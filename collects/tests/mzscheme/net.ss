@@ -6,7 +6,24 @@
 ;; url.ss tests
 ;;
 
-(require (lib "url.ss" "net"))
+(require (lib "url.ss" "net")
+	 (lib "uri-codec.ss" "net"))
+
+(test "a=hel%2blo" alist->form-urlencoded '((a . "hel+lo")))
+(test '((a . "hel+lo")) form-urlencoded->alist (alist->form-urlencoded '((a . "hel+lo"))))
+(test "a=hel%2blo;b=good-bye" alist->form-urlencoded '((a . "hel+lo") (b . "good-bye")))
+(test '((a . "hel+lo") (b . "good-bye")) form-urlencoded->alist (alist->form-urlencoded '((a . "hel+lo") (b . "good-bye"))))
+
+(let ([with-censor (load-relative "censor.ss")])
+  (with-censor
+   (lambda ()
+     (let ([p (let loop ([n 0])
+		(if (= n 256)
+		    null
+		    (let ([s (string (char-downcase (integer->char n)))])
+		      (cons (cons (string->symbol s) s)
+			    (loop (add1 n))))))])
+       (test p form-urlencoded->alist (alist->form-urlencoded p))))))
 
 (let ()
   (define (test-s->u vec str)
@@ -68,7 +85,7 @@
   (test-s->u (vector "http" #f "www.drscheme.org" #f (list "a" "b" "c") '((tam . "tom")) "joe")
              "http://www.drscheme.org/a/b/c?tam=tom#joe")
   (test-s->u (vector "http" #f "www.drscheme.org" #f (list "a" "b" "c") '((tam . "tom") (pam . "pom")) "joe")
-             "http://www.drscheme.org/a/b/c?tam=tom&pam=pom#joe")
+             "http://www.drscheme.org/a/b/c?tam=tom;pam=pom#joe")
   (test-s->u (vector "http" #f "www.drscheme.org" #f (list "a" "b" #("c" "b")) '() #f)
              "http://www.drscheme.org/a/b/c;b")
   (test-s->u (vector "http" #f "www.drscheme.org" #f (list #("a" "x") "b" #("c" "b")) '() #f)
@@ -133,23 +150,24 @@
 	 (lib "port.ss"))
 
 (define tricky-strings
-  (list (make-bytes 200 32)
-	(make-bytes 200 9)
-	(make-bytes 200 (char->integer #\x))
-	(list->bytes
-	 (let loop ([i 0])
-	   (if (= i 256)
-	       null
-	       (cons i (loop (add1 i))))))
-	;; Something that doesn't end with a LF:
-	(bytes-append 
-	 (with-input-from-file "net.ss" (lambda () (read-bytes 500)))
-	 #"xxx")
-	;; CRLF:
-	(regexp-replace
-	 #rx#"\n"
-	 (with-input-from-file "net.ss" (lambda () (read-bytes 500)))
-	 #"\r\n")))
+  (let ([dir (collection-path "tests" "mzscheme")])
+    (list (make-bytes 200 32)
+	  (make-bytes 200 9)
+	  (make-bytes 200 (char->integer #\x))
+	  (list->bytes
+	   (let loop ([i 0])
+	     (if (= i 256)
+		 null
+		 (cons i (loop (add1 i))))))
+	  ;; Something that doesn't end with a LF:
+	  (bytes-append 
+	   (with-input-from-file (build-path dir "net.ss") (lambda () (read-bytes 500)))
+	   #"xxx")
+	  ;; CRLF:
+	  (regexp-replace
+	   #rx#"\n"
+	   (with-input-from-file (build-path dir "net.ss") (lambda () (read-bytes 500)))
+	   #"\r\n"))))
 
 (define (check-same encode decode port line-rx max-w)
   (let ([p (open-output-bytes)])
