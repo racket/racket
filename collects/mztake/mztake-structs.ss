@@ -34,6 +34,7 @@
                                 exited?       ; FrTime cell receives #t when the target exits
                                 exceptions    ; (an event stream) Exceptions thrown during the evaluation of the target
                                 runtime       ; Behavior with current runtime in milliseconds
+                                main-client   ; the main client module that will be run
                                 clients))     ; list of all the clients attached to this process
   
   ;###########################################################################################################
@@ -69,6 +70,7 @@
                         (frp:new-cell)       ; exited?
                         (frp:event-receiver) ; exceptions
                         null                 ; runtime
+                        null                 ; main-client
                         empty))              ; clients
   
   (define (create-empty-debug-client)

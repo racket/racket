@@ -1,10 +1,12 @@
 #| TODO
 
+make sure that the main client for a process is in the list of clients being annotated
+
+provide a body to bind instead or returning an eventstream, like (list x y)
+
 breaks dont pause at a client -- they just send a ping when they get hit -- if you want to pause you should say ((when-e breakpoint) . -=> . (pause p)); maybe take a thunk to do when the breakpoint is hit?
 
 make syntax errors work for invalid bindings ... take the syntax when the binding is made and save it in a hashtable
-
-provide set-running! again
 
 ---------LOAD ANNOTATOR BUGS::::::::::::::
 ;catch oops exception
@@ -48,7 +50,7 @@ With multiple threads... It is hard to differentiate between the threads since w
 
 Otherwise if you stack them up, interact with one, resume, interact, resume... could be tedious.  Also, one may negate the necessity for the other.  What does it even mean to pause in vector.ss?
 
-Problem with synchronysity in multiple threads too... Maybe we need to have the threaded breakpoints run in lockstep... Put a 'semaphore' *before* processing breakpoints to ensure that there is ever only one breakpoint happening at a time, and each thread waits in a queue.  Big performance impact though... Does this solve all of our other problems -- I think we would only need one semaphore to continue then, and pausing will be global.  Yes, if each thread causes a pause, then we will pause possibly annoyingly each time.  We need a way to turn forced breaks on and off dynamically then -- what do we do about behaviors in set-running!? (is set-running! global then?).  (does it make sense to be able to turn bind traces on and off too?)
+Problem with synchronysity in multiple threads too... Maybe we need to have the threaded breakpoints run in lockstep... Put a 'semaphore' *before* processing breakpoints to ensure that there is ever only one breakpoint happening at a time, and each thread waits in a queue.  Big performance impact though... Does this solve all of our other problems -- I think we would only need one semaphore to continue then, and pausing will be global.  Yes, if each thread causes a pause, then we will pause possibly annoyingly each time.  We need a way to turn forced breaks on and off dynamically then. (does it make sense to be able to turn bind traces on and off too?)
 
 Performance-wise, this turns a multi-threaded program into a single thread -- if there are t threads over an arbitrary number of modules, worst case is that you have t threads in the queue.
 
@@ -59,18 +61,7 @@ With the syntax for debugging, you will not have to provide ways to create clien
 
 Need to know where the program breaks at -- need to know *when* it breaks too -- print something out
 
-I will want to be able to take "(lib ...)" as a path to the file being debugged
-
-exceptions thrown in anonymous threads spawned by the target, are caught by the default drs handler, and not by frtime or mztake. they get printed out in the interaction window and there is nothing we can do about them for now -- if you want you can parameterize and rethrow the exceptions. just be aware of that.
-RETHROW EXCEPTIONS CAUGHT ON THE STREAM FOR A CLIENT -- OFFER A WAY TO DISABLE IT
-WHO is catching (thread (lambda () (raise 'first-raise)))?  It never gets to the exn evstream
-
-code like
-(set-running! client (or (elapsed . < . 5) (elapsed . >= . 10)))
-(set-running! client #t)
-will break the behavior ... it gets set!'d.  Fix this!
-set-running! behaviors can go in a list which is and'd to check if all are satisfied
-
+CAN I take "(lib ...)" as a path to the file being debugged?
 
 DEMOS---------------------------------------------------------------------------------------
 Data structure examples
@@ -81,7 +72,7 @@ MST example
 
 Code something with multiple threads doing something and draw the threads in different colors in a window
 
-code the heap example and copy the set-running! coolness to it from sine-test.ss
+code the heap example
 
 SCRIPT--------------------------------------------------------------------------------------
 provide a running? behavior for the scripts, which actually works.
@@ -146,10 +137,9 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
            (rename runtime/seconds process:runtime/seconds)
            (rename runtime/milliseconds process:runtime/milliseconds)
            (rename debug-process-exited? process:exited?)
-           #|
-           set-running!
-           process:running? ; disabled until it works
-|#
+           ;TODO HACK!!!
+           set-debug-process-main-client!
+           ;;           process:running? ; disabled until it works
            )
   
   ;              ;           ;                 ;                                      
@@ -240,10 +230,9 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   
   
   (define (kill-all)
-    (for-each (lambda (p) (kill p)) all-debug-processes)
     (unless (empty? all-debug-processes)
-      (display "All debug processes have been killed."))
-    (set! all-debug-processes empty))
+      (for-each (lambda (p) (kill p)) all-debug-processes)
+      (display "All debug processes have been killed.")))
   
   
   ; wrapper for errors related to the script only
@@ -255,14 +244,16 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   
   
   (define (client-error err)
-    ; TODO I made this a syntax error so that the little 'goto' clickable box wouldnt show up
-    ; it could easily be an (error)
     (display (format "mztake:client-error: ~a~n---~n" err))
     (kill-all))
   
   
   (define (print-debug str)
-    (display (format "mztake:debug: ~a~n---~n" str)))
+    (void)) ;(display (format "mztake:debug: ~a~n---~n" str)))
+  
+  
+  (define (print-info str)
+    (display (format "mztake: ~a~n---~n" str)))
   
   
   ; retreives the binding of a variable from a breakpoint event
@@ -352,7 +343,10 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   ;  ;        ;      ;    ;   ;   ;  ;    ; ;    ; ;    ;      ;        ;    ;; ;      ;  ;   ; ;    ; 
   ;  ;        ;       ;;;;     ;;;    ;;;;   ;;;;   ;;;;       ;         ;;;; ; ;      ;   ;;;   ;;;;  
   
-  (define (start-debug-process receive-result process)
+  (define (start-debug-process receive-result process)    
+    (assert (not (null? (debug-process-main-client process)))
+            "main-client not defined for one of the processes!")
+    
     ; initialize the semaphore
     (set-debug-process-run-semaphore! process (make-semaphore))
     ; set initial state of exit predicate
@@ -373,41 +367,51 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
          (frp:value-now (debug-process-running? process))))
   
   
+  (define (main-client-name process)
+    (let-values ([(_ name __)
+                 (split-path (debug-client-modpath (debug-process-main-client process)))])
+      name))
+  
   ; Switches the running state on or off
-  ; ((union frp:behavior? boolean?) . -> . void?)
+  ; (debug-process? boolean? . -> . void?)
   (define (set-running! process run?)
-    (define (update)
-      ; start the debugger if needed
-      (when (null? (debug-process-run-semaphore process))
-        (start-debug-process (receive-result process) process))
-      
-      (when run?
-        (semaphore-post (debug-process-run-semaphore process)))
-      
-      (frp:value-now run?))
+    (set-debug-process-running?! process run?)
     
-    (cond [(frp:behavior? run?)
-           (script-error "set-running! can't take behaviors right now!")]
-          ;(set! debugger:running? (frp:proc->signal update run?))]
-          
-          [else (set-debug-process-running?! process run?)
-                (update)])
+    ; start the debugger if needed
+    (when (null? (debug-process-run-semaphore process))
+      (print-info (format "starting debugger for ~a" (main-client-name process)))
+      (start-debug-process (receive-result process) process))
+    
+    (when run?
+      (semaphore-post (debug-process-run-semaphore process)))
     (void))
   
   
-  (define (pause process) (set-running! process #f))
+  (define (pause process)
+    (print-info (format "pausing debugger for ~a" (main-client-name process)))
+    (set-running! process #f))
+  
   
   (define (start/resume process)
     (let ([val (frp:value-now (debug-process-exited? process))])
-      ; only start the debugger once
+      (when (not (null? (debug-process-run-semaphore process)))
+        (print-info (format "resuming debugger for ~a" (main-client-name process))))
+      
+      ; only start the debugger once for each process
       (if ((not (equal? val frp:undefined)) . and . val)
-          (script-error "Cannot restart program once it has exited. Try restarting the script.")
+          (print-info (format "Cannot restart a process once it has exited (~a). Try restarting the script."
+                              (main-client-name process)))
           (set-running! process #t))))
   
   
-  ; Kills the debugger process immediately
+  ; Kills the debugger process immediately and permanently
   (define (kill process)
-    (pause process)
+    (print-info (format "killing debugger for ~a" (main-client-name process)))
+    
+    ; remove the process from the process list
+    (set! all-debug-processes (remq process all-debug-processes))
+    
+    (set-running! process #f)
     ; shutdown the custodian
     (custodian-shutdown-all (debug-process-custodian process))
     ; set the exit predicate to 'exited'
@@ -501,7 +505,6 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
                
                [client (create-empty-debug-client)])
           
-          ;TODO remove me
           (print-debug (format "'~a' -> '~a'" filename modpath))
           
           (set-debug-client-modpath! client modpath)

@@ -56,16 +56,14 @@
                                            all-used-module-paths))]
                  
                  [annotator (lambda (fn m stx)
-                              (printf "annotating: ~a~n~n" fn)
+                              ;(printf "annotating: ~a~n~n" fn)
                               (let* ([client (path->client fn)]
                                      [breakpoints (hash-keys (debug-client-tracepoints client))]
                                      [stx (annotate (expand stx) breakpoints fn (break client))])
                                 ; add an error handler so anything that goes wrong points to the correct module
                                 (annotate-module-with-error-handler stx (err-display-handler fn))))]
                  
-                 ;TODO hack
-                 [_ (print "hack -- main-mod problem")]
-                 [main-mod (first all-used-module-paths)])
+                 [main-mod (debug-client-modpath (debug-process-main-client process))])
             
             (parameterize ([current-custodian (debug-process-custodian process)]
                            [current-namespace (make-namespace-with-mred)]
