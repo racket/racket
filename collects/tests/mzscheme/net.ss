@@ -9,7 +9,8 @@
 (require (lib "url.ss" "net")
 	 (lib "uri-codec.ss" "net"))
 
-(test "" uri-decode "%Pq")
+(test "%Pq" uri-decode "%Pq")
+(test "%P" uri-decode "%P")
 (test "a=hel%2blo+%e7%88%b8" alist->form-urlencoded '((a . "hel+lo \u7238")))
 (test '((a . "hel+lo \u7238")) form-urlencoded->alist (alist->form-urlencoded '((a . "hel+lo \u7238"))))
 (test "a=hel%2blo;b=good-bye" alist->form-urlencoded '((a . "hel+lo") (b . "good-bye")))
