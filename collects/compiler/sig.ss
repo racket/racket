@@ -53,6 +53,7 @@
    compile-c-extension-parts
 
    link-extension-parts
+   glue-extension-parts
 
    compile-zos
 
@@ -71,4 +72,5 @@
 
 ;; Low-level multi-file extension linker interface
 (define-signature compiler:linker^
-  (link-extension))
+  (link-extension
+   glue-extension))
