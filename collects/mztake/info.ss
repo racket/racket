@@ -1,6 +1,6 @@
 (module info (lib "infotab.ss" "setup")
   (define name "Debugger")
   (define tools '(("debugger-tool.ss")))
-  (define tool-names '("The Debugger"))
+  (define tool-names '("MzTake Debugger"))
   (define tool-icons '(("emblem-ohno.png" "mztake")))
 )

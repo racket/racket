@@ -1,4 +1,6 @@
 #| TODO
+CAN I CATCH FRTIME EXCEPTIONS AND RETHROW THOSE TOO?
+
 
 LOOK AT (require (lifted mzscheme random)) in demos/random-xs-test.ss -- there seems to be a problem with requires that do lifting for FrTime in the target program, we need to do requires in the script for some reason.  random becomes random3 and throws an exception.
 
@@ -10,6 +12,7 @@ will break the behavior ... it gets set!'d.  Fix this!
 rethink start/resume and kill -- do we want people to be able to restart after a kill or the progam exits (we have a behavior to check for that)?
 
 RETHROW EXCEPTIONS CAUGHT ON THE STREAM FOR A CLIENT -- OFFER A WAY TO DISABLE IT
+WHO is catching (thread (lambda () (raise 'first-raise)))?  It never gets to the exn evstream
 
 Need a way to define which language to evaluate the target with. Robby should know how: robby@cs.uchicago.edu
 Does this work with modules?  with frtime?
@@ -193,7 +196,12 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   (define (script-error err)
     ; TODO I made this a syntax error so that the little 'goto' clickable box wouldnt show up
     ; it could easily be an (error)
-    (display (format "script-error: ~a~n" err)))
+    (display (format "mztake:script-error: ~a~n" err)))
+  
+  (define (client-error err)
+    ; TODO I made this a syntax error so that the little 'goto' clickable box wouldnt show up
+    ; it could easily be an (error)
+    (display (format "mztake:client-error: ~a~n" err)))
   
   (define (fatal-script-error err client)
     (script-error err)
@@ -262,7 +270,11 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
                   ; all errors and raises from the TARGET program will be caught here
                   ; FrTime errors from the script have their own eventstream
                   (with-handlers ([(lambda (exn) #t)
-                                   (lambda (exn) (frp:send-event (client-exceptions client) exn))])
+                                   (lambda (exn)
+                                     (frp:send-event (client-exceptions client) exn)
+                                     (client-error (if (exn? exn)
+                                                (format "exception: ~a" (exn-message exn))
+                                                exn)))])
                     (go)))))])
         (thread (lambda () 
                   (thread-wait evaluation-thread)
