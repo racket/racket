@@ -20,6 +20,12 @@
      mred-launcher-up-to-date?
      mzscheme-launcher-up-to-date?
 
+     mred-launcher-is-directory?
+     mzscheme-launcher-is-directory?
+
+     mred-launcher-put-file-extension+style+filters
+     mzscheme-launcher-put-file-extension+style+filters
+
      build-aux-from-path
      current-launcher-variant
      available-mred-variants
