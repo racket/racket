@@ -26,7 +26,6 @@
 |#
 
   (define (require/sandbox+annotations custodian err-display-handler initial-module annotate-module? annotator)
-    (printf "require/sandbox+annotations ~a~n" initial-module)
     (parameterize ([current-custodian custodian]
                    [current-namespace (make-namespace-with-mred)]
                    [error-display-handler err-display-handler])

@@ -1,15 +1,12 @@
-(require (lib "animation.ss" "frtime"))
-(require (lib "mztake-syntax.ss" "mztake"))
+(require (lib "animation.ss" "frtime")
+         (lib "list.ss" "frtime")
+         (lib "useful-code.ss" "mztake" "private"))
+(require (lib "mztake.ss" "mztake"))
 
-(define-mztake-process p ("sine.ss" [x/sinx-trace 5 8 bind '(x sin-x)]))
-
-
-(define x/sinx (hold x/sinx-trace))
-
+(define x/sinx (hold (trace "sine.ss" 5 8 (bind (x sin-x) (list x sin-x)))))
 
 (define x     (first x/sinx))
 (define sin-x (second x/sinx))
-
 
 (printf-b "x: ~a" x)
 (printf-b "sin(x/20): ~a" sin-x)
@@ -37,5 +34,5 @@
                                       (if (< 200 x) "blue" "darkblue")      #| Quadrants 3 and 4 |#
                                       (if (< 200 x) "red" "darkred")))))))) #|           1 and 2 |#
 
+(start/resume)
 
-(start/resume p)

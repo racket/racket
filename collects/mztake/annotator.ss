@@ -8,7 +8,7 @@
            (lib "load-annotator.ss" "mztake" "private")
            (prefix srfi: (lib "search.ss" "srfi" "1"))
            )
-  (provide annotate-stx annotate-for-single-stepping bindings)
+  (provide annotate-stx annotate-for-single-stepping)
 
   (define (arglist-bindings arglist-stx)
     (syntax-case arglist-stx ()
@@ -27,6 +27,7 @@
   ;; Returns a list of pairs `(,variable-name-stx ,variable-value). Each
   ;; item in the list is a shadowed instance of a variable with the given
   ;; name, with the first item being the one in scope.
+  #;
   (define (bindings top-mark marks sym)
     (let ([mark-list (cons top-mark (continuation-mark-set->list marks debug-key))])
       (map (lambda (binding) (list (mark-binding-binding binding)

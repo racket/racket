@@ -13,10 +13,10 @@
            "annotator.ss"
            )
   
-  (provide/contract [start/resume (debug-process? . -> . void?)]
-                    [kill (debug-process? . -> . void?)]
+  (provide/contract [start/resume (() (debug-process?) . opt-> . void?)]
+                    [kill (() (debug-process?) . opt-> . void?)]
                     [kill-all (-> void?)]
-                    [pause (debug-process? . -> . void?)]
+                    [pause (() (debug-process?) . opt-> . void?)]
                     [rename debug-process-exceptions
                             process:exceptions
                             (debug-process? . -> . frp:event?)]
@@ -107,43 +107,8 @@
     (display (format "mztake: ~a~n---~n" str)))
   
   
-  (define create-trace
-    (case-lambda
-      [(client line col type args)
-       (case type
-         ['bind  (trace/bind client line col args)]
-         ['entry (trace/entry client line col)]
-         [else (script-error (format "Invalid trace type: `~a' in client: `~a'"
-                                     (symbol->string type)
-                                     (debug-client-modpath client)))])]
-      
-      [(client line col type)
-       (create-trace client line col type null)]))
-  
-  
-                                        ; takes a single trace, looks up what it needs to do, and returns an frp-event to publish
-  (define (trace->frp-event client top-mark marks trace)
-    (match trace
-           [($ entry-trace evnt-rcvr)
-            (list evnt-rcvr #t)]
-           
-           [($ bind-trace evnt-rcvr variable-to-bind)
-            (let* ([vars (if (list? variable-to-bind) variable-to-bind
-                             (list variable-to-bind))]
-                   [values (map
-                            (lambda (var)
-                              (let ([val (bindings top-mark marks var)])
-                                (if (empty? val)
-                                    (script-error
-                                     (format "Variable not found at the syntax location for the BIND: `~a'" var))
-                                    (cadar (bindings top-mark marks var)))))
-                            vars)])
-              (list evnt-rcvr
-                    (if (list? variable-to-bind) values
-                        (first values))))]))  
-  
-                                        ; returns a memoized function that takes (line column) -> position
-                                        ; line-col->pos : (debug-file? . -> . (number? number? . -> . (union void? number?)))
+  ;; returns a memoized function that takes (line column) -> position
+  ;; line-col->pos : (debug-file? . -> . (number? number? . -> . (union void? number?)))
   (define (line-col->pos filename)
                                         ; produces a nested list of (line column offset) for all addressable syntax
     (define (unwrap-syntax stx)
@@ -198,41 +163,41 @@
   ;  ;        ;       ;;;;     ;;;    ;;;;   ;;;;   ;;;;       ;         ;;;; ; ;      ;   ;;;   ;;;;  
 
 
+  (define current-process (make-parameter (create-empty-debug-process)))
+
   (define (find-client process modpath) 
-    (begin0/rtn
-     (cond
-      [(memf (lambda (c) (equal? (debug-client-modpath c) (path->string modpath)))
-             (debug-process-clients process)) => first]
-      [else false])
-     (printf "find-client ~s ~s : ~s~n" (map debug-client-modpath (debug-process-clients process)) modpath rtn)))
+    (cond
+     [(memf (lambda (c) (equal? (debug-client-modpath c) (path->string modpath)))
+            (debug-process-clients process)) => first]
+     [else false]))
  
   (define (break? process client)
-    (printf "break? ~a ~a~n" client (debug-client-tracepoints client))
     (let ([tracepoints (and client (debug-client-tracepoints client))])
-      (if tracepoints
-          (lambda (pos) 
-            (begin0/rtn
-             (hash-get tracepoints (sub1 pos) (lambda () false))
-             (printf "break? ~a~n" rtn)))
-          (lambda (pos) false))))
+      (lambda (pos)
+        (or (not (running-now? process))
+            (and tracepoints
+                 (hash-get tracepoints (sub1 pos) (lambda () false)))))))
   
-  (define (receive-result process client top-mark marks)
-    (printf "receive-result~n")
+  (define (receive-result process client top-mark rest-marks)
     (let* ([byte-offset (sub1 (syntax-position (mark-source top-mark)))]
-           [traces (hash-get (debug-client-tracepoints client) byte-offset)])
+           [traces (hash-get (debug-client-tracepoints client) byte-offset (lambda () empty))]
+           [marks (cons top-mark (continuation-mark-set->list rest-marks debug-key))])
       
-      (assert (not (empty? traces))
-              (format "There are no traces at offset ~a, but a trace point is defined!~n"
-                      (number->string byte-offset)))
-      
+      (set-debug-process-marks! process marks)
+
                                         ; Run all traces at this trace point               
-      (let ([to-send (map (lambda (t) (trace->frp-event client top-mark marks t)) traces)])
-        (printf "frp:send-synchronous-events ~a~n" to-send)
-        (frp:send-synchronous-events to-send))
+      (let ([to-send (map (lambda (t)
+                            (list (trace-struct-evnt-rcvr t)
+                                  ((trace-struct-thunk t))))
+                          traces)])
+        (unless (empty? to-send)
+          (frp:send-synchronous-events to-send)))
       
                                         ; Now that we processed the trace, do we want to pause ojr continue
       (unless (running-now? process)
-        (semaphore-wait (debug-process-run-semaphore process)))))
+        (semaphore-wait (debug-process-run-semaphore process)))
+
+      (set-debug-process-marks! process false)))
   
   
   
@@ -256,12 +221,8 @@
      `(file ,(debug-client-modpath (debug-process-main-client process)))
      ;; annotate-module?
      (lambda (filename module-name)
-       (begin0/rtn
         (memf (lambda (c) (equal? (debug-client-modpath c) (path->string filename)));; TODO: harmonize path & string
-              (debug-process-clients process))
-        (printf "annotate-module? ~s ~s ~s : ~s~n"
-                (map debug-client-modpath (debug-process-clients process))
-                filename module-name rtn)))
+              (debug-process-clients process)))
      ;; annotator
      (lambda (stx)
        (let ([client (and (syntax-source stx)
@@ -301,52 +262,59 @@
                   (split-path (debug-client-modpath (debug-process-main-client process)))])
       name))
   
+
+
   ; Switches the running state on or off
   ; (debug-process? boolean? . -> . void?)
-  (define (set-running! process run?)
-    (set-debug-process-running?! process run?)
-    
-    ; start the debugger if needed
-    (when (null? (debug-process-run-semaphore process))
-      (print-info (format "starting debugger for ~a" (main-client-name process)))
-      (start-debug-process process))
-    
-    (when run?
-      (semaphore-post (debug-process-run-semaphore process)))
-    (void))
-  
-  
-  (define (pause process)
-    (print-info (format "pausing debugger for ~a" (main-client-name process)))
-    (set-running! process #f))
-  
-  
-  (define (start/resume process)
-    (let ([val (frp:value-now (debug-process-exited? process))])
-      (when (not (null? (debug-process-run-semaphore process)))
-        (print-info (format "resuming debugger for ~a" (main-client-name process))))
+  (define set-running!
+    (opt-lambda (run? [process (current-process)])
+      (set-debug-process-running?! process run?)
       
-      ; only start the debugger once for each process
-      (if ((not (equal? val frp:undefined)) . and . val)
-          (print-info (format "Cannot restart a process once it has exited (~a). Try restarting the script."
-                              (main-client-name process)))
-          (set-running! process #t))))
+                                        ; start the debugger if needed
+      (when (null? (debug-process-run-semaphore process))
+        (print-info (format "starting debugger for ~a" (main-client-name process)))
+        (start-debug-process process))
+      
+      (when run?
+        (semaphore-post (debug-process-run-semaphore process)))
+      (void)))
+  
+  
+  (define pause
+    (opt-lambda ([process (current-process)])
+      (print-info (format "pausing debugger for ~a" (main-client-name process)))
+      (set-running! #f process)))
+  
+  
+  (define start/resume
+    (opt-lambda ([process (current-process)])
+      (let ([val (frp:value-now (debug-process-exited? process))])
+        (when (not (null? (debug-process-run-semaphore process)))
+          (print-info (format "resuming debugger for ~a" (main-client-name process))))
+        
+                                        ; only start the debugger once for each process
+        (if ((not (equal? val frp:undefined)) . and . val)
+            (print-info (format "Cannot restart a process once it has exited (~a). Try restarting the script."
+                                (main-client-name process)))
+            (set-running! #t process)))))
   
   ; Kills and prints out a message stating it
-  (define (kill process)
-    (print-info (format "killing debugger for ~a" (main-client-name process)))
-    (stop process))
+  (define kill
+    (opt-lambda ([process (current-process)])
+      (print-info (format "killing debugger for ~a" (main-client-name process)))
+      (stop process)))
   
   ; Kills the debugger process immediately and permanently
-  (define (stop process)
-    ; remove the process from the process list
-    (set! all-debug-processes (remq process all-debug-processes))
+  (define stop
+    (opt-lambda ([process (current-process)])
+                                        ; remove the process from the process list
+      (set! all-debug-processes (remq process all-debug-processes))
     
-    (set-running! process #f)
-    ; shutdown the custodian
-    (custodian-shutdown-all (debug-process-custodian process))
-    ; set the exit predicate to 'exited'
-    (frp:set-cell! (debug-process-exited? process) #t))
+      (set-running! #f process)
+                                        ; shutdown the custodian
+      (custodian-shutdown-all (debug-process-custodian process))
+                                        ; set the exit predicate to 'exited'
+      (frp:set-cell! (debug-process-exited? process) #t)))
   
   
   ; creates and initializes a debug process
@@ -354,6 +322,7 @@
     (let ([p (create-empty-debug-process)])
       (set-debug-process-runtime! p (runtime p))
       (set! all-debug-processes (cons p all-debug-processes))
+      (current-process p)
       p))
   
   
@@ -396,14 +365,16 @@
   ;                            ;                                                          
   
   
-  #;(define (running? process)
-      (script-error "client-running? is broken")
-      (and (running-now? process)
-           (not (debug-process-exited? process))))
+  #;
+  (define (running? process)
+    (script-error "client-running? is broken")
+    (and (running-now? process)
+         (not (debug-process-exited? process))))
   
-  #;(define (time-per-event/milliseconds process behavior)
-      (frp:lift (truncate (/ (frp:value-now (debug-process-runtime process))
-                             (add1 (frp:value-now (count-e (frp:changes behavior))))))))
+  #;
+  (define (time-per-event/milliseconds process behavior)
+    (frp:lift (truncate (/ (frp:value-now (debug-process-runtime process))
+                           (add1 (frp:value-now (count-e (frp:changes behavior))))))))
   
   (define (runtime/milliseconds process)
     (debug-process-runtime process))
@@ -457,12 +428,43 @@
           (when (null? (debug-process-main-client process))
             (set-debug-process-main-client! process client))
           
-          client))))
-  
-  
+          client))))  
+
+
+  (define (trace* modpath line col thunk)
+    (let* ([clients (member modpath (debug-process-clients (current-process)))]
+           [client (if clients
+                       (first clients)
+                       (create-debug-client (current-process) modpath))]
+           [trace-hash (debug-client-tracepoints client)]
+           [trace (make-trace-struct (frp:event-receiver) thunk)]
+           [pos ((debug-client-line-col->pos client) line col)])
+                                        ; add the trace to the list of traces for that byte-offset
+      (hash-put! trace-hash pos
+                 (append (hash-get trace-hash pos (lambda () '()))
+                         (list trace)))
+      (trace-struct-evnt-rcvr trace)))
+
+  (define-syntax trace
+    (syntax-rules ()
+      [(_ client line col)
+       (trace* client line col (lambda () true))]
+      [(_ client line col body ...)
+       (trace* client line col (lambda () body ...))]))
+
+  (define-syntax bind
+    (syntax-rules ()
+      [(_ (name ...) body0 body ...)
+       (let ([name (mark-binding-value
+                    (first (lookup-all-bindings
+                            (lambda (id) (eq? (syntax-e id) 'name))
+                            (debug-process-marks (current-process)))))] ...)
+         body0 body ...)]))
+
   ; (client (offset | line column) (symbol | listof symbols) -> (frp:event-receiver)
   ; (debug-client? number? number? (union symbol? (listof symbol?)) . -> . frp:event?)
-  (define (trace/bind client line col binding-symbol)
+  #;
+   (define (trace/bind client line col binding-symbol)
     (when (empty? binding-symbol)
       (script-error (format "No symbols defined in BIND for client: `~a'"
                             (debug-client-modpath client))))
@@ -480,6 +482,7 @@
   
   
   ;(debug-file? number? number? . -> . frp:event?)
+  #;
   (define (trace/entry client line col)
     (let ([trace-hash (debug-client-tracepoints client)]
           [trace (create-entry-trace)]
@@ -490,8 +493,7 @@
       (trace-struct-evnt-rcvr trace)))
   
   
-  (provide create-trace
-           create-debug-process
+  (provide trace trace* bind create-debug-process
            create-debug-client
            mztake-version)
   

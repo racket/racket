@@ -17,11 +17,7 @@
   ;  ;     ;   ;   ;      ;    ;;  ;   ;  ;   ;    ; 
   ;   ;;;;;     ;;;;       ;;;; ;   ;;;    ;;; ;;;;  
   
-  (define-struct trace-struct (evnt-rcvr))           ; frp:event-receiver
-  
-  (define-struct (entry-trace trace-struct) ())
-  (define-struct (bind-trace trace-struct)
-                 (variable-to-bind))          ; symbol
+  (define-struct trace-struct (evnt-rcvr thunk))           ; frp:event-receiver
   
   (define-struct debug-client (modpath          ; complete-path of the module
                                tracepoints      ; hash-table of traces
@@ -35,7 +31,8 @@
                                 exceptions    ; (an event stream) Exceptions thrown during the evaluation of the target
                                 runtime       ; Behavior with current runtime in milliseconds
                                 main-client   ; the main client module that will be run
-                                clients))     ; list of all the clients attached to this process
+                                clients       ; list of all the clients attached to this process
+                                marks))       ; while paused, the marks at the point of the pause (else false)
   
   ;###########################################################################################################
   
@@ -55,14 +52,6 @@
   ;  ;     ;   ;   ;      ;    ;;  ;   ;  ;         ;;     ; ;      ;    ; ;    ;;  ;    ;    ;  ;     ;    ; 
   ;   ;;;;;     ;;;;       ;;;; ;   ;;;    ;;;        ;;;;;  ;       ;;;;   ;;;; ;   ;;;  ;;;;   ;      ;;;;  
   
-  ; Creates a trace that binds to the value of a variable in scope
-  (define (create-bind-trace sym-to-bind) ; ((union (listof symbol?) symbol?) . -> . trace?)
-    (make-bind-trace (frp:event-receiver) sym-to-bind))
-  
-  ; Creates a trace that simply alerts that it was hit
-  (define (create-entry-trace) ; (void? . -> . trace?)
-    (make-entry-trace (frp:event-receiver)))
-  
   (define (create-empty-debug-process)
     (make-debug-process (make-custodian)
                         null                 ; run-semaphore - null so we know it has never started
@@ -71,7 +60,8 @@
                         (frp:event-receiver) ; exceptions
                         null                 ; runtime
                         null                 ; main-client
-                        empty))              ; clients
+                        empty                ; clients
+                        false))              ; marks
   
   (define (create-empty-debug-client)
     (make-debug-client null        ; modpath
