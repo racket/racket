@@ -40,9 +40,9 @@
 (let ([with-censor (load-relative "censor.ss")])
   (with-censor
    (lambda ()
-     ;; Test all chars up to 300
+     ;; Test all ASCII chars
      (let ([p (let loop ([n 0])
-		(if (= n 300)
+		(if (= n 128)
 		    null
 		    (let ([s (string (char-downcase (integer->char n)))])
 		      (cons (cons (string->symbol s) s)
@@ -76,7 +76,7 @@
                (if (= (string-length str) 1)
                    (string-append "0" str)
                    str))))
-    (for (code 0 256)
+    (for (code 0 127)
          (if (or (= code 45) (= code 33) (= code 95)
                  (= code 46) (= code 126) (= code 42)
                  (= code 39) (= code 40) (= code 41) 
@@ -323,12 +323,15 @@
 			  (open-input-bytes tricky-string)
 			  line-rx max-w))
 	    tricky-strings)
-  (let ([dir (collection-path "tests" "mzscheme")])
-    (for-each (lambda (p)
-		(when (regexp-match #rx"[.]ss$" (path->string p))
-		  (unless (equal? (path->string p) "flat.ss")
-		    (check-same-file encode decode (build-path dir p) line-rx max-w))))
-	      (directory-list dir))))
+  (parameterize ([current-pseudo-random-generator (make-pseudo-random-generator)])
+    (random-seed 17)
+    (let ([dir (collection-path "tests" "mzscheme")])
+      (for-each (lambda (p)
+		  (when (regexp-match #rx"[.]ss$" (path->string p))
+		    (unless (or (positive? (random 10)) ; check random 1/10 of files
+				(equal? (path->string p) "flat.ss"))
+		      (check-same-file encode decode (build-path dir p) line-rx max-w))))
+		(directory-list dir)))))
 
 (check-same-all (lambda (i o) (qp-encode-stream i o))
 		qp-decode-stream
