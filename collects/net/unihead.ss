@@ -5,7 +5,7 @@
 
   (provide encode-for-header
 	   decode-for-header
-	   latin-1->windows-1252)
+	   generalize-encoding)
   
   (define re:ascii #rx"^[\u0-\u7F]*$")
 
@@ -51,21 +51,23 @@
 
   ;; ----------------------------------------
 
-  (define re:iso #rx#"[iI][sS][oO]-8859-1")
-  (define re:utf-8 #rx#"[uU][tT][fF]-8")
+  (define re:iso #rx#"^[iI][sS][oO]-8859-1$")
+  (define re:gb #rx#"^[gG][bB](2312)?$")
+  (define re:utf-8 #rx#"^[uU][tT][fF]-8$")
   
   (define re:encoded #rx#"^(.*?)=[?]([^?]+)[?]([qQbB])[?](.*?)[?]=(.*)$")
   
-  (define (latin-1->windows-1252 encoding)
-    (if (regexp-match re:iso encoding)
-	;; Treat Latin-1 as Windows-1252, because
-	;; some mailers are broken. The only difference
-	;; is control chaarcters (which are technically
-	;; not mapped in Latin-1, anyway).
-	(if (bytes? encoding)
-	    #"WINDOWS-1252"
-	    "WINDOWS-1252")
-	encoding))
+  (define (generalize-encoding encoding)
+    ;; Treat Latin-1 as Windows-1252 and also threat GB and GB2312
+    ;; as GBK, because some mailers are broken.
+    (cond 
+     [(regexp-match re:iso encoding) (if (bytes? encoding)
+					 #"WINDOWS-1252"
+					 "WINDOWS-1252")]
+     [(regexp-match re:gb encoding) (if (bytes? encoding)
+					#"GBK"
+					"GBK")]
+     [else encoding]))
   
   (define (decode-for-header s)
     (and s
@@ -81,7 +83,7 @@
 		     [encoding (caddr m)])
 		 (string-append
 		  (decode-for-header (bytes->string/latin-1 (cadr m)))
-		  (let ([encoding (latin-1->windows-1252 encoding)])
+		  (let ([encoding (generalize-encoding encoding)])
 		    (cond
 		     [(regexp-match re:utf-8 encoding) (bytes->string/utf-8 s #\?)]
 		     [else (let ([c (bytes-open-converter (bytes->string/latin-1 encoding) "UTF-8")])
