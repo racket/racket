@@ -131,6 +131,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   (require (lib "match.ss")
            (lib "unit.ss")
            (lib "contract.ss")
+           (lib "stx.ss" "syntax")
            (lib "marks.ss" "stepper/private")
            (prefix frp: (lib "frp.ss" "frtime"))
            "private/useful-code.ss"
@@ -171,7 +172,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   ;   ;;      ;  ;   ;    ;  ;     ;  ;    ;;  ;          ; ;    ;    ;; ;     ;    ; 
   ;     ;;;;;;   ;    ;;;;   ;;;;;;    ;;;; ;  ;           ;      ;;;; ; ;      ;;;;  
   
-    
+  
   ;Keeps track of all debugging processes
   (define all-debug-processes null)
   
@@ -199,13 +200,9 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   (define ((receive-result process) result)
     (match result
       ; regular breakpoint
-      [($ normal-breakpoint-info (top-mark rest-mark ...) kind)
-       (print-debug "breakpoint hit")
-       (void)]
-      #|
+      [($ normal-breakpoint-info (top-mark rest-mark ...) client)
        (let* ([byte-offset (sub1 (syntax-position (mark-source top-mark)))]
-              [trace-hash (debug-file-tracepoints client)]
-              [traces (hash-get trace-hash byte-offset)])
+              [traces (hash-get (debug-client-tracepoints client) byte-offset)])
          
          (assert (not (empty? traces))
                  (format "There are no traces at offset ~a, but a breakpoint is defined!~n"
@@ -213,7 +210,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
          
          ; Run all traces at this breakpoint               
          (let ([to-send (map (lambda (t) (trace->frp-event client result t)) traces)])
-           (frp:send-synchronous-events to-send)))|#
+           (frp:send-synchronous-events to-send)))]
       ; now, breakpoint-halt message should be sent by the debugger model
       
       ;TODO eventually remove this from debugger-model.ss
@@ -221,9 +218,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
        ; all errors and raises from the TARGET program will be caught here
        ; FrTime errors from the script have their own eventstream
        (frp:send-event (debug-process-exceptions process) exn)
-       (client-error (if (exn? exn)
-                         (format "source: ~a | exception: ~a" source (exn-message exn))
-                         exn))]
+       (client-error (format "source: ~a | exception: ~a" source (if (exn? exn) (exn-message exn) exn)))]
       
       ;end of a statement
       [($ breakpoint-halt)
@@ -259,7 +254,9 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   
   (define (kill-all)
     (for-each (lambda (p) (kill p)) all-debug-processes)
-    (display "All debug processes have been killed."))
+    (unless (empty? all-debug-processes)
+      (display "All debug processes have been killed."))
+    (set! all-debug-processes empty))
   
   
   ; wrapper for errors related to the script only
@@ -356,7 +353,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
           (cond
             ; none is found
             [(empty? lst)
-             (script-error (format "No syntax found for trace at line/column ~a:~a in ~a" line col filename))]
+             (raise (format "No syntax found for trace at line/column ~a:~a in ~a" line col filename))]
             
             ; if first is correct line and correct column
             [(and (= line (caar lst))
@@ -385,19 +382,22 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   ;  ;        ;       ;;;;     ;;;    ;;;;   ;;;;   ;;;;       ;         ;;;; ; ;      ;   ;;;   ;;;;  
   
   (define (start-debug-process process)
-    (let* ([receive-result (receive-result process)]
-           ; connect to the debugger-model@ unit
-           [run (invoke-unit debugger-model@ receive-result process)])
+    (let* ([receive-result (receive-result process)])
       
       ; initialize the semaphore
       (set-debug-process-run-semaphore! process (make-semaphore))
       ; set initial state of exit predicate
       (frp:set-cell! (debug-process-exited? process) #f)
       
-      ; run the process
-      (let ([evaluation-thread (thread (lambda () (run)))])
+      (parameterize ([current-custodian (debug-process-custodian process)]
+                     [current-namespace (debug-process-namespace process)])
+        
+        ; connect to the debugger-model@ unit
+        (define-values/invoke-unit (run) debugger-model@ #f receive-result process)
+        
         (thread (lambda ()
-                  (thread-wait evaluation-thread)
+                  ; run the process
+                  (thread-wait (thread (lambda () (run))))
                   ; program terminates
                   (kill process))))))
   
@@ -453,6 +453,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   (define (create-debug-process)
     (let ([p (create-empty-debug-process)])
       (set-debug-process-runtime! p (runtime p))
+      (set! all-debug-processes (cons p all-debug-processes))
       p))
   
   
@@ -527,9 +528,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
                                  (and (file-exists? tst) tst)))])
                     (or (try ".ss") (try ".scm") (try "") str)))]
                
-               [modsymbol ((current-module-name-resolver) filename #f #f)]
-               
-               [modpath (symbol->string modsymbol)]
+               [modpath (symbol->string ((current-module-name-resolver) filename #f #f))]
                [modpath (build-module-filename
                          (if (regexp-match #rx"^," modpath)
                              (substring modpath 1 (string-length modpath))
@@ -541,7 +540,6 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
           (print-debug (format "'~a' -> '~a'" filename modpath))
           
           (set-debug-client-modpath! client modpath)
-          (set-debug-client-modsymbol! client modsymbol)
           (set-debug-client-process! client process)
           (set-debug-client-line-col->pos! client (line-col->pos filename))
           (set-debug-process-clients! process
@@ -552,15 +550,19 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   
   ; (client (offset | line column) (symbol | listof symbols) -> (frp:event-receiver)
   ; (debug-client? number? number? (union symbol? (listof symbol?)) . -> . frp:event?)
-  (define (trace/bind client line col binding-symbol)
-    (let ([trace-hash (debug-client-tracepoints client)]
-          [trace (create-bind-trace binding-symbol)]
-          [pos ((debug-client-line-col->pos client) line col)])
-      ; add the trace to the list of traces for that byte-offset
-      (hash-put! trace-hash pos
-                 (cons trace
-                       (hash-get trace-hash pos (lambda () '()))))
-      (trace-struct-evnt-rcvr trace)))
+  (define-syntax trace/bind
+    (syntax-rules ()
+      [(_ client line col binding-symbol)
+       (with-handlers ([(lambda (exn) #t)
+                        (lambda (exn) (raise-syntax-error 'trace/bind exn ))])
+         (let ([trace-hash (debug-client-tracepoints client)]
+               [trace (create-bind-trace binding-symbol)]
+               [pos ((debug-client-line-col->pos client) line col)])
+           ; add the trace to the list of traces for that byte-offset
+           (hash-put! trace-hash pos
+                      (cons trace
+                            (hash-get trace-hash pos (lambda () '()))))
+           (trace-struct-evnt-rcvr trace)))]))
   
   
   ;(debug-file? number? number? . -> . frp:event?)

@@ -25,7 +25,6 @@
                  (variable-to-bind))          ; symbol
   
   (define-struct debug-client (modpath          ; complete-path of the module
-                               modsymbol        ; symbol returned from the module-name-resolver
                                tracepoints      ; hash-table of traces
                                line-col->pos    ; memoized O(n) function to map line/col -> byte offset
                                process))        ; parent debug-process
@@ -79,7 +78,6 @@
   
   (define (create-empty-debug-client)
     (make-debug-client null        ; modpath
-                       null        ; modsymbol
                        (make-hash) ; tracepoints
                        null        ; line-col->pos function
                        null))      ; process
