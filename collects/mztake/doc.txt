@@ -290,6 +290,33 @@ that are particularly useful when debugging.
 
 Known Issues
 
+* This is rather subtle, but very important:
+  
+  - You have a struct, my-struct, and a function, do-fun
+    (do-fun takes a my-struct) in prog.ss.
+
+  - You are debugging the same prog.ss, and add a trace that
+    binds to the latest my-struct in some test cases at the
+    end of prog.ss.
+
+  - In the script, you want to use do-fun on the the binding,
+    so you (require "my-prog.ss") at the top of the script.
+
+  - When you try to run this, you get an error that there are
+    conflicting structs called my-struct.
+
+  - This is a known problem, and currently there is no solution.
+    If this is an issue, we recommend performing the operation
+    with do-fun within the test cases and binding to the result,
+    or putting traces into do-fun itself, to watch it work.
+
+  - Technical reason:
+    The debugger executes code in a different (protected)
+    namespace than the script is executed in. So even though
+    *you* know the structs are the same, Scheme plays it safe
+    and says they are different, because though they have the
+    same format, they come from two different namespaces.
+
 * The break button will *not* kill runaway client processes.
   You must type (kill process-name) or (kill-all).
 
