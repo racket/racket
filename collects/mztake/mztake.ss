@@ -199,12 +199,13 @@
 
 
   (define (find-client process modpath) 
-    (printf "find-client ~s ~s ~n" (map debug-client-modpath (debug-process-clients process)) modpath) 
-   (cond
-     [(memf (lambda (c) (equal? (debug-client-modpath c) modpath))
-            (debug-process-clients process)) => first]
-     [else false]))
-  
+    (begin0/rtn
+     (cond
+      [(memf (lambda (c) (equal? (debug-client-modpath c) (path->string modpath)))
+             (debug-process-clients process)) => first]
+      [else false])
+     (printf "find-client ~s ~s : ~s~n" (map debug-client-modpath (debug-process-clients process)) modpath rtn)))
+ 
   (define (break? process client)
     (printf "break? ~a ~a~n" client (debug-client-tracepoints client))
     (let ([tracepoints (and client (debug-client-tracepoints client))])
@@ -261,9 +262,10 @@
         (printf "annotate-module? ~s ~s ~s : ~s~n"
                 (map debug-client-modpath (debug-process-clients process))
                 filename module-name rtn)))
-     ;; annotator?
+     ;; annotator
      (lambda (stx)
-       (let ([client (find-client process (syntax-source stx))])
+       (let ([client (and (syntax-source stx)
+                          (find-client process (syntax-source stx)))])
          (if (not client)
              stx
              (let-values ([(annotated-stx pos-list)
