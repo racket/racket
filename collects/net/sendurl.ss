@@ -48,8 +48,14 @@
 					   (format "~a,new-window" str)
 					   str)))
 		      (process*/close-ports browser-path str)))]
+               [(and (and (or (not preferred)
+			      (eq? preferred 'netscape)))
+		     (find-executable-path "dillo" #f))
+		=>
+		(lambda (browser-path)
+		  (process*/close-ports browser-path str))]
 	       [else
-		(error 'open-url "Couldn't find Netscape or Opera to open URL: ~e" str)]))]
+		(error 'open-url "Couldn't find Opera, Netscape, or Dillo to open URL: ~e" str)]))]
 	  [else (error 'send-url "don't know how to open URL on platform: ~s" (system-type))]))))
   
   ; null-input : iport
