@@ -16,13 +16,9 @@
   (define raw:tcp-listen tcp-listen)
   (define raw:tcp-listener? tcp-listener?)
   
-  ; I cannot follow the data definiton well because I don't have
-  ; predicates tcp-port? or pipe-port?.  I could print them out and
-  ; look at the string, but that's ugly, too.  Instead I use with-handlers.
-  
-  ; For tcp-listeners, I do have suitable predicates, but I still use
-  ; an else branch in the conds since I want the same error message as
-  ; the raw primitive for bad inputs.
+  ; For tcp-listeners, we use an else branch in the conds since
+  ; (instead of a contract) I want the same error message as the raw
+  ; primitive for bad inputs.
   
   ; : (listof nat) -> (unit/sig () -> net:tcp^)
   (define (tcp-redirect redirected-ports)
