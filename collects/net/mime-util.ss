@@ -57,56 +57,59 @@
 					   (string-length s))))
 		  (list s)))))))
 
-    
   ;; Trim all spaces, except those in quoted strings.
+  (define re:quote-start (regexp "\""))
+  (define re:space (regexp "[ \t\n\r\v]"))
   (define trim-all-spaces
     (lambda (str)
-      (letrec ((eat-quoted-string (lambda (str)
-				    (let* ((r (regexp "(\".*\")(.*)"))
-					   (ans (regexp-match r str)))
-				      (when (not ans)
-					    ;; Uh oh, unterminated quoted string
-					    ;; I will try to recover, but...
-					    (values (substring str 0 1)
-						    (substring str 1 (string-length str))))
-				      (values (regexp-replace r str "\\1")
-					      (regexp-replace r str "\\2"))))))					
-	(let loop ((out "") (str str))
-	  (cond ((string=? str "") out)
-		(else
-		 (let ((c (string-ref str 0)))
-		   (cond ((memq c '(#\space #\tab #\newline #\return))
-			  (loop out (substring str 1 (string-length str))))
-			 ((char=? c #\");; Begin of quoted string
-			  (let-values ([(quoted rest)
-					(eat-quoted-string str)])
-				      (loop (string-append out quoted) rest)))
-			 (else 
-			  (loop (string-append out (string c))
-				(substring str 1 (string-length str))))))))))))
+      ;; Break out alternate quoted and unquoted parts.
+      ;; Initial and final string are unquoted.
+      (let-values ([(unquoted quoted)
+		    (let loop ([str str][unquoted null][quoted null])
+		      (let ([m (regexp-match-positions re:quote-start str)])
+			(if m
+			    (let ([prefix (substring str 0 (caar m))]
+				  [rest (substring str (add1 (caar m)) (string-length str))])
+			      ;; Find closing quote
+			      (let ([m (regexp-match-positions re:quote-start rest)])
+				(if m
+				    (let ([inside (substring rest 0 (caar m))]
+					  [rest (substring rest (add1 (caar m)) (string-length rest))])
+				      (loop rest (cons prefix unquoted) (cons (format "\"~a\"" inside) quoted)))
+				    ;; No closing quote! 
+				    (loop "" (cons prefix unquoted) (cons (format "\"~a" rest) quoted)))))
+			    (values (reverse! (cons str unquoted)) (reverse! quoted)))))])
+          ;; Put the pieces back together, stripping spaces for unquoted parts:
+	  (apply
+	   string-append
+	   (let loop ([unquoted unquoted][quoted quoted])
+	     (let ([clean (regexp-replace* re:space (car unquoted) "")])
+	       (if (null? quoted)
+		   (list clean)
+		   (list* clean
+			  (car quoted)
+			  (loop (cdr unquoted) (cdr quoted))))))))))
 
   ;; Only trims left and right spaces:
   (define trim-spaces
     (lambda (str)
       (trim-right (trim-left str))))
 
+  (define re:left-spaces (regexp "^[ \t\r\n\v]+"))
   (define trim-left
     (lambda (str)
-      (let* ((r (regexp "^[ \t\r\n]*(.*)"))
-	     (ans (regexp-match r str)))
-	(cadr ans))))
+      (regexp-replace re:left-spaces str "")))
 
+  (define re:right-spaces (regexp "[ \t\r\n\v]+$"))
   (define trim-right
     (lambda (str)
-      (let* ((r (regexp "[ \t\r\n]*$"))
-	     (pos (regexp-match-positions r str)))
-	(substring str 0 (caar pos)))))
+      (regexp-replace re:right-spaces str "")))
 
+  (define re:comments (regexp "\\(.*\\)"))
   (define trim-comments
     (lambda (str)
-      (let* ((reg (regexp "\\(.*\\)"))
-	     (positions (regexp-match-positions reg str)))
-	(if (regexp-match reg str)
+      (let* ((positions (regexp-match-positions re:comments str)))
+	(if positions
 	    (string-append (substring str 0 (caar positions))
 			   (substring str (cdar positions) (string-length str)))
 	    str))))
