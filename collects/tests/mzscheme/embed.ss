@@ -23,10 +23,8 @@
   (when (file-exists? exe)
     (delete-file exe)))
 
-(define (try-exe exe expect)
-  (let ([out (open-output-bytes)]
-	[in (open-input-bytes #"")]
-	[plthome (getenv "PLTHOME")]
+(define (try-exe exe expect mred?)
+  (let ([plthome (getenv "PLTHOME")]
 	[collects (getenv "PLTCOLLECTS")])
     ;; Try to hide usual collections:
     (when plthome
@@ -34,17 +32,21 @@
     (when collects
       (putenv "PLTCOLLECTS" (path->string (find-system-path 'temp-dir))))
     ;; Execute:
-    (parameterize ([current-output-port out]
-		   [current-input-port in])
+    (parameterize ([current-directory (find-system-path 'temp-dir)])
+      (when (file-exists? "stdout")
+	(delete-file "stdout"))
       (system* exe))
     (when plthome
       (putenv "PLTHOME" plthome))
     (when collects
-      (putenv "PLTCOLLECTS" ""))
-    (test expect get-output-string out)))
+      (putenv "PLTCOLLECTS" collects))
+    (test expect with-input-from-file (build-path (find-system-path 'temp-dir) "stdout") 
+	  (lambda () (read-string 5000)))))
 
 (define (mz-tests mred?)
   (define dest (if mred? mr-dest mz-dest))
+  (define (flags s)
+    (string-append "-" (if mred? "Z" "") "mvq" s))
   (define (one-mz-test filename expect)
     ;; Try simple mode: one module, launched from cmd line:
     (prepare dest filename)
@@ -53,8 +55,8 @@
      `((#t (lib ,filename "tests" "mzscheme")))
      null
      null
-     `("-mvqL" ,filename "tests/mzscheme"))
-    (try-exe dest expect)
+     `(,(flags "L") ,filename "tests/mzscheme"))
+    (try-exe dest expect mred?)
 
     ;; Try explicit prefix:
     (let ([w/prefix
@@ -68,7 +70,7 @@
 	      `("-mvqe" ,(format "(require ~a~a)" 
 				 (or pfx "")
 				 (regexp-replace #rx"[.].*$" filename ""))))
-	     (try-exe dest expect))])
+	     (try-exe dest expect mred?))])
       (w/prefix #f)
       (w/prefix 'before:))
 
@@ -80,8 +82,8 @@
        `((#t ,path))
        null
        `(require (file ,(path->string path)))
-       `("-mvq")))
-    (try-exe dest expect)
+       `(,(flags ""))))
+    (try-exe dest expect mred?)
 
     ;; Use `file' form:
     (prepare dest filename)
@@ -91,8 +93,8 @@
        `((#t (file ,(path->string path))))
        null
        `(require (file ,(path->string path)))
-       `("-mvq")))
-    (try-exe dest expect)
+       `(,(flags ""))))
+    (try-exe dest expect mred?)
 
     ;; Use relative path
     (prepare dest filename)
@@ -102,8 +104,8 @@
        `((#f ,filename))
        null
        `(require ,(string->symbol (regexp-replace #rx"[.].*$" filename "")))
-       `("-mvq")))
-    (try-exe dest expect)
+       `(,(flags ""))))
+    (try-exe dest expect mred?)
 
     ;; Try multiple modules
     (prepare dest filename)
@@ -115,8 +117,8 @@
      `(begin
 	(require (lib "embed-me3.ss" "tests" "mzscheme"))
 	(require (lib ,filename "tests" "mzscheme")))
-     `("-mvq"))
-    (try-exe dest (string-append "3 is here, too? #t\n" expect))
+     `(,(flags "")))
+    (try-exe dest (string-append "3 is here, too? #t\n" expect) mred?)
 
     ;; Try a literal file
     (prepare dest filename)
@@ -124,12 +126,15 @@
      dest mred? #f
      `((#t (lib ,filename "tests" "mzscheme")))
      (list (build-path (collection-path "tests" "mzscheme") "embed-me4.ss"))
-     `(begin (display "... and more!\n"))
-     `("-mvqL" ,filename "tests/mzscheme"))
+     `(with-output-to-file "stdout"
+	(lambda () (display "... and more!\n"))
+	'append)
+     `(,(flags "L") ,filename "tests/mzscheme"))
     (try-exe dest (string-append 
 		      "This is the literal expression 4.\n" 
 		      "... and more!\n"
-		      expect)))
+		      expect)
+	     mred?))
 
   (one-mz-test "embed-me1.ss" "This is 1\n")
   (one-mz-test "embed-me2.ss" "This is 1\nThis is 2: #t\n")
@@ -137,12 +142,17 @@
   ;; Try unicode expr and cmdline:
   (prepare dest "unicode")
   (make-embedding-executable 
-   dest #f #f
+   dest mred? #f
    null
    null
-   `(printf "\uA9, \u7238, and \U1D670\n")
-   `("-mvqe" "(display \"\u7237...\U1D671\n\")"))
-  (try-exe dest "\uA9, \u7238, and \U1D670\n\u7237...\U1D671\n"))
+   `(begin 
+      (define (out s)
+	(with-output-to-file "stdout"
+	  (lambda () (printf s))
+	  'append))
+      (out "\uA9, \u7238, and \U1D670\n"))
+   `(,(flags "e") "(out \"\u7237...\U1D671\n\")"))
+  (try-exe dest "\uA9, \u7238, and \U1D670\n\u7237...\U1D671\n" mred?))
 
 (mz-tests #f)
 (mz-tests #t)
@@ -154,6 +164,6 @@
  null
  null
  `("-ZmvqL" "embed-me5.ss" "tests/mzscheme"))
-(try-exe mr-dest "This is 5: #<struct:class:button%>\n")
+(try-exe mr-dest "This is 5: #<struct:class:button%>\n" #t)
 
 (report-errs)

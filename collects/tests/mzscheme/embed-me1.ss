@@ -1,2 +1,5 @@
 (module embed-me1 mzscheme
-  (printf "This is 1~n"))
+  (with-output-to-file "stdout"
+    (lambda () (printf "This is 1~n"))
+    'append))
+
