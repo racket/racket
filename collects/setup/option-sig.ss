@@ -17,4 +17,5 @@
      force-unpacks
      specific-collections
      archives
-     current-target-directory-getter)))
+     current-target-directory-getter
+     current-target-plt-directory-getter)))
