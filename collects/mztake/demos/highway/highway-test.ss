@@ -3,7 +3,7 @@
 (require (lib "animation.ss" "frtime")) ;; needed for display-shapes
 
 
-(mztake-process p ("highway.ss" [values-of-speed 3 4 bind 'speed]))
+(mztake-process radar-program ("highway.ss" [values-of-speed 3 4 bind 'speed]))
 #| * Create a process to debug highway.ss
 
    * Add a tracepoint at line 3, column 4; in the program,
@@ -15,15 +15,15 @@
          every time the code at line 3, column 4, is reached.
 |#
 
-(printf-b "runtime elapsed: ~a" (process:runtime/seconds p))
+(printf-b "runtime elapsed: ~a" (process:runtime/seconds radar-program))
 ;; Prints how long the program has been running, in seconds
 
 (printf-b "last ten speeds: ~a" (history-b 10 values-of-speed))
 ;; prints a FIFO list of the last 10 speeds seen
 
-(map (lambda (an-x) (if (< an-x 55) 'ok 'too-fast!!))
-     (history-b 10 values-of-speed))
-;; prints a 
+(map-e (lambda (a-speed) (when (>= a-speed 55) (pause radar-program)))
+       values-of-speed)
+;; pauses the program for inspection when a speed is too fast
 
 ;; produces a list of shapes to draw/animate, taking in a number for speed
 (define (make-speed-gauge speed)
@@ -47,5 +47,5 @@
    which gets called every time values-of-speed gets a new speed.
 |#
 
-(start/resume p)
+(start/resume radar-program)
 ;; Start the process for highway.ss
