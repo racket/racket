@@ -20,6 +20,7 @@
      mred-launcher-up-to-date?
      mzscheme-launcher-up-to-date?
 
+     build-aux-from-path
      current-launcher-variant
      available-mred-variants
      available-mzscheme-variants)))
