@@ -14,6 +14,7 @@
      make-launchers
      call-install
      pause-on-errors
+     force-unpacks
      specific-collections
      archives
      current-target-directory-getter)))
