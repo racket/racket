@@ -15,9 +15,11 @@
 		     [current-error-port null-output] ; comment out this line to see error messages
 		     [current-output-port null-output])
 	(case (system-type)
-	  [(macos macosx)
+	  [(macos)
 	   ;; actually, I think GURL means something slightly different...
 	   (send-event "MACS" "GURL" "GURL" str)]
+	  [(macosx)
+	   (system (format "osascript -e 'open location \"~a\"'" str))]
 	  [(windows)
 	   (shell-execute #f str "" (current-directory) 'SW_SHOWNORMAL)]
 	  [(unix)
