@@ -22,6 +22,10 @@
                             ;  from infor for collection compiling
                             ; default = #t
 
+   compile-for-embedded  ; #f => make objects to be linked
+                         ; directly with MzScheme, not dynamically
+                         ; loaded; default = #f
+
    propagate-constants  ; default = #t
    assume-primitives    ; #t => car = #%car; default = #f
    stupid               ; allow obvious non-syntactic errors;
