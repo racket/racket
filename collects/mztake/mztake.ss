@@ -117,14 +117,13 @@ TESTING/CAPABILITIES------------------------------------------------------------
 |#
   
   (require (lib "match.ss")
-           (lib "unit.ss")
            (lib "contract.ss")
            (lib "marks.ss" "mztake" "private") ; TODO local private copy until stepper release
            (prefix frp: (lib "frp.ss" "frtime"))
            (lib "useful-code.ss" "mztake" "private")
            (lib "more-useful-code.ss" "mztake" "private") ; mostly for hash- bindings
            "mztake-structs.ss"
-           "debugger-model.ss")
+           "debugger-annotate.ss")
   
   (provide/contract [start/resume (debug-process? . -> . void?)]
                     [kill (debug-process? . -> . void?)]
@@ -188,19 +187,27 @@ TESTING/CAPABILITIES------------------------------------------------------------
   ;   ;;     ; ;    ;;  ;   ;  ;     ;  ;    ;;  ;   ; ;    ;  ;    ; 
   ;     ;;;;;   ;;;; ;  ;   ;  ;;;;;;    ;;;; ;   ;;;  ;     ;  ;;;;  
   ;                                                                   
+
+  (define (find-client process modpath)
+    (first 
+     (filter (lambda (c) (equal? modpath (debug-client-modpath c)))
+             (debug-process-clients process))))
   
   ; Callback for when a breakpoint (tracepoint) is hit by the model
   ; ((client) breakpoint-struct) -> ()
   (define ((receive-result process) result)
     
     ; Before we process the trace, see if we are supposed to pause
+    ;; TODO : this condition variable has a race condition
     (unless (running-now? process)
       (semaphore-wait (debug-process-run-semaphore process)))
     
     (match result
       ; regular breakpoint
-      [($ normal-breakpoint-info (top-mark rest-mark ...) client)
+      [($ normal-breakpoint-info (top-mark rest-mark ...) target)
        (let* ([byte-offset (sub1 (syntax-position (mark-source top-mark)))]
+              ;; TODO : find-client is slow and awkward
+              [client (find-client process (first target))]
               [traces (hash-get (debug-client-tracepoints client) byte-offset)])
          
          (assert (not (empty? traces))
@@ -212,8 +219,8 @@ TESTING/CAPABILITIES------------------------------------------------------------
            (frp:send-synchronous-events to-send))
          
          ; Now that we processed the trace, do we want to pause or continue
-         (when (running-now? process)
-           (semaphore-post (debug-process-run-semaphore process))))]
+         (unless (running-now? process)
+           (semaphore-wait (debug-process-run-semaphore process))))]
       
       [($ error-breakpoint-info (source exn))
        ; all errors and raises from the TARGET program will be caught here
@@ -270,19 +277,6 @@ TESTING/CAPABILITIES------------------------------------------------------------
     (display (format "mztake: ~a~n---~n" str)))
   
   
-  ; retreives the binding of a variable from a bind trace event
-  (define (binding event sym)
-    (define (do-n-times fn n arg)
-      (foldl (lambda (x arg) (fn arg)) arg (build-list n (lambda (x) x))))
-    
-    (let ([mark-list (normal-breakpoint-info-mark-list event)]
-          [current-frame-num 0])
-      (map (lambda (binding) (list (mark-binding-binding binding)
-                                   (mark-binding-value binding)))
-           (lookup-all-bindings (lambda (id) (eq? (syntax-e id) sym))
-                                (do-n-times cdr current-frame-num mark-list)))))
-  
-  
   (define create-trace
     (case-lambda
       [(client line col type args)
@@ -308,11 +302,11 @@ TESTING/CAPABILITIES------------------------------------------------------------
                         (list variable-to-bind))]
               [values (map
                        (lambda (var)
-                         (let ([val (binding event var)])
+                         (let ([val (bindings event var)])
                            (if (empty? val)
                                (script-error
                                 (format "Variable not found at the syntax location for the BIND: `~a'" var))
-                               (cadar (binding event var)))))
+                               (cadar (bindings event var)))))
                        vars)])
          (list evnt-rcvr
                (if (list? variable-to-bind) values
@@ -372,6 +366,15 @@ TESTING/CAPABILITIES------------------------------------------------------------
   ;  ;        ;     ;      ; ;      ;            ;      ;      ;       ;      ; ;      ; ;           ; 
   ;  ;        ;      ;    ;   ;   ;  ;    ; ;    ; ;    ;      ;        ;    ;; ;      ;  ;   ; ;    ; 
   ;  ;        ;       ;;;;     ;;;    ;;;;   ;;;;   ;;;;       ;         ;;;; ; ;      ;   ;;;   ;;;;  
+
+  (define (run* process receive-result)
+    (run/incremental-annotation
+     (debug-client-modpath (debug-process-main-client process))
+     (debug-process-custodian process)
+     (map (lambda (c) (list (debug-client-modpath c) 
+                            (hash-keys (debug-client-tracepoints c))))
+          (debug-process-clients process))
+     receive-result))
   
   (define (start-debug-process receive-result process)    
     ; initialize the semaphore
@@ -380,10 +383,7 @@ TESTING/CAPABILITIES------------------------------------------------------------
     (frp:set-cell! (debug-process-exited? process) #f)    
     
     (thread (lambda ()
-              ; connect to the debugger-model@ unit
-              (define-values/invoke-unit (run) debugger-model@ #f receive-result process)
-              ; run the process
-              (thread-wait (thread (lambda () (run))))
+              (thread-wait (thread (lambda () (run* process receive-result))))
               ; program terminates
               (stop process)
               (print-info (format "process exited normally: ~a" (main-client-name process))))))

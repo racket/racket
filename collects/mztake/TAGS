@@ -1,0 +1,77 @@
+
+debugger-annotate.ss,91
+  (define (arglist-bindingsarglist-bindings10,204
+       (cons #'var (arannotate20,430
+
+debugger-model.ss,46
+  (define debugger-moddebugger-model@12,332
+
+debugger-tool.ss,0
+
+info.ss,128
+  (define namename2,41
+  (define toolstools3,69
+  (define tool-namestool-names4,111
+  (define tool-iconstool-icons5,155
+
+mztake-structs.ss,2742
+  (define-struct tracestruct:trace-struct20,825
+  (define-struct tracemake-trace-struct20,825
+  (define-struct tracetrace-struct?20,825
+  (define-struct tracetrace-struct-evnt-rcvr20,825
+  (define-struct traceset-trace-struct-evnt-rcvr!20,825
+  (define-struct trace-structtrace-struct20,825
+  
+  (define-struct (struct:break-trace22,900
+  
+  (define-struct (make-break-trace22,900
+  
+  (define-struct (break-trace?22,900
+  
+  (define-struct (break-trace22,900
+  (define-struct (breastruct:bind-trace23,904
+  (define-struct (breamake-bind-trace23,904
+  (define-struct (breabind-trace?23,904
+  (define-struct (breabind-trace-variable-to-bind23,904
+  (define-struct (breaset-bind-trace-variable-to-bind!23,904
+  (define-struct (breabind-trace23,904
+                 (varistruct:debug-client26,997
+                 (varimake-debug-client26,997
+                 (varidebug-client?26,997
+                 (varidebug-client-modpath26,997
+                 (variset-debug-client-modpath!26,997
+                 (varidebug-client-tracepoints26,997
+                 (variset-debug-client-tracepoints!26,997
+                 (varidebug-client-line-col->pos26,997
+                 (variset-debug-client-line-col->pos!26,997
+                 (varidebug-client-process26,997
+                 (variset-debug-client-process!26,997
+                 (varidebug-client26,997
+                      struct:debug-process31,1313
+                      make-debug-process31,1313
+                      debug-process?31,1313
+                      debug-process-custodian31,1313
+                      set-debug-process-custodian!31,1313
+                      debug-process-run-semaphore31,1313
+                      set-debug-process-run-semaphore!31,1313
+                      debug-process-running?31,1313
+                      set-debug-process-running?!31,1313
+                      debug-process-exited?31,1313
+                      set-debug-process-exited?!31,1313
+                      debug-process-exceptions31,1313
+                      set-debug-process-exceptions!31,1313
+                      debug-process-runtime31,1313
+                      set-debug-process-runtime!31,1313
+                      debug-process-main-client31,1313
+                      set-debug-process-main-client!31,1313
+                      debug-process-clients31,1313
+                      set-debug-process-clients!31,1313
+                      debug-process31,1313
+  ; Creates a trace thcreate-bind-trace59,3677
+  ; Creates a trace thcreate-break-trace63,3900
+  (define (create-breacreate-empty-debug-process66,3952
+                      create-empty-debug-client76,4469
+
+mztake-syntax.ss,0
+
+mztake.ss,0

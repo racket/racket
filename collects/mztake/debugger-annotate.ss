@@ -1,12 +1,58 @@
 (module debugger-annotate mzscheme
   
   (require (prefix kernel: (lib "kerncase.ss" "syntax"))
-           (lib "marks.ss" "mztake" "private"))
+           (lib "marks.ss" "mztake" "private")
+           (lib "mred.ss" "mred")
+           (lib "load-annotator.ss" "mztake" "private")
+           (lib "more-useful-code.ss" "mztake" "private")
+           (lib "list.ss"))
   
-;;  (define count 0)
+  (provide annotate-stx
+           run/incremental-annotation
+           bindings)
   
-  (provide annotate)
-  
+  ;; TARGETS is a list of pairs:
+  ;;     `(,module-long-filename (,character-offset ...))
+
+  (define (run/incremental-annotation main-module custodian targets receive-result)
+    
+    (define ((break target) mark-set kind final-mark)
+      (let ([mark-list (continuation-mark-set->list mark-set debug-key)])
+        (receive-result (make-normal-breakpoint-info (cons final-mark mark-list) target))))
+    
+    (define ((err-display-handler source) message exn)
+      (thread (lambda () (receive-result (make-error-breakpoint-info (list source exn))))))
+    
+    (define (annotate-module-with-error-handler stx err-hndlr)
+      (syntax-case stx (module #%plain-module-begin)
+        [(module name req (#%plain-module-begin body ...))
+         #`(module name req (#%plain-module-begin
+                             (error-display-handler #,err-hndlr)
+                             body ...))]))
+    
+    (define (path->target path)
+      (first (filter (lambda (c) (equal? (first c) path))
+                     targets)))
+    
+    (let* ([all-used-module-paths (map first targets)]
+           
+           [annotate-module? (lambda (fn m)
+                               (memf (lambda (sym) (equal? sym fn))
+                                     all-used-module-paths))]
+           
+           [annotator (lambda (fn m stx)
+                        ;;(printf "annotating: ~a~n~n" fn)
+                        (let* ([target (path->target fn)]
+                               [breakpoints (second target)]
+                               [stx (annotate-stx (expand stx) (list fn breakpoints) (break target))])
+                          ;; add an error handler so anything that goes wrong points to the correct module
+                          (annotate-module-with-error-handler stx (err-display-handler fn))))])
+      
+      (parameterize ([current-custodian custodian]
+                     [current-namespace (make-namespace-with-mred)]
+                     [error-display-handler (err-display-handler (format "Loading module ~a..." main-module))])
+        (require/annotations `(file ,main-module) annotate-module? annotator))))
+
   (define (arglist-bindings arglist-stx)
     (syntax-case arglist-stx ()
       [var
@@ -17,7 +63,12 @@
       [(var . others)
        (cons #'var (arglist-bindings #'others))]))
   
-  (define (annotate stx breakpoints breakpoint-origin break)
+  (define (annotate-break? expr targets)
+    (and (eq? (syntax-source expr) (first targets))
+         (memq (- (syntax-position expr) 1) ; syntax positions start at one.
+               (second targets))))
+
+  (define (annotate-stx stx targets break-fn)
     
     (define (top-level-annotate stx)
       (kernel:kernel-syntax-case stx #f
@@ -89,7 +140,7 @@
       
       (define (break-wrap debug-info annotated)
         #`(begin
-            (#,break (current-continuation-marks) 'debugger-break #,debug-info)
+            (#,break-fn (current-continuation-marks) 'debugger-break #,debug-info)
             #,annotated))
       
       (define annotated
@@ -140,7 +191,6 @@
 	  
 	  [(quote-syntax _) expr]
 	  
-	  ;; FIXME: we have to think harder about this
 	  [(with-continuation-mark key mark body)
 	   (quasisyntax/loc expr (with-continuation-mark key
 							 #,(annotate #`mark bound-vars #f)
@@ -162,18 +212,21 @@
         [else (error 'expr-syntax-object-iterator "unknown expr: ~a"
                      (syntax-object->datum expr))]))
 
-;;      (set! count (+ count 1))
-;;      (if (= (modulo count 100) 0)
-;;          (fprintf (current-error-port) "syntax-source: ~v\nsyntax-position: ~v\n" (syntax-source expr) (syntax-position expr)))
-      
-      
-      (if (and (eq? (syntax-source expr) breakpoint-origin)
-               (memq (- (syntax-position expr) 1) ; syntax positions start at one.
-                     breakpoints))
+      (if (annotate-break? expr targets)
           (break-wrap (make-debug-info expr bound-vars bound-vars 'at-break #f)
                              annotated)
           annotated))
     
-    (top-level-annotate stx)))
+    (top-level-annotate stx))
 
-                
+  ;; Retreives the binding of a variable from a normal-breakpoint-info.
+  ;; Returns a list of pairs `(,variable-name-stx ,variable-value). Each
+  ;; item in the list is a shadowed instance of a variable with the given
+  ;; name, with the first item being the one in scope.
+  (define (bindings event sym)
+    (let ([mark-list (normal-breakpoint-info-mark-list event)])
+      (map (lambda (binding) (list (mark-binding-binding binding)
+                                   (mark-binding-value binding)))
+           (lookup-all-bindings (lambda (id) (eq? (syntax-e id) sym))
+                                mark-list)))))
+

@@ -279,7 +279,7 @@
   (define (hash-values hash) 
     (hash-fold hash empty (lambda (key val acc) (cons val acc))))
   (define (hash-pairs hash)
-    (hash-fold hash empty (lambda (key val acc) (cons (cons key val) acc))))
+    (hash-fold hash empty (lambda (key val acc) (cons (list key val) acc))))
   (define (hash-add-all! to-hash from-hash) ;; // memcpy-style argument order
     (hash-for-each from-hash
                    (lambda (key val) (hash-put! to-hash key val))))
