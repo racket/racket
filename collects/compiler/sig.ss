@@ -3,13 +3,13 @@
 
   (import (lib "unitsig.ss"))
 
-  (export compiler:options^
+  (export compiler:option^
 	  compiler^
 	  compiler:inner^
 	  compiler:linker^)
 
   ;; Compiler options
-  (define-signature compiler:options^
+  (define-signature compiler:option^
      (verbose ; default = #f
    
       setup-prefix ; string to embed in public names;
