@@ -14,27 +14,32 @@
     (opt-lambda (str [separate-window? separate-by-default?])
       ; The with-handler reverts to the old error port before printing raised error messages.
       (with-handlers ([void (lambda (exn) (raise exn))])
+	(printf "trying!~n")
         (parameterize ([current-input-port null-input]
                        [current-error-port null-output]
                        [current-output-port null-output])
           (cond
 	    [(eq? (system-type) 'macos)
-	     (let loop ([l '("NAVG" "MSIE")])
-	       (if (null? l)
-		   (error 'send-url "couldn't start Internet Explorer or Netscape")
-		   (with-handlers ([not-break-exn? (lambda (x) (loop (cdr l)))])
-		     (subprocess #f #f #f "by-id" (car l))
-		     (let loop ([retries 2]) ;; <<< Yuck <<<
-		       (if (zero? retries)
-			   (error "enough already") ; caught above
-			   (with-handlers ([not-break-exn? (lambda (x)
-							     (loop (sub1 retries)))])
-			     (let ([t (thread (lambda ()
-						(send-event (car l) "GURL" "GURL" str)))])
-			       (object-wait-multiple 1 t) ;; <<< Yuck (timeout) <<<
-			       (when (thread-running? t)
-				 (kill-thread t)
-				 (error "timeout")))))))))]
+	     (if (regexp-match "Blue Box" (system-type #t))
+		 ;; Classic inside OS X:
+		 (let loop ([l '("MSIE" "NAVG")])
+		   (if (null? l)
+		       (error 'send-url "couldn't start Internet Explorer or Netscape")
+		       (with-handlers ([not-break-exn? (lambda (x) (loop (cdr l)))])
+			 (subprocess #f #f #f "by-id" (car l))
+			 (let loop ([retries 2]) ;; <<< Yuck <<<
+			   (if (zero? retries)
+			       (error "enough already") ; caught above
+			       (with-handlers ([not-break-exn? (lambda (x)
+								 (loop (sub1 retries)))])
+				 (let ([t (thread (lambda ()
+						    (send-event (car l) "GURL" "GURL" str)))])
+				   (object-wait-multiple 1 t) ;; <<< Yuck (timeout) <<<
+				   (when (thread-running? t)
+				     (kill-thread t)
+				     (error "timeout")))))))))
+		 ;; Normal OS Classic:
+		 (send-event "MACS" "GURL" "GURL" str))]
             [(or (eq? (system-type) 'macosx)
                  (equal? "ppc-macosxonx" (system-library-subpath)))
              (system (format "osascript -e 'open location \"~a\"'" str))]
