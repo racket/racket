@@ -1,6 +1,10 @@
 (require-library "pop3u.ss" "net")
 
-(invoke-open-unit/sig mzlib:pop3@ pop3)
+(begin-elaboration-time
+ (require-library "invoke.ss"))
+
+(define-values/invoke-unit/sig mzlib:pop3^
+  mzlib:pop3@ pop3)
 
 #|
 

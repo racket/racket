@@ -1,3 +1,8 @@
 (require-library "nntpu.ss" "net")
 
-(invoke-open-unit/sig mzlib:nntp@ nntp)
+(begin-elaboration-time
+ (require-library "invoke.ss"))
+
+(define-values/invoke-unit/sig mzlib:nntp^
+  mzlib:nntp@
+  nntp)

@@ -1,4 +1,8 @@
 
 (require-relative-library "smtps.ss")
 
-(invoke-open-unit/sig (require-relative-library "smtpr.ss"))
+(begin-elaboration-time
+ (require-library "invoke.ss"))
+
+(define-values/invoke-unit/sig mzlib:smtp^
+  (require-relative-library "smtpr.ss"))

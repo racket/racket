@@ -1,5 +1,8 @@
-(require-library "macro.ss")
 
 (require-library "cgiu.ss" "net")
 
-(invoke-open-unit/sig mzlib:cgi@ #f)
+(begin-elaboration-time
+ (require-library "invoke.ss"))
+
+(define-values/invoke-unit/sig mzlib:cgi^
+  mzlib:cgi@)
