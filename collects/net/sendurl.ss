@@ -2,7 +2,7 @@
   (require (lib "process.ss")
            (lib "file.ss")
            (lib "etc.ss")
-           (lib "thread.ss")
+           (lib "port.ss")
            (lib "sendevent.ss"))
   
   (provide send-url unix-browser-list browser-preference? external-browser)
@@ -44,7 +44,7 @@
 						       (loop (sub1 retries)))])
 			    (let ([t (thread (lambda ()
 					       (send-event (car l) "GURL" "GURL" url-str)))])
-			      (object-wait-multiple 1 t) ;; <<< Yuck (timeout) <<<
+			      (sync/timeout 1 t) ;; <<< Yuck (timeout) <<<
 			      (when (thread-running? t)
 				(kill-thread t)
 				(error "timeout")))))))))
@@ -125,15 +125,11 @@
 	     (eq? preferred browser-name))
 	 (find-executable-path (symbol->string browser-name) #f)))
     
-  ; null-output : oport
-  (define null-output
-    (make-custom-output-port #f (lambda (s start end flush?) (- end start)) void void))
-
   ;; run-browser : process-proc list-of-strings -> void
   (define (run-browser process*/ports args)
     (let-values ([(stdout stdin pid stderr control)
 		  (apply values (apply process*/ports
-				       null-output
+				       (open-output-nowhere)
 				       #f
 				       (current-error-port)
 				       args))])
