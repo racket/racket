@@ -27,9 +27,7 @@
 	  [(eq? (system-type) 'unix)
 	   (let ([preferred (get-preference 'external-browser (lambda () #f))])
 	     (cond
-	       [(and (or (not preferred)
-			 (eq? preferred 'opera))
-		     (find-executable-path "opera" #f))
+	       [(use-browser 'opera preferred)
 		=>
 		(lambda (browser-path) 
 		  ;; opera may not return -- always open asyncronously
@@ -39,9 +37,8 @@
 						(if separate-window?
 						    (format "~a,new-window" str)
 						    str))))]
-	       [(and (and (or (not preferred)
-			      (eq? preferred 'netscape)))
-		     (find-executable-path "netscape" #f))
+	       [(or (use-browser 'mozilla preferred)
+		    (use-browser 'netscape preferred))
 		=>
 		(lambda (browser-path)
 		  ;; netscape's -remote returns with an error code, if no
@@ -52,15 +49,20 @@
 					   (format "~a,new-window" str)
 					   str)))
 		      (process*/close-ports browser-path str)))]
-               [(and (and (or (not preferred)
-			      (eq? preferred 'dillo)))
-		     (find-executable-path "dillo" #f))
+               [(use-browser 'dillo preferred)
 		=>
 		(lambda (browser-path)
 		  (process*/close-ports browser-path str))]
 	       [else
-		(error 'open-url "Couldn't find Opera, Netscape, or Dillo to open URL: ~e" str)]))]
+		(error 'open-url "Couldn't find Opera, Mozilla, Netscape, or Dillo to open URL: ~e" str)]))]
 	  [else (error 'send-url "don't know how to open URL on platform: ~s" (system-type))]))))
+
+  ; : sym sym -> (U #f str)
+  ; to find the path for the named browser, unless another browser is preferred
+  (define (use-browser browser-name preferred)
+    (and (or (not preferred)
+	     (eq? preferred browser-name))
+	 (find-executable-path (symbol->string browser-name) #f)))
   
   ; null-input : iport
   (define null-input
