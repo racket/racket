@@ -33,12 +33,14 @@
            "qp-sig.ss"
            "qp.ss"
            "base64-sig.ss"
-           "base64.ss")
+           "base64.ss"
+	   "head-sig.ss"
+	   "head.ss")
 
   (define-values/invoke-unit/sig net:mime^
     net:mime@
     #f
-    net:base64^ net:qp^)
+    net:base64^ net:qp^ net:head^)
 
   (provide-signature-elements net:mime^))
 

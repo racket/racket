@@ -75,8 +75,7 @@
 	  (cond ((string=? str "") out)
 		(else
 		 (let ((c (string-ref str 0)))
-		   (cond ((or (char=? c #\space)
-			      (char=? c #\tab))
+		   (cond ((memq c '(#\space #\tab #\newline #\return))
 			  (loop out (substring str 1 (string-length str))))
 			 ((char=? c #\");; Begin of quoted string
 			  (let-values ([(quoted rest)
@@ -93,13 +92,13 @@
 
   (define trim-left
     (lambda (str)
-      (let* ((r (regexp "^[ 	]*(.*)"))
+      (let* ((r (regexp "^[ \t\r\n]*(.*)"))
 	     (ans (regexp-match r str)))
-	(and ans (regexp-replace r str "\\1")))))
+	(cadr ans))))
 
   (define trim-right
     (lambda (str)
-      (let* ((r (regexp "[ 	]*$"))
+      (let* ((r (regexp "[ \t\r\n]*$"))
 	     (pos (regexp-match-positions r str)))
 	(substring str 0 (caar pos)))))
 
