@@ -84,6 +84,9 @@
      compile-collection-extension
      compile-collection-zos
 
+     compile-directory-extension
+     compile-directory-zos
+ 
      current-compiler-dynamic-require-wrapper
      compile-notify-handler))
 
