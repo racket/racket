@@ -29,10 +29,8 @@
                                line-col->pos    ; memoized O(n) function to map line/col -> byte offset
                                process))        ; parent debug-process
   
-  (define-struct debug-process (namespace     ; Namespace the process runs in
-                                custodian     ; If you shutdown-all it will kill the debugger process
+  (define-struct debug-process (custodian     ; If you shutdown-all it will kill the debugger process
                                 run-semaphore ; When you post to this the debuggee will continue executing
-                                eventspace    ; The eventspace where events queue up
                                 running?      ; Is the program (supposed-to-be) currently running
                                 exited?       ; FrTime cell receives #t when the target exits
                                 exceptions    ; (an event stream) Exceptions thrown during the evaluation of the target
@@ -66,10 +64,8 @@
     (make-break-trace (frp:event-receiver)))
   
   (define (create-empty-debug-process)
-    (make-debug-process (make-namespace)
-                        (make-custodian)
+    (make-debug-process (make-custodian)
                         null                 ; run-semaphore - null so we know it has never started
-                        (make-eventspace)
                         #f                   ; running?
                         (frp:new-cell)       ; exited?
                         (frp:event-receiver) ; exceptions

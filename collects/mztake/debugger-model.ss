@@ -10,33 +10,26 @@
   
   (provide debugger-model@)
   
-  (define (send-to-eventspace eventspace thunk)
-    (parameterize ([current-eventspace eventspace])
-      (queue-callback thunk)))
-  
   (define debugger-model@
     (unit
       (import receive-result
               process)
       (export run)
       
+      
       (define run-semaphore (debug-process-run-semaphore process))
-      (define debug-eventspace (debug-process-eventspace process))
+      (define ev (make-eventspace))
       
-      (define (queue-result result)
-        (send-to-eventspace debug-eventspace
-                            (lambda () (receive-result result))))
-      
-      (define basic-eval (current-eval))
       
       (define ((break client) mark-set kind final-mark)
         (let ([mark-list (continuation-mark-set->list mark-set debug-key)])
-          (queue-result (make-normal-breakpoint-info (cons final-mark mark-list) client))
-          (queue-result (make-breakpoint-halt))
+          (parameterize ([current-eventspace ev])
+            (queue-callback (lambda () (receive-result (make-normal-breakpoint-info (cons final-mark mark-list) client)))))
           (semaphore-wait run-semaphore)))
       
+      
       (define ((err-display-handler source) message exn)
-        (queue-result (make-error-breakpoint-info (list source exn))))
+        (thread (lambda () (receive-result (make-error-breakpoint-info (list source exn))))))
       
       
       (define (annotate-module-with-error-handler stx err-hndlr)
@@ -75,5 +68,7 @@
                  [_ (print "hack -- main-mod problem")]
                  [main-mod (first all-used-module-paths)])
             
-            (parameterize ([error-display-handler (err-display-handler (format "Loading module ~a..." main-mod))])
-                          (require/annotations `(file ,main-mod) annotate-module? annotator))))))))
+            (parameterize ([current-custodian (debug-process-custodian process)]
+                           [current-namespace (make-namespace)]
+                           [error-display-handler (err-display-handler (format "Loading module ~a..." main-mod))])
+              (require/annotations `(file ,main-mod) annotate-module? annotator))))))))

@@ -9,22 +9,11 @@ does this work on binary drscheme files?
 
 create client takes either a lib or relative or absolute path string
 
-need client-error to throw an exception, they are all fatal
-
-all errors are fatal now -- you can do this when
-
 make all exposed cells and evstreams read-only by lifting the identity function on them
 
 does this handle module prefixes?
 
 what happens if two modules have the same name in different directories
-
-WHY CANT REQUIRE TAKE AN ABSOLUTE PATH?
-(require (lib "file.ss"))
-  (find-relative-path (current-directory) "C:/Files/Desktop/debugger/src/collects/mztake/mztake.ss")
-
-Need to find a way to map the absolute paths taken in from clients to the function that determines what to annotate.
-
 MAKE SURE THERE WONT BE COLLISIONS WHEN EVAL'NG MODULES...GIVE THEM UNIQUE NAMES BASED ON PATH!
 ----------------
 
@@ -63,8 +52,6 @@ exceptions thrown in anonymous threads spawned by the target, are caught by the 
 RETHROW EXCEPTIONS CAUGHT ON THE STREAM FOR A CLIENT -- OFFER A WAY TO DISABLE IT
 WHO is catching (thread (lambda () (raise 'first-raise)))?  It never gets to the exn evstream
 
-CAN I CATCH FRTIME EXCEPTIONS AND RETHROW THOSE TOO?
-
 code like
 (set-running! client (or (elapsed . < . 5) (elapsed . >= . 10)))
 (set-running! client #t)
@@ -101,17 +88,13 @@ improve speed of lookup for line-col->pos; load them into a hashtable?  not impo
 
 improve speed of load/annotate
 
+improve speed of functions in (run)
 
 
 ERROR-CHECKING------------------------------------------------------------------------------
 Make sure that you do not define more than one client for the same file.
 
 Test what happens when you bind to variables that don't exist.
-
-This throws an exception where it says something like random210 is an undefined variable
-The script does not tell you something went wrong though, and the solution (as-is/unchecked) is not obvious.
-(require (as-is mzscheme random random-seed))
-(random 100)
 
 
 TESTING/CAPABILITIES------------------------------------------------------------------------
@@ -210,24 +193,17 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
          
          ; Run all traces at this breakpoint               
          (let ([to-send (map (lambda (t) (trace->frp-event client result t)) traces)])
-           (frp:send-synchronous-events to-send)))]
-      ; now, breakpoint-halt message should be sent by the debugger model
+           (frp:send-synchronous-events to-send))
+         ; do we want to pause interactive debugging
+         (when (running-now? process)
+           (semaphore-post (debug-process-run-semaphore process))))]
       
       ;TODO eventually remove this from debugger-model.ss
       [($ error-breakpoint-info (source exn))
        ; all errors and raises from the TARGET program will be caught here
        ; FrTime errors from the script have their own eventstream
        (frp:send-event (debug-process-exceptions process) exn)
-       (client-error (format "source: ~a | exception: ~a" source (if (exn? exn) (exn-message exn) exn)))]
-      
-      ;end of a statement
-      [($ breakpoint-halt)
-       ; do we want to pause interactive debugging
-       (when (running-now? process)
-         (semaphore-post (debug-process-run-semaphore process)))]
-      
-      ;when a top level expression finishes
-      [($ expression-finished return-val-list) (void)]))
+       (client-error (format "source: ~a | exception: ~a" source (if (exn? exn) (exn-message exn) exn)))]))
   
   ;###########################################################################################################
   
@@ -366,25 +342,19 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   ;  ;        ;      ;    ;   ;   ;  ;    ; ;    ; ;    ;      ;        ;    ;; ;      ;  ;   ; ;    ; 
   ;  ;        ;       ;;;;     ;;;    ;;;;   ;;;;   ;;;;       ;         ;;;; ; ;      ;   ;;;   ;;;;  
   
-  (define (start-debug-process process)
-    (let* ([receive-result (receive-result process)])
-      
-      ; initialize the semaphore
-      (set-debug-process-run-semaphore! process (make-semaphore))
-      ; set initial state of exit predicate
-      (frp:set-cell! (debug-process-exited? process) #f)
-      
-      (parameterize ([current-custodian (debug-process-custodian process)]
-                     [current-namespace (debug-process-namespace process)])
-        
-        ; connect to the debugger-model@ unit
-        (define-values/invoke-unit (run) debugger-model@ #f receive-result process)
-        
-        (thread (lambda ()
-                  ; run the process
-                  (thread-wait (thread (lambda () (run))))
-                  ; program terminates
-                  (kill process))))))
+  (define (start-debug-process receive-result process)
+    ; initialize the semaphore
+    (set-debug-process-run-semaphore! process (make-semaphore))
+    ; set initial state of exit predicate
+    (frp:set-cell! (debug-process-exited? process) #f)    
+    
+    (thread (lambda ()
+              ; connect to the debugger-model@ unit
+              (define-values/invoke-unit (run) debugger-model@ #f receive-result process)
+              ; run the process
+              (thread-wait (thread (lambda () (run))))
+              ; program terminates
+              (kill process))))
   
   
   ; predicate - is the debugee supposed to be running now?
@@ -399,7 +369,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
     (define (update)
       ; start the debugger if needed
       (when (null? (debug-process-run-semaphore process))
-        (start-debug-process process))
+        (start-debug-process (receive-result process) process))
       
       (when run?
         (semaphore-post (debug-process-run-semaphore process)))
