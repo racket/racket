@@ -34,7 +34,7 @@
       
       ; : port -> void
       (define (tcp-abandon-port tcp-port)
-	(with-handlers ([exn:application:type? void])
+	(when (tcp-port? tcp-port)
 	  (raw:tcp-abandon-port tcp-port)))
       
       ; : listener -> iport oport
@@ -54,18 +54,17 @@
       
       ; : tcp-port -> str str
       (define (tcp-addresses tcp-port)
-        (with-handlers ([exn:application:type?
-			 (lambda (exn) (values local-address local-address))])
-          (raw:tcp-addresses tcp-port)))
+	(if (tcp-port? tcp-port)
+	    (raw:tcp-addresses tcp-port)
+	    (values local-address local-address)))
       
       ; : port -> void
       (define (tcp-close tcp-listener)
-        (with-handlers ([exn:application:type?
-			 (lambda (exn)
-			   (hash-table-remove!
-			    port-table
-			    (pipe-listener-port tcp-listener)))])
-	  (raw:tcp-close tcp-listener)))
+	(if (tcp-listener? tcp-listener)
+	    (raw:tcp-close tcp-listener)
+	    (hash-table-remove!
+	     port-table
+	     (pipe-listener-port tcp-listener))))
       
       ; : (str nat -> iport oport) -> str nat -> iport oport
       (define (gen-tcp-connect raw)
