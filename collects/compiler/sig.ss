@@ -3,7 +3,8 @@
  (require-library "compiles.ss")
  (require-library "inflates.ss")
  (require-library "makes.ss" "make")
- (require-library "collections.ss" "make"))
+ (require-library "collections.ss" "make")
+ (require-library "get-infos.ss" "setup"))
 
 ;; Compiler options
 (define-signature compiler:option^
