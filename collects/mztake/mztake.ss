@@ -20,10 +20,12 @@ DEMOS---------------------------------------------------------------------------
 
 * something with multiple threads doing something and draw the threads in different colors in a window
 
-* heap example
+* FIX heap example -- give greg new heap.ss
 
 
 SCRIPT--------------------------------------------------------------------------------------
+* document history-e; provide a variant of history which takes no n, and keeps a complete history
+
 * process:time-per-event/milliseconds is broken
   (printf-b "~a ms per event" (time-per-event/milliseconds p (changes (hold sin/x-trace))))
 
@@ -37,6 +39,8 @@ SCRIPT--------------------------------------------------------------------------
   Write a nested syntax for bind so that you can take a first-class function that defines a way to return variables, not just as a list
 
 * Maybe take a thunk to do when a break-point is hit?
+
+* Way to turn printouts on and off like (print-struct #t), or should we have an output window? (mztake-verbose) (parameterize it?)
 
 
 OPTIMIZATIONS-------------------------------------------------------------------------------
@@ -130,7 +134,7 @@ TESTING/CAPABILITIES------------------------------------------------------------
   (define debugging? #f)
   
   ; 
-  (define mztake-version "Rev. Wed Aug 4, 2004 - 23:57:00")
+  (define mztake-version "Rev. Wed Aug 4, 2004 - 17:06:00")
   
   ;###########################################################################################################
     
