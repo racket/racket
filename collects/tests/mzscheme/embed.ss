@@ -25,10 +25,22 @@
 
 (define (try-exe exe expect)
   (let ([out (open-output-bytes)]
-	[in (open-input-bytes #"")])
+	[in (open-input-bytes #"")]
+	[plthome (getenv "PLTHOME")]
+	[collects (getenv "PLTCOLLECTS")])
+    ;; Try to hide usual collections:
+    (when plthome
+      (putenv "PLTHOME" (path->string (find-system-path 'temp-dir))))
+    (when collects
+      (putenv "PLTCOLLECTS" (path->string (find-system-path 'temp-dir))))
+    ;; Execute:
     (parameterize ([current-output-port out]
 		   [current-input-port in])
       (system* exe))
+    (when plthome
+      (putenv "PLTHOME" plthome))
+    (when collects
+      (putenv "PLTCOLLECTS" ""))
     (test expect get-output-string out)))
 
 (define (mz-tests mred?)
