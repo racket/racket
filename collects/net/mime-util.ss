@@ -125,11 +125,13 @@
 		     (substring rest 1 size)
 		     (sub1 size)))))))
 
-  (define warning
+  (define warning void)
+#|
     (lambda (msg . args)
       (fprintf (current-error-port)
 	       (apply format (cons msg args)))
       (newline (current-error-port))))
+|#
 
   ;; Copies its input `in' to its ouput port if given, it uses
   ;; current-output-port if out is not provided.
