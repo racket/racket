@@ -248,7 +248,7 @@ In more depth, the debugger works on a model roughly as follows:
     DrScheme (in the "module ..." language). It is assumed the module
     has "side-effects" which start the target program.
 
-    The rest of the files traced in a MZTAKE-PROCESS are modules
+    The rest of the files traced in a DEFINE-MZTAKE-PROCESS are modules
     used *by* the main module, allowing you to see what is going
     on deeper than in the main-module. For example:
 
@@ -310,13 +310,13 @@ ping the value of one or more variables when the trace point is reached.
     <2>  [trace-name line-number column-number bind 'variable-name]
     <3>  [trace-name line-number column-number bind '(variable-name ...)]
 
-   MZTAKE-PROCESS defines the variable process-name,
+   DEFINE-MZTAKE-PROCESS defines the variable process-name,
    whose value is a MzTake process object. That object
    can be passed to functions such as START/RESUME, KILL,
    and "process:runtime/milliseconds", documented in the next
    section.
 
-   MZTAKE-PROCESS installs trace points in one or many files,
+   DEFINE-MZTAKE-PROCESS installs trace points in one or many files,
    as indicated by the trace-clauses. The target-filename can
    be any file specification accepted by the standard REQUIRE
    syntax for modules:
@@ -381,7 +381,7 @@ and can be used in the Interactions window.
 
 > (start/resume process-name)
 
-   Start the execution and monitoring of the MZTAKE-PROCESS,
+   Start the execution and monitoring of the DEFINE-MZTAKE-PROCESS,
    process-name. If the process given to START/RESUME is already
    running, and was paused with the function PAUSE (below),
    START/RESUME resumes its execution.
@@ -589,7 +589,7 @@ Known Problems
   For instance, you get an error if you make a module like this
   on Windows:
 
-   (module m mzschem
+   (module m mzscheme
      (require (lib "my-lib.ss" "mycollect" "private"))
      (provide (lib "my-lib.ss" "mycollect/private")))
 

@@ -12,6 +12,34 @@
 * MAKE SURE THERE WONT BE COLLISIONS WHEN EVAL'NG MODULES...GIVE THEM UNIQUE NAMES BASED ON PATH!
 ::::::::::::::::::::::::::::::::::::::::::
 
+CHANGES TO MAKE-----------------------------------------------------------------------------
+Mailing list just for MzTake updates
+
+Demo monitoring DrScheme for Robby?
+
+Bind Stop button to kill-all.
+
+Remove the tool button for 299 update.
+
+Reword hacked changes in doc.txt for stopping MzTake with kill
+
+Test Suite for debugger annotator
+
+Demo and docs for debugging multiple files, to make Robby happy.  It is true that the docs are not very helpful on this count.  It'd be nice if you could mock up a quick example of tracing something inside DrScheme....
+
+On the whole, I like the tool, although it'd be nice to have either
+ 	(a) an interactive pointy-clicky interface rather than figuring
+ 		out line/column co-ordinates, or
+ 	(b) an AST-based description of the thing to be monitored (shades
+ 		of aspect-oriented programming).
+
+(1) montecarlo never gets to pi: I think there's a math error.
+Shouldn't montecarlo.ss check whether (length . <= . 200)?  Otherwise, you're off by about 1% which gives an underestimate by about 0.03.  (You could speed it up by removing the sqrt call and checking against 40000).
+
+(2) dijkstra seems to go into an infinite loop -- but I don't know what the source of the problem is, because
+
+(3) plt scheme becomes quite unstable: the STOP button no longer works, and I end up killing things using Windows Task Manager, at which point I cannot run PLT Scheme (208) until I reboot :-(
+
 
 Re-direct, or at least prefix, program output from the client so that it can be distinguished from the script
 
