@@ -3,10 +3,10 @@
          (lib "match.ss"))
 
 (define-mztake-process p 
-                ("dijkstra.ss")
-                ("heap.ss"
-                   [inserts 49 6 bind 'item]
-                   [removes 67 10 bind 'result]))
+                       ("dijkstra.ss")
+                       ("heap.ss"
+                        [inserts 49 6 bind 'item]
+                        [removes 67 10 bind 'result]))
 
 (define (not-in-order e)
   (filter-e
@@ -17,7 +17,7 @@
    (history-e 2 e)))
 
 (history-e 5 (history-e 2 (merge-e (removes . ==> . node-weight)
-                                    (inserts . -=> . 'reset))))
+                                   (inserts . -=> . 'reset))))
 
 (define violations
   (not-in-order (merge-e (removes . ==> . node-weight)
@@ -37,4 +37,3 @@
 (printf-b "model: ~a" model)
 
 (start/resume p)
-  

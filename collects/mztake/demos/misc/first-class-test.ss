@@ -9,11 +9,11 @@
    and idea of why they recieve different values from the same "x". |#
 
 (define-mztake-process p ("first-class.ss" [x-before-let 3 29 bind 'x]
-                                    [x-in-let     4 25 bind 'x]
-                                    [x-after-let  5 11 bind 'x]))
+                                           [x-in-let     4 25 bind 'x]
+                                           [x-after-let  5 11 bind 'x]))
 
 (printf-b "Number of times x updates, should be 12: ~a"
-          (count-e (merge-e x-before-let
+          (count-b (merge-e x-before-let
                             x-in-let
                             x-after-let)))
 #| merge-e takes multiple event streams and turns them into one event stream.

@@ -266,7 +266,7 @@ In more depth, the debugger works on a model roughly as follows:
     This installs an ENTRY trace at the function entry point for
     ALLOCATE-STACK and CLEAR-STACK in "my-stack.ss". Every time
     those functions get called, these traces will send a "#t" event,
-    and could be counted using COUNT-E.
+    and could be counted using COUNT-B.
 
   * Once a MzTake processe is defined, and all the script code operating
     on traces is defined, START/RESUME can be called on the process
@@ -434,9 +434,15 @@ and can be used in the Interactions window.
 
 _Useful Functions for Time-Varying Values_
 
-Note: FrTime uss naming convention where functions which
+Note: FrTime uses a naming convention where functions which
       return behaviors have names that end in "-b", and
       functions that return event streams end in "-e".
+
+Tips: When you have a behavior that you want to turn into
+      an event, use (changes behavior).
+
+      When you have an event that you want to be a
+      behavior, use (hold event)
 
 
 MzTake defines a few functions on time-varying values
@@ -461,7 +467,7 @@ that are particularly useful when debugging:
    Counts number of events seen on an eventstream.
    
    Often used directly on ENTRY traces, counting how many
-   times ENTRY occured: (count-e entry-trace)
+   times ENTRY occured: (count-b entry-trace)
    
    Also useful to count how many times a BIND changed
    by calling: (count-b (changes bind-trace))
@@ -472,7 +478,7 @@ that are particularly useful when debugging:
   Keeps track of the largest/smallest values seen on a stream.
   Use with BINDs: (largest-val-b (changes bind-trace)).
 
-> (sequence-match? seq evs)
+> (sequence-match? seq stream)
 
    Matches a sequence of items in a list to the history
    of event pings, on the event stream evs. Returns #t
