@@ -49,7 +49,7 @@
 					   str)))
 		      (process*/close-ports browser-path str)))]
                [(and (and (or (not preferred)
-			      (eq? preferred 'netscape)))
+			      (eq? preferred 'dillo)))
 		     (find-executable-path "dillo" #f))
 		=>
 		(lambda (browser-path)
