@@ -221,6 +221,10 @@ can be used interactively in the interactions pane.
    Kills the target process and releases all resources
    it used -- you cannot start/resume after a kill.
 
+   Closing a FrTime animation/graphics window will *not*
+   kill a running program, you must kill it by hand in the
+   interaction pane.
+
 > (kill-all)
 
    kill-all kills all the processes currently running
@@ -406,7 +410,7 @@ Tips and Tricks
 * FrTime has two methods for drawing graphics. One runs in
   constant time, and is fast, because it simply accumulates
   pixels on the screen and doesn't redraw a list of objects.
-  See the random-xs demo for this in action.
+  See the Monte Carlo, or random-xs demo for this in action.
 
   The other method is primarily for animations which need
   redrawing because things move. It slows down pretty quickly

@@ -1,5 +1,6 @@
-#| * The program being debugged (in the file "sine.ss") is a module that runs an infinite loop,
-     binding "x" to a moment in time [-200,200], and "sin-x" to the sin(x) ... over and over.
+#|   The program being debugged (a module in "sine.ss") runs an infinite loop,
+     binding "x" to a moment in time [-200,200], and "sin-x" to the sin(x) each iteration.
+
      This MzTake script plots the value of x over time, in sync with the execution of "sine.ss".
 |#
 
@@ -7,14 +8,14 @@
 
 
 (mztake-process p ("sine.ss" [sin/x-trace 5 8 bind '(sin-x x)]))
-#| * Create a process to debug for sine.ss
+#| * Create a process to debug sine.ss
 
    * Add a tracepoint at line 5, column 8; in the program,
      this is right after the let values are bound, ->(if (x ...)
 
    * At this tracepoint, define "sin/x-trace" to a FrTime eventstream that
      recieves events containing a list of two elements:
-       * The (lexically-scoped) current values of the variables `sin-x' and `x' are
+       - The (lexically-scoped) current values of the variables `sin-x' and `x' are
          sent as a list every time the code at line 5, column 8, is reached.
 |#
 
@@ -27,7 +28,7 @@
 
 
 (define sin/x (hold sin/x-trace))
-;; "sin/x" now is a FrTime behavior that holds the current value of the list (sin-x x)
+;; the local variable "sin/x" now is a FrTime behavior that holds the current value of the list (sin-x x)
 
 
 (define sin-x (+ 200 (first sin/x)))

@@ -1,5 +1,6 @@
 (module montecarlo mzscheme
-  (random-seed 846259386) ; specially chosen because it isn't terribly erratic
+  ;; a seed specially chosen because it isn't terribly erratic when converging on pi
+  (random-seed 846259386)
   
   (define (run)
     (let loop ([hits 1]
