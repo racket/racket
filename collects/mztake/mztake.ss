@@ -1,6 +1,6 @@
 (module mztake mzscheme
   
-  (define mztake-version "(rev. 8/6/2004)")
+  (define mztake-version "rev. 8/6/2004")
   
   #|:::::::::LOAD/ANNOTATOR BUGS:::::::::::
 * catch oops exception
@@ -11,6 +11,11 @@
 * what happens if two modules have the same name in different directories
 * MAKE SURE THERE WONT BE COLLISIONS WHEN EVAL'NG MODULES...GIVE THEM UNIQUE NAMES BASED ON PATH!
 ::::::::::::::::::::::::::::::::::::::::::
+
+
+Re-direct, or at least prefix, program output from the client so that it can be distinguished from the script
+
+Paramterize print-struct to #f for printing in the script
 
 
 DEMOS---------------------------------------------------------------------------------------

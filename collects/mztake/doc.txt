@@ -588,6 +588,13 @@ Known Problems
 
 Tips and Tricks
 
+* If output seems difficult to read in the script, e.g. you ever
+  see "struct:signal" and a lot of garbage, try (print-struct #f)
+  before you do any printing, or use (value-now behavior-name) to
+  get a more usable/printable version of a FrTime behavior (the
+  caveat is that it is no longer 'reactive' and it may be out of
+  date after the moment it is processed).
+
 * You may want to bind more than one variable at a certain point
   so that you only get one change event -- otherwise, you will
   get multiple change events even if at the same trace point

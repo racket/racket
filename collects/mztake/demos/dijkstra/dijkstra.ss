@@ -17,7 +17,7 @@
   (for-each (lambda (n) (graph-node-add! g n)) nodes)
   (define (n-ref label) 
     (first (filter (lambda (n) (eq? label (node-label n))) nodes)))
-    
+  
   (define edges
     (list  (list (n-ref 's) (n-ref '1))
            (list (n-ref 's) (n-ref '2))
@@ -27,10 +27,6 @@
            (list (n-ref 'J) (n-ref '6))))
   (for-each (lambda (e) (graph-edge-add! g (first e) (second e)))
             edges)
-
-  (require (lib "pretty.ss"))
-  ;(printf "input:~n")
-  ;(pretty-print (graph-to-list g))
-  (printf "output:~n")
-  (print-struct #t)
-  (pretty-print (solve g (reverse nodes) (n-ref 's))))
+  
+  (printf "~n~n---output from dijkstra.ss:~n~a~n---~n"
+          (solve g (reverse nodes) (n-ref 's))))

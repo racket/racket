@@ -10,8 +10,18 @@
                   (regexp-match #rx".1$" path)
                   (regexp-match #rx"make" path)))))
   
+  ;For use with PLaneT
+  (parameterize ((current-directory "."))
+    (pack "mztake-planet.plt"
+          "MzTake Debugger"
+          '(".")
+          '()
+          my-filter
+          #t
+          'file
+          #f
+          #f
+          '(("frtime") ("stepper"))))
   
-  (pack-collections "mztake.plt" "MzTake Debugger" '(("mztake")) #t '(("frtime") ("stepper")) my-filter #t))
-
-; Now, check-out
-;(make-planet-archive "mztake.plt"))
+  ; for use not on PLaneT
+  (pack-collections "mztake-distro.plt" "MzTake Debugger" '(("mztake")) #t '(("frtime") ("stepper")) my-filter))
