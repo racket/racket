@@ -31,72 +31,72 @@
       (system* exe))
     (test expect get-output-string out)))
 
-
 (define (mz-tests mred?)
+  (define dest (if mred? mr-dest mz-dest))
   (define (one-mz-test filename expect)
     ;; Try simple mode: one module, launched from cmd line:
-    (prepare mz-dest filename)
+    (prepare dest filename)
     (make-embedding-executable 
-     mz-dest mred? #f
+     dest mred? #f
      `((#t (lib ,filename "tests" "mzscheme")))
      null
      null
      `("-mvqL" ,filename "tests/mzscheme"))
-    (try-exe mz-dest expect)
+    (try-exe dest expect)
 
     ;; Try explicit prefix:
     (let ([w/prefix
 	   (lambda (pfx)
-	     (prepare mz-dest filename)
+	     (prepare dest filename)
 	     (make-embedding-executable 
-	      mz-dest mred? #f
+	      dest mred? #f
 	      `((,pfx (lib ,filename "tests" "mzscheme")))
 	      null
 	      null
 	      `("-mvqe" ,(format "(require ~a~a)" 
 				 (or pfx "")
 				 (regexp-replace #rx"[.].*$" filename ""))))
-	     (try-exe mz-dest expect))])
+	     (try-exe dest expect))])
       (w/prefix #f)
       (w/prefix 'before:))
 
     ;; Try full path, and use literal S-exp to start
-    (prepare mz-dest filename)
+    (prepare dest filename)
     (let ([path (build-path (collection-path "tests" "mzscheme") filename)])
       (make-embedding-executable 
-       mz-dest mred? #f
+       dest mred? #f
        `((#t ,path))
        null
        `(require (file ,(path->string path)))
        `("-mvq")))
-    (try-exe mz-dest expect)
+    (try-exe dest expect)
 
     ;; Use `file' form:
-    (prepare mz-dest filename)
+    (prepare dest filename)
     (let ([path (build-path (collection-path "tests" "mzscheme") filename)])
       (make-embedding-executable 
-       mz-dest mred? #f
+       dest mred? #f
        `((#t (file ,(path->string path))))
        null
        `(require (file ,(path->string path)))
        `("-mvq")))
-    (try-exe mz-dest expect)
+    (try-exe dest expect)
 
     ;; Use relative path
-    (prepare mz-dest filename)
+    (prepare dest filename)
     (parameterize ([current-directory (collection-path "tests" "mzscheme")])
       (make-embedding-executable 
-       mz-dest mred? #f
+       dest mred? #f
        `((#f ,filename))
        null
        `(require ,(string->symbol (regexp-replace #rx"[.].*$" filename "")))
        `("-mvq")))
-    (try-exe mz-dest expect)
+    (try-exe dest expect)
 
     ;; Try multiple modules
-    (prepare mz-dest filename)
+    (prepare dest filename)
     (make-embedding-executable 
-     mz-dest mred? #f
+     dest mred? #f
      `((#t (lib ,filename "tests" "mzscheme"))
        (#t (lib "embed-me3.ss" "tests" "mzscheme")))
      null
@@ -104,17 +104,17 @@
 	(require (lib "embed-me3.ss" "tests" "mzscheme"))
 	(require (lib ,filename "tests" "mzscheme")))
      `("-mvq"))
-    (try-exe mz-dest (string-append "3 is here, too? #t\n" expect))
+    (try-exe dest (string-append "3 is here, too? #t\n" expect))
 
     ;; Try a literal file
-    (prepare mz-dest filename)
+    (prepare dest filename)
     (make-embedding-executable 
-     mz-dest mred? #f
+     dest mred? #f
      `((#t (lib ,filename "tests" "mzscheme")))
      (list (build-path (collection-path "tests" "mzscheme") "embed-me4.ss"))
      `(begin (display "... and more!\n"))
      `("-mvqL" ,filename "tests/mzscheme"))
-    (try-exe mz-dest (string-append 
+    (try-exe dest (string-append 
 		      "This is the literal expression 4.\n" 
 		      "... and more!\n"
 		      expect)))
@@ -123,17 +123,25 @@
   (one-mz-test "embed-me2.ss" "This is 1\nThis is 2: #t\n")
 
   ;; Try unicode expr and cmdline:
-  (prepare mz-dest "unicode")
+  (prepare dest "unicode")
   (make-embedding-executable 
-   mz-dest #f #f
+   dest #f #f
    null
    null
    `(printf "\uA9, \u7238, and \U1D670\n")
    `("-mvqe" "(display \"\u7237...\U1D671\n\")"))
-  (try-exe mz-dest "\uA9, \u7238, and \U1D670\n\u7237...\U1D671\n"))
-
+  (try-exe dest "\uA9, \u7238, and \U1D670\n\u7237...\U1D671\n"))
 
 (mz-tests #f)
 (mz-tests #t)
+
+(prepare mr-dest "embed-me5.ss")
+(make-embedding-executable 
+ mr-dest #t #f
+ `((#t (lib "embed-me5.ss" "tests" "mzscheme")))
+ null
+ null
+ `("-ZmvqL" "embed-me5.ss" "tests/mzscheme"))
+(try-exe mr-dest "This is 5: #<struct:class:button%>\n")
 
 (report-errs)
