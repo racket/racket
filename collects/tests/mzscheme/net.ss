@@ -28,8 +28,6 @@
        (let ([l (apply string-append (map cdr p))])
 	 (test l uri-decode (uri-encode l)))))))
 
-done
-
 (let ()
   (define (test-s->u vec str)
     (define (string->url/vec str) (url->vec (string->url str)))
