@@ -108,9 +108,9 @@ confirm (or refute!) that they are working correctly.
   Installing MzTake
 
 MzTake is a DrScheme tool distributed as a self-installing
-".PLT" file from the PLaneT Package Repository.
+".PLT" file from the following web site:
 
-  http://planet.plt-scheme.org/
+  http://www.cs.brown.edu/research/plt/software/mztake/
 
 MzTake requires PLT Scheme v208 and higher.
 

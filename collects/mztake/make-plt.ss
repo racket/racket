@@ -1,7 +1,7 @@
 (module make-plt mzscheme
   
   (require (lib "pack.ss" "setup")
-           (lib "util.ss" "planet"))
+           #;(lib "util.ss" "planet"))
   
   (define (my-filter path)
     (and (std-filter path)
@@ -11,7 +11,7 @@
                   (regexp-match #rx"make" path)))))
   
   ;For use with PLaneT
-  (parameterize ((current-directory "."))
+  #;(parameterize ((current-directory "."))
     (pack "mztake-planet.plt"
           "MzTake Debugger"
           '(".")
