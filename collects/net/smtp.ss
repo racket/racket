@@ -1,11 +1,11 @@
 
 (module smtp mzscheme
-  (import (lib "unitsig.ss"))
+  (require (lib "unitsig.ss"))
 
-  (import "smtp-sig.ss")
-  (import "smtp-unit.ss")
+  (require "smtp-sig.ss")
+  (require "smtp-unit.ss")
 
   (define-values/invoke-unit/sig net:smtp^
     net:smtp@)
 
-  (export-signature-elements net:smtp^))
+  (provide-signature-elements net:smtp^))
