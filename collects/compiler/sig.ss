@@ -84,7 +84,7 @@
      compile-collection-extension
      compile-collection-zos
 
-     current-compiler-dynamic-require-namespace
+     current-compiler-dynamic-require-wrapper
      compile-notify-handler))
 
   ;; Low-level extension compiler interface

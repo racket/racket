@@ -9,6 +9,7 @@
      make-verbose
      compiler-verbose
      clean
+     compile-mode
      make-zo
      make-so
      make-launchers
