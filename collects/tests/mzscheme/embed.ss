@@ -35,7 +35,11 @@
     (parameterize ([current-directory (find-system-path 'temp-dir)])
       (when (file-exists? "stdout")
 	(delete-file "stdout"))
-      (system* exe))
+      (system* (if (and mred? (eq? 'macosx (system-type)))
+		   (let-values ([(base name dir?) (split-path exe)])
+		     (build-path exe "Contents" "MacOS"
+				 (path-replace-suffix name #"")))
+		   exe)))
     (when plthome
       (putenv "PLTHOME" plthome))
     (when collects
