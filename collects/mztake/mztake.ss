@@ -16,9 +16,6 @@ rethink start/resume and kill -- do we want people to be able to restart after a
 RETHROW EXCEPTIONS CAUGHT ON THE STREAM FOR A CLIENT -- OFFER A WAY TO DISABLE IT
 WHO is catching (thread (lambda () (raise 'first-raise)))?  It never gets to the exn evstream
 
-Need a way to define which language to evaluate the target with. Robby should know how: robby@cs.uchicago.edu
-Does this work with modules?  with frtime?
-
 You cannot annotate across requires. Test threads and multiple clients. Two files at the same time if they use each other?
 DrScheme has hooks which should let me bind to the 'load's of libraries and force loading source, then annotating after expansion.
 
@@ -345,10 +342,6 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
      0))
   
   ;####################  SCRIPT FUNCTIONS  ###################
-  
-  ;dont forget to contract this
-  ;(define (send-to-eval client stx)
-   ;   (parameterize ))
   
   
   ; Switches the running state on or off
