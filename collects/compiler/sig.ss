@@ -38,6 +38,15 @@
 
    max-inline-size      ; max size of inlined procedures
 
+   disable-interrupts   ; #t => UNSAFE: turn off breaking, stack
+                        ; overflow, and thread switching;
+                        ; default = #f
+   unsafe               ; #t => UNSAFE: omit some type checks
+                        ; default = #f
+   fixnum-arithmetic    ; #t => UNSAFE: don't check for overflow or
+                        ; underflow for fixnum arithmetic;
+                        ; default = #f
+
    propagate-constants  ; default = #t
    assume-primitives    ; #t => car = #%car; default = #f
    stupid               ; allow obvious non-syntactic errors;
