@@ -1,8 +1,8 @@
 
 (module launcher-sig mzscheme
-  (import (lib "unitsig.ss"))
+  (require (lib "unitsig.ss"))
   
-  (export launcher-maker^)
+  (provide launcher-maker^)
 
   (define-signature launcher-maker^
     (make-mred-launcher
