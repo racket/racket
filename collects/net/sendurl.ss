@@ -60,7 +60,7 @@
 		(lambda (browser-path)
 		  (process*/close-ports browser-path str))]
 	       [else
-		(error 'open-url "Couldn't find Opera, Mozilla, Netscape, or Dillo to open URL: ~e" str)]))]
+		(error 'open-url "Couldn't find Opera, Galeon, Mozilla, Netscape, or Dillo to open URL: ~e" str)]))]
 	  [else (error 'send-url "don't know how to open URL on platform: ~s" (system-type))]))))
 
   ; : sym sym -> (U #f str)
