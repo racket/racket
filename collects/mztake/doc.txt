@@ -1,4 +1,8 @@
 
+============================================================
+
+  About MzTake
+
 _MzTake_ is a scripted debugger for Plt Scheme. It
 provides facilities for monitoring the execution of a
 target program as it unfolds. In the future, MzTake
@@ -12,14 +16,14 @@ values and real-time event streams. With these two
 constructs, it is possible to respond to outside
 events, concisely without using callbacks, for example:
 
-   (debug-process p ("highway.ss" [values-of-speed 5 8 bind 'speed]))
-   (history-e 10 values-of-speed)
+   (debug-process p ("highway.ss" [values-of-speed 3 5 bind 'speed]))
+   (history-b 10 values-of-speed)
 
 This MzTake script executes the file first-demo.ss in the
 "module" language, and installs a watch point for the
 variable "x" on line 5 (at column 8). This watch point
 is named "values-of-speed", which is in turn used in the
-call to "history-e". Here, "history-e" returns a list
+call to "history-b". Here, "history-b" returns a list
 of the last ten values of the variable x seen on line
 5, over time. DrScheme displays this list in the
 interaction pane, where you can use it to confirm (or
@@ -34,15 +38,15 @@ intermediate steps that lead to a correct answer were
 also correct. In the example below, we test that x
 always is less than 5:
 
-  (for-each (lambda (an-x) (assert (< an-x 65)))
-    (history-e 10 values-of-speed))
+  (map (lambda (an-x) (if (< an-x 55) 'ok 'too-fast!!))
+       (history-b 10 values-of-speed))
 
 Finally, FrTime provides a rich animation
 library. Combined with the MzTake debugger, it takes
 only a few lines to animate your algorithms and see
 them in action.
 
-  (display-shapes (list (make-speed-gauge (hold values-of-speed))))
+  (display-shapes (make-speed-gauge (hold values-of-speed)))
 
 
 ============================================================
@@ -51,11 +55,13 @@ them in action.
 
 MzTake is a DrScheme tool. DrScheme will look for
 MzTake in the "collects" directory and load it
-automatically, if found. If your language dialog does
-not contain "MzTake" in the "Experimental Languages"
-section, you can install it by downloading the
-".plt" distribution file, then selecting "Install
-.plt File..." from the "File" menu in DrScheme.
+automatically, if found. Make sure you select the
+"MzTake" language from DrScheme's language dialog, in
+the "Experimental Languages" section. If your language
+dialog does not contain "MzTake", you can install it by
+downloading the ".plt" distribution file, then
+selecting "Install .plt File..." from the "File" menu
+in DrScheme.
 
     http://www.cs.brown.edu/~gmarceau/files/mztake.plt
 
@@ -85,6 +91,8 @@ and clicking the "Run" button.
 
 ============================================================
 
+  Functions
+
 In order to use MzTake, you will first have to learn
 the FrTime language. FrTime's own "doc.txt" explains
 how to use time varying values and event streams, and
@@ -92,21 +100,180 @@ also describes the many functions that operate on them.
 
 MzTake itself defines the following functions:
 
-> (debug-process process-name
+
+_Installing Watch Points_
+
+> (mztake-process process-name
     [target-filename trace-clause ...] ...)
 
-  where trace-clause is either
+   where trace-clause is either
 
-    [trace-name line-number column-number bind variable-name]
-    [trace-name line-number column-number bind '(variable-name ...)]
+    <1>   [trace-name line-number column-number break]
+    <2>   [trace-name line-number column-number bind variable-name]
 
-  or 
+   or
 
-    [trace-name line-number column-number break]
+    <3>  [trace-name line-number column-number bind '(variable-name ...)]
+
+   mztake-process installs watch points in one or many
+   files, as indicated by the trace-clauses. The
+   target-filename can be any file specification
+   accepted the standard "require" syntax for
+   modules. For instance, to specify a target file
+   using an absolute path, use requires's "file"
+   specifier:
+
+     (mztake-process p [(file "/home/me/test.ss") [brk 10 7 break]])
+
+   Each target-filename should define a module (MzTake
+   does not support debugging top-level
+   definitions). mztake-process defines the variable
+   process-name, whose value is a MzTake process
+   object.  That object can be passed to the process
+   functions documented in the next section. In
+   particular, start/resume is a function that consumes
+   a MzTake process and actually lunches its
+   execution. That is, start/resume calls "require" on
+   the first of the target-files given in the call to
+   mztake-process.
+
+   For each trace-clause in the call to mztake-process,
+   the trace-name is a variable name bound at the
+   top-level, whose value is a FrTime event
+   stream. Each time the execution of the target
+   reaches the given line-number and column[*], the
+   debugger emits an event on that stream. The value of
+   that event depends on which of the three kinds of
+   trace-clause was used, as follow:
+
+   <1> the value of the event is #t
+
+   <2> the value of the event is the value of variable-name,
+       in the target program, at the location of the
+       watch point.
+
+   <3> the value of the event is a list containing one
+       element for each variable name given. The value
+       of each element is taken from the variable of
+       that name in the target (as in <2>)
+
+   Watch points do not themselves pause the
+   program. Unless a MzTake process is suspended using
+   the pause function (below), execution resumes after
+   the MzTake script processed the event.
 
 
-comment the demos
-document the functions
-make sure the issues mentionned in the readme are addressed
-write highway.ss and heap.ss
+   [*] To obtain accurate line/column information when
+       setting up watch points, make sure you turn off
+       DrScheme's "Wrap Test" feature under the "Edit"
+       menu. Alternatively, you can click MzTake's
+       "Syntax Location" to obtain the line and column
+       number for the position under the cursor.
+   
 
+_Operations on MzTake Processes_
+
+The following functions operate on MzTake processes:
+
+> (start/resume process)
+
+   Initiate the execution of the process, under the
+   monitoring by MzTake. In general, you should install
+   your monitoring before calling start/resume,
+   otherwise you script may miss events from the
+   beginning of the evaluation. 
+
+   If the process given to start/resume is already
+   running was paused with the function "pause", below,
+   start/resume resume its execution.
+
+> (kill process)
+
+   Kills the target process and releases all ressources
+   it used.
+
+> (kill-all)
+
+   kill-all kills all the processes currently running
+   under MzTake.
+
+> (pause process)
+
+   Suspends the execution of the given debugger
+   process. Use start/resume to resume execution.
+
+> (process:exceptions process)
+
+   Returns an event stream. If the target process
+   throws an uncaught exception, the exception will
+   appear of this stream.
+
+> (process:runtime/seconds process)
+
+   Returns a FrTime time-varying value which count the
+   number of seconds elapsed in the execution of the
+   given process (not counting time spent suspended by
+   "pause")
+  
+> (process:runtime/milliseconds process)
+
+   Returns a FrTime time-varying value which count the
+   number of milliseconds elapsed in the execution of the
+   given process (not counting time spent suspended by
+   "pause")
+
+> (process:exited? process)
+
+   Return a time-varying boolean value which becomes
+   true after the given MzTake process exited.
+  
+
+_Useful Functions for Time-Varying Values_
+
+MzTake defines a few functions on time-varying values
+that are particularly useful when debugging.
+
+
+> (history-b n stream)
+
+   Keeps a list of the last n values of a behavior
+   Returns a list of at most n elements, where the
+   elements are the n last values seem on the stream,
+   in order, oldest first.
+
+> (count-e stream)
+
+   Counts number of event pings on an eventstream.
+
+> (count-b b)
+
+   Counts number of times a behavior updates/changes
+
+> (sequence-match? seq evs)
+
+   Matches a sequence of items in a list to the history
+   of event pings, on the event stream evs.
+
+> (printf-b format arg ...)
+
+   Display the value of the behaviors with the given format
+
+
+============================================================
+
+Authors and Thanks 
+
+You can reach the authors of MzTake at the following
+email addresses. MzTake is an experimental debugger. It
+should enable new debugging approaches that were not
+possible (easily) before. We are eager to hear about
+how you are using MzTake.
+
+   Guillaume Marceau:       gmarceau@cs.brown.edu
+   Jonathan Spiro:          jspiro@cs.brown.edu
+   Shriram Khrisnamurthy:   sk@cs.brown.edu
+
+
+Icons for MzTake come from the Gnome Project: Nautilus
+Emblems, used under the GPL lisence.
+   http://jimmac.musichall.cz/ikony.php3
