@@ -9,13 +9,6 @@
 (require (lib "url.ss" "net")
 	 (lib "uri-codec.ss" "net"))
 
-(let ([portno (+ 40000 (random 50))])
-  
-(define l (tcp-listen 40005))
-> (define-values (r w) (tcp-accept l))
-
-
-
 (test "a=hel%2blo+%e7%88%b8" alist->form-urlencoded '((a . "hel+lo \u7238")))
 (test '((a . "hel+lo \u7238")) form-urlencoded->alist (alist->form-urlencoded '((a . "hel+lo \u7238"))))
 (test "a=hel%2blo;b=good-bye" alist->form-urlencoded '((a . "hel+lo") (b . "good-bye")))
@@ -31,7 +24,11 @@
 		    (let ([s (string (char-downcase (integer->char n)))])
 		      (cons (cons (string->symbol s) s)
 			    (loop (add1 n))))))])
-       (test p form-urlencoded->alist (alist->form-urlencoded p))))))
+       (test p form-urlencoded->alist (alist->form-urlencoded p))
+       (let ([l (apply string-append (map cdr p))])
+	 (test l uri-decode (uri-encode l)))))))
+
+done
 
 (let ()
   (define (test-s->u vec str)
