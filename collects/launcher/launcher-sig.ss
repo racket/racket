@@ -17,6 +17,9 @@
      install-mred-program-launcher
      install-mzscheme-program-launcher
 
+     mred-launcher-up-to-date?
+     mzscheme-launcher-up-to-date?
+
      current-launcher-variant
      available-mred-variants
      available-mzscheme-variants)))
