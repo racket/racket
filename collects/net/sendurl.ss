@@ -1,6 +1,7 @@
 
 (module sendurl mzscheme
-  (require (lib "process.ss"))
+  (require (lib "process.ss")
+	   (lib "file.ss"))
 
   (provide send-url)
   
@@ -24,28 +25,33 @@
 		 (close-input-port err)))
 	     (error 'send-url "don't know how to open URL in Windows without MrEd")))]
       [(unix)
-       (cond
-         [(find-executable-path "opera" #f)
-          =>
-          (lambda (browser-path) 
-            ;; opera may not return -- always open asyncronously
-            ;; opera starts a new browser automatically, if it can't find one
-            (let-values ([(out in id err status) (apply 
-                                                  values
-                                                  (process* browser-path "-remote" (format "openURL(~a)" str)))])
-              (close-output-port in)
-              (close-input-port out)
-              (close-input-port err)))]
-         [(find-executable-path "netscape" #f)
-          =>
-          (lambda (browser-path)
-            ;; netscape's -remote returns with an error code, if no
-            ;; netscape is around. start a new netscape in that case.
-            (or (system* browser-path "-remote" (format "openURL(~a)" str))
-                (let-values ([(out in id err status) (apply values (process* browser-path str))])
-                  (close-output-port in)
-                  (close-input-port out)
-                  (close-input-port err))))]
-         [else
-          (error 'open-url "Couldn't find Netscape or Opera to open URL: ~e" str)])]
+       (let ([preferred (get-preference 'external-browser (lambda () #f))])
+	 (cond
+	  [(and (or (not preferred)
+		    (eq? preferred 'opera))
+		(find-executable-path "opera" #f))
+	   =>
+	   (lambda (browser-path) 
+	     ;; opera may not return -- always open asyncronously
+	     ;; opera starts a new browser automatically, if it can't find one
+	     (let-values ([(out in id err status) (apply 
+						   values
+						   (process* browser-path "-remote" (format "openURL(~a)" str)))])
+	       (close-output-port in)
+	       (close-input-port out)
+	       (close-input-port err)))]
+	  [(and (and (or (not preferred)
+			 (eq? preferred 'netscape)))
+		(find-executable-path "netscape" #f))
+	   =>
+	   (lambda (browser-path)
+	     ;; netscape's -remote returns with an error code, if no
+	     ;; netscape is around. start a new netscape in that case.
+	     (or (system* browser-path "-remote" (format "openURL(~a)" str))
+		 (let-values ([(out in id err status) (apply values (process* browser-path str))])
+		   (close-output-port in)
+		   (close-input-port out)
+		   (close-input-port err))))]
+	  [else
+	   (error 'open-url "Couldn't find Netscape or Opera to open URL: ~e" str)]))]
       [else (error 'send-url "don't know how to open URL on platform: ~s" (system-type))])))
