@@ -1,8 +1,11 @@
 
-(require-library "cgiu.ss" "net")
+(module cgi mzscheme
+  (require (lib "unitsig.ss"))
 
-(begin-elaboration-time
- (require-library "invoke.ss"))
+  (require "cgi-sig.ss")
+  (require "cgi-unit.ss")
 
-(define-values/invoke-unit/sig mzlib:cgi^
-  mzlib:cgi@)
+  (define-values/invoke-unit/sig net:cgi^
+    net:cgi@)
+
+  (provide-signature-elements net:cgi^))

@@ -1,8 +1,11 @@
-(require-library "nntpu.ss" "net")
 
-(begin-elaboration-time
- (require-library "invoke.ss"))
+(module nntp mzscheme
+  (require (lib "unitsig.ss"))
 
-(define-values/invoke-unit/sig mzlib:nntp^
-  mzlib:nntp@
-  nntp)
+  (require "nntp-sig.ss")
+  (require "nntp-unit.ss")
+
+  (define-values/invoke-unit/sig net:nntp^
+    net:nntp@)
+
+  (provide-signature-elements net:nntp^))
