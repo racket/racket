@@ -16,7 +16,7 @@
 
   (define external-browser
     (make-parameter
-     (get-preference 'external-browser (lambda () #f))
+     #f ; #f means "consult the preferences file"
      (lambda (x)
        (if (browser-preference? x)
            x
@@ -64,7 +64,7 @@
             [(eq? (system-type) 'windows)
              (shell-execute #f url-str "" (current-directory) 'SW_SHOWNORMAL)]
             [(eq? (system-type) 'unix)
-             (let ([preferred (external-browser)])
+             (let ([preferred (or (external-browser) (get-preference 'external-browser))])
                (cond
                  [(use-browser 'opera preferred)
                   =>
