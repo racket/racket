@@ -1,7 +1,7 @@
 
-(reference-library "compiles.ss")
-(reference-library "makes.ss" "make")
-(reference-library "collections.ss" "make")
+(require-library "compiles.ss")
+(require-library "makes.ss" "make")
+(require-library "collections.ss" "make")
 
 ;; Compiler options
 (define-signature compiler:option^
