@@ -1,4 +1,32 @@
 #| TODO
+-------------------
+does this work on binary drscheme files?
+
+create client takes either a lib or relative or absolute path string
+
+need client-error to throw an exception, they are all fatal
+
+
+all errors are fatal now -- you can do this when
+
+make all exposed cells and evstreams read-only
+
+does this handle module prefixes?
+
+what happens if two modules have the same name in different directories
+
+WHY CANT REQUIRE TAKE AN ABSOLUTE PATH?
+(require (lib "file.ss"))
+  (find-relative-path (current-directory) "C:/Files/Desktop/debugger/src/collects/mztake/mztake.ss")
+
+
+Need to find a way to map the absolute paths taken in from clients to the function that determines what to annotate.
+
+MAKE SURE THERE WONT BE COLLISIONS WHEN EVAL'NG MODULES...GIVE THEM UNIQUE NAMES BASED ON PATH!
+----------------
+
+
+
 Remove client from runtime setters
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -29,24 +57,17 @@ Need to know where the program breaks at -- need to know *when* it breaks too --
 I will want to be able to take "(lib ...)" as a path to the file being debugged
 
 exceptions thrown in anonymous threads spawned by the target, are caught by the default drs handler, and not by frtime or mztake. they get printed out in the interaction window and there is nothing we can do about them for now -- if you want you can parameterize and rethrow the exceptions. just be aware of that.
+RETHROW EXCEPTIONS CAUGHT ON THE STREAM FOR A CLIENT -- OFFER A WAY TO DISABLE IT
+WHO is catching (thread (lambda () (raise 'first-raise)))?  It never gets to the exn evstream
 
 CAN I CATCH FRTIME EXCEPTIONS AND RETHROW THOSE TOO?
-
-
-When lifting for debugging a frtime program, you cannot lift in the target program, you have to lift in the script itself.  Everything else should be as-is/unchecked.
 
 code like
 (set-running! client (or (elapsed . < . 5) (elapsed . >= . 10)))
 (set-running! client #t)
 will break the behavior ... it gets set!'d.  Fix this!
+set-running! behaviors can go in a list which is and'd to check if all are satisfied
 
-rethink start/resume and kill -- do we want people to be able to restart after a kill or the progam exits (we have a behavior to check for that)?
-
-RETHROW EXCEPTIONS CAUGHT ON THE STREAM FOR A CLIENT -- OFFER A WAY TO DISABLE IT
-WHO is catching (thread (lambda () (raise 'first-raise)))?  It never gets to the exn evstream
-
-You cannot annotate across requires. Test threads and multiple clients. Two files at the same time if they use each other?
-DrScheme has hooks which should let me bind to the 'load's of libraries and force loading source, then annotating after expansion.
 
 DEMOS---------------------------------------------------------------------------------------
 Data structure examples
@@ -57,6 +78,7 @@ MST example
 
 Code something with multiple threads doing something and draw the threads in different colors in a window
 
+code the heap example and copy the set-running! coolness to it from sine-test.ss
 
 SCRIPT--------------------------------------------------------------------------------------
 provide a running? behavior for the scripts, which actually works.
@@ -65,8 +87,6 @@ make (script-error) map to some exception stream for script errors only.
 For now it is a synonym for (display)
 Find a way to signal the error outside of FrTime's eventspace so that it doesnt loop the error endlessly
 
-add a trace/break function.
-
 make script errors highlight the location of the error
 
 let traces take a line number without offset and find the first bindable location.
@@ -74,9 +94,9 @@ let traces take a line number without offset and find the first bindable locatio
 
 
 OPTIMIZATIONS-------------------------------------------------------------------------------
-get rid of references to stepper and move files like marks.ss over to debugger
-
 improve speed of lookup for line-col->pos; load them into a hashtable?  not important since this is just startup time for the script.
+
+improve speed of load/annotate
 
 
 
@@ -93,10 +113,6 @@ The script does not tell you something went wrong though, and the solution (as-i
 
 TESTING/CAPABILITIES------------------------------------------------------------------------
 Does user interaction work?  Can we step through loops one line at a time waiting for input?  GUIs?
-
-Verify that when killing the debugger, all the memory and bindings that need to be released are released.
-
-code the heap example and copy the set-running! coolness to it from sine-test.ss
 
 We want a way to interactively step through code one line at a time when we hit a breakpoint.  Provide way to check bindings at the same time -- EVEN IF NOT BOUND USING TRACE/BIND
 
@@ -135,7 +151,20 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   ;(rename script-running? client-running?)) ; disabled until it works
   
   
-  ;########################  STRUCTS  ########################
+  
+  
+  ;    ;;;;;   ;                          ;          
+  ;   ;     ;  ;                          ;          
+  ;  ;         ;                          ;          
+  ;  ;        ;;;;;; ;;; ;      ;   ;;;  ;;;;; ;;;;  
+  ;  ;         ;   ;;    ;      ;  ;   ;  ;   ;    ; 
+  ;   ;;;      ;   ;     ;      ; ;       ;   ;      
+  ;      ;;;   ;   ;     ;      ; ;       ;   ;      
+  ;         ;  ;   ;     ;      ; ;       ;    ;;;;  
+  ;         ;  ;   ;     ;      ; ;       ;        ; 
+  ;         ;  ;   ;     ;      ; ;       ;        ; 
+  ;  ;     ;   ;   ;      ;    ;;  ;   ;  ;   ;    ; 
+  ;   ;;;;;     ;;;;       ;;;; ;   ;;;    ;;; ;;;;  
   
   (define-struct trace (evnt-rcvr))    ; frp:event-receiver
   
@@ -147,7 +176,23 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
                          tracepoints    ; hash-table of traces
                          line-col->pos)); memoized O(n) function to map line/col -> byte offset
   
-  ;####################  STRUCT-BUILDERS  #####################
+  ;###########################################################################################################
+  
+  
+  
+  
+  ;    ;;;;;   ;                          ;           ;;;;;                         ;                         
+  ;   ;     ;  ;                          ;         ;;     ;                        ;                         
+  ;  ;         ;                          ;         ;                               ;                         
+  ;  ;        ;;;;;; ;;; ;      ;   ;;;  ;;;;;     ;         ; ;;;   ;;;     ;;;;  ;;;;;  ;;;;   ; ;;;  ;;;;  
+  ;  ;         ;   ;;    ;      ;  ;   ;  ;        ;         ;;     ;   ;   ;    ;  ;    ;    ;  ;;    ;    ; 
+  ;   ;;;      ;   ;     ;      ; ;       ;        ;         ;     ;     ;       ;  ;   ;      ; ;     ;      
+  ;      ;;;   ;   ;     ;      ; ;       ;        ;         ;     ;     ;   ;;;;;  ;   ;      ; ;     ;      
+  ;         ;  ;   ;     ;      ; ;       ;        ;         ;     ;;;;;;;  ;    ;  ;   ;      ; ;      ;;;;  
+  ;         ;  ;   ;     ;      ; ;       ;        ;         ;     ;       ;     ;  ;   ;      ; ;          ; 
+  ;         ;  ;   ;     ;      ; ;       ;         ;        ;     ;       ;     ;  ;   ;      ; ;          ; 
+  ;  ;     ;   ;   ;      ;    ;;  ;   ;  ;         ;;     ; ;      ;    ; ;    ;;  ;    ;    ;  ;     ;    ; 
+  ;   ;;;;;     ;;;;       ;;;; ;   ;;;    ;;;        ;;;;;  ;       ;;;;   ;;;; ;   ;;;  ;;;;   ;      ;;;;  
   
   ; Creates a trace that binds to the value of a variable in scope
   (define (create-bind-trace sym-to-bind) ; ((union (listof symbol?) symbol?) . -> . trace?)
@@ -157,8 +202,23 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   (define (create-break-trace) ; (void? . -> . trace?)
     (make-break-trace (frp:event-receiver)))
   
+  ;###########################################################################################################
   
-  ;###################  GLOBAL VARIABLES  ####################
+  
+  
+  ;              ;           ;                 ;                                      
+  ;     ;;;;;;   ;           ;                 ;       ;       ;                      
+  ;   ;;      ;  ;           ;                 ;       ;       ;                      
+  ;   ;          ;           ;                 ;        ;     ;                       
+  ;  ;           ;    ;;;;   ; ;;;;     ;;;;   ;        ;     ;    ;;;;  ; ;;;  ;;;;  
+  ;  ;           ;   ;    ;  ;;    ;   ;    ;  ;        ;     ;   ;    ; ;;    ;    ; 
+  ;  ;           ;  ;      ; ;      ;       ;  ;         ;   ;         ; ;     ;      
+  ;  ;    ;;;;;  ;  ;      ; ;      ;   ;;;;;  ;         ;   ;     ;;;;; ;     ;      
+  ;  ;        ;  ;  ;      ; ;      ;  ;    ;  ;         ;   ;    ;    ; ;      ;;;;  
+  ;  ;        ;  ;  ;      ; ;      ; ;     ;  ;          ; ;    ;     ; ;          ; 
+  ;   ;       ;  ;  ;      ; ;      ; ;     ;  ;          ; ;    ;     ; ;          ; 
+  ;   ;;      ;  ;   ;    ;  ;     ;  ;    ;;  ;          ; ;    ;    ;; ;     ;    ; 
+  ;     ;;;;;;   ;    ;;;;   ;;;;;;    ;;;; ;  ;           ;      ;;;; ; ;      ;;;;  
   
   ; Keeps track of all defined clients
   (define all-clients null)
@@ -195,8 +255,24 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
       second)
      0))
   
+  ;###########################################################################################################
   
-  ;#######################  CALLBACKS  #######################
+  
+  
+  ;                     ;   ;  ;                       ;              
+  ;     ;;;;;           ;   ;  ;                       ;              
+  ;   ;;     ;          ;   ;  ;                       ;              
+  ;   ;                 ;   ;  ;                       ;              
+  ;  ;           ;;;;   ;   ;  ; ;;;;     ;;;;    ;;;  ;    ;   ;;;;  
+  ;  ;          ;    ;  ;   ;  ;;    ;   ;    ;  ;   ; ;   ;   ;    ; 
+  ;  ;               ;  ;   ;  ;      ;       ; ;      ;  ;    ;      
+  ;  ;           ;;;;;  ;   ;  ;      ;   ;;;;; ;      ; ;     ;      
+  ;  ;          ;    ;  ;   ;  ;      ;  ;    ; ;      ;;;      ;;;;  
+  ;  ;         ;     ;  ;   ;  ;      ; ;     ; ;      ;  ;         ; 
+  ;   ;        ;     ;  ;   ;  ;      ; ;     ; ;      ;   ;        ; 
+  ;   ;;     ; ;    ;;  ;   ;  ;     ;  ;    ;;  ;   ; ;    ;  ;    ; 
+  ;     ;;;;;   ;;;; ;  ;   ;  ;;;;;;    ;;;; ;   ;;;  ;     ;  ;;;;  
+  ;                                                                   
   
   ; Callback for when a breakpoint (tracepoint) is hit by the model
   ; ((client) breakpoint-struct) -> ()
@@ -210,7 +286,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
               [traces (hash-get trace-hash byte-offset)])
          
          (assert (not (empty? traces))
-                 (format "There are no traces at offset ~a, but a breakpoint is defined!"
+                 (format "There are no traces at offset ~a, but a breakpoint is defined!~n"
                          (number->string byte-offset)))
          
          ; Run all traces at this breakpoint               
@@ -229,16 +305,48 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
          (semaphore-post run-semaphore))]
       
       ;when a top level expression finishes
-      [($ expression-finished return-val-list) (void)]
-      
-      [else-struct
-       (assert false)(printf "something else hit: ~a~n" else-struct)]))
+      [($ expression-finished return-val-list) (void)]))
+  
+  ;###########################################################################################################
   
   
-  ;###################  DEBUGGER BACKEND  ####################
   
-  ;(define (annotate-all-clients)
-  ;   (
+  
+  ;             ;                                                    ;                               ; 
+  ;  ;;;;;;     ;                            ;;;;;;                  ;                               ; 
+  ;  ;     ;;   ;                            ;     ;                 ;                               ; 
+  ;  ;       ;  ;                            ;     ;                 ;                               ; 
+  ;  ;       ;  ; ;;;;     ;;;;;; ; ;;;      ;     ;    ;;;;    ;;;  ;    ;    ;;;   ; ;;;;     ;;;;;; 
+  ;  ;        ; ;;    ;   ;     ; ;;         ;    ;    ;    ;  ;   ; ;   ;    ;   ;  ;;    ;   ;     ; 
+  ;  ;        ; ;      ; ;      ; ;          ;;;;;;         ; ;      ;  ;    ;     ; ;      ; ;      ; 
+  ;  ;        ; ;      ; ;      ; ;          ;     ;    ;;;;; ;      ; ;     ;     ; ;      ; ;      ; 
+  ;  ;        ; ;      ; ;      ; ;          ;      ;  ;    ; ;      ;;;     ;;;;;;; ;      ; ;      ; 
+  ;  ;       ;  ;      ; ;      ; ;          ;      ; ;     ; ;      ;  ;    ;       ;      ; ;      ; 
+  ;  ;       ;  ;      ; ;      ; ;          ;      ; ;     ; ;      ;   ;   ;       ;      ; ;      ; 
+  ;  ;     ;;   ;     ;   ;    ;; ;          ;     ;  ;    ;;  ;   ; ;    ;   ;    ; ;      ;  ;    ;; 
+  ;  ;;;;;;     ;;;;;;     ;;;; ; ;          ;;;;;;    ;;;; ;   ;;;  ;     ;   ;;;;  ;      ;   ;;;; ; 
+  ;                             ;                                                                      
+  ;                       ;    ;                                                                       
+  ;                        ;;;;                                                                        
+  
+  #|(define (annotate-and-load-all-clients break namespace)
+       (let ([main-client-fn (client-filename (first all-clients))]
+             [annotate-module?
+              (lambda (m)
+                (filter (lambda (c)
+                          (client-
+                          ]
+             [annotator
+              (lambda (fn m stx)
+         
+              [fn (client-filename client)]
+              [breakpoints (hash-keys (client-tracepoints client))]
+              [receive-result (receive-result client)]
+              [annotator (lambda (stx)
+                           (annotate stx breakpoints fn break))])
+         (parameterize ([current-namespace namespace])
+           (load/annotate main-client
+            (printf "expanding: ~a~n~n" (syntax-object->datum (expand stx)))))))|#
   
   ; retreives the binding of a variable from a breakpoint event
   (define (binding event sym)
@@ -257,12 +365,15 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   (define (script-error err)
     ; TODO I made this a syntax error so that the little 'goto' clickable box wouldnt show up
     ; it could easily be an (error)
-    (display (format "mztake:script-error: ~a~n" err)))
+    (display (format "mztake:script-error: ~a~n---~n" err)))
   
   (define (client-error err)
     ; TODO I made this a syntax error so that the little 'goto' clickable box wouldnt show up
     ; it could easily be an (error)
-    (display (format "mztake:client-error: ~a~n" err)))
+    (display (format "mztake:client-error: ~a~n---~n" err)))
+  
+  (define (print-debug str)
+    (display (format "mztake:debug: ~a~n---~n" str)))
   
   (define (fatal-script-error err client)
     (script-error err)
@@ -297,15 +408,17 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
         (begin0
           (let loop ([stx (read-syntax filename port)])
             (unless (eof-object? stx)
-              (printf "expanding: ~a~n~n" (syntax-object->datum (expand stx)))
+              (print-debug (format "expanding: ~a" (syntax-object->datum (expand stx))))
               (callback
                (expand stx)
                (lambda () (loop (read-syntax filename port))))))
           (close-input-port port)))))
   
   
-  (define (start-debugger client)
-    (let* ([breakpoint-origin (client-filename client)]
+  (define (start-debugger)
+    (let* ([client (first all-clients)]
+           [_ (print-debug "change '[client (first all-clients)]' in (start-debugger)")]
+           [breakpoint-origin (client-filename client)]
            [breakpoints (hash-keys (client-tracepoints client))]
            [program-expander (program-expander breakpoint-origin)]
            [receive-result (receive-result client)])
@@ -325,6 +438,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
       (set! run-semaphore go-semaphore)
       
       (set! debugger-custodian user-custodian)
+      (print-debug (format "~a" debugger-custodian))
       
       ; we run the program under its own custodian so we can easily kill it...that's IT
       
@@ -335,17 +449,18 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
                 (lambda ()
                   ; all errors and raises from the TARGET program will be caught here
                   ; FrTime errors from the script have their own eventstream
-                  (with-handlers ([(lambda (exn) #t)
-                                   (lambda (exn)
-                                     (frp:send-event debugger:exceptions exn)
-                                     (client-error (if (exn? exn)
-                                                       (format "exception: ~a" (exn-message exn))
-                                                       exn)))])
+                  (with-handlers
+                      ([(lambda (exn) #t)
+                        (lambda (exn)
+                          (frp:send-event debugger:exceptions exn)
+                          (client-error (if (exn? exn)
+                                            (format "exception: ~a" (exn-message exn))
+                                            exn)))])
                     (go)))))])
         (thread (lambda () 
                   (thread-wait evaluation-thread)
                   ; program terminates
-                  (script:kill client))))))
+                  (script:kill))))))
   
   
   ; returns a memoized function that takes (line column) -> position
@@ -392,16 +507,34 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
     (and (not (null? run-semaphore))
          (frp:value-now debugger:running?)))
   
+  ;###########################################################################################################
   
-  ;####################  SCRIPT FUNCTIONS  ###################
+  
+  
+  
+  ;    ;;;;;                ;            ;        ;;;;;;;                                 
+  ;   ;     ;               ;            ;        ;                                       
+  ;  ;                                   ;        ;                                       
+  ;  ;          ;;;  ; ;;;  ;  ; ;;;;   ;;;;;     ;       ;      ; ; ;;;;     ;;;   ;;;;  
+  ;  ;         ;   ; ;;     ;  ;;    ;   ;        ;       ;      ; ;;    ;   ;   ; ;    ; 
+  ;   ;;;     ;      ;      ;  ;      ;  ;        ;;;;;;; ;      ; ;      ; ;      ;      
+  ;      ;;;  ;      ;      ;  ;      ;  ;        ;       ;      ; ;      ; ;      ;      
+  ;         ; ;      ;      ;  ;      ;  ;        ;       ;      ; ;      ; ;       ;;;;  
+  ;         ; ;      ;      ;  ;      ;  ;        ;       ;      ; ;      ; ;           ; 
+  ;         ; ;      ;      ;  ;      ;  ;        ;       ;      ; ;      ; ;           ; 
+  ;  ;     ;   ;   ; ;      ;  ;     ;   ;        ;        ;    ;; ;      ;  ;   ; ;    ; 
+  ;   ;;;;;     ;;;  ;      ;  ;;;;;;     ;;;     ;         ;;;; ; ;      ;   ;;;   ;;;;  
+  ;                            ;                                                          
+  ;                            ;                                                          
+  ;                            ;                                                          
   
   ; Switches the running state on or off
-  ; (client [boolean]) -> ()
-  (define/contract script:set-running! (client? (union frp:behavior? boolean?) . -> . void?)
-    (lambda (client run?)
+  ; ([boolean]) -> ()
+  (define/contract script:set-running! ((union frp:behavior? boolean?) . -> . void?)
+    (lambda (run?)
       (define (update)
-        ; (re)start the debugger if needed
-        (when (null? run-semaphore) (start-debugger client))
+        ; start the debugger if needed
+        (when (null? run-semaphore) (start-debugger))
         (when run? (semaphore-post run-semaphore))
         (frp:value-now run?))
       
@@ -414,11 +547,13 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   
   ;TODO dont forget to contract this
   (define (script:running?)
-    (print "client-running? is broken")
+    (script-error "client-running? is broken")
     (and (running-now?)
          (not debugger:exited?)))
   
+  
   (define script:runtime/milliseconds debugger:runtime)
+  
   
   (define script:runtime/seconds
     (frp:hold ((frp:changes debugger:runtime)
@@ -426,34 +561,60 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
                (lambda (t) (truncate (/ t 1000))))
               0))
   
+  
   ; Creates a debugger client
   ; (string) -> (client)
-  (define/contract script:create (string? . -> . client?)
+  (define/contract script:create ((union (listof (union string? symbol?)) string?) . -> . client?)
     (lambda (filename)
-      (let ([c (make-client filename (make-hash) null)])
-        
-        ; set curried line-col->pos function for client
-        (set-client-line-col->pos! c (line-col->pos c))
-        
-        (set! all-clients (cons c all-clients))
-        
-        c)))
+      ; throwaway namespace so the module-name-resolver doesn't load an unannotated module
+      (parameterize ([current-namespace (make-namespace)])
+        (with-handlers ([exn:module?
+                         (lambda (exn)
+                           (client-error (format "Expected a module in client: ~a" filename)))])
+          
+          (let* ([build-module-filename ; taken from module-overview.ss
+                  (lambda (str)
+                    (let ([try (lambda (ext)
+                                 (let ([tst (string-append str ext)])
+                                   (and (file-exists? tst) tst)))])
+                      (or (try ".ss") (try ".scm") (try "") str)))]
+                 
+                 [modpath (symbol->string ((current-module-name-resolver) filename #f #f))]
+                 [modpath (build-module-filename
+                           (if (regexp-match #rx"^," modpath)
+                               (substring modpath 1 (string-length modpath))
+                               modpath))]
+                 [c (make-client modpath (make-hash) null)])
+          
+          ;TODO remove me
+          (print-debug (format "'~a' -> '~a'" filename modpath))
+          
+          ; set curried line-col->pos function for client
+          (set-client-line-col->pos! c (line-col->pos c))
+          
+          (set! all-clients (cons c all-clients))
+          
+          c)))))
   
-  (define (script:pause c) (script:set-running! c #f))
-  (define (script:start/resume c) (script:set-running! c #t))
+  
+  (define (script:pause) (script:set-running! #f))
+  
+  
+  (define (script:start/resume)
+    ; only start the debugger once
+    (if (frp:value-now debugger:exited?)
+        (script-error "Cannot restart program once it has exited. Try restarting the script.")
+        (script:set-running! #t)))
+  
   
   ; Kills the debugger immediately
-  ; (client) -> ()
-  (define/contract script:kill (client? . -> . void?)
-    (lambda (client)
-      (script:pause client)
-      
-      ; shutdown the custodian
-      (custodian-shutdown-all debugger-custodian)
-      (set! debugger-custodian null)
-      (set! run-semaphore null)
-      ; set the exit predicate to 'exited'
-      (frp:set-cell! debugger:exited? #t)))
+  (define (script:kill)
+    (script:pause)
+    ; shutdown the custodian
+    (custodian-shutdown-all debugger-custodian)
+    ; set the exit predicate to 'exited'
+    (frp:set-cell! debugger:exited? #t))
+  
   
   ; (client (offset | line column) (symbol | listof symbols) -> (frp:event-receiver)
   (define/contract script:trace/bind (client? number? number? (union symbol? (listof symbol?)) . -> . frp:event?)
@@ -467,6 +628,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
                          (hash-get trace-hash pos (lambda () '()))))
         (trace-evnt-rcvr trace))))
   
+  
   (define/contract script:trace/break (client? number? number? . -> . frp:event?)
     (lambda (client line col)
       (let ([trace-hash (client-tracepoints client)]
@@ -476,4 +638,6 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
                    (cons trace
                          (hash-get trace-hash pos (lambda () '()))))
         (trace-evnt-rcvr trace))))
+  
+  ;###########################################################################################################
   )

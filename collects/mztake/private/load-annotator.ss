@@ -7,7 +7,7 @@
   
   (require (lib "moddep.ss" "syntax")
            (lib "class.ss" "mzlib")
-           (lib "mred.ss" "mred"))
+           (lib "mred.ss" "mred"))  
   
   (provide load-with-annotations)
   
@@ -23,7 +23,7 @@
         If true, loads source file and annotates.
         Else, tries to load compiled or source, no annotation.
 
-    >annotator : (syntax? . -> . syntax?)
+    >annotator : (string? symbol? syntax? . -> . syntax?)
 |#
   (define (load-with-annotations initial-module annotate-module? annotator)
     (parameterize
@@ -50,11 +50,11 @@
        (lambda ()
          (parameterize ([read-accept-compiled #f]
                         [current-load-relative-directory base])
-           (unless m (raise 'oops))
+           (unless m (raise 'module-name-not-passed-to-load/annotate))
            (with-module-reading-parameterization
             (lambda ()
-              (let* ([first (read-syntax src in-port)]
-                     [module-ized-exp (annotator (check-module-form first m fn))]
+              (let* ([first (expand (read-syntax src in-port))]
+                     [module-ized-exp (annotator fn m (check-module-form first m fn))]
                      [second (read in-port)])
                 (unless (eof-object? second)
                   (raise-syntax-error
@@ -65,17 +65,18 @@
        
        (lambda () (close-input-port in-port)))))
   
+  
+  
   ; taken directly from mred.ss -- it's not exported...
   (define (build-input-port filename)
     (let ([p (open-input-file filename)])
       (port-count-lines! p)
-      (let ([p (cond
-                 [(regexp-match-peek "^WXME01[0-9][0-9] ## " p)
-                  (let ([t (make-object text%)])
-                    (send t insert-file p 'standard)
-                    (close-input-port p)
-                    (open-input-text-editor t))]
-                 [else p])])
+      (let ([p (cond [(regexp-match-peek "^WXME01[0-9][0-9] ## " p)
+                      (let ([t (make-object text%)])
+                        (send t insert-file p 'standard)
+                        (close-input-port p)
+                        (open-input-text-editor t))]
+                     [else p])])
         (port-count-lines! p)
         (let loop ()
           (when (with-handlers ([not-break-exn? (lambda (x) #f)])
@@ -90,12 +91,13 @@
                     (lloop c))))))
         (values p filename))))
   
+  
   (define (test annotate-all?)
     (load-with-annotations '(lib "mztake.ss" "mztake")
                        (lambda (fn m)
                          (printf "~a ~a~n" fn m)
                          annotate-all?)
-                       (lambda (stx) stx)))
+                       (lambda (fn m stx) stx)))
   ;(test #t) ; slow
   ;(test #f) ; fast
   )
