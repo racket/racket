@@ -18,6 +18,7 @@
      pause-on-errors
      force-unpacks
      specific-collections
+     specific-planet-dirs
      archives
      current-target-directory-getter
      current-target-plt-directory-getter)))
