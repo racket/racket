@@ -1,5 +1,8 @@
 #| TODO
 
+get time-per-event/milliseconds working
+(printf-b "~a ms per event" (time-per-event/milliseconds p (changes (hold sin/x-trace))))
+
 implies that the first client created is always the main module
 
 turn script errors into syntax errors
@@ -125,7 +128,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
                     [pause (debug-process? . -> . void?)]
                     [rename debug-process-exceptions
                             process:exceptions
-                            (debug-process? . -> . frp:behavior?)]
+                            (debug-process? . -> . frp:event?)]
                     [rename runtime/seconds
                             process:runtime/seconds
                             (debug-process? . -> . frp:behavior?)]
@@ -135,7 +138,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
                     [rename debug-process-exited?
                             process:exited?
                             (debug-process? . -> . frp:behavior?)]
-                    [rename time-per-event/milliseconds
+                    #;[rename time-per-event/milliseconds
                             process:time-per-event/milliseconds
                             (debug-process? frp:behavior? . -> . frp:behavior?)])
                     
@@ -367,7 +370,8 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
               ; run the process
               (thread-wait (thread (lambda () (run))))
               ; program terminates
-              (kill process))))
+              (kill process)
+              (print-info (format "process terminated: ~a" (main-client-name process))))))
   
   
   ; predicate - is the debugee supposed to be running now?
@@ -412,11 +416,13 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
                               (main-client-name process)))
           (set-running! process #t))))
   
-  
-  ; Kills the debugger process immediately and permanently
+  ; Kills and prints out a message stating it
   (define (kill process)
     (print-info (format "killing debugger for ~a" (main-client-name process)))
-    
+    (stop process))
+  
+  ; Kills the debugger process immediately and permanently
+  (define (stop process)
     ; remove the process from the process list
     (set! all-debug-processes (remq process all-debug-processes))
     
@@ -474,14 +480,14 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   ;                            ;                                                          
   
   
-  (define (running? process)
+  #;(define (running? process)
     (script-error "client-running? is broken")
     (and (running-now? process)
          (not (debug-process-exited? process))))
   
-  (define (time-per-event/milliseconds process behavior)
-    (truncate (/ (debug-process-runtime process)
-                 (add1 (count-e (frp:changes behavior))))))
+  #;(define (time-per-event/milliseconds process behavior)
+    (frp:lift (truncate (/ (frp:value-now (debug-process-runtime process))
+                 (add1 (frp:value-now (count-e (frp:changes behavior))))))))
   
   (define (runtime/milliseconds process)
     (debug-process-runtime process))
