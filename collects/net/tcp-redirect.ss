@@ -2,7 +2,7 @@
   (provide tcp-redirect)
   
   (require (lib "unitsig.ss")
-           (lib "channel.ss" "web-server")
+           (lib "async-channel.ss")
            (lib "etc.ss")
            "tcp-sig.ss")
   
@@ -41,7 +41,7 @@
       (define (tcp-accept tcp-listener)
         (cond
           [(pipe-listener? tcp-listener)
-           (let ([in-out (channel-get (pipe-listener-channel tcp-listener))])
+           (let ([in-out (async-channel-get (pipe-listener-channel tcp-listener))])
              (values (car in-out) (cdr in-out)))]
           [else (raw:tcp-accept tcp-listener)]))
       
@@ -74,7 +74,7 @@
 		   (redirect? port))
 	      (let-values ([(to-in from-out) (make-pipe)]
                            [(from-in to-out) (make-pipe)])
-		(channel-put
+		(async-channel-put
 		 (pipe-listener-channel
 		  (hash-table-get
 		   port-table
@@ -102,7 +102,7 @@
 	   port
 	   (lambda ()
 	     (if (redirect? port)
-		 (let ([listener (make-pipe-listener port (create-channel))])
+		 (let ([listener (make-pipe-listener port (make-async-channel))])
 		   (hash-table-put! port-table port listener)
 		   listener)
 		 (raw:tcp-listen port max-allow-wait reuse? hostname-string))))))
