@@ -93,7 +93,8 @@ execution. Once paused, it becomes trivial to interactively
 explore and compute with script variables (such as LAST-TEN)
 in the interaction pane. Once satisfied, you can easily resume
 execution by typing "(start/resume radar-program)", or end it
-with "(kill radar-program)".
+with "(kill radar-program)", where RADAR-PROGRAM is any MzTake
+process.
 
 Finally, FrTime provides a rich animation library. Combined
 with the MzTake debugger, it takes only a few lines to animate
@@ -171,6 +172,14 @@ written a FrTime script before!
 
   ./djikstra/dijkstra-mztake.ss       - Debugs a buggy implementation of 
                                       Dijkstra's algorithm
+
+If you have just downloaded MzTake and are coming directly
+to the demos, know that once started, you can easily end
+execution of a debugger scipt by typing "(kill p)" into the
+Interactions window (freeing up resources). You can also pause
+a script with "(pause p)", and resume it with with "(start/resume p)",
+where P is any MzTake process.  In the "highway" demo, P is
+"radar-program", and P is "p" (meaning "process") for the others.
 
 
 ============================================================
@@ -710,6 +719,7 @@ We are eager to hear about how you are using MzTake!
    Jonathan Spiro
    Guillaume Marceau
    Gregory Cooper
+   John Clements
    Shriram Krishnamurthi
 
 
