@@ -53,14 +53,13 @@
 ; more negative the better ...down to -14
 (printf-b "log error: ~a" (log (abs (- current-pi 3.1415926))))
 
-((changes (list x y))
- . ==> .
- (lambda (x/y)
-   ((draw-solid-ellipse window) (make-posn (first x/y) (second x/y))
-                                3 3 "blue")))
+(map-e (lambda (x/y) ((draw-solid-ellipse window) (make-posn (first x/y) (second x/y))
+                                                  3 3 "blue"))
+       (changes (list x y)))
 #| Every time the list (x y) changes (x and y get a new value), take this latest list value ("==>")
    and pass it to a function which draws a circle at the x,y coordinates in the list.
 |#
+
 
 (start/resume p)
 ;; Start the process for montecarlo.ss

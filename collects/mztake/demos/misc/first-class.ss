@@ -1,4 +1,4 @@
-(module higher-order mzscheme
+(module first-class mzscheme
   (map (lambda (x)
          (let* ([x (* 2 (+ 1 x))]
                 [x (sub1 x)])

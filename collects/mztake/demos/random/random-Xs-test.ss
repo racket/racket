@@ -49,13 +49,13 @@
 (define valcount (make-hash-table))
 ;; this will hold the counts for the histogram
 
-((changes x) . ==> . (lambda (x)
-                       (hash-table-put! valcount x (add1 (hash-table-get valcount x (lambda () 0))))
-                       ;; increment the value in the hashtable, starting from 0 if none exists.
-                       
-                       ((draw-solid-ellipse window) (make-posn (* x 3)
-                                                               (- 500 (* 3 (hash-table-get valcount x (lambda () 1)))))
-                                                    4 4 "blue")))
+(map-e (lambda (x)
+         (hash-table-put! valcount x (add1 (hash-table-get valcount x (lambda () 0))))
+         ;; increment the value in the hashtable, starting from 0 if none exists.
+         ((draw-solid-ellipse window) (make-posn (* x 3)
+                                                 (- 500 (* 3 (hash-table-get valcount x (lambda () 1)))))
+                                                    4 4 "blue"))
+       (changes x))
 #| Every time the local variable x changes (x-trace gets a new value), take this latest value ("==>")
    and pass it to a function which increments the count in the hashtable, and draws a circle in the window
    at (* x 3) pixels from the left, and the height is (3 * the latest count in the hashtable for that x).
@@ -68,10 +68,12 @@
 |#
 
 (let ([cnt (count-e (changes x))])
-  (when (= 13000 cnt) (pause p)))
+  (when (= 2000 cnt) (pause p)))
 #| This binds the same type of count seen above to cnt,
-   when the histogram is showing 13000 values, pause the program
-   the next time the breakpoint is reached, the 13001st iteration of the loop.
+   when the histogram is showing 2000 values, pause the program
+   the next time the breakpoint is reached before doing anything else.
+
+   Then try restarting it with (start/resume p)
 |#
 
 (start/resume p)

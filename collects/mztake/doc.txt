@@ -3,44 +3,77 @@
 
   About MzTake
 
-_MzTake_ is a scripted debugger for PLT Scheme. It
-provides facilities for monitoring the execution of a
-target program as it unfolds. In the future, MzTake
-will also let you interact with a paused program and
+_MzTake_ is a _scripted debugger_ for PLT Scheme. It
+helps programmers monitor the execution of a target
+program as it unfolds. In the future, MzTake will
+also let you interact with a paused program and
 inspect its state. 
 
-MzTake scripts are written in the Frtime programming
+MzTake scripts are written in the FrTime programming
 language, which is bundled with DrScheme. FrTime is
 similar to Scheme with the additions of time-varying
 values and real-time event streams. With these two
 constructs, it is possible to respond to outside
-events, concisely without using callbacks, for example:
+events concisely (without using callbacks). Consider
+the following MzTake script:
 
-   (debug-process p ("highway.ss" [values-of-speed 3 5 bind 'speed]))
-   (history-b 10 values-of-speed)
+   (debug-process radar-program
+                  ("highway.ss" [values-of-speed 3 4 bind 'speed]))
+   (printf-b "current speed: ~a" (hold values-of-speed))
+   (start/resume radar-program)
 
-This MzTake script executes the file highway.ss in the
-"module" language, and installs a watch point (also used
-interchangeably as 'trace point') for the variable "speed"
-on line 5 (at column 8). This watch point is named
-"values-of-speed", which is in turn used in the
-call to "history-b". Here, "history-b" returns a list
-of the last ten values of the variable "speed"
-seen on line 5, over time. DrScheme displays this list
-in the interaction pane, where you can use it to confirm
-(or refute!) that your program is working correctly.
+This code actually executes a target module in the file
+"highway.ss" after installing a _trace point_ (also known
+as a _watch point_) just before Scheme syntax on the third
+line (at the fourth column) of "highway.ss". "values-of-speed"
+is is a FrTime event stream that always contains the *current*
+value (and potentially every past value) of the variable named
+"speed", as it is bound at that point in execution/syntax.
 
-MzTake scripts are powerful tool for building test
-suites. Whereas typical test cases can only assert that
+"printf-b" works like Scheme's printf" function, consuming a
+format-string and fill-values, printing the result in
+DrScheme's interaction pane. Whereas "printf" accumulates
+outdated text on the screen, "printf-b" will constantly replace
+the old text with a newer one if any of the fill-values change.
+In this invocation, it prints the current speed to screen,
+throughout the execution of "highway.ss".
+
+MzTake scripts are also powerful tools for building external
+test suites. Whereas typical test cases can only assert that
 the result of a computation is correct, MzTake scripts
-can break open an execution and record its inner state
-and compute with it, allowing you to confirm that the
-intermediate steps that lead to a correct answer were
-also correct. In the example below, we test that the
-lsat 10 speeds are all less than 55:
+can dynamically break open an execution, record inner state,
+and *compute* with it. This allows you to confirm that the
+intermediate steps which lead to a correct answer were
+also correct. In the example below, we use a version of map
+that works over events in an event stream. We assert that
+all recorded speeds are less than 55, otherwise we raise
+an exception:
 
-  (map (lambda (a-speed) (if (< a-speed 55) 'ok 'too-fast!!))
-       (history-b 10 values-of-speed))
+  (map-e (lambda (a-speed)
+                 (when (>= a-speed 55) (raise 'too-fast!!)))
+         values-of-speed)
+
+Of course, like most test suites, this only tells you
+something went wrong. Perhaps knowing the last ten speeds that
+led to this would prove useful. You could "printf" the value
+onto a new line each time, but too many of these updates and
+the screen quickly starts to fill up with useless data -- we are
+only interested in the last ten speeds, afterall. Instead, why
+don't we "pause" the program when this happens, and interactively
+review only the ten recorded speeds we care about:
+
+  (printf-b "last ten speeds: ~a" (history-b 10 values-of-speed))
+  (map-e (lambda (a-speed)
+                 (when (>= a-speed 55) (pause radar-program)))(semaphore-wait run-semaphore)
+         values-of-speed)
+
+"history-b" consumes a number and an event stream
+("values-of-speed") and returns a FrTime behavior containing
+a FIFO ordered list of the last ten values
+seen emitted on that event stream. In this case, it contains
+the ten most recent "speed"s seen during execution. DrScheme
+displays this list in the interaction pane, where you can use
+it to confirm (or refute!) that your program is working correctly.
 
 Finally, FrTime provides a rich animation
 library. Combined with the MzTake debugger, it takes
@@ -106,7 +139,7 @@ also describes the many functions that operate on them.
 MzTake itself defines the following functions:
 
 
-_Installing Watch Points_
+_Installing Trace Points_
 
 > (mztake-process process-name
     [target-filename trace-clause ...] ...)
@@ -120,7 +153,7 @@ _Installing Watch Points_
 
     <3>  [trace-name line-number column-number bind '(variable-name ...)]
 
-   mztake-process installs watch points in one or many
+   mztake-process installs trace points in one or many
    files, as indicated by the trace-clauses. The
    target-filename can be any file specification
    accepted by the standard "require" syntax for
@@ -139,7 +172,7 @@ _Installing Watch Points_
    does not support debugging top-level
    definitions). mztake-process defines the variable
    process-name, whose value is a MzTake process
-   object.  That object can be passed to the process
+   object. That object can be passed to the process
    functions documented in the next section. In
    particular, start/resume is a function that consumes
    a MzTake process and starts its execution and debugging.
@@ -167,14 +200,14 @@ _Installing Watch Points_
 
    <2> the value of the event is the value of variable-name,
        in the target program, at the location of the
-       watch point (a "bind" trace).
+       trace point (a "bind" trace).
 
    <3> the value of the event is a list containing one
        element for each variable name given. The value
        of each element is taken from the variable of
        that name in the target (as in <2>)
 
-   Watch points do not themselves pause the
+   Trace points do not themselves pause the
    program. Unless a MzTake process is suspended using
    the pause function (below), execution resumes after
    the MzTake script processed the event.
@@ -184,7 +217,7 @@ _Installing Watch Points_
        See Known Issues for more information.
 
    [*] To obtain accurate line/column information when
-       setting up watch points, make sure you turn off
+       setting up trace points, make sure you turn off
        DrScheme's "Wrap Text" feature under the "Edit"
        menu. Alternatively, you can click MzTake's
        "Syntax Location" button, on the toolbar, to
@@ -208,7 +241,7 @@ can be used interactively in the interactions pane.
    In general, you want to call start/resume at the end of
    the script, or in the interactions pane after you
    started the script -- in either case, after you have done
-   all processing.  Otherwise your script may miss events
+   all processing. Otherwise your script may miss events
    from the beginning of the evaluation. 
 
 > (pause process)
@@ -244,14 +277,14 @@ can be used interactively in the interactions pane.
    Returns a FrTime time-varying value which counts the
    number of seconds elapsed in the execution of the
    given process (not counting time spent suspended by
-   "pause").  Includes garbage-collection time.
+   "pause"). Includes garbage-collection time.
   
 > (process:runtime/milliseconds process)
 
    Returns a FrTime time-varying value which count the
    number of milliseconds elapsed in the execution of the
    given process (not counting time spent suspended by
-   "pause").  Includes garbage-collection time.
+   "pause"). Includes garbage-collection time.
 
 > (process:exited? process)
 
@@ -368,7 +401,7 @@ Known Issues
   possible.
 
 * process:running? tells you if the process is currently,
-  actively, running.  It might be useful to you, and will
+  actively, running. It might be useful to you, and will
   be in the next release.
 
 
@@ -393,8 +426,9 @@ Tips and Tricks
   contexts, and compare results.
 
 * Code such as (when (= num 100) (pause p)) pauses *after*
-  num reaches 100, so the pause doesn't happen until the
-  101st iteration.
+  num reaches 100, the next time a trace point is hit.
+  However, the next point is not processed until you
+  "start/resume".  See the random-xs demo.
 
 * When you pause a mztake-process, you can play with
   current bindings and explore script code interactively.
@@ -404,7 +438,7 @@ Tips and Tricks
   and start/resume them, integrating and exploring the traces.
   You cannot add or change existing traces dynamically.
 
-* You can add watch points to first-class functions, and they
+* You can add trace points to first-class functions, and they
   will send events from no matter where they are evaluated.
 
 * FrTime has two methods for drawing graphics. One runs in
