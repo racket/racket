@@ -713,7 +713,7 @@ We are eager to hear about how you are using MzTake!
    Shriram Krishnamurthi
 
 
-Please send bug reports to: \mailto{jspiro@cs.brown.edu}
+Please send bug reports to: jspiro@cs.brown.edu
 
 ---
 Icons for MzTake come from the Gnome Project: Nautilus Emblems.
