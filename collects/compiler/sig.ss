@@ -4,9 +4,9 @@
   (require (lib "unitsig.ss"))
 
   (provide compiler:option^
-	  compiler^
-	  compiler:inner^
-	  compiler:linker^)
+	   compiler^
+	   compiler:inner^
+	   compiler:linker^)
 
   ;; Compiler options
   (define-signature compiler:option^
