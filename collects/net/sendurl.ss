@@ -11,7 +11,7 @@
   
   ; send-url : str [bool] -> void
   (define send-url
-    (opt-lambda (str [separate-window? separate-by-default?])
+    (opt-lambda (url-str [separate-window? separate-by-default?])
       ; The with-handler reverts to the old error port before printing raised error messages.
       (with-handlers ([void (lambda (exn) (raise exn))])
         (parameterize ([current-input-port null-input]
@@ -32,22 +32,22 @@
                                (with-handlers ([not-break-exn? (lambda (x)
                                                                  (loop (sub1 retries)))])
                                  (let ([t (thread (lambda ()
-                                                    (send-event (car l) "GURL" "GURL" str)))])
+                                                    (send-event (car l) "GURL" "GURL" url-str)))])
                                    (object-wait-multiple 1 t) ;; <<< Yuck (timeout) <<<
                                    (when (thread-running? t)
                                      (kill-thread t)
                                      (error "timeout")))))))))
                  ;; Normal OS Classic:
-                 (send-event "MACS" "GURL" "GURL" str))]
+                 (send-event "MACS" "GURL" "GURL" url-str))]
             [(or (eq? (system-type) 'macosx)
                  (equal? "ppc-macosxonx" (system-library-subpath)))
              
              ; not sure what changed, but this is wrong now.... -robby
-             ;(system (format "osascript -e 'open location \"~a\"'" (regexp-replace* "%" str "%25")))
+             ;(system (format "osascript -e 'open location \"~a\"'" (regexp-replace* "%" url-str "%25")))
              
-             (system (format "osascript -e 'open location \"~a\"'" str))]
+             (system (format "osascript -e 'open location \"~a\"'" url-str))]
             [(eq? (system-type) 'windows)
-             (shell-execute #f str "" (current-directory) 'SW_SHOWNORMAL)]
+             (shell-execute #f url-str "" (current-directory) 'SW_SHOWNORMAL)]
             [(eq? (system-type) 'unix)
              (let ([preferred (get-preference 'external-browser (lambda () #f))])
                (cond
@@ -59,14 +59,14 @@
                     (process*/close-ports browser-path "-remote"
                                           (format "openURL(~a)"
                                                   (if separate-window?
-                                                      (format "~a,new-window" str)
-                                                      str))))]
+                                                      (format "~a,new-window" url-str)
+                                                      url-str))))]
                  [(use-browser 'galeon preferred)
                   =>
                   (lambda (browser-path)
                     (process*/close-ports browser-path
                                           (if separate-window? "-w" "-x")
-                                          str))]
+                                          url-str))]
                  [(or (use-browser 'netscape preferred)
                       (use-browser 'mozilla preferred))
                   =>
@@ -76,16 +76,31 @@
                     (or (system* browser-path "-remote"
                                  (format "openURL(~a)"
                                          (if separate-window?
-                                             (format "~a,new-window" str)
-                                             str)))
-                        (process*/close-ports browser-path str)))]
+                                             (format "~a,new-window" url-str)
+                                             url-str)))
+                        (process*/close-ports browser-path url-str)))]
                  [(use-browser 'dillo preferred)
                   =>
                   (lambda (browser-path)
-                    (process*/close-ports browser-path str))]
+                    (process*/close-ports browser-path url-str))]
+                 [(custom-browser? preferred)
+		  (let ([cmd (parse-bash-command
+			      (string-append (car preferred)
+					     url-str
+					     (cdr preferred)))])
+		    (if (null? cmd)
+			(error 'send-url "no custom browser selected")
+			(let ([prog (find-executable-path (car cmd) #f)])
+			  (if prog
+			      (apply process*/close-ports prog (cdr cmd))
+			      (error 'send-url "cannot find custom browser ~e" (car cmd))))))]
                  [else
-                  (error 'open-url "Couldn't find ~a to open URL: ~e" (orify unix-browser-list) str)]))]
+                  (error 'send-url "Couldn't find ~a to open URL: ~e" (orify unix-browser-list) url-str)]))]
             [else (error 'send-url "don't know how to open URL on platform: ~s" (system-type))])))))
+  
+  ; : tst -> bool
+  (define (custom-browser? x)
+    (and (pair? x) (string? (car x)) (string? (cdr x))))
   
   (define unix-browser-list '(opera galeon netscape mozilla dillo))
   
@@ -214,4 +229,60 @@
          (equal? (parse-command.com (open-input-string "a\\\\\\\"b c d"))
                  '("a\\\"b" "c" "d"))
          (equal? (parse-command.com (open-input-string "a\\\\\\\\\"b c\" d e"))
-                 '("a\\\\b c" "d" "e")))))
+                 '("a\\\\b c" "d" "e")))) ; : str -> (listof str)
+  ; to split a string into an argument list similar to how bash does.
+  ; It does not handle backquotes because it does not evaluate bash commands.
+  ; It does not expand shell variables, nor does it expand tilda paths.
+  (define (parse-bash-command line)
+    (let ([in (open-input-string line)])
+      (let loop ()
+        (let ([w (parse-word in)])
+          (if (zero? (string-length w))
+              null
+              (cons w (loop)))))))
+  
+  ; : iport -> str
+  ; backslashes are literal inside ''s, almost literal inside ""s, and always escape the next character when unquoted
+  (define (parse-word in)
+    (skip-space-tab in)
+    (list->string
+     (let parse-word ()
+       (let ([c (read-char in)])
+         (cond
+           [(eof-object? c) null]
+           [else
+            (case c
+              [(#\')
+               (let until-quote ()
+                 (let ([c (read-char in)])
+                   (cond
+                     [(eof-object? c) (error 'parse-word "missing close '")]
+                     [else (case c
+                             [(#\') (parse-word)]
+                             [else (cons c (until-quote))])])))]
+              [(#\")
+               (let until-double-quote ()
+                 (let ([c (read-char in)])
+                   (cond
+                     [(eof-object? c) (error 'parse-word "missing close \"")]
+                     [else (case c
+                             [(#\") (parse-word)]
+                             [(#\\)
+                              (let ([escaped-char (read-char in)])
+                                (cond
+                                  [(eof-object? escaped-char)
+                                   (error 'parse-word "backslash at end of string")]
+                                  [else (cons escaped-char (until-double-quote))]))]
+                             [else (cons c (until-double-quote))])])))]
+              [(#\\)
+               (let ([escaped-char (read-char in)])
+                 (cond
+                   [(eof-object? escaped-char)
+                    (error 'parse-word "backslash at end of string")]
+                   [else (cons escaped-char (parse-word))]))]
+              [(#\space #\tab) null]
+              [else (cons c (parse-word))])])))))
+  
+  ;  > (parse-word (open-input-string "a'b\\c\"d'ef\" g\\h\"\\i jkl"))
+  ; (#\a #\b #\\ #\c #\" #\d #\e #\f #\space #\g #\h #\i)
+  )
