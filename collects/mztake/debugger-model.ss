@@ -3,7 +3,6 @@
            (lib "mred.ss" "mred")
            (lib "debugger-annotate.ss" "stepper/private")
            (lib "marks.ss" "stepper/private")
-           (lib "list.ss")
            "mztake-structs.ss"
            "private/load-annotator.ss"
            "private/more-useful-code.ss")
@@ -69,6 +68,6 @@
                  [main-mod (first all-used-module-paths)])
             
             (parameterize ([current-custodian (debug-process-custodian process)]
-                           [current-namespace (make-namespace)]
+                           [current-namespace (make-namespace-with-mred)]
                            [error-display-handler (err-display-handler (format "Loading module ~a..." main-mod))])
               (require/annotations `(file ,main-mod) annotate-module? annotator))))))))

@@ -1,8 +1,3 @@
-;catch oops exception
-;catch the other two exceptions that my loaders throw
-;detect if the source code for a certain module is missing and throw an error
-;do I want to parameterize it over a given namespace?
-
 (module load-annotator mzscheme
   
   (require (lib "moddep.ss" "syntax")

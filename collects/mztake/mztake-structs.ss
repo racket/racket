@@ -1,6 +1,5 @@
 (module mztake-structs mzscheme
-  (require (lib "mred.ss" "mred")
-           (prefix frp: (lib "frp.ss" "frtime"))
+  (require (prefix frp: (lib "frp.ss" "frtime"))
            "private/more-useful-code.ss")
   
   (provide (all-defined))

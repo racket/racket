@@ -1,5 +1,18 @@
 #| TODO
 
+breaks dont pause at a client -- they just send a ping when they get hit -- if you want to pause you should say ((when-e breakpoint) . -=> . (pause p)); maybe take a thunk to do when the breakpoint is hit?
+
+make syntax errors work for invalid bindings ... take the syntax when the binding is made and save it in a hashtable
+
+provide set-running! again
+
+---------LOAD ANNOTATOR BUGS::::::::::::::
+;catch oops exception
+;catch the other two exceptions that my loaders throw
+;detect if the source code for a certain module is missing and throw an error
+;do I want to parameterize it over a given namespace?
+::::::::::::::::::::::::::::::::::::::::::
+
 offer a way to install a special handler for exceptions -- somehow identify which client an exceptions comes from
 
 CONTRACT ALL SCRIPT FUNCTIONS
@@ -113,8 +126,6 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
 (module mztake mzscheme
   (require (lib "match.ss")
            (lib "unit.ss")
-           (lib "contract.ss")
-           (lib "stx.ss" "syntax")
            (lib "marks.ss" "stepper/private")
            (prefix frp: (lib "frp.ss" "frtime"))
            "private/useful-code.ss"
@@ -271,8 +282,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   (define (trace->frp-event client event trace)
     (match trace
       [($ break-trace evnt-rcvr)
-       #;(pause client)
-         (list evnt-rcvr #t)]
+       (list evnt-rcvr #t)]
       
       [($ bind-trace evnt-rcvr variable-to-bind)
        (let* ([vars (if (list? variable-to-bind) variable-to-bind
@@ -509,7 +519,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
     (syntax-rules ()
       [(_ client line col binding-symbol)
        (with-handlers ([(lambda (exn) #t)
-                        (lambda (exn) (raise-syntax-error 'trace/bind exn ))])
+                        (lambda (exn) (raise-syntax-error 'trace/bind exn))])
          (let ([trace-hash (debug-client-tracepoints client)]
                [trace (create-bind-trace binding-symbol)]
                [pos ((debug-client-line-col->pos client) line col)])
