@@ -11,7 +11,7 @@
 
   ; : any -> bool
   (define (browser-preference? x)
-    (or (not x) (memq x unix-browser-list) (custom-browser? x)
+    (or (not x) (eq? 'plt x) (memq x unix-browser-list) (custom-browser? x)
         (procedure? x)))
 
   (define external-browser
