@@ -1,0 +1,112 @@
+
+_MzTake_ is a scripted debugger for Plt Scheme. It
+provides facilities for monitoring the execution of a
+target program as it unfolds. In the future, MzTake
+will also let you interact with a paused program and
+inspect its state. 
+
+MzTake scripts are written in the Frtime programming
+language, which is bundled with DrScheme. FrTime is
+similar to Scheme with the additions of time-varying
+values and real-time event streams. With these two
+constructs, it is possible to respond to outside
+events, concisely without using callbacks, for example:
+
+   (debug-process p ("highway.ss" [values-of-speed 5 8 bind 'speed]))
+   (history-e 10 values-of-speed)
+
+This MzTake script executes the file first-demo.ss in the
+"module" language, and installs a watch point for the
+variable "x" on line 5 (at column 8). This watch point
+is named "values-of-speed", which is in turn used in the
+call to "history-e". Here, "history-e" returns a list
+of the last ten values of the variable x seen on line
+5, over time. DrScheme displays this list in the
+interaction pane, where you can use it to confirm (or
+refute!) that your program is working correctly.
+
+MzTake scripts are powerful tool for building test
+suites. Whereas typical test cases can only assert that
+the result of a computation is correct, MzTake scripts
+can break open an execution and record its inner state
+and compute with it, allowing you to confirm that the
+intermediate steps that lead to a correct answer were
+also correct. In the example below, we test that x
+always is less than 5:
+
+  (for-each (lambda (an-x) (assert (< an-x 65)))
+    (history-e 10 values-of-speed))
+
+Finally, FrTime provides a rich animation
+library. Combined with the MzTake debugger, it takes
+only a few lines to animate your algorithms and see
+them in action.
+
+  (display-shapes (list (make-speed-gauge (hold values-of-speed))))
+
+
+============================================================
+
+  Running MzTake
+
+MzTake is a DrScheme tool. DrScheme will look for
+MzTake in the "collects" directory and load it
+automatically, if found. If your language dialog does
+not contain "MzTake" in the "Experimental Languages"
+section, you can install it by downloading the
+".plt" distribution file, then selecting "Install
+.plt File..." from the "File" menu in DrScheme.
+
+    http://www.cs.brown.edu/~gmarceau/files/mztake.plt
+
+
+============================================================
+
+  Demos
+
+The demos subdirectories contains examples for
+different uses of MzTake. You should be able to run
+them in DrScheme by switching to the MzTake language
+and clicking the "Run" button.
+
+  demos/highway/highway-test.ss        - small MzTake example used above
+
+  demos/sine/sine-test.ss              - plots values extracted from the
+                                         running program
+
+  demos/montecarlo/montecarlo-test.ss  - visualizes montecarlo integration used
+                                         to evaluate the value of pi
+
+  demos/random/random-Xs-test.ss       - tests the quality of Scheme's random
+                                         number generator
+
+
+
+
+============================================================
+
+In order to use MzTake, you will first have to learn
+the FrTime language. FrTime's own "doc.txt" explains
+how to use time varying values and event streams, and
+also describes the many functions that operate on them.
+
+MzTake itself defines the following functions:
+
+> (debug-process process-name
+    [target-filename trace-clause ...] ...)
+
+  where trace-clause is either
+
+    [trace-name line-number column-number bind variable-name]
+    [trace-name line-number column-number bind '(variable-name ...)]
+
+  or 
+
+    [trace-name line-number column-number break]
+
+
+comment the demos
+document the functions
+make sure the issues mentionned in the readme are addressed
+write highway.ss and heap.ss
+

@@ -119,10 +119,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
            "mztake-structs.ss"
            "debugger-model.ss")
   
-  (provide create-trace)
-  (provide/contract [create-debug-process (-> debug-process?)]
-                    [create-debug-client (debug-process? (union string? (listof (union symbol? string?))) . -> . debug-client?)]
-                    [start/resume (debug-process? . -> . void?)]
+  (provide/contract [start/resume (debug-process? . -> . void?)]
                     [kill (debug-process? . -> . void?)]
                     [kill-all (-> void?)]
                     [pause (debug-process? . -> . void?)]
@@ -571,59 +568,8 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
                        (hash-get trace-hash pos (lambda () '()))))
       (trace-struct-evnt-rcvr trace)))
   
-  ;###########################################################################################################
   
-  
-  ;                                                 
-  ;    ;;;;;                    ;                   
-  ;   ;     ;                   ;                   
-  ;  ;                          ;                   
-  ;  ;        ;     ; ; ;;;;   ;;;;;  ;;;;  ;     ; 
-  ;  ;        ;     ; ;;    ;   ;    ;    ;  ;   ;  
-  ;   ;;;      ;   ;  ;      ;  ;         ;   ; ;   
-  ;      ;;;   ;   ;  ;      ;  ;     ;;;;;   ; ;   
-  ;         ;  ;   ;  ;      ;  ;    ;    ;    ;    
-  ;         ;   ; ;   ;      ;  ;   ;     ;   ; ;   
-  ;         ;   ; ;   ;      ;  ;   ;     ;   ; ;   
-  ;  ;     ;     ;    ;      ;  ;   ;    ;;  ;   ;  
-  ;   ;;;;;      ;    ;      ;   ;;; ;;;; ; ;     ; 
-  ;              ;                                   
-  ;              ;                                   
-  ;              ;                                   
-  
-  #|
-  (define-syntax bind
-    (syntax-rules ()
-      [(_ (arg ...) body ...)
-       (trace () (arg ...) body ...)]
-      
-      [(_ (arg ...))
-       (trace () (arg ...))]))
-  
-    
-  (define-syntax trace
-    (syntax-rules ()
-      [(trace client line col . type)
-       (print type)]))
-  
-  (define-syntax debugger
-    (syntax-rules ()
-      [(debug
-        (process process-name
-                 [client-name mod-path] ...)
-        (traces [trace-name trace-client-name
-                            (trace-type . trace-args) (trace-body ...)] ...)
-        (run process-name 
-             body ...))
-        
-        (printf "clients: ~a~nrun: ~a~nbody: ~a~n"
-                '(clients [client-name client-path (traces [trace-name trace-client trace-type . trace-args] ...)] ...)
-                '(run run-client-name)
-                '(body ...))]))
-  |#
-  
-  
-  
+  (provide create-trace create-debug-process create-debug-client)
   
   ;###########################################################################################################
   
