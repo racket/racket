@@ -1,10 +1,10 @@
-(reference-library "pop3u.ss" "net")
+(require-library "pop3u.ss" "net")
 
 (invoke-open-unit/sig mzlib:pop3@ pop3)
 
 #|
 
-> (reference-library "pop3.ss" "net")
+> (require-library "pop3.ss" "net")
 > (define c (pop3:connect-to-server "cs.rice.edu"))
 > (pop3:authenticate/plain-text "scheme" "********" c)
 > (pop3:get-mailbox-status c)
