@@ -82,7 +82,9 @@
      compile-zos
 
      compile-collection-extension
-     compile-collection-zos))
+     compile-collection-zos
+
+     current-compiler-dynamic-require-namespace))
 
   ;; Low-level extension compiler interface
   (define-signature compiler:inner^
