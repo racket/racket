@@ -130,7 +130,7 @@
 
 (require (lib "base64.ss" "net")
 	 (lib "qp.ss" "net")
-	 (lib "thread.ss"))
+	 (lib "port.ss"))
 
 (define tricky-strings
   (list (make-bytes 200 32)
