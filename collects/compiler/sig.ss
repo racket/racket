@@ -64,8 +64,6 @@
    
       debug ; #t => creates debug.txt debugging file
       test  ; #t => ignores top-level expressions with syntax errors
-      
-      zo-compiler-flags
       ))
 
   ;; Compiler procedures
