@@ -1,6 +1,39 @@
 
 (load-relative "loadtest.ss")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; url parsing tests
+;;
+
+(require (lib "url.ss" "net"))
+
+(let ()
+  (define (test-s->u vec str)
+    (define (string->url/vec str)
+      (let ([res (string->url str)])
+        (vector (url-scheme res)
+                (url-host res)
+                (url-port res)
+                (url-path res)
+                (url-params res)
+                (url-query res)
+                (url-fragment res)
+                (url/user-user res))))
+      (test vec string->url/vec str))
+  
+  (test-s->u (vector "http" "www.google.com" #f '() #f #f #f #f)
+             "http://www.google.com/")
+  (test-s->u (vector "http" "www.google.com" #f (list "a" "b" "c") #f #f #f #f)
+             "http://www.google.com/a/b/c"))
+
+(report-errs)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; other net tests
+;;
+
 (require (lib "base64.ss" "net")
 	 (lib "qp.ss" "net")
 	 (lib "thread.ss"))
