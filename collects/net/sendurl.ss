@@ -12,57 +12,59 @@
   ; send-url : str -> void
   (define send-url
     (opt-lambda (str [separate-window? separate-by-default?])
-      (parameterize ([current-input-port null-input]
-		     [current-error-port null-output] ; comment out this line to see error messages
-		     [current-output-port null-output])
-	(cond
-	  [(eq? (system-type) 'macos)
-	   ;; actually, I think GURL means something slightly different...
-	   (send-event "MACS" "GURL" "GURL" str)]
-	  [(or (eq? (system-type) 'macosx)
-	       (equal? "ppc-macosxonx" (system-library-subpath)))
-	   (system (format "osascript -e 'open location \"~a\"'" str))]
-	  [(eq? (system-type) 'windows)
-	   (shell-execute #f str "" (current-directory) 'SW_SHOWNORMAL)]
-	  [(eq? (system-type) 'unix)
-	   (let ([preferred (get-preference 'external-browser (lambda () #f))])
-	     (cond
-	       [(use-browser 'opera preferred)
-		=>
-		(lambda (browser-path) 
-		  ;; opera may not return -- always open asyncronously
-		  ;; opera starts a new browser automatically, if it can't find one
-		  (process*/close-ports browser-path "-remote"
-					(format "openURL(~a)"
-						(if separate-window?
-						    (format "~a,new-window" str)
-						    str))))]
-               [(use-browser 'galeon preferred)
-                =>
-		(lambda (browser-path)
-		  (process*/close-ports browser-path
-					(if separate-window? "-w" "-x")
-					str))]
-	       [(or (use-browser 'netscape preferred)
-                    (use-browser 'mozilla preferred))
-		=>
-		(lambda (browser-path)
-		  ;; netscape's -remote returns with an error code, if no
-		  ;; netscape is around. start a new netscape in that case.
-		  (or (system* browser-path "-remote"
-			       (format "openURL(~a)"
-				       (if separate-window?
-					   (format "~a,new-window" str)
-					   str)))
-		      (process*/close-ports browser-path str)))]
-               [(use-browser 'dillo preferred)
-		=>
-		(lambda (browser-path)
-		  (process*/close-ports browser-path str))]
-	       [else
-		(error 'open-url "Couldn't find Opera, Galeon, Mozilla, Netscape, or Dillo to open URL: ~e" str)]))]
-	  [else (error 'send-url "don't know how to open URL on platform: ~s" (system-type))]))))
-
+      ; The with-handler reverts to the old error port before printing raised error messages.
+      (with-handlers ([void (lambda (exn) (raise exn))])
+        (parameterize ([current-input-port null-input]
+                       [current-error-port null-output]
+                       [current-output-port null-output])
+          (cond
+            [(eq? (system-type) 'macos)
+             ;; actually, I think GURL means something slightly different...
+             (send-event "MACS" "GURL" "GURL" str)]
+            [(or (eq? (system-type) 'macosx)
+                 (equal? "ppc-macosxonx" (system-library-subpath)))
+             (system (format "osascript -e 'open location \"~a\"'" str))]
+            [(eq? (system-type) 'windows)
+             (shell-execute #f str "" (current-directory) 'SW_SHOWNORMAL)]
+            [(eq? (system-type) 'unix)
+             (let ([preferred (get-preference 'external-browser (lambda () #f))])
+               (cond
+                 [(use-browser 'opera preferred)
+                  =>
+                  (lambda (browser-path) 
+                    ;; opera may not return -- always open asyncronously
+                    ;; opera starts a new browser automatically, if it can't find one
+                    (process*/close-ports browser-path "-remote"
+                                          (format "openURL(~a)"
+                                                  (if separate-window?
+                                                      (format "~a,new-window" str)
+                                                      str))))]
+                 [(use-browser 'galeon preferred)
+                  =>
+                  (lambda (browser-path)
+                    (process*/close-ports browser-path
+                                          (if separate-window? "-w" "-x")
+                                          str))]
+                 [(or (use-browser 'netscape preferred)
+                      (use-browser 'mozilla preferred))
+                  =>
+                  (lambda (browser-path)
+                    ;; netscape's -remote returns with an error code, if no
+                    ;; netscape is around. start a new netscape in that case.
+                    (or (system* browser-path "-remote"
+                                 (format "openURL(~a)"
+                                         (if separate-window?
+                                             (format "~a,new-window" str)
+                                             str)))
+                        (process*/close-ports browser-path str)))]
+                 [(use-browser 'dillo preferred)
+                  =>
+                  (lambda (browser-path)
+                    (process*/close-ports browser-path str))]
+                 [else
+                  (error 'open-url "Couldn't find Opera, Galeon, Mozilla, Netscape, or Dillo to open URL: ~e" str)]))]
+            [else (error 'send-url "don't know how to open URL on platform: ~s" (system-type))])))))
+  
   ; : sym sym -> (U #f str)
   ; to find the path for the named browser, unless another browser is preferred
   (define (use-browser browser-name preferred)
