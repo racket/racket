@@ -13,8 +13,8 @@
   
 
   ;without frtime bundled:
-  (pack-collections "mztake-distro.plt" "MzTake Debugger"
+  (pack-collections "mztake-208.plt" "MzTake Debugger"
                     '(("mztake")) #t '(("frtime")("stepper")) my-filter #f)
   
-  (pack-collections "mztake-frtime-distro.plt" "MzTake Debugger"
+  (pack-collections "mztake-frtime-pre-208.plt" "MzTake Debugger"
                     '(("mztake")("frtime")) #t '(("stepper")) my-filter #f))
