@@ -75,7 +75,7 @@
 		   port-table
 		   port
 		   (lambda ()
-		     (raise (make-exn:i/o:tcp
+		     (raise (make-exn:fail:network
 			     (format "tcp-connect: connection to ~a, port ~a failed (nobody is listening)"
 				     hostname-string port)
 			     (current-continuation-marks))))))
