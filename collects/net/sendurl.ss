@@ -37,6 +37,12 @@
 						(if separate-window?
 						    (format "~a,new-window" str)
 						    str))))]
+               [(use-browser 'galeon preferred)
+                =>
+		(lambda (browser-path)
+		  (process*/close-ports browser-path
+					(if separate-window? "-w" "-x")
+					str))]
 	       [(or (use-browser 'mozilla preferred)
 		    (use-browser 'netscape preferred))
 		=>
