@@ -16,7 +16,10 @@
   (define external-browser
     (make-parameter
      (get-preference 'external-browser (lambda () #f))
-     browser-preference?))
+     (lambda (x)
+       (if (browser-preference? x)
+           x
+           (error 'external-browser "~a is not a valid browser preference" x)))))
   
   ; send-url : str [bool] -> void
   (define send-url
