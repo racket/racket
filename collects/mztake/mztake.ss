@@ -253,7 +253,10 @@ TESTING/CAPABILITIES------------------------------------------------------------
       [(client line col type args)
        (case type
          ['bind  (trace/bind client line col args)]
-         ['break (trace/break client line col)])]))
+         ['break (trace/break client line col)])]
+      
+      [(client line col type)
+       (create-trace client line col type null)]))
   
   
   ; takes a single trace, looks up what it needs to do, and returns an frp-event to publish
