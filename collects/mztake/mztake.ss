@@ -1,4 +1,6 @@
 #| TODO
+exceptions thrown in anonymous threads spawned by the target, are caught by the default drs handler, and not by frtime or mztake. they get printed out in the interaction window and there is nothing we can do about them for now -- if you want you can parameterize and rethrow the exceptions. just be aware of that.
+
 CAN I CATCH FRTIME EXCEPTIONS AND RETHROW THOSE TOO?
 
 
