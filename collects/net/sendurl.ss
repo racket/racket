@@ -35,13 +35,13 @@
 	    (let loop ([l '("MSIE" "NAVG")])
 	      (if (null? l)
 		  (error 'send-url "couldn't start Internet Explorer or Netscape")
-		  (with-handlers ([not-break-exn? (lambda (x) (loop (cdr l)))])
+		  (with-handlers ([exn:fail? (lambda (x) (loop (cdr l)))])
 		    (subprocess #f #f #f "by-id" (car l))
 		    (let loop ([retries 2]) ;; <<< Yuck <<<
 		      (if (zero? retries)
 			  (error "enough already") ; caught above
-			  (with-handlers ([not-break-exn? (lambda (x)
-							    (loop (sub1 retries)))])
+			  (with-handlers ([exn:fail? (lambda (x)
+						       (loop (sub1 retries)))])
 			    (let ([t (thread (lambda ()
 					       (send-event (car l) "GURL" "GURL" url-str)))])
 			      (object-wait-multiple 1 t) ;; <<< Yuck (timeout) <<<
