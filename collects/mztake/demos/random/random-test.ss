@@ -1,8 +1,8 @@
-#|   The program being debugged (a module in the file "random-xs.ss") runs an infinite loop,
+#|   The program being debugged (a module in the file "random.ss") runs an infinite loop,
      binding "x" to a random number between [0,100) each iteration.
      
      This MzTake script draws a histogram of the values of x seen over time,
-     in sync with the execution of "random-xs.ss". This will run until one
+     in sync with the execution of "random.ss". This will run until one
      bar reaches the top of the screen.     
 
      This histogram provides three pieces of information:
@@ -51,8 +51,8 @@
 
 
 
-(define-mztake-process p ("random-xs.ss" [x-trace 4 6 bind 'x]))
-#| * Create a process to debug random-xs.ss
+(define-mztake-process p ("random.ss" [x-trace 4 6 bind 'x]))
+#| * Create a process to debug random.ss
 
    * Add a tracepoint at line 4, column 6; in the program,
      this is right before the next iteration of the loop is called,
@@ -104,4 +104,4 @@
 
 
 (start/resume p)
-;; Start the process for random-xs.ss
+;; Start the process for random.ss
