@@ -43,8 +43,8 @@
 		  (process*/close-ports browser-path
 					(if separate-window? "-w" "-x")
 					str))]
-	       [(or (use-browser 'mozilla preferred)
-		    (use-browser 'netscape preferred))
+	       [(or (use-browser 'netscape preferred)
+                    (use-browser 'mozilla preferred))
 		=>
 		(lambda (browser-path)
 		  ;; netscape's -remote returns with an error code, if no
