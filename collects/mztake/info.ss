@@ -1,6 +1,7 @@
 (module info (lib "infotab.ss" "setup")
   (define name "Debugger")
   (define tools '(("debugger-tool.ss")))
+  (define blurb '("MzTake is a scripted debugger for PLT Scheme."))
   (define tool-names '("MzTake Debugger"))
   (define tool-icons '(("emblem-ohno.png" "mztake")))
 )

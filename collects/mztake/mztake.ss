@@ -1,14 +1,8 @@
 (module mztake mzscheme
   
-  (define mztake-version "Rev. Wed Aug 5, 2004 - 23:12:00")
+  (define mztake-version "(rev. 8/6/2004)")
   
-  #| TODO
-
-Remove marks.ss from MzTake as soon as the new version of it becomes standard with releases.
-Search for everywhere marks.ss shows up in mztake and replace
-(lib "marks.ss" "mztake" "private") with (lib "marks.ss" "stepper" "private")
-
-:::::::::LOAD/ANNOTATOR BUGS::::::::::::::
+  #|:::::::::LOAD/ANNOTATOR BUGS:::::::::::
 * catch oops exception
 * catch the other two exceptions that my loaders throw
 * detect if the source code for a certain module is missing and throw an exception
@@ -27,8 +21,6 @@ DEMOS---------------------------------------------------------------------------
 * MST example
 
 * something with multiple threads doing something and draw the threads in different colors in a window
-
-* FIX heap example -- give greg new heap.ss
 
 
 SCRIPT--------------------------------------------------------------------------------------
@@ -57,6 +49,10 @@ OPTIMIZATIONS-------------------------------------------------------------------
 * improve speed of load/annotate
 
 * improve speed of functions in (run)
+
+* Remove marks.ss from MzTake as soon as the new version of it becomes standard with releases.
+Search for everywhere marks.ss shows up in mztake and replace
+(lib "marks.ss" "mztake" "private") with (lib "marks.ss" "stepper" "private")
 
 
 ERROR-CHECKING/HANDLING---------------------------------------------------------------------
@@ -535,7 +531,7 @@ TESTING/CAPABILITIES------------------------------------------------------------
     (when (empty? binding-symbol)
       (script-error (format "No symbols defined in BIND for client: `~a'"
                             (debug-client-modpath client))))
-
+    
     (with-handlers ([(lambda (exn) #t)
                      (lambda (exn) (raise-syntax-error 'mztake:script-error:trace/bind exn))])
       (let ([trace-hash (debug-client-tracepoints client)]

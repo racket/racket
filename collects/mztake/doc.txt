@@ -235,7 +235,7 @@ In more depth, the debugger works on a model roughly as follows:
   * The first client defined for each MzTake process is *always* the
     main ("top level") module. That is, START/RESUME runs the main
     client module, in much the same way that you would run it in
-    DrScheme (in the "module..." language). It is assumed the module
+    DrScheme (in the "module ..." language). It is assumed the module
     has "side-effects" which start the target program.
 
     The rest of the files traced in a MZTAKE-PROCESS are modules
