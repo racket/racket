@@ -4,7 +4,7 @@
 
 (mztake-process p 
                 ("dijkstra.ss")
-                ((lib "heap.ss" "frtime")
+                ("heap.ss"
                    [inserts 49 6 bind 'item]
                    [removes 67 10 bind 'result]))
 
