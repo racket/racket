@@ -1,6 +1,7 @@
 ;;;
 ;;; <mime.ss> ---- MIME support
 ;;;
+;;; Copyright (C) 2002 by PLT. 
 ;;; Copyright (C) 2001 by Wish Computing. 
 ;;;
 ;;; This file is part of mime

@@ -1,7 +1,7 @@
 ;;;
 ;;; <qp.ss> ---- Quoted Printable Encoding/Decoding
-;;; Time-stamp: <01/04/23 09:35:51 solsona>
 ;;;
+;;; Copyright (C) 2002 by PLT. 
 ;;; Copyright (C) 2001 by Francisco Solsona. 
 ;;;
 ;;; This file is part of mime-plt.
