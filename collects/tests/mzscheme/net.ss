@@ -9,6 +9,7 @@
 (require (lib "url.ss" "net")
 	 (lib "uri-codec.ss" "net"))
 
+(test "" uri-decode "%Pq")
 (test "a=hel%2blo+%e7%88%b8" alist->form-urlencoded '((a . "hel+lo \u7238")))
 (test '((a . "hel+lo \u7238")) form-urlencoded->alist (alist->form-urlencoded '((a . "hel+lo \u7238"))))
 (test "a=hel%2blo;b=good-bye" alist->form-urlencoded '((a . "hel+lo") (b . "good-bye")))
@@ -93,7 +94,7 @@
              "http://www.drscheme.org/a/b/c;b")
   (test-s->u (vector "http" #f "www.drscheme.org" #f (list #("a" "x") "b" #("c" "b")) '() #f)
              "http://www.drscheme.org/a;x/b/c;b")
-  
+    
   ;; test unquoting for %
   (test-s->u (vector "http" #f "www.drscheme.org" #f (list "a" "b" "c") '((ti#m . "")) "jo e")
              "http://www.drscheme.org/a/b/c?ti%23m=#jo%20e")
