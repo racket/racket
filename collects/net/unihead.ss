@@ -51,6 +51,7 @@
 
   ;; ----------------------------------------
 
+  (define re:us-ascii #rx#"^[uS][sS]-[aA][sS][cC][iI][iI]$")
   (define re:iso #rx#"^[iI][sS][oO]-8859-1$")
   (define re:gb #rx#"^[gG][bB](2312)?$")
   (define re:ks_c #rx#"^[kK][sS]_[cC]_5601-1987$")
@@ -62,15 +63,19 @@
     ;; Treat Latin-1 as Windows-1252 and also threat GB and GB2312
     ;; as GBK, because some mailers are broken.
     (cond 
-     [(regexp-match re:iso encoding) (if (bytes? encoding)
-					 #"WINDOWS-1252"
-					 "WINDOWS-1252")]
-     [(regexp-match re:gb encoding) (if (bytes? encoding)
-					#"GBK"
-					"GBK")]
-     [(regexp-match re:ks_c encoding) (if (bytes? encoding)
-					  #"CP949"
-					  "CP949")]
+     [(or (regexp-match re:iso encoding) 
+	  (regexp-match re:us-ascii encoding))
+      (if (bytes? encoding)
+	  #"WINDOWS-1252"
+	  "WINDOWS-1252")]
+     [(regexp-match re:gb encoding) 
+      (if (bytes? encoding)
+	  #"GBK"
+	  "GBK")]
+     [(regexp-match re:ks_c encoding) 
+      (if (bytes? encoding)
+	  #"CP949"
+	  "CP949")]
      [else encoding]))
   
   (define (decode-for-header s)
