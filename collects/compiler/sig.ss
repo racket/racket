@@ -32,6 +32,8 @@
                          ; directly with MzScheme, not dynamically
                          ; loaded; default = #f
 
+   max-inline-size      ; max size of inlined procedures
+
    propagate-constants  ; default = #t
    assume-primitives    ; #t => car = #%car; default = #f
    stupid               ; allow obvious non-syntactic errors;
