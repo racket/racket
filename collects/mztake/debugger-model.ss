@@ -1,7 +1,7 @@
 (module debugger-model mzscheme
   (require (lib "unit.ss")
            (lib "mred.ss" "mred")
-           (lib "marks.ss" "stepper/private")
+           (lib "marks.ss" "stepper" "private")
            "debugger-annotate.ss"
            "mztake-structs.ss"
            "private/load-annotator.ss"

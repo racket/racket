@@ -77,7 +77,7 @@ TESTING/CAPABILITIES------------------------------------------------------------
   (require (lib "match.ss")
            (lib "unit.ss")
            (lib "contract.ss")
-           (lib "marks.ss" "stepper/private")
+           (lib "marks.ss" "stepper" "private")
            (prefix frp: (lib "frp.ss" "frtime"))
            "private/useful-code.ss"
            "private/more-useful-code.ss" ; mostly for hash- bindings
