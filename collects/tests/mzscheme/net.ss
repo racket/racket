@@ -13,7 +13,27 @@
 (test "a=hel%2blo+%e7%88%b8" alist->form-urlencoded '((a . "hel+lo \u7238")))
 (test '((a . "hel+lo \u7238")) form-urlencoded->alist (alist->form-urlencoded '((a . "hel+lo \u7238"))))
 (test "a=hel%2blo;b=good-bye" alist->form-urlencoded '((a . "hel+lo") (b . "good-bye")))
+(parameterize ([current-alist-separator-mode 'semi])
+  (test "a=hel%2blo;b=good-bye" alist->form-urlencoded '((a . "hel+lo") (b . "good-bye"))))
+(parameterize ([current-alist-separator-mode 'amp])
+  (test "a=hel%2blo&b=good-bye" alist->form-urlencoded '((a . "hel+lo") (b . "good-bye"))))
 (test '((a . "hel+lo") (b . "good-bye")) form-urlencoded->alist (alist->form-urlencoded '((a . "hel+lo") (b . "good-bye"))))
+(parameterize ([current-alist-separator-mode 'amp])
+  (test '((a . "hel+lo") (b . "good-bye")) form-urlencoded->alist (alist->form-urlencoded '((a . "hel+lo") (b . "good-bye")))))
+(test '((a . "hel+lo") (b . "good-bye")) form-urlencoded->alist 
+      (parameterize ([current-alist-separator-mode 'amp])
+	(alist->form-urlencoded '((a . "hel+lo") (b . "good-bye")))))
+(parameterize ([current-alist-separator-mode 'semi])
+  (test '((a . "hel+lo&b=good-bye")) form-urlencoded->alist 
+	(parameterize ([current-alist-separator-mode 'amp])
+	  (alist->form-urlencoded '((a . "hel+lo") (b . "good-bye"))))))
+(parameterize ([current-alist-separator-mode 'amp])
+  (test '((a . "hel+lo;b=good-bye")) form-urlencoded->alist 
+	(parameterize ([current-alist-separator-mode 'semi])
+	  (alist->form-urlencoded '((a . "hel+lo") (b . "good-bye"))))))
+
+(test 'amp-or-semi current-alist-separator-mode)
+(err/rt-test (current-alist-separator-mode 'bad))
 
 (let ([with-censor (load-relative "censor.ss")])
   (with-censor
@@ -90,6 +110,12 @@
              "http://www.drscheme.org/a/b/c?tam=tom#joe")
   (test-s->u (vector "http" #f "www.drscheme.org" #f (list "a" "b" "c") '((tam . "tom") (pam . "pom")) "joe")
              "http://www.drscheme.org/a/b/c?tam=tom;pam=pom#joe")
+  (parameterize ([current-alist-separator-mode 'semi])  
+    (test-s->u (vector "http" #f "www.drscheme.org" #f (list "a" "b" "c") '((tam . "tom") (pam . "pom")) "joe")
+	       "http://www.drscheme.org/a/b/c?tam=tom;pam=pom#joe"))
+  (parameterize ([current-alist-separator-mode 'amp])  
+    (test-s->u (vector "http" #f "www.drscheme.org" #f (list "a" "b" "c") '((tam . "tom") (pam . "pom")) "joe")
+	       "http://www.drscheme.org/a/b/c?tam=tom&pam=pom#joe"))
   (test-s->u (vector "http" #f "www.drscheme.org" #f (list "a" "b" #("c" "b")) '() #f)
              "http://www.drscheme.org/a/b/c;b")
   (test-s->u (vector "http" #f "www.drscheme.org" #f (list #("a" "x") "b" #("c" "b")) '() #f)
