@@ -6,7 +6,6 @@ create client takes either a lib or relative or absolute path string
 
 need client-error to throw an exception, they are all fatal
 
-
 all errors are fatal now -- you can do this when
 
 make all exposed cells and evstreams read-only
@@ -18,7 +17,6 @@ what happens if two modules have the same name in different directories
 WHY CANT REQUIRE TAKE AN ABSOLUTE PATH?
 (require (lib "file.ss"))
   (find-relative-path (current-directory) "C:/Files/Desktop/debugger/src/collects/mztake/mztake.ss")
-
 
 Need to find a way to map the absolute paths taken in from clients to the function that determines what to annotate.
 
@@ -137,17 +135,18 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
            (prefix frp: (lib "frp.ss" "frtime")))
   
   ; Provides come from the script section at the bottom of the code
-  (provide (rename script:kill kill)
-           (rename script:pause pause)
-           (rename script:trace/bind trace/bind)
-           (rename script:trace/break trace/break)
-           (rename script:set-running! set-running!)
-           (rename debugger:exited? debugger:exited?)
-           (rename script:start/resume start/resume)
-           (rename script:create client:create)
-           (rename debugger:exceptions debugger:exceptions)
-           (rename script:runtime/seconds debugger:runtime/seconds)
-           (rename script:runtime/milliseconds debugger:runtime/milliseconds))
+  (provide debugger)
+  ;(rename script:kill kill)
+  ;(rename script:pause pause)
+  ;(rename script:trace/bind trace/bind)
+  ;(rename script:trace/break trace/break)
+  ;(rename script:set-running! set-running!)
+  ;(rename debugger:exited? debugger:exited?)
+  ;(rename script:start/resume start/resume)
+  ;(rename script:create client:create)
+  ;(rename debugger:exceptions debugger:exceptions)
+  ;(rename script:runtime/seconds debugger:runtime/seconds)
+  ;(rename script:runtime/milliseconds debugger:runtime/milliseconds))
   ;(rename script-running? client-running?)) ; disabled until it works
   
   
@@ -175,6 +174,42 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   (define-struct client (filename       ; string
                          tracepoints    ; hash-table of traces
                          line-col->pos)); memoized O(n) function to map line/col -> byte offset
+  
+  (define-struct client-process (namespace     ; Namespace the process runs in
+                                 custodian     ; If you shutdown-all it will kill the debugger process
+                                 run-semaphore ; When you post to this the debuggee will continue executing
+                                 running?      ; Is the program (supposed-to-be) currently running
+                                 exited?       ; FrTime cell receives #t when the target exits
+                                 exceptions    ; (an event stream) Exceptions thrown during the evaluation of the target
+                                 runtime       ; Behavior with current runtime in milliseconds
+                                 files/traces  ; Hash-table with filenames as keys and hashtables of traces as values
+                                 ))
+  
+  (define run-semaphore null)
+  
+  (define debugger:running? #f)
+  
+  (define debugger:exited? (frp:new-cell))
+  
+  (define debugger:exceptions (frp:event-receiver))
+  
+  (define debugger:runtime
+    (frp:hold
+     ((frp:changes
+       (frp:accum-b
+        ((frp:changes frp:milliseconds)
+         . frp:-=> .
+         (match-lambda [(prev sum)
+                        (if (frp:value-now debugger:running?)
+                            (list (frp:value-now frp:milliseconds)
+                                  (+ (- (frp:value-now frp:milliseconds) prev) sum))
+                            (list (frp:value-now frp:milliseconds) sum))]))
+        (list (frp:value-now frp:milliseconds) 0)))
+      . frp:==> .
+      second)
+     0))
+  
+  
   
   ;###########################################################################################################
   
@@ -223,37 +258,11 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   ; Keeps track of all defined clients
   (define all-clients null)
   
-  ; If you shutdown-all it will kill the debugger
-  (define debugger-custodian null)
+  ;TODO For now, we have one global process in this list
+  (define all-client-processes null)
   
-  ; When you post to this the debuggee will continue executing
-  (define run-semaphore null)
-  
-  ; Is the program (supposed-to-be) currently running
-  (define debugger:running? #f)
-  
-  ; FrTime cell receives #t when the target exits
-  (define debugger:exited? (frp:new-cell))
-  
-  ; (an event stream) Exceptions thrown during the evaluation of the target
-  (define debugger:exceptions (frp:event-receiver))
-  
-  ; Behavior with current runtime in milliseconds
-  (define debugger:runtime
-    (frp:hold
-     ((frp:changes
-       (frp:accum-b
-        ((frp:changes frp:milliseconds)
-         . frp:-=> .
-         (match-lambda [(prev sum)
-                        (if (frp:value-now debugger:running?)
-                            (list (frp:value-now frp:milliseconds)
-                                  (+ (- (frp:value-now frp:milliseconds) prev) sum))
-                            (list (frp:value-now frp:milliseconds) sum))]))
-        (list (frp:value-now frp:milliseconds) 0)))
-      . frp:==> .
-      second)
-     0))
+  ;TODO When you support more than one process, find and replace this function
+  (define (get-main-client-process) (first all-client-processes))
   
   ;###########################################################################################################
   
@@ -302,7 +311,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
       [($ breakpoint-halt)
        ; do we want to pause interactive debugging
        (when (running-now?)
-         (semaphore-post run-semaphore))]
+         (semaphore-post (client-process-run-semaphore (get-main-client-process))))]
       
       ;when a top level expression finishes
       [($ expression-finished return-val-list) (void)]))
@@ -435,10 +444,10 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
       ; set initial state of exit predicate
       (frp:set-cell! debugger:exited? #f)
       
-      (set! run-semaphore go-semaphore)
+      (set-client-process-run-semaphore! (get-main-client-process) go-semaphore)
       
-      (set! debugger-custodian user-custodian)
-      (print-debug (format "~a" debugger-custodian))
+      (set-client-process-custodian! (get-main-client-process) user-custodian)
+      (print-debug (format "~a" (client-process-custodian (get-main-client-process))))
       
       ; we run the program under its own custodian so we can easily kill it...that's IT
       
@@ -504,7 +513,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   
   ; predicate - is the debugee supposed to be running now?
   (define (running-now?)
-    (and (not (null? run-semaphore))
+    (and (not (null? (client-process-run-semaphore (get-main-client-process))))
          (frp:value-now debugger:running?)))
   
   ;###########################################################################################################
@@ -534,7 +543,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
     (lambda (run?)
       (define (update)
         ; start the debugger if needed
-        (when (null? run-semaphore) (start-debugger))
+        (when (null? (client-process-run-semaphore (get-main-client-process))) (start-debugger))
         (when run? (semaphore-post run-semaphore))
         (frp:value-now run?))
       
@@ -585,16 +594,16 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
                                (substring modpath 1 (string-length modpath))
                                modpath))]
                  [c (make-client modpath (make-hash) null)])
-          
-          ;TODO remove me
-          (print-debug (format "'~a' -> '~a'" filename modpath))
-          
-          ; set curried line-col->pos function for client
-          (set-client-line-col->pos! c (line-col->pos c))
-          
-          (set! all-clients (cons c all-clients))
-          
-          c)))))
+            
+            ;TODO remove me
+            (print-debug (format "'~a' -> '~a'" filename modpath))
+            
+            ; set curried line-col->pos function for client
+            (set-client-line-col->pos! c (line-col->pos c))
+            
+            (set! all-clients (cons c all-clients))
+            
+            c)))))
   
   
   (define (script:pause) (script:set-running! #f))
@@ -611,7 +620,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   (define (script:kill)
     (script:pause)
     ; shutdown the custodian
-    (custodian-shutdown-all debugger-custodian)
+    (custodian-shutdown-all (client-process-custodian (get-main-client-process)))
     ; set the exit predicate to 'exited'
     (frp:set-cell! debugger:exited? #t))
   
@@ -640,4 +649,43 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
         (trace-evnt-rcvr trace))))
   
   ;###########################################################################################################
+  
+  
+  
+  ;                                                 
+  ;    ;;;;;                    ;                   
+  ;   ;     ;                   ;                   
+  ;  ;                          ;                   
+  ;  ;        ;     ; ; ;;;;   ;;;;;  ;;;;  ;     ; 
+  ;  ;        ;     ; ;;    ;   ;    ;    ;  ;   ;  
+  ;   ;;;      ;   ;  ;      ;  ;         ;   ; ;   
+  ;      ;;;   ;   ;  ;      ;  ;     ;;;;;   ; ;   
+  ;         ;  ;   ;  ;      ;  ;    ;    ;    ;    
+  ;         ;   ; ;   ;      ;  ;   ;     ;   ; ;   
+  ;         ;   ; ;   ;      ;  ;   ;     ;   ; ;   
+  ;  ;     ;     ;    ;      ;  ;   ;    ;;  ;   ;  
+  ;   ;;;;;      ;    ;      ;   ;;; ;;;; ; ;     ; 
+  ;              ;                                   
+  ;              ;                                   
+  ;              ;                                   
+  
+  (define-syntax debugger
+    (syntax-rules ()
+      [(debug
+        (process process-name
+                 [client-name mod-path] ...)
+        (traces [trace-name trace-client-name
+                            (trace-type . trace-args) (trace-body ...)] ...)
+        (run process-name 
+        body ...)
+       
+       (printf "clients: ~a~nrun: ~a~nbody: ~a~n"
+               '(clients [client-name client-path (traces [trace-name trace-client trace-type . trace-args] ...)] ...)
+               '(run run-client-name)
+               '(body ...))
+       ]))
+  
+  
+  ;###########################################################################################################
+  
   )
