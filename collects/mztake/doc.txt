@@ -503,6 +503,11 @@ Known Issues
   random-xs, and sine demos), the FrTime animation window may
   appear unresponsive because of how fast it is redrawing.
 
+* Currently, if you are running traces on two modules with the
+  same name, IN the same process, though in different directories,
+  there will probably be some sort of name-clash and strange error.
+  This will be fixed.
+
 
 ============================================================
 
