@@ -13,21 +13,58 @@
     (define (string->url/vec str)
       (let ([res (string->url str)])
         (vector (url-scheme res)
+                (url-user res)
                 (url-host res)
                 (url-port res)
-                (url-path res)
-                (url-params res)
+                (map (lambda (x) (if (string? x)
+                                     x
+                                     (vector (path/param-path x) (path/param-param x))))
+                     (url-path res))
                 (url-query res)
-                (url-fragment res)
-                (url/user-user res))))
-      (test vec string->url/vec str))
+                (url-fragment res))))
+    (define (url/vec->string vec)
+      (url->string
+       (make-url
+        (vector-ref vec 0)
+        (vector-ref vec 1)
+        (vector-ref vec 2)
+        (vector-ref vec 3)
+        (map (lambda (x) (if (string? x)
+                             x
+                             (make-path/param (vector-ref x 0) (vector-ref x 1))))
+             (vector-ref vec 4))
+        (vector-ref vec 5)
+        (vector-ref vec 6))))
+    
+    (test vec string->url/vec str)
+    (test str url/vec->string vec))
   
-  (test-s->u (vector "http" "www.google.com" #f '() #f #f #f #f)
+  (test-s->u (vector "http" #f "www.google.com" #f '() #f #f)
              "http://www.google.com/")
-  (test-s->u (vector "http" "www.google.com" #f (list "a" "b" "c") #f #f #f #f)
-             "http://www.google.com/a/b/c"))
-
-(report-errs)
+  (test-s->u (vector "http" #f "www.google.com" #f (list "a" "b" "c") #f #f)
+             "http://www.google.com/a/b/c")
+  (test-s->u (vector "http" "robby" "www.google.com" #f (list "a" "b" "c") #f #f)
+             "http://robby@www.google.com/a/b/c")
+  (test-s->u (vector "http" #f "www.google.com" 8080 (list "a" "b" "c") #f #f)
+             "http://www.google.com:8080/a/b/c")
+  (test-s->u (vector "http" #f "www.google.com" #f (list "a" "b" "c") #f "joe")
+             "http://www.google.com/a/b/c#joe")
+  (test-s->u (vector "http" #f "www.google.com" #f (list "a" "b" "c") "tim" #f)
+             "http://www.google.com/a/b/c?tim")
+  (test-s->u (vector "http" #f "www.google.com" #f (list "a" "b" "c") "tim" "joe")
+             "http://www.google.com/a/b/c?tim#joe")
+  (test-s->u (vector "http" #f "www.google.com" #f (list "a" "b" #("c" "b")) #f #f)
+             "http://www.google.com/a/b/c;b")
+  (test-s->u (vector "http" #f "www.google.com" #f (list #("a" "x") "b" #("c" "b")) #f #f)
+             "http://www.google.com/a;x/b/c;b")
+  
+  ;; test unquoting for %
+  (test-s->u (vector "http" #f "www.google.com" #f (list "a" "b" "c") "ti#m" "jo e")
+             "http://www.google.com/a/b/c?ti%23m#jo%20e")
+  (test-s->u (vector "http" #f "www.google.com" #f (list #("a " " a") " b " " c ") #f #f)
+             "http://www.google.com/a ; a/ b / c ")
+  (test-s->u (vector "http" "robb y" "www.google.com" #f '() #f #f)
+             "http://robb%20y@www.google.com/"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
