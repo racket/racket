@@ -15,5 +15,8 @@
      mzscheme-program-launcher-path
 
      install-mred-program-launcher
-     install-mzscheme-program-launcher)))
+     install-mzscheme-program-launcher
 
+     current-launcher-variant
+     available-mred-variants
+     available-mzscheme-variants)))
