@@ -21,9 +21,8 @@
    use-mrspidey-for-units ; #t => per-unit analyze with MrSpidey
                           ; default = #f
 
-   lightweight ; #t => perform lightweight closure conversion
-               ;       on MrSpidey-analyzed code
-               ;       default = #t
+   lightweight ; #t => perform lightweight closure conversion;
+               ;       default = #f
 
    clean-intermediate-files ; #t => keep intermediate .c/.o files
                             ; default = #f
