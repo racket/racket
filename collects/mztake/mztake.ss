@@ -1,4 +1,9 @@
 #| TODO
+
+offer a way to install a special handler for exceptions -- somehow identify which client an exceptions comes from
+
+CONTRACT ALL SCRIPT FUNCTIONS
+
 -------------------
 does this work on binary drscheme files?
 
@@ -8,7 +13,7 @@ need client-error to throw an exception, they are all fatal
 
 all errors are fatal now -- you can do this when
 
-make all exposed cells and evstreams read-only
+make all exposed cells and evstreams read-only by lifting the identity function on them
 
 does this handle module prefixes?
 
@@ -124,122 +129,33 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
 
 (module mztake mzscheme
   (require (lib "match.ss")
+           (lib "unit.ss")
            (lib "contract.ss")
-           (lib "unitsig.ss")
-           (lib "debugger-model.ss" "stepper" "private")
-           (lib "debugger-annotate.ss" "stepper" "private")
-           (lib "marks.ss" "stepper" "private")
+           (lib "marks.ss" "stepper/private")
+           (prefix frp: (lib "frp.ss" "frtime"))
            "private/useful-code.ss"
            "private/more-useful-code.ss" ; mostly for hash- bindings
-           "private/load-annotator.ss"
-           (prefix frp: (lib "frp.ss" "frtime")))
+           "mztake-structs.ss"
+           "debugger-model.ss")
   
   ; Provides come from the script section at the bottom of the code
-  (provide debugger)
-  ;(rename script:kill kill)
-  ;(rename script:pause pause)
-  ;(rename script:trace/bind trace/bind)
-  ;(rename script:trace/break trace/break)
-  ;(rename script:set-running! set-running!)
-  ;(rename debugger:exited? debugger:exited?)
-  ;(rename script:start/resume start/resume)
-  ;(rename script:create client:create)
-  ;(rename debugger:exceptions debugger:exceptions)
-  ;(rename script:runtime/seconds debugger:runtime/seconds)
-  ;(rename script:runtime/milliseconds debugger:runtime/milliseconds))
-  ;(rename script-running? client-running?)) ; disabled until it works
-  
-  
-  
-  
-  ;    ;;;;;   ;                          ;          
-  ;   ;     ;  ;                          ;          
-  ;  ;         ;                          ;          
-  ;  ;        ;;;;;; ;;; ;      ;   ;;;  ;;;;; ;;;;  
-  ;  ;         ;   ;;    ;      ;  ;   ;  ;   ;    ; 
-  ;   ;;;      ;   ;     ;      ; ;       ;   ;      
-  ;      ;;;   ;   ;     ;      ; ;       ;   ;      
-  ;         ;  ;   ;     ;      ; ;       ;    ;;;;  
-  ;         ;  ;   ;     ;      ; ;       ;        ; 
-  ;         ;  ;   ;     ;      ; ;       ;        ; 
-  ;  ;     ;   ;   ;      ;    ;;  ;   ;  ;   ;    ; 
-  ;   ;;;;;     ;;;;       ;;;; ;   ;;;    ;;; ;;;;  
-  
-  (define-struct trace (evnt-rcvr))    ; frp:event-receiver
-  
-  (define-struct (break-trace trace) ())
-  (define-struct (bind-trace trace)
-                 (variable-to-bind))    ; symbol
-  
-  (define-struct client (filename       ; string
-                         tracepoints    ; hash-table of traces
-                         line-col->pos)); memoized O(n) function to map line/col -> byte offset
-  
-  (define-struct client-process (namespace     ; Namespace the process runs in
-                                 custodian     ; If you shutdown-all it will kill the debugger process
-                                 run-semaphore ; When you post to this the debuggee will continue executing
-                                 running?      ; Is the program (supposed-to-be) currently running
-                                 exited?       ; FrTime cell receives #t when the target exits
-                                 exceptions    ; (an event stream) Exceptions thrown during the evaluation of the target
-                                 runtime       ; Behavior with current runtime in milliseconds
-                                 files/traces  ; Hash-table with filenames as keys and hashtables of traces as values
-                                 ))
-  
-  (define run-semaphore null)
-  
-  (define debugger:running? #f)
-  
-  (define debugger:exited? (frp:new-cell))
-  
-  (define debugger:exceptions (frp:event-receiver))
-  
-  (define debugger:runtime
-    (frp:hold
-     ((frp:changes
-       (frp:accum-b
-        ((frp:changes frp:milliseconds)
-         . frp:-=> .
-         (match-lambda [(prev sum)
-                        (if (frp:value-now debugger:running?)
-                            (list (frp:value-now frp:milliseconds)
-                                  (+ (- (frp:value-now frp:milliseconds) prev) sum))
-                            (list (frp:value-now frp:milliseconds) sum))]))
-        (list (frp:value-now frp:milliseconds) 0)))
-      . frp:==> .
-      second)
-     0))
-  
-  
-  
-  ;###########################################################################################################
-  
-  
-  
-  
-  ;    ;;;;;   ;                          ;           ;;;;;                         ;                         
-  ;   ;     ;  ;                          ;         ;;     ;                        ;                         
-  ;  ;         ;                          ;         ;                               ;                         
-  ;  ;        ;;;;;; ;;; ;      ;   ;;;  ;;;;;     ;         ; ;;;   ;;;     ;;;;  ;;;;;  ;;;;   ; ;;;  ;;;;  
-  ;  ;         ;   ;;    ;      ;  ;   ;  ;        ;         ;;     ;   ;   ;    ;  ;    ;    ;  ;;    ;    ; 
-  ;   ;;;      ;   ;     ;      ; ;       ;        ;         ;     ;     ;       ;  ;   ;      ; ;     ;      
-  ;      ;;;   ;   ;     ;      ; ;       ;        ;         ;     ;     ;   ;;;;;  ;   ;      ; ;     ;      
-  ;         ;  ;   ;     ;      ; ;       ;        ;         ;     ;;;;;;;  ;    ;  ;   ;      ; ;      ;;;;  
-  ;         ;  ;   ;     ;      ; ;       ;        ;         ;     ;       ;     ;  ;   ;      ; ;          ; 
-  ;         ;  ;   ;     ;      ; ;       ;         ;        ;     ;       ;     ;  ;   ;      ; ;          ; 
-  ;  ;     ;   ;   ;      ;    ;;  ;   ;  ;         ;;     ; ;      ;    ; ;    ;;  ;    ;    ;  ;     ;    ; 
-  ;   ;;;;;     ;;;;       ;;;; ;   ;;;    ;;;        ;;;;;  ;       ;;;;   ;;;; ;   ;;;  ;;;;   ;      ;;;;  
-  
-  ; Creates a trace that binds to the value of a variable in scope
-  (define (create-bind-trace sym-to-bind) ; ((union (listof symbol?) symbol?) . -> . trace?)
-    (make-bind-trace (frp:event-receiver) sym-to-bind))
-  
-  ; Creates a trace that simply pauses the program
-  (define (create-break-trace) ; (void? . -> . trace?)
-    (make-break-trace (frp:event-receiver)))
-  
-  ;###########################################################################################################
-  
-  
+  (provide create-debug-process
+           create-debug-client
+           trace/bind
+           trace/break
+           start/resume
+           kill
+           kill-all
+           pause
+           (rename debug-process-exceptions process:exceptions)
+           (rename runtime/seconds process:runtime/seconds)
+           (rename runtime/milliseconds process:runtime/milliseconds)
+           (rename debug-process-exited? process:exited?)
+           #|
+           set-running!
+           process:running? ; disabled until it works
+|#
+           )
   
   ;              ;           ;                 ;                                      
   ;     ;;;;;;   ;           ;                 ;       ;       ;                      
@@ -255,14 +171,9 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   ;   ;;      ;  ;   ;    ;  ;     ;  ;    ;;  ;          ; ;    ;    ;; ;     ;    ; 
   ;     ;;;;;;   ;    ;;;;   ;;;;;;    ;;;; ;  ;           ;      ;;;; ; ;      ;;;;  
   
-  ; Keeps track of all defined clients
-  (define all-clients null)
-  
-  ;TODO For now, we have one global process in this list
-  (define all-client-processes null)
-  
-  ;TODO When you support more than one process, find and replace this function
-  (define (get-main-client-process) (first all-client-processes))
+    
+  ;Keeps track of all debugging processes
+  (define all-debug-processes null)
   
   ;###########################################################################################################
   
@@ -285,13 +196,15 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   
   ; Callback for when a breakpoint (tracepoint) is hit by the model
   ; ((client) breakpoint-struct) -> ()
-  (define ((receive-result client) result)
+  (define ((receive-result process) result)
     (match result
       ; regular breakpoint
       [($ normal-breakpoint-info (top-mark rest-mark ...) kind)
-       
+       (print-debug "breakpoint hit")
+       (void)]
+      #|
        (let* ([byte-offset (sub1 (syntax-position (mark-source top-mark)))]
-              [trace-hash (client-tracepoints client)]
+              [trace-hash (debug-file-tracepoints client)]
               [traces (hash-get trace-hash byte-offset)])
          
          (assert (not (empty? traces))
@@ -300,18 +213,23 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
          
          ; Run all traces at this breakpoint               
          (let ([to-send (map (lambda (t) (trace->frp-event client result t)) traces)])
-           (frp:send-synchronous-events to-send)))]
+           (frp:send-synchronous-events to-send)))|#
       ; now, breakpoint-halt message should be sent by the debugger model
       
       ;TODO eventually remove this from debugger-model.ss
-      [($ error-breakpoint-info message)
-       (assert false)]
+      [($ error-breakpoint-info (source exn))
+       ; all errors and raises from the TARGET program will be caught here
+       ; FrTime errors from the script have their own eventstream
+       (frp:send-event (debug-process-exceptions process) exn)
+       (client-error (if (exn? exn)
+                         (format "source: ~a | exception: ~a" source (exn-message exn))
+                         exn))]
       
       ;end of a statement
       [($ breakpoint-halt)
        ; do we want to pause interactive debugging
-       (when (running-now?)
-         (semaphore-post (client-process-run-semaphore (get-main-client-process))))]
+       (when (running-now? process)
+         (semaphore-post (debug-process-run-semaphore process)))]
       
       ;when a top level expression finishes
       [($ expression-finished return-val-list) (void)]))
@@ -338,24 +256,30 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   ;                       ;    ;                                                                       
   ;                        ;;;;                                                                        
   
-  #|(define (annotate-and-load-all-clients break namespace)
-       (let ([main-client-fn (client-filename (first all-clients))]
-             [annotate-module?
-              (lambda (m)
-                (filter (lambda (c)
-                          (client-
-                          ]
-             [annotator
-              (lambda (fn m stx)
-         
-              [fn (client-filename client)]
-              [breakpoints (hash-keys (client-tracepoints client))]
-              [receive-result (receive-result client)]
-              [annotator (lambda (stx)
-                           (annotate stx breakpoints fn break))])
-         (parameterize ([current-namespace namespace])
-           (load/annotate main-client
-            (printf "expanding: ~a~n~n" (syntax-object->datum (expand stx)))))))|#
+  
+  (define (kill-all)
+    (for-each (lambda (p) (kill p)) all-debug-processes)
+    (display "All debug processes have been killed."))
+  
+  
+  ; wrapper for errors related to the script only
+  (define (script-error err)
+    ; TODO I made this a syntax error so that the little 'goto' clickable box wouldnt show up
+    ; it could easily be an (error)
+    (display (format "mztake:script-error: ~a~n---~n" err))
+    (kill-all))
+  
+  
+  (define (client-error err)
+    ; TODO I made this a syntax error so that the little 'goto' clickable box wouldnt show up
+    ; it could easily be an (error)
+    (display (format "mztake:client-error: ~a~n---~n" err))
+    (kill-all))
+  
+  
+  (define (print-debug str)
+    (display (format "mztake:debug: ~a~n---~n" str)))
+  
   
   ; retreives the binding of a variable from a breakpoint event
   (define (binding event sym)
@@ -370,30 +294,12 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   (define (do-n-times fn n arg)
     (foldl (lambda (x arg) (fn arg)) arg (build-list n (lambda (x) x))))
   
-  ; wrapper for errors related to the script only
-  (define (script-error err)
-    ; TODO I made this a syntax error so that the little 'goto' clickable box wouldnt show up
-    ; it could easily be an (error)
-    (display (format "mztake:script-error: ~a~n---~n" err)))
-  
-  (define (client-error err)
-    ; TODO I made this a syntax error so that the little 'goto' clickable box wouldnt show up
-    ; it could easily be an (error)
-    (display (format "mztake:client-error: ~a~n---~n" err)))
-  
-  (define (print-debug str)
-    (display (format "mztake:debug: ~a~n---~n" str)))
-  
-  (define (fatal-script-error err client)
-    (script-error err)
-    (script:kill client))
-  
   ; takes a single trace, looks up what it needs to do, and returns an frp-event to publish
   (define (trace->frp-event client event trace)
     (match trace
       [($ break-trace evnt-rcvr)
-       (script:pause client)
-       (list evnt-rcvr #t)]
+       #;(pause client)
+         (list evnt-rcvr #t)]
       
       [($ bind-trace evnt-rcvr variable-to-bind)
        (let* ([vars (if (list? variable-to-bind) variable-to-bind
@@ -401,8 +307,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
               [values (map (lambda (var)
                              (let ([val (binding event var)])
                                (if (empty? val)
-                                   (fatal-script-error (format "No binding found in trace for symbol '~a" var)
-                                                       client)
+                                   (script-error (format "No binding found in trace for symbol '~a" var))
                                    (cadar (binding event var)))))
                            vars)])
          (list evnt-rcvr
@@ -417,104 +322,156 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
         (begin0
           (let loop ([stx (read-syntax filename port)])
             (unless (eof-object? stx)
-              (print-debug (format "expanding: ~a" (syntax-object->datum (expand stx))))
+              #;(print-debug (format "expanding: ~a" (syntax-object->datum (expand stx))))
               (callback
                (expand stx)
                (lambda () (loop (read-syntax filename port))))))
           (close-input-port port)))))
   
   
-  (define (start-debugger)
-    (let* ([client (first all-clients)]
-           [_ (print-debug "change '[client (first all-clients)]' in (start-debugger)")]
-           [breakpoint-origin (client-filename client)]
-           [breakpoints (hash-keys (client-tracepoints client))]
-           [program-expander (program-expander breakpoint-origin)]
-           [receive-result (receive-result client)])
+  ; returns a memoized function that takes (line column) -> position
+  ; line-col->pos : (debug-file? . -> . (number? number? . -> . (union void? number?)))
+  (define (line-col->pos filename)
+    ; produces a nested list of (line column offset) for all addressable syntax
+    (define (unwrap-syntax stx)
+      (let ([elt (list (syntax-line stx)
+                       (syntax-column stx)
+                       (sub1 (syntax-position stx)))])
+        (syntax-case stx ()
+          [(item ...) (cons elt (map unwrap-syntax (syntax->list stx)))]
+          [x elt])))
+    
+    (let ([pos-list
+           (flatten (parameterize ([port-count-lines-enabled #t])
+                      (let ([port (open-input-file filename)])
+                        (begin0
+                          (let loop ([stx (read-syntax filename port)])
+                            (if (eof-object? stx) '()
+                                (cons (unwrap-syntax stx)
+                                      (loop (read-syntax filename port)))))
+                          (close-input-port port)))))])
+      (lambda (line col)
+        (let loop ([lst pos-list]
+                   [last-coord (first pos-list)])
+          (cond
+            ; none is found
+            [(empty? lst)
+             (script-error (format "No syntax found for trace at line/column ~a:~a in ~a" line col filename))]
+            
+            ; if first is correct line and correct column
+            [(and (= line (caar lst))
+                  (= col (cadar lst)))
+             (third (first lst))]
+            
+            [else (loop (rest lst)
+                        (first lst))])))))
+  
+  
+  ;###########################################################################################################
+  
+  
+  
+  ;  ;;;;;;                                                    ;;;;;;;                                 
+  ;  ;     ;                                                   ;                                       
+  ;  ;      ;                                                  ;                                       
+  ;  ;      ; ; ;;;   ;;;;     ;;;    ;;;    ;;;;   ;;;;       ;       ;      ; ; ;;;;     ;;;   ;;;;  
+  ;  ;      ; ;;     ;    ;   ;   ;  ;   ;  ;    ; ;    ;      ;       ;      ; ;;    ;   ;   ; ;    ; 
+  ;  ;      ; ;     ;      ; ;      ;     ; ;      ;           ;;;;;;; ;      ; ;      ; ;      ;      
+  ;  ;     ;  ;     ;      ; ;      ;     ; ;      ;           ;       ;      ; ;      ; ;      ;      
+  ;  ;;;;;;   ;     ;      ; ;      ;;;;;;;  ;;;;   ;;;;       ;       ;      ; ;      ; ;       ;;;;  
+  ;  ;        ;     ;      ; ;      ;            ;      ;      ;       ;      ; ;      ; ;           ; 
+  ;  ;        ;     ;      ; ;      ;            ;      ;      ;       ;      ; ;      ; ;           ; 
+  ;  ;        ;      ;    ;   ;   ;  ;    ; ;    ; ;    ;      ;        ;    ;; ;      ;  ;   ; ;    ; 
+  ;  ;        ;       ;;;;     ;;;    ;;;;   ;;;;   ;;;;       ;         ;;;; ; ;      ;   ;;;   ;;;;  
+  
+  (define (start-debug-process process)
+    (let* ([receive-result (receive-result process)]
+           ; connect to the debugger-model@ unit
+           [run (invoke-unit debugger-model@ receive-result process)])
       
-      ; connect to the debugger-model@ unit
-      (define-values/invoke-unit/sig (go go-semaphore user-custodian)
-                                     debugger-model@
-                                     #f ; prefix
-                                     (receive-result)
-                                     (program-expander)
-                                     ; breakpoint-origin = filename from thunk of (program-expander)
-                                     (breakpoints breakpoint-origin))
-      
+      ; initialize the semaphore
+      (set-debug-process-run-semaphore! process (make-semaphore))
       ; set initial state of exit predicate
-      (frp:set-cell! debugger:exited? #f)
+      (frp:set-cell! (debug-process-exited? process) #f)
       
-      (set-client-process-run-semaphore! (get-main-client-process) go-semaphore)
-      
-      (set-client-process-custodian! (get-main-client-process) user-custodian)
-      (print-debug (format "~a" (client-process-custodian (get-main-client-process))))
-      
-      ; we run the program under its own custodian so we can easily kill it...that's IT
-      
-      
-      (let ([evaluation-thread
-             (parameterize ([current-custodian user-custodian])
-               (thread
-                (lambda ()
-                  ; all errors and raises from the TARGET program will be caught here
-                  ; FrTime errors from the script have their own eventstream
-                  (with-handlers
-                      ([(lambda (exn) #t)
-                        (lambda (exn)
-                          (frp:send-event debugger:exceptions exn)
-                          (client-error (if (exn? exn)
-                                            (format "exception: ~a" (exn-message exn))
-                                            exn)))])
-                    (go)))))])
-        (thread (lambda () 
+      ; run the process
+      (let ([evaluation-thread (thread (lambda () (run)))])
+        (thread (lambda ()
                   (thread-wait evaluation-thread)
                   ; program terminates
-                  (script:kill))))))
+                  (kill process))))))
   
-  
-  ; returns a memoized function that takes (line column) -> position
-  (define/contract line-col->pos (client? . -> . (number? number? . -> . (union void? number?)))
-    (lambda (client)
-      (let ([filename (client-filename client)])
-        ; produces a nested list of (line column offset) for all addressable syntax
-        (define (unwrap-syntax stx)
-          (let ([elt (list (syntax-line stx)
-                           (syntax-column stx)
-                           (sub1 (syntax-position stx)))])
-            (syntax-case stx ()
-              [(item ...) (cons elt (map unwrap-syntax (syntax->list stx)))]
-              [x elt])))
-        
-        (let ([pos-list
-               (flatten (parameterize ([port-count-lines-enabled #t])
-                          (let ([port (open-input-file filename)])
-                            (begin0
-                              (let loop ([stx (read-syntax filename port)])
-                                (if (eof-object? stx) '()
-                                    (cons (unwrap-syntax stx)
-                                          (loop (read-syntax filename port)))))
-                              (close-input-port port)))))])
-          (lambda (line col)
-            (let loop ([lst pos-list]
-                       [last-coord (first pos-list)])
-              (cond
-                ; none is found
-                [(empty? lst)
-                 (fatal-script-error (format "No syntax found for trace at line/column ~a:~a in ~a" line col filename)
-                                     client)]
-                
-                ; if first is correct line and correct column
-                [(and (= line (caar lst))
-                      (= col (cadar lst)))
-                 (third (first lst))]
-                
-                [else (loop (rest lst)
-                            (first lst))])))))))
   
   ; predicate - is the debugee supposed to be running now?
-  (define (running-now?)
-    (and (not (null? (client-process-run-semaphore (get-main-client-process))))
-         (frp:value-now debugger:running?)))
+  (define (running-now? process)
+    (and (not (null? (debug-process-run-semaphore process)))
+         (frp:value-now (debug-process-running? process))))
+  
+  
+  ; Switches the running state on or off
+  ; ((union frp:behavior? boolean?) . -> . void?)
+  (define (set-running! process run?)
+    (define (update)
+      ; start the debugger if needed
+      (when (null? (debug-process-run-semaphore process))
+        (start-debug-process process))
+      
+      (when run?
+        (semaphore-post (debug-process-run-semaphore process)))
+      
+      (frp:value-now run?))
+    
+    (cond [(frp:behavior? run?)
+           (script-error "set-running! can't take behaviors right now!")]
+          ;(set! debugger:running? (frp:proc->signal update run?))]
+          
+          [else (set-debug-process-running?! process run?)
+                (update)])
+    (void))
+  
+  
+  (define (pause process) (set-running! process #f))
+  
+  (define (start/resume process)
+    (let ([val (frp:value-now (debug-process-exited? process))])
+      ; only start the debugger once
+      (if ((not (equal? val frp:undefined)) . and . val)
+          (script-error "Cannot restart program once it has exited. Try restarting the script.")
+          (set-running! process #t))))
+  
+  
+  ; Kills the debugger process immediately
+  (define (kill process)
+    (pause process)
+    ; shutdown the custodian
+    (custodian-shutdown-all (debug-process-custodian process))
+    ; set the exit predicate to 'exited'
+    (frp:set-cell! (debug-process-exited? process) #t))
+  
+  
+  ; creates and initializes a debug process
+  (define (create-debug-process)
+    (let ([p (create-empty-debug-process)])
+      (set-debug-process-runtime! p (runtime p))
+      p))
+  
+  
+  ; returns a behavior that keeps track of runtime
+  (define (runtime process)
+    (frp:hold
+     ((frp:changes
+       (frp:accum-b
+        ((frp:changes frp:milliseconds)
+         . frp:-=> .
+         (match-lambda [(prev sum)
+                        (if (frp:value-now (debug-process-running? process))
+                            (list (frp:value-now frp:milliseconds)
+                                  (+ (- (frp:value-now frp:milliseconds) prev) sum))
+                            (list (frp:value-now frp:milliseconds) sum))]))
+        (list (frp:value-now frp:milliseconds) 0)))
+      . frp:==> .
+      cadr) ; take the second element
+     0))
   
   ;###########################################################################################################
   
@@ -537,119 +494,86 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   ;                            ;                                                          
   ;                            ;                                                          
   
-  ; Switches the running state on or off
-  ; ([boolean]) -> ()
-  (define/contract script:set-running! ((union frp:behavior? boolean?) . -> . void?)
-    (lambda (run?)
-      (define (update)
-        ; start the debugger if needed
-        (when (null? (client-process-run-semaphore (get-main-client-process))) (start-debugger))
-        (when run? (semaphore-post run-semaphore))
-        (frp:value-now run?))
-      
-      (cond [(frp:behavior? run?)
-             (set! debugger:running? (frp:proc->signal update run?))]
-            [else (set! debugger:running? run?)
-                  (update)])
-      (void)))
   
+  (define (running? process)
+    (script-error "client-running? is broken")
+    (and (running-now? process)
+         (not (debug-process-exited? process))))
+  
+  (define (runtime/milliseconds process)
+    (debug-process-runtime process))
   
   ;TODO dont forget to contract this
-  (define (script:running?)
-    (script-error "client-running? is broken")
-    (and (running-now?)
-         (not debugger:exited?)))
-  
-  
-  (define script:runtime/milliseconds debugger:runtime)
-  
-  
-  (define script:runtime/seconds
-    (frp:hold ((frp:changes debugger:runtime)
+  (define (runtime/seconds process)
+    (frp:hold ((frp:changes (runtime/milliseconds process))
                . frp:==> .
                (lambda (t) (truncate (/ t 1000))))
               0))
   
   
   ; Creates a debugger client
-  ; (string) -> (client)
-  (define/contract script:create ((union (listof (union string? symbol?)) string?) . -> . client?)
-    (lambda (filename)
-      ; throwaway namespace so the module-name-resolver doesn't load an unannotated module
-      (parameterize ([current-namespace (make-namespace)])
-        (with-handlers ([exn:module?
-                         (lambda (exn)
-                           (client-error (format "Expected a module in client: ~a" filename)))])
+  ; ((union (listof (union string? symbol?)) string?) . -> . debug-file?)
+  (define (create-debug-client process filename)
+    ; throwaway namespace so the module-name-resolver doesn't load an unannotated module
+    (parameterize ([current-namespace (make-namespace)])
+      (with-handlers ([exn:module?
+                       (lambda (exn)
+                         (client-error (format "Expected a module in client: ~a" filename)))])
+        
+        (let* ([build-module-filename ; taken from module-overview.ss
+                (lambda (str)
+                  (let ([try (lambda (ext)
+                               (let ([tst (string-append str ext)])
+                                 (and (file-exists? tst) tst)))])
+                    (or (try ".ss") (try ".scm") (try "") str)))]
+               
+               [modsymbol ((current-module-name-resolver) filename #f #f)]
+               
+               [modpath (symbol->string modsymbol)]
+               [modpath (build-module-filename
+                         (if (regexp-match #rx"^," modpath)
+                             (substring modpath 1 (string-length modpath))
+                             modpath))]
+               
+               [client (create-empty-debug-client)])
           
-          (let* ([build-module-filename ; taken from module-overview.ss
-                  (lambda (str)
-                    (let ([try (lambda (ext)
-                                 (let ([tst (string-append str ext)])
-                                   (and (file-exists? tst) tst)))])
-                      (or (try ".ss") (try ".scm") (try "") str)))]
-                 
-                 [modpath (symbol->string ((current-module-name-resolver) filename #f #f))]
-                 [modpath (build-module-filename
-                           (if (regexp-match #rx"^," modpath)
-                               (substring modpath 1 (string-length modpath))
-                               modpath))]
-                 [c (make-client modpath (make-hash) null)])
-            
-            ;TODO remove me
-            (print-debug (format "'~a' -> '~a'" filename modpath))
-            
-            ; set curried line-col->pos function for client
-            (set-client-line-col->pos! c (line-col->pos c))
-            
-            (set! all-clients (cons c all-clients))
-            
-            c)))))
-  
-  
-  (define (script:pause) (script:set-running! #f))
-  
-  
-  (define (script:start/resume)
-    ; only start the debugger once
-    (if (frp:value-now debugger:exited?)
-        (script-error "Cannot restart program once it has exited. Try restarting the script.")
-        (script:set-running! #t)))
-  
-  
-  ; Kills the debugger immediately
-  (define (script:kill)
-    (script:pause)
-    ; shutdown the custodian
-    (custodian-shutdown-all (client-process-custodian (get-main-client-process)))
-    ; set the exit predicate to 'exited'
-    (frp:set-cell! debugger:exited? #t))
+          ;TODO remove me
+          (print-debug (format "'~a' -> '~a'" filename modpath))
+          
+          (set-debug-client-modpath! client modpath)
+          (set-debug-client-modsymbol! client modsymbol)
+          (set-debug-client-process! client process)
+          (set-debug-client-line-col->pos! client (line-col->pos filename))
+          (set-debug-process-clients! process
+                                      (cons client (debug-process-clients process)))
+          
+          client))))
   
   
   ; (client (offset | line column) (symbol | listof symbols) -> (frp:event-receiver)
-  (define/contract script:trace/bind (client? number? number? (union symbol? (listof symbol?)) . -> . frp:event?)
-    (lambda (client line col binding-symbol)      
-      (let ([trace-hash (client-tracepoints client)]
-            [trace (create-bind-trace binding-symbol)]
-            [pos ((client-line-col->pos client) line col)])
-        ; add the trace to the list of traces for that byte-offset
-        (hash-put! trace-hash pos
-                   (cons trace
-                         (hash-get trace-hash pos (lambda () '()))))
-        (trace-evnt-rcvr trace))))
+  ; (debug-client? number? number? (union symbol? (listof symbol?)) . -> . frp:event?)
+  (define (trace/bind client line col binding-symbol)
+    (let ([trace-hash (debug-client-tracepoints client)]
+          [trace (create-bind-trace binding-symbol)]
+          [pos ((debug-client-line-col->pos client) line col)])
+      ; add the trace to the list of traces for that byte-offset
+      (hash-put! trace-hash pos
+                 (cons trace
+                       (hash-get trace-hash pos (lambda () '()))))
+      (trace-struct-evnt-rcvr trace)))
   
   
-  (define/contract script:trace/break (client? number? number? . -> . frp:event?)
-    (lambda (client line col)
-      (let ([trace-hash (client-tracepoints client)]
-            [trace (create-break-trace)]
-            [pos ((client-line-col->pos client) line col)])
-        (hash-put! trace-hash pos
-                   (cons trace
-                         (hash-get trace-hash pos (lambda () '()))))
-        (trace-evnt-rcvr trace))))
+  ;(debug-file? number? number? . -> . frp:event?)
+  (define (trace/break client line col)
+    (let ([trace-hash (debug-client-tracepoints client)]
+          [trace (create-break-trace)]
+          [pos ((debug-client-line-col->pos client) line col)])
+      (hash-put! trace-hash pos
+                 (cons trace
+                       (hash-get trace-hash pos (lambda () '()))))
+      (trace-struct-evnt-rcvr trace)))
   
   ;###########################################################################################################
-  
   
   
   ;                                                 
@@ -669,6 +593,21 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   ;              ;                                   
   ;              ;                                   
   
+  #|
+  (define-syntax bind
+    (syntax-rules ()
+      [(_ (arg ...) body ...)
+       (trace () (arg ...) body ...)]
+      
+      [(_ (arg ...))
+       (trace () (arg ...))]))
+  
+    
+  (define-syntax trace
+    (syntax-rules ()
+      [(trace client line col . type)
+       (print type)]))
+  
   (define-syntax debugger
     (syntax-rules ()
       [(debug
@@ -677,13 +616,15 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
         (traces [trace-name trace-client-name
                             (trace-type . trace-args) (trace-body ...)] ...)
         (run process-name 
-        body ...)
-       
-       (printf "clients: ~a~nrun: ~a~nbody: ~a~n"
-               '(clients [client-name client-path (traces [trace-name trace-client trace-type . trace-args] ...)] ...)
-               '(run run-client-name)
-               '(body ...))
-       ]))
+             body ...))
+        
+        (printf "clients: ~a~nrun: ~a~nbody: ~a~n"
+                '(clients [client-name client-path (traces [trace-name trace-client trace-type . trace-args] ...)] ...)
+                '(run run-client-name)
+                '(body ...))]))
+  |#
+  
+  
   
   
   ;###########################################################################################################
