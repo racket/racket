@@ -18,33 +18,34 @@
                        [current-error-port null-output]
                        [current-output-port null-output])
           (cond
-	    [(eq? (system-type) 'macos)
-	     (if (regexp-match "Blue Box" (system-type #t))
-		 ;; Classic inside OS X:
-		 (let loop ([l '("MSIE" "NAVG")])
-		   (if (null? l)
-		       (error 'send-url "couldn't start Internet Explorer or Netscape")
-		       (with-handlers ([not-break-exn? (lambda (x) (loop (cdr l)))])
-			 (subprocess #f #f #f "by-id" (car l))
-			 (let loop ([retries 2]) ;; <<< Yuck <<<
-			   (if (zero? retries)
-			       (error "enough already") ; caught above
-			       (with-handlers ([not-break-exn? (lambda (x)
-								 (loop (sub1 retries)))])
-				 (let ([t (thread (lambda ()
-						    (send-event (car l) "GURL" "GURL" str)))])
-				   (object-wait-multiple 1 t) ;; <<< Yuck (timeout) <<<
-				   (when (thread-running? t)
-				     (kill-thread t)
-				     (error "timeout")))))))))
-		 ;; Normal OS Classic:
-		 (send-event "MACS" "GURL" "GURL" str))]
+            [(eq? (system-type) 'macos)
+             (if (regexp-match "Blue Box" (system-type #t))
+                 ;; Classic inside OS X:
+                 (let loop ([l '("MSIE" "NAVG")])
+                   (if (null? l)
+                       (error 'send-url "couldn't start Internet Explorer or Netscape")
+                       (with-handlers ([not-break-exn? (lambda (x) (loop (cdr l)))])
+                         (subprocess #f #f #f "by-id" (car l))
+                         (let loop ([retries 2]) ;; <<< Yuck <<<
+                           (if (zero? retries)
+                               (error "enough already") ; caught above
+                               (with-handlers ([not-break-exn? (lambda (x)
+                                                                 (loop (sub1 retries)))])
+                                 (let ([t (thread (lambda ()
+                                                    (send-event (car l) "GURL" "GURL" str)))])
+                                   (object-wait-multiple 1 t) ;; <<< Yuck (timeout) <<<
+                                   (when (thread-running? t)
+                                     (kill-thread t)
+                                     (error "timeout")))))))))
+                 ;; Normal OS Classic:
+                 (send-event "MACS" "GURL" "GURL" str))]
             [(or (eq? (system-type) 'macosx)
                  (equal? "ppc-macosxonx" (system-library-subpath)))
-             (printf "str: ~s\n" str)
-             (printf  "osascript -e 'open location \"~a\"'" (regexp-replace* "%" str "%25"))
-             (system (format "osascript -e 'open location \"~a\"'"
-			     (regexp-replace* "%" str "%25")))]
+             
+             ; not sure what changed, but this is wrong now.... -robby
+             ;(system (format "osascript -e 'open location \"~a\"'" (regexp-replace* "%" str "%25")))
+             
+             (system (format "osascript -e 'open location \"~a\"'" str))]
             [(eq? (system-type) 'windows)
              (shell-execute #f str "" (current-directory) 'SW_SHOWNORMAL)]
             [(eq? (system-type) 'unix)
