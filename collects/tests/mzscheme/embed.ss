@@ -67,9 +67,9 @@
 	      `((,pfx (lib ,filename "tests" "mzscheme")))
 	      null
 	      null
-	      `("-mvqe" ,(format "(require ~a~a)" 
-				 (or pfx "")
-				 (regexp-replace #rx"[.].*$" filename ""))))
+	      `(,(flags "e") ,(format "(require ~a~a)" 
+				      (or pfx "")
+				      (regexp-replace #rx"[.].*$" filename ""))))
 	     (try-exe dest expect mred?))])
       (w/prefix #f)
       (w/prefix 'before:))
