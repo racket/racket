@@ -14,15 +14,16 @@
       (parameterize ([current-input-port null-input]
 		     [current-error-port null-output] ; comment out this line to see error messages
 		     [current-output-port null-output])
-	(case (system-type)
-	  [(macos)
+	(cond
+	  [(eq? (system-type) 'macos)
 	   ;; actually, I think GURL means something slightly different...
 	   (send-event "MACS" "GURL" "GURL" str)]
-	  [(macosx)
+	  [(or (eq? (system-type) 'macosx)
+	       (equal? "ppc-macosxonx" (system-library-subpath)))
 	   (system (format "osascript -e 'open location \"~a\"'" str))]
-	  [(windows)
+	  [(eq? (system-type) 'windows)
 	   (shell-execute #f str "" (current-directory) 'SW_SHOWNORMAL)]
-	  [(unix)
+	  [(eq? (system-type) 'unix)
 	   (let ([preferred (get-preference 'external-browser (lambda () #f))])
 	     (cond
 	       [(and (or (not preferred)
