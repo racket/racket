@@ -18,6 +18,10 @@
    clean-intermediate-files ; #t => keep intermediate .c/.o files
                             ; default = #f
 
+   compile-subcollections   ; #t => use 'compile-subcollections
+                            ;  from infor for collection compiling
+                            ; default = #t
+
    propagate-constants  ; default = #t
    assume-primitives    ; #t => car = #%car; default = #f
    stupid               ; allow obvious non-syntactic errors;
