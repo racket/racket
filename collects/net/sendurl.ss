@@ -65,13 +65,14 @@
   
   ; null-input : iport
   (define null-input
-    (make-input-port (lambda () eof)
-                     (lambda () #t)
-                     void))
+    (make-custom-input-port #f
+			    (lambda (s) eof)
+			    #f
+			    void))
   
   ; null-output : oport
   (define null-output
-    (make-output-port void void))
+    (make-custom-output-port #f (lambda (s start end flush?) (- end start)) void void))
   
   (define dev-null "/dev/null") ; unix specific, so slashes are okay
   
