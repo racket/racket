@@ -1,4 +1,3 @@
-
 (module sendurl mzscheme
   (require (lib "process.ss")
 	   (lib "file.ss")
@@ -8,7 +7,7 @@
   
   (define separate-by-default?
     (get-preference 'new-browser-for-urls (lambda () #t)))
-
+  
   ; send-url : str -> void
   (define send-url
     (opt-lambda (str [separate-window? separate-by-default?])
@@ -27,12 +26,10 @@
 		 (let ([b (box "")])
 		   (unless (get-res "HKEY_CLASSES_ROOT" "htmlfile\\shell\\open\\command" b)
 		     (error 'send-url "couldn't find URL opener in the registry"))
-		   (let-values ([(out in id err status) (apply 
-							 values
-							 (process (format "~a ~a" (unbox b) str)))])
-		     (close-output-port in)
-		     (close-input-port out)
-		     (close-input-port err)))
+                   (apply
+                    process*/close-ports
+                    (append (parse-command.com (open-input-string (unbox b)))
+                            (list str))))
 		 (error 'send-url "don't know how to open URL in Windows without MrEd")))]
 	  [(unix)
 	   (let ([preferred (get-preference 'external-browser (lambda () #f))])
@@ -107,4 +104,69 @@
                       (apply values (apply process*/ports #f #f #f args))])
           (close-input-port out)
           (close-output-port in)
-          (close-input-port err)))))
+          (close-input-port err))))
+  
+  ; parse-command : iport -> (listof str)
+  (define (parse-command.com in)
+    (let parse ()
+      (cond
+        [(eof-object? (skip-space-tab in)) null]
+        [else (cons (list->string (parse-one #t in)) (parse))])))
+  
+  ; parse-one : bool iport -> (listof char)
+  (define (parse-one unquoted in)
+    (let parse-1 ([unquoted unquoted])
+      (let ([c (read-char in)])
+        (cond
+          [(eof-object? c) null]
+          [(eq? c #\\) (parse-backslashes 1 unquoted in)]
+          [(eq? c #\") (parse-1 (not unquoted))]
+          [(and unquoted (or (eq? #\space c) (eq? #\tab c))) null]
+          [else (cons c (parse-1 unquoted))]))))
+  
+  ; parse-backslashes : nat bool iport -> (listof char)
+  (define (parse-backslashes n unquoted in)
+    (let more ([n n])
+      (let ([c (read-char in)])
+        (cond
+          [(eq? c #\\) (more (add1 n))]
+          [(eq? c #\")
+           (if (even? n)
+               (cons-n-backslashes (/ n 2) (parse-one (not unquoted) in))
+               (cons-n-backslashes (/ (sub1 n) 2) (cons #\" (parse-one unquoted in))))]
+          [(and unquoted (or (eq? #\space c) (eq? #\tab c))) null]
+          [else (cons-n-backslashes n (cons c (parse-one unquoted in)))]))))
+  
+  ; cons-n-backslashes : nat (listof char) -> (listof char)
+  (define (cons-n-backslashes n l)
+    (cond
+      [(zero? n) l]
+      [else (cons-n-backslashes (sub1 n) (cons #\\ l))]))
+  
+  ; skip-space-tab : iport -> (U char eof)
+  ; to skip spaces and tabs
+  (define (skip-space-tab in)
+    (let loop ()
+      (let ([c (peek-char in)])
+        (cond
+          [(or (eq? #\space c) (eq? #\tab c))
+           (read-char in)
+           (loop)]
+          [else c]))))
+  
+  ; test-parse-command.com : -> bool
+  ; all but one of these tests is taken from MS's documentation
+  ; http://www.cygwin.com/ml/cygwin/1999-08/msg00701.html
+  (define (test-parse-command.com)
+    (and (equal? (parse-command.com (open-input-string "\"a b c\" d e"))
+                 '("a b c" "d" "e"))
+         (equal? (parse-command.com (open-input-string "\"ab\\\"c\" \"\\\\\" d"))
+                 '("ab\"c" "\\" "d"))
+         (equal? (parse-command.com (open-input-string "a\\\\\\b d\"e f\"g h"))
+                 '("a\\\\\\b" "de fg" "h"))
+         (equal? (parse-command.com (open-input-string "a\\\"b c d"))
+                 '("a\"b" "c" "d"))
+         (equal? (parse-command.com (open-input-string "a\\\\\\\"b c d"))
+                 '("a\\\"b" "c" "d"))
+         (equal? (parse-command.com (open-input-string "a\\\\\\\\\"b c\" d e"))
+                 '("a\\\\b c" "d" "e")))))
