@@ -19,7 +19,7 @@
       (define debugger-bitmap
         (drscheme:unit:make-bitmap
          "Syntax Offset"
-         (build-path (collection-path "mztake") "stock_macro-check-brackets.png")))
+         (build-path (collection-path "mztake") "stock_macro-check-brackets-16.png")))
       
       (define (debugger-unit-frame-mixin super%)
         (class super%
@@ -36,14 +36,12 @@
                 (let* ([pos (send (get-definitions-text) get-start-position)]
                        [line (send (get-definitions-text) position-paragraph pos)]
                        [column (- pos (send (get-definitions-text) line-start-position
-                                            (send (get-definitions-text) position-line pos)))])
-                  (message-box/custom "Syntax Offset"
-                                      (format "Line: ~a~nColumn: ~a~nOffset: ~a" (add1 line) column pos)
-                                      "OK"
-                                      #f #f #f
-                                      '(default=1))))))
+                                        (send (get-definitions-text) position-line pos)))])
+                  
+                  (message-box "Syntax Offset"
+                               (format "Line: ~a~nColumn: ~a~nOffset: ~a" (add1 line) column pos))))))
           
           (send (get-button-panel) change-children
-                (lambda (_) (cons debugger-button (remq debugger-button _))))))
+            (lambda (_) (cons debugger-button (remq debugger-button _))))))
       
       (drscheme:get/extend:extend-unit-frame debugger-unit-frame-mixin))))
