@@ -2,10 +2,9 @@
   
   (require (lib "string.ss")
            (lib "contract.ss")
-           (lib "list.ss")
-           (lifted mzscheme list*))
+           (lib "list.ss"))
   
-  (provide (all-defined-except list*))
+  (provide (all-defined))
   
   ; Keeps a list of the last n values of a behavior
   (define (history-b n stream)
