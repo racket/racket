@@ -10,9 +10,6 @@
                                  net:imap@)
   
   (provide/contract
-   [imap-port-number (case->
-                      (-> number?)
-                      (number? . -> . void?))]
    [imap-get-hierarchy-delimiter (imap-connection? . -> . bytes?)]
    [imap-list-child-mailboxes
     (case->
@@ -32,6 +29,8 @@
    imap-poll
    imap-status
    
+   imap-port-number ; a parameter
+
    imap-new?
    imap-messages
    imap-recent
