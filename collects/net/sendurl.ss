@@ -1,13 +1,22 @@
 (module sendurl mzscheme
   (require (lib "process.ss")
-	   (lib "file.ss")
-	   (lib "etc.ss")
-	   (lib "sendevent.ss"))
+           (lib "file.ss")
+           (lib "etc.ss")
+           (lib "sendevent.ss"))
   
-  (provide send-url unix-browser-list)
+  (provide send-url unix-browser-list browser-preference? external-browser)
   
   (define separate-by-default?
     (get-preference 'new-browser-for-urls (lambda () #t)))
+
+  ; : any -> bool
+  (define (browser-preference? x)
+    (or (not x) (memq x unix-browser-list) (custom-browser? x)))
+
+  (define external-browser
+    (make-parameter
+     (get-preference 'external-browser (lambda () #f))
+     browser-preference?))
   
   ; send-url : str [bool] -> void
   (define send-url
@@ -49,7 +58,7 @@
             [(eq? (system-type) 'windows)
              (shell-execute #f url-str "" (current-directory) 'SW_SHOWNORMAL)]
             [(eq? (system-type) 'unix)
-             (let ([preferred (get-preference 'external-browser (lambda () #f))])
+             (let ([preferred (external-browser)])
                (cond
                  [(use-browser 'opera preferred)
                   =>
