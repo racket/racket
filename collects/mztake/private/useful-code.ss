@@ -6,25 +6,48 @@
   
   (provide (all-defined))
   
+  ; Everything is contracted to 'any' for speed benefits, though there is already a big performance hit
+  
   ; Keeps a list of the last n values of a behavior
-  (define (history-b n stream)
-    (hold (history-e n stream) empty))
-
-  (define (history-e n stream)
-    (define ((add-to-hist thing) hist) (append (if ((length hist) . < . n) hist (rest hist)) (list thing)))
-    (accum-e  (stream . ==> . add-to-hist) empty))
+  (define/contract history-b (case-> (event? . -> . any)
+                                     (number? event? . -> . any))    
+    (case-lambda [(stream)
+                  (define ((add-to-complete-hist x) hist) (append hist (list x)))
+                  (accum-b (stream . ==> . add-to-complete-hist) empty)]
+                 
+                 [(n stream)
+                  (define ((add-to-short-hist x) hist) (append (if (< (length hist) n) hist (rest hist)) (list x)))
+                  (accum-b  (stream . ==> . add-to-short-hist) empty)]))
   
-  ; Counts number of event pings on an eventstream
-  (define (count-e evs)
-    (accum-b (evs . -=> . add1) 0))
+  ; Counts number of events on an event stream
+  (define/contract count-b (event? . -> . any)
+    (lambda (stream)
+      (accum-b (stream . -=> . add1) 0)))
   
-  ; Counts number of times a behavior updates/changes
-  (define (count-b b)
-    (accum-b ((changes b) . -=> . add1) 0))
+  ; Keeps track of the largest value seen on a stream
+  (define/contract largest-val-b (event? . -> . any)
+    (lambda (stream)
+      (hold (accum-e (stream
+                . ==> .
+                (lambda (last)
+                  (lambda (x)
+                    (if (> x last) x last))))
+               -inf.0))))
+  
+  ; Keeps track of the smallest value seen on a stream
+  (define/contract smallest-val-b (event? . -> . any)
+    (lambda (stream)
+      (hold (accum-e (stream
+                      . ==> .
+                      (lambda (last)
+                        (lambda (x)
+                          (if (< x last) x last))))
+                     +inf.0))))
   
   ; Matches a sequence of items in a list to event pings
-  (define (sequence-match? seq evs)
-    (equal? seq (history-b (length seq) evs)))
+  (define/contract sequence-match? ((listof any?) . -> . any)
+    (lambda (seq evs)
+      (equal? seq (history-b (length seq) evs))))
   
   ; Cheap printf for behaviors
   (define printf-b format)
