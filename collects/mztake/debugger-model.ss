@@ -2,7 +2,7 @@
   (require (lib "unit.ss")
            (lib "mred.ss" "mred")
            (lib "marks.ss" "stepper/private")
-           "../debugger-annotate.ss"
+           "debugger-annotate.ss"
            "mztake-structs.ss"
            "private/load-annotator.ss"
            "private/more-useful-code.ss")
