@@ -105,13 +105,13 @@
     (lambda (str)
       (regexp-replace re:right-spaces str "")))
 
-  (define re:comments (regexp "\\(.*\\)"))
+  (define re:comments (regexp "^[^\"]*(\"[^\"]*\")*[^\"]*(\\(.*\\))"))
   (define trim-comments
     (lambda (str)
       (let* ((positions (regexp-match-positions re:comments str)))
 	(if positions
-	    (string-append (substring str 0 (caar positions))
-			   (substring str (cdar positions) (string-length str)))
+	    (string-append (substring str 0 (caaddr positions))
+			   (substring str (cdaddr positions) (string-length str)))
 	    str))))
 
   (define lowercase
