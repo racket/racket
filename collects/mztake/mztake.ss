@@ -1,10 +1,8 @@
 #| TODO
 
+turn script errors into syntax errors
+
 make sure that the main client for a process is in the list of clients being annotated
-
-provide a body to bind instead or returning an eventstream, like (list x y)
-
-breaks dont pause at a client -- they just send a ping when they get hit -- if you want to pause you should say ((when-e breakpoint) . -=> . (pause p)); maybe take a thunk to do when the breakpoint is hit?
 
 make syntax errors work for invalid bindings ... take the syntax when the binding is made and save it in a hashtable
 
@@ -15,14 +13,8 @@ make syntax errors work for invalid bindings ... take the syntax when the bindin
 ;do I want to parameterize it over a given namespace?
 ::::::::::::::::::::::::::::::::::::::::::
 
-offer a way to install a special handler for exceptions -- somehow identify which client an exceptions comes from
-
-CONTRACT ALL SCRIPT FUNCTIONS
-
 -------------------
 does this work on binary drscheme files?
-
-create client takes either a lib or relative or absolute path string
 
 make all exposed cells and evstreams read-only by lifting the identity function on them
 
@@ -31,10 +23,6 @@ does this handle module prefixes?
 what happens if two modules have the same name in different directories
 MAKE SURE THERE WONT BE COLLISIONS WHEN EVAL'NG MODULES...GIVE THEM UNIQUE NAMES BASED ON PATH!
 ----------------
-
-
-
-Remove client from runtime setters
 
 ------------------------------------------------------------------------------------------------------------------------
 Problem:
@@ -61,8 +49,6 @@ With the syntax for debugging, you will not have to provide ways to create clien
 
 Need to know where the program breaks at -- need to know *when* it breaks too -- print something out
 
-CAN I take "(lib ...)" as a path to the file being debugged?
-
 DEMOS---------------------------------------------------------------------------------------
 Data structure examples
 Binary search over a tree, show which node is being examined, or the most commonly taken path
@@ -85,6 +71,11 @@ make script errors highlight the location of the error
 
 let traces take a line number without offset and find the first bindable location.
 
+provide a body to bind instead or returning an eventstream, like (list x y)
+
+breaks dont pause at a client -- they just send a ping when they get hit -- if you want to pause you should say ((when-e breakpoint) . -=> . (pause p)); maybe take a thunk to do when the breakpoint is hit?
+
+offer a way to install a special handler for exceptions -- somehow identify which client an exceptions comes from
 
 
 OPTIMIZATIONS-------------------------------------------------------------------------------
@@ -96,8 +87,6 @@ improve speed of functions in (run)
 
 
 ERROR-CHECKING------------------------------------------------------------------------------
-Make sure that you do not define more than one client for the same file.
-
 Test what happens when you bind to variables that don't exist.
 
 
@@ -106,7 +95,7 @@ Does user interaction work?  Can we step through loops one line at a time waitin
 
 We want a way to interactively step through code one line at a time when we hit a breakpoint.  Provide way to check bindings at the same time -- EVEN IF NOT BOUND USING TRACE/BIND
 
-trace/bind what kind of interface do we want to dig into frames
+what kind of interface do we want to dig into frames
 write a nested syntax for bind so that you can take a first-class function that defines a way to return variables, not just as a list
 
 What do we do about binding to a variable and following it EVERYWHERE it goes.  Even if it is assigned to something else.  Need to talk to Shriram, Greg, and Guillaume about this.
@@ -117,6 +106,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
 (module mztake mzscheme
   (require (lib "match.ss")
            (lib "unit.ss")
+           (lib "contract.ss")
            (lib "marks.ss" "stepper/private")
            (prefix frp: (lib "frp.ss" "frtime"))
            "private/useful-code.ss"
@@ -125,22 +115,31 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
            "debugger-model.ss")
   
   ; Provides come from the script section at the bottom of the code
-  (provide create-debug-process
-           create-debug-client
-           trace/bind
-           trace/break
-           start/resume
-           kill
-           kill-all
-           pause
-           (rename debug-process-exceptions process:exceptions)
-           (rename runtime/seconds process:runtime/seconds)
-           (rename runtime/milliseconds process:runtime/milliseconds)
-           (rename debug-process-exited? process:exited?)
-           ;TODO HACK!!!
-           set-debug-process-main-client!
-           ;;           process:running? ; disabled until it works
-           )
+  (provide/contract [create-debug-process (-> debug-process?)]
+                    [create-debug-client (debug-process? (union string? (listof (union symbol? string?))) . -> . debug-client?)]
+                    [trace/bind (debug-client? number? number? (union symbol? (listof (union symbol? string?))) . -> . frp:event?)]
+                    [trace/break (debug-client? number? number? . -> . frp:event?)]
+                    [start/resume (debug-process? . -> . void?)]
+                    [kill (debug-process? . -> . void?)]
+                    [kill-all (-> void?)]
+                    [pause (debug-process? . -> . void?)]
+                    [rename debug-process-exceptions
+                            process:exceptions
+                            (debug-process? . -> . frp:behavior?)]
+                    [rename runtime/seconds
+                            process:runtime/seconds
+                            (debug-process? . -> . frp:behavior?)]
+                    [rename runtime/milliseconds
+                            process:runtime/milliseconds
+                            (debug-process? . -> . frp:behavior?)]
+                    [rename debug-process-exited?
+                            process:exited?
+                            (debug-process? . -> . frp:behavior?)]
+                    
+                    ;; process:running? ; disabled until it works
+                    
+                    ;TODO HACK!
+                    [set-debug-process-main-client! (debug-process? debug-client? . -> . void?)])
   
   ;              ;           ;                 ;                                      
   ;     ;;;;;;   ;           ;                 ;       ;       ;                      
@@ -237,9 +236,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   
   ; wrapper for errors related to the script only
   (define (script-error err)
-    ; TODO I made this a syntax error so that the little 'goto' clickable box wouldnt show up
-    ; it could easily be an (error)
-    (display (format "mztake:script-error: ~a~n---~n" err))
+    (raise-syntax-error 'mztake:script-error: (format "~a" err))
     (kill-all))
   
   
@@ -281,7 +278,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
               [values (map (lambda (var)
                              (let ([val (binding event var)])
                                (if (empty? val)
-                                   (script-error (format "No binding found in trace for symbol '~a" var))
+                                   (script-error (format "trace/bind: No binding found in trace for symbol '~a" var))
                                    (cadar (binding event var)))))
                            vars)])
          (list evnt-rcvr
@@ -369,7 +366,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   
   (define (main-client-name process)
     (let-values ([(_ name __)
-                 (split-path (debug-client-modpath (debug-process-main-client process)))])
+                  (split-path (debug-client-modpath (debug-process-main-client process)))])
       name))
   
   ; Switches the running state on or off
@@ -482,7 +479,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   
   
   ; Creates a debugger client
-  ; ((union (listof (union string? symbol?)) string?) . -> . debug-file?)
+  ; (debug-process? require-path. -> . debug-file?)
   (define (create-debug-client process filename)
     ; throwaway namespace so the module-name-resolver doesn't load an unannotated module
     (parameterize ([current-namespace (make-namespace)])
@@ -505,11 +502,17 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
                
                [client (create-empty-debug-client)])
           
+          (for-each (lambda (c)
+                      (when (equal? modpath (debug-client-modpath c))
+                        (raise-syntax-error 'mztake:script-error:create-debug-client
+                                            (format "A client for `~a' is already defined for this process." modpath))))
+                    (debug-process-clients process))
+          
           (print-debug (format "'~a' -> '~a'" filename modpath))
           
           (set-debug-client-modpath! client modpath)
           (set-debug-client-process! client process)
-          (set-debug-client-line-col->pos! client (line-col->pos filename))
+          (set-debug-client-line-col->pos! client (line-col->pos modpath))
           (set-debug-process-clients! process
                                       (append (list client) (debug-process-clients process)))
           
@@ -518,19 +521,17 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   
   ; (client (offset | line column) (symbol | listof symbols) -> (frp:event-receiver)
   ; (debug-client? number? number? (union symbol? (listof symbol?)) . -> . frp:event?)
-  (define-syntax trace/bind
-    (syntax-rules ()
-      [(_ client line col binding-symbol)
-       (with-handlers ([(lambda (exn) #t)
-                        (lambda (exn) (raise-syntax-error 'trace/bind exn))])
-         (let ([trace-hash (debug-client-tracepoints client)]
-               [trace (create-bind-trace binding-symbol)]
-               [pos ((debug-client-line-col->pos client) line col)])
-           ; add the trace to the list of traces for that byte-offset
-           (hash-put! trace-hash pos
-                      (cons trace
-                            (hash-get trace-hash pos (lambda () '()))))
-           (trace-struct-evnt-rcvr trace)))]))
+  (define (trace/bind client line col binding-symbol)
+    (with-handlers ([(lambda (exn) #t)
+                     (lambda (exn) (raise-syntax-error 'mztake:script-error:trace/bind exn))])
+      (let ([trace-hash (debug-client-tracepoints client)]
+            [trace (create-bind-trace binding-symbol)]
+            [pos ((debug-client-line-col->pos client) line col)])
+        ; add the trace to the list of traces for that byte-offset
+        (hash-put! trace-hash pos
+                   (cons trace
+                         (hash-get trace-hash pos (lambda () '()))))
+        (trace-struct-evnt-rcvr trace))))
   
   
   ;(debug-file? number? number? . -> . frp:event?)
