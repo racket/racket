@@ -1,12 +1,11 @@
 #|
-(debugger
- (processes (p ("sine.ss" [sin/x 5 8 bind '(sin-x x)]
-                          [foo 10 20 bind '(sin-x x)])
-               ("sine-extra.ss")))
+(debug-process p ("sine.ss" [sin/x 5 8 bind '(sin-x x)]
+                            [foo 10 20 bind '(sin-x x)])
+                 ("sine-extra.ss"))
  
- (define sin/x (hold sin/x))
- (define x (+ 200 (second sin/x)))
- (print-b "x:" x))
+(define sin/x (hold sin/x))
+(define x (+ 200 (second sin/x)))
+(print-b "x:" x)
 
 *** translates to ***
 
@@ -15,34 +14,26 @@
  (let ([tmp (create-debug-client p "sine.ss")])
    (values (create-trace tmp 5 8 'bind '(sin-x x))))
 ...
-(start/resume <temp1>)
-...
 |#
 
 (module mztake-syntax (lib "frtime-big.ss" "frtime")
   
-  (define-syntax debugger-module-begin
-    (syntax-rules (debugger)
-      [(_ (debugger . clauses))
-       (#%module-begin (debugger . clauses))]))
+  (require (lib "mztake.ss" "mztake")
+           (lib "useful-code.ss" "mztake/private"))
   
-  (define-syntax debugger
-    (syntax-rules (processes)
-      [(_ (processes (proc-id (client (trace line col cmd . args) ...))
-                     ...)
-          expr ...)
+  (define-syntax debug-process
+    (syntax-rules (debug-process)
+      [(debug-process proc-id (client (trace line col cmd . args) ...) ...)
        (begin
          (define proc-id (create-debug-process))
-         ...
-         (define-values (trace ...)
-           (let ([tmp (create-debug-client proc-id client)])
-             (values
-              (create-trace line col 'cmd . args)
-              ...)))
-         ...
-         expr
-         ...)]))
+         (begin
+           (define-values (trace ...)
+             (let ([tmp (create-debug-client proc-id 'client)])
+               (values
+                (create-trace tmp line col 'cmd . args)
+                ...))) ...))]))
   
-  (provide debugger
-           (rename debugger-module-begin #%module-begin)
-           (all-from-except (lib "frtime-big.ss" "frtime") #%module-begin)))
+  (provide debug-process
+           (all-from-except (lib "frtime-big.ss" "frtime") #%module-begin)
+           (all-from (lib "mztake.ss" "mztake"))
+           (all-from (lib "useful-code.ss" "mztake/private"))))

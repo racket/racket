@@ -116,11 +116,9 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
            "mztake-structs.ss"
            "debugger-model.ss")
   
-  ; Provides come from the script section at the bottom of the code
+  (provide create-trace)
   (provide/contract [create-debug-process (-> debug-process?)]
                     [create-debug-client (debug-process? (union string? (listof (union symbol? string?))) . -> . debug-client?)]
-                    [trace/bind (debug-client? number? number? (union symbol? (listof (union symbol? string?))) . -> . frp:event?)]
-                    [trace/break (debug-client? number? number? . -> . frp:event?)]
                     [start/resume (debug-process? . -> . void?)]
                     [kill (debug-process? . -> . void?)]
                     [kill-all (-> void?)]
@@ -137,9 +135,12 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
                     [rename debug-process-exited?
                             process:exited?
                             (debug-process? . -> . frp:behavior?)]
+                    [rename time-per-event/milliseconds
+                            process:time-per-event/milliseconds
+                            (debug-process? frp:behavior? . -> . frp:behavior?)])
                     
                     ;; process:running? ; disabled until it works
-                    )
+
   
   ;              ;           ;                 ;                                      
   ;     ;;;;;;   ;           ;                 ;       ;       ;                      
@@ -159,9 +160,11 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   ;Keeps track of all debugging processes
   (define all-debug-processes null)
   
+  ; turns debug output on and off
+  (define debugging? #f)
+  
   ;###########################################################################################################
-  
-  
+    
   
   ;                     ;   ;  ;                       ;              
   ;     ;;;;;           ;   ;  ;                       ;              
@@ -246,7 +249,8 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   
   
   (define (print-debug str)
-    (void)) ;(display (format "mztake:debug: ~a~n---~n" str)))
+    (when debugging?
+      (display (format "mztake:debug: ~a~n---~n" str))))
   
   
   (define (print-info str)
@@ -264,6 +268,14 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
                                    (mark-binding-value binding)))
            (lookup-all-bindings (lambda (id) (eq? (syntax-e id) sym))
                                 (do-n-times cdr current-frame-num mark-list)))))
+  
+  
+  (define create-trace
+    (case-lambda
+      [(client line col type args)
+       (case type
+         ['bind  (trace/bind client line col args)]
+         ['break (trace/break client line col)])]))
   
   
   ; takes a single trace, looks up what it needs to do, and returns an frp-event to publish
@@ -466,6 +478,10 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
     (script-error "client-running? is broken")
     (and (running-now? process)
          (not (debug-process-exited? process))))
+  
+  (define (time-per-event/milliseconds process behavior)
+    (truncate (/ (debug-process-runtime process)
+                 (add1 (count-e (frp:changes behavior))))))
   
   (define (runtime/milliseconds process)
     (debug-process-runtime process))

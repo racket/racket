@@ -23,9 +23,8 @@
   (define (sequence-match? seq evs)
     (equal? seq (history-b (length seq) evs)))
   
-  ; Reaaaalllly cheap print function
-  (define (print-b str b)
-    (format "~a ~a" str b))
+  ; Cheap printf for behaviors
+  (define printf-b format)
   
   ; Flattens a list
   (define (flatten x)

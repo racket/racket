@@ -1,7 +1,7 @@
 (module more-useful-code mzscheme
   (require (lib "list.ss")
            (lib "pretty.ss")
-	   (lib  "etc.ss"))
+	   (lib "etc.ss"))
   
   (provide assert
            cons-to-end
