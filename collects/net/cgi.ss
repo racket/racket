@@ -1,5 +1,5 @@
 (reference-library "macro.ss")
-(reference-library "cgiu.ss" "web")
+(reference-library "cgiu.ss" "net")
 
 (define sendmail-program-file "/usr/lib/sendmail")
 
