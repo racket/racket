@@ -41,6 +41,8 @@
 		 (send-event "MACS" "GURL" "GURL" str))]
             [(or (eq? (system-type) 'macosx)
                  (equal? "ppc-macosxonx" (system-library-subpath)))
+             (printf "str: ~s\n" str)
+             (printf  "osascript -e 'open location \"~a\"'" (regexp-replace* "%" str "%25"))
              (system (format "osascript -e 'open location \"~a\"'"
 			     (regexp-replace* "%" str "%25")))]
             [(eq? (system-type) 'windows)
