@@ -34,9 +34,10 @@
 	   (lambda (browser-path) 
 	     ;; opera may not return -- always open asyncronously
 	     ;; opera starts a new browser automatically, if it can't find one
-	     (let-values ([(out in id err status) (apply 
-						   values
-						   (process* browser-path "-remote" (format "openURL(~a)" str)))])
+	     (let-values ([(out in id err status) 
+                           (apply 
+                            values
+                            (process* browser-path "-remote" (format "openURL(~a,new-window)" str)))])
 	       (close-output-port in)
 	       (close-input-port out)
 	       (close-input-port err)))]
