@@ -13,6 +13,8 @@
 ::::::::::::::::::::::::::::::::::::::::::
 
 CHANGES TO MAKE-----------------------------------------------------------------------------
+Ability to add named anchors into code using Special menu in DRS -- use those anchors as tracepoints.
+
 Mailing list just for MzTake updates
 
 Demo monitoring DrScheme for Robby?
