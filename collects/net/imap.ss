@@ -29,7 +29,21 @@
    imap-reselect
    imap-examine
    imap-noop
+   imap-poll
    imap-status
+   
+   imap-new?
+   imap-messages
+   imap-recent
+   imap-uidnext
+   imap-uidvalidity
+   imap-unseen
+   imap-reset-new!
+   
+   imap-get-expunges
+   imap-pending-expunges?
+   imap-get-updates
+   imap-pending-updates?
    
    imap-get-messages
    imap-copy imap-append
