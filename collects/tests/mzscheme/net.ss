@@ -108,6 +108,13 @@
   (test-c-u/r (string->url "http://www.drscheme.org/a/b/c/d/index.html")
               (string->url "http://www.drscheme.org/a/b/c/")
               "d/index.html")
+  
+  (test-c-u/r (string->url "file:///a/b/c/d/index.html")
+              (string->url "file:///a/b/c/")
+              "d/index.html")
+  (test-c-u/r (string->url "file:///a/b/d/index.html")
+              (string->url "file:///a/b/c")
+              "d/index.html")
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
