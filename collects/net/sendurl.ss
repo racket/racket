@@ -1,7 +1,8 @@
 (module sendurl mzscheme
   (require (lib "process.ss")
 	   (lib "file.ss")
-	   (lib "etc.ss"))
+	   (lib "etc.ss")
+	   (lib "sendevent.ss"))
   
   (provide send-url)
   
