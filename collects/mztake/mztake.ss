@@ -1,4 +1,29 @@
 #| TODO
+------------------------------------------------------------------------------------------------------------------------
+Problem:
+When debugging multiple files ...
+
+It is trivial to retrive values from from multiple files ... of course, you don't necessarily know the order that things will happen, and it may be difficult to relate the values correctly without writing a good debug script.  For instance, if debugging vector.ss, it may be used in multiple contexts in the file being debugged.  Can I provide a mechanism to turn breaks on and off based on other variables?  i.e. only register the breakpoint or send values on the eventstream IF a certain condition is met.
+
+what happens when a break happens in multiple files -- how do you know when it happens -- what does it mean when it happens -- in a single thread I assume that if a break happens deep in execution, all execution halts there until the semaphore gets posted to...
+
+Of course, you don't know where or why.
+
+With multiple threads... It is hard to differentiate between the threads since we do simple annotation that doesn't send which namespace, thread, custodian, eventspace... it came from.  More importantly, how can multiple threads hold on the same semaphore?  When you post to it ... which gets the post ... should one or all continue?  Does it make sense for only one to continue, or should they all get posted too (most likely).  When you want to pause the program, do you want to pause all the threads? (yes...)  When you resume, resume all?
+
+Otherwise if you stack them up, interact with one, resume, interact, resume... could be tedious.  Also, one may negate the necessity for the other.  What does it even mean to pause in vector.ss?
+
+Problem with synchronysity in multiple threads too... Maybe we need to have the threaded breakpoints run in lockstep... Put a 'semaphore' *before* processing breakpoints to ensure that there is ever only one breakpoint happening at a time, and each thread waits in a queue.  Big performance impact though... Does this solve all of our other problems -- I think we would only need one semaphore to continue then, and pausing will be global.  Yes, if each thread causes a pause, then we will pause possibly annoyingly each time.  We need a way to turn forced breaks on and off dynamically then -- what do we do about behaviors in set-running!? (is set-running! global then?).  (does it make sense to be able to turn bind traces on and off too?)
+
+Performance-wise, this turns a multi-threaded program into a single thread -- if there are t threads over an arbitrary number of modules, worst case is that you have t threads in the queue.
+
+Last issue: Could this queue potentially cause a condition where threads A and B always get their breakpoints evaluated in the same order, a race condition, and they can't exit this until B comes before A?  Should I have some sort of random insertion that guarantees that everyone will get a chance, but does not guarantee order?
+------------------------------------------------------------------------------------------------------------------------
+
+With the syntax for debugging, you will not have to provide ways to create clients... they can only happen in one place at one time.!!!
+
+Need to know where the program breaks at -- need to know *when* it breaks too -- print something out
+
 I will want to be able to take "(lib ...)" as a path to the file being debugged
 
 exceptions thrown in anonymous threads spawned by the target, are caught by the default drs handler, and not by frtime or mztake. they get printed out in the interaction window and there is nothing we can do about them for now -- if you want you can parameterize and rethrow the exceptions. just be aware of that.
@@ -54,6 +79,8 @@ improve speed of lookup for line-col->pos; load them into a hashtable?  not impo
 
 
 ERROR-CHECKING------------------------------------------------------------------------------
+Make sure that you do not define more than one client for the same file.
+
 Test what happens when you bind to variables that don't exist.
 
 This throws an exception where it says something like random210 is an undefined variable
@@ -84,9 +111,11 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
            (lib "contract.ss")
            (lib "unitsig.ss")
            (lib "debugger-model.ss" "stepper" "private")
+           (lib "debugger-annotate.ss" "stepper" "private")
            (lib "marks.ss" "stepper" "private")
            "private/useful-code.ss"
            "private/more-useful-code.ss" ; mostly for hash- bindings
+           "private/load-annotator.ss"
            (prefix frp: (lib "frp.ss" "frtime")))
   
   ; Provides come from the script section at the bottom of the code
@@ -114,9 +143,6 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   
   (define-struct client (filename       ; string
                          tracepoints    ; hash-table of traces
-                         running?       ; boolean - is the program (supposed-to-be) currently running
-                         custodian      ; if you shutdown-all it will kill the debugger
-                         run-semaphore  ; when you post to this the debuggee will continue executing
                          exceptions     ; (an event stream) exceptions thrown during the evaluation of the target
                          exited?        ; (an cell) receives #t when the target exits
                          runtime        ; behavior with current runtime in milliseconds
@@ -131,6 +157,22 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   ; Creates a trace that simply pauses the program
   (define (create-break-trace) ; (void? . -> . trace?)
     (make-break-trace (frp:event-receiver)))
+  
+  
+  ;###################  GLOBAL VARIABLES  ####################
+  
+  ;Keeps track of all defined clients
+  (define all-clients null)
+  
+  ;If you shutdown-all it will kill the debugger
+  (define debugger-custodian null)
+  
+  ;When you post to this the debuggee will continue executing
+  (define run-semaphore null)
+  
+  ;Is the program (supposed-to-be) currently running
+  (define debugger-running? #f)
+  
   
   ;#######################  CALLBACKS  #######################
   
@@ -162,7 +204,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
       [($ breakpoint-halt)
        ; do we want to pause interactive debugging
        (when (running-now? client)
-         (semaphore-post (client-run-semaphore client)))]
+         (semaphore-post run-semaphore))]
       
       ;when a top level expression finishes
       [($ expression-finished return-val-list) (void)]
@@ -172,6 +214,9 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   
   
   ;###################  DEBUGGER BACKEND  ####################
+  
+  ;(define (annotate-all-clients)
+ ;   (
   
   ; retreives the binding of a variable from a breakpoint event
   (define (binding event sym)
@@ -255,9 +300,9 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
       ; set initial state of exit predicate
       (frp:set-cell! (client-exited? client) #f)
       
-      (set-client-run-semaphore! client go-semaphore)
+      (set! run-semaphore go-semaphore)
       
-      (set-client-custodian! client user-custodian)
+      (set! debugger-custodian user-custodian)
       
       ; we run the program under its own custodian so we can easily kill it...that's IT
       
@@ -322,8 +367,8 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   
   ; predicate - is the debugee supposed to be running now?
   (define (running-now? client)
-    (and (not (null? (client-run-semaphore client)))
-         (frp:value-now (client-running? client))))
+    (and (not (null? run-semaphore))
+         (frp:value-now debugger-running?)))
   
   ; returns a behavior for a client counting runtime
   ; this is set!'d into the client struct so that it is always accurate
@@ -334,7 +379,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
         ((frp:changes frp:milliseconds)
          . frp:-=> .
          (match-lambda [(prev sum)
-                        (if (frp:value-now (client-running? c))
+                        (if (frp:value-now debugger-running?)
                             (list (frp:value-now frp:milliseconds)
                                   (+ (- (frp:value-now frp:milliseconds) prev) sum))
                             (list (frp:value-now frp:milliseconds) sum))]))
@@ -343,8 +388,8 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
       second)
      0))
   
-  ;####################  SCRIPT FUNCTIONS  ###################
   
+  ;####################  SCRIPT FUNCTIONS  ###################
   
   ; Switches the running state on or off
   ; (client [boolean]) -> ()
@@ -352,18 +397,18 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
     (lambda (client run?)
       (define (update)
         ; (re)start the debugger if needed
-        (when (null? (client-run-semaphore client)) (start-debugger client))
-        (when run? (semaphore-post (client-run-semaphore client)))
+        (when (null? run-semaphore) (start-debugger client))
+        (when run? (semaphore-post run-semaphore))
         (frp:value-now run?))
       
       (cond [(frp:behavior? run?)
-             (set-client-running?! client (frp:proc->signal update run?))]
-            [else (set-client-running?! client run?)
+             (set! debugger-running? (frp:proc->signal update run?))]
+            [else (set! debugger-running? run?)
                   (update)])
       (void)))
   
   
-  ;dont forget to contract this
+  ;TODO dont forget to contract this
   (define script:running?
     (lambda (client)
       (print "client-running? is broken")
@@ -385,12 +430,16 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   ; (string) -> (client)
   (define/contract script:create (string? . -> . client?)
     (lambda (filename)
-      (let ([c (make-client filename (make-hash) #f null null
-                            (frp:event-receiver) (frp:new-cell) null null)])
+      (let ([c (make-client filename (make-hash) (frp:event-receiver) (frp:new-cell) null null)])
+        
         ; set curried line-col->pos function for client
         (set-client-line-col->pos! c (line-col->pos c))
+        
         ; set the runtime info (runtime-evs, time-behavior)
         (set-client-runtime! c (runtime c))
+        
+        (set! all-clients (cons c all-clients))
+        
         c)))
   
   (define (script:pause c) (script:set-running! c #f))
@@ -403,9 +452,9 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
       (script:pause client)
       
       ; shutdown the custodian
-      (custodian-shutdown-all (client-custodian client))
-      (set-client-custodian! client null)
-      (set-client-run-semaphore! client null)
+      (custodian-shutdown-all debugger-custodian)
+      (set! debugger-custodian null)
+      (set! run-semaphore null)
       ; set the exit predicate to 'exited'
       (frp:set-cell! (client-exited? client) #t)))
   
