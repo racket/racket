@@ -1,4 +1,0 @@
-Add this to the demos section of the main doc.
-
-demos/djikstra/dijkstra-test.ss      - debugs a buggy implementation of 
-                                         Dijkstra's algorithm

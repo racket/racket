@@ -159,6 +159,9 @@ MzTake without ever having written a FrTime script before!
                                      can trace first-class functions, such
                                      as those passed to map.
 
+  ./djikstra/dijkstra-test.ss      - debugs a buggy implementation of 
+                                     Dijkstra's algorithm
+
 
 ============================================================
 

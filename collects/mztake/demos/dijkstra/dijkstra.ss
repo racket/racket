@@ -33,8 +33,4 @@
   ;(pretty-print (graph-to-list g))
   (printf "output:~n")
   (print-struct #t)
-  (pretty-print (solve g (reverse nodes) (n-ref 's)))
-                  
-
-  
-  )
+  (pretty-print (solve g (reverse nodes) (n-ref 's))))
