@@ -1,9 +1,3 @@
-#|
-    (let* ([breakpoint-origin (debug-file-filename client)]
-           [breakpoints (hash-keys (debug-file-tracepoints client))]
-           [program-expander (program-expander breakpoint-origin)])
-|#
-
 (module debugger-model mzscheme
   (require (lib "unit.ss")
            (lib "mred.ss" "mred")
@@ -26,10 +20,11 @@
               process)
       (export run)
       
-      (define (run-semaphore) (debug-process-run-semaphore process))
+      (define run-semaphore (debug-process-run-semaphore process))
+      (define debug-eventspace (debug-process-eventspace process))
       
       (define (queue-result result)
-        (send-to-eventspace (debug-process-eventspace process)
+        (send-to-eventspace debug-eventspace
                             (lambda () (receive-result result))))
       
       (define basic-eval (current-eval))
@@ -38,7 +33,7 @@
         (let ([mark-list (continuation-mark-set->list mark-set debug-key)])
           (queue-result (make-normal-breakpoint-info (cons final-mark mark-list) client))
           (queue-result (make-breakpoint-halt))
-          (semaphore-wait (run-semaphore))))
+          (semaphore-wait run-semaphore)))
       
       (define ((err-display-handler source) message exn)
         (queue-result (make-error-breakpoint-info (list source exn))))

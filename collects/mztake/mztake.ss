@@ -280,6 +280,9 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   
   ; retreives the binding of a variable from a breakpoint event
   (define (binding event sym)
+    (define (do-n-times fn n arg)
+      (foldl (lambda (x arg) (fn arg)) arg (build-list n (lambda (x) x))))
+    
     (let ([mark-list (normal-breakpoint-info-mark-list event)]
           [current-frame-num 0])
       (map (lambda (binding) (list (mark-binding-binding binding)
@@ -287,9 +290,6 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
            (lookup-all-bindings (lambda (id) (eq? (syntax-e id) sym))
                                 (do-n-times cdr current-frame-num mark-list)))))
   
-  ; does something for (binding)
-  (define (do-n-times fn n arg)
-    (foldl (lambda (x arg) (fn arg)) arg (build-list n (lambda (x) x))))
   
   ; takes a single trace, looks up what it needs to do, and returns an frp-event to publish
   (define (trace->frp-event client event trace)
@@ -309,22 +309,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
                            vars)])
          (list evnt-rcvr
                (if (list? variable-to-bind) values
-                   (first values))))]))
-  
-  ; TODO improve program expander
-  (define ((program-expander filename) init callback)
-    ;; (init) ; TODO now that's a bit of a hack.
-    (parameterize ([port-count-lines-enabled #t])
-      (let ([port (open-input-file filename)])
-        (begin0
-          (let loop ([stx (read-syntax filename port)])
-            (unless (eof-object? stx)
-              #;(print-debug (format "expanding: ~a" (syntax-object->datum (expand stx))))
-              (callback
-               (expand stx)
-               (lambda () (loop (read-syntax filename port))))))
-          (close-input-port port)))))
-  
+                   (first values))))]))  
   
   ; returns a memoized function that takes (line column) -> position
   ; line-col->pos : (debug-file? . -> . (number? number? . -> . (union void? number?)))
@@ -506,7 +491,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   
   ;TODO dont forget to contract this
   (define (runtime/seconds process)
-    (frp:hold ((frp:changes (runtime/milliseconds process))
+    (frp:hold ((frp:changes (debug-process-runtime process))
                . frp:==> .
                (lambda (t) (truncate (/ t 1000))))
               0))
