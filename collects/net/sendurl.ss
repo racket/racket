@@ -6,8 +6,8 @@
   
   (define (send-url str)
     (case (system-type)
-      [(macos)
-       (send-event "MACS" "GURL" "GURL" str)]
+      [(macos macosx)
+       (send-event "MACS" "GURL" "GURL" str)] ;; actually, I think GURL means something slightly different...
       [(unix)
        (let ([netscape-path (find-executable-path "netscape" #f)])
          (unless netscape-path
