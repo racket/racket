@@ -2,9 +2,9 @@
 (module launcher-sig mzscheme
   (require (lib "unitsig.ss"))
   
-  (provide launcher-maker^)
+  (provide launcher^)
 
-  (define-signature launcher-maker^
+  (define-signature launcher^
     (make-mred-launcher
      make-mzscheme-launcher
 
