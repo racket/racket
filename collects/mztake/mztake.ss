@@ -336,7 +336,7 @@ TESTING/CAPABILITIES------------------------------------------------------------
               ; run the process
               (thread-wait (thread (lambda () (run))))
               ; program terminates
-              (kill process)
+              (stop process)
               (print-info (format "process terminated: ~a" (main-client-name process))))))
   
   
