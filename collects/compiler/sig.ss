@@ -1,7 +1,8 @@
 
-(require-library "compiles.ss")
-(require-library "makes.ss" "make")
-(require-library "collections.ss" "make")
+(begin-elaboration-time
+ (require-library "compiles.ss")
+ (require-library "makes.ss" "make")
+ (require-library "collections.ss" "make"))
 
 ;; Compiler options
 (define-signature compiler:option^
