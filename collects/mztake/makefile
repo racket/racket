@@ -5,7 +5,8 @@ all:
 
 plt:
 	mred -u make-plt.ss
+	mv *.plt ../../web/files/
 
 clean:
-	rm -r compiled private/compiled
-	rm *distro*
+	${RM} -r compiled private/compiled
+	${RM} *distro*

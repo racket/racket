@@ -8,20 +8,13 @@
          (not (or (regexp-match #rx".svn$" path)
                   (regexp-match #rx".bak$" path)
                   (regexp-match #rx".1$" path)
+                  (regexp-match #rx"-uncommented.ss$" path)
                   (regexp-match #rx"make" path)))))
   
-  ;For use with PLaneT
-  #;(parameterize ((current-directory "."))
-    (pack "mztake-planet.plt"
-          "MzTake Debugger"
-          '(".")
-          '()
-          my-filter
-          #t
-          'file
-          #f
-          #f
-          '(("frtime") ("stepper"))))
+
+  ;without frtime bundled:
+  (pack-collections "mztake-frtime-distro.plt" "MzTake Debugger"
+                    '(("mztake")) #t '(("frtime")("stepper")) my-filter #f)
   
-  ; for use not on PLaneT
-  (pack-collections "mztake-distro.plt" "MzTake Debugger" '(("mztake")("frtime")) #t '(("stepper")) my-filter #f))
+  (pack-collections "mztake-distro.plt" "MzTake Debugger"
+                    '(("mztake")("frtime")) #t '(("stepper")) my-filter #f))

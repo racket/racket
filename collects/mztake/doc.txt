@@ -119,14 +119,18 @@ MzTake requires PLT Scheme v208 and higher.
 
   Demos
 
-You can find demos of a few different uses of MzTake (including
-the "highway.ss" example) in the following directories:
+If you installed MzTake using the .PLT distritubtion, you can
+find demos of a few different uses of MzTake in the
+following directories:
 
    On Linux:
-   $PLTHOME/collects/mztake/demos/
+   ~/.plt-scheme/208/collects/mztake/demos
 
    On Windows (typically):
-   c:\Program Files\PLT\collects\mztake\demos\
+   C:\Documents and Settings\Jono\Application Data\PLT Scheme\208\collects\mztake
+
+Where "Jono" is your username, and "208" is the version of
+DrScheme you are running.
 
 You should be able to run them in DrScheme by switching to the
 "MzTake" language from the "Experimental Languages" section
@@ -139,28 +143,28 @@ scripts themselves are only a few lines of code. However, the
 commenting is *exhaustive* so that a FrTime novice can still use
 MzTake without ever having written a FrTime script before!
 
-  ./highway/highway-test.ss        - a small MzTake example, shown above
+  ./highway/highway-test.ss         - a small MzTake example, shown above
 
-  ./sine/sine-test.ss              - plots values extracted from the
-                                     running program
+  ./sine/sine-test.ss               - plots values extracted from the
+                                      running program
 
-  ./montecarlo/montecarlo-test.ss  - visualizes the Monte Carlo
-                                     integration used to derive the
-                                     value of pi
+  ./montecarlo/montecarlo-test.ss   - visualizes the Monte Carlo
+                                      integration used to derive the
+                                      value of pi
 
-  ./random/random-Xs-test.ss       - tests the quality of Scheme's random
-                                     number generator with a histogram
+  ./random/random-test.ss           - tests the quality of Scheme's random
+                                      number generator with a histogram
 
-  ./misc/exception-test.ss         - demonstrates how MzTake catches exceptions
+  ./exception/exception-test.ss     - demonstrates how MzTake catches exceptions
 
-  ./misc/first-class-test.ss       - demonstrates how you can add multiple
-                                     traces to the same variable in a file
-                                     to 'record' its evolution, and how you
-                                     can trace first-class functions, such
-                                     as those passed to map.
+  ./first-class/first-class-test.ss - demonstrates how you can add multiple
+                                      traces to the same variable in a file
+                                      to 'record' its evolution, and how you
+                                      can trace first-class functions, such
+                                      as those passed to map.
 
-  ./djikstra/dijkstra-test.ss      - debugs a buggy implementation of 
-                                     Dijkstra's algorithm
+  ./djikstra/dijkstra-test.ss       - debugs a buggy implementation of 
+                                      Dijkstra's algorithm
 
 
 ============================================================
@@ -448,12 +452,16 @@ Tips: When you have a behavior that you want to turn into
 MzTake defines a few functions on time-varying values
 that are particularly useful when debugging:
 
+> (history-e stream)
+
 > (history-b stream)
 
    Keeps a complete history of all the values seen
    on an event stream as a list, oldest events last.
 
    Use with BINDs: (history-b x-trace)
+
+> (history-e n stream)
 
 > (history-b n stream)
 
@@ -701,6 +709,6 @@ We are eager to hear about how you are using MzTake!
    Shriram Krishnamurthi
 
 ---
-Icons for MzTake come from the Gnome Project: Nautilus Emblems
+Icons for MzTake come from the Gnome Project: Nautilus Emblems.
 These are provided under the GPL license.
    http://jimmac.musichall.cz/ikony.php3
