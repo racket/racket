@@ -1,4 +1,6 @@
 (module open-url mzscheme
+  (require (lib "process.ss"))
+
   (provide open-url)
   
   (define (open-url str)
