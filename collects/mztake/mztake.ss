@@ -157,6 +157,11 @@ TESTING/CAPABILITIES------------------------------------------------------------
   ; Callback for when a breakpoint (tracepoint) is hit by the model
   ; ((client) breakpoint-struct) -> ()
   (define ((receive-result process) result)
+    
+    ; Before we process the trace, see if we are supposed to pause
+    (unless (running-now? process)
+      (semaphore-wait (debug-process-run-semaphore process)))
+    
     (match result
       ; regular breakpoint
       [($ normal-breakpoint-info (top-mark rest-mark ...) client)
@@ -170,11 +175,11 @@ TESTING/CAPABILITIES------------------------------------------------------------
          ; Run all traces at this breakpoint               
          (let ([to-send (map (lambda (t) (trace->frp-event client result t)) traces)])
            (frp:send-synchronous-events to-send))
-         ; do we want to pause interactive debugging
+         
+         ; Now that we processed the trace, do we want to pause or continue
          (when (running-now? process)
            (semaphore-post (debug-process-run-semaphore process))))]
       
-      ;TODO eventually remove this from debugger-model.ss
       [($ error-breakpoint-info (source exn))
        ; all errors and raises from the TARGET program will be caught here
        ; FrTime errors from the script have their own eventstream
@@ -462,7 +467,6 @@ TESTING/CAPABILITIES------------------------------------------------------------
   (define (runtime/milliseconds process)
     (debug-process-runtime process))
   
-  ;TODO dont forget to contract this
   (define (runtime/seconds process)
     (frp:hold ((frp:changes (debug-process-runtime process))
                . frp:==> .

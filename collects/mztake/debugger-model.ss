@@ -15,15 +15,11 @@
               process)
       (export run)
       
-      
       (define run-semaphore (debug-process-run-semaphore process))
-      (define ev (make-eventspace))
-      
       
       (define ((break client) mark-set kind final-mark)
         (let ([mark-list (continuation-mark-set->list mark-set debug-key)])
-          (parameterize ([current-eventspace ev])
-            (queue-callback (lambda () (receive-result (make-normal-breakpoint-info (cons final-mark mark-list) client)))))
+          (receive-result (make-normal-breakpoint-info (cons final-mark mark-list) client))
           (semaphore-wait run-semaphore)))
       
       
