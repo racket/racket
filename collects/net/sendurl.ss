@@ -14,7 +14,6 @@
     (opt-lambda (str [separate-window? separate-by-default?])
       ; The with-handler reverts to the old error port before printing raised error messages.
       (with-handlers ([void (lambda (exn) (raise exn))])
-	(printf "trying!~n")
         (parameterize ([current-input-port null-input]
                        [current-error-port null-output]
                        [current-output-port null-output])
