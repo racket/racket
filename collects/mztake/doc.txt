@@ -453,7 +453,6 @@ MzTake defines a few functions on time-varying values
 that are particularly useful when debugging:
 
 > (history-e stream)
-
 > (history-b stream)
 
    Keeps a complete history of all the values seen
@@ -462,7 +461,6 @@ that are particularly useful when debugging:
    Use with BINDs: (history-b x-trace)
 
 > (history-e n stream)
-
 > (history-b n stream)
 
    Keeps a list of the last n values of a behavior
