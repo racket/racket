@@ -4,4 +4,5 @@
 (begin-elaboration-time
  (require-library "invoke.ss"))
 
-(define-values/invoke-unit/sig (require-relative-library "dnsr.ss"))
+(define-values/invoke-unit/sig mzlib:dns^
+  (require-relative-library "dnsr.ss"))
