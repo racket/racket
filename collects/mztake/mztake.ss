@@ -1,4 +1,6 @@
 #| TODO
+I will want to be able to take "(lib ...)" as a path to the file being debugged
+
 exceptions thrown in anonymous threads spawned by the target, are caught by the default drs handler, and not by frtime or mztake. they get printed out in the interaction window and there is nothing we can do about them for now -- if you want you can parameterize and rethrow the exceptions. just be aware of that.
 
 CAN I CATCH FRTIME EXCEPTIONS AND RETHROW THOSE TOO?
@@ -77,7 +79,7 @@ What do we do about binding to a variable and following it EVERYWHERE it goes.  
 Find a way to bind to the result of ananonymous expression: here->(add1 2)
 |#
 
-(module mztake mzscheme  
+(module mztake mzscheme
   (require (lib "match.ss")
            (lib "contract.ss")
            (lib "unitsig.ss")
