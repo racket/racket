@@ -2,7 +2,7 @@
 CAN I CATCH FRTIME EXCEPTIONS AND RETHROW THOSE TOO?
 
 
-LOOK AT (require (lifted mzscheme random)) in demos/random-xs-test.ss -- there seems to be a problem with requires that do lifting for FrTime in the target program, we need to do requires in the script for some reason.  random becomes random3 and throws an exception.
+When lifting for debugging a frtime program, you cannot lift in the target program, you have to lift in the script itself.  Everything else should be as-is/unchecked.
 
 code like
 (set-running! client (or (elapsed . < . 5) (elapsed . >= . 10)))
@@ -62,19 +62,13 @@ The script does not tell you something went wrong though, and the solution (as-i
 
 
 TESTING/CAPABILITIES------------------------------------------------------------------------
-If you pause after a value = 14000, it doesn't pause until the 14001th iteration.  Keep this in mind.
-
 Does user interaction work?  Can we step through loops one line at a time waiting for input?  GUIs?
 
 Verify that when killing the debugger, all the memory and bindings that need to be released are released.
 
 code the heap example and copy the set-running! coolness to it from sine-test.ss
 
-Can you duplicate the problem when the program seems to keep running event after killing it?
-
 We want a way to interactively step through code one line at a time when we hit a breakpoint.  Provide way to check bindings at the same time -- EVEN IF NOT BOUND USING TRACE/BIND
-
-Map kill or pause to the Break button?
 
 trace/bind what kind of interface do we want to dig into frames
 write a nested syntax for bind so that you can take a first-class function that defines a way to return variables, not just as a list
@@ -84,38 +78,40 @@ What do we do about binding to a variable and following it EVERYWHERE it goes.  
 Find a way to bind to the result of ananonymous expression: here->(add1 2)
 |#
 
-(module mztake mzscheme
-  (require 
-   (lib "match.ss")
-   (lib "contract.ss")
-   (lib "unitsig.ss")
-   (rename (lib "mred.ss" "mred") make-eventspace make-eventspace)
-   (rename (lib "mred.ss" "mred") current-eventspace current-eventspace)
-   (rename (lib "mred.ss" "mred") eventspace-shutdown? eventspace-shutdown?)
-   (rename (lib "mred.ss" "mred") queue-callback queue-callback)
-   (lib "debugger-model.ss" "stepper" "private")
-   (lib "marks.ss" "stepper" "private")
-   "private/useful-code.ss" ; provides stuff for scripts -- history-b etc...
-   "private/more-useful-code.ss" ; mostly for hash- bindings
-   (prefix frp: (lib "frp.ss" "frtime")))
+(module mztake mzscheme  
+  (require (lib "match.ss")
+           (lib "contract.ss")
+           (lib "unitsig.ss")
+           (rename (lib "mred.ss" "mred") make-eventspace make-eventspace)
+           (rename (lib "mred.ss" "mred") current-eventspace current-eventspace)
+           (rename (lib "mred.ss" "mred") eventspace-shutdown? eventspace-shutdown?)
+           (rename (lib "mred.ss" "mred") queue-callback queue-callback)
+           (lib "debugger-model.ss" "stepper" "private")
+           (lib "marks.ss" "stepper" "private")
+           "private/useful-code.ss" ; provides stuff for scripts -- history-b etc...
+           "private/more-useful-code.ss" ; mostly for hash- bindings
+           (prefix frp: (lib "frp.ss" "frtime")))
   
   ; Provides come from the script section at the bottom of the code
   (provide kill
            pause
            trace/bind
+           trace/break
            set-running!
            client-exit?
            start/resume
            create-client
            client-exceptions
            client-runtime-seconds
-           client-runtime-milliseconds
-           (rename script-running? client-running?))
+           client-runtime-milliseconds)
+  ;(rename script-running? client-running?)) ; disabled until it works
+  
   
   ;########################  STRUCTS  ########################
   
   (define-struct trace (evnt-rcvr))    ; frp:event-receiver
   
+  (define-struct (break-trace trace) ())
   (define-struct (bind-trace trace)
                  (variable-to-bind))    ; symbol
   
@@ -132,11 +128,12 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   ;####################  STRUCT-BUILDERS  #####################
   
   ; Creates a trace that binds to the value of a variable in scope
-  (define/contract create-bind-trace
-    ((union (listof symbol?) symbol?) . -> . trace?)
-    (lambda (sym-to-bind)
-      (make-bind-trace (frp:event-receiver) sym-to-bind)))
+  (define (create-bind-trace sym-to-bind) ; ((union (listof symbol?) symbol?) . -> . trace?)
+    (make-bind-trace (frp:event-receiver) sym-to-bind))
   
+  ; Creates a trace that simply pauses the program
+  (define (create-break-trace) ; (void? . -> . trace?)
+    (make-break-trace (frp:event-receiver)))
   
   ;#######################  CALLBACKS  #######################
   
@@ -210,6 +207,10 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   ; takes a single trace, looks up what it needs to do, and returns an frp-event to publish
   (define (trace->frp-event client event trace)
     (match trace
+      [($ break-trace evnt-rcvr)
+       (pause client)
+       (list evnt-rcvr #t)]
+      
       [($ bind-trace evnt-rcvr variable-to-bind)
        (let* ([vars (if (list? variable-to-bind) variable-to-bind
                         (list variable-to-bind))]
@@ -273,8 +274,8 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
                                    (lambda (exn)
                                      (frp:send-event (client-exceptions client) exn)
                                      (client-error (if (exn? exn)
-                                                (format "exception: ~a" (exn-message exn))
-                                                exn)))])
+                                                       (format "exception: ~a" (exn-message exn))
+                                                       exn)))])
                     (go)))))])
         (thread (lambda () 
                   (thread-wait evaluation-thread)
@@ -408,20 +409,24 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
       (frp:set-cell! (client-exit? client) #t)))
   
   ; (client (offset | line column) (symbol | listof symbols) -> (frp:event-receiver)
-  (define/contract trace/bind (case->
-                               (client? number? (union symbol? (listof symbol?)) . -> . frp:event?)
-                               (client? number? number? (union symbol? (listof symbol?)) . -> . frp:event?))
-    
-    (case-lambda 
-      [(client line col binding-symbol)
-       (trace/bind client ((client-line-col->pos client) line col) binding-symbol)]
-      
-      [(client pos binding-symbol)
-       (let ([trace-hash (client-tracepoints client)]
-             [trace (create-bind-trace binding-symbol)])
-         ; add the trace to the list of traces for that byte-offset
-         (hash-put! trace-hash pos
-                    (cons trace
-                          (hash-get trace-hash pos (lambda () '()))))
-         (trace-evnt-rcvr trace))]))
+  (define/contract trace/bind (client? number? number? (union symbol? (listof symbol?)) . -> . frp:event?)
+    (lambda (client line col binding-symbol)      
+      (let ([trace-hash (client-tracepoints client)]
+            [trace (create-bind-trace binding-symbol)]
+            [pos ((client-line-col->pos client) line col)])
+        ; add the trace to the list of traces for that byte-offset
+        (hash-put! trace-hash pos
+                   (cons trace
+                         (hash-get trace-hash pos (lambda () '()))))
+        (trace-evnt-rcvr trace))))
+  
+  (define/contract trace/break (client? number? number? . -> . frp:event?)
+    (lambda (client line col)
+      (let ([trace-hash (client-tracepoints client)]
+            [trace (create-break-trace)]
+            [pos ((client-line-col->pos client) line col)])
+        (hash-put! trace-hash pos
+                   (cons trace
+                         (hash-get trace-hash pos (lambda () '()))))
+        (trace-evnt-rcvr trace))))
   )
