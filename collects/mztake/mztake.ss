@@ -508,7 +508,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
           (set-debug-client-process! client process)
           (set-debug-client-line-col->pos! client (line-col->pos filename))
           (set-debug-process-clients! process
-                                      (cons client (debug-process-clients process)))
+                                      (append (list client) (debug-process-clients process)))
           
           client))))
   
