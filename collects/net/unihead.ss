@@ -53,6 +53,7 @@
 
   (define re:iso #rx#"^[iI][sS][oO]-8859-1$")
   (define re:gb #rx#"^[gG][bB](2312)?$")
+  (define re:ks_c #rx#"^[kK][sS]_[cC]_5601-1987$")
   (define re:utf-8 #rx#"^[uU][tT][fF]-8$")
   
   (define re:encoded #rx#"^(.*?)=[?]([^?]+)[?]([qQbB])[?](.*?)[?]=(.*)$")
@@ -67,6 +68,9 @@
      [(regexp-match re:gb encoding) (if (bytes? encoding)
 					#"GBK"
 					"GBK")]
+     [(regexp-match re:ks_c encoding) (if (bytes? encoding)
+					  #"CP949"
+					  "CP949")]
      [else encoding]))
   
   (define (decode-for-header s)
