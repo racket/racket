@@ -77,10 +77,14 @@ different uses of MzTake. You should be able to run
 them in DrScheme by switching to the MzTake language
 and clicking the "Run" button.
 
-  demos/highway/highway-test.ss        - small MzTake example used above
+  demos/highway/highway-test.ss        - a small MzTake example, used above
+
 
   demos/sine/sine-test.ss              - plots values extracted from the
                                          running program
+
+  demos/djikstra/dijkstra-test.ss      - debugs a buggy implementation of 
+                                         Dijkstra's algorithm
 
   demos/montecarlo/montecarlo-test.ss  - visualizes Monte Carlo integration
                                          used to derive the value of pi

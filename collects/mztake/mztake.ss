@@ -337,7 +337,7 @@ TESTING/CAPABILITIES------------------------------------------------------------
               (thread-wait (thread (lambda () (run))))
               ; program terminates
               (stop process)
-              (print-info (format "process terminated: ~a" (main-client-name process))))))
+              (print-info (format "process exited normally: ~a" (main-client-name process))))))
   
   
   ; predicate - is the debugee supposed to be running now?

@@ -8,8 +8,11 @@
   
   ; Keeps a list of the last n values of a behavior
   (define (history-b n stream)
+    (hold (history-e n stream) empty))
+
+  (define (history-e n stream)
     (define ((add-to-hist thing) hist) (append (if ((length hist) . < . n) hist (rest hist)) (list thing)))
-    (accum-b  (stream . ==> . add-to-hist) empty))
+    (accum-e  (stream . ==> . add-to-hist) empty))
   
   ; Counts number of event pings on an eventstream
   (define (count-e evs)

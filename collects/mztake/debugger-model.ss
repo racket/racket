@@ -52,7 +52,7 @@
                                               clients)))]
                  
                  [annotate-module? (lambda (fn m)
-                                     (memf (lambda (sym) (eq? sym fn))
+                                     (memf (lambda (sym) (equal? sym fn))
                                            all-used-module-paths))]
                  
                  [annotator (lambda (fn m stx)
