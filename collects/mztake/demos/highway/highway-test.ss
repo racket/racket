@@ -3,7 +3,7 @@
 (require (lib "animation.ss" "frtime")) ;; needed for display-shapes
 
 
-(mztake-process radar-program ("highway.ss" [values-of-speed 3 4 bind 'speed]))
+(define-mztake-process radar-program ("highway.ss" [values-of-speed 3 4 bind 'speed]))
 #| * Create a process to debug highway.ss
 
    * Add a tracepoint at line 3, column 4; in the program,

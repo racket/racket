@@ -23,7 +23,7 @@ using callbacks). Consider a MzTake script to monitor the
 behavior of the program "highway.ss", in the demos directory
 of the MzTake collection:
 
-   (debug-mztake-process
+   (define-mztake-process
      radar-program
      ("highway.ss" [values-of-speed 3 4 bind 'speed]))
    (printf-b "current speed: ~a" (hold values-of-speed))
@@ -111,6 +111,11 @@ MzTake is a DrScheme tool distributed as a self-installing
 ".PLT" file from the PLaneT Package Repository.
 
   http://planet.plt-scheme.org/
+
+You need to have the latest version of FrTime installed
+for MzTake to work correctly (it may function, though
+unpredictably, in older versions). Please use FrTime from
+DrScheme v208 and up, or the latest CVS revision.
 
 
 ============================================================
@@ -205,11 +210,11 @@ The model of the debugger is as follows:
     that you run it in DrScheme in the "module..." language), assuming there
     will be side-effects that start the debugging.
 
-    The rest of the files traced in a mztake-process are typically
+    The rest of the files traced in a MZTAKE-PROCESS are typically
     modules used *by* the main-module, allowing you to see
     what is going on deeper than the main module. For example:
 
-      (mztake-process p1
+      (define-mztake-process p1
             ("my-stack-tests.ss")
             ((lib "my-stack.ss" "my-stack") [s-push-p1 3  29 bind 'insert-value]
                                             [s-pop-p1  10 16 bind 'return-value]))
@@ -221,7 +226,7 @@ The model of the debugger is as follows:
   * The same file can be traced differently in different processes, even with
     different main clients using them:
 
-      (mztake-process p2
+      (define-mztake-process p2
             ("more-my-stack-tests.ss")
             ((lib "my-stack.ss" "my-stack") [s-clear-p2 22 8 ENTRY]))
 
@@ -257,7 +262,7 @@ ENTRYs are event streams that get a "#t" event every time the
 target program reaches the trace point. Binds are event streams that
 ping the value of one or more variables when the trace point is reached.
 
-> (mztake-process process-name
+> (define-mztake-process process-name
     [target-filename trace-clause ...] ...)
 
    Where trace-clause is one of the following:
@@ -278,15 +283,15 @@ ping the value of one or more variables when the trace point is reached.
    syntax for modules:
 
    * Absolute path:
-       (mztake-process p [(file "/home/me/test.ss") [brk 10 7 ENTRY]])
+       (define-mztake-process p [(file "/home/me/test.ss") [brk 10 7 ENTRY]])
 
    * Relative path:
-       (mztake-process p ["../test.ss" [brk 10 7 ENTRY]])
+       (define-mztake-process p ["../test.ss" [brk 10 7 ENTRY]])
 
    * Library path:
-       (mztake-process p [(lib "test.ss" "collect-dir") [brk 10 7 ENTRY]])
+       (define-mztake-process p [(lib "test.ss" "collect-dir") [brk 10 7 ENTRY]])
 
-   For each trace-clause in the call to mztake-process,
+   For each trace-clause in the call to DEFINE-MZTAKE-PROCESS,
    the trace-name is a variable name bound at the
    top-level, whose value is a FrTime event
    stream. Each time the execution of the target
@@ -337,7 +342,7 @@ and can be used in the Interactions window.
 
 > (start/resume process-name)
 
-   Start the execution and monitoring of the mztake-process,
+   Start the execution and monitoring of the MZTAKE-PROCESS,
    process-name. If the process given to START/RESUME is already
    running, and was paused with the function PAUSE (below),
    START/RESUME resumes its execution.
@@ -442,12 +447,12 @@ Known Problems
   you are putting bind-traces on:
 
   ORIGINAL FILE:
-  (define (my-fun some-struct) ...)
+    (define (my-fun some-struct) ...)
 
   MZTAKE SCRIPT:
-  (require "original-file.ss")
-  (mztake-process p ("original-file.ss" [val 10 12 bind 'my-struct]))
-  (my-fun (hold val))
+    (require "original-file.ss")
+    (define-mztake-process p ("original-file.ss" [val 10 12 bind 'my-struct]))
+    (my-fun (hold val))
 
   Sometimes this causes unusual errors. These problems usually only
   show up if you are binding to structs (defined in the same file) and
@@ -472,22 +477,9 @@ Known Problems
      (let ([x (add1 x)]) x)
      ^        ^^    ^    ^
 
-* Don't rely completely on MzTake to complain when you change
+* Don't rely entirely on MzTake to complain when you change
   target code and your line/col locations in the script are out
   of date. It can only raise an error if the locations are invalid.
-
-* Order matters -- if you have more than one kind of trace at
-  an identical syntax location, the order that trace events get
-  updated is currently undefined.
-
-  For now, the hack is to add traces as follows:
-
-       First trace:                   Second trace:
-       (code ... (more-code ...))     (code ... (more-code ...))
-       ^                                        ^
-  Because of how Scheme is evaluated, usually nothing happens on
-  the same line of between two "open" parentheses as they are
-  traversed from left to right; this gives you a definite trace order.
 
 * MzTake has not been tested for stability if the target is using
   multiple threads. This only applies to threaded modules
@@ -514,6 +506,29 @@ Known Problems
   there will probably be some sort of name-clash and strange error.
   This will be fixed.
 
+* If you find that sometimes it seems one of the breakpoints you
+  set in a file REQUIRE'd by the main client module, your problem
+  may be that the file-specification you used is different in the
+  script than it is in the main client module (occuring in REQUIREs
+  that use sub-directories):
+
+  MAIN CLIENT:
+    (require (lib "my-lib.ss" "mycollect" "private"))
+
+  MZTAKE SCRIPT:
+    (define-mztake-process p ("main.ss")
+                             ((lib "my-lib.ss" "mycollect/private") [traces...])
+
+  This seems to be an issue with DrScheme rather than MzTake.
+  For instance, you get an error if you make a module like this
+  on Windows:
+
+   (module m mzschem
+     (require (lib "my-lib.ss" "mycollect" "private"))
+     (provide (lib "my-lib.ss" "mycollect/private")))
+
+  This will be looked into, but keep your eyes open for it.
+
 
 ============================================================
 
@@ -529,16 +544,40 @@ Tips and Tricks
     * Then 'x updates and 'y is out-of-date.
     * Then 'y updates, and both are up-to-date.
 
-  But code that draws using a position derived from x and y
+  But code that draws using a position derived from X and Y
   will draw twice, in two locations, one for each update,
   the second one being correct.
+
+* Order matters -- if you have more than one trace at an identical
+  syntax location (in the same file), the order that trace events
+  get updated is identical to the order they exist in the script.
+  For example:
+
+  (define-mztake-process p ("file.ss" [a-bind  5 55 bind 'x]
+                                      [some-bind  2 22 bind 'irrelevent]
+                                      [a-entry 5 55 entry]
+                                      [another-bind 5 55 bind 'y]))
+
+  When that trace gets evaluated, A-BIND will get the new value
+  of X, and relevant FrTime code will get re-evaluated. *Then*
+  A-ENTRY will be notified about the trace and a #t will be emitted,
+  (at this point in time, Y is out-of-date, but X is up-to-date). Lastly,
+  ANOTHER-BIND will get the new value of Y, and the trace is complete.
+
+  Of course, you will typically want ENTRY as the first trace,
+  and all other BINDs to be in a list, so that you get two updates,
+  as explained in the previous tip:
+
+  (define-mztake-process p ("file.ss" [a-entry 5 55 entry]
+                                      [x/y-bind 5 55 bind '(x y)]
+                                      [some-bind  2 22 bind 'irrelevent]))
 
 * You can trace the *same* file in different ways by using
   multiple processes on the same file, under different
   contexts, and compare results. For example, in
   "demos/misc/first-class-test.ss":
 
-     (mztake-process p ("first-class.ss" [x-before-let 3 29 bind 'x]
+     (define-mztake-process p ("first-class.ss" [x-before-let 3 29 bind 'x]
                                          [x-in-let     4 25 bind 'x]
                                          [x-after-let  5 11 bind 'x]))
      (... code omitted ...)
@@ -546,9 +585,9 @@ Tips and Tricks
 
   is functionally equivalent to:
 
-     (mztake-process p1 ("first-class.ss" [x-before-let 3 29 bind 'x]))
-     (mztake-process p2 ("first-class.ss" [x-in-let     4 25 bind 'x]))
-     (mztake-process p3 ("first-class.ss" [x-after-let  5 11 bind 'x]))
+     (define-mztake-process p1 ("first-class.ss" [x-before-let 3 29 bind 'x]))
+     (define-mztake-process p2 ("first-class.ss" [x-in-let     4 25 bind 'x]))
+     (define-mztake-process p3 ("first-class.ss" [x-after-let  5 11 bind 'x]))
      (... code omitted ...)
      (start/resume p1) (start/resume p2) (start/resume p3)
 

@@ -2,7 +2,7 @@
 (require "dijkstra-solver.ss"
          (lib "match.ss"))
 
-(mztake-process p 
+(define-mztake-process p 
                 ("dijkstra.ss")
                 ("heap.ss"
                    [inserts 49 6 bind 'item]

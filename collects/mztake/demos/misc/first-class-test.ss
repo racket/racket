@@ -9,7 +9,7 @@
    and idea of why they recieve different values from the same "x".
 |#
 
-(mztake-process p ("first-class.ss" [x-before-let 3 29 bind 'x]
+(define-mztake-process p ("first-class.ss" [x-before-let 3 29 bind 'x]
                                     [x-in-let     4 25 bind 'x]
                                     [x-after-let  5 11 bind 'x]))
 

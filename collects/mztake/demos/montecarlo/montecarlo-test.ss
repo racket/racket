@@ -20,7 +20,7 @@
    See the doc for more information on this kind of drawing.
 |#
 
-(mztake-process p ("montecarlo.ss" [x/y/pi-trace 13 18 bind '(x y pi)]))
+(define-mztake-process p ("montecarlo.ss" [x/y/pi-trace 13 18 bind '(x y pi)]))
 #| * Create a process to debug montecarlo.ss
 
    * Add a tracepoint at line 13, column 18; in the program,

@@ -29,7 +29,7 @@
    See the doc for more information on this kind of drawing.
 |#
 
-(mztake-process p ("random-Xs.ss" [x-trace 4 6 bind 'x]))
+(define-mztake-process p ("random-Xs.ss" [x-trace 4 6 bind 'x]))
 #| * Create a process to debug random-xs.ss
 
    * Add a tracepoint at line 4, column 6; in the program,

@@ -1,6 +1,6 @@
 (module mztake-structs mzscheme
   (require (prefix frp: (lib "frp.ss" "frtime"))
-           "private/more-useful-code.ss")
+           (lib "more-useful-code.ss" "mztake" "private"))
   
   (provide (all-defined))
   
@@ -19,7 +19,7 @@
   
   (define-struct trace-struct (evnt-rcvr))           ; frp:event-receiver
   
-  (define-struct (break-trace trace-struct) ())
+  (define-struct (entry-trace trace-struct) ())
   (define-struct (bind-trace trace-struct)
                  (variable-to-bind))          ; symbol
   
@@ -59,9 +59,9 @@
   (define (create-bind-trace sym-to-bind) ; ((union (listof symbol?) symbol?) . -> . trace?)
     (make-bind-trace (frp:event-receiver) sym-to-bind))
   
-  ; Creates a trace that simply pauses the program
-  (define (create-break-trace) ; (void? . -> . trace?)
-    (make-break-trace (frp:event-receiver)))
+  ; Creates a trace that simply alerts that it was hit
+  (define (create-entry-trace) ; (void? . -> . trace?)
+    (make-entry-trace (frp:event-receiver)))
   
   (define (create-empty-debug-process)
     (make-debug-process (make-custodian)

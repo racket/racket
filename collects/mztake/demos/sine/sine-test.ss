@@ -7,7 +7,7 @@
 (require (lib "animation.ss" "frtime")) ;; needed for display-shapes
 
 
-(mztake-process p ("sine.ss" [sin/x-trace 5 8 bind '(sin-x x)]))
+(define-mztake-process p ("sine.ss" [sin/x-trace 5 8 bind '(sin-x x)]))
 #| * Create a process to debug sine.ss
 
    * Add a tracepoint at line 5, column 8; in the program,

@@ -1,7 +1,7 @@
 (module debugger-annotate mzscheme
   
   (require (prefix kernel: (lib "kerncase.ss" "syntax"))
-           (lib "marks.ss" "stepper" "private"))
+           (lib "marks.ss" "mztake" "private"))
   
 ;;  (define count 0)
   

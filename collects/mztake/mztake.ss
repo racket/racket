@@ -1,4 +1,12 @@
-#| TODO
+(module mztake mzscheme
+  
+  (define mztake-version "Rev. Wed Aug 5, 2004 - 23:12:00")
+  
+  #| TODO
+
+Remove marks.ss from MzTake as soon as the new version of it becomes standard with releases.
+Search for everywhere marks.ss shows up in mztake and replace
+(lib "marks.ss" "mztake" "private") with (lib "marks.ss" "stepper" "private")
 
 :::::::::LOAD/ANNOTATOR BUGS::::::::::::::
 * catch oops exception
@@ -38,7 +46,7 @@ SCRIPT--------------------------------------------------------------------------
 * Provide a body to bind instead or returning an eventstream, like (list x y)
   Write a nested syntax for bind so that you can take a first-class function that defines a way to return variables, not just as a list
 
-* Maybe take a thunk to do when a break-point is hit?
+* Maybe take a thunk to do when a entry trace is hit?
 
 * Way to turn printouts on and off like (print-struct #t), or should we have an output window? (mztake-verbose) (parameterize it?)
 
@@ -65,26 +73,25 @@ ERROR-CHECKING/HANDLING---------------------------------------------------------
 TESTING/CAPABILITIES------------------------------------------------------------------------
 * Does user interaction work?  Can we step through loops one line at a time waiting for input?  GUIs?
 
-* We want a way to interactively step through code one line at a time when we hit a breakpoint.
+* We want a way to interactively step through code one line at a time when we pause.
   Provide way to check bindings at the same time -- EVEN IF NOT BOUND USING TRACE/BIND
 
 * What kind of interface do we want to dig into frames
 
-* Need to know where the program breaks at -- need to know *when* it breaks too -- print something out
+* Need to know where the program pauses at
 
 * What do we do about binding to a variable and following it EVERYWHERE it goes.  Even if it is assigned to something else.
 
 * Find a way to bind to the result of ananonymous expression: here->(add1 2)
 |#
-
-(module mztake mzscheme
+  
   (require (lib "match.ss")
            (lib "unit.ss")
            (lib "contract.ss")
-           (lib "marks.ss" "stepper" "private")
+           (lib "marks.ss" "mztake" "private") ; TODO local private copy until stepper release
            (prefix frp: (lib "frp.ss" "frtime"))
-           "private/useful-code.ss"
-           "private/more-useful-code.ss" ; mostly for hash- bindings
+           (lib "useful-code.ss" "mztake" "private")
+           (lib "more-useful-code.ss" "mztake" "private") ; mostly for hash- bindings
            "mztake-structs.ss"
            "debugger-model.ss")
   
@@ -104,14 +111,14 @@ TESTING/CAPABILITIES------------------------------------------------------------
                     [rename debug-process-exited?
                             process:exited?
                             (debug-process? . -> . frp:behavior?)])
-                    
-                    #| DISABLED - BROKEN
+  
+  #| DISABLED - BROKEN
                     [process:running? (debug-process? . -> . frp:behavior?)]
                     [rename time-per-event/milliseconds
                             process:time-per-event/milliseconds
                             (debug-process? frp:behavior? . -> . frp:behavior?)]
                     |#
-
+  
   
   ;              ;           ;                 ;                                      
   ;     ;;;;;;   ;           ;                 ;       ;       ;                      
@@ -133,11 +140,8 @@ TESTING/CAPABILITIES------------------------------------------------------------
   ; turns debug output on and off
   (define debugging? #f)
   
-  ; 
-  (define mztake-version "Rev. Wed Aug 4, 2004 - 17:06:00")
-  
   ;###########################################################################################################
-    
+  
   
   ;                     ;   ;  ;                       ;              
   ;     ;;;;;           ;   ;  ;                       ;              
@@ -169,10 +173,10 @@ TESTING/CAPABILITIES------------------------------------------------------------
               [traces (hash-get (debug-client-tracepoints client) byte-offset)])
          
          (assert (not (empty? traces))
-                 (format "There are no traces at offset ~a, but a breakpoint is defined!~n"
+                 (format "There are no traces at offset ~a, but a trace point is defined!~n"
                          (number->string byte-offset)))
          
-         ; Run all traces at this breakpoint               
+         ; Run all traces at this trace point               
          (let ([to-send (map (lambda (t) (trace->frp-event client result t)) traces)])
            (frp:send-synchronous-events to-send))
          
@@ -217,7 +221,7 @@ TESTING/CAPABILITIES------------------------------------------------------------
   
   ; wrapper for errors related to the script only
   (define (script-error err)
-    (raise-syntax-error 'mztake:script-error: (format "~a" err))
+    (raise-syntax-error 'mztake:script-error (format "~a" err))
     (kill-all))
   
   
@@ -235,7 +239,7 @@ TESTING/CAPABILITIES------------------------------------------------------------
     (display (format "mztake: ~a~n---~n" str)))
   
   
-  ; retreives the binding of a variable from a breakpoint event
+  ; retreives the binding of a variable from a bind trace event
   (define (binding event sym)
     (define (do-n-times fn n arg)
       (foldl (lambda (x arg) (fn arg)) arg (build-list n (lambda (x) x))))
@@ -253,7 +257,10 @@ TESTING/CAPABILITIES------------------------------------------------------------
       [(client line col type args)
        (case type
          ['bind  (trace/bind client line col args)]
-         ['break (trace/break client line col)])]
+         ['entry (trace/entry client line col)]
+         [else (script-error (format "Invalid trace type: `~a' in client: `~a'"
+                                     (symbol->string type)
+                                     (debug-client-modpath client)))])]
       
       [(client line col type)
        (create-trace client line col type null)]))
@@ -262,18 +269,20 @@ TESTING/CAPABILITIES------------------------------------------------------------
   ; takes a single trace, looks up what it needs to do, and returns an frp-event to publish
   (define (trace->frp-event client event trace)
     (match trace
-      [($ break-trace evnt-rcvr)
+      [($ entry-trace evnt-rcvr)
        (list evnt-rcvr #t)]
       
       [($ bind-trace evnt-rcvr variable-to-bind)
        (let* ([vars (if (list? variable-to-bind) variable-to-bind
                         (list variable-to-bind))]
-              [values (map (lambda (var)
-                             (let ([val (binding event var)])
-                               (if (empty? val)
-                                   (script-error (format "trace/bind: No binding found in trace for symbol '~a" var))
-                                   (cadar (binding event var)))))
-                           vars)])
+              [values (map
+                       (lambda (var)
+                         (let ([val (binding event var)])
+                           (if (empty? val)
+                               (script-error
+                                (format "Variable not found at the syntax location for the BIND: `~a'" var))
+                               (cadar (binding event var)))))
+                       vars)])
          (list evnt-rcvr
                (if (list? variable-to-bind) values
                    (first values))))]))  
@@ -305,7 +314,7 @@ TESTING/CAPABILITIES------------------------------------------------------------
           (cond
             ; none is found
             [(empty? lst)
-             (raise (format "No syntax found for trace at line/column ~a:~a in ~a" line col filename))]
+             (raise (format "No syntax found for trace at line/column ~a:~a in client `~a'" line col filename))]
             
             ; if first is correct line and correct column
             [(and (= line (caar lst))
@@ -334,9 +343,6 @@ TESTING/CAPABILITIES------------------------------------------------------------
   ;  ;        ;       ;;;;     ;;;    ;;;;   ;;;;   ;;;;       ;         ;;;; ; ;      ;   ;;;   ;;;;  
   
   (define (start-debug-process receive-result process)    
-    (assert (not (null? (debug-process-main-client process)))
-            "main-client not defined for one of the processes!")
-    
     ; initialize the semaphore
     (set-debug-process-run-semaphore! process (make-semaphore))
     ; set initial state of exit predicate
@@ -459,13 +465,13 @@ TESTING/CAPABILITIES------------------------------------------------------------
   
   
   #;(define (running? process)
-    (script-error "client-running? is broken")
-    (and (running-now? process)
-         (not (debug-process-exited? process))))
+      (script-error "client-running? is broken")
+      (and (running-now? process)
+           (not (debug-process-exited? process))))
   
   #;(define (time-per-event/milliseconds process behavior)
-    (frp:lift (truncate (/ (frp:value-now (debug-process-runtime process))
-                 (add1 (frp:value-now (count-e (frp:changes behavior))))))))
+      (frp:lift (truncate (/ (frp:value-now (debug-process-runtime process))
+                             (add1 (frp:value-now (count-e (frp:changes behavior))))))))
   
   (define (runtime/milliseconds process)
     (debug-process-runtime process))
@@ -484,7 +490,7 @@ TESTING/CAPABILITIES------------------------------------------------------------
     (parameterize ([current-namespace (make-namespace)])
       (with-handlers ([exn:module?
                        (lambda (exn)
-                         (client-error (format "Expected a module in client: ~a" filename)))])
+                         (client-error (format "Expected a module in client file: ~a" filename)))])
         
         (let* ([build-module-filename ; taken from module-overview.ss
                 (lambda (str)
@@ -526,6 +532,10 @@ TESTING/CAPABILITIES------------------------------------------------------------
   ; (client (offset | line column) (symbol | listof symbols) -> (frp:event-receiver)
   ; (debug-client? number? number? (union symbol? (listof symbol?)) . -> . frp:event?)
   (define (trace/bind client line col binding-symbol)
+    (when (empty? binding-symbol)
+      (script-error (format "No symbols defined in BIND for client: `~a'"
+                            (debug-client-modpath client))))
+
     (with-handlers ([(lambda (exn) #t)
                      (lambda (exn) (raise-syntax-error 'mztake:script-error:trace/bind exn))])
       (let ([trace-hash (debug-client-tracepoints client)]
@@ -533,19 +543,19 @@ TESTING/CAPABILITIES------------------------------------------------------------
             [pos ((debug-client-line-col->pos client) line col)])
         ; add the trace to the list of traces for that byte-offset
         (hash-put! trace-hash pos
-                   (cons trace
-                         (hash-get trace-hash pos (lambda () '()))))
+                   (append (hash-get trace-hash pos (lambda () '()))
+                           (list trace)))
         (trace-struct-evnt-rcvr trace))))
   
   
   ;(debug-file? number? number? . -> . frp:event?)
-  (define (trace/break client line col)
+  (define (trace/entry client line col)
     (let ([trace-hash (debug-client-tracepoints client)]
-          [trace (create-break-trace)]
+          [trace (create-entry-trace)]
           [pos ((debug-client-line-col->pos client) line col)])
       (hash-put! trace-hash pos
-                 (cons trace
-                       (hash-get trace-hash pos (lambda () '()))))
+                 (append (hash-get trace-hash pos (lambda () '()))
+                         (list trace)))
       (trace-struct-evnt-rcvr trace)))
   
   

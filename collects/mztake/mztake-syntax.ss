@@ -1,7 +1,7 @@
 #|
 (mztake-process p ("sine.ss" [sin/x 5 8 bind '(sin-x x)]
-                            [foo 10 20 bind '(sin-x x)])
-                 ("sine-extra.ss"))
+                             [foo 10 20 bind '(sin-x x)])
+                  ("sine-extra.ss"))
  
 (define sin/x (hold sin/x))
 (define x (+ 200 (second sin/x)))
@@ -19,11 +19,11 @@
 (module mztake-syntax (lib "frtime-big.ss" "frtime")
   
   (require (lib "mztake.ss" "mztake")
-           (lib "useful-code.ss" "mztake/private"))
+           (lib "useful-code.ss" "mztake" "private"))
   
-  (define-syntax mztake-process
-    (syntax-rules (mztake-process)
-      [(mztake-process proc-id (client (trace line col cmd . args) ...) ...)
+  (define-syntax define-mztake-process
+    (syntax-rules (define-mztake-process)
+      [(define-mztake-process proc-id (client (trace line col cmd . args) ...) ...)
        (begin
          (define proc-id (create-debug-process))
          (begin
@@ -33,7 +33,7 @@
                 (create-trace tmp line col 'cmd . args)
                 ...))) ...))]))
   
-  (provide mztake-process
-           (all-from-except (lib "frtime-big.ss" "frtime") #%module-begin)
+  (provide define-mztake-process
+           (all-from (lib "frtime-big.ss" "frtime"))
            (all-from (lib "mztake.ss" "mztake"))
-           (all-from (lib "useful-code.ss" "mztake/private"))))
+           (all-from (lib "useful-code.ss" "mztake" "private"))))
