@@ -24,5 +24,4 @@
           '(("frtime") ("stepper"))))
   
   ; for use not on PLaneT
-  (pack-collections "frtime-distro.plt" "FrTime Language" '(("frtime")) #f '() std-filter)
-  (pack-collections "mztake-distro.plt" "MzTake Debugger" '(("mztake")) #t '(("frtime") ("stepper")) my-filter))
+  (pack-collections "mztake-distro.plt" "MzTake Debugger" '(("mztake")("frtime")) #t '(("stepper")) my-filter #f))
