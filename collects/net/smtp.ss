@@ -1,8 +1,11 @@
 
-(require-relative-library "smtps.ss")
+(module smtp mzscheme
+  (import (lib "unitsig.ss"))
 
-(begin-elaboration-time
- (require-library "invoke.ss"))
+  (import "smtp-sig.ss")
+  (import "smtp-unit.ss")
 
-(define-values/invoke-unit/sig mzlib:smtp^
-  (require-relative-library "smtpr.ss"))
+  (define-values/invoke-unit/sig net:smtp^
+    net:smtp@)
+
+  (export-signature-elements net:smtp^))

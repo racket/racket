@@ -1,8 +1,11 @@
 
-(require-relative-library "imaps.ss")
+(module imap mzscheme
+  (import (lib "unitsig.ss"))
 
-(begin-elaboration-time
- (require-library "invoke.ss"))
+  (import "imap-sig.ss")
+  (import "imap-unit.ss")
 
-(define-values/invoke-unit/sig mzlib:imap^
-  (require-relative-library "imapr.ss"))
+  (define-values/invoke-unit/sig net:imap^
+    net:imap@)
+
+  (export-signature-elements net:imap^))
