@@ -12,6 +12,7 @@
      compile-mode
      make-zo
      make-so
+     make-info-domain
      make-launchers
      call-install
      pause-on-errors
