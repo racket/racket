@@ -1,111 +1,76 @@
 #| TODO
 
-get time-per-event/milliseconds working
-(printf-b "~a ms per event" (time-per-event/milliseconds p (changes (hold sin/x-trace))))
-
-implies that the first client created is always the main module
-
-turn script errors into syntax errors
-
-make sure that the main client for a process is in the list of clients being annotated
-
-make syntax errors work for invalid bindings ... take the syntax when the binding is made and save it in a hashtable
-
----------LOAD ANNOTATOR BUGS::::::::::::::
-;catch oops exception
-;catch the other two exceptions that my loaders throw
-;detect if the source code for a certain module is missing and throw an error
-;do I want to parameterize it over a given namespace?
+:::::::::LOAD/ANNOTATOR BUGS::::::::::::::
+* catch oops exception
+* catch the other two exceptions that my loaders throw
+* detect if the source code for a certain module is missing and throw an exception
+* do I want to parameterize it over a given namespace?
+* does this handle module prefixes?
+* what happens if two modules have the same name in different directories
+* MAKE SURE THERE WONT BE COLLISIONS WHEN EVAL'NG MODULES...GIVE THEM UNIQUE NAMES BASED ON PATH!
 ::::::::::::::::::::::::::::::::::::::::::
 
--------------------
-does this work on binary drscheme files?
-
-make all exposed cells and evstreams read-only by lifting the identity function on them
-
-does this handle module prefixes?
-
-what happens if two modules have the same name in different directories
-MAKE SURE THERE WONT BE COLLISIONS WHEN EVAL'NG MODULES...GIVE THEM UNIQUE NAMES BASED ON PATH!
-----------------
-
-------------------------------------------------------------------------------------------------------------------------
-Problem:
-When debugging multiple files ...
-
-It is trivial to retrive values from from multiple files ... of course, you don't necessarily know the order that things will happen, and it may be difficult to relate the values correctly without writing a good debug script.  For instance, if debugging vector.ss, it may be used in multiple contexts in the file being debugged.  Can I provide a mechanism to turn breaks on and off based on other variables?  i.e. only register the breakpoint or send values on the eventstream IF a certain condition is met.
-
-what happens when a break happens in multiple files -- how do you know when it happens -- what does it mean when it happens -- in a single thread I assume that if a break happens deep in execution, all execution halts there until the semaphore gets posted to...
-
-Of course, you don't know where or why.
-
-With multiple threads... It is hard to differentiate between the threads since we do simple annotation that doesn't send which namespace, thread, custodian, eventspace... it came from.  More importantly, how can multiple threads hold on the same semaphore?  When you post to it ... which gets the post ... should one or all continue?  Does it make sense for only one to continue, or should they all get posted too (most likely).  When you want to pause the program, do you want to pause all the threads? (yes...)  When you resume, resume all?
-
-Otherwise if you stack them up, interact with one, resume, interact, resume... could be tedious.  Also, one may negate the necessity for the other.  What does it even mean to pause in vector.ss?
-
-Problem with synchronysity in multiple threads too... Maybe we need to have the threaded breakpoints run in lockstep... Put a 'semaphore' *before* processing breakpoints to ensure that there is ever only one breakpoint happening at a time, and each thread waits in a queue.  Big performance impact though... Does this solve all of our other problems -- I think we would only need one semaphore to continue then, and pausing will be global.  Yes, if each thread causes a pause, then we will pause possibly annoyingly each time.  We need a way to turn forced breaks on and off dynamically then. (does it make sense to be able to turn bind traces on and off too?)
-
-Performance-wise, this turns a multi-threaded program into a single thread -- if there are t threads over an arbitrary number of modules, worst case is that you have t threads in the queue.
-
-Last issue: Could this queue potentially cause a condition where threads A and B always get their breakpoints evaluated in the same order, a race condition, and they can't exit this until B comes before A?  Should I have some sort of random insertion that guarantees that everyone will get a chance, but does not guarantee order?
-------------------------------------------------------------------------------------------------------------------------
-
-With the syntax for debugging, you will not have to provide ways to create clients... they can only happen in one place at one time.!!!
-
-Need to know where the program breaks at -- need to know *when* it breaks too -- print something out
 
 DEMOS---------------------------------------------------------------------------------------
-Data structure examples
-Binary search over a tree, show which node is being examined, or the most commonly taken path
-Parse, graph the AST -- show OR and AND precedence getting messed up
+* Data structure examples
+  Binary search over a tree, show which node is being examined, or the most commonly taken path
+  Parse, graph the AST -- show OR and AND precedence getting messed up
 
-MST example
+* MST example
 
-Code something with multiple threads doing something and draw the threads in different colors in a window
+* something with multiple threads doing something and draw the threads in different colors in a window
 
-code the heap example
+* heap example
+
 
 SCRIPT--------------------------------------------------------------------------------------
-provide a running? behavior for the scripts, which actually works.
+* process:time-per-event/milliseconds is broken
+  (printf-b "~a ms per event" (time-per-event/milliseconds p (changes (hold sin/x-trace))))
 
-make (script-error) map to some exception stream for script errors only.
-For now it is a synonym for (display)
-Find a way to signal the error outside of FrTime's eventspace so that it doesnt loop the error endlessly
+* process:running? is broken
 
-make script errors highlight the location of the error
+* Make script errors highlight the location of the error
 
-let traces take a line number without offset and find the first bindable location.
+* Let traces take a line number without offset and find the first bindable location.
 
-provide a body to bind instead or returning an eventstream, like (list x y)
+* Provide a body to bind instead or returning an eventstream, like (list x y)
+  Write a nested syntax for bind so that you can take a first-class function that defines a way to return variables, not just as a list
 
-breaks dont pause at a client -- they just send a ping when they get hit -- if you want to pause you should say ((when-e breakpoint) . -=> . (pause p)); maybe take a thunk to do when the breakpoint is hit?
-
-offer a way to install a special handler for exceptions -- somehow identify which client an exceptions comes from
+* Maybe take a thunk to do when a break-point is hit?
 
 
 OPTIMIZATIONS-------------------------------------------------------------------------------
-improve speed of lookup for line-col->pos; load them into a hashtable?  not important since this is just startup time for the script.
+* improve speed of lookup for line-col->pos; load them into a hashtable?  not important since this is just startup time for the script.
 
-improve speed of load/annotate
+* improve speed of load/annotate
 
-improve speed of functions in (run)
+* improve speed of functions in (run)
 
 
-ERROR-CHECKING------------------------------------------------------------------------------
-Test what happens when you bind to variables that don't exist.
+ERROR-CHECKING/HANDLING---------------------------------------------------------------------
+* Make (script-error) map to some exception stream for script errors only.
+
+* Make all exposed cells and evstreams read-only by lifting the identity function on them
+
+* Turn script errors into syntax errors (i.e. what happens when you bind to variables that don't exist)
+    --take the syntax when the binding is made and save it in a hashtable
+
+* Offer a way to install a special handler for exceptions -- somehow identify which client an exceptions comes from
 
 
 TESTING/CAPABILITIES------------------------------------------------------------------------
-Does user interaction work?  Can we step through loops one line at a time waiting for input?  GUIs?
+* Does user interaction work?  Can we step through loops one line at a time waiting for input?  GUIs?
 
-We want a way to interactively step through code one line at a time when we hit a breakpoint.  Provide way to check bindings at the same time -- EVEN IF NOT BOUND USING TRACE/BIND
+* We want a way to interactively step through code one line at a time when we hit a breakpoint.
+  Provide way to check bindings at the same time -- EVEN IF NOT BOUND USING TRACE/BIND
 
-what kind of interface do we want to dig into frames
-write a nested syntax for bind so that you can take a first-class function that defines a way to return variables, not just as a list
+* What kind of interface do we want to dig into frames
 
-What do we do about binding to a variable and following it EVERYWHERE it goes.  Even if it is assigned to something else.  Need to talk to Shriram, Greg, and Guillaume about this.
+* Need to know where the program breaks at -- need to know *when* it breaks too -- print something out
 
-Find a way to bind to the result of ananonymous expression: here->(add1 2)
+* What do we do about binding to a variable and following it EVERYWHERE it goes.  Even if it is assigned to something else.
+
+* Find a way to bind to the result of ananonymous expression: here->(add1 2)
 |#
 
 (module mztake mzscheme
@@ -134,12 +99,14 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
                             (debug-process? . -> . frp:behavior?)]
                     [rename debug-process-exited?
                             process:exited?
-                            (debug-process? . -> . frp:behavior?)]
-                    #;[rename time-per-event/milliseconds
-                            process:time-per-event/milliseconds
-                            (debug-process? frp:behavior? . -> . frp:behavior?)])
+                            (debug-process? . -> . frp:behavior?)])
                     
-                    ;; process:running? ; disabled until it works
+                    #| DISABLED - BROKEN
+                    [process:running? (debug-process? . -> . frp:behavior?)]
+                    [rename time-per-event/milliseconds
+                            process:time-per-event/milliseconds
+                            (debug-process? frp:behavior? . -> . frp:behavior?)]
+                    |#
 
   
   ;              ;           ;                 ;                                      
@@ -156,12 +123,14 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   ;   ;;      ;  ;   ;    ;  ;     ;  ;    ;;  ;          ; ;    ;    ;; ;     ;    ; 
   ;     ;;;;;;   ;    ;;;;   ;;;;;;    ;;;; ;  ;           ;      ;;;; ; ;      ;;;;  
   
-  
   ;Keeps track of all debugging processes
   (define all-debug-processes null)
   
   ; turns debug output on and off
   (define debugging? #f)
+  
+  ; 
+  (define mztake-version "Rev. Wed Aug 4, 2004 - 23:57:00")
   
   ;###########################################################################################################
     
@@ -569,7 +538,10 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
       (trace-struct-evnt-rcvr trace)))
   
   
-  (provide create-trace create-debug-process create-debug-client)
+  (provide create-trace
+           create-debug-process
+           create-debug-client
+           mztake-version)
   
   ;###########################################################################################################
   

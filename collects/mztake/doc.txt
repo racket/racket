@@ -162,13 +162,17 @@ _Installing Watch Points_
    the pause function (below), execution resumes after
    the MzTake script processed the event.
 
+   [*] All valid syntax begins to the left of "(", "["
+       or the before the first character of a symbol/name.
+       See Known Issues for more information.
 
    [*] To obtain accurate line/column information when
        setting up watch points, make sure you turn off
-       DrScheme's "Wrap Test" feature under the "Edit"
+       DrScheme's "Wrap Text" feature under the "Edit"
        menu. Alternatively, you can click MzTake's
-       "Syntax Location" to obtain the line and column
-       number for the position under the cursor.
+       "Syntax Location" button, on the toolbar, to
+       obtain the line and column number for the
+       position under the cursor.
    
 
 _Operations on MzTake Processes_
@@ -257,6 +261,96 @@ that are particularly useful when debugging.
 > (printf-b format arg ...)
 
    Display the value of the behaviors with the given format
+
+
+============================================================
+
+Known Issues
+
+* The break button will *not* kill runaway client processes.
+  You must type (kill process-name) or (kill-all).
+
+* Some valid join points, such as ("->"):
+     (define x 12)
+     (->let ->(->[>x (add1 x)]) x)
+  do *not* produce any values for the bindings, just an empty
+  eventstream -- particularily in "let"s.
+  
+  Legal (recommended) bind points ("->"):
+     (define x 12)
+   ->(let ([x ->(->add1 ->x)]) ->x)
+
+* Don't rely completely on bind to complain when you change
+  target code and your line/col offsets are out of date in a
+  script. Sometimes you may write a bunch of code and the
+  values will still be on valid syntax join points, albeit
+  not the correct ones, so you get the wrong values.
+
+* Order matters -- if you have more than one kind of trace at
+  an identical syntax location, the order events occur is
+  undefined.
+    - You may have a bind that when updated draws a graphic,
+      and a breakpoint, you may want the breakpoint to happen
+      before the bind happens.
+
+    - For now, the hack is to bind one at ->(code...)
+      and the other (code...->(more-code...))
+      immediately following at the next open parentheses.
+      Often, not much happens on the same line between two
+      valid trace points, so this gives you a definite order.
+
+* Has not been tested for stability if the target is using
+  multiple threads. This only applies to threaded modules
+  *with* traces on them -- other 'require'd modules will work
+  as expected.
+
+
+============================================================
+
+Misc. Tips
+
+* You may want to bind more than one variable at a certain point
+  so that you only get one change event -- otherwise, you will
+  get multiple change events even if at the same tracepoint
+  (see Known Issues).
+
+  For instance, if you trace 'x and 'y seperately:
+    'x 'y are up to date, then 'x updates, 'y is out of date,
+    then 'y updates, and both are up to date.
+
+  But code that draws x and y locations will draw in two places,
+  one for each update.
+
+* You can trace the *same* file in different ways by using
+  multiple processes on the same file, under different
+  contexts, and compare results.
+
+* Code such as (when (= num 100) (pause p)) pauses *after*
+  num reaches 100, so the pause doesn't happen until the
+  101st iteration.
+
+* When you pause a mztake-process, you can play with
+  current bindings and explore script code interactively.
+  You *may* dynamically evaluate/add FrTime code to do
+  things like pause or kill a mztake-process based on runtime,
+  etc. You can even define new mztake-processes dynamically
+  and start/resume them, integrating and exploring the traces.
+  You cannot add or change existing traces dynamically.
+
+* You can add watch points to first-class functions, and they
+  will send events from no matter where they are evaluated.
+
+* FrTime has two methods for drawing graphics. One runs in
+  constant time, and is fast, because it simply accumulates
+  pixels on the screen and doesn't redraw a list of objects.
+  See the random-xs demo for this in action.
+
+  The other method is primarily for animations which need
+  redrawing because things move. It slows down pretty quickly
+  after you have more than 1000 objects to the shape list.
+  See the sine demo for this in action.
+
+  For more information, refer to the FrTime documentation.
 
 
 ============================================================

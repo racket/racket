@@ -1,6 +1,6 @@
 ;tests higher order annotation and redefinition of bindings
 
-(debug-process p ("higher-order.ss" [x-before-let 3 29 bind 'x]
+(mztake-process p ("higher-order.ss" [x-before-let 3 29 bind 'x]
                                     [x-in-let     4 25 bind 'x]
                                     [x-after-let  5 11 bind 'x]))
 

@@ -6,7 +6,7 @@
 (require (lib "animation.ss" "frtime")) ;; needed for display-shapes
 
 
-(debug-process p ("sine.ss" [sin/x-trace 5 8 bind '(sin-x x)]))
+(mztake-process p ("sine.ss" [sin/x-trace 5 8 bind '(sin-x x)]))
 #| * Create a process to debug for sine.ss
 
    * Add a tracepoint at line 5, column 8; in the program,
@@ -23,7 +23,7 @@
 
 
 (printf-b "sine.ss exited? ~a" (process:exited? p))
-;; Prints out a behavior that tells you whether the debug-process is still running...
+;; Prints out a behavior that tells you whether the mztake-process is still running...
 
 
 (define sin/x (hold sin/x-trace))

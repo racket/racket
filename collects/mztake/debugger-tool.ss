@@ -16,7 +16,8 @@
 ;                                                                                       ;;;;   
 
 (module debugger-tool mzscheme
-  (require (lib "etc.ss")
+  (require "mztake.ss"
+           (lib "etc.ss")
            (lib "list.ss")
            (lib "class.ss")
            (lib "unitsig.ss")
@@ -81,7 +82,7 @@
 	  (define/public (get-module)
 	    '(lib "mztake-syntax.ss" "mztake"))
 	  (define/public (get-one-line-summary)
-	    "MzTake Debugger")
+	    (format "MzTake Debugger (~a)" mztake-version))
           (define/public (get-language-url) #f)
 	  (define/public (get-reader)
 	    (lambda (name port offsets)
@@ -116,7 +117,7 @@
       
       (define debugger-bitmap
         (drscheme:unit:make-bitmap
-         "Syntax Offset"
+         "Syntax Location"
          (build-path (collection-path "mztake") "stock_macro-check-brackets-16.png")))
       
       (define (debugger-unit-frame-mixin super%)
@@ -136,8 +137,8 @@
                        [column (- pos (send (get-definitions-text) line-start-position
                                             (send (get-definitions-text) position-line pos)))])
                   
-                  (message-box "Syntax Offset"
-                               (format "Line: ~a~nColumn: ~a~nOffset: ~a" (add1 line) column pos))))))          
+                  (message-box "Syntax Location"
+                               (format "Line: ~a~nColumn: ~a" (add1 line) column))))))
           (send (get-button-panel) change-children
                 (lambda (_) (cons debugger-button (remq debugger-button _))))))
       

@@ -1,6 +1,6 @@
 (require (lib "animation.ss" "frtime"))
 
-(debug-process p ("highway.ss" [values-of-speed 3 4 bind 'speed]))
+(mztake-process p ("highway.ss" [values-of-speed 3 4 bind 'speed]))
 
 (printf-b "last ten speeds: ~a" (history-b 10 values-of-speed))
 

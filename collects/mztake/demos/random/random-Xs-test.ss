@@ -13,7 +13,7 @@
 (open-graphics)
 (define window (open-viewport "Debugger" 600 500))
 
-(debug-process p ("random-Xs.ss" [x-trace 4 6 bind 'x]))
+(mztake-process p ("random-Xs.ss" [x-trace 4 6 bind 'x]))
 
 (define x (hold x-trace))
 

@@ -3,7 +3,7 @@
 (open-graphics)
 (define window (open-viewport "Debugger" 400 400))
 
-(debug-process p ("montecarlo.ss" [x/y/pi-trace 12 18 bind '(x y pi)]))
+(mztake-process p ("montecarlo.ss" [x/y/pi-trace 12 18 bind '(x y pi)]))
 
 (define x/y/pi (hold x/y/pi-trace))
 
