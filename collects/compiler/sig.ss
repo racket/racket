@@ -15,6 +15,9 @@
                 ;  the public names of loaded extensions
                 ; default = ""
 
+   use-mrspidey ; #t => analyze with MrSpidey
+                ; default = #f
+
    clean-intermediate-files ; #t => keep intermediate .c/.o files
                             ; default = #f
 
