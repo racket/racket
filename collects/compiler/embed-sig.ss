@@ -7,4 +7,5 @@
     (make-embedding-executable
      write-module-bundle
      embedding-executable-is-directory?
-     embedding-executable-put-file-extension+style+filters)))
+     embedding-executable-put-file-extension+style+filters
+     embedding-executable-add-suffix)))

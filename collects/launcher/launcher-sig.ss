@@ -23,6 +23,9 @@
      mred-launcher-is-directory?
      mzscheme-launcher-is-directory?
 
+     mred-launcher-add-suffix
+     mzscheme-launcher-add-suffix
+
      mred-launcher-put-file-extension+style+filters
      mzscheme-launcher-put-file-extension+style+filters
 
