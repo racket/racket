@@ -9,16 +9,17 @@
 (require (lib "url.ss" "net")
 	 (lib "uri-codec.ss" "net"))
 
-(test "a=hel%2blo" alist->form-urlencoded '((a . "hel+lo")))
-(test '((a . "hel+lo")) form-urlencoded->alist (alist->form-urlencoded '((a . "hel+lo"))))
+(test "a=hel%2blo+%e7%88%b8" alist->form-urlencoded '((a . "hel+lo \u7238")))
+(test '((a . "hel+lo \u7238")) form-urlencoded->alist (alist->form-urlencoded '((a . "hel+lo \u7238"))))
 (test "a=hel%2blo;b=good-bye" alist->form-urlencoded '((a . "hel+lo") (b . "good-bye")))
 (test '((a . "hel+lo") (b . "good-bye")) form-urlencoded->alist (alist->form-urlencoded '((a . "hel+lo") (b . "good-bye"))))
 
 (let ([with-censor (load-relative "censor.ss")])
   (with-censor
    (lambda ()
+     ;; Test all chars up to 300
      (let ([p (let loop ([n 0])
-		(if (= n 256)
+		(if (= n 300)
 		    null
 		    (let ([s (string (char-downcase (integer->char n)))])
 		      (cons (cons (string->symbol s) s)
