@@ -50,7 +50,7 @@
                      +inf.0))))
   
   ; Matches a sequence of items in a list to event pings
-  (define/contract sequence-match? ((listof any?) . -> . any)
+  (define/contract sequence-match? ((listof any/c) . -> . any)
     (lambda (seq evs)
       (equal? seq (history-b (length seq) evs))))
   

@@ -15,12 +15,13 @@
 ;                                                                                      ;    ;  
 ;                                                                                       ;;;;   
 
-(module debugger-tool mzscheme
+(module mztake-lang mzscheme
   (require "mztake.ss"
            (lib "etc.ss")
            (lib "list.ss")
            (lib "class.ss")
            (lib "unitsig.ss")
+           (lib "bitmap-label.ss" "mrlib")
            (lib "contract.ss")
            (lib "mred.ss" "mred")
            (lib "tool.ss" "drscheme")
@@ -44,11 +45,10 @@
 		(drscheme:language:simple-module-based-language->module-based-language-mixin
 		 base))
           (field (watch-list empty))
-	  (rename [super-on-execute on-execute])
           (inherit get-language-position)
           (define/override (on-execute settings run-in-user-thread)
             (let ([drs-eventspace (current-eventspace)])
-              (super-on-execute settings run-in-user-thread)
+              (super on-execute settings run-in-user-thread)
               (run-in-user-thread
                (lambda ()
                  (let ([new-watch (namespace-variable-value 'render)]
@@ -60,15 +60,12 @@
                               (lambda (r) (cons (make-weak-box new-watch) r)))
                           (filter weak-box-value watch-list))))))))
           
-          (rename (super:render-value/format render-value/format)
-                  (super:render-value        render-value))
-          (override render-value/format render-value)
-          (define (render-value/format value settings port put-snip width)
-            (super:render-value/format (watch watch-list value put-snip)
-                                       settings port put-snip width))
-          (define (render-value value settings port put-snip)
-            (super:render-value (watch watch-list value put-snip)
-                                settings port put-snip))
+          (define/override (render-value/format value settings port width)
+            (super render-value/format (watch watch-list value)
+                                       settings port width))
+          (define/override (render-value value settings port)
+            (super render-value (watch watch-list value)
+                                settings port))
 	  (define/override (use-namespace-require/copy?) #t)
 	  (super-instantiate ())))
       
@@ -103,12 +100,12 @@
                     [else false])
                   (loop (rest lis)))))))
       
-      (define (watch watch-list value as-snip?)
+      (define (watch watch-list value)
         (foldl
          (lambda (wb acc)
            (cond
              [(weak-box-value wb)
-              => (lambda (f) (f acc as-snip?))]
+              => (lambda (f) (f acc))]
              [else acc]))
          value
          watch-list))
@@ -116,9 +113,9 @@
       
       
       (define debugger-bitmap
-        (drscheme:unit:make-bitmap
+        (bitmap-label-maker
          "Syntax Location"
-         (build-path (collection-path "mztake") "stock_macro-check-brackets-16.png")))
+         (build-path (collection-path "mztake" "icons") "stock_macro-check-brackets-16.png")))
       
       (define (debugger-unit-frame-mixin super%)
         (class super%

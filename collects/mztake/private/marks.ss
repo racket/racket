@@ -14,10 +14,10 @@
   
   (provide/contract 
    ;[make-debug-info (-> any? binding-set? varref-set? any? boolean? syntax?)] ; (location tail-bound free label lifting? -> mark-stx)
-   [expose-mark (-> mark? (list/p any? symbol? (listof (list/p identifier? any?))))]
+   [expose-mark (-> mark? (list/c any/c symbol? (listof (list/c identifier? any/c))))]
    [make-top-level-mark (syntax? . -> . syntax?)]
-   [lookup-all-bindings ((identifier? . -> . boolean?) mark-list? . -> . (listof any?))]
-   [lookup-first-binding ((identifier? . -> . boolean?) mark-list? ( -> any) . -> . any?)]
+   [lookup-all-bindings ((identifier? . -> . boolean?) mark-list? . -> . (listof any/c))]
+   [lookup-first-binding ((identifier? . -> . boolean?) mark-list? ( -> any) . -> . any)]
    [lookup-binding (mark-list? identifier? . -> . any)])
   
   (provide
@@ -32,6 +32,7 @@
    mark-label
    mark-binding-value
    mark-binding-binding
+   mark-binding-set!
    display-mark
    all-bindings
    #;lookup-binding-list
@@ -79,7 +80,9 @@
     
   ; : identifier -> identifier
   (define (make-mark-binding-stx id)
-    #`(lambda () #,(syntax-property id 'stepper-dont-check-for-function #t)))
+    #`(case-lambda
+        [() #,(syntax-property id 'stepper-dont-check-for-function #t)]
+        [(v) (set! #,(syntax-property id 'stepper-dont-check-for-function #t) v)]))
   
   (define (mark-bindings mark)
     (map list 
@@ -95,6 +98,9 @@
   (define (mark-binding-binding mark-binding)
     (car mark-binding))
 
+  (define (mark-binding-set! mark-binding v)
+    ((cadr mark-binding) v))
+  
   (define (expose-mark mark)
     (let ([source (mark-source mark)]
           [label (mark-label mark)]
@@ -146,7 +152,7 @@
     (map mark-binding-binding (mark-bindings mark)))
   
   (define (wcm-wrap debug-info expr)
-    #`(with-continuation-mark #,debug-key #,debug-info #,expr))
+    (quasisyntax/loc expr (with-continuation-mark #,debug-key #,debug-info #,expr)))
 
   
   ; DEBUG-INFO STRUCTURES

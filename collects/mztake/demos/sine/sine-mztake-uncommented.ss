@@ -1,5 +1,5 @@
 (require (lib "animation.ss" "frtime"))
-
+(require (lib "mztake-syntax.ss" "mztake"))
 
 (define-mztake-process p ("sine.ss" [x/sinx-trace 5 8 bind '(x sin-x)]))
 
