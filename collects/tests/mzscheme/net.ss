@@ -7,7 +7,8 @@
 ;;
 
 (require (lib "url.ss" "net")
-	 (lib "uri-codec.ss" "net"))
+	 (lib "uri-codec.ss" "net")
+         (lib "string.ss"))
 
 (test "%Pq" uri-decode "%Pq")
 (test "%P" uri-decode "%P")
@@ -49,6 +50,90 @@
        (test p form-urlencoded->alist (alist->form-urlencoded p))
        (let ([l (apply string-append (map cdr p))])
 	 (test l uri-decode (uri-encode l)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; tests adapted from Noel Welsh's original test suite
+;;
+
+(let ()
+  (define-syntax (for stx)
+    (syntax-case stx (code)
+      [(_ (i from to) e)
+       (and (identifier? (syntax code))
+            (number? (syntax-e (syntax from)))
+            (number? (syntax-e (syntax to))))
+       (syntax (let loop ([i from])
+                 e
+                 (unless (= i to)
+                   (loop (+ i 1)))))]))
+  
+  
+  (test "hello" uri-encode "hello")
+  (test "hello%20there" uri-encode "hello there")
+  
+  (let ((pad (lambda (str)
+               (if (= (string-length str) 1)
+                   (string-append "0" str)
+                   str))))
+    (for (code 0 256)
+         (if (or (= code 45) (= code 33) (= code 95)
+                 (= code 46) (= code 126) (= code 42)
+                 (= code 39) (= code 40) (= code 41) 
+                 (and (<= 48 code) (<= code 57))   ; 0-9
+                 (and (<= 65 code) (<= code 90))   ; A-Z
+                 (and (<= 97 code) (<= code 122))) ; a-z
+             (test (string (integer->char code)) uri-encode (string (integer->char code)))
+             (test (string-append "%" (pad (number->string code 16)))
+                   uri-encode
+                   (string (integer->char code))))))
+  
+  
+  (test "" alist->form-urlencoded '())
+  (test "key=hello+there" alist->form-urlencoded '((key . "hello there")))
+  (test "key1=hi;key2=hello" alist->form-urlencoded '((key1 . "hi") (key2 . "hello")))
+  (test "key1=hello+there" alist->form-urlencoded '((key1 . "hello there")))
+  
+  (test "hello" uri-decode "hello")
+  (test "hello there" uri-decode "hello%20there")
+  
+  (let* ((pad (lambda (str)
+                (if (= (string-length str) 1)
+                    (string-append "0" str)
+                    str)))
+         (uppercase (lambda (str)
+                      (string-uppercase! str)
+                      str))
+         (lowercase (lambda (str)
+                      (string-lowercase! str)
+                      str))
+         (hexcode (lambda (code)
+                    (string-append "%"
+                                   (pad (number->string code 16))))))
+
+    ;; each of the next three of these were going from 0 to 255 in Noel's
+    ;; original test suite. Those fail here, however.
+    
+    (for (code 0 127)
+         (test (string (integer->char code)) uri-decode (uppercase (hexcode code))))
+    (for (code 0 127)
+         (test (string (integer->char code)) uri-decode (lowercase (hexcode code)))))
+  
+  (for (code 0 127)
+       (test (string (integer->char code)) uri-decode (string (integer->char code))))
+  
+  ;; form-urlencoded->alist
+  (test '() form-urlencoded->alist "")
+  (test '((key . "value")) form-urlencoded->alist "key=value")
+  (test '((key . "hello there")) form-urlencoded->alist "key=hello+there")
+  (test '((key . "a value")) form-urlencoded->alist "key=a%20value")
+  (test '((key . ""))  form-urlencoded->alist "key")
+  (test '((key1 . "value 1") (key2 . "value 2")) form-urlencoded->alist "key1=value+1&key2=value+2"))
+
+;;
+;; end Noel's original tests
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (let ()
   (define (test-s->u vec str)
