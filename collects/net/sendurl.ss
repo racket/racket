@@ -6,9 +6,12 @@
   
   (provide send-url)
   
+  (define separate-by-default?
+    (get-preference 'new-browser-for-urls (lambda () #t)))
+
   ; send-url : str -> void
   (define send-url
-    (opt-lambda (str [separate-window? #t])
+    (opt-lambda (str [separate-window? separate-by-default?])
       (parameterize ([current-input-port null-input]
 		     [current-error-port null-output] ; comment out this line to see error messages
 		     [current-output-port null-output])
