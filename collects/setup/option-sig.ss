@@ -1,5 +1,5 @@
 
-(module sig mzscheme
+(module option-sig mzscheme
   (import (lib "unitsig.ss"))
   
   (export setup-option^)
