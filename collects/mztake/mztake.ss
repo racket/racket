@@ -1,4 +1,6 @@
 #| TODO
+Remove client from runtime setters
+
 ------------------------------------------------------------------------------------------------------------------------
 Problem:
 When debugging multiple files ...
@@ -124,12 +126,12 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
            (rename script:trace/bind trace/bind)
            (rename script:trace/break trace/break)
            (rename script:set-running! set-running!)
-           (rename client-exited? client:exited?)
+           (rename debugger:exited? debugger:exited?)
            (rename script:start/resume start/resume)
            (rename script:create client:create)
-           (rename client-exceptions client:exceptions)
-           (rename script:runtime-seconds client:runtime/seconds)
-           (rename script:runtime-milliseconds client:runtime/milliseconds))
+           (rename debugger:exceptions debugger:exceptions)
+           (rename script:runtime/seconds debugger:runtime/seconds)
+           (rename script:runtime/milliseconds debugger:runtime/milliseconds))
   ;(rename script-running? client-running?)) ; disabled until it works
   
   
@@ -143,9 +145,6 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   
   (define-struct client (filename       ; string
                          tracepoints    ; hash-table of traces
-                         exceptions     ; (an event stream) exceptions thrown during the evaluation of the target
-                         exited?        ; (an cell) receives #t when the target exits
-                         runtime        ; behavior with current runtime in milliseconds
                          line-col->pos)); memoized O(n) function to map line/col -> byte offset
   
   ;####################  STRUCT-BUILDERS  #####################
@@ -161,17 +160,40 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   
   ;###################  GLOBAL VARIABLES  ####################
   
-  ;Keeps track of all defined clients
+  ; Keeps track of all defined clients
   (define all-clients null)
   
-  ;If you shutdown-all it will kill the debugger
+  ; If you shutdown-all it will kill the debugger
   (define debugger-custodian null)
   
-  ;When you post to this the debuggee will continue executing
+  ; When you post to this the debuggee will continue executing
   (define run-semaphore null)
   
-  ;Is the program (supposed-to-be) currently running
-  (define debugger-running? #f)
+  ; Is the program (supposed-to-be) currently running
+  (define debugger:running? #f)
+  
+  ; FrTime cell receives #t when the target exits
+  (define debugger:exited? (frp:new-cell))
+  
+  ; (an event stream) Exceptions thrown during the evaluation of the target
+  (define debugger:exceptions (frp:event-receiver))
+  
+  ; Behavior with current runtime in milliseconds
+  (define debugger:runtime
+    (frp:hold
+     ((frp:changes
+       (frp:accum-b
+        ((frp:changes frp:milliseconds)
+         . frp:-=> .
+         (match-lambda [(prev sum)
+                        (if (frp:value-now debugger:running?)
+                            (list (frp:value-now frp:milliseconds)
+                                  (+ (- (frp:value-now frp:milliseconds) prev) sum))
+                            (list (frp:value-now frp:milliseconds) sum))]))
+        (list (frp:value-now frp:milliseconds) 0)))
+      . frp:==> .
+      second)
+     0))
   
   
   ;#######################  CALLBACKS  #######################
@@ -203,7 +225,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
       ;end of a statement
       [($ breakpoint-halt)
        ; do we want to pause interactive debugging
-       (when (running-now? client)
+       (when (running-now?)
          (semaphore-post run-semaphore))]
       
       ;when a top level expression finishes
@@ -216,7 +238,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
   ;###################  DEBUGGER BACKEND  ####################
   
   ;(define (annotate-all-clients)
- ;   (
+  ;   (
   
   ; retreives the binding of a variable from a breakpoint event
   (define (binding event sym)
@@ -298,7 +320,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
                                      (breakpoints breakpoint-origin))
       
       ; set initial state of exit predicate
-      (frp:set-cell! (client-exited? client) #f)
+      (frp:set-cell! debugger:exited? #f)
       
       (set! run-semaphore go-semaphore)
       
@@ -315,7 +337,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
                   ; FrTime errors from the script have their own eventstream
                   (with-handlers ([(lambda (exn) #t)
                                    (lambda (exn)
-                                     (frp:send-event (client-exceptions client) exn)
+                                     (frp:send-event debugger:exceptions exn)
                                      (client-error (if (exn? exn)
                                                        (format "exception: ~a" (exn-message exn))
                                                        exn)))])
@@ -366,27 +388,9 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
                             (first lst))])))))))
   
   ; predicate - is the debugee supposed to be running now?
-  (define (running-now? client)
+  (define (running-now?)
     (and (not (null? run-semaphore))
-         (frp:value-now debugger-running?)))
-  
-  ; returns a behavior for a client counting runtime
-  ; this is set!'d into the client struct so that it is always accurate
-  (define (runtime c)
-    (frp:hold
-     ((frp:changes
-       (frp:accum-b
-        ((frp:changes frp:milliseconds)
-         . frp:-=> .
-         (match-lambda [(prev sum)
-                        (if (frp:value-now debugger-running?)
-                            (list (frp:value-now frp:milliseconds)
-                                  (+ (- (frp:value-now frp:milliseconds) prev) sum))
-                            (list (frp:value-now frp:milliseconds) sum))]))
-        (list (frp:value-now frp:milliseconds) 0)))
-      . frp:==> .
-      second)
-     0))
+         (frp:value-now debugger:running?)))
   
   
   ;####################  SCRIPT FUNCTIONS  ###################
@@ -402,41 +406,34 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
         (frp:value-now run?))
       
       (cond [(frp:behavior? run?)
-             (set! debugger-running? (frp:proc->signal update run?))]
-            [else (set! debugger-running? run?)
+             (set! debugger:running? (frp:proc->signal update run?))]
+            [else (set! debugger:running? run?)
                   (update)])
       (void)))
   
   
   ;TODO dont forget to contract this
-  (define script:running?
-    (lambda (client)
-      (print "client-running? is broken")
-      (and (running-now? client)
-           (not (client-exited? client)))))
+  (define (script:running?)
+    (print "client-running? is broken")
+    (and (running-now?)
+         (not debugger:exited?)))
   
-  (define/contract script:runtime-milliseconds (client? . -> . frp:behavior?)
-    (lambda (client)
-      (client-runtime client)))
+  (define script:runtime/milliseconds debugger:runtime)
   
-  (define/contract script:runtime-seconds (client? . -> . frp:behavior?)
-    (lambda (client)
-      (frp:hold ((frp:changes (client-runtime client))
-                 . frp:==> .
-                 (lambda (t) (truncate (/ t 1000))))
-                0)))
+  (define script:runtime/seconds
+    (frp:hold ((frp:changes debugger:runtime)
+               . frp:==> .
+               (lambda (t) (truncate (/ t 1000))))
+              0))
   
   ; Creates a debugger client
   ; (string) -> (client)
   (define/contract script:create (string? . -> . client?)
     (lambda (filename)
-      (let ([c (make-client filename (make-hash) (frp:event-receiver) (frp:new-cell) null null)])
+      (let ([c (make-client filename (make-hash) null)])
         
         ; set curried line-col->pos function for client
         (set-client-line-col->pos! c (line-col->pos c))
-        
-        ; set the runtime info (runtime-evs, time-behavior)
-        (set-client-runtime! c (runtime c))
         
         (set! all-clients (cons c all-clients))
         
@@ -456,7 +453,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
       (set! debugger-custodian null)
       (set! run-semaphore null)
       ; set the exit predicate to 'exited'
-      (frp:set-cell! (client-exited? client) #t)))
+      (frp:set-cell! debugger:exited? #t)))
   
   ; (client (offset | line column) (symbol | listof symbols) -> (frp:event-receiver)
   (define/contract script:trace/bind (client? number? number? (union symbol? (listof symbol?)) . -> . frp:event?)
