@@ -1,5 +1,7 @@
 #| TODO
 
+implies that the first client created is always the main module
+
 turn script errors into syntax errors
 
 make sure that the main client for a process is in the list of clients being annotated
@@ -137,9 +139,7 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
                             (debug-process? . -> . frp:behavior?)]
                     
                     ;; process:running? ; disabled until it works
-                    
-                    ;TODO HACK!
-                    [set-debug-process-main-client! (debug-process? debug-client? . -> . void?)])
+                    )
   
   ;              ;           ;                 ;                                      
   ;     ;;;;;;   ;           ;                 ;       ;       ;                      
@@ -515,6 +515,11 @@ Find a way to bind to the result of ananonymous expression: here->(add1 2)
           (set-debug-client-line-col->pos! client (line-col->pos modpath))
           (set-debug-process-clients! process
                                       (append (list client) (debug-process-clients process)))
+          
+          ; set the main module if it has not been set
+          ; this implies that the first client created is always the main module
+          (when (null? (debug-process-main-client process))
+            (set-debug-process-main-client! process client))
           
           client))))
   
