@@ -19,18 +19,7 @@
 	   ;; actually, I think GURL means something slightly different...
 	   (send-event "MACS" "GURL" "GURL" str)]
 	  [(windows)
-	   ;; Try to get a MrEd function...
-	   (let ([get-res (with-handlers ([not-break-exn? (lambda (x) #f)])
-			    (dynamic-require '(lib "mred.ss" "mred") 'get-resource))])
-	     (if get-res
-		 (let ([b (box "")])
-		   (unless (get-res "HKEY_CLASSES_ROOT" "htmlfile\\shell\\open\\command" b)
-		     (error 'send-url "couldn't find URL opener in the registry"))
-                   (apply
-                    process*/close-ports
-                    (append (parse-command.com (open-input-string (unbox b)))
-                            (list str))))
-		 (error 'send-url "don't know how to open URL in Windows without MrEd")))]
+	   (shell-execute #f str "" (current-directory) 'SW_SHOWNORMAL)]
 	  [(unix)
 	   (let ([preferred (get-preference 'external-browser (lambda () #f))])
 	     (cond
