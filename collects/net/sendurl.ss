@@ -1,5 +1,5 @@
 
-(module send-url mzscheme
+(module sendurl mzscheme
   (require (lib "process.ss"))
 
   (provide send-url)
