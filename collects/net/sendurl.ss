@@ -1,9 +1,10 @@
-(module open-url mzscheme
+
+(module send-url mzscheme
   (require (lib "process.ss"))
 
-  (provide open-url)
+  (provide send-url)
   
-  (define (open-url str)
+  (define (send-url str)
     (case (system-type)
       [(macos)
        (send-event "MACS" "GURL" "GURL" str)]
@@ -17,4 +18,4 @@
                (close-output-port in)
                (close-input-port out)
                (close-input-port err))))]
-      [else (error 'open-url "don't know how to open url on platform: ~s" (system-type))])))
+      [else (error 'send-url "don't know how to open url on platform: ~s" (system-type))])))
