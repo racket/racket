@@ -51,7 +51,7 @@
 	    ;; Normal OS Classic:
 	    (send-event "MACS" "GURL" "GURL" url-str))]
        [(or (eq? (system-type) 'macosx)
-	    (equal? "ppc-macosxonx" (system-library-subpath)))
+	    (equal? "ppc-darwin" (system-library-subpath)))
 	;; not sure what changed, but this is wrong now.... -robby
 	;;(browser-process (format "osascript -e 'open location \"~a\"'" (regexp-replace* "%" url-str "%25")))	
 	(browser-process (format "osascript -e 'open location \"~a\"'" url-str))]
