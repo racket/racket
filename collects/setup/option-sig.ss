@@ -1,8 +1,8 @@
 
 (module option-sig mzscheme
-  (import (lib "unitsig.ss"))
+  (require (lib "unitsig.ss"))
   
-  (export setup-option^)
+  (provide setup-option^)
 
   (define-signature setup-option^
     (verbose

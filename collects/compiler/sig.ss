@@ -1,9 +1,9 @@
 
 (module sig mzscheme
 
-  (import (lib "unitsig.ss"))
+  (require (lib "unitsig.ss"))
 
-  (export compiler:option^
+  (provide compiler:option^
 	  compiler^
 	  compiler:inner^
 	  compiler:linker^)
