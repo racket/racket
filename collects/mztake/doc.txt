@@ -112,10 +112,7 @@ MzTake is a DrScheme tool distributed as a self-installing
 
   http://planet.plt-scheme.org/
 
-You need to have the latest version of FrTime installed
-for MzTake to work correctly (it may function, though
-unpredictably, in older versions). Please use FrTime from
-DrScheme v208 and up, or the latest CVS revision.
+MzTake requires PLT Scheme v208 and higher.
 
 
 ============================================================
