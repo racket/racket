@@ -4,12 +4,12 @@
 	   (lib "etc.ss")
 	   (lib "sendevent.ss"))
   
-  (provide send-url)
+  (provide send-url unix-browser-list)
   
   (define separate-by-default?
     (get-preference 'new-browser-for-urls (lambda () #t)))
   
-  ; send-url : str -> void
+  ; send-url : str [bool] -> void
   (define send-url
     (opt-lambda (str [separate-window? separate-by-default?])
       ; The with-handler reverts to the old error port before printing raised error messages.
@@ -76,8 +76,21 @@
                   (lambda (browser-path)
                     (process*/close-ports browser-path str))]
                  [else
-                  (error 'open-url "Couldn't find Opera, Galeon, Mozilla, Netscape, or Dillo to open URL: ~e" str)]))]
+                  (error 'open-url "Couldn't find ~a to open URL: ~e" (orify unix-browser-list) str)]))]
             [else (error 'send-url "don't know how to open URL on platform: ~s" (system-type))])))))
+  
+  (define unix-browser-list '(opera galeon netscape mozilla dillo))
+  
+  ; : (cons tst (listof tst)) -> str
+  (define (orify l)
+    (cond
+      [(null? (cdr l)) (format "~a" (car l))]
+      [(null? (cddr l)) (format "~a or ~a" (car l) (cadr l))]
+      [else 
+    (let loop ([l l])
+      (cond
+        [(null? (cdr l)) (format "or ~a" (car l))]
+        [else (string-append (format "~a, " (car l)) (loop (cdr l)))]))]))
   
   ; : sym sym -> (U #f str)
   ; to find the path for the named browser, unless another browser is preferred
