@@ -11,7 +11,8 @@
 
   ; : any -> bool
   (define (browser-preference? x)
-    (or (not x) (memq x unix-browser-list) (custom-browser? x)))
+    (or (not x) (memq x unix-browser-list) (custom-browser? x)
+        (procedure? x)))
 
   (define external-browser
     (make-parameter
@@ -30,6 +31,8 @@
                        [current-error-port null-output]
                        [current-output-port null-output])
           (cond
+            [(procedure? (external-browser))
+             ((external-browser) url-str)]
             [(eq? (system-type) 'macos)
              (if (regexp-match "Blue Box" (system-type #t))
                  ;; Classic inside OS X:
