@@ -15,15 +15,17 @@
          every time the code at line 3, column 4, is reached.
 |#
 
-(printf-b "runtime elapsed: ~a" (process:runtime/seconds radar-program))
-;; Prints how long the program has been running, in seconds
+
+(printf-b "current speed: ~a" (hold values-of-speed))
+;; Prints the current speed being recorded
+
 
 (printf-b "last ten speeds: ~a" (history-b 10 values-of-speed))
 ;; prints a FIFO list of the last 10 speeds seen
-
 (map-e (lambda (a-speed) (when (>= a-speed 55) (pause radar-program)))
        values-of-speed)
 ;; pauses the program for inspection when a speed is too fast
+
 
 ;; produces a list of shapes to draw/animate, taking in a number for speed
 (define (make-speed-gauge speed)
