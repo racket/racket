@@ -15,4 +15,5 @@
      call-install
      pause-on-errors
      specific-collections
-     archives)))
+     archives
+     current-target-directory-getter)))
