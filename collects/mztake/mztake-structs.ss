@@ -2,7 +2,9 @@
   (require (prefix frp: (lib "frp.ss" "frtime"))
            (lib "more-useful-code.ss" "mztake" "private"))
   
-  (provide (all-defined))
+  (provide (all-defined-except loc make-loc)
+           (rename loc loc$)
+           (rename make-loc loc))
   
   ;    ;;;;;   ;                          ;          
   ;   ;     ;  ;                          ;          
@@ -26,14 +28,21 @@
   
   (define-struct debug-process (custodian     ; If you shutdown-all it will kill the debugger process
                                 run-semaphore ; When you post to this the debuggee will continue executing
-                                running?      ; Is the program (supposed-to-be) currently running
+                                running-e     ; Is the program (supposed-to-be) currently running
+                                run-manager   ; saves behavior that actually pauses/resumes from GC
+                                pause-requested?
+                                resume-requested?
+
                                 exited?       ; FrTime cell receives #t when the target exits
                                 exceptions    ; (an event stream) Exceptions thrown during the evaluation of the target
-                                runtime       ; Behavior with current runtime in milliseconds
                                 main-client   ; the main client module that will be run
                                 clients       ; list of all the clients attached to this process
+                                
+                                where         ; a behavior signaling each position where we pause
                                 marks))       ; while paused, the marks at the point of the pause (else false)
   
+  (define-struct loc (modpath line col))
+                      
   ;###########################################################################################################
   
   
@@ -51,17 +60,6 @@
   ;         ;  ;   ;     ;      ; ;       ;         ;        ;     ;       ;     ;  ;   ;      ; ;          ; 
   ;  ;     ;   ;   ;      ;    ;;  ;   ;  ;         ;;     ; ;      ;    ; ;    ;;  ;    ;    ;  ;     ;    ; 
   ;   ;;;;;     ;;;;       ;;;; ;   ;;;    ;;;        ;;;;;  ;       ;;;;   ;;;; ;   ;;;  ;;;;   ;      ;;;;  
-  
-  (define (create-empty-debug-process)
-    (make-debug-process (make-custodian)
-                        null                 ; run-semaphore - null so we know it has never started
-                        #f                   ; running?
-                        (frp:new-cell)       ; exited?
-                        (frp:event-receiver) ; exceptions
-                        null                 ; runtime
-                        null                 ; main-client
-                        empty                ; clients
-                        false))              ; marks
   
   (define (create-empty-debug-client)
     (make-debug-client null        ; modpath
