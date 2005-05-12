@@ -1,0 +1,114 @@
+  
+  #|:::::::::LOAD/ANNOTATOR BUGS:::::::::::
+* catch oops exception
+* catch the other two exceptions that my loaders throw
+* detect if the source code for a certain module is missing and throw an exception
+* do I want to parameterize it over a given namespace?
+* does this handle module prefixes?
+* what happens if two modules have the same name in different directories
+* MAKE SURE THERE WONT BE COLLISIONS WHEN EVAL'NG MODULES...GIVE THEM UNIQUE NAMES BASED ON PATH!
+::::::::::::::::::::::::::::::::::::::::::
+
+CHANGES TO MAKE-----------------------------------------------------------------------------
+Ability to add named anchors into code using Special menu in DRS -- use those anchors as tracepoints.
+
+Mailing list just for MzTake updates
+
+Demo monitoring DrScheme for Robby?
+
+Bind Stop button to kill-all.
+
+Remove the tool button for 299 update.
+
+Reword hacked changes in doc.txt for stopping MzTake with kill
+
+Test Suite for debugger annotator
+
+Demo and docs for debugging multiple files, to make Robby happy.  It is true that the docs are not very helpful on this count.  It'd be nice if you could mock up a quick example of tracing something inside DrScheme....
+
+On the whole, I like the tool, although it'd be nice to have either
+ 	(a) an interactive pointy-clicky interface rather than figuring
+ 		out line/column co-ordinates, or
+ 	(b) an AST-based description of the thing to be monitored (shades
+ 		of aspect-oriented programming).
+
+(1) montecarlo never gets to pi: I think there's a math error.
+Shouldn't montecarlo.ss check whether (length . <= . 200)?  Otherwise, you're off by about 1% which gives an underestimate by about 0.03.  (You could speed it up by removing the sqrt call and checking against 40000).
+
+(2) dijkstra seems to go into an infinite loop -- but I don't know what the source of the problem is, because
+
+(3) plt scheme becomes quite unstable: the STOP button no longer works, and I end up killing things using Windows Task Manager, at which point I cannot run PLT Scheme (208) until I reboot :-(
+
+
+Re-direct, or at least prefix, program output from the client so that it can be distinguished from the script
+
+Paramterize print-struct to #f for printing in the script
+
+
+DEMOS---------------------------------------------------------------------------------------
+* Data structure examples
+  Binary search over a tree, show which node is being examined, or the most commonly taken path
+  Parse, graph the AST -- show OR and AND precedence getting messed up
+
+* MST example
+
+* something with multiple threads doing something and draw the threads in different colors in a window
+
+
+SCRIPT--------------------------------------------------------------------------------------
+* document history-e; provide a variant of history which takes no n, and keeps a complete history
+
+* process:time-per-event/milliseconds is broken
+  (printf-b "~a ms per event" (time-per-event/milliseconds p (changes (hold sin/x-trace))))
+
+* process:running? is broken
+
+* Make script errors highlight the location of the error
+
+* Let traces take a line number without offset and find the first bindable location.
+
+* Provide a body to bind instead or returning an eventstream, like (list x y)
+  Write a nested syntax for bind so that you can take a first-class function that defines a way to return variables, not just as a list
+
+* Maybe take a thunk to do when a entry trace is hit?
+
+* Way to turn printouts on and off like (print-struct #t), or should we have an output window? (mztake-verbose) (parameterize it?)
+
+
+OPTIMIZATIONS-------------------------------------------------------------------------------
+* improve speed of lookup for line-col->pos; load them into a hashtable?  not important since this is just startup time for the script.
+
+* improve speed of load/annotate
+
+* improve speed of functions in (run)
+
+* Remove marks.ss from MzTake as soon as the new version of it becomes standard with releases.
+Search for everywhere marks.ss shows up in mztake and replace
+(lib "marks.ss" "mztake" "private") with (lib "marks.ss" "stepper" "private")
+
+
+ERROR-CHECKING/HANDLING---------------------------------------------------------------------
+* Make (script-error) map to some exception stream for script errors only.
+
+* Make all exposed cells and evstreams read-only by lifting the identity function on them
+
+* Turn script errors into syntax errors (i.e. what happens when you bind to variables that don't exist)
+    --take the syntax when the binding is made and save it in a hashtable
+
+* Offer a way to install a special handler for exceptions -- somehow identify which client an exceptions comes from
+
+
+TESTING/CAPABILITIES------------------------------------------------------------------------
+* Does user interaction work?  Can we step through loops one line at a time waiting for input?  GUIs?
+
+* We want a way to interactively step through code one line at a time when we pause.
+  Provide way to check bindings at the same time -- EVEN IF NOT BOUND USING TRACE/BIND
+
+* What kind of interface do we want to dig into frames
+
+* Need to know where the program pauses at
+
+* What do we do about binding to a variable and following it EVERYWHERE it goes.  Even if it is assigned to something else.
+
+* Find a way to bind to the result of ananonymous expression: here->(add1 2)
+|#
