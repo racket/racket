@@ -1,0 +1,143 @@
+The A List
+Version 1.1.9 - 5/18/2000
+Copyright © 1997-2000 Kyle Hammond
+E-Mail: <mailto:hammo009@tc.umn.edu>
+
+The A List is a list manager library for the Mac OS.  It was designed to overcome the limitations of Appleπs List Manager.  The main features of The A List includeä
+
+Ä Carbon compatibility: you can use The A List on System 7.0 through Mac OS X!
+Ä Number of cells in a list is limited only by available memory.
+Ä Application callback routines do all drawing and data input/output; no LDEF hassles.
+Ä Drag-and-drop of multiple items.
+Ä Cut/copy/paste of multiple items.
+Ä Live scrolling.
+Ä Faster performance than Appleπs List Manager, especially on large lists.
+Ä Support for the Appearance Manager and MacOS 8.5 features.
+Ä Heirarchical rows for an outline view list.
+
+äand more!
+
+Licensing The A List
+
+The A List is currently distributed as ≥almost-free≤-ware.  The cost of including it in your programs is:
+
+Ä Nothing!  All I ask is a fully registered, working copy of the finished product (except in-house applications).
+
+Ä For all uses, you must include the following line in the credits of your program (the about box and/or manual):
+
+The A List © 1997-2000 Kyle Hammond
+
+Ä Of course, any other donations will always be gladly accepted.
+
+Programming Info
+
+The A List uses application callbacks to do all of the cell drawing, which allows the application programmer to specify the data format and appearance of each cell individually.  There is also a callback mechanism which allows the application programmer to specify the type of data supported in cut/copy/paste/drag events.
+
+The A List API is based on Appleπs List Manager, with some additions.  The A List is written in C.  Complete source code is included for the library, as well as for a demo application.
+
+The source and a demo application have been successfully compiled with the Metrowerks C/C++ compilers for 68K and PPC.  The source is based on Appleπs Universal Headers version 2.1.  It is compatible with Universal Headers 3.3.1.
+
+Documentation in HTML format for The A List API is in a separate archive.  It is also available online at the web site (see below).
+
+Web Site
+
+For the latest information on The A List, go to this web page:
+
+	<http://genbiol.cbs.umn.edu/staff/hammond/TheAList.html>
+
+Legal Stuff
+
+I, Kyle Hammond, retain all rights on the library and on the original source code.
+
+Permission to distribute this software and its documentation on any online service without fee is hereby granted, provided that the copyright notice appears in all copies.  Please obtain my permission before distributing The A List in any other format (disk, CD, paper/printed).
+
+This software is provided ≥as is≤ without express or implied warranty.
+
+Including the source in an application is subject to the above fees (none!).  Also, I request that any programs that include The A List send me the name of the package it is used in and that I be granted the use of this information in a list of applications using The A List.
+
+Acknowledgements
+
+Thanks to Sebastiano Pilla for developing the A List Pascal Adaptation Kit.
+
+Thanks to Marco Piovanelli for developing the WASTE library.  Without that for an example, I would probably not have attempted this.  For information about WASTE, go to the web page:
+	<http://www.boingo.com/waste/>
+
+Many thanks to the people that have sent in bug reports and suggestions.  Without their interest and encouragement nothing would get changed.
+
+Whatπs Included:
+
+ReadMe - The A List - this file.
+Version History - The A List - a list of known bugs as well as bug fix and new feature lists.
+The A List.mcp (Pro 3 ) - a Metrowerks Codewarrior Pro 3 project that will build debug or optimized versions of the A List as a static library that you can then include in your own projects.  Note: You need to add QDDrawingState.c to this project.
+The A List.mcp (Pro 4 ) - a Metrowerks Codewarrior Pro 4 project that will build debug or optimized versions of the A List as a static library that you can then include in your own projects.  Note: You need to add QDDrawingState.c to this project.
+The A List.mcp (Pro 5 ) - a Metrowerks Codewarrior Pro 5 project that will build debug or optimized versions of the A List as a static library that you can then include in your own projects.
+
+
+C/C++ Headers Folder -
+
+   TheAList.h - the main header file that you should #include to use the A List from C and C++ code.
+   AListOptimizations.h - header file that contains flags to affect compilation of the A List library.
+   LongCoords.h - header file for utilities using long coordinates, which the A List uses for the row and column count.
+   QDDrawingState.h - header file for utilities to save and restore the QuickDraw drawing state in a port.  This is really useful for Appearance Manager compliance.
+
+   For Universal Headers < v3.0 Folder -
+
+      DragManagerAdditions.h - header file for translucent drags only needed if you have Universal Headers versions prior to 3.0.
+      DragManagerAdditions.c - glue for translucent drags only needed if you have Universal Headers versions prior to 3.0.
+
+
+Pascal Interfaces Folder -
+
+   TheAList.p - interface file for that you should use to access the A List from Pascal code.
+   LongCoords.p - interface file for utilities using long coordinates, which the A List uses for the row and column count.
+   ReadMe - Pascal users - a file that explains what is necessary to use the A List from Pascal.
+
+
+A List <version number> Folder -
+   All files contained here are the actual source code of the A List routines.  They are already in The A List.mcp (Pro 5) projects.  For the (Pro 3) and (Pro 4) projects, you need to add QDDrawingState.c.
+
+
+A List Demo Folder -
+
+   A List Demo - a small application that shows how to use most of the features of the A List.  There are five lists in the main window and one list in a dialog to look at.
+   A List Demo (Carbon) - the same application compiled for Carbon.  Requires CarbonLib to be installed.
+   A List Demo.mcp (Pro 3 ) - a Metrowerks Codewarrior Pro 3 project that will build the demo application.
+   A List Demo.mcp (Pro 4 ) - a Metrowerks Codewarrior Pro 4 project that will build the demo application.
+   A List Demo.mcp (Pro 5 ) - a Metrowerks Codewarrior Pro 5 project that will build the demo application.
+   A List Demo-Carbon.rsrc - resources required to build the Carbon-ated demo application.
+   A List Demo.mcp.rsrc - resources required to build the demo application.
+   Headers Folder -
+      AListDemo.h - the main header file for the demo application.
+      AplEvts.h - the header file containing prototypes for the Apple Event handlers.
+   Source Folder -
+      AplEvts.c - the Apple Event handler functions.
+      Checks/Errors.c - code to initialize the Mac toolbox.
+      DemoDialog.c - the code to display a list in a dialog.
+      DemoMain.c - the main function and event handling code.
+      DemoWindow.c - main window setup code and all the special A List callback functions used in the demo.
+
+
+How to Use The A List:
+
+From Pascal, download the A List Pascal Adaptation Kit and follow the instructions there.
+
+From C or C++, in your source code #include ≥TheAList.h≤.  That file gives you access to the prototypes and functions that are part of the A List API (Application Programming Interface).
+
+You also need to build the static libraries that will contain the object code for the A List routines.  You can then include the static libraries in your projects.
+
+Open the file AListOptimizations.h in the C/C++ Headers folder.  Set the #define flags to the options that you want.
+
+If you have Metrowerks Codewarrior, open on the The A List.mcp projects (Pro 3, Pro 4 and Pro 5 versions included).  Select the target you want to compile for (debug/optimized and 680x0/PowerPC/Carbon).  ≥Make≤ the library.
+
+If you donπt have Metrowerks Codewarrior, you need to compile all the files in the ≥A List (version number)≤ folder into a static library using your development environment of choice.
+
+Copy TheAList.h, AListOptimizations.h, and LongCoords.h ( QDDrawingState.h is optional ) and the static libraries to use with your project.
+
+Authorπs Address
+
+Kyle Hammond
+Mail:   656 Maple Street NE,
+            Spring Lake Park, MN, USA 55432-1118
+E-Mail: <mailto:hammo009@tc.umn.edu>
+
+Comments and suggestions are always welcome.

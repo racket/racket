@@ -1,0 +1,215 @@
+Known Bugs And Version History for The A List
+Version 1.1.9 - 5/19/2000
+Copyright © 1997-2000 Kyle Hammond
+E-Mail: <mailto:hammo009@tc.umn.edu>
+
+Disclaimer/History
+
+The A List was developed for two applications that I wrote (am writingŠstill) for the University of Minnesota General Biology Program.  Specifically, I needed a faster list, and I also needed something that could handle more than 32K of data.  I wrote the main base of code in about a week and a half in 1996, and have been tweaking and adding to it on a sporadic basis since then.
+
+Bugs
+
+€ A 2 dimensional list (more than one row and column) will almost definitely cause problems with drag-and-drop and cut/copy/paste.  There may be other problems with 2D lists also.  I¹ve never actually tried one. :-)
+€ The drag caret is sometimes not erased.  This leaves a line artifact behind that will be removed the next time the list is redrawn.
+€ Setting the window after the list is created doesn¹t move the scroll bar controls to the new window.
+€ Lazy drags to the same list closer to the top have the wrong data copied because cells are created (throwing off the ItemReferences).
+€ Cut/copy/paste and drag operations do not work correctly on heirarchical lists.
+€ Changing the dynamic scroll feature flag after list creation when the Appearance Manager is present does not work.
+
+Supposed Features that just don¹t work
+
+€ All of the cell selection flags are not operational.  The alFSelectOne flag works.  Does anyone actually use or want any other options?
+€ Undo is totally unsupported.  Maybe somedayŠbut then again, maybe not.
+
+Version History
+
+v1.1.9 - 5/19/2000
+€ Changed check for Universal Headers to earlier than v3.2 in AListOptimizations.h for PRAGMA_STRUCT_ALIGN.
+€ TheAList.h now has #include <ControlDefinitions.h> if Universal Headers 3.3 or later.
+€ Fixed a bug in ALPaste that could lead to an infinite loop if the input flavors did not match the output flavors of a list.  For instance, if you output three flavors and only input two, on an ALPaste after an ALCopy you would end up in an infinite loop looking for the correct flavors.
+€ Added a check for ( part != kControlNoPart ) in ALMouse.c on line 1119.  Apparently, sometimes a control is returned in whichControl but part == kControlNoPart (in PowerPlant for instance).  Thanks to Chris Behm.
+€ Fixed a bug in ALDrawCell. It was sending the wrong cell rect to the hilite cell callback with heirarchical lists.
+€ Added a #define ALIST_FOR_WX_WINDOWS to ALOptimizations.h.  Set this flag to one if you want to use the A List with wx-windows.  Thanks to John Clements.
+€ Fixed a bug in ALKey where I wasn't checking to make sure the search key string was nil before using it.
+€ Rearranged ALOptimizations.h so all the standard Universal Interfaces stuff is at the end.
+€ Removed the pixel pattern garbage from QDDrawingState.c and .h (again).  It seems that Apple¹s documentation in this area is incredibly unclear and possibly just plain wrong.  So, we¹ll let the system deal with it.  Thanks to Chris Behm for all his testing of pixel patterns.
+
+v1.1.8 - 2/9/2000
+€ Added custom calls for disposing of A List UPPs.  This makes for much easier Carbon support since they #define to nothing under Carbon.  See DisposeALClickLoopUPP and friends in TheAList.h and AListInternal.h.
+€ Added a routine ALIsRowHidden for heirarchical lists.  This routine takes any row number and returns true if the row is hidden under a superrow that is not expanded.
+€ Changed some constant names to have an AL in them so you can tell they're from the A List.
+€ Holding down the Option key while clicking disclosure triangle will open/close all children of a superrow.
+€ Fixed display problems with heirarchical lists when some rows were hidden.  This two line description doesn¹t do it justice - it was a pain!
+€ All heirarchical routines now make sure that the list has the alFHeirarchical flag set before doing anything.
+€ Fixed keyboard support for heirarchical lists with some hidden (non-expanded) rows.  Thanks to Christopher Stern for pointing this out.
+€ Fixed a possible stale handle reference in LCAttach.  Thanks to Christopher Stern.
+
+v1.1.7 - 11/19/99
+€ The A List is now Carbon compatible!  Added debug and optimized targets for Carbon.
+€ Added a Carbon target for the demo project.
+€ Added Clear and Select All commands in the Edit menu of the demo app.
+€ NOTE: Changed the signature of ALKey to remove the virtualKey parameter.  I changed the code to use only the charCode values for Home/End/Page Up/Page Down.  This should work in the user pane proc as well.
+€ NOTE: Need to rethink the QDDrawingState support for pixel patterns, since they were causing memory leaks and crashes like nuts.
+€ Fixed a memory leak of a RgnHandle in _ALHiliteSelected.  Thanks to Chris Behm.
+€ Fixed a bug in ALDelRow and ALDelColumn where the result of ALGetCell was not checked before continuing.  Thanks to Evan Gross.
+€ Fixed a bug(?) where the list borders would be redrawn when scrolling by dragging the thumb.  Thanks to Evan Gross.
+€ Fixed an incorrect return value from ALSetCell when the ALIST_HAVE_CELLDATA flag was turned on.  The function worked correctly but returned a result of alNoDataErr instead of noErr.
+€ Fixed a bug when drawing an inactive list border with the Appearance Manager.  I was passing the wrong state to DrawThemeListBoxFrame.
+
+v1.1.6 - 10/18/99
+€ No longer increments standard UPP user count with every call to ALSetInfo.
+€ Attempts to AutoEmbed the newly created UserPane control in ALMakeUserPaneControl.
+€ Added optimization flag ALIST_HAVE_CELLDATA in AListOptimizations.h.  Set this to zero if you want no data associated with your cells.  This only makes sense if you use all custom callback routines to do everything based on the indices of the cell.  For instance, if you have another data structure that you are tracking anyway, you can just use the cell index to get the data from that other data structure.  With this flag set to zero, ALGet/SetCell return alNoDataErr, the ALSearch function always returns false, and all the callback routines will get a data parameter of nil.
+€ Fixed a bug where the cell data handle would become permanently locked when drawing a hilighted cell.
+€ Changed the scroll bar ControlActionProc for the live scrolling variant with Appearance Manager to not flash the list border.  Thanks to Evan Gross.
+€ Fixed a bug where the cell selection handle could become permanently locked when drawing selected cells in an active list (the usual case).  Thanks to Evan Gross.
+€ Changed behavior of ALKey when there is no selection and an arrow key comes in.  With the up arrow the bottom cell is selected; with the down arrow the top cell is selected; with the right arrow the left cell is selected; with the left arrow the right cell is selected.  This is more consistant with standard system list behavior.
+€ Fixed a bug when inhibit redraw flag was set and shift-arrow key would select the appropriate cell(s) but not redraw the selection.
+
+v1.1.5 - 9/16/99
+€ Now call OSEventAvail to get the state of the modifier keys within the Appearance User Pane control tracking procedure.  Thanks to Evan Gross.
+€ ALKey is smarter about the arrow keys now.  Thanks to Evan Gross.
+€ Changed all calls from BlockMove to BlockMoveData, since it IS all data.
+€ Sets the background color to white before calling CopyBits if using offscreen drawing.
+
+v1.1.4 - 8/?/99
+€ Added optimization flag ALIST_USEAPPEARANCEMGR in AListOptimizations.h.  Set this to zero if you do not want any Appearance Manager calls to be included in the library.  If this is zero, you don¹t have to link to the AppearanceLib for CFM-68K/PPC projects.
+€ Added optimization flag ALIST_USECONTROLMGR2 in AListOptimizations.h.  Set this to zero if you do not want to use proportional thumbs with the library.  If this is zero, you don¹t have to link to the ControlsLib for CFM-68K/PPC projects.
+€ More theme compliant (Appearance Manager) because I use a new set of routines to save and restore the QuickDraw drawing state.  Feel free to use them in your own code.
+€ When using the Appearance Manager background, selected cells are simply inverted without using the user-defined hilight color.  This is because the Appearance Manager background can be a pattern, which does not invert correctly with the hilight color.
+€ Fixed a bug with the click count that was passed in to the click callback routine.
+€ Fixed a bug when toggling disclosure triangles with inhibit redraw flag set.
+€ Fixed a bug when deleting rows/columns with inhibit redraw flag set.
+€ NOTE: if you use the older Codewarrior projects (Pro 3 and Pro 4), you¹ll have to add QDDrawingState.c in the A List 1.1.4 folder to them.
+
+v1.1.3 - 6/2/99
+€ Fixed a bug where the list border and focus could be drawn in the incorrect port within a call to ALActivate.
+€ Removed some old unused code from ALMouse.c.
+€ Fixed a redraw bug when the last row was hidden in a heirarchical list.
+€ Changed the AEDesc paramaters in function callbacks to ALDataDescriptor.  An ALDataDescriptor really does have just a type and plain Handle.
+€ Some updates to bring the A List into compliance with the latest Carbon specs.
+€ Scrolling with hierarchical rows really sucks!
+€ Fixed bug that somehow crept in with translucent drag support being checked incorrectly.
+€ Changed to using TARGET_RT_MAC_CFM.  Duh!  Should have done this about two years ago.
+€ Added check in ALOptimizations.h for Universal Headers v3 or less to use GENERATINGCFM instead of TARGET_RT_MAC_CFM.
+€ Renamed alDoCanFocus to alDoDrawFocus; similar change to alFCanFocus.  The DrawFocus names are more clear on what is happening.
+€ Changed all NULLs to nils.  I like nil better now -- no shift key to press.
+€ Fixed dynamic scrolling with Appearance Manager, when creating a list with alDoDynamicScroll.
+
+v1.1.2 - 1/25/99
+€ Fixed up UserPane control functions to better support the scroll bars.
+€ ALKey uses LMGetKeyThresh( ) instead of GetDblTime( ) for determining if a key press is part of a string.
+€ Included a list in a dialog in the demo.  This should answer a lot of questions I¹ve been getting.
+
+v1.1.1 - 1/1/1999
+€ A few minor changes to the code to support compilation under version 8.0 of the THINK C compiler: a few type-casting fixes and using ³#pragma unused(x)² instead of comments in the function definition.
+
+v1.1 - 12/17/98
+€ Put all code optimization #define flags in AListOptimizations.h.  This new file is #included by the library code (AListInternal.h) and the public C/C++ header file (TheAList.h).
+€ Made changes required for Pascal interface compliance.  All public functions now use an ALIST_API keyword that may be defined as pascal.  Be sure to use ALIST_API for your callback functions also (except the drag send data callback which is always pascal).  Thanks to Sebastiano Pilla for concrete information on what was necessary to support Pascal.
+€ Removed the C++ style comments ( // ) from the public header (TheAList.h) in favor of C style comments ( /* */ ).  The A List should play nicely with vanilla C code now.
+€ Added correct error checking in ALMakeUserPaneControl.
+€ Fixed a memory leak the first time ALClick was called.
+€ Made many of the internally used routines static.
+€ Changed alClickCell constant to alClickCellHook.
+€ Modified the behavior of alClickCellHook.  If the hook function returns false, the A List will not process the click any further and will now also reset the multiple click values.  This means that if the click cell hook function returns false, the click will not be considered part of a double click.
+€ Added another list to the demo app.  This list shows how to implement clicking in the cell to modify the cell contents.  Try clicking the on/off icons in the list.
+
+v1.0.2 - 11/16/98
+€ Fixed a cosmetic bug when erasing the focus on non-Appearance Manager systems.
+€ Put in checks for Universal Headers version numbers around SetControlViewSize calls, since they¹re only in 3.2 and later.
+
+v1.0.1 - 11/4/98
+€ The default StringHandle implementation now correctly sets the text color when the Appearance Manager is present.
+€ Proportional scroll bars are supported under MacOS 8.5 on PPC only.  You need to weak link to ControlsLib, included with Universal Headers 3.2 for this functionality.
+€ Finally killed the bug with dynamic scrolling and the indicator remaining drawn in the hilite state.  Simply called DrawOneControl when the indicator drag was finished,
+
+v1.0 - 5/11/98
+€ Heirarchical lists now work!  However, don¹t allow drags into or out of heirarchical lists, and don¹t use ALCut, ALCopy, or ALPaste on heirarchical lists; support for those operations will be in a future release.  Everything else should work.
+€ Added a precompiler directive ALIST_HEIRARCHICAL with a default value of one.  Set this to zero if you wont be using heirarchical lists and all of the heirarchical code will be skipped.
+€ Five functions were added to support heirarchical lists.  ALExpandRow, ALCollapseRow, ALIsRowExpanded, ALSuperRow and ALAddRowUnder.  These are documented in the on-line documentation.
+€ Important: Changed application callback prototypes to use Rect instead of LongRect for the location of the cells.  Since The A List is always drawing in Quickdraw ports, there is no reason to have LongRects and constantly be switching to Rects.
+€ Added code to save and reset the pen state with Appearance Manager backgrounds.
+€ Fixed a bug in _ALAcceptDrag that would almost always accept drags regardless of type.
+€ Fixed ALKey to act more like Apple¹s standard list selection keyboard support, ie. it scrolls the list to show the selected cell if it¹s not visible.
+€ Fixed a memory leak with the StringHandle allocated in ALKey not being disposed of in ALDispose.
+€ Fixed a memory leak with the LongControls not being detached from the scroll bars in ALDispose.
+€ Fixed a memory problem with standard UPPs being allocated while the ALReference was locked.  This would leave a small hole of unused memory.
+€ Fixed standard UPP code so the UPPs will be disposed of when no ALReferences are instantiated.
+€ Several fixes to ALKey, ALClick, ALGetCellAndEdge, ALIsVisible, ALDrawCell and ALUpdate to work with heirarchical lists.
+€ Changed ALActivate so it calls ALUpdate when the active status of the list changes.
+€ Fixed the focus rectangle to erase itself if the list is not active.  To see this in action, run the demo app and click in any of the lists to give it the focus.  A dark rectangle should be drawn around the list.  Now switch to the Finder and watch the focus rectangle disappear; switch back to the demo app and the focus reappears.
+€ Added a function ALVersion to return the version number.
+€ Updated my email address again.
+
+v1.0b8 - 2/12/98
+€ Changed the signature for ALKey; it now takes a time of the key press.  This is used to track a string of alphanumeric characters that can be used to find a given cell.  If the key presses are less than GetDblTime apart, they are considered as one string; otherwise a new string is started.  If you don¹t have a time (eg. when faking key presses), send in TickCount( ).
+€ Added a callback function:
+Boolean MyStringSearch( StringHandle string, ALCell *theCell, ALReference alRef );
+   This callback is called from within ALKey and should search through the list and find a cell matching the string.  If a match is found, theCell should be set to the matching cell and true should be returned.  If there is no match, false should be returned.
+   The default MyStringSearch works for StringHandles.  If you are not storing StringHandles and you use ALKey, you MUST set the alStringSearchHook.  You can set it to NULL if you want ALKey to do nothing with alphanumeric keys; the Demo program shows how to do that (for the Œcrsr¹ list).
+€ Commented out the code that moved the selection when the Page Up, Page Down, Home or End keys were pressed.  It was brought to my attention that the selection should not change with these key presses.
+€ Fixed a bug in ALMakeUserPaneControl when sending in NULL for the ALReference.
+€ Fixed several cosmetic bugs with the Notepad and Appearance Manager backgrounds, as well as drawing lines between cells.  Now you can have both the Notepad and the Appearance Manager background turned on; the Appearance Manager background takes precedence if the Appearance Manager is installed.
+€ Added a function ALGetCellSize().  It is the flip side of ALSetCellSize.
+€ Removed the flag alFSelNoNilHilite.  It didn¹t work anyway.
+€ Added the flag alFCanFocus.  The focus rectangle surrounding the list will only be redrawn if this flag is turned on.  ALSetFocus and ALPartFocused can still be used, they just won¹t have any visible effect if alFCanFocus is not turned on.
+€ Updated my email address.
+
+v1.0b7 - 11/12/97
+€ Added code so the background can use the Appearance Manager¹s theme brushes.  Use the constants alDoAppearanceBg and alFAppearanceBackground.
+€ Added some functions to support heirarchical (outline view) lists.  They aren¹t complete so don¹t start using them yet.
+€ Now the A List redraws the frame around the list upon activation/deactivation.
+€ Changed ALGetCellAndEdge to use Point instead of LongPt for a parameter; this is more consistant with Quickdraw graphics (and easier to use).
+€ Fixed a bug in ALDelete and ALReceiveDrag: the visible cells were not being recalculated.
+€ Fixed a bug when shift-clicking and moving the cursor very fast over the list.
+€ Fixed a nasty bug when shift-clicking on a list without alFRowsOnly enabled.
+€ Updated DragAdditions.h & .c for Universal Headers v3.0.1.  Also put it some checks for Universal Headers version to stay compatible with v2.1.
+€ Updated projects for Codewarrior Pro 2.
+
+v1.0b6 - 10/24/97
+€ Fixed a serious bug when calling ALDelRow or ALDelColumn with a count value of zero.  It did not call the dispose-cell-data application callback properly.  This resulted in memory leaks when disposing of a list with cells via ALDispose.
+€ ŒHome¹ and ŒEnd¹ keys bring you to the top-left or bottom-right of a list, respectively.
+€ A few minor bug fixes with parameter checking.
+€ Fixed the About Box of the demo app.  It¹s not fancy, but it works.
+
+v1.0b5 - 10/22/97
+€ Improved error checking of input parameters.
+€ Check for division by zero errors at all divisions - mostly caught at input parameter checks.
+€ Added tab key to switch keyboard focus in demo app.
+€ Fixed bugs that were added to demo app in 1.0b4 when Use_ListManager is defined.
+
+v1.0b4 - 10/8/97
+€ Added focus and keyboard support to the demo application.  Also included a drawing procedure for Œcrsr¹ resources.
+€ Improved keyboard support for horizontal lists.
+€ Added code for using the A List as a UserPane control with the Appearance Manager.  Use the function ALMakeUserPaneControl.
+€ Added two functions: ALSetFocus and ALPartFocused to help support keyboard focusing, especially with the Appearance Manager.
+€ Improved drawing outline of list box.  Now uses Appearance Manager if it¹s installed.  Also draws/erases Focus box as appropriate.
+€ Improved scrolling action procedure code.  Now it only uses globals for dynamic scrolling.  Also, the dynamic scrolling has been cleaned up.
+€ Combined projects into one for Codewarrior Pro 1.
+€ Created debug and optimized targets, all in one project!
+€ Updated my snail mail address.
+
+v 1.0b3 - 5/6/97
+€ Can now copy/paste many cells to/from the clipboard.
+€ Included DragAdditions.c with the archive for translucent PPC dragging.
+€ Updated Metrowerks libraries included with projects, because of the MSL 2.1.1 update.
+
+v1.0b2 - 3/24/97
+€ Changed ALSetSize to ALSetViewRect.  This allows you to move the entire list, or just resize it.
+€ ALDispose now calls the DisposeCellData callback routine for every cell while deleting the list.  Well, it was supposed to; see the notes under v1.0b6 above.
+€ Added the caret enumerated constants in TheAList.h (returned from ALGetCellAndEdge).
+€ Inserted checks for all necessary Mac OS #include files.
+€ Preliminary work on a Pascal interface file.
+
+v1.0b1 - 3/12/97
+€ Original release.
+
+Author¹s Address
+
+Kyle Hammond
+Mail:   656 Maple Street NE,
+            Spring Lake Park, MN, USA 55432-1118
+E-Mail: <mailto:hammo009@tc.umn.edu>
+
+Comments and suggestions are always welcome.

@@ -1,0 +1,12 @@
+
+This version of wxWindows has been substatially modified from Markus
+Holzem's release.
+
+Other READMEs provide copyright and licensing information about parts
+of this library. Although README.MARKUS states that the library is
+released under GNU GPL, Markus later released this version of
+wxWindows under the GNU LGPL (which is the license used by all PLT
+software).
+
+- Matthew
+  mflatt@cs.rice.edu

@@ -1,0 +1,59 @@
+Welcome to wxWindows Version 1.60
+
+
+Hello, and welcome to wxWindows, a portable GUI
+toolkit for X and Windows 3.1.
+
+This program demonstrates the following features:
+
+*   Main frame window with menu bar
+
+*   Panel with various widgets
+
+*   Status line with help on menu items
+
+*   Scrolling text window with this file loaded
+
+*   Scrolling canvas with text and graphics displayed
+    (use the mouse and left button to doodle)
+
+*   Icon and cursor setting
+
+*   Canvas scaling
+
+*   Printing (Windows printing on PC, PostScript under UNIX)
+
+*   Copying a metafile to the clipboard (Windows only)
+
+*   Timer (prints to this text window occasionally)
+
+Other wxWindows features include:
+
+*   Interprocess communication (DDE on both platforms)
+
+*   File browser dialog box
+
+*   Form construction facility
+
+wxWindows provides a common core of GUI facilities across several
+platforms (two at present). XView programmers will be familiar with
+the frame/subwindow principles, whilst appreciating the simpler and
+object-oriented interface. Windows programmers should also find it
+much simpler than the native API. Motif programmers should never again
+have to experiment to avoid constraint contradictions. And,
+synchronous interprocess communications are now a doddle on all
+supported platforms.
+
+This software is available free of charge from:
+
+Dr Julian Smart
+Artificial Intelligence Applications Institute
+University of Edinburgh
+80, South Bridge
+Edinburgh
+EH1 1HN
+
+Email J.Smart@ed.ac.uk
+
+Please feel free to send me suggestions - and code - for the next
+release.

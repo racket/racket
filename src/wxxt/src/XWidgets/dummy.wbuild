@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# Just touch the output file (which is the last argument
+#  with .w replaced by .c)
+
+findlast()
+{
+  RESULT=`echo $1 | sed -e 's/[.]w$//'`
+  if [ "$2" != '' ] ; then
+    shift
+    findlast ${1+"$@"}
+  fi
+}
+findlast ${1+"$@"}
+
+if [ -f "${RESULT}.c" ] ; then
+  touch "${RESULT}.c"
+fi
+
+if [ -f "${RESULT}.h" ] ; then
+  touch "${RESULT}.h"
+fi

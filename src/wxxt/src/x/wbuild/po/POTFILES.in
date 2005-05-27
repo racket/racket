@@ -1,0 +1,8 @@
+src/wbuild.c
+src/util.c
+src/generatec.c
+src/generateh.c
+src/generatedoc.c
+src/declarefunc.c
+src/printbody.c
+

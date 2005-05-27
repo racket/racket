@@ -1,0 +1,321 @@
+
+srcdir = @srcdir@
+builddir = @builddir@
+
+# for version.mak:
+mainsrcdir = @srcdir@/../..
+@INCLUDEDEP@ @srcdir@/../version.mak
+
+CC = @CC@
+CPP = @CPP@
+CXX = @CXX@
+AR = @AR@
+ARFLAGS = @ARFLAGS@
+RANLIB = @RANLIB@
+
+CPPFLAGS = @PREFLAGS@ @OPTIONS@ @GC2OPTIONS@ @MZOPTIONS@ -I$(builddir)/.. -I$(srcdir)/../include
+CFLAGS = @CFLAGS@ $(CPPFLAGS) @COMPFLAGS@ @PROFFLAGS@
+LIBS = @LIBS@
+
+PRE_MZ@OSX@ = env DYLD_FRAMEWORK_PATH="`pwd`/.."
+PRE_MZ@NOT_OSX@ = 
+XFORM = $(PRE_MZ) ../mzscheme -rq $(srcdir)/xform.ss --setup "$(CPP) $(CPPFLAGS)"
+XSRCDIR = xsrc
+SRCDIR = $(srcdir)/../src
+
+OBJS =  salloc.@LTO@ \
+	bignum.@LTO@ \
+	bool.@LTO@ \
+	builtin.@LTO@ \
+	char.@LTO@ \
+	complex.@LTO@ \
+	dynext.@LTO@ \
+	env.@LTO@ \
+	error.@LTO@ \
+	eval.@LTO@ \
+	file.@LTO@ \
+	fun.@LTO@ \
+	hash.@LTO@ \
+	image.@LTO@ \
+	list.@LTO@ \
+	module.@LTO@ \
+	network.@LTO@ \
+	numarith.@LTO@ \
+	number.@LTO@ \
+	numcomp.@LTO@ \
+	numstr.@LTO@ \
+	port.@LTO@ \
+	portfun.@LTO@ \
+	print.@LTO@ \
+        rational.@LTO@ \
+	read.@LTO@ \
+	regexp.@LTO@ \
+	sema.@LTO@ \
+	setjmpup.@LTO@ \
+	string.@LTO@ \
+	struct.@LTO@ \
+	stxobj.@LTO@ \
+	symbol.@LTO@ \
+	syntax.@LTO@ \
+	thread.@LTO@ \
+	type.@LTO@ \
+	vector.@LTO@ \
+	foreign.@LTO@ \
+	gc2.@LTO@
+
+XSRCS = $(XSRCDIR)/salloc.c \
+	$(XSRCDIR)/bignum.c \
+	$(XSRCDIR)/bool.c \
+	$(XSRCDIR)/builtin.c \
+	$(XSRCDIR)/char.c \
+	$(XSRCDIR)/complex.c \
+	$(XSRCDIR)/dynext.c \
+	$(XSRCDIR)/env.c \
+	$(XSRCDIR)/error.c \
+	$(XSRCDIR)/eval.c \
+	$(XSRCDIR)/file.c \
+	$(XSRCDIR)/fun.c \
+	$(XSRCDIR)/hash.c \
+	$(XSRCDIR)/image.c \
+	$(XSRCDIR)/list.c \
+	$(XSRCDIR)/module.c \
+	$(XSRCDIR)/network.c \
+	$(XSRCDIR)/numarith.c \
+	$(XSRCDIR)/numcomp.c \
+	$(XSRCDIR)/number.c \
+	$(XSRCDIR)/numstr.c \
+	$(XSRCDIR)/port.c \
+	$(XSRCDIR)/portfun.c \
+	$(XSRCDIR)/print.c \
+        $(XSRCDIR)/rational.c \
+	$(XSRCDIR)/read.c \
+	$(XSRCDIR)/regexp.c \
+	$(XSRCDIR)/sema.c \
+	$(XSRCDIR)/setjmpup.c \
+	$(XSRCDIR)/string.c \
+	$(XSRCDIR)/struct.c \
+	$(XSRCDIR)/stxobj.c \
+	$(XSRCDIR)/symbol.c \
+	$(XSRCDIR)/syntax.c \
+	$(XSRCDIR)/thread.c \
+	$(XSRCDIR)/type.c \
+	$(XSRCDIR)/vector.c \
+	$(XSRCDIR)/foreign.c \
+	$(XSRCDIR)/main.c
+
+all: xsrc
+	$(MAKE) xobjects
+
+xsrcs: $(XSRCS)
+
+xsrc:
+	mkdir xsrc
+
+xobjects: $(OBJS) main.@LTO@
+
+XFORMDEP = $(srcdir)/gc2.h $(srcdir)/xform.ss $(srcdir)/xform-mod.ss
+
+$(XSRCDIR)/salloc.c: ../src/salloc.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/salloc.c $(XSRCDIR)/salloc.c
+$(XSRCDIR)/bignum.c: ../src/bignum.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/bignum.c $(XSRCDIR)/bignum.c
+$(XSRCDIR)/bool.c: ../src/bool.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/bool.c $(XSRCDIR)/bool.c
+$(XSRCDIR)/builtin.c: ../src/builtin.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/builtin.c $(XSRCDIR)/builtin.c
+$(XSRCDIR)/char.c: ../src/char.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/char.c $(XSRCDIR)/char.c
+$(XSRCDIR)/complex.c: ../src/complex.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/complex.c $(XSRCDIR)/complex.c
+$(XSRCDIR)/dynext.c: ../src/dynext.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/dynext.c $(XSRCDIR)/dynext.c
+$(XSRCDIR)/env.c: ../src/env.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/env.c $(XSRCDIR)/env.c
+$(XSRCDIR)/error.c: ../src/error.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/error.c $(XSRCDIR)/error.c
+$(XSRCDIR)/eval.c: ../src/eval.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/eval.c $(XSRCDIR)/eval.c
+$(XSRCDIR)/file.c: ../src/file.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/file.c $(XSRCDIR)/file.c
+$(XSRCDIR)/fun.c: ../src/fun.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/fun.c $(XSRCDIR)/fun.c
+$(XSRCDIR)/hash.c: ../src/hash.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/hash.c $(XSRCDIR)/hash.c
+$(XSRCDIR)/image.c: ../src/image.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/image.c $(XSRCDIR)/image.c
+$(XSRCDIR)/module.c: ../src/module.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/module.c $(XSRCDIR)/module.c
+$(XSRCDIR)/list.c: ../src/list.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/list.c $(XSRCDIR)/list.c
+$(XSRCDIR)/network.c: ../src/network.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/network.c $(XSRCDIR)/network.c
+$(XSRCDIR)/numarith.c: ../src/numarith.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/numarith.c $(XSRCDIR)/numarith.c
+$(XSRCDIR)/number.c: ../src/number.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/number.c $(XSRCDIR)/number.c
+$(XSRCDIR)/numcomp.c: ../src/numcomp.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/numcomp.c $(XSRCDIR)/numcomp.c
+$(XSRCDIR)/numstr.c: ../src/numstr.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/numstr.c $(XSRCDIR)/numstr.c
+$(XSRCDIR)/port.c: ../src/port.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/port.c $(XSRCDIR)/port.c
+$(XSRCDIR)/portfun.c: ../src/portfun.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/portfun.c $(XSRCDIR)/portfun.c
+$(XSRCDIR)/print.c: ../src/print.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/print.c $(XSRCDIR)/print.c
+$(XSRCDIR)/rational.c: ../src/rational.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/rational.c $(XSRCDIR)/rational.c
+$(XSRCDIR)/read.c: ../src/read.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/read.c $(XSRCDIR)/read.c
+$(XSRCDIR)/regexp.c: ../src/regexp.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/regexp.c $(XSRCDIR)/regexp.c
+$(XSRCDIR)/sema.c: ../src/sema.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/sema.c $(XSRCDIR)/sema.c
+$(XSRCDIR)/setjmpup.c: ../src/setjmpup.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/setjmpup.c $(XSRCDIR)/setjmpup.c
+$(XSRCDIR)/string.c: ../src/string.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/string.c $(XSRCDIR)/string.c -I$(OBJDIR)
+$(XSRCDIR)/struct.c: ../src/struct.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/struct.c $(XSRCDIR)/struct.c
+$(XSRCDIR)/stxobj.c: ../src/stxobj.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/stxobj.c $(XSRCDIR)/stxobj.c
+$(XSRCDIR)/symbol.c: ../src/symbol.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/symbol.c $(XSRCDIR)/symbol.c
+$(XSRCDIR)/syntax.c: ../src/syntax.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/syntax.c $(XSRCDIR)/syntax.c
+$(XSRCDIR)/thread.c: ../src/thread.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/thread.c $(XSRCDIR)/thread.c
+$(XSRCDIR)/type.c: ../src/type.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/type.c $(XSRCDIR)/type.c
+$(XSRCDIR)/vector.c: ../src/vector.@LTO@ $(XFORMDEP)
+	$(XFORM) $(SRCDIR)/vector.c $(XSRCDIR)/vector.c
+$(XSRCDIR)/foreign.c: ../../foreign/foreign.@LTO@ $(XFORMDEP)
+	$(XFORM)" -I../../foreign/gcc/libffi/include -I${SRCDIR}/../../mzscheme/src" $(SRCDIR)/../../foreign/foreign.c $(XSRCDIR)/foreign.c
+$(XSRCDIR)/main.c: ../main.@LTO@ $(XFORMDEP)
+	$(XFORM) $(srcdir)/../main.c $(XSRCDIR)/main.c
+
+
+salloc.@LTO@: $(XSRCDIR)/salloc.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/salloc.c -o salloc.@LTO@
+bignum.@LTO@: $(XSRCDIR)/bignum.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/bignum.c -o bignum.@LTO@
+bool.@LTO@: $(XSRCDIR)/bool.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/bool.c -o bool.@LTO@
+builtin.@LTO@: $(XSRCDIR)/builtin.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/builtin.c -o builtin.@LTO@
+char.@LTO@: $(XSRCDIR)/char.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/char.c -o char.@LTO@
+complex.@LTO@: $(XSRCDIR)/complex.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/complex.c -o complex.@LTO@
+dynext.@LTO@: $(XSRCDIR)/dynext.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/dynext.c -o dynext.@LTO@
+env.@LTO@: $(XSRCDIR)/env.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/env.c -o env.@LTO@
+error.@LTO@: $(XSRCDIR)/error.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/error.c -o error.@LTO@
+eval.@LTO@: $(XSRCDIR)/eval.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/eval.c -o eval.@LTO@
+file.@LTO@: $(XSRCDIR)/file.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/file.c -o file.@LTO@
+fun.@LTO@: $(XSRCDIR)/fun.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/fun.c -o fun.@LTO@
+hash.@LTO@: $(XSRCDIR)/hash.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/hash.c -o hash.@LTO@
+image.@LTO@: $(XSRCDIR)/image.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/image.c -o image.@LTO@
+list.@LTO@: $(XSRCDIR)/list.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/list.c -o list.@LTO@
+module.@LTO@: $(XSRCDIR)/module.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/module.c -o module.@LTO@
+network.@LTO@: $(XSRCDIR)/network.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/network.c -o network.@LTO@
+numarith.@LTO@: $(XSRCDIR)/numarith.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/numarith.c -o numarith.@LTO@
+number.@LTO@: $(XSRCDIR)/number.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/number.c -o number.@LTO@
+numcomp.@LTO@: $(XSRCDIR)/numcomp.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/numcomp.c -o numcomp.@LTO@
+numstr.@LTO@: $(XSRCDIR)/numstr.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/numstr.c -o numstr.@LTO@
+port.@LTO@: $(XSRCDIR)/port.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/port.c -o port.@LTO@
+portfun.@LTO@: $(XSRCDIR)/portfun.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/portfun.c -o portfun.@LTO@
+print.@LTO@: $(XSRCDIR)/print.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/print.c -o print.@LTO@
+rational.@LTO@: $(XSRCDIR)/rational.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/rational.c -o rational.@LTO@
+read.@LTO@: $(XSRCDIR)/read.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/read.c -o read.@LTO@
+regexp.@LTO@: $(XSRCDIR)/regexp.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/regexp.c -o regexp.@LTO@
+sema.@LTO@: $(XSRCDIR)/sema.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/sema.c -o sema.@LTO@
+setjmpup.@LTO@: $(XSRCDIR)/setjmpup.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/setjmpup.c -o setjmpup.@LTO@
+string.@LTO@: $(XSRCDIR)/string.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/string.c -o string.@LTO@
+struct.@LTO@: $(XSRCDIR)/struct.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/struct.c -o struct.@LTO@
+stxobj.@LTO@: $(XSRCDIR)/stxobj.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/stxobj.c -o stxobj.@LTO@
+symbol.@LTO@: $(XSRCDIR)/symbol.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/symbol.c -o symbol.@LTO@
+syntax.@LTO@: $(XSRCDIR)/syntax.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/syntax.c -o syntax.@LTO@
+thread.@LTO@: $(XSRCDIR)/thread.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/thread.c -o thread.@LTO@
+type.@LTO@: $(XSRCDIR)/type.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/type.c -o type.@LTO@
+vector.@LTO@: $(XSRCDIR)/vector.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/vector.c -o vector.@LTO@
+foreign.@LTO@: $(XSRCDIR)/foreign.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/foreign.c -o foreign.@LTO@
+main.@LTO@: $(XSRCDIR)/main.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/main.c -o main.@LTO@
+
+gc2.@LTO@: $(srcdir)/gc2.c $(srcdir)/newgc.c $(srcdir)/compact.c $(srcdir)/newgc.c $(srcdir)/gc2.h \
+       $(srcdir)/vm_osx.c $(srcdir)/vm_mmap.c $(srcdir)/vm_osk.c $(srcdir)/alloc_cache.c $(srcdir)/my_qsort.c \
+       $(srcdir)/../include/scheme.h $(srcdir)/../src/schpriv.h
+	$(CC) $(CFLAGS) -c $(srcdir)/gc2.c -o gc2.@LTO@
+
+FOREIGN_OBJS = ../../foreign/gcc/libffi/src/*.@LTO@ ../../foreign/gcc/libffi/src/*/*.@LTO@
+FOREIGN_LIB = ../../foreign/gcc/libffi/libffi@FOREIGN_CONVENIENCE@.la
+FOREIGN_OBJSLIB = @FOREIGN_OBJSLIB@
+
+EXTRA_OBJS_T = ../src/gmp.@LTO@ $(FOREIGN_LIB)
+EXTRA_OBJS_L = ../src/gmp.@LTO@ $(FOREIGN_OBJSLIB)
+
+../libmzscheme3m.@LIBSFX@: $(OBJS) $(EXTRA_OBJS_T)
+	$(AR) $(ARFLAGS) ../libmzscheme3m.@LIBSFX@ $(OBJS) $(EXTRA_OBJS_L)
+	$(RANLIB) ../libmzscheme3m.@LIBSFX@
+
+../mzscheme3m@NOT_OSX@: main.@LTO@ ../libmzscheme3m.@LIBSFX@
+	@MZLINKER@ -o ../mzscheme3m main.@LTO@ ../libmzscheme3m.@LIBSFX@ $(LIBS)
+
+MZFWMMM = PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme
+
+$(MZFWMMM): $(OBJS) $(EXTRA_OBJS_T)
+	if [ ! -d PLT_MzScheme.framework ] ; then mkdir PLT_MzScheme.framework ; fi
+	if [ ! -d PLT_MzScheme.framework/Versions ] ; then mkdir PLT_MzScheme.framework/Versions ; fi
+	if [ ! -d PLT_MzScheme.framework/Versions/$(FWVERSION)_3m ] ; then mkdir PLT_MzScheme.framework/Versions/$(FWVERSION)_3m ; fi
+	$(CC) -o $(MZFWMMM) -framework CoreFoundation -dynamiclib -all_load $(OBJS) $(EXTRA_OBJS_L) $(LIBS)
+	rm -f PLT_MzScheme.framework/PLT_MzScheme
+	ln -s Versions/$(FWVERSION)_3m/PLT_MzScheme PLT_MzScheme.framework/PLT_MzScheme	
+
+../mzscheme3m@OSX@: $(MZFWMMM) main.@LTO@
+	$(CC) -o ../mzscheme3m main.@LTO@ -F. -framework PLT_MzScheme
+	if [ ! -d ../PLT_MzScheme.framework/Versions/$(FWVERSION)_3m ] ; then mkdir ../PLT_MzScheme.framework/Versions/$(FWVERSION)_3m ; fi
+	cp PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme ../PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme
+
+clean:
+	/bin/rm -f ../mzscheme3m *.@LTO@ $(XSRCDIR)/*
+	/bin/rm -rf PLT_MzScheme.framework
+
+#--------------------------------------------------
+
+test.@LTO@: $(srcdir)/test.c
+	$(CC) $(CFLAGS) -c $(srcdir)/test.c -o test.@LTO@
+
+gct: test.@LTO@ gc2.@LTO@
+	$(CC) -o gct test.@LTO@ gc2.@LTO@

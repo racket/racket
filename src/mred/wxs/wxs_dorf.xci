@@ -1,0 +1,2 @@
+
+@MACRO DLGORFRAME[f.n] = if (x<f> && !wxSubType(((wxObject *)x<f>)->__type, wxTYPE_FRAME) && !wxSubType(((wxObject *)x<f>)->__type, wxTYPE_DIALOG_BOX)) scheme_wrong_type(<n>, "frame or dialog box", POFFSET+<f>, n, p);

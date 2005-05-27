@@ -1,0 +1,158 @@
+
+*****                  Announcing wxWindows 1.65                  *****
+*****  A Free C++ GUI toolkit for Motif, Open Look, Windows 3.1   *****
+*****                       and Windows NT                        *****
+
+>>> wxWindows is a C++ framework for developing multi-platform, graphical
+    applications from the same body of C++ code.
+
+>>> Uses include:
+
+* development of applications for delivery on several platforms
+* single-platform development, as a high-level wrapper around XView,
+  Motif or Windows
+
+>>> Main features:
+
+* Simple-to-use, object-oriented API
+* Graphics calls include splines, polylines, rounded rectangles, etc.
+* Simple programmatic panel/dialog item layout
+* Support for menu bars and status lines
+* Toolbar class
+* Pens, brushes, fonts, icons, cursors, bitmaps
+* Easy, object-oriented interprocess comms (DDE subset) under
+  Windows 3 *and* UNIX
+* Encapsulated PostScript generation under UNIX, Windows 3 printing on PC
+* Print/preview framework                (NEW)
+* Document/view/undo framework           (NEW)
+* Memory-checking and debugging features (NEW)
+* ODBC subset support                    (NEW)
+* Virtually automatic MDI support under Windows
+* Support for Windows 3 printer and file selector common dialogs, with
+  equivalents for UNIX
+* Under Windows 3, support for copying metafiles to the clipboard
+* Programmatic form facility for building form-like screens fast,
+  with constraints on values
+* Applications can access Windows Help or wxHelp hypertext help system
+* All source
+* Several examples
+* Reference manual in PostScript, wxHelp, and WinHelp form
+
+>>> Bonus features:
+
+* Simple-to-use Windows program installation utility for delivering
+  your applications
+* wxCLIPS: an interface to NASA's CLIPS, for rapid GUI prototyping
+  and application extension
+* wxPython: an IDE for rapid object-oriented GUI development
+* Tex2RTF utility for maintaining online and printed manuals
+* Tree and graph layout classes
+* Contributed advanced editor/hypertext classes
+* Dialog Editor (currently Windows only).
+
+>>> Requirements:
+
+* On PC, one of Microsoft C/C++, Borland C++ 3.1/4.0, Symantec C++,
+  Watcom C++ (WIN32 only).
+* On UNIX, XView 3.x or Motif 1.2.x and GCC/G++ (or virtually any C++ compiler)
+  wxWindows is compatible with most UNIX platforms, but is most
+  tested on Suns using GCC.
+* At least 8 MB of disk space.
+
+>>> Weaknesses
+
+To avoid disappointment, it should be pointed out that wxWindows may
+not be suitable for everyone. It contains a few bugs and some ugly
+code, unlike any commercial equivalent :-); it does not have the
+slickness or coverage of a tool like Microsoft's MFC; and you may not
+agree with the compromises made for portability. On the other hand,
+it is in a state of continuous development and improvement.
+
+Some changes may need to be made for specific platforms, although most
+compilers and UNIXes are now catered for. And wxWindows does produce
+large executables and increase compilation time, although there are
+strategies for minimizing these problems, depending on brand of
+compiler and operating system: see the FAQ.
+
+>>> Where to get it
+
+wxWindows is currently available from the Artificial Intelligence
+Applications Institute by anonymous FTP.
+ 
+> FTP to ftp.aiai.ed.ac.uk (or German mirror site at
+   ftp.mapsy.nat.tu-bs.de/pub/mirror/wxwin)
+
+> log on as `anonymous', and give your user ID as password
+
+> Change directory into /pub/packages/wxwin/1.65, (unix or mswin
+  subdirectories), change transmission method to binary, and
+  get wx165*.tar.Z or wx164*.tgz (UNIX) and/or wx165_*.zip (PC).
+
+> Get install.txt.
+
+> For automated installation under UNIX, get wxinstal.
+
+> Both archives contain the source code for both platforms, but only the
+  executable demos for the specific platform (UNIX and Windows
+  respectively). The demos are available separately as demo.tar.Z and
+  demo.zip.
+
+You can view the documentation for wxWindows on the AIAI World Wide Web
+server using a viewer such as Mosaic.
+ 
+See http://www.aiai.ed.ac.uk/~jacs/wxwin.html
+
+>>> Installation
+
+See install.txt and the installation script wxinstal.
+
+>>> Bugs and an exhortation
+
+wxWindows, like most other software, has the occasional buglet
+(bugs.txt contains a list of some of them). I would be grateful for
+bug reports (even better, fixes) though I can't guarantee to integrate
+them.  Meanwhile, please do join the growing wxWindows community: it's
+fun, and it's going places. The more contributors, the stronger
+the chances that it will be the best toolkit of its type within
+the next year or so.
+
+>>> wxWindows discussion forum
+
+There is a mailing list for users or potential users of wxWindows. Send
+a request to wxwin-users-request@aiai.ed.ac.uk or J.Smart@ed.ac.uk to
+subscribe to (or unsubscribe from) the mailing list. Note that these
+messages go to me, it's not yet automated.
+
+General discussions take place on wxwin-users@aiai.ed.ac.uk;
+wxwin-announce is for people preferring lower bandwidth, and I will
+always send announcements to wxwin-users as well as wxwin-announce. So
+there's not usually a need to subscribe to both. wxwin-dev is for
+discussion about future developments for wxWindows.
+
+wxwin-users currently contains around 360 entries.
+
+>>> In the pipeline
+
+* wxSizer classes for advanced window layout.
+* Ports of the Dialog Editor to other platforms, and expansion
+  of its capabilities.
+* Persistent storage.
+* Ports to Mac, OS/2, Xt and NEXTSTEP. There is currently an
+  AIAI-funded Mac port project due to end July 1996.
+* OLE-2 support is under consideration via the OLE++ project.
+
+>>> THANKS, to everyone who has contributed code, suggestions
+or moral support.
+
+------------------------------------------------------------------
+Julian Smart, December 1995
+
+Artificial Intelligence Applications Institute
+University of Edinburgh
+80 South Bridge
+Edinburgh
+Scotland
+EH1 1HN
+
+EMAIL: J.Smart@ed.ac.uk
+TEL:   0131 650 2746

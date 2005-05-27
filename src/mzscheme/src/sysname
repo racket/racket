@@ -1,0 +1,10 @@
+#!/bin/sh
+
+systype=`uname -s`
+version=`uname -r`
+machine=`uname -p 2> /dev/null`
+if [ "$machine" = "" ] ; then
+  machine=`uname -m`
+fi
+
+echo "\"${machine}-${systype}-${version}\""

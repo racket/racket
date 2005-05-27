@@ -1,0 +1,122 @@
+#undef l_ADDRESS
+#undef l_DEREF
+#undef l_TEST
+#undef l_POINT
+#undef l_TYPE
+#undef l_LIST_ITEM_BUNDLE
+#undef l_LIST_ITEM_UNBUNDLE
+#undef l_MAKE_LIST
+#undef l_MAKE_ARRAY
+#undef l_EXTRA
+#undef l_TERMINATE
+#undef l_COPY
+#undef l_OKTEST
+#undef l_INTTYPE
+
+@IFDEFINE l_ADDRESS = INDIRECT : & : 
+@IFDEFINE l_DEREF = INDIRECT : * : 
+@IFDEFINE l_NEWATOMIC = NEWATOMIC : (AtomicGC) : 
+@IFDEFINE l_NULLOK = ALLOWNULL : 1 : 0
+@IFDEFINE l_TEST = NOTEST :  : , l_NULLOK
+@IFDEFINE l_POINT = POINTERS : * : 
+@IFDEFINE l_EXTRA = NULLTERM : 1 : 0
+@IFDEFINE l_TERMINATE = NULLTERM : f[i] = 0; :
+@IFDEFINE l_COPY = POINTWISE : l_COPYDEST.x=l_COPYSRC.x; l_COPYDEST.y=l_COPYSRC.y; : l_COPYDEST=l_COPYSRC;
+@IFDEFINE l_OKTEST = DOOKTEST : { if (!((l_COPYDEST)->Ok())) WITH_VAR_STACK(scheme_arg_mismatch(OKTESTWHERE, "bad bitmap: ", SCHEME_CAR(l))); if (BM_SELECTED(l_COPYDEST)) WITH_VAR_STACK(scheme_arg_mismatch(OKTESTWHERE, "bitmap is currently installed into a bitmap-dc%: ", SCHEME_CAR(l))); }
+@IFDEFINE l_INTTYPE = SIZEISLONG : long : int
+@IFDEFINE l_DIRECTMALLOC = DIRECTMALLOC : 1 : 0
+
+@DEFINE l_TYPE = <TYPE>
+@DEFINE l_LIST_ITEM_BUNDLE = objscheme_bundle_<TYPE>
+@DEFINE l_LIST_ITEM_UNBUNDLE = objscheme_unbundle_<TYPE>
+@DEFINE l_MAKE_LIST = __Make<TYPE>List
+@DEFINE l_MAKE_ARRAY = __Make<TYPE>Array
+
+@MACRO bList = NULL
+@MACRO ubList = NULL
+@MACRO cList = SCHEME_LISTP({x})
+
+@MACRO glueListSet[type.list.array.cnt.who] = x<array> = WITH_VAR_STACK(__Make<type>Array((<list>+POFFSET < n) ? p[POFFSET+<list>] : scheme_null, &x<cnt>, <who>));
+@MACRO glueUncountedListSet[type.list.array.who] = x<array> = WITH_VAR_STACK(__Make<type>Array((<array>+POFFSET < n) ? p[POFFSET+<list>] : scheme_null, NULL, <who>));
+@MACRO methListSet[type.list.array.cnt] = p[POFFSET+<list>] = WITH_VAR_STACK(__Make<type>List(x<array>, x<cnt>));
+
+@MACRO glueCleanup[array] = delete[] x<array>;
+
+@MACRO bReturnList[type.cnt] =  WITH_VAR_STACK(__Make<type>List({x}, *x<cnt>));
+
+static Scheme_Object *l_MAKE_LIST(l_TYPE l_POINT *f, l_INTTYPE c)
+{
+  Scheme_Object *cdr = scheme_null, *obj = NULL;
+  SETUP_VAR_STACK(1);
+  VAR_STACK_PUSH(0, cdr);
+
+  while (c--) {
+    obj = WITH_VAR_STACK(l_LIST_ITEM_BUNDLE(l_ADDRESS f[c]));
+    cdr = WITH_VAR_STACK(scheme_make_pair(obj, cdr));
+  }
+  
+  READY_TO_RETURN;
+
+  return cdr;
+}
+
+static l_TYPE l_POINT *l_MAKE_ARRAY(Scheme_Object *l, l_INTTYPE *c, char *who)
+{
+  Scheme_Object *orig_l = l;
+  int i = 0;
+  long len;
+  l_TYPE l_POINT *f = NULL;
+
+  SETUP_VAR_STACK(3);
+  VAR_STACK_PUSH(0, l);
+  VAR_STACK_PUSH(1, orig_l);
+  VAR_STACK_PUSH(2, f);
+
+  len = WITH_VAR_STACK(scheme_proper_list_length(l));
+  if (len < 0) WITH_VAR_STACK(scheme_wrong_type(who, "proper-list", -1, 0, &l));
+  if (c) *c = len;
+
+  if (!(len + l_EXTRA)) {
+    READY_TO_RETURN;
+    return NULL;
+  }
+
+#if l_DIRECTMALLOC
+  f = (l_TYPE l_POINT *)WITH_VAR_STACK(GC_malloc_atomic(sizeof(l_TYPE l_POINT) * (len + l_EXTRA)));
+#else
+  f = WITH_VAR_STACK(new l_NEWATOMIC l_TYPE l_POINT[len + l_EXTRA]);
+#endif
+
+  while (!SCHEME_NULLP(l)) {
+    if (!SCHEME_LISTP(l)) {
+      WITH_VAR_STACK(scheme_arg_mismatch(who, "expected a proper list: ", orig_l));
+      READY_TO_RETURN;
+      return NULL;
+    }
+
+#define l_COPYDEST f[i]
+#define l_COPYSRC (l_DEREF WITH_VAR_STACK(l_LIST_ITEM_UNBUNDLE(SCHEME_CAR(l), who l_TEST)))
+
+    l_COPY
+
+    l_OKTEST
+
+    i++;
+
+    l = SCHEME_CDR(l);
+  }
+  l_TERMINATE
+
+  READY_TO_RETURN;
+
+  return f;
+}
+
+@SET NOTEST = 0
+@SET INDIRECT = 0
+@SET POINTERS = 0
+@SET NULLTERM = 0
+@SET ALLOWNULL = 0
+@SET POINTWISE = 0
+@SET DOOKTEST = 0
+@SET DIRECTMALLOC = 0

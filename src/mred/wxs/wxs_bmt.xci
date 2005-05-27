@@ -1,0 +1,24 @@
+
+#ifndef wx_mac
+# define wxBITMAP_TYPE_PICT 101
+#endif
+
+#define wxBITMAP_TYPE_UNKNOWN 0
+#define wxBITMAP_TYPE_GIF_MASK (wxBITMAP_TYPE_GIF | wxBITMAP_TYPE_MASK)
+#define wxBITMAP_TYPE_PNG_MASK (wxBITMAP_TYPE_PNG | wxBITMAP_TYPE_MASK)
+
+@BEGINSYMBOLS bitmapType > ONE > PRED
+@SYM "bmp" : wxBITMAP_TYPE_BMP
+@SYM "gif" : wxBITMAP_TYPE_GIF
+@SYM "gif/mask" : wxBITMAP_TYPE_GIF_MASK
+@SYM "xbm" : wxBITMAP_TYPE_XBM
+@SYM "xpm" : wxBITMAP_TYPE_XPM
+@SYM "pict" : wxBITMAP_TYPE_PICT
+@SYM "jpeg" : wxBITMAP_TYPE_JPEG
+@SYM "png" : wxBITMAP_TYPE_PNG
+@SYM "png/mask" : wxBITMAP_TYPE_PNG_MASK
+@SYM "unknown" : wxBITMAP_TYPE_UNKNOWN
+@SYM "unknown/mask" : wxBITMAP_TYPE_MASK
+@ENDSYMBOLS
+
+@MACRO USEALLFUEL[ok] = if (<ok>) WITH_VAR_STACK(scheme_thread_block(0.0));

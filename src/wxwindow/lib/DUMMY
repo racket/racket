@@ -1,0 +1,3 @@
+This stupid file makes the PLT archiving process work.  Unfortunately,
+if all of the contents of a directory are excluded from a bundle, the
+directory itself is excluded.

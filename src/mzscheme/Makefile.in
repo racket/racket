@@ -1,0 +1,311 @@
+#
+# Makefile for mzscheme
+#
+
+srcdir = @srcdir@
+prefix = @prefix@
+builddir = @builddir@
+
+# for version.mak:
+mainsrcdir = @srcdir@/..
+@INCLUDEDEP@ @srcdir@/version.mak
+
+CC = @CC@
+CPP = @CPP@
+
+AR = @AR@
+ARFLAGS = @ARFLAGS@
+RANLIB = @RANLIB@
+
+MZSRC = $(srcdir)/src
+
+FOREIGN_DIR = ../foreign
+FOREIGN_OBJ = $(FOREIGN_DIR)/foreign.@LTO@
+FOREIGN_OBJS = $(FOREIGN_OBJ) $(FOREIGN_DIR)/gcc/libffi/src/*.@LTO@ $(FOREIGN_DIR)/gcc/libffi/src/*/*.@LTO@
+FOREIGN_LIB = $(FOREIGN_OBJ) ../foreign/gcc/libffi/libffi@FOREIGN_CONVENIENCE@.la
+FOREIGN_OBJSLIB = @FOREIGN_OBJSLIB@
+# Dependency always uses FOREIGN_LIB, but linker uses FOREIGN_OBJSLIB. The
+#  FOREIGN_OBJSLIB expansion has too many "*"s to be a valid make target,
+#  while FOREIGN_LIB is not always acceptable to the linker.
+# The foreign build always uses libtool, so that's why we use .la instead of @LTA@
+#  in FOREIGN_LIB.
+
+################################################################################
+
+bin: 
+	$(MAKE) g-c
+	$(MAKE) @FOREIGNTARGET@
+	$(MAKE) @MZBINTARGET@
+
+normal-bin:
+	$(MAKE) dynlib
+	$(MAKE) mzlibrary
+	$(MAKE) mzscheme 
+
+cygwin-bin:
+	$(MAKE) starter
+	$(MAKE) dynlib
+	$(MAKE) mzlibrary
+	$(MAKE) mzscheme.exe
+
+oskit: 
+	$(MAKE) mzlibrary
+	$(MAKE) mzscheme.multiboot
+
+mzschemelib: 
+	$(MAKE) g-c 
+	$(MAKE) @FOREIGNTARGET@
+	$(MAKE) mzlibrary 
+
+dynlib:
+	cd src; $(MAKE) mzheaders
+	cd dynsrc; $(MAKE) dynlib 
+
+dynexample:
+	$(MAKE) dynlib
+	cd dynsrc; $(MAKE) dynexample 
+
+oe:
+	$(MAKE) dynlib
+	cd dynsrc; $(MAKE) oe
+
+cygwin-dll-setup:
+	cd src; $(MAKE) mzheaders
+	$(MAKE) gmzwin.exp
+
+gmzwin.exp: $(srcdir)/include/gmzwin.def
+	dlltool --def $(srcdir)/include/gmzwin.def --output-exp gmzwin.exp --output-lib gmzwin.a --dllname mzscheme.exe
+
+g-c:
+	cd @GCDIR@; $(MAKE) ../libmzgc.@LIBSFX@ 
+
+sproc-extra-lib:
+	cd @GCDIR@; $(MAKE) sproc.@LTO@
+	$(MAKE) sproc.@LTO@
+
+gc.@LIBSFX@: 
+	$(AR) $(ARFLAGS) @GCDIR@/gc.@LIBSFX@ @GCDIR@/*.@LTO@
+
+# Compilation of the foreign libraries (this compiles all of them)
+foreign-stuff:
+	cd $(FOREIGN_DIR); $(MAKE) all
+
+foreign-nothing:
+	echo no foreign
+
+mzlibrary:
+	cd src; $(MAKE) all 
+	$(MAKE) libmzscheme.@LIBSFX@
+
+libmzscheme.@LIBSFX@: src/*.@LTO@ @FOREIGN_LIB_IF_USED@
+	$(AR) $(ARFLAGS) libmzscheme.@LIBSFX@ src/*.@LTO@ @FOREIGN_OBJSLIB_IF_USED@
+	$(RANLIB) libmzscheme.@LIBSFX@
+
+# Irix sproc, only
+sproc.@LTO@: @GCDIR@/sproc.@LTO@
+	cp @GCDIR@/sproc.@LTO@ sproc.@LTO@
+
+# Unix ----------------------------------------
+
+mzscheme@NOT_OSX@: libmzscheme.@LIBSFX@ libmzgc.@LIBSFX@ main.@LTO@ $(SPECIALIZINGOBJECTS)
+	@MZLINKER@ -o mzscheme main.@LTO@ $(SPECIALIZINGOBJECTS) libmzscheme.@LIBSFX@ libmzgc.@LIBSFX@ @LDFLAGS@ @LIBS@
+
+# Cygwin ----------------------------------------
+
+libmzgcxxxxxxx.dll : libmzgc.a
+	gcc -mdll -o libmzgcxxxxxxx.dll -Wl,--whole-archive libmzgc.a -Wl,--no-whole-archive
+	dlltool --dllname libmzgcxxxxxxx.dll --output-lib libmzgcdll.a libmzgc.a
+
+libmzschxxxxxxx.dll: libmzscheme.a libmzgcdll.a
+	gcc -mdll -o libmzschxxxxxxx.dll -Wl,--whole-archive libmzscheme.a -Wl,--no-whole-archive libmzgcdll.a
+	dlltool --dllname libmzschxxxxxxx.dll --output-lib libmzschdll.a libmzscheme.a
+
+mzscheme.exe: main.o libmzgcxxxxxxx.dll libmzschxxxxxxx.dll
+	gcc -o mzscheme.exe main.o libmzschdll.a libmzgcdll.a
+
+# Mac OS ----------------------------------------
+
+MZFW = PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme
+
+$(MZFW): libmzscheme.@LIBSFX@ libmzgc.@LIBSFX@ $(SPECIALIZINGOBJECTS)
+	if [ ! -d PLT_MzScheme.framework ] ; then mkdir PLT_MzScheme.framework ; fi
+	if [ ! -d PLT_MzScheme.framework/Versions ] ; then mkdir PLT_MzScheme.framework/Versions ; fi
+	if [ ! -d PLT_MzScheme.framework/Versions/$(FWVERSION) ] ; then mkdir PLT_MzScheme.framework/Versions/$(FWVERSION) ; fi
+	$(CC) -o $(MZFW) -framework CoreFoundation -dynamiclib -all_load $(SPECIALIZINGOBJECTS) libmzscheme.@LIBSFX@ libmzgc.@LIBSFX@ @LDFLAGS@ @LIBS@
+	rm -f PLT_MzScheme.framework/PLT_MzScheme
+	ln -s Versions/$(FWVERSION)/PLT_MzScheme PLT_MzScheme.framework/PLT_MzScheme
+
+mzscheme@OSX@: $(MZFW) main.@LTO@
+	$(CC) -o mzscheme main.@LTO@ -F. -framework PLT_MzScheme
+
+# OSKit ----------------------------------------
+
+mzscheme.multiboot : libmzscheme.@LIBSFX@ libmzgc.@LIBSFX@ main.@LTO@
+	$(LD) -Ttext 100000 $(LDFLAGS) @OSKHOME@/lib/oskit/multiboot.@LTO@ \
+		-o mzscheme.multiboot main.@LTO@ -L. -lmzscheme -lgc \
+                -L@OSKHOME@/lib -loskit_kern -loskit_clientos @EXTRA_OSK_LIBS@ \
+                -loskit_freebsd_c -loskit_c -loskit_lmm \
+                -loskit_freebsd_m -loskit_memfs -loskit_fsnamespace  \
+                -loskit_dev -loskit_com \
+                -loskit_kern -loskit_freebsd_c -loskit_c \
+		@OSKHOME@/lib/oskit/crtn.@LTO@
+
+# ----------------------------------------
+
+main.@LTO@: $(srcdir)/main.c $(srcdir)/include/scheme.h $(srcdir)/sconfig.h $(srcdir)/src/stypes.h $(srcdir)/cmdline.inc $(srcdir)/oskglue.inc
+	$(CC) @CFLAGS@ @COMPFLAGS@ @PREFLAGS@ @PROFFLAGS@ @OPTIONS@ @MZOPTIONS@ -I$(builddir) -I$(srcdir)/include -c $(srcdir)/main.c -o main.@LTO@
+
+main_ee.@LTO@: main.@LTO@
+	$(CC) @CFLAGS@ @COMPFLAGS@ @PREFLAGS@ @PROFFLAGS@ @OPTIONS@ @MZOPTIONS@ -I$(builddir) -I$(srcdir)/include -DSTANDALONE_WITH_EMBEDDED_EXTENSION -c $(srcdir)/main.c -o main_ee.@LTO@
+
+ee-main:
+	$(MAKE) main_ee.@LTO@
+
+ee-app: $(MZSCHEME) main_ee.@LTO@
+	if [ "$(EEAPP)" = '' ] ; then echo "ERROR: You must specify EEAPP" ; else $(CC) $(MAIN_CFLAGS_NODBG) -o $(EEAPP) main_ee.@LTO@ $(EEOBJECTS) $(SPECIALIZINGOBJECTS) libmzscheme.@LIBSFX@ libmzgc.@LIBSFX@ @LIBS@ ; fi
+
+testext.@LTO@: testext.c
+	$(CC) $(MAIN_CFLAGS) -I/home/scheme/plt/compiler/ -c testext.c -o testext.@LTO@
+
+mzstart.exe: $(srcdir)/dynsrc/start.c
+	$(CC) @CFLAGS@ -o mzstart.exe $(srcdir)/dynsrc/start.c
+
+starter: mzstart.exe
+
+exn:
+	$(MAKE) $(srcdir)/src/schexn.h
+
+CSTARTUPDEST = cstartup.inc
+
+startup:
+	$(MAKE) $(srcdir)/src/$(CSTARTUPDEST)
+
+mark:
+	$(MAKE) $(srcdir)/src/mzmark.c
+
+headers:
+	./mzscheme -qr $(srcdir)/mkincludes.ss $(srcdir)/../.. . $(srcdir)
+	$(MAKE) $(srcdir)/../../collects/mzscheme/lib/mzdyn.c
+
+# mzdyn.c, used for MacOS "library"
+$(srcdir)/../../collects/mzscheme/lib/mzdyn.c: $(srcdir)/dynsrc/mzdyn.c
+	rm -rf $(srcdir)/../../collects/mzscheme/lib/mzdyn.c
+	cp $(srcdir)/dynsrc/mzdyn.c $(srcdir)/../../collects/mzscheme/lib/mzdyn.c
+
+$(srcdir)/src/schexn.h: $(srcdir)/src/exnsrc.ss $(srcdir)/src/makeexn
+	./mzscheme -gqr $(srcdir)/src/makeexn < $(srcdir)/src/exnsrc.ss > $(srcdir)/src/schexn.h
+
+$(srcdir)/src/$(CSTARTUPDEST): $(srcdir)/src/startup.ss $(srcdir)/src/schvers.h $(srcdir)/src/schminc.h
+	./mzscheme -qr $(srcdir)/src/sstoinc.ss $(CSTARTUPEXTRA) < $(srcdir)/src/startup.ss > $(srcdir)/src/$(CSTARTUPDEST)
+
+$(srcdir)/src/mzmark.c: $(srcdir)/src/mzmarksrc.c $(srcdir)/src/mkmark.ss
+	mzscheme -qr $(srcdir)/src/mkmark.ss < $(srcdir)/src/mzmarksrc.c > $(srcdir)/src/mzmark.c
+
+cstartup.zo:
+	$(MAKE) startup CSTARTUPEXTRA='zo' CSTARTUPDEST="../cstartup.zo"
+
+zo:
+	rm -f ../collects/mzlib/compiled/*.zo
+	rm -f ../collects/mzlib/compiled/*/*.so
+	$(MZSCHEME) -qf mkmzlib.ss -e '(make-zo)' -e '(exit)'
+
+3m:
+	$(MAKE) bin
+	cd gc2; $(MAKE) all
+	cd dynsrc; $(MAKE) LIBDIR='$(LIBDIR)' dynlib3m
+	cd gc2; $(MAKE) ../mzscheme3m
+
+palmos:
+	$(MAKE) bin
+	cd palm; $(MAKE) all
+
+clean@NOT_OSX@:
+	/bin/rm -rf tmp[123456789] tests/tmp[123456789] tests/sub[123]
+	/bin/rm -f tests/*~
+	/bin/rm -f *.@LTO@ core
+	/bin/rm -f mzdyn.o libmzgc.@LIBSFX@ libmzscheme.@LIBSFX@ libdl.a mzscheme mzscheme.multiboot
+	/bin/rm -f include/macosxpre
+	/bin/rm -f include/macosxpre.p
+	cd gc; $(MAKE) clean
+	cd gc2; $(MAKE) clean
+	cd sgc; $(MAKE) clean
+	cd src; $(MAKE) clean
+	cd dynsrc; $(MAKE) clean
+	cd ../foreign ; $(MAKE) clean
+
+clean@OSX@:
+	rm -rf PLT_MzScheme.framework
+	$(MAKE) clean@NOT_OSX@
+
+install:
+	$(MAKE) headers
+	$(MAKE) @MZINSTALLTARGET@
+
+install-3m-basic:
+	cd ..; $(ICP) mzscheme/mzscheme3m $(prefix)/bin/mzscheme3m
+	cd ..; $(ICP) mzscheme/mzdyn3m.o $(prefix)/lib/mzdyn3m.o
+
+install-3m@NOT_OSX@:
+	$(MAKE) install-3m-basic
+	cd ..; $(ICP) mzscheme/libmzscheme3m.@LIBSFX@ $(LIBIDIR)/libmzscheme3m.@LIBSFX@
+
+LIBIDIR=`(cd $(prefix); pwd)`/lib
+BUILDINFO=$(LIBIDIR)/buildinfo
+ICP=@ICP@
+
+# Prefix might be relative to srcdir, or it might be absolute, so we
+# have to go up and install things from there.
+
+normal-install:
+	cd ..; if [ ! -d $(prefix)/bin ] ; then mkdir $(prefix)/bin ; fi
+	cd ..; rm -f $(prefix)/bin/mzscheme
+	cd ..; if [ ! -d $(LIBIDIR) ] ; then mkdir $(LIBIDIR) ; fi
+	cd ..; cp mzscheme/mzdyn.o $(LIBIDIR)/mzdyn.o
+	cd ..; $(ICP) mzscheme/libmzgc.@LIBSFX@ $(LIBIDIR)/libmzgc.@LIBSFX@
+	cd ..; $(ICP) mzscheme/libmzscheme.@LIBSFX@ $(LIBIDIR)/libmzscheme.@LIBSFX@
+	cd ..; $(ICP) mzscheme/mzscheme `(cd $(prefix); pwd)`/bin/mzscheme
+	cd ..; echo 'CC=@CC@' > $(BUILDINFO)
+	cd ..; echo 'CFLAGS=@CFLAGS@ @PREFLAGS@ @COMPFLAGS@' >> $(BUILDINFO)
+	cd ..; echo 'OPTIONS=@OPTIONS@' >> $(BUILDINFO)
+	cd ..; echo 'MZOPTIONS=@MZOPTIONS@' >> $(BUILDINFO)
+	cd ..; echo "LDFLAGS=@LDFLAGS@" >> $(BUILDINFO)
+	cd ..; echo 'LIBS=@LIBS@' >> $(BUILDINFO)
+
+MZFWDIR = @FRAMEWORK_INSTALL_DIR@/PLT_MzScheme.framework
+
+osx-install:
+	$(MAKE) normal-install
+	rm -f $(MZFWDIR)/Versions/$(FWVERSION)/PLT_MzScheme
+	rm -f $(MZFWDIR)/PLT_MzScheme
+	if [ ! -d @FRAMEWORK_INSTALL_DIR@ ] ; then mkdir @FRAMEWORK_INSTALL_DIR@ ; fi
+	if [ ! -d $(MZFWDIR) ] ; then mkdir $(MZFWDIR) ; fi
+	if [ ! -d $(MZFWDIR)/Versions ] ; then mkdir $(MZFWDIR)/Versions ; fi
+	if [ ! -d $(MZFWDIR)/Versions/$(FWVERSION) ] ; then mkdir $(MZFWDIR)/Versions/$(FWVERSION) ; fi
+	cp $(MZFW) $(MZFWDIR)/Versions/$(FWVERSION)/
+	ln -s Versions/$(FWVERSION)/PLT_MzScheme $(MZFWDIR)/
+
+MZFWMMM = PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme
+
+install-3m@OSX@:
+	$(MAKE) install-3m-basic
+	rm -f $(MZFWDIR)/Versions/$(FWVERSION)_3m/PLT_MzScheme
+	if [ ! -d $(MZFWDIR)/Versions/$(FWVERSION)_3m ] ; then mkdir $(MZFWDIR)/Versions/$(FWVERSION)_3m ; fi
+	cp $(MZFWMMM) $(MZFWDIR)/Versions/$(FWVERSION)_3m/
+
+WLIBIDIR=`(cd $(prefix); pwd)`/lib
+WBUILDINFO=$(WLIBIDIR)/buildinfo
+
+cygwin-install:
+	cd ..; rm -f $(prefix)/mzscheme.exe
+	cd ..; cp mzscheme/mzscheme.exe $(prefix)/mzscheme.exe
+	cd ..; cp mzscheme/libmzschxxxxxxx.dll $(prefix)/libmzschxxxxxxx.dll
+	cd ..; cp mzscheme/libmzgcxxxxxxx.dll $(prefix)/libmzgcxxxxxxx.dll
+	cd dynsrc; $(MAKE) cygwin-install
+	cd ..; $(ICP) mzscheme/mzstart.exe `(cd $(prefix); pwd)`/collects/launcher/mzstart.exe
+	cd ..; if [ ! -d $(WLIBIDIR) ] ; then mkdir $(WLIBIDIR) ; fi
+	cd ..; echo 'CC=gcc' > $(WBUILDINFO)
+	cd ..; echo 'CFLAGS=@CFLAGS@ @OPTIONS@' >> $(WBUILDINFO)
+	cd ..; echo 'LIBS=@LIBS@' >> $(WBUILDINFO)
+
+config:
+	autoconf $(srcdir)/configure.ac | mzscheme -qr $(srcdir)/clean_ac.ss > $(srcdir)/../configure

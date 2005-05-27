@@ -1,0 +1,9 @@
+In order to make our CVS server happy with the A List, I renamed all of the files
+that had any funny characters in them. Now, all of the files in this copy of
+the A List distribution have only alphanumeric characters and the hyphen character
+in them.
+
+See readme-a-list for general information about the A List.
+
+Robby Findler
+robby@cs.rice.edu

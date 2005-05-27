@@ -1,0 +1,232 @@
+wxWindows Xt port v1.60 ~ v1.62 (somewhere between these versions)
+==================================================================
+
+Browse README.AIAI too. It's the readme file from wxWindows for
+Windows and X(Motif and XView). It gives you an idea what this is all
+about. (TODO and CHANGES-TODO are things that are not implemented
+yet.)
+
+Copyright
+---------
+Before anything else I'd like to say a few words about the copyright
+that I've used for my wxWindows port. In almost every file you will
+find lines like this:
+
+ * Copyright: (C) 1995, AIAI, University of Edinburgh (Julian)
+ * Copyright: (C) 1995, GNU (Markus)
+
+I broke with the splitting between architecture dependent and
+architecture independent parts and merged them into one file. A result
+of this is that it is not possible/useful to split the code to have a
+part under AIAI copyright and another under my (GNU) copyright. But
+nontheless the AIAI copyright will continue to be valid.
+
+Motivation
+----------
+I've begun with the port because the binaries of wxWindows for XView
+were enormously large. I'm working at home on a PC (i486 33 MHz 8MB)
+and the binary of the wxWindows demo was around 480KB large (debug info
+stripped of) PLUS the size of the shared XView library, which is about
+1.3MB large.
+Besides I was interested in Widget programming and so I started with
+it. The same demo has now a size of about 320KB, but it needs only the
+standard X libraries, which are needed nearly by every X program. So
+The size remains effektive 320KB and not 1.8MB.
+And: I liked the idea of a cross platform GUI development toolkit that
+is in the public domain. As every other Linux user I had a lot of profit
+from the Internet and I thought it was time to give something back.
+
+Documentation
+-------------
+Sorry, I didn't include the wxWindows manual in this distribution, but
+this will be changed in the next release. Please look on the original
+site (ftp.aiai.ed.ac.uk, /pub/packages/wxwin).
+
+Requirements
+------------
+This wxWindows port should work on any X Windows system. Following
+libraries are used:
+	- libX11	; XLib
+	- libXt		; XToolkit
+	- libXaw	; Athena Widget set
+	- libXmu	; Xmu functions
+	- libiostream	; or any C++ library with stream classes
+The dependency on the Athena library will be removed in the future. I've
+begun with it, but I didn't like the outfit and it was not possible to
+provide keyboard traversal. 
+Now the most used X widgets are from the FWF-library (Free Widget
+Foundation, ftp.let.rug.nl, /pub/FWF). They are modified to fit better
+to the wxWindows necessaries. The menu widget and the canvas widget I've
+written myself.
+
+Class Inheritances
+------------------
+I've changed a few inheritances. In original wxWindows wxTextWindow,
+wxCanvas, wxPanel, and wxFrame are derived from wxWindow. I changed it
+to:
+	wxWindow <- wxItem  <- wxCanvas
+	wxWindow <- wxItem  <- wxText   <- wxTextWindow
+	wxWindow <- wxPanel <- wxFrame
+
+The idea is that panels contain something and even frames may contain
+different items (panels, canvases, text windows). I allow panel in
+panel placement by default - it doesn't mess up tab traversal. I'm
+working on a solution for the default button setting.
+
+Event Handling
+--------------
+I've extended the eventhandling. Following methods
+    - ENCAPSULATE the widget's default actions	     \
+	-- OnChar()				      | This allows the   
+	-- OnEvent()				      | replacement of    
+	-- OnPaint()				      | default behaviour.
+	-- OnScroll()				     /
+    - are called BEFORE the widget's default actions \
+	-- OnKillFocus()			      | This only allowes to
+	-- OnMove()				      | add something - but
+	-- OnSetFocus()				      | not to replace it!
+	-- OnSize()				     /
+If OnChar is called by a descendant, it is possible to change the values of
+the wxKeyEvent-structure. It will be translated back to a XEvent structure
+and executes afterwards the translations.
+Currently I don't the same thing for OnEvent and OnScroll, because there is
+not much sense in translation the mouse events and if another scroll
+behaviour is desired, the moving should be done by the wxWindow::Scroll
+method.
+OnPaint doesn't encapsulate the drawing for the following widgets:
+wxMenuBar, wxListBox, wxMultiText, wxText, wxTextWindow - for this widgets
+OnPaint is called AFTER the standard expose method. For some widgets the
+result will be another than desired (e.g. wxRadioBox).
+In original wxWindows these methods ar restricted to a few methods like
+wxCanvas, wxPanel, and wxTextWindow. Remind that for compatibility!
+
+wxWindow as a device context
+----------------------------
+I'd mostly appereciate to derive wxWindow from wxEvtHandler AND wxWindowDC
+(wxWindowDC, wxCanvasDC, and wxPanelDC are handled for the Xt port as
+aliases). But this leads to two different problems for which I don't have a
+solution:
+    - since wxWindowDC and wxEvtHandler are both derived from wxObject, the
+      virtual destructor is ambiguous => the delete operator doesn't work
+      correctly.
+    - if you resolve the ambiguousity by deriving wxDC and wxEvtHandler
+      virtually from wxObject (wxWindow : public virtual wxObject). But now
+      the compiler comlains about casts e.g. from wxObject to wxWindow:
+      wxWindow *win = (wxWindow*)(node->Date()).
+One solution may be, if wxDC would not be derived from wxObject, but this
+would contradict to the meaning of wxObject as a common root of all
+wxWindows classes.
+Therefore I derive wxWindow from wxEvtHandler and implement all wxDC
+methods inside wxWindow. The original methods are called by something like
+if (dc) do_func;.
+To reduce memory usage I don't create a wxWindowDC by default (only for
+wxCanvas and for wxPanel). But it can created and destroyed dynamically by
+wxWindow::CreateDC and wxWindow::DestroyDC.
+
+WXK_BACK / WXK_DELETE on Linux-Systems
+--------------------------------------
+In my .Xmodmap I have following definitions:
+    keycode  22 = Delete     <-- BackSpace
+    keycode 107 = Find       <-- Delete
+due to the keyboard handling of XEmacs.
+This results in the following translations:
+    XK_Find   <-> WXK_DELETE
+    XK_Delete <-> WXK_BACK
+If you have other definitions on your Linux(!)-System, check
+EventHandler/wxEvent.cxx (search for #ifdef linux)
+
+Include files
+-------------
+I've tried to include as few include files as possible. The X include files
+(X11/Xlib.h X11/XtIntrinsic X11/Xaw/*.h) are needed ONLY to build the
+library. For the use of the library they are unnecessary. But some standard
+header files are nontheless ever included:
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <fstream.h>
+This may be not compatible to standard wxWindows but it decreases the
+compilation time; and the programmer has to know what he needs
+- to my opinion.
+I've introduced another include scheme - don't worry, there are AIAI compatible
+include too. I've borrowed it from the Borland Turbo Vision library. The
+following is from wb_form.cc:
+
+    standard wxWindows     |   wxWindows Xt port
+    -----------------------------------------------------
+    #include "common.h"    |   #define  Uses_wxItem       
+    #include "wx_setup.h"  |   #define  Uses_wxButton     
+    #include "wx_utils.h"  |   #define  Uses_wxMessage    
+    #include "wx_dialg.h"  |   #define  Uses_wxChoice     
+    #include "wx_item.h"   |   #define  Uses_wxCheckBox   
+    #include "wx_buttn.h"  |   #define  Uses_wxText       
+    #include "wx_messg.h"  |   #define  Uses_wxMultiText  
+    #include "wx_choic.h"  |   #define  Uses_wxSlider     
+    #include "wx_check.h"  |   #define  Uses_wxListBox    
+    #include "wx_menu.h"   |   #define  Uses_wxRadioBox   
+    #include "wx_txt.h"    |   #define  Uses_wxHashTable  
+    #include "wx_mtxt.h"   |   #define  Uses_wxForm       
+    #include "wx_slidr.h"  |   #include "wx.h"            
+    #include "wx_lbox.h"   |   #include <ctype.h>         
+    #include "wx_rbox.h"   |   #include <stdarg.h>        
+    #include "wx_hash.h"   |
+    #include "wx_mgstr.h"  |
+    #include "wx_cmdlg.h"  |
+    #include <stdlib.h>    |
+    #include <stdio.h>     |
+    #include <ctype.h>     |
+    #include <stdarg.h>    |
+    #include "wx_form.h"   |
+
+Inside wx.h there is a dependency checking that cares for all further needed
+header files. If you like the standard including more add following options
+to your Makefile:
+    -DNO_USES_DEFINES -IAIAI-include
+All samples/utils are compiled this way - look for the Imakefiles.
+
+XPM
+---
+Since the XPM library is available on the most XWindows systems I do not
+include it in the wxWindows library. You have to link it seperately to your
+applications (-lXpm). You find in src/wxSetup.h a line like
+	#define XPM_INCLUDE <X11/xpm.h>
+Change it, if "xpm.h" is in a different directory.
+For those, who don't have the XPM library on their systems I've included
+the library to this distribution (contrib/xpm). Follow the instructions in
+contrib/xpm/README. I do NOT depend on this version of XPM (3.4g) - everything
+should work as of version 3.4b.
+
+Debug Ouput
+-----------
+I've added to command line options to enable different debugging outputs.
+  -debugOutput: Does the same as wantDebugOutput = TRUE.
+  -debugEvents: Traces all X events that arrive to the application: the name
+		of the wxWindow/XWidget is displayed and the event-type.
+		Sometimes it is really nice to know, which events arrive to
+		the application and e.g. to know which event causes an error.
+		(Only, if DEBUG=1)
+
+Bugs and an exhortation
+-----------------------
+wxWindows, like most other software, has the occasional buglet
+(BUGS contains a list of some of them). I would be grateful for
+bug reports (even better, fixes) though I can't guarantee to integrate
+them.  Meanwhile, please do join the growing wxWindows community: it's
+fun, and it's going places. The more contributors, the stronger
+the chances that it will be the best toolkit of its type within
+the next year or so.
+
+wxWindows discussion forum
+--------------------------
+There is a mailing list for users or potential users of wxWindows. Send
+a request to wxwin-users-request@aiai.ed.ac.uk or J.Smart@ed.ac.uk to
+subscribe to (or unsubscribe from) the mailing list. Note that these
+messages go to me, it's not yet automated.
+
+General discussions take place on wxwin-users@aiai.ed.ac.uk;
+wxwin-announce is for people preferring lower bandwidth, and I will
+always send announcements to wxwin-users as well as wxwin-announce. So
+there's not usually a need to subscribe to both. wxwin-dev is for
+discussion about future developments for wxWindows.
+
+-------------------------------------------------------------------------------
+Markus Holzem (markus@melaten.ihf.rwth-aachen.de)

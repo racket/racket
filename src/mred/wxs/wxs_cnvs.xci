@@ -1,0 +1,5 @@
+
+@ c "on-paint" : void OnPaint(); : JMPDECL/SETJMP/RESETJMP
+@ c "on-event" : void OnEvent(wxMouseEvent!);  : JMPDECL/SETJMP/RESETJMP
+
+@INCLUDE wxs_char.xci

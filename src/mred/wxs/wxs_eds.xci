@@ -1,0 +1,19 @@
+
+@BEGINSYMBOLS bufferType > ONE > PRED
+@SYM "text" : wxEDIT_BUFFER
+@SYM "pasteboard" : wxPASTEBOARD_BUFFER
+@ENDSYMBOLS
+
+@BEGINSYMBOLS fileType > ONE > PRED
+@SYM "guess" : wxMEDIA_FF_GUESS
+@SYM "standard" : wxMEDIA_FF_STD
+@SYM "text" : wxMEDIA_FF_TEXT
+@SYM "text-force-cr" : wxMEDIA_FF_TEXT_FORCE_CR
+@SYM "same" : wxMEDIA_FF_SAME
+@SYM "copy" : wxMEDIA_FF_COPY
+@ENDSYMBOLS
+
+@INCLUDE wxs_fcs.xci
+
+@INCLUDE wxs_cret.xci
+

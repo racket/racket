@@ -1,0 +1,138 @@
+#
+#  Copyright (C) 1989-95 GROUPE BULL
+#
+#  Permission is hereby granted, free of charge, to any person obtaining a copy
+#  of this software and associated documentation files (the "Software"), to
+#  deal in the Software without restriction, including without limitation the
+#  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+#  sell copies of the Software, and to permit persons to whom the Software is
+#  furnished to do so, subject to the following conditions:
+#
+#  The above copyright notice and this permission notice shall be included in
+#  all copies or substantial portions of the Software.
+#
+#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+#  GROUPE BULL BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+#  AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+#  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#
+#  Except as contained in this notice, the name of GROUPE BULL shall not be
+#  used in advertising or otherwise to promote the sale, use or other dealings
+#  in this Software without prior written authorization from GROUPE BULL.
+#
+
+srcdir = @srcdir@
+
+PLTSRCDIR = $(srcdir)../../../..
+
+###########################
+#      Common Macros      #
+###########################
+CC = @CC@
+CXX = @CXX@
+LINKER = $(CXX)
+PERL = @PERL@
+RANLIB = @RANLIB@
+AR = @STATIC_AR@
+ARFLAGS = @ARFLAGS@
+OPTIONS = @OPTIONS@ @MROPTIONS@
+COMPFLAGS = @CFLAGS@
+XINCLUDE = @X_CFLAGS@
+XLIB = @X_LIBS@
+LDLIBS = @X_PRE_LIBS@ -lXaw -lXmu -lXt -lX11 -lXext @X_EXTRA_LIBS@ @LIBS@
+GCDIRECTORY = @GCDIR@
+WBUILD = @WBUILD@
+
+WXINC = $(PLTSRCDIR)/wxxt/src/AIAI-include -I$(PLTSRCDIR)/wxxt/src
+NOGCINC = -I$(WXINC) -I$(PLTSRCDIR)/mred/wxme/ -I$(PLTSRCDIR)/mzscheme/include/
+INC = -I$(PLTSRCDIR)/mzscheme/$(GCDIRECTORY) $(NOGCINC)
+CXXFLAGS = $(XINCLUDE) $(INC) $(OPTIONS) -Dwx_xt @COMPFLAGS@ @PROFFLAGS@ @CXXFLAGS@ @PREFLAGS@
+CFLAGS = $(XINCLUDE) $(INC) $(OPTIONS) -Dwx_xt @COMPFLAGS@ @PROFFLAGS@ @CFLAGS@ @PREFLAGS@
+LDFLAGS = $(XLIB)
+###########################
+
+XPMCC = $(CC)
+
+XPM_CC = $(XPMCC) $(CFLAGS) -c
+
+OBJS= data.@LTO@ create.@LTO@ misc.@LTO@ rgb.@LTO@ \
+      scan.@LTO@ parse.@LTO@ hashtab.@LTO@ \
+      WrFFrP.@LTO@ RdFToP.@LTO@ CrPFrDat.@LTO@ CrDatFrP.@LTO@ \
+      WrFFrI.@LTO@ RdFToI.@LTO@ CrIFrDat.@LTO@ CrDatFrI.@LTO@ \
+      CrIFrBuf.@LTO@ CrPFrBuf.@LTO@ CrBufFrI.@LTO@ CrBufFrP.@LTO@ \
+      RdFToDat.@LTO@ WrFFrDat.@LTO@ \
+      Attrib.@LTO@ CrIFrP.@LTO@ CrPFrI.@LTO@ Image.@LTO@ \
+      Info.@LTO@ RdFToBuf.@LTO@ WrFFrBuf.@LTO@
+
+all: libXpm.@LIBSFX@
+
+clean: 
+	rm -f *.@LTO@ libXpm.@LIBSFX@
+
+libXpm.@LIBSFX@: $(OBJS)
+	$(AR) $(ARFLAGS) libXpm.@LIBSFX@ $(OBJS)
+	$(RANLIB) libXpm.@LIBSFX@
+
+# Other dependencies.
+CrBufFrI.@LTO@:
+	$(XPM_CC) $(srcdir)/CrBufFrI.c -o CrBufFrI.@LTO@
+CrBufFrP.@LTO@:
+	$(XPM_CC) $(srcdir)/CrBufFrP.c -o CrBufFrP.@LTO@
+CrDatFrI.@LTO@:
+	$(XPM_CC) $(srcdir)/CrDatFrI.c -o CrDatFrI.@LTO@
+CrDatFrP.@LTO@:
+	$(XPM_CC) $(srcdir)/CrDatFrP.c -o CrDatFrP.@LTO@
+CrDatFI.@LTO@:
+	$(XPM_CC) $(srcdir)/CrDatFI.c -o CrDatFI.@LTO@
+CrDatFP.@LTO@:
+	$(XPM_CC) $(srcdir)/CrDatFP.c -o CrDatFP.@LTO@
+CrIFrBuf.@LTO@:
+	$(XPM_CC) $(srcdir)/CrIFrBuf.c -o CrIFrBuf.@LTO@
+CrIFrDat.@LTO@:
+	$(XPM_CC) $(srcdir)/CrIFrDat.c -o CrIFrDat.@LTO@
+CrPFrBuf.@LTO@:
+	$(XPM_CC) $(srcdir)/CrPFrBuf.c -o CrPFrBuf.@LTO@
+CrPFrDat.@LTO@:
+	$(XPM_CC) $(srcdir)/CrPFrDat.c -o CrPFrDat.@LTO@
+RdFToDat.@LTO@:
+	$(XPM_CC) $(srcdir)/RdFToDat.c -o RdFToDat.@LTO@
+RdFToI.@LTO@:
+	$(XPM_CC) $(srcdir)/RdFToI.c -o RdFToI.@LTO@
+RdFToP.@LTO@:
+	$(XPM_CC) $(srcdir)/RdFToP.c -o RdFToP.@LTO@
+WrFFrDat.@LTO@:
+	$(XPM_CC) $(srcdir)/WrFFrDat.c -o WrFFrDat.@LTO@
+WrFFrI.@LTO@:
+	$(XPM_CC) $(srcdir)/WrFFrI.c -o WrFFrI.@LTO@
+WrFFrP.@LTO@:
+	$(XPM_CC) $(srcdir)/WrFFrP.c -o WrFFrP.@LTO@
+create.@LTO@:
+	$(XPM_CC) $(srcdir)/create.c -o create.@LTO@
+data.@LTO@:
+	$(XPM_CC) $(srcdir)/data.c -o data.@LTO@
+hashtab.@LTO@:
+	$(XPM_CC) $(srcdir)/hashtab.c -o hashtab.@LTO@
+misc.@LTO@:
+	$(XPM_CC) $(srcdir)/misc.c -o misc.@LTO@
+parse.@LTO@:
+	$(XPM_CC) $(srcdir)/parse.c -o parse.@LTO@
+rgb.@LTO@:
+	$(XPM_CC) $(srcdir)/rgb.c -o rgb.@LTO@
+scan.@LTO@: $(srcdir)/scan.c
+	$(XPM_CC) $(srcdir)/scan.c -o scan.@LTO@
+Attrib.@LTO@:
+	$(XPM_CC) $(srcdir)/Attrib.c -o Attrib.@LTO@
+CrIFrP.@LTO@:
+	$(XPM_CC) $(srcdir)/CrIFrP.c -o CrIFrP.@LTO@
+CrPFrI.@LTO@:
+	$(XPM_CC) $(srcdir)/CrPFrI.c -o CrPFrI.@LTO@
+Image.@LTO@:
+	$(XPM_CC) $(srcdir)/Image.c -o Image.@LTO@
+Info.@LTO@:
+	$(XPM_CC) $(srcdir)/Info.c -o Info.@LTO@
+RdFToBuf.@LTO@:
+	$(XPM_CC) $(srcdir)/RdFToBuf.c -o RdFToBuf.@LTO@
+WrFFrBuf.@LTO@:
+	$(XPM_CC) $(srcdir)/WrFFrBuf.c -o WrFFrBuf.@LTO@

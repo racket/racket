@@ -1,0 +1,16 @@
+
+@SETMARK w = d
+@INCLUDE wxs_win.xci
+
+// @SETMARK c = d
+// @INCLUDE wxs_cnvs.xci
+
+// @ p "on-default-action" : void OnDefaultAction(wxItem!);
+
+// @ p "on-item-event" : void OnItemEvent(wxItem!,wxMouseEvent%); ## INTERACT_METHODS
+// @ p "on-item-left-click" : void OnItemLeftClick(wxItem!,int,int,int); ## INTERACT_METHODS
+// @ p "on-item-right-click" : void OnItemRightClick(wxItem!,int,int,int); ## INTERACT_METHODS
+// @ p "on-item-move" : void OnItemMove(wxItem!,int,int); ## INTERACT_METHODS
+// @ p "on-item-size" : void OnItemSize(wxItem!,int,int); ## INTERACT_METHODS
+// @ p "on-left-click" : void OnLeftClick(int,int,int); ## INTERACT_METHODS
+// @ p "on-right-click" : void OnRightClick(int,int,int); ## INTERACT_METHODS

@@ -1,0 +1,74 @@
+# makefile for libpng
+# Copyright (C) 2002 Glenn Randers-Pehrson
+# Copyright (C) 1995 Guy Eric Schalnat, Group 42, Inc.
+# For conditions of distribution and use, see copyright notice in png.h
+
+srcdir = @srcdir@
+
+CC = @CC@
+
+# override DESTDIR= on the make install command line to easily support
+# installing into a temporary location.  Example:
+#
+#    make install DESTDIR=/tmp/build/libpng
+#
+# If you're going to install into a temporary location
+# via DESTDIR, $(DESTDIR)$(prefix) must already exist before
+# you execute make install.
+DESTDIR=
+
+# Where the zlib library and include files are located
+#ZLIBINC=/usr/local/include
+ZLIBINC=@ZLIB_INC@
+
+CFLAGS=@CFLAGS@ @PREFLAGS@ @COMPFLAGS@ @OPTIONS@ @MROPTIONS@ $(ZLIBINC)
+
+RANLIB=@RANLIB@
+
+OBJS = png.@LTO@ pngset.@LTO@ pngget.@LTO@ pngrutil.@LTO@ pngtrans.@LTO@ pngwutil.@LTO@ \
+	pngread.@LTO@ pngrio.@LTO@ pngwio.@LTO@ pngwrite.@LTO@ pngrtran.@LTO@ \
+	pngwtran.@LTO@ pngmem.@LTO@ pngerror.@LTO@ pngpread.@LTO@
+
+all: libpng.@LIBSFX@ pngtest
+
+libpng.@LIBSFX@: $(OBJS)
+	@STATIC_AR@ @ARFLAGS@ $@  $(OBJS)
+	$(RANLIB) $@
+
+clean:
+	rm -f *.@LTO@ libpng.@LIBSFX@ pngtest pngout.png
+
+PNG_CC=$(CC) $(CFLAGS) -c
+
+png.@LTO@: $(srcdir)/png.c $(srcdir)/png.h $(srcdir)/pngconf.h
+	$(PNG_CC) $(srcdir)/png.c -o png.@LTO@
+pngerror.@LTO@: $(srcdir)/pngerror.c $(srcdir)/png.h $(srcdir)/pngconf.h
+	$(PNG_CC) $(srcdir)/pngerror.c -o pngerror.@LTO@
+pngrio.@LTO@: $(srcdir)/pngrio.c $(srcdir)/png.h $(srcdir)/pngconf.h
+	$(PNG_CC) $(srcdir)/pngrio.c -o pngrio.@LTO@
+pngwio.@LTO@: $(srcdir)/pngwio.c $(srcdir)/png.h $(srcdir)/pngconf.h
+	$(PNG_CC) $(srcdir)/pngwio.c -o pngwio.@LTO@
+pngmem.@LTO@: $(srcdir)/pngmem.c $(srcdir)/png.h $(srcdir)/pngconf.h
+	$(PNG_CC) $(srcdir)/pngmem.c -o pngmem.@LTO@
+pngset.@LTO@: $(srcdir)/pngset.c $(srcdir)/png.h $(srcdir)/pngconf.h
+	$(PNG_CC) $(srcdir)/pngset.c -o pngset.@LTO@
+pngget.@LTO@: $(srcdir)/pngget.c $(srcdir)/png.h $(srcdir)/pngconf.h
+	$(PNG_CC) $(srcdir)/pngget.c -o pngget.@LTO@
+pngread.@LTO@: $(srcdir)/pngread.c $(srcdir)/png.h $(srcdir)/pngconf.h
+	$(PNG_CC) $(srcdir)/pngread.c -o pngread.@LTO@
+pngrtran.@LTO@: $(srcdir)/pngrtran.c $(srcdir)/png.h $(srcdir)/pngconf.h
+	$(PNG_CC) $(srcdir)/pngrtran.c -o pngrtran.@LTO@
+pngrutil.@LTO@: $(srcdir)/pngrutil.c $(srcdir)/png.h $(srcdir)/pngconf.h
+	$(PNG_CC) $(srcdir)/pngrutil.c -o pngrutil.@LTO@
+pngtest.@LTO@: $(srcdir)/pngtest.c $(srcdir)/png.h $(srcdir)/pngconf.h
+	$(PNG_CC) $(srcdir)/pngtest.c -o pngtest.@LTO@
+pngtrans.@LTO@: $(srcdir)/pngtrans.c $(srcdir)/png.h $(srcdir)/pngconf.h
+	$(PNG_CC) $(srcdir)/pngtrans.c -o pngtrans.@LTO@
+pngwrite.@LTO@: $(srcdir)/pngwrite.c $(srcdir)/png.h $(srcdir)/pngconf.h
+	$(PNG_CC) $(srcdir)/pngwrite.c -o pngwrite.@LTO@
+pngwtran.@LTO@: $(srcdir)/pngwtran.c $(srcdir)/png.h $(srcdir)/pngconf.h
+	$(PNG_CC) $(srcdir)/pngwtran.c -o pngwtran.@LTO@
+pngwutil.@LTO@: $(srcdir)/pngwutil.c $(srcdir)/png.h $(srcdir)/pngconf.h
+	$(PNG_CC) $(srcdir)/pngwutil.c -o pngwutil.@LTO@
+pngpread.@LTO@: $(srcdir)/pngpread.c $(srcdir)/png.h $(srcdir)/pngconf.h
+	$(PNG_CC) $(srcdir)/pngpread.c -o pngpread.@LTO@

@@ -1,0 +1,29 @@
+SenoraGC is a relatively portable conservative GC for a slightly
+cooperative environment.
+
+The collector is intended mainly for debugging and memory tracing, but
+it can also act as a reasonbaly effecient, general-purpose,
+conservative collector. The standard MzScheme build uses SGC for
+certain platforms where Boehm's GC hasn't been ported, yet (notably,
+OSKit and BeOS).
+
+This collector is not recommended as a replacement for Boehm's GC if
+you can get Boehm's to work at all. SenoraGC MIGHT be useful if, for
+some reason, Boehm's collector does not work for your platform.
+SenoraGC MIGHT be useful as a debugging collector if you can figure
+out the [undocumented] debugging utilities.
+
+Usage:
+
+The stack base must be manually identified with GC_set_stack_base();
+no garbage collection will occur before this function is called.
+
+All non-stack/register roots (i.e., global variables) must be
+registered with GC_add_roots(). For certain platforms, this is
+actually done automatically for static variables, but it can't be done
+portably in general. (See AUTO_STATIC_ROOTS_IF_POSSIBLE in the flags
+section.)
+
+GC space is allocated using malloc() and free(). Alternatively, the GC
+can define malloc() and free() itself if platform-specific allocation
+routines are supported.

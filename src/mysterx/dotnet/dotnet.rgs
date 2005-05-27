@@ -1,0 +1,11 @@
+HKCR
+{
+	NoRemove AppID
+	{
+		'%APPID%' = s 'DotnetProfiler'
+		'dotnet.DLL'
+		{
+			val AppID = s '%APPID%'
+		}
+	}
+}

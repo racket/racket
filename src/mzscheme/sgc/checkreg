@@ -1,0 +1,179 @@
+#!/bin/sh
+string=? ; exec ${PLTHOME}/bin/mzscheme -gqr $0 "$@"
+
+; Script to check that global and static variables are registered
+
+(define ignore-types (list "int" "long" "short" "double" "float" "DWORD"))
+
+(define-struct decl (type file))
+
+(define declared (make-hash-table))
+(define registered (make-hash-table))
+
+(define spaces (string #\[ #\space #\tab #\] #\*))
+(define id "[a-zA-Z0-9_]+")
+(define type-suffix "[*]+")
+
+(define open-comment-regexp (regexp "/\\*(.*)"))
+(define close-comment-regexp (regexp "\\*/(.*)"))
+
+(define quote-regexp (regexp "((^[^\"]*|^[^\"]*[^\\]))\"(.*)"))
+(define char-regexp (regexp "(.*)'.'(.*)"))
+(define open-regexp (regexp "^([^{}]*){(.*)"))
+(define close-regexp (regexp "^([^{}]*)}(.*)"))
+(define id-regexp (regexp id))
+(define prefixed-id-regexp (regexp (format "(~a)~a(~a)" type-suffix spaces id)))
+(define extern-regexp (regexp (format "~aextern~a[^;]*;(.*)"
+				       spaces
+				       spaces)))
+(define typedef-regexp (regexp (format "~atypedef~a[^;]*;(.*)"
+				       spaces
+				       spaces)))
+(define declare-regexp (regexp (format "~a(~a)~a([^();]*);(.*)"
+				       spaces
+				       id
+				       spaces)))
+(define static-regexp (regexp (format "~astatic~a(~a)~a([^();]*);(.*)"
+				      spaces
+				      spaces
+				      id
+				      spaces)))
+(define register-regexp (regexp (format "(.*)REGISTER_SO[(](~a)[)](.*)"
+					id)))
+
+(define comma-regexp (regexp "(.*),(.*)"))
+(define equal-regexp (regexp "(.*)=(.*)"))
+
+(define starts-close-comment
+  (lambda (l)
+    (let ([m (regexp-match close-comment-regexp l)])
+      (if m
+	  (let ([post (cadr m)]
+		[pre (substring l 0 (- (string-length l)
+				       (string-length (car m))))])
+	    (list l pre post))
+	  #f))))
+
+(define starts-open-comment
+  (lambda (l)
+    (let ([m (regexp-match open-comment-regexp l)])
+      (if m
+	  (let ([post (cadr m)]
+		[pre (substring l 0 (- (string-length l)
+				       (string-length (car m))))])
+	    (if (or (regexp-match quote-regexp pre)
+		    (regexp-match open-comment-regexp pre)
+		    (regexp-match close-comment-regexp pre))
+		#f
+		(list l pre post)))
+	  #f))))
+
+(define (declare type vars orig file)
+  (cond
+   [(regexp-match comma-regexp vars)
+    => (lambda (m) 
+	 (declare type (cadr m) orig file)
+	 (declare type (caddr m) orig file))]
+   [(regexp-match equal-regexp vars)
+    => (lambda (m) 
+	 (declare type (cadr m) orig file))]
+   [(regexp-match prefixed-id-regexp vars)
+    => (lambda (m)
+	 (declare (string-append type (cadr m))
+		  (caddr m) orig file))]
+   [(regexp-match id-regexp vars)
+    => (lambda (m)
+	 (unless (member type ignore-types)
+		 (hash-table-put! declared (string->symbol (car m)) 
+				  (make-decl type file))))]
+   [else
+    '(fprintf (current-error-port)
+	     "Warning: no variable in ~s of ~s"
+	     vars orig)]))
+
+(define (check-file file)
+  (let loop ([depth 0][comment? #f][string? #f])
+    (let ([l (read-line)])
+      (unless (eof-object? l)
+	 (let parse ([l l][depth depth][comment? comment?][string? string?][k loop])
+	   (cond
+	    [(and comment? (starts-close-comment l))
+	     => (lambda (m)
+		  (parse (caddr m) depth #f #f k))]
+	    [comment?
+	     (k depth #t #f)]
+	    [(and (not string?) (starts-open-comment l))
+	     => (lambda (m)
+		  (parse (cadr m) depth #f #f
+			 (lambda (depth comment? string?)
+			   (parse (caddr m) depth #t #f k))))]
+	    [(regexp-match quote-regexp l)
+	     => (lambda (m)
+		  (parse (cadr m) depth #f string?
+			 (lambda (depth comment? string?)
+			   (parse (cadddr m) depth #f string? k))))]
+	    [string? (k depth #f #t)]
+	    [(regexp-match char-regexp l)
+	     => (lambda (m)
+		  (parse (cadr m) depth #f #f
+			 (lambda (depth comment? string?)
+			   (parse (caddr m) depth #f #f k))))]
+	    [(regexp-match open-regexp l)
+	     => (lambda (m)
+		  (parse (cadr m) depth #f #f void)
+		  (parse (caddr m) (add1 depth) #f #f k))]
+	    [(regexp-match close-regexp l)
+	     => (lambda (m)
+		  (unless (positive? depth)
+			  (error 'imbalance "in ~s in ~a at ~a" file
+				 l
+				 (file-position (current-input-port))))
+		  (parse (cadr m) depth #f #f void)
+		  (parse (caddr m) (sub1 depth) #f #f k))]
+	    [(or (regexp-match extern-regexp l)
+		 (regexp-match typedef-regexp l))
+	     => (lambda (m) 
+		  (parse (cadr m) depth #f #f k))]
+	    [(or (regexp-match static-regexp l)
+		 (and (zero? depth) (regexp-match declare-regexp l)))
+	     => (lambda (m) 
+		  (declare (cadr m) (caddr m) l file)
+		  (parse (cadddr m) depth #f #f k))]
+	    [(regexp-match register-regexp l)
+	     => (lambda (m)
+		  (parse (cadr m) depth #f #f void)
+		  (hash-table-put! registered (string->symbol (caddr m)) #t)
+		  (parse (cadddr m) depth #f #f k))]
+	    [else (k depth #f #f)]))))))
+
+(for-each
+ (lambda (file)
+   (with-input-from-file file
+     (lambda ()
+       (check-file file))))
+ (vector->list argv))
+
+#|
+(printf "Declared: ~n")
+(hash-table-for-each declared
+		     (lambda (k v)
+		       (printf "  ~a:   ~a : ~a~n" 
+			       (decl-file v) k (decl-type v))))
+
+(printf "Registered: ~n")
+(hash-table-for-each registered
+		     (lambda (k v)
+		       (printf "  ~a~n" k)))
+
+|#
+
+(printf "Declared but not registered: ~n")
+(hash-table-for-each declared
+		     (lambda (k v)
+		       (hash-table-get registered
+				       k
+				       (lambda ()
+					 (printf "  ~a:   ~a : ~a~n" 
+						 (decl-file v) k 
+						 (decl-type v))))))
+

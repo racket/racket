@@ -1,0 +1,172 @@
+================================= README.FWF =================================
+
+*******************************************************************************
+*                                                                             *
+*               I N F O R M A T I O N    A B O U T    T H E                   *
+*              F R E E    W I D G E T    F O U N D A T I O N                  *
+*                                                                             *
+*******************************************************************************
+
+                        The Free Widget Foundation
+				       
+                                Brian Totty
+
+                      Department of Computer Science
+                University of Illinois at Urbana-Champaign
+                        1304 West Springfield Avenue
+                             Urbana, IL 61801
+
+                    free-widgets-info@let.rug.nl
+
+THE FREE WIDGET FOUNDATION
+
+The Free Widget Foundation (FWF) was first organized in the summer of 1990, as
+a grass-roots, all-volunteer effort to generate a publically accessible
+repository for X widgets.  The goal of the FWF was to gather a set of
+powerful, flexible, freely-accessible widgets, assisting programmers to
+construct complicated user-interfaces.  Furthermore, we wanted to discourage
+multiple parties from "reinventing the widget" multiple times, and encourage
+the development of a single, quality object.
+
+NOT ENOUGH BUILDING BLOCKS
+
+There are several collections of widgets available, including commercial and
+free libraries.  Unfortunately, there is not currently a sufficiently diverse
+set of widgets available for the wide variety of user-interface needs.
+Additionally, some widgets have licensing costs and/or distribution
+restrictions that make them inappropriate for inclusion in certain software
+projects.
+
+The Free Widget Foundation was founded in an attempt to increase the quantity
+and quality of freely accessible widgets.
+
+We have accumulated widgets of varying degrees of complexity, with application
+across a wide range of program domains.  Over time, our organization has grown
+substantially in size, and has reorganized into a more effective
+administrative structure.  Primarily using electronic mail, we are
+coordinating volunteer labor from around the world to create our new library
+of free widgets.  This project is exciting because it is created and managed
+by grass-roots volunteerism.  And we are beginning to see the rewards of our
+efforts, as FWF gains publicity and our products are increasingly being used
+in projects.
+
+The FWF project has been described in several articles, including the X
+Resource Journal.  The widget set is available from several FTP and mail
+server sites, and a version is available on the ICS Widget Databook CD ROM.
+
+WE ARE NOT THE FSF
+
+The Free Widget Foundation name is an obvious play on the Free Software
+Foundation, but we are not related to that organization, apart from sharing
+the goal of making quality software more accessible to the public.  In the
+legal definition of the word, we are not even a foundation!
+
+MAILING LISTS
+
+The FWF maintains three electronic mailing lists for discussion related to
+free-widgets.  The names of the three mailing lists are
+'free-widgets-announce', 'free-widgets-development', and 'free-widgets-bugs'.
+The lists are briefly sumamrized below:
+
+    free-widgets-announce	Infrequent FWF announcements
+    free-widgets-development	Detailed technical & administrative discussion
+    free-widgets-bugs		Discussions about bugs and potential fixes
+
+To be added to one of these mailing lists, send mail to the automated list
+server 'listserv@let.rug.nl' with a command in the message body of the form:
+
+    subscribe <listname> <your real name>
+
+For example, if your name was Ross Perot, and you were interested in FWF
+announcements (new releases, bug fixes, calls for volunteer help, etc.), you
+would send mail to listserv@let.rug.nl, with the following line in the
+body of the letter:
+
+    subscribe free-widgets-announce Ross Perot
+
+For more information about the Free Widget Foundation, send electronic mail to
+free-widgets-info@let.rug.nl.
+
+OBTAINING A LIBRARY COPY
+
+The FWF source code release is available via FTP (file transfer protocol) from
+the machine ftp.let.rug.nl (129.125.8.20) in the file pub/FWF/fwf.tar.Z.
+
+First, connect to the machine with anonymous ftp (ftp to
+ftp.let.rug.nl, login as 'anonymous' or 'ftp', and provide your email
+address as the password).  Once you are connected, change directory to
+the 'pub' directory.  Switch to binary transfer mode, and get the
+file.  Once you receive the file, uncompress it (using 'uncompress'),
+and then unarchive it by typing 'tar xvf fwf.tar'.  This will create a
+directory called FWF, containing the source files, documentation, test
+programs, and build instructions.
+
+RECEIVING FWF WIDGETS VIA EMAIL
+
+Using FTP is the best way to receive the FWF widgets.  But, if you cannot
+access the widgets using FTP, it is possible to obtain them via email.
+
+Because the FWF release is large, it must be sent in many pieces.  Is is
+possible for us to send it by hand, but this is labor-intensive and
+error-prone, and will be done only as a last-resort.
+
+The preferable way to obtain widgets by email is to access an email server
+program.  We are currently gathering a list of email servers and searching for
+volunteers to maintain releases on each site.  The servers currently secured
+are described below.
+
+	SUNSITE.UNC.EDU
+	    One such server is sunsite.unc.edu, run by the University of
+	    North Carolina and SUN.  FWF volunteer Reed Wade (wade@cs.utk.edu)
+	    maintains the FWF software on this site.  If the release is out
+	    of date, or if you have trouble with the server, send email to
+	    Reed.  To obtain the FWF release via the SunSite email server,
+	    send email to ftpmail@sunsite.unc.edu, with the following
+	    commands in the body:
+
+		open
+		cd pub/X11/fwf
+		get fwf.shar.Z
+
+	FTP.INFORMATIK.TU-MUENCHEN.DE (131.159.0.198)
+	    The FWF widgets have also been available via the FTP mailer
+	    at ftp.informatik.tu-muenchen.de, in Munich, Germany.  FWF
+	    volunteer Markus Stumpf (markus.stumpf@informatik.tu-muenchen.de)
+	    maintains the FWF software on this site.  If the release is out
+	    of date, or if you have trouble with the server, send email to
+	    Markus.  To obtain the FWF release via the Munich server,
+	    send email to FTP-Mailer@ftp.informatik.tu-muenchen.de with the
+	    following command in the body:
+
+		GET /pub/comp/X11/contrib/lib/fwf/fwf.tar.gz
+
+LIBRARY CONTENTS
+
+The current FWF release contains approximately 40 widgets of varying degrees
+of complexity.  Several of the widgets are simple, primitive widgets,
+including buttons and labels.  Others are sophisticated, high-level widgets
+supporting advanced user interface tasks such as hierarchical file selection,
+statistical data presentation, and image editing.  Numerous other widgets are
+currently under construction, and will be available in the Fall of 1993.
+
+WE NEED VOLUNTEERS
+
+The FWF is an all-volunteer organization.  Our success depends solely on the
+efforts of our volunteers.  It is our happy experience that many people are
+interested in our project.  Many others are actively using FWF widgets in
+their programs.  We hope that people with interest in our success will
+volunteer a small amount of their time to help us improve our product.
+
+There are dozens of volunteer opportunities available, both in technical and
+non-technical capacities.  Technical work includes widget and application
+design, programming, code improvement, and maintenance.  Non-technical work
+includes administration, testing, documentation, and publicity.  If you think
+you can contribute a small amount of time to our efforts, please send
+electronic mail to free-widgets-info@let.rug.nl.
+
+Furthermore, if you have widgets that you would like to include in the FWF
+release, we will be happy to tell you about our submission procedure.  Again,
+direct your requests to free-widgets-info@let.rug.nl.
+
+Finally, if you like the Free Widgets concept, please tell other people about
+it.  We can't save people any effort if they don't know about us.

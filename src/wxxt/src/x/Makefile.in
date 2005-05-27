@@ -1,0 +1,50 @@
+
+# Builds the wxWindows library proper, plus the wxImage and XPM
+# libraries.
+
+srcdir = @srcdir@
+
+all: @MAKE_WBUILD@ \
+                ../Application \
+		../DataStructures \
+		../DeviceContexts \
+		../Dialogs \
+		../EventHandling \
+		../GDI-Classes \
+		../Misc \
+		../Utilities \
+		../Windows \
+		../XWidgets
+	cd ..; $(MAKE)
+	cd ../../utils/image/src/; $(MAKE)
+	cd ../../contrib/xpm/lib/; $(MAKE)
+
+clean:
+	cd ..; $(MAKE) clean
+	cd ../../contrib/xpm/lib; $(MAKE) clean
+	rm -f ../../contrib/xpm/lib/libXpm.a
+	cd ../../utils/image/src; $(MAKE) cleaneach
+
+../Application:
+	mkdir $@
+../DataStructures:
+	mkdir $@
+../DeviceContexts:
+	mkdir $@
+../Dialogs:
+	mkdir $@
+../EventHandling:
+	mkdir $@
+../GDI-Classes:
+	mkdir $@
+../Misc:
+	mkdir $@
+../Utilities:
+	mkdir $@
+../Windows:
+	mkdir $@
+../XWidgets:
+	mkdir $@
+
+wb:
+	cd wbuild; $(MAKE)

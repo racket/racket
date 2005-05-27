@@ -1,0 +1,13 @@
+In an effort to make the PLT source code distribution as
+self-contained as possible, we provide this corrected and pruned
+version of wbuild 3.2. It is used when building MrEd from changed .w
+files in plt/src/wxxt/src/XWidgets. It is *not* used by the normal
+build process, unless configure is run with --enable-wbuild. (No users
+compiling unmodifed PLT software will need to use --enable-wbuild,
+since the wbuild output is included in the distribution.)
+
+For a complete version of wbuild, including the pruned documentation
+and meta-build files, see:
+
+  ftp://alpha.gnu.ai.mit.edu/fwf
+  ftp://prep.ai.mit.edu/pub/gnu

@@ -1,0 +1,11 @@
+HKCR
+{
+	NoRemove AppID
+	{
+		{A604CB9D-2AB5-11D4-B6D3-0060089002FE} = s 'MzCOM'
+		'MzCOM.EXE'
+		{
+			val AppID = s {A604CB9D-2AB5-11D4-B6D3-0060089002FE}
+		}
+	}
+}

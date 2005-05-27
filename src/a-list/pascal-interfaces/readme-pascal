@@ -1,0 +1,7 @@
+The A List Pascal Adaptation Kit is available from
+
+http://genbiol.cbs.umn.edu/staff/hammond/TheAList.html
+
+It contains old libraries for use with THINK and Codewarrior Pascal.  You should compile your own static libraries from the source code included with the latest version of the A List.  There is also a Pascal version of the demo application.
+
+Thanks to Sebastiano Pilla for developing the Pascal Adaptation Kit.

@@ -1,0 +1,92 @@
+#undef l_ADDRESS
+#undef l_DEREF
+#undef l_TEST
+#undef l_POINT
+#undef l_TYPE
+#undef l_VECTOR_ITEM_BUNDLE
+#undef l_VECTOR_ITEM_UNBUNDLE
+#undef l_MAKE_VECTOR
+#undef l_MAKE_ARRAY
+#undef l_EXTRA
+#undef l_TERMINATE
+
+@IFDEFINE l_ADDRESS = INDIRECT : & : 
+@IFDEFINE l_DEREF = INDIRECT : * : 
+@IFDEFINE l_TEST = NOTEST :  : , 1
+@IFDEFINE l_POINT = POINTERS : * : 
+@IFDEFINE l_EXTRA = NULLTERM : 1 : 0
+@IFDEFINE l_TERMINATE = NULLTERM : f[i] = 0; :
+
+@DEFINE l_TYPE = <TYPE>
+@DEFINE l_VECTOR_ITEM_BUNDLE = objscheme_bundle_<TYPE>
+@DEFINE l_VECTOR_ITEM_UNBUNDLE = objscheme_unbundle_<TYPE>
+@DEFINE l_MAKE_VECTOR = __Make<TYPE>Vector
+@DEFINE l_MAKE_ARRAY = __Make<TYPE>Array
+
+@MACRO bVec = NULL
+@MACRO ubVec = NULL
+@MACRO cVec = SCHEME_VECP({x})
+
+@MACRO glueVectorSet[type.vector.array.cnt] = x<array> = WITH_VAR_STACK(__Make<type>Array((<vector> < n) ? p[POFFSET+<vector>] : scheme_null, &x<cnt>));
+@MACRO glueUncountedVectorSet[type.vector.array] = x<array> = WITH_VAR_STACK(__Make<type>Array((<array> < n) ? p[POFFSET+<vector>] : scheme_null, NULL));
+@MACRO methVectorSet[type.vector.array.cnt] = p[POFFSET+<vector>] = WITH_VAR_STACK(__Make<type>Vector(x<array>, x<cnt>));
+
+@MACRO glueCleanup[array] = delete[] x<array>;
+
+@MACRO bReturnVec[type.cnt] =  WITH_VAR_STACK(__Make<type>Vector({x}, *x<cnt>));
+
+static Scheme_Object *l_MAKE_VECTOR(l_TYPE l_POINT *f, int c)
+{
+  Scheme_Object *vec = NULL, *obj = NULL;
+  SETUP_VAR_STACK(3);
+  VAR_STACK_PUSH(0, vec);
+  VAR_STACK_PUSH(1, obj);
+  VAR_STACK_PUSH(2, f);
+
+  vec = WITH_VAR_STACK(scheme_make_vector(c, scheme_null));
+
+  while (c--) {
+    obj = WITH_VAR_STACK(l_VECTOR_ITEM_BUNDLE(l_ADDRESS f[c]));
+    SCHEME_VEC_ELS(vec)[c] = obj;
+  }
+
+  READY_TO_RETURN;
+  
+  return vec;
+}
+
+static l_TYPE l_POINT *l_MAKE_ARRAY(Scheme_Object *l, int *c)
+{
+  int i = 0;
+  long len;
+  l_TYPE l_POINT *f = NULL;
+
+  SETUP_VAR_STACK(2);
+  VAR_STACK_PUSH(0, l);
+  VAR_STACK_PUSH(1, f);
+
+  len = SCHEME_VEC_SIZE(l);
+  if (c) *c = len;
+
+  if (!(len + l_EXTRA)) {
+    READY_TO_RETURN;
+    return NULL;
+  }
+
+  f = WITH_VAR_STACK(new l_TYPE l_POINT[len + l_EXTRA]);
+
+  while (len--) {
+    f[i++] = l_DEREF WITH_VAR_STACK(l_VECTOR_ITEM_UNBUNDLE(SCHEME_VEC_ELS(l)[i], 
+						           "make-array" l_TEST));
+  }
+  l_TERMINATE
+
+  READY_TO_RETURN;
+
+  return f;
+}
+
+@SET NOTEST = 0
+@SET INDIRECT = 0
+@SET POINTERS = 0
+@SET NULLTERM = 0

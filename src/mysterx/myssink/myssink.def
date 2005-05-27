@@ -1,0 +1,9 @@
+; myssink.def : Declares the module parameters.
+
+LIBRARY      "myssink.DLL"
+
+EXPORTS
+	DllCanUnloadNow     PRIVATE
+	DllGetClassObject   PRIVATE
+	DllRegisterServer   PRIVATE
+	DllUnregisterServer PRIVATE

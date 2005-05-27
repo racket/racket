@@ -1,0 +1,251 @@
+
+This README provides and overview of the precise GC interface used by
+MzScheme. The header file gc2.h provides additional documentation.
+
+GC Architecture
+---------------
+
+The GC interface for MzScheme (and MrEd) is designed to support
+precise collection with both moving and non-moving
+collectors. Generational and incremental collectors must rely on
+hardware-based memory protection for their implementation (to detect
+writes into old objects, etc.).
+
+As a general rule, all pointers to collectable objects reference the
+beginning of the object (i.e., the pointer is never into the interior
+of the object). The exception is that a pointer may reference the
+interior of an "Interior" object, but MzScheme allocates such objects
+infrequently, and only as relatively large objects.
+
+All alocated memory must be longword-aligned. For architectures where
+`double' values must be 8-byte aligned, the GC must provide 8-byte
+aligned memory in response to an allocation request for a memory size
+divisible by 8. Except for atomic memory, allocated objects must be
+completely initialized with 0s.
+
+Memory locations that hold pointers to collectable objects can also
+hold pointers to non-collectable memory. They may also contain a
+"fixnum" integer, where the lowest bit is set (so it could never be
+confused with a longword-aligned pointer). Thus, the collector must
+distinguish between longword-aligned pointers into collected memory
+regions and all other pointers.
+
+At any point when the allocator/collector is invoked, MzScheme will
+have set the GC_variable_stack variable to indicate a chain of local
+pointer variables on the stack (i.e., both the chain of record and the
+pointer variables themselves are on the stack). The GC_variable_stack
+global points to a value of the form
+
+     struct {
+        void *next_frame;
+        long frame_size;
+        void **pointers[...];
+     }
+
+where the size of `pointers' is indicated by `frame_size'. Each
+element of `pointers' is usually the address of a pointer of the
+stack. It can also be 0, in which case the next `pointers' element is
+an integer, and the following `pointers' element is a pointer to an
+array of the indicated size. (The three `pointers' slots contribute 3
+towards the value of `frame_size'.)
+
+The `next_frame' field in the structure gives the address of the next
+frame on the stack, and so on. The garbage collector should follow the
+chain of frames, adjusting pointers for copying collection, until it
+reaches a frame that is the same as the value returned by
+GC_get_thread_stack_base() (which is supplied by MzScheme).
+
+More generally, GC_mark_variable_stack() can be used to GC a stack
+that has been copied into the heap. See below for more details.
+
+Memory Kinds
+------------
+
+MzScheme allocates the following kinds of memory objects:
+
+ * Tagged - The object starts with a `short' integer containing the
+   tag, but the tag will always be less than 256. After requesting
+   memory from the GC, MzScheme installs the tag before performing any
+   other memory operation. MzScheme provides three functions for each tag:
+
+    o an operation for obtaining the value's size in words (not
+      bytes!);
+
+    o an operation for marking pointers within the object; and 
+
+    o an operation for "fixing up" pointers in the object to other
+      objects that have been moved.
+
+   The mark and fixup procedures use the gcMARK and gcFIXUP macros
+   provided by the collector. The mark and fixup operations also
+   return the size of the object, like the size procedure.
+
+   Note that a two-space copying collector might use only the fixup
+   operation, while a non-moving collector might use only the mark
+   operation.
+
+ * Atomic - The allocated object contains no pointers to other
+   allocated objects.
+
+ * Atomic Tagged - Like a tagged object, but the mark and fixup
+   procedures are no-ops.
+ 
+ * Array - The allocated object is an array of pointers to other
+   allocated objects.
+
+ * Tagged Array - The allocated object is an array of tagged
+   objects. Every tagged object in the array is the same size and has
+   the same effective tag. After allocating the memory, MzScheme sets
+   the tag on the initial array element, but might not set the tag of
+   other elements until later. (Even if tags are not set for all
+   objects, the mark and fixup operations might be applied to all of
+   them.)
+
+ * Xtagged - The object is somehow tagged, but not with a leading
+   `short'. MzScheme provides a single mark and fixup operation (no
+   size operation) for all xtagged objects.
+
+ * Interior Array - Like array objects, but pointers to the object can
+   reference its interior, rather than just the start of the object.
+   Such pointers will always be longword-aligned. MzScheme allocates
+   interior objects infrequently, and only as relatively large
+   objects. Furthermore, if GC_INTERIORABLES_NEVER_MOVE is #defined as
+   1 in gc2.h, MzScheme will assume that such objects never move
+   (useful for skipping certain stack variables that do not need to be
+   updated).
+
+ * Weak Box - The object has the following initial structure:
+
+     struct {
+       short tag;
+       short filler_used_for_hashing;
+       void *val;
+     }
+
+   MzScheme reads the `tag' and `val' fields, and both reads and
+   writes the `filler_used_for_hashing' field. MzScheme also provides
+   the value to be used for `tag', via GC_init_type_tags(). The reason
+   this structure is implemented by the collector is to handle the
+   special behavior of the weak link.
+
+   MzScheme can change `val' at any time; when a collection happens,
+   if the object in `val' is collectable and is collected, then `val'
+   is zeroed.  The `val' pointer must be updated by the collector if
+   the object it refers to is moved by the collector, but it does not
+   otherwise keep an object from being collected.
+
+   The interface for creating weak boxes is
+
+    void *GC_malloc_weak_box(void *p, void **secondary, int soffset);
+
+   If the `secondary' argument is not NULL, it points to an auxilliary
+   address that should be zeroed (by the collector) whenever `val' is
+   zeroed. To allow zeroing in the interior of an allocated pointer,
+   the zero-out address is determined by `secondary + soffset'. The
+   memory referenced by `secondary' is kept live as long as it isn't
+   zeroed by its registration in the weak box, but when the content of
+   `secondary + soffset' is zeroed, the `secondary' pointer in the
+   weak box should also be zeroed.
+
+ * Weak Array - The object has the following structure:
+
+     struct {
+       long gc_private[4];
+       long array[...];
+     }
+
+   The gc_private array contains collector-private values that are
+   neither read nor written by MzScheme. The array field is an array
+   of weak pointers to collectable objects. See GC_malloc_weak_array()
+   in gc2.h for more details.
+
+ * Immobile box - a longword-sized box that can contain a reference to
+   a collectable object, but it not itself collectable or movable. An
+   immobile box lets MzScheme refer to a collectable object (through
+   one indirection) from memory that is not traversed by the
+   collector.
+
+   The GC_malloc_immobile_box() function creates an immobile box with
+   an initial value:
+
+     void **GC_malloc_immobile_box(void *p);
+
+   Immobile boxes must be explicitly freed with the
+   GC_free_immobile_box() function:
+
+     void GC_free_immobile_box(void **b);
+
+Of course, an implementation of the collector may collapse any of
+these catagories internally.
+
+Finalization
+------------
+
+The finalization interface is
+
+  void GC_set_finalizer(void *p, int tagged, int level, 
+                        GC_finalization_proc f, void *data, 
+                        GC_finalization_proc *oldf, void **olddata);
+
+This function installs a finalizer to be queued for invocation when
+`p' would otherwise be collected. All ready finalizers should be
+called at the end of a collection. (A finalization can trigger calls
+back to the collector, but such a collection will not run more
+finalizers.)
+
+The `p' object isn't actually collected when a finalizer is queued,
+since the finalizer will receive `p' as an argument. (Hence, weak
+references aren't zeroed, either.) `p' must point to the beginning of
+a tagged (if `tagged' is 1) or xtagged (if `tagged' is 0) object.
+
+The `level' argument refers to an ordering of finalizers. It can be 1,
+2, or 3. During a collection, level 1 finalizers are queued first,
+then all objects queued for finalization are marked as live and
+traversed. Next, level 2 finalizers are queued in the same way. Thus,
+if a level 1 object refers to a level 2 object, the level 1 object
+will be queued for finalization, and only sometime after the finalizer
+is run and the object is again no longer referenced can the level 2
+object be finalized.
+
+Level 3 finalizers are even later. Not only are they after level 1 and
+2, but a level 3 finalizer is only enqueued if no other level-3
+finalizer refers to the object. Note that cycles among level-3
+finalizers can prevent finalization and collection. (But it's also
+possible that other finalizers will break a finalization cycle among a
+set of level 3 finalizers.)
+
+The `f' and `data' arguments define the finalizer closure to be called
+for `p'. If a finalizer is already installed for `p', it is replaced,
+and `oldf' and `olddata' are filled with the old closure. If `f' is
+NULL, any existing finalizer is removed and no new one is
+installed.
+
+To break cycles among level-3 finalizers, the collector must also
+provide GC_finalization_weak_ptr():
+
+  void GC_finalization_weak_ptr(void **p, int offset);
+
+This function registers the address of a "weak" pointer for level-3
+finalization. When checking for references among level-3 finalized
+objects, `*(p + offset)' is set to NULL. The mark procedure for the
+object `p' will see the NULL value, preventing it from marking
+whatever `p + object' normally references. After level-3 finalizers
+are enqueued, `*(p + offset)' is reset to its original value (and
+marked if the object `p' is already marked).
+
+When the object `p' is collected, all weak pointer registrations are
+removed automatically.
+
+Functions versus Macros
+-----------------------
+
+Any function in the defined interface can be implemented as a
+macro. Indeed, gcMARK() and gcFIXUP() are expected to be
+macros.
+
+Due to the way that the MzScheme and MrEd code is generated for
+precise collection, the header file gc2.h must allow multiple
+inclusion in two different phases. If the pre-processor symbol
+GC2_JUST_MACROS is defined, then the header should only define
+macros. If GC2_JUST_MACROS is not defined, then the header should
+define all typedefs, function proptypes, and macros.

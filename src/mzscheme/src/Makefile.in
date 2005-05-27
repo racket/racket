@@ -1,0 +1,302 @@
+#
+# Makefile for mzscheme basic sources
+#
+
+srcdir = @srcdir@
+builddir = @builddir@
+
+CC = @CC@
+PERL = @PERL@
+
+XMAKE = $(MAKE) $(EXPORT)
+
+MZSRC = $(srcdir)
+
+CFLAGS = @CFLAGS@ @COMPFLAGS@ @PREFLAGS@ @PROFFLAGS@ @OPTIONS@ @MZOPTIONS@ -I$(builddir)/.. -I$(srcdir)/../include
+
+OBJS =  salloc.@LTO@ \
+	bignum.@LTO@ \
+	bool.@LTO@ \
+	builtin.@LTO@ \
+	char.@LTO@ \
+	complex.@LTO@ \
+	dynext.@LTO@ \
+	env.@LTO@ \
+	error.@LTO@ \
+	eval.@LTO@ \
+	file.@LTO@ \
+	fun.@LTO@ \
+        gmp.@LTO@ \
+	hash.@LTO@ \
+	image.@LTO@ \
+	list.@LTO@ \
+	module.@LTO@ \
+	network.@LTO@ \
+	numarith.@LTO@ \
+	number.@LTO@ \
+	numcomp.@LTO@ \
+	numstr.@LTO@ \
+	port.@LTO@ \
+	portfun.@LTO@ \
+	print.@LTO@ \
+        rational.@LTO@ \
+	read.@LTO@ \
+	regexp.@LTO@ \
+	sema.@LTO@ \
+	setjmpup.@LTO@ \
+	string.@LTO@ \
+	struct.@LTO@ \
+	stxobj.@LTO@ \
+	symbol.@LTO@ \
+	syntax.@LTO@ \
+	thread.@LTO@ \
+	type.@LTO@ \
+	vector.@LTO@  @EXTRA_GMP_OBJ@
+
+SRCS =  $(srcdir)/salloc.c \
+	$(srcdir)/bignum.c \
+	$(srcdir)/bool.c \
+	$(srcdir)/builtin.c \
+	$(srcdir)/char.c \
+	$(srcdir)/complex.c \
+	$(srcdir)/dynext.c \
+	$(srcdir)/env.c \
+	$(srcdir)/error.c \
+	$(srcdir)/eval.c \
+	$(srcdir)/file.c \
+	$(srcdir)/fun.c \
+	$(srcdir)/gmp/gmp.c \
+	$(srcdir)/hash.c \
+	$(srcdir)/image.c \
+	$(srcdir)/list.c \
+	$(srcdir)/module.c \
+	$(srcdir)/network.c \
+	$(srcdir)/numarith.c \
+	$(srcdir)/number.c \
+	$(srcdir)/numcomp.c \
+	$(srcdir)/numstr.c \
+	$(srcdir)/port.c \
+	$(srcdir)/portfun.c \
+	$(srcdir)/print.c \
+	$(srcdir)/rational.c \
+	$(srcdir)/read.c \
+	$(srcdir)/regexp.c \
+	$(srcdir)/sema.c \
+	$(srcdir)/setjmpup.c \
+	$(srcdir)/string.c \
+	$(srcdir)/struct.c \
+	$(srcdir)/stxobj.c \
+	$(srcdir)/symbol.c \
+	$(srcdir)/syntax.c \
+	$(srcdir)/thread.c \
+	$(srcdir)/type.c \
+	$(srcdir)/vector.c
+
+wrong:
+	echo Make from the directory above this one
+
+all:
+	$(XMAKE) mzheaders
+	$(XMAKE) mzobjects
+
+mzheaders: $(srcdir)/schemex.h $(srcdir)/schemexm.h $(srcdir)/schemex.inc $(srcdir)/schexn.h schsys.h \
+           $(srcdir)/../include/mzscheme.exp $(srcdir)/../include/mzwin.def $(srcdir)/../include/gmzwin.def \
+           $(srcdir)/../include/mzscheme3m.exp 
+
+mzobjects: $(OBJS)
+
+$(srcdir)/startup.inc : $(srcdir)/startup.ss $(srcdir)/sstoinc
+	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/startup.inc ; else $(PERL) $(srcdir)/sstoinc < $(srcdir)/startup.ss > $(srcdir)/startup.inc ; fi
+
+$(srcdir)/schemex.h : $(srcdir)/schemef.h $(srcdir)/makex
+	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/schemex.h ; else $(PERL) $(srcdir)/makex < $(srcdir)/schemef.h > $(srcdir)/schemex.h ; fi
+
+$(srcdir)/schemexm.h : $(srcdir)/schemef.h $(srcdir)/makex
+	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/schemexm.h ; else $(PERL) -s -- $(srcdir)/makex -list < $(srcdir)/schemef.h > $(srcdir)/schemexm.h ; fi
+
+$(srcdir)/schemex.inc : $(srcdir)/schemef.h $(srcdir)/makex
+	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/schemex.inc ; else $(PERL) -s -- $(srcdir)/makex -assign < $(srcdir)/schemef.h > $(srcdir)/schemex.inc ; fi
+
+$(srcdir)/../include/mzscheme.exp : $(srcdir)/schemef.h $(srcdir)/makex
+	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/../include/mzscheme.exp ; else $(PERL) -s -- $(srcdir)/makex -exports < $(srcdir)/schemef.h > $(srcdir)/../include/mzscheme.exp ; fi
+
+$(srcdir)/../include/mzscheme3m.exp : $(srcdir)/schemef.h $(srcdir)/makex
+	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/../include/mzscheme3m.exp ; else $(PERL) -s -- $(srcdir)/makex -exports -precisegc < $(srcdir)/schemef.h > $(srcdir)/../include/mzscheme3m.exp ; fi
+
+$(srcdir)/../include/mzwin.def : $(srcdir)/schemef.h $(srcdir)/makex
+	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/../include/mzwin.def ; else $(PERL) -s -- $(srcdir)/makex -winex < $(srcdir)/schemef.h > $(srcdir)/../include/mzwin.def ; fi
+
+$(srcdir)/../include/gmzwin.def : $(srcdir)/schemef.h $(srcdir)/makex
+	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/../include/gmzwin.def ; else $(PERL) -s -- $(srcdir)/makex -gwinex < $(srcdir)/schemef.h > $(srcdir)/../include/gmzwin.def ; fi
+
+schsys.h : $(srcdir)/sysname
+	echo -n "#define SCHEME_PLATFORM_LIBRARY_SUBPATH " > schsys.h
+	$(srcdir)/sysname >> schsys.h
+
+depend:
+	makedepend -- $(CFLAGS) -- $(SRCS)
+
+clean:
+	/bin/rm -f *.@LTO@ schsys.h
+
+salloc.@LTO@: $(srcdir)/salloc.c
+	$(CC) $(CFLAGS) -c $(srcdir)/salloc.c -o salloc.@LTO@
+bignum.@LTO@: $(srcdir)/bignum.c $(srcdir)/bgnfloat.inc
+	$(CC) $(CFLAGS) -c $(srcdir)/bignum.c -o bignum.@LTO@
+bool.@LTO@: $(srcdir)/bool.c
+	$(CC) $(CFLAGS) -c $(srcdir)/bool.c -o bool.@LTO@
+builtin.@LTO@: $(srcdir)/builtin.c
+	$(CC) $(CFLAGS) -c $(srcdir)/builtin.c -o builtin.@LTO@
+char.@LTO@: $(srcdir)/char.c
+	$(CC) $(CFLAGS) -c $(srcdir)/char.c -o char.@LTO@
+complex.@LTO@: $(srcdir)/complex.c
+	$(CC) $(CFLAGS) -c $(srcdir)/complex.c -o complex.@LTO@
+dynext.@LTO@: $(srcdir)/dynext.c
+	$(CC) $(CFLAGS) -c $(srcdir)/dynext.c -o dynext.@LTO@
+env.@LTO@: $(srcdir)/env.c
+	$(CC) $(CFLAGS) -c $(srcdir)/env.c -o env.@LTO@
+error.@LTO@: $(srcdir)/error.c
+	$(CC) $(CFLAGS) -c $(srcdir)/error.c -o error.@LTO@
+eval.@LTO@: $(srcdir)/eval.c $(srcdir)/schapp.inc
+	$(CC) $(CFLAGS) -c $(srcdir)/eval.c -o eval.@LTO@
+file.@LTO@: $(srcdir)/file.c
+	$(CC) $(CFLAGS) -c $(srcdir)/file.c -o file.@LTO@
+fun.@LTO@: $(srcdir)/fun.c
+	$(CC) $(CFLAGS) -c $(srcdir)/fun.c -o fun.@LTO@
+gmp.@LTO@: $(srcdir)/gmp/gmp.c $(srcdir)/gmp/gmplonglong.h
+	$(CC) $(CFLAGS) -c $(srcdir)/gmp/gmp.c -o gmp.@LTO@
+hash.@LTO@: $(srcdir)/hash.c
+	$(CC) $(CFLAGS) -c $(srcdir)/hash.c -o hash.@LTO@
+image.@LTO@: $(srcdir)/image.c
+	$(CC) $(CFLAGS) -c $(srcdir)/image.c -o image.@LTO@
+list.@LTO@: $(srcdir)/list.c
+	$(CC) $(CFLAGS) -c $(srcdir)/list.c -o list.@LTO@
+module.@LTO@: $(srcdir)/module.c
+	$(CC) $(CFLAGS) -c $(srcdir)/module.c -o module.@LTO@
+network.@LTO@: $(srcdir)/network.c
+	$(CC) $(CFLAGS) -c $(srcdir)/network.c -o network.@LTO@
+numarith.@LTO@: $(srcdir)/numarith.c
+	$(CC) $(CFLAGS) -c $(srcdir)/numarith.c -o numarith.@LTO@
+number.@LTO@: $(srcdir)/number.c
+	$(CC) $(CFLAGS) -c $(srcdir)/number.c -o number.@LTO@
+numcomp.@LTO@: $(srcdir)/numcomp.c
+	$(CC) $(CFLAGS) -c $(srcdir)/numcomp.c -o numcomp.@LTO@
+numstr.@LTO@: $(srcdir)/numstr.c
+	$(CC) $(CFLAGS) -c $(srcdir)/numstr.c -o numstr.@LTO@
+port.@LTO@: $(srcdir)/port.c
+	$(CC) $(CFLAGS) -c $(srcdir)/port.c -o port.@LTO@
+portfun.@LTO@: $(srcdir)/portfun.c
+	$(CC) $(CFLAGS) -c $(srcdir)/portfun.c -o portfun.@LTO@
+print.@LTO@: $(srcdir)/print.c
+	$(CC) $(CFLAGS) -c $(srcdir)/print.c -o print.@LTO@
+rational.@LTO@: $(srcdir)/rational.c $(srcdir)/ratfloat.inc
+	$(CC) $(CFLAGS) -c $(srcdir)/rational.c -o rational.@LTO@
+read.@LTO@: $(srcdir)/read.c
+	$(CC) $(CFLAGS) -c $(srcdir)/read.c -o read.@LTO@
+regexp.@LTO@: $(srcdir)/regexp.c
+	$(CC) $(CFLAGS) -c $(srcdir)/regexp.c -o regexp.@LTO@
+sema.@LTO@: $(srcdir)/sema.c
+	$(CC) $(CFLAGS) -c $(srcdir)/sema.c -o sema.@LTO@
+setjmpup.@LTO@: $(srcdir)/setjmpup.c
+	$(CC) $(CFLAGS) -c $(srcdir)/setjmpup.c -o setjmpup.@LTO@
+string.@LTO@: $(srcdir)/string.c
+	$(CC) $(CFLAGS) -c $(srcdir)/string.c -I. -o string.@LTO@
+struct.@LTO@: $(srcdir)/struct.c
+	$(CC) $(CFLAGS) -c $(srcdir)/struct.c -o struct.@LTO@
+stxobj.@LTO@: $(srcdir)/stxobj.c
+	$(CC) $(CFLAGS) -c $(srcdir)/stxobj.c -o stxobj.@LTO@
+symbol.@LTO@: $(srcdir)/symbol.c
+	$(CC) $(CFLAGS) -c $(srcdir)/symbol.c -o symbol.@LTO@
+syntax.@LTO@: $(srcdir)/syntax.c
+	$(CC) $(CFLAGS) -c $(srcdir)/syntax.c -o syntax.@LTO@
+thread.@LTO@: $(srcdir)/thread.c
+	$(CC) $(CFLAGS) -c $(srcdir)/thread.c -o thread.@LTO@
+type.@LTO@: $(srcdir)/type.c
+	$(CC) $(CFLAGS) -c $(srcdir)/type.c -o type.@LTO@
+vector.@LTO@: $(srcdir)/vector.c
+	$(CC) $(CFLAGS) -c $(srcdir)/vector.c -o vector.@LTO@
+
+gmp_alpha_gcc.@LTO@: $(srcdir)/gmp/gmp_alpha_gcc.s
+	$(AS) -o gmp_alpha_gcc.@LTO@ $(srcdir)/gmp/gmp_alpha_gcc.s
+
+SCONFIG =   $(srcdir)/../sconfig.h $(srcdir)/../uconfig.h
+
+# More dependencies
+
+salloc.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+            $(srcdir)/../gc/gc.h $(srcdir)/mzmark.c
+bignum.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+          $(srcdir)/../src/stypes.h    
+bool.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+          $(srcdir)/../src/stypes.h $(srcdir)/mzeqchk.inc
+builtin.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h  \
+        $(srcdir)/../src/stypes.h  $(srcdir)/schminc.h $(srcdir)/startup.inc $(srcdir)/cstartup.inc
+char.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+        $(srcdir)/../src/stypes.h  $(srcdir)/schuchar.inc
+complex.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h  \
+         $(srcdir)/../src/stypes.h    
+dynext.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h  \
+         $(srcdir)/../src/stypes.h $(srcdir)/../src/schemex.h \
+         $(srcdir)/schvers.h $(srcdir)/../gc/gc.h $(srcdir)/schemex.h
+env.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h  \
+        $(srcdir)/../src/stypes.h  $(srcdir)/schminc.h $(srcdir)/mzmark.c
+error.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+        $(srcdir)/../src/stypes.h  
+eval.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+        $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c \
+          $(srcdir)/schmach.h $(srcdir)/mzstkchk.h $(srcdir)/schrunst.h
+file.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+        $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c 
+fun.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+        $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
+hash.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+        $(srcdir)/../src/stypes.h  
+image.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+        $(srcdir)/../src/stypes.h  $(srcdir)/schvers.h
+list.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+        $(srcdir)/../src/stypes.h  
+module.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+        $(srcdir)/../src/stypes.h $(srcdir)/schfd.h $(srcdir)/mzmark.c
+network.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+        $(srcdir)/../src/stypes.h  $(srcdir)/schfd.h $(srcdir)/mzmark.c
+numarith.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+         $(srcdir)/../src/stypes.h $(srcdir)/nummacs.h
+number.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+         $(srcdir)/../src/stypes.h $(srcdir)/nummacs.h
+numcomp.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+         $(srcdir)/../src/stypes.h $(srcdir)/nummacs.h
+numstr.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+         $(srcdir)/../src/stypes.h  $(srcdir)/random.inc $(srcdir)/newrandom.inc
+port.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+        $(srcdir)/../src/stypes.h  $(srcdir)/schfd.h $(srcdir)/mzmark.c
+portfun.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+        $(srcdir)/../src/stypes.h $(srcdir)/schfd.h $(srcdir)/mzmark.c
+print.@LTO@: $(srcdir)/../include/scheme.h $(srcdir)/../src/stypes.h $(srcdir)/../src/schcpt.h \
+          $(srcdir)/schpriv.h $(srcdir)/schexn.h $(srcdir)/schvers.h $(SCONFIG) $(srcdir)/mzmark.c
+thread.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+         $(srcdir)/../src/stypes.h  $(srcdir)/schfd.h $(srcdir)/mzmark.c
+rational.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+         $(srcdir)/../src/stypes.h    
+read.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+        $(srcdir)/../src/schcpt.h $(srcdir)/schvers.h $(srcdir)/schminc.h \
+        $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
+regexp.@LTO@:  $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+        $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
+setjmpup.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+         $(srcdir)/../src/stypes.h   $(srcdir)/schmach.h
+string.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+         $(srcdir)/../src/stypes.h    $(srcdir)/schvers.h $(srcdir)/mzmark.c $(srcdir)/strops.inc
+struct.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
+stxobj.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+         $(srcdir)/../src/stypes.h $(srcdir)/schfd.h $(srcdir)/mzmark.c
+symbol.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+         $(srcdir)/../src/stypes.h   
+syntax.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
+sema.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
+type.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+        $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
+vector.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+         $(srcdir)/../src/stypes.h

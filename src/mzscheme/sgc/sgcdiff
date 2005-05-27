@@ -1,0 +1,247 @@
+#!/bin/sh
+string=? ; exec $PLTHOME/bin/mzscheme -agrq $0 "$@"
+
+;; This script reads a stream of sgc (dump-memory-stats) output until
+;; EOF. Then, the avg change per dump is reported for all types. This
+;; is reported as a list of lists of four elements. The first element
+;; of the list is the kind of value, the second is the number of these
+;; values, the third is the estimated size and the fourth is the
+;; traced size. All three numbers are the average differences between
+;; traces.
+;;
+;; Use --skip <n> flag to skip the first <n> dumps
+;;
+;; Written by Robby Findler, Rice PLT
+
+(require-library "macro.ss")
+(require-library "functio.ss")
+(require-library "pretty.ss")
+
+(define skip-count 0)
+
+(define (argument-error . args)
+  (apply fprintf (current-error-port) args)
+  (newline (current-error-port))
+  (exit -1))
+
+(let loop ([l (vector->list argv)])
+  (unless (null? l)
+	  (case (string->symbol (car l))
+	    [(--skip)
+	     (if (or (null? (cdr l))
+		     (not (string->number (cadr l))))
+		 (argument-error "expected a number after --skip")
+		 (begin
+		   (set! skip-count (string->number (cadr l)))
+		   (loop (cddr l))))]
+	    [else
+	     (argument-error "bad flag: ~a" (car l))])))
+
+(define re:begin-stats (regexp "^Begin (.*)$"))
+(define re:end-stats (regexp "^End"))
+(define re:end-dump (regexp "^End Dump"))
+(define-values (re:mz-stats re:wx-stats)
+  (let* ([number-or-hyphen "([0-9]+|-)"]
+	 [spaces "[ ]+"]
+	 [name "([^ ]+)"]
+	 [anything ".*"]
+	 [repeat
+	  (lambda (n . args)
+	    (let ([s (apply string-append args)])
+	      (let loop ([n n])
+		(if (= n 0)
+		    ""
+		    (string-append s (loop (sub1 n)))))))]
+	 [mz-stats (string-append spaces name
+				  (repeat 3 spaces number-or-hyphen)
+				  anything)]
+	 [wx-stats (string-append spaces name
+				  (repeat 4 spaces number-or-hyphen)
+				  anything)])
+    '(printf "mz-stats: ~s~nwx-stats: ~s~n" mz-stats wx-stats)
+    (values (regexp mz-stats)
+	    (regexp wx-stats))))
+
+(define (find-begin)
+  (let loop ()
+    (let ([line (read-line)])
+      (when (eof-object? line)
+	    (raise 'no-more))
+      (if (regexp-match re:end-dump line)
+	  #f
+	  (or (regexp-match re:begin-stats line)
+	      (loop))))))
+
+(define gather-stats
+  (lambda (re:stat stat-compile)
+    (let loop ()
+      (let ([line (read-line)])
+	(cond
+	  [(or (eof-object? line)
+	       (regexp-match re:end-stats line))
+	   null]
+	  [(regexp-match re:stat line) => 
+	   (lambda (l)
+	     (cons (stat-compile l)
+		   (loop)))]
+	  [else (loop)])))))
+
+(define stat-compile
+  (let ([get
+	 (lambda (s)
+	   (if (string=? s "-")
+	       'n/a
+	       (string->number s)))])
+    (lambda (l)
+      (cons (string->symbol (cadr l))
+	    (map get (cddr l))))))
+
+(define gather-all-stats
+  (lambda ()
+    (let loop ([l null])
+      (let ([m (find-begin)])
+	(if m
+	    (case (string->symbol (cadr m))
+	      [(MzScheme) 
+	       (loop (append l (gather-stats re:mz-stats stat-compile)))]
+	      [(wxWindows)
+	       (loop (append l (gather-stats re:wx-stats stat-compile)))]
+	      [else (loop l)])
+	    l)))))
+
+(define equalize-two-hash-tables
+  (lambda (before-table after-table)
+    (let ([equalize
+	   (lambda (hash-left hash-right)
+	     (hash-table-for-each 
+	      hash-left
+	      (lambda (key value)
+		(hash-table-get hash-right key
+				(lambda ()
+				  (hash-table-put! hash-right key 
+						   (map (lambda (x) 0)
+							value)))))))])
+      (equalize before-table after-table)
+      (equalize after-table before-table))))
+
+(define equalize-hash-tables
+  (lambda (tables)
+    (if (null? tables)
+	(void)
+	(let* ([table (car tables)]
+	       [go
+		(lambda ()
+		  (let loop ([l (cdr tables)])
+		    (cond
+		      [(null? l) (void)]
+		      [else (equalize-two-hash-tables table (car l))
+			    (loop (cdr l))])))])
+	  (go)
+	  (go)))))
+
+(define build-diff
+  (lambda (stats-before stats-after)
+    
+    (define before-table (make-hash-table))
+    (define after-table (make-hash-table))
+
+    (define final-table (make-hash-table))
+
+    (let ([f
+	   (lambda (table stats)
+	     (for-each (lambda (l)
+			 (let ([id (car l)]
+			       [rest (cdr l)])
+			 (hash-table-put! table id rest)))
+		       stats))])
+      (f before-table stats-before)
+      (f after-table stats-after))
+    
+    (equalize-two-hash-tables before-table after-table)
+
+    (hash-table-for-each
+       before-table
+       (lambda (key before-value)
+	 (let ([after-value (hash-table-get after-table key)])
+	   (hash-table-put! final-table key
+			    (map (lambda (x y)
+				   (if (or (eq? x 'n/a)
+					   (eq? y 'n/a))
+				       x
+				       (- y x)))
+				 before-value
+				 after-value)))))
+    final-table))
+
+(define diffs-count 0)
+
+(let loop ([n skip-count])
+  (unless (zero? n)
+	  (gather-all-stats)
+	  (loop (sub1 n))))
+
+(define diffs
+  (let loop ([stats-before (gather-all-stats)])
+    (with-handlers ([(lambda (x) (eq? x 'no-more))
+		     (lambda (x) null)])
+      (let* ([stats-after (gather-all-stats)]
+	     [new-diff (build-diff stats-before stats-after)])
+	(set! diffs-count (add1 diffs-count))
+	(cons new-diff (loop stats-after))))))
+
+(equalize-hash-tables diffs)
+
+(define (number->whole/part x)
+  (cond
+   [(or (= x (floor x)) (<= -1 x 1)) x]
+   [else `(+ ,(floor x) ,(- x (floor x)))]))
+
+(define avg-diffs
+  (let* ([avg-lists
+	  (lambda (ls)
+	    (apply map (lambda x
+			 (if (ormap (lambda (x) (eq? x 'n/a)) x)
+			     'n/a
+			     (/ (apply + x) diffs-count)))
+		   ls))]
+	 [get-avg (lambda (key value)
+		    (list key
+			  (avg-lists
+			   (map (lambda (t) (hash-table-get t key))
+				diffs))))])
+    (hash-table-map (car diffs) get-avg)))
+
+(define remove-zeros
+  (lambda (list)
+    (cond
+      [(null? list) null]
+      [else (if (andmap (lambda (x) (and (number? x)
+					 (= x 0)))
+			(second (car list)))
+		(remove-zeros (cdr list))
+		(cons (car list) (remove-zeros (cdr list))))])))
+
+(define last
+  (lambda (l)
+    (cond
+      [(null? l) (error 'last "empty list")]
+      [(null? (cdr l)) (car l)]
+      [else (last (cdr l))])))
+
+(define compare-entries
+  (lambda (x y)
+    (let ([xl (car (second x))]
+	  [yl (car (second y))])
+      (cond
+	[(eq? xl 'n/a) #f]
+	[(eq? yl 'n/a) #t]
+	[(= xl yl) (string<=? (symbol->string (car x))
+			      (symbol->string (car x)))]
+	[else (<= yl xl)]))))
+
+(define (numbers->whole/part l)
+  (map (lambda (i) (if (number? i) (number->whole/part i) i)) l))
+
+(pretty-print
+ (map (lambda (x) (numbers->whole/part (apply cons x)))
+      (quicksort (remove-zeros avg-diffs) compare-entries)))

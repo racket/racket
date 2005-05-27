@@ -1,0 +1,88 @@
+#!/usr/local/bin/perl
+
+$ready = 0;
+$parens = 0;
+
+while (<>)
+{
+    chop;
+
+    if ($_ =~ /^ *$/) {
+	# Just spaces; do nothing
+    } elsif ($_ =~ /^\s*;/) {
+	# comment; do nothing
+    } else {
+
+	if (!$ready) {
+	    print '  EVAL_ONE_STR(';
+	    print "\n";
+	    $ready = 1;
+	}
+
+	if ($_ =~ /\"[^"]*\[[^"]*\"/) {
+	} else {
+	    $_ =~ tr/\[/\(/;
+	    $_ =~ tr/\]/\)/;
+	}
+
+	$_ =~ s/\\/\\\\/g;
+	$_ =~ s/\"/\\\"/g;
+	
+	$_ =~ s/\t/ /g;
+	$_ =~ s/  */ /g;
+
+        if ($_ =~ /\"/) {
+	    # Has a string - can't safely delete more spaces
+	} else {
+	    $_ =~ s/ \(/\(/g;
+	}
+
+	# Check for comments:
+	if ($_ =~ /[\"\\]/) {
+	    # If there's a comment char, add a newline,
+	    # just in case:
+	    if ($_ =~ /;/) {
+		$_ = $_ . "\\n";
+	    }
+	} else {
+	    if ($_ =~ /^([^;]*);/) {
+		$_ = $1;
+	    }
+	}
+	
+
+	print '"' . $_ . '"';
+	print "\n";
+
+	# Remove strings before counting parens:
+	$_ =~ s/\\\"//g; # first remove escaped quotes
+	$_ =~ s/\"[^\"]*\"//g; # then remove matching quotes
+
+	# Convert sq brackets to parens and remove escaped
+	$_ =~ s/\[/\(/g;
+	$_ =~ s/\]/\)/g;
+	$_ =~ s/\\[()]//g; # remove escaped parens
+
+	# Now count parens:
+	$save = $_;
+	while ($_ =~ /\((.*)/) {
+	    $parens = $parens + 1;
+	    $_ = $1;
+	}
+	$_ = $save;
+	while ($_ =~ /\)(.*)/) {
+	    $parens = $parens - 1;
+	    $_ = $1;
+	}
+
+	if ($parens == 0) {
+	    $ready = 0;
+	    print ");\n";	    
+	}
+    }
+}
+
+if ($ready) {
+    print ');';
+    print "\n";
+}

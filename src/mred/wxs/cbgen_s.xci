@@ -1,0 +1,30 @@
+
+#undef CALLBACKCLASS
+#undef CB_REALCLASS
+#undef CB_UNBUNDLE
+#undef CB_USER
+
+@DEFINE CALLBACKCLASS = os_<CALLBACK_CLASS>
+@DEFINE CB_REALCLASS = <CALLBACK_CLASS>
+@DEFINE CB_UNBUNDLE = objscheme_unbundle_<CALLBACK_CLASS>
+@DEFINE CB_USER = <CALLBACK_CLASS_USER>
+
+#undef CB_TOSCHEME
+#undef CB_TOC
+@DEFINE CB_TOSCHEME = <CALLBACK_CLASS>CallbackToScheme
+@DEFINE CB_TOC = <CALLBACK_CLASS>CallbackToC
+
+@VAR Scheme_Object *callback_closure;
+
+class CALLBACKCLASS;
+
+@MACRO ubCallback = (SCHEME_NULLP({x}) ? NULL : (WITH_REMEMBERED_STACK(objscheme_istype_proc2({x}, CB_USER)), cb_pos = {s}, (CB_FUNCTYPE)CB_TOSCHEME))
+
+@MACRO ubCallbackSetup = int cb_pos = 0;
+@MACRO ubCallbackFinish = ((CALLBACKCLASS *)((Scheme_Class_Object *)THEOBJ)->primdata)->callback_closure = p[POFFSET+cb_pos];
+@MACRO ubCallbackCreatorFinish = realobj->callback_closure = p[POFFSET+cb_pos];
+
+@MACRO bCallback = WITH_VAR_STACK(scheme_make_closed_prim((Scheme_Closed_Prim *)CB_TOC, {x}))
+@MACRO cCallback = (SCHEME_NULLP({x}) || WITH_REMEMBERED_STACK(objscheme_istype_proc2({x}, {s})))
+
+@MACRO spCallback = $$>(<CALLBACK_CLASS>-object wxEvent-object -> void)

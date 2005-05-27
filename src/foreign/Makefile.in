@@ -1,0 +1,37 @@
+# Makefile for all foreign-related libraires
+
+srcdir = @srcdir@
+builddir = @builddir@
+CC = @CC@
+CFLAGS = @CFLAGS@ @COMPFLAGS@ @PREFLAGS@ @PROFFLAGS@ @OPTIONS@ @MZOPTIONS@ \
+         -I$(builddir)/../mzscheme \
+         -I$(srcdir)/../mzscheme/include -I$(srcdir)/../mzscheme/src \
+         -Igcc/libffi/include
+ARFLAGS = @ARFLAGS@
+
+# compile sub-libraries & foreign.c
+all:
+	$(MAKE) foreign.@LTO@
+	$(MAKE) gcc/libffi/libffi@FOREIGN_CONVENIENCE@.la
+#	$(MAKE) lightning.@LTO@
+
+# Causes objects to be generated in gcc/libffi/src/
+#  in inconvenience mode:
+gcc/libffi/libffi@FOREIGN_CONVENIENCE@.la:
+	cd gcc/libffi; $(MAKE) libffi@FOREIGN_CONVENIENCE@.la
+
+foreign.@LTO@: $(srcdir)/foreign.c \
+           $(srcdir)/../mzscheme/include/scheme.h \
+           $(srcdir)/../mzscheme/src/schemef.h \
+           $(srcdir)/../mzscheme/src/schvers.h
+	$(CC) $(CFLAGS) -c $(srcdir)/foreign.c -o foreign.@LTO@
+
+lightning.@LTO@: $(srcdir)/lightning.c \
+           $(srcdir)/../mzscheme/include/scheme.h \
+           $(srcdir)/../mzscheme/src/schemef.h \
+           $(srcdir)/../mzscheme/src/schvers.h
+	$(CC) $(CFLAGS) -c $(srcdir)/lightning.c -o lightning.@LTO@
+
+clean:
+	rm -f foreign.@LTO@ lightning.@LTO@
+	cd gcc/libffi; $(MAKE) clean

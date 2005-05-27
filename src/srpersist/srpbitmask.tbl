@@ -1,0 +1,844 @@
+// srpbitmask.tbl - bitmask tables for SQLGetInfo
+
+SRP_NAMED_CONSTANT getdataExtensionsBits[] = {
+  { "sql-gd-any-column", SQL_GD_ANY_COLUMN },
+  { "sql-gd-any-order", SQL_GD_ANY_ORDER },
+  { "sql-gd-block", SQL_GD_BLOCK },
+  { "sql-gd-bound", SQL_GD_BOUND },
+};
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT infoSchemaViewsBits[] = {
+  { "sql-isv-assertions", SQL_ISV_ASSERTIONS },
+  { "sql-isv-character-sets", SQL_ISV_CHARACTER_SETS },
+  { "sql-isv-check-constraints", SQL_ISV_CHECK_CONSTRAINTS },
+  { "sql-isv-collations", SQL_ISV_COLLATIONS },
+  { "sql-isv-column-domain-usage", SQL_ISV_COLUMN_DOMAIN_USAGE },
+  { "sql-isv-column-privileges", SQL_ISV_COLUMN_PRIVILEGES },
+  { "sql-isv-columns", SQL_ISV_COLUMNS },
+  { "sql-isv-constraint-column-usage", SQL_ISV_CONSTRAINT_COLUMN_USAGE },
+  { "sql-isv-constraint-table-usage", SQL_ISV_CONSTRAINT_TABLE_USAGE },
+  { "sql-isv-domain-constraints", SQL_ISV_DOMAIN_CONSTRAINTS },
+  { "sql-isv-domains", SQL_ISV_DOMAINS },
+  { "sql-isv-key-column-usage", SQL_ISV_KEY_COLUMN_USAGE },
+  { "sql-isv-referential-constraints", SQL_ISV_REFERENTIAL_CONSTRAINTS },
+  { "sql-isv-schemata", SQL_ISV_SCHEMATA },
+  { "sql-isv-sql-languages", SQL_ISV_SQL_LANGUAGES },
+  { "sql-isv-table-constraints", SQL_ISV_TABLE_CONSTRAINTS },
+  { "sql-isv-table-privileges", SQL_ISV_TABLE_PRIVILEGES },
+  { "sql-isv-tables", SQL_ISV_TABLES },
+  { "sql-isv-translations", SQL_ISV_TRANSLATIONS },
+  { "sql-isv-usage-privileges", SQL_ISV_USAGE_PRIVILEGES },
+  { "sql-isv-view-column-usage", SQL_ISV_VIEW_COLUMN_USAGE },
+  { "sql-isv-view-table-usage", SQL_ISV_VIEW_TABLE_USAGE },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT batchRowCountBits[] = {
+  { "sql-brc-rolled-up", SQL_BRC_ROLLED_UP },
+  { "sql-brc-procedures", SQL_BRC_PROCEDURES },
+  { "sql-brc-explicit", SQL_BRC_EXPLICIT },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT cursorAttributes1Bits[] = {
+  { "sql-ca1-next", SQL_CA1_NEXT },
+  { "sql-ca1-absolute", SQL_CA1_ABSOLUTE },
+  { "sql-ca1-relative", SQL_CA1_RELATIVE },
+  { "sql-ca1-bookmark", SQL_CA1_BOOKMARK },
+  { "sql-ca1-lock-exclusive", SQL_CA1_LOCK_EXCLUSIVE },
+  { "sql-ca1-lock-no-change", SQL_CA1_LOCK_NO_CHANGE },
+  { "sql-ca1-lock-unlock", SQL_CA1_LOCK_UNLOCK },
+  { "sql-ca1-pos-position", SQL_CA1_POS_POSITION },
+  { "sql-ca1-pos-update", SQL_CA1_POS_UPDATE },
+  { "sql-ca1-pos-delete", SQL_CA1_POS_DELETE },
+  { "sql-ca1-pos-refresh", SQL_CA1_POS_REFRESH },
+  { "sql-ca1-positioned-update", SQL_CA1_POSITIONED_UPDATE },
+  { "sql-ca1-positioned-delete", SQL_CA1_POSITIONED_DELETE },
+  { "sql-ca1-select-for-update", SQL_CA1_SELECT_FOR_UPDATE },
+  { "sql-ca1-bulk-add", SQL_CA1_BULK_ADD },
+  { "sql-ca1-bulk-update-by-bookmark", SQL_CA1_BULK_UPDATE_BY_BOOKMARK },
+  { "sql-ca1-bulk-delete-by-bookmark", SQL_CA1_BULK_DELETE_BY_BOOKMARK },
+  { "sql-ca1-bulk-fetch-by-bookmark", SQL_CA1_BULK_FETCH_BY_BOOKMARK },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT batchSupportBits[] = {
+  { "sql-bs-select-explicit", SQL_BS_SELECT_EXPLICIT },
+  { "sql-bs-row-count-explicit", SQL_BS_ROW_COUNT_EXPLICIT },
+  { "sql-bs-select-proc", SQL_BS_SELECT_PROC },
+  { "sql-bs-row-count-proc", SQL_BS_ROW_COUNT_PROC }, 
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT cursorAttributes2Bits[] = {
+  { "sql_ca2_read_only_concurrency", SQL_CA2_READ_ONLY_CONCURRENCY },
+  { "sql_ca2_lock_concurrency", SQL_CA2_LOCK_CONCURRENCY },
+  { "sql_ca2_opt_rowver_concurrency", SQL_CA2_OPT_ROWVER_CONCURRENCY },
+  { "sql_ca2_opt_values_concurrency", SQL_CA2_OPT_VALUES_CONCURRENCY },
+  { "sql_ca2_sensitivity_additions", SQL_CA2_SENSITIVITY_ADDITIONS },
+  { "sql_ca2_sensitivity_deletions", SQL_CA2_SENSITIVITY_DELETIONS },
+  { "sql_ca2_sensitivity_updates", SQL_CA2_SENSITIVITY_UPDATES },
+  { "sql_ca2_max_rows_select", SQL_CA2_MAX_ROWS_SELECT },
+  { "sql_ca2_max_rows_insert", SQL_CA2_MAX_ROWS_INSERT },
+  { "sql_ca2_max_rows_delete", SQL_CA2_MAX_ROWS_DELETE },
+  { "sql_ca2_max_rows_update", SQL_CA2_MAX_ROWS_UPDATE },
+  { "sql_ca2_max_rows_catalog", SQL_CA2_MAX_ROWS_CATALOG },
+  { "sql_ca2_max_rows_affects_all", SQL_CA2_MAX_ROWS_AFFECTS_ALL },
+  { "sql_ca2_crc_exact", SQL_CA2_CRC_EXACT },
+  { "sql_ca2_crc_approximate", SQL_CA2_CRC_APPROXIMATE },
+  { "sql_ca2_simulate_non_unique", SQL_CA2_SIMULATE_NON_UNIQUE },
+  { "sql_ca2_simulate_try_unique", SQL_CA2_SIMULATE_TRY_UNIQUE },
+  { "sql_ca2_simulate_unique", SQL_CA2_SIMULATE_UNIQUE },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT standardCliConformanceBits[] = {
+  { "sql-scc-xopen-cli-version1", SQL_SCC_XOPEN_CLI_VERSION1 },
+  { "sql-scc-iso92-cli", SQL_SCC_ISO92_CLI },
+};
+#endif
+
+SRP_NAMED_CONSTANT bookmarkPersistenceBits[] = {
+  { "sql-bp-close", SQL_BP_CLOSE },
+  { "sql-bp-delete", SQL_BP_DELETE },
+  { "sql-bp-drop", SQL_BP_DROP },
+  { "sql-bp-transaction", SQL_BP_TRANSACTION },
+  { "sql-bp-update", SQL_BP_UPDATE },
+  { "sql-bp-other-hstmt", SQL_BP_OTHER_HSTMT },
+};
+
+SRP_NAMED_CONSTANT scrollOptionsBits[] = {
+  { "sql-so-forward-only",SQL_SO_FORWARD_ONLY },
+  { "sql-so-static", SQL_SO_STATIC },
+  { "sql-so-keyset-driven", SQL_SO_KEYSET_DRIVEN },
+  { "sql-so-dynamic", SQL_SO_DYNAMIC },
+  { "sql-so-mixed", SQL_SO_MIXED },
+};
+
+SRP_NAMED_CONSTANT txnIsolationOptionBits[] = {
+  { "sql-txn-read-uncommitted", SQL_TXN_READ_UNCOMMITTED },
+  { "sql-txn-read-committed", SQL_TXN_READ_COMMITTED },
+  { "sql-txn-repeatable-read", SQL_TXN_REPEATABLE_READ },
+  { "sql-txn-serializable", SQL_TXN_SERIALIZABLE },
+};
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT dropTableBits[] = {
+  { "sql-dt-drop-table", SQL_DT_DROP_TABLE },
+  { "sql-dt-cascade", SQL_DT_CASCADE },
+  { "sql-dt-restrict", SQL_DT_RESTRICT },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT alterDomainBits[] = {
+  { "sql-ad-add-domain-constraint", SQL_AD_ADD_DOMAIN_CONSTRAINT },
+  { "sql-ad-add-domain-default", SQL_AD_ADD_DOMAIN_DEFAULT },
+  { "sql-ad-constraint-name-definition", SQL_AD_CONSTRAINT_NAME_DEFINITION },
+  { "sql-ad-drop-domain-constraint", SQL_AD_DROP_DOMAIN_CONSTRAINT },
+  { "sql-ad-drop-domain-default", SQL_AD_DROP_DOMAIN_DEFAULT },
+  { "sql-ad-add-constraint-deferrable", SQL_AD_ADD_CONSTRAINT_DEFERRABLE },
+  { "sql-ad-add-constraint-non-deferrable", SQL_AD_ADD_CONSTRAINT_NON_DEFERRABLE },
+  { "sql-ad-add-constraint-inititally-deferred", SQL_AD_ADD_CONSTRAINT_INITIALLY_DEFERRED },
+  { "sql-ad-add-constraint-initially-immediate", SQL_AD_ADD_CONSTRAINT_INITIALLY_IMMEDIATE },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT dropViewBits[] = {
+  { "sql-dv-drop-view", SQL_DV_DROP_VIEW },
+  { "sql-dv-cascade", SQL_DV_CASCADE },
+  { "sql-dv-restrict", SQL_DV_RESTRICT },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT alterTableBits[] = {
+  { "sql-at-add-column-collation", SQL_AT_ADD_COLUMN_COLLATION },
+  { "sql-at-add-column-default", SQL_AT_ADD_COLUMN_DEFAULT },
+  { "sql-at-add-column-single", SQL_AT_ADD_COLUMN_SINGLE },
+  { "sql-at-add-constraint", SQL_AT_ADD_CONSTRAINT },
+  { "sql-at-add-table-constraint", SQL_AT_ADD_TABLE_CONSTRAINT },
+  { "sql-at-constraint-name-definition", SQL_AT_CONSTRAINT_NAME_DEFINITION },
+  { "sql-at-drop-column-cascade", SQL_AT_DROP_COLUMN_CASCADE },
+  { "sql-at-drop-column-default", SQL_AT_DROP_COLUMN_DEFAULT },
+  { "sql-at-drop-column-restrict", SQL_AT_DROP_COLUMN_RESTRICT },
+  { "sql-at-drop-table-constraint-cascade", SQL_AT_DROP_TABLE_CONSTRAINT_CASCADE },
+  { "sql-at-drop-table-constraint-restrict", SQL_AT_DROP_TABLE_CONSTRAINT_RESTRICT },
+  { "sql-at-set-column-default", SQL_AT_SET_COLUMN_DEFAULT },
+  { "sql-at-constraint-initially-deferred", SQL_AT_CONSTRAINT_INITIALLY_DEFERRED },
+  { "sql-at-constraint-initially-immediate", SQL_AT_CONSTRAINT_INITIALLY_IMMEDIATE },
+  { "sql-at-constraint-deferrable", SQL_AT_CONSTRAINT_DEFERRABLE },
+  { "sql-at-constraint-non-deferrable", SQL_AT_CONSTRAINT_NON_DEFERRABLE },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT datetimeLiteralsBits[] = { // not sure why this is here
+  { "sql-dl-sql92-date", SQL_DL_SQL92_DATE },
+  { "sql-dl-sql92-time", SQL_DL_SQL92_TIME },
+  { "sql-dl-sql92-timestamp", SQL_DL_SQL92_TIMESTAMP },
+  { "sql-dl-sql92-interval-year", SQL_DL_SQL92_INTERVAL_YEAR },
+  { "sql-dl-sql92-interval-month", SQL_DL_SQL92_INTERVAL_MONTH },
+  { "sql-dl-sql92-interval-day", SQL_DL_SQL92_INTERVAL_DAY },
+  { "sql-dl-sql92-interval-hour", SQL_DL_SQL92_INTERVAL_HOUR },
+  { "sql-dl-sql92-interval-minute", SQL_DL_SQL92_INTERVAL_MINUTE },
+  { "sql-dl-sql92-interval-second", SQL_DL_SQL92_INTERVAL_SECOND },
+  { "sql-dl-sql92-interval-year-to-month", SQL_DL_SQL92_INTERVAL_YEAR_TO_MONTH },
+  { "sql-dl-sql92-interval-day-to-hour", SQL_DL_SQL92_INTERVAL_DAY_TO_HOUR },
+  { "sql-dl-sql92-interval-day-to-minute", SQL_DL_SQL92_INTERVAL_DAY_TO_MINUTE },
+  { "sql-dl-sql92-interval-day-to-second", SQL_DL_SQL92_INTERVAL_DAY_TO_SECOND },
+  { "sql-dl-sql92-interval-hour-to-minute", SQL_DL_SQL92_INTERVAL_HOUR_TO_MINUTE },
+  { "sql-dl-sql92-interval-hour-to-second", SQL_DL_SQL92_INTERVAL_HOUR_TO_SECOND },
+  { "sql-dl-sql92-interval-minute-to-second", SQL_DL_SQL92_INTERVAL_MINUTE_TO_SECOND },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT indexKeywordsBits[] = {
+  { "sql-ik-asc", SQL_IK_ASC },
+  { "sql-ik-desc", SQL_IK_DESC },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT catalogUsageBits[] = {
+  { "sql-cu-dml-statements", SQL_CU_DML_STATEMENTS },
+  { "sql-cu-procedure-invocation", SQL_CU_PROCEDURE_INVOCATION },
+  { "sql-cu-table-definition", SQL_CU_TABLE_DEFINITION },
+  { "sql-cu-index-definition", SQL_CU_INDEX_DEFINITION },
+  { "sql-cu-privilege-definition", SQL_CU_PRIVILEGE_DEFINITION },
+};
+#endif
+
+#if (ODBCVER < 0x0300)
+SRP_NAMED_CONSTANT qualifierUsageBits[] = {
+  { "sql-qu-dml-statements", SQL_QU_DML_STATEMENTS },
+  { "sql-qu-procedure-invocation", SQL_QU_PROCEDURE_INVOCATION },
+  { "sql-qu-table-definition", SQL_QU_TABLE_DEFINITION },
+  { "sql-qu-index-definition", SQL_QU_INDEX_DEFINITION },
+  { "sql-qu-privilege-definition", SQL_QU_PRIVILEGE_DEFINITION },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT insertStatementBits[] = {
+  { "sql-is-insert-literals", SQL_IS_INSERT_LITERALS },
+  { "sql-is-insert-searched", SQL_IS_INSERT_SEARCHED },
+  { "sql-is-select-into", SQL_IS_SELECT_INTO },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT createAssertionBits[] = {
+  { "sql-ca-create-assertion", SQL_CA_CREATE_ASSERTION },
+  { "sql-ca-constraint-initially-deferred", SQL_CA_CONSTRAINT_INITIALLY_DEFERRED },
+  { "sql-ca-constraint-initially-immediate", SQL_CA_CONSTRAINT_INITIALLY_IMMEDIATE },
+  { "sql-ca-constraint-deferrable", SQL_CA_CONSTRAINT_DEFERRABLE },
+  { "sql-ca-constraint-non-deferrable", SQL_CA_CONSTRAINT_NON_DEFERRABLE },
+};
+#endif
+
+
+#if (ODBCVER >= 0x0300)
+/* NB: not marked in SQLEXT.H as ODBC 3.0 */
+SRP_NAMED_CONSTANT createViewBits[] = {
+  { "sql-cv-create-view", SQL_CV_CREATE_VIEW },
+  { "sql-cv-check-option", SQL_CV_CHECK_OPTION },
+  { "sql-cv-cascaded", SQL_CV_CASCADED },
+  { "sql-cv-local", SQL_CV_LOCAL },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT createCharSetBits[] = {
+  { "sql-ccs-create-character-set", SQL_CCS_CREATE_CHARACTER_SET },
+  { "sql-ccs-collate-clause", SQL_CCS_COLLATE_CLAUSE },
+  { "sql-ccs-limited-collation", SQL_CCS_LIMITED_COLLATION },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT createCollationBits[] = {
+  { "sql-ccol-create-collation", SQL_CCOL_CREATE_COLLATION },
+};
+#endif
+
+#if ODBCVER >= 0x0201
+SRP_NAMED_CONSTANT ojCapabilitiesBits[] = {
+  { "sql-oj-left", SQL_OJ_LEFT },
+  { "sql-oj-right", SQL_OJ_RIGHT },
+  { "sql-oj-full", SQL_OJ_FULL },
+  { "sql-oj-nested", SQL_OJ_NESTED },
+  { "sql-oj-not-ordered", SQL_OJ_NOT_ORDERED },
+  { "sql-oj-inner", SQL_OJ_INNER },
+  { "sql-oj-all-comparison-ops", SQL_OJ_ALL_COMPARISON_OPS },
+};
+#endif 
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT createDomainBits[] = {
+  { "sql-cdo-create-domain", SQL_CDO_CREATE_DOMAIN },
+  { "sql-cdo-constraint-name-definition", SQL_CDO_CONSTRAINT_NAME_DEFINITION },
+  { "sql-cdo-default", SQL_CDO_DEFAULT },
+  { "sql-cdo-constraint", SQL_CDO_CONSTRAINT },
+  { "sql-cdo-collation", SQL_CDO_COLLATION },
+  { "sql-cdo-constraint-initially-deferred", SQL_CDO_CONSTRAINT_INITIALLY_DEFERRED },
+  { "sql-cdo-constraint-initially-immediate", SQL_CDO_CONSTRAINT_INITIALLY_IMMEDIATE },
+  { "sql-cdo-constraint-deferrable", SQL_CDO_CONSTRAINT_DEFERRABLE },
+  { "sql-cdo-constraint-non-deferrable", SQL_CDO_CONSTRAINT_NON_DEFERRABLE },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT createSchemaBits[] = {
+  { "sql-cs-create-schema", SQL_CS_CREATE_SCHEMA },
+  { "sql-cs-authorization", SQL_CS_AUTHORIZATION },
+  { "sql-cs-default-character-set", SQL_CS_DEFAULT_CHARACTER_SET },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT createTableBits[] = {
+  { "sql-ct-create-table", SQL_CT_CREATE_TABLE },
+  { "sql-ct-table-constraint", SQL_CT_TABLE_CONSTRAINT },
+  { "sql-ct-constraint-name-definition", SQL_CT_CONSTRAINT_NAME_DEFINITION },
+  { "sql-ct-commit-preserve", SQL_CT_COMMIT_PRESERVE },
+  { "sql-ct-commit-delete", SQL_CT_COMMIT_DELETE },
+  { "sql-ct-global-temporary", SQL_CT_GLOBAL_TEMPORARY },
+  { "sql-ct-local-temporary", SQL_CT_LOCAL_TEMPORARY },
+  { "sql-ct-column-constraint", SQL_CT_COLUMN_CONSTRAINT },
+  { "sql-ct-column-default", SQL_CT_COLUMN_DEFAULT },
+  { "sql-ct-column-collation", SQL_CT_COLUMN_COLLATION },
+  { "sql-ct-constraint-initially-deferred", SQL_CT_CONSTRAINT_INITIALLY_DEFERRED },
+  { "sql-ct-constraint-initially-immediate", SQL_CT_CONSTRAINT_INITIALLY_IMMEDIATE },
+  { "sql-ct-constraint-deferrable", SQL_CT_CONSTRAINT_DEFERRABLE },
+  { "sql-ct-constraint-non-deferrable", SQL_CT_CONSTRAINT_NON_DEFERRABLE },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT createTranslationBits[] = {
+  { "sql-ctr-create-translation", SQL_CTR_CREATE_TRANSLATION },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT dropAssertionBits[] = {
+  { "sql-da-drop-assertion", SQL_DA_DROP_ASSERTION },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT dropTranslationBits[] = {
+  { "sql-dtr-drop-translation", SQL_DTR_DROP_TRANSLATION },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT schemaUsageBits[] = {
+  { "sql-su-dml-statements", SQL_SU_DML_STATEMENTS },
+  { "sql-su-procedure-invocation", SQL_SU_PROCEDURE_INVOCATION },
+  { "sql-su-table-definition", SQL_SU_TABLE_DEFINITION },
+  { "sql-su-index-definition", SQL_SU_INDEX_DEFINITION },
+  { "sql-su-privilege-definition", SQL_SU_PRIVILEGE_DEFINITION },
+};
+#endif
+
+#if (ODBCVER < 0x0300)
+SRP_NAMED_CONSTANT ownerUsageBits[] = {
+  { "sql-ou-dml-statements", SQL_OU_DML_STATEMENTS },
+  { "sql-ou-procedure-invocation", SQL_OU_PROCEDURE_INVOCATION },
+  { "sql-ou-table-definition", SQL_OU_TABLE_DEFINITION },
+  { "sql-ou-index-definition", SQL_OU_INDEX_DEFINITION },
+  { "sql-ou-privilege-definition", SQL_OU_PRIVILEGE_DEFINITION },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT dropCharSetBits[] = {
+  { "sql-dcs-drop-character-set", SQL_DCS_DROP_CHARACTER_SET },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT dropCollationBits[] = {
+  { "sql-dc-drop-collation", SQL_DC_DROP_COLLATION },
+};
+#endif
+
+SRP_NAMED_CONSTANT subqueriesBits[] = {
+  { "sql-sq-correlated-subqueries", SQL_SQ_CORRELATED_SUBQUERIES },
+  { "sql-sq-comparison", SQL_SQ_COMPARISON },
+  { "sql-sq-exists", SQL_SQ_EXISTS },
+  { "sql-sq-in", SQL_SQ_IN },
+  { "sql-sq-quantified", SQL_SQ_QUANTIFIED },
+};
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT dropDomainBits[] = {
+  { "sql-dd-drop-domain", SQL_DD_DROP_DOMAIN },
+  { "sql-dd-cascade", SQL_DD_CASCADE },
+  { "sql-dd-restrict", SQL_DD_RESTRICT },
+};
+#endif
+
+SRP_NAMED_CONSTANT unionBits[] = {
+  { "sql-u-union", SQL_U_UNION },
+  { "sql-u-union-all", SQL_U_UNION_ALL },
+};
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT dropSchemaBits[] = {
+  { "sql-ds-drop-schema", SQL_DS_DROP_SCHEMA },
+  { "sql-ds-cascade", SQL_DS_CASCADE },
+  { "sql-ds-restrict", SQL_DS_RESTRICT },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT convertFunctionBits[] = {
+  { "sql-fn-cvt-cast", SQL_FN_CVT_CAST },
+  { "sql-fn-cvt-convert", SQL_FN_CVT_CONVERT },
+};
+#endif
+
+SRP_NAMED_CONSTANT timedateAddIntervalsBits[] = {
+  { "sql-fn-tsi-frac-second", SQL_FN_TSI_FRAC_SECOND },
+  { "sql-fn-tsi-second", SQL_FN_TSI_SECOND },
+  { "sql-fn-tsi-minute", SQL_FN_TSI_MINUTE },
+  { "sql-fn-tsi-hour", SQL_FN_TSI_HOUR },
+  { "sql-fn-tsi-day", SQL_FN_TSI_DAY },
+  { "sql-fn-tsi-week", SQL_FN_TSI_WEEK },
+  { "sql-fn-tsi-month", SQL_FN_TSI_MONTH },
+  { "sql-fn-tsi-quarter", SQL_FN_TSI_QUARTER },
+  { "sql-fn-tsi-year", SQL_FN_TSI_YEAR },
+};
+
+SRP_NAMED_CONSTANT numericFunctionsBits[] = {
+  { "sql-fn-num-abs", SQL_FN_NUM_ABS },
+  { "sql-fn-num-acos", SQL_FN_NUM_ACOS },
+  { "sql-fn-num-asin", SQL_FN_NUM_ASIN },
+  { "sql-fn-num-atan", SQL_FN_NUM_ATAN },
+  { "sql-fn-num-atan2", SQL_FN_NUM_ATAN2 },
+  { "sql-fn-num-ceiling", SQL_FN_NUM_CEILING },
+  { "sql-fn-num-cos", SQL_FN_NUM_COS },
+  { "sql-fn-num-cot", SQL_FN_NUM_COT },
+  { "sql-fn-num-degrees", SQL_FN_NUM_DEGREES },
+  { "sql-fn-num-exp", SQL_FN_NUM_EXP },
+  { "sql-fn-num-floor", SQL_FN_NUM_FLOOR },
+  { "sql-fn-num-log", SQL_FN_NUM_LOG },
+  { "sql-fn-num-log10", SQL_FN_NUM_LOG10 },
+  { "sql-fn-num-mod", SQL_FN_NUM_MOD },
+  { "sql-fn-num-pi", SQL_FN_NUM_PI },
+  { "sql-fn-num-power", SQL_FN_NUM_POWER },
+  { "sql-fn-num-radians", SQL_FN_NUM_RADIANS },
+  { "sql-fn-num-rand", SQL_FN_NUM_RAND },
+  { "sql-fn-num-round", SQL_FN_NUM_ROUND },
+  { "sql-fn-num-sign", SQL_FN_NUM_SIGN },
+  { "sql-fn-num-sin", SQL_FN_NUM_SIN },
+  { "sql-fn-num-sqrt", SQL_FN_NUM_SQRT },
+  { "sql-fn-num-tan", SQL_FN_NUM_TAN },
+  { "sql-fn-num-truncate", SQL_FN_NUM_TRUNCATE },
+};
+
+SRP_NAMED_CONSTANT timedateDiffIntervalsBits[] = {
+  { "sql-fn-tsi-frac-second", SQL_FN_TSI_FRAC_SECOND },
+  { "sql-fn-tsi-second", SQL_FN_TSI_SECOND },
+  { "sql-fn-tsi-minute", SQL_FN_TSI_MINUTE },
+  { "sql-fn-tsi-hour", SQL_FN_TSI_HOUR },
+  { "sql-fn-tsi-day", SQL_FN_TSI_DAY },
+  { "sql-fn-tsi-week", SQL_FN_TSI_WEEK },
+  { "sql-fn-tsi-month", SQL_FN_TSI_MONTH },
+  { "sql-fn-tsi-quarter", SQL_FN_TSI_QUARTER },
+  { "sql-fn-tsi-year", SQL_FN_TSI_YEAR },
+};
+
+SRP_NAMED_CONSTANT stringFunctionsBits[] = {
+#if (ODBCVER >= 0x0300)
+  { "sql-fn-str-bit-length", SQL_FN_STR_BIT_LENGTH },
+  { "sql-fn-str-char-length", SQL_FN_STR_CHAR_LENGTH },
+  { "sql-fn-str-character-length", SQL_FN_STR_CHARACTER_LENGTH },
+  { "sql-fn-str-octet-length", SQL_FN_STR_OCTET_LENGTH },
+  { "sql-fn-str-position", SQL_FN_STR_POSITION },
+#endif
+#if (ODBCVER >= 0x0200)
+  { "sql-fn-str-difference", SQL_FN_STR_DIFFERENCE },
+  { "sql-fn-str-soundex", SQL_FN_STR_SOUNDEX },
+  { "sql-fn-str-space", SQL_FN_STR_SPACE },
+#endif
+  { "sql-fn-str-ascii", SQL_FN_STR_ASCII },
+  { "sql-fn-str-char", SQL_FN_STR_CHAR },
+  { "sql-fn-str-concat", SQL_FN_STR_CONCAT },
+  { "sql-fn-str-insert", SQL_FN_STR_INSERT },
+  { "sql-fn-str-lcase", SQL_FN_STR_LCASE },
+  { "sql-fn-str-left", SQL_FN_STR_LEFT },
+  { "sql-fn-str-length", SQL_FN_STR_LENGTH },
+  { "sql-fn-str-locate", SQL_FN_STR_LOCATE },
+  { "sql-fn-str-ltrim", SQL_FN_STR_LTRIM },
+  { "sql-fn-str-repeat", SQL_FN_STR_REPEAT },
+  { "sql-fn-str-replace", SQL_FN_STR_REPLACE },
+  { "sql-fn-str-right", SQL_FN_STR_RIGHT },
+  { "sql-fn-str-rtrim", SQL_FN_STR_RTRIM },
+  { "sql-fn-str-substring", SQL_FN_STR_SUBSTRING },
+  { "sql-fn-str-ucase", SQL_FN_STR_UCASE },
+};
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT sql92DatetimeFunctionsBits[] = {
+  { "sql-sdf-current-date", SQL_SDF_CURRENT_DATE },
+  { "sql-sdf-current-time", SQL_SDF_CURRENT_TIME },
+  { "sql-sdf-current-timestamp", SQL_SDF_CURRENT_TIMESTAMP },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT sql92StringFunctionsBits[] = {
+  { "sql-ssf-convert", SQL_SSF_CONVERT },
+  { "sql-ssf-lower", SQL_SSF_LOWER },
+  { "sql-ssf-upper", SQL_SSF_UPPER },
+  { "sql-ssf-substring", SQL_SSF_SUBSTRING },
+  { "sql-ssf-translate", SQL_SSF_TRANSLATE },
+  { "sql-ssf-trim-both", SQL_SSF_TRIM_BOTH },
+  { "sql-ssf-trim-leading", SQL_SSF_TRIM_LEADING },
+  { "sql-ssf-trim-trailing", SQL_SSF_TRIM_TRAILING },
+};
+#endif
+
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT sql92ForeignKeyDeleteRuleBits[] = {
+  { "sql-sfkd-cascade", SQL_SFKD_CASCADE },
+  { "sql-sfkd-no-action", SQL_SFKD_NO_ACTION },
+  { "sql-sfkd-set-default", SQL_SFKD_SET_DEFAULT },
+  { "sql-sfkd-set-null", SQL_SFKD_SET_NULL },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT sql92ForeignKeyUpdateRuleBits[] = {
+  { "sql-sfku-cascade", SQL_SFKU_CASCADE },
+  { "sql-sfku-no-action", SQL_SFKU_NO_ACTION },
+  { "sql-sfku-set-default", SQL_SFKU_SET_DEFAULT },
+  { "sql-sfku-set-null", SQL_SFKU_SET_NULL },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT sql92GrantBits[] = {
+  { "sql-sg-delete-table", SQL_SG_DELETE_TABLE },
+  { "sql-sg-insert-column", SQL_SG_INSERT_COLUMN },
+  { "sql-sg-insert-table", SQL_SG_INSERT_TABLE },
+  { "sql-sg-references-table", SQL_SG_REFERENCES_TABLE },
+  { "sql-sg-references-column", SQL_SG_REFERENCES_COLUMN },
+  { "sql-sg-select-table", SQL_SG_SELECT_TABLE },
+  { "sql-sg-update-column", SQL_SG_UPDATE_COLUMN },
+  { "sql-sg-update-table", SQL_SG_UPDATE_TABLE },
+  { "sql-sg-usage-on-domain", SQL_SG_USAGE_ON_DOMAIN },
+  { "sql-sg-usage-on-character-set", SQL_SG_USAGE_ON_CHARACTER_SET },
+  { "sql-sg-usage-on-collation", SQL_SG_USAGE_ON_COLLATION },
+  { "sql-sg-usage-on-translation", SQL_SG_USAGE_ON_TRANSLATION },
+  { "sql-sg-with-grant-option", SQL_SG_WITH_GRANT_OPTION },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT sql92RevokeBits[] = {
+  { "sql-sr-cascade", SQL_SR_CASCADE },
+  { "sql-sr-delete-table", SQL_SR_DELETE_TABLE },
+  { "sql-sr-grant-option-for", SQL_SR_GRANT_OPTION_FOR },
+  { "sql-sr-insert-column", SQL_SR_INSERT_COLUMN },
+  { "sql-sr-insert-table", SQL_SR_INSERT_TABLE },
+  { "sql-sr-references-column", SQL_SR_REFERENCES_COLUMN },
+  { "sql-sr-references-table", SQL_SR_REFERENCES_TABLE },
+  { "sql-sr-restrict", SQL_SR_RESTRICT },
+  { "sql-sr-select-table", SQL_SR_SELECT_TABLE },
+  { "sql-sr-update-column", SQL_SR_UPDATE_COLUMN },
+  { "sql-sr-update-table", SQL_SR_UPDATE_TABLE },
+  { "sql-sr-usage-on-domain", SQL_SR_USAGE_ON_DOMAIN },
+  { "sql-sr-usage-on-character-set", SQL_SR_USAGE_ON_CHARACTER_SET },
+  { "sql-sr-usage-on-collation", SQL_SR_USAGE_ON_COLLATION },
+  { "sql-sr-usage-on-translation", SQL_SR_USAGE_ON_TRANSLATION },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT sql92RowValueConstructorBits[] = {
+  { "sql-srvc-value-expression", SQL_SRVC_VALUE_EXPRESSION },
+  { "sql-srvc-null", SQL_SRVC_NULL },
+  { "sql-srvc-default", SQL_SRVC_DEFAULT },
+  { "sql-srvc-row-subquery", SQL_SRVC_ROW_SUBQUERY },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT sql92ValueExpressionsBits[] = {
+  { "sql-sve-case", SQL_SVE_CASE },
+  { "sql-sve-cast", SQL_SVE_CAST },
+  { "sql-sve-coalesce", SQL_SVE_COALESCE },
+  { "sql-sve-nullif", SQL_SVE_NULLIF },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT sql92NumericValueFunctionsBits[] = {
+  { "sql-snvf-bit-length", SQL_SNVF_BIT_LENGTH },
+  { "sql-snvf-char-length", SQL_SNVF_CHAR_LENGTH },
+  { "sql-snvf-character-length", SQL_SNVF_CHARACTER_LENGTH },
+  { "sql-snvf-extract", SQL_SNVF_EXTRACT },
+  { "sql-snvf-octet-length", SQL_SNVF_OCTET_LENGTH },
+  { "sql-snvf-position", SQL_SNVF_POSITION },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT sql92PredicatesBits[] = {
+  { "sql-sp-between", SQL_SP_BETWEEN },
+  { "sql-sp-comparison", SQL_SP_COMPARISON },
+  { "sql-sp-exists", SQL_SP_EXISTS },
+  { "sql-sp-in", SQL_SP_IN },
+  { "sql-sp-isnotnull", SQL_SP_ISNOTNULL },
+  { "sql-sp-isnull", SQL_SP_ISNULL },
+  { "sql-sp-like", SQL_SP_LIKE },
+  { "sql-sp-match-full", SQL_SP_MATCH_FULL },
+  { "sql-sp-match-partial", SQL_SP_MATCH_PARTIAL },
+  { "sql-sp-match-unique-full", SQL_SP_MATCH_UNIQUE_FULL },
+  { "sql-sp-match-unique-partial", SQL_SP_MATCH_UNIQUE_PARTIAL },
+  { "sql-sp-overlaps", SQL_SP_OVERLAPS },
+  { "sql-sp-quantified-comparison", SQL_SP_QUANTIFIED_COMPARISON },
+  { "sql-sp-unique", SQL_SP_UNIQUE },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT sql92RelationalJoinOpsBits[] = {
+  { "sql-srjo-corresponding-clause", SQL_SRJO_CORRESPONDING_CLAUSE },
+  { "sql-srjo-cross-join", SQL_SRJO_CROSS_JOIN },
+  { "sql-srjo-except-join", SQL_SRJO_EXCEPT_JOIN },
+  { "sql-srjo-full-outer-join", SQL_SRJO_FULL_OUTER_JOIN },
+  { "sql-srjo-inner-join", SQL_SRJO_INNER_JOIN },
+  { "sql-srjo-intersect-join", SQL_SRJO_INTERSECT_JOIN },
+  { "sql-srjo-left-outer-join", SQL_SRJO_LEFT_OUTER_JOIN },
+  { "sql-srjo-natural-join", SQL_SRJO_NATURAL_JOIN },
+  { "sql-srjo-right-outer-join", SQL_SRJO_RIGHT_OUTER_JOIN },
+  { "sql-srjo-union-join", SQL_SRJO_UNION_JOIN },
+};
+#endif
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT timedateFunctionsBits[] = {
+  { "sql-fn-td-current-date", SQL_FN_TD_CURRENT_DATE },
+  { "sql-fn-td-current-time", SQL_FN_TD_CURRENT_TIME },
+  { "sql-fn-td-current-timestamp", SQL_FN_TD_CURRENT_TIMESTAMP },
+  { "sql-fn-td-curdate", SQL_FN_TD_CURDATE },
+  { "sql-fn-td-curtime", SQL_FN_TD_CURTIME },
+  { "sql-fn-td-dayname", SQL_FN_TD_DAYNAME },
+  { "sql-fn-td-dayofmonth", SQL_FN_TD_DAYOFMONTH },
+  { "sql-fn-td-dayofweek", SQL_FN_TD_DAYOFWEEK },
+  { "sql-fn-td-dayofyear", SQL_FN_TD_DAYOFYEAR },
+  { "sql-fn-td-extract", SQL_FN_TD_EXTRACT },
+  { "sql-fn-td-hour", SQL_FN_TD_HOUR },
+  { "sql-fn-td-minute", SQL_FN_TD_MINUTE },
+  { "sql-fn-td-month", SQL_FN_TD_MONTH },
+  { "sql-fn-td-monthname", SQL_FN_TD_MONTHNAME },
+  { "sql-fn-td-now", SQL_FN_TD_NOW },
+  { "sql-fn-td-quarter", SQL_FN_TD_QUARTER },
+  { "sql-fn-td-second", SQL_FN_TD_SECOND },
+  { "sql-fn-td-timestampadd", SQL_FN_TD_TIMESTAMPADD },
+  { "sql-fn-td-timestampdiff", SQL_FN_TD_TIMESTAMPDIFF },
+  { "sql-fn-td-week", SQL_FN_TD_WEEK },
+  { "sql-fn-td-year", SQL_FN_TD_YEAR },
+};
+#endif
+
+SRP_NAMED_CONSTANT systemFunctionsBits[] = {
+  { "sql-fn-sys-dbname", SQL_FN_SYS_DBNAME },
+  { "sql-fn-sys-ifnull", SQL_FN_SYS_IFNULL },
+  { "sql-fn-sys-username", SQL_FN_SYS_USERNAME },
+};
+
+SRP_NAMED_CONSTANT convertBits[] = {
+  { "sql-cvt-bigint", SQL_CVT_BIGINT },
+  { "sql-cvt-binary", SQL_CVT_BINARY },
+  { "sql-cvt-bit", SQL_CVT_BIT },
+  { "sql-cvt-char", SQL_CVT_CHAR },
+  { "sql-cvt-date", SQL_CVT_DATE },
+  { "sql-cvt-decimal", SQL_CVT_DECIMAL },
+  { "sql-cvt-double", SQL_CVT_DOUBLE },
+  { "sql-cvt-float", SQL_CVT_FLOAT },
+  { "sql-cvt-integer", SQL_CVT_INTEGER },
+#if (ODBCVER >= 0x0300)
+  { "sql-cvt-interval-year-month", SQL_CVT_INTERVAL_YEAR_MONTH },
+  { "sql-cvt-interval-day-time", SQL_CVT_INTERVAL_DAY_TIME },
+#endif
+  { "sql-cvt-longvarbinary", SQL_CVT_LONGVARBINARY },
+  { "sql-cvt-longvarchar", SQL_CVT_LONGVARCHAR },
+  { "sql-cvt-numeric", SQL_CVT_NUMERIC },
+  { "sql-cvt-real", SQL_CVT_REAL },
+  { "sql-cvt-smallint", SQL_CVT_SMALLINT },
+  { "sql-cvt-time", SQL_CVT_TIME },
+  { "sql-cvt-timestamp", SQL_CVT_TIMESTAMP },
+  { "sql-cvt-tinyint", SQL_CVT_TINYINT },
+  { "sql-cvt-varbinary", SQL_CVT_VARBINARY },
+  { "sql-cvt-varchar", SQL_CVT_VARCHAR },
+};
+
+#if (ODBCVER >= 0x0300)
+SRP_NAMED_CONSTANT aggregateFunctionsBits[] = {
+  { "sql-af-all", SQL_AF_ALL },
+  { "sql-af-avg", SQL_AF_AVG },
+  { "sql-af-count", SQL_AF_COUNT },
+  { "sql-af-distinct", SQL_AF_DISTINCT },
+  { "sql-af-max", SQL_AF_MAX },
+  { "sql-af-min", SQL_AF_MIN },
+  { "sql-af-sum", SQL_AF_SUM },
+};
+#endif
+
+SRP_NAMED_CONSTANT fetchDirectionBits[] = {
+  { "sql-fd-fetch-next", SQL_FD_FETCH_NEXT },
+  { "sql-fd-fetch-first", SQL_FD_FETCH_FIRST },
+  { "sql-fd-fetch-last", SQL_FD_FETCH_LAST },
+  { "sql-fd-fetch-prior", SQL_FD_FETCH_PRIOR },
+  { "sql-fd-fetch-absolute", SQL_FD_FETCH_ABSOLUTE },
+  { "sql-fd-fetch-relative", SQL_FD_FETCH_RELATIVE },
+  { "sql-fd-fetch-bookmark", SQL_FD_FETCH_BOOKMARK },
+};
+
+SRP_NAMED_CONSTANT posOperationsBits[] = {
+  { "sql-pos-position", SQL_POS_POSITION },
+  { "sql-pos-refresh", SQL_POS_REFRESH },
+  { "sql-pos-update", SQL_POS_UPDATE },
+  { "sql-pos-delete", SQL_POS_DELETE },
+  { "sql-pos-add", SQL_POS_ADD },
+};
+
+SRP_NAMED_CONSTANT lockTypesBits[] = {
+  { "sql-lck-no-change", SQL_LCK_NO_CHANGE },
+  { "sql-lck-exclusive", SQL_LCK_EXCLUSIVE },
+  { "sql-lck-unlock", SQL_LCK_UNLOCK },
+};
+
+SRP_NAMED_CONSTANT positionedStatementsBits[] = {
+  { "sql-ps-positioned-delete", SQL_PS_POSITIONED_DELETE },
+  { "sql-ps-positioned-update", SQL_PS_POSITIONED_UPDATE },
+  { "sql-ps-select-for-update", SQL_PS_SELECT_FOR_UPDATE },
+};
+
+SRP_NAMED_CONSTANT scrollConcurrencyBits[] = {
+  { "sql-scco-read-only", SQL_SCCO_READ_ONLY },
+  { "sql-scco-lock", SQL_SCCO_LOCK },
+  { "sql-scco-opt-rowver", SQL_SCCO_OPT_ROWVER },
+  { "sql-scco-opt-values", SQL_SCCO_OPT_VALUES },
+};
+
+SRP_NAMED_CONSTANT staticSensitivityBits[] = {
+  { "sql-ss-additions", SQL_SS_ADDITIONS },
+  { "sql-ss-deletions", SQL_SS_DELETIONS },
+  { "sql-ss-updates", SQL_SS_UPDATES },
+};
+
+SRP_NAMED_BITS_DICT bitMaskTable[] = {
+#if (ODBCVER >= 0x0300)
+  { "sql-info-schema-views",infoSchemaViewsBits,sizeray(infoSchemaViewsBits) },
+  { "sql-batch-row-count",batchRowCountBits,sizeray(batchRowCountBits) },
+  { "sql-keyset-cursor-attributes1",cursorAttributes1Bits,sizeray(cursorAttributes1Bits) },
+  { "sql-batch-support",batchSupportBits,sizeray(batchSupportBits) },
+  { "sql-keyset-cursor-attributes2",cursorAttributes2Bits,sizeray(cursorAttributes2Bits) },
+  { "sql-standard-cli-conformance",standardCliConformanceBits,sizeray(standardCliConformanceBits) },
+  { "sql-drop-table",dropTableBits,sizeray(dropTableBits) }, 
+  { "sql-alter-domain",alterDomainBits,sizeray(alterDomainBits) },
+  { "sql-drop-view",dropViewBits,sizeray(dropViewBits) }, 
+  { "sql-alter-table",alterTableBits,sizeray(alterTableBits) },
+  { "sql-index-keywords",indexKeywordsBits,sizeray(indexKeywordsBits) },
+  { "sql-catalog-usage",catalogUsageBits,sizeray(catalogUsageBits) },
+  { "sql-insert-statement",insertStatementBits,sizeray(insertStatementBits) },
+  { "sql-create-assertion",createAssertionBits,sizeray(createAssertionBits) },
+  { "sql-create-character-set",createCharSetBits,sizeray(createCharSetBits) },
+  { "sql-create-domain",createDomainBits,sizeray(createDomainBits) },
+  { "sql-create-collation",createCollationBits,sizeray(createCollationBits) },
+  { "sql-create-schema",createSchemaBits,sizeray(createSchemaBits) },
+  { "sql-create-table",createTableBits,sizeray(createTableBits) },
+  { "sql-create-translation",createTranslationBits,sizeray(createTranslationBits) },
+  { "sql-create-view",createViewBits,sizeray(createViewBits) },
+  { "sql-drop-assertion",dropAssertionBits,sizeray(dropAssertionBits) },
+  { "sql-drop-translation",dropTranslationBits,sizeray(dropTranslationBits) },
+  { "sql-schema-usage",schemaUsageBits,sizeray(schemaUsageBits) },
+  { "sql-drop-character-set",dropCharSetBits,sizeray(dropCharSetBits) },
+  { "sql-drop-collation",dropCollationBits,sizeray(dropCollationBits) },
+  { "sql-drop-domain",dropDomainBits,sizeray(dropDomainBits) },
+  { "sql-drop-schema",dropSchemaBits,sizeray(dropSchemaBits) },
+  { "sql-convert-functions",convertFunctionBits,sizeray(convertFunctionBits) },
+  { "sql-sql92-datetime-functions",sql92DatetimeFunctionsBits,sizeray(sql92DatetimeFunctionsBits) },
+  { "sql-sql92-string-functions",sql92StringFunctionsBits,sizeray(sql92StringFunctionsBits) },
+  { "sql-sql92-foreign-key-delete-rule",sql92ForeignKeyDeleteRuleBits,sizeray(sql92ForeignKeyDeleteRuleBits) },
+  { "sql-sql92-foreign-key-update-rule",sql92ForeignKeyUpdateRuleBits,sizeray(sql92ForeignKeyUpdateRuleBits) },
+  { "sql-sql92-grant",sql92GrantBits,sizeray(sql92GrantBits) },
+  { "sql-sql92-revoke",sql92RevokeBits,sizeray(sql92RevokeBits) },
+  { "sql-sql92-row-value-constructor",sql92RowValueConstructorBits,sizeray(sql92RowValueConstructorBits) },
+  { "sql-sql92-value-expressions",sql92ValueExpressionsBits,sizeray(sql92ValueExpressionsBits) },
+  { "sql-sql92-numeric-value-functions",sql92NumericValueFunctionsBits,sizeray(sql92NumericValueFunctionsBits) },
+  { "sql-sql92-predicates",sql92PredicatesBits,sizeray(sql92PredicatesBits) },
+  { "sql-sql92-relational-join-operators",sql92RelationalJoinOpsBits,sizeray(sql92RelationalJoinOpsBits) },
+  { "sql-timedate-functions",timedateFunctionsBits,sizeray(timedateFunctionsBits) },
+  { "sql-aggregate-functions",aggregateFunctionsBits,sizeray(aggregateFunctionsBits) },
+  { "sql-dynamic-cursor-attributes1",cursorAttributes1Bits,sizeray(cursorAttributes1Bits) },
+  { "sql-dynamic-cursor-attributes2",cursorAttributes2Bits,sizeray(cursorAttributes2Bits) },
+  { "sql-forward-only-cursor-attributes1",cursorAttributes1Bits,sizeray(cursorAttributes1Bits) },
+  { "sql-forward-only-cursor-attributes2",cursorAttributes2Bits,sizeray(cursorAttributes2Bits) },
+  { "sql-static-cursor-attributes1",cursorAttributes1Bits,sizeray(cursorAttributes1Bits) },
+  { "sql-static-cursor-attributes2",cursorAttributes2Bits,sizeray(cursorAttributes2Bits) },
+#endif
+#if (ODBCVER < 0x0300)
+  { "sql-owner-usage",ownerUsageBits,sizeray(ownerUsageBits) },
+  { "sql-qualifier-usage",qualifierUsageBits,sizeray(qualifierUsageBits) },
+#endif
+  { "sql-string-functions",stringFunctionsBits,sizeray(stringFunctionsBits) },
+  { "sql-getdata-extensions",getdataExtensionsBits,sizeray(getdataExtensionsBits) },
+  { "sql-bookmark-persistence",bookmarkPersistenceBits,sizeray(bookmarkPersistenceBits) },
+  { "sql-scroll-options",scrollOptionsBits,sizeray(scrollOptionsBits) },
+  { "sql-txn-isolation-option",txnIsolationOptionBits,sizeray(txnIsolationOptionBits) },
+  { "sql-attr-txn-isolation",txnIsolationOptionBits,sizeray(txnIsolationOptionBits) },
+#if ODBCVER >= 0x0201
+  { "sql-oj-capabilities",ojCapabilitiesBits,sizeray(ojCapabilitiesBits) },
+#endif
+  { "sql-subqueries",subqueriesBits,sizeray(subqueriesBits) },
+  { "sql-union",unionBits,sizeray(unionBits) },
+  { "sql-timedate-add-intervals",timedateAddIntervalsBits,sizeray(timedateAddIntervalsBits) },
+  { "sql-numeric-functions",numericFunctionsBits,sizeray(numericFunctionsBits) },
+  { "sql-timedate-diff-intervals",timedateDiffIntervalsBits,sizeray(timedateDiffIntervalsBits) },
+  { "sql-system-functions",systemFunctionsBits,sizeray(systemFunctionsBits) },
+  { "sql-convert-bigint",convertBits,sizeray(convertBits) },
+  { "sql-convert-longvarbinary",convertBits,sizeray(convertBits) },
+  { "sql-convert-binary",convertBits,sizeray(convertBits) },
+  { "sql-convert-longvarchar",convertBits,sizeray(convertBits) },
+  { "sql-convert-bit",convertBits,sizeray(convertBits) },
+  { "sql-convert-numeric",convertBits,sizeray(convertBits) },
+  { "sql-convert-char",convertBits,sizeray(convertBits) },
+  { "sql-convert-real",convertBits,sizeray(convertBits) },
+  { "sql-convert-date",convertBits,sizeray(convertBits) },
+  { "sql-convert-smallint",convertBits,sizeray(convertBits) },
+  { "sql-convert-decimal",convertBits,sizeray(convertBits) },
+  { "sql-convert-time",convertBits,sizeray(convertBits) },
+  { "sql-convert-double",convertBits,sizeray(convertBits) },
+  { "sql-convert-timestamp",convertBits,sizeray(convertBits) },
+  { "sql-convert-float",convertBits,sizeray(convertBits) },
+  { "sql-convert-tinyint",convertBits,sizeray(convertBits) },
+  { "sql-convert-integer",convertBits,sizeray(convertBits) },
+  { "sql-convert-varbinary",convertBits,sizeray(convertBits) },
+  { "sql-convert-varchar",convertBits,sizeray(convertBits) },
+  { "sql-convert-interval-year-month",convertBits,sizeray(convertBits) },
+  { "sql-convert-interval-day-time",convertBits,sizeray(convertBits) },
+  { "sql-fetch-direction",fetchDirectionBits,sizeray(fetchDirectionBits) },
+  { "sql-pos-operations",posOperationsBits,sizeray(posOperationsBits) },
+  { "sql-lock-types",lockTypesBits,sizeray(lockTypesBits) },
+  { "sql-positioned-statements",positionedStatementsBits,sizeray(positionedStatementsBits) },
+  { "sql-scroll-concurrency",scrollConcurrencyBits,sizeray(scrollConcurrencyBits) },
+  { "sql-static-sensitivity",staticSensitivityBits,sizeray(staticSensitivityBits) },
+};

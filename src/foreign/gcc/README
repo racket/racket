@@ -1,0 +1,4 @@
+This directory is here only for configuring libffi which is
+distributed as part of GCC.  If it becomes easy to disconnect libffi's
+configuration from GCC while tracking changes in it (= not changing
+it), then this will not be needed anymore.

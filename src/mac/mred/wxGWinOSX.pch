@@ -1,0 +1,7 @@
+/* wxGWinOSX.pch 
+ * the precompiled header file for OS X wxmac
+ */
+
+#define OS_X 1
+
+#include "wxGWin.pch"

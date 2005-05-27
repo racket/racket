@@ -1,0 +1,34 @@
+
+static void CB_TOSCHEME(CB_REALCLASS *realobj, wxCommandEvent *event)
+{
+  Scheme_Object *p[2];
+  Scheme_Class_Object *obj;
+  mz_jmp_buf savebuf;
+  SETUP_VAR_STACK(4);
+  VAR_STACK_PUSH(0, obj);
+  VAR_STACK_PUSH(1, event);
+  VAR_STACK_PUSH(2, p[0]);
+  VAR_STACK_PUSH(3, p[1]);
+
+  p[0] = NULL;
+  p[1] = NULL;
+
+  obj = (Scheme_Class_Object *)realobj->__gc_external;
+
+  if (!obj) {
+    // scheme_signal_error("bad callback object");
+    return;
+  }
+
+  p[0] = (Scheme_Object *)obj;
+  p[1] = WITH_VAR_STACK(objscheme_bundle_wxCommandEvent(event));
+
+  COPY_JMPBUF(savebuf, scheme_error_buf);
+
+  if (!scheme_setjmp(scheme_error_buf))
+    WITH_VAR_STACK(scheme_apply_multi(((CALLBACKCLASS *)obj->primdata)->callback_closure, 2, p));
+
+  COPY_JMPBUF(scheme_error_buf, savebuf);
+
+  READY_TO_RETURN;
+}

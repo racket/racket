@@ -1,0 +1,4 @@
+
+#define GC_LINE_EXTEND 0
+#define GC_RECT_BRUSH_EXTEND 0
+#define GC_RECT_FRAME_EXTEND 0

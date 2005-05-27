@@ -1,0 +1,5 @@
+
+#define THISOBJECT ((RANGECLASS *)((Scheme_Class_Object *)THEOBJ)->primdata)
+
+@MACRO RANGERET[p.rv] = if ((x<p> < 0) || (x<p> >= THISOBJECT->Number())) return <rv>;
+@MACRO RANGE[p] = $$RANGERET[<p>.scheme_void]

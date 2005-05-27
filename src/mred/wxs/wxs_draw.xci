@@ -1,0 +1,21 @@
+
+#define DO_OK_CHECK(name) if (!((wxDC *)((Scheme_Class_Object *)THEOBJ)->primdata)->Ok()) WITH_VAR_STACK(scheme_arg_mismatch(name, "device context is not ok: ", THEOBJ));
+
+@MACRO CheckOk[name] = DO_OK_CHECK(<name>)
+
+@MACRO CheckGen[p.ret] = if (!x<p>->Ok()) return <ret>;
+@MACRO Check[p] = $$CheckGen[<p>.scheme_void]
+@MACRO CheckFalse[p] = $$CheckGen[<p>.scheme_false]
+
+extern Scheme_Object *objscheme_bundle_wxPoint(wxPoint *);
+extern wxPoint *objscheme_unbundle_wxPoint(Scheme_Object *, const char *, int);
+
+@SET TYPE = wxPoint
+@SET INDIRECT = 1
+@SET POINTWISE = 1
+@SET NEWATOMIC = 1
+@SET DIRECTMALLOC = 1
+@INCLUDE list.xci
+
+/* The methods are here: */
+@INCLUDE wxs_drwf.xci

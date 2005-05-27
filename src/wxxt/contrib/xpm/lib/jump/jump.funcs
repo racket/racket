@@ -1,0 +1,65 @@
+00000000 T _xpmatoui            libXpm         ./jump/data
+00000000 T _xpmNextString       libXpm         ./jump/data
+00000000 T _xpmNextUI           libXpm         ./jump/data
+00000000 T _xpmNextWord         libXpm         ./jump/data
+00000000 T _xpmGetString        libXpm         ./jump/data
+00000000 T _xpmGetCmt           libXpm         ./jump/data
+00000000 U __DUMMY__
+00000000 U __DUMMY__
+00000000 U __DUMMY__
+00000000 U __DUMMY__
+00000000 U __DUMMY__
+00000000 T _xpmParseHeader      libXpm         ./jump/data
+00000000 T _XpmCreateImageFromXpmImage libXpm         ./jump/create
+00000000 T _xpm_xynormalizeimagebits libXpm         ./jump/create
+00000000 T _xpm_znormalizeimagebits libXpm         ./jump/create
+00000000 T _XpmCreatePixmapFromXpmImage libXpm         ./jump/create
+00000000 T _xpmFreeColorTable   libXpm         ./jump/misc
+00000000 T _XpmFreeExtensions   libXpm         ./jump/misc
+00000000 T _XpmAttributesSize   libXpm         ./jump/misc
+00000000 T _xpmInitAttributes   libXpm         ./jump/misc
+00000000 T _xpmSetAttributes    libXpm         ./jump/misc
+00000000 T _XpmFreeAttributes   libXpm         ./jump/misc
+00000000 T _xpmInitXpmImage     libXpm         ./jump/misc
+00000000 T _XpmFreeXpmImage     libXpm         ./jump/misc
+00000000 T _xpmInitXpmInfo      libXpm         ./jump/misc
+00000000 T _XpmFreeXpmInfo      libXpm         ./jump/misc
+00000000 T _xpmSetInfoMask      libXpm         ./jump/misc
+00000000 T _xpmSetInfo          libXpm         ./jump/misc
+00000000 T _XpmReadFileToBuffer libXpm         ./jump/misc
+00000000 T _XpmWriteFileFromBuffer libXpm         ./jump/misc
+00000000 T _XpmGetErrorString   libXpm         ./jump/misc
+00000000 T _XpmLibraryVersion   libXpm         ./jump/misc
+00000000 T _xpmCreatePixmapFromImage libXpm         ./jump/misc
+00000000 T _xpmCreateImageFromPixmap libXpm         ./jump/misc
+00000000 T _xpmReadRgbNames     libXpm         ./jump/rgb
+00000000 T _xpmGetRgbName       libXpm         ./jump/rgb
+00000000 T _xpmFreeRgbNames     libXpm         ./jump/rgb
+00000000 T _XpmCreateXpmImageFromImage libXpm         ./jump/scan
+00000000 T _XpmCreateXpmImageFromPixmap libXpm         ./jump/scan
+00000000 T _xpmParseData        libXpm         ./jump/parse
+00000000 T _xpmHashSlot         libXpm         ./jump/hashtable
+00000000 T _xpmHashIntern       libXpm         ./jump/hashtable
+00000000 T _xpmHashTableInit    libXpm         ./jump/hashtable
+00000000 T _xpmHashTableFree    libXpm         ./jump/hashtable
+00000000 T _XpmCreateBufferFromImage libXpm         ./jump/XpmCrBufFrI
+00000000 T _XpmCreateBufferFromXpmImage libXpm         ./jump/XpmCrBufFrI
+00000000 T _XpmCreateDataFromPixmap libXpm         ./jump/XpmCrDataFrP
+00000000 T _XpmCreatePixmapFromBuffer libXpm         ./jump/XpmCrPFrBuf
+00000000 T _XpmReadFileToImage  libXpm         ./jump/XpmRdFToI
+00000000 T _XpmReadFileToXpmImage libXpm         ./jump/XpmRdFToI
+00000000 T _XpmWriteFileFromImage libXpm         ./jump/XpmWrFFrI
+00000000 T _XpmWriteFileFromXpmImage libXpm         ./jump/XpmWrFFrI
+00000000 U __DUMMY__
+00000000 T _XpmCreateBufferFromPixmap libXpm         ./jump/XpmCrBufFrP
+00000000 T _XpmCreateImageFromBuffer libXpm         ./jump/XpmCrIFrBuf
+00000000 T _XpmCreateXpmImageFromBuffer libXpm         ./jump/XpmCrIFrBuf
+00000000 T _XpmCreatePixmapFromData libXpm         ./jump/XpmCrPFrData
+00000000 T _XpmReadFileToPixmap libXpm         ./jump/XpmRdFToP
+00000000 T _XpmWriteFileFromPixmap libXpm         ./jump/XpmWrFFrP
+00000000 T _XpmCreateDataFromImage libXpm         ./jump/XpmCrDataFrI
+00000000 T _XpmCreateDataFromXpmImage libXpm         ./jump/XpmCrDataFrI
+00000000 T _XpmCreateImageFromData libXpm         ./jump/XpmCrIFrData
+00000000 T _XpmCreateXpmImageFromData libXpm         ./jump/XpmCrIFrData
+00000000 T _XpmReadFileToData   libXpm         ./jump/XpmRdFToData
+00000000 T _XpmWriteFileFromData libXpm         ./jump/XpmWrFFrData

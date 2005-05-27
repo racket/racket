@@ -1,0 +1,8 @@
+
+@BEGINSYMBOLS breakType > > PRED
+@SYM "caret" : wxBREAK_FOR_CARET
+@SYM "line" : wxBREAK_FOR_LINE
+@SYM "selection" : wxBREAK_FOR_SELECTION
+@SYM "user1" : wxBREAK_FOR_USER_1
+@SYM "user2" : wxBREAK_FOR_USER_2
+@ENDSYMBOLS

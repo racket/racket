@@ -1,0 +1,79 @@
+#
+# Makefile for mzscheme
+#
+
+# dynlink is a script that uses the right set of link commands
+DYNLINK = mzc --ld 
+
+srcdir = @srcdir@
+prefix = @prefix@
+builddir = @builddir@
+
+MZSRC = $(srcdir)/../src
+
+CC = @CC@
+PLAIN_CC = @PLAIN_CC@
+CFLAGS = @CFLAGS@ @COMPFLAGS@ @PREFLAGS@ -I$(builddir)/.. -I$(srcdir)/../include -I$(srcdir)/../src @MZOPTIONS@
+
+dynlib:
+	$(MAKE) ../mzdyn.o
+
+dynlib3m:
+	$(MAKE) ../mzdyn3m.o
+
+dynexample:
+	$(MAKE) ../dynexmpl.so
+
+HEADERS = $(builddir)/../mzconfig.h \
+          $(srcdir)/../include/scheme.h $(srcdir)/../src/schemef.h \
+          $(srcdir)/../sconfig.h $(srcdir)/../uconfig.h
+
+MZDYNDEP = ../mzdyn.o $(srcdir)/../include/ext.exp $(srcdir)/../include/mzscheme.exp
+
+../mzdyn.o: $(srcdir)/mzdyn.c $(srcdir)/../src/schvers.h  $(HEADERS)
+	$(PLAIN_CC) $(CFLAGS) -c $(srcdir)/mzdyn.c -o ../mzdyn.o
+
+../mzdyn3m.o: $(srcdir)/mzdyn.c $(srcdir)/../src/schvers.h  $(HEADERS)
+	$(PLAIN_CC) $(CFLAGS) -DMZ_PRECISE_GC -c $(srcdir)/mzdyn.c -o ../mzdyn3m.o
+
+../dynexmpl.so: dynexmpl.o $(MZDYNDEP)
+	$(DYNLINK) ../dynexmpl.so dynexmpl.o
+dynexmpl.o: $(srcdir)/dynexmpl.c  $(HEADERS)
+	$(PLAIN_CC) $(CFLAGS) -c $(srcdir)/dynexmpl.c -o dynexmpl.o
+
+ILIBDIR = $(prefix)/lib
+
+# Prefix might be relative to srcdir, or it might be absolute, so we
+# have to go up and install things from there.
+
+cygwin-install:
+	gcc -c -O2 -I$(builddir)/.. -I$(srcdir)/../include $(srcdir)/mzdyn.c
+	gcc -c $(srcdir)/init.cc
+	gcc -c $(srcdir)/fixup.c
+	cp $(srcdir)/mzdyn.def mzdynx.def
+	dlltool --def mzdynx.def --output-exp mzdyn.exp
+	dlltool --input-def $(srcdir)/../include/mzwin.def --output-lib libmzschxxxxxxx.lib --dllname libmzschxxxxxxx.dll
+	dlltool --input-def $(srcdir)/../include/gmzwin.def --output-lib libmzgcxxxxxxx.lib --dllname libmzgcxxxxxxx.dll
+	cd ../..; if [ ! -d $(ILIBDIR) ] ; then mkdir $(ILIBDIR) ; fi
+	cd ../..; if [ ! -d $(ILIBDIR)/gcc ] ; then mkdir $(ILIBDIR)/gcc ; fi
+	cd ../..; cp mzscheme/dynsrc/mzdynx.def $(ILIBDIR)/gcc/mzdyn.def
+	cd ../..; cp mzscheme/dynsrc/mzdyn.exp $(ILIBDIR)/gcc
+	cd ../..; cp mzscheme/dynsrc/mzdyn.o $(ILIBDIR)/gcc
+	cd ../..; cp mzscheme/dynsrc/init.o $(ILIBDIR)/gcc
+	cd ../..; cp mzscheme/dynsrc/fixup.o $(ILIBDIR)/gcc
+	cd ../..; cp mzscheme/dynsrc/libmzschxxxxxxx.lib $(ILIBDIR)/gcc
+	cd ../..; cp mzscheme/dynsrc/libmzgcxxxxxxx.lib $(ILIBDIR)/gcc
+
+clean:
+	/bin/rm -f *.o Makefile.bak
+
+# Note: 'make depend' is no longer required. As distributed, the below
+#       dependencies have been trimmed to include only dependencies
+#       on MzScheme files
+
+# DO NOT DELETE THIS LINE -- make depend depends on it.
+
+mzdyn.o: $(srcdir)/../include/escheme.h $(srcdir)/../include/scheme.h $(srcdir)/../src/stypes.h \
+         $(srcdir)/../src/schemex.h $(srcdir)/../src/schemexm.h $(srcdir)/../src/schvers.h
+
+dynexmpl.o: $(srcdir)/../include/escheme.h $(srcdir)/../include/scheme.h $(srcdir)/../src/schemexm.h 

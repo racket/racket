@@ -1,0 +1,15 @@
+
+@BEGINSYMBOLS focus > ONE > PRED
+@SYM "immediate" : wxFOCUS_IMMEDIATE
+@SYM "display" : wxFOCUS_DISPLAY
+@SYM "global" : wxFOCUS_GLOBAL
+@ENDSYMBOLS
+
+# define Sym_END 1
+# define Sym_START -1
+# define Sym_NONE 0
+@BEGINSYMBOLS bias > ONE > PRED
+@SYM "start" : Sym_START
+@SYM "none" : Sym_NONE
+@SYM "end" : Sym_END
+@ENDSYMBOLS

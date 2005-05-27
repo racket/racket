@@ -1,0 +1,26 @@
+HKCR
+{
+	Myspage.EventQueue.1 = s 'EventQueue Class'
+	{
+		CLSID = s '{44D46F51-9375-11D2-B559-0060089002FE}'
+	}
+	Myspage.EventQueue = s 'EventQueue Class'
+	{
+		CLSID = s '{44D46F51-9375-11D2-B559-0060089002FE}'
+		CurVer = s 'Myspage.EventQueue.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {44D46F51-9375-11D2-B559-0060089002FE} = s 'EventQueue Class'
+		{
+			ProgID = s 'Myspage.EventQueue.1'
+			VersionIndependentProgID = s 'Myspage.EventQueue'
+			ForceRemove 'Programmable'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Apartment'
+			}
+			'TypeLib' = s '{0E7D1480-8948-11D2-B54E-0060089002FE}'
+		}
+	}
+}

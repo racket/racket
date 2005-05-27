@@ -1,0 +1,11 @@
+/* srpersist prefix file for mac os */
+
+#ifdef powerc
+  #pragma precompile_target ":srpersist-pre.ppc"
+#else
+  #pragma precompile_target ":srpersist-pre.68k"
+#endif
+
+#define ODBCVER 0x0250
+
+#define __MAC_OS__

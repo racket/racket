@@ -1,0 +1,7 @@
+/* wxspreOSX.pch
+ * precompiled header for OS X
+ */
+ 
+#define OS_X 1
+
+#include "wxspre.pch"

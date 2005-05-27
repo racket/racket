@@ -1,0 +1,5 @@
+
+@BEGINSYMBOLS orientation > ONE > PRED
+@SYM "vertical" : wxVERTICAL
+@SYM "horizontal" : wxHORIZONTAL
+@ENDSYMBOLS

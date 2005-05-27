@@ -1,0 +1,4 @@
+
+@ f "on-activate" : void OnActivate(bool); : JMPDECL/SETJMP/RESETJMP
+@ f "on-close" : bool OnClose(); : JMPDECL/SETJMPV[0]/RESETJMP
+@ "enforce-size" : void EnforceSize(int,int,int,int,int,int);

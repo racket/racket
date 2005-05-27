@@ -1,0 +1,42 @@
+// myssink.idl : IDL source for myssink.dll
+//
+
+// This file will be processed by the MIDL tool to
+// produce the type library (myssink.tlb) and marshalling code.
+
+import "oaidl.idl";
+import "ocidl.idl";
+
+	[
+		object,
+		uuid(DA064DCC-0881-11D3-B5CA-0060089002FE),
+		dual,
+		helpstring("ISink Interface"),
+		pointer_default(unique),
+                local
+	]
+	interface ISink : IDispatch
+	{
+		[id(0xFFFFFCFF), helpstring("method set_myssink_table")] HRESULT set_myssink_table(void *);
+	        [id(0xFFFFFCFE), helpstring("method register_handler")] HRESULT register_handler(DISPID,void *);
+	        [id(0xFFFFFCFD), helpstring("method unregister_handler")] HRESULT unregister_handler(DISPID);
+    }
+[
+	uuid(DA064DC0-0881-11D3-B5CA-0060089002FE),
+	version(1.0),
+	helpstring("myssink 1.0 Type Library")
+]
+library MYSSINKLib
+{
+	importlib("stdole32.tlb");
+	importlib("stdole2.tlb");
+
+	[
+		uuid(DA064DCD-0881-11D3-B5CA-0060089002FE),
+		helpstring("Sink Class")
+	]
+	coclass Sink
+	{
+		[default] interface ISink;
+	};
+};

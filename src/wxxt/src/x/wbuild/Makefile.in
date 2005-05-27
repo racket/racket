@@ -1,0 +1,146 @@
+# Makefile.in generated automatically by automake 1.1f from Makefile.am
+
+# Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
+# This Makefile.in is free software; the Free Software Foundation
+# gives unlimited permission to copy, distribute and modify it.
+
+
+SHELL = /bin/sh
+
+srcdir = @srcdir@
+top_srcdir = @top_srcdir@
+VPATH = @srcdir@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+
+bindir = @bindir@
+sbindir = @sbindir@
+libexecdir = @libexecdir@
+datadir = @datadir@
+sysconfdir = @sysconfdir@
+sharedstatedir = @sharedstatedir@
+localstatedir = @localstatedir@
+libdir = @libdir@
+infodir = @infodir@
+mandir = @mandir@
+includedir = @includedir@
+oldincludedir = /usr/include
+
+pkgdatadir = $(datadir)/@PACKAGE@
+pkglibdir = $(libdir)/@PACKAGE@
+pkgincludedir = $(includedir)/@PACKAGE@
+
+top_builddir = .
+
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_DATA = @INSTALL_DATA@
+INSTALL_SCRIPT = @INSTALL_SCRIPT@
+transform = @program_transform_name@
+
+SUBDIRS = libit intl src po
+ACLOCAL = aclocal.m4
+ACCONFIG = acconfig.h
+CONFIG_HEADER_IN = config.h.in
+mkinstalldirs = $(top_srcdir)/mkinstalldirs
+CONFIG_HEADER = config.h
+CONFIG_CLEAN_FILES = 
+
+PACKAGE = @PACKAGE@
+VERSION = @VERSION@
+
+default: all-recursive
+
+mostlyclean-hdr:
+
+clean-hdr:
+
+maintainer-clean-hdr:
+
+# This directory's subdirectories are mostly independent; you can cd
+# into them and run `make' without going through this Makefile.
+# To change the values of `make' variables: instead of editing Makefiles,
+# (1) if the variable is set in `config.status', edit `config.status'
+#     (which will cause the Makefiles to be regenerated when you run `make');
+# (2) otherwise, pass the desired values on the `make' command line.
+
+@SET_MAKE@
+
+all-recursive install-data-recursive install-exec-recursive \
+installdirs-recursive install-recursive uninstall-recursive \
+check-recursive installcheck-recursive info-recursive dvi-recursive \
+mostlyclean-recursive clean-recursive \
+maintainer-clean-recursive:
+	for subdir in $(SUBDIRS); do		\
+	  target=`echo $@ | sed s/-recursive//`; \
+	  (cd $$subdir && $(MAKE) $$target)	\
+	   || case "$(MFLAGS)" in *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
+
+tags: TAGS
+
+tags-recursive:
+	list="$(SUBDIRS)"; for subdir in $$list; do \
+	  (cd $$subdir && $(MAKE) tags); \
+	done
+
+TAGS: tags-recursive $(HEADERS) $(SOURCES) $(CONFIG_HEADER) \
+		$(TAGS_DEPENDENCIES)
+	tags=; \
+	here=`pwd`; \
+	for subdir in $(SUBDIRS); do \
+	  test -f $$subdir/TAGS && tags="$$tags -i $$here/$$subdir/TAGS"; \
+	done; \
+	test -z "$(ETAGS_ARGS)$(CONFIG_HEADER)$(SOURCES)$(HEADERS)$$tags" \
+	  || etags $(ETAGS_ARGS) $$tags $(CONFIG_HEADER) $(SOURCES) $(HEADERS)
+
+mostlyclean-tags:
+
+clean-tags:
+
+maintainer-clean-tags:
+
+
+mostlyclean-generic:
+	test -z "$(MOSTLYCLEANFILES)" || rm -f $(MOSTLYCLEANFILES)
+
+clean-generic:
+	test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
+
+maintainer-clean-generic:
+	test -z "$(MAINTAINERCLEANFILES)" || rm -f $(MAINTAINERCLEANFILES)
+	test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
+mostlyclean-am:  mostlyclean-hdr mostlyclean-tags mostlyclean-generic
+
+clean-am:  clean-hdr clean-tags clean-generic mostlyclean-am 
+
+maintainer-clean-am:  maintainer-clean-hdr maintainer-clean-tags \
+		maintainer-clean-generic
+
+mostlyclean:  mostlyclean-am mostlyclean-recursive
+
+clean:  clean-am clean-recursive
+
+maintainer-clean:  maintainer-clean-am maintainer-clean-recursive
+	@echo "This command is intended for maintainers to use;"
+	@echo "it deletes files that may require special tools to rebuild."
+	rm -f config.status
+
+.PHONY: default mostlyclean-hdr distclean-hdr clean-hdr \
+maintainer-clean-hdr install-data-recursive uninstall-data-recursive \
+install-exec-recursive uninstall-exec-recursive installdirs-recursive \
+uninstalldirs-recursive all-recursive check-recursive \
+installcheck-recursive info-recursive dvi-recursive \
+mostlyclean-recursive distclean-recursive clean-recursive \
+maintainer-clean-recursive tags tags-recursive mostlyclean-tags \
+distclean-tags clean-tags maintainer-clean-tags distdir info dvi check \
+installcheck all-recursive-hack all-am install-exec install-data \
+install uninstall all installdirs mostlyclean-generic distclean-generic \
+clean-generic maintainer-clean-generic clean mostlyclean distclean \
+maintainer-clean
+
+.SUFFIXES:
+
+# Tell versions [3.59,3.63) of GNU make to not export all variables.
+# Otherwise a system limit (for SysV at least) may be exceeded.
+.NOEXPORT:

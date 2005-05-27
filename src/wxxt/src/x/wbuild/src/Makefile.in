@@ -1,0 +1,215 @@
+# Makefile.in generated automatically by automake 1.1f from Makefile.am
+
+# Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
+# This Makefile.in is free software; the Free Software Foundation
+# gives unlimited permission to copy, distribute and modify it.
+
+
+SHELL = /bin/sh
+
+srcdir = @srcdir@
+top_srcdir = @top_srcdir@
+VPATH = @srcdir@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+
+bindir = @bindir@
+sbindir = @sbindir@
+libexecdir = @libexecdir@
+datadir = @datadir@
+sysconfdir = @sysconfdir@
+sharedstatedir = @sharedstatedir@
+localstatedir = @localstatedir@
+libdir = @libdir@
+infodir = @infodir@
+mandir = @mandir@
+includedir = @includedir@
+oldincludedir = /usr/include
+
+pkgdatadir = $(datadir)/@PACKAGE@
+pkglibdir = $(libdir)/@PACKAGE@
+pkgincludedir = $(includedir)/@PACKAGE@
+
+top_builddir = ..
+
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_DATA = @INSTALL_DATA@
+INSTALL_SCRIPT = @INSTALL_SCRIPT@
+transform = @program_transform_name@
+
+bin_PROGRAMS = wbuild
+wbuild_SOURCES = declarefunc.c symbol.c printbody.c generatec.c generateh.c \
+	generatedoc.c util.c wbuild.c parse.y scan.l wbuild.h wsym.h
+LDADD = @INTLLIBS@ -L../libit -lmisc
+INCLUDES = -I$(top_srcdir) -I.. -I../intl -DPKGDATADIR=\"$(pkgdatadir)\"
+mkinstalldirs = $(top_srcdir)/mkinstalldirs
+CONFIG_HEADER = ../config.h
+CONFIG_CLEAN_FILES = 
+PROGRAMS =  $(bin_PROGRAMS)
+
+
+DEFS = @DEFS@ -I. -I$(srcdir) -I..
+CPPFLAGS = @CPPFLAGS@
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
+wbuild_OBJECTS =  declarefunc.o symbol.o printbody.o generatec.o \
+generateh.o generatedoc.o util.o wbuild.o parse.o scan.o
+EXTRA_wbuild_SOURCES = 
+wbuild_LDADD = $(LDADD)
+wbuild_DEPENDENCIES = 
+YACC = @YACC@
+LEX = @LEX@
+LEX_OUTPUT_ROOT = @LEX_OUTPUT_ROOT@
+CC = @CC@
+CFLAGS = @CFLAGS@
+COMPILE = $(CC) $(DEFS) $(INCLUDES) $(CPPFLAGS) $(CFLAGS)
+LINK = $(CC) $(LDFLAGS) -o $@
+
+
+PACKAGE = @PACKAGE@
+VERSION = @VERSION@
+
+SOURCES = $(wbuild_SOURCES)
+OBJECTS = $(wbuild_OBJECTS)
+
+default: all
+
+mostlyclean-binPROGRAMS:
+
+clean-binPROGRAMS:
+	test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
+
+maintainer-clean-binPROGRAMS:
+
+install-binPROGRAMS: $(bin_PROGRAMS)
+	$(NORMAL_INSTALL)
+	$(mkinstalldirs) $(bindir)
+	list="$(bin_PROGRAMS)"; for p in $$list; do \
+	  if test -f $$p; then \
+	    $(INSTALL_PROGRAM) $$p $(bindir)/`echo $$p|sed '$(transform)'`; \
+	  else :; fi; \
+	done
+
+uninstall-binPROGRAMS:
+	list="$(bin_PROGRAMS)"; for p in $$list; do \
+	  rm -f $(bindir)/`echo $$p|sed '$(transform)'`; \
+	done
+
+.c.o:
+	$(COMPILE) -c $<
+
+mostlyclean-compile:
+	rm -f *.o core
+
+clean-compile:
+
+maintainer-clean-compile:
+$(wbuild_OBJECTS): ../config.h
+
+wbuild: $(wbuild_OBJECTS) $(wbuild_DEPENDENCIES)
+	$(LINK) $(wbuild_OBJECTS) $(wbuild_LDADD) $(LIBS)
+.y.c:
+	$(YACC) $(YFLAGS) -d $< && mv y.tab.c $@ && mv y.tab.h parse.h
+.l.c:
+	$(LEX) $(LFLAGS) $< && mv $(LEX_OUTPUT_ROOT).c $@
+
+ID: $(HEADERS) $(SOURCES)
+	here=`pwd` && cd $(srcdir) && mkid -f$$here/ID $(SOURCES) $(HEADERS)
+
+tags: TAGS
+
+TAGS: $(HEADERS) $(SOURCES) $(TAGS_DEPENDENCIES)
+	here=`pwd` && cd $(srcdir) && etags $(ETAGS_ARGS) $(SOURCES) $(HEADERS) -o $$here/TAGS
+
+mostlyclean-tags:
+
+clean-tags:
+
+maintainer-clean-tags:
+
+subdir = src
+declarefunc.o: declarefunc.c ../config.h $(srcdir)/../libit/unistd.h \
+	$(srcdir)/../libit/string.h $(srcdir)/../libit/ctype.h wbuild.h wsym.h \
+	$(srcdir)/../libit/malloc.h
+generatec.o: generatec.c ../config.h $(srcdir)/../libit/unistd.h $(srcdir)/../libit/string.h \
+	$(srcdir)/../libit/ctype.h wbuild.h wsym.h \
+	$(srcdir)/../libit/malloc.h
+generatedoc.o: generatedoc.c ../config.h $(srcdir)/../libit/unistd.h \
+	$(srcdir)/../libit/string.h $(srcdir)/../libit/ctype.h wbuild.h wsym.h \
+	$(srcdir)/../libit/malloc.h
+generateh.o: generateh.c ../config.h $(srcdir)/../libit/unistd.h $(srcdir)/../libit/string.h \
+	$(srcdir)/../libit/ctype.h wbuild.h wsym.h \
+	$(srcdir)/../libit/malloc.h
+parse.o: parse.c ../config.h $(srcdir)/../libit/alloca.h $(srcdir)/../libit/string.h \
+	$(srcdir)/../libit/unistd.h wbuild.h $(srcdir)/../libit/malloc.h
+printbody.o: printbody.c ../config.h wbuild.h wsym.h \
+	$(srcdir)/../libit/malloc.h
+scan.o: scan.c ../config.h wbuild.h parse.h $(srcdir)/../libit/ctype.h \
+	$(srcdir)/../libit/string.h $(srcdir)/../libit/unistd.h $(srcdir)/../libit/malloc.h
+symbol.o: symbol.c ../config.h $(srcdir)/../libit/string.h wbuild.h wsym.h \
+	$(srcdir)/../libit/malloc.h
+util.o: util.c ../config.h $(srcdir)/../libit/string.h $(srcdir)/../libit/ctype.h wbuild.h \
+	wsym.h $(srcdir)/../libit/malloc.h
+wbuild.o: wbuild.c ../config.h $(srcdir)/../libit/stat.h $(srcdir)/../libit/unistd.h \
+	$(srcdir)/../libit/string.h $(srcdir)/../libit/getopt.h wbuild.h wsym.h \
+	$(srcdir)/../libit/ctype.h $(srcdir)/../libit/malloc.h
+
+info:
+dvi:
+check: all
+installcheck:
+install-exec: install-binPROGRAMS
+	$(NORMAL_INSTALL)
+
+install-data: 
+	$(NORMAL_INSTALL)
+
+install: install-exec install-data all
+	@:
+
+uninstall: uninstall-binPROGRAMS
+
+all: $(PROGRAMS) Makefile
+
+install-strip:
+	$(MAKE) INSTALL_PROGRAM='$(INSTALL_PROGRAM) -s' install
+installdirs:
+	$(mkinstalldirs)  $(bindir)
+
+
+mostlyclean-generic:
+	test -z "$(MOSTLYCLEANFILES)" || rm -f $(MOSTLYCLEANFILES)
+
+clean-generic:
+	test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
+
+maintainer-clean-generic:
+	test -z "$(MAINTAINERCLEANFILES)" || rm -f $(MAINTAINERCLEANFILES)
+	test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
+mostlyclean:  mostlyclean-binPROGRAMS mostlyclean-compile \
+		mostlyclean-tags mostlyclean-generic
+
+clean:  clean-binPROGRAMS clean-compile clean-tags clean-generic \
+		mostlyclean 
+
+maintainer-clean:  maintainer-clean-binPROGRAMS maintainer-clean-compile \
+		maintainer-clean-tags maintainer-clean-generic
+	@echo "This command is intended for maintainers to use;"
+	@echo "it deletes files that may require special tools to rebuild."
+
+.PHONY: default mostlyclean-binPROGRAMS distclean-binPROGRAMS \
+clean-binPROGRAMS maintainer-clean-binPROGRAMS uninstall-binPROGRAMS \
+install-binPROGRAMS mostlyclean-compile distclean-compile clean-compile \
+maintainer-clean-compile tags mostlyclean-tags distclean-tags \
+clean-tags maintainer-clean-tags distdir info dvi check installcheck \
+install-exec install-data install uninstall all installdirs \
+mostlyclean-generic distclean-generic clean-generic \
+maintainer-clean-generic clean mostlyclean distclean maintainer-clean
+
+.SUFFIXES:
+.SUFFIXES: .c .o .y .l
+
+# Tell versions [3.59,3.63) of GNU make to not export all variables.
+# Otherwise a system limit (for SysV at least) may be exceeded.
+.NOEXPORT:

@@ -1,0 +1,12 @@
+
+@DEFINE CB_FUNCTYPE wxFunction
+
+@INCLUDE cbgen_s.xci
+
+extern wxCommandEvent *objscheme_unbundle_wxCommandEvent(Scheme_Object *,const char *,int);
+extern Scheme_Object *objscheme_bundle_wxCommandEvent(wxCommandEvent *);
+
+#if 0
+static Scheme_Object *CB_TOC(wxFunction f, int n, struct Scheme_Object **p);
+#endif
+static void CB_TOSCHEME(CB_REALCLASS *obj, wxCommandEvent *event);

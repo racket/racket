@@ -1,0 +1,43 @@
+WBUILD
+======
+
+Wbuild is a program for easier creating of X widgets. It reads
+abbreviated code from a file and expands it with the boilerplate code
+that every widget must have. It also generates the documentation.
+
+Wbuild is a tool for the widget writer. It has three goals: (1) making
+widget writing easier, (2) making it more object-oriented, and (3)
+encouraging `literate programming'.  It does this in the same way that
+yacc helps in writing compilers: it lets the programmer write code
+that is close to the concepts in his head. With yacc the concept is
+grammar-rules, with Wbuild it is OOP.
+
+The input to Wbuild is an object-oriented description of a widget.
+There are sections for private and public variables, methods, private
+functions, etc. But all the structs, macros, header files and
+functions that are needed to trick C into object-orientedness remain
+hidden. Inheritance is automatic, which means that one has to write
+only the code that makes a widget different from its superclass. Even
+the manual is created automatically.  Documentation can be written
+directly into the source. Documentation and code are formatted
+together with nroff or TeX.
+
+You may need to install bison and/or flex if you encounter problems.
+
+
+AUTHORS
+=======
+
+Bert Bos <bert@let.rug.nl>
+Alfa-informatica, Rijksuniversiteit Groningen, The Netherlands
+August 1992 - June 1995
+
+Joel N. Weber II <devnull@gnu.ai.mit.edu>
+June 1996 - ?
+
+FTP
+===
+
+Wbuild is available from either
+ftp://alpha.gnu.ai.mit.edu/fwf
+ftp://prep.ai.mit.edu/pub/gnu

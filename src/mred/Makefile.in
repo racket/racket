@@ -1,0 +1,307 @@
+
+srcdir = @srcdir@
+prefix = @prefix@
+builddir = @builddir@
+
+# for version.mak:
+mainsrcdir = @srcdir@/..
+@INCLUDEDEP@ @srcdir@/../mzscheme/version.mak
+
+WXDIR = $(srcdir)/../wxxt
+
+PLTSRCDIR = $(srcdir)/..
+PLTBUILDDIR = $(builddir)/..
+
+
+###########################
+#      Common Macros      #
+###########################
+CC = @CC@
+CXX = @CXX@
+LINKER = $(CXX)
+PERL = @PERL@
+RANLIB = @RANLIB@
+AR = @AR@
+ARFLAGS = @ARFLAGS@
+OPTIONS = @OPTIONS@ @MROPTIONS@
+XINCLUDE = @X_CFLAGS@
+XLIB = @X_LIBS@
+LDLIBS = @X_PRE_LIBS@ -lXaw -lXmu -lXt -lX11 -lXext @X_EXTRA_LIBS@ @LIBS@
+GCDIRECTORY = @GCDIR@
+WBUILD = @WBUILD@
+WXVARIANT =  @WXVARIANT@
+
+WXINC_wx_xt = -I$(PLTSRCDIR)/wxxt/src/AIAI-include -I$(PLTSRCDIR)/wxxt/src
+WXINC_wx_mac = -I$(PLTSRCDIR)/wxmac/include/base -I$(PLTSRCDIR)/wxmac/include/mac -I$(PLTSRCDIR)/wxcommon -I$(PLTSRCDIR)/a-list/c-headers/
+
+WXINC = $(WXINC_@WXVARIANT@)
+NOGCINC = $(WXINC) -I$(PLTSRCDIR)/mred/wxme/ -I$(PLTBUILDDIR)/mzscheme/ -I$(PLTSRCDIR)/mzscheme/include/
+INC = -I$(PLTSRCDIR)/mzscheme/$(GCDIRECTORY) $(NOGCINC)
+CXXFLAGS = $(XINCLUDE) $(INC) $(OPTIONS) -D$(WXVARIANT) @COMPFLAGS@ @PROFFLAGS@ @CXXFLAGS@ @PREFLAGS@
+CFLAGS = $(XINCLUDE) $(INC) $(OPTIONS) -D$(WXVARIANT) @COMPFLAGS@ @PROFFLAGS@ @CFLAGS@ @PREFLAGS@
+LDFLAGS = @LDFLAGS@ $(XLIB)
+###########################
+
+MREDLINKER = @MREDLINKER@
+
+JPEG_A = ../wxcommon/jpeg/libjpeg.@LIBSFX@
+JPEG_INC = -I../wxcommon/jpeg -I$(srcdir)/../wxcommon/jpeg
+ZLIB_A = ../wxcommon/zlib/libz.@LIBSFX@
+ZLIB_INC = -I$(srcdir)/../wxcommon/zlib
+PNG_A = ../wxcommon/libpng/libpng.@LIBSFX@
+
+EXTRALDFLAGS_wx_xt =
+EXTRALDFLAGS_wx_mac = -framework Carbon -framework QuickTime -framework AGL -framework OpenGL -lz
+MREDLDFLAGS = $(LDFLAGS) $(EXTRALDFLAGS_@WXVARIANT@)
+WXLIBS_wx_xt = ../wxxt/src/libwx_xt.@LIBSFX@ ../wxxt/contrib/xpm/lib/libXpm.@LIBSFX@ ../wxxt/utils/image/src/libimage_xt.@LIBSFX@ 
+MREDX_wx_xt = mredx.@LTO@
+WXLIBS_wx_mac = ../wxmac/src/libwxmac.@LIBSFX@
+MREDX_wx_mac = mredmac.@LTO@ simpledrop.@LTO@
+WXLIBSNORM = mred.@LTO@ $(MREDX_@WXVARIANT@) wxGC.@LTO@ wxJPEG.@LTO@ wxs/libwxscheme.@LIBSFX@ wxme/libwxme.@LIBSFX@ $(WXLIBS_@WXVARIANT@) @JPEG_A@ @PNG_A@ @ZLIB_A@
+WXLIBSDYN = libmred.@LIBSFX@
+GUILIBS_wx_xt = $(LDLIBS)
+GUILIBS_wx_mac = @LIBS@
+MREDLDLIBS = ../mzscheme/libmzscheme.@LIBSFX@ ../mzscheme/libmzgc.@LIBSFX@ $(@WXLIBS@) $(GUILIBS_@WXVARIANT@)
+
+LOCALFLAGS_wx_xt = @WX_MMD_FLAG@
+LOCALFLAGS_wx_mac = -I$(srcdir)/../mac/mzscheme -MMD -DWX_CARBON
+LOCALFLAGS = $(LOCALFLAGS_@WXVARIANT@)
+
+MREDOBJECTS = mrmain.@LTO@
+
+MZSCHEME = ../mzscheme/libmzscheme.@LIBSFX@ ../mzscheme/libmzgc.@LIBSFX@
+WXSCHEME = wxs/libwxscheme.@LIBSFX@
+WXME = wxme/libwxme.@LIBSFX@
+
+INSTALLDEST=/home/scheme/plt
+
+MRSTATIC = 
+MRSTATIC_STUB =
+
+WXINCDEP_wx_xt = $(WXDIR)/src/Windows/Window.h $(WXDIR)/src/Windows/Frame.h \
+                 $(WXDIR)/src/DataStructures/Object.h
+WXINCDEP_wx_mac = 
+WXINCDEP = $(WXINCDEP_@WXVARIANT@)
+
+MZEXTRAEXPORT='GCDIR=$(GCDIRECTORY)'
+
+LINKRESULT_wx_xt = mred
+LINKRESULT_wx_mac = MrEd.app/Contents/MacOS/MrEd
+LINKRESULT = $(LINKRESULT_@WXVARIANT@)
+
+all:
+	$(MAKE) @WXVARIANT@
+	cd wxs; $(MAKE)
+	cd wxme; $(MAKE)
+	$(MAKE) $(LINKRESULT)
+
+bin:
+	$(MAKE) $(LINKRESULT)
+
+mred : $(MZSCHEME) mrmain.@LTO@ $(MREDOBJECTS) $(@WXLIBS@) $(MRSTATIC_STUB)
+	$(MREDLINKER) $(MREDLDFLAGS) $(MRSTATIC) -o mred $(MREDOBJECTS) $(MREDLDLIBS) $(MRSTATIC_STUB)
+
+libmred.@LIBSFX@: $(WXLIBSNORM)
+	$(AR) $(ARFLAGS) libmred.@LIBSFX@ $(WXLIBSNORM)
+
+MRFW = PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd
+MRFWRES = PLT_MrEd.framework/Versions/$(FWVERSION)/Resources/PLT_MrEd.rsrc
+
+$(MRFW) : $(MZSCHEME) $(MREDOBJECTS) $(@WXLIBS@) $(MRSTATIC_STUB)
+	$(MREDLINKER) $(MREDLDFLAGS) -dynamiclib -o $(MRFW) -F../mzscheme -framework PLT_MzScheme $(@WXLIBS@) $(GUILIBS_@WXVARIANT@) @X_EXTRA_LIBS@
+
+MrEd.app/Contents/MacOS/MrEd: $(MRFWRES) $(MRFW) mrmain.@LTO@ 
+	$(MREDLINKER) -o MrEd.app/Contents/MacOS/MrEd mrmain.@LTO@ -F. -F../mzscheme -framework PLT_MrEd -framework Carbon -framework PLT_MzScheme @PROFFLAGS@
+
+$(MRFWRES): $(srcdir)/../mac/osx_appl.ss $(srcdir)/../mac/cw/MrEd.r
+	rm -rf PLT_MrEd.framework/Resources PLT_MrEd.framework/PLT_MrEd
+	env BUILDBASE=.. $(srcdir)/../mac/osx_appl.ss $(srcdir)/..
+	ln -s Versions/$(FWVERSION)/PLT_MrEd PLT_MrEd.framework/PLT_MrEd
+	ln -s Versions/$(FWVERSION)/Resources PLT_MrEd.framework/Resources
+
+ee-app: mred mrmain_ee.@LTO@
+	if [ "$(EEAPP)" = '' ] ; then echo "ERROR: You must specify EEAPP" ; else $(MREDLINKER) $(MREDLDFLAGS) $(MRSTATIC) -o $(EEAPP) mrmain_ee.@LTO@ $(EEOBJECTS) $(MREDLDLIBS) $(MRSTATIC_STUB) ; fi
+
+sunos4-static: dl_stub.@LTO@
+	$(MAKE) mred MRSTATIC=-static  MRSTATIC_STUB='dl_stub.@LTO@' LDNONSTATICLIBS=''
+
+solaris-static:
+	$(MAKE) mred MRSTATIC="-Wl,-Bstatic" LDNONSTATICLIBS='-Wl,-Bdynamic -ldl -Wl,-Bstatic'
+
+linux-static:
+	$(MAKE) mred MRSTATIC=--static LDNONSTATICLIBS='-ldl'
+
+wx_xt:
+	cd ../wxxt/src/x; $(MAKE)
+
+wx_mac:
+	cd ../wxmac/src; $(MAKE)
+
+mred.@LTO@ :  $(srcdir)/mred.cxx $(srcdir)/wxme/wx_media.h $(srcdir)/wxme/wx_medad.h \
+          $(srcdir)/wxs/wxscheme.h $(srcdir)/mred.h \
+          $(srcdir)/../mzscheme/include/scheme.h $(srcdir)/../mzscheme/src/schvers.h \
+          $(srcdir)/wxs/wxsmred.h $(WXINCDEP) $(srcdir)/../wxcommon/wxGC.h \
+          $(srcdir)/../wxcommon/wx_list.h
+	$(CXX) $(CXXFLAGS) $(LOCALFLAGS) -c $(srcdir)/mred.cxx -o mred.@LTO@
+
+mrmain.@LTO@ :  $(srcdir)/mrmain.cxx $(srcdir)/mred.h $(srcdir)/wxs/wxsmred.h \
+            $(srcdir)/../mzscheme/cmdline.inc $(srcdir)/../mzscheme/src/stypes.h \
+            $(srcdir)/../mzscheme/include/scheme.h $(srcdir)/../mzscheme/src/schvers.h
+	$(CXX) $(CXXFLAGS) $(LOCALFLAGS) -c $(srcdir)/mrmain.cxx -o mrmain.@LTO@
+
+mrmain_ee.@LTO@ : mred.@LTO@
+	$(CXX) $(CXXFLAGS) $(LOCALFLAGS) -DSTANDALONE_WITH_EMBEDDED_EXTENSION -c $(srcdir)/mrmain.cxx -o mrmain_ee.@LTO@
+
+ee-main:
+	$(MAKE) mrmain_ee.@LTO@
+
+mredx.@LTO@ : $(srcdir)/mredx.cxx $(srcdir)/../mzscheme/include/scheme.h $(srcdir)/mred.h \
+          $(WXINCDEP) \
+          $(srcdir)/../wxcommon/wxGC.h $(srcdir)/../wxcommon/wx_list.h \
+          $(srcdir)/../mzscheme/src/stypes.h
+	$(CXX) $(CXXFLAGS) $(LOCALFLAGS) -c $(srcdir)/mredx.cxx -o mredx.@LTO@
+
+mredmac.@LTO@ : $(srcdir)/mredmac.cxx $(srcdir)/../mzscheme/include/scheme.h $(srcdir)/mred.h \
+          $(srcdir)/../wxcommon/wxGC.h $(srcdir)/../wxcommon/wx_list.h \
+          $(srcdir)/../mzscheme/src/stypes.h
+	$(CXX) $(CXXFLAGS) $(LOCALFLAGS) -c $(srcdir)/mredmac.cxx -o mredmac.@LTO@
+
+wxGC.@LTO@ : $(srcdir)/../wxcommon/wxGC.cxx $(srcdir)/../wxcommon/wxGC.h \
+         $(srcdir)/../mzscheme/src/stypes.h
+	$(CXX) $(CXXFLAGS) $(LOCALFLAGS) -c $(srcdir)/../wxcommon/wxGC.cxx -o wxGC.@LTO@
+
+wxJPEG.@LTO@ : $(srcdir)/../wxcommon/wxJPEG.cxx $(srcdir)/../wxcommon/wxGC.h
+	$(CXX) $(CXXFLAGS) $(LOCALFLAGS) @JPEG_INC@ @ZLIB_INC@ -c $(srcdir)/../wxcommon/wxJPEG.cxx -o wxJPEG.@LTO@
+
+dl_stub.@LTO@: $(srcdir)/misc/dl_stub.c
+	$(CC) $(CFLAGS) $(LOCALFLAGS) -c $(srcdir)/misc/dl_stub.c -o dl_stub.@LTO@
+
+simpledrop.@LTO@ : $(srcdir)/../mac/mzscheme/simpledrop.cpp
+	$(CXX) $(CXXFLAGS) $(LOCALFLAGS) -o simpledrop.@LTO@ -c $(srcdir)/../mac/mzscheme/simpledrop.cpp
+
+sgilinkhack.@LTO@:
+	$(CXX) $(CXXFLAGS) $(LOCALFLAGS) -c $(srcdir)/misc/sgilinkhack.cxx -o sgilinkhack.@LTO@
+
+$(WXDIR)/libwx_xt.@LIBSFX@:
+	$(MAKE) wx
+
+../wxcommon/jpeg/libjpeg.@LIBSFX@:
+	cd ../wxcommon/jpeg; $(MAKE) libjpeg.@LIBSFX@ CC="$(CC)" AR="@STATIC_AR@ $(ARFLAGS)" AR2="$(RANLIB)"
+
+../wxcommon/libpng/libpng.@LIBSFX@:
+	cd ../wxcommon/libpng; $(MAKE) libpng.@LIBSFX@
+
+../wxcommon/zlib/libz.@LIBSFX@:
+	cd ../wxcommon/zlib; $(MAKE) libz.@LIBSFX@
+
+CLEANDIR_wx_xt = ../wxxt/src/x
+CLEANDIR_wx_mac = ../wxmac/src
+
+clean:
+	cd $(CLEANDIR_@WXVARIANT@); $(MAKE) clean
+	rm -f *.@LTO@ *.d core mred mred3m
+	rm -f gc2/*.@LTO@ gc2/xsrc/*.c gc2/xsrc/*.cc gc2/*.d
+	cd wxme; $(MAKE) clean
+	cd wxs; $(MAKE) clean
+	if [ -f ../wxcommon/jpeg/Makefile ] ; then cd ../wxcommon/jpeg; $(MAKE) clean ; fi
+	if [ -f ../wxcommon/libpng/Makefile ] ; then cd ../wxcommon/libpng; $(MAKE) clean ; fi
+	if [ -f ../wxcommon/zlib/Makefile ] ; then cd ../wxcommon/zlib; $(MAKE) clean ; fi
+	rm -f $(WXLIBS_@WXVARIANT@)
+	$(MAKE) clean_@WXVARIANT@
+
+clean_wx_xt:
+	echo clean done
+
+clean_wx_mac:
+	rm -rf PLT_MrEd.framework MrEd.app Starter.app MrEd3m.app Starter3m.app MrEd.rsrc.OSX
+	rm -rf gc2/PLT_MrEd.framework gc2/MrEd.rsrc.OSX gc2/*.pfe gc2/macxsrc/*
+	echo clean done
+
+ICP=@ICP@
+
+# Prefix might be relative to srcdir, or it might be absolute, so we
+# have to go up and install things from there.
+
+install-no-lib:
+	echo "no dynamic libs"
+
+install-lib:
+	cd ..; $(ICP) mred/libmred.@LIBSFX@ `(cd $(prefix); pwd)`/lib/
+
+install_wx_xt:
+	cd ..; if [ ! -d $(prefix)/bin ] ; then mkdir $(prefix)/bin ; fi
+	cd ..; rm -f $(prefix)/bin/mred
+	$(MAKE) @MRLIBINSTALL@
+	cd ..; $(ICP) mred/mred `(cd $(prefix); pwd)`/bin/
+
+MRFWDIR = @FRAMEWORK_INSTALL_DIR@/PLT_MrEd.framework
+
+install_wx_mac:
+	rm -f $(MRFWDIR)/Versions/$(FWVERSION)/PLT_MrEd
+	rm -rf $(MRFWDIR)/Versions/$(FWVERSION)/Resources
+	rm -f $(MRFWDIR)/PLT_MrEd
+	rm -rf $(MRFWDIR)/Resources
+	if [ ! -d @FRAMEWORK_INSTALL_DIR@ ] ; then mkdir @FRAMEWORK_INSTALL_DIR@ ; fi
+	if [ ! -d $(MRFWDIR) ] ; then mkdir $(MRFWDIR) ; fi
+	if [ ! -d $(MRFWDIR)/Versions ] ; then mkdir $(MRFWDIR)/Versions ; fi
+	if [ ! -d $(MRFWDIR)/Versions/$(FWVERSION) ] ; then mkdir $(MRFWDIR)/Versions/$(FWVERSION) ; fi
+	cd ..; rm -rf $(prefix)/collects/launcher/Starter.app
+	cd ..; rm -rf $(prefix)/MrEd.app
+	cd ..; $(ICP) -r mred/MrEd.app $(prefix)/.
+	$(ICP) PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd $(MRFWDIR)/Versions/$(FWVERSION)/PLT_MrEd
+	$(ICP) -r PLT_MrEd.framework/Versions/$(FWVERSION)/Resources $(MRFWDIR)/Versions/$(FWVERSION)/Resources
+	ln -s Versions/$(FWVERSION)/PLT_MrEd $(MRFWDIR)/
+	ln -s Versions/$(FWVERSION)/Resources $(MRFWDIR)/
+	if [ ! -d $(prefix)/collects ] ; then mkdir $(prefix)/collects ; fi
+	if [ ! -d $(prefix)/collects/launcher ] ; then mkdir $(prefix)/collects/launcher ; fi
+	cd ..; $(ICP) -r mred/Starter.app $(prefix)/collects/launcher/.
+
+LIBIDIR=$(prefix)/lib
+BUILDINFO=$(LIBIDIR)/buildinfo
+
+install:
+	$(MAKE) install_@WXVARIANT@
+	cd ..; echo 'CXX=@CXX@' >> $(BUILDINFO)
+	cd ..; echo 'CXXFLAGS=@CXXFLAGS@ @PREFLAGS@ @COMPFLAGS@' >> $(BUILDINFO)
+	cd ..; echo 'MROPTIONS=@MROPTIONS@' >> $(BUILDINFO)
+	cd ..; echo 'X_CFLAGS=@X_CFLAGS@' >> $(BUILDINFO)
+	cd ..; echo 'X_LIB=@X_LIBS@' >> $(BUILDINFO)
+	cd ..; echo "MRLIBS=$(GUILIBS_@WXVARIANT@)" >> $(BUILDINFO)
+	cd ..; echo "MRLDFLAGS=$(MREDLDFLAGS)" >> $(BUILDINFO)
+
+3m:
+	$(MAKE) all
+	cd gc2; $(MAKE) 3m
+
+install-no-lib3m:
+	echo "no dynamic libs"
+
+install-lib3m:
+	cd ..; $(ICP) mred/libmred3m.@LIBSFX@ `(cd $(prefix); pwd)`/lib/
+
+install-3m_wx_xt:
+	cd ..; $(ICP) mred/mred3m $(prefix)/bin/
+	$(MAKE) @MRLIBINSTALL@3m
+
+install-3m_wx_mac:
+	rm -f $(MRFWDIR)/Versions/$(FWVERSION)_3m/PLT_MrEd
+	rm -rf $(MRFWDIR)/Versions/$(FWVERSION)_3m/Resources
+	if [ ! -d $(MRFWDIR)/Versions/$(FWVERSION)_3m ] ; then mkdir $(MRFWDIR)/Versions/$(FWVERSION)_3m ; fi
+	cd ..; rm -rf $(prefix)/collects/launcher/Starter3m.app
+	cd ..; rm -rf $(prefix)/MrEd3m.app
+	cd ..; $(ICP) -r mred/MrEd3m.app $(prefix)/.
+	$(ICP) PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd $(MRFWDIR)/Versions/$(FWVERSION)_3m/PLT_MrEd
+	$(ICP) -r PLT_MrEd.framework/Versions/$(FWVERSION)_3m/Resources $(MRFWDIR)/Versions/$(FWVERSION)_3m/Resources
+	if [ ! -d $(prefix)/collects ] ; then mkdir $(prefix)/collects ; fi
+	if [ ! -d $(prefix)/collects/launcher ] ; then mkdir $(prefix)/collects/launcher ; fi
+	cd ..; $(ICP) -r mred/Starter3m.app $(prefix)/collects/launcher/.
+
+install-3m:
+	$(MAKE) install-3m_@WXVARIANT@
+
+
+@INCLUDEDEP@ wxGC.d
+@INCLUDEDEP@ wxJPEG.d
+@INCLUDEDEP@ mred.d
+@INCLUDEDEP@ mredmac.d
+@INCLUDEDEP@ mrmain.d

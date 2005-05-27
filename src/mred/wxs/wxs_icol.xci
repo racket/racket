@@ -1,0 +1,8 @@
+@ "get-button-colour" : wxColour! GetButtonColour();
+@ "set-button-colour" : void SetButtonColour(wxColour!);
+
+@ "get-label-colour" : wxColour! GetLabelColour();
+@ "set-label-colour" : void SetLabelColour(wxColour!);
+
+@ "get-background-colour" : wxColour! GetBackgroundColour();
+@ "set-background-colour" : void SetBackgroundColour(wxColour!);

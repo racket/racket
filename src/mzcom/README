@@ -1,0 +1,10 @@
+This directory contains the MzCOM source files.
+
+The Visual Studio .NET project files for MzCOM are in
+plt/src/worksp/mzcom/.
+
+You'll also need the MzScheme sources to compile
+MzCOM.  See plt/src/worksp/README for more information
+on compiling MzScheme.
+
+Send questions to Paul Steckler, steck@plt-scheme.org.
