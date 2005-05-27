@@ -1,0 +1,65 @@
+{ (define LIBNAME "Animated Images")
+  (include "head.tinc") }
+
+<p>The teachpack provides two kinds of functions. The first four allow
+students to simulate a small world of animated drawings and games: 
+<menu>
+<li><code>big-bang : Number Number Number World -> true</code><br>
+    <code>(big-bang width height n w)</code>
+   creates and shows a width x height canvas, 
+   starts the clock, 
+   makes it tick every n seconds, 
+   and makes w the first world
+
+<li><code>on-tick-event : (World -> World) -> true</code><br>
+   <code>(on-tick-event tock)</code>
+   calls tock on the current world for every clock tick;
+   the result is the next world 
+
+<li><code>on-key-event  : (KeyEvent World -> World) -> true</code><br>
+   <code>(on-key-event react)</code>
+   calls react on every keystroke event, 
+   with a char or a symbol representing the keystroke, 
+   and the current world; the result is the next world 
+
+<li><code>end-of-time   : -> World</code><br>
+   <code>(end-of-time)</code>
+   stops the clock. 
+</menu></p>
+
+<p>The rest are functions for creating scenes:
+<menu>
+<li><code>nw:rectangle   : Number Number Mode Color -> Image</code><br>
+   <code>(nw:rectangle width height mode color)</code>
+   creates a width x height rectangle, solid or outlined, 
+   with its anchor in the NW corner
+
+<li><code>empty-scene : Number Number -> Scene</code><br>
+   <code>(empty-scene width height)</code>
+   creates a width x height "scene" (frame with origin in NW)
+
+<li><code>place-image : Image Number Number Scence -> Scene</code><br>
+   <code>(place-image image x y scene)</code>
+   places image at (x,y) into scene; (x,y) are comp. graph. coordinates
+   
+<li><code>run-movie   : (Listof Image) -> true </code><br>
+   <code>(run-movie loi)</code>
+   shows the list of images in loi, time-delayed
+</menu></p>
+
+<p>Finally, the teachpack also adds some one new form of syntax to the
+language: 
+<menu>
+<li><code>
+   (<b>update</b> &lt;expression&gt; <b>produce</b> &lt;expression&gt;)</code><br>
+   update the canvas of the world with the first expression; the result
+   is the value of the second expression. 
+</menu>
+ Both update and produce are new keywords. </p>
+
+<p>The teachpack provides all the functions that image.ss provides. </p>
+
+{(include "foot.tinc")}
+
+
+

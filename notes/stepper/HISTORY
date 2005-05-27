@@ -1,0 +1,65 @@
+Stepper
+-------
+
+Changes for v101:
+
+all steps scroll to bottom automatically.
+constants like 'pi' are explicitly expanded in a step.
+stepper uses fewer threads internally.
+
+Changes for v102:
+
+Stepper handles intermediate level.
+UI redesigned to use "side-by-side" reduction.
+
+Changes for v103:
+
+PRs fixed: 1564, 1277, 1536, 1500, 1561, 1468, 1599, 1631
+
+Changes for v200:
+
+Total rewrite for new syntax. Addition of test suites.
+Addition of somewhat more systematic macro unwinding.
+Lots of bug fixes.
+
+Changes for v201:
+
+Minor bug fixes.
+
+Changes for v203:
+
+Much more systematic unwinding, intermediate almost ready, redesigned test suite
+
+Changes for v204:
+
+none.
+
+Changes for v205:
+
+v. minor bug fixes.
+
+Changes for v206:
+
+Stepper supports intermediate, minor bug fixes, major rewrite of interface
+ between reconstruct and display.
+
+Changes for v206p1:
+
+None.
+
+Changes for v207:
+
+None.
+
+Changes for v208:
+
+minor bug fixes.
+
+Changes for v209:
+
+None.
+
+Changes for v300: 
+
+updated for compatibility.
+

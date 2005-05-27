@@ -1,0 +1,597 @@
+
+MzScheme version 300 is different from previous versions of MzScheme
+in several significant ways:
+
+ * MzScheme's reader is case-sensitive for symbols/identifier by
+   default. Prefix an S-expression with #ci to make it
+   case-insensitive.
+
+ * MzScheme now directly supports Unicode. The "char" datatype
+   corresponds to a Unicode code point, and strings correspond to a
+   sequence of code points. Meanwhile, a new "byte string" datatype
+   implements a sequence of bytes (exact integers between 0 and 255),
+   and byte strings take over the old role of strings with respect to
+   low-level port operations.
+
+   Regexp matching works on both char strings and byte strings, and
+   MzScheme provides various operations for encoding chars as byte
+   strings. See the "Unicode" section below for more information.
+
+ * Related to the Unicode change, MzScheme now uses a distinct "path"
+   datatype for file and directory names, instead of using
+   strings. Built-in procedures that accept a path also accept a
+   string (and implicitly convert it); procedures that produce a path
+   never produce a string. See the "Paths" section below for more
+   details.
+
+ * The new "foreign.ss" library in MzLib provides access to foreign
+   libraries dynamically and directly in Scheme. See "PLT Foreign
+   Interface Manual" for more information.
+
+ * File-stream output ports (including file ports, the initial output
+   port, and ports created by `subprocess') are now block-buffered by
+   default, instead of line-buffered. The exception is when an output
+   port corresponds to a terminal, in which case it is line-buffered
+   by default. Also, the initial error port remains unbuffered.
+
+   TCP output ports are block buffered (instead of unbuffered) by
+   default.
+
+   The file-stream changes are especially likely to affect stdio-based
+   communication among OS-level processes. For example, when
+   communicating with an ispell subprocess, adding a newline at the
+   end of a command previously would have been enough to send the
+   command to ispell. Now, the output must be flushed explicitly
+   (using `flush-output') or the buffer mode must be explicitly
+   changed to by-line (using `file-stream-buffer-mode').
+
+   The TCP changes affect most TCP-based communication. Explicitly
+   flush output using `flush-output' or change the buffer mode using
+   `file-stream-buffer-mode'.
+
+ * The class system has changed slightly. The `rename' keyword has
+   been changed to `rename-super', but the new `super' expression form
+   eliminates the need for most `rename' declarations. Also, the class
+   system supports methods that cannot be overridden entirely, but
+   that can augmented through "inner" methods (as in Beta). Some
+   methods in MrEd's classes have been changed to augment-only
+   methods. Finally, `class*/names' has been eliminated, and `this',
+   `super-new', etc. are all exported by the "class.ss" module. See
+   the "Classes" section below for more details.
+
+ * The built-in exception hierarchy has been revised and streamlined
+   (again). See the "Exceptions" section below for more details.
+
+ * A continuation is no longer tied to its creating thread.
+
+   Various continuation barriers remain in place, such as around the
+   call to an exception handler or syntax expander, and also around
+   the start of MzScheme's main thread. The main thread's barrier
+   prevents continuations captured in the main thread from being used
+   in other threads (which should make sense, intuitively, because
+   then other threads could become "main"). A newly created thread,
+   however, has no such barrier, so that created threads can trade
+   continuations.
+
+ * The "parameter" construct has been redefined. The revised
+   `parameterize' is like the old one, except that:
+
+     - The `parameterize' form accepts only parameter procedures
+      created by `make-parameter', not arbitrary procedures that
+      accept 0 or 1 arguments.
+
+    - The body of a `parameterize' is in tail position with respect
+      to the entire `parameterize' expression.
+
+    - The given parameter procedures are not called on exit from a
+      `parameterize' form, so the parameter guards (if any) are not
+      called.
+
+    - A `parameterize' expression tends to execute much more quickly,
+      while parameter lookup can be slightly slower.
+
+    - A `parameterize' has the expected effect if a continuation is
+      captured during the `parameterize' body and invoked in a
+      different thread.
+
+   Preserved thread cells now provide precisely the semantics of old
+   "parameters" (but without a form like `parameterize'). Meanwhile, a
+   new "parameter" maps a continuation to a preserved thread cell,
+   which in turn provides a thread-specific value.
+
+ * The `break-enabled' procedure no longer corresponds to a parameter,
+   because changing the break-enable state implies a check for a
+   suspended break, and this check is incompatible with tail
+   evaluation of `parameterize' forms.
+
+   Related to this change, if a `with-handlers' handler is called to
+   handle an exception, breaks are initially disabled for the handler,
+   but the handler is not called in tail position with respect to the
+   `with-handlers' form. (The body is in tail position, though.) Use
+   `with-handlers*' to make a handler called in tail position, but
+   without breaks disabled.
+
+ * The `object-wait-multiple' function has been renamed to
+   `sync/timeout', and `sync' is the same procedure without a timeout
+   argument. The `object-wait-multiple/enable-break' procedure has
+   been renamed to `sync/timeout/enable-break', and
+   `sync/enable-break' enables breaks without a timeout.
+
+   The "waitable" procedures have been renamed to "evt" procedures in
+   general, often dropping "make-". "Evt" stands for "synchronizable
+   event". Several new event-generating procedures have been added.
+
+            Old                        New
+            ---                        ---
+            object-waitable?           evt?
+            waitables->waitable-set    choice-evt
+            make-channel-put-waitable  channel-put-evt
+            make-semaphore-peek        semaphore-peek-evt
+            make-wrapped-waitable      wrap-evt or handle-evt
+            make-guard-waitable        guard-evt
+            make-nack-guard-waitable   nack-guard-evt
+            make-poll-guard-waitable   poll-guard-evt
+            thread-dead-waitable       thread-dead-evt
+            thread-suspend-waitable    thread-suspend-evt
+            thread-resume-waitable     thread-resume-evt
+            udp-receive-waitable       udp-receive-ready-evt
+            udp-send-waitable          udp-send-ready-evt
+
+                                       alarm-evt
+                                       write-bytes-avail-evt
+                                       udp-receive!-evt
+                                       udp-send-to-evt
+                                       udp-send-evt
+                                       ...
+
+ * The new `require-for-template' core form serves as a kind of dual
+   to `require-for-syntax', and the new `define-for-syntax' and
+   `begin-for-syntax' forms allow macro helper functions to be placed
+   closer to macro definitions. See the MzScheme manual for more
+   information.
+
+ * Unexported module bindings are more secure because they can only
+   appear in certified contexts, and they can be made completely
+   secure by changing the current code inspector. Certification
+   management is automatic for most macros, but certification requires
+   changes to programs that transform the result of `expand' and feed
+   the transformed program back to `eval'.  See the MzScheme manual
+   for more information.
+
+======================================================================
+ Unicode
+======================================================================
+
+The "char" datatype means "Unicode code point", which technically
+should not be confused with "Unicode character". But most things that
+a literate human would call a "character" can be represented by a
+single code point in Unicode, so the "code point" approximation of
+"character" works well for many purposes. See section 1.2 in the
+MzScheme manual for an overview of MzScheme's approach to Unicode and
+locales.
+
+In particular, `integer->char' produces a character for every exact
+integer from 0 to #x10FFFF, except #xD800 to #xDFFF (which are
+reserved for surrogates in some encodings of Unicode).
+
+The `bytes->string/utf-8' and `string->bytes/utf-8' functions convert
+between byte string and character strings via UTF-8.  The
+`bytes->string/utf-8' procedure accepts an optional character to use
+in place of bad encoding sequences (otherwise an exception is raised).
+
+A general `bytes-convert' interface converts among different encodings
+in a bytes, including UTF-8 and the current locale's encoding. The
+conversion interface can deal with input that ends mid-encoding, so it
+can be used for conversion on streams, too. (The converter uses iconv
+where available.)
+
+Internally, strings are encoded as UCS-4, but symbols are encoded in
+UTF-8.
+
+Other details:
+
+ * The `char->latin-1-integer' and `latin-1-integer->char' procedures
+   have been removed.
+
+ * Added a `bytes-...' operation for most every `string-...' operation.
+   The `byte?' predicate returns true for exact integers in [0,255].
+
+ * `regexp' produces a char regexp, and `byte-regexp' produces a byte
+   regexp. A regexp can be matched against a byte string (or port), in
+   which case the byte string (or port) is interpreted as a UTF-8
+   encoding. Similarly, a regexp can be matched against a string, in
+   which case the string is encoded via UTF-8 before matching.
+
+ * A hash before a string makes it a byte-string literal:
+
+      (string->list "hi") = '(#\h #\i)
+      (bytes->list #"hi") = '(104 105)
+
+   Similarly, #rx"...." is a regexp, while #rx#"...." is a byte
+   regexp.
+
+ * Use #\uXXXX or #\UXXXXXX for arbitrary character constants, where
+   each X is a hexadecimal digit and the resulting number identifies a
+   code point. In a string (but not a byte string), use "\uXXXX" or
+   "\UXXXXXX".
+
+ * All of the `char-whitespace?', `char-alphabetic?', etc. functions
+   are defined in accordance with SRFI-14. New functions include
+   `char-title-case?', `char-blank?', `char-graphic?' `char-symbolic?',
+   and `char-titlecase'.
+
+ * The built-in string functions remain locale-independent (as in
+   SRFI-13), and `string-locale=?', etc. provide locale-sensitive
+   comparisons. The `string-locale-upcase' and
+   `string-locale-downcase' functions provide locale-sensitive case
+   conversion. No locale-sensitive character operations are provided
+   (the old ones have been removed).
+
+ * Case-insensitivity for symbols is consistent with SRFI-13, which
+   means using the 1-1 character mapping defined by the Unicode
+   consortium.
+
+   Number parsing recognizes only ASCII digits (and A-F/a-f) for
+   numbers, but all `char-whitespace?' characters are treated as
+   whitespace by `read'.
+
+ * MzScheme effectively assumes UTF-8 stdin and stdout, but library
+   procedures like `reencode-input-port' can be used to accommodate
+   other encodings, including the locale's encoding. DrScheme reads
+   and writes files using UTF-8.
+
+Ports
+-----
+
+"Port" still means "byte port" in MzScheme. Various port operations,
+like `read-string-avail!', have been renamed to to `read-bytes-avail!'.
+
+Character operations on a port, such as `read-char' and `read-string',
+are defined in terms of a UTF-8 parsing/writing of the port's byte
+stream. (With a custom-port wrapper and the byte-string conversion
+functions, other decodings can be implemented.)
+
+Position and column counting for a port is sensitive to UTF-8.  For
+example, reading #o302 followed by #o251 increments the position and
+column by 1, instead of 2.
+
+======================================================================
+ Paths
+======================================================================
+
+Under Unix, paths are fundamentally byte strings, not strings.
+Typically, the correct printing of a path use the current locale's
+encoding, but there's no guarantee that the path is well-formed using
+the current locale's encoding.
+
+To mediate these view of paths, MzScheme now supplies a "path"
+datatype, with operations `path->string', `string->path',
+`bytes->string', and `bytes->path'. Use `path->string' to print a path
+to the user, but use `path->bytes' to marshal a path (e.g., for saving
+a pathname in a file).
+
+All functions that consume a pathname accept a string and implicitly
+convert it (via the user's locale's default encoding) to a byte-string
+pathname.
+
+Under Windows, where a pathname is an array of UTF-16 code units,
+MzScheme internally converts to and from byte strings via
+UTF-8<->UTF-16, but extended to support unpaired surrogates and other
+code units that are invalid in an encoding. A byte string that is not
+a UTF-8 encoding will never correspond to a pathname under Windows.
+
+======================================================================
+ Classes
+======================================================================
+
+Changes to the `(lib "class.ss")' object system are in three parts: 
+
+ - a syntactic clean-up to eliminate `class*/names',
+ - a syntactic clean-up for super calls, and 
+ - new constructs for augment-only methods.
+
+Meanwhile, keywords such as `public' are now bound to syntactic forms
+that report out-of-context uses (much like `unquote' and
+`unquote-splicing').
+
+The Demise of `class*/names'
+----------------------------
+
+The `class*/names' form allowed the programmer to specify names to be
+bound instead of `this', `super-new', etc. The `class*' and `class'
+forms non-hygienically introduced those names. Macros that would
+naturally expand to `class' or `class*' had to expand to
+`class*/names', instead, because expanding to a non-hygienic macro
+usually does not work.
+
+In v300, `this', `super-new', etc. are exported by `(lib "class.ss")',
+and attempting to use the keywords outside of a `class' or `class*'
+form results in a syntax error. Meanwhile, macros can easily and
+correctly expand to uses of `class' and `class*'.
+
+Super Calls
+-----------
+
+A `rename' clause is no longer necessary in a typical class with
+method overrides, due to the new `super' form. For example,
+
+  (class splotch%
+    (rename [super-paint paint])
+    (define/override (paint x)
+      (super-paint x)
+      ....)
+    (super-new))
+
+can now be written
+
+  (class splotch%
+    (define/override (paint x)
+      (super paint x)
+      ....)
+    (super-new))
+
+An `override' declaration enables the corresponding (internal) method
+name to be used with the `super' form. The `super' form is legal only
+for expressions within a `class' (or `class*', etc.).
+
+For cases where `super' cannot be used --- either because no
+overriding method is declared in a class that calls a super method, or
+because the super call is in a lexically nested class --- the
+`rename-super' form can be used just like the old `rename' form.
+
+The script plt/notes/mzscheme/rename-super-fixup.ss may be useful for
+converting code that uses `rename' to use `super'.
+
+Augment-Only Methods
+--------------------
+
+A `pubment' clause declares a method like `public', but the resulting
+method cannot be overridden. Instead, the `pubment' method can use
+`inner' to dispatch to an augmenting method declared in a
+subclass. The word "pubment" is a contraction of "public, but merely
+augmentable in subclasses".
+
+The `inner' expression form includes an expression to evaluate when a
+subclass does not provide an augmenting method. A subclass augments a
+`pubment' method with `augment' instead of `override'. The `augment'
+declaration itself is non-overridable, and it can use `inner' to allow
+further augmentation in further subclasses.
+
+Example:
+
+  (define img%
+    (class object%
+      ;; No subclass can avoid clearing the dc in `paint',
+      ;; but a subclass can augment `paint' to draw afterward.
+      ;; The result indicates the size of the drawn image,
+      ;; which is 0 if the paint method is not augmented.
+      (define/pubment (paint dc)
+        (send dc clear)
+        (inner 0 paint dc))
+      (super-new)))
+
+  (define box%
+    (class img%
+      ;; Add a square to the drawing, but allow subclasses
+      ;; to draw first. Subclasses cannot skip the final
+      ;; square-drawing step. Note that the result of the
+      ;; method is the result of the `inner' call, which is 20
+      ;; if the paint method is not augmented.
+      (define/augment (paint dc)
+        (begin0
+         (inner 20 paint dc)
+         (send dc draw-rectangle 0 0 20 20)))
+      (super-new)))
+
+  (define frbox%
+    (class img%
+      ;; Add a larger red square as a background.
+      (define/augment (paint dc)
+        (send dc set-color (make-object color% "red"))
+        (send dc draw-rectangle -1 -1 22 22)
+        (send dc set-color (make-object color% "black"))
+        (inner 22 paint dc))
+      (super-new)))
+
+  (send (new img%) paint dc) ; => 0
+                             ; and clears the dc
+
+  (send (new box%) paint dc) ; => 20
+                             ; and clears the dc,
+                             ; then draws a black rectangle
+
+
+  
+  (send (new frbox%) paint dc) ; => 22
+                               ; and clears the dc,
+                               ; then draws a big red rectangle
+                               ; then draws a black rectangle
+
+An augmentation itself can be made overrideable using `augride', which
+is a contraction of "augment, but allow the augment to be overridden".
+Similarly, `overment' overrides a method, but allows subclasses only
+to augment this overriding.
+
+  (define dot%
+    (class img%
+      ;; This augmentation of img% can be replaced in
+      ;;  subclasses.
+      (define/augride (paint dc)
+        (send dc draw-ellipse 0 0 20 20)
+        20)
+      (super-new)))
+
+  (define emptydot%
+    (class dot%
+      ;; Draw nothing, but still claim to have
+      ;; drawn something of size 20. The dc is still
+      ;; cleared in `paint' from img%; the override
+      ;; replaces only `paint' in dot%.
+      (define/override (paint dc)
+        20)
+      (super-new)))
+
+  (define frdot%
+    (class dot%
+      ;; This method re-uses the `paint' augmentation in
+      ;; dot%, and allows further augmentation in subclasses
+      ;; (which cannot skip the painting here).
+      (define/overment (paint dc)
+        (send dc set-color (make-object color% "red"))
+        (send dc draw-ellipse -1 -1 22 22)
+        (send dc set-color (make-object color% "black"))
+        (super paint dc)
+        (inner 22 paint dc))
+      (super-new)))
+
+Note that `pubment', `augment', or `overment' without an `inner' call
+is effectively the same as `public-final', `augment-final', or
+`override-final'. However, the `-final' variants report a class error
+if a subclass attempts to augment the method, whereas the non-`-final'
+variants allow subclasses to include an augmentation (that is always
+ignored).
+
+In general:
+
+                  Can use `inner'?    Can use `super'?
+    public             N                    N
+    pubment            Y                    N
+    override           N                    Y
+    augment            Y                    N
+    overment           Y                    Y
+    augride            N                    N
+    public-final       N                    N
+    override-final     N                    Y
+    augment-final      N                    N
+
+
+The `rename-inner' form is similar to `rename-super'. Like
+`rename-super', it is rarely useful compared to `inner'. A use of a
+binding introduced by `rename-inner' must include a `lambda' pattern
+after the identifier to provide the default expression (i.e., the
+expression to evaluate if no subclass augments the method); see the
+documentation for further information.
+
+Keywords
+--------
+
+The various keywords for class clauses are now all defined as syntax
+and exported by `(lib "class.ss")'. Use of a keyword in an expression
+positions produces a syntax error.
+
+A complete list of keywords:
+
+	   private public override augment
+	   pubment overment augride
+           public-final override-final augment-final
+	   field init init-field
+	   rename-super rename-inner inherit
+	   super inner
+
+
+======================================================================
+ Exceptions
+======================================================================
+
+The new exception hierarchy distinguishes between breaks and failures
+at nearly the top level of the hierarchy. In particular, most
+`with-handlers' expressions should use the `exn:fail?' predicate,
+instead of the old (and now removed) `not-break-exn?' predicate.
+
+The "type" and "mismatch" exceptions have been merged into
+`exn:fail:contract'. Similarly, `exn:i/o:tcp' and `exn:i/o:udp'
+have been merged into `exn:fail:network'.
+
+Many exception fields have been eliminated, but certain exceptions
+contain multiple source locations instead of just one. Instead of a
+single type for all exceptions with source locations, the
+`exn:srclocs' property identifies exceptions with source-location
+information.
+
+Field guards are triggered when an exception record is created, and it
+ checks the "type" of the field arguments. Mutators are not exported
+ for exception fields.
+
+Structs:
+
+  exn  - message continuation-marks
+    exn:fail
+      exn:fail:contract
+        exn:fail:contract:arity
+        exn:fail:contract:divide-by-zero
+        exn:fail:contract:continuation
+        exn:fail:contract:variable  - id
+      exn:fail:syntax  - exprs
+      exn:fail:read  - sources
+        exn:fail:read:eof
+        exn:fail:read:non-char
+      exn:fail:filesystem
+        exn:fail:filesystem:exists
+        exn:fail:filesystem:version
+      exn:fail:network
+      exn:fail:out-of-memory
+      exn:fail:unsupported
+    exn:break  - continuation
+
+  special-comment  - width
+  ; Note: not exn:special-comment, because it doesn't need
+  ;  a message or marks
+
+Properties:
+
+ exn:srclocs  - accessor
+
+======================================================================
+ Inside MzScheme (extend MzScheme via C)
+======================================================================
+
+A structure that represents a Scheme type should now start with a
+Scheme_Object, instead of Scheme_Type. A Scheme_Object contains only a
+Scheme_Type (except in 3m mode), so it takes the same amount of space
+as before. But using Scheme_Object instead of Scheme_Type ensures that
+casts to and from Scheme_Object* do not run afoul of C99's aliasing
+assumptions.
+
+SCHEME_STRINGP(), etc. have been replaced by SCHEME_CHAR_STRINGP(),
+etc. and SCHEME_BYTE_STRINGP(), etc.  A character is represented by the
+`mzchar' type, which corresponds to an unsigned integer (4 bytes).
+Use the functions scheme_char_string_to_byte_string() and
+scheme_byte_string_to_char_string() to convert between string types
+via UTF-8. Several UTF-8/UTF-16 <-> mzchar conversion functions are
+also provided.
+
+In addition to functions scheme_char_string...() which operate on
+`mzchar' arrays, some functions scheme_utf8_string...() are provided,
+which accept a `char' array and interpret it as a UTF-8 encoding.
+
+SCHEME_PATHP() recognizes the new path type. Use SCHEME_STRING_PATHP()
+to recognize either a string or path, and use scheme_string_to_path()
+to convert a string to a path.
+
+The error_buf field of Scheme_Thread is now a pointer to a mz_jmp_buf,
+instead of an inlined mz_jmp_buf. The protocol for temporarily
+catching an exception is now as follows:
+
+  mz_jmp_buf *save, fresh;
+  save = scheme_current_thread->error_buf;
+  scheme_current_thread->error_buf = &fresh;
+  if (scheme_setjmp(scheme_error_buf)) {
+    /* There was an error or continuation invocation */
+    if (scheme_jumping_to_continuation) {
+      /* It was a continuation jump */
+      scheme_longjmp(*save, 1);
+      /* To block the jump, instead: scheme_clear_escape(); */
+    } else {
+      /* It was a primitive error escape */
+    }
+  } else {
+    /* Whatever might escape. */
+    ....
+  }
+  scheme_current_thread->error_buf = save;
+
+The input and output port driver interfaces have changed to accommodate
+progress events and commits (for input ports) and write events (for
+output ports). For most port types, the new features can be
+implemented automatically by MzScheme with a small amount of extra
+work in the driver.

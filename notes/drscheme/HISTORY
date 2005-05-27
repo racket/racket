@@ -1,0 +1,1023 @@
+------------------------------
+        Version 299
+------------------------------
+
+ - Added support for user-definable keybindings. See the new
+   menus at the bottom of the Edit menu (and their
+   documentation) for details.
+
+ - DrScheme's background color for the definitions and
+   interactions window is now configurable.
+
+ - The regular expression language for the lexer has changed.
+   See doc.txt in the parser-tools collection.
+   (This isn't a DrScheme change per se.)
+
+ - Check syntax can (when using modules) go to the
+   definition site of an imported variable.
+
+ - the PLTDRDEBUG environment variable now works much
+   better. Thanks to improvements in cm, setting it now
+   builds .zos with errortrace and should make porting tools
+   to v299 much easier.
+
+ - set the PLTDRBREAK environment variable to get a window
+   with two buttons that are useful for debugging deadlocks
+   & infinite loops. The buttons break drscheme's
+   eventspace's main thread and all threads started by
+   drscheme (and tools) resp. Useful in combination with
+   PLTDRDEBUG
+
+ - tool & framework interface changes:
+
+   . remove exn:locs; this functionality is now in
+     mzscheme itself.
+
+   . removed drscheme:unit:make-bitmap. Use
+     (lib "bitmap-label.ss" "mrlib") instead.
+
+   . contract name changes (overall, removed all of the /f,
+     /p, and ? suffixes in favor of the /c suffix)
+
+      not/f => not/c
+      box/p => box/c
+      cons/p => cons/c
+      vector/p => vector/c
+      list/p => list/c
+      any? => any/c
+      printable? => printable/c
+      false? => false/c
+      natural-number? => natural-number/c
+
+
+   . The framework still probhits editing of files that are
+     read-only, but rather than using the editor<%>'s lock
+     method, it overrides can-insert? and can-delete? in
+     text%. Accordingly, several and interfaces are now gone
+     and the functionality has moved into existing
+     mixins. These are now gone:
+
+       frame:file<%>
+       frame:file-mixin
+       frame:text-info-file%
+
+   . can-close? in editor:basic is now an augmentable method.
+
+   . render-value and render-value/format no longer take the
+     put-snip argument. Use write-special on the port
+     instead.
+
+   . order-manuals in
+     drscheme:tool:language-configuration<%> now accepts
+     (and returns) lists of bytes, not lists of strings.
+
+   . front-end/complete-program and front-end/interaction
+     methods now accept a port, instead of an `input'.
+
+   . added an extra argument to create-executable in
+     drscheme:language:language<%> and get-init-code in
+     drscheme:language:module-based-language<%>
+
+ - errortrace internal interface has changed (see docs for
+   details)
+
+ - added ->r contract combinator
+
+------------------------------
+        Version 209
+------------------------------
+
+* Several small errors in the ProfessorJ compiler have been corrected.
+  Additionally, the native method interface has been updated to
+  provide more access to class members by the native method.
+
+* The interfaces and implementations for several HtDP and HtDCH
+  teachpacks have changed:
+  + the World class for HtDCH now supplies 'draw' and 'erase' methods
+  + its event callbacks are guaranteed to call erase before and draw
+    after handling a tick or keyboard event
+  + the world.ss teachpack provides a nw:rectangle function for
+    creating rectangles whose pinhole is in the northwest corner.
+
+* Oleg Kiselyov's SSAX/SXML is included in the distribution.
+
+  The SSAX/SXML libraries provides functions for reading, writing and
+  manipulating XML data.  In addition, the package supports the
+  definition of XML languages and exports machinery for transforming
+  XML documents based on concise specifications.  SSAX/SXML is the
+  foundation for a variety of other XML packages in Scheme.  For more
+  information, see http://ssax.sourceforge.net/ and the documentation
+  in the "ssax" collection.
+
+* Swindle is now included and maintained with PLT Scheme.
+
+  Swindle is an extension of PLT Scheme.  The main feature is a
+  CLOS-like object system based on Tiny-CLOS from Xerox.  Additional
+  syntactic extensions include: :keyword values and optional CL-style
+  argument lists; syntactic sugar for `define's and `let's; generic
+  `set!'; `defsubst' & `letsubst' for defining simple macros,
+  `letsyntax', `letsubst' and `letmacro' than can bind identifier
+  macros; a list-comprehension macro `list-of' with an extensive
+  generic version `collect'; an `echo' mechanism for complex output
+  formatting including list iterations; customizing printings via a
+  `print-object' generic; `amb', adopted from Dorai's TYSiFD, and
+  more.
+
+  Like Scheme in DrScheme, Swindle has several language levels.  It is
+  also possible to use its features on a selective basis.
+
+  Those extensions that are not directly related to Tiny CLOS are
+  likely to migrate into MzLib.
+
+------------------------------
+        Version 207
+------------------------------
+
+ - Wizards for ProfessorJ added 
+   + union wizard
+   + class wizard 
+
+------------------------------
+        Version 206p1
+------------------------------
+
+ - Check Syntax disabled in professorJ languages. 
+
+------------------------------
+        Version 206
+------------------------------
+
+ - Help Desk searching is now language-sensitive.
+
+ - Check syntax is now integrated (better) with the syntax
+   colorer.
+
+ - Check Syntax now distinguishes between require'd
+   and locally defined identifiers.
+
+ - added the ability to specify a command-line to the module
+   language.
+
+ - Help Desk's status messages are now in the frame and
+   it's break button is also in the frame (no more modal
+   dialog)
+
+ - Check Syntax now does a better job of navigating amoung
+   occurrences of a single variable. The popup menu lets you
+   go from a bound occurrence to a binding occurrence and
+   from a binding occurrence to the next binding occurrence.
+
+   Also added two keystrokes: c-x;n to go to the next bound
+   occurrence and c-x;b to to the binding occurrence.
+
+ - show menu => view menu, added show/hide for the toolbar
+
+ - multi file search works much better
+
+------------------------------
+        Version 205
+------------------------------
+
+  - the teaching languages color the portion of the program
+    that has not been tested in dark red (using a simple
+    syntactic coverage criterion -- dark red means untested,
+    but not dark red doesn't mean fully tested, of course).
+
+  - added a test coverage annotation for other languages in
+    the "details" portion of the languages dialog; run the
+    program and it colors the code that was executed in
+    green and code that wasn't executed in red.
+
+  - fixed up help desk fonts, so that the font size in help
+    desk is now linked to the font size in drscheme proper.
+
+  - added support for editor modes to drscheme.
+
+  - drscheme shows the stack via arrows on the program text
+    when an error occurs (and debugging is on)
+
+  - added to special menu item: "insert delta" (to mean
+    define) in parallel to the insert lambda menu item.
+
+  - framework's scheme-mode font changed to be in an editor
+    mixin.
+
+  - macos: drscheme doesn't quit when all windows are closed
+    anymore.
+
+------------------------------
+        Version 204
+------------------------------
+
+  - contract -> supports multiple values using this syntax:
+
+   (-> integer? (values integer? integer?))
+
+  - parenthesis highlight color is now configurable
+
+  - integrated the module browser into the main drscheme
+    window. Use the show menu to open a panel on the lhs of
+    the drscheme window containing a DAG representing the
+    modules that are required (only works for programs in
+    modules).
+
+  - integrated Bruce Hauman's rewrite of the match.ss
+    library (ongoing).
+
+  - added arrows to check syntax that show the (syntactic)
+    tail structure of the program.
+
+  - fixed many many problems with Help Desk. Some of the
+    more interesting ones:
+    - manual downloading now works.
+    - bug report form is a mred window now.
+    - doc.txt highlighting is in the right place now
+    - doc.txt search restults now go to the right place
+    - servlets are now modules (with no more free vars)
+    - browser menus work properly
+    - urls outside of our documentation use an external browser
+    - eliminated many (now unecessary) redirections
+    - various responsiveness improvements 
+
+  - help desk as a standalone web server isn't supported
+    anymore.
+
+  - added a status line class to the framework, which is
+    used for check syntax and the module browser. both show
+    status as the check the program and show information on
+    mouse-over. Also, the contour window shows you the line
+    under the mouse in a status line on mouse over.
+
+  - added an extra level of hierarchy to the language
+    dialog, but without the turn-down triangles. this helps
+    organize the language dialog somewhat.
+
+  - the top level function declarations in algol60 are now
+    available in the REPL and in the test suite tool
+
+  - Removed `Windows' menu from windows and unix versions.
+
+  - Windows installer generates Program menu shortcuts for
+    all users
+
+------------------------------
+        Version 203
+------------------------------
+
+GENERAL
+-------
+
+- added test suite support for use with the How to Design
+  Programs
+
+- added support for recovering autosave files when DrScheme
+  crashes
+
+- the draw.ss teachpack now provides the function 
+
+     get-key-event : -> Key 
+
+   This function enables programmers who use the draw.ss
+   teachpack to write interactive drawing games.
+   Warning: The function fails intermittently on Mac OS X. We intend 
+   to fix this problem in a future release.
+
+- Help Desk users can choose whether they wish to use a
+  frame-based version.  A toggle switch for this choice (in the
+  form of a link) appears on the Help Desk home page.  It can
+  also be changed in the Help Desk configuration.
+
+- Help Desk users can once again use the PLT internal browser;
+  look for the browser preference in DrScheme's preferences panel
+
+- removed an error in MrEd for Windows that was a frequent source of 
+  instability
+
+------------------------------
+        Version 202
+------------------------------
+
+GENERAL
+-------
+
+- improved the comment boxes
+
+- interaction between Help Desk and the external browser
+  should be much better
+
+------------------------------
+        Version 201
+------------------------------
+
+GENERAL
+-------
+
+- many misc bug fixes
+
+- improved the create executable interface
+
+- got rid of the "text box" and added in "comment"
+  boxes. commenting out code now uses those comment boxes.
+
+- Help Desk now uses an external browser
+
+FRAMEWORK AND TOOLS
+-------------------
+
+- contracts have moved from
+
+   (lib "specs.ss" "framework")
+
+to
+
+  (lib "contracts.ss")
+
+- The create-executable method of
+  drscheme:language:language<%> has changed. It no longer
+  receives the filename for the executable; instead the
+  method must prompt the user. See either
+  `drscheme:language:put-executable-file' or
+  `drscheme:language:create-executable-gui' for two methods
+  of getting a filename from the user. 
+
+
+------------------------------
+        Version 200
+------------------------------
+
+THINGS MISSING (as compared to 103)
+
+- project manager (use `module' instead)
+
+GENERAL
+
+- added profiling support. DrScheme colors your program text
+  based on the time spent in each portion of the code.
+
+- Added support for other natural languages for DrScheme's
+  GUI. French and Spanish are most up to date; German and
+  Danish are also included (but incomplete).
+
+- added a module browser for seeing the entire program and
+  dependencies among modules in a single window.
+
+- added XML boxes (a quasi-quote/unquote feature for XML
+  using embedded editors). See the DrScheme manual for
+  details.
+
+- added a code ``contour'' window that is
+  visible along the rhs of the drscheme
+  window. Use the `show' menu to make 
+  it visible.
+
+- drscheme's new version window is now a 
+  modified version of the language dialog
+
+- the language settings are now frame-specific.
+  If you change the language in one
+  window, it won't affect execute in another window;
+  the most recently set language is what is
+  used for newly created windows.
+
+- added "Open recent" menu item
+
+- added a preference called "Reuse existing DrScheme frame"
+  that, when opening new files, causes DrScheme to replace
+  the existing frame.
+
+- bug reports now go to the new bugs.plt-scheme.org
+  server (and to bugs@plt-scheme.org)
+
+- error messages output improved
+
+- added a mechanism for collapsing and expanding
+  sexpressions to drscheme. right-click to collapse the
+  enclosing sexpression to something like (...) and right
+  click on that to expand it back to the previous text.
+
+- added an emacs-like c-x c-b feature to drscheme.
+  Type <menukey>-j to popup a window of the open frames
+  and choose one without using the mouse by typing.
+
+- added <menukey>-minus and <menukey>-plus as shortcuts to
+  move to the next and previous menus
+
+- The enter key now submits the interaction in the REPL,
+  even if the cursor isn't at the end of a sexpression.
+
+- It is possible to switch the interface language of
+  DrSheme's GUI. The mechanism is in place, in any
+  case. The translations aren't yet, so you probably
+  don't want to try to switch. Also, you will see
+  funny warnings when starting up DrScheme to that
+  effect. Ignore them unless you are working on
+  the translation.
+
+- drscheme constructor and quasiquote printers
+  now shows syntax's structure, and module-path-index
+  structure.
+
+- DrScheme's quasiquote printer now works a little bit
+  better for expressions like '('a 'a).
+  It used to show `((,'quote a) (,'quote a)), but
+  now it shows `('a 'a).
+
+- The portion of space between the definitions and
+  interactions window is now interactively changable.
+
+- the bug report form now connects to bugs.drscheme.org
+  instead of cs.rice.edu directly, so earthlink users
+  should be able to submit PRs via Help Desk.
+
+- adding splitting of the definitions and interactions
+  canvases, to be able to see two different parts of the
+  buffer simultaneously
+
+- when saving or executing, 
+  if the file has been overwritten in the filesystem, 
+  drscheme prompts you to make sure you want to overwrite
+  or execute the file.
+   
+- added Teach Youself Scheme in Fixnum Days to 
+  DrScheme's documentation.
+
+- implicit sequencing has been eliminated from the advanced language 
+  level in order to give better error messages. Use an explicit `begin' 
+  for sequencing. (this change was made between 102 and
+  103, but we forgot to put it into the release notes)
+
+- teachpacks finally support macro definitions.
+ 
+- there is now a little eof icon next to the input box when
+  input is expected. you can click it send an eof. It closes
+  the input port until execute is next clicked.
+
+- many minor improvements to the Help Desk html renderer.
+
+- the filename button (in the top right of the drs frame)
+  now pops up a menu of the directories
+  that contain the saved file's directories. Choose one
+  to open a `get-file' dialog in that directory.
+ 
+- (without checking the syntax) the right click context-sensitive menu
+  has an entry to search based either on the selection, or on the text
+  that was clicked on.
+
+- DrScheme now prints exact real numbers as graphical fractions
+  (instead of the (+ 1 1/2) notation). These are also valid as
+  input, but you have to copy and paste to get them into your
+  program.
+
+- Added an "insert fraction" menu item to the edit menu for
+  inserting fractions directly into the program.
+
+FRAMEWORK and TOOLS
+-------------------
+
+- added HO function contracts.
+
+- it is now possible to add languages to DrScheme,
+  as tools.
+
+- changed many filenames to match the new -unit.ss, and -sig.ss
+  convention instead of the old r.ss and s.ss convention.
+
+- changed guiutils.ss to gui-utils.ss in framework collection.
+
+- tools are now specified in info.ss files in top-level
+  collections, rather than in a subcollection of the
+  drscheme collection (see the tools manual for details).
+
+- added gui-utils:alphabetic-list-box% to framework
+
+- added `expand-program' to tools interface for
+  tools that process program text.
+  
+- exit:exit and exit:can-exit? now accept optional 
+  booleans that specify if the user should be asked
+  about quitting.
+
+- the splash screen now only allows a single
+  splash screen (per namespace).
+
+Version 103:
+
+General
+-------
+
+ - typing characters in to the definitions and interactions window
+   should be more responsive now (it was noticably slow on slower
+   machines)
+
+ - files added to projects are now stored as relative files, 
+   by default. (use project menu to change the default)
+
+ - project files are saved using a platform-independant syntax for
+   paths now.
+
+ - Using file|open and choosing a project file (based on contents) will open
+   the project file. (this only will work with project files saved in this
+   version -- old project files won't be recognized until they are
+   saved once.)
+
+ - Opening or a .plt file will install the .plt file, after querying the user.
+
+ - added break button to project windows 
+   (does the same thing as the break menu item always did)
+
+ - added save button and little "full name" thingy to project
+   frames
+
+ - DrScheme permits the use of "." (period) as an identifier in the
+   student language levels.
+
+ - implicit sequencing has been eliminated from the advanced language
+   level in order to give better error messages. Use an explicit `begin'
+   for sequencing.
+
+Version 102:
+
+General
+-------
+
+ - the help desk language level specific documentation has been
+   integrated into drscheme.
+
+ - errortrace-like facility is now available in drscheme debug
+   language levels. Click on the bug next to an error message to see
+   a trace of the continuation of the error.
+
+ - drscheme-jr now supports teachpacks 
+   (those that don't use GUIs, like htdp/dir.ss)
+
+ - launchers can now be run from any directory.
+   They do not need to be saved in a particular place (this has been
+   true for some time, but it is officially true now.).
+
+ - the debug full scheme languages now allow loading of files
+   that contain graphics.
+
+ - #! is treated like a comment when executing the defintions window,
+   if it is the first two characters in the definitions window.
+
+ - rarely used save menu items relegated to sub-menu.
+
+ - added a "keymap" menu to the edit menu (shortcut: k)
+   that opens a window where you can see all of the key
+   bindings' names and short cuts, and you can choose one
+   to invoke.
+
+ - added a "Kill" menu item that kills all computation and reclaims
+   all resources from the program that drscheme is executing.
+   This is useful for multi-threaded apps that get out of hand.
+
+ - meta-control-d, meta-control-u, meta-shift-control-d, meta-shift-control-u
+   keybindings all restored.
+
+ - drscheme now has a little button on the bar that lets you hop
+   around between definitions in the program. It is approximate in
+   that it doesn't really know every detail about the lexical
+   structure of scheme, but it should still be quite useful. 
+
+ - interactions window now shows the names of the teachpacks that
+   were installed at last execute.
+
+ - drscheme now allows multiple teachpacks.
+
+ - teachpack names are not in the area with the execute button, instead
+   they are now shown in the language menu.
+
+ - repl errors that are in some loaded file have little clickable
+   icons that open the file and show the error's source location in
+   the file.
+   
+ - Only the platform-specific dialogs are used in drscheme now, on
+   all platforms. The preference has been removed from the dialog.
+
+ - project files are `load'able. That is, if you have the right
+   language settings, you can do 
+   
+           mzscheme -qmvr myproj.proj
+
+   and have the same effect as clicking execute on the project
+   window. For mred, you will need to do something like this:
+
+           mred -qmvr myproj.proj -e "(yield (make-semaphore 0))"
+
+   so that mred doesn't quit automatically.
+
+ - Help Desk now has a "feeling lucky" option ala google (menu
+   shortcut: l). It goes directly to the first item that would have
+   been found in a regular search.
+
+ - Clicking on an error message link in drscheme now uses the "feeling
+   lucky" style search in help desk.
+
+ - clicking on the name in the topleft of the drscheme frame opens a
+   little window with the full path.
+
+ - check syntax now shows its syntax errors in a separate window.
+
+ - the teaching languages now come with:
+
+     make-posn, posn-x, posn-y, and posn?
+
+   by default (no library required).
+
+ - teaching levels print exact numbers whose denominators are evenly
+   disivible by 2 and 5 as decimals.
+
+ - teaching levels treat input decimals as exact numbers.
+
+ - in the main help-desk window, space does pgdn and backspace does
+   pgup, ala netscape. Also, typing return or enter while the cursor
+   is on a link follows the link.
+
+ - added class/d macro. It's syntax is like that for a unit, but it
+   defines a class. Roughly:
+
+   (class/d
+    super-expresion
+    init-args
+    ((public var ...)
+     (override var ...)
+     (inherit var ...)
+     (rename (var var) ...))
+ 
+     definitions-and-expressions ...)
+
+    This a new part of macro.ss in the mzlib library
+
+Tools and Framework
+-------------------
+
+ - drscheme:rep:process-text/zodiac and
+   drscheme:rep:process-text/no-zodiac
+   are now called drscheme:load-handler:process-text/zodiac and
+   drscheme:load-handler:process-text/no-zodiac.
+
+ - added a slew of -on-demand methods to frame:standard-menus-mixin
+
+ - the framework now imports a definition of the preferences
+   file location. Use this to have a separate preferences file
+   for each different application.
+
+ - do not use 'drscheme:settings anymore to get the current
+   language settings from drscheme. Now, use
+
+      drscheme:language:settings-preferences-symbol
+
+   (which is bound to the right symbol) instead.
+
+ - setup plt's ``clean'' info.ss flag does not recur
+   into subdirectories anymore.
+
+ - the graphics library (sometimes known as sixlib) no longer 
+   accepts any scaling arguments. 
+
+ - the framework's preferences system now requires you to
+   set the marshall/unmarshalling functions (if any) before
+   setting the default preference.
+
+ - drscheme now supports site-specific default preferences.
+   To use, create a file prefs.ss in the defaults collection
+   that is a copy of the preferences file that you want to 
+   be the defaults. Then, if the user-specific preferences file
+   doesn't exist (or the preferences in it are from an old version),
+   the contents of the prefs.ss file in the defaults collection is
+   used as the preferences.
+
+ - drscheme now wraps uses with-handlers so that if a tool 
+   signals an error when it is loaded or invoked, it just
+   puts a window with the error message and continues, instead
+   of keeping drscheme from starting up.
+
+ - the .plt installer no longer automatically deletes compiled
+   files when installing a .plt file. 
+
+ - setup-plt now uses the 'clean flag in info.ss to determine
+   the files to be deleted when --clean-ing a collection. It
+   defaults to the files in the "compiled" sub-collection of a
+   collection.
+
+ - setup-plt no longer automatically runs --clean when installing
+   a .plt file.
+
+ - framework:
+   - added canonicalize-keybinding-string
+   - added aug-keymap%, aug-keymap<%>
+   - editor:basic now sets it's keymap to an
+     aug-keymap<%> during initialization.
+
+ - the framework's info frame mixins no longer require frame:editor<%> 
+   as an input. Also, they are moved lower in the hierarchy of the
+   instantiated mixin classes in the framework. This affects all of the
+   frame:XX% classes.
+
+ tools:
+   - ensure-interactions-shown is now ensure-rep-shown
+   - do-many-buffer-evals is now do-many-text-evals
+
+ - clever-file-format now symetrically changes the file's format to
+   'standard. It used to rever the file format to 'text when there
+   were no more images in it. Now, it also changes back to non-'text
+   when images (and other non-string-snips) are added back.
+
+ - the framework's gui-utils:get-snips/chars-from-buffer is now
+   gui-utils:get-snips/chars-from-text
+
+ - zodiac now supports graphical expressions. If a snip implements
+   zodiac's expand<%> interface, zodiac calls a method of the snip to
+   expand it. 
+   
+ - the drscheme:get/extend:extend-* functions no longer haver %s at
+   the end of their names.
+
+
+PRS
+---
+
+  1507: thread error freezes repl
+  1506: Help Desk exits gracelessly when interrupted
+  1503: Launcher prints debug info
+  1502: (define's hard to find
+  1499: text mode display auto-wraps
+  1490: alt-tduring execution has different binding
+  1484: cannot paste in search box on macos
+  1480: default launcher name is "Save A Launcher"
+  1478: parity reversed in Dr Jr command line flag
+  1461: Kill menu problems
+  1460: Help Desk has empty preferences
+  1459: search menu items work on empty search text
+  1456: teachpacks don't add
+  1455: project windows never leave `Windows' menu
+  1437:
+  1428: setup -c deletes files for all platforms
+  1424: long (list ...) displays don't display correctly
+  1405: memory usage box should be read only
+  1398: Downloading doc files requires restart
+  1377: replacing by empty string loops
+  1341:
+  1334:
+  1330: killing repl, then check-syntax hangs
+  1306:
+  1297:
+  1235:
+  1171:
+  1144: match docs not setup right in Help Desk
+   737: mred:preferences library too global
+   599: mac: can't double click to open files while mred starts up
+   406: bad error message for sixlib op
+
+  1274, 1280, 1264, 1260, 1239, 1225, 1220, 1268, 1209, 1208,
+  1196, 1180, 1096, 1088, 1043, 771, 752, 846
+
+  1358, 1344, 1341, 1329, 1322, 1242 (docs not yet built), 1235 
+
+
+Version 101:
+
+General
+-------
+
+ - The teaching libraries are now called teachpacks. See the teachpack
+   release notes for more information.
+
+ - DrScheme's languages have changed (again). The langauges are now:
+
+   - Beginning Student
+   - Intermediate Student
+   - Advanced Student
+   - Full Scheme, which contains:
+     - Graphical Full Scheme (with and without debugging), and
+     - Textual Full Scheme (with and without debugging)
+
+ - Help Desk now supports bug report submissions. Please use it in
+   favor of the web based form. To submit a bug, follow the "Sumbit a
+   Bug" link near the bottom of Help Desk's front page
+
+ - On European keyboards, the backslash character
+   may not work properly in DrScheme.  If you 
+   experience this problem, comment out this line:
+
+        (map-meta "\\" "remove-space")
+
+   in PLTHOME/collects/framework/keymap.ss.
+
+ - For tools, invoke-library is now called invoke-teachpack.
+
+ - Renamed two files in the graphics collection:
+    graphic.ss is now graphics.ss
+    graphics.ss is now graphicss.ss
+
+ - DrScheme's print menu now inserts the time, date and filename in the
+   header of the file to be printed.
+
+ - comment/uncomment is improved. Now, it blindly adds a semicolon to the 
+   front of each line (and doesn't add extra semicolons on following lines)
+   and aways removes one semicolon (if present) from the front of each line.
+
+ - Parenthesis highlighting now turns unmatched parens red
+   in addition to turning matched parenthesis regions grey.
+   Also (now that the caret flashes) if the caret is between two
+   parens, both before and after parens will be highlighted,
+   not just the ones before.
+   
+   Thus, every time the cursor is next to an uncommented
+   paren, the programmer sees some feedback about the paren.
+
+Version 100:
+
+General
+-------
+
+ - DrScheme's languages have changed. The new languages are:
+
+    - Beginner
+    - Intermediate
+    - Advanced
+    - MzScheme
+    - MrEd
+
+   The first three languages are essentially the same as in version
+   53, except that graphics primitives have been removed. (Instead,
+   domain-specific graphics commands can be loaded as libraries.) The
+   turtles remain in the advanced language.
+
+   The MzScheme and MrEd languages match exactly the languages
+   provided by the MzScheme and MrEd executables.
+
+ - A simple algebraic stepper, dubbed The Foot, is now available.  The
+   Foot permits users to construct a source-level evaluation trace for
+   programs written in the Beginner language. It will be expanded in
+   future releases.
+
+ - DrScheme's Help Desk provides online help for DrScheme, its
+   languages, and its libraries.
+
+ - Graphics functions were removed from the teaching languages
+   (Beginner, Intermediate, and Advanced), except Turtles in
+   Advanced. To use graphics functions, you must select a library (and
+   the teaching libraries are not yet updated).
+
+ - The old viewport-based graphics library can be loaded into the MrEd
+   Debug language via (require-library "graphic.ss" "graphics").
+
+ - I/O within DrScheme is substantially improved.
+
+ - The library and tool interfaces for extended DrScheme have
+   changed.
+
+
+Version 53:
+
+General
+-------
+
+ - view menu items now have accelerators
+
+ - (<= exp) isn't allowed in beginner. (same for <, >, and >=)
+
+ - print primitive is now setup correctly to print based on the language level
+
+ - paren-matching in semi-colon comments is disabled
+
+ - info panel "running" message is now aligned correctly 
+ 
+ - The check synatax and analyze buttons are now disabled during evaluation
+
+ - library directory now starts in "MZLIB_COLLECTS_DIR/../../lib"
+   which is our best approximation to "PLTHOME/lib"
+ 
+ - elevator library can now select more than one floor at a time
+
+
+Version 52:
+
+General
+-------
+
+- The words "running" or "not running" at the bottom of the
+  DrScheme frame indicate whether or not work is happening in the 
+  user's program. 
+
+- a "Windows" menu has been added which keeps track of the currently
+  open drscheme windows.
+
+- the source locations for "load"ed files now match the numbers 
+  in the bottom of the drscheme window.
+
+- the thread that evaluations (including execution) take place on is
+  the same as the eventspace's main thread, unless the evaluation
+  thread is killed. In that case, the eventspace's main thread is
+  re-generated, but the execution thread does not.
+
+- The REPL implementation has been cleaned up.
+
+- the turtles window does not survive across executions anymore
+
+- the Quasi-R4RS language level has been renamed to R4RS+
+
+DrScheme Tools/Libraries
+------------------------
+
+- new methods on rep:edit%: report-exception-error accepts an exception and
+  prints the error message in the console.
+
+- send-scheme is outdated. Use run-in-evaluation-thread instead
+
+- the drscheme:tool^ signature has changed. A new subunit, "basis" has
+  been aded and the process-finish struct is now in that subunit. So,
+  drscheme:language:process-finish? becomes
+  drscheme:basis:process-finish?, etc.
+  
+  The process-finish structure no longer has a boolean indicating sucess. 
+  Instead, an exception is raised.
+
+
+- the settings for the language have been re-aranged
+  - there are two new parameters, exported from the basis
+    subunit of drscheme:export^, current-setting and current-vocabulary
+    - current-vocabulary contains the vocabulary that zodiac uses to
+      perform macro expansion
+    - current-setting is bound to a setting struct, which encapsulates
+      all of the information about the language level
+  - the process-*/zodiac and process-*/no-zodiac proceudres
+    are no longer methods and their arguments have changed
+
+
+Version 51:
+
+General 
+-------
+- fixed error message for "eq?" and "cons" at beginner level.
+
+- check syntax does not work with an unitialized repl when:
+  the source contains define-macro. (won't be fixed in the release)
+
+- eval no longer loops forever in mred vocabulary 
+
+- searching keybindings have changed. There are four distinct actions:
+   action1: move keyboard focus to the searching window, opening it if necessary, 
+            or if already there search forward
+   action2: move keyboard focus to the searching window, opening it if necessary, 
+            or if already there search backward.
+   action3: search again, in the same direction
+   action4: move the focus between the main window, searching window and replacment window
+   action5: hide the searching window
+
+The actions are mapped to different keys, based on the platform. 
+
+On unix:
+ action1 => control-s, meta-%
+ action2 => control-r
+ action3 => f3
+ action4 => control-i
+ action5 => control-g
+
+On the macintosh:
+  action1 => command-f
+  action2 => command-r
+  action3 => command-g
+  action4 => command-o
+  action5 => command-.
+
+On windows:
+ action1 => control-f
+ action2 => control-r
+ action3 => f3, control-g
+ action4 => control-i
+ action5 => escape
+
+- turned off the file name printouts on splash screen
+
+  evaluate: 
+  (wx:write-resource "mred" "splashMessages" 1 (wx:find-path 'setup-file))
+  to turn them back on.
+
+- fixed a bug that caused error messages to be displayed in message
+  boxes more often than neccessary. (as opposed to printing in the
+  repl)
+
+- parenthesis matching is improved
+
+- The empty list is now called "empty" instead of "null" with the
+  constructor style printer.
+
+- The analyze button puts up a dialog saying "please wait, loading",
+  now.
+
+- the fonts dialog now shows previews of the selected fonts. You
+  still need to restart to see the changes, unfortunately.
+
+DrScheme Tools/Libraries
+------------------------
+
+- tools must now import wx names explicitly, as a new first import.
+
+- the parameters interface has changed. Instead getting and setting
+  the class, the tool programmer must register a function that
+  accepts a class and returns a class. See the manual for more
+  details.
+
+- process/zodiac-finish has been renamed to process-finish

@@ -1,0 +1,17 @@
+Primitives like 'make-number/make-numeric' that are renamed
+as module provides are not displayed using their renamed
+names.
+
+Inexact numbers are not printed with a leading #i.
+
+Expansion of quasiquote uses 'the-cons' rather than 'cons'.
+This is essentially an instance of the renaming difficulty.
+
+XML boxes evaluate successfully but are printed poorly.
+
+For a more complete listing of known bugs, see our
+<a href="http://bugs.plt-scheme.org/query/">
+online bug report database</a>, or click on the 
+"Query bug reports" link in the Help Desk search 
+frame.
+

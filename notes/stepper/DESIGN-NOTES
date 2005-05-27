@@ -1,0 +1,790 @@
+[Ed. Note.: Much of this refers to the Zodiac version of the stepper, which
+I am busily replacing at this very moment.  jbc, 2001-12-04]
+
+variable references: there are three kinds of variable references:
+1) bound variable refs
+2) unit-bound variable refs
+3) top-level variable refs
+
+You might be forgiven for some confusion: these three appear to overlap 
+heavily.  Here are more accurate defintions for each one:
+
+unit-bound variable references are those which occur as the left-hand sides of 
+top-level definitions within a unit.
+
+bound variable references are those which occur within the scope of a 
+lambda, case-lambda, let, let*, letrec, or other form which introduces a 
+limited lexical scope.  This includes `local', but not the unit-bound 
+variables mentioned above.
+
+top-level references are the rest of the references.
+
+One difference between top-level and bound varrefs are the way that they 
+are handled at runtime.  Top-level varrefs are looked up in a table; if 
+they are not found in this table, a runtime error is signalled.  Note that 
+this lookup occurs only when the varref is evaluated, not when it is first 
+`encountered' (e.g., in the body of a closure). One reason that this 
+mechanism is necessary is that a Scheme REPL permits top-level references 
+to variables that have not yet been defined.
+
+Bound varrefs have a known lexical binding location, and they can be looked 
+up directly, rather than going through the indirection of checking a table.  
+These variables may be introduced by forms like `letrec' or `local', and 
+they may furthermore be used before their binding definition has been 
+evaluated.  In this case, they have the `<undefined>' value.  In most 
+language levels, a reference to a variable which contains the `<undefined>' 
+value is an error.  In such a language level, any variable which may have 
+this value must be checked on every evaluated reference.
+
+So here's the problem: unit-bound varrefs are similar to those inside a 
+`local'.  Syntactically, their bindings are introduced by `define', and their 
+scope extends in both directions. Semantically they are similar to 
+bound variables, in that the interpreter can lexically fix the binding of 
+the variable.  In both of these regards they are similar to the bindings 
+in a `local'.  However, zodiac does not parse them like those in a 
+`local'.  Rather, it parses them as `top-level-varref's.  Why? I forget, 
+and I'm about to ask Matthew yet again.  Then I'll record the answer here.
+
+Now things get a bit more complicated.  Top-level varrefs never need to be 
+checked for the '<undefined>' value; before they are bound, they have no 
+runtime lookup location at all.  Bound varrefs and unit varrefs, on the 
+other hand, may contain the `<undefined>' value.  In particular, those 
+bound by letrec, local, and units may contain this value.  Others, like 
+those bound by lambda, let, and let*, will not.  For the first and third 
+categories, we do not need to check for the undefined value at runtime.  
+Only when we are looking at a bound or unit varref which may contain the 
+`<undefined>' value do we need to insert a runtime check.
+
+*******
+
+Another topic entirely is that of sharing.  When a break occurs, the 
+stepper reconstructs the state of memory. However, two closures may refer 
+to the same binding. For instance,
+
+(define-values (setter getter)
+  (let ([a '*undefined*])
+    (values
+     (lambda (x) (set! a x))
+     (lambda () a))))
+
+If each closure is linked to a record of the form (lambda () 
+values-of-free-vars), there's no way to tell whether the first and second 
+closure refer to the same binding of a or not.  So in this case, we must 
+devise some other technique to detect sharing.  A simple one suggested by 
+Matthew is to store mutators in the closure record; then, sharing can be 
+detected by the old bang-one-and-see-if-the-other-changes technique.
+
+*********
+
+A note about source locations: I'm using the "start" locations of sexps 
+(assigned by Zodiac) to uniquely identify those expressions: I don't 
+believe there are any instances where two expressions share a start 
+location.
+
+Later: this is now obsolete: I'm just storing the parsed zodiac 
+expressions.  Forget all of this source correlation crap. Zodiac does it 
+for me.
+
+[Ed. Note: this observation turned out to be completely wrong. cf. later
+notes.]
+
+*********
+
+Robby has a good point: Matthew's technique for detecting gaps in the 
+continuation-mark chain (look for applications whose arguments are fully 
+evaluated but are still on the list of current marks) depends on the 
+assumption that every "jump site" has the jump as its tail action.  In 
+other words, what about things like "invoke-unit/open", which jumps to some
+code, evaluates it, >then comes back and binds unit values in the 
+environment<.  In this case, the "invoke-unit/open" continuation will not 
+be handed directly to the evaluation of the unit, because work remains to 
+be done after the evaluation of the unit's definitions.  Therefore, it will 
+be impossible to tell when un-annotated code is appearing on the stack in 
+uses of "invoke-unit/open."   Problem.
+
+*********
+
+So what the heck does a mark contain for the stepper? it looks like this:
+
+(lambda () (list <source-expr> <var-list>))
+
+with 
+
+var-list = (list-of var)
+
+and
+
+var = (list <val> z:varref)
+
+*********
+
+Let me say a few words here about the overall structure of the 
+annotator/stepper combination. We have a choice when rebuilding the source: 
+we can follow the source itself, or we can follow the parsed expression 
+emitted by zodiac.  If our task is simply to spit out source code, then 
+it's clear that we should simply follow the source.  However, we need to 
+replace certain variables with the values of their bindings (in 
+particular, lambda-bound ones). Well, in beginner mode anyway...
+
+*******
+
+Okay, I'm about to extend the stepper significantly, and I want to do at
+least a little bit of design work first.  The concept is this: I want the
+stepper to stop _after_ each reduction, as well as before it.  One principal
+difference between the new and old step types is that in the new one,
+the continuation cannot be rectified entirely based upon the continuation
+marks; the value that is produced by the expression in question is also 
+needed.
+
+Here's a question: can I prove, for the setup I put together, that the part
+of the continuation _outside_ the highlighted region does not change? This
+should be the case; after all, the continuation itself does not change.
+
+Of course, there are some reductions which do not immediately produce a value;
+procedure applications, and ... uh oh, what about cond and if expressions?
+We want the stepper to use the appropriate "answer" as the "result" of
+the step.  So there's some context sensitivity here. 
+
+Wait, maybe not. It seems like _every_ expression  will have to have a "stop
+on entry" step. Further, these types of steps will _not_ have values associated
+with them. Hmmm....  
+
+Okay, this isn't that hard.  Yes, it's true that every expression that becomes
+... no, it's not obvious that the expression which is substituted ... jesus,
+it's not even always the case that a "substitution" occurs in the simplistic 
+sense I'm imagining.  Damn, I wish my reduction semantics were finished.
+
+(Much later): The real issue is that the "stop-on-enter" code is inserted based
+on the surrounding code, and 
+
+
+So, here's the next macro we need to handle: define-struct.
+
+
+*********
+
+Don't forget a test like
+
+(cond [blah]
+      [else cond [blah] [blah]])
+	  
+	  
+**********
+
+Okay, I'm a complete moron.  In particular, I threw out all of the source 
+correlation code a week ago because I somehow convinced myself that the 
+parsed expressions retained references to the read expressions.  That's 
+not true; all that's kept is a "location" structure, which records the file 
+and offset and all that jazz.  
+
+So I tried to fix that by inserting these source expressions into the 
+marks, along with the parsed expressions.  This doesn't work because I 
+need to find the read expressions for expressions that don't get marks... 
+or do I?  Yes, I do.  In particular, to unparse (define a 3), I need to see 
+the read expression to know that it wasn't really (define-values (a) 
+(values 3)).
+
+Maybe I can add a field to zodiac structures a la maybe-undefined?
+
+************
+
+That worked great!
+
+************
+
+Man, there's a lot of shared code in here. 
+
+************
+
+Okay, back to the drawing board on a lot of things.
+
+1) Matthias and Robby are of the opinion that the break for an expression 
+should be triggered only when that expression becomes the redex.  For 
+example, the breakpoint for an if expression is triggered _after_ the test 
+expression is evaluated.
+
+2) I've realized that I need a more general approach in the annotater to 
+handle binding constructs other than lambda.  In particular, the new 
+scheme handles top-level variables differently than lexically bound ones.  
+In particular, the mark for an expression contains the value of a 
+top-level variable if (1) the variable occurs free in the expression, and 
+(2) the expression is on the spine of the current procedure or definition.
+Lexically bound variables are placed in the mark if (1) they occur free in 
+the expression, and (2) they are in tail position relative to the innermost 
+binding expression for the variable.
+
+*** Wait, no.  This is crap, because the bodies of lambdas need to store 
+all free variables, regardless of whether they're lexically tail w.r.t. 
+the binding occurrence. Maybe it really would just be easier to do this in 
+two passes.  How would this work?  One pass would attach the free variables 
+to each expression.  Then, the variables you must store in the mark for an 
+expression are those which (1) occur free and (2) are not contained in 
+some lexically enclosing expression. I guess we can use the 
+register-client ability of zodiac for this... 
+
+We're helped out in the lexical variables by the fact that zodiac renames 
+all lexically bound variables, so no two bindings have the same name. Of 
+course, that's not the case for the special variables inserted by the 
+annotator.  Most of these ... well, no, all of these will have to appear 
+in marks now.  The question is whether they'll ever fight with each other. 
+In the case of applications, I'm okay, because the only expressions which 
+appear in tail ... wait, wait, the only problem that I could have here 
+arises when top-level variables have the same names as lexically bound 
+ones, and since all of the special ones are lexically bound, this is fine. 
+
+
+************
+
+I'm taking these comments out of the program file.  They just clutter 
+things up.
+
+           ; make-debug-info takes a list of variables and an expression and
+           ; creates a thunk closed over the expression and (if bindings-needed is true) 
+           ; the following information for each variable in kept-vars:
+           ; 1) the name of the variable (could actually be inferred)
+           ; 2) the value of the variable
+           ; 3) a mutator for the variable, if it appears in mutated-vars.
+           ; (The reason for the third of these is actually that it can be used
+           ;  in the stepper to determine which bindings refer to the same location,
+           ;  as per Matthew's suggestion.)
+           ; 
+           ; as an optimization:
+           ; note that the mutators are needed only for the bindings which appear in
+           ; closures; no location ambiguity can occur in the 'currently-live' bindings,
+           ; since at most one location can exist for any given stack binding.  That is,
+           ; using the source, I can tell whether variables referenced directly in the
+           ; continuation chain refer to the same location.
+           
+           ; okay, things have changed a bit.  For this iteration, I'm simply not going to 
+           ; store mutators.  later, I'll add them in.
+
+		  
+************
+
+Okay, I'm back to the one-pass scheme, and here's how it's going to work.  
+Top-level variables are handled differently from lexically bound ones.  
+Annotate/inner takes an expression to annotate, and a list of variables whose 
+bindings the current expression is in tail position to.  This list may 
+optionally also hold the symbol 'all, which indicates that all variables 
+which occur free should be placed in the mark.
+
+
+***********
+
+Regarding the question: what the heck is this lexically-bound-vars argument 
+to annotate-source-expr?  The answer is that if we're displaying a lambda, 
+we do not have values for the variables whose bindings are the arguments 
+to the lambda.  For instance, suppose we have:
+
+(define my-top-level 13)
+
+(define my-closure
+  (lambda (x) (x top-level)))
+
+When we're displaying my-closure, we better not try to find a value for x 
+when reconstructing the body, as there isn't one.
+
+*************
+
+This may come back to haunt me: the temporary variables I'm introducing for 
+applications and 'if's are funny: they have no bindings.  They have no 
+orig-name's.  They _must_ be expanded, always. This may be a problem when 
+I stop displaying the values of lambda-bound variables.
+
+***************
+
+currently on the stack:
+
+yank all of that 'comes-from-blah' crap if read->raw works.
+
+*************
+
+annotater philosophy: don't look at the source; just expand based on the 
+parsed expression.  The information you need to reconstruct the 
+
+*************
+
+for savings, I could elide the guard-marks on all but the top level.
+
+***********
+
+months later; October 99.
+
+major reorganization, along a model-view-controller philosophy. Here's how it 
+works:
+
+The view and controller (for the regular stepper) are combined in a gui unit.
+This unit takes a text%, handles all gui stuff, and invokes the model unit 
+(one for each stepping).
+
+The model unit is a compound unit.  It consists of the annotater, the
+reconstructor, and the model unit itself.
+
+Gee whiz; there's so much stuff I haven't talked about.  Like for instance the
+fact that the stepper now has before and after steps.  The point of this 
+reorganization is to permit a natural test suite.  Jesus, that's been a long
+time coming. At some point, I'm also hoping to combine the stepper into the 
+main DrScheme frame.
+
+Oh yes, another major change was that evaluation is now strictly on a one-
+expression-at-a-time basis.  The read, parse, and step are now done indiv-
+idually for each expression.  This has the ancillary benefit that there's no
+longer any need to reconstruct _all_ of the old expressions at every step.
+
+************
+
+You know, I should never have started that ******** divider.  I have no idea how
+many stars are supposed to be there.  Oh well.
+
+************
+
+The version for DrS-101 is out, and I've restructured the stepper into a
+"model/view/controller" architecture, primarily to ease testing.  Of course,
+I haven't actually written the tester yet. So now, the view and controller are
+combined in stepper-view-controller.ss, and the model (instantiated once per
+step-process) is in stepper-model.ss.  In fact, the view-controller is also 
+instantiated once per step-process, so I'm not utilizing the division in that
+way, but the tester will definitely want to instantiate the model repeatedly.
+
+***********
+
+I also want to comment a little bit on some severe ugliness regarding pretty-
+printing.  The real problem is how to use the existing pretty-print code, while
+still having enough control to highlight in the right locations.  
+
+Okay, let me explain this one step at a time.
+
+The way the pretty-printer currently works is this: there are four hooks into
+the pretty-printing process.  The first one is used to determine the width of
+an element.  The result of this procedure is used to decide whether a line
+break is necessary.  However, this hook is _also_ used to determine whether
+or not the pretty-printer will try to print the string itself or hand off 
+responsibility to the display-handler hook.  In other words, if the width-
+hook procedure returns a non-false value, then the display-handler will be
+called to print the actual string.  The other pair of hook procedures is 
+first, a procedure which is called _before_ display of any subexpression,
+and one which is called _after_ display of any subexpression.
+
+So how does the stepper use this to do its work?  Well, the stepper has two
+tricky tasks to accomplish.  First, it must highlight some subexpression.
+Second, it must manually insert elements (i.e. images) which the pretty-printer
+does not handle.
+
+Let's talk about images first.  In order to display images, the width-hook
+procedure detects images and (if one is encountered) returns a width 
+explicitly. (Currently that width is always one, which can lead to display 
+errors, but let's leave that for later.)  Remember, whenever the width returned
+by this hook is non-false, the display handler will be called to insert the
+object.  That's perfect: the display hander inserts the image just fine.
+
+One down, one to go.
+
+The stepper needs to detect the beginning of the (let's call it the) redex. 
+The obvious way to do this is (almost) the right way: the before-printing
+handler checks to see whether the element about to be printed is the redex
+(by an eq?-test).  If so, it sets the beginning of the highlight region.
+A corresponding test determines the end of the highlight region.  When the
+pretty-printing is complete, we highlight the desired region.  Fine. 
+
+BUT, sometimes we want to highlight things like numbers and symbols;  in other
+words, non-heap values.  For instance, suppose I tell you that the expression
+that we're printing is (if #t #t #t) and that you're supposed to be highlight-
+ing the #t.  Well, I can't tell which of the #t's you want to highlight.  So
+this isn't enough information.  
+
+To solve this problem, the result of the reconstructor is split up into two
+pieces: the reconstructed stuff outside the box, with a special gensym 
+occurring where the redex should be, and a separate expression containing
+the redex.  Now at least the displayer has enough information to do its job.
+
+Now, what happens is that when the width-hook runs into the special gensym,
+it knows that it must insert the redex.  Well, that's fine, but remember,
+if this procedure wants to take control of the printing process, it must do
+so by returning the width of the printed object, and then this object must
+be printed by the display-hook.  The problem here is that neither of these
+procedures have the faintest idea about line-breaks; that's the pretty-
+printer's job.  In other words, this solution only works for things (like
+numbers, symbols and booleans) which cannot be split across lines. What
+do we do?
+
+Well, the solution is ugly.  Remember, the only reason we had to resort to
+this baroque solution in the first place is that values like numbers, symbols,
+and booleans couldn't be identified uniquely by eq?.  So we take a two-
+pronged approach.  For non-confusable values, we insert them in place 
+of the gensym before doing the printing.  For confusable values, we leave
+the placeholder in and take control of the printing process manually.
+
+In other words, the _only_ reason this solution works is because of the
+chance overlap between confusable values and non-breakable values.  To
+be more precise, it just so happens that all confusable values are non-
+line-breakable.
+
+Lucky.
+
+And Ugly.
+
+*****
+
+January, 2000
+
+I'm working on the debugger, now, and in particular extending the annotater 
+to handle all of the Zodiac forms. Let and Letrec turn out to be quite ugly.  
+I'm still a little unsure about certain aspects of variable references, like 
+for example whether or not they stay renamed, or whether they return to their 
+original names. [ed. note: they get new uninterned symbols that print like
+their original names]
+
+But that's not what I'm here to talk about.  No, the topic of the day is 
+'floating variables.'  A floating variable is one whose value must be captured
+in a continuation mark even though it doesn't occur free in the expression that 
+the wcm wraps.  Let me give an example:
+
+(unit/sig some-sig^
+  (import)
+  
+  (define a 13)
+  (define b (wcm <must grab a> (+ 3 4))))
+  
+In this case, the continuation-mark must hold the value of a, even though a 
+does not occur free in the rhs of b's definition.  Floating variables are 
+stored in a parameter of annotate/inner.  In other words, they propagate 
+downward.  Furthermore, they're subject to the same potential elision as all 
+other variables; you only need to store the ones which are also contained in 
+the set tail-bound.  Also note that (thank God) Zodiac standardizes names 
+apart, so we don't need to worry about duplications.  Also note that 
+floating variables may only be bound-varrefs.
+
+********
+
+Okay, well that doesn't work at all; dynamic scope blows it away completely.  For instance, imagine the following unit:
+
+(unit/sig some-sig^
+  (import sig-that-includes-c^)
+  
+  (define a 13)
+  (define b (c)))
+  
+Now, during the execution of c, there's no mark on the stack which holds the bindings of a. DUH! I can't believe I didn't think of this before.  Okay, one possible solution for this would be to use _different keys_ for the marks, so that a mark on the unit-evaluation-continuaiton could be retained.
+  
+  
+*********
+
+
+Okay, time to do units.  Compound units are dead easy.  Just wrap them in a wcm that captures all free vars.  No problemo.  Normal units are more tricky, because of their scoping rules.  Here's my canonical translation:
+
+(unit 
+  (import vars)
+  (export vars)
+  
+  (define a a-exp)
+  
+  b
+  
+  (define c c-exp)
+  
+  d
+  
+  etc.)
+  
+... goes to ...
+
+(unit
+  (import vars)
+  (export vars)
+  
+  (wcm blah ; including imported vars
+    (begin
+      (set! a a-exp)
+      b
+      (set! c c-exp)
+      d))
+      
+   (define a a)
+   (define c c)
+   ...)
+   
+************
+
+Well, I still haven't written the code to annotate units, so it's a damn good thing
+I wrote down the transformation.  I'm here today (thank you very much) to talk about
+annotation schemes.  
+
+I just (okay, a month ago --- it's now 2000-05-23) folded aries into the stepper. the
+upshot of this is that aries now supports two different annotation modes: "cheap-wrap,"
+which is what aries used to do, and the regular annotation, used for the algebraic
+stepper.
+
+However, I'm beginning to see a need for a third annotation, to be used for (non-
+algebraic) debugging.  In particular, much of the bulk involved in annotating the
+program source is due to the strict algebraic nature of the stepper.  For instance,
+I'm now annotating lets.  The actual step taken by the let is after the evaluation
+of all bindings.  So we need a break there.  However, the body expression is 
+_also_ going to have a mark and a break around it, for the "result-break" of the
+let.  I thought I could leave out the outer break, but it doesn't work.  Actually,
+maybe I could leave out the inner one.  Gee whiz.  This stuff is really complicated.
+
+*************
+
+Okay, well, I figured all that stuff out, but now I've got to restructure the 
+reconstructor to handle lifting---PRE-lifting, that is---on let/letrec/local.
+In particular, the reconstruct-inner function will now return four things: the
+free bindings, the reconstructed expr, the "before" definitions, and the "after"
+definitions.  These before and after definitions are wrapped around the current
+set of generated definitions.  Case in point; I'm about to execute the (+ 7 8)
+in the following expression:
+
+(let ([a 4]
+      [b (let ([h 3]
+               [i (+ 7 8)]
+               [j 9])
+            (+ h i j))]
+      [c 19])
+   (+ a b c))
+
+How do we reconstruct this?  Well, first we reconstruct the (+ 7 8) itself, that's
+easy.  Then, we encounter a let.  The return value of this will be the _before_
+expressions:
+(define ~h~0 3)
+the _after_expressions:
+(define ~i~0 (+ 7 8))
+(define ~j~0 9)
+and the reconstructed expression:
+(+ ~h~0 ~i~0 ~j~0)
+
+Now, we recur, using the reconstructed expression.  The next step outward is _also_
+a let, so we get the following before expressions:
+(define ~a~0 4)
+the following after expressions:
+(define ~b~0 (+ ~h~0 ~i~0 ~j~0))  <---here is where the reconstructed expr appears
+(define ~c~0 19)
+and the reconstructed expression:
+(+ ~a~0 ~b~0 ~c~0)
+
+So then, the final assembly occurs when the "before" expressions are slapped together,
+last first, then the "after" expressions, first first, and then whatever reconstructed
+expression is left over.
+
+Ugh.
+
+***********
+
+Wow. more complications.  Here's the new problem.  Let's say I have an expression like
+this:
+
+(define (make-thunk)
+  (let ([lexical-binding 14]
+        [returned-thunk (lambda () lexical-binding)])
+     returned-thunk))
+     
+(define first-thunk (make-thunk))
+(define second-thunk (make-thunk))
+
+(first-thunk)
+
+Now, when I'm just inside the body of first-thunk, and trying to reconstruct "lexical-
+binding", I need to know what lifted name it got. 
+
+There are a bunch of ways to try to do this, but I'm going to take the most 
+straightforward approach (which came to me after about a day of thought), 
+which is to expand every lexical binding into a pair of bindings; one which 
+refers to the bound value (with the same name as the original binding), and 
+a new, gensym'ed one, which indicates what index number this binding has
+received.
+
+2000-06-05
+
+***********
+
+So here's the new format of a full mark: 
+(make-mark label source bindings)
+where label is a symbol, source is a zodiac:parsed, and bindings is an association
+list from bindings to values.  Note, however, that every let-type binding now has
+_two_ entries in this list.  The first one supplies the binding's value, and the
+second one supplies the lifted name's index.
+
+[ed note.: see note for 2000-09-26]
+
+2000-06-06
+
+***********
+
+How do we guarantee that lifted names do not clash? Well, for
+each binding we use the original name, with two numbers appended
+to it, separated by zeros; the first one indicates which binding
+it is (more than one binding may have the same original name),
+and the second one indicates which dynamic occurrence of this
+binding it is.
+
+So, for instance, if a program contains one binding named 'foo', and it's 
+evaluated three times, the third evaluation would result in the lifted name
+'foo0002'.  I personally guarantee that no namespace clashes can occur
+in this scheme. Yep.
+
+2000-06-06
+
+***********
+
+Oh.. Well, Matthias prefers a naming scheme whereby all bindings are assigned
+sequential numbers, regardless of the binding name. So this name clash isn't
+really an issue anymore.
+
+2000-09-09
+
+***********
+
+To handle units, marks must now contain "top-level" (actually, unit-bound) variables.
+For this reason, the datatype for a full mark must change.  a full mark is now:
+
+(make-full-mark location label bindings)
+
+where location is a zodiac:location
+      label    is a symbol,
+  and bindings is an association list containing <bindings> and values 
+  
+a <binding> is either a zodiac:binding (for bound vars), or a slot (for
+unit-bound vars in the zodiac:top-level-varref/bind/unit struct).
+
+***********
+
+Ooookay.  We're in Boston now, and I'm rewriting the stepper
+completely to work with version 200.  In other words, we're scrapping
+Zodiac completely.  This is an interesting SE task, because from a
+data-driven design standpoint, the code is starting from zero again;
+all of my data have different shapes now.
+
+Another change is that with the demise of DrScheme Jr and the
+institution of the static-compilation module mechanism, there's no
+longer a need for two separate collections.  I've therefore scrapped
+stepper-graphical, and moved everything back into stepper.
+
+Also, the stepper no longer needs to be tightly integrated with
+DrScheme itself; it can now be simply a tool.  I've already done the
+front-end work to tie in to the new tool interface; I think this stuff
+is all done.
+
+So, here's the plan.  The major pain is in the annotater, and that's 
+what I'm tackling now.  I'm proceeding along an iterative refinement
+path;  first, I want to get a bare-bones annotation working, without
+any macro-reversal (hence source-correlation) stuff.
+
+Bindings.  What's a binding?  It looks to me like the syntax object
+representing the binding occurrence of the variable should serve 
+admirably as a 'binding' for our purposes.
+
+***********
+
+I'm dumping the tracking of the 'never-undefined property.  It was
+originally used for two purposes; first, varrefs had to be wrapped
+with an undefined check.  Second, varrefs in ankle- and cheap-wrap
+were not wrapped if the variables were known never to be
+undefined. Now, the undefined check is (at last) inserted by the
+language's elaborator, so the first use is obsolete.  The second one
+is more or less obsolete as well, because I'm not sure that cheap- or
+ankle-wrap are ever going to be used again.
+
+Also, the 'lambda-bound-var' property is going away; in v200, I don't
+see a good way to get from a bound variable to its binding, which 
+makes it more or less impossible to keep track of things by attaching
+properties to bindings.  In fact, it doesn't really even make sense
+to try and find the binding for an occurrence in v200, because it's 
+not even known.  Instead, I've just added another recursion argument
+called 'let-bound-variables", which is basically what the property
+was anyway.
+
+2002-01-08
+
+***********
+
+Why, for the love of God, do we need to put a wcm around a quote? I 
+can see how we need one if there's a pre-break there, but otherwise,
+it seems totally useless.
+
+Ditto for quote-syntax
+
+2002-01-08
+
+[Later Note: This is preposterous.  Of course I need a wcm there,
+to replace an existing one if necessary.  Maybe if it's in
+non-tail position...]
+
+***********
+
+Here's a nice optimization I'm not taking advantage of: the application
+of all lambda-bound vars doesn't need all those temp vars.  OTOH, this won't
+help much with beginner/intermediate, because you never have a lexical
+var in the application position.  I suppose you can generalize this to
+say that you only need arg-temps for things that are not lambda-bound
+vars.  Well, maybe some other day...
+
+2002-01-08
+
+***********
+
+Okay, as much as I hate to admit it, reconstruct is not just getting a
+face lift; it's being largely rewritten.  The major change is this:
+I'm going to delay macro unwinding until the end.  Toward this end,
+the recon (formerly "rectify") procedures will produce syntax objects
+with attached properties that record the macro expansions and the
+primary origin of the form.  After all reconstruction is done, we go
+through again and look for things that need to be rewritten.  This
+will separate the macro unwinding from the basic reconstruction of the
+expression.  Hopefully, at the end we can just use
+(syntax-object->datum) to discard all of the side information.
+
+Please, let this work. Yikes.
+
+2002-01-12
+
+*******
+
+There's a problem with the reconstruction of let-values, which only
+surfaces in the presence of multiple-values.  This is okay for now,
+because beginner and intermediate do not allow multiple values.  The
+problem is that if you allow expressions like this --- (let-values
+([() (values)]) 3) --- that is, where there can be an empty set of
+variables in a lhs position, you may not be able to tell at runtime
+what expression you're in the middle of.  The problem is that when we
+stop during the evaluation of a rhs in a let, we figure out which rhs
+we're evaluating by which lhs-vars have been changed from their
+original values.  Oh, dang.  This is totally broken for letrec's in
+which the rhs evaluates to the undefined value.
+
+Well, I guess I'm going to have to fix this the right way, by adding a
+counter to every let which is incremented explicitly after the
+evaluation of each rhs. Yikes.
+
+********
+
+Ha! Did I actually say "right way?" This is totally the _wrong_
+way; keeping information about the continuation by mutating the
+store is guaranteed to fail when continuations are invoked.
+
+2002-06-21
+
+*********
+
+Well, another year has passed.  How swiftly they fly!  Nathan is
+almost walking, Alex is almost three, and I'm about to graduate.
+But I'd better get the Intermediate stepper working first.
+
+A note about lifting; I keep looking for the right idiom in which
+to code the search for the highlight. In fact, the real problem 
+is my inability to cleanly express the location of the highlight.
+The one I've settled on as the least egregious is this: a location
+in a syntax object is expressed as a list of context records, where
+each one contains an index indicating the location of the subterm.
+This index makes coding the search less pleasant than it might 
+otherwise be; right now, I'm searching by constructing a list 
+of subterms paired with indices, and then iterating through these.
+
+2003-07-13
+
+**********
+
+Intermediate stepper now working.  I developed a much better
+way of specifying the highlight: the reconstruct engine now delivers
+a syntax object to the display engine, which allows me to use
+syntax properties.  Much much better.
+
+2004-01-15
+

@@ -1,0 +1,297 @@
+MrEd 100 Framework revision
+
+The framework is a streamlined version of the `mred:' names
+from MrEd version 53.
+
+Several of the old classes and proecedures are not longer in the
+framework. Some have been eliminated and some have been moved out
+into a separate application.
+
+Subtle Changes:
+
+ - get-edit -> get-editor
+ - get-panel -> get-area-container
+ - many other mred-sympathetic names changes
+
+ - removing exit callbacks is accomplished by calling the procedure that
+   exit:insert-callback returns
+
+ - menus
+
+ - the built in keymap functions no longer call: 
+     add-editor-keymap-functions
+     add-text-keymap-functions and
+     add-pasteboard-keymap-functions
+   automatically. Instead, the pasteboards and editor classes add them in.
+
+ - the editor `auto-save?' ivar is now called `autosave?'
+ - overriding `windows-menu' with #f no longer eliminates the windows
+   menu. Now, it is an error.
+ - mred:original-output-port, mred:original-error-port, and 
+   mred:original-input-port are gone
+ - mred:the-frame-groups method new-frame is gone. Use handler:edit-file 
+   instead.
+   
+The eliminated classes are:
+
+  :: classes that used to improve the wx: toolbox 
+  :: interface and are no longer needed
+
+  mred:button% 
+  mred:check-box% 
+  mred:choice% 
+  mred:dialog-box% 
+  mred:frame%
+  mred:gauge% 
+  mred:horizontal-panel%
+  mred:list-box%
+  mred:message% 
+  mred:multi-text% 
+  mred:panel% 
+  mred:radio-box% 
+  mred:single-panel% 
+  mred:slider% 
+  mred:text% 
+  mred:text-window%
+  mred:vertical-panel% 
+  mred:media-canvas% 
+  mred:connections-frame%
+  mred:connections-dialog-box%
+  mred:connections-media-edit%
+  mred:connections-media-pasteboard%
+  mred:connections-media-canvas%
+  mred:connections-panel%
+  mred:testable-button% 
+  mred:testable-check-box% 
+  mred:testable-choice% 
+  mred:testable-dialog-box% 
+  mred:testable-gauge% 
+  mred:testable-list-box% 
+  mred:testable-message% 
+  mred:testable-multi-text% 
+  mred:testable-panel% 
+  mred:testable-radio-box% 
+  mred:testable-slider% 
+  mred:testable-text% 
+  mred:testable-text-window% 
+  mred:menu% 
+  mred:menu-bar% 
+  mred:menu-frame% 
+  mred:media-text-edit%   (use a text-field%)
+  mred:media-text-canvas% (use a text-field%)
+  mred:media-multi-text%  (use a text-field% with 'multiple style)
+  mred:canvas-message%    (use a message%)  
+
+  mred:edit% (only the name alias is gone; mred:file-edit lives on)
+
+  :: modes have just become mixins
+
+  mred:basic-mode% 
+  mred:mode%                       
+  mred:scheme-interaction-mode% 
+  mred:scheme-mode% 
+  
+  :: just use drscheme instead of these
+    
+  mred:console-edit% 
+  mred:console-frame%
+  mred:editor-frame%
+  mred:transparent-io-edit% 
+
+  mred:autoload
+
+The moved functions and classes are:
+  
+  :: web browswer
+  
+  mred:hyper-basic-frame% 
+  mred:hyper-canvas% 
+  mred:hyper-edit% 
+  mred:hyper-make-frame% 
+  mred:hyper-view-frame% 
+  
+  :: graph
+  
+  mred:graph-pasteboard% 
+  mred:node-snip% 
+
+The remaining existant classes: 
+  
+  frame:empty% = (frame:make-empty% frame%)
+  frame:standard-menus% = (frame:make-standard-menus% frame:empty%)
+  frame:simple-menu% = (frame:make-simple-menu% frame:standard-menus%)
+  frame:searchable% = (frame:make-searchable% frame:simple-menu%)
+  frame:info% = (frame:make-info% frame:searchable%)
+  frame:info-file% = (frame:make-file% frame:info%)
+  frame:pasteboard% = (frame:make-pasteboard% frame:simple-menu%)
+  frame:pasteboard-info% = (frame:make-info% frame:pasteboard%)
+  frame:pasteboard-info-file% = (frame:make-file% frame:pasteboard-info%)
+
+  text:basic% = 
+     (text:make-basic% (editor:make-basic% text%))  
+  text:return% = (text:make-return% text:basic%)
+  text:searching% = (text:make-searching% text:basic%)
+  text:info% = 
+    (text:make-info% (editor:make-info% text:searching%))
+  text:clever-file-format% = 
+    (text:make-clever-file-format% text:info%)
+  text:file% = 
+    (editor:make-file% text:clever-file-format%)
+  text:backup-autosave% = 
+    (editor:make-backup-autosave% text:file%)
+  text:scheme% = 
+    (text:make-scheme% text:backup-autosave%)
+
+  pasteboard:basic% = (editor:make-basic% pasteboard%)
+  pasteboard:info% = (editor:make-info% pasteboard:basic%)
+  pasteboard:file% = (editor:make-file% pasteboard:info%)
+  pasteboard:backup-autosave% = (editor:make-backup-autosave% pasteboard:info%)
+  
+  editor-canvas:frame-title% = 
+    (editor-canvas:make-frame-title% editor-canvas%)
+  editor-canvas:wide-snip% =
+    (editor-canvas:make-wide-snip% editor-canvas:frame-title%)
+
+  panel:vertical-edit% = (panel:make-edit% vertical-panel%)
+  panel:horizontal-edit% = (panel:make-edit% horizontal-panel%)
+      
+  snip:basic-style% = (snip:make-basic-style% snip%)
+  snip:basic-style-media% = (snip:make-basic-style% media-snip%)
+
+  frame-group:%
+
+  match-cache:%
+
+Old to new name mapping:
+
+  mred:scheme-paren-pairs -> scheme-paren:paren-pairs
+  mred:scheme-quote-pairs -> scheme-paren:quote-pairs
+  mred:scheme-comments -> scheme-paren:comments
+  mred:scheme-backward-match -> scheme-paren:forward-match
+  mred:scheme-forward-match-> scheme-paren:backward-match
+  mred:scheme-balanced? -> scheme-paren:balanced?
+  mred:scheme-backward-containing-sexp -> scheme-paren:backward-containing-sexp
+
+  mred:setup-global-keymap -> keymap:setup-global
+  mred:setup-global-search -> keymap:setup-search
+  mred:setup-global-file -> keymap:setup-file
+	
+  mred:global-keymap -> keymap:global
+  mred:global-search-keymap -> keymap:serach
+  mred:global-file-keymap -> keyamp:file
+
+  mred:match-cache% -> match-cache:%
+
+  mred:handler? -> handler:handler?
+  mred:handler-name -> handler:handler-name
+  mred:handler-extension -> handler:handler-extension
+  mred:handler-handler -> handler:handler-handler
+  mred:format-handlers -> handler:format-handlers
+  mred:insert-format-handler -> handler:insert-format-handler
+  mred:find-format-handler  -> handler:find-format-handler 
+  mred:find-named-format-handler  -> handler:find-named-format-handler 
+  mred:edit-file -> handler:edit-file
+  mred:open-url -> handler:open-url
+  mred:open-file -> handler:open-file
+  
+  mred:register-autosave -> autosave:register
+
+  mred:make-exn -> exn:make-exn
+  mred:exn? -> exn:exn?
+  mred:make-exn:unkown-preference -> exn:make-unkown-preference
+  mred:exn:unkown-preference? -> exn:unkown-preference?
+  mred:exn:make-during-preferences -> exn:make-during-preferences
+  mred:exn:during-preferences? -> exn:during-preferences?
+  mred:exn:make-url -> exn:make-url
+  mred:exn:url? -> exn:url?
+
+  mred:insert-exit-callback -> exit:insert-callback
+  mred:remove-exit-callback -> exit:remove-callback
+  mred:run-exit-callbacks -> exit:run-callbacks
+  mred:exit -> exit:exit
+
+  mred:add-version-spec -> version:add-spec
+  mred:version -> version:version
+
+  mred:empty-frame% -> frame:basic%
+  mred:standard-menus-frame% -> frame:standard-menus%
+  mred:simple-menu-frame% -> frame:simple-menu%
+  mred:searchable-frame% -> frame:searchable%
+  mred:info-frame% -> frame:text-info%
+  mred:info-file-frame% -> frame:text-info-file%
+  mred:pasteboard-frame% -> frame:pasteboard%
+  mred:pasteboard-info-frame% -> frame:pasteboard-info%
+  mred:pasteboard-info-file-frame% -> frame:pasteboard-info-file%
+
+  mred:media-edit% -> text:basic%
+  mred:return-edit% -> text:return%
+  mred:searching-edit% -> text:searching%
+  mred:info-edit% -> text:info%
+  mred:clever-file-format-edit% -> text:clever-file-format%
+  mred:file-edit% -> text:file%
+  mred:backup-autosave-edit% -> text:backup-autosave%
+  mred:scheme-mode-edit% -> text:scheme% 
+     (The new class is now implemented differently but has the same 
+      functionality as the old.)
+
+  mred:media-pasteboard% -> pasteboard:basic%
+  mred:info-pasteboard% -> pasteboard:info%
+  mred:file-pasteboard% -> pasteboard:file%
+  mred:backup-autosave-pasteboard% -> pasteboard:backup-autosave%
+  
+  mred:wrapping-canvas% -> editor-canvas:wrapping%
+  mred:frame-title-canvas% -> editor-canvas:frame-title%
+  mred:one-line-canvas% -> editor-canvas:one-line%
+  mred:wide-snip-canvas% -> editor-canvas:wide-snip%
+
+  mred:vertical-edit-panel% -> panel:vertical-edit%
+  mred:horizontal-edit-panel% -> panel:horizontal-edit%
+      
+  mred:snip% -> snip:basic-style%
+  mred:media-snip% -> snip:basic-style-media%
+
+  mred:frame-group -> frame-group:%
+               
+  mred:match-cache% -> match-cache:%
+
+Mixins:
+
+NOTE: some used but non-existant interfaces from mred engine:
+      frame<%>, panel<%>, editor-canvas<%>, and text<%>.
+      For now, these will use some "class derived from" predicate,
+      with the corresponding engine classes. Perhaps later those
+      interfaces will be added.
+
+  frame:make-empty% : frame% -> frame:basic<%>
+  frame:make-standard-menus% : frame% -> frame:standard-menus<%>
+  frame:make-edit% : frame:empty-standard-menus<%> -> frame:edit<%>
+  frame:make-searchable% : frame:edit<%> -> frame:searchable<%>
+  frame:make-pasteboard% : frame:edit<%> -> frame:pasteboard<%>
+  frame:make-info% : frame:empty<%> -> frame:info<%>
+  frame:make-edit-info% : (interface (frame:info<%> frame:edit<%>)) -> frame:edit-info<%>
+  frame:make-file% : frame:edit<%> -> frame:info-file<%>
+  
+  ; editor:make-basic% adds keymap support, error checking on load-file
+  ;      run-after-edit-sequence, locked?, get-edit-snip, 
+  ;      get-pasteboard-snip, sets up parents for get-file and put-file
+  editor:make-basic% : editor<%> -> editor:basic<%>
+  editor:make-info% : editor:basic<%> -> editor:info<%>
+  editor:make-file% : editor:basic<%> -> editor:basic<%>
+  editor:make-backup-autosave% : editor:basic<%> -> editor:autosave<%>
+  
+  ; text:make-basic% adds ranges, wrapping, move/copy-to-edit
+  text:make-basic% : (interface (editor:basic<%> text<%>)) -> text:basic<%>
+  text:make-return% : editor:basic<%> -> editor:basic<%>
+  text:make-searching% : (interface (editor:basic<%> text<%>)) -> text:searching<%>
+  text:make-info% : (interface (editor:basic<%> text<%>)) -> (interface (editor:basic<%> text<%>))
+  text:make-clever-file-format% : text<%> -> clever-file-format<%>
+  text:make-scheme% : (interface (editor:basic<%> text<%>)) -> editor:scheme<%>
+  
+  editor-canvas:make-frame-title% : editor-canvas<%> -> editor-canvas<%>
+  editor-canvas:make-wide-snip% : editor-canvas<%> -> editor-canvas:wide-snip<%>
+  
+  panel:make-edit% : panel<%> -> panel:edit<%>
+  
+  snip:make-basic-style% : snip<%> -> snip<%>
+
+  scheme:make-text% : text:basic<%> -> scheme:text<%>

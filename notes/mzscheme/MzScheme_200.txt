@@ -1,0 +1,275 @@
+
+MzScheme version 200 is different from previous versions of MzScheme
+in several significant ways:
+
+ * The new module system supports top-level, first-order modules that
+   import and export both syntax and run-time variables. The
+   library-collection system now works with the module system. In
+   particular, `require-library' has been replaced by a `require'
+   form.
+
+ * No object or unit system is built into MzScheme. These have been moved
+   to MzLib-defined syntax modules: "class.ss" (or "class-old.ss"),
+   "unit.ss", and "unitsig.ss" in the "mzlib" collection. For example,
+   to get the old class system, use
+    
+       (require (lib "class-old.ss"))
+
+ * The core syntax system is hygienic; `define-macro' has been
+   replaced by `define-syntax'.
+
+   The "defmacro.ss" library in the "mzlib" collection defines
+   `define-macro' for compatibility purposes:
+
+       (require (lib "defmacro.ss"))
+
+   IMPORTANT: a macro procedure cannot access global bindings as in
+   previous versions. See the MzLib and MzScheme manuals for details.
+
+ * Although MzScheme has no class system, there is still a "standard"
+   one (i.e., the one that works with MrEd), and it is different from
+   the previous built-in class system. The principal difference is
+   that classes have fields and methods, and the form of a method
+   definition is syntactically restricted (so that it can be
+   implemented with a per-class procedure instead of a per-object
+   procedure).
+
+   Syntactically, the new `class' form is substantially different from
+   the old `class' form. The new form is more consistent with the
+   `unit' and `module' syntax, using `define' for method and private
+   field declarations.
+
+   The "class100.ss" library in MzLib supplies a `class100' form with a
+   syntax similar to the old `class' form, but with a semantics that
+   matches the new `class' form.
+
+   To make old code work with the new class system:
+
+      0. Require the "class.ss" and "class100.ss" libraries.
+
+      1. Replace "class" with "class100" (and "class*" with
+         "class100*", etc.).
+
+      2. Replace "private" with "private-field".
+
+      3. Loop until there are no more syntax errors:
+         - Try to load the code
+         - Read the error message (which provides a source location)
+         - Fix the problem
+   
+   The `send' form works as before, but there is no `ivar' form.
+   Field values are accessed through procedures constructed with
+   `make-class-field-accessor'. Instances are constructed with either
+   `make-object' or the new `instantiate' form; the latter supports
+   by-name initialization arguments. See the MzLib documentation for
+   details.
+
+   The "class-old.ss" library in MzLib implements precisely the old
+   MzScheme class syntax, but it cannot be used with MrEd classes.
+
+ * Modules can replace units where units are used merely for namespace
+   control, but `unit' still has its own place:
+
+    - Implementing parameterized components: The `unit' form separates
+      interface from implementation, unlike `module'.
+
+    - Encapsulating a program that has "global" state: A unitized
+      program can be instantiated multiple times.
+
+    - Mutually dependent components: A unit linking graph can be
+      cyclic, while the module dependency graph must form a DAG.
+
+   A unit or unit signature is typically defined within a module. The
+   module must import the MzLib "unitsig.ss" or "unit.ss" library.
+
+   The "unit.ss" and "unitsig.ss" libraries implement essentially the
+   same forms as in previous versions of MzScheme, except that
+   variables exported from a unit cannot be mutated, and units can
+   contain references to top-level variables (since `module' already
+   catches free variables).
+
+ * The `struct' form is gone, replaced by a more flexible
+   `make-struct-type' form. 
+
+   The `define-struct' form has changed. In addition to the old
+   bindings from a `define-struct' declaration like
+
+      (define-struct <id> (<field-id> ...))
+
+   binds <id> to expansion-time information about the declaration, and
+   the sub-typing form is
+ 
+      (define-struct (<id> <super-id>) (<field-id> ...))
+
+   where <super-id> is the <id> from a previous `define-struct' ---
+   not an expression that produces a structure type descriptor.
+
+   The changes break old code in several ways:
+
+     - The binding for <id> might collide with other definitions.
+
+     - Sub-typing declarations must be changed, usually by deleting
+       `struct:'.
+
+     - Struct instances can be `equal?' only if transparent (see
+       below).
+
+   The new `define-struct' is slightly less powerful than the old one,
+   though in ways that are unlikely to matter. For example, the new
+   form cannot extend a structure type descriptor that is passed into
+   a procedure.
+
+   The advantage of the change is that forms like `match' and `shared'
+   can work properly with structures. For example, given the
+   declarations
+
+     (define-struct a (x y))
+     (define-struct (b a) (z))
+
+   The expression
+
+     (match .... [($ a pat) ....])
+
+   is a syntax error, because the structure type `a' has two
+   fields. But
+
+     (match .... [($ a pat1 pat2) ....])
+     (match .... [($ b pat1 pat2 pat3) ....])
+
+   both work, and the structure types need not be declared as
+   "transparent" (through a dummy inspector).
+   
+   The `struct' module export form exports the <id> binding as well as
+   the old ones, so that sub-typing declarations and `match' forms
+   work across module boundaries.
+
+   The `struct' signature form for `unit/sig' introduces
+   expansion-time information into importing units that immitates that
+   of a `define-struct' declaration. The information is currently
+   limited, in that subtyping relations are not exposed and the actual
+   structure type may have more fields than declared in the
+   signature. But `match' works with the partial information, for
+   example, matching on as many fields as declared in the signature.
+
+   The `define-struct' form also works mostly as before, but also
+   supports an optional inspector expression after the field list.
+
+   Inspectors provide debugging access, with a custodian-like
+   hierarchy for opacity. The form
+
+    (define-struct s (f ...))
+
+   now creates a type for structs that are effectively opaque. Use
+
+    (define-struct s (f ...) (make-inspector))
+
+   for transparent structs.
+
+   Finally, structure type properties let a programmer attach static
+   information to a structure type. (For example, using properties,
+   structure-based classes can be implemented more efficiently.)
+   Structure type properties are only available via
+   `make-struct-type'.
+
+ * The `process', `process*', `process/ports', `process*/ports',
+   `system', and `system*' procedures have been moved to a new MzLib
+   library, "process.ss".
+
+   MzScheme's new built-in form is `subprocess', which takes the same
+   arguments as `process*/ports'. It returns four values: a subprocess
+   value, an input port or false (the subprocess's stdout, if one was
+   created), an output port or false (the subprocess's stdin), and an
+   input port or false (the subprocess's stderr). The new
+   `subprocess-status' procedure gets the status or return code of the
+   subprocess, and `subprocess-pid' gets its process id.
+   
+   The `process', etc. procedures are implemented in terms of
+   `subprocess'. Consequently, old bugs and gaps in support
+   (especially for Windows) have been eliminated.
+
+   The `execute' and `execute*' procedures were eliminated entirely.
+
+ * The new `object-wait-multiple' procedure allows blocking on
+   multiple different types of objects, including semaphores, input
+   ports, output ports, and subprocesses. The set of port reading and
+   writing functions includes new peek functions and new non-blocking
+   read and write functions.
+
+   The `make-input-port' and `make-output-port' procedures have been
+   replaced `make-custom-input-port' and `make-custom-output-port',
+   which implement a port in terms of non-blocking, string-based
+   operations instead of blocking, character-based operations.
+
+ * The built-in regular-expression matcher works on input ports (in
+   addition to strings).
+
+ * The mzc compiler supports a subset of the Gambit-C foreign-function
+   interface.
+
+ * All of the old #% names are gone, since they are unnecessary with
+   the new module and macro system. However, a few new syntactic
+   forms, which are usually implicit, use #%: `#%app', `#%datum',
+   `#%top', etc.
+
+ * `global-defined-value' is replaced by `namespace-variable-value'
+   and `namespace-set-variable-value!'. The `defined?' procedure moved
+   to the "etc.ss" MzLib library, renamed as `namespace-defined?'.
+   The `make-global-value-list' procedure is gone, but a new
+   `namespace-mapped-symbols' procedure provides similar
+   functionality.
+
+ * Compiling an expression no longer links its global-variable
+   references to a particular namespace. Instead, an implicit link
+   phase, at the start of evaluation, connects compiled variable
+   references to actual variables in a specific namespace.
+
+ * In the "unitsig.ss" library, all `unit-with-signature' names were
+   either replaced by `unit/sig' names or eliminated in favor of
+   existing `unit/sig' names.
+
+ * Removed constant and keyword attributes of global variables, since
+   they are not needed with the module system.
+
+ * Moved `send-event' to both MrEd and MzLib's "sendevent.ss".
+
+MzLib changes:
+
+ * "functio.ss" was split into "list.ss" and "etc.ss".
+
+ * "macro.ss" was merged into "etc.ss", mostly.
+
+ * "invoke.ss" was merged into "unit.ss" and "unitsig.ss".
+
+ * "include.ss" is new; it implements the `include' form that used to
+    be restricted to `unit/sig' bodies.
+
+ * "defstru.ss" was roughly re-implemented in "compat.ss" (and the
+    re-implementation matches the Chez form).
+
+ * "process.ss" is new.
+
+ * The default for the whole/fractional-exact-numbers parameter in
+   the "pconvert.ss" library is now #f.
+
+Inside MzScheme:
+
+ * "process" in function, type, and macro names was replaced by
+   "thread".
+
+ * "manager" in function, type, and macro names was replaced by
+   "custodian".
+
+ * The functions to make and use input and output ports changed
+   considerably.
+
+ * scheme_rep() is gone; use the Scheme procedure returned by
+   scheme_builtin_value("read-eval-print-loop") instead.
+
+ * scheme_add_global_constant(), etc. are gone, since globals have no
+   constant or keyword attributes; use scheme_add_global(),
+   etc. instead.
+
+ * Many port-related functions were changed.
+
+
+For information about minor changes, see HISTORY.

@@ -1,0 +1,167 @@
+VERSION 208p1
+
+* fixed a bug in image.ss; find-image now returns the result
+  relative to the pinhole. Misc image.ss docs improvements.
+
+------------------------------------------------------------------------
+VERSION 208				  [Fri Jul 30 10:07:21 EDT 2004]
+
+* image.ss introduces images as algebraic values. Students can create basic
+  images such as rectangles, circles, and they can compose them via an
+  overlay function. There are also primitives for finding one picture in
+  another one and so on. Testing with drawing is now feasible. 
+
+* world.ss enriches image.ss with animation functions. Like draw.ss, it
+  comes with big-bang, on-key-event, on-tick, end-of-time for creating a
+  world, starting a clock, reacting to clock ticks and keystrokes, and
+  ending time. It also comes with a mechanism for display movies. It does
+  *not* yet provide primitives for dealing with mouse clicks.
+
+  The performance problems from the TS! workshops have been eliminated. 
+
+------------------------------------------------------------------------
+VERSION 207  			          [Fri May 14 12:52:43 EDT 2004]
+
+* draw.ss now comes with functional callbacks for maintaining a visual
+  world: big-bang, on-key-event, on-tick, end-of-time 
+
+* draw also comes now as a ProfessorJ implementation in the htdch 
+  collects directory. This is an experimental teachpack. Docs are available
+  via doc.txt. Experiences with students may change this teachpack
+  significantly. 
+ 
+------------------------------------------------------------------------
+VERSION 203  			          [Thu Dec  5 09:10:40 EST 2002]
+
+* added get-key-event to draw.ss 
+
+------------------------------------------------------------------------
+VERSION 201  			          [Wed Jul 24 22:44:19 EDT 2002]
+
+* added servlet.ss and servlet2.ss 
+
+* all exported functions are primitive operators or higher order primitives
+  this improves error reporting behavior in the Beginner languages (before
+  higher-order functions are introduced)
+
+* removed: 
+  pingp-play.ss   
+  pingp.ss        
+  protect-play.ss 
+  rectangle.ss    
+  these teachpacks aren't mentioned in htdp, and aren't used for any 
+  of the additional exercises
+
+------------------------------------------------------------------------
+VERSION 200alpha1			  [Wed Nov 21 13:07:43 EST 2001]
+
+* Robby converted to modules 
+
+* Fixed bug in convert.ss 
+
+------------------------------------------------------------------------
+VERSION 103				  []
+
+* modified draw.ss interface so that colors are symbols
+  use 'red instead of RED 
+
+------------------------------------------------------------------------
+VERSION 102				  [Thu Jun 22 18:22:48 CDT 2000]
+
+* Added "convert.ss" to teachpacks/htdp
+
+* Fixed error messages for some arity tests
+
+* Fixed documentation 
+
+------------------------------------------------------------------------
+
+VERSION 101				  [Tue Oct 26 22:28:38 CDT 1999]
+
+
+* TERMINOLOGY: We decided to eliminate the terminology "teaching
+  library", because it is easily confused with a plain library. As of
+  release 101, we refer to one of these objects as a
+
+    teachpack
+
+* USAGE: Inside of DrScheme, the menu choice called "Language|Set
+  library to..."  is now called "Language|Set teachpack to...".
+
+* LOCATION of Files: The distributed teachpacks are found at
+
+    $PLTHOME/teachpack/
+    PLTHOME is the location of the PLT software
+
+  The htdp subdirectory contains those files that matter to students who
+  use HtDP. 
+
+* CHANGES in individual teachpacks: The most important and most visible
+  change in the teachpack support concerns
+
+    hangman.ss 
+
+  It now provides two GUI interfaces: (1) hangman for three-letter words
+  and (2) hangman-list for words of arbitrary length. See the teachpack
+  documentation for details. 
+
+  The teachpack 
+
+    master.ss
+
+  now exports the procedure _master_, which is exactly like the procedure
+  _repl_ in the old master-lib.ss library. 
+
+  The corresponding exercises in HtDP have been rewritten and are posted
+  on the HtDP Web site.
+
+* REMINDER: The *purpose* of teachpacks is to supplement student programs
+  with code that is beyond the teaching languages (Beginner, Intermediate,
+  Advanced). For example, to enable students to play hangman, we supply a
+  teachpack that 
+    - implements the random choosing of a word 
+    - maintains the state variable of how many guesses have gone wrong 
+    - manages the GUI. 
+  All these tasks are beyond students in the third week and/or impose
+  nothing memorization of currently useless knowledge on students. 
+
+  A teachpack is a signed unit that imports the interface:   
+
+    plt:userspace^
+
+  The exported names are added to the read-eval-print loop at the end of
+  an EXECUTE step.
+
+------------------------------------------------------------------------
+
+Version 100
+
+The plt:userspace^ signature does not contain the
+graphics library. In order to use the graphics library in your
+teachpacks, use a compound unit and link in graphics directly. For example:
+
+  (require-library "graphics.ss" "graphics")
+  
+  (define-signature my-teachpack^ (four))
+  
+  (define my-teachpack
+    (unit/sig my-teachpack^
+      
+      (import plt:userspace^ 
+              graphics^)
+      
+      '...
+      
+      (define four 4)))
+  
+  (compound-unit/sig 
+   (import [P : plt:userspace^])
+   (link [G : graphics^ ((require-library "graphicr.ss" "graphics")
+                         (P : mzlib:file^)
+                         (P : mred^))]
+         [TP : my-teachpack^ (my-teachpack P G)])
+   (export (open TP)))
+
+The graphics^ signature contains all of the primitives in the
+graphic.ss library. Search for "graphics" in Help Desk for more
+information on those primitives.

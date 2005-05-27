@@ -1,0 +1,250 @@
+#!/bin/sh
+#| -*- scheme -*-
+# PLT software installer
+# ----------------------
+# Normally it'll use MzScheme (will search for it at the same place this script
+# is), but it can also be used with mred for graphic installations.
+# Run with `-h' for more information.
+
+# Try to find where mzscheme is, usually where this script is being run from
+if [ -x install -a -d collects ]; then
+  pltdir="."
+else
+  # Try finding the installation directory...
+  if [ -x "/bin/dirname" ]; then
+    pltdir="`/bin/dirname \"$0\"`"
+  elif [ -x "/usr/bin/dirname" ]; then
+    pltdir="`/usr/bin/dirname \"$0\"`"
+  else
+    dirname="`which dirname`"
+    if [ ! -z "$dirname" ]; then
+      pltdir="$dirname"
+    fi
+  fi
+fi
+
+if [ -x "$pltdir/bin/mzscheme" ]; then
+  mz="$pltdir/bin/mzscheme"
+elif [ -e "$pltdir/MzScheme.exe" ]; then
+  # Note: with cygwin, `-x' doesn't work properly
+  mz="$pltdir/MzScheme.exe"
+else
+  echo "install: cannot find the mzscheme executable"
+  echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+  echo "!!               Install incomplete!               !!"
+  echo "!!                                                 !!"
+  echo "!! If you downloaded the source distribution, see  !!"
+  echo "!!        src/README for build instructions.       !!"
+  echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+  exit 1
+fi
+
+exec "$mz" -qC "$0" "$@"
+exit 1
+|#
+
+(use-compiled-file-paths null)
+
+(define plthome #f)
+(define this-script #f)
+(define install-mode? #f)
+
+(when (or (getenv "OSX_PLT_INSTALL") (getenv "RPM_INSTALL_PREFIX"))
+  (set! install-mode? #t))
+
+(define (set-plthome this)
+  (let-values ([(dir name dir?)
+                (split-path
+                 (resolve-path
+                  (path->complete-path (simplify-path (resolve-path this)))))])
+    (unless (path? dir) (error 'install "Bad pathname for install: ~s" this))
+    (current-directory dir)
+    (current-directory ".") ; avoid a "/" suffix
+    (set! plthome (current-directory))
+    (unless (and (directory-exists? "collects/mzlib") (file-exists? name))
+      (error 'install
+             "Can't find the PLT installation this script (~a) is part of"
+             this))
+    (set! this-script (path->string name))))
+
+(define (setup-environment)
+  (putenv "PLTHOME" (path->string plthome))
+  (putenv "PLTCOLLECTS" "")
+  (current-library-collection-paths (list (build-path plthome "collects"))))
+
+(require (lib "cmdline.ss"))
+(define setup-flags (make-parameter '()))
+(define (process-command-line args)
+  (define more-help
+    (lambda (help)
+      (display "This is the PLT installer.\nUsage: ")
+      (display help)
+      (exit 0)))
+  (command-line this-script (list->vector args)
+    (once-each
+     (("-i")
+      "Install mode.\n\
+       This is a `one-time option' that is intended to be used with\n\
+       installers or after retrieving a fresh plt tree.  This will re-use\n\
+       existing zos (making only missing ones), and recreate the launchers.\n\
+       It should be again in this mode only if the PLT tree was moved."
+      (set! install-mode? #t)))
+    (help-labels
+     "Additional arguments (after a \"--\" are passed on to setup-plt")
+    (=> (lambda (f . _) (setup-flags _))
+        '("setup-flags")
+        more-help)))
+
+;; Set up GUI if we're using MrEd
+(when (namespace-variable-value 'make-eventspace #t (lambda () #f))
+  ;; no console input
+  (current-input-port (open-input-string ""))
+  (let ([evt (make-eventspace)] [orig-exit (exit-handler)])
+    (parameterize ([current-eventspace evt])
+      (define (do-callback thunk)
+        (parameterize ([current-eventspace evt]) (queue-callback thunk #f)))
+      (define (quit)
+        (when (eq? 'ok (message-box "Stop Installation"
+                                    "Ok to stop the installation?"
+                                    f '(ok-cancel)))
+          (exit 1)))
+      (define (fail msg exit-code)
+        (do-callback
+         (lambda ()
+           (send e lock #f)
+           (let* ([p1 (send e last-position)]
+                  [_  (send e insert msg p1)]
+                  [p2 (send e last-position)])
+             (send e insert "\n(click button below to exit)" p2)
+             (send e change-style
+                   (let ([d (make-object style-delta% 'change-bold)])
+                     (send d set-delta-foreground "red")
+                     d)
+                   p1 p2))
+           (send e lock #t)
+           (send b set-label "Quit Installation")
+           (set! quit (lambda () (orig-exit exit-code)))))
+        (semaphore-wait (make-semaphore)))
+      (define f (make-object
+                 (class frame% ()
+                   (define/augment (can-close?) (quit) #f)
+                   (super-instantiate ("PLT Installer" #f 600 480)))))
+      (define e (make-object text%))
+      (define c (make-object editor-canvas% f e '(no-hscroll)))
+      (define b (make-object button% "Stop Installation" f (lambda _ (quit))))
+      (send c allow-tab-exit #t)
+      (send e lock #t)
+      (send e auto-wrap #t)
+      (let ([out (make-output-port 'gui-output
+                   always-evt
+                   (lambda (bstring start end flush? breaks?)
+                     (do-callback (lambda ()
+                                    (send e lock #f)
+                                    (send e insert
+                                          (bytes->string/utf-8
+                                           (subbytes bstring start end))
+                                          (send e last-position))
+                                    (send e lock #t)))
+                     (- end start))
+                   void)])
+        (current-output-port out)
+        (current-error-port out))
+      (send f center 'both)
+      (send f show #t)
+      (exit-handler
+       (lambda (v)
+         ;; can use an explicit (exit 0) to show the output
+         (fail (if (zero? v) "Done" "INSTALLATION FAILED") v)))
+      (current-exception-handler
+       (lambda (e)
+         (if (exn:break? e)
+           (orig-exit 1) ; don't lock up if the process is killed
+           (fail (format "INSTALLATION FAILED: ~a"
+                         (if (exn? e) (exn-message e) e))
+                 1))))
+      (initial-exception-handler (current-exception-handler)))))
+
+(define (create-zos)
+  (let/ec return
+    (parameterize
+        (;; Need a new namespace to ensure that all modules are compiled,
+         ;; including ones we've already loaded.  We also need to re-enable
+         ;; compiled files, since cm.ss checks on that flag.
+         [current-namespace (make-namespace)]
+         [use-compiled-file-paths '("compiled")]
+         [current-command-line-arguments
+          (list->vector
+           (append (if install-mode? '("-n" "--trust-zos" "--no-install") '())
+                   (setup-flags)))]
+         ;; setup will use `exit' when done, so catch these, and stop if
+         ;; non-zero
+         [exit-handler
+          (lambda (n)
+            (if (zero? n)
+              (return)
+              (error 'install "Errors in compilation process! (~a)" n)))]
+         ;; also, protect `current-directory' since it will change
+         [current-directory (current-directory)])
+      (printf "Running setup...\n")
+      (dynamic-require '(lib "setup.ss" "setup") #f))))
+
+(define oldrun-plthome #f)
+;; This will change the `oldrun-plthome' definition in this file.
+(define (remember-this-path!)
+  (let* ([in (open-input-file this-script)]
+         [lines (let loop ([r '()])
+                  (let ([l (read-line in)])
+                    (if (eof-object? l)
+                      (reverse! r)
+                      (loop (cons l r)))))])
+    (close-input-port in)
+    (let ([out (open-output-file this-script 'truncate)]
+          [oldrun-expr (format "~s" `(define oldrun-plthome
+                                       ,(path->string plthome)))]
+          [oldrun-re "^ *\\(define oldrun-plthome .*\\) *$"])
+      (for-each (lambda (l)
+                  (display (if (regexp-match oldrun-re l) oldrun-expr l) out)
+                  (newline out))
+                lines))))
+
+(define (main args)
+  (set-plthome (car args))
+  (when (regexp-match #rx"^[Ff]inish.[Ii]nstall($|\\.)" this-script)
+    (set! install-mode? #t))
+  (setup-environment)
+  (process-command-line (cdr args))
+  (when (and install-mode? (equal? (path->string plthome) oldrun-plthome))
+    (parameterize ([current-output-port (current-error-port)])
+      (for-each display
+                `("This program should be used again only when the PLT tree "
+                  "was moved.\nYou should use "
+                  ,(if (eq? 'unix (system-type)) "bin/setup-plt" "Setup PLT")
+                  " instead.\n"))
+      (exit 1)))
+  (create-zos)
+  (display "PLT installation done.\n")
+  (cond [(not install-mode?)
+         (when (file-exists? "bin/drscheme")
+           (for-each display '("\nRun DrScheme as bin/drscheme.\nFor Help, "
+                               "select `Help Desk' from DrScheme's `Help' "
+                               "menu,\nor run bin/help-desk.\n")))
+         ;; if we're using GUI, and not in install mode, don't close the window
+         (exit 0)]
+        [this-script
+         #| Instead of deleting this, detect when running from the same place.
+         ;; Delete this script when finished running in install-mode, it
+         ;; doesn't make sense to do this twice.  Experienced users should just
+         ;; use setup-plt from now on.
+         (when (file-exists? this-script) (delete-file this-script))
+         ;; Also remove Win/OSX stuff that just use this script.
+         (when (file-exists? "install.bat") (delete-file "install.bat"))
+         (when (file-exists? "Finish Install.exe")
+           ;; this will fail if called from `Finish Install.exe' itself
+           (with-handlers ([void void]) (delete-file "Finish Install.exe")))
+         (when (directory-exists? "Finish Install.app")
+           ((dynamic-require '(lib "file.ss") 'delete-directory/files)
+            "Finish Install.app"))
+         (when (file-exists? "finish install.command")
+           (delete-file "finish install.command"))
+         |#
+         (when (file-exists? this-script) (remember-this-path!))]))

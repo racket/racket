@@ -1,0 +1,16 @@
+Check Syntax alpha-renaming does not work with `define-struct'.
+
+After breaking a long interaction several times, one of the breaks
+  may carry over to the next interaction.
+
+The yellow execute warning in the interactions window does not go away
+  if the user undoes all changes to the defintions window.
+
+Backup files don't preserve file permissions.
+
+Standalone executables do not support files with images (or
+any kind of graphical syntax).
+
+For a more complete listing of known bugs, see our
+<a href="http://bugs.plt-scheme.org/query/">
+online bug report database</a>

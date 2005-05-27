@@ -1,0 +1,192 @@
+{ (define LIBNAME "Images")
+  (include "head.tinc") }
+
+This teachpack provides primitives for constructing and
+manipulating images.
+
+These functions create basic shapes. The mode can be either
+<code>'solid</code>, meaning the shape is filled in, or
+<code>'outline</code>, meaning the shape is hollow. Image
+colors can be either symbols (like <code>'blue</code>),
+strings (like <code>"blue"</code>), or color structs (like
+<code>(make-color 0 0 255)</code>) -- see below for
+more information about color structs.
+
+<menu>
+<li><code>{(idx rectangle)}</code> :  int int mode image-color -> image <br>
+ to create a rectangle using the given width, height, mode, and color
+<li><code>{(idx circle)}</code> : int mode image-color -> image <br>
+ to create a circle using the given radius, mode, and color
+<li><code>{(idx ellipse)}</code> : int int mode image-color -> image <br>
+ to create an ellipse using the given width, height, and color
+<li><code>{(idx triangle)}</code> : int mode iamge-color -> image <br>
+ to create an upward pointing equilateral triangle using the given edge size and color
+<li><code>{(idx line)}</code> : int int image-color -> image <br>
+ to create an image with a colored line from (0,0) to the
+ point with the given coordinates
+<li><code>{(idx add-line)}</code> : image int int int int image-color -> image <br>
+ to add a line to an existing image, drawn between the two given points
+<li><code>{(idx text)}</code> : string size image-color -> image <br>
+ to create an image of the text in the given string, with the point size, and color specified by the last two arguments
+</menu>
+
+These functions build complex images from the basic
+shapes.  When two images are laid on top of each other, the
+are lined up at their <i>pinhole</i>. Most shapes have their
+pinholes in the middle. The exceptions are
+<code>text</code> and <code>line</code> which have their
+pinholes in the top-left corner.
+<menu>
+<li><code>{(idx overlay)}</code> : image image image ... -> image <br> 
+ to add the pixels of the second image onto the first image, lining up the pinholes
+<li><code>{(idx overlay/xy)}</code> :  image int int image -> image <br>
+ to add the pixels of the second image onto the first image. Instead of lining up
+ on the pinhole, the second image's pinhole is lined up with an offset from the 
+ first image's pinhole. The two coordinates specify how far down and to the right 
+ the offset should be.
+ The pinhole of the resulting image is the same place as the pinhole
+ in the first image.
+</menu>
+
+After an image has been overlaid on another, it is possible
+to recover the position of overlaid image, using the next
+two functions.
+
+<menu>
+<li><code>{(idx image-inside?)}</code> : image image -> boolean <br>
+ to determine whether the pixels of the second image appear in the first
+
+<p> Be careful when using this function with jpeg images. If
+you use an image-editing program to crop a jpeg image and
+then save it, <code>image-inside?</code> will not recognize
+the cropped image, due to jpeg's compression. </p>
+
+<p> Use png images instead. </p>
+
+<li><code>{(idx find-image)}</code> : image image -> posn <br>
+ to determine where the pixels of the second image appear in the first, with
+ respect to the pinhole of the first image.
+</menu>
+
+The shrink functions trim an image by eliminating extraneous pixels.
+<menu>
+<li><code>{(idx shrink-tl)}</code> : image number number -> image <br>
+to shrink the image, starting from the top-left corner. The
+two numbers indicate how many pixels to save.
+The pinhole of the resulting image is in the middle of the image.
+</li>
+<li><code>{(idx shrink-tr)}</code> : image number number -> image <br>
+to shrink the image, starting from the top-right corner. The
+two numbers indicate how many pixels to save.
+The pinhole of the resulting image is in the middle of the image.
+</li>
+<li><code>{(idx shrink-bl)}</code> : image number number -> image <br>
+to shrink the image, starting from the bottom-left corner. The
+two numbers indicate how many pixels to save.
+The pinhole of the resulting image is in the middle of the image.
+</li>
+<li><code>{(idx shrink-br)}</code> : image number number -> image <br>
+to shrink the image, starting from the bottom-right corner. The
+two numbers indicate how many pixels to save.
+The pinhole of the resulting image is in the middle of the image.
+</li>
+
+<li><code>{(idx shrink)}</code> : image number number number number -> image <br>
+to shrink an image around its pinhole. The numbers are the
+pixels to save to left, above, to the right, and below the
+pinhole, respectively. The pixel directly on the pinhole is
+always saved.
+</li>
+</menu>
+
+These functions provide information about the image's size.
+
+<menu>
+<li><code>{(idx image-width)}</code> :  image -> number <br>
+ to obtain an image's width in pixels
+<li><code>{(idx image-height)}</code> :  image -> number <br>
+ to obtain an image's height in pixels
+</menu>
+
+This functions provide information and manipulate an image's
+pinhole.
+
+<menu>
+<li><code>{(idx pinhole-x)}</code> :  image -> number <br>
+ to determine the x coordinate of the pinhole, measuring from
+ the left of the image
+<li><code>{(idx pinhole-y)}</code> :  image -> number <br>
+ to determine the y coordinate of the pinhole, measuring down from 
+ the left of the image
+<li><code>{(idx move-pinhole)}</code> :  image number number -> image <br>
+ to move the pinhole down and to the right (by the specified amounts) of 
+ its current location. Use negative numbers to move it up or to the left.
+<li><code>{(idx put-pinhole)}</code> :  image number number -> image <br>
+ to put the pinhole in the location specified by the arguments, counting
+ from the left and down from the top, respectively.
+</menu>
+ 
+This function precisely specifies what a valid image color is.
+
+<menu>
+<li><code>{(idx image-color?)}</code> :  anything -> boolean <br>
+ to determine if the input is a valid image color
+</menu>
+
+The next functions separate an image into its consitiuent
+colors and combine pixels together to build an image.
+
+<menu>
+<li><code>{(idx image->color-list)}</code> : image -> list-of-color <br>
+ to convert an image to a list of colors
+
+<li><code>{(idx color-list->image)}</code> : list-of-color int int int int -> image <br>
+ to convert a list of colors to an image with the given
+ width and height, and pinhole coordinates (the pinhole
+ coordinates are with respect to the top-left of the image).
+ 
+<li><code>{(idx make-color)}</code> : int int int -> color <br>
+ to construct a color
+<li><code>{(idx color?)}</code> : anything -> boolean <br>
+ to determine if its input is a color
+<li><code>{(idx color-red)}</code> : color -> int <br>
+ to extract the red component of a color
+<li><code>{(idx color-green)}</code> : color -> int <br>
+ to extract the green component of a color
+<li><code>{(idx color-blue)}</code> : color -> int <br>
+ to extract the blue component of a color
+</menu>
+ 
+Like the last group of functions, these functions separate
+an image into its consitiuent colors and combine pixels
+together to build an image, but these provide alpha-channel
+information as well. Alpha channels are a measure of
+transparency; 0 indicates fully opaque and 255 indicates
+fully transparent.
+
+<menu>
+<li><code>{(idx image->alpha-color-list)}</code> : image -> list-of-alpha-color <br>
+ to convert an image to a list of alpha colors
+<li><code>{(idx alpha-color-list->image)}</code> : list-of-alpha-color int int int int -> image <br>
+ to convert a list of alpha colors to an image with the given
+ width and height, and pinhole coordinates (the pinhole
+ coordinates are with respect to the top-left of the image).
+<li><code>{(idx make-alpha-color)}</code> : int int int int -> color <br>
+ to construct an alpha color
+<li><code>{(idx alpha-color?)}</code> : anything -> boolean <br>
+ to determine if its input is a color
+<li><code>{(idx alpha-color-alpha)}</code> : color -> int <br>
+ to extract the alpha value of a color
+<li><code>{(idx alpha-color-red)}</code> : color -> int <br>
+ to extract the red component of a color
+<li><code>{(idx alpha-color-green)}</code> : color -> int <br>
+ to extract the green component of a color
+<li><code>{(idx alpha-color-blue)}</code> : color -> int <br>
+ to extract the blue component of a color"
+</menu>
+
+
+{(include "foot.tinc")}
+
+
+{(include "foot.tinc")}

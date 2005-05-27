@@ -1,0 +1,1500 @@
+
+Version 299.105
+Added get-handle to window<%>
+
+Version 299.104
+Added open-output-text-editor
+Changed application-file-handler so that handler's result is
+ used; #f tells Windows that the application won't quit
+
+
+Version 299.100, March 2005
+
+General:
+ Added support for smoothed (i.e., anti-aliased) shape drawing,
+  including support for spline-based paths; under X, smoothed
+  drawing requires Cairo
+ Mac OS X: switched to composite Carbon layer for widgets, added
+  support for full keyboard access
+ X: modernized GUI look, added support for X clipboard (as opposed
+  to the X selection)
+ Changed some methods to augmentable instead of overrideable (see
+  MzScheme_300.txt about augmentable methods):
+      top-level-window<%>: can-close?
+                           on-close
+      editor<%>:           on-change
+                           on-snip-modified
+                           can-save-file?
+                           on-save-file
+                           after-save-file
+                           can-load-file?
+                           on-load-file
+                           after-load-file
+                           on-edit-sequence
+                           after-edit-sequence
+      text%:               can-insert?
+                           on-insert
+                           after-insert
+                           can-delete?
+                           on-delete
+                           after-delete
+                           can-change-style?
+                           on-change-style
+                           after-change-style
+                           after-set-position
+                           can-set-size-constraint?
+                           on-set-size-constraint
+                           after-set-size-constraint
+      pasteboard%:         can-insert?
+                           on-insert
+                           after-insert
+                           can-delete?
+                           on-delete
+                           after-delete
+                           can-move-to?
+                           on-move-to
+                           after-move-to
+                           can-resize?
+                           on-resize
+                           after-resize
+                           can-reorder?
+                           on-reorder
+                           after-reorder
+                           can-select?
+                           on-select
+                           after-select
+                           can-interactive-move?
+                           on-interactive-move
+                           after-interactive-move
+                           can-interactive-resize?
+                           on-interactive-resize
+                           after-interactive-resize
+Widgets and Widget Features:
+ Added a default callback procedure for every control<%> class
+  that has a callback
+ Added combo-field%
+ Added 'float and 'metal styles to frame%
+ Added 'combo, 'transparent, and 'resize-corner styles to canvas%
+  and editor-canvas%; added 'no-border, 'auto-vscroll, and
+  'auto-hscroll flags to editor-canvas%; added set-resize-corner
+  to canvas<%>; added  show-scrollbars and method to canvas%
+ Added set-min-width function to popup-menu%
+ Added set-canvas-background and get-canvas-background to
+  canvas<%>
+ Added get-item-label, set-item-label, and set to tab-panel%
+ Added 'blank cursor%
+ Added hide-cursor-until-moved, called by text%'s on-char
+ Added message+check-box and message+check-box/custom
+ Added a font intialization argument for control<%> classes
+  and popup-menu%, and added get-font method
+ Removed get-label-font, get-control-font, set-label-font, 
+  set-control-front, get-label-position, and set-label-position
+  from area-container<%> and implementing classes
+ Added normal-control-font, small-control-font, tiny-control-font,
+  view-control-font, and menu-control-font constants
+Drawing:
+ Added set-smoothing and get-smoothing to dc<%>
+ Added dc-path% class and added draw-path to dc<%>
+ Added set-path to region%
+ Added in-region? to region%
+ Added draw-bitmap-section-smooth to bitmap-dc% (not dc<%>)
+ Added variants of dc<%>'s set-{pen,brush} that accept arguments
+  like the-{pen,brush}-list's find-or-create-{pen,brush}
+ Changed default of radius argument of set-rounded-rectangle 
+  in region% to -0.25 (consistent with dc<%> method)
+ Changed the font% constructor so that weight and style
+  arguments are optional
+ Added screen-glyph-exists? to font% and glyph-exists to dc<%>
+ Removed get-afm-path and set-afm-path from ps-setup%;
+  use the PLTAFMDIR environment variable or the
+  current-ps-afm-file-paths parameter, instead
+ Added can-show-native? and show-native to ps-setup%
+ Changed default 'default PostScript font to Helvetica
+ Changed default 'decorative PostScript font to Helvetica
+ Changed gl-context% swap-buffers to use the call-as-current lock,
+  and changed the lock to be re-entrant
+ Added gl-config%, a gl-config init argument to canvas%, and
+  set-gl-config and get-gl-config methods to bitmap%
+ X: improved performance of bitmap scaling when RENDER is 
+  available
+ Improved performance of get-argb-pixels, set-argb-pixels,
+  and loading of PNG and JPG files on some platforms
+Misc:
+ Added the-x-selection-clipboard
+ Added paste-x-selection and do-paste-x-selection to editor<%>
+ Added "paste-x-selection" to add-editor-keymap-functions
+ Changed "middlebutton" mapping in the default text keymap
+  initializer's map to use paste-x-selection
+ Dropped question marks for interactive and use-paper-bbox
+  initialization arguments of post-script-dc%; added
+  as-eps initialization argument
+ Added an as-eps argument to editor<%>'s print method
+ Flattened text from an editor<%> always uses #\newline,
+  not a platform-specific line separator
+ Added background-color argument to editor<%>'s refresh
+ Added on-split-snip, on-merge-snips, and get-revision-number
+  to text%
+ Changed read-one-special in readable-snip<%> to read-special
+ Added get-unterminated-bytes to editor-stream-in%
+ Removed >> and << from the editor-stream classes, and changed
+  "string" to "bytes" in class and method names
+
+----------------------------------------------------------------------
+
+Version 209, December 2004
+
+No significant changes.
+
+----------------------------------------------------------------------
+
+Version 208, August 2004
+
+No significant changes.
+
+----------------------------------------------------------------------
+
+Version 207, May 2004
+
+Changed Windows launching behavior to bring an existing window
+ to the front and to use `application-file-handler' to deliver
+ comamnd-line arguments
+
+----------------------------------------------------------------------
+
+Version 206p1, February 2004
+
+ Fixed printing scale for Windows NT/2000/XP
+
+
+Version 206, Janurary 2004
+
+Drawing:
+ Changed get-argb-pixels and set-argb-pixels to row-major order:
+  left to right then top to bottom
+ Added get-bitmap and get-bitmap-mask to image-snip%
+ PostScript `draw-bitmap' now uses a supplied mask
+ Changed the default radius for dc<%>'s draw-rounded-rectangle
+  to -0.25, and added checking and a mismatch exception
+  when the radius is out of range
+Text and fonts:
+ Added optional argument to draw-text in dc<%> for rotation
+ Changed text scaling to support independent X and Y scale
+  (except Windows 95/98/Me)
+ Added argument to font%, etc., to make size in pixels
+ Added size-in-pixels to style<%> and style-delta%
+ X with fontconfig/Xft: Added remapping for the 'symbol family
+  to match Adobe symbols (like Mac OS X)
+ X with fontconfig/Xft: Added substitution support via
+  comma-separated font names
+ X with fontconfig/Xft: Changed default 'symbol face mapping
+  to " Standard Symbols L,Nimbus Sans L"
+ Added optional 'mono argument to get-face-list
+Frames:
+ X, Mac OS: minimum size and non-stretchiness of a frame
+  or dialog is enforced by the window manager
+ Added optional argument to get-display-size to get the entire
+  screen's size under Windows and Mac OS
+ Added get-display-left-top-inset
+ Added 'hide-menu-bar frame style
+ Initial location for a frame can use negative numbers, and
+  the move method can move a frame to a negative location
+Editors:
+ Added an optional argument to begin-edit-sequence in
+  editor<%> to treat actions before and after sequence
+  as consecutive
+Framework collection:
+ Changed the defaults for frame:standard-menus-mixin;
+  the method file-menu:between-save-as-and-print method no
+  longer creates a separator menu item
+ Changed the overriding method behavior of
+   drscheme:frame:basics-mixin
+ Modes are now based on the language settings, rather than
+   the filename
+
+----------------------------------------------------------------------
+
+Version 205: August, 2003
+
+Anti-aliased text:
+ Text rendering uses smoothing (anti-aliasing) for Mac OS X,
+ Windows, and X with Xft/fontconfig/RENDER
+PNG format and image masks:
+ Added 'png and 'png/mask as load bitmap types, and added
+  optional background color argument for loading 'png
+ Added 'jpeg and 'png as save bitmap types
+ Changed draw-bitmap and draw-bitmap-section to accept
+  a non-monochrome bitmap as a mask (serving roughly 
+  as an inverted alpha channel)
+ Changed image-snip% to use a mask attached to a
+  bitmap, if any, and to preserve the mask bitmap
+  when the file is saved
+OpenGL:
+ OpenGL support now available on all platforms; see also the
+  "sgl" collection
+ Changed canvas% so that 'gl style is no longer needed
+  to enable OpenGL drawing in the canvas
+ Added get-gl-context method to dc<%>, which returns a
+  gl-context<%> for canvas and bitmap DCs
+ Changed with-gl-context method of canvas% to use
+  call-as-current for its gl-context<%>; the difference
+  from the old behavior is that such context-setting
+  is serialized across all eventspaces
+GUI:
+ Added 'no-autoclear style to canvas%
+ Added 'control-border style to canvas% and editor-canvas%
+ Added 'hilite style for pen% and brush%
+ Windows: Use XP theme controls (under Windows XP)
+ Windows: system font is Tahoma when available,
+  default font is Microsoft Sans Serif when available
+ Mac OS X: Added 'toolbar-button style, on-toolbar-button-click
+  method, and modified method to frame%; the 'toolbar-button style
+  only affects the frame under OS X
+ Mac OS: Added current-eventspace-has-menu-root? and support for
+  'root parent of a menu-bar% instance
+ Mac OS: Added application-file-handler
+ Mac OS: Key-release events now reported
+ Mac OS X: Fixed menu-bar flashing bug, thanks to Paul Schlie
+Editor:
+ Added write-editor-version and read-editor-version
+ Changed cut-and-paste WXME format to include version
+ Added on-display-size-when-ready and lock for refresh that blocks
+  an edit sequence
+ Added get-text! to snip%
+ Added locations-computed? to editor<%>
+ Added locked-for-write?, locked-for-flow?, and
+  locked-for-read? to editor<%>
+Misc:
+ Handling of --main/-C command-line flag changed
+
+----------------------------------------------------------------------
+
+Version 204: May, 2003
+
+Mac OS X: tab-panel% draws a border around its content by default
+Added 'no-border style to tab-panel%
+Windows: removed border around radio-box% buttons, changed label
+ to follow requested positioning
+Added group-box-panel%
+Added eventspace-handler-thread
+Added vertical-inset and horizontal-inset methods to editor-canvas%
+Changed text-field% to have margins of 2, reduced space between
+ the edit-box border and the editable text
+Windows: switched to XP-style controls under XP
+Added application-quit-handler
+
+----------------------------------------------------------------------
+
+Version 203: December, 2002
+
+Windows: corrected a source of much instability
+Added tab-panel%
+Added message-box/custom
+Added 'app, 'caution, and 'stop styles to message-box
+Added 'app, 'caution, and 'stop labels for message%
+Added value init argument to check%, selection init argument to
+ radio-box%, choice%, and list-box%; in the argument order, the new
+ argument follows the style argument
+Added checked init argument for checkable-menu-item%
+Added and 'deleted style to every subwindow<%> class; a window
+ created with 'deleted is initially invisible and takes no
+ space in its container
+Added `file-creator-and-type', useful in Mac OS
+Mac OS X: file dialogs use given starting directory, and dialog%s
+ with a parent frame are shown as "sheets"
+Mac OS X: MrEd3m is now supported
+
+----------------------------------------------------------------------
+
+Version 202: August, 2002
+
+Added 'panel brush style for drawing in the current platform's panel
+ background color and pattern.
+Added application-about-handler, application-preferences-handler,
+ and current-eventspace-has-standard-menus?
+Mac OS X: fixed handling of the standard `Quit' menu item; it now
+ invokes the `on-exit' handler of the most recently active frame in the
+ initial eventspace
+
+----------------------------------------------------------------------
+
+Version 201: July, 2002
+
+Added 'unknown/mask and 'unknown/gif bitmap types and
+ get-loaded-mask and set-loaded-mask methods to bitmap%;
+ used for GIF files containing transparent pixels
+New load handler, text-editor-load-handler, enables MrEd to
+ load source files that are stored in the graphical
+ editor format
+Added open-input-text-editor, used by the load handler
+Added readable-snip<%>, which is recognized in ports created
+ with open-input-text-editor to "read" special snips
+Changed file loading and saving so that a snip class name of
+ the form "(lib ...)" triggers the loading of a snip class
+ implementation
+Removed get-clipboard-client from clipboard<%>
+Changed set-clipboard-client to associate a clipboard-client%
+ object to the current eventspace, and the-clipboard to call
+ methods within the eventspace through event callbacks
+Added a variant of insert-file to editor<%> to accept
+ an input port instead of a filename
+Changed load-file, save-file, and insert-file in editor<%>
+ to raise exceptions instead of returning booleans
+Added can-reorder?, on-reorder, and after-reorder to
+ pasteboard%
+Added on-snip-modified method to editor<%>, set-unmodified
+ method on snip%, and modified method to editor-admin and
+ snip-admin
+Added 'packages and 'enter-packages style flags to get-file
+ and get-directory; affects only Mac OS
+
+----------------------------------------------------------------------
+
+Version 200: June, 2002
+
+Changed mouse-event% and key-event% positions (x and y) to be
+ exact integers
+Added 'wheel-up and 'wheel-down "key" events
+Added 'release key events
+Added popup-menu to window<%>
+Added a popup menu to the message-box dialog that copies the contained
+ message to the clipboard
+Changed methods in dc<%> classes to raise an exception if the
+ DC is not ok (except for the ok? method)
+Changed dc<%>'s draw-bitmap and draw-bitmap-section to
+ scale the bitmap if the dc<%> has a scale, and to accept
+ a mask bitmap
+The get-resource and write-resource procedures are deprecated, and
+ not supported for Mac OS; MrEd uses the preferences file that
+ ismanaged by MzLib's get-preference and put-preferences
+Changed text% undo to restore the pre-modification selection
+Changed text% so that later-installed clickbacks take precedence
+Changed cursor% constructor to take image and mask bitmaps instead of
+ a filename
+Restricted all label string arguments to <= 200 characters
+Added optional filters argument to get-file, put-file, and
+ get-file-list (used by Windows, only)
+Added get-directory
+Fixed internal lock handling on focus and activation events
+Removed ps-setup%'s get-options and set-options
+Added a use-paper-bbox? initialization argument to post-script-dc%
+Added a 'gl style flag to canvas%, and with-gl-context and
+ swap-gl-buffers methods; supported for Windows, only
+Added container-flow-modified method to area-container<%>
+Added "standard" HTML colors to the-color-database
+Added 'size-n/s, 'size-e/w, 'size-ne/sw, and 'size-nw/se icons
+Windows: removed special handling of Ctl-m, Ctl-i, and Ctl-h
+X: play-sound in Linux uses the "play" program, and under
+   Solaris, it uses the "audioplay" program
+X: Default keymap double-click time determined via the standard Xt
+ function
+X: 'no-resize-border and 'no-caption work for frame% with many window
+ managers
+X: too-long menus can scroll
+X: changed default preview command from "ghostview" to "gv"
+Mac OS: play-sound plays virtually any kind of sound, including
+ .wav files; QuickTime 3.0 or higher is required
+
+----------------------------------------------------------------------
+
+Version 103: August 28, 2000
+
+Added 'wait as a possible argument to yield, and changed startup
+ to call (yield 'wait), with new meaning for -V flag
+Removed 'anchored flag for snip% (wasn't implemented)
+Added support for loading JPEG file (but not saving)
+Added get-clipboard-bitmap and set-clipboard-bitmap to
+ clipboard<%>
+Changed graphical-read-eval-print-loop to take an optional
+ eventspace argument, which determines the evaluation eventspace
+Fixed menu shortcut handling to call the menu bar's `on-demand'
+ method before looking for a key binding
+Fixed auto-wrapping bug in text%
+Fixed set-max-undo-history in editor<%>
+Windows: editors can paste bitmaps copied to the
+ clipboard from other programs
+Windows: fixed get-file-list
+
+----------------------------------------------------------------------
+
+Version 102: June 26, 2000
+
+Changed the interaction of face and familiy settings in a font for
+ drawing text
+Removed get-afm-name and set-afm-name from font-name-directory<%>,
+ and changed post-script-dc% to use the PostScript font name as the
+ AFM file name
+Added get-margin and set-margin to ps-setup%; post-script-dc% uses
+ the margins to shrink its paper size and offset its output
+Changed pen%'s width from integer to real number (used for PS)
+Added on-superwindow-show and on-superwindow-enable to window<%>
+Added get-file-list procedure
+Added on-message to top-level-window<%>
+Added send-message-to-window procedure
+Added pop-down callback initialization argument to popup-menu%, and
+ added 'menu-popdown and 'menu-popdown-none event types to
+ control-event%
+Added get-popup-target method to popup-menu%
+Added popup-menu method to editor-admin% and snip-admin%
+Added can-do-edit-operation? to editor<%>
+Added "leftbuttonseq", "middlebuttonseq", and "rightbuttonseq" to
+ keymap%'s map-function
+Changed the default text keymap initializer to map right button
+ releases to popup an edit menu
+Changed the meaning of the on-change method in editor<%>; see the
+ manual for details
+Editor reading/writing/cutting/pasting no longer relies on global
+ state, so exceptions raised for one editor do not affect other
+ editors
+Removed read-done and write-done from snip-class%
+Moved reading-version to snip-class% (from snip-class-list%)
+Added offset argument to dc<%>'s get-text-extent and draw-text
+Made stdio window for Windows/MacOS accept input (for `read', etc.)
+X, Mac: Fixed list-box% to handle arbitrarily many list items
+X: Fixed input of keypad characters and dead characters (such as
+ accent marks)
+X: Fixed loading of amimated GIFs (shows only first image)
+
+----------------------------------------------------------------------
+
+Version 101: October 25, 1999
+
+Showing an inactive child window now raises an exception
+Added set-paragrapgh-alignment to text%
+Added 'symbol font family
+Added {set,get}-paste-text-only to editor<%>
+Added {set,get}-line-spacing and {set,get}-styles-sticky to text%
+Added {set,get}-tight-text-fit to editor-snip%
+A text-field%'s text% is in paste-text-only mode by default
+
+Framework changes:
+
+- gui-utils:get-choice accepts a new (final) parameter that controls the 
+ result when the user cancels the dialog. 
+
+- added color-model:rgb-color-distance that accepts six numbers representing 
+ two colors in rgb form and returns the distance between those colors. 
+ Larger numbers mean that the human eye will see larger differences. 
+
+- when the framework collection has a "CVS" subdirectory, 
+  info frames show the current memory usage in the info panel.
+  Clicking the button performs three gcs and updates the memory count.
+
+- editor:basic-mixin no longer has a `default-auto-wrap?' method.
+  Just set the parameter method `auto-wrap' directly.
+ 
+----------------------------------------------------------------------
+
+Version 100: August 9, 1999
+
+MrEd 100 is the successor to MrEd 53. For MrEd 100, we preserved the
+underlying windowing model, but redesigned the GUI toolbox interface
+to make it simpler and more Scheme-like. Every MrEd 53 program
+requires substantial changes to run in MrEd 100.
+
+The revised interface makes MrEd more accessible to new users: class
+and method names are more consistent; useless and redundant methods
+have been eliminated; and methods check their arguments more
+precisely.  Key portions of the documentation have been re-written,
+and a new help system called "Help Desk" makes locating information
+much easier than before.
+
+The implementation behind the revised interface is reliable. Whereas
+previous versions of MrEd were plagued by bugs and inconsistently
+implemented features, the new interface is consistently implemented
+across platforms and thoroughly tested. Of course, bugs will always
+slip through, but MrEd 100 is far more robust than its predecessors as
+a result of a cleaner implementation and a new testing process.
+
+New Application Architecture
+----------------------------
+
+MrEd 53 comprised two parts:
+
+ * a core toolbox (containing names prefixed with `wx:') that was too
+   primitive for real programming (notably, no geometry management);
+   and
+
+ * an application framework (containing names prefixed with `mred:')
+   that provided crucial functionality (notably, windows with geometry
+   management) but also much more, making it too heavyweight for
+   simple GUI programs.
+
+For MrEd 100, we moved the boundary between the core toolbox and the
+application framework. The name "MrEd" now refers to only the core
+toolbox, but the core toolbox now includes the most useful `mred:'
+classes from the old application framework. While merging the `wx:'
+and `mred:' classes, we eliminated the prefixes.
+
+All of the core toolbox classes are built into the MrEd executable.
+The old `mred:' classes that are not part of the core toolbox have
+been moved into a separate framework library. The framework library is
+designed for use in large and polished applications (as opposed to
+small or prototype applications), and particularly in applications
+that require coordinated groups of frames, editor frames with
+searching, or user preference dialogs.
+
+Running MrEd and Developing MrEd Applications
+---------------------------------------------
+
+MrEd 100 is more consistent with MzScheme than previous releases. The
+default language for MrEd 100 is the same as MzScheme's default
+language. In contrast, MrEd 53's language had different
+case-sensitivity and cond-fallthrough behavior. Command-line handling
+for MrEd 100 is nearly the same as for MzScheme; the only difference
+is that MrEd executes `(graphical-read-eval-print-loop)' on startup
+instead of `(read-eval-print-loop)'. MrEd 100 programmers do not need
+to understand units and collections to implement a simple GUI
+application.
+
+MrEd's `graphical-read-eval-print-loop' implements a rather primitive
+REPL, unlike the relatively useful REPL provided by the old MrEd
+toolbox-framework combination. MrEd 100 provides no replacement for
+the old REPL. Instead, DrScheme 100 provides a REPL that matches
+MrEd's language exactly.
+
+Porting to MrEd 100
+-------------------
+
+The remainder of this document provides an overview of MrEd 100 with
+notes for porting MrEd 53 applications. Section 0 describes a few
+highlights of the MrEd 100 revision. Section 1 shows the new
+interface/class hierarchy for windows and a few other parts of the
+toolbox. Section 2 lists the methods of the new interfaces and
+classes. Section 3 lists the complete, new set of MrEd procedures,
+showing the arguments for selected new procedures. Section 4 provides
+a mapping from the old `wx:const-XXX' constants to the new
+symbols. Finally, Section 5 lists some of the small, relatively
+subtle, and potentially confusing changes in MrEd 100 (similar to
+changes normally listed in the HISTORY notes).
+
+Further Details
+---------------
+
+See plt/notes/mred/MrEd_100.txt in the PLT distribution for further
+details.
+
+----------------------------------------------------------------------
+
+Version 53: July 25, 1998
+
+IMPORTANT: Expect further major changes in the MrEd toolbox with
+version 54. See the note for version 51, below. Here are some
+more expected changes:
+ * wx:text%, wx:multi-text%, wx:text-window%, mred:text%, and
+   mred:multi-text% will be removed and replaced with 
+   wx:media%-based tools, i.e., the current mred:media-text% and
+   mred:media-multi-text%
+
+Engine:
+-------
+Removed wx:concat-files, wx:string-match?, wx:get-temp-file-name
+ (see MzLib's new make-temporary-file)
+Procedures and methods that accept wx:const-XXX bit combinations
+ now check their arguments more thoroughly; junk values are
+ no longer ignored
+The wx:style-delta% initialization and wx:style-delta% set-delta
+ method no longer allow a second argument with command flags
+ where it used to be ignored; the second argument with 
+ wx:const-change-underline is now a Boolean rather than 0 or 1
+Removed some constants:
+  wx:const-bitmap-type-default
+  wx:const-bitmap-discard-colourmap
+  wx:const-allow-auto-resize
+  wx:const-needed-sb
+  wx:const-event-type-char
+  wx:const-conter (use wx:const-centre)
+All methods that operate on bitmap files now require that the 
+ bitmap type is specified
+Removed wx:key-event%'s get-event-type, since there was only
+ one possible result
+Added wx:const-print-postscript, wx:const-print-standard, and
+ wx:const-print-ask
+Restricted wx:find-path to fewer paths; see MzScheme's new
+ find-system-path
+Changed wx:list-box%'s get-selections to just return a list
+ of integers
+The following wx:command-event% methods are deprecated and
+ have been removed from the documentation:
+  get-/set-command-int (use get-/set-selection)
+  get-/set-command-string (use get-/set-string)
+  get-/set-extra-long (use get-/set-selection-type)
+Cleaned up wx:list-box% multiple-selection (wx:const-multiple
+ and wx:const-extended standardized across platforms)
+Cleaned up wx:command-event% field values for list-box events
+Cleaned up canvas scrollbar handling for all platforms;
+ the get-scroll-units method was removed
+wx:panel%'s set-button-font and set-label-font work consistenly
+Windows: cleaned up structure of sliders and gauges
+
+System:
+-------
+- Fixed minimum mred:slider% size
+
+- Cleaned up wx:command-event% field values for list-box double-click
+  events
+
+- When only one object of class mred:standard-menus-frame% exists,
+   its File|Close menu item is disabled, and its close button
+   invokes the exit handler
+
+----------------------------------------------------------------------
+
+Version 52: May 25, 1998
+
+IMPORTANT: Expect major changes in the MrEd toolbox with version 53 or
+so. See the note for version 51, below.
+
+Engine:
+-------
+on-set-focus and on-kill-focus work reliably; not all windows 
+ can get the focus, but those that do call the on-set-focus and
+ on-kill-focus methods
+pre-on-char and pre-on-event work for all windows on all
+ platforms
+wx:begin-busy-cursor no longer takes a cursor argument, but it
+ now works correctly on all platforms
+set-cursor in wx:window% now accepts and returns null, indicating
+ that the window's cursor is the same as its parents; most
+ windows start out with the null cursor
+Added number method to wx:menu% and wx:menu-bar
+The delete methods of wx:menu% and wx:menu-bar return #t if the
+ delete suceeded, #f otherwise
+
+System:
+-------
+- mred:standard-menus-frame now has a windows menu. To
+  eliminate it, ovveride "windows-meun" with #f. It
+  is updated by mred:the-frame-group
+
+- added documentation for:
+    mred:constants:original-output-port, 
+    mred:constants:original-error-port, and
+    mred:constants:original-input-port.
+
+- added get-title-prefix to mred:simple-menu-frame% class
+  documented get-title, etc. in mred:simple-menu-frame% class
+  added get-complete-title to mred:simple-menu-frame% class
+
+----------------------------------------------------------------------
+
+Version 51: March 25, 1998
+
+IMPORTANT: Expect major changes in the MrEd toolbox with version 53 or
+so. Likely changes include:
+ * Removing the useless size arguments for initializing mred:frame%,
+   mred:button%, etc. instances.
+ * Changing the ``nothing'' value (e.g., no parent frame) from null 
+   to #f.
+ * Replacing `bitwise-or'ed wx:const-XXX numerical constants with 
+   lists of 'wx:const-XXX symbols.
+
+Engine:
+-------
+The wx: classes and procedures are no longer ``built-in''
+ with respect to units; instead, all wx: items are now
+ in the wx@ signed unit, with the signature wx^, so
+ the MzScheme and MrEd languages are the same; the
+ wx^ signature is in MrEd's initial environment and
+ in the "wxs.ss" library of the "system" collection
+Added a --pre flag for evaluating an expression in a 
+ MzScheme-only namespace at startup. This flag is intended
+ for use with image dumps (see the MzScheme manual), which
+ are disabled by default
+X Windows: mred now accepts a fixed set of standard X
+ Windows command-line flags (it treats them the same as
+ always) instead of letting the platform-specific Xt
+ library decide; these flags must now be specified
+ first if there is no --pre flag, or after --pre's 
+ argument if there is one, otherwise the flags
+ are passed on to MrEd's system (for good or ill)
+X Windows: window manager close-frame request is ignored
+ when a modal dialog is in control
+Added security so that wx:snip% methods cannot be overridden 
+ to crash MrEd
+Fixed wx:canvas% scrolling on all platforms; the style flags
+ wx:const-hscroll and wx:const-vscroll must be used at
+ canvas-creation to set up for scrolling. Removed the
+ enable-scrolling method from wx:canvas%. Renamed the method
+ get-scroll-page-units to get-scroll-units. Added methods
+ get-scroll-pos, get-scroll-range, and get-scroll-page.
+The wx:canvas% wx:const-backingstore and wx:const-retained
+ style flags have been removed.
+Pasteboard printing implemented [finally], and many pasteboard
+ bugs are fixed
+Removed wx:key-event%'s position method and added get-x,
+ get-y, set-x, and set-y
+Changed default pen in DC to width 0 instead of 1
+Added get-max-view method to wx:media-admin%
+Revised wx:media-buffer%'s cursor system for better 
+ cooperation with embedded buffers; instead of handling
+ the cursor in on-default-event, added a method adjust-cursor
+ to buffers and snips, and replaced admin's set-cursor with
+ update-cursor
+Added refresh-delayed? predicate to wx:media-buffer%, useful
+ for deciding whether a buffer (or one of its enclosing 
+ buffers) is in an edit-sequence
+Added copy-self-to method to wx:media-buffer% and made copy-self
+ overrideable; copy-self creates a new buffer and copy-self-to
+ copies properties of the buffer to the newly created buffer;
+ now implemented for pasteboards, too
+Added number-of-visible-items to wx:list-box%
+Removed wx:copy-file; MzScheme now has copy-file
+Fixed wx:media-stream-in%'s get-string (it was adding an
+ extra nul character)
+Removed error dialogs when wx:media-buffer%'s load-file or
+ save-file fails
+Changed the meaning of wx:keymap%'s implies-shift method;
+ mapping from ``?'', where ``?'' implies a shift, maps both
+ ``?'' and ``s:?''; the idea is that only one of these
+ mappings is possible, but it may be difficult to know
+ which one
+Windows: fixed canvas mouse events; button-down event grabs
+ the mouse until the next button-up event
+Windows: fixed initial setting of DC text mode: transparent
+ instead of opaque
+X Windows: fixed wx:frame's iconize and iconized? methods,
+ ignoring the X idea of not de-iconifying windows that were 
+ iconified by the user
+X Windows: fixed iconification of parentless dialog boxes;
+ they can't be iconified, since there's often no way to
+ get them back
+Changed the initial setting of an eventspace created by the
+ wx:make-eventspace procedure; now, the initial directory is
+ the current directory when wx:make-eventspace is called
+Removed wx:exit
+MacOS: fixed event handling -> better response and performance
+More PostScript drawing fixes
+X Windows: added .mred.resources option `mred.forceFocus'; if
+ the value is 1, bringing a frame to the foreground forces the
+ focus there (good for Window Managers where the focus does
+ not follow the pointer); the default is 0, the old behavior
+MacOS: removed the special -r command-line flag
+Upgraded to gc 13alpha1
+
+System:
+-------
+- mred console printer improved:
+  - values printer now shows partial results.
+  - last newline inside stdout (purple) boxes ommitted
+  - more efficient
+
+- killing and breaking read (finally) works.
+
+- printing dialogs for windows and mac work better now
+
+- parenthesis matching is improved. The cache is now used much more
+  heavily.
+
+- turned off the file name printouts on splash screen
+
+  evaluate: 
+
+  (wx:write-resource "mred" "splashMessages" 1 (wx:find-path 'setup-file))
+
+  to turn them back on.
+
+- searching keybindings have changed. There are four distinct actions:
+   action1: move keyboard focus to the searching window, opening it if necessary, 
+            or if already there search forward
+   action2: move keyboard focus to the searching window, opening it if necessary, 
+            or if already there search backward.
+   action3: search again, in the same direction
+   action4: move the focus between the main window, searching window and replacment window
+   action5: hide the searching window
+
+The actions are mapped to different keys, based on the platform. 
+
+On unix:
+ action1 => control-s, meta-%
+ action2 => control-r
+ action3 => f3
+ action4 => control-i
+ action5 => control-g
+
+On the macintosh:
+  action1 => command-f
+  action2 => command-r
+  action3 => command-g
+  action4 => command-o
+  action5 => command-.
+
+On windows:
+ action1 => control-f
+ action2 => control-r
+ action3 => f3, control-g
+ action4 => control-i
+ action5 => escape
+
+- set-empty-callback in mred:frame-group% is now set-empty-callbacks
+  in mred:frame-group%. See the docs for more details.
+
+- initial basis now documented
+
+- provide "simple" interface to unitized apps
+
+- mred:edit-file used to return (void) when the file was already
+  open. Now it returns the (already open) frame.
+
+- fixed callback printfs from frames. They now appear in the console.
+
+- the paren shader used to fail on very large regions. It does not
+  anymore.
+
+- fixed mred:radio-box%'s enable method. It now takes two arguments.
+
+- better begin/end-edit-sequence support in mred; used by
+  info-frame and to improve the speed in the console io. There is a
+  new method of mred:media-edit: "run-after-edit-sequence".
+
+- mred:original-output-port is now called mred:constants:original-output-port
+  mred:original-input-port is now called mred:constants:original-input-port
+
+- MrEd's collections are now documented.
+
+- The command line flags have changed. Specifically:
+  the -nu flag is now called either "--non-unitized" or "-u".
+  the splash screen flag has changed.
+
+- mred no longer imports a unit of the mred:application signature. Instead, 
+  the parameter mred:current-app-name is used to get and set the
+  applications name. The eval-string and frame are not used.
+
+- CACHE-WRITE-COUNT in a console-edit is no longer used.
+
+- set-empty-callback is now set-empty-callbacks. It sets two
+  callbacks, one for when the group is about to become empty and one
+  for when the group is actually empty. See the documentation for
+  more info.
+
+- do not use the frame method on-close anymore. Use can-close? and
+  do-close.
+
+- renamed the edit-method "on-close" to "do-close"
+
+- the startup procedure has changed again. Now, applications are
+  expected to be in a collection. The -a flag has an extra first
+  argument, specifing the collection to load the files from, and 
+  a -A flag has been added. See the startup documentation for more
+  information.
+
+  Also, if you define mred:startup and use the -u (previously -nu) flag, the
+  definition of mred:startup must come after the flag on the command
+  line. For example:
+     mred -e "(define mred:startup (lambda ...))" -nu
+  no longer works.
+
+  Redefinition of mred:initialize and mred:make-invokeable-unit are
+  no longer supported. Create a new system instead, using the -s flag.
+
+- added "set-display/write-handlers" method of mred:console-edit. This
+  work used to happen during a call to the "takeover" method.
+
+-  mred:get-file and mred:put-file now take a parent window as optional
+   last argument.
+
+- added kill-protect and kill-allow-protected to mred:console-edit%
+
+- the collection paths are not normalized anymore
+
+- fixed bugs in the meta-u and meta-l keybindings
+
+- if unmarshalling preferences caused an exception at startup, MrEd
+  would open up EdJr; now it recovers and uses the default value.
+
+----------------------------------------------------------------------
+
+Version 50: August 26, 1997
+
+Engine:
+-------
+Changed wx:dc%'s get-size method to return size of
+ destination area; old [documented] functionality
+ is available via max-x and max-y
+Made button-click state visible for Xt on b&w displays
+Fixed and normalized PostScript drawing
+Removed wx:dc% methods: device-to-logical-x, etc.
+Windows wx:display-size changed to return the size of the
+ screen not including the task bar
+Windows: finally fixed scale for [non-PostScript] printing
+Added wx:[un]register-collecting-blit
+X Windows: Fixed use of colormap by loaded bitmap images
+Added an optional argument to wx:media-buffer's print method
+ to supporting fitting to the destination page
+X Windows: Saving as xbm works for bitmaps of any depth
+MzScheme pathname expansion performed by all wx: toolbox
+ procedures that take a pathname
+X Windows Xt: removed excessive borders on wx:canvas% objects
+X Windows Xt: removed 2 pixel offset for a single auto-sized
+ child in a wx:frame% or wx:dialog-box%
+Windows: Fixed scrollbars on editor buffers; they're always
+ shown now, but the editor never gets confused about the size
+Fixed on-size, pre-on-char, and pre-on-event for wx:item% 
+ subclasses
+Fixed confusing argument type and number error messages
+ for overloaded methods of primitive classes
+
+System:
+-------
+- fixed a bug in file handlers; if a predicate is supplied, that
+  predicate is only called with one argument, the filename.
+
+- added mred:get-single-choice, which takes the same arguments as
+  wx:get-single-choice. It works the same, unless the dialog is
+  resized, in which case the mred: version resizes gracefully.
+
+- All of the icons in mred are now loaded lazily (but only once),
+  and their names are prefixed with "get-". They are now:
+
+  - mred:get-anchor-bitmap
+  - mred:get-lock-bitmap
+  - mred:get-unlock-bitmap
+  - mred:get-icon
+  - mred:get-autowrap-bitmap
+  - mred:get-paren-highlight-bitmap
+  - mred:get-reset-console-bitmap
+
+- added mred:info-frame%
+
+- split out mred:edit into several edits. The choices for pasteboards
+  and edits are now:
+
+    mred:media-edit%
+    mred:info-edit%
+    mred:searching-edit%
+    mred:clever-file-format-edit%
+    mred:file-edit%
+    mred:backup-autosave-edit%
+    mred:edit%
+    mred:return-edit%
+    mred:pasteboard%
+    mred:file-pasteboard%
+    mred:backup-autosave-pasteboard%
+
+  Probably mred:edit is not the right choice for you now.
+
+- mred:media-snip% objects now defaultly carry a mred:media-edit% object 
+
+----------------------------------------------------------------------
+
+Version 49: May 31, 1997
+
+Engine:
+-------
+Object system changes: see mzscheme/HISTORY for details
+Fixed Mac event-handling and many other Mac things
+Fixed garbage collection of hidden frames under Windows (!)
+Panels, canvases, and controls that are both hidden and
+  inaccessible are now garbage-collected
+Disabled controls are reliably grayed-out, including items 
+  within a disabled panel 
+Instances of wx:pen%, wx:brush%, or wx:pen% that are
+  selected into a drawing context cannot be mutated
+Immutability of objects obtained via wx:the-XXX-list is
+  enforced
+Controls for Windows, Xt are created with the "System" family
+  rather than the "Default" family (using resources)
+Single wx:bitmap% object can be used by multiple controls
+  and/or pens and/or brushes
+Fixed Motif image-label radio button
+wx:find-directory replaced with wx:find-path
+All wx:dc% instances have a default font for drawing
+wx:const-copy blit never uses the pen/background color;
+  new blit mode wx:const-colour uses current pen
+X Windows: removed mapping of Mod3 to Alt (too confusing on
+  keyboards where NumLock is Mod3)
+Fixed wx:timer% bug that caused autosaving to not work
+Fixed eventspace bugs
+Fixed .bmp reading when smaller-than-max colormap is provided
+Fixed interlaced .gif reading for Windows and MacOS
+Xt: fixed default height of wx:text% items
+Xt: In a wx:mouse-event% instance, type wx:const-type-XXX-down
+  implies get-XXX-down => #t (formerly #f)
+Removed wx:group-box% class; use a panel with a border, instead
+Removed wx:tool-bar% class
+wx:choice% get-columns and set-columns no longer supported
+Added wx:gauge% methods: get-value and get-range
+wx:media-pasteboard% bug fixes and improvements: raise, lower, 
+  set-before, and set-after methods now work
+wx:list-box% set-client-data and get-client-data work with
+  any Scheme data type
+Windows and X Windows: Break key changed back to shift-ctl-c 
+  instead of ctl-c (to avoid conflicts with Emacs-std keyboard
+  mappings)
+
+System:
+-------
+- .htx files are no longer supported
+
+- the search paths for the mzlib collection have changed. The PLTHOME
+  environment variable is now given preference.
+
+- mred:editor-frames are shown by default (the documentation was wrong)
+
+- mred:pasteboard-frames initialization arguments have changed and
+  they are not shown by default
+
+- autosaving has been moved to new edit and pasteboard classes, 
+  mred:backup-autosave-edit and  mred:backup-autosave-pasteboard.
+
+- mred:add-preference-default now takes a function which determines if
+  preferences read from the disk are valid or not (if not, the default
+  is used)
+
+- the show method of mred:dialog-box% only takes one argument now. Use
+  the centre method instead of the second argument
+
+- There is only one frame group now, and all frames are registered
+  with it. It is called mred:the-frame-group.
+  Associated changes:
+  - mred:current-frames is gone
+  - mred:edit-file only takes at most two arguments now
+  - handlers do not take a group as an argument
+  - mred:editor-frame% does not take a group as an input argument
+  - classes with the method `get-edit' are treated specially in groups
+  - mred:frame-group% method open-file does not exist,
+    use the procedures mred:edit-file or mred:open-file.
+  - mred:frame-group% ask-before-closing last eliminated. 
+    Use the empty-callback method
+  - added locate-file, a method of mred:the-frame-group which
+    takes a filename and returns a frame that is editing that if one exists.
+  - mred:edit-file now consults mred:the-frame-group to see if 
+    the file is already open, based on the third argument (or the parameter
+    mred:edit-file-consult-group)
+  - mred:editor-frame
+     - medthod get-frame-group gone from mred:editor-frame%
+     - method open-file's final optional arg eliminated
+     - do-autosave method deleted
+     - register-autosave call moved to mred:std-buffer 
+       (ie mred:edit and mred:pasteboard)
+
+- The perform-updates and set-perform-update ivars in mred:panel%,
+  mred:frame%, and mred:dialog-box% have been replaced with the
+  delay-updates method in mred:frame% and mred:dialog-box%.
+
+  Added on-container-resize method to mred:panel%, etc. to handle
+  container resize events, rather than inferring a container resize via
+  on-size (which could confuse real container resizes with external
+  events).
+
+  Changed force-redraw to ignore refresh requests when the
+  redraw-requesting window is not shown. Redraw requests are now
+  propogated to the top-level frame or dialog via child-redraw-request.
+- if your application is unititized, then you need to change the
+  startup procedure. See the application startup section in the
+  toolbox manual.
+
+----------------------------------------------------------------------
+
+Version 48: Skipped to avoid confusion with Scheme48
+
+----------------------------------------------------------------------
+
+Version 47: January 11, 1997
+
+Engine:
+-------
+WARNING: multiple inhertance is going away in 48
+Added overwrite-styles? arg to wx:media-buffer%'s read-from-file,
+  and added get-/set-load-overwrites-styles methods
+Modified wx:media-buffer%'s set-caret-owner to provide more
+  levels of focus control
+Controls with bitmap labels work correctly, fixed crashing bugs,
+  some Mac controls do not display yet
+wx:bitmap%'s load-file only allowed when the bitmap is not selected
+  into a wx:memory-dc% object or used by a control
+
+System:
+-------
+- find-string-embedded of mred:edit% is just like find-string except it
+  searches in embedded buffers as well.
+- mred:frame-name is gone, use app-name in the application unit instead,
+  which is documented under the `Starting Up' section of the toolbox
+  manual.
+- the signature mred:application^ now contains the variable app-name.
+
+----------------------------------------------------------------------
+
+Version 46: December 5, 1996
+
+Engine:
+-------
+Fixed misc. Motif control-sizing problems
+Mac & Xt: "&" stripped from control labels correctly
+wx:yield takes an optional semaphore argument
+
+System:
+-------
+- pretty-print-out is gone, use display-result instead, if you want to
+  display results
+
+----------------------------------------------------------------------
+
+Version 45: November 12, 1996
+
+Engine:
+-------
+IMPORTANT: let-values is now analogous to let; the old 
+  let-values is now let*-values
+Added thread-savy parameterization system; namespace system changed
+Added eventspaces
+wx:server%, wx:client%, and wx:connection% are no longer supported
+  (Better TCP support is now built into MzScheme)
+wx:the-snip-class-list was replaced by (wx:get-the-snip-class-list)
+wx:the-buffer-data-class-list was replaced by (wx:get-the-buffer-data-class-list)
+Added transparent text backing for editor text
+Added wx:dc% try-colour method
+wx:window% capture-mode, release-mouse, and make-modal no longer supported
+  Modal dialogs can be used instead of make-modal (modal is
+  specified through the constructor). There is currently no
+  replacement for capture-mouse and release-mouse, but a replacement is
+  likely to be in 46.
+Xt and Mac: "&" stripped from control labels (matches Windows/Motif), sortof
+
+System:
+-------
+- frame groups no longer set the frame title prefix
+- there is a new edit%, mred:return-edit%. It takes an extra arg at
+  initialization time, which should be a function that will be called
+  when the user types return in the edit.
+- takeover-output is now takeover and release-output is gone.
+  In the next release this should become obsolete
+- there are now two new methods of simple-menu-frame%'s, 
+  get-edit and get-canvas. These return the current "main" edit and canvas
+  in the frame. They should be used for saving, reverting, etc. If your
+  frame can have more than one "main" edit then override get-edit and 
+  get-canvas and have them return the current main canvas. Note that
+  this is different from active-canvas and active-edit. Those two functions
+  may return *any* visible edit in the frame, eg one of the searching edits
+  in the bottom of the frame, that appear while searching. 
+  active-edit and active-canvas should be used for things like pasting 
+  and copying, which should apply to all edits, not just "important" or "main"
+  ones.
+- mred:simple-frame-canvas% and mred:editor-canvas% are now obsolete.
+  Instead there are now three important canvas classes in the system:
+  mred:wrapping-canvas% : 
+    handles autowrapping, can create edits automatically, uses
+    style-flags ivar and style initialization for default styles to
+    super-init, and implements edit-modifited and edit-renamed
+  mred:one-line-canvas% 
+    is just the right height to display one line of text.
+    inherits from mred:wrapping-canvas%
+  mred:frame-title-canvas%
+    updates the title of the frame when it recieves focus
+    events. inherits from mred:wrapping-canvas%
+- all of the "connection maintenence" ie edits that know which canvses
+  they are in, frames that know which canvas is the most recently
+  active canvas have been moved into into separate classes that only
+  maintain those connections, mred:connections-media-edit%,
+  mred:connections-media-canvas%, mred:connections-frame%,
+  mred:connections-dialog-box%, and mred:connections-panel%
+- all instance variables class% (e.g. edit% and canvas% on frames) 
+  have been changed to get-class%, to support inheiritance.
+- added extra optional arg to mred:local-busy-cursor and
+  mred:show-busy-cursor that specifies the timeout
+- frame title prefixes are now handled by the frame, and
+  the set-frame-prefix and set-frame-title methods correctly
+  update the graphical frame with it's new title.
+
+----------------------------------------------------------------------
+
+Version 44: September 9, 1996
+
+Engine:
+-------
+wx:play-sound added
+Saving bitmaps fixed on all platforms; editor can now save 
+  "inlined" images instead of only references to images
+Hyper-text browser handles HTML files (w/o networking)
+Fixed Mac control drawing and hiding
+Fixed Xt menus (finally!)
+Fixed menu item auto-check for popup menus
+Fixed Motif canvas click event reporting (spurious drags)
+See also mzscheme/HISTORY, wxme/README, and system/HISTORY
+Upgraded to gc 11alpha3
+
+System:
+-------
+- .html files (with file: links) are supported
+- system now provides and uses a better dialog buildling classes. 
+  See toolbox manual for more info
+- changed do-eval and do-save-and-eval-or-read-avail
+  to accept a range in the edit rather than a string
+- added read-snips/chars-from-buffer, a function that takes an edit and 
+  produces a thunk. That thunk returns either a snip or a character, for
+  each character and non-text snip in the edit.  
+- added a check so that edits will now save themselves in mred's format
+  if there are non-text snips in the edit.
+
+----------------------------------------------------------------------
+
+Version 43: Re-released August 12, 1996
+Under GNU LGPL license
+
+----------------------------------------------------------------------
+
+Version 43: August 9, 1996
+
+Engine:
+-------
+Major system overhaul (Robby Findler); see system/HISTORY
+Windows stability greatly advanced
+Windows and MacOS versions much more "Windows-like" and "Mac-like"
+  with standard menu shortcuts and better icons
+MacOS and Windows use native print facilities
+GIF images supported under Windows
+wx:window set-client-size removed
+wx:panel%'s get-cursor renamed to get-item-cursor; added set-item-cursor
+Fixed cut-n-paste newlines under MacOS and Windows
+Xt: panel with one item no longer auto-sizes the child
+See also mzscheme/HISTORY
+
+System:
+-------
+- replaced search dialogue
+- new application startup procedure
+- mred:frame% changed to mred:editor-frame%
+- mred:canvas% changed to mred:editor-canvas%
+- mred:console-frame renamed to mred:console
+- mred:console-edit and mred:console-canvas gone, use
+  (ivar mred:console edit) and (ivar mred:console canavs)
+- expanded keybindings -- most movement keys now
+  have a shifted form that selects text
+- added mred:standard-menus-frame% which gets the right keybindings for
+  the different platforms
+
+----------------------------------------------------------------------
+
+Version 42: June 8, 1996
+Documentation translated to Scheme notation, corrected
+Windows update bug fixed for embedded buffers
+MacOS memory use greatly improved
+Fixed annoying non-standard Windows beep
+Non-matching cond or case expression raises and error
+mred:platform and mred:window-system changed to wx:...
+standard system uses functors (see MzScheme)
+wx:canvas%::int-draw-line and wx:int-point% removed
+wx:list%, wx:hash-table%, wx:string-list%, wx:path-list removed
+wx:media-stream-in%::get removed for strings; use get-string
+Redundant wx: functions removed:
+  wx:dir-exists?  (use directory-exists?)
+  wx:file-exists? (use file-exists?)
+  wx:file-name-from-path (use file-name-from-path or split-path)
+  wx:path-only (use path-only or split-path)
+  wx:is-absolute-path? (use reletaive-path?)
+  wx:expand-path (use expand-path)
+  wx:get-working-directory (use current-directory)
+  wx:set-working-directory (use current-directory)
+  wx:mkdir (use make-directory)
+  wx:remove-file (use delete-file)
+  wx:rename-file (use rename-file)
+  wx:get-user-home and wx:get-home-dir (use expand-path with "~")
+  wx:execute and wx:shell (use system or process)
+  wx:find-first-file and wx:find-next-file (use get-directory-list)
+  wx:sleep (use sleep)
+  wx:sub-type? (use subclass?)
+  wx:to-lower (use char-upcase)
+  wx:to-upper (use char-downcase)
+  wx:is-wild? (use reg exps)
+  wx:match-wild? (use reg exps)
+
+Version 0.41: April 15, 1996
+Important language changes; see mzscheme/HISTORY
+Fixed bug in wxCanvas drawing methods
+Fixed wxCanvasDC and wxMemoryDC bugs in Xt version
+Pasteboards fixed
+AIX: two consecutive SIGDANGERs => exit(-1)
+wxGetMultipleChoice supported
+
+Version 0.40: March 24, 1996
+Possible improvements to memory system
+Some redundant event methods removed
+Finally fixed Windows NT/95 Scheme threads
+Stdout/stderr messages to a window instead of file for Windows/Mac+
+Fixed misc. Xt problems, including show-n-hide on frame
+
+Version 0.39: March 6, 1996
+Fixed safety from Scheme on invalidated C++ objects (stack objs, too)
+Fixed many bugs in Xt version
+Upgraded to gc version 4.10
+Reduced memory usage of buffer objects
+
+Version 0.38: February 22, 1996
+Xt port released
+Part of standard system moved to DrScheme
+See also mzscheme HISTORY and wxmedia README
+
+Version 0.37: Not released
+
+Version 0.36: January 18, 1996
+Fixed bug in MzScheme's bignum multiplication
+
+Version 0.35: January 17, 1996
+X selection protocol supported. To get the old clipboard-style
+  mechanism, add this to your .mredrc:
+     (wx:media-set-x-selection-mode #f)
+ See also wxMediaEdit::SetPosition() in the wxMedia manual.
+
+Version 0.34: December 30, 1995
+Minor improvements to MzScheme and the standard system
+
+Version 0.33: December 21, 1995
+MzScheme language changes; see mzscheme/HISTORY
+Old standard system no longer compatible
+Project system improved
+Many bugs fixed in the new standard system
+
+Version 0.32: December 4, 1995
+New standard system:
+  * The console I/O is completely different. It works more
+     like an Emacs shell. Use M-p and M-n to access previously
+     entered expressions. (read) will now read from the console.
+  * All mred:std-<x> variables have been eliminated. For each
+     mred:<x>%, there is now a procedure mred:make-<x>% that takes a
+     superclass and returns a new class.
+  * The frame and buffer hierarchies have changed a little.
+  * From a mred:edit% object, you can get to its canvas or frame.
+  * The menubar/menu system is completely revised. You don't have to
+     deal with menu ids much anymore. Menus and menu items can now be 
+     dynamically added and removed.
+  * Keymap chaining works differently.
+  * The new Scheme project system is roughly in place. This will let you
+     develop Scheme programs by organizing Scheme files within a project.
+     Projects help manage loading program files into the
+     evaluator and uses Shriram's Zodiac/Aries packages to
+     provide debugging facilities. This will be improved in the near 
+     future.
+ The old standard system is available in the "oldsys" directory.
+Pretty printer handles loops and graphs
+Very limited support for wxYield under XView - will be extended
+Fixed some wxMedia bugs (see wxme/README)
+Fixed some MzScheme bugs (see mzscheme/HISTORY)
+
+Version 0.31: November 14, 1995
+Fixed some wxMedia bugs (see wxme/README)
+Fixed some MzScheme bugs (see mzscheme/HISTORY)
+Parameterization for Macintosh
+
+Verion 0.30: October 25, 1995
+Added call-with-values and regexp to MzScheme
+Unix stack-checking setup code fixed in MzScheme
+wxMediaPasteboard implemented more
+Scheme-C++ object link changed; use ptr in all C++ objects
+Added tutorial section to "User Manual"
+
+Version 0.29: October 18, 1995
+Editor can save text preserving automatic CR
+Bug fix in automatic line-wrapping
+New font system can access arbitrary fonts
+Multiple displays in Motif: wx:set-display and wx:get-display-name
+MzScheme fix for forms such as (let ([x (let ...)]) ...)
+
+Version 0.28: October 3, 1995
+MzScheme bug fix: stack-checking on Unix
+wxMedia fix: Insert(unsigned char, ...) instead of Insert(char, ...)
+ and proper use of `unsigned' in word-breaking array access
+
+Version 0.27: September 29, 1995
+Major MzScheme upgrade, including multiple inheritance
+ (See MzScheme HISTORY for details)
+Win32: Allow deeper recursion by copying the stack
+Win32: Allow breaking with Shift-Ctl-C
+New font configuration system
+
+Version 0.26: September 8, 1995
+Very minor changes
+Bug fix to MzScheme for Win32s
+
+Version 0.25: September 7, 1995
+Upgraded to wxWindows 1.63
+Minor bug fixes
+
+Version 0.24: September 1, 1995
+Minor bug fixes
+
+Version 0.23: August 23, 1995
+Minor bug fixes
+Editor can display images (types depend on wxWindow compile flags)
+MzScheme correction: expand & expand-once
+
+Version 0.22: August 17, 1995
+Mostly MzScheme improvements
+File-format bug fixed related to portability; To make files created 
+  earlier portable, open and re-save them.
+
+Version 0.21: August 8, 1995
+Bug fixes
+triggers, hash tables, and case-lambda added to MzScheme
+MzScheme "sleeps" properly
+Connected MrEd to wxWindow's layout constraint system
+
+Version 0.20: July 26, 1995
+MzScheme Bug fixes
+
+Version 0.19: July 25, 1995
+All "!"s removed from method names!!!!!
+Full continuations and bignums added to MzScheme
+Bug Fixes
+
+Version 0.18: July 20, 1995
+Win32s kinda supported
+Bug fixes
+Added (compile ...) to MzScheme
+Added internal processes & threads to MzScheme
+wxSnipData -> wxBufferData
+Old process and system changed to process* and system*
+
+Version 0.17: July 11, 1995
+Bug fixes, especially Motif and memory bugs
+Rewrote editor line-maintenance
+Faster caret updating
+Upgraded garbage collector
+File format changed to accomodate nested buffers with
+  separate style lists
+Standard system standardized
+Code changes for compiling on MSWindows (almost works...)
+Scheme mode
+
+Version 0.16: June 16, 1995
+Fixed define-struct bug
+
+Version 0.15: June 15, 1995
+Bug fixes, especially XView
+make-input-port takes only 3 args; "unget" param dropped
+on-local-char & on-local-event renamed to on-default-char 
+  and on-default-event
+name changes: to have "!" or not to have "!". See doc/names.diff
+  for a list of changed names
+fonts configuarble through .Xdefaults; see MrEd.ad
+
+Version 0.14: June 9, 1995
+Bug fixes, including wxWindows widget table clash
+Scheme mode works
+error-handler changed to parameterizing function
+
+Version 0.13: June 5, 1995
+MzScheme replaced libscheme
+ctl-c breaks Scheme evaluation in MrEd
+libscheme/ changed to mzscheme/ - change your make.env!
+
+Version 0.12: June 1, 1995
+Bug fixes
+Revised object system: requires (inherit ...) declarations
+(pretty-print ...) installed
+
+Version 0.11: May 19, 1995
+Bug Fixes
+
+Version 0.10: May 19, 1995
+Bug fixes
+(match ...) installed
+
+Version 0.9: May 18, 1995
+wxMediaPasteboard
+
+Version 0.8: May 11, 1995
+Bug fixes
+
+Version 0.7: May 10, 1995
+mred:default-<x> changed to mred:<x> in system
+README in demo directory
+Lots of bug fixes

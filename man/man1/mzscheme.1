@@ -1,0 +1,373 @@
+.\" dummy line
+.TH MZSCHEME 1 "January 2005"
+.UC 4
+.SH NAME
+mzscheme \- The PLT Scheme implementation
+.SH SYNOPSIS
+.B mzscheme
+[
+.I option ...
+] [
+.I argument ...
+]
+.SH DESCRIPTION
+.I MzScheme
+is the PLT
+Scheme implementation.  It implements the language as
+described in the
+.I Revised^5 Report on
+.I the Algorithmic Language Scheme
+and adds numerous extensions.
+.PP
+.I MrEd
+embeds and extends MzScheme with a graphical user interface (GUI) toolbox.
+.PP
+.I DrScheme
+is the graphical development environment for creating
+.I MzScheme
+and
+.I MrEd
+applications.
+
+.SH STARTUP FILE AND EXPRESSION OPTIONS
+
+.TP
+.BI \-e \ expr
+.TP
+.BI \--eval \ expr
+Evaluates
+.I expr
+after
+.I MzScheme
+starts.
+.TP
+.BI \-f \ file
+.TP
+.BI \--load \ file
+Loads
+.I file
+after
+.I MzScheme
+starts.
+.TP
+.BI \-d \ file
+.TP
+.BI \--load-cd \ file
+Load/cds
+.I file
+after
+.I MzScheme
+starts.
+.TP
+.BI \-t \ file
+.TP
+.BI \--require \ file
+Requires
+.I file
+after
+.I MzScheme
+starts.
+.TP
+.B \-F
+.TP
+.B \--Load
+.br
+Loads all remaining arguments after
+.I MzScheme
+starts.
+.TP
+.B \-D
+.TP
+.B \--Load-cd
+.br
+Load/cds all remaining arguments after
+.I MzScheme
+starts.
+.TP
+.B \-T
+.TP
+.B \--Require
+.br
+Requires all remaining arguments after
+.I MzScheme
+starts.
+.TP
+.BI \-l \ file
+.TP
+.BI \--mzlib \ file
+Same as
+.BR -e \ '(require\ (lib\ "\|\c
+.I file\|\c
+"))'.
+.TP
+.BI \-L \ file \  coll
+Same as
+.BR -e \ '(require\ (lib\ "\|\c
+.I file\|\c
+" "\|\c
+.I coll\|\c
+"))'.
+.TP
+.BI \-M \ coll
+Same as
+.BR -e \ '(require\ (lib\ "\|\c
+.I coll\|\c
+\|.ss" "\|\c
+.I coll\|\c
+"))'.
+.TP
+.B \-r
+.TP
+.B \--script
+Script mode: use as last flag for scripts.
+Same as
+.BR -fmv- .
+.TP
+.B \-i
+.TP
+.B \--script-cd
+Like -r, but also sets the directory.
+Same as 
+.BR -dmv- .
+.TP
+.B \-u
+.TP
+.B --require-script
+Like -r, but requires a module.
+Same as
+.BR -tmv- .
+.TP
+.B \-i
+.TP
+.B \-w
+.TP
+.B \--awk
+Same as
+.B -l
+.BR awk.ss .
+.TP
+.BI \-k \ n \  m
+Load executable-embedded code from file offset
+.I n
+to
+.IR m .
+.TP
+.B \-C
+.TP
+.B \--main
+Like -r, then calls `main' with a list of argument strings. The first 
+string in the list is the name of the loaded file, and
+the rest of the list contains leftover command-line arguments.
+.PP
+
+.SH INITIALIZATION OPTIONS
+.TP
+.B \-x
+.TP
+.B \--no-lib-path
+Skips trying to set current-library-collection-paths.
+.TP
+.B \-q
+.TP
+.B \--no-init-file
+Skips trying to load "~/.mzschemerc".
+.TP
+.B \-A
+.TP
+.B \--no-argv
+Skips defining `argv' and `program'.
+.PP
+
+.SH LANGUAGE SETTING OPTIONS
+.TP
+.B \-g
+.TP
+.B \--case-sens
+Identifiers and symbols are initially case-sensitive (the default).
+.B \-s
+.TP
+.B \-G
+.TP
+.B \--case-insens
+Identifiers and symbols are initially case-insensitive.
+.TP
+.B \-s
+.TP
+.B \--set-undef
+Set! works on undefined identifiers.
+.PP
+
+.SH MISCELLANEOUS OPTIONS
+.TP
+.B \--
+.br
+No argument following this switch is used as a switch.
+.TP
+.B \-p
+.TP
+.B \--persistent
+Catches AIX SIGDANGER (low page space) signal. (AIX only)
+.TP
+.B \-m
+.TP
+.B \--mute-banner
+Suppresses the startup banner.
+.TP
+.B \-v
+.TP
+.B \--version
+Suppresses the read-eval-print loop.
+.TP
+.B \-h
+.TP
+.B \--help
+Shows help for command-line arguments.
+.TP
+.BI \-R file
+.TP
+.BI \--restore \ file
+Restores an image; must be the only switch. (Special versions only)
+
+.SH OPTION CONVENTIONS
+
+Multiple single-letter switches can be collapsed, with arguments placed
+after the collapsed switches; the first collapsed switch cannot be
+.BR -- .
+E.g.:
+.B -vfme file expr
+is the same as
+.B -v -f file -m -e
+.BR expr .
+.PP
+Extra arguments following the last switch are put into the Scheme global
+variable `argv' as a vector of strings. The name used to start 
+.I MzScheme
+is put into the global variable `program' as a string.
+.PP
+Extra arguments after a 
+.B --restore
+file are returned as a vector of
+strings to the continuation of the `write-image-to-file' call that created
+the image.
+.PP
+Expressions/files are evaluated/loaded in order as provided, including
+calls to
+.B main
+implied by
+.BR --main ,
+embedded segments loaded by
+.BR -k ,
+and so on. An uncaught exception during an evaluation/load causes later
+evaluations/loads to be skipped.
+.PP
+The current-library-collections-paths parameter is automatically set before any
+expressions/files are evaluated/loaded, unless the
+.B -x
+or
+.B --no-lib-path
+switch is used.  
+
+.SH EXECUTABLE NAME
+If the executable name has the form scheme-\|\c
+.I dialect\|\c
+, then the command line is effectively prefixed with
+.ce 1
+-qAeC '(require (lib "init.ss" "script-lang" "\|\c
+.I dialect\|\c
+"))'
+The first actual command-line argument thus serves as the name of a file
+to load. The file should define
+.BR main ,
+which is called with the command-line arguments---starting with the
+loaded file name---as a list of immutable strings.
+
+.SH FILES
+The file "~/.mzschemerc" is loaded before any provided
+expressions/files are evaluated/loaded, unless the
+.B -q 
+or 
+.B --no-init-file 
+switch is used.
+.PP
+The library collections search path is read
+from the PLTCOLLECTS environment variable
+(as a colon-separated list of paths). Wherever the empty path
+appears appears in PLTCOLLECTS, it is replaced with the default
+collections directory. If PLTCOLLECTS is not defined, the default
+collections directory is used as the only element in the search path.
+.PP
+.I MzScheme
+looks for the default collections directory as one of the 
+following (tried in order):
+.IP
+The path in the environment variable PLTHOME is checked
+for a "collects" subdirectory.
+.IP
+If
+.I MzScheme
+was invoked with an absolute pathname, the directory of the invoked
+executable is checked. If the executable is a link, the directory of
+the referenced file is also checked, recursively following links. The
+parent directories and the parent's parent directories are also
+checked (in case
+.I MzScheme
+is in a "bin" directory or a ".bin/\c
+.I platform\|\c
+" directory).
+.IP
+If
+.I MzScheme
+is invoked with a relative pathname, the directories in the PATH
+environment variable containing a file with the name of the program as
+invoked (usually "mzscheme") are checked. Links and parent directories
+are followed as in the first case.
+.IP
+The "/usr/local/lib/plt/collects" directory is 
+tried.
+
+.SH EXECUTABLE SCRIPTS
+The most flexible way to create an executable script file is to
+trampoline through /bin/sh, using a #| ... |# block-comment trick to make the first few lines
+parseable by both /bin/sh and mzscheme. Here's an example:
+.PP
+.PD 0
+.PP
+  #! /bin/sh
+.PP
+  #|
+.PP
+  exec mzscheme -qr "$0" ${1+"$@"}
+.PP
+  |#
+.PP
+  (display "Hello, world!")
+.PP
+  (newline)
+.PD
+
+.SH MORE INFORMATION
+For further information on
+.IR MzScheme ,
+please consult the on-line
+documentation and other information available at
+.PP
+.ce 1
+http://www.plt-scheme.org/software/mzscheme/
+
+.SH BUGS
+Submit bug reports via
+.ce 1
+http://bugs.plt-scheme.org/ (encouraged)
+or by e-mail to
+.ce 1
+bugs@plt-scheme.org (discouraged)
+.SH AUTHOR
+.I MzScheme
+was implemented by Matthew Flatt (mflatt@plt-scheme.org).
+It uses the conservative garbage collector implemented by Hans 
+Boehm and extended by John Ellis. MzScheme was originally based 
+on libscheme, written by Brent Benson.
+.SH SEE ALSO
+.BR help-desk(1),
+.BR drscheme(1),
+.BR mred(1)
