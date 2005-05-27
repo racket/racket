@@ -1,0 +1,10 @@
+(interface
+  ("Serializable" "java" "io")
+  (public)
+  #t
+  ()
+  ()
+  ()
+  ()
+  ()
+  "version1")

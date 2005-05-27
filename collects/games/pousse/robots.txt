@@ -1,0 +1,40 @@
+A player program for Pousse is a module that exports a `robot'
+function. The `robot' function takes two arguments:
+
+ * The first argument is a number for the board size.
+
+ * The second argument is the history of moves as a list (with the
+   first move of the game at the beginning of the list).  Each move is
+   a list of two values: a symbol --- 't, 'l, 'b, or 'r --- and a
+   number.
+
+The result should be a move (a list containing a symbol and a number).
+
+The player program is not given the current board state, but it can be
+derived from the move history. The history is more useful than the
+board state, because a move that repeats a board state is a losing
+move.
+
+The following example player program always mimics the other player,
+choosing T1 if it has to go first:
+
+ ;; In the file my-robot.scm
+ (module my-robot mzscheme
+   (provide robot)
+
+   (define robot
+     (lambda (n moves)
+       (if (null? moves)
+	   ;; first move
+           '(t 1)
+	   ;; otherwise, mimic previous move
+	   (let loop ([moves moves])
+	     (if (null? (cdr moves))
+	         (car moves)
+	         (loop (cdr moves))))))))
+
+A robot should take 30 seconds or less to select a move.
+
+A program player is loaded into the game via the "Setup..." dialog,
+which has an "Add a Program Player..." button for selecting a file
+containing a module.

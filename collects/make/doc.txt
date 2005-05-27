@@ -1,0 +1,279 @@
+_Overview of make_
+------------------
+
+This library provides a Scheme version of the standard unix
+`make' utility. Its syntax is intended to simulate regular
+unix make in Scheme.
+
+If you are already familiar with make, skip down the precise
+details of the make collection. This section contains a
+brief overview of make. The idea is to explain how to
+generate some project you have from a collection of source
+files that go through several stages of processing.
+
+For example, lets say that you are writing soem project that
+has three input files (that you create and maintain) called
+a.input, b.input, and c.input. Further, there are two stages
+of processing -- first you run a particular tool
+"make-output" that takes an input file and produces and
+output file, and second you combine the input files into a
+single file using "output". Using make, you might write
+this:
+
+a.output: a.input
+	make-output a.input a.output
+b.output: b.input
+	make-output b.input b.output
+c.output: c.input
+	make-output c.input c.output 
+total: a.output b.output c.output
+	combine a.output b.output c.output 
+
+Once you've put those above lines in a file called
+"Makefile", you can issue the command:
+
+  make total 
+
+that builds your entire project. The Makefile consists of
+several lines that tell `make' how to create each piece. The
+first two lines say that a.output depends on a.input and the
+command for making a.output from a.input is 
+
+  make-output a.input a.ouput
+
+The point of this exercise is that the `make' utility looks
+at the file creation dates of the various files and only
+re-builds what is necessary.  Make is based on building
+things with shell programs. If, on the other hand, you want
+to build similar things with various Scheme programs, you
+can use the make collection.
+
+Here's the equivalent Scheme program: 
+
+(require (lib "make.ss" "make"))
+
+(define (make-output in out)
+   ...)
+
+(define (combine-total . args)
+  ...)
+
+(make
+  (("a.ouput" ("a.input") (make-output "a.output" "a.input"))
+   ("b.ouput" ("b.input") (make-output "b.output" "b.input"))
+   ("c.ouput" ("c.input") (make-output "c.output" "c.input"))
+   ("total" ("a.output" "b.output" "c.output")
+            (combine-total "a.output" "b.output" "c.output")))
+
+If you were to fill in the ellipses above with calls to
+`system', you'd have the exact same thing as the original
+Makefile. In addition, if you use `make/proc', you can
+abstract over the various make lines (for example, the
+a.output, b.output, and c.output lines are very similar and
+it would be good to write a program to generate those
+lines).
+			      
+_make.ss_
+---------
+
+The make.ss library in the `make' collection provides a
+`make' macro and a `make/proc' procedure.
+
+> (make ((target (depend ...) command ...) ...) argv)
+
+expands to
+
+  (make/proc
+    (list (list target (list depend ...) (lambda () command ...)) ...)
+    argv)
+
+> (make/proc spec argv) performs a make according to `spec'
+and using `argv' as command-line arguments selecting one
+or more targets.  `argv' can either be a string or a
+vector of strings.
+
+`spec' is a MAKE-SPEC:
+
+  MAKE-SPEC = (list-of MAKE-LINE)
+  MAKE-LINE = (list TARGET (list-of DEPEND-STRING) COMMAND-THUNK)
+  TARGET = (union string (list-of string)) ; either a string or a list of strings
+  DEPEND-STRING = string
+  COMMAND-THUNK = (-> void)
+
+To make a target, make/proc is first called on each of the
+target's dependencies. If a target is not in the spec and it
+exists, then the target is considered made. If a target is
+older than any of its dependencies, the corresponding
+COMMAND-THUNK is invoked. The COMMAND-THUNK is optional; a
+MAKE-LINE without a COMMAND-THUNK is useful as a target for
+making a number of other targets (the dependencies).
+
+`make/proc' catches any exceptions raised by a COMMAND-THUNK
+and wraps them in an exn:fail:make structure, and raises the
+wrapped exn. exn:fail:make structures are defined with:
+
+  (define-struct (exn:fail:make exn:fail) (target orig-exn))
+
+The `target' field is a string or a list of strings naming
+the target(s), and the `orig-exn' field is the original
+exception.
+
+The maker.ss library is a signed unit that requires no
+imports and provdes `make/proc'.
+
+make.ss also provides the following parameters:
+
+> (make-print-checking [on?]) - If #f, make only prints when
+it is making a target. Otherwise, it prints when it is
+checking the dependancies of a target. Defaultly #t.
+
+> (make-print-dep-no-line [on?]) - If #f, make only prints
+"checking..."  lines for dependancies that have a
+corresponding make line.  Defaultly #f.
+
+> (make-print-reasons [on?]) If #t, make prints the reason
+for each dependancy that fires. Defaultly #t.
+
+_collection.ss_
+---------------
+
+ [index entry: _collections, compiling_]
+
+The collection.ss library in the make collection provides a
+`make-collection' procedure.
+
+> (make-collection collection-name collection-files argv) constructs
+and performs a make to compile a collection of Scheme files into a
+multi-file extension. `collection-name' is used as a name that is
+embedded into publicly visible names in the extension (choosing a
+unique `collection-name' for each extension helps avoid conflicts
+among different extensions for certain operating
+systems). `collection-files' is a list of Scheme source files to be
+compiled. `argv' is passed on to `make'.
+
+The resulting extension "_loader" is compiled to the current
+directory's "compiled/native/PLATFORM" subdirectory, where `PLATFORM'
+is replaced by the system name of the current platform. Intermediate
+.c amd .kp files are placed into "compiled/native", and intermediate
+object files are also placed into "compiled/native/PLATFORM".  The .c
+and .kp files are preserved so that thay can be generated once for
+compiling across multiple platforms with the same filesystem.
+
+Make rules are also generated for compiling .zo files, placed in the
+"compiled" directory. The make target "zo" makes all of the .zo
+files. (In other words, pass #("zo") as `argv' to compile .zo files.)
+
+The "compiled", "compiled/native", etc. directories are automatically
+created if they do not already exist. Currently, `make-collection'
+does not try to infer sophisticated file dependencies. Each .c/.kp/.zo
+is dependent just on the .ss source file, each object file is depend
+only on its .c file, and the extension is dependent only on the
+object files.
+
+_setup-extension.ss_
+--------------------
+
+ [index entry: _Setup PLT compile extension_]
+
+The "setup-extension.ss" library helps compile C code via Setup PLT's
+"pre-install" phase (triggered by a `pre-installer' item in "info.ss";
+see the "setup" collection for further information).
+
+The `pre-install' function takes a number of arguments that describe
+how the C code is compiled, mainly the libraries that it depends
+on. It then drives a C compiler via the "dynext" collection functions.
+
+Many issues can complicate C compilation, and the `pre-install'
+function helps with a few:
+
+   * finding non-standard libraries and header files,
+
+   * taming to some degree the differing conventions of Unix and
+     Windows, 
+
+   * setting up suitable dependencies on MzScheme headers, and
+
+   * using a pre-compiled binary when a "precompiled" directory
+     is present.
+
+Many extension installers will have to sort out addition platform
+issues manually, however. For example, the "readline" installer picks
+whether to link to "libcurses" or "libncurses" heuristically by
+inspecting "/usr/lib". More generally, the "last chance" argument to
+`pre-install' allows an installer to patch compiler and linker options
+(see "dynext") before the C code is compiled or linked.
+
+
+> (pre-install plthome-dir
+               collection-dir
+               file.c
+               default-lib-dir
+               include-subdirs
+               find-unix-libs
+               find-windows-libs
+               unix-libs
+               windows-libs
+	       extra-depends
+               last-chance-k)
+
+The arguments are as follows:
+
+  * plthome-dir --- the directory provided to a `pre-installer'
+    function.
+
+  * collection-dir --- a directory to use as the current directory
+    while building.
+
+  * file.c --- the name of the source file (relative to
+    `collection-dir'). The output file will be the same, except with a
+    ".c" suffix replaced with ".so" or ".dll" (depending on the
+    platform) and the path changed to "compiled/native/<platform>".
+
+    If "precompiled/native/<platform>/file.{so,dll} exists", then
+    `file.c' is not used at all, and the file in the "precompiled"
+    directory is simply copied.
+
+  * default-lib-dir --- a default directory for finding supporting
+    libraries, often a subdirectory of `collection-dir'. The user
+    can supplement this path by setting the PLT_EXTENSION_LIB_PATHS
+    environment variable. [Index entry: _PLT_EXTENSION_LIB_PATHS_]
+    This one environment variable applies to all extensions manged
+    by `pre-install'.
+
+  * include-subdirs --- a list of relative paths in which incldue
+    files will be found; the path of the path will be determined
+    through a search, in case it's not in a standard place like
+    /usr/include.
+
+    For example, the list is '("openssl") for the "openssl"
+    collection, because the source uses "#include <openssl/ssl.h>" and
+    "#include <openssl/err.h>".
+
+  * find-unix-libs --- like `include-subdirs', but a list of library
+    bases. Leave off the "lib" prefix and any suffix (such as ".a" or
+    ".zo"). For "openssl", the list is '("ssl" "crypto"). This name
+    will get a "-l" prefix on the link line.
+
+  * find-windows-libs --- like `find-unix-libs', but for Windows.  The
+    library name will be suffixed with ".lib" and supplied directly to
+    the linker.
+
+  * unix-libs --- like `find-unix-libs', except that the installer
+    makes no attempt to find the libraries in a non-standard
+    place. For example, the "readline" installer supplies '("curses").
+
+  * windows-libs --- like `unix-libs', but for Windows. For example,
+    the "openssl" installer supplies '("wsock32").
+
+  * extra-depends --- a list of relative paths to treat as
+    dependencies for compiling `file.c'. Often this list will include
+    `file.c' with the ".c" suffix replaced by ".ss" or ".scm". For
+    example, the "openssl" installer supplies '("mzssl.ss") to ensure
+    that the stub module "mzssl.ss" is never used when the true
+    extension can be built.
+
+  * last-chance-k --- a procedure of one argument, which is a thunk.
+    this procedure should invoke the thunk to make the file, but may
+    add parameterizations before the final build. For example, the
+    "readline" installer adds an AIX-specific compile flag in this
+    step when under AIX.

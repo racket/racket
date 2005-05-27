@@ -1,0 +1,64 @@
+_SLaTeX_
+========
+
+The use SLaTeX as a standalone program, either drag your .tex file onto
+SLaTeX (on the macintosh or windows), or type "slatex file" at the command
+prompt (under windows or X).
+
+Under the macintosh, SLaTeX will attempt to run OzTeX. If you do not have
+OzTeX installed, or use another version of LaTeX, this will fail and you
+can run your own version manually.
+
+To use SLaTeX in a program, require _slatex-wrapper.ss_:
+
+  (require (lib "slatex-wrapper.ss" "slatex"))
+
+The file slatex-wrapper.ss defines three procedures:
+
+> (slatex filename)
+
+This procedure accepts a string naming a file and runs slatex and latex on
+the file. It calls `filename->latex-filename' on `filename'.
+
+> (slatex/no-latex filename)
+
+This procedure slatex's the file named by filename, without calling
+latex. That is, it only processes the .tex file to produce the .Z files.
+It calls filename->latex-filename on `filename'.
+
+> (latex filename)
+
+This procedure `latex's the file named by filename. It calls
+filename->latex-filename on `filename'.
+
+> (filename->latex-filename filename)
+
+This procedure accepts a filename and, if that file exists, it returns
+it. If the filename appended with the suffix `.tex' exists, that filename
+is returned. Otherwise, error is called.
+
+NOTE: in order to run slatex, your TEXINPUTS environment variable
+must contain a reference to the directory in which the most recent
+version of slatex.sty lives.  That file resides by default in 
+plt/collects/slatex.
+
+_PDF-SLaTeX_
+============
+
+In addition to the slatex tools, this collection contains a parallel
+set of PDF-SLaTeX tools, which are identical except that they call
+pdf-latex rather than latex.  In particular, there is now a launcher
+called (PDF-SLaTeX/pdf-slatex), and the file slatex-wrapper.ss now
+defines pdf-slatex and pdf-latex.
+
+> (pdf-slatex filename)
+
+This procedure `slatex's the file named by filename and
+produces PDF output instead of ps output. It calls
+filename->latex-filename on `filename'.
+
+> (pdf-latex filename)
+
+This procedure `latex's the file named by filename and
+produces PDF output instead of ps output. It calls
+filename->latex-filename on `filename'.

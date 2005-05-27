@@ -1,0 +1,23 @@
+/* XPM */
+static char * radiobox_xpm[] = {
+"16 16 4 1",
+" 	c #FFFFFFFFFFFF",
+".	c #000000000000",
+"X	c #A0A0A0A0A0A0",
+"o	c #A0A0A0A0A0A0",
+"                ",
+"                ",
+"                ",
+"  ..            ",
+" .XX. ooooooooo ",
+" .XX. ooooooooo ",
+"  ..            ",
+"                ",
+"                ",
+"  ..            ",
+" .  . ooooooooo ",
+" .  . ooooooooo ",
+"  ..            ",
+"                ",
+"                ",
+"                "};

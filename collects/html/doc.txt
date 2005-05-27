@@ -1,0 +1,460 @@
+_HTML_ Library, _html.ss_
+=========================
+
+(require (lib "html.ss" "html")) will provide functions to read
+html documents and structures to represent them.
+
+Functions:
+==========
+
+> read-xhtml : [Input-port] -> Html
+
+> read-html : [Input-port] -> Html
+
+> read-html-as-xml : [Input-port] -> (listof Content)
+  See the XML library for the definition of Content
+
+HTML Structures:
+================
+
+Pcdata, Entity, and Attribute are defined in the XML documentation.
+
+> Html-content = Html-element | Pcdata | Entity
+
+> Html-element = any of the structures below which all inherit from
+  (define-struct html-element (attributes)).  Any html tag that may
+  include content also inherits from
+  (define-struct (html-full struct:html-element) (content))
+  without adding any additional fields.
+
+A Html is
+(make-html (listof Attribute) (listof Contents-of-html))
+
+A Contents-of-html is either
+  - Body
+  - Head
+
+A Div is
+(make-div (listof Attribute) G2)
+
+A Center is
+(make-center (listof Attribute) G2)
+
+A Blockquote is
+(make-blockquote (listof Attribute) G2)
+
+An Ins is
+(make-ins (listof Attribute) G2)
+
+A Del is
+(make-del (listof Attribute) G2)
+
+A Dd is
+(make-dd (listof Attribute) G2)
+
+A Li is
+(make-li (listof Attribute) G2)
+
+A Th is
+(make-th (listof Attribute) G2)
+
+A Td is
+(make-td (listof Attribute) G2)
+
+An Iframe is
+(make-iframe (listof Attribute) G2)
+
+A Noframes is
+(make-noframes (listof Attribute) G2)
+
+A Noscript is
+(make-noscript (listof Attribute) G2)
+
+A Style is
+(make-style (listof Attribute) Cdata)
+
+A Script is
+(make-script (listof Attribute) Cdata)
+
+A Basefont is
+(make-basefont (listof Attribute))
+
+A Br is
+(make-br (listof Attribute))
+
+An Area is
+(make-area (listof Attribute))
+
+A Link is
+(make-link (listof Attribute))
+
+An Img is
+(make-img (listof Attribute))
+
+A Param is
+(make-param (listof Attribute))
+
+A Hr is
+(make-hr (listof Attribute))
+
+An Input is
+(make-input (listof Attribute))
+
+A Col is
+(make-col (listof Attribute))
+
+An Isindex is
+(make-isindex (listof Attribute))
+
+A Base is
+(make-base (listof Attribute))
+
+A Meta is
+(make-meta (listof Attribute))
+
+An Option is
+(make-option (listof Attribute) Pcdata)
+
+A Textarea is
+(make-textarea (listof Attribute) Pcdata)
+
+A Title is
+(make-title (listof Attribute) Pcdata)
+
+A Head is
+(make-head (listof Attribute) (listof Contents-of-head))
+
+A Contents-of-head is either
+  - Base
+  - Isindex
+  - Link
+  - Meta
+  - Object
+  - Script
+  - Style
+  - Title
+
+A Tr is
+(make-tr (listof Attribute) (listof Contents-of-tr))
+
+A Contents-of-tr is either
+  - Td
+  - Th
+
+A Colgroup is
+(make-colgroup (listof Attribute) Col)
+
+A Thead is
+(make-thead (listof Attribute) Tr)
+
+A Tfoot is
+(make-tfoot (listof Attribute) Tr)
+
+A Tbody is
+(make-tbody (listof Attribute) Tr)
+
+A Tt is
+(make-tt (listof Attribute) G5)
+
+An I is
+(make-i (listof Attribute) G5)
+
+A B is
+(make-b (listof Attribute) G5)
+
+An U is
+(make-u (listof Attribute) G5)
+
+A S is
+(make-s (listof Attribute) G5)
+
+A Strike is
+(make-strike (listof Attribute) G5)
+
+A Big is
+(make-big (listof Attribute) G5)
+
+A Small is
+(make-small (listof Attribute) G5)
+
+An Em is
+(make-em (listof Attribute) G5)
+
+A Strong is
+(make-strong (listof Attribute) G5)
+
+A Dfn is
+(make-dfn (listof Attribute) G5)
+
+A Code is
+(make-code (listof Attribute) G5)
+
+A Samp is
+(make-samp (listof Attribute) G5)
+
+A Kbd is
+(make-kbd (listof Attribute) G5)
+
+A Var is
+(make-var (listof Attribute) G5)
+
+A Cite is
+(make-cite (listof Attribute) G5)
+
+An Abbr is
+(make-abbr (listof Attribute) G5)
+
+An Acronym is
+(make-acronym (listof Attribute) G5)
+
+A Sub is
+(make-sub (listof Attribute) G5)
+
+A Sup is
+(make-sup (listof Attribute) G5)
+
+A Span is
+(make-span (listof Attribute) G5)
+
+A Bdo is
+(make-bdo (listof Attribute) G5)
+
+A Font is
+(make-font (listof Attribute) G5)
+
+A P is
+(make-p (listof Attribute) G5)
+
+A H1 is
+(make-h1 (listof Attribute) G5)
+
+A H2 is
+(make-h2 (listof Attribute) G5)
+
+A H3 is
+(make-h3 (listof Attribute) G5)
+
+A H4 is
+(make-h4 (listof Attribute) G5)
+
+A H5 is
+(make-h5 (listof Attribute) G5)
+
+A H6 is
+(make-h6 (listof Attribute) G5)
+
+A Q is
+(make-q (listof Attribute) G5)
+
+A Dt is
+(make-dt (listof Attribute) G5)
+
+A Legend is
+(make-legend (listof Attribute) G5)
+
+A Caption is
+(make-caption (listof Attribute) G5)
+
+A Table is
+(make-table (listof Attribute) (listof Contents-of-table))
+
+A Contents-of-table is either
+  - Caption
+  - Col
+  - Colgroup
+  - Tbody
+  - Tfoot
+  - Thead
+
+A Button is
+(make-button (listof Attribute) G4)
+
+A Fieldset is
+(make-fieldset (listof Attribute) (listof Contents-of-fieldset))
+
+A Contents-of-fieldset is either
+  - Legend
+  - G2
+
+An Optgroup is
+(make-optgroup (listof Attribute) Option)
+
+A Select is
+(make-select (listof Attribute) (listof Contents-of-select))
+
+A Contents-of-select is either
+  - Optgroup
+  - Option
+
+A Label is
+(make-label (listof Attribute) G6)
+
+A Form is
+(make-form (listof Attribute) G3)
+
+An Ol is
+(make-ol (listof Attribute) Li)
+
+An Ul is
+(make-ul (listof Attribute) Li)
+
+A Dir is
+(make-dir (listof Attribute) Li)
+
+A Menu is
+(make-menu (listof Attribute) Li)
+
+A Dl is
+(make-dl (listof Attribute) (listof Contents-of-dl))
+
+A Contents-of-dl is either
+  - Dd
+  - Dt
+
+A Pre is
+(make-pre (listof Attribute) (listof Contents-of-pre))
+
+A Contents-of-pre is either
+  - G9
+  - G11
+
+An Object is
+(make-object (listof Attribute) (listof Contents-of-object-applet))
+
+An Applet is
+(make-applet (listof Attribute) (listof Contents-of-object-applet))
+
+A Contents-of-object-applet is either
+  - Param
+  - G2
+
+A Map is
+(make-map (listof Attribute) (listof Contents-of-map))
+
+A Contents-of-map is either
+  - Area
+  - Fieldset
+  - Form
+  - Isindex
+  - G10
+
+An A is
+(make-a (listof Attribute) (listof Contents-of-a))
+
+A Contents-of-a is either
+  - Label
+  - G7
+
+An Address is
+(make-address (listof Attribute) (listof Contents-of-address))
+
+A Contents-of-address is either
+  - P
+  - G5
+
+A Body is
+(make-body (listof Attribute) (listof Contents-of-body))
+
+A Contents-of-body is either
+  - Del
+  - Ins
+  - G2
+
+A G12 is either
+  - Button
+  - Iframe
+  - Input
+  - Select
+  - Textarea
+
+A G11 is either
+  - A
+  - Label
+  - G12
+
+A G10 is either
+  - Address
+  - Blockquote
+  - Center
+  - Dir
+  - Div
+  - Dl
+  - H1
+  - H2
+  - H3
+  - H4
+  - H5
+  - H6
+  - Hr
+  - Menu
+  - Noframes
+  - Noscript
+  - Ol
+  - P
+  - Pre
+  - Table
+  - Ul
+
+A G9 is either
+  - Abbr
+  - Acronym
+  - B
+  - Bdo
+  - Br
+  - Cite
+  - Code
+  - Dfn
+  - Em
+  - I
+  - Kbd
+  - Map
+  - Pcdata
+  - Q
+  - S
+  - Samp
+  - Script
+  - Span
+  - Strike
+  - Strong
+  - Tt
+  - U
+  - Var
+
+A G8 is either
+  - Applet
+  - Basefont
+  - Big
+  - Font
+  - Img
+  - Object
+  - Small
+  - Sub
+  - Sup
+  - G9
+
+A G7 is either
+  - G8
+  - G12
+
+A G6 is either
+  - A
+  - G7
+
+A G5 is either
+  - Label
+  - G6
+
+A G4 is either
+  - G8
+  - G10
+
+A G3 is either
+  - Fieldset
+  - Isindex
+  - G4
+  - G11
+
+A G2 is either
+  - Form
+  - G3
+

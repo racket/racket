@@ -1,0 +1,23 @@
+/* XPM */
+static char * mred[] = {
+"16 16 4 1",
+" 	c #000000",
+".	c #0000ff",
+"X	c #ffffff",
+"o	c #ff0000",
+"                ",
+"     .XXXX.     ",
+"   ooXXXXXX..   ",
+"  ooXXXooXXX..  ",
+"  ooXXooooXX..  ",
+" oooooooooXX... ",
+" ooooooooXXX... ",
+" oooooooXXX.... ",
+" ooooooXXX..... ",
+" ooooooXX...... ",
+" ooooooXX...... ",
+"  oooooXX.....  ",
+"  oooooo......  ",
+"   ooooXX....   ",
+"     ooXX..     ",
+"                "};

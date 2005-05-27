@@ -1,0 +1,12 @@
+type t {
+  int x;
+}
+
+class c(int x) : t impl t {
+  int y = x;
+  export t : y as x; 
+}
+
+t main() {
+  new c:t(x = 5);
+}

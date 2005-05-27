@@ -1,0 +1,9 @@
+
+\newwrite\mztpOUT
+\newbox\mztpBOX
+\immediate\openout\mztpOUT=\jobname.mztp
+
+\newcommand{\mztpMeasure}[2]{%
+\setbox\mztpBOX\hbox{#1}%
+\immediate\write\mztpOUT{#2 \the\wd\mztpBOX\space\the\ht\mztpBOX\space\the\dp\mztpBOX}%
+\usebox\mztpBOX}

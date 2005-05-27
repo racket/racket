@@ -1,0 +1,48 @@
+
+_SLIB_ Initialization File
+--------------------------
+
+The "init.ss" file in the _slibinit_ collection is an SLIB
+initialization file (tested with version 2d2).
+
+To use SLIB in MzScheme:
+
+  (load (build-path (collection-path "slibinit") "init.ss"))
+or
+  (require (lib "load.ss" "slibinit"))     ; loads "init.ss"
+
+That's enough if the SCHEME_LIBRARY_PATH environment variable is
+defined, or if SLIB is installed as an "slib" collection (i.e., in an
+"slib" directory in the same location as the "mzlib" directory).
+
+
+SLIB is not integerated with MzScheme's module system.  Instead, SLIB
+works in the top-level environment, and it provides its own "feature"
+system using the function `require'. Unfortunately, that function name
+conflicts with MzScheme's own `require' form. In an attempt to work
+around this collision, "init.ss" re-defines `require' as syntax:
+
+  require [not in app position]  -> slib:require
+> (require '<something>)         -> (slib:require '<something>)
+  (require <any> ...)            -> (mz:require <any> ...)
+
+where `slib:require' is bound to SLIB's require function, and
+`mz:require' is bound to MzScheme's `require' syntax.
+
+
+SLIB's `implementation-vicinity' points to the PLT installation
+directory. If that directory is not writable by SLIB users, then
+initialize the installation with
+
+ (require (lib "load.ss" "slibinit"))
+ (require 'new-catalog) ; which is an SLIB `require'
+
+
+The initialization file contains one system-dependent setting:
+`most-positive-fixnum' is bound to a value that is precisely correct
+for 32-bit architectures. The precise value for a 64-bit architcture
+is in the file, but commented out. The only problem with using the
+32-bit value for a 64-bit architecture is a decrease in performance.
+
+No other changes should be necessary. Send patches to
+bugs@plt-scheme.org.

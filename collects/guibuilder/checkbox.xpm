@@ -1,0 +1,22 @@
+/* XPM */
+static char * checkbox_xpm[] = {
+"16 16 3 1",
+" 	c #FFFFFFFFFFFF",
+".	c #000000000000",
+"X	c #A0A0A0A0A0A0",
+"                ",
+"                ",
+"                ",
+"                ",
+"                ",
+"                ",
+" ....           ",
+" .  . XXXXXXXXX ",
+" .  . XXXXXXXXX ",
+" ....           ",
+"                ",
+"                ",
+"                ",
+"                ",
+"                ",
+"                "};

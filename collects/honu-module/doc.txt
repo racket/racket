@@ -1,0 +1,49 @@
+
+>>> FOR NOW, THIS IS AN EXPERIMENTAL TOY <<<
+    > Everything is subject to change. <
+
+Write a dynamically typed Honu program as
+
+ #honu dynamic
+
+ <defn-or-provide>
+ ...
+
+The syntax of a definition is much like Java, and type positions in
+Java are roughly contract positions in dynamic Honu.
+
+The only supported base "types" right now are
+
+    int     - exact integer
+    obj     - anything
+    string  - character string
+
+and the only "type constructor" is
+
+    (_ -> _)
+
+where "_" is to be replaced with a "type". [Ok, "->" is not very Java
+like...]
+
+Every declaration must have a value, like this:
+
+  #honu dynamic
+
+  int v = 10;
+
+  int f(int x) {
+    return x + 1;
+  }
+
+  (int -> int) g() {
+    return f;
+  }
+
+  provide f, g;
+
+The "return" keyword is optional, but allowed only for expressions in
+tail position.
+
+Assignment: =
+Operators: + - * / %
+Functions: stringToNumber numberToString

@@ -1,0 +1,102 @@
+`(#|
+		      Framework Test Suite Overview
+
+Each tests will rely on the sucessfully completion of all of the ones
+before it. In addition, all test suites rely on the sucessful
+completion of the engine test suites and the mzscheme test suites.
+
+All of these tests reside in PLTHOME/collects/tests/framework/
+
+There will be a main mzscheme process which will start up a new mred
+as necessary for the test suites. Since some tests actually require
+mred to exit in order to pass, this governor is required. 
+
+To run a test use:
+
+   framework-test <test.ss> ...
+
+where or <test.ss> is the name of one of the tests below.
+Alternatively, pass no command-line arguments to run all of
+the tests. (Under windows, the app will be named "Framework
+Test"; see the mred-launcher-names documentation for how the
+names change on the various platforms)
+
+Some of the tests in this file are not yet present in the
+testing directory. They are planned future expansions of
+this test suite (and have been for some time....)
+
+OS X: you will have to click on the newly started mred
+processes in the doc while the test suite runs or it will
+signal failures when there aren't any.
+
+- load: |# load.ss #|
+
+  | This tests that the advertised ways of loading the framework at
+  | it's components all work.
+
+- exit: |# exit.ss #|
+
+  | This tests that exit:exit really exits and that the exit callbacks
+  | are actually run.
+
+- preferences: |# prefs.ss #|
+
+  | This tests that preferences are saved and restored correctly, both
+  | immediately and across reboots of mred.
+
+
+- individual object tests:
+
+  | These tests are simple object creation and basic operations.
+  | Each test assumes that the others pass; this may yield strange
+  | error messages when one fails.
+
+  - frames: |# frame.ss #|
+  - canvases: |# canvas.ss #|
+  - texts: |# text.ss #|
+  - pasteboards: |# pasteboard.ss #|
+
+- keybindings: |# keys.ss #|
+
+  | This tests the misc (non-scheme) keybindings
+
+- searching: |# search.ss #|
+
+  | This tests the seaching frame.
+
+- info: |# info-frame.ss #|
+
+  | This tests the info frame. (ie that toolbar on the bottom of the
+                                screen)
+
+- group tests: |# group-test.ss #|
+
+  | make sure that mred:the-frame-group records frames correctly.
+  | fake user input expected.
+
+- scheme mode |# scheme.ss #|
+
+  | Make sure that Scheme things work in scheme mode.
+
+- saving tests:
+
+  | These tests will make sure that the usual checks against a user
+  | losing their work are in place.
+
+  - autosaving: |# autosave.ss #|
+  - closing: |# close.ss #|
+  - quitting: |# quit.ss #|
+
+- interactive tests
+
+  | these tests require intervention by people. Clicking and whatnot
+  
+  - panel:single |# panel.ss #|
+
+  - garbage collection: |# mem.ss #|
+
+    | These tests will create objects in various configurations and
+    | make sure that they are garbage collected
+
+	
+|#)

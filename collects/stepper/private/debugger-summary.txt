@@ -1,0 +1,16 @@
+
+(c) : continue execution (more accurately, post to the continue semaphore)
+(events) : show all debugging events
+(e #) : pick which event to examine
+
+... the following are all implicitly parameterized
+    by the chosen event:
+
+  (bt) : summarize the continuation
+  (f #) : examine the #th frame of the continuation
+
+  ... the following are all implicitly parameterized
+      by the chosen frame
+    (bound) : all bound vars
+    (v <x>) : value of a named variable
+    (src) : the source code 

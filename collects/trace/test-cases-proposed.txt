@@ -1,0 +1,8 @@
+factorial
+tail recursion
+odd & even
+all flavors of improper arglist
+anonymous procedures
+all language constructs
+indentation of first call (from error)
+unannotated code

@@ -1,0 +1,20 @@
+((("CFBundleTypeName"
+   "Scheme Source")
+  ("CFBundleTypeIconFile"
+   "doc")
+  ("CFBundleTypeRole"
+   "Editor")
+  ("CFBundleTypeOSTypes"
+   (array "TEXT" "WXME"))
+  ("CFBundleTypeExtensions"
+   (array "scm" "ss")))
+ (("CFBundleTypeName"
+   "Package")
+  ("CFBundleTypeIconFile"
+   "pltdoc")
+  ("CFBundleTypeRole"
+   "Viewer")
+  ("CFBundleTypeOSTypes"
+   (array "PLT_" "WXME"))
+  ("CFBundleTypeExtensions"
+   (array "plt"))))

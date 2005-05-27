@@ -1,0 +1,44 @@
+_Version_ or _version_: PLT software online version checking
+============================================================
+
+The version collection allows online version checking of PLT software.
+The user-side software sends version information about installed
+software to a server that compares that information against the latest
+released versions.
+
+In particular, the user-side software sends to the server
+
+ - the binary version as reported by (version), a MzScheme primitive,
+   and
+ - the values of the release-version and release-iteration fields in
+   the info.ss file for collections, if those fields exist
+
+If the binary version is out of date, that information is reported to
+the user.  Otherwise, the status of each package is reported.  The
+determination of whether a package is up-to-date is made on the server
+side.
+
+Two files may be used to run version checks from MrEd and MzScheme:
+_check-text.ss_ for (MrEd or MzScheme), and _check-gui.ss_ (for MrEd).
+These files contain modules that export a procedure named
+check-version:
+
+ (require (lib "check-gui.ss" "version"))
+
+and
+
+ (require (lib "check-text.ss" "version"))
+
+For check-text.ss, the procedure is called with
+
+> (check-version)
+
+For check-gui.ss, the procedure is called with
+
+> (check-version [frame] [sync?])
+
+where the optional argument `frame' is either a frame% instance or #f,
+the default.  The optional `sync?' argument is any Scheme value, #f by
+default.  If `sync?' is #f, the procedure returns immediately;
+otherwise, it returns after the user clicks OK on the dialog box that
+appears (or when an error occurs).

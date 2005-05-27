@@ -1,0 +1,546 @@
+
+Syntax Utilities
+----------------
+
+The libraries of the "syntax" collection provide utilities for
+manipulating expressions and inspecting modules.
+
+======================================================================
+_stx.ss_: deconstructing syntax objects
+======================================================================
+
+> (stx-null? v) - returns #t if `v' is either the empty list or a
+  syntax object representing the empty list (i.e., `syntax-e' on the
+  syntax object returns the empty list).
+
+> (stx-pair? v) - returns #t if `v' is either a pair or a syntax
+  object representing a pair. See also the definition of "syntax pair"
+  in the MzScheme manual.
+
+> (stx-list? v) - returns #t if `v' is a list, or if it is a sequence
+  of pairs leading to a syntax object such that `syntax->list' (from
+  MzScheme) would produce a list.
+
+> (stx->list stx-list) - produces a list by flatting out a trailing
+  syntax object using `syntax->list'. The `stx-list' argument must be
+  a value for which `stx-list?' would return #t.
+
+> (stx-car v) - takes the car of a "syntax pair". See the definition
+  of "syntax pair" in the MzScheme manual.
+
+> (stx-cdr v) - takes the cdr of a "syntax pair". See the definition
+  of "syntax pair" in the MzScheme manual.
+
+> (module-or-top-identifier=? a-id b-id) - returns #t if `a-id' and
+  `b-id' are module-identifier=?, or if `a-id' and `b-id' have the
+  same name (as extracted by `syntax-e') and `a-id' has no binding
+  other than at the top level.
+
+  This procedure is useful in conjunction with `syntax-case*' to match
+  procedure names that are normally bound by MzScheme. For example,
+  the `include' macro uses this procedure to recognize `build-path';
+  using `module-identifier=?'  would not work well outside of
+  `module', since the top-level `build-path' is a distinct variable
+  from the MzScheme export (though it's bound to the same procedure,
+  initially).
+
+======================================================================
+_kerncase.ss_: matching fully-expanded expressions
+======================================================================
+
+> (kernel-syntax-case stx-expr trans?-expr clause ...) - a syntactic
+  form like `syntax-case*', except that the literals are built-in as
+  the names of the primitive MzScheme forms. (The primitive syntactic
+  forms must have their normal bindings in the context of the
+  `kernel-syntax-case' expression.)
+
+  The `trans?-expr' boolean expression replaces the comparision
+  procedure, and instead selects simply between normal-phase
+  comparisions or transformer-phase comparisions. The `clause's are
+  the same as in `syntax-case*'.
+
+> (kernel-form-identifier-list syntax) - returns a list of identifiers
+  for the names of the primitive MzScheme forms for expressions, with
+  the lexical context of `syntax'. This function is useful for
+  generating a list of stopping points to provide to `local-expand'.
+
+======================================================================
+_toplevel.ss_: helper for moduleless compilation and expansion
+======================================================================
+
+> (expand-top-level-with-compile-time-evals stx) - expands `stx' as
+  a top-level expression, and evaluates its compile-time portion for
+  the benefit of later expansions.
+
+  The expander recognizes top-level `begin' expressions, and
+  interleaves the evaluation and expansion of of the `begin' body, so
+  that compile-time expressions within the `begin' body affect later
+  expansions within the body. (In other words, it ensures that
+  expanding a `begin' is the same as expanding separate top-level
+  expressions.)
+
+  The `stx' argument should have a context already, possibily
+  introduced with `namespacae-inroduce-syntax'.
+
+> (expand-top-level-with-compile-time-evals/flatten stx) - 
+  Just like expand-top-level-with-compile-time-evals,
+  except that it returns a list of syntax objects, none of
+  which have a begin. These syntax objects are the
+  flattened out contents of any begins in `stx'.
+
+> (expand-syntax-top-level-with-compile-time-evals stx)
+  Like `expand-top-level-with-compile-time-evals', but `stx' should
+  have a context already, possibily introduced with
+  `namespacae-inroduce-syntax'.
+
+> (eval-compile-time-part-of-top-level stx) - evaluates
+  expansion-time code in the fully expanded top-level expression
+  represented by `stx (or a part of it, in the case of `begin'
+  expressions). The expansion-time code might affect the compilation
+  of later top-level expressions. For example, if `stx is a
+  `require' expression, then `namespace-require/expansion-time' is
+  used on each require specification in the form. Normally, this
+  function is used only by `expand-top-level-with-compile-time-evals'.
+
+> (eval-compile-time-part-of-top-level/compile stx) - like
+  `eval-compile-time-part-of-top-level', but the result is compiled
+  code.
+
+======================================================================
+_define.ss_: handling all the same function forms as `define'
+======================================================================
+
+> (normalize-definition defn-stx lambda-id-stx [check-context?]) -
+  takes a definition form whose shape is like `define' (though
+  possibly with a different keyword) and returns two values: the
+  defined identifier and the right-hand side expression.
+
+  To generate the right-hand side, this funciton may need to insert
+  uses of `lambda'. The `lambda-id-stx' argument provides a suitable
+  `lambda' identifier.
+
+  If the definition is ill-formed, a syntax error is raised. If
+  `check-context?' is true, then a syntax error is raised if
+  `(syntax-local-context)' indicates that the current context is an
+  expression context. The default value of `check-context?' is #t.
+
+======================================================================
+_struct.ss_: generating the same names as `define-struct'
+======================================================================
+
+> (parse-define-struct stx orig-stx) - parses `stx' as a `define-struct' 
+  form, but uses `orig-stx' to report syntax errors (under the
+  assumption that `orig-stx' is the same as `stx', or that they at
+  least share sub-forms). The result is four values: an identifier for
+  the struct type name, a identifier or #f for the super-name, a list
+  of identifiers for fields, and a syntax object for the inspector
+  expression.
+
+> (build-struct-names name-id field-ids omit-sel? omit-set? [src-stx]) -
+  generates the names bound by `define-struct' given an identifier for
+  the struct type name and a list of identifiers for the field
+  names. The result is a list of identifiers:
+
+      struct:`name-id'
+      make-`name-id'
+      `name-id'?
+      `name-id'-`field'       ; for each `field' in `field-ids'
+      set-`name-id'-`field'!  ; (getter and setter names alternate)
+      ...
+
+  If `omit-sel?' is true, then the selector names are omitted from the
+  result list. If `omit-set?' is true, then the setter names are
+  omitted from the result list.
+
+  The default src-stx is #f; it is used to provide a source location
+  to the generated identifiers.
+
+> (build-struct-generation name-id field-ids omit-sel? omit-set? 
+                          [super-type prop-value-list immutable-k-list]) -
+  takes the same arguments as `build-struct-names' and generates an
+  S-expression for code using `make-struct-type' to generate the
+  structure type and return values for the identifiers created by
+  `build-struct-names'.  The optional `super-type', `prop-value-list',
+  and `immutable-k-list' parameters take s-expression values that are
+  used as the corresponding arguments to `make-struct-type'.
+
+> (build-struct-generation* all-name-ids name-id field-ids omit-sel? omit-set? 
+                            [super-type prop-value-list immutable-k-list]) -
+  like `build-struct-generation', but given the names produced by
+  `build-struct-names', instead of re-generating them.
+
+> (build-struct-expand-info name-id field-ids omit-sel? omit-set?
+                            base-name base-getters base-setters) - 
+  takes the same arguments as `build-struct-names', plus a parent
+  identifier/#t/#f and a list of accessor and mutator identifiers
+  (possibly ending in #f) for a parent type, and generates an
+  S-expression for expansion-time code to be used in the binding for
+  the structure name. A #t for the base-name means no super-type, #f
+  means that the super-type (if any) is unknown, and an identifier
+  indicates the super-type identifier.
+
+> (struct-declaration-info? v) - returns #t if `x' has the shape of
+  expansion-time information for structure type declarations, #f
+  otherwise. See also the syntax chapter of the MzScheme manual.
+
+> (generate-struct-declaration orig-stx name-id super-id-or-false
+                               field-id-list current-context
+			       make-make-struct-type
+			       continue-macro-id continue-data-stx)
+> (generate-delayed-struct-declaration stx make-make-make-struct-type)
+
+  These two procedurs cooperate to implement the core of a
+  `define-struct' expansion that works for embedded definition
+  contexts (where lookup of supertype information may need to be
+  delayed).
+
+  The `generate-struct-declaration' procedure is called by a macro
+  expander to generate the expansion, where the `name-id',
+  `super-id-or-false', and `field-id-list' arguments provide the main
+  parameters. The `current-context' argument is normally the result of
+  `syntax-local-context'. The `orig-stx' argument is used for syntax
+  errors.
+
+  The `make-struct-type' procedure is called to generate the
+  expression to actually create the struct type. Its arguments are
+  `orig-stx', `name-id-stx', `defined-name-stxes', and `super-info'.
+  The first two are as provided originally to
+  `generate-struct-declaration', the third is the set of names
+  generated by `build-struct-names', and the last is super-struct info
+  obtained by resolving `super-id-or-false' when it is not #f, #f
+  otherwise.
+
+  The result should be an expression whose values are the same as the
+  result of `make-struct-type'. Thus, the following is a basic
+  `make-make-struct-type'
+
+      (lambda (orig-stx name-stx defined-name-stxes super-info)
+	#`(make-struct-type '#,name-stx 
+			     #,(and super-info (list-ref super-info 0))
+			     #,(/ (- (length defined-name-stxes) 3) 2)
+			     0 #f))
+
+  but an actual `make-make-struct-type' will likely do more.
+
+  If the lookup of super-struct information must be delayed,
+  `generate-struct-declaration' produces an expression that invokes
+  the macro named by `continue-macro-id'. This macro should have the
+  form
+
+     (define-syntax (continue-macro stx)
+       (generate-delayed-struct-declaration 
+        stx 
+        make-make-make-struct-type))
+
+  where `make-make-make-struct-type' takes the syntax object
+  `continue-stx' and produces a procedure equivalent to the
+  `make-make-struct-type' procedure.
+
+======================================================================
+_name.ss_: extracting inferred names
+======================================================================
+
+> (syntax-local-infer-name stx) - similar to
+>   syntax-local-name
+  except that `stx' is checked for an
+>   'inferred-name
+  property (which overrides any inferred name). If neither
+  `syntax-local-name' not 'inferred-name produce a name, then a name
+  is constructed from the source-location information in `stx', if
+  any. If no name can be constructed, the result is #f.
+
+======================================================================
+_docprovide.ss_: attaching documentation to exports
+======================================================================
+
+> (provide-and-document doc-label-id doc-row ...) - a form that
+  exports names and records documentation information.  
+
+  !! IMPORTANT: For now, the exporting module must be required with a
+     `lib' or `file' form. Releatiuve paths do no work correctly !!
+
+  The `doc-label-id' identifier is used as a key for accessing the
+  documentation through `lookup-documentation'.  The actual
+  documentation is organized into "rows", each with a section title.
+
+  A `row' has one of the following forms
+
+   (section-string (name type-datum doc-string ...) ...)
+
+     Creates a documentation section whose title is `section-string',
+     and provides/documents each `name. The `type-datum' is arbitrary,
+     for use by clients that call `lookup-documentation'. The
+     `doc-string's are also arbitrary documentation information,
+     usually concatenated by clients.
+
+     A `name' is either an identifier or a renaming sequence
+     `(local-name-id extenal-name-id)'.
+
+     Multiple `row's with the same section name will be merged in the
+     documentation output. The final order of sections matches the
+     order of the first mention of each section.
+  
+   (all-from prefix-id module-path doc-label-id)
+   (all-from-except prefix-id module-path doc-label-id id ...)
+
+     where `all-from' and `all-from-except' are keywords. Merges
+     documentation and provisions from the specified module into the
+     current one; the `prefix-id' is used to prefix the imports into
+     the current module (so they can be re-exported). If `id's are
+     provided, the specified `id's are not re-exported and their
+     documentation is not merged.  
+
+> (lookup-documentation module-path-v label-sym) - returns
+  documentation for the specified module and label. The
+  `module-path-v' argument is a quoted module path, like the argument
+  to MzScheme's `dynamic-require'. The `label-sym' identifies a set of
+  documentation using the symbol as a label identifier in
+  `provide-and-document'.
+
+======================================================================
+_moddep.ss_: inspecting modules and module dependencies
+======================================================================
+
+Interpretations of module paths in this library mimic that of the
+default module path resolver in MzScheme (which means that the library
+is limited, but certainly useful as no other module path resolvers
+currently exist).
+
+> (with-module-reading-parameterization thunk) - calls `thunk' with
+  all reader parameters reset to their default values.
+
+> (check-module-form stx expected-module-sym filename-string-or-#f) -
+  inspects `stx' to check whether evaluating it will declare a module
+  named `expected-module-sym' (plus a prefix, if
+  `current-module-name-prefix' is set) --- at least if `module' is
+  bound in the top-level to MzScheme's `module'. The syntax object
+  `stx' can contain a compiled expression.
+
+  If `stx' can declare a module in an appropriate top-level, then the
+  `check-module-form' procedure returns a syntax object that certainly
+  will declare a module (adding explicit context to the leading
+  `module' if necessary) in any top-level. Otherwise, if
+  `filename-string-or-#f' is a string, a suitable exception is raised,
+  and if `filename-string-or-#f' is #f, #f is returned.
+
+  If stx is eof or eof wrapped as a syntax object, then an error is
+  raised or #f is returned.
+
+> (get-module-code path [compiled-subdir compile-proc ext-proc]) -
+  returns a compiled expression for the declaration of the module
+  specified by `module-path-v'. The `module-path-v' argument is a
+  quoted module path, as for MzScheme's `dynamic-require' using the
+  default module path resolver.
+
+  The `compiled-subdir' argument defaults to "compiled"; it specifies
+  the sub-directory to search for a compiled version of the module.
+
+  The `compile-proc' argument defaults to `compile'. This procedure is
+  used to compile module source if an already-compiled version is not
+  available.
+
+  The `ext-proc' argument defaults to #f. If it is not #f, it must be
+  a procedure of two arguments that is used when `path' does not exist
+  and no ".zo" version of `path' can be found, but an extension
+  implementing `path' is found. In that case, the arguments to
+  `ext-proc' are the path for the extension, and a boolean indicating
+  whether the extension is a _loader file (#t) or not (#f).
+
+  If a ".zo" version of `path' is available and newer than var `path'
+  (in one of the directories specified by `compiled-subdir'), then it
+  is used instead of the source. Native-code versions of `path' are
+  ignored --- unless only a native-code version exists (i.e., `path'
+  itself does not exist). If only a native-code version exists, it is
+  supplied to `ext-proc' when `ext-proc' is #f, or an exception is
+  raised (to report that an extension file cannot be used) when
+  `ext-proc' is #f.
+
+> (resolve-module-path module-path-v rel-to-path-string/thunk/#f) -
+  resolves a module path to filename path. The module path is
+  resolved relative to `rel-to-path-string/thunk/#f' if it is a string
+  (a filename path), to the directory result of calling the thunk if
+  it is a thunk, or to the current directory otherwise.
+
+> (resolve-module-path-index module-path-index rel-to-path-string/thunk/#f)
+  - like `resolve-module-path' but the input is a module path index
+  (see the MzScheme manual for details); in this case, the
+  `rel-to-path-string/thunk/#f' base is used where the module path index
+  contains the "self" index.  If `module-path-v' represents the
+  "self" module path index, then an exception is raised unless
+  `rel-to-path-string/thunk/#f' is a path string.
+
+> (collapse-module-path module-path-v rel-to-module-path-v) - returns
+  a "simplified" module path by combining `module-path-v' with
+  `rel-to-module-path', where the latter must have the form '(lib
+  <relative-path> <collection>), '(file <path>), a relative path, or a
+  thunk to generate one of those.
+
+> (collapse-module-path-index module-path-index rel-to-module-path-v)
+  - like `collapse-module-path', but the input is a module path index
+  (see the MzScheme manual for details); in this case, the
+  `rel-to-module-path-v' base is used where the module path index
+  contains the "self" index.
+
+> (show-import-tree module-path-v) - a debugging aid that prints the
+  import hierarchy starting from a given module path.
+
+======================================================================
+_readerr.ss_: signalling parse errors
+======================================================================
+
+> (raise-read-error msg-string source-v line-k col-k pos-k span-k)
+
+  Creates and raises an
+>  exn:read
+  exception, using `msg-string' as the base error message.
+
+  Source-location information is added to the error message using the
+  last five arguments (if the `error-print-source-location' parameter
+  is set to #t). The `source-v' argument is an arbitrary value naming
+  the source location --- usually a file path string. Each of the
+  `line-k', `pos-k' arguments is #f or a positive exact integer
+  representing the location within `source-name' (as much as known),
+  `col-k' is a non-negaytive exact integer for the source column (if
+  known), and `span-k' is #f or a non-negative exact integer for an
+  item range starting from the indicated position.
+
+> (raise-read-eof-error msg-string source-v line-k col-k pos-k span-k)
+
+  Like `raise-read-error', but raises
+>  exn:read:eof
+  insteda of `exn:read'.
+
+======================================================================
+_boundmap.ss_: mapping identifiers based on bound-identifier=? and module-identifier=?
+======================================================================
+
+> (make-bound-identifier-mapping) - produces a hash-table-like value
+   for storing a mapping from syntax identifiers to arbitrary
+   values.
+
+   The mapping uses `bound-identifier=?' to compare mapping keys, but
+   also uses a hash table based on symbol equality to make the mapping
+   efficient in the common case (i.e., where the identifiers print
+   differently).
+
+> (bound-identifier-mapping? v) - #t if v was produced by
+   `make-bound-identifier-mapping', #f otherwise.
+
+> bound-identifier-mapping-get : (bound-identifier-mapping?
+				  identifier?
+				  [(-> any)]
+				  . opt-> . 
+				  any)
+  - Like `hash-table-get' for bound-identifier mappings.
+
+> bound-identifier-mapping-put! : (bound-identifier-mapping?
+				   identifier?
+				   any?
+				   . -> .
+				   void?)
+  - Like `hash-table-put! for bound-identifier mappings.
+
+> bound-identifier-mapping-for-each : (bound-identifier-mapping?
+				       (identifier? any? . -> . any)
+				       . -> .
+				       void?)
+  - Like `hash-table-for-each'
+
+> bound-identifier-mapping-map : (bound-identifier-mapping?
+				  (identifier? any? . -> . any)
+				  . -> .
+				  (listof any?))
+  - Like `hash-table-map'
+
+
+> (make-module-identifier-mapping) - produces a hash-table-like value
+   for storing a mapping from syntax identifiers to arbitrary
+   values.
+
+   The mapping uses `module-identifier=?' to compare mapping
+   keys, but also uses a hash table based on symbol equality
+   to make the mapping efficient in the common case, i.e.,
+   where the identifiers print differently. Note that some
+   identifiers print differently but are module-identifier=?
+   to each other. This case is handled properly by this
+   library.
+
+> (module-identifier-mapping? v) - #t if v was produced by
+   `make-module-identifier-mapping', #f otherwise.
+
+> module-identifier-mapping-get : (opt->
+                                   (module-identifier-mapping?
+                                    identifier?)
+                                   [(-> any)]
+                                   any)
+  - Like `hash-table-get' for module-identifier mappings.
+
+> module-identifier-mapping-put! : (module-identifier-mapping?
+                                    identifier?
+                                    any?
+                                    . -> .
+                                    void?)
+  - Like `hash-table-put! for module-identifier mappings.
+
+> module-identifier-mapping-for-each : (module-identifier-mapping?
+                                        (identifier? any? . -> . any)
+                                        . -> .
+                                        void?)
+  - Like `hash-table-for-each'
+
+> module-identifier-mapping-map : (module-identifier-mapping?
+                                   (identifier? any? . -> . any)
+                                   . -> .
+                                   (listof any?))
+  - Like `hash-table-map'
+
+
+======================================================================
+_zodiac.ss_, _zodiac-unit.ss_, and _zodiac-sig.ss_: compatibility
+  layer for software that used to use Zodiac
+======================================================================
+
+The interface is similar to Zodiac --- enough to be useful for porting
+--- but different in many ways. See "zodiac-sig.ss" for details. New
+software should not use this compatibility layer.
+
+======================================================================
+_path-spec.ss_: resolves `include'-like static path specification
+======================================================================
+
+> (resolve-path-spec path-spec-stx source-stx expr-stx build-path-stx)
+
+Resolves the syntactic path specification `path-spec-stx' as for
+MzLib's `include'. The result is a complete path.
+
+The `source-stx' specifies a syntax object whose source-location
+information determines relative-path resolution.  The `expr-stx' is
+used for reporting syntax errors. The `build-path-stx' is usually
+#'build-path; it provides an identifier to compare to parts of
+`path-spec-stx' to recognize the `build-path' keyword.
+
+======================================================================
+_context.ss_: support for _local-expand_
+======================================================================
+
+> (build-expand-context v) - returns an immutable list suitable for
+  use as a context argument to `local-expand' for an
+  internal-definition context. The `v' argument represents the
+  immediate context for expansion. The context list builds on
+  `(syntax-local-context)' if it is a list.
+
+> (generate-expand-context) - calls `build-expand-context' with a
+  generated symbol.
+
+======================================================================
+_trusted-xforms.ss_: trustworthy recertifying transformers
+======================================================================
+
+This module has no exports. It exists only to require other modules
+that perform syntax transformations, where the other transformations
+must use `syntax-recertify'. An application that wishes to provide a
+less powerful code inspector to a sub-program should generally attach
+"trusted-xforms.ss" to the sub-program's namespace so that things like
+the class system work properly.
+
+

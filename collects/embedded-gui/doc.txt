@@ -1,0 +1,386 @@
+[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]
+
+                     _embedded_gui.ss_
+
+[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]
+
+The embedded gui collection provides a class hierarchy for
+creating graphical boxes within mred's editors with geometry
+managment that mirrors that of vertical-panel% and
+horizontal-panel%
+
+============================================================
+
+The _aligned-pasteboard%_ class is derived from pasteboard%
+It implements alignment-parent<%> and acts as the top of an
+alignment<%> tree.
+
+============================================================
+
+_alignment<%> is derived from dllist<%> and requires the
+following additional methods.
+
+> (send an-alignment get-parent) -> (is-a?/c alignment-parent<%>)
+
+The parent of the alignment in the tree.
+
+> (send an-alignment set-min-sizes) -> void
+
+Tells the alignment that its sizes should be calculated
+      
+> (send an-alignment align x-offset y-offset width height) -> void
+  x-offset : nonnegative?
+  y-offset : nonnegative?
+  width : nonnegative?
+  height : nonnegative?
+      
+Tells the alignment to align its children on the pasteboard
+in the given rectangle defined by a width, height and a top
+left corner point given as offsets into the pasteboards top
+left corner.
+
+> (send an-alignment get-min-width) -> nonnegative?
+
+The minimum width this alignment must be
+      
+> (send an-alignment get-min-height) -> nonnegative?
+
+The minimum height this alignment must be
+      
+> (send an-alignment stretchable-width value) -> void
+  value : boolean?
+
+Sets the property of stretchability in the x dimension
+
+> (send an-alignment stretchable-width) -> boolean?
+
+True if the alignment can be stretched in the x dimension
+      
+> (send an-alignment stretchable-height value) -> void
+  value : boolean?
+
+Sets the property of stretchability in the y dimension
+
+> (send an-alignment stretchable-height) -> boolean?
+
+True if the alignment can be stretched in the y dimension
+      
+> (send an-alignment show/hide show?) -> void
+  show? : boolean?
+  
+Tells the alignment to show or hide its children
+      
+> (send an-alignment show show?) -> void
+  show? : boolean?
+
+Tells the alignment that its show state is the given value
+and it should show or hide its children accordingly.
+
+============================================================
+
+_alignment-parent<%>_s implement the following methods.
+
+> (send an-alignment-parent get-pasteboard) -> (is-a?/c pasteboard%)
+
+The pasteboard that this alignment is being displayed to
+      
+> (send an-alignment-parent add-child) -> void
+  child : (is-a?/c alignment<%>)
+  after : (union (is-a?/c alignment<%>) false?) = false
+
+Add the given alignment as a child after the existing child
+      
+> (send an-alignment-parent delete-child child) -> void
+  child : (is-a?/c alignment<%>)
+
+Deletes a child from the the alignments
+      
+> (send an-alignment-parent is-shown?) -> boolean?
+
+True if the alignment is being shown (accounting for its parent being shown)
+
+============================================================
+
+The _stretchable-snip<%>_ interface must be implemented
+by any snip class who's objects will be stretchable when
+inserted into an aligned-pasteboard<%> within a
+snip-wrapper%.
+
+> (send a-stretchable-snip get-aligned-min-width) -> nonnegative?
+
+The minimum width that the snip can be resized to
+
+> (send a-stretchable-snip get-aligned-min-height) -> nonnegative?
+
+The minimum height that the snip can be resized to
+
+> (send a-stretchable-snip stretchable-width) -> boolean?
+
+Whether or not the snip can be stretched in the X dimension
+
+> (send a-stretchable-snip stretchable-height) -> boolean?
+
+Whether or not the snip can be stretched in the Y dimension
+
+============================================================
+
+_dllist<%>_ is an interface which makes a class a
+doublly-linked list and requires the following methods
+
+> (send a-dlllist next) -> (is-a?/c dllist<%>)
+
+The next item in the list
+
+> (send a-dllist next new-next) -> void
+  new-next : (is-a?/c dllist<%>)
+
+Set the next field to be the given dllist
+
+> (send a-dllist prev) -> (is-a?/c dllist<%>)
+
+The previous item in the list
+
+> (send a-dllist prev new-prev) -> void
+  new-prev : (is-a?/c dllist<%>)
+
+Set the previous field to be the given dllist
+
+> (send a-dllist for-each f) -> void
+  f : ((is-a?/c dllist<%>) . -> . void)
+
+Applies f to every element of the dllist
+
+> (send a-dllist map-to-list f) -> (listof any?)
+  f : ((is-a?/c dllist<%>) . -> . any?)
+
+A Scheme list of the results of applying f to every element
+of the dllist.
+
+============================================================
+
+_vertical-alignment%_ and _horizontal-alignment%_ are
+geometry managment classes of the embedded-gui toolkit. They
+implement alignment<%> and alignment-parent<%> and are
+instantiated as follows
+
+> (new vertical-alignment% (parent _) [(show? _)] [(after _)])
+  parent : (is-a?/c alignment-parent<%>)
+  show? : boolean? = true
+  after : (union (is-a?/c alignment<%>) false?) = false
+
+Inserts a new vertical alignment into the parent optionally
+after a given alignment also in the parent. The alignment
+can be initially shown or hidden.
+
+============================================================
+
+_snip-wrapper%_ is an alignment<%> that introduces a snip
+into the alignment tree. snip%s are not instantiated with
+a parent nor do they implement alignment<%>. snip-wrapper%
+is an adapter for snip%s.
+
+> (new snip-wrapper% (parent _) (snip _))
+  parent : (is-a?/c alignment-parent<%>)
+  snip : (is-a?/c snip%)
+
+============================================================
+
+_text-button-snip%_, button-snip%, and toggle-button-snip%
+are three derivative snip% classes that act like buttons
+when inserted into an editor.
+
+Note: In order to allow the buttons to be pushed the editor
+in which they appear must forward clicks to them properly.
+(see click-forwarding-editor-mixin)
+
+> (new text-button-snip% (label _) (callback _))
+  label : string?
+  callback : ((is-a?/c text-button-snip%) (is-a?/c event%) . -> . void)
+
+> (new button-snip% (images _) (callback _))
+  images : (pair string? string?)
+  callback : ((is-a?/c button-snip%) (is-a?/c event%) . -> . void)
+
+The images argument is a pair filenames to be load as the
+button image. The car of the pair is the normal button and the
+cdr of the pair is the depressed button image.
+
+> (new toggle-button-snip% (images-off _) (images-on _) (turn-off _) (turn-on _) [(state _)])
+  images-off : (pair string string)
+  images-on : (pair string string)
+  turn-on : ((is-a?/c toggle-button-snip%) (is-a?/c event%) . -> . void)
+  turn-off : ((is-a?/c toggle-button-snip%) (is-a?/c event%) . -> . void)
+  state : (symbols 'on 'off) = 'on
+
+Like button-snip but given two pairs of images, images-on
+and images-off, and two callback, turn-on and turn-off. The
+initial can be passed as an argument but is by default on.
+
+============================================================
+
+_embedded-button%_, _embedded-text-button%_, and
+_embedded-toggle-button%_ are button classes derived from
+snip-wrapper% that wrap their corresponding snip% derivative
+buttons from above. The embedded buttons implement
+alignment<%> and take an addition parent init argument.
+
+============================================================
+
+The _embedded-message%_ is a label with no IO.
+
+> (new embedded-message% (parent _) (label _))
+  parent : (is-a?/c alignment-parent<%>)
+  label : string?
+
+============================================================
+
+_fixed-width-label-snip_ makes it easy to align GUI elements
+that are labeled with arbitrary strings.
+fixed-width-label-snip is an abstract snip% class that takes
+a list of strings, labels, and returns a snip% class. The
+returned class may be instantiated with a string, label,
+argument matching any of the strings in the list. The
+resultant object is a snip% displaying label with a width as
+wide as is required to display the longest string in labels.
+
+============================================================
+
+_vline%_ and _hline%_ are two graphical elements of the
+alignment<%> hierarchy that display a vertical or horizontal
+line across the region they are inserted into. They implement
+alingment<%>.
+
+> (new vline% (parent _))
+  parent : (is-a?/c alignment-parent<%>)
+
+============================================================
+
+_stretchable-editor-snip-mixin_ gives an editor snip the
+_stretchable-snip<%>_ interface allowing it to be stretched
+to fit it's alignment-parent<%>'s alloted width. Stretchable
+snips are useful as the snip of a snip-wrapper%.
+
+_stretchable-editor-snip%_ is (stretcable-editor-snip-mixin editor-snip%)
+
+> (new stretchable-editor-snip% [(stretchable-width _)] [(stretchable-height _)])
+  stretchable-width : boolean? = true
+  stretchable-height : boolean? = true
+
+============================================================
+
+_tabbable-text<%>_ is an interface for tabbing between
+text%s. It requires the following methods.
+
+> (send a-tabbable-text set-caret-owner) -> void
+
+Takes the caret into the tabbable-text<%>
+
+> (send a-tabbable-text set-ahead) -> void
+
+The thunk to execute when tabbing ahead
+
+> (send a-tabbable-text set-back) -> void
+
+The thunk to execute when tabbing back
+
+============================================================
+
+_tabbable-text-mixin_ gives a text% the tabbable-text<%>
+interface and gives it keybindings to tab ahead and back.
+
+============================================================
+
+The _set-tabbing_ function sets the tabbing order of
+tabbable-text<%>s by setting each text's set-ahead and
+set-back thunks to point to it's neighbor in the argument
+list.
+
+> (set-tabbing a-text ...)
+  a-text : (is-a?/c tabbable-text<%>)
+
+============================================================
+
+The _grey-editor-snip-mixin_ and _grey-editor-mixin_ give an
+editor-snip% and editor% a colored background indicating they
+are disabled. The editor is not disabled by the mixin however,
+and must be locked separately.
+
+============================================================
+
+The _single-line-text-mixin_ restricts a text to one line by
+overriding its keybidings to do nothing on enter.
+
+============================================================
+
+The _cue-text-mixin_ gives a text% an instantiation argument
+of a string that is displayed in the text% initially in grey.
+This text dissappears when the text gets focus. This is
+useful for labeling texts without needing to take up space.
+
+_cue-text%_ is (cue-text-mixin text%)
+
+> (new cue-text% [(cue-text _)])
+  cue-text : string? = ""
+  color : string = "gray"
+  behavior : (listof (symbols 'on-focus 'on-char)) = '(on-focus)
+
+============================================================
+
+The following functions are useful for working with snips
+
+> (snip-width snip) -> number?
+  snip : (is-a?/c snip%)
+
+The width of a snip in the parent pasteboard
+    
+> (snip-height snip)
+  snip : (is-a?/c snip%)
+
+The height of a snip in the parent pasteboard
+  
+> (snip-min-width snip)
+  snip : (is-a?/c snip%)
+
+The minimum width of the snip
+  
+> (snip-min-height snip)
+  snip : (is-a?/c snip%)
+
+The minimum height of the snip
+  
+> (snip-parent snip)
+  snip : (is-a?/c snip%)
+
+The pasteboard that contains the snip
+  
+> (fold-snip f init-acc snip) -> any?
+  f : ((is-a?/c snip%) any? . -> . any?)
+  init-acc : any?
+  snip : (is-a?/c snip%)
+
+The application of f on all snips from snip to the end in a
+foldl foldr mannor
+  
+> (for-each-snip f first-snip init-lists ...) -> void
+  f : ((is-a?/c snip%) . -> . void)
+  first-snip : (is-a?/c snip%)
+  init-lists : (listof any?)
+
+Applies the function to all the snips
+  
+> (map-snip f first-snip init-lists ...) -> (listof any?)
+  f : ((is-a?/c snip%) . -> . any?)
+  first-snip : (is-a?/c snip%)
+  init-lists : (listof any?)
+
+A list of f applied to each snip
+  
+> (stretchable-width? snip) -> boolean?
+  snip : (is-a?/c snip%)
+
+True if the snip can be resized in the x dimention
+  
+> (stretchable-height? snip) -> boolean?
+  snip : (is-a?/c snip%)
+
+True if the snip can be resized in the y dimention

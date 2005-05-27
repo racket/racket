@@ -1,0 +1,28 @@
+teachpack/htdp
+collects/htdp
+ cvs commit -m. 
+
+-----------------------------------------------------------------------------------
+
+docs: 
+
+-----------------------------------------------------------------------------------
+code: 
+
+General comment: 
+ the word repl should disappear
+
+guess.ss: repl, repl3,
+  check that the result is a symbol gives bad error message 
+
+master.ss 
+  add close? button 
+
+hangman.ss
+  error messages: can we do better? 
+  (test-error (hangman-list (lambda (x y z) x) first))
+  (test-error (hangman-list (lambda (x y z) x) list))
+  
+  the game should be "start-once only"
+
+-----------------------------------------------------------------------------------

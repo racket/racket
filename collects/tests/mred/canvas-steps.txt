@@ -1,0 +1,175 @@
+
+Overview
+--------
+
+This canvas test frame is for checking the behvaiour of the
+scrollbars. Canvas scrollbars work in one of two modes:
+  1) Managing: the scrollbar determines the size and offset of
+     the canvas's drawing area.
+  2) Non-managing: the scrollbars are simply placed next to the
+     canvas; the canvas's size and offset are not affected by
+     the scrollbar values.
+In the test frame, the top canvas is initially unmanaged, and the
+bottom is managed.
+
+An HVCanvas has both horizontal and vertical scrollbars, but the
+scrollbars are initially disabled. Clikcing the "Enable Vertical"
+checkbox enables the vertical scroll. A VCanvas has only a vertical
+scrollbar; clicking "ENable Horizontal" in this case has no effect.
+When a canvas is managed by its scrollbars and a scrollbar is missing
+in a particular direction, it should act the same as an unmanaged
+canvas in that direction.
+
+On each canvas, the following are painted at 0,0:
+ * The name of the canvas
+ * Three values per scroll bar, for UNMANAGED canvases:
+    - The current value of the scroll
+    - The maximum value of the scroll
+    - The page step of the scroll
+   These should all be 0 for MANAGED canvases and for
+   disabled directions
+ * Two size measurements:
+    - The client size of the canvas
+    - The drawing area of the canvas
+   These should be the same for UNMANAGED canvases/directions
+ * Two lines showing what each `virtual boundary' of the canvas would
+   be if it is managed and the scrollbar is enabled. (Initially, the
+   bottom canvas's boundaries are probably beyond the visible region.)
+   When the canvas is managed with a vertical scrollbar, the bottom
+   boundary line might not be visible, i.e., it might be clipped - but
+   it must be clipped eactly in that case.
+
+As the scroll is changed for the managed canvas, the information will
+move, because the scrolls automatically adjust the offset of the
+canvas. For the unmanaged canvas, the information is always visible in
+the same place; it is just updated.
+
+The top's scrollbars have a range of 10 and a page step of 3.  The
+bottom's scrollbars have a range of 20 and a page step of 3 (although
+the page step is sometimes ignored for a managed canvas).  In managed
+mode:
+
+ * In the bottom canvas, one vertical scroll step is mapped to 10
+   pixels and one horizontal step to 25 pixels, making the virtual
+   area 200 pixels high and 500 pixels wide.
+
+   When the "Small" checkbox is checked, the range is changed to 2
+   instead of 20, making the virtual size 20 high by 50 wide.
+
+ * In the bottom canvas, one vertical or horizontal scroll step is
+   mapped to 1 pixel, making the virtual area 10x10.
+
+Initially, the top canvas is unmanaged and the bottom is managed.
+Checking the "swap" checkbox makes the top canvas unmanaged and the
+bottom canvas managed.
+
+The steps below assume an HVCanvas. Don't resize the window before
+starting the steps.
+
+HVCanvas Steps
+--------------
+ 
+Enable vertical scroll. The scroll should be at position 1 for both
+ canvases. The bottom canvas should be scrolled up 10 pixels.  The
+ displayed info should change:
+    -------------------------------------------
+    | Unmanaged Scroll                        |
+    | V: p: 1 r: 10 g: 3 H: 0 0 0             |
+    | Client: <m> x <n> Virtual: <m> x <n>    | ; for some <m> and <n>
+    -------------------------------------------
+    | Automanaged Scroll                      | ; <- actually, scrolled up
+    | V: p: 0 r: 0 g: 0 H: 0 0 0              | ; all zero for managed
+    | Client: <m> x <n'> Virtual: <m> x 200   | ; <n'> within 1 of <n>
+    -------------------------------------------
+  (You might not be able to read 200 in the lower right.)
+  Make the window slightly wider. Make sure the <m> gets bigger to
+  reflect the new width of the canvases.
+
+Set the bottom canvas's vertical scroll to 0. The "Automanaged Scroll"
+ should scroll back down into the original location.
+
+Scroll the bottom canvas's vertical scroll to its maximum value (which
+ is less than 10) You may see the bottom border close to the bottom
+ edge of the canvas.
+
+Adjust the top canvas's scroll, and watch the `p' value change each
+ time. The maximum value is 10. Use the `page up/down' areas and make
+ sure the `p' value changes by 3.
+
+Turn off the vertical scroll. The bottom canvas's image should snap
+ back to its original place. All the `V:' values in the top should
+ return to zeros.
+
+Perform the above steps for horizontal scrolling.
+
+Turn on both vertical and horizontal scrolling. You should see the
+ obvious combined effect. In particular, the bottom canvas's text
+ should be scrolled both up and to the left.
+
+Move all scrolls to 1 step beyond the smallest setting.  
+
+Make the frame larger. The top canvas's scrolls should still have 10
+ steps, but the bottom canvas's scrolls will have fewer steps,
+ reflecting the fact that less scrolling is needed to see the same
+ virtual area.
+
+Test the bottom canvas's scrolls to ensure that the maximum values of
+ the scrolls show the edges of the canvas's virtual area.
+
+Make the frame large enough to see the whole bottom canvas's virtual
+  area. The scrollbars should become disabled in both directions.
+
+Make the frame smaller again. The bottom canvas's scrolls should
+ adjust correctly. Make the frame small enough that all scrollbars are
+ active.
+
+Move all scrolls to 1 step beyond the smallest setting.  
+
+Check "swap". Now, the top canvas is managed and the bottom canvas is
+ unmanaged. But the top canvas's area is so small that its scrollbars
+ are always disabled. (It may also be clipped to the tiny 10x10 box.)
+ The bottom canvas's scrollbars should now act the the top ones used
+ to: there are 20 steps in each direction and the `V:' and `H:' values
+ change as the scrolls are moved.
+
+Uncheck "swap". The scrollbars should all go back to the 1 position.
+ The bottom canvas should be scrolled in the usual way.
+
+Check "small". The top canvas should be unaffected. The bottom canvas
+ should scroll back to 0,0, the scrollbars should be disabled, and a
+ 50x20 box should be drawn in the upper left (or the entire canvas is
+ clipped to that box).
+
+Check "swap". The bottom canvas should not be clipped.
+
+Check "swap". The bottom canvas might be clipped again.
+
+Uncheck "small". The bottom canvas should not be clipped.
+
+Check "small" and disable vertical scrolls. The bottom canvas should
+ be clipped horizontally or the boundary drawn at a small offset from
+ the left.
+
+Enable vertical and disable horizontal. The bottom canvas will be
+ narrowly clipped of have a short boundary from the top.
+
+HCanvas Steps
+--------------
+
+A vertical scrollbar should not be visible at all.
+
+Check both "Enable Vertical" and "Enable Horizontal". Verify that the
+ canvases act exactly like an HVCanvas with vertical scrolls disabled.
+
+VCanvas Steps
+--------------
+
+Transpose the approve appropriately
+
+Canvas Steps
+------------
+
+No scrollbars, checking the enabler boxes has no effect.
+
+Click "small" and make sure the bottom canvas is not clipped.
+

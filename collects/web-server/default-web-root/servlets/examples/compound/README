@@ -1,0 +1,19 @@
+To build libraries that use send/suspend, the library code must reside inside
+a unit that imports send/suspend.  Servlets that use the library must
+link the main servlet with the code from the library using a compound-unit.
+
+helper.ss
+  This file provides the function _get-number_ that uses send/suspend
+  to interact with the consumer.
+  
+helper-sig.ss
+  This file provides a unit signature required for linking to the helper
+  library.
+
+add.ss
+  The add servlet links to the helper unit and calls get-number.
+
+multiply.ss
+  The multiply servlet also uses the helper library.
+
+

@@ -1,0 +1,68 @@
+
+_Framework Extras_
+
+_hierlist-editor-snip.ss_ defines two classes:
+
+--------------------------------------------------
+
+> decorated-editor-snip%, derived from editor-snip%
+   
+This class operated just like a regular editor snip, except
+that it has a color and an icon in the top right hand corner.
+
+Overridable methods:
+
+Each of these methods must be overridden in a derived class
+to specify this class's behavior.
+
+>  make-snip :: (send a-des make-snip) - returns an instance
+     of one of these snips. Defaults to returning an
+     instance of decorated-editor-snip%. Override this when
+     deriving a new class from decorated-editor-snip%.
+
+>  make-editor :: (send a-des make-editor) - returns the 
+     editor to be used in the snip. Defaultly returns an
+     instance of text%.
+
+>  get-color :: (send a-des get-color) - returns a color%
+     object or a string in the color-database%
+     that is used for the border of the snip. Defaults to
+     return "black".
+
+> get-corner-bitmap :: (send a-des get-corner-bitmap) -
+     returns the bitmap to be used in the corner of the
+     snip, or #f. Defaults to returning #f.
+
+> get-menu :: (send a-des get-menu) - returns the menu to be
+     used when someone clicks on the top portion of the
+     snip, or #f (in which case there is no menu). Defaults
+     to return #f.
+
+Overridden methods:
+
+>  write : writes the editor's contents to the file.
+
+>  copy : uses the `make-snip' method to copy the
+          snip. Creates a copy of the editor in the snip using
+          the `copy-self' method and sets the style of the
+          copy to be the style of the original.
+
+>  on-event : handles the popup menu 
+
+>  draw : draws the icon
+
+--------------------------------------------------
+
+> decorated-editor-snipclass%, derived from snip-class%
+
+Overridable method:
+
+>  make-snip :: (send a-desc make-snip stream-in) - returns
+   an instance of the snip to be created by this snipclass.
+
+Overridden method:
+
+>  write : This method matches decorated-editor-snip%'s
+           `write' method. It first calls `make-snip' to
+           create the snip and then reads the editor from
+           the stream.

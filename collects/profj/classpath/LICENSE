@@ -1,0 +1,29 @@
+The software in this package is distributed under the GNU General Public
+License (with "Library Exception" described below).
+
+A copy of GNU General Public License (GPL) is included in this distribution,
+in the file COPYING.  If you do not have the source code, it is available at:
+
+    http://www.gnu.org/software/classpath/
+
+In addition, the files distributed under GPL include the following
+special exception.
+
+    As a special exception, if you link this library with
+    other files to produce an executable, this library does
+    not by itself cause the resulting executable to be covered
+    by the GNU General Public License. This exception does
+    not however invalidate any other reasons why the executable
+    file might be covered by the GNU General Public License. 
+
+As such, this software can be used to run Free as well as proprietary
+applications and applets:  static linking is permitted, so this can
+even be used in embedded configurations.
+
+External libraries included with GNU Classpath may be distributed under
+different licensing terms.  Refer to the documentation for each package
+located in the external directory.
+
+Parts of the native library fdlibm in native/fdlibm are copyright of 
+Sun Microsystems, Inc. or AT&T.
+

@@ -1,0 +1,78 @@
+_String Constants_
+
+This library provides the facility for multiple langauges in
+DrScheme's GUI. These are the exported syntactic forms and
+procedures from
+
+   (lib "string-constant.ss" "string-constants")
+
+are
+        
+> (string-constant name) : string
+ 
+   This form returns the string constant named `name'.
+   
+> (string-constants name) : (listof string)
+
+  This form returns a list of string constants, one for each
+  language that DrScheme's GUI supports.
+  
+> (this-language) : symbol
+
+  This form returns the name of the current language
+  
+> (all-languages) : (listof symbol)
+
+  This form returns a list of symbols (in the same order as
+  those returned from string-constants) naming each
+  language.
+
+> (set-language-pref lang) : void
+
+  Sets the language for the next run of DrScheme to
+  lang, which must be a symbol returned from `all-languages'.
+  Does not affect the running DrScheme.
+  
+============================================================
+
+To add string-constants to DrScheme, see the files:
+
+  _english-string-constants.ss_
+  _french-string-constants.ss_
+  _spanish-string-constants.ss_
+  _german-string-constants.ss_
+  _danish-string-constants.ss_
+  _italian-string-constants.ss_
+  
+Each file has the same format. They are each modules
+in the "string-constant-lang.ss" language. The body of each
+module is a finite mapping table that gives the mapping
+from the symbolic name of a string constant to its
+translation in the appropriate language.
+
+The english-string-constants.ss is considered the master
+file -- string constants will be set there and translated
+into each of the other langauge files.  In addition, the
+english-string-constants.ss file should contain hints about
+the context of the strings whose symbol name might not be
+clear.
+
+============================================================
+
+_PLTSTRINGCONSTANTS_ environment variable
+_STRINGCONSTANTS_ environment variable
+
+If either of these environment variables are set, DrScheme
+shows you, during startup, which string constants are not
+yet defined for each langauge. 
+
+You can also specify which languages you are interested
+in. If either environment variable is bound to a symbol (as
+interpreted by `read') you see only the corresponding
+language's messages. If either one is bound to a list of
+symbol (again, as interpreted by `read') you see the
+messages for all the languages in the list. If either is
+bound to anything else, you see all of the languages.
+
+The PLTSTRINGCONSTANTS environment variable takes precedence
+of the STRINGCONSTANTS environment variaable.

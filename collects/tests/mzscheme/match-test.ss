@@ -1,0 +1,6 @@
+(load-relative (build-path "match" "plt-match-test.ss"))
+(load-relative (build-path "match" "match-test.ss"))
+;(load-relative (build-path "match" "match-performance.ss"))
+;(load-relative (build-path "match" "rand-vec-perf.ss"))
+;(load-relative (build-path "match" "rand-list-perf.ss"))
+;(load-relative (build-path "match" "short-rand-list.scm"))

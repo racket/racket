@@ -1,0 +1,574 @@
+% slatex.sty
+% SLaTeX v. 2.4
+% style file to be used in (La)TeX when using SLaTeX
+% (c) Dorai Sitaram, Rice U., 1991, 1999
+
+\def\slatexversion{2.4z2}
+
+% This file (or a soft link to it) should be in some
+% directory in your TEXINPUTS path (i.e., the one
+% (La)TeX scours for \input or \documentstyle option
+% files).
+
+% Do not attempt to debug this file, since the results
+% are not transparent just to (La)TeX.  The Scheme part
+% of SLaTeX depends on information laid out here -- so
+% (La)TeX-minded debugging of this file will almost
+% inevitably sabotage SLaTeX.
+
+% It's possible you don't find the default style set
+% out here appealing: e.g., you may want to change the
+% positioning of displayed code; change the fonts for
+% keywords, constants, and variables; add new keywords,
+% constants, and variables; use your names instead of
+% the provided \scheme, [\begin|\end]{schemedisplay},
+% [\begin|\end]{schemebox}, (or \[end]schemedisplay,
+% \[end]schemebox for TeX), which might be seem too
+% long or unmnemonic, and many other things.  The clean
+% way to do these things is outlined in the
+% accompanying manual, slatxdoc.tex.  This way is both
+% easier than messing with this .sty file, and safer
+% since you will not unwittingly break SLaTeX.
+
+%%%
+
+% to prevent loading slatex.sty more than once
+
+\ifx\slatexignorecurrentfile\UNDEFINED
+\else\endinput\fi
+
+% use \slatexignorecurrentfile to disable slatex for
+% the current file.  (Unstrangely, the very definition
+% disables slatex for the rest of _this_ file, slatex.sty.)
+
+\def\slatexignorecurrentfile{}
+
+% checking whether we're using LaTeX or TeX?
+
+\newif\ifusinglatex
+\ifx\newenvironment\UNDEFINED\usinglatexfalse\else\usinglatextrue\fi
+
+% make @ a letter for TeX
+\ifusinglatex\relax\else
+\edef\atcatcodebeforeslatex{\the\catcode`\@ }
+\catcode`\@11
+\fi
+
+% identification of TeX/LaTeX style for schemedisplay.
+% Do \defslatexenvstyle{tex} to get TeX environment
+% style in LaTeX
+\def\defslatexenvstyle#1{\gdef\slatexenvstyle{#1}}
+
+\ifusinglatex\defslatexenvstyle{latex}\else\defslatexenvstyle{tex}\fi
+
+% TeX doesn't have sans-serif; use roman instead
+\ifx\sf\UNDEFINED\let\sf\rm\fi
+
+% tabbing from plain TeX
+%
+\newif\ifus@ \newif\if@cr
+\newbox\tabs \newbox\tabsyet \newbox\tabsdone
+%
+\def\cleartabs{\global\setbox\tabsyet\null \setbox\tabs\null}
+\def\settabs{\setbox\tabs\null \futurelet\next\sett@b}
+\let\tabalignaux=\relax % in case this file is being read in twice
+\def\sett@b{\ifx\next\tabalignaux\let\next\relax
+    \def\next{\afterassignment\s@tt@b\let\next}%
+\else\let\next\s@tcols\fi\next}
+\def\s@tt@b{\let\next\relax\us@false\m@ketabbox}
+\def\tabalign{\us@true\m@ketabbox} % non-\outer version of \tabalignaux
+\outer\def\tabalignaux{\tabalign}
+\def\s@tcols#1\columns{\count@#1 \dimen@\hsize
+  \loop\ifnum\count@>\z@ \@nother \repeat}
+\def\@nother{\dimen@ii\dimen@ \divide\dimen@ii\count@
+  \setbox\tabs\hbox{\hbox to\dimen@ii{}\unhbox\tabs}%
+  \advance\dimen@-\dimen@ii \advance\count@\m@ne}
+%
+\def\m@ketabbox{\begingroup
+  \global\setbox\tabsyet\copy\tabs
+  \global\setbox\tabsdone\null
+  \def\CR{\@crtrue\crcr\egroup\egroup
+    \ifus@\unvbox\z@\lastbox\fi\endgroup
+    \setbox\tabs\hbox{\unhbox\tabsyet\unhbox\tabsdone}}%
+  \setbox\z@\vbox\bgroup\@crfalse
+    \ialign\bgroup&\t@bbox##\t@bb@x\crcr}
+%
+\def\t@bbox{\setbox\z@\hbox\bgroup}
+\def\t@bb@x{\if@cr\egroup % now \box\z@ holds the column
+  \else\hss\egroup \global\setbox\tabsyet\hbox{\unhbox\tabsyet
+      \global\setbox\@ne\lastbox}% now \box\@ne holds its size
+    \ifvoid\@ne\global\setbox\@ne\hbox to\wd\z@{}%
+    \else\setbox\z@\hbox to\wd\@ne{\unhbox\z@}\fi
+    \global\setbox\tabsdone\hbox{\box\@ne\unhbox\tabsdone}\fi
+  \box\z@}
+% finished (re)defining TeX's tabbing macros
+
+% above from plain.tex; was disabled in lplain.tex.  Do
+% not modify above unless you really know what you're
+% up to.  Make all changes you want to following code.
+% The new env is preferable to LaTeX's tabbing env
+% since latter accepts only a small number of tabs
+
+% following retrieves something like LaTeX's tabbing
+% env without the above problem (it also creates a box
+% for easy manipulation!)
+
+\def\lat@xtabbing{\begingroup
+\def\={\cleartabs&} \def\>{&}%
+\def\\{\CR\tabalign\lat@xtabbingleftmost}%
+\tabalign\lat@xtabbingleftmost}
+\def\endlat@xtabbing{\CR\endgroup}
+\let\lat@xtabbingleftmost\relax
+
+% stuff for formating Scheme code
+
+\newskip\par@nlen \newskip\brack@tlen \newskip\quot@len
+\newskip\h@lflambda
+
+\newbox\garb@ge
+\def\s@ttowidth#1#2{\setbox\garb@ge\hbox{#2}#1\wd\garb@ge\relax}
+
+\s@ttowidth\par@nlen{$($}       % size of paren
+\s@ttowidth\brack@tlen{$[$}     % size of bracket
+\s@ttowidth\quot@len{'}         % size of quote indentation
+\s@ttowidth\h@lflambda{ii}      % size of half of lambda indentation
+
+\def\PRN{\hskip\par@nlen}       % these are used by SLaTeX's codesetter
+\def\BKT{\hskip\brack@tlen}
+\def\QUO{\hskip\quot@len}
+\def\HL{\hskip\h@lflambda}
+
+\newskip\abovecodeskip \newskip\belowcodeskip
+\newskip\leftcodeskip \newskip\rightcodeskip
+
+% the following default assignments give a flushleft
+% display
+
+\abovecodeskip=\medskipamount \belowcodeskip=\medskipamount
+\leftcodeskip=0pt \rightcodeskip=0pt
+
+% adjust above,below,left,right codeskip's to personal
+% taste
+
+% for centered displays
+%
+% \leftcodeskip=0pt plus 1fil
+% \rightcodeskip=0pt plus 1fil
+%
+% if \rightcodeskip != 0pt, pagebreaks within Scheme
+% blocks in {schemedisplay} are disabled
+
+\let\checkforfollpar1
+\def\noindentifnofollpar{\ifx\checkforfollpar0\let\next\relax
+  \else\ifusinglatex\let\next\@endparenv
+  \else\let\next\noindentifnofollparI\fi\fi\next}
+\def\noindentifnofollparI{\futurelet\next\noindentifnofollparII}
+\def\noindentifnofollparII{\ifx\next\par\else\noindent\ignorespaces\fi}
+
+% the following are the default font assignments for
+% words in code.  Change them to suit personal taste
+
+\def\keywordfont#1{{\bf #1}}
+\def\variablefont#1{{\it #1\/}}
+\def\constantfont#1{{\sf #1}}
+\def\datafont#1{\constantfont{#1}}
+
+\let\schemecodehook\relax
+\let\ZZZZschemecodehook\relax
+
+%program listings that allow page breaks but
+%can't be centered
+
+\def\ZZZZschemedisplay{\edef\thez@skip{\the\z@skip}%
+  \edef\@tempa{\the\rightcodeskip}%
+  \ifx\@tempa\thez@skip\let\next\ZZZZschemeprogram
+  \else\let\next\ZZZZschemeprogramII\fi\next}
+
+\def\endZZZZschemedisplay{\edef\thez@skip{\the\z@skip}%
+  \edef\@tempa{\the\rightcodeskip}%
+  \ifx\@tempa\thez@skip\let\next\endZZZZschemeprogram
+  \else\let\next\endZZZZschemeprogramII\fi\next}
+
+\def\ZZZZschemeprogram{\vskip\abovecodeskip
+  \begingroup
+  \schemecodehook\ZZZZschemecodehook
+  \frenchspacing
+  \let\sy=\keywordfont \let\cn=\constantfont
+  \let\va=\variablefont \let\dt=\datafont
+  \def\lat@xtabbingleftmost{\hskip\leftskip\hskip\leftcodeskip\relax}%
+  \lat@xtabbing}
+
+\def\endZZZZschemeprogram{\endlat@xtabbing
+  \endgroup
+  \vskip\belowcodeskip
+  \noindentifnofollpar}
+
+\def\ZZZZschemeprogramII{\vskip\abovecodeskip
+  \begingroup
+  \noindent
+  %\ZZZZschemecodehook\schemecodehook %\ZZZZschemebox already has it
+  \hskip\leftcodeskip
+  \ZZZZschemebox}
+
+\def\endZZZZschemeprogramII{\endZZZZschemebox
+  \hskip\rightcodeskip
+  \endgroup
+  \vskip\belowcodeskip
+  \noindentifnofollpar}
+
+\def\ZZZZschemeresponse{\ZZZZschemecodehookforresult
+  \ZZZZschemedisplay}
+\let\endZZZZschemeresponse\endZZZZschemedisplay
+
+%
+
+\def\ZZZZschemebox{%
+  \leavevmode\hbox\bgroup\vbox\bgroup
+  \schemecodehook\ZZZZschemecodehook
+  \frenchspacing
+  \let\sy=\keywordfont \let\cn=\constantfont
+  \let\va=\variablefont \let\dt=\datafont
+  \lat@xtabbing}
+\def\endZZZZschemebox{\endlat@xtabbing
+\egroup\egroup\ignorespaces}
+
+% schemetopbox : added by robby/jbc 2000
+
+\def\ZZZZschemetopbox{%
+  \leavevmode\hbox\bgroup\vtop\bgroup
+  \schemecodehook\ZZZZschemecodehook
+  \frenchspacing
+  \let\sy=\keywordfont \let\cn=\constantfont
+  \let\va=\variablefont \let\dt=\datafont
+  \lat@xtabbing}
+\def\endZZZZschemetopbox{\endlat@xtabbing
+\egroup\egroup\ignorespaces}
+
+\def\ZZZZschemeresponsebox{\ZZZZschemecodehookforresult
+  \ZZZZschemebox}
+\let\endZZZZschemeresponsebox\endZZZZschemebox
+
+%in-text
+
+\def\ZZZZschemecodeintext{\begingroup
+  \schemecodehook\ZZZZschemecodehook
+  \frenchspacing
+  \let\sy\keywordfont \let\cn\constantfont
+  \let\va\variablefont \let\dt\datafont}
+
+\def\endZZZZschemecodeintext{\endgroup\ignorespaces}
+
+\def\ZZZZschemeresultintext{\ZZZZschemecodehookforresult
+  \ZZZZschemecodeintext}
+
+\let\endZZZZschemeresultintext\endZZZZschemecodeintext
+
+%
+
+\def\ZZZZschemecodehookforresult{%
+  \gdef\ZZZZschemecodehook{\let\keywordfont\constantfont
+    \let\variablefont\constantfont
+    \global\let\ZZZZschemecodehook\relax}}
+
+% \comm@nt<some-char>...text...<same-char> comments out
+% TeX source analogous to
+% \verb<some-char>...text...<same-char>.  Sp. case:
+% \comm@nt{...text...} == \comm@nt}...text...}
+
+\def\@makeother#1{\catcode`#112\relax}
+
+\def\comm@nt{%
+  \begingroup
+  \let\do\@makeother \dospecials
+  \@comm}
+
+\begingroup\catcode`\<1 \catcode`\>2
+\catcode`\{12 \catcode`\}12
+\long\gdef\@comm#1<%
+  \if#1{\long\def\@tempa ##1}<\endgroup>\else
+	\long\def\@tempa ##1#1<\endgroup>\fi
+  \@tempa>
+\endgroup
+
+% like LaTeX2e's \InputIfFileExists
+
+\ifx\InputIfFileExists\UNDEFINED
+  \def\InputIfFileExists#1#2#3{%
+    \immediate\openin0=#1\relax
+    \ifeof0\relax\immediate\closein0\relax#3%
+    \else\immediate\closein0\relax#2\input#1\relax\fi}%
+\fi
+
+\def\ZZZZinput#1{\input#1 \relax}
+
+% you may replace the above by
+%
+% \def\ZZZZinput#1{\InputIfFileExists{#1}{}{}}
+%
+% if you just want to call (La)TeX on your text
+% ignoring the portions that need to be SLaTeX'ed
+
+%use \subjobname rather than \jobname to generate
+%slatex's temp files --- this allows us to change
+%\subjobname for more control, if necessary.
+
+\let\subjobname\jobname
+
+% counter for generating temp file names
+
+\newcount\sch@mefilenamecount
+\sch@mefilenamecount=-1
+
+% To produce displayed Scheme code:
+% in LaTeX:
+% \begin{schemedisplay}
+%   ... indented program (with sev'l lines) ...
+% \end{schemedisplay}
+%
+% in TeX:
+% \schemedisplay
+%   ... indented program (with sev'l lines) ...
+% \endschemedisplay
+
+\begingroup\catcode`\|=0 \catcode`\[=1 \catcode`\]=2
+\catcode`\{=12 \catcode`\}=12 \catcode`\\=12
+|gdef|defschemedisplaytoken#1[%
+  |long|expandafter|gdef|csname ZZZZcomment#1|endcsname[%
+    |begingroup
+    |let|do|@makeother |dospecials
+    |csname ZZZZcomment|slatexenvstyle II#1|endcsname]%
+  |long|expandafter|gdef|csname ZZZZcommentlatexII#1|endcsname##1\end{#1}[%
+    |endgroup|end[#1]]%
+  |long|expandafter|gdef|csname ZZZZcommenttexII#1|endcsname##1\end#1[%
+    |endgroup|csname end#1|endcsname]%
+  |long|expandafter|gdef|csname #1|endcsname[%
+    |csname ZZZZcomment#1|endcsname]%
+  |long|expandafter|gdef|csname end#1|endcsname[%
+    |global|advance|sch@mefilenamecount by 1
+    |let|checkforfollpar0%
+    |ZZZZinput[|filehider Z|number|sch@mefilenamecount|subjobname.tex]%
+    |let|checkforfollpar1%
+    |noindentifnofollpar]]%
+|endgroup
+
+\def\undefschemedisplaytoken#1{%
+  \expandafter\gdef\csname#1\endcsname{\UNDEFINED}}
+
+% like {schemedisplay}, but displays output from a
+% Scheme evaluation.  I.e., keywords and variables
+% appear in the data font
+
+\let\defschemeresponsetoken\defschemedisplaytoken
+\let\undefschemeresponsetoken\undefschemedisplaytoken
+
+% \scheme|...program fragment...| produces Scheme code
+% in-text.  Sp. case: \scheme{...} == \scheme}...}
+
+\def\defschemetoken#1{%
+  \long\expandafter\def\csname#1\endcsname{%
+    \global\advance\sch@mefilenamecount by 1
+    \ZZZZinput{\filehider Z\number\sch@mefilenamecount\subjobname.tex}%
+    \comm@nt}}
+
+\let\undefschemetoken\undefschemedisplaytoken
+
+% \schemeresult|...program fragment...| produces a
+% Scheme code result in-text: i.e. keyword or variable
+% fonts are replaced by the data font.  Sp. case:
+% \schemeresult{...} == \schemeresult}...}
+
+\let\defschemeresulttoken\defschemetoken
+\let\undefschemeresulttoken\undefschemetoken
+
+% To produce a box of Scheme code:
+% in LaTeX:
+% \begin{schemebox}
+%   ... indented program (with sev'l lines) ...
+%  \end{schemebox}
+%
+% in TeX:
+% \schemebox
+%   ... indented program (with sev'l lines) ...
+% \endschemebox
+
+\begingroup\catcode`\|=0 \catcode`\[=1 \catcode`\]=2
+\catcode`\{=12 \catcode`\}=12 \catcode`\\=12
+|gdef|defschemeboxtoken#1[%
+  |long|expandafter|gdef|csname ZZZZcomment#1|endcsname[%
+    |begingroup
+    |let|do|@makeother |dospecials
+    |csname ZZZZcomment|slatexenvstyle II#1|endcsname]%
+  |long|expandafter|gdef|csname ZZZZcommentlatexII#1|endcsname##1\end{#1}[%
+    |endgroup|end[#1]]%
+  |long|expandafter|gdef|csname ZZZZcommenttexII#1|endcsname##1\end#1[%
+    |endgroup|csname end#1|endcsname]%
+  |long|expandafter|gdef|csname #1|endcsname[%
+    |global|advance|sch@mefilenamecount by 1
+    |ZZZZinput[|filehider Z|number|sch@mefilenamecount|subjobname.tex]%
+    |csname ZZZZcomment#1|endcsname]%
+  |long|expandafter|gdef|csname end#1|endcsname[]]%
+|endgroup
+
+\let\undefschemeboxtoken\undefschemedisplaytoken
+
+% like {schemeresponse}, but in a box
+
+\let\defschemeresponseboxtoken\defschemeboxtoken
+\let\undefschemeresponseboxtoken\undefschemeboxtoken
+
+\let\defschemetopboxtoken\defschemeboxtoken
+\let\undefschemetopboxtoken\undefschemeboxtoken
+
+% for wholesale dumping of all-Scheme files into TeX (converting
+% .scm files to .tex),
+% use
+%   \schemeinput{<filename>}
+% .scm, .ss, .s extensions optional
+
+\def\defschemeinputtoken#1{%
+  \long\expandafter\gdef\csname#1\endcsname##1{%
+    \global\advance\sch@mefilenamecount by 1
+    \ZZZZinput{\filehider Z\number\sch@mefilenamecount\subjobname.tex}}}
+
+\def\undefschemeinputtoken#1{%
+  \expandafter\gdef\csname#1\endcsname{\UNDEFINED}}
+
+% delineating a region that features typeset code
+% not usually needed, except when using \scheme and schemedisplay
+% inside macro-args and macro-definition-bodies
+% in LaTeX:
+% \begin{schemeregion}
+%   ...
+% \end{schemeregion}
+%
+% in TeX:
+% \schemeregion
+% ...
+% \endschemeregion
+
+\let\defschemeregiontoken\defschemeboxtoken
+\let\undefschemeregiontoken\undefschemeboxtoken
+
+% the SLaTeX tokens
+
+\defschemedisplaytoken{schemedisplay}
+\defschemetoken{scheme}
+\defschemeboxtoken{schemebox}
+\defschemetopboxtoken{schemetopbox}
+\defschemeresulttoken{schemeresult}
+\defschemeresponsetoken{schemeresponse}
+\defschemeresponseboxtoken{schemeresponsebox}
+\defschemeinputtoken{schemeinput}
+\defschemeregiontoken{schemeregion}
+
+% introducing new code-tokens to the keyword, variable and constant
+% categories
+
+\def\comm@ntII{%
+  \begingroup
+  \let\do\@makeother \dospecials
+  \@commII}
+
+\begingroup\catcode`\[1 \catcode`\]2
+\catcode`\{12 \catcode`\}12
+\long\gdef\@commII{[%
+  \long\def\@tempa ##1}[\endgroup]\@tempa]%
+\endgroup
+
+\let\setkeyword\comm@ntII
+\let\setvariable\comm@ntII
+\let\setconstant\comm@ntII
+\let\setdata\comm@ntII
+
+% \defschememathescape makes the succeeding grouped character an
+% escape into latex math from within Scheme code;
+% this character can't be }
+
+\let\defschememathescape\comm@ntII
+\let\undefschememathescape\comm@ntII
+
+% telling SLaTeX that a certain Scheme identifier is to
+% be replaced by the specified LaTeX expression.
+% Useful for generating ``mathematical''-looking
+% typeset code even though the corresponding Scheme
+% code is ascii as usual and doesn't violate
+% identifier-naming rules
+
+\def\setspecialsymbol{%
+  \begingroup
+  \let\do\@makeother \dospecials
+  \@commIII}
+
+\begingroup\catcode`\[1 \catcode`\]2
+\catcode`\{12 \catcode`\}12
+\long\gdef\@commIII{[%
+  \long\def\@tempa ##1}[\endgroup\@gobbleI]\@tempa]%
+\endgroup
+
+\def\@gobbleI#1{}
+
+% \unsetspecialsymbol strips Scheme identifier(s) of
+% any ``mathematical'' look lent by the above
+
+\let\unsetspecialsymbol\comm@ntII
+
+% enabling/disabling slatex
+
+\def\slatexdisable#1{\expandafter\gdef\csname#1\endcsname{}}
+
+% \schemecasesensitive takes either true or false as
+% argument
+
+\def\schemecasesensitive#1{}
+
+%for latex only: use \slatexseparateincludes before the
+%occurrence of any Scheme code in your file, if you
+%want the various \include'd files to have their own
+%pool of temporary slatex files.  This lets you juggle
+%your \include's in successive runs of LaTeX without
+%having to worry that the temp. files may interfere.
+%By default, only a single pool of temp files is used.
+%Warning: On DOS, if your \include'd files have fairly
+%similar names, avoid \slatexseparateincludes since the
+%short filenames on DOS will likely confuse the temp
+%file pools of different \include files.
+
+\def\slatexseparateincludes{%
+\gdef\include##1{{\def\subjobname{##1}%
+\sch@mefilenamecount=-1
+\@include##1 }}}
+
+% convenient abbreviations for characters
+
+\begingroup
+\catcode`\|=0
+|catcode`|\=12
+|gdef|ttbackslash{{|tt|catcode`|\=12 \}}
+|endgroup
+\mathchardef\lt="313C
+\mathchardef\gt="313E
+\begingroup
+  \catcode`\@12
+  \global\let\atsign@%
+\endgroup
+\chardef\dq=`\"
+
+% leading character of slatex filenames: . for unix to
+% keep them out of the way
+
+\def\filehider{.}
+
+% since the above doesn't work of dos, slatex on dos
+% will use a different character, and make the
+% redefinition available through the following
+
+\InputIfFileExists{xZfilhid.tex}{}{}
+
+% @ is no longer a letter for TeX
+
+\ifusinglatex\relax\else
+\catcode`\@\atcatcodebeforeslatex
+\fi
+
+\message{*** Check: Are you sure you called SLaTeX
+\slatexversion\space or later? ***}

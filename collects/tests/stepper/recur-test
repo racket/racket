@@ -1,0 +1,5 @@
+(define (my-proc x)
+  (+ (my-proc (- x 1)) x))
+
+(my-proc 34)
+

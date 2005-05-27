@@ -1,0 +1,140 @@
+_Games_
+=======
+
+The "Games" (Unix: plt/bin/games) executable is created by "Setup PLT"
+(Unix: plt/bin/setup-plt). You can also start Games via Help Desk
+(search for "games").
+
+The Games program lets you select one of the games distributed by PLT,
+or other games installed as sub-collections of the "games" collection
+(see below).
+
+ * Aces - A solitaire card game. Click the "Help" button in Aces for
+   more details.
+
+                                              - by Robby
+
+ * Same - The object is to score points by removing dots from the
+   board. Click the "Help" button in Same for more details.
+
+                                              - by Robby
+
+ * Go Fish (against two computer players) - The children's card game
+   where you try to get rid of all you cards by forming pairs.
+
+                                              - by Matthew
+
+ * Crazy 8s : The card game where you try to get rid of all you cards
+   by matching the top card in the discard pile. Click "Help" in the
+   game for details.
+
+                                              - by Matthew
+
+ * Blackjack : Standard rules. Click "Help" in the game for specifics.
+
+                                              - by Matthew
+
+ * Rummy (against one computer player) - A simple variant of the
+   popular card game. Click "Help" in the game for details.
+
+                                              - by Matthew
+
+ * _Minesweeper_ - A simple version of the classic tile-removing game.
+
+                                              - by Matthew
+
+ * _Memory_ (matching game) - In case you have small children, too.
+
+                                              - by Matthew
+
+ * Paint by Numbers - A logic game. Click the "Help" button in Paint
+   by Numbers for more details.
+
+                                              - by Robby
+
+ * _Lights Out_ - A color-toggling game. Click the "Help" button in
+   Lights Out for more details.
+
+                                              - by Robby
+
+ * Pousse - A game similar to tic-tac-toe, but tokens are pushed
+   onto the board and can move other pieces. Click the "Help" button
+   in Pousse for more details. You can install your own player
+   programs. (This game was part of the 1998 ICFP programming
+   contest.)
+
+                                              - by Matthew
+
+ * GCalc - Not really a game, but a demonstration of "concrete
+   abstractions".  See
+     http://www.grame.fr/Research/GCalcul/Graphic_Calculus.html
+     ftp://ftp.grame.fr/pub/Documents/ICMC94LambdaCalc.pdf
+   for the theoretic details, and right-click anywhere in the game
+   for instructions.
+
+                                              - by Eli
+
+ * Checkers - A simple checkers game (with no AI player) intended
+   as a demonstration use of the gl-board-games library.
+                                             
+					      - by Scott
+
+Implementing new Games
+----------------------
+
+The game-starting console inspects the sub-collections of the "games"
+collection. If a sub-collection has an info.ss definition (see the mzc
+manual), the following fields of the collection's "info.ss" file are
+used:
+
+ * `game' [required] : used as a library name in the sub-collection to
+    load for the game; the library must export a `game-unit' unsigned
+    unit (see MzLib's `unit' form); the unit is invoked with no
+    imports to start the game.
+
+ * `name' [defauls to the collection name] : used to label the
+   game-starting button in the game console.
+
+ * `game-icon' [defaults to collection name with ".png"] : used as a
+   path to a bitmap file taht is used for the game button's label;
+   this image should be 32 x 32 and have a mask.
+
+ * `game-set' [defaults to "Other Games"] : a label used to group
+   games that declare themselves to be in the same set.
+
+To implement card games, see the documentation for the "cards"
+sub-collection of the "games" collection. Card games typically belong
+in the "Cards" game set.
+
+
+Showing Help
+------------
+
+The _show-help.ss_ library provides a `show-help' function for
+displaying a help window.
+
+> (show-help collection frame-title-str verbatim?)
+
+  Returns a thunk for showing a help window. Multiple invocations
+  of the thunk bring the same window to the foreground (until the
+  user closes the window).
+
+  The help window displays "doc.txt" from the given collection, where
+  `coll-path' is a list of strings to select the collection.
+
+  The `frame-title-str' string is used for the help window title.
+
+  If `verbatim?' is true, then "doc.txt" is displayed verbatim,
+  otherwise it is formatted as follows:
+
+   - Any line of the form "** ... **" is omitted.
+
+   - Any line that starts with "*" after whitespace is indented
+     as a bullet point.
+
+   - Any line that contains only "-"s and is as long as the previous
+     line causes the previous line to be formatted as a title.
+
+   - Other lines are pargraph-flowed to fit the window.
+
+  The `verbatim?' argument is optional, and it defaults to #f.

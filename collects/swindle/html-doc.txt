@@ -1,0 +1,1887 @@
+This is a rough manual/tutorial thing for "html.ss".
+
+Contents:
+
+  1. General
+  2. Scheme extensions
+  2.1. Lisp-like self-evaluating keywords
+  2.2. Extended function arguments
+  2.3. Convenient list syntax
+  2.4. General functions and macros
+  3. HTML generation
+  3.1. General value producing
+  3.2. Quoting -- Scheme and HTML output
+  3.3. Global variables
+  3.4. Text processing
+  3.5. Output and formatting tags
+  3.6. Tags, wrappers, and attributes
+  3.7. Predefined tags and wrappers
+  4. Making it work
+  4.1. General Scripting
+  4.2. Script setup for "html.ss"
+  4.3. Creating HTML files
+
+
+========================================================================
+1. General
+
+This is the documentation for "html.ss", a module I wrote to produce
+HTML code using Scheme (specific to MzScheme).  This project was born as
+a quick hack to create my home page files, and grew into a much larger
+system, which was later incorporated into my Scheme Web Server as well.
+Its goals are to produce HTML easily and elegantly, so that even the
+HTML code generated is readable.
+
+You should use this thing if you want to produce a lot of HTML output in
+a uniform way, and have a relatively easy time maintaining it.  However,
+the price which is paid to achieve this goal, is that you should know
+how to program well.  This means that if you want a quick HTML page, or
+if you don't know/want/like programming, then this is probably the wrong
+solution.  One thing to bear in mind is that a project can begin its
+life using this and at some point, it can continue by editing the HTML
+output (and suffer the usual price this implies).  The goal of having
+readable HTML output is not only for having an elegant output, but for
+making such a conversion easy since this output is human-readable.
+
+I'm assuming general knowledge of Scheme, MzScheme and HTML.
+Documentations can be found on the PLT sites (http://www.drscheme.org/),
+
+* The Revised Scheme Report:
+  http://www.cs.rice.edu/CS/PLT/packages/doc/r5rs/index.htm
+
+* MzScheme:
+  http://www.cs.rice.edu/CS/PLT/packages/doc/mzscheme/index.htm
+
+Also, good HTML reference can be found at:
+  http://www.idocs.com/tags/
+
+To use this thing, all you need to do is download and install the PLT
+file at http://www.barzilay.org/Swindle/, and load the module with:
+  (require (lib "html.ss" "swindle"))
+This document is not complete, nor does it attempts to be -- the
+ultimate documentation is, as usually with all open-source projects, the
+code itself.  But there are more convenient ways to write scripts as
+explained below.
+
+If you have any more comments, questions, suggestions or bug reports,
+mail eli@barzilay.org.
+
+
+========================================================================
+2. Scheme extensions
+
+There are several extensions to Scheme that "html.ss" provides and uses.
+Again, this comes on top of MzScheme which has its own extensions on top
+of the Scheme standard.  Note also, that "html.ss" does a
+`(read-case-sensitive #t)', so all Scheme code which uses it is
+case-sensitive.
+
+
+------------------------------------------------------------------------
+2.1. Lisp-like self-evaluating keywords
+
+As in Lisp, symbols that begin with a `:' evaluate to themselves.  This
+is used for keyword function arguments, including functions that
+generate HTML tags, where arbitrary keyword/values can be specified and
+will be used as attributes and values for the HTML tag.
+
+
+------------------------------------------------------------------------
+2.2. Extended function arguments
+
+Function arguments (both for `define' and `lambda' expressions (named
+and anonymous functions)) are extended considerably:
+
+* A function can have nested parens to indicate currying.  This is
+  useful for functions that will swallow some arguments and output a
+  function to be used later.
+   +----------
+   |> (define ((plus x) y) (+ x y))
+   |> (plus 1)
+   |#<procedure:plus:1>
+   |> ((plus 1) 2)
+   |3
+   +----------
+
+* `&optional' indicates optional arguments, as in Lisp.  They can also
+  contain default values:
+   +----------
+   |> (define (foo x &optional y) (list 'x= x 'y= y))
+   |> (foo 1)
+   |(x= 1 y= #f)
+   |> ((lambda (x &optional y) (list 'x= x 'y= y)) 1)
+   |(x= 1 y= #f)
+   |> (foo 1 2)
+   |(x= 1 y= 2)
+   |> (define (foo x &optional (y 3)) (list 'x= x 'y= y))
+   |> (foo 1)
+   |(x= 1 y= 3)
+   |> (foo 1 2)
+   |(x= 1 y= 2)
+   |> (define (foo x &optional (y (* x 2))) (list 'x= x 'y= y))
+   |> (foo 12)
+   |(x= 12 y= 24)
+   +----------
+
+* `&keys' behaves like Lisp's `&key' (for compatibility, `&key' does the
+  same), and is used to define arguments that are assigned by labeled
+  keywords.  Default values and different names are possible too.  Note
+  that no extensive error checking is done (like checking that the
+  keyword list is balanced, or that it uses only keywords), so watch for
+  sneaky bugs.
+   +----------
+   |> (define (foo x &keys y z) (list 'x= x 'y= y 'z= z))
+   |> (foo 1)
+   |(x= 1 y= #f z= #f)
+   |> (foo 1 :z 2)
+   |(x= 1 y= #f z= 2)
+   |> (foo 1 :z 2 :y 1)
+   |(x= 1 y= 1 z= 2)
+   |> (foo 1 :y 1 :y 2 :y 3)
+   |(x= 1 y= 1 z= #f)
+   |> (define (foo x &keys (y 'yyy)) (list 'x= x 'y= y))
+   |> (foo 1)
+   |(x= 1 y= yyy)
+   |> (foo 1 :y 2)
+   |(x= 1 y= 2)
+   |> (define (foo x &keys (y :foo 'yyy)) (list 'x= x 'y= y))
+   |> (foo 1 :foo 2)
+   |(x= 1 y= 2)
+   |> ((lambda (&keys x y) (list x y)) :y 1 :x 2)
+   |(2 1)
+   +----------
+  Keywords are an important feature for this system, since it allows
+  modifying a function so it is more generalized without affecting
+  previous places that use it.
+
+* `&rest' indicates an argument that holds unprocessed values for the
+  function call.  This is mainly for completeness with Lisp's syntax,
+  since it is the same as using Scheme's dot notation.
+   +----------
+   |> (define (foo x &optional y &rest r) (list 'x= x 'y= y 'r= r))
+   |> (foo 1)
+   |(x= 1 y= #f r= ())
+   |> (foo 1 2)
+   |(x= 1 y= 2 r= ())
+   |> (foo 1 2 3)
+   |(x= 1 y= 2 r= (3))
+   |> (foo 1 2 3 4)
+   |(x= 1 y= 2 r= (3 4))
+   +----------
+
+* There are two additional options that are related to `&rest':
+  - `&body' is like `&rest' without all keyword/values;
+  - `&rest-keys' is like `&rest' without all keyword/values for the
+    specified `&keys'.
+   +----------
+   |> ((lambda (&keys x y &rest r &rest-keys r1 &body r2)
+   |     (list x y r r1 r2))
+   |   :x 2 :z 2 3)
+   |(2 #f (:x 2 :z 2 3) (:z 2 3) (3))
+   +----------
+  Note that this is different than Lisp, where `&body' is the same as
+  `&rest'.
+
+
+------------------------------------------------------------------------
+2.3. Convenient list and strings syntax
+
+Since lists are useful as a way to concatenate output elements (see
+below), there is a convenient notation for them -- just use an infix
+`:'.  It can also be used inside quotes and quasiquotes.  Note that it
+cannot touch an identifier because it will get parsed as part of that
+identifier.
+   +----------
+   |> (begin 1 : 2)
+   |(1 2)
+   |> (let ((x 12)) "var foo = "(+ x 1))
+   |13
+   |> (let ((x 12)) "var foo = ":(+ x 1))
+   |("var foo = " 13)
+   |> (let ((x 12)) "var foo = ":x)
+   |:x
+   |> (let ((x 12)) '("var foo = ":(+ x 1):"z"))
+   |(("var foo = " (+ x 1) "z"))
+   |> (let ((x 12)) '("{" "var foo = ":(+ x 1):"z" "}"))
+   |("{" ("var foo = " (+ x 1) "z") "}")
+   +----------
+Notes: I have wrapped examples in a form since if you enter "1 : 2" then
+MzScheme's evaluator will read the input item by item instead of using
+the colon preprocessor.  Also note that the last form returned `:x'
+because the colon was attached to the identifier, making it a keyword
+which is the result of the whole form.
+
+Also, strings as arguments are common, so there is another shortcut
+syntax: if a string has a `_' on both sides, its contents is split on
+newlines and the result substitutes the original.
+   +----------
+   |> (list _""_)
+   |("")
+   |> (list _"eli"_)
+   |("eli")
+   |> (list _"eli
+   |          barzilay"_)
+   |("eli" "barzilay")
+   |> (list _"
+   |          eli
+   |          
+   |          barzilay
+   |          "_)
+   |("eli" "" "barzilay")
+   |> '(big: _"
+   |          eli
+   |          
+   |          barzilay
+   |          "_)
+   |(big: "eli" "" "barzilay")
+   |> (output-html (big: _"
+   |                       eli
+   |                       
+   |                       barzilay
+   |                       "_))
+   |<big>eli  barzilay</big>
+   +----------
+The same notes above apply here too.
+
+------------------------------------------------------------------------
+2.4. General functions and macros
+
+(getarg plist key [default])
+  Given a keyword/value list (a Lisp "plist"), and a key, it returns the
+  value associated with that key (or, if not found, it returns its third
+  argument supplied as a default value, or #f if omitted)
+   +----------
+   |> (getarg '(1 11 2 22 3 33 444) 2)
+   |22
+   |> (getarg '(1 11 2 22 3 33 444) 4)
+   |#f
+   |> (getarg '(1 11 2 22 3 33 444) 4 "FOO")
+   |"FOO"
+   |> (getarg '(1 11 2 22 3 33 444) 4 (delay "FOO"))
+   |"FOO"
+   |> (getarg '(1 11 2 22 3 33 444) 4 (thunk "FOO"))
+   |"FOO"
+   +----------
+  This is not something that should be used frequently, since usually
+  you would use `&keys' to pull out keyword arguments.
+
+(eprintf format-str args...)
+  A function that can be used like MzScheme's `printf', except it
+  outputs stuff on the standard error port, so you can use this for
+  debugging.  This is useful because during HTML generation, standard
+  output is post-processed (and probably going away to a file).
+
+(defmacro (foo ...) ...)
+  Is a macro that generates macro bindings in a simple Lisp-like way.
+  The difference from Lisp is that the argument list contains the
+  identifier as in Scheme functions, unlike Lisp's definitions.
+
+(maptree func tree)
+  Similar to `map', but descends down into lists and pairs.
+
+(mappend func list...)
+  Performs a normal `map' and appends the results.
+
+(mapply func list)
+  Performs a `map' by applying the given function over argument lists in
+  the given list.
+
+(thunk ...)
+  A macro that has some forms in its body like Scheme's `begin', and
+  will generate an argument-less function that evaluates the body when
+  called.  This can be used to defer evaluation, but note that Scheme
+  promises are handled as well (using `delay' and `force').
+
+
+========================================================================
+3. HTML generation
+
+The `output-html' function outputs the HTML code generated by its
+arguments.  To try things out, simply run mzscheme and type
+  (require (lib "html.ss" "swindle"))
+Do all this in Emacs for more convenience.  Another option is to write a
+quick script that will do it, see below for ways to do this.
+
+The main function to try things out is `output-html' which is the one
+used to produce HTML output.  Another function that might be useful in
+some cases is `output'.  This is the internal function that is used to
+output text, except that it doesn't do HTML quoting etc (which the above
+does).
+
+Note that all this is either for internal usage, debugging or
+experimenting.  Other functions should be used to generate HTML files,
+such as `make-html' etc, more later.
+
+
+------------------------------------------------------------------------
+3.1. General value producing
+
+HTML values are almost any Scheme values.
+
+* Simple values will just get printed out.  This includes values that
+  don't fall under one of the categories below.
+   +----------
+   |> (output-html 1)
+   |1
+   |> (output-html 'foo)
+   |foo
+   |> (output-html "foo")
+   |foo
+   |> (output-html 0.10)
+   |0.1
+   |> (output-html (/ 4 3))
+   |4/3
+   +----------
+
+* Lists are iterated over, general pairs get recoursed too.
+   +----------
+   |> (output-html (list 1 'foo "foo" 0.10 (/ 4 3)))
+   |1foofoo0.14/3
+   |> (output-html (list 'foo (list 1 (cons 2 3) 4)))
+   |foo1234
+   |> (let ((f (lambda (x) "{": x :"}"))) (output-html (f 1):" ":(f 2)))
+   |{1} {2}
+   +----------
+  The last example demonstrates usage of both a scheme function, and the
+  list infix notation.  An exception for this are lists that represent
+  HTML tags, which are lists that begin with a symbol that ends with a
+  colon:
+   +----------
+   |> (output-html (list 'foo: :bar 1 "x" '(foo: "y")))
+   |<foo bar="1">x <foo>y</foo></foo>
+   +----------
+  This is explained below.
+
+* Functions are applied on no arguments, which means that only thunks
+  should be used.  One note here -- the function is called with no
+  arguments and then the value it returns is again passed to the output
+  function, so a function can either print stuff, return stuff, or even
+  both.
+   +----------
+   |> (output-html (lambda () 'foo))
+   |foo
+   |> (output-html (lambda () (output 'foo)))
+   |foo
+   |> (output-html (lambda () (output 'foo) 'bar))
+   |foobar
+   |> (output-html (lambda () (output "<") 123))
+   |&lt;123
+   |> (output (lambda () (output "<") 123))
+   |<123
+   +----------
+  Note that the third expression will output "foo" and return a symbol
+  which is then printed as it is the result of the function call.  The
+  last two expressions demonstrates that using `output' is fine within
+  HTML generating code, but when used outside the HTML processing
+  context, the result is normal.
+
+* Promises are forced -- this is not the place to describe promises, but
+  as a quick reminder, (delay ...) is similar to an argument-less
+  function, and `force' will evaluate the body and return its value
+  (caching it for further `force's, which is the difference between a
+  promise and a thunk).
+   +----------
+   |> (let ((x (delay (begin (output "foo!") 'x))))
+   |    (output-html (list x x x)))
+   |foo!xxx
+   +----------
+
+* Parameters output their values.  (Parameters are MzScheme's solution
+  against using global values -- they are procedures that when applied
+  on no arguments return the stored value, and when applied on a value,
+  they set the stored value to it.  They are safer than globals since
+  they work properly even in a multithreaded environment.)
+
+* #f and MzScheme's `void' produces no output, which is useful for
+  conditional expressions.
+   +----------
+   |> (output-html (list 'a (and (< 3 2) 2) 'b))
+   |ab
+   |> (output-html (list 'a (when (< 3 2) 2) 'b))
+   |ab
+   +----------
+
+Allowing general functions is especially useful: it allows you to
+include functions that will generate output by printing things.  This
+can be used to create arbitrary output (but see the "Quoting" section
+below).
+
+When writing code that generate HTML, remember that this is still
+standard Scheme, so while a function like `html:' will process all of
+its arguments, it is different than Scheme's `begin' (you can use lists
+instead).  For example:
+   +----------
+   |> (output-html (html: 1 2 3))
+   |<html>
+   |1
+   |2
+   |3
+   |</html>
+   |> (output-html (html: (lambda () 1 2 3)))
+   |<html>
+   |3
+   |</html>
+   |> (output-html (html: (lambda () (list 1 2 3))))
+   |<html>
+   |123
+   |</html>
+   |> (output-html (html: (lambda () 1 : 2 : 3)))
+   |<html>
+   |123
+   |</html>
+   +----------
+
+
+------------------------------------------------------------------------
+3.2. Quoting -- Scheme and HTML output
+
+One thing to keep in mind, which tends to make things seem a bit
+complicated, is that in Scheme strings, the backslash and double-quote
+characters have special meanings.  A double-quote terminates a string
+and a backslash is used to add the following character literally,
+including backslash itself (note that in future versions of MzScheme,
+more C-like backslash sequences will be included).  So, for example, the
+scheme string "\"\\\"" contains a double-quote, a backslash, and another
+double-quote.  As you can see, when combining Scheme with another system
+that uses backslash as a special character, you get a bunch of fun
+backslashes to play with.  So, just be careful, it's not as complicated
+as it seems to be.
+
+HTML output is done with an output post-processing context, so printing
+special characters produces the correct HTML output.  Backslash can be
+used to include the actual character, and it can be used to include a
+literal backslash characters as well.
+   +----------
+   |> (output-html "<foo> & \"bar\"")
+   |&lt;foo&gt; &amp; &quot;bar&quot;
+   |> (output-html "\\<\\&\\>\\\\")
+   |<&>\
+   +----------
+Character conversions are controlled by the value of the `html-quotes'
+variable.
+
+There are also some special characters that produce some special HTML
+symbol as a result.  Currently, this list has space which generates an
+HTML non-breakable space symbol, `C' (copywrite), `R'(trademark), `-'
+(mdash), `<' and `>' (left and right angle quotes), `1', `2' and `3'
+(superscript 1, 2 and 3), `*' (bullet).  Remember that you can always
+quote the ampersand to insert any other element:
+   +----------
+   |> (output-html "\\ \\C\\R\\T\\*\\&foo;")
+   |&nbsp;&copy;&reg;&trade;&bull;&foo;
+   +----------
+These are stored in the `html-specials' variables.  The default list is
+likely to be augmented and changed.
+
+Finally, there are two special strings that make a context where this
+processing is disabled -- they are a NUL character (ASCII 0) followed by
+a "{" to open the context and a "}" to close it.  In such a context,
+which can be nested, HTML processing is disabled.  The choice of a NUL
+character makes it impossible to have conflicts with input files and
+user strings.  This construct can be made automatically with the
+`::literal?' meta-keyword or the `literal:' function (see below).  In
+(very) rare cases where the context should be controlled, you should use
+the variables `literal-begin' and `literal-end' have these strings as
+their values.
+
+These constructs are used internally to make output of attributes and
+their values, scripts and styles unprocessed.  There are some other
+cases where they can be useful, like outputting raw HTML as part of
+other code or from an external file, avoiding the standard
+post-processing, as in the last line of the example below.
+
+Examples:
+   +----------
+   |> (output-html literal-begin :"<foo>": literal-end)
+   |<foo>
+   |> (output-html literal-begin :"<": literal-begin :"&":
+   |               literal-end :">": literal-end)
+   |<&>
+   |> (output-html literal-begin :"<": literal-begin :"&":
+   |                literal-end :">")
+   |<&>
+   |quote-html: Unmatched open-literal.
+   |> (output-html literal-begin :"x\\&y": literal-end)
+   |x\&y
+   |> (output-html literal-begin :"\\ \\C": literal-end)
+   |\ \C
+   |> (output-html
+   |   literal-begin :(thunk (printf "<b>foo</b>")): literal-end)
+   |<b>foo</b>
+   |> (output-html (meta-content~ 'description "\"<meta>\" example"))
+   |<meta name="description" content=""<meta>" example">
+   |> (output-html (meta-content~ 'description
+   |                              literal-end :"\"<meta>\" example":
+   |                              literal-begin))
+   |<meta name="description" content="&quot;&lt;meta&gt;&quot; example">
+   +----------
+Again, this is just to know what's going on, the `literal:' function and
+`::literal?' keywords are preferable.
+
+As another example, note that in:
+   +----------
+   |> (output-html (b: (thunk (output-html (i: "foo")))))
+   |<b>&lt;i&gt;foo&lt;/i&gt;
+   |</b>
+   |> (output-html (b: (literal: (thunk (output-html (i: "foo"))))))
+   |<b><i>foo</i>
+   |</b>
+   +----------
+The internal thunk outputs raw HTML so `::literal?' should be #t, but it
+is important for that thunk's formatting that `::verbatim?' is left as
+the default #f because it uses the same values.  (The reason for the
+unnecessary newline is that `output-html' always tries to terminate
+output with a newline.)
+
+The post-processing mechanism is general and applies to any output
+generated when HTML is produced.  This simplifies including HTML
+content by just printing stuff on the standard output.  A useful
+function for this is `display-file' which gets a file name and prints
+it.  So, you can use something like
+   +----------
+   |> (output-html (literal: (thunk (display-file "foo"))))
+   |<b>foo</b>
+   +----------
+to display the contents of a file that contains raw HTML.  More on
+`display-file' (and `display-mixed-file') below.
+
+
+------------------------------------------------------------------------
+3.3. Global parameters
+
+The behavior of the HTML generator can be customized by modifying some
+global parameters.  If these values are set, it should be done right
+after loading "html.ss", it is not a wise thing to change these values
+during HTML generation.  A parameter is a procedure that keeps a value:
+to get the value you apply the procedure on no arguments and to change
+its value, you apply it on the new value.  See the MzScheme manual for
+more information on parameters.
+
+*html-target-dir*
+  a string which is the default directory to create HTML files in, or
+  "", for using the current directory.  The default is "".  Can be set
+  to #f: "" will be used in this case.  It always ends with a "/" unless
+  it is "".
+
+*html-suffix*
+  a string which is used as a suffix for HTML files.  The default is
+  ".html".  This string always begins with a ".".
+
+*image-dir*
+  a string which is the name of an images directory (similarly to
+  `*html-target-dir*', it can be set to #f for no directory), used only
+  for the `my-images~', `my-gif~', and `my-jpg~' functions.  The default
+  is "images/".  It always ends with a "/" unless it is "".
+
+*doc-type*
+  a string that is inserted at the top of files generated by
+  `make-html', and is intended for an initial "<!DOCTYPE...>" line.  It
+  can be changed to #f to have no such line.  The default is: "HTML 4.0
+  Transitional", the rest of this string is produced by `make-html'.
+  (See the description of output values above for an explanation on
+  parameters and how to change them.  In short, `(*doc-type*)' returns
+  the value and `(*doc-type* x)' sets it to x.)
+
+*charset-type*
+  a string that is inserted in the header using `http-equiv~' and
+  "Content-Type" and a default "text/html" value for the type.  The
+  default is "ISO-8859-1".
+
+*prefix*
+  stuff that gets inserted by `html~:' into the header section.  Useful
+  for adding things like `meta-content~'.  The default is #f.
+
+*current-html-obj*
+  when working on an HTML object (see below), this parameter will be set
+  to this object.
+
+
+------------------------------------------------------------------------
+3.4. Text processing
+
+Text processing is, obviously, a big thing for this application, and
+there is therefore a lot of related functionality.
+
+(concat str...)
+  Is used to concatenate strings, shorthand for `string-append'.
+
+(mapconcat func list separator)
+  Similar to the Emacs Lisp `mapconcat' function, except that it works
+  with lists: it gets a function, a sequence of objects and a returns a
+  list of the function applied to all objects, with the separator
+  between them.  The fact that it works with lists makes it suitable for
+  HTML output.
+   +----------
+   |> (mapconcat add1 '(1 2 3) 'x)
+   |(2 x 3 x 4)
+   |> (output-html (mapconcat (lambda (x) "[": x :"]") '(1 2 3) " | "))
+   |[1] | [2] | [3]
+   +----------
+
+(string-capital str)
+  Capitalizes the first character in a given string (only the first).
+
+(input->output)
+  Copies (efficiently) the current input port to the current output
+  port.
+
+(with-output-filter filter-func output-thunk)
+  The filter function is a function of no arguments that reads its input
+  and write some accordingly processed output.  The output function is a
+  function of no arguments that produces some output.  Applying
+  filterize on both will run `output-thunk' piping its output into
+  `filter-func' and its results are in turn printed on the standard
+  output.  This is a low level function that is used to implement the
+  HTML post-processing (and some more).
+
+(with-input-filter filter-func input)
+  Similar for `with-output-filter', but for input.
+
+(display-file file)
+  Gets a file name and simply spit its contents on the standard output.
+  If you want to display HTML content using this, you should first wrap
+  it in a thunk so the contents will appear as part of going over the
+  HTML structure rather than when making the function call, and you also
+  need to wrap it with a `literal:' to avoid processing of the HTML
+  text.
+
+(display-mixed-file file ...)
+  Displays the file, filtered through a function that allows mixing raw
+  text and Scheme code.  For example, if the file "x" contains:
+   +----------
+   |<#(define a "foo")#>
+   |<a href="c:\{:a:}.htm"><#a#>&nbsp;?</a>
+   |<#(b:#>FOO<#)#>
+   +----------
+  then you can get:
+   +----------
+   |> (output-html (big: (thunk (display-mixed-file "x"))))
+   |<big>
+   |<a href="c:\{:a:}.htm">foo&nbsp;?</a>
+   |<b>FOO</b>
+   |</big>
+   +----------
+  More arguments are keywords and values:
+  * `:metas'         a list with two strings that are used as the open
+                     and close markers.  (Default: "<#" and "#>").
+  * `:scheme?'       if true, then the default initial mode for parsing
+                     the file is Scheme -- note that in that case you'll
+                     probably view the file as a Scheme file and the
+                     meaning of the open/close will look like it is
+                     reversed, so be careful.  (Default: #f).
+  * `:string-quotes' if specified, either a string that will be inserted
+                     for the Scheme reader for the begin/end of a meta
+                     string, or a pair for different begin/end values.
+  * `:split-lines?'  if true, then generated strings that span several
+                     lines will be split so that each line is a seperate
+                     string in the result (and a a space prefix for
+                     these lines is eliminated).  (Default: #f).
+  If "y" contains:
+   +----------
+   |(define a "foo")
+   |]<a href="c:\[a].htm">[a]&nbsp;?</a>[
+   |(b: ]FOO[)
+   +----------
+  then:
+   +----------
+   |> (output-html
+   |   (big: (thunk (display-mixed-file "y" :metas '("[" "]")
+   |                                        :scheme? #t))))
+   |<big><a href="c:\foo.htm">foo&nbsp;?</a><b>FOO</b></big>
+   +----------
+  Finally, if there is a squence of two such meta-open tags, then a
+  sequence of two closing ones is expected, all on one line with an even
+  number of characters between them.  The two parts of the section
+  between them are used as the new tokens.  If "z" contains:
+   +----------
+   |<#(define a "foo")#>
+   |<#<#[]#>#>
+   |<a href="c:\[a].htm">[a]&nbsp;?</a>
+   |[(b: ]FOO[)]
+   |[[{}]]{a}!
+   |zzz
+   +----------
+  then (note the empty lines):
+   +----------
+   |> (output-html (thunk (display-mixed-file "z")))
+   |
+   |
+   |<a href="c:\foo.htm">foo&nbsp;?</a>
+   |<b>FOO</b>
+   |foo!
+   |zzz
+   +----------
+
+(relativize-path path)
+  Attempt to relativize the given path according to the current path.
+  This is used in case you want to create HTML objects in directories,
+  refer to them according to their normal path and get it relative to
+  the currect object.  For example, in the source for the `a/b' object,
+  a reference to `c/d' will turn to "../d.html".  Search for this name
+  below for more details.
+
+(regexp-replacements replacements)
+  This function gets a single argument which is a list of replacements,
+  each one is a list of a regular expression an a replacement, which is
+  either a fixed string, a string containing "\\N" instances (replaced
+  using MzScheme's `regexp-replace'), or a function (applied on the
+  result of `regexp-match').  The replacements list can hold a single
+  replacement for convenience.  The return value is a function that will
+  execute these replacements on a given input.  The result of applying
+  the function is a string only as long as it is possible -- a
+  replacement can put in non-string values and in this case the result
+  will be a list of recursive calls (which makes it suitable for HTML
+  output).
+   +----------
+   |> (regexp-replacements '(("a" "b")))
+   |#<procedure:replacement>
+   |> ((regexp-replacements '(("a" "b"))) "abcde")
+   |"bbcde"
+   |> ((regexp-replacements '(("[ae]" "\\0\\0"))) "abcde")
+   |"aabcdee"
+   |> ((regexp-replacements '(("[ae]" 12))) "abcde")
+   |("" 12 ("bcd" 12 ""))
+   |> (output-html ((regexp-replacements `(("[ae]" ,b:))) "abcde"))
+   |<b>a</b>bcd<b>e</b>
+   +----------
+  Note that this function is not too optimized, and it is generally a
+  quick hack which is supposed to do the right thing in simple cases.
+  Also, replacement results are not rescanned again (or some of the
+  above examples would loop infinitely).
+
+(do-replacements replacements args...)
+  This is a simple `maptree'ing of the generated replacements function,
+  which makes it useful for general tree structures.  Note that there is
+  it doesn't penetrate promises and thunks, and that it only works on
+  the separate string elements so it can't recognize a regexp that
+  starts at one place and ends at another string, for example, in the
+  following:
+   +----------
+   |> (output-html
+   |   (do-replacements (list "<([^<>]+)>" (lambda (_ x) (u: x)))
+   |     (b: "FOO")))
+   |<b>FOO</b>
+   |> (output-html
+   |   (do-replacements (list "<([^<>]+)>" (lambda (_ x) (u: x)))
+   |     (b: "<FOO>")))
+   |<b><u>FOO</u></b>
+   +----------
+  the "<b>"s and "</b>"s did not change since `tag~:' puts the "<" and
+  the ">" in different elements of a list.  The replacements argument
+  can be a function, expected to be the result of `regexp-replacements'.
+
+(with-replacements replacements body...)
+  Similar to the above, except the the body's output is post-processed
+  using the specified replacements (using `with-output-filter').  This
+  means that it covers any output, including HTML junk.  The output is
+  pulled just before the normal HTML post-processing, so it'll have some
+  "\\("s etc.  The output of `with-replacements' is actually a thunk, so
+  its output is normally preprocessed getting the final HTML output.
+  One more restriction is that it works on a line-by-line basis so no
+  multi-line regexps can be used.
+   +----------
+   |> (output-html (u: (with-replacements `(("[ae]" ,b:)) "abcde")))
+   |<u><b>a</b>bcd<b>e</b></u>
+   |> (output-html (u: (with-replacements
+   |                       `(("\\*([^*]*)\\*" ,(lambda (_ x) (b: x))))
+   |                     "foo *bar* baz")))
+   |<u>foo <b>bar</b> baz</u>
+   +----------
+
+text-replacements
+  A variable holding a standard text replacements: "*...*" for bold,
+  "_..._" underlines, "/.../" italicizes.
+   +----------
+   |> (output-html (with-replacements text-replacements
+   |                                  "*foo* _bar_ _/baz/_"))
+   |<b>foo</b> <u>bar</u> <u><i>baz</i></u>
+   +----------
+
+(regexp-case str clauses...)
+  This is a macro that has a structure which is somewhat like a `case'
+  expression.  Every clause has a test part which is a regexp, a list
+  made of a regexp and some symbols following it or `else'.  If the
+  given string matches the regexp of a clause, the body is evaluated,
+  possibly binding given variable names to `regexp-match's results.  To
+  access the complete result of `regexp-match', either use the `match'
+  identifier that is bound to the whole match (when the form that binds
+  variables is used), or use the `=>' syntax which applies a given
+  function on all match results.
+   +----------
+   |> (regexp-case "foo"
+   |    ["f" 1] [("(b)a(r*)" x y) (list x y)] [else '?])
+   |1
+   |> (regexp-case "barr"
+   |    ["f" 1] [("(b)a(r*)" x y) (list x y)] [else '?])
+   |("b" "rr")
+   |> (regexp-case "bzzt"
+   |    ["f" 1] [("(b)a(r*)" x y) (list x y)] [else '?])
+   |?
+   |> (regexp-case "bzzt" ["f" 1] [("b(z)" x) match])
+   |"bz"
+   |> (regexp-case "zbarrz"
+   |    ["f" 1] ["(b)a(r*)" => (lambda x x)] [else '?])
+   |("barr" "b" "rr")
+   +----------
+
+
+------------------------------------------------------------------------
+3.5. Output and formatting tags
+
+There are various functions that are used to format output.  These
+functions are used by HTML-generating function to format the resulting
+HTML so it is readable.  Despite being on a lower level, there are some
+cases where they can be useful.
+
+(display!: x)
+  displays its argument like Scheme's `display', but it takes care of
+  newline and indentation management.
+
+(newline!:), (space!:)
+  is used to stick newlines or spaces in the HTML code, in a way that
+  respects the current indentation.
+
+(newlines: ...), (spaces: ...)
+  outputs its arguments, separated by `newline!:'s or `space!:'s.
+
+(text: ...)
+  is the same as `newlines:'.
+
+(indent: ...)
+  output its arguments in an indented environment.
+
+(literal: ...)
+  output its arguments in an environment that disables HTML post
+  processing (for example, for including and external file, or code that
+  outputs raw HTML).
+
+(verbatim: ...)
+  output its arguments in an environment that disables indentation etc
+  temporarily (which is needed, for example, for `pre:').
+
+(include-file: ...)
+(include-mixed-file: ...)
+  these are two wrappers for `display-file' and `display-mixed-file',
+  described above.  Note that they don't use any meta keywords, and that
+  `include-mixed-file:' can get normal keywords that are sent to
+  `display-mixed-file'.
+
+
+------------------------------------------------------------------------
+3.6. HTML tags structures, wrappers, and attributes
+
+There are several functions and macros that are used to produce HTML
+tags and tag pairs, and for defining functions that produce them.  These
+functions get keywords and values that are used for attributes and
+values for the tags, and then some HTML content.  Note that if a keyword
+appears more than once, the first value is the one used, but this is not
+a feature that should be used often.  Boolean values for keywords are
+special: #f drops the attribute, and #t will include it by itself.  The
+HTML output has keyword values always surrounded by double quote (also,
+remember that all this is in case-sensitive mode).
+
+*** HTML list structures
+
+First, there are some details to know.  The HTML tag functions create
+list values that represent them, which are then converted to normal text
+when output.  These list values are very simple -- they look just like
+the function application, so they can be constructed using quotations or
+any other way:
+   +----------
+   |> (b: 1 2)
+   |(b: 1 2)
+   |> (output-html (b: 1 2))
+   |<b>1 2</b>
+   |> (output-html '(b: 1 2))
+   |<b>1 2</b>
+   |> (output-html '(b: :x 1 1 2))
+   |<b x="1">1 2</b>
+   +----------
+
+This is can be confusing for inexperienced Scheme programmers, for
+example:
+   +----------
+   |> (define eli "Eli Barzilay")
+   |> (output-html (b: eli))
+   |<b>Eli Barzilay</b>
+   |> (output-html '(b: eli))
+   |<b>eli</b>
+   +----------
+what happened here is that the first `b:' form is a normal function
+application which evaluated `eli' to its value.  The second form had a
+literal quoted string that only has the symbol `eli' in it.  I could
+resolve symbols by looking up their global value, but that wouldn't
+work with local variables, which is the reason why these two
+expression are different:
+   +----------
+   |> (let ((b: i:)) (output-html (b: "foo")))
+   |<i>foo</i>
+   |> (let ((b: i:)) (output-html '(b: "foo")))
+   |<b>foo</b>
+   +----------
+The main thing to remember is that since the output of these tags is
+readable, you can always inspect this value to see what's wrong.  For
+example, here is the above values:
+   +----------
+   |> (b: eli)
+   |(b: "Eli Barzilay")
+   |> '(b: eli)
+   |(b: eli)
+   |> (let ((b: i:)) (b: "foo"))
+   |(i: "foo")
+   |> (let ((b: i:)) '(b: "foo"))
+   |(b: "foo")
+   +----------
+
+For this reason, it is generally better to stick with the normal
+function form rather than generate literal strings.  In the future, I
+might make things better by making them return some non-list
+structure, and doing some processing work, for example, an `itemize:'
+function will return the appropriate `(ul: (li: ...) (li: ...))'
+structure that matches exactly the HTML structure (sans formatting)...
+The reason for this list structure is that I plan to reach the goal of
+a better output for these HTML functions so you could inspect their
+values as well, for example, use them with different packages like the
+XML collection that comes with MzScheme.
+
+Most HTML tags have such equivalent functions, so they can all be either
+applied or stuck in lists manually.  Even symbols that end with a colon
+that were not defined as functions can be used.
+   +----------
+   |> (output-html (x: :x 1 1 2))
+   |reference to undefined identifier: x:
+   |> (output-html '(x: :x 1 1 2))
+   |<x x="1">1 2</x>
+   +----------
+
+There is a table that stores information about tags, including, in some
+cases some processing functions:
+   +----------
+   |> (p: :x 1 1 2)
+   |(p: :x 1 1 2)
+   |> (output-html (p: :x 1 1 2))
+   |<p x="1">
+   |1
+   |2
+   |</p>
+   +----------
+
+Another confusing point about this is that the list structure matters:
+if some `foo:' symbol doesn't appear at the beginning of a list, you
+will not get the expected result -- normally, working with lists
+(e.g., appending) does not modify the output, but if you modify the
+list structure, you can get a mess:
+   +----------
+   |> (output-html (list "foo" (b: "bar")))
+   |foo<b>bar</b>
+   |> (output-html (cons "foo" (b: "bar")))
+   |foob:bar
+   +----------
+The second result turned out wrong, because the `b:' symbol that the
+`b:' function created is no long at the beginning of a list.  As said
+above, remember that you can print these values to see what's wrong:
+   +----------
+   |> (list "foo" (b: "bar"))
+   |("foo" (b: "bar"))
+   |> (cons "foo" (b: "bar"))
+   |("foo" b: "bar")
+   +----------
+The second expression's value shows why the output didn't come out
+right.
+
+There is a safety mechanism that can be used to prevent some of these
+things -- making these HTML lists wrapped in an extra list level,
+which will take care of most of these problem -- the
+`make-safe-forms!' function can be used to turn it on (or off, given
+an explicit #f argument):
+   +----------
+   |> (make-safe-forms!)
+   |> (b: "bar")
+   |((b: "bar"))
+   |> (cons "foo" (b: "bar"))
+   |("foo" (b: "bar"))
+   |> (output-html (cons "foo" (b: "bar")))
+   |foo<b>bar</b>
+   |> (make-safe-forms! #f)
+   |> (output-html (cons "foo" (b: "bar")))
+   |foob:bar
+   +----------
+This is not on by default not only because it is less efficient (the
+difference is negligible), but because it modifies the result structures
+which means that code that must have it on should most likely be fixed
+anyway.  Also, note that it doesn't change the result of manually
+constructed lists (obviously).
+
+*** Naming conventions
+
+There are various identifier naming conventions that are used throughout
+the system -- some are just conventions and some gets special treatment.
+
+* As said above, symbols that begin with a ":" are keyword -- they
+  evaluate to themselves.
+
+* Keywords that begin with a ":" (= symbols that begin with a "::") are
+  `meta-keywords' which are treated differently in HTML structures:
+  normal keywords are used as tag attributes to display, but meta
+  keywords are not displayed -- they are reserved for various tag
+  processing functions, for output formatting and other information.
+  For example:
+   +----------
+   |> (output-html '(foo: :bar 1 2 3))
+   |<foo bar="1">2 3</foo>
+   |> (output-html '(foo: ::bar 1 2 3))
+   |<foo>2 3</foo>
+   |> (output-html '(foo: ::spaces? #f ::bar 1 2 3))
+   |<foo>23</foo>
+   +----------
+  (As usual in Scheme, a "?" is used for booleans.)
+
+* Symbols that end with a ":" are used for HTML tags.  This is also for
+  symbols that are bound to functions that produce HTML tags with the
+  same symbol at its beginning.
+
+* Names that end with a "~" are functions that generate HTML but do not
+  get keyword/value arguments -- usually these create some HTML
+  structure given some fixed arguments (e.g., `mailto~'), or HTML tags
+  that have no end-tag (e.g., `meta-content~').  They are usually bound
+  as the same type of functions (returning a value that looks like the
+  function call), so they can be planted in lists, but only defined ones
+  can be used.
+
+* Names that end with a "~:" get some special argument and then more
+  arguments that are used as usual, e.g., `color~:'.
+
+* Names that end with a "::" (or "~::") are functions that generate
+  functions that generate HTML output.  These are usually internal
+  functions, and not defined as HTML tags (so you can't put these
+  symbols in lists).
+
+* Names that start with a "_" are normally used for global html-object
+  bindings (see `defhtml' below).
+
+* There are other standard Scheme conventions that I will not discuss.
+  Just one thing that I use -- `*foo*' for parameter names, because
+  they're somewhat equivalent to special globals in Common Lisp.
+
+*** Some standard meta attributes
+
+The following is a list of meta attributes that are common to all HTML
+tags (there are others which are used by various functions).  Note that
+some meta keywords are inherited to subforms, and some do not get passed
+along -- in the descriptions, below, the default is that there is no
+inheritance except when specified.
+
+* `::args' -- This is a special meta argument that can have a list value
+  which will be added to the argument list.  It is usually intended for
+  keyword/value pairs, but can be used as a general mechanism (e.g., a
+  substitute for apply).  For example:
+   +----------
+   |> (output-html
+   |   (body: ::args '(:bgcolor "blue" :text "yellow") "foo"))
+   |<body bgcolor="blue" text="yellow">
+   |foo
+   |</body>
+   |> (output-html
+   |   (body: :bgcolor "black" ::args '(:bgcolor "blue" :text "yellow")
+   |     "foo"))
+   |<body bgcolor="black" text="yellow">
+   |foo
+   |</body>
+   |> (output-html ;; <- unreliable
+   |   (body: ::args '(:bgcolor "blue" :text "yellow") :bgcolor "black"
+   |     "foo"))
+   |<body bgcolor="blue" text="yellow">
+   |foo
+   |</body>
+   |> (output-html
+   |   (body: ::args '(:bgcolor "blue" :text "yellow" "bar") "foo"))
+   |<body bgcolor="blue" text="yellow">
+   |bar
+   |foo
+   |</body>
+   +----------
+  Note that the place where these are stuck in is not something to rely
+  on -- I have one version that sticks it in place, and another that
+  puts it between the keywords and the body.  So don't rely on
+  precedence with other keywords, and put normal arguments only if
+  `::args' is the last keyword.
+
+* `::func' -- A function that will be used to process the body.  The
+  relation of this function and the assigned HTML tag string is complex
+  so just don't use this.
+
+* `::empty?' -- If #t, then this construct should not have any body and
+  an error is raised if it gets any.  If it is #f, then when the body is
+  empty you still get both open and close tags.  The default is neither,
+  which makes the output have both tags only if there is some body
+  present.
+
+* `::1st-args' -- This should be a list of keywords.  This construct
+  will pull an appropriate number of elements from the body and use them
+  as values for these keywords, which makes it a mechanism to generate
+  `foo~:' functions.  Mostly for internal usage.
+
+* `::arg-funcs' -- The value of this keyword should be an association
+  list of a keyword and a processing function.  If this keyword appears
+  in an HTML function, the function will be applied on the HTML tag,
+  keyword name (a string) and the given value, and it should return two
+  values for the new name and value.  The default value is the value of
+  the `*arg-funcs*' parameter which defaults to a list that will use
+  `relativize-path' on `:src' and `:href' arguments.  To disable this
+  processing, you can use `::arg-funcs #f', but that will disable all
+  processing so it is better to disable processing only for one
+  attribute, for example: `::arg-funcs (list* :href #f (*arg-funcs*))'.
+  This keyword is inherited, so you can do this at any form to modify
+  evrything in it.
+
+* `::literal?' -- If true, then HTML post-processing is disabled for the
+  body (see above for more details).  Default: #f.  This meta-keyword is
+  not inherited, but it is not needed since the context of the body is
+  all literal.  Also, once it is used, it is impossible to disable it in
+  nested forms by giving a #f value.
+
+* `::verbatim?' -- If true, then spaces and newlines that are used for
+  pretty printing are not used.  Default: #f.
+
+* `::indent?' -- If true, make the body indented.  This meta keyword is
+  inherited, default: #f
+
+* `::newlines?' -- If true, put a `newline!:' between body elements.
+  Note that `:newlines?' can be false, while `::indent?' true, because
+  the contents can have things with newlines in them.  This meta keyword
+  is inherited, default: same as `:indent?'.
+
+* `::spaces?' -- Same for `space!:'s.  This meta keyword is inherited,
+  default: the opposite of `::newlines?'.
+
+*** Form functions and wrappers
+
+(make-form ...)
+  This is the function which is used to create HTML list structures.
+  Usually `list*', but can be modified with `make-safe-forms!'.  See
+  above.
+
+(defform name: [string] ...)
+  This macro defines `name:' (a ":" suffix is required) as an HTML
+  structure generating function that outputs a "name" tag (or a
+  different tag if a string follows `name:').  Such declared forms can
+  be used as functions that will create a list that looks like the
+  function application, so they can be used as symbols in lists too.  It
+  can specify keywords (both normal and meta) to use with this construct
+  -- but when the function is used, these keyword values can be
+  overridden.  If the string is #f, then no tag gets printed, which is
+  useful only for formatting and applying a sub `::func' field (this is
+  how functions like `newlines:' are defined), and if it is a symbol it
+  will use that form for output.  See the source for advanced usages.
+   +----------
+   |> (output-html '(foo: 1 2))
+   |<foo>1 2</foo>
+   |> (defform foo: :bar 1)
+   |> (output-html '(foo: 1 2))
+   |<foo bar="1">1 2</foo>
+   |> (output-html (foo: 1 2))
+   |<foo bar="1">1 2</foo>
+   |> (output-html (foo:))
+   |<foo bar="1">
+   |> (output-html (foo: :bar 2))
+   |<foo bar="2">
+   |> (defform foo :bar 1)
+   |defform: got a name that doesn't end with a colon at: foo in: [...]
+   |> (defform foo: "foooo" :bar 1)
+   |> (output-html (foo:))
+   |<foooo bar="1">
+   |> (output-html (foo: foo:))
+   |<foooo bar="1"><foooo bar="1"></foooo>
+   +----------
+  Note that the resulting tag can be used with no arguments which means
+  that it can be used as is (as shown in the last expression).
+
+(defwrapper name: [string] ...)
+(deftag name: [string] ...)
+  These are versions of `defform' that set the ::empty? value:
+   +----------
+   |> (defwrapper foo: :bar 1)
+   |> (output-html (foo: foo:))
+   |<foo bar="1"><foo bar="1"></foo></foo>
+   |> (deftag foo: :bar 1)
+   |> (output-html (foo: foo:))
+   |output-form: `foo' got a non-empty body: (#<procedure:foo:>).
+   +----------
+
+(form~:    tag ...)
+(wrapper~: tag ...)
+(tag~:     tag ...)
+  These are special HTML functions that can be used to create arbitrary
+  HTML tags, given a first string argument (must be first, and must be a
+  string):
+   +----------
+   |> (output-html (wrapper~: "foo" :bar 1))
+   |<foo bar="1"></foo>
+   |> (output-html (tag~: "foo" :bar 1))
+   |<foo bar="1">
+   |> (output-html (form~: "foo" :bar 1))
+   |<foo bar="1">
+   |> (output-html (form~: "foo" :bar 1 1 2))
+   |<foo bar="1">1 2</foo>
+   |> (output-html (form~: "foo" :bar 1 ::indent? #t 1 2))
+   |<foo bar="1">
+   |  1
+   |  2
+   |</foo>
+   |> (output-html '(form~: "foo" :bar 1 ::spaces? #f 1 2))
+   |<foo bar="1">12</foo>
+   |> (output-html '(form~: #f :bar 1 ::spaces? #f 1 2))
+   |12
+   +----------
+
+(form:->:: foo:), (form~:->~:: foo~:),
+  These are functions that gets a form function as its argument, and
+  returns a different form function, the first returns a wrapper
+  constructor with some default values.  The second works on functions
+  that get a unique first argument.  (This is like currying, except that
+  keywords given to the final result get precedence.)
+   +----------
+   |> (defwrapper foo: :bar 1)
+   |> (defwrapper foo~: 'recform: ::tag 'foo: ::1st-args ::n)
+   |> (define foo:: (form:->:: foo:))
+   |> (define foo~:: (form~:->~:: foo~:))
+   |> (output-html (foo: "zzz"))
+   |<foo bar="1">zzz</foo>
+   |> (output-html (foo~: 3 "zzz"))
+   |<foo bar="1"><foo bar="1"><foo bar="1">zzz</foo></foo></foo>
+   |> (output-html (foo~: 3 :bar 2 "zzz"))
+   |<foo bar="2"><foo bar="2"><foo bar="2">zzz</foo></foo></foo>
+   |> (output-html ((foo:: :x 1) :y 2 "bar"))
+   |<foo y="2" x="1" bar="1">bar</foo>
+   |> (output-html ((foo:: :x 1) :x 2 "bar"))
+   |<foo x="2" bar="1">bar</foo>
+   |> (output-html ((foo~:: 2 :x 1) :x 2 "bar"))
+   |<foo x="2" bar="1"><foo x="2" bar="1">bar</foo></foo>
+   +----------
+
+(recform: foo:)
+  This is a form function that expects `::tag' and `::n' arguments, and
+  will repeat that tag the specified number of times, nesting it in
+  itself or collecting a result list (depending on the `::empty?'
+  property of its tag):
+   +----------
+   |> (output-html (recform: ::n 2 ::tag 'big:))
+   |<big><big></big></big>
+   |> (output-html (recform: ::n 2 ::tag 'big: "A"))
+   |<big><big>A</big></big>
+   |> (output-html (recform: ::n 2 ::tag 'br:))
+   |<br><br>
+   |> (output-html (recform: ::n 2 ::tag 'br: :foo 2))
+   |<br foo="2"><br foo="2">
+   |> (defwrapper foo~: 'recform: ::tag 'foo: ::1st-args ::n)
+   |> (output-html (foo~: 2 "A"))
+   |<foo><foo>A</foo></foo>
+   |> (output-html (foo~: 2))
+   |<foo><foo>
+   +----------
+  This is useful for HTML tags that can be `accumulated', like "<big>",
+  and for defining many wrappers based on a more general one.
+
+
+------------------------------------------------------------------------
+3.7. Predefined tags and wrappers
+
+This is a brief list of functions that generate HTML output.  For more
+details, see the source.
+
+br:, break:, break~:
+  output an HTML line-break ("<br>").  `break~:' can be used to output a
+  sequence of these.
+
+hr: (hline:)
+  outputs a horizontal line ("<hr>").
+
+html:, head:, body:, title:, link:, base:, frameset:, frame:, noframes:,
+iframe:, meta:, p:, b:, i:, u:, em:, strong:, blink:, strike:, tt:,
+cite:, code:, samp:, kbd:, dfn:, var:, abbr:, acronym:, h1:, h2:, h3:,
+h4:, h5:, h6:, sub:, sup:, ins:, del:, nobr:
+  simple HTML wrappers and tags, each with some default formatting
+  attributes (`::newlines?', `::indent?', `::spaces?').
+
+(link-rel~ rel ref)
+(link-rev~ rev ref)
+  shorthand for (link: :rel rel :href ref), and the same for `:rev'.
+
+(meta-content~ name content), (http-equiv~ name content)
+  shorthand for (meta: :name name :content content) and for
+  (meta: :http-equiv name :content content).
+
+big:, big~:, small:, small~:
+  simple and `recform:' versions of these tags.
+
+font:, face~:, size~:, color~:, size-2:, ..., size+4:, black:, white:,
+red:, green:, blue:, cyan:, magenta:, yellow:, purple:
+  an HTML font tag, and shorthands for face, sizes, and colors
+  specifications.
+
+div:, left:, right:, center:, justify:
+  a "div" tag, and shorthands for formatting text using the `:align'
+  attribute.
+
+ltr:, rtl:
+  a "div" shorthand for using an "ltr" or an "rtl" direction using the
+  `:dir' attribute.
+
+span:, class~:
+  a "span" tag, and shorthand for a "span" using a `:class' attribute.
+
+address:, blockquote:, quote:, q:
+  more simple tags (quote: is a `blockquote:' tag).
+
+pre:
+  a "pre" environment (with no automatic indentation).
+
+img:, (image~ fname [alt] ...), (gif~ fname [alt] ...),
+(jpg~ fname [alt] ...), (png~ fname [alt] ...)
+  an "img" tag, shorthand for specifying the `alt:' attribute (with
+  possibly more attributes), and shorthands for omitting common
+  suffixes.
+
+(my-image~ fname [alt]), (my-gif~ fname [alt] ...),
+(my-jpg~ fname [alt] ...), (my-png~ fname alt ...)
+  similar to the above, but automatically prepends `*image-dir*'.
+
+map:, area:, spacer:
+  some more image-related things.
+
+a:, (ref~: ref ...), (name~: label ...)
+  an html "a" wrapper, a reference link ("a" with an "href" attribute),
+  and a named anchor ("a" with a "name" attribute).  The first argument
+  to `ref~:' and `label~:' is the URL and the rest is the keyword/values
+  and body expressions.
+   +----------
+   |> (output-html (html: (name~: "foo" "FOO") "foo..."
+   |                      (ref~: "#foo" "Go to FOO")))
+   |<html>
+   |<a name="foo">FOO</a>
+   |foo...
+   |<a href="#foo">Go to FOO</a>
+   |</html>
+   +----------
+
+http~:, ftp~:, telnet~:, mailto~:
+  shorthands that prepends the corresponding URL element to a `ref~:'
+  call.
+
+(ref~ x), (http~ x), (ftp~ x), (telnet~ x), (mailto~ x)
+  generate links that contain their own text in tt font.
+
+(list~: tag ...)
+  This generates a list of some kind, the given tag is the one used to
+  construct the list.  There are some special keyword arguments that it
+  handles -- a `::br' argument specifies some number of "<br>"s to stick
+  after every item to make a list with more spaces, and a `::subtag'
+  argument can be used to override the default "<li>" tag used for
+  items.  The extra arguments for `list~:' are the items, each is a
+  list that is passed to the item wrapper.  If the item list has a
+  `item>' symbol, then it is split by that symbol to generate the real
+  items (this is controlled by a `::split-by' argument).  Note that
+  `item>' is bound to itself so it can be used unquoted and in manually
+  constructed lists.
+   +----------
+   |> (output-html (list~: "ul" '("item #1") '("item #2")))
+   |<ul>
+   |  <li>item #1</li>
+   |  <li>item #2</li>
+   |</ul>
+   |> (output-html (list~: "ul" ::br 2 '("item #1") '("item #2")))
+   |<ul>
+   |  <li>item #1 <br><br></li>
+   |  <li>item #2 <br><br></li>
+   |</ul>
+   |> (output-html (list~: "ul" ::subtag "foo"
+   |                        '("item #1") '("item #2")))
+   |<ul>
+   |  <foo>item #1</foo>
+   |  <foo>item #2</foo>
+   |</ul>
+   |> (output-html (list~: "ul" :type 'disc
+   |                        '("item" "#1") '(:foo 2 "item" "#2")))
+   |<ul type="disc">
+   |  <li>item #1</li>
+   |  <li foo="2">item #2</li>
+   |</ul>
+   |> (output-html (list~: "ul" :type 'disc
+   |                       item> "item" "#1"
+   |                       item> :foo 2 "item" "#2"))
+   |<ul type="disc">
+   |  <li>item #1</li>
+   |  <li foo="2">item #2</li>
+   |</ul>
+   +----------
+  There is also an option of using a second `::subtag2' argument for
+  things like description lists (below), and it is possible to put a
+  list of tags in `::subtag' and a matching list of separators in
+  `::split-by' (to change the token used to separate items) so a nested
+  list can be generated (for example, for tables).  Finally, a
+  `::subargs' argument can be used to supply default arguments
+  (keywords) to sub items (see `table*:' below for an example).
+
+enumerate:, itemize:, menu:, dir:
+  These functions use the above (through `list~::'), for lists with
+  "ol", "ul", "menu", and "dir" tags.
+
+itemize-bullet:, itemize-circle:, itemize-square:
+  These are versions of `itemize:' that use "disc", "circle", and
+  "square" as the value of the "type" attribute to force a certain
+  marker.
+
+description:
+   These are used for description lists ("dl").  Using them is similar
+   to the above, except that in items a `!>' separates the header part
+   ("dt") from the body part ("dd") (`!>', like `item>' is bound to
+   itself).
+
+table:, th:, tr:, td:
+  "table" and related wrappers.
+
+table*:
+  This is an HTML function that uses the `list~:' function above, with
+  `row>' and `col>' tokens, to create a table:
+   +----------
+   |> (output-html (table*: :width "100%"
+   |                 row> :bgcolor "blue" col> "a" col> "b" "c"
+   |                 row> col> "x" "y"
+   |                 row> "1" "2" "3"))
+   |<table width="100%">
+   |  <tr bgcolor="blue">
+   |    <td>a</td>
+   |    <td>b c</td>
+   |  </tr>
+   |  <tr>
+   |    <td>x y</td>
+   |  </tr>
+   |  <tr>
+   |    <td>1</td>
+   |    <td>2</td>
+   |    <td>3</td>
+   |  </tr>
+   |</table>
+   |> (output-html (table*: ::subargs '(:foo "bar")
+   |                        row> col> "x1" col> "x2" row> "y1" "y2"))
+   |<table>
+   |  <tr foo="bar">
+   |    <td>x1</td>
+   |    <td>x2</td>
+   |  </tr>
+   |  <tr foo="bar">
+   |    <td>y1</td>
+   |    <td>y2</td>
+   |  </tr>
+   |</table>
+   |> (output-html (table*: ::subargs '((:foo1 "bar") (:foo2 "baz"))
+   |                        row> col> "x1" col> "x2" row> "y1" "y2"))
+   |<table>
+   |  <tr foo1="bar">
+   |    <td foo2="baz">x1</td>
+   |    <td foo2="baz">x2</td>
+   |  </tr>
+   |  <tr foo1="bar">
+   |    <td foo2="baz">y1</td>
+   |    <td foo2="baz">y2</td>
+   |  </tr>
+   |</table>
+   +----------
+  Note the last item in all examples, which doesn't have `col>' tokens
+  so each element is made a separate item.  The `table*:' form is much
+  easier to create `quick' tables, but when a program is used to create
+  complex tables, `table:' (with `tr:' and `td:') can be more
+  convenient, since it is not sensitive to the list structure of its
+  arguments.
+
+form:, input:, button:, submit-button:, text-input:, checkbox:,
+radiobox:, password-input:, hidden-input:, select:, option:
+  "form" wrapper and various form element tags, many are just `input:'
+  with some value for `:type' (the last two are actually wrappers
+  expecting a body).
+
+(submit~: val ...)
+  shorthand for `submit-button:' with the first argument being the label
+  or the option value (the "value" attribute).
+
+options:
+  Similar to a list, but generates a `select' element with nested
+  `options'.  Each item should have the value first:
+   +----------
+   |> (output-html (options: item> 1 "item #1" item> 2 "item #2"))
+   |<select>
+   |  <option value="1">item #1</option>
+   |  <option value="2">item #2</option>
+   |</select>
+   +----------
+
+(select-options: ...)
+  shorthand for a `select:' with nested `option:'s -- the arguments are
+  lists holding a value and a label, for example:
+   +----------
+   |> (output-html (select-options: '(1 label1) '(2 label2)))
+   |<select>
+   |  <option value="1">label1</option>
+   |  <option value="2">label2</option>
+   |</select>
+   +----------
+
+(button*: ...)
+  this is the actual HTML "button" wrapper, unlike the above `button:'
+  which is just a shor for (input: :type 'button ...).
+
+(label~: label ...)
+  a "label" wrapper, with a value for the `:for' attribute.
+
+(textarea: ...)
+  a "textarea" form element, the contents has indentation disabled.
+
+legend:, (fieldset: ...)
+  a "legend" wrapper, and a "fieldset" wrapper -- if the `fieldset:'
+  body contains a `!>', then the first part will be sent to `legend:'
+  and the second used as the `fieldset:' body.
+
+(comment: ...)
+  formatted HTML comment (doesn't accept any attributes):
+   +----------
+   |> (output-html (comment: "foo"))
+   |<!-- foo -->
+   |> (output-html (comment: "foo" "bar"))
+   |<!--
+   |  foo
+   |  bar
+   |-->
+   +----------
+
+(script-src~ src), (style-src~ css-file)
+  a "script" tag with its "src" attribute given and an empty body, and a
+  "link" tag used for a css file specification.
+
+script:, style:, noscript:
+  comment-objects (objects that are placed in an HTML comment), and a
+  matching "noscript" wrapper -- the contents is protected from HTML
+  post-processing:
+   +----------
+   |> (output-html (script: "var i = 1;" "window.alert(\"foo\");"))
+   |<script type="text/javascript" language="JavaScript"><!--
+   |  var i = 1;
+   |  window.alert("foo");
+   |// --></script>
+   +----------
+
+applet:, object:, param:, param~:
+  an "applet", and "object" wrappers, a "param" tag, and a function
+  receiving the name and value of the parameter.
+
+embed:, noembed:
+  an "embed" tag and a "noembed" wrapper.
+
+applet-params:, object-params:
+  Uses `list:' for items that each has a name and a value.  Note that
+  this is also useful if you give it arguments that are a two-element
+  list each:
+   +----------
+   |> (output-html (applet-params: item> 'foo 1 item> 'bar 2))
+   |<applet>
+   |  <param name="foo" value="1">
+   |  <param name="bar" value="2">
+   |</applet>
+   |> (output-html (object-params: '(foo 1) '(bar 2)))
+   |<object>
+   |  <param name="foo" value="1">
+   |  <param name="bar" value="2">
+   |</object>
+   +----------
+
+(html~: title head body [args...])
+  This is a convenient HTML wrapper, getting a title, a head argument
+  containing some list of stuff to put in the head section, and a body.
+  It also uses `*prefix*' to add stuff to the header section (#f by
+  default), and `*charset-type*' for adding the right meta-tag.  In
+  addition, extra arguments can be used to override this behavior:
+  `:prefix' and `:charset-type' can be used to override these defaults.
+   +----------
+   |> (*prefix* (meta-content~ 'author (concat "Eli Barzilay")))
+   |> (output-html (html~: "Main Page" (list (script: "var foo = 1"))
+   |                 (body: "blah blah blah")))
+   |<html>
+   |<head>
+   |  <meta name="author" content="Eli Barzilay">
+   |  <meta name="generator" content="Scheme!">
+   |  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+   |  <title>Main Page</title>
+   |  <script type="text/javascript" language="JavaScript"><!--
+   |    var foo = 1
+   |  // --></script>
+   |</head>
+   |<body>
+   |blah blah blah
+   |</body>
+   |</html>
+   +----------
+  Note that the head argument must be in a list, see `make-safe-forms!'
+  above.
+
+(document: ...)
+  This is a global wrapper, it does some minimal job like outputting the
+  document type (if `*doc-type*' is set) and an optional comment to put
+  at the top and bottom of the result (if a `::comment' keyword is
+  given, or you can specify different ones with `::comment1' and
+  `::comment2').
+
+
+========================================================================
+4. Making it work
+
+Now that woring with all the above should be clear, we reach the point
+of putting it all together in a script.
+
+
+------------------------------------------------------------------------
+4.1. General scripting
+
+The easiest way to run a script in Unix, is to make it executable (using
+"chmod +x foo") and write some `magic' prefix that will allow it to run.
+What I found most convenient is the following prefix:
+   +----------
+   |#!/bin/sh
+   |#|
+   |exec mzscheme -r "$0" "$@"
+   ||#
+   |... scheme code ...
+   +----------
+This will make it a /bin/sh script that will just execute mzscheme with
+the correct command-line arguments: `-r' is for running a script: short
+for `-fmv-' which stands for `-f' for loading an argument, `-m' for
+supressing the banner, `-v' for no interactive read-eval-print loop, and
+`--' to specify that more arguments are passed to the script without
+further processing.  The first "$0" argument is consumed by the `-f' --
+this is the actual script (the double-quotes are to protect file name
+with spaces from exploding to multiple arguments), and "$@" are other
+arguments that are passed to the script because of the `--' (again "$@"
+will send each argument, handeling spaces in them correctly).  When
+MzScheme starts, it ignores the /bin/sh stuff and will happily proceed
+to execute the file.  Stick to this template and be safe.
+
+On Windows, it should be possible to add an executable file type,
+specifying how it should be run.  For example, making it executed by
+  "C:\Program Files\PLT\MzScheme.exe" -r
+should do the trick.  Note that spaces makes life a mess.
+
+
+------------------------------------------------------------------------
+4.2. Script setup for "html.ss"
+
+The MzScheme executable accepts lots of useful flags that can be used to
+automate a lot of work.  We've seen above how `-r' is used to run a
+Scheme script, but HTML generation scripts will usually look roughly
+like this:
+   +----------
+   |#!/bin/sh
+   |#|
+   |exec mzscheme -r "$0" "$@"
+   ||#
+   |(require (lib "html.ss" "swindle"))
+   |...
+   |... HTML-definitions scheme code  ...
+   |...
+   |(html-main argv)
+   +----------
+(See below for `html-main' usage.)
+
+Now, we can further use the following command-line arguments:
+* `-L' to specify a library file and collection names;
+* `-C' to invoke `main' on the given script arguments as a list
+  beginning with the script file name (it implies `-r').
+Using these, we can write this equivalent script:
+   +----------
+   |#!/bin/sh
+   |#|
+   |exec mzscheme -LC "html.ss" "swindle" "$0" "$@"
+   ||#
+   |...
+   |... HTML-definitions scheme code  ...
+   |...
+   |(define (main args) (html-main (cdr args)))
+   +----------
+Note that the "-LC" order specifies that the library and collection
+names come first, then the script name and that `main' is invoked after
+loading the file.
+
+On Windows, the problem is that an extension can be used to specify that
+a file is to be thrown as an argument on some binary with predefined
+additional arguments.  So either use something like the first script
+above, or create yet another extension for HTML scripts.
+
+
+------------------------------------------------------------------------
+4.3. Creating HTML files
+
+Finally, this section describes how to produce HTML files.  This is
+describing the level built on top of all of the above.
+
+`*defined-htmls*' is a variable holding HTML objects.  To define an HTML
+object, use the `(defhtml foo ...)' macro -- it gets a variable name
+that will be bound to the HTML object, and push that object onto
+`*defined-html*'.  The extra arguments are keyword/values, which are
+expected to hold values for at least `:name' which holds the file name
+(sans base directory and suffix, but possibly with sub directories), and
+a `:contents' value that will be used to produce the HTML object.  The
+`:contents' value can be any of the valid value that is shown as usual,
+or a function of a variable number of arguments that will be applied to
+the supplied list of keywords and values so it can inspect values for
+more keywords (e.g., supplied by defaults as described below).  For
+convenience, the `:name' argument can be dropped and the symbol name
+will be used instead (dropping a "_" prefix of and adding "index" in
+case it ends with a "/").  Also the `:contents' argument can be dropped
+and its value should just be the last one -- in this case, its value
+will be protected by a `delay' which makes it easier for it to reference
+later defined values.  `defhtml' uses the `(html-obj!  ...)' macro,
+which is similar to a simple `list', except that it handles the contents
+value as described above, and the result is pushed on the
+`*defined-htmls*' list (the `!' suffix doesn't mean that this is
+especially exiting, just that it modifies a value rather than simply
+returning one).
+   +----------
+   |> (html-obj! :a 1 :b 2 3)
+   |(:a 1 :b 2 :contents #<struct:promise>)
+   |> (defhtml x :a 1 :b 2 3)
+   |> x
+   |(:name "x" :a 1 :b 2 :contents #<struct:promise>)
+   |> (getarg x :contents)
+   |#<struct:promise>
+   |> (force (getarg x :contents))
+   |3
+   |> *defined-htmls*
+   |((:name "x" :a 1 :b 2 :contents #<struct:promise>)
+   | (:a 1 :b 2 :contents #<struct:promise>))
+   +----------
+One note about `:name' -- possible file arguments (e.g., arguments for
+`ref~:'s and `image~', can be relativized in case `:name' contains a
+subdirectory name; to do this, use the `relativize-path' function
+described above.  This means that to get it done properly, the actual
+call should be done at HTML generation time (you can wrap them in a
+`delay' or `thunk').
+
+At this point you probably wonder why the whole keywords-values mess...
+
+Well, one feature that is desired is to have access to information about
+HTML objects from other pieces of code.  For example, code that
+generates a menu that shows links to other pages with some information
+about them, which is included in the appropriate `defhtml' form.  If an
+HTML output object is used, there is no way to pull that information
+out, so HTML objects are just keyword/value lists.  A good setup is to
+have a function that creates the contents function and treats given
+information in some uniform way -- see below for an example.  To pull
+out keyword information from an HTML object, the utility function
+`getarg' described above can be used.  Remember the option of using
+`delay' (a Scheme promise) or a thunk (a function with no arguments)
+above -- putting references to yet-undefined HTML objects is possible in
+such constructs since they get evaluated when all HTML objects are
+defined.
+
+To actually produce HTML files from HTML objects, use the `make-html'
+function -- it should be called with an HTML object and possibly more
+keywords/values.  If keywords are provided, they will be used as default
+values for HTML object keywords (so this can be used for invocation
+specific values, like date).  The `make-htmls' is similar, except it
+expects a list of HTML objects as its first arguments (and again,
+optionally more keywords/values).  Finally, a convenient function is
+`make-defined-htmls' -- when called (with no arguments or
+keywords/values), it will go over all HTML objects in `*defined-htmls*',
+collected by `defhtml' forms, and create their files.  (Actually, it
+will check `*defined-html*' once it is done, since more HTML objects may
+be defined while creating pages.)
+
+The following example is a complete script that will create three HTML
+files in the directory you run it from.  (The evaluation delay trick
+should be used in case the body of the `_main' object references later
+ones.)
+
+   +----------
+   |#!/bin/sh
+   |#|
+   |exec mzscheme -LC "html.ss" "swindle" "$0" "$@"
+   ||#
+   |(define ((my-page: &rest body)
+   |         &keys name (title (string-capital name)) info)
+   |  (html: (title: title)
+   |    (body: (h1: title) hr: body hr: (comment: "menu follows")
+   |      (apply text: (map (lambda (html)
+   |                          (ref~: (concat (getarg html :name)
+   |                                         (*html-suffix*))
+   |                                 "[":(getarg html :info):"]"))
+   |                        (reverse *pages*))))))
+   |(defhtml _main :name "index" :title "Main" :info "My main page"
+   |  (my-page: "Yo!  Welcome to my main page!"))
+   |(defhtml _professional :info "Career stuff"
+   |  (my-page: "As CEO of Foo Corp, I blah blah blah..."))
+   |(defhtml _hobbies :info "Personal hobbies"
+   |  (my-page: "I like to shove dead bugs up my nose."))
+   |(define *pages* *defined-htmls*)
+   |(define (main args) (html-main (cdr args)))
+   +----------
+
+(Remember that `defhtml' can use symbol names that contain `/'s to put
+the results in these subdirectories, but remember that these
+subdirectories should exist.)
+
+This is the standard approach that I prefer -- a single script that
+creates multiple HTML files.  To create a single HTML file at a time,
+different approaches can be used.  The first one, is to have the same
+script, but create only a subset of the defined HTML objects.  For this,
+use the function `html-main' instead of `make-defined-htmls'.  This
+function gets a list as an argument and will make each HTML object on
+the list or search for it by a defined name in case of a string.  It can
+also accept more keyword/values to send to the html creation function.
+If the input list is empty, it simply invokes `make-defined-htmls'.  To
+search an HTML object by a string name, it looks for either a symbol
+bound to an HTML object with the given argument name, or an HTML object
+with a `:name' attribute equal to the given argument, or an HTML object
+whose processed name (the `:name' value with `*html-target-dir*' and
+`*html-suffix*') is equal to the given argument.  All this makes it
+convenient to run on script inputs: with arguments it will genrate only
+the requested pages, and without it will create all defined pages.
+Thing you should know if you use this approach:
+
+* Make sure that the script header has that "$@" so additional command
+  line arguments are passed to MzScheme.  On Windows you should make
+  sure that whatever way you chose to invoke MzScheme programs, should
+  be passing command line arguments to it.
+
+* The variable MzScheme uses to bind command line arguments is `argv',
+  it is bound to a vector of strings but `html-main' will convert a
+  given vector to a list.
+
+* MzScheme has a `-C' flag that will call the `main' function with the
+  list of arguments, beginning with the script file name -- so you can
+  bind `main' to `html-main' and get the above automatically.
+
+* You should be aware of the fact that this approach might not evaluate
+  all HTML bodies, so you should be careful not to rely on an HTML
+  object evaluation to have a visible effect on evaluation of other
+  objects.
+
+Another option is to create separate scripts to create several pages.
+For this, you can either use the above functions (just have a single
+HTML object defined on each script) or resort to lower level functions
+like `output-html'.  Another function that can be used for this purpose
+is `(output-to-html "foo" html-object)' which will place the HTML output
+of the given html-object in "foo.html" (or any other file, depending on
+`*html-target-dir*' and `*html-suffix*'.  If these scripts rely on some
+shared code, you should consult the MzScheme documentation to learn how
+to load files.  Normally, you would just `load' the given shared code,
+but you might want to invoke several scripts in a single execution --
+for extra convenience you could use MzScheme's module mechanism.  For a
+more ambitious project, you can even use MzScheme's `make' library and
+much more.
+
+In addition to all this, remember that the HTML generators can do
+anything at all.  They can even read in external files and incorporate
+them in the output -- remember that everything that is printed on the
+standard output is included in the resulting HTML.  You can use
+`display-mixed-file' as described above, or do anything you want, (and
+remember to use `literal:' where necessary).
+
+
+========================================================================

@@ -1,0 +1,10 @@
+(interface
+  ("Comparable" "java" "lang")
+  (public)
+  #t
+  ()
+  (("compareTo" (public) int (("Object" "java" "lang")) () ("Comparable" "java" "lang")))
+  ()
+  ()
+  ()
+  "version1")

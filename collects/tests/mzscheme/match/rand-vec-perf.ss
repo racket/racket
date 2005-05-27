@@ -1,0 +1,278 @@
+(load-relative "../loadtest.ss")
+(SECTION 'MATCH-PERFORMANCE)
+
+(require (lib "pretty.ss"))
+(require-for-syntax (lib "pretty.ss"))
+(require (lib "include.ss"))
+(require (lib "plt-match.ss"))
+
+
+(include "match-compile-perf.scm")
+
+
+
+(match-performance-test
+ (file
+  ;; this is the name of the underlying file that handles the 
+  ;; persistance of test data between invocations of this performance test
+  ;; Each time a test is run one has the option to only compare current
+  ;; data with previous data or one can modify the database file by appending
+  ;; hopefullly improved data.
+  ;; For most purposes it is advisable not to alter the database.
+  (name "rand-vec-hist.db")
+  ;; onlly one of the following options is allowed
+  ;; write-new   ;; uncomment to write an new test database 
+                 ;; (this requires the whole-list display option below)
+  ;; add-results ;; uncomment to append the results of the current test
+                 ;; to the database
+  )
+ (tag
+  ;; only one option is allowed 
+  ;; this is the name of the tag placed on data generted by this test
+  current
+  ;; other options are 
+  ;; date ;; to tag new date with a date
+  ;; time ;; to tag new date with a time
+  )
+ (display
+  ;; only one option is allowed
+  ;; remember negative -> good  and positive -> bad 
+  ;; positive-change       ;; displays increases in node counts
+  ;; other options are:
+  ;; negative-change    ;; displays decreases in node counts
+  percent-change             ;; to display any change in node count
+  ;; rt-positive-change ;; same as above but for real compile time
+  ;; rt-negative-change
+  ;; rt-change
+  ;; whole-list         ;; display whole database line with current test appended
+  ;; last-two ;; display only the current result with the previous result
+  )
+ (patterns
+ (pattern
+   (vector 1 2 4 4 9 8 8 7)
+   (vector 9 0 0 2 5 6 0 9)
+   (vector 9 5 5 2 2 1 8 8)
+   (vector 5 8 7 5 5 1 7 9)
+   (vector 5 1 5 4 2 6 1 3)
+   (vector 8 1 6 3 9 8 5 0)
+   (vector 5 0 3 8 3 3 6 8)
+   (vector 1 5 6 8 8 3 9 4)
+   (vector 7 5 8 9 3 0 4 1)
+   (vector 3 2 7 3 0 2 5 6)
+   (vector 4 8 6 7 1 2 6 4)
+   (vector 7 4 5 5 9 4 9 6)
+   (vector 9 8 7 2 0 2 6 3)
+   (vector 4 3 8 7 7 4 5 1)
+   (vector 4 1 8 8 3 6 2 2))
+ (pattern
+   (vector 2 7 7 2 4 9 8 3)
+   (vector 9 8 8 9 2 6 4 8)
+   (vector 9 5 7 8 1 2 9 7)
+   (vector 3 9 5 8 8 0 0 0)
+   (vector 9 0 2 3 9 3 9 8)
+   (vector 3 7 9 5 5 5 5 6)
+   (vector 2 3 4 3 5 3 1 9)
+   (vector 4 8 7 2 8 0 3 0)
+   (vector 0 7 3 9 2 2 9 5)
+   (vector 1 0 2 6 5 8 2 0)
+   (vector 1 8 3 8 1 6 7 8)
+   (vector 7 7 0 7 9 5 7 9)
+   (vector 5 1 0 7 5 1 3 9)
+   (vector 1 5 5 8 5 0 8 6)
+   (vector 8 4 5 2 2 4 0 9))
+ (pattern
+   (vector 3 2 7 2 0 6 3 5)
+   (vector 7 5 4 5 6 9 4 7)
+   (vector 5 1 8 2 3 8 9 2)
+   (vector 2 6 6 7 2 8 8 8)
+   (vector 2 5 2 2 4 6 9 1)
+   (vector 3 4 6 0 5 2 9 0)
+   (vector 4 7 3 7 8 4 1 0)
+   (vector 2 9 9 6 7 8 4 2)
+   (vector 5 9 6 9 7 6 3 0)
+   (vector 2 1 0 7 4 0 0 8)
+   (vector 9 5 7 7 1 9 0 3)
+   (vector 8 9 9 8 9 6 0 5)
+   (vector 5 6 6 2 4 9 2 8)
+   (vector 1 5 6 7 5 8 5 6)
+   (vector 3 4 4 6 3 6 1 4))
+ (pattern
+   (vector 7 0 4 7 8 4 4 5)
+   (vector 2 0 7 9 2 2 7 5)
+   (vector 7 3 2 4 3 9 0 8)
+   (vector 3 4 4 9 2 5 5 0)
+   (vector 8 9 7 6 5 3 2 9)
+   (vector 5 1 8 7 3 6 4 2)
+   (vector 1 6 6 7 7 7 5 3)
+   (vector 3 0 2 6 7 9 6 7)
+   (vector 0 5 4 7 0 8 6 5)
+   (vector 1 7 5 7 3 9 9 6)
+   (vector 8 8 3 5 5 9 8 0)
+   (vector 1 2 6 0 1 4 8 1)
+   (vector 1 4 8 1 4 7 7 5)
+   (vector 4 2 4 9 3 6 5 1)
+   (vector 4 1 7 1 2 5 1 5))
+ (pattern
+   (vector 8 0 5 1 6 3 5 8)
+   (vector 9 5 1 3 2 0 1 8)
+   (vector 4 7 7 8 3 5 9 7)
+   (vector 6 6 0 8 4 2 3 4)
+   (vector 4 0 7 0 6 2 0 5)
+   (vector 8 4 1 2 4 2 3 9)
+   (vector 9 0 7 5 7 6 4 3)
+   (vector 5 5 3 1 9 8 7 3)
+   (vector 9 4 5 5 7 8 2 7)
+   (vector 2 3 1 6 7 4 5 9)
+   (vector 5 4 4 4 3 8 0 0)
+   (vector 5 3 1 4 4 0 9 5)
+   (vector 4 7 2 3 5 4 0 9)
+   (vector 0 4 7 7 8 5 8 5)
+   (vector 9 2 0 4 3 0 4 8))
+ (pattern
+   (vector 5 7 3 1 7 4 6 4)
+   (vector 1 0 7 8 5 0 9 7)
+   (vector 4 7 6 2 4 5 8 5)
+   (vector 9 8 0 2 0 4 3 5)
+   (vector 2 8 7 1 2 5 5 6)
+   (vector 6 3 6 3 5 6 0 9)
+   (vector 5 8 1 9 3 1 6 5)
+   (vector 1 6 7 1 1 2 9 5)
+   (vector 0 8 6 5 3 4 1 1)
+   (vector 7 7 4 2 5 6 3 2)
+   (vector 7 6 1 0 8 0 7 9)
+   (vector 6 7 3 9 9 4 4 0)
+   (vector 2 3 5 7 7 8 9 6)
+   (vector 7 5 0 3 4 3 5 1)
+   (vector 9 9 3 9 9 1 9 7))
+ (pattern
+   (vector 8 4 7 9 8 3 9 0)
+   (vector 6 6 9 5 6 0 1 4)
+   (vector 6 3 9 2 6 6 3 8)
+   (vector 7 8 7 8 9 8 6 9)
+   (vector 2 3 9 0 8 0 2 5)
+   (vector 9 2 2 5 4 6 1 0)
+   (vector 9 2 4 8 9 7 6 8)
+   (vector 8 3 7 7 4 3 9 6)
+   (vector 8 8 9 6 0 3 3 9)
+   (vector 7 8 7 2 4 8 4 3)
+   (vector 3 9 1 2 8 9 0 6)
+   (vector 5 9 6 9 4 5 5 4)
+   (vector 3 6 3 5 0 6 5 9)
+   (vector 4 2 1 0 2 6 4 5)
+   (vector 7 7 9 5 7 2 4 2))
+ (pattern
+   (vector 1 0 3 6 5 0 0 0)
+   (vector 7 3 5 9 2 0 8 8)
+   (vector 4 2 9 9 0 5 4 7)
+   (vector 2 6 4 1 8 8 5 9)
+   (vector 8 8 7 3 9 0 3 8)
+   (vector 5 1 7 7 1 7 8 8)
+   (vector 9 7 7 9 4 1 8 8)
+   (vector 9 3 0 7 1 7 9 2)
+   (vector 6 8 7 7 8 1 5 4)
+   (vector 2 2 3 5 9 1 3 1)
+   (vector 0 0 0 6 4 1 5 3)
+   (vector 4 5 3 7 4 2 9 0)
+   (vector 0 7 7 1 0 4 5 4)
+   (vector 8 0 1 0 4 7 1 4)
+   (vector 9 3 3 5 4 8 9 0))
+ (pattern
+   (vector 5 4 8 9 6 9 2 8)
+   (vector 8 1 9 0 6 6 4 4)
+   (vector 7 8 4 3 5 7 7 4)
+   (vector 1 2 0 5 0 1 8 5)
+   (vector 5 6 5 3 7 9 1 6)
+   (vector 0 3 8 6 1 3 1 0)
+   (vector 3 7 3 8 5 3 4 6)
+   (vector 5 6 3 6 7 1 3 4)
+   (vector 9 0 7 9 9 1 7 0)
+   (vector 6 5 6 7 0 9 8 3)
+   (vector 7 1 3 4 4 8 2 0)
+   (vector 6 5 8 4 9 1 0 0)
+   (vector 2 8 9 1 1 6 1 7)
+   (vector 4 0 6 4 9 4 0 8)
+   (vector 8 3 4 2 3 6 4 0))
+ (pattern
+   (vector 4 2 4 5 4 4 5 8)
+   (vector 4 7 9 7 5 3 4 9)
+   (vector 5 3 6 4 9 6 5 7)
+   (vector 9 9 2 3 8 6 3 2)
+   (vector 1 9 7 7 5 4 5 2)
+   (vector 1 6 9 9 1 6 8 6)
+   (vector 9 4 1 8 0 8 8 2)
+   (vector 9 0 7 9 8 0 1 9)
+   (vector 1 0 8 8 5 3 0 8)
+   (vector 2 2 7 3 0 6 0 9)
+   (vector 2 3 9 5 1 9 9 2)
+   (vector 9 6 2 8 6 5 9 9)
+   (vector 6 8 7 3 3 0 1 5)
+   (vector 4 9 9 4 7 9 5 1)
+   (vector 2 6 6 5 6 5 9 5))
+ (pattern
+   (vector 1 3 5 9 9 7 0 7)
+   (vector 5 0 0 8 2 1 6 6)
+   (vector 2 5 0 9 6 5 1 0)
+   (vector 1 9 7 7 7 6 5 0)
+   (vector 2 0 2 1 7 2 0 4)
+   (vector 4 2 5 6 3 1 2 8)
+   (vector 8 2 7 4 7 0 4 1)
+   (vector 0 3 8 7 9 5 9 1)
+   (vector 6 1 4 5 4 6 2 0)
+   (vector 8 7 7 4 0 9 2 8)
+   (vector 2 1 2 1 2 8 4 4)
+   (vector 1 3 3 2 8 2 6 6)
+   (vector 4 2 4 0 9 6 0 9)
+   (vector 5 7 3 5 9 5 3 1)
+   (vector 7 7 4 9 7 9 5 8))
+ (pattern
+   (vector 4 8 2 4 0 8 3 4)
+   (vector 3 7 6 2 5 7 1 0)
+   (vector 6 7 5 5 2 0 8 1)
+   (vector 7 5 2 4 6 7 4 0)
+   (vector 5 8 6 8 9 9 2 2)
+   (vector 6 1 6 3 0 9 3 6)
+   (vector 6 0 4 1 0 4 4 9)
+   (vector 9 7 5 5 6 9 7 4)
+   (vector 8 4 2 7 5 6 1 4)
+   (vector 7 7 7 7 6 1 6 3)
+   (vector 3 0 6 4 4 0 3 6)
+   (vector 7 1 3 6 0 3 0 0)
+   (vector 7 2 9 2 8 2 8 6)
+   (vector 9 6 5 6 9 1 1 2)
+   (vector 3 9 6 8 9 2 6 9))
+ (pattern
+   (vector 3 1 5 5 4 5 8 1)
+   (vector 9 9 6 7 2 4 5 1)
+   (vector 2 1 9 1 4 2 4 8)
+   (vector 1 2 8 3 6 4 2 9)
+   (vector 5 7 7 2 4 7 3 5)
+   (vector 6 1 4 0 8 2 4 2)
+   (vector 5 5 4 9 8 8 7 1)
+   (vector 0 7 4 7 3 6 8 1)
+   (vector 5 7 3 1 4 8 8 3)
+   (vector 2 3 3 0 5 7 2 0)
+   (vector 5 8 1 3 6 1 6 9)
+   (vector 8 1 8 2 9 8 3 7)
+   (vector 6 8 0 2 6 9 5 8)
+   (vector 4 1 0 9 0 5 1 5)
+   (vector 3 4 0 2 5 9 3 4))
+ (pattern
+   (vector 2 3 8 1 1 3 0 9)
+   (vector 1 1 4 7 2 9 8 6)
+   (vector 2 8 7 3 5 0 0 1)
+   (vector 4 1 3 0 0 8 6 2)
+   (vector 1 4 5 4 7 8 6 0)
+   (vector 1 0 9 3 9 7 1 4)
+   (vector 8 0 7 5 0 7 6 4)
+   (vector 0 1 6 2 9 2 6 2)
+   (vector 8 4 7 7 2 3 7 3)
+   (vector 3 9 8 4 8 9 8 6)
+   (vector 1 7 4 1 7 0 7 7)
+   (vector 2 6 2 3 0 8 6 9)
+   (vector 2 5 6 6 0 6 9 5)
+   (vector 7 7 9 5 8 0 2 1)
+   (vector 7 6 2 4 8 2 4 0))
+
+))
+
+(report-errs)

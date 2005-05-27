@@ -1,0 +1,11 @@
+Click the "Hit Me" button. "Callback Ok" should appear in the console.
+
+Click "Check". "All Ok" should appear in the console.
+
+Repeat the above two steps.
+
+Click "Disable Test" and quickly click "Hit Me". The button should
+ become disabled for a second, then become re-enabled, but the
+ click on "Hit Me" should not invoke the callback.
+
+Repeat the first two steps above.

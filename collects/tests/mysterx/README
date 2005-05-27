@@ -1,0 +1,33 @@
+MysterX test control
+====================
+
+The file mystests.ss in this directory creates a window
+with a test ActiveX control, and runs a number of tests on it.
+After the internal tests are performed, you can interact 
+with the test control using a mouse.
+
+The C++ code in the src subdirectory is supplied uncompiled.
+You need Visual C++ .NET to compile it.
+
+To compile, run "nmake".  Once you've compiled the test ActiveX 
+control, load "mystests.ss".
+
+DHTML test code
+===============
+
+The file dhtmltests.ss contains a number of tests
+for the Dynamic HTML capabilities of MysterX.
+Simply load the file into MzScheme or DrScheme to run the 
+tests.  Any errors will be printed in the REPL.
+The behavior that appears in the window that is created
+may be ignored.
+
+Manual tests
+============
+
+Here are some manual tests to run on MysterX:
+
+  - run mxdemo.ss (in the collection) under IE4, IE5, IE5.5
+  - check for no context menu in browsers
+  - load mxdemo.ss into DrScheme; hit Execute a second time,
+     the browser windows should disappear

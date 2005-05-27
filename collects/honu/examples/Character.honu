@@ -1,0 +1,12 @@
+type Character {
+  char value;
+  String toString();
+}
+
+class CharBox() : Character impl Character {
+  init char value;
+
+  String toString() { return new StrBox(value = charToStr(value)); }
+
+  export Character : value, toString;
+}

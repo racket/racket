@@ -1,0 +1,237 @@
+The _openssl_ collection provides glue for the OpenSSL library with
+the MzScheme port system. The OpenSSL collection functions nearly
+identically to the standard TCP subsystems in PLT Scheme, with a few
+additional flags.
+
+To use this library, you will need OpenSSL installed on your
+machine, but
+
+ * the PLT-distributed archive for Windows installs the necessary
+   DLLs, and
+
+ * Mac OS X 10.2 provides the necessary OpenSSL libraries
+   (as do some other operating systems).
+
+To build from source, you will need a C compiler and linker;
+see the end of this documentation for build notes.
+
+==================================================
+
+_mzssl.ss_ library
+
+The variables below are provided the by "mzssl.ss" library.
+
+> ssl-available? 
+
+A boolean value which says whether the system openssl library was
+successfully loaded. Calling `ssl-connect', etc.  when this value is
+#f (library not loaded) will raise an error.
+
+
+-- Client procedures ----------------------------------------
+
+> (ssl-connect hostname port-k [ssl-client-context-or-protocol-symbol])
+
+Connect to the given host (a string) on the given port-k (a number
+from 1 to 65535). This connection will be encrypted using SSL.  The
+return values are as tcp-connect; an input port and an output port.
+
+The optional `ssl-context-or-protocol-symbol' argument determines
+which encryption protocol is used, whether the server's certificate is
+checked, etc. The argument can be either a client context created by
+`make-client-context' (see below), or one of the following symbols:
+'sslv2-or-v3 (the default), 'sslv2, 'sslv3, or 'tls; see
+`make-client-context' for further details (including the meanings of
+the protocol symbols.)
+
+
+> (ssl-connect/enable-break hostname port-k [protocol-symbol])
+
+Like `ssl-connect', but breaking is enabled while trying to connect. 
+
+
+> (ssl-make-client-context [protocol-symbol])
+
+Creates a context to be supplied to `ssl-connect'. The context
+identifis a communication protocol (as selected by `protocol-symbol'),
+and also holds certificate information (i.e., the client's identity,
+its trusted certificate authorities, etc.). See the "Certificate
+procedures" section below for more information on certificates.
+
+The `protocol-symbol' must be one of the following:
+
+ * _'sslv2-or-v3_ : SSL protocol versions 2 or 3, as
+                     appropriate (this is the default)
+
+ * _'sslv2_ : SSL protocol version 2
+
+ * _'sslv3_ : SSL protocol version 3
+
+ * _'tls_ : the TLS protocol version 1
+
+By default, the context returned by `ssl-make-client-context' does not
+request verification of a server's certificate. Use `ssl-set-verify!'
+to enable such verification.
+
+
+> (ssl-client-context? v)
+
+Returns #t if `v' is a value produced by `ssl-make-client-context', #f
+otherwise.
+
+
+-- Server procedures ----------------------------------------
+
+> (ssl-listen port-k [queue-k reuse? hostname-or-#f protocol-symbol])
+
+Like `tcp-listen', but the result is an SSL listener (which is a
+waitable object). The extra optional `protocol-symbol' is as for
+`ssl-connect'.
+
+Call `ssl-load-certificate-chain!' and `ssl-load-private-key!' to
+avoid a _no shared cipher_ error on accepting connections. The file
+"test.pem" in the "openssl" collection is a suitable argument for both
+calls when testing. Since "test.pem" is public, however, such a test
+configuration obviously provides no security.
+
+
+> (ssl-close ssl-listener)
+> (ssl-listener? v)
+
+Analogous to `tcp-close' and `tcp-listener?'.
+
+
+> (ssl-accept ssl-listener)
+
+Analogous to `tcp-accept'.
+
+
+> (ssl-accept/enable-break ssl-listener)
+
+Analogous to `tcp-accept/enable-break'.
+
+
+-- Certificate procedures ----------------------------------------
+
+> (ssl-load-certificate-chain! ssl-client-context-or-listener pathname)
+
+Loads a PEM-format certification chain file for connections to made
+with the given context (created by `ssl-make-context') or listener
+(created by `ssl-listener').
+
+This chain is used to identify the client or server when it connects
+or accepts connections. Loading a chain overwrites the old chain. Also
+call `ssl-load-private-key!' to load the certificate's corresponding
+key.
+
+The file "test.pem" is suitable for testing purposes. Since "test.pem"
+is public, such a test configuration obviously provides no security.
+
+
+> (ssl-load-private-key! ssl-client-context-or-listener pathname [rsa? asn1?])
+
+Loads the first private key from `pathname' for the given client
+context or listener. The key goes with the certificate that identifies
+the client or server.
+
+If `rsa?' is #t (the default), the first RSA key is read (i.e.,
+non-RSA keys are skipped). If `asn1?' is #t (the default is #f), the
+file is parsed as ASN1 format instead of PEM.
+
+The file "test.pem" is suitable for testing purposes. Since "test.pem"
+is public, such a test configuration obviously provides no security.
+
+
+> (ssl-set-verify! ssl-client-context-or-listener boolean)
+
+Enables or disables verification of a connection peer's certificates.
+By default, verification is disabled.
+
+Enabling verification also requires, at a minimum, designating trusted
+certificate authorities with `ssl-load-verify-root-certificates!'.
+
+
+> (ssl-load-verify-root-certificates! ssl-client-context-or-listener pathname)
+
+Loads a PEM-format file containing trusted certificates that are used
+to verify the certificates of a connection peer. Call this procedure
+multiple times to load multiple sets of trusted certifactes.
+
+The file "test.pem" is suitable for testing purposes where the peer
+identifies itself using "test.pem".  Since "test.pem" is public, such
+a test configuration obviously provides no security.
+
+
+> (ssl-load-suggested-certificate-authorities! ssl-listener pathname)
+
+Loads a PEM-format file containing certificates that are used by a
+server. The certificate list is sent to a client when the server
+requests a certificate as an indication of which certificates the
+server trusts.
+
+Loading the suggested certifcicates does not imply trust, however; any
+certificate presented by the client will be checked using the trusted
+roots loaded by `ssl-load-verify-root-certificates!'.
+
+The file "test.pem" is suitable for testing purposes where the peer
+identifies itself using "test.pem".
+
+
+==================================================
+
+Build notes
+-----------
+
+The "mzssl.ss" library is actually implemented in C as "mzssl.c".
+When you run Setup PLT, setup attempts to compile and link "mzssl.c"
+to create a PLT Scheme extension.
+
+Per-platform notes:
+
+ * Windows
+
+   The setup script needs "libeay32.lib" and "ssleay32.lib", which it
+   can find automatically if they are installed as
+   plt/collects/openssl/openssl/lib/{lib,ssl}easy32.lib. Similarly, the
+   setup script needs several OpenSSL header files (such as "ssl.h"),
+   which it can find automatically if they are installed as
+   plt/collects/openssl/openssl/include/openssl/ssl.h, etc.
+
+   At run-time, the DLLs "libeay32.dll" and "ssleay32.dll" must be
+   found by Windows as it tries to load the "mzssl.dll" extension. For
+   example, if the two DLLs are installed in the system folder, they
+   will be found. (Another possibility is the folder containing the
+   ".exe" that uses the "mzssl.dll" extension.)
+
+   To designate a directory other than plt/collects/openssl/openssl
+   for .lib and .h files, define the environment variable
+   PLT_EXTENSION_LIB_PATHS. The variable's value should be a
+   semicolon-separated path list, where one of the paths contains
+   "include" and "lib" subdirectories with the OpenSSL headers and
+   libraries.
+
+   If OpenSLL is built with cygwin, ".a" files are generated instead
+   of ".lib" an ".dll" files. Presumably "mzssl.c" could be made to
+   build with those libraries by modifying "pre-installer.ss", but we
+   haven't tried. Similar caveats apply to other build techniques that
+   do not produce DLLs.
+
+   Bonus hack: If "{lib,ssl}easy32xxxxxxx.lib" exist in the lib
+   directory, they are used (instead of "{liib,ssl}eay32.lib") with
+   the expectation that the resulting extension will link to
+   "{lib,ssl}eay32xxxxxxx.dll". This enables the name-mangling version
+   hack for distributing DLLs.
+
+ * Mac OS
+
+   "Just works" for Mac OS X version >= 10.2 if you have the developer
+   tools installed. Building for 10.1 requires installing OpenSSL. Mac
+   OS Classic is not supported at all.
+
+ * Unix (including Linux)
+
+   Usually "just works" if you have OpenSSL installed.  If the header
+   files or libraries are in a non-standard place, define the
+   environment variable PLT_EXTENSION_LIB_PATHS as a colon-separated
+   path list, where one of the paths contains "include" and "lib"
+   subdirectories with the OpenSSL headers and libraries.

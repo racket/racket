@@ -1,0 +1,37 @@
+The pousse GUI can
+
+ * play a person against another person,
+ * play a person against a program,
+ * play a program against another program, or
+
+The "Setup..." button opens a dialog for selecting one of the above
+modes, and for adding new program players to the system. Use
+"Setup..." to reset a game or to cancel a game where two programs are
+playing each other.
+
+Person Players 
+--------------
+Watch the status line above the board for information. When it's your
+turn, click on one of the numbers surrounding the board to move.
+
+The left and right arrows above the board undo and redo moves,
+respectively. The right side of the window shows the game played so
+far, including undone moves that have not yet been replaced. The most
+recent move is hilighted in blue.
+
+When a player loses by repeating a previous board configuration, the
+player's pieces turn red and no further moves are allowed (although
+moves can be undone). When a player wins, the player's pieces that
+form straights are turned green.
+
+Players are encouraged to move within 30 or 60 seconds. A beep is
+sounded at 30 and 60 seconds from the start of player's turn.
+
+Program Players
+---------------
+While a program player is ``thinking,'' the cursor changes to a watch
+over the board. When a person plays a program, clicking the left arrow
+while a program is thinking cancels the program and undoes the
+person's most recent move. Clicking the left arrow during the person's
+turn undoes the program's last move, plus the person's previous move
+(i.e., it undoes two moves).

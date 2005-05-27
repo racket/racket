@@ -1,0 +1,534 @@
+
+The Compiler
+============
+
+To use the compiler within a Scheme program, require _compiler.ss_:
+  (require (lib "compiler.ss" "compiler"))
+The _compiler.ss_ library defines the following functions (plus a few
+signatures).  Options that control the compiler are documented in the
+next section.
+
+ Single-file extension compilation
+ ---------------------------------
+
+>  ((compile-extensions expr) scheme-file-list dest-dir)
+
+      `(compile-extensions expr)' returns a compiler that is
+      initialized with the elaboration-time expression `expr', as
+      described below.
+
+      The compiler takes a list of Scheme files and compiles each of
+      them to an extension, placing the resulting extensions in the
+      directory specified by `dest-dir'.  If `dest-dir' is #f, each
+      extension is placed in the same directory as its source file.
+      If `dest-dir' is 'auto, each extension file is placed in a
+      "compiled/native/<PLATFORM>" subdirectory relative to the source
+      file, where <PLATFORM> is the result of
+      `system-library-subpath'. (The directory is created if
+      necessary.)
+
+      `expr' effect:
+
+       If `expr' is anything other than #f, then a namespace is
+       created for compiling the files that are supplied later; `expr'
+       is evaluated to initialize the created namespace. For example,
+       `expr' might load a set of macros. In addition, the
+       expansion-time part of each expression later compiled is
+       evaluated in the namespace before being compiled, so that the
+       effects are visible when compiling later expressions.
+
+       If `expr' is #f, then no compilation namespace is created, and
+       expressions in the files are assumed to compile independently
+       (so there's no need to evaluate the expansion-time part of an
+       expression to compile).
+
+       Typically, `expr' is #f for compiling `module' files and
+       `(void)' for compiling files with top-level definitions and
+       expressions.
+
+>  ((compile-extensions-to-c expr) scheme-file-list dest-dir)
+
+     Like `compile-extensions', but only .c files are produced, not
+     extensions.
+
+>  (compile-c-extensions c-file-list dest-dir)
+
+     Compiles each .c file (usually produced with `compile-extensions-to-c') 
+     in c-file-list to an extension.  `dest-dir' is handled as in
+     `compile-extensions'.
+
+ Multi-file extension compilation
+ ---------------------------------
+
+>  ((compile-extension-parts expr) scheme-file-list dest-dir)
+
+      `(compile-extension-parts expr)' returns a compiler that is
+      initialized with the elaboration-time expression `expr'.
+
+      See `compile-extension' above for information about the effect
+      of `expr'.
+
+      The compiler takes a list of Scheme files and compiles each of
+      them to a linkable object and a .kp (constant pool) file,
+      placing the resulting objects and .kp files in the directory
+      specified by `dest-dir'.  If `dest-dir' is #f, each object and
+      .kp file is placed in the same directory as its source file.  If
+      `dest-dir' is 'auto, each .kp file is placed in a
+      "compiled/native" subdirectory relative to the source file, and
+      each object file is placed in "compiled/native/<PLATFORM>",
+      where <PLATFORM> is the result of `system-library-subpath'. (The
+      directory is created if necessary.)
+
+>  ((compile-extension-parts-to-c expr)  scheme-file-list dest-dir)
+
+     Like `compile-extension-parts', but only .c and .kp files are
+     produced, not compiled objects. If `dest-dir' is 'auto, each
+     output file is placed in a "compiled/native" subdirectory
+     relative to the source file.
+
+>  (compile-c-extension-parts c-file-list dest-dir)
+
+     Compiles each .c file (produced with `compile-extension-parts-to-c')
+     in c-file-list to an extension.
+
+>  (link-extension-parts obj-and-kp-file-list dest-dir)
+
+     Links objects for a multi-object extension together, using .kp
+     files to generate and link pooled constants.  The objects and
+     .kp files in `obj-and-kp-file' can be in any order.  The resulting
+     extension "_loader" is placed in the directory specified by `dest-dir'.
+
+>  (glue-extension-parts obj-and-kp-file-list dest-dir)
+
+     Like `link-extension-parts', but only a "_loader" object file
+     is generated; this object file is linked with all the other
+     object files to produce the "_loader" extension.
+
+ zo compilation
+ --------------
+
+>  ((compile-zos expr) scheme-file-list dest-dir)
+
+      `(compile-zos expr)' returns a compiler that is initialized with
+      the elaboration-time expression `expr'.
+
+      See `compile-extensions' above for information about the effect
+      of `expr'.
+
+      The returned compiler takes a list of Scheme files and compiles
+      each of them to a .zo file, placing the resulting .zo files in
+      the directory specified by `dest-dir'.  If `dest-dir' is #f,
+      each .zo file is placed in the same directory as its source
+      file. If `dest-dir' is 'auto, each .zo file is placed in a
+      "compiled" subdirectory relative to the source file. (The
+      directory is created if necessary.)
+ 
+ Collection compilation
+ ----------------------
+
+>  (compile-collection-extension collection sub-collection ...)
+
+      Compiles the specified (sub-)collection to an extension
+      "_loader", putting intermediate .c and .kp files in the
+      collection's "compiled/native" directory, and object files and
+      the resulting "_loader" extension in the collection's
+      "compiled/native/PLATFORM" directory (where `PLATFORM' is the
+      system name for the current platform).
+
+      The collection compiler reads the collection's _info.ss_ file
+      (see the mzc manual for information about info.ss) to obtain
+      information about compiling the collection.  The following
+      fields are used:
+
+>      name - the name of the collection as a string.
+
+>      compile-omit-files - a list of filenames (without paths); all
+         Scheme files in the collection are compiled except for the
+         files in this list.  If a file contains elaboration time
+         expressions (e.g., macros, signatures) that are not intended
+         to be local to the file, then the file should be included in
+         this list.
+
+>      compile-extension-omit-files - a list of filenames to extend
+         the list returned for `compile-omit-files'. Unlike the list
+         returned for `compile-omit-files', this extension is not used
+         when compiling .zo files.
+
+>      compile-subcollections - a list of collection paths, where each
+         path is a list of strings. `compile-collection-extension' is 
+         applied to each of the collections.
+
+      Only the `name' field is required from info.ss.(Note: Setup PLT
+      uses this field as an indication that the collection should be
+      compiled.)
+
+      The compilation process is driven by the 'make-collection'
+      function in the "collection.ss" library of the "make"
+      collection.
+
+>  (compile-directory-extension path info-function)
+
+      Like `compile-collection-extension', but compiles the given 
+      directory rather than a collection. Also takes an info
+      function (the result of `get-info' or `get-info/full'; see 
+      the setup collection's documentation for more information)
+      that will be used to guide compilation instead of looking for
+      an info.ss file in the directory.
+
+>  (compile-collection-zos collection sub-collection ...)
+
+      Compiles the specified (sub-)collection files to .zo files.
+      The .zo files are placed into the collection's "compiled"
+      directory.
+
+      The _info.ss_ file is used as in `compile-collection-extension',
+      except for `compile-extension-omit-files'. In addition, the
+      following two fields are used:
+
+>      compile-zo-omit-files - a list of filenames to extend the
+         list returned for 'compile-omit-files.
+
+      The compilation process is driven by the `managed-compile-zo'
+      function in the "cm.ss" library of the "mzlib" collection.
+
+>  (compile-directory-zos path info-function)
+
+      Like `compile-collection-zos', but compiles the given directory
+      rather than a collection. Also takes an info function (the
+      result of `get-info' or `get-info/full'; see the setup
+      collection's documentation for more information) that will be
+      used to guide compilation instead of looking for an info.ss file
+      in the directory.
+
+
+ Loading compiler support
+ ------------------------
+
+The compiler unit loads certain tools on demand via `dynamic-require'
+and `get-info'. If the namespace used during compilation is different
+from the namespace used to load the compiler, or if other load-related
+parameters are set, then the following parameter can be used to
+restore settings for `dyanmic-require'.
+
+>  current-compiler-dynamic-require-wrapper
+
+    A parameter whose value is a procedure that takes a thunk to
+    apply. The default wrapper sets the current namespace (via
+    `parameterize') before calling the thunk; it sets it to the
+    namespace that was current at the time that the "compiler-unit.ss"
+    module was evaluated.
+
+---------------------------------------------------------------------------
+
+Options for the Compiler
+========================
+
+To set options for the _compile.ss_ extension compiler, use the
+_option.ss_ module. Options are set by the following parameters:
+
+> verbose - #t causes the compiler to print
+     verbose messages about its operations.  Default = #f.
+
+> setup-prefix - a string to embed in public names.
+     This is used mainly for compiling extensions with the collection
+     name so that cross-extension conflicts are less likely in
+     architectures that expose the public names of loaded extensions.
+     Note that `compile-collection' handles prefixing automatically
+     (by setting this option).  Default = "".
+
+> clean-intermediate-files - #t keeps intermediate
+     .c/.o files.  Default = #f.
+
+> compile-subcollections - #t uses info.ss's
+     'compile-subcollections' for compiling collections. Default = #t.
+
+> compile-for-embedded - #t creates .c files and
+     object files to be linked directly with an embedded MzScheme
+     run-time system, instead of .c files and object files to
+     be dynamically loaded into MzScheme as an extension.
+     Default = #f.
+
+> propagate-constants - #t improves the code by
+     propogating constants.  Default = #t.
+
+> assume-primitives - #t equates X with #%X when
+     #%X exists.  This is useful only with non-unitized code.
+     Default = #f.
+
+> stupid - Allow obvious non-syntactic errors; e.g.:
+    ((lambda () 0) 1 2 3).  Default = #f.
+
+> vehicles - Controls how closures are compiled.  The
+    possible values are: 'vehicles:automatic - auto-groups
+                         'vehicles:functions - groups by procedue
+                         'vechicles:units - groups by unit
+                         'vehicles:monolithic - groups randomly
+    Default = 'vehicles:automatic.
+
+> vehicles:monoliths - Sets the number of random
+    groups for 'vehicles:monolithic.
+
+> seed - Sets the randomizer seed for
+    'vehicles:monolithic.
+
+> max-exprs-per-top-level-set - Sets the number of
+    top-level Scheme expressions crammed into one C function.  Default
+    = 25.
+
+> unpack-environments - #f might help for
+    register-poor architectures.  Default = #t.
+
+> debug - #t creates debug.txt debugging file.  Default
+    = #f.
+
+> test - #t ignores top-level expressions with syntax
+   errors.  Default = #f.
+
+More options are defined by the compile.ss and link.ss libraries in
+the `dynext' collection . Those options control the actual C compiler
+and linker that are used. See doc.txt in the `dynext' collection for
+more information about those options.
+
+The _option-unit.ss_ library is a unit/sig matching the signature
+>    compiler:option^
+which contains these options. The _sig.ss_ library defines the
+`compiler:option^' signature.
+
+---------------------------------------------------------------------------
+
+The Compiler as a Unit
+======================
+
+The _compiler-unit.ss_ library provides a unit/sig 
+>      compiler@
+matching the signature
+>      compiler^ 
+which provides the compiler.ss functions.  This signature and all
+auxilliary signatures needed by compiler@ are defined by the
+_sig.ss_ library.
+
+The signed unit requires the following imports:
+
+   compiler:option^ - From sig.ss, impl by _option-unit.ss_ or _option.ss_
+   dynext:compile^ - From the `dynext' collection
+   dynext:link^
+   dynext:file^
+
+---------------------------------------------------------------------------
+
+Low-level Extension Compiler and Linker
+=======================================
+
+The high-level compiler.ss interface relies on low-level
+implementations of the extension compiler and linker.
+
+The _comp-unit.ss_ and _ld-unit.ss_ libraries define unit/sigs for the
+low-level extension compiler and multi-file linker,
+> ld@
+and
+> comp@
+respectively.
+
+The low-level compiler functions from comp@ are:
+
+> (eval-compile-prefix expr) - Evaluates an elaboration-time
+    S-expression `expr'.  Future calls to mzc:compile-XXX will see the
+    effects of the elaboration expression.
+
+> (compile-extension scheme-source dest-dir) - Compiles a
+    single Scheme file to an extension.
+
+> (compile-extension-to-c scheme-source dest-dir) - Compiles
+    a single Scheme file to a .c file.
+
+> (compile-c-extension c-source dest-dir) - Compiles a single .c
+    file to an extension.
+
+> (compile-extension-part scheme-source dest-dir) - Compiles a
+    single Scheme file to a compiled object and .kp file toward a
+    multi-file extension.
+
+> (compile-extension-part-to-c scheme-source dest-dir) - Compiles
+    a single Scheme file to .c and .kp files towards a multi-file
+    extension.
+
+> (compile-c-extension-part c-source dest-dir) - Compiles a single
+    .c file to a compiled object towards a multi-file extension.
+
+The low-level linker functions from ld@ are:
+
+> (link-extension object-and-kp-file-list dest-dir) - Links
+    compiled object and .kp files into a multi-file extension.
+
+
+Both unit/sigs requires the following imports:
+
+   dynext:compile^ - From the `dynext' collection
+   dynext:link^
+   dynext:file^
+   compiler:option^ - From sig.ss, impl by _option-unit.ss_ or _option.ss_
+
+---------------------------------------------------------------------------
+
+Embedding Scheme Code to Create a Stand-alone Executable
+========================================================
+
+The _embed.ss_ library provides a function to embed Scheme code into a
+copy of MzScheme or MrEd, thus creating a _stand-alone_ Scheme
+executable.
+
+Embedding walks the module dependency graph to find all modules needed
+by some initial set of top-level modules, compiling them if needed,
+and combining them into a "module bundle". In addition to the module
+code, the bundle extends the module name resolver, so that modules can
+be `require'd with their original names, and they will be retrieved
+from the bundle instead of the filesystem.
+
+The `make-embedding-executable' function combines the bundle with an
+executable (MzScheme or MrEd). The `write-module-bundle' function
+prints the bundle to the current output port, instead; this stream can
+be `load'ed directly by a running program, as long as the
+`read-accept-compiled' parameter is true.
+
+The _embedr-unit.ss_ library provides a signed unit, _compiler:embed@_
+that imports nothing and exports the functions below. The
+_embedr-sig.ss_ library provides the signature, _compiler:embed^_.
+
+> (make-embedding-executable dest mred? verbose? mod-list literal-file-list literal-sexpr cmdline-list [aux launcher? variant])
+  - Copies the MzScheme (if `mred?' is #f) or MrEd (otherwise) binary,
+  embedding code into the copied executable to be loaded on startup.
+  The source executable is located relative to the "mzlib" collection.
+
+  See the mzc documentation for a simpler interface that is
+  well-suited to programs defined with `module'.
+
+  The embeddeding executable is written to `dest', which is
+  overwritten if it exists already (as a file or directory).
+
+  The embedded code consists of module declaratons followed by
+  additional (arbitrary) code. When a module is embedded, every module
+  that it imports is also embedded. Library modules are embedded so
+  that they are accessible via their `lib' paths in the initial
+  namespace' except as specified in `mod-list', other modules
+  (accessed via local paths and absolte paths) are embedded with a
+  generated prefix, so that they are not directly accessible.
+
+  The `mod-list' argument designates modules to be embedded, as
+  described below. The `literal-file-list' and `literal-sexp'
+  arguments specifiy literal code to be copied into the executable:
+  the content of each file in `literal-file-list' is copied in order
+  (with no intervening space), followed by `literal-sexp'. The
+  `literal-file-list' files or `literal-sexp' can contain compiled
+  bytecode, and it's possible that the content of the
+  `literal-file-list' files only parse when concatenated; the files
+  and expression are not compiled or inspected in any way during the
+  embedding process. If `literal-sexp' is #f, no literal expression is
+  included in the executable.
+
+  The `cmdline-list' argument contains command-line strings that are
+  prefixed onto any actual command-line arguments that are provided to
+  the embedding executable. A command-line argument that evaluates an
+  expression or loads a file will be executed after the embedded code
+  is loaded.
+
+  Each element of the `mod-list' argument is a 2-item list, where the
+  first item is a prefix for the module name, and the second item is a
+  module path datum (that's in the format understood by the default
+  module name resolver). The prefix can be a symbol, #f to indicate no
+  prefix, or #t to indicate an auto-generated prefix. For example,
+
+    '((#f "m.ss"))
+
+  embeds the module `m' from the file "m.ss", without prefixing the
+  name of the module; the `literal-sexpr' argument to go with the
+  above might be '(require m).
+
+  All modules are compiled before they are embedded into the target
+  executable.
+
+  When embedding into a copy of MrEd, a "-Z" flag should usually be
+  included in the list of command-line flags, so that the target
+  executable has a chance to see an embedded declaration of (lib
+  "mred.ss" "mred"). Then, if the literal code expect to have MrEd and
+  the class library required into the top-level namespace, literal
+  `require's for thoselibraries should be included at the start.
+
+   The optional `aux' argument is an association list for
+   platform-specific options (i.e., it is a list of pairs where the
+   first element of the pair is a key symbol and the second element is
+   the value for that key). The currently supported keys are as
+   follows:
+
+      _'icns_ (Mac OS X) - an icon file path (suffix ".icns") to
+              use for the executable's desktop icon
+
+      _'ico_ (Windows) - an icon file path (suffix ".ico") to
+              use for the executable's desktop icon; the executable
+              will have 16x16, 32x32, and 48x48 icons at 4-bit,
+              8-bit, and 32-bit (RBBA) depths; the icons are
+              copied and generated from any 16x16, 32x32, and 48x48
+              icons in the ".ico" file
+
+      _'creator_ (Mac OS X) - provides a 4-character string to use as
+              the application signature.
+
+      _'file-types_ (Mac OS X) - provides a list of association lists,
+              one for each type of file handled by the application;
+              each association is a 2-element list, where the first (key)
+              element is a string recognized by Finder, and the second
+              element is a plist value (see doc.tx in the "xml" collection);
+              see plt/collects/drscheme/drscheme.filetypes for an example.
+
+      -'resource-files_ (Mac OS X) - extra files to copy into the
+              "Resources" directory of the generated executable
+
+      _'forget-exe?_ (Windows, Mac OS X) - a boolean; #t for a launcher
+              (see `launcher?' below) does not preserve the original
+              executable name for `(find-system-path 'exec-file)'; the
+              main consequence is that library collections will be
+              found relative to the launcher instead of the original
+              executable
+
+   See also `build-aux-from-path' in the "launcher" collection. The
+   default `aux' is `null'.
+
+   If `launcher?' is #t, then no `modules' should be null,
+   `literal-file-list' should be null, `literal-sexp' should be #f,
+   and the platform should be Windows or Mac OS X. The embedding
+   executable is created in such a way that `(find-system-path
+   'exec-file)' produces the source MzScheme or MrEd path instead of
+   the embedding executable.
+
+   The `variant' argument indicates which variant of the original
+   binary to use for embedding. The default is 'normal, and typically
+   the only other possibility is '3m. See `current-launcher-variant'
+   in the "launcher" collection for more information.
+
+
+> (write-module-bundle verbose? mod-list literal-file-list literal-sexpr)
+  - Like `make-embedding-executable', but the module bundle is written
+  to the current output port instead of being embedded into an
+  executable.  The output of this function can be `read' to load and
+  instantiate `mod-list' and its dependencies, adjust the module name
+  resolver to find the newly loaded modules, evaluate the forms
+  included from `literal-file-list', and finally evaluate
+  `literal-sexpr'. The `read-accept-compiled' parameter must be true
+  to read the stream.
+
+
+> (embedding-executable-is-directory? mred?) - Returns #t if
+  Mzscheme/MrEd executables for the current platform correspond to
+  directories (as on Mac OS X).
+
+
+> (embedding-executable-put-file-extension+style+filters mred?) -
+  Returns three values suitable for use as the `extension', `style',
+  and `filters' arguments to `put-file', respectively. If
+  MzScheme/MrEd launchers for this platform are directories, the
+  `style' result is suitable for use with `get-directory', and the
+  `extension' result may be a string indicating a required extension
+  for the directory name (e.g., ".app" for Mac OS X).
+
+
+> (embedding-executable-add-suffix path mred?) - Returns a path with a
+  suitable executable suffix added, if it's not present already.

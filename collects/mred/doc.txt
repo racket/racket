@@ -1,0 +1,29 @@
+
+_edit-main.ss_
+
+The edit-main.ss module does not export anything, but invoking the
+module opens an _editor_ frame or frames, based on the
+`current-command-line-arguments' parameter.
+
+In particular, from a command line
+
+   mred -mvqL edit-main.ss <filename> ...
+
+runs a simple editor program. If <filename> is an image file (suffix
+.gif, .xpm, .xbm, .bmp, or .jpg), the editor window display the image.
+
+-----------------------------------------------------------------
+
+_edit.ss_
+
+The edit.ss module exports the following function.
+
+> (new-text-frame file)
+   Creates an editor text frame, initially loading `file' if is it a
+   string. Supply #f as `file' for an initially empty editor.
+
+> (new-pasteboard-frame file)
+  Like `new-text-frame', but for a pasteboard editor.
+
+> (new-frame editor% file)
+  Takes the editor class.

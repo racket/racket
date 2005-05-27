@@ -1,0 +1,27 @@
+** To play _Blackjack_, run the "Games" application. **
+
+Standard Blackjack rules, plus the following specifics:
+
+      * 1 player (not counting the dealer)
+
+      * 4 decks, reshuffled after 3/4 of the cards are used
+
+      * Dealer stands on soft 17s
+
+      * Splitting is allowed only on the first two cards, and only if
+        they are equal; 10 and the face cards are all considered equal
+        for splitting
+
+      * Doubling is allowed on all unsplit hands, not on split hands
+
+      * No blackjacks after splitting
+
+      * No surrender
+
+      * No insurance
+
+      * No maximum under-21 hand size
+
+      * Dealer's second card is not revealed if the player busts (or
+        both halves of a split hand bust)
+

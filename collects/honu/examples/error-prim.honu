@@ -1,0 +1,4 @@
+int main() {
+  int x = if true { 3; } else { error("I shouldn't be here!"); };
+  x + 4;
+}

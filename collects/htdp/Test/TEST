@@ -1,0 +1,28 @@
+TEST: 
+----
+
+* arrow.ss
+* arrow-gui.ss
+* convert.ss
+* dir.ss 
+* docs.ss
+* draw.ss
+* elevator.ss
+* graphing.ss
+* guess.ss
+* guess2.ss
+* guess3.ss
+* gui.ss
+* lkup-gui.ss
+* hangman.ss : changed, docs
+* master.ss : changed, docs
+* pingp.ss 
+* - pingp-test-play.ss : play with a ping-pong
+* - pingp-test-trace.ss : test the two tracer interfaces
+* protect.ss
+* pingp-play.ss 
+* protect-play.ss 
+ - both are tested with pingp-play-test.ss
+ rectangle.ss
+
+Mon Oct 18 16:56:38 CDT 1999: re-organization into teachpacks

@@ -1,0 +1,76 @@
+This is the proposed pattern grammer.
+
+Asterisks mark rules that have changed.
+
+pat ::= 
+        identifier                      anything, can not be ooo
+      | _                               anything
+      | #t                              #t
+      | #f                              #f
+      | string                          a string
+      | number                          a number
+      | character                       a character
+      | 'sexp                           an s-expression
+      | 'symbol                         a symbol (special case of s-expr)
+*     | (list lvp_1 ... lvp_n)               list of n elements
+*     | (list-rest lvp_1 ... lvp_n lvp_{n+1})   list of n or more
+*     | (vector lvp_1 ... lvp_n)              vector of n elements
+*     | (box pat)                           box
+*     | (struct struct-name (pat_1 ... pat_n)) a structure
+      ;; this may be better as '$' ?     
+      | (list-no-order pat ...)         matches a list with no regard for 
+                                        the order of the
+                                        items in the list
+      | (list-no-order pat ... pat_n ooo) pat_n matches the remaining 
+                                          unmatched items
+      | (hash-table pat ...)            matches the elements of a hash table
+      | (hash-table pat ... pat_n ooo)  pat_n must match the remaining 
+                                        unmatched elements
+*     | (app field pat)                   a field of a structure (field is 
+                                          an accessor)
+                                        Actually field can be any function 
+                                        which can be
+                                        applied to the data being matched.
+                                        Ex: (match 5 ((= add1 b) b)) => 6
+
+      | (and pat_1 ... pat_n)           if all of pat_1 thru pat_n match
+      | (or pat_1 ... pat_n)            if any of pat_1 thru pat_n match
+      | (not pat_1 ... pat_n)           if all pat_1 thru pat_n don't match
+*     | (? predicate pat_1 ... pat_n)   if predicate is true and all of
+                                         pat_1 thru pat_n match
+      | (set! identifier)               anything, and binds setter
+      | (get! identifier)               anything, and binds getter
+      | `qp                             a quasi-pattern
+
+lvp ::= pat ooo                         greedily matches n or more of pat, 
+                                        each element must match pat
+      | pat                             matches pat
+
+ooo ::= ...                             zero or more
+      | ___                             zero or more
+      | ..k                             k or more
+      | __k                             k or more
+
+        quasi-patterns:                 matches:
+
+qp  ::= ()                              the empty list
+      | #t                              #t
+      | #f                              #f
+      | string                          a string
+      | number                          a number
+      | character                       a character
+      | identifier                      a symbol
+      | (qp_1 ... qp_n)                 list of n elements
+      | (qp_1 ... qp_n . qp_{n+1})      list of n or more
+      | (qp_1 ... qp_n qp_n+1 ooo)      list of n or more, each element
+                                          of remainder must match qp_n+1
+      | #(qp_1 ... qp_n)                vector of n elements
+      | #(qp_1 ... qp_n qp_n+1 ooo)     vector of n or more, each element
+                                          of remainder must match qp_n+1
+      | #&qp                            box
+      | ,pat                            a pattern
+      | ,@(lvp . . . lvp-n)
+      | ,@(lvp-1 . . . lvp-n . lvp-{n+1})
+      | ,@`qp                           qp must evaluate to a list as 
+                                        so that this rule resembles the 
+                                        above two rules

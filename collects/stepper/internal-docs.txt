@@ -1,0 +1,242 @@
+This file summarizes certain aspects of the operation of the stepper.
+
+The Stepper's use of syntax-property:
+
+In order to make macro-unwinding possible, the stepper adds
+syntax-properties to elaborated code which then informs the
+reconstruction process about how certain macros were originally
+formed.  
+
+In fact, the truth is slightly more complicated, because there are
+two rounds of macro-expansion for a program written in a teaching
+language.  First, the program is expanded according to the 
+macro definitions contained in the "lang" collection.  Then, the
+code is expanded according to the macro definitions built into
+mzscheme.  So, for instance, a beginner 'cond' expands into a
+mzscheme 'cond' which expands into a nested series of 'if's.  
+
+Correspondingly, the stepper's addition of syntax properties is broken
+into two parts; those added for the beginner macros, and those added
+for the mzscheme macros.  However, since it is harder to alter the
+macro expansion which occurs in mzscheme, the latter set are added not
+during the actual macro expansion in mzscheme but as part of a pass
+over the code that occurs in the annotater between expansion and the
+main annotation.  This procedure is called 'top-level-rewrite'.
+
+Therefore, the stepper's syntax-property additions occur in two
+textual locations: collects/lang/private/teach.ss, and
+collects/stepper/private/annotate.ss (with a few stray ones 
+in collects/lang/private/teachhelp.ss).
+
+Also, in order to be visible to the reconstructor, these properties
+must be explicitly transferred from the annotated source code syntax
+to the reconstructed syntax. This is accomplished by the 'attach-info'
+procedure in reconstruct.ss.  Note that in the process, these properties
+are given names that have "user-" prepended to them.  This now seems 
+like a strange decision.
+
+Finally, the astute reader may wonder why I need to add things like
+'comes-from-or, since the expression that results from the expansion
+of 'or' has a corresponding 'or' element in its 'origin field.  The
+reason is that this element appears only on the outermost expression
+in the expansion, and during runtime reconstruction, this outermost
+expression may be gone.
+
+Here are the syntax properties added, the values they may be
+associated with, their meanings, whether they're transferred
+by attach-info, and where they're used:
+
+stepper-skip-completely :
+ [ #t ] : this code should not be annotated at all.  In general, this
+ means it therefore be invisible to the reconstructor. (Not
+ transferred.) Actually, the code is wrapped with a dummy mark,
+ just to make sure that other marks get properly obliterated.
+
+ Note that skipping an expression can turn a sensible expression into
+ a nonsensical one.  This is where the 'expressions are lists of 
+ subexpressions' abstraction and the 'expressions are one of A...Z'
+ abstraction part ways. 
+
+ Uses:
+ - applied to the check of the test-variable in the expansion of the
+   'or' macro. 
+ - applied to the expansion of the primitives defined with 
+   'define-primitive'.
+ - applied to the 'make-generative-lambda' inserted by teach.ss
+ 
+stepper-hint : 
+ this is the most generally applied syntax property.  In general, it
+ informs the reconstructor what macro this source expression came
+ from. 
+
+ See notes below about 'being careful with stepper-hint'.
+
+(Transferred.)
+
+ [ 'comes-from-cond ] : similarly, this expression came from a use
+ of 'cond'. This tag is applied to all the if's, but not to the else
+ clause.
+
+ [ 'comes-from-let* ] : expression was expanded from let*
+ [ 'comes-from-local ] : expression was expanded from local
+
+ [ 'from-xml-box ] : expression was expanded from an xml box
+ [ 'from-scheme-box ] : expression was expanded from a scheme box
+                        (inside an xml box)
+ [ 'from-splice-box ] : expression was expanded from a scheme splice
+		        box (inside an xml box)
+ [ 'comes-from-recur ] : expression was expanded from a 'recur'
+
+stepper-define-type: 
+ this is attached to the right-hand sides of defines to indicate what
+ kind of define they came from. 
+
+ [ 'shortened-proc-define ] : this lambda arose from the expansion
+    of (define (id arg ...) body).  N.B.: anything tagged with this 
+    property must also have a 'stepper-proc-define-name
+    property.
+
+ [ 'lambda-define ] : this lambda arose from the expansion of 
+    (define id (lambda (
+
+
+
+  (Transferred.)
+
+ Question 1: why the right-hand side?  Why not on the define itself?
+ A: because for certain kinds of define (namely those in a local),
+    the define itself evaporates into an internal define which is then
+    expanded in a mzscheme-native expansion into a letrec.
+
+ Question 2: won't the right-hand side change, losing the mark?  
+ A: yes it will, but not for definitions of lambdas.  Since there
+    are three cases we need to distinguish, and two of them are
+    definitions of lambdas, we can distinguish the third case
+    by its lack of a stepper-define-type mark.
+
+ Question 3: what if, through reduction, a different expression
+  than the original one shows up ... which _does_ have one of the
+  two stepper-define-type marks?
+ A: to prevent this, there's another syntax-property, 
+    'stepper-proc-define-name, which indicates the identifier to which
+    this procedure was originally bound.  In the absence of set!,
+    this solves the problem.
+
+stepper-xml-hint : indicates whether this expression came from an 
+xml-box.  The protocol is as follows:
+
+ [ 'from-xml-box ] : attached to the outer application that wraps
+   the result of expanding an xml-box
+
+ [ 'from-scheme-box ] : attached to the (begin ...) that wraps
+   the result of expanding a scheme-box
+
+ [ 'from-splice-box ] : attached to the (qq-append ...) that wraps
+   the result of expanding a splice-box
+
+  (Transferred.)
+
+stepper-xml-value-hint : like the stepper-xml-hint, used to indicate
+   values that are the result of evaluating xml boxes.  The reason
+   this cannot be the same as the stepper-xml-hint property is that
+   the stepper-xml-hint property is one of the "attached" ones which
+   follows the source syntax around.  This means that instances of this
+   property used to signal values that are the result of xml-box
+   evaluation get stomped by the stepper-xml-hint values attached to the
+   source.
+
+ [ 'from-xml-box ] : this value is the result of evaluating an xml 
+   box.
+
+stepper-proc-define-name : stores the name to which a procedure
+   defined with the (define (fn arg ...) body) was bound.
+
+  (Transferred.)
+
+stepper-orig-name: attached to an uninterned symbol used by
+   the expansion of define so that the stepper can compare the
+   name attached to a lambda to the name of a definition.
+
+  (Not transferred.)
+
+stepper-prim-name: 
+ this is attached to the expansion of primitives introduced with the
+ 'define-primitive' form. Its value indicates what name to give to
+ the source term at reconstruction time. 
+
+stepper-binding-type : 
+ this is actually unrelated to macro expansion. It differentiates
+ between the various kinds of lexical bindings. (Not transferred.)
+
+ [ 'macro-bound ] : this variable's binding was inserted by a macro
+ [ 'let-bound ] : this variable's binding was in a let/*/rec
+ [ 'lambda-bound ] : this variable's binding was in a lambda
+
+stepper-and/or-clauses-consumed : 
+ indicates the number of clauses to the left of the one associated
+ with a given 'if' in the expansion of an 'and' or 'or'.
+ This allows the stepper to reconstruct a partially evaluated
+ 'and' or 'or' with the right number of 'true's or 'false's 
+ in front.
+ (Transferred.)
+
+stepper-skipto : 
+ this instructs the annotater to look inside the current expression
+ along a given path for the expression to be annotated.  In
+ particular, the value bound to stepper-skipto must be a list whose
+ elements are car, cdr, or syntax-e. (Not transferred)
+
+Some uses:
+ - applied to the 'check-undefined' check added on local-bound variables.
+ - applied to the spurious 'let' that's wrapped around a local.
+
+Where it's used: the stepper-skipto label is used by the 2nd-pass
+macro-labeler and the annotater.  Both are in annotate.ss.  In addition
+to skipping inward, a stepper hint 
+
+stepper-else : 
+ [ #t ] : Initially applied to the 'true' that the cond macro
+  replaces a beginner's 'else' with, it is later transferred
+  to the 'if' wrapping that 'true'.  This is because there is no
+  place to annotated the cond that is passed to mzscheme's
+  expander which will result in an annotation on the 'if.'
+  Note that it cannot be applied simply to the 'true' itself,
+  because then, when you reduce to the then, the mark on the
+  test (that is, the (#%datum . true)) is gone.
+  (Transferred.)
+
+stepper-define-struct-hint :
+  this expression came from a define-struct. The value associated with
+  this label is the syntax-object representing the define-struct itself.
+
+stepper-test-suite-hint :
+  this expression was the expression being tested in a test-suite-tool
+  test.  this hint indicates to the annotater that the expression should
+  be annotated, even though it's not in one of the expected top-level
+  shapes.
+
+STEPPER-HINT COLLISIONS
+
+ The major concern with the stepper-hint is that two of them may
+ collide.  My claim that this never happens is founded on the following
+ reasoning, KNOWN NOT TO BE RIGOROUS.
+
+ 0) Tags are attached only to expressions that are produced fresh as
+ the result of a macro expansion. (For instance, the 'if' that is
+ the result of the expansion of 'and'.)
+
+ 1) except in the circumstances listed below, the expressions with tags 
+ attached to them are not themselves macro invocations.
+
+ Q.E.D.
+
+ exceptions:
+ 
+1) the beginner cond expands into the mzscheme cond, which is 
+then annotated by the top-level-rewrite. In this case, the expansion
+of the beginner cond does not add any stepper-hint properties, so no
+collision can occur.
+
+2) the intermediate let* expands into the beginner let; both add a 
+stepper-hint.  To resolve this, the expansion of let allows an existing
+stepper-hint to stand.

@@ -1,0 +1,296 @@
+_Honu_
+
+_TODO_
+
+  * At the moment you can only apply method references or lexically
+    bound variables to arguments in order to invoke a function or
+    method.  The syntax will be reworked in the extremely near future
+    to allow application of arbitrary expressions (assuming they
+    result in a method or function type) to arguments.
+
+  > Rewrite TODO list in terms of interfaces (not implementations) 
+    The next bullet is a prime example. I have added a second bullet to
+    show what I mean. -- MF
+
+  * Fix up honu-mcall and honu-new in honu-typecheck-exp.ss to use
+    type context argument.
+  
+  * Admit statements as elements of mixin bodies, i.e., 
+
+     struct ExamplesC() : Examples {
+      IStack s0 = new StackC();
+      int d0 = s0.depth();
+      s0.push(s0);
+     }
+
+    should work. -- MF
+
+  * Work out details of standard library, including boxed versions of
+    primitive types.
+
+  * Let's use _string_ for _str_. (In principle we should probably use
+    String eventually, if it becomes a class.) 
+
+  * If you do have a standard library, document it please. -- MF 
+
+  * Let's add arrays. 
+
+  * Add new statement that uses positional initialization arguments.
+
+  * Add autoboxing of primitive types.
+
+  * Add generics (parametric polymorphism and bounded polymorphism).
+    RESEARCH! 
+
+_Primitive types_
+
+  int   - integers
+  float - floating point numbers
+  str   - strings    (double quoted)
+  bool  - booleans   (true, false)
+  char  - characters (single quoted)
+
+_Built-in functions_
+
+Error reporting:
+
+> error(str message) => 'a
+    - Raises an error and prints the string as an error message.
+    - Calls to error() do not return.
+
+Input/output:
+
+> printStr(str message) => void
+    - Takes a string and prints it on the standard output.
+
+> printLine(str message) => void
+    - Like printStr, but prints a newline after printing the string.
+
+> readChar() => char
+    - Reads a single character from the standard input.
+
+> readLine() => str
+    - Reads a line of text from the standard input.
+
+Conversions to string:
+
+> intToStr(int val) => str
+    - Converts an integer to a string.
+
+> floatToStr(float val) => str
+    - Converts a floating point number to a string.
+
+> charToStr(char val) => str
+    - Converts a character to a string.
+
+String conversions:
+
+> strToInt(str val) => int
+    - Converts a string to an integer.
+    - Raises an error if the string cannot be converted.
+
+> strToFloat(str val) => float
+    - Converts a string to a floating point number.
+    - Raises an error if the string cannot be converted.
+
+String operations:
+
+> strLen(str s) => int
+    - Takes a string and returns the string length.
+
+> substr(str s, int start, int end) => str
+    - Takes a string, a start index, and an end index and
+      returns the corresponding substring.
+    - The indexes are zero-based.
+    - The start index cannot be negative or greater than the end index.
+    - The end index must be less than or equal to the string length.
+
+> charAt(str s, int i) => char
+    - Takes a string and an index into the string and returns
+      the corresponding character.
+    - The zero-based index cannot be negative and must be less
+      than the string length.
+
+_Grammar_
+
+NOTE: Since I want to use parentheses to mean "real" parentheses, I use
+      square brackets for grouping inside of rules.
+
+<program>  ::= <defn>*
+
+<defn>     ::= <function>
+             | <type>
+             | <class>
+             | <mixin>
+             | <subclass>
+
+<function> ::= <tid> <id> ( <argdecls> ) <block>
+
+<type>     ::= type <id> <extends> { <mfdecl>* }
+             | interface <id> <extends> { <mfdecl>* }
+
+<tid>      ::= <ifacet>
+             | <primtype>
+             | <funtype>
+
+<funtype>  ::= [ <typetup> ] -> <tid>
+
+NOTE: The above are literal braces as opposed to the meta-braces.
+      This is the only place they occur right now.
+
+<typetup>  ::= <tid> [, <tid>]*
+             |
+
+<ifacet>   ::= id
+             | Any
+
+<primtype> ::= int
+             | float
+             | bool
+             | str
+             | char
+             | void
+
+<extends>  ::= extends <ifacet> [, <ifacet>]*
+             | <: <ifacet> [, <ifacet>]*
+             |
+
+<mfdecl>   ::= <tid> <fdid> ;
+             | <tid> <mdid> ( <argdecls>* ) ;
+
+<argdecls> ::= <argdecl> [, <argdecl>]*
+             |
+
+<argdecl>  ::= <tid>
+             | <tid> <varid>
+
+<struct>   ::= struct <id> <initargs> : <ifacet> <sctbody>
+             | final struct <id> <initargs> : <ifacet> <sctbody>
+
+<class>    ::= class <id> <initargs> : <ifacet> <impls> <clsbody>
+             | final class <initargs> <id> : <ifacet> <impls> <clsbody>
+
+<mixin>    ::= mixin <id> <initargs> : <ifacet> <argtype> <impls> <mixbody>
+             | final mixin <id> <initargs> : <ifacet> <argtype> <impls> <mixbody>
+
+<subclass> ::= subclass <id> = <id> ( <id> ) ;
+             | subclass <id> <initargs> : <ifacet> <scexts> <impls> <mixbody>
+             | final subclass <id> <initargs> : <ifacet> <scexts> <impls> <mixbody>
+
+<initargs> ::= ( <tid> <id> [, <tid> <id>]* )
+             | ( )
+
+<scexts>   ::= extends <id> <argtype>
+
+<argtype>  ::= at <ifacet>
+             | @ <ifacet>
+
+<impls>    ::= implements <ifacet> [, <ifacet>]*
+             | impl <ifacet> [, <ifacet>]*
+             |
+
+<sctbody>  ::= { <mfidefn>* }
+
+<clsbody>  ::= { <mfidefn>* <export>* }
+
+<mixbody>  ::= { <mfidefn>* <supernew> <mfidefn>* <export>* }
+
+<mfidefn>  ::= init <tid> <id> ;
+             | init <tid> <id> = <expr> ;
+             | <tid> <id> = <expr> ;
+             | <tid> <id> ( <argdefns> ) <block>
+
+<supernew> ::= super_new( <newargs> ) ;
+
+<argdefns> ::= <argdefn> [, <argdefn>]* 
+             |
+
+<argdefn>  ::= <tid> <id>
+
+<newargs>  ::= <newarg> [, <newarg>]*
+             |
+
+<newarg>   ::= <id> = <expr>
+
+<export>   ::= export <ifacet> : <renames> ;
+
+<renames>  ::= <rename> [, <rename>]*
+
+<rename>   ::= <id>
+             | <id> as <id>
+
+<expr>     ::= <literal>
+             | <lambda>
+             | <id>
+             | <id> = <expr>
+             | <id> ( <exprs-cd> )
+             | this
+             | <expr> : <ifacet>
+             | <expr> isa <ifacet>
+             | if <expr> <block> else <block>
+             | while <expr> <block>
+             | new <id> : <ifacet> ( <newargs> )
+             | new <id> ( <newargs> )
+             | ! <expr>
+             | - <expr>
+             | <expr> || <expr>
+             | <expr> && <expr>
+             | <expr> == <expr>
+             | <expr> != <expr>
+             | <expr> ==== <expr>
+             | <expr> < <expr>
+             | <expr> > <expr>
+             | <expr> <= <expr>
+             | <expr> >= <expr>
+             | <expr> + <expr>
+             | <expr> - <expr>
+             | <expr> * <expr>
+             | <expr> / <expr>
+             | <expr> % <expr>
+             | <expr> . <id>
+             | <expr> . <id> = <expr>
+             | <expr> . <id> ( <exprs-cd> )
+             | ( <expr> )
+             | <block>
+
+NOTE: Here's the precedence and associativity of things above.
+      Top is most strongly binding, bottom is least.  Things on
+      the same line have same precedence.  The : below refers to
+      casting, and the = is for assignment.  else requires a
+      precedence to avoid shift/reduce errors, even though we
+      don't have the dangling else problem.
+
+   LEFT   |   RIGHT  |  NONASSOC
+----------+----------+-----------
+    .     |          |
+          |  :  isa  |
+          |          | !, - (un)
+   * / %  |          |
+   +  -   |          |
+          |          | < <= > >=
+          |          |   ====
+  ==  !=  |          |
+    &&    |          |
+    ||    |          |
+    =     |          |
+   else   |          |
+
+<lambda>   ::= fun ( <argdecls> ) <block>
+
+<exprs-cd> ::= <expr> [, <expr>]*
+             | <expr>
+
+<literal>  ::= <intlit>
+             | <floatlit>
+             | true
+             | false
+             | <strlit>
+             | <charlit>
+
+<block>    ::= { <vardefn>* <expr-sc>+ }
+
+<vardefn>  ::= <tid> <id> = <expr> ;
+
+<expr-sc>  ::= <expr> ;
+             | return ;
+             | return <expr> ;

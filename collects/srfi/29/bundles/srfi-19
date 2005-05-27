@@ -1,0 +1,30 @@
+;; -*- scheme -*-
+( ;; weekday abbreviations
+ (sun . "Sun") (mon . "Mon") (tue . "Tue") (wed . "Wed")
+ (thu . "Thu") (fri . "Fri") (sat . "Sat")
+
+ ;; long weekdays
+ (sunday . "Sunday") (monday . "Monday") (tuesday . "Tuesday")
+ (wednesday . "Wednesday") (thursday . "Thursday") (friday . "Friday")
+ (saturday . "Saturday")
+
+ ;; month abbrevs
+ (jan . "Jan") (feb . "Feb") (mar . "Mar") (apr . "Apr")
+ (may . "May") (jun . "Jun") (jul . "Jul") (aug . "Aug")
+ (sep . "Sep") (oct . "Oct") (nov . "Nov") (dec . "Dec")
+
+ ;; long month
+ (january . "January") (february . "February") (march . "March") (april . "April")
+ (may . "May") (june . "June") (july . "July") (august . "August")
+ (septembre . "September") (octuber . "Octuber") (november . "November") (december . "December")
+
+ (pm . "PM") (am . "AM")
+
+ (date-time . "~a ~b ~d ~H:~M:~S~z ~Y")
+ (date . "~m/~d/~y")
+ (time . "~H:~M:~S")
+ (iso8601 . "~Y-~m-~dT~H:~M:~S~z")
+ (separator . ".")
+ 
+ 
+ )

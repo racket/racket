@@ -1,0 +1,15 @@
+When the doc/help subcollection is installed, the installer creates
+an hdindex file.  See plt/collects/help/doc.txt for information about
+the structure of such files.
+
+To create index entries for Help Desk servlets, put 
+anchor entries of the form
+
+  (A ((NAME "name") (VALUE "Index entry")))
+
+on a single line in the Scheme source.  The NAME attribute
+can be any string that is unique among such anchors in that
+file, though of course it should be mnemonic.  The VALUE
+attribute is used as the index entry that is matched against 
+search strings in Help Desk, and appears again as the 
+link caption in the Help Desk search results.

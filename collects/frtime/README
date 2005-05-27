@@ -1,0 +1,67 @@
+
+This directory contains the source code for FrTime.
+
+To run the animation/GUI demos, simply set the language level to
+FrTime, open the corresponding file, and Execute.  See the demo source
+code for more information.
+
+orbit-mouse.ss : A collection of balls that move in circles around
+the mouse pointer.
+
+piston.ss : Simulation of a piston/cylinder.
+
+rotation.ss : Balls moving in circles.
+
+delay-mouse.ss : A trail of balls following the mouse.
+
+ball-on-string.ss : A ball chasing the mouse.
+
+pong.ss : A simple pong/air-hockey game.  The left paddle moves with
+numeric keypad; the right paddle moves with the mouse.  The 'r' key
+resets the score.
+
+net-pong-*.ss : A networked version of the pong/air-hockey game.
+Currently known to work under Linux.  To play, open the client on one
+machine and the server on another.  Execute both (and require if
+necessary, depending on language level).  Evaluate (self) on each.
+Results will be something like:
+
+[client]
+> (self)
+#3(tid 128.148.38.2:1180 main)
+
+and
+[server]
+> (self)
+#3(tid 128.148.33.71:1178 main)
+
+Now tell each machine about the other:
+[client]
+> (set-cell! server (make-tid '128.148.33.71 1178 'frtime-heart))
+
+[server]
+> (set-cell! client (make-tid '128.148.38.2 1180 'frtime-heart))
+
+Note the differences between the #3(tid ...) output and the (make-tid ...)
+commands---there is no colon (:) between the host and port, and main becomes
+'frtime-heart.
+
+After setting the cells, complete the connection by clicking the left
+mouse button in both animation windows.  The player running the server
+can reset the score by pressing 'r'.
+
+pizza.ss : A simple "pizza ordering" user interface based on an HtDP
+exercise.
+
+calculator.ss : A simple calculator interface, also based on an HtDP
+exercise except that the result updates continuously as the arguments
+and operator change.
+
+Robb Cutler's Examples
+
+analog-clock.ss : An animated real-time clock.  A slider adjusts the radius
+of the face.  Click and drag to move the face around.
+
+growing-points.ss : A field of points that grow as the mouse approaches.
+
+needles.ss : A field of needles that point at the mouse.

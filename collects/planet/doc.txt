@@ -1,0 +1,404 @@
+_PLaneT_
+
+The PLaneT Module Repository Interaction Collection
+
+The PLaneT system is a method for automatically sharing code packages,
+both as libraries and as full applications, that gives every user of a
+PLaneT client the illusion of having a local copy of every code
+package on the server, but is parsimonious in its transmission. It
+consists of a centralized server that holds all packages and
+individual clients that hold some portion of the archive
+locally. Maintenance of that archive should be transparent, and is the
+complete responsibility of the PLaneT client.
+
+The PLaneT client receives user requests (i.e., the (require (planet
+...)) forms) and loads the appropriate modules in response. In the
+course of handling these requests it may download new code packages
+from the PLaneT server.
+
+The structure of user PLaneT invocations is listed below.
+
+PLANET-REQUEST ::= (planet FILE-NAME PKG-SPEC [PATH ...]) 
+FILE-NAME      ::= string
+PKG-SPEC       ::= string | (FILE-PATH ... PKG-NAME) | (FILE-PATH ... PKG-NAME VER-SPEC)
+VER-SPEC       ::= Nat | (Nat MINOR) 
+MINOR          ::= Nat       ; the specified revision or above
+                 | (Nat Nat) ; a revision between the two specified numbers (inclusive)
+                 | (= Nat)   ; exactly the revision specified
+                 | (+ Nat)   ; the specified revision or above
+                 | (- Nat)   ; the specified revision or below
+FILE-PATH      ::= string    ; the path to the given package in the repository
+PKG-NAME       ::= string
+OWNER-NAME     ::= string
+PATH           ::= string    ; the subdirectory path to the specified file within the package
+
+All strings must be legal filename strings.
+
+When encountered, a planet-request is interpreted as requiring the
+given file name from the given logical package, specified by the
+client's host language (automatically deduced by the client), the
+package spec and the collection specification, if given. If no
+VER-SPEC is provided, the most recent version is assumed. If no
+owner-name/path ... clause is provided, the default package is
+assumed.
+
+_config.ss_: client configuration
+
+This file provides several parameters useful for configuring how
+PLaneT works. 
+
+Parameters:
+
+> (PLANET-SERVER-NAME) -> string
+> (PLANET-SERVER-NAME string) -> void
+
+The name of the PLaneT server to which the client should connect if it
+needs to fetch a package. The default value for this parameter is
+"planet.plt-scheme.org".
+
+> (PLANET-SERVER-PORT) -> Nat
+> (PLANET-SERVER-PORT Nat) -> void
+
+The port on the server the client should connect to. The default value
+for this parameter is 270.
+
+> (PLANET-DIR) -> directory-string
+> (PLANET-DIR directory-string) -> void
+
+The root PLaneT directory. Default is the directory in which config.ss
+is found.
+
+> (CACHE-DIR) -> directory-string
+> (CACHE-DIR directory-string) -> void
+
+The root of the PLaneT client's cache directory.
+
+> (LINKAGE-FILE) file-string
+> (LINKAGE-FILE file-string) -> void
+
+The file to use as the first place PLaneT looks to determine how a
+particular PLaneT dependence in a file should be satisfied. The
+contents of this file are used to ensure that no "magic upgrades"
+occur after a package is installed. The default is the file "LINKAGE"
+in the root PLaneT directory.
+
+> (LOG-FILE) -> file-string or #f
+> (LOG-FILE [file-string or #f]) -> void
+
+If #f, indicates that no logging should take place. Otherwise
+specifies the file into which logging should be written. The default
+is the file "INSTALL-LOG" in the root PLaneT directory.
+
+Note that while these parameters can be useful to modify
+programmatically, PLaneT code runs at module-expansion time and so
+most user programs cannot set them until PLaneT has already
+run. Therefore to meaningfully change these settings it is best to
+manually edit the config.ss file.
+
+_util.ss_
+
+utility functions
+
+The functions in this module support examination of the pieces of
+PLaneT. They are meant primarily to support debugging and to allow
+easier development of higher-level package-management tools.
+
+> (current-cache-contents) -> ((string ((string ((nat (nat ...)) ...)) ...)) ...)
+
+Returns a listing of all package names and versions installed in the
+local cache.
+
+> (current-linkage) -> ((filename (package-name nat nat) ...) ...)
+
+Gives the current linkage table.
+
+> (make-planet-archive directory [file-string]) -> file-string
+
+Makes a .plt archive file suitable for PLaneT whose contents are all
+files in the given directory and returns that file's name.  If the
+optional filename argument is provided, that filename will be used as
+the output file's name.
+
+> (remove-pkg owner name major-version minor-version) -> void
+
+Removes the specified package from the local planet cache. Owner and
+name must be strings; major-version and minor-version must be natural
+numbers and major-version must be greater than zero.
+
+> (unlink-all) -> void
+
+Removes the entire linkage table from the system, which will force all
+modules to relink themselves to PLaneT modules the next time they run.
+
+
+_The PLaneT search order_
+-------------------------
+
+PLaneT has three strategies it uses to match a request with an appropriate
+package that it tries in order.
+
+1. Previous linkage
+
+Whenever a file requires a package via PLaneT and that requirement is
+satisfied, the system makes a note of exactly which package satisfied
+that requirement and from then on always uses that exact same package,
+even if a newer version is available. This is done to prevent "magic
+upgrades" in which a program stops working after installation because
+an unrelated package was installed. Such connections are called links
+and are stored in a user-specific table called the linkage table.
+
+2. Acceptable local package
+
+If the PLaneT client doesn't have any previous linkage information,
+it checks its list of already-installed PLaneT packages for one that
+meets the requirement, and uses it if available.
+
+3. Acceptable remote package
+
+If there is no acceptable local package, the PLaneT client sends 
+a request to the PLaneT server for a new package that would satisfy
+the requirement. The server then finds the newest matching package
+and sends it back to the client, which then installs it and uses
+it to satisfy the original requirement.
+
+_The planet command-line tool_
+------------------------------
+
+The planet command-line tool allows you to examine and manipulate your
+local planet cache and linkage table. It has several modes (only one
+of which may be used in a single invocation):
+
+-f, --file <plt-file> <owner> <maj> <min>
+
+Install local file <plt-file> as though it had been downloaded from
+the planet server. The installed package has path (planet (<owner>
+<plt-file's filename> <maj> <min>)), where maj and min are natural
+numbers and maj is greater than 0.
+
+-c, --create-archive <path>
+
+Create a PLaneT archive in the current directory whose contents are
+the directory <path>
+
+-i, --install <owner> <pkg> <maj> <min>
+
+Download and install the package that 
+(require (planet "file.ss" (<owner> <pkg> <maj> <min>))
+would install. In this mode, min can be any s-expression that
+the (require (planet ...)) form can interpret, not just a natural
+number.
+
+-r, --remove <owner> <pkg> <maj> <min>
+
+Remove the specified package from the local cache.
+
+-p, --packages
+
+List the packages installed in the local cache.
+
+-l, --linkage
+
+List the current linkage table
+
+-U, --unlink-all
+
+Clear the linkage table, unlinking all packages and allowing upgrades.
+
+_Distributing Packages with PLaneT_
+-----------------------------------
+
+To put a package on PLaneT, or release an upgrade to an
+already-existing package:
+
+1. PREPARE A DIRECTORY
+
+Make sure that all source files, documentation, etc. that you want to
+be a part of the package are in a single directory and its
+subdirectories. Furthermore make sure that nothing else, e.g. unneeded
+backup files, is in that directory (with the exception that the
+subdirectories and files CVS or Subversion creates are allowed).
+
+For instance, in the following directory tree, my-app/ is set up
+appropriately:
+
+home/
+  ...
+  jacob/
+  ...
+    my-app/
+      doc.txt
+      my-app.ss
+      graphic-for-my-app.png
+      private/
+         implementation.ss
+
+There are no strict requirements for what sorts of files can go in
+your package, but for it to work well with PLT Scheme's module
+system you should arrange your Schme code into modules.
+
+2. CREATE INFO.SS AND DOC.TXT FILES [OPTIONAL]
+
+If you put a file named info.ss in your package's root directory, the
+PLaneT system will look in it for descriptive metadata about your
+package. The PLaneT system looks for certain names in that file:
+
+The _'blurb field_
+
+If present, the blurb field should contain a list of XHTML fragments 
+encoded as x-expressions (see the xml collection for details) that
+PLaneT will use as a short description of your project. This field
+is also used by the Help Desk.
+
+The _'categories field_
+
+If present, the categories field should be a list of symbols 
+corresponding to the categories under which this package should be listed.
+The valid categories are:
+
+Symbol         Description
+------         -----------
+devtools       Development Tools
+net            Networking and Protocols
+media          Graphics and Audio
+xml            XML-Related
+datastructures Data Structures and Algorithms
+io             Input/Output and Filesystem
+scientific     Mathematical and Scientific
+system         Hardware/Operating System-Specific Tools
+ui             Textual and Graphical User Interface
+metaprogramming Metaprogramming Tools
+planet         PLaneT-Related
+misc           Miscellaneous
+
+If you put symbols other than these the categories field, they will be
+ignored. If you put no legal symbols in the categories field or do not
+include this field in your info.ss file, your package will be
+categorized as "Miscellaneous."
+
+The _'doc.txt field_
+
+If present, the doc.txt field should be a string corresponding to the
+name (without path) of the text documentatation file for your
+package. If this field is the value "doc.txt" and a file called
+"doc.txt" exists in your package's root directory, it will be used as
+the online documentation visitors to the planet.plt-scheme.org website
+will be able to read.
+
+The _'html-docs field_
+
+If present, this field should be a list of strings representing
+subdirectories of your package. These directories will be used by
+Help Desk as HTML documentation for your package. See
+_Creating Help Desk Documentation in HTML format_ for more information
+on how to useful HTML Help Desk documentation.
+
+The _'homepage field_
+
+If present, the URL field should be a string corresponding to a URL
+for the package. PLaneT provides this link with the description of your
+package on the main PLaneT web page.
+
+The _'primary-file field_
+
+If present, the primary-file field should be a string corresponding to
+the name (without path) of the main Scheme source file of your
+package. PLaneT will direct casual users of your library to require
+this file.
+
+The _'version field_
+
+If present, the version field should describe the version number
+of this code that should be presented to users (e.g., "0.15 alpha").
+This field does not override or in any way interact with your package's
+package version number, which is assigned by PLaneT, but may be useful
+to users.
+
+
+In addition, PLaneT uses the setup-plt installer to install packages
+on client machines, so most fields it looks for can be included with
+their usual effects. In particular, adding a name field indicates that
+the Scheme files in the package should be compiled during
+installation; it is probably a good idea to add it.
+
+An example info.ss file looks like this:
+
+(module info (lib "infotab.ss" "setup")
+  (define name "My Application")
+  (define blurb
+    (list "My application runs 60% faster on 20% less peanut "
+	  "butter. It even shows a fancy graphic!"))
+  (define primary-file "my-app.ss")
+  (define doc.txt '("doc.txt"))
+  (define categories '(system xml)))
+
+See the PLT mzc: MzScheme Compiler Manual, chapter 7 for more
+information on info.ss files.
+
+The other special file PLaneT looks for in the root directory of your
+package is doc.txt. Its contents should be documentation for your
+package. Its contents will be available as a link on your package's
+listing on the PLaneT web page.
+
+3. BUILD A .PLT FILE
+
+Use the planet command-line tool in its archive-creation mode to
+create a planet archive:
+
+  planet --create-archive /home/jacob/my-app/
+
+This will create a planet archive named my-app.plt in the current
+directory whose contents are the contents of /home/jacobm/my-app and
+all its subdirectories. 
+
+Alternately, you can run the function make-planet-archive from the
+util.ss module in the planet collection with the name of the directory
+you've prepared as its argument:
+
+  (make-planet-archive "/home/jacob/my-app/")
+
+This function will build a packaged version of your directory and
+return the path to that package. The path will always be a file named
+X.plt, where X is the name of the directory you gave to
+make-planet-archive, located in that same directory.
+
+You can now test that your .plt file works as intended using the
+planet command-line tool in its install mode:
+
+  planet --file <path to your .plt file> <owner name> <maj> <min>
+
+will install the specified .plt file into your local PLaneT cache as
+though it had been downloaded from the PLaneT server with the given
+owner name and major and minor versions. After you run this command,
+you can require your package on your local machine using
+
+  (require (planet (<owner name> <.plt file name without path> <maj> <min>)))
+
+to verify everything works. After you do so, you can use
+
+  planet --remove <owner name> <.plt file name> <maj> <min>
+
+to remove the test package from your local cache. (Not removing it is
+safe as long as you use the same name and version numbers the package
+will have on the official PLaneT server; otherwise you may experience
+problems.)
+
+4. SUBMIT THE PACKAGE
+
+E-mail the .plt file you built to jacobm+planet@plt-scheme.org If the
+package is an upgrade to a prior package, then tell me so and tell me
+whether or not this package is backwards-compatible with the package
+it's upgrading. Also tell me what PLT Scheme version this package is
+intended for. There's no particular format for this message; the
+system isn't automated yet so I'll just be reading these and
+processing them by hand.
+
+Once I've added your package to the repository, I'll e-mail you
+back and tell you the require-line users will need to type in to get
+it.
+
+WARNING: 
+
+It's very important that packages you say are backwards-compatible
+with the prior version, at a minimum contain all the same modules and
+provide all the same names the prior version did. If you do not,
+programs that use your package will break on some systems.

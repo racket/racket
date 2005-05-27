@@ -1,0 +1,122 @@
+
+The _Essentials of Programming Languages_ (a.k.a _EoPL_) language in
+DrScheme provides all of the functions of R5RS, plus the forms and
+procedures described below. It is intended for use with the textbook
+
+  Essentials of Programming Languages, Second Edition
+  Friedman, Wand, and Haynes
+  MIT Press, 2001
+
+Differences from the book:
+
+ * Datatypes must be defined before they are used in `cases'
+   expressions. This constraint enables better and earlier error
+   reporting.
+
+   Some examples in the book's code (or at least the code dstributed
+   for the book) must be changed by moving datatype definitions
+   earlier.
+
+ * The sllgen: functions have been changed to syntactic forms. This
+   change is also related to better error reporting. 
+  
+   All examples in the book work work with the sllgen: forms.
+
+----------------------------------------
+
+> (define-datatype id predicate-id (variant-id (field-id predicate-expr) ...) ...)
+
+  Defines the datatype `id' and a function `predicate-id' that returns
+  #t for instances of the datatype, and #f for any other value.
+
+  Each `variant-id' is defined as a constructor function that creates
+  an instance of the datatype; the constructor takes as many arguments
+  as the variant's `field-id's, and each argument is checked by
+  applying the function produced by the variant's `predicate-expr'.
+
+  When constructor-based printing is used in DrScheme, variant
+  instances are printed with a `make-' prefix before the variant name.
+  Thus, in addition to `variant-id', `make-variant-id' is also defined
+  for each `variant-id' (to the same constructor as `variant-id').
+
+> (cases datatype-id expr (variant-id (field-id ...) result-expr ...) ...)
+> (cases datatype-id expr (variant-id (field-id ...) result-expr ...) ... (else result-expr ...))
+
+  Branches on the datatype instance produced by `expr', which must be
+  an instance of the specified `datatype-id' (previously defined with
+  `define-datatype').
+
+> sllgen:make-string-scanner
+> sllgen:make-string-parser
+> sllgen:make-stream-parser
+> sllgen:make-define-datatypes
+> sllgen:show-define-datatypes
+> sllgen:list-define-datatypes
+
+  Defined in the EoPL textbook's Appendix A. However, the DrScheme
+  versions are syntactic forms, instead of procedures, and the
+  arguments must be either quoted literal tables or identifiers that
+  are defined (at the top level) to quoted literal tables.
+
+> sllgen:make-rep-loop
+
+  Defined in the EoPL textbook's Appendix A (and still a function).
+
+> eopl:error
+
+  As in the book.
+
+> eopl:printf
+> eopl:pretty-print
+
+  Same as MzScheme's `printf' and `pretty-print'.
+
+> list-of
+> always?
+
+  As in the book.
+
+> empty 
+
+  The empty list.
+
+> (time expr)
+
+  Evaluates `expr', and prints timing information before returning the
+  result.
+
+> (collect-garbage)
+
+  Performs a garbage collection (useful for repeatable timings).
+
+> (trace id ...)
+> (untrace id ...)
+
+  For debugging: `trace' redefines each `id' at the top level (bound
+  to a procedure) so that it prints arguments on entry and results on
+  exit. `untrace' reverses the action of `trace' for the given `id's.
+
+  Tracing a function causes tail-calls in the original function to
+  become non-tail calls.
+
+> (provide provide-spec ...)
+
+  Useful only with a module that uses _(lib "eopl.ss" "eopl")_ as a
+  language: exports identifiers from the module. See the MzScheme
+  manual for information on `provided-spec'.
+
+> eopl:error-stop
+
+  Defined only in the top-level namespace (i.e., not in a module);
+  mutate this varable to install an exception-handling
+  thunk. Typically, the handler thunk escapes through a continuation.
+
+  The "eopl.ss" module sets this variable to #f in the current
+  namespace when it executes.
+
+> (install-eopl-exception-handler)
+
+  Sets MzScheme's exception handler to one that checks
+  `eopl:error-stop'.
+
+  The "eopl.ss" module calls this function when it executes.

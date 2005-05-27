@@ -1,0 +1,142 @@
+PLoT collection: Quick Start
+
+[Note: This guide is excerpted from the official documentation available
+ from Help Desk.]
+
+2.1  Making basic plots
+
+   After loading the correct module using (require (lib "plot.ss"
+   "plot")) try (plot (line (lambda (x) x)))
+
+   Any other function with the contract number -> number can be plotted
+   using the same form. To plot multiple items, use the functions mix and
+   mix* to combine the items to be plotted
+
+(plot
+ (mix
+  (line (lambda (x) (sin x)))
+  (line (lambda (x) (cos x)))))
+
+   The display area and appearance of the plot can be changed by adding
+   parenthesized argument/value pairs after the first argument
+
+(plot
+ (line (lambda (x) (sin x)))
+ (x-min -1) (x-max 1) (title "Sin(x)"))
+
+   The appearance of each individual plot item can be altered by adding
+   parameter-value pairs after the data.
+
+(plot
+ (line
+  (lambda (x) x)
+  (color 'green) (width 3)))
+
+   Besides plotting lines from functions in 2d, the plotter can also
+   render a variety of other datums in several ways:
+     * Discreet data, such as
+
+(define data
+ (list
+  (vector 1 1 2)
+  (vector 2 2 2)))
+       can be interpreted in several ways
+          + As points: (plot (points data))
+          + As Error Data: (plot (error-bars data))
+     * A function of two variables, such as
+(define 3dfun (lambda (x y) (* (sin x) (sin y))))
+       can be plotted on a 2d graph
+          + Using contours to represent height (z)
+(plot (contour 3dfun))
+          + Using color shading
+(plot (shade 3dfun))
+          + Using a gradient field
+(plot (field (gradient 3dfun)))
+       or in a 3d box
+          + Displaying only the top of the surface
+(plot3d (surface 3dfun))
+
+[8]2.2  Curve Fitting
+
+   The scheme-plot library uses a Non-Linear Least Squares fit algorithm
+   to fit parametrized functions to given data.
+
+   To fit a particular function to a curve:
+    1. Set up the independent and dependent variable data. The first item
+       in each vector is the independant var, the second is the result.
+       The last item must is the weight of the error - we can leave it as
+       1 since all the items weigh the same.
+(define data '(#(0 3 1)
+               #(1 5 1)
+               #(2 7 1)
+               #(3 9 1)
+               #(4 11 1)))
+
+    2. Set up the function to be fitted using fit. This particular
+       function looks like a line. The independant variables must come
+       before the parameters.
+(define fit-fun
+ (lambda (x m b) (+ b (* m x))))
+    3. If possible, come up with some guesses for the values of the
+       parameters. The guesses can be left as one, but each parameter
+       must be named.
+    4. Do the fit - the details of the function are described in [9]Curve
+       Fitting section
+(define fit-result
+  (fit
+   fit-fun
+   ((m 1) (b 1))
+   data)
+    5. View the resulting parameters
+(fit-result-final-params fit-result) ; will produce ((m 2) (b 3))
+
+    6. For some visual feedback of the fit result, plot the function with
+       the new parameters. For convenience, the structure that is
+       returned by the fit command has already created the function.
+(plot (mix
+        (points data)
+        (line (fit-result-function fit-result)))
+      (y-max 15))
+
+   A more realistic example can be found in demos/fit-demo-2.ss
+
+[10]2.3  Creating Custom Plots
+
+   Defining custom plots is simple : a Plot-item (that is passed to plot
+   or mix) is just a function that acts on a [11]view . Both the 2d and
+   3d view snip have several drawing functions defined that the plot-item
+   can call in any order. The full details of the view interface can be
+   found in the [12]plot-extend.ss section.
+
+   For example, if we wanted to create a constructor that creates
+   Plot-items that draw dashed-lines given a number-number function we
+   could do the following:
+
+; Load the required modules
+(require (lib "class.ss")
+         (lib "etc.ss")
+         (lib "plot-extend.ss" "plot"))
+
+
+; Set up the constructor
+(define-plot-type dashed-line
+  fun 2dview (x-min x-max) ((samples 100) (segments 20) (color 'red) (width 1))
+  (let* ((dash-size (/ (- x-max x-min) segments))
+         (x-lists (build-list
+                   (/ segments 2)
+                   (lambda (index)
+                     (x-values
+                      (/ samples segments)
+                      (+ x-min (* 2 index dash-size))
+                      (+ x-min (* (add1 ( * 2 index)) dash-size)))))))
+    (send* 2dview
+           (set-line-color color)
+           (set-line-width width))
+    (for-each
+     (lambda (dash)
+       (send 2dview plot-line
+              (map (lambda (x) (vector x (fun x))) dash)))
+     x-lists)))
+
+; Plot a test case
+(plot (dashed-line (lambda (x) x) (color 'blue)))

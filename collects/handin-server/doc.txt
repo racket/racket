@@ -1,0 +1,439 @@
+
+_Handin Server and Client_
+
+The "handin-server" directory contains a server to be run by a course
+instructor for accepting homework assignments and reporting on
+submitted assignments.
+
+The "handin-client" directory contains a client to be customized then
+re-distributed to students in the course. The customized client will
+embed a particular hostname and port where the server is running, as
+well as a server certificate.
+
+With a customized client, students simply install a ".plt" file --- so
+there's no futzing with configuration dialogs and certificates. A
+student can install any number of clients at once (assuming that the
+clients are properly customized, as described below).
+
+The result, on the student's side, is a "Handin" button in DrScheme's
+toolbar. Clicking the "Handin" button allows the student to type a
+password and upload the current content of the definitions and
+interactions window to the course instructor's server. The "File" menu
+is also extended with a "Manage..." menu item for managing a handin
+account (i.e., changing the password, or creating a new account if the
+instructor configures the server to allow new accounts).
+
+On the instructor's side, the handin server can be configured to check
+the student's submission before accepting it. Other configuration of
+the server includes setting the list of currently active assignments
+(i.e., those for which handins are accepted).
+
+The handin process uses SSL, so it is effectively as secure as the
+server and each user's password.
+
+
+Quick Start for a Test Drive:
+============================================
+
+ 1.  Create a new directory.
+
+ 2.  Copy "server-cert.pem" from the "handin-client" collection
+     to the new directory.
+       NOTE: for real use, you need a new certificate.
+       NOTE: see also "Where is the collection?", below
+
+ 3.  Copy "private-key.pem" from the "handin-server" collection
+     to the new directory.
+       NOTE: for real use, you need a new key.
+
+ 4.  Create a file "users.ss" with the following content:
+       ((tester ("8fe4c11451281c094a6578e6ddbf5eed"
+                 "Chester Tester"
+                 "123")))
+
+ 5.  Make an "active" subdirectory in your new directory.
+
+ 6.  Make a "test" subdirectory in "active".
+
+ 7.  In your new directory, run
+        mred -mvqM handin-server
+     
+ 8.  In the "handin-client" collection, edit "info.ss" and
+     uncomment the line
+        (define server:port "localhost:7979")
+
+ 9.  Start DrScheme, click "Handin" to run the client, submit with
+     username "tester" and password "pw".
+
+     The submitted file will be .../active/test/tester/handin.scm.
+ 
+ 10. Check the status of your submission by pointing a web browser at
+        https://localhost:7980/servlets/status.ss
+     Note the "s" in "https". Use the "tester" username and "pw"
+     password, as before.
+
+  -------------------------------------------------------------------
+ | "Where is the collection?"                                        |
+ |- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -|
+ | If you obtained the server and client by installing a .plt file,  |
+ | then the "handin-server" and "handin-client" directories          |
+ | are likely in your PLT addon space:                               |
+ |  Windows:                                                         |
+ |   %USERPROFILE%\Application Data\PLT Scheme\<version>\collects    |
+ |  Unix:                                                            |
+ |   ~/.plt-scheme/<version>/collects                                |
+ |  Mac OS X:                                                        |
+ |   ~/Library/PLT Scheme/<version>/collects                         |
+  -------------------------------------------------------------------
+
+
+Client Customization
+============================================
+
+To customize the client:
+
+  1. Rename (or make a copy of) the "handin-client" collection
+     directory. The new name should describe your class more or less
+     uniquely. For example, "uu-cpsc2010" is a good name for CPSC 2010
+     at the University of Utah.
+
+  2. Edit the first three definitions of "info.ss" in your renamed
+     client collection:
+
+       * For `name', choose a name for the handin tool as it will
+         appear in DrScheme's interface (e.g., the "XXX" for the
+         "Manage XXX..."  menu item). Again, make the name specific to
+         the course, in case a student installs multiple handin tools.
+         It's a good idea to use "Handin" as the last part of the
+         name, as in "2010 Handin", since the button is always named
+         "Handin".
+
+       * For `collection', use the name that you chose for your
+         collection directory (i.e., whatever you changed
+         "handin-client" to).
+
+       * For `server:port', uncomment the line, and use the hostname
+         and port where the server will be running to accept handin
+         submissions.
+
+      Optionally uncomment and edit the next two definitions,
+      `web-menu-name' and `web-address', to add an item to the "Help"
+      menu that opens a (course-specific) web page.
+
+   3. Replace "icon.png" in your renamed directory with a new 32x32
+      icon. This icon is displayed on startup with DrScheme's splash
+      screen, and it is included at half size on the "Handin"
+      button. Again, choose a distinct icon for the benefit of
+      students who install multiple handin tools.
+
+   4. Replace "server-cert.pem" in your renamed directory with a
+      server certificate. The file "server-cert.pem" in
+      "handin-client" collection is ok for testing, but the point of
+      this certificate is to make handins secure, so you should
+      generate a new (self-certifying) certificate and keep its key
+      private. (See server setup, below.)
+
+   5. Run
+           mzc --collection-plt <name>.plt <name>
+      where <name> is the name that you chose for your directory
+      (i.e., whatever you changed "handin-client" to).
+
+   6. Distribute <name>.plt to students for installation into their
+      copies of DrScheme. The students need not have access to the
+      DrScheme installation directory; the tool will be installed on
+      the filesystem in the student's personal space. If you want to
+      install it once on a shared installation, use setup-plt with the
+      --all-users flag.
+
+
+Server Setup
+============================================
+
+The server must be run from a directory that is specially prepared to
+host the server. This directory contains the following files and
+sub-directories:
+
+  * server-cert.pem --- the server's certificate. To create a
+    ceritificate and key with openssl:
+
+     openssl req -new -nodes -x509 -days 365 -out server-cert.pem 
+                 -keyout private-key.pem 
+
+  * private-key.pem --- the private key to go with "server-cert.pem".
+    Whereas "server-cert.pem" gets distributed to students with the
+    handin client, "private-key.pem" is kept private.
+
+  * config.ss (optional) --- configuration options. The file format
+    is 
+
+         ((<key> <val>) ...)
+
+    for the following keys:
+
+      'port-number : the port for the main handin server; the default
+         is 7979
+
+      'https-port-number : the port for the handin-status HTTPS
+         server; the default is one more than the main server's port
+         (so the transitive default is 7980)
+
+      'session-timeout : number of seconds a session can last,
+         including execution of the submit-validation function;
+         the default is 300
+
+      'session-memory-limit : maximum size in bytes of memory allowed
+         for per-session comuptation, if per-session limits are
+         supported (i.e., when using MrEd3m and MzScheme3m with memory
+         accounting); the default is 40000000
+
+      'default-file-name : the default filename that will be saved
+        with the submission contents.  The default is "handin.scm".
+
+      'max-upload : maximum size in bytes of an acceptable submission;
+         the default is 500000
+
+      'max-upload-keep : maximum index of submissions to keep; the
+         most recent submission is "handin.scm" (by default), the next
+         oldest is in "BACKUP-0/handin.scm", next oldest is
+         "BACKUP-1/handin.scm", etc.; the default is 9
+
+      'id-regexp : a regular expression used to validate a "free form"
+         user id (possibly a student id) for a created account; the
+         default is #rx"^.*$"
+
+      'id-desc : a plain-words description of the acceptable format
+         for a "free form" id; the default is "anything"
+
+      'allow-new-users : a boolean indicating whether to allow
+         new-user requests from a client tool; the default is #f
+
+      'master-password : a string for an MD5 hash for a password that
+         allows login as any user; the default is #f, which disables
+         the password
+
+  * users.ss (created if not present if a user is added) --- keeps
+    the list of user accounts, along with the associated password
+    (actually the MD5 hash of the password), full name, and free-form
+    id (perhaps a student id at a university) of the account. The file
+    format is
+
+      ((<username-sym> (<pw-md5-str> <full-name-str> <id-str>)) ...)
+
+    If the 'allow-new-users configuration allows new users, the
+    "users.ss" file can be updated by the server with new users. It
+    can always be updated by the server to change passwords.
+
+    The username "solution" is special. It is used by the HTTPS status
+    server.
+
+  * active/ --- sub-directory for active assignments. A list of active
+    assignments is sent to a client tool when a student clicks
+    "Handin". The student then selects from the list. The list of
+    active assignments is built once by the server when it starts.
+    The assignments are ordered in the student's menu using `string<?',
+    and the first assignment is the default selection.
+
+    Within each directory, the student id is used for a sub-directory
+    name. Within each student sub-directory are "handin.scm" (or some
+    other name if `default-file-name' is set), "BACKUP-0", "BACKUP-1",
+    etc., for each student who submits an assignment. (The most recent
+    handin is in this directory, and "BACKUP-?" directories hold older
+    submission for the same assignment.) A `checker' procedure can
+    replace the name "handin.scm" with something else (possibly
+    sensitive to the content of the submission), and create additional
+    files; see below for more details.
+
+    For submissions from a normal DrScheme frame, a "handin.scm" file
+    contains a copy of the student's definitions and interactions
+    windows. The file is in a binary format (to support non-text
+    code), and opening the file directly in DrScheme shows the
+    definitions part. To get both the defintions and interactions
+    parts, the file can be parsed with `unpack-submission' from
+    "utils.ss" (see below).
+
+    For submissions from a test-suite window, the file is a normal
+    test-suite file.
+
+  * inactive/ --- sub-directory for inactive assignments, used by the
+    HTTPS status web server.
+
+  * active/<assignment>/checker.ss (optional) --- a module that
+    exports a `checker' function. This function receives two
+    strings. The first is a username and the second is the user's
+    submission as a string. (See also `unpack-submission', etc. from
+    "util.ss", below.) To reject the submission, the `checker'
+    function can raise an exception; the exception message will be
+    relayed back to the student. The `checker' function is called when
+    the current directory is active/<assignment>/<user>, and it can
+    create additional files in this directory -- such files will get
+    moved when a backup is done.  If you want to hide some of these
+    files from the web interface, but them in a subdirectory -- it
+    will be properly backed up, and directories are all hidden from
+    the web interface.
+
+    The checker should return a string, such as "handin.scm", to use in
+    naming the submission. For submissions that require both programs
+    and test suites, the checker might use `is-test-suite-submission?'
+    and return "tests" if the string is a test-suite submission or
+    "program" if it is not.
+
+  * log.ss (created if not present, appended otherwise) --- records
+    connections and actions, where each entry is of the form
+        (id time-str msg-str)
+    and `id' is an integer reprsenting the connection (numbered
+    consecutively from 1 when the server starts) or 0 for a message
+    for server without a connection.
+
+  * web-status-log.ss (created if not present, appended otherwise)
+    --- records accesses of the HTTPS status web server.
+
+  * [in]active/<assignment>/<user>/<filename> (if submitted) --- the
+    most recent submission for <assignment> by <user> where <filename>
+    was returned by the checker (or the value of the
+    `default-file-name' configuration option if there's no checker).
+
+  * [in]active/<assignment>/<user>/grade (optional) --- <user>'s grade
+    for <assignment>, to be reported by the HTTPS status web server.
+
+  * [in]active/<assignment>/solution/<assignment>sol.scm --- the
+    solution to the assignment, made available by the status server
+    to any user who logs in.
+
+The server can be run within either MzScheme or MrEd, but "utils.ss"
+requires MrEd (which means that `checker' modules will likely require
+the server to run under MrEd).
+
+The server currently provides no mechanism for a graceful shutdown,
+but terminiating the server is no worse than a network outage. (In
+particular, no data should be lost.) To reconfigure the server (e.g.,
+to change the set of active assignments), stop it and restart it.
+
+The client and server are designed to be robust against network
+problems and timeouts. The client-side tool always provides a "cancel"
+button for any network transaction. For handins, "cancel" is
+guaranteed to work up to the point that the client sends a "commit"
+command; this command is sent only after the server is ready to record
+the submission (having run it through the checker, if any), but before
+the server writes the "handin.scm" file. Also, the server responds to a
+commit with "ok" only after it has written the file. Thus, when the
+client-side tool reports that the handin was successful, the report is
+reliable. Meanwhile, the tool can also report successful cancels most
+of the time. In the (normally brief) time between a commit and an "ok"
+response, the tool gives the student a suitable warning that the
+cancel is unreliable.
+
+To minimize human error, the number of active assignments should be
+limited to 1 whenever possible. When multiple assignments are active,
+design a checker to help ensure that the student has selected the
+correct assignment in the handin dialog.
+
+A student can download his/her own submissions through a web server
+that runs concurrently with the handin server. The starting URL is
+
+  https://SERVER:PORT/servlets/status.ss
+
+to obtain a list of all assingments, or
+
+  https://SERVER:PORT/servlets/status.ss?handin=ASSIGNMENT
+
+to start with a specific assignment (named ASSIGNMENT). The default
+PORT is 7980.
+
+
+Checker Utilities
+============================================
+
+The _utils.ss_ module provides utilities helpful in implementing
+`checker' functions:
+
+> (unpack-submission bytes) - returns two text% objects corresponding
+  to the submitted definitions and interactions windows.
+
+> (unpack-test-suite-submission bytes) - returns a pasteboard%
+  object corresponding to the submitted test-suite window. The
+  pasteboard contains a sequence of editor-snip% objects, each each
+  editor-snip% contains a text% with three embedded editor-snip%s: one
+  for the test expression, one for the expected result, and one for
+  the equality predicate.
+
+> (is-test-suite-submission? bytes) - returns #t if `string' can be
+  read as an old-style test suite, #f otherwise.
+
+
+> (make-evaluator language teachpack-paths program-port) - returns a
+  function of one argument for evaluating expressions in the
+  designated teaching language, one of 'beginner, 'beginner-abbr,
+  'intermediate, 'intermediate-lambda, or 'advanced. The
+  `teachpack-paths' list contains paths to teachpacks to load in the
+  evaluator. The `program-port' is an input port that produces the
+  content of the definitions window; use `(open-input-string "")'
+  for an empty definitions window.
+
+  The actual evaluation of expressions happens in a newly created
+  eventspace and namespace.
+
+> (make-evaluator/submission language teachpack-paths bytes) - like
+  `make-evaluator', but the definitions content is supplied as a
+  submission byte string.
+
+> (call-with-evaluator language teachpack-paths program-port proc) -
+  calls `proc' with an evaluator for the given language, teachpack
+  paths, and initial definition content as supplied by a port. It also
+  sets the current error-value print handler to print values in a way
+  suitable for `lang', it initializes `current-run-status' with
+  "executing your code", and it catches all exceptions to re-raise
+  them in a form suitable as a submission error.
+
+> (call-with-evaluator/submission language teachpack-paths bytes proc) -
+   like `call-with-evaluator', but the definitions content is supplied
+   as a submission string.
+
+
+> (evaluate-all source input-port eval) - like `load' on an input
+  port.
+
+> (evaluate-submission bytes eval) - like `load' on a non-test-suite
+  submission byte string.
+
+
+> (check-proc eval expect-v compare-proc proc-name arg ...) - calls
+  the function named `proc-name' using the evaluator `eval', giving it
+  the (unquoted) arguments `arg'... Let `result-v' be the result of
+  the call; unless `(compare-proc result-v expect-v)' is true, an
+  exception is raised.
+
+  Every exception or result mismatch during the call to `check-proc'
+  phrased suitably for the handin client.
+
+> (check-defined eval name) - checks whether `name' is defined in the
+  evaluator `eval', and raises an error if not (suitably phrased for
+  the handin client).  If it is defined as non-syntax, its value is
+  returned. Warning: in the beginner language level, procedure
+  definitions are bound as syntax.
+
+> (look-for-tests text name n) - inspects the given text% object to
+  determine whether it contains at least `n' tests for the function
+  `name'. The tests must be top-level expressions.
+
+> (user-construct eval name arg ...) - like `check-proc', but with no
+  result checking. This function is often useful for calling a
+  student-defined constructor.
+
+
+> test-history-enabled - parameter that controls how run-time errors
+  are reported to the handin client. If the parameter's value is true,
+  then the complete sequence of tested expressions is reported to the
+  handin client for any test failure. Set this parameter to true when
+  testing programs that use state.
+
+> (current-run-status string-or-#f) - registers information about the
+  current actions of the checker, in case the session is terminated
+  due to excessive memory consumption. For example, a cccchecker might
+  set the status to indicate which instructor-supplied test was being
+  executed when the session ran out of memory. This status is only
+  used when per-session memory limits are supported (i.e., under
+  MrEd3m or MzScheme3m with memory accounting).
+
+> (reraise-exn-as-submission-problem thunk) - calls thunk in a context
+  that catches exceptions and re-raises them in a form suitable as a
+  submission error.

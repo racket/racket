@@ -1,0 +1,17 @@
+Run the MzCOM tests with
+
+ mzscheme -mvqf test.ss
+
+The tests exercise the three COM methods of MzCOM, namely
+
+ About
+ Reset
+ Eval
+
+Note that some of the tests deliberately cause COM exceptions,
+which are handled in the Scheme code.  The details of those
+exceptions are displayed to make sure they're the ones we 
+expected -- these are not errors.
+
+If the number of detected errors is greater than 0, an 
+error count is printed.

@@ -1,0 +1,31 @@
+
+You should see three radioboxes:
+  "Left" with one radio button: "Singleton"
+  "Center" with two radio button: "First" and "Last"
+  "Right" with three radio button: "Top", "Middle", and "Bottom"
+
+Click the "Check" button. "All Ok" should appear in the console.
+
+Click each radio button once. For each click, "Callback Ok"
+ should be printed in the console, even if the radio button
+ is already selected.
+
+Click the "Check" button. "All Ok" should appear in the console.
+
+Select the first button in all radio boxes.
+
+Click "Select First", "Select Middle", "Select Last" then
+ "Select First" again. The appropriate button should become selected
+ in all radioboxes each time. (For the two-button box, the
+ second one counts as `middle'.)
+
+Click "Select -1" and "Select N". Nothing should happen (because the
+ appropriate exceptions are caught). Select the last button in each
+ box and try "Select -1" again. Nothing should happen. Return the
+ selection to the first item in each box.
+
+Repeat the two steps for the "Select XXX by Simulate" buttons. In this
+ case, "Callback Ok" should be printed three times when any button
+ is hit. The selection should move appropriately.
+
+Click the "Check" button.

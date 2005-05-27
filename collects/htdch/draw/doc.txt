@@ -1,0 +1,86 @@
+This `draw' package provides libraries for modeling in a visual world. It
+consists of two sets of classes: 
+
+ - World and Posn 
+
+ - Color with five subclasses: 
+   + Blue 
+   + Green 
+   + Red 
+   + White 
+   + Yellow 
+
+		     +-------+
+		     | Color |
+		     +-------+
+			/ \
+			---
+			 |
+    ------------------------------------------
+    |          |         |         |         |     
++-------+  +-------+ +-------+ +-------+ +-------+  
+| Blue  |  | Green | | Red   | | White | | Yellow| 
++-------+  +-------+ +-------+ +-------+ +-------+ 
+
+
+The _World_ class has the following class interface: 
+
+     // create the visual aspect 
+     boolean start(int width, int height)
+
+     // tear down the canvas and shut down the program
+     boolean stop()
+
+     // draw a circle at p, paint circle c
+     boolean drawCircle(Posn p, int r, Color c)
+
+     // draw a solid disk at p, fill with color c
+     boolean drawDisk(Posn p, int r, Color c)
+
+     // draw a width x height rectangle at p, fill with color c
+     boolean drawRect(Posn p, int width, int height, Color c)
+
+     // draw a line from p0 to p1, use color c
+     boolean drawLine(Posn p0, Posn p1, Color c)
+
+     // draw a string at position p
+     boolean drawString(Posn p, String s)
+
+     // clear a circle at p, paint circle c
+     boolean clearCircle(Posn p, int r, Color c)
+
+     // clear a solid disk at p, fill with color c
+     boolean clearDisk(Posn p, int r, Color c)
+
+     // clear a width x height rectangle at p, fill with color c
+     boolean clearRect(Posn p, int width, int height, Color c)
+
+     // clear a line from p0 to p1, use color c
+     boolean clearLine(Posn p0, Posn p1, Color c)
+
+     // wait for s seconds (roughly)
+     boolean sleepForAWhile(int s)
+
+     // start the clock and make this world the current one
+     boolean bigBang(double s) 
+
+     // process a tick of the clock in this world
+     World onTick() 
+
+     // process a keystroke event in this world
+     World onKeyEvent(String ke) 
+
+     // stop this world's clock
+     World endOfWorld() 
+
+     // draw this world
+     boolean draw() 
+
+     // erase this world
+     boolean erase() 
+
+     // view the last World that onTick or onKeyEvent or bigBang created
+     World lastWorld()
+
+_Posn_ is the usual class: it combines two integers, x and y, and makes the
+ available via the selectors Posn.x and Posn.y. 

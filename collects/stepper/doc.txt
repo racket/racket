@@ -1,0 +1,62 @@
+What is the _Stepper_?
+
+DrScheme includes an "algebraic stepper," a tool which proceeds
+through the evaluation of a set of definitions and expressions,
+one step at a time. This evaluation shows the user how DrScheme
+evaluates expressions and definitions, and can help in debugging
+programs.  Currently, the Stepper is available in the "Beginning
+Student" and "Intermediate Student" language levels.
+
+How do I use the Stepper?
+
+The Stepper operates on the contents of the frontmost DrScheme
+window.  A click on the "Step" button brings up the stepper
+window.  The stepper window has four panes, arranged as follows:
+
+------------------
+|    finished    |
+------------------
+|before ->  after|
+------------------
+|     coming     |
+------------------
+
+
+The first, "finished," box shows definitions and expressions
+whose evaluation is complete. This box is changed only when
+another completed evaluation's result is added to it.
+
+The second, "before," box, shows the current expression.  The
+region highlighted in green is known as the "redex".  You may
+pronounce this word in any way you want.  It is short for
+"reducible expression," and it is the expression which is the
+next to be simplified.
+
+The third, "after," box shows the result of the reduction.  The
+region highlighted in purple is the new expression which is
+substituted for the green one as a result of the reduction.
+
+Finally, the fourth box, labeled "coming" above, shows new
+expressions introduced by prior reductions which have yet to be
+reduced. As an example, a "local" expression may result in many
+new definitions which require reduction.  The definitions which
+have not yet been evaluated appear in the "coming" box.
+
+There are three buttons at the top of the stepper window.  The
+"Home" button returns to the initial state of the evaluation: that
+is, no expressions have yet been evaluated.  The "Previous"
+button returns to the prior step of the evaluation.  The "Next"
+step shows the next step in the evaluation.
+
+For more information on how DrScheme selects a "redex" and how
+the expressions are reduced, please see <A>The Beginner Language
+Semantics</A> which formally specify the set of rules governing
+the language's evaluation.
+
+Please note that the stepper only steps through the expressions
+in the definitions window, and does not allow the user to enter
+additional expressions.  So, for instance, a definitions buffer
+which contains only procedure definitions will not result in
+any reductions.
+
+

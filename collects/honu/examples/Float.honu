@@ -1,0 +1,13 @@
+type Float {
+  float value;
+
+  String toString();
+}
+
+class FloatBox() : Float impl Float {
+  init float value;
+
+  String toString() { return new StrBox(value = floatToStr(value)); }
+
+  export Float : value, toString;
+}

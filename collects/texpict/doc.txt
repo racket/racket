@@ -1,0 +1,1131 @@
+
+_texpict_ is a MzScheme/MrEd library for creating pictures using a
+MrEd dc<%> (including post-script-dc% for _PostScript_ output) or
+_LaTeX_ as the back-end. The library was originally designed for LaTeX
+output, hence the name.
+
+Pictures are created as `pict' structures. Some procedures in the
+texpict library create new simple picts (e.g., `hline'). Others build
+new picts out of existing picts (e.g., `ht-append'). In the latter
+case, the embedded picts retain their identity, so that offset-finding
+functions (e.g., `lt-find') can find the offset of an embedded pict in
+a larger pict.
+
+A pict has the following structure:
+                w
+        ------------------
+       |                  | a  \
+       |------------------|    |
+       |                  |    | h
+       |------------------|    |
+       |                  | d  /
+        ------------------     
+
+For a single text line, d is descent below the baseline and
+a + d = h. For multiple text lines (created with vX-append), a is 
+ascent of top line above baseline and d is descent of bottom line,
+so a + d < h. Most other boxes have d = 0 and a = h.
+
+The size information for a pict is computed when the pict is
+created. This strategy supports programs that create new picts though
+arbitrarily complex computations on the size and shape of existing
+picts. However, it also means that a pict cannot be generated before
+its target device is known.
+
+A slightly different set of picture-making function are available for
+MrEd and LaTeX output. For example, the LaTeX set includes `tex',
+which accepts a string of arbitrary LaTeX code, and the MrEd set
+includes `dc', which accepts an arbitrary Scheme procedure for drawing
+to a dc<%>.
+
+When creating pictures with the obsolte `picture' or `cons-picture'
+functions, or when finding relative picture locations with the
+obsolete `find-lt', etc., the coordinate system is upside-down: (0, 0)
+is in the lower left.
+
+Slideshow output
+----------------
+
+Slideshow (see the "slideshow" collection) takes care of configuring
+texpict and rendering them to the screen or printer. In particular,
+the `slide' function takes any number of picts and assembles them into
+a slide.
+
+If you are using Slideshow, skip the following two sections. In the
+reference below, functions marked "MrEd only" or "MrEd only, in
+utils.ss" are available, and functions marked "LaTeX only" are not
+available.
+
+For non-Slideshow users, _utils.ss_ library provides additional
+drawing procedures for MrEd (not LaTeX) output. These are marked below
+with "MrEd only, in utils.ss".
+
+
+MrEd (or PostScript) output
+---------------------------
+
+The MrEd texpict function set is loaded by the _mrpict.ss_ library.
+The library is available in unit form via _mrpictr.ss_, which produces
+a unit importing mred^. The _mrpicts.ss_ library file defines the
+unit's signature.
+
+When creating a picture for a MrEd dc<%> that contains text, texpict
+needs a drawing context for measuring the text. Provide a dc<%> before
+constructing pictures via the `dc-for-text-size' parameter. The dc<%>
+should have the same text-measuring results as the destination dc<%>;
+in particular, use a post-script-dc% for preparing PostScript output,
+and a bitmap-dc% will work fine for bitmap-dc% or canvas% output.
+
+The `draw-pict' function takes a picture, a device context
+
+ ;; Example of producing PostScript output
+ (require (lib "mrpict.ss" "texpict"))
+
+ ;; Create PS context
+ (define ps-dc (make-object post-script-dc%))
+ (send ps-dc start-doc "Pict output")
+ (send ps-dc start-page)
+
+ ;; Install context for sizing
+ (dc-for-text-size ps-dc)
+
+ ;; Create the pict
+ (define p ...)
+
+ ;; Output pict
+ (draw-pict p ps-dc 0 0)
+ (send ps-dc end-page)
+ (send ps-dc end-doc)
+
+If the output dc<%> has a "user scale", it is not reflected in the
+size information reported for pictures. This is consistent with MrEd's
+usual policy for reporting size information.
+
+LaTeX output
+------------
+
+The LaTeX texpict function set is loaded by the _texpict.ss_ library.
+The library is available in unit form via _texpictr.ss_, which
+produces a unit with no imports. The _texpicts.ss_ library file
+defines the unit's signature.
+
+To create a LaTeX picture, assemble a pict and then
+call `pict->string'. This string can be `display'ed to obtain the
+LaTeX code, which is usually of the form:
+   \begin{picture} ... \end{picture}
+When using colors, the output may be of the form:
+   \special{color push ...} ... \special{color pop ...}
+so consider putting the output in an \hbox{} when using color.
+
+The `tex' function creates a pict given an arbitrary LaTeX
+expression as a string. Initially, `tex' guess at the size of the
+resulting pict. (It always guesses 10 x 10.) The LaTeX expression
+generated for a `tex' pict causes information to be written to an
+auxiliary file when LaTeX evaluates the expression. If you use
+`tex' boxes, then:
+
+   * Use the package "mztp.sty" at the start of your LaTeX
+     document "X.tex".
+   * In the MzScheme code creating `tex' picts, call
+     (read-in-sizes "X.mztp") before calling `tex'.
+   * Run the texpict-LaTeX cycle twice to get properly
+     draw pictures.
+
+texpict keys `tex' size information on the exact LaTeX expression
+provided to `tex'. If you use a single `tex' pict in two different
+contexts where the provided expression produces differently sized
+output, texpict will not distinguish the uses (and the size of the
+first instance of the pict will be used) by default. The
+`serialize-tex-picts' parameter can solve this problem, but
+serialization requires that the output is built in exactly the same
+order every time, and generally requires more texpict-tex cycles to
+reach a fixed point after a small change to the output. The
+`tex-series-prefix' parameter may be used to explicitly tag `tex'
+sequences in different contexts.
+
+For LaTeX output, all positions and sizes must be specified as exact
+integers, but texpict does not check that exact integers are supplied.
+
+------------------------------------------------------------
+Structures
+------------------------------------------------------------
+
+A pict is an instance of the `pict' structure type:
+
+> struct:pict :: (struct pict (draw width height ascent descent children panbox))
+
+The `children' field is a list of `child' structures:
+
+> struct:child :: (struct child (pict dx dy sx sy))
+
+------------------------------------------------------------
+Procedures
+------------------------------------------------------------
+
+Basic Constructors:
+-------------------
+
+>  (dc draw-proc w h) -> pict
+>  (dc draw-proc w h a d) -> pict
+       where draw proc is (dc x y -> void)
+
+   Creates an arbitrary self-rendering pict.  The arguments to the
+   rendering procedure will be a device context and top-left
+   location for drawing.
+  
+   When the rendering procedure is called, the current pen and
+   brush will be solid and in the pict's color (and linewidth), and
+   the scale and offset of the dc will be set. The text mode will
+   be transparent, but the font and colors are not guaranteed to be
+   anything in particular.
+      [MrEd only]
+
+>  (blank)  -> pict
+>  (blank s)  -> pict   ; s is side length of square
+>  (blank w h)  -> pict
+>  (blank w a d)  -> pict  ; => h = a + d
+>  (blank w g a d)  -> pict
+
+   Creates an empty pict
+
+>  (text string [text-style null] [size 12] [angle 0]) -> pict
+
+   Creates a pict from a string, style, size, and rotation.
+    A _text-style_ is one of
+      null (the default, same a 'default),
+      a font% object,
+      a font family symbol (e.g., 'roman),
+      a font face string (e.g., "-adobe-symbol"),
+      `(bold . ,text-style),
+      `(italic . ,text-style), 
+      `(subscript . ,text-style), 
+      `(superscript . ,text-style),
+      `(combine . ,text-style), or
+      `(no-combine . ,text-style).
+    A size is an exact number in [1, 255] in pixels; the
+     default size is 12, but the size is ignored if
+     a font% object is provided in the text-style.
+    The default rotation is 0; for a non-zero rotation,
+     the pict covers the rotated text, and the descent
+     is zero and the ascent is the height
+    By default, text drawing can combine characters (to
+     form ligatures, for kerning, etc.), unless the
+     base text-style is 'modern. The 'combine text-style symbol
+     overrides the default to allow combining, and the
+     'no-combine text-style symbol overrides the default to
+     disable combining; if both 'combine and 'no-combine
+     are specified, the first one takes precedence
+      [MrEd only]
+
+>  (caps-text string [text-style null] [size 12] [angle 0]) -> pict
+
+   Same as `text', but use small caps:
+
+>  (hline w h) -> pict
+>  (dash-hline w h seg-length) -> pict ; default seg-length is 5
+>  (vline w h) -> pict
+>  (dash-vline w h seg-length) -> pict ; default seg-length is 5
+
+   To draw other kinds of lines, use `picture' or `cons-picture'
+
+>  (frame pict) -> pict
+>  (dash-frame pict seg-length) -> pict ; default seg-length is 5
+>  (oval pict) -> pict
+>  (oval/radius pict r) -> pict ; r is radius of corners
+
+>  (big-circle diameter) -> pict
+
+   Creates a fairly round circle using four splines (intended
+   for LaTeX output)
+
+>  (color-frame pict color-string) -> pict
+>  (color-frame pict color-string line-w) -> pict
+>  (color-dash-frame pict seg-length color-string) -> pict
+>  (color-dash-frame pict seg-length color-string line-w) -> pict
+
+   Like `frame' and `dash-frame', but the frame gets a color and
+   optional line width
+      [MrEd only, in utils.ss]
+
+>  (round-frame pict) -> pict
+>  (color-round-frame pict color-string) -> pict
+>  (color-round-frame pict color-string line-w) -> pict
+
+   Rounded frames
+      [MrEd only, in utils.ss]
+
+>  (circle diameter) -> pict
+>  (disk diameter) -> pict
+
+   Unfilled and filled circles; works for all sizes.
+      [MrEd only, in utils.ss]
+
+>  (ellipse width height) -> pict
+>  (filled-ellipse width height) -> pict
+
+   Unfilled and filled ellipses; works for all sizes.
+      [MrEd only, in utils.ss]
+
+>  (rectangle width height) -> pict
+>  (filled-rectangle width height) -> pict
+
+   Unfilled and filled rectangle; works for all sizes.
+      [MrEd only, in utils.ss]
+
+>  (rounded-rectangle width height [corner]) -> pict
+>  (filled-rounded-rectangle width height [corner]) -> pict
+
+   Unfilled and filled rounded rectangle; works for all sizes.
+      [MrEd only, in utils.ss]
+
+>  (arrow size radians) -> pict
+>  (arrowhead size radians) -> pict
+
+   Creates an arrow or arrowhead in the specific direction
+    within a size x size pict. (Points on the arrow may
+    extend slightly beyond the box.)
+      [MrEd only, in utils.ss]
+
+>  (pt-line dx dy size) -> pict
+>  (pt-arrow-line dx dy size) -> pict
+>  (pt-arrows-line dx dy size) -> pict
+
+   Creates a line [with arrowhead(s)] as a 0-sized picture suitable
+   for use with `pin-over'. The 0-sized picture contains the starting
+   point.
+      [MrEd only, in utils.ss]
+
+>  (bitmap filename) -> pict
+>  (bitmap bitmap%-object) -> pict
+
+   Loads a bitmap into a pict; if the bitmap is not ok,
+    the result is a box containing the words "bitmap failed"
+      [MrEd only, in utils.ss]
+
+>  (cloud w h [color-string "gray"]) -> pict
+
+   Fluffy cloud.
+      [MrEd only, in utils.ss]
+
+>  (file-icon w h gray [fancy? ...]) -> pict
+
+   Creates a MacOS-like file icon, optionally shaded.
+   Default for `fancy?': gray = #f -> white
+                         gray = #t -> default color
+                         gray = color/string -> uses color
+
+      [MrEd only, in utils.ss]
+
+>  (jack-o-lantern size [pumpkin-color "orange"] [face-color "black"]) -> pict
+
+   Creates a jack-o-lantern; use the same pumpkin-color and
+   face color to get a plain pumpkin. The size is the width.
+      [MrEd only, in utils.ss]
+
+>  (angel-wing w h left?) -> pict
+
+   Creates an angel wing, left or right, or any size.
+   The color and pen width for drawing the wing outline is the
+   current one.
+      [MrEd only, in utils.ss]
+
+
+>  (standard-fish w h [direction 'left] [color "blue"] 
+                      [eye-color "black"] [open-mouth? #t]) -> pict
+
+   Creates a fish, swimming either 'left or 'right.
+      [MrEd only, in utils.ss]
+
+
+Combiners:
+----------
+
+>  (vl-append [d 0] pict ...) -> pict ; d units between each picture
+>  (vc-append [d 0] pict ...) -> pict
+>  (vr-append [d 0] pict ...) -> pict
+>  (ht-append [d 0] pict ...) -> pict
+>  (hc-append [d 0] pict ...) -> pict
+>  (hb-append [d 0] pict ...) -> pict
+>  (htl-append [d 0] pict ...) -> pict  ; align bottoms of ascents
+>  (hbl-append [d 0] pict ...) -> pict  ; align tops of descents (normal text alignment)
+
+   Make a new picture as a column (vX-append) or row (hX-append)
+   of other pictures. Different procedures align pictures in the
+   orthogonal direction in different ways; e.g, vl-append left-aligns
+   all of the pictures. A specified amount of space is inserted
+   between each pair of pictures in making the column or row.
+   The descent of the result corresponds to baseline that is lowest
+   in the result among all of the picts' descent-specified
+   baselines; similarly, the ascent of the result corresponds to
+   the highest ascent-specified baseline.
+
+>  (lt-superimpose pict ...) -> pict
+>  (lb-superimpose pict ...) -> pict
+>  (lc-superimpose pict ...) -> pict
+>  (ltl-superimpose pict ...) -> pict
+>  (lbl-superimpose pict ...) -> pict
+>  (rt-superimpose pict ...) -> pict
+>  (rb-superimpose pict ...) -> pict
+>  (rc-superimpose pict ...) -> pict
+>  (rtl-superimpose pict ...) -> pict
+>  (rbl-superimpose pict ...) -> pict
+>  (ct-superimpose pict ...) -> pict
+>  (cb-superimpose pict ...) -> pict
+>  (cc-superimpose pict ...) -> pict
+>  (ctl-superimpose pict ...) -> pict
+>  (cbl-superimpose pict ...) -> pict
+
+   Make a new picture by superimposing a set of pictures. The
+   alignment indicators are essentially as above: horizontal
+   alignment then vertical alignment. The descent and the ascent
+   of the result is also computed as above (i.e., lowest descent
+   and highest ascent).
+
+>  (pin-over pict dx dy pict) -> pict
+>  (pin-over pict sub-pict find-proc pict) -> pict
+
+   Creates a pict with the same bounding box, ascent, and descent
+   as the initial argument, but with the second pict placed on top.
+   The dx and dy argument specify how far right and down the second
+   pict's corner is from the first pict's corner.
+   Alternately, the sub-pict and procedure arguments find a point
+   in the initial pict for the second pict's corner. The procedure
+   should be like lt-find.
+
+>  (pin-under pict dx dy pict) -> pict
+>  (pin-under pict sub-pict find-proc pict) -> pict
+
+   Like pin-over, but the second pict is drawn first, then the
+   initial pict.
+
+>  (table ncols pict-list col-aligns row-aligns col-seps row-seps) -> pict
+
+   Make a table given a list of picts. The list is a
+   concatenation of rows (which means that a Scheme `list' call
+   can be formatted to reflect the shape of the output table).
+  
+   The col-aligns, row-aligns, col-seps, and row-seps arguments are
+   `lists' specifying the row and columns alignments separation
+   between rows and columns.  For C columns and R rows, the first
+   two should have C and R superimpose procedures, and the last two
+   should have C - 1 and R - 1 numbers, respectively. The lists can
+   be improper (e.g. just a number), in which case the non-pair cdr
+   is used as the value for all remaining list items that were
+   expected. The alignment procedures are used to superimpose all
+   of the cells in a column or row; this superimposition determines
+   the total width or height of the column or row, and also
+   determines the horizontal or vertical placement of each cell in
+   the column or row.
+
+>  (record pict pict ...) -> pict
+
+   Make a UML-like record picture, where the
+   first argument is the title and the rest are fields.
+
+
+Drawing Adjusters:
+------------------
+
+>  (scale pict factor) -> pict
+>  (scale pict x-factor y-factor) -> pict
+
+   Scales a pict (by adjusting the destination dc<%>'s
+   scale while drawing the pict.
+      [MrEd only, in utils.ss]
+
+>  (ghost pict) -> pict
+
+   Make a container picture that doesn't draw the child picture,
+   but uses the child's size
+
+>  (thick pict) -> pict
+>  (thin pict) -> pict
+
+   Set the line thickness for a picture. For MrEd output,
+   selects between a pen width of 0 or 1.
+
+>  (linewidth w pict) -> pict
+
+   Set a specific pen width for drawing.
+      [MrEd only]
+
+>  (colorize pict color-string) -> pict
+
+   Apply a color to a picture. If the given picture has a colorized
+   sub-picture, the color of the sub-picture is not affected.
+   Be sure to use the LaTeX package `colordvi'.
+
+>  (colorize pict color%) -> pict
+
+   Same as above, except uses the color% object instead of a string
+   to indicate the color of the pict.
+      [MrEd only]
+
+>  (colorize pict num-list) -> pict
+
+   Same as above, except the list of three numbers indicate the
+   red, green, and blue components of the color.
+      [MrEd only]
+
+>  (clip pict)
+
+   Clips a pict to its bounding box.
+      [MrEd only, in utils.ss]
+
+>  (scale/improve-new-text pict-expr s-expr)
+>  (scale/improve-new-text pict-expr sx-expr sy-expr)
+
+   Syntax that is like `scale', but also sets
+   `current-expected-text-scale' while evaluating
+   `pict-expr':
+      [MrEd only, in utils.ss]
+
+>  (inset/clip pict amt)
+>  (inset/clip pict h-amt v-amt)
+>  (inset/clip pict l-amt t-amt r-amt b-amt)
+
+   Insets and clips the pict's drawing to its
+   bounding box. (Usually the inset amounts are negative.)
+      [MrEd only, in utils.ss]
+
+
+Bounding-Box Adjusters:
+-----------------------
+
+>  (inset pict i) -> pict
+>  (inset pict hi vi) -> pict
+>  (inset pict li ti ri bi) -> pict
+
+   Extends picture size by adding the give amounts to the
+    corersponding side; ascent and descent are extended, too.
+
+>  (clip-descent pict) -> pict
+
+   Truncates picture, removing descent part.
+
+>  (lift pict n) -> pict
+
+   Lifts picture relative to its baseline, extending
+    the height if necessary
+
+>  (drop pict n) -> pict
+
+   Drops picture below its ascent line, extending
+    the height if necessary
+
+>  (baseless pict) -> pict
+
+   Makes the descent 0 and the ascent the height
+
+>  (refocus pict pict) -> pict
+
+   Given a pict and an embedded pict, shifts the
+    given pict's bounding box to that of the
+    embedded pict
+
+>  (panorama pict) -> pict
+
+   Given a pict, shifts the given pict's bounding box
+    to enclose the bounding boxes of all sub-picts
+    (laundered or not)
+
+
+Finders:
+--------
+
+>  (lt-find pict pict-path) -> dx dy
+>  (lc-find pict pict-path) -> dx dy
+>  (lb-find pict pict-path) -> dx dy
+>  (ltl-find pict pict-path) -> dx dy
+>  (lbl-find pict pict-path) -> dx dy
+>  (rt-find pict pict-path) -> dx dy
+>  (rc-find pict pict-path) -> dx dy
+>  (rb-find pict pict-path) -> dx dy
+>  (rtl-find pict pict-path) -> dx dy
+>  (rbl-find pict pict-path) -> dx dy
+>  (ct-find pict pict-path) -> dx dy
+>  (cc-find pict pict-path) -> dx dy
+>  (cb-find pict pict-path) -> dx dy
+>  (ctl-find pict pict-path) -> dx dy
+>  (cbl-find pict pict-path) -> dx dy
+
+   Finds an embedded pictur.
+   A pict-path is either
+    pict
+    non-empty-pict-path-list
+
+>  (launder pict) -> pict
+
+   Creates a new pict that hides the given pict from XX-find
+
+
+Other constructors:
+-------------------
+
+>  pin-line                ; pict 
+                           ; src-pict (pict pict -> x y)
+                           ; dest-pict (pict pict -> x y)
+                           ; [line-w [color-string [lines-under?]]]
+                           ; -> pict
+>  pin-arrow-line          ; arrow-size pict 
+                           ; src-pict (pict pict -> x y)
+                           ; dest-pict (pict pict -> x y)
+                           ; [line-w [color-string [lines-under?]]]
+                           ; -> pict
+>  pin-arrows-line         ; arrow-size pict 
+                           ; src-pict (pict pict -> x y)
+                           ; dest-pict (pict pict -> x y)
+                           ; [line-w [color-string [lines-under?]]] 
+                           ; -> pict
+
+   Adds a line or line-with-arrows onto a pict, using
+   one of the sub-pict-finding functions (e.g., `lt-find')
+   to extract the source and destination of the line.
+      [MrEd only, in utils.ss]
+
+>  (hyperlinkize pict) -> pict
+
+   Adds an underline and blue color. The pict's
+    height and descent are extended.
+      [MrEd only, in utils.ss]
+
+
+Renderers:
+----------
+
+>  (show-pict pict [w #f] [h #f]) -> void
+
+   Opens a frame that displays the pict.
+   The frame adds one method: 
+     set-pict : pict -> void
+   that changes the visible pict.
+   the optional w and h arguments must
+   be either numbers of #f. If numbers,
+   the window is at least that size
+   and the pict is drawn in the middle of
+   the window.
+      [MrEd only]
+
+>  (draw-pict pict dc x y) -> void
+
+   Draw a pict to a dc<%>
+      [MrEd only]
+
+>  (make-pict-drawer pict) -> ((dc x y) -> void)
+
+   Generate a pict-drawer procedure for multiple renderings of a
+   pict (much faster than repeated calls to draw-pict)
+      [MrEd only]
+
+
+MrEd DC Helpers:
+----------------
+
+>  (scale-color factor string-or-color%) -> color%
+
+   Scales a color, making it brighter or darker. If the
+   factor is < 1, the color is darkened by multiplying
+   the RGB components by the factor. If the factor is > 1,
+   the color is lightened by dividing the gap between
+   the RGB components and 255 by the factor.
+      [MrEd only, in utils.ss]
+
+>  (find-pen string-or-color% [size 1] [style 'solid]) -> pen%
+
+   Gets an immutable pen% from the-pen-list
+      [MrEd only, in utils.ss]
+
+>  (find-brush string-or-color% [style 'solid]) -> brush%
+
+   Gets an immutable brush from the-brush-list
+      [MrEd only, in utils.ss]
+
+>  color-series            ; dc<%> num-steps step-delta
+                           ;  start-color-or-string%
+                           ;  end-color-or-string%
+                           ;  (num -> any)
+                           ;  set-pen? set-brush? -> void
+
+   Calls a drawing function multiple times, gradually
+   changing the pen/brush color for each call. The
+   step count and step delta should be exact numbers;
+   the procedure is called with each number from 0 to 
+   the step count, using the step delta. For the first
+   call, the current pen and/or brush color matches the
+   starting color; for the last call, it matches the
+   ending color; and for intermediate calls, the color
+   is an intermediate color.
+      [MrEd only, in utils.ss]
+
+------------------------------------------------------------
+Additional LaTex Utilities
+------------------------------------------------------------
+
+>  (tex string) -> pict
+>  (text-line string) -> pict
+>  (text-line/phantom string string) -> pict
+>  (tex-paragraph w string ['top|'bottom]) -> pict
+
+   Create picts from LaTeX code
+      [LaTeX only]
+
+>  (left-brace h) -> pict
+>  (right-brace h) -> pict
+>  (left-delimit str h) -> pict
+>  (right-delimit str h) -> pict
+>  (middle-delimit str h) -> pict
+>  (top-brace w) -> pict
+>  (bottom-brace w) -> pict
+
+   Delimiters to go around height h (result is taller than h;
+    try h/2)
+   Delimiter to go around width w (result is w wide)
+      [LaTeX only]
+
+>  (pict->string pict) -> string
+
+   Generate the LaTeX code for a pict.
+      [LaTeX only]
+
+------------------------------------------------------------
+MrEd and LaTex Setup
+------------------------------------------------------------
+
+>  dc-for-text-size
+
+   Parameter specifying the dc<%> to use for measuring text.
+   Default: #f
+      [MrEd only]
+
+>  current-expected-text-scale ; -> (list num num)
+                               ; (list num num) -> void
+
+   A parameter used to refine text measurements to better
+   match an expected scaling of the image.
+   Default: 1
+      [MrEd only]
+
+>  (read-in-sizes string) -> void
+
+   Load `tex' pict size information generated by a LaTeX run.
+      [LaTeX only]
+
+>  output-measure-commands
+
+   Parameter specifying whether to produce LaTeX commands to
+   produce size information for a future run.
+   Default: #t
+      [LaTeX only]
+
+>  using-pict2e-package
+
+   Parameter specifying whether the `pict2e' package is active.
+   Default: #f
+      [LaTeX only]
+
+>  draw-bezier-lines
+
+   Parameter specifying whether to draw precise lines for `connect'
+   with bezier curves. The value is a Boolean or a procedure that
+   takes a length and returns the number of points to use.
+   Default: #f
+      [LaTeX only]
+
+>  use-old-connect
+
+   Parameter to use the old implementation of `connect'.
+   Default: #f
+      [LaTeX only]
+
+>  tex-series-prefix
+
+   Parameter specifying a string to embed in the sizing key for a
+   pict created with `tex'. The prefix is applied when the `tex'
+   pict is created. Turning on the `serialize-tex-picts' parameter
+   effectively generates a new series prefix for every `tex' pict.
+   Default: #f
+      [LaTeX only]
+   
+>  serialize-tex-picts
+
+   Parameter specifying whether to assign serial numbers to
+   `tex'-generated strings for sizing purposes. Serial numbers
+   allow the same tex string to be used in multiple contexts, but
+   the output must be built in the same order every time.
+   Default: #f
+      [LaTeX only]
+
+>  black-and-white
+
+   Parameter specifying whether to draw in B&W or color (when
+   `colorize' is used).
+   Default: #f
+
+------------------------------------------------------------
+Obsolete functions
+------------------------------------------------------------
+
+>  (picture w h command-list) -> pict
+
+   Obsolte: describes a picture with low-level commands; see below.
+
+>  (cons-picture pict command-list) -> pict
+>  (cons-picture* pict command-list) -> pict
+
+   Create a new picture by `cons'ing drawing commands onto
+   an existing picture. `cons-picture*' maintains the pict's
+   descent and ascent.
+
+>  (cons-colorized-picture pict color-string command-list) -> pict
+
+   Like `cons-picture', but the newly consed commands get a
+   color
+
+>  (place-over pict dx dy pict) -> pict
+>  (place-over pict sub-pict find-proc pict) -> pict
+
+   Obsolete versions of `pin-over', where a procedure is expected
+   to return a flipped y value, like find-lt.
+
+>  (place-under pict dx dy pict) -> pict
+>  (place-under pict sub-pict find-proc pict) -> pict
+
+   Like `place-over', but the second pict is drawn first, then the
+   initial pict.
+
+>  find-lt
+>  find-lc
+>  find-lb
+>  find-ltl
+>  find-lbl
+>  find-ct
+>  find-cc
+>  find-cb
+>  find-ctl
+>  find-cbl
+>  find-rt
+>  find-rc
+>  find-rb
+>  find-rtl
+>  find-rbl
+
+   Obsolete versions of ...-find, where the result y is flipped
+
+>  (arrow-line dx dy size) -> pict
+>  (arrows-line dx dy size) -> pict
+
+   Obsolte versions of the `line+arrow[s]' functions,
+   where the vertical delta is negated.
+      [MrEd only, in utils.ss]
+
+>  add-line
+>  add-arrow-line
+>  add-arrows-line
+
+   Obsolete variants of the pin-...line functions
+   where the pict-finding functions are like `find-lt' (i.e.,
+   the y result is flipped)
+      [MrEd only, in utils.ss]
+
+------------------------------------------------------------
+Obsolete: Commands, Putables, and Drawables
+------------------------------------------------------------
+
+Commands:
+---------
+
+These commands use LaTeX-style coordinates: bottom-left
+is (0, 0).
+
+The varieties of `connect' commands are for LaTeX, where
+lines are constrained to a small set of allowed angles.
+For MrEd, all of the commands below act the same, and produce
+lines with precisely the requested angle.
+
+A command is one of the following:
+   `(place ,x ,y ,pict)
+   `(put ,x ,y ,putable)
+   
+
+   `(connect ,x1 ,y1 ,x2 ,y2 ,bool)         ; line or vector; bool => vector;
+                                            ;   from (x1,y1) to (~x2,~y2)
+                                            ;   as close as possible
+                                            ;   (synonym for connect~xy with 
+                                            ;   an infinite tolerance when
+                                            ;   draw-bezier-lines is #f, or
+                                            ;   for curve when draw-bezier-lines
+                                            ;   is #t)
+   `(dconnect ,x ,y ,dx ,dy ,bool)          ; line or vector; bool => vector;
+                                            ;   from (x,y) to (~(x+dx),~(y+dy))
+                                            ;   as close as possible (uses
+                                            ;   connect)
+   `(connect~y ,tol ,x1 ,y2 ,x2 ,y2 ,bool)  ; sequence of lines from
+                                            ;  (~x1,~y1) to (~x2,~y2) where
+                                            ;  either: 
+                                            ;    1) ~x2=x2 and |~y2-y2|<tol
+                                            ;    2) ~y2=y2 and |~x2-x2|<tol and 
+                                            ;       the final line is vertical
+   `(connect~x ,tol ,x1 ,y2 ,x2 ,y2 ,bool)  ; like connect~y, but either:
+                                            ;    1) ~x2=x2 and |~y2-y2|<tol
+                                            ;       the final line is horizontal
+                                            ;    2) ~y2=y2 and |~x2-x2|<tol
+   `(connect~xy ,tol ,x1 ,y2 ,x2 ,y2 ,bool) ; like connect~y, but either:
+                                            ;    1) ~x2=x2 and |~y2-y2|<tol
+                                            ;       the final line is horizontal
+                                            ;    2) ~y2=y2 and |~x2-x2|<tol
+                                            ;       the final line is vertical
+                                            ;    3) |(x2,y2)-(~x2,~y2)|<tol
+   `(curve ,x1 ,y1 ,x2 ,y2 ,xc ,yc ,d)      ; bezier curve; d is optional density
+                                            ;  for LaTeX; the default d is 1.0
+
+  [Notes: curve can generate more precise lines than connect~, but it usually 
+          requires more LaTeX memory.]
+
+Putables:
+---------
+
+A putable is one of the following:
+   draw
+   `(line ,dh ,dv ,hlen)       ; LaTeX-style line - slope and size is limited
+   `(vector ,dh ,dv ,hlen)     ; LaTeX-style vector - slope and size is limited
+   `(circle ,d)                ; LaTeX-style circle - size is limited
+   `(circle* ,d)
+   `(frame ,draw)
+   `(colorbox ,color-str ,draw)
+   `(oval ,str ,w ,h)  ; str is portion a la LaTeX: e.g., "" or "[bl]";
+                       ;  the oval is centered at the put position, instead of
+                       ;  bl-aligned
+   ; plus some more undocumented ones...
+
+Draws:
+------
+
+A draw is one of the following:
+   string ; latex string
+   `(picture ,w ,h ,@command-list)
+   `(color ,color-string ,draw)
+   `(thickness ,thickness ,draw) ; thickness is thicklines or thinlines
+
+------------------------------------------------------------
+_slideshow-run.ss_ and _slideshow.ss_
+------------------------------------------------------------
+
+The "slideshow-run.ss" and "slideshow.ss" modules simply re-export
+`(lib "run.ss" "slideshow")' and `(lib "slideshow.ss" "slideshow")'
+for backward compatibility.
+
+See the "slideshow" collection for more details.
+
+------------------------------------------------------------
+_balloon.ss_
+------------------------------------------------------------
+
+The "balloon.ss" module produce functions for creating and placing
+cartoon-speech balloons.
+
+> (wrap-balloon pict spike-sym dx dy [color corner-radius])
+
+Superimposes `pict' on top of a balloon that wraps it.
+
+The `spike-sym' indicates the corner from which a spike protrudes from
+the balloon (i.e., the spike that points to whatever the balloon is
+about). It's one of 'n, 's, 'e, 'w, 'ne, 'se, 'sw, or 'nw.
+
+The `dx' and `dy' arguments specify how far the spike should protrude.
+For a 'w spike, `dx' should be negative, etc.
+
+The `color' argument is the background color for the balloon. It
+defaults to `balloon-color'.
+
+The result is a balloon, not a pict. The `balloon-pict' function
+extracts a pict whose bounding box does not include the spike, but
+includes the rest of the image. (The `balloon-point-x' and
+`balloon-point-y' functions specify the location of the spike point.)
+
+> (pin-balloon balloon pict to-pict find-to-pos)
+> (pin-balloon balloon pict x y)
+
+Superimposes the pict in `balloon' onto `pict' to produce a new
+pict. The balloon is positioned so that its spike points to the
+location specified by either `x' and `y' (numbers) or `to-pict' and
+`find-to-pos'. In the latter case, `to-pict' is a sub-pict in `pict'
+and `find-to-pos' is a function like `lt-find'.
+
+The resulting pict has the same bounding box, descent, and ascent as
+`pict', even if the balloon extends beyond the bounding box.
+
+> (place-balloon balloon pict to-pict find-to-pos)
+> (place-balloon balloon pict x y)
+
+Obsolete version of `pin-balloon' where `find-to-pos' is a function
+like `find-lt' (i.e., the y result is flipped).
+
+> (balloon w h corner-radius spike-pos dx dy color)
+
+Creates a balloon, much like `wrap-balloon' except that the balloon's
+width is `w' and its height is `h'. The `corner-radius' argument
+specifies the radius for the balloon's rounded corners; if the radius
+is positive, the value is used as the radius of the rounded corner,
+but if radius is negative, the absolute value is used as the the
+proportion of the smallest dimension of the balloon.
+
+> (make-balloon pict num num) -> balloon
+> (balloon-pict balloon)      -> pict
+> (balloon-point-x balloon)   -> num
+> (balloon-point-y balloon)   -> num
+> (balloon? v)                -> bool
+
+A balloon value encapsulates a pict and the position of the balloon's
+spike relative to the balloon's top-left corner.
+
+> balloon-color
+
+The default background color for a balloon.
+
+------------------------------------------------------------
+_face.ss_
+------------------------------------------------------------
+
+The "face.ss" module provides functions for a kind of
+Mr.-Potatohead-style face library. The _face-demo.ss_ module
+implements an interactive browser for face configurations.
+
+> default-face-color - orange
+
+> (face mood-symbol [color]) - returns a pict a pre-configured face
+  with the given base color. The built-in configurations, selected by
+  mood-symbol, are as follows:
+
+    'unhappy - (face* 'none 'plain #t default-face-color 6)
+    'sortof-unhappy - (face* 'worried 'grimace #t default-face-color 6)
+    'sortof-happy - (face* 'worried 'medium #f default-face-color 6)
+    'happy - (face* 'none 'plain #f default-face-color 6)
+    'happier - (face* 'none 'large #f default-face-color 3)
+    'embarrassed - (face* 'worried 'medium #f default-face-color 3)
+    'badly-embarrassed - (face* 'worried 'medium #t default-face-color 3)
+    'unhappier - (face* 'normal 'large #t default-face-color 3)
+    'happiest - (face* 'normal 'huge #f default-face-color 0 -3)
+    'unhappiest - (face* 'normal 'huge #t default-face-color 0 -3)
+    'mad - (face* 'angry 'grimace #t default-face-color 0)
+    'mean - (face* 'angry 'narrow #f default-face-color 0)
+
+> (face* eyebrow-kind mouth-kind frown? [color eye-inset eyebrow-dy pupil-dx pupil-dy])
+  - returns a pict for a configured face:
+
+      - eyebrow-kind is one of 'none, 'normal, 'worried, or 'angry
+      - mouth-kind is one of 'plain, 'narrow, 'medium, 'large, 'huge, 
+                             'grimace, or 'tongue
+      - frown? determines whether the mouth is up or down
+      - color is either a color string or a color% object
+      - eye-inset adjusts the eye size; recommend values: between 0 and 10
+      - eyebrow-dy adjusts the eyebrows; recommend values: between -5 and 5
+      - pupil-dx adjusts the pupil; recommend values: between -10 and 10
+      - pupil-dy adjusts the pupil; recommend values: between -15 and 15
+
+------------------------------------------------------------
+_code.ss_
+------------------------------------------------------------
+
+The "code.ss" module provides a unit for typesetting Scheme code a la
+SlaTeX.
+
+The _code@_ signed unit imports _code-params^_ and exports _code^_.
+The _code-params^_ signature contains two elements:
+
+   current-font-size - a thunk to obtain the font size to use for
+                       text
+   line-sep - an integer for the amount of space (in drawing units) to
+              insert between lines of text
+
+The _code^_ unit supplies the following
+
+> (typeset-code stx) - produces a pict for code in the given syntax
+  object. The source-location information of the syntax object
+  determines the line breaks, line indenting, and space within a row.
+  Empty rows are ignored.
+
+  Normally, `typeset-code' is used through a macro (often called
+  `code') that is generated by `define-code'. See below for more
+  information.
+
+  Embedded picts within `stx' are used directly. Row elements are
+  combined using `htl-append', so use `code-align' (see below) as
+  necessary to add an ascent to ascentless picts.
+
+  An identifier that starts with an underscore is italicized in
+  the pict. Underscores and carets in the middle of a word
+  create superscripts and subscripts (like TeX). For example
+  `foo_^4_ok' is displayed as the identifier "foo" with a "4"
+  superscript and an "ok" subscript.
+
+  Further, uses of certain keywords in `stx' typeset specially:
+
+>    code:blank - produces a space
+>    (code:comment s ...) - produces a comment block, with each `s'
+                            on its own line; each `s' must be a string
+                            or a pict
+>    (code:line datum ...) - typesets the `datum' sequence, mostly useful
+                             for the top-level sequence, since 
+                             `typeset-code' takes only one argument
+>    (code:contract datum ...) - like code:line, but every `datum' is
+                                 colored as a comment, and a semi-colon
+                                 is prefixed to every line
+>    (code:template datum ...) - like code:line, but a semi-colon
+                                 is prefixed to every line
+>     $                        - typesets as a vertical bar (for no
+                                 particularly good reason)
+
+> current-code-tt - parameter for a one-argument function to turn a
+  string into a pict, used to typeset text. The default is
+    (lambda (s) (text s `(bold . modern) (current-font-size)))
+
+> current-comment-color - parameter for a string or color% for comments
+> current-keyword-color - parameter for a string or color% for keywords
+> current-id-color - parameter for a string or color% for identifiers
+> current-literal-color - parameter for a string or color% for literals
+> current-base-color - parameter for a string or color% for everything else
+
+For backward compatibility:
+> comment-color - default string/color% for comments
+> keyword-color - default string/color% for keywords
+> id-color - default string/color% for ids
+> literal-color - default string/color% for literals
+
+> (code-align pict) - adjusts the ascent of `pict' so that its bottom
+  aligns with the baseline for text; use this function when `pict'
+  has no ascent.
+
+> current-keyword-list - a list of identifiers to color as keywords; the
+  default includes the MzScheme syntactic form names
+
+> current-const-list - a list of identifiers to color ad literals; the
+  default is 'empty
+
+> code-colorize-enabled - a parameter to enable or disable all code
+  coloring
+
+In addition to the `code@' unit, the "code.ss" module exports a
+`define-code' macro for defining other macros:
+
+> (define-code code-id typeset-code-id) - defines `code-id' as a macro
+  that uses `typeset-code-id', which is a function with the same input
+  as `typeset-code'.
+
+  The `code-id' syntactic form takes a sequence of `datum's:
+
+    (code datum ...)
+
+  It produces a pict that typesets the sequence. Source-location
+  information for the `datum' determine the layout of code in the
+  resulting pict.
+
+  If a `datum' contains `(unsyntax expr)' (perhaps as #,expr), then
+  the `expr' is evaluated and the result datum is spliced in place of
+  the `unsyntax' form in `datum'. If the result is not a syntax object,
+  it is given the source location of the `(unsyntax expr)'.
+
+  The `code' syntactic form expands to a use of `typeset-code'. The
+  `datum's are not merely syntax-quoted, because then the compiled
+  form of the call would loose source information. Instead, `code'
+  expands to an expression that preserves expansion-time
+  source-location information.

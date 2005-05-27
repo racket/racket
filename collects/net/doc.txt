@@ -1,0 +1,2260 @@
+The `net' collection contains libraries that provide access to the
+following _Internet_ (quasi-)protocols:
+
+  URL parsing
+  CGI backends
+  sendmail
+  SMTP
+  NNTP
+  POP-3
+  IMAP
+  Mail header reading and writing
+  DNS
+
+==========================================================================
+_URL_ posting, _web clients_, _WWW_
+==========================================================================
+
+To load directly: (require (lib "url.ss" "net"))
+Module files: _url.ss_ - provides the procedures documented below
+              _url-unit.ss_ - provides unit net:url@
+              _url-sig.ss_ - provides signalture net:url^
+
+
+ABSTRACT -------------------------------------------------------------
+
+The url package helps programmers use URIs as specified in RFC 2396:
+http://www.ietf.org/rfc/rfc2396.txt
+
+TYPES ----------------------------------------------------------------
+
+> url
+  struct url (scheme user host port path fragment)
+  scheme : string or #f
+  user : string or #f
+  host : string or #f
+  port : number or #f
+  path : (listof (union string path/param))
+  query : (listof (cons symbol string))
+  fragment : string or #f
+
+  The basic structure for all URLs.
+
+  http://sky@www.cs.brown.edu:801/cgi-bin/finger;xyz?name=shriram;host=nw#top
+  {-1}   {2} {----3---------} {4}{---5---------} {6} {----7-------------} {8}
+
+  1 = scheme, 2 = user, 3 = host, 4 = port,
+  5 = path,  6 = param, 7 = query, 8 = fragment
+
+  If the scheme is "file", then the path is a platform-dependent
+  string assumed to have been constructed using build-path.  The library
+  does, however, check for the presence of a fragment designator and, if
+  there is one, separates it from the rest of the path.  For non-"file"
+  schemes, the path is a URL path as defined in the standard.
+
+  If a path segment has a parameter, it is represented with
+  an instance of the path/param struct. Otherwise, it is
+  just represented as a string.
+
+  The strings inside the fields user, path, query, and fragment are
+  represented directly as Scheme strings, ie without
+  url-syntax-specific quoting. The procedures `string->url' and
+  `url->string' translate things like %20 into spaces and back again.
+
+  By default, query associations are parsed with either ";" or "&" as
+  a separator, and they are generated with ";" as a separtor. The
+  `current-alist-separator-mode' parameter for "uri-codec.ss" adjusts
+  this default.
+
+  An empty string at the end of the list of paths
+  corresponds to a url that ends in a slash. For example,
+  this url: http://www.drscheme.org/a/ has a path field
+  '("a" "") and this url: http://www.drscheme.org/a
+  has a path field '("a").
+
+> path/param
+
+  A pair of strings, accessible with _path/param-path_ and
+  path/param-params_ that joins a path segment with its
+  params in a url. The function _path/param?_ recognizes
+  such pairs.
+
+> pure-port
+
+  A pure port is one from which the MIME headers have been removed, so
+  that what remains is purely the first content fragment.
+
+> impure-port
+
+  An impure port is one that still has its MIME headers.  Contrast
+  with a pure-port.
+
+PROCEDURES -----------------------------------------------------------
+
+> unixpath->path
+
+  This procedure, which used to be provided by this library, is no
+  longer supported.
+
+> (string->url string) -> url
+
+  Parses the url specified by the string into a url struct. The
+  `string->url' procedure uses `form-urlencoded->alist' when parsing
+  the query, so it is sensitive to the `current-alist-separator-mode'
+  parameter for determining the association separtor.
+
+> (combine-url/relative url string) -> url
+
+  Given a base URL and a relative path, combines the two and returns a
+  new URL as per the URL combination specification.  Call the
+  arguments base and relative.  They are combined according to the
+  following rules (applied in order until one matches):
+  - If either argument is an empty URL, the result is the other
+    argument.
+  - If relative sports a scheme, then the result is relative.
+  - If the base has scheme "file", the procedure uses the special rule
+    specified below.
+  - If relative specifies a host, then the result is relative.
+  Failing the above, relative inherit's base's host and port.  Then:
+  - If the path of relative begins with a "/", the result is relative.
+  - If the path of relative is empty, then relative inherits base's
+    params and query, and the result is relative.
+  - Otherwise base and relative are combined as per the standard
+    specification of merging and normalization.
+
+  On combining "file" schemes:
+
+  If the base has scheme "file", relative is treated as a
+  slash-separated path (unless it contains an empty path --- only
+  params, queries, and fragments --- in which case the path is not
+  used).  These path fragments are combined using build-path, starting
+  with the base's path.  Three path segments are special: ".."
+  corresponds to an 'up directive to build-path, while "." and ""
+  correspond to 'same.  As a consequence, if relative begins with "/",
+  this does not make it an absolute URL: the leading slash is treated
+  as if the initial segment is "", so this has no effect, and base's
+  path remains the base path of the result.  If base refers to a
+  directory, relative is indexed from that directory; if base refers
+  to a file, relative is indexed from the directory containing the
+  file.  Note that if base does not refer to an actual directory that
+  exists on the filesystem, then it must syntactically be a directory
+  as understood by split-path.
+
+  The above algorithm tests for the presence of a directory to
+  correctly combine paths.  As a result, it can raise any exception
+  raised by directory-exists?.  None of these exceptions is trapped by
+  the procedure; consumers must be prepared for them.
+
+> (netscape/string->url string) -> url
+
+  Turns a string into a URL, applying (what appear to be) Netscape's
+  conventions on automatically specifying the scheme: a string
+  starting with a slash gets the scheme "file", while all others get
+  the scheme "http".
+
+> (url->string url) -> string
+
+  Generates a string corresponding to the contents of the url struct.
+
+  The `url->string' procedure uses `alist->form-urlencoded' when
+  formatting the query, so it it sensitive to the
+  `current-alist-separator-mode' parameter for determining the
+  association separtor. In particular, the default is to separate
+  associations with ";" (based on modern recommendations) instead of
+  "&".
+
+> (decode-some-url-parts url) -> url
+
+  This procedure, which used to be provided by this library, is no
+  longer supported or necessary. A `url' struct not contains properly
+  decoded information.
+
+> (get-pure-port url [list-of-strings]) -> input-port
+
+  Takes a URL and returns a pure port corresponding to it.  Writes the
+  optional RFC 822 header-line strings to the server.  For the "file"
+  scheme, uses open-input-file, does not handle exceptions, and
+  ignores the optional strings.
+
+> (post-pure-port url post-byte-string [list-of-strings]) -> input-port
+
+  Like `get-pure-port', but issues a POST request (instead of a GET
+  request) to a web server using the given post data byte string.
+
+> (get-impure-port url [list-of-strings]) -> input-port
+
+  Takes a URL and returns an impure port corresponding to it.  Writes
+  the optional RFC 822 header-line strings to the server.  There are
+  no impure ports with scheme "file".
+
+> (post-impure-port url post-byte-string [list-of-strings]) -> input-port
+
+  Like `get-impure-port', but issues a POST request (instead of a GET
+  request) to a web server using the given post data string.
+
+> (display-pure-port input-port) -> void
+
+  Writes the output of a pure port.  For debugging purposes.
+
+> (purify-port input-port) -> string
+
+  Purifies a port, returning the MIME headers, plus a leading line
+  for the form
+
+   HTTP/<vers> <code> <messsage>
+
+  where <vers> is something like 1.0 or 1.1, <code> is an exact
+  integer for the response code, and <message> is arbitrary text
+  without a return or newline.
+
+  The "head.ss" library provides procedures, such as `extract-field,
+  for manipulating the header.
+
+  Since web server sometimes return mis-formatted replies,
+  `purify-port' is liberal in what it accepts as a header. as a
+  result, the result string may be ill formed, but it will either be
+  the empty string, or it will be a string matching the following
+  regexp:
+
+      #rx"^HTTP/.*?((\r\n\r\n)|(\n\n)|(\r\r))"
+
+> (call/input-url url url->port-proc port->X-proc [list-of-strings]) -> X
+
+  First argument is the URL to open.  Second is a procedure that takes
+  a URL and turns it into a (pure or impure) port.  The third takes
+  the (pure or impure) port and handles its contents.  The optional
+  fourth argument is a set of strings to send to the server. The result
+  of `call/input-url' is the result of the third argument procedure.
+
+> (current-proxy-servers) -> (list (list scheme string port-number) ...)
+> (current-proxy-servers server-mapping) -> void
+
+  The `current-proxy-server' parameter determines a mapping of proxy
+  servers used for connections. The mapping is of the form
+
+    (list (list proxiable-scheme server-string port-number) ...)
+
+  where, currently, the only proxiable scheme is "http". An omitted
+  mapping indicates that no proxy should be used. The default mapping
+  is the empty list (i.e., no proxies).
+
+PRAGMATICS -----------------------------------------------------------
+
+_web documents_
+
+  To access the text of a document from the Web, first obtain its URL
+  as a string; convert this into a url structure using string->url;
+  then open the document using get-pure-port or get-impure-port,
+  depending on whether or not you wish to examine its MIME headers.
+  At this point you have a regular input port with which to process
+  the document like any other file.  Note that currently the only
+  supported protocol is "http".  The "news" protocol is not supported
+  directly by this library, but the news library in this collection
+  can be used to read NNTP documents.
+
+EXAMPLE --------------------------------------------------------------
+
+ (require (lib "url.ss" "net"))
+ (define url:cs (string->url "http://www.cs.rice.edu/"))
+ (define (test url)
+   (call/input-url url get-pure-port display-pure-port))
+ (test url:cs)
+
+UNITS ----------------------------------------------------------------
+
+The _url-sig.ss_ module exports the _net:url^_ signature which
+contains the names documented above. the _url-unit.ss_ module exports
+_url@_, a unit that imports net:tcp^ (see "tcp-sig.ss", below) and
+exports the names in net:url^.
+
+==========================================================================
+_URL viewing_
+==========================================================================
+
+To load a module for accessing a Web _browser_ either
+  (require (lib "external.ss" "browser"))
+or
+  (require (lib "sendurl.ss" "net"))
+
+The version in "browser" will prompt the user for a browser preference
+if not already set.  The version in "sendurl.ss" lacks this capability,
+but does not depend on MrEd's graphical toolbox.
+
+These modules define one main function:
+
+> (send-url str [separate-window? #t]) -
+  opens the url in a platform-specific manner,
+  sending a message to the local browser to display the url named
+  by `str'. The separate-window? parameter determines
+  if the browser creates a new window to display the url
+  or not.
+
+  Under Windows, `send-url' uses the registry to get a
+  browser-launching command line. The registry can be read only from
+  MrEd (i.e., not MzScheme).
+
+  Under Mac OS, `send-url' uses the URL apple event library.
+
+  Under Unix, `send-url' uses the value of a the _external-browser_
+  parameter to select a browser.  The parameter is initialized to the
+  value of the _'external-browser preference_, which can be either
+  'opera, 'galeon, 'netscape, 'mozilla, 'dillo, #f, or a pair of
+  strings.  If #f, `send-url' uses the first of these browsers found
+  in the path.  If the parameter is a pair of strings, then the first
+  string, the url requested, followed by the second string is
+  interpreted as a command line used to launch a browser.  If the
+  preferred or default browser can't be launched, `send-url'
+  fails. See the file.ss library for details on setting preferences.
+
+> (browser-preference? v) -> bool
+  return #t if v is a valid browser preference
+
+==========================================================================
+_CGI_ backends, _WWW_
+==========================================================================
+
+To load directly: (require (lib "cgi.ss" "net"))
+Module files: _cgi.ss_ - provides the procedures documented below
+              _cgi-unit.ss_ - provides unit net:cgi@
+              _cgi-sig.ss_ - provides signalture net:cgi^
+
+ABSTRACT -------------------------------------------------------------
+
+The cgi package helps programmers write scripts that follow the Common
+Gateway Interface (CGI/1.1) protocol of the World-Wide Web:
+http://hoohoo.ncsa.uiuc.edu/cgi/
+
+INTERACTIONS ---------------------------------------------------------
+
+The CGI library expects to be run in a certain context as defined by
+the CGI standard.  This means, for instance, that certain environment
+variables will be bound.  Unfortunately, not all CGI environments
+provide this.  For instance, the FastCGI library, despite its name,
+does not bind the environment variables required of the standard.
+Users of FastCGI will need to bind REQUEST_METHOD and possibly also
+QUERY_STRING to successfully employ the CGI library.  The FastCGI
+library ought to provide a way to extract the values bound to these
+variables; the user can then put these into the CGI program's
+environment using PLT Scheme's `putenv' function.
+
+TYPES ----------------------------------------------------------------
+
+binding:
+
+  A binding is an association of a form item with its value.  Some form
+  items (such as checkboxes) may correspond to multiple bindings.  A
+  binding is a tag-string pair, where a tag is a symbol or a string.
+
+bindings:
+
+  A list of `binding's.
+
+html-string:
+
+  A text string that has been escaped according to HTML conventions.
+
+EXCEPTIONS -----------------------------------------------------------
+
+> cgi-error
+  struct cgi-error ()
+
+  cgi-error is a super-structure for all exceptions thrown by this
+  library.
+
+> incomplete-%-suffix
+  struct (incomplete-%-suffix cgi-error) (chars)
+  chars : list of chars
+
+  Used when a % in a query is followed by an incomplete suffix.  The
+  characters of the suffix -- excluding the "%" -- are provided by the
+  exception.
+
+> invalid-%-suffix
+  struct (invalid-%-suffix cgi-error) (char)
+  char : char
+
+  Used when the character immediately following a % in a query is
+  invalid.
+
+PROCEDURES -----------------------------------------------------------
+
+> (get-bindings) -> bindings
+> (get-bindings/post) -> bindings
+> (get-bindings/get) -> bindings
+
+  Returns the bindings that corresponding to the options specified by
+  the user.  The /post and /get forms work only when POST and GET
+  forms are used, respectively, while get-bindings determines the kind
+  of form that was used and invokes the appropriate function.
+
+> (extract-bindings symbol-or-string bindings) -> list of strings
+
+  Given a key and a set of bindings, extract-bindings determines which
+  ones correspond to a given key.  There may be zero, one, or many
+  associations for a given key.
+
+> (extract-binding/single symbol-or-string bindings) -> string
+
+  Given a key and a set of bindings, extract-binding/single ensures
+  that the key has exactly one association, and returns it.
+
+> (output-http-headers) -> void
+
+  Outputs all the http headers needed for a normal html response.
+  Only call this function if you are not using generate-html-output
+  or generate-error-output.
+
+> (generate-html-output html-string list-of-html-strings [color color color color color]) -> void
+
+  The first argument is the title.  The second is a list of strings
+  that consist of the body.  The last five arguments are each strings
+  representing a HTML color; in order, they represent the color of the
+  text, the background, un-visited links, visited links, and a link
+  being selected.
+
+> (string->html string) -> html-string
+
+  Converts a string into an html-string by applying the appropriate
+  HTML quoting conventions.
+
+> (generate-link-text string html-string) -> html-string
+
+  Takes a string representing a URL, a html-string for the anchor
+  text, and generates HTML corresponding to an achor.
+
+> (generate-error-output list-of-html-strings) -> <exit>
+
+  The procedure takes a series of strings representing the body,
+  prints them with the subject line "Internal error", and forces the
+  script to exit.
+
+> (get-cgi-method) -> string
+
+  Returns either "GET" or "POST".  Always returns a string when
+  invoked inside a CGI script.  Unpredictable otherwise.
+
+> (bindings-as-html bindings) -> list of html-strings
+
+  Converts a set of bindings into a list of html-string's.  Useful for
+  debugging.
+
+==========================================================================
+_sending mail_, _sendmail_
+==========================================================================
+
+To load directly: (require (lib "sendmail.ss" "net"))
+Module files: _sendmail.ss_ - provides the procedures documented below
+              _sendmail-unit.ss_ - provides unit net:sendmail@
+              _sendmail-sig.ss_ - provides signalture net:sendmail^
+
+
+ABSTRACT -------------------------------------------------------------
+
+The sendmail package helps programmers write programs that need to
+send electronic mail messages.  The package assumes the existence of a
+conformant sendmail program on the local system; see also the SMTP
+package, below (and, in most cases, use it instead).
+
+TYPES ----------------------------------------------------------------
+
+  All strings used in mail messages are assumed to conform to their
+  corresponding SMTP specifications, except as noted otherwise.
+
+EXCEPTIONS -----------------------------------------------------------
+
+> no-mail-recipients
+  struct (no-mail-recipients exn) ()
+
+  Raised when no mail recipients were specified.
+
+PROCEDURES -----------------------------------------------------------
+
+> (send-mail-message/port from-string subject-string to-list-of-strings cc-list-of-strings bcc-list-of-string) -> output-port
+
+  The first argument is the header for the sender, the second is the
+  subject line, the third a list of To: recipients, the fourth a list
+  of CC: recipients, and the fifth a list of BCC: recipients.  The
+  optional sixth argument is used for other mail headers, which must
+  be specified completely formatted.
+
+  The return value is an output port into which the client must write
+  the message.  Clients are urged to use close-output-port on the
+  return value as soon as the necessary text has been written, so that
+  the sendmail process can complete.
+
+  The sender can hold any value, though of course spoofing should be
+  used with care.
+
+> (send-mail-message from-string subject-string to-list-of-strings cc-list-of-strings bcc-list-of-string body-list-of-strings [extra-headers-list-of-strings]) -> void
+
+  The arguments are the same as that for send-mail-message/port except
+  that there is one extra input, the list of strings corresponding to
+  the mail message (followed by the optional additional headers, if
+  present).  There is no interesting return value.
+
+  Lines that contain a single period do not need to be quoted.
+
+==========================================================================
+_sending mail_, _SMTP_
+==========================================================================
+
+To load directly: (require (lib "smtp.ss" "net"))
+Module files: _smtp.ss_ - provides the procedures documented below
+              _smtp-unit.ss_ - provides unit net:smtp@
+              _smtp-sig.ss_ - provides signalture net:smtp^
+
+ABSTRACT -------------------------------------------------------------
+
+The SMTP package helps programmers write programs that need to send
+electronic mail messages using SMTP. The client must provide the
+address of an SMTP server; in contrast, the mail package (see above)
+uses a pre-configured sendmail on the local system.
+
+TYPES ----------------------------------------------------------------
+
+  The head package defines the format of a `header' string, which is
+  used by `send-smtp-message'. The head package also provides
+  utilities to verify the formatting of a mail address. The procedures
+  of the SMTP package assume that the given string arguments are
+  well-formed.
+
+EXCEPTIONS -----------------------------------------------------------
+
+  Communication errors are signalled via exn:fail structure instances.
+
+PROCEDURES -----------------------------------------------------------
+
+> (smtp-send-message server-string from-string to-list-of-strings header
+                     message-list-of-strings/bytes [port]) -> void
+
+  The first argument is the IP address of the SMTP server. The
+  `from-string' argument specifies the mail address of the sender, and
+  `to-listof-strings' is a list of recipient addresses (including
+  "To", "CC", and "BCC" recipients). The `header' argument is the
+  complete message header, which should already include "From", "To",
+  and "CC" fields consistent with the given sender and recipients.
+  the `message-list-of-strings/bytes' argument is the body of the
+  message, where each string or byte string in the list corresponds to
+  a single line of message text; no string in
+  `message-list-of-strings' should contain a carriage return or
+  newline characters. The optional `port' argument specifies the IP
+  port to use in contacting the SMTP server; the default is 25.
+
+  See the head package for utilities that construct a message headers
+  and validate mail address strings.
+
+> (smtp-sending-end-of-message [proc])
+
+  Parameter that detemines a send-done procedure to be called after
+  `smtp-send-message' has completely sent the message. Before the
+  send-done procedure is called, breaking the thread that is executing
+  `smtp-send-message' cancels the send. After the send-done procedure
+  is called, breaking may or may not cancel the send (and probably
+  won't).
+
+==========================================================================
+_NNTP_, _newsgroups_
+==========================================================================
+
+To load directly: (require (lib "nntp.ss" "net"))
+Module files: _nntp.ss_ - provides the procedures documented below
+              _nntp-unit.ss_ - provides unit net:nntp@
+              _nntp-sig.ss_ - provides signalture net:nntp^
+
+ABSTRACT -------------------------------------------------------------
+
+The nntp package helps programmers access Usenet groups via the NNTP
+protocols:
+http://www.ietf.org/rfc/rfc0977.txt
+
+TYPES ----------------------------------------------------------------
+
+> communicator
+  struct communicator (sender receiver server port)
+  sender : oport
+  receiver : iport
+  server : string
+  port : number
+
+  Once a connection to a Usenet server has been established, its state
+  is stored in a communicator, and other procedures take communicators
+  as an argument.
+
+> message-index
+
+  A number or string (the number is common, but a string is useful for
+  specifying the entire Message-ID).
+
+> desired
+
+  A regular expression that matches against a Usenet header.
+
+EXCEPTIONS -----------------------------------------------------------
+
+> nntp
+  struct (nntp exn) ()
+
+  The super-struct of all subsequent exceptions.
+
+> unexpected-response
+  struct (unexpected-response nntp) (code text)
+  code : number
+  text : string
+
+  Thrown whenever an unexpected response code is received.  The text
+  holds the response text sent by the server.
+
+> bad-status-line
+  struct (bad-status-line nntp) (line)
+  line : string
+
+  Mal-formed status lines.
+
+> premature-close
+  struct (premature-close nntp) (communicator)
+  communicator : communicator
+
+  Thrown when a remote server closes its connection unexpectedly.
+
+> bad-newsgroup-line
+  struct (bad-newsgroup-line nntp) (line)
+  line : string
+
+  When the newsgroup line is improperly formatted.
+
+> non-existent-group
+  struct (non-existent-group nntp) (group)
+  group : string
+
+  When the server does not recognize the name of the requested group.
+
+> article-not-in-group
+  struct (article-not-in-group nntp) (article)
+  article : number
+
+  When an article is outside the server's range for that group.
+
+> no-group-selected
+  struct (no-group-selected nntp) ()
+
+  When an article operation is used before a group has been selected.
+
+> article-not-found
+  struct (article-not-found nntp) (article)
+  article : number
+
+  When the server is unable to locate the article.
+
+> authentication-rejected
+  struct (authentication-rejected nntp) ()
+
+  When the server reject an authentication attempt.
+
+PROCEDURES -----------------------------------------------------------
+
+> (connect-to-server server-string [port-number]) -> communicator
+
+  Connects to the name server.  The second argument, if provided, must
+  be a port number; otherwise the default NNTP port is used.
+
+> (disconnect-from-server communicator) -> void
+
+  Disconnects a communicator.
+
+> (open-news-group communicator newsgroup-string) -> three values: number number number
+
+  The second argument is the name of a newsgroup.  The returned values
+  are the total number of articles in that group, the first available
+  article, and the last available article.
+
+> (authenticate-user communicator username password) -> void
+
+  Tries to authenticate a user.  This is using the original authinfo command
+  (uses cleartext).  The password argument is ignored if the server does not
+  ask for it.
+
+> (head-of-message communicator message-index) -> list of strings
+
+  Given a message number, returns its headers.
+
+> (body-of-message communicator message-index) -> list of strings
+
+  Given a message number, returns the body of the message.
+
+> (newnews-since communicator message-index) -> list of strings
+
+  Implements the NEWNEWS command (often disabled on servers).
+
+> (generic-message-command communicator message-index) -> list of strings
+
+  Useful primitive for implementing head-of-message, body-of-message
+  and other similar commands.
+
+> (make-desired-header tag-string) -> desired
+
+  Takes the header's tag and returns a desired regexp for that header.
+
+> (extract-desired-headers list-of-header-strings list-of-desireds) -> list of strings
+
+  Given a list of headers and of desired's, returns the header lines
+  that match any of the desired's.
+
+==========================================================================
+_POP-3_, _reading mail_
+==========================================================================
+
+To load directly: (require (lib "pop3.ss" "net"))
+Module files: _pop3.ss_ - provides the procedures documented below
+              _pop3-unit.ss_ - provides unit net:pop3@
+              _pop3-sig.ss_ - provides signalture net:pop3^
+
+ABSTRACT -------------------------------------------------------------
+
+Implements RFC 1939, Post Office Protocol - Version 3, Myers & Rose.
+http://www.ietf.org/rfc/rfc1939.txt
+
+TYPES ----------------------------------------------------------------
+
+> communicator
+  struct communicator (sender receiver server port state)
+  sender : oport
+  receiver : iport
+  server : string
+  port : number
+  state : symbol = (disconnected, authorization, transaction)
+
+  Once a connection to a POP-3 server has been established, its state
+  is stored in a communicator, and other procedures take communicators
+  as an argument.
+
+> desired
+
+  A regular expression that matches against a mail header.
+
+EXCEPTIONS -----------------------------------------------------------
+
+> pop3
+  struct (pop3 exn) ()
+
+  The super-struct used for all other package exceptions.
+
+> cannot-connect
+  struct (cannot-connect pop3) ()
+
+  When a connection to a server cannot be established.
+
+> username-rejected
+  struct (username-rejected pop3) ()
+
+  If the username is rejected.
+
+> password-rejected
+  struct (password-rejected pop3) ()
+
+  If the password is rejected.
+
+> not-ready-for-transaction
+  struct (not-ready-for-transaction pop3) (communicator)
+  communicator : communicator
+
+  When the communicator is not in transaction mode.
+
+> not-given-headers
+  struct (not-given-headers pop3) (communicator message)
+  communicator : communicator
+  message : number
+
+  When the server does not respond with headers for a message as
+  requested.
+
+> illegal-message-number
+  struct (illegal-message-number pop3) (communicator message)
+  communicator : communicator
+  message : number
+
+  When the user specifies an illegal message number.
+
+> cannot-delete-message
+  struct (cannot-delete-message exn) (communicator message)
+  communicator : communicator
+  message : number
+
+  When the server is unable to delete a message.
+
+> disconnect-not-quiet
+  struct (disconnect-not-quiet pop3) (communicator)
+  communicator : communicator
+
+  When the server does not gracefully disconnect.
+
+> malformed-server-response
+  struct (malformed-server-response pop3) (communicator)
+  communicator : communicator
+
+  When the server produces a mal-formed response.
+
+PROCEDURES -----------------------------------------------------------
+
+> (connect-to-server server-string [port-number]) -> communicator
+
+  Connects to a server.  Uses the default port number if none is
+  provided.
+
+> (disconnect-from-server communicator) -> void
+
+  Disconnects from as server.  Sets the communicator state to
+  disconnected.
+
+> (authenticate/plain-text user-string passwd-string communicator) -> void
+
+  Takes a username and password string and, if successful, changes the
+  communicator's state to transaction.
+
+> (get-mailbox-status communicator) -> two values: count-number octet-number
+
+  Returns the number of messages and the number of octets.
+
+> (get-message/complete communicator message-number) -> two lists of strings
+
+  Given a message number, returns a list of headers and list of
+  strings for the body.
+
+> (get-message/headers communicator message-number) -> list of strings
+
+  Given a message number, returns the list of headers.
+
+> (get-message/body communicator message-number) -> list of strings
+
+  Given a message number, returns the list of strings for the body.
+
+> (delete-message communicator message-number) -> void
+
+  Deletes the specified message.
+
+> (get-unique-id/single communicator message-number) -> string
+
+  Gets the server's unique id for a particular message.
+
+> (get-unique-id/all communicator) -> list of (cons message-number id-string)
+
+  Gets a list of unique id's from the server for all the messages in
+  the mailbox.
+
+> (make-desired-header tag-string) -> desired
+
+  Takes the header's tag and returns a desired regexp for that header.
+
+> (extract-desired-headers list-of-strings list-of-desireds) -> list of strings
+
+  Given a list of headers and of desired's, returns the header lines
+  that match any of the desired's.
+
+EXAMPLE --------------------------------------------------------------
+
+ > (require (lib "pop3.ss" "net"))
+ > (define c (connect-to-server "cs.rice.edu"))
+ > (authenticate/plain-text "scheme" "********" c)
+ > (get-mailbox-status c)
+ 196
+ 816400
+ > (get-message/headers c 100)
+ ("Date: Thu, 6 Nov 1997 12:34:18 -0600 (CST)"
+  "Message-Id: <199711061834.MAA11961@new-world.cs.rice.edu>"
+  "From: Shriram Krishnamurthi <shriram@cs.rice.edu>"
+  ...
+  "Status: RO")
+ > (get-message/complete  c 100)
+ ("Date: Thu, 6 Nov 1997 12:34:18 -0600 (CST)"
+  "Message-Id: <199711061834.MAA11961@new-world.cs.rice.edu>"
+  "From: Shriram Krishnamurthi <shriram@cs.rice.edu>"
+  ...
+  "Status: RO")
+ ("some body" "text" "goes" "." "here" "." "")
+ > (get-unique-id/single c 205)
+ no message numbered 205 available for unique id
+ > (list-tail (get-unique-id/all c) 194)
+ ((195 . "e24d13c7ef050000") (196 . "3ad2767070050000"))
+ > (get-unique-id/single c 196)
+ "3ad2767070050000"
+ > (disconnect-from-server c)
+
+==========================================================================
+_IMAP_, _reading mail_
+==========================================================================
+
+To load directly: (require (lib "imap.ss" "net"))
+Module files: _imap.ss_ - provides the procedures documented below
+              _imap-unit.ss_ - provides unit net:imap@
+              _imap-sig.ss_ - provides signalture net:imap^
+
+ABSTRACT -------------------------------------------------------------
+
+Implements portions of client-side RFC 2060, Internet Message Access
+Protocol - Version 4rev1, Crispin
+http://www.ietf.org/rfc/rfc2060.txt
+
+TYPES ----------------------------------------------------------------
+
+> imap
+
+  An opaque record reprsenting an IMAP connection.
+
+> imap-flag
+
+  A symbol, but generally not a convenient one to use within a Scheme
+  program. The `imap-flag->symbol' and `symbol->imap-flag' procedures
+  convert IMAP flags to convenient symbols and vice-versa.
+
+EXCEPTIONS -----------------------------------------------------------
+
+  Communication errors are signalled via exn:fail structure instances.
+
+PROCEDURES -----------------------------------------------------------
+
+- - - - - - Connecting and selecting mailboxes - - - - -
+
+> (imap-connect server-string username-str/bytes password-str/bytes mailbox-str/bytes)
+   -> three values: imap, message count, recent message count
+
+  Establishes an IMAP connection to the given server using the given
+  username and password, and selects the specified mailbox. The second
+  and third return values indicate the total number of messages in the
+  mailbox and the number of recent messages (i.e., messages received
+  since the mailbox was last selected), respectively.
+
+  See also `imap-port-number', below.
+
+  A user's primary mailbox is always called "INBOX". (Capitalization
+  doesn't matther for that keyword.)
+
+  Updated message-count and recent-count values are available through
+  `imap-messages' and `imap-recent'. See also `imap-new?' and
+  `imap-reset-new!'.
+
+> (imap-port-number [k])
+
+  A parameter that determines the server port number. The initial
+  value is 143.
+
+> (imap-connect* in-port out-port username-str/bytes password-str/bytes mailbox-str/bytes)
+   -> three values: imap, message count, recent message count
+
+  Like `imap-connect', but given input and output ports instead of a
+  server address.
+
+> (imap-disconnect imap) -> void
+
+  Closes an IMAP connection. The close may fail due to a communication
+  error.
+
+> (imap-force-disconnect imap) -> void
+
+  Closes an IMAP connection forcefully (i.e., without send a close
+  message to the server). A forced disconnect never fails.
+
+> (imap-reselect imap mailbox-str/bytes)
+  -> two values: message count and recent message count
+
+  De-selects the mailbox currently selected by the connection and
+  selects the specified mailbox, returning the total and recent
+  message counts for the new mailbox. Expunge and message-state
+  information is removed.
+
+  Do not use this procedure to poll a mailbox to see whether there are
+  any new messages. Use `imap-noop', `imap-new?', and
+  `imap-reset-new?' instead.
+
+> (imap-examine imap mailbox-str/bytes)
+  -> two values: message count and recent message count
+
+  Like `imap-reselect', but the mailbox is selected as read-only.
+
+- - - - - - Selected mailbox state - - - - -
+
+> (imap-noop imap mailbox-str/bytes)
+  -> two values: message count and recent message count
+
+  Sends a "no-op" message to the server, typically to keep the session
+  alive. As for many commands, the server may report message-state
+  updates or expunges.
+
+  The return information is the same as for `imap-reselect'.
+
+> (imap-poll imap) -> void
+
+  Does not send a request to the server, but checks for asynchronous
+  messages from the server that update the message count, to report
+  expunges, etc.
+
+
+> (imap-messages imap) -> number
+
+  Returns the number of messages in the selected mailbox. The server
+  can update this count during most any interaction.
+
+  This operation does not communicate with the server. It merely
+  reports the result of previous communication.
+
+> (imap-recent imap) -> number
+
+  Returns the number of "recent" messages in the currently selected
+  mailbox, as most recently reported by the server. The server can
+  update this count during most any interaction.
+
+  This operation does not communicate with the server. It merely
+  reports the result of previous communication.
+
+> (imap-unseen imap) -> number-or-false
+
+  Returns the number of "unseen" messages in the currently selected
+  mailbox, as most recently reported by the server. The server can
+  update this count during most any interaction. Old IMAP servers
+  might not report this value, in which case the result is #f.
+
+  This operation does not communicate with the server. It merely
+  reports the result of previous communication.
+
+> (imap-uidnext imap) -> number-or-false
+
+  Returns the predicted next uid for a message in the currently
+  selected mailbox, as most recently reported by the server. The
+  server can update this count during most any interaction. Old IMAP
+  servers might not report this value, in which case the result is #f.
+
+  This operation does not communicate with the server. It merely
+  reports the result of previous communication.
+
+> (imap-uidvalidity imap) -> number-or-false
+
+  Returns an id number that changes when all uids become invalid. The
+  server *cannot* update this number during a session. Old IMAP
+  servers might not report this value, in which case the result is #f.
+
+  This operation does not communicate with the server. It merely
+  reports the result of previous communication.
+
+> (imap-new? imap) -> boolean
+
+  Returns #t if the server has reported an increase in the message
+  count for the currently mailbox since the last call to
+  `imap-reset-new!'. Selecting a mailbox implicitly calls
+  `imap-reset-new!'.
+
+  This operation does not communicate with the server. It merely
+  reports the result of previous communication.
+
+> (imap-reset-new! imap) -> void
+
+  Resets the new flag for the session; see `imap-new?', above.
+  This operation does not communicate with the server.
+
+> (imap-get-expunges imap) -> msg-num-list
+
+  Returns pending expunge notifications from the server for the
+  selected mailbox in terms of message positions (not uids), and
+  clears the pending notifications. The result list is sorted,
+  ascending.
+
+  This operation does not communicate with the server. It merely
+  reports the result of previous communication.
+
+  The server can notify the client of newly deleted messages during
+  most other commands, but not asynchronously between
+  commands. Furthermore, the server cannot report new deletions during
+  `imap-get-messages' or `imap-store' operations.
+
+  Before calling any IMAP operation that works in terms of message
+  numbers, pending expunge notifications must be handled by calling
+  `imap-get-expunges'.
+
+> (imap-pending-expunges? imap) -> boolean
+
+  Returns #f if `imap-get-expunges' would return an empty list, #t
+  otherwise.
+
+> (imap-get-updates imap) -> list of (cons msg-num assoc-list)
+
+  Returns information must like `imap-get-messages', but includes
+  information reported asynchronously by the server (e.g., to notify a
+  client with some other client changes a message attribute).  Instead
+  of reporting specific requested information for specific messages,
+  the result is associates message positions to field-value
+  association lists. The result list is sorted by message position,
+  ascending.
+
+  This operation does not communicate with the server; it merely
+  reports the result of previous communication. It also clears the
+  update information from the connection after reporting it.
+
+  When a server reports information that supercedes old reported
+  information for a message, or if the server reports that a message
+  has been deleted, then old information for the message is
+  dropped. Similarly, if `imap-get-messages' is used to explicitly
+  obtain information, any redudant (or out-of-date) information is
+  dropped.
+
+  A client need not use `imap-get-updates' ever, but accumulated
+  information for the connection consumes space.
+
+> (imap-pending-updates? imap) -> boolean
+
+  Returns #f if `imap-get-updates' would return an empty list, #t
+  otherwise.
+
+- - - - - - Manipulating messages - - - - -
+
+> (imap-get-messages imap msg-num-list field-list)
+  -> list of field-value lists
+
+  Downloads information for a set of messages. The `msg-num-list'
+  argument specifies a set of messages by their message positions (not
+  their uids). The `field-list' argument specifies the type of
+  information to download for each message. The avilable fields are:
+
+    * 'uid - value is an integer
+    * 'header - value is a header (string; see the head package)
+    * 'body - value is a byte string (with CRLF-separated lines)
+    * 'flags - value is a list of imap flags
+
+  The return value is a list of entry items in parallel to
+  `msg-num-list'. Each entry is itself a list containing value items
+  in parallel to `field-list'.
+
+  Pending expunges must be handled before calling this function; see
+  `imap-get-expunges'.
+
+  Example:
+    (imap-get-message imap '(1 3 5) '(uid header))
+    ; => ((107 #"From: larry@stooges.com ...")
+          (110 #"From: moe@stooges.com ...")
+          (112 #"From: curly@stooges.com ..."))
+
+> (imap-flag->symbol imap-flag) -> symbol
+> (symbol->imap-flag symbol) -> imap-flag
+
+  An imap flag is a symbol, but it is generally not a convenient one
+  to use within a Scheme program, because it usually starts with a
+  backslash and flag comparisions are case-insensitive. The
+  `imap-flag->symbol' and `symbol->imap-flag' procedures convert IMAP
+  flags to convenient symbols and vice-versa:
+
+      symbol       imap flag
+      ------       ----------
+     'seen         '|\Seen|            \
+     'answered     '|\Answered|        |
+     'flagged      '|\Flagged|          > message flags
+     'deleted      '|\Deleted|         |
+     'draft        '|\Draft|           |
+     'recent       '|\Recent|          /
+
+     'noinferiors   '|\Noinferiors|    \
+     'noselect      '|\Noselect|       |
+     'marked        '|\Marked|          > mailbox flags
+     'unmarked      '|\Unmarked|       |
+     'hasnochildren '|\HasNoChildren|  |
+     'haschildren   '|\HasChildren|    /
+
+  `imap-flag->symbol' and `symbol->imap-flag' act like the identity
+  function when any other symbol/flag is provided.
+
+> (imap-store imap mode msg-num-list imap-flags) -> void
+
+  Sets flags for a set of messages. The mode argument specifies how
+  flags are set:
+
+       * '+ - add the given flags to each message
+       * '- - remove the given flags from each emssage
+       * '! - set each message's flags to the given set
+
+  The `msg-num-list' argument specifies a set of messages by their
+  message positions (not their uids). The `flags' argument specifies
+  the imap flags to add/remove/install.
+
+  Pending expunges must be handled before calling this function; see
+  `imap-get-expunges'. The server will not report back message-state
+  changes (so they will not show up through `imap-get-updates').
+
+  Example:
+    (imap-store imap '+ '(1 2 3) (list (symbol->imap-flag 'deleted)))
+    ; marks the first three messages to be deleted
+    (imap-expunge imap)
+    ; permanently removes the first three messages (and possibly others)
+    ;  from the currently-selected mailbox
+
+> (imap-expunge imap) -> void
+
+  Purges every message currently marked with the '|\Deleted| flag from
+  the mailbox.
+
+- - - - - - Querying and changing (other) mailboxes - - - - -
+
+> (imap-copy imap msg-num-list dest-mailbox-str/bytes) -> void
+
+  Copies the specified messages from the currently selected mailbox to
+  the specified mailbox.
+
+  Pending expunges must be handled before calling this function; see
+  `imap-get-expunges'.
+
+> (imap-append imap mailbox-string message-str/bytes) -> void
+
+  Adds a new message (containing message-string) to the given mailbox
+
+> (imap-status imap mailbox-str/bytes status-symbol-list)
+  -> list of status values
+
+  Requests information about a mailbox from the server, typically
+  *not* the currently selected mailbox.
+
+  The status-symbol-list specifies the request, and the return value
+  includes one value for each symbol in status-symbol-list. The
+  allowed status symbols are:
+
+    'messages - number of messages
+    'recent - number of recent messages
+    'unseen - number of unseen messages
+    'uidnext - uid for next received message
+    'uidvalidity - id that changes when all uids are changed
+
+  Use `imap-messages' to get the message count for the currently
+  selected mailbox, etc. Use `imap-new?' and `imap-reset-new!' to
+  detect when new messages are available in the currently selected
+  mailbox.
+
+> (imap-mailbox-exists? imap mailbox-str/bytes) -> bool
+
+  Returns #t if the specified mailbox exists, #f otherwise.
+
+> (imap-create-mailbox imap mailbox-str/bytes) -> void
+
+  Creates the specified mailbox. (It must not exist already.)
+
+> (imap-list-child-mailboxes imap mailbox-str/bytes [delimiter-str/bytes])
+  -> list of mailbox-info lists
+
+  Returns information about sub-mailboxes of the given mailbox.  If
+  mailbox-string is #f, information about all top-level mailboxes is
+  returned. The optional `delimiter-string' is determined
+  automatically (via `imap-get-hierarchy-delimiter') if it is not
+  provided.
+
+  The return value is a list of mailbox-information lists. Each
+  mailbox-information list contains two items:
+    * a list of imap flags for the mailbox
+    * the mailbox's name
+
+> (imap-get-hierarchy-delimiter imap) -> bytes
+
+  Returns the server-specific string that is used as a separator in
+  mailbox path names.
+
+> (imap-mailbox-flags imap mailbox-str/bytes)
+  -> list of imap flags
+
+  Returns a list of imap flags for the given mailbox.
+
+==========================================================================
+_mime headers_, _mail headers_, _http headers_
+==========================================================================
+
+To load directly: (require (lib "head.ss" "net"))
+Module files: _head.ss_ - provides the procedures documented below
+              _head-unit.ss_ - provides unit net:head@
+              _head-sig.ss_ - provides signalture net:head^
+
+ABSTRACT -------------------------------------------------------------
+
+Implements utlities for RFC 822 headers and mail addresses.
+
+TYPES ----------------------------------------------------------------
+
+> header
+
+  A string that is an RFC-882-compliant header. A header string
+  contains a series of CRLF-delimitted fields, and ends with two CRLFs
+  (the first one terminates the last field, and the second terminates
+  the header).
+
+PROCEDURES -----------------------------------------------------------
+
+> empty-header
+
+  A string correcponding to the empty header, useful for building up
+  headers with `insert-field' and `append-headers'.
+
+> (validate-header candidate-header-string) -> void
+
+  If the format of `candidate-header-string' matches RFC 822, void is
+  returned, otherwise an exception is raised.
+
+> (extract-field field-string header) -> string or #f
+
+  Returns the header content for the specified field, or #f if the
+  field is not in the header. `field-string' should not end with ":",
+  and it is used case-insensitively. The returned string will not
+  contain the field name, color separator, of CRLF terminator for the
+  field; however, if the field spans multiple lines, the CRLFs
+  separating the lines will be intact.
+
+  Example:
+    (extract-field "TO" (insert-field "to" "me@localhost" empty-header))
+    ; => "me@localhost"
+
+> (extract-all-fields header) -> (list (cons string string))
+
+  Returns an association-list version of the header; the case of the
+  field names is preserved, as well as the order and duplicate uses of
+  a field name.
+
+> (remove-field field-string header) -> header
+
+  Creates a new header by removing the specified field from `header'
+  (or the first instance of the field, if it occurs multiple
+  times). If the field is not in `header', then the return value is
+  `header'.
+
+> (insert-field field-string value-string header) -> header
+
+  Creates a new header by prefixing the given header with the given
+  field-value pair. `value-string' should not contain a terminating
+  CRLF, but a multi-line value (perhaps created with
+  `data-lines->data') may contain seperator CRLFs.
+
+> (replace-field field-string value-string header) -> header
+
+  Replaces or inserts the given field. If value-string is #f, then
+  the field is simply removed.
+
+> (append-headers a-header another-header) -> header
+
+> (standard-message-header from-string to-list-of-strings cc-list-of-strings bcc-list-of-strings subject-string) -> header
+
+  Creates a standard mail header given the sender, various lists of
+  recipients, a subject, and the current date. (The BCC recipients do
+  not acually appear in the header, but they're accepted anyway to
+  complete the abstraction.)
+
+> (data-lines->data list-of-strings) -> string
+
+  Merges multiple lines for a single field value into one string,
+  adding CRLF-TAB separators.
+
+> (extract-addresses string kind) -> list of strings or
+                                     list of list of strings
+
+  Parses `string' as a list of comma-delimited mail addresses, raising
+  an exception if the list is ill-formed. This procedure can be used
+  for single-address strings, in which case the returned list should
+  contain only one address.
+
+  The `kind' argument specifies which portion of an address should be
+  returned:
+
+     * 'name - the free-form name in the address, or the address
+               itself if no name is available:
+        "John Doe <doe@localhost>" => "Jon Doe"
+        "doe@localhost (Johnny Doe)" => "Johnny Doe"
+        "doe@localhost" => "doe@localhost"
+
+     * 'address - just the mailing address, without any free-form
+               names:
+        "Jon Doe <doe@localhost>" => "doe@localhost"
+        "doe@localhost (Johnny Doe)" => "doe@localhost"
+        "doe@localhost" => "doe@localhost"
+
+     * 'full - the full address, essentially as it appears in the
+               input, but normalized:
+        "Jon Doe   < doe@localhost >" => "Jon Doe <doe@localhost>"
+        "  doe@localhost  (Johnny Doe)" => "doe@localhost (Johnny Doe)"
+        "doe@localhost" => "doe@localhost"
+
+     * 'all - a list containing each of the three posibilities:
+              free-form name, address, and full address (in that
+              order)
+
+  Example:
+    (extract-addresses " \"Doe, John\" <doe@localhost>, john" 'address)
+    ; => ("doe@localhost" "john")
+
+> (assemble-address-field list-of-address-strings) -> string
+
+  Creates a header field value from a list of addresses. The addresses
+  are comma-separated, and possibly broken into multiple lines.
+
+==========================================================================
+_DNS_, _domain name service_
+==========================================================================
+
+To load directly: (require (lib "dns.ss" "net"))
+Module files: _dns.ss_ - provides the procedures documented below
+              _dns-unit.ss_ - provides unit net:dns@
+              _dns-sig.ss_ - provides signalture net:dns^
+
+ABSTRACT -------------------------------------------------------------
+
+Implements part of a DNS client, based on RFC 1035. The name cache
+does not properly time out entries, however.
+
+Thanks to Eduardo Cavazos and Jason Crowe for repairs and
+improvements.
+
+PROCEDURES -----------------------------------------------------------
+
+> (dns-get-address nameserver-string address-string) -> address-string
+
+  Consults the specified nameserver (normally a numerical address like
+  "128.42.1.30") to obtain a numerical address for the given internet
+  address.
+
+  The query record sent to the DNS server includes the "recursive"
+  bit, but `dns-get-address' also implements a recursive search itself
+  in case the server does not provide this optional feature.
+
+> (dns-get-name nameserver-string address-string) -> address-string
+
+  Consults the specified nameserver (normally a numerical address like
+  "128.42.1.30") to obtain a name for the given numerical address.
+
+> (dns-get-mail-exchanger nameserver-string address-string) -> address-string
+
+  Consults the specified nameserver to obtain the address for a mail
+  exchanger the given mail host address. For example, the mail
+  exchanger for "ollie.cs.rice.edu" is currently "cs.rice.edu".
+
+> (dns-find-nameserver) -> address-string or #f
+
+  Attempts to find the address of a nameserver on the present system.
+  Under Unix, this procedure parses /etc/resolv.conf to extract the
+  first nameserver address. Under Windows, it runs "nslookup.exe".
+
+==========================================================================
+_MIME support__
+==========================================================================
+
+To load directly: (require (lib "mime.ss" "net"))
+Module files: _mime.ss_ - provides the procedures documented below
+              _mime-unit.ss_ - provides unit net:mime@
+                               imports net:base64^ from "base64-sig.ss"
+                               and net:qp^ from "qp-sig.ss"
+              _mime-sig.ss_ - provides signalture net:mime^
+
+ABSTRACT -------------------------------------------------------------
+
+Author: Francisco Solsona <solsona@acm.org>
+
+MIME stands for Multipurpose Internet Mail Extensions. the mime
+library provides support for MIME as described in: rfc2045 through
+rfc2049.
+
+This library is supposed to be used by PLT Scheme applications, or
+libraries to make the MIME-aware.  For instance, MUAs, (Fast)CGI
+libraries to support multipart/form-data extensions, etc.
+
+EXCEPTIONS -----------------------------------------------------------
+
+   unexpected-termination
+
+   This exception is raised when eof is reached while parsing the
+   headers of a MIME entity.  And it usually means, that the message
+   does not conform to rfc2045, and friends. It has a message
+   parameter, `msg', that gives exact information on the problem:
+   unexpected-termination-msg.
+
+   missing-multipart-boundary-parameter
+
+   A multipart type is signalled, but no `boundary' parameter is
+   given, also an error on the producer end of the message.
+
+   malformed-multipart-entity
+
+   Similar to `unexpected-termination', but it is used only while
+   scanning parts of a multipart message.
+
+   empty-mechanism
+
+   No transport encoding mechanism was provided with the
+   Conent-Transfer-Encoding field.
+
+   empty-type
+
+   No type specified for Content-Type, or incorrectly formated.
+
+   empty-subtype
+
+   No subtype specified for Content-Type, or incorrectly formated.
+
+   empty-disposition-type
+
+   No type specified for the Content-Disposition field, or incorrectly
+   formated.
+
+
+   mime-error
+
+   A catch-all exception.
+
+PROCEDURES -----------------------------------------------------------
+
+> (mime-analyze message)
+
+   Message must conform to the RFC 2045, 2046, 2047, 2048, and 2049.
+
+   This is basically the only function provided by the MIME support
+   library.  It returns a `message' structure, having the following
+   fields: version, entity, and fields.
+
+> (message-version message-struct)
+
+   the value of the MIME-version header.  It has a default 1.0 value
+   when message does not contain a MIME-version header.
+
+> (message-entity message-struct)
+
+   another structure, `entity'.  According to rfc2045, and entity
+   refers to the MIME-defined header fields and contents of either a
+   message or one of the parts in the body of a multipart entity.
+
+   See below, for the fields of an entity-structure.  All the
+   MIME-headers, parts (sub-entities), and/or contents of message are
+   stored into this structure.
+
+> (message-fields message-struct)
+
+   a list of all non-MIME headers in message.  If message is an
+   rfc822, for instance, this list could contain 'From', 'Subject',
+   etc.
+
+struct entity
+-------------
+
+   These kind of structure contains all the headers, parameters, and
+   contents of a given entity, and its parts (sub-entities).  These
+   are the fields of the entity structure:
+
+   type, subtype, charset, encoding, disposition, params, id,
+   description, other, fields, parts, body, close.
+
+> (entity-type entity-struct)
+
+   In rfc822 BNF extension:
+
+   type := discrete-type | composite-type
+
+   discrete-type := "text" / "image" / "audio" / "video" /
+                        "application" / extension-token
+
+   composite-type := "message" / "multipart" / extension-token
+
+   extension-token := ietf-token / x-token
+
+   ietf-token := <An extension token defined by a standards-track
+                  RFC and registered with IANA.>
+
+   x-token := <The two characters "X-" or "x-" followed, with no
+               intervening white space, by any token>
+
+   In English, it returns one of the symbols: text, image, audio,
+   video, application, an ietf-extension, and x-token, or a local
+   extension (not recommended by the way.)
+
+> (entity-subtype entity-struct)
+
+   subtype := extension-token / iana-token
+
+   Also a symbol, it depends on the value of type.  Quoting RFC 1700:
+
+ Type            Subtype         Description                 Reference
+ ----            -------         -----------                 ---------
+ text            plain                                   [RFC1521,NSB]
+                 richtext                                [RFC1521,NSB]
+                 tab-separated-values                   [Paul Lindner]
+
+ multipart       mixed                                   [RFC1521,NSB]
+                 alternative                             [RFC1521,NSB]
+                 digest                                  [RFC1521,NSB]
+                 parallel                                [RFC1521,NSB]
+                 appledouble                [MacMime,Patrik Faltstrom]
+                 header-set                             [Dave Crocker]
+
+ message         rfc822                                  [RFC1521,NSB]
+                 partial                                 [RFC1521,NSB]
+                 external-body                           [RFC1521,NSB]
+                 news                        [RFC 1036, Henry Spencer]
+
+ application     octet-stream                            [RFC1521,NSB]
+                 postscript                              [RFC1521,NSB]
+                 oda                                     [RFC1521,NSB]
+                 atomicmail                           [atomicmail,NSB]
+                 andrew-inset                       [andrew-inset,NSB]
+                 slate                           [slate,terry crowley]
+                 wita              [Wang Info Transfer,Larry Campbell]
+                 dec-dx            [Digital Doc Trans, Larry Campbell]
+                 dca-rft        [IBM Doc Content Arch, Larry Campbell]
+                 activemessage                          [Ehud Shapiro]
+                 rtf                                    [Paul Lindner]
+                 applefile                  [MacMime,Patrik Faltstrom]
+                 mac-binhex40               [MacMime,Patrik Faltstrom]
+                 news-message-id              [RFC1036, Henry Spencer]
+                 news-transmission            [RFC1036, Henry Spencer]
+                 wordperfect5.1                         [Paul Lindner]
+                 pdf                                    [Paul Lindner]
+                 zip                                    [Paul Lindner]
+                 macwriteii                             [Paul Lindner]
+                 msword                                 [Paul Lindner]
+                 remote-printing                         [RFC1486,MTR]
+
+ image           jpeg                                    [RFC1521,NSB]
+                 gif                                     [RFC1521,NSB]
+                 ief             Image Exchange Format       [RFC1314]
+                 tiff            Tag Image File Format           [MTR]
+
+ audio           basic                                   [RFC1521,NSB]
+
+ video           mpeg                                    [RFC1521,NSB]
+                 quicktime                              [Paul Lindner]
+
+
+> (entity-charset entity-struct)
+
+   The value of the `charset' parameter of the Content-Type header.
+   By default, the symbol: us-ascii.
+
+> (entity-encoding entity-struct)
+
+   The value of the Content-Transfer-Encoding header, one of the
+   symbols: 7bit, 8bit, binary, quoted-printable, base64.  If no
+   Content-Transfer-Encoding header is given, message should be 7bit,
+   thus, 7bit is the default value of this field.
+
+> (entity-disposition entity-struct)
+
+   This one is a litter bit complex, so it is yet another structure.
+   These `disposition' structures represent the value of the
+   Content-Disposition header, as defined in rfc2183:
+
+  disposition := "Content-Disposition" ":"
+                  disposition-type
+                  *(";" disposition-parm)
+
+   disposition structs have the following fields: type, filename,
+   creation, modification, read, size, and params.  Only type is
+   required.
+
+> (disposition-type disposition-struct)
+
+   disposition-type := 'inline / 'attachment  / extension-token
+
+> (disposition-filename disposition-struct)
+
+   string representing the `filename' parameter of the
+   Content-Disposition header.
+
+> (disposition-creation disposition-struct)
+
+   string representing the `creation-date' parameter, which must
+   follow this BNF grammar:
+
+ date-time   =  [ day "," ] date time        ; dd mm yy
+                                   ;  hh:mm:ss zzz
+
+ day         =  "Mon"  / "Tue" /  "Wed"  / "Thu"
+            /  "Fri"  / "Sat" /  "Sun"
+
+ date        =  1*2DIGIT month 2DIGIT        ; day month year
+                                   ;  e.g. 20 Jun 82
+
+ month       =  "Jan"  /  "Feb" /  "Mar"  /  "Apr"
+            /  "May"  /  "Jun" /  "Jul"  /  "Aug"
+            /  "Sep"  /  "Oct" /  "Nov"  /  "Dec"
+
+ time        =  hour zone                    ; ANSI and Military
+
+ hour        =  2DIGIT ":" 2DIGIT [":" 2DIGIT]
+                                   ; 00:00:00 - 23:59:59
+
+ zone        =  "UT"  / "GMT"                ; Universal Time
+                                   ; North American : UT
+            /  "EST" / "EDT"                ;  Eastern:  - 5/ - 4
+            /  "CST" / "CDT"                ;  Central:  - 6/ - 5
+            /  "MST" / "MDT"                ;  Mountain: - 7/ - 6
+            /  "PST" / "PDT"                ;  Pacific:  - 8/ - 7
+            /  1ALPHA                       ; Military: Z = UT;
+                                   ;  A:-1; (J not used)
+                                   ;  M:-12; N:+1; Y:+12
+            / ( ("+" / "-") 4DIGIT )        ; Local differential
+
+> (disposition-modification disposition-struct)
+
+   String representing the `modification-date' parameter, it has the
+   same syntax as `disposition-creation'.
+
+> (disposition-read disposition-struct)
+
+   String representing the `read-date' parameter, it has the same
+   syntax as `disposition-creation'.
+
+> (disposition-size disposition-struct)
+
+   Number representing the `size' parameter (the size of the file).
+
+> (disposition-params disposition-struct)
+
+   List of extra parameters (non-standard) following the
+   Content-Disposition header.
+
+> (entity-params entity-struct)
+
+   List of `parameters' given with all the MIME headers above.  Each
+   of these parameters is a pair of the form: (parameter-name . value)
+
+> (entity-id entity-struct)
+
+   The value of the Content-Id header.
+
+> (entity-description entity-struct)
+
+   The value of the Content-description header.
+
+> (entity-other entity-struct)
+
+   MIME extension fields (non-standard) they all start with
+   "Content-".
+
+> (entity-fields entity-struct)
+
+   A list of all non-MIME headers.
+
+> (entity-parts entity-struct)
+
+   A list of `message'-structs see above.  Each entry represents a
+   part of the current MIME entity (only multipart, or message
+   entities can have parts).
+
+> (entity-body entity-struct)
+
+   A procedure that consumes an output port and writes the message
+   body into the port, properly decoded (e.g. if body was
+   quoted-printable encoded, then the body is written already
+   quoted-printable decoded.).  If type is multipart, or message,
+   clearly no bytes are written to port. The procedure only works
+   once (since the encoded body is pulled from a stream).
+
+==========================================================================
+_Base 64 Encoding_, _base64_
+==========================================================================
+
+To load directly: (require (lib "base64.ss" "net"))
+Module files: _base64.ss_ - provides the procedures documented below
+              _base64-unit.ss_ - provides unit net:base64@
+              _base64-sig.ss_ - provides signalture net:base64^
+
+ABSTRACT -------------------------------------------------------------
+
+Implements Base 64 (mime-standard) encoder and decoder.
+
+PROCEDURES -----------------------------------------------------------
+
+> (base64-encode bytes) -> bytes
+
+  Consumes a byte string and returns its Base 64 encoding as a new
+  byte string.  The returned string is broken into 72-byte lines
+  separated by CRLF combinations, and always ends with a CRLF
+  combination unless the input is empty.
+
+> (base64-decode bytes) -> bytes
+
+  Consumes a byte string and returns its Base 64 decoding as a new
+  byte string.
+
+> (base64-encode-stream input-port output-port [newline-bytes]) -> void
+
+  Reads bytes from `input-port' and writes the encoded result to
+  `output-port', breaking the output into 72-character lines separated
+  by `newline-bytes, and ending with `newline-bytes unless the
+  input stream is empty. The default `newline-bytes contains just a
+  newline (not CRLF). The procedure returns when it encounters an
+  end-of-file from `input-port'.
+
+> (base64-decode-stream input-port output-port) -> void
+
+  Reads a Base 64 encoding from `input-port' and writes the decoded
+  result to `output-port'. The procedure returns when it encounters an
+  end-of-file or Base 64 terminator (=) from `input-port'.
+
+==========================================================================
+_Quoted Printable Encoding_, _qp__
+==========================================================================
+
+To load directly: (require (lib "qp.ss" "net"))
+Module files: _qp.ss_ - provides the procedures documented below
+              _qp-unit.ss_ - provides unit net:qp@
+              _qp-sig.ss_ - provides signalture net:qp^
+
+ABSTRACT -------------------------------------------------------------
+
+Author: Francisco Solsona <solsona@acm.org>
+
+Implements Quoted Printable (mime-standard) encoder and decoder. As
+proposed by the rfc2045 section 6.7.
+
+EXCEPTIONS -----------------------------------------------------------
+
+
+  qp-wrong-input
+
+  This exception is raised when input to any of the qp-procedures (see
+  below) is neither a string, nor an input port.
+
+  qp-wrong-line-size
+
+  If the length of a supposedly quoted-printable line is longer than
+  76 this exception is raised.
+
+  qp-error
+
+  is a catch all exception.
+
+PROCEDURES -----------------------------------------------------------
+
+
+> (qp-encode string) -> string
+
+  Consumes a string and returns its quoted printable representation as
+  a new string. The encoded string uses "\r\n" where necessary to
+  create shorter lines.
+
+> (qp-decode string) -> string
+
+  Consumes a string and returns its un-quoted printable representation
+  as a new string. Non-soft linebreaks are preserved in whatever form
+  they exist (CR, LR, or CRLF) in the input string.
+
+> (qp-encode-stream input output [newline-string]) -> void
+
+  Reads characters from `input' and writes the quoted printable
+  encoded result to `output'.
+
+  The `newline-string' argument is used for soft line-breaks (after
+  "="). The default `newline-string' is #"\n", though it should
+  probably be #"\r\n" instead.
+
+  Other linebreaks are preserved in whatever form they exist (CR, LR,
+  or CRLF) in the input stream.
+
+> (qp-decode-stream input output) -> void
+
+   Reads characters from `input' and writes de-quoted-printable result
+   to `output'.  Non-soft linebreaks are preserved in whatever form
+   they exist (CR, LR, or CRLF) in the input stream.
+
+
+==========================================================================
+_FTP client_
+==========================================================================
+
+To load directly: (require (lib "ftp.ss" "net"))
+Module files: _ftp.ss_ - provides the procedures documented below
+              _ftp-unit.ss_ - provides unit net:ftp@
+              _ftp-sig.ss_ - provides signalture net:ftp^
+
+ABSTRACT -------------------------------------------------------------
+
+Author: Micah Flatt <mflatt@elephant-ear.com>
+
+Implements FTP client actions.
+
+PROCEDURES -----------------------------------------------------------
+
+> (ftp-establish-connection server-host-string server-port-k user-string passwd-string)
+
+  Establishes an FTP connection with the given server using the
+  supplied username and password. The result is an opaque `ftp-conn'
+  structure reprsenting the connection.
+
+  The username and password strings are encoded to bytes using the
+  current locale's encoding.
+
+> (ftp-close-connection ftp-conn)
+
+  Closes an FTP connection.
+
+> (ftp-cd ftp-conn new-dir-string)
+
+  Changes the current directory on the FTP server to `new-dir-string'.
+  The `new-dir-string' is not interpreted at all, but simply passed on
+  to the server (encoded using the current locale's encoding). It must
+  not contain a newline.
+
+> (ftp-directory-list ftp-conn)
+
+  Returns a list of files and directories in the current directory of
+  the server, assuming that the server provides directory information
+  in the quasi-standard Unix format.
+
+  Each file or directory is represented by a list of three
+  strings. The first string is either "-", "d", or "l", depending on
+  whether the items is a file, directory, or link, respectively.  The
+  second item is the file's date; to convert this value to seconds
+  consistent with `file-seconds', pass the date string to
+  `ftp-make-file-seconds', below.  The third string is the name of the
+  file or directory.
+
+  All strings are decoded frombytes using the current locale's
+  encoding.
+
+> (ftp-make-file-seconds ftp-date-string)
+
+  Takes a date string produced by `ftp-directory-list' and converts it
+  to seconds.
+
+> (ftp-download-file ftp-conn local-directory-path filename-string)
+
+  Downloads `filename-string' from the server's current directory and
+  puts it in `local-directory-path' using the same name. If the file
+  already exists in the local directory, it is replaced, but only
+  after the transfer suceeds (i.e., the file is first downloaded to a
+  temporary file, then moved into place on success).
+
+==========================================================================
+_TCP redirect_
+==========================================================================
+
+The "tcp-redirect.ss" library provides an function to generate a unit
+with the signature net:tcp^ that redirects certain port numbers to
+intra-process listeners that do not actually use TCP. The net:tcp^
+signature is imported, for example, by the url@ unit of "url-unit.ss".
+
+Module file: _tcp-redirect.ss_ - provides the `tcp-redirect-function
+             _tcp-sig.ss_ - defines _net:tcp^_, which contains the
+                            following:
+                                 tcp-abandon-port
+                                 tcp-accept
+                                 tcp-accept-ready?
+                                 tcp-addresses
+                                 tcp-close
+                                 tcp-connect
+                                 tcp-connect/enable-break
+                                 tcp-listen
+                                 tcp-listener?
+             _tcp-unit.ss_ - defines _tcp@_ which implements
+                             net:tcp^ using the MzScheme functions of
+                             the same name
+             ssl-tcp-unit.ss - see below
+
+PROCEDURES -----------------------------------------------------------
+
+> (tcp-redirect port-number-list)
+
+  Returns a unit that implements net:tcp^ (from "tcp-sig.ss"). For
+  port numbers not listed in `port-number-list', the unit's
+  implementations are the MzScheme implementations.
+
+  For the port numbers listed in `port-number-list', and for
+  connections to "127.0.0.1", the unit's implementation does not use
+  TCP connections, but instead uses internal buffered channels. Such
+  channels behave exactly as TCP listeners and ports.
+
+==========================================================================
+_SSL redirect__
+==========================================================================
+
+The _ssl-tcp-unit.ss_ library provides `make-ssl-tcp@', which returns
+a unit that implements net:tcp^ from "tcp-sig.ss"
+
+PROCEDURES -----------------------------------------------------------
+
+> (make-ssl-tcp@
+   server-cert-file server-key-file server-root-cert-files
+   server-suggest-auth-file
+   client-cert-file client-key-file client-root-cert-files)
+
+  Returns a unit that implements net:tcp^ using the SSL functions from
+  (lib "mzssl.ss" "openssl"). The arguments to `make-ssl-tcp@' control
+  the certificates and keys uses by server and client connections:
+
+    `server-cert-file' - a PEM file for a server's certyificate; #f means
+     no certificate (which is unlikely to work with any SSL client)
+    `server-key-file' - a private key PEM to go with `server-cert-file';
+     #f means no key (which is likely renders a certificate useless)
+    `server-root-cert-files' - a list of PEM files for trusted root
+     ceritifcates; #f disables verification of peer client certificates
+
+    `server-suggest-auth-file' - PEM file for root certificates to be
+     suggested to peer clients that must supply certificates
+
+    `client-cert-file' - a PEM file for a client's certificate; #f means
+     no certificate (usually fine)
+    `client-key-file' - a private key PEM to go with `client-cert-file';
+     #f means no key (which is likely renders a certificate useless)
+    `client-root-cert-files' - a list of PEM files for trusted root
+     ceritifcates; #f disables verification of peer server certificates
+
+==========================================================================
+_cookies_, HTTP _State Management_
+==========================================================================
+
+To load directly: (require (lib "cookie.ss" "net"))
+Module files: _cookie.ss_ - provides the procedures documented below
+              _cookie-unit.ss_ - provides unit net:cookie@
+              _cookie-sig.ss_ - provides signalture net:cookie^
+
+
+ABSTRACT -------------------------------------------------------------
+
+The cookie package helps programmers use cookies as specified in RFC
+2109 HTTP State Management Mechanism, aka HTTP cookies:
+http://www.w3.org/Protocols/rfc2109/rfc2109
+
+EXCEPTIONS -----------------------------------------------------------
+
+> cookie-error
+  struct (cookie-error exn) ()
+
+  All errors are signalled by raising a cookie-error
+
+TYPES ----------------------------------------------------------------
+
+> cookie
+
+  The opaque structure that represents a cookie
+
+PROCEDURES -----------------------------------------------------------
+
+> (set-cookie name value)
+  : String String -> cookie
+
+  Creates a new cookie, with default values for required fields:
+
+> (cookie:add-comment cookie comment)
+  : cookie String -> cookie
+
+> (cookie:add-domain cookie domain)
+  : cookie String -> cookie
+
+> (cookie:add-max-age cookie seconds)
+  : cookie Nat -> cookie
+
+> (cookie:add-path cookie path)
+  : cookie String -> cookie
+
+> (cookie:secure cookie secure?)
+  : cookie Boolean -> cookie
+
+> (cookie:version cookie version)
+  : cookie Nat -> cookie
+
+  These procedures all modify the fields of an existing cookie.  The
+  modification is destructive, and the modified cookie is returned.
+
+  `domain' must match a prefix of the request-URI.
+
+  `seconds' should be a non-negative natural number representing the
+  number of seconds you want the client to retain the cookie.
+
+  `version' is a required field; the library defaults to the only
+  known incarnation of HTTP cookies: 1.
+
+> (print-cookie cookie)
+  : cookie-structure -> String
+
+  Printing a cookie obtains the string that represents the cookie you
+  formed with the procedures above.
+
+  Empty fields will not appear in the output except when there is a
+  required default.  Currently only the Version is always added.
+
+> (get-cookie name cookies)
+  : String String -> (listof String)
+
+  Returns a list with all the values (strings) associated with name.
+
+> (get-cookie/single name cookies)
+  : String String -> (U String #f)
+
+  Returns the `first' value string associated to name, or #f if no
+  association is found.
+
+  The method used to obtain the `Cookie' header depends on the web
+  server.  It may be an environment variable (CGI), or you may have to
+  read it from the `input port' (FastCGI), or maybe it comes in an
+  `initial-request' structure, etc.  The above two procedures can be
+  used to extract fields from a `Cookie' header.
+
+
+EXAMPLES -------------------------------------------------------------
+
+> Creating a cookie
+
+(let ((c (cookie:add-max-age
+          (cookie:add-path
+           (set-cookie "foo" "bar")
+           "/servlets")
+          3600)))
+  (print-cookie c))
+=>
+"foo=bar; Max-Age=3600; Path=/servlets; Version=1"
+
+To use this output in a "regular" CGI, instead of the last line you
+would use:
+
+  (display (format "Set-Cookie: ~a" (print-cookie c)))
+
+and to use with the PLT Web Server, you would use:
+
+  (make-response/full code message (current-seconds) mime
+                      `((Set-Cookie . ,(print-cookie c)))
+                      body)
+
+> Parsing a cookie
+
+Imagine your Cookie header looks like this:
+
+(cookies . "test2=2; test3=3; xfcTheme=theme6; xfcTheme=theme2")
+
+Then, to get the values of the xfcTheme cookie, you would use:
+
+  (get-cookie "xfcTheme" cookies)
+=> ("theme6" "theme2")
+  (get-cookie/single "xfcTheme" cookies)
+=> "theme6"
+
+If you try to get a cookie that simply is not there, you will get:
+
+ (get-cookie/single "foo" cookies)
+=> #f
+ (get-cookie "foo" cookies)
+=> ()
+
+Note that not having a cookie is normally not an error.  Most clients
+won't have a cookie set then first arrive at your site.
+
+==========================================================================
+_URL encoding_, _URL decoding_, _application/x-www-form-urlencoded_
+==========================================================================
+
+To load directly: (require (lib "uri-codec.ss" "net"))
+Module files: _uri-codec.ss_ - provides the procedures documented below
+              _uri-codec-unit.ss_ - provides unit net:uri-codec@
+              _uri-codec-sig.ss_ - provides signalture net:uri-codec^
+
+
+ABSTRACT -------------------------------------------------------------
+
+The module provides functions to encode and decode strings using
+the URI encoding rules given in RFC 2396, and to encode and decode
+name/value pairs using the application/x-www-form-urlencoded
+mimetype given the in HTML 4.0 specification.  There are minor
+differences between the two encodings.
+
+The URI encoding uses allows a few characters to be represented `as
+is': a-Z, A-Z, 0-9, -, _, ., !, ~, *, ', ( and ).  The remaining
+characters are encoded as %xx, where xx is the hex representation
+of the integer value of the character (where the mapping
+character<->integer is determined by US-ASCII if the integer is
+<128).
+
+The encoding, inline with RFC 2396's recommendation, represents a
+character as is, if possible.  The decoding allows any characters
+to be represented by their hex values, and allows characters to be
+incorrectly represented `as is'.
+
+The rules for the application/x-www-form-urlencoded mimetype given
+in the HTML 4.0 spec are:
+
+  1. Control names and values are escaped. Space characters are
+  replaced by `+', and then reserved characters are escaped as
+  described in [RFC1738], section 2.2: Non-alphanumeric characters
+  are replaced by `%HH', a percent sign and two hexadecimal digits
+  representing the ASCII code of the character. Line breaks are
+  represented as "CR LF" pairs (i.e., `%0D%0A').
+
+  2. The control names/values are listed in the order they appear in
+  the document. The name is separated from the value by `=' and
+  name/value pairs are separated from each other by either `;' or `&'.
+  When encoding, `;' is used as the separator by default. When
+  decoding, both `;' and `&' are parsed as separators by default.
+
+NB: RFC 2396 supersedes RFC 1738.
+
+This differs slightly from the straight encoding in RFC 2396 in
+that `+' is allowed, and represents a space.  We follow this
+convention, encoding a space as `+' and decoding `+' as a space.
+There appear to be some brain-dead decoders on the web, so we also
+encode `!', `~', `'', `(' and ')' using their hex representation.
+This is the same choice as made by the Java URLEncoder.
+
+TYPES ----------------------------------------------------------------
+
+> alist
+
+  (list-of (cons symbol string))  Represents decoded name/value pairs
+
+PROCEDURES -----------------------------------------------------------
+
+> (uri-encode string)
+  : String -> String
+
+  Encode a string using the URI encoding rules
+
+> (uri-decode string)
+  : String -> String
+
+  Decode a string encoded using the URI encoding rules
+
+> (form-urlencoded-encode string)
+  : String -> String
+
+  Encode a string using the application/x-www-form-urlencoded encoding
+  rules. (This string contains no non-ASCII characters, of course.)
+
+> (form-urlencoded-decode string)
+  : String -> String
+
+  Decode a string encoded using the application/x-www-form-urlencoded
+  encoding rules.
+
+> (alist->form-urlencoded alist)
+  : alist -> String
+
+  Encode an alist of key/value pairs using the
+  application/x-www-form-urlencoded encoding rules.
+
+  The `separator-mode-sym' argument must be either 'amp or 'semi to
+  select the separator. The default is 'semi.
+ 
+
+> (form-urlencoded->alist string [separator-mode-sym])
+  : String -> alist
+
+  Decode a string encoded using the application/x-www-form-urlencoded
+  encoding rules into an alist of key/value pairs. All keys are
+  downcased for conversion to symbols.
+
+  The `separator-mode-sym' argument must be either 'amp, 'semi, or
+  'both to select the separator. The default is 'both.
+
+> (current-alist-separator-mode)
+> (current-alist-separator-mode mode-sym)
+
+  A parameter that determines the separator used/recognized between
+  alist pairs in `form-urlencoded->alist', `alist->form-urlencoded',
+  `url->string', and `string->url'. The possible mode symbols are
+  'amp, 'semi, and 'amp-or-semi.
+
+  The default value is 'amp-or-semi, which means that both "&" and ";"
+  are treated as separators when parsing, and ";" is used as a
+  separator when encoding. The other modes use/recognize only of the
+  separators.
+
+  Exmaples for '((name . "shriram") (host "nw")):
+
+    Mode                     Parse                    Generate
+   ------             --------------------      --------------------
+
+   'amp               name=shriram&host=nw      name=shriram&host=nw
+
+   'semi              name=shriram;host=nw      name=shriram;host=nw
+
+   'amp-or-semi       name=shriram&host=nw      name=shriram;host=nw
+                               or
+                      name=shriram;host=nw

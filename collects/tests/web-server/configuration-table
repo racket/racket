@@ -1,0 +1,28 @@
+((port 80)
+ (max-waiting 40)
+ (initial-connection-timeout 30)
+ (default-host-table
+   (host-table
+     (default-indices "index.html" "index.htm")
+     (log-format parenthesized-default)
+     (messages
+       (servlet-message "servlet-error.html")
+       (authentication-message "forbidden.html")
+       (servlets-refreshed "servlet-refresh.html")
+       (passwords-refreshed "passwords-refresh.html")
+       (file-not-found-message "not-found.html")
+       (protocol-message "protocol-error.html"))
+     (timeouts
+       (default-servlet-timeout 120)
+       (password-connection-timeout 300)
+       (servlet-connection-timeout 86400)
+       (file-per-byte-connection-timeout 1/20)
+       (file-base-connection-timeout 30))
+     (paths
+      (configuration-root "conf")
+      (host-root "web-root")
+      (log-file-path "log")
+      (file-root "htdocs")
+      (servlet-root ".")
+      (password-authentication "passwords"))))
+ (virtual-host-table))

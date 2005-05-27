@@ -1,0 +1,55 @@
+
+ [index entries: _debug_ _debugger_ _debugging_ ]
+
+_Calltrace_ is a tool that displays all calls to user procedures. It
+ displays the arguments to the calls, and indents to show the depth of
+ the continuation.
+
+ Quick instructions
+------------------
+
+  0) Throw away .zo versions of your source
+
+  1) Prefix your program with
+      (require (lib "calltrace.ss" "trace"))
+
+  2) Run your program
+
+The calltrace module is odd; don't import it into another
+module. Instead, the calltrace module is meant to be invoked from the
+top-level, so that it can install an evaluation handler, exception
+handler, etc.
+
+To reuse parts of the code of errortrace, import
+_calltrace-lib.ss_. It contains all of the names here but
+does not set the eval-handler.
+
+Exception Information
+---------------------
+
+Invoking the calltrace.ss module sets the eval handler to instrument
+Scheme source code.
+
+ NOTE: errortrace has no effect on code loaded as compiled byte code
+ (i.e., from a .zo file) or native code (i.e., from a .dll or .so
+ file).
+
+Errortrace's instrumentation can be explicitly disabled via the
+`instrumenting-enabled' boolean parameter. Instrumentation is on by
+default. The `instrumenting-enabled' parameter affects only the way
+that source code is compiled, not the way that exception information
+is reported.
+
+> (instrumenting-enabled) - returns #t if error tracing instrumentation is
+  enabled, #f otherwise
+> (instrumenting-enabled on?) - enables/disables error tracing
+  instrumentation
+
+<slowdown information elided.>
+
+Do not load calltrace before writing .zo files. Calltrace
+instruments S-expressions with unprintable values; this works fine if
+the instrumented S-expression is passed to the default eval handler,
+but neither the S-expression nor its byte-code form can be marshalled
+to a string.
+

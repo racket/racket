@@ -1,0 +1,104 @@
+---
+
+Preliminary _Debugger_ Documentation
+
+The debugger is structured as an interaction between the program
+being debugged and a debugger UI.  The program is annotated to
+produce a stream of debugger "events" (as defined below) and to
+periodically block on a debugger semaphore.  The debugger currently
+uses the stepper's annotation; changes to the annotation will
+be the focus of the next stage of the debugger.
+
+A simple debugger UI is provided as part of the debugger, but
+users who want to use the debugger will probably also want
+to supply their own UI.  For this reason, we describe the interface
+to the UI first, and then the working of the current skeleton 
+UI.
+
+Debugger Events:
+
+A debugger-event is either:
+> (make-breakpoint-halt), or
+    : (-> debugger-event?)
+> (make-normal-breakpoint-info mark-list kind returned-value-list)
+    : (-> (listof mark?) symbol? (listof any?) 
+          debugger-event?)
+> (make-error-breakpoint-info message)
+    : (-> string? 
+          debugger-event?)
+> (make-expression-finished returned-value-list)
+    : (-> (listof any?)
+          debugger-event?)
+
+> (make-full-mark location label bindings)
+    : (-> syntax? symbol? (listof identifier?)
+          syntax?)
+
+NOTE: there is a mistake here, in the sense that the thing made by
+'make-full-mark' is not actually a mark.  It's a piece of syntax
+that represents a lambda expression which when evaluated turns 
+into a mark.  A mark is an opaque data type.  Its contents can
+be extracted with the expose-mark function:
+
+expose-mark : (-> mark?
+                  (list/p syntax? 
+                          symbol? 
+                          (listof (list/p identifier? any?))))
+
+
+Debugger UI (view-controller) signatures:
+
+  (define-signature debugger-model^
+    (go-semaphore
+     user-custodian
+     set-breakpoint
+     restart-program))
+  
+  (define-signature debugger-vc^
+    (receive-result
+     debugger-output-port))
+
+A debugger UI is a unit which imports signature debugger-model^
+(name-change suggestions welcomed) and exports signature
+debugger-vc^ (ditto).  
+
+> go-semaphore: when the user's program halts at a breakpoint,
+it will block on this semaphore.  Therefore, the UI can
+post to this semaphore to allow computation to proceed.
+
+> user-custodian: the user-custodian governs the user's program.
+Therefore, the UI can shut down this custodian to halt debugging.
+
+> (set-breakpoint location [name]): (location -> number)
+set-breakpoint specifies a location at which to set a breakpoint.
+For the moment, this breakpoint will be active only after restarting
+the user's program.  A location has the following contract:
+(list/p number? ; line number
+	(union string? false?) ; filename
+	(union number? false?) ; position  
+
+> (receive-result event) : (event -> void) The user's program 
+calls this procedure whenever a debugger event occurs.  Note that 
+a  (make-breakpoint-halt) event will occur whenever the user's 
+program blocks at a breakpoint.
+
+> debugger-output-port : output from the user's program goes 
+to this port. 
+
+
+Existing mini-UI:
+
+The debugger starts a graphical read-eval-print loop, with the 
+following bindings:
+
+> go-semaphore: passed through from the debugger
+
+> (events): returns a list of all events that have occurred during 
+the execution of the program.
+
+> user-custodian: passed through from the debugger.
+
+In addition, the mini-UI prints a message to the grepl whenever
+an event occurs (which is cheerfully accepted as input the next
+time the user presses return...).
+

@@ -1,0 +1,32 @@
+
+To run most of the tests, run:
+ > (load "PATHTOHERE/all.ss")
+where PATHTOHERE is the path to this directory.  
+
+Test failures may cause the test to stop before finishing, but most
+test failures will let the test continue, and a summary message at the
+end will enummerate the failures that occurred.
+
+Some files are directories are created (in the current directory)
+during the run. The files are named "tmp<N>" where <N> is a number.
+The directory is named "deep". If the test suite passes, the directory
+should be removed, but some "tmp<N>" files will remain. (The "tmp<N>"
+files are automatically replaced if the test suite is run again.)
+
+Additionally, test `expand' by running:
+ > (load "PATHTOHERE/expand.ss")
+
+Test compilation and writing/reading compiled code with:
+ > (load "PATHTOHERE/compile.ss")
+
+Run the standard tests with no output except for the results with:
+ > (load "PATHTOHERE/quiet.ss")
+
+Run 3 copies of the test suite concurrently in separate threads:
+ > (load "PATHTOHERE/parallel.ss")
+
+
+Please report bugs using
+  http://bugs.plt-scheme.org/
+or (as a last resort) send mail to
+  scheme@plt-scheme.org

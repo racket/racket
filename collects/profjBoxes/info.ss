@@ -1,0 +1,5 @@
+(module info (lib "infotab.ss" "setup")
+  (define name "ProfJ Boxes")
+  (define tools '(("tool.ss")))
+  (define tool-names (list "ProfJ Boxes"))
+  #;(define tool-icons '()))

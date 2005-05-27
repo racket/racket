@@ -1,0 +1,377 @@
+The `help' collection provides tools for PLT _Help Desk_.
+
+The file help.ss is used to build the Help Desk launcher, which
+uses MrEd.  The file help-bg.ss is used to build a `background' 
+Help Desk launcher, which uses MzScheme.
+
+There are two modules that Help Desk clients may load.
+The file `help-desk-mz.ss' provides a set of functions that 
+use only MzScheme.  The file `help-desk.ss' provides all the 
+functions provided by `help-desk-mz.ss', plus some that rely 
+on MrEd.
+
+The MrEd-dependent functions provided by `help-desk.ss' are:
+
+> search-for-docs : hd-cookie search-string search-type match-type lucky? -> void
+
+The `hd-cookie' argument is returned by `start-help-server', below.
+Searches for `search-string' in the documentation, using `search-type' 
+and `match-type', and displays result in the Help Desk browser.  The 
+`search-type' is one of "keyword", "keyword-index", or "keyword-index-text".
+The `match-type' is one of "exact-match", "containing-match", or 
+"regexp-match".  The `lucky?' parameter indicates whether to do a 
+lucky search or not; it is considered true for any value other than #f.
+Side effect: the `search-type' and `match-type' values are stored as 
+preferences, reflected in the Help Desk search pane as the values  
+of options shown in drop-down lists.
+
+> goto-manual-link : hd-cookie manual index-key -> void
+
+The `hd-cookie' argument is returned by `start-help-server', below.
+The `manual' and `index-key' entries are strings.  The `manual' 
+argument is the string name of a doc collection, or "help"; 
+the second is an index entry in that manual.  When called,
+this procedure starts a Help Desk browser with the appropriate 
+manual page shown in the lower frame, if the requested entry 
+exists.  Otherwise, an error occurs.
+
+> goto-hd-location : hd-cookie sym -> void
+
+The `hd-cookie' argument is returned by `start-help-server',
+below.  The argument `sym' is a symbol in
+
+   '(hd-tour release-notes plt-license front-page)
+
+Sends a Help Desk browser on the page suggested by `sym',
+creating one if necessary.
+
+> help-desk-browser : hd-cookie -> void
+
+Starts the Help Desk browser on the Help Desk home page.  The 
+`hd-cookie' argument is obtained from `start-help-server', described 
+below.  If the user's default browser does not contact the
+Help Desk server within a certain time period, an internal PLT 
+browser is started instead.
+
+The following functions are provided by both `help-desk-mz.ss' and
+`help-desk.ss'.  These functions rely only on MzScheme:
+
+_Server functions_
+------------------
+
+> start-help-server : (browser-frame-mixin . -> . hd-cookie)
+
+Starts the Web server for Help Desk.  The optional argument
+`remote?' indicates whether remote connections should be
+allowed; the default is #f.  The optional argument `port' is
+an exact integer or #f, the default.  If a port number is
+given, the server attempts to use that port; otherwise, the
+server attempts to find an available port.  The optional
+argument browser-frame-mixin is mixed into the internal
+browser's frame class, if one is created.
+
+The return value is a structure that contains instance
+information about the server.  The cookie needs to be passed
+to some other Help Desk functions described here.  If the
+specified port is unavailable, or the server cannot find an
+unused port, an error occurs.
+
+> hd-cookie-port : hd-cookie -> number
+
+Given a Help Desk server cookie, returns the port number
+used by the server.
+
+> hd-cookie-shutdown-server : hd-cookie -> (-> void)
+
+Given a Help Desk server cookie, returns a thunk that 
+shuts down the server when called.
+
+> hd-cookie-find-browser : (hd-cookie?
+                            . -> . 
+                            (-> (union false? (is-a?/c frame%))))
+
+ Returns a procedure that finds a help desk browser
+ window. If none is available, returns #f.
+
+> hd-cookie? : obj -> boolean
+
+Returns #t if `obj' is a Help Desk cookie, #f otherwise. 
+
+> visit-url-in-browser : (hd-cookie? string? . -> . void?)
+
+ Visits the second argument in a browser, creating a
+ browser window if necessary.
+
+> visit-url-in-new-browser : (hd-cookie? string? . -> . void?)
+
+ Visits the second argument in a browser, always creating a
+ new browser window.
+
+_Manual ordering_
+-----------------
+
+> standard-html-doc-position : string -> number
+
+Given a manual name, returns a number (possibly negative)
+that indicates its standard search order position.
+
+> user-defined-doc-position : string -> (union number #f)
+
+Like standard-html-doc-position, but returns a weight 
+only if the user has assigned one using `set-doc-position!',
+described below.  If the user has not set a weight for the
+manual, #f is returned.  If the manual is not among `known-docs' 
+(see below), an error occurs.
+
+> set-doc-position! : string number -> void
+
+Sets the manual, indicated by the string argument, to 
+use the search order position given by the number argument.
+If the manual is not among `known-docs' (see below), an
+error occurs.
+
+> reset-doc-positions! : -> void
+
+Removes all the user-defined document weights that may have
+been set using `set-doc-position!', above.
+
+> known-docs : (listof (cons string string))
+
+A list of pairs, where each pair consists of a short-form name of a
+manual, suitable to pass to `standard-html-doc-position',
+`user-defined-doc-position', or `set-doc-position', and
+a full name for the manual.
+
+_Search functions_
+------------------
+
+> do-search : search-string num bool bool val f1 f2 f3 f4 -> (union string #f)
+
+Peforms a search for `search-string' in the documentation, and returns either 
+a string containing HTML or #f.  More details are provided in the file
+search.ss in the private subdirectory of the help collection.
+
+> doc-collections-changed : -> void
+
+Calling this procedure indicates to the Help Desk search engine that 
+the documentation collections have changed.
+
+_Important Help Desk URLs_
+---------------------------
+
+> make-home-page-url : number -> string
+
+given the port of the help desk server (from the cookie),
+returns a url for the homepage of help desk.
+
+_Manual listing_
+----------------
+
+> (find-manuals)
+
+ Returns HTML showing the installed documentation.
+
+_Manual search functions_
+-------------------------
+
+These functions are used to search for particular portions of
+documentation.
+
+> (finddoc manual index-key label)
+  This procedure accepts three strings. The first is the name of 
+  a doc collection, the second is an index entry in that manual, and 
+  the final is a desriptive string. It returns a string representation 
+  of an anchor (in HTML) that points to that index entry in the manual.
+  If the manual is not found, or the index-key is not in the manual,
+  it returns html code that shows an error. Because the link is
+  a "file:" link, it cannot link to a particular anchor in the target.
+  Note that "help" is not a valid value for `manual', because 
+  Help Desk content is not stored in a doc collection.
+
+> (findreldoc to-doc-path manual index-key label)
+  Like `finddoc', but `to-doc-path' is a Unix-style relative path that
+  reaches the "docs" collection. The resulting link is relative, and
+  it can point to a specific anchor in the target.
+
+> (finddoc-page-anchor manual index-key)
+  This procedure accepts two strings. The `manual' argument is the name 
+  of a doc collection, or "help"; the second is an index entry in that 
+  manual.  It returns a forward-slashed path to the manual or Help Desk 
+  entry, to be passed to the Help Desk web server.  For manuals in the 
+  doc collection, that path is of the form "/doc/manual/page#anchor"; 
+  for Help Desk entries, that path is of the form 
+  "/servlets/<rest-of-path>#anchor".  If the manual is not found, or the 
+  index-key is not in the manual, an error occurs.
+
+> (finddoc-page manual index-key)
+  Like `finddoc-page-anchor', but returns only the page, without
+  an anchor.
+
+_Supplemental Help Desk functions_
+----------------------------------
+
+> (set-bug-report-info! string thunk)
+
+  Adds dynamic information used when submitting a bug
+  report.
+
+  The string is the label for the information and the thunk
+  must return a string that is the current value of the
+  information.
+
+> (help-desk:installed-components)
+
+  It returns a string of XHTML with documentation extracted from the 
+  _'blurb_ fields of the info.ss files in each collection.
+
+_Creating Help Desk Documentation in doc.txt files_
+===================================================
+
+Help Desk reads doc.txt files that are named by info.ss
+files (in PLaneT, or in collections or thier
+subcollections). The info.ss file should have a line:
+
+  (define doc.txt "filename.txt")
+
+directing Help Desk to read the file named "filename.txt"
+(usually, by convention these files are named "doc.txt").
+
+Index Entry Annotations
+- - - - - - - - - - - -
+
+An index entry is specified by surrounding the indexed phrase with
+underscores, as for the current portion of this file.
+
+Keyword Entry Annotations
+- - - - - - - - - - - - -
+
+A keyword entry is specified using
+
+  >
+
+at the beginning of a line. After the ">", put an S-expression that
+contains only symbols. (Spaces between ">" and the S-expression are
+ignored.) The leftmost atom must be a symbol, and this symbol is used
+as the key for the entry, whereas the whole S-expression is displayed
+when the user searches on the key. (Note: the S-expression is read
+with `read-accept-bar-quote' turned off, since | is useful for showing
+alternatives.)
+
+For example, a keyword entry for `cons' might have the following form:
+
+ > (cons v list) - Constructs a new list by ...
+
+When the user searches on "cons", the Help Desk will display a link
+that looks something like
+
+ In mytools collection:
+   (cons v list) in "doc.txt"
+    ^^^^^^^^^^^
+Note that a search on "list" will not reveal this entry, because
+"cons" is used as the key, not the whole S-expression.
+
+To create a keyword entry where the key is *not* the leftmost symbol
+in the S-expression, use the follwing form:
+
+  > keyword :: S-expression
+
+where `keyword' is a Scheme symbol. The special "::" indicator
+instructs the Help Desk to look ahead one more S-expression. For
+example, documentation for a `set-title' method might appear as
+follows:
+
+  > set-title :: (send o set-title string) - sets the title
+
+The "(send o set-title string)" part allows a Help Desk user to learn
+about the calling convention of `set-title' without accessing the
+documentation directly.
+
+_Creating Help Desk Documentation in HTML format_
+===================================================
+
+Help Desk looks for html documentation in two places:
+
+  1) If an info.ss file defines _'html-docs_ to be a list of
+     path strings, Help Desk looks inside those directories
+     for html documentation (the paths are treated as
+     relative to the location of the info.ss file)Ï
+
+  2) Help Desk aslo looks inside each sub-directory in any
+     `doc' collection (Help Desk searches all doc
+     collections, not just the first one, unlike
+     `collection-path'). For example, the MzScheme manual is
+     in the directory plt/collects/doc/mzscheme. 
+
+The starting point for each manual must be called either:
+
+  index.htm
+  index.html
+  <jobname>.html, where <jobname>-Z-H-1.html
+                  also exists in the directory
+
+The last is to support tex2page generation of manuals.
+
+In addition to HTML files, a manual directory can contain a "keywords"
+file, which maps keywords to HTML pages and labels, and an "hdindex"
+file, which similarly maps index entries HTML pages.
+
+The _"keywords"_ File
+- - - - - - - - - - -
+
+The "keywords" file must contain one S-expression (not evaluated),
+which is a list of keyword entries. Each keyword entry is a list of
+five values:
+
+  * keyword - a string, e.g., "cons"
+
+  * result display - a string to be displayed in the search results
+    window when the user searches on the keyword, e.g., "(cons v
+    list)"
+
+  * HTML file - a file name relative to the manual's directory, e.g.,
+    "node198.htm"
+
+  * HTML label - a string reprsenting a label within the HTML file
+
+  * page title - a string presenting the title of the HTML page, e.g.,
+    "List Procedures"
+
+See plt/collects/doc/mzscheme/keywords for an example.
+
+The _"hdindex"_ File
+- - - - - - - - - -
+
+The "hdindex" file is similar to the "keywords" file; it must contain
+one S-expression (not evaluated), which is a list of index entries.
+Each index entry is a list of four values:
+
+  * indexed item - a string, e.g., "creating help desk documents"
+
+  * HTML file - a file name (represented as a bytes)
+    relative to the manual's directory, e.g., #"node198.htm"
+
+  * HTML label - a string reprsenting a label within the HTML file
+
+  * page title - a string presenting the title of the HTML page, e.g.,
+    "How to Create Help Desk Documents"
+
+See plt/collects/doc/mzscheme/hdindex for an example.
+
+
+The _'blurb field_ of the _info.ss_ file
+- - - - - - - - - - - - - - - - - - - - 
+
+The 'blurb field of the info.txt file should be a list of xexprs (see the
+xml documentation for information on the xexpr datatype) that correspond to
+the html that help desk can parse. If a collection's info.ss file returns
+such a list, the blurb is inserted into the ``installed components'' page
+of the help desk documentation.
+
+The _'help-desk-message field_ of the _info.ss_ file
+- - - - - - - - - - - - - - - - - - - - - - - - - -
+
+This field must be a string that is displayed at the top of the Help Desk
+results window, in green, when the doc.txt file of this collection is displayed. 
+It should be a single line, describing how to load the library with a prefix
+specifing the applicable language levels.
+  

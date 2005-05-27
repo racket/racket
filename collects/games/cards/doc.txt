@@ -1,0 +1,311 @@
+
+The _Virtual Playing Cards Library_
+-----------------------------------
+
+Load the virtual card library with
+   (require (lib "cards.ss" "games" "cards"))
+
+The _cards.ss_ module defines the following procedures:
+
+> (make-table [title-string] [w] [h]) returns a table named by
+      `title-string' that is `w' cards wide and `h' cards high. A
+      table is an frame% object, with extra methods described
+      below. The table is not intially shown; (send table show #t)
+      shows it. The arguments are optional, with the default values
+      being "Cards", 7, and 3.
+
+> (make-deck) returns a list of 52 cards, one for each suit-value 
+      combination. The cards are all face-down, sorted lowest-suit
+      then lowest-value. A card is an object, with methods described 
+      below. A card can only be on one table at a time.
+
+> (make-card front-bm back-bm-or-#f suit-id value) returns a single
+      card given a bitmap for the front, an optional bitmap for the
+      back, and arbitrary values for the card's suit and value (which
+      are returned by the card's `get-value' and `get-suit-id'
+      methods). All provided bitmaps should be 71 by 96 pixels.
+
+> (shuffle-list list n) shuffles the given `list' `n' times, returning
+      the new list. Shuffling simulates an actual shuffle: the list is
+      split into halves which are merged back together by repeatedly
+      pulling the top card off one of the halves, randomly selecting
+      one half or the other. According to some mathematical theorem, 7
+      is a large enough `n' to get a perfect shuffle.
+
+plus a structure:
+
+>  struct:region :: (struct region (x y w h label callback))
+      `x', `y', `w', `h' are coordinates on the table,
+      `label' is a string or bitmap to label the region or #f for no
+        label. When the region is added to a table, a text label is
+        drawn in 12-pixel text, and the label is centered horizontally
+        and 5 pixels down from the region's top outline. If label is
+        #f, no label or box is drawn for the region.
+      `callback' is a procedure that takes a list of cards that were
+        dragged to the region; if callback is #f, the region is not
+        active (i.e., dragging cards to the region doesn't highlight the
+        region box). The region remains hilited until the callback returns.
+     The only mutator on the structure that is available is set-region-callback!.
+     The structure created by make-region actually has extra hidden fields.
+
+>  (make-button-region x y w h label callback) - returns a region like
+     one made by make-region, but the is drawn slightly differently and
+     it reacts differently to cards and the mouse. The label is drawn
+     in the middle of the box instead of at the top, and the callback is
+     called with no arguments when the user clicks the region (instead
+     of dragging cards to the region).
+
+>  (make-background-region x y w h paint-callback) - returns a region that
+     does not respond to mouse clicks, but which has a general paint
+     callback. The `paint-callback' function is called with five
+     arguments: a drawing context, x and y offsets, and the width and
+     height (which are always `w' and `h'). The x and y offsets can be
+     different than the supplied `x' and `y' when part of the table is
+     drawn offscreen. Regions are painted in the order that they are
+     added to a table, and all regions are painted before any card.
+     The `paint-callback' procedure should not assume a particular
+     state for the drawing context (i.e.,current brush or pen), and it
+     should restore any modified drawing context state before
+     returning.
+
+Plus some extra callback procedures on regions:
+
+> (region-interactive-callback r)
+> (set-region-interactive-callback! r hilite-callback)
+  Get and set a callback procedure that is invoked when a region is
+  [un]hilited as the user drags a set of cards to the region. The
+  callback is provided two arguments: a boolean indicating whether the
+  region is hilited, and the list of cards being dragged. Like
+  region-callback, the default is #f, which indicates that the region
+  has no interactive callback (but does not affect whether the region
+  is hilited as cards are dragged). The final unhilite (when cards are
+  potentially delivered) does not trigger this callback.
+
+
+Table methods: [in addition to standard frame% methods]
+--------------
+
+> add-card :: (send t add-card card x y) - adds `card' to the table
+        with its top-left corner at (`x',`y') in table pixels.
+
+> add-cards :: (send t add-cards cards x y [offset-proc]) - adds list
+        of cards at (`x',`y'); the optional `offset-proc' procedure is
+        called with an index i (counting from 0) and should return two
+        values: `dx' and `dy'; the ith card is the placed at `x'+`dx'
+        and `y'+`dy'. The cards are added in order on top of cards
+        already one the table such that the first card in `cards' is
+        topmost.
+
+> add-cards-to-region :: (send t add-cards-to-region cards r) - adds
+        `cards' to fill the region `r', fanning them out bottom-right
+        to top-left. The region `r' does not have to be added to the
+        table.
+
+
+> remove-card :: (send t remove-card card) - removes `card' from the
+        table
+
+> remove-cards :: (send t remove-cards cards) - removes `cards' from
+        the table
+
+
+> move-card :: (send t move-card card x y)
+> move-cards :: (send t move-cards cards x y [offset-proc])
+> move-cards-to-region :: (send t move-cards-to-region cards r)
+        These are like the `add-card' methods, except that they move
+        cards already on the table. The movement of the cards is
+        animated. All of the cards are moved at once. If the cards are
+        in snap-back-after-move mode and a drag is active, snapping
+        back will use the new location.
+
+
+> flip-card :: (send t flip-card card) - flips `card' over with
+        animation.
+
+> flip-cards :: (send t flip-cards cards) - flips all `cards' over (at
+        once) with animation.
+
+> card-face-up :: (send t card-face-up card)
+> cards-face-up :: (send t cards-face-up cards)
+> card-face-down :: (send t card-face-down card)
+> cards-face-down :: (send t cards-face-down cards)
+        These are like `flip-card', but only cards that are not
+        already face up/down are flipped.
+
+> card-to-front :: (send t card-to-front card) - moves `card' in front
+        of all other cards.
+
+> card-to-back :: (send t card-to-back card) - moves `card' behind all
+        other cards.
+
+> stack-cards :: (send t stack-cards cards) - the first card in
+        `cards' is not moved; the second card is moved to follow
+        immediately behind the first one, then (send t stack-cards
+        (cdr cards)) is called. If `cards' is empty or contains only
+        one card, no action is taken.
+
+> card-location :: (send t card-location card) - returns the position
+        of the given card; an exception is raised if the card is not
+        on the table.
+
+> all-cards :: (send t all-cards) - returns a list of all cards on the
+        table in stacking order from front to back
+
+> table-width :: (send t table-width) - returns the width of the table
+        in pixels.
+
+> table-height :: (send t table-height) - returns the height of the
+        table in pixels.
+
+
+> begin-card-sequence :: (send t begin-card-sequence) - starts a
+        sequence of card or region changes that won't be animated or
+        updated until the end of the sequence.
+
+> end-card-sequence :: (send t end-card-sequence) - ends a sequence;
+        begin-/end- pairs can be nested.
+   
+
+> add-region :: (send t add-region r) - adds the region `r' to the
+        table; regions are drawn in the order that they are added to
+        the table, and when a region added later is hilighted, it can
+        obscure regions added earlier.
+
+> remove-region :: (send t remove-region r) - removes the region `r'
+        from the table.
+
+> hilite-region :: (send t hilite-region r) - manual hilite (usually
+        for animation)
+
+> unhilite-region :: (send t unhilite-region r) - manual unhilite
+        (usually for anaimation)
+
+
+> set-button-action :: (send t set-button-action which action) - sets
+        the way that a mouse click is handled. The which argument must
+        be 'left, 'middle, or 'right. The action argument must be one
+        of:
+           'drag/one - drag only the clicked-on card
+           'drag-raise/one - like drag/one, but raise the card to the
+                  top on a click
+           'drag/above - drag the card along with any card on top of the
+                  card (i.e., more towards the front and overlapping with
+                  the card). The on-top-of relation is closed transitively.
+           'drag-raise/above
+           'drag/below - drag the card along with any card underneath the
+                  card (i.e., more towards the back and overlapping with
+                  the card). The underneath relation is closed transitively.
+           'drag-raise/below
+        The initial settings are:
+           'left - 'drag-raise/above
+           'middle - 'drag/one
+           'right - 'drag/below
+
+> set-double-click-action :: (send t set-double-click-action proc) -
+        sets the procedure to be called when a card is
+        double-clicked. The procedure is called with the
+        double-clicked card. The default procedure flips the cards
+        along with its on-top-of cards, raises the cards, and reverses
+        the front-to-back order of the cards
+
+> set-single-click-action :: (send t set-single-click-action proc) -
+        sets the procedure to be called when a card is single-clicked,
+        after the button action is initiated. (If the card is
+        double-clicked, this action is inoked for the first click,
+        then the double-click action is invoked.) The default action
+        does nothing.
+
+> pause :: (send t pause n-secs) - pauses, allowing the table display
+        to be updated (unless a sequence is active), but does not let
+        the user click on the cards.
+
+> animated :: (send t animated) - returns #t is animation is on.
+> animated :: (send t animated on?) - enables/disables animation.
+
+> create-status-pane :: (send t create-status-pane) - creates a
+        pane with a status message (initially empty) and returns
+        the pane so that you can add additional controls
+> set-status :: (send t set-status str) - sets the text message
+        in the status pane
+> add-help-button :: (send t add-help-button pane coll-path str tt?) -
+        adds a "Help" button to the give pane, where clicking the
+        button opens a new window to display "doc.txt" from the given
+        collection (where `coll-path' is a list of strings to select
+        the collection). The `str' is used for the help window title.
+        If `tt?' is true, then "doc.txt" is displayed verbatim,
+        otherwise it is formatted as for `show-help' from
+        `(lib "show-help.ss" "games").
+
+
+Card methods:
+-------------
+
+> card-width :: (send c card-width) - returns the width of the card in
+       pixels.
+
+> card-height :: (send c card-height) - returns the height of the card
+       in pixels.  All cards have the same width and height.
+
+> flip :: (send c flip) - flips the card without animation. This is
+       useful for flipping a card before it is added to a table.
+
+> face-up :: (send c face-up)
+> face-down :: (send c face-down)
+       Makes the card face up/down without animation.
+
+> face-down? :: (send c face-down?) - #t if the card is currently
+       face down.
+
+> get-suit-id :: (send c get-suit-id) - normally 1, 2, 3, or 4 (see
+       `get-suit' for corresponding suit names), but the result can be
+       anything for a card created by `make-card'
+
+> get-suit :: (send c get-suit) - 'clubs, 'diamonds, 'hearts, 'spades,
+       or 'unknown, depending on whether `get-suit-id' returns 1, 2,
+       3, 4, or something else
+
+> get-value :: (send c get-value) - normally 1 (Ace), 2, ... 10, 11
+       (Jack), 12 (Queen), or 13 (King), but the result can be
+       anything for a card created by `make-card'
+   
+> user-can-flip :: (send c user-can-flip)
+> user-can-flip :: (send c user-can-flip can?)
+       Determines whether the user can flip the card interactively,
+       usually by double-clicking it. Initially #t.
+
+> user-can-move :: (send c user-can-move)
+> user-can-move :: (send c user-can-move can?)
+       Determines whether the user can move the card interactively,
+       usually by dragging it. Disabling moves has the side-effect of
+       disabling raises and double-clicks. Initially #t.
+
+> snap-back-after-move :: (send c snap-back-after-move)
+> snap-back-after-move :: (send c snap-back-after-move on?)
+       Assuming user can move the card interactively, determines
+       whether the card stays where the user dragged it or snaps back
+       to its original place. Initially #f. A region's *interactive*
+       callback can disable snap-back for a card so that the card can
+       be delivered to the region. (A region's normal callback cannot
+       release the card, because it's too late.)
+
+> stay-in-region :: (send c stay-in-region r)
+> stay-in-region :: (send c stay-in-region)
+       If `r' is a region, the user cannot move the card out of r.
+       Initially #f.
+
+> home-region :: (send c home-region r)
+> home-region :: (send c home-region)
+       If `r' is a region, the user can move the card freely within
+       the region, but it snaps back if moved completely out of the
+       region. If moved partly out of the region, the card is moved
+       enough to get completely back in. Initially #f. A region's
+       *interactive* callback can disable snap-back for a card so that
+       the card can be delivered to the region. (A region's normal
+       callback cannot release the card, because it's too late.)
+
+> dim :: (send c dim dim?)
+> dim :: (send c dim)
+       "Highlights" the card by drawing it dimmer than normal.
+
+> copy :: (send c copy) - makes a new card with the same suit and
+       value.

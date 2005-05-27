@@ -1,0 +1,895 @@
+_GL_/_OpenGL_ bindings for PLT Scheme
+
+Sgl provides access to the system's GL library, version 1.5, and GLU library,
+version 1.3.  The GL API and hence the sgl library do not address system level
+concerns, such as the attachment of GL rendering contexts to displays.  The
+sgl library should work with any PLT Scheme extension that provides GL with
+access to the system (such as a binding for glx).  DrScheme and mred
+automatically attach a GL rendering context to each canvas% object on (at
+least) Windows, Linux and OS X systems.  Refer to the gears.ss example
+(${PLTHOME}/collects/sgl/examples/gears.ss) and the with-gl-context method on
+canvas% objects for more information on using the built-in GL rendering
+context support.
+
+Sgl has two layers, gl.ss and sgl.ss.  The gl.ss library provides access to
+the C-language-style GL API, whereas the sgl.ss library provides a more
+Scheme-like interface.  The gl.ss library provides a binding for each #defined
+constant and for most functions in GL 1.5 and GLU 1.3.  The functions perform
+comparable checking to their C-language counterparts; they check the types of
+their arguments, but do not check the length of array arguments.  The sgl.ss
+library provides wrappers around many of the functions in the gl.ss library to
+present a more Scheme-friendly interface, including function names that follow
+Scheme conventions, and checked, symbolic enumeration arguments, and
+array-length checks.
+
+Safety:
+GL programming is inherently unsafe, even when using only the sgl.ss library.
+Although sgl.ss checks the arguments to each function call, violation of
+higher-level assumptions of the system's GL library can cause it to crash,
+bringing the entire Scheme system down.  For example, sending a large number
+of vertices in a single glBegin causes at least some GL implementations to
+crash.
+
+_gl.ss_
+
+Use the gl.ss module by adding (require (lib "gl.ss" "sgl")) to your program.
+The gl.ss module provides a direct interface to the system's GL library
+closely following the conventions of the C-language GL API.  It provides a
+binding for each #defined constant (these start with GL_) and for the
+functions in the GL 1.5 and GLU 1.3 specifications, except for the following.  
+Vertex arrays           (GL 1.5, Section 2.8)
+Buffer objects          (GL 1.5, Section 2.9)
+glGetPointerv           (GL 1.5, Section 6.1.11)
+Buffer object queries   (GL 1.5, Section 6.1.13)
+Polygon tessalation     (GLU 1.3, Section 5)
+gluQuadricCallback      (GLU 1.3, Section 6.2)
+NURBS                   (GLU 1.3, Section 7)
+
+If one of the provided functions is not present on your system (e.g. if your
+system supports GL 1.3), the function will raise a run-time exception when
+invoked.
+
+Types:
+The functions provided by gl.ss perform comparable checking to their
+C-language counterparts; they check the types of their arguments, but do not
+check the length of array arguments.  The following chart details what Scheme
+values can be passed in for each primitive GL type.
+GLtype                          Scheme value
+------------------------------------------------------------------------------
+GLbyte, GLshort, GLint          exact integer in the proper range
+GLubyte, GLushort, GLuint       non-negative exact integer in the proper range
+GLsizei, GLenum, GLbitfield     non-negative exact integer in the proper range
+GLfloat, GLdouble               real number
+GLclampf, GLclampd              real number
+GLboolean                       Any value, interpreted such that
+                                 #f is GL_FALSE and anything else is GL_TRUE
+                                 (This means that you should not usually
+                                 GL_FALSE or GL_TRUE as arguments, since they
+                                 are bound to integers, both will end up being
+                                 converted to GL_TRUE.)
+				    
+GL functions that take vector arguments accept cvector values.  Section 2.4 of
+the PLT Foreign Interface Manual describes the functions for creating and
+manipulating cvectors (make-cvector, cvector, cvector?, cvector-length,
+cvector-type, cvector-ref, cvector-set!, cvector->list, and list->cvector).
+The type of the cvector is checked: for example, glVertex3fv expects a vector
+of GLfloats, and will only accept a cvector containing GLfloats.  The
+gl-vector.ss module provides cvector operations that account for the GL type
+information.  Functions that accept arrays of type void* will accept any
+cvector, you must ensure that you supply the proper kind of vector, as in the
+C-language GL API.
+
+The following functions have interfaces that differ from their C-language
+counterparts.  The function index at the end of this document refers back
+to these notes for each function.
+
+1: glPixelMap
+   glDeleteTextures
+   glDeleteQueries
+These functions do not take a size argument, it is derived from the length of
+the argument vector.
+
+2: glGenTextures
+   glGenQueries
+These functions do not take vector arguments.  Instead, they allocate a vector
+of the requested size and return it.
+
+3: glAreTexturesResident
+This function takes in a single uint vector, textures, and returns 2 values:
+the specified boolean and a boolean vector residences.
+
+4: glGetBooleanv
+   glGetIntegerv
+   glGetFloatv
+   glGetDoublev
+   glGetLight
+   glGetMaterial
+   glGetTexEnv
+   glGetTexGen
+   glGetTexParameter
+   glGetTexLevelParameter
+   glGetPixelMap
+   glGetMap
+   glGetBufferParameter
+   glGetConvolutionParameter
+   glGetHistogramParameter
+   glGetMinmaxParameter
+   glGetQuery
+   glGetQueryObject
+Instead of taking a vector argument, these function take an integer argument
+that specifies the size of the vector which is returned.
+
+5: glGetClipPlane
+This function does not take a vector argument and returns a double vector of
+length 4.
+
+6: glGetString
+   gluCheckExtension
+   gluErrorString
+   gluGetString
+These functions deal with strings instead of ubyte vectors.
+
+7: gluProject
+   gluUnProject
+   gluUnProject4
+Instead of taking pointers to doubles for return values, these function
+directly return double vectors.
+
+8: glSelectBuffer
+   glFeedbackBuffer
+These functions do not take vectors, instead they return a
+selection-buffer-object or feedback-buffer-object.  The gl.ss library provides
+the functions select-buffer->gl-uint-vector and
+feedback-buffer->gl-float-vector to copy the contents of the buffer into a
+vector.  Because the GL library writes to the buffer-object on GL function
+calls after glSelectBuffer or glFeedbackBuffer has returned, if the buffer is
+garbage collected before GL is finished writing to it, the entire Scheme
+system can crash.  The process-selection function in sgl helps interpret the
+results of glSelectBuffer in a Scheme-friendly format.
+
+
+Notational Example:
+(require (lib "gl.ss" "sgl")
+         (lib "gl-vectors.ss" "sgl"))
+(glBegin GL_TRIANGLES)
+(glVertex3i 1 2 3)
+(glVertex4fv (gl-float-vector 1 2 3 4))
+(glEnd)
+
+See alpha.ss in the examples subdirectory of the sgl collection
+(${PLTHOME}/collects/sgl/examples/alpha.ss) for a working example.  Try
+choosing the sk.jpg file in the icons when this example asks you for a file.
+You may have to press "t" a few times if the spinning cube is blank.
+
+
+_gl-vectors.ss_
+
+The gl-vectors module supports GL programming with cvectors.  In this
+document, and in the error messages, a gl-vector is just a cvector, from (lib
+"foreign.ss"), and a gl-<type>-vector is a cvector with an appropriate type.
+Use this module by adding (require (lib "gl-vectors.ss" "sgl")) to your
+program.  I suggest using this module instead of using the cvector function
+directly because these functions are specialized to handling the GL typedefs
+correctly.
+
+The gl-vectors.ss module provides the following functions, which are synonyms
+for the corresponding cvector functions:
+gl-vector->vector
+gl-vector->list
+gl-vector-length
+gl-vector-ref
+gl-vector-set!
+gl-vector?
+
+Furthermore, for each <type> in byte, ubyte, short, ushort, int, uint, float,
+double, boolean gl-vectors.ss provides the following functions:
+gl-<type>-vector?: any -> boolean
+  True when the argument is a gl-<type>-vector
+make-gl-<type>-vector: non-negative-integer -> gl-<type>-vector
+  Makes a gl-<type>-vector of the given length
+gl-<type>-vector: X ... -> gl-<type>-vector
+  Makes a gl-<type>-vector from the given arguments
+vector->gl-<type>-vector: vector -> gl-<type>-vector
+  Converts a Scheme vector into the specified gl-<type>-vector
+list->gl-<type>-vector: vector -> gl-<type>-vector
+  Converts a Scheme list into the specified gl-<type>-vector
+gl-<type>-vector+: gl-vector ... -> gl-type-vector
+  Computes the element-by-element sum of the given gl-vectors and places the
+  result into a gl-<type>-vector
+gl-<type>-vector-: gl-vector ... -> gl-type-vector
+  Computes the element-by-element difference of the given gl-vectors and
+  places the result into a gl-<type>-vector
+gl-<type>-vector*: real-number gl-vector -> gl-type-vector
+  Multiplies each element of the given gl-vector by the given number and
+  places the result into a gl-<type>-vector
+
+Finally, the following functions are also provided.
+gl-vector-norm: gl-vector -> real-number
+  Returns the square root of the sum of the squares of the elements of the
+  given gl-vector 
+
+_sgl.ss_
+
+Use the sgl.ss module by adding (require (lib "sgl.ss" "sgl)) to your program.
+To prefix the function names with "gl-" use the form (require (prefix gl- (lib
+"sgl.ss" "sgl"))) instead.  The sgl.ss module provides a more Scheme-like
+interface to the GL functions in gl.ss.
+
+Functions in sgl.ss take symbols instead of integers for GLenum arguments.
+Each function checks that the given symbol is an acceptable argument and
+raises an exception if it is not.  Given the name of a C-language #define
+constant, determine the corresponding symbolic argument by removing the
+leading "GL_", converting the letters to lower-case and replacing all
+underscores with dashes.  For example, GL_TRIANGLES becomes 'triangles and
+GL_TRIANGLE_STRIP becomes 'triangle-strip.  Additionally, the functions check
+the length of any array arguments to ensure that GL does not attempt to write
+or read after the array.
+
+The functions in sgl.ss use Scheme style names instead of C style names.  To
+convert a C GL name to a Scheme GL name, drop the leading "gl" (use the
+require form to choose whatever prefix you desire, as above), separate
+adjacent words with hyphens, and convert to all lower case.  Functions that
+have several variants to accommodate different numbers and types of arguments
+are collapsed into one or two functions in sgl.ss.  For example, sgl.ss
+provides two vertex functions, vertex and vertex-v.  The vertex function
+accepts 2, 3 or 4 numerical arguments, and the vertex-v function accepts
+gl-vectors of length 2, 3 or 4.  The C language GL interface has 24 vertex
+functions glVertex3i, glVertex4fv, etc.
+
+
+The sgl.ss module is not yet complete and many functions from the gl module do
+not yet have counterparts in the sgl.ss module.  See the list of functions
+below.
+
+Notational Example:
+(require (prefix gl- (lib "sgl.ss" "sgl"))
+         (lib "gl-vectors.ss" "sgl"))
+(gl-begin 'triangles)
+(gl-vertex 1 2 3)
+(gl-vertex-v (gl-float-vector 1 2 3 4))
+(gl-end)
+
+See gears.ss in the examples subdirectory of the sgl collection
+(${PLTHOME}/collects/sgl/examples/gears.ss) for a working example.  Also see
+the checkers game in ${PLTHOME}/collects/games/checkers/checkers.ss.
+
+sgl provides the following utility functions that have no OpenGL counterpart:
+
+process-selection: gl-uint-vector int -> (listof selection-record)
+where a selection-record is defined by this exported struct: 
+(define-struct selection-record (min-z max-z stack)).
+process-selection parses the contents of a gl-vector from the format used by
+glSelectBuffer.  The second argument should be the number of hits as returned
+by glRenderMode.
+
+get-gl-version-number: -> int
+Returns the version number as an integer: 10, 11, 12, 13, 14, 15, or 20.
+
+get-glu-version-number: -> int
+Returns the version number as an integer: 10, 11, 12, or 13.
+
+Function indexes:
+
+
+----------------------------  sgl.ss: ----------------------------
+(struct selection-record (min-z max-z stack))
+accum
+active-texture
+alpha-func
+begin
+begin-query
+blend-color
+blend-equation
+blend-func
+blend-func-separate
+call-list
+check-extension
+clear
+clear-accum
+clear-color
+clear-depth
+clear-index
+clear-stencil
+clip-plane
+color
+color-mask
+color-material
+color-v
+copy-pixels
+cull-face
+cylinder
+delete-lists
+delete-queries
+depth-func
+depth-mask
+depth-range
+disable
+disk
+edge-flag
+enable
+end
+end-list
+end-query
+eval-coord
+eval-coord-v
+eval-mesh
+eval-point
+feedback-buffer->gl-float-vector
+finish
+flush
+front-face
+frustum
+gen-lists
+gen-queries
+get-error
+get-string
+get-gl-version-number
+get-glu-version-number
+hint
+index
+index-mask
+index-v
+init-names
+is-buffer
+is-enabled
+is-list
+is-query
+light
+light-model
+light-model-v
+light-v
+line-stipple
+line-width
+list-base
+load-identity
+load-matrix
+load-name
+load-transpose-matrix
+look-at
+map-grid
+material
+material-v
+matrix-mode
+mult-matrix
+mult-transpose-matrix
+multi-tex-coord
+multi-tex-coord-v
+new-list
+new-quadric
+normal
+normal-v
+ortho
+ortho-2d
+partial-disk
+pass-through
+perspective
+pick-matrix
+pixel-store
+point-parameter
+point-parameter-v
+point-size
+polygon-mode
+polygon-offset
+pop-attrib
+pop-client-attrib
+pop-matrix
+pop-name
+process-selection
+project
+push-matrix
+push-name
+quadric-draw-style
+quadric-normals
+quadric-orientation
+quadric-texture
+raster-pos
+raster-pos-v
+rect
+rect-v
+render-mode
+rotate
+sample-coverage
+scale
+scissor
+secondary-color
+secondary-color-v
+select-buffer->gl-uint-vector
+shade-model
+sphere
+stencil-func
+stencil-mask
+stencil-op
+tex-coord
+tex-coord-v
+tex-gen
+tex-gen-v
+translate
+u-get-string
+un-project
+un-project4
+vertex
+vertex-v
+viewport
+window-pos
+window-pos-v
+
+-----------------------------  gl.ss:  -----------------------------
+glAccum
+glActiveTexture
+glAlphaFunc
+glAreTexturesResident		*3
+glBegin
+glBeginQuery
+glBindTexture
+glBitmap
+glBlendColor
+glBlendEquation
+glBlendFunc
+glBlendFuncSeparate
+glCallList
+glCallLists
+glClear
+glClearAccum
+glClearColor
+glClearDepth
+glClearIndex
+glClearStencil
+glClipPlane
+glColor3b
+glColor3bv
+glColor3d
+glColor3dv
+glColor3f
+glColor3fv
+glColor3i
+glColor3iv
+glColor3s
+glColor3sv
+glColor3ub
+glColor3ubv
+glColor3ui
+glColor3uiv
+glColor3us
+glColor3usv
+glColor4b
+glColor4bv
+glColor4d
+glColor4dv
+glColor4f
+glColor4fv
+glColor4i
+glColor4iv
+glColor4s
+glColor4sv
+glColor4ub
+glColor4ubv
+glColor4ui
+glColor4uiv
+glColor4us
+glColor4usv
+glColorMask
+glColorMaterial
+glColorSubTable
+glColorTable
+glColorTableParameterfv
+glColorTableParameteriv
+glCompressedTexImage1D
+glCompressedTexImage2D
+glCompressedTexImage3D
+glCompressedTexSubImage1D
+glCompressedTexSubImage2D
+glCompressedTexSubImage3D
+glConvolutionFilter1D
+glConvolutionFilter2D
+glConvolutionParameterf
+glConvolutionParameterfv
+glConvolutionParameteri
+glConvolutionParameteriv
+glCopyColorSubTable
+glCopyColorTable
+glCopyConvolutionFilter1D
+glCopyConvolutionFilter2D
+glCopyPixels
+glCopyTexImage1D
+glCopyTexImage2D
+glCopyTexSubImage1D
+glCopyTexSubImage2D
+glCopyTexSubImage3D
+glCullFace
+glDeleteLists
+glDeleteQueries			*1
+glDeleteTextures		*1
+glDepthFunc
+glDepthMask
+glDepthRange
+glDisable
+glDrawBuffer
+glDrawPixels
+glEdgeFlag
+glEdgeFlagv
+glEnable
+glEnd
+glEndList
+glEndQuery
+glEvalCoord1d
+glEvalCoord1dv
+glEvalCoord1f
+glEvalCoord1fv
+glEvalCoord2d
+glEvalCoord2dv
+glEvalCoord2f
+glEvalCoord2fv
+glEvalMesh1
+glEvalMesh2
+glEvalPoint1
+glEvalPoint2
+glFeedbackBuffer		*8
+glFinish
+glFlush
+glFogCoordd
+glFogCoorddv
+glFogCoordf
+glFogCoordfv
+glFogf
+glFogfv
+glFogi
+glFogiv
+glFrontFace
+glFrustum
+glGenLists
+glGenQueries			*2
+glGenTextures			*2
+glGetBooleanv			*4
+glGetBufferParameteriv		*4
+glGetClipPlane			*5
+glGetColorTable
+glGetCompressedTexImage
+glGetConvolutionFilter
+glGetConvolutionParameterfv	*4
+glGetConvolutionParameteriv	*4
+glGetDoublev			*4
+glGetError
+glGetFloatv			*4
+glGetHistogram
+glGetHistogramParameterfv	*4
+glGetHistogramParameteriv	*4
+glGetIntegerv			*4
+glGetLightfv			*5
+glGetLightiv			*5
+glGetMapdv			*4
+glGetMapfv			*4
+glGetMapiv			*4
+glGetMaterialfv			*4
+glGetMaterialiv			*4
+glGetMinmax
+glGetMinmaxParameterfv		*4
+glGetMinmaxParameteriv		*4
+glGetPixelMapfv			*4
+glGetPixelMapuiv		*4
+glGetPixelMapusv		*4
+glGetPolygonStipple
+glGetQueryObjectiv		*4
+glGetQueryObjectuiv		*4
+glGetQueryiv			*4
+glGetSeparableFilter
+glGetString			*6
+glGetTexEnvfv			*4
+glGetTexEnviv			*4
+glGetTexGendv			*4
+glGetTexGenfv			*4
+glGetTexGeniv			*4
+glGetTexImage
+glGetTexLevelParameterfv	*4
+glGetTexLevelParameteriv	*4
+glGetTexParameterfv		*4
+glGetTexParameteriv		*4
+glHint
+glHistogram
+glIndexMask
+glIndexd
+glIndexdv
+glIndexf
+glIndexfv
+glIndexi
+glIndexiv
+glIndexs
+glIndexsv
+glIndexub
+glIndexubv
+glInitNames
+glIsBuffer
+glIsEnabled
+glIsList
+glIsQuery
+glIsTexture
+glLightModelf
+glLightModelfv
+glLightModeli
+glLightModeliv
+glLightf
+glLightfv
+glLighti
+glLightiv
+glLineStipple
+glLineWidth
+glListBase
+glLoadIdentity
+glLoadMatrixd
+glLoadMatrixf
+glLoadName
+glLoadTransposeMatrixd
+glLoadTransposeMatrixf
+glLogicOp
+glMap1d
+glMap1f
+glMap2d
+glMap2f
+glMapGrid1d
+glMapGrid1f
+glMapGrid2d
+glMapGrid2f
+glMaterialf
+glMaterialfv
+glMateriali
+glMaterialiv
+glMatrixMode
+glMinmax
+glMultMatrixd
+glMultMatrixf
+glMultTransposeMatrixd
+glMultTransposeMatrixf
+glMultiTexCoord1d
+glMultiTexCoord1dv
+glMultiTexCoord1f
+glMultiTexCoord1fv
+glMultiTexCoord1i
+glMultiTexCoord1iv
+glMultiTexCoord1s
+glMultiTexCoord1sv
+glMultiTexCoord2d
+glMultiTexCoord2dv
+glMultiTexCoord2f
+glMultiTexCoord2fv
+glMultiTexCoord2i
+glMultiTexCoord2iv
+glMultiTexCoord2s
+glMultiTexCoord2sv
+glMultiTexCoord3d
+glMultiTexCoord3dv
+glMultiTexCoord3f
+glMultiTexCoord3fv
+glMultiTexCoord3i
+glMultiTexCoord3iv
+glMultiTexCoord3s
+glMultiTexCoord3sv
+glMultiTexCoord4d
+glMultiTexCoord4dv
+glMultiTexCoord4f
+glMultiTexCoord4fv
+glMultiTexCoord4i
+glMultiTexCoord4iv
+glMultiTexCoord4s
+glMultiTexCoord4sv
+glNewList
+glNormal3b
+glNormal3bv
+glNormal3d
+glNormal3dv
+glNormal3f
+glNormal3fv
+glNormal3i
+glNormal3iv
+glNormal3s
+glNormal3sv
+glOrtho
+glPassThrough
+glPixelMapfv			*1
+glPixelMapuiv			*1
+glPixelMapusv			*1
+glPixelStoref
+glPixelStorei
+glPixelTransferf
+glPixelTransferi
+glPixelZoom
+glPointParameterf
+glPointParameterfv
+glPointParameteri
+glPointParameteriv
+glPointSize
+glPolygonMode
+glPolygonOffset
+glPolygonStipple
+glPopAttrib
+glPopClientAttrib
+glPopMatrix
+glPopName
+glPushAttrib
+glPushClientAttrib
+glPushMatrix
+glPushName
+glRasterPos2d
+glRasterPos2dv
+glRasterPos2f
+glRasterPos2fv
+glRasterPos2i
+glRasterPos2iv
+glRasterPos2s
+glRasterPos2sv
+glRasterPos3d
+glRasterPos3dv
+glRasterPos3f
+glRasterPos3fv
+glRasterPos3i
+glRasterPos3iv
+glRasterPos3s
+glRasterPos3sv
+glRasterPos4d
+glRasterPos4dv
+glRasterPos4f
+glRasterPos4fv
+glRasterPos4i
+glRasterPos4iv
+glRasterPos4s
+glRasterPos4sv
+glReadBuffer
+glReadPixels
+glRectd
+glRectdv
+glRectf
+glRectfv
+glRecti
+glRectiv
+glRects
+glRectsv
+glRenderMode
+glResetHistogram
+glResetMinmax
+glRotated
+glRotatef
+glSampleCoverage
+glScaled
+glScalef
+glScissor
+glSecondaryColor3b
+glSecondaryColor3bv
+glSecondaryColor3d
+glSecondaryColor3dv
+glSecondaryColor3f
+glSecondaryColor3fv
+glSecondaryColor3i
+glSecondaryColor3iv
+glSecondaryColor3s
+glSecondaryColor3sv
+glSecondaryColor3ub
+glSecondaryColor3ubv
+glSecondaryColor3ui
+glSecondaryColor3uiv
+glSecondaryColor3us
+glSecondaryColor3usv
+glSelectBuffer			*8
+glSeparableFilter2D
+glShadeModel
+glStencilFunc
+glStencilMask
+glStencilOp
+glTexCoord1d
+glTexCoord1dv
+glTexCoord1f
+glTexCoord1fv
+glTexCoord1i
+glTexCoord1iv
+glTexCoord1s
+glTexCoord1sv
+glTexCoord2d
+glTexCoord2dv
+glTexCoord2f
+glTexCoord2fv
+glTexCoord2i
+glTexCoord2iv
+glTexCoord2s
+glTexCoord2sv
+glTexCoord3d
+glTexCoord3dv
+glTexCoord3f
+glTexCoord3fv
+glTexCoord3i
+glTexCoord3iv
+glTexCoord3s
+glTexCoord3sv
+glTexCoord4d
+glTexCoord4dv
+glTexCoord4f
+glTexCoord4fv
+glTexCoord4i
+glTexCoord4iv
+glTexCoord4s
+glTexCoord4sv
+glTexEnvf
+glTexEnvfv
+glTexEnvi
+glTexEnviv
+glTexGend
+glTexGendv
+glTexGenf
+glTexGenfv
+glTexGeni
+glTexGeniv
+glTexImage1D
+glTexImage2D
+glTexImage3D
+glTexParameterf
+glTexParameterfv
+glTexParameteri
+glTexParameteriv
+glTexSubImage1D
+glTexSubImage2D
+glTexSubImage3D
+glTranslated
+glTranslatef
+glVertex2d
+glVertex2dv
+glVertex2f
+glVertex2fv
+glVertex2i
+glVertex2iv
+glVertex2s
+glVertex2sv
+glVertex3d
+glVertex3dv
+glVertex3f
+glVertex3fv
+glVertex3i
+glVertex3iv
+glVertex3s
+glVertex3sv
+glVertex4d
+glVertex4dv
+glVertex4f
+glVertex4fv
+glVertex4i
+glVertex4iv
+glVertex4s
+glVertex4sv
+glViewport
+glWindowPos2d
+glWindowPos2dv
+glWindowPos2f
+glWindowPos2fv
+glWindowPos2i
+glWindowPos2iv
+glWindowPos2s
+glWindowPos2sv
+glWindowPos3d
+glWindowPos3dv
+glWindowPos3f
+glWindowPos3fv
+glWindowPos3i
+glWindowPos3iv
+glWindowPos3s
+glWindowPos3sv
+gluBuild1DMipmapLevels
+gluBuild1DMipmaps
+gluBuild2DMipmapLevels
+gluBuild2DMipmaps
+gluBuild3DMipmapLevels
+gluBuild3DMipmaps
+gluCheckExtension		*6
+gluCylinder
+gluDisk
+gluErrorString			*6
+gluGetString			*6
+gluLookAt
+gluNewQuadric
+gluOrtho2D
+gluPartialDisk
+gluPerspective
+gluPickMatrix
+gluProject			*7
+gluQuadricDrawStyle
+gluQuadricNormals
+gluQuadricOrientation
+gluQuadricTexture
+gluScaleImage
+gluSphere
+gluUnProject			*7
+gluUnProject4			*7

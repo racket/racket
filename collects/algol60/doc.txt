@@ -1,0 +1,61 @@
+_Algol 60_
+
+The "Algol 60" language for DrScheme implements the language define by
+the "Revised Report on the Algorithmic Language Algol 60", edited by
+Peter Naur.
+
+
+The "algol60.ss" library provides an `include-algol' form for including
+an Algol 60 program as an expression in a Scheme program:
+
+>  (include-algol file-path-string)
+
+The included Algol 60 program is closed (i.e., it doesn't see any
+bindings in the included context), and the result is always void.
+
+
+Language
+--------
+
+The DrScheme/`include-algol' implementation departs from the
+specification in the following minor ways:
+
+  * strings are not permitted to contain nested quotes;
+
+  * identifiers cannot contain whitespace;
+
+  * argument separators are constrained to be identifiers (i.e., they
+    cannot be keywords, and they cannot consistnt of multiple
+    identifiers separated by whitespace); and
+
+  * numbers containing exponents (using the "10" subscript) are not
+    supported.
+
+Identifiers and keywords are case-sensitive. The boldface/underlined
+keywords of the report are represented by the obvious character
+sequence, as are most operators. A few operators do not fit into
+ASCII, and they are mapped as follows:
+
+  times             *
+  quotient          div
+  exponential       ^
+  less or equal     <=
+  greater or equal  >=
+  not equal         !=
+  equivalence       ==
+  implication       =>
+  and               &
+  or                |
+  negation          !
+
+In addition to the standard functions, the following output functions
+are supported:
+
+  prints(E)    prints the string E
+  printsln(E)  prints the string E followed by a newline
+  printn(E)    prints the number E
+  printnln(E)  prints the number E followed by a newline
+
+A prompt in DrScheme's Interactions window accepts whole programs only
+for the Algol 60 language.
+

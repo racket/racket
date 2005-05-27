@@ -1,0 +1,13 @@
+(let ((Y (lambda (f)
+           (let ((g (lambda (x)
+                      (apply f (list (lambda (z1 z2)
+                           (apply (apply x (list x)) (list z1 z2))))))))
+             (g g))))
+      (newappend (lambda (ap)
+                   (lambda (x y)
+                     (if (null? x)
+                         y
+                         (cons (first x)
+                               (apply ap (list (rest x) y)))))))
+      (l (cons 1 (cons 2 (cons 3 null)))))
+  (apply (Y newappend) (list l l)))

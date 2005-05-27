@@ -1,0 +1,98 @@
+_professorj_
+
+This documentation details available resources, recent additions, and
+constructs which do not currently work in ProfessorJ overall. For
+details of the specific language levels, please see the language level
+specific manuals.
+
+The interactions window accepts variable declaration, statements and
+expressions legal for the language level. If the text is not sending,
+type Alt+Enter.
+
+The definitions window expects class and interface defintions,
+interaction boxes, and test-suite boxes. (i.e. what would be given to
+javac plus two graphical boxes). Descriptions of these boxes can be
+found in the DrScheme manual.
+
+_Libraries available to ProfessorJ:
+
+*NEW* Items are new to either DrScheme 207 or DrScheme 208
+
+  java.lang.Object
+  java.lang.String (see exceptions)
+  java.lang.Throwable
+  java.lang.*Exception
+  *NEW* java.lang.System (only currentTimeMillis, gc, and identityHashCode)
+  *NEW* java.lang.Comparable
+  *NEW* java.lang.Number
+  *NEW* java.lang.Double (see exceptions) 
+  *NEW* java.lang.Float (see exceptions) 
+  *NEW* java.lang.Boolean (see exceptions) 
+  *NEW* java.io.Serializable
+  *NEW* java.util.Random
+
+  *NEW* Teachpacks (PLT/collects/htdch)
+  *NEW* draw.*
+
+  exceptions:
+   String: String(byte[],int,int,String) -- incorrect
+           String(byte[],int,int,int) -- incorrect
+           getBytes() -- partially incorrect
+           replaceAll(String,String) -- not implemented
+           replaceFirst(String,String) -- not implemented
+           matches(String) -- not implemented
+           split(String,int) -- not implemented
+           split(String) -- not implemented
+           trim -- not implemented
+   Double: doubleToLongBits -- not implemented
+           doubleToRawBits -- not implemented
+           longBitsToDouble -- not implemented
+   Float:  floatToIntBits, floatToRawBits, longBitsToFloat -- not implemented
+   Boolean: getBoolean(String) not implemented
+
+_General New Items (New to 207 and 208)
+
+  New to all teaching language levels:
+    import package.name.*;
+    a teachpack directory (PLT/collects/htdch)
+    access to draw.* teachpack
+
+  New to Beginner:
+    super calls reallowed. For example
+      class A { 
+        int x;
+        A(int x) {
+          this.x = x;
+        }
+        int adder() { return x + 1; }
+      }
+      class B extends A {
+        int y;
+        B( int x, int y) {
+          super(x);
+          this.y = y;
+        }
+        int adder() { return y + super.adder(); }
+      }
+    now works
+ 
+    == is restricted to comparing byte, short, int, long, char, and boolean
+    values
+
+    Classes may have initialized fields (i.e. int x = 3;)
+
+_Unfinished constructs:
+  nested classes
+  switch
+  labeled statements (compiles but does not work correctly)
+  reflection
+  unicode
+  synchronized (compiles but is ignored)
+  strictfp (compiles but is ignored)
+
+
+
+
+
+
+

@@ -1,0 +1,5 @@
+(module info (lib "infotab.ss" "setup")
+  (define name "Preprocessor")
+  (define doc.txt "doc.txt")
+  (define mzscheme-launcher-names     '("mzpp"        "mztext"))
+  (define mzscheme-launcher-libraries '("mzpp-run.ss" "mztext-run.ss")))

@@ -1,0 +1,55 @@
+This directory contains a few example MzScheme extensions. Most
+examples are implemented directly in C. A few examples listed at the
+end use the mzc `c-lambda', etc. forms.
+
+ * hello.c - returns the string "Hello, World!". Demonstrates creating
+   a Scheme value. (Works with 3m.)
+
+ * fmod.c - defines the `fmod' procedure, which calculates modulo on
+   floating-point numbers. Demonstrates creating Scheme procedures
+   from C and adding top-level definitions. (Works with 3m.)
+
+ * curses.c - links MzScheme to the curses library. Demonstrates more
+   procedures and definitions, a little more type dispatching, and
+   returning multiple values. (Works with 3m.)
+
+ * makeadder.c - defines `make-adder', which takes a number and
+   returns a procedure that takes another number to add to
+   it. Demonstrates closure creation in C, getting Scheme global
+   values, and calling Scheme procedures from C.
+
+   makeadder3m.c - the same, but works with 3m. Making the code
+   work with 3m requires several changes.
+
+ * catch.c - defined `eval-string/catch-error', which catches
+   excpetions whil evaluating a string. Demonstrates how to catch
+   exceptions from C code. (Does not work with 3m.)
+
+ * bitmatrix.c - implements two-dimentional bit matrixes with some
+   operations. Demonstrates defining a new Scheme data type, data
+   allocation, fancy integer type checking, general exception raising,
+   and registering static variables. (Does not work with 3m.)
+
+ * idmodule.c - Declares the module named `idmodule' that provides an
+   `identity' function. Demonstrates implementing a primitive module
+   in C. (Does not work with 3m.)
+
+ * helloprint.c - prints "Hello, World!" directly to the current
+   output port rather than relying on the read-eval-print-loop.
+   Demonstrates using built-in Scheme parameter values from C.  (Does
+   not work with 3m.)
+
+ * tree.cxx, tree-finish.ss - shows how to inject a C++ class into
+   MzLib's class.ss world. (Does not work with 3m.)
+
+
+ * fmod-ez.ss - same as fmod.c, but with 10% of the code. Demonstrates
+   `c-lambda'. (Does not work with 3m.)
+
+ * cfile.ss - simple (and unsafe) glue to the fopen(), fread(),
+   fwrite(), and fclose() C library functions. Demonstrates the use of
+   `(pointer ...)' types. (Does not work with 3m.)
+
+ * msgbox.ss - a Windows-only example, provides a `message-box'
+   procedure. Demonstrates some of the limitations of `c-lambda' and
+   how to work around them. (Does not work with 3m.)
