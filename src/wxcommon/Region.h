@@ -170,8 +170,6 @@ class wxPathPathRgn : public wxPathRgn
 {
  public:
   wxPath *p;
-  double xoffset;
-  double yoffset;
   int fillStyle;
   wxPathPathRgn(wxDC *dc_for_scale, wxPath *p, double xoffset, double yoffset, int fillStyle);
   virtual Bool Install(long target, Bool reverse, Bool align);

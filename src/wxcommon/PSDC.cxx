@@ -2233,6 +2233,7 @@ void wxPrintSetupData::SetAFMPath(char *f)
 void wxPrintSetupData::copy(wxPrintSetupData* data)
 {
   double x, y;
+  long lx, ly;
   char *s;
   int i;
   
@@ -2257,6 +2258,10 @@ void wxPrintSetupData::copy(wxPrintSetupData* data)
   SetPrinterTranslation(x, y);
   data->GetPrinterScaling(&x, &y);
   SetPrinterScaling(x, y);
+  data->GetMargin(&x, &y);
+  SetMargin(x, y);
+  data->GetEditorMargin(&lx, &ly);
+  SetEditorMargin(lx, ly);
 
 #ifdef wx_mac
   if (data->native) {

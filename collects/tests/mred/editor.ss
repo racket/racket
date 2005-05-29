@@ -5,6 +5,129 @@
 ;;                            Editor Tests                                    ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;;;;;; File and port save/load tests
+
+(define (run-save/load-tests editor% insert reset?)
+  (when reset?
+    (map (lambda (f)
+	   (when (file-exists? f) (delete-file f)))
+	 '("tmp99" "tmp98" "tmp97" "tmp96" "tmp95")))
+  (let* ([mode #f]
+	 [editor+% (class editor%
+		     (define/augment (on-load-file path -mode)
+		       (set! mode -mode))
+		     (define/augment (on-save-file path -mode)
+		       (set! mode -mode))
+		     (super-new))]
+	 [e (make-object editor+%)]
+	 [ck-text (lambda (path)
+		    (when (eq? editor% text%)
+		      (st 'text e get-file-format)
+		      (when path
+			(test "Hello" 'content (with-input-from-file path
+						 (lambda ()
+						   (read-string 100)))))))]
+	 [ck-binary (lambda (path)
+		      (when (eq? editor% text%)
+			(st 'standard e get-file-format))
+		      (when path
+			(test #"WXME" 'content (with-input-from-file path
+						 (lambda ()
+						   (read-bytes 4))))))]
+	 [ck-mode (lambda (-mode)
+		    (test (if (eq? editor% pasteboard%) 
+			      (if (eq? -mode 'copy)
+				  'copy
+				  'standard) 
+			      -mode) 
+			  'mode mode))])
+    (insert e "Hello")
+    (st #t e is-modified?)
+    (st #f e get-filename)
+    (when (eq? editor% text%)
+      (st 'standard e get-file-format))
+    (st #t e save-file "tmp99" 'text)
+    (ck-mode 'text)
+    (st (string->path "tmp99") e get-filename)
+    (st #f e is-modified?)
+    (ck-text "tmp99")
+    (insert e "Ack")
+    (st #t e is-modified?)
+    (st #t e load-file "tmp99" 'guess)
+    (ck-mode 'guess)
+    (ck-text #f)
+    (st #f e is-modified?)
+    (st "Hello" e get-flattened-text)
+    (let ([now (file-or-directory-modify-seconds "tmp99")])
+      (st #t e save-file "tmp99" 'same)
+      (ck-text "tmp99")
+      (st (string->path "tmp99") e get-filename)
+      (let ([later (file-or-directory-modify-seconds "tmp99")])
+	(test #t 'file-date (now . <= . later))
+	(st #t e save-file "tmp98" 'standard)
+	(test #f 'file-date (later . < . (file-or-directory-modify-seconds "tmp99")))
+	(ck-binary "tmp98")
+	(st #t e load-file "tmp98" 'guess)
+	(ck-mode 'guess)
+	(ck-binary #f)
+	(st #t e load-file "tmp98" 'text)
+	(ck-mode 'text)
+	(ck-text #f)
+	(when (eq? editor% text%)
+	  (st "WXME" e get-text 0 4))
+	(st #t e load-file "tmp98" 'same)
+	(ck-mode 'same)
+	(ck-text #f)
+	(when (eq? editor% text%)
+	  (st "WXME" e get-text 0 4))
+	(st #t e load-file "tmp98" 'guess)
+	(ck-mode 'guess)
+	(ck-binary #f)
+	(st "Hello" e get-flattened-text)))
+    (let ([target "tmp97"])
+      ;; Check [non-]temporary file names
+      (set! e (make-object (class editor+%
+			     (define/override (put-file file dir)
+			       (string->path target))
+			     (super-new))))
+      (insert e "Howdy")
+      (st #t e is-modified?)
+      (set! mode #f)
+      (st #t e save-file #f 'copy)
+      (ck-mode 'copy)
+      (set! target "tmp95")
+      (st #t e is-modified?)
+      (ck-binary "tmp97")
+      (stv e set-filename "tmp96")
+      (st #t e save-file #f)
+      (st #f e is-modified?)
+      (st (string->path "tmp96") e get-filename)
+      (ck-binary "tmp96")
+      (stv e set-filename "tmp96" #t)
+      (st #t e save-file #f)
+      (ck-mode 'same)
+      (st (string->path "tmp95") e get-filename)
+      (stv e set-filename "tmp96" #t)
+      (st #t e save-file "")
+      (st (string->path "tmp95") e get-filename)
+      (ck-binary "tmp95")
+      (st "Howdy" e get-flattened-text)
+      (when (eq? editor% text%)
+	(stv e set-position 100))
+      (st #t e insert-file "tmp98")
+      (st "HowdyHello" e get-flattened-text)
+      (st #t e insert-file "tmp99")
+      (st "HowdyHelloHello" e get-flattened-text)
+      (st (string->path "tmp95") e get-filename))))
+    
+(map (lambda (reset?)
+       (run-save/load-tests text% (lambda (e t) (send e insert t)) reset?)
+       (run-save/load-tests pasteboard% (lambda (e t) (send e insert (make-object string-snip% t))) reset?))
+     '(#t #f))
+
+(report-errs)
+done
+
 ;;;;;; Undo tests
 
 (define e (make-object text%))

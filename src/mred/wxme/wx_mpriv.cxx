@@ -2531,7 +2531,7 @@ void wxMediaEdit::Redraw()
 void wxMediaEdit::Refresh(double left, double top, double width, double height,
 			  int show_caret, wxColour *bgColor)
 {
-  double x, y, bottom, right, ddx, ddy;
+  double x, y, bottom, right;
   Bool ps;
   wxDC *dc;
   int show_xsel = 0;
@@ -2565,8 +2565,17 @@ void wxMediaEdit::Refresh(double left, double top, double width, double height,
   if (ReadyOffscreen(width, height))
     drawCachedInBitmap = FALSE;
 
-  bottom = top + height;
-  right = left + width;
+  /* Make sure all location information is integral,
+     so we can shift the coordinate system and generally
+     update on pixel boundaries. */
+  x = floor(x);
+  y = floor(y);
+  bottom = ceil(top + height);
+  right = ceil(left + width);
+  top = floor(top);
+  left = floor(left);
+  width = right - left;
+  height = bottom - top;
 
   ps = (wxSubType(dc->__type, wxTYPE_DC_POSTSCRIPT)
 	|| wxSubType(dc->__type, wxTYPE_DC_PRINTER));
@@ -2580,24 +2589,12 @@ void wxMediaEdit::Refresh(double left, double top, double width, double height,
 #endif
 
   if (bgColor && !offscreenInUse && bitmap && bitmap->Ok() && offscreen->Ok() && !ps) {
-    /* Need to make sure that difference between coordinates is
-       integral; otherwise, roundoff error could affect drawing */
     unsigned char red, green, blue;
 
     red = (unsigned char)bgColor->Red();
     green = (unsigned char)bgColor->Green();
     blue = (unsigned char)bgColor->Blue();
 
-    ddx = (left - x) - (long)(left - x);
-    if (ddx < 0)
-      ddx = 1 + ddx;
-    left -= ddx;
-    width += ddx;
-    ddy = (top - y) - (long)(top - y);
-    if (ddy < 0)
-      ddy = 1 + ddy;
-    top -= ddy;
-    height += ddy;
 #ifndef EACH_BUFFER_OWN_OFFSCREEN
     offscreenInUse = TRUE;
 #endif

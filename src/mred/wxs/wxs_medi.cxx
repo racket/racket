@@ -2142,7 +2142,7 @@ static Scheme_Object *os_wxMediaBufferInsertPort(int n,  Scheme_Object *p[])
   VAR_STACK_PUSH(1, x0);
 
   
-  x0 = (SCHEME_INPORTP(p[POFFSET+0]) ? p[POFFSET+0] : (scheme_wrong_type(METHODNAME("editor<%>","insert-file"), "input port", -1, 1, &p[POFFSET+0]), (Scheme_Object *)NULL));
+  x0 = (SCHEME_INPORTP(p[POFFSET+0]) ? p[POFFSET+0] : (scheme_wrong_type(METHODNAME("editor<%>","insert-port"), "input port", -1, 1, &p[POFFSET+0]), (Scheme_Object *)NULL));
   if (n > (POFFSET+1)) {
     x1 = WITH_VAR_STACK(unbundle_symset_fileType(p[POFFSET+1], "insert-port in editor<%>"));
   } else
@@ -2161,13 +2161,13 @@ static Scheme_Object *os_wxMediaBufferInsertPort(int n,  Scheme_Object *p[])
   return WITH_REMEMBERED_STACK(bundle_symset_fileType(r));
 }
 
-static Scheme_Object *os_wxMediaBufferSaveFile(int n,  Scheme_Object *p[])
+static Scheme_Object *os_wxMediaBufferSavePort(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   Bool r;
-  objscheme_check_valid(os_wxMediaBuffer_class, "save-file in editor<%>", n, p);
-  nxpathname x0 INIT_NULLED_OUT;
+  objscheme_check_valid(os_wxMediaBuffer_class, "save-port in editor<%>", n, p);
+  Scheme_Object* x0 INIT_NULLED_OUT;
   int x1;
   Bool x2;
 
@@ -2176,21 +2176,18 @@ static Scheme_Object *os_wxMediaBufferSaveFile(int n,  Scheme_Object *p[])
   VAR_STACK_PUSH(1, x0);
 
   
-  if (n > (POFFSET+0)) {
-    x0 = (nxpathname)WITH_VAR_STACK(objscheme_unbundle_nullable_xpathname(p[POFFSET+0], "save-file in editor<%>"));
-  } else
-    x0 = NULL;
+  x0 = (SCHEME_OUTPORTP(p[POFFSET+0]) ? p[POFFSET+0] : (scheme_wrong_type(METHODNAME("editor<%>","save-port"), "output port", -1, 1, &p[POFFSET+0]), (Scheme_Object *)NULL));
   if (n > (POFFSET+1)) {
-    x1 = WITH_VAR_STACK(unbundle_symset_fileType(p[POFFSET+1], "save-file in editor<%>"));
+    x1 = WITH_VAR_STACK(unbundle_symset_fileType(p[POFFSET+1], "save-port in editor<%>"));
   } else
     x1 = wxMEDIA_FF_SAME;
   if (n > (POFFSET+2)) {
-    x2 = WITH_VAR_STACK(objscheme_unbundle_bool(p[POFFSET+2], "save-file in editor<%>"));
+    x2 = WITH_VAR_STACK(objscheme_unbundle_bool(p[POFFSET+2], "save-port in editor<%>"));
   } else
     x2 = TRUE;
 
   
-  r = WITH_VAR_STACK(((wxMediaBuffer *)((Scheme_Class_Object *)p[0])->primdata)->SaveFile(x0, x1, x2));
+  r = WITH_VAR_STACK(((wxMediaBuffer *)((Scheme_Class_Object *)p[0])->primdata)->SavePort(x0, x1, x2));
 
   
   
@@ -2272,7 +2269,7 @@ void objscheme_setup_wxMediaBuffer(Scheme_Env *env)
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaBuffer_class, "insert-file" " method", (Scheme_Method_Prim *)os_wxMediaBufferNoInsertFile, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaBuffer_class, "load-file" " method", (Scheme_Method_Prim *)os_wxMediaBufferNoLoadFile, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaBuffer_class, "insert-port" " method", (Scheme_Method_Prim *)os_wxMediaBufferInsertPort, 1, 3));
-  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaBuffer_class, "save-file" " method", (Scheme_Method_Prim *)os_wxMediaBufferSaveFile, 0, 3));
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaBuffer_class, "save-port" " method", (Scheme_Method_Prim *)os_wxMediaBufferSavePort, 1, 3));
 
 
   WITH_VAR_STACK(scheme_made_class(os_wxMediaBuffer_class));

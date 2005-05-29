@@ -1022,6 +1022,8 @@ int mred_in_restricted_context()
 #ifdef NEED_HET_PARAM
   /* see wxHiEventTrampoline for info on mred_het_param: */
   Scheme_Object *v;
+  if (!scheme_current_thread) 
+    return 1;
   v = scheme_get_param(scheme_current_thread->init_config, mred_het_param);
   if (SCHEME_TRUEP(v))
     return 1;

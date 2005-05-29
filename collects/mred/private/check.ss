@@ -43,6 +43,10 @@
     (unless (or (not str) (string? str))
       (raise-type-error (who->name who) "string or #f" str)))
 
+  (define (check-path who str)
+    (unless (path-string? str)
+      (raise-type-error (who->name who) "path or string" str)))
+
   (define (check-path/false who str)
     (unless (or (not str) (path-string? str))
       (raise-type-error (who->name who) "path, string, or #f" str)))

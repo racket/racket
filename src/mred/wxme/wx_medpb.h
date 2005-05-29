@@ -91,7 +91,7 @@ class wxMediaPasteboard : public wxMediaBuffer
 
   Bool WriteToFile(wxMediaStreamOut *);
   Bool ReadFromFile(wxMediaStreamIn *, Bool overwritestyle = FALSE);
-  Bool SaveFile(char *filename = NULL, int format = wxMEDIA_FF_STD, Bool showErrors = TRUE);
+  Bool SavePort(Scheme_Object *port, int format = wxMEDIA_FF_SAME, Bool showErrors = TRUE);
   int InsertPort(Scheme_Object *port, int format = wxMEDIA_FF_GUESS, Bool replaceStyles = TRUE);
 
   void StyleHasChanged(wxStyle *style);

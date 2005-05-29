@@ -36,15 +36,24 @@
       get-active-canvas set-active-canvas
       get-canvas
       add-canvas remove-canvas
-      auto-wrap get-max-view-size))
+      auto-wrap get-max-view-size
+      save-file))
 
   (define-local-member-name 
     -format-filter
+    -format-filter/save
     -get-current-format
     -get-file-format
     -set-file-format
+    -set-position
     -set-format)
 
+  (define (check-format who format)
+    (unless (memq format '(guess standard text text-force-cr same copy))
+      (raise-type-error (who->name who)
+			"'guess, 'standard, 'text, 'text-force-cr, 'same, or 'copy"
+			format)))
+  
   (define-syntax (augmentize stx)
     (syntax-case stx ()
       [(_ (result id arg ...) ...)
@@ -53,7 +62,7 @@
 	     (and (super id arg ...)
 		  (inner result id arg ...)))
 	   ...)]))
-  
+
   (define (make-editor-buffer% % can-wrap? get-editor%)
 					; >>> This class is instantiated directly by the end-user <<<
     (class* % (editor<%> internal-editor<%>)
@@ -62,13 +71,15 @@
 			  [super-begin-edit-sequence begin-edit-sequence]
 			  [super-end-edit-sequence end-edit-sequence]
 			  [super-insert-port insert-port]
+			  [super-save-port save-port]
 			  [super-erase erase]
 			  [super-clear-undos clear-undos]
 			  [super-get-load-overwrites-styles get-load-overwrites-styles]
 			  [super-get-filename get-filename])
 	    (inherit get-max-width set-max-width get-admin
 		     get-keymap get-style-list
-		     set-modified set-filename)
+		     set-modified set-filename
+		     get-file put-file)
 	    (define canvases null)
 	    (define active-canvas #f)
 	    (define auto-set-wrap? #f)
@@ -92,19 +103,30 @@
 		  (values (unbox wb) (unbox hb))))])
 	    (public*
 	     [-format-filter (lambda (f) f)]
+	     [-format-filter/save (lambda (f) f)]
 	     [-set-file-format (lambda (f) (void))]
+	     [-set-position (lambda () (void))]
 	     [-get-file-format (lambda () 'standard)])
 	    
 	    (override*
 	     [insert-file
-	      (opt-lambda ([file #f] [format 'guess] [show-errors? #t])
-		(dynamic-wind
-		    (lambda () (super-begin-edit-sequence))
-		    (lambda () (super-insert-port file format #f))
-		    (lambda () (super-end-edit-sequence))))]
+	      (opt-lambda (file [format 'guess] [show-errors? #t])
+		(let ([who '(method editor<%> insert-file)])
+		  (check-path who file)
+		  (check-format who format))
+		(do-load-file file format #f))]
 
 	     [load-file
 	      (opt-lambda ([file #f] [format 'guess] [show-errors? #t])
+		(do-load-file file format #t))])
+
+	    (private*
+	     [do-load-file
+	      (lambda (file format load?)
+		(let ([who '(method editor<%> load-file)])
+		  (unless (equal? file "")
+		    (check-path/false who file))
+		  (check-format who format))
 		(let* ([temp-filename?-box (box #f)]
 		       [old-filename (super-get-filename temp-filename?-box)])
 		  (let* ([file (cond
@@ -114,15 +136,17 @@
 				     (let ([path (if old-filename
 						     (path-only old-filename)
 						     #f)])
-				       ((get-get-file) path))
+				       (get-file path))
 				     old-filename)]
 				[(path? file) file]
 				[else (string->path file)])])
 		    (and 
 		     file
-		     (can-load-file? file (-format-filter format))
+		     (or (not load?)
+			 (can-load-file? file (-format-filter format)))
 		     (begin
-		       (on-load-file file (-format-filter format))
+		       (or (not load?)
+			   (on-load-file file (-format-filter format)))
 		       (let ([port (open-input-file file)]
 			     [finished? #f])
 			 (dynamic-wind
@@ -133,10 +157,11 @@
 			       (dynamic-wind
 				   void
 				   (lambda ()
-				     (super-erase)
-				     (unless (and (not (unbox temp-filename?-box))
-						  (equal? file old-filename))
-				       (set-filename file #f))
+				     (when load?
+				       (super-erase)
+				       (unless (and (not (unbox temp-filename?-box))
+						    (equal? file old-filename))
+					 (set-filename file #f)))
 				     (let ([format (if (eq? format 'same)
 						       (-get-file-format)
 						       format)])
@@ -146,20 +171,84 @@
 									(raise x))])
 						(super-insert-port port 
 								   (-format-filter format) 
-								   (super-get-load-overwrites-styles)))])
+								   (and load?
+									(super-get-load-overwrites-styles))))])
 					 (close-input-port port) ; close as soon as possible
-					 (-set-file-format new-format)))) ; text% only
+					 (when load?
+					   (-set-file-format new-format)
+					   (-set-position))))) ; text% only
 				   (lambda ()
 				     (super-end-edit-sequence)
 				     (wx:end-busy-cursor)))
-			       (super-clear-undos)
-			       (set-modified #f)
+			       (when load?
+				 (super-clear-undos)
+				 (set-modified #f))
 			       (set! finished? #t)
 			       #t)
 			     (lambda ()
-			       (after-load-file finished?)
 			       ;; In case it wasn't closed before:
-			       (close-input-port port)))))))))])
+			       (close-input-port port)
+			       (when load?
+				 (after-load-file finished?))))))))))])
+	    (public*
+	     [save-file
+	      (opt-lambda ([file #f] [format 'same] [show-errors? #t])
+		(let ([who '(method editor<%> save-file)])
+		  (unless (equal? file "")
+		    (check-path/false who file))
+		  (check-format who format))
+		(let* ([temp-filename?-box (box #f)]
+		       [old-filename (super-get-filename temp-filename?-box)])
+		  (let* ([file (cond
+				[(or (not (path-string? file))
+				     (equal? file ""))
+				 (if (or (equal? file "") (not old-filename) (unbox temp-filename?-box))
+				     (let ([path (if old-filename
+						     (path-only old-filename)
+						     #f)])
+				       (put-file path (and old-filename
+							   (file-name-from-path old-filename))))
+				     old-filename)]
+				[(path? file) file]
+				[else (string->path file)])]
+			 [f-format (-format-filter/save format)]
+			 [actual-format (if (memq f-format '(copy same))
+					    (-get-file-format)
+					    f-format)]
+			 [text? (not (memq actual-format '(text text-force-cr)))])
+		    (and 
+		     file
+		     (can-save-file? file f-format)
+		     (begin
+		       (on-save-file file f-format)
+		       (let ([port (open-output-file file (if text? 'text 'binary) 'truncate/replace)]
+			     [finished? #f])
+			 (dynamic-wind
+			     void
+			     (lambda ()
+			       (wx:file-creator-and-type file #"mReD" (if text? #"TEXT" #"WXME"))
+			       (wx:begin-busy-cursor)
+			       (dynamic-wind
+				   void
+				   (lambda ()
+				     (super-save-port port format #t)
+				     (close-output-port port) ; close as soon as possible
+				     (unless (or (eq? format 'copy)
+						 (and (not (unbox temp-filename?-box))
+						      (equal? file old-filename)))
+				       (set-filename file #f))
+				     (unless (eq? format 'copy)
+				       (-set-file-format actual-format))) ; text% only
+				   (lambda ()
+				     (wx:end-busy-cursor)))
+			       (unless (eq? format 'copy)
+				 (set-modified #f))
+			       (set! finished? #t)
+			       #t)
+			     (lambda ()
+			       ;; In case it wasn't closed before:
+			       (close-output-port port)
+			       (after-save-file finished?)))))))))])
 
 	    (public*
 	     [get-canvases (entry-point (lambda () (map wx->mred canvases)))]
@@ -290,8 +379,9 @@
        [-get-file-format (lambda ()
 			   (super-get-file-format))]
        [-set-file-format (lambda (format)
-			   (super-set-file-format format)
-			   (super-set-position 0 0))])
+			   (super-set-file-format format))]
+       [-set-position (lambda ()
+			(super-set-position 0 0))])
 
       (augmentize (#t can-insert? s e)
 		  ((void) on-insert s e)
@@ -316,7 +406,10 @@
   (define pasteboard%
     (class (es-contract-mixin (make-editor-buffer% wx:pasteboard% #f (lambda () pasteboard%))) ()
 	   (override*
-	    [-format-filter (lambda (f) 'standard)])
+	    [-format-filter (lambda (f) 'standard)]
+	    [-format-filter/save (lambda (f) (if (eq? f 'copy)
+						 f
+						 'standard))])
 	   (augmentize (#t can-insert? s s2 x y)
 		       ((void) on-insert s s2 x y)
 		       ((void) after-insert s s2 x y)

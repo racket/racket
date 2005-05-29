@@ -49,8 +49,10 @@ static void *wxbDCToBuffer(wxMediaBuffer *b, double x, double y)
 @MACRO rFALSE = return FALSE;
 @MACRO rZERO = return 0;
 
-@MACRO ubPort = (SCHEME_INPORTP({x}) ? {x} : (scheme_wrong_type(METHODNAME("editor<%>","insert-file"), "input port", -1, 1, &{x}), (Scheme_Object *)NULL))
-@MACRO cPort = SCHEME_INPORTP({x})
+@MACRO ubiPort[who] = (SCHEME_INPORTP({x}) ? {x} : (scheme_wrong_type(METHODNAME("editor<%>",<who>), "input port", -1, 1, &{x}), (Scheme_Object *)NULL))
+@MACRO ciPort = SCHEME_INPORTP({x})
+@MACRO uboPort[who] = (SCHEME_OUTPORTP({x}) ? {x} : (scheme_wrong_type(METHODNAME("editor<%>",<who>), "output port", -1, 1, &{x}), (Scheme_Object *)NULL))
+@MACRO coPort = SCHEME_OUTPORTP({x})
 
 @INCLUDE wxs_eds.xci
 
@@ -85,8 +87,8 @@ static void NoInsertFile(wxMediaBuffer *)
 // but acutally are implemented with virtual
 @SETMARK W = D
 
-@ W "save-file" : bool SaveFile(nxpathname=NULL,SYM[fileType]=wxMEDIA_FF_SAME,bool=TRUE);
-@ W "insert-port" : SYM[fileType] InsertPort(Scheme_Object[]//ubPort/cPort///push,SYM[fileType]=wxMEDIA_FF_GUESS,bool=TRUE); <> port
+@ W "save-port" : bool SavePort(Scheme_Object[]//uboPort["save-port"]/coPort///push,SYM[fileType]=wxMEDIA_FF_SAME,bool=TRUE);
+@ W "insert-port" : SYM[fileType] InsertPort(Scheme_Object[]//ubiPort["insert-port"]/ciPort///push,SYM[fileType]=wxMEDIA_FF_GUESS,bool=TRUE); <> port
 
 // No longer actually in C, but we want them in the editor<%> interface:
 @ m "load-file" : void NoLoadFile()

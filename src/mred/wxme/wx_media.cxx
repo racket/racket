@@ -3256,66 +3256,21 @@ Bool wxMediaEdit::InsertFile(const char *who, Scheme_Object *f, char *WXUNUSED(f
   return !fileerr;
 }
 
-Bool wxMediaEdit::SaveFile(char *file, int format, Bool showErrors)
+Bool wxMediaEdit::SavePort(Scheme_Object *f, int format, Bool showErrors)
 {
-  Bool no_set_filename, fileerr;
-  Scheme_Object *f;
-  int is_binary;
-
-  if (readLocked)
-    return FALSE;
+  Bool fileerr;
 
   showErrors = TRUE;
 
-  if (!file || !*file) {
-    if ((file && !*file) || !filename || tempFilename) {
-      char *path, *pfile;
-      
-      if (filename) {
-	path = PathOnly(filename);
-	if (path && *path)
-	  path = copystring(path);
-	else
-	  path = NULL;
-	pfile = copystring(FileNameFromPath(filename));
-      } else
-	path = pfile = NULL;
-      
-      file = PutFile(path, pfile);
-    } else
-      file = filename;
+  if (readLocked) {
+    if (showErrors)
+      wxmeError("save-file in text%: editor locked for reading");
+    return FALSE;
   }
-
-  if (!file)
-    return FALSE;
-
-  if (!CanSaveFile(file, format))
-    return FALSE;
-  OnSaveFile(file, format);
-
-  no_set_filename = (format == wxMEDIA_FF_COPY);
 
   if ((format == wxMEDIA_FF_SAME) || (format == wxMEDIA_FF_GUESS)
       || (format == wxMEDIA_FF_COPY))
     format = fileFormat;
-
-  is_binary = !((format == wxMEDIA_FF_TEXT) 
-		|| (format == wxMEDIA_FF_TEXT_FORCE_CR));
-
-  f = scheme_open_output_file_with_mode(file, "save-file in text%", !is_binary);
-  
-  if (!f) {
-    if (showErrors)
-      wxmeError("save-file in text%: couldn't write the file");
-    AfterSaveFile(FALSE);
-    return FALSE;
-  }
-
-  wxBeginBusyCursor();
-
-#ifdef wx_mac
-  wxMediaSetFileCreatorType(file, is_binary);
-#endif
 
   fileerr = FALSE;
 
@@ -3323,7 +3278,6 @@ Bool wxMediaEdit::SaveFile(char *file, int format, Bool showErrors)
     wxchar *us;
     us = GetText(-1, -1, TRUE, format == wxMEDIA_FF_TEXT_FORCE_CR);
     scheme_put_char_string("save-file", f, us, 0, wxstrlen(us));
-    scheme_close_output_port(f);
   } else {
     wxMediaStreamOutFileBase *b;
     wxMediaStreamOut *mf;
@@ -3339,23 +3293,10 @@ Bool wxMediaEdit::SaveFile(char *file, int format, Bool showErrors)
     wxWriteMediaGlobalFooter(mf);
 
     fileerr = fileerr || !mf->Ok();
-
-    scheme_close_output_port(f);
   }
 
   if (fileerr && showErrors)
     wxmeError("save-file in text%: error writing the file");
-
-  if (!no_set_filename && PTRNE(file, filename))
-    SetFilename(file, FALSE);
-  fileFormat = format;
-
-  wxEndBusyCursor();
-
-  if (!no_set_filename)
-    SetModified(fileerr);
-
-  AfterSaveFile(!fileerr);
 
   return !fileerr;
 }

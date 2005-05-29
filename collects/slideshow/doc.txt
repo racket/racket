@@ -279,6 +279,22 @@ runs the slides.
 The "Slideshow" executable accepts a number of command-line flags.
 Use the --help flag to obtain a list of other flags.
 
+Printing
+========
+
+The -p or --print command-line flag causes slideshow to print slides
+instead of showing them on the screen. Under Unix, the result is
+always PostScript. For all platforms, -P or --ps generates PostScript.
+
+PS-to-PDF converters vary on how well they handle landscape
+mode. Here's a Ghostscript command that converts slides reliably
+(replace "src.ps" and "dest.pdf" with your file names, and put the
+command all on one line):
+
+  gs -q -dAutoRotatePages=/None -dSAFER -dNOPAUSE -dBATCH 
+     -sOutputFile=dest.pdf -sDEVICE=pdfwrite -c .setpdfwrite 
+     -c "<</Orientation 3>> setpagedevice" -f src.ps
+
 Procedure Reference
 ===================
 

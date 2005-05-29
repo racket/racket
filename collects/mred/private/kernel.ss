@@ -225,7 +225,7 @@
     insert-file
     load-file
     insert-port
-    save-file
+    save-port
     get-flattened-text
     put-file
     get-file

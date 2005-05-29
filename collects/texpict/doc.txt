@@ -286,9 +286,9 @@ Basic Constructors:
     extend slightly beyond the box.)
       [MrEd only, in utils.ss]
 
->  (pt-line dx dy size) -> pict
->  (pt-arrow-line dx dy size) -> pict
->  (pt-arrows-line dx dy size) -> pict
+>  (pip-line dx dy size) -> pict
+>  (pip-arrow-line dx dy size) -> pict
+>  (pip-arrows-line dx dy size) -> pict
 
    Creates a line [with arrowhead(s)] as a 0-sized picture suitable
    for use with `pin-over'. The 0-sized picture contains the starting

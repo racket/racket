@@ -85,8 +85,8 @@
 @ Z "on-edit-sequence" : void OnEditSequence();
 @ Z "after-edit-sequence" : void AfterEditSequence();
 
-@ Z "get-file" : npathname GetFile(epathname);
-@ Z "put-file" : npathname PutFile(epathname, epathname);
+@ Z "get-file" : npathname GetFile(nepathname);
+@ Z "put-file" : npathname PutFile(nepathname, nepathname);
 
 @MACRO makeNoCopyFlatString[len] = WITH_VAR_STACK(scheme_make_sized_char_string(r, <len>, 0))
 

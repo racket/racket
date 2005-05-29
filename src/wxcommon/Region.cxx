@@ -1480,8 +1480,7 @@ wxPathPathRgn::wxPathPathRgn(wxDC *dc_for_scale,
 {
   p = new wxPath();
   p->AddPath(_p);
-  xoffset = _xoffset;
-  yoffset = _yoffset;
+  p->Translate(_xoffset, _yoffset);
   fillStyle = _fillStyle;
 }
 

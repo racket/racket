@@ -49,6 +49,21 @@
 	  (check-instance 'get-ps-setup-from-user wx:ps-setup% 'ps-setup% #t pss-in)
 	  (check-style 'get-ps-setup-from-user #f null style)))
       
+      (define bad-fields null)
+      (define number-callback
+	(lambda (f ev)
+	  (let ([e (send f get-editor)]
+		[ok? (real? (string->number (send f get-value)))])
+	    (send e change-style 
+		  (send (make-object wx:style-delta%) 
+			set-delta-background 
+			(if ok? "white" "yellow"))
+		  0 (send e last-position))
+	    (set! bad-fields (remq f bad-fields))
+	    (unless ok?
+	      (set! bad-fields (cons f bad-fields)))
+	    (send ok enable (null? bad-fields)))))
+
       (define pss (or pss-in (wx:current-ps-setup)))
       (define f (make-object dialog% "PostScript Setup" parent))
       (define papers 
@@ -67,11 +82,14 @@
       (define sp (make-object vertical-pane% ssp))
       (define def-scale "0100.000")
       (define def-offset "0000.000")
-      (define xscale (make-object text-field% "Horizontal Scale:" sp void def-scale))
-      (define xoffset (make-object text-field% "Horizontal Translation:" sp void def-offset))
+      (define def-margin "0016.000")
+      (define xscale (make-object text-field% "Horizontal Scale:" sp number-callback def-scale))
+      (define xoffset (make-object text-field% "Horizontal Translation:" sp number-callback def-offset))
+      (define xmargin (make-object text-field% "Horizontal Margin:" sp number-callback def-margin))
       (define sp2 (make-object vertical-pane% ssp))
-      (define yscale (make-object text-field% "Vertical Scale:" sp2 void def-scale))
-      (define yoffset (make-object text-field% "Vertical Translation:" sp2 void def-offset))
+      (define yscale (make-object text-field% "Vertical Scale:" sp2 number-callback def-scale))
+      (define yoffset (make-object text-field% "Vertical Translation:" sp2 number-callback def-offset))
+      (define ymargin (make-object text-field% "Vertical Margin:" sp2 number-callback def-margin))
 
       (define l2 (make-object check-box% "PostScript Level 2" f void))
 
@@ -84,7 +102,8 @@
 	(send f show #f)
 	(set! ok? ?))
 
-      (define-values (xsb ysb xtb ytb) (values (box 0) (box 0) (box 0) (box 0)))
+      (define-values (xsb ysb xtb ytb xmb ymb) 
+	(values (box 0) (box 0) (box 0) (box 0) (box 0) (box 0)))
 
       (send paper set-selection (or (find-pos papers (send pss get-paper-name) equal?) 0))
       (send orientation set-selection (if (eq? (send pss get-orientation) 'landscape) 1 0))
@@ -102,16 +121,21 @@
       (send pss get-translation xtb ytb)
       (send xoffset set-value (number->string* (unbox xtb)))
       (send yoffset set-value (number->string* (unbox ytb)))
+      (send pss get-margin xmb ymb)
+      (send xmargin set-value (number->string* (unbox xmb)))
+      (send ymargin set-value (number->string* (unbox ymb)))
       (send xscale stretchable-width #f)
       (send yscale stretchable-width #f)
       (send xoffset stretchable-width #f)
       (send yoffset stretchable-width #f)
+      (send xmargin stretchable-width #f)
+      (send ymargin stretchable-width #f)
 
       (send l2 set-value (send pss get-level-2))
 
       (send f set-alignment 'center 'top)
 
-      (map no-stretch (list f xscale yscale xoffset yoffset dp))
+      (map no-stretch (list f xscale yscale xoffset yoffset xmargin ymargin dp))
 
       (send f center)
 
@@ -132,6 +156,7 @@
 				 [(2) 'file])))
 	    (send s set-scaling (gv xscale xsb) (gv yscale ysb))
 	    (send s set-translation (gv xoffset xtb) (gv yoffset ytb))
+	    (send s set-margin (gv xmargin xmb) (gv ymargin ymb))
 	    (send s set-level-2 (send l2 get-value))
 	    
 	    (when (eq? (system-type) 'unix)

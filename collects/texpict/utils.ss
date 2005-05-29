@@ -20,9 +20,9 @@
 	   arrowhead/offset
 	   arrow-line
 	   arrows-line
-	   pt-line
-	   pt-arrow-line
-	   pt-arrows-line
+	   pip-line
+	   pip-arrow-line
+	   pip-arrows-line
 	   
            ellipse
            filled-ellipse
@@ -185,7 +185,7 @@
 		(+ x (/ size 2)) (+ y (/ size 2)))
 	  (send dc set-brush b)
 	  (send dc set-pen p)))
-      size size 0 0)
+      size size)
      (- (- 0 (* 1/2 size (cos angle))) (/ size 2))
      (- (+ (* 1/2 size) (- (* 1/2 size (sin angle)))) size)))
 
@@ -203,7 +203,7 @@
   (define (arrowhead/offset size angle)
     (arrowhead/delta 0 size angle))
 
-  (define (pt-line dx dy size)
+  (define (pip-line dx dy size)
     (picture
      0 0
      `((connect 0 0 ,dx ,(- dy)))))
@@ -215,7 +215,7 @@
        `((connect 0 0 ,dx ,dy)
 	 (place ,(+ dx adx) ,(+ ady dy) ,a)))))
 
-  (define (pt-arrow-line dx dy size)
+  (define (pip-arrow-line dx dy size)
     (arrow-line dx (- dy) size))
 
   (define (arrows-line dx dy size)
@@ -224,7 +224,7 @@
      `((place 0 0 ,(arrow-line dx dy size))
        (place ,dx ,dy ,(arrow-line (- dx) (- dy) size)))))
 
-  (define (pt-arrows-line dx dy size)
+  (define (pip-arrows-line dx dy size)
     (arrows-line dx (- dy) size))
 
   (define (filled-rectangle w h)

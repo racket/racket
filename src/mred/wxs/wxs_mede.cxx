@@ -996,8 +996,8 @@ class os_wxMediaEdit : public wxMediaEdit {
   void DoPaste(nnlong x0, ExactLong x1);
   void DoCopy(nnlong x0, nnlong x1, ExactLong x2, Bool x3);
   void SetAnchor(Bool x0);
-  npathname PutFile(epathname x0, epathname x1);
-  npathname GetFile(epathname x0);
+  npathname PutFile(nepathname x0, nepathname x1);
+  npathname GetFile(nepathname x0);
   void AfterEditSequence();
   void OnEditSequence();
   void AfterLoadFile(Bool x0);
@@ -1926,7 +1926,7 @@ void os_wxMediaEdit::SetAnchor(Bool x0)
 
 static Scheme_Object *os_wxMediaEditPutFile(int n, Scheme_Object *p[]);
 
-npathname os_wxMediaEdit::PutFile(epathname x0, epathname x1)
+npathname os_wxMediaEdit::PutFile(nepathname x0, nepathname x1)
 {
   Scheme_Object *p[POFFSET+2] INIT_NULLED_ARRAY({ NULLED_OUT INA_comma NULLED_OUT INA_comma NULLED_OUT });
   Scheme_Object *v;
@@ -1969,7 +1969,7 @@ npathname os_wxMediaEdit::PutFile(epathname x0, epathname x1)
 
 static Scheme_Object *os_wxMediaEditGetFile(int n, Scheme_Object *p[]);
 
-npathname os_wxMediaEdit::GetFile(epathname x0)
+npathname os_wxMediaEdit::GetFile(nepathname x0)
 {
   Scheme_Object *p[POFFSET+1] INIT_NULLED_ARRAY({ NULLED_OUT INA_comma NULLED_OUT });
   Scheme_Object *v;
@@ -7115,8 +7115,8 @@ static Scheme_Object *os_wxMediaEditPutFile(int n,  Scheme_Object *p[])
   REMEMBER_VAR_STACK();
   npathname r;
   objscheme_check_valid(os_wxMediaEdit_class, "put-file in text%", n, p);
-  epathname x0 INIT_NULLED_OUT;
-  epathname x1 INIT_NULLED_OUT;
+  nepathname x0 INIT_NULLED_OUT;
+  nepathname x1 INIT_NULLED_OUT;
 
   SETUP_VAR_STACK_REMEMBERED(3);
   VAR_STACK_PUSH(0, p);
@@ -7124,8 +7124,8 @@ static Scheme_Object *os_wxMediaEditPutFile(int n,  Scheme_Object *p[])
   VAR_STACK_PUSH(2, x1);
 
   
-  x0 = (epathname)WITH_VAR_STACK(objscheme_unbundle_epathname(p[POFFSET+0], "put-file in text%"));
-  x1 = (epathname)WITH_VAR_STACK(objscheme_unbundle_epathname(p[POFFSET+1], "put-file in text%"));
+  x0 = (nepathname)WITH_VAR_STACK(objscheme_unbundle_nullable_epathname(p[POFFSET+0], "put-file in text%"));
+  x1 = (nepathname)WITH_VAR_STACK(objscheme_unbundle_nullable_epathname(p[POFFSET+1], "put-file in text%"));
 
   
   if (((Scheme_Class_Object *)p[0])->primflag)
@@ -7145,14 +7145,14 @@ static Scheme_Object *os_wxMediaEditGetFile(int n,  Scheme_Object *p[])
   REMEMBER_VAR_STACK();
   npathname r;
   objscheme_check_valid(os_wxMediaEdit_class, "get-file in text%", n, p);
-  epathname x0 INIT_NULLED_OUT;
+  nepathname x0 INIT_NULLED_OUT;
 
   SETUP_VAR_STACK_REMEMBERED(2);
   VAR_STACK_PUSH(0, p);
   VAR_STACK_PUSH(1, x0);
 
   
-  x0 = (epathname)WITH_VAR_STACK(objscheme_unbundle_epathname(p[POFFSET+0], "get-file in text%"));
+  x0 = (nepathname)WITH_VAR_STACK(objscheme_unbundle_nullable_epathname(p[POFFSET+0], "get-file in text%"));
 
   
   if (((Scheme_Class_Object *)p[0])->primflag)

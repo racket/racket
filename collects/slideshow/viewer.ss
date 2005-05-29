@@ -672,49 +672,50 @@
 	      (redraw)))
 
 	  (define/public (redraw)
-	    (reset-display-inset! (sliderec-inset (talk-list-ref current-page)))
-	    (send commentary lock #f)
-	    (send commentary begin-edit-sequence)
-	    (send commentary erase)
-	    (let ([s (talk-list-ref current-page)])
-	      (when (just-a-comment? (sliderec-comment s))
-		(for-each (lambda (v)
-			    (send commentary insert (if (string? v)
-							v
-							(make-object pict-snip% v))))
-			  (just-a-comment-content (sliderec-comment s)))))
-	    (send commentary scroll-to-position 0 #f 'same 'start)
-	    (send commentary end-edit-sequence)
-	    (send commentary lock #t)
-	    (set! click-regions null)
-	    (set! clicking #f)
-	    (stop-transition/no-refresh)
-	    (cond
-	     [config:use-offscreen?
-	      (let-values ([(cw ch) (get-client-size)])
-		(when (and offscreen
-			   (let ([bm (send offscreen get-bitmap)])
-			     (not (and (= cw (send bm get-width))
-				       (= ch (send bm get-height))))))
-		  (send offscreen set-bitmap #f)
-		  (set! offscreen #f))
-		(unless offscreen
-		  (set! offscreen (make-object bitmap-dc% 
-					       (make-bitmap cw ch)))))
-	      (send offscreen clear)
+	    (unless printing?
+	      (reset-display-inset! (sliderec-inset (talk-list-ref current-page)))
+	      (send commentary lock #f)
+	      (send commentary begin-edit-sequence)
+	      (send commentary erase)
+	      (let ([s (talk-list-ref current-page)])
+		(when (just-a-comment? (sliderec-comment s))
+		  (for-each (lambda (v)
+			      (send commentary insert (if (string? v)
+							  v
+							  (make-object pict-snip% v))))
+			    (just-a-comment-content (sliderec-comment s)))))
+	      (send commentary scroll-to-position 0 #f 'same 'start)
+	      (send commentary end-edit-sequence)
+	      (send commentary lock #t)
+	      (set! click-regions null)
+	      (set! clicking #f)
+	      (stop-transition/no-refresh)
 	      (cond
+	       [config:use-offscreen?
+		(let-values ([(cw ch) (get-client-size)])
+		  (when (and offscreen
+			     (let ([bm (send offscreen get-bitmap)])
+			       (not (and (= cw (send bm get-width))
+					 (= ch (send bm get-height))))))
+		    (send offscreen set-bitmap #f)
+		    (set! offscreen #f))
+		  (unless offscreen
+		    (set! offscreen (make-object bitmap-dc% 
+						 (make-bitmap cw ch)))))
+		(send offscreen clear)
+		(cond
+		 [(equal? prefetched-page current-page)
+		  (paint-prefetch offscreen)]
+		 [else
+		  (paint-slide offscreen)])
+		(let ([bm (send offscreen get-bitmap)])
+		  (send (get-dc) draw-bitmap bm 0 0))]
 	       [(equal? prefetched-page current-page)
-		(paint-prefetch offscreen)]
+		(paint-prefetch (get-dc))]
 	       [else
-		(paint-slide offscreen)])
-	      (let ([bm (send offscreen get-bitmap)])
-		(send (get-dc) draw-bitmap bm 0 0))]
-	     [(equal? prefetched-page current-page)
-	      (paint-prefetch (get-dc))]
-	     [else
-	      (let ([dc (get-dc)])
-		(send dc clear)
-		(paint-slide dc))]))
+		(let ([dc (get-dc)])
+		  (send dc clear)
+		  (paint-slide dc))])))
 	  (super-new [style '(no-autoclear)])))
 
       (define two-c%
@@ -773,7 +774,7 @@
 	     [(send e button-up?)
 	      (send (get-top-level-window) next)]))
 	  
-	  (define/public (redraw) (on-paint))
+	  (define/public (redraw) (unless printing? (on-paint)))
 	  (super-new)))
 
       (define (paint-letterbox dc cw ch usw ush)

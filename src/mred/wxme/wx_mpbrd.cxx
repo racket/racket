@@ -1656,7 +1656,7 @@ void wxMediaPasteboard::Draw(wxDC *dc, double dx, double dy,
 void wxMediaPasteboard::Refresh(double localx, double localy, double w, double h, 
 				int show_caret, wxColour *bgColor)
 {
-  double dx, dy, ddx, ddy;
+  double dx, dy, right, bottom;
   wxDC *dc;
 
   if (!admin)
@@ -1677,21 +1677,20 @@ void wxMediaPasteboard::Refresh(double localx, double localy, double w, double h
 
   dc = admin->GetDC(&dx, &dy);
 
+  /* Make sure all location information is integral,
+     so we can shift the coordinate system and generally
+     update on pixel boundaries. */
+  dx = floor(dx);
+  dy = floor(dy);
+  bottom = ceil(localy + h);
+  right = ceil(localx + w);
+  localy = floor(localy);
+  localx = floor(localx);
+  w = right - localx;
+  h = bottom - localy;
+
   if (!offscreenInUse && bitmap && bitmap->Ok() && offscreen->Ok()
       && bgColor) {
-    /* Need to make sure that difference between coordinates is
-       integral; otherwise, roundoff error could affect drawing */
-    ddx = (localx - dx) - (long)(localx - dx);
-    if (ddx < 0)
-      ddx = 1 + ddx;
-    localx -= ddx;
-    w += ddx;
-    ddy = (localy - dy) - (long)(localy - dy);
-    if (ddy < 0)
-      ddy = 1 + ddy;
-    localy -= ddy;
-    h += ddy;
-
 #ifndef EACH_BUFFER_OWN_OFFSCREEN
     offscreenInUse = TRUE;
 #endif
@@ -2610,62 +2609,14 @@ Bool wxMediaPasteboard::InsertFile(const char *who, Scheme_Object *f, const char
   return !fileerr;
 }
 
-Bool wxMediaPasteboard::SaveFile(char *file, int format, Bool showErrors)
+Bool wxMediaPasteboard::SavePort(Scheme_Object *f, int format, Bool showErrors)
 {
-  Scheme_Object *f;
   Bool fileerr;
-  Bool no_set_filename;
   wxMediaStreamOutFileBase *b;
   wxMediaStreamOut *mf;
 
   showErrors = TRUE;
-
-  if (!file || !*file) {
-    if ((file && !*file) || !filename || tempFilename) {
-      char *path, *pfile;
-      
-      if (filename) {
-	path = PathOnly(filename);
-	if (path && *path)
-	  path = copystring(path);
-	else
-	  path = NULL;
-	pfile = copystring(FileNameFromPath(filename));
-      } else
-	path = pfile = NULL;
-      
-      file = PutFile(path, pfile);
-    } else
-      file = filename;
-  }
-
-  if (!file)
-    return FALSE;
-
-  if (format != wxMEDIA_FF_COPY)
-    format = wxMEDIA_FF_STD;
-
-  no_set_filename = (format == wxMEDIA_FF_COPY);
-
-  if (!CanSaveFile(file, wxMEDIA_FF_STD))
-    return FALSE;
-  OnSaveFile(file, wxMEDIA_FF_STD);
   
-  f = scheme_open_output_file(file, "save-file in pasteboard%");
-  
-  if (!f) {
-    if (showErrors)
-      wxmeError("save-file in pasteboard%: could not write the file");
-    AfterSaveFile(FALSE);
-    return FALSE;
-  }
-
-  wxBeginBusyCursor();
-
-#ifdef wx_mac
-  wxMediaSetFileCreatorType(file, TRUE);
-#endif
-
   b = new wxMediaStreamOutFileBase(f);
   mf = new wxMediaStreamOut(b);
   
@@ -2680,21 +2631,9 @@ Bool wxMediaPasteboard::SaveFile(char *file, int format, Bool showErrors)
   
   fileerr = fileerr || !mf->Ok();
 
-  scheme_close_output_port(f);
-
   if (fileerr && showErrors)
     wxmeError("save-file in pasteboard%: error writing the file");
-
-  if (!no_set_filename)
-    SetFilename(file, FALSE);
-
-  wxEndBusyCursor();
-
-  if (!no_set_filename)
-    SetModified(fileerr);
-
-  AfterSaveFile(!fileerr);
-
+  
   return !fileerr;
 }
 
