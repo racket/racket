@@ -945,7 +945,7 @@ module browser threading seems wrong.
              (string-constant kill)
              (string-constant kill?)
              'diallow-close
-             frame))
+             this))
           
           ;; reset-offer-kill
           (define/public (reset-offer-kill)
@@ -1259,7 +1259,7 @@ module browser threading seems wrong.
           (define/private (update-tabs-labels)
             (for-each
              (λ (tab)
-               (let* ([label (get-defs-tab-label (send tab get-defs))])
+               (let* ([label (get-defs-tab-label (send tab get-defs) tab)])
                  (unless (equal? label (send tabs-panel get-item-label (send tab get-i)))
                    (send tabs-panel set-item-label (send tab get-i) label))))
              tabs)
@@ -1275,15 +1275,52 @@ module browser threading seems wrong.
                            l
                            (cons tabs-panel l))]))))
           
-          (define/private (get-defs-tab-label defs)
+          (define/private (get-defs-tab-label defs tab)
             (let ([fn (send defs get-filename)])
               (if fn
-                  (get-tab-label-from-filename fn)
+                  (get-tab-label-from-filename fn tab)
                   (send defs get-filename/untitled-name))))
-          (define/private (get-tab-label-from-filename fn)
-            (let-values ([(base name dir?) (split-path fn)])
-              (path->string name)))
-            
+          
+          (define/private (get-tab-label-from-filename fn tab)
+            (let* ([take-n
+                    (λ (n lst)
+                      (let loop ([n n]
+                                 [lst lst])
+                        (cond
+                          [(zero? n) null]
+                          [else (cons (car lst) (loop (- n 1) (cdr lst)))])))]
+                   [find-exp-diff
+                    (λ (p1 p2)
+                      (let loop ([p1 p1]
+                                 [p2 p2]
+                                 [i 1])
+                        (cond
+                          [(or (null? p1) (null? p2)) i]
+                          [else (let ([f1 (car p1)]
+                                      [f2 (car p2)])
+                                  (if (equal? f1 f2)
+                                      (loop (cdr p1) (cdr p2) (+ i 1))
+                                      i))])))]
+                   [exp (reverse (explode-path fn))]
+                   [other-exps
+                    (filter
+                     (λ (x) x)
+                     (map (λ (other-tab) 
+                            (and (not (eq? other-tab tab))
+                                 (let ([fn (send (send other-tab get-defs) get-filename)])
+                                   (and fn 
+                                        (reverse (explode-path fn))))))
+                          tabs))]
+                   [size
+                    (let loop ([other-exps other-exps]
+                               [size 1])
+                      (cond
+                        [(null? other-exps) size]
+                        [else (let ([new-size (find-exp-diff (car other-exps) exp)])
+                                (loop (cdr other-exps)
+                                      (max new-size size)))]))])
+              (path->string (apply build-path (reverse (take-n size exp))))))
+              
           [define/override get-canvas% (λ () (drscheme:get/extend:get-definitions-canvas))]
           
           (define/public (update-running running?)
@@ -1953,8 +1990,8 @@ module browser threading seems wrong.
                 (send new-tab set-ints ints)
                 (set! tabs (append tabs (list new-tab)))
                 (send tabs-panel append (if filename
-                                            (get-tab-label-from-filename filename)
-                                            (get-defs-tab-label defs)))
+                                            (get-tab-label-from-filename filename #f)
+                                            (get-defs-tab-label defs #f)))
                 (init-definitions-text new-tab)
                 (when filename (send defs load-file filename))
                 (change-to-nth-tab (- (send tabs-panel get-number) 1))
