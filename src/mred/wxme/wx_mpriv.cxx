@@ -44,6 +44,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <math.h>
 
 #include "wx_mpriv.h"
 
