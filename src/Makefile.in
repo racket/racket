@@ -83,8 +83,8 @@ copy-finish:
 	cd $(prefix); ./install
 
 inplace-finish:
-	if [ ! -d $(srcdir)/CVS -a ! -d $(srcdir)/.svn ] ; then cd $(prefix); ./install ; fi
-	if [ -d $(srcdir)/CVS -o -d $(srcdir)/.svn ] ; then cat $(srcdir)/mzscheme/imsg.txt ; fi
+	if [ ! -d $(srcdir)/../collects/repos-time-stamp ] ; then cd $(prefix); ./install ; fi
+	if [ -d $(srcdir)/../collects/repos-time-stamp ] ; then cat $(srcdir)/mzscheme/imsg.txt ; fi
 
 copytree:
 	cp -p -r $(srcdir)/../collects $(prefix)/.
