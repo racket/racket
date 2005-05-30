@@ -35,7 +35,9 @@
 #include "wx_media.h"
 #include "wx_gcrct.h"
 #include "wx_ptreq.h"
+
 #include <string.h>
+#include <math.h>
 
 #define LINE_HEIGHT 16
 
