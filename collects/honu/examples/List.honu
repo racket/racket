@@ -4,6 +4,7 @@ type List {
   List addToEnd(Any);
 
   Any  first();
+  List rest();
   Any  atIndex(int);
   Any  last();
 
@@ -39,6 +40,10 @@ class MTList() : List impl List {
     error("The empty list has no elements!");
   }
 
+  List rest() {
+      error("The empty list has no elements!");
+  }
+
   List drop(int n) {
     if n == 0 {
       this : List;
@@ -70,8 +75,8 @@ class MTList() : List impl List {
   List filter([Any] -> bool f) { return (this : List); }
 
   export List : add as addToFront, add as addToEnd,
-                no_elt as first, no_elts as atIndex, no_elt as last,
-                drop, take, reverse,
+                no_elt as first, rest, no_elts as atIndex,
+                no_elt as last, drop, take, reverse,
                 ret_other as  appendToEnd, ret_other as appendToFront,
                 length, empty,
                 map, fold as foldl, fold as foldr, filter;
@@ -83,6 +88,8 @@ class ConsList() : List impl List {
   init List cdr;
 
   Any first() { return car; }
+
+  List rest() { return cdr; }
 
   Any atIndex(int n) {
     if n == 0 {
@@ -164,7 +171,7 @@ class ConsList() : List impl List {
     };
   }
 
-  export List : addToFront, addToEnd, first, atIndex, last, reverse,
+  export List : addToFront, addToEnd, first, rest, atIndex, last, reverse,
                 drop, take, appendToEnd, appendToFront, length, empty,
                 map, foldl, foldr, filter;
 }
