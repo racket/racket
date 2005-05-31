@@ -809,7 +809,12 @@ static Scheme_Object *c_to_scheme(Scheme_Object *type, void *src)
     {:(for-each-type
         (~ "case FOREIGN_"cname": return "
            (if ctype
-             (let ([x (list "(("ctype"*)src)[0]")])
+             (let ([x (list
+                       ;; will cause a bug in big-endians with int8 & int16
+                       ;; "(("ctype"*)src)[0]"
+                       "((sizeof("ctype")<sizeof(int))"
+                       " ? (("ctype")(((int*)src)[0]))"
+                       " : ((("ctype"*)src)[0]))")])
                (if (procedure? c->s) (c->s x) (list c->s"("x")")))
              "scheme_void")";")):}
     case FOREIGN_struct: return scheme_make_foreign_cpointer(src);
