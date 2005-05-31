@@ -224,7 +224,7 @@
       (let ([p (cond
 		[(regexp-match-peek #rx#"^WXME01[0-9][0-9] ## " p)
 		 (let ([t (make-object text%)])
-		   (send t insert-file p 'standard)
+		   (send t insert-port p 'standard)
 		   (close-input-port p)
 		   (open-input-text-editor t))]
 		[else p])])
