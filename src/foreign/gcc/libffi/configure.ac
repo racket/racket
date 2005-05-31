@@ -46,6 +46,7 @@ i*86-*-solaris*) TARGET=X86; TARGETDIR=x86;;
 i*86-*-beos*) TARGET=X86; TARGETDIR=x86;;
 i*86-*-freebsd* | i*86-*-kfreebsd*-gnu) TARGET=X86; TARGETDIR=x86;;
 i*86-*-netbsdelf* | i*86-*-knetbsd*-gnu) TARGET=X86; TARGETDIR=x86;;
+i*86-*-rtems*) TARGET=X86; TARGETDIR=x86;;
 i*86-*-win32*) TARGET=X86_WIN32; TARGETDIR=x86;;
 i*86-*-cygwin*) TARGET=X86_WIN32; TARGETDIR=x86;;
 i*86-*-mingw*) TARGET=X86_WIN32; TARGETDIR=x86;;
@@ -53,6 +54,7 @@ frv-*-*) TARGET=FRV; TARGETDIR=frv;;
 sparc-sun-4*) TARGET=SPARC; TARGETDIR=sparc;;
 sparc*-sun-*) TARGET=SPARC; TARGETDIR=sparc;;
 sparc-*-linux* | sparc-*-netbsdelf* | sparc-*-knetbsd*-gnu) TARGET=SPARC; TARGETDIR=sparc;;
+sparc*-*-rtems*) TARGET=SPARC; TARGETDIR=sparc;;
 sparc64-*-linux* | sparc64-*-netbsd* | sparc64-*-knetbsd*-gnu) TARGET=SPARC; TARGETDIR=sparc;;
 alpha*-*-linux* | alpha*-*-osf* | alpha*-*-freebsd* | alpha*-*-kfreebsd*-gnu | alpha*-*-netbsd* | alpha*-*-knetbsd*-gnu) TARGET=ALPHA; TARGETDIR=alpha;;
 ia64*-*-*) TARGET=IA64; TARGETDIR=ia64;;
@@ -65,13 +67,17 @@ powerpc*-*-linux* | powerpc-*-sysv*) TARGET=POWERPC; TARGETDIR=powerpc;;
 powerpc-*-beos*) TARGET=POWERPC; TARGETDIR=powerpc;;
 powerpc-*-darwin*) TARGET=POWERPC_DARWIN; TARGETDIR=powerpc;;
 powerpc-*-aix*) TARGET=POWERPC_AIX; TARGETDIR=powerpc;;
+powerpc*-*-rtems*) TARGET=POWERPC; TARGETDIR=powerpc;;
 rs6000-*-aix*) TARGET=POWERPC_AIX; TARGETDIR=powerpc;;
 arm*-*-linux-*) TARGET=ARM; TARGETDIR=arm;;
 arm*-*-netbsdelf* | arm*-*-knetbsd*-gnu) TARGET=ARM; TARGETDIR=arm;;
+arm*-*-rtems*) TARGET=ARM; TARGETDIR=arm;;
+cris-*-*) TARGET=LIBFFI_CRIS; TARGETDIR=cris;;
 s390-*-linux-*) TARGET=S390; TARGETDIR=s390;;
 s390x-*-linux-*) TARGET=S390; TARGETDIR=s390;;
 x86_64-*-linux* | x86_64-*-freebsd* | x86_64-*-kfreebsd*-gnu) TARGET=X86_64; TARGETDIR=x86;;
 sh-*-linux* | sh[[34]]*-*-linux*) TARGET=SH; TARGETDIR=sh;;
+sh-*-rtems*) TARGET=SH; TARGETDIR=sh;;
 sh64-*-linux* | sh5*-*-linux*) TARGET=SH64; TARGETDIR=sh64;;
 hppa-*-linux* | parisc-*-linux*) TARGET=PA; TARGETDIR=pa;;
 esac
@@ -95,6 +101,7 @@ AM_CONDITIONAL(POWERPC, test x$TARGET = xPOWERPC)
 AM_CONDITIONAL(POWERPC_AIX, test x$TARGET = xPOWERPC_AIX)
 AM_CONDITIONAL(POWERPC_DARWIN, test x$TARGET = xPOWERPC_DARWIN)
 AM_CONDITIONAL(ARM, test x$TARGET = xARM)
+AM_CONDITIONAL(LIBFFI_CRIS, test x$TARGET = xLIBFFI_CRIS)
 AM_CONDITIONAL(FRV, test x$TARGET = xFRV)
 AM_CONDITIONAL(S390, test x$TARGET = xS390)
 AM_CONDITIONAL(X86_64, test x$TARGET = xX86_64)
@@ -111,8 +118,8 @@ AC_HEADER_STDC
 AC_CHECK_FUNCS(memcpy)
 AC_FUNC_ALLOCA
 
-AC_COMPILE_CHECK_SIZEOF(double)
-AC_COMPILE_CHECK_SIZEOF(long double)
+AC_CHECK_SIZEOF(double)
+AC_CHECK_SIZEOF(long double)
 
 # Also AC_SUBST this variable for ffi.h.
 HAVE_LONG_DOUBLE=0
@@ -124,7 +131,7 @@ if test $ac_cv_sizeof_double != $ac_cv_sizeof_long_double; then
 fi
 AC_SUBST(HAVE_LONG_DOUBLE)
 
-AC_C_BIGENDIAN_CROSS
+AC_C_BIGENDIAN
 
 if test x$TARGET = xSPARC; then
     AC_CACHE_CHECK([assembler and linker support unaligned pc related relocs],
@@ -225,17 +232,6 @@ case $multi_os_directory in
 esac
 AC_SUBST(toolexecdir)
 AC_SUBST(toolexeclibdir)
-
-#Figure out where generated headers like ffitarget.h get installed.
-changequote(,)dnl
-gcc_version_trigger=${srcdir}/../gcc/version.c
-gcc_version_full=`grep version_string ${gcc_version_trigger} | sed -e 's/.*\"\([^\"]*\)\".*/\1/'`
-gcc_version=`echo ${gcc_version_full} | sed -e 's/\([^ ]*\) .*/\1/'`
-tool_include_dir='$(libdir)/gcc/$(target_alias)/'${gcc_version}/include
-changequote([,])dnl
-AC_SUBST(tool_include_dir)
-AC_SUBST(gcc_version)
-
 
 if test "${multilib}" = "yes"; then
   multilib_arg="--enable-multilib"

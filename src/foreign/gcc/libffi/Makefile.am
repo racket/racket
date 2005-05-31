@@ -1,6 +1,7 @@
 ## Process this with automake to create Makefile.in
 
-AUTOMAKE_OPTIONS = foreign no-dependencies subdir-objects
+AUTOMAKE_OPTIONS = foreign subdir-objects
+ACLOCAL_AMFLAGS = -I ..
 
 # ELI: removed testsuite
 SUBDIRS = include
@@ -8,6 +9,7 @@ SUBDIRS = include
 EXTRA_DIST = LICENSE ChangeLog.v1 \
 	src/alpha/ffi.c src/alpha/osf.S src/alpha/ffitarget.h \
 	src/arm/ffi.c src/arm/sysv.S src/arm/ffitarget.h \
+	src/cris/ffi.c src/cris/sysv.S src/cris/ffitarget.h \
 	src/mips/ffi.c src/mips/n32.S src/mips/o32.S \
 	src/mips/ffitarget.h \
 	src/m32r/ffi.c src/m32r/sysv.S src/m32r/ffitarget.h \
@@ -66,9 +68,7 @@ AM_MAKEFLAGS = \
 	"CC=$(CC)" \
 	"CXX=$(CXX)" \
 	"LD=$(LD)" \
-	"LIBCFLAGS=$(LIBCFLAGS)" \
 	"NM=$(NM)" \
-	"PICFLAG=$(PICFLAG)" \
 	"RANLIB=$(RANLIB)" \
 	"DESTDIR=$(DESTDIR)"
 
@@ -120,6 +120,9 @@ nodist_libffi_la_SOURCES += src/powerpc/ffi_darwin.c src/powerpc/darwin.S src/po
 endif
 if ARM
 nodist_libffi_la_SOURCES += src/arm/sysv.S src/arm/ffi.c
+endif
+if LIBFFI_CRIS
+nodist_libffi_la_SOURCES += src/cris/sysv.S src/cris/ffi.c
 endif
 if FRV
 nodist_libffi_la_SOURCES += src/frv/eabi.S src/frv/ffi.c
