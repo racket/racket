@@ -1,3 +1,15 @@
+------------------------------------------------------------------------
+VERSION 209				  [Fri Dec 17 10:19:52 EST 2004]
+
+ * fixed small bugs in image.ss and world.ss concerning colors and the
+   location of pinholes 
+
+ * The interface of the draw teachpack (package) for ProfessorJ has
+   changed. A World now supports draw and erase methods. The onTick and
+   onKeyEvent methods call erase on the current world, create the next
+   world, and then call draw on the new world. 
+
+------------------------------------------------------------------------
 VERSION 208p1
 
 * fixed a bug in image.ss; find-image now returns the result
