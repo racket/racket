@@ -276,7 +276,7 @@ Matthew
        (change-style [(x) (x y) (x y z) (x y z w)] unlocked)
        (insert [(x) (x y) (x y z) (x y z p) (x y z p q)] unlocked)
        (delete [() (start) (start end) (start end scroll-ok?)] unlocked)
-       (insert-port [(port) (port format show-errors?)] unlocked)
+       (insert-port [(port) (port format) (port format show-errors?)] unlocked)
        (read-from-file [(x) (x y) (x y z)] unlocked)
        (set-style-list [(style-list)] unlocked)]
       
