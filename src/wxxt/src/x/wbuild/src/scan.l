@@ -3,7 +3,6 @@
 **  Author: Bert Bos <bert@let.rug.nl>
 **  Revised by Joel N. Weber II <nemo@nautilus.sub>
 **  Description: (F)LEX definition for Widget Builder
-**  $Header: /proj/scheme/cvs/plt/src/wxxt/src/x/wbuild/src/scan.l,v 1.1 2000/04/05 13:51:42 mflatt Exp $
 */
 
 %k 2000

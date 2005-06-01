@@ -15,4 +15,4 @@
       (import drscheme:tool^)
       (define (phase1) (void))
       (define (phase2) (void))
-      (version:add-spec '-cvs stamp))))
+      (version:add-spec '-svn stamp))))

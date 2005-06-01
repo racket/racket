@@ -35,7 +35,7 @@
            (with-handlers ([exn:fail:filesystem? (lambda (exn) #f)])
              (collection-path "repos-time-stamp"))])
       (if (and stamp-collection (file-exists? (build-path stamp-collection "stamp.ss")))
-          (format "~a-cvs~a" mz-version (dynamic-require '(lib "stamp.ss" "repos-time-stamp") 'stamp))
+          (format "~a-svn~a" mz-version (dynamic-require '(lib "stamp.ss" "repos-time-stamp") 'stamp))
           mz-version)))
   
   

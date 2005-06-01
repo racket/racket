@@ -37,11 +37,10 @@
   #|
   cd ~.../plt/collects/icons 
   cp where/ever/trumpet.xbm .
-  cvs update -A 
-  cvs add -kb trumpet.xbm 
-  cvs commit -m "added trumpet image"
-  cvs tag -F exp trumpet.xbm
-  cvs update -r exp
+  svn update
+  svn trumpet.xbm
+  svn setprop svn:mime-type image/x-xbitmap
+  svn commit -m "added trumpet image"
   |#
   
   #| ------------------------------------------------------------------------

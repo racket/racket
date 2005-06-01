@@ -1,7 +1,7 @@
 
 (define old-dir (current-directory))
 (define new-dir "~/tmp/gc6.3")
-(define really-cvs? #t)
+(define really-svn? #t)
 
 (require (lib "file.ss")
 	 (lib "process.ss"))
@@ -66,7 +66,7 @@
 
 (define (go cmd)
   (printf "CMD: ~a~n" cmd)
-  (when really-cvs?
+  (when really-svn?
     (system cmd)))
 
 (hash-table-for-each new 
@@ -82,13 +82,13 @@
   (go (get-output-string s)))
 
 (let ([s (open-output-string)])
-  (fprintf s "cd ~a; cvs add " (path->string old-dir))
+  (fprintf s "cd ~a; svn add " (path->string old-dir))
   (hash-table-for-each new (lambda (k v)
 			     (fprintf s "~a " (path->string k))))
   (go (get-output-string s)))
 
 (let ([s (open-output-string)])
-  (fprintf s "cd ~a; cvs remove " (path->string old-dir))
+  (fprintf s "cd ~a; svn remove " (path->string old-dir))
   (hash-table-for-each old (lambda (k v)
 			     (fprintf s "~a " (path->string k))))
   (go (get-output-string s)))
