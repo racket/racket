@@ -161,7 +161,7 @@ typedef void (*Check_Func)(Scheme_Object *prnt_name, Scheme_Object *name, Scheme
 static Scheme_Object *parse_requires(Scheme_Object *form,
 				     Scheme_Object *base_modidx,
 				     Scheme_Env *env,
-				     Scheme_Object *rn,
+				     Scheme_Object *rn, Scheme_Object *post_ex_rn,
 				     Check_Func ck, void *data,
 				     int start, int expstart, Scheme_Object *redef_modname,
 				     int unpack_kern, int copy_vars,
@@ -916,7 +916,7 @@ static Scheme_Object *do_namespace_require(int argc, Scheme_Object *argv[], int 
   
   rn = scheme_make_module_rename(for_exp, mzMOD_RENAME_TOPLEVEL, NULL);
 
-  (void)parse_requires(form, scheme_false, env, rn, 
+  (void)parse_requires(form, scheme_false, env, rn, rn,
 		       NULL, NULL, !etonly, etonly, NULL, 1, copy, NULL);
 
   brn = env->rename;
@@ -3483,7 +3483,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   Scheme_Object *all_defs_out;    /* list of (cons protected? (stx-list except-name ...)) */
   Scheme_Object *all_defs;        /* list of stxid; this is almost redundant to the syntax and toplevel
 				     tables, but it preserves the original name for exporting */
-  Scheme_Object *post_ex_rn, *post_ex_et_rn; /* renames for ids introduced by expansion */
+  Scheme_Object *post_ex_rn, *post_ex_et_rn, *post_ex_tt_rn; /* renames for ids introduced by expansion */
   void *tables[3], *et_tables[3], *tt_tables[3];
   Scheme_Object **exs, **exsns, **exss, **exis, *exclude_hint = scheme_false, *lift_data;
   Scheme_Hash_Table *et_mn;
@@ -3634,11 +3634,18 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
   post_ex_rn = scheme_make_module_rename(0, mzMOD_RENAME_MARKED, env->genv->marked_names);
   post_ex_et_rn = scheme_make_module_rename(1, mzMOD_RENAME_MARKED, env->genv->exp_env->marked_names);
+  post_ex_tt_rn = scheme_make_module_rename(-1, mzMOD_RENAME_MARKED, env->genv->exp_env->marked_names);
 
   /* For syntax-local-context, etc., in a d-s RHS: */
   rhs_env = scheme_new_comp_env(env->genv, env->insp, SCHEME_TOPLEVEL_FRAME);
 
   scheme_rec_add_certs(rec, drec, form);
+
+  /* It's possible that #%module-begin expansion introduces
+     marked identifiers for definitions. */
+  form = scheme_add_rename(form, post_ex_rn);
+  form = scheme_add_rename(form, post_ex_et_rn);
+  form = scheme_add_rename(form, post_ex_tt_rn);
   
   /* Partially expand all expressions, and process definitions, requires,
      and provides. Also, flatten top-level `begin' expressions: */
@@ -3680,6 +3687,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	  fm = SCHEME_STX_CDR(fm);
 	  e = scheme_add_rename(e, post_ex_rn);
 	  e = scheme_add_rename(e, post_ex_et_rn);
+	  e = scheme_add_rename(e, post_ex_tt_rn);
 	  fm = scheme_flatten_begin(e, fm);
 	  if (SCHEME_STX_NULLP(fm)) {
 	    e = NULL;
@@ -3693,6 +3701,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
     e = scheme_add_rename(e, post_ex_rn);
     e = scheme_add_rename(e, post_ex_et_rn);
+    e = scheme_add_rename(e, post_ex_tt_rn);
     
     if (SCHEME_STX_PAIRP(e)) {
       Scheme_Object *fst;
@@ -3876,7 +3885,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
 	  /* Add requires to renaming: */
 	  imods = parse_requires(e, self_modidx, env->genv, 
-				 rn, check_require_name, tables, 0, 1,
+				 rn, post_ex_rn, check_require_name, tables, 0, 1,
 				 redef_modname, 0, 0,
 				 &all_simple_renames);
 	
@@ -3894,7 +3903,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
 	  /* Add requires to renaming: */
 	  imods = parse_requires(e, self_modidx, env->genv->exp_env,
-				 et_rn, check_require_name, et_tables, 1, 0,
+				 et_rn, post_ex_et_rn, check_require_name, et_tables, 1, 0,
 				 redef_modname, 0, 0,
 				 &et_all_simple_renames);
 
@@ -3916,7 +3925,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
 	  /* Add requires to renaming: */
 	  imods = parse_requires(e, self_modidx, env->genv->template_env,
-				 tt_rn, check_require_name, tt_tables, 0, 0,
+				 tt_rn, post_ex_tt_rn, check_require_name, tt_tables, 0, 0,
 				 redef_modname, 0, 0,
 				 &tt_all_simple_renames);
 
@@ -4854,7 +4863,7 @@ static void qsort_provides(Scheme_Object **exs, Scheme_Object **exsns, Scheme_Ob
 Scheme_Object *parse_requires(Scheme_Object *form, 
 			      Scheme_Object *base_modidx,
 			      Scheme_Env *env,
-			      Scheme_Object *rn,
+			      Scheme_Object *rn, Scheme_Object *post_ex_rn,
 			      Check_Func ck, void *data,
 			      int start, int expstart, Scheme_Object *redef_modname,
 			      int unpack_kern, int copy_vars,
@@ -5041,7 +5050,6 @@ Scheme_Object *parse_requires(Scheme_Object *form,
       mark_src = iname;
 
       iname = SCHEME_STX_VAL(iname);
-      ename = SCHEME_STX_VAL(ename);
       
       prefix = NULL;
       exns = NULL;
@@ -5116,7 +5124,7 @@ Scheme_Object *parse_requires(Scheme_Object *form,
 	Scheme_Object *modidx;
 	
 	if (ename) {
-	  if (!SAME_OBJ(ename, exs[j]))
+	  if (!SAME_OBJ(SCHEME_STX_VAL(ename), exs[j]))
 	    continue;  /* we don't want this one. */
 	} else if (onlys) {
 	  name = scheme_hash_get(onlys, exs[j]);
@@ -5185,8 +5193,10 @@ Scheme_Object *parse_requires(Scheme_Object *form,
 	    menv = scheme_module_access(modidx, env, 0);
 	    val = scheme_lookup_in_table(menv->toplevel, (char *)exsns[j]);
 	    scheme_add_global_symbol(iname, val, env);
-	  } else
-	    scheme_extend_module_rename(rn, modidx, iname, exsns[j], nominal_modidx, exs[j], 0);
+	  } else {
+	    scheme_extend_module_rename((has_context ? post_ex_rn : rn), 
+					modidx, iname, exsns[j], nominal_modidx, exs[j], 0);
+	  }
 	}
 
 	iname = NULL;
@@ -5199,7 +5209,7 @@ Scheme_Object *parse_requires(Scheme_Object *form,
 
       if (ename) {
 	if (!m->reprovide_kernel) {
-	  scheme_wrong_syntax(NULL, i, form, "no such provided variable");
+	  scheme_wrong_syntax(NULL, ename, form, "no such provided variable");
 	  return NULL;
 	}
       }
@@ -5292,7 +5302,7 @@ top_level_require_execute(Scheme_Object *data)
 
   rn = scheme_make_module_rename(for_phase, mzMOD_RENAME_TOPLEVEL, NULL);
 
-  (void)parse_requires(form, modidx, env, rn, 
+  (void)parse_requires(form, modidx, env, rn, rn,
 		       check_dup_require, ht, (for_phase > -1), (for_phase == 0), NULL,
 		       !env->module, 0, NULL);
 
@@ -5356,7 +5366,7 @@ static Scheme_Object *do_require(Scheme_Object *form, Scheme_Comp_Env *env,
     genv = genv->template_env;
   }
 
-  (void)parse_requires(form, modidx, genv, rn, 
+  (void)parse_requires(form, modidx, genv, rn, rn,
 		       check_dup_require, ht, 0, 0, 
 		       NULL, 0, 0, NULL);
 

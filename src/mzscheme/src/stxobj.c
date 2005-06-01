@@ -4797,7 +4797,7 @@ static Scheme_Object *syntax_recertify(int argc, Scheme_Object **argv)
 	  if (!i)
 	    pr = scheme_make_pair((Scheme_Object *)new_certs, SCHEME_CDR(stx->certs));
 	  else
-	    pr = scheme_make_pair(ACTIVE_CERTS(stx), (Scheme_Object *)new_certs);
+	    pr = scheme_make_pair((Scheme_Object *)ACTIVE_CERTS(stx), (Scheme_Object *)new_certs);
 	  res->certs = pr;
 	}
       
