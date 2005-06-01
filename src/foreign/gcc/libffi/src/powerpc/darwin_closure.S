@@ -246,6 +246,7 @@ Lfinish:
 /* END(ffi_closure_ASM)  */
 
 .data
+/* ELI: removed live_support attribute, doesn't work on current OSXs */
 .section __TEXT,__eh_frame,coalesced,no_toc+strip_static_syms
 EH_frame1:
 	.set	L$set$0,LECIE1-LSCIE1
