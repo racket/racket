@@ -266,6 +266,7 @@ exclude_expsyms="_GLOBAL_OFFSET_TABLE_"
 # rely on this symbol name, it's probably fine to never include it in
 # preloaded symbol tables.
 extract_expsyms_cmds=
+file_list_spec=
 
 ## Tools:
 old_AR="$AR"
@@ -1168,6 +1169,17 @@ gnu*)
   hardcode_into_libs=yes
   ;;
 
+kfreebsd*-gnu | knetbsd*-gnu)
+  version_type=linux
+  need_lib_prefix=no
+  need_version=no
+  library_names_spec='${libname}${release}.so$versuffix ${libname}${release}.so${major} ${libname}.so'
+  soname_spec='${libname}${release}.so$major'
+  shlibpath_var=LD_LIBRARY_PATH
+  shlibpath_overrides_runpath=yes
+  hardcode_into_libs=yes
+  ;;
+
 hpux9* | hpux10* | hpux11*)
   # Give a soname corresponding to the major version so that dld.sl refuses to
   # link against other versions.
@@ -1361,6 +1373,18 @@ sysv4 | sysv4.2uw2* | sysv4.3* | sysv5*)
       sys_lib_search_path_spec='/lib /usr/lib /usr/ccs/lib'
       ;;
   esac
+  ;;
+
+tpf*)
+  version_type=linux
+  need_lib_prefix=no
+  need_version=no
+  library_names_spec='${libname}${release}.so$versuffix ${libname}${release}.so $major $libname.so'
+  soname_spec='${libname}${release}.so$major'
+  shlibpath_var=LD_LIBRARY_PATH
+  shlibpath_overrides_runpath=no
+  hardcode_into_libs=yes
+  dynamic_linker='GNU/Linux ld.so'
   ;;
 
 uts4*)
@@ -2141,7 +2165,7 @@ case $ltmain in
     finish_cmds finish_eval global_symbol_pipe global_symbol_to_cdecl \
     hardcode_libdir_flag_spec hardcode_libdir_separator  \
     sys_lib_search_path_spec sys_lib_dlsearch_path_spec \
-    compiler_c_o need_locks exclude_expsyms include_expsyms; do
+    compiler_c_o need_locks exclude_expsyms include_expsyms file_list_spec; do
 
     case $var in
     reload_cmds | old_archive_cmds | old_archive_from_new_cmds | \
@@ -2533,6 +2557,12 @@ exclude_expsyms=$exclude_expsyms
 
 # Symbols that must always be exported.
 include_expsyms=$include_expsyms
+
+# Specify filename containing input files.
+file_list_spec=$file_list_spec
+
+# with_gnu_ld value
+with_gnu_ld=$with_gnu_ld
 
 EOF
 
