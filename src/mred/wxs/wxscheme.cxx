@@ -1016,17 +1016,17 @@ static int indirect_strcmp(const void *a, const void *b)
 typedef struct {
   int mono_only;
   int count, size;
-  char **names;
+  mzchar **names;
 } gfData;
 
-static int CALLBACK get_font(ENUMLOGFONT FAR*  lpelf, 
-			     NEWTEXTMETRIC FAR* lpntm, 
+static int CALLBACK get_font(ENUMLOGFONTW FAR*  lpelf, 
+			     NEWTEXTMETRICW FAR* lpntm, 
 			     DWORD type, 
 			     LPARAM _data)
 {
   gfData *data = (gfData *)_data;
-  int l;
-  char *s;
+  long ulen;
+  mzchar *s;
 
   if (data->mono_only) {
     /* TMPF_FIXED_PITCH flag means not monospace */
@@ -1036,17 +1036,18 @@ static int CALLBACK get_font(ENUMLOGFONT FAR*  lpelf,
   }
   
   if (data->count == data->size) {
-    char **naya;
+    mzchar **naya;
 
     data->size += (2 * data->size) + 10;
-    naya = new char*[data->size];
-    memcpy(naya, data->names, data->count * sizeof(char *));
+    naya = new mzchar*[data->size];
+    memcpy(naya, data->names, data->count * sizeof(mzchar *));
     data->names = naya;
   }
   
-  l = strlen(lpelf->elfLogFont.lfFaceName);
-  s = new char[l + 1];
-  memcpy(s, lpelf->elfLogFont.lfFaceName, l);
+  s = scheme_utf16_to_ucs4(lpelf->elfLogFont.lfFaceName, 0, 
+			   wx_wstrlen(lpelf->elfLogFont.lfFaceName),
+			   0, 0, &ulen, 1);
+  s[ulen] = 0;
 
   data->names[data->count++] = s;
 
@@ -1189,7 +1190,7 @@ static Scheme_Object *wxSchemeGetFontList(int argc, Scheme_Object **argv)
 
   dc = GetDC(NULL);
 
-  EnumFontFamilies(dc, NULL, (FONTENUMPROC)get_font, (LPARAM)&data);
+  EnumFontFamiliesW(dc, NULL, (FONTENUMPROCW)get_font, (LPARAM)&data);
 #endif
 
   while (1) {
@@ -1241,7 +1242,11 @@ static Scheme_Object *wxSchemeGetFontList(int argc, Scheme_Object **argv)
 #ifdef wx_msw
     if (i >= data.count)
       break;
-    s = data.names[i++];
+    {
+      mzchar *ws;
+      ws = data.names[i++];
+      s = scheme_utf8_encode_to_buffer(ws, scheme_char_strlen(ws), NULL, 0);
+    }
     l = strlen(s);
 #endif
     
