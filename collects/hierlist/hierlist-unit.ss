@@ -147,8 +147,8 @@
 
       (send item-keymap add-function "mouse-select"
 	    (lambda (edit event) (when (send event button-down?)
-                                   (send edit select #t)
-					; To handle hypertext clicks:
+                                   (send edit click-select #t)
+				   ;; To handle hypertext clicks:
 				   (send edit on-default-event event))))
       (send item-keymap add-function "mouse-double-select"
 	    (lambda (edit event) (when (send event button-down?)
@@ -185,6 +185,7 @@
             [is-selected? (lambda () (send (get-editor) is-selected?))]
             
             [select (lambda (on?) (send snip select on?))]
+            [click-select (lambda (on?) (send snip click-select on?))]
             [scroll-to (lambda () (let* ([admin (send snip get-admin)]
                                          [dc (send admin get-dc)]
                                          [h-box (box 0.0)])
@@ -307,11 +308,14 @@
 		     (send dc draw-rectangle (+ dx left 1) (+ dy top_ 1) (- right left 2) (- bottom top_ 2)))
                    (send dc set-pen p)
                    (send dc set-brush b))))])
+	  (private
+	    [do-select (lambda (on? clicked?)
+			 (unless (eq? (not selected?) 
+				      (not on?))
+			   (top-select (if on? item #f) snip clicked?)))])
           (public
-            [select (lambda (on?)
-                      (unless (eq? (not selected?) 
-                                   (not on?))
-                        (top-select (if on? item #f) snip)))]
+            [select (lambda (on?) (do-select on? #f))]
+            [click-select (lambda (on?) (do-select on? #t))]
             [double-select (lambda () (send top on-double-select item))]
             [select-prev (lambda () (send top select-prev))])
           (override
@@ -454,6 +458,7 @@
 	    [get-parent (lambda () parent)]
 	    [get-item-text% (lambda () hierarchical-item-text%)]
 	    [select (lambda (on?) (send item-buffer select on?))]
+	    [click-select (lambda (on?) (send item-buffer click-select on?))]
 	    [deselect-all (lambda () (select #f))]
 	    [show-select (lambda (on?) (send item-buffer show-select on?))]
 	    [get-item-buffer (lambda () item-buffer)]
@@ -488,10 +493,8 @@
 	    [get-title-text% (lambda () hierarchical-item-text%)]
 	    [get-content-text% (lambda () hierarchical-list-text%)]
 	    [get-arrow-snip% (lambda () arrow-snip%)]
-	    [select (lambda (on?)
-		      (if on?
-			  (send title-buffer select #t)
-			  (send title-buffer select #f)))]
+	    [select (lambda (on?) (send title-buffer select on?))]
+	    [click-select (lambda (on?) (send title-buffer click-select on?))]
 	    [deselect-all (lambda ()
 			    (select #f)
 			    (send content-buffer deselect-all))]
@@ -655,7 +658,7 @@
                                 [parent-snip
                                  (let ([parent (send parent-snip get-item)])
                                    (when (send parent get-allow-selection?)
-                                     (send parent select #t)
+                                     (send parent click-select #t)
                                      (send parent scroll-to)))]
                                 [else
                                  (void)]))))]
@@ -667,7 +670,7 @@
                               (send selected open)
                               (let ([items (send selected-item get-items)])
                                 (unless (null? items)
-                                  (send (car items) select #t)
+                                  (send (car items) click-select #t)
                                   (send (car items) scroll-to)))
                               (send edit-sequence-text end-edit-sequence))]
                            [else (void)]))]
@@ -675,18 +678,21 @@
             [select-prev (lambda () (move -1))]
             [select-first (lambda () (let ([l (get-items)])
                                        (unless (null? l)
-                                         (send (car l) select #t)
+                                         (send (car l) click-select #t)
                                          (send (car l) scroll-to))))]
             [select-last (lambda () (let loop ([l (get-items)])
                                       (cond
                                         [(null? l) (void)]
                                         [(null? (cdr l))
-                                         (send (car l) select #t)
+                                         (send (car l) click-select #t)
                                          (send (car l) scroll-to)]
                                         [else (loop (cdr l))])))]
 	    [select (lambda (i) 
 		      (send i select #t)
 		      (send i scroll-to))]
+            [click-select (lambda (i) 
+			    (send i click-select #t)
+			    (send i scroll-to))]
             [page-up (lambda () (page 'up))]
             [page-down (lambda () (page 'down))]
             [show-focus
@@ -751,7 +757,7 @@
                           (when (< -1 pos (length l))
                             (let ([i (vector-ref vec pos)])
                               (when (send i get-allow-selection?)
-                                (send i select #t)
+                                (send i click-select #t)
                                 (send i scroll-to)))))
                         (let ([y-box (box 0.0)]
                               [x-box (box 0.0)]
@@ -778,14 +784,25 @@
                                             (max 0 (- (unbox sbox) len))
                                             (min (sub1 (length items)) (+ (unbox ebox) len)))]
                                      [i (list-ref items l)])
-                                (send i select #t)
+                                (send i click-select #t)
                                 (send i scroll-to)))))
                         (send top-buffer move-position dir #f 'page)))])
           (private-field
            [selectable? #t]
-           [show-focus? #f])
+           [show-focus? #f]
+	   [on-select-always? #t]
+	   [allow-deselect? #f])
+	  (public
+	    [on-select-always
+	     (case-lambda 
+	      [() on-select-always?]
+	      [(v) (set! on-select-always? (and v #t))])]
+	    [allow-deselect
+	     (case-lambda 
+	      [() allow-deselect?]
+	      [(v) (set! allow-deselect? (and v #t))])])
           (private
-            [do-select (lambda (item s)
+            [do-select (lambda (item s clicked?)
                          (cond
                            [(and selectable?
                                  item 
@@ -795,11 +812,20 @@
                               (set! selected (if item s #f))
                               (set! selected-item item)
                               (when selected (send selected show-select #t))
-                              (on-select item))]
-                           [item
-                            (on-click item)]))])
+			      (when (or clicked? on-select-always?)
+				(on-select item)))]
+                           [(and item
+				 clicked?)
+                            (on-click item)]
+			   [allow-deselect?
+			    (when selected-item
+			      (send selected show-select #f)
+			      (set! selected #f)
+			      (set! selected-item #f))
+			    (when (or clicked? on-select-always?)
+			      (on-select #f))]))])
           (private-field
-           [top-buffer (make-object hierarchical-list-text% this (lambda (i s) (do-select i s)) 0 #f)]
+           [top-buffer (make-object hierarchical-list-text% this (lambda (i s c?) (do-select i s c?)) 0 #f)]
            [selected #f]
            [selected-item #f])
           (sequence

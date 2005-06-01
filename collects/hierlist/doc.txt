@@ -93,10 +93,26 @@ New methods:
 >  select-last :: (send a-list select-last)
 >  select-in :: (send a-list select-in)
 >  select-out :: (send a-list select-out)
->  select :: (send a-list select i)
+>  click-select :: (send a-list select i)
 >  page-up :: (send a-list page-up)
 >  page-down :: (send a-list page-down)
-     - Move the selection and scroll
+     - Move the selection, scroll, and call on-select
+
+>  select :: (send a-list select i)
+     - Like `click-select', but does not call `on-select'
+       unless `on-select' is always called (see `on-select-always')
+
+>  on-select-always :: (send on-select-always)
+>  on-select-always :: (send on-select-always on?)
+     - Gets/sets whether the `on-select' method is called in
+       response to `select' (as opposed to `click-select');
+       the default is #t
+
+>  allow-deselect :: (send allow-deselect)
+>  allow-deselect :: (send allow-deselect on?)
+     - Gets/sets whether the `select' can be used with a #f
+       argument to deselect the current item (leaving none
+       selected); the default is #f
 
 --------------------------------------------------
 
@@ -109,8 +125,11 @@ New methods:
 
 >  is-selected? :: (send an-item is-selected?) - returns #t or #f
 
->  select :: (send an-item select on?) - selects or deselects the
-     item; hierarchical-list%'s on-select is called
+>  click-select :: (send an-item select on?) - selects or deselects
+     the item; hierarchical-list%'s `on-select' is called; see also
+     `allow-deselect'
+>  select :: (send an-item select on?) - like `click-select', 
+     but `on-select' might not be called; see `on-select-always'
 
 >  user-data :: (send an-item user-data) - returns user data;
      initialized to #f
