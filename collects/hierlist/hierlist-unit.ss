@@ -398,17 +398,18 @@
                           [e (line-end-position pos)])
                       (delete (if (zero? s) s (sub1 s)) (if (zero? s) (add1 e) e)))]
                    [else (loop (add1 pos) (cdr l) (cons (car l) others))])))]
-            [sort (lambda (less-than?)
+            [sort (opt-lambda (less-than? [recur? #t])
                     (let ([l (mergesort children (lambda (a b)
                                                    (less-than? (send a get-item)
                                                                (send b get-item))))])
                       (begin-edit-sequence)
-                      (for-each (lambda (child)
-                                  (when (is-a? child hierarchical-list-snip%)
-                                    (let ([ed (send child get-content-buffer)])
-                                      (when (is-a? ed hierarchical-list-text%)
-                                        (send ed sort less-than?)))))
-                                children)
+		      (when recur?
+			(for-each (lambda (child)
+				    (when (is-a? child hierarchical-list-snip%)
+				      (let ([ed (send child get-content-buffer)])
+					(when (is-a? ed hierarchical-list-text%)
+					  (send ed sort less-than?)))))
+				  children))
                       (erase)
                       (let ([to-scroll-to #f])
                         (for-each
@@ -642,7 +643,7 @@
             [set-no-sublists (lambda x (send top-buffer set-no-sublists . x))]
             [new-list (lambda x (send top-buffer new-list . x))]
             [delete-item (lambda (i) (send top-buffer delete-item i))]
-            [sort (lambda (less-than?) (send top-buffer sort less-than?))]
+            [sort (opt-lambda (less-than? [recur? #t]) (send top-buffer sort less-than? recur?))]
             [get-items (lambda () (send top-buffer get-items))]
             [toggle-open/closed
              (lambda ()

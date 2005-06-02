@@ -78,8 +78,9 @@ New methods:
 >  on-item-closed :: (send a-list on-item-closed i) - called when the
      arrow for `i' is turned up
 
->  sort :: (send a-list sort less-than-proc) - sorts items in the list
-     by calling `less-than-proc' on pairs of items.
+>  sort :: (send a-list sort less-than-proc [recur?]) - sorts items in
+     the list by calling `less-than-proc' on pairs of items; if
+     `recur?' is #t (the default), sub-items are sorted recursively
 
 >  can-do-edit-operation? :: (send a-list can-do-edit-operation? sym bool)
      - like the method on editor<%>s; returns #f always
