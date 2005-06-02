@@ -537,7 +537,7 @@
                  O_CURLY fmidefns supernew fmidefns exports C_CURLY)
           (let ([mixin-name (datum->syntax-object $3 (string->symbol (string-append "$" (symbol->string (syntax-e $3)))))]
                 [subclass-stx (create-src-stx 'honu-subclass source-name $1-start-pos $18-end-pos)])
-            (list (make-honu-mixin subclass-stx mixin-name $6 $10 #f (cdr $4) (car $4) $11 (cdr $12) (car $12) $14 $15 $16 $17)
+            (list (make-honu-mixin subclass-stx mixin-name $6 $10 #t (cdr $4) (car $4) $11 (cdr $12) (car $12) $14 $15 $16 $17)
                   (make-honu-subclass subclass-stx $3 mixin-name $8)))])
         
         ;; Expressions
