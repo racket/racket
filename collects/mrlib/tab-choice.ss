@@ -9,7 +9,7 @@
 	   (lib "mred.ss" "mred")
 	   (lib "list.ss"))
 
-  (provide tab-choice%
+  (provide auto-tab-panel%
 	   single<%> single-mixin)
   
   (define single<%> (interface (area-container<%>) active-child))
@@ -32,16 +32,10 @@
 		 (send c show #f)
 		 (set! current-active-child c)))
 	   [define/override (container-size l)
-	     (let-values ([(w h) (super container-size l)]
-			  [(dw dh) (if (this . is-a? . window<%>)
-				       (let-values ([(cw ch) (send this get-client-size)]
-						    [(nw nh) (send this get-size)])
-					 (values (- nw cw) (- nh ch)))
-				       (values 0 0))])
-	       (if (null? l)
-		   (values w h)
-		   (values (+ dw (apply max (- w dw) (map car l)))
-			   (+ dh (apply max (- h dh) (map cadr l))))))]
+	     (if (null? l)
+		 (values 0 0)
+		 (values (apply max (map car l))
+			 (apply max (map cadr l))))]
 	   [define/override (place-children l width height)
 	     (let-values ([(h-align-spec v-align-spec) (get-alignment)])
 	       (let ([align
@@ -86,8 +80,8 @@
 		 (end-container-sequence))]))
 	   (super-instantiate ())))
 
-  (define tab-choice%
-    (class (single-mixin tab-panel%)
+  (define auto-tab-panel%
+    (class tab-panel%
       (init choices
 	    parent 
 	    [callback (lambda (b e) (void))])
@@ -98,23 +92,26 @@
 		 [parent parent]
 		 [callback
 		  (lambda (b e)
-		    (super active-child (list-ref panels (get-selection)))
+		    (send single-panel active-child (list-ref panels (get-selection)))
 		    (callback b e))])
+
+      (define single-panel (new (single-mixin pane%)
+				[parent this]))
 
       (inherit get-number)
       (define panels (let loop ([i (get-number)])
 		       (unless (zero? i)
-			 (cons (new vertical-panel% [parent this])
+			 (cons (new vertical-panel% [parent single-panel])
 			       (loop (sub1 i))))))
 
       (define/public (get-panel i)
 	(list-ref panels i))
 
-      (define/override active-child
+      (define/public active-child
 	(case-lambda
-	 [() (super active-child)]
+	 [() (send single-panel active-child)]
 	 [(c)
-	  (super active-child c)
+	  (send single-panel active-child c)
 	  (let loop ([i 0][l panels])
 	    (unless (null? l)
 	      (if (eq? (car l) c)
@@ -123,4 +120,4 @@
 
       (define/override (set-selection i)
 	(super set-selection i)
-	(super active-child (list-ref panels i))))))
+	(send single-panel active-child (list-ref panels i))))))
