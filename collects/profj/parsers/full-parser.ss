@@ -20,7 +20,7 @@
     (parser
      (start CompilationUnit Interactions VariableInitializer Type)
      ;;(debug "parser.output")
-     (tokens java-vals special-toks Keywords Separators EmptyLiterals Operators)
+     (tokens java-vals special-toks Keywords ExtraKeywords Separators EmptyLiterals Operators)
      (error (lambda (tok-ok name val start-pos end-pos)
               (raise-read-error (format "Parse error near <~a:~a>" name val)
                                 (file-path)
@@ -59,7 +59,8 @@
       ;; 19.4
       (Type
        [(PrimitiveType) $1]
-       [(ReferenceType) $1])
+       [(ReferenceType) $1]
+       [(dynamic) (make-type-spec 'dynamic 0 (build-src 1))])
       
       (PrimitiveType
        [(NumericType) $1]
@@ -250,9 +251,9 @@
 
       (VariableDeclaratorId
        [(IDENTIFIER)
-	(make-var-decl (make-id $1 (build-src 1)) null (make-type-spec #f 0 (build-src 1)) (build-src 1))]
+	(make-var-decl (make-id $1 (build-src 1)) null (make-type-spec #f 0 (build-src 1)) #f (build-src 1))]
        [(IDENTIFIER Dims)
-	(make-var-decl (make-id $1 (build-src 1)) null (make-type-spec #f $2 (build-src 2)) (build-src 2))])
+	(make-var-decl (make-id $1 (build-src 1)) null (make-type-spec #f $2 (build-src 2)) #f (build-src 2))])
 			
       (VariableInitializer
        [(Expression) $1]
@@ -478,9 +479,10 @@
                               ((var-decl? d) d)
                               (else (var-init-var-decl d))))
                       (new-decl (make-var-decl (var-decl-name decl)
-                                                   `(final)
-                                                   (var-decl-type decl)
-                                                   (var-decl-src decl))))
+                                               `(final)
+                                               (var-decl-type-spec decl)
+                                               #f
+                                               (var-decl-src decl))))
                                  
                  (cond
                    ((var-decl? d) new-decl)
@@ -843,6 +845,8 @@
 		       $5)]
        [(O_PAREN PrimitiveType C_PAREN UnaryExpression)
 	(make-cast #f (build-src 4) $2 $4)]
+       [(O_PAREN dynamic C_PAREN UnaryExpression)
+        (make-cast #f (build-src 4) (make-type-spec 'dynamic 0 (build-src 2 2)) $4)]
        [(O_PAREN Expression C_PAREN UnaryExpressionNotPlusMinus)
         (if (access? $2)
             (make-cast #f (build-src 4) 

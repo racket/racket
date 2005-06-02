@@ -2,6 +2,7 @@
 (module Object-composite mzscheme
   
   (require (lib "class.ss")
+           (prefix c: (lib "contract.ss"))
            (lib "errortrace-lib.ss" "errortrace")
            (lib "Comparable.ss" "profj" "libs" "java" "lang")
            (lib "Serializable.ss" "profj" "libs" "java" "io"))
@@ -35,13 +36,15 @@
 ;                 ;;;                        
 
   ;Object.java
-  (provide ObjectI Object-Mix Object)
+  (provide ObjectI Object-Mix Object
+           wrap-convert-assert-Object convert-assert-Object guard-convert-Object dynamic-Object/c static-Object/c)
   
   ;Object interface, and a mixin to create objects from.
   
   (define ObjectI
     (interface () Object-constructor clone equals-java.lang.Object finalize getClass
-      hashCode notify notifyAll toString wait wait-long wait-long-int my-name))
+      hashCode notify notifyAll toString wait wait-long wait-long-int my-name
+      equals hash-code to-string get-class))
   
   (define Object-Mix
     (lambda (parent)
@@ -53,17 +56,20 @@
         (define/public clone (lambda () void))
         
         (define/public (equals-java.lang.Object obj) (eq? this obj))
+        (define/public (equals obj) (send this equals-java.lang.Object obj))
         
         ;Needs to do something
         (define/public (finalize) void)
         
-        (public-final getClass)
+        (public-final getClass get-class)
         (define (getClass)
           (error 'ProfessorJ:getClass 
                  (format "ProfessorJ does not support getClass calls. ~e" 
                          (send this toString))))
+        (define (get-class) (getClass))
         
         (define/public (hashCode) (eq-hash-code this))
+        (define/public (hash-code) (send this hashCode))
         
         ;Needs to do something when Threads more implemented
         (public-final notify |notifyAll|)
@@ -73,6 +79,7 @@
         (define/public (my-name) "Object")
         (define/public (toString)
           (make-java-string (format "~a@~a" (send this my-name) (send this hashCode))))
+        (define/public (to-string) (send this toString))
         
         (public-final wait wait-long wait-long-int)
         (define wait (lambda () void))
@@ -96,7 +103,153 @@
   
   (define Object (Object-Mix object%))
   
+  (define (wrap-convert-assert-Object obj p n s c)
+    (if (string? obj)
+        (make-java-string string)
+        (begin
+          (c:contract (c:object-contract
+                       (clone (c:-> c:any/c))
+                       (equals-java.lang.Object (c:-> c:any/c c:any/c))
+                       (finalize (c:-> c:any/c))
+                       (getClass (c:-> c:any/c))
+                       (hashCode (c:-> c:any/c))
+                       (notify (c:-> c:any/c))
+                       (notifyAll (c:-> c:any/c))
+                       (toString (c:-> c:any/c))
+                       (wait (c:-> c:any/c))
+                       (wait-long (c:-> c:any/c c:any/c))
+                       (wait-long-int (c:-> c:any/c c:any/c c:any/c))) obj p n s)
+          (make-object convert-assert-Object obj p n s c))))
   
+  (define convert-assert-Object
+    (class object%
+      
+      (init w p n s c)
+      (define-values (wrapped pos-blame neg-blame src cc-marks) (values null null null null null))
+      (set! wrapped w)
+      (set! pos-blame p)
+      (set! neg-blame n)
+      (set! src s)
+      (set! cc-marks c)
+      
+      (define/public (clone) (send wrapped clone))        
+      (define/public (equals-java.lang.Object obj)
+        (let ((val (send wrapped equals-java.lang.Object 
+                         (make-object guard-convert-Object obj pos-blame neg-blame src cc-marks))))
+          (unless (boolean? val)
+            (raise (make-exn:fail (string->immutable-string
+                                   (format "~a broke ~a contract here; Object's equals expects boolean return, given ~a"
+                                           pos-blame neg-blame val)) cc-marks)))
+          val))
+              
+      (define/public (finalize) (send wrapped finalize))
+      (define/public (getClass) (send wrapped getClass))
+
+      (define/public (hashCode) 
+        (let ((val (send wrapped hashCode)))
+          (unless (integer? val)
+            (raise (make-exn:fail (string->immutable-string
+                                   (format "~a broke ~a contract here; Object's hashCode expects int return, given ~a"
+                                           pos-blame neg-blame val)) cc-marks)))
+          val))
+      
+      (define/public (notify) (send wrapped notify))
+      (define/public (notifyAll) (send wrapped notifyAll))
+      (define/public (toString)
+        (let ((val (send wrapped toString)))
+          (unless (string? val)
+            (raise (make-exn:fail (string->immutable-string
+                                   (format "~a broke ~a contract here: Object's toString expects String return, given ~a"
+                                           pos-blame neg-blame val)) cc-marks)))
+          (make-java-string val)))
+      (define/public (wait) (send wrapped wait))
+      (define/public (wait-long l) (send wrapped wait-long l))
+      (define/public (wait-long-int l i) (send wrapped wait-long l i))
+      (define/public (my-name) (send wrapped my-name))
+      (define/public (field-names) (send wrapped field-names))
+      (define/public (field-values) (send wrapped field-values))        
+      (define/public (fields-for-display) (send wrapped fields-for-display))
+      (super-instantiate ())))
+  
+  (define dynamic-Object/c
+    (c:flat-named-contract "Object" (lambda (v) (is-a? v convert-assert-Object))))
+     
+  (define guard-convert-Object
+    (class object%
+      
+      (init w p n s c)
+      (define-values (wrapped pos-blame neg-blame src cc-marks) (values null null null null null))
+      (set! wrapped w)
+      (set! pos-blame p)
+      (set! neg-blame n)
+      (set! src s)
+      (set! cc-marks s)
+      
+      (define/public (clone) (send wrapped clone))
+      (define/public (equals-java.lang.Object . obj)
+        (unless (= (length obj) 1)
+          (raise (make-exn:fail:contract:arity
+                  (string->immutable-string
+                   (format "~a broke ~a contract here: Object's equals expects to be called with 1 argument, given ~n"
+                           pos-blame neg-blame (length obj))) cc-marks)))
+        (send wrapped equals-java.lang.Object (wrap-convert-assert-Object (car obj) pos-blame neg-blame src cc-marks)))
+      (define/public (equals . obj)
+        (unless (= (length obj) 1)
+          (raise (make-exn:fail:contract:arity
+                  (string->immutable-string
+                   (format "~a broke ~a contract here: Object's equals expects to be called with 1 argument, given ~n"
+                           pos-blame neg-blame (length obj))) cc-marks)))
+        (send wrapped equals-java.lang.Object (wrap-convert-assert-Object (car obj) pos-blame neg-blame src cc-marks)))
+      (define/public (finalize) (send wrapped finalize))
+      (define/public (getClass) (send wrapped getClass))
+      (define/public (get-class) (send wrapped getClass))
+      (define/public (hashCode) (send wrapped hashCode))
+      (define/public (hash-code) (send wrapped hashCode))
+      (define/public (notify) (send wrapped notify))
+      (define/public (notifyAll) (send wrapped notifyAll))
+      (define/public (notify-all) (send wrapped notifyAll))        
+      (define/public (toString)
+        (send (send wrapped toString) get-mzscheme-string))
+      (define/public (to-string) (send (send wrapped toString) get-mzscheme-string))
+      (define/public (wait) (send wrapped wait))
+      (define/public (wait-long . l)
+        (unless (= (length l) 1)
+          (raise (make-exn:fail:contract:arity
+                  (string->immutable-string
+                   (format "~a broke ~a contract here: Object's wait-long expects to be called with 1 argument, given ~n"
+                           pos-blame neg-blame (length l))) cc-marks)))
+        (unless (integer? (car l))
+          (raise (make-exn:fail 
+                  (string->immutable-string
+                   (format "~a broke ~a contract here: Object's wait that takes a long argument expected long, given ~a"
+                           pos-blame neg-blame (car l))) cc-marks)))
+        (send wrapped wait-long (car l)))
+      (define/public (wait-long-int . l) 
+        (unless (= (length l) 2)
+          (raise (make-exn:fail:contract:arity
+                  (string->immutable-string
+                   (format "~a broke ~a contract here: Object's wait-long-int expects to be called with 2 arguments, given ~n"
+                           pos-blame neg-blame (length l))) cc-marks)))
+        (unless (integer? (car l))
+          (raise (make-exn:fail 
+                  (string->immutable-string
+                   (format "~a broke ~a contract here: Object's wait-long-int expected long, given ~a"
+                           pos-blame neg-blame (car l))) cc-marks)))
+        (unless (integer? (cadr l))
+          (raise (make-exn:fail 
+                  (string->immutable-string
+                   (format "~a broke ~a contract here: Object's wait-long-int expected int, given ~a"
+                           pos-blame neg-blame (cadr l))) cc-marks)))                
+        (send wrapped wait-long (car l) (cadr l)))
+      (define/public (my-name) (send wrapped my-name))
+      (define/public (field-names) (send wrapped field-names))
+      (define/public (field-values) (send wrapped field-values))        
+      (define/public (fields-for-display) (send wrapped fields-for-display))
+      (super-instantiate ())))
+  
+  (define static-Object/c
+    (c:flat-named-contract "Object" (lambda (v) (is-a? v guard-convert-Object))))  
+      
 ;                                     
 ;                                     
 ;   ;;;                               
@@ -310,6 +463,7 @@
       (define/public (length) (string-length text))
       ; int -> char
       (define/public  (charAt-int index) (string-ref text index))
+      (define/public (char-at i) (charAt-int i))
     
       ;-> void
       (define/public (getChars-int-int-char1-int begin end dest i)
@@ -321,6 +475,7 @@
                           (send dest set index (string-ref text offset))
                           (build-char-array (add1 offset) (add1 index)))))))
           (build-char-array begin i)))
+      (define/public (get-chars b e d i) (getChars-int-int-char1-int b e d i))
     
       ;Does not mess with charset
       (define/public (getBytes)
@@ -348,6 +503,7 @@
 
       (define/public (contentEquals-java.lang.StringBuffer buf)
         (equals-java.lang.Object (send buf toString)))
+      (define/public (content-equals b) (contentEquals-java.lang.StringBuffer b))
     
       ;Object -> boolean
       (define/override (equals-java.lang.Object obj)
@@ -357,6 +513,7 @@
       ;Object -> boolean
       (define/public (equalsIgnoreCase-java.lang.String str)
         (string-ci=? text (send str get-mzscheme-string)))
+      (define/public (equals-ignore-case s) (equalsIgnoreCase-java.lang.String s))
 
       ;find-diff-chars: int int string-> (values int int)
       (define/private (find-diff-chars i stop-length compare-string)
@@ -420,6 +577,7 @@
                  (let-values (((int-text int-str) (find-diff-chars 0)))
                    (- int-text int-str))
                  (- text-l str-l))))))
+      (define/public (compare->ignore-case s) (compareToIgnoreCase-java.lang.String s))
     
       ;int String int int -> boolean
       (define/public (regionMatches-int-java.lang.String-int-int toffset jstr ooffset len)
@@ -458,7 +616,8 @@
         (let ((suffix (send Jsuffix get-mzscheme-string)))
           (and (<= (string-length suffix) (string-length text))
                (string=? suffix (substring text (- (string-length text) (string-length suffix)) (string-length text))))))
-    
+      (define/public (ends-with s) (endsWith-java.lang.String s))
+      
       ; -> int
       (define/override (hashCode)
         (let ((hash 0))
@@ -521,11 +680,13 @@
     
       (define/public (subSequence-int-int begin end)
         (error 'subSequence "Internal Error: subsequence is unimplemented because charSequence is unimplemented"))
-    
+      (define/public (sub-sequence i j) (subSequence-int-int i j))
+      
       ;String -> String
       (define/public (concat-java.lang.String Jstr)
         (let ((str (send Jstr get-mzscheme-string)))
           (make-java-string (string-append text str))))
+      (define/public (concat s) (concat-java.lang.String s))
     
       ; .. -> String
       (define/public (replace-char-char old new)
@@ -536,16 +697,20 @@
                 (string-set! new-text pos new)
                 (loop (add1 index)))))
           (make-java-string new-text)))
+      (define/public (replace c1 c2) (replace-char-char c1 c2))
     
       ;Does not currently work. Needs to replace regex in text with replace and return new string; PROBLEM
       (define/public (replaceAll-java.lang.String-java.lang.String regex replace)
         (error 'replaceAll "Internal error: replaceAll is unimplemented at this time"))
+      (define/public (replace-all s s2) (replaceAll-java.lang.String-java.lang.String s s2))
     
       (define/public (replaceFirst-java.lang.String-java.lang.String regex replace)
         (error 'replaceFirst "Internal error: replaceFirst is unimplemented at this time"))
+      (define/public (replace-first s s2) (replaceFirst-java.lang.String-java.lang.String s s2))
     
       (define/public (matches-java.lang.String regex)
         (error 'matches "Internal error: matches is unimplemented at this time"))
+      (define/public (matches s) (matches-java.lang.String s))
     
       (define/public (split-java.lang.String-int regex limit)
         (error 'split "Internal error: split is unimplemented at this time"))
@@ -571,10 +736,11 @@
       ;... -> String
       (define/public (trim)
         (error 'trim "Internal error: trim is unimplemented at this time."))
-    
+      
       (define/public (toCharArray) (make-java-array 'char 0 (string->list text)))
+      (define/public (to-char-array) (toCharArray))
     
-      ;PROBLEM I am not sure what the side effects of this are supposed to be! PROBLEM!
+      ;PROBLEM I am not sure what the side effects of this should be in context! PROBLEM!
       (define/public intern  
         (lambda () this))
       
@@ -632,7 +798,7 @@
       
       ;private fields
       ;message: String
-      (define message "")
+      (define message (make-java-string ""))
       ;stack: continuation-mark-set
       (define stack null)
       ;java:exception
@@ -678,11 +844,16 @@
       (define/public (getMessage) message)
       (define/public (getCause) cause)
       (define/public (getLocalizedMessage) (send this getMessage))
+      (define/public (get-message) (send this getMessage))
+      (define/public (get-cause) (send this getCause))
+      (define/public (get-localized-message) (send this getLocalizedMessage))
       
       (define/public (setStackTrace-java.lang.StackTraceElement1 elments)
         (error 'setStackTrace "Internal error: setStackTrace will not be implemented until strack trace element s implemented"))
       (define/public (getStackTrace)
         (error 'getStackTrace "Internal error: getStackTrace will not be implemented until StackTraceElement is implemented"))
+      (define/public (set-stack-trace e) (send this setStackTrace-java.lang.StackTraceElement1 e))
+      (define/public (get-stack-trace) (send this getStackTrace))
       
        ; -> string
       (define/override (toString)
@@ -695,7 +866,7 @@
       ; -> void
       (define/public (printStackTrace)
         (print-error-trace (current-output-port)
-                           (make-exn message stack)))
+                           (make-exn (string->immutable-string message) stack)))
 
       ;These functions do not work correctly yet, and won't until printStreams are implemented
       (define/public printStackTrace-PrintStream (lambda (printStream) void)) 
@@ -703,6 +874,7 @@
       
       ;This function does nothing at this time
       (define/public (fillInStackTrace) this)
+      (define/public (fill-in-stack-trace) (send this fillInStackTrace))
       
       ; -> string
       (define/override (my-name) "Throwable")
@@ -730,6 +902,243 @@
       (constructor exn str)
       (send exn set-exception! scheme-exn)
       scheme-exn))
+  
+  (provide convert-assert-Throwable wrap-convert-assert-Throwable dynamic-Throwable/c 
+           guard-convert-Throwable static-Throwable/c)
+  
+  (define (wrap-convert-assert-Throwable obj p n s c)
+    (c:contract (c:object-contract
+                 (initCause (c:-> c:any/c c:any/c))
+                 (getMessage (c:-> c:any/c))
+                 (getCause (c:-> c:any/c))
+                 (getLocalizedMessage (c:-> c:any/c))
+                 (setStackTrace-java.lang.StackTraceElement1 (c:-> c:any/c c:any/c))
+                 (getStackTrace (c:-> c:any/c))
+                 (printStackTrace (c:-> c:any/c))
+                 (printStackTrace-PrintStream (c:-> c:any/c))
+                 (printStackTrace-PrintWriter (c:-> c:any/c))
+                 (fillInStackTrace (c:-> c:any/c))
+                 (clone (c:-> c:any/c))
+                 (equals-java.lang.Object (c:-> c:any/c c:any/c))
+                 (finalize (c:-> c:any/c))
+                 (getClass (c:-> c:any/c))
+                 (hashCode (c:-> c:any/c))
+                 (notify (c:-> c:any/c))
+                 (notifyAll (c:-> c:any/c))
+                 (toString (c:-> c:any/c))
+                 (wait (c:-> c:any/c))
+                 (wait-long (c:-> c:any/c c:any/c))
+                 (wait-long-int (c:-> c:any/c c:any/c c:any/c))) obj p n s)
+    (make-object convert-assert-Throwable obj p n s c))
+  
+  (define convert-assert-Throwable
+    (class object%
+      
+      (init w p n s c)
+      (define-values  (wrapped pos-blame neg-blame src cc-marks) (values null null null null null))
+      (set! wrapped w)
+      (set! pos-blame p)
+      (set! neg-blame n)
+      (set! src s)
+      (set! cc-marks c)
+
+      (define/public (set-exception! exn) (send wrapped set-exception! exn))
+      (define/public (get-mzscheme-exception) (send wrapped get-mzscheme-exception))
+      (define/public (initCause-java.lang.Throwable cse)
+        (wrap-convert-assert-Throwable
+         (send wrapped initCause-java.lang.Throwable (make-object guard-convert-Throwable cse
+                                                       pos-blame neg-blame src cc-marks)
+               pos-blame neg-blame src cc-marks)))
+      (define/public (getMessage) 
+        (let ((val (send wrapped getMessage)))
+          (if (string? val)
+              (make-java-string val)
+              (raise (make-exn:fail 
+                      (string->immutable-string 
+                       (format "~a broke ~a contract here; Throwable's getMessage expects string return, given ~a"
+                               pos-blame neg-blame val)) cc-marks)))))
+      (define/public (getCause) 
+        (wrap-convert-assert-Throwable (send wrapped getCause)))        
+      (define/public (getLocalizedMessage) 
+        (let ((val (send wrapped getLocalizedMessage)))
+          (if (string? val)
+              (make-java-string val)
+              (raise (make-exn:fail 
+                      (string->immutable-string 
+                       (format "~a broke ~a contract here; Throwable's getLocalizedMessage expects string return, given ~a"
+                               pos-blame neg-blame val)) cc-marks)))))
+      (define/public (setStackTrace-java.lang.StackTraceElement1 elements)
+        (send wrapped setStackTrace-java.lang.StackTraceElement1 elements))
+      (define/public (getStackTrace) (send wrapped getStackTrace))
+      (define/public (printStackTrace)  (send wrapped printStackTrace))
+      (define/public (printStackTrace-PrintStream printStream) (send wrapped printStackTrace-PrintStream)) 
+      (define/public (printStackTrace-PrintWriter pW) (send wrapped printStackTrace-PrintWriter))
+      (define/public (fillInStackTrace) (send wrapped fillInStackTrace))      
+      (define/public (clone) (send wrapped clone))        
+      (define/public (equals-java.lang.Object obj)
+        (let ((val (send wrapped equals-java.lang.Object 
+                         (make-object guard-convert-Object obj pos-blame neg-blame src cc-marks))))
+          (unless (boolean? val)
+            (raise (make-exn:fail 
+                    (string->immutable-string
+                     (format "~a broke ~a contract here; Throwable's equals expects boolean return, given ~a"
+                             pos-blame neg-blame val)) cc-marks)))
+          val))
+              
+      (define/public (finalize) (send wrapped finalize))
+      (define/public (getClass) (send wrapped getClass))
+
+      (define/public (hashCode) 
+        (let ((val (send wrapped hashCode)))
+          (unless (integer? val)
+            (raise (make-exn:fail 
+                    (string->immutable-string
+                     (format "~a broke ~a contract here; Throwable's hashCode expects int return, given ~a"
+                             pos-blame neg-blame val)) cc-marks)))
+          val))
+      
+      (define/public (notify) (send wrapped notify))
+      (define/public (notifyAll) (send wrapped notifyAll))
+      (define/public (toString)
+        (let ((val (send wrapped toString)))
+          (unless (string? val)
+            (raise (make-exn:fail 
+                    (string->immutable-string
+                     (format "~a broke ~a contract here: Throwable's toString expects String return, given ~a"
+                             pos-blame neg-blame val)) cc-marks)))
+          (make-java-string val)))
+      (define/public (wait) (send wrapped wait))
+      (define/public (wait-long l) (send wrapped wait-long l))
+      (define/public (wait-long-int l i) (send wrapped wait-long l i))
+      (define/public (my-name) (send wrapped my-name))
+      (define/public (field-names) (send wrapped field-names))
+      (define/public (field-values) (send wrapped field-values))        
+      (define/public (fields-for-display) (send wrapped fields-for-display))
+      (super-instantiate ())))
+  
+  (define dynamic-Throwable/c
+    (c:flat-named-contract "Throwable" (lambda (v) (is-a? v convert-assert-Throwable))))
+     
+  (define guard-convert-Throwable
+    (class object%
+      
+      (init w p n s c)
+      (define-values (wrapped pos-blame neg-blame src cc-marks) (values null null null null null))
+      (set! wrapped w)
+      (set! pos-blame p)
+      (set! neg-blame n)
+      (set! src s)
+      (set! cc-marks s)
+
+      (define/public (set-exception! exn) (send wrapped set-exception! exn))
+      (define/public (get-mzscheme-exception) (send wrapped get-mzscheme-exception))
+      (define/public (initCause-java.lang.Throwable . cse)
+        (unless (= 1 (length cse))
+          (raise (make-exn:fail:contract:arity
+                  (string->immutable-string
+                   (format "~a broke ~a contract here: Throwable's initCause expects to be called with 1 argument, given ~n"
+                           pos-blame neg-blame (length cse))) cc-marks)))
+        (make-object guard-convert-Throwable
+          (send wrapped initCause-java.lang.Throwable (wrap-convert-assert-Throwable (car cse)))))
+      (define/public (init-cause . cse)
+        (unless (= 1 (length cse))
+          (raise (make-exn:fail:contract:arity
+                  (string->immutable-string
+                   (format "~a broke ~a contract here: Throwable's initCause expects to be called with 1 argument, given ~n"
+                           pos-blame neg-blame (length cse))) cc-marks)))        
+        (make-object guard-convert-Throwable
+          (send wrapped initCause-java.lang.Throwable (wrap-convert-assert-Throwable (car cse) pos-blame neg-blame src cc-marks))
+          pos-blame neg-blame src cc-marks))
+      (define/public (getMessage) (send (send wrapped getMessage) get-mzscheme-string))
+      (define/public (get-message) (send (send wrapped getMessage) get-mzscheme-string))
+      (define/public (getCause) (make-object guard-convert-Throwable (send wrapped getCause) pos-blame neg-blame src cc-marks))
+      (define/public (get-cause) (make-object guard-convert-Throwable
+                                   (send wrapped getCause) pos-blame neg-blame src cc-marks))
+      (define/public (getLocalizedMessage) (send (send wrapped getLocalizedMessage) get-mzscheme-string))
+      (define/public (get-localized-message) (send (send wrapped getLocalizedMessage) get-mzscheme-string))
+      (define/public (setStackTrace-java.lang.StackTraceElement1 elements)
+        (send wrapped setStackTrace-java.lang.StackTraceElement1 elements))
+      (define/public (set-stack-trace t) 
+        (send wrapped setStackTrace-java.lang.StackTraceElement1 t))
+      (define/public (getStackTrace) (send wrapped getStackTrace))
+      (define/public (get-stack-trace) (send wrapped getStackTrace))
+      (define/public (printStackTrace)  (send wrapped printStackTrace))
+      (define/public (printStackTrace-PrintStream printStream) (send wrapped printStackTrace-PrintStream))
+      (define/public (printStackTrace-PrintWriter pW) (send wrapped printStackTrace-PrintWriter))
+      (define/public (fillInStackTrace) (send wrapped fillInStackTrace))
+      (define/public (fill-in-stack-trace) (send wrapped fillInStackTrace))
+      
+      (define/public (clone) (send wrapped clone))
+      (define/public (equals-java.lang.Object . obj)
+        (unless (= (length obj) 1)
+          (raise (make-exn:fail:contract:arity
+                  (string->immutable-string
+                   (format "~a broke ~a contract here: Throwable's equals expects to be called with 1 argument, given ~n"
+                           pos-blame neg-blame (length obj))) cc-marks)))
+        (send wrapped equals-java.lang.Object (wrap-convert-assert-Object (car obj) pos-blame neg-blame src cc-marks)))
+      (define/public (equals . obj)
+        (unless (= (length obj) 1)
+          (raise (make-exn:fail:contract:arity
+                  (string->immutable-string
+                   (format "~a broke ~a contract here: Throwable's equals expects to be called with 1 argument, given ~n"
+                           pos-blame neg-blame (length obj))) cc-marks)))
+        (send wrapped equals-java.lang.Object (wrap-convert-assert-Object (car obj) pos-blame neg-blame src cc-marks)))
+      (define/public (finalize) (send wrapped finalize))
+      (define/public (getClass) (send wrapped getClass))
+      (define/public (get-class) (send wrapped getClass))
+      (define/public (hashCode) (send wrapped hashCode))
+      (define/public (hash-code) (send wrapped hashCode))
+      (define/public (notify) (send wrapped notify))
+      (define/public (notifyAll) (send wrapped notifyAll))
+      (define/public (notify-all) (send wrapped notifyAll))        
+      (define/public (my-name) (send wrapped my-name))
+      (define/public (toString)
+        (send (send wrapped toString) get-mzscheme-string))
+      (define/public (to-string) (send (send wrapped toString) get-mzscheme-string))
+      (define/public (wait) (send wrapped wait))
+      (define/public (wait-long . l)
+        (unless (= (length l) 1)
+          (raise (make-exn:fail:contract:arity
+                  (string->immutable-string
+                   (format "~a broke ~a contract here: Throwable's wait-long expects to be called with 1 argument, given ~n"
+                           pos-blame neg-blame (length l))) cc-marks)))
+        (unless (integer? (car l))
+          (raise (make-exn:fail 
+                  (string->immutable-string
+                   (format "~a broke ~a contract here: Throwable's wait that takes a long argument expected long, given ~a"
+                           pos-blame neg-blame (car l))) cc-marks)))
+        (send wrapped wait-long (car l)))
+      (define/public (wait-long-int . l) 
+        (unless (= (length l) 2)
+          (raise (make-exn:fail:contract:arity
+                  (string->immutable-string
+                   (format "~a broke ~a contract here: Throwable's wait-long-int expects to be called with 2 arguments, given ~n"
+                           pos-blame neg-blame (length l))) cc-marks)))
+        (unless (integer? (car l))
+          (raise (make-exn:fail 
+                  (string->immutable-string
+                   (format "~a broke ~a contract here: Throwable's wait-long-int expected long, given ~a"
+                           pos-blame neg-blame (car l))) cc-marks)))
+        (unless (integer? (cadr l))
+          (raise (make-exn:fail 
+                  (string->immutable-string
+                   (format "~a broke ~a contract here: Throwable's wait-long-int expected int, given ~a"
+                           pos-blame neg-blame (cadr l))) cc-marks)))
+        (send wrapped wait-long (car l) (cadr l)))
+      (define/public (field-names) (send wrapped field-names))
+      (define/public (field-values) (send wrapped field-values))        
+      (define/public (fields-for-display) (send wrapped fields-for-display))
+      (super-instantiate ())))
+  
+  (define static-Throwable/c
+    (c:flat-named-contract "Throwable" (lambda (v) (is-a? v guard-convert-Throwable))))  
+  
+  (provide wrap-convert-assert-Class guard-convert-Class wrap-convert-assert-PrintString wrap-convert-assert-PrintWriter)
+  
+  (define (wrap-convert-assert-Class . args) (void))
+  (define guard-convert-Class (class object% (super-new)))
+  (define (wrap-convert-assert-PrintString . args) (void))
+  (define (wrap-convert-assert-PrintWriter . args) (void))
   
   (compile-rest-of-lang (list "Object" "Throwable" "String" "Exception" "RuntimeException" "Comparable"))
   

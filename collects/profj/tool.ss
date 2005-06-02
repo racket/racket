@@ -114,7 +114,7 @@
       (define (phase1) void)
       ;Add all the ProfessorJ languages into DrScheme
       (define (phase2) 
-        #;(drscheme:language-configuration:add-language
+        (drscheme:language-configuration:add-language
          (make-object ((drscheme:language:get-default-mixin) dynamic-lang%)))
         (drscheme:language-configuration:add-language
          (make-object ((drscheme:language:get-default-mixin) full-lang%)))
@@ -376,7 +376,7 @@
                                 (val-editor (caddr example))
                                 (val (parse-expression (open-input-text-editor val-editor) val-editor level)))
                            (compile-interactions-ast
-                            (make-var-init (make-var-decl name null type #f) val #f)
+                            (make-var-init (make-var-decl name null type #f) val #f #f)
                             val-editor level type-recs)))
                        contents)
                   (process-extras (cdr extras) type-recs))))
@@ -474,8 +474,8 @@
           (define/public (on-execute settings run-in-user-thread)
             (dynamic-require '(lib "Object.ss" "profj" "libs" "java" "lang") #f)
             (let ([obj-path ((current-module-name-resolver) '(lib "Object.ss" "profj" "libs" "java" "lang") #f #f)]
+                  [string-path ((current-module-name-resolver) '(lib "String.ss" "profj" "libs" "java" "lang") #f #f)]
                   [class-path ((current-module-name-resolver) '(lib "class.ss") #f #f)]
-                  [tool-path ((current-module-name-resolver) '(lib "tool.ss" "profj") #f #f)]
                   [n (current-namespace)])
               (read-case-sensitive #t)
               (run-in-user-thread
@@ -517,9 +517,10 @@
                  (with-handlers ([void (lambda (x)  (printf "~a~n" (exn-message x)))])
                    (namespace-require 'mzscheme)
                    (namespace-attach-module n obj-path)
+                   (namespace-attach-module n string-path)
                    (namespace-attach-module n class-path)
                    (namespace-require obj-path)
-                   #;(namespace-require '(lib "tool.ss" "profj"))
+                   (namespace-require string-path)
                    (namespace-require class-path)
                    (namespace-require '(prefix javaRuntime: (lib "runtime.scm" "profj" "libs" "java")))
                    (namespace-require '(prefix c: (lib "contract.ss"))))))))
@@ -528,7 +529,7 @@
             (let ((print-full? (profj-settings-print-full? settings))
                   (style (profj-settings-print-style settings)))
               (if (is-a? value String)
-                  (write-special (send value get-mzscheme-string) port)
+                  (write-special (format "~v" (send value get-mzscheme-string)) port)
                   (let ((out (format-java value print-full? style null #f 0)))
                     (if (< 25 (string-length out))
                         (display (format-java value print-full? style null #t 0) port)
@@ -802,7 +803,12 @@
         (namespace-syntax-introduce ((syntax-object->datum (syntax comp))
                                      (syntax-object->datum (syntax ast)))))))
   
-    
+
+  (define (supports-printable-interface? o)
+    (and (is-a? o object%)
+         (method-in-interface? 'my-name (object-interface o))
+         (method-in-interface? 'fields-for-display (object-interface o))))
+  
   (provide format-java)
   ;formats a java value (number, character or Object) into a string
   ;format-java: java-value bool symbol (list value) -> string
@@ -816,8 +822,9 @@
        (if full-print?
            (array->string value (send value length) -1 #t style already-printed newline? num-tabs)
            (array->string value 3 (- (send value length) 3) #f style already-printed newline? num-tabs)))
-      ((is-a? value String) (format "~s" (send value get-mzscheme-string)))
-      ((is-a? value ObjectI)
+      ((is-a? value String) (format "~v" (send value get-mzscheme-string)))
+      ((string? value) (format "~v" value))
+      ((or (is-a? value ObjectI) (supports-printable-interface? value))
        (case style
          ((type) (send value my-name))
          ((field)

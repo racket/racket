@@ -1,3 +1,11 @@
-(module |InstantiationException| mzscheme
+(module InstantiationException mzscheme
   (require "Object-composite.ss")
-  (provide |InstantiationException|))
+  (provide
+   InstantiationException
+   guard-convert-InstantiationException
+   convert-assert-InstantiationException
+   wrap-convert-assert-InstantiationException
+   dynamic-InstantiationException/c
+   static-InstantiationException/c
+   InstantiationException-InstantiationException-constructor~generic
+   InstantiationException-InstantiationException-constructor-java.lang.String~generic))

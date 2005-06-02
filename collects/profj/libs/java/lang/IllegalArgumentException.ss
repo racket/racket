@@ -1,3 +1,11 @@
-(module |IllegalArgumentException| mzscheme
+(module IllegalArgumentException mzscheme
   (require "Object-composite.ss")
-  (provide |IllegalArgumentException|))
+  (provide
+   IllegalArgumentException
+   guard-convert-IllegalArgumentException
+   convert-assert-IllegalArgumentException
+   wrap-convert-assert-IllegalArgumentException
+   dynamic-IllegalArgumentException/c
+   static-IllegalArgumentException/c
+   IllegalArgumentException-IllegalArgumentException-constructor~generic
+   IllegalArgumentException-IllegalArgumentException-constructor-java.lang.String~generic))

@@ -42,9 +42,10 @@
                        ((and local? (not (to-file))) name)
                        (else `(file ,(path->string (build-path dir name)))))))
            (make-name (lambda ()
-                        (if (or (not local?) profj-lib? htdch-lib? (to-file))
-                            (string-append name ".ss")
-                            (string->symbol name)))))
+                        (let ((n (if scheme? (java-name->scheme name) name)))
+                          (if (or (not local?) profj-lib? htdch-lib? (to-file))
+                              (string-append n ".ss")
+                              (string->symbol n))))))
       (if scheme?
           (list (syn `(prefix ,(string->symbol
                                 (apply string-append
@@ -232,7 +233,7 @@
                                 loc type-recs level caller-src add-to-env))
                 (append (class-record-parents record) (class-record-ifaces record)))
            ))
-        ((and (scheme-ok?) (dir-path-scheme? in-dir) (check-scheme-file-exists? class dir))
+        ((and (dynamic?) (dir-path-scheme? in-dir) (check-scheme-file-exists? class dir))
          (send type-recs add-to-records class-name (make-scheme-record class (cdr path) dir null))
          (send type-recs add-require-syntax class-name (build-require-syntax class path dir #f #t)))
         (class-exists?
@@ -281,8 +282,8 @@
     
   ;check-scheme-file-exists? string path -> bool
   (define (check-scheme-file-exists? name path)
-    (or (file-exists? (build-path path (string-append name ".ss")))
-        (file-exists? (build-path path (string-append name ".scm")))))
+    (or (file-exists? (build-path path (string-append (java-name->scheme name) ".ss")))
+        (file-exists? (build-path path (string-append (java-name->scheme name) ".scm")))))
   
   (define (create-scheme-type-rec mod-name req-path) 'scheme-types)
     
@@ -326,7 +327,7 @@
   (define (find-directory path fail)
     (cond
       ((null? path) (make-dir-path (build-path 'same) #f))
-      ((and (scheme-ok?) (equal? (car path) "scheme"))
+      ((and (dynamic?) (equal? (car path) "scheme"))
        (cond
          ((null? (cdr path)) (make-dir-path (build-path 'same) #t))
          ((not (equal? (cadr path) "lib")) 
@@ -359,7 +360,7 @@
 
   ;get-class-list: dir-path -> (list string)
   (define (get-class-list dir)
-    (if (and (scheme-ok?) (dir-path-scheme? dir))
+    (if (and (dynamic?) (dir-path-scheme? dir))
         (filter (lambda (f) (or (equal? (filename-extension f) #".ss")
                                 (equal? (filename-extension f) #".scm")))
                 (directory-list (dir-path-path dir)))
@@ -535,7 +536,7 @@
                                           members
                                           level
                                           type-recs)
-                   
+                                      
                    (let ((record
                           (make-class-record 
                            cname
@@ -763,9 +764,9 @@
                    (length (method-parms (car members))))
                 (andmap type=?
                         (method-record-atypes member-record)
-                        (map (lambda (t)
-                               (type-spec-to-type t (method-record-class member-record)  level type-recs))
-                             (map field-type (method-parms (car members)))))
+                        ;(map (lambda (t)
+                               ;(type-spec-to-type t (method-record-class member-record)  level type-recs))
+                             (map field-type-spec (method-parms (car members))));)
                 (type=? (method-record-rtype member-record)
                         (type-spec-to-type (method-type (car members)) (method-record-class member-record) level type-recs)))
            (car members)
@@ -794,8 +795,8 @@
                                  #f)
                    (method-error 'repeated 
                              (method-name m)
-                             (map (lambda (t)
-                                    (type-spec-to-type (field-type t) class level type-recs))
+                             (map field-type #;(lambda (t)
+                                                 (type-spec-to-type (field-type-spec t) class level type-recs))
                                   (method-parms m))
                              (car class)
                              (method-src m)
@@ -814,7 +815,7 @@
                                  #f)
                    (method-error 'ctor-ret-value 
                                  (method-name m)
-                                 (map (lambda (t) (type-spec-to-type (field-type t) class level type-recs))
+                                 (map field-type #;(lambda (t) (type-spec-to-type (field-type-spec t) class level type-recs))
                                       (method-parms m))
                                  (car class)
                                  (method-src m)
@@ -833,7 +834,7 @@
                                  #f)
                    (method-error 'class-name
                                  (method-name m)
-                                 (map (lambda (t) (type-spec-to-type (field-type t) class level type-recs))
+                                 (map field-type #;(lambda (t) (type-spec-to-type (field-type-spec t) class level type-recs))
                                       (method-parms m))
                                  (car class)
                                  (method-src m)
@@ -908,8 +909,8 @@
                                  #f)
                    (method-error 'conflict
                                  (method-name method)
-                                 (map (lambda (t)
-                                        (type-spec-to-type (field-type t) class level type-recs))
+                                 (map field-type #;(lambda (t)
+                                                     (type-spec-to-type (field-type-spec t) class level type-recs))
                                       (method-parms method))
                                  (car class)
                                  (method-src method)
@@ -953,8 +954,8 @@
                    (class (method-record-class (car methods))))
                (method-error 'illegal-abstract 
                              (method-name method) 
-                             (map (lambda (t)
-                                    (type-spec-to-type (field-type t) class level type-recs))
+                             (map field-type #;(lambda (t)
+                                                 (type-spec-to-type (field-type-spec t) class level type-recs))
                                   (method-parms method)) 
                              (car class)
                              (method-src method)
@@ -999,17 +1000,19 @@
   
   ;; process-field: field (string list) type-records symbol -> field-record
   (define (process-field field cname type-recs level)
+    (set-field-type! field (type-spec-to-type (field-type-spec field) cname level type-recs))
     (make-field-record (id-string (field-name field)) 
-                       (check-field-modifiers level (field-modifiers field)) 
+                       (check-field-modifiers level (field-modifiers field))
                        (var-init? field)
                        cname 
-                       (type-spec-to-type (field-type field) cname level type-recs)))
+                       (field-type field)))
                   
   ;; process-method: method (list method-record) (list string) type-records symbol -> method-record  
   (define (process-method method inherited-methods cname type-recs level . args)
     (let* ((name (id-string (method-name method)))
            (parms (map (lambda (p)
-                         (type-spec-to-type (field-type p) cname level type-recs))
+                         (set-field-type! p (type-spec-to-type (field-type-spec p) cname level type-recs))
+                         (field-type p))
                        (method-parms method)))
            (mods (if (null? args) (method-modifiers method) (cons (car args) (method-modifiers method))))
            (ret (type-spec-to-type (method-type method) cname level type-recs))
@@ -1024,7 +1027,7 @@
                                         (throws-error (name-id t) (name-src t)))))
                                 (method-throws method))))
            (over? (overrides? name parms inherited-methods)))
-
+      
       (when (and (memq level '(beginner intermediate))
                  (member name (map method-record-name inherited-methods))
                  (not over?))

@@ -1,3 +1,11 @@
-(module |IllegalMonitorStateException| mzscheme
+(module IllegalMonitorStateException mzscheme
   (require "Object-composite.ss")
-  (provide |IllegalMonitorStateException|))
+  (provide
+   IllegalMonitorStateException
+   guard-convert-IllegalMonitorStateException
+   convert-assert-IllegalMonitorStateException
+   wrap-convert-assert-IllegalMonitorStateException
+   dynamic-IllegalMonitorStateException/c
+   static-IllegalMonitorStateException/c
+   IllegalMonitorStateException-IllegalMonitorStateException-constructor~generic
+   IllegalMonitorStateException-IllegalMonitorStateException-constructor-java.lang.String~generic))

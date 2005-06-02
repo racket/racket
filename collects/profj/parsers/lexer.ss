@@ -7,7 +7,8 @@
   
   
   (require (lib "lex.ss" "parser-tools")
-           (prefix re: (lib "lex-sre.ss" "parser-tools")))
+           (prefix re: (lib "lex-sre.ss" "parser-tools"))
+           (lib "parameters.ss" "profj"))
   
   (provide (all-defined))
   (define-struct test-case (test))
@@ -38,6 +39,8 @@
                                     class       float      native        super        while
                                     const       for        new           switch
                                     continue    goto       package       synchronized))
+  
+  (define-empty-tokens ExtraKeywords (dynamic))
   
   (define-tokens java-vals
                  (STRING_LIT CHAR_LIT INTEGER_LIT LONG_LIT FLOAT_LIT DOUBLE_LIT 
@@ -293,6 +296,11 @@
      ((re:: OctalNumeral IntegerTypeSuffix)
       (token-OCTL_LIT (string->number (trim-string lexeme 1 1) 8)))
      
+     ("dynamic" 
+      (cond
+        ((dynamic?) (string->symbol lexeme))
+        (else (token-IDENTIFIER lexeme))))
+     
      ;; 3.9
      (Keyword (string->symbol lexeme))
      
@@ -390,6 +398,12 @@
      
      ;; 3.10.5
      (#\" ((colorize-string start-pos) input-port))
+     
+     ("dynamic" 
+      (cond
+        ((dynamic?) (syn-val lexeme 'keyword #f start-pos end-pos))
+        (else (syn-val lexeme 'identifier #f start-pos end-pos))))
+     
      ;; 3.9
      (Keyword (syn-val lexeme 'keyword #f start-pos end-pos))
      

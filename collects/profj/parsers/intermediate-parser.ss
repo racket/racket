@@ -223,7 +223,7 @@
        [(IDENTIFIER)
 	(make-var-decl (make-id $1 (build-src 1)) 
                        (list (make-modifier 'public #f))
-                       (make-type-spec #f 0 (build-src 1)) (build-src 1))])
+                       (make-type-spec #f 0 (build-src 1)) #f (build-src 1))])
 			
       (VariableInitializer
        [(Expression) $1])

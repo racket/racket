@@ -199,7 +199,7 @@
       
       (VariableDeclaratorId
        [(IDENTIFIER)
-	(make-var-decl (make-id $1 (build-src 1)) null (make-type-spec #f 0 (build-src 1)) (build-src 1))])			
+	(make-var-decl (make-id $1 (build-src 1)) null (make-type-spec #f 0 (build-src 1)) #f (build-src 1))])			
       
       ;; 19.8.3
       (MethodDeclaration

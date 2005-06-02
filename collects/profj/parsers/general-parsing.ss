@@ -78,8 +78,9 @@
                       (make-type-spec
                        (type-spec-name type)
                        (+ (type-spec-dim type) 
-                          (type-spec-dim (var-decl-type decl)))
+                          (type-spec-dim (var-decl-type-spec decl)))
                        (type-spec-src type))
+                      #f
                       (var-decl-src decl)))
       ((var-init? decl)
        (make-var-init
