@@ -248,11 +248,13 @@
       (lambda (host-ip client-ip method uri host)
         (semaphore-wait outsem)
         ; do the display all at once by formating first
-        (display
-          (format "~s~n"
-            (list 'from client-ip 'to host-ip 'for (url->string uri) 'at
-                  (date->string (seconds->date (current-seconds)) #t)))
-          (open-output-file log-path 'append))
+        (let ([log-p (open-output-file log-path 'append)])
+          (display
+           (format "~s~n"
+                   (list 'from client-ip 'to host-ip 'for (url->string uri) 'at
+                         (date->string (seconds->date (current-seconds)) #t)))
+           log-p)
+          (close-output-file log-p))
         (semaphore-post outsem))))
 
   ; ignore-log : sym str -> str str sym url str -> str
