@@ -36,7 +36,7 @@ please adhere to these guidelines:
   has changed and needs to be re-translated.  Do not erase the old
   version, it might help us translate the new one.  Do not move it
   either.  Just comment it out and add the short comment.  After the
-  next svn update DrScheme will automatically tell us translators that
+  next cvs update DrScheme will automatically tell us translators that
   a new string needs to be translated, we will find your comment in
   the file, and know what to do.
 	Some evil evil people might think that, since DrScheme automatically
@@ -93,16 +93,16 @@ please adhere to these guidelines:
  (is-this-your-native-language "Is Japanese Your Native Language?")
 
  (are-you-sure-you-want-to-switch-languages
-  "This will change the language of the GUI, which requires you to restart DrScheme. Are you sure?")
+  "GUI で使用する自然言語を変更します。DrScheme を再起動する必要があります。よろしいですか？")
 
- (interact-with-drscheme-in-language "Interact with DrScheme in Japanese")
+ (interact-with-drscheme-in-language "DrScheme を日本語で使う")
 
  ;; these two should probably be the same in all languages excepet English.
  ;; they are the button labels (under macos and windows, respectively)
  ;; that go the with the string above.
- (accept-and-quit "Accept and Quit")
- (accept-and-exit "Accept and Exit")
- 
+ (accept-and-quit "承認して終了")
+ (accept-and-exit "承認して終了")
+
  ;;; general purpose (DrScheme is hereby a word in every language, by decree of Robby :)
  (plt "PLT")
  (drscheme "DrScheme")
@@ -116,7 +116,7 @@ please adhere to these guidelines:
  (close "閉じる") ;; as in, close an open window. must match close-menu-item
                  ;; in the sense that, when the &s have been stripped from
                  ;; close-menu-item, it must be the same string as this.
- (stop "停止")   
+ (stop "停止")
  (&stop "停止(&S)") ;; for use in button and menu item labels, with short cut.
  (are-you-sure-delete? "~a を削除してよろしいですか？") ;; ~a is a filename or directory name
  (ignore "無視")
@@ -178,21 +178,21 @@ please adhere to these guidelines:
  (cs-underline "下線")
  (cs-change-color "カラーの変更")
  (cs-tack/untack-arrow "矢印の連結/非連結")
- (cs-jump-to-next-bound-occurrence "Jump to Next Bound Occurrence")
- (cs-jump-to-binding "Jump to Binding Occurrence")
- (cs-jump-to-definition "Jump to Definition")
+ (cs-jump-to-next-bound-occurrence "次の束縛に移動")
+ (cs-jump-to-binding "束縛へ移動")
+ (cs-jump-to-definition "定義へ移動")
  (cs-error-message "エラーメッセージ")
  (cs-open-file "~a を開く")
  (cs-rename-var "~a の名前を変更")
- (cs-rename-id "Rename Identifier")
- (cs-rename-var-to "Rename ~a to:")
- (cs-name-duplication-error "The new name you have chosen, ~s, conflicts with an already established name in this scope.")
- (cs-rename-anyway "Rename Anyway")
- (cs-status-init "Check Syntax: Initializing environment for user code")
- (cs-status-coloring-program "Check Syntax: coloring expression")
- (cs-status-eval-compile-time "Check Syntax: eval compile time")
- (cs-status-expanding-expression "Check Syntax: expanding expression")
- (cs-mouse-over-import "binding ~s imported from ~s")
+ (cs-rename-id "識別子の名前変更")
+ (cs-rename-var-to "~a を名前変更:")
+ (cs-name-duplication-error "入力された新しい名前 ~s は、このスコープに存在する名前と競合します。")
+ (cs-rename-anyway "とにかく名前変更")
+ (cs-status-init "構文の検証: ユーザーコードのための環境を初期化しています")
+ (cs-status-coloring-program "構文の検証: 式にカラーを付けています")
+ (cs-status-eval-compile-time "構文の検証: コンパイル時間を評価しています")
+ (cs-status-expanding-expression "構文の検証: 式を展開しています")
+ (cs-mouse-over-import "束縛 ~s が ~s がインポートされました")
 
  (cs-lexical-variable "レキシカル変数")
  (cs-lexical-syntax "レキシカル構文")
@@ -207,10 +207,10 @@ please adhere to these guidelines:
  (overwrite "上書き")
  (running "実行中")
  (not-running "停止中")
- 
+
  ;;; misc
  (welcome-to-something "~a にようこそ！")
- 
+
  ; this appears in the drscheme about box.
  (welcome-to-drscheme-version/language "Welcome to DrScheme, version ~a, ~a")
 
@@ -255,9 +255,9 @@ please adhere to these guidelines:
  (scheme-mode-color-error "エラー")
  (scheme-mode-color-other "その他")
  ;; the ~a is filled in with one of the above (scheme-mode-*)
- (syntax-coloring-choose-color "Choose a color for ~a")
- (preferences-colors "Colors") ;; used in the preferences dialog
- 
+ (syntax-coloring-choose-color "~aのカラーを選択してください。")
+ (preferences-colors "カラー") ;; used in the preferences dialog
+
  (url "URL")
  (url: "URL:")
  (open-url... "URL を開く...")
@@ -265,7 +265,7 @@ please adhere to these guidelines:
  (browse... "選択...")
  (bad-url "不正な URL")
  (bad-url:this "不正な URL: ~a")
- 
+
  ;; Help Desk
  (help "ヘルプ")
  (help-desk "ヘルプデスク")
@@ -274,11 +274,11 @@ please adhere to these guidelines:
  (plt:hd:search-for "検索語")
  (plt:hd:lucky "Lucky!")
  (plt:hd:feeling-lucky "Feeling Lucky")
- (plt:hd:stop "停止")   
- (plt:hd:options "オプション") 
+ (plt:hd:stop "停止")
+ (plt:hd:options "オプション")
  (plt:hd:configure "設定")
- (plt:hd:home "ヘルプデスクのホーム") 
- (plt:hd:show-manuals "マニュアルの表示") 
+ (plt:hd:home "ヘルプデスクのホーム")
+ (plt:hd:show-manuals "マニュアルの表示")
  (plt:hd:send-bug-report "バグ報告の送信")
  (plt:hd:query-bug-reports "バグ報告の検索")
  ; next 3 are popup menu choices in help desk search frame
@@ -296,59 +296,59 @@ please adhere to these guidelines:
  (plt:hd:nothing-found-for "情報はありません ~a")
  (plt:hd:error-finding-docs "ドキュメントが見つかりません\n\n~a")
  (plt:hd:and "and")
- (plt:hd:refresh "refresh")
- (plt:hd:refresh-all-manuals "refresh all manuals")
+ (plt:hd:refresh "更新")
+ (plt:hd:refresh-all-manuals "すべてのマニュアルを更新する")
  (plt:hd:manual-installed-date "(installed ~a)")
  ; Help Desk configuration
- (plt:hd:configuration "PLT Help Desk configuration")
- (plt:hd:no-frames "No Frames")
- (plt:hd:use-frames "Use Frames")
- (plt:hd:use-html-frames "Use HTML frames")
- (plt:hd:search-pane-options "Search pane options")
- (plt:hd:height "Height")
- (plt:hd:bg-color "Background color")
- (plt:hd:pixels "pixels")
- (plt:hd:text-color "Text color")
- (plt:hd:link-color "Link color")
- (plt:hd:text-sample "Search pane text appears in this color")
- (plt:hd:link-sample "Search pane links appear in this color")
- (plt:hd:save-changes "Save changes")
- (plt:hd:reset "Reset")
- (plt:hd:defaults "Defaults")
+ (plt:hd:configuration "PLT ヘルプデスクの設定")
+ (plt:hd:no-frames "フレームなし")
+ (plt:hd:use-frames "フレームを使う")
+ (plt:hd:use-html-frames "HTML フレームを使う")
+ (plt:hd:search-pane-options "検索ペインのオプション")
+ (plt:hd:height "高さ")
+ (plt:hd:bg-color "背景色")
+ (plt:hd:pixels "ピクセル")
+ (plt:hd:text-color "テキストのカラー")
+ (plt:hd:link-color "リンクのカラー")
+ (plt:hd:text-sample "検索ペインのテキストはこのカラーで表示されます")
+ (plt:hd:link-sample "検索ペインのリンクはこのカラーで表示されます")
+ (plt:hd:save-changes "設定を保存")
+ (plt:hd:reset "リセット")
+ (plt:hd:defaults "既定")
  (plt:hd:javascript-note
     "The selections you make will be shown here if you have Javascript enabled and a recent, standards-compliant browser.")
  ;; refreshing manuals
- (plt:hd:refresh-downloading "Downloading ~a")
- (plt:hd:refresh-installing "Installing ~a")
- (plt:hd:refresh-progress "PLT manual download progress")
- (plt:hd:refresh-done "Done refreshing manuals")
- (plt:hd:refresh-installation-log "Installation log")
- (plt:hd:refresh-stopped "PLT manuals refresh stopped")
- (plt:hd:refreshing-manuals "Re-downloading Manuals")
- (plt:hd:refresh-downloading... "Downloading ~a...")
- (plt:hd:refresh-deleting... "Deleting old version of ~a...")
- (plt:hd:refresh-installing... "Installing new version of ~a...")
- (plt:hd:refresh-clearing-indicies "Clearing cached indices")
- (plt:hd:refreshing-manuals-finished "Finished.")
+ (plt:hd:refresh-downloading "~a をダウンロードしています")
+ (plt:hd:refresh-installing "~a をインストールしています")
+ (plt:hd:refresh-progress "PLT マニュアルのダウンロードの進行状況")
+ (plt:hd:refresh-done "CVS マニュアルの更新が終わりました")
+ (plt:hd:refresh-installation-log "インストール ログ")
+ (plt:hd:refresh-stopped "PLT マニュアルの更新を中止しました")
+ (plt:hd:refreshing-manuals "マニュアルを再ダウンロードしています")
+ (plt:hd:refresh-downloading... "~a をダウンロードしています...")
+ (plt:hd:refresh-deleting... "古いバージョンの ~a を削除しています...")
+ (plt:hd:refresh-installing... "新しいバージョンの ~a をインストールしています...")
+ (plt:hd:refresh-clearing-indicies "キャッシュ内の索引を消去しています")
+ (plt:hd:refreshing-manuals-finished "完了しました。")
  (plt:hd:about-help-desk "ヘルプデスクについて")
  (plt:hd:help-desk-about-string
-  "Help Desk is a complete source of information about PLT software, including DrScheme, MzScheme, and MrEd.\n\nVersion ~a\nCopyright (c) 1995-2003 PLT")
- (plt:hd:help-on-help "Help on Help")
- (plt:hd:help-on-help-details "For help on using Help Desk, follow the `How to use Help Desk' link on Help Desk's home page. (To get to the home page if you're not already there, click the `Home' button at the top of the Help Desk window.)")
-  (reload "Reload") ;; refresh the page in a web browser
+  "ヘルプデスクは PLT のソフトウェア (DrScheme, MzScheme, MrEd など) に関する完全な情報を提供します。\n\nバージョン ~a\nCopyright (c) 1995-2003 PLT")
+ (plt:hd:help-on-help "ヘルプのヘルプ")
+ (plt:hd:help-on-help-details "ヘルプデスクの使い方については、ヘルプデスクのホームページにある `How to use Help Desk' というリンクをたどってください。(ホームページが表示されていない場合は、ヘルプデスク ウィンドウの上部にある [ホーム] ボタンを押すことで表示されます。)")
+  (reload "再読み込み") ;; refresh the page in a web browser
   (plt:hd:ask-about-separate-browser
-   "You have selected a link to content from the world-wide web. Would you like to view it in the Help Desk browser, or would you like to use a separate browser program to view it?")
-  (plt:hd:homebrew-browser "Help Desk Browser") ;; choice for the above string (in a button)
-  (plt:hd:separate-browser "Separate Browser") ;; other choice for the above string (also in a button)
-  (plt:hd:external-link-in-help "External URLs in Help")
-  (plt:hd:use-homebrew-browser "Use Help Desk browser for external URLs")
-  (plt:hd:new-help-desk "New Help Desk")
-  (plt:hd:teaching-manuals "Student manuals")
-  (plt:hd:professional-manuals "Professional manuals")
-  (plt:hd:all-manuals "All manuals")
+   "ウェブ上のコンテンツへのリンクを選択しました。リンクをヘルプデスク ブラウザで表示しますか？それとも別のブラウザで表示しますか？")
+  (plt:hd:homebrew-browser "ヘルプデスク ブラウザ") ;; choice for the above string (in a button)
+  (plt:hd:separate-browser "別のブラウザ") ;; other choice for the above string (also in a button)
+  (plt:hd:external-link-in-help "ヘルプ内の外部 URL")
+  (plt:hd:use-homebrew-browser "ヘルプデスク ブラウザで外部 URL を開く")
+  (plt:hd:new-help-desk "新規ヘルプデスク")
+  (plt:hd:teaching-manuals "学生用のマニュアル")
+  (plt:hd:professional-manuals "プロフェッショナル用のマニュアル")
+  (plt:hd:all-manuals "すべてのマニュアル")
 
   ;; in the Help Desk language dialog, title on the right.
-  (plt:hd:manual-search-ordering "Manual Search Order")
+  (plt:hd:manual-search-ordering "マニュアルの検索順序")
 
 
  ;; Help desk htty proxy
@@ -357,7 +357,7 @@ please adhere to these guidelines:
  (proxy-use-proxy "プロキシを使う:")
  (proxy-host "ホスト")
  (proxy-port "ポート")
- (proxy-bad-host "Bad Proxy Host")
+ (proxy-bad-host "不正なプロキシ ホスト")
 
  ;; browser
  (rewind-in-browser-history "戻る")
@@ -366,26 +366,26 @@ please adhere to these guidelines:
  (browser "ブラウザ")
  (external-browser-choice-title "外部ブラウザ") ; title for radio-button set
  (browser-command-line-label "コマンドライン:") ; label for radio button that is followed by text boxes
- (choose-browser "Choose a Browser")
- (no-browser "Ask Later")
- (use-internal-browser-for-help "Read help with internal PLT browser") ; radio-button label
- (use-external-browser-for-help "Read help with external web browser") ; radio-button label
+ (choose-browser "ブラウザを選択してください")
+ (no-browser "後で尋ねる")
+ (use-internal-browser-for-help "内部 PLT ブラウザでヘルプを読む") ; radio-button label
+ (use-external-browser-for-help "外部ウェブ ブラウザでヘルプを読む") ; radio-button label
  (browser-cmdline-expl-line-1 "(Command line formed by concatenating pre-text, URL,") ; explanatory text for dialog, line 1
  (browser-cmdline-expl-line-2 "and post-text, with no extra spaces between them.)") ; ... line 2. (Anyone need more lines?)
- (cannot-display-url "Cannot display URL ~s: ~a")
- (install? "Install?")  ;; if a .plt file is found (title of dialog)
- (you-have-selected-an-installable-package "You have selected an installable package.")
- (do-you-want-to-install-it? "Do you want to install it?")
- (paren-file-size "(The file is ~a bytes)")
- (download-and-install "Download && Install") ;; button label
- (download "Download") ;; button label
- (save-downloaded-file/size "Save downloaded file (~a bytes) as") ;; label for get-file dialog
- (save-downloaded-file "Save downloaded file as")  ;; label for get-file dialog
- (downloading "Downloading") ;; dialog title
- (downloading-file... "Downloading file...")
- (package-was-installed "The package was installed.")
- (download-was-saved "The downloaded file was saved.")
- (getting-page "Getting Page") ;; dialog title
+ (cannot-display-url "URL を表示できません ~s: ~a")
+ (install? "インストールしますか？")  ;; if a .plt file is found (title of dialog)
+ (you-have-selected-an-installable-package "インストール可能なパッケージを選択しました。")
+ (do-you-want-to-install-it? "これをインストールしますか？")
+ (paren-file-size "(このファイルのサイズは ~a バイトです)")
+ (download-and-install "ダウンロード＋インストール") ;; button label
+ (download "ダウンロード") ;; button label
+ (save-downloaded-file/size "ダウンロードしたファイル (~a バイト) を、次の名前で保存") ;; label for get-file dialog
+ (save-downloaded-file "ダウンロードしたファイルを、次の名前で保存")  ;; label for get-file dialog
+ (downloading "ダウンロード中") ;; dialog title
+ (downloading-file... "ファイルをダウンロード中...")
+ (package-was-installed "パッケージがインストールされました。")
+ (download-was-saved "ダウンロードされたファイルが保存されました。")
+ (getting-page "ページを読み込んでいます") ;; dialog title
 
  (install-plt-file-menu-item... ".plt ファイルのインストール...")
  (install-plt-file-dialog-title ".plt ファイルのインストール")
@@ -393,7 +393,7 @@ please adhere to these guidelines:
  (install-plt-file-tab "ファイル")
  (install-plt-filename "ファイル名:")
  (install-plt-url "URL:")
- 
+
  ;; install plt file when opened in drscheme strings
  (install-plt-file "~a をインストールしますか？それとも編集用に開きますか？")
  (install-plt-file/yes "インストール")
@@ -407,24 +407,24 @@ please adhere to these guidelines:
  (about-drscheme-frame-title "DrScheme について")
  (take-a-tour "ツアーの紹介！")
  (release-notes "リリースノート")
- (parenthetical-last-version "(previous version ~a)")
- (parenthetical-last-language "(previous language ~a)")
- (parenthetical-last-version/language "(previous version ~a, language ~a)")
- 
- 
+ (parenthetical-last-version "(前のバージョン ~a)")
+ (parenthetical-last-language "(前の言語 ~a)")
+ (parenthetical-last-version/language "(前のバージョン ~a, 言語 ~a)")
+
+
  ;;; save file in particular format prompting.
  (save-as-plain-text "このファイルをプレーンテキストで保存しますか？")
  (save-in-drs-format "このファイルを DrScheme 専用のバイナリ形式で保存しますか？")
  (yes "はい")
  (no "いいえ")
- 
+
  ;;; preferences
  (preferences "環境設定")
  (saving-preferences "保存の設定")
- (error-unmarshalling "Error unmarshalling ~a preference")
- (error-saving-preferences "Error saving preferences: ~a")
- (error-reading-preferences "Error reading preferences")
- (expected-list-of-length2 "expected a list of length 2")
+ (error-unmarshalling "環境設定 ~a を読み取るときにエラーが発生しました")
+ (error-saving-preferences "環境設定を保存時にエラーが発生しました: ~a")
+ (error-reading-preferences "環境設定を読み取り時にエラーが発生しました")
+ (expected-list-of-length2 "長さ 2 のリストでなければなりません")
  (scheme-prefs-panel-label "Scheme")
  (warnings-prefs-panel-label "警告")
  (editor-prefs-panel-label "編集")
@@ -440,35 +440,35 @@ please adhere to these guidelines:
  (wrap-words-in-editor-buffers "エディタでテキストを折り返して表示する")
  (show-status-line "ステータス行を表示する")
  (count-columns-from-one "桁番号を 1 から数える")
- (display-line-numbers "Display line numbers in buffer; not character offsets")
+ (display-line-numbers "バッファの行番号を表示 (文字オフセットではなく)")
  (enable-keybindings-in-menus "メニューのキーバインドを有効にする")
  (automatically-to-ps "自動的に PostScript ファイルに印刷する")
  (option-as-meta "Option キーを Meta キーとして処理する") ;; macos/macos x only
  (use-mdi "MDI ウィンドウを使用する") ;;; ms windows only -- use that window in a window thingy
- (separate-dialog-for-searching "Use separate dialog for searching")
- (reuse-existing-frames "Reuse existing frames when opening new files")
- (default-fonts "Default Fonts")
- (paren-match-color "Parenthesis highlight color") ; in prefs dialog
- (choose-color "Choose Color") ; in prefs dialog
- (online-coloring-active "Color syntax interactively")
- (open-files-in-tabs "Open files in separate tabs (not separate windows)")
- (show-interactions-on-execute "Automatically open interactions window when running a program")
- (limit-interactions-size "Limit interactions size")
- (background-color "Background color")
- (default-text-color "Default text") ;; used for configuring colors, but doesn't need the word "color"
- (choose-a-background-color "Please choose a background color")
+ (separate-dialog-for-searching "検索に別のダイアログを使う")
+ (reuse-existing-frames "新しいファイルを開くときに既存のフレームを再利用する")
+ (default-fonts "既定のフォント")
+ (paren-match-color "括弧の強調表示のカラー") ; in prefs dialog
+ (choose-color "カラーの選択") ; in prefs dialog
+ (online-coloring-active "入力と同時に構文の色付けをする")
+ (open-files-in-tabs "ファイルを別のタブに開く (別のウィンドウではなく)")
+ (show-interactions-on-execute "プログラムを実行するときは、自動的に対話ウィンドウを開く")
+ (limit-interactions-size "対話ウィンドウに表示する文字数を制限する")
+ (background-color "背景色")
+ (default-text-color "既定のテキスト") ;; used for configuring colors, but doesn't need the word "color"
+ (choose-a-background-color "背景色を選択してください")
 
  ; title of the color choosing dialog
- (choose-paren-highlight-color "Choose Parenthesis Highlight Color")
+ (choose-paren-highlight-color "括弧の強調表示のカラーを選択してください")
 
  ; should have entire alphabet
- (font-example-string "The quick brown fox jumped over the lazy dogs.") 
+ (font-example-string "The quick brown fox jumped over the lazy dogs.")
 
- (change-font-button-label "Change")
- (fonts "Fonts")
+ (change-font-button-label "変更")
+ (fonts "フォント")
 
  ; filled with type of font, eg modern, swiss, etc.
- (choose-a-new-font "Please choose a new \"~a\" font")
+ (choose-a-new-font "フォントタイプが \"~a\" のフォントを選択してください")
 
  (font-size-slider-label "サイズ")
  (restart-to-see-font-changes "フォントの変更は再起動後に有効になります")
@@ -485,68 +485,68 @@ please adhere to these guidelines:
  (select-font-name "フォント名の選択")
  (example-text "サンプル テキスト:")
  (only-warn-once "定義と対話が同期していない場合、一度だけ警告する。")
- 
+
  ; warning message when lockfile is around
  (waiting-for-pref-lock "環境設定のロックファイルを待っています...")
  (pref-lock-not-gone
-  "The preferences lockfile:\n\n   ~a\n\nprevents the preferences from being saved. Ensure that no PLT software is running and delete this file.")
+  "環境設定のロックファイル:\n\n   ~a\n\n があるために、環境設定の保存ができません。PLT のソフトウェアが実行されていないことを確認した上で、このファイルを削除してください。")
  (still-locked-exit-anyway? "環境設定が保存できませんでした。とりあえず終了しますか？")
- 
+
  ;;; indenting preferences panel
  (indenting-prefs-panel-label "インデント")
- (indenting-prefs-extra-regexp "Extra regexp")
+ (indenting-prefs-extra-regexp "正規表現")
 
  ; filled with define, lambda, or begin
- (enter-new-keyword "Enter new ~a-like keyword:")
- (x-keyword "~a Keyword")
- (x-like-keywords "~a-like Keywords")
+ (enter-new-keyword "新しい ~a のようなキーワードを入力してください:")
+ (x-keyword "~a キーワード")
+ (x-like-keywords "~a のようなキーワード")
 
- (expected-a-symbol "expected a symbol, found: ~a")
- (already-used-keyword "\"~a\" is already a specially indented keyword")
+ (expected-a-symbol "シンボルでなければなりません: ~a")
+ (already-used-keyword "\"~a\" はすでに特別にインデントされるキーワードです")
  (add-keyword "追加")
  (remove-keyword "削除")
- 
+
  ;;; find/replace
  (find-and-replace "検索と置換")
  (find "検索")
  (replace "置換")
  (dock "結合")
  (undock "分離")
- (use-separate-dialog-for-searching "Use separate dialog for searching")
- (replace&find-again "Replace && Find Again") ;;; need double & to get a single &
- (replace-to-end "Replace to End")
+ (use-separate-dialog-for-searching "分離した検索ダイアログを使用する")
+ (replace&find-again "置換＋再検索") ;;; need double & to get a single &
+ (replace-to-end "最後まで置換")
  (forward "前方")
  (backward "後方")
- (hide "Hide")
- 
+ (hide "隠す")
+
  ;;; multi-file-search
- (mfs-multi-file-search-menu-item "Search in Files...")
- (mfs-string-match/graphics "String match (handles files with graphics)")
- (mfs-regexp-match/no-graphics "Regular Expression (only raw text files)")
- (mfs-searching... "Searching...")
- (mfs-configure-search "Configure Search") ;; dialog title
- (mfs-files-section "Files")   ;; section in config dialog
- (mfs-search-section "Search") ;; section in config dialog
- (mfs-dir "Dir")
- (mfs-recur-over-subdirectories "Recur over subdirectories")
- (mfs-regexp-filename-filter "Regexp filename filter")
- (mfs-search-string "Search string")
- (mfs-drscheme-multi-file-search "DrScheme - Multi File Search") ;; results window and error message title
- (mfs-not-a-dir "\"~a\" is not a directory")
- (mfs-open-file "Open File")
- (mfs-stop-search "Stop Search")
- (mfs-case-sensitive-label "Case sensitive")
- (mfs-no-matches-found "No matches found.")
- (mfs-search-interrupted "Search aborted.")
- 
+ (mfs-multi-file-search-menu-item "ファイルから検索...")
+ (mfs-string-match/graphics "文字列の一致 (画像を含むファイルも検索)")
+ (mfs-regexp-match/no-graphics "正規表現 (プレーンテキストのみ)")
+ (mfs-searching... "検索中...")
+ (mfs-configure-search "検索の設定") ;; dialog title
+ (mfs-files-section "ファイル")   ;; section in config dialog
+ (mfs-search-section "検索") ;; section in config dialog
+ (mfs-dir "ディレクトリ")
+ (mfs-recur-over-subdirectories "サブディレクトリ内を再帰的に検索")
+ (mfs-regexp-filename-filter "ファイル名を正規表現でフィルタ")
+ (mfs-search-string "検索語")
+ (mfs-drscheme-multi-file-search "DrScheme - 複数ファイルからの検索") ;; results window and error message title
+ (mfs-not-a-dir "\"~a\" はディレクトリではありません")
+ (mfs-open-file "ファイルを開く")
+ (mfs-stop-search "検索を中止")
+ (mfs-case-sensitive-label "大小文字を区別する")
+ (mfs-no-matches-found "見つかりませんでした。")
+ (mfs-search-interrupted "検索は中止されました。")
+
  ;;; reverting a file
- (error-reverting "DrScheme - Error Reverting")
- (could-not-read "could not read \"~a\"")
+ (error-reverting "DrScheme - 復元に失敗しました")
+ (could-not-read "\"~a\" を読み取ることができません")
  (are-you-sure-revert
-  "Are you sure that you want to revert this file? This change cannot be undone.")
+  "このファイルをディスク上の内容に復元しますか？この操作はやり直すことができないので注意してください。")
  (are-you-sure-revert-title
-  "Revert?")
- 
+  "ファイル内容の復元")
+
  ;;; saving a file
  ; ~a is filled with the filename
  (error-saving "保存に失敗") ;; title of error message dialog
@@ -556,27 +556,27 @@ please adhere to these guidelines:
  (unknown-filename "<< unknown >>")
 
  ;;; finder dialog
- (must-specify-a-filename "You must specify a file name")
- (file-does-not-exist "The file \"~a\" does not exist.")
- (ask-because-file-exists "The file \"~a\" already exists. Replace it?")
+ (must-specify-a-filename "ファイル名を指定してください")
+ (file-does-not-exist "ファイル \"~a\" は存在しません。")
+ (ask-because-file-exists "ファイル \"~a\" はすでに存在します。置換しますか？")
  (dne-or-cycle "The file \"~a\" contains a nonexistent directory or a cycle.")
  (get-file "Get file")
  (put-file "Put file")
  (full-pathname "Full pathname")
- (show-dot-files "Show files and directories that begin with a dot.")
- (up-directory-button-label "Up directory")
- (add-button-label "Add") ;;; for multi-file selection
- (add-all-button-label "Add all") ;;; for multi-file selection
- (remove-button-label "Remove") ;;; for multi-file selection
- (file-wrong-form "That filename does not have the right form.")
+ (show-dot-files "ドットで始まるファイルやディレクトリを表示する。")
+ (up-directory-button-label "上のディレクトリへ")
+ (add-button-label "追加") ;;; for multi-file selection
+ (add-all-button-label "すべて追加") ;;; for multi-file selection
+ (remove-button-label "削除") ;;; for multi-file selection
+ (file-wrong-form "そのファイル名は正しい形式ではありません。")
  (select-files "ファイルの選択")
  (select-file "ファイルの選択")
  (dir-dne "そのディレクトリは存在しません。")
  (file-dne "そのファイルは存在しません。")
- (empty-filename "The filename must have some letters in it.")
+ (empty-filename "ファイル名が空です。")
  (that-is-dir-name "それはディレクトリ名です。")
- 
- ;;; raw menu names -- these must match the 
+
+ ;;; raw menu names -- these must match the
  ;;; versions below, once the &s have been stripped.
  ;;; if they don't, DrScheme's menus will appear
  ;;; in the wrong order.
@@ -584,12 +584,12 @@ please adhere to these guidelines:
  (edit-menu "編集(E)")
  (help-menu "ヘルプ(H)")
  (windows-menu "ウィンドウ(W)")
- 
+
  ;;; menus
  ;;; - in menu labels, the & indicates a alt-key based shortcut.
- ;;; - sometimes, things are stuck in the middle of 
+ ;;; - sometimes, things are stuck in the middle of
  ;;; menu item labels. For instance, in the case of
- ;;; the "Save As" menu, you might see: "Save Definitions As". 
+ ;;; the "Save As" menu, you might see: "Save Definitions As".
  ;;; be careful of spacing, follow the English, if possible.
  ;;; - the ellipses in the `after' strings indicates that
  ;;; more information is required from the user before completing
@@ -607,7 +607,7 @@ please adhere to these guidelines:
 
  (open-recent-info "最近開いたファイルの一覧を表示します")
  (open-recent-menu-item "最近開いたファイル")
- 
+
  (revert-info "このファイルをディスク上のファイルに戻します")
  (revert-menu-item "復元(&R)")
 
@@ -626,9 +626,9 @@ please adhere to these guidelines:
  (quit-info "すべてのウィンドウを閉じます")
  (quit-menu-item-windows "終了(&X)")
  (quit-menu-item-others "&Quit")
- 
+
  (edit-menu-label "編集(&E)")
- 
+
  (undo-info "直前の動作を元に戻します")
  (undo-menu-item "元に戻す(&U)")
 
@@ -650,13 +650,13 @@ please adhere to these guidelines:
 
  (select-all-info "文書全体を選択します")
  (select-all-menu-item "すべて選択(&L)")
- 
+
  (find-info "文字列を検索します")
  (find-menu-item "検索...")
 
  (find-again-info "直前の検索文字列と同じ文字列を検索します")
  (find-again-menu-item "再検索")
- 
+
  (replace-and-find-again-info "現在のテキストを置換し、直前の検索文字列と同じ文字列を検索します")
  (replace-and-find-again-menu-item "置換と再検索")
 
@@ -674,8 +674,8 @@ please adhere to these guidelines:
  (keybindings-choose-user-defined-file "キーバインドを記述したファイルを選択してください")
 
  (user-defined-keybinding-error "キーバインド ~a\n\n~a を実行中にエラーが発生しました")
- (user-defined-keybinding-malformed-file "ファイル ~a には、言語 (lib \"keybinding-lang.ss\" \"framework\") で書かれたモジュールが含まれていません。")  
-  
+ (user-defined-keybinding-malformed-file "ファイル ~a には、言語 (lib \"keybinding-lang.ss\" \"framework\") で書かれたモジュールが含まれていません。")
+
  ;; menu items in the "special" menu
  (insert-text-box-item "テキストボックスを挿入")
  (insert-pb-box-item "ペーストボード ボックスを挿入")
@@ -694,7 +694,7 @@ please adhere to these guidelines:
  (most-recent-window "最近使用したウィンドウ")
 
  (view-menu-label "表示(&V)")
- (show-overview "プログラムの外観を表示") 
+ (show-overview "プログラムの外観を表示")
  (hide-overview "プログラムの外観を非表示")
  (show-module-browser "モジュール ブラウザを表示")
  (hide-module-browser "モジュール ブラウザを非表示")
@@ -703,7 +703,7 @@ please adhere to these guidelines:
  (about-info "このアプリケーションの著作権と詳細情報を表示します")
  (about-menu-item "バージョン情報...")
  (help-menu-check-for-updates "アップデートの確認...")
- 
+
  ;; open here's new menu item
  (create-new-window-or-clear-current
   "新規ウィンドウを作成しますか？それとも、現在のウィンドウを消去しますか？")
@@ -717,7 +717,7 @@ please adhere to these guidelines:
  (quit "終了")
  (are-you-sure-exit "終了してよろしいですか？")
  (are-you-sure-quit "終了してよろしいですか？")
- 
+
  ;;; autosaving
  (error-autosaving "\"~a\" を自動保存中にエラーが発生しました。") ;; ~a will be a filename
  (autosaving-turned-off "このファイルが保存されるまで、\n自動保存は無効になります。")
@@ -725,7 +725,7 @@ please adhere to these guidelines:
  (autosave-details "詳細")
  (autosave-recover "復元")
  (autosave-unknown-filename "<<unknown>>")
-  
+
   ;; these are labels in a dialog that drscheme displays
   ;; if you have leftover autosave files. to see the dialog,
   ;; start up drscheme and modify (but don't save) a file
@@ -749,24 +749,24 @@ please adhere to these guidelines:
   (autosave-delete-button "削除")
   (autosave-delete-title "削除")  ;; title of a dialog asking for deletion confirmation
   (autosave-done "Done")
-  
+
   ;; appears in the file dialog
   (autosave-restore-to-where? "自動保存ファイルを保存する場所を選択してください。")
-  
-  
+
+
  ;;; file modified warning
  (file-has-been-modified
   "このファイルは、前回保存された後に変更されています。変更を上書きしますか？")
  (overwrite-file-button-label "上書き")
- 
- (definitions-modified 
-  "The definitions text has been modified in the file-system; please save or revert the definitions text.")
+
+ (definitions-modified
+  "定義テキストがファイルシステム上で変更されました。定義テキストを保存するか復元してください。")
  (drscheme-internal-error "DrScheme 内部エラー")
- 
+
  ;;; tools
- (invalid-tool-spec "The tool specification in collection ~a's info.ss file is invalid. Expected either a string or a non-empty list of strings, got: ~e")
- (error-loading-tool-title "DrScheme - Error loading tool ~s; ~s")
- (error-invoking-tool-title "Error invoking tool ~s;~s")
+ (invalid-tool-spec "コレクション ~a の info.ss ファイルに記述されているツール仕様が不正です。文字列か空でない文字列リストでなければなりませんが、次の値が記述されています: ~e")
+ (error-loading-tool-title "DrScheme - ツール ~s をロード時にエラーが発生しました: ~s")
+ (error-invoking-tool-title "ツール ~s を起動時にエラーが発生しました: ~s")
  (tool-tool-names-same-length
   "expected `tool-names' and `tools' to be lists of the same length, in info.ss file for ~s, got ~e and ~e")
  (tool-tool-icons-same-length
@@ -774,9 +774,9 @@ please adhere to these guidelines:
  (tool-tool-urls-same-length
   "expected `tool-urls' and `tools' to be lists of the same length, in info.ss file for ~s, got ~e and ~e")
  (error-getting-info-tool
-  "error loading info.ss file for ~s")
- (tool-error-phase1 "Error in phase 1 for tool ~s; ~s")
- (tool-error-phase2 "Error in phase 2 for tool ~s; ~s")
+  "~s の info.ss をロード時にエラーが発生しました")
+ (tool-error-phase1 "ツール ~s のフェーズ 1 でエラーが発生しました: ~s")
+ (tool-error-phase2 "ツール ~s のフェーズ 2 でエラーが発生しました: ~s")
 
 
  ;;; define popup menu
@@ -788,7 +788,7 @@ please adhere to these guidelines:
 
  (recent-items-sort-by-age "日時で並び替え")
  (recent-items-sort-by-name "名前で並び替え")
- 
+
  ;;; view menu
  (hide-definitions-menu-item-label "定義を非表示(&D)")
  (show-definitions-menu-item-label "定義を表示(&D)")
@@ -812,14 +812,14 @@ please adhere to these guidelines:
  (print-interactions "対話を印刷...")
  (new-tab "新規タブ")
  (close-tab "タブを閉じる") ;; must not have any &s in it.
- 
+
  ;;; edit-menu
  (split-menu-item-label "分割(&S)")
  (collapse-menu-item-label "分割解除(&O)")
- 
+
  ;;; language menu
  (language-menu-name "言語(&L)")
- 
+
  ;;; scheme-menu
  (scheme-menu-name "S&cheme")
  (execute-menu-item-label "実行")
@@ -837,7 +837,7 @@ please adhere to these guidelines:
  (uncomment-menu-item-label "コメント解除(&U)")
 
  (convert-to-semicolon-comment "セミコロン コメントに変換")
- 
+
  ;;; executables
  (create-executable-menu-item-label "実行ファイルの作成...")
  (create-executable-title "実行ファイルの作成")
@@ -863,137 +863,137 @@ please adhere to these guidelines:
  (create "作成")
  (please-choose-an-executable-filename "Please choose a filename to save the executable.")
  (windows-executables-must-end-with-exe
-  "The filename\n\n  ~a\n\nis illegal. Under Windows, executables must end with .exe.")
+  "ファイル名\n\n  ~a\n\nは正しくありません。Windows では、実行ファイルは .exe という拡張子を持たなければなりません。")
  (macosx-executables-must-end-with-app
-  "The filename\n\n  ~a\n\nis illegal. Under MacOS X, executables must end with .app.")
+  "ファイル名\n\n  ~a\n\nは正しくありません。MacOS X では、実行ファイルは .app という拡張子を持たなければなりません。")
  (warning-directory-will-be-replaced
-  "WARNING: the directory:\n\n  ~a\n\nwill be replaced. Proceed?")
- 
+  "警告: ディレクトリ:\n\n  ~a\n\nは削除または上書きされます。よろしいですか？")
+
  (create-servlet "サーブレットの作成...")
 
  ; the ~a is a language such as "module" or "algol60"
  (create-servlet-unsupported-language
   "言語 ~a ではサーブレットの作成はできません。")
-  
+
  ;;; buttons
- (execute-button-label "実行") 
+ (execute-button-label "実行")
  (save-button-label "保存")
  (break-button-label "停止")
- 
+
  ;;; search help desk popup menu
- (search-help-desk-for "Search in Help Desk for \"~a\"")
- (exact-lucky-search-help-desk-for "Exact lucky search in Help Desk for \"~a\"")
+ (search-help-desk-for "\"~a\" をヘルプデスクで検索")
+ (exact-lucky-search-help-desk-for "\"~a\" をヘルプデスクでラッキー検索 (正確に一致するもの)")
 
  ;; collapse and expand popup menu items
  (collapse-sexp "S-式を縮小")
  (expand-sexp "S-式を展開")
- 
+
  ;;; fraction dialog
- (enter-fraction "Enter Fraction")
- (whole-part "Whole Part")
- (numerator "Numerator")
- (denominator "Denominator")
- (invalid-number "Invalid number: must be an exact, real, non-integral number.")
- (insert-fraction-menu-item-label "Insert Fraction...")
+ (enter-fraction "分数を入力してください")
+ (whole-part "整数部")
+ (numerator "分子")
+ (denominator "分母")
+ (invalid-number "不正な数値です。正確数で、実数で、整数でない数でないといけません。")
+ (insert-fraction-menu-item-label "分数を挿入...")
 
  ;; number snip popup menu
- (show-decimal-expansion "View decimal expansion")
- (show-fraction-view "View as fraction")
- (show-mixed-fraction-view "View as mixed fraction")
- (show-improper-fraction-view "View as improper fraction")
- (show-more-decimal-places "Show more decimal places")
- 
+ (show-decimal-expansion "小数で表示")
+ (show-fraction-view "分数で表示")
+ (show-mixed-fraction-view "帯分数で表示")
+ (show-improper-fraction-view "仮分数で表示")
+ (show-more-decimal-places "小数の桁数を増やす")
+
  ;;; Teachpack messages
  (select-a-teachpack "ティーチパックを選択")
- (clear-teachpack "Clear ~a Teachpack")
- (teachpack-error-label "DrScheme - Teachpack error")
- (teachpack-dne/cant-read "The teachpack file ~a does not exist or is not readable.")
- (teachpack-didnt-load "The teachpack file ~a did not load properly.")
- (teachpack-error-invoke "The teachpack file ~a raised an error when invoked.")
- (add-teachpack-menu-item-label "Add Teachpack...")
- (clear-all-teachpacks-menu-item-label "Clear All Teachpacks")
- (drscheme-teachpack-message-title "DrScheme Teachpack")
- (already-added-teachpack "Already added ~a teachpack")
- 
+ (clear-teachpack "ティーチパック ~a を消去")
+ (teachpack-error-label "DrScheme - ティーチパック エラー")
+ (teachpack-dne/cant-read "ティーチパック ファイル ~a は存在しないか読み取れません。")
+ (teachpack-didnt-load "ティーチパック ファイル ~a は、正しくロードされませんでした。")
+ (teachpack-error-invoke "ティーチパック ファイル ~a は、起動時にエラーを発生しました。")
+ (add-teachpack-menu-item-label "ティーチパックの追加...")
+ (clear-all-teachpacks-menu-item-label "すべてのティーチパックを消去")
+ (drscheme-teachpack-message-title "DrScheme ティーチパック")
+ (already-added-teachpack "ティーチパック ~a はすでに追加されています")
+
  ;;; Language dialog
  (introduction-to-language-dialog
-  "Please select a language. Students in most introductory courses should use the default language.")
- (language-dialog-title "Choose Language")
- (case-sensitive-label "Case sensitive")
- (output-style-label "Output Style")
- (constructor-printing-style "Constructor")
- (quasiquote-printing-style "Quasiquote")
- (write-printing-style "write")
- (print-printing-style "current-print")
- (sharing-printing-label "Show sharing in values")
- (use-pretty-printer-label "Insert newlines in printed values")
- (input-syntax "Input Syntax")
- (dynamic-properties "Dynamic Properties")
- (output-syntax "Output Syntax")
- (no-debugging-or-profiling "No debugging or profiling")
- (debugging "Debugging")
- (debugging-and-profiling "Debugging and profiling")
- (test-coverage "Syntactic test suite coverage")
- (whole/fractional-exact-numbers-label "Print numbers as fractions")
- (booleans-as-true/false-label "Print booleans using true and false")
+  "言語を選択してください。ほとんどの入門コースの学生は、既定の言語を使うとよいでしょう。")
+ (language-dialog-title "言語の選択")
+ (case-sensitive-label "大小文字の区別")
+ (output-style-label "出力形式")
+ (constructor-printing-style "コンストラクタ スタイル")
+ (quasiquote-printing-style "擬似クォート スタイル")
+ (write-printing-style "write スタイル")
+ (print-printing-style "current-print スタイル")
+ (sharing-printing-label "値の表示に shared 構文を使う (値の共有構造を表示する)")
+ (use-pretty-printer-label "値を表示するときに改行を挿入する")
+ (input-syntax "入力の構文")
+ (dynamic-properties "実行時のオプション") ;; "Dynamic Properties" の訳だが、これでいいか？
+ (output-syntax "出力の構文")
+ (no-debugging-or-profiling "デバッグもプロファイリングもしない")
+ (debugging "デバッグ")
+ (debugging-and-profiling "デバッグとプロファイリング")
+ (test-coverage "構文上のテストスイート カバレージ")
+ (whole/fractional-exact-numbers-label "数値を分数で表示する")
+ (booleans-as-true/false-label "ブール値を true と false で表示する")
  (show-details-button-label "詳細を表示")
- (hide-details-button-label "詳細を非表示")
+ (hide-details-button-label "詳細を隠す")
  (choose-language-menu-item-label "言語の選択...")
- (revert-to-language-defaults "Revert to Language Defaults")
- (language-docs-button-label "Language Docs")
- (fraction-style "Fraction Style")
- (use-mixed-fractions "Mixed fractions")
- (use-repeating-decimals "Repeating decimals")
- (decimal-notation-for-rationals "Use decimal notation for rationals")
- (please-select-a-language "Please select a language")
+ (revert-to-language-defaults "言語の既定値に戻す")
+ (language-docs-button-label "言語のドキュメント")
+ (fraction-style "分数のスタイル")
+ (use-mixed-fractions "帯分数")
+ (use-repeating-decimals "循環小数")
+ (decimal-notation-for-rationals "有理数を10進数で表示する")
+ (please-select-a-language "言語を選択してください")
 
- 
+
  ;;; languages
  (beginning-student "Beginning Student")
- (beginning-one-line-summary "define, cond, structs, constants, and primitives")
+ (beginning-one-line-summary "定義, 条件式, 構造体, 定数, プリミティブ")
  (beginning-student/abbrev "Beginning Student with List Abbreviations")
- (beginning/abbrev-one-line-summary "Beginner, with list style printing in the REPL")
+ (beginning/abbrev-one-line-summary "Beginner で、REPL でリスト スタイルの表示を行う")
  (intermediate-student "Intermediate Student")
- (intermediate-one-line-summary "Beginner plus lexical scope")
+ (intermediate-one-line-summary "Beginner ＋ レキシカル スコープ")
  (intermediate-student/lambda "Intermediate Student with lambda")
- (intermediate/lambda-one-line-summary "Intermediate plus higher-order functions")
+ (intermediate/lambda-one-line-summary "Intermediate ＋ 高階関数")
  (advanced-student "Advanced Student")
- (advanced-one-line-summary "Intermediate plus lambda and mutation")
+ (advanced-one-line-summary "Intermediate ＋ lambda と mutation")
  (full-language "Full") ;; also in the HtDP languages section
  (how-to-design-programs "How to Design Programs") ;; should agree with MIT Press on this one...
  (r5rs-like-languages "R5RS-like")
- (pretty-big-scheme "Pretty Big (includes MrEd and Advanced)")
- (pretty-big-scheme-one-line-summary "Adds syntax and functions from the HtDP languages")
+ (pretty-big-scheme "Pretty Big (MrEd と Advanced を含む)")
+ (pretty-big-scheme-one-line-summary "syntax と HtDP 言語の関数を追加")
  (r5rs-lang-name "Standard (R5RS)")
- (r5rs-one-line-summary "R5RS, with no frills")
+ (r5rs-one-line-summary "純粋な R5RS")
  (expander "Expander")
- (expander-one-line-summary "Expands, rather than evaluates, expressions")
- (professional-languages "Professional Languages")
- (teaching-languages "Teaching Languages")
- (experimental-languages "Experimental Languages")
- 
- (module-language-one-line-summary "Run creates a REPL in the context of the module, including the module's declared language")
-  
+ (expander-one-line-summary "式を評価するのではなく展開する")
+ (professional-languages "プロフェッショナル用の言語")
+ (teaching-languages "学習用の言語")
+ (experimental-languages "実験的な言語")
+
+ (module-language-one-line-summary "実行するとモジュールのコンテキスト内で REPL を作成する。モジュールで宣言された言語を含む。")
+
 
  ;;; debug language
  (unknown-debug-frame "[unknown]")
- (backtrace-window-title "Backtrace - DrScheme")
+ (backtrace-window-title "バックトレース - DrScheme")
  (files-interactions "~a's interactions") ;; filled with a filename
  (current-interactions "interactions")
  (current-definitions "definitions")
- (mzscheme-w/debug "Textual (MzScheme, includes R5RS)")
- (mzscheme-one-line-summary "PLT's implementation Scheme")
- (mred-w/debug "Graphical (MrEd, includes MzScheme)")
- (mred-one-line-summary "Adds GUI support to MzScheme")
+ (mzscheme-w/debug "Textual (MzScheme, R5RS を含む)")
+ (mzscheme-one-line-summary "PLT による Scheme 処理系")
+ (mred-w/debug "Graphical (MrEd, MzScheme を含む)")
+ (mred-one-line-summary "GUI サポートを MzScheme に追加")
 
  ;; profiling
- (profiling-low-color "低い")
- (profiling-high-color "高い")
- (profiling-choose-low-color "低いPlease select a low color")
- (profiling-choose-high-color "Please select a high color")
+ (profiling-low-color "低度")
+ (profiling-high-color "高度")
+ (profiling-choose-low-color "低度のカラーを選択してください")
+ (profiling-choose-high-color "高度のカラーを選択してください")
  (profiling "プロファイル")
  (profiling-example-text "(define (whee) (whee))")
- (profiling-color-config "プロファイルのカラー範囲") 
+ (profiling-color-config "プロファイルのカラー範囲")
  (profiling-scale "プロファイルのカラー尺度")
  (profiling-sqrt "平方根")
  (profiling-linear "線型")
@@ -1012,12 +1012,12 @@ please adhere to these guidelines:
  (profiling-unknown-src "<< unknown >>")
  (profiling-no-information-available "プロファイル情報がありません。お使いの言語でプロファイリングを有効にし、プロファイル対象のプログラムを実行してください。")
  (profiling-clear? "定義ウィンドウを書き換えると、プロファイル情報が無効になります。よろしいですか？")
- 
+
  ;; test coverage
  (test-coverage-clear? "定義ウィンドウを書き換えると、テスト カバレージ情報が無効になります。よろしいですか？")
- (test-coverage-clear-and-do-not-ask-again "Yes, and don't ask again")
- (test-coverage-ask? "Ask about clearing test coverage")
-  
+ (test-coverage-clear-and-do-not-ask-again "「はい」を選択し、今後尋ねないようにする")
+ (test-coverage-ask? "テスト カバレージを消去するときは、確認を行う")
+
  ;; tracing
  (tracing-enable-tracing "トレースを有効にする")
  (tracing-show-tracing-window "トレースを表示")
@@ -1031,14 +1031,14 @@ please adhere to these guidelines:
  (last-stack-frame "最後のスタックフレームを表示する")
  (last-stack-frames "最後の  ~a スタックフレームを表示する")
  (next-stack-frames "次の ~a スタックフレームを表示する")
- 
+
  ;;; welcoming message in repl
  (language "言語")
  (custom "カスタム")
  (teachpack "ティーチパック")
  (welcome-to "ようこそ")
  (version "バージョン")
- 
+
  ;;; kill evaluation dialog
  (kill-evaluation? "評価を強制終了しますか？")
  (just-break "Just Break")
@@ -1049,31 +1049,31 @@ please adhere to these guidelines:
  ;; the next two are used in the initial wizard dialog.
  ;; Note that vc-wizard-check-prompt can (should) have newlines so
  ;; it will not make the dialog too wide.
- (vc-wizard-check-note "The version you are about to install may not be the latest\n one. If you would like, DrScheme can check for you.")
- (vc-wizard-check-button "Check for Updates")
- (vc-update-check "Update check")
- (vc-please-wait "Please wait")
- (vc-connecting-version-server "Connecting to PLT version server")
- (vc-network-timeout "Network timeout") 
- (vc-cannot-connect  "Can't connect to PLT version server")
- (vc-network-failure "Network failure")
- (vc-old-binaries "Installed binaries for DrScheme (or MzScheme) are not up-to-date")
- (vc-binary-information-format "Installed binary version: ~a (iteration ~a)")
- (vc-details-format "~a~nDetails:~n~a")
- (vc-details-text "Details:~n")
- (vc-error-format "Error: ~a") 
- (vc-current-format "~a v.~a (iteration ~a) is up-to-date")
- (vc-update-format "~a v.~a (iteration ~a) needs updating to v.~a (iteration ~a)")
- (vc-binary-name "Binary")
- (vc-updates-available "Updates are available at")
- (vc-latest-binary-information-format "Latest released version: ~a (iteration ~a)")
- (vc-update-dialog-title "PLT update status")
- (vc-need-update-string "One or more installed PLT software packages needs updating")
- (vc-no-update-string "All installed PLT software packages are up-to-date")
+ (vc-wizard-check-note "今からインストールするバージョンは最新でない可能性があります。\n最新バージョンがあるか確認しますか？")
+ (vc-wizard-check-button "アップデートを確認する")
+ (vc-update-check "アップデートの確認")
+ (vc-please-wait "お待ちください")
+ (vc-connecting-version-server "PLT バージョン サーバーに接続しています")
+ (vc-network-timeout "ネットワークがタイムアウトしました")
+ (vc-cannot-connect  "PLT バージョン サーバーに接続できません")
+ (vc-network-failure "ネットワークに問題があります")
+ (vc-old-binaries "インストールされている DrScheme (または MzScheme) は最新ではありません")
+ (vc-binary-information-format "インストールされているバイナリのバージョン: ~a (iteration ~a)")
+ (vc-details-format "~a~n詳細:~n~a")
+ (vc-details-text "詳細:~n")
+ (vc-error-format "エラー: ~a")
+ (vc-current-format "~a v.~a (iteration ~a) は最新です")
+ (vc-update-format "~a v.~a (iteration ~a) は v.~a (iteration ~a) にアップデートする必要があります")
+ (vc-binary-name "バイナリ")
+ (vc-updates-available "アップデートは次の場所から入手できます: ")
+ (vc-latest-binary-information-format "最新のリリース バージョン: ~a (iteration ~a)")
+ (vc-update-dialog-title "PLT アップデートの状態")
+ (vc-need-update-string "インストールされている 1 つ以上の PLT ソフトウェア パッケージは、アップデートする必要があります")
+ (vc-no-update-string "インストールされているすべての PLT ソフトウェア パッケージは最新です")
 
  ;; special menu
  (special-menu "特殊(&P)")
- 
+
  ;; large semi colon letters
  (insert-large-letters... "大きな文字を挿入...")
  (large-semicolon-letters "大きなセミコロン")
@@ -1082,20 +1082,20 @@ please adhere to these guidelines:
  (module-browser-filename-format "完全なファイル名: ~a (~a 行)")
  (module-browser-root-filename "ルート ファイル名: ~a")
  (module-browser-font-size-gauge-label "フォント サイズ")
- (module-browser-progress-label "Module overview progress")
+ (module-browser-progress-label "モジュールの概要の進行状況")
  (module-browser-adding-file "ファイルを追加しています: ~a...")
  (module-browser-laying-out-graph-label "グラフを配置しています")
  (module-browser-open-file-format "開く ~a")
  (module-browser "モジュール ブラウザ") ;; frame title
  (module-browser... "モジュール ブラウザ...") ;; menu item title
- (module-browser-error-expanding "Error expanding the program:\n\n~a")
- (module-browser-show-lib-paths "Show files loaded by (lib ..) paths")
- (module-browser-progress "Module Browser: ~a") ;; prefix in the status line
- (module-browser-compiling-defns "Module Browser: compiling definitions")
+ (module-browser-error-expanding "プログラムを展開中にエラーが発生しました:\n\n~a")
+ (module-browser-show-lib-paths "(lib ..) のパスでロードされたファイルを表示する")
+ (module-browser-progress "モジュール ブラウザ: ~a") ;; prefix in the status line
+ (module-browser-compiling-defns "モジュール ブラウザ: 定義をコンパイル中です")
  (module-browser-show-lib-paths/short "Follow lib requires") ;; check box label in show module browser pane in drscheme window.
  (module-browser-refresh "Refresh") ;; button label in show module browser pane in drscheme window.
  (module-browser-only-in-plt-and-module-langs
-  "The module browser is only available for programs in the PLT languages and in the module language (and only for programs that have modules in them).")
+  "モジュール ブラウザは PLT 言語、または、モジュール言語のプログラム (あるいは、それらの言語のモジュールを持つプログラム) でのみ利用可能です。")
  (module-browser-name-length "名前の長さ")
  (module-browser-name-short "短い")
  (module-browser-name-medium "普通")
@@ -1125,7 +1125,7 @@ please adhere to these guidelines:
  ;(mrflow-unknown-exception "Unknown exception: ~a")
  ;(mrflow-language-primitives-error-title "Language Primitives Error")
  ;(mrflow-language-primitives-error "Wrong filename for language primitives types table: ~a")
-  
+
  (snips-and-arrows-popup-menu-tack-all-arrows "Tack All Arrows")
  (snips-and-arrows-popup-menu-untack-all-arrows "Untack All Arrows")
  (snips-and-arrows-user-action-disallowed-title "User Changes Currently Disallowed")
@@ -1147,25 +1147,25 @@ please adhere to these guidelines:
   "空タグ内の空白を削除")
  (xml-tool-leave-whitespace-alone
   "空白を残す")
- 
+
  (show-recent-items-window-menu-item "最近開いたファイルを別ウィンドウに表示する")
  (show-recent-items-window-label "最近開いたファイル")
- (number-of-open-recent-items "Number of recent items")
+ (number-of-open-recent-items "[最近開いたファイル] に表示する数")
  (switch-anyway "Switch File Anyway")
 
  (stepper-program-has-changed "警告: プログラムが変更されました。")
  (stepper-program-window-closed "警告: プログラム ウィンドウが閉じました。")
 
- (stepper-home "Home")
- (stepper-name "Stepper")
+ (stepper-home "ホーム")
+ (stepper-name "ステッパ")
  (stepper-language-level-message
-  "The language level is set to \"~a\". Currently, the stepper works only for the \"~a\" through the \"~a\" language levels.")
- (stepper-button-label "Step")
+  "言語レベルが \"~a\" に設定されています。現状では、言語レベルが \"~a\" から \"~a\" までのときにだけ、ステッパを使用できます。")
+ (stepper-button-label "ステップ")
  (stepper-previous-application "|< Application")
- (stepper-previous "< Step")
- (stepper-next "Step >")
+ (stepper-previous "< ステップ")
+ (stepper-next "ステップ >")
  (stepper-next-application "Application >|")
- 
+
 
  (wizard-next "次へ")
  (wizard-back "戻る")
@@ -1175,33 +1175,33 @@ please adhere to these guidelines:
  ;; might still be doing something interesting
  (program-is-still-running "定義ウィンドウ内のプログラムは実行中です。強制的に閉じますか？")
   (program-has-open-windows "定義ウィンドウ内のプログラムはウィンドウを開いています。このウィンドウを強制的に閉じますか？")
- 
+
   ;; ml-command-line-arguments is for the command line arguments
   ;; label in the module language details in the language dialog.
-  (ml-command-line-arguments "Command-line arguments as a vector of strings, in read syntax")
+  (ml-command-line-arguments "コマンドライン引数 (文字列ベクタの読み取り構文で指定)")
 
   ;; ml-cp names are all for the module language collection path
   ;; configuration. See the details portion of the language dialog
   ;; for the module language (at the bottom).
-  (ml-cp-default-collection-path "<<default collection paths>>")
+  (ml-cp-default-collection-path "<<既定のコレクション パス>>")
 
-  ;; in std get-directory 
-  (ml-cp-choose-a-collection-path "Please choose a collection path")
+  ;; in std get-directory
+  (ml-cp-choose-a-collection-path "コレクション パスを選択してください。")
 
   ;; err msg when adding default twice
   (ml-cp-default-already-present
-   "Default collection paths are already present")
-  
+   "既定のコレクション パスはすでに存在しています。")
+
   ;; title of this section of the dialog (possibly the word
   ;; `Collection' should not be translated)
-  (ml-cp-collection-paths "Collection Paths")
+  (ml-cp-collection-paths "コレクション パス")
 
   ;; button labels
-  (ml-cp-add "Add")
-  (ml-cp-add-default "Add Default")
-  (ml-cp-remove "Remove")
-  (ml-cp-raise "Raise")
-  (ml-cp-lower "Lower")
+  (ml-cp-add "追加")
+  (ml-cp-add-default "既定の追加")
+  (ml-cp-remove "削除")
+  (ml-cp-raise "上へ")
+  (ml-cp-lower "下へ")
 
   ;; Profj
   (profj-java "Java")
@@ -1219,14 +1219,14 @@ please adhere to these guidelines:
 
   ;; The Test Suite Tool
   ;; Errors
-  (test-case-empty-error "Empty test case")
-  (test-case-too-many-expressions-error "Too many expressions in a test case.")
-  (test-case-not-at-top-level "Test case box not at top level")
+  (test-case-empty-error "空のテストケース")
+  (test-case-too-many-expressions-error "テストケース内に式が多過ぎます。")
+  (test-case-not-at-top-level "テストケース ボックスはトップレベルではありません")
   ;; Dr. Scheme window menu items
-  (test-case-insert "Insert Test Case")
-  (test-case-disable-all "Disable all Test Cases")
-  (test-case-enable-all "Enable all Test Cases")
-  
+  (test-case-insert "テストケースを挿入")
+  (test-case-disable-all "すべてのテストケースを無効にする")
+  (test-case-enable-all "すべてのテストケースを有効にする")
+
   ;; NOTE: The following string constants are labels of the test-case fields. The width
   ;;       of the field is determined by the length of the longest of the following three words.
   ;;       if the words are too long the test case will take up too much horizontal room and
@@ -1240,46 +1240,46 @@ please adhere to these guidelines:
   (test-case-predicate "Predicate")
   (test-case-should-raise "Should Raise")
   ;; The label of a field of the test-case that describes the expected error message of a test case
-  (test-case-error-message "Error Message")
+  (test-case-error-message "エラーメッセージ")
 
-  (test-case-menu-title "Test Case")
+  (test-case-menu-title "テストケース")
   (test-case-switch-to-error-box "Switch to Error Test Box")
   (test-case-switch-to-nonerror-box "Switch to Nonerror Test box")
-  (test-case-collapse "Collapse Test Case")
-  (test-case-show-actual "Show Actual Value")
-  (test-case-enable "Enable Test Case")
+  (test-case-collapse "テストケースを縮小")
+  (test-case-show-actual "実際の値を表示する")
+  (test-case-enable "テストケースを有効にする")
   (test-case-show-predicate "Show Predicate")
-  (test-case-show-error-message "Show Error Message")
-  (test-case-convert-to-text "Convert to text")
-  
+  (test-case-show-error-message "エラーメッセージを表示する")
+  (test-case-convert-to-text "テキストに変換する")
+
   ;; Profj Boxes
   (profjBoxes-empty-error "Empty interaction")
-  (profjBoxes-too-many-expressions-error "Too many expressions in a box")
+  (profjBoxes-too-many-expressions-error "ボックスに式が多過ぎです")
   (profjBoxes-interactions-label "Interactions")
-  (profjBoxes-bad-java-id-error "Malformed Java ID")
-  (profjBoxes-examples-label "Examples")
-  (profjBoxes-add-new-example-button "Add new example")
+  (profjBoxes-bad-java-id-error "不正な形式の Java ID です")
+  (profjBoxes-examples-label "例")
+  (profjBoxes-add-new-example-button "例を追加")
   (profjBoxes-type "Type")
   ;; The Java identifier of an example of data
-  (profjBoxes-name "Name")
-  (profjBoxes-value "Value")
+  (profjBoxes-name "名前")
+  (profjBoxes-value "値")
   (profjBoxes-insert-java-examples "Insert Java Examples")
   (profjBoxes-insert-java-interactions "Insert Java Interactions")
 
   ;; Slideshow
-  (slideshow-show-slideshow-panel "Show Slideshow Panel")
-  (slideshow-hide-slideshow-panel "Hide Slideshow Panel")
+  (slideshow-show-slideshow-panel "スライドショー パネルを表示")
+  (slideshow-hide-slideshow-panel "スライドショー パネルを非表示")
   (slideshow-freeze-picts "Freeze These Picts")
   (slideshow-thaw-picts "Show Picts Under Mouse")
   (slideshow-hide-picts "Show Nested Boxes")
   (slideshow-show-picts "Show Picts")
   (slideshow-cannot-show-picts "Cannot show picts; run program to cache sizes first")
-  (slideshow-insert-pict-box "Insert Pict Box") 
+  (slideshow-insert-pict-box "Insert Pict Box")
 
   ;; GUI Tool
   (gui-tool-heading "GUI Tool")
-  (gui-tool-before-clicking-message "Before clicking a tool icon, use \"Insert GUI\" from the \"Special\" menu to insert a root GUI item, or select an already inserted GUI.")
-  (gui-tool-show-gui-toolbar "Show GUI Toolbar")
-  (gui-tool-hide-gui-toolbar "Hide GUI Toolbar")
-  (gui-tool-insert-gui "Insert GUI")
+  (gui-tool-before-clicking-message "ツール アイコンをクリックする前に、[Special] メニューの [Insert GUI] からルート GUI 項目を挿入するか、すでに挿入されている GUI を選択してください。")
+  (gui-tool-show-gui-toolbar "GUI ツールバーを表示")
+  (gui-tool-hide-gui-toolbar "GUI ツールバーを非表示")
+  (gui-tool-insert-gui "GUI を挿入")
   )
