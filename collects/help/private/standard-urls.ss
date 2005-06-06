@@ -37,20 +37,17 @@
    [make-docs-plt-url (string? . -> . string?)]
    [make-docs-html-url (string? . -> . string?)])
 
+  (define (base-docs-url)
+    (if (repos-or-nightly-build?)
+      "http://pre.plt-scheme.org/docs"
+      (string-append "http://download.plt-scheme.org/doc/" (version))))
+
   (define (make-docs-plt-url manual-name)
-    (format "http://download.plt-scheme.org/doc/~a/bundles/~a-doc.plt"
-            (if (repos-or-nightly-build?)
-                "pre-release"
-                (version))
-            manual-name))
-  
+    (format "~a/bundles/~a-doc.plt" (base-docs-url) manual-name))
+
   (define (make-docs-html-url manual-name)
-    (format "http://download.plt-scheme.org/doc/~a/html/~a/index.htm" 
-            (if (repos-or-nightly-build?)
-                "pre-release"
-                (version))
-            manual-name))
-  
+    (format "~a/html/~a/index.htm" (base-docs-url) manual-name))
+
   (define (prefix-with-server cookie suffix)
     (format "http://~a:~a~a" internal-host internal-port suffix))
   
