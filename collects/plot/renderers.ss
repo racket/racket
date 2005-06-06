@@ -31,7 +31,8 @@
                        (lambda (point)  ; convert to cartesian from theta, r
                          (vector 
                           (* (vector-y point) (cos (vector-x point)))
-                          (* (vector-y point) (sin (vector-x point))))))))))))
+                          (* (vector-y point) (sin (vector-x point)))))
+                       points)))))))
   
     ; error-bars : (listof (vector x y err)) [symbol] -> (2dplotview -> nothing)
   (define-plot-type error-bars
