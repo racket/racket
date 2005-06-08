@@ -83,9 +83,7 @@
 ;;;   * CLASS-OF
 ;;;     INSTANCE-OF?
 ;;;     SUBCLASS?
-;;;   * CLASS-DEFAULT-INITARGS
-;;;     CLASS-DIRECT-DEFAULT-INITARGS
-;;;     CLASS-DIRECT-SUPERS
+;;;   * CLASS-DIRECT-SUPERS
 ;;;     CLASS-DIRECT-SLOTS
 ;;;     CLASS-CPL
 ;;;     CLASS-SLOTS
@@ -106,7 +104,6 @@
 ;;;   class initialization
 ;;;     COMPUTE-CPL
 ;;;     COMPUTE-SLOTS
-;;;     COMPUTE-DEFAULT-INITARGS
 ;;;     COMPUTE-GETTER-AND-SETTER
 ;;;   method initialization
 ;;;     COMPUTE-APPLY-METHOD
@@ -334,7 +331,6 @@
   (cond [(or (eq? class <class>) (eq? class <entity-class>))
          (let* ([new     (%allocate-instance class
                                              (length the-slots-of-a-class))]
-                [dinitargs (getarg initargs :direct-default-initargs '())]
                 [dsupers (getarg initargs :direct-supers '())]
                 [dslots  (map list (getarg initargs :direct-slots '()))]
                 [cpl     (let loop ([sups dsupers] [so-far (list new)])
@@ -347,8 +343,6 @@
                                      (cons (car sups) so-far)))))]
                 [slots
                  (apply append dslots (map %class-direct-slots (cdr cpl)))]
-                [initargs
-                 (apply append dinitargs (map %class-direct-default-initargs (cdr cpl)))]
                 [nfields 0]
                 [name (or (getarg initargs :name) '-anonymous-)]
                 [field-initializers '()]
@@ -365,8 +359,6 @@
                  (map (lambda (s)
                         (cons (car s) (allocator unspecified-initializer)))
                       slots)])
-           (%set-class-default-initargs!   new '()) ; no default initargs yet
-           (%set-class-direct-default-initargs! new dinitargs)
            (%set-class-direct-supers!      new dsupers)
            (%set-class-direct-slots!       new dslots)
            (%set-class-cpl!                new cpl)
@@ -523,8 +515,6 @@
 ;;; Given that the early version of MAKE is allowed to call accessors on class
 ;;; metaobjects, the definitions for them come here, before the actual class
 ;;; definitions, which are coming up right afterwards.
-;;>> (class-default-initargs class)
-;;>> (class-direct-default-initargs class)
 ;;>> (class-direct-slots class)
 ;;>> (class-direct-supers class)
 ;;>> (class-slots class)
@@ -532,9 +522,6 @@
 ;;>> (class-name class)
 ;;>> (class-initializers class)
 ;;>   Accessors for class objects (look better than using `slot-ref').
-(define* (class-default-initargs c)   (%slot-ref c 'default-initargs))
-(define* (class-direct-default-initargs c)
-                                      (%slot-ref c 'direct-default-initargs))
 (define* (class-direct-slots       c) (%slot-ref c 'direct-slots))
 (define* (class-direct-supers      c) (%slot-ref c 'direct-supers))
 (define* (class-slots              c) (%slot-ref c 'slots))
@@ -575,8 +562,6 @@
                        m a)])))
 
 ;;; These versions will be optimized later.
-(define %class-default-initargs   class-default-initargs)
-(define %class-direct-default-initargs class-direct-default-initargs)
 (define %class-direct-slots       class-direct-slots)
 (define %class-direct-supers      class-direct-supers)
 (define %class-slots              class-slots)
@@ -596,10 +581,6 @@
 (define %method-qualifier         method-qualifier)
 (define %method-name              method-name)
 
-(define (%set-class-default-initargs! c x)
-                                         (%slot-set! c 'default-initargs x))
-(define (%set-class-direct-default-initargs! c x)
-                                         (%slot-set! c 'direct-default-initargs x))
 (define (%set-class-direct-slots!   c x) (%slot-set! c 'direct-slots   x))
 (define (%set-class-direct-supers!  c x) (%slot-set! c 'direct-supers  x))
 (define (%set-class-slots!          c x) (%slot-set! c 'slots          x))
@@ -631,9 +612,7 @@
 ;;; the first and fourth both contribute to <class>.
 
 (define the-slots-of-a-class
-  '(default-initargs
-    direct-default-initargs    ; ((name form thunk) ...)
-    direct-supers              ; (class ...)
+  '(direct-supers              ; (class ...)
     direct-slots               ; ((name . options) ...)
     cpl                        ; (class ...)
     slots                      ; ((name . options) ...)
@@ -658,8 +637,6 @@
 ;;>   This is the "mother of all classes": every Swindle class is an
 ;;>   instance of `<class>'.
 ;;>   Slots:
-;;>   * default-initargs: initargs
-;;>   * direct-default-initargs: direct initargs
 ;;>   * direct-supers:  direct superclasses
 ;;>   * direct-slots:   direct slots, each a list of a name and options
 ;;>   * cpl:            class precedence list (classes list this to <top>)
@@ -694,28 +671,23 @@
 ;;>> <top>
 ;;>   This is the "mother of all values": every value is an instance of
 ;;>   `<top>' (including standard Scheme values).
-(define* <top> (make <class> :direct-default-initargs '()
-                             :direct-supers '()
+(define* <top> (make <class> :direct-supers '()
                              :direct-slots  '()
                              :name          '<top>))
 
 ;;>> <object>
 ;;>   This is the "mother of all objects": every Swindle object is an
 ;;>   instance of `<object>'.
-(define* <object> (make <class> :direct-default-initargs '()
-                                :direct-supers (list <top>)
+(define* <object> (make <class> :direct-supers (list <top>)
                                 :direct-slots  '()
                                 :name          '<object>))
 
 ;;; This cluster, together with the first cluster above that defines <class>
 ;;; and sets its class, have the effect of:
 ;;;   (define <class>
-;;;     (make <class> :direct-default-initargs '()
-;;;                   :direct-supers (list <object>)
+;;;     (make <class> :direct-supers (list <object>)
 ;;;                   :direct-slots  '(direct-supers ...)
 ;;;                   :name          '<class>))
-(%set-class-default-initargs!   <class> '())
-(%set-class-direct-default-initargs! <class> '())
 (%set-class-direct-supers!      <class> (list <object>))
 (%set-class-cpl!                <class> (list <class> <object> <top>))
 (%set-class-direct-slots!       <class> (map list the-slots-of-a-class))
@@ -733,8 +705,7 @@
 ;;>   classes and entity (Swindle procedure objects) classes.  (Note that
 ;;>   this is a class of *classes*).
 (define* <procedure-class>
-  (make <class> :direct-default-initargs '()
-                :direct-supers (list <class>)
+  (make <class> :direct-supers (list <class>)
                 :direct-slots  '()
                 :name          '<procedure-class>))
 
@@ -744,8 +715,7 @@
 ;;>   a function but it is still a Swindle object.  Note that this is the
 ;;>   class of entity *classes* not of entities themselves.
 (define* <entity-class>
-  (make <class> :direct-default-initargs '()
-                :direct-supers (list <procedure-class>)
+  (make <class> :direct-supers (list <procedure-class>)
                 :direct-slots  '()
                 :name          '<entity-class>))
 
@@ -753,8 +723,7 @@
 ;;>   The class of all applicable values: methods, generic functions, and
 ;;>   standard closures.
 (define* <function>
-  (make <class> :direct-default-initargs '()
-                :direct-supers (list <top>)
+  (make <class> :direct-supers (list <top>)
                 :direct-slots  '()
                 :name          '<function>))
 
@@ -789,8 +758,7 @@
 ;;>   * combination: a method combination function or #f, see
 ;;>                  `make-generic-combination' below for details
 (define* <generic>
-  (make <entity-class> :direct-default-initargs '()
-                       :direct-supers (list <object> <function>)
+  (make <entity-class> :direct-supers (list <object> <function>)
                        :direct-slots  '(methods arity name combination
                                         app-cache singletons-list) ; see above
                        :name          '<generic>))
@@ -806,8 +774,7 @@
 ;;>   * qualifier:    some qualifier tag, used when applying a generic
 ;;>   * name:         method name
 (define* <method>
-  (make <entity-class> :direct-default-initargs '()
-                       :direct-supers (list <object> <function>)
+  (make <entity-class> :direct-supers (list <object> <function>)
                        :direct-slots  '(specializers procedure qualifier name)
                        :name          '<method>))
 ;; Do this since compute-apply-method relies on them not changing, as well as a
@@ -829,8 +796,7 @@
 ;;>> (make-class direct-supers direct slots)
 ;;>   Creates a class object -- an instance of <class>.
 (define* (make-class direct-supers direct-slots)
-  (make <class> :direct-default-initargs '()
-                :direct-supers direct-supers
+  (make <class> :direct-supers direct-supers
                 :direct-slots  direct-slots))
 ;;>> (make-generic-function [name/arity])
 ;;>   Creates a generic function object -- an instance of <generic>.  The
@@ -944,12 +910,6 @@
 ;;>   <class> collects information from all preceding classes.
 (define* compute-slots
   (make-generic-function 'compute-slots))
-
-;;>> (compute-default-initargs class)
-;;>   This generic is used to compute the default initargs for a given
-;;>   class.
-(define* compute-default-initargs
-  (make-generic-function 'compute-default-initargs))
 
 ;;>> (compute-apply-method method)
 ;;>   This generic is used to compute the procedure that will get executed
@@ -1443,10 +1403,6 @@
   (make-method (list <class>)
     (named-lambda method:initialize (call-next-method class initargs)
       (call-next-method)
-      ;; No checking on this.
-      (%set-class-direct-default-initargs!
-       class
-       (getarg initargs :direct-default-initargs '()))
       (%set-class-direct-supers!
        class
        (let ([default (*default-object-class*)]
@@ -1481,7 +1437,6 @@
               (getarg initargs :direct-slots '()))))
       (%set-class-cpl!   class (compute-cpl   class))
       (%set-class-slots! class (compute-slots class))
-      (%set-class-default-initargs! class (compute-default-initargs class))
       (%set-class-name!  class (or (getarg initargs :name) '-anonymous-))
       (let* ([nfields 0]
              [field-initializers '()]
@@ -1585,28 +1540,6 @@
                 [else (collect (cdr to-process)
                                (cons (assq (caar to-process) final-slots)
                                      result))]))))))
-
-(add-method compute-default-initargs
-  (make-method (list <class>)
-    (named-lambda method:compute-slots (call-next-method class)
-      (reverse!
-       ;; Remove the duplicates from the less specific classes
-       (foldl
-        (lambda (initarg initlist)
-          (if (memf (lambda (already-seen)
-                      (eq? (car initarg) (car already-seen)))
-                    initlist)
-              initlist
-              (cons initarg initlist)))
-        '()
-        ;; Collect them into a list (if they aren't #F)
-        (foldr (lambda (initargs all-initargs)
-                 (if initargs
-                     (append initargs all-initargs)
-                     all-initargs))
-               '()
-               ;; Get all the initargs
-               (map %class-direct-default-initargs (%class-cpl class))))))))
 
 (add-method compute-getter-and-setter
   (make-method (list <class>)
@@ -1789,18 +1722,6 @@
                         class (car args))]
                 [else (loop (cddr args))])))))
 
-(define (extend-initargs given-initargs class-initargs)
-  (let ((extended
-         (foldl (lambda (initarg initlist)
-                  (let ((key (car initarg)))
-                    (if (getarg given-initargs key)
-                        initlist
-                        (cons key (cons ((caddr initarg)) initlist)))))
-                '() class-initargs)))
-    (if (null? extended)
-        given-initargs
-        (append given-initargs extended))))
-
 ;;; ---------------------------------------------------------------------------
 ;;; Make `make' a generic function
 
@@ -1818,9 +1739,8 @@
 ;;>   See the `Object Initialization Protocol' below for a description of
 ;;>   generic functions that are involved in creating a Swindle object.
 (let ([m (make-method (list <class>)
-           (named-lambda method:make (call-next-method class . given-initargs)
-             (let* ([initargs (extend-initargs given-initargs (class-default-initargs class))]
-                    [instance (allocate-instance class initargs)])
+           (named-lambda method:make (call-next-method class . initargs)
+             (let ([instance (allocate-instance class initargs)])
                (when (*make-safely*) (check-initargs class initargs))
                (initialize instance initargs)
                instance)))]
@@ -1844,16 +1764,10 @@
 ;;>   that this is a special form, which invokes `allocate-instance' and
 ;;>   `initialize' directly, so specializing `make' on some input will not
 ;;>   change the way `rec-make' works.
-(define (rec-allocate-instance class given-initargs)
-  (allocate-instance class (extend-initargs given-initargs (class-default-initargs class))))
-
-(define (rec-initialize instance given-initargs)
-  (initialize instance (extend-initargs given-initargs (class-default-initargs (class-of instance)))))
-
 (defsubst* (rec-make (name class arg ...) ...)
-  (let ((name (rec-allocate-instance class (list arg ...))) ...)
+  (let ([name (allocate-instance class (list arg ...))] ...)
     (when (*make-safely*) (check-initargs class (list arg ...)) ...)
-    (rec-initialize name (list arg ...)) ...
+    (initialize name (list arg ...)) ...
     (values name ...)))
 
 ;;; ---------------------------------------------------------------------------
@@ -1916,8 +1830,6 @@
 ;;; This is possible because of the ordering of the slots in compute-slots,
 ;;; works only for single-inheritance.  Note that there is no type checking -
 ;;; it is unsafe, but makes things around 5-6 times faster!
-(set! %class-default-initargs    (%slot-getter <class>   'default-initargs))
-(set! %class-direct-default-initargs (%slot-getter <class> 'direct-default-initargs))
 (set! %class-direct-slots        (%slot-getter <class>   'direct-slots))
 (set! %class-direct-supers       (%slot-getter <class>   'direct-supers))
 (set! %class-slots               (%slot-getter <class>   'slots))
@@ -1936,8 +1848,6 @@
 (set! %method-procedure          (%slot-getter <method>  'procedure))
 (set! %method-qualifier          (%slot-getter <method>  'qualifier))
 (set! %method-name               (%slot-getter <method>  'name))
-(set! %set-class-default-initargs! (%slot-setter <class> 'default-initargs))
-(set! %set-class-direct-default-initargs! (%slot-setter <class> 'direct-default-initargs))
 (set! %set-class-direct-slots!   (%slot-setter <class>   'direct-slots))
 (set! %set-class-direct-supers!  (%slot-setter <class>   'direct-supers))
 (set! %set-class-slots!          (%slot-setter <class>   'slots))
@@ -1970,8 +1880,7 @@
 ;;>> <primitive-class>
 ;;>   The class of all built-on classes.
 (define* <primitive-class>
-  (make <class> :direct-default-initargs '()
-                :direct-supers (list <class>)
+  (make <class> :direct-supers (list <class>)
                 :direct-slots  '()
                 :name          '<primitive-class>
                 ;; needed so structs can turn to classes even if *make-safely*
@@ -1986,15 +1895,13 @@
 ;;>> <builtin>
 ;;>   The superclass of all built-in classes.
 (define* <builtin>
-  (make <class> :direct-default-initargs '()
-                :direct-supers (list <top>)
+  (make <class> :direct-supers (list <top>)
                 :direct-slots  '()
                 :name          '<builtin>))
 (defsubst (defprimclass primclass) (defprimclass primclass <builtin>)
           (_ primclass supers ...) (define* primclass
                                      (make <primitive-class>
                                            :name          'primclass
-                                           :direct-default-initargs '()
                                            :direct-supers (list supers ...)
                                            :direct-slots  '())))
 ;;>> <sequence>
@@ -2143,7 +2050,6 @@
 ;;>   The class of all Scheme procedures.
 (define* <procedure>
   (make <procedure-class> :name          '<procedure>
-                          :direct-default-initargs '()
                           :direct-supers (list <builtin> <function>)
                           :direct-slots  '()))
 ;;>> <primitive-procedure>
@@ -2151,7 +2057,6 @@
 (define* <primitive-procedure>
   (make <procedure-class>
         :name          '<primitive-procedure>
-        :direct-default-initargs '()
         :direct-supers (list <procedure>)
         :direct-slots  '()))
 
@@ -2349,7 +2254,6 @@
 ;;>   class initialization only:
 ;;>     compute-cpl
 ;;>     compute-slots
-;;>     compute-default-initargs
 ;;>     compute-getter-and-setter
 ;;>   method initialization only:
 ;;>     compute-apply-method
