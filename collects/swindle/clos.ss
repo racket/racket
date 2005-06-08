@@ -357,57 +357,22 @@
 
 (defsyntax (make-class-form stx)
   (define (slots/initargs s/a)
-    (define (syntax-null? x)
-      (or (null? x)
-          (and (syntax? x)
-               (null? (syntax-e x)))))
-
-    (define (syntax-car x)
-      (cond ((pair? x) (car x))
-            ((syntax? x) (car (syntax-e x)))
-            (else (error "Syntax car"))))
-
-    (define (syntax-cdr x)
-      (cond ((pair? x) (cdr x))
-            ((syntax? x) (cdr (syntax-e x)))
-            (else (error "Syntax cdr"))))
-
-    (define (syntax-cadr x) (syntax-car (syntax-cdr x)))
-    (define (syntax-cddr x) (syntax-cdr (syntax-cdr x)))
-
-    (let loop ([xs s/a]
-               [r '()]
-               ;; use #F so we can tell the difference between
-               ;; unsupplied and specifically false.
-               [default-initargs #f])
-      (syntax-case xs (:default-initargs)
+    (let loop ([xs s/a] [r '()])
+      (syntax-case xs ()
         [() (values (datum->syntax-object #'s/a (reverse! r) #'s/a)
-                    #'()
-                    (datum->syntax-object #'s/a default-initargs #'s/a))]
+                    #'())]
         [((name . args) . more) (identifier? #'name)
-         (loop #'more (cons #'(list 'name . args) r) default-initargs)]
-        [(:default-initargs val . more)
-         (loop #'more r
-               (do ((tail (syntax val) (syntax-cddr tail))
-                    (result '() (cons #`(list '#,(syntax-car tail)
-                                              '#,(syntax-cadr tail)
-                                              (lambda ()
-                                                #,(syntax-cadr tail)))
-                                      result)))
-                   ((syntax-null? tail)
-                    #`(list #,@(reverse! result)))))]
+         (loop #'more (cons #'(list 'name . args) r))]
         [(key val . more) (syntax-keyword? #'key)
          (values (datum->syntax-object #'s/a (reverse! r) #'s/a)
-                 #'(key val . more)
-                 (datum->syntax-object #'s/a default-initargs #'s/a))]
+                 #'(key val . more))]
         [(name . more) (identifier? #'name)
-         (loop #'more (cons #'(list 'name) r) default-initargs)])))
+         (loop #'more (cons #'(list 'name) r))])))
   (syntax-case stx ()
     [(_ metaclass cname supers . s/a)
-     (let*-values ([(slots initargs default-initargs) (slots/initargs #'s/a)]
+     (let*-values ([(slots initargs) (slots/initargs #'s/a)]
                    [(meta) (syntax-getarg initargs :metaclass #'metaclass)])
        (with-syntax ([(arg ...) #`(#,@initargs
-                                   :direct-default-initargs #,default-initargs
                                    :direct-supers (list . supers)
                                    :direct-slots (list #,@slots)
                                    :name '#,(if (syntax-e #'cname)
@@ -507,7 +472,7 @@
 ;;>   accessors) is determined by `-defclass-accessor-mode-' (see above).
 ;;>
 ;;>   Available class options (in addition to normal ones that initialize
-;;>   the class slots like `:name', `:direct-default-initargs', `:direct-slots', `:direct-supers') are:
+;;>   the class slots like `:name', `:direct-slots', `:direct-supers') are:
 ;;>   * :metaclass class
 ;;>     create a class object which is an instance of the `class'
 ;;>     meta-class (this means that an instance of the given meta-class
