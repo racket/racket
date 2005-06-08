@@ -571,6 +571,7 @@
 (defsyntax (make-defclass-form stx)
   (syntax-case stx ()
     [(_ class-maker name supers . slots0)
+     (identifier? #'name)
      (let loop ([slots1 #'slots0] [slots2 '()])
        (syntax-case slots1 ()
          [(slot more ...) (not (syntax-keyword? #'slot))
