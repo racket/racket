@@ -154,7 +154,10 @@ void wxGroupBox::Refresh(void)
 
 void wxGroupBox::SetPhantomSize(int w, int h)
 {
-  phantom_height = h;
+  if (phantom_height != h) {
+    phantom_height = h;
+    OnClientAreaDSize(0, 1, 0, 0);
+  }
 }
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

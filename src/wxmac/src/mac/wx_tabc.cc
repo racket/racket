@@ -229,7 +229,10 @@ void wxTabChoice::Refresh(void)
 
 void wxTabChoice::SetPhantomSize(int w, int h)
 {
-  phantom_height = h;
+  if (phantom_height != h) {
+    phantom_height = h;
+    OnClientAreaDSize(0, 1, 0, 0);
+  }
 }
 
 extern Bool wx_propagate_key;
