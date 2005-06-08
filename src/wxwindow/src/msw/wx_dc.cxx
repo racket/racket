@@ -1659,17 +1659,42 @@ static int substitute_font(wchar_t *ustring, int d, int alen, wxFont *font, HDC 
     sub = font->Substitute(v, dc, screen_font);
     if (sub) {
       HFONT cfont;
-      font = sub;
-      cfont = font->BuildInternalFont(dc, screen_font, angle);
+      int max_alen;
+
+      /* Continue using this substituion as long as
+	 glyphs are in this font and not in the original font. */
+      max_alen = alen;
+      for (i = 1; i < alen; i++) {
+	v = ustring[d+i];
+	if (font->GlyphAvailableNow(v, dc, screen_font)) {
+	  max_alen = i;
+	  break;
+	}
+      }
+
+      cfont = sub->BuildInternalFont(dc, screen_font, angle);
       if (cfont) {
+	font = sub;
 	::SelectObject(dc, cfont);
+	*reset = 1;
+
+	for (i = 1; i < max_alen; i++) {
+	  v = ustring[d+i];
+	  if (!font->GlyphAvailableNow(v, dc, screen_font)) {
+	    max_alen = i;
+	    break;
+	  }
+	}
+	return max_alen;
       }
     }
-  }
-  for (i = 1; i < alen; i++) {
-    v = ustring[d+i];
-    if (!font->GlyphAvailableNow(v, dc, screen_font)) {
-      return i;
+
+    /* Continue for as long as glyphs are in this font */
+    for (i = 1; i < alen; i++) {
+      v = ustring[d+i];
+      if (!font->GlyphAvailableNow(v, dc, screen_font)) {
+	return i;
+      }
     }
   }
 
