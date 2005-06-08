@@ -18,7 +18,7 @@ _URL_ posting, _web clients_, _WWW_
 To load directly: (require (lib "url.ss" "net"))
 Module files: _url.ss_ - provides the procedures documented below
               _url-unit.ss_ - provides unit net:url@
-              _url-sig.ss_ - provides signalture net:url^
+              _url-sig.ss_ - provides signature net:url^
 
 
 ABSTRACT -------------------------------------------------------------
@@ -62,7 +62,7 @@ TYPES ----------------------------------------------------------------
   `url->string' translate things like %20 into spaces and back again.
 
   By default, query associations are parsed with either ";" or "&" as
-  a separator, and they are generated with ";" as a separtor. The
+  a separator, and they are generated with ";" as a separator. The
   `current-alist-separator-mode' parameter for "uri-codec.ss" adjusts
   this default.
 
@@ -101,7 +101,7 @@ PROCEDURES -----------------------------------------------------------
   Parses the url specified by the string into a url struct. The
   `string->url' procedure uses `form-urlencoded->alist' when parsing
   the query, so it is sensitive to the `current-alist-separator-mode'
-  parameter for determining the association separtor.
+  parameter for determining the association separator.
 
 > (combine-url/relative url string) -> url
 
@@ -159,7 +159,7 @@ PROCEDURES -----------------------------------------------------------
   The `url->string' procedure uses `alist->form-urlencoded' when
   formatting the query, so it it sensitive to the
   `current-alist-separator-mode' parameter for determining the
-  association separtor. In particular, the default is to separate
+  association separator. In particular, the default is to separate
   associations with ";" (based on modern recommendations) instead of
   "&".
 
@@ -201,7 +201,7 @@ PROCEDURES -----------------------------------------------------------
   Purifies a port, returning the MIME headers, plus a leading line
   for the form
 
-   HTTP/<vers> <code> <messsage>
+   HTTP/<vers> <code> <message>
 
   where <vers> is something like 1.0 or 1.1, <code> is an exact
   integer for the response code, and <message> is arbitrary text
@@ -316,7 +316,7 @@ _CGI_ backends, _WWW_
 To load directly: (require (lib "cgi.ss" "net"))
 Module files: _cgi.ss_ - provides the procedures documented below
               _cgi-unit.ss_ - provides unit net:cgi@
-              _cgi-sig.ss_ - provides signalture net:cgi^
+              _cgi-sig.ss_ - provides signature net:cgi^
 
 ABSTRACT -------------------------------------------------------------
 
@@ -420,7 +420,7 @@ PROCEDURES -----------------------------------------------------------
 > (generate-link-text string html-string) -> html-string
 
   Takes a string representing a URL, a html-string for the anchor
-  text, and generates HTML corresponding to an achor.
+  text, and generates HTML corresponding to an anchor.
 
 > (generate-error-output list-of-html-strings) -> <exit>
 
@@ -445,7 +445,7 @@ _sending mail_, _sendmail_
 To load directly: (require (lib "sendmail.ss" "net"))
 Module files: _sendmail.ss_ - provides the procedures documented below
               _sendmail-unit.ss_ - provides unit net:sendmail@
-              _sendmail-sig.ss_ - provides signalture net:sendmail^
+              _sendmail-sig.ss_ - provides signature net:sendmail^
 
 
 ABSTRACT -------------------------------------------------------------
@@ -501,7 +501,7 @@ _sending mail_, _SMTP_
 To load directly: (require (lib "smtp.ss" "net"))
 Module files: _smtp.ss_ - provides the procedures documented below
               _smtp-unit.ss_ - provides unit net:smtp@
-              _smtp-sig.ss_ - provides signalture net:smtp^
+              _smtp-sig.ss_ - provides signature net:smtp^
 
 ABSTRACT -------------------------------------------------------------
 
@@ -520,7 +520,7 @@ TYPES ----------------------------------------------------------------
 
 EXCEPTIONS -----------------------------------------------------------
 
-  Communication errors are signalled via exn:fail structure instances.
+  Communication errors are signaled via exn:fail structure instances.
 
 PROCEDURES -----------------------------------------------------------
 
@@ -545,7 +545,7 @@ PROCEDURES -----------------------------------------------------------
 
 > (smtp-sending-end-of-message [proc])
 
-  Parameter that detemines a send-done procedure to be called after
+  Parameter that determines a send-done procedure to be called after
   `smtp-send-message' has completely sent the message. Before the
   send-done procedure is called, breaking the thread that is executing
   `smtp-send-message' cancels the send. After the send-done procedure
@@ -559,7 +559,7 @@ _NNTP_, _newsgroups_
 To load directly: (require (lib "nntp.ss" "net"))
 Module files: _nntp.ss_ - provides the procedures documented below
               _nntp-unit.ss_ - provides unit net:nntp@
-              _nntp-sig.ss_ - provides signalture net:nntp^
+              _nntp-sig.ss_ - provides signature net:nntp^
 
 ABSTRACT -------------------------------------------------------------
 
@@ -706,7 +706,7 @@ _POP-3_, _reading mail_
 To load directly: (require (lib "pop3.ss" "net"))
 Module files: _pop3.ss_ - provides the procedures documented below
               _pop3-unit.ss_ - provides unit net:pop3@
-              _pop3-sig.ss_ - provides signalture net:pop3^
+              _pop3-sig.ss_ - provides signature net:pop3^
 
 ABSTRACT -------------------------------------------------------------
 
@@ -885,7 +885,7 @@ _IMAP_, _reading mail_
 To load directly: (require (lib "imap.ss" "net"))
 Module files: _imap.ss_ - provides the procedures documented below
               _imap-unit.ss_ - provides unit net:imap@
-              _imap-sig.ss_ - provides signalture net:imap^
+              _imap-sig.ss_ - provides signature net:imap^
 
 ABSTRACT -------------------------------------------------------------
 
@@ -897,7 +897,7 @@ TYPES ----------------------------------------------------------------
 
 > imap
 
-  An opaque record reprsenting an IMAP connection.
+  An opaque record representing an IMAP connection.
 
 > imap-flag
 
@@ -907,7 +907,7 @@ TYPES ----------------------------------------------------------------
 
 EXCEPTIONS -----------------------------------------------------------
 
-  Communication errors are signalled via exn:fail structure instances.
+  Communication errors are signaled via exn:fail structure instances.
 
 PROCEDURES -----------------------------------------------------------
 
@@ -925,7 +925,7 @@ PROCEDURES -----------------------------------------------------------
   See also `imap-port-number', below.
 
   A user's primary mailbox is always called "INBOX". (Capitalization
-  doesn't matther for that keyword.)
+  doesn't matter for that keyword.)
 
   Updated message-count and recent-count values are available through
   `imap-messages' and `imap-recent'. See also `imap-new?' and
@@ -1086,11 +1086,11 @@ PROCEDURES -----------------------------------------------------------
   reports the result of previous communication. It also clears the
   update information from the connection after reporting it.
 
-  When a server reports information that supercedes old reported
+  When a server reports information that supersedes old reported
   information for a message, or if the server reports that a message
   has been deleted, then old information for the message is
   dropped. Similarly, if `imap-get-messages' is used to explicitly
-  obtain information, any redudant (or out-of-date) information is
+  obtain information, any redundant (or out-of-date) information is
   dropped.
 
   A client need not use `imap-get-updates' ever, but accumulated
@@ -1109,7 +1109,7 @@ PROCEDURES -----------------------------------------------------------
   Downloads information for a set of messages. The `msg-num-list'
   argument specifies a set of messages by their message positions (not
   their uids). The `field-list' argument specifies the type of
-  information to download for each message. The avilable fields are:
+  information to download for each message. The available fields are:
 
     * 'uid - value is an integer
     * 'header - value is a header (string; see the head package)
@@ -1134,7 +1134,7 @@ PROCEDURES -----------------------------------------------------------
 
   An imap flag is a symbol, but it is generally not a convenient one
   to use within a Scheme program, because it usually starts with a
-  backslash and flag comparisions are case-insensitive. The
+  backslash and flag comparisons are case-insensitive. The
   `imap-flag->symbol' and `symbol->imap-flag' procedures convert IMAP
   flags to convenient symbols and vice-versa:
 
@@ -1163,7 +1163,7 @@ PROCEDURES -----------------------------------------------------------
   flags are set:
 
        * '+ - add the given flags to each message
-       * '- - remove the given flags from each emssage
+       * '- - remove the given flags from each message
        * '! - set each message's flags to the given set
 
   The `msg-num-list' argument specifies a set of messages by their
@@ -1260,18 +1260,18 @@ _mime headers_, _mail headers_, _http headers_
 To load directly: (require (lib "head.ss" "net"))
 Module files: _head.ss_ - provides the procedures documented below
               _head-unit.ss_ - provides unit net:head@
-              _head-sig.ss_ - provides signalture net:head^
+              _head-sig.ss_ - provides signature net:head^
 
 ABSTRACT -------------------------------------------------------------
 
-Implements utlities for RFC 822 headers and mail addresses.
+Implements utilities for RFC 822 headers and mail addresses.
 
 TYPES ----------------------------------------------------------------
 
 > header
 
   A string that is an RFC-882-compliant header. A header string
-  contains a series of CRLF-delimitted fields, and ends with two CRLFs
+  contains a series of CRLF-delimited fields, and ends with two CRLFs
   (the first one terminates the last field, and the second terminates
   the header).
 
@@ -1279,7 +1279,7 @@ PROCEDURES -----------------------------------------------------------
 
 > empty-header
 
-  A string correcponding to the empty header, useful for building up
+  A string corresponding to the empty header, useful for building up
   headers with `insert-field' and `append-headers'.
 
 > (validate-header candidate-header-string) -> void
@@ -1318,7 +1318,7 @@ PROCEDURES -----------------------------------------------------------
   Creates a new header by prefixing the given header with the given
   field-value pair. `value-string' should not contain a terminating
   CRLF, but a multi-line value (perhaps created with
-  `data-lines->data') may contain seperator CRLFs.
+  `data-lines->data') may contain separator CRLFs.
 
 > (replace-field field-string value-string header) -> header
 
@@ -1331,7 +1331,7 @@ PROCEDURES -----------------------------------------------------------
 
   Creates a standard mail header given the sender, various lists of
   recipients, a subject, and the current date. (The BCC recipients do
-  not acually appear in the header, but they're accepted anyway to
+  not actually appear in the header, but they're accepted anyway to
   complete the abstraction.)
 
 > (data-lines->data list-of-strings) -> string
@@ -1368,7 +1368,7 @@ PROCEDURES -----------------------------------------------------------
         "  doe@localhost  (Johnny Doe)" => "doe@localhost (Johnny Doe)"
         "doe@localhost" => "doe@localhost"
 
-     * 'all - a list containing each of the three posibilities:
+     * 'all - a list containing each of the three possibilities:
               free-form name, address, and full address (in that
               order)
 
@@ -1388,7 +1388,7 @@ _DNS_, _domain name service_
 To load directly: (require (lib "dns.ss" "net"))
 Module files: _dns.ss_ - provides the procedures documented below
               _dns-unit.ss_ - provides unit net:dns@
-              _dns-sig.ss_ - provides signalture net:dns^
+              _dns-sig.ss_ - provides signature net:dns^
 
 ABSTRACT -------------------------------------------------------------
 
@@ -1403,7 +1403,7 @@ PROCEDURES -----------------------------------------------------------
 > (dns-get-address nameserver-string address-string) -> address-string
 
   Consults the specified nameserver (normally a numerical address like
-  "128.42.1.30") to obtain a numerical address for the given internet
+  "128.42.1.30") to obtain a numerical address for the given Internet
   address.
 
   The query record sent to the DNS server includes the "recursive"
@@ -1436,7 +1436,7 @@ Module files: _mime.ss_ - provides the procedures documented below
               _mime-unit.ss_ - provides unit net:mime@
                                imports net:base64^ from "base64-sig.ss"
                                and net:qp^ from "qp-sig.ss"
-              _mime-sig.ss_ - provides signalture net:mime^
+              _mime-sig.ss_ - provides signature net:mime^
 
 ABSTRACT -------------------------------------------------------------
 
@@ -1462,7 +1462,7 @@ EXCEPTIONS -----------------------------------------------------------
 
    missing-multipart-boundary-parameter
 
-   A multipart type is signalled, but no `boundary' parameter is
+   A multipart type is signaled, but no `boundary' parameter is
    given, also an error on the producer end of the message.
 
    malformed-multipart-entity
@@ -1473,7 +1473,7 @@ EXCEPTIONS -----------------------------------------------------------
    empty-mechanism
 
    No transport encoding mechanism was provided with the
-   Conent-Transfer-Encoding field.
+   Content-Transfer-Encoding field.
 
    empty-type
 
@@ -1746,7 +1746,7 @@ _Base 64 Encoding_, _base64_
 To load directly: (require (lib "base64.ss" "net"))
 Module files: _base64.ss_ - provides the procedures documented below
               _base64-unit.ss_ - provides unit net:base64@
-              _base64-sig.ss_ - provides signalture net:base64^
+              _base64-sig.ss_ - provides signature net:base64^
 
 ABSTRACT -------------------------------------------------------------
 
@@ -1788,7 +1788,7 @@ _Quoted Printable Encoding_, _qp__
 To load directly: (require (lib "qp.ss" "net"))
 Module files: _qp.ss_ - provides the procedures documented below
               _qp-unit.ss_ - provides unit net:qp@
-              _qp-sig.ss_ - provides signalture net:qp^
+              _qp-sig.ss_ - provides signature net:qp^
 
 ABSTRACT -------------------------------------------------------------
 
@@ -1855,7 +1855,7 @@ _FTP client_
 To load directly: (require (lib "ftp.ss" "net"))
 Module files: _ftp.ss_ - provides the procedures documented below
               _ftp-unit.ss_ - provides unit net:ftp@
-              _ftp-sig.ss_ - provides signalture net:ftp^
+              _ftp-sig.ss_ - provides signature net:ftp^
 
 ABSTRACT -------------------------------------------------------------
 
@@ -1869,7 +1869,7 @@ PROCEDURES -----------------------------------------------------------
 
   Establishes an FTP connection with the given server using the
   supplied username and password. The result is an opaque `ftp-conn'
-  structure reprsenting the connection.
+  structure representing the connection.
 
   The username and password strings are encoded to bytes using the
   current locale's encoding.
@@ -1899,7 +1899,7 @@ PROCEDURES -----------------------------------------------------------
   `ftp-make-file-seconds', below.  The third string is the name of the
   file or directory.
 
-  All strings are decoded frombytes using the current locale's
+  All strings are decoded from bytes using the current locale's
   encoding.
 
 > (ftp-make-file-seconds ftp-date-string)
@@ -1912,7 +1912,7 @@ PROCEDURES -----------------------------------------------------------
   Downloads `filename-string' from the server's current directory and
   puts it in `local-directory-path' using the same name. If the file
   already exists in the local directory, it is replaced, but only
-  after the transfer suceeds (i.e., the file is first downloaded to a
+  after the transfer succeeds (i.e., the file is first downloaded to a
   temporary file, then moved into place on success).
 
 ==========================================================================
@@ -1972,12 +1972,12 @@ PROCEDURES -----------------------------------------------------------
   (lib "mzssl.ss" "openssl"). The arguments to `make-ssl-tcp@' control
   the certificates and keys uses by server and client connections:
 
-    `server-cert-file' - a PEM file for a server's certyificate; #f means
+    `server-cert-file' - a PEM file for a server's certificate; #f means
      no certificate (which is unlikely to work with any SSL client)
     `server-key-file' - a private key PEM to go with `server-cert-file';
      #f means no key (which is likely renders a certificate useless)
     `server-root-cert-files' - a list of PEM files for trusted root
-     ceritifcates; #f disables verification of peer client certificates
+     certificates; #f disables verification of peer client certificates
 
     `server-suggest-auth-file' - PEM file for root certificates to be
      suggested to peer clients that must supply certificates
@@ -1987,7 +1987,7 @@ PROCEDURES -----------------------------------------------------------
     `client-key-file' - a private key PEM to go with `client-cert-file';
      #f means no key (which is likely renders a certificate useless)
     `client-root-cert-files' - a list of PEM files for trusted root
-     ceritifcates; #f disables verification of peer server certificates
+     certificates; #f disables verification of peer server certificates
 
 ==========================================================================
 _cookies_, HTTP _State Management_
@@ -1996,7 +1996,7 @@ _cookies_, HTTP _State Management_
 To load directly: (require (lib "cookie.ss" "net"))
 Module files: _cookie.ss_ - provides the procedures documented below
               _cookie-unit.ss_ - provides unit net:cookie@
-              _cookie-sig.ss_ - provides signalture net:cookie^
+              _cookie-sig.ss_ - provides signature net:cookie^
 
 
 ABSTRACT -------------------------------------------------------------
@@ -2010,7 +2010,7 @@ EXCEPTIONS -----------------------------------------------------------
 > cookie-error
   struct (cookie-error exn) ()
 
-  All errors are signalled by raising a cookie-error
+  All errors are signaled by raising a cookie-error
 
 TYPES ----------------------------------------------------------------
 
@@ -2135,7 +2135,7 @@ _URL encoding_, _URL decoding_, _application/x-www-form-urlencoded_
 To load directly: (require (lib "uri-codec.ss" "net"))
 Module files: _uri-codec.ss_ - provides the procedures documented below
               _uri-codec-unit.ss_ - provides unit net:uri-codec@
-              _uri-codec-sig.ss_ - provides signalture net:uri-codec^
+              _uri-codec-sig.ss_ - provides signature net:uri-codec^
 
 
 ABSTRACT -------------------------------------------------------------
@@ -2246,7 +2246,7 @@ PROCEDURES -----------------------------------------------------------
   separator when encoding. The other modes use/recognize only of the
   separators.
 
-  Exmaples for '((name . "shriram") (host "nw")):
+  Examples for '((name . "shriram") (host "nw")):
 
     Mode                     Parse                    Generate
    ------             --------------------      --------------------

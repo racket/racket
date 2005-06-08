@@ -9,7 +9,7 @@ The interactions window accepts variable declaration, statements and
 expressions legal for the language level. If the text is not sending,
 type Alt+Enter.
 
-The definitions window expects class and interface defintions,
+The definitions window expects class and interface definitions,
 interaction boxes, and test-suite boxes. (i.e. what would be given to
 javac plus two graphical boxes). Descriptions of these boxes can be
 found in the DrScheme manual.

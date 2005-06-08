@@ -1,4 +1,4 @@
-This is the proposed pattern grammer.
+This is the proposed pattern grammar.
 
 Asterisks mark rules that have changed.
 

@@ -20,7 +20,7 @@ into two parts; those added for the beginner macros, and those added
 for the mzscheme macros.  However, since it is harder to alter the
 macro expansion which occurs in mzscheme, the latter set are added not
 during the actual macro expansion in mzscheme but as part of a pass
-over the code that occurs in the annotater between expansion and the
+over the code that occurs in the annotator between expansion and the
 main annotation.  This procedure is called 'top-level-rewrite'.
 
 Therefore, the stepper's syntax-property additions occur in two
@@ -181,7 +181,7 @@ stepper-and/or-clauses-consumed :
  (Transferred.)
 
 stepper-skipto : 
- this instructs the annotater to look inside the current expression
+ this instructs the annotator to look inside the current expression
  along a given path for the expression to be annotated.  In
  particular, the value bound to stepper-skipto must be a list whose
  elements are car, cdr, or syntax-e. (Not transferred)
@@ -191,7 +191,7 @@ Some uses:
  - applied to the spurious 'let' that's wrapped around a local.
 
 Where it's used: the stepper-skipto label is used by the 2nd-pass
-macro-labeler and the annotater.  Both are in annotate.ss.  In addition
+macro-labeler and the annotator.  Both are in annotate.ss.  In addition
 to skipping inward, a stepper hint 
 
 stepper-else : 
@@ -211,7 +211,7 @@ stepper-define-struct-hint :
 
 stepper-test-suite-hint :
   this expression was the expression being tested in a test-suite-tool
-  test.  this hint indicates to the annotater that the expression should
+  test.  this hint indicates to the annotator that the expression should
   be annotated, even though it's not in one of the expected top-level
   shapes.
 

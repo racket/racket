@@ -10,7 +10,7 @@ If there are no items:
    * Click on the choice box. Make sure that nothing prints to the
      console as a result. 
 
-   * Click "Append"; "Extra 1" should appear in the list of tiems.
+   * Click "Append"; "Extra 1" should appear in the list of items.
      For a choice, it should be immediately selected.
 
    * Click "Append" again. The selection should not change.
@@ -28,7 +28,7 @@ If there are no items:
 For a multi-selection list, jump down to "Multiple Selections".
 
 If there are items, select each once in order (single-click for
- lists). After each solection, "Changed N" should appear in the
+ lists). After each selection, "Changed N" should appear in the
  console (where N is the position of the item, counting from 0) for a
  choice item, "Change (N)" for a list box; in either case, the
  "Changed" line is followed by "Callback Ok". This should be printed
@@ -40,14 +40,14 @@ For a choice, click to pop-up the menu, but don't select anything. for
  both cases, the selection should not change and nothing should print
  in the console.
 
-Click the "Append" button. The seletion should not change, but a new
+Click the "Append" button. The selection should not change, but a new
  item "Extra 1" should appear.
 
 Click the "Append" button again.
 
 Select the first newly added item.
 
-Click on the "check" button. In the console, "content: " whould be
+Click on the "check" button. In the console, "content: " would be
  printed along with a list of strings. That list should match the
  items in the choice/list.
 
@@ -89,7 +89,7 @@ Click on all parts of the control. The callback should never be
 
 Click on all the "Select" buttons. For the top buttons and "by
  Simulate" buttons (but not the "bad" ones), an exception should be
- reported. Nothing should happend for the "by Name" buttons.
+ reported. Nothing should happened for the "by Name" buttons.
 
 Click on "Check". The empty item list should be reported in the
  console.
@@ -126,7 +126,7 @@ Scroll to the top and select the first item. Click "Visible
  item. If an item is only partly visible, it should not be counted.
 
 Scroll down exactly one item's height without changing the
- selection. Click "Visible Incices" again. The top should change to 1
+ selection. Click "Visible Indices" again. The top should change to 1
  but the count should be the same.
 
 On some platforms, you can scroll to partially show the first item.
@@ -139,7 +139,7 @@ Make the window taller to show at least one more item. Try "Visible
 Click "Select Last". The list should scroll to the end. Try "Visible
  Indices" again.
 
-Make the list box taller than all its items. (It may be necssary to
+Make the list box taller than all its items. (It may be necessary to
  delete some items by selecting them and hitting the "Delete" button.)
  Click "Visible Indices" and make sure that the visible count is still
  more than the number of items.
@@ -149,7 +149,7 @@ Deleting  >> Lists Only <<
 
 Select an item in the middle of the list.
 
-Hit "Delete". The item should disappear, and nothing shold be
+Hit "Delete". The item should disappear, and nothing should be
  selected.
 
 Append a new item.

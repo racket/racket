@@ -1,7 +1,7 @@
 The drawing area should have the following features:
 
   At the top-left, when the window is opened for the first time, you
-    shoudl see a hollow box with a line sticking out to the bottom
+    should see a hollow box with a line sticking out to the bottom
     left. Repainting the canvas should produce instead a solid box and
     no line. Repainting with Pixmap or Bitmap should always produce
     the hollow box and line.
@@ -30,18 +30,18 @@ The drawing area should have the following features:
 
   Toward the right should be three columns of boxes, with a fourth
     column that starts with a box. All boxes should have a red border.
-    In the first thre columns, the boxes shold contain lines on a
+    In the first three columns, the boxes should contain lines on a
     background that matches the normal background (i.e., either white
-    or cyan). The lines should be black for the left colum, and green
+    or cyan). The lines should be black for the left column, and green
     for the second and third columns. In the fourth column, the shapes
     should be filled with the platform-specific panel background
     pattern; the third shape should be a semi-circle with no outline
-    on the bottm edge.
+    on the bottom edge.
 
   Further right (to the the right of the columns) should appear an
     X, a cross, and an narrow X tilted NW. Each should be drawn in
     green (5 pixels wide) with a thin black line centered along each
-    green line.  Scaling the piture should make the green line thicker,
+    green line.  Scaling the picture should make the green line thicker,
     but not the black line, and the black line should stay centered.
 
   Under the columns of boxes, a black box should be filled with an 25%
@@ -97,7 +97,7 @@ The drawing area should have the following features:
 
     Arcs: The leftmost should be the top half of an ellipse (it's
           formed via two arcs); the rightmost should be a filled wedge
-          from 90 degrees to 180 degress. The arcs are part of an
+          from 90 degrees to 180 degrees. The arcs are part of an
           ellipse 40 tall and 30 wide (i.e., stretched slightly in the
           vertical direction from a circle).
 
@@ -108,13 +108,13 @@ The drawing area should have the following features:
           Also, it's drawn in xor mode, so it should flip black to
           white wherever the octagon line runs over the shapes of the
           middle section. The bitmaps of the bottom region are drawn
-          afterwards, and wil therefore hide parts of the octagon
+          afterwards, and will therefore hide parts of the octagon
           line, although the MrEd logo is also drawn in XOR mode so it
           shouldn't obscure the octagon line.
 
   Bottom section:
 
-    Images: MrEd logo (b & w), drawn in XOR mode, so the octagin line
+    Images: MrEd logo (b & w), drawn in XOR mode, so the octagon line
               should be toggled where the black part of the MrEd logo
               intersects with the line. This changes with the
               "MrEd XOR" choice control (see below).
@@ -135,7 +135,7 @@ The drawing area should have the following features:
     Stippled boxes, in a blue box w/black border, four black-outlined
       shapes:
         Sqaure - green down-arrows on blue field
-        Cirle - green down-arrows on background (cyan or white) field
+        Circle - green down-arrows on background (cyan or white) field
         Square - bb logo
         Square - green cross-hatch on blue
 		    
@@ -161,7 +161,7 @@ The drawing area should have the following features:
       as paths.
 
    Four lines (to right of red shapes): in 'unsmoothed or 'aligned
-      mode, the lines should appear euqally spaced at scale 1, but
+      mode, the lines should appear equally spaced at scale 1, but
       scale 2 should show the middle lines closer by two pixels; the
       'smoothed mode should approximate this at scale 1. At scale 2,
       'unsmoothed and 'aligned should look the same.
@@ -172,8 +172,8 @@ The drawing area should have the following features:
       'smoothed mode, but in 'smoothed mode or at scale 2, they should
       touch.
 
-    Four suqares with overbar (bottom of drawing): the suqares,
-      which are strteched bitmaps, should touch, and the four squares
+    Four squares with overbar (bottom of drawing): the squares,
+      which are stretched bitmaps, should touch, and the four squares
       should have the same span as the overbar line.
 
 The image should look the same regardless of the top radio button
@@ -201,14 +201,14 @@ Clipping should slip the drawing to a particular shape:
    rectangle - a 10-pixel strip 100 pixels from the left
  
    octagon - the content of the big outlined octagon; some
-     part of the octagone outline is clipped
+     part of the octagon outline is clipped
 
    circle - a circle inscribed in the octagon's bounding
      box
 
    wedge - pi/4 to 3pi/4 of circle
 
-   round rectangle - a rounded rect inscrobed in the the blue box for
+   round rectangle - a rounded rect inscribed in the the blue box for
      testing stipples
 
    unions, intersects, subtracts - hopefully obvious
@@ -243,9 +243,9 @@ The "Clock" button tests a range of wedges. Each wedge has a 1-pixel
    the wedge part and empty part (so the wedge starts small and grows
    larger this time around).
  The orange wedge is drawn just before the bitmaps, so they appear on
- top of the orange wedge, but the wegde paints over other things. If
+ top of the orange wedge, but the wedge paints over other things. If
  the "Pixmap" box is checked and the "Polka" clipping region is
- selected, the result is an animtation where you can only see the
+ selected, the result is an animation where you can only see the
  wedge grow and move through the polka-dot holes in the purple field.
 
 The "Clip Clock" button is similar to "Clock", except that all drawing
@@ -293,7 +293,7 @@ The "MrEd XOR" menu selects a icon:
 
 Finally, print these instructions by hitting the "Print" button at the
 top of the "What Should I See?" window. The following lines are for
-the printing test; they should wrap aroundneatly on the printed
+the printing test; they should wrap around neatly on the printed
 page. (Don't add any newlines.) Check to make sure no lines are
 skipped or duplicated across page breaks. Try different page
 orientations.

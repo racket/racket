@@ -19,7 +19,7 @@ To load a SRFI, use the following form:
 		    (require (lib "N.ss" "srfi"))
 
 if you know the number of the SRFI you want to load.  This is the
-prefered method, or this one:
+preferred method, or this one:
 
 		 (require (lib "NAME.ss" "srfi" "N"))
 
@@ -51,7 +51,7 @@ and should be required like this:
 
 		 (require (lib "list.ss" "srfi" "1"))
 
-which supplies the collading names with a prefix of 's:'
+which supplies the colliding names with a prefix of 's:'
 (e.g. "s:map", "s:reverse!") and is therefore suitable for requires in
 a module.
 
@@ -60,7 +60,7 @@ like this:
 
 		(require (lib "time.ss" "srfi" "19"))
 
-which supplies the collading names with a prefix of 'srfi:'
+which supplies the colliding names with a prefix of 'srfi:'
 (e.g. "srfi:date?", "srfi:date-second") and is therefore suitable for
 requires in a module.
 
@@ -120,7 +120,7 @@ Notes:
 
 ,--------------------
 | *2 The time module does not export its time structure (you have to
-| use the time-* procedures.)  It renames all the date-* accesors to
+| use the time-* procedures.)  It renames all the date-* accessors to
 | tm:date-* so that you won't get errors when including this code in
 | other modules.  Care most be taken NOT to confuse the internal date
 | structure with the PLT Scheme one, they are not the same, and all

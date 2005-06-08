@@ -38,7 +38,7 @@ which accepts a string of arbitrary LaTeX code, and the MrEd set
 includes `dc', which accepts an arbitrary Scheme procedure for drawing
 to a dc<%>.
 
-When creating pictures with the obsolte `picture' or `cons-picture'
+When creating pictures with the obsolete `picture' or `cons-picture'
 functions, or when finding relative picture locations with the
 obsolete `find-lt', etc., the coordinate system is upside-down: (0, 0)
 is in the lower left.
@@ -497,7 +497,7 @@ Bounding-Box Adjusters:
 >  (inset pict li ti ri bi) -> pict
 
    Extends picture size by adding the give amounts to the
-    corersponding side; ascent and descent are extended, too.
+    corresponding side; ascent and descent are extended, too.
 
 >  (clip-descent pict) -> pict
 
@@ -549,7 +549,7 @@ Finders:
 >  (ctl-find pict pict-path) -> dx dy
 >  (cbl-find pict pict-path) -> dx dy
 
-   Finds an embedded pictur.
+   Finds an embedded picture.
    A pict-path is either
     pict
     non-empty-pict-path-list
@@ -767,7 +767,7 @@ Obsolete functions
 
 >  (picture w h command-list) -> pict
 
-   Obsolte: describes a picture with low-level commands; see below.
+   Obsolete: describes a picture with low-level commands; see below.
 
 >  (cons-picture pict command-list) -> pict
 >  (cons-picture* pict command-list) -> pict
@@ -814,7 +814,7 @@ Obsolete functions
 >  (arrow-line dx dy size) -> pict
 >  (arrows-line dx dy size) -> pict
 
-   Obsolte versions of the `line+arrow[s]' functions,
+   Obsolete versions of the `line+arrow[s]' functions,
    where the vertical delta is negated.
       [MrEd only, in utils.ss]
 

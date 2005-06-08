@@ -17,7 +17,7 @@ turn, click on one of the numbers surrounding the board to move.
 The left and right arrows above the board undo and redo moves,
 respectively. The right side of the window shows the game played so
 far, including undone moves that have not yet been replaced. The most
-recent move is hilighted in blue.
+recent move is highlighted in blue.
 
 When a player loses by repeating a previous board configuration, the
 player's pieces turn red and no further moves are allowed (although

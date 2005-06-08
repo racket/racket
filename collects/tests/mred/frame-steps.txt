@@ -74,7 +74,7 @@ Window Resizing
 Stretch the window vertically. Stretch it horizontally.  Unless the
 frame was created with "all stechy" on, then messages, buttons, check
 boxes, and radio boxes should not stretch. Choice and text items 
-should only strech horizontally. Sliders and gauges should only
+should only stretch horizontally. Sliders and gauges should only
 resize in the major direction.
 
 If "all stretchy" was on, then everything in the left column should
@@ -131,9 +131,9 @@ disabled.
   * enable/disable all the controls through each panel
     checkbox
 
-  * click each checkbox to disble an item; click on the
+  * click each checkbox to disable an item; click on the
     item to make sure it's disabled; recheck the checkbox;
-    make sure the item is re-enebaled
+    make sure the item is re-enabled
 
   * disable all the controls; disable and re-enable the
     whole panel; make sure the controls are still disabled
@@ -142,14 +142,14 @@ disabled.
     make sure the controls are still not enabled; re-enable
     the panel and check that the controls are enabled
 
-  * disbale the panel; diable all the controls; enable the
+  * disable the panel; disable all the controls; enable the
     panel and make sure the controls are still disabled;
     enable all the controls
 
   * repeat the three steps above with the other panel checkbox
 
   * repeat the three steps for radioboxes and radio items,
-    sintead of panels and controls
+    instead of panels and controls
 
 Relabeling
 ----------
@@ -162,9 +162,9 @@ it depends:
 
   - message: <down-right arrow>
   - button: <down-left arrow>
-  - checbox: <BB icon>
+  - checkbox: <BB icon>
 
-Note that radio items can't be relabelled.
+Note that radio items can't be relabeled.
 
 Be sure to click each button twice, to make sure that the original
 label is restored.
@@ -216,7 +216,7 @@ same panel as the "New Deleted" control, but each subwindow<%> is
 created with the 'deleted style, which means that the subwindow<%> is
 initially hidden and deleted. The "*Activate Last*" item activates
 the last-created subwindow<%>, i.e., it shows the subwindow<%> and
-adjusts the panel size to accomodate the activated window<%>. The key
+adjusts the panel size to accommodate the activated window<%>. The key
 part of this test is that no deleted subwindow<%> is shown, and no
 deleted subwindow<%> affects the panel's geometry.
       
@@ -262,20 +262,20 @@ under windows, the key info is immediately replaced with mouse info.)
 Event Filtering
 ---------------
 
-When "Drop Mouse Events" is checked at the bottom of the thrid column,
+When "Drop Mouse Events" is checked at the bottom of the third column,
 all other controls (except "Drop Mouse Events" and "Drop Key Events")
-shold cease to respond to mouse events. The event indicator will still
+should cease to respond to mouse events. The event indicator will still
 work. Keyboard events should not be affected (though it may be hard to
 get the focus somewhere interesting).
 
 Try every control with mouse events dropped.
 
-"Drop Key Events" does the obvious thing. Try every keybord-responding
+"Drop Key Events" does the obvious thing. Try every keyboard-responding
 control with events dropped. Try dialog navigation keys on other
 controls, such as TAB or left-arrow.
 
-Different Configuations
------------------------
+Different Configurations
+------------------------
 
 Each Frame can be created in several different configurations (32 or
 64 of them!).

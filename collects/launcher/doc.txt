@@ -51,7 +51,7 @@ executables.
               one for each type of file handled by the application;
               each association is a 2-element list, where the first (key)
               element is a string recognized by Finder, and the second
-              element is a plist value (see doc.tx in the "xml" collection);
+              element is a plist value (see doc.txt in the "xml" collection);
               see plt/collects/drscheme/drscheme.filetypes for an example.
 
       -'resource-files_ (Mac OS X) - extra files to copy into the
@@ -107,12 +107,12 @@ executables.
 
 
 > (install-mred-program-launcher file collection name) - Calls
-   `make-mred-launcher' with the destintation returned by
+   `make-mred-launcher' with the destination returned by
    (mred-program-launcher-path name); the `file' and `collection'
    arguments are passed on to `make-mred-launcher'.
 
 > (install-mzscheme-program-launcher file collection name) - Calls
-   `make-mzscheme-launcher' with the destintation returned by
+   `make-mzscheme-launcher' with the destination returned by
    (mzscheme-program-launcher-path name); the `file' and `collection'
    arguments are passed on to `make-mzscheme-launcher'.
 
@@ -123,7 +123,7 @@ executables.
    ".exe" suffix is automatically appended to `name'. For Unix, `name'
    is changed to lowercase, whitespace is changed to `-', and the path
    includes the bin subdirectory of the PLT home directory. For Mac OS
-   X, the ".app" suffix is appened to `name'.
+   X, the ".app" suffix is appended to `name'.
 
 > (mzscheme-program-launcher-path name) returns the same pathname as
    (mred-program-launcher-path name) for Unix, Windows, and Mac OS Classic.

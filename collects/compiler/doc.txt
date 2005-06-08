@@ -208,7 +208,7 @@ The compiler unit loads certain tools on demand via `dynamic-require'
 and `get-info'. If the namespace used during compilation is different
 from the namespace used to load the compiler, or if other load-related
 parameters are set, then the following parameter can be used to
-restore settings for `dyanmic-require'.
+restore settings for `dynamic-require'.
 
 >  current-compiler-dynamic-require-wrapper
 
@@ -249,7 +249,7 @@ _option.ss_ module. Options are set by the following parameters:
      Default = #f.
 
 > propagate-constants - #t improves the code by
-     propogating constants.  Default = #t.
+     propagating constants.  Default = #t.
 
 > assume-primitives - #t equates X with #%X when
      #%X exists.  This is useful only with non-unitized code.
@@ -260,8 +260,8 @@ _option.ss_ module. Options are set by the following parameters:
 
 > vehicles - Controls how closures are compiled.  The
     possible values are: 'vehicles:automatic - auto-groups
-                         'vehicles:functions - groups by procedue
-                         'vechicles:units - groups by unit
+                         'vehicles:functions - groups by procedure
+                         'vehicles:units - groups by unit
                          'vehicles:monolithic - groups randomly
     Default = 'vehicles:automatic.
 
@@ -304,7 +304,7 @@ The _compiler-unit.ss_ library provides a unit/sig
 matching the signature
 >      compiler^ 
 which provides the compiler.ss functions.  This signature and all
-auxilliary signatures needed by compiler@ are defined by the
+auxiliary signatures needed by compiler@ are defined by the
 _sig.ss_ library.
 
 The signed unit requires the following imports:
@@ -402,20 +402,20 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
   See the mzc documentation for a simpler interface that is
   well-suited to programs defined with `module'.
 
-  The embeddeding executable is written to `dest', which is
+  The embedding executable is written to `dest', which is
   overwritten if it exists already (as a file or directory).
 
-  The embedded code consists of module declaratons followed by
+  The embedded code consists of module declarations followed by
   additional (arbitrary) code. When a module is embedded, every module
   that it imports is also embedded. Library modules are embedded so
   that they are accessible via their `lib' paths in the initial
   namespace' except as specified in `mod-list', other modules
-  (accessed via local paths and absolte paths) are embedded with a
+  (accessed via local paths and absolute paths) are embedded with a
   generated prefix, so that they are not directly accessible.
 
   The `mod-list' argument designates modules to be embedded, as
   described below. The `literal-file-list' and `literal-sexp'
-  arguments specifiy literal code to be copied into the executable:
+  arguments specify literal code to be copied into the executable:
   the content of each file in `literal-file-list' is copied in order
   (with no intervening space), followed by `literal-sexp'. The
   `literal-file-list' files or `literal-sexp' can contain compiled
@@ -451,7 +451,7 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
   executable has a chance to see an embedded declaration of (lib
   "mred.ss" "mred"). Then, if the literal code expect to have MrEd and
   the class library required into the top-level namespace, literal
-  `require's for thoselibraries should be included at the start.
+  `require's for those libraries should be included at the start.
 
    The optional `aux' argument is an association list for
    platform-specific options (i.e., it is a list of pairs where the

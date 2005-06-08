@@ -2,7 +2,7 @@
 Overview
 --------
 
-This canvas test frame is for checking the behvaiour of the
+This canvas test frame is for checking the behavior of the
 scrollbars. Canvas scrollbars work in one of two modes:
   1) Managing: the scrollbar determines the size and offset of
      the canvas's drawing area.
@@ -13,9 +13,9 @@ In the test frame, the top canvas is initially unmanaged, and the
 bottom is managed.
 
 An HVCanvas has both horizontal and vertical scrollbars, but the
-scrollbars are initially disabled. Clikcing the "Enable Vertical"
+scrollbars are initially disabled. Clicking the "Enable Vertical"
 checkbox enables the vertical scroll. A VCanvas has only a vertical
-scrollbar; clicking "ENable Horizontal" in this case has no effect.
+scrollbar; clicking "Enable Horizontal" in this case has no effect.
 When a canvas is managed by its scrollbars and a scrollbar is missing
 in a particular direction, it should act the same as an unmanaged
 canvas in that direction.
@@ -37,7 +37,7 @@ On each canvas, the following are painted at 0,0:
    bottom canvas's boundaries are probably beyond the visible region.)
    When the canvas is managed with a vertical scrollbar, the bottom
    boundary line might not be visible, i.e., it might be clipped - but
-   it must be clipped eactly in that case.
+   it must be clipped exactly in that case.
 
 As the scroll is changed for the managed canvas, the information will
 move, because the scrolls automatically adjust the offset of the

@@ -234,7 +234,7 @@ home/
 
 There are no strict requirements for what sorts of files can go in
 your package, but for it to work well with PLT Scheme's module
-system you should arrange your Schme code into modules.
+system you should arrange your Scheme code into modules.
 
 2. CREATE INFO.SS AND DOC.TXT FILES [OPTIONAL]
 
@@ -278,7 +278,7 @@ categorized as "Miscellaneous."
 The _'doc.txt field_
 
 If present, the doc.txt field should be a string corresponding to the
-name (without path) of the text documentatation file for your
+name (without path) of the text documentation file for your
 package. If this field is the value "doc.txt" and a file called
 "doc.txt" exists in your package's root directory, it will be used as
 the online documentation visitors to the planet.plt-scheme.org website

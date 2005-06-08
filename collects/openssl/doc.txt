@@ -53,7 +53,7 @@ Like `ssl-connect', but breaking is enabled while trying to connect.
 > (ssl-make-client-context [protocol-symbol])
 
 Creates a context to be supplied to `ssl-connect'. The context
-identifis a communication protocol (as selected by `protocol-symbol'),
+identifies a communication protocol (as selected by `protocol-symbol'),
 and also holds certificate information (i.e., the client's identity,
 its trusted certificate authorities, etc.). See the "Certificate
 procedures" section below for more information on certificates.
@@ -155,7 +155,7 @@ certificate authorities with `ssl-load-verify-root-certificates!'.
 
 Loads a PEM-format file containing trusted certificates that are used
 to verify the certificates of a connection peer. Call this procedure
-multiple times to load multiple sets of trusted certifactes.
+multiple times to load multiple sets of trusted certificates.
 
 The file "test.pem" is suitable for testing purposes where the peer
 identifies itself using "test.pem".  Since "test.pem" is public, such
@@ -169,7 +169,7 @@ server. The certificate list is sent to a client when the server
 requests a certificate as an indication of which certificates the
 server trusts.
 
-Loading the suggested certifcicates does not imply trust, however; any
+Loading the suggested certificates does not imply trust, however; any
 certificate presented by the client will be checked using the trusted
 roots loaded by `ssl-load-verify-root-certificates!'.
 
@@ -217,7 +217,7 @@ Per-platform notes:
    do not produce DLLs.
 
    Bonus hack: If "{lib,ssl}easy32xxxxxxx.lib" exist in the lib
-   directory, they are used (instead of "{liib,ssl}eay32.lib") with
+   directory, they are used (instead of "{lib,ssl}eay32.lib") with
    the expectation that the resulting extension will link to
    "{lib,ssl}eay32xxxxxxx.dll". This enables the name-mangling version
    hack for distributing DLLs.

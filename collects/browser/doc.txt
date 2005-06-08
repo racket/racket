@@ -105,7 +105,7 @@ The html-eval-ok parameter controls the evaluation of
 ----------------------------------------
 
 > (hyper-text-mixin text%) - Extends the given text% class. The
-   initializtion arguments are extended with a four new first
+   initialization arguments are extended with a four new first
    arguments: a url or a port to be loaded into the text% object, a
    top-level-window or #f to use as a parent for status dialogs, a
    progress procedure used as for `get-url', and either #f or a post
@@ -185,7 +185,7 @@ The html-eval-ok parameter controls the evaluation of
 
 > hyper-text% = (hyper-text-mixin text:keymap%)
 
-  This is an extension of the keymap class, to support standard keybindings
+  This is an extension of the keymap class, to support standard key bindings
   in the browser window. It adds the following method:
 
 >   get-hyper-keymap :: (send o get-hyper-keymap) -> keymap% object
@@ -195,7 +195,7 @@ The html-eval-ok parameter controls the evaluation of
 ----------------------------------------
 
 > (hyper-canvas-mixin editor-canvas%) - Extends the given
-  editor-canvas% class. The intialization arguments are unchanged.
+  editor-canvas% class. The initialization arguments are unchanged.
 
   The canvas's parent should be an instance of a class derived with
   `hyper-panel-mixin' (described below).
@@ -215,7 +215,7 @@ The html-eval-ok parameter controls the evaluation of
      editor-canvas may not be an instance of this class.
 
 >   current-page :: (send o current-page)
-     Returns a reprsentation of the currently displayed page, which
+     Returns a representation of the currently displayed page, which
      includes a particular editor and a visible range within the
      editor.
  
@@ -273,7 +273,7 @@ The html-eval-ok parameter controls the evaluation of
 
 
 >   make-control-bar-panel :: (send o make-control-bar-panel container)
-     Create's the panel's sub-container for the control bar containing
+     Creates the panel's sub-container for the control bar containing
      the navigation buttons. If #f is returned, the panel will have no
      control bar. The default method instantiates horizontal-panel%.
 
@@ -295,7 +295,7 @@ The html-eval-ok parameter controls the evaluation of
      This method is called by the hypertext canvas to notify the
      panel that the hypertext page changed. The `page' is #f
      if `new-page' is the first page for the canvas. See also
-     `page->editor' (decsribed below).
+     `page->editor' (described below).
 
 >   filter-notes :: (send o filter-notes list-of-strings)
      Given the notes from a page as a list of strings (where
@@ -352,7 +352,7 @@ init arg text to follow the corresponding link.
 
 The _browser-unit.ss_ library in the "browser" collection is a
 unitized version of the code documented above.  It imports unit
-matching thefollowing signatures:
+matching the following signatures:
 
     setup:plt-installer^
     mred^
@@ -405,7 +405,7 @@ An interface that extends text% with the following methods:
 > (html-text-mixin text%-subclass) -> html-text<%> implementation
 
 Extends the given text% class with implementations of the html-text<%>
-methods. Hyperlinks are attched to clickbacks that use `send-url'
+methods. Hyperlinks are attached to clickbacks that use `send-url'
 (from the "sendurl.ss" library of the "net" collection).
 
 > (render-html-to-text input-port html-text<%>-obj load-img? eval-mz?)

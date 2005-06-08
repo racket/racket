@@ -29,7 +29,7 @@ New methods:
 
 >  new-item :: (send a-list new-item mixin) - creates and returns
      a new (empty) hierarchical-list-item<%>, but first, applies
-     `mixin' to a class implemeting hierarchical-list-item<%> and uses
+     `mixin' to a class implementing hierarchical-list-item<%> and uses
      the result as the class for the new hierarchical-list-item<%>
      object.
 
@@ -43,7 +43,7 @@ New methods:
 
 >  new-list :: (send a-list new-list mixin) - creates and returns
      a new (empty) hierarchical-list-compound-item<%>, but first,
-     applies `mixin' to a class implemeting
+     applies `mixin' to a class implementing
      hierarchical-list-compound-item<%> and uses the result as the
      class for the new hierarchical-list-compound-item<%> object.
 
@@ -138,7 +138,7 @@ New methods:
 
 >  get-clickable-snip :: (send an-item get-clickable-snip) -
    returns the snip that (when clicked) selects this element in
-   the list. This is intended for use with the autmatic test
+   the list. This is intended for use with the automatic test
    suite.
 
 >  get-allow-selection? :: (send an-item get-allow-selection?) -
@@ -147,7 +147,7 @@ New methods:
    to be selected.
 
 >  set-allow-selection :: (send an-item set-allow-selection boolean) -
-   deteremines if this item is allowed to be selected
+   determines if this item is allowed to be selected
    
 --------------------------------------------------
 
@@ -161,7 +161,7 @@ New methods:
 
 >  new-item :: (send a-list-item new-item mixin) - creates and returns
      a new (empty) hierarchical-list-item<%>, but first, applies
-     `mixin' to a class implemeting hierarchical-list-item<%> and uses
+     `mixin' to a class implementing hierarchical-list-item<%> and uses
      the result as the class for the new hierarchical-list-item<%>
      object.
 
@@ -175,7 +175,7 @@ New methods:
 
 >  new-list :: (send a-list-item new-list mixin) - creates and returns
      a new (empty) hierarchical-list-compound-item<%>, but first,
-     applies `mixin' to a class implemeting
+     applies `mixin' to a class implementing
      hierarchical-list-compound-item<%> and uses the result as the
      class for the new hierarchical-list-compound-item<%> object.
 

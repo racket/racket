@@ -40,7 +40,7 @@ this tool:
   a bounded term size.
 
   _threads.ss_: shows how non-deterministic choice can be
-  modelled in a reduction semantics. Contains an example use
+  modeled in a reduction semantics. Contains an example use
   of a simple alternative pretty printer.
 
   _semaphores.ss_: a simple threaded language with semaphores
@@ -85,7 +85,7 @@ variables.
 
 The _hole_ pattern matches anything when inside a matching
 in-hole pattern. The (hole <symbol>) variation on that
-pattern is used in conjuction with in-named-hole to support
+pattern is used in conjunction with in-named-hole to support
 languages that require multiple patterns in a hole.
 
 The _<symbol>_ pattern stands for a literal symbol that must
@@ -143,7 +143,7 @@ The (pattern ...) pattern matches a sexpression list, where
 each pattern matches an element of the list. In addition, if
 a list pattern contains an ellipses that is not treated as a
 literal, instead it matches any number of duplications of the
-pattern that came before the ellipses (including 0). Furthemore,
+pattern that came before the ellipses (including 0). Furthermore,
 each (name <symbol> <pattern>) in the duplicated pattern
 binds a list of matches to <symbol>, instead of a single match.
 (A nested duplicated pattern creates a list of list matches,
@@ -427,7 +427,7 @@ instead invoked with a single argument, the s-expression to
 render, and it must return a string which the GUI will use
 as a representation of the given expression for display.
 
-The default pp uses mzlib's pretty-print function. See 
+The default pp uses MzLib's pretty-print function. See 
 threads.ss in the examples directory for an example use 
 of the one-argument form of this argument and 
 ho-contracts.ss in the examples directory for an example 
@@ -475,15 +475,15 @@ The _subst.ss_ library provides these names:
 > (subst (match-pattern subst-rhs ...) ...)      SYNTAX
 
 The result of this form is a function that performs capture
-avoiding substition for a particular (sexp-based)
+avoiding substitution for a particular (sexp-based)
 language. The function accepts three arguments, a variable,
-a term to substitue and a term to substitute into.
+a term to substitute and a term to substitute into.
 
 Each of the `match-pattern's specify the forms of
 the language and the `subst-rhs's specify what kind of form
 it is.  Each of the match-patterns are in (lib "match.ss"
-"match)'s pattern language and any variable that they bind
-are avaialbe in the <scheme-expression>'s described below.
+"match")'s pattern language and any variable that they bind
+are available in the <scheme-expression>'s described below.
 
 The language of the subst-rhs follows.
 
@@ -495,7 +495,7 @@ The language of the subst-rhs follows.
 
 > (constant)
 
-  this means that the rhs for thsi form is a constant that
+  this means that the rhs for this form is a constant that
   cannot be renamed. Nothing may follow this.
 
 > (all-vars <scheme-expression>)
@@ -539,7 +539,7 @@ corresponding to one of the subexpressions of this
 expression (matched by the match-patten for this clause of
 subst).
 
-Consider this example of a substition procedure for the
+Consider this example of a substitution procedure for the
 lambda calculus:
 
   (define lc-subst
@@ -575,7 +575,7 @@ subterms declaration says that all of the arguments are
 subterms and that they do not introduce any new terms.
 
 In this program, lc-subst is bound to a function that does
-the substition. The first argument is the variable to
+the substitution. The first argument is the variable to
 substitute for, the second is the term to substitute and the
 final argument is the term to substitute into. For example,
 this call:
@@ -720,10 +720,10 @@ The _helper.ss_ module provides additional helper functions and syntax.
 
 > (define-memoized (f arg ...) expr ...)    SYNTAX
 
-  Like `define' for function defitions, except that the function is
+  Like `define' for function definitions, except that the function is
   "memoized": it automatically remembers each result, and when `eq?'
   arguments are provided later, the same result is returned
-  immeduately.
+  immediately.
 
 > (lambda-memoized (arg ...) expr)          SYNTAX
 
@@ -788,7 +788,7 @@ Aggregates potential results for future exploration.
   computation proceeds bey generating each successful result from
   `backtrackable-expr', and then feeding the result to the
   `body-expr's to refine the results. Naturally, `body-expr' can
-  contain futher uses of `explore-results' or `many-results' which are
+  contain further uses of `explore-results' or `many-results' which are
   folded into the backtracking exploration.
 
 > (explore-parallel-results (results-id) backtrackable-list-expr
@@ -816,10 +816,10 @@ Aggregates potential results for future exploration.
 
    A poor-man's `gui' for test interaction. The first argument
    represents a set of reductions that define a function; the second
-   argument is the starting expression; the thrid argument is a
+   argument is the starting expression; the third argument is a
    predicate to recognize ending expressions; the fourth argument
    limits the number of steps taken.  The function applies the
-   reductions repeatedly until an ending expression os found, or until
+   reductions repeatedly until an ending expression is found, or until
    the reduction gets stuck. (If the reduction produces multiple
    results, an exception is raised.) The result is the list of
    expressions leading to the ending expression.
@@ -835,7 +835,7 @@ Aggregates potential results for future exploration.
 
 > all-of : (any? (any? . -> . any) . -> . (listof any?))
 
-   Takes an arbirary S-expression as the first argument, and a
+   Takes an arbitrary S-expression as the first argument, and a
    predicate as the second argument. all-of' then traverses the pairs
    that make up the S-expression, calling the predicate on every pair
    and every value within a pair. The result is the list of values for
@@ -844,7 +844,7 @@ Aggregates potential results for future exploration.
 
 > transitive-closure : ((listof pair?) . -> . (listof (listof any?))
 
-   Given the reprsentation of a function as a list of pairs,
+   Given the representation of a function as a list of pairs,
    `transitive-closure' produces the transitive closure as a list of
    lists. Each nested list begins with a domain item and continues
    with a list of range items. 
@@ -888,7 +888,7 @@ a grammar non-terminal.
                         . -> . any)
 
   The first argument is a procedure to call with a series of generated
-  grammar instances and each term's size. Instances are generatedfrom
+  grammar instances and each term's size. Instances are generated from
   smallest to largest; the size of an instance is roughly the size of
   the proof tree that demonstrates grammar membership.
 
@@ -904,6 +904,6 @@ a grammar non-terminal.
                               symbol?
                               . -> . any)
 
-  Like `for-each-generated', except minimum and maxiumum sizes are
+  Like `for-each-generated', except minimum and maximum sizes are
   provided, and the order of generation is arbitrary (i.e., some
   larger instances may be generated before smaller instances).

@@ -242,7 +242,7 @@
 
  ODBC 3.0.
 
- Frees `handle', which may be an environment, connection, statment,
+ Frees `handle', which may be an environment, connection, statement,
  or descriptor handle.  Returns the value of `handle'.
 
 > (free-stmt hstmt option)
@@ -408,7 +408,7 @@
  connection handle `hdbc'.  The type of the return value depends
  on the symbol `infotype', which indicates the information requested.
  The optional argument `handle' is either a statement handle
- or a descript handle, and may be used only with certain 
+ or a descriptor handle, and may be used only with certain 
  values of `infotype', as described below.
 
  The significance of the values returned by get-info is beyond the
@@ -781,7 +781,7 @@
                                         sql-ad-drop-domain-default
                                         sql-ad-add-constraint-deferrable
                                         sql-ad-add-constraint-non-deferrable
-                                        sql-ad-add-constraint-inititally-deferred
+                                        sql-ad-add-constraint-initially-deferred
                                         sql-ad-add-constraint-initially-immediate)
  'sql-async-mode                   'sql-am-connection, or
 	                            'sql-am-statement, or
@@ -1236,7 +1236,7 @@
 
  For a connection handle `hdbc', returns the value of the 
  connection option specified by the symbol `option'.  
- The permisible values of `option' are 
+ The permissible values of `option' are 
 
   'sql-access-mode 
   'sql-autocommit 
@@ -1300,7 +1300,7 @@
 
  For a connection handle `hdbc', sets the option indicated by the 
  symbol `option' to be `val'.  The type of `val' depends on `attr'.
- The permisible values of `option' are: 
+ The permissible values of `option' are: 
 
   'sql-access-mode 
   'sql-autocommit 
@@ -1916,7 +1916,7 @@
 
  Associates the sql-buffer `buff' and sql-indicator `ind' 
  with a column of data denoted by the statement handle `hstmt'
- and column numer `colnum', an integer.  Returns the value 
+ and column number `colnum', an integer.  Returns the value 
  of `hstmt'.  
  
 > (fetch hstmt)

@@ -25,7 +25,7 @@ specification in the following minor ways:
   * identifiers cannot contain whitespace;
 
   * argument separators are constrained to be identifiers (i.e., they
-    cannot be keywords, and they cannot consistnt of multiple
+    cannot be keywords, and they cannot consistent of multiple
     identifiers separated by whitespace); and
 
   * numbers containing exponents (using the "10" subscript) are not

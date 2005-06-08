@@ -1,5 +1,5 @@
 
-Finish Install is for Mac OS X.
+Finish Install is for Mac OS X and Windows.
 
 The launcher (which does not embed a path to the original executable) runs the
 "install" script in the same directory as the launcher.  The collection itself

@@ -6,7 +6,7 @@
 
 The embedded gui collection provides a class hierarchy for
 creating graphical boxes within mred's editors with geometry
-managment that mirrors that of vertical-panel% and
+management that mirrors that of vertical-panel% and
 horizontal-panel%
 
 ============================================================
@@ -125,7 +125,7 @@ Whether or not the snip can be stretched in the Y dimension
 ============================================================
 
 _dllist<%>_ is an interface which makes a class a
-doublly-linked list and requires the following methods
+doubly-linked list and requires the following methods
 
 > (send a-dlllist next) -> (is-a?/c dllist<%>)
 
@@ -159,7 +159,7 @@ of the dllist.
 ============================================================
 
 _vertical-alignment%_ and _horizontal-alignment%_ are
-geometry managment classes of the embedded-gui toolkit. They
+geometry management classes of the embedded-gui toolkit. They
 implement alignment<%> and alignment-parent<%> and are
 instantiated as follows
 
@@ -248,7 +248,7 @@ wide as is required to display the longest string in labels.
 _vline%_ and _hline%_ are two graphical elements of the
 alignment<%> hierarchy that display a vertical or horizontal
 line across the region they are inserted into. They implement
-alingment<%>.
+alignment<%>.
 
 > (new vline% (parent _))
   parent : (is-a?/c alignment-parent<%>)
@@ -286,7 +286,7 @@ The thunk to execute when tabbing back
 ============================================================
 
 _tabbable-text-mixin_ gives a text% the tabbable-text<%>
-interface and gives it keybindings to tab ahead and back.
+interface and gives it key bindings to tab ahead and back.
 
 ============================================================
 
@@ -308,13 +308,13 @@ and must be locked separately.
 ============================================================
 
 The _single-line-text-mixin_ restricts a text to one line by
-overriding its keybidings to do nothing on enter.
+overriding its key bindings to do nothing on enter.
 
 ============================================================
 
 The _cue-text-mixin_ gives a text% an instantiation argument
 of a string that is displayed in the text% initially in grey.
-This text dissappears when the text gets focus. This is
+This text disappears when the text gets focus. This is
 useful for labeling texts without needing to take up space.
 
 _cue-text%_ is (cue-text-mixin text%)
@@ -359,7 +359,7 @@ The pasteboard that contains the snip
   snip : (is-a?/c snip%)
 
 The application of f on all snips from snip to the end in a
-foldl foldr mannor
+foldl foldr manner
   
 > (for-each-snip f first-snip init-lists ...) -> void
   f : ((is-a?/c snip%) . -> . void)
@@ -378,9 +378,9 @@ A list of f applied to each snip
 > (stretchable-width? snip) -> boolean?
   snip : (is-a?/c snip%)
 
-True if the snip can be resized in the x dimention
+True if the snip can be resized in the x dimension
   
 > (stretchable-height? snip) -> boolean?
   snip : (is-a?/c snip%)
 
-True if the snip can be resized in the y dimention
+True if the snip can be resized in the y dimension

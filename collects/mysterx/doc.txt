@@ -1151,7 +1151,7 @@ _Remote COM servers_
   large x-large xx-large); 2) a symbol in the list '(larger smaller), 
   indicating a size relative to a parent element; 3) an instance
   of the css-length structure, or 4) an instance of the css-percentage
-  structure, where the perecentage is relative to the parent element's
+  structure, where the percentage is relative to the parent element's
   font-size.
 
 > set-font-size-native! :: (send an-mx-element set-font-size-native! fs)

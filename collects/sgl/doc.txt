@@ -41,7 +41,7 @@ Vertex arrays           (GL 1.5, Section 2.8)
 Buffer objects          (GL 1.5, Section 2.9)
 glGetPointerv           (GL 1.5, Section 6.1.11)
 Buffer object queries   (GL 1.5, Section 6.1.13)
-Polygon tessalation     (GLU 1.3, Section 5)
+Polygon tessellation    (GLU 1.3, Section 5)
 gluQuadricCallback      (GLU 1.3, Section 6.2)
 NURBS                   (GLU 1.3, Section 7)
 

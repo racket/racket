@@ -181,8 +181,8 @@ Contact us
 If you need more information on using MzCOM, please 
 contact us at scheme@plt-scheme.org.
 
-Acknowledgements
-----------------
+Acknowledgments
+---------------
 
 MzCOM was developed in response to a query by 
 Andre Van Meulebrouck.  Andre also did extensive 

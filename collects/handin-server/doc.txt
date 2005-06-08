@@ -154,7 +154,7 @@ host the server. This directory contains the following files and
 sub-directories:
 
   * server-cert.pem --- the server's certificate. To create a
-    ceritificate and key with openssl:
+    certificate and key with openssl:
 
      openssl req -new -nodes -x509 -days 365 -out server-cert.pem 
                  -keyout private-key.pem 
@@ -182,7 +182,7 @@ sub-directories:
          the default is 300
 
       'session-memory-limit : maximum size in bytes of memory allowed
-         for per-session comuptation, if per-session limits are
+         for per-session computation, if per-session limits are
          supported (i.e., when using MrEd3m and MzScheme3m with memory
          accounting); the default is 40000000
 
@@ -247,7 +247,7 @@ sub-directories:
     contains a copy of the student's definitions and interactions
     windows. The file is in a binary format (to support non-text
     code), and opening the file directly in DrScheme shows the
-    definitions part. To get both the defintions and interactions
+    definitions part. To get both the definitions and interactions
     parts, the file can be parsed with `unpack-submission' from
     "utils.ss" (see below).
 
@@ -280,7 +280,7 @@ sub-directories:
   * log.ss (created if not present, appended otherwise) --- records
     connections and actions, where each entry is of the form
         (id time-str msg-str)
-    and `id' is an integer reprsenting the connection (numbered
+    and `id' is an integer representing the connection (numbered
     consecutively from 1 when the server starts) or 0 for a message
     for server without a connection.
 
@@ -304,7 +304,7 @@ requires MrEd (which means that `checker' modules will likely require
 the server to run under MrEd).
 
 The server currently provides no mechanism for a graceful shutdown,
-but terminiating the server is no worse than a network outage. (In
+but terminating the server is no worse than a network outage. (In
 particular, no data should be lost.) To reconfigure the server (e.g.,
 to change the set of active assignments), stop it and restart it.
 
@@ -332,7 +332,7 @@ that runs concurrently with the handin server. The starting URL is
 
   https://SERVER:PORT/servlets/status.ss
 
-to obtain a list of all assingments, or
+to obtain a list of all assignments, or
 
   https://SERVER:PORT/servlets/status.ss?handin=ASSIGNMENT
 
@@ -428,7 +428,7 @@ The _utils.ss_ module provides utilities helpful in implementing
 
 > (current-run-status string-or-#f) - registers information about the
   current actions of the checker, in case the session is terminated
-  due to excessive memory consumption. For example, a cccchecker might
+  due to excessive memory consumption. For example, a checker might
   set the status to indicate which instructor-supplied test was being
   executed when the session ran out of memory. This status is only
   used when per-session memory limits are supported (i.e., under

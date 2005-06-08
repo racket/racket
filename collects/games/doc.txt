@@ -92,11 +92,11 @@ used:
     unit (see MzLib's `unit' form); the unit is invoked with no
     imports to start the game.
 
- * `name' [defauls to the collection name] : used to label the
+ * `name' [defaults to the collection name] : used to label the
    game-starting button in the game console.
 
  * `game-icon' [defaults to collection name with ".png"] : used as a
-   path to a bitmap file taht is used for the game button's label;
+   path to a bitmap file that is used for the game button's label;
    this image should be 32 x 32 and have a mask.
 
  * `game-set' [defaults to "Other Games"] : a label used to group
@@ -135,6 +135,6 @@ displaying a help window.
    - Any line that contains only "-"s and is as long as the previous
      line causes the previous line to be formatted as a title.
 
-   - Other lines are pargraph-flowed to fit the window.
+   - Other lines are paragraph-flowed to fit the window.
 
   The `verbatim?' argument is optional, and it defaults to #f.

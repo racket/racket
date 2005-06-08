@@ -147,7 +147,7 @@ _Search functions_
 
 > do-search : search-string num bool bool val f1 f2 f3 f4 -> (union string #f)
 
-Peforms a search for `search-string' in the documentation, and returns either 
+Performs a search for `search-string' in the documentation, and returns either 
 a string containing HTML or #f.  More details are provided in the file
 search.ss in the private subdirectory of the help collection.
 
@@ -180,7 +180,7 @@ documentation.
 > (finddoc manual index-key label)
   This procedure accepts three strings. The first is the name of 
   a doc collection, the second is an index entry in that manual, and 
-  the final is a desriptive string. It returns a string representation 
+  the final is a descriptive string. It returns a string representation 
   of an anchor (in HTML) that points to that index entry in the manual.
   If the manual is not found, or the index-key is not in the manual,
   it returns html code that shows an error. Because the link is
@@ -228,7 +228,7 @@ _Creating Help Desk Documentation in doc.txt files_
 ===================================================
 
 Help Desk reads doc.txt files that are named by info.ss
-files (in PLaneT, or in collections or thier
+files (in PLaneT, or in collections or their
 subcollections). The info.ss file should have a line:
 
   (define doc.txt "filename.txt")
@@ -271,7 +271,7 @@ Note that a search on "list" will not reveal this entry, because
 "cons" is used as the key, not the whole S-expression.
 
 To create a keyword entry where the key is *not* the leftmost symbol
-in the S-expression, use the follwing form:
+in the S-expression, use the following form:
 
   > keyword :: S-expression
 
@@ -296,7 +296,7 @@ Help Desk looks for html documentation in two places:
      for html documentation (the paths are treated as
      relative to the location of the info.ss file)Ï
 
-  2) Help Desk aslo looks inside each sub-directory in any
+  2) Help Desk also looks inside each sub-directory in any
      `doc' collection (Help Desk searches all doc
      collections, not just the first one, unlike
      `collection-path'). For example, the MzScheme manual is
@@ -331,7 +331,7 @@ five values:
   * HTML file - a file name relative to the manual's directory, e.g.,
     "node198.htm"
 
-  * HTML label - a string reprsenting a label within the HTML file
+  * HTML label - a string representing a label within the HTML file
 
   * page title - a string presenting the title of the HTML page, e.g.,
     "List Procedures"
@@ -350,7 +350,7 @@ Each index entry is a list of four values:
   * HTML file - a file name (represented as a bytes)
     relative to the manual's directory, e.g., #"node198.htm"
 
-  * HTML label - a string reprsenting a label within the HTML file
+  * HTML label - a string representing a label within the HTML file
 
   * page title - a string presenting the title of the HTML page, e.g.,
     "How to Create Help Desk Documents"
@@ -373,5 +373,5 @@ The _'help-desk-message field_ of the _info.ss_ file
 This field must be a string that is displayed at the top of the Help Desk
 results window, in green, when the doc.txt file of this collection is displayed. 
 It should be a single line, describing how to load the library with a prefix
-specifing the applicable language levels.
+specifying the applicable language levels.
   

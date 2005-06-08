@@ -145,7 +145,7 @@ To retrieve all profiling information accumulated so far, call
 
   * a list of call paths, recorded while `profile-paths-enabled' is
     set to #t. Each call path is a list containing two-element lists;
-    each two-element list contains the calling proceure's name or
+    each two-element list contains the calling procedure's name or
     source expression and the calling procedure's source file or #f.
 
 Depending of the source program, profiling usually induces a factor of
@@ -173,7 +173,7 @@ counting):
   instrumentation
 
 > (get-execute-counts) - returns a list of pairs, one for each
-  instrucmented expression. The first element of the pair is a syntax
+  instrumented expression. The first element of the pair is a syntax
   object (usually containing source location information) for the
   original expression, and the second element of the pair is the
   number of times that the expression has been evaluated.
@@ -241,7 +241,7 @@ expression (#f).
 The `st-mark-source' and `st-mark-bindings' functions extract
 information from a particular kind of value. The value must
 be created by `make-st-mark'. `st-mark-source' extracts
-the value originally provided to the expresion-maker, and
+the value originally provided to the expression-maker, and
 `st-mark-bindings' returns local binding information (if available).
 
 The import signature contains these names:

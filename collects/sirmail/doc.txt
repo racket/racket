@@ -44,7 +44,7 @@ Reading panel:
 
     which specifies where messages should be autofiled based on
     regular expression matching of various headers in the email. For
-    any email, if it has a header named `field-string' that mathces
+    any email, if it has a header named `field-string' that matches
     `regexp-string', it is filed into `mailbox-name-string'.
 
   - Shown Header Fields: Names header fields to to (in order_ when
@@ -80,7 +80,7 @@ Sending panel:
 
       (list-of (list string (union string (list-of string))))
 
-    specifing a mapping from names to one or more email
+    specifying a mapping from names to one or more email
     addresses. These names can be used in the "To", "cc", or "bcc"
     headers of your email address.
 
@@ -93,16 +93,16 @@ Sending panel:
 Internal options that still need preference-panel support:
 
   - biff-delay-seconds: (union #f number); when number specifies how long
-    between sirmail waits before polling the mailbox. Only polls when
+    between SirMail waits before polling the mailbox. Only polls when
     connected.
 
   - sort-by: (union #f 'date 'subject 'from 'id); specifies the
-    initial storting of opened mailboxes. 
+    initial sorting of opened mailboxes. 
     'id indicates sorting by order received and #f means no sorting.
     These should produce the same ordering, but 'id is probably a bit slower.
 
   - show-urls: (union 'on 'off), defaults to 'on
-    If this is 'on, it hilights urls in the text. Clicking on the
+    If this is 'on, it highlights urls in the text. Clicking on the
     urls will open a web browser, pointing it at that url.
 
 -------------------------------------------------------------------
@@ -123,6 +123,6 @@ entry is a list of at least two elements:
  Rice. Nothing in SirMail ever writes new options into "mailboxes"; I
  add them by hand, and SirMail preserves them. 
 
-The overidding-options feature was a quick hack for what I needed, and
+The overriding-options feature was a quick hack for what I needed, and
 it should be replaced eventually. There's a lot of duplication of
 information in the current format.

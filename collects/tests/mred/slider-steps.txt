@@ -8,7 +8,7 @@ Change the slider value in each way allowed by the control (dragging,
  intermediate callbacks may be reported.
 
 Click "Up" until the slider is at the top; a mismatch exception should
- be reported. Click "Down" once aand verify that the slider is at 10.
+ be reported. Click "Down" once and verify that the slider is at 10.
 
 Repeat the above step for "Down" (checking for an exception when the
  slider is already at its minimum value).

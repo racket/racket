@@ -16,7 +16,7 @@ Game Rules
 The 3x3 game is a generalization of tic-tac-toe:
 
  * The object of the game is to get three in a row of your color,
-   vetically, horizontally, or diagonally. Size doesn't matter for
+   vertically, horizontally, or diagonally. Size doesn't matter for
    determining a winner.
 
  * Each player (red or yellow) starts with 6 pieces: two large, two
@@ -30,7 +30,7 @@ The 3x3 game is a generalization of tic-tac-toe:
    placed/moved on top of a smaller piece already on the board,
    "gobbling" the smaller piece. The smaller piece does not have to be
    an opponent's piece, and the smaller piece may itself have gobbled
-   another piece previouly.
+   another piece previously.
 
  * Only visible pieces can be moved, and only visible pieces count
    toward winning. Gobbled pieces stay on the board, however, and when
@@ -82,8 +82,8 @@ slightly different way than zooming.) Depending on how keyboard focus
 works on your machine, you may have to click the board area to make
 these controls work.
 
-The button labelled "<" at the bottom of the window rewinds the game
-by one turn. The button labelled ">" re-plays one turn in a rewound
+The button labeled "<" at the bottom of the window rewinds the game
+by one turn. The button labeled ">" re-plays one turn in a rewound
 game. An alternate move can be made at any point in a rewound game,
 replacing the old game from that point on.
 

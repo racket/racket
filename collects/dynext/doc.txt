@@ -167,7 +167,7 @@ _file.ss_
 
 > (extract-base-filename/ss s program) - strips the Scheme file suffix
    from the path/string s and returns a stripped path. If s is not a
-   Scheme file name and `program' is a symbol, and error is signalled.
+   Scheme file name and `program' is a symbol, and error is signaled.
    If s is not a Scheme file and `program' is #f, #f is returned. The
    `program' argument is optional and defaults to #f.
 

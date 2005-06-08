@@ -190,7 +190,7 @@ The following require imports the _lexer generator_.
 
    When peeking from the input port raises an exception (such as by an
    embedded XML editor with malformed syntax), the exception can be
-   raised before all tokens preceeding the exception have been
+   raised before all tokens preceding the exception have been
    returned.
 
 
@@ -275,9 +275,9 @@ operators:
 > (+ re ...)       repetition of regexps 1 or more times 
 > (? re ...)       0 or 1 occurrence of regexps
 > (= natural-number re ...)
-                   exactly n occurences of regexps
+                   exactly n occurrences of regexps
 > (>= natural-number re ...)
-                   at least n occurences of regexps
+                   at least n occurrences of regexps
 > (** natural-number natural-number-or-#f-or-+inf.0 re ...)
                    between m and n of regexps, inclusive
                      #f and +inf.0 both indicate no upper limit

@@ -333,7 +333,7 @@ HTML values are almost any Scheme values.
    |4/3
    +----------
 
-* Lists are iterated over, general pairs get recoursed too.
+* Lists are iterated over, general pairs get recursed too.
    +----------
    |> (output-html (list 1 'foo "foo" 0.10 (/ 4 3)))
    |1foofoo0.14/3
@@ -673,7 +673,7 @@ there is therefore a lot of related functionality.
                      for the Scheme reader for the begin/end of a meta
                      string, or a pair for different begin/end values.
   * `:split-lines?'  if true, then generated strings that span several
-                     lines will be split so that each line is a seperate
+                     lines will be split so that each line is a separate
                      string in the result (and a a space prefix for
                      these lines is eliminated).  (Default: #f).
   If "y" contains:
@@ -689,7 +689,7 @@ there is therefore a lot of related functionality.
    |                                        :scheme? #t))))
    |<big><a href="c:\foo.htm">foo&nbsp;?</a><b>FOO</b></big>
    +----------
-  Finally, if there is a squence of two such meta-open tags, then a
+  Finally, if there is a sequence of two such meta-open tags, then a
   sequence of two closing ones is expected, all on one line with an even
   number of characters between them.  The two parts of the section
   between them are used as the new tokens.  If "z" contains:
@@ -716,7 +716,7 @@ there is therefore a lot of related functionality.
   Attempt to relativize the given path according to the current path.
   This is used in case you want to create HTML objects in directories,
   refer to them according to their normal path and get it relative to
-  the currect object.  For example, in the source for the `a/b' object,
+  the correct object.  For example, in the source for the `a/b' object,
   a reference to `c/d' will turn to "../d.html".  Search for this name
   below for more details.
 
@@ -1132,7 +1132,7 @@ inheritance except when specified.
   processing so it is better to disable processing only for one
   attribute, for example: `::arg-funcs (list* :href #f (*arg-funcs*))'.
   This keyword is inherited, so you can do this at any form to modify
-  evrything in it.
+  everything in it.
 
 * `::literal?' -- If true, then HTML post-processing is disabled for the
   body (see above for more details).  Default: #f.  This meta-keyword is
@@ -1528,7 +1528,7 @@ options:
 
 (button*: ...)
   this is the actual HTML "button" wrapper, unlike the above `button:'
-  which is just a shor for (input: :type 'button ...).
+  which is just a short for (input: :type 'button ...).
 
 (label~: label ...)
   a "label" wrapper, with a value for the `:for' attribute.
@@ -1633,7 +1633,7 @@ applet-params:, object-params:
 ========================================================================
 4. Making it work
 
-Now that woring with all the above should be clear, we reach the point
+Now that working with all the above should be clear, we reach the point
 of putting it all together in a script.
 
 
@@ -1653,13 +1653,13 @@ What I found most convenient is the following prefix:
 This will make it a /bin/sh script that will just execute mzscheme with
 the correct command-line arguments: `-r' is for running a script: short
 for `-fmv-' which stands for `-f' for loading an argument, `-m' for
-supressing the banner, `-v' for no interactive read-eval-print loop, and
+suppressing the banner, `-v' for no interactive read-eval-print loop, and
 `--' to specify that more arguments are passed to the script without
 further processing.  The first "$0" argument is consumed by the `-f' --
 this is the actual script (the double-quotes are to protect file name
 with spaces from exploding to multiple arguments), and "$@" are other
 arguments that are passed to the script because of the `--' (again "$@"
-will send each argument, handeling spaces in them correctly).  When
+will send each argument, handling spaces in them correctly).  When
 MzScheme starts, it ignores the /bin/sh stuff and will happily proceed
 to execute the file.  Stick to this template and be safe.
 
@@ -1840,7 +1840,7 @@ bound to an HTML object with the given argument name, or an HTML object
 with a `:name' attribute equal to the given argument, or an HTML object
 whose processed name (the `:name' value with `*html-target-dir*' and
 `*html-suffix*') is equal to the given argument.  All this makes it
-convenient to run on script inputs: with arguments it will genrate only
+convenient to run on script inputs: with arguments it will generate only
 the requested pages, and without it will create all defined pages.
 Thing you should know if you use this approach:
 

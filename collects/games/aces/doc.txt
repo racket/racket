@@ -1,6 +1,6 @@
 ** To play _Aces_, run the "Games" application. **
 
-Aces is a solitare card game. The object is to remove all of the cards
+Aces is a solitaire card game. The object is to remove all of the cards
 from the board, except the four Aces.
 
 Remove a card by clicking it. You may remove a card when two

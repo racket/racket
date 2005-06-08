@@ -1,9 +1,9 @@
 _Overview of make_
 ------------------
 
-This library provides a Scheme version of the standard unix
+This library provides a Scheme version of the standard Unix
 `make' utility. Its syntax is intended to simulate regular
-unix make in Scheme.
+Unix make in Scheme.
 
 If you are already familiar with make, skip down the precise
 details of the make collection. This section contains a
@@ -11,7 +11,7 @@ brief overview of make. The idea is to explain how to
 generate some project you have from a collection of source
 files that go through several stages of processing.
 
-For example, lets say that you are writing soem project that
+For example, lets say that you are writing some project that
 has three input files (that you create and maintain) called
 a.input, b.input, and c.input. Further, there are two stages
 of processing -- first you run a particular tool
@@ -39,7 +39,7 @@ several lines that tell `make' how to create each piece. The
 first two lines say that a.output depends on a.input and the
 command for making a.output from a.input is 
 
-  make-output a.input a.ouput
+  make-output a.input a.output
 
 The point of this exercise is that the `make' utility looks
 at the file creation dates of the various files and only
@@ -59,9 +59,9 @@ Here's the equivalent Scheme program:
   ...)
 
 (make
-  (("a.ouput" ("a.input") (make-output "a.output" "a.input"))
-   ("b.ouput" ("b.input") (make-output "b.output" "b.input"))
-   ("c.ouput" ("c.input") (make-output "c.output" "c.input"))
+  (("a.output" ("a.input") (make-output "a.output" "a.input"))
+   ("b.output" ("b.input") (make-output "b.output" "b.input"))
+   ("c.output" ("c.input") (make-output "c.output" "c.input"))
    ("total" ("a.output" "b.output" "c.output")
             (combine-total "a.output" "b.output" "c.output")))
 
@@ -119,20 +119,20 @@ the target(s), and the `orig-exn' field is the original
 exception.
 
 The maker.ss library is a signed unit that requires no
-imports and provdes `make/proc'.
+imports and provides `make/proc'.
 
 make.ss also provides the following parameters:
 
 > (make-print-checking [on?]) - If #f, make only prints when
 it is making a target. Otherwise, it prints when it is
-checking the dependancies of a target. Defaultly #t.
+checking the dependencies of a target. Default: #t.
 
 > (make-print-dep-no-line [on?]) - If #f, make only prints
-"checking..."  lines for dependancies that have a
-corresponding make line.  Defaultly #f.
+"checking..."  lines for dependencies that have a
+corresponding make line.  Default: #f.
 
 > (make-print-reasons [on?]) If #t, make prints the reason
-for each dependancy that fires. Defaultly #t.
+for each dependency that fires. Default: #t.
 
 _collection.ss_
 ---------------
@@ -154,9 +154,9 @@ compiled. `argv' is passed on to `make'.
 The resulting extension "_loader" is compiled to the current
 directory's "compiled/native/PLATFORM" subdirectory, where `PLATFORM'
 is replaced by the system name of the current platform. Intermediate
-.c amd .kp files are placed into "compiled/native", and intermediate
+.c and .kp files are placed into "compiled/native", and intermediate
 object files are also placed into "compiled/native/PLATFORM".  The .c
-and .kp files are preserved so that thay can be generated once for
+and .kp files are preserved so that they can be generated once for
 compiling across multiple platforms with the same filesystem.
 
 Make rules are also generated for compiling .zo files, placed in the
@@ -240,7 +240,7 @@ The arguments are as follows:
     This one environment variable applies to all extensions manged
     by `pre-install'.
 
-  * include-subdirs --- a list of relative paths in which incldue
+  * include-subdirs --- a list of relative paths in which include
     files will be found; the path of the path will be determined
     through a search, in case it's not in a standard place like
     /usr/include.

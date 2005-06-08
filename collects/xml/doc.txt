@@ -135,7 +135,7 @@ Parameters
 > read-comments : Bool
        Default: #f
        Comments, by definition, should be ignored by programs.  However,
-       interoperating with ad hoc extentions to other languages sometimes
+       interoperating with ad hoc extensions to other languages sometimes
        requires processing comments anyway.
 
 > xexpr-drop-empty-attributes : Bool
@@ -165,8 +165,8 @@ What this Library Doesn't Provide
 
        Document Type Declaration (DTD) processing
        Validation
-       Expanding user-defined entites
-       Reading user-defined entites in attributes
+       Expanding user-defined entities
+       Reading user-defined entities in attributes
        Unicode support
 
 XML Datatype Details

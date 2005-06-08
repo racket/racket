@@ -10,7 +10,7 @@ The _cards.ss_ module defines the following procedures:
 > (make-table [title-string] [w] [h]) returns a table named by
       `title-string' that is `w' cards wide and `h' cards high. A
       table is an frame% object, with extra methods described
-      below. The table is not intially shown; (send table show #t)
+      below. The table is not initially shown; (send table show #t)
       shows it. The arguments are optional, with the default values
       being "Cards", 7, and 3.
 
@@ -178,7 +178,7 @@ Table methods: [in addition to standard frame% methods]
         for animation)
 
 > unhilite-region :: (send t unhilite-region r) - manual unhilite
-        (usually for anaimation)
+        (usually for animation)
 
 
 > set-button-action :: (send t set-button-action which action) - sets
@@ -211,7 +211,7 @@ Table methods: [in addition to standard frame% methods]
 > set-single-click-action :: (send t set-single-click-action proc) -
         sets the procedure to be called when a card is single-clicked,
         after the button action is initiated. (If the card is
-        double-clicked, this action is inoked for the first click,
+        double-clicked, this action is invoked for the first click,
         then the double-click action is invoked.) The default action
         does nothing.
 

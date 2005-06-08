@@ -1,6 +1,6 @@
 ** To play _Spider_, run the "Games" application. **
 
-Spider is a solitare card game played with 104 cards. The cards can
+Spider is a solitaire card game played with 104 cards. The cards can
 include either a single suit, two suits, or four suites. (Choose your
 variant through the "Options" item in the "Edit" menu.)
 

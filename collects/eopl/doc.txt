@@ -13,7 +13,7 @@ Differences from the book:
    expressions. This constraint enables better and earlier error
    reporting.
 
-   Some examples in the book's code (or at least the code dstributed
+   Some examples in the book's code (or at least the code distributed
    for the book) must be changed by moving datatype definitions
    earlier.
 
@@ -108,7 +108,7 @@ Differences from the book:
 > eopl:error-stop
 
   Defined only in the top-level namespace (i.e., not in a module);
-  mutate this varable to install an exception-handling
+  mutate this variable to install an exception-handling
   thunk. Typically, the handler thunk escapes through a continuation.
 
   The "eopl.ss" module sets this variable to #f in the current

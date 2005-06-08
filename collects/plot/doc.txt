@@ -63,7 +63,7 @@ PLoT collection: Quick Start
 
    To fit a particular function to a curve:
     1. Set up the independent and dependent variable data. The first item
-       in each vector is the independant var, the second is the result.
+       in each vector is the independent var, the second is the result.
        The last item must is the weight of the error - we can leave it as
        1 since all the items weigh the same.
 (define data '(#(0 3 1)
@@ -73,7 +73,7 @@ PLoT collection: Quick Start
                #(4 11 1)))
 
     2. Set up the function to be fitted using fit. This particular
-       function looks like a line. The independant variables must come
+       function looks like a line. The independent variables must come
        before the parameters.
 (define fit-fun
  (lambda (x m b) (+ b (* m x))))

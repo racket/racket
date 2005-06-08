@@ -145,7 +145,7 @@ SRP_NAMED_CONSTANT alterDomainBits[] = {
   { "sql-ad-drop-domain-default", SQL_AD_DROP_DOMAIN_DEFAULT },
   { "sql-ad-add-constraint-deferrable", SQL_AD_ADD_CONSTRAINT_DEFERRABLE },
   { "sql-ad-add-constraint-non-deferrable", SQL_AD_ADD_CONSTRAINT_NON_DEFERRABLE },
-  { "sql-ad-add-constraint-inititally-deferred", SQL_AD_ADD_CONSTRAINT_INITIALLY_DEFERRED },
+  { "sql-ad-add-constraint-initially-deferred", SQL_AD_ADD_CONSTRAINT_INITIALLY_DEFERRED },
   { "sql-ad-add-constraint-initially-immediate", SQL_AD_ADD_CONSTRAINT_INITIALLY_IMMEDIATE },
 };
 #endif

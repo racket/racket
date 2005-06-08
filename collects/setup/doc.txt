@@ -121,7 +121,7 @@ Additional "info.ss" fields trigger additional setup actions:
    relative to the collection. The module must provide `installer' as
    a procedure that accepts either one or two arguments. The first
    argument is a directory path to the PLT installation directory; the
-   second argument, if accecpted, is a path to the collection's own
+   second argument, if accepted, is a path to the collection's own
    directory. The procedure should perform collection-specific
    installation work, and it should avoid unnecessary work in the case
    that it is called multiple times for the same installation.
@@ -181,7 +181,7 @@ installing a single .plt file:
 
    The `get-dir-proc' procedure is called if the installer needs a
    target directory for installation, and a #f result means that the
-   user cancelled the installation. Typically, `get-dir-proc' is
+   user canceled the installation. Typically, `get-dir-proc' is
    `current-directory'.
 
  Setup PLT as a Unit
@@ -219,7 +219,7 @@ parameters that control the setup process:
 > call-install - #t => call collection "info.ss"-specified setup code
                  [default: #t]
 > force-unpack - #t => ignore version and already-installed errors
-                 when upacking a .plt archive [default: #f]
+                 when unpacking a .plt archive [default: #f]
 > pause-on-errors - #t => in the event of an error, prints a summary error
                  and waits for stdin input before terminating
                  [default: #f]
@@ -244,7 +244,7 @@ parameters that control the setup process:
 Thus, to unpack a single .plt archive "x.plt", set the `archives'
 parameter to (list "x.plt") and leave `specific-collections' as null.
 
-Beware that the current namespace might intefere with setup
+Beware that the current namespace might interfere with setup
 actions. For example, if setup is supposed to compile a module `(lib
 "foo.ss")' that imports `(lib "bar.ss")', but `(lib "bar.ss")' is
 already loaded in the current namespace, then compilation will use the
@@ -302,7 +302,7 @@ The _getinfo.ss_ module defines the following functions:
    directory (as determined by the PLT_COLLECTION_PATHS environment variable, 
    etc.) and the file "cache.ss" in the user addon dir.
 
-   The result is in a cannonical order (sorted lexographically by directory
+   The result is in a canonical order (sorted lexicographically by directory
    name), and the paths it returns are suitable for providing to
    get-info/full.
 

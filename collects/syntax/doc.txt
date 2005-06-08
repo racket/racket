@@ -54,9 +54,9 @@ _kerncase.ss_: matching fully-expanded expressions
   forms must have their normal bindings in the context of the
   `kernel-syntax-case' expression.)
 
-  The `trans?-expr' boolean expression replaces the comparision
+  The `trans?-expr' boolean expression replaces the comparison
   procedure, and instead selects simply between normal-phase
-  comparisions or transformer-phase comparisions. The `clause's are
+  comparisons or transformer-phase comparisons. The `clause's are
   the same as in `syntax-case*'.
 
 > (kernel-form-identifier-list syntax) - returns a list of identifiers
@@ -79,8 +79,8 @@ _toplevel.ss_: helper for moduleless compilation and expansion
   expanding a `begin' is the same as expanding separate top-level
   expressions.)
 
-  The `stx' argument should have a context already, possibily
-  introduced with `namespacae-inroduce-syntax'.
+  The `stx' argument should have a context already, possibly
+  introduced with `namespacae-introduce-syntax'.
 
 > (expand-top-level-with-compile-time-evals/flatten stx) - 
   Just like expand-top-level-with-compile-time-evals,
@@ -90,8 +90,8 @@ _toplevel.ss_: helper for moduleless compilation and expansion
 
 > (expand-syntax-top-level-with-compile-time-evals stx)
   Like `expand-top-level-with-compile-time-evals', but `stx' should
-  have a context already, possibily introduced with
-  `namespacae-inroduce-syntax'.
+  have a context already, possibly introduced with
+  `namespacae-introduce-syntax'.
 
 > (eval-compile-time-part-of-top-level stx) - evaluates
   expansion-time code in the fully expanded top-level expression
@@ -115,7 +115,7 @@ _define.ss_: handling all the same function forms as `define'
   possibly with a different keyword) and returns two values: the
   defined identifier and the right-hand side expression.
 
-  To generate the right-hand side, this funciton may need to insert
+  To generate the right-hand side, this function may need to insert
   uses of `lambda'. The `lambda-id-stx' argument provides a suitable
   `lambda' identifier.
 
@@ -189,7 +189,7 @@ _struct.ss_: generating the same names as `define-struct'
 			       continue-macro-id continue-data-stx)
 > (generate-delayed-struct-declaration stx make-make-make-struct-type)
 
-  These two procedurs cooperate to implement the core of a
+  These two procedures cooperate to implement the core of a
   `define-struct' expansion that works for embedded definition
   contexts (where lookup of supertype information may need to be
   delayed).
@@ -257,7 +257,7 @@ _docprovide.ss_: attaching documentation to exports
   exports names and records documentation information.  
 
   !! IMPORTANT: For now, the exporting module must be required with a
-     `lib' or `file' form. Releatiuve paths do no work correctly !!
+     `lib' or `file' form. Relative paths do no work correctly !!
 
   The `doc-label-id' identifier is used as a key for accessing the
   documentation through `lookup-documentation'.  The actual
@@ -385,7 +385,7 @@ currently exist).
   import hierarchy starting from a given module path.
 
 ======================================================================
-_readerr.ss_: signalling parse errors
+_readerr.ss_: signaling parse errors
 ======================================================================
 
 > (raise-read-error msg-string source-v line-k col-k pos-k span-k)
@@ -400,7 +400,7 @@ _readerr.ss_: signalling parse errors
   the source location --- usually a file path string. Each of the
   `line-k', `pos-k' arguments is #f or a positive exact integer
   representing the location within `source-name' (as much as known),
-  `col-k' is a non-negaytive exact integer for the source column (if
+  `col-k' is a non-negative exact integer for the source column (if
   known), and `span-k' is #f or a non-negative exact integer for an
   item range starting from the indicated position.
 
@@ -408,7 +408,7 @@ _readerr.ss_: signalling parse errors
 
   Like `raise-read-error', but raises
 >  exn:read:eof
-  insteda of `exn:read'.
+  instead of `exn:read'.
 
 ======================================================================
 _boundmap.ss_: mapping identifiers based on bound-identifier=? and module-identifier=?

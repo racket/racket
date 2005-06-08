@@ -119,7 +119,7 @@ Alt-q (or Meta-q) to end the slides. More controls:
 
 In general, each element after the title string for `slide/title' is a
 pict that will be centered on the slide. The picts are stacked
-verically and top-aligned, with `gap-size' separation between each
+vertically and top-aligned, with `gap-size' separation between each
 pict.
 
  (module hello-world (lib "slideshow.ss" "slideshow")
@@ -137,7 +137,7 @@ instead of putting them at the top of the slide:
     (t "Hello World!")
     (t "Goodbye Dlrow!")))
 
-Various functions format paragraphs and generate bullted items for
+Various functions format paragraphs and generate bulleted items for
 lists. For example, `item/page' creates a bulleted paragraph that
 spaces the width of the slide:
 
@@ -174,24 +174,24 @@ multi-slide patterns. Each element argument to `slide/title' after the
 title is usually a pict, but there are a few other possibilities:
 
   * If an element is 'next, then a slide is generated containing only
-    the preceeding elements, and then the <elems> are re-processed
+    the preceding elements, and then the <elems> are re-processed
     without the 'next. Multiple 'next elements generate multiple slides.
 
   * If an element is 'alts, then the next element must be a list of
     element lists. Each list up to the last one is appended to the
     elements before 'alts and the resulting list of elements is
-    processed. The last lists is appended to the preceeding elements
+    processed. The last lists is appended to the preceding elements
     along with the remaining elements (after the list of lists) and the
     result is re-processed.
 
   * A 'nothing element is ignored (useful as a result of a branching
     expression).
 
-  * 'next! is like 'next, except that it is preserved when consensing
+  * 'next! is like 'next, except that it is preserved when condensing
     (see below on the --condense flag).
 
   * 'alts~ is like 'alts, except that it is *not* preserved when
-    consensing (see below on the --condense flag).
+    condensing (see below on the --condense flag).
 
   * A comment produced by `comment' is ignored, except when commentary
     is displayed.
@@ -427,7 +427,7 @@ Procedure Reference
 
 > (start-at-recent-slide) - Sets the starting slide for the talk to
   the most recently created slide. If this function is used multiple
-  times, the last use overrides the realier uses.
+  times, the last use overrides the earlier uses.
 
 > (scroll-transition x y w h dx dy [secs steps-k]) - inserts a scroll
   animation that shifts the screen rectangle (x, y, x+w, y+h) by `dx'
@@ -470,7 +470,7 @@ Procedure Reference
 
 > current-font-size - Parameter for the font size used by `t', etc.,
   initialized to `font-size'.
-> line-sep - Amount of seperating between paragraph lines.
+> line-sep - Amount of separating between paragraph lines.
 > title-size - Font size used for slide titles, derived from `font-size'.
 > main-font - Font specification used for `t' by default
 > current-main-font - Parameter for the font specification
@@ -482,7 +482,7 @@ Procedure Reference
   `current-main-font' set to `f', which must be a
   text-style (see texpict for details)
 
-> red - a color name like "red", possibiliy selected by the user.
+> red - a color name like "red", possibly selected by the user.
 > green - a color name like "green"
 > blue - ...
 > purple - ...
@@ -491,10 +491,10 @@ Procedure Reference
 > bullet - a bullet pict
 > o-bullet - a hollow bullet pict
 
-> client-w - (syntax) useable width of the screen
-> client-h - (syntax) useable height of the screen
-> get-client-w - returns useable width of the screen
-> get-client-h - returns useable height of the screen
+> client-w - (syntax) usable width of the screen
+> client-h - (syntax) usable height of the screen
+> get-client-w - returns usable width of the screen
+> get-client-h - returns usable height of the screen
 
 > full-page - (syntax) an empty pict that is the same size as the
               client area
@@ -530,7 +530,7 @@ Procedure Reference
 > set-page-numbers-visible! - determines whether slide numbers are
   initially visible
 
-> printing? - #t if the slides are begin durected to PostScript output
+> printing? - #t if the slides are being directed to PostScript output
 > condense? - #t if slides are being condensed (see overview)
 > (skip-slides n) - increment the slide counter by `n' without adding
   any slides.
@@ -585,7 +585,7 @@ Meanwhile, `runnable-id' is bound to a syntax object that wraps the
 used to comment out an expression from the pict, but have it present
 in the syntax object for evaluation.
 
-The `string-id' is bound to a string reprsentation of the code that is
+The `string-id' is bound to a string representation of the code that is
 in the pict. This string is useful for copying to the clipboard with
 `(send the-clipboard set-clipboard-string string-id 0)'.
 
