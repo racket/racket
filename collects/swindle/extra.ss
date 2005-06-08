@@ -30,7 +30,7 @@
         (hash-table-put! struct-to-slot-names this slots)
         (add-method allocate-instance
           (let ([???s (build-list (length allslots) (lambda _ ???))])
-            (method ([class = this]) (maker . ???s))))
+            (method ([class = this] initargs) (maker . ???s))))
         (add-method initialize
           (let ([none "-"]
                 [keys (build-list
