@@ -2781,6 +2781,20 @@
       x)
    1)
   
+  (test/pos-blame 
+   'syntax/c1
+   '(contract (syntax/c boolean?)
+              #'x
+              'pos
+              'neg))
+  
+  (test/spec-passed
+   'syntax/c2
+   '(contract (syntax/c symbol?)
+              #'x
+              'pos
+              'neg))
+  
   (test/spec-passed
    'struct/c1
    '(let ()
@@ -2807,6 +2821,35 @@
                 1
                 'pos
                 'neg)))
+
+  (test/spec-passed
+   'recursive-contract1
+   (letrec ([ctc (-> integer? (recursive-contract ctc))])
+     (letrec ([f (λ (x) f)])
+       ((((contract ctc f 'pos 'neg) 1) 2) 3))))
+  
+  (test/neg-blame
+   'recursive-contract2
+   '(letrec ([ctc (-> integer? (recursive-contract ctc))])
+      (letrec ([f (λ (x) f)])
+        ((contract ctc f 'pos 'neg) #f))))
+  
+  (test/neg-blame
+   'recursive-contract3
+   '(letrec ([ctc (-> integer? (recursive-contract ctc))])
+      (letrec ([f (λ (x) f)])
+        ((((contract ctc f 'pos 'neg) 1) 2) #f))))
+  
+  (test/pos-blame
+   'recursive-contract4
+   '(letrec ([ctc (-> integer? (recursive-contract ctc))])
+      (letrec ([c 0]
+               [f (λ (x) 
+                    (set! c (+ c 1))
+                    (if (= c 2)
+                        'nope
+                        f))])
+        ((((contract ctc f 'pos 'neg) 1) 2) 3))))
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                                                        ;;
@@ -3107,9 +3150,13 @@
   (test-name '(object-contract (m (->r ((x ...) (y ...) (z ...)) rest-x ... ...))) 
              (object-contract (m (->r ((x number?) (y boolean?) (z pair?)) rest-x any/c number?))))
   (test-name '(promise/c any/c) (promise/c any/c))
+  (test-name '(syntax/c any/c) (syntax/c any/c))
   (test-name '(struct/c st integer?) 
              (let ()
                (define-struct st (a))
                (struct/c st integer?)))
+  
+  (test-name '(recursive-contract (box/c boolean?)) (recursive-contract (box/c boolean?)))
+  (test-name '(recursive-contract x) (let ([x (box/c boolean?)]) (recursive-contract x)))
   ))
 (report-errs)

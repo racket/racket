@@ -11,6 +11,7 @@ add struct contracts for immutable structs?
   
   (provide (rename -contract contract)
            any
+           recursive-contract
            ->
            ->d
            ->*
@@ -506,7 +507,7 @@ add struct contracts for immutable structs?
   ;                                                      
   ;                                                      
   
-  ;; contract = (make-contract ((union #f (listof number)) -> string)
+  ;; contract = (make-contract sexp
   ;;                           (sym
   ;;                            sym
   ;;                            (union syntax #f)
@@ -560,7 +561,7 @@ add struct contracts for immutable structs?
     
   
   
-  ;; build-compound-type-name : (union contract symbol) ... -> (union path #f) -> sexp
+  ;; build-compound-type-name : (union contract symbol) ... -> (-> sexp)
   (define (build-compound-type-name . fs)
     (let loop ([subs fs]
                [i 0])
@@ -594,7 +595,7 @@ add struct contracts for immutable structs?
     (build-flat-contract name predicate))
   
   (define (build-flat-contract name predicate)
-    (make-flat-contract 
+    (make-flat-contract
      name
      (lambda (pos neg src-info orig-str) 
        (lambda (val)
@@ -728,6 +729,23 @@ add struct contracts for immutable structs?
               ""))
         ""))
     
+  (define-syntax (recursive-contract stx)
+    (syntax-case stx ()
+      [(_ arg)
+       (syntax (recursive-contract/proc '(recursive-contract arg) (delay (check-contract arg))))]))
+  
+  (define (recursive-contract/proc name delayed-contract)
+    (make-contract name
+                   (λ (pos neg src str)
+                     (let ([proc (contract-proc (force delayed-contract))])
+                       (λ (val)
+                         ((proc pos neg src str) val))))))
+  
+  (define (check-contract ctc)
+    (unless (contract? ctc)
+      (error 'recursive-contract "expected a contract, got ~e" ctc))
+    ctc)
+                   
 ;                                                                                   
 ;                                                                                   
 ;                                                                                   
@@ -3094,14 +3112,14 @@ add struct contracts for immutable structs?
 	[(null? args) (flat-contract null?)]
 	[else (cons-immutable/c (car args) (loop (cdr args)))])))
 
-  (define (syntax/c c)
-    (unless (flat-contract/predicate? c)
-      (error 'syntax/c "expected argument of type <flat-contract> or procedure of arity 1, got ~e" c))
-    (build-flat-contract
-     (let ([pred (flat-contract-predicate c)])
-       (lambda (val)
-         (and (syntax? val)
-              (pred (syntax-e val)))))))
+  (define (syntax/c ctc-in)
+    (let ([ctc (coerce-contract syntax/c ctc-in)])
+      (build-flat-contract
+       (build-compound-type-name 'syntax/c ctc)
+       (let ([pred (flat-contract-predicate ctc)])
+         (lambda (val)
+           (and (syntax? val)
+                (pred (syntax-e val))))))))
   
   (define promise/c
     (lambda (ctc-in)
