@@ -190,7 +190,6 @@
       (datum->syntax-object
        (quote-syntax here)
        (list* (quote-syntax #%plain-module-begin)
-	      (quote-syntax 
-	       (require-for-syntax (rename mzscheme syntax-rules syntax-rules)))
+	      (quote-syntax (require-for-syntax (only mzscheme syntax-rules)))
 	      (cdr (syntax-e stx)))
        stx))))

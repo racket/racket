@@ -1442,7 +1442,7 @@
                         (apply lift true tmp-name args))
                       ...))]
                [(as-is:unchecked module id ...)
-                (syntax (begin clause ... (require (rename module id id) ...)))]
+                (syntax (begin clause ... (require (only module id) ...)))]
                [(as-is module . ids)
                 (with-syntax ([(fun-name ...) (syntax ids)]
                               [(tmp-name ...) (generate-temporaries/loc stx #'ids)])

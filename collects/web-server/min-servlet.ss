@@ -2,7 +2,7 @@
 ;; needed to write servlets. It is based on the *old* version of "servlet-sig.ss"
 (module min-servlet mzscheme
   (require (lib "xml.ss" "xml")
-           (rename "util.ss" translate-escapes translate-escapes))
+           (only "util.ss" translate-escapes))
   (provide response?
            (struct response/full (code message seconds mime extras body))
            (struct response/incremental ())

@@ -24,7 +24,7 @@
    "text-syntax-object.ss"
    "print-to-text.ss"
    "test-case.ss"
-   (rename (lib  "teachprims.ss" "lang" "private") beginner-equal? beginner-equal?))
+   (only (lib  "teachprims.ss" "lang" "private") beginner-equal?))
   
   (define-signature test-case-box^ (test-case-box% phase1 phase2))
   (define test-case-box@

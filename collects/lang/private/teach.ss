@@ -75,7 +75,7 @@
 
   ;; For quasiquote and shared:
   (require (rename "teachprims.ss" the-cons advanced-cons))
-  (require (rename "teachprims.ss" cyclic-list? cyclic-list?))
+  (require (only   "teachprims.ss" cyclic-list?))
 
   ;; Referenced to ensure that evaluating `lambda' always
   ;; produces a new closure (instead of using a closure

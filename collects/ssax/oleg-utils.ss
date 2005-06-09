@@ -9,9 +9,8 @@
 	   string-split
 	   make-char-quotator)
   
-  (require (rename (lib "13.ss" "srfi") string-index-right string-index-right)
-	   (rename (lib "13.ss" "srfi") string-contains string-contains)
-	   (rename (lib "13.ss" "srfi") string-null? string-null?))
+  (require (only (lib "13.ss" "srfi")
+                 string-index-right string-contains string-null?))
   (require (lib "23.ss" "srfi"))
   (require "crementing.ss")
 

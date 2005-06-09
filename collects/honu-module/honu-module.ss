@@ -1,5 +1,5 @@
 (module honu-module mzscheme
-  (require (rename "dynamic.ss" #%dynamic-honu-module-begin #%dynamic-honu-module-begin))
+  (require (only "dynamic.ss" #%dynamic-honu-module-begin))
 
   (define-syntax (honu-module-begin stx)
     (syntax-case stx (dynamic)

@@ -9,9 +9,9 @@
            (lib "string.ss")
            (lib "port.ss")
            (lib "url-sig.ss" "net")
-	   (rename (lib "html.ss" "html") read-html-as-xml read-html-as-xml)
-	   (rename (lib "html.ss" "html") read-html-comments read-html-comments)
-	   (rename (lib "html.ss" "html") use-html-spec use-html-spec)
+	   (only (lib "html.ss" "html") read-html-as-xml)
+	   (only (lib "html.ss" "html") read-html-comments)
+	   (only (lib "html.ss" "html") use-html-spec)
 	   (all-except (lib "xml.ss" "xml") read-comments)
            (lib "class.ss")
 	   "bullet.ss"

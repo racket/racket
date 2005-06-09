@@ -39,7 +39,7 @@
 		   "predicate.ss"
 		   "selector.ss"
 		   "util.ss"
-		   (rename "fold.ss" reduce-right reduce-right)
+		   (only "fold.ss" reduce-right)
 		   (rename "fold.ss" srfi-1:map map))
   (require (lib "receive.ss" "srfi" "8"))
 

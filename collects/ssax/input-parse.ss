@@ -10,8 +10,7 @@
 	   exn:ssax?
 	   exn:ssax-port)
 
-  (require (rename (lib "13.ss" "srfi")
-		   string-concatenate-reverse string-concatenate-reverse))
+  (require (only (lib "13.ss" "srfi") string-concatenate-reverse))
 
   (require "define-opt.ss")
   (require "ascii.ss")

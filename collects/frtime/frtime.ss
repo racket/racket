@@ -24,7 +24,7 @@
            ;(rename mzscheme mz:or or)
            ;(lib "list.ss")
            (lib "contract.ss")
-           (rename "erl.ss" tid? tid?))
+           (only "erl.ss" tid?))
   
   (define-syntax cond
     (syntax-rules (else =>)

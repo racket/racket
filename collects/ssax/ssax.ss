@@ -21,13 +21,12 @@
 	   ssax:xml->sxml
 	   ssax:warn-parameter)
 
-  (require (rename (lib "1.ss" "srfi") cons* cons*))
-  (require (rename (lib "13.ss" "srfi") string-null? string-null?)
-	   (rename (lib "13.ss" "srfi") string-index string-index)
-	   (rename (lib "13.ss" "srfi")
-		   string-concatenate/shared string-concatenate/shared)
-	   (rename (lib "13.ss" "srfi")
-		   string-concatenate-reverse/shared string-concatenate-reverse/shared))
+  (require (only (lib "1.ss" "srfi") cons*))
+  (require (only (lib "13.ss" "srfi")
+                 string-null?
+                 string-index
+                 string-concatenate/shared
+                 string-concatenate-reverse/shared))
 
   (require "crementing.ss")
   (require "input-parse.ss")

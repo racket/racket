@@ -37,7 +37,7 @@
 
   (require (lib "etc.ss" "mzlib")
 		   (lib "optional.ss" "srfi")
-		   (rename "search.ss" find find)
+		   (only "search.ss" find)
 		   "filter.ss"
 		   (rename "fold.ss" s:map map))
 

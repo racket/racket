@@ -3,7 +3,7 @@
   (require (lifted (lib "list.ss") quicksort mergesort
                    fifth sixth seventh eighth
                    last-pair empty? cons?)
-           (rename (lib "list.ss") empty empty))
+           (only (lib "list.ss") empty))
 
   (define first car)
   (define rest cdr)

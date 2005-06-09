@@ -92,6 +92,6 @@
 	      (list 'require-for-syntax 
 		    (datum->syntax-object
 		     stx
-		     '(rename mzscheme syntax-rules syntax-rules)))
+		     '(only mzscheme syntax-rules)))
 	      (cdr (syntax-e stx)))
        stx))))
