@@ -3103,7 +3103,7 @@
 "(parameterize((current-namespace n))"
 "(namespace-attach-module orig '#%r5rs)"
 "(namespace-require '#%r5rs)"
-"(namespace-transformer-require '(rename mzscheme syntax-rules syntax-rules))"
+"(namespace-transformer-require '(only mzscheme syntax-rules))"
 "(unless stx-only?"
 "(for-each"
 "(lambda(n)"
@@ -3236,7 +3236,7 @@
 " #%app #%datum #%top))"
 );
   EVAL_ONE_STR(
-"(require(rename mzscheme namespace-require/copy namespace-require/copy))"
+"(require(only mzscheme namespace-require/copy))"
 );
   EVAL_ONE_STR(
 "(begin"

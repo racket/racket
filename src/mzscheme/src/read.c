@@ -1344,14 +1344,14 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	      params_copy.honu_mode = 1;
 
 	      if (honu == 1) {
-		v = read_inner(port, stxsrc, ht, indentation, params, 0);
+		v = read_inner(port, stxsrc, ht, indentation, &params_copy, 0);
 		if (SCHEME_EOFP(v)) {
 		  scheme_read_err(port, stxsrc, line, col, pos, 2, EOF, indentation,
 				  "read: end-of-file after #hx");
 		  return NULL;
 		}
 	      } else
-		v = read_list(port, stxsrc, line, col, pos, EOF, mz_shape_cons, 0, ht, indentation, params);
+		v = read_list(port, stxsrc, line, col, pos, EOF, mz_shape_cons, 0, ht, indentation, &params_copy);
 
 	      return v;
 	    } else {
