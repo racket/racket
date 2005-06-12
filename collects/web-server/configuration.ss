@@ -244,17 +244,20 @@
   ; including the major and minor HTTP version numbers
   ; to produce a string that is displayed into the log file
   (define (gen-log-message log-format log-path)
-    (let ([outsem (make-semaphore 1)])
+    (let ([outsem (make-semaphore 1)]
+          [log-p #f])
       (lambda (host-ip client-ip method uri host)
         (semaphore-wait outsem)
+        (unless (and log-p (file-exists? log-path))
+          (set! log-p (open-output-file log-path 'append))
+          (file-stream-buffer-mode log-p 'line))
         ; do the display all at once by formating first
-        (let ([log-p (open-output-file log-path 'append)])
+        (when log-p
           (display
            (format "~s~n"
                    (list 'from client-ip 'to host-ip 'for (url->string uri) 'at
                          (date->string (seconds->date (current-seconds)) #t)))
-           log-p)
-          (close-output-port log-p))
+           log-p))
         (semaphore-post outsem))))
 
   ; ignore-log : sym str -> str str sym url str -> str
