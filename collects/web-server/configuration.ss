@@ -249,6 +249,8 @@
       (lambda (host-ip client-ip method uri host)
         (semaphore-wait outsem)
         (unless (and log-p (file-exists? log-path))
+          (when log-p
+            (close-output-port log-p))
           (set! log-p (open-output-file log-path 'append))
           (file-stream-buffer-mode log-p 'line))
         ; do the display all at once by formating first
