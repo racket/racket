@@ -1,7 +1,7 @@
-(define-mztake-process p ("exception.ss"))
+(set-main! "exception.ss")
 
-(printf-b "exception.ss exited? ~a" (process:exited? p))
+(printf-b "exception.ss exited? ~a" (process:exited?))
 
-(printf-b "last exception seen: ~a" (hold (process:exceptions p)))
+(printf-b "last exception seen: ~a" (hold (process:exceptions)))
 
-(start/resume p)
+(set-running! true)

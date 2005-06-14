@@ -23,7 +23,7 @@
                     [set-running! (frp:value-nowable? . -> . void?)]
                     [rename debug-process-exceptions
                             process:exceptions
-                            (debug-process? . -> . frp:event?)]
+                            (() (debug-process?) . opt-> . frp:event?)]
                     [rename debug-process-exited?
                             process:exited?
                             (debug-process? . -> . frp:behavior?)])

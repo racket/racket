@@ -1,11 +1,9 @@
-(require "dijkstra-solver.ss"
+(require (lib "mztake.ss" "mztake")
+	 "dijkstra-solver.ss"
          (lib "match.ss"))
 
-
-(define-mztake-process p
-                       ("dijkstra.ss")
-                       ("heap.ss" [inserts 49 6 bind 'item]
-                                  [removes 67 10 bind 'result]))
+(define/bind (loc "heap.ss" 49 6) item)
+(define/bind (loc "heap.ss" 67 10) result)
 
 (define (not-in-order e)
   (filter-e
@@ -39,4 +37,4 @@
 (define inserters (accum-b (inserts . ==> . insert-in-model) empty))
 (define removers  (accum-b (removes . ==> . remove-from-model) inserters))
 
-(start/resume p)
+(set-running-e! (violations . -=> . false))

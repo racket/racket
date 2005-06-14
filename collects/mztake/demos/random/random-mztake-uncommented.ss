@@ -1,5 +1,6 @@
 (require (lib "graphics.ss" "graphics")         
-         (lifted mzscheme
+         (lib "mztake.ss" "mztake")
+	 (lifted mzscheme
                  make-hash-table
                  hash-table-put!
                  hash-table-get))
@@ -10,7 +11,7 @@
 ((draw-viewport window) (make-rgb 0.95 0.95 0.95))
 
 
-(define-mztake-process p ("random.ss" [x-trace 4 6 bind 'x]))
+(define/bind (loc "random.ss" 4 6) x)
 
 
 (define largest-bin 0)
@@ -40,4 +41,4 @@
 (printf-b "count: ~a" (count-b x-trace))
 
 
-(start/resume p)
+(set-running! true)

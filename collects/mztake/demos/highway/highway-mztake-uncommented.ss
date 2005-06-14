@@ -1,7 +1,7 @@
-(require (lib "animation.ss" "frtime"))
+(require (lib "mztake.ss" "mztake")
+	 (lib "animation.ss" "frtime"))
 
-(define-mztake-process radar-program ("highway.ss" [values-of-speed 3 4 bind 'speed]))
-
+(define/bind (loc "highway.ss" 3 4) speed)
 
 (printf-b "current speed: ~a" (hold values-of-speed))
 (printf-b "last ten speeds: ~a" (history-b 10 values-of-speed))
@@ -25,4 +25,4 @@
 
 (display-shapes (make-speed-gauge (hold values-of-speed)))
 
-(start/resume radar-program)
+(set-runnning! true)
