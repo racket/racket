@@ -17,6 +17,7 @@
      virtual-hosts
      access
      scripts ;; : equal-hash-table
+     scripts-lock
      initial-connection-timeout))
 
   ; more here - rename

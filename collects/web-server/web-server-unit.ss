@@ -143,7 +143,9 @@
              [(string=? "/conf/refresh-servlets" path)
               ;; more here - this is broken - only out of date or specifically mentioned
               ;; scripts should be flushed.  This destroys persistent state!
-              (set-box! config:scripts (make-hash-table 'equal))
+              (call-with-semaphore config:scripts-lock
+                                   (lambda ()
+                                     (set-box! config:scripts (make-hash-table 'equal))))
               (output-response/method
                conn
                ((responders-servlets-refreshed (host-responders host-info)))
@@ -590,9 +592,11 @@
       ;; timestamps are no longer checked for performance.  The cache must be explicitly
       ;; refreshed (see dispatch).
       (define (cached-load name)
-        (hash-table-get (unbox config:scripts)
-                        name
-                        (lambda () (reload-servlet-script name))))
+        (call-with-semaphore config:scripts-lock
+                             (lambda ()
+                               (hash-table-get (unbox config:scripts)
+                                               name
+                                               (lambda () (reload-servlet-script name))))))
 
       ;; exn:i/o:filesystem:servlet-not-found =
       ;; (make-exn:fail:filesystem:exists:servlet str continuation-marks str sym)
@@ -605,6 +609,7 @@
         (cond
           [(load-servlet/path servlet-filename)
            => (lambda (svlt)
+                ; This is only called from cached-load, so config:scripts is locked
                 (hash-table-put! (unbox config:scripts) servlet-filename svlt)
                 svlt)]
           [else
