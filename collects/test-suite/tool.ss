@@ -135,7 +135,7 @@
       ;; Require the test-case macro into every new namespace when a program is run.
       (define require-macro-mixin
         (mixin ((class->interface drscheme:rep:text%)) ()
-          (inherit get-user-namespace get-canvas)
+          (inherit get-user-namespace get-definitions-text)
           
           #;((is-a?/c area<%>) . -> . (is-a?/c frame%))
           ;; The frame containing the given area
@@ -150,11 +150,11 @@
           ;; Overriden to reset test case boxes
           (define/override (reset-highlighting)
             (super reset-highlighting)
-            (let ([text (send (find-frame (get-canvas)) get-definitions-text)])
+            (let ([defs-text (get-definitions-text)])
               ;(if (send text delay-reset)
               ;    (send text delay-reset false)
               ;    (send text reset-test-case-boxes)))) 
-              (send text reset-test-case-boxes)))
+              (send defs-text reset-test-case-boxes)))
           
           #;(-> void)
           ;; Called when the program is execute to reset the rep:text

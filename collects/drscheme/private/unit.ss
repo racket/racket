@@ -1221,7 +1221,7 @@ module browser threading seems wrong.
             (when execute-menu-item
               (send execute-menu-item enable #f))
             (send execute-button enable #f)
-            (send file-menu:create-new-tab-item enable #f)
+            ;(send file-menu:create-new-tab-item enable #f)
             (inner (void) disable-evaluation))
           
           (define/public-final (enable-evaluation-in-tab tab)
@@ -1232,7 +1232,7 @@ module browser threading seems wrong.
             (when execute-menu-item
               (send execute-menu-item enable #t))
             (send execute-button enable #t)
-            (send file-menu:create-new-tab-item enable #t)
+            ;(send file-menu:create-new-tab-item enable #t)
             (inner (void) enable-evaluation))
           
           (inherit set-label)

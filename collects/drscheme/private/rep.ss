@@ -52,7 +52,12 @@ TODO
               [-text<%> text<%>])
 
       (define -text<%>
-        (interface ()
+        (interface ((class->interface text%)
+                    text:ports<%>
+                    editor:file<%>
+                    scheme:text<%>
+                    color:text<%>
+                    text:ports<%>)
           reset-highlighting
           highlight-errors
           highlight-errors/exn
@@ -63,6 +68,8 @@ TODO
           get-user-namespace
           get-user-teachpack-cache
           set-user-teachpack-cache
+
+          get-definitions-text
           
           kill-evaluation
           
@@ -516,6 +523,7 @@ TODO
     
           (define definitions-text 'not-yet-set-definitions-text)
           (define/public (set-definitions-text dt) (set! definitions-text dt))
+          (define/public (get-definitions-text) definitions-text)
           
           (unless (is-a? context context<%>)
             (error 'drscheme:rep:text% 
@@ -631,56 +639,50 @@ TODO
               
               (set! error-ranges locs)
               
-              (let ([defs               
-                     (let ([f (get-top-level-window)])
-                       (and f
-                            (is-a? f drscheme:unit:frame<%>)
-                            (send f get-definitions-text)))])
-                
-                (for-each (λ (loc) (send (srcloc-source loc) begin-edit-sequence)) locs)
-                
-                (when color?
-                  (let ([resets
-                         (map (λ (loc)
-                                (let* ([file (srcloc-source loc)]
-                                       [start (- (srcloc-position loc) 1)]
-                                       [span (srcloc-span loc)]
-                                       [finish (+ start span)])
-                                  (send file highlight-range start finish error-color #f #f 'high)))
-                              locs)])
-                    
-                    (when (and defs error-arrows)
-                      (let ([filtered-arrows
-                             (remove-duplicate-error-arrows
-                              (filter
-                               (λ (arr)
-                                 (embedded-in? (car arr) defs))
-                               error-arrows))])
-                        (send defs set-error-arrows filtered-arrows)))
-                    
-                    (set! internal-reset-callback
-                          (λ ()
-                            (set! error-ranges #f)
-                            (when defs
-                              (send defs set-error-arrows #f))
-                            (set! internal-reset-callback void)
-                            (for-each (λ (x) (x)) resets)))))
-                
-                (let* ([first-loc (and (pair? locs) (car locs))]
-                       [first-file (and first-loc (srcloc-source first-loc))]
-                       [first-start (and first-loc (- (srcloc-position first-loc) 1))]
-                       [first-span (and first-loc (srcloc-span first-loc))])
+              (for-each (λ (loc) (send (srcloc-source loc) begin-edit-sequence)) locs)
+              
+              (when color?
+                (let ([resets
+                       (map (λ (loc)
+                              (let* ([file (srcloc-source loc)]
+                                     [start (- (srcloc-position loc) 1)]
+                                     [span (srcloc-span loc)]
+                                     [finish (+ start span)])
+                                (send file highlight-range start finish error-color #f #f 'high)))
+                            locs)])
                   
-                  (when first-loc
-                    (let ([first-finish (+ first-start first-span)])
-                      (when (eq? first-file defs) ;; only move set the cursor in the defs window
-                        (send first-file set-position first-start first-start))
-                      (send first-file scroll-to-position first-start #f first-finish)))
+                  (when (and definitions-text error-arrows)
+                    (let ([filtered-arrows
+                           (remove-duplicate-error-arrows
+                            (filter
+                             (λ (arr)
+                               (embedded-in? (car arr) definitions-text))
+                             error-arrows))])
+                      (send definitions-text set-error-arrows filtered-arrows)))
                   
-                  (for-each (λ (loc) (send (srcloc-source loc) end-edit-sequence)) locs)
-                  
-                  (when first-loc
-                    (send first-file set-caret-owner (get-focus-snip) 'global))))))
+                  (set! internal-reset-callback
+                        (λ ()
+                          (set! error-ranges #f)
+                          (when definitions-text
+                            (send definitions-text set-error-arrows #f))
+                          (set! internal-reset-callback void)
+                          (for-each (λ (x) (x)) resets)))))
+              
+              (let* ([first-loc (and (pair? locs) (car locs))]
+                     [first-file (and first-loc (srcloc-source first-loc))]
+                     [first-start (and first-loc (- (srcloc-position first-loc) 1))]
+                     [first-span (and first-loc (srcloc-span first-loc))])
+                
+                (when first-loc
+                  (let ([first-finish (+ first-start first-span)])
+                    (when (eq? first-file definitions-text) ;; only move set the cursor in the defs window
+                      (send first-file set-position first-start first-start))
+                    (send first-file scroll-to-position first-start #f first-finish)))
+                
+                (for-each (λ (loc) (send (srcloc-source loc) end-edit-sequence)) locs)
+                
+                (when first-loc
+                  (send first-file set-caret-owner (get-focus-snip) 'global)))))
           
           (define/public (reset-highlighting)
             (reset-error-ranges))
@@ -713,7 +715,13 @@ TODO
           ;;  specialization
           ;;
           
-          (define/override (after-io-insertion) (send context ensure-rep-shown this))
+          (define/override (after-io-insertion)
+            (let ([canvas (get-active-canvas)])
+              (when canvas
+                (let ([frame (send canvas get-top-level-window)])
+                  (let ([tab (send definitions-text get-tab)])
+                    (when (eq? (send frame get-current-tab) tab)
+                      (send context ensure-rep-shown this)))))))
           
           (define/augment (after-insert start len)
             (inner (void) after-insert start len)
@@ -1050,12 +1058,7 @@ TODO
           
           (define/private init-evaluation-thread ; =Kernel=
             (λ ()
-              (let ([default (preferences:get drscheme:language-configuration:settings-preferences-symbol)]
-                    [frame (get-top-level-window)])
-                (if frame
-                    (let ([defs (send frame get-definitions-text)])
-                      (set! user-language-settings (send defs get-next-settings)))
-                    (set! user-language-settings default)))
+              (set! user-language-settings (send definitions-text get-next-settings))
               
               (set! user-custodian (make-custodian))
 	      ; (custodian-limit-memory user-custodian 10000000 user-custodian)
