@@ -459,7 +459,7 @@
                 (append (compilation-unit-code (car mod-lists))
                         (order (cdr mod-lists)))))
               
-          (define/public (get-comment-character) (values "//" "*"))
+          (define/public (get-comment-character) (values "//" #\*))
           (define/public (get-style-delta) #f)
           (define/public (get-language-position) 
             (cons (string-constant experimental-languages) (list "ProfessorJ" name) ))
