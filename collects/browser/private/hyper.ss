@@ -578,6 +578,7 @@ A test case:
       (send hyper-keymap map-function "pageup" "previous-page")
       (send hyper-keymap map-function "wheeldown" "do-wheel")
       (send hyper-keymap map-function "pagedown" "next-page")
+      (send hyper-keymap map-function "space" "next-page")
       
       ;; call-with-hyper-panel : object ((is-a?/c hyper-panel<%>) -> void) -> void
       (define (call-with-hyper-panel text f)
