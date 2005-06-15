@@ -66,6 +66,7 @@ module browser threading seems wrong.
       (define-local-member-name
         get-visible-defs
         set-visible-defs
+        set-focus-d/i
         get-i
         set-i)
       (define tab<%>
@@ -76,6 +77,7 @@ module browser threading seems wrong.
           get-visible-defs
           set-visible-defs
           set-visible-ints
+          set-focus-d/i
           get-i
           set-i
           break-callback
@@ -854,11 +856,14 @@ module browser threading seems wrong.
         (class* object% (drscheme:rep:context<%> tab<%>)
           (init-field frame
                       defs
-                      i)
+                      i
+                      defs-shown?
+                      ints-shown?)
           (define enabled? #t)
           (field [ints #f]
                  [visible-defs #f]
-                 [visible-ints #f])
+                 [visible-ints #f]
+                 [focus-d/i 'defs])
           
           ;; only called to initialize this tab.
           ;; the interactions editor should be invariant.
@@ -867,10 +872,17 @@ module browser threading seems wrong.
           (define/public-final (get-frame) frame)
           (define/public-final (get-defs) defs)
           (define/public-final (get-ints) ints)
-          (define/public-final (get-visible-defs) visible-defs)
-          (define/public-final (set-visible-defs vd) (set! visible-defs vd))
-          (define/public-final (get-visible-ints) visible-ints)
-          (define/public-final (set-visible-ints vi) (set! visible-ints vi))
+          (define/public-final (get-visible-defs) (values visible-defs defs-shown?))
+          (define/public-final (set-visible-defs vd ds?) 
+            (set! visible-defs vd)
+            (set! defs-shown? ds?))
+          (define/public-final (get-visible-ints) (values visible-ints ints-shown?))
+          (define/public-final (set-visible-ints vi is?)
+            (set! visible-ints vi)
+            (set! ints-shown? is?))
+          (define/public-final (set-focus-d/i di)
+            (set! focus-d/i di))
+          (define/public-final (get-focus-d/i) focus-d/i)
           (define/public-final (get-i) i)
           (define/public-final (set-i _i) (set! i _i))
           (define/public (disable-evaluation)
@@ -1985,7 +1997,12 @@ module browser threading seems wrong.
             (opt-lambda ([filename #f])
               (let* ([defs (new (drscheme:get/extend:get-definitions-text))]
                      [tab-count (length tabs)]
-                     [new-tab (new (drscheme:get/extend:get-tab) (defs defs) (i tab-count) (frame this))]
+                     [new-tab (new (drscheme:get/extend:get-tab)
+                                   (defs defs)
+                                   (i tab-count)
+                                   (frame this)
+                                   (defs-shown? #t)
+                                   (ints-shown? (not filename)))]
                      [ints (make-object (drscheme:get/extend:get-interactions-text) new-tab)])
                 (send new-tab set-ints ints)
                 (set! tabs (append tabs (list new-tab)))
@@ -2099,14 +2116,18 @@ module browser threading seems wrong.
                           (when admin
                             (send admin get-view xb yb wb hb)))))
                 (list (unbox xb) (unbox yb) (unbox wb) (unbox hb))))
-            (send current-tab set-visible-ints (get-visible-regions interactions-text))
-            (send current-tab set-visible-defs (get-visible-regions definitions-text)))
-                
+            (send current-tab set-visible-ints (get-visible-regions interactions-text) interactions-shown?)
+            (send current-tab set-visible-defs (get-visible-regions definitions-text) definitions-shown?)
+            (send current-tab set-focus-d/i
+                  (if (ormap (λ (x) (send x has-focus?)) interactions-canvases)
+                      'ints
+                      'defs)))
+          
           (define/private (restore-visible-tab-regions)
             (define (set-visible-regions txt regions)
               (when regions
-                (let ([canvases (send txt get-canvases)])
-                  (when (= (length canvases) (length regions))
+                (let* ([canvases (send txt get-canvases)])
+                  (when (equal? (length canvases) (length regions))
                     (for-each (λ (c r) (set-visible-region txt c r)) canvases regions)))))
             (define (set-visible-region txt canvas region)
               (send canvas scroll-to 
@@ -2115,8 +2136,17 @@ module browser threading seems wrong.
                     (third region)
                     (fourth region)
                     #t))
-            (set-visible-regions interactions-text (send current-tab get-visible-ints))
-            (set-visible-regions definitions-text (send current-tab get-visible-defs)))
+            
+            (let-values ([(vi is?) (send current-tab get-visible-ints)])
+              (set-visible-regions interactions-text vi)
+              (set! interactions-shown? is?))
+            (let-values ([(vd ds?) (send current-tab get-visible-defs)])
+              (set-visible-regions definitions-text vd)
+              (set! definitions-shown? ds?))
+            (update-shown)
+            (case (send current-tab get-focus-d/i)
+              [(defs) (send (car definitions-canvases) focus)]
+              [(ints) (send (car interactions-canvases) focus)]))
 
           (define/private (pathname-equal? p1 p2)
             (with-handlers ([exn:fail:filesystem? (λ (x) #f)])
@@ -2772,7 +2802,9 @@ module browser threading seems wrong.
           (define tabs (list (new (drscheme:get/extend:get-tab)
                                   (defs definitions-text)
                                   (frame this)
-                                  (i 0))))
+                                  (i 0)
+                                  (defs-shown? #t)
+                                  (ints-shown? #t))))
           
           ;; current-tab : tab
           ;; corresponds to the tabs-panel's active button.
