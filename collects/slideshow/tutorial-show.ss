@@ -507,13 +507,13 @@
 	      "pict's bounding box and baselines")
    (note "(The green frame is the \"bounding box\" of the result)")
    (blank)
-   (page-item "The" (code pin-over) "function is useful with" (code pt-arrow-line)
+   (page-item "The" (code pin-over) "function is useful with" (code pip-arrow-line)
 	      "to draw an"
 	      (let ([p (bound-frame (inset (t "outgoing arrow") 2))])
 		(pin-over p (/ (pict-width p) 2)  (/ (pict-height p) 2) 
-			  ;; pt-arrow-line creates a pict where the
+			  ;; pip-arrow-line creates a pict where the
 			  ;; "bounding box" corresponds to the non-arrow end
-			  (linewidth 3 (colorize (pt-arrow-line 50 50 gap-size) "orange"))))
+			  (linewidth 3 (colorize (pip-arrow-line 50 50 gap-size) "orange"))))
 	      "without changing the layout"))
 
   (define blue-fish (standard-fish (* 3 gap-size) (* 2 gap-size) 'right "blue" "white"))
@@ -533,7 +533,7 @@
      (pin-over fish-file-scene
 	       fdx fdy
 	       (colorize
-		(pt-arrow-line (- adx fdx) (- ady fdy) gap-size)
+		(pip-arrow-line (- adx fdx) (- ady fdy) gap-size)
 		"orange")))
    (page-para "There's a" (code -find) "function for every combination of"
 	      (code l) "," (code c) ", and" (code r)
