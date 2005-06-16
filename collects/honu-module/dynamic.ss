@@ -117,7 +117,11 @@
 			       parse-a-tail-expr
 			       parse-an-expr)
 			   expr-stxs)])
-		(k code (stx-cdr after-expr))))]))
+		(k ((if (top-block-context? ctx) 
+			(lambda (x) `(printf "~s\n" ,x))
+			values)
+		    code)
+		   (stx-cdr after-expr))))]))
    
    (define (parse-block stx ctx)
      (let loop ([stx stx])
@@ -507,6 +511,8 @@
 	      (and (integer? (syntax-e val-expr))
 		   (exact? (syntax-e val-expr))
 		   (module-identifier=? #'int target-type))
+	      (and (real? (syntax-e val-expr))
+		   (module-identifier=? #'real target-type))
 	      (and (string? (syntax-e val-expr))
 		   (module-identifier=? #'string-type target-type))))))
       
@@ -726,6 +732,7 @@
     (and (integer? v) (exact? v)))
 
   (define-type int exact-integer?)
+  (define-type real real?)
   (define-type num number?)
   (define-type obj (lambda (x) #t))
   (define-type string-type string?)
@@ -988,7 +995,7 @@
   (define true #t)
   (define false #f)
 
-  (provide int obj (rename string-type string) ->
+  (provide int real obj (rename string-type string) ->
 	   \;
            (rename set! =)
 	   (rename honu-return return)
