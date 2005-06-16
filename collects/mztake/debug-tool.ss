@@ -510,8 +510,8 @@
                    get-definitions-text
                    get-interactions-text
                    get-menu-bar
-                   break-callback
-                   reset-offer-kill
+;;                   break-callback TODO
+;;                   reset-offer-kill
                    get-top-level-window)
           
           (define breakpoints (make-hash-table))
@@ -684,8 +684,9 @@
                               (bell)
                               (begin
                                 (set! want-suspend-on-break? #t)
-                                (break-callback)
-                                (reset-offer-kill))))]
+;;                                (break-callback)
+;;                                (reset-offer-kill)
+                                )))]
               [enabled #t]))
           
           (define resume-button
