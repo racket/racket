@@ -125,9 +125,6 @@
        (run-save/load-tests pasteboard% (lambda (e t) (send e insert (make-object string-snip% t))) reset?))
      '(#t #f))
 
-(report-errs)
-done
-
 ;;;;;; Undo tests
 
 (define e (make-object text%))
