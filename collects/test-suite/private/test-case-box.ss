@@ -87,43 +87,44 @@
                                       (syntax-column next)
                                       (syntax-position next)
                                       (syntax-span next))]))
-
-               (if enabled?
-                     (with-syntax ([to-test-stx (syntax-property (text->syntax-object to-test #f)
-                                                                 'stepper-test-suite-hint
-                                                                 true)]
-                                   [update-stx (lambda (x) (update x))] ; eta public method
-                                   [set-actuals-stx set-actuals]
-                                   [w printf])
-                       (if error-box?
-                           (with-syntax ([exn-pred-stx (text->syntax-object should-raise #'exn:fail?)]
-                                         [exn-handler-stx
-                                          (if (empty-text? error-message)
-                                              #'(lambda (v) true)
-                                              #`(lambda (v)
-                                                  (equal? (exn-message v)
-                                                          #,(text->syntax-object
-                                                             error-message
-							     #f))))])
-                             (syntax/loc (datum->syntax-object
-                                          false 'ignored (list source line column position 1))
-                               (test-error-case to-test-stx
-                                                exn-pred-stx
-                                                exn-handler-stx
-                                                update-stx
-                                                set-actuals-stx)))
-                           (with-syntax ([exp-stx (text->syntax-object expected #f)]
-                                         [pred-stx (text->syntax-object predicate beginner-equal?)])
-                             (syntax/loc (datum->syntax-object
-                                          false 'ignored (list source line column position 1))
-                               (test-case pred-stx
-                                          to-test-stx
-                                          exp-stx
-                                          update-stx
-                                          set-actuals-stx)))))
-                   (syntax-property #'(define-values () (values))
-                                    'stepper-skip-completely
-                                    true))))
+	       (syntax-property
+		(if enabled?
+		    (with-syntax ([to-test-stx (syntax-property (text->syntax-object to-test #f)
+								'stepper-test-suite-hint
+								true)]
+				  [update-stx (lambda (x) (update x))] ; eta public method
+				  [set-actuals-stx set-actuals]
+				  [w printf])
+		      (if error-box?
+			  (with-syntax ([exn-pred-stx (text->syntax-object should-raise #'exn:fail?)]
+					[exn-handler-stx
+					 (if (empty-text? error-message)
+					     #'(lambda (v) true)
+					     #`(lambda (v)
+						 (equal? (exn-message v)
+							 #,(text->syntax-object
+							    error-message
+							    #f))))])
+			    (syntax/loc (datum->syntax-object
+					 false 'ignored (list source line column position 1))
+			      (test-error-case to-test-stx
+					       exn-pred-stx
+					       exn-handler-stx
+					       update-stx
+					       set-actuals-stx)))
+			  (with-syntax ([exp-stx (text->syntax-object expected #f)]
+					[pred-stx (text->syntax-object predicate beginner-equal?)])
+			    (syntax/loc (datum->syntax-object
+					 false 'ignored (list source line column position 1))
+			      (test-case pred-stx
+					 to-test-stx
+					 exp-stx
+					 update-stx
+					 set-actuals-stx)))))
+		    (syntax-property #'(define-values () (values))
+				     'stepper-skip-completely
+				     true))
+		'test-case-box #t)))
            
            #;(boolean? . -> . void?)
            ;; sets the test case to the proper result bassed on if it was correct
