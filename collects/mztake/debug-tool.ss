@@ -15,7 +15,8 @@
            (lib "annotator.ss" "mztake")
            (lib "load-annotator.ss" "mztake" "private")
            ;(lib "framework.ss" "framework")
-           #;(lib "string-constant.ss" "string-constants"))
+           #;(lib "string-constant.ss" "string-constants")
+           )
   
   (provide tool@)
   
@@ -203,7 +204,8 @@
                            (let* ([frames (send parent get-stack-frames)]
                                   [pos-vec (send parent get-pos-vec)]
                                   [id (vector-ref pos-vec pos)]
-                                #;[_ (printf "frames = ~a~npos-vec = ~a~nid = ~a~n"
+                                #;
+                                  [_ (printf "frames = ~a~npos-vec = ~a~nid = ~a~n"
                                              frames pos-vec id)])
                              (send parent
                                    set-mouse-over-msg
@@ -215,7 +217,8 @@
                                                               (lambda (id2) (module-identifier=? id id2))
                                                               frames (lambda ()
                                                                        (k #f
-                                                                        #;(format "~a = ~a" id-sym
+                                                                        #;
+                                                                          (format "~a = ~a" id-sym
                                                                                 (namespace-variable-value
                                                                                  id-sym
                                                                                  #f
@@ -289,7 +292,8 @@
                                 (let* ([frames (send parent get-stack-frames)]
                                        [pos-vec (send parent get-pos-vec)]
                                        [id (vector-ref pos-vec pos)]
-                                       #;[_ (printf "frames = ~a~npos-vec = ~a~nid = ~a~n"
+                                       #;
+                                       [_ (printf "frames = ~a~npos-vec = ~a~nid = ~a~n"
                                                     frames pos-vec id)])
                                   (unless (and
                                            id frames
@@ -349,7 +353,8 @@
                                    (send dc set-brush bp-tmp-brush)])
                          ;(drscheme:arrow:draw-arrow dc xl yl xr yr dx dy)
                          (send dc draw-ellipse (+ xl dx) (+ yl dy yoff) diameter diameter)
-                         #;(send dc draw-polygon stop-sign
+                         #;
+                         (send dc draw-polygon stop-sign
                                  (+ xl dx)
                                  (+ yl dy 2))
                          (send dc set-pen op)
@@ -368,7 +373,8 @@
                         [else    (send dc set-pen pc-pen)
                                  (send dc set-brush pc-brush)]))
                     (drscheme:arrow:draw-arrow dc xl ym xr ym dx dy))
-                  #;(let loop ([end-pos pos]
+                  #;
+                  (let loop ([end-pos pos]
                              [marks (send parent get-stack-frames)])
                     (when (cons? marks)
                       (let*-values ([(start-pos) (syntax-position (mark-source (first marks)))]
@@ -510,8 +516,7 @@
                    get-definitions-text
                    get-interactions-text
                    get-menu-bar
-;;                   break-callback TODO
-;;                   reset-offer-kill
+                   get-current-tab
                    get-top-level-window)
           
           (define breakpoints (make-hash-table))
@@ -639,7 +644,8 @@
                                 (alignment '(center center))
                                 (style '(border))))
             (send debug-parent-panel change-children (lambda (l) null))
-            #;(instantiate button% ()
+            #;
+            (instantiate button% ()
               (label "Hide")
               (parent debug-panel)
               (callback (lambda (x y) (hide-debug)))
@@ -684,9 +690,8 @@
                               (bell)
                               (begin
                                 (set! want-suspend-on-break? #t)
-;;                                (break-callback)
-;;                                (reset-offer-kill)
-                                )))]
+                                (send (get-current-tab) break-callback)
+                                (send (get-current-tab) reset-offer-kill))))]
               [enabled #t]))
           
           (define resume-button
