@@ -6,7 +6,7 @@
            (lib "etc.ss")
            (lib "math.ss"))
   
-  (provide wrap-balloon
+  (provide wrap-balloon pip-wrap-balloon
 	   place-balloon
 	   pin-balloon
 	   (rename mk-balloon balloon)
@@ -140,6 +140,10 @@
 	  p)
 	 (balloon-point-x b)
 	 (balloon-point-y b)))))
+
+  (define pip-wrap-balloon
+    (opt-lambda (p corner dx dy [color balloon-color][c-rad corner-size])
+      (pin-balloon (wrap-balloon p corner dx dy color c-rad) (blank 0) 0 0)))
   
   (define (do-place-balloon flip-proc? balloon p to find-to)
     (let-values ([(x y) (if (and (number? to) 

@@ -942,6 +942,11 @@ extracts a pict whose bounding box does not include the spike, but
 includes the rest of the image. (The `balloon-point-x' and
 `balloon-point-y' functions specify the location of the spike point.)
 
+> (pip-wrap-balloon pict spike-sym dx dy [color corner-radius])
+
+Like `wrap-balloon', but produces a zero-sized pict suitable for use
+with `pin-over'.
+
 > (pin-balloon balloon pict to-pict find-to-pos)
 > (pin-balloon balloon pict x y)
 
