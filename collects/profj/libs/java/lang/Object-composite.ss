@@ -49,7 +49,7 @@
   (define Object-Mix
     (lambda (parent)
       (class* parent (ObjectI)
-        
+        (inspect #f)
         (define/public (Object-constructor) (void))
         
         ;Needs to do something
@@ -269,7 +269,7 @@
   
   (define java-array
     (class* Object ()
-      
+      (inspect #f)
       (define array null)
       (define rt #f)
       (define/public (get-rt) rt)
@@ -411,7 +411,8 @@
   
   (define String
     (class* Object (Comparable Serializable)
-      
+
+      (inspect #f)
       ;private field containing scheme string
       (define text "")
       ;Accessor for scheme string
@@ -796,6 +797,7 @@
   (define Throwable
     (class* Object (Serializable)
       
+      (inspect #f)
       ;private fields
       ;message: String
       (define message (make-java-string ""))

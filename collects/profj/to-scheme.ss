@@ -160,8 +160,8 @@
   ;-------------------------------------------------------------------------------------------------------------------------
   ;Translation
   
-  ;translate-interactions: ast location type-records -> syntax
-  (define (translate-interactions prog location type-recs)
+  ;translate-interactions: ast location type-records boolean-> syntax
+  (define (translate-interactions prog location type-recs gen-reqs?)
     (loc location)
     (interactions? #t)
     (types type-recs)
@@ -171,7 +171,7 @@
                   (send type-recs set-class-reqs null)
                   (make-syntax #f 
                                `(begin ,@(map (lambda (f)
-                                                (translate-interactions f location type-recs))
+                                                (translate-interactions f location type-recs gen-reqs?))
                                               prog))
                                #f))
                  ((field? prog) 
@@ -187,7 +187,7 @@
                  ((expr? prog) (translate-expression prog))
                  (else 
                   (error 'translate-interactions "Internal Error: translate-interactions given ~a" prog)))))
-      (if (null? reqs)
+      (if (or (null? reqs) (not gen-reqs?))
           syn
           (make-syntax #f
                        `(begin (require ,@(remove-dup-syntax (translate-interact-require reqs type-recs)))

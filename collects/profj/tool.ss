@@ -123,7 +123,7 @@
         (drscheme:language-configuration:add-language
          (make-object ((drscheme:language:get-default-mixin) intermediate-lang%)))
         (drscheme:language-configuration:add-language
-         (make-object ((drscheme:language:get-default-mixin) beginner-lang%))))                 
+         (make-object ((drscheme:language:get-default-mixin) beginner-lang%))))
       
       ;(make-profj-settings symbol boolean (list string))
       (define-struct profj-settings (print-style print-full? classpath) (make-inspector))
@@ -353,7 +353,7 @@
               (lambda ()
                 (if (eof-object? (peek-char-or-special port))
                     eof
-		    (syntax-as-top
+                    (syntax-as-top
                      (datum->syntax-object 
                       #f
                       #;`(compile-interactions-helper ,(lambda (ast) (compile-interactions-ast ast name level execute-types))
@@ -365,7 +365,7 @@
           (define/private (process-extras extras type-recs)
             (cond
               ((null? extras) null)
-              ((example-box? (car extras)) 
+              ((example-box? (car extras))
                (let ((contents (eval (example-box-contents (car extras)))))
                  (append 
                   (map (lambda (example)
@@ -381,43 +381,24 @@
                        contents)
                   (process-extras (cdr extras) type-recs))))
               ((test-case? (car extras))
-               (cons 
-                (let ((new-test-case
-                       (lambda (to-test-stx exp-stx record set-actuals)
-                         (let ([to-test-values (call-with-values (lambda () to-test-stx) list)]
-                               [exp-values (call-with-values (lambda () exp-stx) list)])
-                           (record (and (= (length to-test-values) (length exp-values))
-                                        (andmap (dynamic-require '(lib "profj-testing.ss" "profj") 'java-values-equal?)
-                                                to-test-values exp-values)))
-                           (set-actuals to-test-values)))))
-                  (let-values (((syn t t2) (send (test-case-test (car extras)) read-special #f #f #f #f)))
-                    (syntax-case syn ()
-                      ((test-case equal? exp1 exp2 exp3 exp4) 
-                       (syntax-case (syntax exp1) (begin require)
-                         ((begin (require req ...) exp)
-                          (syntax-case (syntax exp2) (begin require)
-                            ((begin (require req2 ...) new-exp2) 
-                             (datum->syntax-object #f 
-                                                   `(begin ,(syntax (require req ... req2 ...))
-                                                           (,new-test-case ,(syntax exp) ,(syntax new-exp2)
-                                                             ,(syntax exp3) ,(syntax exp4)))
-                                                   #f))
-                            (else 
-                             (datum->syntax-object #f
-                                                   `(begin ,(syntax (require req ...))
-                                                           (,new-test-case ,(syntax exp) ,(syntax exp2)  ,(syntax exp3) ,(syntax exp4)))
-                                                   #f))))                         
-                         (else 
-                          (syntax-case (syntax exp2) (begin require)
-                            ((begin (require req2 ...) new-exp2)
-                             (datum->syntax-object #f
-                                                   `(begin ,(syntax (require req2 ...))
-                                                           (,new-test-case ,(syntax exp1) ,(syntax new-exp2) ,(syntax exp3) ,(syntax exp4)))
-                                                   #f))
-                          (else 
-                           (datum->syntax-object #f `(,new-test-case ,(syntax exp1) ,(syntax exp2) ,(syntax exp3) ,(syntax exp4)) #f))))))
-                      (else syn))))
-                (process-extras (cdr extras) type-recs)))
+               ;(printf "in process-extras~n")
+               ;(printf "~a~n" (test-case-test (car extras)))
+               (cons
+                (let ((tc (test-case-test (car extras))))
+                  (syntax-case tc (parse-java-interactions)
+                    ((test-case eq (parse-java-interactions ast-1 ed-1) 
+                                (parse-java-interactions ast-2 ed-2) end1 end2)
+                     (datum->syntax-object #f
+                                           `(,(syntax test-case)
+                                              ,(dynamic-require '(lib "profj-testing.ss" "profj") 'java-values-equal?);,(syntax eq)
+                                              ,(compile-interactions-ast (syntax-object->datum (syntax ast-1))
+                                                                         (syntax-object->datum (syntax ed-1)) level type-recs #f)
+                                              ,(compile-interactions-ast (syntax-object->datum (syntax ast-2))
+                                                                         (syntax-object->datum (syntax ed-2)) level type-recs #f)
+                                              ,(syntax end1) ,(syntax end2))
+                                           #f))
+                    (_ tc))) (process-extras (cdr extras) type-recs))
+               #;(cons (test-case-test (car extras)) (process-extras (cdr extras) type-recs)))
               ((interact-case? (car extras))
                (let ((interact-box (interact-case-box (car extras))))
                  (send interact-box set-level level)
@@ -512,7 +493,7 @@
                         ((parse-java-interactions ex loc)
                          (let ((exp (syntax-object->datum (syntax ex))))
                            (old-current-eval 
-                            (syntax-as-top (compile-interactions-ast exp (syntax loc) level execute-types)))))
+                            (syntax-as-top (compile-interactions-ast exp (syntax loc) level execute-types #t)))))
                         (_ (old-current-eval exp))))))
                  (with-handlers ([void (lambda (x)  (printf "~a~n" (exn-message x)))])
                    (namespace-require 'mzscheme)
@@ -529,7 +510,10 @@
             (let ((print-full? (profj-settings-print-full? settings))
                   (style (profj-settings-print-style settings)))
               (if (is-a? value String)
-                  (write-special (format "~v" (send value get-mzscheme-string)) port)
+                  (display (format-java value print-full? style null #t 0) port)
+                  #;(begin 
+                    (write-special (format "~v" (send value get-mzscheme-string)) port)
+                    (void))
                   (let ((out (format-java value print-full? style null #f 0)))
                     (if (< 25 (string-length out))
                         (display (format-java value print-full? style null #t 0) port)
@@ -538,6 +522,7 @@
             (render-value value settings port)(newline port))
           
           (define/public (create-executable fn parent . args)
+            (printf "create-exe called~n")
 	    (message-box "Unsupported"
 			 "Sorry - executables are not supported for Java at this time"
 			 parent))

@@ -316,7 +316,9 @@
       (syntax-case lexeme ()
         ((parse-example-box examples) (token-EXAMPLE (make-example-box (syntax examples))))
         (_ 
-         (token-OTHER_SPECIAL (list lexeme start-pos end-pos)))))
+         (if (syntax-property lexeme 'test-case-box)
+             (token-TEST_SUITE (make-test-case lexeme))
+             (token-OTHER_SPECIAL (list lexeme start-pos end-pos))))))
      
       #;(begin(printf "lexing a special")
             (syntax-case lexeme ()

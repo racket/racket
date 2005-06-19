@@ -169,16 +169,16 @@
           (begin 
             (build-interactions-info ast level location type-recs)
             (check-interactions-types ast level location type-recs)
-            (translate-interactions ast location type-recs)))))
+            (translate-interactions ast location type-recs #t)))))
       
-  (define (compile-interactions-ast ast location level type-recs)
+  (define (compile-interactions-ast ast location level type-recs gen-require?)
     (to-file #f)
     (if (null? ast)
         (datum->syntax-object #f '(void) #f)
         (begin
           (build-interactions-info ast level location type-recs)
           (check-interactions-types ast level location type-recs)
-          (translate-interactions ast location type-recs))))
+          (translate-interactions ast location type-recs gen-require?))))
   
   (define-struct elt (prev val next))
   
