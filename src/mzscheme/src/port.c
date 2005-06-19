@@ -2659,7 +2659,7 @@ Scheme_Object *scheme_get_special(Scheme_Object *port,
     /* do location increment, since read didn't */
     if (line > 0)
       line++;
-    if (col > 0)
+    if (col >= 0)
       col++;
     if (pos > 0)
       pos++;
