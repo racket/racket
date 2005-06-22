@@ -1546,7 +1546,7 @@ Scheme_Object *scheme_add_env_renames(Scheme_Object *stx, Scheme_Comp_Env *env,
 				      Scheme_Comp_Env *upto);
 
 
-typedef Scheme_Object *(*Scheme_Lift_Capture_Proc)(Scheme_Object *, Scheme_Object *, Scheme_Object *, Scheme_Comp_Env *);
+typedef Scheme_Object *(*Scheme_Lift_Capture_Proc)(Scheme_Object *, Scheme_Object **, Scheme_Object *, Scheme_Comp_Env *);
 void scheme_frame_captures_lifts(Scheme_Comp_Env *env, Scheme_Lift_Capture_Proc cp, Scheme_Object *data);
 Scheme_Object *scheme_frame_get_lifts(Scheme_Comp_Env *env);
 
@@ -1785,7 +1785,7 @@ void scheme_ill_formed(Mz_CPort *port);
 extern Scheme_Object *scheme_inferred_name_symbol;
 Scheme_Object *scheme_check_name_property(Scheme_Object *stx, Scheme_Object *current_name);
 
-Scheme_Object *scheme_make_lifted_defn(Scheme_Object *sys_wraps, Scheme_Object *id, Scheme_Object *expr, Scheme_Comp_Env *env);
+Scheme_Object *scheme_make_lifted_defn(Scheme_Object *sys_wraps, Scheme_Object **id, Scheme_Object *expr, Scheme_Comp_Env *env);
 
 /*========================================================================*/
 /*                         namespaces and modules                         */

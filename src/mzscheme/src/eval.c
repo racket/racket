@@ -2564,7 +2564,7 @@ Scheme_Object *scheme_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
   return scheme_compile_expand_expr(form, env, erec, drec, 0);
 }
 
-static Scheme_Object *pair_lifted(Scheme_Object *_ip, Scheme_Object *id, Scheme_Object *expr, Scheme_Comp_Env *env)
+static Scheme_Object *pair_lifted(Scheme_Object *_ip, Scheme_Object **_id, Scheme_Object *expr, Scheme_Comp_Env *env)
 {
   Scheme_Comp_Env **ip = (Scheme_Comp_Env **)_ip, *naya;
 
@@ -2572,9 +2572,9 @@ static Scheme_Object *pair_lifted(Scheme_Object *_ip, Scheme_Object *id, Scheme_
   (*ip)->next = naya;
   *ip = naya;
 
-  scheme_add_compilation_binding(0, id, naya);
+  scheme_add_compilation_binding(0, *_id, naya);
 
-  return icons(id, icons(expr, scheme_null));
+  return icons(*_id, icons(expr, scheme_null));
 }
 
 static Scheme_Object *compile_expand_expr_lift_to_let_k(void);
@@ -4757,15 +4757,15 @@ Scheme_Object *scheme_get_stop_expander(void)
 }
 
 Scheme_Object *
-scheme_make_lifted_defn(Scheme_Object *sys_wraps, Scheme_Object *id, Scheme_Object *expr, Scheme_Comp_Env *env)
+scheme_make_lifted_defn(Scheme_Object *sys_wraps, Scheme_Object **_id, Scheme_Object *expr, Scheme_Comp_Env *env)
 {
   Scheme_Object *l;
 
   /* Registers marked id: */
-  scheme_tl_id_sym(env->genv, id, 2);
+  scheme_tl_id_sym(env->genv, *_id, 2);
 
   l = icons(scheme_datum_to_syntax(define_values_symbol, scheme_false, sys_wraps, 0, 0), 
-	    icons(scheme_make_immutable_pair(id, scheme_null),
+	    icons(scheme_make_immutable_pair(*_id, scheme_null),
 		  icons(expr,
 			scheme_null)));
 

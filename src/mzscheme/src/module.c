@@ -3449,16 +3449,16 @@ static Scheme_Object *add_req(Scheme_Object *imods, Scheme_Object *requires)
   return requires;
 }
 
-static Scheme_Object *add_lifted_defn(Scheme_Object *data, Scheme_Object *id, Scheme_Object *expr, Scheme_Comp_Env *_env)
+static Scheme_Object *add_lifted_defn(Scheme_Object *data, Scheme_Object **_id, Scheme_Object *expr, Scheme_Comp_Env *_env)
 {
   Scheme_Comp_Env *env;
-  Scheme_Object *self_modidx, *rn, *name;
+  Scheme_Object *self_modidx, *rn, *name, *id;
 
   env = (Scheme_Comp_Env *)SCHEME_VEC_ELS(data)[0];
   self_modidx = SCHEME_VEC_ELS(data)[1];
   rn = SCHEME_VEC_ELS(data)[2];
   
-  name = scheme_tl_id_sym(env->genv, id, 2);
+  name = scheme_tl_id_sym(env->genv, *_id, 2);
 
   /* Create the bucket, indicating that the name will be defined: */
   scheme_add_global_symbol(name, scheme_undefined, env->genv);
@@ -3466,7 +3466,10 @@ static Scheme_Object *add_lifted_defn(Scheme_Object *data, Scheme_Object *id, Sc
   /* Add a renaming: */
   scheme_extend_module_rename(rn, self_modidx, name, name, self_modidx, name, 0);
 
-  return scheme_make_lifted_defn(scheme_sys_wraps(env), id, expr, _env);
+  id = scheme_add_rename(*_id, rn);
+  *_id = id;
+
+  return scheme_make_lifted_defn(scheme_sys_wraps(env), _id, expr, _env);
 }
 
 static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env, 

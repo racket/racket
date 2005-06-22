@@ -3289,7 +3289,7 @@ local_lift_expr(int argc, Scheme_Object *argv[])
 
   expr = scheme_stx_activate_certs(expr);
 
-  expr = cp(data, id, expr, orig_env);
+  expr = cp(data, &id, expr, orig_env);
 
   expr = scheme_make_pair(expr, SCHEME_VEC_ELS(vec)[0]);
   SCHEME_VEC_ELS(vec)[0] = expr;
