@@ -4,20 +4,12 @@
   
   (require-for-syntax "gen-match.ss"                      
                       "match-helper.ss"
-                      "match-error.ss"
-                      #;"convert-pat.ss")
-  
-  (require-for-template "gen-match.ss"                      
-                        "match-helper.ss"
-                        mzscheme)                        
+                      "match-error.ss") 
 
   (require (lib "etc.ss")           
            (lib "list.ss")
-           "gen-match.ss"
            "match-expander.ss"
-           "match-helper.ss"
-           "match-error.ss"
-           "render-helpers.ss")
+           "match-error.ss")
 
   
   (define-syntax (match stx)

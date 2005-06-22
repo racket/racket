@@ -2516,17 +2516,18 @@ add struct contracts for immutable structs?
   (define-syntax (coerce/select-contract stx)
     (syntax-case stx ()
       [(_ name val)
-       (syntax
-        (let ([x val])
-          (cond
-            [(contract? x)
-             (contract-proc x)]
-            [(and (procedure? x) (procedure-arity-includes? x 1))
-             (contract-proc (flat-contract x))]
-            [else
-             (error 'name 
-                    "expected contract or procedure of arity 1, got ~e"
-                    x)])))]))
+       (syntax (coerce/select-contract/proc 'name val))]))
+
+  (define (coerce/select-contract/proc name x)
+    (cond
+     [(contract? x)
+      (contract-proc x)]
+     [(and (procedure? x) (procedure-arity-includes? x 1))
+      (contract-proc (flat-contract x))]
+     [else
+      (error name 
+	     "expected contract or procedure of arity 1, got ~e"
+	     x)]))
   
   ;; coerce-contract : id (union contract? procedure-arity-1) -> contract
   ;; contract-proc = sym sym stx -> alpha -> alpha
@@ -2535,17 +2536,17 @@ add struct contracts for immutable structs?
   (define-syntax (coerce-contract stx)
     (syntax-case stx ()
       [(_ name val)
-       (syntax
-        (let ([x val])
-          (cond
-            [(contract? x) x]
-            [(and (procedure? x) (procedure-arity-includes? x 1))
-             (flat-contract x)]
-            [else
-             (error 'name 
-                    "expected contract or procedure of arity 1, got ~e"
-                    x)])))]))
+       (syntax (coerce-contract/proc 'name val))]))
 
+  (define (coerce-contract/proc name x)
+    (cond
+     [(contract? x) x]
+     [(and (procedure? x) (procedure-arity-includes? x 1))
+      (flat-contract x)]
+     [else
+      (error name 
+             "expected contract or procedure of arity 1, got ~e"
+              x)]))
 
 ;                                                                                                   
 ;                                                                                                   

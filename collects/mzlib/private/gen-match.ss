@@ -14,17 +14,9 @@
            "tag-negate-tests.scm"
            "convert-pat.ss")
   
-  (require-for-template
-   mzscheme
-   (lib "etc.ss")
-   (lib "stx.ss" "syntax")
-   "match-error.ss"           
-   "coupling-and-binding.scm"		      
-   "update-counts.scm"
-   "update-binding-counts.scm"
-   "render-test-list.scm"
-   "reorder-tests.scm"
-   "tag-negate-tests.scm")
+  (require-for-template mzscheme
+			(lib "etc.ss")
+			"match-error.ss")
   
   ;;!(function mark-patlist
   ;;          (form (mark-patlist clauses) -> marked-clause-list)

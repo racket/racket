@@ -21,19 +21,9 @@
   (require-for-syntax "match-helper.ss"
                       "match-expander-struct.ss")
   
-  (require-for-template
-   mzscheme
-   "match-expander-struct.ss"
-   "match-error.ss"
-   "match-helper.ss"
-   "test-structure.scm"
-   "coupling-and-binding.scm"
-   "update-counts.scm"
-   "update-binding-counts.scm"
-   "reorder-tests.scm"
-   
-   ;; the following are only used by render-test-list
-   "render-helpers.ss")
+  (require-for-template mzscheme
+			"match-error.ss"
+			"test-no-order.ss")
   
    ;; BEGIN SPECIAL-GENERATORS.SCM
 

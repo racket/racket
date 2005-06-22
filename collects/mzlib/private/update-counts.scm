@@ -7,9 +7,6 @@
   (require "test-structure.scm"
 	   "match-helper.ss")
   
-  #;(require-for-template "test-structure.scm"
-	   "match-helper.ss")
-  
   ;;!(function test-filter
   ;;          (form (test-filter test-list) -> test-list)
   ;;          (contract list -> list))

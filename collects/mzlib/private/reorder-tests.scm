@@ -6,8 +6,7 @@
   
   (require "test-structure.scm")
   
-  (require-for-template mzscheme
-                        "test-structure.scm")
+  (require-for-template mzscheme)
   
   ;; There really ought to be a stable sort in the std library.
   

@@ -6,10 +6,8 @@
   (require "match-helper.ss"
 	   "coupling-and-binding.scm")
   
-  (require-for-template 
-   mzscheme
-   "match-helper.ss"
-   "coupling-and-binding.scm")
+  (require-for-template mzscheme)
+
   ;;!(function emit
   ;;          (form (emit act-test-func ae let-bound sf bv kf ks)
   ;;                ->

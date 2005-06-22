@@ -6,12 +6,8 @@
            "match-helper.ss"
            "match-error.ss"
            (lib "stx.ss" "syntax"))
-  (require-for-template 
-   mzscheme
-   "coupling-and-binding.scm"
-   "match-helper.ss"
-   "match-error.ss"
-   (lib "stx.ss" "syntax"))
+  (require-for-template mzscheme
+			"match-error.ss")
   
   ;;!(function setter
   ;;          (form (setter e ident let-bound) -> syntax)

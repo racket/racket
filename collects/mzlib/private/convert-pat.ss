@@ -3,13 +3,10 @@
            "match-helper.ss"
            "match-expander-struct.ss")
 
-  (require-for-template
-   mzscheme
-   "match-error.ss"
-   "match-helper.ss")
+  (require-for-template mzscheme
+			"match-error.ss")
   
- (provide convert-pat handle-clauses convert-pats)
-                
+  (provide convert-pat handle-clauses convert-pats)
   
   ;; these functions convert the patterns from the old syntax 
   ;; to the new syntax

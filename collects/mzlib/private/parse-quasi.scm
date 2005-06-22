@@ -7,10 +7,7 @@
            (lib "stx.ss" "syntax"))
   
   (require-for-template mzscheme
-                        "match-error.ss"
-                        "match-helper.ss"
-                        (lib "etc.ss")
-                        (lib "stx.ss" "syntax"))
+                        "match-error.ss")
 
   ;; Raise an error from a quasi-pattern
   (define q-error 

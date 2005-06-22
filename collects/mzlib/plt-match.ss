@@ -138,7 +138,6 @@
    match-let*
    match-letrec
    match-define
-   match:test-no-order
    pregexp-match-with-error
    exn:misc:match?
    exn:misc:match-value
@@ -148,8 +147,7 @@
   (require "private/match-internal-func.ss"
            "private/match-expander.ss"
            "private/match-helper.ss"
-           "private/match-error.ss"
-           "private/render-helpers.ss")
+           "private/match-error.ss")
   
   )
 

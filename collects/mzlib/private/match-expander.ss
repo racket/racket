@@ -1,8 +1,5 @@
 (module match-expander mzscheme
   (provide (all-defined))
-  ;(require "match-expander-struct.ss")
-  (require-for-template "match-expander-struct.ss"
-                        "match-error.ss")
   (require-for-syntax "match-expander-struct.ss"
                       "match-error.ss")
   

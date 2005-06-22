@@ -3,7 +3,6 @@
   (provide update-binding-counts update-binding-count)
   
   (require "test-structure.scm")
-  (require-for-template "test-structure.scm")
   (require (lib "etc.ss"))
   
   

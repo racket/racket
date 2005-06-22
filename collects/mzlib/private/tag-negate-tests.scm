@@ -1,8 +1,6 @@
 (module tag-negate-tests mzscheme
   (provide tag-negate-tests)
   (require "test-structure.scm")
-  #;(require-for-template mzscheme
-                        "test-structure.scm")
   
   (define (tag-neg-test ls target-set)
     (easy-tag ls #f target-set))

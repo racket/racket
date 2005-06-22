@@ -130,15 +130,16 @@
    exn:misc:match-value
    define-match-expander)
   
+  ;; FIXME: match-helper and match-error should each be split
+  ;; into a compile-time part and a run-time part.
+
   (require-for-syntax "private/convert-pat.ss"
                       "private/match-helper.ss")
   
-  (require-for-template mzscheme  (prefix plt: "private/match-internal-func.ss"))
-                      
   (require  (prefix plt: "private/match-internal-func.ss")
-   "private/match-expander.ss"
-   "private/match-helper.ss"
-   "private/match-error.ss")
+	    "private/match-expander.ss"
+	    "private/match-helper.ss"
+	    "private/match-error.ss")
   
   (define-syntax (match-lambda stx)
     (syntax-case stx ()

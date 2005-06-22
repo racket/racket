@@ -7,10 +7,7 @@
   (require "test-structure.scm"
 	   "match-helper.ss")
   
-  (require-for-template 
-   mzscheme
-   "test-structure.scm"
-   "match-helper.ss")
+  (require-for-template mzscheme)
   
   ;;!(function couple-tests
   ;;          (form (couple-tests test-list ks-func kf-func let-bound)

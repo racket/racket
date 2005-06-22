@@ -8,9 +8,7 @@
            "match-error.ss"
            (lib "list.ss"))
   
-  (require-for-template mzscheme
-                        (lib "struct.ss" "syntax")
-                        (lib "syntax-utils.ss" "mzlib" "private"))
+  (require-for-template mzscheme)
   
   ;; define a syntax-transformer in terms of a two-argument function  
   (define-syntax define-proc 
