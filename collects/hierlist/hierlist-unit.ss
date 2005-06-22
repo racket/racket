@@ -4,10 +4,16 @@
 	   (lib "class.ss")
 	   (lib "class100.ss")
 	   (lib "mred-sig.ss" "mred")
+	   (lib "include-bitmap.ss" "mrlib")
 	   "hierlist-sig.ss")
 
   (require (lib "list.ss")
 	   (lib "etc.ss"))
+
+  (define turn-up (include-bitmap "../icons/turn-up.png" 'png))
+  (define turn-down (include-bitmap "../icons/turn-down.png" 'png))
+  (define turn-up-click (include-bitmap "../icons/turn-up-click.png" 'png))
+  (define turn-down-click (include-bitmap "../icons/turn-down-click.png" 'png))
 
   (provide hierlist@)
   (define hierlist@
@@ -27,17 +33,7 @@
       (define arrow-cursor (make-object cursor% 'arrow))
       
       (define-values (up-bitmap down-bitmap up-click-bitmap down-click-bitmap)
-	(with-handlers ([exn:fail? (lambda (x)
-				     (values
-				      (make-object bitmap% 10 10)
-				      (make-object bitmap% 10 10)
-				      (make-object bitmap% 10 10)
-				      (make-object bitmap% 10 10)))])
-	  (values
-	   (make-object bitmap% (build-path (collection-path "icons") "turn-up.png"))
-	   (make-object bitmap% (build-path (collection-path "icons") "turn-down.png"))
-	   (make-object bitmap% (build-path (collection-path "icons") "turn-up-click.png"))
-	   (make-object bitmap% (build-path (collection-path "icons") "turn-down-click.png")))))
+	(values turn-up turn-down turn-up-click turn-down-click))
 
       ;; Hack for implementing auto-wrapping items:
       (define arrow-size 0)

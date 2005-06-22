@@ -10,7 +10,7 @@
   
   (define-syntax (-include-bitmap stx)
     (syntax-case stx ()
-      [(_ orig-stx source path-spec)
+      [(_ orig-stx source path-spec type)
        (let* ([c-file (resolve-path-spec #'path-spec #'source #'orig-stx #'build-path)]
 	      [content
 	       (with-handlers ([exn:fail?
@@ -28,22 +28,24 @@
 	 (with-syntax ([content content]
 		       [c-file (path->bytes c-file)])
 	   (syntax/loc stx
-	     (get-or-load-bitmap content c-file))))]))
+	     (get-or-load-bitmap content c-file type))))]))
 
   (define-syntax (include-bitmap/relative-to stx)
     (syntax-case stx ()
-      [(_ source path-spec) #`(-include-bitmap #,stx source path-spec)]))
+      [(_ source path-spec) #`(-include-bitmap #,stx source path-spec 'unknown/mask)]
+      [(_ source path-spec type) #`(-include-bitmap #,stx source path-spec type)]))
 
   (define-syntax (include-bitmap stx)
     (syntax-case stx ()
-      [(_ path-spec) #`(-include-bitmap #,stx #,stx path-spec)]))
+      [(_ path-spec) #`(-include-bitmap #,stx #,stx path-spec 'unknown/mask)]
+      [(_ path-spec type) #`(-include-bitmap #,stx #,stx path-spec type)]))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Run-time support
 
   (define cached (make-hash-table 'equal))
 
-  (define (get-or-load-bitmap content orig)
+  (define (get-or-load-bitmap content orig type)
     (hash-table-get cached content
 		    (lambda ()
 		      (let ([bm (let ([fn (make-temporary-file)])
@@ -53,7 +55,7 @@
 					(with-output-to-file fn
 					  (lambda () (display content))
 					  'truncate)
-					(make-object bitmap% fn 'unknown/mask))
+					(make-object bitmap% fn type))
 				      (lambda ()
 					(delete-file fn))))])
 			(unless (send bm ok?)

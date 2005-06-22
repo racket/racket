@@ -130,13 +130,15 @@ program. The advantage of "inlining" the bitmap is that a stand-alone
 executable can be created that contains the bitmap and does not refer
 to the original image file.
 
-> (include-bitmap file-spec)                       SYNTAX
+> (include-bitmap file-spec)                               SYNTAX
+> (include-bitmap file-spec type-expr)                     SYNTAX
 
 The `file-spec' is the same as for MzLib's `include': a path string, a
-`build-path' form, or a `lib' form.
+`build-path' form, or a `lib' form. The `type-expr' should produce
+'unknown, 'unknown/mask, etc., and the default is 'unknown/mask.
 
-> (include-bitmap/relative-to source file-spec)    SYNTAX
+> (include-bitmap/relative-to source file-spec)            SYNTAX
+> (include-bitmap/relative-to source file-spec type-expr)  SYNTAX
 
 Analogous to `include-at/relative-to', though only a source is needed
 (no context).
-
