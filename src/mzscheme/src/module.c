@@ -1126,19 +1126,21 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 	from_modchain = SCHEME_VEC_ELS(from_modchain)[2];
 	to_modchain = SCHEME_CAR(past_to_modchains);
 	past_to_modchains = SCHEME_CDR(past_to_modchains);
+	with_tt--;
       } else {
 	past_checkeds = cons((Scheme_Object *)prev_checked, past_checkeds);
 	prev_checked = checked;
 
 	todo = next_phase_todo;
+	checked = next_checked;
 	
 	if (SCHEME_NULLP(future_todos)) {
 	  next_phase_todo = scheme_null;
-	  checked = NULL;
+	  next_checked = NULL;
 	} else {
 	  next_phase_todo = SCHEME_CAR(future_todos);
 	  future_todos = SCHEME_CDR(future_todos);
-	  checked = (Scheme_Hash_Table *)SCHEME_CAR(future_checkeds);
+	  next_checked = (Scheme_Hash_Table *)SCHEME_CAR(future_checkeds);
 	  future_checkeds = SCHEME_CDR(future_checkeds);
 	}
 	
