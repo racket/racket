@@ -8,7 +8,8 @@
 	   (lib "moddep.ss" "syntax")
 	   (lib "plist.ss" "xml")
 	   "embed-sig.ss"
-	   "private/winicon.ss")
+	   "private/winicon.ss"
+           "private/winsubsys.ss")
 
   (provide compiler:embed@)
 
@@ -560,4 +561,8 @@
 			      (let ([m (and (eq? 'windows (system-type))
 					    (assq 'ico aux))])
 				(when m
-				  (install-icon dest-exe (cdr m))))))))))))))))))
+				  (install-icon dest-exe (cdr m))))
+			      (let ([m (and (eq? 'windows (system-type))
+					    (assq 'subsystem aux))])
+				(when m
+				  (set-subsystem dest-exe (cdr m))))))))))))))))))

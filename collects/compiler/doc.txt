@@ -470,17 +470,22 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
               icons in the ".ico" file
 
       _'creator_ (Mac OS X) - provides a 4-character string to use as
-              the application signature.
+              the application signature
 
       _'file-types_ (Mac OS X) - provides a list of association lists,
               one for each type of file handled by the application;
               each association is a 2-element list, where the first (key)
               element is a string recognized by Finder, and the second
               element is a plist value (see doc.tx in the "xml" collection);
-              see plt/collects/drscheme/drscheme.filetypes for an example.
+              see plt/collects/drscheme/drscheme.filetypes for an example
 
       -'resource-files_ (Mac OS X) - extra files to copy into the
               "Resources" directory of the generated executable
+
+      _'subsystem_ (Windows) - a symbol, either 'console for a console
+              application or 'windows for a consoleless application;
+              the default is 'console for a MzScheme-based application
+              and 'windows for a MrEd-based application
 
       _'forget-exe?_ (Windows, Mac OS X) - a boolean; #t for a launcher
               (see `launcher?' below) does not preserve the original

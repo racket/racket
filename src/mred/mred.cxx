@@ -84,7 +84,11 @@ int wx_in_terminal;
 #  define wx_in_terminal 0
 # endif
 #else
-#define wx_in_terminal 0
+# ifdef wx_msw
+static int wx_in_terminal = 0;
+# else
+#  define wx_in_terminal 0
+# endif
 #endif
 
 #ifdef OS_X
@@ -3451,6 +3455,16 @@ void wxCreateApp(void)
   if (!TheMrEdApp) {
 #ifdef wx_mac
     wxmac_reg_globs();
+#endif
+#ifdef wx_msw
+  {
+    HANDLE h;
+    h = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (h && (h != INVALID_HANDLE_VALUE)
+        && (GetFileType(h) != FILE_TYPE_UNKNOWN)) {
+      wx_in_terminal = 1;
+    }
+  }
 #endif
 
     wxREGGLOB(orig_ps_setup);
