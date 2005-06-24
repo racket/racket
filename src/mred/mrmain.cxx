@@ -57,6 +57,12 @@ extern "C" { typedef int (*ACTUAL_MAIN_PTR)(int argc, char **argv); }
 # define CAST_ACTUAL_MAIN /* empty */
 #endif
 
+#ifdef wx_msw
+/* Hack: overwrite "y" with "n" in binary to disable checking for another
+   instance of the same app. */
+char *check_for_another = "yes, please check for another";
+#endif
+
 #if defined(_IBMR2)
 static void dangerdanger(int)
 {
@@ -650,7 +656,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored
   }
 
   /* Check for an existing instance: */
-  {
+  if (check_for_another[0] != 'n') {
     int alreadyrunning;
     HANDLE mutex;
 

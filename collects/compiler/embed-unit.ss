@@ -91,14 +91,15 @@
 	    exe)))
 
       ;; Find the magic point in the binary:
-      (define (find-cmdline)
-	(let ([m (regexp-match-positions #"\\[Replace me for EXE hack" (current-input-port))])
+      (define (find-cmdline what rx)
+	(let ([m (regexp-match-positions rx (current-input-port))])
 	  (if m
 	      (caar m)
 	      (error 
 	       'make-embedding-executable
 	       (format
-		"can't find cmdline position in executable")))))
+		"can't find ~a position in executable"
+		what)))))
 
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -525,11 +526,25 @@
 					   cmdline)])
 			(if osx?
 			    (finish-osx-mred dest full-cmdline exe keep-exe?)
-			    (let ([cmdpos (with-input-from-file dest-exe find-cmdline)]
+			    (let ([cmdpos (with-input-from-file dest-exe 
+					    (lambda () (find-cmdline 
+							"cmdline"
+							#"\\[Replace me for EXE hack")))]
+				  [anotherpos (and mred?
+						   (eq? 'windows (system-type))
+						   (let ([m (assq 'single-instance? aux)])
+						     (and m (not (cdr m))))
+						   (with-input-from-file dest-exe 
+						     (lambda () (find-cmdline 
+								 "instance-check"
+								 #"yes, please check for another"))))]
 				  [out (open-output-file dest-exe 'update)])
 			      (dynamic-wind
 				  void
 				  (lambda ()
+				    (when anotherpos
+				      (file-position out anotherpos)
+				      (write-bytes #"no," out))
 				    (if long-cmdline?
 					;; write cmdline at end:
 					(file-position out end)

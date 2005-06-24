@@ -841,6 +841,9 @@ void MrEdMSWSleep(float secs, void *fds)
   win_extended_fd_set *r, *w, *e;
   DWORD msecs;
 
+  if (fds && ((win_extended_fd_set *)fds)->no_sleep)
+    return;
+
   if (wxCheckMousePosition())
     return;
 

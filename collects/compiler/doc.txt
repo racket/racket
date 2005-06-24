@@ -487,6 +487,11 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
               the default is 'console for a MzScheme-based application
               and 'windows for a MrEd-based application
 
+      _'single-instance?_ (Windows) - a boolean for MrEd-based apps; the
+              default is #t, which means that the app looks for instances
+              of itself on startup and merely brings the other instance to
+              the front; #f means that multiple instances are expected
+
       _'forget-exe?_ (Windows, Mac OS X) - a boolean; #t for a launcher
               (see `launcher?' below) does not preserve the original
               executable name for `(find-system-path 'exec-file)'; the
