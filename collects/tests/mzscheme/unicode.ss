@@ -1428,4 +1428,11 @@
 	(cons (integer->char i) (loop (add1 i)))))))
 
 
+;; ----------------------------------------
+;; Whatever bytes->string/locale does with a bad locale, it shouldn't crash
+
+(parameterize ([current-locale "no such locale"])
+  (with-handlers ([exn:fail:contract? void]) (bytes->string/locale #"xxx"))
+  (with-handlers ([exn:fail:contract? void]) (string->bytes/locale "xxx")))
+
 (report-errs)
