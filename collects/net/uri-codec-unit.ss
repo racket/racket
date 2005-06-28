@@ -247,7 +247,6 @@
 		(match (regexp-match-positions key-regexp str start)
 		  [((start . end))
 		   (vector (let ([s (form-urlencoded-decode (substring str start end))])
-			     (string-lowercase! s)
 			     (string->symbol s))
 			   (add1 end))]
 		  [#f #f])))

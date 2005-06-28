@@ -33,6 +33,9 @@
   (test '((a . "hel+lo;b=good-bye")) form-urlencoded->alist 
 	(parameterize ([current-alist-separator-mode 'semi])
 	  (alist->form-urlencoded '((a . "hel+lo") (b . "good-bye"))))))
+(test "aNt=hi" alist->form-urlencoded '((aNt . "hi")))
+(test '((aNt . "hi")) form-urlencoded->alist (alist->form-urlencoded '((aNt . "hi"))))
+(test "aNt=hi" alist->form-urlencoded (form-urlencoded->alist "aNt=hi"))
 
 (test 'amp-or-semi current-alist-separator-mode)
 (err/rt-test (current-alist-separator-mode 'bad))
