@@ -357,9 +357,7 @@
 	      #,(generate-struct-declaration stx
 					     id super-id field-ids 
 					     (syntax-local-context)
-					     (make-make-make-struct-type #'(inspector-expr deserializer-id))
-					     #'continue-define-serializable-struct 
-					     #'(inspector-expr deserializer-id))
+					     (make-make-make-struct-type #'(inspector-expr deserializer-id)))
 	      (define deserializer-id (let ([l (internal-deserialize-info struct-type-id)])
 					(make-deserialize-info
 					 ((car l))
@@ -403,9 +401,6 @@
        (lambda (stx)
 	 (context-check stx)
 	 (main/versions stx)))))
-
-  (define-syntax (continue-define-serializable-struct stx)
-    (generate-delayed-struct-declaration stx make-make-make-struct-type))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; serialize

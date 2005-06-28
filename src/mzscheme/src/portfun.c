@@ -3751,7 +3751,14 @@ display_write(char *name,
 	scheme_put_byte_string(name, port,
 			       SCHEME_BYTE_STR_VAL(v), 0, SCHEME_BYTE_STRLEN_VAL(v),
 			       0);
-      } else
+      } else if (SCHEME_CHAR_STRINGP(v)) {
+	scheme_put_char_string(name, port,
+			       SCHEME_CHAR_STR_VAL(v), 0, SCHEME_CHAR_STRLEN_VAL(v));
+      } else if (SCHEME_SYMBOLP(v)) {
+	scheme_put_byte_string(name, port,
+			       SCHEME_SYM_VAL(v), 0, SCHEME_SYM_LEN(v),
+			       0);
+      } else 
 	scheme_internal_display(v, port);
     } else {
       Scheme_Object *a[2];

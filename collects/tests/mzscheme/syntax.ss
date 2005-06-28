@@ -802,9 +802,9 @@
 	8
 	(define x 7)
 	x))
-(test 6 'define 
-      (let ()
-	(define define 5)
+(test 8 'define ; used to be 6
+      (let ([y 8])
+	(define (define z w) 5)
 	(define y 6)
 	y))
 

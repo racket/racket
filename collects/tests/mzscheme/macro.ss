@@ -266,7 +266,69 @@
       (let ([v (et-struct-info b)])
 	(test '(struct:b make-b b? (b-z exn-continuation-marks exn-message) (set-b-z! #f #f) exn) values v)))))
     
-  
+;; ----------------------------------------
+
+(let () 
+  (define-syntax (goo stx) 
+    (syntax-case stx () 
+      [(_ foo) #'(define-syntax (foo stx) (syntax-case stx () [(_ x) #'(define x 120)]))]))
+  (goo foo)
+  (foo x)
+  (test 120 'intdef x))
+
+(let-syntax ([goo (lambda (stx) #'(begin (define z 131) (test 131 'intdef z)))])
+  (let-syntax ([y (lambda (stx) #'goo)])
+    (let () 
+      (define-syntax (goo stx) 
+	(syntax-case stx () 
+	  [(_ foo) #'(define-syntax (foo stx) (syntax-case stx () [(_ x) #'(define x 121)]))]))
+      (goo foo)
+      (foo x)
+      y
+      (test 121 'intdef x))))
+
+(syntax-test #'(let ()
+		 (define-syntax goo 10)
+		 (define goo 10)
+		 12))
+
+(syntax-test #'(let-syntax ([ohno (lambda (stx) #'(define z -10))])
+		 (let ()
+		   (define ohno 128)
+		   ohno
+		   (define-syntax (goo stx) #'ohno)
+		   (printf "~a\n" ohno))))
+
+(define-syntax (def-it stx)
+  (syntax-case stx ()
+    [(_ eid id) 
+     #'(define-syntax eid #'id)]))
+
+(define-syntax (get-it stx)
+  (syntax-case stx ()
+    [(_ id eid) 
+     #`(define id #,(syntax-local-value #'eid))]))
+
+(let ()
+  (define x1 90)
+  (def-it y1 x1)
+  (get-it z1 y1)
+  (test 90 'intdef z1))
+
+(let ()
+  (define-struct a (b c))
+  (test 2 'intdef (a-c (make-a 1 2))))
+
+(let ()
+  (define-struct a (b c))
+  (let ()
+    (define-struct (d a) (e))
+    (test 3 'intdef (d-e (make-d 1 2 3)))))
+
+(let ()
+  (define-struct a (b c))
+  (define-struct (d a) (e))
+  (test 3 'intdef (d-e (make-d 1 2 3))))
 
 ;; ----------------------------------------
 

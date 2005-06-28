@@ -1711,9 +1711,19 @@ mark_cert {
   gcMARK(c->modidx);
   gcMARK(c->insp);
   gcMARK(c->key);
+  gcMARK(c->mapped);
   gcMARK(c->next);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Cert));
+}
+
+lex_rib {
+ mark:
+  Scheme_Lexical_Rib *rib = (Scheme_Lexical_Rib *)p;
+  gcMARK(rib->rename);
+  gcMARK(rib->next);
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Lexical_Rib));
 }
 
 END stxobj;

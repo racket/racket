@@ -4233,6 +4233,7 @@ int mark_cert_MARK(void *p) {
   gcMARK(c->modidx);
   gcMARK(c->insp);
   gcMARK(c->key);
+  gcMARK(c->mapped);
   gcMARK(c->next);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Cert));
@@ -4244,6 +4245,7 @@ int mark_cert_FIXUP(void *p) {
   gcFIXUP(c->modidx);
   gcFIXUP(c->insp);
   gcFIXUP(c->key);
+  gcFIXUP(c->mapped);
   gcFIXUP(c->next);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Cert));
@@ -4251,6 +4253,31 @@ int mark_cert_FIXUP(void *p) {
 
 #define mark_cert_IS_ATOMIC 0
 #define mark_cert_IS_CONST_SIZE 1
+
+
+int lex_rib_SIZE(void *p) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Lexical_Rib));
+}
+
+int lex_rib_MARK(void *p) {
+  Scheme_Lexical_Rib *rib = (Scheme_Lexical_Rib *)p;
+  gcMARK(rib->rename);
+  gcMARK(rib->next);
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Lexical_Rib));
+}
+
+int lex_rib_FIXUP(void *p) {
+  Scheme_Lexical_Rib *rib = (Scheme_Lexical_Rib *)p;
+  gcFIXUP(rib->rename);
+  gcFIXUP(rib->next);
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Lexical_Rib));
+}
+
+#define lex_rib_IS_ATOMIC 0
+#define lex_rib_IS_CONST_SIZE 1
 
 
 #endif  /* STXOBJ */

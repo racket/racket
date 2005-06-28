@@ -163,13 +163,9 @@
 	(generate-struct-declaration stx
 				     id sup-id fields
 				     (syntax-local-context)
-				     (make-make-make-struct-type props+insp)
-				     #'continue-ds/p props+insp)))
+				     (make-make-make-struct-type props+insp))))
     
     (parse-at-main))
-      
-  (define-syntax (continue-ds/p stx)
-    (generate-delayed-struct-declaration stx make-make-make-struct-type))
 
   ;; ------------------------------------------------------------
   ;; make->vector

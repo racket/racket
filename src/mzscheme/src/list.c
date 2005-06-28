@@ -614,18 +614,26 @@ Scheme_Object *
 scheme_named_map_1(char *name, Scheme_Object *(*fun)(Scheme_Object*, Scheme_Object*),
 		   Scheme_Object *lst, Scheme_Object *form)
 {
-  if (SCHEME_STX_NULLP(lst))
-      return (scheme_null);
-  else if (SCHEME_STX_PAIRP(lst)) {
+  Scheme_Object *first = scheme_null, *last = NULL, *pr;
+
+  while (SCHEME_STX_PAIRP(lst)) {
     Scheme_Object *v;
     v = SCHEME_STX_CAR(lst);
     v = fun(v, form);
+    pr = scheme_make_pair(v, scheme_null);
+    if (last)
+      SCHEME_CDR(last) = pr;
+    else
+      first = pr;
+    last = pr;
+
     lst = SCHEME_STX_CDR(lst);
-    return scheme_make_pair(v, scheme_named_map_1(name, fun, lst, form));
-  } else {
-    scheme_wrong_syntax(name, lst, form, "bad syntax (" IMPROPER_LIST_FORM ")");
-    return scheme_void;
   }
+
+  if (!SCHEME_STX_NULLP(lst))
+    scheme_wrong_syntax(name, lst, form, "bad syntax (" IMPROPER_LIST_FORM ")");
+
+  return first;
 }
 
 Scheme_Object *

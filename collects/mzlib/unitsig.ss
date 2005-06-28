@@ -44,29 +44,32 @@
 	  (let ([a-unit (parse-unit expr (syntax rest) sig
 				    (kernel-form-identifier-list (quote-syntax here))
 				    (quote-syntax define-values)
+				    (quote-syntax define-syntaxes)
 				    (quote-syntax begin))])
 	    (check-signature-unit-body sig a-unit (parsed-unit-renames a-unit) 'unit/sig expr)
-	    (with-syntax ([imports (datum->syntax-object
-				    expr
-				    (flatten-signatures (parsed-unit-imports a-unit) 'must-have-ctx)
-				    expr)]
+	    (with-syntax ([imports (parsed-unit-import-vars a-unit)]
 			  [exports (datum->syntax-object
 				    expr
-				    (map
-				     (lambda (name)
-				       (list (do-rename name (parsed-unit-renames a-unit))
-					     name))
-				     (signature-vars sig))
+				    (let ([vars (make-hash-table)])
+				      (for-each (lambda (var)
+						  (hash-table-put! vars (syntax-e var) var))
+						(parsed-unit-vars a-unit))
+				      (map
+				       (lambda (name)
+					 (list (hash-table-get vars
+							       name
+							       (lambda () (do-rename name (parsed-unit-renames a-unit))))
+					       name))
+				       (signature-vars sig)))
 				    expr)]
 			  [body (append
-				 ((parsed-unit-stxes a-unit) expr)
 				 (reverse! (parsed-unit-body a-unit))
 				 ((parsed-unit-stx-checks a-unit) expr))]
 			  [import-sigs (explode-named-sigs (parsed-unit-imports a-unit) #f)]
 			  [export-sig (explode-sig sig #f)])
 	      (syntax/loc expr
 		(make-signed-unit
-		 (unit
+		 (unit/no-expand
 		   (import . imports)
 		   (export . exports)
 		   . body)

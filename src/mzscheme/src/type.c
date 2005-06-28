@@ -223,6 +223,9 @@ scheme_init_type (Scheme_Env *env)
 
   set_name(scheme_certifications_type, "<certifications>");
 
+  set_name(scheme_intdef_context_type, "<internal-definition-context>");
+  set_name(scheme_lexical_rib_type, "<internal:lexical-rib>");
+
   set_name(scheme_already_comp_type, "<internal:already-compiled>");
 
   set_name(_scheme_values_types_, "<resurrected>");
@@ -484,6 +487,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_random_state_type, random_state_val);
   
   GC_REG_TRAV(scheme_compilation_top_type, compilation_top_val);
+  GC_REG_TRAV(scheme_intdef_context_type, twoptr_obj);
 
   GC_REG_TRAV(scheme_eval_waiting_type, bad_trav);
   GC_REG_TRAV(scheme_tail_call_waiting_type, bad_trav);

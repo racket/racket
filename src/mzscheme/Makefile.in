@@ -136,7 +136,7 @@ $(MZFW): libmzscheme.@LIBSFX@ libmzgc.@LIBSFX@ $(SPECIALIZINGOBJECTS)
 	ln -s Versions/$(FWVERSION)/PLT_MzScheme PLT_MzScheme.framework/PLT_MzScheme
 
 mzscheme@OSX@: $(MZFW) main.@LTO@
-	$(CC) -o mzscheme main.@LTO@ -F. -framework PLT_MzScheme
+	$(CC) -o mzscheme @PROFFLAGS@ main.@LTO@ -F. -framework PLT_MzScheme
 
 # OSKit ----------------------------------------
 

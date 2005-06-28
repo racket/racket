@@ -552,7 +552,13 @@ Scheme_Object *scheme_add_remove_mark(Scheme_Object *o, Scheme_Object *m);
 Scheme_Object *scheme_make_rename(Scheme_Object *newname, int c);
 void scheme_set_rename(Scheme_Object *rnm, int pos, Scheme_Object *oldname);
 
+#define SCHEME_RIBP(v) SAME_TYPE(scheme_lexical_rib_type, SCHEME_TYPE(v))
+Scheme_Object *scheme_make_rename_rib();
+void scheme_add_rib_rename(Scheme_Object *ro, Scheme_Object *rename);
+void scheme_drop_first_rib_rename(Scheme_Object *ro);
+
 Scheme_Object *scheme_add_rename(Scheme_Object *o, Scheme_Object *rename);
+Scheme_Object *scheme_add_rename_rib(Scheme_Object *o, Scheme_Object *rib);
 Scheme_Object *scheme_add_mark_barrier(Scheme_Object *o);
 
 #define mzMOD_RENAME_TOPLEVEL 0
@@ -1522,7 +1528,8 @@ Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
 					    Scheme_Compile_Expand_Info *erec, int drec,
 					    int int_def_pos,
 					    Scheme_Object **current_val,
-					    Scheme_Comp_Env **_xenv);
+					    Scheme_Comp_Env **_xenv,
+					    Scheme_Object *ctx);
 
 Scheme_Object *scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
 				  Scheme_Object *f, Scheme_Object *code,
@@ -1545,6 +1552,7 @@ Scheme_Object *scheme_lookup_binding(Scheme_Object *symbol, Scheme_Comp_Env *env
 Scheme_Object *scheme_add_env_renames(Scheme_Object *stx, Scheme_Comp_Env *env,
 				      Scheme_Comp_Env *upto);
 
+Scheme_Object *scheme_env_frame_uid(Scheme_Comp_Env *env);
 
 typedef Scheme_Object *(*Scheme_Lift_Capture_Proc)(Scheme_Object *, Scheme_Object **, Scheme_Object *, Scheme_Comp_Env *);
 void scheme_frame_captures_lifts(Scheme_Comp_Env *env, Scheme_Lift_Capture_Proc cp, Scheme_Object *data);
@@ -1569,6 +1577,12 @@ Scheme_Object *scheme_register_toplevel_in_prefix(Scheme_Object *var, Scheme_Com
 						  Scheme_Compile_Info *rec, int drec);
 Scheme_Object *scheme_register_stx_in_prefix(Scheme_Object *var, Scheme_Comp_Env *env,
 					     Scheme_Compile_Info *rec, int drec);
+
+Scheme_Object *scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object *a, 
+				    Scheme_Env *exp_env, Scheme_Object *insp, Scheme_Object *certs,
+				    Scheme_Comp_Env *stx_env, Scheme_Comp_Env *rhs_env,
+				    int *_pos, Scheme_Object *names_to_disappear);
+int scheme_is_sub_env(Scheme_Comp_Env *stx_env, Scheme_Comp_Env *env);
 
 /* Resolving & linking */
 #define DEFINE_VALUES_EXPD 0
@@ -1685,6 +1699,8 @@ int *scheme_env_get_flags(Scheme_Comp_Env *frame, int start, int count);
 #define SCHEME_NO_RENAME 32
 #define SCHEME_CAPTURE_WITHOUT_RENAME 64
 #define SCHEME_FOR_STOPS 128
+#define SCHEME_FOR_INTDEF 256
+#define SCHEME_CAPTURE_LIFTED 512
 
 /* Flags used with scheme_static_distance */
 #define SCHEME_ELIM_CONST 1
@@ -1698,6 +1714,7 @@ int *scheme_env_get_flags(Scheme_Comp_Env *frame, int start, int count);
 #define SCHEME_OUT_OF_CONTEXT_OK 256
 #define SCHEME_NULL_FOR_UNBOUND 512
 #define SCHEME_RESOLVE_MODIDS 1024
+#define SCHEME_NO_CERT_CHECKS 2048
 
 Scheme_Hash_Table *scheme_map_constants_to_globals(void);
 
@@ -1785,7 +1802,7 @@ void scheme_ill_formed(Mz_CPort *port);
 extern Scheme_Object *scheme_inferred_name_symbol;
 Scheme_Object *scheme_check_name_property(Scheme_Object *stx, Scheme_Object *current_name);
 
-Scheme_Object *scheme_make_lifted_defn(Scheme_Object *sys_wraps, Scheme_Object **id, Scheme_Object *expr, Scheme_Comp_Env *env);
+Scheme_Object *scheme_make_lifted_defn(Scheme_Object *sys_wraps, Scheme_Object **_id, Scheme_Object *expr, Scheme_Comp_Env *env);
 
 /*========================================================================*/
 /*                         namespaces and modules                         */

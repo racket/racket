@@ -106,7 +106,7 @@ static Bool wxIsShownToRoot(wxWindow *w)
 
 static long wxWindowGetHandle(wxWindow *w)
 {
-#ifdef wx_msw
+#ifdef wx_win
   return (long)w->GetHWND();
 #else
   return w->GetWindowHandle();

@@ -894,16 +894,16 @@
 (test 10 'cm1-z (send (make-object cm1%) get-z))
 (test 10 'cm1-w (send (make-object cm1%) get-w))
 
-;; Make sure that local and syntax names do not shadow enclosing syntax for
+;; Make sure that local and syntax names do not confuse enclosing syntax for
 ;; definition RHSs
 (test #t class? (let-syntax ([see-outer (lambda (x) (syntax (lambda () 10)))])
 		  (class object%
-		    (define see-outer 10)
+		    (define see-outer-x 10)
 		    (public meth)
 		    (define meth (see-outer)))))
 (test #t class? (let-syntax ([see-outer (lambda (x) (syntax (lambda () 10)))])
 		  (class object%
-		    (define-macro see-outer 10)
+		    (define-syntax see-outer-x 10)
 		    (public meth)
 		    (define meth (see-outer)))))
 

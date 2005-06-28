@@ -917,7 +917,11 @@ regoptail(rxpos p, rxpos val)
   regtail(OPERAND(p), val);
 }
 
-static rxpos l_strchr(char *str, rxpos a, int l, int c)
+static 
+#ifndef NO_INLINE_KEYWORD
+MSC_IZE(inline)
+#endif
+  rxpos l_strchr(char *str, rxpos a, int l, int c)
 {
   int i;
 
@@ -1318,8 +1322,8 @@ static void read_more_from_regport(Regwork *rw, rxpos need_total)
     size = size * 2;
     if (size < need_total)
       size += need_total;
-    else if (size < 256)
-      size = 256;
+    if (size < 16)
+      size = 16;
 
     naya = (char *)scheme_malloc_atomic(size);
     memcpy(naya, rw->instr, rw->input_end);

@@ -28,7 +28,7 @@
 				      (build-path d 'up "command.com"))))))])
 		   (list cmd
 			 'exact
-			 (format "~a /c ~a" (path->string cmd) argstr))))
+			 (format "~a /c \"~a\"" (path->string cmd) argstr))))
       (else (raise-mismatch-error 
 	     who
 	     (format "~a: don't know what shell to use for platform: " who)

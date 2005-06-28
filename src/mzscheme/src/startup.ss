@@ -713,16 +713,9 @@
 	     "bad syntax"
 	     code)))))
 
-  ;; The `define-struct' form is the normal one.
-  ;; The `generate-struct-vals' form is used as a delaying mechanism
-  ;; when a `define-struct' form appears in an internal definition
-  ;; context and a superstruct is specified. The delay is used because
-  ;; some other (earlier) part of the definition sequence might be
-  ;; defining the superclass.
-  (define-syntaxes (define-struct generate-struct-vals)
+  (define-syntaxes (define-struct)
     (let ([make-core
-	   ;; generates the call to `make-struct-type'; used by
-	   ;;  `define-struct' and `generate-struct-vals'
+	   ;; generates the call to `make-struct-type'
 	   (lambda (name inspector super-id/struct: field-names)
 	     `(let-values ([(type maker pred access mutate)
 			    (make-struct-type ',name
@@ -737,129 +730,95 @@
 				(list* `(make-struct-field-accessor access ,n ',(car field-names))
 				       `(make-struct-field-mutator mutate ,n ',(car field-names))
 				       (loop (cdr field-names) (add1 n))))))))])
-      (values
-       ;; define-struct
-       (lambda (stx)
-	 (if (identifier? stx)
-	     (raise-syntax-error #f "bad syntax" stx))
-	 (let ([body (stx->list (stx-cdr stx))])
-	   (let ([syntax-error
-		  (lambda (s . detail)
-		    (apply
-		     raise-syntax-error
-		     #f
-		     s
-		     stx
-		     detail))]
-		 [build-struct-names
-		  (lambda (name fields)
-		    (let ([name (symbol->string (syntax-e name))]
-			  [fields (map symbol->string (map syntax-e fields))]
-			  [+ string-append])
-		      (map string->symbol
-			   (append
-			    (list 
-			     (+ "struct:" name)
-			     (+ "make-" name)
-			     (+ name "?"))
-			    (apply
-			     append
-			     (map
-			      (lambda (f) 
-				(list 
-				 (+ name "-" f)
-				 (+ "set-" name "-" f "!")))
-			      fields))))))])
-	     (or (pair? body)
-		 (syntax-error "empty declaration"))
-	     (or (stx-list? body)
-		 (syntax-error "illegal use of `.'"))
-	     (or (<= 2 (length body) 3)
-		 (syntax-error "wrong number of parts"))
-	     (or (identifier? (car body))
-		 (and (stx-pair? (car body))
-		      (identifier? (stx-car (car body)))
-		      (stx-pair? (stx-cdr (car body)))
-		      (identifier? (stx-car (stx-cdr (car body))))
-		      (stx-null? (stx-cdr (stx-cdr (car body)))))
-		 (syntax-error "first part must be an identifier or pair of identifiers"))
-	     (or (stx-list? (cadr body))
-		 (if (stx-pair? (cadr body))
-		     (syntax-error "illegal use of `.' in field name sequence")
-		     (syntax-error "field names must be a sequence")))
-	     (for-each (lambda (x) 
-			 (or (identifier? x)
-			     (syntax-error "field name not a identifier" x)))
-		       (stx->list (cadr body)))
-	     (if (memq (syntax-local-context) '(expression))
-		 (syntax-error "allowed only in definition contexts"))
-	     (let ([name (if (identifier? (car body))
-			     (car body)
-			     (stx-car (car body)))]
-		   [field-names (stx->list (cadr body))]
-		   [inspector (if (null? (cddr body))
-				  (quote-syntax (current-inspector))
-				  (caddr body))]
-		   [super-id (if (identifier? (car body))
-				 #f
-				 (stx-car (stx-cdr (car body))))])
-	       (let ([defined-names (map 
-				     (lambda (n) (datum->syntax-object name n name)) 
-				     (build-struct-names name field-names))]
-		     [delay? (and (not (memq (syntax-local-context) '(module module-begin top-level expression)))
-				  super-id)])
-		 (let-values ([(super-id/struct: stx-info) (if delay?
-							       (values #f #f)
-							       (get-stx-info stx super-id defined-names #t))])
-		   (let ([result
-			  (datum->syntax-object
-			   (quote-syntax here)
-			   `(begin
-			      (define-values
-				,defined-names
-				,(let ([core (if delay?
-						 `(begin0 ;; the `begin0' stops `class' from inspecting more closely
-						   (generate-struct-vals ,stx ,name ,(and inspector 'inspector) ,super-id ,field-names))
-						 (make-core name (and inspector 'inspector) super-id/struct: field-names))])
-				   (if inspector
-				       `(let ([inspector ,inspector])
-					  (if (if inspector (not (inspector? inspector)) #f)
-					      (raise-type-error 'define-struct "inspector or #f" inspector))
-					  ,core)
-				       core)))
-			      (define-syntaxes (,name) ,(if delay?
-							    `(let-values ([(super-id/struct: stx-info) 
-									   (get-stx-info (quote-syntax ,stx)
-											 (quote-syntax ,super-id)
-											 (list ,@(map (lambda (x) `(quote-syntax ,x))
-												      defined-names))
-											 #f)])
-							       stx-info)
-							    stx-info)))
-			   stx)])
-		     (if super-id
-			 (syntax-property result 
-					  'disappeared-use 
-					  (syntax-local-introduce super-id))
-			 result))))))))
-       
-       ;; generate-struct-vals
-       (lambda (stx)
-	 (let* ([stx (stx-cdr stx)]
-		[orig-stx (stx-car stx)]
-		[stx (stx-cdr stx)]
-		[name (stx-car stx)]
-		[stx (stx-cdr stx)]
-		[inspector (stx-car stx)]
-		[super-id (stx-car (stx-cdr stx))]
-		[field-names (stx-car (stx-cdr (stx-cdr stx)))])
-	   (let-values ([(super-id/struct: stx-info) (get-stx-info orig-stx super-id #f #f)])
-	     (datum->syntax-object
-	      (quote-syntax here)
-	      (make-core name
-			 inspector
-			 super-id/struct:
-			 (syntax->list field-names)))))))))
+      ;; define-struct
+      (lambda (stx)
+	(if (identifier? stx)
+	    (raise-syntax-error #f "bad syntax" stx))
+	(let ([body (stx->list (stx-cdr stx))])
+	  (let ([syntax-error
+		 (lambda (s . detail)
+		   (apply
+		    raise-syntax-error
+		    #f
+		    s
+		    stx
+		    detail))]
+		[build-struct-names
+		 (lambda (name fields)
+		   (let ([name (symbol->string (syntax-e name))]
+			 [fields (map symbol->string (map syntax-e fields))]
+			 [+ string-append])
+		     (map string->symbol
+			  (append
+			   (list 
+			    (+ "struct:" name)
+			    (+ "make-" name)
+			    (+ name "?"))
+			   (apply
+			    append
+			    (map
+			     (lambda (f) 
+			       (list 
+				(+ name "-" f)
+				(+ "set-" name "-" f "!")))
+			     fields))))))])
+	    (or (pair? body)
+		(syntax-error "empty declaration"))
+	    (or (stx-list? body)
+		(syntax-error "illegal use of `.'"))
+	    (or (<= 2 (length body) 3)
+		(syntax-error "wrong number of parts"))
+	    (or (identifier? (car body))
+		(and (stx-pair? (car body))
+		     (identifier? (stx-car (car body)))
+		     (stx-pair? (stx-cdr (car body)))
+		     (identifier? (stx-car (stx-cdr (car body))))
+		     (stx-null? (stx-cdr (stx-cdr (car body)))))
+		(syntax-error "first part must be an identifier or pair of identifiers"))
+	    (or (stx-list? (cadr body))
+		(if (stx-pair? (cadr body))
+		    (syntax-error "illegal use of `.' in field name sequence")
+		    (syntax-error "field names must be a sequence")))
+	    (for-each (lambda (x) 
+			(or (identifier? x)
+			    (syntax-error "field name not a identifier" x)))
+		      (stx->list (cadr body)))
+	    (if (memq (syntax-local-context) '(expression))
+		(syntax-error "allowed only in definition contexts"))
+	    (let ([name (if (identifier? (car body))
+			    (car body)
+			    (stx-car (car body)))]
+		  [field-names (stx->list (cadr body))]
+		  [inspector (if (null? (cddr body))
+				 (quote-syntax (current-inspector))
+				 (caddr body))]
+		  [super-id (if (identifier? (car body))
+				#f
+				(stx-car (stx-cdr (car body))))])
+	      (let ([defined-names (map 
+				    (lambda (n) (datum->syntax-object name n name)) 
+				    (build-struct-names name field-names))])
+		(let-values ([(super-id/struct: stx-info) (get-stx-info stx super-id defined-names #t)])
+		  (let ([result
+			 (datum->syntax-object
+			  (quote-syntax here)
+			  `(begin
+			     (define-values
+			       ,defined-names
+			       ,(let ([core (make-core name (and inspector 'inspector) super-id/struct: field-names)])
+				  (if inspector
+				      `(let ([inspector ,inspector])
+					 (if (if inspector (not (inspector? inspector)) #f)
+					     (raise-type-error 'define-struct "inspector or #f" inspector))
+					 ,core)
+				      core)))
+			     (define-syntaxes (,name) ,stx-info))
+			  stx)])
+		    (if super-id
+			(syntax-property result 
+					 'disappeared-use 
+					 (syntax-local-introduce super-id))
+			result))))))))))
 
   (provide -define -define-syntax when unless let/ec define-struct))
 

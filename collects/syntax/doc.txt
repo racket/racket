@@ -185,14 +185,9 @@ _struct.ss_: generating the same names as `define-struct'
 
 > (generate-struct-declaration orig-stx name-id super-id-or-false
                                field-id-list current-context
-			       make-make-struct-type
-			       continue-macro-id continue-data-stx)
-> (generate-delayed-struct-declaration stx make-make-make-struct-type)
+			       make-make-struct-type)
 
-  These two procedures cooperate to implement the core of a
-  `define-struct' expansion that works for embedded definition
-  contexts (where lookup of supertype information may need to be
-  delayed).
+  This procedure implements the core of a `define-struct' expansion.
 
   The `generate-struct-declaration' procedure is called by a macro
   expander to generate the expansion, where the `name-id',
@@ -221,21 +216,7 @@ _struct.ss_: generating the same names as `define-struct'
 			     0 #f))
 
   but an actual `make-make-struct-type' will likely do more.
-
-  If the lookup of super-struct information must be delayed,
-  `generate-struct-declaration' produces an expression that invokes
-  the macro named by `continue-macro-id'. This macro should have the
-  form
-
-     (define-syntax (continue-macro stx)
-       (generate-delayed-struct-declaration 
-        stx 
-        make-make-make-struct-type))
-
-  where `make-make-make-struct-type' takes the syntax object
-  `continue-stx' and produces a procedure equivalent to the
-  `make-make-struct-type' procedure.
-
+ 
 ======================================================================
 _name.ss_: extracting inferred names
 ======================================================================

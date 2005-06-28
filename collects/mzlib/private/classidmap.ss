@@ -50,10 +50,10 @@
 	     stx)]
 	   [id (find the-finder the-obj stx)])))))
 
-  (define (make-field-map the-finder the-obj the-binder field-accessor field-mutator field-pos/null)
+  (define (make-field-map the-finder the-obj the-binder the-binder-localized field-accessor field-mutator field-pos/null)
     (let ([set!-stx (datum->syntax-object the-finder 'set!)])
       (mk-set!-trans
-       the-binder
+       the-binder-localized
        (lambda (stx)
 	 (syntax-case stx ()
 	   [(set! id expr)
@@ -79,10 +79,10 @@
 	      (list* field-accessor (find the-finder the-obj stx) field-pos/null)
 	      stx))])))))
 
-  (define (make-method-map the-finder the-obj the-binder method-accessor)
+  (define (make-method-map the-finder the-obj the-binder the-binder-localized method-accessor)
     (let ([set!-stx (datum->syntax-object the-finder 'set!)])
       (mk-set!-trans
-       the-binder
+       the-binder-localized
        (lambda (stx)
 	 (syntax-case stx ()
 	   [(set! id expr)
@@ -106,10 +106,10 @@
 
   ;; For methods that are dirrectly available via their names
   ;;  (e.g., private methods)
-  (define (make-direct-method-map the-finder the-obj the-binder new-name)
+  (define (make-direct-method-map the-finder the-obj the-binder the-binder-localized new-name)
     (let ([set!-stx (datum->syntax-object the-finder 'set!)])
       (mk-set!-trans
-       the-binder
+       the-binder-localized
        (lambda (stx)
 	 (syntax-case stx ()
 	   [(set! id expr)
@@ -128,10 +128,10 @@
 	     "misuse of method (not in application)" 
 	     stx)])))))
 
-  (define (make-rename-super-map the-finder the-obj the-binder rename-temp)
+  (define (make-rename-super-map the-finder the-obj the-binder the-binder-localized rename-temp)
     (let ([set!-stx (datum->syntax-object the-finder 'set!)])
       (mk-set!-trans
-       the-binder
+       the-binder-localized
        (lambda (stx)
 	 (syntax-case stx ()
 	   [(set! id expr)
@@ -150,11 +150,11 @@
 	     "misuse of super method (not in application)" 
 	     stx)])))))
 
-  (define (make-rename-inner-map the-finder the-obj the-binder rename-temp)
+  (define (make-rename-inner-map the-finder the-obj the-binder the-binder-localized rename-temp)
     (let ([set!-stx (datum->syntax-object the-finder 'set!)]
 	  [lambda-stx (datum->syntax-object the-finder 'lambda)])
       (mk-set!-trans
-       the-binder
+       the-binder-localized
        (lambda (stx)
 	 (syntax-case stx ()
 	   [(set! id expr)
@@ -270,7 +270,7 @@
 			 (private-name-gen-id v)))]
 	 [(and (set!-transformer? v)
 	       (s!t? (set!-transformer-procedure v)))
-	  (loop (s!t-ref (set!-transformer-procedure v) 1))]
+	  (s!t-ref (set!-transformer-procedure v) 1)]
 	 [else orig-id]))))
 
   (define-struct class-context ())

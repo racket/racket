@@ -729,38 +729,57 @@ print_to_string(Scheme_Object *obj,
   params.print_maxlen = maxl;
   params.print_port = port;
 
-  config = scheme_current_config();
-
-  v = scheme_get_param(config, MZCONFIG_PRINT_GRAPH);
-  params.print_graph = SCHEME_TRUEP(v);
-  v = scheme_get_param(config, MZCONFIG_PRINT_BOX);
-  params.print_box = SCHEME_TRUEP(v);
-  v = scheme_get_param(config, MZCONFIG_PRINT_STRUCT);
-  params.print_struct = SCHEME_TRUEP(v);
-  v = scheme_get_param(config, MZCONFIG_PRINT_VEC_SHORTHAND);
-  params.print_vec_shorthand = SCHEME_TRUEP(v);
-  v = scheme_get_param(config, MZCONFIG_PRINT_HASH_TABLE);
-  params.print_hash_table = SCHEME_TRUEP(v);
-  if (write) {
-    if (maxl > 0)
-      params.print_unreadable = 1;
-    else {
-      v = scheme_get_param(config, MZCONFIG_PRINT_UNREADABLE);
-      params.print_unreadable = SCHEME_TRUEP(v);
-    }
-  } else
+  /* Getting print params can take a while, and they're irrelevant
+     for simple things like displaying numbers. So try a shortcut: */
+  if (!write
+      && (SCHEME_NUMBERP(obj)
+	  || SCHEME_BYTE_STRINGP(obj)
+	  || SCHEME_CHAR_STRINGP(obj)
+	  || SCHEME_SYMBOLP(obj))) {
+    params.print_graph = 0;
+    params.print_box = 0;
+    params.print_struct = 0;
+    params.print_vec_shorthand = 0;
+    params.print_hash_table = 0;
     params.print_unreadable = 1;
-  v = scheme_get_param(config, MZCONFIG_CAN_READ_PIPE_QUOTE);
-  params.can_read_pipe_quote = SCHEME_TRUEP(v);
-  v = scheme_get_param(config, MZCONFIG_CASE_SENS);
-  params.case_sens = SCHEME_TRUEP(v);
-  if (check_honu) {
-    v = scheme_get_param(config, MZCONFIG_HONU_MODE);
-    params.honu_mode = SCHEME_TRUEP(v);
-  } else
+    params.can_read_pipe_quote = 1;
+    params.case_sens = 1;
     params.honu_mode = 0;
-  v = scheme_get_param(config, MZCONFIG_INSPECTOR);
-  params.inspector = v;
+    params.inspector = scheme_false;
+  } else {
+    config = scheme_current_config();
+
+    v = scheme_get_param(config, MZCONFIG_PRINT_GRAPH);
+    params.print_graph = SCHEME_TRUEP(v);
+    v = scheme_get_param(config, MZCONFIG_PRINT_BOX);
+    params.print_box = SCHEME_TRUEP(v);
+    v = scheme_get_param(config, MZCONFIG_PRINT_STRUCT);
+    params.print_struct = SCHEME_TRUEP(v);
+    v = scheme_get_param(config, MZCONFIG_PRINT_VEC_SHORTHAND);
+    params.print_vec_shorthand = SCHEME_TRUEP(v);
+    v = scheme_get_param(config, MZCONFIG_PRINT_HASH_TABLE);
+    params.print_hash_table = SCHEME_TRUEP(v);
+    if (write) {
+      if (maxl > 0)
+	params.print_unreadable = 1;
+      else {
+	v = scheme_get_param(config, MZCONFIG_PRINT_UNREADABLE);
+	params.print_unreadable = SCHEME_TRUEP(v);
+      }
+    } else
+      params.print_unreadable = 1;
+    v = scheme_get_param(config, MZCONFIG_CAN_READ_PIPE_QUOTE);
+    params.can_read_pipe_quote = SCHEME_TRUEP(v);
+    v = scheme_get_param(config, MZCONFIG_CASE_SENS);
+    params.case_sens = SCHEME_TRUEP(v);
+    if (check_honu) {
+      v = scheme_get_param(config, MZCONFIG_HONU_MODE);
+      params.honu_mode = SCHEME_TRUEP(v);
+    } else
+      params.honu_mode = 0;
+    v = scheme_get_param(config, MZCONFIG_INSPECTOR);
+    params.inspector = v;
+  }
 
   if (params.print_graph)
     cycles = 1;

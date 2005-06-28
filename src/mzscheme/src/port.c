@@ -5527,7 +5527,7 @@ static long flush_fd(Scheme_Output_Port *op,
 	/* If we don't have a thread yet, we'll need to start it. If
 	   we have a non-blocking pipe, we can try the write (and
 	   we'll still need the thread to determine when the data is
-	   flushed. */
+	   flushed). */
 	if (!fop->oth || fop->oth->nonblocking) {
 	  int nonblocking;
 
@@ -5539,7 +5539,7 @@ static long flush_fd(Scheme_Output_Port *op,
 	    nonblocking = ((scheme_stupid_windows_machine < 0)
 			   && (GetFileType((HANDLE)fop->fd) == FILE_TYPE_PIPE));
 	  } else
-	    nonblocking = 1; /* ust be, or we would not have got here */
+	    nonblocking = 1; /* must be, or we would not have gotten here */
 
 	  if (nonblocking) {
 	    /* Unless we're still trying to flush old data, write to the

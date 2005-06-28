@@ -1,4 +1,13 @@
 
+Version 299.107
+Changed expansion of internal definitions so that local
+ macros that expand to definition forms can be used
+ within the local definition set
+Added syntax-local-make-definition-context
+Added syntax-local-bind-syntaxes
+Added optional definition-context argument to
+ local-expand and syntax-local-value
+
 Version 299.106
 Changed certification so that a reference cannot have more
  certificates than its binding, and lexical context gives

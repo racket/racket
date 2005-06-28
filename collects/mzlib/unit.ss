@@ -37,295 +37,332 @@
   ;; ----------------------------------------------------------------------
   ;; The `unit' syntactic form
 
-  (define-syntax :unit
-    (lambda (stx)
-      (syntax-case stx (import export)
-	[(_ (import ivar ...)
-	    (export evar ...)
-	    defn&expr ...)
-	 (let ([check-id (lambda (v)
-			   (unless (identifier? v)
-			     (raise-syntax-error
-			      #f
-			      "import is not an identifier"
-			      stx
-			      v)))]
-	       [check-renamed-id 
-		(lambda (v)
-		  (syntax-case v ()
-		    [id (identifier? (syntax id)) 'ok]
-		    [(lid eid) (and (identifier? (syntax lid))
-				    (identifier? (syntax eid))) 'ok]
-		    [else (raise-syntax-error
-			   #f
-			   "export is not an identifier or renamed identifier"
-			   stx
-			   v)]))]
-	       [expand-context (generate-expand-context)]
-	       [ivars (syntax->list (syntax (ivar ...)))]
-	       [evars (syntax->list (syntax (evar ...)))])
-	   (for-each check-id ivars)
-	   (for-each check-renamed-id evars)
-	   
-	   ;; Get import/export declared names:
-	   (let* ([exported-names
-		   (map (lambda (v)
-			  (syntax-case v ()
-			    [(lid eid) (syntax lid)]
-			    [id (syntax id)]))
-			evars)]
-		  [extnames (map (lambda (v)
-				   (syntax-case v ()
-				     [(lid eid) (syntax eid)]
-				     [id (syntax id)]))
-				 evars)]
-		  [imported-names ivars]
-		  [declared-names (append imported-names exported-names)])
-	     ;; Check that all exports are distinct (as symbols)
-	     (let ([ht (make-hash-table)])
-	       (for-each (lambda (name)
-			   (when (hash-table-get ht (syntax-e name) (lambda () #f))
-			     (raise-syntax-error
-			      #f
-			      "duplicate export"
-			      stx
-			      name))
-			   (hash-table-put! ht (syntax-e name) #t))
-			 extnames))
-
-	     ;; Expand all body expressions
-	     ;; so that all definitions are exposed.
-	     (letrec ([expand-all
-		       (lambda (defns&exprs)
-			 (let ([expanded
-				(map
-				 (lambda (defn-or-expr)
-				   (local-expand
-				    defn-or-expr
-				    expand-context
-				    (append
-				     (kernel-form-identifier-list (quote-syntax here))
-				     declared-names)))
-				 defns&exprs)])
-			   (apply
-			    append
-			    (map
-			     (lambda (defn-or-expr)
-			       (syntax-case defn-or-expr (begin)
-				 [(begin . l)
-				  (let ([l (syntax->list (syntax l))])
-				    (unless l
+  (define-syntaxes (:unit unit/no-expand)
+    (let ([do-unit 
+	   (lambda (stx expand?)
+	     (syntax-case stx (import export)
+	       [(_ (import ivar ...)
+		   (export evar ...)
+		   defn&expr ...)
+		(let ([check-id (lambda (v)
+				  (unless (identifier? v)
+				    (raise-syntax-error
+				     #f
+				     "import is not an identifier"
+				     stx
+				     v)))]
+		      [check-renamed-id 
+		       (lambda (v)
+			 (syntax-case v ()
+			   [id (identifier? (syntax id)) (list v)]
+			   [(lid eid) (and (identifier? (syntax lid))
+					   (identifier? (syntax eid))) 
+			    (list #'lid #'eid)]
+			   [else (raise-syntax-error
+				  #f
+				  "export is not an identifier or renamed identifier"
+				  stx
+				  v)]))]
+		      [expand-context (generate-expand-context)]
+		      [def-ctx (and expand?
+				    (syntax-local-make-definition-context))]
+		      [localify (lambda (ids def-ctx)
+				  (if (andmap identifier? ids)
+				      ;; In expand mode, add internal defn context
+				      (if expand?
+					  (begin
+					    ;; Treat imports as internal-defn names:
+					    (syntax-local-bind-syntaxes ids #f def-ctx)
+					    (cdr (syntax->list
+						  (local-expand #`(stop #,@ids)
+								'expression
+								(list #'stop)
+								def-ctx))))
+					  ids)
+				      ;; Let later checking report an error:
+				      ids))])
+		  (let ([ivars (localify (syntax->list (syntax (ivar ...))) def-ctx)]
+			[evars (syntax->list (syntax (evar ...)))])
+		    (for-each check-id ivars)
+		    (for-each check-renamed-id evars)
+		    
+		    ;; Get import/export declared names:
+		    (let* ([exported-names
+			    (localify
+			     (map (lambda (v)
+				    (syntax-case v ()
+				      [(lid eid) (syntax lid)]
+				      [id (syntax id)]))
+				  evars)
+			     def-ctx)]
+			   [extnames (map (lambda (v)
+					    (syntax-case v ()
+					      [(lid eid) (syntax eid)]
+					      [id (syntax id)]))
+					  evars)]
+			   [imported-names ivars]
+			   [declared-names (append imported-names exported-names)])
+		      ;; Check that all exports are distinct (as symbols)
+		      (let ([ht (make-hash-table)])
+			(for-each (lambda (name)
+				    (when (hash-table-get ht (syntax-e name) (lambda () #f))
 				      (raise-syntax-error
 				       #f
-				       "bad syntax (illegal use of `.')"
-				       defn-or-expr))
-				    (expand-all (map (lambda (s)
-						       (syntax-track-origin s defn-or-expr #'begin))
-						     l)))]
-				 [else (list defn-or-expr)]))
-			     expanded))))])
-	       (let ([all-expanded (expand-all (syntax->list (syntax (defn&expr ...))))])
-		 ;; Get all the defined names, sorting out variable definitions
-		 ;; from syntax definitions.
-		 (let* ([definition?
-			  (lambda (id)
-			    (and (identifier? id)
-				 (or (module-identifier=? id (quote-syntax define-values))
-				     (module-identifier=? id (quote-syntax define-syntaxes)))))]
-			[all-defined-names/kinds
-			 (apply
-			  append
-			  (map
-			   (lambda (defn-or-expr)
-			     (syntax-case defn-or-expr (define-values define-syntaxes)
-			       [(dv (id ...) expr)
-				(definition? (syntax dv))
-				(let ([l (syntax->list (syntax (id ...)))])
-				  (for-each (lambda (i)
-					      (unless (identifier? i)
-						(raise-syntax-error
-						 #f
-						 "not an identifier in definition"
-						 defn-or-expr
-						 i)))
-					    l)
-				  (let ([key (if (module-identifier=? (syntax dv) (quote-syntax define-syntaxes))
-						 'stx
-						 'val)])
-				    (map (lambda (id) (cons key id)) l)))]
-			       [(define-values . l)
-				(raise-syntax-error
-				 #f
-				 "bad definition form"
-				 defn-or-expr)]
-			       [(define-syntaxes . l)
-				(raise-syntax-error
-				 #f
-				 "bad syntax definition form"
-				 defn-or-expr)]
-			       [else null]))
-			   all-expanded))]
-			[all-defined-names (map cdr all-defined-names/kinds)]
-			[all-defined-val-names (map cdr 
-						    (filter (lambda (i) (eq? (car i) 'val))
-							    all-defined-names/kinds))])
-		   ;; Check that all defined names (var + stx) are distinct:
-		   (let ([name (check-duplicate-identifier
-				(append imported-names all-defined-names))])
-		     (when name
-		       (raise-syntax-error 
-			#f
-			"variable imported and/or defined twice"
-			stx
-			name)))
-		   ;; Check that all exported names are defined (as var):
-		   (let ([ht (make-hash-table)]
-			 [stx-ht (make-hash-table)])
-		     (for-each
-		      (lambda (kind+name)
-			(let ([name (cdr kind+name)])
-			  (let ([l (hash-table-get ht (syntax-e name) (lambda () null))])
-			    (hash-table-put! (if (eq? (car kind+name) 'val) ht stx-ht)
-					     (syntax-e name) 
-					     (cons name l)))))
-		      all-defined-names/kinds)
-		     (for-each 
-		      (lambda (n)
-			(let ([v (hash-table-get ht (syntax-e n) (lambda () null))])
-			  (unless (ormap (lambda (i) (bound-identifier=? i n)) v)
-			    ;; Either not defined, or defined as syntax:
-			    (let ([stx-v (hash-table-get stx-ht (syntax-e n) (lambda () null))])
-			      (if (ormap (lambda (i) (bound-identifier=? i n)) stx-v)
-				  (raise-syntax-error
-				   #f
-				   "cannot export syntax from a unit"
-				   stx
-				   n)
-				  (raise-syntax-error
-				   #f
-				   "exported variable is not defined"
-				   stx
-				   n))))))
-		      exported-names))
+				       "duplicate export"
+				       stx
+				       name))
+				    (hash-table-put! ht (syntax-e name) #t))
+				  extnames))
 
-		   ;; Compute defined but not exported:
-		   (let ([ht (make-hash-table)])
-		     (for-each
-		      (lambda (name)
-			(let ([l (hash-table-get ht (syntax-e name) (lambda () null))])
-			  (hash-table-put! ht (syntax-e name) (cons name l))))
-		      exported-names)
-		     (let ([internal-names
-			    (let loop ([l all-defined-val-names])
-			      (cond
-			       [(null? l) null]
-			       [(let ([v (hash-table-get ht (syntax-e (car l)) (lambda () null))])
-				  (ormap (lambda (i) (bound-identifier=? i (car l))) v))
-				(loop (cdr l))]
-			       [else (cons (car l) (loop (cdr l)))]))])
-		       ;; Generate names for import/export boxes, etc:
-		       (with-syntax ([(iloc ...) (generate-temporaries (syntax (ivar ...)))]
-				     [(eloc ...) (generate-temporaries evars)]
-				     [(extname ...) extnames]
-				     [(expname ...) exported-names]
-				     [(intname ...) internal-names])
-			 ;; Change all definitions to set!s. Convert evars to set-box!,
-			 ;; because set! on exported variables is not allowed.
-			 (with-syntax ([(defn&expr ...) 
-					(let ([elocs (syntax->list (syntax (eloc ...)))])
-					  (filter
-					   values
-					   (map (lambda (defn-or-expr)
-						  (syntax-case defn-or-expr (define-values define-syntaxes)
-						    [(define-values ids expr)
-						     (let* ([ids (syntax->list (syntax ids))])
-						       (if (null? ids)
-							   (syntax/loc defn-or-expr (set!-values ids expr))
-							   (let ([do-one
-								  (lambda (id tmp name)
-								    (let loop ([evars exported-names]
-									       [elocs elocs])
-								      (cond
-								       [(null? evars)
-									;; not an exported id
-									(with-syntax ([id id][tmp tmp])
-									  (syntax/loc
-									      defn-or-expr
-									      (set! id tmp)))]
-								       [(bound-identifier=? (car evars) id)
-									;; set! exported id:
-									(with-syntax 
-									    ([loc (car elocs)]
-									     [tmp 
-									      (if name
-										  (with-syntax 
-										      ([tmp tmp]
-										       [name name])
-										    (syntax 
-										     (let ([name tmp])
-										       name)))
-										  tmp)])
-									  (syntax/loc defn-or-expr
-									      (set-box! loc tmp)))]
-								       [else (loop (cdr evars) 
-										   (cdr elocs))])))])
-							     (if (null? (cdr ids))
-								 (do-one (car ids) (syntax expr) (car ids))
-								 (let ([tmps (generate-temporaries ids)])
-								   (with-syntax ([(tmp ...) tmps]
-										 [(set ...)
-										  (map (lambda (id tmp)
-											 (do-one id tmp #f))
-										       ids tmps)])
-								     (syntax/loc defn-or-expr
-									 (let-values ([(tmp ...) expr])
-									   set ...))))))))]
-						    [(define-syntaxes . l) #f]
-						    [else defn-or-expr]))
-						all-expanded)))]
-				       [(stx-defn ...) 
-					(filter
-					 values
-					 (map (lambda (defn-or-expr)
-						(syntax-case defn-or-expr (define-syntaxes)
-						  [(define-syntaxes . l) defn-or-expr]
-						  [else #f]))
-					      all-expanded))])
-			   ;; Build up set! redirection chain:
-			   (with-syntax ([redirections
-					  (let ([varlocs 
-						 (syntax->list 
-						  (syntax ((ivar iloc) ... (expname eloc) ...)))])
-					    (with-syntax ([vars (map stx-car varlocs)]
-							  [rhss
-							   (map
-							    (lambda (varloc)
-							      (with-syntax ([(var loc) varloc])
-								(syntax
-								 (make-id-mapper (quote-syntax (unbox loc))
-										 (quote-syntax var)))))
-							    varlocs)])
-					      (syntax
-					       ([vars (values . rhss)]))))]
-					 [num-imports (datum->syntax-object
-						       (quote-syntax here)
-						       (length (syntax->list (syntax (iloc ...))))
-						       #f)]
-					 [name (syntax-local-infer-name stx)])
-			     (syntax/loc stx
-			       (make-a-unit
-				'name
-				num-imports
-				(list (quote extname) ...)
-				(lambda ()
-				  (let ([eloc (box undefined)] ...)
-				    (list (vector eloc ...)
-					  (lambda (iloc ...)
-					    (let ([intname undefined] ...)
-					      (letrec-syntaxes+values redirections ()
-						stx-defn ...
-						(void) ; in case the body would be empty
-						defn&expr ...))))))))))))))))))])))
+		      ;; Expand all body expressions
+		      ;; so that all definitions are exposed.
+		      (letrec ([expand-all
+				(if expand?
+				    (lambda (defns&exprs)
+				      (apply
+				       append
+				       (map
+					(lambda (defn-or-expr)
+					  (let ([defn-or-expr
+						  (local-expand
+						   defn-or-expr
+						   expand-context
+						   (append
+						    (kernel-form-identifier-list (quote-syntax here))
+						    declared-names)
+						   def-ctx)])
+					    (syntax-case defn-or-expr (begin define-values define-syntaxes)
+					      [(begin . l)
+					       (let ([l (syntax->list (syntax l))])
+						 (unless l
+						   (raise-syntax-error
+						    #f
+						    "bad syntax (illegal use of `.')"
+						    defn-or-expr))
+						 (expand-all (map (lambda (s)
+								    (syntax-track-origin s defn-or-expr #'begin))
+								  l)))]
+					      [(define-syntaxes (id ...) rhs)
+					       (andmap identifier? (syntax->list #'(id ...)))
+					       (with-syntax ([rhs (local-transformer-expand
+								   #'rhs
+								   'expression
+								   null)])
+						 (syntax-local-bind-syntaxes (syntax->list #'(id ...)) #'rhs def-ctx)
+						 (list #'(define-syntaxes (id ...) rhs)))]
+					      [(define-values (id ...) rhs)
+					       (andmap identifier? (syntax->list #'(id ...)))
+					       (begin
+						 (syntax-local-bind-syntaxes (syntax->list #'(id ...)) #f def-ctx)
+						 (list defn-or-expr))]
+					      [else (list defn-or-expr)])))
+					defns&exprs)))
+				    values)])
+			(let ([all-expanded (expand-all (syntax->list (syntax (defn&expr ...))))])
+			  ;; Get all the defined names, sorting out variable definitions
+			  ;; from syntax definitions.
+			  (let* ([definition?
+				   (lambda (id)
+				     (and (identifier? id)
+					  (or (module-identifier=? id (quote-syntax define-values))
+					      (module-identifier=? id (quote-syntax define-syntaxes)))))]
+				 [all-defined-names/kinds
+				  (apply
+				   append
+				   (map
+				    (lambda (defn-or-expr)
+				      (syntax-case defn-or-expr (define-values define-syntaxes)
+					[(dv (id ...) expr)
+					 (definition? (syntax dv))
+					 (let ([l (syntax->list (syntax (id ...)))])
+					   (for-each (lambda (i)
+						       (unless (identifier? i)
+							 (raise-syntax-error
+							  #f
+							  "not an identifier in definition"
+							  defn-or-expr
+							  i)))
+						     l)
+					   (let ([key (if (module-identifier=? (syntax dv) (quote-syntax define-syntaxes))
+							  'stx
+							  'val)])
+					     (map (lambda (id) (cons key id)) l)))]
+					[(define-values . l)
+					 (raise-syntax-error
+					  #f
+					  "bad definition form"
+					  defn-or-expr)]
+					[(define-syntaxes . l)
+					 (raise-syntax-error
+					  #f
+					  "bad syntax definition form"
+					  defn-or-expr)]
+					[else null]))
+				    all-expanded))]
+				 [all-defined-names (map cdr all-defined-names/kinds)]
+				 [all-defined-val-names (map cdr 
+							     (filter (lambda (i) (eq? (car i) 'val))
+								     all-defined-names/kinds))])
+			    ;; Check that all defined names (var + stx) are distinct:
+			    (let ([name (check-duplicate-identifier
+					 (append imported-names all-defined-names))])
+			      (when name
+				(raise-syntax-error 
+				 #f
+				 "variable imported and/or defined twice"
+				 stx
+				 name)))
+			    ;; Check that all exported names are defined (as var):
+			    (let ([ht (make-hash-table)]
+				  [stx-ht (make-hash-table)])
+			      (for-each
+			       (lambda (kind+name)
+				 (let ([name (cdr kind+name)])
+				   (let ([l (hash-table-get ht (syntax-e name) (lambda () null))])
+				     (hash-table-put! (if (eq? (car kind+name) 'val) ht stx-ht)
+						      (syntax-e name) 
+						      (cons name l)))))
+			       all-defined-names/kinds)
+			      (for-each 
+			       (lambda (n)
+				 (let ([v (hash-table-get ht (syntax-e n) (lambda () null))])
+				   (unless (ormap (lambda (i) (bound-identifier=? i n)) v)
+				     ;; Either not defined, or defined as syntax:
+				     (let ([stx-v (hash-table-get stx-ht (syntax-e n) (lambda () null))])
+				       (if (ormap (lambda (i) (bound-identifier=? i n)) stx-v)
+					   (raise-syntax-error
+					    #f
+					    "cannot export syntax from a unit"
+					    stx
+					    n)
+					   (raise-syntax-error
+					    #f
+					    "exported variable is not defined"
+					    stx
+					    n))))))
+			       exported-names))
+
+			    ;; Compute defined but not exported:
+			    (let ([ht (make-hash-table)])
+			      (for-each
+			       (lambda (name)
+				 (let ([l (hash-table-get ht (syntax-e name) (lambda () null))])
+				   (hash-table-put! ht (syntax-e name) (cons name l))))
+			       exported-names)
+			      (let ([internal-names
+				     (let loop ([l all-defined-val-names])
+				       (cond
+					[(null? l) null]
+					[(let ([v (hash-table-get ht (syntax-e (car l)) (lambda () null))])
+					   (ormap (lambda (i) (bound-identifier=? i (car l))) v))
+					 (loop (cdr l))]
+					[else (cons (car l) (loop (cdr l)))]))])
+				;; Generate names for import/export boxes, etc:
+				(with-syntax ([(ivar ...) ivars]
+					      [(iloc ...) (generate-temporaries ivars)]
+					      [(eloc ...) (generate-temporaries evars)]
+					      [(extname ...) extnames]
+					      [(expname ...) exported-names]
+					      [(intname ...) internal-names])
+				  ;; Change all definitions to set!s. Convert evars to set-box!,
+				  ;; because set! on exported variables is not allowed.
+				  (with-syntax ([(defn&expr ...) 
+						 (let ([elocs (syntax->list (syntax (eloc ...)))])
+						   (filter
+						    values
+						    (map (lambda (defn-or-expr)
+							   (syntax-case defn-or-expr (define-values define-syntaxes)
+							     [(define-values ids expr)
+							      (let* ([ids (syntax->list (syntax ids))])
+								(if (null? ids)
+								    (syntax/loc defn-or-expr (set!-values ids expr))
+								    (let ([do-one
+									   (lambda (id tmp name)
+									     (let loop ([evars exported-names]
+											[elocs elocs])
+									       (cond
+										[(null? evars)
+										 ;; not an exported id
+										 (with-syntax ([id id][tmp tmp])
+										   (syntax/loc
+										       defn-or-expr
+										     (set! id tmp)))]
+										[(bound-identifier=? (car evars) id)
+										 ;; set! exported id:
+										 (with-syntax 
+										     ([loc (car elocs)]
+										      [tmp 
+										       (if name
+											   (with-syntax 
+											       ([tmp tmp]
+												[name name])
+											     (syntax 
+											      (let ([name tmp])
+												name)))
+											   tmp)])
+										   (syntax/loc defn-or-expr
+										     (set-box! loc tmp)))]
+										[else (loop (cdr evars) 
+											    (cdr elocs))])))])
+								      (if (null? (cdr ids))
+									  (do-one (car ids) (syntax expr) (car ids))
+									  (let ([tmps (generate-temporaries ids)])
+									    (with-syntax ([(tmp ...) tmps]
+											  [(set ...)
+											   (map (lambda (id tmp)
+												  (do-one id tmp #f))
+												ids tmps)])
+									      (syntax/loc defn-or-expr
+										(let-values ([(tmp ...) expr])
+										  set ...))))))))]
+							     [(define-syntaxes . l) #f]
+							     [else defn-or-expr]))
+							 all-expanded)))]
+						[(stx-defn ...) 
+						 (filter
+						  values
+						  (map (lambda (defn-or-expr)
+							 (syntax-case defn-or-expr (define-syntaxes)
+							   [(define-syntaxes . l) #'l]
+							   [else #f]))
+						       all-expanded))])
+				    ;; Build up set! redirection chain:
+				    (with-syntax ([redirections
+						   (let ([varlocs 
+							  (syntax->list 
+							   (syntax ((ivar iloc) ... (expname eloc) ...)))])
+						     (with-syntax ([vars (map stx-car varlocs)]
+								   [rhss
+								    (map
+								     (lambda (varloc)
+								       (with-syntax ([(var loc) varloc])
+									 (syntax
+									  (make-id-mapper (quote-syntax (unbox loc))
+											  (quote-syntax var)))))
+								     varlocs)])
+						       (syntax
+							([vars (values . rhss)]))))]
+						  [num-imports (datum->syntax-object
+								(quote-syntax here)
+								(length (syntax->list (syntax (iloc ...))))
+								#f)]
+						  [name (syntax-local-infer-name stx)])
+				      (syntax/loc stx
+					(make-a-unit
+					 'name
+					 num-imports
+					 (list (quote extname) ...)
+					 (lambda ()
+					   (let ([eloc (box undefined)] ...)
+					     (list (vector eloc ...)
+						   (lambda (iloc ...)
+						     (letrec-syntaxes+values 
+						      (stx-defn ... . redirections)
+						      ([(intname) undefined] ...)
+						      (void) ; in case the body would be empty
+						      defn&expr ...))))))))))))))))))]))])
+      (values (lambda (stx) (do-unit stx #t))
+	      (lambda (stx) (do-unit stx #f)))))
 
   ;; ----------------------------------------------------------------------
   ;; check-expected-interface: used by the expansion of `compound-unit'
@@ -824,7 +861,8 @@
 			      (syntax (define-values (tagged-export ...) invoke-unit)))))))])))])
       (values (mk #f) (mk #t))))
   
-  (provide (rename :unit unit) compound-unit invoke-unit unit?
+  (provide (rename :unit unit) unit/no-expand
+	   compound-unit invoke-unit unit?
 	   (struct exn:fail:unit ())
 
 	   define-values/invoke-unit

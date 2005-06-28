@@ -554,10 +554,17 @@ void wxFrame::DoSetSize(int x, int y, int width, int height)
       int theMacWidth, theMacHeight;
       wxArea *parea;
       wxMargin pam;
+
       parea = PlatformArea();
       pam = parea->Margin();
       theMacWidth = cWindowWidth - pam.Offset(wxHorizontal);
       theMacHeight = cWindowHeight - pam.Offset(wxVertical);
+
+      if (!dw && (dh == 22) && (os_x_post_tiger < 0)) {
+	/* Defeat OS X bug that incorrectly shortcuts when the target
+	   client size matches the structure size */
+	::SizeWindow(theMacWindow, theMacWidth, theMacHeight+1, TRUE);
+      }
       ::SizeWindow(theMacWindow, theMacWidth, theMacHeight, TRUE);
       // Resizing puts windows into the unzoomed state
       cMaximized = FALSE;

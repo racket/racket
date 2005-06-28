@@ -16,7 +16,7 @@
 			    elems     ; list of syms and signatures
 			    ctxs      ; list of stx
 			    structs)) ; list of struct-infos
-  (define-struct parsed-unit (imports renames vars stxes body stx-checks))
+  (define-struct parsed-unit (imports renames vars import-vars body stx-checks))
 
   (define-struct struct-def (name super-name names))
 
@@ -528,7 +528,10 @@
       (let ([vars (map syntax-e (parsed-unit-vars a-unit))])
 	(for-each
 	 (lambda (var)
-	   (let ([renamed (do-rename var renames)])
+	   (let ([renamed (let ([s (do-rename var renames)])
+			    (if (syntax? s)
+				(syntax-e s)
+				s))])
 	     (unless (memq renamed vars)
 		     (syntax-error #f expr
 				   (format 
@@ -578,7 +581,7 @@
 	   clause)))))
 
   (define parse-unit
-    (lambda (expr body sig user-stx-forms dv-stx begin-stx)
+    (lambda (expr body sig user-stx-forms dv-stx ds-stx begin-stx)
       (let ([body (stx->list body)])
 	(unless body
 	  (syntax-error #f expr "illegal use of `.'"))
@@ -590,12 +593,22 @@
 	(let* ([imports (parse-imports 'unit/sig #t #t expr (stx-cdr (car body)) #t)]
 	       [imported-names (flatten-signatures imports #f)]
 	       [exported-names (flatten-signature #f sig #f)]
+	       [def-ctx (syntax-local-make-definition-context)]
 	       [body (cdr body)])
 	  (let-values ([(renames body)
 			(if (and (stx-pair? body)
 				 (stx-pair? (car body))
 				 (eq? 'rename (syntax-e (stx-car (car body)))))
-			    (values (map syntax-object->datum (cdr (stx->list (car body)))) (cdr body))
+			    (values (map (lambda (p)
+					   (list (stx-car p)
+						 (syntax-e (stx-car (stx-cdr p)))))
+					 (cdr (stx->list 
+					       (let ([rn (car body)])
+						 (local-expand rn
+							       'expression
+							       (list (stx-car rn))
+							       def-ctx)))))
+				    (cdr body))
 			    (values null body))])
 	    (unless renames
 	      (syntax-error #f expr "illegal use of `.'" (car body)))
@@ -635,14 +648,29 @@
 				  (loop (cdr e))
 				  (cons (car e) (loop (cdr e)))))))]
 		   [local-vars (append renamed-internals filtered-exported-names imported-names)]
-		   [expand-context (generate-expand-context)])
-	      (let loop ([pre-lines null][lines body][port #f][port-name #f][body null][vars null])
+		   [expand-context (generate-expand-context)]
+		   [import-stxes (apply append (map (lambda (i) 
+						      (map
+						       (lambda (d)
+							 (datum->syntax-object expr d))
+						       (make-struct-stx-decls i #f #t expr #f)))
+						    imports))]
+		   [import-vars
+		    (let ([vars (map (lambda (sym) (datum->syntax-object expr sym expr))
+				     (flatten-signatures imports 'must-have-ctx))])
+		      ;; Treat imported names like internal definitions:
+		      (syntax-local-bind-syntaxes vars #f def-ctx)
+		      (cdr (syntax->list (local-expand #`(stop #,@vars)
+						       'expression
+						       (list #'stop)
+						       def-ctx))))])
+	      (let loop ([pre-lines null][lines (append import-stxes body)][port #f][port-name #f][body null][vars null])
 		(cond
 		 [(and (null? pre-lines) (not port) (null? lines))
 		  (make-parsed-unit imports 
 				    renames 
 				    vars 
-				    (lambda (src-stx) (apply append (map (lambda (i) (make-struct-stx-decls i #f #t src-stx #f)) imports)))
+				    import-vars
 				    body
 				    (lambda (src-stx) 
 				      ;; Disabled until we have a mechanism for declaring precise information in signatures:
@@ -656,12 +684,13 @@
 						 [port (read-syntax port-name port)]
 						 [else (car lines)])])
 					 (if (eof-object? s)
-					   s
-					   (local-expand s    
-							 expand-context
-							 (append
-							  user-stx-forms
-							  local-vars))))]
+					     s
+					     (local-expand s    
+							   expand-context
+							   (append
+							    user-stx-forms
+							    local-vars)
+							   def-ctx)))]
 			       [(rest-pre-lines) 
 				(if (null? pre-lines)
 				    null
@@ -679,16 +708,47 @@
 			   (identifier? (stx-car line))
 			   (module-identifier=? (stx-car line) dv-stx))
 		      (syntax-case line ()
-			[(_ (id ...) expr)
-			 (loop rest-pre-lines
-			       rest-lines
-			       port
-			       port-name
-			       (cons line body)
-			       (append (syntax->list (syntax (id ...))) vars))]
+			[(_ (id ...) rhs)
+			 (let ([ids (syntax->list #'(id ...))])
+			   (for-each (lambda (id)
+				       (unless (identifier? #'id)
+					 (syntax-error #f id "not an identifier" line)))
+				     ids)
+			   (syntax-local-bind-syntaxes ids #f def-ctx)
+			   (loop rest-pre-lines
+				 rest-lines
+				 port
+				 port-name
+				 (cons line body)
+				 (append ids vars)))]
 			[else
 			 (syntax-error #f expr 
 				       "improper `define-values' clause form"
+				       line)])]
+		     [(and (stx-pair? line)
+			   (identifier? (stx-car line))
+			   (module-identifier=? (stx-car line) ds-stx))
+		      (syntax-case line ()
+			[(_ (id ...) rhs)
+			 (let ([ids (syntax->list #'(id ...))])
+			   (for-each (lambda (id)
+				       (unless (identifier? #'id)
+					 (syntax-error #f id "not an identifier" line)))
+				     ids)
+			   (with-syntax ([rhs (local-transformer-expand
+					       #'rhs
+					       'expression
+					       null)])
+			     (syntax-local-bind-syntaxes ids #'rhs def-ctx)
+			     (loop rest-pre-lines
+				   rest-lines
+				   port
+				   port-name
+				   (cons line body)
+				   vars)))]
+			[else
+			 (syntax-error #f expr 
+				       "improper `define-syntaxes' clause form"
 				       line)])]
 		     [(and (stx-pair? line)
 			   (identifier? (stx-car line))
@@ -1148,9 +1208,10 @@
 
 	   parsed-unit-renames
 	   parsed-unit-imports
-	   parsed-unit-stxes
+	   parsed-unit-import-vars
 	   parsed-unit-body
 	   parsed-unit-stx-checks
+	   parsed-unit-vars
 
 	   make-struct-stx-decls
 	   verify-struct-shape

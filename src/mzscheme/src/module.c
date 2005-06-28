@@ -959,7 +959,7 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
   Scheme_Hash_Table *checked, *next_checked, *prev_checked;
   Scheme_Object *past_checkeds, *future_checkeds, *future_todos, *past_to_modchains;
   Scheme_Module *m2;
-  int same_namespace, skip_notify = 0, with_tt;
+  int same_namespace, skip_notify = 0, phase;
 
   if (!SCHEME_NAMESPACEP(argv[0]))
     scheme_wrong_type("namespace-attach-module", "namespace", 0, argc, argv);
@@ -980,7 +980,7 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
   prev_phase_todo = scheme_null;
   from_modchain = from_env->modchain;
   to_modchain = to_env->modchain;
-  with_tt = 0;
+  phase = 0;
 
   checked = NULL;
   next_checked = NULL;
@@ -998,7 +998,8 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
     if (!checked)
       checked = scheme_make_hash_table(SCHEME_hash_ptr);
     /* This is just a shortcut: */
-    next_checked = scheme_make_hash_table(SCHEME_hash_ptr);
+    if (!next_checked)
+      next_checked = scheme_make_hash_table(SCHEME_hash_ptr);
 
     /* This loop iterates through require chains in the same phase */
     while (!SCHEME_NULLP(todo)) {
@@ -1011,6 +1012,8 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
       if (!SAME_OBJ(name, kernel_symbol)) {
 	menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(from_modchain), name);
 
+	/* printf("Check %d %s\n", phase, SCHEME_SYM_VAL(name)); */
+	
 	if (!menv) {
 	  /* Assert: name == argv[1] */
 	  /* Module at least declared? */
@@ -1069,6 +1072,7 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 	  while (!SCHEME_NULLP(l)) {
 	    name = scheme_module_resolve(SCHEME_CAR(l));
 	    if (!scheme_hash_get(checked, name)) {
+	      /* printf("Add %d %s (%p)\n", phase, SCHEME_SYM_VAL(name), checked); */
 	      todo = scheme_make_pair(name, todo);
 	      scheme_hash_set(checked, name, scheme_true);
 	    }
@@ -1083,13 +1087,14 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 	  while (!SCHEME_NULLP(l)) {
 	    name = scheme_module_resolve(SCHEME_CAR(l));
 	    if (!scheme_hash_get(next_checked, name)) {
+	      /* printf("Add +%d %s (%p)\n", phase+1, SCHEME_SYM_VAL(name), next_checked); */
 	      next_phase_todo = scheme_make_pair(name, next_phase_todo);
 	      scheme_hash_set(next_checked, name, scheme_true);
 	    }
 	    l = SCHEME_CDR(l);
 	  }
 
-	  if (with_tt) {
+	  if (phase > 0) {
 	    l = menv->tt_require_names;
 	    if (l) {
 	      while (!SCHEME_NULLP(l)) {
@@ -1098,6 +1103,7 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 		
 		name = scheme_module_resolve(SCHEME_CAR(l));
 		if (!scheme_hash_get(prev_checked, name)) {
+		  /* printf("Add -%d %s (%p)\n", phase-1, SCHEME_SYM_VAL(name), prev_checked); */
 		  prev_phase_todo = scheme_make_pair(name, prev_phase_todo);
 		  scheme_hash_set(prev_checked, name, scheme_true);
 		}
@@ -1126,7 +1132,7 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 	from_modchain = SCHEME_VEC_ELS(from_modchain)[2];
 	to_modchain = SCHEME_CAR(past_to_modchains);
 	past_to_modchains = SCHEME_CDR(past_to_modchains);
-	with_tt--;
+	phase--;
       } else {
 	past_checkeds = cons((Scheme_Object *)prev_checked, past_checkeds);
 	prev_checked = checked;
@@ -1148,22 +1154,39 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 	past_to_modchains = cons(to_modchain, past_to_modchains);
 	if (SCHEME_TRUEP(to_modchain))
 	  to_modchain = SCHEME_VEC_ELS(to_modchain)[1];
-	with_tt++;
+	phase++;
       }
     } while (SCHEME_NULLP(todo) && (SCHEME_PAIRP(next_phase_todo)
 				    || SCHEME_PAIRP(future_todos)));
   }
 
-  /* All of the modules that we saw are in the past_checkeds
-     hash tables, plus maybe prev_checked. */
-  if (prev_checked)
-    past_checkeds = cons((Scheme_Object *)prev_checked, past_checkeds);
-  /* Reverse the list */
-  while (!SCHEME_NULLP(past_checkeds)) {
-    if (SCHEME_CAR(past_checkeds))
-      future_checkeds = scheme_make_pair(SCHEME_CAR(past_checkeds),
-					 future_checkeds);
+  /* printf("Done phase: %d\n", phase); */
+  
+  phase += 2; /* represents phase at the start of in future_checkeds */
+
+  /* All of the modules that we saw are in the ***_checked hash tables */
+  if (phase > 1) {
+    if (next_checked)
+      future_checkeds = cons((Scheme_Object *)next_checked, future_checkeds);
+    /* else future_checkeds must be scheme_null */
+    --phase;
+  }
+  if (phase > 0) {
+    if (checked)
+      future_checkeds = cons((Scheme_Object *)checked, future_checkeds);
+    /* else future_checkeds must be scheme_null */
+    --phase;
+  }
+  if (phase > 0) {
+    future_checkeds = cons((Scheme_Object *)prev_checked, future_checkeds);
+    --phase;
+  }
+  while (phase > 0) {
+    prev_checked = (Scheme_Hash_Table *)SCHEME_CAR(past_checkeds);
+    future_checkeds = scheme_make_pair((Scheme_Object *)prev_checked, future_checkeds);
+    
     past_checkeds = SCHEME_CDR(past_checkeds);
+    --phase;
   }
   /* Now all the modules to check are in the future_checkeds
      list of hash tables. */
@@ -1178,6 +1201,9 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
     int i;
 
     checked = (Scheme_Hash_Table *)SCHEME_CAR(future_checkeds);
+
+    /* printf("Copying %d (%p)\n", phase, checked); */
+
     for (i = checked->size; i--; ) {
       if (checked->vals[i]) {
 	name = checked->keys[i];
@@ -1185,6 +1211,8 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 	if (!SAME_OBJ(name, kernel_symbol)) {
 	  menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(from_modchain), name);
 	  
+	  /* printf("Copy %d %s\n", phase, SCHEME_SYM_VAL(name)); */
+
 	  menv2 = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(to_modchain), name);
 	  if (!menv2) {
 	    /* Clone menv for the new namespace: */
@@ -1206,6 +1234,7 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
     future_checkeds = SCHEME_CDR(future_checkeds);
     from_modchain = SCHEME_VEC_ELS(from_modchain)[1];
     to_modchain = SCHEME_VEC_ELS(to_modchain)[1];
+    phase++;
     /* Preceding scheme_clone_module_env ensures that we don't get a
        #f for to_modchain if there's more to do. */
   }
@@ -3083,7 +3112,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   fm = scheme_add_rename(fm, tt_rn);
 
   if (!check_mb) {
-    fm = scheme_check_immediate_macro(fm, benv, rec, drec, 0, &mbval, NULL);
+    fm = scheme_check_immediate_macro(fm, benv, rec, drec, 0, &mbval, NULL, NULL);
 
     /* If expansion is not the primitive `#%module-begin', add local one: */
     if (!SAME_OBJ(mbval, modbeg_syntax)) {
@@ -3665,7 +3694,6 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
       scheme_frame_captures_lifts(xenv, scheme_make_lifted_defn, scheme_sys_wraps(xenv));
 
-      /* -2 means expand all the way (to stops), but preserve letrec-syntax. */
       {
 	Scheme_Expand_Info erec1;
 	erec1.comp = 0;
@@ -3680,6 +3708,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	/* Expansion lifted expressions, so add them to
 	   the front and try again. */
 	fm = SCHEME_STX_CDR(fm);
+	/* Why don't we need post_ex renames on fst and e? */
 	fm = scheme_append(fst, scheme_make_pair(e, fm));
       } else {
 	/* No lifts added... */
@@ -3857,8 +3886,9 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	    code = scheme_expand_expr_lift_to_let(code, eenv, &erec1, 0);
 	  }
 	  m = scheme_compile_expr_lift_to_let(code, eenv, &mrec, 0);
-
-	  rp = scheme_resolve_prefix(1, eenv->prefix, 1);
+	  
+	  /* Simplify only in compile mode; it is too slow in expand mode. */
+	  rp = scheme_resolve_prefix(1, eenv->prefix, rec[drec].comp);
 	  m = scheme_resolve_expr(m, scheme_resolve_info_create(rp));
 
 	  /* Add code with names and lexical depth to exp-time body: */
