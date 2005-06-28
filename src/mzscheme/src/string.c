@@ -1104,7 +1104,7 @@ do_byte_string_to_char_string_locale(const char *who,
   reset_locale();
   if (!iconv_ready) init_iconv();
 
-  if (mzLOCALE_IS_UTF_8(current_locale_name) || !locale_on)
+  if (mzLOCALE_IS_UTF_8(current_locale_name) || !locale_on || !iconv_open)
     return do_byte_string_to_char_string(who, bstr, istart, ifinish, perm, 1);
 
   if (istart < ifinish) {
@@ -1235,7 +1235,7 @@ do_char_string_to_byte_string_locale(const char *who,
   reset_locale();
   if (!iconv_ready) init_iconv();
 
-  if (mzLOCALE_IS_UTF_8(current_locale_name) || !locale_on)
+  if (mzLOCALE_IS_UTF_8(current_locale_name) || !locale_on || !iconv_open)
     return do_char_string_to_byte_string(cstr, istart, ifinish, 1);
 
   if (istart < ifinish) {
