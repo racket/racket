@@ -247,6 +247,8 @@
                     (file-or-directory-modify-seconds file-path)
                     mime-type)
     (when (eq? method 'get)
+      ; Give it one second per byte.
+      (adjust-connection-timeout! conn (file-size file-path))
       (call-with-input-file file-path
         (lambda (i-port) (copy-port i-port (connection-o-port conn))))))
   
