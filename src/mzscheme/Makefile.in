@@ -223,7 +223,7 @@ clean@NOT_OSX@:
 	/bin/rm -rf tmp[123456789] tests/tmp[123456789] tests/sub[123]
 	/bin/rm -f tests/*~
 	/bin/rm -f *.@LTO@ core
-	/bin/rm -f mzdyn.o libmzgc.@LIBSFX@ libmzscheme.@LIBSFX@ libdl.a mzscheme mzscheme.multiboot
+	/bin/rm -f mzdyn.o libmzgc.@LIBSFX@ libmzscheme.@LIBSFX@ libmzscheme3m.@LIBSFX@ libdl.a mzscheme mzscheme.multiboot
 	/bin/rm -f include/macosxpre
 	/bin/rm -f include/macosxpre.p
 	cd gc; $(MAKE) clean
