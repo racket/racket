@@ -54,6 +54,8 @@ inline wxMediaAdmin::wxMediaAdmin()
 #endif
 };
 
+class wxUpdateCursorTimer;
+
 class wxCanvasMediaAdmin : public wxMediaAdmin
 {
  private:
