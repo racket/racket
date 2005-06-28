@@ -482,10 +482,19 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
       -'resource-files_ (Mac OS X) - extra files to copy into the
               "Resources" directory of the generated executable
 
+      _'framework-root_ (Mac OS X) - a string to prefix the
+              executable's path to the MzScheme and MrEd frameworks
+              (including a separating slash); note that when the
+              prefix start "@executable_path/" works for a
+              MzScheme-based application, the corresponding prefix
+              start for a MrEd-based application is
+              "@executable_path/../../../"
+
       _'subsystem_ (Windows) - a symbol, either 'console for a console
               application or 'windows for a consoleless application;
               the default is 'console for a MzScheme-based application
-              and 'windows for a MrEd-based application
+              and 'windows for a MrEd-based application; see also
+              'single-instance?, below
 
       _'single-instance?_ (Windows) - a boolean for MrEd-based apps; the
               default is #t, which means that the app looks for instances

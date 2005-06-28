@@ -7,6 +7,7 @@
 	   (lib "port.ss")
 	   (lib "moddep.ss" "syntax")
 	   (lib "plist.ss" "xml")
+	   (lib "process.ss")
 	   "embed-sig.ss"
 	   "private/winicon.ss"
            "private/winsubsys.ss")
@@ -506,6 +507,28 @@
 					  (when (file-exists? dest)
 					    (delete-file dest)))
 				      (raise x))])
+		(let ([m (and (eq? 'macosx (system-type))
+			      (assq 'framework-root aux))])
+		  (when m
+		    (for-each (lambda (p)
+				(system* "/usr/bin/install_name_tool"
+					 "-change"
+					 (format "~a.framework/Versions/~a/~a" p (version) p)
+					 (format "~a~a.framework/Versions/~a/~a" 
+						 (cdr m)
+						 p (version) p)
+					 (let ([dest (if mred?
+							 (let-values ([(base name dir?) (split-path dest)])
+							   (build-path dest
+								       "Contents" "MacOS"
+								       (path-replace-suffix name #"")))
+							 dest)])
+					   (if (path? dest)
+					       (path->string dest)
+					       dest))))
+			      (if mred?
+				  '("PLT_MzScheme" "PLT_MrEd")
+				  '("PLT_MzScheme")))))
 		(let ([start (file-size dest-exe)])
 		  (with-output-to-file dest-exe
 		    (lambda ()
