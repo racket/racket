@@ -1999,9 +1999,6 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
 /*****************************************************************************/
 /* Initialization */
 
-/* lightning initialization */
-/* void scheme_init_lightning(Scheme_Env *env); */
-
 void scheme_init_foreign(Scheme_Env *env)
 {
   Scheme_Env *menv;
@@ -2243,7 +2240,6 @@ void scheme_init_foreign(Scheme_Env *env)
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_pointer));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_fpointer);
   scheme_add_global("_fpointer", (Scheme_Object*)t, menv);
-  /* scheme_init_lightning(menv); */
   scheme_finish_primitive_module(menv);
   scheme_protect_primitive_provide(menv, NULL);
 }

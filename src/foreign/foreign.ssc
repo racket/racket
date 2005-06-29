@@ -1595,9 +1595,6 @@ void free_cl_cif_args(void *ignored, void *p)
 /*****************************************************************************/
 /* Initialization */
 
-/* lightning initialization */
-/* void scheme_init_lightning(Scheme_Env *env); */
-
 void scheme_init_foreign(Scheme_Env *env)
 {
   Scheme_Env *menv;
@@ -1630,7 +1627,6 @@ void scheme_init_foreign(Scheme_Env *env)
         (list "(Scheme_Object*)(void*)(&ffi_type_"ftype")")
         (list "(Scheme_Object*)FOREIGN_"cname))
       (~ "scheme_add_global(\"_"stype"\", (Scheme_Object*)t, menv);")):}
-  /* scheme_init_lightning(menv); */
   scheme_finish_primitive_module(menv);
   scheme_protect_primitive_provide(menv, NULL);
 }

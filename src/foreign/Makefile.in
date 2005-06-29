@@ -13,7 +13,6 @@ ARFLAGS = @ARFLAGS@
 all:
 	$(MAKE) foreign.@LTO@
 	$(MAKE) gcc/libffi/libffi@FOREIGN_CONVENIENCE@.la
-#	$(MAKE) lightning.@LTO@
 
 # Causes objects to be generated in gcc/libffi/src/
 #  in inconvenience mode:
@@ -26,12 +25,6 @@ foreign.@LTO@: $(srcdir)/foreign.c \
            $(srcdir)/../mzscheme/src/schvers.h
 	$(CC) $(CFLAGS) -c $(srcdir)/foreign.c -o foreign.@LTO@
 
-lightning.@LTO@: $(srcdir)/lightning.c \
-           $(srcdir)/../mzscheme/include/scheme.h \
-           $(srcdir)/../mzscheme/src/schemef.h \
-           $(srcdir)/../mzscheme/src/schvers.h
-	$(CC) $(CFLAGS) -c $(srcdir)/lightning.c -o lightning.@LTO@
-
 clean:
-	rm -f foreign.@LTO@ lightning.@LTO@
+	rm -f foreign.@LTO@
 	cd gcc/libffi; $(MAKE) clean
