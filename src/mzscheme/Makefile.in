@@ -30,11 +30,14 @@ FOREIGN_OBJSLIB = @FOREIGN_OBJSLIB@
 # The foreign build always uses libtool, so that's why we use .la instead of @LTA@
 #  in FOREIGN_LIB.
 
+LLVM_DIR = ../llvm
+
 ################################################################################
 
 bin: 
 	$(MAKE) g-c
 	$(MAKE) @FOREIGNTARGET@
+	$(MAKE) @LLVMTARGET@
 	$(MAKE) @MZBINTARGET@
 
 normal-bin:
@@ -92,6 +95,13 @@ foreign-stuff:
 
 foreign-nothing:
 	echo no foreign
+
+# llvm
+llvm-stuff:
+	cd $(LLVM_DIR); $(MAKE) all
+
+llvm-nothing:
+	echo no llvm
 
 mzlibrary:
 	cd src; $(MAKE) all 
@@ -232,6 +242,7 @@ clean@NOT_OSX@:
 	cd src; $(MAKE) clean
 	cd dynsrc; $(MAKE) clean
 	if [ ! -d ../foreign ] ; then cd ../foreign ; $(MAKE) clean ; fi
+	if [ ! -d ../llvm    ] ; then cd ../llvm    ; $(MAKE) clean ; fi
 
 clean@OSX@:
 	rm -rf PLT_MzScheme.framework

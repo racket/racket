@@ -37,6 +37,7 @@ AC_ARG_ENABLE(shared, [  --enable-shared         create shared libraries])
 AC_ARG_ENABLE(dynlib, [  --enable-dynlib         same as --enable-shared])
 
 AC_ARG_ENABLE(foreign, [  --enable-foreign        compile foreign support (enabled by default)], , enable_foreign=yes)
+AC_ARG_ENABLE(llvm,    [  --enable-llvm           compile llvm support (disabled by default)], , enable_llvm=no)
 
 AC_ARG_ENABLE(sgc, [  --enable-sgc            use Senora GC instead of the Boehm GC])
 AC_ARG_ENABLE(sgcdebug, [  --enable-sgcdebug       use Senora GC for debugging])
@@ -1044,6 +1045,8 @@ AC_SUBST(FOREIGN_OBJSLIB)
 AC_SUBST(FOREIGN_CONVENIENCE)
 AC_SUBST(FOREIGNTARGET)
 
+AC_SUBST(LLVMTARGET)
+
 AC_SUBST(LTO)
 AC_SUBST(LTA)
 
@@ -1082,6 +1085,20 @@ if test -d "${srcdir}/foreign" && test "${enable_foreign}" = "yes" ; then
 else
   FOREIGNTARGET="foreign-nothing"
   MZOPTIONS="$MZOPTIONS -DDONT_USE_FOREIGN"
+fi
+
+LLVMTARGET=
+if test -d "${srcdir}/llvm" && test "${enable_llvm}" = "yes" ; then
+  AC_CONFIG_SUBDIRS( llvm/llvm )
+  makefiles="$makefiles llvm/Makefile"
+  LLVMTARGET="llvm-stuff"
+  # Again, this changes arguments that are passed to *all* sub-configure
+  # invocations, which might be a problem.  Hopefully nobody else uses
+  # "--enable-targets" and if someone else uses "--enable-optimized" we might
+  # as well just go with it...
+  ac_configure_args="$ac_configure_args --enable-optimized --enable-targets=host-only"
+else
+  LLVMTARGET="llvm-nothing"
 fi
 
 if test "${enable_mred}" = "yes" ; then

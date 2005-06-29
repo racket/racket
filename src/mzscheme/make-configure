@@ -1,3 +1,17 @@
+#!/bin/sh
+#|
+cd "`dirname \"$0\"`"
+src="configure.ac"
+tgt="../configure"
+if [ ! -e "$src" ]; then echo "abort: did not find $src"; exit 1; fi
+echo "Creating $tgt from $src"
+if [ -e "$tgt" ]; then
+  echo -n "overwriting $tgt, Ctrl-C to abort, enter to continue "; read R;
+fi
+autoconf "$src" | mzscheme -r "$0" > "$tgt"
+chmod +x "$tgt"
+exit 0
+|#
 
 ;; When autoconf produces `configure', it includes many
 ;;  options that do not apply to PLT software. We want to
