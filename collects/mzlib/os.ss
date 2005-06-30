@@ -105,9 +105,9 @@
   (define ftruncate
     (if (eq? 'windows (system-type))
 	(delay-ffi-obj "_chsize" (force msvcrt)
-		       (_fun _int _long -> _int))
+		       (_fun _int _llong -> _int))
 	(delay-ffi-obj "ftruncate" #f
-		       (_fun _int _long -> _int))))
+		       (_fun _int _llong -> _int))))
 
   ;; on-c-fail : int (-> X) int or X
   (define (on-c-fail val fail-k)
@@ -126,7 +126,6 @@
 		 ((force open) file O_WRONLY)
 		 (lambda () 
 		   (error 'truncate-file "could not open file")))])
-	#;
 	(on-c-fail
 	 ((force ftruncate) fd size)
 	 (lambda ()
