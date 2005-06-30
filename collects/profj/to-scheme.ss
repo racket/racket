@@ -1170,7 +1170,7 @@
   
   ;create-local-names: (list symbol) -> syntax
   (define (create-local-names names)
-    (make-syntax #f  `(define-local-member-name ,@names) #f))
+    (create-syntax #f  `(define-local-member-name ,@names) #f))
   
   ;translate-parents: (list name) -> (list syntax)
   (define (translate-parents extends)

@@ -36,7 +36,7 @@
          (let-values  (((path-base file dir?) (split-path (path->complete-path (build-path name)))))
            (let ((compiled-path (build-path path-base "compiled" (path-replace-suffix file ".zo")))
                  (type-path (build-path path-base "compiled" (path-replace-suffix file ".jinfo"))))
-             (unless (and (and (file-exists? compiled-path)
+             (unless #f #;(and (and (file-exists? compiled-path)
                               (> (file-or-directory-modify-seconds compiled-path)
                                  (file-or-directory-modify-seconds (build-path name))))
                          (and (file-exists? type-path)

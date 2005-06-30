@@ -214,7 +214,8 @@
                      ((beginner) ".bjava")
                      ((intermediate) ".ijava")
                      ((advanced) ".ajava")
-                     ((full) ".java")))
+                     ((full) ".java")
+                     ((dynamic-full) ".djava")))
            (file-path (build-path dir (string-append class suffix))))
       (cond
         ((is-import-restricted? class path level) (used-restricted-import class path caller-src))
@@ -240,12 +241,18 @@
          (send type-recs add-to-records 
                class-name
                (lambda () 
-                 (let* ((location (string-append class suffix))
-                        (ast (call-with-input-file file-path (lambda (p) (parse p location (unbox new-level))))))
-                   (send type-recs set-compilation-location location (build-path dir "compiled"))
-                   (build-info ast (unbox new-level) type-recs 'not_look_up)
-                   (send type-recs get-class-record class-name #f (lambda () 'internal-error "Failed to add record"))
-                   )))
+                 (let ((location (string-append class suffix))
+                       (old-dynamic? (dynamic?)))
+                   (when (eq? 'dynamic-full (unbox new-level))
+                     (dynamic? #t) (set-box! new-level 'full))
+                   (let ((ast (call-with-input-file file-path 
+                                (lambda (p) (parse p location (unbox new-level))))))
+                     (send type-recs set-compilation-location location (build-path dir "compiled"))
+                     (build-info ast (unbox new-level) type-recs 'not_look_up)
+                     (send type-recs get-class-record class-name #f 
+                           (lambda () 'internal-error "Failed to add record"))
+                     (dynamic? old-dynamic?)
+                     ))))
          (send type-recs add-require-syntax class-name (build-require-syntax class path dir #t #f)))
         (else (file-error 'file (cons class path) caller-src level)))
       (when add-to-env (send type-recs add-to-env class path loc))
@@ -276,6 +283,7 @@
              (and (file-exists? (build-path path (string-append class suffix)))
                   (set-box! level lang)))))
       (or (exists? ".java" 'full)
+          (exists? ".djava" 'dynamic-full)
           (exists? ".bjava" 'beginner)
           (exists? ".ijava" 'intermediate)
           (exists? ".ajava" 'advanced))))
