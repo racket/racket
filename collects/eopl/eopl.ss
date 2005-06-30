@@ -14,11 +14,10 @@
     (syntax-case stx (quote)
       [(_ name (quote def))
        (identifier? (syntax name))
-       (begin
-	 (hash-table-put! sllgen-def
-			  (syntax-e (syntax name))
-			  (syntax def))
-	 (syntax/loc stx (define name (quote def))))]
+       (syntax/loc stx
+	 (begin
+	   (begin-for-syntax (hash-table-put! sllgen-def 'name (quote-syntax def)))
+	   (define name (quote def))))]
       [(_ . rest)
        (syntax/loc stx (define . rest))]))
 
