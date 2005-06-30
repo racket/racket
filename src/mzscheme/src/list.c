@@ -770,7 +770,7 @@ list_p_prim (int argc, Scheme_Object *argv[])
 }
 
 static Scheme_Object *
-list_exec (int argc, Scheme_Object *argv[], int star)
+list_exec (int argc, Scheme_Object *argv[], int star, int immut)
 {
   int i;
   Scheme_Object *l;
@@ -781,8 +781,14 @@ list_exec (int argc, Scheme_Object *argv[], int star)
   } else
     l = scheme_null;
 
-  for (i = argc ; i--; ) {
-    l = scheme_make_pair(argv[i], l);
+  if (immut) {
+    for (i = argc ; i--; ) {
+      l = scheme_make_immutable_pair(argv[i], l);
+    }
+  } else {
+    for (i = argc ; i--; ) {
+      l = scheme_make_pair(argv[i], l);
+    }
   }
 
   return l;
@@ -791,31 +797,25 @@ list_exec (int argc, Scheme_Object *argv[], int star)
 static Scheme_Object *
 list_prim (int argc, Scheme_Object *argv[])
 {
-  return list_exec(argc, argv, 0);
+  return list_exec(argc, argv, 0, 0);
 }
 
 static Scheme_Object *
 list_immutable_prim (int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *l;
-  l = list_exec(argc, argv, 0);
-  scheme_make_list_immutable(l);
-  return l;
+  return list_exec(argc, argv, 0, 1);
 }
 
 static Scheme_Object *
 list_star_prim (int argc, Scheme_Object *argv[])
 {
-  return list_exec(argc, argv, 1);
+  return list_exec(argc, argv, 1, 0);
 }
 
 static Scheme_Object *
 list_star_immutable_prim (int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *l;
-  l = list_exec(argc, argv, 1);
-  scheme_make_list_immutable(l);
-  return l;
+  return list_exec(argc, argv, 1, 1);
 }
 
 static Scheme_Object *
