@@ -709,7 +709,7 @@ void wx_end_win_event(const char *who, HWND hWnd, UINT message, int tramp)
     scheme_end_atomic_no_swap();
 
 
-  if (!tramp && ((message == WM_VSCROLL) || (message == WM_HSCROLL))) {
+  if (!tramp && ((message == WM_VSCROLL) || (message == WM_HSCROLL)) && scheme_current_thread) {
     HiEventTramp *het;
     Scheme_Object *v;
 

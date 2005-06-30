@@ -3799,7 +3799,6 @@ static void wxDo(Scheme_Object *proc, int argc, Scheme_Object **argv)
   scheme_end_atomic_no_swap();
 }
 
-#if defined(wx_mac) || defined(wx_msw)
 void wxDrop_Runtime(char **argv, int argc)
 {
   int i;
@@ -3809,7 +3808,6 @@ void wxDrop_Runtime(char **argv, int argc)
     wxDo(wxs_app_file_proc, 1, p);
   }
 }
-#endif
 
 void wxDrop_Quit()
 {

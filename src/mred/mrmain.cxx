@@ -603,7 +603,6 @@ static char *CreateUniqueName()
   return together;
 }
 
-
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored, int nCmdShow)
 {
   LPWSTR m_lpCmdLine;

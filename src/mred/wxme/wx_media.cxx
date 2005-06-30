@@ -3245,8 +3245,6 @@ Bool wxMediaEdit::InsertFile(const char *who, Scheme_Object *f, char *WXUNUSED(f
       Insert(1, "\r");
   } 
 
-  fileerr = fileerr;
-
   if (fileerr && showErrors) {
     char ebuf[256];
     sprintf(ebuf, "%s: error loading the file", who);

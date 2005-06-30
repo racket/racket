@@ -44,6 +44,8 @@ HICON wxSTD_FRAME_ICON = NULL;
 HFONT wxSTATUS_LINE_FONT = NULL;
 LRESULT APIENTRY wxWndProc(HWND, UINT, WPARAM, LPARAM);
 
+__declspec(dllexport) void (*wx_post_setup)(void) = NULL;
+
 static void RegisterNoCursor(HINSTANCE hInstance,
 			     char *src, char *dest, wchar_t *wsrc, wchar_t *wdest)
 {
