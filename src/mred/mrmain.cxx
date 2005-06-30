@@ -226,7 +226,14 @@ static int do_main_loop(FinishArgs *fa)
   }
 #endif
 
-  wxDoMainLoop();
+ {
+   mz_jmp_buf * volatile save, newbuf;
+   save = scheme_current_thread->error_buf;
+   scheme_current_thread->error_buf = &newbuf;
+   if (!scheme_setjmp(newbuf))
+     wxDoMainLoop();
+   scheme_current_thread->error_buf = save;
+ }
 
   return 0;
 }

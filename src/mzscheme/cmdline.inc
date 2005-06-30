@@ -303,14 +303,31 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
 #ifndef DONT_RUN_REP
   if (!fa->no_rep && !fa->script_mode) {
     /* enter read-eval-print loop */
-    repl(fa->global_env);
-    exit_val = 0;
+    mz_jmp_buf * volatile save, newbuf;
+    save = scheme_current_thread->error_buf;
+    scheme_current_thread->error_buf = &newbuf;
+    if (!scheme_setjmp(newbuf)) {
+      repl(fa->global_env);
+      exit_val = 0;
+    } else {
+      exit_val = 1;
+#ifdef VERSION_YIELD_FLAG
+      fa->add_yield = 0;
+#endif
+    }
+    scheme_current_thread->error_buf = save;
   }
 #endif /* DONT_RUN_REP */
 
 #ifdef VERSION_YIELD_FLAG
   if (fa->add_yield) {
-    yield_indefinitely();
+    mz_jmp_buf * volatile save, newbuf;
+    save = scheme_current_thread->error_buf;
+    scheme_current_thread->error_buf = &newbuf;
+    if (!scheme_setjmp(newbuf)) {
+      yield_indefinitely();
+    }
+    scheme_current_thread->error_buf = save;
   }
 #endif
 

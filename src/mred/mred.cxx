@@ -3766,34 +3766,15 @@ static unsigned long get_deeper_base()
 /****************************************************************************/
 
 #if defined(wx_mac) || defined(wx_msw)
-void wxDrop_Runtime(char **argv, int argc)
-{
-  int i;
-  mz_jmp_buf *save, newbuf;
-
-  save = scheme_current_thread->error_buf;
-  scheme_current_thread->error_buf = &newbuf;
-
-  if (scheme_setjmp(newbuf)) {
-    /* give up on rest */
-    scheme_clear_escape();
-  } else {
-    for (i = 0; i < argc; i++) {
-      Scheme_Object *p[1];
-      p[0] = scheme_make_path(argv[i]);
-      scheme_apply(wxs_app_file_proc, 1, p);
-    }
-  }
-
-  scheme_current_thread->error_buf = save;
-}
-#endif
-
-#if defined(wx_mac) || defined(wx_msw)
-static void wxDo(Scheme_Object *proc)
+static void wxDo(Scheme_Object *proc, int argc, Scheme_Object **argv)
 {
   mz_jmp_buf * volatile save, newbuf;
   volatile int block_descriptor;
+
+  if (!proc) {
+    /* Oops --- too early. */
+    return;
+  }
 
   /* wxDo might be called when MrEd is sleeping (i.e.,
      blocked on WNE in OS X). Since we're hijacking the
@@ -3809,7 +3790,7 @@ static void wxDo(Scheme_Object *proc)
   if (scheme_setjmp(newbuf)) {
     scheme_clear_escape();
   } else {
-    scheme_apply(proc, 0, NULL);
+    scheme_apply(proc, argc, argv);
   }
 
   scheme_current_thread->error_buf = save;
@@ -3818,6 +3799,18 @@ static void wxDo(Scheme_Object *proc)
   scheme_end_atomic_no_swap();
 }
 
+#if defined(wx_mac) || defined(wx_msw)
+void wxDrop_Runtime(char **argv, int argc)
+{
+  int i;
+
+  for (i = 0; i < argc; i++) {
+    Scheme_Object *p[1];
+    wxDo(wxs_app_file_proc, 1, p);
+  }
+}
+#endif
+
 void wxDrop_Quit()
 {
   if (ioFrame) {
@@ -3825,20 +3818,20 @@ void wxDrop_Quit()
       ioFrame->Show(FALSE);
   }
 
-  wxDo(wxs_app_quit_proc);
+  wxDo(wxs_app_quit_proc, 0, NULL);
 }
 #endif
 
 #ifdef wx_mac
 void wxDo_About()
 {
-  wxDo(wxs_app_about_proc);
+  wxDo(wxs_app_about_proc, 0, NULL);
 }
 
 void wxDo_Pref()
 {
   if (!SCHEME_FALSEP(wxs_app_pref_proc))
-    wxDo(wxs_app_pref_proc);
+    wxDo(wxs_app_pref_proc, 0, NULL);
 }
 
 int wxCan_Do_Pref()
