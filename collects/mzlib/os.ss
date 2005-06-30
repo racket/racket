@@ -115,6 +115,11 @@
 	val
 	(fail-k)))
 
+  (define scheme_security_check_file
+    (delay-ffi-obj "scheme_security_check_file" #f
+		   (_fun _string _string _int -> _void)))
+  (define SCHEME_GUARD_FILE_WRITE #x2)
+
   ;; truncate-file : path int -> void
   (define truncate-file
     (opt-lambda (file [size 0])
@@ -122,6 +127,10 @@
 	(error 'truncate-file "expects argument of type <string> or <path>; given ~s" file))
       (when (not (integer? size))
 	(error 'truncate-file "expects argument of type <integer>; given ~s" size))
+      ((force scheme_security_check_file) 
+       "truncate-file" 
+       (if (path? file) (path->string file) file)
+       SCHEME_GUARD_FILE_WRITE)
       (let ([fd (on-c-fail 
 		 ((force open) file O_WRONLY)
 		 (lambda () 
