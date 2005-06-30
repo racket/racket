@@ -1,5 +1,5 @@
 @REM   Debug version of mkmzdyn
-cl /Od /D"_DEBUG" /RTC1 /MTd /GS /W3 -I../include /c mzdyn.c
+cl /Od /D"_DEBUG" /RTC1 /MTd /GS /W3 -I../include -I../../worksp /c mzdyn.c
 lib -machine:X86 -def:mzdyn.def -out:mzdyn.lib
 mkdir ..\..\..\lib
 mkdir ..\..\..\lib\msvc
