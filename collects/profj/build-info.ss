@@ -249,9 +249,9 @@
                                 (lambda (p) (parse p location (unbox new-level))))))
                      (send type-recs set-compilation-location location (build-path dir "compiled"))
                      (build-info ast (unbox new-level) type-recs 'not_look_up)
-                     (send type-recs get-class-record class-name #f 
-                           (lambda () 'internal-error "Failed to add record"))
-                     (dynamic? old-dynamic?)
+                     (begin0 (send type-recs get-class-record class-name #f 
+                                   (lambda () 'internal-error "Failed to add record"))
+                             (dynamic? old-dynamic?))
                      ))))
          (send type-recs add-require-syntax class-name (build-require-syntax class path dir #t #f)))
         (else (file-error 'file (cons class path) caller-src level)))
