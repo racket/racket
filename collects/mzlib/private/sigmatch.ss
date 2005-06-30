@@ -33,8 +33,9 @@
 	  (loop (format "~a:~a" s (car path))
 		(cdr path)))))
 
-  (define (check-sig-match table sig path exact? who src-context dest-context)
-    (and (vector? (car sig))
+  (define (check-sig-match table sig path exact? who src-context dest-context wrapped? unwrap)
+    (and (wrapped? sig)
+	 (vector? (unwrap sig))
 	 (andmap
 	  (lambda (s)
 	    (cond
@@ -98,9 +99,10 @@
 			     (current-continuation-marks)))))
 		       (hash-table-put! table (car s) #f)
 		       (check-sig-match v (cdr s) (cons (car s) path)
-					exact? who src-context dest-context))))]
+					exact? who src-context dest-context
+					wrapped? unwrap))))]
 	     [else #f]))
-	  (vector->list (car sig)))
+	  (vector->list (unwrap sig)))
 	 (or (not exact?)
 	     (hash-table-for-each
 	      table
@@ -120,7 +122,7 @@
 		      (current-continuation-marks)))))))
 	     #t)))
 
-  (define (verify-signature-match who exact? dest-context dest-sig src-context src-sig)
+  (define (-verify-signature-match who exact? dest-context dest-sig src-context src-sig wrapped? unwrap)
     (unless (symbol? who)
       (raise-type-error 'verify-signature-match "symbol" who))
     (unless (string? dest-context)
@@ -130,10 +132,21 @@
 
     (let ([src-table (make-hash-table)])
       (unless (hash-sig src-sig src-table)
-	(raise-type-error 'verify-signature-match "signature" src-sig))
+	(raise-type-error 'verify-signature-match "exploded signature" src-sig))
 
       (unless (check-sig-match src-table dest-sig null
-			       exact? who src-context dest-context)
-	(raise-type-error 'verify-signature-match "signature" dest-sig))))
+			       exact? who src-context dest-context
+			       wrapped? unwrap)
+	(raise-type-error 'verify-signature-match "exploded signature" dest-sig))))
 
-  (provide verify-signature-match))
+  (define (alt-verify-signature-match who exact? dest-context dest-sig src-context src-sig)
+    (-verify-signature-match who exact? dest-context dest-sig src-context src-sig
+			     pair? car))
+
+  (define (verify-signature-match who exact? dest-context dest-sig src-context src-sig)
+    (-verify-signature-match who exact? dest-context dest-sig src-context src-sig
+			     values values))
+
+  (provide -verify-signature-match
+	   verify-signature-match
+	   alt-verify-signature-match))

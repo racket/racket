@@ -107,7 +107,7 @@
 	     (syntax/loc
 	      expr
 	      (let ([tagx uexpr] ... . interned-vectors)
-		(verify-linkage-signature-match
+		(alt-verify-linkage-signature-match
 		 'compound-unit/sig
 		 '(tag ...)
 		 (list tagx ...)
@@ -140,7 +140,7 @@
 	     (syntax/loc
 	      expr
 	      (let ([unt u])
-		(verify-linkage-signature-match
+		(alt-verify-linkage-signature-match
 		 (quote invoke-unit/sig)
 		 (quote (invoke))
 		 (list unt)
@@ -173,10 +173,10 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define verify-linkage-signature-match
+  (define -verify-linkage-signature-match
     (let ([make-exn make-exn:fail:unit]
 	  [p-suffix (lambda (pos) (case pos [(1) 'st][(2) 'nd][(3) 'rd][else 'th]))])
-      (lambda (who tags units esigs isigs)
+      (lambda (who tags units esigs isigs wrapped? unwrap)
 	(for-each
 	 (lambda (u tag)
 	   (unless (signed-unit? u)
@@ -190,12 +190,13 @@
 	 units tags)
 	(for-each
 	 (lambda (u tag esig)
-	   (verify-signature-match
+	   (-verify-signature-match
 	    who #f
 	    (format "specified export signature for ~a" tag)
 	    esig
 	    (format "export signature for actual ~a sub-unit" tag)
-	    (signed-unit-exports u)))
+	    (signed-unit-exports u)
+	    wrapped? unwrap))
 	 units tags esigs)
 	(for-each
 	 (lambda (u tag isig)
@@ -216,7 +217,7 @@
 	     (unless (null? isig)
 	       (let ([expected (car expecteds)]
 		     [provided (car isig)])
-		 (verify-signature-match
+		 (-verify-signature-match
 		  who #t
 		  (format "~a unit's ~s~s import (which is ~a)" tag
 			  pos (p-suffix pos)
@@ -226,9 +227,18 @@
 			  tag
 			  pos (p-suffix pos)
 			  (car provided))
-		  (cdr provided))
+		  (cdr provided)
+		  wrapped? unwrap)
 		 (loop (cdr isig) (cdr expecteds) (add1 pos))))))
 	 units tags isigs))))
+
+  (define verify-linkage-signature-match
+    (lambda (who tags units esigs isigs)
+      (-verify-linkage-signature-match who tags units esigs isigs values values)))
+
+  (define alt-verify-linkage-signature-match
+    (lambda (who tags units esigs isigs)
+      (-verify-linkage-signature-match who tags units esigs isigs pair? car)))
 
   (define-syntax signature->symbols
     (lambda (stx)
@@ -287,7 +297,7 @@
 			 (dv/iu
 			  ex-flattened
 			  (let ([unit-var unite])
-			    (verify-linkage-signature-match
+			    (alt-verify-linkage-signature-match
 			     'formname
 			     '(invoke)
 			     (list unit-var)

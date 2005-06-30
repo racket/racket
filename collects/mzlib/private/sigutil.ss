@@ -857,7 +857,7 @@
 							(syntax-error 
 							 #f expr
 							 (exn-message exn)))])
-				       (verify-signature-match
+				       (alt-verify-signature-match
 					'compound-unit/sig #f
 					(format "signature ~s" (signature-src use-sig))
 					(explode-sig use-sig #f)

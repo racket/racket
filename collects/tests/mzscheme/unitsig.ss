@@ -680,6 +680,17 @@
 	(moot x (list x i:y i:z))))
 
 ;; --------------------------------------------------
-	
+
+(let ()
+  (define-signature s^ (x)) 
+  (test (void)
+	verify-linkage-signature-match 'where 
+	(list 'tag) 
+	(list (unit/sig s^ (import) (define x 1)))
+	(list (signature->symbols s^))
+	(list (list))))
+
+;; --------------------------------------------------
+
 (report-errs)
 
