@@ -3805,6 +3805,7 @@ void wxDrop_Runtime(char **argv, int argc)
 
   for (i = 0; i < argc; i++) {
     Scheme_Object *p[1];
+    p[0] = scheme_make_path(argv[i]);
     wxDo(wxs_app_file_proc, 1, p);
   }
 }
