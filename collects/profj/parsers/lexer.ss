@@ -123,7 +123,7 @@
    (IntegerTypeSuffix (char-set "lL"))
    (DecimalNumeral (re:or #\0
                           (re:: (re:/ "19") (re:* (re:/ "09")))))
-   (HexDigit (re:/ "09" "af" "Af"))
+   (HexDigit (re:/ "09" "af" "AF"))
    (HexNumeral (re:: #\0 (char-set "xX") (re:+ HexDigit)))
    (OctalNumeral (re:: #\0 (re:+ (re:/ "07"))))
    
@@ -287,10 +287,10 @@
       (token-INTEGER_LIT (string->number lexeme 10)))
      ((re:: DecimalNumeral IntegerTypeSuffix)
       (token-LONG_LIT (string->number (trim-string lexeme 0 1) 10)))
-     (HexNumeral
-      (token-HEX_LIT (string->number (trim-string lexeme 2 0) 16)))
      ((re:: HexNumeral IntegerTypeSuffix)
       (token-HEXL_LIT (string->number (trim-string lexeme 2 1) 16)))
+     (HexNumeral
+      (token-HEX_LIT (string->number (trim-string lexeme 2 0) 16)))
      (OctalNumeral
       (token-OCT_LIT (string->number (trim-string lexeme 1 0) 8)))
      ((re:: OctalNumeral IntegerTypeSuffix)
