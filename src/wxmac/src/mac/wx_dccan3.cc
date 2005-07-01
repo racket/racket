@@ -283,7 +283,7 @@ void wxCanvasDC::DrawText(const char* text, double x, double y, Bool combine, Bo
 
 	if (smoothing == wxSMOOTHING_OFF)
 	  CGContextSetShouldAntialias(cg, FALSE);
-	else if (!use_cgctx)
+	else if (smoothing == wxSMOOTHING_PARTIAL)
 	  CGContextSetFontRenderingMode(cg, 2);
 
 	qdp = cMacDC->macGrafPort();
@@ -1074,16 +1074,11 @@ static double DrawMeasUnicodeText(const char *text, int d, int theStrlen, int uc
 	  ATSLineLayoutOptions ll_attribs;
 
 	  if (qd_spacing) {
-#if 1
-	    /* We write down a literal constant, because the constants aren't
-	       in 10.1 */
-	    ll_attribs = 0x11f4040;
-#else
 	    ll_attribs = (kATSLineFractDisable 
 			  | kATSLineDisableAutoAdjustDisplayPos
 			  | kATSLineDisableAllLayoutOperations
-			  | kATSLineUseDeviceMetrics);
-#endif
+			  | kATSLineUseDeviceMetrics
+			  | (use_cgctx ? 0 : kATSLineUseQDRendering));
 	    ll_theTags[cnt] = kATSULineLayoutOptionsTag;
 	    ll_theSizes[cnt] = sizeof(ATSLineLayoutOptions);
 	    ll_theValues[cnt] = &ll_attribs;
