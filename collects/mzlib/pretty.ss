@@ -668,9 +668,9 @@
 		  #f #f
 		  (lambda ()
 		    (out "#hash")
-		    (wr-lst (hash-table-map obj cons) #f depth))
-		  (parameterize ([print-hash-table #f])
-		    ((if display? orig-display orig-write) obj pport))))]
+		    (wr-lst (hash-table-map obj cons) #f depth)))
+		 (parameterize ([print-hash-table #f])
+		   ((if display? orig-display orig-write) obj pport)))]
 	    [(boolean? obj)
 	     (out (if obj "#t" "#f"))]
 	    [(number? obj)
