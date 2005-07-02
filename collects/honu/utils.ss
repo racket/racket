@@ -44,4 +44,16 @@
             (loop (map cdr lists)
                   (cons m1 map1)
                   (cons m2 map2))))))
+  
+  (provide partition-first)
+  (define (partition-first f lis)
+    (let loop ([lis    lis]
+               [passed '()])
+      (cond
+        [(null? lis)
+         (values #f (reverse passed))]
+        [(f (car lis))
+         (values (car lis) (append (reverse passed) (cdr lis)))]
+        [else
+         (loop (cdr lis) (cons (car lis) passed))])))
     )

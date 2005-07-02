@@ -2,19 +2,10 @@ _Honu_
 
 _TODO_
 
-  * At the moment you can only apply method references or lexically
-    bound variables to arguments in order to invoke a function or
-    method.  The syntax will be reworked in the extremely near future
-    to allow application of arbitrary expressions (assuming they
-    result in a method or function type) to arguments.
-
   > Rewrite TODO list in terms of interfaces (not implementations) 
     The next bullet is a prime example. I have added a second bullet to
     show what I mean. -- MF
 
-  * Fix up honu-mcall and honu-new in honu-typecheck-exp.ss to use
-    type context argument.
-  
   * Admit statements as elements of mixin bodies, i.e., 
 
      struct ExamplesC() : Examples {
@@ -27,9 +18,6 @@ _TODO_
 
   * Work out details of standard library, including boxed versions of
     primitive types.
-
-  * Let's use _string_ for _str_. (In principle we should probably use
-    String eventually, if it becomes a class.) 
 
   * If you do have a standard library, document it please. -- MF 
 
@@ -44,68 +32,68 @@ _TODO_
 
 _Primitive types_
 
-  int   - integers
-  float - floating point numbers
-  str   - strings    (double quoted)
-  bool  - booleans   (true, false)
-  char  - characters (single quoted)
+  int    - integers
+  float  - floating point numbers
+  string - strings    (double quoted)
+  bool   - booleans   (true, false)
+  char   - characters (single quoted)
 
 _Built-in functions_
 
 Error reporting:
 
-> error(str message) => 'a
+> error(string message) => 'a
     - Raises an error and prints the string as an error message.
     - Calls to error() do not return.
 
 Input/output:
 
-> printStr(str message) => void
+> printString(string message) => void
     - Takes a string and prints it on the standard output.
 
-> printLine(str message) => void
-    - Like printStr, but prints a newline after printing the string.
+> printLine(string message) => void
+    - Like printString, but prints a newline after printing the string.
 
 > readChar() => char
     - Reads a single character from the standard input.
 
-> readLine() => str
+> readLine() => string
     - Reads a line of text from the standard input.
 
 Conversions to string:
 
-> intToStr(int val) => str
+> intToString(int val) => string
     - Converts an integer to a string.
 
-> floatToStr(float val) => str
+> floatToString(float val) => string
     - Converts a floating point number to a string.
 
-> charToStr(char val) => str
+> charToString(char val) => string
     - Converts a character to a string.
 
 String conversions:
 
-> strToInt(str val) => int
+> stringToInt(string val) => int
     - Converts a string to an integer.
     - Raises an error if the string cannot be converted.
 
-> strToFloat(str val) => float
+> stringToFloat(string val) => float
     - Converts a string to a floating point number.
     - Raises an error if the string cannot be converted.
 
 String operations:
 
-> strLen(str s) => int
+> strlen(string s) => int
     - Takes a string and returns the string length.
 
-> substr(str s, int start, int end) => str
+> substr(string s, int start, int end) => string
     - Takes a string, a start index, and an end index and
       returns the corresponding substring.
     - The indexes are zero-based.
     - The start index cannot be negative or greater than the end index.
     - The end index must be less than or equal to the string length.
 
-> charAt(str s, int i) => char
+> charAt(string s, int i) => char
     - Takes a string and an index into the string and returns
       the corresponding character.
     - The zero-based index cannot be negative and must be less
@@ -119,27 +107,29 @@ NOTE: Since I want to use parentheses to mean "real" parentheses, I use
 <program>  ::= <defn>*
 
 <defn>     ::= <function>
+             | <top-bind>
              | <type>
              | <class>
              | <mixin>
              | <subclass>
 
-<function> ::= <tid> <id> ( <argdecls> ) <block>
+<top-bind> ::= <bind> = <expr> ;
+             | ( <bind> [, <bind>]* ) = <expr>;
 
-<type>     ::= type <id> <extends> { <mfdecl>* }
-             | interface <id> <extends> { <mfdecl>* }
+<bind>     ::= <tid> <id>
+             | _
+
+<function> ::= <tid> <id> ( <argdecls> ) <block>
 
 <tid>      ::= <ifacet>
              | <primtype>
              | <funtype>
+             | <tuptype>
 
-<funtype>  ::= [ <typetup> ] -> <tid>
+<funtype>  ::= <tid> -> <tid>
 
-NOTE: The above are literal braces as opposed to the meta-braces.
-      This is the only place they occur right now.
-
-<typetup>  ::= <tid> [, <tid>]*
-             |
+<tuptype>  ::= < >
+             | < <tid> [, <tid>]* >
 
 <ifacet>   ::= id
              | Any
@@ -150,6 +140,9 @@ NOTE: The above are literal braces as opposed to the meta-braces.
              | str
              | char
              | void
+
+<type>     ::= type <id> <extends> { <mfdecl>* }
+             | interface <id> <extends> { <mfdecl>* }
 
 <extends>  ::= extends <ifacet> [, <ifacet>]*
              | <: <ifacet> [, <ifacet>]*
@@ -164,32 +157,33 @@ NOTE: The above are literal braces as opposed to the meta-braces.
 <argdecl>  ::= <tid>
              | <tid> <varid>
 
-<struct>   ::= struct <id> <initargs> : <ifacet> <sctbody>
-             | final struct <id> <initargs> : <ifacet> <sctbody>
+<struct>   ::= struct <id> <initargs> : <ifacet> <impls> <clsbody>
+             | final struct <id> <initargs> : <ifacet> <impls> <clsbody>
+             | struct <id> <initargs> : <ifacet>
+                   extends <id> <initargs> : <ifacet> <impls> <mixbody>
+             | final struct <id> <initargs> : <ifacet>
+                   extends <id> <initargs> : <ifacet> <impls> <mixbody>
 
 <class>    ::= class <id> <initargs> : <ifacet> <impls> <clsbody>
              | final class <initargs> <id> : <ifacet> <impls> <clsbody>
+             | class <id> = <id> ( <id> ) ;
+             | class <id> <initargs> : <ifacet> 
+                  extends <id> <initargs> : <ifacet> <impls> <mixbody>
+             | final class <id> <initargs> : <ifacet> 
+                  extends <id> <initargs> : <ifacet> <impls> <mixbody>
 
-<mixin>    ::= mixin <id> <initargs> : <ifacet> <argtype> <impls> <mixbody>
-             | final mixin <id> <initargs> : <ifacet> <argtype> <impls> <mixbody>
 
-<subclass> ::= subclass <id> = <id> ( <id> ) ;
-             | subclass <id> <initargs> : <ifacet> <scexts> <impls> <mixbody>
-             | final subclass <id> <initargs> : <ifacet> <scexts> <impls> <mixbody>
+<mixin>    ::= mixin <id> <initargs> : <ifacet> <initargs> -> <ifacet>
+                  <impls> <mixbody>
+             | final mixin <id> <initargs> : <ifacet> <initargs> -> <ifacet>
+                  <impls> <mixbody>
 
 <initargs> ::= ( <tid> <id> [, <tid> <id>]* )
              | ( )
 
-<scexts>   ::= extends <id> <argtype>
-
-<argtype>  ::= at <ifacet>
-             | @ <ifacet>
-
 <impls>    ::= implements <ifacet> [, <ifacet>]*
              | impl <ifacet> [, <ifacet>]*
              |
-
-<sctbody>  ::= { <mfidefn>* }
 
 <clsbody>  ::= { <mfidefn>* <export>* }
 
@@ -200,7 +194,7 @@ NOTE: The above are literal braces as opposed to the meta-braces.
              | <tid> <id> = <expr> ;
              | <tid> <id> ( <argdefns> ) <block>
 
-<supernew> ::= super_new( <newargs> ) ;
+<supernew> ::= super( <newargs> ) ;
 
 <argdefns> ::= <argdefn> [, <argdefn>]* 
              |
@@ -221,13 +215,17 @@ NOTE: The above are literal braces as opposed to the meta-braces.
 
 <expr>     ::= <literal>
              | <lambda>
+             | <tuple>
+             | #n <expr>
              | <id>
-             | <id> = <expr>
-             | <id> ( <exprs-cd> )
+             | <expr> = <expr>
+             | <expr> <tuple>
              | this
              | <expr> : <ifacet>
              | <expr> isa <ifacet>
-             | if <expr> <block> else <block>
+             | if <expr> <block> [else <block>]?
+             | cond { [<expr> => <expr> ;]+ }
+             | cond { [<expr> => <expr> ;]* else <block> }
              | while <expr> <block>
              | new <id> : <ifacet> ( <newargs> )
              | new <id> ( <newargs> )
@@ -248,9 +246,7 @@ NOTE: The above are literal braces as opposed to the meta-braces.
              | <expr> / <expr>
              | <expr> % <expr>
              | <expr> . <id>
-             | <expr> . <id> = <expr>
-             | <expr> . <id> ( <exprs-cd> )
-             | ( <expr> )
+             | return <expr>
              | <block>
 
 NOTE: Here's the precedence and associativity of things above.
@@ -264,6 +260,8 @@ NOTE: Here's the precedence and associativity of things above.
 ----------+----------+-----------
     .     |          |
           |  :  isa  |
+          |          |   #n        (tuple selector)
+          |          |    (        (function application)
           |          | !, - (un)
    * / %  |          |
    +  -   |          |
@@ -274,8 +272,11 @@ NOTE: Here's the precedence and associativity of things above.
     ||    |          |
     =     |          |
    else   |          |
+          |          |  return
 
-<lambda>   ::= fun ( <argdecls> ) <block>
+<tuple>    ::= ( )
+             | ( <exprs-cd> )
+<lambda>   ::= <tid> fun ( <argdecls> ) <block>
 
 <exprs-cd> ::= <expr> [, <expr>]*
              | <expr>
@@ -286,11 +287,15 @@ NOTE: Here's the precedence and associativity of things above.
              | false
              | <strlit>
              | <charlit>
+             | null
 
-<block>    ::= { <vardefn>* <expr-sc>+ }
+<block>    ::= { <stmts> }
 
-<vardefn>  ::= <tid> <id> = <expr> ;
+<stmts>    ::= <expr-sc>
+             | <vardefn> <stmts>
+             | <expr-sc> <stmts>
+
+<vardefn>  ::= <bind> = <expr> ;
+             | ( <bind> [, <bind>]* ) = <expr> ;
 
 <expr-sc>  ::= <expr> ;
-             | return ;
-             | return <expr> ;

@@ -1,52 +1,56 @@
 (module compile mzscheme
  
-  (require (lib "contract.ss"))
- 
-  (require "ast.ss")
-  (require "tenv.ss")
-  (require "tenv-utils.ss")
-  (require "honu-compile-context.ss")
-  (require "private/compiler/honu-translate-utils.ss")
-  (require "private/compiler/honu-translate-program.ss")
-  (require "private/compiler/honu-translate-expression.ss")
-  (require "private/typechecker/honu-typecheck.ss")
-  (require "private/typechecker/honu-typecheck-exp.ss")
-  (require "read-error-with-stx.ss")
+  (require (lib "boundmap.ss" "syntax")
+           (lib "contract.ss")
+           (lib "plt-match.ss")
+           "ast.ss"
+           "honu-context.ss"
+           "readerr.ss"
+           "tenv.ss"
+           "tenv-utils.ss"
+           "parsers/post-parsing.ss"
+           "private/compiler/translate.ss"
+           "private/compiler/translate-expression.ss"
+           "private/compiler/translate-utils.ss"
+           "private/typechecker/type-utils.ss"
+           "private/typechecker/typechecker.ss"
+           "private/typechecker/typecheck-expression.ss")
   
-  (provide/contract [compile/complete-program
-                     (tenv? honu-program?
+  (provide/contract [compile/defns
+                     (tenv? tenv? (listof honu:defn?)
                       . -> . 
-;                     (listof (syntax/c any/c))]
-                      list?)]
+                      (listof (syntax/c any/c)))]
                     [compile/interaction
-                     ((tenv? 
-                       any/c
-                       (union honu-binding? honu-exp?))
-                      . ->* . 
-;                     (listof (syntax/c any/c))]
-                      (any/c any/c))])
-  (define (compile/complete-program tenv pgm)
-    (add-defns-to-tenv (honu-program-defns pgm) tenv)
-    (let ([checked (honu-typecheck-program tenv pgm)])
-      (parameterize ([current-compile-context honu-compile-context])
-        (honu-translate-program tenv checked))))
+                     (tenv? 
+                      tenv?
+                      (union honu:bind-top? honu:expr?)
+                      . -> . 
+                      (syntax/c any/c))])
+  (define (compile/defns tenv lenv pgm)
+    (let ([pgm (post-parse-program tenv (add-defns-to-tenv pgm tenv))])
+      (let ([checked (typecheck tenv lenv pgm)])
+        (parameterize ([current-compile-context honu-compile-context])
+          (translate tenv checked)))))
   
-  (define (compile/interaction tenv env ast)
-    (cond
-      [(honu-binding? ast)
-       (if (env (honu-binding-name ast))
-           (raise-read-error-with-stx
-            (format "~a already bound" (printable-key (honu-binding-name ast)))
-            (honu-binding-name ast))
-           (let-values ([(checked new-env)
-                         ((honu-typecheck-binding tenv #f) ast env)])
-             (parameterize ([current-compile-context honu-compile-context])
-               (values (honu-translate-binding tenv #f checked #t)
-                       new-env))))]
-      [(honu-exp? ast)
-       (let-values ([(checked type) ((honu-typecheck-exp tenv env #f) ast #f)])
+  (define (check-bound-names lenv names)
+    (for-each (lambda (n)
+                (if (and n (bound-identifier-mapping-get lenv n (lambda () #f)))
+                    (raise-read-error-with-stx
+                     (format "~a already bound" (printable-key n))
+                     n)))
+              names))
+  
+  (define (compile/interaction tenv lenv ast)
+    (match (post-parse-interaction tenv ast)
+      [(struct honu:bind-top (stx names _ value))
+       (check-bound-names lenv names)
+       (let ([checked (typecheck-defn tenv lenv ast)])
          (parameterize ([current-compile-context honu-compile-context])
-           (values (honu-translate-expression tenv #f checked)
-                   env)))]))
+           (translate-defn tenv checked)))]
+      [else
+       (let-values ([(checked type) (typecheck-expression tenv (lambda (n) #f)
+                                                          (wrap-as-function lenv) (make-top-type #f) #f ast)])
+         (parameterize ([current-compile-context honu-compile-context])
+           (translate-expression tenv #f checked)))]))
   )
     

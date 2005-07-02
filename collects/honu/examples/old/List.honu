@@ -4,6 +4,7 @@ type List {
   List addToEnd(Any);
 
   Any  first();
+  List rest();
   Any  atIndex(int);
   Any  last();
 
@@ -18,10 +19,10 @@ type List {
   int length();
   bool empty();
 
-  List map(Any -> Any);
-  Any  foldl(<Any, Any> -> Any, Any);
-  Any  foldr(<Any, Any> -> Any, Any);
-  List filter(Any -> bool);
+  List map([Any] -> Any);
+  Any  foldl([Any, Any] -> Any, Any);
+  Any  foldr([Any, Any] -> Any, Any);
+  List filter([Any] -> bool);
 
 }
 
@@ -37,6 +38,10 @@ class MTList() : List impl List {
 
   Any no_elt() {
     error("The empty list has no elements!");
+  }
+
+  List rest() {
+      error("The empty list has no elements!");
   }
 
   List drop(int n) {
@@ -63,26 +68,28 @@ class MTList() : List impl List {
 
   bool empty() { return true; }
 
-  List map(Any -> Any f) { return (this : List); }
+  List map([Any] -> Any f) { return (this : List); }
 
-  Any fold(<Any, Any> -> Any f, Any i) { return i; }
+  Any fold([Any, Any] -> Any f, Any i) { return i; }
 
-  List filter(Any -> bool f) { return (this : List); }
+  List filter([Any] -> bool f) { return (this : List); }
 
   export List : add as addToFront, add as addToEnd,
-                no_elt as first, no_elts as atIndex, no_elt as last,
-                drop, take, reverse,
+                no_elt as first, rest, no_elts as atIndex,
+                no_elt as last, drop, take, reverse,
                 ret_other as  appendToEnd, ret_other as appendToFront,
                 length, empty,
                 map, fold as foldl, fold as foldr, filter;
 }
 
-// Since init slots get translated to init fields by need, we can put
-// car and cdr here, and then use them appropriately inside the methods
-// which will make them fields.
-class ConsList(Any car, List cdr) : List impl List {
+class ConsList() : List impl List {
+
+  init Any car;
+  init List cdr;
 
   Any first() { return car; }
+
+  List rest() { return cdr; }
 
   Any atIndex(int n) {
     if n == 0 {
@@ -144,19 +151,19 @@ class ConsList(Any car, List cdr) : List impl List {
 
   bool empty() { return false; }
 
-  List map(Any -> Any f) {
+  List map([Any] -> Any f) {
     return new ConsList(car = f(car), cdr = cdr.map(f));
   }
 
-  Any foldl(<Any, Any> -> Any f, Any i) {
+  Any foldl([Any, Any] -> Any f, Any i) {
     return f(car, cdr.foldl(f, i));
   }
 
-  Any foldr(<Any, Any> -> Any f, Any i) {
+  Any foldr([Any, Any] -> Any f, Any i) {
     return cdr.foldr(f, f(car, i));
   }
 
-  List filter(Any -> bool f) {
+  List filter([Any] -> bool f) {
     if f(car) {
       new ConsList(car = car, cdr = cdr.filter(f));
     } else {
@@ -164,7 +171,7 @@ class ConsList(Any car, List cdr) : List impl List {
     };
   }
 
-  export List : addToFront, addToEnd, first, atIndex, last, reverse,
+  export List : addToFront, addToEnd, first, rest, atIndex, last, reverse,
                 drop, take, appendToEnd, appendToFront, length, empty,
                 map, foldl, foldr, filter;
 }

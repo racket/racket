@@ -1,56 +1,36 @@
-/* Again, should parse and typecheck, though watch out for constructor
- * syntax.
- */
+struct PointC(int x, int y) : Point { }
+struct ColorC(int r, int g, int b) : Color { }
 
-type Point
-{
-    int x;
-    int y;
+// Make extends clause look more like the first part of a class/struct,
+// where the "with" args come in the same place as the init slots normally.
+
+struct Point3DC(int z) : Point3D extends PointC() : Point { super(); }
+
+type ColorPoint  <: Point { Color c; }
+type MovingPoint <: Point { void movePoint(int, int); } 
+
+// Make mixins look more like functions for classes to classes by
+// making their "type" look more like the following:
+//
+// <input class type>(<with args>) -> <output class type>
+
+mixin addColor(Color c) : Point() -> ColorPoint impl ColorPoint  { 
+  super(); 
+  export ColorPoint : x, y, c;
+}
+mixin makeMobile()      : Point() -> MovingPoint impl MovingPoint {
+  super();
+  void movePoint(int dx, int dy) {
+    x = x + dx;
+    y = y + dy;
+  }
+  export MovingPoint : x, y, movePoint;
 }
 
-type ColorPoint extends Point
-{
-    int color;
-}
+class ColorPointC  = addColor(PointC);
+class MovingPointC = makeMobile(PointC);
 
-type MovingPoint extends Point
-{
-    float dx;
-    float dy;
-}
-
-class PtClass() : Point implements Point
-{
-    init int x;
-    init int y;
-
-    export Point : x as x, y as y;
-}
-
-class ColorPtClass() : ColorPoint implements Point, ColorPoint
-{
-    /* We should add syntactic sugar for init fields. */
-
-    init int x;
-    init int y;
-    init int color;
-
-    export Point : x as x,  y as y;
-    export ColorPoint : x as x,  y as y, color as color;
-}
-
-mixin makeMovingPoint() : MovingPoint at Point impl MovingPoint
-{
-    init float dx;
-    init float dy;
-    super();
-
-    export MovingPoint : x, y, dx, dy;
-}
-
-subclass MvPtCls = makeMovingPoint(PtClass);
-subclass MvClrPtCls = makeMovingPoint(ColorPtClass);
-
-MovingPoint main() {
-  new MvClrPtCls : MovingPoint(x = 3, y = 4, color = 42, dx = 0.4, dy = -3.2);
-}
+// only useable as a MovingPoint
+class MovingColorPointC = makeMobile(ColorPointC);
+// only usable as a ColorPoint
+class ColorMovingPointC = addColor(MovingPointC);

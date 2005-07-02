@@ -5,12 +5,11 @@
            (lib "unitsig.ss")
            (lib "etc.ss")
            (lib "class.ss")
+           (lib "list.ss" "srfi" "1")
+           "parsers/lex.ss"
            "parsers/parse.ss"
-           "ast.ss"
            "tenv.ss"
-           "private/typechecker/honu-type-utils.ss"
            "compile.ss"
-           "honu-compile-context.ss"
 	   (lib "string-constant.ss" "string-constants"))
 
   (provide tool@)
@@ -22,9 +21,7 @@
       (define (phase1) (void))
       (define (phase2) 
         (drscheme:language-configuration:add-language
-         (make-object ((drscheme:language:get-default-mixin) (honu-lang-mixin 'single))))
-        (drscheme:language-configuration:add-language
-         (make-object ((drscheme:language:get-default-mixin) (honu-lang-mixin 'group)))))
+         (make-object ((drscheme:language:get-default-mixin) (honu-lang-mixin 'normal)))))
       
       (define (honu-lang-mixin level)
         (class* object% (drscheme:language:language<%>)
@@ -36,51 +33,43 @@
           (define/public (default-settings) null)
           (define/public (default-settings? x) #t)
           (define tenv (empty-tenv))
-          (define env (empty-env))
+          (define lenv (get-builtin-lenv))
           (define level-parser
             (case level
-              [(single) parse-port]
-              [(group)  parse-group]))
+              [(normal) parse-port]))
           (define/public (front-end/complete-program port settings teachpack-cache)
             (set! tenv (empty-tenv))
+            (set! lenv (get-builtin-lenv))
             (let ([name (object-name port)])
               (lambda ()
                 (if (eof-object? (peek-char-or-special port))
                     eof
-                    (let* ([parsed (level-parser port name)]
-                           [compiled-defns (compile/complete-program tenv parsed)])
-                      (set! env (get-initial-env tenv))
-                      (datum->syntax-object #f `(run-honu-full-program ,compiled-defns) #f))))))
+                    (let* ([parsed (level-parser port name)])
+                      (let ([compiled-defns (compile/defns tenv lenv parsed)])
+                        (datum->syntax-object #f (cons 'begin compiled-defns) #f)))))))
           (define/public (front-end/interaction port settings teachpack-cache)
             (let ([name (object-name port)])
               (lambda ()
                 (if (eof-object? (peek-char-or-special port))
                     eof
                     (let ([parsed (parse-interaction port name)])
-                      (let-values ([(compiled-expr new-env)
-                                    (compile/interaction tenv env parsed)])
-                        (begin (set! env new-env)
-                               (datum->syntax-object #f `(run-honu-interaction ,compiled-expr) #f))))))))
+                      (let ([compiled-expr (compile/interaction tenv lenv parsed)])
+                        (datum->syntax-object #f compiled-expr #f)))))))
           (define/public (get-style-delta) #f)
           (define/public (get-language-position)
 	    (list (string-constant experimental-languages)
-		  "Honu"
-                  (case level
-                    [(single) "Single File"]
-                    [(group)  "Group File"])))
+		  "Honu"))
           (define/public (order-manuals x) 
             (values 
              (list #"drscheme" #"tour" #"help")
              #f))
           (define/public (get-language-name)
             (case level
-              [(single) "Honu (single)"]
-              [(group)  "Honu (group)"]))
+              [(normal) "Honu"]))
           (define/public (get-language-url) #f)
           (define/public (get-language-numbers)
             (case level
-              [(single) (list 1000 10 1)]
-              [(group)  (list 1000 10 2)]))
+              [(normal) (list 1000 10)]))
           (define/public (get-teachpack-names) null)
           (define/public (marshall-settings x) x)
           (define/private (syntax-as-top s)
@@ -97,21 +86,12 @@
                    (current-eval
                     (with-handlers ([(lambda (x) #t) (lambda (x) (printf "~a~n" (exn-message x)))])
                       (lambda (exp)
-                      (syntax-case exp (run-honu-full-program run-honu-interaction)
-                        [(run-honu-full-program defns)
-                         (let loop ([defns (syntax->list #'defns)])
-                           (if (null? defns)
-                               (void)
-                               (begin (old-current-eval (syntax-as-top (car defns)))
-                                      (loop (cdr defns)))))]
-                        [(run-honu-interaction ex)
-                         (old-current-eval (syntax-as-top #'ex))]
-                        [(_) (old-current-eval exp)])))))
+                        (old-current-eval (syntax-as-top exp))))))
                  (with-handlers ([(lambda (x) #t) (lambda (x) (printf "~a~n" (exn-message x)))])
                    (namespace-attach-module n path)
                    (namespace-require path))))))
-          (define/public (render-value value settings port) (write value port))
-          (define/public (render-value/format value settings port width) (write value port))
+          (define/public (render-value value settings port) (display (format-honu value settings #t) port))
+          (define/public (render-value/format value settings port width) (render-value value settings port) (if (not (null? value)) (newline port)))
           (define/public (unmarshall-settings x) x)
 	  (define/public (create-executable settings parent src-file teachpacks)
 	    (message-box "Unsupported"
@@ -119,8 +99,7 @@
 			 parent))
 	  (define/public (get-one-line-summary)
             (case level
-              [(single) "Honu (also not Scheme at all!)"]
-              [(group)  "List of Honu files to run together"]))
+              [(normal) "Honu (also not Scheme at all!)"]))
           
           (super-instantiate ())))
       
@@ -131,17 +110,79 @@
       (define (matches-language l)
         (and l (pair? l) (pair? (cdr l)) (equal? (cadr l) "Honu")))
 
+      (define (format-honu value settings at-top?)
+        (cond
+          [(number? value)    (format "~a" value)]
+          [(char? value)      (format "'~a'" value)]
+          [(string? value)    (format "~v" value)]
+          [(boolean? value)   (if value "true" "false")]
+          [(procedure? value) "procedure"]
+          ;; tuples -- first the zero tuple, then the non-empty tuples
+          ;;
+          ;; if you want void values to be printed out, uncomment
+          ;; the following:
+          ;; [(null? value)      "()"]
+          [(null? value)
+           ;; the following makes it so that nothing is printed out
+           ;; for a void value, but if a zero-tuple is part of a tuple
+           ;; or structure, then it is printed out.
+           (if at-top? "" "()")]
+          [(list? value)
+           (string-append "("
+                          (fold (lambda (v s)
+                                  (string-append s ", " (format-honu v settings #f)))
+                                (format-honu (car value) settings #f)
+                                (cdr value))
+                          ")")]
+          [else (format "~a" value)]))
+                                   
+      
+      ;Set the Honu editing colors
+      (define color-prefs-table
+        `((keyword ,(make-object color% "black")       "keyword")
+          (parenthesis ,(make-object color% 132 60 36) "parenthesis")
+          (string ,(make-object color% "forestgreen")  "string")
+          (literal ,(make-object color% "forestgreen") "literal")
+          (comment ,(make-object color% 194 116 31)    "comment")
+          (error ,(make-object color% "red")           "error")
+          (identifier ,(make-object color% 38 38 128)  "identifer")
+          (default ,(make-object color% "black")       "default")))
+      
+      ;; short-sym->pref-name : symbol -> symbol
+      ;; returns the preference name for the color prefs
+      (define (short-sym->pref-name sym) (string->symbol (short-sym->style-name sym)))
+      
+      ;; short-sym->style-name : symbol->string
+      ;; converts the short name (from the table above) into a name in the editor list
+      ;; (they are added in by `color-prefs:register-color-pref', called below)
+      (define (short-sym->style-name sym) (format "honu:syntax-coloring:scheme:~a" sym))
+      
+      ;; extend-preferences-panel : vertical-panel -> void
+      ;; adds in the configuration for the Honu colors to the prefs panel
+      (define (extend-preferences-panel parent)
+        (for-each
+         (lambda (line)
+           (let ([sym (car line)])
+             (color-prefs:build-color-selection-panel 
+              parent
+              (short-sym->pref-name sym)
+              (short-sym->style-name sym)
+              (format "~a" sym))))
+         color-prefs-table))
+      
       ;Create the Honu editing mode
       (define mode-surrogate
         (new color:text-mode%
              (matches (list (list '|{| '|}|)
                             (list '|(| '|)|)
-                            (list '|[| '|]|)))))
+                            (list '|[| '|]|)))
+             (get-token get-syntax-token)
+             (token-sym->style short-sym->style-name)))
             
       ;repl-submit: text int -> bool
       ;Determines if the reple should submit or not
       (define (repl-submit text prompt-position)
-        (let ((is-if? #f)
+        (let ((is-empty? #t)
               (is-string? #f)
               (open-parens 0)
               (open-braces 0)
@@ -149,41 +190,58 @@
           (let loop ((index 1) (char (send text get-character prompt-position)))
             (unless (eq? char #\nul)
               (cond 
-                ;beginning of if statement
-                ((and (= index 1) 
-                      (eq? char #\i) 
-                      (eq? (send text get-character (add1 prompt-position)) #\f)
-                      (eq? (send text get-character (+ 2 prompt-position)) #\space))
-                 (set! is-if? #t)
-                 (loop 3 (send text get-character (+ 3 prompt-position))))
                 ((eq? char #\()
+                 (set! is-empty? #f)
                  (unless is-string? (set! open-parens (add1 open-parens)))
                  (loop (add1 index) (send text get-character (+ index prompt-position))))
                 ((eq? char #\))
+                 (set! is-empty? #f)
                  (unless is-string? (set! open-parens (sub1 open-parens)))
                  (loop (add1 index) (send text get-character (+ index prompt-position))))
                 ((eq? char #\{)
+                 (set! is-empty? #f)
                  (unless is-string? (set! open-curlies (add1 open-curlies)))
                  (loop (add1 index) (send text get-character (+ index prompt-position))))
                 ((eq? char #\})
+                 (set! is-empty? #f)
                  (unless is-string? (set! open-curlies (sub1 open-curlies)))
                  (loop (add1 index) (send text get-character (+ index prompt-position))))
                 ((eq? char #\[)
+                 (set! is-empty? #f)
                  (unless is-string? (set! open-braces (add1 open-braces)))
                  (loop (add1 index) (send text get-character (+ index prompt-position))))
                 ((eq? char #\])
+                 (set! is-empty? #f)
                  (unless is-string? (set! open-braces (sub1 open-braces)))
                  (loop (add1 index) (send text get-character (+ index prompt-position))))
                 ;beginning of string
                 ((eq? char #\")
+                 (set! is-empty? #f)
                  (set! is-string? (not is-string?))
                  (loop (add1 index) (send text get-character (+ index prompt-position))))
+                ((char-whitespace? char)
+                 (loop (add1 index) (send text get-character (+ index prompt-position))))
                 (else
+                 (set! is-empty? #f)
                  (loop (add1 index) (send text get-character (+ index prompt-position)))))))
           (not (or (not (= open-parens 0))
                    (not (= open-braces 0))
                    (not (= open-curlies 0))
-                   is-if?))))
+                   is-empty?))))
+      
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      ;;
+      ;;  Wire up to DrScheme
+      ;;
       
       (drscheme:modes:add-mode "Honu mode" mode-surrogate repl-submit matches-language)
+      (color-prefs:add-to-preferences-panel "Honu" extend-preferences-panel)
+      
+      (for-each (lambda (line)
+                  (let ([sym (car line)]
+                        [color (cadr line)])
+                    (color-prefs:register-color-pref (short-sym->pref-name sym)
+                                                     (short-sym->style-name sym)
+                                                     color)))
+                color-prefs-table)      
       )))

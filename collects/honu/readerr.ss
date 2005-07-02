@@ -1,4 +1,4 @@
-(module read-error-with-stx mzscheme
+(module readerr mzscheme
   
   (require (lib "readerr.ss" "syntax"))
   

@@ -1,0 +1,12 @@
+type t1 {
+  int x;
+}
+
+type t2 {
+  int m(int);
+}
+
+type t3 <: t1, t2 {
+  int y;
+  int m2(int, int);
+}
