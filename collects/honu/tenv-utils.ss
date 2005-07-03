@@ -355,6 +355,11 @@
       ;; If we get here, we know that all the supers are in the tenv and are type entries, so we can use
       ;; get-type-entry safely.
       [(struct honu:iface (src-stx name supers members))
+       ;; we have to do this because members of the type can refer to the type itself.
+       ;; this is only for <:_P checks.
+       (extend-tenv name
+                    (make-tenv:type src-stx supers '() '())
+                    tenv)
        (let* ([tenv-members (convert-members (make-iface-type name name) members)]
               [inherited-decls
                (apply append (map (lambda (n) (check-super-for-members tenv name tenv-members n)) 
@@ -362,9 +367,10 @@
               [unique-inherited
                ;; remove duplicate entries for the same member name, making sure they match.
                (check-and-remove-duplicate-members tenv name inherited-decls)])
-         (extend-tenv name 
-                      (make-tenv:type src-stx supers tenv-members unique-inherited)
-                      tenv)
+         
+         (extend-tenv-without-checking name 
+                                       (make-tenv:type src-stx supers tenv-members unique-inherited)
+                                       tenv)
          defn)]
       ;; for classes and mixins, just add a new appropriate entry.
       [(struct honu:class (src-stx name t f? impls inits defns _))

@@ -107,14 +107,14 @@
     (let ([right-defn (if in-super? 'define/override 'define/public)])
       (match binding
         [(struct comp:exp-bind (old-name new-name #t))
-         (at #f `(,right-defn (,(translate-method-name type new-name) args)
-                   ,(translate-static-method tenv arg-type old-name 'args)))]
+         (at #f `(,right-defn (,(translate-method-name type new-name) arg-tuple)
+                   ,(translate-static-method tenv arg-type old-name 'arg-tuple)))]
         [(struct comp:exp-bind (old-name new-name #f))
          (at #f `(begin
                    (,right-defn (,(translate-field-getter-name type new-name) args)
                      ,(translate-static-field-getter tenv arg-type old-name))
-                   (,right-defn (,(translate-field-setter-name type new-name) arg)
-                     ,(translate-static-field-setter tenv arg-type old-name 'arg))))])))
+                   (,right-defn (,(translate-field-setter-name type new-name) set-arg)
+                     ,(translate-static-field-setter tenv arg-type old-name 'set-arg))))])))
 
   (provide translate-super-new translate-inits translate-member)
   (define (translate-super-new tenv arg-type super-new)

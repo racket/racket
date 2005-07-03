@@ -25,35 +25,62 @@
   ;; since lenv is a hashtable and thus will be mutated, we don't need to return it from
   ;; typecheck or typecheck-defn.
   (define (typecheck tenv lenv defns)
-    (map (lambda (d)
-           (typecheck-defn tenv lenv d))
-         defns))
-
+    (let loop ([defns   defns]
+               [results '()])
+      (cond
+        [(null? defns) (reverse results)]
+        ;; we allow functions to be mutually recursive in Algol-like fashion
+        ;; (i.e. if they are no intervening non-function definitions)
+        [(honu:function? (car defns))
+         (let-values ([(funcs remaining) (span honu:function? defns)])
+           (loop remaining (append (typecheck-functions tenv lenv funcs) results)))]
+        [else (loop (cdr defns) (cons (typecheck-defn tenv lenv (car defns)) results))])))
+  
+  (define (typecheck-functions tenv lenv funcs)
+    (define (check-function-type func)
+      (match func
+        [(struct honu:function (stx name type args body))
+         (if (not (type-valid? tenv type))
+             (raise-read-error-with-stx
+              "Return type of function is undefined"
+              (honu:ast-stx type)))
+         (for-each (lambda (t)
+                     (if (not (type-valid? tenv t))
+                         (raise-read-error-with-stx
+                          "Type of function argument is undefined"
+                          (honu:ast-stx type))))
+                   (map honu:formal-type args))
+         (make-func-type stx (make-tuple-type stx (map honu:formal-type args)) type)]))
+    ;; first we add the functions to the lexical environment so that when we typecheck
+    ;; the bodies, they'll be in scope.
+    (for-each (lambda (f)
+                (extend-tenv (honu:function-name f)
+                             (make-tenv:value (honu:ast-stx f) (check-function-type f))
+                             lenv))
+              funcs)
+    (let loop ([funcs     funcs]
+               [new-funcs '()])
+      (if (null? funcs)
+          ;; don't reverse it, because we want to keep these in the same order in typecheck,
+          ;; which will eventually reverse everything
+          new-funcs
+          (match (car funcs)
+            [(struct honu:function (stx name type args body))
+             (let-values ([(e1 t1) (typecheck-expression tenv (lambda (name) #f)
+                                                         (fold (lambda (a e)
+                                                                 (extend-fenv (honu:formal-name a)
+                                                                              (honu:formal-type a)
+                                                                              e))
+                                                               (wrap-as-function lenv)
+                                                               args)
+                                                         type type body)])
+               (loop (cdr funcs)
+                     (cons (copy-struct honu:function (car funcs)
+                             [honu:function-body e1])
+                           new-funcs)))]))))
+  
   (define (typecheck-defn tenv lenv defn)
     (match defn
-      [(struct honu:function (stx name type args body))
-       (if (not (type-valid? tenv type))
-           (raise-read-error-with-stx
-            "Return type of function is undefined"
-            (honu:ast-stx type)))
-       (for-each (lambda (t)
-                   (if (not (type-valid? tenv t))
-                       (raise-read-error-with-stx
-                        "Type of function argument is undefined"
-                        (honu:ast-stx type))))
-                 (map honu:formal-type args))
-       (let ([func-type (make-func-type stx (make-tuple-type stx (map honu:formal-type args)) type)])
-         (extend-tenv name (make-tenv:value stx func-type) lenv)
-         (let-values ([(e1 t1) (typecheck-expression tenv (lambda (name) #f)
-                                                     (fold (lambda (a e)
-                                                             (extend-fenv (honu:formal-name a)
-                                                                          (honu:formal-type a)
-                                                                          e))
-                                                           (wrap-as-function lenv)
-                                                           args)
-                                                     type type body)])
-           (copy-struct honu:function defn
-             [honu:function-body e1])))]
       [(struct honu:bind-top (stx names types value))
        (for-each (lambda (n t)
                    (if (and (not (and (not n)

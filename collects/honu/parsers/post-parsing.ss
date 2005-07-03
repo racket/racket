@@ -26,6 +26,11 @@
   ;;;;                  or expression inside of a block, this merges them.
   
   ;;;; convert-static MUST be run before convert-slots.
+
+  ;;;; add-defns-to-tenv (from tenv-utils.ss) must be run before
+  ;;;; post-parse-program.  This means that honu:struct and
+  ;;;; honu:substruct structures will not appear in the defns,
+  ;;;; and so we no longer need to cover them.
   
   (provide post-parse-program post-parse-interaction)
   (define (post-parse-program tenv defns)
@@ -62,42 +67,24 @@
        defn]
       [(struct honu:class (_ _ _ _ _ inits members _))
        (let-values ([(members _)
-                     (map-and-fold convert-static-member (map honu:formal-name inits) members)])
+                     (convert-static-members members (map honu:formal-name inits))])
          (copy-struct honu:class defn
            [honu:class-members members]))]
       [(struct honu:mixin (_ _ _ arg-type _ _ inits _ super-new members-before members-after _))
        (let*-values ([(members-before env)
-                      (map-and-fold convert-static-member (map honu:formal-name inits) members-before)]
+                      (convert-static-members members-before (map honu:formal-name inits))]
                      [(super-new)
                       (convert-static-super-new super-new env)]
                      [(env)
                       (extend-env-with-type-members tenv env arg-type)]
                      [(members-after _)
-                      (map-and-fold convert-static-member env members-after)])
+                      (convert-static-members members-after env)])
          (copy-struct honu:mixin defn
            [honu:mixin-super-new super-new]
            [honu:mixin-members-before members-before]
            [honu:mixin-members-after members-after]))]
       [(struct honu:subclass (_ _ _ _))
        defn]
-      [(struct honu:struct (_ _ _ _ _ inits members _))
-       (let-values ([(members _)
-                     (map-and-fold convert-static-member (map honu:formal-name inits) members)])
-         (copy-struct honu:struct defn
-           [honu:struct-members members]))]
-      [(struct honu:substruct (_ _ _ _ arg-type _ _ inits _ super-new members-before members-after _))
-       (let*-values ([(members-before env)
-                      (map-and-fold convert-static-member (map honu:formal-name inits) members-before)]
-                     [(super-new)
-                      (convert-static-super-new super-new env)]
-                     [(env)
-                      (extend-env-with-type-members tenv env arg-type)]
-                     [(members-after _)
-                      (map-and-fold convert-static-member env members-after)])
-         (copy-struct honu:substruct defn
-           [honu:substruct-super-new super-new]
-           [honu:substruct-members-before members-before]
-           [honu:substruct-members-after members-after]))]
       [(struct honu:function (_ _ _ _ _))
        defn]
       [(struct honu:bind-top (_ _ _ _))
@@ -110,29 +97,47 @@
             env
             (tenv:type-members type-entry))))
 
+  (define (convert-static-members members env)
+    (let loop ([members members]
+               [env     env]
+               [results '()])
+      (cond
+        [(null? members) (values (reverse results) env)]
+        [(honu:method? (car members))
+         (let-values ([(methods remaining) (span honu:method? members)])
+           (let ([env (append (map honu:method-name methods) env)])
+             (loop remaining
+                   env
+                   ;; reverse is here just to keep the order
+                   (append (reverse (map (lambda (m)
+                                           (convert-static-member m env))
+                                         members))
+                           results))))]
+        [else
+         (let ([name (if (honu:field? (car members))
+                         (honu:field-name (car members))
+                         (honu:init-field-name (car members)))])
+           (loop (cdr members)
+                 (cons name env)
+                 (cons (convert-static-member (car members) env) results)))])))
+  
   (define (convert-static-member member env)
     (match member
       [(struct honu:init-field (_ name _ value))
        (if value
-           (values 
-            (copy-struct honu:init-field member
-              [honu:init-field-value (convert-static-expression value env)])
-            (cons name env))
-           (values member (cons name env)))]
+          (copy-struct honu:init-field member
+            [honu:init-field-value (convert-static-expression value env)])
+          member)]
       [(struct honu:field (_ name _ value))
-       (values
-        (copy-struct honu:field member
-          [honu:field-value (convert-static-expression value env)])
-        (cons name env))]
+       (copy-struct honu:field member
+         [honu:field-value (convert-static-expression value env)])]
       [(struct honu:method (_ name _ args body))
-       (values 
-        ;; remember to remove lexical bindings!
-        (let ([env (fold (lambda (name env)
-                           (delete name env bound-identifier=?))
-                         env (map honu:formal-name args))])
-          (copy-struct honu:method member
-            [honu:method-body (convert-static-expression body env)]))
-        (cons name env))]))
+       ;; remember to remove lexical bindings!
+       (let ([env (fold (lambda (name env)
+                          (delete name env bound-identifier=?))
+                        env (map honu:formal-name args))])
+         (copy-struct honu:method member
+           [honu:method-body (convert-static-expression body env)]))]))
 
   (define (convert-static-super-new snew env)
     (match snew
@@ -212,8 +217,8 @@
       [(struct honu:cond (_ clauses else))
        (copy-struct honu:cond expr
          [honu:cond-clauses (map (lambda (c)
-                                   (convert-static-cond-clause c env)
-                                   clauses))]
+                                   (convert-static-cond-clause c env))
+                                 clauses)]
          [honu:cond-else    (if else (convert-static-expression else env) #f)])]
       [(struct honu:return (_ body))
        (copy-struct honu:return expr
@@ -245,7 +250,9 @@
         (copy-struct honu:binding binding
           [honu:binding-value (convert-static-expression value env)])
         (fold (lambda (name env)
-                (delete name env bound-identifier=?))
+                (if name
+                    (delete name env bound-identifier=?)
+                    env))
               env names))]))
   
   (define (convert-static-cond-clause clause env)
@@ -331,26 +338,6 @@
                          new-fields)))))]
       [(struct honu:subclass (_ _ _ _))
        defn]
-      [(struct honu:struct (_ _ _ _ _ inits members _))
-       (copy-struct honu:struct defn
-         [honu:struct-inits   '()]
-         [honu:struct-members (append (map (lambda (i)
-                                             (make-honu:init-field (honu:ast-stx i)
-                                                                   (honu:formal-name i)
-                                                                   (honu:formal-type i)
-                                                                   #f))
-                                           inits)
-                                      members)])]
-       [(struct honu:substruct (_ _ _ _ _ _ _ inits _ _ members-before _ _))
-        (copy-struct honu:substruct defn
-          [honu:substruct-inits          '()]
-          [honu:substruct-members-before (append (map (lambda (i)
-                                                        (make-honu:init-field (honu:ast-stx i)
-                                                                              (honu:formal-name i)
-                                                                              (honu:formal-type i)
-                                                                              #f))
-                                                      inits)
-                                                 members-before)])]
       [(struct honu:function (_ _ _ _ _))
        defn]
       [(struct honu:bind-top (_ _ _ _))
@@ -432,8 +419,8 @@
       [(struct honu:cond (_ clauses else))
        (apply append (cons (if else (convert-slots-expression else env) (list))
                            (map (lambda (c)
-                                  (convert-slots-cond-clause c env)
-                                  clauses))))]
+                                  (convert-slots-cond-clause c env))
+                                clauses)))]
       [(struct honu:return (_ body))
        (convert-slots-expression body env)]
       [(struct honu:tuple (_ vals))
@@ -501,18 +488,6 @@
            [honu:mixin-members-after members-after]))]
       [(struct honu:subclass (_ _ _ _))
        defn]
-      [(struct honu:struct (_ _ type _ _ _ members _))
-       (let ([members (map (lambda (m) (check-this-member m type)) members)])
-         (copy-struct honu:struct defn
-           [honu:struct-members members]))]
-      [(struct honu:substruct (_ _ type _ _ _ _ _ _ super-new members-before members-after _))
-       (let ([members-before (map (lambda (m) (check-this-member m type)) members-before)]
-             [super-new      (check-this-super-new super-new type)]
-             [members-after  (map (lambda (m) (check-this-member m type)) members-after)])
-         (copy-struct honu:substruct defn
-           [honu:substruct-super-new super-new]
-           [honu:substruct-members-before members-before]
-           [honu:substruct-members-after members-after]))]
       [(struct honu:function (_ _ _ _ body))
        ;; we only use check-this-expression here for side-effects (we should not get
        ;; a changed AST if this passes, only an exception if the this keyword occurs here).
@@ -639,8 +614,8 @@
       [(struct honu:cond (_ clauses else))
        (copy-struct honu:cond expr
          [honu:cond-clauses (map (lambda (c)
-                                   (check-this-cond-clause c type)
-                                   clauses))]
+                                   (check-this-cond-clause c type))
+                                 clauses)]
          [honu:cond-else    (if else (check-this-expression else type) #f)])]
       [(struct honu:return (_ body))
        (copy-struct honu:return expr
@@ -713,14 +688,6 @@
          [honu:mixin-members-after (map simplify-member members-after)])]
       [(struct honu:subclass (_ _ _ _))
        defn]
-      [(struct honu:struct (_ _ _ _ _ _ members _))
-       (copy-struct honu:struct defn
-         [honu:struct-members (map simplify-member members)])]
-      [(struct honu:substruct (_ _ _ _ _ _ _ _ _ super-new members-before members-after _))
-       (copy-struct honu:substruct defn
-         [honu:substruct-super-new (simplify-super-new super-new)]
-         [honu:substruct-members-before (map simplify-member members-before)]
-         [honu:substruct-members-after (map simplify-member members-after)])]
       [(struct honu:function (_ _ _ _ body))
        (copy-struct honu:function defn
          [honu:function-body (simplify-expression body)])]

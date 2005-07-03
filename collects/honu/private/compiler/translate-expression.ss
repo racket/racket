@@ -5,6 +5,7 @@
            "../../ast.ss"
            "../../readerr.ss"
            "../../tenv.ss"
+           "../typechecker/type-utils.ss"
            "translate-utils.ss")
 
   (provide/contract [translate-expression (tenv? (union honu:type? false/c) honu:expr?
@@ -17,9 +18,11 @@
       [(struct honu:var (stx name))
        (at-ctxt name)]
       [(struct honu:tuple (stx args))
-       (at stx `(list ,@(map (lambda (e)
-                               (translate-expression tenv arg-type e))
-                             args)))]
+       ;; list is a bindable name in Honu, so... we use list*, which isn't.
+       (at stx `(list* ,@(map (lambda (e)
+                                (translate-expression tenv arg-type e))
+                              args)
+                       ()))]
       [(struct honu:lambda (stx _ formals body))
        (translate-function stx #f formals (translate-expression tenv arg-type body))]
       [(struct honu:call (stx func arg))
@@ -28,9 +31,9 @@
           (at stx (translate-static-method tenv arg-type name
                                      (translate-expression tenv arg-type arg)))]
          [(struct honu:member (stx obj elab name #t))
-          (at stx `(send ,(translate-expression tenv arg-type obj)
-                         ,(translate-method-name elab name)
-                         ,(translate-expression tenv arg-type arg)))]
+          (at stx `(honu:send ,(translate-expression tenv arg-type obj)
+                              ,(translate-method-name elab name)
+                              ,(translate-expression tenv arg-type arg)))]
          [else 
           (at stx `(,(translate-expression tenv arg-type func)
                     ,(translate-expression tenv arg-type arg)))])]
@@ -228,7 +231,9 @@
                                  (let-values ([(bound-names body)
                                                (translate-binding-clause (honu:binding-names b)
                                                                          (translate-expression tenv arg-type (honu:binding-value b)))])
-                                   `(,bound-names ,body)))
+                                   ;; make sure to give the let binding the appropriate syntax,
+                                   ;; otherwise errors will highlight the entire let expression.
+                                   (at (honu:ast-stx b) `(,bound-names ,body))))
                                bindings)
               ,(translate-expression tenv arg-type body)))]
       [(struct honu:seq (stx effects value))
@@ -261,9 +266,9 @@
               (raise-read-error-with-stx
                "Left-hand side of assignment cannot be a method name"
                mstx)
-              (at stx `(send ,(translate-expression tenv arg-type obj)
-                             ,(translate-field-setter-name elab name)
-                             ,(translate-expression tenv arg-type rhs))))]
+              (at stx `(honu:send ,(translate-expression tenv arg-type obj)
+                                  ,(translate-field-setter-name elab name)
+                                  ,(translate-expression tenv arg-type rhs))))]
          [else
           (raise-read-error-with-stx
            "Left-hand side of assignment is invalid"
@@ -275,12 +280,12 @@
       [(struct honu:member (stx obj elab name method?))
        (if method?
            (at stx `(lambda (args)
-                      (send ,(translate-expression tenv arg-type obj)
-                            ,(translate-method-name elab name)
-                            args)))
-           (at stx `(send ,(translate-expression tenv arg-type obj)
-                          ,(translate-field-getter-name elab name)
-                          (list))))]
+                      (honu:send ,(translate-expression tenv arg-type obj)
+                                 ,(translate-method-name elab name)
+                                 args)))
+           (at stx `(honu:send ,(translate-expression tenv arg-type obj)
+                               ,(translate-field-getter-name elab name)
+                               ,void-value)))]
       [(struct honu:new (stx class _ args))
        (at stx `(new ,(translate-class-name class)
                      ,@(map (lambda (a)
@@ -289,16 +294,23 @@
                             args)))]
       [(struct honu:cast (stx obj type))
        (at stx `(let ([cast-obj ,(translate-expression tenv arg-type obj)])
-                  (if (is-a? cast-obj ,(translate-iface-name type))
+                  ;; you can always cast null to an interface type
+                  (if (or (is-a? cast-obj null%)
+                          (is-a? cast-obj ,(translate-iface-name type)))
                       cast-obj
+                      ;; we can use object-info and class-info since we always set (inspect #f)
+                      ;; we have to do that for the moment anyway for "extensional" class equality.
                       (let*-values ([(class dc-1) (object-info cast-obj)]
                                     [(class-name dc-1 dc-2 dc-3 dc-4 dc-5 dc-6) (class-info class)])
                         (error (format "Class ~a does not implement ~a" 
-                                       class-name 
-                                       (quote ,(translate-iface-name type))))))))]
+                                       (let ([class-string (symbol->string class-name)])
+                                         (string->symbol (substring class-string 0 (- (string-length class-string) 1))))
+                                       (quote ,(printable-type type))))))))]
       [(struct honu:isa (stx obj type))
        (at stx `(let ([cast-obj ,(translate-expression tenv arg-type obj)])
-                  (is-a? cast-obj ,(translate-iface-name type))))]
+                  ;; null is a member of any interface type
+                  (or (is-a? cast-obj null%)
+                      (is-a? cast-obj ,(translate-iface-name type)))))]
       [(struct honu:this (stx))
        (at stx 'this)]
       [else (raise-read-error-with-stx

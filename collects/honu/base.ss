@@ -2,8 +2,16 @@
 
   (require (lib "class.ss"))
 
+  (define-syntax (honu:send stx)
+    (syntax-case stx ()
+      [(_ obj msg arg ...)
+       #'(if (is-a? obj null%)
+             (error "Attempt to access member of null")
+             (send obj msg arg ...))]))
+  
   (define null%
     (class object%
+      (inspect #f)
       (super-new)))
   
   (define null-obj (new null%))

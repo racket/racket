@@ -102,8 +102,8 @@
                         tenv-key=?)
               (if arg
                   `(super ,(translate-method-name arg-type name) ,arg)
-                  `(lambda (arg)
-                     (super ,(translate-method-name arg-type name) arg)))
+                  `(lambda (arg-tuple)
+                     (super ,(translate-method-name arg-type name) arg-tuple)))
               (if arg
                   `(,(at-ctxt name) ,arg)
                   (at-ctxt name))))
@@ -118,7 +118,7 @@
                         (map tenv:member-name (append (tenv:type-members type-entry)
                                                       (tenv:type-inherited type-entry)))
                         tenv-key=?)
-              `(super ,(translate-field-getter-name arg-type name) (list))
+              `(super ,(translate-field-getter-name arg-type name) ,void-value)
               (at-ctxt name)))
         (at-ctxt name)))
   

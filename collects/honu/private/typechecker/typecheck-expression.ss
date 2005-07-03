@@ -296,13 +296,21 @@
                     "Found if expression without else branch in non-void context"
                     stx)))))]
       [(struct honu:cast (stx obj type))
+       (if (not (type-valid? tenv type))
+           (raise-read-error-with-stx
+            "Type argument of cast is not a valid type"
+            (honu:ast-stx type)))
        (let-values ([(e1 t1) (typecheck-expression tenv cenv lenv (make-any-type (honu:ast-stx obj)) rtype obj)])
          (if (<:_P tenv type ctype)
              (values (copy-struct honu:cast expr
                        [honu:cast-obj e1])
                      type)
              (raise-honu-type-error stx ctype type)))]
-      [(struct honu:isa (stx obj _))
+      [(struct honu:isa (stx obj type))
+       (if (not (type-valid? tenv type))
+           (raise-read-error-with-stx
+            "Type argument of isa is not a valid type"
+            (honu:ast-stx type)))
        (let-values ([(e1 t1) (typecheck-expression tenv cenv lenv (make-any-type (honu:ast-stx obj)) rtype obj)])
          (let ([ret-type (make-bool-type stx)])
            (if (<:_P tenv ret-type ctype)
@@ -314,7 +322,7 @@
        (cond
          [(cenv name) => (lambda (t)
                            (if (honu:type-disp? t)
-                               (let ([fun-type (make-func-type (honu:type-disp-arg t) (honu:type-disp-ret t))])
+                               (let ([fun-type (make-func-type (honu:ast-stx t) (honu:type-disp-arg t) (honu:type-disp-ret t))])
                                  (if (<:_P tenv fun-type ctype)
                                      (values (copy-struct honu:member expr
                                                [honu:member-method? #t])
@@ -328,6 +336,17 @@
                 stx)])]
       [(struct honu:member (stx obj _ name _))
        (let-values ([(e1 t1) (typecheck-expression tenv cenv lenv (make-any-type (honu:ast-stx obj)) rtype obj)])
+         ;; if obj was something like error or return, which do not give us a valid type for
+         ;; getting the appropriate member...
+         (if (honu:type-bot? t1)
+             (raise-read-error-with-stx
+              "Attempt to access member of an expression which does not return"
+              stx))
+         ;; if obj was null...
+         (if (honu:type-iface-bot? t1)
+             (raise-read-error-with-stx
+              "Null has no fields or methods"
+              stx))
          (let ([t (get-member-type tenv t1 name)])
            (cond
              [(honu:type-disp? t)
@@ -352,6 +371,11 @@
       [(struct honu:new (stx class type args))
        (let ([class-entry (get-class-entry tenv class)]
              [new-type    (if type type ctype)])
+         ;; the following can only be triggered if the type annontation isn't a type
+         (if (not (type-valid? tenv new-type))
+             (raise-read-error-with-stx
+              (format "Type annotation ~a on new statement is not a valid type" (printable-type new-type))
+              (honu:ast-stx new-type)))
          ;; the following two checks can only be triggered if there is no type annotation
          (if (honu:type-top? new-type)
              (raise-read-error-with-stx

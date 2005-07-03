@@ -195,7 +195,7 @@
                               cenv)
                  (cons member ret)))]
         [(honu:method? (car members))
-         (let-values ([(methods remainder) (get-murec-methods members)])
+         (let-values ([(methods remainder) (span honu:method? members)])
            (let ([cenv (fold (lambda (m cenv)
                                (extend-fenv (get-class-member-name m)
                                             (get-class-member-type selftype m)
@@ -211,17 +211,6 @@
                                          methods))
                            ret))))])))
   
-  (define (get-murec-methods members)
-    (let loop ([members members]
-               [ret     '()])
-      (cond
-        [(null? members) (values (reverse ret) members)]
-        [(or (honu:init-field? (car members))
-             (honu:field?      (car members)))
-         (values (reverse ret) members)]
-        [(honu:method? (car members))
-         (loop (cdr members) (cons (car members) ret))])))
-    
   (define (typecheck-member tenv cenv lenv selftype member)
     (match member
       [(struct honu:init-field (stx name type value))

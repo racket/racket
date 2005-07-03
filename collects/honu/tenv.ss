@@ -100,6 +100,7 @@
   (provide/contract [empty-tenv (-> tenv?)]
                     [get-builtin-lenv (-> tenv?)]
                     [extend-tenv (identifier? tenv:entry? tenv? . -> . void?)]
+                    [extend-tenv-without-checking (identifier? tenv:entry? tenv? . -> . void?)]
                     [create-tenv ((listof identifier?)
                                   (listof tenv:entry?)
                                   . -> .
@@ -123,6 +124,8 @@
              (format "~a already bound by top-level definition" (printable-key key))
              key))
         (bound-identifier-mapping-put! tenv key val)))
+  (define (extend-tenv-without-checking key val tenv)
+    (bound-identifier-mapping-put! tenv key val))
   (define (create-tenv keys vals)
     (let ((table (empty-tenv)))
       (begin (for-each extend-tenv table keys vals)
