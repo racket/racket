@@ -60,9 +60,9 @@
                  ret)])))
     (values (filter (lambda (n) n) names)
             `(let ([arg-tuple ,(if (= (length names) 1)
-                                   `(list ,value)
+                                   `(list* ,value ())
                                    value)])
-               ,(cons values (grab-indices names)))))
+               ,(cons 'values (grab-indices names)))))
   
   (provide translate-iface-name translate-class-name translate-method-name
            translate-field-getter-name translate-field-setter-name)
