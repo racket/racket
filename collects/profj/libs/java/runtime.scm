@@ -104,7 +104,7 @@
   
   ;cast-primitive: value symbol int -> value
   (define (cast-primitive val type dim)
-    (printf "case-primitive ~a ~a ~n" val type)
+    ;(printf "cast-primitive ~a ~a ~n" val type)
     (if (> dim 0)
         (if (send val check-prim-type type dim)
             val
