@@ -87,7 +87,10 @@
                     eof
                     (let* ([parsed (level-parser port name)])
                       (let ([compiled-defns (compile/defns tenv lenv parsed)])
-                        (datum->syntax-object #f `(compiled-program ,(cons 'begin compiled-defns)) #f)))))))
+                        ;; if we wrap this in something special for the syntax-case below, then
+                        ;; Check Syntax breaks (unsurprisingly), so we'll just do special
+                        ;; wrappers for the interaction stuff.
+                        (datum->syntax-object #f (cons 'begin compiled-defns) #f)))))))
           (define/public (front-end/interaction port settings teachpack-cache)
             (let ([name (object-name port)])
               (lambda ()
@@ -127,14 +130,16 @@
 		 (let ([old-current-eval (drscheme:debug:make-debug-eval-handler (current-eval))])
                    (current-eval
                     (lambda (exp)
-                      (syntax-case exp (compiled-program compiled-binding compiled-expression)
-                        [(compiled-program pgm)
-                         (old-current-eval (syntax-as-top #'pgm))]
+                      (syntax-case exp (compiled-binding compiled-expression)
                         [(compiled-binding binding)
                          (old-current-eval (syntax-as-top #'binding))]
                         [(compiled-expression ex type)
                          (cons (old-current-eval (syntax-as-top #'ex))
-                               (syntax-e #'type))]))))
+                               (syntax-e #'type))]
+                        ;; if it wasn't either of those, this must have been from the definitions
+                        ;; window, so just eval it.
+                        [exp
+                         (old-current-eval (syntax-as-top #'exp))]))))
                  (namespace-attach-module n path)
                  (namespace-require path)))))
           (define/public (render-value value settings port) 
