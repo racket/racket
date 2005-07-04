@@ -141,7 +141,7 @@
             (display (format-honu value settings) port))
           (define/public (render-value/format value settings port width)
             (render-value value settings port)
-            (if (not (null? value)) (newline port)))
+            (if (not (null? (car value))) (newline port)))
 	  (define/public (create-executable settings parent src-file teachpacks)
 	    (message-box "Unsupported"
 			 "Sorry - executables are not supported for Honu at this time"
@@ -164,9 +164,12 @@
           ;; if we have a pair, then we evaluated an expression (the car)
           ;; and we also have its type (the cdr).
           [(pair? result)
-           (format "~a : ~a"
-                   (format-honu-value (car result) settings 0)
-                   (printable-type (cdr result)))]
+           (if (null? (car result))
+               ;; Don't print out anything for void values.
+               ""
+               (format "~a : ~a"
+                       (format-honu-value (car result) settings 0)
+                       (printable-type (cdr result))))]
           ;; If we got here, then who knows what we got -- just print it out.
           [else (format "~a" result)]))
       
