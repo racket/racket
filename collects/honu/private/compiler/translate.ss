@@ -98,32 +98,34 @@
   
   (define (translate-formatter tenv name members arg-type)
     (let ([right-define (if arg-type 'define/override 'define/public)])
-      `(,right-define (format-class renderer indent)
-         (format "~a {~a}" 
-                 (quote ,(syntax-e name))
-                 ,(cons 'string-append
-                        (let ([printable-members (filter (lambda (m)
-                                                           (not (honu:method? m)))
-                                                         members)]
-                              [printable-smembers (if arg-type
-                                                      (filter-map (lambda (m)
-                                                                    (if (not (honu:type-disp? (tenv:member-type m)))
-                                                                        (tenv:member-name m)
-                                                                        #f))
-                                                                  (tenv:type-members (get-type-entry tenv arg-type)))
-                                                      '())]
-                              ;; how much more do we want the members indented?  Let's try 2 spaces more.
-                              [indent-delta 2])
-                          (if (and (null? printable-members)
-                                   (null? printable-smembers))
-                              '("")
-                              (fold-right (lambda (m l)
-                                            (list* "\n" (translate-super-member-formatter tenv arg-type m indent-delta) l))
-                                          (fold-right (lambda (m l)
-                                                        (list* "\n" (translate-member-formatter m indent-delta) l))
-                                                      '("\n" (make-string indent #\space))
-                                                      printable-members)
-                                          printable-smembers))))))))
+      `(,right-define (format-class renderer indent print-fields?)
+         (if print-fields?
+             (format "~a {~a}" 
+                     (quote ,(syntax-e name))
+                     ,(cons 'string-append
+                            (let ([printable-members (filter (lambda (m)
+                                                               (not (honu:method? m)))
+                                                             members)]
+                                  [printable-smembers (if arg-type
+                                                          (filter-map (lambda (m)
+                                                                        (if (not (honu:type-disp? (tenv:member-type m)))
+                                                                            (tenv:member-name m)
+                                                                            #f))
+                                                                      (tenv:type-members (get-type-entry tenv arg-type)))
+                                                          '())]
+                                  ;; how much more do we want the members indented?  Let's try 2 spaces more.
+                                  [indent-delta 2])
+                              (if (and (null? printable-members)
+                                       (null? printable-smembers))
+                                  '("")
+                                  (fold-right (lambda (m l)
+                                                (list* "\n" (translate-super-member-formatter tenv arg-type m indent-delta) l))
+                                              (fold-right (lambda (m l)
+                                                            (list* "\n" (translate-member-formatter m indent-delta) l))
+                                                          '("\n" (make-string indent #\space))
+                                                          printable-members)
+                                              printable-smembers)))))
+             (format "~a" (quote ,(syntax-e name)))))))
   
   (define (translate-member-formatter member indent-delta)
     (let ([name (if (honu:field? member)

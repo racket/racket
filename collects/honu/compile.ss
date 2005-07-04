@@ -21,11 +21,12 @@
                       . -> . 
                       (listof (syntax/c any/c)))]
                     [compile/interaction
-                     (tenv? 
-                      tenv?
-                      (union honu:bind-top? honu:expr?)
-                      . -> . 
-                      (syntax/c any/c))])
+                     ((tenv? 
+                       tenv?
+                       (union honu:bind-top? honu:expr?))
+                      . ->* . 
+                      ((syntax/c any/c)
+                       (union honu:type? false/c)))])
   (define (compile/defns tenv lenv pgm)
     (let ([pgm (post-parse-program tenv (add-defns-to-tenv pgm tenv))])
       (let ([checked (typecheck tenv lenv pgm)])
@@ -46,11 +47,11 @@
        (check-bound-names lenv names)
        (let ([checked (typecheck-defn tenv lenv ast)])
          (parameterize ([current-compile-context honu-compile-context])
-           (translate-defn tenv checked)))]
+           (values (translate-defn tenv checked) #f)))]
       [else
        (let-values ([(checked type) (typecheck-expression tenv (lambda (n) #f)
                                                           (wrap-as-function lenv) (make-top-type #f) #f ast)])
          (parameterize ([current-compile-context honu-compile-context])
-           (translate-expression tenv #f checked)))]))
+           (values (translate-expression tenv #f checked) type)))]))
   )
     

@@ -8,6 +8,7 @@
            (lib "list.ss" "srfi" "1")
            "parsers/lex.ss"
            "parsers/parse.ss"
+           "private/typechecker/type-utils.ss"
            (only "base.ss" null%)
            "tenv.ss"
            "compile.ss"
@@ -24,15 +25,54 @@
         (drscheme:language-configuration:add-language
          (make-object ((drscheme:language:get-default-mixin) (honu-lang-mixin 'normal)))))
       
+      (define-struct honu-settings (display-style) #f)
+      
       (define (honu-lang-mixin level)
         (class* object% (drscheme:language:language<%>)
-          (define/public (config-panel parent)
-            (case-lambda
-              [() null]
-              [(x) (void)]))
           (define/public (get-comment-character) (values "//" #\*))
-          (define/public (default-settings) null)
-          (define/public (default-settings? x) #t)
+          
+          (define/public (default-settings)
+            (make-honu-settings 'field))
+          (define/public (default-settings? s)
+            (equal? s (default-settings)))
+          (define/public (marshall-settings s)
+            (list (list (honu-settings-display-style s))))
+          (define/public (unmarshall-settings s)
+            (if (and (pair? s)       (= (length s) 1)
+                     (pair? (car s)) (= (length (car s)) 1))
+                (make-honu-settings (caar s))
+                #f))
+
+          (define/public (config-panel _parent)
+            (letrec ([parent (instantiate vertical-panel% ()
+                               (parent _parent)
+                               (alignment '(center center))
+                               (stretchable-height #f)
+                               (stretchable-width #f))]
+                     
+                     [output-panel (instantiate group-box-panel% ()
+                                     (label "Display Preferences")
+                                     (parent parent)
+                                     (alignment '(left center)))]
+                     [display-style (make-object radio-box%
+                                      "Display style"
+                                      (list "Class" "Class+Fields" )
+                                      output-panel
+                                      (lambda (x y) (update-ps)))]
+                     
+                     [update-ps (lambda () (void))])
+                                   
+              (case-lambda
+                [()
+                 (make-honu-settings (case (send display-style get-selection)
+                                       [(0) 'class]
+                                       [(1) 'field]))]
+                [(settings)
+                 (send display-style set-selection
+                       (case (honu-settings-display-style settings)
+                         ((class) 0)
+                         ((field) 1)))])))
+          
           (define tenv (empty-tenv))
           (define lenv (get-builtin-lenv))
           (define level-parser
@@ -47,15 +87,17 @@
                     eof
                     (let* ([parsed (level-parser port name)])
                       (let ([compiled-defns (compile/defns tenv lenv parsed)])
-                        (datum->syntax-object #f (cons 'begin compiled-defns) #f)))))))
+                        (datum->syntax-object #f `(compiled-program ,(cons 'begin compiled-defns)) #f)))))))
           (define/public (front-end/interaction port settings teachpack-cache)
             (let ([name (object-name port)])
               (lambda ()
                 (if (eof-object? (peek-char-or-special port))
                     eof
                     (let ([parsed (parse-interaction port name)])
-                      (let ([compiled-expr (compile/interaction tenv lenv parsed)])
-                        (datum->syntax-object #f compiled-expr #f)))))))
+                      (let-values ([(compiled-expr type) (compile/interaction tenv lenv parsed)])
+                        (if type
+                            (datum->syntax-object #f `(compiled-expression ,compiled-expr ,type) #f)
+                            (datum->syntax-object #f `(compiled-binding ,compiled-expr) #f))))))))
           (define/public (get-style-delta) #f)
           (define/public (get-language-position)
 	    (list (string-constant experimental-languages)
@@ -72,7 +114,6 @@
             (case level
               [(normal) (list 1000 10)]))
           (define/public (get-teachpack-names) null)
-          (define/public (marshall-settings x) x)
           (define/private (syntax-as-top s)
             (if (syntax? s) (namespace-syntax-introduce s) s))
           (define/public (on-execute settings run-in-user-thread)
@@ -86,12 +127,21 @@
 		 (let ([old-current-eval (drscheme:debug:make-debug-eval-handler (current-eval))])
                    (current-eval
                     (lambda (exp)
-                      (old-current-eval (syntax-as-top exp)))))
+                      (syntax-case exp (compiled-program compiled-binding compiled-expression)
+                        [(compiled-program pgm)
+                         (old-current-eval (syntax-as-top #'pgm))]
+                        [(compiled-binding binding)
+                         (old-current-eval (syntax-as-top #'binding))]
+                        [(compiled-expression ex type)
+                         (cons (old-current-eval (syntax-as-top #'ex))
+                               (syntax-e #'type))]))))
                  (namespace-attach-module n path)
                  (namespace-require path)))))
-          (define/public (render-value value settings port) (display (format-honu value settings 0) port))
-          (define/public (render-value/format value settings port width) (render-value value settings port) (if (not (null? value)) (newline port)))
-          (define/public (unmarshall-settings x) x)
+          (define/public (render-value value settings port) 
+            (display (format-honu value settings) port))
+          (define/public (render-value/format value settings port width)
+            (render-value value settings port)
+            (if (not (null? value)) (newline port)))
 	  (define/public (create-executable settings parent src-file teachpacks)
 	    (message-box "Unsupported"
 			 "Sorry - executables are not supported for Honu at this time"
@@ -109,7 +159,18 @@
       (define (matches-language l)
         (and l (pair? l) (pair? (cdr l)) (equal? (cadr l) "Honu")))
 
-      (define (format-honu value settings indent)
+      (define (format-honu result settings)
+        (cond
+          ;; if we have a pair, then we evaluated an expression (the car)
+          ;; and we also have its type (the cdr).
+          [(pair? result)
+           (format "~a : ~a"
+                   (format-honu-value (car result) settings 0)
+                   (printable-type (cdr result)))]
+          ;; If we got here, then who knows what we got -- just print it out.
+          [else (format "~a" result)]))
+      
+      (define (format-honu-value value settings indent)
         (cond
           [(number? value)    (format "~a" value)]
           [(char? value)      (format "'~a'" value)]
@@ -127,34 +188,35 @@
            ;; or structure, then it is printed out.
            (if (= indent 0) "" "()")]
           [(list? value)
-           (if (any (lambda (v)
-                      ;; checking to see if it's a non-null object
-                      (and (object? v) (not (is-a? v null%))))
-                    value)
+           (if (and (eqv? (honu-settings-display-style settings) 'field)
+                    (any (lambda (v)
+                           ;; checking to see if it's a non-null object
+                           (and (object? v) (not (is-a? v null%))))
+                         value))
                (string-append "("
                               (fold (lambda (v s)
                                       ;; if there are objects in the list, then we'll
                                       ;; print each value on its own line.
                                       (string-append s ",\n" (make-string (+ indent 1) #\space)
-                                                     (format-honu v settings (+ indent 1))))
-                                    (format-honu (car value) settings (+ indent 1))
+                                                     (format-honu-value v settings (+ indent 1))))
+                                    (format-honu-value (car value) settings (+ indent 1))
                                     (cdr value))
                               ")")
                (string-append "("
                               (fold (lambda (v s)
                                       ;; if there are no objects, then we'll just print out
                                       ;; the list on the same line.
-                                      (string-append s ", " (format-honu v settings (+ indent 1))))
-                                    (format-honu (car value) settings (+ indent 1))
+                                      (string-append s ", " (format-honu-value v settings (+ indent 1))))
+                                    (format-honu-value (car value) settings (+ indent 1))
                                     (cdr value))
                               ")"))]
           [(is-a? value null%) "null"]
           [(object? value) (send value format-class 
                                  (lambda (value at-top?)
-                                   (format-honu value settings at-top?))
-                                 indent)]
+                                   (format-honu-value value settings at-top?))
+                                 indent
+                                 (eqv? (honu-settings-display-style settings) 'field))]
           [else (format "~a" value)]))
-                                   
       
       ;Set the Honu editing colors
       (define color-prefs-table
