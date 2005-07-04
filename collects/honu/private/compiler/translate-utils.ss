@@ -1,6 +1,7 @@
 (module translate-utils mzscheme
 
   (require (all-except (lib "list.ss" "srfi" "1") any)
+           (lib "plt-match.ss")
            (lib "contract.ss")
            "../../ast.ss"
            "../../parameters.ss"
@@ -67,7 +68,7 @@
            translate-field-getter-name translate-field-setter-name)
   (define (translate-iface-name type)
     (let ([name (if (honu:type-iface-top? type)
-                    (datum->syntax-object #f 'Any #f)
+                    (datum->syntax-object #f 'Any (honu:ast-stx type))
                     (honu:type-iface-name type))])
       (at name (string->symbol (string-append (symbol->string (syntax-e name)) "<%>")))))
   
@@ -132,6 +133,25 @@
               `(begin (set! ,(at-ctxt name) ,arg)
                       ,void-value)))
         `(begin (set! ,(at-ctxt name) ,arg)
-                ,void-value))) 
+                ,void-value)))
+  
+  ;; Yes, this is just part of the hack that gives us Check Syntax-correctness on all the types that
+  ;; are not otherwise used in the compiled code.
+  (provide translate-type-for-syntax)
+  (define (translate-type-for-syntax type)
+    (define (real-translation type)
+      (match type
+        [(struct honu:type-iface (stx name))
+         (list (translate-iface-name type))]
+        [(struct honu:type-iface-top (stx))
+         (list (translate-iface-name type))]
+        [(struct honu:type-prim (stx name))
+         '()]
+        [(struct honu:type-func (stx arg ret))
+         (append (real-translation arg)
+                 (real-translation ret))]
+        [(struct honu:type-tuple (stx args))
+         (apply append (map real-translation args))]))
+    `(list* ,@(real-translation type) '()))
 
   )

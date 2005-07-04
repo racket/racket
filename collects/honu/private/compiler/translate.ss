@@ -35,7 +35,7 @@
         [else
          (loop (cdr defns-to-go) (cons (translate-defn (car defns-to-go)) syntaxes))])))
   
-  (define (translate-member-names name)
+  (define (translate-iface-member-names name)
     (let* ([iface      (make-iface-type name name)]
            [type-entry (get-type-entry iface)])
       (let loop ([members (append (tenv:type-members type-entry) (tenv:type-inherited type-entry))]
@@ -50,23 +50,39 @@
                       (cons (translate-field-setter-name iface (tenv:member-name (car members)))
                             (cons (translate-field-getter-name iface (tenv:member-name (car members)))
                                   names))))))))
-                                                         
+
+  (define (translate-iface-member-types members)
+    (define (get-member-type-list m)
+      (match m
+        [(struct honu:field-decl (_ _ type))
+         (list (translate-type-for-syntax type))]
+        [(struct honu:method-decl (_ _ type arg-types))
+         (cons (translate-type-for-syntax type)
+               (map translate-type-for-syntax arg-types))]))
+    (apply append (map get-member-type-list members)))
+  
   (define (translate-defn defn)
     (match defn
-      [(struct honu:bind-top (stx names _ value))
+      [(struct honu:bind-top (stx names types value))
        (let-values ([(bound-names body) (translate-binding-clause names (translate-expression value))])
-         (at stx `(define-values ,bound-names ,body)))]
-      [(struct honu:function (stx name _ args body))
-       (translate-function stx name args (translate-expression body))]
+         (at stx `(begin (honu:type ,@(map translate-type-for-syntax types))
+                         (define-values ,bound-names ,body))))]
+      [(struct honu:function (stx name type args body))
+       (at stx `(begin (honu:type ,(translate-type-for-syntax type))
+                       (honu:type ,@(map (lambda (a) (translate-type-for-syntax (honu:formal-type a))) args))
+                       ,(translate-function stx name args (translate-expression body))))]
       [(struct honu:iface (stx name supers members))
-       (at stx `(define ,(translate-iface-name (make-iface-type name name))
-                  (interface ,(if (null? supers)
-                                  (list (translate-iface-name (make-any-type #f)))
-                                  (map translate-iface-name supers))
-                    ,@(translate-member-names name))))]
-      [(struct honu:class (stx name _ _ impls inits members exports))
+       (at stx `(begin
+                  (define ,(translate-iface-name (make-iface-type name name))
+                    (interface ,(if (null? supers)
+                                    (list (translate-iface-name (make-any-type #f)))
+                                    (map translate-iface-name supers))
+                      ,@(translate-iface-member-names name)))
+                  (honu:type ,@(translate-iface-member-types members))))]
+      [(struct honu:class (stx name selftype _ impls inits members exports))
        (at stx `(define ,(translate-class-name name)
                   (class* object% ,(map translate-iface-name impls)
+                    (honu:type ,(translate-type-for-syntax selftype))
                     (inspect #f)
                     ,(translate-inits inits)
                     ,@(map translate-member members)
@@ -80,7 +96,7 @@
   
   (define (translate-subclass mixin-defn defn)
     (match (list mixin-defn defn)
-      [(list (struct honu:mixin (mstx mname _ arg-type _ impls inits _ super-new members-before members-after exports))
+      [(list (struct honu:mixin (mstx mname selftype arg-type _ impls inits withs super-new members-before members-after exports))
              (struct honu:subclass (stx name base mixin)))
        (parameterize ([current-mixin-argument-type arg-type])
          (let* ([base-entry (get-class-entry base)]
@@ -88,6 +104,8 @@
                                   (tenv:class-impls base-entry))])
            (at stx `(define ,(translate-class-name name)
                       (class* ,(translate-class-name base) ,(map translate-iface-name impls)
+                        (honu:type ,(translate-type-for-syntax selftype))
+                        (honu:type ,@(map (lambda (w) (translate-type-for-syntax (honu:formal-type w)))))
                         (inspect #f)
                         ,(translate-inits inits)
                         ,@(map translate-member members-before)
