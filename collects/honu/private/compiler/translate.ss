@@ -71,6 +71,7 @@
                     ,@(map (lambda (m)
                              (translate-member tenv #f m)) members)
                     ,@(translate-class-exports tenv exports)
+                    ,(translate-formatter tenv name members #f)
                     (super-new))))]
       [else (raise-read-error-with-stx
              "Haven't translated that type of definition yet."
@@ -92,6 +93,53 @@
                       ,(translate-super-new tenv arg-type super-new)
                       ,@(map (lambda (m)
                                (translate-member tenv arg-type m)) members-after)
-                      ,@(translate-subclass-exports tenv base-types arg-type exports)))))]))
+                      ,@(translate-subclass-exports tenv base-types arg-type exports)
+                      ,(translate-formatter tenv name (append members-before members-after) arg-type)))))]))
   
+  (define (translate-formatter tenv name members arg-type)
+    (let ([right-define (if arg-type 'define/override 'define/public)])
+      `(,right-define (format-class renderer indent)
+         (format "~a {~a}" 
+                 (quote ,(syntax-e name))
+                 ,(cons 'string-append
+                        (let ([printable-members (filter (lambda (m)
+                                                           (not (honu:method? m)))
+                                                         members)]
+                              [printable-smembers (if arg-type
+                                                      (filter-map (lambda (m)
+                                                                    (if (not (honu:type-disp? (tenv:member-type m)))
+                                                                        (tenv:member-name m)
+                                                                        #f))
+                                                                  (tenv:type-members (get-type-entry tenv arg-type)))
+                                                      '())]
+                              ;; how much more do we want the members indented?  Let's try 2 spaces more.
+                              [indent-delta 2])
+                          (if (and (null? printable-members)
+                                   (null? printable-smembers))
+                              '("")
+                              (fold-right (lambda (m l)
+                                            (list* "\n" (translate-super-member-formatter tenv arg-type m indent-delta) l))
+                                          (fold-right (lambda (m l)
+                                                        (list* "\n" (translate-member-formatter m indent-delta) l))
+                                                      '("\n" (make-string indent #\space))
+                                                      printable-members)
+                                          printable-smembers))))))))
+  
+  (define (translate-member-formatter member indent-delta)
+    (let ([name (if (honu:field? member)
+                    (honu:field-name member)
+                    (honu:init-field-name member))])
+      `(format "~a~a = ~a;"
+               (make-string (+ indent ,indent-delta) #\space)
+               (quote ,(syntax-e name))
+               ;; the 3 is for " = "
+               (renderer ,name (+ indent ,(+ indent-delta (string-length (symbol->string (syntax-e name))) 3))))))
+  
+  (define (translate-super-member-formatter tenv arg-type name indent-delta)
+    `(format "~a~a = ~a;"
+             (make-string (+ indent ,indent-delta) #\space)
+             (quote ,(syntax-e name))
+             ;; as before, the 3 is for " = "
+             (renderer ,(translate-static-field-getter tenv arg-type name)
+                       (+ indent ,(+ indent-delta (string-length (symbol->string (syntax-e name))) 3)))))
   )

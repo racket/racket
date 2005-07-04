@@ -8,6 +8,7 @@
            (lib "list.ss" "srfi" "1")
            "parsers/lex.ss"
            "parsers/parse.ss"
+           (only "base.ss" null%)
            "tenv.ss"
            "compile.ss"
 	   (lib "string-constant.ss" "string-constants"))
@@ -88,7 +89,7 @@
                       (old-current-eval (syntax-as-top exp)))))
                  (namespace-attach-module n path)
                  (namespace-require path)))))
-          (define/public (render-value value settings port) (display (format-honu value settings #t) port))
+          (define/public (render-value value settings port) (display (format-honu value settings 0) port))
           (define/public (render-value/format value settings port width) (render-value value settings port) (if (not (null? value)) (newline port)))
           (define/public (unmarshall-settings x) x)
 	  (define/public (create-executable settings parent src-file teachpacks)
@@ -108,7 +109,7 @@
       (define (matches-language l)
         (and l (pair? l) (pair? (cdr l)) (equal? (cadr l) "Honu")))
 
-      (define (format-honu value settings at-top?)
+      (define (format-honu value settings indent)
         (cond
           [(number? value)    (format "~a" value)]
           [(char? value)      (format "'~a'" value)]
@@ -124,14 +125,34 @@
            ;; the following makes it so that nothing is printed out
            ;; for a void value, but if a zero-tuple is part of a tuple
            ;; or structure, then it is printed out.
-           (if at-top? "" "()")]
+           (if (= indent 0) "" "()")]
           [(list? value)
-           (string-append "("
-                          (fold (lambda (v s)
-                                  (string-append s ", " (format-honu v settings #f)))
-                                (format-honu (car value) settings #f)
-                                (cdr value))
-                          ")")]
+           (if (any (lambda (v)
+                      ;; checking to see if it's a non-null object
+                      (and (object? v) (not (is-a? v null%))))
+                    value)
+               (string-append "("
+                              (fold (lambda (v s)
+                                      ;; if there are objects in the list, then we'll
+                                      ;; print each value on its own line.
+                                      (string-append s ",\n" (make-string (+ indent 1) #\space)
+                                                     (format-honu v settings (+ indent 1))))
+                                    (format-honu (car value) settings (+ indent 1))
+                                    (cdr value))
+                              ")")
+               (string-append "("
+                              (fold (lambda (v s)
+                                      ;; if there are no objects, then we'll just print out
+                                      ;; the list on the same line.
+                                      (string-append s ", " (format-honu v settings (+ indent 1))))
+                                    (format-honu (car value) settings (+ indent 1))
+                                    (cdr value))
+                              ")"))]
+          [(is-a? value null%) "null"]
+          [(object? value) (send value format-class 
+                                 (lambda (value at-top?)
+                                   (format-honu value settings at-top?))
+                                 indent)]
           [else (format "~a" value)]))
                                    
       
