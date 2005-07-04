@@ -214,11 +214,12 @@
                                     (cdr value))
                               ")"))]
           [(is-a? value null%) "null"]
-          [(object? value) (send value format-class 
+          [(object? value) (if (eqv? (honu-settings-display-style settings) 'field)
+                               (send value format-class 
                                  (lambda (value at-top?)
                                    (format-honu-value value settings at-top?))
-                                 indent
-                                 (eqv? (honu-settings-display-style settings) 'field))]
+                                 indent)
+                               (send value format-class-name))]
           [else (format "~a" value)]))
       
       ;Set the Honu editing colors

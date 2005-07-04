@@ -16,17 +16,17 @@
   (define (translate-class-exports exports)
     (let ([exports (filter-exports (generate-exports exports))])
       (map (lambda (e)
-             (translate-export #f #f e))
+             (translate-export #f e))
            exports)))
   
-  (define (translate-subclass-exports super-types arg-type exports)
+  (define (translate-subclass-exports super-types exports)
     (let ([exports (filter-exports (generate-exports exports))])
       (map (lambda (e)
              (if (ormap (lambda (t)
                           (<:_P t (comp:export-type e)))
                         super-types)
-                 (translate-export #t arg-type e)
-                 (translate-export #f arg-type e)))
+                 (translate-export #t e)
+                 (translate-export #f e)))
            exports)))
   
 
@@ -97,31 +97,31 @@
                   (loop non-matches (cons exp-with-stx kept-exps))
                   (loop non-matches (cons (car exports) kept-exps))))))))
                                       
-  (define (translate-export in-super? arg-type export)
+  (define (translate-export in-super? export)
     (cons 'begin
           (map (lambda (b)
-                 (translate-exp-bind in-super? arg-type (comp:export-type export) b))
+                 (translate-exp-bind in-super? (comp:export-type export) b))
                (comp:export-binds export))))
   
-  (define (translate-exp-bind in-super? arg-type type binding)
+  (define (translate-exp-bind in-super? type binding)
     (let ([right-defn (if in-super? 'define/override 'define/public)])
       (match binding
         [(struct comp:exp-bind (old-name new-name #t))
          (at #f `(,right-defn (,(translate-method-name type new-name) arg-tuple)
-                   ,(translate-static-method arg-type old-name 'arg-tuple)))]
+                   ,(translate-static-method old-name 'arg-tuple)))]
         [(struct comp:exp-bind (old-name new-name #f))
          (at #f `(begin
                    (,right-defn (,(translate-field-getter-name type new-name) args)
-                     ,(translate-static-field-getter arg-type old-name))
+                     ,(translate-static-field-getter old-name))
                    (,right-defn (,(translate-field-setter-name type new-name) set-arg)
-                     ,(translate-static-field-setter arg-type old-name 'set-arg))))])))
+                     ,(translate-static-field-setter old-name 'set-arg))))])))
 
   (provide translate-super-new translate-inits translate-member)
-  (define (translate-super-new arg-type super-new)
+  (define (translate-super-new super-new)
     (at (honu:ast-stx super-new)
         (cons 'super-new (map (lambda (a)
                                 (list (at-ctxt (honu:name-arg-name a))
-                                      (translate-expression arg-type (honu:name-arg-value a))))
+                                      (translate-expression (honu:name-arg-value a))))
                               (honu:super-new-args super-new)))))
   
   (define (translate-inits inits)
@@ -132,20 +132,20 @@
   (define (mangle-init-name name)
     (at name (string->symbol (string-append "init-" (symbol->string (syntax-e name))))))
   
-  (define (translate-member arg-type member)
+  (define (translate-member member)
     (match member
       [(struct honu:init-field (stx name _ value))
        (if value
            `(begin (init ([,(mangle-init-name name) ,(at-ctxt name)]
-                          ,(translate-expression arg-type value)))
+                          ,(translate-expression value)))
                    (define ,(at-ctxt name) ,(mangle-init-name)))
            `(begin (init ([,(mangle-init-name name) ,(at-ctxt name)]))
                    (define ,(at-ctxt name) ,(mangle-init-name name))))]
       [(struct honu:field (stx name _ value))
-       `(define ,(at-ctxt name) ,(translate-expression arg-type value))]
+       `(define ,(at-ctxt name) ,(translate-expression value))]
       [(struct honu:method (stx name _ formals body))
        (translate-function stx name formals
-                           (translate-expression arg-type body))]))
+                           (translate-expression body))]))
   
   
   )

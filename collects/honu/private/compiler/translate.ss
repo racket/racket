@@ -9,6 +9,7 @@
            "../typechecker/type-utils.ss"
            "translate-class-utils.ss"
            "translate-expression.ss"
+           "translate-parameters.ss"
            "translate-utils.ss")
   
   (provide/contract [translate ((listof honu:defn?)
@@ -53,10 +54,10 @@
   (define (translate-defn defn)
     (match defn
       [(struct honu:bind-top (stx names _ value))
-       (let-values ([(bound-names body) (translate-binding-clause names (translate-expression #f value))])
+       (let-values ([(bound-names body) (translate-binding-clause names (translate-expression value))])
          (at stx `(define-values ,bound-names ,body)))]
       [(struct honu:function (stx name _ args body))
-       (translate-function stx name args (translate-expression #f body))]
+       (translate-function stx name args (translate-expression body))]
       [(struct honu:iface (stx name supers members))
        (at stx `(define ,(translate-iface-name (make-iface-type name name))
                   (interface ,(if (null? supers)
@@ -68,10 +69,10 @@
                   (class* object% ,(map translate-iface-name impls)
                     (inspect #f)
                     ,(translate-inits inits)
-                    ,@(map (lambda (m)
-                             (translate-member #f m)) members)
+                    ,@(map translate-member members)
                     ,@(translate-class-exports exports)
-                    ,(translate-formatter name members #f)
+                    ,(translate-impl-method impls)
+                    ,(translate-formatter name members)
                     (super-new))))]
       [else (raise-read-error-with-stx
              "Haven't translated that type of definition yet."
@@ -81,51 +82,59 @@
     (match (list mixin-defn defn)
       [(list (struct honu:mixin (mstx mname _ arg-type _ impls inits _ super-new members-before members-after exports))
              (struct honu:subclass (stx name base mixin)))
-       (let* ([base-entry (get-class-entry base)]
-              [base-types (cons (tenv:class-sub-type base-entry)
-                                (tenv:class-impls base-entry))])
-         (at stx `(define ,(translate-class-name name)
-                    (class* ,(translate-class-name base) ,(map translate-iface-name impls)
-                      (inspect #f)
-                      ,(translate-inits inits)
-                      ,@(map (lambda (m)
-                               (translate-member arg-type m)) members-before)
-                      ,(translate-super-new arg-type super-new)
-                      ,@(map (lambda (m)
-                               (translate-member arg-type m)) members-after)
-                      ,@(translate-subclass-exports base-types arg-type exports)
-                      ,(translate-formatter name (append members-before members-after) arg-type)))))]))
+       (parameterize ([current-mixin-argument-type arg-type])
+         (let* ([base-entry (get-class-entry base)]
+                [base-types (cons (tenv:class-sub-type base-entry)
+                                  (tenv:class-impls base-entry))])
+           (at stx `(define ,(translate-class-name name)
+                      (class* ,(translate-class-name base) ,(map translate-iface-name impls)
+                        (inspect #f)
+                        ,(translate-inits inits)
+                        ,@(map translate-member members-before)
+                        ,(translate-super-new super-new)
+                        ,@(map translate-member members-after)
+                        ,@(translate-subclass-exports base-types exports)
+                        ,(translate-impl-method impls)
+                        ,(translate-formatter name (append members-before members-after)))))))]))
+
+  (define (translate-impl-method impls)
+    (let ([right-define (if (current-mixin-argument-type) 'define/override 'define/public)])
+      `(,right-define (implements? iface)
+         (mz:ormap (lambda (i)
+                     (interface-extension? i iface))
+                   (list* ,@(map translate-iface-name impls) '())))))
   
-  (define (translate-formatter name members arg-type)
-    (let ([right-define (if arg-type 'define/override 'define/public)])
-      `(,right-define (format-class renderer indent print-fields?)
-         (if print-fields?
-             (format "~a {~a}" 
-                     (quote ,(syntax-e name))
-                     ,(cons 'string-append
-                            (let ([printable-members (filter (lambda (m)
-                                                               (not (honu:method? m)))
-                                                             members)]
-                                  [printable-smembers (if arg-type
-                                                          (filter-map (lambda (m)
-                                                                        (if (not (honu:type-disp? (tenv:member-type m)))
-                                                                            (tenv:member-name m)
-                                                                            #f))
-                                                                      (tenv:type-members (get-type-entry arg-type)))
-                                                          '())]
-                                  ;; how much more do we want the members indented?  Let's try 2 spaces more.
-                                  [indent-delta 2])
-                              (if (and (null? printable-members)
-                                       (null? printable-smembers))
-                                  '("")
-                                  (fold-right (lambda (m l)
-                                                (list* "\n" (translate-super-member-formatter arg-type m indent-delta) l))
-                                              (fold-right (lambda (m l)
-                                                            (list* "\n" (translate-member-formatter m indent-delta) l))
-                                                          '("\n" (make-string indent #\space))
-                                                          printable-members)
-                                              printable-smembers)))))
-             (format "~a" (quote ,(syntax-e name)))))))
+  (define (translate-formatter name members)
+    (let ([right-define (if (current-mixin-argument-type) 'define/override 'define/public)])
+      `(begin
+         (,right-define (format-class-name)
+           ,(format "~a" (syntax-e name)))
+         (,right-define (format-class renderer indent)
+           (format "~a {~a}" 
+                   (format-class-name)
+                   ,(cons 'string-append
+                          (let ([printable-members (filter (lambda (m)
+                                                             (not (honu:method? m)))
+                                                           members)]
+                                [printable-smembers (if (current-mixin-argument-type)
+                                                        (filter-map (lambda (m)
+                                                                      (if (not (honu:type-disp? (tenv:member-type m)))
+                                                                          (tenv:member-name m)
+                                                                          #f))
+                                                                    (tenv:type-members (get-type-entry (current-mixin-argument-type))))
+                                                        '())]
+                                ;; how much more do we want the members indented?  Let's try 2 spaces more.
+                                [indent-delta 2])
+                            (if (and (null? printable-members)
+                                     (null? printable-smembers))
+                                '("")
+                                (fold-right (lambda (m l)
+                                              (list* "\n" (translate-super-member-formatter m indent-delta) l))
+                                            (fold-right (lambda (m l)
+                                                          (list* "\n" (translate-member-formatter m indent-delta) l))
+                                                        '("\n" (make-string indent #\space))
+                                                        printable-members)
+                                            printable-smembers)))))))))
   
   (define (translate-member-formatter member indent-delta)
     (let ([name (if (honu:field? member)
@@ -137,11 +146,11 @@
                ;; the 3 is for " = "
                (renderer ,name (+ indent ,(+ indent-delta (string-length (symbol->string (syntax-e name))) 3))))))
   
-  (define (translate-super-member-formatter arg-type name indent-delta)
+  (define (translate-super-member-formatter name indent-delta)
     `(format "~a~a = ~a;"
              (make-string (+ indent ,indent-delta) #\space)
              (quote ,(syntax-e name))
              ;; as before, the 3 is for " = "
-             (renderer ,(translate-static-field-getter arg-type name)
+             (renderer ,(translate-static-field-getter name)
                        (+ indent ,(+ indent-delta (string-length (symbol->string (syntax-e name))) 3)))))
   )

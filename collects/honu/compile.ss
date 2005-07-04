@@ -55,6 +55,6 @@
         [else
          (let-values ([(checked type) (typecheck-expression (wrap-lenv) (make-top-type #f) ast)])
            (parameterize ([current-compile-context honu-compile-context])
-             (values (translate-expression #f checked) type)))])))
+             (values (translate-expression checked) type)))])))
   )
     

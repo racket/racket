@@ -4,7 +4,8 @@
            (lib "contract.ss")
            "../../ast.ss"
            "../../parameters.ss"
-           "../../tenv.ss")
+           "../../tenv.ss"
+           "translate-parameters.ss")
 
   (define stx-for-original-property (read-syntax #f (open-input-string "original")))
 
@@ -91,17 +92,17 @@
                                             "-set!"))))
 
   (provide translate-static-method translate-static-field-getter translate-static-field-setter)
-  (define (translate-static-method arg-type name arg)
-    (if arg-type
-        (let ([type-entry (get-type-entry arg-type)])
+  (define (translate-static-method name arg)
+    (if (current-mixin-argument-type)
+        (let ([type-entry (get-type-entry (current-mixin-argument-type))])
           (if (s:member name
                         (map tenv:member-name (append (tenv:type-members type-entry)
                                                       (tenv:type-inherited type-entry)))
                         tenv-key=?)
               (if arg
-                  `(super ,(translate-method-name arg-type name) ,arg)
+                  `(super ,(translate-method-name (current-mixin-argument-type) name) ,arg)
                   `(lambda (arg-tuple)
-                     (super ,(translate-method-name arg-type name) arg-tuple)))
+                     (super ,(translate-method-name (current-mixin-argument-type) name) arg-tuple)))
               (if arg
                   `(,(at-ctxt name) ,arg)
                   (at-ctxt name))))
@@ -109,25 +110,25 @@
             `(,(at-ctxt name) ,arg)
             (at-ctxt name))))
   
-  (define (translate-static-field-getter arg-type name)
-    (if arg-type
-        (let ([type-entry (get-type-entry arg-type)])
+  (define (translate-static-field-getter name)
+    (if (current-mixin-argument-type)
+        (let ([type-entry (get-type-entry (current-mixin-argument-type))])
           (if (s:member name
                         (map tenv:member-name (append (tenv:type-members type-entry)
                                                       (tenv:type-inherited type-entry)))
                         tenv-key=?)
-              `(super ,(translate-field-getter-name arg-type name) ,void-value)
+              `(super ,(translate-field-getter-name (current-mixin-argument-type) name) ,void-value)
               (at-ctxt name)))
         (at-ctxt name)))
   
-  (define (translate-static-field-setter arg-type name arg)
-    (if arg-type
-        (let ([type-entry (get-type-entry arg-type)])
+  (define (translate-static-field-setter name arg)
+    (if (current-mixin-argument-type)
+        (let ([type-entry (get-type-entry (current-mixin-argument-type))])
           (if (s:member name
                         (map tenv:member-name (append (tenv:type-members type-entry)
                                                       (tenv:type-inherited type-entry)))
                         tenv-key=?)
-              `(super ,(translate-field-setter-name arg-type name) ,arg)
+              `(super ,(translate-field-setter-name (current-mixin-argument-type) name) ,arg)
               `(begin (set! ,(at-ctxt name) ,arg)
                       ,void-value)))
         `(begin (set! ,(at-ctxt name) ,arg)

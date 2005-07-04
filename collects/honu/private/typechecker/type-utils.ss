@@ -255,6 +255,12 @@
                     (tenv:type-supers type-entry))))]
       [else #f]))
   
+  (provide iface-name)
+  (define (iface-name type)
+    (match type
+      [(struct honu:type-iface-top (_))  #'Any]
+      [(struct honu:type-iface (_ name)) name]))
+    
   (provide raise-honu-type-error)
   (define (raise-honu-type-error stx expected received)
     (raise-read-error-with-stx

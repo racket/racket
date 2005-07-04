@@ -79,5 +79,6 @@
         [else (string-ref s i)])))
 
   (provide (all-from mzscheme)
+           (rename ormap mz:ormap)
            (all-from (lib "class.ss"))
            (all-defined)))
