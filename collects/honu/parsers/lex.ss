@@ -242,7 +242,7 @@
       (syn-val lexeme 'default #f start-pos end-pos)]
 
      [lex:grouping
-      (syn-val lexeme 'parenthesis #f start-pos end-pos)]
+      (syn-val lexeme 'parenthesis (string->symbol lexeme) start-pos end-pos)]
 
      [lex:ident
       (syn-val lexeme 'identifier #f start-pos end-pos)]
