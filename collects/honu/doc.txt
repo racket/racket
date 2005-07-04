@@ -2,9 +2,13 @@ _Honu_
 
 _TODO_
 
-  > Rewrite TODO list in terms of interfaces (not implementations) 
-    The next bullet is a prime example. I have added a second bullet to
-    show what I mean. -- MF
+  * If we're going to generate expressions that don't do anything to
+    allow Check Syntax to work, then it might be better to generate
+    them all at the end so that a) we only generate them for the
+    definitions window, which is the only case in which they're useful,
+    and b) ordering issues do not come up (for example, try adding
+    an init arg "Color d" to the PosnC in examples/struct.honu and see
+    that it breaks unless you move PosnC under ColorC.
 
   * Admit statements as elements of mixin bodies, i.e., 
 
