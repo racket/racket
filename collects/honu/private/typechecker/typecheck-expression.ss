@@ -372,7 +372,7 @@
        (let ([class-entry (get-class-entry tenv class)]
              [new-type    (if type type ctype)])
          ;; the following can only be triggered if the type annontation isn't a type
-         (if (not (type-valid? tenv new-type))
+         (if (and type (not (type-valid? tenv type)))
              (raise-read-error-with-stx
               (format "Type annotation ~a on new statement is not a valid type" (printable-type new-type))
               (honu:ast-stx new-type)))
