@@ -82,7 +82,7 @@
        "null"]))
   
   (provide type-valid?)
-  (define (type-valid? tenv t)
+  (define (type-valid? t)
     (match t
       [(struct honu:type-iface-top (_)) #t]
       [(struct honu:type-prim (stx name))
@@ -92,22 +92,22 @@
                 (format "Unexpected primitive type ~a" name)
                 stx)])]
       [(struct honu:type-iface (stx name))
-       (let ([tentry (get-tenv-entry tenv name)])
+       (let ([tentry (get-tenv-entry name)])
          (and tentry (tenv:type? tentry)))]
       [(struct honu:type-tuple (_ args))
        (andmap (lambda (t)
-                 (type-valid? tenv t))
+                 (type-valid? t))
                args)]
       [(struct honu:type-func (_ arg ret))
-       (and (type-valid? tenv arg)
-            (type-valid? tenv ret))]
+       (and (type-valid? arg)
+            (type-valid? ret))]
       [(struct honu:type-disp (_ disp arg ret))
-       (and (type-valid? tenv disp)
-            (type-valid? tenv arg)
-            (type-valid? tenv ret))]))
+       (and (type-valid? disp)
+            (type-valid? arg)
+            (type-valid? ret))]))
   
   (provide type-equal?)
-  (define (type-equal? tenv t1 t2)
+  (define (type-equal? t1 t2)
     (cond
       ;; first all the easy ones
       [(and (honu:type-top? t1)
@@ -135,13 +135,13 @@
       ;; function, dispatch types are equal if their component types are.
       [(and (honu:type-func? t1)
             (honu:type-func? t2))
-       (and (type-equal? tenv (honu:type-func-arg t1) (honu:type-func-arg t2))
-            (type-equal? tenv (honu:type-func-ret t1) (honu:type-func-ret t2)))]
+       (and (type-equal? (honu:type-func-arg t1) (honu:type-func-arg t2))
+            (type-equal? (honu:type-func-ret t1) (honu:type-func-ret t2)))]
       [(and (honu:type-disp? t1)
             (honu:type-disp? t2))
-       (and (type-equal? tenv (honu:type-disp-disp t1) (honu:type-disp-disp t2))
-            (type-equal? tenv (honu:type-disp-arg  t1) (honu:type-disp-arg  t2))
-            (type-equal? tenv (honu:type-disp-ret  t1) (honu:type-disp-ret  t2)))]
+       (and (type-equal? (honu:type-disp-disp t1) (honu:type-disp-disp t2))
+            (type-equal? (honu:type-disp-arg  t1) (honu:type-disp-arg  t2))
+            (type-equal? (honu:type-disp-ret  t1) (honu:type-disp-ret  t2)))]
       ;; tuple types are equal if they have the same number of components and
       ;; their components are pairwise equal
       [(and (honu:type-tuple? t1)
@@ -150,7 +150,7 @@
              [t2-args (honu:type-tuple-args t2)])
          (and (= (length t1-args) (length t2-args))
               (andmap (lambda (t1 t2)
-                        (type-equal? tenv t1 t2))
+                        (type-equal? t1 t2))
                       t1-args t2-args)))]
       ;; for select types, they must be the same type on the same slot
       ;; (should we even get here?)
@@ -169,8 +169,8 @@
        #'Any]))
   
   ;; is t1 a _direct_ subtype of t2?
-  (define (Subtype_P tenv t1 t2)
-    (let ([type-entry (get-type-entry tenv t1)])
+  (define (Subtype_P t1 t2)
+    (let ([type-entry (get-type-entry t1)])
       (match type-entry
         [(struct tenv:type (_ supers _ _))
          (let ([super-names (map get-type-name supers)])
@@ -178,10 +178,10 @@
   
   ;; is t1 a (ref-trans-closed) subtype of t2?
   (provide <:_P)
-  (define (<:_P tenv t1 t2)
+  (define (<:_P t1 t2)
     (cond
       ;; if t1 = t2, t1 <:_P t2
-      [(type-equal? tenv t1 t2)
+      [(type-equal? t1 t2)
        #t]
       ;; if t1 is the bottom of the type lattice, then it trivially holds
       [(honu:type-bot? t1)
@@ -197,15 +197,15 @@
       [(and (honu:type-func? t1)
             (honu:type-func? t2))
        ;; the arg is contravariant and the ret is covariant
-       (and (<:_P tenv (honu:type-func-arg t2) (honu:type-func-arg t1))
-            (<:_P tenv (honu:type-func-ret t1) (honu:type-func-ret t2)))]
+       (and (<:_P (honu:type-func-arg t2) (honu:type-func-arg t1))
+            (<:_P (honu:type-func-ret t1) (honu:type-func-ret t2)))]
       ;; for dispatch types...
       [(and (honu:type-disp? t1)
             (honu:type-disp? t2))
        ;; dispatch args must be co-, regular args contra-, and ret co-
-       (and (<:_P tenv (honu:type-disp-disp t1) (honu:type-disp-disp t2))
-            (<:_P tenv (honu:type-disp-arg  t2) (honu:type-disp-arg  t1))
-            (<:_P tenv (honu:type-disp-ret  t1) (honu:type-disp-ret  t2)))]
+       (and (<:_P (honu:type-disp-disp t1) (honu:type-disp-disp t2))
+            (<:_P (honu:type-disp-arg  t2) (honu:type-disp-arg  t1))
+            (<:_P (honu:type-disp-ret  t1) (honu:type-disp-ret  t2)))]
       ;; for tuple types...
       [(and (honu:type-tuple? t1)
             (honu:type-tuple? t2))
@@ -215,7 +215,7 @@
          (and (= (length t1-args) (length t2-args))
               ;; and each component must be a subtype (covariantly)
               (andmap (lambda (t1 t2)
-                        (<:_P tenv t1 t2))
+                        (<:_P t1 t2))
                       t1-args t2-args)))]
       ;; for a select statement (s, t), we have that a tuple type (t_1 ... t_n) is <:_P t if
       ;; if t_s <:_P t.
@@ -225,12 +225,12 @@
              [t1-args (honu:type-tuple-args t1)])
          (and (<= t2-slot (length t1-args))
               ;; we have to subtract one from t2-slot because list-ref is zero-based
-              (<:_P tenv (list-ref t1-args (- t2-slot 1)) (honu:type-select-type t2))))]
+              (<:_P (list-ref t1-args (- t2-slot 1)) (honu:type-select-type t2))))]
       ;; not sure if this is necessary.  Hmm.
       [(and (honu:type-select? t1)
             (honu:type-select? t2))
        (and (= (honu:type-select-slot t1) (honu:type-select-slot t2))
-            (<:_P tenv (honu:type-select-type t1) (honu:type-select-type t2)))]
+            (<:_P (honu:type-select-type t1) (honu:type-select-type t2)))]
       ;; the bottom of the iface lattice is <:_P either the iface-top or
       ;; any iface
       [(and (honu:type-iface-bot? t1)
@@ -244,14 +244,14 @@
       ;; if two (non-equal) iface types...
       [(and (honu:type-iface? t1)
             (honu:type-iface? t2))
-       (if (Subtype_P tenv t1 t2)
+       (if (Subtype_P t1 t2)
            ;; return true if it's a direct subtype relation
            #t
-           (let ([type-entry (get-type-entry tenv t1)])
+           (let ([type-entry (get-type-entry t1)])
              ;; if any of the direct supertypes of t1 is a subtype of t2,
              ;; then t1 is also
              (ormap (lambda (t)
-                      (<:_P tenv t t2))
+                      (<:_P t t2))
                     (tenv:type-supers type-entry))))]
       [else #f]))
   

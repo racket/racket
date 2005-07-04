@@ -10,21 +10,16 @@
            "../../utils.ss"
            "typecheck-class-utils.ss"
            "typecheck-expression.ss"
+           "typecheck-parameters.ss"
            "type-utils.ss")
   
-  (provide/contract [typecheck (tenv?
-                                tenv?
-                                (listof honu:defn?)
+  (provide/contract [typecheck ((listof honu:defn?)
                                 . -> .
                                 (listof honu:defn?))]
-                    [typecheck-defn (tenv?
-                                     tenv?
-                                     honu:defn?
+                    [typecheck-defn (honu:defn?
                                      . -> .
                                      honu:defn?)])
-  ;; since lenv is a hashtable and thus will be mutated, we don't need to return it from
-  ;; typecheck or typecheck-defn.
-  (define (typecheck tenv lenv defns)
+  (define (typecheck defns)
     (let loop ([defns   defns]
                [results '()])
       (cond
@@ -33,19 +28,19 @@
         ;; (i.e. if they are no intervening non-function definitions)
         [(honu:function? (car defns))
          (let-values ([(funcs remaining) (span honu:function? defns)])
-           (loop remaining (append (typecheck-functions tenv lenv funcs) results)))]
-        [else (loop (cdr defns) (cons (typecheck-defn tenv lenv (car defns)) results))])))
+           (loop remaining (append (typecheck-functions funcs) results)))]
+        [else (loop (cdr defns) (cons (typecheck-defn (car defns)) results))])))
   
-  (define (typecheck-functions tenv lenv funcs)
+  (define (typecheck-functions funcs)
     (define (check-function-type func)
       (match func
         [(struct honu:function (stx name type args body))
-         (if (not (type-valid? tenv type))
+         (if (not (type-valid? type))
              (raise-read-error-with-stx
               "Return type of function is undefined"
               (honu:ast-stx type)))
          (for-each (lambda (t)
-                     (if (not (type-valid? tenv t))
+                     (if (not (type-valid? t))
                          (raise-read-error-with-stx
                           "Type of function argument is undefined"
                           (honu:ast-stx type))))
@@ -54,9 +49,8 @@
     ;; first we add the functions to the lexical environment so that when we typecheck
     ;; the bodies, they'll be in scope.
     (for-each (lambda (f)
-                (extend-tenv (honu:function-name f)
-                             (make-tenv:value (honu:ast-stx f) (check-function-type f))
-                             lenv))
+                (extend-lenv (honu:function-name f)
+                             (make-tenv:value (honu:ast-stx f) (check-function-type f))))
               funcs)
     (let loop ([funcs     funcs]
                [new-funcs '()])
@@ -66,61 +60,60 @@
           new-funcs
           (match (car funcs)
             [(struct honu:function (stx name type args body))
-             (let-values ([(e1 t1) (typecheck-expression tenv (lambda (name) #f)
-                                                         (fold (lambda (a e)
-                                                                 (extend-fenv (honu:formal-name a)
-                                                                              (honu:formal-type a)
-                                                                              e))
-                                                               (wrap-as-function lenv)
-                                                               args)
-                                                         type type body)])
+             (let-values ([(e1 t1) (parameterize ([current-return-type type])
+                                     (typecheck-expression (fold (lambda (a e)
+                                                                   (extend-fenv (honu:formal-name a)
+                                                                                (honu:formal-type a)
+                                                                                e))
+                                                                 (wrap-lenv)
+                                                                 args)
+                                                           type body))])
                (loop (cdr funcs)
                      (cons (copy-struct honu:function (car funcs)
                              [honu:function-body e1])
                            new-funcs)))]))))
   
-  (define (typecheck-defn tenv lenv defn)
+  (define (typecheck-defn defn)
     (match defn
       [(struct honu:bind-top (stx names types value))
        (for-each (lambda (n t)
                    (if (and (not (and (not n)
                                       (honu:type-top? t)))
-                            (not (type-valid? tenv t)))
+                            (not (type-valid? t)))
                        (raise-read-error-with-stx
                         "Type of top-level bound variable is undefined"
                         (honu:ast-stx t))))
                  names types)
-       (let-values ([(e1 t1) (typecheck-expression tenv (lambda (name) #f) (wrap-as-function lenv) 
-                                                   (make-tuple-type stx types) #f value)])
+       (let-values ([(e1 t1) (typecheck-expression (wrap-lenv) (make-tuple-type stx types) value)])
          (for-each (lambda (n t)
-                     (if n (extend-tenv n (make-tenv:value stx t) lenv)))
+                     (if n (extend-lenv n (make-tenv:value stx t))))
                    names types)
          (copy-struct honu:bind-top defn
            [honu:bind-top-value e1]))]
       [(struct honu:iface (stx name supers members))
        (for-each (lambda (t)
-                   (if (not (type-valid? tenv t))
+                   (if (not (type-valid? t))
                        (raise-read-error-with-stx
                         "No definition for supertype"
                         (honu:ast-stx t))))
                  supers)
        (for-each (lambda (m)
-                   (typecheck-member-decl tenv m))
+                   (typecheck-member-decl m))
                  members)
        defn]
       [(struct honu:class (stx name type final? impls inits members exports))
-       (if (not (type-valid? tenv type))
+       (if (not (type-valid? type))
            (raise-read-error-with-stx
             "Self-type of class is undefined"
             (honu:ast-stx type)))
        (for-each (lambda (t)
-                   (if (not (type-valid? tenv t))
+                   (if (not (type-valid? t))
                        (raise-read-error-with-stx
                         "Implemented type is undefined"
                         (honu:ast-stx type))))
                  impls)
        (for-each (lambda (t)
-                   (if (not (type-valid? tenv t))
+                   (if (not (type-valid? t))
                        (raise-read-error-with-stx
                         "Type of init slot is undefined"
                         (honu:ast-stx type))))
@@ -131,34 +124,35 @@
                                         e))
                          (lambda (n) #f)
                          inits)])
-         (let-values ([(members cenv) (typecheck-members tenv cenv (wrap-as-function lenv) type members)])
-           (typecheck-exports tenv cenv type impls exports)
+         (let*-values ([(lenv)         (extend-fenv #'this type (wrap-lenv))]
+                       [(members cenv) (typecheck-members cenv lenv type members)])
+           (typecheck-exports cenv type impls exports)
            (copy-struct honu:class defn
              [honu:class-members members])))]
       [(struct honu:mixin (stx name type arg-type final? impls inits withs
                            supernew members-before members-after exports))
-       (if (not (type-valid? tenv arg-type))
+       (if (not (type-valid? arg-type))
            (raise-read-error-with-stx
             "Argument type of mixin is undefined"
             (honu:ast-stx arg-type)))
-       (if (not (type-valid? tenv type))
+       (if (not (type-valid? type))
            (raise-read-error-with-stx
             "Result type of mixin is undefined"
             (honu:ast-stx type)))
        (for-each (lambda (t)
-                   (if (not (type-valid? tenv t))
+                   (if (not (type-valid? t))
                        (raise-read-error-with-stx
                         "Implemented type is undefined"
                         (honu:ast-stx type))))
                  impls)
        (for-each (lambda (t)
-                   (if (not (type-valid? tenv t))
+                   (if (not (type-valid? t))
                        (raise-read-error-with-stx
                         "Type of init slot is undefined"
                         (honu:ast-stx type))))
                  (map honu:formal-type inits))       
        (for-each (lambda (t)
-                   (if (not (type-valid? tenv t))
+                   (if (not (type-valid? t))
                        (raise-read-error-with-stx
                         "Type of expected init slot is undefined"
                         (honu:ast-stx type))))
@@ -169,11 +163,12 @@
                                         e))
                          (lambda (n) #f)
                          inits)])
-         (let*-values ([(members-before cenv) (typecheck-members  tenv cenv (wrap-as-function lenv) type  members-before)]
-                       [(supernew)            (typecheck-supernew tenv cenv (wrap-as-function lenv) withs supernew)]
-                       [(cenv)                (extend-cenv-with-type-members tenv cenv arg-type)]
-                       [(members-after  cenv) (typecheck-members  tenv cenv (wrap-as-function lenv) type  members-after)])
-           (typecheck-exports tenv cenv type impls exports)
+         (let*-values ([(lenv)                (extend-fenv #'this type (wrap-lenv))]
+                       [(members-before cenv) (typecheck-members cenv lenv type  members-before)]
+                       [(supernew)            (typecheck-supernew cenv lenv withs supernew)]
+                       [(cenv)                (extend-cenv-with-type-members cenv arg-type)]
+                       [(members-after  cenv) (typecheck-members cenv lenv type  members-after)])
+           (typecheck-exports cenv type impls exports)
            (copy-struct honu:mixin defn
              [honu:mixin-members-before members-before]
              [honu:mixin-super-new      supernew]
@@ -186,20 +181,20 @@
              "Haven't typechecked that type of definition yet."
              (honu:ast-stx defn))]))
 
-  (define (typecheck-member-decl tenv member)
+  (define (typecheck-member-decl member)
     (match member
       [(struct honu:field-decl (stx name type))
-       (if (not (type-valid? tenv type))
+       (if (not (type-valid? type))
            (raise-read-error-with-stx
             "Type of field is undefined"
             stx))]
       [(struct honu:method-decl (stx name type args))
-       (if (not (type-valid? tenv type))
+       (if (not (type-valid? type))
            (raise-read-error-with-stx
             "Return type of method is undefined"
             (honu:ast-stx type)))
        (for-each (lambda (t)
-                   (if (not (type-valid? tenv t))
+                   (if (not (type-valid? t))
                        (raise-read-error-with-stx
                         "Type of method argument is undefined"
                         (honu:ast-stx type))))

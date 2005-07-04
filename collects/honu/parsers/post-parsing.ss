@@ -4,6 +4,7 @@
            (lib "plt-match.ss")
            (lib "struct.ss")
            "../ast.ss"
+           "../parameters.ss"
            "../readerr.ss"
            "../tenv.ss"
            "../utils.ss")
@@ -33,15 +34,15 @@
   ;;;; and so we no longer need to cover them.
   
   (provide post-parse-program post-parse-interaction)
-  (define (post-parse-program tenv defns)
-    (convert-slots (convert-static tenv (check-this (simplify-ast defns)))))
+  (define (post-parse-program defns)
+    (convert-slots (convert-static (check-this (simplify-ast defns)))))
   
-  (define (post-parse-interaction tenv ast)
+  (define (post-parse-interaction ast)
     (cond
       [(honu:expr? ast)
        (convert-static-expression (check-this-expression (simplify-expression ast) #f) '())]
       [(honu:bind-top? ast)
-       (convert-static-defn tenv (check-this-defn (simplify-defn ast)))]))
+       (convert-static-defn (check-this-defn (simplify-defn ast)))]))
 
 ;                                                                                                    
 ;                                                                                                    
@@ -58,10 +59,10 @@
 ;                                                                                                    
 ;                                                                                                    
 
-  (define (convert-static tenv defns)
-    (map (lambda (d) (convert-static-defn tenv d)) defns))
+  (define (convert-static defns)
+    (map convert-static-defn defns))
 
-  (define (convert-static-defn tenv defn)
+  (define (convert-static-defn defn)
     (match defn
       [(struct honu:iface (_ _ _ _))
        defn]
@@ -76,7 +77,7 @@
                      [(super-new)
                       (convert-static-super-new super-new env)]
                      [(env)
-                      (extend-env-with-type-members tenv env arg-type)]
+                      (extend-env-with-type-members env arg-type)]
                      [(members-after _)
                       (convert-static-members members-after env)])
          (copy-struct honu:mixin defn
@@ -90,8 +91,8 @@
       [(struct honu:bind-top (_ _ _ _))
        defn]))
 
-  (define (extend-env-with-type-members tenv env type)
-    (let ([type-entry (get-type-entry tenv type)])
+  (define (extend-env-with-type-members env type)
+    (let ([type-entry (get-type-entry type)])
       (fold (lambda (m e)
               (cons (tenv:member-name m) e))
             env

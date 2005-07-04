@@ -3,10 +3,8 @@
   (require (all-except (lib "list.ss" "srfi" "1") any)
            (lib "contract.ss")
            "../../ast.ss"
+           "../../parameters.ss"
            "../../tenv.ss")
-
-  (provide current-compile-context)
-  (define current-compile-context (make-parameter #f))
 
   (define stx-for-original-property (read-syntax #f (open-input-string "original")))
 
@@ -93,9 +91,9 @@
                                             "-set!"))))
 
   (provide translate-static-method translate-static-field-getter translate-static-field-setter)
-  (define (translate-static-method tenv arg-type name arg)
+  (define (translate-static-method arg-type name arg)
     (if arg-type
-        (let ([type-entry (get-type-entry tenv arg-type)])
+        (let ([type-entry (get-type-entry arg-type)])
           (if (s:member name
                         (map tenv:member-name (append (tenv:type-members type-entry)
                                                       (tenv:type-inherited type-entry)))
@@ -111,9 +109,9 @@
             `(,(at-ctxt name) ,arg)
             (at-ctxt name))))
   
-  (define (translate-static-field-getter tenv arg-type name)
+  (define (translate-static-field-getter arg-type name)
     (if arg-type
-        (let ([type-entry (get-type-entry tenv arg-type)])
+        (let ([type-entry (get-type-entry arg-type)])
           (if (s:member name
                         (map tenv:member-name (append (tenv:type-members type-entry)
                                                       (tenv:type-inherited type-entry)))
@@ -122,9 +120,9 @@
               (at-ctxt name)))
         (at-ctxt name)))
   
-  (define (translate-static-field-setter tenv arg-type name arg)
+  (define (translate-static-field-setter arg-type name arg)
     (if arg-type
-        (let ([type-entry (get-type-entry tenv arg-type)])
+        (let ([type-entry (get-type-entry arg-type)])
           (if (s:member name
                         (map tenv:member-name (append (tenv:type-members type-entry)
                                                       (tenv:type-inherited type-entry)))

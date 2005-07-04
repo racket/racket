@@ -2,6 +2,7 @@
 
   (require "readerr.ss"
            "ast.ss"
+           "parameters.ss"
            "tenv.ss"
            "private/typechecker/type-utils.ss"
            (lib "plt-match.ss")
@@ -96,7 +97,7 @@
                class-name)))))
   
   (provide add-defns-to-tenv add-defn-to-tenv)
-  (define (add-defns-to-tenv defns tenv)
+  (define (add-defns-to-tenv defns)
     (let loop ([defns     defns]
                [skipped   '()]
                [changed?  #f]
@@ -125,10 +126,10 @@
              ;; if we went through all the supers with them being defined,
              ;; then we can add this type as well.
              [(null? supers)
-              (loop (cdr defns) skipped #t (cons (add-defn-to-tenv (car defns) tenv) new-defns))]
+              (loop (cdr defns) skipped #t (cons (add-defn-to-tenv (car defns)) new-defns))]
              ;; if there is an entry, we check to make sure it's a type, and
              ;; if it is, then we continue looping in the inner loop
-             [(get-tenv-entry tenv (car supers))
+             [(get-tenv-entry (car supers))
               =>
               (lambda (e)
                 (if (not (tenv:type? e))
@@ -144,7 +145,7 @@
         ;; their entries, so we just run them through as we hit them.
         [(or (honu:class? (car defns))
              (honu:mixin? (car defns)))
-         (loop (cdr defns) skipped #t (cons (add-defn-to-tenv (car defns) tenv) new-defns))]
+         (loop (cdr defns) skipped #t (cons (add-defn-to-tenv (car defns)) new-defns))]
         ;; for structs, we will get back a list of two things: the new type
         ;; and the new class definition, so append those onto new-defns
         [(honu:struct? (car defns))
@@ -154,19 +155,19 @@
                                               (make-struct-type-decls inits members))]
                   [new-class (make-honu:class stx name type final? (cons type impls) inits members 
                                               (cons (make-struct-export type inits members (list)) exports))])
-              (loop (cdr defns) skipped #t (cons (add-defn-to-tenv new-class tenv)
-                                                 (cons (add-defn-to-tenv new-iface tenv) new-defns))))])]
+              (loop (cdr defns) skipped #t (cons (add-defn-to-tenv new-class)
+                                                 (cons (add-defn-to-tenv new-iface) new-defns))))])]
         ;; for subclasses, we check to make sure the base (and its self-type) and
         ;; the mixin (and its arg-type) are in the tenv.  If not, skip it.
         ;; Give appropriate errors for each thing that can go wrong.
         [(honu:subclass? (car defns))
-         (let* ([base     (get-tenv-entry tenv (honu:subclass-base (car defns)))]
+         (let* ([base     (get-tenv-entry (honu:subclass-base (car defns)))]
                 [selftype (if (and base (tenv:class? base))
-                              (get-tenv-entry tenv (honu:type-iface-name (tenv:class-sub-type base)))
+                              (get-tenv-entry (honu:type-iface-name (tenv:class-sub-type base)))
                               #f)]
-                [mixin    (get-tenv-entry tenv (honu:subclass-mixin (car defns)))]
+                [mixin    (get-tenv-entry (honu:subclass-mixin (car defns)))]
                 [argtype  (if (and mixin (tenv:mixin? mixin))
-                              (get-tenv-entry tenv (honu:type-iface-name (tenv:mixin-arg-type mixin)))
+                              (get-tenv-entry (honu:type-iface-name (tenv:mixin-arg-type mixin)))
                               #f)])
            (cond
              [(and base (not (tenv:class? base)))
@@ -194,7 +195,7 @@
                    base))
               ;; if the base's selftype does not match the mixin's argtype,
               ;; we cannot apply the mixin to the base.
-              (if (not (<:_P tenv (tenv:class-sub-type base) (tenv:mixin-arg-type mixin)))
+              (if (not (<:_P (tenv:class-sub-type base) (tenv:mixin-arg-type mixin)))
                   (raise-read-error-with-stx
                    (format "Class ~a (~a) is not of an appropriate type (~a) for mixin ~a"
                            (printable-key  (honu:subclass-base (car defns)))
@@ -202,7 +203,7 @@
                            (printable-type (tenv:mixin-arg-type mixin))
                            (printable-key  (honu:subclass-mixin (car defns))))
                    (honu:subclass-base (car defns))))
-              (loop (cdr defns) skipped #t (cons (add-defn-to-tenv (car defns) tenv) new-defns))]
+              (loop (cdr defns) skipped #t (cons (add-defn-to-tenv (car defns)) new-defns))]
              ;; if we get here, we cannot yet make the entry for this subclass,
              ;; so skip it.
              [else
@@ -214,7 +215,7 @@
          (match (car defns)
            [(struct honu:substruct (stx name type base arg-type final? impls inits withs super-new
                                         members-before members-after exports))
-            (let ([argtype (get-tenv-entry tenv (honu:type-iface-name arg-type))])
+            (let ([argtype (get-tenv-entry (honu:type-iface-name arg-type))])
               (cond
                 [(and argtype (not (tenv:type? argtype)))
                   (raise-read-error-with-stx
@@ -235,13 +236,13 @@
                                                                          (tenv:type-members argtype))
                                                            exports))]
                         [new-sclass (make-honu:subclass stx name base mixin-name)])
-                   (loop (cons new-sclass (cdr defns)) skipped #t  (cons (add-defn-to-tenv new-mixin tenv)
-                                                                         (cons (add-defn-to-tenv new-iface tenv) new-defns))))]
+                   (loop (cons new-sclass (cdr defns)) skipped #t  (cons (add-defn-to-tenv new-mixin)
+                                                                         (cons (add-defn-to-tenv new-iface) new-defns))))]
                 [else
                  (loop (cdr defns) (cons (car defns) skipped) changed? new-defns)]))])])))
   
-  (define (check-super-for-members tenv name members super-name)
-    (match (get-tenv-entry tenv super-name)
+  (define (check-super-for-members name members super-name)
+    (match (get-tenv-entry super-name)
       [(struct tenv:type (_ _ super-members super-inherited))
        ;; here we make sure to use both defined members and inherited members
        (let loop ([super-members (append super-members super-inherited)]
@@ -261,7 +262,7 @@
               ;; if we eventually allow co-/contra-variance here, this is where
               ;; we'd do it.
               (if (honu:type-disp? (tenv:member-type (car super-members)))
-                  (if (<:_P tenv (tenv:member-type m) (tenv:member-type (car super-members)))
+                  (if (<:_P (tenv:member-type m) (tenv:member-type (car super-members)))
                       (loop (cdr super-members) inherited)
                       (raise-read-error-with-stx
                        (format "Type ~a defines member ~a with type ~a, is not a subtype of type ~a as defined in supertype ~a"
@@ -272,7 +273,7 @@
                                (printable-key  super-name))
                        (tenv:member-stx m)))
                   ;; this handles mutable fields -- we don't have immutable fields yet
-                  (if (type-equal? tenv (tenv:member-type m) (tenv:member-type (car super-members)))
+                  (if (type-equal? (tenv:member-type m) (tenv:member-type (car super-members)))
                       (loop (cdr super-members) inherited)
                       (raise-read-error-with-stx
                        (format "Type ~a defines member ~a with type ~a, was defined with type ~a in supertype ~a"
@@ -297,7 +298,7 @@
                                                 (honu:type-disp-ret member-type))])
           member)))
 
-  (define (type-equal-modulo-disp? tenv t1 t2)
+  (define (type-equal-modulo-disp? t1 t2)
     (let ([t1 (if (honu:type-disp? t1)
                   (make-func-type (honu:ast-stx  t1)
                                   (honu:type-disp-arg t1)
@@ -308,9 +309,9 @@
                                   (honu:type-disp-arg t2)
                                   (honu:type-disp-ret t2))
                   t2)])
-      (type-equal? tenv t1 t2)))
+      (type-equal? t1 t2)))
   
-  (define (check-and-remove-duplicate-members tenv subtype inherited-members)
+  (define (check-and-remove-duplicate-members subtype inherited-members)
     (let loop ([inherited-members inherited-members]
                [unique-members    '()])
       (if (null? inherited-members)
@@ -331,8 +332,7 @@
                   ;; (modulo the dispatch arguments of methods)
                   ;;
                   ;; doesn't matter which we keep, so we'll just keep the first one that matched.
-                  [(type-equal-modulo-disp? tenv 
-                                            (tenv:member-type current-member)
+                  [(type-equal-modulo-disp? (tenv:member-type current-member)
                                             (tenv:member-type (cdr (car matching-members))))
                    (loop2 (cdr matching-members))]
                   [else
@@ -346,7 +346,7 @@
                             (printable-type (tenv:member-type (cdr (car matching-members)))))
                     subtype)])))))))
   
-  (define (add-defn-to-tenv defn tenv)
+  (define (add-defn-to-tenv defn)
     (match defn
       ;; for types, we need to recur over our supertypes, make sure that we don't have any definitions that countermand
       ;; those in our super classes (which will also make sure that our superclass definitions are consistent), and
@@ -358,25 +358,23 @@
        ;; we have to do this because members of the type can refer to the type itself.
        ;; this is only for <:_P checks.
        (extend-tenv name
-                    (make-tenv:type src-stx supers '() '())
-                    tenv)
+                    (make-tenv:type src-stx supers '() '()))
        (let* ([tenv-members (convert-members (make-iface-type name name) members)]
               [inherited-decls
-               (apply append (map (lambda (n) (check-super-for-members tenv name tenv-members n)) 
+               (apply append (map (lambda (n) (check-super-for-members name tenv-members n)) 
                                   (map honu:type-iface-name supers)))]
               [unique-inherited
                ;; remove duplicate entries for the same member name, making sure they match.
-               (check-and-remove-duplicate-members tenv name inherited-decls)])
+               (check-and-remove-duplicate-members name inherited-decls)])
          
          (extend-tenv-without-checking name 
-                                       (make-tenv:type src-stx supers tenv-members unique-inherited)
-                                       tenv)
+                                       (make-tenv:type src-stx supers tenv-members unique-inherited))
          defn)]
       ;; for classes and mixins, just add a new appropriate entry.
       [(struct honu:class (src-stx name t f? impls inits defns _))
        (extend-tenv name (make-tenv:class src-stx t impls
                                           (get-inits inits defns)
-                                          f? #f) tenv)
+                                          f? #f))
        defn]
       [(struct honu:mixin (src-stx name type arg-type final? impls inits
                                    withs _ defns-before defns-after _))
@@ -384,13 +382,13 @@
                                           (get-inits inits
                                                      (append defns-before 
                                                              defns-after))
-                                          withs final?) tenv)
+                                          withs final?))
        defn]
       ;; all the heavy lifting of subclasses is in generate-subclass-tenv,
       ;; which does things like make sure that the withs of the mixin are satisfied
       ;; by the base, collects all the inits needed for the resulting class, etc.
       [(struct honu:subclass (src-stx name base mixin))
-       (extend-tenv name (generate-subclass-tenv defn tenv) tenv)
+       (extend-tenv name (generate-subclass-tenv defn))
        defn]))
 
   (define (convert-members iface members)
@@ -429,10 +427,10 @@
                                          #t)))
                    init-fields))))
 
-  (define (generate-subclass-tenv defn tenv)
-    (let ([base  (get-class-entry tenv (honu:subclass-base defn))]
-          [mixin (get-mixin-entry tenv (honu:subclass-mixin defn))])
-      (let ([new-inits (remove-used-inits tenv defn
+  (define (generate-subclass-tenv defn)
+    (let ([base  (get-class-entry (honu:subclass-base defn))]
+          [mixin (get-mixin-entry (honu:subclass-mixin defn))])
+      (let ([new-inits (remove-used-inits defn
                                           (tenv:class-inits base)
                                           (tenv:mixin-withs mixin))])
         (make-tenv:class (honu:ast-stx defn)
@@ -443,7 +441,7 @@
                          (tenv:mixin-final? mixin)
                          (honu:subclass-base defn)))))
 
-  (define (remove-used-inits tenv defn old-inits withs)
+  (define (remove-used-inits defn old-inits withs)
     (let loop ([old-inits  old-inits]
                [withs      withs]
                [new-inits  '()])
@@ -460,7 +458,7 @@
                                       (tenv-key=? (honu:formal-name w) (tenv:init-name curr)))
                                     withs)])
             (if index
-                (if (<:_P tenv (honu:formal-type (list-ref withs index)) (tenv:init-type curr))
+                (if (<:_P (honu:formal-type (list-ref withs index)) (tenv:init-type curr))
                     (loop (cdr old-inits)
                           (append (take withs index)
                                   (drop withs (+ index 1)))
@@ -474,7 +472,9 @@
                       withs
                       (cons curr new-inits)))))))
   
-  (provide display-lenv display-tenv)
+  (provide display-lenv display-current-lenv display-tenv display-current-tenv)
+  (define (display-current-lenv)
+    (display-lenv (current-lexical-environment)))
   (define (display-lenv lenv)
     (tenv-for-each lenv
                    (lambda (k v)
@@ -482,6 +482,8 @@
                                       (printable-key k)
                                       (printable-type (tenv:value-type v)))))))
   
+  (define (display-current-tenv)
+    (display-lenv (current-type-environment)))
   (define (display-tenv tenv)
     (tenv-for-each tenv
                    (lambda (k v)

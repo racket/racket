@@ -4,6 +4,7 @@
            (lib "boundmap.ss" "syntax")
            (lib "contract.ss")  
            "ast.ss"
+           "parameters.ss"
            "readerr.ss")
   
   (provide (struct tenv:entry  (stx))
@@ -99,22 +100,24 @@
 
   (provide/contract [empty-tenv (-> tenv?)]
                     [get-builtin-lenv (-> tenv?)]
-                    [extend-tenv (identifier? tenv:entry? tenv? . -> . void?)]
-                    [extend-tenv-without-checking (identifier? tenv:entry? tenv? . -> . void?)]
-                    [create-tenv ((listof identifier?)
-                                  (listof tenv:entry?)
-                                  . -> .
-                                  tenv?)])
+                    [extend-tenv (identifier? tenv:entry? . -> . void?)]
+                    [extend-lenv (identifier? tenv:value? . -> . void?)]
+                    [extend-tenv-without-checking (identifier? tenv:entry? . -> . void?)])
+  
   (define (empty-tenv) (make-bound-identifier-mapping))
   (define (get-builtin-lenv)
-    (let ([tenv (empty-tenv)])
-      (for-each (lambda (n t)
-                  (extend-tenv n (make-tenv:value #f t) tenv))
-                (map car builtin-list)
-                (map cdr builtin-list))
-      tenv))
-  (define (extend-tenv key val tenv)
-    (if (get-tenv-entry tenv key)
+    (create-tenv (map car builtin-list)
+                 (map (lambda (p)
+                        (make-tenv:value (car p) (cdr p))) builtin-list)))
+  (define (extend-tenv key val)
+    (extend-tenv/checks key val (current-type-environment)))
+  (define (extend-lenv key val)
+    (extend-tenv/checks key val (current-lexical-environment)))
+  (define (extend-tenv-without-checking key val)
+    (extend-tenv/no-checks key val (current-type-environment)))
+
+  (define (extend-tenv/checks key val tenv)
+    (if (bound-identifier-mapping-get tenv key (lambda () #f))
         (if (eqv? (string-ref (symbol->string (printable-key key)) 0) #\$)
             (raise-read-error-with-stx
              (format "~a already bound by a subclass or substruct"
@@ -124,33 +127,36 @@
              (format "~a already bound by top-level definition" (printable-key key))
              key))
         (bound-identifier-mapping-put! tenv key val)))
-  (define (extend-tenv-without-checking key val tenv)
+  (define (extend-tenv/no-checks key val tenv)
     (bound-identifier-mapping-put! tenv key val))
   (define (create-tenv keys vals)
     (let ((table (empty-tenv)))
-      (begin (for-each extend-tenv table keys vals)
+      (begin (for-each (lambda (k v)
+                         (extend-tenv/checks k v table))
+                       keys vals)
              table)))
 
   ;; only use this if you a) don't want an error or b) don't know what you should get.
-  (provide/contract [get-tenv-entry   (tenv? identifier? . -> . (union tenv:entry? false/c))])
-  (define (get-tenv-entry tenv key)
-    (bound-identifier-mapping-get tenv key (lambda () #f)))
+  (provide/contract [get-tenv-entry   (identifier? . -> . (union tenv:entry? false/c))]
+                    [get-lenv-entry   (identifier? . -> . (union tenv:entry? false/c))])
+  (define (get-tenv-entry key)
+    (bound-identifier-mapping-get (current-type-environment) key (lambda () #f)))
+  (define (get-lenv-entry key)
+    (bound-identifier-mapping-get (current-lexical-environment) key (lambda () #f)))
   
-  (provide/contract [get-type-entry   (tenv?
-                                       (union honu:type-iface?
+  (provide/contract [get-type-entry   ((union honu:type-iface?
                                               honu:type-iface-top?) . -> . tenv:type?)]
-                    [get-class-entry  (tenv? identifier?            . -> . tenv:class?)]
-                    [get-mixin-entry  (tenv? identifier?            . -> . tenv:mixin?)]
-                    [get-member-type  (tenv?
-                                       (union honu:type-iface?
+                    [get-class-entry  (identifier?                  . -> . tenv:class?)]
+                    [get-mixin-entry  (identifier?                  . -> . tenv:mixin?)]
+                    [get-member-type  ((union honu:type-iface?
                                               honu:type-iface-top?)
                                        identifier?                  . -> . honu:type?)]
-                    [get-value-entry  (tenv? identifier?            . -> . tenv:value?)])
-  (define (get-type-entry tenv type)
+                    [get-value-entry  (identifier?                  . -> . tenv:value?)])
+  (define (get-type-entry type)
     (if (honu:type-iface-top? type)
       (make-tenv:type #f (list) (list) (list))
       (let* ([name (honu:type-iface-name type)]
-             [entry (get-tenv-entry tenv name)])
+             [entry (get-tenv-entry name)])
         (cond
           [(not entry)
            (raise-read-error-with-stx
@@ -161,8 +167,8 @@
             (format "Definition of ~a is not a type" (printable-key name))
             name)]
           [else entry]))))
-  (define (get-class-entry tenv name)
-    (let ([entry (get-tenv-entry tenv name)])
+  (define (get-class-entry name)
+    (let ([entry (get-tenv-entry name)])
       (cond
         [(not entry)
          (raise-read-error-with-stx
@@ -173,8 +179,8 @@
           (format "Definition of ~a is not a class" (printable-key name))
           name)]
         [else entry])))
-  (define (get-mixin-entry tenv name)
-    (let ([entry (get-tenv-entry tenv name)])
+  (define (get-mixin-entry name)
+    (let ([entry (get-tenv-entry name)])
       (cond
         [(not entry)
          (raise-read-error-with-stx
@@ -185,8 +191,8 @@
           (format "Definition of ~a is not a mixin" (printable-key name))
           name)]
         [else entry])))
-  (define (get-member-type tenv type name)
-    (let* ([entry (get-type-entry tenv type)]
+  (define (get-member-type type name)
+    (let* ([entry (get-type-entry type)]
            [mtype (find (lambda (m)
                           (tenv-key=? (tenv:member-name m) name))
                         (append (tenv:type-members entry)
@@ -200,8 +206,8 @@
                        'Any
                        (printable-key (honu:type-iface-name type))))
            name))))
-  (define (get-value-entry tenv name)
-    (let ([entry (get-tenv-entry tenv name)])
+  (define (get-value-entry name)
+    (let ([entry (get-lenv-entry name)])
       (cond
         [(not entry)
          (raise-read-error-with-stx
@@ -213,8 +219,9 @@
           name)]
         [else entry])))
   
-  (provide wrap-as-function extend-fenv)
+  (provide wrap-lenv extend-fenv)
   
+  (define (wrap-lenv) (wrap-as-function (current-lexical-environment)))
   (define (wrap-as-function tenv)
     (lambda (name)
       (let ([entry (bound-identifier-mapping-get tenv name (lambda () #f))])
