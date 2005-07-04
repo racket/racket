@@ -105,7 +105,7 @@
            (at stx `(define ,(translate-class-name name)
                       (class* ,(translate-class-name base) ,(map translate-iface-name impls)
                         (honu:type ,(translate-type-for-syntax selftype))
-                        (honu:type ,@(map (lambda (w) (translate-type-for-syntax (honu:formal-type w)))))
+                        (honu:type ,@(map (lambda (w) (translate-type-for-syntax (honu:formal-type w))) withs))
                         (inspect #f)
                         ,(translate-inits inits)
                         ,@(map translate-member members-before)
