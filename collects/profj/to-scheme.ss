@@ -536,20 +536,29 @@
                              (lambda () #f)))
                 (translate-interact-require (cdr reqs) type-recs)))))
   
-  ;translate-require: (list req) type-records -> (list syntax)
+  ;translate-require: (list (list location req)) type-records -> (list syntax)
   (define (translate-require reqs type-recs)
-    (if (null? reqs)
-        null
-        (let* ((req (cadr (car reqs)))
-               (err (lambda () (error 'translate-require (format "Internal Error: ~a not found" req)))))
-          (cons (begin (send type-recs set-location! (car (car reqs)))
-                       (send type-recs get-require-syntax 
-                             (send type-recs require-prefix? 
-                                   (cons (req-class req) (req-path req)) 
-                                   err)
-                             (cons (req-class req) (req-path req))
-                             err))
-                (translate-require (cdr reqs) type-recs)))))
+    (cond
+      ((null? reqs) null)
+      ((member (cadr (car reqs))
+               (list (make-req "Class" '("java" "lang"))
+                     (make-req "PrintString" '("java" "io"))
+                     (make-req "PrintWriter" '("java" "io"))))
+       (translate-require (cdr reqs) type-recs))
+      (else
+       (let* ((req (cadr (car reqs)))
+              (err (lambda () 
+                     (error 'translate-require 
+                            (format "Internal Error: (make-req ~a ~a) not found" 
+                                    (req-class req) (req-path req))))))
+         (cons (begin (send type-recs set-location! (car (car reqs)))
+                      (send type-recs get-require-syntax 
+                            (send type-recs require-prefix? 
+                                  (cons (req-class req) (req-path req)) 
+                                  err)
+                            (cons (req-class req) (req-path req))
+                            err))
+               (translate-require (cdr reqs) type-recs))))))
   
   ;translate-implements: (list name) -> (list syntax)
   (define (translate-implements imp)

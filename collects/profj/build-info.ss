@@ -484,6 +484,10 @@
                                        (make-req (car name-list) (cdr name-list))))
                                  (cons super-name (map name->list (header-implements info))))))
                  
+                 (set! reqs
+                       (remove-dup-reqs
+                        (append (get-method-reqs (class-record-methods super-record))
+                                reqs)))                                                
                  (send type-recs set-location! (def-file class))
                  (set-def-uses! class reqs)
                  
@@ -631,6 +635,47 @@
                   (null? (method-record-atypes (car methods)))
                   (car methods))
              (find-default-ctor (cdr methods)))))
+  
+  ;remove-dup-reqs (list req) -> (list req)
+  (define (remove-dup-reqs reqs)
+    (cond
+      ((null? reqs) null)
+      ((member (car reqs) (cdr reqs))
+       (remove-dup-reqs (cdr reqs)))
+      (else
+       (cons (car reqs) (remove-dup-reqs (cdr reqs))))))
+  
+  ;get-method-reqs: (list method-record) -> (list req)
+  (define (get-method-reqs methods)
+    (cond
+      ((null? methods) methods)
+      ((or (memq (method-record-rtype (car methods)) '(void ctor short byte int long float double
+                                                            boolean dynamic char))
+           (array-type? (method-record-rtype (car methods))))
+       (append (get-reqs-parms (method-record-atypes (car methods)))
+               (get-method-reqs (cdr methods))))
+      ((null? (method-record-atypes (car methods)))
+       (cons (type->req (method-record-rtype (car methods)))
+             (get-method-reqs (cdr methods))))
+      (else
+       (cons (type->req (method-record-rtype (car methods)))
+             (append (get-reqs-parms (method-record-atypes (car methods)))
+                     (get-method-reqs (cdr methods)))))))
+  
+  (define (get-reqs-parms parms)
+    (cond
+      ((null? parms) null)
+      ((memq (car parms) '(short byte int char long float double boolean dynamic))
+       (get-reqs-parms (cdr parms)))
+      ((array-type? (car parms)) (get-reqs-parms (cdr parms)))
+      (else (cons (type->req (car parms)) (get-reqs-parms (cdr parms))))))
+  (define (type->req t)
+    (cond
+      ((or (eq? 'string t) (equal? string-type t))
+       (make-req "String" '("java" "lang")))
+      ((ref-type? t)
+       (make-req (ref-type-class/iface t) (ref-type-path t)))
+      #;(else (make-req 'array '()))))
   
   ;; process-interface: interface-def (list string) type-records bool bool symbol -> class-record
   (define (process-interface iface package-name type-recs look-in-table? put-in-table? level)

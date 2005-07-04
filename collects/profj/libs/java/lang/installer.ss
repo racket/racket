@@ -15,6 +15,7 @@
 			       (build-path java.lang file)
 			       #f
 			       #f)))])
+        (javac "Util.djava")
 	(javac "Math.java")
         (javac "System.java")
 	(javac "Number.java")
