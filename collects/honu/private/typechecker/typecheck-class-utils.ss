@@ -231,7 +231,7 @@
             "Type of field is undefined"
             (honu:ast-stx type)))
        (let-values ([(e1 t1) (parameterize ([current-class-environment cenv])
-                               (typecheck-expression cenv lenv type value))])
+                               (typecheck-expression lenv type value))])
          (copy-struct honu:field member
            [honu:field-value e1]))]
       [(struct honu:method (stx name type args body))
