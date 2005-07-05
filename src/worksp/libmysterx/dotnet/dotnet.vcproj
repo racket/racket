@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding = "Windows-1252"?>
+<?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.00"
+	Version="7.10"
 	Name="dotnet"
 	ProjectGUID="{44BA9F7B-63F7-41F4-B8E9-8C69A08A677C}"
 	Keyword="AtlProj">
@@ -71,7 +71,13 @@
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
 				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 		<Configuration
 			Name="Jrm|Win32"
@@ -135,7 +141,13 @@
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
 				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
@@ -200,15 +212,26 @@
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
 				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 	</Configurations>
+	<References>
+	</References>
 	<Files>
 		<Filter
 			Name="Source Files"
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm">
 			<File
 				RelativePath="..\..\..\mysterx\dotnet\BaseInfo.cpp">
+			</File>
+			<File
+				RelativePath="..\..\..\mysterx\dotnet\dotnet.cpp">
 			</File>
 			<File
 				RelativePath="..\..\..\mysterx\dotnet\Patch.cpp">
@@ -218,15 +241,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\mysterx\dotnet\SimpleException.cpp">
-			</File>
-			<File
-				RelativePath="..\..\..\mysterx\dotnet\Synchronize.cpp">
-			</File>
-			<File
-				RelativePath="..\..\..\mysterx\dotnet\ThreadInfo.cpp">
-			</File>
-			<File
-				RelativePath="..\..\..\mysterx\dotnet\dotnet.cpp">
 			</File>
 			<File
 				RelativePath="..\..\..\mysterx\dotnet\stdafx.cpp">
@@ -250,6 +264,12 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\..\..\mysterx\dotnet\Synchronize.cpp">
+			</File>
+			<File
+				RelativePath="..\..\..\mysterx\dotnet\ThreadInfo.cpp">
+			</File>
+			<File
 				RelativePath="..\..\..\mysterx\dotnet\utils.cpp">
 			</File>
 		</Filter>
@@ -269,19 +289,19 @@
 				RelativePath="..\..\..\mysterx\dotnet\Resource.h">
 			</File>
 			<File
+				RelativePath="..\..\..\mysterx\dotnet\SimpleException.h">
+			</File>
+			<File
 				RelativePath="..\..\..\mysterx\dotnet\SList.h">
 			</File>
 			<File
-				RelativePath="..\..\..\mysterx\dotnet\SimpleException.h">
+				RelativePath="..\..\..\mysterx\dotnet\stdafx.h">
 			</File>
 			<File
 				RelativePath="..\..\..\mysterx\dotnet\Synchronize.h">
 			</File>
 			<File
 				RelativePath="..\..\..\mysterx\dotnet\ThreadInfo.h">
-			</File>
-			<File
-				RelativePath="..\..\..\mysterx\dotnet\stdafx.h">
 			</File>
 		</Filter>
 		<Filter

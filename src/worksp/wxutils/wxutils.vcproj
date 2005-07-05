@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding = "Windows-1252"?>
+<?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.00"
+	Version="7.10"
 	Name="wxutils"
 	SccProjectName=""
 	SccLocalPath="">
@@ -47,6 +47,12 @@
 				Culture="1033"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
@@ -90,8 +96,16 @@
 				Culture="1033"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 	</Configurations>
+	<References>
+	</References>
 	<Files>
 		<Filter
 			Name="Source Files"
@@ -121,13 +135,13 @@
 				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Crifrdat.c">
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Utils\Dib\DIB.cxx">
-			</File>
-			<File
 				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Data.c">
 			</File>
 			<File
 				RelativePath="..\..\Wxwindow\Contrib\Fafa\Dialog.c">
+			</File>
+			<File
+				RelativePath="..\..\Wxwindow\Utils\Dib\DIB.cxx">
 			</File>
 			<File
 				RelativePath="..\..\Wxwindow\Contrib\Fafa\Draw.c">
@@ -175,13 +189,13 @@
 				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Wrffrp.c">
 			</File>
 			<File
+				RelativePath="..\..\Wxwindow\Src\Msw\wximgxbm.cxx">
+			</File>
+			<File
 				RelativePath="..\..\Wxwindow\Contrib\Gauge\Zyz3d.c">
 			</File>
 			<File
 				RelativePath="..\..\Wxwindow\Contrib\Gauge\Zyzgauge.c">
-			</File>
-			<File
-				RelativePath="..\..\Wxwindow\Src\Msw\wximgxbm.cxx">
 			</File>
 		</Filter>
 		<Filter

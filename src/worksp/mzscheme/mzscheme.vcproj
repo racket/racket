@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding = "Windows-1252"?>
+<?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.00"
+	Version="7.10"
 	Name="MzScheme"
 	SccProjectName=""
 	SccLocalPath="">
@@ -36,9 +36,9 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
 				OutputFile="..\..\..\$(ProjectName).exe"
-				ProgramDatabaseFile="..\..\..\$(ProjectName).pdb"
 				SuppressStartupBanner="TRUE"
 				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile="..\..\..\$(ProjectName).pdb"
 				SubSystem="1"/>
 			<Tool
 				Name="VCMIDLTool"/>
@@ -66,7 +66,13 @@ cd ..\..\worksp\mzscheme
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
 				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
@@ -98,10 +104,10 @@ cd ..\..\worksp\mzscheme
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
 				OutputFile="..\..\..\$(ProjectName).exe"
-				ProgramDatabaseFile="..\..\..\$(ProjectName).pdb"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile="..\..\..\$(ProjectName).pdb"
 				SubSystem="1"/>
 			<Tool
 				Name="VCMIDLTool"/>
@@ -129,9 +135,17 @@ cd ..\..\worksp\mzscheme
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
 				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 	</Configurations>
+	<References>
+	</References>
 	<Files>
 		<Filter
 			Name="Source Files"

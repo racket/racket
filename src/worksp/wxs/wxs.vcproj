@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding = "Windows-1252"?>
+<?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.00"
+	Version="7.10"
 	Name="wxs"
 	SccProjectName=""
 	SccLocalPath="">
@@ -48,6 +48,12 @@
 				Culture="1033"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
@@ -92,15 +98,20 @@
 				Culture="1033"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 	</Configurations>
+	<References>
+	</References>
 	<Files>
 		<Filter
 			Name="Source Files"
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat;for;f90">
-			<File
-				RelativePath="..\..\mred\Wxs\WXSCHEME.cxx">
-			</File>
 			<File
 				RelativePath="..\..\mred\Wxs\WXS_BMAP.cxx">
 			</File>
@@ -184,6 +195,9 @@
 			</File>
 			<File
 				RelativePath="..\..\mred\Wxs\WXS_WIN.cxx">
+			</File>
+			<File
+				RelativePath="..\..\mred\Wxs\WXSCHEME.cxx">
 			</File>
 		</Filter>
 		<Filter

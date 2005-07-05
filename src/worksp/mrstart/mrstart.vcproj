@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding = "Windows-1252"?>
+<?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.00"
+	Version="7.10"
 	Name="MrStart"
 	SccProjectName=""
 	SccLocalPath="">
@@ -37,9 +37,9 @@
 				AdditionalOptions="/MACHINE:I386"
 				OutputFile="..\..\..\collects\launcher\$(ProjectName).exe"
 				LinkIncremental="1"
+				SuppressStartupBanner="TRUE"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="..\..\..\collects\launcher\$(ProjectName).pdb"
-				SuppressStartupBanner="TRUE"
 				SubSystem="2"/>
 			<Tool
 				Name="VCMIDLTool"
@@ -57,14 +57,22 @@
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="NDEBUG,MRSTART"
-				AdditionalIncludeDirectories="..\starters;$(NoInherit)"
-				Culture="1033"/>
+				Culture="1033"
+				AdditionalIncludeDirectories="..\starters;$(NoInherit)"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
 				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 	</Configurations>
+	<References>
+	</References>
 	<Files>
 		<Filter
 			Name="Source Files"

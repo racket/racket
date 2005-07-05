@@ -1,11 +1,11 @@
-Microsoft Visual Studio Solution File, Format Version 7.00
+Microsoft Visual Studio Solution File, Format Version 8.00
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MzStart", "mzstart.vcproj", "{838B0D91-A8B3-4716-9D37-E0E444B563D2}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
-		ConfigName.0 = Release
-	EndGlobalSection
-	GlobalSection(ProjectDependencies) = postSolution
+		Release = Release
 	EndGlobalSection
 	GlobalSection(ProjectConfiguration) = postSolution
 		{838B0D91-A8B3-4716-9D37-E0E444B563D2}.Release.ActiveCfg = Release|Win32

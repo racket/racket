@@ -1,28 +1,38 @@
-Microsoft Visual Studio Solution File, Format Version 7.00
+Microsoft Visual Studio Solution File, Format Version 8.00
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mysc", "mysc\mysc.vcproj", "{71042DA0-8212-49BB-A3B2-9387D4D39FA6}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "myspage", "myspage\myspage.vcproj", "{4F5E803D-985F-43B1-8BDC-B8F6D12F56B8}"
+	ProjectSection(ProjectDependencies) = postProject
+		{71042DA0-8212-49BB-A3B2-9387D4D39FA6} = {71042DA0-8212-49BB-A3B2-9387D4D39FA6}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "myssink", "myssink\myssink.vcproj", "{1B8F4E47-9F2D-45EA-9941-7672B28E8285}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libmysterx", "libmysterx.vcproj", "{68D1B4E0-D9D3-45C3-9BCC-A5491F1F755A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{71042DA0-8212-49BB-A3B2-9387D4D39FA6} = {71042DA0-8212-49BB-A3B2-9387D4D39FA6}
+		{4F5E803D-985F-43B1-8BDC-B8F6D12F56B8} = {4F5E803D-985F-43B1-8BDC-B8F6D12F56B8}
+		{1B8F4E47-9F2D-45EA-9941-7672B28E8285} = {1B8F4E47-9F2D-45EA-9941-7672B28E8285}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dotnet", "dotnet\dotnet.vcproj", "{44BA9F7B-63F7-41F4-B8E9-8C69A08A677C}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dotnetPS", "dotnet\dotnetPS.vcproj", "{5BF37E89-6891-42AD-9133-77B412C01724}"
+	ProjectSection(ProjectDependencies) = postProject
+		{44BA9F7B-63F7-41F4-B8E9-8C69A08A677C} = {44BA9F7B-63F7-41F4-B8E9-8C69A08A677C}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
-		ConfigName.0 = Debug
-		ConfigName.1 = Jrm
-		ConfigName.2 = Release
-	EndGlobalSection
-	GlobalSection(ProjectDependencies) = postSolution
-		{4F5E803D-985F-43B1-8BDC-B8F6D12F56B8}.0 = {71042DA0-8212-49BB-A3B2-9387D4D39FA6}
-		{68D1B4E0-D9D3-45C3-9BCC-A5491F1F755A}.0 = {1B8F4E47-9F2D-45EA-9941-7672B28E8285}
-		{68D1B4E0-D9D3-45C3-9BCC-A5491F1F755A}.1 = {4F5E803D-985F-43B1-8BDC-B8F6D12F56B8}
-		{68D1B4E0-D9D3-45C3-9BCC-A5491F1F755A}.2 = {71042DA0-8212-49BB-A3B2-9387D4D39FA6}
-		{5BF37E89-6891-42AD-9133-77B412C01724}.0 = {44BA9F7B-63F7-41F4-B8E9-8C69A08A677C}
+		Debug = Debug
+		Jrm = Jrm
+		Release = Release
 	EndGlobalSection
 	GlobalSection(ProjectConfiguration) = postSolution
 		{71042DA0-8212-49BB-A3B2-9387D4D39FA6}.Debug.ActiveCfg = Debug|Win32

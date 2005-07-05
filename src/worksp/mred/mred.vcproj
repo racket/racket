@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding = "Windows-1252"?>
+<?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.00"
+	Version="7.10"
 	Name="MrEd"
 	SccProjectName=""
 	SccLocalPath="">
@@ -41,11 +41,11 @@
 				AdditionalOptions="/MACHINE:I386"
 				AdditionalDependencies="Unicows.lib WSock32.lib User32.lib Advapi32.lib"
 				OutputFile="..\..\..\$(ProjectName).exe"
-				ProgramDatabaseFile="..\..\..\$(ProjectName).pdb"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				IgnoreDefaultLibraryNames="libcd.lib"
 				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile="..\..\..\$(ProjectName).pdb"
 				SubSystem="2"/>
 			<Tool
 				Name="VCMIDLTool"/>
@@ -63,7 +63,13 @@
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
 				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
@@ -91,10 +97,10 @@
 				AdditionalOptions="/MACHINE:I386"
 				AdditionalDependencies="Unicows.lib WSock32.lib User32.lib Advapi32.lib"
 				OutputFile="..\..\..\$(ProjectName).exe"
-				ProgramDatabaseFile="..\..\..\$(ProjectName).pdb"
 				SuppressStartupBanner="TRUE"
 				IgnoreDefaultLibraryNames="libcd.lib"
 				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile="..\..\..\$(ProjectName).pdb"
 				SubSystem="2"/>
 			<Tool
 				Name="VCMIDLTool"/>
@@ -112,9 +118,17 @@
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
 				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 	</Configurations>
+	<References>
+	</References>
 	<Files>
 		<Filter
 			Name="Source Files"
@@ -133,6 +147,12 @@
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;fi;fd">
 			<File
+				RelativePath="..\..\mred\wxme\edjr.h">
+			</File>
+			<File
+				RelativePath="..\..\mred\mred.h">
+			</File>
+			<File
 				RelativePath="..\..\mred\Wxme\Wx_cgrec.h">
 			</File>
 			<File
@@ -140,15 +160,6 @@
 			</File>
 			<File
 				RelativePath="..\..\mred\Wxme\Wx_medad.h">
-			</File>
-			<File
-				RelativePath="..\..\mred\Wxme\Wx_snip.h">
-			</File>
-			<File
-				RelativePath="..\..\mred\wxme\edjr.h">
-			</File>
-			<File
-				RelativePath="..\..\mred\mred.h">
 			</File>
 			<File
 				RelativePath="..\..\mred\wxme\wx_media.h">
@@ -161,6 +172,9 @@
 			</File>
 			<File
 				RelativePath="..\..\mred\Wxme\wx_mpriv.h">
+			</File>
+			<File
+				RelativePath="..\..\mred\Wxme\Wx_snip.h">
 			</File>
 			<File
 				RelativePath="..\..\mred\wxme\wx_style.h">
@@ -176,16 +190,13 @@
 				RelativePath=".\BULLSEYE.CUR">
 			</File>
 			<File
-				RelativePath=".\HAND.CUR">
-			</File>
-			<File
-				RelativePath=".\WATCH1.CUR">
-			</File>
-			<File
 				RelativePath=".\child.ico">
 			</File>
 			<File
 				RelativePath=".\fafa.ico">
+			</File>
+			<File
+				RelativePath=".\HAND.CUR">
 			</File>
 			<File
 				RelativePath=".\mdi.ico">
@@ -195,6 +206,9 @@
 			</File>
 			<File
 				RelativePath=".\std.ico">
+			</File>
+			<File
+				RelativePath=".\WATCH1.CUR">
 			</File>
 		</Filter>
 	</Files>

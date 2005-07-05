@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding = "Windows-1252"?>
+<?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.00"
+	Version="7.10"
 	Name="MzCOM"
 	SccProjectName=""
 	SccLocalPath="">
@@ -37,9 +37,9 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
 				OutputFile="..\..\..\$(ProjectName).exe"
-				ProgramDatabaseFile="..\..\..\$(ProjectName).pdb"
 				SuppressStartupBanner="TRUE"
 				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile="..\..\..\$(ProjectName).pdb"
 				SubSystem="2"/>
 			<Tool
 				Name="VCMIDLTool"
@@ -52,13 +52,19 @@
 				Name="VCPreLinkEventTool"/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="..\..\mzcom,$(OutDir),$(NOINHERIT)"
 				PreprocessorDefinitions="_DEBUG"
-				Culture="1033"/>
+				Culture="1033"
+				AdditionalIncludeDirectories="..\..\mzcom,$(OutDir),$(NOINHERIT)"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
 				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
@@ -91,10 +97,10 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
 				OutputFile="..\..\..\$(ProjectName).exe"
-				ProgramDatabaseFile="..\..\..\$(ProjectName).pdb"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile="..\..\..\$(ProjectName).pdb"
 				SubSystem="2"/>
 			<Tool
 				Name="VCMIDLTool"
@@ -107,15 +113,23 @@
 				Name="VCPreLinkEventTool"/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="..\..\mzcom,$(OutDir),$(NOINHERIT)"
 				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"/>
+				Culture="1033"
+				AdditionalIncludeDirectories="..\..\mzcom,$(OutDir),$(NOINHERIT)"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
 				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 	</Configurations>
+	<References>
+	</References>
 	<Files>
 		<Filter
 			Name="Source Files"
@@ -137,10 +151,10 @@
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl">
 			<File
-				RelativePath=".\MzCOMCP.h">
+				RelativePath=".\mzcom.h">
 			</File>
 			<File
-				RelativePath=".\mzcom.h">
+				RelativePath=".\MzCOMCP.h">
 			</File>
 			<File
 				RelativePath="..\..\mzcom\mzobj.h">
@@ -150,16 +164,16 @@
 			Name="Resource Files"
 			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
 			<File
-				RelativePath=".\MzCOM.rgs">
-			</File>
-			<File
-				RelativePath=".\MzObj.rgs">
-			</File>
-			<File
 				RelativePath=".\mzcom.ico">
 			</File>
 			<File
 				RelativePath=".\mzcom.rc">
+			</File>
+			<File
+				RelativePath=".\MzCOM.rgs">
+			</File>
+			<File
+				RelativePath=".\MzObj.rgs">
 			</File>
 		</Filter>
 	</Files>
