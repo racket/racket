@@ -50,8 +50,10 @@
              (map (lambda (e)
                     (translate-type-for-syntax (honu:export-type e)))
                   exports))]
-      [(struct honu:subclass (_ _ _ _))
-       '()]))
+      [(struct honu:subclass (_ _ _ mixin))
+       ;; okay, this isn't a type, but we still want to see it as a use
+       ;; until we can translate mixins correctly.
+       (list (translate-mixin-name mixin))]))
   
   (define (build-unwanted-type-syntax-member-decl member)
     (match member

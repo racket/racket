@@ -9,13 +9,6 @@
              (error "Attempt to access member of null")
              (send obj msg arg ...))]))
   
-  ;; We just use this so that Check Syntax correctly matches up
-  ;; types that don't appear otherwise.  Yes, this is a hack.
-  ;; For obvious reasons, this can't just be a macro that ignores
-  ;; its arguments, but must instead be a _function_ that ignores them.
-  (define (honu:type . types)
-    (void))
-  
   (define null%
     (class object%
       (inspect #f)

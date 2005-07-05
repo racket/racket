@@ -63,7 +63,7 @@
                                    value)])
                ,(cons 'values (grab-indices names)))))
   
-  (provide translate-iface-name translate-class-name translate-method-name
+  (provide translate-iface-name translate-class-name translate-mixin-name translate-method-name
            translate-field-getter-name translate-field-setter-name)
   (define (translate-iface-name type)
     (let ([name (if (honu:type-iface-top? type)
@@ -73,6 +73,8 @@
   
   (define (translate-class-name class)
     (at class (string->symbol (string-append (symbol->string (syntax-e class)) "%"))))
+  (define (translate-mixin-name mixin)
+    (at mixin (string->symbol (string-append (symbol->string (syntax-e mixin)) "-mixin"))))
   
   (define (translate-method-name type name)
     (at name (string->symbol (string-append (symbol->string (syntax-e (translate-iface-name type)))

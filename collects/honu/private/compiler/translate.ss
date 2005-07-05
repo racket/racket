@@ -26,8 +26,6 @@
         [(null? defns-to-go)
          (cons (build-unwanted-type-syntax defns)
                (reverse syntaxes))]
-        [(honu:mixin? (car defns-to-go))
-         (loop (cdr defns-to-go) syntaxes)]
         [(honu:subclass? (car defns-to-go))
          (let ([mixin (find (lambda (d)
                               (and (honu:mixin? d) 
@@ -77,6 +75,10 @@
                     ,(translate-impl-method impls)
                     ,(translate-formatter name members)
                     (super-new))))]
+      [(struct honu:mixin (stx name _ _ _ _ _ _ _ _ _ _))
+       ;; just a dummy definition to get the bindings set up correctly
+       (at stx `(define ,(translate-mixin-name name)
+                  '()))]
       [else (raise-read-error-with-stx
              "Haven't translated that type of definition yet."
              (honu:ast-stx defn))]))
