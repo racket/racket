@@ -8,6 +8,8 @@
            "match-error.ss"
            (lib "list.ss"))
   
+  (require (only (lib "1.ss" "srfi") zip unzip2))
+  
   (require-for-template mzscheme)
   
   ;; define a syntax-transformer in terms of a two-argument function  
@@ -33,10 +35,10 @@
     (string->symbol (apply string-append (map data->string l))))
   
   ;;!(function struct-pred-accessors-mutators
-  ;;          (form (struct-pred-accessors-mutators struct-name failure-thunk)
+  ;;          (form (struct-pred-accessors-mutators struct-name)
   ;;                ->
   ;;                (values pred accessors mutators parental-chain))
-  ;;          (contract (syntax-object (any -> void))
+  ;;          (contract (syntax-object)
   ;;                     ->
   ;;                     (values (any -> bool) list list)))
   ;; This function takes a syntax-object that is the name of a structure
@@ -44,8 +46,8 @@
   ;; a predicate for the structure.  The second is a list of accessors
   ;; in the same order as the fields of the structure declaration.  The
   ;; third is a list of mutators for the structure also in the same
-  ;; order.  The last is a list of supertypes of this struct. The
-  ;; failure thunk is invoked if the struct-name is not bound to a
+  ;; order.  The last is a list of supertypes of this struct. An
+  ;; error is raised if the struct-name is not bound to a
   ;; structure.
   (define (struct-pred-accessors-mutators struct-name)
     (define accessors-index 3)
@@ -56,23 +58,31 @@
       (match:syntax-err struct-name 
                         "not a defined structure"))
     (define (local-val sn) (syntax-local-value sn failure-thunk))
-    (define (handle-acc-list l)
-      (reverse (filter (lambda (x) x) l)))
+    ;; accessor/mutator lists are stored in reverse order, and can contain #f
+    ;; we only filter out a mutator if the accessor is also false.
+    ;; this function returns 2 lists of the same length if the inputs were the same length
+    (define (handle-acc/mut-lists accs muts)
+      (let*-values ([(filtered-lists) (filter (lambda (x) (car x)) (zip accs muts))]
+                    [(accs muts) (unzip2 filtered-lists)])
+        (values (reverse accs)
+                (reverse muts))))
+    
     (define (get-lineage struct-name)
       (let ([super (list-ref 
                     (local-val struct-name)
                     super-type-index)])
-        (cond [(equal? super #t) '()]
-              [(equal? super #f) '()] ;; not sure what to do in case where super-type is unknown
+        (cond [(equal? super #t) '()] ;; no super type exists
+              [(equal? super #f) '()] ;; super type is unknown
               [else (cons super (get-lineage super))])))
     (define info-on-struct (local-val struct-name))
     
     (define (get-info info-on-struct)
-      (values (handle-acc-list
-               (list-ref info-on-struct accessors-index))
-              (handle-acc-list
-               (list-ref info-on-struct mutators-index))
-              (list-ref info-on-struct pred-index)))
+      (let-values ([(accs muts)
+                    (handle-acc/mut-lists 
+                     (list-ref info-on-struct accessors-index)
+                     (list-ref info-on-struct mutators-index))])
+        (values accs muts
+                (list-ref info-on-struct pred-index))))
     
     (unless (struct-declaration-info? info-on-struct) (failure-thunk))
     

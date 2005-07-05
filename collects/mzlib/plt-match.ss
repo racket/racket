@@ -142,12 +142,14 @@
    exn:misc:match?
    exn:misc:match-value
    match-equality-test
-   define-match-expander) 
+   define-match-expander
+   match:test-no-order) 
   
   (require "private/match-internal-func.ss"
            "private/match-expander.ss"
            "private/match-helper.ss"
-           "private/match-error.ss")
+           "private/match-error.ss"
+	   "private/test-no-order.ss")
   
   )
 

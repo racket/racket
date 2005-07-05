@@ -1,24 +1,13 @@
 ;; (documentation (name match))
 ;; <pre>Pattern Matching Syntactic Extensions for Scheme
 ;;
-;; All bugs or questions concerning this software should be directed to
-;; Bruce Hauman <bhauman@cs.wcu.edu>.  The latest version of this software
-;; can be obtained from http://sol.cs.wcu.edu/~bhauman/scheme/pattern.php.
-;;
 ;; Special thanks go out to:
 ;; Robert Bruce Findler for support and bug detection.
 ;; Doug Orleans for pointing out that pairs should be reused while
 ;; matching lists.
 ;;
-;;
 ;; Originally written by Andrew K. Wright, 1993 (wright@research.nj.nec.com)
 ;; which in turn was adapted from code written by Bruce F. Duba, 1991.
-;;
-;; This software is in the public domain.  Feel free to copy,
-;; distribute, and modify this software as desired.  No warranties
-;; nor guarantees of any kind apply.  Please return any improvements
-;; or bug fixes to bhauman@cs.wcu.edu so that they may be included
-;; in future releases.
 ;;
 ;; This macro package extends Scheme with several new expression forms.
 ;; Following is a brief summary of the new forms.  See the associated
@@ -128,7 +117,8 @@
    match-equality-test
    exn:misc:match?
    exn:misc:match-value
-   define-match-expander)
+   define-match-expander
+   match:test-no-order)
   
   ;; FIXME: match-helper and match-error should each be split
   ;; into a compile-time part and a run-time part.
@@ -139,7 +129,8 @@
   (require  (prefix plt: "private/match-internal-func.ss")
 	    "private/match-expander.ss"
 	    "private/match-helper.ss"
-	    "private/match-error.ss")
+	    "private/match-error.ss"
+	    "private/test-no-order.ss")
   
   (define-syntax (match-lambda stx)
     (syntax-case stx ()

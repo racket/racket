@@ -16,14 +16,17 @@
            "match-expander-struct.ss"
 
            ;; the following are only used by render-test-list
-           "render-helpers.ss")
+           "render-helpers.ss"
+           "test-no-order.ss")
 
   (require-for-syntax "match-helper.ss"
-                      "match-expander-struct.ss")
+                      "match-expander-struct.ss"
+                      "test-no-order.ss")
   
   (require-for-template mzscheme
 			"match-error.ss"
-			"test-no-order.ss")
+			"test-no-order.ss"
+                        "match-helper.ss")
   
    ;; BEGIN SPECIAL-GENERATORS.SCM
 
@@ -1195,7 +1198,7 @@
         "improperly formed hash table pattern"))
       
       ((struct struct-name (fields ...))
-       (identifier? (syntax struct-name))       
+       (identifier? (syntax struct-name))
        (let*-values ([(field-pats) (syntax->list (syntax (fields ...)))]
                      [(num-of-fields) (length field-pats)]
                      [(pred accessors mutators parental-chain)
@@ -1217,7 +1220,8 @@
           (map-append 
              (lambda (cur-pat cur-mutator cur-accessor) 
                (syntax-case cur-pat (set! get!)
-                 [(set! . rest) 
+                 [(set! . rest)
+                  (unless cur-mutator (match:syntax-err cur-pat "Cannot use set! pattern with immutable fields"))
                   (set/get-matcher 'set! ae stx (syntax rest)
                                    #`(lambda (y)
                                        (#,cur-mutator #,ae y)))]
