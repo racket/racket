@@ -21,8 +21,7 @@
        ;; list is a bindable name in Honu, so... we use list*, which isn't.
        (at stx `(list* ,@(map translate-expression args) ()))]
       [(struct honu:lambda (stx _ formals body))
-       (at stx `(begin (honu:type ,@(map (lambda (f) (translate-type-for-syntax (honu:formal-type f))) formals))
-                       ,(translate-function stx #f formals (translate-expression body))))]
+       (translate-function stx #f formals (translate-expression body))]
       [(struct honu:call (stx func arg))
        (match func
          [(struct honu:member (stx 'my _ name #t))
@@ -230,9 +229,7 @@
                                                                          (translate-expression (honu:binding-value b)))])
                                    ;; make sure to give the let binding the appropriate syntax,
                                    ;; otherwise errors will highlight the entire let expression.
-                                   (at (honu:ast-stx b) `(,bound-names (begin (honu:type ,@(map translate-type-for-syntax 
-                                                                                                (honu:binding-types b)))
-                                                                              ,body)))))
+                                   (at (honu:ast-stx b) `(,bound-names ,body))))
                                bindings)
               ,(translate-expression body)))]
       [(struct honu:seq (stx effects value))

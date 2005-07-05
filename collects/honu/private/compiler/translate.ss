@@ -10,11 +10,12 @@
            "translate-class-utils.ss"
            "translate-expression.ss"
            "translate-parameters.ss"
+           "translate-unwanted-types.ss"
            "translate-utils.ss")
   
   (provide/contract [translate ((listof honu:defn?)
                                 . -> .
-                                (listof (syntax/c any/c)))]
+                                (cons/c any/c (listof (syntax/c any/c))))]
                     [translate-defn (honu:defn?
                                      . -> .
                                      (syntax/c any/c))])
@@ -22,7 +23,9 @@
     (let loop ([defns-to-go defns]
                [syntaxes    '()])
       (cond
-        [(null? defns-to-go) (reverse syntaxes)]
+        [(null? defns-to-go)
+         (cons (build-unwanted-type-syntax defns)
+               (reverse syntaxes))]
         [(honu:mixin? (car defns-to-go))
          (loop (cdr defns-to-go) syntaxes)]
         [(honu:subclass? (car defns-to-go))
@@ -51,38 +54,22 @@
                             (cons (translate-field-getter-name iface (tenv:member-name (car members)))
                                   names))))))))
 
-  (define (translate-iface-member-types members)
-    (define (get-member-type-list m)
-      (match m
-        [(struct honu:field-decl (_ _ type))
-         (list (translate-type-for-syntax type))]
-        [(struct honu:method-decl (_ _ type arg-types))
-         (cons (translate-type-for-syntax type)
-               (map translate-type-for-syntax arg-types))]))
-    (apply append (map get-member-type-list members)))
-  
   (define (translate-defn defn)
     (match defn
       [(struct honu:bind-top (stx names types value))
        (let-values ([(bound-names body) (translate-binding-clause names (translate-expression value))])
-         (at stx `(begin (honu:type ,@(map translate-type-for-syntax types))
-                         (define-values ,bound-names ,body))))]
+         (at stx `(define-values ,bound-names ,body)))]
       [(struct honu:function (stx name type args body))
-       (at stx `(begin (honu:type ,(translate-type-for-syntax type))
-                       (honu:type ,@(map (lambda (a) (translate-type-for-syntax (honu:formal-type a))) args))
-                       ,(translate-function stx name args (translate-expression body))))]
+       (translate-function stx name args (translate-expression body))]
       [(struct honu:iface (stx name supers members))
-       (at stx `(begin
-                  (define ,(translate-iface-name (make-iface-type name name))
-                    (interface ,(if (null? supers)
-                                    (list (translate-iface-name (make-any-type #f)))
-                                    (map translate-iface-name supers))
-                      ,@(translate-iface-member-names name)))
-                  (honu:type ,@(translate-iface-member-types members))))]
+       (at stx `(define ,(translate-iface-name (make-iface-type name name))
+                  (interface ,(if (null? supers)
+                                  (list (translate-iface-name (make-any-type #f)))
+                                  (map translate-iface-name supers))
+                    ,@(translate-iface-member-names name))))]
       [(struct honu:class (stx name selftype _ impls inits members exports))
        (at stx `(define ,(translate-class-name name)
                   (class* object% ,(map translate-iface-name impls)
-                    (honu:type ,(translate-type-for-syntax selftype))
                     (inspect #f)
                     ,(translate-inits inits)
                     ,@(map translate-member members)
@@ -104,8 +91,6 @@
                                   (tenv:class-impls base-entry))])
            (at stx `(define ,(translate-class-name name)
                       (class* ,(translate-class-name base) ,(map translate-iface-name impls)
-                        (honu:type ,(translate-type-for-syntax selftype))
-                        (honu:type ,@(map (lambda (w) (translate-type-for-syntax (honu:formal-type w))) withs))
                         (inspect #f)
                         ,(translate-inits inits)
                         ,@(map translate-member members-before)

@@ -138,8 +138,10 @@
                                (syntax-e #'type))]
                         ;; if it wasn't either of those, this must have been from the definitions
                         ;; window, so just eval it.
-                        [exp
-                         (old-current-eval (syntax-as-top #'exp))]))))
+                        ;;
+                        ;; well, remove the cruft I added to get Check Syntax to work first.
+                        [(_ type-cruft stx ...)
+                         (old-current-eval (syntax-as-top #'(begin stx ...)))]))))
                  (namespace-attach-module n path)
                  (namespace-require path)))))
           (define/public (render-value value settings port) 

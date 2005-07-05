@@ -19,7 +19,7 @@
   (provide/contract [compile/defns
                      (tenv? tenv? (listof honu:defn?)
                       . -> . 
-                      (listof (syntax/c any/c)))]
+                      (cons/c any/c (listof (syntax/c any/c))))]
                     [compile/interaction
                      ((tenv? 
                        tenv?

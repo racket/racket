@@ -99,10 +99,9 @@
                                       
   (define (translate-export in-super? export)
     (cons 'begin
-          (cons `(honu:type ,(translate-type-for-syntax (comp:export-type export)))
-                (map (lambda (b)
-                       (translate-exp-bind in-super? (comp:export-type export) b))
-                     (comp:export-binds export)))))
+          (map (lambda (b)
+                 (translate-exp-bind in-super? (comp:export-type export) b))
+               (comp:export-binds export))))
   
   (define (translate-exp-bind in-super? type binding)
     (let ([right-defn (if in-super? 'define/override 'define/public)])
@@ -126,11 +125,9 @@
                               (honu:super-new-args super-new)))))
   
   (define (translate-inits inits)
-    `(begin
-       (honu:type ,@(map (lambda (i) (translate-type-for-syntax (honu:formal-type i))) inits))
-       ,(cons 'init (map (lambda (i)
-                           (at-ctxt (honu:formal-name i)))
-                         inits))))
+    (cons 'init (map (lambda (i)
+                       (at-ctxt (honu:formal-name i)))
+                     inits)))
   
   (define (mangle-init-name name)
     (at name (string->symbol (string-append "init-" (symbol->string (syntax-e name))))))
@@ -139,21 +136,15 @@
     (match member
       [(struct honu:init-field (stx name type value))
        (if value
-           (at stx`(begin (honu:type ,(translate-type-for-syntax type))
-                          (init ([,(mangle-init-name name) ,(at-ctxt name)]
+           (at stx`(begin (init ([,(mangle-init-name name) ,(at-ctxt name)]
                                  ,(translate-expression value)))
                           (define ,(at-ctxt name) ,(mangle-init-name))))
-           (at stx `(begin (honu:type ,(translate-type-for-syntax type))
-                           (init ([,(mangle-init-name name) ,(at-ctxt name)]))
+           (at stx `(begin (init ([,(mangle-init-name name) ,(at-ctxt name)]))
                            (define ,(at-ctxt name) ,(mangle-init-name name)))))]
       [(struct honu:field (stx name type value))
-       (at stx `(begin (honu:type ,(translate-type-for-syntax type))
-                       (define ,(at-ctxt name) ,(translate-expression value))))]
+       (at stx `(define ,(at-ctxt name) ,(translate-expression value)))]
       [(struct honu:method (stx name type formals body))
-       (at stx `(begin (honu:type ,(translate-type-for-syntax type))
-                       (honu:type ,@(map (lambda (f) (translate-type-for-syntax (honu:formal-type f))) formals))
-                       ,(translate-function stx name formals
-                                            (translate-expression body))))]))
+       (translate-function stx name formals (translate-expression body))]))
   
   
   )
