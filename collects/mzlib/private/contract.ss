@@ -15,7 +15,8 @@ add struct contracts for immutable structs?
   (provide make-contract
            contract-proc
            raise-contract-error
-           build-compound-type-name)
+           build-compound-type-name
+           coerce-contract)
   
   (provide (rename -contract contract)
            any
