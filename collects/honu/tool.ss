@@ -86,11 +86,13 @@
                 (if (eof-object? (peek-char-or-special port))
                     eof
                     (let* ([parsed (level-parser port name)])
-                      (let ([compiled-defns (compile/defns tenv lenv parsed)])
+                      (let-values ([(cruft-for-stx compiled-defns) (compile/defns tenv lenv parsed)])
                         ;; if we wrap this in something special for the syntax-case below, then
                         ;; Check Syntax breaks (unsurprisingly), so we'll just do special
                         ;; wrappers for the interaction stuff.
-                        (datum->syntax-object #f (cons 'begin compiled-defns) #f)))))))
+                        (datum->syntax-object #f (list 'begin cruft-for-stx 
+                                                       (datum->syntax-object #f (cons 'begin compiled-defns) #f))
+                                              #f)))))))
           (define/public (front-end/interaction port settings teachpack-cache)
             (let ([name (object-name port)])
               (lambda ()
@@ -140,8 +142,8 @@
                         ;; window, so just eval it.
                         ;;
                         ;; well, remove the cruft I added to get Check Syntax to work first.
-                        [(_ type-cruft stx ...)
-                         (old-current-eval (syntax-as-top #'(begin stx ...)))]))))
+                        [(_ type-cruft real-stx)
+                         (old-current-eval (syntax-as-top #'real-stx))]))))
                  (namespace-attach-module n path)
                  (namespace-require path)))))
           (define/public (render-value value settings port) 

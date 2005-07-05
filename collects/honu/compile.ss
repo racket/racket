@@ -17,9 +17,9 @@
            "private/typechecker/typecheck-expression.ss")
   
   (provide/contract [compile/defns
-                     (tenv? tenv? (listof honu:defn?)
-                      . -> . 
-                      (cons/c any/c (listof (syntax/c any/c))))]
+                     ((tenv? tenv? (listof honu:defn?))
+                      . ->* . 
+                      (any/c (listof (syntax/c any/c))))]
                     [compile/interaction
                      ((tenv? 
                        tenv?

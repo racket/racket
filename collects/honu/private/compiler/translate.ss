@@ -13,9 +13,9 @@
            "translate-unwanted-types.ss"
            "translate-utils.ss")
   
-  (provide/contract [translate ((listof honu:defn?)
-                                . -> .
-                                (cons/c any/c (listof (syntax/c any/c))))]
+  (provide/contract [translate (((listof honu:defn?))
+                                . ->* .
+                                (any/c (listof (syntax/c any/c))))]
                     [translate-defn (honu:defn?
                                      . -> .
                                      (syntax/c any/c))])
@@ -24,8 +24,8 @@
                [syntaxes    '()])
       (cond
         [(null? defns-to-go)
-         (cons (build-unwanted-type-syntax defns)
-               (reverse syntaxes))]
+         (values (build-unwanted-type-syntax defns)
+               (	reverse syntaxes))]
         [(honu:subclass? (car defns-to-go))
          (let ([mixin (find (lambda (d)
                               (and (honu:mixin? d) 
