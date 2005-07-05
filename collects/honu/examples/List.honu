@@ -23,6 +23,7 @@ type List {
   Any  foldl(<Any, Any> -> Any, Any);
   Any  foldr(<Any, Any> -> Any, Any);
   List filter(Any -> bool);
+  void foreach(Any -> void);
 
 }
 
@@ -74,12 +75,14 @@ class MTList() : List impl List {
 
   List filter(Any -> bool f) { return (this : List); }
 
+  void foreach(Any -> void f) { return(); }
+
   export List : add as addToFront, add as addToEnd,
                 no_elt as first, no_elts as atIndex, no_elt as last,
                 rest, drop, take, reverse,
                 ret_other as  appendToEnd, ret_other as appendToFront,
                 length, empty,
-                map, fold as foldl, fold as foldr, filter;
+                map, fold as foldl, fold as foldr, filter, foreach;
 }
 
 // Since init slots get translated to init fields by need, we can put
@@ -171,7 +174,12 @@ class ConsList(Any car, List cdr) : List impl List {
     };
   }
 
+  void foreach(Any -> void f) {
+    f(car);
+    cdr.foreach(f);
+  }
+
   export List : addToFront, addToEnd, first, atIndex, last, reverse,
                 rest, drop, take, appendToEnd, appendToFront, length, empty,
-                map, foldl, foldr, filter;
+                map, foldl, foldr, filter, foreach;
 }

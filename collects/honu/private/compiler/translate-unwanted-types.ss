@@ -1,6 +1,7 @@
 (module translate-unwanted-types mzscheme
   
-  (require (lib "plt-match.ss")
+  (require (lib "list.ss" "srfi" "1")
+           (lib "plt-match.ss")
            "../../ast.ss"
            "translate-utils.ss")
   
@@ -14,7 +15,8 @@
     (match defn
       [(struct honu:bind-top (_ _ types value))
        (cons (build-unwanted-type-syntax-expression value)
-             (map translate-type-for-syntax types))]
+             ;; remember to filter out the top types used whenever _ appears
+             (map translate-type-for-syntax (filter (lambda (t) (not (honu:type-top? t))) types)))]
       [(struct honu:function (_ _ type formals body))
        (list (translate-type-for-syntax type)
              (build-unwanted-type-syntax-expression body)
@@ -88,7 +90,10 @@
              (build-unwanted-type-syntax-expression body))]
       [(struct honu:let (_ bindings body))
        (list (map (lambda (b)
-                    (list (map translate-type-for-syntax (honu:binding-types b))
+                    ;; again, make sure to remove types corresponding to _
+                    (list (map translate-type-for-syntax (filter (lambda (t)
+                                                                   (not (honu:type-top? t)))
+                                                                 (honu:binding-types b)))
                           (build-unwanted-type-syntax-expression (honu:binding-value b))))
                   bindings)
              (build-unwanted-type-syntax-expression body))]

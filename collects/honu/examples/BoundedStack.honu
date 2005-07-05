@@ -16,6 +16,7 @@
 type Stack {
   Stack push(Any x);
   <Stack, Any> pop();
+  void foreach(Any -> void);
 }
 
 class ListStackC(List list) : Stack impl Stack {
@@ -28,7 +29,9 @@ class ListStackC(List list) : Stack impl Stack {
     return (new ListStackC(list = list.rest()), list.first());
   }
 
-  export Stack : push, pop;
+  void foreach(Any -> void f) { list.foreach(f); }
+
+  export Stack : push, pop, foreach;
 }
 
 Stack emptyStack() {
@@ -75,7 +78,9 @@ class BoundedStackC(Stack stack, int space) : BoundedStack impl BoundedStack {
     return (new BoundedStackC(stack = s, space = space + 1), obj);
   }
 
-  export BoundedStack : push, pop, isFull, spaceRemaining;
+  void foreach(Any -> void f) { stack.foreach(f); }
+
+  export BoundedStack : push, pop, isFull, spaceRemaining, foreach;
 }
 
 BoundedStack emptyBoundedStack(int n) {
@@ -139,6 +144,7 @@ type List {
   Any  foldl(<Any, Any> -> Any, Any);
   Any  foldr(<Any, Any> -> Any, Any);
   List filter(Any -> bool);
+  void foreach(Any -> void);
 
 }
 
@@ -190,12 +196,14 @@ class MTList() : List impl List {
 
   List filter(Any -> bool f) { return (this : List); }
 
+  void foreach(Any -> void f) { return(); }
+
   export List : add as addToFront, add as addToEnd,
                 no_elt as first, no_elts as atIndex, no_elt as last,
                 rest, drop, take, reverse,
                 ret_other as  appendToEnd, ret_other as appendToFront,
                 length, empty,
-                map, fold as foldl, fold as foldr, filter;
+                map, fold as foldl, fold as foldr, filter, foreach;
 }
 
 // Since init slots get translated to init fields by need, we can put
@@ -289,9 +297,14 @@ class ConsList(Any car, List cdr) : List impl List {
     };
   }
 
+  void foreach(Any -> void f) {
+    f(car);
+    cdr.foreach(f);
+  }
+
   export List : addToFront, addToEnd, first, atIndex, last, reverse,
                 rest, drop, take, appendToEnd, appendToFront, length, empty,
-                map, foldl, foldr, filter;
+                map, foldl, foldr, filter, foreach;
 }
 
 
@@ -317,6 +330,15 @@ Stack s2 = s1.push(new IntegerC(value = 3));
 Stack s3 = s2.push(new IntegerC(value = 10));
 Stack s4 = s3.push(new IntegerC(value = 20));
 Stack s5 = s4.push(new IntegerC(value = 40));
+
+// use foreach + don't care(about binding) syntax
+
+_ = s5.foreach(void fun(Any x) {
+                 cond {
+                   x isa Integer => printLine(intToString((x : Integer).value));
+                   else             printLine("Unknown type of value");
+                 };
+               });
 
 // Now try adding something to s5!
 
