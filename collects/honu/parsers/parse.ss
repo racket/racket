@@ -68,9 +68,9 @@
               (left PLUS MINUS)
               (left TIMES DIV MOD)
               (nonassoc NOT UMINUS) ;; unary operators
-              (left O_PAREN)  ;; this gives application a precedence
-              (nonassoc selector)
               (right COLON isa)
+              (nonassoc selector)
+              (left O_PAREN)  ;; this gives application a precedence
               (left DOT))
        (tokens keywords separators operators val-tokens lex-errors EOF for-prec)
        (error (lambda (a b stx start end) 

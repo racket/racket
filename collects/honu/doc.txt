@@ -255,9 +255,9 @@ NOTE: Here's the precedence and associativity of things above.
    LEFT   |   RIGHT  |  NONASSOC
 ----------+----------+-----------
     .     |          |
-          |  :  isa  |
-          |          |   #n        (tuple selector)
           |          |    (        (function application)
+          |          |   #n        (tuple selector)
+          |  :  isa  |
           |          | !, - (un)
    * / %  |          |
    +  -   |          |
