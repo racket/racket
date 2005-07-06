@@ -80,7 +80,7 @@
   (make-subst plt-subst plt:match)
   
   (define (subst/proc var val exp separate)
-    (let* ([free-vars-cache (make-hash-table)]
+    (let* ([free-vars-cache (make-hash-table 'equal)]
            [fv-val (free-vars/memoize free-vars-cache val separate)])
       (let loop ([exp exp])
         (let ([fv-exp (free-vars/memoize free-vars-cache exp separate)]
@@ -88,7 +88,7 @@
                (lambda (x) x)]
               [handle-variable
                (lambda (rebuild var-name)
-                 (if (eq? var-name var)
+                 (if (equal? var-name var)
                      val
                      (rebuild var-name)))]
               [handle-complex
@@ -114,7 +114,7 @@
                                         sub-term
                                         (loop sub-term))))
                                 subpieces))]))])
-          (if (memq var fv-exp)
+          (if (member var fv-exp)
               (separate
                exp
                handle-constant
