@@ -1,6 +1,22 @@
 (module utils mzscheme
   (require "ast.ss")
   (require (lib "list.ss" "srfi" "1"))
+  (require (only (lib "list.ss") quicksort))
+
+  (define (identifier<? a b)
+    (string<? (symbol->string (syntax-e a))
+              (symbol->string (syntax-e b))))
+  
+  (provide get-first-non-unique-name)
+  (define (get-first-non-unique-name lst)
+    (let loop ([lst (quicksort lst identifier<?)])
+      (cond
+        [(null? lst)       #f]
+        [(null? (cdr lst)) #f]
+        [(bound-identifier=? (car lst) (cadr lst))
+         ;; since quicksort isn't stable, just return the first
+         (car lst)]
+        [else #f])))
 
   (provide fold-with-rest)
   (define (fold-with-rest f init l)

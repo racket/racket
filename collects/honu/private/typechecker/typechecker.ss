@@ -39,6 +39,12 @@
              (raise-read-error-with-stx
               "Return type of function is undefined"
               (honu:ast-stx type)))
+         (let ([conflicting-name (get-first-non-unique-name (map honu:formal-name args))])
+           (if conflicting-name
+               (raise-read-error-with-stx
+                (format "Argument name ~a used more than once"
+                        (printable-key conflicting-name))
+                conflicting-name)))
          (for-each (lambda (t)
                      (if (not (type-valid? t))
                          (raise-read-error-with-stx
@@ -97,6 +103,18 @@
                         "No definition for supertype"
                         (honu:ast-stx t))))
                  supers)
+       (let ([conflicting-name (get-first-non-unique-name (map (lambda (d)
+                                                                 (cond
+                                                                   [(honu:field-decl? d)
+                                                                    (honu:field-decl-name d)]
+                                                                   [(honu:method-decl? d)
+                                                                    (honu:method-decl-name d)]))
+                                                               members))])
+         (if conflicting-name
+             (raise-read-error-with-stx
+              (format "Field/method name ~a used more than once"
+                      (printable-key conflicting-name))
+              conflicting-name)))
        (for-each (lambda (m)
                    (typecheck-member-decl m))
                  members)
@@ -112,6 +130,21 @@
                         "Implemented type is undefined"
                         (honu:ast-stx type))))
                  impls)
+       (let ([conflicting-name (get-first-non-unique-name (append (map honu:formal-name inits)
+                                                                  (map (lambda (d)
+                                                                         (cond
+                                                                           [(honu:init-field? d)
+                                                                            (honu:init-field-name d)]
+                                                                           [(honu:field? d)
+                                                                            (honu:field-name d)]
+                                                                           [(honu:method? d)
+                                                                            (honu:method-name d)]))
+                                                                       members)))])
+         (if conflicting-name
+             (raise-read-error-with-stx
+              (format "Init/field/method name ~a used more than once"
+                      (printable-key conflicting-name))
+              conflicting-name)))
        (for-each (lambda (t)
                    (if (not (type-valid? t))
                        (raise-read-error-with-stx
@@ -145,12 +178,38 @@
                         "Implemented type is undefined"
                         (honu:ast-stx type))))
                  impls)
+       (let* ([arg-tentry (get-type-entry arg-type)]
+              [conflicting-name (get-first-non-unique-name (append (map tenv:member-name
+                                                                        (append (tenv:type-members arg-tentry)
+                                                                                (tenv:type-inherited arg-tentry)))
+                                                                   (map honu:formal-name inits)
+                                                                   (map (lambda (d)
+                                                                          (cond
+                                                                            [(honu:init-field? d)
+                                                                             (honu:init-field-name d)]
+                                                                            [(honu:field? d)
+                                                                             (honu:field-name d)]
+                                                                            [(honu:method? d)
+                                                                             (honu:method-name d)]))
+                                                                        (append members-before
+                                                                                members-after))))])
+         (if conflicting-name
+             (raise-read-error-with-stx
+              (format "Init/field/method name ~a used more than once in mixin or conflicts with members of argument type"
+                      (printable-key conflicting-name))
+              (honu:ast-stx defn))))
        (for-each (lambda (t)
                    (if (not (type-valid? t))
                        (raise-read-error-with-stx
                         "Type of init slot is undefined"
                         (honu:ast-stx type))))
-                 (map honu:formal-type inits))       
+                 (map honu:formal-type inits))
+       (let ([conflicting-name (get-first-non-unique-name (map honu:formal-name withs))])
+         (if conflicting-name
+             (raise-read-error-with-stx
+              (format "Init name ~a used more than once in expected init slots"
+                      (printable-key conflicting-name))
+              conflicting-name)))
        (for-each (lambda (t)
                    (if (not (type-valid? t))
                        (raise-read-error-with-stx

@@ -1,8 +1,10 @@
 (module translate-class-utils mzscheme 
 
   (require (lib "list.ss" "srfi" "1")
+           (only (lib "list.ss") quicksort)
            (lib "plt-match.ss")
            "../../ast.ss"
+           "../../readerr.ss"
            "../../tenv.ss"
            "../../utils.ss"
            "../typechecker/type-utils.ss"
@@ -81,7 +83,38 @@
                                                      (honu:exp-bind-new (car exp-binds))
                                                      (honu:type-disp? (tenv:member-type matched)))
                                  comp-binds)))))))))
-              
+  
+  (define (sort-binds export)
+    (quicksort (comp:export-binds export)
+               (lambda (b1 b2)
+                 (tenv-key<? (comp:exp-bind-new b1)
+                             (comp:exp-bind-new b2)))))
+               
+  
+  (define (check-exports exports)
+    (let* ([main-export (car exports)]
+           [main-export-binds (sort-binds main-export)])
+      (let loop ([exports (cdr exports)])
+        (if (null? exports)
+            (void)
+            (let loop2 ([binds-1 main-export-binds]
+                        [binds-2 (sort-binds (car exports))])
+              ;; if one's empty, both must be since we passed the typechecker
+              (cond
+                [(null? binds-1)
+                 (loop (cdr exports))]
+                [(tenv-key=? (comp:exp-bind-old (car binds-1))
+                             (comp:exp-bind-old (car binds-2)))
+                 (loop2 (cdr binds-1) (cdr binds-2))]
+                [else
+                 (raise-read-error-with-stx
+                  (format "Different local names exported for member ~a of type ~a: ~a here and ~a elsewhere"
+                          (printable-type (comp:export-type main-export))
+                          (printable-key (comp:exp-bind-new (car binds-1)))
+                          (printable-key (comp:exp-bind-old (car binds-1)))
+                          (printable-key (comp:exp-bind-old (car binds-2))))
+                  (comp:exp-bind-old (car binds-1)))]))))))
+        
   (define (filter-exports exports)
     (let loop ([exports   exports]
                [kept-exps '()])
@@ -92,6 +125,7 @@
                                                                         (comp:export-type (car exports))
                                                                         (comp:export-type exp)))
                                                          exports)])
+            (check-exports matches)
             (let ([exp-with-stx (find comp:export-stx (cons (car exports) matches))])
               (if exp-with-stx
                   (loop non-matches (cons exp-with-stx kept-exps))

@@ -221,6 +221,22 @@
            "Unknown operator"
            op-stx)])]
       [(struct honu:lambda (stx ret-type args body))
+       (if (not (type-valid? ret-type))
+           (raise-read-error-with-stx
+            "Return type of anonymous function is invalid"
+            (honu:ast-stx ret-type)))
+       (let ([conflicting-name (get-first-non-unique-name (map honu:formal-name args))])
+         (if conflicting-name
+             (raise-read-error-with-stx
+              (format "Variable name ~a used more than once in function arguments"
+                      (printable-key conflicting-name))
+              conflicting-name)))
+       (for-each (lambda (t)
+                   (if (not (type-valid? t))
+                       (raise-read-error-with-stx
+                        "Type of argument of anonymous function is invalid"
+                        (honu:ast-stx t))))
+                 (map honu:formal-type args))
        ;; since we have explicit return type annotations now, we use them for the body's ctype and rtype.
        (let ([body-lenv  (fold (lambda (f e)
                                  (extend-fenv (honu:formal-name f)
@@ -535,6 +551,13 @@
   (define (typecheck-binding lenv binding)
     (match binding
       [(struct honu:binding (stx names types value))
+       ;; make sure to remove all the #f for don't care arguments.
+       (let ([conflicting-name (get-first-non-unique-name (filter (lambda (n) n) names))])
+         (if conflicting-name
+             (raise-read-error-with-stx
+              (format "Variable name ~a used more than once in binding form"
+                      (printable-key conflicting-name))
+              conflicting-name)))
        (for-each (lambda (n t)
                    (if (and (not (and (not n)
                                       (honu:type-top? t)))
