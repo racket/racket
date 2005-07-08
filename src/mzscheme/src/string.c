@@ -239,8 +239,8 @@ static void register_traversers(void);
 #endif
 
 static void reset_locale(void);
-static int mz_char_strcmp(const char *who, const mzchar *str1, int l1, const mzchar *str2, int l2, int locale);
-static int mz_char_strcmp_ci(const char *who, const mzchar *str1, int l1, const mzchar *str2, int l2, int locale);
+static int mz_char_strcmp(const char *who, const mzchar *str1, int l1, const mzchar *str2, int l2, int locale, int size_shortcut);
+static int mz_char_strcmp_ci(const char *who, const mzchar *str1, int l1, const mzchar *str2, int l2, int locale, int size_shortcut);
 static int mz_strcmp(const char *who, unsigned char *str1, int l1, unsigned char *str2, int l2);
 
 static int utf8_decode_x(const unsigned char *s, int start, int end,
@@ -939,7 +939,7 @@ void scheme_get_substring_indices(const char *name, Scheme_Object *str,
 #define xstrlen scheme_char_strlen
 #include "strops.inc"
 
-#define GEN_STRING_COMP(name, scheme_name, comp, op, ul) \
+#define GEN_STRING_COMP(name, scheme_name, comp, op, ul, size_shortcut)     \
 static Scheme_Object * name (int argc, Scheme_Object *argv[]) \
 {  mzchar *s, *prev; int i, sl, pl; int falz = 0;\
    if (!SCHEME_CHAR_STRINGP(argv[0])) \
@@ -951,30 +951,30 @@ static Scheme_Object * name (int argc, Scheme_Object *argv[]) \
      s = SCHEME_CHAR_STR_VAL(argv[i]); sl = SCHEME_CHAR_STRTAG_VAL(argv[i]); \
      if (!falz) if (!(comp(scheme_name, \
                            prev, pl, \
-                           s, sl, ul) op 0)) falz = 1; \
+                           s, sl, ul, size_shortcut) op 0)) falz = 1; \
      prev = s; pl = sl; \
   } \
   return falz ? scheme_false : scheme_true; \
 }
 
-GEN_STRING_COMP(string_eq, "string=?", mz_char_strcmp, ==, 0)
-GEN_STRING_COMP(string_lt, "string<?", mz_char_strcmp, <, 0)
-GEN_STRING_COMP(string_gt, "string>?", mz_char_strcmp, >, 0)
-GEN_STRING_COMP(string_lt_eq, "string<=?", mz_char_strcmp, <=, 0)
-GEN_STRING_COMP(string_gt_eq, "string>=?", mz_char_strcmp, >=, 0)
+GEN_STRING_COMP(string_eq, "string=?", mz_char_strcmp, ==, 0, 1)
+GEN_STRING_COMP(string_lt, "string<?", mz_char_strcmp, <, 0, 0)
+GEN_STRING_COMP(string_gt, "string>?", mz_char_strcmp, >, 0, 0)
+GEN_STRING_COMP(string_lt_eq, "string<=?", mz_char_strcmp, <=, 0, 0)
+GEN_STRING_COMP(string_gt_eq, "string>=?", mz_char_strcmp, >=, 0, 0)
 
-GEN_STRING_COMP(string_ci_eq, "string-ci=?", mz_char_strcmp_ci, ==, 0)
-GEN_STRING_COMP(string_ci_lt, "string-ci<?", mz_char_strcmp_ci, <, 0)
-GEN_STRING_COMP(string_ci_gt, "string-ci>?", mz_char_strcmp_ci, >, 0)
-GEN_STRING_COMP(string_ci_lt_eq, "string-ci<=?", mz_char_strcmp_ci, <=, 0)
-GEN_STRING_COMP(string_ci_gt_eq, "string-ci>=?", mz_char_strcmp_ci, >=, 0)
+GEN_STRING_COMP(string_ci_eq, "string-ci=?", mz_char_strcmp_ci, ==, 0, 1)
+GEN_STRING_COMP(string_ci_lt, "string-ci<?", mz_char_strcmp_ci, <, 0, 0)
+GEN_STRING_COMP(string_ci_gt, "string-ci>?", mz_char_strcmp_ci, >, 0, 0)
+GEN_STRING_COMP(string_ci_lt_eq, "string-ci<=?", mz_char_strcmp_ci, <=, 0, 0)
+GEN_STRING_COMP(string_ci_gt_eq, "string-ci>=?", mz_char_strcmp_ci, >=, 0, 0)
 
-GEN_STRING_COMP(string_locale_eq, "string-locale=?", mz_char_strcmp, ==, 1)
-GEN_STRING_COMP(string_locale_lt, "string-locale<?", mz_char_strcmp, <, 1)
-GEN_STRING_COMP(string_locale_gt, "string-locale>?", mz_char_strcmp, >, 1)
-GEN_STRING_COMP(string_locale_ci_eq, "string-locale-ci=?", mz_char_strcmp_ci, ==, 1)
-GEN_STRING_COMP(string_locale_ci_lt, "string-locale-ci<?", mz_char_strcmp_ci, <, 1)
-GEN_STRING_COMP(string_locale_ci_gt, "string-locale-ci>?", mz_char_strcmp_ci, >, 1)
+GEN_STRING_COMP(string_locale_eq, "string-locale=?", mz_char_strcmp, ==, 1, 0)
+GEN_STRING_COMP(string_locale_lt, "string-locale<?", mz_char_strcmp, <, 1, 0)
+GEN_STRING_COMP(string_locale_gt, "string-locale>?", mz_char_strcmp, >, 1, 0)
+GEN_STRING_COMP(string_locale_ci_eq, "string-locale-ci=?", mz_char_strcmp_ci, ==, 1, 0)
+GEN_STRING_COMP(string_locale_ci_lt, "string-locale-ci<?", mz_char_strcmp_ci, <, 1, 0)
+GEN_STRING_COMP(string_locale_ci_gt, "string-locale-ci>?", mz_char_strcmp_ci, >, 1, 0)
 
 /**********************************************************************/
 /*                         byte strings                               */
@@ -3017,7 +3017,7 @@ static void reset_locale(void)
 	&& mz_char_strcmp("result-locale",
 			  current_locale_name, scheme_char_strlen(current_locale_name),
 			  name, SCHEME_CHAR_STRLEN_VAL(v),
-			  0)) {
+			  0, 1)) {
       /* We only need CTYPE and COLLATE; two calls seem to be much
 	 faster than one call with ALL */
       char *n, buf[32];
@@ -3046,9 +3046,13 @@ int scheme_char_strlen(const mzchar *s)
   return i;
 }
 
-static int mz_char_strcmp(const char *who, const mzchar *str1, int l1, const mzchar *str2, int l2, int use_locale)
+static int mz_char_strcmp(const char *who, const mzchar *str1, int l1, const mzchar *str2, int l2, 
+			  int use_locale, int size_shortcut)
 {
   int endres;
+
+  if (size_shortcut && (l1 != l2))
+    return 1;
 
 #ifndef DONT_USE_LOCALE
   if (use_locale) {
@@ -3083,9 +3087,13 @@ static int mz_char_strcmp(const char *who, const mzchar *str1, int l1, const mzc
   return endres;
 }
 
-static int mz_char_strcmp_ci(const char *who, const mzchar *str1, int l1, const mzchar *str2, int l2, int use_locale)
+static int mz_char_strcmp_ci(const char *who, const mzchar *str1, int l1, const mzchar *str2, int l2, 
+			     int use_locale, int size_shortcut)
 {
   int endres;
+
+  if (size_shortcut && (l1 != l2))
+    return 1;
 
 #ifndef DONT_USE_LOCALE
   if (use_locale) {

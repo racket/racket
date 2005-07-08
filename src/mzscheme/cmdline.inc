@@ -434,8 +434,19 @@ static int run_from_cmd_line(int argc, char *_argv[],
   
 #ifdef DOS_FILE_SYSTEM
   {
-    /* Make sure the .exe extension is present for consistency */
+    /* For consistency, strip trailing spaces, and make sure the .exe
+       extension is present. */
     int l = strlen(prog);
+    if ((l > 0) && (prog[l-1] == ' ')) {
+      char *s;
+      while ((l > 0) && (prog[l-1] == ' ')) {
+	l--;
+      }
+      s  = (char *)scheme_malloc_atomic(l + 1);
+      memcpy(s, prog, l);
+      s[l] = 0;
+      prog = s;
+    }
     if (l <= 4 
 	|| (prog[l - 4] != '.')
 	|| (tolower(((unsigned char *)prog)[l - 3]) != 'e')
