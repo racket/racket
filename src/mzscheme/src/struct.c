@@ -1089,11 +1089,12 @@ static Scheme_Object *struct_setter(Struct_Proc_Info *i, int argc, Scheme_Object
 
   if (i->struct_type->immutables) {
     Scheme_Struct_Type *t = i->struct_type;
+    int p = pos;
 
     if (t->name_pos)
-      pos -= t->parent_types[t->name_pos - 1]->num_slots;
+      p -= t->parent_types[t->name_pos - 1]->num_slots;
     
-    if (t->immutables[pos]) {
+    if (t->immutables[p]) {
       scheme_arg_mismatch(i->func_name, 
 			  "cannot modify value of immutable field in structure: ", 
 			  args[0]);
