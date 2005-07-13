@@ -27,7 +27,7 @@
   ;; tests : (listof test)
   (define tests
     (list 
-     
+
      (build-test "12345"
                 '(("12345" constant)))
      (build-test "'abcdef"
@@ -549,7 +549,21 @@
                 (list '((10 18) (20 27))
                       '((28 55) (73 80) (81 86))
                       '((56 71) (73 80) (81 86))))
-                      
+
+     (build-test "(module m mzscheme (require (only (lib \"list.ss\") foldr) (only (lib \"list.ss\") foldl)) foldl foldr)"
+                 '(("("                                                  default-color)
+                   ("module"                                             imported-syntax)
+                   (" m mzscheme ("                                      default-color)
+                   ("require"                                            imported-syntax)
+                   (" (only (lib \"list.ss\") foldr) (only (lib \"list.ss\") foldl)) " default-color)
+                   ("foldl"                                              imported-variable)
+                   (" "                                                  default-color)
+                   ("foldr"                                              imported-variable)
+                   (")"                                                  default-color))
+                 (list '((10 18) (20 27))
+                       '((28 56) (87 92) (93 98))
+                       '((57 85) (87 92) (93 98))))
+     
      (build-test "(module m mzscheme (require (lib \"etc.ss\")) (rec f 1))"
                 '(("("                     default-color)
                   ("module"                imported-syntax)

@@ -49,7 +49,6 @@ If the namespace does not, they are colored the unbound color.
     syncheck:add-mouse-over-status
     syncheck:add-jump-to-definition
     syncheck:sort-bindings-table
-    syncheck:get-bindings-table
     syncheck:jump-to-next-bound-occurrence
     syncheck:jump-to-binding-occurrence
     syncheck:jump-to-definition
@@ -57,7 +56,8 @@ If the namespace does not, they are colored the unbound color.
     syncheck:clear-highlighting
     syncheck:button-callback
     syncheck:add-to-cleanup-texts
-    syncheck:error-report-visible?
+    ;syncheck:error-report-visible? ;; test suite uses this one.
+    ;syncheck:get-bindings-table    ;; test suite uses this one.
     syncheck:clear-error-message
     
     hide-error-report
@@ -1855,14 +1855,16 @@ If the namespace does not, they are colored the unbound color.
       
        ;; trim-require-prefix : syntax -> syntax
       (define (trim-require-prefix require-spec)
-        (let loop ([stx require-spec])
-          (syntax-case stx (prefix all-except rename)
-            [(prefix identifier module-name) (loop (syntax module-name))]
-            [(all-except module-name identifer ...)
-             (loop (syntax module-name))]
-            [(rename module-name local-identifer exported-identifer)
-             (loop (syntax module-name))]
-            [_ stx])))
+        (syntax-case require-spec (prefix all-except rename only)
+          [(prefix identifier module-name) 
+           (syntax module-name)]
+          [(all-except module-name identifer ...)
+           (syntax module-name)]
+          [(only module-name identifer ...)
+           (syntax module-name)]
+          [(rename module-name local-identifer exported-identifer)
+           (syntax module-name)]
+          [_ require-spec]))
       
       ;; add-binders : syntax id-set -> void
       ;; transforms an argument list into a bunch of symbols/symbols
