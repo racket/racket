@@ -106,6 +106,13 @@ Functions
        "something-else" set to what it was really given; and the code set to
        the part of the non-Xexpr that caused the exception.
 
+> correct-xexpr? : any (-> a) (exn -> a) -> a
+       If the given thing is an Xexpr, produce an a. Otherwise call the
+       second function with an exn:invalid-xexpr. This second function
+       may inspect this structure and decide to return a "correct" value.
+       This is a method of extending the definition of an Xexpr and is used
+       by the web-server's Xexpr/callbacks. (See for an example.)
+
 Parameters
 ==========
 
@@ -182,6 +189,7 @@ Note: Xexpr is the only important one to understand.  Even then,
         |  (cons Symbol (listof Xexpr)) ;; an element with no attributes
         |  Symbol ;; symbolic entities such as &nbsp;
         |  Number ;; numeric entities like &#20;
+        |  Cdata
         |  Misc
 
 > Document = (make-document Prolog Element (listof Processing-instruction))
@@ -221,6 +229,12 @@ Note: Xexpr is the only important one to understand.  Even then,
 
 > Pcdata = (make-pcdata Location Location String)
   (define-struct (pcdata struct:source) (string))
+
+> Cdata = (make-cdata Location Location String)
+  (define-struct (cdata struct:source) (string))
+  Note: The string of a cdata structure is assumed to be of the form
+        "<![CDATA[~a]]>" with proper quoting. If this is an incorrect 
+        assumption, this library will generate invalid XML.
 
 > Entity = (make-entity (U Nat Symbol))
   (define-struct entity (text))

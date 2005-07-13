@@ -189,7 +189,7 @@
                              (lex-error in pos "expected ; at the end of an entity")))])])
             (make-entity start (pos) data))))
       
-      ; lex-tag-cdata-pi-comment : Input-port (-> Location) -> Start-tag | Element | End-tag | Pcdata | Pi | Comment
+      ; lex-tag-cdata-pi-comment : Input-port (-> Location) -> Start-tag | Element | End-tag | Cdata | Pi | Comment
       ; pre: the first char is a #\<
       (define (lex-tag-cdata-pi-comment in pos)
         (let ([start (pos)])
@@ -210,7 +210,7 @@
                 (unless (string=? (read-string 6 in) "CDATA[")
                   (lex-error in pos "expected CDATA following <["))
                 (let ([data (lex-cdata-contents in pos)])
-                  (make-pcdata start (pos) data))]
+                  (make-cdata start (pos) (format "<![CDATA[~a]]>" data)))]
                [else (skip-dtd in pos)
                      (skip-space in)
                      (unless (eq? (peek-char-or-special in) #\<)

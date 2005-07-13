@@ -59,10 +59,14 @@
       ; Pcdata = (make-pcdata Location Location String)
       (define-struct (pcdata source) (string))
       
+      ; Cdata = (make-cdata Location Location String)
+      (define-struct (cdata source) (string))
+      
       ; Content = Pcdata  
       ;         |  Element
       ;         |  Entity
       ;         |  Misc
+      ;         |  Cdata
       
       ; Misc = Comment
       ;      |  Processing-instruction

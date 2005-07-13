@@ -16,6 +16,7 @@
      (struct pi (target-name instruction))
      (struct source (start stop))
      (struct pcdata (string))
+     (struct cdata (string))
      (struct entity (text))
      content?))
 
@@ -40,6 +41,7 @@
       xexpr->string
       xexpr-drop-empty-attributes
       xexpr?
+      correct-xexpr?
       validate-xexpr
       (struct exn:invalid-xexpr (code))
       xexpr-attribute?

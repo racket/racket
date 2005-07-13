@@ -87,6 +87,7 @@
 	((cond
            [(element? el) write-xml-element]
            [(pcdata? el) write-xml-pcdata]
+           [(cdata? el) write-xml-cdata]
            [(entity? el) write-xml-entity]
            [(comment? el) write-xml-comment]
            [(pi? el) write-xml-pi]
@@ -130,6 +131,11 @@
       ;; write-xml-pcdata : Pcdata Nat (Nat Output-Stream -> Void) Output-Stream -> Void
       (define (write-xml-pcdata str over dent out)
 	(write-xml-base (escape (pcdata-string str) escape-table) over dent out))
+
+      ;; write-xml-cdata : Cdata Nat (Nat Output-Stream -> Void) Output-Stream -> Void
+      (define (write-xml-cdata cdata over dent out)
+        ;; XXX: Different kind of quote is needed, for assume the user includes the <![CDATA[...]]> with proper quoting
+        (write-xml-base (format "~a" (cdata-string cdata)) over dent out))
       
       ;; write-xml-pi : Processing-instruction Nat (Nat Output-Stream -> Void) Output-Stream -> Void
       (define (write-xml-pi pi over dent out)

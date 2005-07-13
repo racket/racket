@@ -55,6 +55,10 @@
       (define (make-pcdata from to x)
         (wrap x from to))
       
+      ; make-cdata : src src str -> cdata
+      (define (make-cdata from to x)
+        (wrap x from to))
+      
       ; make-entity : src src (U sym num) -> entity
       (define (make-entity from to entity)
         (wrap entity from to))
@@ -98,6 +102,7 @@
       (define (entity-text e) (syntax-e e))
       
       (define (pcdata-string x) (syntax-e x))
+      (define (cdata-string x) (syntax-e x))
       
       (define (comment-text c)
         (error 'comment-text "expected a syntax representation of an XML comment, received ~a" c))
@@ -182,6 +187,8 @@
       ; : tst -> bool
       (define (pcdata? x)
         (and (syntax? x) (string (syntax-e x))))
+      (define (cdata? x)
+        (and (syntax? x) (string (syntax-e x))))
       
       ; : tst -> bool
       (define (entity? x)
@@ -200,6 +207,7 @@
       (struct! pi (target-name instruction))
       ;(struct! source (start stop))
       (struct! pcdata (string))
+      (struct! cdata (string))
       (struct! entity (text))
       
       )))

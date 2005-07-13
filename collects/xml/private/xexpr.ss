@@ -18,6 +18,7 @@
       ;;        |  Nat
       ;;        |  Comment
       ;;        |  Processing-instruction
+      ;;        |  Cdata
       ;; Attribute-srep ::= (list Symbol String)
       
       ;; sorting is no longer necessary, since xt3d uses xml->zxexpr, which sorts.
@@ -58,6 +59,7 @@
           ((number? x) (true))
           ((comment? x) (true))
           ((pi? x) (true))
+          ((cdata? x) (true))
           ((list? x)
            (or (null? x)
                (if (symbol? (car x))
@@ -172,7 +174,7 @@
                 (cons (element-name x) (combine atts body)))]
               [(pcdata? x) (pcdata-string x)]
               [(entity? x) (entity-text x)]
-              [(or (comment? x) (pi? x)) x]
+              [(or (comment? x) (pi? x) (cdata? x)) x]
               [(document? x) (error 'xml->xexpr "Expected content, given ~e~nUse document-element to extract the content." x)]
               [else ;(error 'xml->xexpr "Expected content, given ~e" x)
               x]))))
@@ -208,7 +210,7 @@
           [(string? x) (make-pcdata 'scheme 'scheme x)]
           [(or (symbol? x) (and (integer? x) (>= x 0)))
           (make-entity 'scheme 'scheme x)]
-          [(or (comment? x) (pi? x)) x]
+          [(or (comment? x) (pi? x) (cdata? x)) x]
           [else ;(error 'xexpr->xml "malformed xexpr ~s" x)
           x]))
 
