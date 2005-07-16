@@ -256,6 +256,14 @@ add struct contracts for immutable structs?
            (let* ([struct-name (syntax-case struct-name-position ()
                                  [(a b) (syntax a)]
                                  [else struct-name-position])]
+                  [super-id (syntax-case struct-name-position ()
+                                [(a b) (syntax b)]
+                                [else #t])]
+                  [struct-info (extract-struct-info struct-name-position)]
+                  [constructor-id (list-ref struct-info 1)]
+                  [predicate-id (list-ref struct-info 2)]
+                  [selector-ids (reverse (list-ref struct-info 3))]
+                  [mutator-ids (reverse (list-ref struct-info 4))]
                   [parent-struct-count (let ([parent-info (extract-parent-struct-info struct-name-position)])
                                          (and parent-info
                                               (let ([fields (cadddr parent-info)])
@@ -274,69 +282,105 @@ add struct contracts for immutable structs?
                                                           field-name
                                                           struct-name))
                                            field-names)]
-                  [selector-ids (map (lambda (field-name) 
-                                       (build-selector-id struct-name field-name))
-                                     field-names)]
-                  [mutator-ids (map (lambda (field-name) 
-                                      (build-mutator-id struct-name field-name))
-                                    field-names)]
-                  [predicate-id (build-predicate-id struct-name)]
-                  [constructor-id (build-constructor-id struct-name)])
-             (with-syntax ([(selector-codes ...)
+                  [struct:struct-name
+                   (datum->syntax-object
+                    struct-name
+                    (string->symbol
+                     (string-append
+                      "struct:"
+                      (symbol->string (syntax-e struct-name)))))])
+             
+             (let ([unknown-info
+                    (λ (what)
+                      (raise-syntax-error
+                       'provide/contract
+                       (format "cannot determine ~a" what)
+                       provide-stx
+                       struct-name))])
+               (unless constructor-id (unknown-info "constructor"))
+               (unless predicate-id (unknown-info "predicate"))
+               (unless (andmap values selector-ids) (unknown-info "selectors"))
+               (unless (andmap values mutator-ids) (unknown-info "mutators")))
+             
+             (with-syntax ([((selector-codes selector-new-names) ...)
                             (filter
                              (lambda (x) x)
                              (map/count (lambda (selector-id field-contract-id index)
                                           (if (or (not parent-struct-count)
                                                   (parent-struct-count . <= . index))
-                                              (code-for-one-id stx
-                                                               selector-id
-                                                               (build-selector-contract struct-name 
-                                                                                        predicate-id
-                                                                                        field-contract-id)
-                                                               #f)
+                                              (code-for-one-id/new-name
+                                               stx
+                                               selector-id
+                                               (build-selector-contract struct-name 
+                                                                        predicate-id
+                                                                        field-contract-id)
+                                               #f)
                                               #f))
                                         selector-ids
                                         field-contract-ids))]
-                           [(mutator-codes ...)
+                           [((mutator-codes mutator-new-names) ...)
                             (filter
                              (lambda (x) x)
                              (map/count (lambda (mutator-id field-contract-id index)
                                           (if (or (not parent-struct-count)
                                                   (parent-struct-count . <= . index))
-                                              (code-for-one-id stx
-                                                               mutator-id 
-                                                               (build-mutator-contract struct-name 
-                                                                                       predicate-id
-                                                                                       field-contract-id)
-                                                               #f)
+                                              (code-for-one-id/new-name stx
+                                                                        mutator-id 
+                                                                        (build-mutator-contract struct-name 
+                                                                                                predicate-id
+                                                                                                field-contract-id)
+                                                                        #f)
                                               #f))
                                         mutator-ids
                                         field-contract-ids))]
-                           [predicate-code (code-for-one-id stx predicate-id (syntax (-> any/c boolean?)) #f)]
-                           [constructor-code (code-for-one-id
-                                              stx
-                                              constructor-id
-                                              (build-constructor-contract stx
-                                                                          field-contract-ids 
-                                                                          predicate-id)
-                                              #f)]
+                           [(predicate-code predicate-new-name)
+                            (code-for-one-id/new-name stx predicate-id (syntax (-> any/c boolean?)) #f)]
+                           [(constructor-code constructor-new-name)
+                            (code-for-one-id/new-name
+                             stx
+                             constructor-id
+                             (build-constructor-contract stx
+                                                         field-contract-ids 
+                                                         predicate-id)
+                             #f)]
                            [(field-contracts ...) field-contracts]
-                           [(field-contract-ids ...) field-contract-ids]
-                           [struct-name struct-name]
-                           [struct:struct-name (datum->syntax-object
-                                                struct-name
-                                                (string->symbol
-                                                 (string-append
-                                                  "struct:"
-                                                  (symbol->string (syntax-e struct-name)))))])
-               (syntax/loc stx
-                (begin
-                  (define field-contract-ids field-contracts) ...
-                  selector-codes ...
-                  mutator-codes ...
-                  predicate-code
-                  constructor-code
-                  (provide struct-name struct:struct-name))))))
+                           [(field-contract-ids ...) field-contract-ids])
+               (with-syntax ([struct-code 
+                              (with-syntax ([id-rename (a:mangle-id provide-stx 
+                                                                    "provide/contract-struct-expandsion-info-id"
+                                                                    struct-name)]
+                                            [struct-name struct-name]
+                                            [struct:struct-name struct:struct-name]
+                                            ;[(selector-id ...) selector-ids]
+                                            ;[(mutator-id ...) mutator-ids]
+                                            ;[predicate-id predicate-id]
+                                            ;[constructor-id constructor-id]
+                                            [super-id (if (boolean? super-id)
+                                                          super-id
+                                                          (with-syntax ([super-id super-id])
+                                                            (syntax #'super-id)))])
+                                (syntax (begin
+                                          #;
+                                          (provide struct-name)
+                                          
+                                          (provide (rename id-rename struct-name))
+                                          (define-syntax id-rename
+                                            (list-immutable #'struct:struct-name
+                                                            #'constructor-new-name
+                                                            #'predicate-new-name
+                                                            (list-immutable #'selector-new-names ...)
+                                                            (list-immutable #'mutator-new-names ...)
+                                                            super-id)))))]
+                             [struct:struct-name struct:struct-name])
+                 (syntax/loc stx
+                   (begin
+                     struct-code
+                     (define field-contract-ids field-contracts) ...
+                     selector-codes ...
+                     mutator-codes ...
+                     predicate-code
+                     constructor-code
+                     (provide struct:struct-name)))))))
  
          ;; map/count : (X Y int -> Z) (listof X) (listof Y) -> (listof Z)
          (define (map/count f l1 l2)
@@ -363,6 +407,19 @@ add struct contracts for immutable structs?
                                      provide-stx
                                      (syntax b))))]
              [a #f]))
+         
+         ;; extract-struct-info : syntax -> (union #f (list syntax syntax (listof syntax) ...))
+         (define (extract-struct-info stx)
+           (let ([id (syntax-case stx ()
+                       [(a b) (syntax a)]
+                       [_ stx])])
+             (syntax-local-value 
+              id
+              (lambda ()
+                (raise-syntax-error 'provide/contract
+                                    "expected a struct name" 
+                                    provide-stx
+                                    id)))))
          
          ;; build-constructor-contract : syntax (listof syntax) syntax -> syntax
          (define (build-constructor-contract stx field-contract-ids predicate-id)
@@ -393,103 +450,66 @@ add struct contracts for immutable structs?
                       . -> .
                       void?))))
          
-         ;; build-constructor-id : syntax -> syntax
-         ;; constructs the name of the selector for a particular field of a struct
-         (define (build-constructor-id struct-name)
-           (datum->syntax-object
-            struct-name
-            (string->symbol
-             (string-append
-              "make-"
-              (symbol->string (syntax-object->datum struct-name))))))
-         
-         ;; build-predicate-id : syntax -> syntax
-         ;; constructs the name of the selector for a particular field of a struct
-         (define (build-predicate-id struct-name)
-           (datum->syntax-object
-            struct-name
-            (string->symbol
-             (string-append
-              (symbol->string (syntax-object->datum struct-name))
-              "?"))))
-         
-         ;; build-selector-id : syntax syntax -> syntax
-         ;; constructs the name of the selector for a particular field of a struct
-         (define (build-selector-id struct-name field-name)
-           (datum->syntax-object
-            struct-name
-            (string->symbol
-             (string-append
-              (symbol->string (syntax-object->datum struct-name))
-              "-"
-              (symbol->string (syntax-object->datum field-name))))))
-         
-         ;; build-mutator-id : syntax syntax -> syntax
-         ;; constructs the name of the selector for a particular field of a struct
-         (define (build-mutator-id struct-name field-name)
-           (datum->syntax-object
-            struct-name
-            (string->symbol
-             (string-append
-              "set-"
-              (symbol->string (syntax-object->datum struct-name))
-              "-"
-              (symbol->string (syntax-object->datum field-name))
-              "!"))))
-         
          ;; code-for-one-id : syntax syntax syntax (union syntax #f) -> syntax
          ;; given the syntax for an identifier and a contract,
          ;; builds a begin expression for the entire contract and provide
          ;; the first syntax object is used for source locations
          (define (code-for-one-id stx id ctrct user-rename-id)
+           (with-syntax ([(code id) (code-for-one-id/new-name stx id ctrct user-rename-id)])
+             (syntax code)))
+         
+         ;; code-for-one-id/new-name : syntax syntax syntax (union syntax #f) -> (values syntax syntax)
+         ;; given the syntax for an identifier and a contract,
+         ;; builds a begin expression for the entire contract and provide
+         ;; the first syntax object is used for source locations
+         (define (code-for-one-id/new-name stx id ctrct user-rename-id)
            (with-syntax ([id-rename (a:mangle-id provide-stx "provide/contract-id" id)]
                          [contract-id (a:mangle-id provide-stx "provide/contract-contract-id" id)]
                          [pos-module-source (a:mangle-id provide-stx "provide/contract-pos-module-source" id)]
                          [pos-stx (datum->syntax-object provide-stx 'here)]
                          [id id]
-                         [ctrct ctrct])
-             (with-syntax ([provide-clause (if user-rename-id
-                                               (with-syntax ([user-rename-id user-rename-id])
-                                                 (syntax (provide (rename id-rename user-rename-id))))
-                                               (syntax (provide (rename id-rename id))))])
-               (syntax/loc stx
-                 (begin
-                   provide-clause
-                   
-                   ;; unbound id check
-                   (if #f id)
-                   
-                   (define pos-module-source (module-source-as-symbol #'pos-stx))
-                   (define contract-id (let ([id ctrct]) id))
-                   (define-syntax id-rename
-                     (make-set!-transformer
-                      (lambda (stx)
-                        (with-syntax ([neg-stx (datum->syntax-object stx 'here)])
-                          (syntax-case stx (set!)
-                            [(set! _ body) (raise-syntax-error
-                                            #f 
-                                            "cannot set! provide/contract identifier"
-                                            stx
-                                            (syntax _))]
-                            [(_ arg (... ...))
-                             (syntax 
-                              ((begin-lifted
-				(-contract contract-id
-					   id
-					   pos-module-source
-					   (module-source-as-symbol #'neg-stx)
-					   (quote-syntax _)))
-                               arg
-                               (... ...)))]
-                            [_
-                             (identifier? (syntax _))
-                             (syntax 
-                              (begin-lifted
-			       (-contract contract-id
-					  id  
-					  pos-module-source 
-					  (module-source-as-symbol #'neg-stx)
-					  (quote-syntax _))))]))))))))))
+                         [ctrct ctrct]
+                         [external-name (or user-rename-id id)])
+             (with-syntax ([code
+                            (syntax/loc stx
+                              (begin
+                                (provide (rename id-rename external-name))
+                                
+                                ;; unbound id check
+                                (if #f id)
+                                
+                                (define pos-module-source (module-source-as-symbol #'pos-stx))
+                                (define contract-id (let ([id ctrct]) id))
+                                (define-syntax id-rename
+                                  (make-set!-transformer
+                                   (lambda (stx)
+                                     (with-syntax ([neg-stx (datum->syntax-object stx 'here)])
+                                       (syntax-case stx (set!)
+                                         [(set! _ body) (raise-syntax-error
+                                                         #f 
+                                                         "cannot set! provide/contract identifier"
+                                                         stx
+                                                         (syntax _))]
+                                         [(_ arg (... ...))
+                                          (syntax 
+                                           ((begin-lifted
+                                              (-contract contract-id
+                                                         id
+                                                         pos-module-source
+                                                         (module-source-as-symbol #'neg-stx)
+                                                         (quote-syntax _)))
+                                            arg
+                                            (... ...)))]
+                                         [_
+                                          (identifier? (syntax _))
+                                          (syntax 
+                                           (begin-lifted
+                                             (-contract contract-id
+                                                        id  
+                                                        pos-module-source 
+                                                        (module-source-as-symbol #'neg-stx)
+                                                        (quote-syntax _))))])))))))])
+               (syntax (code id-rename)))))
          
          (with-syntax ([(bodies ...) (code-for-each-clause (syntax->list (syntax (p/c-ele ...))))])
            (syntax 

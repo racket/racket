@@ -1318,26 +1318,44 @@
   
   (test/spec-passed
    'provide/contract4
-   '(let ()
+   '(parameterize ([current-namespace (make-namespace)])
       (eval '(module contract-test-suite4 mzscheme
                (require (lib "contract.ss"))
-               (provide/contract (struct s ((a any/c))))
-               (define-struct s (a))))
+               (define-struct s (a))
+               (provide/contract (struct s ((a any/c))))))
       (eval '(require contract-test-suite4))
       (eval '(list (make-s 1)
                    (s-a (make-s 1))
                    (s? (make-s 1))
                    (set-s-a! (make-s 1) 2)))))
   
+  (test/spec-passed/result
+   'provide/contract4-b
+   '(parameterize ([current-namespace (make-namespace)])
+      (eval '(module contract-test-suite4-b mzscheme
+               (require (lib "contract.ss"))
+               (define-struct s (a b))
+               (provide/contract (struct s ((a any/c) (b any/c))))))
+      (eval '(require contract-test-suite4-b))
+      (eval '(let ([an-s (make-s 1 2)])
+               (list (s-a an-s)
+                     (s-b an-s)
+                     (begin (set-s-a! an-s 3)
+                            (s-a an-s))
+                     (begin (set-s-b! an-s 4)
+                            (s-b an-s))))))
+   
+   (list 1 2 3 4))
+  
   (test/spec-passed
    'provide/contract5
-   '(let ()
+   '(parameterize ([current-namespace (make-namespace)])
       (eval '(module contract-test-suite5 mzscheme
                (require (lib "contract.ss"))
-               (provide/contract (struct s ((a any/c)))
-                                 (struct t ((a any/c))))
                (define-struct s (a))
-               (define-struct t (a))))
+               (define-struct t (a))
+               (provide/contract (struct s ((a any/c)))
+                                 (struct t ((a any/c))))))
       (eval '(require contract-test-suite5))
       (eval '(list (make-s 1)
                    (s-a (make-s 1))
@@ -1350,17 +1368,45 @@
   
   (test/spec-passed
    'provide/contract6
-   '(let ()
+   '(parameterize ([current-namespace (make-namespace)])
       (eval '(module contract-test-suite6 mzscheme
                (require (lib "contract.ss"))
-               (provide/contract (struct s ((a any/c))))
-               (define-struct s (a))))
+               (define-struct s (a))
+               (provide/contract (struct s ((a any/c))))))
       (eval '(require contract-test-suite6))
       (eval '(define-struct (t s) ()))))
   
   (test/spec-passed
+   'provide/contract6
+   '(parameterize ([current-namespace (make-namespace)])
+      (eval '(module contract-test-suite6 mzscheme
+               (require (lib "contract.ss"))
+               (define-struct s (a))
+               (provide/contract (struct s ((a any/c))))))
+      (eval '(require contract-test-suite6))
+      (eval '(define-struct (t s) ()))))
+  
+  #;
+  (test/spec-passed
+   'provide/contract6b
+   '(parameterize ([current-namespace (make-namespace)])
+      (eval '(module contract-test-suite6b mzscheme
+               (require (lib "contract.ss"))
+               (provide/contract (struct s_ ((a any/c))))
+               (define-struct s_ (a))))
+      (eval '(require contract-test-suite6b))
+      (eval '(module contract-test-suite6b2 mzscheme
+               (require contract-test-suite6b)
+               (require (lib "contract.ss"))
+               (define-struct (t_ s_) (b))
+               (provide/contract (struct (t_ s_) ((a any/c) (b any/c))))))
+      (eval '(require contract-test-suite6b2))
+      (eval '(define-struct (u_ t_) ()))
+      (eval '(t_-a (make-u_ 1 2)))))
+  
+  (test/spec-passed
    'provide/contract7
-   '(let ()
+   '(parameterize ([current-namespace (make-namespace)])
       (eval '(module contract-test-suite7 mzscheme
                (require (lib "contract.ss"))
                (define-struct s (a b))
@@ -1378,7 +1424,7 @@
   
   (test/spec-passed
    'provide/contract8
-   '(let ()
+   '(parameterize ([current-namespace (make-namespace)])
       (eval '(module contract-test-suite8 mzscheme
                (require (lib "contract.ss"))
                (define-struct i-s (contents))
@@ -1389,15 +1435,48 @@
       (eval '(i-s-contents (make-i-s 1)))))
    
   (test/spec-passed
-   'provide/contract8
-   '(let ()
-      (eval '(module contract-test-suite8 mzscheme
+   'provide/contract9
+   '(parameterize ([current-namespace (make-namespace)])
+      (eval '(module contract-test-suite9 mzscheme
                (require (lib "contract.ss"))
                (provide/contract (rename the-internal-name the-external-name integer?))
                (define the-internal-name 1)
                (+ the-internal-name 1)))
-      (eval '(require contract-test-suite8))
+      (eval '(require contract-test-suite9))
       (eval '(+ the-external-name 1))))
+  
+  (test/spec-passed
+   'provide/contract10
+   '(parameterize ([current-namespace (make-namespace)])
+      (eval '(module m mzscheme
+               (require (lib "contract.ss"))
+               (define-struct s (a b) (make-inspector))
+               (provide/contract (struct s ((a number?) (b number?))))))
+      (eval '(module n mzscheme
+               (require (lib "struct.ss")
+                        m)
+               (print-struct #t)
+               (copy-struct s 
+                            (make-s 1 2)
+                            [s-a 3])))
+      (eval '(require n))))
+  
+  (test/spec-failed
+   'provide/contract11
+   '(parameterize ([current-namespace (make-namespace)])
+      (eval '(module m mzscheme
+               (require (lib "contract.ss"))
+               (define-struct s (a b) (make-inspector))
+               (provide/contract (struct s ((a number?) (b number?))))))
+      (eval '(module n mzscheme
+               (require (lib "struct.ss")
+                        m)
+               (print-struct #t)
+               (copy-struct s 
+                            (make-s 1 2)
+                            [s-a #f])))
+      (eval '(require n)))
+   'n)
 
   
 ;                                                                                                     
