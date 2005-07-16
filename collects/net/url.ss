@@ -1,7 +1,7 @@
 (module url mzscheme
   (require (lib "unitsig.ss")
            (lib "contract.ss")
-	   "url-struct.ss"
+	   "url-structs.ss"
            "url-sig.ss"
            "url-unit.ss"
            "tcp-sig.ss"
