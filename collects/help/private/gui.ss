@@ -14,6 +14,7 @@
            
            (lib "browser-sig.ss" "browser")
            (lib "url-sig.ss" "net")
+           (lib "url-structs.ss" "net")
            "sig.ss"
            "../bug-report.ss"
            (lib "bday.ss" "framework" "private")

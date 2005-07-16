@@ -9,6 +9,7 @@
            (lib "string.ss")
            (lib "port.ss")
            (lib "url-sig.ss" "net")
+           (lib "url-structs.ss" "net")
 	   (only (lib "html.ss" "html") read-html-as-xml)
 	   (only (lib "html.ss" "html") read-html-comments)
 	   (only (lib "html.ss" "html") use-html-spec)

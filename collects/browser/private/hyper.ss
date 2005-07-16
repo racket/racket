@@ -38,6 +38,7 @@ A test case:
            (lib "string.ss")
            (lib "etc.ss")
            (lib "url-sig.ss" "net")
+           (lib "url-structs.ss" "net")
            (lib "head.ss" "net")
            (lib "mred-sig.ss" "mred")
            (lib "framework.ss" "framework")

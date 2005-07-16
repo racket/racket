@@ -13,6 +13,7 @@
   (require (lib "file.ss")
            (lib "unitsig.ss")
            (lib "port.ss")
+	   "url-structs.ss"
            "uri-codec.ss"
            "url-sig.ss"
            "tcp-sig.ss")
@@ -59,9 +60,6 @@
                                                  arg))
                                            args)))))
             (raise (make-url-exception s (current-continuation-marks))))))
-
-      (define-struct url (scheme user host port path query fragment))
-      (define-struct path/param (path param))
 
       (define url->string
         (lambda (url)

@@ -6,6 +6,7 @@
            (lib "sig.ss" "web-server")
            (lib "tcp-sig.ss" "net")
            (lib "url-sig.ss" "net")
+           (lib "url-structs.ss" "net")
            "internal-hp.ss")
   
   (define-syntax (redefine stx)
@@ -33,35 +34,18 @@
           [(and (equal? (url-port url) internal-port)
                 (equal? (url-host url) internal-host))
            (let* ([long
-                   (raw:url->string 
-                    (raw:make-url ""
-                                  (raw:url-user url)
-                                  ""
-                                  #f
-                                  (raw:url-path url)
-                                  (raw:url-query url)
-                                  (raw:url-fragment url)))])
+                   (url->string 
+                    (make-url ""
+			      (url-user url)
+			      ""
+			      #f
+			      (url-path url)
+			      (url-query url)
+			      (url-fragment url)))])
              (substring long 3 (string-length long)))]
           [else (raw:url->string url)]))
       
-      (redefine make-url
-                struct:url
-                url-scheme set-url-scheme!
-                url-user set-url-user!
-                url-host set-url-host!
-                url-port set-url-port!
-                url-path set-url-path!
-                url-query set-url-query!
-                url-fragment set-url-fragment!
-                url?
-                
-                struct:path/param
-                make-path/param
-                path/param-path set-path/param-path!
-                path/param-param set-path/param-param!
-                path/param?
-                
-                get-pure-port
+      (redefine get-pure-port
                 get-impure-port
                 post-pure-port
                 post-impure-port

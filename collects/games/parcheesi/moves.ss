@@ -3,6 +3,15 @@
            (lib "contract.ss")
            (lib "list.ss"))
 
+  ;; a move is either:
+  ;;  - (make-enter-piece pawn)
+  ;;  - (make-move-piece-main pawn start distance)
+  ;;  - (make-move-piece-home pawn start distance)
+  (define-struct move () (make-inspector))
+  (define-struct (enter-piece move) (pawn) (make-inspector))
+  (define-struct (move-piece-main move) (pawn start distance) (make-inspector))
+  (define-struct (move-piece-home move) (pawn start distance) (make-inspector))
+
   (provide/contract
    (struct enter-piece ((pawn pawn?)))
    (struct move-piece-main ([pawn pawn?] [start number?] [distance number?]))
@@ -36,15 +45,6 @@
   
   (define bop-bonus 20)
   (define home-bonus 10)
-
-  ;; a move is either:
-  ;;  - (make-enter-piece pawn)
-  ;;  - (make-move-piece-main pawn start distance)
-  ;;  - (make-move-piece-home pawn start distance)
-  (define-struct move () (make-inspector))
-  (define-struct (enter-piece move) (pawn) (make-inspector))
-  (define-struct (move-piece-main move) (pawn start distance) (make-inspector))
-  (define-struct (move-piece-home move) (pawn start distance) (make-inspector))
          
   ;; moves-dice : moves -> (listof number)
   ;; does not return the die moves that correspond to entering pawns
