@@ -19,6 +19,7 @@ To load directly: (require (lib "url.ss" "net"))
 Module files: _url.ss_ - provides the procedures documented below
               _url-unit.ss_ - provides unit net:url@
               _url-sig.ss_ - provides signature net:url^
+              _url-struct.ss_ - provides the url and path/param structs
 
 
 ABSTRACT -------------------------------------------------------------
