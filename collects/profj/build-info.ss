@@ -35,17 +35,25 @@
            (htdch-lib? (ormap (lambda (p) (same-base-dir? dir p))
                               (map (lambda (p) (build-path p "htdch"))
                                    (current-library-collection-paths))))
+           (scheme-lib? (ormap (lambda (p) (same-base-dir? dir p))
+                               (current-library-collection-paths)))
            (access (lambda (name)
                      (cond
                        (profj-lib? `(lib ,name "profj" "libs" ,@path))
-                       (htdch-lib? `(lib ,name "htdch" ,@path))
+                       (htdch-lib? 
+                        `(lib ,name "htdch" ,@(if scheme? (cdddr path) path)))
+                       (scheme-lib? `(lib ,name ,@(cddr path)))
                        ((and local? (not (to-file))) name)
                        (else `(file ,(path->string (build-path dir name)))))))
            (make-name (lambda ()
                         (let ((n (if scheme? (java-name->scheme name) name)))
-                          (if (or (not local?) profj-lib? htdch-lib? (to-file))
+                          (if (or (not local?) profj-lib? htdch-lib? scheme-lib? (to-file))
                               (string-append n ".ss")
                               (string->symbol n))))))
+      #;(when (or htdch-lib? (equal? name "Image"))
+        (printf "build-require : class ~a path ~a ~a~n" name path (access (make-name))))
+      #;(printf "build-req of ~a profj-lib? ~a htdch-lib? ~a scheme-lib? ~a ~n"
+              (make-name) profj-lib? htdch-lib? scheme-lib?)
       (if scheme?
           (list (syn `(prefix ,(string->symbol
                                 (apply string-append
@@ -306,7 +314,8 @@
       ;(printf "~n~nadd-my-package package ~a~n" package)
       ;(printf "add-my-package: dir ~a class ~a~n" dir classes)
       (for-each (lambda (c) 
-                  (import-class c package dir loc type-recs level #f #t)
+                  (import-class c package 
+                                (make-dir-path (build-path 'same) #f) loc type-recs level #f #t)
                   (send type-recs add-to-env c package loc))
                 (filter (lambda (c) (not (contained-in? defs c))) classes))
       (send type-recs add-package-contents package classes)))
@@ -373,10 +382,16 @@
                                 (equal? (filename-extension f) #".scm")))
                 (directory-list (dir-path-path dir)))
         (filter (lambda (c-name) (not (equal? c-name "")))
-                (map (lambda (fn) (substring fn 0 (- (string-length fn) 5)))
-                     (map path->string
-                          (filter (lambda (f) (equal? (filename-extension f) #"java"))
-                                  (directory-list (dir-path-path dir))))))))
+                (map (lambda (fn) 
+                       (let ((str (path->string fn)))
+                         (substring str 0 (- (string-length str) 
+                                             (add1 (bytes-length (filename-extension fn)))))))
+                     (filter (lambda (f) 
+                                    (let ((ext (filename-extension f)))
+                                      (or (equal? ext #"java")
+                                          (equal? ext #"djava")
+                                          (equal? ext #"ajava"))))
+                                  (directory-list (dir-path-path dir)))))))
   
   ;load-lang: type-records -> void (adds lang to type-recs)
   (define (load-lang type-recs)

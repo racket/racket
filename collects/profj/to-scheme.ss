@@ -2292,7 +2292,12 @@
                         (mangle-method-name (method-record-name method-record)
                                             (method-record-atypes method-record))))
                 (m-name (cond
-                          ((method-contract? method-record) (java-name->scheme (method-contract-name method-record)))
+                          ((method-contract? method-record)
+                           (if (method-contract-prefix method-record)
+                               (build-static-name
+                                (java-name->scheme (method-contract-name method-record))
+                                (method-contract-prefix method-record))
+                               (java-name->scheme (method-contract-name method-record))))
                           (static?
                            (build-static-name temp (car (method-record-class method-record))))
                           (else temp)))
@@ -2300,7 +2305,7 @@
                                 (build-generic-name (car (method-record-class method-record)) m-name))))
            (cond 
              ((special-name? expr)
-              (let* ((over? (overridden? (string->symbol m-name)))
+              (let* ((over? (and (overridden? (string->symbol m-name)) (equal? "super" (special-name-name expr))))
                      (name (translate-id m-name (id-src method-name)))
                      (new-exp (cond
                                 (static? (create-syntax #f `(,name ,@translated-args) (build-src src)))
@@ -2317,7 +2322,7 @@
                 ((method-contract? method-record)
                  (make-syntax #f (convert-assert-value
                                   (create-syntax #f `((c:contract ,(type->contract method-record #t)
-                                                                  ,(build-identifier (java-name->scheme (method-contract-name method-record)))
+                                                                  ,(build-identifier m-name #;(java-name->scheme (method-contract-name method-record)))
                                                                   (quote ,(string->symbol (class-name))) '|infered contract|)
                                                       ,@translated-args) (build-src src))
                                   (method-contract-return method-record))

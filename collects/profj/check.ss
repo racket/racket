@@ -1910,13 +1910,17 @@
                       ((scheme-record? record)
                        (module-has-binding? record  name-string 
                                             (lambda () (no-method-error 'class 'not-found
-                                                                        (string->symbol name-string)
-                                                                        (make-ref-type name (list "scheme"))
+                                                                        (string->symbol
+                                                                         (scheme-record-name record))
+                                                                        name
                                                                         src)))
+                       (send type-recs add-req (make-req (scheme-record-name record)
+                                                         (cons "scheme" (scheme-record-path record))))
                        (cond
                          ((name? name) (set-id-string! (name-id name) (java-name->scheme name-string)))
                          ((id? name) (set-id-string! name (java-name->scheme name-string))))
-                       (list (make-method-contract (java-name->scheme name-string) #f #f)))))
+                       (list (make-method-contract (java-name->scheme name-string) #f #f 
+                                                   (scheme-record-name record))))))
                   ;Teaching languages
                   (if (and (= (length (access-name expr)) 1)
                            (with-handlers ((exn:fail:syntax? (lambda (exn) #f)))
@@ -1977,7 +1981,7 @@
                        (get-method-records name-string
                                            (send type-recs get-class-record object-type)))
                       ((dynamic-val? call-exp) 
-                       (let ((m-contract (make-method-contract name-string #f #f)))
+                       (let ((m-contract (make-method-contract name-string #f #f #f)))
                          (set-dynamic-val-type! call-exp (make-unknown-ref m-contract))
                          (set! exp-type call-exp)
                          (list m-contract)))
@@ -1999,7 +2003,7 @@
                           ((and (null? rec) (dynamic?) (lookup-var-in-env name-string env)) =>
                            (lambda (var-type)
                              (if (eq? 'dynamic (var-type-type var-type))
-                                 (list (make-method-contract (string-append name-string "~f") #f #f))
+                                 (list (make-method-contract (string-append name-string "~f") #f #f #f))
                                  null)))
                           ((null? rec) null)
                           (else (get-method-records name-string rec)))))))))))
@@ -2205,8 +2209,14 @@
                                               (not (package-members? c-class (cons (ref-type-class/iface type) 
                                                                                    (ref-type-path type)) type-recs))))
           (class-access-error 'pro level type src))
-        (when (and (not (memq 'private mods)) (not (memq 'protected mods)) (not (memq 'public mods))
-                   (not (package-members? c-class (cons (ref-type-class/iface type) (ref-type-path type)) type-recs)))
+        (when (and (not (or (memq 'private mods) (memq 'protected mods) (memq 'public mods)))
+                   (not (package-members? c-class 
+                                          (cons (ref-type-class/iface type) 
+                                                (if (null? (ref-type-path type))
+                                                    (send type-recs lookup-path (ref-type-class/iface type)
+                                                          (lambda () null))
+                                                    (ref-type-path type)))
+                                          type-recs)))
           (class-access-error 'pac level type src))
         ((if (class-alloc? exp) set-class-alloc-ctor-record! set-inner-alloc-ctor-record!)exp const)
         (make-type/env type (cadr args/env)))))

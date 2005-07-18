@@ -376,7 +376,7 @@
                                 (val-editor (caddr example))
                                 (val (parse-expression (open-input-text-editor val-editor) val-editor level)))
                            (compile-interactions-ast
-                            (make-var-init (make-var-decl name null type #f) val #f #f)
+                            (make-var-init (make-var-decl name null type #f #f) val #f #f)
                             val-editor level type-recs)))
                        contents)
                   (process-extras (cdr extras) type-recs))))
@@ -457,6 +457,7 @@
             (let ([obj-path ((current-module-name-resolver) '(lib "Object.ss" "profj" "libs" "java" "lang") #f #f)]
                   [string-path ((current-module-name-resolver) '(lib "String.ss" "profj" "libs" "java" "lang") #f #f)]
                   [class-path ((current-module-name-resolver) '(lib "class.ss") #f #f)]
+                  [mred-path ((current-module-name-resolver) '(lib "mred.ss" "mred") #f #f)]
                   [n (current-namespace)])
               (read-case-sensitive #t)
               (run-in-user-thread
@@ -500,24 +501,45 @@
                    (namespace-attach-module n obj-path)
                    (namespace-attach-module n string-path)
                    (namespace-attach-module n class-path)
+                   (namespace-attach-module n mred-path)
                    (namespace-require obj-path)
                    (namespace-require string-path)
                    (namespace-require class-path)
+                   (namespace-require mred-path)
                    (namespace-require '(prefix javaRuntime: (lib "runtime.scm" "profj" "libs" "java")))
-                   (namespace-require '(prefix c: (lib "contract.ss"))))))))
+                   (namespace-require '(prefix c: (lib "contract.ss")))
+                   )))))
           
-          (define/public (render-value value settings port); port-write)
+          #;(define/public (render-value value settings port); port-write)
             (let ((print-full? (profj-settings-print-full? settings))
                   (style (profj-settings-print-style settings)))
-              (if (is-a? value String)
-                  (display (format-java value print-full? style null #t 0) port)
-                  #;(begin 
-                    (write-special (format "~v" (send value get-mzscheme-string)) port)
-                    (void))
-                  (let ((out (format-java value print-full? style null #f 0)))
-                    (if (< 25 (string-length out))
-                        (display (format-java value print-full? style null #t 0) port)
-                        (display out port))))))
+              (write-special 
+               (if (is-a? value String)
+                     (format-java value print-full? style null #t 0)
+                     (let ((out (format-java value print-full? style null #f 0)))
+                       (if (< 25 (string-length out))
+                           (format-java value print-full? style null #t 0)
+                           out))) port)
+              (void)))
+          
+          (define/public (render-value value settings port)
+            (let* ((print-full? (profj-settings-print-full? settings))
+                   (style (profj-settings-print-style settings))
+                   (formatted (format-java-list value print-full? style null #f 0)))
+              (when (< 24 (total-length formatted))
+                (set! formatted (format-java-list value print-full? style null #t 0)))
+              (let loop ((out formatted))
+                (unless (null? out)
+                  (write-special (car out) port)
+                  (loop (cdr out))))))
+          
+          (define/private (total-length lst)
+            (cond
+              ((null? lst) 0)
+              ((string? (car lst)) (+ (string-length (car lst))
+                                      (total-length (cdr lst))))
+              (else (add1 (total-length (cdr lst))))))
+              
           (define/public (render-value/format value settings port width) 
             (render-value value settings port)(newline port))
           
@@ -842,6 +864,57 @@
                                (substring fields 0 (sub1 (string-length fields))) "") ")")))
          (else (send value my-name))))
       (else (format "~a" value))))
+  
+  (define (format-java-list value full-print? style already-printed newline? num-tabs)
+    (cond
+      ((null? value) '("null"))
+      ((number? value) (list (format "~a" value)))
+      ((char? value) (list (format "'~a'" value)))
+      ((boolean? value) (list (if value "true" "false")))
+      ((is-java-array? value)
+       (if full-print?
+           (array->string value (send value length) -1 #t style already-printed newline? num-tabs)
+           (array->string value 3 (- (send value length) 3) #f style already-printed newline? num-tabs)))
+      ((is-a? value String) (list (format "~v" (send value get-mzscheme-string))))
+      ((string? value) (list (format "~v" value)))
+      ((or (is-a? value ObjectI) (supports-printable-interface? value))
+       (case style
+         ((type) (list (send value my-name)))
+         ((field)
+          (let* ((retrieve-fields (send value fields-for-display))
+                 (st (format "~a(" (send value my-name)))
+                 (new-tabs (+ num-tabs 3))
+                 (fields null))
+            (let loop ((current (retrieve-fields)))
+              (let ((next (retrieve-fields)))
+                (when current
+                  (set! fields 
+                        (append fields 
+                                (cons
+                                 (format "~a~a = "
+                                         (if newline? (if (eq? fields null)
+                                                          (format "~n~a" (get-n-spaces new-tabs))
+                                                          (get-n-spaces new-tabs)) "")
+                                         (car current))
+                                 (append
+                                  (if (memq (cadr current) already-printed)
+                                      (format-java-list (cadr current) full-print? 'type already-printed #f 0)
+                                      (format-java-list (cadr current) full-print? style 
+                                                        (cons value already-printed) newline?
+                                                        (if newline? 
+                                                            (+ new-tabs (string-length (car current)) 3)
+                                                            num-tabs)))
+                                  (list (format "~a~a" 
+                                                (if next "," "")
+                                                (if newline? (format "~n") " ")))))))
+                  (loop next))))
+            (cons st 
+                  (append
+                   (if (> (length fields) 1) 
+                       (reverse (cdr (reverse fields))) null) (list ")")))))
+         (else (list (send value my-name)))))
+      (else (list value))))
+
   
   ;array->string: java-value int int bool symbol (list value) -> string
   (define (array->string value stop restart full-print? style already-printed nl? nt)

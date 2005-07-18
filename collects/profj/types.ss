@@ -253,8 +253,8 @@
   ;;(make-unknown-ref (U method-contract field-contract))
   (define-struct unknown-ref (access))
   
-  ;;(make-method-contract string type (list type))
-  (define-struct method-contract (name return args))
+  ;;(make-method-contract string type (list type) (U #f string))
+  (define-struct method-contract (name return args prefix))
   
   ;;(make-field-contract string type)
   (define-struct field-contract (name type))
@@ -585,7 +585,17 @@
   (define (module-has-binding? mod-ref variable fail)
     (let ((var (string->symbol (java-name->scheme variable))))
       (or (memq var (scheme-record-provides mod-ref))
-          (let ((old-namespace (current-namespace)))
+          (let ((mod-syntax (datum->syntax-object #f
+                                                  `(module m mzscheme
+                                                     (require ,(generate-require-spec (java-name->scheme (scheme-record-name mod-ref))
+                                                                                      (scheme-record-path mod-ref)))
+                                                     ,var)
+                                                  #f)))
+            (with-handlers ((exn? (lambda (e) (fail))))
+              (expand mod-syntax))
+            (set-scheme-record-provides! mod-ref (cons var (scheme-record-provides mod-ref))))
+                                    
+          #;(let ((old-namespace (current-namespace)))
            (current-namespace (make-namespace))
            (namespace-require (generate-require-spec (java-name->scheme (scheme-record-name mod-ref))
                                                      (scheme-record-path mod-ref)))
