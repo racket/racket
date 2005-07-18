@@ -6,6 +6,7 @@
   (provide
    (struct exn:assoc-set:key-not-found (assoc-set key))
    (struct exn:assoc-set:duplicate-key (assoc-set key))
+   exn:assoc-set
    exn:assoc-set?
    raise-key-not-found-exn
    raise-duplicate-key-exn

@@ -5,6 +5,7 @@
 (module set-exn mzscheme
   
   (provide
+   exn:set
    exn:set?
    (struct exn:set:value-not-found (set value))
    (struct exn:set:duplicate-value (set value))

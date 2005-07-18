@@ -265,7 +265,7 @@ add struct contracts for immutable structs?
                   [selector-ids (reverse (list-ref struct-info 3))]
                   [mutator-ids (reverse (list-ref struct-info 4))]
                   [parent-struct-count (let ([parent-info (extract-parent-struct-info struct-name-position)])
-                                         (and parent-info
+					 (and parent-info
                                               (let ([fields (cadddr parent-info)])
                                                 (cond
                                                   [(null? fields) 0]
@@ -291,16 +291,50 @@ add struct contracts for immutable structs?
                       (symbol->string (syntax-e struct-name)))))])
              
              (let ([unknown-info
-                    (λ (what)
+                    (lambda (what names)
                       (raise-syntax-error
                        'provide/contract
-                       (format "cannot determine ~a" what)
+                       (format "cannot determine ~a, found ~s" what names)
                        provide-stx
-                       struct-name))])
-               (unless constructor-id (unknown-info "constructor"))
-               (unless predicate-id (unknown-info "predicate"))
-               (unless (andmap values selector-ids) (unknown-info "selectors"))
-               (unless (andmap values mutator-ids) (unknown-info "mutators")))
+                       struct-name))]
+		   [is-id-ok?
+		    (lambda (id i)
+                      (if (or (not parent-struct-count)
+			      (parent-struct-count . <= . i))
+			  id
+			  #t))])
+               
+               (unless constructor-id (unknown-info "constructor" constructor-id))
+               (unless predicate-id (unknown-info "predicate" predicate-id))
+               (unless (andmap/count is-id-ok? selector-ids)
+		 (unknown-info "selectors"
+			       (map (lambda (x) (if (syntax? x)
+						    (syntax-object->datum x)
+						    x))
+						selector-ids)))
+               (unless (andmap/count is-id-ok? mutator-ids)
+		 (unknown-info "mutators"
+			       (map (lambda (x) (if (syntax? x)
+						    (syntax-object->datum x)
+						    x))
+				    mutator-ids))))
+             
+             (unless (equal? (length selector-ids)
+                             (length field-contract-ids))
+               (raise-syntax-error 'provide/contract
+                                   (format "found ~a fields in struct, but ~a contracts"
+                                           (length selector-ids)
+                                           (length field-contract-ids))
+                                   provide-stx
+                                   struct-name))
+             (unless (equal? (length mutator-ids)
+                             (length field-contract-ids))
+               (raise-syntax-error 'provide/contract
+                                   (format "found ~a fields in struct, but ~a contracts"
+                                           (length mutator-ids)
+                                           (length field-contract-ids))
+                                   provide-stx
+                                   struct-name))
              
              (with-syntax ([((selector-codes selector-new-names) ...)
                             (filter
@@ -394,6 +428,16 @@ add struct contracts for immutable structs?
                            (loop (cdr l1)
                                  (cdr l2)
                                  (+ i 1)))])))
+
+	 ;; andmap/count : (X Y int -> Z) (listof X) (listof Y) -> (listof Z)
+         (define (andmap/count f l1)
+           (let loop ([l1 l1]
+                      [i 0])
+             (cond
+               [(null? l1) #t]
+               [else (and (f (car l1) i)
+			  (loop (cdr l1)
+				(+ i 1)))])))
          
          ;; extract-parent-struct-info : syntax -> (union #f (list syntax syntax (listof syntax) ...))
          (define (extract-parent-struct-info stx)

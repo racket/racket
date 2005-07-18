@@ -20,8 +20,14 @@
   
   (provide/contract
    (exn:assoc-set? (any/c . -> . boolean?))
-   (struct exn:assoc-set:key-not-found ((assoc-set assoc-set?) (key any/c)))
-   (struct exn:assoc-set:duplicate-key ((assoc-set assoc-set?) (key any/c)))
+   (struct (exn:assoc-set:key-not-found exn:assoc-set) ((message (and/c string? immutable?))
+							(continuation-mark-set continuation-mark-set?)
+							(assoc-set assoc-set?)
+							(key any/c)))
+   (struct (exn:assoc-set:duplicate-key exn:assoc-set) ((message (and/c string? immutable?))
+							(continuation-mark-set continuation-mark-set?)
+							(assoc-set assoc-set?)
+                                                        (key any/c)))
    (assoc-set-make (() ((symbols 'equal)) . opt-> . assoc-set?))
    (assoc-set-reset (assoc-set? . -> . assoc-set?))
    (assoc-set? (any/c . -> . boolean?))

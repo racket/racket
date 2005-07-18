@@ -1478,6 +1478,15 @@
       (eval '(require n)))
    'n)
 
+  (test/spec-passed
+   'provide/contract12
+   '(parameterize ([current-namespace (make-namespace)])
+      (eval '(module m mzscheme
+               (require (lib "contract.ss"))
+(define-struct (exn2 exn) ())
+(provide/contract (struct (exn2 exn) ((message any/c) (continuation-marks any/c))))))
+      (eval '(require m))))
+
   
 ;                                                                                                     
 ;                                                                                                     
