@@ -113,7 +113,7 @@
 (define common-deps (list "../../mzscheme/gc2/xform.ss"
 			  "../../mzscheme/gc2/xform-mod.ss"))
 
-(define (find-obj f d) (format "../../worksp/~a/release/~a.obj" d f))
+(define (find-obj f d) (format "../~a/release/~a.obj" d f))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -128,8 +128,7 @@
 (for-each
  (lambda (x)
    (try (format "../../mzscheme/src/~a.c" x)
-	(list* ; (find-obj x "libmzsch")
-	       (format "../../mzscheme/src/~a.c" x)
+	(list* (format "../../mzscheme/src/~a.c" x)
 	       common-deps)
 	(format "xsrc/~a.c" x)
 	(format "xsrc/~a.obj" x)
@@ -141,8 +140,7 @@
  srcs)
 
 (try "../../mzscheme/main.c"
-     (list* ; (find-obj "main" "mzscheme")
-	    "../../mzscheme/main.c"
+     (list* "../../mzscheme/main.c"
 	    common-deps)
      "xsrc/main.c"
      "xsrc/main.obj"
@@ -153,8 +151,7 @@
      #f)
 
 (try "../../foreign/foreign.c"
-     (list* ; (find-obj "main" "mzscheme")
-	    "../../foreign/foreign.c"
+     (list* "../../foreign/foreign.c"
 	    common-deps)
      "xsrc/foreign.c"
      "xsrc/foreign.obj"
@@ -243,15 +240,14 @@
 			      "/I ../../mred/wxme "
 			      "/I ../../wxwindow/contrib/wxxpm/libxpm.34b/lib "
 			      "/I ../../wxWindow/contrib/fafa "
-			      "/I ../../wxcommon/jpeg /I ../../worksp/jpeg /I ../../wxcommon/zlib "))
+			      "/I ../../wxcommon/jpeg /I ../jpeg /I ../../wxcommon/zlib "))
 (try "wxprecomp.cxx" (list* "../../mzscheme/src/schvers.h" common-deps)
      "xsrc/wxprecomp.h" #f wx-inc #f "" "-DGC2_AS_IMPORT" #f)
 
 (define (wx-try base proj x use-precomp? suffix)
   (let ([cxx-file (format "../../~a/~a.~a" base x suffix)])
     (try cxx-file
-	 (list* ; (find-obj x proj)
-		cxx-file
+	 (list* cxx-file
 		common-deps)
 	 (format "xsrc/~a.~a" x suffix)
 	 (format "xsrc/~a.obj" x)
@@ -386,7 +382,7 @@
 (wx-try "mzscheme/utils" "wxme" "xcglue" #f "c")
 (compile "../../wxcommon/wxGC.cxx"
 	 "xsrc/wxGC.obj"
-	 (list "../../worksp/wxme/Release/wxGC.obj")
+	 (list "../wxme/Release/wxGC.obj")
 	 (string-append wx-inc " -DMZ_PRECISE_GC -DGC2_AS_IMPORT -Dwx_msw"))
 
 (let ([objs (append (list
@@ -404,10 +400,10 @@
 			     mred-srcs)))]
       [libs (list
 	     "../../../libmzsch3mxxxxxxx.lib"
-	     "../../worksp/wxutils/Release/wxutils.lib"
-	     "../../worksp/jpeg/Release/jpeg.lib"
-	     "../../worksp/png/Release/png.lib"
-	     "../../worksp/zlib/Release/zlib.lib")]
+	     "../wxutils/Release/wxutils.lib"
+	     "../jpeg/Release/jpeg.lib"
+	     "../png/Release/png.lib"
+	     "../zlib/Release/zlib.lib")]
       [win-libs (list
 		 "comctl32.lib" "glu32.lib" "opengl32.lib"
 		 "gdi32.lib" "comdlg32.lib" "advapi32.lib" 
@@ -420,7 +416,7 @@
 (unless (file-exists? "mred.res")
   (system- (string-append 
 	    "rc /l 0x409 /I ../../wxwindow/include/msw /I ../../wxwindow/contrib/fafa "
-	    "/fomred.res ../../worksp/mred/mred.rc")))
+	    "/fomred.res ../mred/mred.rc")))
 
 (let ([objs (list
 	     "mred.res"
