@@ -23,7 +23,9 @@
   ;; bindings? any/c -> boolean
   ;; is this a binding
   (define binding?
-    (cons/c symbol? string?))
+    (cons/c symbol? 
+            (union string?
+                   bytes?)))
 
   (provide/contract
    [struct request ([method symbol?] [uri url?] [headers (listof header?)]
@@ -169,8 +171,8 @@
                   (map (lambda (part)
                          ;; more here - better checks, avoid string-append
                          (cons (get-field-name (cdr (assq 'content-disposition (car part))))
-                               (apply string-append (cdr part))))
-                       (read-mime-multipart (bytes->string/utf-8 (cadr content-boundary)) (connection-i-port conn))))]
+                               (apply bytes-append (cdr part))))
+                       (read-mime-multipart (cadr content-boundary) (connection-i-port conn))))]
              [else
              (let ([len-str (assq 'content-length headers)]
                    [in (connection-i-port conn)])
@@ -199,16 +201,16 @@
 
   ;; **************************************************
   ;; read-mime-multipart
-
-  ; read-mime-multipart : str iport -> (listof part)
+  
+  ; read-mime-multipart : bytes iport -> (listof part)
   (define (read-mime-multipart boundary in)
-    (let* ([boundary-len (string-length boundary)]
-           [start-boundary (string-append "--" boundary)]
-           [end-boundary (string-append start-boundary "--")])
+    (let* ([boundary-len (bytes-length boundary)]
+           [start-boundary (bytes-append #"--" boundary)]
+           [end-boundary (bytes-append start-boundary #"--")])
       (let skip-preamble ()
-        (let ([line (read-line in 'return-linefeed)])
+        (let ([line (read-bytes-line in 'return-linefeed)])
           (cond
-            [(string=? line start-boundary)
+            [(bytes=? line start-boundary)
              (let read-parts ()
                (let ([headers (read-headers in)])
                  (let read-mime-part-body ([more-k (lambda (contents)
@@ -218,27 +220,27 @@
                                            [end-k (lambda (contents)
                                                     (list (construct-mime-part
                                                            headers contents)))])
-                   (let ([line (read-line in 'return-linefeed)])
+                   (let ([line (read-bytes-line in 'return-linefeed)])
                      (cond
-                       [(string=? line start-boundary)
+                       [(bytes=? line start-boundary)
                         (more-k null)]
-                       [(string=? line end-boundary)
+                       [(bytes=? line end-boundary)
                         (end-k null)]
                        [else (read-mime-part-body
                               (lambda (x) (more-k (cons line x)))
                               (lambda (x) (end-k (cons line x))))])))))]
-            [(string=? line end-boundary) null]
+            [(bytes=? line end-boundary) null]
             [else (skip-preamble)])))))
 
   ; more here - use structure, perhaps
-  ; construct-mime-part : (listof header) (listof str) -> part
+  ; construct-mime-part : (listof header) (listof bytes) -> part
   (define (construct-mime-part headers body)
     (cons headers
           (cond
             [(null? body) null]
             [else (cons (car body)
-                        (foldr (lambda (str acc)
-                                 (list* CR-NL str acc))
+                        (foldr (lambda (byt acc)
+                                 (list* (string->bytes/utf-8 CR-NL) byt acc))
                                null
                                (cdr body)))])))
 

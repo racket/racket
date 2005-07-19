@@ -1,3 +1,6 @@
+Version 299.108
+Changed collects/web-server request-bindings/raw
+ to return an alist of bytes, not strings.
 
 Version 299.107
 Changed expansion of internal definitions so that local
