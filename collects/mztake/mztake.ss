@@ -167,7 +167,7 @@
 
   (define (find-client process modpath) 
     (cond
-     [(memf (lambda (c) (equal? (debug-client-modpath c) (path->string modpath)))
+     [(memf (lambda (c) (equal? (debug-client-modpath c) modpath))
             (debug-process-clients process)) => first]
      [else false]))
  
@@ -186,7 +186,6 @@
            [where-event ((frp:signal-thunk (debug-process-where process)) #t)])
       
       (set-debug-process-marks! process marks)
-
       (if (empty? traces)
 
           (frp:send-synchronous-event where-event w)
@@ -221,7 +220,6 @@
     false)
   
   (define (launch-sandbox process)
-
     (require/sandbox+annotations
      (debug-process-custodian process)
      ;; error-display-handler :
@@ -230,6 +228,7 @@
          (frp:send-event (debug-process-exceptions process) exn)
          (orig-err-disp msg exn)))
      `(file ,(debug-client-modpath (debug-process-main-client process)))
+     
      ;; annotate-module?
      (lambda (filename module-name)
         (memf (lambda (c) (equal? (debug-client-modpath c) (path->string filename)));; TODO: harmonize path & string
@@ -237,7 +236,7 @@
      ;; annotator
      (lambda (stx)
        (let ([client (and (syntax-source stx)
-                          (find-client process (syntax-source stx)))])
+                          (find-client process (path->string (syntax-source stx))))])
          (if (not client)
              stx
              (let-values ([(annotated-stx pos-list)
@@ -373,29 +372,28 @@
         (set-debug-process-clients! process
                                     (append (list client) (debug-process-clients process)))
           
-                                        ; set the main module if it has not been set
-                                        ; this implies that the first client created is always the main module
+        ; set the main module if it has not been set
+        ; this implies that the first client created is always the main module
         (unless (debug-process-main-client process)
           (set-debug-process-main-client! process client))
           
         client)))
 
-  (define (set-main! mod-path)
-    (let ([client (find-client (current-process) mod-path)])
-      (if client
-          (set-debug-process-main-client! (current-process) client)
-          (create-debug-client (current-process) mod-path))))
+  (define (set-main! reqspec)
+    (let* ([modpath (reqspec->modpath reqspec)]
+           [maybe-client (find-client (current-process) modpath)]
+           [client (or maybe-client (create-debug-client (current-process) modpath))])
+      (set-debug-process-main-client! (current-process) client)))
 
   (define (hold-b b)
     (frp:hold (frp:filter-e (lambda (ev) (not (frp:undefined? ev))) (frp:changes b))))
 
-  (define (expand-module-filename filename)
+  (define (reqspec->modpath filename)
     (define (build-module-filename str) ; taken from module-overview.ss
       (let ([try (lambda (ext)
                    (let ([tst (string-append str ext)])
                      (and (file-exists? tst) tst)))])
-        (or (try ".ss") (try ".scm") (try "") str)))
-               
+        (or (try ".ss") (try ".scm") (try "") str)))               
     (let ([modpath (symbol->string ((current-module-name-resolver) filename #f #f))])
       (build-module-filename
        (if (regexp-match #rx"^," modpath)
@@ -403,7 +401,7 @@
            modpath))))
 
   (define (trace* loc thunk)
-    (let* ([modpath (expand-module-filename (loc-modpath loc))]
+    (let* ([modpath (reqspec->modpath (loc-reqspec loc))]
            [clients (filter (lambda (c)
                               (equal? modpath (debug-client-modpath c)))
                             (debug-process-clients (current-process)))]
@@ -457,7 +455,7 @@
                      (let ([p (syntax-position stx)])
                        (string->symbol (format "~a::~a" s p)))))))))
 
-  (provide loc$ loc loc-modpath loc-line loc-col
+  (provide loc$ loc loc-reqspec loc-line loc-col
            trace trace* bind define/bind create-debug-process
            create-debug-client where set-main!
            mztake-version)

@@ -33,11 +33,12 @@
       binary heap implementation without satisfying its (stronger) contract. |#
 
 (require (lib "mztake.ss" "mztake")
+         (lib "useful-code.ss" "mztake" "private")
 	 "dijkstra-solver.ss"
          (lib "match.ss"))
 
-(define/bind (loc "heap.ss" 49 6) item)
-(define/bind (loc "heap.ss" 67 10) result)
+(define inserts (trace (loc "heap.ss" 49 6) (bind (item) item)))
+(define removes (trace (loc "heap.ss" 67 10) (bind (result) result)))
 
 #| The following code merely observes the insertions and removals
    from the heap. We notice whether any of the removals are out
@@ -59,7 +60,6 @@
                                        (inserts . -=> . 'reset)))
 (define violations (not-in-order inserts-and-removes-e))
 
-
 (printf-b "all inserts and removes: ~a" (history-b inserts-and-removes-e))
 (printf-b "all violations: ~a" (history-b violations))
 (printf-b "latest-violation: ~a" (hold violations))
@@ -77,5 +77,7 @@
 
 (define inserters (accum-b (inserts . ==> . insert-in-model) empty))
 (define removers  (accum-b (removes . ==> . remove-from-model) inserters))
+
+(set-main! "dijkstra.ss")
 
 (set-running-e! (violations . -=> . false))

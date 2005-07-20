@@ -41,7 +41,7 @@
                                 where         ; a behavior signaling each position where we pause
                                 marks))       ; while paused, the marks at the point of the pause (else false)
   
-  (define-struct loc (modpath line col))
+  (define-struct loc (reqspec line col))
                       
   ;###########################################################################################################
   
