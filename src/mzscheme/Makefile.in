@@ -241,8 +241,8 @@ clean@NOT_OSX@:
 	cd sgc; $(MAKE) clean
 	cd src; $(MAKE) clean
 	cd dynsrc; $(MAKE) clean
-	if [ ! -d ../foreign ] ; then cd ../foreign ; $(MAKE) clean ; fi
-	if [ ! -d ../llvm    ] ; then cd ../llvm    ; $(MAKE) clean ; fi
+	if [ -d ../foreign ] ; then cd ../foreign ; $(MAKE) clean ; fi
+	if [ -d ../llvm    ] ; then cd ../llvm    ; $(MAKE) clean ; fi
 
 clean@OSX@:
 	rm -rf PLT_MzScheme.framework
