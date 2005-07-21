@@ -276,6 +276,7 @@ void wxMenu::SelectMenu(void)
 	}
       }
     }
+    wxUnhideCursor();
   }
 }
 

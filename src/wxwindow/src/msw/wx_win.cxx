@@ -1141,6 +1141,7 @@ static LONG WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, in
     break;
   case WM_SYSKEYDOWN:
     if ((wParam == VK_MENU) || (wParam == VK_F4)) { /* F4 is close */
+      wxUnhideCursor();
       retval = wnd->DefWindowProc(message, wParam, lParam);
     }
   case WM_KEYUP:
@@ -1160,6 +1161,7 @@ static LONG WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, in
     }
   case WM_SYSCHAR:
     if (wParam == VK_MENU) {
+      wxUnhideCursor();
       retval = wnd->DefWindowProc(message, wParam, lParam);
     }
   case WM_CHAR: /* ^^^ fallthrough */

@@ -385,6 +385,7 @@ LONG wxDoItemPres(wxItem *item, HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 
     case WM_SYSKEYDOWN:
       if ((wParam == VK_MENU) || (wParam == VK_F4)) { /* F4 is close */
+	wxUnhideCursor();
 	retval = 1;
 	break;
       }
@@ -414,6 +415,7 @@ LONG wxDoItemPres(wxItem *item, HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     case WM_SYSCHAR: /* ^^^ fallthrough */
       if (message == WM_SYSCHAR) {
 	if (wParam == VK_MENU) {
+	  wxUnhideCursor();
 	  retval = 1;
 	  break;
 	}
