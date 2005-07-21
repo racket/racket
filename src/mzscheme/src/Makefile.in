@@ -285,7 +285,8 @@ regexp.@LTO@:  $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../in
 setjmpup.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
          $(srcdir)/../src/stypes.h   $(srcdir)/schmach.h
 string.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
-         $(srcdir)/../src/stypes.h    $(srcdir)/schvers.h $(srcdir)/mzmark.c $(srcdir)/strops.inc
+         $(srcdir)/../src/stypes.h    $(srcdir)/schvers.h $(srcdir)/mzmark.c $(srcdir)/strops.inc \
+         $(srcdir)/schustr.inc
 struct.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
          $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
 stxobj.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \

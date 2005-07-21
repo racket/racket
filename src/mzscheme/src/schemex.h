@@ -179,10 +179,12 @@ Scheme_Object *(*scheme_make_void)(void);
 Scheme_Object *scheme_undefined;
 Scheme_Object *scheme_tail_call_waiting;
 Scheme_Object *scheme_multiple_values;
-unsigned int ***scheme_uchar_table;
+unsigned short **scheme_uchar_table;
+unsigned char **scheme_uchar_cases_table;
 int *scheme_uchar_ups;
 int *scheme_uchar_downs;
 int *scheme_uchar_titles;
+int *scheme_uchar_folds;
 /*========================================================================*/
 /*                              evaluation                                */
 /*========================================================================*/
@@ -361,6 +363,7 @@ Scheme_Object *(*scheme_make_immutable_sized_char_string)(mzchar *chars, long le
 Scheme_Object *(*scheme_make_char_string_without_copying)(mzchar *chars);
 Scheme_Object *(*scheme_alloc_char_string)(int size, mzchar fill);
 Scheme_Object *(*scheme_append_char_string)(Scheme_Object *, Scheme_Object *);
+mzchar *(*scheme_string_recase)(mzchar *s, int d, int len, int mode, int inplace, int *_len);
 Scheme_Object *(*scheme_make_vector)(int size, Scheme_Object *fill);
 Scheme_Object *(*scheme_make_integer_value)(long i);
 Scheme_Object *(*scheme_make_integer_value_from_unsigned)(unsigned long i);

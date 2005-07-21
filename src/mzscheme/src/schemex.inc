@@ -104,9 +104,11 @@
   scheme_extension_table->scheme_tail_call_waiting = scheme_tail_call_waiting;
   scheme_extension_table->scheme_multiple_values = scheme_multiple_values;
   scheme_extension_table->scheme_uchar_table = scheme_uchar_table;
+  scheme_extension_table->scheme_uchar_cases_table = scheme_uchar_cases_table;
   scheme_extension_table->scheme_uchar_ups = scheme_uchar_ups;
   scheme_extension_table->scheme_uchar_downs = scheme_uchar_downs;
   scheme_extension_table->scheme_uchar_titles = scheme_uchar_titles;
+  scheme_extension_table->scheme_uchar_folds = scheme_uchar_folds;
   scheme_extension_table->scheme_eval = scheme_eval;
   scheme_extension_table->scheme_eval_multi = scheme_eval_multi;
   scheme_extension_table->scheme_eval_compiled = scheme_eval_compiled;
@@ -239,6 +241,7 @@
   scheme_extension_table->scheme_make_char_string_without_copying = scheme_make_char_string_without_copying;
   scheme_extension_table->scheme_alloc_char_string = scheme_alloc_char_string;
   scheme_extension_table->scheme_append_char_string = scheme_append_char_string;
+  scheme_extension_table->scheme_string_recase = scheme_string_recase;
   scheme_extension_table->scheme_make_vector = scheme_make_vector;
   scheme_extension_table->scheme_make_integer_value = scheme_make_integer_value;
   scheme_extension_table->scheme_make_integer_value_from_unsigned = scheme_make_integer_value_from_unsigned;

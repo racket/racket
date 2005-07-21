@@ -223,10 +223,12 @@ MZ_EXTERN Scheme_Object scheme_undefined[1];
 MZ_EXTERN Scheme_Object *scheme_tail_call_waiting;
 MZ_EXTERN Scheme_Object *scheme_multiple_values;
 
-MZ_EXTERN unsigned int **scheme_uchar_table[];
+MZ_EXTERN unsigned short *scheme_uchar_table[];
+MZ_EXTERN unsigned char *scheme_uchar_cases_table[];
 MZ_EXTERN int scheme_uchar_ups[];
 MZ_EXTERN int scheme_uchar_downs[];
 MZ_EXTERN int scheme_uchar_titles[];
+MZ_EXTERN int scheme_uchar_folds[];
 
 /*========================================================================*/
 /*                              evaluation                                */
@@ -443,6 +445,8 @@ MZ_EXTERN Scheme_Object *scheme_make_immutable_sized_char_string(mzchar *chars, 
 MZ_EXTERN Scheme_Object *scheme_make_char_string_without_copying(mzchar *chars);
 MZ_EXTERN Scheme_Object *scheme_alloc_char_string(int size, mzchar fill);
 MZ_EXTERN Scheme_Object *scheme_append_char_string(Scheme_Object *, Scheme_Object *);
+
+MZ_EXTERN mzchar *scheme_string_recase(mzchar *s, int d, int len, int mode, int inplace, int *_len);
 
 MZ_EXTERN Scheme_Object *scheme_make_vector(int size, Scheme_Object *fill);
 MZ_EXTERN Scheme_Object *scheme_make_integer_value(long i);

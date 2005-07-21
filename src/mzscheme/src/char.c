@@ -57,6 +57,7 @@ static Scheme_Object *integer_to_char (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_upcase (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_downcase (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_titlecase (int argc, Scheme_Object *argv[]);
+static Scheme_Object *char_foldcase (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_utf8_length (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_map_list (int argc, Scheme_Object *argv[]);
 
@@ -223,6 +224,11 @@ void scheme_init_char (Scheme_Env *env)
 						      "char-titlecase", 
 						      1, 1, 1),
 			     env);
+  scheme_add_global_constant("char-foldcase", 
+			     scheme_make_folding_prim(char_foldcase, 
+						      "char-foldcase", 
+						      1, 1, 1),
+			     env);
 
   scheme_add_global_constant("char-utf-8-length", 
 			     scheme_make_folding_prim(char_utf8_length, 
@@ -269,38 +275,38 @@ char_p (int argc, Scheme_Object *argv[])
   return (SCHEME_CHARP(argv[0]) ? scheme_true : scheme_false);
 }
 
-#define charSTD_DOWNCASE(nl) nl;
-#define charNO_DOWNCASE(nl) /* empty */
+#define charSTD_FOLDCASE(nl) nl;
+#define charNO_FOLDCASE(nl) /* empty */
 
-#define GEN_CHAR_COMP(func_name, scheme_name, comp, DOWNCASE) \
+#define GEN_CHAR_COMP(func_name, scheme_name, comp, FOLDCASE) \
  static Scheme_Object *func_name(int argc, Scheme_Object *argv[])     \
  { int c, prev, i; Scheme_Object *rv = scheme_true; \
    if (!SCHEME_CHARP(argv[0]))      \
      scheme_wrong_type(#scheme_name, "character", 0, argc, argv);     \
    prev = SCHEME_CHAR_VAL(argv[0]);     \
-   DOWNCASE(prev = scheme_tolower(prev)) \
+   FOLDCASE(prev = scheme_tofold(prev)) \
    for (i = 1; i < argc; i++) {     \
      if (!SCHEME_CHARP(argv[i]))      \
        scheme_wrong_type(#scheme_name, "character", i, argc, argv);     \
      c = SCHEME_CHAR_VAL(argv[i]);     \
-     DOWNCASE(c = scheme_tolower(c)) \
+     FOLDCASE(c = scheme_tofold(c)) \
      if (!(prev comp c)) rv = scheme_false;   \
      prev = c;     \
    }     \
    return rv;     \
  }
 
-GEN_CHAR_COMP(char_eq, char=?, ==, charNO_DOWNCASE)
-GEN_CHAR_COMP(char_lt, char<?, <, charNO_DOWNCASE)
-GEN_CHAR_COMP(char_gt, char>?, >, charNO_DOWNCASE)
-GEN_CHAR_COMP(char_lt_eq, char<=?, <=, charNO_DOWNCASE)
-GEN_CHAR_COMP(char_gt_eq, char>=?, >=, charNO_DOWNCASE)
+GEN_CHAR_COMP(char_eq, char=?, ==, charNO_FOLDCASE)
+GEN_CHAR_COMP(char_lt, char<?, <, charNO_FOLDCASE)
+GEN_CHAR_COMP(char_gt, char>?, >, charNO_FOLDCASE)
+GEN_CHAR_COMP(char_lt_eq, char<=?, <=, charNO_FOLDCASE)
+GEN_CHAR_COMP(char_gt_eq, char>=?, >=, charNO_FOLDCASE)
 
-GEN_CHAR_COMP(char_eq_ci, char-ci=?, ==, charSTD_DOWNCASE)
-GEN_CHAR_COMP(char_lt_ci, char-ci<?, <, charSTD_DOWNCASE)
-GEN_CHAR_COMP(char_gt_ci, char-ci>?, >, charSTD_DOWNCASE)
-GEN_CHAR_COMP(char_lt_eq_ci, char-ci<=?, <=, charSTD_DOWNCASE)
-GEN_CHAR_COMP(char_gt_eq_ci, char-ci>=?, >=, charSTD_DOWNCASE)
+GEN_CHAR_COMP(char_eq_ci, char-ci=?, ==, charSTD_FOLDCASE)
+GEN_CHAR_COMP(char_lt_ci, char-ci<?, <, charSTD_FOLDCASE)
+GEN_CHAR_COMP(char_gt_ci, char-ci>?, >, charSTD_FOLDCASE)
+GEN_CHAR_COMP(char_lt_eq_ci, char-ci<=?, <=, charSTD_FOLDCASE)
+GEN_CHAR_COMP(char_gt_eq_ci, char-ci>=?, >=, charSTD_FOLDCASE)
 
 #define GEN_CHAR_TEST(func_name, scheme_name, pred) \
 static Scheme_Object *func_name (int argc, Scheme_Object *argv[]) \
@@ -378,6 +384,7 @@ static Scheme_Object *func_name (int argc, Scheme_Object *argv[]) \
 GEN_RECASE(char_upcase, "char-upcase", scheme_toupper)
 GEN_RECASE(char_downcase, "char-downcase", scheme_tolower)
 GEN_RECASE(char_titlecase, "char-titlecase", scheme_totitle)
+GEN_RECASE(char_foldcase, "char-foldcase", scheme_tofold)
 
 static Scheme_Object *char_utf8_length (int argc, Scheme_Object *argv[])
 {

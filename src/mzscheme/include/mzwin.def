@@ -98,9 +98,11 @@ EXPORTS
  scheme_tail_call_waiting
  scheme_multiple_values
  scheme_uchar_table
+ scheme_uchar_cases_table
  scheme_uchar_ups
  scheme_uchar_downs
  scheme_uchar_titles
+ scheme_uchar_folds
  scheme_eval
  scheme_eval_multi
  scheme_eval_compiled
@@ -203,6 +205,7 @@ EXPORTS
  scheme_make_char_string_without_copying
  scheme_alloc_char_string
  scheme_append_char_string
+ scheme_string_recase
  scheme_make_vector
  scheme_make_integer_value
  scheme_make_integer_value_from_unsigned

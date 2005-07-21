@@ -520,24 +520,29 @@ typedef void (*Scheme_Type_Printer)(Scheme_Object *v, int for_display, Scheme_Pr
 #define scheme_make_character(ch) ((((mzchar)ch) < 256) ? scheme_char_constants[(unsigned char)(ch)] : scheme_make_char(ch))
 #define scheme_make_ascii_character(ch) scheme_char_constants[(unsigned char)(ch)];
 
-#define scheme_uchar_find(x) (scheme_uchar_table[x >> 21][(x >> 8) & 0x1FFF][x & 0xFF])
+#define scheme_uchar_find(table, x) (table[(x >> 8) & 0x1FFF][x & 0xFF])
 
-#define scheme_isblank(x) ((scheme_uchar_find(x)) & 0x1)
-#define scheme_issymbol(x) ((scheme_uchar_find(x)) & 0x2)
-#define scheme_ispunc(x) ((scheme_uchar_find(x)) & 0x4)
-#define scheme_iscontrol(x) ((scheme_uchar_find(x)) & 0x8)
-#define scheme_isspace(x) ((scheme_uchar_find(x)) & 0x10)
-#define scheme_isxdigit(x) ((scheme_uchar_find(x)) & 0x20)
-#define scheme_isdigit(x) ((scheme_uchar_find(x)) & 0x40)
-#define scheme_isalpha(x) ((scheme_uchar_find(x)) & 0x80)
-#define scheme_istitle(x) ((scheme_uchar_find(x)) & 0x100)
-#define scheme_isupper(x) ((scheme_uchar_find(x)) & 0x200)
-#define scheme_islower(x) ((scheme_uchar_find(x)) & 0x400)
-#define scheme_isgraphic(x) ((scheme_uchar_find(x)) & 0x800)
+#define scheme_isblank(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x1)
+#define scheme_issymbol(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x2)
+#define scheme_ispunc(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x4)
+#define scheme_iscontrol(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x8)
+#define scheme_isspace(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x10)
+#define scheme_isxdigit(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x20)
+#define scheme_isdigit(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x40)
+#define scheme_isalpha(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x80)
+#define scheme_istitle(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x100)
+#define scheme_isupper(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x200)
+#define scheme_islower(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x400)
+#define scheme_isgraphic(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x800)
+#define scheme_iscaseignorable(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x1000)
+#define scheme_isspecialcasing(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x2000)
 
-#define scheme_toupper(x) (x + scheme_uchar_ups[(((scheme_uchar_find(x)) & 0x3F000) >> 12)])
-#define scheme_tolower(x) (x + scheme_uchar_downs[(((scheme_uchar_find(x)) & 0xFC0000) >> 18)])
-#define scheme_totitle(x) (x + scheme_uchar_titles[(((scheme_uchar_find(x)) & 0x3F000000) >> 24)])
+#define scheme_iscased(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x700)
+
+#define scheme_toupper(x) (x + scheme_uchar_ups[scheme_uchar_find(scheme_uchar_cases_table, x)])
+#define scheme_tolower(x) (x + scheme_uchar_downs[scheme_uchar_find(scheme_uchar_cases_table, x)])
+#define scheme_totitle(x) (x + scheme_uchar_titles[scheme_uchar_find(scheme_uchar_cases_table, x)])
+#define scheme_tofold(x) (x + scheme_uchar_folds[scheme_uchar_find(scheme_uchar_cases_table, x)])
 
 /*========================================================================*/
 /*                          procedure values                              */

@@ -2369,7 +2369,7 @@ read_string(int is_byte, int is_honu_char, Scheme_Object *port,
       case 'u':
       case 'U':
 	if (!is_byte) {
-	  int maxc = ((ch == 'u') ? 4 : 6);
+	  int maxc = ((ch == 'u') ? 4 : 8);
 	  ch = scheme_getc_special_ok(port);
 	  if (NOT_EOF_OR_SPECIAL(ch) && scheme_isxdigit(ch)) {
 	    int count = 1;
@@ -2718,7 +2718,7 @@ read_number_or_symbol(int init_ch, Scheme_Object *port,
   int ungetc_ok;
   int honu_mode, e_ok = 0;
   int far_char_ok;
-  int single_escape, multiple_escape;
+  int single_escape, multiple_escape, norm_count = 0;
   Getc_Fun_r getc_special_ok_fun;
 
   ungetc_ok = scheme_peekc_is_ungetc(port);
@@ -2828,7 +2828,28 @@ read_number_or_symbol(int init_ch, Scheme_Object *port,
     }
 
     if (!case_sens && !quoted && !running_quote)
-      ch = scheme_tolower(ch);
+      norm_count++;
+    else if (norm_count) {
+      /* case-normalize the last norm_count characters */
+      mzchar *s;
+      int newlen;
+      s = scheme_string_recase(buf, i - norm_count, norm_count, 3, 1, &newlen);
+      if (s != buf) {
+	if ((i + newlen - norm_count) >= size) {
+	  oldsize = size;
+	  oldbuf = buf;
+	  
+	  size *= 2;
+	  if (size <= (i + newlen - norm_count))
+	    size = 2 * (i + (newlen - norm_count));
+	  buf = (mzchar *)scheme_malloc_atomic((size + 1) * sizeof(mzchar));
+	  memcpy(buf, oldbuf, oldsize * sizeof(mzchar));
+	}
+	memcpy(buf + i - norm_count, s, sizeof(mzchar) * newlen);
+      }
+      i += (newlen - norm_count);
+      norm_count = 0;
+    }
 
     buf[i++] = ch;
 
@@ -2856,6 +2877,22 @@ read_number_or_symbol(int init_ch, Scheme_Object *port,
     scheme_read_err(port, stxsrc, rq_line, rq_col, rq_pos, SPAN(port, rq_pos), EOF, indentation,
 		    "read: unbalanced `%c'", running_quote_ch);
     return NULL;
+  }
+
+  if (norm_count) {
+    /* case-normalize the last norm_count characters */
+    mzchar *s;
+    int newlen;
+    s = scheme_string_recase(buf, i - norm_count, norm_count, 3, 1, &newlen);
+    if (s != buf) {
+      oldsize = size;
+      oldbuf = buf;
+      size = i + (newlen - norm_count) + 1;
+      buf = (mzchar *)scheme_malloc_atomic((size + 1) * sizeof(mzchar));
+      memcpy(buf, oldbuf, oldsize * sizeof(mzchar));
+      memcpy(buf + i - norm_count, s, sizeof(mzchar) * newlen);
+    }
+    i += (newlen - norm_count);
   }
 
   buf[i] = '\0';
@@ -3085,7 +3122,7 @@ read_character(Scheme_Object *port,
   }
 
   if (((ch == 'u') || (ch == 'U')) && NOT_EOF_OR_SPECIAL(next) && scheme_isxdigit(next)) {
-    int count = 0, n = 0, nbuf[8], maxc = ((ch == 'u') ? 4 : 6);
+    int count = 0, n = 0, nbuf[10], maxc = ((ch == 'u') ? 4 : 8);
     while (count < maxc) {
       ch = scheme_peekc_special_ok(port);
       if (NOT_EOF_OR_SPECIAL(ch) && scheme_isxdigit(ch)) {
@@ -3102,7 +3139,7 @@ read_character(Scheme_Object *port,
 	|| (n > 0x10FFFF)) {
       scheme_read_err(port, stxsrc, line, col, pos, count + 2, 0, indentation,
 		      "read: bad character constant #\\%c%u",
-		      (maxc == 6) ? 'U' : 'u',
+		      (maxc == 4) ? 'u' : 'U',
 		      nbuf, count);
       return NULL;
     } else {

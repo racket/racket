@@ -145,9 +145,6 @@
   (define-for-syntax gl-regex2 (regexp "(^GLU\\-)|(^GL\\-)"))
   (define-for-syntax _-regex (regexp "_"))
     
-  (define-for-syntax (string-downcase s)
-    (list->string (map char-downcase (string->list s))))
-  
   (define-for-syntax (translate-cname name)
     (string->symbol
      (string-downcase

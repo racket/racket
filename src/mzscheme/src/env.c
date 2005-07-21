@@ -2781,7 +2781,7 @@ namespace_variable_value(int argc, Scheme_Object *argv[])
 
   if (!SCHEME_SYMBOLP(argv[0]))
     scheme_wrong_type("namespace-variable-value", "symbol", 0, argc, argv);
-  use_map = ((argc > 0) ? SCHEME_TRUEP(argv[1]) : 1);
+  use_map = ((argc > 1) ? SCHEME_TRUEP(argv[1]) : 1);
   if ((argc > 2) && SCHEME_TRUEP(argv[2])
       && !scheme_check_proc_arity(NULL, 0, 2, argc, argv))
     scheme_wrong_type("namespace-variable-value", "procedure (arity 0) or #f", 1, argc, argv);

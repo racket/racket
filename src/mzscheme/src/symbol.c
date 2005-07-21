@@ -376,6 +376,9 @@ scheme_intern_exact_char_symbol(const mzchar *name, unsigned int len)
 
 Scheme_Object *
 scheme_intern_symbol(const char *name)
+  /* `name' must be ASCII; this function is not suitable for non-ASCII
+     conversion, necause it assumes that downcasing each C char
+     is good enough to normalize the case. */
 {
   if (!scheme_case_sensitive) {
       unsigned long i, len;
@@ -459,13 +462,34 @@ const char *scheme_symbol_name_and_size(Scheme_Object *sym, unsigned int *length
       has_special = 1;
     else if (s[i] == '|')
       has_pipe = 1;
-    else if ((((unsigned char)s[i]) >= 'A')
-	     && (((unsigned char)s[i]) <= 'Z'))
-      has_upper = 1;
+    else if (flags & SCHEME_SNF_NEED_CASE) {
+      int ch = ((unsigned char *)s)[i];
+      if (ch > 127) {
+	/* Decode UTF-8. */
+	mzchar buf[2];
+	int ul = 2;
+	while (1) {
+	  if (scheme_utf8_decode(s, i, i + ul,
+				 buf, 0, 1,
+				 NULL, 0, 0) > 0)
+	    break;
+	  ul++;
+	}
+	ch = buf[0];
+	if (scheme_isspecialcasing(ch)) {
+	  mzchar *rc;
+	  buf[1] = 0;
+	  rc = scheme_string_recase(buf, 0, 1, 3, 1, NULL);
+	  if ((rc != buf) || (rc[0] != ch))
+	    has_upper = 1;
+	  ch = 'a';
+	}
+	i += (ul - 1);
+      }
+      if (scheme_tofold(ch) != ch)
+	has_upper = 1;
+    }
   }
-
-  if (!(flags & SCHEME_SNF_NEED_CASE))
-    has_upper = 0;
 
   result = NULL;
   total_length = 0;

@@ -4,7 +4,7 @@
            (lib "port.ss")
            (lib "pretty.ss")
            (lib "xml.ss" "xml")
-           (lib "13.ss" "srfi")
+           (lib "string.ss" "srfi" "13")
            "connection-manager.ss")
   
   ;; **************************************************

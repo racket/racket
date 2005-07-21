@@ -1158,7 +1158,10 @@
    #\u00FC
    #\u00FD
    #\u00FE
-   #\u00FF))
+   #\u00FF
+   ;; New definition of lower case:
+   #\u00AA
+   #\u00BA))
 
 ;; No upper case in latin-1
 (check-all-latin-1
@@ -1167,7 +1170,9 @@
 		      (> (char->integer (char-upcase x)) 255))))
  '(#\u00B5
    #\u00DF
-   #\u00FF))
+   #\u00FF
+   #\u00AA
+   #\u00BA))
 
 ;; Latin-1 uppercase:
 (check-all-latin-1
@@ -1235,8 +1240,7 @@
    (and (char-alphabetic? c)
 	(not (char-upper-case? c))
 	(not (char-lower-case? c))))
- '(#\u00AA
-   #\u00BA))
+ '())
 
 ;; Complete titlecase list:
 (check-all-unicode
@@ -1295,7 +1299,7 @@
    #\u2008
    #\u2009
    #\u200A
-   #\u200B
+   ;; #\u200B --- in Unicode 4.0, this code point changed from Zs to Cf
    #\u2028
    #\u2029
    #\u202F
@@ -1386,7 +1390,7 @@
    #\u2008
    #\u2009
    #\u200A
-   #\u200B
+   ;; #\u200B --- see note above
    #\u202F
    #\u3000
    ;; Post SRFI-14?
@@ -1434,5 +1438,47 @@
 (parameterize ([current-locale "no such locale"])
   (with-handlers ([exn:fail:contract? void]) (bytes->string/locale #"xxx"))
   (with-handlers ([exn:fail:contract? void]) (string->bytes/locale "xxx")))
+
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  String-upcase, etc.:
+
+(test "ABC!" string-upcase "abc!")
+(test "Z\u7238Z" string-upcase "z\u7238z")
+(test "STRASSE" string-upcase "Stra\xDFe")
+(test "\u039A\u0391\u039F\u03A3" string-upcase "\u039A\u03b1\u03BF\u03C2")
+(test "\u039A\u0391\u039F\u03A3" string-upcase "\u039A\u03b1\u03BF\u03C3")
+
+(test "abc!" string-downcase "aBC!")
+(test "z\u7238z" string-downcase "z\u7238Z")
+(test "stra\xDFe" string-downcase "Stra\xDFe")
+(test "\u03BA\u03b1\u03BF\u03C2" string-downcase "\u039A\u0391\u039F\u03A3")
+(test "\u03C3" string-downcase "\u03A3")
+(test "x\u03C2" string-downcase "X\u03A3")
+(test "\u03BA\u03b1\u03BF\u03C3\u03C2" string-downcase "\u039A\u0391\u039F\u03A3\u03A3")
+(test "\u03BA\u03b1\u03BF\u03C2 x" string-downcase "\u039A\u0391\u039F\u03A3 x")
+
+(test "abc!" string-foldcase "aBC!")
+(test "z\u7238z" string-foldcase "z\u7238Z")
+(test "strasse" string-foldcase "Stra\xDFe")
+(test "\u03BA\u03b1\u03BF\u03C3" string-foldcase "\u039A\u0391\u039F\u03A3")
+(test "\u03C3" string-foldcase "\u03A3")
+(test "x\u03C3" string-foldcase "X\u03A3")
+(test "\u03BA\u03b1\u03BF\u03C3\u03C3" string-foldcase "\u039A\u0391\u039F\u03A3\u03A3")
+(test "\u03BA\u03b1\u03BF\u03C3 x" string-foldcase "\u039A\u0391\u039F\u03A3 x")
+
+(test "Abc!" string-titlecase "aBC!")
+(test "Abc  Two" string-titlecase "aBC  twO")
+(test "Abc!Two" string-titlecase "aBC!twO")
+(test "Z\u7238Z" string-titlecase "z\u7238Z")
+(test "Stra\xDFe" string-titlecase "stra\xDFe")
+(test "Stra Sse" string-titlecase "stra \xDFe")
+(test "\u039A\u03b1\u03BF\u03C2" string-titlecase "\u039A\u0391\u039F\u03A3")
+(test "\u039A\u03b1\u03BF \u03A3x" string-titlecase "\u039A\u0391\u039F \u03A3x")
+(test "\u03A3" string-titlecase "\u03A3")
+(test "X\u03C2" string-titlecase "x\u03A3")
+(test "\u039A\u03b1\u03BF\u03C3\u03C2" string-titlecase "\u039A\u0391\u039F\u03A3\u03A3")
+(test "\u039A\u03b1\u03BF\u03C2 X" string-titlecase "\u039A\u0391\u039F\u03A3 x")
+
 
 (report-errs)

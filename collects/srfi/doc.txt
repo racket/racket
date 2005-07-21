@@ -39,10 +39,10 @@ or,
 NOTE on SRFIs with name conflicts
 ---------------------------------
 
-Certain SRFIs (currently SRFIs 1, 19, 43 and 45) provide names which
-conflict with names provided by the 'mzscheme' language.  Attempting
-to require one of these SRFIs in a module written in the 'mzscheme'
-language will result in an error.
+Certain SRFIs (currently SRFIs 1, 13, 19, 43 and 45) provide names
+which conflict with names provided by the 'mzscheme' language.
+Attempting to require one of these SRFIs in a module written in the
+'mzscheme' language will result in an error.
 
 To address this problem, the PLT implementations of these SRFIs
 provide a different module which renames the problematic exports to

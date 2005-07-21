@@ -104,7 +104,7 @@
    string-compare string-compare-ci
    string=    string<    string>    string<=    string>=    string<>
    string-ci= string-ci< string-ci> string-ci<= string-ci>= string-ci<> 
-   string-downcase  string-upcase  string-titlecase  
+   s:string-downcase  s:string-upcase  s:string-titlecase  
    string-downcase! string-upcase! string-titlecase! 
    string-take string-take-right
    string-drop string-drop-right
@@ -965,7 +965,7 @@
   ;;   Capitalize every contiguous alpha sequence: capitalise
   ;;   first char, lowercase rest.
 
-  (define (string-upcase  s . maybe-start+end)
+  (define (s:string-upcase  s . maybe-start+end)
     (let-string-start+end (start end) 'string-upcase s maybe-start+end
 			  (%string-map char-upcase s start end)))
 
@@ -973,7 +973,7 @@
     (let-string-start+end (start end) 'string-upcase! s maybe-start+end
 			  (%string-map! char-upcase s start end)))
 
-  (define (string-downcase  s . maybe-start+end)
+  (define (s:string-downcase  s . maybe-start+end)
     (let-string-start+end (start end) 'string-downcase s maybe-start+end
 			  (%string-map char-downcase s start end)))
 
@@ -1000,7 +1000,7 @@
     (let-string-start+end (start end) 'string-titlecase! s maybe-start+end
 			  (%string-titlecase! s start end)))
 
-  (define (string-titlecase s . maybe-start+end)
+  (define (s:string-titlecase s . maybe-start+end)
     (let-string-start+end (start end) 'string-titlecase! s maybe-start+end
 			  (let ((ans (substring s start end)))
 			    (%string-titlecase! ans 0 (- end start))

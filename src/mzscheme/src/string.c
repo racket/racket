@@ -49,6 +49,8 @@
 # include "schsys.h"
 #endif
 
+#include "schustr.inc"
+
 #ifdef USE_ICONV_DLL
 typedef long iconv_t;
 typedef int *(*errno_proc_t)();
@@ -173,6 +175,10 @@ static Scheme_Object *string_ci_gt (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_locale_ci_gt (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_ci_lt_eq (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_ci_gt_eq (int argc, Scheme_Object *argv[]);
+static Scheme_Object *string_upcase (int argc, Scheme_Object *argv[]);
+static Scheme_Object *string_downcase (int argc, Scheme_Object *argv[]);
+static Scheme_Object *string_titlecase (int argc, Scheme_Object *argv[]);
+static Scheme_Object *string_foldcase (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_locale_upcase (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_locale_downcase (int argc, Scheme_Object *argv[]);
 static Scheme_Object *substring (int argc, Scheme_Object *argv[]);
@@ -465,6 +471,27 @@ scheme_init_string (Scheme_Env *env)
 						      1, 1),
 			     env);
 
+
+  scheme_add_global_constant("string-upcase",
+			     scheme_make_prim_w_arity(string_upcase,
+						      "string-upcase",
+						      1, 1),
+			     env);
+  scheme_add_global_constant("string-downcase",
+			     scheme_make_prim_w_arity(string_downcase,
+						      "string-downcase",
+						      1, 1),
+			     env);
+  scheme_add_global_constant("string-titlecase",
+			     scheme_make_prim_w_arity(string_titlecase,
+						      "string-titlecase",
+						      1, 1),
+			     env);
+  scheme_add_global_constant("string-foldcase",
+			     scheme_make_prim_w_arity(string_foldcase,
+						      "string-foldcase",
+						      1, 1),
+			     env);
 
   scheme_add_global_constant("string-locale-upcase",
 			     scheme_make_prim_w_arity(string_locale_upcase,
@@ -963,7 +990,7 @@ GEN_STRING_COMP(string_gt, "string>?", mz_char_strcmp, >, 0, 0)
 GEN_STRING_COMP(string_lt_eq, "string<=?", mz_char_strcmp, <=, 0, 0)
 GEN_STRING_COMP(string_gt_eq, "string>=?", mz_char_strcmp, >=, 0, 0)
 
-GEN_STRING_COMP(string_ci_eq, "string-ci=?", mz_char_strcmp_ci, ==, 0, 1)
+GEN_STRING_COMP(string_ci_eq, "string-ci=?", mz_char_strcmp_ci, ==, 0, 0)
 GEN_STRING_COMP(string_ci_lt, "string-ci<?", mz_char_strcmp_ci, <, 0, 0)
 GEN_STRING_COMP(string_ci_gt, "string-ci>?", mz_char_strcmp_ci, >, 0, 0)
 GEN_STRING_COMP(string_ci_lt_eq, "string-ci<=?", mz_char_strcmp_ci, <=, 0, 0)
@@ -3034,6 +3061,192 @@ static void reset_locale(void)
   }
 }
 
+static int find_special_casing(int ch)
+{
+  /* Binary search */
+  int i, lo, hi, j;
+
+  i = NUM_SPECIAL_CASINGS >> 1;
+  lo = i;
+  hi = NUM_SPECIAL_CASINGS - i - 1;
+
+  while (1) {
+    if (uchar_special_casings[i * 10] == ch)
+      return i * 10;
+    if (uchar_special_casings[i * 10] > ch) {
+      j = i - lo;
+      i = j + (lo >> 1);
+      hi = lo - (i - j) - 1;
+      lo = i - j;
+    } else {
+      j = i + 1;
+      i = j + (hi >> 1);
+      lo = i - j;
+      hi = hi - (i - j) - 1;
+    }
+  }
+}
+
+static int is_final_sigma(int mode, mzchar *s, int d, int i, int len)
+{
+  int j;
+
+  if (mode == 3)
+    return 1;
+  
+  /* find a cased char before, skipping case-ignorable: */
+  for (j = i - 1; j >= d; j--) {
+    if (!scheme_iscaseignorable(s[j])) {
+      if (scheme_iscased(s[j]))
+	break;
+      else
+	return 0;
+    }
+  }
+  if (j < d)
+    return 0;
+
+  /* next non-case-ignorable must not be cased: */
+  for (j = i + 1; j < d + len; j++) {
+    if (!scheme_iscaseignorable(s[j])) {
+      return !scheme_iscased(s[j]);
+    }
+  }
+
+  return 1;
+}
+
+mzchar *scheme_string_recase(mzchar *s, int d, int len, int mode, int inplace, int *_len)
+{
+  mzchar *t;
+  int i, extra = 0, pos, special = 0, td, prev_was_cased = 0, xmode = mode;
+
+  for (i = 0; i < len; i++) {
+    if (scheme_isspecialcasing(s[d+i])) {
+      pos = find_special_casing(s[d+i]);
+      if (!uchar_special_casings[pos + 9] || is_final_sigma(xmode, s, d, i, len)) {
+	special = 1;
+	extra += (uchar_special_casings[pos + 1 + (xmode << 1)] - 1);
+      }
+    }
+    if (mode == 2) {
+      if (!scheme_iscaseignorable(s[d+i]))
+	prev_was_cased = scheme_iscased(s[d+i]);
+      xmode = (prev_was_cased ? 0 : 2);
+    }
+  }
+
+  if (_len)
+    *_len = len + extra;
+
+  if (!extra && inplace) {
+    t = s;
+    td = d;
+  } else {
+    t = scheme_malloc_atomic(sizeof(mzchar) * (len + extra + 1));
+    td = 0;
+  }
+
+  if (!special) {
+    if (mode == 0) {
+      for (i = 0; i < len; i++) {
+	t[i+td] = scheme_tolower(s[i+d]);
+      }
+    } else if (mode == 1) {
+      for (i = 0; i < len; i++) {
+	t[i+td] = scheme_toupper(s[i+d]);
+      }
+    } else if (mode == 2) {
+      prev_was_cased = 0;
+      for (i = 0; i < len; i++) {
+	if (!prev_was_cased)
+	  t[i+td] = scheme_totitle(s[i+d]);
+	else
+	  t[i+td] = scheme_tolower(s[i+d]);
+	if (!scheme_iscaseignorable(s[i+d]))
+	  prev_was_cased = scheme_iscased(s[i+d]);
+      }
+    } else /* if (mode == 3) */ {
+      for (i = 0; i < len; i++) {
+	t[i+td] = scheme_tofold(s[i+d]);
+      }
+    }
+  } else {
+    int j = 0, c;
+    prev_was_cased = 0;
+    for (i = 0; i < len; i++) {
+      if (mode == 0) {
+	t[j+td] = scheme_tolower(s[i+d]);
+      } else if (mode == 1) {
+	t[j+td] = scheme_toupper(s[i+d]);
+      } else if (mode == 2) {
+	if (!prev_was_cased) {
+	  xmode = 2;
+	  t[j+td] = scheme_totitle(s[i+d]);
+	} else {
+	  xmode = 0;
+	  t[j+td] = scheme_tolower(s[i+d]);
+	}
+	if (!scheme_iscaseignorable(s[i+d]))
+	  prev_was_cased = scheme_iscased(s[i+d]);
+      } else /* if (mode == 3) */ {
+	t[j+td] = scheme_tofold(s[i+d]);
+      }
+
+      if (scheme_isspecialcasing(s[i+d])) {
+	pos = find_special_casing(s[i+d]);
+	if (!uchar_special_casings[pos + 9] || is_final_sigma(xmode, s, d, i, len)) {
+	  c = uchar_special_casings[pos + 1 + (xmode << 1)];
+	  pos = uchar_special_casings[pos + 2 + (xmode << 1)];
+	  while (c--) {
+	    t[(j++)+td] = uchar_special_casing_data[pos++];
+	  }
+	} else
+	  j++;
+      } else
+	j++;
+    }
+  }
+
+  return t;
+}
+
+static Scheme_Object *string_recase (const char *name, int argc, Scheme_Object *argv[], int mode)
+{
+  mzchar *s;
+  int len;
+
+  if (!SCHEME_CHAR_STRINGP(argv[0]))
+    scheme_wrong_type(name, "string", 0, argc, argv);
+  
+  s = SCHEME_CHAR_STR_VAL(argv[0]);
+  len = SCHEME_CHAR_STRLEN_VAL(argv[0]);
+
+  s = scheme_string_recase(s, 0, len, mode, 0, &len);
+
+  return scheme_make_sized_char_string(s, len, 0);
+}
+
+static Scheme_Object *string_upcase (int argc, Scheme_Object *argv[])
+{
+  return string_recase("string-upcase", argc, argv, 1);
+}
+
+static Scheme_Object *string_downcase (int argc, Scheme_Object *argv[])
+{
+  return string_recase("string-downcase", argc, argv, 0);
+}
+
+static Scheme_Object *string_titlecase (int argc, Scheme_Object *argv[])
+{
+  return string_recase("string-titlecase", argc, argv, 2);
+}
+
+static Scheme_Object *string_foldcase (int argc, Scheme_Object *argv[])
+{
+  return string_recase("string-foldcase", argc, argv, 3);
+}
+
 /**********************************************************************/
 /*                            strcmps                                 */
 /**********************************************************************/
@@ -3090,7 +3303,8 @@ static int mz_char_strcmp(const char *who, const mzchar *str1, int l1, const mzc
 static int mz_char_strcmp_ci(const char *who, const mzchar *str1, int l1, const mzchar *str2, int l2, 
 			     int use_locale, int size_shortcut)
 {
-  int endres;
+  int p1, p2, sp1, sp2, a, b;
+  mzchar spec1[SPECIAL_CASE_FOLD_MAX], spec2[SPECIAL_CASE_FOLD_MAX];
 
   if (size_shortcut && (l1 != l2))
     return 1;
@@ -3104,30 +3318,54 @@ static int mz_char_strcmp_ci(const char *who, const mzchar *str1, int l1, const 
   }
 #endif
 
-  if (l1 > l2) {
-    l1 = l2;
-    endres = 1;
-  } else {
-    if (l2 > l1)
-      endres = -1;
-    else
-      endres = 0;
-  }
+  p1 = sp1 = 0;
+  p2 = sp2 = 0;
 
-  while (l1--) {
-    unsigned int a, b;
+  while (((p1 < l1) || sp1) && ((p2 < l2) || sp2)) {
+    if (sp1) {
+      a = spec1[--sp1];
+    } else {
+      a = str1[p1];
+      if (scheme_isspecialcasing(a)) {
+	int pos, i;
+	pos = find_special_casing(a);
+	sp1 = uchar_special_casings[pos + 7];
+	pos = uchar_special_casings[pos + 8];
+	for (i = sp1; i--; pos++) {
+	  spec1[i] = uchar_special_casing_data[pos];
+	}
+	a = spec1[--sp1];
+      } else {
+	a = scheme_tofold(a);
+      }
+      p1++;
+    }
 
-    a = *(str1++);
-    b = *(str2++);
-    a = scheme_toupper(a);
-    b = scheme_toupper(b);
+    if (sp2) {
+      b = spec2[--sp2];
+    } else {
+      b = str2[p2];
+      if (scheme_isspecialcasing(b)) {
+	int pos, i;
+	pos = find_special_casing(b);
+	sp2 = uchar_special_casings[pos + 7];
+	pos = uchar_special_casings[pos + 8];
+	for (i = sp2; i--; pos++) {
+	  spec2[i] = uchar_special_casing_data[pos];
+	}
+	b = spec2[--sp2];
+      } else {
+	b = scheme_tofold(b);
+      }
+      p2++;
+    }
 
     a = a - b;
     if (a)
       return a;
   }
 
-  return endres;
+  return ((p1 < l1) || sp1) - ((p2 < l2) || sp2);
 }
 
 static int mz_strcmp(const char *who, unsigned char *str1, int l1, unsigned char *str2, int l2)

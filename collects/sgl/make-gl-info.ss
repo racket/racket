@@ -3,7 +3,7 @@
            (all-except (lib "file.ss" "dynext") append-c-suffix)
            (prefix dynext: (lib "link.ss" "dynext"))
            (lib "file.ss")
-           (lib "13.ss" "srfi"))
+           (lib "string.ss" "srfi" "13"))
   
   (provide make-gl-info)
   

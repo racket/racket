@@ -111,7 +111,7 @@
 
 ;; Test escape printing:
 (parameterize ([current-locale #f])
-  (test "\"\\a\\b\\t\\n\\f\\r\\e\\v\\\\\\\"A \\u0005A\\u000FP\\u000FP\u00DDD\u00FF7\\u00011\\U012345\""
+  (test "\"\\a\\b\\t\\n\\f\\r\\e\\v\\\\\\\"A \\u0005A\\u000FP\\u000FP\u00DDD\u00FF7\\u00011\\U00012345\""
 	'output-escapes
 	(let ([p (open-output-string)])
 	  (write "\a\b\t\n\f\r\e\v\\\"\101\40\5A\xFP\xfP\xdDD\3777\0011\U12345" p)
