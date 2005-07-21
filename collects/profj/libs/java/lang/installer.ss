@@ -8,7 +8,8 @@
       (let ([javac
 	     (lambda (file)
 	       (parameterize ([current-load-relative-directory
-			       java.lang])
+			       java.lang]
+                              [current-directory java.lang])
 		 (compile-java 'file
 			       'file
 			       'full
