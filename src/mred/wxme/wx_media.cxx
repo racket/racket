@@ -597,7 +597,16 @@ void wxMediaEdit::OnChar(wxKeyEvent *event)
     return;
   }
 
-  wxHideCursor();
+  {
+    int code;
+    code = event->keyCode;
+    if ((code != WXK_RELEASE)
+	&& (code != WXK_SHIFT)
+	&& (code != WXK_CONTROL)
+	&& (code != WXK_MENU)
+	&& (code != 0))
+      wxHideCursor();
+  }
 
   OnLocalChar(event);
 }
