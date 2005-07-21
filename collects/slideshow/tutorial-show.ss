@@ -600,9 +600,10 @@
     (let ([c (make-custodian)])
       (parameterize ([current-namespace (make-namespace-with-mred)]
 		     [current-command-line-arguments
-		      (vector (build-path (collection-path "slideshow")
-					  "examples"
-					  f))]
+		      (vector (path->string
+			       (build-path (collection-path "slideshow")
+					   "examples"
+					   f)))]
 		     [current-custodian c]
 		     [exit-handler (lambda (v)
 				     (custodian-shutdown-all c))]
@@ -610,13 +611,13 @@
 						    "examples")])
 	(parameterize ([current-eventspace (make-eventspace)])
 	  (queue-callback
-	   (lambda () (dynamic-require '(lib "slideshow.ss" "slideshow") #f)))))))
+	   (lambda () (dynamic-require '(lib "start.ss" "slideshow") #f)))))))
 
   (require (lib "edit.ss" "mred"))
   (define (show-example-code f)
-    (new-text-frame (build-path (collection-path "slideshow")
-				"examples"
-				f)))  
+    (new-text-frame (path->string (build-path (collection-path "slideshow")
+					      "examples"
+					      f))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Part IV
