@@ -47,8 +47,8 @@
           ([exn:fail:network? (lambda (_) (loop (add1 port)))])
         (values (tcp-listen port) port))))
   
-  (define ip-address
-    (let*-values
+  (define ip-address '127.0.0.1
+    #;(let*-values
         ([(sub-proc in-p dummy1 dummy2) (subprocess #f #f #f "/bin/hostname" "-i")]
          [(ip-address) (read in-p)])
       (subprocess-wait sub-proc)
@@ -59,8 +59,8 @@
   (define my-ip:port
     (string->symbol (format "~a:~a" ip-address port)))
   
-  (define dns
-    (dns-find-nameserver))
+  (define dns #f
+    #;(dns-find-nameserver))
   
   (define ip-regexp
     (regexp "[0-9][0-9]?[0-9]?\\.[0-9][0-9]?[0-9]?\\.[0-9][0-9]?[0-9]?\\.[0-9][0-9]?[0-9]?"))
@@ -120,8 +120,8 @@
                   v))))))
   
   (define (receive-help timeout timeout-thunk matcher)
-    (if (and timeout (negative? timeout))
-        (timeout-thunk)
+    ;(if (and timeout (negative? timeout))
+        ;(timeout-thunk)
         (let* ([start-time (current-milliseconds)]
                [mb (hash-table-get mailboxes (tid-lid (self)))]
                [val (try-extract matcher (mailbox-old-head mb))])
@@ -150,7 +150,7 @@
                               (loop))
                             (val)))
                       (timeout-thunk))))
-              (val)))))
+              (val))));)
   
   (define-syntax receive
     (syntax-rules (after)

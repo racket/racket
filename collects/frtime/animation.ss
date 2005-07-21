@@ -2,7 +2,7 @@
   
   (require (all-except "graphics.ss" make-posn posn-x posn-y make-rgb)
            (lifted "graphics.ss" posn-x posn-y make-posn make-rgb)
-           (all-except (lib "match.ss") match)
+           (lib "match.ss")
            (lib "class.ss")
            (lib "list.ss" "frtime")
            (lib "etc.ss" "frtime")
@@ -73,6 +73,7 @@
   (define-struct rrect (ur w h color))
   (define-struct curve (xmin xmax ymin ymax fn))
   (define-struct polygon (posn-list posn color))
+  (define-struct solid-polygon (posn-list posn color))
   
   (define (make-circle center r color)
     (make-solid-ellipse (make-posn (- (posn-x center) r)
@@ -110,7 +111,8 @@
           [(>= h 0) ((draw-solid-rectangle pixmap) (make-posn (+ (posn-x ul) w) (posn-y ul)) (- w) h color)]
           [(>= w 0) ((draw-solid-rectangle pixmap) (make-posn (posn-x ul) (+ (posn-y ul) h)) w (- h) color)]
           [else ((draw-solid-rectangle pixmap) (make-posn (+ (posn-x ul) w) (+ (posn-y ul) h)) (- w) (- h) color)])]
-       [($ polygon pts offset color) ((draw-solid-polygon pixmap) pts offset color)]
+       [($ polygon pts offset color) ((draw-polygon pixmap) pts offset color)]
+       [($ solid-polygon pts offset color) ((draw-solid-polygon pixmap) pts offset color)]
        [(? list? x) (draw-list x)]
        [(? void?) (void)])
      a-los))
@@ -136,7 +138,7 @@
   (define (valid-posn? v)
     (and (posn? v) (number? (posn-x v)) (number? (posn-y v))))
   
-  (define seconds~ (/ time-b 1000.0))
+
   
   (define (key sym)
     (key-strokes
@@ -213,7 +215,7 @@
   
   (define (wave hz)
     (let* ([state (collect-b
-                   (snapshot-e (changes hz) time-b)
+                   (snapshot-e (changes hz) milliseconds)
                    (make-wave-state (value-now hz) 0)
                    (lambda (new-freq+time old-state)
                      (match new-freq+time
@@ -224,7 +226,7 @@
                             h1
                             (+ o0 (* .002 pi t (- h0 h1))))])])))])
       (+ (lift #f wave-state-offset state)
-         (* time-b pi (lift #f wave-state-hz state) .002))))
+         (* milliseconds pi (lift #f wave-state-hz state) .002))))
   
   (define (current-and-last-value signal)
     (let ([init (value-now signal)])
@@ -291,7 +293,8 @@
     (make-posn (integral (posn-x p)) (integral (posn-y p))))
   
   (provide
-   (all-defined-except pixmap window draw-list l d make-circle make-ring make-solid-ellipse
-                       make-rect make-line make-polygon make-graph-string make-wave-state wave-state-hz wave-state-offset)
-   (lifted make-circle make-ring make-solid-ellipse make-rect make-line make-polygon make-graph-string)
+   (all-defined-except pixmap window draw-list l d 
+                       make-wave-state wave-state-hz wave-state-offset)
+   #;(lifted make-circle make-ring make-solid-ellipse make-rect make-line make-polygon make-solid-polygon
+           make-graph-string)
    (all-from "graphics.ss")))

@@ -11,9 +11,10 @@
 	   (lib "class100.ss")
 	   (lib "etc.ss")
            "erl.ss"
-           (only   "frp.ss" event-receiver)
-           (rename "frp.ss" frp-man man)
-           (only   "frp.ss" send-event)
+           ;(rename "frp-core.ss" event-receiver event-receiver)
+           ;(rename "frp-core.ss" frp-man man)
+           ;(rename "frp-core.ss" send-event send-event)
+           (lib "frp-core.ss" "frtime")
 	   "graphics-sig.ss")
   (provide graphics-posn-less@)
 

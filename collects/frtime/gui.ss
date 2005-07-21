@@ -3,6 +3,7 @@
    (all-except (lib "etc.ss") rec)
    (lib "list.ss")
    (lib "class.ss")
+   (rename (lib "frp-core.ss" "frtime") proc->signal proc->signal)
    (all-except (lib "mred.ss" "mred") send-event))
   
   (define reactive-control<%>

@@ -2,8 +2,8 @@
   
   (require (lifted (lib "list.ss") quicksort mergesort
                    fifth sixth seventh eighth
-                   last-pair empty? cons?)
-           (only (lib "list.ss") empty))
+                   last-pair)
+           (rename (lib "list.ss") empty empty))
 
   (define first car)
   (define rest cdr)
@@ -11,8 +11,10 @@
   (define third caddr)
   (define fourth cadddr)
   
+  (define empty? null?)
+  
   (define remove
-    (letrec ([rm (case-lambda 
+    (letrec ([rm (case-lambda
                    [(item list) (rm item list equal?)]
                    [(item list equal?)
                     (let loop ([list list])
@@ -151,5 +153,8 @@
       [(empty? l) empty]
       [(f (first l)) (cons (first l) (filter f (rest l)))]
       [else (filter f (rest l))]))
+  
+  
+  (define (cons? x) (pair? x))
   
   (provide (all-defined) empty))

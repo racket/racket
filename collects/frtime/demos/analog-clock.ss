@@ -28,8 +28,11 @@
                          
 (define offset
   (hold
-   (clicks-in-clock . -=> . (value-now (posn- mouse-pos clock-center)))))
-                                             
+   (clicks-in-clock
+    . -=> .
+    (snapshot (mouse-pos clock-center)
+              (posn- mouse-pos clock-center)))))
+
 ;; Define follow-mouse which is true when the center of the clock
 ;; should be at the mouse cursor; false when it is at the last 
 ;; click position. Clicking the left button of the mouse
@@ -37,7 +40,7 @@
 (define follow-mouse?
   (hold (merge-e
          clicks-in-clock
-         (left-releases . -=> . false))))
+         (left-releases . -=> . false)) #f))
 
 ;; Define the position of the center and the radius of the clock.
 (define clock-center

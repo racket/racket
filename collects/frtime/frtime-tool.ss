@@ -26,8 +26,8 @@
 	    "FrTime without libraries")
           (define/public (get-language-url) #f)
 	  (define/public (get-reader)
-	    (lambda (name port offsets)
-	      (let ([v (read-syntax name port offsets)])
+	    (lambda (name port)
+	      (let ([v (read-syntax name port)])
 		(if (eof-object? v)
 		    v
 		    (namespace-syntax-introduce v)))))
