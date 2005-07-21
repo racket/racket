@@ -315,7 +315,7 @@ static OSStatus window_evt_handler(EventHandlerCallRef inHandlerCallRef,
 	n.right = n.left + (o.right - o.left);
 	SetEventParameter(inEvent, kEventParamCurrentBounds, typeQDRectangle, 
 			  sizeof(Rect), &n);
-      } else if (!(a & kWindowBoundsChangeUserResize)) {
+      } else if (!(a & (kWindowBoundsChangeUserResize | kWindowBoundsChangeZoom))) {
 	Rect n, s, c;
 	WindowRef w;
 
