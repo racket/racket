@@ -43,8 +43,6 @@ static long DoPrim(void *data)
 
   pdf = _data->f;
 
-  wxCannotHideCursor();
-  
   _data->result = pdf(_data->data, _data->hwnd);
   
   _data->done = 1;
@@ -53,8 +51,6 @@ static long DoPrim(void *data)
      asleep. The message is arbitrary (i.e., it shouldn't mean
      anything to MrEd). */
   PostThreadMessage(_data->main_thread_id, WM_APP + 79, 0, 0);
-
-  wxCanHideCursor();
 
   return 0;
 }
@@ -126,7 +122,9 @@ BOOL wxPrimitiveDialog(wxPDF f, void *data, int strict)
       }
     }
   }
-
+  
+  wxCannotHideCursor();
+  
   if (!(th = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)DoPrim, _data, 0, &id))) {
     /* Thread creation failed! We're in trouble, but do `f' anyway. */
     result = f(data, top);
@@ -147,6 +145,8 @@ BOOL wxPrimitiveDialog(wxPDF f, void *data, int strict)
 
     result = _data->result;
   }
+
+  wxCanHideCursor(); 
 
   free(_data);
 
