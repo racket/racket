@@ -198,14 +198,14 @@ void wxItem::SubclassControl(HWND hWnd)
     wxGenericControlSubClassProc = MakeProcInstance((FARPROC)wxSubclassedGenericControlProc,
 						    wxhInstance);
   }
-  SetWindowLong(hWnd, GWL_WNDPROC, (LONG)wxGenericControlSubClassProc);
+  SetWindowLongW(hWnd, GWL_WNDPROC, (LONG)wxGenericControlSubClassProc);
 }
 
 void wxItem::UnsubclassControl(HWND hWnd)
 {
   if (oldWndProc) {
     wxRemoveControlHandle(hWnd);
-    SetWindowLong(hWnd, GWL_WNDPROC, (LONG)oldWndProc);
+    SetWindowLongW(hWnd, GWL_WNDPROC, (LONG)oldWndProc);
   }
 }
 
@@ -484,7 +484,7 @@ LONG APIENTRY _EXPORT
 
   if (!tramp)
     scheme_start_atomic();
-  res = CallWindowProc((WNDPROC)item->oldWndProc, hWnd, message, wParam, lParam);
+  res = CallWindowProcW((WNDPROC)item->oldWndProc, hWnd, message, wParam, lParam);
   if (!tramp)
     scheme_end_atomic_no_swap();
 

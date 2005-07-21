@@ -79,7 +79,7 @@ wxRadioItemProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     }
     return TRUE;
   } else
-    return CallWindowProc((WNDPROC)i->old, hWnd, message, wParam, lParam);
+    return CallWindowProcW((WNDPROC)i->old, hWnd, message, wParam, lParam);
 }
 
 static FARPROC wxGenericRIProc;
@@ -101,7 +101,7 @@ static void *SubclassRadioButton(HWND hWnd, wxItem *item, int which)
   if (!wxGenericRIProc) {
     wxGenericRIProc = MakeProcInstance((FARPROC) wxRadioItemProc, wxhInstance);
   }
-  SetWindowLong(hWnd, GWL_WNDPROC, (LONG) wxGenericRIProc);
+  SetWindowLongW(hWnd, GWL_WNDPROC, (LONG) wxGenericRIProc);
 
   return i;
 }
@@ -113,7 +113,7 @@ void UnsubclassRadioButton(HWND hWnd)
   
   if (i) {
     wxRemoveControlHandle(hWnd);
-    SetWindowLong(hWnd, GWL_WNDPROC, (LONG)i->old);
+    SetWindowLongW(hWnd, GWL_WNDPROC, (LONG)i->old);
   }
 }
 

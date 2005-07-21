@@ -90,7 +90,7 @@ Bool wxListBox::Create(wxPanel *panel, wxFunction func,
 				   0, 0, 0, 0, cparent->handle, (HMENU)nid,
 				   wxhInstance, NULL);
 
-    wxSetWinFont(label_font, (HANDLE)static_label);
+    wxSetWinFont(font, (HANDLE)static_label);
   }
   else
     static_label = NULL;
