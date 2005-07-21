@@ -460,7 +460,7 @@ void wxFrame::DesignateRootFrame(void)
     wxRootFrame = this;
     Show(TRUE);
     
-    if (!FrontWindow()) {
+    if (!FrontNonFloatingWindow()) {
       ::ShowWindow(win);
     }
   }
@@ -1005,6 +1005,29 @@ void wxFrame::SetTitle(char* title)
   }
 }
 
+void wxCheckRootFrame(Bool frame_present)
+{
+  if (frame_present) {
+    /* Hide root frame, if any, in case it's shown */
+    if (wxRootFrame) {
+      wxMacDC *dc;
+      WindowPtr theMacWindow;
+      dc = wxRootFrame->MacDC();
+      theMacWindow = GetWindowFromPort(dc->macGrafPort());
+      ::HideWindow(theMacWindow);
+    }
+  } else {
+    /* If all frames are closed/minimized, it's time for the root window (if any) */
+    if (wxRootFrame && !FrontNonFloatingWindow()) {
+      wxMacDC *dc;
+      WindowPtr theMacWindow;
+      dc = wxRootFrame->MacDC();
+      theMacWindow = GetWindowFromPort(dc->macGrafPort());
+      ::ShowWindow(theMacWindow);
+    }
+  }
+}
+
 //-----------------------------------------------------------------------------
 void wxFrame::Show(Bool show)
 {
@@ -1101,13 +1124,7 @@ void wxFrame::Show(Bool show)
       /* b/c may be optimized for hidden: */
       cMacDC->setCurrentUser(NULL);
 
-    /* Hide root frame, if any, in case it's shown */
-    if (wxRootFrame) {
-      wxMacDC *dc;
-      dc = wxRootFrame->MacDC();
-      theMacWindow = GetWindowFromPort(dc->macGrafPort());
-      ::HideWindow(theMacWindow);
-    }
+    wxCheckRootFrame(TRUE);
   } else {
     if (cFocusWindow) {
       ReleaseFocus();
@@ -1132,13 +1149,7 @@ void wxFrame::Show(Bool show)
 	::HideWindow(theMacWindow);
       }
 
-    /* If all frames are closed, it's time for the root window (if any) */
-    if (wxRootFrame && !FrontWindow()) {
-      wxMacDC *dc;
-      dc = wxRootFrame->MacDC();
-      theMacWindow = GetWindowFromPort(dc->macGrafPort());
-      ::ShowWindow(theMacWindow);
-    }
+    wxCheckRootFrame(FALSE);
   }
 }
 
