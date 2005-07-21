@@ -198,6 +198,7 @@ void wxApp::doMacPreEvent()
     wxDoneMenuDraw();
     wxSetCursor(wxSTANDARD_CURSOR);
     noWinMode = TRUE;
+    oldFrontWindow = NULL;
   } else if (w && noWinMode)
     noWinMode = FALSE;
 
