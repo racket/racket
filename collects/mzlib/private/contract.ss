@@ -379,42 +379,40 @@ add struct contracts for immutable structs?
                              #f)]
                            [(field-contracts ...) field-contracts]
                            [(field-contract-ids ...) field-contract-ids])
-               (with-syntax ([struct-code 
-                              (with-syntax ([id-rename (a:mangle-id provide-stx 
-                                                                    "provide/contract-struct-expandsion-info-id"
-                                                                    struct-name)]
-                                            [struct-name struct-name]
-                                            [struct:struct-name struct:struct-name]
-                                            ;[(selector-id ...) selector-ids]
-                                            ;[(mutator-id ...) mutator-ids]
-                                            ;[predicate-id predicate-id]
-                                            ;[constructor-id constructor-id]
-                                            [super-id (if (boolean? super-id)
-                                                          super-id
-                                                          (with-syntax ([super-id super-id])
-                                                            (syntax #'super-id)))])
-                                (syntax (begin
-                                          #;
-                                          (provide struct-name)
-                                          
-                                          (provide (rename id-rename struct-name))
-                                          (define-syntax id-rename
-                                            (list-immutable #'struct:struct-name
-                                                            #'constructor-new-name
-                                                            #'predicate-new-name
-                                                            (list-immutable #'selector-new-names ...)
-                                                            (list-immutable #'mutator-new-names ...)
-                                                            super-id)))))]
-                             [struct:struct-name struct:struct-name])
-                 (syntax/loc stx
-                   (begin
-                     struct-code
-                     (define field-contract-ids field-contracts) ...
-                     selector-codes ...
-                     mutator-codes ...
-                     predicate-code
-                     constructor-code
-                     (provide struct:struct-name)))))))
+               (with-syntax ([(rev-selector-new-names ...) (reverse (syntax->list (syntax (selector-new-names ...))))]
+                             [(rev-mutator-new-names ...) (reverse (syntax->list (syntax (mutator-new-names ...))))])
+                 (with-syntax ([struct-code 
+                                (with-syntax ([id-rename (a:mangle-id provide-stx 
+                                                                      "provide/contract-struct-expandsion-info-id"
+                                                                      struct-name)]
+                                              [struct-name struct-name]
+                                              [struct:struct-name struct:struct-name]
+                                              [super-id (if (boolean? super-id)
+                                                            super-id
+                                                            (with-syntax ([super-id super-id])
+                                                              (syntax #'super-id)))])
+                                  (syntax (begin
+                                            #;
+                                            (provide struct-name)
+                                            
+                                            (provide (rename id-rename struct-name))
+                                            (define-syntax id-rename
+                                              (list-immutable #'struct:struct-name
+                                                              #'constructor-new-name
+                                                              #'predicate-new-name
+                                                              (list-immutable #'rev-selector-new-names ...)
+                                                              (list-immutable #'rev-mutator-new-names ...)
+                                                              super-id)))))]
+                               [struct:struct-name struct:struct-name])
+                   (syntax/loc stx
+                     (begin
+                       struct-code
+                       (define field-contract-ids field-contracts) ...
+                       selector-codes ...
+                       mutator-codes ...
+                       predicate-code
+                       constructor-code
+                       (provide struct:struct-name))))))))
  
          ;; map/count : (X Y int -> Z) (listof X) (listof Y) -> (listof Z)
          (define (map/count f l1 l2)

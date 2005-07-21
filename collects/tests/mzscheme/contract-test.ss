@@ -1483,9 +1483,24 @@
    '(parameterize ([current-namespace (make-namespace)])
       (eval '(module m mzscheme
                (require (lib "contract.ss"))
-(define-struct (exn2 exn) ())
-(provide/contract (struct (exn2 exn) ((message any/c) (continuation-marks any/c))))))
+               (define-struct (exn2 exn) ())
+               (provide/contract (struct (exn2 exn) ((message any/c) (continuation-marks any/c))))))
       (eval '(require m))))
+  
+  (test/spec-passed/result
+   'provide/contract13
+   '(parameterize ([current-namespace (make-namespace)])
+      (eval '(module common-msg-structs mzscheme
+               (require (lib "contract.ss" "mzlib"))
+               (define-struct register (name type) (make-inspector))
+               (provide/contract (struct register ([name any/c] [type any/c])))))
+      
+      (eval '(require common-msg-structs))
+      (eval '(require (lib "plt-match.ss")))
+      (eval '(match (make-register 1 2)
+               [(struct register (name type))
+                (list name type)])))
+   (list 1 2))
 
   
 ;                                                                                                     
