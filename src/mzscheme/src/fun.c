@@ -2822,10 +2822,9 @@ void scheme_takeover_stacks(Scheme_Thread *p)
 static Scheme_Object *
 call_with_continuation_barrier (int argc, Scheme_Object *argv[])
 {
-  scheme_check_proc_arity("call-with-continuation-barrier", 1,
-			  0, argc, argv);
+  scheme_check_proc_arity("call-with-continuation-barrier", 0, 0, argc, argv);
 
-  return scheme_apply(argv[0], 1, NULL);
+  return scheme_apply(argv[0], 0, NULL);
 }
 
 
