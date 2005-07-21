@@ -614,6 +614,12 @@
       (send list-keymap map-function "end" "select-last")
       (send list-keymap map-function "pageup" "page-up")
       (send list-keymap map-function "pagedown" "page-down")
+      (send list-keymap map-function "a:up" "page-up")
+      (send list-keymap map-function "a:down" "page-down")
+      (send list-keymap map-function "m:up" "page-up")
+      (send list-keymap map-function "m:down" "page-down")
+      (send list-keymap map-function "d:up" "select-first")
+      (send list-keymap map-function "d:down" "select-last")
 
       (send list-keymap add-function "toggle-open/closed"
 	    (lambda (list event) (send list toggle-open/closed)))
