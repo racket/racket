@@ -124,7 +124,7 @@
                 [else acc])))
           
           (define/public (read-special source line column position)
-            (raise (make-special-comment "comment")))
+            (make-special-comment "comment"))
           (super-instantiate ())
           (inherit set-snipclass)
           (set-snipclass snipclass))))))
