@@ -1468,7 +1468,7 @@ int scheme_is_hash_table_equal(Scheme_Object *o)
 
 static Scheme_Object *hash_table_put(int argc, Scheme_Object *argv[])
 {
-  if (!(SCHEME_HASHTP(argv[0]) || SCHEME_BUCKTP(argv[0])) || SCHEME_IMMUTABLEP(argv[0]))
+  if (!(SCHEME_HASHTP(argv[0]) && SCHEME_MUTABLEP(argv[0])) && !SCHEME_BUCKTP(argv[0]))
     scheme_wrong_type("hash-table-put!", "mutable hash-table", 0, argc, argv);
 
   if (SCHEME_BUCKTP(argv[0])) {
@@ -1519,7 +1519,7 @@ static Scheme_Object *hash_table_get(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *hash_table_remove(int argc, Scheme_Object *argv[])
 {
-  if (!(SCHEME_HASHTP(argv[0]) || SCHEME_BUCKTP(argv[0])) || SCHEME_IMMUTABLEP(argv[0]))
+  if (!(SCHEME_HASHTP(argv[0]) && SCHEME_MUTABLEP(argv[0])) && !SCHEME_BUCKTP(argv[0]))
     scheme_wrong_type("hash-table-remove!", "mutable hash-table", 0, argc, argv);
 
   if (SCHEME_BUCKTP(argv[0])) {
