@@ -175,6 +175,11 @@
                                                    (unbox xrb) (unbox yrb))]
                             [(xr yr) (dc-location-to-editor-location xr-off yr-off)])
                 (values xl yl xr yr))))
+
+	  (define/private (render v)
+	    (if parent
+		(send parent render v)
+		(printf "~e" v)))
           
           (define/override (on-event event)
             (if (and parent debug?)
@@ -230,7 +235,7 @@
                                                                                   get-user-namespace))))))]
                                                     [val (mark-binding-value
                                                           binding)])
-                                               (truncate (format "~a = ~a" id-sym val) 200))))]
+                                               (truncate (format "~a = ~a" id-sym (render val)) 200))))]
                                      [""]))))))
 		     (super on-event event)]
                     [(send event button-down? 'right)
@@ -255,8 +260,9 @@
                                             (send (make-object menu-item%
                                                     (truncate
                                                      (if (= 2 (length stat))
-                                                         (format "value = ~a" (cadr stat))
-                                                         (format "~a" (cons 'values (rest stat))))
+                                                         (format "value = ~a" (render (cadr stat)))
+                                                         (format "~a" (cons 'values 
+									    (map (lambda (v) (render v)) (rest stat)))))
                                                      200)
                                                     menu
                                                     void) enable #f))
@@ -519,16 +525,20 @@
                    get-interactions-text
                    get-menu-bar
                    get-current-tab
-                   get-top-level-window)
+                   get-top-level-window
+		   get-eventspace)
           
           (define breakpoints (make-hash-table))
           (hash-table-put! breakpoints -1 #f)
-          (define resume-sem (make-semaphore))
+          (define suspend-sema (make-semaphore 1))
+          (define resume-ch (make-channel))
+          (define in-user-ch (make-channel))
           (define want-suspend-on-break? #f)
           (define want-debug? #f)
           (define/public (debug?)
             want-debug?)
           (define stack-frames #f)
+	  (define current-language-settings #f)
           (define pos-vec (make-vector 1))
           (define/public (suspend-on-break?)
             want-suspend-on-break?)
@@ -545,7 +555,11 @@
             (set! break-status stat))
           (define control-panel #f)
           (define/public (resume)
-            (semaphore-post resume-sem))
+	    (let ([v (if (cons? break-status)
+			 (apply values (rest break-status))
+			 #f)])
+	      (resume-gui)
+	      (channel-put resume-ch v)))
           (define/public (set-mouse-over-msg msg)
             (when (not (string=? msg (send mouse-over-message get-label)))
               (send mouse-over-message set-label msg)))
@@ -559,64 +573,99 @@
                       end
                       start))
                 #f))
+
+	  (define/public (render v)
+	    ;; ==drscheme eventspace thread==
+	    ;; only when a user thread is suspended
+	    (let ([result-ch (make-channel)])
+	      (channel-put in-user-ch (lambda ()
+					(let ([s (open-output-string)])
+					  (send (drscheme:language-configuration:language-settings-language 
+						 current-language-settings)
+						render-value
+						v
+						(drscheme:language-configuration:language-settings-settings
+						 current-language-settings)
+						s)
+					  (channel-put result-ch (get-output-string s)))))
+	      (channel-get result-ch)))
           
+	  (define/private (suspend-gui frames status)
+	    (set! want-suspend-on-break? #f)
+	    (hash-table-put! breakpoints -1 #f)
+	    (send pause-button enable #f)
+	    (send step-button enable #t)
+	    (send resume-button enable #t)
+	    ;;(fprintf (current-error-port) "break: ~a~n" (map expose-mark frames))
+	    ;;(printf "status = ~a~n" status)
+	    (set! stack-frames frames)
+	    (set! break-status status)
+	    (when (cons? status)
+	      (let ([expr (mark-source (first frames))])
+		(send status-message set-label
+		      (truncate
+		       (format "~a ==> ~a"
+			       (trim-expr-str
+				(send (get-definitions-text) get-text
+				      (sub1 (syntax-position expr))
+				      (+ -1 (syntax-position expr) (syntax-span expr))))
+			       (if (= 2 (length status))
+				   (render (cadr status))
+				   (cons 'values (map (lambda (v) (render v)) (rest status)))))
+		       200))))
+	    (cond [(get-pc) => (lambda (pc) (send (get-definitions-text) scroll-to-position pc))])
+	    (send (get-definitions-text) invalidate-bitmap-cache))
+
+	  (define/private (resume-gui)
+	    (set! stack-frames #f)
+	    (set! break-status #f)
+	    (send pause-button enable #t)
+	    (send step-button enable #f)
+	    (send resume-button enable #f)
+	    (send status-message set-label "")
+	    (send (get-definitions-text) invalidate-bitmap-cache))
+
           (define/public suspend
+	    ;; ==called from user thread==
             (opt-lambda (break-handler frames [status #f])
-              (set! want-suspend-on-break? #f)
-              (hash-table-put! breakpoints -1 #f)
-              (send pause-button enable #f)
-              (send step-button enable #t)
-              (send resume-button enable #t)
-              ;(fprintf (current-error-port) "break: ~a~n" (map expose-mark frames))
-              ;(printf "status = ~a~n" status)
-              (let ([osf stack-frames]
-                    [obs break-status])
-                (set! stack-frames frames)
-                (set! break-status status)
-                (when (cons? status)
-                  (let ([expr (mark-source (first frames))])
-                    (send status-message set-label
-                                        (truncate
-                                         (format "~a ==> ~a"
-                                                 (trim-expr-str
-                                                  (send (get-definitions-text) get-text
-                                                        (sub1 (syntax-position expr))
-                                                        (+ -1 (syntax-position expr) (syntax-span expr))))
-                                                 (if (= 2 (length status))
-                                                     (cadr status)
-                                                     (cons 'values (rest status))))
-                                         200))))
-                (cond [(get-pc) => (lambda (pc) (send (get-definitions-text) scroll-to-position pc))])
-                (send (get-definitions-text) invalidate-bitmap-cache)
-                (with-handlers ([exn:break?
-                                 (lambda (exn)
-                                   (set! stack-frames osf)
-                                   (set! break-status obs)
-                                   (send status-message set-label "")
-                                   (send (get-definitions-text) invalidate-bitmap-cache)
-                                   (break-handler exn))])
-                  (semaphore-wait/enable-break resume-sem))
-                (begin0
-                  (if (cons? break-status)
-                      (apply values (rest break-status))
-                      #f)
-                  (set! stack-frames osf)
-                  (set! break-status obs)
-                  (send pause-button enable #t)
-                  (send step-button enable #f)
-                  (send resume-button enable #f)
-                  (send status-message set-label "")
-                  (send (get-definitions-text) invalidate-bitmap-cache)))))
+	      ;; suspend-sema ensures that we allow only one suspended thread
+	      ;;  at a time
+	      (if (semaphore-try-wait? suspend-sema)
+		  (begin
+		    (parameterize ([current-eventspace (get-eventspace)])
+		      (queue-callback (lambda () (suspend-gui frames status))))
+		    (with-handlers ([exn:break?
+				     (lambda (exn)
+				       (let ([wait-sema (make-semaphore)])
+					 (parameterize ([current-eventspace (get-eventspace)])
+					   (queue-callback (lambda () 
+							     (resume-gui)
+							     (semaphore-post wait-sema))))
+					 (semaphore-wait wait-sema))
+				       (semaphore-post suspend-sema)
+				       (break-handler exn))])
+		      (begin0
+		       (let loop ()
+			 (sync/enable-break resume-ch
+					    (handle-evt
+					     in-user-ch
+					     (lambda (thunk)
+					       (thunk)
+					       (loop)))))
+		       (semaphore-post suspend-sema))))
+		  #f)))
           
           (define (my-execute debug?)
             (set! want-debug? debug?)
             (if debug?
                 (show-debug)
                 (hide-debug))
+	    (set! current-language-settings (and debug?
+						 (send (get-definitions-text) get-next-settings)))
             (set! breakpoints (make-hash-table))
             (hash-table-put! breakpoints -1 #t)
             (set! pos-vec (make-vector (add1 (send (get-definitions-text) last-position)) #f))
-            (set! resume-sem (make-semaphore))
+            (set! resume-ch (make-channel))
             (set! want-suspend-on-break? #f)
             (set! stack-frames #f)
             (send (get-definitions-text) set-parent! this)
@@ -704,7 +753,7 @@
               [parent debug-panel]
               [callback (lambda (button evt)
                           (if stack-frames
-                              (semaphore-post resume-sem)
+			      (resume)
                               (bell)))]
               [enabled #f]))
           
@@ -718,7 +767,7 @@
                           (if stack-frames
                               (begin
                                 (hash-table-put! breakpoints -1 #t)
-                                (semaphore-post resume-sem))
+				(resume))
                               (bell)))]
               [enabled #f]))
 
