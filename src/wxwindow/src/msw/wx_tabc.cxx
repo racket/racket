@@ -76,10 +76,10 @@ wxTabChoice::wxTabChoice(wxPanel *panel, wxFunction func, char *label,
     height = 2 * cy;
   }
 
-  hwndTab = CreateWindow(WC_TABCONTROL, "", 
-			 WS_CHILD | WS_CLIPSIBLINGS,
-			 0, 0, width ? width : 40, height,
-			 cparent->handle, (HMENU)windows_id, wxhInstance, NULL);
+  hwndTab = CreateWindowW(L"wxTABCONTROL", L"", 
+			  WS_CHILD | WS_CLIPSIBLINGS,
+			  0, 0, width ? width : 40, height,
+			  cparent->handle, (HMENU)windows_id, wxhInstance, NULL);
 
   nid = NewId(this);
 

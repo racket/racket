@@ -110,10 +110,10 @@ Bool wxListBox::Create(wxPanel *panel, wxFunction func,
 
   windows_id = NewId(this);
 
-  wx_list = wxwmCreateWindowEx(WS_EX_CLIENTEDGE, "wxLISTBOX", NULL,
-			       wstyle | WS_CHILD | WS_CLIPSIBLINGS,
-			       0, 0, 0, 0, cparent->handle, (HMENU)windows_id,
-			       wxhInstance, NULL);
+  wx_list = CreateWindowExW(WS_EX_CLIENTEDGE, L"wxLISTBOX", NULL,
+			    wstyle | WS_CHILD | WS_CLIPSIBLINGS,
+			    0, 0, 0, 0, cparent->handle, (HMENU)windows_id,
+			    wxhInstance, NULL);
 
   user_data = new char*[N];
   for (i = 0; i < N; i++) {

@@ -46,6 +46,12 @@ LRESULT APIENTRY wxWndProc(HWND, UINT, WPARAM, LPARAM);
 
 __declspec(dllexport) void (*wx_post_setup)(void) = NULL;
 
+LRESULT CALLBACK UnhideMouseHook(int nCode, WPARAM wParam, LPARAM lParam)
+{
+  wxUnhideCursor();
+  return CallNextHookEx(0, nCode, wParam, lParam);
+}
+
 static void RegisterNoCursor(HINSTANCE hInstance,
 			     char *src, char *dest, wchar_t *wsrc, wchar_t *wdest)
 {
@@ -136,6 +142,7 @@ void wxInitialize(HINSTANCE hInstance)
     RegisterNoCursor(hInstance, "LISTBOX", "wxLISTBOX", L"LISTBOX", L"wxLISTBOX");
     RegisterNoCursor(hInstance, "EDIT", "wxEDIT", L"EDIT", L"wxEDIT");
     RegisterNoCursor(hInstance, "STATIC", "wxSTATIC", L"STATIC", L"wxSTATIC");
+    RegisterNoCursor(hInstance, WC_TABCONTROL, "wxTABCONTROL", WC_TABCONTROLW, L"wxTABCONTROL");
   }
 
   wxREGGLOB(wxWinHandleList);
@@ -143,6 +150,8 @@ void wxInitialize(HINSTANCE hInstance)
 
   wxWinHandleList = new wxNonlockingHashTable();
   wxSliderList = new wxNonlockingHashTable();  
+
+  SetWindowsHookEx(WH_MOUSE, UnhideMouseHook, NULL, GetCurrentThreadId());
 }
 
 
