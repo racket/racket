@@ -129,10 +129,11 @@
             (end-edit-sequence))
 
           (define/private (clean-up)
-            (set! debug? #f)
-            (when parent
-              (send parent hide-debug))
-            (invalidate-bitmap-cache))
+	    (when debug?
+	      (set! debug? #f)
+	      (when parent
+		    (send parent hide-debug))
+	      (invalidate-bitmap-cache)))
           
           (define/private (get-pos/text event)
             (let ([event-x (send event get-x)]
@@ -182,7 +183,8 @@
                     [(send event leaving?)
                      (when mouse-over-pos
                        (set! mouse-over-pos #f)
-                       (invalidate-bitmap-cache))]
+                       (invalidate-bitmap-cache))
+		     (super on-event event)]
                     [(or (send event moving?)
                          (send event entering?))
                      (let-values ([(pos text) (get-pos/text event)])
@@ -229,8 +231,8 @@
                                                     [val (mark-binding-value
                                                           binding)])
                                                (truncate (format "~a = ~a" id-sym val) 200))))]
-                                     [""])))
-                           (super on-event event))))]
+                                     [""]))))))
+		     (super on-event event)]
                     [(send event button-down? 'right)
                      (let-values ([(pos text) (get-pos/text event)])
                        (if (and pos text)
@@ -730,7 +732,6 @@
                 (lambda (_)
                   (cons debug-button
                         (remq debug-button _))))))
-      
       (drscheme:get/extend:extend-definitions-text debug-definitions-text-mixin)
       (drscheme:get/extend:extend-interactions-text debug-interactions-text-mixin)
       (drscheme:get/extend:extend-unit-frame debug-unit-frame-mixin))))
