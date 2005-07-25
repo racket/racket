@@ -199,11 +199,11 @@
       
                                         ; Now that we processed the trace, do we want to pause or continue
       (when (debug-process-pause-requested? process)
-        (set-debug-process-pause-requested?! process false)
         (let loop ()
           (unless (debug-process-resume-requested? process)
             (semaphore-wait (debug-process-run-semaphore process))
             (loop)))
+        (set-debug-process-pause-requested?! process false)
         (set-debug-process-resume-requested?! process false))
 
       (set-debug-process-marks! process false)))
@@ -290,11 +290,12 @@
                (not (frp:value-now (debug-process-exited? process)))
                (not (debug-process-pause-requested? process)))
       (process:running->paused process)))
-
+  
   (define (resume process)
     (cond
      [(not (debug-process-run-semaphore process)) (process:new->running process)]
      [(and (not (frp:value-now (debug-process-exited? process)))
+           (debug-process-pause-requested? process)
            (not (debug-process-resume-requested? process)))
       (process:paused->running process)]))
            

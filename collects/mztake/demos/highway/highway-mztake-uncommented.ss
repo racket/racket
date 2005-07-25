@@ -1,15 +1,10 @@
 (require (lib "mztake.ss" "mztake")
-	 (lib "animation.ss" "frtime"))
+	 (lib "animation.ss" "frtime")
+         (lib "useful-code.ss" "mztake" "private"))
 
 (define/bind (loc "highway.ss" 3 4) speed)
 
-(printf-b "current speed: ~a" (hold values-of-speed))
-(printf-b "last ten speeds: ~a" (history-b 10 values-of-speed))
-
-
-(map-e (lambda (a-speed) (when (>= a-speed 55) (pause radar-program)))
-       values-of-speed)
-
+(printf-b "current speed: ~a" speed)
 
 (define (make-speed-gauge speed)
   (let ([center (make-posn 200 200)])
@@ -23,6 +18,6 @@
                      "red"))))
 
 
-(display-shapes (make-speed-gauge (hold values-of-speed)))
+(display-shapes (make-speed-gauge speed))
 
-(set-runnning! true)
+(set-running! (< speed 55))
