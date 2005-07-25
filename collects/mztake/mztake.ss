@@ -21,12 +21,18 @@
                     [resume (debug-process? . -> . void?)]
                     [set-running-e! (frp:event? . -> . void?)]
                     [set-running! (frp:value-nowable? . -> . void?)]
-                    [rename debug-process-exceptions
-                            process:exceptions
-                            (() (debug-process?) . opt-> . frp:event?)]
-                    [rename debug-process-exited?
-                            process:exited?
-                            (debug-process? . -> . frp:behavior?)])
+                    [exceptions
+                     (() (debug-process?) . opt-> . frp:event?)]
+                    [exited?
+                     (() (debug-process?) . opt-> . frp:behavior?)])
+  
+  (define exceptions
+    (opt-lambda ([p (current-process)])
+      (debug-process-exceptions p)))  
+  (define exited?
+    (opt-lambda ([p (current-process)])
+      (debug-process-exited? p)))
+  
   
   #| DISABLED - BROKEN
   [process:running? (debug-process? . -> . frp:behavior?)]
