@@ -49,3 +49,11 @@ Limitations:
 
  - reader adjusts only string, character, and quoted-symbol
    syntax, for now
+
+
+To appear:
+
+ - a tool to take a sequence of `library' declarations and
+   copy them into the collection tree (adjusting the
+   declared library name as necessary, and adding the #reader
+   line)
