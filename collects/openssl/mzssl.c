@@ -557,7 +557,7 @@ static void sslin_need_wakeup(Scheme_Input_Port *port, void *fds)
 Scheme_Input_Port *make_sslin_port(SSL *ssl, struct sslplt *wrapper, const char *name)
 {
   return scheme_make_input_port(ssl_input_port_type, wrapper, 
-				scheme_make_immutable_sized_utf8_string((char *)name, -1),
+				scheme_make_immutable_sized_utf8_string(name ? (char *)name : "ssl", -1),
 				ssl_get_string, 
 				NULL, 
 				scheme_progress_evt_via_get,
@@ -787,7 +787,7 @@ static void sslout_need_wakeup(Scheme_Output_Port *port, void *fds)
 static Scheme_Output_Port *make_sslout_port(SSL *ssl, struct sslplt *data, const char *name)
 {
   return scheme_make_output_port(ssl_output_port_type, data, 
-				 scheme_make_immutable_sized_utf8_string((char *)name, -1),
+				 scheme_make_immutable_sized_utf8_string(name ? (char *)name : "ssl-output", -1),
 				 scheme_write_evt_via_write,
 				 write_string, 
 				 sslout_char_ready, sslout_close, 
