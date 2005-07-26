@@ -80,6 +80,10 @@ extern int osk_not_console; /* set by cmd-line flag */
 #include <math.h> /* for fmod , used by default_sleep */
 #include "schfd.h"
 
+#ifndef MZ_BINARY
+# define MZ_BINARY 0
+#endif
+
 #define mzAssert(x) /* if (!(x)) abort() */
 
 
@@ -3361,7 +3365,7 @@ scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[
 #ifdef USE_FD_PORTS
   /* Note: assuming there's no difference between text and binary mode */
   do {
-    fd = open(filename, O_RDONLY | MZ_NONBLOCKING);
+    fd = open(filename, O_RDONLY | MZ_NONBLOCKING | MZ_BINARY);
   } while ((fd == -1) && (errno == EINTR));
 
   if (fd == -1) {
@@ -3575,7 +3579,7 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
     flags |= O_EXCL;
 
   do {
-    fd = open(filename, flags | MZ_NONBLOCKING, 0666);
+    fd = open(filename, flags | MZ_NONBLOCKING | MZ_BINARY, 0666);
   } while ((fd == -1) && (errno == EINTR));
 
   if (errno == ENXIO) {
@@ -3583,7 +3587,7 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
     flags -= O_WRONLY;
     flags |= O_RDWR;
     do {
-      fd = open(filename, flags | MZ_NONBLOCKING, 0666);
+      fd = open(filename, flags | MZ_NONBLOCKING | MZ_BINARY, 0666);
     } while ((fd == -1) && (errno == EINTR));
   }
 
@@ -3606,7 +3610,7 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
 			   "%s: error deleting \"%q\"",
 			   name, filename);
 	do {
-	  fd = open(filename, flags, 0666);
+	  fd = open(filename, flags | MZ_BINARY, 0666);
 	} while ((fd == -1) && (errno == EINTR));
       }
     }

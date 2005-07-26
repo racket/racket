@@ -467,11 +467,10 @@
 
 #endif
 
-  /**** Windows with MS Visual C, Cygwin gcc, or Borland *****/
+  /****************** Windows with MS Visual C ***************/
   /* See the "worksp" directory for more MSVC details.       */
-  /* See the "borland" directory for more Borland details.   */
 
-#if (defined(__CYGWIN32__) || defined(__BORLANDC__) \
+#if (defined(__BORLANDC__) \
      || (defined(_MSC_VER) \
          && (defined(__WIN32__) || defined(WIN32) || defined(_WIN32))))
 
@@ -490,20 +489,11 @@
 #  define NO_READLINK
 #  define MKDIR_NO_MODE_FLAG
 # endif
-# if defined(__CYGWIN32__)
-#  define DIRENT_NO_NAMLEN
-#  define UNISTD_INCLUDE
-# endif
 
 # define TIME_SYNTAX
-# ifdef __CYGWIN32__
-#  define USE_PLAIN_TIME
-#  define USE_TOD_FOR_TIMEZONE
-# else
-#  define USE_FTIME
-#  define USE_TIMEZONE_VAR_W_DLS
-#  define WINDOWS_GET_PROCESS_TIMES
-# endif
+# define USE_FTIME
+# define USE_TIMEZONE_VAR_W_DLS
+# define WINDOWS_GET_PROCESS_TIMES
 # define GETENV_FUNCTION
 # define DIR_FUNCTION
 
@@ -512,9 +502,6 @@
 # define WINDOWS_FIND_STACK_BOUNDS
 
 # define USE_MZ_SETJMP
-# ifdef __CYGWIN32__
-#  define USE_MZ_CYGWIN_SETJMP
-# endif
 
 # define WINDOWS_DYNAMIC_LOAD
 
@@ -528,9 +515,6 @@
          /* With VC 7, ATAN2_DOESNT... wasn't needed, and
             POW_HANDLES_INF_CORRECTLY worked, too. */
 # define SIN_COS_NEED_DEOPTIMIZE
-#endif
-#ifdef __CYGWIN32__
-# define USE_DIVIDE_MAKE_INFINITY
 #endif
 #ifdef __BORLANDC__
 # define NAN_EQUALS_ANYTHING
@@ -546,30 +530,15 @@
 # define DONT_IGNORE_PIPE_SIGNAL
 
 # define PROCESS_FUNCTION
-#ifdef __CYGWIN32__
-# define UNIX_PROCESSES
-# define FILES_HAVE_FDS
-# define USE_FD_PORTS
-# define HAS_CYGWIN_IOB
-# define SIGCHILD_DOESNT_INTERRUPT_SELECT
-#else
 # define NO_SLEEP
 # define WINDOWS_PROCESSES
 # define WINDOWS_FILE_HANDLES
 # define USE_WIN32_THREAD_TIMER
-#endif
 
 # define SIGSET_IS_SIGNAL
 # define SIGSET_NEEDS_REINSTALL
 
-#ifdef __CYGWIN32__
-# define USE_UNIX_SOCKETS_TCP
-# define CANT_SET_SOCKET_BUFSIZE
-# define NO_NEED_FOR_BEGINTHREAD
-# define USE_CREATE_PIPE
-#else
-# define USE_WINSOCK_TCP
-#endif
+#define USE_WINSOCK_TCP
 
 /* MS Visual C++ likes underscore prefixes */
 #if defined(_MSC_VER)
@@ -592,6 +561,47 @@
 # define WINDOWS_UNICODE_SUPPORT
 # define USE_ICONV_DLL
 # define NO_MBTOWC_FUNCTIONS
+
+# define FLAGS_ALREADY_SET
+
+#endif
+
+  /******************** Windows with Cygwin ******************/
+  /* See the "worksp" directory for more MSVC details.       */
+
+#if defined(__CYGWIN32__)
+
+# define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-cygwin"
+
+# include "uconfig.h"
+
+# undef HAS_STANDARD_IOB
+# define HAS_CYGWIN_IOB
+# define MZ_BINARY O_BINARY
+
+# define DIRENT_NO_NAMLEN
+# define UNISTD_INCLUDE
+
+# define SIGCHILD_DOESNT_INTERRUPT_SELECT
+# define SIGSET_IS_SIGNAL
+# define SIGSET_NEEDS_REINSTALL
+
+# define CANT_SET_SOCKET_BUFSIZE
+# define NO_NEED_FOR_BEGINTHREAD
+# define USE_CREATE_PIPE
+
+# define USE_MZ_CYGWIN_SETJMP
+
+# define USE_PLAIN_TIME
+# define USE_TOD_FOR_TIMEZONE
+
+# define USE_DIVIDE_MAKE_INFINITY
+
+# define STACK_GROWS_DOWN
+# define DO_STACK_CHECK
+# define WINDOWS_FIND_STACK_BOUNDS
+
+# define REGISTER_POOR_MACHINE
 
 # define FLAGS_ALREADY_SET
 
@@ -995,6 +1005,9 @@
 
  /* USE_NULL_TO_DISCONNECT_UDP calls connect() with NULL instead of
     an AF_UNSPEC address to disconnect a UDP socket. */
+
+ /* MZ_BINARY is combinaed with other flags in all calls to open();
+    it can be defined to O_BINARY in Cygwin, for example. */
 
   /***********************/
  /* Threads & Signals  */
