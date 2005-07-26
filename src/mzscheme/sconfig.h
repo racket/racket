@@ -575,6 +575,8 @@
 
 # include "uconfig.h"
 
+# undef USE_ITIMER
+
 # undef HAS_STANDARD_IOB
 # define HAS_CYGWIN_IOB
 # define MZ_BINARY O_BINARY
