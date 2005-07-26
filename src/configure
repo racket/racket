@@ -8543,15 +8543,14 @@ case $OS in
     X_CFLAGS="-I/usr/contrib/X11R6/include/ $X_CFLAGS"
     X_LIBS="-L/usr/contrib/X11R6/lib/ $X_LIBS"
     ;;
-  SCO) # How do you really recognize SCO?
-    LIBS="$LIBS -lc -lsocket"
-    ;;
   CYGWIN*)
-    MZBINTARGET=cygwin-bin
-    MZINSTALLTARGET=cygwin-install
-    EXTRALIBS="$LIBS gmzwin.exp"
-    MZOPTIONS="$MZOPTIONS -DGC_DLL"
-    CGCOPTIONS="$CGCOPTIONS -DGC_DLL -DGC_BUILD -DUSE_MSVC_MD_LIBRARY -DMD_LIB_MAIN"
+    # Old cygwin approach, to make it Windows-like instead of Unix-like:
+    #  MZBINTARGET=cygwin-bin
+    #  MZINSTALLTARGET=cygwin-install
+    #  EXTRALIBS="$LIBS gmzwin.exp"
+    #  MZOPTIONS="$MZOPTIONS -DGC_DLL"
+    #  CGCOPTIONS="$CGCOPTIONS -DGC_DLL -DGC_BUILD -DUSE_MSVC_MD_LIBRARY -DMD_LIB_MAIN"
+    BUILD_CYGWIN_LIKE_UNIX=yes
     ;;
   BeOS)
     if test "${enable_sgcdebug}" = "yes" ; then
