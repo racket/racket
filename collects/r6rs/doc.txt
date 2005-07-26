@@ -8,8 +8,9 @@ To write an R6RS library:
  #reader(lib "library.ss" "r6rs")
  (library "name" ....)
 
-where "name" matches the containing file name without the file path
-or suffix.
+where "name" matches the containing file name without the file path or
+suffix. Note that the #reader line adjusts reader syntax in addition
+to converting `library' to `module'.
 
 
 To evaluate R6RS `library' and `import' forms at the REPL (or with
@@ -22,7 +23,8 @@ or start MzScheme as
  % mzscheme -L library-repl.ss r6rs
 
 
-To import a collection-based library, use
+In either mode, to import a collection-based module to to reference
+other libraries installed in the collection tree, use
 
  "scheme://<collection>/...<collection>/<file>"
 
@@ -48,7 +50,7 @@ Limitations:
    declaration are actually defined
 
  - reader adjusts only string, character, and quoted-symbol
-   syntax, for now
+   syntax (as in SRFI-75), for now
 
 
 To appear:
