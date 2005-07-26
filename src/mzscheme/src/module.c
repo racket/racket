@@ -109,6 +109,8 @@ static Scheme_Object *all_from_symbol;
 static Scheme_Object *all_from_except_symbol;
 static Scheme_Object *all_defined_symbol;
 static Scheme_Object *all_defined_except_symbol;
+static Scheme_Object *prefix_all_defined_symbol;
+static Scheme_Object *prefix_all_defined_except_symbol;
 static Scheme_Object *struct_symbol;
 static Scheme_Object *protect_symbol;
 
@@ -491,6 +493,8 @@ void scheme_finish_kernel(Scheme_Env *env)
   REGISTER_SO(all_from_except_symbol);
   REGISTER_SO(all_defined_symbol);
   REGISTER_SO(all_defined_except_symbol);
+  REGISTER_SO(prefix_all_defined_symbol);
+  REGISTER_SO(prefix_all_defined_except_symbol);
   REGISTER_SO(struct_symbol);
   REGISTER_SO(protect_symbol);
   prefix_symbol = scheme_intern_symbol("prefix");
@@ -502,6 +506,8 @@ void scheme_finish_kernel(Scheme_Env *env)
   all_from_except_symbol = scheme_intern_symbol("all-from-except");
   all_defined_symbol = scheme_intern_symbol("all-defined");
   all_defined_except_symbol = scheme_intern_symbol("all-defined-except");
+  prefix_all_defined_symbol = scheme_intern_symbol("prefix-all-defined");
+  prefix_all_defined_except_symbol = scheme_intern_symbol("prefix-all-defined-except");
   struct_symbol = scheme_intern_symbol("struct");
   protect_symbol = scheme_intern_symbol("protect");
 }
@@ -4143,24 +4149,62 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 				  scheme_make_pair(scheme_datum_to_syntax(names[i], scheme_false, prnt_base, 0, 0),
 						   protect_cnt ? scheme_true : scheme_false));
 		}
-	      }  else if (SAME_OBJ(all_defined_symbol, SCHEME_STX_VAL(fst))) {
+	      } else if (SAME_OBJ(all_defined_symbol, SCHEME_STX_VAL(fst))) {
 		/* (all-defined) */
 		if (!SCHEME_STX_NULLP(rest))
 		  scheme_wrong_syntax(NULL, a, e, "bad syntax");
 		
-		all_defs_out = scheme_make_pair(scheme_make_pair(scheme_make_pair(e, scheme_null),
+		all_defs_out = scheme_make_pair(scheme_make_pair(scheme_make_pair(e, 
+										  scheme_make_pair(scheme_null, 
+												   scheme_false)),
 								 protect_cnt ? scheme_true : scheme_false),
 						all_defs_out);
-	      } else if (SAME_OBJ(all_defined_except_symbol, SCHEME_STX_VAL(fst))) {
-		/* (all-defined-except <id> ...) */
-		Scheme_Object *exns, *el;
-		int len;
+	      } else if (SAME_OBJ(prefix_all_defined_symbol, SCHEME_STX_VAL(fst))) {
+		/* (prefix-all-defined <prefix>) */
+		Scheme_Object *prefix;
+
+		if (!SCHEME_STX_PAIRP(rest))
+		  scheme_wrong_syntax(NULL, a, e, "bad syntax");
+		prefix = SCHEME_STX_CAR(rest);
+		rest = SCHEME_STX_CDR(rest);
+		if (!SCHEME_STX_NULLP(rest))
+		  scheme_wrong_syntax(NULL, a, e, "bad syntax");
 		
+		if (!SCHEME_STX_SYMBOLP(prefix)) {
+		  scheme_wrong_syntax(NULL, a, e,
+				      "bad syntax (prefix is not an identifier)");
+		}
+		prefix = SCHEME_STX_VAL(prefix);
+
+		all_defs_out = scheme_make_pair(scheme_make_pair(scheme_make_pair(e, 
+										  scheme_make_pair(scheme_null, 
+												   prefix)),
+								 protect_cnt ? scheme_true : scheme_false),
+						all_defs_out);
+	      } else if (SAME_OBJ(all_defined_except_symbol, SCHEME_STX_VAL(fst))
+			 || SAME_OBJ(prefix_all_defined_except_symbol, SCHEME_STX_VAL(fst))) {
+		/* ([prefix-]all-defined-except <id> ...) */
+		Scheme_Object *exns, *el, *prefix = scheme_false;
+		int len, is_prefix;
+		
+		is_prefix = SAME_OBJ(prefix_all_defined_except_symbol, SCHEME_STX_VAL(fst));
+
 		len = scheme_stx_proper_list_length(a);
 
 		if (len < 0)
 		  scheme_wrong_syntax(NULL, a, e, "bad syntax (" IMPROPER_LIST_FORM ")");
 		
+		if (is_prefix && (len < 2))
+		  scheme_wrong_syntax(NULL, a, e, "bad syntax (missing prefix)");
+
+		if (is_prefix) {
+		  prefix = SCHEME_STX_CAR(rest);
+		  if (!SCHEME_STX_SYMBOLP(prefix))
+		    scheme_wrong_syntax(NULL, a, e, "bad syntax (prefix is not an identifier)");
+		  prefix = SCHEME_STX_VAL(prefix);
+		  rest = SCHEME_STX_CDR(rest);
+		}
+
 		exns = rest;
 		
 		/* Check all exclusions are identifiers: */
@@ -4172,7 +4216,9 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 		  }
 		}
 		
-		all_defs_out = scheme_make_pair(scheme_make_pair(scheme_make_pair(e, exns), 
+		all_defs_out = scheme_make_pair(scheme_make_pair(scheme_make_pair(e, 
+										  scheme_make_pair(exns,
+												   prefix)),
 								 protect_cnt ? scheme_true : scheme_false),
 						all_defs_out);
 	      } else {
@@ -4400,22 +4446,24 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
     /* Do all-defined provides */
     for (; !SCHEME_NULLP(all_defs_out); all_defs_out = SCHEME_CDR(all_defs_out)) {
-      Scheme_Object *exns, *ree, *ree_kw, *exl, *name, *a, *adl, *exname;
+      Scheme_Object *exns, *ree, *ree_kw, *exl, *name, *a, *adl, *exname, *pfx;
       int protected;
 	    
       ree = SCHEME_CAR(all_defs_out);
       protected = SCHEME_TRUEP(SCHEME_CDR(ree));
       ree = SCHEME_CAR(ree);
-      exl = SCHEME_CDR(ree);
       ree_kw = SCHEME_CAR(ree);
-	    
+      ree = SCHEME_CDR(ree);
+      exl = SCHEME_CAR(ree);
+      pfx = SCHEME_CDR(ree);
+
       /* Make sure each excluded name was defined: */
       for (exns = exl; !SCHEME_STX_NULLP(exns); exns = SCHEME_STX_CDR(exns)) {
 	a = SCHEME_STX_CAR(exns);
 	name = scheme_tl_id_sym(env->genv, a, 0);
 	if (!scheme_lookup_in_table(env->genv->toplevel, (const char *)name)
 	    && !scheme_lookup_in_table(env->genv->syntax, (const char *)name)) {
-	  scheme_wrong_syntax("module", a, ree, "excluded identifier was not defined");
+	  scheme_wrong_syntax("module", a, ree_kw, "excluded identifier was not defined");
 	}
       }
 
@@ -4434,7 +4482,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
 	if (SCHEME_STX_NULLP(exns)) {
 	  /* not excluded */
-
+	  
 	  /* But don't export uninterned: */
 	  if (!SCHEME_SYM_UNINTERNEDP(name)) {
 	    /* Also, check that ree_kw and the identifier have the same
@@ -4446,8 +4494,12 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	    a = scheme_tl_id_sym(env->genv, a, 0);
 	    
 	    if (SAME_OBJ(a, name)) {
+	      /* Add prefix, if any */
+	      if (SCHEME_TRUEP(pfx)) {
+		exname = scheme_symbol_append(pfx, exname);
+	      }
 	      if (scheme_hash_get(provided, exname))
-		scheme_wrong_syntax("module", exname, ree, "identifier already provided");
+		scheme_wrong_syntax("module", exname, ree_kw, "identifier already provided");
 	      
 	      scheme_hash_set(provided, exname, 
 			      scheme_make_pair(name, protected ? scheme_true : scheme_false));
