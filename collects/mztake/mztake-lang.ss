@@ -79,7 +79,7 @@
 	  (define/public (get-module)
 	    '(lib "mztake-syntax.ss" "mztake"))
 	  (define/public (get-one-line-summary)
-	    (format "MzTake Debugger (~a)" mztake-version))
+	    (format "MzTake Debugger"))
           (define/public (get-language-url) #f)
 	  (define/public (get-reader)
 	    (lambda (name port offsets)
