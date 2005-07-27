@@ -3875,7 +3875,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	    count++;
 	  }
 
-	  names = scheme_named_map_1(NULL, stx_sym, names, (Scheme_Object *)env->genv);
+	  names = scheme_named_map_1(NULL, stx_sym, names, (Scheme_Object *)oenv->genv);
 	  
 	  mrec.comp = 1;
 	  mrec.dont_mark_local_use = 0;
