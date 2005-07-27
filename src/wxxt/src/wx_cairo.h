@@ -30,6 +30,6 @@ typedef cairo_matrix_t *cairo_matrix_p;
 #  define cairo_set_matrix_create(m) (m) = cairo_matrix_create();
 #  define cairo__set_matrix(CAIRO_DEV, m) cairo_set_matrix(CAIRO_DEV, m)
 #  define cairo_set_create_xlib(dev, display, drawable, vis, w, h) \
-          dev = cario_create(); cairo_set_target_drawable(dev, wxAPP_DISPLAY, DRAWABLE)
+          dev = cairo_create(); cairo_set_target_drawable(dev, wxAPP_DISPLAY, DRAWABLE)
 # endif
 #endif
