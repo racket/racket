@@ -128,7 +128,9 @@
          (emit (value-now b))))
      b))
   
-  
+  (define never-e
+    (changes #f))
+    
   
   ; when-e : behavior[bool] -> event
   (define (when-e b)
@@ -683,6 +685,7 @@
            merge-e
            once-e
            changes
+	   never-e
            when-e
            while-e
            ==>
