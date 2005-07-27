@@ -150,55 +150,38 @@
 
   (define (translate-export i)
     (define orig-i #`(export #,i))
-    (translate-impexp 
-     i orig-i
-     (lambda (i exceptions onlys renames extra-prefix)
-       (define (result l)
-	 (when exceptions
-	   (check-present orig-i "except not" "identifier" values exceptions l))
-	 (when onlys
-	   (check-present orig-i "only not" "identifier" values onlys l))
-	 (when renames
-	   (check-present orig-i "rename not" "identifier" values renames l))
-	 (let* ([l (if exceptions
-		       (filter (lambda (i)
-				 (not (ormap (lambda (x) (bound-identifier=? (car x) i))
-					     exceptions)))
-			       l)
-		       l)]
-		[name-pairs (if onlys 
-				onlys
-				(apply-rename (map car renames) (map cdr renames)
-					      (map cons l
-						   (map (lambda (i) (add-prefix extra-prefix i)) l))
-					      (lambda (b a) (cons a b))))])
-	   (if (andmap (lambda (p) (eq? (car p) (cdr p)))
-		       name-pairs)
-	       #`(provide #,@(map car name-pairs))
-	       #`(provide #,@(map (lambda (p)
-				    #`(rename #,(car p) #,(cdr p)))
-				  name-pairs)))))
-       (syntax-case* i (set) (lambda (a b) (eq? (syntax-e a) (syntax-e b)))
-	 [(set id ...)
-	  (let ([ids (syntax->list #'(id ...))])
-	    (for-each (lambda (x)
-			(unless (identifier? x)
-			  (raise-syntax-error
-			   #f
-			   "expected an identifier"
-			   i
-			   x)))
-		      ids)
-	    (result ids))]
-	 [_else
-	  (begin
-	    (unless (identifier? i)
-	      (raise-syntax-error
-	       #f
-	       "expected an identifier or a `set', `only', `except', `add-prefix', or `rename' form"
-	       orig-i
-	       i))
-	    (result (list i)))]))))
+    #`(provide
+       #,@(syntax-case* i (rename) (lambda (a b) (eq? (syntax-e a) (syntax-e b)))
+	    [(rename ie ...)
+	     (begin
+	       (for-each (lambda (ie)
+			   (syntax-case ie ()
+			     [(int ext)
+			      (for-each (lambda (i)
+					  (unless (identifier? i)
+					    (raise-syntax-error
+					     #f
+					     "expected an identifier for rename"
+					     orig-i
+					     i)))
+					(list #'int #'ext))]))
+			 (syntax->list #'(ie ...)))
+	       #`((rename . ie) ...))]
+	    [(rename . x)
+	     (raise-syntax-error
+	      #f
+	      "bad rename clause"
+	      i
+	      orig-i)]
+	    [_
+	     (identifier? i)
+	     (list i)]
+	    [_else
+	     (raise-syntax-error
+	      #f
+	      "expected an identifier or `rename' form"
+	      orig-i
+	      i)])))
 
   (define (translate-impexp i orig-i k)
     (let loop ([i i]
