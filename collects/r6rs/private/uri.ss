@@ -42,8 +42,19 @@
 		     (apply collection-path (cdr p)))])
 	      (path->string (build-path collpath
 					(path-replace-suffix (car p) #""))))))]
-       [else (string->symbol s)])))
-
+       [else (string->symbol
+	      (string-append "," 
+			     (path->string
+			      (apply build-path 
+				     (simplify-path
+				      (expand-path
+				       ;; Don't use (current-load-relative-directory)
+				       (current-directory)))
+				     (filter 
+				      (lambda (x)
+					(not (string=? x "")))
+				      (regexp-split #rx"/" s))))))])))
+  
   (define (uri->module-path s)
     (let ([p (uri->scheme-path s)])
       (cond
@@ -54,4 +65,4 @@
 	      (apply collection-path (cdr p)))
 	    `(lib ,@p)
 	    (uri->symbol s))]
-       [else (string->symbol s)]))))
+       [else s]))))
