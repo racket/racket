@@ -43,12 +43,6 @@ Limitations:
  - doesn't enforce that a for-run import isn't also
    a for-expand import in a different import-spec
 
- - doesn't enforce that idenfiers in a macro expansion
-   are only the ones declared by indirect-export
-
- - doesn't check that an identifiers in an indirect-export
-   declaration are actually defined
-
  - reader adjusts only string, character, and quoted-symbol
    syntax (as in SRFI-75), for now
 

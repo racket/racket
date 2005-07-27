@@ -45,11 +45,11 @@
      [(bound-identifier=? id (caar renames)) (cdar renames)]
      [else (locate-rename id (cdr renames))]))
 
-  (define (apply-rename new-names old-names name-pairs)
+  (define (apply-rename new-names old-names name-pairs rcons)
     (map (lambda (i)
 	   (or (ormap (lambda (new old)
 			(and (bound-identifier=? (car i) new)
-			     (cons old (cdr i))))
+			     (rcons old (cdr i))))
 		      new-names old-names)
 	       i))
 	 name-pairs))
@@ -153,51 +153,52 @@
     (translate-impexp 
      i orig-i
      (lambda (i exceptions onlys renames extra-prefix)
-       (syntax-case* i (all-defined) (lambda (a b) (eq? (syntax-e a) (syntax-e b)))
-	 [(all-defined)
-	  (cond
-	   [onlys
-	    #`(provide #,@(map (lambda (name-pair)
-				 #`(rename #,(car name-pair) #,(cdr name-pair)))
-			       onlys))]
-	   [(or exceptions (pair? renames))
-	    ;; First import non-renamed, then renamed:
-	    #`(provide (#,(if extra-prefix #'prefix-all-defined-except #'all-defined-except)
-			#,@(if extra-prefix (list extra-prefix) null)
-			#,@(append (map car (or exceptions null))
-				   (map car renames)))
-		       #,@(map (lambda (i)
-				 #`(rename #,(car i) #,(cdr i)))
-			       renames))]
-	   [extra-prefix
-	    #`(provide (prefix-all-defined #,extra-prefix))]
-	   [else
-	    #`(provide (all-defined))])]
-	 [(all-defined . _)
-	  (raise-syntax-error #f "bad syntax" i)]
+       (define (result l)
+	 (when exceptions
+	   (check-present orig-i "except not" "identifier" values exceptions l))
+	 (when onlys
+	   (check-present orig-i "only not" "identifier" values onlys l))
+	 (when renames
+	   (check-present orig-i "rename not" "identifier" values renames l))
+	 (let* ([l (if exceptions
+		       (filter (lambda (i)
+				 (not (ormap (lambda (x) (bound-identifier=? (car x) i))
+					     exceptions)))
+			       l)
+		       l)]
+		[name-pairs (if onlys 
+				onlys
+				(apply-rename (map car renames) (map cdr renames)
+					      (map cons l
+						   (map (lambda (i) (add-prefix extra-prefix i)) l))
+					      (lambda (b a) (cons a b))))])
+	   (if (andmap (lambda (p) (eq? (car p) (cdr p)))
+		       name-pairs)
+	       #`(provide #,@(map car name-pairs))
+	       #`(provide #,@(map (lambda (p)
+				    #`(rename #,(car p) #,(cdr p)))
+				  name-pairs)))))
+       (syntax-case* i (set) (lambda (a b) (eq? (syntax-e a) (syntax-e b)))
+	 [(set id ...)
+	  (let ([ids (syntax->list #'(id ...))])
+	    (for-each (lambda (x)
+			(unless (identifier? x)
+			  (raise-syntax-error
+			   #f
+			   "expected an identifier"
+			   i
+			   x)))
+		      ids)
+	    (result ids))]
 	 [_else
 	  (begin
 	    (unless (identifier? i)
 	      (raise-syntax-error
 	       #f
-	       "expected an identifier or an `all-defined', `only', `except', `add-prefix', or `rename' form"
+	       "expected an identifier or a `set', `only', `except', `add-prefix', or `rename' form"
 	       orig-i
 	       i))
-	    (when exceptions
-	      (check-present orig-i "except not" "identifier" values exceptions (list i)))
-	    (when onlys
-	      (check-present orig-i "only not" "identifier" values onlys (list i)))
-	    (when renames
-	      (check-present orig-i "rename not" "identifier" values renames (list i)))
-	    (cond
-	     [(pair? exceptions)
-	      ;; Must be the only exception, so nothing is exported
-	      #'(provide)]
-	     [(pair? renames)
-	      #`(provide (rename #,(caar renames) #,(cdar renames)))]
-	     [extra-prefix
-	      #`(provide (rename #,i #,(add-prefix extra-prefix i)))]
-	     [else #`(provide #,i)]))]))))
+	    (result (list i)))]))))
 
   (define (translate-impexp i orig-i k)
     (let loop ([i i]
@@ -290,7 +291,7 @@
 	   (check-unique-names orig-i "`rename' source" old-names)
 	   (let ([combine-renames
 		  (lambda ()
-		    (let ([renames (apply-rename new-names old-names renames)])
+		    (let ([renames (apply-rename new-names old-names renames cons)])
 		      (append
 		       renames
 		       (remove* renames name-pairs 
@@ -299,14 +300,14 @@
 	     (cond
 	      [exceptions
 	       (loop #'sub
-		     (apply-rename new-names old-names exceptions)
+		     (apply-rename new-names old-names exceptions cons)
 		     #f
 		     (combine-renames)
 		     extra-prefix)]
 	      [onlys
 	       (loop #'sub
 		     #f
-		     (apply-rename new-names old-names onlys)
+		     (apply-rename new-names old-names onlys cons)
 		     null
 		     #f)]
 	      [else
