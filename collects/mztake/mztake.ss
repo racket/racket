@@ -1,6 +1,6 @@
 (module mztake mzscheme
   (require (lib "contract.ss")
-           (prefix frp: (lib "frp.ss" "frtime"))
+           (prefix frp: (lib "lang-ext.ss" "frtime"))
            (rename (lib "frtime.ss" "frtime") frp:value-nowable? value-nowable?)
            (rename (lib "frtime.ss" "frtime") frp:behaviorof behaviorof)
            "mztake-structs.ss"
@@ -9,14 +9,20 @@
            (lib "marks.ss" "mztake" "private")
            "engine.ss")
   
-  (provide loc$ loc loc-reqspec loc-line loc-col
+  (provide loc$ loc-reqspec loc-line loc-col
            trace trace* bind define/bind define/bind-e where set-main!)
   (provide/contract [kill (() (debug-process?) . opt-> . void?)]
                     [kill-all (-> void?)]
                     [set-running-e! (frp:event? . -> . void?)]
                     [set-running! (frp:value-nowable? . -> . void?)]
                     [exceptions (() (debug-process?) . opt-> . frp:event?)]
-                    [exited? (() (debug-process?) . opt-> . frp:behavior?)])
+                    [exited? (() (debug-process?) . opt-> . frp:behavior?)]
+                    [rename loc/opt-col loc
+                            ((any/c number?) (number?) . opt-> . loc?)])
+  
+  (define loc/opt-col
+    (opt-lambda (reqspec line [col #f])
+      (loc reqspec line col)))
   
   (define exceptions
     (opt-lambda ([p (current-process)])

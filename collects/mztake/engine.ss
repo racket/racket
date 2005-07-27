@@ -1,6 +1,9 @@
 (module engine mzscheme
   (require (lib "marks.ss" "mztake" "private")
-           (prefix frp: (lib "frp.ss" "frtime"))
+;           (prefix frp: (lib "frp.ss" "frtime"))
+           (prefix frp: (lib "lang-ext.ss" "frtime"))           
+           (rename (lib "frp-core.ss" "frtime")
+                   frp:signal-thunk signal-thunk)
            (lib "useful-code.ss" "mztake" "private")
            (lib "more-useful-code.ss" "mztake" "private") ; mostly for hash- bindings
            "mztake-structs.ss"
@@ -43,17 +46,18 @@
                                 (cons (unwrap-syntax stx)
                                       (loop (read-syntax filename port)))))
                           (close-input-port port)))))])
-      (lambda (line col)
+      (lambda (line maybe-col)
         (let loop ([lst pos-list]
                    [last-coord (first pos-list)])
           (cond
             ; none is found
             [(empty? lst)
-             (raise (format "No syntax found for trace at line/column ~a:~a in client `~a'" line col filename))]
+             (raise (format "No syntax found for trace at line/column ~a:~a in client `~a'" line maybe-col filename))]
             
             ; if first is correct line and correct column
             [(and (= line (caar lst))
-                  (= col (cadar lst)))
+                  (or (not maybe-col)
+                      (= maybe-col (cadar lst))))
              (third (first lst))]
             
             [else (loop (rest lst)

@@ -1,6 +1,5 @@
 (module mztake-structs mzscheme
-  (require (prefix frp: (lib "frp.ss" "frtime"))
-           (lib "more-useful-code.ss" "mztake" "private"))
+  (require (lib "more-useful-code.ss" "mztake" "private"))
   
   (provide (all-defined-except loc make-loc)
            (rename loc loc$)
