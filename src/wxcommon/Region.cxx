@@ -35,7 +35,7 @@ typedef struct {
 #endif
 
 #ifndef WX_USE_CAIRO
-typedef cairo_matrix_p int;
+typedef int cairo_matrix_p;
 #endif
 
 wxRegion::wxRegion(wxDC *_dc, wxRegion *r, Bool _no_prgn)
