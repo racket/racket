@@ -101,8 +101,8 @@ class wxPathRgn : public wxObject
   ~wxPathRgn();
   virtual Bool Install(long target, Bool reverse, Bool align) = 0;
 
-  long PrepareScale(long target, Bool oe, Bool align);
-  void RestoreScale(long target, long v, Bool align);
+  void PrepareScale(long target, Bool oe, Bool align, void *m);
+  void RestoreScale(long target, Bool align, void *m);
 
   virtual Bool InstallPS(wxPostScriptDC *dc, wxPSStream *s) = 0;
 

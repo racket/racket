@@ -34,9 +34,7 @@
 #define  Uses_wxPostScriptDC
 #include "wx.h"
 
-#ifdef WX_USE_CAIRO
-# include <cairo.h>
-#endif
+#include "../wx_cairo.h"
 
 #include <math.h>
 

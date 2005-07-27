@@ -1065,23 +1065,18 @@ double wxPathRgn::XFormH(double _h, double _y, Bool align)
     return _h;
 }
 
-long wxPathRgn::PrepareScale(long target, Bool oe, Bool align)
+void wxPathRgn::PrepareScale(long target, Bool oe, Bool align, void *_m)
 {
 #ifdef wx_xt
 # ifdef WX_USE_CAIRO
-  if (align)
-    return 0;
-  else {
-    cairo_matrix_t *m;
-    m = cairo_matrix_create();
-    cairo_current_matrix(CAIRO_DEV, m);
+  if (!align) {
+    cairo_matrix_p *m = (cairo_matrix_p *)_m;
+    cairo_set_matrix_create(*m);
+    cairo_current_matrix(CAIRO_DEV, *m);
     cairo_default_matrix(CAIRO_DEV);
     cairo_translate(CAIRO_DEV, ox, oy);
     cairo_scale(CAIRO_DEV, sx, sy);
-    return (long)m;
   }
-# else
-  return 0;
 # endif
 #endif
 #ifdef wx_mac
@@ -1091,21 +1086,19 @@ long wxPathRgn::PrepareScale(long target, Bool oe, Bool align)
     current_xform = CGAffineTransformMakeTranslation(ox, oy);
     current_xform = CGAffineTransformScale(current_xform, sx, sy);
   }
-  return 0;
 #endif
 #ifdef wx_msw
   current_path = wxGPathNew(oe ?  FillModeAlternate : FillModeWinding);
-  return 0;
 #endif
 }
 
-void wxPathRgn::RestoreScale(long target, long v, Bool align)
+void wxPathRgn::RestoreScale(long target, Bool align, void *_m)
 {
 #ifdef WX_USE_CAIRO
-  if (v) {
-    cairo_matrix_t *m = (cairo_matrix_t *)v;
-    cairo_set_matrix(CAIRO_DEV, m);
-    cairo_matrix_destroy(m);
+  if (!align) {
+    cairo_matrix_p *m = (cairo_matrix_p *)_m;
+    cairo__set_matrix(CAIRO_DEV, *m);
+    cairo_matrix_destroy(*m);
   }
 #endif
 #ifdef wx_mac
@@ -1137,8 +1130,9 @@ wxRectanglePathRgn::wxRectanglePathRgn(wxDC *dc_for_scale, double _x, double _y,
 Bool wxRectanglePathRgn::Install(long target, Bool reverse, Bool align)
 {
   double xx, yy, ww, hh;
-  long m;
-  m = PrepareScale(target, TRUE, align);
+  cairo_matrix_p m;
+
+  PrepareScale(target, TRUE, align, &m);
 
   xx = XFormXB(x, align);
   yy = XFormYB(y, align);
@@ -1184,7 +1178,7 @@ Bool wxRectanglePathRgn::Install(long target, Bool reverse, Bool align)
   wxGPathCloseFigure(CURRENT_GP);
 #endif
 
-  RestoreScale(target, m, align);
+  RestoreScale(target, align, &m);
   
   return FALSE;
 }
@@ -1229,8 +1223,9 @@ wxRoundedRectanglePathRgn::wxRoundedRectanglePathRgn(wxDC *dc_for_scale,
 Bool wxRoundedRectanglePathRgn::Install(long target, Bool reverse, Bool align)
 {
   double xx, yy, ww, hh, rr, rr2;
-  long m;
-  m = PrepareScale(target, TRUE, align);
+  cairo_matrix_p m;
+  
+  PrepareScale(target, TRUE, align, &m);
 
   xx = XFormXB(x, align);
   yy = XFormYB(y, align);
@@ -1313,7 +1308,7 @@ Bool wxRoundedRectanglePathRgn::Install(long target, Bool reverse, Bool align)
   wxGPathCloseFigure(CURRENT_GP);
 #endif
 
-  RestoreScale(target, m, align);
+  RestoreScale(target, align, &m);
 
   return FALSE;
 }
@@ -1371,8 +1366,9 @@ wxPolygonPathRgn::wxPolygonPathRgn(wxDC *dc_for_scale,
 Bool wxPolygonPathRgn::Install(long target, Bool reverse, Bool align)
 {
   double xx, yy;
-  long m;
-  m = PrepareScale(target, fillStyle == wxODDEVEN_RULE, align);
+  cairo_matrix_p m;
+
+  PrepareScale(target, fillStyle == wxODDEVEN_RULE, align, &m);
 
 #ifdef WX_USE_CAIRO
   if (reverse) {
@@ -1447,7 +1443,7 @@ Bool wxPolygonPathRgn::Install(long target, Bool reverse, Bool align)
   wxGPathCloseFigure(CURRENT_GP);
 #endif
 
-  RestoreScale(target, m, align);
+  RestoreScale(target, align, &m);
 
   return (fillStyle == wxODDEVEN_RULE);
 }
@@ -1487,9 +1483,9 @@ wxPathPathRgn::wxPathPathRgn(wxDC *dc_for_scale,
 Bool wxPathPathRgn::Install(long target, Bool reverse, Bool align)
 {
   wxPath *q;
-  long m;
+  cairo_matrix_p m;
 
-  m = PrepareScale(target, fillStyle == wxODDEVEN_RULE, align);
+  PrepareScale(target, fillStyle == wxODDEVEN_RULE, align, &m);
 
   if (reverse) {
     q = new wxPath();
@@ -1520,7 +1516,7 @@ Bool wxPathPathRgn::Install(long target, Bool reverse, Bool align)
 #endif
   }
 
-  RestoreScale(target, m, align);
+  RestoreScale(target, align, &m);
 
   return (fillStyle == wxODDEVEN_RULE);
 }
@@ -1546,9 +1542,9 @@ wxArcPathRgn::wxArcPathRgn(wxDC *dc_for_scale,
 Bool wxArcPathRgn::Install(long target, Bool reverse, Bool align)
 {
   double xx, yy, ww, hh;
-  long m;
+  cairo_matrix_p m;
 
-  m = PrepareScale(target, TRUE, align);
+  PrepareScale(target, TRUE, align, &m);
 
   xx = XFormXB(x, align);
   yy = XFormYB(y, align);
@@ -1611,7 +1607,7 @@ Bool wxArcPathRgn::Install(long target, Bool reverse, Bool align)
   }
 #endif
 
-  RestoreScale(target, m, align);
+  RestoreScale(target, align, &m);
 
   return FALSE;
 }

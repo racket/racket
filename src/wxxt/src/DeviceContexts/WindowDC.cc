@@ -49,14 +49,7 @@
 #endif
 #include <X11/Intrinsic.h>
 
-#ifdef WX_USE_CAIRO
-extern "C" {
-# include <cairo.h>
-# ifndef WX_CAIRO_NO_XLIBH
-#  include <cairo-xlib.h>
-# endif
-};
-#endif
+#include "../wx_cairo.h"
 
 #define  UseXtRegions
 #include "wx_rgn.h"
@@ -1213,20 +1206,20 @@ void wxWindowDC::DrawArc(double x, double y, double w, double h, double start, d
     
     if (SetCairoPen()) {
       double xx, yy, ww, hh;
-      cairo_matrix_t *m;
+      cairo_matrix_p m;
 
       xx = SmoothingXFormX(x);
       yy = SmoothingXFormY(y);
       ww = SmoothingXFormWL(w, x);
       hh = SmoothingXFormHL(h, y);
       
-      m = cairo_matrix_create();
+      cairo_set_matrix_create(m);
       cairo_current_matrix (CAIRO_DEV, m);
       cairo_translate(CAIRO_DEV, xx, yy);
       cairo_scale(CAIRO_DEV, ww, hh);
       cairo_new_path(CAIRO_DEV);
       cairo_arc_negative(CAIRO_DEV, 0.5, 0.5, 0.5, start, end);
-      cairo_set_matrix(CAIRO_DEV, m);
+      cairo__set_matrix(CAIRO_DEV, m);
       cairo_stroke(CAIRO_DEV);
       cairo_matrix_destroy(m);
     }
@@ -3616,9 +3609,10 @@ void wxWindowDC::InitCairoDev()
 {
   if (!X->cairo_dev) {
     cairo_t *dev;
+    double ww, hh;
 
-    dev = cairo_create();
-    cairo_set_target_drawable(dev, wxAPP_DISPLAY, DRAWABLE);
+    GetSize(&ww, &hh);
+    cairo_set_create_xlib(dev, wxAPP_DISPLAY, DRAWABLE, wxAPP_VISUAL, (int)ww, (int)hh);
     X->cairo_dev = (long)dev;
     X->reset_cairo_clip = 1;
   }
