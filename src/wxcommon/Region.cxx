@@ -34,6 +34,10 @@ typedef struct {
 # define PATH_GP ((GraphicsPath *)target)
 #endif
 
+#ifndef WX_USE_CAIRO
+typedef cairo_matrix_p int;
+#endif
+
 wxRegion::wxRegion(wxDC *_dc, wxRegion *r, Bool _no_prgn)
 {
   dc = _dc;
