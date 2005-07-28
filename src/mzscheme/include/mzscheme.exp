@@ -296,7 +296,6 @@ scheme_print_to_string
 scheme_write_to_string_w_max
 scheme_display_to_string_w_max
 scheme_print_to_string_w_max
-scheme_print_to_string_w_max
 scheme_debug_print
 scheme_flush_output
 scheme_format
@@ -337,7 +336,6 @@ scheme_close_input_port
 scheme_close_output_port
 scheme_write_special
 scheme_write_special_nonblock
-scheme_make_read_evt
 scheme_make_write_evt
 scheme_make_port_type
 scheme_make_input_port
@@ -359,7 +357,6 @@ scheme_make_fd_output_port
 scheme_make_byte_string_input_port
 scheme_make_sized_byte_string_input_port
 scheme_make_byte_string_output_port
-scheme_get_byte_string_output
 scheme_get_sized_byte_string_output
 scheme_pipe
 scheme_pipe_with_limit

@@ -341,7 +341,6 @@
   scheme_extension_table->scheme_write_to_string_w_max = scheme_write_to_string_w_max;
   scheme_extension_table->scheme_display_to_string_w_max = scheme_display_to_string_w_max;
   scheme_extension_table->scheme_print_to_string_w_max = scheme_print_to_string_w_max;
-  scheme_extension_table->scheme_print_to_string_w_max = scheme_print_to_string_w_max;
   scheme_extension_table->scheme_debug_print = scheme_debug_print;
   scheme_extension_table->scheme_flush_output = scheme_flush_output;
   scheme_extension_table->scheme_format = scheme_format;
@@ -382,7 +381,6 @@
   scheme_extension_table->scheme_close_output_port = scheme_close_output_port;
   scheme_extension_table->scheme_write_special = scheme_write_special;
   scheme_extension_table->scheme_write_special_nonblock = scheme_write_special_nonblock;
-  scheme_extension_table->scheme_make_read_evt = scheme_make_read_evt;
   scheme_extension_table->scheme_make_write_evt = scheme_make_write_evt;
   scheme_extension_table->scheme_make_port_type = scheme_make_port_type;
   scheme_extension_table->scheme_make_input_port = scheme_make_input_port;
@@ -404,7 +402,6 @@
   scheme_extension_table->scheme_make_byte_string_input_port = scheme_make_byte_string_input_port;
   scheme_extension_table->scheme_make_sized_byte_string_input_port = scheme_make_sized_byte_string_input_port;
   scheme_extension_table->scheme_make_byte_string_output_port = scheme_make_byte_string_output_port;
-  scheme_extension_table->scheme_get_byte_string_output = scheme_get_byte_string_output;
   scheme_extension_table->scheme_get_sized_byte_string_output = scheme_get_sized_byte_string_output;
   scheme_extension_table->scheme_pipe = scheme_pipe;
   scheme_extension_table->scheme_pipe_with_limit = scheme_pipe_with_limit;

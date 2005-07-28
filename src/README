@@ -29,14 +29,10 @@ Please report bugs via one of the following:
 To compile with Microsoft Visual C, read the instructions in
 plt\src\worksp\README.
 
-To compile MzScheme with Cygwin tools, follow the Unix instructions
-below. MrEd does not compile with Cygwin.
-
-Regardless of the compiler used to build MzScheme, compatible
-extensions can be built with any of the other compilers. For example,
-to support Borland-built extensions after compiling MzScheme with MSVC
-or Cygwin, cd to plt\src\mzscheme\dynsrc and run mkbordyn.bat. (The
-mkbordyn.bat script requires bcc23.exe.)
+To compile with Cygwin tools, follow the Unix instructions below, and
+be sure to configure with --enable-shared. The result is a Unix-style
+build, not a Windows-style build (e.g., MzScheme's `system-type'
+procedure returns 'unix, not 'windows, and MrEd uses X11).
 
 ========================================================================
  Compiling for Mac OS X
@@ -68,8 +64,7 @@ the Unix instructions below, but note the following:
    'unix.
 
 ========================================================================
- Compiling for supported Unix variants (including Linux)
-               or Cygwin (MzScheme only)
+ Compiling for supported Unix variants (including Linux) or Cygwin
 ========================================================================
 
  0. If you have an old PLT installation in the target directory,
@@ -143,7 +138,7 @@ the Unix instructions below, but note the following:
 
  2. Run `make'. [As noted in step 0, this must be GNU `make'.]
 
-    With Cygwin, use `make --unix'.
+    With Cygwin, you may need to use `make --unix'.
 
     Binaries and libraries are placed in subdirectories of the build
     directory. For example, the `mzscheme' binary appears in the
@@ -170,19 +165,11 @@ the Unix instructions below, but note the following:
     --enabled-shared, beware that you may accumlate many old, unused
     versions of the dynamic libraries in plt/lib.
 
- 4a. ONLY Cygwin: Create the other executables (besides mred.exe and
-     mzscheme.exe) by running
-        mzscheme.exe -mvqM- setup
-    in the plt directory (one directory up from here). The above makes
-    the .zo files, too, but add -n to the end of the command to skip
-    the .zo-compiling step. Afterwards, `plt/Setup PLT.exe' and
-    `plt/mzc.exe' work.
-
- 4b. ONLY Subversion users with in-place builds: the `make install'
-     step does not run plt/install for an in-place build, because old
-     .zo files typically need to be deleted, first. After an initial
-     in-place build, manually run ./install in the plt directory. For
-     later builds, manually run plt/bin/setup-plt.
+ 4. ONLY Subversion users with in-place builds: the `make install'
+    step does not run plt/install for an in-place build, because old
+    .zo files typically need to be deleted, first. After an initial
+    in-place build, manually run ./install in the plt directory. For
+    later builds, manually run plt/bin/setup-plt.
 
 After an "in-place" install without Subversion, the plt/src directory
 is no longer needed, and it can be safely deleted. Build information

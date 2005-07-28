@@ -102,7 +102,7 @@ mred : $(MZSCHEME) mrmain.@LTO@ $(MREDOBJECTS) $(@WXLIBS@) $(MRSTATIC_STUB)
 	$(MREDLINKER) $(MREDLDFLAGS) $(MRSTATIC) -o mred $(MREDOBJECTS) $(MREDLDLIBS) $(MRSTATIC_STUB)
 
 libmred.@LIBSFX@: $(WXLIBSNORM)
-	$(AR) $(ARFLAGS) libmred.@LIBSFX@ $(WXLIBSNORM)
+	$(AR) $(ARFLAGS) libmred.@LIBSFX@ $(WXLIBSNORM) @LIBMRED_DEP@
 
 MRFW = PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd
 MRFWRES = PLT_MrEd.framework/Versions/$(FWVERSION)/Resources/PLT_MrEd.rsrc

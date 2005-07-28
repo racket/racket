@@ -605,6 +605,8 @@
 
 # define REGISTER_POOR_MACHINE
 
+# define LINK_EXTENSIONS_BY_TABLE
+
 # define FLAGS_ALREADY_SET
 
 #endif

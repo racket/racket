@@ -45,6 +45,7 @@ normal-bin:
 	$(MAKE) mzlibrary
 	$(MAKE) mzscheme 
 
+# OBSOLTE:
 cygwin-bin:
 	$(MAKE) starter
 	$(MAKE) dynlib
@@ -72,6 +73,7 @@ oe:
 	$(MAKE) dynlib
 	cd dynsrc; $(MAKE) oe
 
+# OBSOLTE:
 cygwin-dll-setup:
 	cd src; $(MAKE) mzheaders
 	$(MAKE) gmzwin.exp
@@ -108,7 +110,7 @@ mzlibrary:
 	$(MAKE) libmzscheme.@LIBSFX@
 
 libmzscheme.@LIBSFX@: src/*.@LTO@ @FOREIGN_LIB_IF_USED@
-	$(AR) $(ARFLAGS) libmzscheme.@LIBSFX@ src/*.@LTO@ @FOREIGN_OBJSLIB_IF_USED@
+	$(AR) $(ARFLAGS) libmzscheme.@LIBSFX@ src/*.@LTO@ @FOREIGN_OBJSLIB_IF_USED@ @LIBMZSCHEME_DEP@
 	$(RANLIB) libmzscheme.@LIBSFX@
 
 # Irix sproc, only
@@ -121,6 +123,7 @@ mzscheme@NOT_OSX@: libmzscheme.@LIBSFX@ libmzgc.@LIBSFX@ main.@LTO@ $(SPECIALIZI
 	@MZLINKER@ -o mzscheme main.@LTO@ $(SPECIALIZINGOBJECTS) libmzscheme.@LIBSFX@ libmzgc.@LIBSFX@ @LDFLAGS@ @LIBS@
 
 # Cygwin ----------------------------------------
+# OBSOLTE:
 
 libmzgcxxxxxxx.dll : libmzgc.a
 	gcc -mdll -o libmzgcxxxxxxx.dll -Wl,--whole-archive libmzgc.a -Wl,--no-whole-archive
@@ -267,11 +270,10 @@ ICP=@ICP@
 # Prefix might be relative to srcdir, or it might be absolute, so we
 # have to go up and install things from there.
 
-normal-install:
+unix-install:
 	cd ..; if [ ! -d $(prefix)/bin ] ; then mkdir $(prefix)/bin ; fi
 	cd ..; rm -f $(prefix)/bin/mzscheme
 	cd ..; if [ ! -d $(LIBIDIR) ] ; then mkdir $(LIBIDIR) ; fi
-	cd ..; cp mzscheme/mzdyn.o $(LIBIDIR)/mzdyn.o
 	cd ..; $(ICP) mzscheme/libmzgc.@LIBSFX@ $(LIBIDIR)/libmzgc.@LIBSFX@
 	cd ..; $(ICP) mzscheme/libmzscheme.@LIBSFX@ $(LIBIDIR)/libmzscheme.@LIBSFX@
 	cd ..; $(ICP) mzscheme/mzscheme `(cd $(prefix); pwd)`/bin/mzscheme
@@ -281,6 +283,10 @@ normal-install:
 	cd ..; echo 'MZOPTIONS=@MZOPTIONS@' >> $(BUILDINFO)
 	cd ..; echo "LDFLAGS=@LDFLAGS@" >> $(BUILDINFO)
 	cd ..; echo 'LIBS=@LIBS@' >> $(BUILDINFO)
+
+normal-install:
+	$(MAKE) unix-install
+	cd ..; cp mzscheme/mzdyn.o $(LIBIDIR)/mzdyn.o	
 
 MZFWDIR = @FRAMEWORK_INSTALL_DIR@/PLT_MzScheme.framework
 
@@ -306,6 +312,7 @@ install-3m@OSX@:
 WLIBIDIR=`(cd $(prefix); pwd)`/lib
 WBUILDINFO=$(WLIBIDIR)/buildinfo
 
+# OBSOLTE:
 cygwin-install:
 	cd ..; rm -f $(prefix)/mzscheme.exe
 	cd ..; cp mzscheme/mzscheme.exe $(prefix)/mzscheme.exe
@@ -317,6 +324,10 @@ cygwin-install:
 	cd ..; echo 'CC=gcc' > $(WBUILDINFO)
 	cd ..; echo 'CFLAGS=@CFLAGS@ @OPTIONS@' >> $(WBUILDINFO)
 	cd ..; echo 'LIBS=@LIBS@' >> $(WBUILDINFO)
+
+unix-cygwin-install:
+	$(MAKE) unix-install
+	cd dynsrc; $(MAKE) cygwin-install	
 
 config:
 	autoconf $(srcdir)/configure.ac | mzscheme -qr $(srcdir)/clean_ac.ss > $(srcdir)/../configure

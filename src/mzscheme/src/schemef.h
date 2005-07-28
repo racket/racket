@@ -609,7 +609,6 @@ MZ_EXTERN char *scheme_print_to_string(Scheme_Object *obj, long *len);
 MZ_EXTERN char *scheme_write_to_string_w_max(Scheme_Object *obj, long *len, long maxl);
 MZ_EXTERN char *scheme_display_to_string_w_max(Scheme_Object *obj, long *len, long maxl);
 MZ_EXTERN char *scheme_print_to_string_w_max(Scheme_Object *obj, long *len, long maxl);
-MZ_EXTERN char *scheme_print_to_string_w_max(Scheme_Object *obj, long *len, long maxl);
 MZ_EXTERN void scheme_debug_print(Scheme_Object *obj);
 MZ_EXTERN void scheme_flush_output(Scheme_Object *port);
 
@@ -674,10 +673,6 @@ MZ_EXTERN void scheme_close_output_port(Scheme_Object *port);
 MZ_EXTERN Scheme_Object *scheme_write_special(int argc, Scheme_Object *argv[]);
 MZ_EXTERN Scheme_Object *scheme_write_special_nonblock(int argc, Scheme_Object *argv[]);
 
-MZ_EXTERN Scheme_Object *scheme_make_read_evt(const char *who, Scheme_Object *port,
-					      char *str, long start, long size,
-					      int peek, Scheme_Object *peek_skip,
-					      int byte_or_spec);
 MZ_EXTERN Scheme_Object *scheme_make_write_evt(const char *who, Scheme_Object *port,
 					       Scheme_Object *special, char *str, long start, long size);
 
@@ -732,7 +727,6 @@ MZ_EXTERN Scheme_Object *scheme_make_fd_output_port(int fd, Scheme_Object *name,
 MZ_EXTERN Scheme_Object *scheme_make_byte_string_input_port(const char *str);
 MZ_EXTERN Scheme_Object *scheme_make_sized_byte_string_input_port(const char *str, long len);
 MZ_EXTERN Scheme_Object *scheme_make_byte_string_output_port();
-MZ_EXTERN char *scheme_get_byte_string_output(Scheme_Object *);
 MZ_EXTERN char *scheme_get_sized_byte_string_output(Scheme_Object *, long *len);
 
 MZ_EXTERN void scheme_pipe(Scheme_Object **read, Scheme_Object **write);

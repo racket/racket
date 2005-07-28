@@ -314,7 +314,7 @@ ac_subdirs_all="$ac_subdirs_all foreign/gcc/libffi"
 ac_subdirs_all="$ac_subdirs_all llvm/llvm"
 ac_subdirs_all="$ac_subdirs_all wxcommon/jpeg"
 ac_subdirs_all="$ac_subdirs_all wxxt/src/x/wbuild"
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP EGREP CXX CXXFLAGS ac_ct_CXX CXXCPP RANLIB ac_ct_RANLIB PERL X_CFLAGS X_PRE_LIBS X_LIBS X_EXTRA_LIBS PREFLAGS COMPFLAGS PROFFLAGS SED AS AR STATIC_AR ARFLAGS WBUILD CC_FOR_BUILD REZ MZLINKER PLAIN_CC x_includes x_libraries OPTIONS MZOPTIONS CGCOPTIONS GC2OPTIONS MROPTIONS GCDIR MZBINTARGET MZINSTALLTARGET EXTRA_GMP_OBJ OSX NOT_OSX FRAMEWORK_INSTALL_DIR MREDLINKER LIBSFX WXLIBS WXVARIANT ICP MRLIBINSTALL LIBFINISH MAKE_MRED MAKE_MRED3M MAKE_MREDINSTALL MAKE_MREDINSTALL3M MAKE_WBUILD MAKE_COPYTREE MAKE_FINISH WXPRECOMP USE_WXPRECOMP INCLUDEDEP WX_MMD_FLAG JPEG_A JPEG_INC ZLIB_A ZLIB_INC PNG_A OSKHOME EXTRA_OSK_LIBS FOREIGN_OBJSLIB_IF_USED FOREIGN_LIB_IF_USED FOREIGN_OBJSLIB FOREIGN_CONVENIENCE FOREIGNTARGET LLVMTARGET LTO LTA subdirs LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP EGREP CXX CXXFLAGS ac_ct_CXX CXXCPP RANLIB ac_ct_RANLIB PERL X_CFLAGS X_PRE_LIBS X_LIBS X_EXTRA_LIBS PREFLAGS COMPFLAGS PROFFLAGS SED AS AR STATIC_AR ARFLAGS WBUILD CC_FOR_BUILD REZ MZLINKER PLAIN_CC x_includes x_libraries OPTIONS MZOPTIONS CGCOPTIONS GC2OPTIONS MROPTIONS GCDIR MZBINTARGET MZINSTALLTARGET EXTRA_GMP_OBJ OSX NOT_OSX FRAMEWORK_INSTALL_DIR MREDLINKER LIBSFX WXLIBS WXVARIANT ICP MRLIBINSTALL LIBFINISH MAKE_MRED MAKE_MRED3M MAKE_MREDINSTALL MAKE_MREDINSTALL3M MAKE_WBUILD MAKE_COPYTREE MAKE_FINISH WXPRECOMP USE_WXPRECOMP INCLUDEDEP WX_MMD_FLAG JPEG_A JPEG_INC ZLIB_A ZLIB_INC PNG_A OSKHOME EXTRA_OSK_LIBS FOREIGN_OBJSLIB_IF_USED FOREIGN_LIB_IF_USED FOREIGN_OBJSLIB FOREIGN_CONVENIENCE FOREIGNTARGET LIBMZSCHEME_DEP LIBMRED_DEP LLVMTARGET LTO LTA subdirs LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -5127,6 +5127,9 @@ PNG_A='$(PNG_A)'
 
 PREFLAGS="$CPPFLAGS"
 
+ar_libtool_no_undefined=""
+LIBMZSCHEME_DEP=""
+
 ###### OSKit stuff #######
 
 if test "${enable_oskit}" = "yes" ; then
@@ -8550,7 +8553,12 @@ case $OS in
     #  EXTRALIBS="$LIBS gmzwin.exp"
     #  MZOPTIONS="$MZOPTIONS -DGC_DLL"
     #  CGCOPTIONS="$CGCOPTIONS -DGC_DLL -DGC_BUILD -DUSE_MSVC_MD_LIBRARY -DMD_LIB_MAIN"
-    BUILD_CYGWIN_LIKE_UNIX=yes
+    MZINSTALLTARGET=unix-cygwin-install
+    if test "${enable_shared}" = "yes" ; then
+      ar_libtool_no_undefined=" -no-undefined"
+      LIBMZSCHEME_DEP="libmzgc.la -liconv"
+      LIBMRED_DEP="../mzscheme/libmzgc.la ../mzscheme/libmred.la"
+    fi
     ;;
   BeOS)
     if test "${enable_sgcdebug}" = "yes" ; then
@@ -10859,7 +10867,7 @@ if test "${enable_shared}" = "yes" ; then
     plt_lib_version=`grep " MZSCHEME_VERSION " ${srcdir}/mzscheme/src/schvers.h | cut -d '"' -f 2`
   fi
 
-  AR="${LTDIR}/libtool --mode=link $CC${need_gcc_static_libgcc} -release ${plt_lib_version} -rpath ${absprefix}/lib -o"
+  AR="${LTDIR}/libtool --mode=link $CC${need_gcc_static_libgcc}${ar_libtool_no_undefined} -release ${plt_lib_version} -rpath ${absprefix}/lib -o"
   STATIC_AR="${LTDIR}/libtool --mode=link $CC -o"
   ARFLAGS=""
   RANLIB=":"
@@ -10897,6 +10905,9 @@ fi
 ############## final output ################
 
 LIBS="$LIBS $EXTRALIBS"
+
+
+
 
 
 
@@ -11844,6 +11855,8 @@ s,@FOREIGN_LIB_IF_USED@,$FOREIGN_LIB_IF_USED,;t t
 s,@FOREIGN_OBJSLIB@,$FOREIGN_OBJSLIB,;t t
 s,@FOREIGN_CONVENIENCE@,$FOREIGN_CONVENIENCE,;t t
 s,@FOREIGNTARGET@,$FOREIGNTARGET,;t t
+s,@LIBMZSCHEME_DEP@,$LIBMZSCHEME_DEP,;t t
+s,@LIBMRED_DEP@,$LIBMRED_DEP,;t t
 s,@LLVMTARGET@,$LLVMTARGET,;t t
 s,@LTO@,$LTO,;t t
 s,@LTA@,$LTA,;t t

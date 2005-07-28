@@ -197,6 +197,9 @@ PNG_A='$(PNG_A)'
 
 PREFLAGS="$CPPFLAGS"
 
+ar_libtool_no_undefined=""
+LIBMZSCHEME_DEP=""
+
 ###### OSKit stuff #######
 
 if test "${enable_oskit}" = "yes" ; then
@@ -422,7 +425,12 @@ case $OS in
     #  EXTRALIBS="$LIBS gmzwin.exp"
     #  MZOPTIONS="$MZOPTIONS -DGC_DLL"
     #  CGCOPTIONS="$CGCOPTIONS -DGC_DLL -DGC_BUILD -DUSE_MSVC_MD_LIBRARY -DMD_LIB_MAIN"
-    BUILD_CYGWIN_LIKE_UNIX=yes
+    MZINSTALLTARGET=unix-cygwin-install
+    if test "${enable_shared}" = "yes" ; then
+      ar_libtool_no_undefined=" -no-undefined"
+      LIBMZSCHEME_DEP="libmzgc.la -liconv"
+      LIBMRED_DEP="../mzscheme/libmzgc.la ../mzscheme/libmred.la"
+    fi
     ;;
   BeOS)
     if test "${enable_sgcdebug}" = "yes" ; then
@@ -926,7 +934,7 @@ if test "${enable_shared}" = "yes" ; then
     plt_lib_version=`grep " MZSCHEME_VERSION " ${srcdir}/mzscheme/src/schvers.h | cut -d '"' -f 2`
   fi
 
-  AR="${LTDIR}/libtool --mode=link $CC${need_gcc_static_libgcc} -release ${plt_lib_version} -rpath ${absprefix}/lib -o"
+  AR="${LTDIR}/libtool --mode=link $CC${need_gcc_static_libgcc}${ar_libtool_no_undefined} -release ${plt_lib_version} -rpath ${absprefix}/lib -o"
   STATIC_AR="${LTDIR}/libtool --mode=link $CC -o"
   ARFLAGS=""
   RANLIB=":"
@@ -1043,6 +1051,9 @@ AC_SUBST(FOREIGN_LIB_IF_USED)
 AC_SUBST(FOREIGN_OBJSLIB)
 AC_SUBST(FOREIGN_CONVENIENCE)
 AC_SUBST(FOREIGNTARGET)
+
+AC_SUBST(LIBMZSCHEME_DEP)
+AC_SUBST(LIBMRED_DEP)
 
 AC_SUBST(LLVMTARGET)
 

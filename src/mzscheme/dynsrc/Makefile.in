@@ -46,6 +46,9 @@ ILIBDIR = $(prefix)/lib
 # Prefix might be relative to srcdir, or it might be absolute, so we
 # have to go up and install things from there.
 
+# Not obsolete --- the following is still used for Unix-style Cygwin, although
+# the generated .lib files are useful only when building extensions to be
+# linked with the MSVC-built MzScheme
 cygwin-install:
 	gcc -c -O2 -I$(builddir)/.. -I$(srcdir)/../include $(srcdir)/mzdyn.c
 	gcc -c $(srcdir)/init.cc
