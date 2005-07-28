@@ -1,12 +1,12 @@
 
-Version 299.105
-Added get-handle to window<%>
+Version 299.200, August 2005
 
-Version 299.104
+Added get-handle to window<%>
 Added open-output-text-editor
 Changed application-file-handler so that handler's result is
  used; #f tells Windows that the application won't quit
 
+----------------------------------------------------------------------
 
 Version 299.100, March 2005
 

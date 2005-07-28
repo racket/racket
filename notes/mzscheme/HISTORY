@@ -1,77 +1,71 @@
-Version 299.108
-\U allows up to 8 digits (again) instead of 6
-Changed char-lower-case? and char-upper-case?
-Added string-upcase, string-downcase, string-titlecase,
- string-foldcase, and char-foldcase
-In case-insenstive mode, symbols are case-folded instead
- of downcased (which is usually the same thing)
-Added prefix-all-defined and prefix-all-defined-except
- provide forms
-Changed collects/web-server request-bindings/raw
- to return an alist of bytes, not strings
-
-Version 299.107
-Changed expansion of internal definitions so that local
- macros that expand to definition forms can be used
- within the local definition set
-Added syntax-local-make-definition-context
-Added syntax-local-bind-syntaxes
-Added optional definition-context argument to
- local-expand and syntax-local-value
-
-Version 299.106
-Changed certification so that a reference cannot have more
- certificates than its binding, and lexical context gives
- syntax-quoted values inactive instead of active certificates
-Added sub-form for require: only
-
-Version 299.105
-TCP output ports are now block-buffered by default
-Changed file-stream-buffer-mode to work on more port types,
- including TCP ports and custom ports
-Added extra argument to make-input-port and make-output-port
- to get/set buffer mode
-Added define-serializable-class[*], externalizble<%>,
- class/derived, and inspect clause form to MzLib's "class.ss"
-Added define-struct/properties to MzLib's "struct.ss"
-
-Version 299.104
-Changed prop:custom-write value to a procedure that writes
- to a port
-Changed port-count-lines! and port-next-location to work
- on output-ports
-Changed make-output-port to take three new arguments:
- get-location procedure, count-lines! procedure,
- and initial position
-Added relocate-output-port, transplant-input-port,
- and transplant-output-port to MzLib's "port.ss"
-Removed pretty-print-display-string-handler from MzLib's
- "pretty.ss", and adapted protocol for hook procedures
- slightly (i.e., they usually must write to a given port)
-
-Version 299.103
-Added prop:custom-write, custom-write?, custom-write-accessor
-Changed read-syntax[/recursive] to remove the delta-list
- argument
-Changed read handler to remove the delta-list argument
-Changed read[-syntax]/recursive to produce a special-comment
- value when a comment is parsed (instead of reading the
- next datum)
-Changed make-input-port to take two new arguments: count-lines!
- procedure (defaults to void) and initial position
-Added relocate-input-port to port.ss
-
-Version 299.102
-Fixed all-from provides to include redundant imports from the
- indicated require
-When { or [ is disabled, it is treated as an illegal character
- instead of a symbol character by the reader
-Added module-provide-protected?
-Added readtables
-Added #reader
-Struct custodian can be #f to make it fully transparent
-Changed run-server in thread.ss to use the same parameterization
- for all connection threads
+Version 299.200, August 2005
+>> See MzScheme_300.txt for information on major changes since
+   version 209. Relatively minor changes are listed here.
+Ports:
+ TCP output ports are now block-buffered by default
+ Changed file-stream-buffer-mode to work on more port types,
+  including TCP ports and custom ports
+ Added extra argument to make-input-port and make-output-port
+  to get/set buffer mode
+ Changed port-count-lines! and port-next-location to work
+  on output-ports
+ Changed make-output-port to take three new arguments:
+  get-location procedure, count-lines! procedure,
+  and initial position
+ Changed make-input-port to take two new arguments: count-lines!
+  procedure (defaults to void) and initial position
+ Added relocate-input-port, relocate-output-port, transplant-input-port,
+  and transplant-output-port to MzLib's "port.ss"
+Strings and Unicode:
+ \U allows up to 8 digits instead of 6
+ Changed char-lower-case? and char-upper-case?
+ Added string-upcase, string-downcase, string-titlecase,
+  string-foldcase, and char-foldcase
+ In case-insenstive mode, symbols are case-folded instead
+  of downcased (which is usually the same thing)
+Reader:
+ Added #reader and readtables
+ When { or [ is disabled, it is treated as an illegal character
+  instead of a symbol character by the reader
+ Changed read-syntax[/recursive] to remove the delta-list
+  argument
+ Changed read handler to remove the delta-list argument
+ Changed read[-syntax]/recursive to produce a special-comment
+  value when a comment is parsed (instead of reading the
+  next datum)
+Printer:
+ Added custom struct writers through prop:custom-write,
+  custom-write?, custom-write-accessor
+Syntax and Macros:
+ Changed expansion of internal definitions so that local
+  macros that expand to definition forms can be used
+  within the local definition set
+ Added syntax-local-make-definition-context
+ Added syntax-local-bind-syntaxes
+ Added optional definition-context argument to
+  local-expand and syntax-local-value
+ Changed certification so that a reference cannot have more
+  certificates than its binding, and lexical context gives
+  syntax-quoted values inactive instead of active certificates
+ Added sub-form for require: only
+ Added module-provide-protected?
+ Fixed all-from provides to include redundant imports from the
+  indicated require
+ Added prefix-all-defined and prefix-all-defined-except
+  provide forms
+Structure Types:
+ Struct custodian can be #f to make it fully transparent
+Libraries:
+ Added define-serializable-class[*], externalizble<%>,
+  class/derived, and inspect clause form to MzLib's "class.ss"
+ Changed run-server in thread.ss to use the same parameterization
+  for all connection threads
+ Added define-struct/properties to MzLib's "struct.ss"
+ Removed pretty-print-display-string-handler from MzLib's
+  "pretty.ss", and adapted protocol for hook procedures
+  slightly (i.e., they usually must write to a given port)
+ Changed collects/web-server request-bindings/raw
+  to return an alist of bytes, not strings
 
 Version 299.100, March 2005
 >> See MzScheme_300.txt for information on major changes since
