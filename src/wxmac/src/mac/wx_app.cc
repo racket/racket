@@ -44,7 +44,7 @@ extern Bool doCallPreMouseEvent(wxWindow *in_win, wxWindow *win, wxMouseEvent *e
 extern WindowPtr MrEdMouseWindow(Point where);
 extern WindowPtr MrEdKeyWindow();
 
-extern void wxCheckRootFrame(Bool frame_present);
+extern void wxCheckRootFrame(WindowPtr w);
 
 int wxMenuBarHeight;
 
@@ -182,7 +182,7 @@ void wxApp::doMacPreEvent()
   WindowPtr w;
 
   w = FrontNonFloatingWindow();
-  wxCheckRootFrame(!!w);
+  wxCheckRootFrame(w);
   if (!w) {
     /* Maybe we just showed the root frame: */
     w = FrontNonFloatingWindow();

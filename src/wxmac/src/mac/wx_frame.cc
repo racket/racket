@@ -301,7 +301,7 @@ static OSStatus window_evt_handler(EventHandlerCallRef inHandlerCallRef,
       GetEventParameter(inEvent, kEventParamAttributes, typeUInt32, 
 			NULL, sizeof(a), NULL, &a);
       if (a & kWindowBoundsChangeUserDrag) {
-	/* DragWindow is somehow broken. It seems to confuse the struct
+	/* DragWindow is somehow confused by MrEd. It seems to confuse the struct
 	   and content regions, causing current bounds's height to become
 	   different from the original bound's height. To compensate,
 	   10.3 seems to ignore the hieght, but 10.4 doesn't. So we
@@ -328,7 +328,7 @@ static OSStatus window_evt_handler(EventHandlerCallRef inHandlerCallRef,
 	if (((c.bottom - c.top) == (s.bottom - s.top))
 	    && ((c.right - c.left) == (s.right - s.left))) {
 	  /* Struct size == content size? This is when the window
-	     manager is confused in 10.4. Subtract out the difference
+	     manager is confused by MrEd in 10.4. Subtract out the difference
 	     between the real content and structure regions. */
 	  int h, w, hdelta, wdelta;
 
@@ -614,6 +614,20 @@ void wxFrame::Maximize(Bool maximize)
       }
 
       ::ZoomWindowIdeal(theMacWindow, maximize ? inZoomOut : inZoomIn, &size);
+
+      if (maximize) {
+	/* MrEd somehow confuses Carbon about structure region versus content region.
+	   Subtract out the difference. */
+	Rect r;
+	wxArea *parea;
+	wxMargin pam;
+	parea = PlatformArea();
+	pam = parea->Margin();
+	GetWindowIdealUserState(theMacWindow, &r);
+	r.right -= pam.Offset(wxHorizontal);
+	r.bottom -= pam.Offset(wxVertical);
+	SetWindowIdealUserState(theMacWindow, &r);
+      }
 
       wxMacRecalcNewSize();
       
@@ -1005,16 +1019,17 @@ void wxFrame::SetTitle(char* title)
   }
 }
 
-void wxCheckRootFrame(Bool frame_present)
+void wxCheckRootFrame(WindowPtr w)
 {
-  if (frame_present) {
+  if (w) {
     /* Hide root frame, if any, in case it's shown */
     if (wxRootFrame) {
       wxMacDC *dc;
       WindowPtr theMacWindow;
       dc = wxRootFrame->MacDC();
       theMacWindow = GetWindowFromPort(dc->macGrafPort());
-      ::HideWindow(theMacWindow);
+      if (w != theMacWindow)
+	::HideWindow(theMacWindow);
     }
   } else {
     /* If all frames are closed/minimized, it's time for the root window (if any) */
@@ -1124,7 +1139,7 @@ void wxFrame::Show(Bool show)
       /* b/c may be optimized for hidden: */
       cMacDC->setCurrentUser(NULL);
 
-    wxCheckRootFrame(TRUE);
+    wxCheckRootFrame(theMacWindow);
   } else {
     if (cFocusWindow) {
       ReleaseFocus();
@@ -1149,7 +1164,7 @@ void wxFrame::Show(Bool show)
 	::HideWindow(theMacWindow);
       }
 
-    wxCheckRootFrame(FALSE);
+    wxCheckRootFrame(NULL);
   }
 }
 
