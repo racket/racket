@@ -52,9 +52,12 @@
       ;; Helpers to tell us about the selected linker in Windows:
       
       (define (still-win-gcc?)
-	(and (eq? 'windows (system-type))
-	     (let ([c (current-extension-linker)])
-	       (and c (regexp-match #"ld.exe$" (path-string->string c))))))
+	(or (and (eq? 'windows (system-type))
+		 (let ([c (current-extension-linker)])
+		   (and c (regexp-match #"ld.exe$" (path-string->string c)))))
+	    (and (eq? 'unix (system-type))
+		 (string=? "i386-cygwin"
+			   (path->string (system-library-subpath #f))))))
       (define (still-win-borland?)
 	(and (eq? 'windows (system-type))
 	     (let ([c (current-extension-linker)])
@@ -96,6 +99,10 @@
         (lambda ()
           (if (current-use-mzdyn) (s) null)))
 
+      (define msvc-linker-flags (list "/LD"))
+      (define win-gcc-linker-flags (list "--dll"))
+      (define borland-linker-flags (list "/Tpd" "/c"))
+
       (define (get-unix-link-flags)
 	(case (string->symbol (path->string (system-library-subpath #f)))
 	  [(sparc-solaris i386-solaris) (list "-G")]
@@ -111,11 +118,8 @@
 			    "-bnoentry")]
 	  [(parisc-hpux) (list "-b")]
 	  [(ppc-macosx ppc-darwin) (list "-bundle" "-flat_namespace" "-undefined" "suppress")]
+	  [(i386-cygwin) win-gcc-linker-flags]
 	  [else (list "-shared")]))
-
-      (define msvc-linker-flags (list "/LD"))
-      (define win-gcc-linker-flags (list "--dll"))
-      (define borland-linker-flags (list "/Tpd" "/c"))
       
       ;; See doc.txt:
       (define current-extension-linker-flags
@@ -159,7 +163,10 @@
       (define current-make-link-output-strings
 	(make-parameter
 	 (case (system-type)
-	   [(unix macosx) (lambda (s) (list "-o" (path-string->string s)))]
+	   [(unix macosx) 
+	    (case (string->symbol (path->string (system-library-subpath #f)))	    
+	      [(i386-cygwin) win-gcc-link-output-strings]
+	      [else (lambda (s) (list "-o" (path-string->string s)))])]
 	   [(windows) (cond
 		       [win-gcc? win-gcc-link-output-strings]
 		       [win-borland? borland-link-output-strings]
@@ -170,7 +177,7 @@
 	     (raise-type-error 'current-make-link-output-strings "procedure of arity 1" p))
 	   p)))
 
-      (define (make-win-link-libraries win-gcc? win-borland?)
+      (define (make-win-link-libraries win-gcc? win-borland? unix?)
 	(let* ([file (lambda (f)
 		       (path->string
 			(build-path std-library-dir 
@@ -192,12 +199,16 @@
                              (file (format s "xxxxxxx"))))
                          (f))))])
 	  (cond
-	   [win-gcc? (list (wrap-xxxxxxx (wrap-3m "libmzsch~a~~a.lib"))
-			   (wrap-xxxxxxx (drop-3m "libmzgc~a.lib"))
-			   (mzdyn-maybe (filethunk (wrap-3m "mzdyn~a.exp")))
-			   (mzdyn-maybe (filethunk (wrap-3m "mzdyn~a.o")))
-			   (file "init.o")
-			   (file "fixup.o"))]
+	   [win-gcc? (append
+		      (if unix?
+			  null
+			  (list (wrap-xxxxxxx (wrap-3m "libmzsch~a~~a.lib"))
+				(wrap-xxxxxxx (drop-3m "libmzgc~a.lib"))))
+		      (list
+		       (mzdyn-maybe (filethunk (wrap-3m "mzdyn~a.exp")))
+		       (mzdyn-maybe (filethunk (wrap-3m "mzdyn~a.o")))
+		       (file "init.o")
+		       (file "fixup.o")))]
 	   [win-borland? (map file (if (current-use-mzdyn)
                                      (list "mzdynb.obj")
                                      null))]
@@ -207,19 +218,23 @@
 		       (mzdyn-maybe (filethunk (wrap-3m "mzdyn~a.obj"))))])))
 
       (define (get-unix/macos-link-libraries)
-	(list (lambda ()
-		(if (current-use-mzdyn)
-                  (map (lambda (mz.o)
-                         (path->string (build-path std-library-dir mz.o)))
-                       ((wrap-3m "mzdyn~a.o")))
-                  null))))
+	(case (string->symbol (path->string (system-library-subpath #f)))
+	  [(i386-cygwin)
+	   (make-win-link-libraries #t #f #t)]
+	  [else
+	   (list (lambda ()
+		   (if (current-use-mzdyn)
+		       (map (lambda (mz.o)
+			      (path->string (build-path std-library-dir mz.o)))
+			    ((wrap-3m "mzdyn~a.o")))
+		       null)))]))
 
       ;; See doc.txt:
       (define current-standard-link-libraries
 	(make-parameter
 	 (case (system-type)
 	   [(unix macos macosx) (get-unix/macos-link-libraries)]
-	   [(windows) (make-win-link-libraries win-gcc? win-borland?)])
+	   [(windows) (make-win-link-libraries win-gcc? win-borland? #f)])
 	 (lambda (l)
 	   (unless (and (list? l) 
 			(andmap (lambda (s) (or (path-string? s)
@@ -252,7 +267,7 @@
 		      (current-extension-linker-flags win-gcc-linker-flags)
 		      (current-make-link-input-strings (lambda (s) (list (path-string->string s))))
 		      (current-make-link-output-strings win-gcc-link-output-strings)
-		      (current-standard-link-libraries (make-win-link-libraries #t #f)))]
+		      (current-standard-link-libraries (make-win-link-libraries #t #f #f)))]
 	     [(borland) (let ([f (find-executable-path "ilink32.exe" #f)])
 			  (unless f
 			    (error 'use-standard-linker "cannot find ilink32.exe"))
@@ -260,7 +275,7 @@
 			  (current-extension-linker-flags borland-linker-flags)
 			  (current-make-link-input-strings (lambda (s) (list (path-string->string s))))
 			  (current-make-link-output-strings borland-link-output-strings)
-			  (current-standard-link-libraries (make-win-link-libraries #f #t)))]
+			  (current-standard-link-libraries (make-win-link-libraries #f #t #f)))]
 	     [(msvc) (let ([f (find-executable-path "cl.exe" #f)])
 		       (unless f
 			 (error 'use-standard-linker "cannot find MSVC's cl.exe"))
@@ -268,7 +283,7 @@
 		       (current-extension-linker-flags msvc-linker-flags)
 		       (current-make-link-input-strings (lambda (s) (list (path-string->string s))))
 		       (current-make-link-output-strings msvc-link-output-strings)
-		       (current-standard-link-libraries (make-win-link-libraries #f #f)))]
+		       (current-standard-link-libraries (make-win-link-libraries #f #f #f)))]
 	     [else (bad-name name)])]
 	  [(macos)
 	   (case name
@@ -314,7 +329,7 @@
 		      (when (and dlltool basefile)
 			(let* ([dll-command
 				;; Generate DLL link information
-				`("--dllname" ,out 
+				`("--dllname" ,(if (path? out) (path->string out) out)
 				  ,@(if (current-use-mzdyn)
                                       `("--def" ,(path->string (build-path std-library-dir "gcc" "mzdyn.def")))
                                       `())
@@ -323,16 +338,20 @@
 			       ;; Command to link with new .exp, re-create .base:
 			       [command1
 				(map (lambda (s)
-				       (if (regexp-match "[.]exp$" s)
-					   (path->string expfile)
-					   s))
+				       (let ([s (if (path? s)
+						    (path->string s)
+						    s)])
+					 (if (regexp-match "[.]exp$" s)
+					     (path->string expfile)
+					     s)))
 				     command)]
 			       ;; Command to link with new .exp file, no .base needed:
 			       [command2
 				(let loop ([l command1])
 				  (cond
 				   [(null? l) null]
-				   [(string=? (car l) "--base-file")
+				   [(and (string? (car l))
+					 (string=? (car l) "--base-file"))
 				    (cddr l)]
 				   [else (cons (car l) (loop (cdr l)))]))])
 			  (unless quiet?

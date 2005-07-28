@@ -162,36 +162,42 @@
 	      [(rs6k-aix) (list "-lc")]
 	      [else null])
 	    
-	    (define (delete/continue x)
-	      (with-handlers ([(lambda (x) #t) void])
-		(delete-file x)))
-	    
-	    (make-directory* dir)
-	    
-	    (last-chance-k
-	     (lambda ()
-	       (make/proc
-		(list (list file.so 
-			    (list file.o)
-			    (lambda ()
-			      (link-extension #f (append (list file.o) 
-							 (if is-win?
-							     null
-							     (map (lambda (l)
-								    (string-append "-l" (string-path->string l)))
-								  (append find-unix-libs unix-libs))))
-					      file.so)))
-		      
-		      (list file.o 
-			    (append (list file.c)
-				    (filter (lambda (x)
-					      (regexp-match #rx#"mzdyn[a-z0-9]*[.]o" 
-							    (if (string? x)
-								x
-								(path->string x))))
-					    (expand-for-link-variant (current-standard-link-libraries)))
-				    headers
-				    extra-depends)
-			    (lambda ()
-			      (compile-extension #f file.c file.o ()))))
-		#())))))))))))
+	    (with-new-flags
+	     current-standard-link-libraries
+	     (case mach-id
+	       [(i386-cygwin) (list "-lc")]
+	       [else null])
+	     
+	     (define (delete/continue x)
+	       (with-handlers ([(lambda (x) #t) void])
+			      (delete-file x)))
+	     
+	     (make-directory* dir)
+	     
+	     (last-chance-k
+	      (lambda ()
+		(make/proc
+		 (list (list file.so 
+			     (list file.o)
+			     (lambda ()
+			       (link-extension #f (append (list file.o) 
+							  (if is-win?
+							      null
+							      (map (lambda (l)
+								     (string-append "-l" (string-path->string l)))
+								   (append find-unix-libs unix-libs))))
+					       file.so)))
+		       
+		       (list file.o 
+			     (append (list file.c)
+				     (filter (lambda (x)
+					       (regexp-match #rx#"mzdyn[a-z0-9]*[.]o" 
+							     (if (string? x)
+								 x
+								 (path->string x))))
+					     (expand-for-link-variant (current-standard-link-libraries)))
+				     headers
+				     extra-depends)
+			     (lambda ()
+			       (compile-extension #f file.c file.o ()))))
+		 #()))))))))))))

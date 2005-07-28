@@ -46,7 +46,14 @@
             (make-directory* tmp-dir)
             (compile-c-extension-parts c-files tmp-dir)
             (parameterize ([current-directory tmp-dir])
-              (link-extension #f (directory-list tmp-dir) so-name))
+              (link-extension #f (append 
+				  (directory-list tmp-dir) 
+				  (if (string=? "i386-cygwin"
+						(path->string (system-library-subpath #f)))
+				      ;; DLL needs every dependence explicit:
+				      '("-lc" "-lm" "-lcygwin" "-lkernel32")
+				      null))
+			      so-name))
             (delete-directory/files tmp-dir))))))
 
   (provide pre-installer)
