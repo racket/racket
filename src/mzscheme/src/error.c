@@ -2310,7 +2310,7 @@ static Scheme_Object *extract_syntax_locations(int argc, Scheme_Object **argv)
       loc = ((Scheme_Stx *)stx)->srcloc;
       loco = scheme_make_location(loc->src ? loc->src : scheme_false,
 				  (loc->line >= 0) ? scheme_make_integer(loc->line) : scheme_false,
-				  (loc->col >= 0) ? scheme_make_integer(loc->col) : scheme_false,
+				  (loc->col >= 0) ? scheme_make_integer(loc->col-1) : scheme_false,
 				  (loc->pos >= 0) ? scheme_make_integer(loc->pos) : scheme_false,
 				  (loc->span >= 0) ? scheme_make_integer(loc->span) : scheme_false);
       p = scheme_make_pair(loco, scheme_null);
