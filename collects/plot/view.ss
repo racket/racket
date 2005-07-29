@@ -233,7 +233,7 @@
       
       ; fill : (list-of number) (list-of number) -> void
       (define (fill xs ys)
-        (pl-fill (length xs) xs ys))
+        (pl-fill xs ys))
       
       ; plot-y-errors (listof (vector x y-min y-max)) ->nothing
       ; plots y error bars given a vector containing the x y and z (error magnitude) points
