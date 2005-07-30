@@ -330,7 +330,7 @@
   (define (find-implicit-import name type-recs level call-src)
     (lambda ()
       (let ((original-loc (send type-recs get-location))
-            (dir (find-directory (cdr name) (lambda () (file-error 'dir name call-src level)))))
+            (dir (find-directory (cdr name) (lambda () (file-error 'dir (cdr name) call-src level)))))
         (when (memq level '(beginner intermediate))
           (file-error 'file name call-src level))
         (import-class (car name) (cdr name) dir original-loc type-recs level call-src #f)

@@ -1319,10 +1319,17 @@
       (cond
         ((literal? exp)
          (make-type/env
-          (if (memq (expr-types exp) `(String string))
-              (begin (add-required c-class "String" `("java" "lang") type-recs)
-                     (set-expr-type exp string-type))
-              (expr-types exp)) env))
+          (cond
+            ((memq (expr-types exp) `(String string))
+             (add-required c-class "String" `("java" "lang") type-recs)
+             (set-expr-type exp string-type))
+            ((eq? (expr-types exp) 'image)
+             (get-record (send type-recs get-class-record '("Image" "draw2") #f
+                               ((get-importer type-recs) '("Image" "draw2")
+                                                         type-recs level (expr-src exp))) type-recs)
+             (add-required c-class "Image" `("draw2") type-recs)
+             (set-expr-type exp (make-ref-type "Image" '("draw2"))))
+            (else (expr-types exp))) env))
         ((bin-op? exp)
          (set-expr-type exp 
                         (check-bin-op (bin-op-op exp) (bin-op-left exp) (bin-op-right exp)

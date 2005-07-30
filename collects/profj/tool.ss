@@ -341,6 +341,7 @@
           
           (define/public (front-end/complete-program port settings teachpack-cache)
             (set! execute-types (create-type-record))
+            (mred? #t)
             (let ([name (object-name port)])
               (lambda ()
                 (syntax-as-top
@@ -349,6 +350,7 @@
                        eof 
                        (datum->syntax-object #f `(parse-java-full-program ,(parse port name level)) #f)))))))
           (define/public (front-end/interaction port settings teachpack-cache)
+            (mred? #t)
             (let ([name (object-name port)])
               (lambda ()
                 (if (eof-object? (peek-char-or-special port))
@@ -878,42 +880,47 @@
       ((is-a? value String) (list (format "~v" (send value get-mzscheme-string))))
       ((string? value) (list (format "~v" value)))
       ((or (is-a? value ObjectI) (supports-printable-interface? value))
-       (case style
-         ((type) (list (send value my-name)))
-         ((field)
-          (let* ((retrieve-fields (send value fields-for-display))
-                 (st (format "~a(" (send value my-name)))
-                 (new-tabs (+ num-tabs 3))
-                 (fields null))
-            (let loop ((current (retrieve-fields)))
-              (let ((next (retrieve-fields)))
-                (when current
-                  (set! fields 
-                        (append fields 
-                                (cons
-                                 (format "~a~a = "
-                                         (if newline? (if (eq? fields null)
-                                                          (format "~n~a" (get-n-spaces new-tabs))
-                                                          (get-n-spaces new-tabs)) "")
-                                         (car current))
-                                 (append
-                                  (if (memq (cadr current) already-printed)
-                                      (format-java-list (cadr current) full-print? 'type already-printed #f 0)
-                                      (format-java-list (cadr current) full-print? style 
-                                                        (cons value already-printed) newline?
-                                                        (if newline? 
-                                                            (+ new-tabs (string-length (car current)) 3)
-                                                            num-tabs)))
-                                  (list (format "~a~a" 
-                                                (if next "," "")
-                                                (if newline? (format "~n") " ")))))))
-                  (loop next))))
-            (cons st 
-                  (append
-                   (if (> (length fields) 1) 
-                       (reverse (cdr (reverse fields))) null) (list ")")))))
-         (else (list (send value my-name)))))
-      (else (list value))))
+       (cond 
+         ((equal? "Image" (send value my-name))
+          ;(printf "~a~n" ((send value fields-for-display)))
+          (list (cadr ((send value fields-for-display)))))
+         (else
+          (case style
+            ((type) (list (send value my-name)))
+            ((field)
+             (let* ((retrieve-fields (send value fields-for-display))
+                    (st (format "~a(" (send value my-name)))
+                    (new-tabs (+ num-tabs 3))
+                    (fields null))
+               (let loop ((current (retrieve-fields)))
+                 (let ((next (retrieve-fields)))
+                   (when current
+                     (set! fields 
+                           (append fields 
+                                   (cons
+                                    (format "~a~a = "
+                                            (if newline? (if (eq? fields null)
+                                                             (format "~n~a" (get-n-spaces new-tabs))
+                                                             (get-n-spaces new-tabs)) "")
+                                            (car current))
+                                    (append
+                                     (if (memq (cadr current) already-printed)
+                                         (format-java-list (cadr current) full-print? 'type already-printed #f 0)
+                                         (format-java-list (cadr current) full-print? style 
+                                                           (cons value already-printed) newline?
+                                                           (if newline? 
+                                                               (+ new-tabs (string-length (car current)) 3)
+                                                               num-tabs)))
+                                     (list (format "~a~a" 
+                                                   (if next "," "")
+                                                   (if newline? (format "~n") " ")))))))
+                     (loop next))))
+               (cons st 
+                     (append
+                      (if (> (length fields) 1) 
+                          (reverse (cdr (reverse fields))) null) (list ")")))))
+            (else (list (send value my-name)))))))
+          (else (list value))))
 
   
   ;array->string: java-value int int bool symbol (list value) -> string

@@ -5,12 +5,17 @@
   ;; chapter 3.
   ;; Lacks all Unicode support
   
-  
-  (require (lib "lex.ss" "parser-tools")
+  (require (lib "class.ss")
+           (lib "lex.ss" "parser-tools")
            (prefix re: (lib "lex-sre.ss" "parser-tools"))
            (lib "parameters.ss" "profj"))
   
-  (provide (all-defined))
+  (define (image-snip%)
+    (if (mred?)
+      	(dynamic-require '(lib "mred.ss" "mred") 'image-snip%)
+        (class object% (super-instantiate ()))))
+  
+  (provide (all-defined-except image-snip%))
   (define-struct test-case (test))
   (define-struct example-box (contents))
   (define-struct interact-case (box))
@@ -46,7 +51,8 @@
                  (STRING_LIT CHAR_LIT INTEGER_LIT LONG_LIT FLOAT_LIT DOUBLE_LIT 
                              IDENTIFIER STRING_ERROR NUMBER_ERROR HEX_LIT OCT_LIT HEXL_LIT OCTL_LIT))
   
-  (define-tokens special-toks (CLASS_BOX INTERACTIONS_BOX EXAMPLE TEST_SUITE OTHER_SPECIAL))
+  (define-tokens special-toks (CLASS_BOX INTERACTIONS_BOX EXAMPLE TEST_SUITE 
+                                         IMAGE_SPECIAL OTHER_SPECIAL))
   
   (define (trim-string s f l)
     (substring s f (- (string-length s) l)))
@@ -316,15 +322,13 @@
       (syntax-case lexeme ()
         ((parse-example-box examples) (token-EXAMPLE (make-example-box (syntax examples))))
         (_ 
-         (if (syntax-property lexeme 'test-case-box)
-             (token-TEST_SUITE (make-test-case lexeme))
-             (token-OTHER_SPECIAL (list lexeme start-pos end-pos))))))
+         (cond
+           ((and (syntax? lexeme) (syntax-property lexeme 'test-case-box))
+            (token-TEST_SUITE (make-test-case lexeme)))
+           ((is-a? lexeme (image-snip%))
+            (token-IMAGE_SPECIAL lexeme))
+           ((token-OTHER_SPECIAL (list lexeme start-pos end-pos)))))))
      
-      #;(begin(printf "lexing a special")
-            (syntax-case lexeme ()
-              ((test-case equal? exp1 exp2 exp3 exp4)
-               (token-TEST_SUITE (make-test-case (syntax exp1) (syntax exp2) (syntax exp3) (syntax exp4))))
-              (_ (token-OTHER_SPECIAL (list lexeme start-pos end-pos)))))
       #;(cond
         ((class-case? lexeme) (token-CLASS_BOX lexeme))
         ((interact-case? lexeme) (token-INTERACTIONS_BOX lexeme))
