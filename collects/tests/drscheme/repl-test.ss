@@ -20,7 +20,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
   
   (define-struct loc (line col offset))
   ;; loc = (make-loc number number number)
-  ;; numbers in loc structs start at zero.
+  ;; all numbers in loc structs start at zero.
   
   (define-struct test (program
                        ;; : (union 
@@ -116,7 +116,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
      (make-test "("
                 "~aread: expected a ')'"
                 "~aread: expected a ')'"
-                #t
+                #f
                 (cons (make-loc 0 0 0) (make-loc 0 1 1))
 		'read
                 #f
@@ -126,7 +126,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
      (make-test "."
                 "~aread: illegal use of \".\""
                 "~aread: illegal use of \".\""
-                #t
+                #f
                 (cons (make-loc 0 0 0) (make-loc 0 1 1))
                 'read
                 #f
@@ -136,7 +136,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
      (make-test "(lambda ())"
                 "~alambda: bad syntax in: (lambda ())"
                 "~alambda: bad syntax in: (lambda ())"
-                #t
+                #f
                 (cons (make-loc 0 0 0) (make-loc 0 11 11))
 		'expand
                 #t
@@ -512,7 +512,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 void)
      
      (make-test "(current-namespace (make-namespace 'empty))\nif"
-                "~acompile: bad syntax; reference to top-level identifiers is not allowed, because no #%top syntax transformer is bound in: if"
+                "~acompile: bad syntax; reference to top-level identifier is not allowed, because no #%top syntax transformer is bound in: if"
                 #f
                 #f
 		(cons (make-loc 1 0 44) (make-loc 1 0 46))
@@ -563,8 +563,8 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
      
      ;; should produce a syntax object with a turn-down triangle.
      (make-test "(write (list (syntax x)))" 
-                "({syntax-snip})"
-                "({syntax-snip})"
+                "({embedded \".#<syntax:1:21>\"})"
+                "({embedded \".#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp.ss:1:21>\"})"
                 #f
                 'interactions
                 #f
@@ -665,8 +665,8 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
      (make-test (list "(" '("Special" "Insert λ") "())")
                 "~aλ: bad syntax in: (λ ())"
                 "~aλ: bad syntax in: (λ ())"
-                #t
-                (cons (make-loc 0 0 0) (make-loc 0 11 11))
+                #f
+                (cons (make-loc 0 0 0) (make-loc 0 5 5))
 		'expand
                 #t
                 #f
@@ -765,6 +765,8 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                                   (number->string (+ 1 (loc-line (car source-location)))))]
                  [start-col (and source-location-in-message
                                  (number->string (loc-col (car source-location))))]
+                 [start-pos (and (pair? source-location)
+                                 (number->string (+ 1 (loc-offset (car source-location)))))]
                  [formatted-execute-answer
                   (let* ([w/backtrace
                           (if (and (test-has-backtrace? in-vector)
@@ -782,29 +784,40 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                  [load-answer (test-load-answer in-vector)]
                  [formatted-load-answer
                   (and load-answer
-                       (let* ([w/file-icon
-                               (if raw?
-                                   (if source-location-in-message
-                                       (string-append file-image-string " " load-answer)
-                                       load-answer)
-                                   (if (or (eq? source-location 'definitions)
-                                           (pair? source-location))
-                                       (string-append file-image-string " " load-answer)
-                                       load-answer))]
-                              [w/backtrace
-                               (if raw?
-                                   w/file-icon
-                                   (if (or (eq? source-location 'definitions)
-                                           (pair? source-location))
-                                       (string-append backtrace-image-string " " w/file-icon)
-                                       w/file-icon))])
-                         (if source-location-in-message
-                             (format w/file-icon 
-                                     (format "~a:~a:~a: "
-                                             short-tmp-load-filename
-                                             start-line
-                                             start-col))
-                             w/file-icon)))]
+                       (let ([line-col-loc-str
+                              (and source-location-in-message
+                                   (format "~a:~a:~a: "
+                                           short-tmp-load-filename
+                                           start-line
+                                           start-col))]
+                             [pos-col-str
+                              (if (pair? source-location)
+                                  (format "~a::~a:"
+                                          short-tmp-load-filename
+                                          start-pos)
+                                  "")])
+                         (if raw?
+                             (if source-location-in-message
+                                 (string-append file-image-string 
+                                                " " 
+                                                (format load-answer line-col-loc-str))
+                                 load-answer)
+                             (cond
+                               [source-location-in-message
+                                ;; syntax error or read time error, so has a back trace
+                                ;; (the call to load) and line/col info
+                                (string-append backtrace-image-string " " 
+                                               file-image-string " "
+                                               (format load-answer line-col-loc-str))]
+                               [(or (eq? source-location 'definitions)
+                                    (pair? source-location))
+                                ;; run-time error, so has a backtrace (the call to to load)
+                                ;; but only offset info
+                                (string-append backtrace-image-string " " 
+                                               file-image-string " "
+                                               pos-col-str " "
+                                               load-answer)]
+                               [else load-answer]))))]
                  [breaking-test? (test-breaking-test? in-vector)])
             
             (setup)
@@ -984,5 +997,6 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
     
     ;(set-language-level! (list "PLT" "Graphical (MrEd)")) (kill-tests)
     
+    (run-test-in-language-level #t)
     (run-test-in-language-level #f)
-    (run-test-in-language-level #t)))
+    ))

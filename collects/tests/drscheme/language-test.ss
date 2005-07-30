@@ -118,7 +118,7 @@ the settings above should match r5rs
       (test-expression "(exact? 1.5)" "#f")
       
       (test-expression "(list 1)" "(1)")
-      (test-expression "(car (list))" "car: expects argument of type <pair>; given ()")
+      (test-expression "(car (list))" "{bug09.gif} car: expects argument of type <pair>; given ()")
 
       (test-expression "argv" "#0()")))
 
@@ -213,7 +213,7 @@ the settings above should match r5rs
       (test-expression ",1" "unquote: not in quasiquote in: (unquote 1)")
 
       (test-expression "(list 1)" "(1)")
-      (test-expression "(car (list))" "car: expects argument of type <pair>; given ()")
+      (test-expression "(car (list))" "{bug09.gif} car: expects argument of type <pair>; given ()")
       
       (test-expression "argv" "#0()")))
 
@@ -255,7 +255,8 @@ the settings above should match r5rs
                        "#f")
       (test-expression "(define x 1)(define x 2)" "")
       
-      (test-expression "(define-struct spider (legs))(make-spider 4)" "#<struct:spider>")
+      (test-expression "(define-struct spider (legs))(make-spider 4)" 
+                       "{bug09.gif} reference to undefined identifier: define-struct")
       
       (test-expression "(sqrt -1)" "0+1i")
 
@@ -269,27 +270,27 @@ the settings above should match r5rs
       (test-expression "(define (f car) 1)" "")
       (test-expression "(define (f empty) 1)" "")
       
-      (test-expression "call/cc" "#<primitive:call-with-current-continuation>")
+      (test-expression "call/cc" "{bug09.gif} reference to undefined identifier: call/cc")
       
-      (test-expression "(error 'a \"~a\" 1)" "{bug09.gif} a: 1")
-      (test-expression "(error \"a\" \"a\")" "{bug09.gif} a \"a\"")
+      (test-expression "(error 'a \"~a\" 1)" "{bug09.gif} reference to undefined identifier: error")
+      (test-expression "(error \"a\" \"a\")" "{bug09.gif} reference to undefined identifier: error")
       
       (test-expression "(time 1)" 
-                       #rx"cpu time: [0-9]+ real time: [0-9]+ gc time: [0-9]+\n1")
+                       "{bug09.gif} reference to undefined identifier: time")
       
       (test-expression "true" "{bug09.gif} reference to undefined identifier: true")
       (test-expression "mred^" "{bug09.gif} reference to undefined identifier: mred^")
       (test-expression "(eq? 'a 'A)" "#t")
       (test-expression "(set! x 1)" "{bug09.gif} set!: cannot set undefined identifier: x")
-      (test-expression "(cond [(= 1 2) 3])" "")
+      (test-expression "(cond ((= 1 2) 3))" "")
       (test-expression "(cons 1 2)" "(1 . 2)")
       (test-expression "'(1)" "(1)")
-      (test-expression "(define shrd (box 1)) (list shrd shrd)"
-                       "(#&1 #&1)")
+      (test-expression "(define shrd (cons 1 1)) (list shrd shrd)"
+                       "((1 . 1) (1 . 1))")
       (test-expression 
        "(local ((define x x)) 1)"
        #rx"define: not allowed in an expression context")
-      (test-expression "(letrec ([x x]) 1)" "1")
+      (test-expression "(letrec ((x x)) 1)" "1")
       (test-expression "(if 1 1 1)" "1")
       (test-expression "(+ 1)" "1")
 
@@ -308,13 +309,14 @@ the settings above should match r5rs
       (test-expression "779625/32258" "{number 779625/32258 \"24 5433/32258\" mixed}")
       (test-expression "(exact? 1.5)" "#f")
 
-      (test-expression "(let ([f (lambda (x) x)]) f)" "#<procedure:f>")
+      (test-expression "(let ((f (lambda (x) x))) f)" "#<procedure:f>")
       (test-expression ",1" "unquote: not in quasiquote in: (unquote 1)")
 
       (test-expression "(list 1)" "(1)")
-      (test-expression "(car (list))" "car: expects argument of type <pair>; given ()")
+      (test-expression "(car (list))"
+                       "{bug09.gif} car: expects argument of type <pair>; given ()")
 
-      (test-expression "argv" "#0()")))
+      (test-expression "argv" "{bug09.gif} reference to undefined identifier: argv")))
                                                         
 ;;                      ;                               
  ;                                                      
@@ -1062,7 +1064,7 @@ the settings above should match r5rs
       (clear-definitions drs)
       (for-each fw:test:keystroke
                 (string->list
-                 "(define (f n)\n(cond [(zero? n) null]\n[else (cons n (f (- n 1)))]))\n(f 200)"))
+                 "(define (f n)\n(cond ((zero? n) '())\n(else (cons n (f (- n 1))))))\n(f 200)"))
       (test "Constructor" #f #f
             (case-lambda
              [(x) (not (member #\newline (string->list x)))]

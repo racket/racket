@@ -316,62 +316,69 @@
         (if (eq? (simple-settings-printing-style settings) 'current-print)
             (parameterize ([current-output-port port])
               ((current-print) value))
-            (let ([converted-value
-                   (simple-module-based-language-convert-value value settings)]
-                  [use-number-snip?
+            (let ([converted-value (simple-module-based-language-convert-value value settings)])
+              (setup-printing-parameters 
+               (λ ()
+                 (cond
+                   [(simple-settings-insert-newlines settings)
+                    (if (number? width)
+                        (parameterize ([pretty-print-columns width])
+                          (pretty-print converted-value port))
+                        (pretty-print converted-value port))]
+                   [else
+                    (parameterize ([pretty-print-columns 'infinity])
+                      (pretty-print converted-value port))
+                    (newline port)]))
+               settings
+               width))))
+      
+      ;; setup-printing-parameters : (-> void) -> void
+      (define (setup-printing-parameters thunk settings width)
+        (let ([use-number-snip?
                    (λ (x)
                      (and (number? x)
                           (exact? x)
                           (real? x)
                           (not (integer? x))))])
-              (parameterize ([pretty-print-columns width]
-                             [pretty-print-size-hook
-                              (λ (value display? port)
-                                (cond
-                                  [(is-a? value snip%) 1]
-                                  [(use-number-snip? value) 1]
-                                  [(syntax? value) 1]
-                                  [(to-snip-value? value) 1]
-                                  [else #f]))]
-                             [pretty-print-print-hook
-                              (λ (value display? port)
-                                (cond
-                                  [(is-a? value snip%)
-                                   (write-special value port)
-                                   1]
-                                  [(use-number-snip? value)
-                                   (write-special
-                                    (case (simple-settings-fraction-style settings)
-                                      [(mixed-fraction) 
-                                       (number-snip:make-fraction-snip value #f)]
-                                      [(mixed-fraction-e)
-                                       (number-snip:make-fraction-snip value #t)]
-                                      [(repeating-decimal)
-                                       (number-snip:make-repeating-decimal-snip value #f)]
-                                      [(repeating-decimal-e)
-                                       (number-snip:make-repeating-decimal-snip value #t)])
-                                    port)
-                                   1]
-                                  [(syntax? value)
-                                   (write-special (render-syntax/snip value))]
-                                  [else (write-special (value->snip value))]))]
-                             [print-graph
-                              ;; only turn on print-graph when using `write' printing 
-                              ;; style because the sharing is being taken care of
-                              ;; by the print-convert sexp construction when using
-                              ;; other printing styles.
-                              (and (eq? (simple-settings-printing-style settings) 'write)
-                                   (simple-settings-show-sharing settings))])
-                (cond
-                  [(simple-settings-insert-newlines settings)
-                   (if (number? width)
-                       (parameterize ([pretty-print-columns width])
-                         (pretty-print converted-value port))
-                       (pretty-print converted-value port))]
-                  [else
-                   (parameterize ([pretty-print-columns 'infinity])
-                     (pretty-print converted-value port))
-                   (newline port)])))))
+          (parameterize ([pretty-print-columns width]
+                         [pretty-print-size-hook
+                          (λ (value display? port)
+                            (cond
+                              [(is-a? value snip%) 1]
+                              [(use-number-snip? value) 1]
+                              [(syntax? value) 1]
+                              [(to-snip-value? value) 1]
+                              [else #f]))]
+                         [pretty-print-print-hook
+                          (λ (value display? port)
+                            (cond
+                              [(is-a? value snip%)
+                               (write-special value port)
+                               1]
+                              [(use-number-snip? value)
+                               (write-special
+                                (case (simple-settings-fraction-style settings)
+                                  [(mixed-fraction) 
+                                   (number-snip:make-fraction-snip value #f)]
+                                  [(mixed-fraction-e)
+                                   (number-snip:make-fraction-snip value #t)]
+                                  [(repeating-decimal)
+                                   (number-snip:make-repeating-decimal-snip value #f)]
+                                  [(repeating-decimal-e)
+                                   (number-snip:make-repeating-decimal-snip value #t)])
+                                port)
+                               1]
+                              [(syntax? value)
+                               (write-special (render-syntax/snip value))]
+                              [else (write-special (value->snip value))]))]
+                         [print-graph
+                          ;; only turn on print-graph when using `write' printing 
+                          ;; style because the sharing is being taken care of
+                          ;; by the print-convert sexp construction when using
+                          ;; other printing styles.
+                          (and (eq? (simple-settings-printing-style settings) 'write)
+                               (simple-settings-show-sharing settings))])
+            (thunk))))
       
       ;; drscheme-inspector : inspector
       (define drscheme-inspector (current-inspector))
@@ -412,6 +419,15 @@
                  (error-display-handler))))
              (drscheme:debug:profiling-enabled (eq? annotations 'debug/profile))
              (drscheme:debug:test-coverage-enabled (eq? annotations 'test-coverage)))
+           (global-port-print-handler
+            (λ (value port)
+              (let ([converted-value (simple-module-based-language-convert-value value setting)])
+                (setup-printing-parameters 
+                 (λ ()
+                   (parameterize ([pretty-print-columns 'infinity])
+                     (pretty-print converted-value port)))
+                 setting
+                 'infinity))))
            (current-inspector (make-inspector))
            (read-case-sensitive (simple-settings-case-sensitive setting)))))
       

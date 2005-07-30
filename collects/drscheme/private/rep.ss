@@ -172,16 +172,22 @@ TODO
       ;; the highlight must be set after the error message, because inserting into the text resets
       ;;     the highlighting.
       (define (drscheme-error-display-handler msg exn)
-        (display msg (current-error-port))
-        (newline (current-error-port))
-        (flush-output (current-error-port))
-        (let ([rep (current-rep)])
-          (when (and (is-a? rep -text<%>)
-                     (eq? (current-error-port) (send rep get-err-port)))
-            (parameterize ([current-eventspace drscheme:init:system-eventspace])
-              (queue-callback
-               (λ ()
-                 (send rep highlight-errors/exn exn)))))))
+        (let ([src-locs (if (exn:srclocs? exn)
+                            ((exn:srclocs-accessor exn) exn)
+                            '())])
+          (for-each drscheme:debug:display-srcloc-in-error src-locs)
+          (display msg (current-error-port))
+          (when (exn:fail:syntax? exn)
+            (drscheme:debug:show-syntax-error-context (current-error-port) exn))
+          (newline (current-error-port))
+          (flush-output (current-error-port))
+          (let ([rep (current-rep)])
+            (when (and (is-a? rep -text<%>)
+                       (eq? (current-error-port) (send rep get-err-port)))
+              (parameterize ([current-eventspace drscheme:init:system-eventspace])
+                (queue-callback
+                 (λ ()
+                   (send rep highlight-errors/exn exn))))))))
       
       ;; drscheme-error-value->string-handler : TST number -> string
       (define (drscheme-error-value->string-handler x n)
@@ -1241,7 +1247,6 @@ TODO
               (current-error-port (get-err-port))
               (current-value-port (get-value-port))
               (current-input-port (get-in-box-port))
-              ;(current-input-port (make-input-port #f (λ (bytes) eof) #f void))
               (break-enabled #t)
               (let* ([primitive-dispatch-handler (event-dispatch-handler)])
                 (event-dispatch-handler
@@ -1505,7 +1510,7 @@ TODO
       
       (define input-delta (make-object style-delta%))
       (send input-delta set-delta-foreground (make-object color% 0 150 0))
-          
+
       ;; insert-error-in-text : (is-a?/c text%)
       ;;                        (union #f (is-a?/c drscheme:rep:text<%>))
       ;;                        string?
@@ -1533,13 +1538,13 @@ TODO
               [insert-file-name/icon
                ;; insert-file-name/icon : string number number number number -> void
                (λ (source-name start span row col)
-                 (let* ([range-spec
-                         (cond
-                           [(and row col)
-                            (format ":~a:~a" row col)]
-                           [start
-                            (format "::~a" start)]
-                           [else ""])])
+                 (let ([range-spec
+                        (cond
+                          [(and row col)
+                           (format ":~a:~a" row col)]
+                          [start
+                           (format "::~a" start)]
+                          [else ""])])
                    (cond
                      [(file-exists? source-name)
                       (let* ([normalized-name (normalize-path source-name)]

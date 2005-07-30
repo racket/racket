@@ -62,7 +62,10 @@
      show-error-and-highlight
      open-and-highlight-in-file
      show-backtrace-window
-     get-cm-key))
+     get-cm-key
+     
+     display-srcloc-in-error
+     show-syntax-error-context))
   
   (define-signature drscheme:module-language^
     (add-module-language

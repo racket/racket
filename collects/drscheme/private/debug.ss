@@ -243,23 +243,7 @@ profile todo:
                   (display #\space (current-error-port))))))
           
           (let ([srcs-to-display (find-src-to-display exn cms)])
-            (for-each (λ (src-to-display)
-                        (let ([src (srcloc-source src-to-display)])
-                          (when (and (path? src) file-note%)
-                            (let ([note (new file-note%)])
-                              (send note set-callback 
-                                    (λ () (open-and-highlight-in-file src-to-display)))
-                              (write-special note (current-error-port))
-                              (display #\space (current-error-port))
-                              (display (path->string (find-relative-path (current-directory) src))
-                                       (current-error-port))
-                              (let ([line (srcloc-line src-to-display)]
-                                    [col (srcloc-column src-to-display)])
-                                (when (and (number? line) 
-                                           (number? col))
-                                  (fprintf (current-error-port) ":~a:~a" line col)))
-                              (display ": " (current-error-port))))))
-                      srcs-to-display)
+            (for-each display-srcloc-in-error srcs-to-display)
             
             (display msg (current-error-port))
             (when (exn:fail:syntax? exn)
@@ -280,6 +264,48 @@ profile todo:
                                            (number? (cadr x))
                                            (number? (cddr x))))
                                     cms))))))
+      
+      ;; display-srcloc-in-error : src-loc -> void
+      ;; prints out the src location information for src-to-display
+      ;; as it would appear in an error message
+      (define (display-srcloc-in-error src-to-display)
+        (let ([src (srcloc-source src-to-display)])
+          (when (and (path? src) file-note%)
+            (let ([note (new file-note%)])
+              (send note set-callback 
+                    (λ () (open-and-highlight-in-file src-to-display)))
+              (write-special note (current-error-port))
+              (display #\space (current-error-port))
+              (display (path->string (find-relative-path (current-directory) src))
+                       (current-error-port))
+              (let ([line (srcloc-line src-to-display)]
+                    [col (srcloc-column src-to-display)]
+                    [pos (srcloc-position src-to-display)])
+                (cond
+                  [(and (number? line) (number? col))
+                   (fprintf (current-error-port) ":~a:~a" line col)]
+                  [pos
+                   (fprintf (current-error-port) "::~a" pos)]))
+              (display ": " (current-error-port))))))
+      
+      ;; find-src-to-display : exn (union #f (listof (list* <src> number number)))
+      ;;                    -> (listof srclocs)
+      ;; finds the source location to display, choosing between
+      ;; the stack trace and the exception record.
+      ;; returns #f if the source isn't a string.
+      (define (find-src-to-display exn cms)
+        (cond
+          [(exn:srclocs? exn)
+           ((exn:srclocs-accessor exn) exn)]
+          [(pair? cms)
+           (let ([fst (car cms)])
+             (list (make-srcloc (car fst)
+                                #f
+                                #f
+                                (cadr fst)
+                                (cddr fst))))]
+          [else '()]))
+  
       
       (define (show-syntax-error-context port exn)
         (let ([error-text-style-delta (make-object style-delta%)])
@@ -308,23 +334,6 @@ profile todo:
          (λ (rep errs arrows) (send rep highlight-errors errs arrows))
          orig-error-display-handler))
 
-      ;; find-src-to-display : exn (union #f (listof (list* <src> number number)))
-      ;;                    -> (listof srclocs)
-      ;; finds the source location to display, choosing between
-      ;; the stack trace and the exception record.
-      ;; returns #f if the source isn't a string.
-      (define (find-src-to-display exn cms)
-	(cond
-	  [(exn:srclocs? exn)
-           ((exn:srclocs-accessor exn) exn)]
-          [(pair? cms)
-           (let ([fst (car cms)])
-             (list (make-srcloc (car fst)
-                                #f
-                                #f
-                                (cadr fst)
-                                (cddr fst))))]
-          [else '()]))
 
       ;; insert/clickback : (instanceof text%) (union string (instanceof snip%)) (-> void)
       ;; inserts `note' and a space at the end of `rep'
