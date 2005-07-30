@@ -1,7 +1,6 @@
 This `draw' package provides libraries for modeling in a visual world. It
 consists of two sets of classes: 
 
- - World 
 
 		     +----------+     +----------+
 		     | World    |  +->| Canvas   |
@@ -11,70 +10,18 @@ consists of two sets of classes:
 		     +----------+     | clear    |
 				      +----------+
 
-     // start the clock and make this world the current one
-     boolean bigBang(double s) 
+ - abstract class World 
 
-     // process a tick of the clock in this world
-     World onTick() 
+ - class Canvas 
 
-     // process a keystroke event in this world
-     World onKeyEvent(String ke) 
+ - class Posn 
 
-     // stop this world's clock
-     World endOfWorld() 
-
-     // draw this world
-     boolean draw() 
-
-     // erase this world
-     boolean erase() 
-
-     // view the last World that onTick or onKeyEvent or bigBang created
-     World lastWorld()
-
- - Canvas 
-
-     // create the visual aspect 
-     boolean start(int width, int height)
-
-     // tear down the canvas and shut down the program
-     boolean stop()
-
-     // draw a circle at p, paint circle c
-     boolean drawCircle(Posn p, int r, Color c)
-
-     // draw a solid disk at p, fill with color c
-     boolean drawDisk(Posn p, int r, Color c)
-
-     // draw a width x height rectangle at p, fill with color c
-     boolean drawRect(Posn p, int width, int height, Color c)
-
-     // draw a line from p0 to p1, use color c
-     boolean drawLine(Posn p0, Posn p1, Color c)
-
-     // draw a string at position p
-     boolean drawString(Posn p, String s)
-
-     // clear a circle at p, paint circle c
-     boolean clearCircle(Posn p, int r, Color c)
-
-     // clear a solid disk at p, fill with color c
-     boolean clearDisk(Posn p, int r, Color c)
-
-     // clear a width x height rectangle at p, fill with color c
-     boolean clearRect(Posn p, int width, int height, Color c)
-
-     // clear a line from p0 to p1, use color c
-     boolean clearLine(Posn p0, Posn p1, Color c)
-
- - Posn 
-
-   +----------+
-   | Posn     |
-   +----------+
-   | int x    |
-   | int y    |
-   +----------+
+		      +----------+
+		      | Posn     |
+		      +----------+
+		      | int x    |
+		      | int y    |
+		      +----------+
 
  - Color with five subclasses: 
    + Blue 
@@ -83,16 +30,16 @@ consists of two sets of classes:
    + White 
    + Yellow 
 
-		     +-------+
-		     | Color |
-		     +-------+
-			 |
-			/ \
-			---
-			 |
-    ------------------------------------------
-    |          |         |         |         |     
-+-------+  +-------+ +-------+ +-------+ +-------+  
-| Blue  |  | Green | | Red   | | White | | Yellow| 
-+-------+  +-------+ +-------+ +-------+ +-------+ 
+			      +-------+
+			      | Color |
+			      +-------+
+				  |
+				 / \
+				 ---
+				  |
+	     ------------------------------------------
+	     |          |         |         |         |     
+	 +-------+  +-------+ +-------+ +-------+ +-------+  
+	 | Blue  |  | Green | | Red   | | White | | Yellow| 
+	 +-------+  +-------+ +-------+ +-------+ +-------+ 
 

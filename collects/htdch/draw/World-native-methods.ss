@@ -35,6 +35,7 @@
                               (lower (cdr s))))))))
       (list->string (lower (string->list s)))))
   
+#|
   (define/provide (start-int-int-native this accs gets privates x y)
      (start x y))
   
@@ -69,7 +70,8 @@
 
   (define/provide (sleepForAWhile-int-native this accs gets privates s)
     (sleep-for-a-while s))
-  
+|#  
+
   (define/provide (bigBang-double-native this accs gets privates i)
     (big-bang i this)
     (on-tick-event
@@ -93,17 +95,19 @@
   (define (keyevent->string ke)
     (if (char? ke) (string ke) (symbol->string ke)))
   
+#|
   (define/provide (draw-native this accs gets privates)
-    #t)
+    (error 'draw "abstract method"))
 
   (define/provide (erase-native this accs gets privates)
-    #t)
+    (error 'erase "abstract method"))
 
   (define/provide (onTick-native this accs gets privates)
-     this)
+    (error 'onTick "abstract method"))
 
   (define/provide (onKeyEvent-java.lang.String-native this accs gets privates ke)
-     this)
+    (error 'onKeyEvent "abstract method"))
+|#
 
   (define last-world #f)
   
