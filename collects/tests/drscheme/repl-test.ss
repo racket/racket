@@ -573,6 +573,41 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 void
                 void)
      
+     ;; make sure syntax objects only go into good ports
+     (make-test "(define-syntax (foo stx) (with-handlers ([exn:fail? (lambda (x) #'10)]) (syntax-local-value #'foot))) (foo)"
+                "10"
+                "10"
+                #f
+                'interactions
+                #f
+                #f
+                #f
+                void
+                void)
+     
+     ;; make sure syntax objects don't go into bad ports
+     (make-test "(parameterize ([current-output-port (open-output-string)]) (write #'1))"
+                ""
+                ""
+                #f
+                'interactions
+                #f
+                #f
+                #f
+                void
+                void)
+     
+     (make-test "(parameterize ([current-output-port (open-output-string)]) (fprintf (current-error-port) \"~e\" #'foot))"
+                "#<syntax::79>"
+                "#<syntax::79>"
+                #f
+                'interactions
+                #f
+                #f
+                #f
+                void
+                void)
+     
      (make-test
       ;; the begin/void combo is to make sure that no value printout
       ;; comes and messes up the source location for the error.

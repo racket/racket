@@ -369,8 +369,8 @@
                                 port)
                                1]
                               [(syntax? value)
-                               (write-special (render-syntax/snip value))]
-                              [else (write-special (value->snip value))]))]
+                               (write-special (render-syntax/snip value) port)]
+                              [else (write-special (value->snip value) port)]))]
                          [print-graph
                           ;; only turn on print-graph when using `write' printing 
                           ;; style because the sharing is being taken care of
