@@ -512,14 +512,7 @@
 	[double (mk (lambda (l c p)
 		      (values (* 2 l) (* 2 c) (* 2 p))))]
 	[none (mk (lambda (l c p) (values #f #f #f)))]
-	[bad (mk (let ([did-once? #f])
-		   (lambda (l c p)
-		     (if did-once?
-			 #f
-			 (begin
-			   ;; First call is from `port-count-lines!'
-			   (set! did-once? #t)
-			   (values l c p))))))])
+	[bad (mk (lambda (l c p) #f))])
     (test-values '(1 0 1) (lambda () (port-next-location plain)))
     (test-values '(2 0 2) (lambda () (port-next-location double)))
     (test-values '(#f #f #f) (lambda () (port-next-location none)))

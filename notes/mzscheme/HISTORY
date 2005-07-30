@@ -66,6 +66,9 @@ Libraries:
   slightly (i.e., they usually must write to a given port)
  Changed collects/web-server request-bindings/raw
   to return an alist of bytes, not strings
+Misc:
+ Cygwin build produces a Unix-style installation instead of
+ a Windows-style installation (e.g., system-type is 'unix)
 
 Version 299.100, March 2005
 >> See MzScheme_300.txt for information on major changes since

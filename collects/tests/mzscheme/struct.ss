@@ -102,8 +102,12 @@
 	    (arity-test bmake 2 2)
 	    (arity-test bmakex 1 1)
 
-	    (err/rt-test (make-struct-type 'bb type 0 0 #f (list (cons prop:p 12))) exn:application:mismatch?)
-	    (err/rt-test (make-struct-type 'bb btype 0 0 #f (list (cons prop:p3 12))) exn:application:mismatch?)
+	    ;; Override ok:
+	    (make-struct-type 'bb type 0 0 #f (list (cons prop:p 12)))
+	    (make-struct-type 'bb btype 0 0 #f (list (cons prop:p3 12)))
+
+	    (err/rt-test (make-struct-type 'bb type 0 0 #f (list (cons prop:p 12) (cons prop:p 12))) exn:application:mismatch?)
+	    (err/rt-test (make-struct-type 'bb btype 0 0 #f (list (cons prop:p3 12) (cons prop:p3 12))) exn:application:mismatch?)
 	    (err/rt-test (make-struct-type 'bb #f 0 0 #f (list (cons prop:p 12) (cons prop:p2 12) (cons prop:p 12))) exn:application:mismatch?)
 	    (err/rt-test (make-struct-type 'bb type 0 0 #f (list (cons (let-values ([(p p? p-v)
 										     (make-struct-type-property 'p (lambda (v s)

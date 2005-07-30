@@ -2347,7 +2347,7 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
 	  if (SAME_OBJ(SCHEME_CAR(pa[j]), prop))
 	    break;
 	}
-	if (j < i) {
+	if (j < num_props) {
 	  /* already there */
 	  if (!scheme_hash_get(can_override, prop))
 	    break; 
