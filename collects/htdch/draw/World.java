@@ -2,9 +2,9 @@ package draw;
         
 public abstract class World {
 
-    Canvas theCanvas = new Canvas(); 
+    public Canvas theCanvas = new Canvas(); 
 
-    public native boolean bigBang(double s); 
+    public native boolean bigBang(/* int width, int height,*/ double s); 
     
     public native boolean endOfTime();
     

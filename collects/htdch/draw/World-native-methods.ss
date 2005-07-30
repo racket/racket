@@ -72,7 +72,7 @@
     (sleep-for-a-while s))
 |#  
 
-  (define/provide (bigBang-double-native this accs gets privates i)
+  (define/provide (bigBang-double-native this accs gets privates #;width #;height i)
     (big-bang i this)
     (on-tick-event
       (lambda (world)
@@ -94,20 +94,6 @@
   ;; (union Char Symbol) -> String
   (define (keyevent->string ke)
     (if (char? ke) (string ke) (symbol->string ke)))
-  
-#|
-  (define/provide (draw-native this accs gets privates)
-    (error 'draw "abstract method"))
-
-  (define/provide (erase-native this accs gets privates)
-    (error 'erase "abstract method"))
-
-  (define/provide (onTick-native this accs gets privates)
-    (error 'onTick "abstract method"))
-
-  (define/provide (onKeyEvent-java.lang.String-native this accs gets privates ke)
-    (error 'onKeyEvent "abstract method"))
-|#
 
   (define last-world #f)
   

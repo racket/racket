@@ -23,6 +23,4 @@ public class Canvas {
      public native boolean clearRect(Posn p, int width, int height, Color c);
 
      public native boolean clearLine(Posn p0, Posn p1, Color c);
-
-    // public native boolean sleepForAWhile(int s);
 }    
