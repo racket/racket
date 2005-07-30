@@ -306,7 +306,7 @@
                    seconds->date
                    expand syntax-object->datum exn-message continuation-mark-set->list exn-continuation-marks
                    exn:fail?
-                   list->vector make-vector vector-set!)
+                   list->vector make-vector)
             
            (rename eq? mzscheme:eq?)
            make-exn:fail  current-inspector make-inspector

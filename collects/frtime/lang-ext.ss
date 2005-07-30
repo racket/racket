@@ -250,8 +250,11 @@
   (define-syntax snapshot/sync
     (syntax-rules ()
       [(_ (id ...) expr ...)
-       (let-values ([(id ...) (sync/read id ...)])
+       (let-values ([(id ...) (value-now/sync id ...)])
          expr ...)]))
+  
+  (define (synchronize)
+    (snapshot/sync () (void)))
   
   (define-syntax snapshot
     (syntax-rules ()
@@ -702,6 +705,7 @@
            hold
            for-each-e!
            snapshot/sync
+           synchronize
            snapshot
            snapshot-e
            snapshot/apply
@@ -736,7 +740,7 @@
            value-now/sync
            frtime-version
            signal-count
-           
+           signal?
            
            )
   )

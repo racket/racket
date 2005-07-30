@@ -141,7 +141,10 @@
                                   (lambda (_)
                                     (loop (unbox (signal:switching-current v))))
                                   (signal:switching-trigger v))]
-          [(signal? v) (printf "access to ~a in ~a~n" acc (value-now/no-copy v)) (lift #t acc v)]
+          [(signal? v) #;(printf "access to ~a in ~a~n" acc
+                                 (value-now/no-copy v))
+                       (lift #t acc v)]
+	  [(undefined? v) undefined]
           [else (acc v)]))))
     
   (define frp:car
@@ -252,7 +255,7 @@
   
   ; FORBIDS MUTATION
   (define (frp:make-struct-field-mutator acc i sym)
-    (lambda (s)
+    (lambda (s _)
       (error "MUTATION NOT ALLOWED IN FrTime STRUCTURES")))
   
   (define-syntax (frp:define-struct stx)
@@ -280,11 +283,23 @@
       [(_ s (field ...))
        #'(frp:define-struct (s #f) (field ...) (current-inspector))]))
   
+ (define (find pred lst)
+    (cond
+      [(empty? lst) #f]
+      [(pred (first lst)) (first lst)]
+      [else (find pred (rest lst))]))
+ 
   
-  
-  
-  
-  
+ (define (ensure-no-signal-args val name)
+    (if (procedure? val)
+        (lambda args
+          (cond
+            [(find signal? args)
+             =>
+             (lambda (v)
+               (raise-type-error name "non-signal"
+                               (format "#<signal: ~a>" (signal-value v))))]
+            [else (apply val args)]))))
   
   
   ;;;;;;;;;;;;;;;;;;;;;;;

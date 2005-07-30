@@ -2,17 +2,20 @@
   
   (require (lib "class.ss")
            (all-except (lib "mred.ss" "mred") send-event)
+           (rename mzscheme mz:define-struct define-struct)
            "preprocessor2.ss"
            (lifted "ss-funcs.ss" inflate-data)
            "quotes.ss"
            (as-is:unchecked (lib "match.ss") match-lambda)
+           (as-is:unchecked (lib "frp-core.ss" "frtime") signal-value
+                            proc->signal)
            (lib "framework.ss" "framework")
            (as-is:unchecked (lib "string.ss") expr->string)
            (as-is:unchecked (lib "etc.ss") build-vector)
            (lifted mzscheme regexp-match)
            (as-is:unchecked mzscheme make-hash-table hash-table-put! hash-table-get
                             hash-table-remove! let*-values vector-set! make-string
-                            exn? eof-object?
+                            exn?
                             open-input-file open-output-file read write hash-table-map
                             file-exists? delete-file open-input-string eof
                             flush-output close-output-port dynamic-require))
@@ -44,7 +47,7 @@
   
   (set-cell! raise-exceptions #t)
   
-  (define-struct ss-loc (row col))
+  (mz:define-struct ss-loc (row col))
   
   (define (ss-format val)
     (if (or (and (signal? val)
@@ -142,7 +145,7 @@
      cols
      (lambda (_) (make-hash-table))))
   
-  (define-struct ss-cell (expr value updater))
+  (mz:define-struct ss-cell (expr value updater))
   
   (define (ss-get-cell-text row col)
     (cond
@@ -212,7 +215,7 @@
                      (eval `(let ([row ,row]
                                   [col ,col])
                               ,processed-expr))))
-        (synchronize)
+        ;(synchronize)
         (send canvas draw-cell row col))
       (send canvas focus)))
   
