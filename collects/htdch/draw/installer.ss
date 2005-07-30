@@ -16,7 +16,7 @@
                                #f #f)))))
         (javac "Posn.java")
         (javac "Color.java")
-;        (javac "ICanvas.java")
+        (javac "Canvas.java")
         (javac "World.java")
         (javac "Red.java")
         (javac "White.java")

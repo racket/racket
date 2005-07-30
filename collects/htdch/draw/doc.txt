@@ -1,29 +1,38 @@
 This `draw' package provides libraries for modeling in a visual world. It
 consists of two sets of classes: 
 
- - World and Posn 
+ - World 
 
- - Color with five subclasses: 
-   + Blue 
-   + Green 
-   + Red 
-   + White 
-   + Yellow 
+		     +----------+     +----------+
+		     | World    |  +->| Canvas   |
+		     +----------+  |  +----------+
+                     | Canvas c |--+  +----------+
+		     +----------+     | draw     |
+		     +----------+     | clear    |
+				      +----------+
 
-		     +-------+
-		     | Color |
-		     +-------+
-			/ \
-			---
-			 |
-    ------------------------------------------
-    |          |         |         |         |     
-+-------+  +-------+ +-------+ +-------+ +-------+  
-| Blue  |  | Green | | Red   | | White | | Yellow| 
-+-------+  +-------+ +-------+ +-------+ +-------+ 
+     // start the clock and make this world the current one
+     boolean bigBang(double s) 
 
+     // process a tick of the clock in this world
+     World onTick() 
 
-The _World_ class has the following class interface: 
+     // process a keystroke event in this world
+     World onKeyEvent(String ke) 
+
+     // stop this world's clock
+     World endOfWorld() 
+
+     // draw this world
+     boolean draw() 
+
+     // erase this world
+     boolean erase() 
+
+     // view the last World that onTick or onKeyEvent or bigBang created
+     World lastWorld()
+
+ - Canvas 
 
      // create the visual aspect 
      boolean start(int width, int height)
@@ -58,29 +67,32 @@ The _World_ class has the following class interface:
      // clear a line from p0 to p1, use color c
      boolean clearLine(Posn p0, Posn p1, Color c)
 
-     // wait for s seconds (roughly)
-     boolean sleepForAWhile(int s)
+ - Posn 
 
-     // start the clock and make this world the current one
-     boolean bigBang(double s) 
+   +----------+
+   | Posn     |
+   +----------+
+   | int x    |
+   | int y    |
+   +----------+
 
-     // process a tick of the clock in this world
-     World onTick() 
+ - Color with five subclasses: 
+   + Blue 
+   + Green 
+   + Red 
+   + White 
+   + Yellow 
 
-     // process a keystroke event in this world
-     World onKeyEvent(String ke) 
+		     +-------+
+		     | Color |
+		     +-------+
+			 |
+			/ \
+			---
+			 |
+    ------------------------------------------
+    |          |         |         |         |     
++-------+  +-------+ +-------+ +-------+ +-------+  
+| Blue  |  | Green | | Red   | | White | | Yellow| 
++-------+  +-------+ +-------+ +-------+ +-------+ 
 
-     // stop this world's clock
-     World endOfWorld() 
-
-     // draw this world
-     boolean draw() 
-
-     // erase this world
-     boolean erase() 
-
-     // view the last World that onTick or onKeyEvent or bigBang created
-     World lastWorld()
-
-_Posn_ is the usual class: it combines two integers, x and y, and makes the
- available via the selectors Posn.x and Posn.y. 

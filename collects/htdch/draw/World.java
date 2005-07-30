@@ -24,7 +24,7 @@ public class World {
 
      public native boolean clearLine(Posn p0, Posn p1, Color c);
 
-     public native boolean sleepForAWhile(int s);
+    // public native boolean sleepForAWhile(int s);
 
      public native boolean bigBang(double s); 
 
