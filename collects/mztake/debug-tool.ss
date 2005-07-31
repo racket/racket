@@ -247,7 +247,9 @@
                                [(#t #f)
                                 (let ([menu (make-object popup-menu% #f)])
                                   (make-object menu-item%
-                                    "Toggle breakpoint"
+                                    (if break-status
+					"Remove pause at this point"
+					"Pause at this point")
                                     menu
                                     (lambda (item evt)
                                       (hash-table-put! breakpoints pos (not break-status))
@@ -284,7 +286,7 @@
                                                                           (eval-string tmp)))
                                                                     list))))))))))
                                         (make-object menu-item%
-                                          "Run up to this location"
+                                          "Continue to this point"
                                           menu
                                           (lambda (item evt)
                                             (hash-table-put!
