@@ -2203,7 +2203,7 @@ static void add_all_marks(Scheme_Object *wraps, Scheme_Hash_Table *marks)
 
 static Scheme_Object *resolve_env(Scheme_Object *a, long phase, 
 				  int w_mod, Scheme_Object **get_names,
-				  Scheme_Object *skip_rib)
+				  Scheme_Object *skip_ribs)
 /* Module binding ignored if w_mod is 0.
    If module bound, result is module idx, and get_names[0] is set to source name,
      get_names[1] is set to the nominal source module, get_names[2] is set to
@@ -2411,7 +2411,9 @@ static Scheme_Object *resolve_env(Scheme_Object *a, long phase,
 	    	      
 	      if (SCHEME_VOIDP(other_env)) {
 		noprint++;
-		other_env = resolve_env(renamed, 0, 0, NULL, WRAP_POS_FIRST(wraps));
+		other_env = resolve_env(renamed, 0, 0, NULL, 
+					scheme_make_pair(WRAP_POS_FIRST(wraps),
+							 skip_ribs));
 		--noprint;
 		SCHEME_VEC_ELS(rename)[2+c+ri] = other_env;
 	      }
@@ -2452,8 +2454,13 @@ static Scheme_Object *resolve_env(Scheme_Object *a, long phase,
       }
     } else if (SCHEME_RIBP(WRAP_POS_FIRST(wraps))) {
       /* Lexical-rename rib. Splice in the names. */
+      Scheme_Object *srs;
       rib = (Scheme_Lexical_Rib *)WRAP_POS_FIRST(wraps);
-      if (SAME_OBJ(skip_rib, (Scheme_Object *)rib))
+      for (srs = skip_ribs; SCHEME_PAIRP(srs); srs = SCHEME_CDR(srs)) {
+	if (SAME_OBJ(SCHEME_CAR(srs), (Scheme_Object *)rib))
+	  break;
+      }
+      if (SCHEME_PAIRP(srs))
 	rib = NULL;
       else if (SAME_OBJ(did_rib, rib))
 	rib = NULL;
@@ -2570,8 +2577,8 @@ int scheme_stx_free_eq(Scheme_Object *a, Scheme_Object *b, long phase)
   if ((a == asym) || (b == bsym))
     return 1;
   
-  a = resolve_env(a, phase, 1, NULL, NULL);
-  b = resolve_env(b, phase, 1, NULL, NULL);
+  a = resolve_env(a, phase, 1, NULL, scheme_null);
+  b = resolve_env(b, phase, 1, NULL, scheme_null);
 
   a = scheme_module_resolve(a);
   b = scheme_module_resolve(b);
@@ -2603,8 +2610,8 @@ int scheme_stx_module_eq(Scheme_Object *a, Scheme_Object *b, long phase)
   if ((a == asym) || (b == bsym))
     return 1;
   
-  a = resolve_env(a, phase, 1, NULL, NULL);
-  b = resolve_env(b, phase, 1, NULL, NULL);
+  a = resolve_env(a, phase, 1, NULL, scheme_null);
+  b = resolve_env(b, phase, 1, NULL, scheme_null);
 
   a = scheme_module_resolve(a);
   b = scheme_module_resolve(b);
@@ -2627,7 +2634,7 @@ Scheme_Object *scheme_stx_module_name(Scheme_Object **a, long phase,
     names[0] = NULL;
     names[3] = scheme_make_integer(0);
 
-    modname = resolve_env(*a, phase, 1, names, NULL);
+    modname = resolve_env(*a, phase, 1, names, scheme_null);
     
     if (names[0]) {
       if (SAME_OBJ(names[0], scheme_undefined)) {
@@ -2669,13 +2676,13 @@ int scheme_stx_env_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *u
   if (!SAME_OBJ(asym, bsym))
     return 0;
 
-  ae = resolve_env(a, phase, 0, NULL, NULL);
+  ae = resolve_env(a, phase, 0, NULL, scheme_null);
   /* No need to module_resolve ae, because we ignored module renamings. */
 
   if (uid)
     be = uid;
   else {
-    be = resolve_env(b, phase, 0, NULL, NULL);
+    be = resolve_env(b, phase, 0, NULL, scheme_null);
     /* No need to module_resolve be, because we ignored module renamings. */
   }
 
@@ -3103,9 +3110,11 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
 	      && !SCHEME_SYMBOLP(SCHEME_VEC_ELS(v)[2]))) {
 	/* This is the place to simplify: */
 	Scheme_Lexical_Rib *rib = NULL, *init_rib = NULL;
+	Scheme_Object *skip_ribs = scheme_null;
 	int ii, vvsize;
 
 	if (SCHEME_RIBP(v)) {
+	  skip_ribs = scheme_make_pair(v, scheme_null);
 	  init_rib = (Scheme_Lexical_Rib *)v;
 	  rib = init_rib->next;
 	  vsize = 0;
@@ -3157,7 +3166,7 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
 	      other_env = SCHEME_VEC_ELS(v)[2+vvsize+ii];
 	      if (SCHEME_VOIDP(other_env)) {
 		noprint++;
-		other_env = resolve_env(stx, 0, 0, NULL, (Scheme_Object *)init_rib);
+		other_env = resolve_env(stx, 0, 0, NULL, skip_ribs);
 		--noprint;
 		SCHEME_VEC_ELS(v)[2+vvsize+ii] = other_env;
 	      }
