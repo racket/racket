@@ -195,10 +195,12 @@
 			     [(tcp-error? x) 
 			      (restart-mred)
 			      (write sexp out-port)
-			      (newline out-port)]
+			      (newline out-port)
+                              (flush-output out-port)]
 			     [else (raise x)]))])
 	  (write sexp out-port)
-	  (newline out-port))
+	  (newline out-port)
+          (flush-output out-port))
 	(let ([answer
 	       (with-handlers ([exn:fail?
 				(lambda (x)

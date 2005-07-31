@@ -55,6 +55,8 @@
 					 (map (lambda (x) (string-append (exception->string x) (string #\newline)))
 					      these-errs)))))
 		      out)
+                     (newline out)
+                     (flush-output out)
 		     (loop))))))))))
 
   (let ([od (event-dispatch-handler)]
