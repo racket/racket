@@ -303,6 +303,7 @@ Scheme_Hash_Table *scheme_clone_hash_table(Scheme_Hash_Table *ht)
 
   table = MALLOC_ONE_TAGGED(Scheme_Hash_Table);
   memcpy(table, ht, sizeof(Scheme_Hash_Table));
+  MZ_OPT_HASH_KEY(&(table->iso)) = 0;
 
   if (table->size) {
     ba = MALLOC_N(Scheme_Object *, table->size);

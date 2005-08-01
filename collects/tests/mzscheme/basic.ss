@@ -1968,6 +1968,9 @@
 (err/rt-test (make-immutable-hash-table cyclic-alist))
 (err/rt-test (make-immutable-hash-table '((1 . 2)) 'weak))
 
+(test 2 hash-table-get (hash-table-copy #hasheq((1 . 2))) 1)
+(test (void) hash-table-put! (hash-table-copy #hasheq((1 . 2))) 3 4)
+
 (arity-test make-hash-table 0 2)
 (arity-test make-immutable-hash-table 1 2)
 (arity-test hash-table-count 1 1)

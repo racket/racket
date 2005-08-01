@@ -3713,6 +3713,7 @@ static int utf8_decode_x(const unsigned char *s, int start, int end,
 	and [d]end) before return, unless they are NULL.
 
 	compact => UTF-8 to UTF-8 or UTF-16 --- the latter if utf16
+	!compact && utf16 => decode extended UTF-8 that allows surrogates
 
 	_state provides initial state and is filled with ending state;
 	when it's not NULL, the us must be NULL
