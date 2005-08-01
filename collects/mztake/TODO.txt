@@ -1,4 +1,9 @@
-  
+- Select what gets annotated
+- Update the documentation
+- Stack navigation from REPL
+- Automated tests
+- Trace by function name 
+ 
   #|:::::::::LOAD/ANNOTATOR BUGS:::::::::::
 * catch oops exception
 * catch the other two exceptions that my loaders throw
