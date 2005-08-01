@@ -506,6 +506,24 @@
 		    (rename (lambda l))
 		    (define lambda 14)))
 
+(test 9 'rename (let ()
+		  (define-signature s (b))
+		  (define-values/invoke-unit/sig s
+		    (unit/sig s
+		      (import)
+		      (rename (a b))
+		      (define a 9)))
+		  b))
+(test 10 'rename (let ()
+		   (define-signature s (b))
+		   (define-values/invoke-unit/sig s
+		     (unit/sig s
+		       (import)
+		       (rename (a b))
+		       (define a 10)
+		       (define b 12)))
+		   b))
+
 ; These are ok, too:
 (test #t unit/sig? (unit/sig ()
 		    (import (define))
