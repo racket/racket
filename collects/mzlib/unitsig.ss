@@ -56,9 +56,10 @@
 						(parsed-unit-vars a-unit))
 				      (map
 				       (lambda (name)
-					 (list (hash-table-get vars
-							       name
-							       (lambda () (do-rename name (parsed-unit-renames a-unit))))
+					 (list (let ([name (do-rename name (parsed-unit-renames a-unit))])
+						 (hash-table-get vars
+								 name
+								 (lambda () name)))
 					       name))
 				       (signature-vars sig)))
 				    expr)]
