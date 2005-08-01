@@ -1,5 +1,4 @@
-This `draw' package provides libraries for modeling in a visual world. It
-consists of two sets of classes: 
+This `draw' package provides libraries for modeling in a visual world:
 
 
 		     +----------+     +----------+
@@ -30,16 +29,16 @@ consists of two sets of classes:
    + White 
    + Yellow 
 
-			      +-------+
-			      | Color |
-			      +-------+
-				  |
-				 / \
-				 ---
-				  |
-	     ------------------------------------------
-	     |          |         |         |         |     
-	 +-------+  +-------+ +-------+ +-------+ +-------+  
-	 | Blue  |  | Green | | Red   | | White | | Yellow| 
-	 +-------+  +-------+ +-------+ +-------+ +-------+ 
+                              +-------+
+                              | Color |
+                              +-------+
+                                  |
+                                 / \
+                                 ---
+                                  |
+             ------------------------------------------
+             |          |         |         |         |     
+         +-------+  +-------+ +-------+ +-------+ +-------+  
+         | Blue  |  | Green | | Red   | | White | | Yellow| 
+         +-------+  +-------+ +-------+ +-------+ +-------+ 
 

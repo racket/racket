@@ -72,7 +72,9 @@
     (sleep-for-a-while s))
 |#  
 
-  (define/provide (bigBang-double-native this accs gets privates #;width #;height i)
+  (define/provide (bigBang-int-int-double-native this accs gets privates width height i)
+    (define theCanvas ((hash-table-get accs 'theCanvas) this))
+    (send theCanvas start-int-int width height)
     (big-bang i this)
     (on-tick-event
       (lambda (world)
