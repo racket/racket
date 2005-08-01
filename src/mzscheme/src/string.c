@@ -2266,12 +2266,13 @@ static char *do_convert(iconv_t cd,
 	/* We assume that out + od is mzchar-aligned */
 	long ipos, opos;
 
-	r = utf8_decode_x(in, id + dip, iilen - dip,
+	r = utf8_decode_x(in, id + dip, iilen,
 			  (unsigned int *)out, (od + dop) >> 2, iolen >> 2,
 			  &ipos, &opos,
 			  0, 0, NULL, 0, 0);
+	
 	opos <<= 2;
-	dop += opos;
+	dop = (opos - od);
 	dip = (ipos - id);
 
 	if ((r == -1) || (r == -2)) {
