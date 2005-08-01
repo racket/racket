@@ -493,7 +493,7 @@ static void dcSetARGBPixels(wxMemoryDC *dc, double x, double y, int w, int h, ch
     } else {
       for (j = 0; j < h; j++) {
 	for (i = 0; i < w; i++) {
-	  WITH_VAR_STACK(dc->SetPixelFast(xi + i, yi + j, ss[p], ss[p], ss[p]));
+	  WITH_VAR_STACK(dc->SetPixelFast(xi + i, yi + j, 255-ss[p], 255-ss[p], 255-ss[p]));
 	  p += 4;
 	}
       }
@@ -513,7 +513,7 @@ static void dcSetARGBPixels(wxMemoryDC *dc, double x, double y, int w, int h, ch
     } else {
       for (j = 0; j < h; j++) {
 	for (i = 0; i < w; i++) {
-	  WITH_VAR_STACK(c->Set(ss[p], ss[p], ss[p]));
+	  WITH_VAR_STACK(c->Set(255-ss[p], 255-ss[p], 255-ss[p]));
 	  WITH_VAR_STACK(dc->SetPixel(x + i, y + j, c));
 	  p += 4;
 	}
