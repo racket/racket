@@ -24,13 +24,13 @@ or other games installed as sub-collections of the "games" collection
 
                                               - by Matthew
 
- * Crazy 8s : The card game where you try to get rid of all you cards
+ * Crazy 8s - The card game where you try to get rid of all you cards
    by matching the top card in the discard pile. Click "Help" in the
    game for details.
 
                                               - by Matthew
 
- * Blackjack : Standard rules. Click "Help" in the game for specifics.
+ * Blackjack - Standard rules. Click "Help" in the game for specifics.
 
                                               - by Matthew
 
@@ -78,6 +78,11 @@ or other games installed as sub-collections of the "games" collection
    as a demonstration use of the gl-board-games library.
                                              
 					      - by Scott
+
+ * Jewel - Swap the jewels to make 3-in-a-row.
+
+                                              - by Dave Ashley
+                                                and Peter Ivanyi
 
 Implementing new Games
 ----------------------

@@ -1,0 +1,5 @@
+(module info (lib "infotab.ss" "setup")
+  (define name "Jewel")
+  (define doc.txt "doc.txt")
+  (define game "jewel.scm")
+  (define game-set "Puzzle Games"))
