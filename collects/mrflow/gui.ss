@@ -168,9 +168,6 @@
       (drscheme:get/extend:extend-unit-frame
        (lambda (super%)
          (class super%
-           (inherit get-definitions-text get-current-tab)
-           ; -> void
-           
            ; -> void
            (define/augment (enable-evaluation)
              (inner cst:void enable-evaluation)
@@ -184,7 +181,7 @@
            (super-instantiate ())
            
            
-           (inherit get-button-panel get-interactions-text)
+           (inherit get-button-panel get-definitions-text get-interactions-text get-current-tab)
            (define analyze-button
              (instantiate
                  button% ()
@@ -194,6 +191,7 @@
                 (lambda (button event)
                   (let ([start-time (current-milliseconds)]
                         [definitions-text (get-definitions-text)]
+                        [current-tab (get-current-tab)]
                         [drs-eventspace (current-eventspace)]
                         [interactions-text (get-interactions-text)]
                         [language-settings
@@ -257,7 +255,7 @@
                       ; is not called here, but is called internally inside
                       ; init-snips-and-arrows-gui
                       (disable-evaluation)
-                      (send (get-current-tab) clear-annotations)
+                      ;(send current-tab clear-annotations)
                       
                       ; note: we have to do this each time, because the user might have changed
                       ; the language between analyses.

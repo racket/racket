@@ -3,12 +3,11 @@
 ; so we can't use contracts here because the sets are not always the same.
 
 (module set-exn mzscheme
-  
   (provide
-   exn:set
-   exn:set?
    (struct exn:set:value-not-found (set value))
    (struct exn:set:duplicate-value (set value))
+   exn:set
+   exn:set?
    raise-value-not-found-exn
    raise-duplicate-value-exn
    )
@@ -20,14 +19,16 @@
   ; string set value -> void
   (define (raise-value-not-found-exn fct-name set value)
     (raise (make-exn:set:value-not-found
-            (format "~a: value ~a not found in set ~a" fct-name value set)
+            (string->immutable-string
+             (format "~a: value ~a not found in set ~a" fct-name value set))
             (current-continuation-marks)
             set value)))
   
   ; string set value -> void
   (define (raise-duplicate-value-exn fct-name set value)
     (raise (make-exn:set:duplicate-value
-            (format "~a: value ~a already in set ~a" fct-name value set)
+            (string->immutable-string
+             (format "~a: value ~a already in set ~a" fct-name value set))
             (current-continuation-marks)
             set value)))
   
