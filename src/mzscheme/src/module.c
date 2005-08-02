@@ -114,6 +114,8 @@ static Scheme_Object *prefix_all_defined_except_symbol;
 static Scheme_Object *struct_symbol;
 static Scheme_Object *protect_symbol;
 
+static Scheme_Object *module_name_symbol;
+
 Scheme_Object *scheme_module_stx;
 Scheme_Object *scheme_begin_stx;
 Scheme_Object *scheme_define_values_stx;
@@ -510,6 +512,9 @@ void scheme_finish_kernel(Scheme_Env *env)
   prefix_all_defined_except_symbol = scheme_intern_symbol("prefix-all-defined-except");
   struct_symbol = scheme_intern_symbol("struct");
   protect_symbol = scheme_intern_symbol("protect");
+
+  REGISTER_SO(module_name_symbol);
+  module_name_symbol = scheme_intern_symbol("enclosing-module-name");
 }
 
 void scheme_require_from_original_env(Scheme_Env *env, int syntax_only)
@@ -3102,6 +3107,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   }
 
   fm = scheme_datum_to_syntax(fm, form, form, 0, 2);
+  fm = scheme_stx_property(fm, module_name_symbol, m->modname);
 
   if (!empty_self_modidx) {
     REGISTER_SO(empty_self_modidx);
@@ -3129,6 +3135,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
       mb = scheme_add_rename(mb, tt_rn);
       fm = scheme_make_pair(mb, scheme_make_pair(fm, scheme_null));
       fm = scheme_datum_to_syntax(fm, form, form, 0, 2);
+      fm = scheme_stx_property(fm, module_name_symbol, m->modname);
       check_mb = 1;
     }
   }
