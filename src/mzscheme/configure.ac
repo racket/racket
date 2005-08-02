@@ -178,6 +178,7 @@ MZINSTALLTARGET=normal-install
 MZOPTIONS=
 CGCOPTIONS=
 GC2OPTIONS=
+DYN_CFLAGS=
 
 LIBS=
 
@@ -279,6 +280,9 @@ if test "$CC" = "gcc" ; then
     WX_MMD_FLAG="-MMD"
     INCLUDEDEP="-include"
   fi
+
+  # Compile mzdyn.o with -fPIC
+  DYN_CFLAGS="-fPIC"
 fi
 
 if test "${enable_perl}" = "yes" ; then
@@ -479,6 +483,7 @@ case $OS in
       OSX=""
       NOT_OSX=".other"
       MZINSTALLTARGET=osx-install
+      DYN_CFLAGS=""
       enable_xrender=no
       enable_cairo=no
       enable_shared=no
@@ -995,6 +1000,7 @@ AC_SUBST(CC_FOR_BUILD)
 AC_SUBST(REZ)
 AC_SUBST(MZLINKER)
 AC_SUBST(PLAIN_CC)
+AC_SUBST(DYN_CFLAGS)
 
 AC_SUBST(x_includes)
 AC_SUBST(x_libraries)

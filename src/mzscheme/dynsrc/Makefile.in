@@ -31,10 +31,10 @@ HEADERS = $(builddir)/../mzconfig.h \
 MZDYNDEP = ../mzdyn.o $(srcdir)/../include/ext.exp $(srcdir)/../include/mzscheme.exp
 
 ../mzdyn.o: $(srcdir)/mzdyn.c $(srcdir)/../src/schvers.h  $(HEADERS)
-	$(PLAIN_CC) $(CFLAGS) -c $(srcdir)/mzdyn.c -o ../mzdyn.o
+	$(PLAIN_CC) @DYN_CFLAGS@ $(CFLAGS) -c $(srcdir)/mzdyn.c -o ../mzdyn.o
 
 ../mzdyn3m.o: $(srcdir)/mzdyn.c $(srcdir)/../src/schvers.h  $(HEADERS)
-	$(PLAIN_CC) $(CFLAGS) -DMZ_PRECISE_GC -c $(srcdir)/mzdyn.c -o ../mzdyn3m.o
+	$(PLAIN_CC) @DYN_CFLAGS@ $(CFLAGS) -DMZ_PRECISE_GC -c $(srcdir)/mzdyn.c -o ../mzdyn3m.o
 
 ../dynexmpl.so: dynexmpl.o $(MZDYNDEP)
 	$(DYNLINK) ../dynexmpl.so dynexmpl.o
