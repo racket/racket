@@ -1,4 +1,13 @@
 ------------------------------------------------------------------------
+VERSION 299.200				  [Tue Aug  2 17:37:24 EDT 2005]
+
+ * servlet.ss and servlet2.ss are still missing. Expect their arrival
+   for 300. 
+
+ * draw.ss in the HtDCH teachpack collection has radically changed. See
+   the doc.txt file for the new arrangement. 
+
+------------------------------------------------------------------------
 VERSION 209				  [Fri Dec 17 10:19:52 EST 2004]
 
  * fixed small bugs in image.ss and world.ss concerning colors and the
