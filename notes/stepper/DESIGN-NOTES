@@ -788,3 +788,18 @@ syntax properties.  Much much better.
 
 2004-01-15
 
+************
+
+A year and a half has passed since I've thought about this file, and 
+I'm now in the midst of a Google Summer of Code (SoC) grant which is 
+supposed to get me to support mutation, and make the corresponding changes
+to the interface.
+
+A thought I had while walking the California mountainsides (BTW: I've just 
+graduated, and gotten a job at Cal Poly)--why do I do the reconstruction
+from the inside out?  Wouldn't it be much much easier to do from the 
+outside in?  Feh.
+
+2005-08-02
+
+
