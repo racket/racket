@@ -288,7 +288,14 @@ add struct contracts for immutable structs?
                     (string->symbol
                      (string-append
                       "struct:"
-                      (symbol->string (syntax-e struct-name)))))])
+                      (symbol->string (syntax-e struct-name)))))]
+                  
+                  
+                   
+                   [is-new-id?
+                    (λ (index)
+                      (or (not parent-struct-count)
+                          (parent-struct-count . <= . index)))])
              
              (let ([unknown-info
                     (lambda (what names)
@@ -340,8 +347,7 @@ add struct contracts for immutable structs?
                             (filter
                              (lambda (x) x)
                              (map/count (lambda (selector-id field-contract-id index)
-                                          (if (or (not parent-struct-count)
-                                                  (parent-struct-count . <= . index))
+                                          (if (is-new-id? index)
                                               (code-for-one-id/new-name
                                                stx
                                                selector-id
@@ -352,12 +358,20 @@ add struct contracts for immutable structs?
                                               #f))
                                         selector-ids
                                         field-contract-ids))]
+                           [(rev-selector-old-names ...)
+                            (reverse
+                             (filter
+                              (lambda (x) x)
+                              (map/count (lambda (selector-id index)
+                                           (if (not (is-new-id? index))
+                                               selector-id
+                                               #f))
+                                         selector-ids)))]
                            [((mutator-codes mutator-new-names) ...)
                             (filter
                              (lambda (x) x)
                              (map/count (lambda (mutator-id field-contract-id index)
-                                          (if (or (not parent-struct-count)
-                                                  (parent-struct-count . <= . index))
+                                          (if (is-new-id? index)
                                               (code-for-one-id/new-name stx
                                                                         mutator-id 
                                                                         (build-mutator-contract struct-name 
@@ -367,6 +381,15 @@ add struct contracts for immutable structs?
                                               #f))
                                         mutator-ids
                                         field-contract-ids))]
+                           [(rev-mutator-old-names ...)
+                            (reverse
+                             (filter
+                              (lambda (x) x)
+                              (map/count (lambda (mutator-id index)
+                                           (if (not (is-new-id? index))
+                                               mutator-id
+                                               #f))
+                                         mutator-ids)))]
                            [(predicate-code predicate-new-name)
                             (code-for-one-id/new-name stx predicate-id (syntax (-> any/c boolean?)) #f)]
                            [(constructor-code constructor-new-name)
@@ -390,18 +413,17 @@ add struct contracts for immutable structs?
                                               [super-id (if (boolean? super-id)
                                                             super-id
                                                             (with-syntax ([super-id super-id])
-                                                              (syntax #'super-id)))])
+                                                              (syntax ((syntax-local-certifier) #'super-id))))])
                                   (syntax (begin
-                                            #;
-                                            (provide struct-name)
-                                            
                                             (provide (rename id-rename struct-name))
                                             (define-syntax id-rename
-                                              (list-immutable #'struct:struct-name
-                                                              #'constructor-new-name
-                                                              #'predicate-new-name
-                                                              (list-immutable #'rev-selector-new-names ...)
-                                                              (list-immutable #'rev-mutator-new-names ...)
+                                              (list-immutable ((syntax-local-certifier) #'struct:struct-name)
+                                                              ((syntax-local-certifier) #'constructor-new-name)
+                                                              ((syntax-local-certifier) #'predicate-new-name)
+                                                              (list-immutable ((syntax-local-certifier) #'rev-selector-new-names) ...
+                                                                              ((syntax-local-certifier) #'rev-selector-old-names) ...)
+                                                              (list-immutable ((syntax-local-certifier) #'rev-mutator-new-names) ...
+                                                                              ((syntax-local-certifier) #'rev-mutator-old-names) ...)
                                                               super-id)))))]
                                [struct:struct-name struct:struct-name])
                    (syntax/loc stx
@@ -415,6 +437,7 @@ add struct contracts for immutable structs?
                        (provide struct:struct-name))))))))
  
          ;; map/count : (X Y int -> Z) (listof X) (listof Y) -> (listof Z)
+         #;
          (define (map/count f l1 l2)
            (let loop ([l1 l1]
                       [l2 l2]
@@ -425,6 +448,16 @@ add struct contracts for immutable structs?
                [else (cons (f (car l1) (car l2) i)
                            (loop (cdr l1)
                                  (cdr l2)
+                                 (+ i 1)))])))
+         
+         (define (map/count f . ls)
+           (let loop ([ls ls]
+                      [i 0])
+             (cond
+               [(andmap null? ls) '()]
+               [(ormap null? ls) (error 'map/count "mismatched lists")]
+               [else (cons (apply f (append (map car ls) (list i)))
+                           (loop (map cdr ls)
                                  (+ i 1)))])))
 
 	 ;; andmap/count : (X Y int -> Z) (listof X) (listof Y) -> (listof Z)
