@@ -1386,23 +1386,23 @@
       (eval '(require contract-test-suite6))
       (eval '(define-struct (t s) ()))))
   
-  #;
   (test/spec-passed
    'provide/contract6b
    '(parameterize ([current-namespace (make-namespace)])
       (eval '(module contract-test-suite6b mzscheme
                (require (lib "contract.ss"))
-               (provide/contract (struct s_ ((a any/c))))
-               (define-struct s_ (a))))
+               (define-struct s_ (a))
+               (provide/contract (struct s_ ((a any/c))))))
       (eval '(require contract-test-suite6b))
       (eval '(module contract-test-suite6b2 mzscheme
                (require contract-test-suite6b)
                (require (lib "contract.ss"))
                (define-struct (t_ s_) (b))
+               (provide s_-a)
                (provide/contract (struct (t_ s_) ((a any/c) (b any/c))))))
       (eval '(require contract-test-suite6b2))
       (eval '(define-struct (u_ t_) ()))
-      (eval '(t_-a (make-u_ 1 2)))))
+      (eval '(s_-a (make-u_ 1 2)))))
   
   (test/spec-passed
    'provide/contract7
@@ -1501,6 +1501,29 @@
                [(struct register (name type))
                 (list name type)])))
    (list 1 2))
+  
+  (test/spec-passed
+   'provide/contract14
+   '(parameterize ([current-namespace (make-namespace)])
+      (eval '(module test1 mzscheme
+               (require (lib "contract.ss"))
+               
+               (define-struct type (flags))
+               (define-struct (type:ptr type) (type))
+               
+               (provide/contract
+                (struct type
+                        ([flags (listof string?)]))
+                
+                (struct (type:ptr type)
+                        ([flags (listof string?)] [type type?])))))
+
+      (eval '(module test2 mzscheme
+               (require (lib "plt-match.ss"))
+               (require test1)
+               (match (make-type:ptr '() (make-type '()))
+                 [(struct type:ptr (flags type)) #f])))
+      (eval '(require test2))))
 
   
 ;                                                                                                     
