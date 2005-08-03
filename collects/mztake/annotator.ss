@@ -112,6 +112,9 @@
             #,(annotate #`expr (syntax->list #`(var ...)) #t))]
        [(define-syntaxes (var ...) expr)
         stx]
+       [(define-values-for-syntax (var ...) expr)
+        #`(define-values-for-syntax (var ...) 
+            #,(annotate #`expr #`(syntax->list #'(var ...)) #t))]      
        [(begin . top-level-exprs)
         (quasisyntax/loc stx (begin #,@(map (lambda (expr)
                                               (module-level-expr-iterator expr))
@@ -120,6 +123,7 @@
         stx]
        [(require-for-syntax . require-specs)
         stx]
+       [(require-for-template dot require-specs) stx]
        [else
         (annotate stx '() #f)]))
     
@@ -297,4 +301,4 @@
      (lambda (fn pos)
        (printf "break?: ~a ~a~n" fn pos) #t)
      (lambda (bp-info) (printf "break: ~a~n" bp-info) #f)))  
-)
+)                                                                 

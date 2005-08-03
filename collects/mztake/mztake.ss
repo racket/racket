@@ -10,7 +10,9 @@
            "engine.ss")
   
   (provide loc$ loc-reqspec loc-line loc-col
-           trace trace* bind define/bind define/bind-e where set-main!)
+           trace
+           trace* bind define/bind define/bind-e where set-main!
+           [rename #%top mztake-top])
   (provide/contract [kill (() (debug-process?) . opt-> . void?)]
                     [kill-all (-> void?)]
                     [set-running-e! (frp:event? . -> . void?)]
@@ -50,7 +52,8 @@
   (define set-running!
     (opt-lambda (b [process (current-process)])
       (if (frp:value-now b) (resume process) (pause process))
-      (frp:set-cell! (debug-process-running-e process) (frp:changes b))))
+      (frp:set-cell! (debug-process-running-e process) (frp:changes b))
+      (list 'now-running (debug-process-running-e process))))
     
   (define where
     (opt-lambda ([p (current-process)])
@@ -73,6 +76,17 @@
        (trace* (current-process) loc (lambda () true))]
       [(_ loc body ...)
        (trace* (current-process) loc (lambda () body ...))]))
+  
+  ;; TODO this does not actually work
+  (define-syntax (mztake-top stx)
+    (syntax-case stx () 
+      [(_ . name) 
+       (begin 
+         (printf "~a~n" 'name) 
+         #'(with-handlers ([exn:fail?
+                            (lambda (exn) (bind* (current-process) 'name))])
+             (printf "~a~n" 'name)
+             (#%top . name)))]))
   
   (define (bind* p name)
     (mark-binding-value
@@ -105,4 +119,4 @@
          ...)]))
   
   
-  )
+  )                                                                                                                     
