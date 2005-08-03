@@ -2,6 +2,8 @@
   
   (provide (all-defined))
   
+  (define identifying-mark 'xxx)
+  
   ;; a path is a 
   ;;         list of symbols 'car 'cdr (or empty list)
   ;;         or  #f 
@@ -19,7 +21,7 @@
     (lambda (p)
       (cond 
        [(not p) `(add1 ,(type-hilighter #f))]
-       [(null? p) `(xxx (add1 ,(type-hilighter #f)))]
+       [(null? p) `(,identifying-mark (add1 ,(type-hilighter #f)))]
        [(eq? (car p) 'car) `(add1 ,(type-hilighter (cdr p)))]
        [else (path-error 'add1 p)])))
   
@@ -29,7 +31,7 @@
     (lambda (p) 
       (cond 
        [(not p) `(,thing ,(type-hilighter #f))]
-       [(null? p) `(xxx (,thing ,(type-hilighter #f)))]
+       [(null? p) `(,identifying-mark (,thing ,(type-hilighter #f)))]
        [(eq? (car p) 'car) `(,thing ,(type-hilighter (cdr p)))]
        [else (path-error thing p)])))
 
@@ -51,7 +53,7 @@
       (let ([list-hl (mk-list-hilighter cnt-hilighters)])
         (cond
          [(not p) name]
-         [(null? p) `(xxx ,name)]
+         [(null? p) `(,identifying-mark ,name)]
          [(or (eq? (car p) 'car) (eq? (car p) 'cdr)) `(define-data ,name ,@(list-hl p))]
          [else (path-error name p)]))))
   
@@ -61,7 +63,7 @@
       (let ([constructor (string->symbol (string-append "make-" (symbol->string name)))])
         (cond 
          [(not p) `(,constructor ,@(map (lambda (f) (f #f)) field-hilighters))]
-         [(null? p) `(xxx (,constructor ,@(map (lambda (f) (f #f)) field-hilighters)))]
+         [(null? p) `(,identifying-mark (,constructor ,@(map (lambda (f) (f #f)) field-hilighters)))]
          [(eq? (car p) 'car) `(,constructor ,((car field-hilighters) (cdr p)) ,@(map (lambda (f) (f #f)) (cdr field-hilighters)))]
          [(eq? (car p) 'cdr) `(,constructor ,((car field-hilighters) #f) ,@((mk-list-hilighter (cdr field-hilighters)) (cdr p)))]
          [else (path-error name p)]))))
@@ -72,7 +74,7 @@
     (lambda (p)
       (cond
        [(not p) `(cons ,(car-hilighter #f) ,(cdr-hilighter #f))]
-       [(null? p) `(xxx (cons ,(car-hilighter #f) ,(cdr-hilighter #f)))]
+       [(null? p) `(,identifying-mark (cons ,(car-hilighter #f) ,(cdr-hilighter #f)))]
        [(eq? (car p) 'cdr) `(cons ,(car-hilighter #f) ,(cdr-hilighter (cdr p)))]
        [(eq? (car p) 'car) `(cons ,(car-hilighter (cdr p)) ,(cdr-hilighter #f))]
        [else (path-error 'cons p)])))
@@ -83,7 +85,7 @@
       (let ([list-hilighter (mk-list-hilighter domain-hilighter-list)])
         (cond
          [(not p) `( ,@(list-hilighter #f) -> ,(range-hilighter #f))]
-         [(null? p) `(xxx (,@(list-hilighter #f) -> ,(range-hilighter #f)))]
+         [(null? p) `(,identifying-mark (,@(list-hilighter #f) -> ,(range-hilighter #f)))]
          [(eq? (car p) 'car) `( ,@(list-hilighter (cdr p)) -> , (range-hilighter #f))]
          [(eq? (car p) 'cdr) `( ,@(list-hilighter #f) -> ,(range-hilighter (cdr p)))]
          [else (path-error 'arrow p)]))))
@@ -94,7 +96,7 @@
       (let ([false-func (lambda (f) (f #f))])
         (cond
          [(not p) `( ,@(map false-func lhilighters))]
-         [(null? p) `(xxx ,@(map false-func lhilighters))]
+         [(null? p) `(,identifying-mark ,@(map false-func lhilighters))]
          [(eq? (car p) 'car) `( ,@(cons ((car lhilighters) (cdr p)) (map false-func (cdr lhilighters))))]
          [(eq? (car p) 'cdr) `( ,@(cons ((car lhilighters) #f) ((mk-list-hilighter (cdr lhilighters)) (cdr p))))]
          [else (path-error 'list p)]))))
@@ -104,5 +106,5 @@
     (lambda (p)
       (cond 
        [(not p) name]
-       [(or (null? p)(eq? (car p) 'car))  `(xxx ,name)]
+       [(or (null? p)(eq? (car p) 'car))  `(,identifying-mark ,name)]
        [else (path-error 'flat p)]))))

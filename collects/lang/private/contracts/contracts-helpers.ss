@@ -115,12 +115,12 @@ flat-contract : contract
                (let ([name (object-name function)])
                  (if (regexp-match #rx"[0-9]+:[0-9]+" (symbol->string name)) 
                      ; cant infer a good name (higher order things)
-                     (format "function defined on line ~e (called with: ~a) failed the assertion ~e"
+                     (format "function defined on line ~e (called with: ~a) failed the assertion ~s"
                              name 
                              (format-list-with-spaces values)
                              error)
                      ; have func name
-                     (format "function ~e (called with: ~a) failed the assertion ~e"
+                     (format "function ~e (called with: ~a) failed the assertion ~s"
                              name
                              (format-list-with-spaces values)
                              error)))))]
@@ -129,9 +129,9 @@ flat-contract : contract
              (lambda (error)
                (let ([name (object-name function)])
                  (if (regexp-match #rx"[0-9]+:[0-9]+" (symbol->string name)) 
-                     (format "the arguments to the function defined on line ~e (~e) failed the assertion ~e"
+                     (format "the arguments to the function defined on line ~e (~e) failed the assertion ~s"
                              name values error)
-                     (format "function ~e's arguments ~a failed the assertion ~e" 
+                     (format "function ~e's arguments ~a failed the assertion ~s" 
                              name
                              (format-list-with-spaces values)
                              error)))))])
