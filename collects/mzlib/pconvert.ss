@@ -2,7 +2,9 @@
 (module pconvert mzscheme
   
   (require (prefix s: "string.ss")
-           (prefix f: "list.ss"))
+           (prefix f: "list.ss")
+	   "etc.ss"
+	   "pconvert-prop.ss")
   (require "class.ss")
   (require "unit.ss")
   
@@ -413,13 +415,18 @@
                                
                                ;; this case must be next to last, so that all of the
                                ;; things with object-name's fall into the cases above first
-                               [(object-name expr)
-                                (let* ([name (object-name expr)]
-                                       [str-name (if (string? name)
-                                                     name
-                                                     (symbol->string name))]
-                                       [uniq (box #f)])
-                                  `(,(string->symbol (string-append "make-" str-name))
+                               [(or (print-convert-named-constructor? expr)
+				    (object-name expr))
+                                (let ([constructor
+				       (if (print-convert-named-constructor? expr)
+					   (print-convert-constructor-name expr)
+					   (let* ([name (object-name expr)]
+						  [str-name (if (string? name)
+								name
+								(symbol->string name))])
+					     (string->symbol (string-append "make-" str-name))))]
+				      [uniq (begin-lifted (box #f))])
+                                  `(,constructor
                                     ,@(map (lambda (x) 
                                              (if (eq? uniq x)
                                                  '...
