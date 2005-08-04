@@ -37,10 +37,10 @@
 
 (define* pl-setup-page
   (get-ffi-obj "c_plspage" libplplot
-               (_fun (xp : _plflt = 0.)
-                     (yp : _plflt = 0.)
-                     (xleng : _plflt)
-                     (yleng : _plflt)
+               (_fun (xp : _plint = 0)
+                     (yp : _plint = 0)
+                     (xleng : _plint)
+                     (yleng : _plint)
                      (xoff : _plint = 0)
                      (yoff : _plint = 0)
                      -> _void)))
@@ -116,7 +116,7 @@
 
 (define* pl-fill
   (get-ffi-obj "c_plfill" libplplot
-   (_fun  (n         : _int = (length x-values))
+   (_fun  (n         : _plint = (length x-values))
           (x-values  : (_list i _plflt))
           (y-values  : (_list i _plflt))
           -> _void)))
