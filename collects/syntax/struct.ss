@@ -174,7 +174,8 @@
 				  [(null? l) #t]
 				  [(not (car l)) #f]
 				  [else (loop (cdr l))]))
-			       (append base '(#f)))
+			       (append base '(#f))
+			       base)
 			   base))]
 	     [qs (lambda (x) (if (eq? x #t)
 				 x
