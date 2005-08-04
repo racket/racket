@@ -34,10 +34,11 @@ Differences from the book:
   as the variant's `field-id's, and each argument is checked by
   applying the function produced by the variant's `predicate-expr'.
 
-  When constructor-based printing is used in DrScheme, variant
-  instances are printed with a `make-' prefix before the variant name.
-  Thus, in addition to `variant-id', `make-variant-id' is also defined
-  for each `variant-id' (to the same constructor as `variant-id').
+  In DrScheme v209 and older, when constructor-based printing was
+  used, variant instances were printed with a `make-' prefix before
+  the variant name.  Thus, for compatibility, in addition to
+  `variant-id', `make-variant-id' is also defined for each
+  `variant-id' (to the same constructor as `variant-id').
 
 > (cases datatype-id expr (variant-id (field-id ...) result-expr ...) ...)
 > (cases datatype-id expr (variant-id (field-id ...) result-expr ...) ... (else result-expr ...))

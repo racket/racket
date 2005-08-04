@@ -174,7 +174,8 @@
         (list 'mzscheme
               '(lib "foreign.ss")
               '(lib "mred.ss" "mred")
-              '(lib "cache-image-snip.ss" "mrlib")))
+              '(lib "cache-image-snip.ss" "mrlib")
+              '(lib "pconvert-prop.ss")))
       
       ;; ensure that they are all here.
       (for-each (λ (x) (dynamic-require x #f)) to-be-copied-module-specs)

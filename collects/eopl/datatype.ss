@@ -4,6 +4,7 @@
 
 (module datatype mzscheme
 
+  (require (lib "pconvert-prop.ss"))
   (require-for-syntax "private/utils.ss")
 
   (define-syntax define-datatype
@@ -100,7 +101,9 @@
                     (let-values ([(struct:variant make-variant variant? 
                                                   variant-accessor variant-mutator)
                                   (make-struct-type 'variant-name struct:x variant-field-count 0
-                                                    #f null (make-inspector))]
+                                                    #f 
+						    `((,prop:print-convert-constructor-name . variant-name))
+						    (make-inspector))]
                                  ...)
                       ;; User-available functions:
                       (values
