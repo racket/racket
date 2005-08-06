@@ -1,6 +1,7 @@
 (module mztake mzscheme
   (require (lib "contract.ss")
            (prefix frp: (lib "lang-ext.ss" "frtime"))
+           (rename (lib "frtime.ss" "frtime") frp:list list)
            (rename (lib "frtime.ss" "frtime") frp:value-nowable? value-nowable?)
            (rename (lib "frtime.ss" "frtime") frp:behaviorof behaviorof)
            "mztake-structs.ss"
@@ -15,8 +16,8 @@
            [rename #%top mztake-top])
   (provide/contract [kill (() (debug-process?) . opt-> . void?)]
                     [kill-all (-> void?)]
-                    [set-running-e! (frp:event? . -> . void?)]
-                    [set-running! (frp:value-nowable? . -> . void?)]
+                    [set-running-e! (frp:event? . -> . any)]
+                    [set-running! (frp:value-nowable? . -> . any)]
                     [exceptions (() (debug-process?) . opt-> . frp:event?)]
                     [exited? (() (debug-process?) . opt-> . frp:behavior?)]
                     [rename loc/opt-col loc
@@ -52,8 +53,7 @@
   (define set-running!
     (opt-lambda (b [process (current-process)])
       (if (frp:value-now b) (resume process) (pause process))
-      (frp:set-cell! (debug-process-running-e process) (frp:changes b))
-      (list 'now-running (debug-process-running-e process))))
+      (frp:set-cell! (debug-process-running-e process) (frp:changes b))))
     
   (define where
     (opt-lambda ([p (current-process)])
