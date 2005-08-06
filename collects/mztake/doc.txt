@@ -24,19 +24,16 @@ using callbacks). Consider a MzTake script to monitor the
 behavior of the program "highway.ss", in the demos directory
 of the MzTake collection:
 
-   (define-mztake-process radar-program
-                          ("highway.ss" [values-of-speed 3 4 bind 'speed]))
-   (printf-b "current speed: ~a" (hold values-of-speed))
-   (start/resume radar-program)
+  (define/bind (loc "highway.ss" 3 ) speed)
+  (printf-b "current speed: ~a" speed)
+  (set-running! (< speed 55))
 
 This code executes a target module in the file "highway.ss"
-after installing a _trace point_ (also known as a
-_watch point_) just before the Scheme expression on the fourth
-column of the third line of "highway.ss". VALUES-OF-SPEED
-is a FrTime event stream that always contains the *current*
-value (and potentially every past value) of the variable named
-SPEED, as it is bound to the values corresponding to that
-syntactic location.
+after installing a _trace point_ (also known as a _watch
+point_) just before the Scheme expression on the third line
+of "highway.ss". SPEED is a FrTime behavior that always
+contains the *current* value of the variable named SPEED in
+the target program.
 
 PRINTF-B works like Scheme's PRINTF function, consuming a
 format-string and fill-values, printing the result in
@@ -52,89 +49,48 @@ the result of a computation is correct, MzTake scripts
 can dynamically break open an execution, record inner state,
 and *compute* with it. This allows you to confirm that the
 intermediate steps which lead to a correct answer were
-also correct. In the example below, we use a version of map
-that operates over events in an event stream, instead of
-elements in a list. We assert that all recorded speeds are
-less than 55, otherwise we raise an exception:
-
-  (map-e (lambda (a-speed)
-           (when (>= a-speed 55) (raise 'too-fast!!)))
-         values-of-speed)
-
-Of course, like most test suites, this only tells you
-something went wrong. Perhaps knowing the last ten speeds that
-led to this would prove useful. You could PRINTF the value
+also correct. In the highway example, perhaps knowing the last ten speeds that
+would prove useful. You could PRINTF the value
 onto a new line each time, but after ten updates the screen
 is already starting to fill up with information -- we are
 only interested in the last ten speeds, after all.
 One possible solution:
 
-  (printf-b "last ten speeds: ~a" (history-b 10 values-of-speed))
-  (map-e (lambda (a-speed)
-           (when (>= a-speed 55) (raise 'too-fast!!)))
-         values-of-speed)
+  (printf-b "last ten speeds: ~a" (history-b 10 (changes speed)))
 
-HISTORY-B consumes a number and an event stream (VALUES-OF-SPEED),
+HISTORY-B consumes a number and an event stream (CHANGES SPEED),
 returning a FrTime behavior containing a FIFO ordered list of
 the last ten values emitted on that event stream. In this case,
 HISTORY-B maintains a list of the ten most recent SPEEDS seen
-on VALUES-OF-SPEED (up until the exception is raised). Though
+on SPEED. Though
 this is is an improvement, we still can't *use* that list as
-data to see what led to the exception. One possible solution:
+data to see what led to the exception. We might want to
+puase the program when something goes awry.
 
-  (define last-ten (history-b 10 values-of-speed))
-  (printf-b "last ten speeds: ~a" last-ten)
-  (map-e (lambda (a-speed)
-                 (when (>= a-speed 55) (pause radar-program)))
-         values-of-speed)
+  (printf-b "last ten speeds: ~a" (history-b 10 (changes speed)))
+  (set-running! (< speed 55))
 
 MzTake allows you to "pause" a target program anytime during
-execution. Once paused, it becomes trivial to interactively
-explore and compute with script variables (such as LAST-TEN)
-in the interaction pane. Once satisfied, you can easily resume
-execution by typing "(start/resume radar-program)", or end it
-with "(kill radar-program)", where RADAR-PROGRAM is any MzTake
-process.
+execution. Once paused, it becomes posssible to interactively
+explore and compute with script variables. Once satisfied, you can easily resume
+execution by typing "(set-running #t)", or end it
+with "(kill)".
 
 Finally, FrTime provides a rich animation library. Combined
 with the MzTake debugger, it takes only a few lines to animate
 your algorithms and see them in action, easily letting you
 confirm (or refute!) that they are working correctly.
 
-  (display-shapes (make-speed-gauge (hold values-of-speed)))
-
-
-============================================================
-
-  Installing MzTake
-
-MzTake is a DrScheme tool distributed as a self-installing
-".PLT" file from the following web site:
-
-  http://www.cs.brown.edu/research/plt/software/mztake/
-
-MzTake requires PLT Scheme v208 and higher.
+  (display-shapes (make-speed-gauge (hold speed)))
 
 
 ============================================================
 
   Demos
 
-If you installed MzTake using the .PLT distribution, you can
-find the demos in the following directories:
-
-   On Linux:
-   ~/.plt-scheme/208/collects/mztake/demos
-
-   On Windows (typically):
-   C:\Documents and Settings\Jono\Application Data\PLT Scheme\208\collects\mztake\demos
-
-where "Jono" is your username, and "208" is the version of
-DrScheme you are running.
-
 The demos directory contains a sub-directory for each of the demos.
 For instance, the highway directory contains "highway.ss" and
-"highway-mztake.ss". To run this demo, switch to the "MzTake" language
+"highway-mztake.ss". To run this demo, switch to the "FrTime" language
 level from the "Experimental Languages" section of DrScheme's language
 dialog, load "highway-mztake.ss", and click "Run". What you see is
 generated by the debugging script. Each demo directory contains
@@ -142,11 +98,6 @@ the following two files: one is the program being debugged
 (named after the directory), and the other is a file ending
 in "...-mztake.ss" (the MzTake script).
 
-The demos are in order of increasing complexity.  When you open
-them in DrScheme, don't let the amount of text overwhelm you --
-the scripts themselves are only a few lines of code. However, the
-commenting is *extensive* to aid even a FrTime novice who has never
-written a FrTime script before!
 
   ./highway/highway-mztake.ss         - The program simulates a very simple
                                       speedometer, and the MzTake script
@@ -156,32 +107,14 @@ written a FrTime script before!
                                       which generates coordinates for a
                                       single sine wave.
 
-  ./montecarlo/montecarlo-mztake.ss   - Visualizes the Monte Carlo integration
-                                      ("throwing darts at a dartboard") used
-                                      to derive the value of pi.
-
   ./random/random-mztake.ss           - Tests the quality of Scheme's random
                                       number generator with a histogram.
 
   ./exception/exception-mztake.ss     - Demonstrates how MzTake catches exceptions.
 
-  ./first-class/first-class-mztake.ss - Demonstrates how you can add multiple traces
-                                      to the same variable in a file to `record'
-                                      its evolution, and how you can trace first-class
-                                      functions, such as those passed to map.
-
   ./djikstra/dijkstra-mztake.ss       - Debugs a buggy implementation of 
                                       Dijkstra's algorithm
-
-If you have just downloaded MzTake and are coming directly
-to the demos, know that once started, you can easily end
-execution of a debugger scipt by typing "(kill p)" into the
-Interactions window (freeing up resources). You can also pause
-a script with "(pause p)", and resume it with with "(start/resume p)",
-where P is any MzTake process.  In the "highway" demo, P is
-"radar-program", and P is "p" (meaning "process") for the others.
-
-
+ 
 ============================================================
 
   Functions
@@ -203,8 +136,9 @@ with them.
 
 _Debugging with MzTake_
 
-Conceptually, MzTake is an extension of FrTime, providing
-functions that execute a target program (or many!), and
+Conceptually, MzTake is a library for the FrTime languages
+which provides
+functions that execute a target program (or many), and
 "connect" to points in its code. MzTake then provides the
 running FrTime script with interesting information (such as
 a variable's current value) which it derives from these
@@ -214,92 +148,6 @@ FrTime takes that information and lets the script author
 compute with it, verify it, print it, make visualizations
 with it, anything you would like to do.
 
-Currently, other than the powerful monitoring facilities that
-MzTake provides (see BIND and ENTRY in the next section), user
-interaction is limited to pausing/resuming the running program,
-and operating on a few properties and predicates over general
-program state (see PROCESS:EXITED?, PROCESS:RUNTIME/SECONDS,
-and PROCESS:EXCEPTIONS). In the future, MzTake will offer other
-types of interaction and information, such as inspecting
-(and stepping through!) the call stack.
-
-In more depth, the debugger works on a model roughly as follows:
-
-  * A single debugging script file contains all the MzTake
-    processes, traces, bindings, animations, and other FrTime
-    code fragments that do the debugging and program monitoring.
-
-  * This script file is loaded into the Definitions window in
-    DrScheme, and run using the MzTake language. User interaction
-    with the debugger is provided through the Interactions window.
-
-  * A MzTake *process* is like an operating system that runs a group of
-    programs, installs hooks into them to monitor their execution,
-    and provides FrTime with these hooks to do computations.
-
-  * Also like an operating system, each MzTake process runs
-    independently of all other MzTake processes; one will not affect
-    another. They can "interact" in the script by adding traces and
-    computing with those traces.
-
-  * A MzTake process accepts a number of target-files as "clients" to
-    debug and monitor. Each client should contain a module program,
-    of the form:
-
-       (module mod-name mzscheme
-         ... program-body ... )
-
-    MzTake does not support debugging anything other than modules.
-
-  * The first client defined for each MzTake process is *always* the
-    main ("top level") module. That is, START/RESUME runs the main
-    client module, in much the same way that you would run it in
-    DrScheme (in the "module ..." language). It is assumed the module
-    has "side-effects" which start the target program.
-
-    The rest of the files traced in a DEFINE-MZTAKE-PROCESS are modules
-    used *by* the main module, allowing you to see what is going
-    on deeper than in the main-module. For example:
-
-      (define-mztake-process p1
-            ("my-stack-tests.ss")
-            ((lib "my-stack.ss" "my-stack") [s-push-p1 3  29 bind 'insert-value]
-                                            [s-pop-p1  10 16 bind 'return-value]))
-
-    "my-stack-tests.ss" is the main module. Suppose it is a test-suite
-    for "my-stack.ss"; the test suite asserts that the stacks are not
-    working as expected. You may want to use these traces to test how
-    "my-stack.ss" is operating "inside" during the test-suite.
-    Watch the pushes and pops and see how they correlate to what you expect.
-
-  * The same module can be traced differently for each MzTake processe.
-    Lets say that in the same script you want to see why the stack is using
-    a lot more memory than expected. You can set traces to count how many times
-    spaces is allocated and cleared and see if they are equal.
-
-      (define-mztake-process p2
-            ("my-stack-tests.ss")
-            ((lib "my-stack.ss" "my-stack") [s-allocates-p2 22 2 entry]
-                                            [s-clears-p2 28 2 entry]))
-
-    This installs an ENTRY trace at the function entry point for
-    ALLOCATE-STACK and CLEAR-STACK in "my-stack.ss". Every time
-    those functions get called, these traces will send a "#t" event,
-    and could be counted using COUNT-B.
-
-  * Once a MzTake processe is defined, and all the script code operating
-    on traces is defined, START/RESUME can be called on the process
-    to begin its execution.
-
-  * All of the variables defined by traces (BINDs and ENTRYs on the active
-    MzTake processes) are available simulatenously in the script.
-
-  * Lastly, proceses can be started, paused, resumed, and terminated.
-    See START/RESUME, PAUSE, KILL, KILL-ALL.
-
-
-
-============================================================
 
 MzTake itself defines the following functions:
 
@@ -313,104 +161,10 @@ ping the value of one or more variables when the trace point is reached.
 > (define-mztake-process process-name
     [target-filename trace-clause ...] ...)
 
-   Where trace-clause is one of the following:
+> (kill)
 
-    <1>  [trace-name line-number column-number ENTRY]
-    <2>  [trace-name line-number column-number bind 'variable-name]
-    <3>  [trace-name line-number column-number bind '(variable-name ...)]
-
-   DEFINE-MZTAKE-PROCESS defines the variable process-name,
-   whose value is a MzTake process object. That object
-   can be passed to functions such as START/RESUME, KILL,
-   and "process:runtime/milliseconds", documented in the next
-   section.
-
-   DEFINE-MZTAKE-PROCESS installs trace points in one or many files,
-   as indicated by the trace-clauses. The target-filename can
-   be any file specification accepted by the standard REQUIRE
-   syntax for modules:
-
-   * Absolute path:
-       (define-mztake-process p [(file "/home/me/test.ss") [brk 10 7 ENTRY]])
-
-   * Relative path:
-       (define-mztake-process p ["../test.ss" [brk 10 7 ENTRY]])
-
-   * Library path:
-       (define-mztake-process p [(lib "test.ss" "collect-dir") [brk 10 7 ENTRY]])
-
-   For each trace-clause in the call to DEFINE-MZTAKE-PROCESS,
-   the trace-name is a variable name bound at the
-   top-level, whose value is a FrTime event
-   stream. Each time the execution of the target
-   reaches the given line-number and column[*], the
-   debugger emits an event on that stream. The value of
-   that event depends on which of the three kinds of
-   trace-clause was used, as follows:
-
-      <1> The value of the event is #t (an ENTRY trace).
-
-      <2> The value of the event is the value of variable-name,
-          in the target program, at the location of the
-          trace point (a BIND trace).
-
-      <3> The value of the event is a list containing one
-          element for each variable name given. The value
-          of each element is taken from the variable of
-          that name in the target (as in <2>).
-
-   Trace points do not themselves pause the
-   program. Unless a MzTake process is suspended using
-   the PAUSE function (below), execution resumes after
-   the MzTake script processed the event.
-
-   [*] Valid locations to add traces to are almost 
-       always one character to the left of open-parentheses, "(",
-       open-square-braces, "[", or to the left of the first
-       character of a symbol/name (LET is a special exception,
-       see Known Problems for more information on tracing LET):
-
-         (code [more-code ...] ...)
-         ^^    ^^         ^
-
-   [*] To obtain accurate line/column information when
-       setting up trace points, make sure you turn off
-       DrScheme's "Wrap Text" feature under the "Edit"
-       menu. Alternatively, you can position your cursor
-       at the location where you want to add a trace,
-       and click MzTake's "Syntax Location" button on the
-       main DrScheme toolbar. A message-box will tell
-       the correct line and column numbers to use.
-   
-
-_Operations on MzTake Processes_
-
-The following functions operate on MzTake processes,
-and can be used in the Interactions window.
-
-> (start/resume process-name)
-
-   Start the execution and monitoring of the DEFINE-MZTAKE-PROCESS,
-   process-name. If the process given to START/RESUME is already
-   running, and was paused with the function PAUSE (below),
-   START/RESUME resumes its execution.
-
-   Script statements are executed top-down, sequentially.
-   In general, you want to call start/resume at the end of
-   the script, or in the interactions pane after you
-   start running the script. Otherwise, a race condition may
-   develop, where your script may miss events from the
-   beginning of the execution.
-
-> (pause process)
-
-   Suspends the execution of the given mztake
-   process. Use START/RESUME to resume execution.
-
-> (kill process)
-
-   Kills the target process and releases all resources
-   it used -- you cannot START/RESUME after a KILL.
+   Kills the process and releases all resources
+   it used -- you cannot start/resume after a KILL.
 
    Closing a FrTime animation/graphics window will *not*
    kill a running MzTake process. If it does not terminate
@@ -423,33 +177,8 @@ and can be used in the Interactions window.
    under MzTake -- use this when it seems a process is
    out of control and needs to be stopped immediately.
    Has the same effect of calling KILL on each process
-   you defined and START/RESUME'd in the script.
+   you defined and start/resume'd in the script.
 
-> (process:exceptions process)
-
-   Returns an event stream. If the target process
-   throws an uncaught exception, the exception will
-   appear on this stream.
-
-> (process:runtime/seconds process)
-
-   Returns a FrTime time-varying value which counts the
-   number of seconds elapsed in the execution of the
-   given process (not counting time spent suspended by
-   PAUSE). Includes garbage-collection time.
-  
-> (process:runtime/milliseconds process)
-
-   Returns a FrTime time-varying value which counts the
-   number of milliseconds elapsed in the execution of the
-   given process (not counting time spent suspended by
-   PAUSE). Includes garbage-collection time.
-
-> (process:exited? process)
-
-   Return a time-varying Boolean value which becomes
-   true after the given MzTake process exited/killed.
-  
 
 _Useful Functions for Time-Varying Values_
 
@@ -517,26 +246,25 @@ that are particularly useful when debugging:
 
 Known Problems
 
-* In general, you should not REQUIRE or use any methods
-  in your MzTake script that were defined in any of the files
-  you are putting bind-traces on:
+* In general, you should not REQUIRE or use any functions on
+  acting on the structures of your target program in your
+  MzTake script.
 
   ORIGINAL FILE:
-    (define (my-fun some-struct) ...)
+    (define-struct foo (a b))
+    (let ([x (make-foo 1 2)])
+      x)
 
   MZTAKE SCRIPT:
     (require "original-file.ss")
-    (define-mztake-process p ("original-file.ss" [val 10 12 bind 'my-struct]))
-    (my-fun (hold val))
+    (define/bind (loc "original-file.ss" 3) x)
+    (foo-a x) ;; this will fail!
 
-  Sometimes this causes unusual errors. These problems usually only
-  show up if you are binding to structs (defined in the same file) and
-  passing those bindings to functions (defined in the same file).
- 
-  You have been warned.
+  The target program and the MzTake will have different
+  instances of the struct, and the call to FOO-A will fail.
 
 * The break button will *not* kill runaway client processes.
-  You must type (kill process-name) or (kill-all).
+  You must type (kill) or (kill-all).
 
 * Some legal syntax locations (used in setting trace points)
   are unreachable during program execution (they do not get
@@ -566,10 +294,6 @@ Known Problems
   However, the messages that are printed are as accurate as
   possible.
 
-* process:running? tells you if the process is currently,
-  actively, running. It might be useful to you, and will
-  be in the next release.
-
 * On particularly fast computers, when running scripts with a
   very high trace point density (traces are hit constantly,
   potentially hundreds in a second, like in the Monte Carlo,
@@ -580,29 +304,6 @@ Known Problems
   same name, IN the same process, though in different directories,
   there will probably be some sort of name-clash and strange error.
   This will be fixed.
-
-* If you find that sometimes it seems one of the breakpoints you
-  set in a file REQUIRE'd by the main client module, your problem
-  may be that the file-specification you used is different in the
-  script than it is in the main client module (occuring in REQUIREs
-  that use sub-directories):
-
-  MAIN CLIENT:
-    (require (lib "my-lib.ss" "mycollect" "private"))
-
-  MZTAKE SCRIPT:
-    (define-mztake-process p ("main.ss")
-                             ((lib "my-lib.ss" "mycollect/private") [traces...])
-
-  This seems to be an issue with DrScheme rather than MzTake.
-  For instance, you get an error if you make a module like this
-  on Windows:
-
-   (module m mzscheme
-     (require (lib "my-lib.ss" "mycollect" "private"))
-     (provide (lib "my-lib.ss" "mycollect/private")))
-
-  This will be looked into, but keep your eyes open for it.
 
 
 ============================================================
@@ -616,94 +317,9 @@ Tips and Tricks
   caveat is that it is no longer 'reactive' and it may be out of
   date after the moment it is processed).
 
-* You may want to bind more than one variable at a certain point
-  so that you only get one change event -- otherwise, you will
-  get multiple change events even if at the same trace point
-  (see Known Problems).
-
-  For instance, if you trace 'x and 'y separately:
-    * First 'x and 'y are up-to-date.
-    * Then 'x updates and 'y is out-of-date.
-    * Then 'y updates, and both are up-to-date.
-
-  But code that draws using a position derived from X and Y
-  will draw twice, in two locations, one for each update,
-  the second one being correct.
-
-* Order matters -- if you have more than one trace at an identical
-  syntax location (in the same file), the order that trace events
-  get updated is identical to the order they exist in the script.
-  For example:
-
-  (define-mztake-process p ("file.ss" [a-bind  5 55 bind 'x]
-                                      [some-bind  2 22 bind 'irrelevent]
-                                      [a-entry 5 55 entry]
-                                      [another-bind 5 55 bind 'y]))
-
-  When that trace gets evaluated, A-BIND will get the new value
-  of X, and relevant FrTime code will get re-evaluated. *Then*
-  A-ENTRY will be notified about the trace and a #t will be emitted,
-  (at this point in time, Y is out-of-date, but X is up-to-date). Lastly,
-  ANOTHER-BIND will get the new value of Y, and the trace is complete.
-
-  Of course, you will typically want ENTRY as the first trace,
-  and all other BINDs to be in a list, so that you get two updates,
-  as explained in the previous tip:
-
-  (define-mztake-process p ("file.ss" [a-entry 5 55 entry]
-                                      [x/y-bind 5 55 bind '(x y)]
-                                      [some-bind  2 22 bind 'irrelevent]))
-
-* You can trace the *same* file in different ways by using
-  multiple processes on the same file, under different
-  contexts, and compare results. For example, in
-  "demos/misc/first-class-mztake.ss":
-
-     (define-mztake-process p ("first-class.ss" [x-before-let 3 29 bind 'x]
-                                         [x-in-let     4 25 bind 'x]
-                                         [x-after-let  5 11 bind 'x]))
-     (... code omitted ...)
-     (start/resume p)
-
-  is functionally equivalent to:
-
-     (define-mztake-process p1 ("first-class.ss" [x-before-let 3 29 bind 'x]))
-     (define-mztake-process p2 ("first-class.ss" [x-in-let     4 25 bind 'x]))
-     (define-mztake-process p3 ("first-class.ss" [x-after-let  5 11 bind 'x]))
-     (... code omitted ...)
-     (start/resume p1) (start/resume p2) (start/resume p3)
-
-  All the variable bindings can still be used as they were before.
-
-* Code such as (when (= num 100) (pause p)) pauses *after*
-  num reaches 100, the next time a trace point is hit.
-  However, the next point is not processed until you
-  START/RESUME. See the random-xs demo.
-
-* When you pause a MzTake process, you can play with
-  current bindings and explore script code interactively.
-  You *may* dynamically evaluate/add FrTime code to do
-  things like pause or kill a MzTake process based on runtime,
-  etc. You can even define new MzTake processes dynamically
-  and start/resume them, integrating and exploring the traces.
-  You cannot add or change existing traces dynamically.
-
 * You can add trace points to first-class functions, and they
   will send trace update from anywhere they are passed to and
-  evaluated.
-
-* FrTime has two methods for drawing graphics. One runs in
-  constant time, and is fast, because it simply accumulates
-  pixels on the screen and doesn't redraw a list of objects.
-  See the "Monte Carlo" or "random-xs" demos for this in action.
-
-  The other method is primarily for animations which need
-  redrawing because things move. It slows down pretty quickly
-  after you have more than 1000 objects to the shape list.
-  See the "sine" or "highway" demos for this in action.
-
-  For more information, refer to the FrTime documentation.
-
+  invoked.
 
 ============================================================
 
