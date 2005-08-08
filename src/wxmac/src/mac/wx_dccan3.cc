@@ -167,6 +167,7 @@ void wxCanvasDC::DrawText(const char* text, double x, double y, Bool combine, Bo
     wxKey *k = (wxKey *)SCHEME_BYTE_STR_VAL(table_key);
     int ulen;
     atomic_timeout_t old;
+    double one_res;
     CGSize *sizes;
     CGGlyph *cgglyphs;
     int glyph;
@@ -211,7 +212,10 @@ void wxCanvasDC::DrawText(const char* text, double x, double y, Bool combine, Bo
       glyph = SCHEME_INT_VAL(SCHEME_VEC_ELS(val)[2]);
       if (glyph < 0)
 	break;
-      sizes[i-d].width = SCHEME_DBL_VAL(SCHEME_VEC_ELS(val)[0]);
+      one_res = SCHEME_DBL_VAL(SCHEME_VEC_ELS(val)[0]);
+      if (!use_cgctx)
+	one_res = one_res / user_scale_y;
+      sizes[i-d].width = one_res;
       sizes[i-d].height = 0;
       cgglyphs[i-d] = (CGGlyph)glyph;
     }
