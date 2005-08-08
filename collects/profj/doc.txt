@@ -63,11 +63,11 @@ _Java + dynamic_ language level
  will be used:
  JName = [a-zA-Z0-9_]
    Scheme name        <->   Java name
-   JName*-[a-zA-Z0-9] <-> JName*[A-Z0-9]   i.e. make-foo      <->   makeFoo
-   JName*?            <-> JName*P          i.e. foo?          <->   fooP
-   JName*->[a-zA-Z0-9]<-> JName*To[A-Z0-9] i.e. foo->string   <->   fooToString
-   JName*!            <-> JName*Set        i.e. set-foo-baz!  <->   setFooBazSet
-   JName*%            <-> Jname*Obj        i.e. object%       <->   objectObj
+   JName.*[-][a-zA-Z0-9] <-> JName.*[A-Z0-9]     i.e. make-foo      <->   makeFoo
+   JName.*[?]            <-> JName.*[P]          i.e. foo?          <->   fooP
+   JName.*[->][a-zA-Z0-9]<-> JName.*[To][A-Z0-9] i.e. foo->string   <->   fooToString
+   JName.*[!]            <-> JName.*[Set]        i.e. set-foo-baz!  <->   setFooBazSet
+   JName.*[%]            <-> Jname.*[Obj]        i.e. object%       <->   objectObj
    
  
 _Libraries available to ProfessorJ:
