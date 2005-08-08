@@ -14,7 +14,7 @@ interaction boxes, and test-suite boxes. (i.e. what would be given to
 javac plus two graphical boxes). Descriptions of these boxes can be
 found in the DrScheme manual.
 
-_Java + dynamic language level
+_Java + dynamic_ language level
  Version 299.200 +
  This language level allows programs to contain a value that will be 
  checked dynamically rather than statically.
@@ -31,6 +31,12 @@ _Java + dynamic language level
  is executed. Values declared with type 'dynamic' can also be used as
  any primitive or object value in Java. In addition, values with type
  'dynamic' can also be used as methods: var() is a legal use.
+ 
+ In general, variables declared with type 'dynamic' will generate a contract
+ check with coercians at each usage to ensure consistency with the Java type
+ system.
+ 
+ A Java String will be converted to a Scheme string, and vice-versa.
  
  Within the Java + dynamic language level, Scheme libraries may be 
  imported and used within the Java program.
@@ -55,12 +61,13 @@ _Java + dynamic language level
  
  As many Scheme names are not valid Java names, the following automatic name translations
  will be used:
-   Scheme name   <->   Java name
-   make-foo      <->   makeFoo
-   foo?          <->   fooP
-   foo->string   <->   fooToString
-   set-foo-baz!  <->   setFooBazSet
-   object%       <->   objectObj    
+ JName = [a-zA-Z0-9_]
+   Scheme name        <->   Java name
+   JName*-[a-zA-Z0-9] <-> JName*[A-Z0-9]   i.e. make-foo      <->   makeFoo
+   JName*?            <-> JName*P          i.e. foo?          <->   fooP
+   JName*->[a-zA-Z0-9]<-> JName*To[A-Z0-9] i.e. foo->string   <->   fooToString
+   JName*!            <-> JName*Set        i.e. set-foo-baz!  <->   setFooBazSet
+   JName*%            <-> Jname*Obj        i.e. object%       <->   objectObj
    
  
 _Libraries available to ProfessorJ:
