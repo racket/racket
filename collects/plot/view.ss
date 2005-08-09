@@ -47,24 +47,25 @@
         get-x-max
         get-y-min
         get-y-max
-        
+
         get-x-label
         get-y-label
         get-title 
         start-plot 
         finish-plot
-        
+
         get-renderer
-        
+
         get-height
         get-width)
-      
+
       (init-field
        renderer)
-      
+
       (fields-with-accessors
        (height 300)
        (width 400)
+       (out-file #f) ;; if file is not #f, keep the file
        (x-min -5)
        (x-max 5)
        (y-min -5)
@@ -75,13 +76,12 @@
        (device 'png)
        (fgcolor '( 0 0 0))
        (bgcolor '(255 255 255))
-       (lncolor '(255 0 0 ))
-       )   
-     
+       (lncolor '(255 0 0 )))
+
       (define bitmap #f)
       (define x-size 400)
       (define y-size 300)
-     
+
       (inherit 
         set-bitmap
         load-file)
@@ -120,26 +120,28 @@
         (let ((index (cond [(assq color colors ) => cadr]
                            [else (error (string-append "color \"" color "\" not found"))])))
           (pl-select-colormap0-index index)))
-      
+
       ; start the plot
       ; does housekeeping/setup for plplot
       (define (start-plot)
         (cond
-          [(eq? device 'png)
-           (set! bitmap (make-temporary-file))
-           (init-colors)
-           (pl-setup-page  width height)
-           (pl-set-device "png")
-           (pl-set-output-file (path->string bitmap))
-           (pl-init-plot)]
-;          [(eq? device 'mem)
-;           (init-colors)
-;           (set! bitmap (make-u8vector (* x-size y-size 4) 255))
-;           (pl-setup-memory x-size y-size bitmap)
-;           (pl-set-device "mem")
-;           (pl-init-plot)]
-          [else
-           (error "Incorrect device specified")]))
+         [(eq? device 'png)
+          (set! bitmap (if out-file
+                         (build-path out-file)
+                           (make-temporary-file)))
+          (init-colors)
+          (pl-setup-page  width height)
+          (pl-set-device "png")
+          (pl-set-output-file (path->string bitmap))
+          (pl-init-plot)]
+                                        ;          [(eq? device 'mem)
+                                        ;           (init-colors)
+                                        ;           (set! bitmap (make-u8vector (* x-size y-size 4) 255))
+                                        ;           (pl-setup-memory x-size y-size bitmap)
+                                        ;           (pl-set-device "mem")
+                                        ;           (pl-init-plot)]
+         [else
+          (error "Incorrect device specified")]))
 
       ; finish the plot.. loads the file
       (define (finish-plot)
@@ -147,7 +149,7 @@
           [(eq? device 'png)
            (pl-finish-plot)
            (load-file bitmap)
-           (delete-file bitmap)]
+           (or out-file (delete-file bitmap))]
 ;          [(eq? device 'mem)
 ;           (pl-finish-plot)
 ;           (set-bitmap (bits->bitmap-dc% bitmap))]

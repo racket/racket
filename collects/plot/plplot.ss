@@ -37,8 +37,8 @@
 
 (define* pl-setup-page
   (get-ffi-obj "c_plspage" libplplot
-               (_fun (xp : _plint = 0)
-                     (yp : _plint = 0)
+               (_fun (xp : _plflt = 0.0)
+                     (yp : _plflt = 0.0)
                      (xleng : _plint)
                      (yleng : _plint)
                      (xoff : _plint = 0)
