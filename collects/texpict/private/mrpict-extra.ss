@@ -80,10 +80,10 @@
 	(let ([x (current-expected-text-scale)])
 	  (if (equal? x '(1 1))
 	      (thunk)
-	      (begin
-		(send dc set-scale (car x) (cadr x))
+	      (let-values ([(xs ys) (send dc get-scale)])
+		(send dc set-scale (* xs (car x)) (* ys (cadr x)))
 		(let-values ([(w h d s) (thunk)])
-		  (send dc set-scale 1 1)
+		  (send dc set-scale xs ys)
 	          (values w h d s))))))
 
       (define (memq* a l)

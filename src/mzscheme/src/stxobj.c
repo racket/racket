@@ -1615,7 +1615,8 @@ Scheme_Object *scheme_stx_extract_certs(Scheme_Object *o, Scheme_Object *base_ce
 }
 
 Scheme_Object *scheme_stx_cert(Scheme_Object *o, Scheme_Object *mark, Scheme_Env *menv, 
-			       Scheme_Object *plus_stx_or_certs, Scheme_Object *key)
+			       Scheme_Object *plus_stx_or_certs, Scheme_Object *key, 
+			       int active)
      /* If `name' is module-bound, add the module's certification.
 	Also copy any certifications from plus_stx.
 	If mark is non-NULL, make inactive certificates active. */
@@ -1630,7 +1631,7 @@ Scheme_Object *scheme_stx_cert(Scheme_Object *o, Scheme_Object *mark, Scheme_Env
     else
       certs = (Scheme_Cert *)plus_stx_or_certs;
     if (certs)
-      o = add_certs(o, certs, key, 1);
+      o = add_certs(o, certs, key, active);
     /* Also copy over inactive certs, if any */
     if (SCHEME_STXP(plus_stx_or_certs))
       o = add_certs(o, INACTIVE_CERTS((Scheme_Stx *)plus_stx_or_certs), key, 0);
@@ -1646,23 +1647,32 @@ Scheme_Object *scheme_stx_cert(Scheme_Object *o, Scheme_Object *mark, Scheme_Env
     res->wraps = stx->wraps;
     res->u.lazy_prefix = stx->u.lazy_prefix;
 
-    cert = ACTIVE_CERTS(stx);
-    
     if (SCHEME_FALSEP(mark)) {
       /* Need to invent a mark and apply it */
       mark = scheme_new_mark();
       res = (Scheme_Stx *)scheme_add_remove_mark((Scheme_Object *)res, mark);
     }
 
+    if (active)
+      cert = ACTIVE_CERTS(stx);
+    else
+      cert = INACTIVE_CERTS(stx);
+    
     cert = cons_cert(mark, menv->link_midx ? menv->link_midx : menv->module->src_modidx, 
 		     menv->module->insp, key, cert);
 
-    if (stx->certs && SCHEME_PAIRP(stx->certs)) {
+    if (active) {
+      if (stx->certs && SCHEME_PAIRP(stx->certs)) {
+	Scheme_Object *pr;
+	pr = scheme_make_pair((Scheme_Object *)cert, SCHEME_CDR(stx->certs));
+	res->certs = pr;
+      } else
+	res->certs = (Scheme_Object *)cert;
+    } else {
       Scheme_Object *pr;
-      pr = scheme_make_pair((Scheme_Object *)cert, SCHEME_CDR(stx->certs));
+      pr = scheme_make_pair((Scheme_Object *)ACTIVE_CERTS(stx), (Scheme_Object *)cert);
       res->certs = pr;
-    } else
-      res->certs = (Scheme_Object *)cert;
+    }
     
     o = (Scheme_Object *)res;
   }

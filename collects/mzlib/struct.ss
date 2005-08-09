@@ -53,7 +53,7 @@
 		  (let ([dests
 			 (map
 			  (lambda (field)
-			    (or (ormap (lambda (f2) (and (module-or-top-identifier=? field f2) f2)) accessors)
+			    (or (ormap (lambda (f2) (and f2 (module-or-top-identifier=? field f2) f2)) accessors)
 				(raise-syntax-error #f "accessor name not associated with the given structure type" stx field)))
 			  as)])
 		    ;; Check for duplicates using dests, not as, because mod=? as might not be id=?
@@ -64,7 +64,8 @@
 					    stx 
 					    ;; Map back to an original field:
 					    (ormap (lambda (a)
-						     (and (module-or-top-identifier=? dupe a)
+						     (and a
+							  (module-or-top-identifier=? dupe a)
 							  a))
 						   (reverse as))))))
 		  

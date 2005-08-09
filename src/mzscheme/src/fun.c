@@ -1363,7 +1363,7 @@ cert_with_specials(Scheme_Object *code, Scheme_Object *mark, Scheme_Env *menv,
   if (SCHEME_STXP(code)) {
     prop = scheme_stx_property(code, certify_mode_symbol, NULL);
     if (SAME_OBJ(prop, opaque_symbol)) {
-      return scheme_stx_cert(code, mark, menv, orig_code, NULL);
+      return scheme_stx_cert(code, mark, menv, orig_code, NULL, 1);
     } else if (SAME_OBJ(prop, transparent_symbol)) {
       cadr_deflt = 0;
       /* fall through */
@@ -1391,7 +1391,7 @@ cert_with_specials(Scheme_Object *code, Scheme_Object *mark, Scheme_Env *menv,
       }
       
       if (!trans)
-	return scheme_stx_cert(code, mark, menv, orig_code, NULL);
+	return scheme_stx_cert(code, mark, menv, orig_code, NULL, 1);
     }
   }
 
@@ -1412,7 +1412,7 @@ cert_with_specials(Scheme_Object *code, Scheme_Object *mark, Scheme_Env *menv,
   } else if (SCHEME_STX_NULLP(code))
     return code;
 
-  return scheme_stx_cert(code, mark, menv, orig_code, NULL);
+  return scheme_stx_cert(code, mark, menv, orig_code, NULL, 1);
 }
 
 Scheme_Object *

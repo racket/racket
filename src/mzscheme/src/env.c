@@ -3020,7 +3020,7 @@ local_exp_time_value(int argc, Scheme_Object *argv[])
     v = SCHEME_PTR_VAL(v);
     if (SAME_TYPE(SCHEME_TYPE(v), scheme_id_macro_type)) {
       sym = SCHEME_PTR1_VAL(v);
-      sym = scheme_stx_cert(sym, scheme_false, menv, sym, NULL);
+      sym = scheme_stx_cert(sym, scheme_false, menv, sym, NULL, 1);
       renamed = 1;
       menv = NULL;
       SCHEME_USE_FUEL(1);
@@ -3305,13 +3305,15 @@ certifier(void *_data, int argc, Scheme_Object **argv)
     s = scheme_stx_cert(s, mark, 
 			(Scheme_Env *)(cert_data[1] ? cert_data[1] : cert_data[2]),
 			cert_data[0],
-			(argc > 1) ? argv[1] : NULL);
+			(argc > 1) ? argv[1] : NULL,
+			0 /* inactive cert */);
     if (cert_data[1] && cert_data[2] && !SAME_OBJ(cert_data[1], cert_data[2])) {
       /* Have module we're expanding, in addition to module that bound
 	 the expander. */
       s = scheme_stx_cert(s, mark, (Scheme_Env *)cert_data[2],
 			  NULL,
-			  (argc > 1) ? argv[1] : NULL);
+			  (argc > 1) ? argv[1] : NULL,
+			  0  /* inactive cert */);
     }
   }
 
@@ -3385,7 +3387,7 @@ local_lift_expr(int argc, Scheme_Object *argv[])
   expr = scheme_stx_cert(expr, scheme_false, 
 			 (menv && menv->module) ? menv : NULL,
 			 scheme_current_thread->current_local_certs, 
-			 NULL);
+			 NULL, 1);
 
   expr = scheme_stx_activate_certs(expr);
 

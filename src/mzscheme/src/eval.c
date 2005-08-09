@@ -1884,7 +1884,7 @@ Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
     } else if (SAME_TYPE(SCHEME_TYPE(val), scheme_macro_type)) {
       if (SAME_TYPE(SCHEME_TYPE(SCHEME_PTR_VAL(val)), scheme_id_macro_type)) {
 	/* It's a rename. Look up the target name and try again. */
-	name = scheme_stx_cert(SCHEME_PTR_VAL(SCHEME_PTR_VAL(val)), scheme_false, menv, name, NULL);
+	name = scheme_stx_cert(SCHEME_PTR_VAL(SCHEME_PTR_VAL(val)), scheme_false, menv, name, NULL, 1);
 	menv = NULL;
 	SCHEME_USE_FUEL(1);
       } else {
@@ -2048,7 +2048,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 	  if (!rec[drec].comp) {
 	    new_name = scheme_stx_track(new_name, find_name, find_name);
 	  }
-	  new_name = scheme_stx_cert(new_name, scheme_false, menv, find_name, NULL);
+	  new_name = scheme_stx_cert(new_name, scheme_false, menv, find_name, NULL, 1);
 	  find_name = new_name;
 	  SCHEME_USE_FUEL(1);
 	  menv = NULL;
@@ -2140,7 +2140,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 	  if (!rec[drec].comp) {
 	    new_name = scheme_stx_track(new_name, find_name, find_name);
 	  }
-	  new_name = scheme_stx_cert(new_name, scheme_false, menv, find_name, NULL);
+	  new_name = scheme_stx_cert(new_name, scheme_false, menv, find_name, NULL, 1);
 	  find_name = new_name;
 	  SCHEME_USE_FUEL(1);
 	  menv = NULL;
@@ -2213,7 +2213,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 	if (!rec[drec].comp) {
 	  new_name = scheme_stx_track(new_name, find_name, find_name);
 	}
-	new_name = scheme_stx_cert(new_name, scheme_false, menv, find_name, NULL);
+	new_name = scheme_stx_cert(new_name, scheme_false, menv, find_name, NULL, 1);
 	find_name = new_name;
 	SCHEME_USE_FUEL(1);
 	menv = NULL;
@@ -2404,7 +2404,7 @@ compile_expand_app(Scheme_Object *forms, Scheme_Comp_Env *env,
 					      0, 2);
 
 		/* Copy certifications from lambda to `body'. */
-		body = scheme_stx_cert(body, NULL, NULL, name, NULL);
+		body = scheme_stx_cert(body, NULL, NULL, name, NULL, 1);
 		
 		return scheme_compile_expand_expr(body, env, rec, drec, 0);
 	      } else {

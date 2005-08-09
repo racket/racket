@@ -631,7 +631,7 @@ Scheme_Object *scheme_source_to_name(Scheme_Object *code);
 #define STX_SRCTAG scheme_false
 
 Scheme_Object *scheme_stx_cert(Scheme_Object *o, Scheme_Object *mark, Scheme_Env *menv, Scheme_Object *plus_stx, 
-			       Scheme_Object *mkey);
+			       Scheme_Object *mkey, int active);
 int scheme_stx_certified(Scheme_Object *stx, Scheme_Object *extra_certs, Scheme_Object *modidx, Scheme_Object *home_insp);
 int scheme_module_protected_wrt(Scheme_Object *home_insp, Scheme_Object *insp);
 Scheme_Object *scheme_stx_activate_certs(Scheme_Object *stx);
