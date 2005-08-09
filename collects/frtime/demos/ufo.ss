@@ -1,13 +1,16 @@
 (require (lib "animation.ss" "frtime"))
 
 (define ufo-x
-  (+ 200 ; center of window
-     (integral ; integrate over time
-      (* .04 ; scale speed to appropriate # of pixels/ms
-         (- 3 ; start off stationary
-            ; use left and right arrows to accelerate
-            ; (up to 3 in either direction)
-            (range-control (key 'left) (key 'right) 6 3))))))
+  (modulo
+   (+ 200 ; center of window
+      (floor
+       (integral ; integrate over time
+        (* .04 ; scale speed to appropriate # of pixels/ms
+           (- 3 ; start off stationary
+              ; use left and right arrows to accelerate
+              ; (up to 3 in either direction)
+              (range-control (key 'left) (key 'right) 6 3))))))
+      450))
 (define ufo-y ; bob up and down 5 pixels around center of window
   (+ 200 (* 5 (sin (/ milliseconds 200)))))
 (define ufo-bright ; flash light and dark

@@ -45,7 +45,7 @@
                   signal-thunk
                   signal-depth
                   signal-continuation-marks
-                  signal-custodians
+                  signal-parameterization
                   signal-producers
                   set-signal-value!
                   set-signal-dependents!
@@ -53,11 +53,11 @@
                   set-signal-thunk!
                   set-signal-depth!
                   set-signal-continuation-marks!
-                  set-signal-custodians!
+                  set-signal-parameterization!
                   set-signal-producers!)
     (let*-values ([(field-name-symbols)
                    (list 'value 'dependents 'stale? 'thunk
-                         'depth 'continuation-marks 'guards 'producers)]
+                         'depth 'continuation-marks 'parameterization 'producers)]
                   [(desc make-signal signal? acc mut)
                    (make-struct-type
                     'signal #f (length field-name-symbols) 0 #f null frtime-inspector
@@ -83,7 +83,8 @@
   
   (define-syntax signal
     (let ([field-name-symbols (list 'value 'dependents 'stale? 'thunk
-                                    'depth 'continuation-marks 'guards 'producers)])
+                                    'depth 'continuation-marks 'parameterization
+                                    'producers)])
       (list-immutable
        ((syntax-local-certifier) #'struct:signal)
        ((syntax-local-certifier) #'make-signal)
@@ -103,6 +104,11 @@
                                             (string->symbol (format "set-signal-~a!" fd)))))
                (reverse field-name-symbols)))
        #t)))
+  
+  (define (signal-custodians sig)
+    (call-with-parameterization
+     (signal-parameterization sig)
+     current-custs))
   
   (define-struct ft-cust (signal constructed-sigs))
   ;(define-struct non-scheduled (signal))
@@ -165,7 +171,9 @@
                     (add1 (apply max 0 (append (map safe-signal-depth producers)
                                                (map safe-signal-depth cust-sigs))))
                     ccm
-                    custs
+                    (parameterize ([current-exception-handler
+                                    (lambda (exn) (exn-handler exn))])
+                      (current-parameterization))
                     (append cust-sigs producers))])
          ;(printf "~a custodians~n" (length custs))
          (when (cons? producers)
@@ -188,7 +196,9 @@
                     (add1 (apply max 0 (append (map safe-signal-depth producers)
                                                (map safe-signal-depth cust-sigs))))
                     ccm
-                    custs
+                    (parameterize ([current-exception-handler
+                                    (lambda (exn) (exn-handler exn))])
+                      (current-parameterization))
                     (append cust-sigs producers)
                     current-box
                     trigger)])
@@ -229,19 +239,25 @@
                     acc))
               empty args (build-list (length args) identity))]
             [sig (make-signal:compound
-                  value
+                  undefined
                   empty
                   #f
                   (lambda () ;mutators
-                    (let loop ([i 0] [args args])
-                      (when (cons? args)
-                        ((mutate! value i) (value-now/no-copy (car args)))
-                        (loop (add1 i) (cdr args))))
-                    value)
+                    (let loop ([i 0] [args args] [val value])
+                      (if (cons? args)
+                          (let ([fd (value-now/no-copy (car args))])
+                            ((mutate! value i) fd)
+                            (loop (add1 i) (cdr args)
+                                  (if (undefined? fd)
+                                      undefined
+                                      val)))
+                          val)))
                   (add1 (apply max 0 (append (map safe-signal-depth args)
                                              (map safe-signal-depth cust-sigs))))
                   (current-continuation-marks)
-                  custs
+                  (parameterize ([current-exception-handler
+                                    (lambda (exn) (exn-handler exn))])
+                      (current-parameterization))
                   (append cust-sigs args)
                   (apply ctor args)
                    (lambda () (apply ctor (map value-now args))))])
@@ -253,6 +269,7 @@
        (for-each (lambda (g) (set-ft-cust-constructed-sigs!
                               g (cons (make-weak-box sig) (ft-cust-constructed-sigs g))))
                  custs)
+       (iq-enqueue sig)
        ;(printf "~n*made a compound [~a]*~n~n" (value-now/no-copy sig))
        sig)))
   
@@ -527,10 +544,12 @@
        (if (man?)
            (begin expr ...)
            (begin
-             (! man (list 'run-thunk (self) (let ([custs (current-custs)])
-                                              (lambda ()
-                                                (parameterize ([current-custs custs])
-                                                  expr ...)))))
+             (! man (list 'run-thunk (self)
+                          (let ([params (current-parameterization)])
+                            (lambda ()
+                              (call-with-parameterization
+                               params
+                               (lambda () expr ...))))))
              (receive [('vals . vs) (apply values vs)]
                       [('exn e) (raise e)])))]))
   
@@ -541,10 +560,11 @@
            (begin expr ...)
            (begin
              (! man (list 'run-thunk/stabilized (self)
-                          (let ([custs (current-custs)])
+                          (let ([params (current-parameterization)])
                             (lambda ()
-                              (parameterize ([current-custs custs])
-                                expr ...)))))
+                              (call-with-parameterization
+                               params
+                               (lambda () expr ...))))))
              (receive [('vals .  vs) (apply values vs)]
                       [('exn e) (raise e)])))]))
   
@@ -587,7 +607,9 @@
            (letrec ([custodian-signal
                      (proc->signal:unchanged
                       (lambda ()
-                        (for-each kill-signal (filter identity (map weak-box-value (ft-cust-constructed-sigs cust))))
+                        (for-each kill-signal
+                                  (filter identity
+                                          (map weak-box-value (ft-cust-constructed-sigs cust))))
                         (unregister rtn (unbox current))
                         (set-box! current (pfun (value-now/no-copy bhvr)))
                         (register rtn (unbox current))
@@ -633,10 +655,11 @@
       [(and (? signal?)
             (= signal-value value)
             (= signal-thunk thunk)
-            (= signal-custodians custs))
+            (= signal-parameterization params))
        (set-signal-stale?! b #f)
-       (let ([new-value (parameterize ([current-custs custs])
-                          (thunk))])
+       (let ([new-value (call-with-parameterization
+                         params
+                         thunk)])
          (if (or (signal:unchanged? b) (not (eq? value new-value)))
            (begin
              #;(if (signal? new-value)
@@ -667,19 +690,17 @@
            (propagate b)))]
       [_ (void)]))
   
-  
-  
   (define (signal-count)
     (! man `(stat ,(self)))
     (receive [n n]))
 
-  
+  (define exn-handler (lambda (exn) (raise exn)))
   
   ;;;;;;;;;;;;;
   ;; Manager ;;
   ;;;;;;;;;;;;;
   
-  ;; the manager of all signals and event streams
+  ;; the manager of all signals
   (define man
     (spawn/name
      'frtime-heart
@@ -704,7 +725,7 @@
                           (lambda (exn)
                             (when (and cur-beh
                                        #;(not (undefined? (signal-value cur-beh))))
-                              #(when (empty? (continuation-mark-set->list
+                              #;(when (empty? (continuation-mark-set->list
                                              (exn-continuation-marks exn) 'frtime))
                                 (set! exn (make-exn:fail (exn-message exn)
                                                          (signal-continuation-marks
@@ -715,6 +736,7 @@
                                 (undef cur-beh)
                                 #;(kill-signal cur-beh)))
                             (outer))])
+           (set! exn-handler (current-exception-handler))
            (let inner ()
              
              ;; process external messages until there is an internal update
@@ -738,13 +760,6 @@
                         [('run-thunk rtn-pid thunk)
                          (begin
                            (do-and-queue rtn-pid thunk)
-                           ; (with-handlers
-                           ;     ([exn:fail? (lambda (exn)
-                           ;                   (set! notifications
-                           ;                         (cons (list rtn-pid 'exn exn)
-                           ;                               notifications)))])
-                           ;   (set! notifications (cons (list rtn-pid 'val (thunk))
-                           ;                             notifications)))
                            (loop))]
                         
                         
