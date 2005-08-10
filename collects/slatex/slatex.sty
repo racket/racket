@@ -3,7 +3,7 @@
 % style file to be used in (La)TeX when using SLaTeX
 % (c) Dorai Sitaram, Rice U., 1991, 1999
 
-\def\slatexversion{2.4z2}
+\def\slatexversion{20050609}  % last modified
 
 % This file (or a soft link to it) should be in some
 % directory in your TEXINPUTS path (i.e., the one
@@ -551,7 +551,12 @@
   \catcode`\@12
   \global\let\atsign@%
 \endgroup
-\chardef\dq=`\"
+%\chardef\dq=`\"
+\ifusinglatex
+\def\dq{\ttfamily\char`\"}%
+\else
+\def\dq{\tt\char`\"}%
+\fi
 
 % leading character of slatex filenames: . for unix to
 % keep them out of the way

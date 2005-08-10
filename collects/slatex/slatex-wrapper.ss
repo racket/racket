@@ -22,6 +22,12 @@
         [else
          (error 'filename->latex-filename "~e does not exist" input-file)])))
 
+  (define (exec-latex exe file)
+    (let ([latex-path (find-executable-path exe #f)])
+      (unless latex-path
+        (error 'latex "could not find latex binary: ~e" exe))
+      (system* latex-path file)))
+
   ;; latex, pdf-latex : string -> boolean
   ;; boolean result indicates success
   (define-values (latex pdf-latex)
@@ -63,11 +69,9 @@
                              (send-event "MACS" "aevt" "odoc" (vector 'file oztex-location)))))
                        (send-event "OTEX" "aevt" "odoc" (vector 'file file))
                        #t]
-                      [(windows unix macosx) ;; is this also okay for beos?
-		       (let ([latex-path (find-executable-path command-name #f)])
-			 (unless latex-path
-			   (error 'latex "could not find latex binary"))
-			 (system* latex-path file))]
+                      [(windows) (exec-latex (add-suffix command-name #".exe") file)]
+                      [(unix macosx) ;; is this also okay for beos?
+                       (exec-latex command-name file)]
                       [else
                        (error 'latex "do not know how to run ~s on ~s" command-name (system-type))]))))])
       (values

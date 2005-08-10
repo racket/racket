@@ -25,7 +25,7 @@
 ;(c) Dorai Sitaram, 
 ;http://www.ccs.neu.edu/~dorai/scmxlate/scmxlate.html
 
-(define slatex::*slatex-version* "2.4z2")
+(define slatex::*slatex-version* "20050609")
 
 (define slatex::*operating-system* (if (getenv "COMSPEC") 'windows 'unix))
 
@@ -317,7 +317,7 @@
 
 (define slatex::*tex-calling-directory* "")
 
-(define slatex::*max-line-length* 200)
+(define slatex::*max-line-length* 300)
 
 (slatex::defenum
   &void-space
