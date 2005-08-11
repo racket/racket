@@ -49,19 +49,6 @@ PLaneT works.
 
 Parameters:
 
-> (PLANET-SERVER-NAME) -> string
-> (PLANET-SERVER-NAME string) -> void
-
-The name of the PLaneT server to which the client should connect if it
-needs to fetch a package. The default value for this parameter is
-"planet.plt-scheme.org".
-
-> (PLANET-SERVER-PORT) -> Nat
-> (PLANET-SERVER-PORT Nat) -> void
-
-The port on the server the client should connect to. The default value
-for this parameter is 270.
-
 > (PLANET-DIR) -> directory-string
 > (PLANET-DIR directory-string) -> void
 
@@ -88,6 +75,35 @@ in the root PLaneT directory.
 If #f, indicates that no logging should take place. Otherwise
 specifies the file into which logging should be written. The default
 is the file "INSTALL-LOG" in the root PLaneT directory.
+
+> (USE-HTTP-DOWNLOADS?) -> boolean
+> (USE-HTTP-DOWNLOADS? boolean) -> void
+
+PLaneT can use two different protocols to retrieve packages. If #t,
+PLaneT will use the HTTP protocol; if #f it will use the custom-built
+PLaneT protocol. The default value for this parameter is #t.
+
+> (HTTP-DOWNLOAD-SERVLET-URL) -> url-string
+> (HTTP-DOWNLOAD-SERVLET-URL url-string) -> void
+
+The URL  for the servlet that will provide PLaneT packages if 
+USE-HTTP-DOWNLOADS? is #t, represented as a string.  The default
+value is "http://planet.plt-scheme.org/servlets/planet-servlet.ss".
+
+> (PLANET-SERVER-NAME) -> string
+> (PLANET-SERVER-NAME string) -> void
+
+The name of the PLaneT server to which the client should connect if
+USE-HTTP-DOWNLOADS? is #f. The default value for this parameter is
+"planet.plt-scheme.org".
+
+> (PLANET-SERVER-PORT) -> Nat
+> (PLANET-SERVER-PORT Nat) -> void
+
+The port on the server the client should connect to if
+USE-HTTP-DOWNLOADS? is #f. The default value for this parameter is
+270.
+
 
 Note that while these parameters can be useful to modify
 programmatically, PLaneT code runs at module-expansion time and so
@@ -328,7 +344,7 @@ An example info.ss file looks like this:
     (list "My application runs 60% faster on 20% less peanut "
 	  "butter. It even shows a fancy graphic!"))
   (define primary-file "my-app.ss")
-  (define doc.txt '("doc.txt"))
+  (define doc.txt "doc.txt")
   (define categories '(system xml)))
 
 See the PLT mzc: MzScheme Compiler Manual, chapter 7 for more
