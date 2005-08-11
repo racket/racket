@@ -50,6 +50,11 @@ PLANNED FEATURES:
        "  (require (planet \"file.ss\" (<owner> <pkg> <maj> <min>)))"
        "would install"
        (set! actions (cons (lambda () (download/install owner pkg maj min)) actions)))
+      (("-d" "--download")
+       owner pkg maj min
+       ""
+       "Download the given package file without installing it"
+       (set! actions (cons (lambda () (download/no-install owner pkg maj min)) actions)))
       (("-r" "--remove")
        owner pkg maj min
        ""
@@ -67,7 +72,6 @@ PLANNED FEATURES:
        ""
        "List the current linkage table"
        (set! actions (cons show-linkage actions)))
-      
       ;; unimplemented so far:
       #;(("-u" "--unlink")
          module
@@ -79,7 +83,8 @@ PLANNED FEATURES:
   ;; ============================================================
   ;; FEATURE IMPLEMENTATIONS
   
-  (define (fail s) (raise (make-exn:fail s (current-continuation-marks))))
+  (define (fail s . args) 
+    (raise (make-exn:fail (string->immutable-string (apply format s args)) (current-continuation-marks))))
   
   (define (download/install owner pkg majstr minstr)
     (let* ([maj (read-from-string majstr)]
@@ -90,12 +95,26 @@ PLANNED FEATURES:
       (unless (get-package-from-server full-pkg-spec)
         (fail "Could not find matching package"))))
   
+  (define (download/no-install owner pkg majstr minstr)
+    (let* ([maj (read-from-string majstr)]
+           [min (read-from-string minstr)]
+           [full-pkg-spec (pkg-spec->full-pkg-spec (list owner pkg maj min) #f)])
+      (when (file-exists? pkg)
+        (fail "Cannot download, there is a file named ~a in the way" pkg))
+      (match (download-package full-pkg-spec)
+        [(#t path maj min) 
+         (copy-file path pkg)
+         (printf "Downloaded ~a package version ~a.~a\n" pkg maj min)]
+	[_ 
+        (fail "Could not find matching package")])))
+  
+  
   (define (install-plt-file filestr owner majstr minstr)
     (let ((maj (string->number majstr))
           (min (string->number minstr)))
       (unless (and (integer? maj) (integer? min) (> maj 0) (>= min 0))
         (fail "Invalid major/minor version"))
-      (unless (file-exists? filestr) (fail (format "File does not exist: ~a" filestr)))
+      (unless (file-exists? filestr) (fail "File does not exist: ~a" filestr))
       (let* ([file (normalize-path filestr)]
              [name (let-values ([(base name dir?) (split-path file)]) (path->string name))]
              [spec (list owner name maj min)]
@@ -105,7 +124,7 @@ PLANNED FEATURES:
   
   (define (do-archive p)
     (unless (directory-exists? p)
-      (fail (format "No such directory: ~a" p)))
+      (fail "No such directory: ~a" p))
     (make-planet-archive (normalize-path p)))
   
   (define (remove owner pkg majstr minstr)

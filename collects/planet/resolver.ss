@@ -160,6 +160,7 @@ an appropriate subdirectory.
            pkg-spec->full-pkg-spec
            get-package-from-cache
            get-package-from-server
+           download-package
            install-pkg
            get-planet-module-path/pkg)
 
@@ -287,11 +288,15 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
                                 "Error downloading module from PLaneT server: ~a"
                                 (exn-message e)))
                               (exn-continuation-marks e))))])
-      (let ((download (if (USE-HTTP-DOWNLOADS?) download-package/http download-package)))
-        (match (download pkg)
-          [(#t path maj min) (install-pkg pkg path maj min)]
-          [(#f str) #f]))))
+      (match (download-package pkg)
+        [(#t path maj min) (install-pkg pkg path maj min)]
+        [(#f str) #f])))
   
+  (define (download-package pkg) 
+    ((if (USE-HTTP-DOWNLOADS?) 
+         download-package/http
+         download-package/planet)
+     pkg))
   
   (define (current-time) 
     (let ((date (seconds->date (current-seconds))))
@@ -336,7 +341,7 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
   ; the path is to a file that contains the package. If bool is #f, the package
   ; didn't exist and the string is the server's informative message.
   ; raises an exception if some protocol failure occurs in the download process
-  (define (download-package pkg)
+  (define (download-package/planet pkg)
   
     (define-values (ip op) (tcp-connect (PLANET-SERVER-NAME) (PLANET-SERVER-PORT)))
 
