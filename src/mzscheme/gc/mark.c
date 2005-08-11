@@ -25,11 +25,7 @@
 
 /* We put this here to minimize the risk of inlining. */
 /*VARARGS*/
-#ifdef __WATCOMC__
-  void GC_noop(void *p, ...) {}
-#else
-  void GC_noop() {}
-#endif
+void GC_noop(void *p, ...) {}
 
 /* Single argument version, robust against whole program analysis. */
 void GC_noop1(x)

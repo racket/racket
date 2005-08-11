@@ -1817,17 +1817,6 @@ GC_API void GC_dump GC_PROTO((void));
 #  define GC_MARKED_FOR_FINALIZATION(dest)
 #endif
 
-/* Make arguments appear live to compiler */
-# ifdef __WATCOMC__
-    void GC_noop(void*, ...);
-# else
-#   ifdef __DMC__
-      GC_API void GC_noop(...);
-#   else
-      GC_API void GC_noop();
-#   endif
-# endif
-
 void GC_noop1 GC_PROTO((word));
 
 /* Logging and diagnostic output: 	*/
