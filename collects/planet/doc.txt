@@ -204,6 +204,11 @@ would install. In this mode, min can be any s-expression that
 the (require (planet ...)) form can interpret, not just a natural
 number.
 
+-d, --download <owner> <pkg> <maj> <min>
+
+Download the given package file (specified as with the --install
+flag) without installing it.
+
 -r, --remove <owner> <pkg> <maj> <min>
 
 Remove the specified package from the local cache.
