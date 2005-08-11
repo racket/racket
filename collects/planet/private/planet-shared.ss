@@ -37,8 +37,8 @@ Various common pieces of code that both the client and server need to access
   ; finds the appropriate language version for the given repository
   (define (language-version->repository ver)
     (cond
-      [(regexp-match #rx"20.+" ver) "207.1"]
-      [(regexp-match #rx"3.+|29.|" ver) "300"]
+      [(regexp-match #rx"^20.+" ver) "207.1"]
+      [(regexp-match #rx"(^30.+)|(^29.+)" ver) "300"]
       [else #f]))
   
   (define (version->description ver)

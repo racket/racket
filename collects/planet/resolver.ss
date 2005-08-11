@@ -148,6 +148,10 @@ an appropriate subdirectory.
            
            (lib "date.ss")
            
+           (lib "url.ss" "net")
+           (lib "head.ss" "net")
+           (lib "struct.ss")
+           
            "config.ss"
            "private/planet-shared.ss"
            "private/linkage.ss")
@@ -229,7 +233,12 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
                                    (or
                                     (get-package-from-cache pspec)
                                     (get-package-from-server pspec)
-                                    (raise-syntax-error #f "Could not find matching package" stx))))])
+                                    (raise-syntax-error #f (format "Could not find package matching ~s" (list (pkg-spec-name pspec)
+                                                                                                              (pkg-spec-maj pspec)
+                                                                                                              (list (pkg-spec-minor-lo pspec)
+                                                                                                                    (pkg-spec-minor-hi pspec))
+                                                                                                              (pkg-spec-path pspec)))
+                                                        stx))))])
          (values (apply build-path (pkg-path pkg) (append path (list file-name))) pkg))]
       [_ (raise-syntax-error 'require (format "Illegal PLaneT invocation: ~e" (cdr spec)) stx)]))
   
@@ -278,9 +287,10 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
                                 "Error downloading module from PLaneT server: ~a"
                                 (exn-message e)))
                               (exn-continuation-marks e))))])
-      (match (download-package pkg)
-        [(#t path maj min) (install-pkg pkg path maj min)]
-        [(#f str) #f])))
+      (let ((download (if (USE-HTTP-DOWNLOADS?) download-package/http download-package)))
+        (match (download pkg)
+          [(#t path maj min) (install-pkg pkg path maj min)]
+          [(#f str) #f]))))
   
   
   (define (current-time) 
@@ -383,6 +393,69 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
         (state:initialize)
         (close-ports))))
   
+  ;; ------------------------------------------------------------
+  ;; HTTP VERSION OF THE PROTOCOL
+  
+  ;; pkg->servlet-args : FULL-PKG-SPEC -> environment[from (lib "url.ss" "net")]
+  ;; gets the appropriate query arguments to request the given package from the
+  ;; PLaneT HTTP download servlet
+  (define (pkg->servlet-args pkg)
+    (let ((get (lambda (access) (format "~s" (access pkg)))))
+      `((lang   . ,(format "~s" (DEFAULT-PACKAGE-LANGUAGE)))
+        (name   . ,(get pkg-spec-name))
+        (maj    . ,(get pkg-spec-maj))
+        (min-lo . ,(get pkg-spec-minor-lo))
+        (min-hi . ,(get pkg-spec-minor-hi))
+        (path   . ,(get pkg-spec-path)))))
+  
+  ;; get-http-response-code : header[from (lib "head.ss" "net")] -> string
+  ;; gets the HTTP response code in the given header
+  (define (get-http-response-code header)
+    (let ((parsed (regexp-match #rx"^HTTP/[^ ]* ([^ ]*)" header)))
+      (and parsed (cadr parsed))))
+  
+  ;; download-package/http : FULL-PKG-SPEC -> RESPONSE
+  ;; a drop-in replacement for download-package that uses HTTP rather than the planet protocol.
+  ;; The HTTP protocol does not allow any kind of complicated negotiation, but it appears that
+  ;; many more users can make HTTP requests than requests from nonstandard protocols.
+  (define (download-package/http pkg)
+    
+    (let* ((args              (pkg->servlet-args pkg))
+           (target            (copy-struct url (string->url (HTTP-DOWNLOAD-SERVLET-URL)) (url-query args)))
+           (ip                (get-impure-port target))
+           (head              (purify-port ip))
+           (response-code/str (get-http-response-code head))
+           (response-code     (string->number response-code/str)))
+      
+      (define (abort msg)
+        (close-input-port ip)
+        (raise (make-exn:i/o:protocol msg (current-continuation-marks))))
+      
+      (case response-code
+        [(#f)  (abort (format "Server returned invalid HTTP response code ~s" response-code/str))]
+        [(200)
+         (let ((maj/str (extract-field "Package-Major-Version" head))
+               (min/str (extract-field "Package-Minor-Version" head)))
+           (unless (and maj/str min/str
+                        (nat? (string->number maj/str))
+                        (nat? (string->number min/str)))
+             (printf "~a" head)
+             (abort "Server did not include valid major and minor version information"))
+           (let* ((filename (make-temporary-file "planettmp~a.plt"))
+                  (op       (open-output-file filename 'truncate))
+                  (maj      (string->number maj/str))
+                  (min      (string->number min/str)))
+             (copy-port ip op)
+             (close-input-port ip)
+             (close-output-port op)
+             (list #t filename maj min)))]
+        [(404)
+         (list #f (format "Server had no matching package: ~a" (read-line ip)))]
+        [(400)
+         (abort (format "Internal error (malformed request): ~a" (read-line ip)))]
+        [else
+         (abort (format "Internal error (unknown HTTP response code ~a)" response-code))])))
+
   ; ==========================================================================================
   ; MODULE MANAGEMENT
   ; Handles interaction with the module system
