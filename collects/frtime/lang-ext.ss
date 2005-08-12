@@ -670,12 +670,7 @@
     (exceptions . ==> . (lambda (p) (when (value-now raise-exceptions)
                                       (thread
                                        (lambda () (raise (car p))))))))
-  
-  
-  
-  
-
-         
+      
          
 
   

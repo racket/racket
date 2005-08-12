@@ -3,6 +3,7 @@
   (require (all-except "graphics.ss" make-posn posn-x posn-y make-rgb)
            (lifted "graphics.ss" posn-x posn-y make-posn make-rgb)
            (lib "match.ss")
+           (as-is:unchecked (lib "lang-ext.ss" "frtime") lift)
            (lib "class.ss")
            (lib "list.ss" "frtime")
            (lib "etc.ss" "frtime")

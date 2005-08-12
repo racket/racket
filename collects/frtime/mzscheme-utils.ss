@@ -40,9 +40,20 @@
            (rename (lib "frp-core.ss" "frtime") super-lift super-lift)
            (rename (lib "frp-core.ss" "frtime") behavior? behavior?)
            (rename (lib "lang-ext.ss" "frtime") undefined undefined)
-           (rename (lib "lang-ext.ss" "frtime") undefined? undefined?))
+           (rename (lib "lang-ext.ss" "frtime") undefined? undefined?)
+	   (lib "class.ss"))
   
   
+  (define-syntax (lifted-send stx)
+    (syntax-case stx ()
+      [(_ obj meth arg ...)
+       (with-syntax ([(obj-tmp) (generate-temporaries '(obj))]
+                     [(arg-tmp ...) (generate-temporaries (syntax->list
+#'(arg ...)))])
+         #'(lift #t 
+                 (lambda (obj-tmp arg-tmp ...)
+                   (send obj-tmp meth arg-tmp ...))
+                 obj arg ...))]))
     
   
   (define (list-ref lst idx)
@@ -305,7 +316,7 @@
                    ;length
                    seconds->date
                    expand syntax-object->datum exn-message continuation-mark-set->list exn-continuation-marks
-                   exn:fail?
+                   exn:fail? regexp-match
                    list->vector make-vector)
             
            (rename eq? mzscheme:eq?)
@@ -342,6 +353,19 @@
            syntax
            let/ec
            with-handlers
+           unsyntax
+           current-security-guard
+           make-security-guard
+           dynamic-require
+           path->complete-path
+           string->path
+           split-path
+           current-directory
+           exit
+           system-type 
+           lifted-send
+           unsyntax-splicing 
+
            delay
            force
            random

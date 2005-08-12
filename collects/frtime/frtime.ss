@@ -16,6 +16,6 @@
   
   (provide value-nowable? behaviorof
 	   (all-from (lib "mzscheme-utils.ss" "frtime"))
-           (all-from (lib "lang-ext.ss" "frtime"))
+           (all-from-except (lib "lang-ext.ss" "frtime") lift)
            (all-from (lib "frp-snip.ss" "frtime"))
            (all-from (lib "ft-qq.ss" "frtime"))))
