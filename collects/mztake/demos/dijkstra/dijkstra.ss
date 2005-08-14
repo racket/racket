@@ -2,7 +2,7 @@
   (require "dijkstra-solver.ss"
            "graph.ss"
            (lib "list.ss"))
-  (print-struct #t)
+
   (define g (make-graph 'directed))
   (define (m-node label x y) (make-node label x y +inf.0))
   (define nodes

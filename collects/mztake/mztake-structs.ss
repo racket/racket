@@ -27,7 +27,7 @@
   
   (define-struct debug-process (custodian     ; If you shutdown-all it will kill the debugger process
                                 run-semaphore ; When you post to this the debuggee will continue executing
-                                running-e     ; Is the program (supposed-to-be) currently running
+                                running-e     ; #t on this event resumes, #f pauses
                                 run-manager   ; saves behavior that actually pauses/resumes from GC
                                 pause-requested?
                                 resume-requested?

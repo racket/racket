@@ -9,11 +9,11 @@
            (lib "mred.ss" "mred")
            (prefix drscheme:arrow: (lib "arrow.ss" "drscheme"))
            (lib "tool.ss" "drscheme")
-           (lib "marks.ss" "mztake" "private")
+           "marks.ss"
            (lib "boundmap.ss" "syntax")
            (lib "bitmap-label.ss" "mrlib")
-           (lib "annotator.ss" "mztake")
-           (lib "load-sandbox.ss" "mztake")
+           "annotator.ss"
+           "load-sandbox.ss"
            ;(lib "framework.ss" "framework")
            #;(lib "string-constant.ss" "string-constants")
            )
