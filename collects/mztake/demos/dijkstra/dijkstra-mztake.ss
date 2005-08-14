@@ -37,8 +37,8 @@
 	 "dijkstra-solver.ss"
          (lib "match.ss"))
 
-(define inserts (trace (loc "heap.ss" 49 6) (bind (item) item)))
-(define removes (trace (loc "heap.ss" 67 10) (bind (result) result)))
+(define inserts (trace (loc "heap.ss" 49 6) item))
+(define removes (trace (loc "heap.ss" 67 10) result))
 
 #| The following code merely observes the insertions and removals
    from the heap. We notice whether any of the removals are out

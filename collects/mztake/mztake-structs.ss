@@ -5,6 +5,9 @@
            (rename loc loc$)
            (rename make-loc loc))
   
+  (define (require-spec? sexp)
+    (or string? list?))
+  
   ;    ;;;;;   ;                          ;          
   ;   ;     ;  ;                          ;          
   ;  ;         ;                          ;          

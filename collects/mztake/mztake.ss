@@ -13,15 +13,12 @@
   ;; Turn struct printing on for MzTake users.
   (print-struct true)
 
-  (define (require-spec? sexp)
-    (or string? list?))
-  
   (provide loc$
            trace
            bind
            define/bind
            define/bind-e
-           [rename #%top mztake-top])
+           [rename mztake-top #%top])
   
   (provide/contract [loc-reqspec (loc? . -> . require-spec?)]
                     [loc-line (loc? . -> . number?)]
@@ -95,25 +92,29 @@
       [(_ loc body ...)
        (trace* (current-process) loc (lambda () body ...))]))
   
-  ;; TODO this does not actually work
   (define-syntax (mztake-top stx)
     (syntax-case stx () 
       [(_ . name) 
        (begin 
-         (printf "top ~a~n" 'name) 
-         #'(with-handlers ([exn:fail?
-                            (lambda (exn) (bind* (current-process) 'name))])
-             (printf "top ~a~n" 'name)
+         #'(with-handlers
+               ([exn:fail?
+                 (lambda (exn)
+                   (with-handlers
+                       ([exn:fail? (lambda (exn2) (raise exn))])
+                     (bind* (current-process) 'name)))])
              (#%top . name)))]))
   
   (define (bind* p name)
     (unless (debug-process-marks p)
-      (error "Bind called while the target process is running"))
-    
-    (mark-binding-value
-     (first (lookup-all-bindings
-             (lambda (id) (eq? (syntax-e id) name))
-             (debug-process-marks p)))))
+      (error "Bind called but the target process is not paused."))
+
+    (let ([bs (lookup-all-bindings
+               (lambda (id) (eq? (syntax-e id) name))
+               (debug-process-marks p))])
+      (when (empty? bs)
+        (error 'bind "variable `~a' not found in target at the current location" name))
+      
+      (mark-binding-value (first bs))))
   
   (define-syntax bind
     (syntax-rules ()

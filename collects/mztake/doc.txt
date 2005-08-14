@@ -20,8 +20,6 @@ between signals and automatically recomputes them when necessary. In
 order to use MzTake, you will need to familiarize yourself with the
 FrTime language by reading its own documentation.
 
-
-
 With signals it is possible to respond to outside events concisely,
 without using callbacks. Consider a MzTake script to monitor the
 behavior of the program "highway.ss", in the demos directory of the
@@ -91,7 +89,16 @@ where the execution is paused, then binds its values to a variable
 named "speed" in the MzTake script, then executes its body. In this
 case, it print the value with PRINTF.
 
-Once satisfied, you can resume execution with "(set-running #t)", or
+Since MzTake defines a #%top syntax, you can also directly type the
+name of a variable. MzTake will first look in the scope in the MzTake
+script. If the variable is not found, it will then in the target
+process. So, the example above can be written as:
+
+  (printf "the speed is ~a~n" speed)
+
+so long as the script itself does not declare a SPEED variable.
+  
+You can resume execution with "(set-running #t)", or
 some other behavior, or end the execution altogether with "(kill)".
 
 Finally, FrTime provides a rich animation library. Combined
