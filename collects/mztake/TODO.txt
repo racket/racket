@@ -61,7 +61,6 @@ DEMOS---------------------------------------------------------------------------
 
 
 SCRIPT--------------------------------------------------------------------------------------
-* document history-e; provide a variant of history which takes no n, and keeps a complete history
 
 * process:time-per-event/milliseconds is broken
   (printf-b "~a ms per event" (time-per-event/milliseconds p (changes (hold sin/x-trace))))

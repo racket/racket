@@ -1,5 +1,5 @@
 (module mztake-structs mzscheme
-  (require (lib "more-useful-code.ss" "mztake" "private"))
+  (require (lib "more-useful-code.ss" "mztake"))
   
   (provide (all-defined-except loc make-loc)
            (rename loc loc$)
@@ -31,6 +31,7 @@
                                 run-manager   ; saves behavior that actually pauses/resumes from GC
                                 pause-requested?
                                 resume-requested?
+                                policy
 
                                 exited?       ; FrTime cell receives #t when the target exits
                                 exceptions    ; (an event stream) Exceptions thrown during the evaluation of the target

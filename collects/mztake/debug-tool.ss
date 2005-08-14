@@ -13,7 +13,7 @@
            (lib "boundmap.ss" "syntax")
            (lib "bitmap-label.ss" "mrlib")
            (lib "annotator.ss" "mztake")
-           (lib "load-annotator.ss" "mztake" "private")
+           (lib "load-sandbox.ss" "mztake")
            ;(lib "framework.ss" "framework")
            #;(lib "string-constant.ss" "string-constants")
            )

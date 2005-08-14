@@ -3,10 +3,13 @@
            (lib "pretty.ss")
 	   (lib "etc.ss"))
   
+  (require-for-syntax (lib "list.ss"))
+  
   (provide assert
            cons-to-end
 	   assoc-get
 	   debug
+           debug-x
            make-to-string
 	   make-debug
 	   to-string
@@ -203,6 +206,20 @@
                 (if (hash-mem? used-ids arg)
                     (format "#~a=~a" my-id result)
                     result)))))))
+  
+  (define-syntax (debug-x stx)
+    (syntax-case stx ()
+      [(_ rest ... expr)
+       #`(let ([result expr])
+           (printf "~a:~a ~a: ~a ~a~n"
+                   #,(syntax-line stx)
+                   #,(syntax-column stx)
+                   '#,(if (syntax->list #'expr)
+                          (syntax-e (first (syntax->list #'expr)))
+                          (syntax-e #'expr))
+                   result
+                   (list rest ...))
+           result)]))
   
   ;; make-debug: usage example: (define debug-f (make-debug (make-to-string `([,is-type? ,type-to-string]))))
   ;; The printers have to take two arguments: the item to converts and the to-string function for subitems

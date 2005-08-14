@@ -33,7 +33,7 @@
       binary heap implementation without satisfying its (stronger) contract. |#
 
 (require (lib "mztake.ss" "mztake")
-         (lib "useful-code.ss" "mztake" "private")
+         (lib "useful-code.ss" "mztake")
 	 "dijkstra-solver.ss"
          (lib "match.ss"))
 
@@ -53,7 +53,7 @@
      [(_ 'reset) false]
      [(previous current) (> previous current)]
      [else false])
-   (history-e 2 e)))
+   (history-e e 2)))
 
 
 (define inserts-and-removes-e (merge-e (removes . ==> . node-weight)

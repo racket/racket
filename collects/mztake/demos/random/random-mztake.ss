@@ -1,8 +1,7 @@
 (require (lib "animation.ss" "frtime")
          (lib "mztake.ss" "mztake")
-         (lib "useful-code.ss" "mztake" "private")
-         (as-is mzscheme 
-                assoc))
+         (lib "useful-code.ss" "mztake")
+         (as-is mzscheme assoc))
 
 (define/bind (loc "random.ss" 4 6) x)
 

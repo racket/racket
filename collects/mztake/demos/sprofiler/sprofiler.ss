@@ -1,6 +1,6 @@
 (require (lib "mztake.ss" "mztake" )
          (lib "match.ss")
-         (lib "more-useful-code.ss" "mztake" "private" ))
+         (lib "more-useful-code.ss" "mztake"))
 
 (set-main! "picture.ss")
 

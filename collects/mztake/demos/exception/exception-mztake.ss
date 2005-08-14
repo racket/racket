@@ -1,5 +1,5 @@
 (require (lib "mztake.ss" "mztake")
-         (lib "useful-code.ss" "mztake" "private"))
+         (lib "useful-code.ss" "mztake"))
 
 (set-main! "exception.ss")
 

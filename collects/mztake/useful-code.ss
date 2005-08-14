@@ -6,23 +6,21 @@
   
   (provide (all-defined))
   
-  ; Everything is contracted to 'any' for speed benefits, though there is already a big performance hit
-  
   ; Keeps a list of the last n values of a behavior
-  (define/contract history-e (case-> (number? event? . -> . any)
-                                     (event? . -> . any))
+  (define/contract history-e (case-> (event? . -> . any)
+                                     (event? number? . -> . any))
     (case-lambda [(stream)
                   (define ((add-to-complete-hist x) hist) (append hist (list x)))
                   (accum-e (stream . ==> . add-to-complete-hist) empty)]
                  
-                 [(n stream)
+                 [(stream n)
                   (define ((add-to-short-hist x) hist) (append (if (< (length hist) n) hist (rest hist)) (list x)))
                   (accum-e (stream . ==> . add-to-short-hist) empty)]))
   
-  (define/contract history-b (case-> (number? event? . -> . any)
-                                     (event? . -> . any))    
+  (define/contract history-b (case-> (event? . -> . any)
+                                     (event? number? . -> . any))    
     (case-lambda [(stream) (hold (history-e stream) empty)]
-                 [(n stream) (hold (history-e n stream) empty)]))
+                 [(stream n) (hold (history-e stream n) empty)]))
   
   ; Counts number of events on an event stream
   (define/contract count-b (event? . -> . any)
@@ -52,7 +50,7 @@
   ; Matches a sequence of items in a list to event pings
   (define/contract sequence-match? ((listof any/c) . -> . any)
     (lambda (seq evs)
-      (equal? seq (history-b (length seq) evs))))
+      (equal? seq (history-b evs (length seq)))))
   
   ; Cheap printf for behaviors
   (define printf-b format)

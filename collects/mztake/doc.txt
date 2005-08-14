@@ -6,7 +6,7 @@
 
 _MzTake_ is a _scripted debugger_ for PLT Scheme. It helps
 programmers monitor the execution of a target program as it
-unfolds (and optionally pause or resume its execution!). MzTake
+unfolds (and optionally pause or resume its execution). MzTake
 gives you the power to easily write real programs that debug real
 programs. You are no longer limited to a tool chest of buttons
 like "add breakpoint", "step-next", "step-into", and "step-over".
@@ -16,17 +16,21 @@ language, which is bundled with DrScheme. FrTime supports the
 implementation of reactive systems in a functional style.
 The key abstraction it adds is a type of value called a 'signal',
 which can change over time. FrTime infers dataflow dependencies
-between signals and automatically recomputes them when necessary.
+between signals and automatically recomputes them when necessary. In
+order to use MzTake, you will need to familiarize yourself with the
+FrTime language by reading its own documentation.
 
-With signals (implemented as "event streams" and "behaviors"),
-it is possible to respond to outside events concisely (without
-using callbacks). Consider a MzTake script to monitor the
-behavior of the program "highway.ss", in the demos directory
-of the MzTake collection:
 
-  (define/bind (loc "highway.ss" 3 ) speed)
+
+With signals it is possible to respond to outside events concisely,
+without using callbacks. Consider a MzTake script to monitor the
+behavior of the program "highway.ss", in the demos directory of the
+MzTake collection:
+
+  (require (lib "mztake.ss" "mztake"))
+  (define/bind (loc "highway.ss" 3) speed)
   (printf-b "current speed: ~a" speed)
-  (set-running! (< speed 55))
+  (set-running! true)
 
 This code executes a target module in the file "highway.ss"
 after installing a _trace point_ (also known as a _watch
@@ -41,7 +45,8 @@ DrScheme's interaction pane. Whereas PRINTF accumulates
 outdated text on the screen, PRINTF-B will replace old text
 with updated text if any of the fill-values change. In this
 invocation, it prints the current speed to screen, throughout
-the execution of "highway.ss".
+the execution of "highway.ss". The last line invokes SET-RUNNING!,
+which lunches the execution of highway.ss
 
 MzTake scripts are also powerful tools for building external
 test suites. Whereas typical test cases may only assert that
@@ -56,31 +61,45 @@ is already starting to fill up with information -- we are
 only interested in the last ten speeds, after all.
 One possible solution:
 
-  (printf-b "last ten speeds: ~a" (history-b 10 (changes speed)))
+  (printf-b "last ten speeds: ~a" (history-b (changes speed) 10))
 
-HISTORY-B consumes a number and an event stream (CHANGES SPEED),
-returning a FrTime behavior containing a FIFO ordered list of
-the last ten values emitted on that event stream. In this case,
-HISTORY-B maintains a list of the ten most recent SPEEDS seen
-on SPEED. Though
-this is is an improvement, we still can't *use* that list as
-data to see what led to the exception. We might want to
-puase the program when something goes awry.
+HISTORY-B consumes an event stream (CHANGES SPEED) and an
+optional number n, returning a FrTime behavior containing a
+FIFO ordered list of the n values emitted on that event
+stream. In this case, HISTORY-B maintains a list of the ten
+most recent SPEEDS seen on SPEED.
 
-  (printf-b "last ten speeds: ~a" (history-b 10 (changes speed)))
+We might want to pause the program when something goes awry. We do
+this by exploiting the fact that SET-RUNNING! function consumes a
+FrTime behavior. The value of a behavior can change over time, and
+SET-RUNNING! monitor these changes. Whenever the behavior is true, the
+target program runs, whenever it is false, the target program
+pauses. We can indicate to MzTake to pause when the speed exceeds 55
+as follow:
+
+  (printf-b "last ten speeds: ~a" (history-b (changes speed) 10))
   (set-running! (< speed 55))
 
-MzTake allows you to "pause" a target program anytime during
-execution. Once paused, it becomes posssible to interactively
-explore and compute with script variables. Once satisfied, you can easily resume
-execution by typing "(set-running #t)", or end it
-with "(kill)".
+Once paused, it becomes possible to interactively explore the state of
+the paused process. You can use the BIND function to reach into the
+scope of the target process and read the value of the variable:
+
+  (bind (speed) (printf "the speed is ~a~n" speed))
+
+This lines finds the variable named "speed" in the scope at the point
+where the execution is paused, then binds its values to a variable
+named "speed" in the MzTake script, then executes its body. In this
+case, it print the value with PRINTF.
+
+Once satisfied, you can resume execution with "(set-running #t)", or
+some other behavior, or end the execution altogether with "(kill)".
 
 Finally, FrTime provides a rich animation library. Combined
 with the MzTake debugger, it takes only a few lines to animate
 your algorithms and see them in action, easily letting you
 confirm (or refute!) that they are working correctly.
 
+  (require (lib "animation.ss" "frtime"))
   (display-shapes (make-speed-gauge (hold speed)))
 
 
@@ -98,6 +117,7 @@ the following two files: one is the program being debugged
 (named after the directory), and the other is a file ending
 in "...-mztake.ss" (the MzTake script).
 
+The demos are (starting with the simplest one):
 
   ./highway/highway-mztake.ss         - The program simulates a very simple
                                       speedometer, and the MzTake script
@@ -115,9 +135,6 @@ in "...-mztake.ss" (the MzTake script).
   ./djikstra/dijkstra-mztake.ss       - Debugs a buggy implementation of 
                                       Dijkstra's algorithm
  
-============================================================
-
-  Functions
 
 The demos demonstrate many ways to debug with MzTake using
 FrTime, even if you are not very familiar with the language.
@@ -125,7 +142,7 @@ That said, in order to become more proficient in using MzTake,
 you will want to learn more about the FrTime language.
 
 You can refer to FrTime's own documentation by searching for
-"frtime" in DrScheme's Help window. It explains how to use
+"FrTime" in DrScheme's Help window. It explains how to use
 time-varying behaviors and event streams in greater depth, and
 also describes the many useful functions FrTime provides to work
 with them.
@@ -136,50 +153,226 @@ with them.
 
 _Debugging with MzTake_
 
-Conceptually, MzTake is a library for the FrTime languages
-which provides
-functions that execute a target program (or many), and
-"connect" to points in its code. MzTake then provides the
-running FrTime script with interesting information (such as
-a variable's current value) which it derives from these
-"connections". FrTime then handles the rest.
+MzTake is a library for the FrTime languages which provides functions
+that execute a target program (or many), and "connect" to points in
+its code. MzTake then provides the running FrTime script with
+interesting information (such as a variable's current value) which it
+derives from these "connections". FrTime then handles the rest.
 
-FrTime takes that information and lets the script author
-compute with it, verify it, print it, make visualizations
-with it, anything you would like to do.
-
-
-MzTake itself defines the following functions:
+MzTake defines the following functions and macros:
 
 _Installing Trace Points_
 
-Currently, MzTake offers two types of traces: ENTRY and BIND.
-ENTRYs are event streams that get a "#t" event every time the
-target program reaches the trace point. Binds are event streams that
-ping the value of one or more variables when the trace point is reached.
+> (loc require-spec line-number)
+> (loc require-spec line-number column-number)
 
-> (define-mztake-process process-name
-    [target-filename trace-clause ...] ...)
+   Creates a LOC structure containing the target file, the target line
+   number, and (optionally) the target column number. LOC structures
+   are consumed by TRACE and by DEFINE/BIND. The first argument to LOC
+   is a file specification suitable for require, provided as a
+   datum. For instance, to install a trace point on the tenth line of
+   the MzLib's list library, use:
 
+     (trace (loc '(lib "list.ss") 10) ...)
+
+> (trace loc body ...)
+
+   Install a trace point at the location indicated by the LOC
+   value. The result is a FrTime event stream containing one value
+   each time the target reaches the location specified. To get the
+   value event, TRACE evaluates its body (once per event. During the
+   evaluation of the body, the target process is paused, and BIND is
+   available to inspect the state of the paused program.
+
+   The body is optional. If no body is provided, the value #t is used
+   by default.
+
+   Unless SET-MAIN! is used, the first call to trace sets the file
+   name that will be run when SET-RUNNING! is invoked the first time.
+
+> (trace* process loc thunk)
+
+   Like TRACE, but takes an explicit process argument, and a thunk
+   rather than a body.
+   
+> (bind (name ...) body ...)
+
+   When the target process is paused (or during the execution of a
+   trace body), BIND reaches in the lexical context at the point of
+   the pause (or of the trace point) and find the values for the
+   variables whose names are given. These values are then bound in the
+   body (in the MzTake script) to variable of the same name.
+
+   It is an error to call BIND while the target process is running.
+
+
+> (bind* process symbol)
+
+   In the given process, find the variable whose name has the given
+   symbol, and returns its value.
+   
+
+> (define/bind loc name ...)
+
+   Define the NAMEs the to behaviors reflecting the values of the
+   giving name in the target program, at the given
+   location. DEFINE/BIND is short for:
+
+     (define name (hold (trace loc (bind (name) name))))
+
+     
+> (define/bind-e loc name ...)
+
+   Same as DEFINE/BIND, but returns an event stream instead of a behavior.
+
+   
+> (exceptions)
+> (exceptions process)
+
+  Returns an event stream containing one EXN structure for each
+  exception raised in the target process and not caught.
+
+
+> (exited?)
+> (exited? process)
+
+   Returns a behavior which starts as #f and take on the value #t when
+   the target process exits.
+
+
+> (set-running! val)
+> (set-running! val process)
+> (set-running! event)
+> (set-running! event process)
+
+   Lunches the execution of the target process. Execution continues as
+   long as the given behavior is true (aka, any value beside #f), or
+   until an event comes on the given event stream with the value
+   #f. When execution pauses, the target remains on the line where the
+   paused occured. You can then inspect the state of the program with
+   BIND, or resume execution with another call to SET-RUNNING!.
+
+
+> (set-main! require-spec)
+> (set-main! require-spec process)
+
+   Sets the file where execution begins when SET-RUNNING! is called
+   for the first time. When SET-MAIN! is not used explicitly,
+   execution begins with the file specified in the first call to
+   trace. It is an error to call SET-RUNNING! without first calling
+   either TRACE or SET-MAIN!.
+   
+   
+> (where)
+> (where process)
+
+   Returns an event stream that contains one event for each expression
+   evaluated in the target process. Combined with HISTORY-B, this let
+   you record entire execution traces for the target program.
+   
+  
 > (kill)
 
-   Kills the process and releases all resources
-   it used -- you cannot start/resume after a KILL.
+   Kills the target process and releases all resources
+   it used -- you cannot resume after a KILL.
 
-   Closing a FrTime animation/graphics window will *not*
-   kill a running MzTake process. If it does not terminate
-   on its own, you may kill it with "(kill p-name)" or
-   "(kill-all)" in the Interactions window.
+   This will not stop of evaluation of the MzTake script, however. In
+   particular, if the script depends on input the varies independently
+   of the target process, FrTime will continue to update them. You can
+   use "Kill" command from DrScheme's "Scheme" menu to stop both the
+   MzTake script and its target process at once.
+   
+   Also, note that closing a FrTime animation/graphics window does *not*
+   kill a running MzTake process.
 
 > (kill-all)
 
-   kill-all kills all the processes currently running
-   under MzTake -- use this when it seems a process is
-   out of control and needs to be stopped immediately.
-   Has the same effect of calling KILL on each process
-   you defined and start/resume'd in the script.
+   When using more than one target process at a time, KILL-ALL invokes
+   KILL on all of them at once.
 
 
+> (current-process)
+> (current-process process)
+
+   The CURRENT-PROCESS parameter gets or sets the process manipulated
+   by the MzTake function when they are not provided with a process
+   argument. The CURRENT-PROCESS parameter is initialized with a blank
+   process, and you can create additional processes using the
+   CREATE-DEBUG-PROCESS function. Using more than one process at a
+   time lets your MzTake run multiple programs different at once and
+   compare their output using a single script.
+
+
+> (create-debug-process)
+
+   Creates a fresh blank debug process. Each debug process has its own
+   set of trace points, its own run trigger (set via SET-RUNNING!),
+   its own exceptions stream, etc. Each debug process run
+   independently from the others, and they can be paused and killed
+   individually. All debug processes in a single MzTake script share
+   the same FrTime event space, and so it is possible to compare
+   output and traces between each of them.
+
+> (current-policy)
+> (current-policy policy)
+
+   Every file executed under MzTake can run either in fast mode or in
+   debuggable mode. The CURRENT-POLICY decides which.
+
+   - debuggable mode: the file is instrumented with MzTake debugging
+     information. It can be the target of trace point and it generate
+     events on the WHERE stream. Execution can also be paused in the middle
+     of code running in debuggable mode. The instrumentation overhead
+     is considerable, however, of the order of 10x-20x slowdown.
+
+   - fast mode: the file is not instrumented, and runs at its normal
+     speed, but cannot be debugged. Inserting trace points into fast
+     mode files after the beginning of the execution has no
+     effect. Also, pausing while executing a fast mode file will be
+     delayed until execution reaches a debuggable mode file.
+
+   MzTake uses the following rules, in order, to decide between fast
+   mode and debuggable mode:
+
+   1) Files that are compiled to .zo run in fast mode.
+
+   2) Files that are the target of a trace point when first lunching
+      the process run in debuggable mode, so is the main file set by SET-MAIN!
+
+   3) If none of the two previous rules apply, the current policy is
+      consulted to decide between fast and debuggable mode.
+
+   If the check reaches the third step and the policy does not decide,
+   MzTake raises an error.
+
+   Policies have the following contract:   
+
+     (listof (list/c (symbols 'fast 'debuggable)
+                     (union (symbols 'everything-else)
+                            path?
+                            string?
+                            (listof (union path? string?)))))
+
+   A policy consist of a list of entries. Each entry is a pair
+   specifying either fast mode or debuggable mode, then a directory,
+   or a list of directories. Files in these directories, or their
+   subdirectories will run under the given mode. The special symbol
+   'everything-else can be used instead of a directory, and this will
+   match any file. The policy is checked in order, and the first entry
+   that applies to the given filename assign a mode the file.
+
+   The default policy run files of the directories specified by
+   CURRENT-LIBRARY-COLLECTIONS-PATHS in fast mode, and runs everything
+   else in debuggable mode. This poloicy is set as follow:
+
+     (current-policy `((fast ,(current-library-collection-paths))
+                       (debuggable everything-else)))
+
+   You can change this policy by calling the
+   CURRENT-POLICY function with a new policy as an argument. The
+   policy is assigned to a process when the process lunches.
+     
+      
 _Useful Functions for Time-Varying Values_
 
 Note: FrTime uses a naming convention where functions which
@@ -187,14 +380,15 @@ Note: FrTime uses a naming convention where functions which
       functions that return event streams end in "-e".
 
 Tips: When you have a behavior that you want to turn into
-      an event, use (changes behavior).
+      an event, use "(changes behavior)".
 
       When you have an event that you want to be a
-      behavior, use (hold event)
+      behavior, use "(hold event)"
 
 
 MzTake defines a few functions on time-varying values
-that are particularly useful when debugging:
+that are particularly useful when debugging. You can require these
+functions with (require (lib "useful-code.ss" "mztake"))
 
 > (history-e stream)
 > (history-b stream)
@@ -204,8 +398,8 @@ that are particularly useful when debugging:
 
    Use with BINDs: (history-b x-trace)
 
-> (history-e n stream)
-> (history-b n stream)
+> (history-e stream n)
+> (history-b stream n)
 
    Keeps a list of the last n values of a behavior
    Returns a list of at most n elements, where the
@@ -246,9 +440,8 @@ that are particularly useful when debugging:
 
 Known Problems
 
-* In general, you should not REQUIRE or use any functions on
-  acting on the structures of your target program in your
-  MzTake script.
+* In general, you should not REQUIRE in your MzTake script any
+  functions that act on the structures of your target program.
 
   ORIGINAL FILE:
     (define-struct foo (a b))
@@ -262,64 +455,39 @@ Known Problems
 
   The target program and the MzTake will have different
   instances of the struct, and the call to FOO-A will fail.
+  Instead, use BIND to bring the function from the target program to
+  the script:
 
+    (define/bind (loc "original-file.ss" 3) x foo-a)
+    (foo-a x) ;; this succeeds 
+  
 * The break button will *not* kill runaway client processes.
   You must type (kill) or (kill-all).
 
 * Some legal syntax locations (used in setting trace points)
   are unreachable during program execution (they do not get
-  triggered and produce empty eventstreams). So far, this only
-  shows up in LETs (the trace point being one line above,
-  and one character to the left of the carrot):
-
+  triggered and produce empty eventstreams). For instance,
+  the name clause of a LET is never the current point of execution:
+  
      (define x 12)
      (let ([x (add1 x)]) x)
-      ^   ^^^ 
+          ^ 
   Recommended syntax locations to use for trace points:
+
      (define x 12)
      (let ([x (add1 x)]) x)
      ^        ^^    ^    ^
 
-* Don't rely entirely on MzTake to complain when you change
-  target code and your line/col locations in the script are out
-  of date. It can only raise an error if the locations are invalid.
-
-* MzTake has not been tested for stability if the target is using
-  multiple threads. This only applies to threaded modules
-  *with* traces on them -- other REQUIRE'd modules will work
-  as expected.
+* Watch out: when you change target code, your line/col locations in
+  the script will drift out of align.
 
 * Error handling is not perfect -- e.g., the little "bug"
   buttons on syntax errors don't reference the correct code.
   However, the messages that are printed are as accurate as
   possible.
 
-* On particularly fast computers, when running scripts with a
-  very high trace point density (traces are hit constantly,
-  potentially hundreds in a second, like in the Monte Carlo,
-  random-xs, and sine demos), the FrTime animation window may
-  appear unresponsive because of how fast it is redrawing.
-
-* Currently, if you are running traces on two modules with the
-  same name, IN the same process, though in different directories,
-  there will probably be some sort of name-clash and strange error.
-  This will be fixed.
-
-
-============================================================
-
-Tips and Tricks
-
-* If output seems difficult to read in the script, e.g. you ever
-  see "struct:signal" and a lot of garbage, try (print-struct #f)
-  before you do any printing, or use (value-now behavior-name) to
-  get a more usable/printable version of a FrTime behavior (the
-  caveat is that it is no longer 'reactive' and it may be out of
-  date after the moment it is processed).
-
-* You can add trace points to first-class functions, and they
-  will send trace update from anywhere they are passed to and
-  invoked.
+* You can add trace points to the body first-class functions, and they
+  will send trace update from anywhere they are passed to and invoked.
 
 ============================================================
 

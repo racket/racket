@@ -1,4 +1,4 @@
-(module load-annotator mzscheme
+(module load-sandbox mzscheme
   
   (require (lib "moddep.ss" "syntax")
            (lib "class.ss" "mzlib")
@@ -8,22 +8,6 @@
            require/annotations
            require/sandbox+annotations
            load-module/annotate)
-  
-  #|load-with-annotations :
-
-    >initial-module : (union (listof symbol?) string?)
-        Takes in a require spec -- "../file.ss", (file "complete-path.ss"), (lib ...), etc
-        In other words -
-        pass it a relative filename or a quoted lib to require
-        "mztake.ss" or '(lib "mztake.ss" "mztake")
-
-    >annotate-module? : (string? symbol? . -> . boolean)
-                        (filename module-name)
-        If true, loads source file and annotates.
-        Else, tries to load compiled or source, no annotation.
-
-    >annotator : (string? symbol? syntax? . -> . syntax?)
-|#
 
   (define (require/sandbox+annotations custodian err-display-handler initial-module annotate-module? annotator)
     (parameterize ([current-custodian custodian]

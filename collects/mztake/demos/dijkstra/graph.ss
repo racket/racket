@@ -1,6 +1,6 @@
 ;; -*- compile-command: "mzscheme -M errortrace -u graph.ss" -*-
 (module graph mzscheme
-  (require (lib "more-useful-code.ss" "mztake" "private"))
+  (require (lib "more-useful-code.ss" "mztake"))
   
   (provide make-graph
            ;; --- Constructors :

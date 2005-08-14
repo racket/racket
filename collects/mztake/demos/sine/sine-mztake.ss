@@ -1,5 +1,5 @@
 (require (lib "animation.ss" "frtime")
-         (lib "useful-code.ss" "mztake" "private"))
+         (lib "useful-code.ss" "mztake"))
 (require (lib "mztake.ss" "mztake"))
 
 (define/bind (loc "sine.ss" 5 ) x sin-x)
@@ -20,7 +20,7 @@
         
         (let ([x (+ 200 x)]
               [sin-x (+ 200 (* 100 sin-x))])
-          (history-b 50 (changes (make-cute-circle x sin-x))))))
+          (history-b (changes (make-cute-circle x sin-x)) 50))))
 
 (set-running! (even? seconds))
 

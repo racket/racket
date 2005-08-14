@@ -7,21 +7,42 @@
            "mztake-structs.ss"
            (lib "etc.ss")
            (lib "list.ss")
-           (lib "marks.ss" "mztake" "private")
+           "marks.ss"
            "engine.ss")
+
+  ;; Turn struct printing on for MzTake users.
+  (print-struct true)
+
+  (define (require-spec? sexp)
+    (or string? list?))
   
-  (provide loc$ loc-reqspec loc-line loc-col
+  (provide loc$
            trace
-           trace* bind define/bind define/bind-e where set-main!
+           bind
+           define/bind
+           define/bind-e
            [rename #%top mztake-top])
-  (provide/contract [kill (() (debug-process?) . opt-> . void?)]
-                    [kill-all (-> void?)]
-                    [set-running-e! (frp:event? . -> . any)]
-                    [set-running! (frp:value-nowable? . -> . any)]
+  
+  (provide/contract [loc-reqspec (loc? . -> . require-spec?)]
+                    [loc-line (loc? . -> . number?)]
+                    [loc-col (loc? . -> . number?)]
+                    [rename loc/opt-col loc
+                            ((any/c number?) (number?) . opt-> . loc?)]
                     [exceptions (() (debug-process?) . opt-> . frp:event?)]
                     [exited? (() (debug-process?) . opt-> . frp:behavior?)]
-                    [rename loc/opt-col loc
-                            ((any/c number?) (number?) . opt-> . loc?)])
+                    [kill (() (debug-process?) . opt-> . void?)]
+                    [kill-all (-> void?)]
+                    [set-running-e! ((frp:event?) (debug-process?) . opt-> . any)]
+                    [set-running! ((frp:value-nowable?) (debug-process?) . opt-> . any)]
+                    [where (() (debug-process?) . opt-> . frp:behavior?)]
+                    [current-policy (case-> (-> any)
+                                            (any/c . -> . void?))]
+                    [current-process (case-> (-> debug-process?)
+                                             (debug-process? . -> . void?))]
+                    [create-debug-process (-> debug-process?)]
+                    [set-main! ((require-spec?) (debug-process?) . opt-> . void?)]
+                    [trace* (debug-process? loc? (-> any) . -> . frp:event?)]
+                    [bind* (debug-process? symbol? . -> . any)])
   
   (define loc/opt-col
     (opt-lambda (reqspec line [col #f])
@@ -67,9 +88,6 @@
     (opt-lambda (reqspec [p (current-process)])
       (process:set-main! p reqspec)))
   
-  (define (hold-b b)
-    (frp:hold (frp:filter-e (lambda (ev) (not (frp:undefined? ev))) (frp:changes b))))
-  
   (define-syntax trace
     (syntax-rules ()
       [(_ loc)
@@ -82,13 +100,16 @@
     (syntax-case stx () 
       [(_ . name) 
        (begin 
-         (printf "~a~n" 'name) 
+         (printf "top ~a~n" 'name) 
          #'(with-handlers ([exn:fail?
                             (lambda (exn) (bind* (current-process) 'name))])
-             (printf "~a~n" 'name)
+             (printf "top ~a~n" 'name)
              (#%top . name)))]))
   
   (define (bind* p name)
+    (unless (debug-process-marks p)
+      (error "Bind called while the target process is running"))
+    
     (mark-binding-value
      (first (lookup-all-bindings
              (lambda (id) (eq? (syntax-e id) name))
