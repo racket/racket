@@ -466,7 +466,7 @@
 		  (send ed write-to-file stream))
 		editors)
       (write-editor-global-footer stream)
-      (send base get-string)))
+      (send base get-bytes)))
 
   (add-test-suite-extension
    "Handin"

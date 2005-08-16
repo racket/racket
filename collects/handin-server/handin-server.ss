@@ -23,7 +23,8 @@
 		   (parameterize ([date-display-format 'iso-8601])
 		     (date->string (seconds->date (current-seconds)) #t))
 		   (apply format str args))])
-      (display line log-port)))
+      (display line log-port)
+      (flush-output log-port)))
 
   (define (get-config which default)
     (get-preference which 
@@ -65,20 +66,21 @@
   (define backup-dir-re (regexp (format "^~a[0-9]+$" backup-prefix)))
   (define (backup n) (format "~a~a" backup-prefix n))
   (define (files+backups)
-    (let* ([files (directory-list)]
+    (let* ([files (map path->string (directory-list))]
            [backups (filter (lambda (f)
-                              (and (directory-exists? f)
-                                   (regexp-match backup-dir-re f)))
-                            files)])
+			      (and (directory-exists? f)
+				   (regexp-match backup-dir-re f)))
+			    files)])
       (values (remove* backups files) backups)))
   (define (do-backups)
     (let-values ([(files backups) (files+backups)])
       (define (make-backup-available n)
         (when (member (backup n) backups)
           (if (< n MAX-UPLOAD-KEEP)
-            (begin (make-backup-available (add1 n))
-                   (rename-file-or-directory (backup n) (backup (add1 n))))
-            (delete-directory/files (backup n)))))
+	      (begin 
+		(make-backup-available (add1 n))
+		(rename-file-or-directory (backup n) (backup (add1 n))))
+	      (delete-directory/files (backup n)))))
       (unless (null? files)
         (LOG "backing up ~a" files)
         (make-backup-available 0)
@@ -117,14 +119,15 @@
 		   "max handin file size is ~s bytes, file to handin is too big (~s bytes)"
 		   MAX-UPLOAD len))
 	  (fprintf w "go\n")
+	  (flush-output w)
 	  (unless (regexp-match #rx"[$]" r-safe)
 	    (error 'handin
 		   "did not find start-of-content marker"))
-	  (let ([s (read-string len r)])
-	    (unless (and (string? s) (= (string-length s) len))
+	  (let ([s (read-bytes len r)])
+	    (unless (and (bytes? s) (= (bytes-length s) len))
 	      (error 'handin
-		     "error uploading (got ~s, expected ~s bytes)"
-		     (if (string? s) (string-length s) s)
+		     "error uploading (got ~e, expected ~s bytes)"
+		     (if (bytes? s) (bytes-length s) s)
 		     len))
             (do-backups)
 	    (LOG "checking ~a for ~a" assignment user)
@@ -136,12 +139,14 @@
 			  user s)
 			 DEFAULT-FILE-NAME))])
                 (fprintf w "confirm\n")
+		(flush-output w)
                 (let ([v (read (make-limited-input-port r 50))])
                   (if (eq? v 'check)
 		    (begin
 		      (LOG "saving ~a for ~a" assignment user)
 		      (save-submission s part)
-		      (fprintf w "done\n"))
+		      (fprintf w "done\n")
+		      (flush-output w))
 		    (error 'handin "upload not confirmed: ~s" v))))))))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -234,7 +239,7 @@
 	  (error 'handin "bad username or password for ~a" username)]))))
   
   (define assignment-list
-    (quicksort (directory-list "active") string<?))
+    (quicksort (map path->string (directory-list "active")) string<?))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -322,6 +327,7 @@
 	  (lambda (kill-watcher)
 	    (let ([r-safe (make-limited-input-port r 1024)])
 	      (fprintf w "handin\n")
+	      (flush-output w)
 	      ;; Check protocol:
 	      (with-handlers ([exn:fail?
 			       (lambda (exn)
@@ -331,11 +337,14 @@
 				   (kill-watcher)
 				   (LOG "ERROR: ~a" msg)
 				   (fprintf w "~s\n" msg)
+				   (flush-output w)
 				   ;; see note on close-output-port below
 				   (close-output-port w)))])
 		(let ([protocol (read r-safe)])
 		  (if (eq? protocol 'original)
-		      (fprintf w "original\n")
+		      (begin
+			(fprintf w "original\n")
+			(flush-output w))
 		      (error 'handin "unknown protocol: ~s" protocol)))
 		(accept-submission-or-update assignment-list r r-safe w)
 		(LOG "normal exit")
@@ -352,8 +361,8 @@
        (printf "~a~n" (if (exn? exn)
 			  (exn-message exn)
 			  exn)))
-     (lambda (port-k)
-       (let ([l (ssl-listen port-k 5 #t)])
+     (lambda (port-k cnt reuse?)
+       (let ([l (ssl-listen port-k cnt #t)])
 	 (ssl-load-certificate-chain! l "server-cert.pem")
 	 (ssl-load-private-key! l "private-key.pem")
 	 l))
