@@ -66,7 +66,11 @@
                                                #t config:listen-ip)])
                      (lambda () 
                        (let-values ([(ip op) (tcp-accept listener)])
-                         (file-stream-buffer-mode op 'none)
+			 ;; Try to set buffer mode, and if it can't be set,
+			 ;;  assume that it doesn't matter. (Only happens
+			 ;;  when tcp-accept is not MzScheme's version.)
+			 (with-handlers ([exn:fail? void])
+			   (file-stream-buffer-mode op 'none))
                          (values ip op))))])
               (thread
                (lambda ()
