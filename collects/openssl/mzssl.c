@@ -1341,8 +1341,8 @@ ctx_load_file(const char *name, int mode, int client_ok, int argc, Scheme_Object
 		      (client_ok ? "ssl-listener or ssl-client-context" : "ssl-listener"),
 		      0, argc, argv);
 
-  if (!SCHEME_PATHP(argv[1]))
-    scheme_wrong_type(name, "string", 1, argc, argv);
+  if (!SCHEME_PATH_STRINGP(argv[1]))
+    scheme_wrong_type(name, SCHEME_PATH_STRING_STR, 1, argc, argv);
 
   if (mode == mzssl_RSA_KEY) {
     if (argc > 2)

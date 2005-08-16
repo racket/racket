@@ -5,13 +5,14 @@
 	   (lib "date.ss")
 	   (lib "unitsig.ss")
 	   (lib "servlet-sig.ss" "web-server")
+	   (lib "response.ss" "web-server")
 	   (lib "md5.ss" "handin-server"))
 
   (provide status-servlet)
   
   (define TOPICS-PER-PAGE 25)
 
-  (define handin-dir (current-directory))
+  (define handin-dir (or (getenv "HANDIN_SERVER_DIR") (current-directory)))
   (define active-dir (build-path handin-dir "active"))
   (define inactive-dir (build-path handin-dir "inactive"))
 
@@ -65,7 +66,8 @@
 	    ,label))
 
       (define (handin-link k user hi)
-	(let* ([dir (build-path (if (directory-exists? (build-path "active" hi))
+	(let* ([dir (build-path handin-dir
+				(if (directory-exists? (build-path handin-dir "active" hi))
 				    "active"
 				    "inactive")
 				hi
@@ -73,7 +75,7 @@
 	       [l (with-handlers ([exn:fail? (lambda (x) null)])
                     (parameterize ([current-directory dir])
                       (filter (lambda (f)
-                                (and (file-exists? f) (not (equal? f "grade"))))
+                                (and (file-exists? f) (not (equal? (path->string f) "grade"))))
                               (directory-list))))])
 	  (if (pair? l)
 	      (cdr
@@ -85,7 +87,7 @@
 			 (let ([hi (build-path dir f)])
 			   `(font
 			     ()
-			     (a ((href ,(make-k k hi))) ,f)
+			     (a ((href ,(make-k k hi))) ,(path->string f))
 			     " ("
 			     ,(date->string
 			       (seconds->date
@@ -96,7 +98,8 @@
 	      (list (format "No handins accepted so far for user ~s, assignment ~s" user hi)))))
 
       (define (solution-link k hi)
-	(let* ([soln-dir (build-path (if (directory-exists? (build-path "active" hi))
+	(let* ([soln-dir (build-path handin-dir
+				     (if (directory-exists? (build-path handin-dir "active" hi))
 					 "active"
 					 "inactive")
 				     hi
@@ -111,11 +114,13 @@
 				 f))))])
 	  (if (file-exists? soln)
 	      `((a ((href ,(make-k k soln)))
-		   "Solution"))
+		   "Solution: " ,(let-values ([(base name dir?) (split-path soln)])
+				   (path->string name))))
 	      `((i "Solution not available")))))
 
       (define (handin-grade user hi)
-	(let* ([dir (build-path (if (directory-exists? (build-path "active" hi))
+	(let* ([dir (build-path handin-dir
+				(if (directory-exists? (build-path handin-dir "active" hi))
 				    "active"
 				    "inactive")
 				hi
@@ -149,9 +154,10 @@
 
       (define (all-status-page status)
 	(let ([l (quicksort
-		  (append (directory-list "active")
-			  (with-handlers ([exn:fail? (lambda (x) null)])
-			    (directory-list "inactive")))
+		  (map path->string
+		       (append (directory-list (build-path handin-dir "active"))
+			       (with-handlers ([exn:fail? (lambda (x) null)])
+				 (directory-list (build-path handin-dir "inactive")))))
 		  (lambda (a b)
 		    (let ([am (regexp-match re:base a)]
 			  [bm (regexp-match re:base b)])
@@ -180,40 +186,41 @@
 	;; Make sure the user is allowed to read the requested file:
 	(with-handlers ([exn:fail?
                          (lambda (exn)
-                           (make-page "Error" "Illegal file access"))])
+                           (make-page "Error" "Illegal file access: "
+				      (exn-message exn)))])
 	  (let ([who (get-status status 'user (lambda () "???"))])
 	    (let-values ([(base name dir?) (split-path tag)])
 	      ;; Any file name is ok...
-	      (unless (string? name) (error "bad"))
+	      (unless (path? name) (error "bad1"))
 	      (let-values ([(base name dir?) (split-path base)])
 		;; Directory must be user or "solution"
-		(unless (or (string=? name who)
-			    (string=? name "solution"))
-		  (error "bad"))
+		(unless (or (string=? (path->string name) who)
+			    (string=? (path->string name) "solution"))
+		  (error "bad2"))
 		;; Any dir name is ok...
 		(let-values ([(base name dir?) (split-path base)])
-		  (unless (string? name) (error "bad"))
+		  (unless (path? name) (error "bad3"))
 		  ;; Base must be active or inactive
 		  (let-values ([(base name dir?) (split-path base)])
-		    (unless (or (string=? name "active") 
-				(string=? name "inactive"))
-		      (error "bad"))
+		    (unless (or (string=? (path->string name) "active") 
+				(string=? (path->string name) "inactive"))
+		      (error "bad4"))
 		    ;; No more to path
-		    (unless (eq? base 'relative)
-		      (error "bad")))))))
+		    (unless (equal? (build-path base 'same) (build-path handin-dir 'same))
+		      (error "bad5")))))))
 	  ;; Return the downloaded file
 	  (let ([data (with-input-from-file tag
 			(lambda ()
-			  (read-string (file-size tag))))])
+			  (read-bytes (file-size tag))))])
 	    (make-response/full 200 "Okay"
 				(current-seconds)
-				"application/data"
-				`((Content-length . ,(string-length data))
+				#"application/data"
+				`((Content-length . ,(number->string (bytes-length data)))
 				  (Content-disposition 
 				   .
 				   ,(format "attachment; filename=~s"
 					    (let-values ([(base name dir?) (split-path tag)])
-					      name))))
+					      (path->string name)))))
 				(list data)))))
 
       (define (status-page status for-handin)
@@ -247,7 +254,7 @@
 	    (let ([user-data (get-preference (string->symbol user)
 					     (lambda () #f)
 					     #f
-					     "users.ss")])
+					     (build-path handin-dir "users.ss"))])
 	      (cond
 	       [(and user-data
 		     (string? passwd)

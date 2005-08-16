@@ -65,5 +65,7 @@
        (export (open S)))
       #f)
 
+    (putenv "HANDIN_SERVER_DIR" (path->string (current-directory)))
+
     (serve)))
 
