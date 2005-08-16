@@ -53,18 +53,43 @@
         ((eq? 'relative base) mode)
         (else (build-path base mode)))))
 
+  ;; with-compile-output : path (output-port -> alpha) -> alpha
+  ;;  Open path for writing, and arranges to delete path if there's
+  ;;  an exception. Breaks are managed so that the port is reliably
+  ;;  closed and the file is reliably deleted if there's a break
+  (define (with-compile-output path proc)
+    (let ([bp (current-break-parameterization)])
+      (with-handlers ([void (lambda (exn)
+			      ;; Attempt to delete, but give up if it
+			      ;;  doesn't work:
+			      (with-handlers ([exn:fail:filesystem? void])
+				(trace-printf "deleting: ~a" path)
+				(delete-file path))
+			      (raise exn))])
+	(let ([out (open-output-file path 'truncate/replace)])
+	  (dynamic-wind
+	      void
+	      (lambda ()
+		(call-with-break-parameterization
+		 bp
+		 (lambda ()
+		   (proc out))))
+	      (lambda ()
+		(close-output-port out)))))))
+
   (define (write-deps code mode path external-deps)
     (let ((dep-path (bytes->path
 		     (bytes-append (get-compilation-path mode path) #".dep")))
           (deps (get-deps code path)))
-      (let ((op (open-output-file dep-path 'replace)))
-        (write (cons (version)
-		     (append (map plthome-ify deps)
-			     (map (lambda (x) (plthome-ify (cons 'ext x)))
-                                  external-deps)))
-	       op)
-        (newline op)
-        (close-output-port op))))
+      (with-compile-output 
+       dep-path
+       (lambda (op)
+	 (write (cons (version)
+		      (append (map plthome-ify deps)
+			      (map (lambda (x) (plthome-ify (cons 'ext x)))
+				   external-deps)))
+		op)
+	 (newline op)))))
 
   (define (touch path)
     (close-output-port (open-output-file path 'append)))
@@ -74,9 +99,10 @@
       (delete-file zo-name))
     (let ([fail-path (bytes->path
 		      (bytes-append (get-compilation-path mode path) #".fail"))])
-      (let ([p (open-output-file fail-path 'truncate/replace)])
-	(display reason p)
-	(close-output-port p)))
+      (with-compile-output 
+       fail-path
+       (lambda (p)
+	 (display reason p))))
     (trace-printf "failure"))
 
   (define (compile-zo mode path)
@@ -107,28 +133,30 @@
                    [code-dir (get-code-dir mode path)])
               (if (not (directory-exists? code-dir))
                 (make-directory* code-dir))
-              (let ((out (open-output-file zo-name 'replace)))
-                (with-handlers ((exn:fail?
-                                 (lambda (ex) (compilation-failure mode path zo-name #f (exn-message ex)))))
-                  (dynamic-wind
-                    void
-                    (lambda () (write code out))
-                    (lambda () (close-output-port out)))))
-              (let ([ss-sec (file-or-directory-modify-seconds path)]
-                    [zo-sec (if (file-exists? zo-name)
-				(file-or-directory-modify-seconds zo-name)
-				+inf.0)])
-                (when (< zo-sec ss-sec)
-                  (error 'compile-zo
-                         "date for newly created .zo file (~a @ ~a) is before source-file date (~a @ ~a)~a"
-                         zo-name
-                         (format-date (seconds->date zo-sec))
-                         path
-                         (format-date (seconds->date ss-sec))
-                         (if (> ss-sec (current-seconds))
-                           ", which appears to be in the future"
-                           ""))))
-              (write-deps code mode path external-deps)))])))
+	      (with-compile-output
+	       zo-name
+	       (lambda (out)
+		 (with-handlers ((exn:fail?
+				  (lambda (ex) (compilation-failure mode path zo-name #f (exn-message ex)))))
+		   (write code out))
+		 ;; redundant, but close as early as possible:
+		 (close-output-port out)
+		 ;; Note that we check time and write .deps before returning from with-compile-output...
+		 (let ([ss-sec (file-or-directory-modify-seconds path)]
+		       [zo-sec (if (file-exists? zo-name)
+				   (file-or-directory-modify-seconds zo-name)
+				   +inf.0)])
+		   (when (< zo-sec ss-sec)
+		     (error 'compile-zo
+			    "date for newly created .zo file (~a @ ~a) is before source-file date (~a @ ~a)~a"
+			    zo-name
+			    (format-date (seconds->date zo-sec))
+			    path
+			    (format-date (seconds->date ss-sec))
+			    (if (> ss-sec (current-seconds))
+				", which appears to be in the future"
+				""))))
+		 (write-deps code mode path external-deps)))))])))
     (trace-printf "end compile: ~a" path))
 
   (define (format-date date)
