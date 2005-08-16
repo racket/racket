@@ -1,0 +1,6 @@
+(module info (lib "infotab.ss" "setup")
+  (define name "PLAI")
+  (define doc.txt "doc.txt")
+  (define tools (list "plai-tool.ss"))
+  (define tool-names (list "Programming Languages: Application and Interpretation"))
+  (define tool-urls (list "http://www.cs.brown.edu/~sk/Publications/Books/ProgLangs/")))

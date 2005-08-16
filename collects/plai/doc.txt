@@ -1,0 +1,134 @@
+
+The _Programming Languages: Application and Interpretations_ languages
+are companion to the textbook, and to the _CS173_ class at Brown university.
+
+In the language dialog box, you will find the four _PLAI_ language:
+
+      PLAI - Beginning Student
+      PLAI - Intermediate Student with lambda
+      PLAI - Advanced Student
+      PLAI - Pretty Big
+
+This language sequence follows the same progression as the book "How
+to Design Programs" (htdp). If you are learning Scheme with the book
+while taking the class, the PLAI languages will provide the same
+support as the htdp languages. Namely, at each language level the
+error messages you receive are explained in term of the constructs you
+know so far, and are tailored to address the common errors done at that
+level.
+
+The PLAI languages provide constructs that are essential to the
+coding style prescribed in the class:
+
+ - Lists are only for holding multiple elements of the same type. Use
+   DEFINE-TYPE and TYPE-CASE to group elements of different types.
+
+ - All functions must have tests that exercise non-trivial cases. Use
+   TEST, TEST/PRED and TEST/EXN (below) to create a persistent
+   collection of tests for your code.
+
+
+> (define-type id (variant-id (field-id predicate-expr) ...) ...)
+
+  Defines the datatype ID and a function ID? that returns true for
+  instances of the datatype, and false for any other value. Here, the
+  name ID? means the given name ID, with an added question mark.
+
+  For each VARIANT-ID, a constructor VARIANT-ID is defined.  The
+  constructor takes as many arguments as the variant's FIELD-ID's, and
+  returns and instance of this datatype. Each argument to the
+  constructor is checked by applying the function produced by the
+  variant's PREDICATE-EXPR. DEFINE-TYPE can also use contracts as
+  defined in (lib "contract.ss"), instead of predicates.
+
+  The instance constructed by the VARIANT-ID can be deconstructed
+  using TYPE-CASE. Also, for each VARIANT-ID, DEFINE-TYPE also provide
+  functions that accesses the individual fields, and a predicate
+  VARIANT-ID? which recognizes instances of that particular variant.
+  
+
+
+> (type-case datatype-id expr (variant-id (field-id ...) result-expr ...) ...)
+> (type-case datatype-id expr (variant-id (field-id ...) result-expr ...) ... (else else-expr ...))
+
+  Branches on the datatype instance produced by EXPR, which must be
+  an instance of the specified DATATYPE-ID (previously defined with
+  DEFINE-DATATYPE). Each clause pattern automatically extract the
+  values stored in the fields of the structure. It binds the extracted
+  values them to the names FIELD-IDs in the order that the
+  fields were declared in the corresponding definition in the
+  define-datatype.
+
+  TYPE-CASE will complains if you do not handle all the variants in a
+  datatype. You can use the ELSE keyword as the last clause of a CASES
+  to create a catch-all clause. In that case, variants which are not
+  handled by the other clauses will trigger the evaluation of the
+  ELSE-EXPR.
+
+  If it should not be possible to reach the else clause according to
+  the logic of your program, your ELSE-EXPR should be a call to
+  ERROR, which will raise an exception. For example:
+
+       (cases shape a-circle
+              [circle (c r) (* pi (sqr r))]
+              [else (error "expected a circle!")])
+
+> (test result expected-value)
+
+  Compares the result of a test expression to the expected value, and
+  return a list of three elements: the first element is the symbol
+  'good (if the test passed) or 'bad (if the test failed), the second
+  element is the result, and the third element is the expected value.
+
+> (test/pred result predicate)
+
+  Applies the predicate to the result, and return a list of three
+  elements: the first element is the symbol 'good (if the predicate
+  returned true), or 'bad (if the predicate returned false), the
+  second element is the result, and the third element is the expected
+  values.
+
+> (test/exn (lambda () expression) expected-error-message)
+
+  Evaluates the expression expecting an exception. This is useful to
+  verify that your program correctly detects error conditions. If the
+  expression does not raise an exception, TEST/PRED returns the list:
+
+      (list 'bad result expected-error-message)
+ 
+  If the evaluation of the expression did throw an exception, TEST/PRED
+  will pattern match the error message against the
+  expected-error-message, and return 'bad if the error was not the
+  expected error. EXPECTED-ERROR-MESSAGE should be a few words from
+  the expected error message. For example:
+
+     (text/exn (lambda () (/ 3 0)) "by zero") 
+
+  evaluates to:
+
+     (list 'good #(struct:exn) "by zero")
+
+> (print-tests false|true|'good|'bad|'stop)
+
+  PRINT-TESTS controls printing of test by TEST, TEST/PRED and TEST/EXN.
+  You can pass one of five values to PRINT-TESTS:
+
+     false   Test result are not printed, they are simply returned.  The
+             results of tests evaluated at the top-level will be
+             printed by DrScheme in the interaction panel, as usual. 
+             (this is the default)
+      
+     true    all test results are printed
+
+     'good   only successful test results are printed
+
+     'bad    only failed test results are printed
+
+     'stop   testing will stops at the first test that fails, by throwing
+             an exn:test exception.
+
+> (test-inexact-epsilon number)
+
+  Sets the precision used by TEST to check the correctness of inexact
+  numbers. By default, floating-point results are considered correct
+  if they fall within 0.01 from their the expected value.
