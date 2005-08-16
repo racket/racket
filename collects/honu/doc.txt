@@ -221,7 +221,7 @@ NOTE: Since I want to use parentheses to mean "real" parentheses, I use
              | <expr> isa <ifacet>
              | if <expr> <block> [else <block>]?
              | cond { [<expr> => <expr> ;]+ }
-             | cond { [<expr> => <expr> ;]* else <block> }
+             | cond { [<expr> => <expr> ;]* else <expr> ; }
              | while <expr> <block>
              | new <id> : <ifacet> ( <newargs> )
              | new <id> ( <newargs> )
