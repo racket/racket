@@ -379,44 +379,44 @@ tracing todo:
           (inherit get-reader set-printing-parameters)
           
           (define/override (front-end/complete-program port settings teachpacks)
-             (let ([state 'init]
-                   ;; state : 'init => 'require => 'done
-                   [reader (get-reader)])
-               
-               (lambda ()
-                 (case state
-                   [(init)
-                    (set! state 'require)
-                    (let ([body-exps 
-                           (let loop ()
-                             (let ([result (reader (object-name port) port)])
-                               (if (eof-object? result)
-                                   null
-                                   (cons result (loop)))))]
-                          [language-module (get-module)]
-                          [require-specs 
-                           (drscheme:teachpack:teachpack-cache-require-specs teachpacks)])
-                      (rewrite-module 
-                       (expand
-                        (datum->syntax-object
-                         #f
-                         `(,#'module #%htdp ,language-module 
-                            (,#'require ,@require-specs)
-                            ,@body-exps)))))]
-                   [(require) 
-                    (set! state 'done)
-                    (syntax
-                     (let ([done-already? #f])
-                       (dynamic-wind
-                        void
-                        (lambda () 
-                          ;(dynamic-require '#%htdp #f)
-                          (eval #'(require #%htdp)))  ;; work around a bug in dynamic-require
-                        (lambda () 
-                          (unless done-already?
-                            (set! done-already? #t)
-                            (current-namespace (module->namespace '#%htdp)))))))]
-                   [(done) eof]))))
+            (let ([state 'init]
+                  ;; state : 'init => 'require => 'done
+                  [reader (get-reader)])
+              
+              (lambda ()
+                (case state
+                  [(init)
+                   (set! state 'require)
+                   (let ([body-exps 
+                          (let loop ()
+                            (let ([result (reader (object-name port) port)])
+                              (if (eof-object? result)
+                                  null
+                                  (cons result (loop)))))]
+                         [language-module (get-module)]
+                         [require-specs 
+                          (drscheme:teachpack:teachpack-cache-require-specs teachpacks)])
+                     (rewrite-module 
+                      (expand
+                       (datum->syntax-object
+                        #f
+                        `(,#'module #%htdp ,language-module 
+                           (,#'require ,@require-specs)
+                           ,@body-exps)))))]
+                  [(require) 
+                   (set! state 'done)
+                   (syntax
+                    (let ([done-already? #f])
+                      (dynamic-wind
+                       void
+                       (lambda () 
+                         ;(dynamic-require '#%htdp #f)
+                         (eval #'(require #%htdp)))  ;; work around a bug in dynamic-require
+                       (lambda () 
+                         (unless done-already?
+                           (set! done-already? #t)
+                           (current-namespace (module->namespace '#%htdp)))))))]
+                  [(done) eof]))))
 
           (super-new)))
 

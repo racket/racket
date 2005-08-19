@@ -48,30 +48,36 @@
                           (= (vector-ref v1 (- i 1)) (vector-ref v2 (- i 1)))))
                  (loop (- i 4)))))))
   
-    ;; coerce-to-cache-image-snip : image -> (is-a?/c cache-image-snip%)
+  
+  (define image-snip-cache (make-hash-table 'weak))
+  ;; coerce-to-cache-image-snip : image -> (is-a?/c cache-image-snip%)
   (define (coerce-to-cache-image-snip snp)
     (cond
+      [(hash-table-get image-snip-cache snp (λ () #f)) => values]
       [(is-a? snp image-snip%)
-       (let ([bmp (send snp get-bitmap)])
-         (if bmp
-             (let ([bmp-mask (or (send bmp get-loaded-mask)
-                                 (send snp get-bitmap-mask)
-                                 (bitmap->mask bmp))])
-               (bitmaps->cache-image-snip (copy-bitmap bmp)
-                                          (copy-bitmap bmp-mask)
-                                          (floor (/ (send bmp get-width) 2))
-                                          (floor (/ (send bmp get-height) 2))))
-             (let-values ([(w h) (snip-size snp)])
-               (let* ([bmp (make-object bitmap% 
-                             (inexact->exact (floor w))
-                             (inexact->exact (floor h)))]
-                      [bdc (make-object bitmap-dc% bmp)])
-                 (send snp draw bdc 0 0 0 0 w h 0 0 'no-caret)
-                 (send bdc set-bitmap #f)
-                 (bitmaps->cache-image-snip bmp 
-                                            (bitmap->mask bmp)
-                                            (floor (/ w 2))
-                                            (floor (/ h 2)))))))]
+       (let* ([bmp (send snp get-bitmap)]
+              [cis
+               (if bmp
+                   (let ([bmp-mask (or (send bmp get-loaded-mask)
+                                       (send snp get-bitmap-mask)
+                                       (bitmap->mask bmp))])
+                     (bitmaps->cache-image-snip (copy-bitmap bmp)
+                                                (copy-bitmap bmp-mask)
+                                                (floor (/ (send bmp get-width) 2))
+                                                (floor (/ (send bmp get-height) 2))))
+                   (let-values ([(w h) (snip-size snp)])
+                     (let* ([bmp (make-object bitmap% 
+                                   (inexact->exact (floor w))
+                                   (inexact->exact (floor h)))]
+                            [bdc (make-object bitmap-dc% bmp)])
+                       (send snp draw bdc 0 0 0 0 w h 0 0 'no-caret)
+                       (send bdc set-bitmap #f)
+                       (bitmaps->cache-image-snip bmp 
+                                                  (bitmap->mask bmp)
+                                                  (floor (/ w 2))
+                                                  (floor (/ h 2))))))])
+         (hash-table-put! image-snip-cache snp cis)
+         cis)]
       [else snp]))
     
   ;; copy-bitmap : bitmap -> bitmap
