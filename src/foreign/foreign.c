@@ -963,14 +963,31 @@ END_XFORM_SKIP;
 /*****************************************************************************/
 /* Scheme<-->C conversions */
 
-static Scheme_Object *c_to_scheme(Scheme_Object *type, void *src)
+static Scheme_Object *c_to_scheme(Scheme_Object *type, void *src
+/* On big endian machines we need to know whether we're pulling a value from an
+ * argument location where it always takes a whole word or straight from a
+ * memory location */
+#ifdef SCHEME_BIG_ENDIAN
+                                  , int args_loc
+#endif
+                                  )
+#ifdef SCHEME_BIG_ENDIAN
+#define REF_CTYPE(ctype) ((sizeof(ctype)<sizeof(int)) && args_loc \
+  ? ((ctype)(((int*)src)[0])) : (((ctype *)src)[0]))
+#else
+#define REF_CTYPE(ctype) (((ctype *)src)[0])
+#endif
 {
   Scheme_Object *res, *base;
   if (!SCHEME_CTYPEP(type))
     scheme_wrong_type("C->Scheme", "C-type", 0, 1, &type);
   base = CTYPE_BASETYPE(type);
   if (base != NULL) {
+#ifdef SCHEME_BIG_ENDIAN
+    res = c_to_scheme(base, src, args_loc);
+#else
     res = c_to_scheme(base, src);
+#endif
     if (SCHEME_FALSEP(CTYPE_USER_C2S(type)))
       return res;
     else
@@ -979,35 +996,36 @@ static Scheme_Object *c_to_scheme(Scheme_Object *type, void *src)
     return (Scheme_Object*)src;
   } else switch (CTYPE_PRIMLABEL(type)) {
     case FOREIGN_void: return scheme_void;
-    case FOREIGN_int8: return scheme_make_integer(((sizeof(Tsint8)<sizeof(int)) ? ((Tsint8)(((int*)src)[0])) : (((Tsint8*)src)[0])));
-    case FOREIGN_uint8: return scheme_make_integer_from_unsigned(((sizeof(Tuint8)<sizeof(int)) ? ((Tuint8)(((int*)src)[0])) : (((Tuint8*)src)[0])));
-    case FOREIGN_int16: return scheme_make_integer(((sizeof(Tsint16)<sizeof(int)) ? ((Tsint16)(((int*)src)[0])) : (((Tsint16*)src)[0])));
-    case FOREIGN_uint16: return scheme_make_integer_from_unsigned(((sizeof(Tuint16)<sizeof(int)) ? ((Tuint16)(((int*)src)[0])) : (((Tuint16*)src)[0])));
-    case FOREIGN_int32: return scheme_make_realinteger_value(((sizeof(Tsint32)<sizeof(int)) ? ((Tsint32)(((int*)src)[0])) : (((Tsint32*)src)[0])));
-    case FOREIGN_uint32: return scheme_make_realinteger_value_from_unsigned(((sizeof(Tuint32)<sizeof(int)) ? ((Tuint32)(((int*)src)[0])) : (((Tuint32*)src)[0])));
-    case FOREIGN_int64: return scheme_make_integer_value_from_long_long(((sizeof(Tsint64)<sizeof(int)) ? ((Tsint64)(((int*)src)[0])) : (((Tsint64*)src)[0])));
-    case FOREIGN_uint64: return scheme_make_integer_value_from_unsigned_long_long(((sizeof(Tuint64)<sizeof(int)) ? ((Tuint64)(((int*)src)[0])) : (((Tuint64*)src)[0])));
-    case FOREIGN_fixint: return scheme_make_integer(((sizeof(Tsint32)<sizeof(int)) ? ((Tsint32)(((int*)src)[0])) : (((Tsint32*)src)[0])));
-    case FOREIGN_ufixint: return scheme_make_integer_from_unsigned(((sizeof(Tuint32)<sizeof(int)) ? ((Tuint32)(((int*)src)[0])) : (((Tuint32*)src)[0])));
-    case FOREIGN_fixnum: return scheme_make_integer(((sizeof(long)<sizeof(int)) ? ((long)(((int*)src)[0])) : (((long*)src)[0])));
-    case FOREIGN_ufixnum: return scheme_make_integer_from_unsigned(((sizeof(unsigned long)<sizeof(int)) ? ((unsigned long)(((int*)src)[0])) : (((unsigned long*)src)[0])));
-    case FOREIGN_float: return scheme_make_float(((sizeof(float)<sizeof(int)) ? ((float)(((int*)src)[0])) : (((float*)src)[0])));
-    case FOREIGN_double: return scheme_make_double(((sizeof(double)<sizeof(int)) ? ((double)(((int*)src)[0])) : (((double*)src)[0])));
-    case FOREIGN_doubleS: return scheme_make_double(((sizeof(double)<sizeof(int)) ? ((double)(((int*)src)[0])) : (((double*)src)[0])));
-    case FOREIGN_bool: return (((sizeof(int)<sizeof(int)) ? ((int)(((int*)src)[0])) : (((int*)src)[0]))?scheme_true:scheme_false);
-    case FOREIGN_string_ucs_4: return scheme_make_char_string_without_copying(((sizeof(mzchar*)<sizeof(int)) ? ((mzchar*)(((int*)src)[0])) : (((mzchar**)src)[0])));
-    case FOREIGN_string_utf_16: return utf16_pointer_to_ucs4_string(((sizeof(unsigned short*)<sizeof(int)) ? ((unsigned short*)(((int*)src)[0])) : (((unsigned short**)src)[0])));
-    case FOREIGN_bytes: return (((sizeof(char*)<sizeof(int)) ? ((char*)(((int*)src)[0])) : (((char**)src)[0]))==NULL)?scheme_false:scheme_make_byte_string_without_copying(((sizeof(char*)<sizeof(int)) ? ((char*)(((int*)src)[0])) : (((char**)src)[0])));
-    case FOREIGN_path: return (((sizeof(char*)<sizeof(int)) ? ((char*)(((int*)src)[0])) : (((char**)src)[0]))==NULL)?scheme_false:scheme_make_path_without_copying(((sizeof(char*)<sizeof(int)) ? ((char*)(((int*)src)[0])) : (((char**)src)[0])));
-    case FOREIGN_symbol: return scheme_intern_symbol(((sizeof(char*)<sizeof(int)) ? ((char*)(((int*)src)[0])) : (((char**)src)[0])));
-    case FOREIGN_pointer: return scheme_make_foreign_cpointer(((sizeof(void*)<sizeof(int)) ? ((void*)(((int*)src)[0])) : (((void**)src)[0])));
-    case FOREIGN_scheme: return ((sizeof(Scheme_Object*)<sizeof(int)) ? ((Scheme_Object*)(((int*)src)[0])) : (((Scheme_Object**)src)[0]));
+    case FOREIGN_int8: return scheme_make_integer(REF_CTYPE(Tsint8));
+    case FOREIGN_uint8: return scheme_make_integer_from_unsigned(REF_CTYPE(Tuint8));
+    case FOREIGN_int16: return scheme_make_integer(REF_CTYPE(Tsint16));
+    case FOREIGN_uint16: return scheme_make_integer_from_unsigned(REF_CTYPE(Tuint16));
+    case FOREIGN_int32: return scheme_make_realinteger_value(REF_CTYPE(Tsint32));
+    case FOREIGN_uint32: return scheme_make_realinteger_value_from_unsigned(REF_CTYPE(Tuint32));
+    case FOREIGN_int64: return scheme_make_integer_value_from_long_long(REF_CTYPE(Tsint64));
+    case FOREIGN_uint64: return scheme_make_integer_value_from_unsigned_long_long(REF_CTYPE(Tuint64));
+    case FOREIGN_fixint: return scheme_make_integer(REF_CTYPE(Tsint32));
+    case FOREIGN_ufixint: return scheme_make_integer_from_unsigned(REF_CTYPE(Tuint32));
+    case FOREIGN_fixnum: return scheme_make_integer(REF_CTYPE(long));
+    case FOREIGN_ufixnum: return scheme_make_integer_from_unsigned(REF_CTYPE(unsigned long));
+    case FOREIGN_float: return scheme_make_float(REF_CTYPE(float));
+    case FOREIGN_double: return scheme_make_double(REF_CTYPE(double));
+    case FOREIGN_doubleS: return scheme_make_double(REF_CTYPE(double));
+    case FOREIGN_bool: return (REF_CTYPE(int)?scheme_true:scheme_false);
+    case FOREIGN_string_ucs_4: return scheme_make_char_string_without_copying(REF_CTYPE(mzchar*));
+    case FOREIGN_string_utf_16: return utf16_pointer_to_ucs4_string(REF_CTYPE(unsigned short*));
+    case FOREIGN_bytes: return (REF_CTYPE(char*)==NULL)?scheme_false:scheme_make_byte_string_without_copying(REF_CTYPE(char*));
+    case FOREIGN_path: return (REF_CTYPE(char*)==NULL)?scheme_false:scheme_make_path_without_copying(REF_CTYPE(char*));
+    case FOREIGN_symbol: return scheme_intern_symbol(REF_CTYPE(char*));
+    case FOREIGN_pointer: return scheme_make_foreign_cpointer(REF_CTYPE(void*));
+    case FOREIGN_scheme: return REF_CTYPE(Scheme_Object*);
     case FOREIGN_fpointer: return scheme_void;
     case FOREIGN_struct: return scheme_make_foreign_cpointer(src);
     default: scheme_signal_error("corrupt foreign type: %V", type);
   }
   return NULL; /* shush the compiler */
 }
+#undef REF_CTYPE
 
 /* Usually writes the C object to dst and returns NULL.  When basetype_p is not
  * NULL, then any pointer value (any pointer or a struct) is returned, and the
@@ -1545,7 +1563,11 @@ static Scheme_Object *foreign_ptr_ref(int argc, Scheme_Object *argv[])
       scheme_wrong_type(MYNAME, "integer", 2, argc, argv);
     ptr = (char*)ptr XFORM_OK_PLUS (size * SCHEME_INT_VAL(argv[2]));
   }
+#ifdef SCHEME_BIG_ENDIAN
+  return c_to_scheme(argv[1], ptr, 0);
+#else
   return c_to_scheme(argv[1], ptr);
+#endif
 }
 
 /* (ptr-set! cpointer type [['abs] n] value) -> void */
@@ -1784,7 +1806,11 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
     }
     break;
   }
+#ifdef SCHEME_BIG_ENDIAN
+  return c_to_scheme(otype, p, 1);
+#else
   return c_to_scheme(otype, p);
+#endif
 }
 
 /* see below */
@@ -1873,7 +1899,11 @@ void ffi_do_callback(ffi_cif* cif, void* resultp, void** args, void *userdata)
   else
     argv = scheme_malloc(argc * sizeof(Scheme_Object*));
   for (i=0, p=data->itypes; i<argc; i++, p=SCHEME_CDR(p)) {
+#ifdef SCHEME_BIG_ENDIAN
+    v = c_to_scheme(SCHEME_CAR(p),args[i],1);
+#else
     v = c_to_scheme(SCHEME_CAR(p),args[i]);
+#endif
     argv[i] = v;
   }
   p = _scheme_apply(data->proc, argc, argv);

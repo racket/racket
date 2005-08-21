@@ -791,14 +791,31 @@ void free_libffi_type(void *ignored, void *p)
 /*****************************************************************************/
 /* Scheme<-->C conversions */
 
-static Scheme_Object *c_to_scheme(Scheme_Object *type, void *src)
+static Scheme_Object *c_to_scheme(Scheme_Object *type, void *src
+/* On big endian machines we need to know whether we're pulling a value from an
+ * argument location where it always takes a whole word or straight from a
+ * memory location */
+#ifdef SCHEME_BIG_ENDIAN
+                                  , int args_loc
+#endif
+                                  )
+#ifdef SCHEME_BIG_ENDIAN
+#define REF_CTYPE(ctype) ((sizeof(ctype)<sizeof(int)) && args_loc \
+  ? ((ctype)(((int*)src)[0])) : (((ctype *)src)[0]))
+#else
+#define REF_CTYPE(ctype) (((ctype *)src)[0])
+#endif
 {
   Scheme_Object *res, *base;
   if (!SCHEME_CTYPEP(type))
     scheme_wrong_type("C->Scheme", "C-type", 0, 1, &type);
   base = CTYPE_BASETYPE(type);
   if (base != NULL) {
+#ifdef SCHEME_BIG_ENDIAN
+    res = c_to_scheme(base, src, args_loc);
+#else
     res = c_to_scheme(base, src);
+#endif
     if (SCHEME_FALSEP(CTYPE_USER_C2S(type)))
       return res;
     else
@@ -809,12 +826,7 @@ static Scheme_Object *c_to_scheme(Scheme_Object *type, void *src)
     {:(for-each-type
         (~ "case FOREIGN_"cname": return "
            (if ctype
-             (let ([x (list
-                       ;; will cause a bug in big-endians with int8 & int16
-                       ;; "(("ctype"*)src)[0]"
-                       "((sizeof("ctype")<sizeof(int))"
-                       " ? (("ctype")(((int*)src)[0]))"
-                       " : ((("ctype"*)src)[0]))")])
+             (let ([x (list "REF_CTYPE("ctype")")])
                (if (procedure? c->s) (c->s x) (list c->s"("x")")))
              "scheme_void")";")):}
     case FOREIGN_struct: return scheme_make_foreign_cpointer(src);
@@ -822,6 +834,7 @@ static Scheme_Object *c_to_scheme(Scheme_Object *type, void *src)
   }
   return NULL; /* shush the compiler */
 }
+#undef REF_CTYPE
 
 /* Usually writes the C object to dst and returns NULL.  When basetype_p is not
  * NULL, then any pointer value (any pointer or a struct) is returned, and the
@@ -1153,7 +1166,11 @@ static void* scheme_to_c(Scheme_Object *type, void *dst,
       scheme_wrong_type(MYNAME, "integer", 2, argc, argv);
     ptr = (char*)ptr XFORM_OK_PLUS (size * SCHEME_INT_VAL(argv[2]));
   }
+#ifdef SCHEME_BIG_ENDIAN
+  return c_to_scheme(argv[1], ptr, 0);
+#else
   return c_to_scheme(argv[1], ptr);
+#endif
 }
 
 /* (ptr-set! cpointer type [['abs] n] value) -> void */
@@ -1388,7 +1405,11 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
     }
     break;
   }
+#ifdef SCHEME_BIG_ENDIAN
+  return c_to_scheme(otype, p, 1);
+#else
   return c_to_scheme(otype, p);
+#endif
 }
 
 /* see below */
@@ -1475,7 +1496,11 @@ void ffi_do_callback(ffi_cif* cif, void* resultp, void** args, void *userdata)
   else
     argv = scheme_malloc(argc * sizeof(Scheme_Object*));
   for (i=0, p=data->itypes; i<argc; i++, p=SCHEME_CDR(p)) {
+#ifdef SCHEME_BIG_ENDIAN
+    v = c_to_scheme(SCHEME_CAR(p),args[i],1);
+#else
     v = c_to_scheme(SCHEME_CAR(p),args[i]);
+#endif
     argv[i] = v;
   }
   p = _scheme_apply(data->proc, argc, argv);
