@@ -79,13 +79,14 @@ fi
 
 OS=`$UNAME -s`
 
-###### Get data sizes #######
+###### Get data sizes & endian #######
 
 AC_CHECK_SIZEOF(char)
 AC_CHECK_SIZEOF(short)
 AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(long)
 AC_CHECK_SIZEOF(long long)
+AC_C_BIGENDIAN()
 
 ###### Some flags imply other flags #######
 
