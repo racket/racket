@@ -875,8 +875,8 @@
       ((boolean? value) (list (if value "true" "false")))
       ((is-java-array? value)
        (if full-print?
-           (array->string value (send value length) -1 #t style already-printed newline? num-tabs)
-           (array->string value 3 (- (send value length) 3) #f style already-printed newline? num-tabs)))
+           (format-array->list value (send value length) -1 #t style already-printed newline? num-tabs)
+           (format-array->list value 3 (- (send value length) 3) #f style already-printed newline? num-tabs)))
       ((is-a? value String) (list (format "~v" (send value get-mzscheme-string))))
       ((string? value) (list (format "~v" value)))
       ((or (is-a? value ObjectI) (supports-printable-interface? value))
@@ -922,6 +922,27 @@
             (else (list (send value my-name)))))))
           (else (list value))))
 
+  ;format-array->list: java-value int int bool symbol (list value) -> (list val)
+  (define (format-array->list value stop restart full-print? style already-printed nl? nt)
+    (letrec ((len (send value length))
+             (make-partial-string
+              (lambda (idx first-test second-test)
+                (cond
+                  ((first-test idx) "")
+                  ((second-test idx)
+                   (string-append (format-java (send value access idx) full-print? style already-printed nl? nt)
+                                  (make-partial-string (add1 idx) first-test second-test)))
+                  (else
+                   (string-append (format-java (send value access idx) full-print? style already-printed nl? nt)
+                                  " "
+                                  (make-partial-string (add1 idx) first-test second-test)))))))
+      (if (or full-print? (< restart stop))
+          (list (format "[~a]" (make-partial-string 0 (lambda (i) (>= i len)) (lambda (i) (= i (sub1 len))))))
+          (list (format "[~a~a~a]"                      
+                  (make-partial-string 0 (lambda (i) (or (>= i stop) (>= i len))) (lambda (i) (= i (sub1 stop))))
+                  " ... "
+                  (make-partial-string restart (lambda (i) (>= i len)) (lambda (i) (= i (sub1 len)))))))))
+  
   
   ;array->string: java-value int int bool symbol (list value) -> string
   (define (array->string value stop restart full-print? style already-printed nl? nt)

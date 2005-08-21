@@ -161,6 +161,22 @@
                       (environment-labels base-env)
                       (environment-local-inners base-env)))
   
+  (define (remove-set-vars to-remove sets)
+    (cond
+      ((null? sets) sets)
+      ((member (car sets) to-remove) (remove-set-vars to-remove (cdr sets)))
+      (else (cons (car sets) (remove-set-vars to-remove (cdr sets))))))
+  
+  (define (unnest-var base-env context+)
+    (let ((adds 
+           (map var-type-var
+                (srfi:lset-difference equal? (environment-types context+) (environment-types base-env)))))
+    (make-environment (environment-types base-env)
+                      (remove-set-vars adds (environment-set-vars context+))
+                      (environment-exns base-env)
+                      (environment-labels base-env)
+                      (environment-local-inners base-env))))
+  
   ;;add-exn-to-env: type env -> env
   (define (add-exn-to-env exn env)
     (make-environment (environment-types env)
@@ -1063,7 +1079,8 @@
   ;check-while: type/env  src -> void
   (define (check-while cond/env src check-s loop-body)
     ((check-cond 'while) (type/env-t cond/env) src)
-    (check-s loop-body (type/env-e cond/env) #t #f))
+    (check-s loop-body (type/env-e cond/env) #t #f)
+    (make-type/env 'void cond/env))
         
   ;check-do: (exp env -> type/env) exp src type/env -> type/env
   (define (check-do check-e exp src loop/env)
@@ -1079,12 +1096,13 @@
                           (check-for-exps init env check-e)))
            (cond/env (check-e cond inits-env)))
       ((check-cond 'for) (type/env-t cond/env) (expr-src cond))
-      (check-s loop (check-for-exps incr inits-env check-e) #t in-switch?)))
+      (check-s loop (check-for-exps incr inits-env check-e) #t in-switch?))
+    (make-type/env 'void env))
 
   ;check-for-vars: (list field) env (expression env -> type/env) symbol (list string) type-records -> env
   (define (check-for-vars vars env check-e level c-class types)
     (or (and (null? vars) env)
-        (check-for-vars (cdr vars) 
+        (check-for-vars (cdr vars)
                         (check-local-var (car vars) env check-e level c-class types) 
                         check-e level c-class types)))
   
@@ -1139,8 +1157,8 @@
                         (check-s (catch-body catch)
                                  (add-var-to-env name (field-type-spec field) parm env)))))
                 catches)
-      (when finally (check-s finally env)
-        body-res)))
+      (when finally (check-s finally env))
+      (make-type/env 'void (unnest-var (type/env-e body-res)))))
 
   ;INCORRECT!!! This doesn't properly type check and I'm just raising an error for now
   ;Skipping proper checks of the statements + proper checking that constants aren't repeated
@@ -1164,7 +1182,7 @@
   (define (check-block stmts env check-s check-e level c-class type-recs)
     (let loop ((stmts stmts) (block-env env))
       (cond 
-        ((null? stmts) (make-type/env 'void block-env))
+        ((null? stmts) (make-type/env 'void (unnest-var env block-env)))
         ((field? (car stmts))
          (loop (cdr stmts) 
                (check-local-var (car stmts) block-env check-e level c-class type-recs)))
