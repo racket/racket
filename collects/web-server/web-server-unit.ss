@@ -575,20 +575,21 @@
                     inst
                     (make-execution-context
                      conn req (lambda () (suspend #t))))
+              (semaphore-wait (servlet-instance-mutex inst))
               (let ([k*salt
-                     (call-with-semaphore
-                      (servlet-instance-mutex inst)
-                      (lambda ()
+                     ; Is this why the semaphore exists?
                         (hash-table-get k-table (second k-ref)
                                         (lambda ()
                                           (raise
                                            (make-exn:servlet-continuation
-                                            "" (current-continuation-marks)))))))])
+                                            "" (current-continuation-marks)))))])
                 (if (= (second k*salt) (third k-ref))
                     ((first k*salt) req)
                     (raise
                      (make-exn:servlet-continuation
-                      "" (current-continuation-marks)))))))))
+                      "" (current-continuation-marks))))))
+            (semaphore-post (servlet-instance-mutex inst))
+            )))
       
       ;; ************************************************************
       ;; ************************************************************
