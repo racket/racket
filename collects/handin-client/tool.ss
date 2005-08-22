@@ -442,14 +442,22 @@
        (show #t))))
 
   (define (scale-by-half file)
-    (let* ([bm (make-object bitmap% file)]
+    (let* ([bm (make-object bitmap% file 'unknown/mask)]
 	   [w (send bm get-width)]
 	   [h (send bm get-height)]
 	   [bm2 (make-object bitmap% (quotient w 2) (quotient h 2))]
+	   [mbm2 (and (send bm get-loaded-mask)
+		      (make-object bitmap% (quotient w 2) (quotient h 2)))]
 	   [mdc (make-object bitmap-dc% bm2)])
       (send mdc set-scale 0.5 0.5)
       (send mdc draw-bitmap bm 0 0)
       (send mdc set-bitmap #f)
+      (when mbm2
+	(send mdc set-bitmap mbm2)
+	(send mdc set-scale 0.5 0.5)
+	(send mdc draw-bitmap (send bm get-loaded-mask) 0 0)
+	(send mdc set-bitmap #f)
+	(send bm2 set-loaded-mask mbm2))
       bm2))
 
   (define handin-icon

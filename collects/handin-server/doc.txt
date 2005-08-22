@@ -93,8 +93,8 @@ Client Customization
 To customize the client:
 
   1. Rename (or make a copy of) the "handin-client" collection
-     directory. The new name should describe your class more or less
-     uniquely. For example, "uu-cpsc2010" is a good name for CPSC 2010
+     directory. The new name should describe your class uniquely.
+     For example, "uu-cpsc2010" is a good name for CPSC 2010
      at the University of Utah.
 
   2. Edit the first three definitions of "info.ss" in your renamed
@@ -153,17 +153,17 @@ The server must be run from a directory that is specially prepared to
 host the server. This directory contains the following files and
 sub-directories:
 
-  * server-cert.pem --- the server's certificate. To create a
+  * "server-cert.pem" --- the server's certificate. To create a
     certificate and key with openssl:
 
      openssl req -new -nodes -x509 -days 365 -out server-cert.pem 
                  -keyout private-key.pem 
 
-  * private-key.pem --- the private key to go with "server-cert.pem".
+  * "private-key.pem" --- the private key to go with "server-cert.pem".
     Whereas "server-cert.pem" gets distributed to students with the
     handin client, "private-key.pem" is kept private.
 
-  * config.ss (optional) --- configuration options. The file format
+  * "config.ss" (optional) --- configuration options. The file format
     is 
 
          ((<key> <val>) ...)
@@ -211,7 +211,7 @@ sub-directories:
          allows login as any user; the default is #f, which disables
          the password
 
-  * users.ss (created if not present if a user is added) --- keeps
+  * "users.ss" (created if not present if a user is added) --- keeps
     the list of user accounts, along with the associated password
     (actually the MD5 hash of the password), full name, and free-form
     id (perhaps a student id at a university) of the account. The file
@@ -226,7 +226,7 @@ sub-directories:
     The username "solution" is special. It is used by the HTTPS status
     server.
 
-  * active/ --- sub-directory for active assignments. A list of active
+  * "active/" --- sub-directory for active assignments. A list of active
     assignments is sent to a client tool when a student clicks
     "Handin". The student then selects from the list. The list of
     active assignments is built once by the server when it starts.
@@ -254,10 +254,10 @@ sub-directories:
     For submissions from a test-suite window, the file is a normal
     test-suite file.
 
-  * inactive/ --- sub-directory for inactive assignments, used by the
+  * "inactive/" --- sub-directory for inactive assignments, used by the
     HTTPS status web server.
 
-  * active/<assignment>/checker.ss (optional) --- a module that
+  * "active/<assignment>/checker.ss" (optional) --- a module that
     exports a `checker' function. This function receives two
     strings. The first is a username and the second is the user's
     submission as a string. (See also `unpack-submission', etc. from
@@ -277,27 +277,29 @@ sub-directories:
     and return "tests" if the string is a test-suite submission or
     "program" if it is not.
 
-  * log.ss (created if not present, appended otherwise) --- records
+  * "log.ss" (created if not present, appended otherwise) --- records
     connections and actions, where each entry is of the form
         (id time-str msg-str)
     and `id' is an integer representing the connection (numbered
     consecutively from 1 when the server starts) or 0 for a message
     for server without a connection.
 
-  * web-status-log.ss (created if not present, appended otherwise)
+  * "web-status-log.ss" (created if not present, appended otherwise)
     --- records accesses of the HTTPS status web server.
 
-  * [in]active/<assignment>/<user>/<filename> (if submitted) --- the
+  * "[in]active/<assignment>/<user>/<filename>" (if submitted) --- the
     most recent submission for <assignment> by <user> where <filename>
     was returned by the checker (or the value of the
     `default-file-name' configuration option if there's no checker).
 
-  * [in]active/<assignment>/<user>/grade (optional) --- <user>'s grade
+  * "[in]active/<assignment>/<user>/grade" (optional) --- <user>'s grade
     for <assignment>, to be reported by the HTTPS status web server.
 
-  * [in]active/<assignment>/solution/<assignment>sol.scm --- the
-    solution to the assignment, made available by the status server
-    to any user who logs in.
+  * "[in]active/<assignment>/solution/<file>" --- the solution to the
+    assignment, made available by the status server to any user who
+    logs in. There must be only one file in "<assignment>/solution/";
+    if there are multiple files, only one named "<assignment>sol.scm"
+    is made available as the solution.
 
 The server can be run within either MzScheme or MrEd, but "utils.ss"
 requires MrEd (which means that `checker' modules will likely require
