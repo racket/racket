@@ -32,7 +32,7 @@
                     [bindings (union (listof binding?) string?)]
                     [host-ip string?]
                     [client-ip string?])]
-   [read-request ((input-port?) . ->* . (request? boolean?))]
+   [read-request ((connection?) . ->* . (request? boolean?))]
    [read-bindings (connection? symbol? url? (listof header?)
                                . -> . (union (listof binding?) string?))])
 
@@ -40,18 +40,22 @@
   ;; read-request: input-port -> request boolean?
   ;; read the request line, and the headers, determine if the connection should
   ;; be closed after servicing the request and build a request structure
-  (define (read-request ip)
-    (let-values ([(method uri major-version minor-version)
-                  (read-request-line ip)])
-      (let ([headers (read-headers ip)])
-        (let-values ([(host-ip client-ip)
-                      (if (tcp-port? ip)
-                          (tcp-addresses ip)
-                          (values "127.0.0.1" "127.0.0.1"))])
-          (values
-           (make-request method uri headers '() host-ip client-ip)
-           (close-connection?
-            headers major-version minor-version client-ip host-ip))))))
+  (define (read-request conn)
+    (call-with-semaphore
+     (connection-mutex conn)
+     (lambda ()
+       (let ([ip (connection-i-port conn)])
+         (let-values ([(method uri major-version minor-version)
+                       (read-request-line ip)])
+           (let ([headers (read-headers ip)])
+             (let-values ([(host-ip client-ip)
+                           (if (tcp-port? ip)
+                               (tcp-addresses ip)
+                               (values "127.0.0.1" "127.0.0.1"))])
+               (values
+                (make-request method uri headers '() host-ip client-ip)
+                (close-connection?
+                 headers major-version minor-version client-ip host-ip)))))))))
 
   ;; **************************************************
   ;; close-connection?
@@ -164,29 +168,32 @@
     (case meth
       [(get) (url-query uri)]
       [(post)
-       (let ([content-type (assq 'content-type headers)])
-         (cond
-           [(and content-type (regexp-match FILE-FORM-REGEXP (cdr content-type)))
-             => (lambda (content-boundary)
-                  (map (lambda (part)
-                         ;; more here - better checks, avoid string-append
-                         (cons (get-field-name (cdr (assq 'content-disposition (car part))))
-                               (apply bytes-append (cdr part))))
-                       (read-mime-multipart (cadr content-boundary) (connection-i-port conn))))]
-             [else
-             (let ([len-str (assq 'content-length headers)]
-                   [in (connection-i-port conn)])
-               (if len-str
-                 (cond
-                   [(string->number (bytes->string/utf-8 (cdr len-str)))
-                    => (lambda (len) (read-string len in))]
-                    [else (error "Post request contained a non-numeric content-length")])
-                 (apply string-append
-                        (let read-to-eof ()
-                          (let ([s (read-string INPUT-BUFFER-SIZE in)])
-                            (if (eof-object? s)
-                              null
-                              (cons s (read-to-eof))))))))]))]
+       (call-with-semaphore
+        (connection-mutex conn)
+        (lambda ()
+          (let ([content-type (assq 'content-type headers)])
+            (cond
+              [(and content-type (regexp-match FILE-FORM-REGEXP (cdr content-type)))
+               => (lambda (content-boundary)
+                    (map (lambda (part)
+                           ;; more here - better checks, avoid string-append
+                           (cons (get-field-name (cdr (assq 'content-disposition (car part))))
+                                 (apply bytes-append (cdr part))))
+                         (read-mime-multipart (cadr content-boundary) (connection-i-port conn))))]
+              [else
+               (let ([len-str (assq 'content-length headers)]
+                     [in (connection-i-port conn)])
+                 (if len-str
+                     (cond
+                       [(string->number (bytes->string/utf-8 (cdr len-str)))
+                        => (lambda (len) (read-string len in))]
+                       [else (error "Post request contained a non-numeric content-length")])
+                     (apply string-append
+                            (let read-to-eof ()
+                              (let ([s (read-string INPUT-BUFFER-SIZE in)])
+                                (if (eof-object? s)
+                                    null
+                                    (cons s (read-to-eof))))))))]))))]
       [else (error "unsupported method" meth)]))
 
   (define FILE-FORM-REGEXP (regexp "multipart/form-data; *boundary=(.*)"))

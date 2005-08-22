@@ -5,44 +5,54 @@
 (module connection-manager mzscheme
   (require "timer.ss"
            (lib "contract.ss"))
-
-  (define-struct connection (timer i-port o-port custodian close?)
+  
+  (define-struct connection (timer i-port o-port custodian close? mutex)
     (make-inspector))
-
+  
   (provide/contract
    [struct connection
            ([timer timer?]
             [i-port input-port?] [o-port output-port?] [custodian custodian?]
-            [close? boolean?])]
+            [close? boolean?] [mutex semaphore?])]
    [start-connection-manager (custodian? . -> . void)]
    [new-connection (number? input-port? output-port? custodian? boolean? . -> . connection?)]
    [kill-connection! (connection? . -> . void)]
    [adjust-connection-timeout! (connection? number? . -> . void)])
-
+  
   ;; start-connection-manager: custodian -> void
   ;; does nothing
   (define start-connection-manager void)
-
+  
   ;; new-connection: number i-port o-port custodian -> connection
   ;; ask the connection manager for a new connection
   (define (new-connection time-to-live i-port o-port cust close?)
-    (make-connection
-     (start-timer time-to-live
-                  (lambda () 
-                    (close-output-port o-port)
-                    (close-input-port i-port)
-                    (custodian-shutdown-all cust)))
-     i-port o-port cust close?))
-
+    (let ([mutex (make-semaphore 1)])
+      (make-connection
+       (start-timer time-to-live
+                    (lambda () 
+                      (call-with-semaphore
+                       mutex
+                       (lambda ()
+                         (close-output-port o-port)
+                         (close-input-port i-port)
+                         (custodian-shutdown-all cust)))))
+       i-port o-port cust close? mutex)))
+  
   ;; kill-connection!: connection -> void
   ;; kill this connection
   (define (kill-connection! conn-demned)
-    (close-output-port (connection-o-port conn-demned))
-    (close-input-port (connection-i-port conn-demned))
-    (custodian-shutdown-all (connection-custodian conn-demned)))
-
+    (call-with-semaphore
+     (connection-mutex conn-demned)
+     (lambda ()
+       (close-output-port (connection-o-port conn-demned))
+       (close-input-port (connection-i-port conn-demned))
+       (custodian-shutdown-all (connection-custodian conn-demned)))))
+  
   ;; adjust-connection-timeout!: connection number -> void
   ;; change the expiration time for this connection
   (define (adjust-connection-timeout! conn time)
-    (reset-timer (connection-timer conn) time))
+    (call-with-semaphore
+     (connection-mutex conn)
+     (lambda ()
+       (reset-timer (connection-timer conn) time))))
   )

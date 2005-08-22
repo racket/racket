@@ -181,53 +181,56 @@
   ;; **************************************************
   ;; output-response: connection response -> void
   (define (output-response conn resp)
-    (cond
-      [(response/full? resp)
-       (output-response/basic
-        conn resp (response/full->size resp)
-        (lambda (o-port)
-          (for-each
-           (lambda (str) (display str o-port))
-           (response/full-body resp))))]
-      [(response/incremental? resp)
-       (output-response/incremental conn resp)]
-      [(and (pair? resp) (string? (car resp)))
-       (output-response/basic
-        conn
-        (make-response/basic 200 "Okay" (current-seconds) (car resp) '())
-        (apply + (map
-                  (lambda (c)
-                    (if (string? c)
-                        (string-length c)
-                        (bytes-length c)))
-                  (cdr resp)))
-        (lambda (o-port)
-          (for-each
-           (lambda (str) (display str o-port))
-           (cdr resp))))]
-      [else
-       ;; TODO: make a real exception for this.
-       (with-handlers
-           ([exn:invalid-xexpr?
-             (lambda (exn)
-               (output-response/method
-                conn
-                (xexpr-exn->response exn resp)
-                'ignored))]
-            [exn? (lambda (exn)
-                    (raise exn))])
-         (let ([str (and (validate-xexpr resp) (xexpr->string resp))])
-           (output-response/basic
-            conn
-            (make-response/basic 200
-                                 "Okay"
-                                 (current-seconds)
-                                 TEXT/HTML-MIME-TYPE
-                                 '())
-            (add1 (string-length str))
-            (lambda (o-port)
-              (display str o-port)
-              (newline o-port)))))]))
+    (call-with-semaphore
+     (connection-mutex conn)
+     (lambda ()
+       (cond
+         [(response/full? resp)
+          (output-response/basic
+           conn resp (response/full->size resp)
+           (lambda (o-port)
+             (for-each
+              (lambda (str) (display str o-port))
+              (response/full-body resp))))]
+         [(response/incremental? resp)
+          (output-response/incremental conn resp)]
+         [(and (pair? resp) (string? (car resp)))
+          (output-response/basic
+           conn
+           (make-response/basic 200 "Okay" (current-seconds) (car resp) '())
+           (apply + (map
+                     (lambda (c)
+                       (if (string? c)
+                           (string-length c)
+                           (bytes-length c)))
+                     (cdr resp)))
+           (lambda (o-port)
+             (for-each
+              (lambda (str) (display str o-port))
+              (cdr resp))))]
+         [else
+          ;; TODO: make a real exception for this.
+          (with-handlers
+              ([exn:invalid-xexpr?
+                (lambda (exn)
+                  (output-response/method
+                   conn
+                   (xexpr-exn->response exn resp)
+                   'ignored))]
+               [exn? (lambda (exn)
+                       (raise exn))])
+            (let ([str (and (validate-xexpr resp) (xexpr->string resp))])
+              (output-response/basic
+               conn
+               (make-response/basic 200
+                                    "Okay"
+                                    (current-seconds)
+                                    TEXT/HTML-MIME-TYPE
+                                    '())
+               (add1 (string-length str))
+               (lambda (o-port)
+                 (display str o-port)
+                 (newline o-port)))))]))))
   
   ;; response/full->size: response/full -> number
   ;; compute the size for a response/full
@@ -242,26 +245,32 @@
   ;; **************************************************
   ;; output-file: connection path symbol bytes -> void
   (define (output-file conn file-path method mime-type)
-    (output-headers conn 200 "Okay"
-                    `(("Content-length: " ,(file-size file-path)))
-                    (file-or-directory-modify-seconds file-path)
-                    mime-type)
-    (when (eq? method 'get)
-      ; Give it one second per byte.
-      (adjust-connection-timeout! conn (file-size file-path))
-      (call-with-input-file file-path
-        (lambda (i-port) (copy-port i-port (connection-o-port conn))))))
+    (call-with-semaphore
+     (connection-mutex conn)
+     (lambda ()
+       (output-headers conn 200 "Okay"
+                       `(("Content-length: " ,(file-size file-path)))
+                       (file-or-directory-modify-seconds file-path)
+                       mime-type)
+       (when (eq? method 'get)
+         ; Give it one second per byte.
+         (adjust-connection-timeout! conn (file-size file-path))
+         (call-with-input-file file-path
+           (lambda (i-port) (copy-port i-port (connection-o-port conn))))))))
   
   ;; **************************************************
   ;; output-response/method: connection response/full symbol -> void
   ;; If it is a head request output headers only, otherwise output as usual
   (define (output-response/method conn resp meth)
-    (cond
-      [(eqv? meth 'head)
-       (output-headers/response conn resp `(("Content-length: "
-                                             ,(response/full->size resp))))]
-      [else
-       (output-response conn resp)]))
+    (call-with-semaphore
+     (connection-mutex conn)
+     (lambda ()
+       (cond
+         [(eqv? meth 'head)
+          (output-headers/response conn resp `(("Content-length: "
+                                                ,(response/full->size resp))))]
+         [else
+          (output-response conn resp)]))))
   
   ;; **************************************************
   ;; output-headers/response: connection response (listof (listof string)) -> void

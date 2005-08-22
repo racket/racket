@@ -113,7 +113,7 @@
       ;; respond to all requests on this connection
       (define (serve-connection conn)
         (let connection-loop ()
-          (let-values ([(req close?) (read-request (connection-i-port conn))])
+          (let-values ([(req close?) (read-request conn)])
             (let* ([host (get-host (request-uri req) (request-headers req))]
                    [host-conf (config:virtual-hosts host)])
               ((host-log-message host-conf) (request-host-ip req)
@@ -124,8 +124,6 @@
               (cond
                 [close? (kill-connection! conn)]
                 [else (connection-loop)])))))
-      
-      
       
       ;; dispatch: connection request host -> void
       ;; NOTE: (GregP) I'm going to use the dispatch logic out of v208 for now.
@@ -161,8 +159,7 @@
                 (output-response/method
                  conn
                  ((responders-passwords-refreshed (host-responders host-info)))
-                 method)
-                ]
+                 method)]
                [else
                 (output-response/method
                  conn
