@@ -575,14 +575,16 @@
                     inst
                     (make-execution-context
                      conn req (lambda () (suspend #t))))
+              ; We don't use call-with-semaphore or dynamic-wind because we
+              ; always call a continuation. The exit-handler above ensures that
+              ; the post is done.
               (semaphore-wait (servlet-instance-mutex inst))
               (let ([k*salt
-                     ; Is this why the semaphore exists?
-                        (hash-table-get k-table (second k-ref)
-                                        (lambda ()
-                                          (raise
-                                           (make-exn:servlet-continuation
-                                            "" (current-continuation-marks)))))])
+                     (hash-table-get k-table (second k-ref)
+                                     (lambda ()
+                                       (raise
+                                        (make-exn:servlet-continuation
+                                         "" (current-continuation-marks)))))])
                 (if (= (second k*salt) (third k-ref))
                     ((first k*salt) req)
                     (raise
