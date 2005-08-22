@@ -77,19 +77,7 @@
    [rename ext:output-response output-response (connection? any/c . -> . any)]
    [rename ext:output-response/method output-response/method (connection? response? symbol? . -> . any)]
    [rename ext:output-file output-file (connection? path? symbol? bytes? . -> . any)]
-   [TEXT/HTML-MIME-TYPE bytes?]
-   )
-  
-  
-  (define (ext:output-response conn resp)
-    (call-with-semaphore (connection-mutex conn)
-                         (lambda () (output-response conn resp))))
-  (define (ext:output-response/method conn resp meth)
-    (call-with-semaphore (connection-mutex conn)
-                         (lambda () (output-response/method conn resp meth))))
-  (define (ext:output-file conn file-path method mime-type)
-    (call-with-semaphore (connection-mutex conn)
-                         (lambda () (output-file conn file-path method mime-type))))
+   [TEXT/HTML-MIME-TYPE bytes?])
   
   ;; Table 1. head responses:
   ; ------------------------------------------------------------------------------
@@ -186,6 +174,10 @@
     
   ;; **************************************************
   ;; output-response: connection response -> void
+  (define (ext:output-response conn resp)
+    (call-with-semaphore (connection-mutex conn)
+                         (lambda () (output-response conn resp))))
+
   (define (output-response conn resp)
        (cond
          [(response/full? resp)
@@ -247,6 +239,10 @@
   
   ;; **************************************************
   ;; output-file: connection path symbol bytes -> void
+  (define (ext:output-file conn file-path method mime-type)
+    (call-with-semaphore (connection-mutex conn)
+                         (lambda () (output-file conn file-path method mime-type))))
+  
   (define (output-file conn file-path method mime-type)
     (output-headers conn 200 "Okay"
                     `(("Content-length: " ,(file-size file-path)))
@@ -261,6 +257,10 @@
   ;; **************************************************
   ;; output-response/method: connection response/full symbol -> void
   ;; If it is a head request output headers only, otherwise output as usual
+  (define (ext:output-response/method conn resp meth)
+    (call-with-semaphore (connection-mutex conn)
+                         (lambda () (output-response/method conn resp meth))))
+
   (define (output-response/method conn resp meth)
     (cond
       [(eqv? meth 'head)

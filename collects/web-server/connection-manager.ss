@@ -51,8 +51,5 @@
   ;; adjust-connection-timeout!: connection number -> void
   ;; change the expiration time for this connection
   (define (adjust-connection-timeout! conn time)
-    (call-with-semaphore
-     (connection-mutex conn)
-     (lambda ()
-       (reset-timer (connection-timer conn) time))))
+    (reset-timer (connection-timer conn) time))
   )
