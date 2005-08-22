@@ -5,7 +5,7 @@
   ;; can set the PLT_HANDIN_SERVER_PORT environment variable.
   (define name "Course Handin")
   (define collection "handin-client")
-  (define server:port "localhost:7979")
+  ;(define server:port "localhost:7979")
 
   ;; The following are optional. Uncomment and fill in
   ;; the values to add a menu item under "Help" to open
