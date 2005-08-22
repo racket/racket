@@ -74,14 +74,22 @@
                                                                          . any)]
             )]
    [response? (any/c . -> . boolean?)]
-   [output-response (connection? any/c . -> . any)]
-   [output-response/method (connection? response? symbol? . -> . any)]
-   [output-file (connection? path? symbol? bytes? . -> . any)]
+   [rename ext:output-response output-response (connection? any/c . -> . any)]
+   [rename ext:output-response/method output-response/method (connection? response? symbol? . -> . any)]
+   [rename ext:output-file output-file (connection? path? symbol? bytes? . -> . any)]
    [TEXT/HTML-MIME-TYPE bytes?]
    )
   
   
-  
+  (define (ext:output-response conn resp)
+    (call-with-semaphore (connection-mutex conn)
+                         (lambda () (output-response conn resp))))
+  (define (ext:output-response/method conn resp meth)
+    (call-with-semaphore (connection-mutex conn)
+                         (lambda () (output-response/method conn resp meth))))
+  (define (ext:output-file conn file-path method mime-type)
+    (call-with-semaphore (connection-mutex conn)
+                         (lambda () (output-file conn file-path method mime-type))))
   
   ;; Table 1. head responses:
   ; ------------------------------------------------------------------------------
@@ -175,15 +183,10 @@
   
   (define DAYS
     #("Sun" "Mon" "Tue" "Wed" "Thu" "Fri" "Sat"))
-  
-  
-  
+    
   ;; **************************************************
   ;; output-response: connection response -> void
   (define (output-response conn resp)
-    (call-with-semaphore
-     (connection-mutex conn)
-     (lambda ()
        (cond
          [(response/full? resp)
           (output-response/basic
@@ -230,7 +233,7 @@
                (add1 (string-length str))
                (lambda (o-port)
                  (display str o-port)
-                 (newline o-port)))))]))))
+                 (newline o-port)))))]))
   
   ;; response/full->size: response/full -> number
   ;; compute the size for a response/full
@@ -245,32 +248,26 @@
   ;; **************************************************
   ;; output-file: connection path symbol bytes -> void
   (define (output-file conn file-path method mime-type)
-    (call-with-semaphore
-     (connection-mutex conn)
-     (lambda ()
-       (output-headers conn 200 "Okay"
-                       `(("Content-length: " ,(file-size file-path)))
-                       (file-or-directory-modify-seconds file-path)
-                       mime-type)
-       (when (eq? method 'get)
-         ; Give it one second per byte.
-         (adjust-connection-timeout! conn (file-size file-path))
-         (call-with-input-file file-path
-           (lambda (i-port) (copy-port i-port (connection-o-port conn))))))))
+    (output-headers conn 200 "Okay"
+                    `(("Content-length: " ,(file-size file-path)))
+                    (file-or-directory-modify-seconds file-path)
+                    mime-type)
+    (when (eq? method 'get)
+      ; Give it one second per byte.
+      (adjust-connection-timeout! conn (file-size file-path))
+      (call-with-input-file file-path
+        (lambda (i-port) (copy-port i-port (connection-o-port conn))))))
   
   ;; **************************************************
   ;; output-response/method: connection response/full symbol -> void
   ;; If it is a head request output headers only, otherwise output as usual
   (define (output-response/method conn resp meth)
-    (call-with-semaphore
-     (connection-mutex conn)
-     (lambda ()
-       (cond
-         [(eqv? meth 'head)
-          (output-headers/response conn resp `(("Content-length: "
-                                                ,(response/full->size resp))))]
-         [else
-          (output-response conn resp)]))))
+    (cond
+      [(eqv? meth 'head)
+       (output-headers/response conn resp `(("Content-length: "
+                                             ,(response/full->size resp))))]
+      [else
+       (output-response conn resp)]))
   
   ;; **************************************************
   ;; output-headers/response: connection response (listof (listof string)) -> void

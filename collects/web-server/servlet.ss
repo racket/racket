@@ -15,15 +15,13 @@
     (send/suspend ((string? . -> . any/c) . -> . request?))
     (send/forward ((string? . -> . any/c) . -> . request?))
     ;;; validate-xexpr/callback is not checked anywhere:
-    (send/suspend/callback (xexpr/callback? . -> . any))
-    )
+    (send/suspend/callback (xexpr/callback? . -> . any)))
 
   (provide
-    (all-from "servlet-helpers.ss")
-    (all-from "xexpr-callback.ss")
-    )
-
-
+   send/suspend/dispatch
+   (all-from "servlet-helpers.ss")
+   (all-from "xexpr-callback.ss"))
+  
   ;; ************************************************************
   ;; EXPORTS
 
@@ -45,13 +43,12 @@
   (define (send/suspend response-generator)
     (let/cc k
       (let* ([inst (current-servlet-instance)]
-             [ctxt (servlet-instance-context inst)])
-        (output-response
-         (execution-context-connection ctxt)
-         (response-generator
-          (store-continuation!
-           k (request-uri (execution-context-request ctxt))
-           inst)))
+             [ctxt (servlet-instance-context inst)]
+             [k-url (store-continuation!
+                     k (request-uri (execution-context-request ctxt))
+                     inst)]
+             [response (response-generator k-url)])
+        (output-response (execution-context-connection ctxt) response)
         ((execution-context-suspend ctxt)))))
 
   ;; send/forward: (url -> response) -> request
@@ -59,15 +56,23 @@
   (define (send/forward response-generator)
     (clear-continuations! (current-servlet-instance))
     (send/suspend response-generator))
-
+  
   ;; send/suspend/callback : xexpr/callback? -> void
   ;; send/back a response with callbacks in it; send/suspend those callbacks.
   (define (send/suspend/callback p-exp)
+    (send/suspend/dispatch
+     (lambda (embed/url)
+       (replace-procedures p-exp embed/url))))
+    
+  ;; send/suspend/dispatch : ((proc -> url) -> response) -> request
+  ;; send/back a response generated from a procedure that may convert
+  ;; procedures to continuation urls
+  (define (send/suspend/dispatch response-generator)
     (let/cc k0
       (send/back
-        (replace-procedures
-          p-exp (lambda (proc)
-                  (let/cc k1 (k0 (proc (send/suspend k1)))))))))
+       (response-generator
+        (lambda (proc)
+          (let/cc k1 (k0 (proc (send/suspend k1)))))))))
 
 
   ;; ************************************************************
