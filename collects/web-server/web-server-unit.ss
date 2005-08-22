@@ -443,7 +443,8 @@
                             config:instances servlet-custodian
                             (make-execution-context
                              conn req (lambda () (suspend #t)))
-                            sema)]
+                            sema
+                            (start-timer 0 (lambda () (void))))]
                      [real-servlet-path (url-path->path
                                          (paths-servlet (host-paths host-info))
                                          (url-path->string (url-path uri)))]
@@ -466,7 +467,7 @@
                         ;; servlet is loaded should be within the dynamic
                         ;; extent of the servlet custodian
                         [servlet-program (cached-load real-servlet-path)])
-                    
+                    (set-servlet-instance-timer! inst time-bomb)
                     (with-handlers ([(lambda (x) #t)
                                      (make-servlet-exception-handler inst
                                                                      host-info)])
@@ -568,14 +569,17 @@
                  [k-table
                   (servlet-instance-k-table inst)])
             (let/cc suspend
-              (set-servlet-instance-context!
-                    inst
-                    (make-execution-context
-                     conn req (lambda () (suspend #t))))
               ; We don't use call-with-semaphore or dynamic-wind because we
               ; always call a continuation. The exit-handler above ensures that
               ; the post is done.
               (semaphore-wait (servlet-instance-mutex inst))
+              (set-servlet-instance-context!
+                    inst
+                    (make-execution-context
+                     conn req (lambda () (suspend #t))))
+              (increment-timer (servlet-instance-timer inst)
+                               (timeouts-default-servlet
+                                (host-timeouts host-info)))
               (let ([k*salt
                      (hash-table-get k-table (second k-ref)
                                      (lambda ()

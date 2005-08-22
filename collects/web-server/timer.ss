@@ -1,5 +1,5 @@
 (module timer mzscheme
-  (provide timer? start-timer reset-timer)
+  (provide timer? start-timer reset-timer increment-timer)
 
   ; BUG: reducing the timeout is ineffective
   ; efficiency: too many threads
@@ -25,7 +25,12 @@
   ; reset-timer : timer num -> void
   ; to cause timer to expire after sec from the adjust-msec-to-live's application
   (define (reset-timer timer sec)
-    (set-timer-expire-seconds! timer (+ sec (current-seconds)))))
+    (set-timer-expire-seconds! timer (+ sec (current-seconds))))
+  
+  ; increment-timer : timer num -> void
+  ; add secs to the timer, rather than replace
+  (define (increment-timer timer sec)
+    (set-timer-expire-seconds! timer (+ sec (timer-expire-seconds timer)))))
 
 
 

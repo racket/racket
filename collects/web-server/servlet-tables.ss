@@ -1,11 +1,12 @@
 (module servlet-tables mzscheme
   (require (lib "contract.ss")
            (lib "url.ss" "net")
-           (lib "list.ss"))
+           (lib "list.ss")
+           "timer.ss")
   (provide (struct exn:servlet-instance ())
            (struct exn:servlet-continuation ())
            (struct execution-context (connection request suspend))
-           (struct servlet-instance (id k-table custodian context mutex))
+           (struct servlet-instance (id k-table custodian context mutex timer))
            current-servlet-instance)
 
   ;; current-servlet-instance. The server will parameterize
@@ -14,7 +15,7 @@
   ;; will be in affect for the entire dynamic extent of every
   ;; continuation associated with that instance.
   (define current-servlet-instance (make-parameter #f))
-  (define-struct servlet-instance (id k-table custodian context mutex))
+  (define-struct servlet-instance (id k-table custodian context mutex timer))
   (define-struct execution-context (connection request suspend))
 
   ;; Notes:
@@ -34,7 +35,7 @@
   (provide/contract
    [continuation-url? (url? . -> . (union boolean? (list/c symbol? number? number?)))]
    [store-continuation! (procedure? url? servlet-instance? . -> . string?)]
-   [create-new-instance! (hash-table? custodian? execution-context? semaphore?
+   [create-new-instance! (hash-table? custodian? execution-context? semaphore? timer?
                                       . -> . servlet-instance?)]
    [remove-instance! (hash-table? servlet-instance? . -> . any)]
    [clear-continuations! (servlet-instance? . -> . any)]
@@ -80,12 +81,12 @@
      inst
      (make-k-table)))
 
-  ;; create-new-instance! hash-table custodian execution-context semaphore-> servlet-instance
-  (define (create-new-instance! instance-table cust ctxt sema)
+  ;; create-new-instance! hash-table custodian execution-context semaphore -> servlet-instance
+  (define (create-new-instance! instance-table cust ctxt sema timer)
     (let* ([inst-id (string->symbol (symbol->string (gensym 'id)))]
            [inst
             (make-servlet-instance
-             inst-id (make-k-table) cust ctxt sema)])
+             inst-id (make-k-table) cust ctxt sema timer)])
       (hash-table-put! instance-table inst-id inst)
       inst))
 

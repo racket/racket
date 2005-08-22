@@ -13,7 +13,7 @@
        (file-not-found-message "not-found.html")
        (protocol-message "protocol-error.html"))
      (timeouts
-      (default-servlet-timeout 60)
+      (default-servlet-timeout 120)
       ;(default-servlet-timeout 300)
       ;(default-servlet-timeout 10)
       (password-connection-timeout 300)
