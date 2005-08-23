@@ -85,12 +85,8 @@
           (let ([connection-cust (make-custodian)])
             (parameterize ([current-custodian connection-cust])
               (let-values ([(ip op) (get-ports)])
-                (thread
-                 (lambda ()
-                   (serve-connection
-                    (new-connection config:initial-connection-timeout
-                                    ip op (current-custodian) #f))))))
-            (loop))))
+                (serve-ports/inner ip op))))
+            (loop)))
       
       ;; serve-ports : input-port output-port -> void
       ;; returns immediately, spawning a thread to handle
@@ -103,11 +99,22 @@
               [server-cust (make-custodian)])
           (parameterize ([current-custodian connection-cust]
                          [current-server-custodian server-cust])
-            (thread
-             (lambda ()
-               (serve-connection
-                (new-connection config:initial-connection-timeout
-                                ip op connection-cust #f)))))))
+            (serve-ports/inner ip op))))
+    
+      ;; serve-ports/inner : input-port output-port -> void
+      ;; returns immediately, spawning a thread to handle
+      (define (serve-ports/inner ip op)
+        (thread
+         (lambda ()
+           (let ([conn (new-connection config:initial-connection-timeout
+                                       ip op (current-custodian) #f)])
+             (with-handlers ([exn:fail:network?
+                              (lambda (e)
+                                (set-connection-close?! conn #t)
+                                ; XXX: Can this block on the mutex?
+                                (kill-connection! conn)
+                                (raise e))])
+               (serve-connection conn))))))
       
       ;; serve-connection: connection -> void
       ;; respond to all requests on this connection
@@ -119,10 +126,10 @@
               ((host-log-message host-conf) (request-host-ip req)
                                             (request-client-ip req) (request-method req) (request-uri req) host)
               (set-connection-close?! conn close?)
-              (dispatch conn req host-conf)
               (adjust-connection-timeout! conn config:initial-connection-timeout)
+              (dispatch conn req host-conf)
               (cond
-                [close? (kill-connection! conn)]
+                [(connection-close? conn) (kill-connection! conn)]
                 [else (connection-loop)])))))
       
       ;; dispatch: connection request host -> void
@@ -523,9 +530,11 @@
                                              host-info))
                         (request-uri req)
                         the-exn)])
-            (output-response/method
-             (execution-context-connection ctxt)
-             resp (request-method req))
+            ;; Don't handle twice
+            (with-handlers ([exn:fail? (lambda (exn) (void))])
+              (output-response/method
+               (execution-context-connection ctxt)
+               resp (request-method req)))
             ((execution-context-suspend ctxt)))))
       
       ;; path -> path
