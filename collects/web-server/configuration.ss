@@ -246,24 +246,24 @@
   ; to produce a string that is displayed into the log file
   (define (gen-log-message log-format log-path)
     (let ([outsem (make-semaphore 1)]
-          [log-p (make-parameter #f)])
+          [log-p #f])
       (lambda (host-ip client-ip method uri host)
         (call-with-semaphore
          outsem
          (lambda ()
-           (with-handlers ([exn? (lambda (e) (log-p #f))])
-             (unless (and (log-p) (file-exists? log-path))
-               (unless (eq? (log-p) #f)
-                 (close-output-port (log-p)))
-               (log-p (open-output-file log-path 'append))
-               (file-stream-buffer-mode (log-p) 'line))
+           (with-handlers ([exn? (lambda (e) (set! log-p #f))])
+             (unless (and log-p (file-exists? log-path))
+               (unless (eq? log-p #f)
+                 (close-output-port log-p))
+               (set! log-p (open-output-file log-path 'append))
+               (file-stream-buffer-mode log-p 'line))
              ; do the display all at once by formating first
-             (when (log-p)
+             (when log-p
                (display
                 (format "~s~n"
                         (list 'from client-ip 'to host-ip 'for (url->string uri) 'at
                               (date->string (seconds->date (current-seconds)) #t)))
-                (log-p)))))))))
+                log-p))))))))
   
   ; ignore-log : sym str -> str str sym url str -> str
   (define (ignore-log log-format log-path) void)
