@@ -178,9 +178,7 @@
               (timeouts-servlet-connection (host-timeouts host-info)))
              ;; more here - make timeouts proportional to size of bindings
              (servlet-content-producer conn req host-info)]
-            
             [else (file-content-producer conn req host-info)])))
-      
       
       ;; conf-prefix?: string -> (union (listof string) #f)
       ;; does the path string have "/conf/" as a prefix?
@@ -670,7 +668,7 @@
                            ; more here - check constraints
                            the-servlet)]
                         [else
-                         (raise (format "unknown sevlet version ~e" version))])))]
+                         (raise (format "unknown servlet version ~e" version))])))]
                  ;; response
                  [(response? s)
                   (letrec ([go (lambda ()
