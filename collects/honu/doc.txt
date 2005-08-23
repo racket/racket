@@ -95,6 +95,79 @@ String operations:
     - The zero-based index cannot be negative and must be less
       than the string length.
 
+_Operators_
+
+Unary operators:
+
+> ! : bool -> bool
+    - Boolean negation (not)
+
+> - : bool -> bool
+    - Arithmetic negation
+
+Binary operators:
+
+> || : bool * bool -> bool
+    - Boolean disjunction (or)
+
+> && : bool * bool -> bool
+    - Boolean conjunction (and)
+
+> == : bool   * bool   -> bool
+> == : int    * int    -> bool
+> == : char   * char   -> bool
+> == : float  * float  -> bool
+> == : string * string -> bool
+    - Equivalence for primitives (value equality)
+
+> == : Any * Any -> bool
+    - Identity for classes (pointer equality)
+
+> != (same types as ==)
+    - Boolean negation of equivalence/identity
+
+> ==== : Any * Any -> bool
+    - Equivalence for classes (value equality)
+
+> < : int    * int    -> bool
+> < : float  * float  -> bool
+> < : char   * char   -> bool
+> < : string * string -> bool
+    - Less than (numeric / character set / lexiographic)
+
+> >  (same types as <)
+    - Greater than
+
+> <= (same types as <)
+    - Less than or equal to
+
+> >= (same types as <)
+    - Greater than or equal to
+
+> + : int   * int   -> int
+> + : float * float -> float
+    - Addition
+
+> + : string * string -> string
+    - String concatenation
+
+> - : int   * int   -> int
+> - : float * float -> float
+    - Subtraction
+
+> * : int   * int   -> int
+> * : float * float -> float
+    - Multiplication
+
+> / : int * int -> int
+    - Integer division
+
+> / : float * float -> float
+    - Division
+
+> % : int * int -> int
+    - Remainder (from integer division)
+
 _Grammar_
 
 NOTE: Since I want to use parentheses to mean "real" parentheses, I use
