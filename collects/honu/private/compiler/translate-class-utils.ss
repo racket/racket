@@ -172,7 +172,7 @@
        (if value
            (at stx`(begin (init ([,(mangle-init-name name) ,(at-ctxt name)]
                                  ,(translate-expression value)))
-                          (define ,(at-ctxt name) ,(mangle-init-name))))
+                          (define ,(at-ctxt name) ,(mangle-init-name name))))
            (at stx `(begin (init ([,(mangle-init-name name) ,(at-ctxt name)]))
                            (define ,(at-ctxt name) ,(mangle-init-name name)))))]
       [(struct honu:field (stx name type value))
