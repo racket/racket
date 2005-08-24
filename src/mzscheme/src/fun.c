@@ -2581,7 +2581,7 @@ call_cc (int argc, Scheme_Object *argv[])
   Scheme_Object *ret;
   Scheme_Cont * volatile cont;
   Scheme_Dynamic_Wind *dw;
-  Scheme_Thread * volatile p = scheme_current_thread;
+  Scheme_Thread *p = scheme_current_thread;
   Scheme_Saved_Stack *saved;
   Scheme_Cont_Mark *msaved;
 
@@ -2685,8 +2685,10 @@ call_cc (int argc, Scheme_Object *argv[])
     p->overflow = cont->save_overflow;
     scheme_restore_env_stack_w_thread(cont->ss, p);
 
-    if (p->runstack_owner)
+    if (p->runstack_owner
+	&& (*p->runstack_owner == p))
       *p->runstack_owner = NULL;
+
     p->runstack_owner = cont->runstack_owner;
     if (p->runstack_owner && (*p->runstack_owner != p)) {
       Scheme_Thread *op;
@@ -2702,6 +2704,10 @@ call_cc (int argc, Scheme_Object *argv[])
        are already restored, so the shape is certainly the same as
        when cont->runstack_copied was made) */
     copy_in_runstack(p, cont->runstack_copied);
+    
+    if (p->cont_mark_stack_owner
+	&& (*p->cont_mark_stack_owner == p))
+      *p->cont_mark_stack_owner = NULL;
 
     p->cont_mark_stack_owner = cont->cont_mark_stack_owner;
     if (p->cont_mark_stack_owner
@@ -2713,6 +2719,8 @@ call_cc (int argc, Scheme_Object *argv[])
 	op->cont_mark_stack_swapped = msaved;
       }
       *p->cont_mark_stack_owner = p;
+      /* In case there's a GC before we copy in marks: */
+      MZ_CONT_MARK_STACK = 0;
     }
 
     /* For dynamic-winds after the "common" intersection
@@ -3199,7 +3207,7 @@ Scheme_Object *scheme_dynamic_wind(void (*pre)(void *),
   volatile int err;
   Scheme_Dynamic_Wind * volatile dw;
   volatile int save_count;
-  Scheme_Thread * volatile p;
+  Scheme_Thread *p;
 
   p = scheme_current_thread;
 
@@ -3303,10 +3311,9 @@ Scheme_Object *scheme_dynamic_wind(void (*pre)(void *),
     scheme_check_break_now();
   }
 
-  if (save_values) {
+  if (v == SCHEME_MULTIPLE_VALUES) {
     p->ku.multiple.count = save_count;
     p->ku.multiple.array = save_values;
-    return SCHEME_MULTIPLE_VALUES;
   }
 
   return v;
