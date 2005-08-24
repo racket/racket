@@ -26,17 +26,13 @@
   ;; new-connection: number i-port o-port custodian -> connection
   ;; ask the connection manager for a new connection
   (define (new-connection time-to-live i-port o-port cust close?)
-    (let ([mutex (make-semaphore 1)])
-      (make-connection
-       (start-timer time-to-live
-                    (lambda () 
-                      (call-with-semaphore
-                       mutex
-                       (lambda ()
-                         (close-output-port o-port)
-                         (close-input-port i-port)
-                         (custodian-shutdown-all cust)))))
-       i-port o-port cust close? mutex)))
+    (letrec ([conn
+              (make-connection
+               (start-timer time-to-live
+                            (lambda () (kill-connection! conn)))
+               i-port o-port cust close?
+               (make-semaphore 1))])
+      conn))
   
   ;; kill-connection!: connection -> void
   ;; kill this connection
@@ -46,6 +42,7 @@
      (lambda ()
        (close-output-port (connection-o-port conn-demned))
        (close-input-port (connection-i-port conn-demned))
+       (set-connection-close?! conn-demned #t)
        (custodian-shutdown-all (connection-custodian conn-demned)))))
   
   ;; adjust-connection-timeout!: connection number -> void
