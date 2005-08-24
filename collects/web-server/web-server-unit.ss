@@ -651,17 +651,17 @@
       ;;;;;; (two versions, 'v1 and I don't know what 'typed-model-split-store0 is)
       ;;;; A response
       (define (load-servlet/path a-path)
-        (and (file-exists? a-path)
-             (let ([s (load/use-compiled a-path)])
-               (cond
-                 ;; signed-unit servlet
-                 ; MF: I'd also like to test that s has the correct import signature.
-                 [(unit/sig? s) 
-                  (make-cache-entry s (current-namespace))]
-                 ; FIX - reason about exceptions from dynamic require (catch and report if not already)
-                 ;; module servlet
-                 [(void? s)
-                  (parameterize ([current-namespace (config:make-servlet-namespace)])
+        (parameterize ([current-namespace (config:make-servlet-namespace)])
+          (and (file-exists? a-path)
+               (let ([s (load/use-compiled a-path)])
+                 (cond
+                   ;; signed-unit servlet
+                   ; MF: I'd also like to test that s has the correct import signature.
+                   [(unit/sig? s) 
+                    (make-cache-entry s (current-namespace))]
+                   ; FIX - reason about exceptions from dynamic require (catch and report if not already)
+                   ;; module servlet
+                   [(void? s)
                     (let* ([module-name `(file ,(path->string a-path))]
                            [version (dynamic-require module-name 'interface-version)])
                       (case version
@@ -681,15 +681,15 @@
                            (make-cache-entry the-servlet
                                              (current-namespace)))]
                         [else
-                         (raise (format "unknown servlet version ~e" version))])))]
-                 ;; response
-                 [(response? s)
-                  (letrec ([go (lambda ()
-                                 (begin
-                                   (set! go (lambda () (load/use-compiled a-path)))
-                                   s))])
-                    (make-cache-entry (unit/sig () (import servlet^) (go))
-                                      (current-namespace)))]
-                 [else
-                  (raise (format "Loading ~e produced ~n~e~n instead of a servlet." a-path s))]))))      
+                         (raise (format "unknown servlet version ~e" version))]))]
+                   ;; response
+                   [(response? s)
+                    (letrec ([go (lambda ()
+                                   (begin
+                                     (set! go (lambda () (load/use-compiled a-path)))
+                                     s))])
+                      (make-cache-entry (unit/sig () (import servlet^) (go))
+                                        (current-namespace)))]
+                   [else
+                    (raise (format "Loading ~e produced ~n~e~n instead of a servlet." a-path s))])))))    
       )))
