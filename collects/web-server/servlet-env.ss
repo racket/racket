@@ -1,0 +1,75 @@
+(module servlet-env mzscheme
+  (require "configuration.ss"
+           "web-server.ss"
+           "sig.ss"
+           "servlet.ss"
+           "connection-manager.ss"
+           "servlet-tables.ss"
+           "util.ss"
+           "response.ss")
+  (require (lib "url.ss" "net")
+           (lib "external.ss" "browser")
+           (lib "unitsig.ss")
+           (lib "tcp-sig.ss" "net"))
+  (provide (rename on-web:syntax on-web)
+           (all-from "servlet.ss"))
+  
+  (define-syntax (on-web:syntax stx)
+    (syntax-case stx ()
+      [(on-web:syntax servlet-expr)
+       (with-syntax ([initial-request (datum->syntax-object (syntax servlet-expr) 'initial-request)])
+         (syntax
+          (on-web (lambda (initial-request) servlet-expr)
+                  8000
+                  "servlets/standalone.ss")))]))
+  
+  (define (on-web servlet-expr the-port the-path)
+    (let* ([standalone-url
+            (format "http://localhost:~a/~a" the-port the-path)]
+           [final-value
+            (void)]
+           [final-conn
+            (void)]
+           [sema
+            (make-semaphore 0)]
+           [new-servlet
+            (unit/sig () (import servlet^)
+              (let ([v (servlet-expr initial-request)])
+                (set! final-value v)
+                ;(set! final-conn (execution-context-connection (servlet-instance-context (current-servlet-instance))))
+                (semaphore-post sema)
+                (if (response? v)
+                    v
+                    `(html (head (title "Servlet has ended."))
+                           (body (p "This servlet has ended, please return to the interaction window."))))))]
+           [shutdown-server
+            (run-the-server (build-standalone-servlet-configuration the-port the-path new-servlet))])
+      (send-url standalone-url #t)
+      ; Wait for final call
+      (semaphore-wait sema)
+      ; XXX: Find a way to wait for final HTML to be sent
+      ; Shutdown the server
+      (shutdown-server)
+      final-value))
+  
+  (define (build-standalone-servlet-configuration the-port the-path the-servlet)
+    (let ([basic-configuration@ (load-developer-configuration default-configuration-table-path)]
+          [the-scripts (make-hash-table 'equal)])
+      (define-values/invoke-unit/sig web-config^ basic-configuration@ i)
+      (hash-table-put! the-scripts 
+                       (build-path (directory-part default-configuration-table-path)
+                                   "default-web-root" "."
+                                   the-path)
+                       the-servlet)
+      (unit/sig web-config^
+        (import)
+        (define port the-port)
+        (define max-waiting i:max-waiting)
+        (define listen-ip i:listen-ip)
+        (define initial-connection-timeout i:initial-connection-timeout)
+        (define virtual-hosts i:virtual-hosts)
+        (define access i:access)
+        (define instances i:instances)
+        (define scripts (box the-scripts))
+        (define scripts-lock i:scripts-lock)
+        (define make-servlet-namespace i:scripts-lock)))))
