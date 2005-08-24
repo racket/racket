@@ -53,9 +53,6 @@ the default printing style shold be 'constructor instead of 'write
 	     (define/override (default-settings)
 	       (let ([s (super default-settings)])
 		 (to-style s 'constructor)))
-	     (define/override (default-settings? s)
-	       (and (eq? (drscheme:language:simple-settings-printing-style s) 'constructor)
-		    (super default-settings? (to-style s 'write))))
 
 	     (define/private (to-style s v)
 	       (drscheme:language:make-simple-settings
