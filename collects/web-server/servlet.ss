@@ -68,11 +68,11 @@
   ;; send/back a response generated from a procedure that may convert
   ;; procedures to continuation urls
   (define (send/suspend/dispatch response-generator)
-    (let/cc k0
+    (let/ec k0
       (send/back
        (response-generator
         (lambda (proc)
-          (let/cc k1 (k0 (proc (send/suspend k1)))))))))
+          (let/ec k1 (k0 (proc (send/suspend k1)))))))))
 
 
   ;; ************************************************************
