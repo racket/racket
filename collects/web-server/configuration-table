@@ -7,19 +7,19 @@
      (log-format parenthesized-default)
      (messages
        (servlet-message
-         "/Users/jay/Development/plt/src/plt/trunk/collects/web-server/default-web-root/conf/servlet-error.html")
+         "servlet-error.html")
        (authentication-message
-         "/Users/jay/Development/plt/src/plt/trunk/collects/web-server/default-web-root/conf/forbidden.html")
+         "forbidden.html")
        (servlets-refreshed
-         "/Users/jay/Development/plt/src/plt/trunk/collects/web-server/default-web-root/conf/servlet-refresh.html")
+         "servlet-refresh.html")
        (passwords-refreshed
-         "/Users/jay/Development/plt/src/plt/trunk/collects/web-server/default-web-root/conf/passwords-refresh.html")
+         "passwords-refresh.html")
        (file-not-found-message
-         "/Users/jay/Development/plt/src/plt/trunk/collects/web-server/default-web-root/conf/not-found.html")
+         "not-found.html")
        (protocol-message
-         "/Users/jay/Development/plt/src/plt/trunk/collects/web-server/default-web-root/conf/protocol-error.html")
+         "protocol-error.html")
        (collect-garbage
-         "/Users/jay/Development/plt/src/plt/trunk/collects/web-server/default-web-root/conf/collect-garbage.html"))
+         "collect-garbage.html"))
      (timeouts
        (default-servlet-timeout 120)
        (password-connection-timeout 300)
@@ -29,13 +29,13 @@
      (paths
       (configuration-root "conf")
       (host-root
-        "/Users/jay/Development/plt/src/plt/trunk/collects/web-server/default-web-root")
+        "default-web-root")
       (log-file-path
-        "/Users/jay/Development/plt/src/plt/trunk/collects/web-server/default-web-root/log")
+        "log")
       (file-root
-        "/Users/jay/Development/plt/src/plt/trunk/collects/web-server/default-web-root/htdocs")
+        "htdocs")
       (servlet-root
-        "/Users/jay/Development/plt/src/plt/trunk/collects/web-server/default-web-root/.")
+        ".")
       (password-authentication
-        "/Users/jay/Development/plt/src/plt/trunk/collects/web-server/default-web-root/passwords"))))
+        "passwords"))))
  (virtual-host-table))
