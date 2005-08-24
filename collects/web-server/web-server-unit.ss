@@ -66,11 +66,11 @@
                                                #t config:listen-ip)])
                      (lambda () 
                        (let-values ([(ip op) (tcp-accept listener)])
-			 ;; Try to set buffer mode, and if it can't be set,
-			 ;;  assume that it doesn't matter. (Only happens
-			 ;;  when tcp-accept is not MzScheme's version.)
-			 (with-handlers ([exn:fail? void])
-			   (file-stream-buffer-mode op 'none))
+                         ;; Try to set buffer mode, and if it can't be set,
+                         ;;  assume that it doesn't matter. (Only happens
+                         ;;  when tcp-accept is not MzScheme's version.)
+                         (with-handlers ([exn:fail? void])
+                           (file-stream-buffer-mode op 'none))
                          (values ip op))))])
               (thread
                (lambda ()
@@ -86,7 +86,7 @@
             (parameterize ([current-custodian connection-cust])
               (let-values ([(ip op) (get-ports)])
                 (serve-ports/inner ip op))))
-            (loop)))
+          (loop)))
       
       ;; serve-ports : input-port output-port -> void
       ;; returns immediately, spawning a thread to handle
@@ -100,7 +100,7 @@
           (parameterize ([current-custodian connection-cust]
                          [current-server-custodian server-cust])
             (serve-ports/inner ip op))))
-    
+      
       ;; serve-ports/inner : input-port output-port -> void
       ;; returns immediately, spawning a thread to handle
       (define (serve-ports/inner ip op)
@@ -581,9 +581,9 @@
               ; the post is done.
               (semaphore-wait (servlet-instance-mutex inst))
               (set-servlet-instance-context!
-                    inst
-                    (make-execution-context
-                     conn req (lambda () (suspend #t))))
+               inst
+               (make-execution-context
+                conn req (lambda () (suspend #t))))
               (increment-timer (servlet-instance-timer inst)
                                (timeouts-default-servlet
                                 (host-timeouts host-info)))
