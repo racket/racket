@@ -459,48 +459,45 @@
                      [real-servlet-path (url-path->path
                                          (paths-servlet (host-paths host-info))
                                          (url-path->string (url-path uri)))]
-                     [servlet-exit-handler (make-servlet-exit-handler inst)]
-                     )
-                
+                     [servlet-exit-handler (make-servlet-exit-handler inst)])                
                 (parameterize ([current-directory (get-servlet-base-dir real-servlet-path)]
                                [current-custodian servlet-custodian]
                                [current-servlet-instance inst]
                                [exit-handler servlet-exit-handler])
-                  
-                  
-                  (let (;; timer thread must be within the dynamic extent of
-                        ;; servlet custodian
-                        [time-bomb (start-timer (timeouts-default-servlet
-                                                 (host-timeouts host-info))
-                                                (lambda ()
-                                                  (servlet-exit-handler #f)))]
-                        ;; any resources (e.g. threads) created when the
-                        ;; servlet is loaded should be within the dynamic
-                        ;; extent of the servlet custodian
-                        [servlet-program (cached-load real-servlet-path)])
-                    (set-servlet-instance-timer! inst time-bomb)
-                    (with-handlers ([(lambda (x) #t)
-                                     (make-servlet-exception-handler inst
-                                                                     host-info)])
-                      
-                      
-                      ;; The following bindings need to be in scope for the
-                      ;; invoke-unit/sig
-                      (let ([adjust-timeout!
-                             (lambda (secs) (reset-timer time-bomb secs))]
-                            [initial-request req])
+                  (let-values (;; timer thread must be within the dynamic extent of
+                               ;; servlet custodian
+                               [(time-bomb) (start-timer (timeouts-default-servlet
+                                                          (host-timeouts host-info))
+                                                         (lambda ()
+                                                           (servlet-exit-handler #f)))]
+                               ;; any resources (e.g. threads) created when the
+                               ;; servlet is loaded should be within the dynamic
+                               ;; extent of the servlet custodian
+                               [(servlet-program servlet-namespace) (cached-load real-servlet-path)])
+                    (parameterize ([current-namespace servlet-namespace])
+                      (set-servlet-instance-timer! inst time-bomb)
+                      (with-handlers ([(lambda (x) #t)
+                                       (make-servlet-exception-handler inst
+                                                                       host-info)])
                         
-                        ;; Two possibilities:
-                        ;; - module servlet. start : Request -> Void handles
-                        ;;   output-response via send/finish, etc.
-                        ;; - unit/sig or simple xexpr servlet. These must produce a
-                        ;;   response, which is then output by the server.
-                        ;; Here, we do not know if the servlet was a module,
-                        ;; unit/sig, or Xexpr; we do know whether it produces a
-                        ;; response.
-                        (let ([r (invoke-unit/sig servlet-program servlet^)])
-                          (when (response? r)
-                            (send/back r)))))))))
+                        
+                        ;; The following bindings need to be in scope for the
+                        ;; invoke-unit/sig
+                        (let ([adjust-timeout!
+                               (lambda (secs) (reset-timer time-bomb secs))]
+                              [initial-request req])
+                          
+                          ;; Two possibilities:
+                          ;; - module servlet. start : Request -> Void handles
+                          ;;   output-response via send/finish, etc.
+                          ;; - unit/sig or simple xexpr servlet. These must produce a
+                          ;;   response, which is then output by the server.
+                          ;; Here, we do not know if the servlet was a module,
+                          ;; unit/sig, or Xexpr; we do know whether it produces a
+                          ;; response.
+                          (let ([r (invoke-unit/sig servlet-program servlet^)])
+                            (when (response? r)
+                              (send/back r))))))))))
             (semaphore-post sema))))
       
       ;; make-servlet-exit-handler: servlet-instance -> alpha -> void
@@ -610,37 +607,43 @@
       ;; ************************************************************
       ;; ************************************************************
       ;; Paul's ugly loading code:
+      (define-struct cache-entry (servlet namespace))
       
-      ;; cached-load : str -> script
+      ;; cached-load : str -> script, namespace
       ;; timestamps are no longer checked for performance.  The cache must be explicitly
       ;; refreshed (see dispatch).
       (define (cached-load name)
-        (call-with-semaphore config:scripts-lock
-                             (lambda ()
-                               (hash-table-get (unbox config:scripts)
-                                               name
-                                               (lambda () (reload-servlet-script name))))))
+        (let ([e
+               (call-with-semaphore config:scripts-lock
+                                    (lambda ()
+                                      (hash-table-get (unbox config:scripts)
+                                                      name
+                                                      (lambda () (reload-servlet-script name)))))])
+          (values (cache-entry-servlet e)
+                  (cache-entry-namespace e))))
       
       ;; exn:i/o:filesystem:servlet-not-found =
       ;; (make-exn:fail:filesystem:exists:servlet str continuation-marks str sym)
       (define-struct (exn:fail:filesystem:exists:servlet
                       exn:fail:filesystem:exists) ())
       
-      ;; reload-servlet-script : str -> script
+      ;; reload-servlet-script : str -> cache-entry
       ;; The servlet is not cached in the servlet-table, so reload it from the filesystem.
       (define (reload-servlet-script servlet-filename)
         (cond
           [(load-servlet/path servlet-filename)
-           => (lambda (svlt)
+           => (lambda (entry)
                 ; This is only called from cached-load, so config:scripts is locked
-                (hash-table-put! (unbox config:scripts) servlet-filename svlt)
-                svlt)]
+                (hash-table-put! (unbox config:scripts)
+                                 servlet-filename
+                                 entry)
+                entry)]
           [else
            (raise (make-exn:fail:filesystem:exists:servlet
                    (string->immutable-string (format "Couldn't find ~a" servlet-filename))
                    (current-continuation-marks) ))]))
       
-      ;; load-servlet/path path -> (union #f signed-unit)
+      ;; load-servlet/path path -> (union #f cache-entry)
       ;; given a string path to a filename attempt to load a servlet
       ;; A servlet-file will contain either
       ;;;; A signed-unit-servlet
@@ -653,7 +656,8 @@
                (cond
                  ;; signed-unit servlet
                  ; MF: I'd also like to test that s has the correct import signature.
-                 [(unit/sig? s) s]
+                 [(unit/sig? s) 
+                  (make-cache-entry s (current-namespace))]
                  ; FIX - reason about exceptions from dynamic require (catch and report if not already)
                  ;; module servlet
                  [(void? s)
@@ -664,15 +668,18 @@
                         [(v1)
                          (let ([timeout (dynamic-require module-name 'timeout)]
                                [start (dynamic-require module-name 'start)])
-                           (unit/sig ()
-                             (import servlet^)
-                             (adjust-timeout! timeout)
-                             (start initial-request)))]
+                           (make-cache-entry
+                            (unit/sig ()
+                              (import servlet^)
+                              (adjust-timeout! timeout)
+                              (start initial-request))
+                            (current-namespace)))]
                         [(typed-model-split-store-0)
                          (let ([constrained (dynamic-require module-name 'type)]
                                [the-servlet (dynamic-require module-name 'servlet)])
                            ; more here - check constraints
-                           the-servlet)]
+                           (make-cache-entry the-servlet
+                                             (current-namespace)))]
                         [else
                          (raise (format "unknown servlet version ~e" version))])))]
                  ;; response
@@ -681,8 +688,8 @@
                                  (begin
                                    (set! go (lambda () (load/use-compiled a-path)))
                                    s))])
-                    (unit/sig () (import servlet^) (go)))]
+                    (make-cache-entry (unit/sig () (import servlet^) (go))
+                                      (current-namespace)))]
                  [else
-                  (raise (format "Loading ~e produced ~n~e~n instead of a servlet." a-path s))]))))
-      
+                  (raise (format "Loading ~e produced ~n~e~n instead of a servlet." a-path s))]))))      
       )))
