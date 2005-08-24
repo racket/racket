@@ -43,7 +43,7 @@
                     `(html (head (title "Servlet has ended."))
                            (body (p "This servlet has ended, please return to the interaction window."))))))]
            [shutdown-server
-            (run-the-server (build-standalone-servlet-configuration the-port the-path new-servlet))])
+            (serve (build-standalone-servlet-configuration the-port the-path new-servlet))])
       (send-url standalone-url #t)
       ; Wait for final call
       (semaphore-wait sema)
