@@ -39,7 +39,8 @@
          (servlets-refreshed ,servlets-refreshed)
          (passwords-refreshed ,passwords-refreshed)
          (file-not-found-message ,file-not-found-message)
-         (protocol-message ,protocol-message))
+         (protocol-message ,protocol-message)
+         (collect-garbage ,collect-garbage))
         (timeouts
          (default-servlet-timeout ,default-servlet-timeout)
          (password-connection-timeout ,password-connection-timeout)
@@ -60,7 +61,8 @@
                       servlets-refreshed
                       passwords-refreshed
                       file-not-found-message
-                      protocol-message)
+                      protocol-message
+                      collect-garbage)
        (make-timeouts default-servlet-timeout
                       password-connection-timeout
                       servlet-connection-timeout

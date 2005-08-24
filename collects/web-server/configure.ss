@@ -447,6 +447,8 @@
                             (build-path-unless-absolute conf (messages-file-not-found m)))
               ,(make-tr-str "Protocol error" 'path-protocol-message
                             (build-path-unless-absolute conf (messages-protocol m)))
+              ,(make-tr-str "Collect garbage" 'path-collect-garbage-message
+                            (build-path-unless-absolute conf (messages-collect-garbage m)))
               (tr (td ([colspan "2"]) (hr)))
               (tr (th ([colspan "2"]) "Timeout Seconds"))
               ,(make-tr-num "Default Servlet" 'time-default-servlet (timeouts-default-servlet timeouts))
@@ -473,7 +475,7 @@
            (host-table-indices old)
            (host-table-log-format old)
            (apply make-messages
-                  (map eb-conf '(path-servlet-message path-access-message servlet-refresh-message password-refresh-message path-not-found-message path-protocol-message)))
+                  (map eb-conf '(path-servlet-message path-access-message servlet-refresh-message password-refresh-message path-not-found-message path-protocol-message path-collect-garbage-message)))
            (apply make-timeouts
                   (map (lambda (tag) (string->number (extract-binding/single tag bindings)))
                        '(time-default-servlet time-password time-servlet-connection time-file-per-byte time-file-base)))
@@ -731,7 +733,8 @@
             (copy-conf "forbidden.html" (messages-authentication messages))
             (copy-conf "protocol-error.html" (messages-protocol messages))
             (copy-conf "not-found.html" (messages-file-not-found messages))
-            (copy-conf "servlet-error.html" (messages-servlet messages)))))
+            (copy-conf "servlet-error.html" (messages-servlet messages))
+            (copy-conf "collect-garbage.html" (messages-collect-garbage messages)))))
 
       ; ensure-file : path path path -> void
       ; to copy (build-path from name) to (build-path to name), creating directories as
@@ -806,7 +809,8 @@
              (servlets-refreshed ,(messages-servlets-refreshed m))
              (passwords-refreshed ,(messages-passwords-refreshed m))
              (file-not-found-message ,(messages-file-not-found m))
-             (protocol-message ,(messages-protocol m)))
+             (protocol-message ,(messages-protocol m))
+             (collect-garbage ,(messages-collect-garbage m)))
             (timeouts
              (default-servlet-timeout ,(timeouts-default-servlet t))
              (password-connection-timeout ,(timeouts-password t))

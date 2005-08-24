@@ -20,7 +20,8 @@
   ;                               response
   ;                               response
   ;                               (url -> response)
+  ;                               response
   ;                               response)
   (provide-define-struct
    responders
-   (servlet servlet-loading authentication servlets-refreshed passwords-refreshed file-not-found protocol)))
+   (servlet servlet-loading authentication servlets-refreshed passwords-refreshed file-not-found protocol collect-garbage)))

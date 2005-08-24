@@ -225,6 +225,11 @@
   (define (gen-file-not-found-responder file-not-found-file)
     (lambda (url)
       (error-response 404 "File not found" file-not-found-file)))
+  
+  ; gen-collect-garbage-responder : str -> -> response
+  (define (gen-collect-garbage-responder file)
+    (lambda ()
+      (error-response 200 "Garbage collectedd" file)))
 
   (define servlet?
     (let ([servlets-regexp (regexp "^/servlets/.*")])
@@ -290,7 +295,8 @@
           (gen-servlets-refreshed (build-path-unless-absolute conf (messages-servlets-refreshed m)))
           (gen-passwords-refreshed (build-path-unless-absolute conf (messages-passwords-refreshed m)))
           (gen-file-not-found-responder (build-path-unless-absolute conf (messages-file-not-found m)))
-          (gen-protocol-responder (build-path-unless-absolute conf (messages-protocol m)))))
+          (gen-protocol-responder (build-path-unless-absolute conf (messages-protocol m)))
+          (gen-collect-garbage-responder (build-path-unless-absolute conf (messages-collect-garbage m)))))
        (host-table-timeouts host-table)
        paths)))
 

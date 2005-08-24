@@ -15,7 +15,7 @@
   ; messages = (make-messages str^6)
   (provide-define-struct messages
     (servlet ;servlet-loading
-     authentication servlets-refreshed passwords-refreshed file-not-found protocol))
+     authentication servlets-refreshed passwords-refreshed file-not-found protocol collect-garbage))
   
   ; timeouts = (make-timeouts nat^5)
   (provide-define-struct timeouts (default-servlet password servlet-connection file-per-byte file-base))

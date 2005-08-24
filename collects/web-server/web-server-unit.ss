@@ -167,6 +167,12 @@
                  conn
                  ((responders-passwords-refreshed (host-responders host-info)))
                  method)]
+               [(string=? "/conf/collect-garbage" path)
+                (collect-garbage)
+                (output-response/method
+                 conn
+                 ((responders-collect-garbage (host-responders host-info)))
+                 method)]
                [else
                 (output-response/method
                  conn
