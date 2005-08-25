@@ -61,9 +61,20 @@
           (start-connection-manager the-server-custodian)
           (parameterize ([current-custodian the-server-custodian]
                          [current-server-custodian the-server-custodian])
-            (let ([get-ports
-                   (let ([listener (tcp-listen config:port config:max-waiting
-                                               #t config:listen-ip)])
+            (thread
+             (lambda ()
+               (listener-loop))))
+          (lambda ()
+            (custodian-shutdown-all the-server-custodian))))
+      
+      ;; listener-loop : -> void
+      ;; loops around starting a listener if the current listener dies
+      (define (listener-loop)
+        (let ([sema (make-semaphore 0)])
+          (let loop ()
+            (let ([listener (tcp-listen config:port config:max-waiting
+                                        #t config:listen-ip)])
+              (let ([get-ports
                      (lambda () 
                        (let-values ([(ip op) (tcp-accept listener)])
                          ;; Try to set buffer mode, and if it can't be set,
@@ -71,12 +82,19 @@
                          ;;  when tcp-accept is not MzScheme's version.)
                          (with-handlers ([exn:fail? void])
                            (file-stream-buffer-mode op 'none))
-                         (values ip op))))])
-              (thread
-               (lambda ()
-                 (server-loop get-ports)))))
-          (lambda ()
-            (custodian-shutdown-all the-server-custodian))))
+                         (values ip op)))])
+                (thread
+                 (lambda ()
+                   (with-handlers ([void (lambda (e)
+                                           ; If the exception did not kill the listener
+                                           (with-handlers ([void void])
+                                             (tcp-close listener))
+                                           (semaphore-post sema)
+                                           ; Rethrow the error to this thread's error printer
+                                           (raise e))])
+                     (server-loop get-ports))))))
+            (semaphore-wait sema)
+            (loop))))
       
       ;; server-loop: (-> i-port o-port) -> void
       ;; start a thread to handle each incoming connection
