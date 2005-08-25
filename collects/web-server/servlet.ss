@@ -5,17 +5,19 @@
            "servlet-tables.ss"
            "response.ss"
            "servlet-helpers.ss"
-           "xexpr-callback.ss")
+           "xexpr-callback.ss"
+           "timer.ss")
 
   ;; Weak contracts: the input is checked in output-response, and a message is
   ;; sent directly to the client (Web browser) instead of the terminal/log.
   (provide/contract
-    (send/back (any/c . -> . any))
-    (send/finish (any/c . -> . any))
-    (send/suspend ((string? . -> . any/c) . -> . request?))
-    (send/forward ((string? . -> . any/c) . -> . request?))
-    ;;; validate-xexpr/callback is not checked anywhere:
-    (send/suspend/callback (xexpr/callback? . -> . any)))
+   [adjust-timeout! (number? . -> . any)]
+   [send/back (any/c . -> . any)]
+   [send/finish (any/c . -> . any)]
+   [send/suspend ((string? . -> . any/c) . -> . request?)]
+   [send/forward ((string? . -> . any/c) . -> . request?)]
+   ;;; validate-xexpr/callback is not checked anywhere:
+   [send/suspend/callback (xexpr/callback? . -> . any)])
 
   (provide
    send/suspend/dispatch
@@ -24,6 +26,12 @@
   
   ;; ************************************************************
   ;; EXPORTS
+  
+  ;; adjust-timeout! : sec -> void
+  ;; adjust the timeout on the servlet
+  (define (adjust-timeout! secs)
+    (reset-timer (servlet-instance-timer (current-servlet-instance))
+                 secs))
 
   ;; send/back: response -> void
   ;; send a response and don't clear the continuation table

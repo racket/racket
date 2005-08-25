@@ -7,9 +7,8 @@
            "response.ss"
            "servlet-tables.ss"
            "servlet.ss"
-           "servlet-helpers.ss"
-           "timer.ss"
-           (lib "tcp-sig.ss" "net")
+           "timer.ss")
+  (require (lib "tcp-sig.ss" "net")
            (lib "unitsig.ss")
            (lib "string.ss")
            (lib "url.ss" "net")
@@ -497,25 +496,17 @@
                       (with-handlers ([(lambda (x) #t)
                                        (make-servlet-exception-handler inst
                                                                        host-info)])
-                        
-                        
-                        ;; The following bindings need to be in scope for the
-                        ;; invoke-unit/sig
-                        (let ([adjust-timeout!
-                               (lambda (secs) (reset-timer time-bomb secs))]
-                              [initial-request req])
-                          
-                          ;; Two possibilities:
-                          ;; - module servlet. start : Request -> Void handles
-                          ;;   output-response via send/finish, etc.
-                          ;; - unit/sig or simple xexpr servlet. These must produce a
-                          ;;   response, which is then output by the server.
-                          ;; Here, we do not know if the servlet was a module,
-                          ;; unit/sig, or Xexpr; we do know whether it produces a
-                          ;; response.
-                          (let ([r (invoke-unit/sig servlet-program servlet^)])
-                            (when (response? r)
-                              (send/back r))))))))))
+                        ;; Two possibilities:
+                        ;; - module servlet. start : Request -> Void handles
+                        ;;   output-response via send/finish, etc.
+                        ;; - unit/sig or simple xexpr servlet. These must produce a
+                        ;;   response, which is then output by the server.
+                        ;; Here, we do not know if the servlet was a module,
+                        ;; unit/sig, or Xexpr; we do know whether it produces a
+                        ;; response.
+                        (let ([r (servlet-program req)])
+                          (when (response? r)
+                            (send/back r)))))))))
             (semaphore-post sema))))
       
       ;; make-servlet-exit-handler: servlet-instance -> alpha -> void
@@ -667,8 +658,8 @@
       ;; given a string path to a filename attempt to load a servlet
       ;; A servlet-file will contain either
       ;;;; A signed-unit-servlet
-      ;;;; A module servlet
-      ;;;;;; (two versions, 'v1 and I don't know what 'typed-model-split-store0 is)
+      ;;;; A module servlet, currently only 'v1
+      ;;;;;; (XXX: I don't know what 'typed-model-split-store0 was, so it was removed.)
       ;;;; A response
       (define (load-servlet/path a-path)
         (parameterize ([current-namespace (config:make-servlet-namespace)])
@@ -678,7 +669,9 @@
                    ;; signed-unit servlet
                    ; MF: I'd also like to test that s has the correct import signature.
                    [(unit/sig? s) 
-                    (make-cache-entry s (current-namespace))]
+                    (make-cache-entry (lambda (initial-request)
+                                        (invoke-unit/sig s servlet^))
+                                      (current-namespace))]
                    ; FIX - reason about exceptions from dynamic require (catch and report if not already)
                    ;; module servlet
                    [(void? s)
@@ -689,17 +682,10 @@
                          (let ([timeout (dynamic-require module-name 'timeout)]
                                [start (dynamic-require module-name 'start)])
                            (make-cache-entry
-                            (unit/sig ()
-                              (import servlet^)
+                            (lambda (initial-request)
                               (adjust-timeout! timeout)
                               (start initial-request))
                             (current-namespace)))]
-                        [(typed-model-split-store-0)
-                         (let ([constrained (dynamic-require module-name 'type)]
-                               [the-servlet (dynamic-require module-name 'servlet)])
-                           ; more here - check constraints
-                           (make-cache-entry the-servlet
-                                             (current-namespace)))]
                         [else
                          (raise (format "unknown servlet version ~e" version))]))]
                    ;; response
@@ -708,8 +694,8 @@
                                    (begin
                                      (set! go (lambda () (load/use-compiled a-path)))
                                      s))])
-                      (make-cache-entry (unit/sig () (import servlet^) (go))
+                      (make-cache-entry (lambda (initial-request) (go))
                                         (current-namespace)))]
                    [else
-                    (raise (format "Loading ~e produced ~n~e~n instead of a servlet." a-path s))])))))    
+                    (raise 'load-servlet/path "Loading ~e produced ~n~e~n instead of a servlet." a-path s)])))))
       )))
