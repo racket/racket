@@ -30,27 +30,27 @@
   ;; adjust-timeout! : sec -> void
   ;; adjust the timeout on the servlet
   (define (adjust-timeout! secs)
-    (reset-timer (servlet-instance-timer (current-servlet-instance))
+    (reset-timer (servlet-instance-timer (thread-cell-ref current-servlet-instance))
                  secs))
 
   ;; send/back: response -> void
   ;; send a response and don't clear the continuation table
   (define (send/back resp)
-    (let ([ctxt (servlet-instance-context (current-servlet-instance))])
+    (let ([ctxt (servlet-instance-context (thread-cell-ref current-servlet-instance))])
       (output-response (execution-context-connection ctxt) resp)
       ((execution-context-suspend ctxt))))
 
   ;; send/finish: response -> void
   ;; send a response and clear the continuation table
   (define (send/finish resp)
-    (clear-continuations! (current-servlet-instance))
+    (clear-continuations! (thread-cell-ref current-servlet-instance))
     (send/back resp))
 
   ;; send/suspend: (url -> response) -> request
   ;; send a response and apply the continuation to the next request
   (define (send/suspend response-generator)
     (let/cc k
-      (let* ([inst (current-servlet-instance)]
+      (let* ([inst (thread-cell-ref current-servlet-instance)]
              [ctxt (servlet-instance-context inst)]
              [k-url (store-continuation!
                      k (request-uri (execution-context-request ctxt))
@@ -62,7 +62,7 @@
   ;; send/forward: (url -> response) -> request
   ;; clear the continuation table, then behave like send/suspend
   (define (send/forward response-generator)
-    (clear-continuations! (current-servlet-instance))
+    (clear-continuations! (thread-cell-ref current-servlet-instance))
     (send/suspend response-generator))
   
   ;; send/suspend/callback : xexpr/callback? -> void

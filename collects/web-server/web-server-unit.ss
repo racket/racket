@@ -112,11 +112,12 @@
       ;;       connection managers don't do anything anyways. -robby
       ;; NOTE: (GregP) should allow the user to pass in a connection-custodian
       (define (serve-ports ip op)
-        (let ([connection-cust (make-custodian)]
-              [server-cust (make-custodian)])
-          (parameterize ([current-custodian connection-cust]
+        (let ([server-cust (make-custodian)])
+          (parameterize ([current-custodian server-cust]
                          [current-server-custodian server-cust])
-            (serve-ports/inner ip op))))
+            (let ([connection-cust (make-custodian)])
+              (parameterize ([current-custodian connection-cust])
+                (serve-ports/inner ip op))))))
       
       ;; serve-ports/inner : input-port output-port -> void
       ;; returns immediately, spawning a thread to handle
@@ -464,7 +465,8 @@
                                                                       the-exn)
                             (request-method req)))])
           
-          (let ([sema (make-semaphore 0)])
+          (let ([sema (make-semaphore 0)]
+                [last-inst (thread-cell-ref current-servlet-instance)])
             (let/cc suspend
               (let* ([servlet-custodian (make-servlet-custodian)]
                      [inst (create-new-instance!
@@ -476,11 +478,11 @@
                      [real-servlet-path (url-path->path
                                          (paths-servlet (host-paths host-info))
                                          (url-path->string (url-path uri)))]
-                     [servlet-exit-handler (make-servlet-exit-handler inst)])                
+                     [servlet-exit-handler (make-servlet-exit-handler inst)])
                 (parameterize ([current-directory (get-servlet-base-dir real-servlet-path)]
                                [current-custodian servlet-custodian]
-                               [current-servlet-instance inst]
                                [exit-handler servlet-exit-handler])
+                  (thread-cell-set! current-servlet-instance inst)
                   (let-values (;; timer thread must be within the dynamic extent of
                                ;; servlet custodian
                                [(time-bomb) (start-timer (timeouts-default-servlet
@@ -494,8 +496,7 @@
                     (parameterize ([current-namespace servlet-namespace])
                       (set-servlet-instance-timer! inst time-bomb)
                       (with-handlers ([(lambda (x) #t)
-                                       (make-servlet-exception-handler inst
-                                                                       host-info)])
+                                       (make-servlet-exception-handler inst host-info)])
                         ;; Two possibilities:
                         ;; - module servlet. start : Request -> Void handles
                         ;;   output-response via send/finish, etc.
@@ -507,6 +508,7 @@
                         (let ([r (servlet-program req)])
                           (when (response? r)
                             (send/back r)))))))))
+            (thread-cell-set! current-servlet-instance last-inst)
             (semaphore-post sema))))
       
       ;; make-servlet-exit-handler: servlet-instance -> alpha -> void
@@ -579,7 +581,8 @@
                                                          host-info))
                              (request-uri req))
                             (request-method req)))])
-          (let* ([inst 
+          (let* ([last-inst (thread-cell-ref current-servlet-instance)]
+                 [inst 
                   (hash-table-get config:instances (first k-ref)
                                   (lambda ()
                                     (raise
@@ -592,6 +595,7 @@
               ; always call a continuation. The exit-handler above ensures that
               ; the post is done.
               (semaphore-wait (servlet-instance-mutex inst))
+              (thread-cell-set! current-servlet-instance inst)
               (set-servlet-instance-context!
                inst
                (make-execution-context
@@ -610,6 +614,7 @@
                     (raise
                      (make-exn:servlet-continuation
                       "" (current-continuation-marks))))))
+            (thread-cell-set! current-servlet-instance last-inst)
             (semaphore-post (servlet-instance-mutex inst))
             )))
       

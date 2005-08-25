@@ -14,7 +14,7 @@
   ;; or invoking a continuation. The current-servlet-instance
   ;; will be in affect for the entire dynamic extent of every
   ;; continuation associated with that instance.
-  (define current-servlet-instance (make-parameter #f))
+  (define current-servlet-instance (make-thread-cell #f))
   (define-struct servlet-instance (id k-table custodian context mutex timer))
   (define-struct execution-context (connection request suspend))
 
@@ -38,8 +38,7 @@
    [create-new-instance! (hash-table? custodian? execution-context? semaphore? timer?
                                       . -> . servlet-instance?)]
    [remove-instance! (hash-table? servlet-instance? . -> . any)]
-   [clear-continuations! (servlet-instance? . -> . any)]
-   )
+   [clear-continuations! (servlet-instance? . -> . any)])
 
   ;; not found in the instance table
   (define-struct (exn:servlet-instance exn) ())
