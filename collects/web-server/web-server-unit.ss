@@ -607,7 +607,9 @@
       ;; ************************************************************
       ;; ************************************************************
       ;; Paul's ugly loading code:
-      (define-struct cache-entry (servlet namespace))
+      (define make-cache-entry cons)
+      (define cache-entry-servlet car)
+      (define cache-entry-namespace cdr)
       
       ;; cached-load : str -> script, namespace
       ;; timestamps are no longer checked for performance.  The cache must be explicitly

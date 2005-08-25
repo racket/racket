@@ -60,7 +60,7 @@
                        (build-path (directory-part default-configuration-table-path)
                                    "default-web-root" "."
                                    the-path)
-                       the-servlet)
+                       (cons the-servlet (i:make-servlet-namespace)))
       (unit/sig web-config^
         (import)
         (define port the-port)
@@ -72,4 +72,4 @@
         (define instances i:instances)
         (define scripts (box the-scripts))
         (define scripts-lock i:scripts-lock)
-        (define make-servlet-namespace i:scripts-lock)))))
+        (define make-servlet-namespace i:make-servlet-namespace)))))
