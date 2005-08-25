@@ -35,6 +35,14 @@
    [read-request ((connection?) . ->* . (request? boolean?))]
    [read-bindings (connection? symbol? url? (listof header?)
                                . -> . (union (listof binding?) string?))])
+  
+  ;; network-error: symbol string . values -> void
+  ;; throws a formatted exn:fail:network
+  (define (network-error src fmt . args)
+    (raise (make-exn:fail:network
+            (string->immutable-string
+             (apply format (format "~a: ~a" src fmt) args))
+            (current-continuation-marks))))
 
   ;; **************************************************
   ;; read-request: input-port -> request boolean?
@@ -105,7 +113,7 @@
   (define (read-request-line ip)
     (let ([line (read-bytes-line ip 'any)])
       (if (eof-object? line)
-          (error 'read-request "http input closed abruptly")
+          (network-error 'read-request "http input closed abruptly")
           (cond
             [(match-method line)
              => (lambda (x)
@@ -114,7 +122,7 @@
                    (string->url (bytes->string/utf-8 (list-ref x 2)))
                    (string->number (bytes->string/utf-8 (list-ref x 3)))
                    (string->number (bytes->string/utf-8 (list-ref x 4)))))]
-            [else (error 'read-request "malformed request ~a" line)]))))
+            [else (network-error 'read-request "malformed request ~a" line)]))))
 
 
 
@@ -143,7 +151,7 @@
                              (cons (cons (lowercase-symbol! (cadr match))
                                          (read-one-head in (caddr match)))
                                    (read-header)))]
-          [else (error 'read-headers "malformed header")]))))
+          [else (network-error 'read-headers "malformed header")]))))
 
 
   ; read-one-head : iport bytes -> bytes
@@ -187,14 +195,14 @@
                      (cond
                        [(string->number (bytes->string/utf-8 (cdr len-str)))
                         => (lambda (len) (read-string len in))]
-                       [else (error "Post request contained a non-numeric content-length")])
+                       [else (network-error 'read-bindings "Post request contained a non-numeric content-length")])
                      (apply string-append
                             (let read-to-eof ()
                               (let ([s (read-string INPUT-BUFFER-SIZE in)])
                                 (if (eof-object? s)
                                     null
                                     (cons s (read-to-eof))))))))]))))]
-      [else (error "unsupported method" meth)]))
+      [else (network-error 'read-bindings "unsupported method" meth)]))
 
   (define FILE-FORM-REGEXP (regexp "multipart/form-data; *boundary=(.*)"))
 
@@ -203,7 +211,7 @@
   (define (get-field-name rhs)
     (let ([x (regexp-match "name=(\"([^\"]*)\"|([^ ;]*))" rhs)])
       (unless x
-        (error 'get-field-name "Couldn't extract form field name for file upload from ~a" x))
+        (network-error 'get-field-name "Couldn't extract form field name for file upload from ~a" x))
       (lowercase-symbol! (or (caddr x) (cadddr x)))))
 
   ;; **************************************************
