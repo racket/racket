@@ -1,10 +1,9 @@
 (module timer mzscheme
+  (require "timer-structs.ss")
   (provide timer? start-timer reset-timer increment-timer)
 
   ; BUG: reducing the timeout is ineffective
   ; efficiency: too many threads
-
-  (define-struct timer (expire-seconds))
 
   ; start-timer : num (-> void) -> timer
   ; to make a timer that calls to-do after msec from make-timer's application

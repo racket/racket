@@ -5,33 +5,15 @@
            "util.ss"
            "connection-manager.ss"
            (lib "port.ss")
-           )
-
-  ;; the request struct as currently doc'd
-  (define-struct request (method uri headers bindings host-ip client-ip))
+           "request-structs.ss")
+  (provide (all-from "request-structs.ss"))
 
   ;; path-prefix: (listof string)
   ;; The part of the URL path that maps to the servlet
   ;; path-suffix: (listof string)
   ;; The part of the URL path that gets passed to the servlet as arguments.
 
-  ;; header?: anyd/c -> boolean
-  ;; is this a header?
-  (define header?
-    (cons/c symbol? bytes?))
-
-  ;; bindings? any/c -> boolean
-  ;; is this a binding
-  (define binding?
-    (cons/c symbol? 
-            (union string?
-                   bytes?)))
-
   (provide/contract
-   [struct request ([method symbol?] [uri url?] [headers (listof header?)]
-                    [bindings (union (listof binding?) string?)]
-                    [host-ip string?]
-                    [client-ip string?])]
    [read-request ((connection?) . ->* . (request? boolean?))]
    [read-bindings (connection? symbol? url? (listof header?)
                                . -> . (union (listof binding?) string?))])

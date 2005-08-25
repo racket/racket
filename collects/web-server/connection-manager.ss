@@ -3,17 +3,12 @@
 
 ;; the queued-model is also fully implemented but won't be used at this time.
 (module connection-manager mzscheme
-  (require "timer.ss"
+  (require "connection-structs.ss"
+           "timer.ss"
            (lib "contract.ss"))
-  
-  (define-struct connection (timer i-port o-port custodian close? mutex)
-    (make-inspector))
-  
+  (provide (all-from "connection-structs.ss"))
+
   (provide/contract
-   [struct connection
-           ([timer timer?]
-            [i-port input-port?] [o-port output-port?] [custodian custodian?]
-            [close? boolean?] [mutex semaphore?])]
    [start-connection-manager (custodian? . -> . void)]
    [new-connection (number? input-port? output-port? custodian? boolean? . -> . connection?)]
    [kill-connection! (connection? . -> . void)]

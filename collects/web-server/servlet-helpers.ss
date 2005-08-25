@@ -1,11 +1,11 @@
 (module servlet-helpers mzscheme
   (require (lib "list.ss")
            (lib "etc.ss")
-           "util.ss"
-           "response.ss"
-           "request-parsing.ss"
            (lib "xml.ss" "xml")
            (lib "base64.ss" "net"))
+  (require "util.ss"
+           "response.ss"
+           "request-parsing.ss")
 
   (provide extract-binding/single
            extract-bindings
@@ -18,15 +18,13 @@
            permanently
            temporarily
            see-other
-           (all-from-except "request-parsing.ss" request-bindings)
-           (rename request-bindings request-bindings/raw)
+           (all-from "request-parsing.ss")
            (rename get-parsed-bindings request-bindings)
-           translate-escapes
-           )
+           translate-escapes)
 
   ;; get-parsed-bindings : request -> (listof (cons sym str))
   (define (get-parsed-bindings r)
-    (let ([x (request-bindings r)])
+    (let ([x (request-bindings/raw r)])
       (if (list? x)
           x
           (parse-bindings x))))

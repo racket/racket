@@ -1,7 +1,6 @@
 ;; Default choice for writing module servlets
 (module servlet mzscheme
   (require (lib "contract.ss")
-           (all-except "request-parsing.ss" request-bindings)
            "servlet-tables.ss"
            "response.ss"
            "servlet-helpers.ss"

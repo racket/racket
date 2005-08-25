@@ -4,14 +4,18 @@
            (lib "list.ss")
            (lib "url.ss" "net")
            (lib "errortrace-lib.ss" "errortrace"))
+  (require "response-structs.ss"
+           "request-structs.ss")
   
   (provide provide-define-struct
            extract-flag
            translate-escapes
            hash-table-empty?
-           network-error)
+           url-path->string)
   
   (provide/contract
+   [decompose-request ((request?) . ->* . (url? symbol? string?))]
+   [network-error ((symbol? string?) (listof any/c) . ->* . (void))]
    [path->list  (path? . -> . (cons/c (union path? (symbols 'up 'same))
                                       (listof (union path? (symbols 'up 'same)))))]
    [url-path->path ((union (symbols 'up 'same) path?) string? . -> . path?)]
@@ -20,6 +24,30 @@
    [exn->string ((union exn? any/c) . -> . string?)]
    [get-mime-type (path? . -> . bytes?)]
    [build-path-unless-absolute (path? (union string? path?) . -> . path?)])
+  
+  ;; ripped this off from url-unit.ss
+  (define (url-path->string strs)
+    (apply
+     string-append
+     (let loop ([strs strs])
+       (cond
+         [(null? strs) (list)]
+         [else (list* "/"
+                      (maybe-join-params (car strs))
+                      (loop (cdr strs)))]))))
+  
+  ;; needs to unquote things!
+  (define (maybe-join-params s)
+    (cond
+      [(string? s) s]
+      [else (path/param-path s)]))
+  
+  ;; decompse-request : request -> uri * symbol * string
+  (define (decompose-request req)
+    (let* ([uri (request-uri req)]
+           [method (request-method req)]
+           [path (translate-escapes (url-path->string (url-path uri)))])
+      (values uri method path)))
   
   ;; network-error: symbol string . values -> void
   ;; throws a formatted exn:fail:network
