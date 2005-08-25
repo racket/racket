@@ -8,7 +8,7 @@
            "util.ss"
            "response.ss")
   (require (lib "url.ss" "net")
-           (lib "external.ss" "browser")
+           (lib "sendurl.ss" "net")
            (lib "unitsig.ss")
            (lib "tcp-sig.ss" "net"))
   (provide (rename on-web:syntax on-web)
