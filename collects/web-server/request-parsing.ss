@@ -36,14 +36,7 @@
    [read-bindings (connection? symbol? url? (listof header?)
                                . -> . (union (listof binding?) string?))])
   
-  ;; network-error: symbol string . values -> void
-  ;; throws a formatted exn:fail:network
-  (define (network-error src fmt . args)
-    (raise (make-exn:fail:network
-            (string->immutable-string
-             (apply format (format "~a: ~a" src fmt) args))
-            (current-continuation-marks))))
-
+  
   ;; **************************************************
   ;; read-request: input-port -> request boolean?
   ;; read the request line, and the headers, determine if the connection should

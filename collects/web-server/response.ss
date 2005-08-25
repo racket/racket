@@ -5,7 +5,8 @@
            (lib "pretty.ss")
            (lib "xml.ss" "xml")
            (lib "string.ss" "srfi" "13")
-           "connection-manager.ss")
+           "connection-manager.ss"
+           "util.ss")
   
   ;; **************************************************
   ;; DATA DEF for response
@@ -251,8 +252,9 @@
     (when (eq? method 'get)
       ; Give it one second per byte.
       (adjust-connection-timeout! conn (file-size file-path))
-      (call-with-input-file file-path
-        (lambda (i-port) (copy-port i-port (connection-o-port conn))))))
+      (with-handlers ([void (lambda (e) (network-error 'output-file (exn-message e)))])
+        (call-with-input-file file-path
+          (lambda (i-port) (copy-port i-port (connection-o-port conn)))))))
   
   ;; **************************************************
   ;; output-response/method: connection response/full symbol -> void

@@ -8,7 +8,8 @@
   (provide provide-define-struct
            extract-flag
            translate-escapes
-           hash-table-empty?)
+           hash-table-empty?
+           network-error)
   
   (provide/contract
    [path->list  (path? . -> . (cons/c (union path? (symbols 'up 'same))
@@ -19,6 +20,14 @@
    [exn->string ((union exn? any/c) . -> . string?)]
    [get-mime-type (path? . -> . bytes?)]
    [build-path-unless-absolute (path? (union string? path?) . -> . path?)])
+  
+  ;; network-error: symbol string . values -> void
+  ;; throws a formatted exn:fail:network
+  (define (network-error src fmt . args)
+    (raise (make-exn:fail:network
+            (string->immutable-string
+             (apply format (format "~a: ~a" src fmt) args))
+            (current-continuation-marks))))
   
   ;; build-path-unless-absolute : path (union string? path?) -> path?
   (define (build-path-unless-absolute base path)
