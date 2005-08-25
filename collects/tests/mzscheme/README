@@ -7,7 +7,7 @@ Test failures may cause the test to stop before finishing, but most
 test failures will let the test continue, and a summary message at the
 end will enummerate the failures that occurred.
 
-Some files are directories are created (in the current directory)
+Some files and directories are created (in the current directory)
 during the run. The files are named "tmp<N>" where <N> is a number.
 The directory is named "deep". If the test suite passes, the directory
 should be removed, but some "tmp<N>" files will remain. (The "tmp<N>"
@@ -26,7 +26,7 @@ Run 3 copies of the test suite concurrently in separate threads:
  > (load "PATHTOHERE/parallel.ss")
 
 
-Please report bugs using
+Please report bugs using Help Desk, or
   http://bugs.plt-scheme.org/
 or (as a last resort) send mail to
   scheme@plt-scheme.org
