@@ -1,37 +1,87 @@
 (module timer mzscheme
   (require "timer-structs.ss")
-  (provide timer? start-timer reset-timer increment-timer)
+  (require (lib "list.ss"))
+  (provide timer? 
+           start-timer reset-timer increment-timer
+           start-timer-manager)
 
-  ; BUG: reducing the timeout is ineffective
-  ; efficiency: too many threads
+  (define timer-ch (make-channel))
+
+  ; start-timer-manager : custodian -> void
+  ; Thanks to Matthew!
+  ; The timer manager thread   
+  (define (start-timer-manager server-custodian)
+    (parameterize ([current-custodian server-custodian])
+      (thread
+       (lambda ()
+         (let loop ([timers null])
+           ;; Wait for either...
+           (apply sync
+                  ;; ... a timer-request message ...
+                  (handle-evt
+                   timer-ch
+                   (lambda (req)
+                     ;; represent a req as a (timer-list -> timer-list) function:
+                     ;; add/remove/change timer evet:
+                     (loop (req timers))))
+                  ;; ... or a timer
+                  (map (lambda (timer)
+                         (handle-evt
+                          (timer-evt timer)
+                          (lambda (_)
+                            ;; execute timer
+                            ((timer-action timer))
+                            (loop (remq timer timers)))))
+                       timers))))))
+    (void))
+
+  ;; Limitation on this add-timer: thunk cannot make timer
+  ;;  requests directly, because it's executed directly by
+  ;;  the timer-manager thread
+  ;; add-timer : number (-> void) -> timer
+  (define (add-timer msecs thunk)
+    (let* ([now (current-inexact-milliseconds)]
+           [timer
+            (make-timer (alarm-evt (+ now msecs))
+                        (+ now msecs)
+                        thunk)])
+      (channel-put timer-ch 
+                   (lambda (timers)
+                     (cons timer timers)))
+      timer))
+
+  ; revise-timer! : timer msecs (-> void) -> timer
+  ; revise the timer to ring msecs from now
+  (define (revise-timer! timer msecs thunk)
+    (let ([now (current-inexact-milliseconds)])
+      (channel-put 
+       timer-ch 
+       (lambda (timers)
+         (set-timer-evt! timer (alarm-evt (+ now msecs)))
+         (set-timer-expire-seconds! timer (+ now msecs))
+         (set-timer-action! timer thunk)
+         timers))))
+
+  (define (cancel-timer! timer)
+    (revise-timer! timer 0 void))  
 
   ; start-timer : num (-> void) -> timer
-  ; to make a timer that calls to-do after msec from make-timer's application
-  (define (start-timer sec to-do)
-    (let ([timer (make-timer (+ (current-seconds) sec))])
-      (letrec ([snooze
-                (lambda ()
-                  (let ([remaining (- (timer-expire-seconds timer) (current-seconds))])
-                    (cond
-                      [(<= remaining 0)
-                       ; use call-in-nested-thread or something when a single thread is used for all timeouts
-                       (to-do)]
-                      [else (sleep remaining)
-                            (snooze)])))])
-        (thread snooze))
-      timer))
+  ; to make a timer that calls to-do after sec from make-timer's application
+  (define (start-timer secs to-do)
+    (add-timer (* 1000 secs) to-do))
 
   ; reset-timer : timer num -> void
   ; to cause timer to expire after sec from the adjust-msec-to-live's application
-  (define (reset-timer timer sec)
-    (set-timer-expire-seconds! timer (+ sec (current-seconds))))
+  (define (reset-timer timer secs)
+    (revise-timer! timer (* 1000 secs) (timer-action timer)))
   
   ; increment-timer : timer num -> void
   ; add secs to the timer, rather than replace
-  (define (increment-timer timer sec)
-    (set-timer-expire-seconds! timer (+ sec (timer-expire-seconds timer)))))
-
-
+  (define (increment-timer timer secs)
+    (revise-timer! timer
+                   (+ (timer-expire-seconds timer)
+                      (* 1000 secs))
+                   (timer-action timer))))
 
 ; --- timeout plan
 

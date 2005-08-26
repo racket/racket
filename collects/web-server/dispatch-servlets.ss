@@ -94,7 +94,7 @@
                           (make-execution-context
                            conn req (lambda () (suspend #t)))
                           sema
-                          (start-timer 0 (lambda () (void))))]
+                          (start-timer 0 void))]
                    [real-servlet-path (url-path->path
                                        (paths-servlet (host-paths host-info))
                                        (url-path->string (url-path uri)))]
@@ -326,7 +326,7 @@
     
     
       (define servlet-bin?
-        (let ([svt-bin-re (regexp "^/servlets/.*")])
+        (let ([svt-bin-re (regexp "^/servlets(;id.*\\*.*\\*.*)?/.*")])
           (lambda (str)
             (regexp-match svt-bin-re str))))
     

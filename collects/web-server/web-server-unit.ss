@@ -97,11 +97,10 @@
       ;; serve-ports : input-port output-port -> void
       ;; returns immediately, spawning a thread to handle
       ;; the connection
-      ;; NOTE: this doesn't use a connection manager since
-      ;;       connection managers don't do anything anyways. -robby
       ;; NOTE: (GregP) should allow the user to pass in a connection-custodian
       (define (serve-ports ip op)
         (let ([server-cust (make-custodian)])
+          (start-connection-manager server-cust)
           (parameterize ([current-custodian server-cust]
                          [current-server-custodian server-cust])
             (let ([connection-cust (make-custodian)])
@@ -118,7 +117,6 @@
              (with-handlers ([exn:fail:network?
                               (lambda (e)
                                 (set-connection-close?! conn #t)
-                                ; XXX: Can this block on the mutex?
                                 (kill-connection! conn)
                                 (raise e))])
                (serve-connection conn))))))

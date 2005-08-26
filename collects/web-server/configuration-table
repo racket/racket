@@ -21,7 +21,7 @@
        (collect-garbage
          "collect-garbage.html"))
      (timeouts
-       (default-servlet-timeout 120)
+       (default-servlet-timeout 30)
        (password-connection-timeout 300)
        (servlet-connection-timeout 86400)
        (file-per-byte-connection-timeout 1/20)

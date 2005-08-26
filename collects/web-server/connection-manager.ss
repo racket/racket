@@ -15,8 +15,9 @@
    [adjust-connection-timeout! (connection? number? . -> . void)])
   
   ;; start-connection-manager: custodian -> void
-  ;; does nothing
-  (define start-connection-manager void)
+  ;; calls the timer manager
+  (define (start-connection-manager custodian)
+    (start-timer-manager custodian))
   
   ;; new-connection: number i-port o-port custodian -> connection
   ;; ask the connection manager for a new connection
@@ -31,14 +32,11 @@
   
   ;; kill-connection!: connection -> void
   ;; kill this connection
-  (define (kill-connection! conn-demned)
-    (call-with-semaphore
-     (connection-mutex conn-demned)
-     (lambda ()
-       (close-output-port (connection-o-port conn-demned))
-       (close-input-port (connection-i-port conn-demned))
-       (set-connection-close?! conn-demned #t)
-       (custodian-shutdown-all (connection-custodian conn-demned)))))
+  (define (kill-connection! conn-demned)    
+    (close-output-port (connection-o-port conn-demned))
+    (close-input-port (connection-i-port conn-demned))
+    (set-connection-close?! conn-demned #t)
+    (custodian-shutdown-all (connection-custodian conn-demned)))
   
   ;; adjust-connection-timeout!: connection number -> void
   ;; change the expiration time for this connection

@@ -1,6 +1,8 @@
 (module timer-structs mzscheme
   (require (lib "contract.ss"))
   
-  (define-struct timer (expire-seconds))
+  (define-struct timer (evt expire-seconds action))
   (provide/contract
-   [struct timer ([expire-seconds number?])]))
+   [struct timer ([evt evt?]
+                  [expire-seconds number?]
+                  [action (-> void)])]))
