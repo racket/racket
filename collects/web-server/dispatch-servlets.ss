@@ -250,11 +250,18 @@
     ;; refreshed (see dispatch).
     (define (cached-load name)
       (let ([e
-             (call-with-semaphore config:scripts-lock
-                                  (lambda ()
-                                    (hash-table-get (unbox config:scripts)
-                                                    name
-                                                    (lambda () (reload-servlet-script name)))))])
+             ; First try to get the cache entry
+             (hash-table-get 
+              (unbox config:scripts)
+              name
+              (lambda () 
+                ; Then try to update the cache entry
+                (call-with-semaphore
+                 config:scripts-lock
+                 (lambda ()
+                   (hash-table-get (unbox config:scripts) name
+                                   (lambda ()
+                                     (reload-servlet-script name)))))))])
         (values (cache-entry-servlet e)
                 (cache-entry-namespace e))))
     
