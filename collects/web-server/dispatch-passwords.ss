@@ -7,11 +7,10 @@
            "configuration-structures.ss")
   
   (provide interface-version
-           gen-dispatcher
-           read-passwords)
+           gen-dispatcher)
   
   (define interface-version 'v1)
-  (define (gen-dispatcher host-info config:access next-dispatcher)
+  (define (gen-dispatcher host-info config:access)
     (lambda (conn req)
       (let-values ([(uri method path) (decompose-request req)])
         (cond
@@ -19,8 +18,16 @@
            => (lambda (realm)
                 (adjust-connection-timeout! conn (timeouts-password (host-timeouts host-info)))
                 (request-authentication conn method uri host-info realm))]
+          [(string=? "/conf/refresh-passwords" path)
+           ;; more here - send a nice error page
+           (hash-table-put! config:access host-info
+                            (read-passwords host-info))
+           (output-response/method
+            conn
+            ((responders-passwords-refreshed (host-responders host-info)))
+            method)]
           [else
-           (next-dispatcher conn req)]))))
+           (next-dispatcher)]))))
   
   ;; ****************************************
   ;; ****************************************
