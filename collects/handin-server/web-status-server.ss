@@ -27,7 +27,8 @@
 	    (servlets-refreshed "servlet-refresh.html")
 	    (passwords-refreshed "passwords-refresh.html")
 	    (file-not-found-message "not-found.html")
-	    (protocol-message "protocol-error.html"))
+	    (protocol-message "protocol-error.html")
+	    (collect-garbage "collect-garbage.html"))
 	   (timeouts
 	    (default-servlet-timeout 120)
 	    (password-connection-timeout 300)
