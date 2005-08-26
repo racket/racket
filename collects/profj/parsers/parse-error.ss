@@ -1,4 +1,3 @@
-#cs
 (module parse-error mzscheme
   
   (require "lexer.ss" "general-parsing.ss"
@@ -546,7 +545,7 @@
         ((class-body)
          (case tokN
            ((EOF) (parse-error (format "Expected class body to begin after ~a" (format-out (get-tok pre))) ps pe))
-           ((O_BRACE) (parse-definition cur-tok (parse-members null (getter) 'start getter #f #f) 'class-body-end getter))
+           ((O_BRACE) (parse-definition cur-tok (parse-members cur-tok (getter) 'start getter #f #f) 'class-body-end getter))
            (else 
             (cond
               ((open-separator? tok)
@@ -1966,11 +1965,11 @@
       (case state
         ((start)
          (cond
-           ((prim-type? tok) 
-            (parse-for pre 
+           ((prim-type? tok)
+            (parse-for pre
                        (parse-statement cur-tok (getter) 'local getter #t ctor? super-seen?)
                        'past-inits getter ctor? super-seen?))
-           ((id-token? tok) 
+           ((id-token? tok)
             (parse-for pre cur-tok 'init-or-expr getter ctor? super-seen?))
            ((semi-colon? tok)
             (parse-for cur-tok (getter) 'past-inits getter ctor? super-seen?))
@@ -1980,13 +1979,13 @@
         ((init-or-exp)
          (case kind
            ((EOF) (parse-error "Expected remainder of 'for'" ps pe))
-           ((PERIOD) 
+           ((PERIOD)
             (parse-for pre (parse-name (getter) getter #f) 'init-or-exp getter ctor? super-seen?))
            ((IDENTIFIER)
-            (parse-for pre (parse-statement pre cur-tok 'local getter #t ctor? super-seen?) 
+            (parse-for pre (parse-statement pre cur-tok 'local getter #t ctor? super-seen?)
                        'past-inits getter ctor? super-seen?))
            (else
-            (parse-for pre (parse-expression pre cur-tok 'start getter #f #f) 
+            (parse-for pre (parse-expression pre cur-tok 'start getter #f #f)
                        'statement-expr-first getter ctor? super-seen?))))
         ((statement-expr-first)
          (case kind
@@ -2000,11 +1999,13 @@
                          start end))))
         ((past-inits)
          (case kind
-           ((EOF) (parse-error "Expected remainder of 'for'" ps pe))
-           ((SEMI_COLON)
+           ((EOF) (parse-error "Expected a conditional expression for 'for'" ps pe))
+           #;((SEMI_COLON)
             (parse-for cur-tok (getter) 'past-condition getter ctor? super-seen?))
            (else
-            (let ((next (getter)))
+            (parse-for cur-tok (parse-expression pre cur-tok 'start getter #f #f) 
+                       'end-condition getter ctor? super-seen?)
+            #;(let ((next (getter)))
               (cond 
                 ((eof? (get-tok next)) (parse-error "Expected the rest of 'for'" start end))
                 ((semi-colon? (get-tok next)) (parse-for cur-tok next 'end-condition getter 
@@ -2013,7 +2014,7 @@
                                  'end-condition getter ctor? super-seen?)))))))
         ((end-condition)
          (case kind
-           ((EOF) (parse-error "Expected a ';' to end the condition portion of 'for', and rest of 'for'." ps pe))
+           ((EOF) (parse-error "Expected a ';' to end the condition portion of 'for'" ps pe))
            ((SEMI_COLON) (parse-for cur-tok (getter) 'past-condition getter ctor? super-seen?))
            (else
             (parse-error (format "Expected a ';' to end the condition portion of 'for', found ~a" out) start end))))
@@ -2039,8 +2040,8 @@
                  
   ;parse-expression: token token state (->token) bool bool -> token
   (define (parse-expression pre cur-tok state getter statement-ok? stmt-exp?)
-    ;(printf "parse-expression state ~a pre ~a cur-tok ~a statement-ok? ~a stmt-exp? ~a ~n" 
-    ;        state pre cur-tok statement-ok? stmt-exp?)
+;    (printf "parse-expression state ~a pre ~a cur-tok ~a statement-ok? ~a stmt-exp? ~a ~n" 
+;            state pre cur-tok statement-ok? stmt-exp?)
     (let* ((tok (get-tok cur-tok))
            (kind (get-token-name tok))
            (out (format-out tok))

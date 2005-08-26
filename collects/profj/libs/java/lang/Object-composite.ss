@@ -299,7 +299,8 @@
         (if (and (= 1(runtime-type-dim rt)) (symbol? (runtime-type-type rt)))
             (case (runtime-type-type rt)
               ((byte short int long float double) 0)
-              ((char) #\null))
+              ((char) #\null)
+              ((boolean) #f))
             null))
 
       (define/public (length) (vector-length array))

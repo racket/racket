@@ -510,7 +510,7 @@
       (ForStatement
        [(for O_PAREN ForInit SEMI_COLON Expression SEMI_COLON ForUpdate C_PAREN Statement)
 	(make-for $3 $5 $7 $9 (build-src 9))]
-       [(for O_PAREN ForInit SEMI_COLON SEMI_COLON ForUpdate C_PAREN Statement)
+       #;[(for O_PAREN ForInit SEMI_COLON SEMI_COLON ForUpdate C_PAREN Statement)
 	(make-for $3 
                       (make-literal 'boolean (build-src 4 5) #t) 
 		      $6 
