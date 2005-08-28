@@ -215,7 +215,7 @@
 			 [actual-format (if (memq f-format '(copy same))
 					    (-get-file-format)
 					    f-format)]
-			 [text? (not (memq actual-format '(text text-force-cr)))])
+			 [text? (memq actual-format '(text text-force-cr))])
 		    (and 
 		     file
 		     (can-save-file? file f-format)
