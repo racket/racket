@@ -37,7 +37,6 @@
                req
                (read-bindings/handled conn meth uri (request-headers req)
                                       host-info))
-              
               (cond
                 [(continuation-url? uri)
                  => (lambda (k-ref)

@@ -152,17 +152,17 @@
       ;;       at a later time.
       (define dispatch 
         (let* ([cache (make-hash-table 'equal)]
-              [sema (make-semaphore 1)]
-              [lookup-dispatcher
-               (lambda (host host-info)
-                 (hash-table-get 
-                  cache host
-                  (lambda () 
-                    (call-with-semaphore
-                     sema (lambda ()
-                            (hash-table-get 
-                             cache host
-                             (lambda () (host-info->dispatcher host-info))))))))])
+               [sema (make-semaphore 1)]
+               [lookup-dispatcher
+                (lambda (host host-info)
+                  (hash-table-get 
+                   cache host
+                   (lambda () 
+                     (call-with-semaphore
+                      sema (lambda ()
+                             (hash-table-get 
+                              cache host
+                              (lambda () (host-info->dispatcher host-info))))))))])
           (lambda (conn req)
             (let* ([host (get-host (request-uri req) (request-headers req))]
                    [host-info (config:virtual-hosts host)])
