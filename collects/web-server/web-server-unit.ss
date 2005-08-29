@@ -150,28 +150,44 @@
       ;; NOTE: (GregP) I'm going to use the dispatch logic out of v208 for now.
       ;;       I will move the other  dispatch logic out of the prototype
       ;;       at a later time.
-      (define (dispatch conn req)
-        (let* ([host (get-host (request-uri req) (request-headers req))]
-               [host-info (config:virtual-hosts host)])
-          ((host-log-message host-info) (request-host-ip req)
-                                        (request-client-ip req) (request-method req) (request-uri req) host)
-          ((sequencer:gen-dispatcher
-            (passwords:gen-dispatcher host-info config:access)
-            (path-procedure:gen-dispatcher "/conf/collect-garbage"
-                                           (lambda ()
-                                             (collect-garbage)
-                                             ((responders-collect-garbage (host-responders host-info)))))
-            (servlets:gen-dispatcher host-info
-                                     config:instances config:scripts config:scripts-lock config:make-servlet-namespace)
-            (files:gen-dispatcher host-info))
-           conn req)))))
+      (define dispatch 
+        (let* ([cache (make-hash-table 'equal)]
+              [sema (make-semaphore 1)]
+              [lookup-dispatcher
+               (lambda (host host-info)
+                 (hash-table-get 
+                  cache host
+                  (lambda () 
+                    (call-with-semaphore
+                     sema (lambda ()
+                            (hash-table-get 
+                             cache host
+                             (lambda () (host-info->dispatcher host-info))))))))])
+          (lambda (conn req)
+            (let* ([host (get-host (request-uri req) (request-headers req))]
+                   [host-info (config:virtual-hosts host)])
+              ((host-log-message host-info) (request-host-ip req)
+                                            (request-client-ip req) (request-method req) (request-uri req) host)
+              ((lookup-dispatcher host host-info)
+               conn req)))))
+      
+      (define (host-info->dispatcher host-info)
+        (sequencer:gen-dispatcher
+         (passwords:gen-dispatcher host-info config:access)
+         (path-procedure:gen-dispatcher "/conf/collect-garbage"
+                                        (lambda ()
+                                          (collect-garbage)
+                                          ((responders-collect-garbage (host-responders host-info)))))
+         (servlets:gen-dispatcher host-info
+                                  config:instances config:scripts config:scripts-lock config:make-servlet-namespace)
+         (files:gen-dispatcher host-info)))))
   
   (define web-server@
     (compound-unit/sig 
       (import (TCP : net:tcp^)
               (CONFIG : web-config^))
-      (link (DISPATCH : dispatch-server^
-                      (dispatch-server@ TCP DISPATCH-CONFIG))
-            (DISPATCH-CONFIG : dispatch-server-config^
-                             (web-config@->dispatch-server-config@ CONFIG)))
+      (link (DISPATCH-CONFIG : dispatch-server-config^
+                             (web-config@->dispatch-server-config@ CONFIG))
+            (DISPATCH : dispatch-server^
+                      (dispatch-server@ TCP DISPATCH-CONFIG)))
       (export (open (DISPATCH : web-server^))))))

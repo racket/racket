@@ -80,11 +80,10 @@
                        (lambda (the-exn)
                          (output-response/method
                           conn
-                          ((responders-servlet-loading (host-responders
-                                                        host-info)) uri
-                                                                    the-exn)
-                          (request-method req)))])
-        
+                          ((responders-servlet-loading 
+                            (host-responders host-info))
+                           uri the-exn)
+                          (request-method req)))])        
         (let ([sema (make-semaphore 0)]
               [last-inst (thread-cell-ref current-servlet-instance)])
           (let/cc suspend
@@ -179,7 +178,6 @@
                   (loop base))
               (or (and (directory-exists? base) base)
                   (loop base))))))
-    
     
     ;; invoke-servlet-continuation: connection request continuation-reference
     ;;                              host -> void

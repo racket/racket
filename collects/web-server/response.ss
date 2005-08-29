@@ -128,7 +128,7 @@
               (response/full-body resp))))]
          [(response/incremental? resp)
           (output-response/incremental conn resp)]
-         [(and (pair? resp) (string? (car resp)))
+         [(and (pair? resp) (bytes? (car resp)))
           (output-response/basic
            conn
            (make-response/basic 200 "Okay" (current-seconds) (car resp) '())
