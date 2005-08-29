@@ -67,7 +67,8 @@
   (define (read-passwords host-info)
     (let ([password-path (host-passwords host-info)])
       (with-handlers ([void (lambda (exn)
-                              (raise (make-exn:password-file (format "could not load password file ~a" password-path)
+                              (raise (make-exn:password-file (string->immutable-string
+                                                              (format "could not load password file ~a" password-path))
                                                              (current-continuation-marks))))])
         (if (and (file-exists? password-path) (memq 'read (file-or-directory-permissions password-path)))
             (let ([passwords
