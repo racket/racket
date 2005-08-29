@@ -308,7 +308,7 @@
   
   ;parse-definition: token token symbol (-> token) -> void
   (define (parse-definition pre cur-tok state getter)
-;    (printf "parse-definition state ~a pre: ~a cur-tok ~a~n" state pre cur-tok)
+    ;(printf "parse-definition state ~a pre: ~a cur-tok ~a~n" state pre cur-tok)
     (let* ((tok (get-tok cur-tok))
            (tokN (get-token-name tok))
            (srt (get-start cur-tok))
@@ -642,7 +642,7 @@
               
   ;parse-members: token token symbol (->token) boolean -> token
   (define (parse-members pre cur state getter abstract-method? just-method?)
-;    (printf "parse-members: state ~a pre ~a current ~a~n" state pre cur)
+    ;(printf "parse-members: state ~a pre ~a current ~a~n" state pre cur)
     (let* ((tok (get-tok cur))
            (kind (get-token-name tok))
            (out (format-out tok))
@@ -1117,7 +1117,7 @@
   
   ;parse-array-init token token symbol (-> token) -> token
   (define (parse-array-init pre cur-tok state getter)
-;    (printf "parse-array-init state ~a pre ~a cur-tok ~a~n" state pre cur-tok)
+    ;(printf "parse-array-init state ~a pre ~a cur-tok ~a~n" state pre cur-tok)
     (let* ((tok (get-tok cur-tok))
            (kind (get-token-name tok))
            (out (format-out tok))
@@ -1493,7 +1493,7 @@
   ;Intermediate - addition of parameter id-ok?
   ;parse-statement: token token symbol (->token) bool bool bool-> token
   (define (parse-statement pre cur-tok state getter id-ok? ctor? super-seen?)
-;    (printf "parse-statement state: ~a pre: ~a cur-tok: ~a~n" state pre cur-tok)
+    ;(printf "parse-statement state: ~a pre: ~a cur-tok: ~a~n" state pre cur-tok)
     (let* ((tok (get-tok cur-tok))
            (kind (get-token-name tok))
            (out (format-out tok))
@@ -1710,7 +1710,7 @@
                             (afterOB-tok (get-tok afterOB)))
                        (if (eof? afterOB-tok)
                            (parse-error "Expected a ']' to end array index" start (get-end afterOB))
-                           (parse-statement afterOB (getter) 'assignment getter id-ok? ctor? super-seen?))))))
+                           (parse-statement afterOB (getter) 'assign-or-call getter id-ok? ctor? super-seen?))))))
               ((advanced?)
                (parse-statement pre cur-tok 'unary-check getter id-ok? ctor? super-seen?))
               (else
@@ -1961,7 +1961,7 @@
            (end (get-end cur-tok))
            (ps (if (null? pre) null (get-start pre)))
            (pe (if (null? pre) null (get-end pre))))
-;      (printf "parse-for: state ~a pre ~a cur-tok ~a~n" state pre cur-tok)
+      ;(printf "parse-for: state ~a pre ~a cur-tok ~a~n" state pre cur-tok)
       (case state
         ((start)
          (cond
@@ -1976,13 +1976,13 @@
            (else (parse-for pre 
                             (parse-expression pre cur-tok 'start getter #f #f)
                             'statement-expr-first getter ctor? super-seen?))))
-        ((init-or-exp)
+        ((init-or-expr)
          (case kind
            ((EOF) (parse-error "Expected remainder of 'for'" ps pe))
            ((PERIOD)
-            (parse-for pre (parse-name (getter) getter #f) 'init-or-exp getter ctor? super-seen?))
+            (parse-for pre (parse-name (getter) getter #f) 'init-or-expr getter ctor? super-seen?))
            ((IDENTIFIER)
-            (parse-for pre (parse-statement pre cur-tok 'local getter #t ctor? super-seen?)
+            (parse-for pre (parse-statement cur-tok (getter) 'local getter #t ctor? super-seen?)
                        'past-inits getter ctor? super-seen?))
            (else
             (parse-for pre (parse-expression pre cur-tok 'start getter #f #f)
@@ -2040,8 +2040,8 @@
                  
   ;parse-expression: token token state (->token) bool bool -> token
   (define (parse-expression pre cur-tok state getter statement-ok? stmt-exp?)
-;    (printf "parse-expression state ~a pre ~a cur-tok ~a statement-ok? ~a stmt-exp? ~a ~n" 
-;            state pre cur-tok statement-ok? stmt-exp?)
+    ;(printf "parse-expression state ~a pre ~a cur-tok ~a statement-ok? ~a stmt-exp? ~a ~n" 
+    ;        state pre cur-tok statement-ok? stmt-exp?)
     (let* ((tok (get-tok cur-tok))
            (kind (get-token-name tok))
            (out (format-out tok))
@@ -2049,6 +2049,7 @@
            (end (get-end cur-tok))
            (ps (if (null? pre) null (get-start pre)))
            (pe (if (null? pre) null (get-end pre))))
+      ;(printf "kind ~a~n" kind)
       (case state
         ((start)
          (case kind
@@ -2096,15 +2097,16 @@
                ((and (advanced?) (unary-end? tok)) (getter))
                (else cur-tok))
              (cond
-               ((bin-operator? tok) (parse-expression cur-tok (getter) 'start getter #f stmt-exp?))
+               ((bin-operator? tok) 
+                (parse-expression cur-tok (getter) 'start getter #f stmt-exp?))
                ((and (advanced?) (unary-end? tok)) 
                 (parse-expression cur-tok (getter) 'op-or-end getter statement-ok? stmt-exp?))
                ((and (advanced?) (if-exp? tok))
                 (parse-expression cur-tok (parse-expression cur-tok (getter) 'start getter #f stmt-exp?) 
                                   'if-exp-colon getter #f stmt-exp?))
-               ((and (advanced?) (o-bracket? tok)) 
+               ((and (advanced?) (o-bracket? tok))
                 (parse-expression cur-tok (getter) 'array-acc getter statement-ok? stmt-exp?))
-               ((and (advanced?) (instanceof-token? tok)) 
+               ((and (advanced?) (instanceof-token? tok))
                 (parse-expression cur-tok (getter) 'instanceof getter #f stmt-exp?))
                (else cur-tok))))
         ((dot-op-or-end)
@@ -2380,6 +2382,7 @@
            ((O_PAREN) (parse-expression pre cur-tok 'method-call-args getter statement-ok? stmt-exp?))
            ((=) (parse-expression cur-tok (parse-expression cur-tok (getter) 'start getter #f stmt-exp?) 
                                   'assign-end getter statement-ok? stmt-exp?))
+           ((C_BRACKET) cur-tok) 
            (else (parse-expression pre cur-tok 'op-or-end getter statement-ok? stmt-exp?))))
         ((method-call-args)
          (case kind
