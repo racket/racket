@@ -9,5 +9,5 @@
   (define (start initial-request)
     (report-errors-to-browser send/finish)
     (list
-     "text/html"	 
+     #"text/html"	 
      (find-manuals))))
