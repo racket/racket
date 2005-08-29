@@ -291,6 +291,20 @@
     ;;;;;; (XXX: I don't know what 'typed-model-split-store0 was, so it was removed.)
     ;;;; A response
     (define (load-servlet/path a-path)
+      (define (v0.servlet->v1.lambda servlet)
+        (lambda (initial-request)
+          (invoke-unit/sig servlet servlet^)))
+      (define (v0.response->v1.lambda response-path response)
+        (letrec ([go (lambda ()
+                       (begin
+                         (set! go (lambda () (load/use-compiled a-path)))
+                         response))])
+          (lambda (initial-request) (go))))
+      (define (v1.module->v1.lambda timeout start)
+        (lambda (initial-request)
+          (adjust-timeout! timeout)
+          (start initial-request)))
+      
       (parameterize ([current-namespace (config:make-servlet-namespace)])
         (and (file-exists? a-path)
              (let ([s (load/use-compiled a-path)])
@@ -298,9 +312,7 @@
                  ;; signed-unit servlet
                  ; MF: I'd also like to test that s has the correct import signature.
                  [(unit/sig? s) 
-                  (make-cache-entry (lambda (initial-request)
-                                      (invoke-unit/sig s servlet^))
-                                    (current-namespace))]
+                  (make-cache-entry (v0.servlet->v1.lambda s) (current-namespace))]
                  ; FIX - reason about exceptions from dynamic require (catch and report if not already)
                  ;; module servlet
                  [(void? s)
@@ -310,25 +322,15 @@
                       [(v1)
                        (let ([timeout (dynamic-require module-name 'timeout)]
                              [start (dynamic-require module-name 'start)])
-                         (make-cache-entry
-                          (lambda (initial-request)
-                            (adjust-timeout! timeout)
-                            (start initial-request))
-                          (current-namespace)))]
+                         (make-cache-entry (v1.module->v1.lambda timeout start) (current-namespace)))]
                       [else
                        (raise (format "unknown servlet version ~e" version))]))]
                  ;; response
                  [(response? s)
-                  (letrec ([go (lambda ()
-                                 (begin
-                                   (set! go (lambda () (load/use-compiled a-path)))
-                                   s))])
-                    (make-cache-entry (lambda (initial-request) (go))
-                                      (current-namespace)))]
+                  (make-cache-entry (v0.response->v1.lambda s a-path) (current-namespace))]
                  [else
                   (raise 'load-servlet/path "Loading ~e produced ~n~e~n instead of a servlet." a-path s)])))))
-    
-    
+        
       (define servlet-bin?
         (let ([svt-bin-re (regexp "^/servlets(;id.*\\*.*\\*.*)?/.*")])
           (lambda (str)
