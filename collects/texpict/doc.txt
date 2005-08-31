@@ -1121,6 +1121,8 @@ The _code^_ unit supplies the following
 > current-id-color - parameter for a string or color% for identifiers
 > current-literal-color - parameter for a string or color% for literals
 > current-base-color - parameter for a string or color% for everything else
+> current-open-paren - #f or a pict to use for plain open parens
+> current-close-paren - #f or a pict to use for plain close parens
 
 For backward compatibility:
 > comment-color - default string/color% for comments
