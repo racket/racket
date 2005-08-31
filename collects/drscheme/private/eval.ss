@@ -2,10 +2,11 @@
 (module eval mzscheme
   (require (lib "mred.ss" "mred")
            (lib "unitsig.ss")
+           (lib "port.ss")
            (lib "class.ss")
 	   (lib "toplevel.ss" "syntax")
-           "drsig.ss"
-           (lib "framework.ss" "framework"))
+           (lib "framework.ss" "framework")
+           "drsig.ss")
   
   ;; to ensure this guy is loaded (and the snipclass installed) in the drscheme namespace & eventspace
   (require (lib "cache-image-snip.ss" "mrlib"))
@@ -39,12 +40,19 @@
                             (cond
                               [(input-port? input) (values input #f)]
                               [else (values
-                                     (let ([p (open-input-text-editor
-                                               (drscheme:language:text/pos-text input)
-                                               (drscheme:language:text/pos-start input)
-                                               (drscheme:language:text/pos-end input))])
-                                       (port-count-lines! p)
-                                       p)
+                                     (let* ([text (drscheme:language:text/pos-text input)]
+                                            [start (drscheme:language:text/pos-start input)]
+                                            [end (drscheme:language:text/pos-end input)]
+                                            [text-port (open-input-text-editor text start end)])
+                                       (port-count-lines! text-port)
+                                       (let* ([line (send text position-paragraph start)]
+                                              [column (- start (send text paragraph-start-position line))]
+                                              [relocated-port (relocate-input-port text-port 
+                                                                                   (+ line 1)
+                                                                                   column
+                                                                                   (+ start 1))])
+                                         (port-count-lines! relocated-port)
+                                         relocated-port))
                                      (drscheme:language:text/pos-text input))])])
                 (parameterize ([current-eventspace eventspace])
                   (queue-callback
