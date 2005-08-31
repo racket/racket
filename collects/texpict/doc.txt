@@ -1028,6 +1028,35 @@ implements an interactive browser for face configurations.
       - pupil-dy adjusts the pupil; recommend values: between -15 and 15
 
 ------------------------------------------------------------
+_flash.ss_
+------------------------------------------------------------
+
+> (filled-flash width height [points spike-fraction rotation])
+  - returns a pict for a "flash" (a spiky oval, like the
+    yellow background that goes behind a "New!" logo).
+  
+    The `height' and `width' arguments determine the size of the oval
+    in which the flash is drawn, prior to rotation. The actual height
+    and width may be smaller if `points' is not a multiple of 4, and
+    the actuall height and width will be different if the flash is
+    rotated.
+
+    The `points' argument defaults to 10, and it determines
+    the number of points on the flash. 
+
+    The `spike-fraction' argument determines how big the flash spikes
+    are compared to the bounding oval. It should be a value between 0
+    and 1 (exclusive), and the default is 0.25.
+
+    The `rotation' argument specifies an angle in radians for
+    counter-clockwise rotation.
+
+    The flash is drawn in the default color.
+
+> (outline-flash width height [points spike-fraction rotation])
+   - like `filled-flash', but drawing only the outline.
+
+------------------------------------------------------------
 _code.ss_
 ------------------------------------------------------------
 

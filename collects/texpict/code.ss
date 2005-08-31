@@ -45,7 +45,8 @@
      code-align current-code-tt
      current-keyword-list current-const-list code-colorize-enabled
      current-comment-color current-keyword-color 
-     current-base-color current-id-color current-literal-color))
+     current-base-color current-id-color current-literal-color
+     current-open-paren current-close-paren))
 
   (define-signature code-params^
     (current-font-size 
@@ -101,6 +102,8 @@
       (define current-literal-color (make-parameter literal-color))
       (define comment-color (current-base-color))
       (define current-comment-color (make-parameter comment-color))
+      (define current-open-paren (make-parameter #f))
+      (define current-close-paren (make-parameter #f))
       
       (define-computed open-paren-p (colorize (tt "(") (current-base-color)))
       (define-computed close-paren-p (colorize (tt ")") (current-base-color)))
@@ -121,7 +124,8 @@
 	  [(literal) close-paren/lit-p]
 	  [(template comment) close-paren/tmpl-p]
 	  [(cond template-cond local) close-sq-p]
-	  [else close-paren-p]))
+	  [else (or (current-close-paren)
+		    close-paren-p)]))
 
       (define (get-open mode)
 	(case mode
@@ -129,7 +133,8 @@
 	  [(template comment) open-paren/tmpl-p]
 	  [(contract line) (blank)]
 	  [(cond template-cond local) open-sq-p]
-	  [else open-paren-p]))
+	  [else (or (current-open-paren)
+		    open-paren-p)]))
       
       (define (add-close p closes)
 	(cond
