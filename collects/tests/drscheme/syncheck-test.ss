@@ -446,6 +446,16 @@
                   ("\n"   default-color)
                   ("1"    constant)))
      
+     (build-test "#!\n(lambda (x) x)"
+                 '(("#!\n("    default-color)
+                   ("lambda"  imported-syntax)
+                   (" ("      default-color)
+                   ("x"       lexically-bound-variable)
+                   (") "      default-color)
+                   ("x"       lexically-bound-variable)
+                   (")"       default-color))
+                 (list '((12 13) (15 16))))
+     
      (build-test "(module m mzscheme (lambda (x) x) (provide))"
                 '(("("             default-color)
                   ("module"        imported-syntax)
