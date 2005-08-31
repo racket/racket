@@ -1,6 +1,7 @@
 (module encode-decode mzscheme
   (require (lib "deflate.ss")
-           (lib "match.ss"))
+           (lib "match.ss")
+           (lib "pretty.ss"))
   (require-for-syntax (lib "inflate.ss")
                       (lib "string.ss"))
   
@@ -18,12 +19,26 @@
             [`(module ,m mzscheme ,@(bodies ...))
              (call-with-output-file out-filename
                (λ (oport)
-                 (write `(module ,m mzscheme
-                           (require (lib "encode-decode.ss" "framework" "private"))
-                           (decode ,(encode-sexp `(begin ,@bodies))))
-                        oport))
+                 (let ([chopped (chop-up (encode-sexp `(begin ,@bodies)))])
+                   (fprintf oport "(module ~a mzscheme\n" m)
+                   (fprintf oport "  (require (lib \"encode-decode.ss\" \"framework\" \"private\"))\n")
+                   (fprintf oport "  (decode ~a" (car chopped))
+                   (for-each (lambda (chopped)
+                               (fprintf oport "\n          ~a" chopped))
+                             (cdr chopped))
+                   (fprintf oport "))\n")))
                'truncate 'text)]
             [else (error 'encode-module "cannot parse module")])))))
+  
+  (define (chop-up sym)
+    (let ([chopping-point 50])
+      (let loop ([str (symbol->string sym)])
+        (cond
+          [(<= (string-length str) chopping-point)
+           (list (string->symbol str))]
+          [else
+           (cons (string->symbol (substring str 0 chopping-point))
+                 (loop (substring str chopping-point (string-length str))))]))))
   
   (define (encode-sexp sexp)
     (define (str->sym string)
@@ -81,11 +96,11 @@
               (+ 10 (- (char->integer char)
                        (char->integer #\a)))]))
 
-         (datum->syntax-object
-          stx
-          (decode-sexp 
-           (apply 
-            string-append
-            (map (λ (x) (symbol->string (syntax-e x)))
-                 (syntax->list (syntax (arg ...))))))
-          stx))])))
+         (define decoded
+           (decode-sexp 
+            (apply 
+             string-append
+             (map (λ (x) (symbol->string (syntax-e x)))
+                  (syntax->list (syntax (arg ...)))))))
+         
+         (datum->syntax-object stx decoded stx))])))
