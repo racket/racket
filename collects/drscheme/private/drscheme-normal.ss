@@ -102,7 +102,7 @@
       (define outer-color (send the-color-database find-color "darkorange"))
       (define inner-color (send the-color-database find-color "green"))
       (define omega-str "λ (x) (x x)) (λ (x) (x x))) ((")
-      (define hebrew-str "אין סופיות אין סופיות ")
+      (define hebrew-str "  ףוס ןיא  ףוס ןיא")
       
       (define (draw-letter dc cx cy angle radius letter color)
         (let ([x (+ cx (* (cos angle) radius))]
@@ -212,10 +212,10 @@
                    (draw-single-step bdc o)
                    (semaphore-post s))))
               (semaphore-wait s))
-            (let ([next (- o (/ pi 60))])
-              (set! o (if (< next 0)
-                          (+ next (* 2 pi))
-                          next))))))
+            (let ([next (+ o (/ pi 60))])
+              (set! o (if (< next (* 2 pi))
+                          next
+                          (- next (* 2 pi))))))))
       
       (define draw-thread #f)
       (define (start-thread)        
