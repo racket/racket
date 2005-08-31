@@ -99,6 +99,8 @@
                    [servlet-exit-handler (make-servlet-exit-handler inst)])
               (parameterize ([current-directory (get-servlet-base-dir real-servlet-path)]
                              [current-custodian servlet-custodian]
+                             [current-servlet-continuation-expiration-handler
+                              (make-default-servlet-continuation-expiration-handler host-info)]
                              [exit-handler servlet-exit-handler])
                 (thread-cell-set! current-servlet-instance inst)
                 (let-values (;; timer thread must be within the dynamic extent of
@@ -138,7 +140,15 @@
          (execution-context-connection
           (servlet-instance-context inst)))
         (custodian-shutdown-all (servlet-instance-custodian inst))))
-    
+
+    ;; make-default-server-continuation-expiration-handler : host -> (request -> response)
+    (define (make-default-servlet-continuation-expiration-handler host-info)
+      (lambda (req)
+        (send/back 
+         ((responders-file-not-found (host-responders
+                                      host-info))
+          (request-uri req)))))
+
     ;; make-servlet-exception-handler: host -> exn -> void
     ;; This exception handler traps all unhandled servlet exceptions
     ;; * Must occur within the dynamic extent of the servlet
@@ -182,58 +192,60 @@
     ;;                              host -> void
     ;; pull the continuation out of the table and apply it
     (define (invoke-servlet-continuation conn req k-ref host-info)
-      (with-handlers ([exn:servlet-instance?
-                       (lambda (the-exn)
-                         (output-response/method
-                          conn
-                          ((responders-file-not-found (host-responders
-                                                       host-info))
-                           (request-uri req))
-                          (request-method req)))]
-                      [exn:servlet-continuation?
-                       (lambda (the-exn)
-                         (output-response/method
-                          conn
-                          ((responders-file-not-found (host-responders
-                                                       host-info))
-                           (request-uri req))
-                          (request-method req)))])
-        (let* ([last-inst (thread-cell-ref current-servlet-instance)]
-               [inst 
-                (hash-table-get config:instances (first k-ref)
-                                (lambda ()
-                                  (raise
-                                   (make-exn:servlet-instance
-                                    "" (current-continuation-marks)))))]
-               [k-table
-                (servlet-instance-k-table inst)])
-          (let/cc suspend
-            ; We don't use call-with-semaphore or dynamic-wind because we
-            ; always call a continuation. The exit-handler above ensures that
-            ; the post is done.
-            (semaphore-wait (servlet-instance-mutex inst))
-            (thread-cell-set! current-servlet-instance inst)
-            (set-servlet-instance-context!
-             inst
-             (make-execution-context
-              conn req (lambda () (suspend #t))))
-            (increment-timer (servlet-instance-timer inst)
-                             (timeouts-default-servlet
-                              (host-timeouts host-info)))
-            (let ([k*salt
-                   (hash-table-get k-table (second k-ref)
-                                   (lambda ()
-                                     (raise
-                                      (make-exn:servlet-continuation
-                                       "" (current-continuation-marks)))))])
-              (if (= (second k*salt) (third k-ref))
-                  ((first k*salt) req)
-                  (raise
-                   (make-exn:servlet-continuation
-                    "" (current-continuation-marks))))))
-          (thread-cell-set! current-servlet-instance last-inst)
-          (semaphore-post (servlet-instance-mutex inst))
-          )))
+      (let-values ([(uk-instance uk-id uk-salt) (apply values k-ref)])
+        (let ([default-servlet-continuation-expiration-handler
+                (make-default-servlet-continuation-expiration-handler host-info)])
+          (with-handlers ([exn:servlet:instance?
+                           (lambda (the-exn)
+                             (output-response/method
+                              conn
+                              ((responders-file-not-found (host-responders
+                                                           host-info))
+                               (request-uri req))
+                              (request-method req)))]
+                          [exn:servlet:continuation?
+                           (lambda (the-exn)
+                             ((exn:servlet:continuation-expiration-handler the-exn) req))])
+            (let* ([last-inst (thread-cell-ref current-servlet-instance)]
+                   [inst 
+                    (hash-table-get config:instances uk-instance
+                                    (lambda ()
+                                      (raise
+                                       (make-exn:servlet:instance
+                                        "" (current-continuation-marks)))))]
+                   [k-table
+                    (servlet-instance-k-table inst)])
+              (let/cc suspend
+                ; We don't use call-with-semaphore or dynamic-wind because we
+                ; always call a continuation. The exit-handler above ensures that
+                ; the post is done.
+                (semaphore-wait (servlet-instance-mutex inst))
+                (thread-cell-set! current-servlet-instance inst)
+                (set-servlet-instance-context!
+                 inst
+                 (make-execution-context
+                  conn req (lambda () (suspend #t))))
+                (increment-timer (servlet-instance-timer inst)
+                                 (timeouts-default-servlet
+                                  (host-timeouts host-info)))
+                (let-values ([(k k-expiration-handler k-salt)
+                              (apply values
+                                     (hash-table-get
+                                      k-table uk-id
+                                      (lambda ()
+                                        (raise
+                                         (make-exn:servlet:continuation
+                                          "" (current-continuation-marks)
+                                          default-servlet-continuation-expiration-handler)))))])
+                  (if (and k (= k-salt uk-salt))
+                      (k req)
+                      (raise
+                       (make-exn:servlet:continuation
+                        "" (current-continuation-marks)
+                        k-expiration-handler)))))
+              (thread-cell-set! current-servlet-instance last-inst)
+              (semaphore-post (servlet-instance-mutex inst))
+              )))))
     
     ;; ************************************************************
     ;; ************************************************************

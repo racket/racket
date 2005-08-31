@@ -1,7 +1,8 @@
 ;; Default choice for writing module servlets
 (module servlet mzscheme
   (require (lib "contract.ss")
-           "servlet-tables.ss"
+           (lib "etc.ss"))
+  (require "servlet-tables.ss"
            "response.ss"
            "servlet-helpers.ss"
            "xexpr-callback.ss"
@@ -13,18 +14,23 @@
    [adjust-timeout! (number? . -> . any)]
    [send/back (any/c . -> . any)]
    [send/finish (any/c . -> . any)]
-   [send/suspend ((string? . -> . any/c) . -> . request?)]
-   [send/forward ((string? . -> . any/c) . -> . request?)]
+   [send/suspend (((string? . -> . any/c)) ((request? . -> . any/c)) . opt-> . request?)]
+   [send/forward (((string? . -> . any/c)) ((request? . -> . any/c)) . opt-> . request?)]
    ;;; validate-xexpr/callback is not checked anywhere:
    [send/suspend/callback (xexpr/callback? . -> . any)])
 
   (provide
    send/suspend/dispatch
+   current-servlet-continuation-expiration-handler
    (all-from "servlet-helpers.ss")
    (all-from "xexpr-callback.ss"))
   
   ;; ************************************************************
   ;; EXPORTS
+  
+  ;; current-servlet-continuation-expiration-handler : request -> response
+  (define current-servlet-continuation-expiration-handler
+    (make-parameter #f))
   
   ;; adjust-timeout! : sec -> void
   ;; adjust the timeout on the servlet
@@ -45,24 +51,27 @@
     (clear-continuations! (thread-cell-ref current-servlet-instance))
     (send/back resp))
 
-  ;; send/suspend: (url -> response) -> request
+  ;; send/suspend: (url -> response) [(request -> response)] -> request
   ;; send a response and apply the continuation to the next request
-  (define (send/suspend response-generator)
-    (let/cc k
-      (let* ([inst (thread-cell-ref current-servlet-instance)]
-             [ctxt (servlet-instance-context inst)]
-             [k-url (store-continuation!
-                     k (request-uri (execution-context-request ctxt))
-                     inst)]
-             [response (response-generator k-url)])
-        (output-response (execution-context-connection ctxt) response)
-        ((execution-context-suspend ctxt)))))
+  (define send/suspend
+    (opt-lambda (response-generator [expiration-handler (current-servlet-continuation-expiration-handler)])
+      (let/cc k
+        (let* ([inst (thread-cell-ref current-servlet-instance)]
+               [ctxt (servlet-instance-context inst)]
+               [k-url (store-continuation!
+                       k expiration-handler
+                       (request-uri (execution-context-request ctxt))
+                       inst)]
+               [response (response-generator k-url)])
+          (output-response (execution-context-connection ctxt) response)
+          ((execution-context-suspend ctxt))))))
 
-  ;; send/forward: (url -> response) -> request
+  ;; send/forward: (url -> response) [(request -> response)] -> request
   ;; clear the continuation table, then behave like send/suspend
-  (define (send/forward response-generator)
-    (clear-continuations! (thread-cell-ref current-servlet-instance))
-    (send/suspend response-generator))
+  (define send/forward
+    (opt-lambda (response-generator [expiration-handler (current-servlet-continuation-expiration-handler)])
+      (clear-continuations! (thread-cell-ref current-servlet-instance))
+      (send/suspend response-generator expiration-handler)))
   
   ;; send/suspend/callback : xexpr/callback? -> void
   ;; send/back a response with callbacks in it; send/suspend those callbacks.
@@ -71,15 +80,15 @@
      (lambda (embed/url)
        (replace-procedures p-exp embed/url))))
     
-  ;; send/suspend/dispatch : ((proc -> url) -> response) -> request
+  ;; send/suspend/dispatch : ((proc -> url) -> response) [(request -> response)] -> request
   ;; send/back a response generated from a procedure that may convert
   ;; procedures to continuation urls
   (define (send/suspend/dispatch response-generator)
     (let/ec k0
       (send/back
        (response-generator
-        (lambda (proc)
-          (let/ec k1 (k0 (proc (send/suspend k1)))))))))
+        (opt-lambda (proc [expiration-handler (current-servlet-continuation-expiration-handler)])
+          (let/ec k1 (k0 (proc (send/suspend k1 expiration-handler)))))))))
 
 
   ;; ************************************************************

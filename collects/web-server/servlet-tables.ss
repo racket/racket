@@ -3,8 +3,8 @@
            (lib "url.ss" "net")
            (lib "list.ss")
            "timer.ss")
-  (provide (struct exn:servlet-instance ())
-           (struct exn:servlet-continuation ())
+  (provide (struct exn:servlet:instance ())
+           (struct exn:servlet:continuation (expiration-handler))
            (struct execution-context (connection request suspend))
            (struct servlet-instance (id k-table custodian context mutex timer))
            current-servlet-instance)
@@ -34,28 +34,43 @@
 
   (provide/contract
    [continuation-url? (url? . -> . (union boolean? (list/c symbol? number? number?)))]
-   [store-continuation! (procedure? url? servlet-instance? . -> . string?)]
+   [store-continuation! (procedure? procedure? url? servlet-instance? . -> . string?)]
    [create-new-instance! (hash-table? custodian? execution-context? semaphore? timer?
                                       . -> . servlet-instance?)]
    [remove-instance! (hash-table? servlet-instance? . -> . any)]
    [clear-continuations! (servlet-instance? . -> . any)])
 
   ;; not found in the instance table
-  (define-struct (exn:servlet-instance exn) ())
+  (define-struct (exn:servlet:instance exn) ())
   ;; not found in the continuatin table
-  (define-struct (exn:servlet-continuation exn) ())
+  (define-struct (exn:servlet:continuation exn) (expiration-handler))
 
-  (define-values (make-k-table get-k-id!)
+  (define-values (make-k-table reset-k-table get-k-id!)
     (let ([id-slot 'next-k-id])
       (values
 
-       ;; make-k-table: -> (hash-table-of continuation)
+       ;; make-k-table: -> (hash-table-of (continuation x expiration handler x salt))
        ;; Create a continuation table with an initial value for the next
        ;; continuation id.
        (lambda ()
          (let ([k-table (make-hash-table)])
            (hash-table-put! k-table id-slot 0)
            k-table))
+       
+       ;; reset-k-table : hash-table -> (hash-table-of (#f x expiration handler x salt ))
+       ;; Remove the continuations from the k-table
+       (lambda (k-table0)
+         (let ([k-table1 (make-hash-table)]
+               [next-id (hash-table-get k-table0 id-slot)])
+           (hash-table-for-each
+            k-table0
+            (lambda (id v)
+              (if (eq? id id-slot)
+                  ; Save old next-id
+                  (hash-table-put! k-table1 id v)
+                  ; Replace continuations with #f
+                  (hash-table-put! k-table1 id (list* #f (cdr v))))))
+           k-table1))            
 
        ;; get-k-id!: hash-table -> number
        ;; get the current-continuation id and increment the internal value
@@ -64,13 +79,13 @@
            (hash-table-put! k-table id-slot (add1 id))
            id)))))
 
-  ;; store-continuation!: continuation execution-context servlet-instance -> url-string
+  ;; store-continuation!: continuation expiration-handler uri servlet-instance -> url-string
   ;; store a continuation in a k-table for the provided servlet-instance
-  (define (store-continuation! k uri inst)
+  (define (store-continuation! k expiration-handler uri inst)
     (let ([k-table (servlet-instance-k-table inst)])
       (let ([next-k-id (get-k-id! k-table)]
             [salt      (random 100000000)])
-        (hash-table-put! k-table next-k-id (list k salt))
+        (hash-table-put! k-table next-k-id (list k expiration-handler salt))
         (embed-ids (servlet-instance-id inst) next-k-id salt uri))))
 
   ;; clear-continuations!: servlet-instance -> void
@@ -78,7 +93,8 @@
   (define (clear-continuations! inst)
     (set-servlet-instance-k-table!
      inst
-     (make-k-table)))
+     (reset-k-table
+      (servlet-instance-k-table inst))))
 
   ;; create-new-instance! hash-table custodian execution-context semaphore -> servlet-instance
   (define (create-new-instance! instance-table cust ctxt sema timer)
