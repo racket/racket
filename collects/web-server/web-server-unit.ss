@@ -157,7 +157,7 @@
                      (host-info->dispatcher host-info))))])
           (lambda (conn req)
             (let* ([host (get-host (request-uri req) (request-headers req))]
-                   [host-info (config:virtual-hosts host)])
+                   [host-info (config:virtual-hosts (symbol->string host))])
               ((host-log-message host-info) (request-host-ip req)
                                             (request-client-ip req) (request-method req) (request-uri req) host)
               ((lookup-dispatcher host host-info)
