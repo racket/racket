@@ -459,7 +459,7 @@ tracing todo:
                                         (lambda results
                                           (let ([rep (drscheme:rep:current-rep)])
                                             (when rep
-                                              (send rep display-results results))))])
+                                              (send rep display-results/void results))))])
                            (syntax 
                             (call-with-values
                              (lambda () body)

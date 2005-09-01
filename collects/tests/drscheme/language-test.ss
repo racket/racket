@@ -87,6 +87,7 @@ the settings above should match r5rs
       (test-expression "mred^" "{bug09.gif} reference to undefined identifier: mred^")
       (test-expression "(eq? 'a 'A)" "#f")
       (test-expression "(set! x 1)" "{bug09.gif} set!: cannot set undefined identifier: x")
+      (test-expression "(define qqq 2) (set! qqq 1)" "")
       (test-expression "(cond [(= 1 2) 3])" "")
       (test-expression "(cons 1 2)" "(1 . 2)")
       (test-expression "'(1)" "(1)")
@@ -182,6 +183,7 @@ the settings above should match r5rs
       (test-expression "mred^" "{bug09.gif} reference to undefined identifier: mred^")
       (test-expression "(eq? 'a 'A)" "#f")
       (test-expression "(set! x 1)" "{bug09.gif} set!: cannot set undefined identifier: x")
+      (test-expression "(define qqq 2) (set! qqq 1)" "")
       (test-expression "(cond [(= 1 2) 3])" "")
       (test-expression "(cons 1 2)" "(1 . 2)")
       (test-expression "'(1)" "(1)")
@@ -282,6 +284,7 @@ the settings above should match r5rs
       (test-expression "mred^" "{bug09.gif} reference to undefined identifier: mred^")
       (test-expression "(eq? 'a 'A)" "#t")
       (test-expression "(set! x 1)" "{bug09.gif} set!: cannot set undefined identifier: x")
+      (test-expression "(define qqq 2) (set! qqq 1)" "")
       (test-expression "(cond ((= 1 2) 3))" "")
       (test-expression "(cons 1 2)" "(1 . 2)")
       (test-expression "'(1)" "(1)")
@@ -390,6 +393,10 @@ the settings above should match r5rs
       (test-expression "(set! x 1)"
                        "set!: name is not defined, not an argument, and not a primitive name"
                        "reference to undefined identifier: set!")
+      (test-expression "(define qqq 2) (set! qqq 1)" 
+                       "set!: name is not defined, not an argument, and not a primitive name"
+                       "reference to undefined identifier: set!")
+
       (test-expression "(cond [(= 1 2) 3])" "cond: all question results were false")
       (test-expression "(cons 1 2)" "cons: second argument must be of type <list>, given 1 and 2")
       (test-expression "'(1)" "quote: expected a name after a ', found something else")
@@ -509,6 +516,9 @@ the settings above should match r5rs
       (test-expression "(set! x 1)"
                        "set!: name is not defined, not an argument, and not a primitive name"
                        "reference to undefined identifier: set!")
+      (test-expression "(define qqq 2) (set! qqq 1)" 
+                       "set!: name is not defined, not an argument, and not a primitive name"
+                       "reference to undefined identifier: set!")
       (test-expression "(cond [(= 1 2) 3])" "cond: all question results were false")
       (test-expression "(cons 1 2)" "cons: second argument must be of type <list>, given 1 and 2")
       (test-expression "'(1)" "(list 1)")
@@ -625,6 +635,9 @@ the settings above should match r5rs
       (test-expression "(set! x 1)"
                        "set!: name is not defined, not an argument, and not a primitive name"
                        "reference to undefined identifier: set!")
+      (test-expression "(define qqq 2) (set! qqq 1)" 
+                       "set!: name is not defined, not an argument, and not a primitive name"
+                       "reference to undefined identifier: set!")
       (test-expression "(cond [(= 1 2) 3])" "cond: all question results were false")
       (test-expression "(cons 1 2)" "cons: second argument must be of type <list>, given 1 and 2")
       (test-expression "'(1)" "(list 1)")
@@ -734,6 +747,9 @@ the settings above should match r5rs
       (test-expression "(set! x 1)"
                        "set!: name is not defined, not an argument, and not a primitive name"
                        "reference to undefined identifier: set!")
+      (test-expression "(define qqq 2) (set! qqq 1)" 
+                       "set!: name is not defined, not an argument, and not a primitive name"
+                       "reference to undefined identifier: set!")
       (test-expression "(cond [(= 1 2) 3])" "cond: all question results were false")
       (test-expression "(cons 1 2)" "cons: second argument must be of type <list>, given 1 and 2")
       (test-expression "'(1)" "(list 1)")
@@ -841,6 +857,7 @@ the settings above should match r5rs
       (test-expression "(set! x 1)"
                        "x: name is not defined"
                        "set!: cannot set undefined identifier: x")
+      (test-expression "(define qqq 2) (set! qqq 1)" "(void)" "define: cannot redefine name: qqq")
       (test-expression "(cond [(= 1 2) 3])" "cond: all question results were false")
       (test-expression "(cons 1 2)" "cons: second argument must be of type <list or cyclic list>, given 1 and 2")
       (test-expression "'(1)" "(list 1)")

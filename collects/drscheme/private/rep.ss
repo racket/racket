@@ -570,17 +570,21 @@ TODO
           ;; display-results : (listof TST) -> void
           ;; prints each element of anss that is not void as values in the REPL.
           (define/public (display-results anss) ; =User=, =Handler=, =Breaks=
+            (display-results/void (filter (λ (x) (not (void? x))) anss)))
+          
+          ;; display-results : (listof TST) -> void
+          ;; prints each element of anss that is not void as values in the REPL.
+          (define/public (display-results/void anss) ; =User=, =Handler=, =Breaks=
             (for-each 
              (λ (v)
-               (unless (void? v)
-                 (let* ([ls (current-language-settings)]
-                        [lang (drscheme:language-configuration:language-settings-language ls)]
-                        [settings (drscheme:language-configuration:language-settings-settings ls)])
-                   (send lang render-value/format
-                         v
-                         settings
-                         (get-value-port)
-			 (get-repl-char-width)))))
+               (let* ([ls (current-language-settings)]
+                      [lang (drscheme:language-configuration:language-settings-language ls)]
+                      [settings (drscheme:language-configuration:language-settings-settings ls)])
+                 (send lang render-value/format
+                       v
+                       settings
+                       (get-value-port)
+                       (get-repl-char-width))))
              anss))
 
         ;; get-repl-char-width : -> (and/c exact? integer?)
