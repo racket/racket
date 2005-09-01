@@ -14,6 +14,14 @@
 	   cases-core
 	   provide-datatype-core)
 
+  ;; Temporary workaround for problem in debugger:
+  (define-for-syntax (generate-dt-temporaries l)
+    (if (list? l)
+	(map (lambda (x)
+	       (gensym (if (symbol? x) x (syntax-e x))))
+	     l)
+	(generate-dt-temporaries (syntax->list l))))
+
   (define (projection-contract name proc)
     (let ([name `(,(car name) ,@(map (lambda (c)
 				       (if (contract? c)
@@ -102,7 +110,7 @@
 				 (datum->syntax-object (quote-syntax here) n #f))
 			       (map length field-nameses))]
 			 [(variant-name/no-contract ...)
-			  (generate-temporaries variant-names)]
+			  (generate-dt-temporaries variant-names)]
                          [(variant-of ...)
 			  (map (lambda (variant-name) 
 				 (datum->syntax-object variant-name
@@ -133,11 +141,11 @@
                                    (format "~a-accessor" (syntax-e vn)))))
                                variant-names)]
 			 [(variant-mutator ...)
-                          (generate-temporaries variant-names)]
+                          (generate-dt-temporaries variant-names)]
                          [(make-variant ...)
-                          (generate-temporaries variant-names)]
+                          (generate-dt-temporaries variant-names)]
                          [(struct:variant ...)
-                          (generate-temporaries variant-names)]
+                          (generate-dt-temporaries variant-names)]
 			 [((selector-name ...) ...)
 			  (map (lambda (variant-name field-names)
 				 (if (memq 'define-selectors options)
@@ -154,7 +162,7 @@
 			       field-nameses)]
 			 [((sub-contract-proc ...) ...)
 			  (map (lambda (field-names)
-				 (generate-temporaries field-names))
+				 (generate-dt-temporaries field-names))
 			       field-nameses)]
 			 [((field-pos ...) ...)
 			  (map (lambda (field-names)
