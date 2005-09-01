@@ -16,7 +16,7 @@
   (define-struct try-record (index try-fn expr))
   
   ; try-records are 
-  (provide/contract [lift (syntax? ; syntax to perform lifiting in
+  (provide/contract [lift (syntax? ; syntax to perform lifting in
                            boolean? ; lift-at-highlight?
                            . -> .
                            (listof syntax?))]) ; result
@@ -27,6 +27,9 @@
       (lift-local-defs context-records highlight lift-in-highlight?)))
   
   ; [find-highlight (-> syntax? (listof context-record?))]
+  ; Accepts a syntax expression where one subexpression is highlighted: that is, has the 
+  ;  'stepper-highlight syntax property.  Returns a list of context records representing the 
+  ;  path through the syntax tree down to the highlight.
 
   (define (find-highlight stx)
     (let/ec success-escape
@@ -156,7 +159,7 @@
   
   (test-begin (require (lib "mz-testing.ss" "tests" "utils")))
   
-  (test-begin (section 'stepper-lifting))
+  (test-begin (SECTION 'stepper-lifting))
 
   (test-begin
    ; TEST OF FIND-HIGHLIGHT

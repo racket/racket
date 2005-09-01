@@ -15,11 +15,28 @@
            "lifting.ss")
 
   (provide/contract 
-   [reconstruct-completed (-> mark-list? (listof any/c) render-settings? 
-                              syntax?)]
-   [reconstruct-current (-> mark-list? symbol? (listof any/c) render-settings?
-                            (union (listof syntax?)
-                                   (list/c (listof syntax?) (listof syntax?))))]
+   [reconstruct-completed (syntax? 
+                           (union (listof natural-number/c) false/c)
+                           (-> (listof any/c))
+                           render-settings? 
+                           . -> .
+                           syntax?)]
+   
+   ;; front ends for reconstruct-current
+   [reconstruct-left-side (mark-list?
+                           render-settings?
+                           . -> .
+                           (listof syntax?))]
+   [reconstruct-right-side (mark-list?
+                            (listof any/c)
+                            render-settings?
+                            . -> .
+                            (listof syntax?))]
+   [reconstruct-double-break (mark-list?
+                              render-settings?
+                              . -> . 
+                              (list/c (listof syntax?) (listof syntax?)))]
+   
    [final-mark-list? (-> mark-list? boolean?)]
    [skip-step? (-> break-kind? (union mark-list? false/c) render-settings? boolean?)]
    [step-was-app? (-> mark-list? boolean?)])
@@ -299,22 +316,26 @@
          (define (inner stx)
            (define (fall-through)
              (kernel:kernel-syntax-case stx #f
-                      [id
-                       (identifier? stx)
-                       (or (syntax-property stx 'stepper-lifted-name)
-                           stx)]
-                      [(define-values dc ...)
-                       (unwind-define stx)]
-                      [(#%app exp ...)
-                       (recur-on-pieces #'(exp ...))]
-                      [(#%datum . datum)
-                       #'datum]
-                      [(let-values . rest)
-                       (unwind-mz-let stx)]
-                      [(letrec-values . rest)
-                       (unwind-mz-let stx)]
-                      [else
-                       (recur-on-pieces stx)]))
+               [id
+                (identifier? stx)
+                (or (syntax-property stx 'stepper-lifted-name)
+                    stx)]
+               [(define-values dc ...)
+                (unwind-define stx)]
+               [(#%app exp ...)
+                (recur-on-pieces #'(exp ...))]
+               [(#%datum . datum)
+                #'datum]
+               [(let-values . rest)
+                (unwind-mz-let stx)]
+               [(letrec-values . rest)
+                (unwind-mz-let stx)]
+               [(set! var rhs)
+                (with-syntax ([unwound-var (or (syntax-property #`var 'stepper-lifted-name) #`var)]
+                              [unwound-body (inner #`rhs)])
+                #`(set! unwound-var unwound-body))]
+               [else
+                (recur-on-pieces stx)]))
            
            (transfer-info 
             (if (syntax-property stx 'user-stepper-hint)
@@ -364,29 +385,30 @@
          (define (unwind-define stx)
            (kernel:kernel-syntax-case stx #f
              [(define-values (name . others) body)
-              (unless (null? (syntax-e #'others))
-                (error 'reconstruct "reconstruct fails on multiple-values define: ~v\n" (syntax-object->datum stx)))
-              (let* ([printed-name (or (syntax-property #`name 'stepper-lifted-name)
-                                        (syntax-property #'name 'stepper-orig-name)
-                                        #'name)]
-                     [unwound-body (inner #'body)]
-                     [define-type (syntax-property unwound-body 'user-stepper-define-type)]) ; see notes in internal-docs.txt
-                (if define-type
-                    (kernel:kernel-syntax-case unwound-body #f
-                      [(lambda arglist lam-body ...)
-                       (case define-type
-                         [(shortened-proc-define)
-                          (let ([proc-define-name (syntax-property unwound-body 'user-stepper-proc-define-name)])
-                            (if (or (module-identifier=? proc-define-name #'name)
-                                    (and (syntax-property #'name 'stepper-orig-name)
-                                         (module-identifier=? proc-define-name (syntax-property #'name 'stepper-orig-name))))
-                                #`(define (#,printed-name . arglist) lam-body ...)
-                                #`(define #,printed-name #,unwound-body)))]
-                         [(lambda-define)
-                          #`(define #,printed-name #,unwound-body)]
-                         [else (error 'unwind-define "unknown value for syntax property 'user-stepper-define-type: ~e" define-type)])]
-                      [else (error 'unwind-define "expr with stepper-define-type is not a lambda: ~e" (syntax-object->datum unwound-body))])
-                    #`(define #,printed-name #,unwound-body)))]
+              (begin
+                (unless (null? (syntax-e #'others))
+                  (error 'reconstruct "reconstruct fails on multiple-values define: ~v\n" (syntax-object->datum stx)))
+                (let* ([printed-name (or (syntax-property #`name 'stepper-lifted-name)
+                                         (syntax-property #'name 'stepper-orig-name)
+                                         #'name)]
+                       [unwound-body (inner #'body)]
+                       [define-type (syntax-property unwound-body 'user-stepper-define-type)]) ; see notes in internal-docs.txt
+                  (if define-type
+                      (kernel:kernel-syntax-case unwound-body #f
+                        [(lambda arglist lam-body ...)
+                         (case define-type
+                           [(shortened-proc-define)
+                            (let ([proc-define-name (syntax-property unwound-body 'user-stepper-proc-define-name)])
+                              (if (or (module-identifier=? proc-define-name #'name)
+                                      (and (syntax-property #'name 'stepper-orig-name)
+                                           (module-identifier=? proc-define-name (syntax-property #'name 'stepper-orig-name))))
+                                  #`(define (#,printed-name . arglist) lam-body ...)
+                                  #`(define #,printed-name #,unwound-body)))]
+                           [(lambda-define)
+                            #`(define #,printed-name #,unwound-body)]
+                           [else (error 'unwind-define "unknown value for syntax property 'user-stepper-define-type: ~e" define-type)])]
+                        [else (error 'unwind-define "expr with stepper-define-type is not a lambda: ~e" (syntax-object->datum unwound-body))])
+                      #`(define #,printed-name #,unwound-body))))]
              [else (error 'unwind-define "expression is not a define-values: ~e" (syntax-object->datum stx))]))
          
          (define (unwind-mz-let stx)
@@ -570,7 +592,18 @@
                               [(let-values . rest) (recon-let/rec #f)]
                               [(letrec-values . rest) (recon-let/rec #t)]
                               
-                              ; set! : set! doesn't fit into this scheme. It would be a mistake to allow it to proceed.
+                              ; set! 
+                              [(set! var rhs)
+                               (let ([rendered-var 
+                                      (if (and (ormap (lambda (binding)
+                                                        (bound-identifier=? binding #`var))
+                                                      dont-lookup)
+                                               (not (ormap (lambda (binding)
+                                                             (bound-identifier=? binding #`var))
+                                                           use-lifted-names)))
+                                          #`var
+                                          (reconstruct-set!-var mark-list #`var))])
+                                 #`(set! #,rendered-var #,(recur #'rhs)))]
                               
                               ; quote 
                               [(quote body) (recon-value (syntax-e (syntax body)) render-settings)]
@@ -602,20 +635,20 @@
                                                              use-lifted-names)))
                                             var
 
-                                            
                                             (case (syntax-property var 'stepper-binding-type)
                                               ((lambda-bound) 
                                                (recon-value (lookup-binding mark-list var) render-settings))
                                               ((macro-bound)
                                                ; for the moment, let-bound vars occur only in and/or :
                                                (recon-value (lookup-binding mark-list var) render-settings))
-                                              ((top-level) var)
                                               ((let-bound)
                                                (syntax-property var
                                                                 'stepper-lifted-name
                                                                 (binding-lifted-name mark-list var)))
                                               ((stepper-temp)
                                                (error 'recon-source-expr "stepper-temp showed up in source?!?"))
+                                              ((non-lexical)
+                                               (error 'recon-source-expr "can't get here: lexical identifier labeled as non-lexical"))
                                               (else
                                                (error 'recon-source-expr "unknown 'stepper-binding-type property: ~a" 
                                                       (syntax-property var 'stepper-binding-type)))))]
@@ -629,6 +662,25 @@
                                (error 'recon-source "no matching clause for syntax: ~a" expr)])])
                 (attach-info recon expr))))))
   
+  ;; reconstruct-set!-var
+  
+  (define (reconstruct-set!-var mark-list var)
+    (case (syntax-property var 'stepper-binding-type)
+        ((lambda-bound)
+         (error 'reconstruct-inner "lambda-bound variables can't be mutated"))
+        ((macro-bound)
+         ; for the moment, let-bound vars occur only in and/or :
+         (error 'reconstruct-inner "macro-bound variables can't occur in a set!"))
+        ((non-lexical) var)
+        ((let-bound)
+         (syntax-property var
+                          'stepper-lifted-name
+                          (binding-lifted-name mark-list var)))
+        ((stepper-temp)
+         (error 'recon-source-expr "stepper-temp showed up in source?!?"))
+        (else
+         (error 'recon-source-expr "unknown 'stepper-binding-type property: ~a" 
+                (syntax-property var 'stepper-binding-type)))))
   
   ;; filter-skipped : (listof syntax?) -> (listof syntax?)
   ;; filter out any elements of the list with 'stepper-skip-completely set, except those with stepper-prim-name set. (HACK).
@@ -661,37 +713,55 @@
                                                                                                                                     
 
   ; reconstruct-completed : reconstructs a completed expression or definition.  
+  ; Accepts the source expression, a lifting-index which is either a number (indicating
+  ;  a lifted binding) or false (indicating a top-level expression), a list of values
+  ;  currently bound to the bindings, and the language level's render-settings.
   
-  (define (reconstruct-completed mark-list vals render-settings)
-    (unless (and (pair? mark-list) (null? (cdr mark-list)) (eq? (mark-label (car mark-list)) 'top-level))
-      (error `reconstruct-completed "expected mark-list of length one with mark having label 'top-level, got: ~a" mark-list))
-    (let skipto-loop ([expr (mark-source (car mark-list))])
-      (cond 
-        [(syntax-property expr 'stepper-skipto) =>
-         (lambda (skipto)
-           (skipto-reconstruct skipto expr
-                               skipto-loop))]
-        [(syntax-property expr 'stepper-define-struct-hint)
-         (error 'reconstruct-completed "define-structs should not be passed to reconstruct-completed")]
-        [else
-         (first-of-one (unwind-no-highlight
-                        (kernel:kernel-syntax-case expr #f
-                          [(define-values vars-stx body)
-                           (let* ([vars (syntax->list #'vars-stx)]
-                                  [recon-vals (map (lambda (val var) 
-                                                     (recon-value val render-settings (or (syntax-property var 'stepper-lifted-name) var))) 
-                                                   vals
-                                                   vars)])
-                             (if (= (length recon-vals) 1)
-                                 (attach-info #`(define-values vars-stx #,(car recon-vals)) expr)
-                                 (attach-info #'(define-values vars-stx (values #,@recon-vals)) expr)))]
-                          [else
-                           (let* ([recon-vals (map (lambda (val)
-                                                     (recon-value val render-settings))
-                                                   vals)])
-                             (if (= (length recon-vals) 1)
-                                 (attach-info (car recon-vals) expr)
-                                 (attach-info #`(values #,@recon-vals) expr)))])))])))
+  (define (reconstruct-completed exp lifting-indices vals-getter render-settings)
+    (if lifting-indices
+        (syntax-case exp ()
+          [(vars-stx rhs ...)
+           (let* ([vars (map (lambda (var index) (syntax-property var 'stepper-lifted-name (construct-lifted-name var index))) 
+                             (syntax->list #`vars-stx)
+                             lifting-indices)])
+             (first-of-one (unwind-no-highlight 
+                            (reconstruct-completed-define exp vars (vals-getter) render-settings))))])
+        (let skipto-loop ([exp exp])
+          (cond 
+            [(syntax-property exp 'stepper-skipto) =>
+                                                   (lambda (skipto)
+                                                     (skipto-reconstruct skipto exp
+                                                                         skipto-loop))]
+            [(syntax-property exp 'stepper-define-struct-hint)
+             ;; the hint contains the original syntax
+             (syntax-property exp 'stepper-define-struct-hint)]
+            [else
+             (first-of-one 
+              (unwind-no-highlight
+               (kernel:kernel-syntax-case exp #f
+                 [(define-values vars-stx body)
+                  (reconstruct-completed-define exp (syntax->list #`vars-stx) (vals-getter) render-settings)]
+                 [else
+                  (let* ([recon-vals (map (lambda (val)
+                                            (recon-value val render-settings))
+                                          (vals-getter))])
+                    (if (= (length recon-vals) 1)
+                        (attach-info (car recon-vals) exp)
+                        (attach-info #`(values #,@recon-vals) exp)))])))]))))
+  
+  ;; an abstraction lifted from reconstruct-completed
+  (define (reconstruct-completed-define exp vars vals render-settings)
+    (let* ([_ (unless (equal? (length vars) (length vals))
+                (error "length of var list and val list unequal: ~v ~v" (map syntax->list vars) vals))]
+           [recon-vals (map (lambda (val var) 
+                              (recon-value val render-settings var)) 
+                            vals
+                            vars)])
+      (if (= (length recon-vals) 1)
+          (attach-info #`(define-values #,vars #,(car recon-vals)) exp)
+          (attach-info #'(define-values #,vars (values #,@recon-vals)) exp))))
+  
+  
   
   ; : (-> syntax? syntax? syntax?)
   (define (reconstruct-top-level source reconstructed)
@@ -720,9 +790,21 @@
  ;    ;      ;     ;   ;  ;   ;     ;  ;   ;    ;   ;  ;     ;          ;     ;   ;  ;    ;    ;      ;   ;  ;  
  ;    ;      ;     ;   ;  ;   ;     ;  ;   ;    ;  ;;  ;     ;          ;     ;  ;;  ;    ;    ;      ;   ;  ;  
  ;     ;;;;   ;;;   ;;;   ;   ;  ;;;    ;; ;     ;; ;   ;;;   ;;         ;;;   ;; ;  ;    ;     ;;;;  ;   ;   ;;
-                                                                                                                
-                                                                                                                
-                                                                                                                
+                      
+  
+  ;; front ends for reconstruct-current:
+  
+  (define (reconstruct-left-side mark-list render-settings)
+    (reconstruct-current mark-list 'left-side null render-settings))
+  
+  
+  (define (reconstruct-right-side mark-list returned-value-list render-settings)
+    (reconstruct-current mark-list 'right-side returned-value-list render-settings))
+  
+  
+  (define (reconstruct-double-break mark-list render-settings)
+    (reconstruct-current mark-list 'double-break null render-settings))
+                                                                                                                           
   
   ; reconstruct-current : takes a list of marks, the kind of break, and
   ; any values that may have been returned at the break point. It produces a list of sexps
@@ -747,11 +829,11 @@
                    (lambda (expr)
                      (recon-source-expr expr mark-list null null render-settings))]
                   [top-mark (car mark-list)]
-                  [expr (mark-source top-mark)]
+                  [exp (mark-source top-mark)]
                   
                   [recon-let
                    (lambda ()
-                     (with-syntax ([(label ((vars rhs) ...) . bodies) expr])
+                     (with-syntax ([(label ((vars rhs) ...) . bodies) exp])
                        (let*-2vals ([binding-sets (map syntax->list (syntax->list #'(vars ...)))]
                                     [binding-list (apply append binding-sets)]
                                     [glumps 
@@ -803,19 +885,19 @@
                                     [recon-bindings (append before-bindings after-bindings)]
                                     [rectified-bodies (map (lambda (body) (recon-source-expr body mark-list binding-list binding-list render-settings))
                                                            (syntax->list (syntax bodies)))])
-                         (attach-info #`(label #,recon-bindings #,@rectified-bodies) expr))))])
-             (kernel:kernel-syntax-case expr #f 
+                         (attach-info #`(label #,recon-bindings #,@rectified-bodies) exp))))])
+             (kernel:kernel-syntax-case exp #f 
                ; variable references
                [id
                 (identifier? (syntax id))
                 (if (eq? so-far nothing-so-far)
-                    (recon-source-current-marks expr)
-                    (error 'recon-inner "variable reference given as context: ~a" expr))]
+                    (recon-source-current-marks exp)
+                    (error 'recon-inner "variable reference given as context: ~a" exp))]
                
                [(#%top . id)
                 (if (eq? so-far nothing-so-far)
-                    (recon-source-current-marks expr)
-                    (error 'recon-inner "variable reference given as context: ~a" expr))]
+                    (recon-source-current-marks exp)
+                    (error 'recon-inner "variable reference given as context: ~a" exp))]
                
                ; applications
                [(#%app . terms)
@@ -841,8 +923,8 @@
                           (datum->syntax-object #'here `(,#'#%app ...)) ; in unannotated code
                           (datum->syntax-object #'here `(,#'#%app ... ,so-far ...))))
                      (else
-                      (error "bad label in application mark in expr: ~a" expr))))
-                 expr)]
+                      (error "bad label in application mark in expr: ~a" exp))))
+                 exp)]
                
                ; define-struct 
                ;               
@@ -866,7 +948,7 @@
                    #`(if #,test-exp 
                          #,(recon-source-current-marks (syntax then))
                          #,(recon-source-current-marks (syntax else))))
-                 expr)]
+                 exp)]
                
                ; one-armed if
                
@@ -877,7 +959,7 @@
                                      so-far)])
                    #`(if #,test-exp 
                          #,(recon-source-current-marks (syntax then))))
-                 expr)]
+                 exp)]
                
                ; quote : there is no break on a quote.
                
@@ -890,8 +972,8 @@
                      #`(begin #,(recon-source-current-marks (syntax clause)))
                      (error 
                       'recon-inner
-                      "stepper:reconstruct: one-clause begin appeared as context: ~a" (syntax-object->datum expr)))
-                 expr)]
+                      "stepper:reconstruct: one-clause begin appeared as context: ~a" (syntax-object->datum exp)))
+                 exp)]
                
                ; begin0 : may not occur directly except in advanced
                
@@ -901,14 +983,21 @@
                
                [(letrec-values . rest) (recon-let)]
                
-               ; define-values : define's don't get marks, so they can't occur here
+               [(set! var rhs) 
+                (attach-info
+                 (let ([rhs-exp (if (eq? so-far nothing-so-far)
+                                    (recon-value (lookup-binding mark-list set!-temp) render-settings)
+                                    so-far)]
+                       [rendered-var (reconstruct-set!-var mark-list #`var)])
+                   #`(set! #,rendered-var #,rhs-exp))
+                 exp)]
                
                ; lambda : there is no break on a lambda
                
                [else
                 (error
                  'recon-inner
-                 "stepper:reconstruct: unknown object to reconstruct: ~a" (syntax-object->datum expr))])))
+                 "stepper:reconstruct: unknown object to reconstruct: ~a" (syntax-object->datum exp))])))
          
          ; the main recursive reconstruction loop is in recon:
          ; recon : (syntax-object mark-list boolean -> syntax-object)
@@ -934,19 +1023,19 @@
                         #f))])]))
 
          ; uncomment to see all breaks coming in:
-         ; (define _ (printf "break-kind: ~a\ninnermost source: ~a\n" break-kind
-         ;           (and (pair? mark-list)
-         ;                (syntax-object->datum (mark-source (car mark-list))))))
+         #;(define _ (printf "break-kind: ~a\ninnermost source: ~a\n" break-kind
+                    (and (pair? mark-list)
+                         (syntax-object->datum (mark-source (car mark-list))))))
          
          (define answer
            (case break-kind
-             ((result-value-break result-exp-break)
+             ((left-side)
+              (unwind (recon nothing-so-far mark-list #t) #f))
+             ((right-side)
               (let* ([innermost (if (null? returned-value-list) ; is it an expr -> expr reduction?
                                     (recon-source-expr (mark-source (car mark-list)) mark-list null null render-settings)
                                     (recon-value (car returned-value-list) render-settings))])
                 (unwind (recon (mark-as-highlight innermost) (cdr mark-list) #f) #f)))
-             ((normal-break)
-              (unwind (recon nothing-so-far mark-list #t) #f))
              ((double-break)
               (let* ([source-expr (mark-source (car mark-list))]
                      [innermost-before (mark-as-highlight (recon-source-expr source-expr mark-list null null render-settings))]
@@ -959,11 +1048,12 @@
                                                            (syntax-object->datum source-expr))])]
                      [innermost-after (mark-as-highlight (recon-source-expr (mark-source (car mark-list)) mark-list null newly-lifted-bindings render-settings))])
                 (list (unwind (recon innermost-before (cdr mark-list) #f) #f)
-                      (unwind (recon innermost-after (cdr mark-list) #f) #t))))
-             ((late-let-break)
-              (let* ([one-level-recon (unwind-only-highlight (mark-as-highlight (recon-inner mark-list nothing-so-far)))])
-                (sublist 0 (- (length one-level-recon) 1) one-level-recon)))
-             (else
-              (error 'reconstruct-current-def "unknown break kind: " break-kind)))))
+                      (unwind (recon innermost-after (cdr mark-list) #f) #t))))))
+         
+         )
       
-      answer)))
+      answer))
+  
+  
+  
+  )
