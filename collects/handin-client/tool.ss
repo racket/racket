@@ -34,11 +34,15 @@
   (define web-menu-name (#%info-lookup 'web-menu-name (lambda () #f)))
   (define web-address (#%info-lookup 'web-address (lambda () #f)))
 
-  (preferences:set-default 'submit:username "" string?)
+  (define preference-key (string->symbol
+			  (format "submit:username:~a" 
+				  this-collection)))
+				  
+  (preferences:set-default preference-key "" string?)
   (define (remembered-user)
-    (preferences:get 'submit:username))
+    (preferences:get preference-key))
   (define (remember-user user)
-    (preferences:set 'submit:username user))
+    (preferences:set preference-key user))
 
   (define (connect)
     (handin-connect server
@@ -97,26 +101,32 @@
 							   "Handin failed."
 							   exn))])
 					 (remember-user (send username get-value))
-					 (submit-assignment
-					  connection
-					  (send username get-value)
-					  (send passwd get-value)
-					  (send assignment
-						get-string
-						(send assignment get-selection))
-					  content
-					  (lambda ()
-					    (semaphore-wait commit-lock)
-					    (send status set-label "Comitting...")
-					    (set! committing? #t)
-					    (semaphore-post commit-lock)))
-					 (queue-callback
-					  (lambda ()
-					    (when abort-commit-dialog
-					      (send abort-commit-dialog show #f))
-					    (send status set-label "Handin successful.")
-					    (set! committing? #f)
-					    (done-interface))))))))]
+					 (let ([result-msg
+						(submit-assignment
+						 connection
+						 (send username get-value)
+						 (send passwd get-value)
+						 (send assignment
+						       get-string
+						       (send assignment get-selection))
+						 content
+						 (lambda ()
+						   (semaphore-wait commit-lock)
+						   (send status set-label "Comitting...")
+						   (set! committing? #t)
+						   (semaphore-post commit-lock)))])
+					   (queue-callback
+					    (lambda ()
+					      (when abort-commit-dialog
+						(send abort-commit-dialog show #f))
+					      (send status set-label "Handin successful.")
+					      (set! committing? #f)
+					      (done-interface)
+					      (when result-msg
+						(message-box "Handin Result"
+							     result-msg
+							     this
+							     '(ok)))))))))))]
 		      [style '(border)]))
 
       (define ok-can-enable? #f)
@@ -129,17 +139,19 @@
 			   [label "Cancel"]
 			   [parent button-panel]
 			   [callback (lambda (b e)
-				       (let ([go? (begin
-						    (semaphore-wait commit-lock)
-						    (if committing?
-							(begin
-							  (semaphore-post commit-lock)
-							  (send abort-commit-dialog show #t)
-							  continue-abort?)
-							#t))])
-					 (when go?
-					   (custodian-shutdown-all comm-cust)
-					   (show #f))))]))
+				       (do-cancel-button))]))
+      (define (do-cancel-button)
+	(let ([go? (begin
+		     (semaphore-wait commit-lock)
+		     (if committing?
+			 (begin
+			   (semaphore-post commit-lock)
+			   (send abort-commit-dialog show #t)
+			   continue-abort?)
+			 #t))])
+	  (when go?
+	    (custodian-shutdown-all comm-cust)
+	    (show #f))))
 
       (define continue-abort? #f)
       (define abort-commit-dialog
@@ -182,6 +194,7 @@
                          (format "~e" exn))]
                   [retry? (regexp-match #rx"bad username or password for" msg)])
              (custodian-shutdown-all comm-cust)
+	     (set! committing? #f)
              (disable-interface)
              (send status set-label tag)
              (when (is-shown?)
@@ -225,7 +238,7 @@
 
       (define/augment (on-close)
 	(inner (void) on-close)
-	(custodian-shutdown-all comm-cust))
+	(do-cancel-button))
 
       (send ok enable #f)
       (send assignment enable #f)
@@ -449,13 +462,15 @@
 	   [mbm2 (and (send bm get-loaded-mask)
 		      (make-object bitmap% (quotient w 2) (quotient h 2)))]
 	   [mdc (make-object bitmap-dc% bm2)])
-      (send mdc set-scale 0.5 0.5)
-      (send mdc draw-bitmap bm 0 0)
+      (send mdc draw-bitmap-section-smooth bm 
+	    0 0 (quotient w 2) (quotient h 2)
+	    0 0 w h)
       (send mdc set-bitmap #f)
       (when mbm2
 	(send mdc set-bitmap mbm2)
-	(send mdc set-scale 0.5 0.5)
-	(send mdc draw-bitmap (send bm get-loaded-mask) 0 0)
+	(send mdc draw-bitmap-section-smooth (send bm get-loaded-mask)
+	      0 0 (quotient w 2) (quotient h 2)
+	      0 0 w h)
 	(send mdc set-bitmap #f)
 	(send bm2 set-loaded-mask mbm2))
       bm2))

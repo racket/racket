@@ -62,43 +62,17 @@
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define backup-prefix "BACKUP-")
-  (define backup-dir-re (regexp (format "^~a[0-9]+$" backup-prefix)))
-  (define (backup n) (format "~a~a" backup-prefix n))
-  (define (files+backups)
-    (let* ([files (map path->string (directory-list))]
-           [backups (filter (lambda (f)
-			      (and (directory-exists? f)
-				   (regexp-match backup-dir-re f)))
-			    files)])
-      (values (remove* backups files) backups)))
-  (define (do-backups)
-    (let-values ([(files backups) (files+backups)])
-      (define (make-backup-available n)
-        (when (member (backup n) backups)
-          (if (< n MAX-UPLOAD-KEEP)
-	      (begin 
-		(make-backup-available (add1 n))
-		(rename-file-or-directory (backup n) (backup (add1 n))))
-	      (delete-directory/files (backup n)))))
-      (unless (null? files)
-        (LOG "backing up ~a" files)
-        (make-backup-available 0)
-        (make-directory (backup 0))
-        (for-each (lambda (file)
-                    (rename-file-or-directory file (build-path (backup 0) file)))
-                  files))))
-  (define (undo-backup)
-    ;; It is ok to just move BACKUP-0 to the real directory, the above will
-    ;; just find it available on later backups.
-    (let-values ([(files backups) (files+backups)])
-      (LOG "undoing backup")
-      (for-each delete-directory/files files)
-      (when (member (backup 0) backups)
-        (for-each (lambda (file)
-                    (rename-file-or-directory (build-path (backup 0) file) file))
-                  (directory-list (backup 0)))
-        (delete-directory (backup 0)))))
+  (define ATTEMPT-DIR "ATTEMPT")
+  (define (success-dir n) 
+    (format "SUCCESS-~a" n))
+  (define (make-success-dir-available n)
+    (let ([name (success-dir n)])
+      (when (directory-exists? name)
+	(if (< n MAX-UPLOAD-KEEP)
+	    (begin 
+	      (make-success-dir-available (add1 n))
+	      (rename-file-or-directory name (success-dir (add1 n))))
+	    (delete-directory/files name)))))
 
   (define (save-submission s part)
     (with-output-to-file part
@@ -129,25 +103,38 @@
 		     "error uploading (got ~e, expected ~s bytes)"
 		     (if (bytes? s) (bytes-length s) s)
 		     len))
-            (do-backups)
+	    ;; Shift successful-attempt directories so that there's
+	    ;;  no SUCCESS-0:
+	    (make-success-dir-available 0)
+	    ;; Clear out old ATTEMPT, if any, and make a new one:
+	    (when (directory-exists? ATTEMPT-DIR)
+	      (delete-directory/files ATTEMPT-DIR))
+	    (make-directory ATTEMPT-DIR)
+	    (save-submission s (build-path ATTEMPT-DIR "handin"))
 	    (LOG "checking ~a for ~a" assignment user)
-	    (with-handlers ([void (lambda (e) (undo-backup) (raise e))])
-              (let ([part
-                     (let ([checker (build-path 'up "checker.ss")])
-                       (if (file-exists? checker)
-			 ((dynamic-require `(file ,(path->complete-path checker)) 'checker)
-			  user s)
+	    (let ([part
+		   ;; Result is either a string or list of strings:
+		   (let ([checker (build-path 'up "checker.ss")])
+		     (if (file-exists? checker)
+			 (let ([checker (path->complete-path checker)])
+			   (parameterize ([current-directory ATTEMPT-DIR])
+			     ((dynamic-require checker 'checker)
+			      user s)))
 			 DEFAULT-FILE-NAME))])
-                (fprintf w "confirm\n")
+	      (fprintf w "confirm\n")
 		(flush-output w)
-                (let ([v (read (make-limited-input-port r 50))])
-                  (if (eq? v 'check)
-		    (begin
-		      (LOG "saving ~a for ~a" assignment user)
-		      (save-submission s part)
-		      (fprintf w "done\n")
-		      (flush-output w))
-		    (error 'handin "upload not confirmed: ~s" v))))))))))
+		(let ([v (read (make-limited-input-port r 50))])
+		  (if (eq? v 'check)
+		      (begin
+			(LOG "saving ~a for ~a" assignment user)
+			(parameterize ([current-directory ATTEMPT-DIR])
+			  (rename-file-or-directory "handin" (if (pair? part) (car part) part)))
+			(rename-file-or-directory ATTEMPT-DIR (success-dir 0))
+			(if (pair? part)
+			    (write (list 'result (cadr part)) w)
+			    (fprintf w "done\n"))
+			(flush-output w))
+		      (error 'handin "upload not confirmed: ~s" v)))))))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

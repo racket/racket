@@ -55,11 +55,17 @@
       (on-commit)
       (fprintf w "check\n")
       (flush-output w)
-      (let ([v (read r)])
-	(unless (eq? v 'done)
-	  (error 'handin-connect "commit probably unsucccesful: ~e" v)))
-      (close-input-port r)
-      (close-output-port w)))
+      (let ([result-msg 
+	     (let ([v (read r)])
+	       (cond
+		[(eq? v 'done) #f]
+		[(and (pair? v) (eq? (car v) 'result))
+		 (cadr v)]
+		[else
+		 (error 'handin-connect "commit probably unsucccesful: ~e" v)]))])
+	(close-input-port r)
+	(close-output-port w)
+	result-msg)))
 
 
   (define (submit-addition h username full-name id passwd)

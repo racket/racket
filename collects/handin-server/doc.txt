@@ -234,16 +234,21 @@ sub-directories:
     and the first assignment is the default selection.
 
     Within each directory, the student id is used for a sub-directory
-    name. Within each student sub-directory are "handin.scm" (or some
-    other name if `default-file-name' is set), "BACKUP-0", "BACKUP-1",
-    etc., for each student who submits an assignment. (The most recent
-    handin is in this directory, and "BACKUP-?" directories hold older
-    submission for the same assignment.) A `checker' procedure can
-    replace the name "handin.scm" with something else (possibly
-    sensitive to the content of the submission), and create additional
-    files; see below for more details.
+    name. Within each student sub-directory are directories for handin
+    attempts and successes. If a directory "ATTEMPT" exists, it
+    contains the most recent (unsuccessful) handin
+    attempt. Directories "SUCCESS-n" (where n counts from 0) contain
+    successful handins; the highest numbered such directory represents
+    the latest handin.
 
-    For submissions from a normal DrScheme frame, a "handin.scm" file
+    Within an "ATTEMPT" or "SUCCESS-n" directory, a file "handin.scm"
+    (or some other name if `default-file-name' is set) contains the
+    actual submission. A `checker' procedure can change this default
+    file name, it can create additional files in an
+    "ATTEMPT"/"SUCCESS-n" directory or in the student directory; see
+    below on "checker.ss" for more details.
+
+    For submissions from a normal DrScheme frame, a submission file
     contains a copy of the student's definitions and interactions
     windows. The file is in a binary format (to support non-text
     code), and opening the file directly in DrScheme shows the
@@ -251,31 +256,32 @@ sub-directories:
     parts, the file can be parsed with `unpack-submission' from
     "utils.ss" (see below).
 
-    For submissions from a test-suite window, the file is a normal
-    test-suite file.
-
   * "inactive/" --- sub-directory for inactive assignments, used by the
     HTTPS status web server.
 
   * "active/<assignment>/checker.ss" (optional) --- a module that
     exports a `checker' function. This function receives two
     strings. The first is a username and the second is the user's
-    submission as a string. (See also `unpack-submission', etc. from
+    submission as a byte string. (See also `unpack-submission', etc. from
     "util.ss", below.) To reject the submission, the `checker'
     function can raise an exception; the exception message will be
-    relayed back to the student. The `checker' function is called when
-    the current directory is active/<assignment>/<user>, and it can
-    create additional files in this directory -- such files will get
-    moved when a backup is done.  If you want to hide some of these
-    files from the web interface, but them in a subdirectory -- it
-    will be properly backed up, and directories are all hidden from
-    the web interface.
+    relayed back to the student.
 
-    The checker should return a string, such as "handin.scm", to use in
-    naming the submission. For submissions that require both programs
-    and test suites, the checker might use `is-test-suite-submission?'
-    and return "tests" if the string is a test-suite submission or
-    "program" if it is not.
+    The `checker' function is called with the current directory as
+    "active/<assignment>/<user>/ATTEMPT", and the submission is saved
+    in the file "handin". The checker function can change "handin",
+    and it can create additional files in this directory or the parent
+    directory. (Extra files in the current directory will be preserved
+    as it is later renamed to "SUCCESS-0", etc.) To hide generated
+    files from the HTTPS status web server interface, put the files in
+    a subdirectory, which is preserved but hidden from the status
+    interface.
+
+    The checker should return either a string or a list of two
+    strings. A single string result, such as "handin.scm", is used to
+    rename the "handin" submission file. In a list result, the first
+    string names the submission, and the second string is a
+    successful-handin message to report back to the student.
 
   * "log.ss" (created if not present, appended otherwise) --- records
     connections and actions, where each entry is of the form
@@ -297,9 +303,10 @@ sub-directories:
 
   * "[in]active/<assignment>/solution/<file>" --- the solution to the
     assignment, made available by the status server to any user who
-    logs in. There must be only one file in "<assignment>/solution/";
-    if there are multiple files, only one named "<assignment>sol.scm"
-    is made available as the solution.
+    logs in. Normall, <file> is the only file in the directory
+    "<assignment>/solution/"; if there are multiple files in the
+    directory, only one named "<assignment>sol.scm" is made available
+    as the solution.
 
 The server can be run within either MzScheme or MrEd, but "utils.ss"
 requires MrEd (which means that `checker' modules will likely require
@@ -350,17 +357,6 @@ The _utils.ss_ module provides utilities helpful in implementing
 
 > (unpack-submission bytes) - returns two text% objects corresponding
   to the submitted definitions and interactions windows.
-
-> (unpack-test-suite-submission bytes) - returns a pasteboard%
-  object corresponding to the submitted test-suite window. The
-  pasteboard contains a sequence of editor-snip% objects, each each
-  editor-snip% contains a text% with three embedded editor-snip%s: one
-  for the test expression, one for the expected result, and one for
-  the equality predicate.
-
-> (is-test-suite-submission? bytes) - returns #t if `string' can be
-  read as an old-style test suite, #f otherwise.
-
 
 > (make-evaluator language teachpack-paths program-port) - returns a
   function of one argument for evaluating expressions in the

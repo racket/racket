@@ -65,13 +65,20 @@
 	`(a ((href ,(make-k k tag)))
 	    ,label))
 
+      (define (find-latest dir)
+	(let ([zero (build-path dir "SUCCESS-0")])
+	  (if (directory-exists? zero)
+	      zero
+	      (build-path dir "SUCCESS-1"))))
+
       (define (handin-link k user hi)
-	(let* ([dir (build-path handin-dir
-				(if (directory-exists? (build-path handin-dir "active" hi))
-				    "active"
-				    "inactive")
-				hi
-				user)]
+	(let* ([dir (find-latest
+		     (build-path handin-dir
+				 (if (directory-exists? (build-path handin-dir "active" hi))
+				     "active"
+				     "inactive")
+				 hi
+				 user))]
 	       [l (with-handlers ([exn:fail? (lambda (x) null)])
                     (parameterize ([current-directory dir])
                       (filter (lambda (f)
@@ -191,23 +198,28 @@
 	  (let ([who (get-status status 'user (lambda () "???"))])
 	    (let-values ([(base name dir?) (split-path tag)])
 	      ;; Any file name is ok...
-	      (unless (path? name) (error "bad1"))
+	      (unless (path? name) (error "bad"))
 	      (let-values ([(base name dir?) (split-path base)])
-		;; Directory must be user or "solution"
-		(unless (or (string=? (path->string name) who)
-			    (string=? (path->string name) "solution"))
-		  (error "bad2"))
-		;; Any dir name is ok...
+		;; Directory must be SUCCESS-0 or SUCCESS-1
+		(unless (or (string=? (path->string name) "SUCCESS-0")
+			    (string=? (path->string name) "SUCCESS-1"))
+		  (error "bad"))
 		(let-values ([(base name dir?) (split-path base)])
-		  (unless (path? name) (error "bad3"))
-		  ;; Base must be active or inactive
+		  ;; Directory must be user or "solution"
+		  (unless (or (string=? (path->string name) who)
+			      (string=? (path->string name) "solution"))
+		    (error "bad"))
+		  ;; Any dir name is ok...
 		  (let-values ([(base name dir?) (split-path base)])
-		    (unless (or (string=? (path->string name) "active") 
-				(string=? (path->string name) "inactive"))
-		      (error "bad4"))
-		    ;; No more to path
-		    (unless (equal? (build-path base 'same) (build-path handin-dir 'same))
-		      (error "bad5")))))))
+		    (unless (path? name) (error "bad"))
+		    ;; Base must be active or inactive
+		    (let-values ([(base name dir?) (split-path base)])
+		      (unless (or (string=? (path->string name) "active") 
+				  (string=? (path->string name) "inactive"))
+			(error "bad"))
+		      ;; No more to path
+		      (unless (equal? (build-path base 'same) (build-path handin-dir 'same))
+			(error "bad"))))))))
 	  ;; Return the downloaded file
 	  (let ([data (with-input-from-file tag
 			(lambda ()
