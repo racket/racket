@@ -52,8 +52,9 @@ Parameters:
 > (PLANET-DIR) -> directory-string
 > (PLANET-DIR directory-string) -> void
 
-The root PLaneT directory. Default is the directory in which config.ss
-is found.
+The root PLaneT directory. If the environment variable PLTPLANETDIR is
+set, default is its value; otherwise the default is the directory in
+which config.ss is found.
 
 > (CACHE-DIR) -> directory-string
 > (CACHE-DIR directory-string) -> void
