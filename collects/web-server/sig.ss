@@ -24,8 +24,7 @@
     (max-waiting 
      virtual-hosts
      access
-     scripts ;; : equal-hash-table
-     scripts-lock
+     scripts
      initial-connection-timeout))
 
   ; more here - rename

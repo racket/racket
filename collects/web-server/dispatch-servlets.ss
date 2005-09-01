@@ -12,12 +12,13 @@
            "servlet.ss"
            "sig.ss"
            "timer.ss"
-           "util.ss")  
+           "util.ss"
+           "cache-table.ss")  
   (provide interface-version
            gen-dispatcher)
   
   (define interface-version 'v1)
-  (define (gen-dispatcher host-info config:instances config:scripts config:scripts-lock config:make-servlet-namespace)
+  (define (gen-dispatcher host-info config:instances config:scripts config:make-servlet-namespace)
     ;; ************************************************************
     ;; ************************************************************
     ;; SERVING SERVLETS
@@ -254,25 +255,18 @@
     (define cache-entry-servlet car)
     (define cache-entry-namespace cdr)
     
-    ;; cached-load : str -> script, namespace
+    ;; cached-load : path -> script, namespace
     ;; timestamps are no longer checked for performance.  The cache must be explicitly
     ;; refreshed (see dispatch).
-    (define (cached-load name)
-      (let ([e
-             ; First try to get the cache entry
-             (hash-table-get 
-              (unbox config:scripts)
-              name
-              (lambda () 
-                ; Then try to update the cache entry
-                (call-with-semaphore
-                 config:scripts-lock
-                 (lambda ()
-                   (hash-table-get (unbox config:scripts) name
-                                   (lambda ()
-                                     (reload-servlet-script name)))))))])
-        (values (cache-entry-servlet e)
-                (cache-entry-namespace e))))
+    (define (cached-load servlet-path)
+      (let* ([entry-id (string->symbol (path->string servlet-path))]
+             [entry (cache-table-lookup! 
+                     (unbox config:scripts)
+                     entry-id
+                     (lambda ()
+                       (reload-servlet-script servlet-path)))])
+        (values (cache-entry-servlet entry)
+                (cache-entry-namespace entry))))
     
     ;; exn:i/o:filesystem:servlet-not-found =
     ;; (make-exn:fail:filesystem:exists:servlet str continuation-marks str sym)
@@ -285,10 +279,6 @@
       (cond
         [(load-servlet/path servlet-filename)
          => (lambda (entry)
-              ; This is only called from cached-load, so config:scripts is locked
-              (hash-table-put! (unbox config:scripts)
-                               servlet-filename
-                               entry)
               entry)]
         [else
          (raise (make-exn:fail:filesystem:exists:servlet
@@ -352,15 +342,13 @@
     (lambda (conn req)
       (let-values ([(uri method path) (decompose-request req)])
         (cond [(string=? "/conf/refresh-servlets" path)
-                ;; more here - this is broken - only out of date or specifically mentioned
-                ;; scripts should be flushed.  This destroys persistent state!
-                (call-with-semaphore config:scripts-lock
-                                     (lambda ()
-                                       (set-box! config:scripts (make-hash-table 'equal))))
-                (output-response/method
-                 conn
-                 ((responders-servlets-refreshed (host-responders host-info)))
-                 method)]
+               ;; more here - this is broken - only out of date or specifically mentioned
+               ;; scripts should be flushed.  This destroys persistent state!
+               (cache-table-clear! (unbox config:scripts))
+               (output-response/method
+                conn
+                ((responders-servlets-refreshed (host-responders host-info)))
+                method)]
               [(servlet-bin? path)
                (adjust-connection-timeout!
                 conn

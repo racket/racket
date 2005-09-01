@@ -6,7 +6,8 @@
            "connection-manager.ss"
            "servlet-tables.ss"
            "util.ss"
-           "response.ss")
+           "response.ss"
+           "cache-table.ss")
   (require (lib "url.ss" "net")
            (lib "sendurl.ss" "net")
            (lib "unitsig.ss")
@@ -33,7 +34,7 @@
            [sema
             (make-semaphore 0)]
            [new-servlet
-            (unit/sig () (import servlet^)
+            (lambda (initial-request)
               (let ([v (servlet-expr initial-request)])
                 (set! final-value v)
                 ;(set! final-conn (execution-context-connection (servlet-instance-context (current-servlet-instance))))
@@ -54,13 +55,16 @@
   
   (define (build-standalone-servlet-configuration the-port the-path the-servlet)
     (let ([basic-configuration@ (load-developer-configuration default-configuration-table-path)]
-          [the-scripts (make-hash-table 'equal)])
+          [the-scripts (make-cache-table)])
       (define-values/invoke-unit/sig web-config^ basic-configuration@ i)
-      (hash-table-put! the-scripts 
-                       (build-path (directory-part default-configuration-table-path)
-                                   "default-web-root" "."
-                                   the-path)
-                       (cons the-servlet (i:make-servlet-namespace)))
+      (cache-table-lookup! the-scripts
+                           (string->symbol
+                            (path->string
+                             (build-path (directory-part default-configuration-table-path)
+                                         "default-web-root" "."
+                                         the-path)))
+                           (lambda ()
+                             (cons the-servlet (i:make-servlet-namespace))))
       (unit/sig web-config^
         (import)
         (define port the-port)
@@ -71,5 +75,4 @@
         (define access i:access)
         (define instances i:instances)
         (define scripts (box the-scripts))
-        (define scripts-lock i:scripts-lock)
         (define make-servlet-namespace i:make-servlet-namespace)))))

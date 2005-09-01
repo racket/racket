@@ -4,6 +4,7 @@
            "connection-manager.ss"
            "configuration-structures.ss"
            "servlet.ss"
+           "cache-table.ss"
            (rename "request-parsing.ss" 
                    the-read-request read-request))
   (require (prefix sequencer: "dispatch-sequencer.ss")
@@ -21,20 +22,16 @@
   ;; stick this auxilliary outside the unit so
   ;; I can get at it with require/expose
   
-  ;; get-host : Url (listof (cons Symbol String)) -> String
+  ;; get-host : Url (listof (cons Symbol String)) -> Symbol
   ;; host names are case insesitive---Internet RFC 1034
-  (define DEFAULT-HOST-NAME "<none>")
+  (define DEFAULT-HOST-NAME '<none>)
   (define (get-host uri headers)
-    (let ([lower!
-           (lambda (s)
-             (string-lowercase! s)
-             s)])
-      (cond
-        [(url-host uri) => lower!]
-        [(assq 'host headers)
-         =>
-         (lambda (h) (lower! (bytes->string/utf-8 (cdr h))))]
-        [else DEFAULT-HOST-NAME])))
+    (cond
+      [(url-host uri) => string->symbol]
+      [(assq 'host headers)
+       =>
+       (lambda (h) (string->symbol (bytes->string/utf-8 (cdr h))))]
+      [else DEFAULT-HOST-NAME]))
   
   ;; ****************************************
   
@@ -151,18 +148,13 @@
       ;;       I will move the other  dispatch logic out of the prototype
       ;;       at a later time.
       (define dispatch 
-        (let* ([cache (make-hash-table 'equal)]
-               [sema (make-semaphore 1)]
+        (let* ([cache (make-cache-table)]
                [lookup-dispatcher
                 (lambda (host host-info)
-                  (hash-table-get 
+                  (cache-table-lookup!
                    cache host
-                   (lambda () 
-                     (call-with-semaphore
-                      sema (lambda ()
-                             (hash-table-get 
-                              cache host
-                              (lambda () (host-info->dispatcher host-info))))))))])
+                   (lambda ()
+                     (host-info->dispatcher host-info))))])
           (lambda (conn req)
             (let* ([host (get-host (request-uri req) (request-headers req))]
                    [host-info (config:virtual-hosts host)])
@@ -179,7 +171,7 @@
                                           (collect-garbage)
                                           ((responders-collect-garbage (host-responders host-info)))))
          (servlets:gen-dispatcher host-info
-                                  config:instances config:scripts config:scripts-lock config:make-servlet-namespace)
+                                  config:instances config:scripts config:make-servlet-namespace)
          (files:gen-dispatcher host-info)))))
   
   (define web-server@

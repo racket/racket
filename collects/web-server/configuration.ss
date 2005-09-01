@@ -5,9 +5,9 @@
            "sig.ss"
            "util.ss"
            "parse-table.ss"
-           ;"servlet-helpers.ss"
-           "response.ss"
-           (lib "unitsig.ss")
+           "cache-table.ss"
+           "response.ss")
+  (require (lib "unitsig.ss")
            (lib "contract.ss")
            (lib "url.ss" "net")
            (lib "date.ss"))
@@ -98,8 +98,7 @@
       (define virtual-hosts the-virtual-hosts)
       (define access (make-hash-table))
       (define instances (make-hash-table))
-      (define scripts (box (make-hash-table 'equal)))
-      (define scripts-lock (make-semaphore 1))
+      (define scripts (box (make-cache-table)))
       (define make-servlet-namespace the-make-servlet-namespace)))
 
   ; begin stolen from commander.ss, which was stolen from private/drscheme/eval.ss
