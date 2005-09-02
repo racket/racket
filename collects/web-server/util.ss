@@ -4,6 +4,7 @@
            (lib "list.ss")
            (lib "url.ss" "net")
            (lib "xml.ss" "xml")
+           (lib "plt-match.ss")
            (lib "errortrace-lib.ss" "errortrace"))
   (require "response-structs.ss"
            "request-structs.ss")
@@ -122,11 +123,12 @@
   (define get-mime-type
     (let ([file-suffix-regexp (byte-regexp #".*\\.([^\\.]*$)")])
       (lambda (path)
-        (let ([sffx (cadr (regexp-match file-suffix-regexp (path->bytes path)))])
-          (hash-table-get MIME-TYPE-TABLE
-                          (lowercase-symbol! sffx)
-                          ;(string->symbol (bytes->string/utf-8 sffx))
-                          (lambda () DEFAULT-MIME-TYPE))))))
+        (match (regexp-match file-suffix-regexp (path->bytes path))
+          [(list path-bytes sffx)
+           (hash-table-get MIME-TYPE-TABLE
+                           (lowercase-symbol! sffx)
+                           (lambda () DEFAULT-MIME-TYPE))]
+          [_ DEFAULT-MIME-TYPE]))))
   
   
   (define DEFAULT-MIME-TYPE #"text/plain")
