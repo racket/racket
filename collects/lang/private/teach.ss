@@ -26,7 +26,8 @@
 (module teach mzscheme
   (require (lib "etc.ss")
 	   (lib "list.ss")
-	   (lib "math.ss"))
+	   (lib "math.ss")
+           "set-result.ss")
   (require-for-syntax "teachhelp.ss"
 		      (lib "kerncase.ss" "syntax")
 		      (lib "stx.ss" "syntax")
@@ -1762,7 +1763,7 @@
 					       exprs
 					       null)
 		      (if continuing?
-			  (syntax/loc stx (set! id expr ...))
+			  (syntax/loc stx (begin (set! id expr ...) set!-result))
 			  (syntax-property
                            (syntax/loc stx (#%app values (advanced-set!-continue id expr ...)))
                            'stepper-skipto

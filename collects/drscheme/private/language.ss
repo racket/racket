@@ -392,19 +392,19 @@
           [(constructor)
            (parameterize ([constructor-style-printing #t]
                           [show-sharing (simple-settings-show-sharing settings)]
-			  [current-print-convert-hook leave-snips-alone-hook])
+			  [current-print-convert-hook (leave-snips-alone-hook (current-print-convert-hook))])
              (print-convert value))]
           [(quasiquote)
            (parameterize ([constructor-style-printing #f]
                           [show-sharing (simple-settings-show-sharing settings)]
-			  [current-print-convert-hook leave-snips-alone-hook])
+			  [current-print-convert-hook (leave-snips-alone-hook (current-print-convert-hook))])
              (print-convert value))]))
       
       ;; leave-snips-alone-hook : any? (any? -> printable) any? -> printable
-      (define (leave-snips-alone-hook expr basic-convert sub-convert)
+      (define ((leave-snips-alone-hook sh) expr basic-convert sub-convert)
 	(if (is-a? expr snip%)
 	    expr
-	    (basic-convert expr)))
+	    (sh expr basic-convert sub-convert)))
 
       ;; initialize-simple-module-based-language : setting ((-> void) -> void)
       (define (initialize-simple-module-based-language setting run-in-user-thread)
@@ -501,7 +501,7 @@
 	(mixin (module-based-language<%>) (language<%>)
 	  (inherit get-module get-transformer-module use-namespace-require/copy?
                    get-init-code use-mred-launcher get-reader)
-
+          
           (define/public (get-comment-character) (values ";  " #\;))
           (define/public (order-manuals x) (values x #t))
           

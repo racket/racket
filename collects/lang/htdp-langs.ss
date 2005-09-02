@@ -24,7 +24,11 @@ tracing todo:
            (lib "mred.ss" "mred")
            (lib "bday.ss" "framework" "private")
            (lib "moddep.ss" "syntax")
-           (lib "cache-image-snip.ss" "mrlib"))
+           (lib "cache-image-snip.ss" "mrlib")
+           
+           ;; this module is shared between the drscheme's namespace (so loaded here) 
+           ;; and the user's namespace in the teaching languages
+           "private/set-result.ss")
   
   (provide tool@)
   
@@ -122,11 +126,14 @@ tracing todo:
             (sharing/not-config-panel (get-allow-sharing?) parent))
           
           (define/override (on-execute settings run-in-user-thread)
-            (let ([drs-namespace (current-namespace)])
+            (let ([drs-namespace (current-namespace)]
+                  [set-result-module-name 
+                   ((current-module-name-resolver) '(lib "set-result.ss" "lang" "private") #f #f)])
               (run-in-user-thread
                (lambda ()
                  (read-accept-quasiquote (get-accept-quasiquote?))
                  (namespace-attach-module drs-namespace 'drscheme-secrets)
+                 (namespace-attach-module drs-namespace set-result-module-name)
                  (error-display-handler teaching-languages-error-display-handler)
                  (current-eval (add-annotation (htdp-lang-settings-tracing? settings) (current-eval)))
                  (error-print-source-location #f)
@@ -139,6 +146,12 @@ tracing todo:
           (define/public (set-printing-parameters settings thunk)
             (parameterize ([pc:booleans-as-true/false #t]
                            [pc:abbreviate-cons-as-list (get-abbreviate-cons-as-list)]
+                           [pc:current-print-convert-hook
+                            (let ([ph (pc:current-print-convert-hook)])
+                              (lambda (val basic sub)
+                                (cond
+                                  [(equal? val set!-result) '(void)]
+                                  [else (ph val basic sub)])))]
                            [pretty-print-show-inexactness #t]
                            [pretty-print-exact-as-decimal #t]
                            [pc:use-named/undefined-handler
@@ -280,6 +293,7 @@ tracing todo:
       (define (language-extension %)
         (class %
           (inherit get-manual)
+          
           (define/override (order-manuals x) 
             (values (list (get-manual) #"teachpack" #"drscheme" #"help") #f))
           
