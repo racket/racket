@@ -1763,7 +1763,10 @@
 					       exprs
 					       null)
 		      (if continuing?
-			  (syntax/loc stx (begin (set! id expr ...) set!-result))
+			  (syntax-property
+                           (syntax/loc stx (begin (set! id expr ...) set!-result))
+                           'stepper-skipto
+                           (list syntax-e cdr syntax-e car))
 			  (syntax-property
                            (syntax/loc stx (#%app values (advanced-set!-continue id expr ...)))
                            'stepper-skipto
