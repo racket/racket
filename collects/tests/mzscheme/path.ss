@@ -3,6 +3,8 @@
 
 (SECTION 'PATH)
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define (make-/tf p exn?)
   (lambda args
     (with-handlers ([exn? (lambda (x) #f)]
@@ -374,7 +376,11 @@
   (test-path (full-path "a" "b") simplify-path (build-path "a" 'same "noexistsdir" 'up "b"))
   (test-path (full-path "a" "b") simplify-path (build-path "a" 'same "noexistsdir" 'same 'up "b" 'same 'same))
   (test-path (full-path "a" "b") simplify-path (build-path 'same "noexistsdir" 'same 'up "a" 'same "b" 'same 'same)))
-(arity-test simplify-path 1 1)
+(test (build-path "x" "y") simplify-path (build-path "x" "z" 'up "y") #f)
+(test (build-path 'up "x" "y") simplify-path (build-path 'up "x" "z" 'up "y") #f)
+(test (build-path 'up "x" "y") simplify-path (build-path 'up 'same "x" "z" 'up "y") #f)
+(test (build-path 'up 'up "x" "y") simplify-path (build-path 'up 'same 'up "x" "z" 'up "y") #f)
+(arity-test simplify-path 1 2)
 
 (arity-test expand-path 1 1)
 (arity-test resolve-path 1 1)
@@ -395,5 +401,198 @@
 
 ; normal-case-path now checks for pathness:
 (err/rt-test (normal-case-path (string #\a #\nul #\b)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; \\?\ paths in Windows
+
+(when (eq? 'windows (system-type))
+  (let ([here (regexp-replace
+	       #rx"[\\]$"
+	       (string-append
+		"\\\\?\\"
+		(path->string
+		 (normal-case-path (simplify-path (expand-path (current-directory))))))
+	       "")]
+	[get-base (lambda (s)
+		    (let-values ([(base name dir?) (split-path s)]) (list base name)))]
+	[drive (path->string (current-drive))])
+
+    (test #t directory-exists? here)
+    (test #t directory-exists? (string-append here "\\")) ; trailing separator is ok for dir
+    (test #f directory-exists? (string-append here "\\\\")) ; extra isn't ok
+
+    (let ([dir (ormap (lambda (f)
+			(and (directory-exists? f) f))
+		      (directory-list))])
+      (when dir
+	(map (lambda (sep)
+	       (let ([dirstr (string-append here sep (path->string dir))])
+		 (test #t directory-exists? dirstr)
+		 (test #t directory-exists? (string-append dirstr "\\"))
+		 (test #f directory-exists? (string-append dirstr "\\\\"))
+		 (test (file-or-directory-modify-seconds dir) file-or-directory-modify-seconds dirstr)
+		 ))
+	     '("\\" "\\\\"))))
+
+    (let ([file (ormap (lambda (f)
+			 (and (file-exists? f) f))
+		       (directory-list))])
+      (when file
+	(map (lambda (sep)
+	       (let ([filestr (string-append here sep (path->string file))])
+		 (test #t file-exists? filestr)
+		 (test #f file-exists? (string-append filestr "\\"))
+		 (test (file-or-directory-modify-seconds file) file-or-directory-modify-seconds filestr)
+		 ))
+	     '("\\" "\\\\"))))
+
+    ;; Check drive and path->complete-path:
+    (parameterize ([current-directory "\\\\?\\"])
+      (test (string->path "\\\\?\\") current-drive)
+      (test (string->path "\\\\?\\\\a") path->complete-path "\\a")
+      )
+    (parameterize ([current-directory "\\\\?\\x\\y\\"])
+      (test (string->path "\\\\?\\") current-drive)
+      (test (string->path "\\\\?\\\\a") path->complete-path "\\a")
+      )
+    (parameterize ([current-directory "\\\\?\\d:\\foo"])
+      (test (string->path "\\\\?\\d:\\") current-drive)
+      (test (string->path "\\\\?\\d:\\a") path->complete-path "\\a")
+      )
+    (parameterize ([current-directory "\\\\?\\UNC\\foo\\bar\\baz"])
+      (test (string->path "\\\\?\\UNC\\foo\\bar") current-drive)
+      (test (string->path "\\\\?\\UNC\\foo\\bar\\a") path->complete-path "\\a")
+      )
+    (parameterize ([current-directory "\\\\?\\REL\\"])
+      (test (string->path "\\\\?\\") current-drive)
+      (test (string->path "\\\\?\\\\a") path->complete-path "\\a")
+      )
+    (parameterize ([current-directory "\\\\?\\REL\\a\\\\"])
+      (test (string->path "\\\\?\\REL\\a\\\\") current-drive)
+      (test (string->path "\\\\?\\REL\\a\\\\\\a") path->complete-path "\\a")
+      )
+    
+    ;; Build path collapses .. and . in added parts and cleans up slashes and trailers:
+    (test (string->path "\\\\?\\c:\\a\\b") build-path "\\\\?\\c:\\a" 'same "b")
+    (test (string->path "\\\\?\\c:\\a\\b") build-path "\\\\?\\c:\\a\\" 'same "b")
+    (test (string->path "\\\\?\\c:\\a\\.\\b") build-path "\\\\?\\c:\\a\\." 'same "b")
+    (test (string->path "\\\\?\\c:\\a\\.\\b") build-path "\\\\?\\c:\\a\\.\\" 'same "b")
+    (test (string->path "\\\\?\\c:\\b") build-path "\\\\?\\c:\\a\\" 'up "b")
+    (test (string->path "\\\\?\\c:\\a\\b") build-path "\\\\?\\c:\\a\\.\\" 'up "b")
+    (test (string->path "\\\\?\\c:\\b") build-path "\\\\?\\c:\\a\\.\\" 'up 'up 'up "b")
+    (test (string->path "\\\\?\\c:\\a\\b\\c\\d\\f\\") build-path "\\\\?\\c:\\a" "b//c" "d//\\f///")
+    (test (string->path "\\\\?\\c:\\a\\foo") build-path "\\\\?\\c:\\a" "foo...  ")
+
+    (test (string->path "\\\\?\\REL\\a") build-path "." "\\\\?\\REL\\a")
+    (test (string->path "\\\\?\\REL\\a") build-path 'same "\\\\?\\REL\\a")
+    (test (string->path "\\\\?\\REL\\a") build-path "\\\\?\\REL\\a" 'same)
+    (test (string->path ".") build-path "\\\\?\\REL\\a" 'up)
+    (test (string->path "\\\\?\\REL\\\\apple") build-path "\\\\?\\REL\\a" 'up "apple")
+    (test (string->path ".") build-path "\\\\?\\REL\\a" 'up 'same)
+
+    (test (string->path "\\\\?\\REL\\..\\\\a") build-path 'up "\\\\?\\REL\\a")
+    (test (string->path "\\\\?\\REL\\..\\\\..") build-path 'up "\\\\?\\REL\\\\..")
+    (test (string->path "\\\\?\\REL\\..\\..") build-path 'up "\\\\?\\REL\\..")
+    (test (string->path "\\\\?\\REL\\..\\..") build-path "\\\\?\\REL\\.." 'up)
+    (test (string->path "\\\\?\\REL\\..\\..\\..") build-path 'up "\\\\?\\REL\\.." 'up)
+    (test (string->path "\\\\?\\REL\\..\\..\\\\..") build-path 'up "\\\\?\\REL\\.." "\\\\?\\REL\\\\..")
+    (test (string->path "\\\\?\\REL\\..\\..\\") build-path 'up "\\\\?\\REL\\.." "\\\\?\\REL\\\\.." 'up)
+    (test (string->path "\\\\?\\REL\\x") build-path "x/y" "\\\\?\\REL\\..")
+    (test (string->path "\\\\?\\c:x\\") build-path "c:x/y" "\\\\?\\REL\\..")
+
+    (test (string->path "\\\\?\\UNC\\f\\g\\") build-path "//f/g/h" "\\\\?\\REL\\..")
+    (test (string->path "\\\\?\\UNC\\f\\g\\h\\..") build-path "//f/g/h" "\\\\?\\REL\\\\..")
+    (test (string->path "\\\\?\\UNC\\f\\g\\h\\..") build-path "//f/g//h" "\\\\?\\REL\\\\..")
+    (test (string->path "\\\\?\\UNC\\f\\g\\i\\x") build-path "//f/g/h/../i" "\\\\?\\REL\\x")
+    (test (string->path "\\\\?\\UNC\\f\\g\\h\\i\\x") build-path "//f/g/../h/i" "\\\\?\\REL\\x")
+
+    (test (string->path (string-append "\\\\?\\" drive "f\\g\\")) build-path "/f/g/h" "\\\\?\\REL\\..")
+    (test (string->path (string-append "\\\\?\\" drive "f\\g\\h\\x")) build-path "/f/g/h" "\\\\?\\REL\\x")
+    (test (string->path (string-append "\\\\?\\" drive "f\\g\\h\\x")) build-path "//f//g/h" "\\\\?\\REL\\x")
+    (test (string->path (string-append "\\\\?\\" drive "f\\g\\h\\x")) build-path "/f//g////h" "\\\\?\\REL\\x")
+    (test (string->path (string-append "\\\\?\\" drive)) build-path "/f//g////h" "\\\\?\\REL\\..\\..\\..\\..")
+    (test (string->path (string-append "\\\\?\\" drive "?\\g\\h\\x")) build-path "//?/g/h" "\\\\?\\REL\\x")
+
+    ;; Allow \\?\ as a drive to add an absolute path:
+    (test (string->path "\\\\?\\c:\\b") build-path "\\\\?\\c:" "\\b")
+    (test (string->path "\\\\?\\c:\\b") build-path "\\\\?\\c:\\" "\\b")
+    (test (string->path "\\\\?\\c:\\\\b") build-path "\\\\?\\c:\\\\" "\\b")
+    (test (string->path "\\\\?\\UNC\\goo\\bar\\b") build-path "\\\\?\\UNC\\goo\\bar" "\\b")
+    (test (string->path "\\\\?\\\\b") build-path "\\\\?\\" "\\b")
+    
+    ;; Don't allow path addition on bad \\?\ to change the root:
+    (test (string->path "\\\\?\\\\c") build-path "\\\\?\\" "c")
+    (test (string->path "\\\\?\\\\UNC") build-path "\\\\?\\" "UNC")
+    (test (string->path "\\\\?\\\\UNC\\s\\y") build-path "\\\\?\\UNC" "s/y")
+    (test (string->path "\\\\?\\\\UNC\\s\\y") build-path "\\\\?\\UNC\\" "s/y")
+    (test (string->path "\\\\?\\\\REL\\s\\y") build-path "\\\\?\\REL" "s/y")
+    (test (string->path "\\\\?\\\\REL\\s\\y") build-path "\\\\?\\REL\\" "s/y")
+    (test (string->path "\\\\?\\REL\\\\\\s\\y") build-path "\\\\?\\REL\\\\" "s/y")
+    (test (string->path "\\\\?\\REL\\x\\\\\\z") build-path "\\\\?\\REL\\x\\\\" "z")
+    (test (string->path "/apple\\x") build-path "//apple" "x")
+    (test (string->path "\\\\?") build-path "\\\\" "?")
+    (test (string->path "\\?\\") build-path "\\\\" "?\\")
+    (test (string->path "\\?\\a") build-path "\\\\" "?" "a")
+    (test (string->path "\\?\\a") build-path "\\\\?" "a")
+
+    ;; UNC paths can't have "?" for machine or "/" in machine part:
+    (test (list (string->path "/?/") (string->path "x")) get-base "//?/x")
+    (test (list (string->path "\\\\?\\UNC\\a/b\\") (string->path "x")) get-base "\\\\?\\UNC\\a/b\\x")
+
+    ;; Split path must treat \\?\ part as a root:
+    (test (list (string->path "\\\\?\\c:\\") (string->path "a")) get-base "\\\\?\\c:\\a")
+    (test (list #f (string->path "\\\\?\\c:\\")) get-base "\\\\?\\c:\\")
+    (test (list #f (string->path "\\\\?\\c:\\\\")) get-base "\\\\?\\c:\\\\")
+    (test (list (string->path "\\\\?\\c:\\\\") (string->path "a")) get-base "\\\\?\\c:\\\\a")
+    (test (list #f (string->path "\\\\?\\UNC\\mach\\vol")) get-base "\\\\?\\UNC\\mach\\vol")
+    (test (list (string->path "\\\\?\\") (string->path "c")) get-base "\\\\?\\c")
+    (test (list (string->path "\\\\?\\UNC\\") (string->path "x")) get-base "\\\\?\\UNC\\x")
+    (test (list (string->path "\\\\?\\") (string->path "UNC")) get-base "\\\\?\\UNC\\")
+    (test (list #f (string->path "\\\\?\\UNC\\\\")) get-base "\\\\?\\UNC\\\\")
+    (test (list #f (string->path "\\\\?\\xyz\\\\")) get-base "\\\\?\\xyz\\\\")
+    (test (list (string->path "\\\\?\\c:\\a\\\\\\") (string->path "b")) get-base "\\\\?\\c:\\a\\\\\\b\\")
+    (test (list #f (string->path "\\\\?\\c:\\a\\\\\\")) get-base "\\\\?\\c:\\a\\\\\\")
+    (test (list (string->path "\\\\?\\UNC\\") (string->path "\\\\?\\REL\\\\x/y")) get-base "\\\\?\\UNC\\x/y")
+    (test (list #f (string->path "\\\\?\\UNC\\x\\y")) get-base "\\\\?\\UNC\\x\\y")
+    (test (list (string->path "\\\\?\\REL\\\\x\\y ") (string->path "z")) get-base "x/y /z")
+    (test (list (string->path "\\\\?\\REL\\\\y ") (string->path "z")) get-base "x/../y /z")
+    (test (list (string->path "\\\\?\\REL\\..\\\\y ") (string->path "z")) get-base "../y /z")
+    (test (list (string->path "\\\\?\\c:\\y ") (string->path "z")) get-base "c:/y /z")
+    (test (list (string->path "\\\\?\\c:\\y ") (string->path "z")) get-base "c:/../y /z")
+    (test (list (string->path "../aux/") (string->path "z")) get-base "../aux/z")
+    (test (list (string->path "../aux.m/") (string->path "z")) get-base "../aux.m/z")
+    (test (list (string->path "../") (string->path "\\\\?\\REL\\\\aux.m")) get-base "../aux.m/")
+    (test (list (string->path "c:/") (string->path "\\\\?\\REL\\\\aux.m")) get-base "c:/aux.m/")
+    (test (list (string->path "c:/") (string->path "\\\\?\\REL\\\\aux.m.p")) get-base "c:/aux.m.p/")
+    (test (list (string->path "c:/") (string->path "\\\\?\\REL\\\\aux:m")) get-base "c:/aux:m/")
+    (test (list (string->path "../") (string->path "aux.m")) get-base "../aux.m")
+    
+    ;; simplify-path leaves path alone:
+    (test (string->path "\\\\?\\c:\\b\\.\\..\\a") simplify-path "\\\\?\\c:\\b\\.\\..\\a")
+    (test (string->path "\\\\?\\c:\\B\\.\\..\\a") normal-case-path "\\\\?\\c:\\B\\.\\..\\a")
+    (test (string->path "\\\\?\\UNC\\foo\\A") normal-case-path "\\\\?\\UNC\\foo\\A")
+
+    ;; expand-path removes redundant backslashes:
+    (test (string->path "\\\\?\\c:\\a\\b") expand-path "\\\\?\\c:\\\\a\\\\b")
+    (test (string->path "\\\\?\\c:\\") expand-path "\\\\?\\c:\\\\")
+    (test (string->path "\\\\?\\c:\\a\\\\") expand-path "\\\\?\\c:\\a\\\\")
+    (test (string->path "\\\\?\\c:\\a\\b") expand-path "\\\\?\\c:\\a\\\\b")
+
+    ;; watch out for simplification that changes root:
+    (test (string->path "\\\\?\\\\UNC\\a\\b\\c") expand-path "\\\\?\\UNC\\\\a\\b\\c")
+    (test (string->path "\\\\?\\\\UNC\\a\\b\\c") expand-path "\\\\?\\UNC\\\\a\\b\\\\c")
+
+    (let ([dir (build-path here "tmp78")])
+      (unless (directory-exists? dir)
+	(make-directory dir))
+      (close-output-port (open-output-file (build-path here "tmp78" "\\\\?\\REL\\aux")
+					   'replace))
+      (test (list (string->path "\\\\?\\REL\\\\aux")) directory-list dir)
+      (delete-file (build-path here "tmp78" "\\\\?\\REL\\aux"))
+      (delete-directory dir))
+
+    ))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

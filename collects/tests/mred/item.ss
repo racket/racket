@@ -360,7 +360,7 @@
       (send p stretchable-height stretchy?)
       
       (let ()
-	(define l (make-object (trace-mixin message%) "Messag&\uE9" p null ($ font))) ; \uE9 is e with '
+	(define l (make-object (trace-mixin message%) "L\u03B9&st" #;"Messag&\u03A3" p null ($ font))) ; \u03A3 is eta
 	(define il (make-object (trace-mixin message%) return-bmp p null ($ font)))
 	
 	(add-testers "Message" l)
@@ -372,7 +372,7 @@
 	(values l il))))
   
   (define b (make-object (trace-mixin button%)
-			 "H\uE9&llo" ip ; \uE9 is e with '
+			 "H\u03A3&llo" ip ; \u03A3 is eta
 			 (lambda (b e)
 			   (send b enable #f)
 			   (sleep/yield 5)
@@ -384,20 +384,20 @@
   ; (define ib2 (make-object button% return-bmp ip void))
   
   (define lb (make-object (trace-mixin list-box%)
-			  (if null-label? #f "L\uED&st") ; \uED is i with '
-			  '("Appl\uE9" "Banana" "Coconut & Donuts" "Eclair" "French Fries" "Gatorade" "Huevos Rancheros") ; \uE9 is e with '
+			  (if null-label? #f "L\u03B9&st") ; \u03B9 is iota
+			  '("Appl\u03A3" "Banana" "Coconut & Donuts" "Eclair" "French Fries" "Gatorade" "Huevos Rancheros") ; \u03A3 is eta
 			  ip void
 			  (add-label-direction label-h? '(single))
 			  (if alt-inits? 2 #f)
 			  (or font view-control-font) ($ font)))
   
-  (define cb (make-object (trace-mixin check-box%) "C&h\u00E9ck" ip void null alt-inits? ($ font))) ; \uE9 is e with '
+  (define cb (make-object (trace-mixin check-box%) "C&h\u03A3ck" ip void null alt-inits? ($ font))) ; \u03A3 is eta
   
   (define icb (make-object (trace-mixin check-box%) mred-bmp ip void null alt-inits? ($ font)))
   
   (define rb (make-object (trace-mixin radio-box%)
-			  (if null-label? #f "R&ad\uEDo") ; \uED is i with '
-			  '("F\uEDrst" "Dos" "T&rio")
+			  (if null-label? #f "R&ad\u03B9o") ; \u03B9 is iota
+			  '("F\u03B9rst" "Dos" "T&rio")
 			  ip void 
 			  (add-label-direction 
 			   label-h? 
@@ -420,15 +420,15 @@
 			  ($ font)))
   
   (define ch (make-object (trace-mixin choice%)
-			  (if null-label? #f "Ch&o\u00EDce") ; \uED is i with '
-			  '("Alpha" "Beta" "Gamma" "Delta & R\uE9st") ; \uE9 is e with '
+			  (if null-label? #f "Ch&o\u03B9ce") ; \u03B9 is iota
+			  '("Alpha" "Beta" "Gamma" "Delta & R\u03A3st") ; \u03A3 is eta
 			  ip void
 			  (add-label-direction label-h? null)
 			  (if alt-inits? 3 0)
 			  ($ font)))
   
   (define txt (make-object (trace-mixin text-field%)
-			   (if null-label? #f "T\uE9&xt") ; \uE9 is e with '
+			   (if null-label? #f "T\u03A3&xt") ; \u03A3 is eta
 			   ip void
 			   "initial & starting"
 			   (add-label-direction label-h? '(single))
@@ -548,7 +548,7 @@
   (define f (make-frame (if use-dialogs?
 			    active-dialog%
 			    active-frame%)
-			"T\uE9ster")) ; \uE9 is e with '
+			"T\u03A3ster")) ; \u03A3 is eta
   
   (define hp (make-object horizontal-panel% f))
   
@@ -645,7 +645,7 @@
       (make-object combo-field% "Greet:" '("Hola" "Ni Hao") ip2 void "hello" null ($ font)))
 
     (define sh (make-object slider% 
-			    (if null-label? #f "H S&lid\uE9r") 0 10 ip2
+			    (if null-label? #f "H S&lid\u03A3r") 0 10 ip2
 			    (lambda (s e)
 			      (send gh set-value (* 10 (send sh get-value))))
 			    5
@@ -655,7 +655,7 @@
 			    ($ font)))
     
     (define sv (make-object slider% 
-			    (if null-label? #f "V Sl&id\uE9r") 0 10 ip2 
+			    (if null-label? #f "V Sl&id\u03A3r") 0 10 ip2 
 			    (lambda (s e)
 			      (send gv set-value (* 10 (send sv get-value))))
 			    5
@@ -665,14 +665,14 @@
 			    ($ font)))
     
     (define gh (make-object gauge% 
-			    (if null-label? #f "H G&aug\uE9") 100 ip2
+			    (if null-label? #f "H G&aug\u03A3") 100 ip2
 			    (add-label-direction 
 			     label-h? 
 			     '(horizontal))
 			    ($ font)))
     
     (define gv (make-object gauge% 
-			    (if null-label? #f "V Ga&ug\uE9") 100 ip2
+			    (if null-label? #f "V Ga&ug\u03A3") 100 ip2
 			    (add-label-direction 
 			     label-h? 
 			     '(vertical))
@@ -688,12 +688,12 @@
 			     ($ font)))
 
     (define tab (make-object tab-panel% 
-			     '("Appl\uE9" "B&anana") ip2 void
+			     '("Appl\u03A3" "B&anana") ip2 void
 			     null
 			     ($ font)))
 
     (define grp (make-object group-box-panel% 
-			     "Group\uE9" ip2
+			     "Group\u03A3" ip2
 			     null (or font small-control-font)))
 
     (make-object button% "OK" tab void)
