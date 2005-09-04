@@ -224,9 +224,9 @@
          (define (err-display-handler message exn)
            (if (not (eq? held-exp-list no-sexp))
                (begin
-                 (set! held-exp-list no-sexp)
                  (receive-result (make-before-error-result (append held-finished-list held-exp-list)
-                                                           message)))
+                                                           message))
+                 (set! held-exp-list no-sexp))
                (receive-result (make-error-result message)))))
       
       (program-expander
