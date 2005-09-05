@@ -917,6 +917,17 @@
 	 (read-syntax '??? (open-input-string "#reader reader-test-module 10")))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test 'paren-shape property
+
+(test #f syntax-property (read-syntax 'x (open-input-string "(1 2 3)")) 'paren-shape)
+(test #\[ syntax-property (read-syntax 'x (open-input-string "[1 2 3]")) 'paren-shape)
+(test #\[ syntax-property (read-syntax 'x (open-input-string "[1 . 3]")) 'paren-shape)
+(test #\[ syntax-property (read-syntax 'x (open-input-string "[1 . 3 . 2]")) 'paren-shape)
+(test #\[ syntax-property (read-syntax 'x (open-input-string "#[1 2]")) 'paren-shape)
+(test #\{ syntax-property (read-syntax 'x (open-input-string "{1 2 3}")) 'paren-shape)
+(test #\{ syntax-property (read-syntax 'x (open-input-string "#{1 2}")) 'paren-shape)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
 
