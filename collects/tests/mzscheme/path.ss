@@ -514,11 +514,11 @@
     (test (string->path (string-append "\\\\?\\" drive "?\\g\\h\\x")) build-path "//?/g/h" "\\\\?\\REL\\x")
 
     ;; Allow \\?\ as a drive to add an absolute path:
-    (test (string->path "\\\\?\\c:\\b") build-path "\\\\?\\c:" "\\b")
     (test (string->path "\\\\?\\c:\\b") build-path "\\\\?\\c:\\" "\\b")
     (test (string->path "\\\\?\\c:\\\\b") build-path "\\\\?\\c:\\\\" "\\b")
     (test (string->path "\\\\?\\UNC\\goo\\bar\\b") build-path "\\\\?\\UNC\\goo\\bar" "\\b")
     (test (string->path "\\\\?\\\\b") build-path "\\\\?\\" "\\b")
+    (err/rt-test (build-path "\\\\?\\c:" "\\b") exn:fail:contract?)
     
     ;; Don't allow path addition on bad \\?\ to change the root:
     (test (string->path "\\\\?\\\\c") build-path "\\\\?\\" "c")
@@ -534,6 +534,8 @@
     (test (string->path "\\?\\") build-path "\\\\" "?\\")
     (test (string->path "\\?\\a") build-path "\\\\" "?" "a")
     (test (string->path "\\?\\a") build-path "\\\\?" "a")
+    (test (string->path "\\\\?\\\\c:") build-path "\\\\?\\" "\\\\?\\REL\\c:")
+    (test (string->path "\\\\?\\\\c:\\a") build-path "\\\\?\\" "\\\\?\\REL\\c:\\a")
 
     ;; UNC paths can't have "?" for machine or "/" in machine part:
     (test (list (string->path "/?/") (string->path "x")) get-base "//?/x")
@@ -541,10 +543,13 @@
 
     ;; Split path must treat \\?\ part as a root:
     (test (list (string->path "\\\\?\\c:\\") (string->path "a")) get-base "\\\\?\\c:\\a")
+    (test (list (string->path "\\\\?\\") (string->path "\\\\?\\REL\\\\c:")) get-base "\\\\?\\c:")
     (test (list #f (string->path "\\\\?\\c:\\")) get-base "\\\\?\\c:\\")
     (test (list #f (string->path "\\\\?\\c:\\\\")) get-base "\\\\?\\c:\\\\")
     (test (list (string->path "\\\\?\\c:\\\\") (string->path "a")) get-base "\\\\?\\c:\\\\a")
     (test (list #f (string->path "\\\\?\\UNC\\mach\\vol")) get-base "\\\\?\\UNC\\mach\\vol")
+    (test (list #f (string->path "\\\\?\\UNC\\mach\\\\vol")) get-base "\\\\?\\UNC\\mach\\\\vol")
+    (test (list #f (string->path "\\\\?\\UNC\\\\mach\\vol")) get-base "\\\\?\\UNC\\\\mach\\vol")
     (test (list (string->path "\\\\?\\") (string->path "c")) get-base "\\\\?\\c")
     (test (list (string->path "\\\\?\\UNC\\") (string->path "x")) get-base "\\\\?\\UNC\\x")
     (test (list (string->path "\\\\?\\") (string->path "UNC")) get-base "\\\\?\\UNC\\")
@@ -577,10 +582,10 @@
     (test (string->path "\\\\?\\c:\\") expand-path "\\\\?\\c:\\\\")
     (test (string->path "\\\\?\\c:\\a\\\\") expand-path "\\\\?\\c:\\a\\\\")
     (test (string->path "\\\\?\\c:\\a\\b") expand-path "\\\\?\\c:\\a\\\\b")
-
-    ;; watch out for simplification that changes root:
-    (test (string->path "\\\\?\\\\UNC\\a\\b\\c") expand-path "\\\\?\\UNC\\\\a\\b\\c")
-    (test (string->path "\\\\?\\\\UNC\\a\\b\\c") expand-path "\\\\?\\UNC\\\\a\\b\\\\c")
+    (test (string->path "\\\\?\\UNC\\a\\b\\c") expand-path "\\\\?\\UNC\\\\a\\b\\c")
+    (test (string->path "\\\\?\\UNC\\a\\b\\c") expand-path "\\\\?\\UNC\\\\a\\b\\\\c")
+    (test (string->path "\\\\?\\\\UNC\\x\\y") expand-path "\\\\?\\\\UNC\\x\\y")
+    (test (string->path "\\\\?\\") expand-path "\\\\?\\\\")
 
     (let ([dir (build-path here "tmp78")])
       (unless (directory-exists? dir)
