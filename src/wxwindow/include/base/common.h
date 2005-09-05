@@ -15,6 +15,10 @@
 
 #define wx_msw
 
+#ifdef MZ_XFORM
+START_XFORM_SUSPEND;
+#endif
+
 #include <stddef.h>
 #include <string.h>
 #include "wx_setup.h"
@@ -24,6 +28,10 @@
 #ifndef Bool
   typedef int Bool;
 # define Bool_DEFINED
+#endif
+
+#ifdef MZ_XFORM
+END_XFORM_SUSPEND;
 #endif
 
 #ifndef TRUE

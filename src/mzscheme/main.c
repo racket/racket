@@ -49,6 +49,10 @@
 # define DONT_LOAD_INIT_FILE
 #endif
 
+#ifdef MZ_XFORM
+START_XFORM_SUSPEND;
+#endif
+
 #ifdef FILES_HAVE_FDS
 # include <sys/types.h>
 # include <sys/time.h>
@@ -78,6 +82,10 @@
 # ifndef OS_X
 #  include "simpledrop.h"
 # endif
+#endif
+
+#ifdef MZ_XFORM
+END_XFORM_SUSPEND;
 #endif
 
 #ifdef WIN32_THREADS

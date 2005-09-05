@@ -454,7 +454,7 @@ wchar_t *wx_convert_to_wchar(char *s, int do_copy)
   if (!do_copy && (len < (WC_BUFFER_SIZE-1)))
     ws = wc_buffer;
   else
-    ws = new WXGC_ATOMIC wchar_t[len + 1];
+    ws = (wchar_t *)GC_malloc_atomic(sizeof(wchar_t) * (len + 1));
   scheme_utf8_decode((unsigned char *)s, 0, l,
 		     (unsigned int *)ws, 0, -1,
 		     NULL, 1/*UTF-16*/, 1);

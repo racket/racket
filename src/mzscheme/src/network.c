@@ -3069,6 +3069,42 @@ static void tcp_accept_evt_needs_wakeup(Scheme_Object *ae, void *fds)
   tcp_accept_needs_wakeup(SCHEME_PTR_VAL(ae), fds);
 }
 
+int scheme_get_port_socket(Scheme_Object *p, long *_s)
+{
+#ifdef USE_TCP
+  tcp_t s = 0;
+  int s_ok = 0;
+
+  if (SCHEME_OUTPORTP(p)) {
+    Scheme_Output_Port *op;
+    op = (Scheme_Output_Port *)p;
+    if (op->sub_type == scheme_tcp_output_port_type) {
+      if (!op->closed) {
+	s = ((Scheme_Tcp *)op->port_data)->tcp;
+	s_ok = 1;
+      }
+    }
+  } else if (SCHEME_INPORTP(p)) {
+    /* Abandon is not really useful on input ports from the Schemer's
+       perspective, but it's here for completeness. */
+    Scheme_Input_Port *ip;
+    ip = (Scheme_Input_Port *)p;
+    if (ip->sub_type == scheme_tcp_input_port_type) {
+      if (!ip->closed) {
+	s = ((Scheme_Tcp *)ip->port_data)->tcp;
+	s_ok = 1;
+      }
+    }
+  }
+
+  if (s_ok) {
+    *_s = (long)s;
+    return 1;
+  } else
+    return 0;
+#endif
+}
+
 /*========================================================================*/
 /*                                 UDP                                    */
 /*========================================================================*/

@@ -280,6 +280,8 @@ static Scheme_Object *quasisyntax_symbol;
 static Scheme_Object *honu_comma, *honu_semicolon;
 static Scheme_Object *honu_parens, *honu_braces, *honu_brackets;
 
+static Scheme_Object *paren_shape_symbol;
+
 static Scheme_Object *terminating_macro_symbol, *non_terminating_macro_symbol, *dispatch_macro_symbol;
 static char *builtin_fast;
 
@@ -314,6 +316,7 @@ void scheme_init_read(Scheme_Env *env)
   REGISTER_SO(unsyntax_splicing_symbol);
   REGISTER_SO(quasisyntax_symbol);
   REGISTER_SO(an_uninterned_symbol);
+  REGISTER_SO(paren_shape_symbol);
 
   quote_symbol = scheme_intern_symbol("quote");
   quasiquote_symbol = scheme_intern_symbol("quasiquote");
@@ -326,6 +329,8 @@ void scheme_init_read(Scheme_Env *env)
 
   an_uninterned_symbol = scheme_make_symbol("unresolved");
 
+  paren_shape_symbol = scheme_intern_symbol("paren-shape");
+  
   REGISTER_SO(honu_comma);
   REGISTER_SO(honu_semicolon);
   REGISTER_SO(honu_parens);
@@ -1928,6 +1933,11 @@ Scheme_Object *scheme_resolve_placeholders(Scheme_Object *obj, int mkstx)
 /*                             list reader                                */
 /*========================================================================*/
 
+static Scheme_Object *attach_shape_property(Scheme_Object *list, 
+					    Scheme_Object *stxsrc, 
+					    ReadParams *params, 
+					    int closer);
+
 static Scheme_Object *honu_add_module_wrapper(Scheme_Object *list,
 					      Scheme_Object *stxsrc,
 					      Scheme_Object *port);
@@ -2033,6 +2043,7 @@ read_list(Scheme_Object *port,
       if (params->honu_mode && (closer == EOF)) {
 	list = honu_add_module_wrapper(list, stxsrc, port);
       }
+      list = attach_shape_property(list, stxsrc, params, closer);
       return list;
     }
 
@@ -2123,9 +2134,11 @@ read_list(Scheme_Object *port,
       }
 
       pop_indentation(indentation);
-      return (stxsrc
+      list = (stxsrc
 	      ? scheme_make_stx_w_offset(list, line, col, pos, SPAN(port, pos), stxsrc, STX_SRCTAG)
 	      : list);
+      list = attach_shape_property(list, stxsrc, params, closer);
+      return list;
     } else if (!params->honu_mode
 	       && params->can_read_dot
 	       && (ch == '.')
@@ -2209,9 +2222,11 @@ read_list(Scheme_Object *port,
 
 	pop_indentation(indentation);
 
-	return (stxsrc
+	list = (stxsrc
 		? scheme_make_stx_w_offset(list, line, col, pos, SPAN(port, pos), stxsrc, STX_SRCTAG)
 		: list);
+	list = attach_shape_property(list, stxsrc, params, closer);
+	return list;
       }
     } else {
       if ((ch == SCHEME_SPECIAL) || (params->table && (ch != EOF))) {
@@ -2281,6 +2296,21 @@ honu_add_module_wrapper(Scheme_Object *list, Scheme_Object *stxsrc, Scheme_Objec
   if (stxsrc)
     v = scheme_datum_to_syntax(v, list, scheme_false, 0, 0);
   return v;
+}
+
+static Scheme_Object *attach_shape_property(Scheme_Object *list, 
+					    Scheme_Object *stxsrc, 
+					    ReadParams *params, 
+					    int closer)
+{
+  if ((closer != ')') && stxsrc && !params->honu_mode) {
+    Scheme_Object *opener;
+    opener = ((closer == '}') 
+	      ? scheme_make_ascii_character('{')
+	      : scheme_make_ascii_character('['));
+    return scheme_stx_property(list, paren_shape_symbol, opener);
+  }
+  return list;
 }
 
 /*========================================================================*/

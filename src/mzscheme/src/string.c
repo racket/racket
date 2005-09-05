@@ -3208,6 +3208,7 @@ mzchar *scheme_string_recase(mzchar *s, int d, int len, int mode, int inplace, i
 	j++;
     }
   }
+  t[len+extra+td] = 0;
 
   return t;
 }

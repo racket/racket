@@ -1032,9 +1032,8 @@ static LONG WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, in
 	  && ((wParam == HTVSCROLL) || (wParam == HTHSCROLL))
 	  && wnd->wx_window
 	  && wxSubType(wnd->wx_window->__type, wxTYPE_CANVAS)) {
-	/* To support interactive scrolling in canvases, we let
-	   windows run its handler for the click in a new
-	   thread. Messages get redirected to this thread. */
+	/* To support interactive scrolling in canvases, we
+	   use a trampoline. See wxHiEventTrampoline in mred.cxx. */
 	wxDWP_Closure *c;
 	c = new wxDWP_Closure;
 	c->wnd = wnd;

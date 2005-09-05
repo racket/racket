@@ -110,12 +110,20 @@ typedef long FILE;
 # define MZ_SIGSET(s, f) sigset(s, f)
 #endif
 
+#ifdef MZ_XFORM
+START_XFORM_SUSPEND;
+#endif
+
 #include <stdio.h>
 #include <setjmp.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
+
+#ifdef MZ_XFORM
+END_XFORM_SUSPEND;
+#endif
 
 #ifdef PALMOS_STUFF
 typedef jmpbuf jmp_buf[1];
@@ -518,7 +526,7 @@ typedef void (*Scheme_Type_Printer)(Scheme_Object *v, int for_display, Scheme_Pr
 
 #define scheme_make_integer(i)    LONG_TO_OBJ ((OBJ_TO_LONG(i) << 1) | 0x1)
 #define scheme_make_character(ch) ((((mzchar)ch) < 256) ? scheme_char_constants[(unsigned char)(ch)] : scheme_make_char(ch))
-#define scheme_make_ascii_character(ch) scheme_char_constants[(unsigned char)(ch)];
+#define scheme_make_ascii_character(ch) scheme_char_constants[(unsigned char)(ch)]
 
 #define scheme_uchar_find(table, x) (table[(x >> 8) & 0x1FFF][x & 0xFF])
 

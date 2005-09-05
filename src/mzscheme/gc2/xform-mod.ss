@@ -692,6 +692,8 @@
     ;; In case a conversion is unnecessary where we have this annotation:
     (printf "#define START_XFORM_SKIP /**/~n")
     (printf "#define END_XFORM_SKIP /**/~n")
+    (printf "#define START_XFORM_SUSPEND /**/~n")
+    (printf "#define END_XFORM_SUSPEND /**/~n")
     ;; For avoiding warnings:
     (printf "#define XFORM_OK_PLUS +~n")
     (printf "#define XFORM_OK_MINUS -~n")
@@ -759,6 +761,8 @@
   (define semi (string->symbol ";"))
   (define START_XFORM_SKIP (string->symbol "START_XFORM_SKIP"))
   (define END_XFORM_SKIP (string->symbol "END_XFORM_SKIP"))
+  (define START_XFORM_SUSPEND (string->symbol "START_XFORM_SUSPEND"))
+  (define END_XFORM_SUSPEND (string->symbol "END_XFORM_SUSPEND"))
   (define Scheme_Object (string->symbol "Scheme_Object"))
   (define sElF (string->symbol "sElF"))
   (define NULLED_OUT (string->symbol "NULLED_OUT"))
@@ -1249,6 +1253,7 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
   (define skipping? #f)
+  (define suspend-xform 0)
 
   (define re:h (regexp "[.]h$"))
 
@@ -1271,6 +1276,14 @@
       null]
      [skipping?
       e]
+
+     ;; START_XFORM_SUSPEND and END_XFORM_SUSPEND:
+     [(end-suspend? e)
+      (set! suspend-xform (sub1 suspend-xform))
+      null]
+     [(start-suspend? e)
+      (set! suspend-xform (add1 suspend-xform))
+      null]
 
      ;; END_XFORM_ARITH and START_XFORM_ARITH enable and
      ;; re-enable warnings about arithmetic operations
@@ -1367,7 +1380,8 @@
      [(function? e)
       (let ([name (register-proto-information e)])
 	(when show-info? (printf "/* FUNCTION ~a */~n" name))
-	(if (or (not pgc?)
+	(if (or (positive? suspend-xform)
+		(not pgc?)
 		(and where 
 		     (regexp-match re:h where)
 		     (let loop ([e e][prev #f])
@@ -1379,7 +1393,8 @@
 			 ;; inline constructor: need to convert
 			 #f]
 			[else (loop (cdr e) (car e))]))))
-	    ;; Not pgc, or still in headers and probably a simple inlined function
+	    ;; Not pgc, xform suspended,
+	    ;; or still in headers and probably a simple inlined function
 	    (let ([palm-static? (and palm? (eq? 'static (tok-n (car e))))])
 	      (when palm?
 		(fprintf map-port "(~aimpl ~s)~n" 
@@ -1410,8 +1425,15 @@
 		  (top-vars (append pointers non-pointers (top-vars))))))
 	    e))]
 
+     [(empty-decl? e)
+      e]
+
      [else (print-struct #t)
 	   (error 'xform "unknown form: ~s" e)]))
+
+  (define (empty-decl? e)
+    (and (= 1 (length e))
+	 (eq? '|;| (tok-n (car e)))))
 
   (define (start-skip? e)
     (and (pair? e)
@@ -1420,6 +1442,14 @@
   (define (end-skip? e)
     (and (pair? e)
 	 (eq? END_XFORM_SKIP (tok-n (car e)))))
+
+  (define (start-suspend? e)
+    (and (pair? e)
+	 (eq? START_XFORM_SUSPEND (tok-n (car e)))))
+
+  (define (end-suspend? e)
+    (and (pair? e)
+	 (eq? END_XFORM_SUSPEND (tok-n (car e)))))
 
   (define (start-arith? e)
     (and (pair? e)

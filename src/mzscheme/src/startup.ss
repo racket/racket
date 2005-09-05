@@ -2902,18 +2902,26 @@
       (raise-type-error 'normal-path-case "path or valid-path string" s))
     (cond
      [(eq? (system-type) 'windows)
-      (let ([s (string-locale-downcase (if (string? s)
-					   s
-					   (path->string s)))])
-	(string->path 
-	 (regexp-replace* #rx"/" (regexp-replace* #rx" +$" s "") bsbs)))]
+      (let ([str (if (string? s) s (path->string s))])
+	(if (regexp-match-positions #rx"^[\u5C][\u5C][?][\u5C]" str)
+	    (if (string? s)
+		(string->path s)
+		s)
+	    (let ([s (string-locale-downcase str)])
+	      (string->path 
+	       (regexp-replace* #rx"/" 
+				(if (regexp-match-positions #rx"[/\u5C][. ]+[/\u5C]*$" s)
+				    ;; Just "." or ".." in last path element - don't remove
+				    s
+				    (regexp-replace* #rx"\u5B .\u5D+([/\u5C]*)$" s "\u005C1"))
+				bsbs)))))]
      [(eq? (system-type) 'macos)
       (string->path (string-locale-downcase (if (string? s)
 						s
 						(path->string s))))]
      [(string? s) (string->path s)]
      [else s]))
-  
+
   (define rationalize
     (letrec ([check (lambda (x) 
                       (unless (real? x) (raise-type-error 'rationalize "real" x)))]

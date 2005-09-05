@@ -211,7 +211,7 @@ typedef struct Scheme_Subprocess {
 /* The Scheme_FD type is used for both input and output */
 typedef struct Scheme_FD {
   MZTAG_IF_REQUIRED
-  int fd;                   /* fd is really a HANDLE in Windows */
+  long fd;                   /* fd is really a HANDLE in Windows */
   long bufcount, buffpos;
   char flushing, regfile, flush;
   char textmode; /* Windows: textmode => CRLF conversion; SOME_FDS_... => select definitely works */
@@ -3163,6 +3163,50 @@ scheme_file_stream_port_p (int argc, Scheme_Object *argv[])
   return scheme_false;
 }
 
+int scheme_get_port_file_descriptor(Scheme_Object *p, long *_fd)
+{
+  long fd = 0;
+  int fd_ok = 0;
+
+  if (SCHEME_INPORTP(p)) {
+    Scheme_Input_Port *ip = (Scheme_Input_Port *)p;
+
+    if (!ip->closed) {
+      if (SAME_OBJ(ip->sub_type, file_input_port_type)) {
+	fd = MSC_IZE(fileno)((FILE *)((Scheme_Input_File *)ip->port_data)->f);
+	fd_ok = 1;
+      }
+#ifdef MZ_FDS
+      else if (SAME_OBJ(ip->sub_type, fd_input_port_type)) {
+	fd = ((Scheme_FD *)ip->port_data)->fd;
+	fd_ok = 1;
+      }
+#endif
+    }
+  } else if (SCHEME_OUTPORTP(p)) {
+    Scheme_Output_Port *op = (Scheme_Output_Port *)p;
+
+    if (!op->closed) {
+      if (SAME_OBJ(op->sub_type, file_output_port_type))  {
+	fd = MSC_IZE (fileno)((FILE *)((Scheme_Output_File *)op->port_data)->f);
+	fd_ok = 1;
+      }
+#ifdef MZ_FDS
+      else if (SAME_OBJ(op->sub_type, fd_output_port_type))  {
+	fd = ((Scheme_FD *)op->port_data)->fd;
+	fd_ok = 1;
+      }
+#endif
+    }
+  }
+
+  if (!fd_ok)
+    return 0;
+
+  *_fd = fd;
+  return 1;
+}
+
 Scheme_Object *scheme_file_identity(int argc, Scheme_Object *argv[])
 {
   long fd = 0;
@@ -3171,40 +3215,23 @@ Scheme_Object *scheme_file_identity(int argc, Scheme_Object *argv[])
 
   p = argv[0];
 
-  if (SCHEME_INPORTP(p)) {
-    Scheme_Input_Port *ip = (Scheme_Input_Port *)p;
-
-    CHECK_PORT_CLOSED("port-file-identity", "input", p, ip->closed);
-
-    if (SAME_OBJ(ip->sub_type, file_input_port_type)) {
-      fd = MSC_IZE(fileno)((FILE *)((Scheme_Input_File *)ip->port_data)->f);
-      fd_ok = 1;
-    }
-#ifdef MZ_FDS
-    else if (SAME_OBJ(ip->sub_type, fd_input_port_type)) {
-      fd = ((Scheme_FD *)ip->port_data)->fd;
-      fd_ok = 1;
-    }
-#endif
-  } else if (SCHEME_OUTPORTP(p)) {
-    Scheme_Output_Port *op = (Scheme_Output_Port *)p;
-
-    CHECK_PORT_CLOSED("port-file-identity", "output", p, op->closed);
-
-    if (SAME_OBJ(op->sub_type, file_output_port_type))  {
-      fd = MSC_IZE (fileno)((FILE *)((Scheme_Output_File *)op->port_data)->f);
-      fd_ok = 1;
-    }
-#ifdef MZ_FDS
-    else if (SAME_OBJ(op->sub_type, fd_output_port_type))  {
-      fd = ((Scheme_FD *)op->port_data)->fd;
-      fd_ok = 1;
-    }
-#endif
-  }
+  fd_ok = scheme_get_port_file_descriptor(p, &fd);
 
   if (!fd_ok) {
+    /* Maybe failed because it was closed... */
+    if (SCHEME_INPORTP(p)) {
+      Scheme_Input_Port *ip = (Scheme_Input_Port *)p;
+      
+      CHECK_PORT_CLOSED("port-file-identity", "input", p, ip->closed);
+    } else if (SCHEME_OUTPORTP(p)) {
+      Scheme_Output_Port *op = (Scheme_Output_Port *)p;
+      
+      CHECK_PORT_CLOSED("port-file-identity", "output", p, op->closed);
+    }
+
+    /* Otherwise, it's just the wrong type: */
     scheme_wrong_type("port-file-identity", "file-stream-port", 0, argc, argv);
+    return NULL;
   }
 
   return scheme_get_fd_identity(p, fd);
@@ -6833,7 +6860,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
     char *np;
     int nplen;
     nplen = strlen(argv[0]);
-    np = scheme_normal_path_seps(argv[0], &nplen);
+    np = scheme_normal_path_seps(argv[0], &nplen, 0);
     argv[0] = np;
   }
 
@@ -7279,7 +7306,7 @@ static Scheme_Object *sch_shell_execute(int c, Scheme_Object *argv[])
     Scheme_Object *sv, *sf, *sp;
 
     nplen = strlen(dir);
-    dir = scheme_normal_path_seps(dir, &nplen);
+    dir = scheme_normal_path_seps(dir, &nplen, 0);
 
     if (SCHEME_FALSEP(argv[0]))
       sv = scheme_false;

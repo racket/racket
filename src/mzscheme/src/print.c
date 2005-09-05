@@ -1560,7 +1560,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	  print_utf8_string(pp, "#<path:", 0, 7);
 	{
 	  Scheme_Object *str;
-	  str = scheme_byte_string_to_char_string_locale(obj);
+	  str = scheme_path_to_char_string(obj);
 	  print(str, 0, 0, ht, symtab, rnht, pp);
 	}
 	if (notdisplay) {

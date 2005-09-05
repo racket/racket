@@ -437,6 +437,7 @@ MZ_EXTERN Scheme_Object *scheme_byte_string_to_char_string(Scheme_Object *s);
 MZ_EXTERN Scheme_Object *scheme_char_string_to_byte_string_locale(Scheme_Object *s);
 MZ_EXTERN Scheme_Object *scheme_byte_string_to_char_string_locale(Scheme_Object *s);
 MZ_EXTERN Scheme_Object *scheme_char_string_to_path(Scheme_Object *p);
+MZ_EXTERN Scheme_Object *scheme_path_to_char_string(Scheme_Object *p);
 
 MZ_EXTERN Scheme_Object *scheme_make_char_string(const mzchar *chars);
 MZ_EXTERN Scheme_Object *scheme_make_sized_char_string(mzchar *chars, long len, int copy);
@@ -773,6 +774,9 @@ MZ_EXTERN void scheme_security_check_file(const char *who, const char *filename,
 MZ_EXTERN void scheme_security_check_network(const char *who, const char *host, int port, int client);
 
 MZ_EXTERN int scheme_get_host_address(const char *address, int id, void *result);
+
+MZ_EXTERN int scheme_get_port_file_descriptor(Scheme_Object *p, long *_fd);
+MZ_EXTERN int scheme_get_port_socket(Scheme_Object *p, long *_s);
 
 MZ_EXTERN void scheme_set_type_printer(Scheme_Type stype, Scheme_Type_Printer printer);
 MZ_EXTERN void scheme_print_bytes(Scheme_Print_Params *pp, const char *str, int offset, int len);

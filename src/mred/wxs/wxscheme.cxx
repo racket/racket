@@ -1044,7 +1044,7 @@ static int CALLBACK get_font(ENUMLOGFONTW FAR*  lpelf,
     data->names = naya;
   }
   
-  s = scheme_utf16_to_ucs4(lpelf->elfLogFont.lfFaceName, 0, 
+  s = scheme_utf16_to_ucs4((unsigned short *)lpelf->elfLogFont.lfFaceName, 0, 
 			   wx_wstrlen(lpelf->elfLogFont.lfFaceName),
 			   0, 0, &ulen, 1);
   s[ulen] = 0;

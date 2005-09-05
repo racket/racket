@@ -2061,7 +2061,7 @@ int scheme_is_complete_path(const char *s, long len);
 
 Scheme_Object *scheme_get_file_directory(const char *filename);
 
-char *scheme_normal_path_seps(char *s, int *_len);
+char *scheme_normal_path_seps(char *s, int *_len, int delta);
 
 int scheme_is_regular_file(char *filename);
 

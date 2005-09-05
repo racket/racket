@@ -206,6 +206,7 @@ scheme_byte_string_to_char_string
 scheme_char_string_to_byte_string_locale
 scheme_byte_string_to_char_string_locale
 scheme_char_string_to_path
+scheme_path_to_char_string
 scheme_make_char_string
 scheme_make_sized_char_string
 scheme_make_sized_offset_char_string
@@ -388,6 +389,8 @@ scheme_add_fd_eventmask
 scheme_security_check_file
 scheme_security_check_network
 scheme_get_host_address
+scheme_get_port_file_descriptor
+scheme_get_port_socket
 scheme_set_type_printer
 scheme_print_bytes
 scheme_print_utf8

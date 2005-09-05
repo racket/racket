@@ -128,7 +128,7 @@ static char* ExtractMultipleFileNames(OPENFILENAMEW* of, wchar_t* wFileBuffer)
     
     directoryByteLength = len_in_bytes(wFileBuffer, 0, directoryLength);
 
-    result = new WXGC_ATOMIC wchar_t[totalLength];
+    result = (wchar_t *)GC_malloc_atomic(sizeof(wchar_t) * totalLength);
 
     /* Skip the directory part */
     currentFileLength = wx_wstrlen(wFileBuffer);
@@ -287,7 +287,7 @@ char *wxFileSelector(char *message,
     free(b);
 
     if (ok) {
-      result = new WXGC_ATOMIC wchar_t[MAX_PATH + 1];
+      result = (wchar_t *)GC_malloc_atomic(sizeof(wchar_t) * (MAX_PATH + 1));
       memcpy(result, _result, sizeof(wchar_t) * (MAX_PATH + 1));
     } else
       result = NULL;

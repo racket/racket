@@ -234,6 +234,7 @@
   scheme_extension_table->scheme_char_string_to_byte_string_locale = scheme_char_string_to_byte_string_locale;
   scheme_extension_table->scheme_byte_string_to_char_string_locale = scheme_byte_string_to_char_string_locale;
   scheme_extension_table->scheme_char_string_to_path = scheme_char_string_to_path;
+  scheme_extension_table->scheme_path_to_char_string = scheme_path_to_char_string;
   scheme_extension_table->scheme_make_char_string = scheme_make_char_string;
   scheme_extension_table->scheme_make_sized_char_string = scheme_make_sized_char_string;
   scheme_extension_table->scheme_make_sized_offset_char_string = scheme_make_sized_offset_char_string;
@@ -437,6 +438,8 @@
   scheme_extension_table->scheme_security_check_file = scheme_security_check_file;
   scheme_extension_table->scheme_security_check_network = scheme_security_check_network;
   scheme_extension_table->scheme_get_host_address = scheme_get_host_address;
+  scheme_extension_table->scheme_get_port_file_descriptor = scheme_get_port_file_descriptor;
+  scheme_extension_table->scheme_get_port_socket = scheme_get_port_socket;
   scheme_extension_table->scheme_set_type_printer = scheme_set_type_printer;
   scheme_extension_table->scheme_print_bytes = scheme_print_bytes;
   scheme_extension_table->scheme_print_utf8 = scheme_print_utf8;

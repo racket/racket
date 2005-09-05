@@ -1594,7 +1594,7 @@ wchar_t *convert_to_drawable_format(const char *text, int d, int ucs4, long *_ul
     ulen = theStrlen + extra;
     alloc_ulen = ulen;
     if (alloc_ulen > QUICK_UBUF_SIZE)
-      unicode = new WXGC_ATOMIC wchar_t[alloc_ulen];
+      unicode = (wchar_t *)GC_malloc_atomic(sizeof(wchar_t) * alloc_ulen);
     else
       unicode = u_buf;
     
@@ -1618,7 +1618,7 @@ wchar_t *convert_to_drawable_format(const char *text, int d, int ucs4, long *_ul
 			      NULL, 1 /*UTF-16*/, '?');
     alloc_ulen = ulen;
     if (alloc_ulen > QUICK_UBUF_SIZE)
-      unicode = new WXGC_ATOMIC wchar_t[alloc_ulen];
+      unicode = (wchar_t *)GC_malloc_atomic(sizeof(wchar_t) * alloc_ulen);
     else
       unicode = u_buf;
     ulen = scheme_utf8_decode((unsigned char *)text, d, theStrlen, 
