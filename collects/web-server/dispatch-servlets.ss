@@ -104,17 +104,17 @@
                               (make-default-servlet-continuation-expiration-handler host-info)]
                              [exit-handler servlet-exit-handler])
                 (thread-cell-set! current-servlet-instance inst)
-                (let-values (;; timer thread must be within the dynamic extent of
-                             ;; servlet custodian
-                             [(time-bomb) (start-timer (timeouts-default-servlet
-                                                        (host-timeouts host-info))
-                                                       (lambda ()
-                                                         (servlet-exit-handler #f)))]
-                             ;; any resources (e.g. threads) created when the
-                             ;; servlet is loaded should be within the dynamic
-                             ;; extent of the servlet custodian
-                             [(servlet-program servlet-namespace) (cached-load real-servlet-path)])
-                  (parameterize ([current-namespace servlet-namespace])
+                (let (;; timer thread must be within the dynamic extent of
+                      ;; servlet custodian
+                      [time-bomb (start-timer (timeouts-default-servlet
+                                               (host-timeouts host-info))
+                                              (lambda ()
+                                                (servlet-exit-handler #f)))]
+                      ;; any resources (e.g. threads) created when the
+                      ;; servlet is loaded should be within the dynamic
+                      ;; extent of the servlet custodian
+                      [the-servlet (cached-load real-servlet-path)])
+                  (parameterize ([current-namespace (servlet-namespace the-servlet)])
                     (set-servlet-instance-timer! inst time-bomb)
                     (with-handlers ([(lambda (x) #t)
                                      (make-servlet-exception-handler inst host-info)])
@@ -126,7 +126,7 @@
                       ;; Here, we do not know if the servlet was a module,
                       ;; unit/sig, or Xexpr; we do know whether it produces a
                       ;; response.
-                      (let ([r (servlet-program req)])
+                      (let ([r ((servlet-handler the-servlet) req)])
                         (when (response? r)
                           (send/back r)))))))))
           (thread-cell-set! current-servlet-instance last-inst)
@@ -149,6 +149,14 @@
          ((responders-file-not-found (host-responders
                                       host-info))
           (request-uri req)))))
+    
+    
+    ;; make-default-server-instance-expiration-handler : host -> (request -> response)
+    (define (make-default-servlet-instance-expiration-handler host-info)
+      (lambda (req)
+        ((responders-file-not-found (host-responders
+                                     host-info))
+          (request-uri req))))
 
     ;; make-servlet-exception-handler: host -> exn -> void
     ;; This exception handler traps all unhandled servlet exceptions
@@ -194,15 +202,18 @@
     ;; pull the continuation out of the table and apply it
     (define (invoke-servlet-continuation conn req k-ref host-info)
       (let-values ([(uk-instance uk-id uk-salt) (apply values k-ref)])
-        (let ([default-servlet-continuation-expiration-handler
-                (make-default-servlet-continuation-expiration-handler host-info)])
+        (let* ([uri (request-uri req)]
+               [default-servlet-continuation-expiration-handler
+                 (make-default-servlet-continuation-expiration-handler host-info)]
+               [real-servlet-path (url-path->path
+                                   (paths-servlet (host-paths host-info))
+                                   (url-path->string (url-path uri)))]
+               [the-servlet (cached-load real-servlet-path)])
           (with-handlers ([exn:servlet:instance?
                            (lambda (the-exn)
                              (output-response/method
                               conn
-                              ((responders-file-not-found (host-responders
-                                                           host-info))
-                               (request-uri req))
+                              ((servlet-instance-expiration-handler the-servlet) req)
                               (request-method req)))]
                           [exn:servlet:continuation?
                            (lambda (the-exn)
@@ -251,22 +262,17 @@
     ;; ************************************************************
     ;; ************************************************************
     ;; Paul's ugly loading code:
-    (define make-cache-entry cons)
-    (define cache-entry-servlet car)
-    (define cache-entry-namespace cdr)
     
     ;; cached-load : path -> script, namespace
     ;; timestamps are no longer checked for performance.  The cache must be explicitly
     ;; refreshed (see dispatch).
     (define (cached-load servlet-path)
-      (let* ([entry-id (string->symbol (path->string servlet-path))]
-             [entry (cache-table-lookup! 
-                     (unbox config:scripts)
-                     entry-id
-                     (lambda ()
-                       (reload-servlet-script servlet-path)))])
-        (values (cache-entry-servlet entry)
-                (cache-entry-namespace entry))))
+      (let ([entry-id (string->symbol (path->string servlet-path))])
+        (cache-table-lookup! 
+         (unbox config:scripts)
+         entry-id
+         (lambda ()
+           (reload-servlet-script servlet-path)))))
     
     ;; exn:i/o:filesystem:servlet-not-found =
     ;; (make-exn:fail:filesystem:exists:servlet str continuation-marks str sym)
@@ -314,7 +320,9 @@
                  ;; signed-unit servlet
                  ; MF: I'd also like to test that s has the correct import signature.
                  [(unit/sig? s) 
-                  (make-cache-entry (v0.servlet->v1.lambda s) (current-namespace))]
+                  (make-servlet (v0.servlet->v1.lambda s)
+                                (current-namespace)
+                                (make-default-servlet-instance-expiration-handler host-info))]
                  ; FIX - reason about exceptions from dynamic require (catch and report if not already)
                  ;; module servlet
                  [(void? s)
@@ -324,12 +332,23 @@
                       [(v1)
                        (let ([timeout (dynamic-require module-name 'timeout)]
                              [start (dynamic-require module-name 'start)])
-                         (make-cache-entry (v1.module->v1.lambda timeout start) (current-namespace)))]
+                         (make-servlet (v1.module->v1.lambda timeout start)
+                                       (current-namespace)
+                                       (make-default-servlet-instance-expiration-handler host-info)))]
+                      [(v2) ; XXX: Undocumented
+                       (let ([timeout (dynamic-require module-name 'timeout)]
+                             [instance-expiration-handler (dynamic-require module-name 'instance-expiration-handler)]
+                             [start (dynamic-require module-name 'start)])
+                         (make-servlet (v1.module->v1.lambda timeout start)
+                                       (current-namespace)
+                                       instance-expiration-handler))]
                       [else
                        (raise (format "unknown servlet version ~e" version))]))]
                  ;; response
                  [(response? s)
-                  (make-cache-entry (v0.response->v1.lambda s a-path) (current-namespace))]
+                  (make-servlet (v0.response->v1.lambda s a-path)
+                                (current-namespace)
+                                (make-default-servlet-instance-expiration-handler host-info))]
                  [else
                   (raise 'load-servlet/path "Loading ~e produced ~n~e~n instead of a servlet." a-path s)])))))
         

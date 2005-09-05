@@ -64,7 +64,11 @@
                                          "default-web-root" "."
                                          the-path)))
                            (lambda ()
-                             (cons the-servlet (i:make-servlet-namespace))))
+                             (make-servlet the-servlet
+                                           (i:make-servlet-namespace)
+                                           (lambda (request)
+                                             `(html (head "Return to the interaction window.")
+                                                    (body (p "Return to the interaction window.")))))))
       (unit/sig web-config^
         (import)
         (define port the-port)
