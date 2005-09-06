@@ -21,8 +21,6 @@
 #include "schpriv.h"
 #include "schmach.h"
 
-static int noprint = 1, cnter;
-
 /* FIXME: syntax->list and resolve_env need stack checks. */
 
 #define STX_DEBUG 0
@@ -2238,10 +2236,6 @@ static Scheme_Object *resolve_env(Scheme_Object *a, long phase,
       /* See rename case for info on rename_stack: */
       Scheme_Object *result;
 
-      if (!noprint && !strcmp(SCHEME_SYM_VAL(SCHEME_STX_VAL(a)), "stx") && (cnter == 1332)) {
-	printf("done\n");
-      }
-
       result = scheme_false;
       while (!SCHEME_NULLP(o_rename_stack)) {
 	if (SAME_OBJ(SCHEME_CAAR(o_rename_stack), result))
@@ -2257,11 +2251,6 @@ static Scheme_Object *resolve_env(Scheme_Object *a, long phase,
 	result = mresult;
       else if (get_names)
 	get_names[0] = scheme_undefined;
-
-      if (!noprint && !strcmp(SCHEME_SYM_VAL(SCHEME_STX_VAL(a)), "stx")) {
-	cnter++;
-	printf("env: %s %d\n", (SCHEME_SYMBOLP(result) ? SCHEME_SYM_VAL(result) : "#f"), cnter);
-      }
 
       return result;
     } else if (SCHEME_RENAMESP(WRAP_POS_FIRST(wraps)) && w_mod) {
@@ -2420,34 +2409,22 @@ static Scheme_Object *resolve_env(Scheme_Object *a, long phase,
 	      other_env = SCHEME_VEC_ELS(rename)[2+c+ri];
 	    	      
 	      if (SCHEME_VOIDP(other_env)) {
-		noprint++;
 		other_env = resolve_env(renamed, 0, 0, NULL, 
 					scheme_make_pair(WRAP_POS_FIRST(wraps),
 							 skip_ribs));
-		--noprint;
 		SCHEME_VEC_ELS(rename)[2+c+ri] = other_env;
 	      }
 
 	      {
-		/* If same==2 because a barrier was used, then if the
-		   rename target itself was never renamed, mark
-		   barriers don't count. The same_marks check may have
-		   used mark barriers when it shouldn't, so
-		   double-check. */
-		/* If same==2 because a rib was used as a barrier, then
-		   we need to check again with a specific rib (possibly #f). */
 		WRAP_POS w2;
 		WRAP_POS_INIT(w2, ((Scheme_Stx *)renamed)->wraps);
 		same = same_marks(&w2, &wraps, SCHEME_FALSEP(other_env), other_env, WRAP_POS_FIRST(wraps));
 	      }
 	    }
 	    
-	    if (same) { /* (could have changed since last test) */
+	    if (same) {
 	      /* If it turns out that we're going to return
 		 other_env, then return envname instead. */
-	      if (!noprint && !strcmp(SCHEME_SYM_VAL(SCHEME_STX_VAL(a)), "stx") && (cnter == 1332)) {
-		printf("match\n");
-	      }
 	      if (stack_pos < QUICK_STACK_SIZE) {
 		rename_stack[stack_pos++] = envname;
 		rename_stack[stack_pos++] = other_env;
@@ -3175,9 +3152,7 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
 
 	      other_env = SCHEME_VEC_ELS(v)[2+vvsize+ii];
 	      if (SCHEME_VOIDP(other_env)) {
-		noprint++;
 		other_env = resolve_env(stx, 0, 0, NULL, skip_ribs);
-		--noprint;
 		SCHEME_VEC_ELS(v)[2+vvsize+ii] = other_env;
 	      }
 	    
@@ -3214,8 +3189,13 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
 		  ok = SCHEME_VEC_ELS(v)[0];
 	      } else
 		ok = NULL;
-	    } else
-	      ok = SCHEME_VEC_ELS(v)[0];
+	    } else {
+	      WRAP_POS_INIT(w2, ((Scheme_Stx *)stx)->wraps);
+	      if (same_marks(&w2, &w, 1, scheme_false, (Scheme_Object *)init_rib))
+		ok = SCHEME_VEC_ELS(v)[0];
+	      else
+		ok = NULL;
+	    }
 
 	    if (ok) {
 	      SCHEME_VEC_ELS(v2)[2+size+pos] = ok;
