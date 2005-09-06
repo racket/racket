@@ -259,17 +259,24 @@ incompatible changes to be done:
         [(null? l) mt-l]
         [else (cons (f (car l)) (loop (cdr l)))])))
     
-  (define re:gen-d (regexp ".*[^0-9]([0-9]+)$"))
+  (define re:gen-d #rx".*[^0-9]([0-9]+)$")
   (define (variable-not-in sexp var)
-    (let ([nums (let loop ([sexp sexp]
-                           [nums null])
-                  (cond
-                    [(pair? sexp) (loop (cdr sexp) (loop (car sexp) nums))]
-                    [(symbol? sexp) (let ([match (regexp-match re:gen-d (symbol->string sexp))])
-                                      (if match
-                                          (cons (string->number (cadr match)) nums)
-                                          nums))]
-                    [else nums]))])
+    (let* ([var-str (symbol->string var)]
+           [nums (let loop ([sexp sexp]
+                            [nums null])
+                   (cond
+                     [(pair? sexp) (loop (cdr sexp) (loop (car sexp) nums))]
+                     [(symbol? sexp) (let* ([str (symbol->string sexp)]
+                                            [match (regexp-match re:gen-d str)])
+                                       (if (and match
+                                                (is-prefix? var-str str))
+                                           (cons (string->number (cadr match)) nums)
+                                           nums))]
+                     [else nums]))])
       (if (null? nums)
           (string->symbol (format "~a1" var))
-          (string->symbol (format "~a~a" var (+ 1 (apply max nums))))))))
+          (string->symbol (format "~a~a" var (+ 1 (apply max nums)))))))
+  
+  (define (is-prefix? str1 str2)
+    (and (<= (string-length str1) (string-length str2))
+         (equal? str1 (substring str2 0 (string-length str1))))))
