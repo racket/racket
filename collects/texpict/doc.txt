@@ -1120,9 +1120,15 @@ The _code^_ unit supplies the following
 > current-keyword-color - parameter for a string or color% for keywords
 > current-id-color - parameter for a string or color% for identifiers
 > current-literal-color - parameter for a string or color% for literals
+> current-const-color - parameter for a string or color% for constants
 > current-base-color - parameter for a string or color% for everything else
-> current-open-paren - #f or a pict to use for plain open parens
-> current-close-paren - #f or a pict to use for plain close parens
+
+> current-reader-forms - parameter for a list of symbols indicating
+                         which built-in reader forms should be used;
+                         the default is '(quote quasiquote unquote
+			 unquote-splicing syntax  quasisyntax unsyntax
+			 unsyntax-splicing); remove a symbol to suppress
+			 the corresponding reader output
 
 For backward compatibility:
 > comment-color - default string/color% for comments
@@ -1137,18 +1143,26 @@ For backward compatibility:
 > current-keyword-list - a list of identifiers to color as keywords; the
   default includes the MzScheme syntactic form names
 
-> current-const-list - a list of identifiers to color ad literals; the
-  default is 'empty
+> current-const-list - a list of identifiers to color as constants; the
+  default is empty
+
+> current-literal-list - a list of identifiers to color as literals; the
+  default is empty
 
 > code-colorize-enabled - a parameter to enable or disable all code
-  coloring
+  coloring; the default is #t
+> code-colorize-quote-enabled - a parameter to control whether everything
+  under a quote is colorized as a literal (like DrScheme's Check Syntax,
+  and unlike DrScheme's interactive text coloring); the default is #t
 
 In addition to the `code@' unit, the "code.ss" module exports a
 `define-code' macro for defining other macros:
 
-> (define-code code-id typeset-code-id) - defines `code-id' as a macro
-  that uses `typeset-code-id', which is a function with the same input
-  as `typeset-code'.
+> (define-code code-id typeset-code-id) 
+> (define-code code-id typeset-code-id escape-id)
+  - defines `code-id' as a macro that uses `typeset-code-id', which is
+  a function with the same input as `typeset-code'. The `escape-id'
+  form defaults to `unsyntax'.
 
   The `code-id' syntactic form takes a sequence of `datum's:
 
@@ -1156,12 +1170,13 @@ In addition to the `code@' unit, the "code.ss" module exports a
 
   It produces a pict that typesets the sequence. Source-location
   information for the `datum' determine the layout of code in the
-  resulting pict.
+  resulting pict. A pict datum is drawn as itself.
 
-  If a `datum' contains `(unsyntax expr)' (perhaps as #,expr), then
-  the `expr' is evaluated and the result datum is spliced in place of
-  the `unsyntax' form in `datum'. If the result is not a syntax object,
-  it is given the source location of the `(unsyntax expr)'.
+  If a `datum' contains `(escape-id expr)' (perhaps as #,expr when
+  `escape-id' is `unsyntax'), then the `expr' is evaluated and the
+  result datum is spliced in place of the `unsyntax' form in
+  `datum'. If the result is not a syntax object, it is given the
+  source location of the `(unsyntax expr)'.
 
   The `code' syntactic form expands to a use of `typeset-code'. The
   `datum's are not merely syntax-quoted, because then the compiled

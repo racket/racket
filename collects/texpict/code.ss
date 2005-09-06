@@ -1,6 +1,7 @@
 (module code mzscheme
   (require "mrpict.ss"
 	   (lib "class.ss")
+	   (lib "list.ss")
            (lib "mred.ss" "mred")
 	   (lib "unitsig.ss"))
 
@@ -8,22 +9,26 @@
 
   (define-syntax (define-code stx)
     (syntax-case stx ()
-      [(_ code typeset-code)
+      [(_ code typeset-code uncode)
        (syntax/loc stx
 	 (define-syntax (code stx)
 	   (define (stx->loc-s-expr v)
 	     (cond
 	      [(syntax? v)
-	       `(datum->syntax-object
-		 #f
-		 ,(syntax-case v (unsyntax)
-		    [(unsyntax e) #'e]
-		    [else (stx->loc-s-expr (syntax-e v))])
-		 (list 'code
-		       ,(syntax-line v)
-		       ,(syntax-column v)
-		       ,(syntax-position v)
-		       ,(syntax-span v)))]
+	       (let ([mk `(datum->syntax-object
+			   #f
+			   ,(syntax-case v (uncode)
+			      [(uncode e) #'e]
+			      [else (stx->loc-s-expr (syntax-e v))])
+			   (list 'code
+				 ,(syntax-line v)
+				 ,(syntax-column v)
+				 ,(syntax-position v)
+				 ,(syntax-span v)))])
+		 (let ([prop (syntax-property v 'paren-shape)])
+		   (if prop
+		       `(syntax-property ,mk 'paren-shape ,prop)
+		       mk)))]
 	      [(pair? v) `(cons ,(stx->loc-s-expr (car v))
 				,(stx->loc-s-expr (cdr v)))]
 	      [(vector? v) `(vector ,@(map
@@ -37,16 +42,19 @@
 	   (syntax-case stx ()
 	     [(_ expr) #`(typeset-code #,(cvt #'expr))]
 	     [(_ expr (... ...))
-	      #`(typeset-code #,(cvt #'(code:line expr (... ...))))])))]))
+	      #`(typeset-code #,(cvt #'(code:line expr (... ...))))])))]
+      [(_ code typeset-code) #'(define-code code typeset-code unsyntax)]))
   
   (define-signature code^
     (typeset-code 
-     comment-color keyword-color id-color literal-color
+     comment-color keyword-color id-color const-color literal-color
      code-align current-code-tt
-     current-keyword-list current-const-list code-colorize-enabled
+     current-keyword-list current-const-list current-literal-list 
+     code-colorize-enabled code-colorize-quote-enabled
      current-comment-color current-keyword-color 
      current-base-color current-id-color current-literal-color
-     current-open-paren current-close-paren))
+     current-reader-forms
+     mzscheme-const-list))
 
   (define-signature code-params^
     (current-font-size 
@@ -61,7 +69,7 @@
 	     (syntax-id-rules (set!)
 	       [(x (... ...)) ,illegal-use-of-once]
 	       [x (get-val)])))]))
-
+  
   (define code@
     (unit/sig code^
       (import code-params^)
@@ -77,15 +85,39 @@
       (define (code-align p)
 	(lift (inset p 0 (pict-height p) 0 0) (pict-height p)))
       
+      (define mzscheme-ns (let ([n (make-namespace 'empty)]
+				[orig (current-namespace)])
+			    (parameterize ([current-namespace n])
+			      (namespace-attach-module orig 'mzscheme)
+			      (namespace-require/copy 'mzscheme))
+			    n))
+      (define mzscheme-bindings (namespace-mapped-symbols mzscheme-ns))
+      (define mzscheme-vars (filter (lambda (n)
+				      (not (eq? 'nope
+						(namespace-variable-value n #f (lambda () 'nope) mzscheme-ns))))
+				    mzscheme-bindings))
+      
       (define current-keyword-list 
-	(make-parameter '("define" "cond" "define-struct" "and" "or" "else"
-			  "lambda" "require" "provide"  "require-for-syntax"
-			  "define-syntax" "let" "letrec" "let*" "syntax-rules"
-			  "syntax-case" "set!" "begin" "quote-syntax" "module")))
+	(make-parameter 
+	 (let ([ht (make-hash-table)])
+	   (for-each (lambda (n) (hash-table-put! ht n #f))
+		     mzscheme-vars)
+	   (map symbol->string
+		(filter (lambda (n)
+			  (hash-table-get ht n (lambda () #t)))
+			mzscheme-bindings)))))
       (define current-const-list 
-	(make-parameter '("null")))
+	(make-parameter '()))
+      (define current-literal-list 
+	(make-parameter '()))
+
+      (define mzscheme-const-list
+	(map symbol->string mzscheme-vars))
 
       (define code-colorize-enabled
+	(make-parameter #t))
+
+      (define code-colorize-quote-enabled
 	(make-parameter #t))
 
       (define (maybe-colorize p c)
@@ -100,49 +132,80 @@
       (define current-id-color (make-parameter id-color))
       (define literal-color (make-object color% 51 135 39))
       (define current-literal-color (make-parameter literal-color))
+      (define const-color (make-object color% #x99 0 0))
+      (define current-const-color (make-parameter const-color))
       (define comment-color (current-base-color))
       (define current-comment-color (make-parameter comment-color))
-      (define current-open-paren (make-parameter #f))
-      (define current-close-paren (make-parameter #f))
+      (define current-reader-forms (make-parameter '(quote
+						     quasiquote 
+						     unquote unquote-splicing
+						     syntax
+						     quasisyntax
+						     unsyntax unsyntax-splicing)))
       
-      (define-computed open-paren-p (colorize (tt "(") (current-base-color)))
-      (define-computed close-paren-p (colorize (tt ")") (current-base-color)))
-      (define-computed open-sq-p (colorize (tt "[") (current-base-color)))
-      (define-computed close-sq-p (colorize (tt "]") (current-base-color)))
-      (define-computed quote-p (colorize (tt "'") (current-literal-color)))
-      (define-computed syntax-p (colorize (tt "#'") (current-keyword-color)))
-      (define-computed semi-p (colorize (tt "; ") (current-comment-color)))
-      (define-computed open-paren/lit-p (colorize (tt "(") (current-literal-color)))
-      (define-computed close-paren/lit-p (colorize (tt ")") (current-literal-color)))
-      (define-computed open-paren/tmpl-p (colorize (tt "(") (current-comment-color)))
-      (define-computed close-paren/tmpl-p (colorize (tt ")") (current-comment-color)))
+      (define-computed open-paren-p (tt "("))
+      (define-computed close-paren-p (tt ")"))
+      (define-computed open-sq-p (tt "["))
+      (define-computed close-sq-p (tt "]"))
+      (define-computed open-curly-p (tt "{"))
+      (define-computed close-curly-p (tt "}"))
 
-      (define-computed dot-p (colorize (tt " . ") (current-base-color)))
+      (define-computed quote-p (tt "'"))
+      (define-computed unquote-p (tt ","))
+      (define-computed unquote-splicing-p (tt ",@"))
+      (define-computed quasiquote-p (tt "`"))
+      (define-computed syntax-p (tt "#'"))
+      (define-computed unsyntax-p (tt "#,"))
+      (define-computed unsyntax-splicing-p (tt "#,@"))
+      (define-computed quasisyntax-p (tt "#`"))
+      (define-computed semi-p (tt "; "))
 
-      (define (get-close mode)
-	(case mode
-	  [(literal) close-paren/lit-p]
-	  [(template comment) close-paren/tmpl-p]
-	  [(cond template-cond local) close-sq-p]
-	  [else (or (current-close-paren)
-		    close-paren-p)]))
+      (define (comment-mode? mode)
+	(eq? mode 'comment))
+      
+      (define-computed dot-p (tt " . "))
 
-      (define (get-open mode)
-	(case mode
-	  [(literal) open-paren/lit-p]
-	  [(template comment) open-paren/tmpl-p]
-	  [(contract line) (blank)]
-	  [(cond template-cond local) open-sq-p]
-	  [else (or (current-open-paren)
-		    open-paren-p)]))
+      (define (mode-colorize mode type p)
+	(maybe-colorize
+	 p
+	 (case mode
+	   [(literal) (current-literal-color)]
+	   [(comment) (current-comment-color)]
+	   [else (cond
+		  [(number? mode) (current-literal-color)]
+		  [(eq? type 'keyword) (current-keyword-color)]
+		  [(eq? type 'literal) (current-literal-color)]
+		  [(eq? type 'const) (current-const-color)]
+		  [(eq? type 'id) (current-id-color)]
+		  [else (current-base-color)])])))
+	
+      (define (get-open mode stx)
+	(if (memq mode '(contract line))
+	    (blank)
+	    (mode-colorize 
+	     mode #f
+	     (case (syntax-property stx 'paren-shape)
+	       [(#\[) open-sq-p]
+	       [(#\{) open-curly-p]
+	       [else open-paren-p]))))
+	
+      (define (get-close mode stx)
+	(if (memq mode '(contract line))
+	    (blank)
+	    (mode-colorize
+	     mode #f
+	     (case (syntax-property stx 'paren-shape)
+	       [(#\[) close-sq-p]
+	       [(#\{) close-curly-p]
+	       [else close-paren-p]))))
       
       (define (add-close p closes)
 	(cond
 	 [(null? closes) p]
-	 [(memq (car closes) '(contract line))
+	 [(memq (caar closes) '(contract line))
 	  (add-close p (cdr closes))]
 	 [else
-	  (add-close (hbl-append p (get-close (car closes)))
+	  (add-close (hbl-append p (get-close (caar closes) (cdar closes)))
 		     (cdr closes))]))
 
       (define (pad-left space p)
@@ -160,8 +223,9 @@
 	 [(and ((string-length str) . > . 1)
 	       (char=? #\_ (string-ref str 0))
 	       (not (char=? #\_ (string-ref str 1))))
-	  (maybe-colorize (text (substring str 1) `(bold italic . modern) (current-font-size))
-			  (current-id-color))]
+	  (mode-colorize
+	   mode 'id
+	   (text (substring str 1) `(bold italic . modern) (current-font-size)))]
 	 [(regexp-match #rx"^(.+)_([0-9a-z]+)\\^([0-9a-z]+)$" str)
 	  => (lambda (m)
 	       (hbl-append (colorize-id (cadr m) mode)
@@ -183,14 +247,14 @@
 	       (hbl-append (colorize-id (cadr m) mode)
 			   (text (caddr m) `(subscript bold . modern) (current-font-size))))]
 	 [else
-	  (maybe-colorize
-	   (tt str)
+	  (mode-colorize
+	   mode 
 	   (cond
-	    [(eq? mode 'literal) (current-literal-color)]
-	    [(memq mode '(comment template)) (current-comment-color)]
-	    [(member str (current-keyword-list)) (current-keyword-color)]
-	    [(member str (current-const-list)) (current-literal-color)]
-	    [else (current-id-color)]))]))
+	    [(member str (current-keyword-list)) 'keyword]
+	    [(member str (current-const-list)) 'const]
+	    [(member str (current-literal-list)) 'literal]
+	    [else 'id])
+	   (tt str))]))
 
       (define (sub-mode mode)
 	(case mode
@@ -210,26 +274,73 @@
           [code:blank 1]
           [_ (or (syntax-span stx) 1)]))
       
+      (define (color-semi-p)
+	(mode-colorize 'comment #f semi-p))
+
       (define (add-semis p)
-	(let loop ([p p] [semis semi-p])
+	(let loop ([p p] [semis (color-semi-p)])
 	  (if ((pict-height p) . > . (+ (pict-height semis) 1))
-	      (loop p (vl-append line-sep semi-p semis))
+	      (loop p (vl-append line-sep (color-semi-p) semis))
 	      (htl-append semis p))))
+
+      (define (add-unquote unquote-p loop x closes mode)
+	(let ([mode (cond
+		     [(number? mode) (if (zero? mode)
+					 #f
+					 (sub1 mode))]
+		     [else mode])])
+	  (htl-append (mode-colorize mode 'keyword unquote-p) 
+		      (loop x closes mode))))
 
       (define (typeset-code stx)
 	(let loop ([stx stx][closes null][mode #f])
-	  (syntax-case* stx (quote syntax-unquote syntax
+	  (syntax-case* stx (quote unquote unquote-splicing quasiquote
+				   syntax-unquote syntax unsyntax
+				   unsyntax-splicing quasisyntax
 				   code:contract code:comment code:line
 				   code:template code:blank $)
 			(lambda (a b) (eq? (syntax-e a) (syntax-e b)))
-	    [() (add-close (htl-append (get-open mode) (get-close mode))
+	    [() (add-close (htl-append (get-open mode stx) (get-close mode stx))
 			   closes)]
 	    [code:blank (tt " ")]
 	    [$ (colorize-id "|" closes)]
 	    [(quote x)
-	     (htl-append quote-p (loop #'x closes 'literal))]
+	     (memq 'quote (current-reader-forms))
+	     (htl-append (mode-colorize mode 'literal quote-p) 
+			 (loop #'x closes (if (or (not (code-colorize-quote-enabled))
+						  (comment-mode? mode))
+					      mode
+					      'literal)))]
+	    [(unquote x)
+	     (memq 'unquote (current-reader-forms))
+	     (add-unquote unquote-p loop #'x closes mode)]
+	    [(unquote-splicing x)
+	     (memq 'unquote-splicing (current-reader-forms))
+	     (add-unquote unquote-splicing-p loop #'x closes mode)]
+	    [(quasiquote x)
+	     (memq 'quasiquote (current-reader-forms))
+	     (htl-append (mode-colorize mode 'keyword quasiquote-p) 
+			 (loop #'x closes (cond
+					   [(not (code-colorize-quote-enabled)) mode]
+					   [(comment-mode? mode) mode]
+					   [(number? mode) (add1 mode)]
+					   [else 0])))]
 	    [(syntax x)
-	     (htl-append syntax-p (loop #'x closes mode))]
+	     (memq 'syntax (current-reader-forms))
+	     (htl-append (mode-colorize mode 'literal syntax-p) 
+			 (loop #'x closes mode))]
+	    [(unsyntax x)
+	     (memq 'unsyntax (current-reader-forms))
+	     (htl-append (mode-colorize mode 'literal unsyntax-p) 
+			 (loop #'x closes mode))]
+	    [(unsyntax-splicing x)
+	     (memq 'unsyntax-splicing (current-reader-forms))
+	     (htl-append (mode-colorize mode 'literal unsyntax-splicing-p) 
+			 (loop #'x closes mode))]
+	    [(quasisyntax x)
+	     (memq 'unsyntax-splicing (current-reader-forms))
+	     (htl-append (mode-colorize mode 'literal quasisyntax-p) 
+			 (loop #'x closes mode))]
 	    [(code:contract i ...)
 	     (add-semis (loop (datum->syntax-object #f (syntax->list #'(i ...)))
 			      closes 'contract))]
@@ -238,20 +349,20 @@
 		   closes 'line)]
 	    [(code:comment s ...)
 	     (apply htl-append 
-		    semi-p 
+		    (color-semi-p)
 		    (map (lambda (s)
 			   (if (pict? (syntax-e s))
 			       (syntax-e s)
 			       (maybe-colorize (tt (syntax-e s)) (current-comment-color))))
 			 (syntax->list #'(s ...))))]
-	    [(code:template i)
-	     (add-semis (loop #'i closes 'template))]
+	    [(code:template i ...)
+	     (add-semis (loop #'(code:line i ...) closes 'template))]
 	    [(i ...)
 	     (let ([is (syntax->list #'(i ...))])
 	       ;; Convert each i to a picture, include close paren in last item:
 	       (let ([ips (let iloop ([is is][sub-mode (sub-mode mode)])
 			    (cond
-			     [(null? (cdr is)) (list (loop (car is) (cons mode closes) sub-mode))]
+			     [(null? (cdr is)) (list (loop (car is) (cons (cons mode stx) closes) sub-mode))]
 			     [else (cons (loop (car is) null sub-mode)
 					 (iloop (cdr is) (cond
 							  [(cond? (car is))
@@ -268,7 +379,7 @@
 		 (let ([left (or (syntax-column stx) +inf.0)])
 		   (let loop ([stxs is]
 			      [ps ips]
-			      [line-so-far (get-open mode)]
+			      [line-so-far (get-open mode stx)]
 			      [col (+ left 1)]
 			      [line (syntax-line stx)]
 			      [always-space? #f]
@@ -326,12 +437,14 @@
 	     (identifier? stx)
 	     (add-close (colorize-id (symbol->string (syntax-e stx)) mode) closes)]
 	    [(a . b)
-	     (hbl-append open-paren-p (loop #'a null mode)
-			 dot-p (loop #'b (cons mode closes) mode))]
+	     (hbl-append (mode-colorize mode #f open-paren-p) (loop #'a null mode)
+			 (mode-colorize mode #f dot-p)
+			 (loop #'b (cons (cons mode stx) closes) mode))]
 	    [else
 	     (add-close (if (pict? (syntax-e stx))
 			    (syntax-e stx)
-			    (maybe-colorize (tt (format "~s" (syntax-e stx))) (current-literal-color)))
+			    (mode-colorize mode 'literal
+					   (tt (format "~s" (syntax-e stx))) ))
 			closes)])))
       
       )))
