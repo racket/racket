@@ -1130,7 +1130,7 @@ The _code^_ unit supplies the following
 			 unsyntax-splicing); remove a symbol to suppress
 			 the corresponding reader output
 
-For backward compatibility:
+The following four are for backward compatibility:
 > comment-color - default string/color% for comments
 > keyword-color - default string/color% for keywords
 > id-color - default string/color% for ids
@@ -1140,17 +1140,18 @@ For backward compatibility:
   aligns with the baseline for text; use this function when `pict'
   has no ascent.
 
-> current-keyword-list - a list of identifiers to color as keywords; the
-  default includes the MzScheme syntactic form names
+> current-keyword-list - a parameter, a list of strings to color as
+  keywords; the default includes the MzScheme syntactic form names
 
-> current-const-list - a list of identifiers to color as constants; the
-  default is empty
+> current-const-list - a parameter, a list of strings to color as
+  constants; the default is empty
 
-> current-literal-list - a list of identifiers to color as literals; the
-  default is empty
+> current-literal-list - a parameter, a list of strings to color as
+  literals; the default is empty
 
 > code-colorize-enabled - a parameter to enable or disable all code
   coloring; the default is #t
+
 > code-colorize-quote-enabled - a parameter to control whether everything
   under a quote is colorized as a literal (like DrScheme's Check Syntax,
   and unlike DrScheme's interactive text coloring); the default is #t
@@ -1160,9 +1161,10 @@ In addition to the `code@' unit, the "code.ss" module exports a
 
 > (define-code code-id typeset-code-id) 
 > (define-code code-id typeset-code-id escape-id)
-  - defines `code-id' as a macro that uses `typeset-code-id', which is
-  a function with the same input as `typeset-code'. The `escape-id'
-  form defaults to `unsyntax'.
+
+  Defines `code-id' as a macro that uses `typeset-code-id', which is a
+  function with the same input as `typeset-code'. The `escape-id' form
+  defaults to `unsyntax'.
 
   The `code-id' syntactic form takes a sequence of `datum's:
 
