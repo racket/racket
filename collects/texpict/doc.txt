@@ -1124,11 +1124,10 @@ The _code^_ unit supplies the following
 > current-base-color - parameter for a string or color% for everything else
 
 > current-reader-forms - parameter for a list of symbols indicating
-                         which built-in reader forms should be used;
-                         the default is '(quote quasiquote unquote
-			 unquote-splicing syntax  quasisyntax unsyntax
-			 unsyntax-splicing); remove a symbol to suppress
-			 the corresponding reader output
+  which built-in reader forms should be used; the default is '(quote
+  quasiquote unquote unquote-splicing syntax quasisyntax unsyntax
+  unsyntax-splicing); remove a symbol to suppress the corresponding
+  reader output
 
 The following four are for backward compatibility:
 > comment-color - default string/color% for comments
@@ -1142,12 +1141,13 @@ The following four are for backward compatibility:
 
 > current-keyword-list - a parameter, a list of strings to color as
   keywords; the default includes the MzScheme syntactic form names
-
 > current-const-list - a parameter, a list of strings to color as
   constants; the default is empty
-
 > current-literal-list - a parameter, a list of strings to color as
   literals; the default is empty
+
+> mzscheme-const-list - a list of strings that could be used to initialize
+  the `current-const-list' parameter
 
 > code-colorize-enabled - a parameter to enable or disable all code
   coloring; the default is #t
