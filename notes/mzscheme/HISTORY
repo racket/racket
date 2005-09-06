@@ -1,3 +1,10 @@
+Version 299.400, Setember 2005
+Improved Windows path support
+Added optional argument to simplify-path
+Added 'pair-shape property to reader
+Inside MzScheme: added scheme_get_port_file_descriptor()
+ and scheme_get_port_socket()
+
 Version 299.200, August 2005
 >> See MzScheme_300.txt for information on major changes since
    version 209. Relatively minor changes are listed here.
