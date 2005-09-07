@@ -30,7 +30,7 @@
   ;; For beginner, `define-type' requires predicates for
   ;;  contracts, and it doesn't define contracts
   (define-syntax (beginner-define-type stx)
-    (syntax-case stx (represented-as)
+    (syntax-case stx ()
       [(_ name (variant (field predicate) ...) ...)
        (let ([name #'name])
 	 (unless (identifier? name)
@@ -64,8 +64,12 @@
     (syntax-case stx ()
       [(_ (id ...) expr)
        (with-syntax ([(alt-id ...) (generate-temporaries #'(id ...))])
-	 #'(begin
-	     (define-values (alt-id ...) expr)
-	     (define-primitive id alt-id) ...))]))
+	 (with-syntax ([top-level-hack (if (eq? 'top-level (syntax-local-context))
+					   #'(define-syntaxes (alt-id ...) (values))
+					   #'(begin))])
+	   #'(begin
+	       top-level-hack
+	       (define-primitive id alt-id) ...
+	       (define-values (alt-id ...) expr))))]))
 
   (define-type-case beginner-type-case plai-else))
