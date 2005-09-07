@@ -41,7 +41,6 @@
                     [fake-beginner-wla-render-settings render-settings?]
                     [fake-intermediate-render-settings render-settings?]
                     [fake-intermediate/lambda-render-settings render-settings?]
-                    [fake-advanced-render-settings render-settings?]
                     [fake-mz-render-settings render-settings?])
   
   (define (make-fake-render-to-sexp true/false constructor-style abbreviate)
@@ -65,10 +64,6 @@
     fake-beginner-wla-render-settings)
   
   (define fake-intermediate/lambda-render-settings
-    fake-beginner-wla-render-settings)
-  
-  ;; this is a guess:
-  (define fake-advanced-render-settings
     fake-beginner-wla-render-settings)
   
   (define fake-mz-render-settings
