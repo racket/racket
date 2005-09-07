@@ -213,8 +213,8 @@ HDC wxGetPrinterDC(void);
 
 // Logical to device
 // Absolute
-#define MS_XLOG2DEV(x) ((int)floor((x)*logical_scale_x*user_scale_x + device_origin_x + canvas_scroll_dx))
-#define MS_YLOG2DEV(y) ((int)floor((y)*logical_scale_y*user_scale_y + device_origin_y + canvas_scroll_dy))
+#define MS_XLOG2DEV(x) ((int)floor((x)*logical_scale_x*user_scale_x + (device_origin_x+canvas_scroll_dx)*logical_scale_x))
+#define MS_YLOG2DEV(y) ((int)floor((y)*logical_scale_y*user_scale_y + (device_origin_y+canvas_scroll_dy)*logical_scale_y))
 
 // Logical to device
 #define XLOG2DEV(x) MS_XLOG2DEV(x)
@@ -226,8 +226,8 @@ HDC wxGetPrinterDC(void);
 
 // Device to logical
 // Absolute
-#define MS_XDEV2LOG(x) (((x) - device_origin_x - canvas_scroll_dx)/(logical_scale_x*user_scale_x))
-#define MS_YDEV2LOG(y) (((y) - device_origin_y - canvas_scroll_dy)/(logical_scale_y*user_scale_y))
+#define MS_XDEV2LOG(x) (((x)/(logical_scale_x*user_scale_x)) - (device_origin_x + canvas_scroll_dx)/logical_scale_x)
+#define MS_YDEV2LOG(y) (((y)/(logical_scale_y*user_scale_y)) - (device_origin_y + canvas_scroll_dy)/logical_scale_y)
 
 // Relative
 #define MS_XDEV2LOGREL(x) ((x)/(logical_scale_x*user_scale_x))

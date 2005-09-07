@@ -1840,8 +1840,8 @@ void wxDC::DrawText(const char *text, double x, double y, Bool combine, Bool ucs
     
     alen = substitute_font(ustring, d, alen, font, dc, screen_font, angle, &reset);
     
-    SetDeviceOrigin(MS_XLOG2DEVREL(x + w) + oox + canvas_scroll_dx, 
-		    MS_YLOG2DEVREL(y + h) + ooy + canvas_scroll_dy);
+    SetDeviceOrigin(((x + w)*user_scale_x) + oox + canvas_scroll_dx, 
+		    ((y + h)*user_scale_y) + ooy + canvas_scroll_dy);
 
     (void)TextOutW(dc, 0, 0, ustring XFORM_OK_PLUS d, alen);
 
@@ -2256,7 +2256,7 @@ void wxDC::ResetMapMode(HDC given_dc)
 		       (int)floor(1000*ly*sy),
 		       NULL);
     ::SetWindowExtEx(dc, 1000, 1000, NULL);
-    ::SetViewportOrgEx(dc, (int)floor(ox), (int)floor(oy), NULL);
+    ::SetViewportOrgEx(dc, (int)floor(ox*lx), (int)floor(oy*ly), NULL);
     ::SetWindowOrgEx(dc, (int)0, (int)0, NULL);
   }
 
