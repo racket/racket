@@ -238,7 +238,7 @@ sub-directories:
     attempts and successes. If a directory "ATTEMPT" exists, it
     contains the most recent (unsuccessful) handin
     attempt. Directories "SUCCESS-n" (where n counts from 0) contain
-    successful handins; the highest numbered such directory represents
+    successful handins; the lowest numbered such directory represents
     the latest handin.
 
     Within an "ATTEMPT" or "SUCCESS-n" directory, a file "handin.scm"
