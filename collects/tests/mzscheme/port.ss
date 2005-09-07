@@ -154,7 +154,7 @@
   (define (remq v l)
     (if (eq? (car l) v)
 	(cdr l)
-	(cons (car l) (remq (cdr l) v))))
+	(cons (car l) (remq v (cdr l)))))
   ;; ----------------------------------------
   ;; The server has a list of outstanding commit requests,
   ;;  and it also must service each port operation (read, 
