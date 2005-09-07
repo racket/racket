@@ -115,7 +115,7 @@
   (test (interp (parse expr)) (num ans)))
 
 (define (interp-test-error expr expected-exception-msg)
-  (test-exn (lambda () (interp (parse expr))) expected-exception-msg))
+  (test/exn (lambda () (interp (parse expr))) expected-exception-msg))
 
 (interp-test '5 5)
 (interp-test '{+ 5 5} 10)

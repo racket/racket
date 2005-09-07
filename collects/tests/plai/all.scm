@@ -24,7 +24,7 @@
 (define (parse sexp)
   (cond
    [(number? sexp) (num sexp)]
-   [(list? sexp)
+   [(cons? sexp)
     (case (first sexp)
       [(+) (add (parse (second sexp))
                      (parse (third sexp)))]
