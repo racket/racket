@@ -14,7 +14,7 @@
 	("getMessage" (public) ("String" "java" "lang") () () ("Throwable" "java" "lang"))
 	("getStackTrace" (public) (1 ("StackTraceElement" "java" "lang")) () () ("Throwable" "java" "lang"))
 	("printStackTrace" (public) void () () ("Throwable" "java" "lang"))
-	("printStackTrace" (public) void (("PrintString" "java" "io")) () ("Throwable" "java" "lang"))
+	("printStackTrace" (public) void (("PrintStream" "java" "io")) () ("Throwable" "java" "lang"))
 	("printStackTrace" (public) void (("PrintWriter" "java" "io")) () ("Throwable" "java" "lang"))
 	("setStackTrace" (public) void ((1 ("StackTraceElement" "java" "lang"))) () ("Throwable" "java" "lang"))
 	;("toString" (public) ("String" "java" "lang") () () ("Throwable" "java" "lang"))

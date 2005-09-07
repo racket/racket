@@ -542,7 +542,7 @@
       ((null? reqs) null)
       ((member (cadr (car reqs))
                (list (make-req "Class" '("java" "lang"))
-                     (make-req "PrintString" '("java" "io"))
+                     (make-req "PrintStream" '("java" "io"))
                      (make-req "PrintWriter" '("java" "io"))))
        (translate-require (cdr reqs) type-recs))
       (else
@@ -932,7 +932,10 @@
        (cond 
          ((and (equal? string-type type) from-dynamic?) `(make-java-string ,value))
          ((equal? string-type type) `(send ,value get-mzscheme-string))
-         ((equal? type (make-ref-type "Class" '("java" "lang"))) value)
+         ((member type (list 
+                        (make-ref-type "Class" '("java" "lang"))
+                        (make-ref-type "PrintStream" '("java" "io"))
+                        (make-ref-type "PrintWriter" '("java" "io")))) value)
          (from-dynamic? `(,(build-identifier (string-append "wrap-convert-assert-" (ref-type-class/iface type)))
                            ,value pos-blame neg-blame src cc-marks))
          (else `(make-object ,(build-identifier (string-append "guard-convert-" (ref-type-class/iface type)))
@@ -1714,7 +1717,7 @@
                      (if isRuntime?
                          (make-syntax #f `exn? (build-src var-src))
                          (make-syntax #f 
-                                      `(javaException:exception-is-a? ,class-name)
+                                      `(exception-is-a? ,class-name)
                                       (build-src var-src))))
                     (parm (translate-id (build-var-name (id-string (field-name catch-var)))
                                         (id-src (field-name catch-var))))
@@ -2624,7 +2627,14 @@
                                                                (build-identifier (var-access-class vaccess))))))
                   ((not obj) (set-h (translate-id (build-var-name field) field-src)))
                   (else
-                   (let ((setter (create-set-name field (var-access-class vaccess)))
+                   (let ((setter (if (var-access-final? vaccess)
+                                     (make-syntax #f 
+                                                  `(lambda (my-dummy new-val)
+                                                     ((class-field-mutator ,(build-identifier (var-access-class vaccess))
+                                                                           ,(build-identifier field))
+                                                      this new-val))
+                                                  #f)
+                                     (create-set-name field (var-access-class vaccess))))
                          (getter (create-get-name field (var-access-class vaccess)))
                          (name (gensym 'field-obj))
                          (new-val (gensym 'val)))

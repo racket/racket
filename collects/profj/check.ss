@@ -1142,12 +1142,15 @@
               (if (null? catches)
                   new-env
                   (let* ((catch (car catches))
-                         (type (field-type-spec (catch-cond catch))))
+                         (type (type-spec-to-type (field-type-spec (catch-cond catch)) #f 'full type-recs)))
                     (unless (and (ref-type? type)
                                  (is-eq-subclass? type throw-type type-recs))
                       (catch-error type (field-src (catch-cond catch))))
+                    (set-field-type! (catch-cond catch) type)
+                    (add-required '("" "") (ref-type-class/iface type) (ref-type-path type) type-recs)
                     (loop (cdr catches) (add-exn-to-env type env))))))
            (body-res (check-s body new-env)))
+      (add-required '("" "") "Throwable" '("java" "lang") type-recs)
       (for-each (lambda (catch)
                   (let* ((field (catch-cond catch))
                          (name (id-string (field-name field)))
@@ -1155,10 +1158,10 @@
                     (if (and in-env? (not (properties-field? (var-type-properties in-env?))))
                         (illegal-redefinition (field-name field) (field-src field))
                         (check-s (catch-body catch)
-                                 (add-var-to-env name (field-type-spec field) parm env)))))
+                                 (add-var-to-env name (field-type field) parm env)))))
                 catches)
       (when finally (check-s finally env))
-      (make-type/env 'void (unnest-var (type/env-e body-res)))))
+      (make-type/env 'void (unnest-var env (type/env-e body-res)))))
 
   ;INCORRECT!!! This doesn't properly type check and I'm just raising an error for now
   ;Skipping proper checks of the statements + proper checking that constants aren't repeated
