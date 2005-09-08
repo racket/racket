@@ -7,6 +7,7 @@
 	   (lib "date.ss")
 	   (lib "list.ss")
 	   "md5.ss"
+	   "lock.ss"
 	   "web-status-server.ss"
 	   "run-status.ss")
 
@@ -63,6 +64,7 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define ATTEMPT-DIR "ATTEMPT")
+
   (define (success-dir n) 
     (format "SUCCESS-~a" n))
   (define (make-success-dir-available n)
@@ -82,6 +84,7 @@
     (parameterize ([current-directory (build-path "active" assignment)])
       (unless (directory-exists? user)
 	(make-directory user))
+      (wait-for-lock user)
       (parameterize ([current-directory user])
 	(let ([len (read r-safe)])
 	  (unless (and (number? len)
