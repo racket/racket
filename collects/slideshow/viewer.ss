@@ -222,11 +222,13 @@
 		   #t]
 		  [(#\g)
 		   (stop-transition)
+		   (send f set-blank-cursor #f)
 		   (if (send e get-meta-down)
 		       (get-page-from-user)
 		       (begin
 			 (set! current-page (max 0 (sub1 slide-count)))
 			 (refresh-page)))
+		   (send f set-blank-cursor blank-cursor-allowed?)
 		   #t]
 		  [(#\1)
 		   (stop-transition)
@@ -240,6 +242,7 @@
 		     (stop-show))
 		   #t]
 		  [(escape)
+		   (send f set-blank-cursor #f)
 		   (when (equal? 1 (message-box/custom
 				    "Quit"
 				    "Really quit the slide show?"
@@ -249,6 +252,7 @@
 				    this
 				    '(default=1 caution)))
 		     (stop-show))
+		   (send f set-blank-cursor blank-cursor-allowed?)
 		   #t]
 		  [(#\p)
 		   (when (or (send e get-meta-down)
