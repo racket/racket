@@ -71,13 +71,16 @@ the default printing style shold be 'constructor instead of 'write
 	     '((lib "plai-beginner.ss" "plai") 
 	       (lib "plai-intermediate.ss" "plai") 
 	       (lib "plai-advanced.ss" "plai")
-	       (lib "plai-pretty-big.ss" "plai"))
+	       (lib "plai-pretty-big.ss" "plai")
+	       (lib "plai-void.ss" "plai"))
 	     '("PLAI - Beginning Student"
 	       "PLAI - Intermediate Student with lambda"
 	       "PLAI - Advanced Student"
-	       "PLAI - Pretty Big")
-	     '((-500 0 0) (-500 0 1) (-500 0 3) (-500 0 4))
+	       "PLAI - Pretty Big"
+	       "PLAI - Void")
+	     '((-500 0 0) (-500 0 1) (-500 0 3) (-500 0 4) (-500 0 5))
 	     '("PLAI: beginning students"
 	       "PLAI: beginner plus lexical scope and higher-order functions" 
 	       "PLAI: intermediate plus lambda and mutation"
-	       "PLAI: professional plt plus define-datatype"))))))
+	       "PLAI: PLT Pretty Big plus define-type"
+	       "PLAI: advanced without function arguments, lambda, or local"))))))

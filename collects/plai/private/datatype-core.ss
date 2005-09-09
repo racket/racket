@@ -334,7 +334,7 @@
   (define-syntax cases-core
     (lambda (stx)
       (syntax-case stx ()
-	[(_ orig-stx datatype-str cases-else
+	[(_ orig-stx datatype-str case-begin cases-else
 	    datatype expr 
 	    clause
 	    ...)
@@ -420,7 +420,9 @@
 						    (loop (cdr clauses) (cons orig-variant saw-cases))])
 					(values (cons vt vts)
 						(cons field-ids idss)
-						(cons (syntax (begin body0 body1 ...)) bodys)
+						(cons (with-syntax ([clause clause])
+							(syntax (case-begin orig-stx clause body0 body1 ...)))
+						      bodys)
 						else))))]
 				 [(else body0 body1 ...)
 				  (begin

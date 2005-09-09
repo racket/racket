@@ -43,12 +43,23 @@
 	"expected an identifier for the type name"
 	stx)]))
   
+  (define-syntax (case-begin stx)
+    (syntax-case stx ()
+      [(_ orig-stx orig-clause expr) #'expr]
+      [(_ orig-stx orig-clause expr0 expr ...)
+       (raise-syntax-error
+	#f
+	(format "expected only one result expression, found ~a"
+		(add1 (length (syntax->list #'(expr ...)))))
+	#'orig-stx
+	#'orig-clause)]))
+
   (define-syntax define-type-case
     (syntax-rules ()
       [(_ type-case else)
        (define-syntax (type-case stx)
 	 (syntax-case stx ()
-	   [(_ . rest) #`(cases-core #,stx "type" else . rest)]))]))
+	   [(_ . rest) #`(cases-core #,stx "type" case-begin else . rest)]))]))
 
   (define-syntax (provide-type stx)
     (syntax-case stx ()
