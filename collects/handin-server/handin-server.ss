@@ -82,12 +82,24 @@
   (define SUCCESS-RE (regexp (format "^~a$" (success-dir "[0-9]+"))))
   (define SUCCESS-GOOD (map success-dir '(0 1)))
 
+  (define-syntax careful-switch-directory-switch
+    (syntax-rules ()
+      [(_ ?dir body ...)
+       (let ([dir (with-handlers ([void (lambda _ #f)]) (normalize-path ?dir))])
+         (when (and dir (directory-exists? dir))
+           (parameterize ([current-directory (current-directory)])
+             (when (with-handlers ([void (lambda _ #f)])
+                     (current-directory dir) #t)
+               body ...))))]))
+
   (define (cleanup-submission dir)
     ;; This is called at a lock cleanup, so it is important that it does not
     ;; throw an exception, or the whole server will be locked down.  It is
     ;; invoked just before the lock is released, so fine to assume that we have
     ;; exclusive access to the directory contents.
-    (when (directory-exists? dir)
+    (with-handlers ([_ (lambda (e)
+                         (LOG "*** ERROR DURING (cleanup-submission ~s) : ~a"
+                              dir (if (exn? e) (exn-message e) e)))])
       (parameterize ([current-directory dir])
         ;; Find the newest SUCCESS dir -- ignore ATTEMPT, since if it exist it
         ;; means that there was a failed submission and the next one will
@@ -104,37 +116,59 @@
             (unless (member dir SUCCESS-GOOD)
               (LOG "*** USING AN UNEXPECTED SUBMISSION DIRECTORY: ~a"
                    (build-path (current-directory) dir)))
-            ;; We have a submission directory -- copy all newer things
-            ;; (extra things that exist in the main submission directory but
-            ;; not in SUCCESS, or things that are newer in the main submission
+            ;; We have a submission directory -- copy all newer things (extra
+            ;; things that exist in the main submission directory but not in
+            ;; SUCCESS, or things that are newer in the main submission
             ;; directory are kept (but subdirs in SUCCESS will are copied as
             ;; is))
             (for-each
              (lambda (f)
+               (define dir/f (build-path dir f))
                (cond [(not (or (file-exists? f) (directory-exists? f)))
                       ;; f is in dir but not in the working directory
-                      (copy-directory/files (build-path dir f) f)]
-                     [(<= (file-or-directory-modify-seconds f)
-                          (file-or-directory-modify-seconds (build-path dir f)))
+                      (copy-directory/files dir/f f)]
+                     [(or (<= (file-or-directory-modify-seconds f)
+                              (file-or-directory-modify-seconds dir/f))
+                          (and (file-exists? f) (file-exists? dir/f)
+                               (not (= (file-size f) (file-size dir/f)))))
                       ;; f is newer in dir than in the working directory
                       (delete-directory/files f)
-                      (copy-directory/files (build-path dir f) f)]))
+                      (copy-directory/files dir/f f)]))
              (directory-list dir)))))))
 
-  ;; On startup, we scan *all* submissions
-  (LOG "Cleaning up submission directories")
-  (for-each (lambda (top)
-	      (when (directory-exists? top)
-		(parameterize ([current-directory top])
-		  (for-each (lambda (pset)
-			      (when (directory-exists? pset) ; filter non-dirs
-				(parameterize ([current-directory pset])
-				  (for-each (lambda (sub)
-					      (when (directory-exists? sub)
-						(cleanup-submission sub)))
-					    (directory-list)))))
-			    (directory-list)))))
-            '("active" "inactive"))
+  (define (cleanup-all-submissions)
+    (LOG "Cleaning up all submission directories")
+    (for-each (lambda (top)
+                (when (directory-exists? top)
+                  (parameterize ([current-directory top])
+                    (for-each (lambda (pset)
+                                (when (directory-exists? pset) ; filter non-dirs
+                                  (parameterize ([current-directory pset])
+                                    (for-each (lambda (sub)
+                                                (when (directory-exists? sub)
+                                                  (cleanup-submission sub)))
+                                              (directory-list)))))
+                              (directory-list)))))
+              '("active" "inactive")))
+
+  ;; On startup, we scan all submissions, then repeat at random intervals (only
+  ;; if clients connected in that time), and check often for changes in the
+  ;; active/inactive directories and run a cleanup if there was a change
+  (thread (lambda ()
+            (define last-active/inactive #f)
+            (define last-connection-num #f)
+            (let loop ()
+              (let loop ([n (+ 20 (random 20))]) ; 10-20 minute delay
+                (when (>= n 0)
+                  (let ([new (map directory-list '("active" "inactive"))])
+                    (if (equal? new last-active/inactive)
+                      (begin (sleep 30) (loop (sub1 n)))
+                      (begin (set! last-active/inactive new)
+                             (set! last-connection-num #f))))))
+              (unless (equal? last-connection-num connection-num)
+                (cleanup-all-submissions)
+                (set! last-connection-num connection-num))
+              (loop))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -251,8 +285,8 @@
       (when (regexp-match #rx"^((nul)|(con)|(prn)|(aux)|(clock[$])|(com[1-9])|(lpt[1-9]))[.]?" 
 			  (string-foldcase username))
 	(error 'handin "username must not be a Windows special file name"))
-      (when (regexp-match #rx"[ .]$" username)
-	(error 'handin "username must not end with a space or period"))
+      (when (regexp-match #rx"^[ .]|[ .]$" username)
+	(error 'handin "username must not begin or end with a space or period"))
       (when (string=? "solution" username)
 	(error 'handin "the username \"solution\" is reserved"))
       (when (string=? "checker.ss" username)
@@ -305,16 +339,8 @@
           (error 'handin "username must not contain a \"+\": ~a" user-string))
         ;; we now know that there is a single username, and (car usernames) is
         ;; the same at user-string
-        (when (or (car user-datas)
-		  (and USERNAME-CASE-SENSITIVE?
-		       ;; Force case-folding for existing-username check:
-		       (get-preference (string->symbol (string-foldcase user-string))
-				       (lambda () #f) #f "users.ss")))
-          (error 'handin "~ausername already exists: `~a'" 
-		 (if (car user-datas)
-		     ""
-		     "case-folded equivalent ")
-		 user-string))
+        (when (car user-datas)
+          (error 'handin "username already exists: `~a'" user-string))
         (add-new-user user-string r-safe w)]
        [(and (pair? user-datas)
              (not (memq #f user-datas))

@@ -202,6 +202,8 @@ sub-directories:
 
       'username-case-sensitive? : a boolean; when #f, usernames
          are case-folded for all purposes; defaults to #f
+         (note that you should not set this to #t on Windows, since
+         usernames are used as directory names)
 
       'id-regexp : a regular expression that is used to validate a
          "free form" user id (possibly a student id) for a created
@@ -260,10 +262,10 @@ sub-directories:
     Within each directory, the student id is used for a sub-directory
     name. Within each student sub-directory are directories for handin
     attempts and successes. If a directory "ATTEMPT" exists, it
-    contains the most recent (unsuccessful) handin
-    attempt. Directories "SUCCESS-n" (where n counts from 0) contain
-    successful handins; the lowest numbered such directory represents
-    the latest handin.
+    contains the most recent (unsuccessful) handin attempt.
+    Directories "SUCCESS-n" (where n counts from 0) contain successful
+    handins; the lowest numbered such directory represents the latest
+    handin.
 
     Within an "ATTEMPT" or "SUCCESS-n" directory, a file "handin.scm"
     (or some other name if `default-file-name' is set) contains the
@@ -271,6 +273,14 @@ sub-directories:
     file name, it can create additional files in an
     "ATTEMPT"/"SUCCESS-n" directory or in the student directory; see
     below on "checker.ss" for more details.
+
+    A cleanup process will copy successful submission to the
+    submission root -- one level up from the corresponding "SUCCESS-n"
+    directory.  This is done only for files and directories that are
+    newer in "SUCCESS-n" than in the submission root, other files and
+    directories are left intact.  This means that you can have
+    external tools that add new content to the submission directory
+    (eg, a "grade" file as described below) and it will stay there.
 
     For submissions from a normal DrScheme frame, a submission file
     contains a copy of the student's definitions and interactions
@@ -302,12 +312,13 @@ sub-directories:
     The `checker' function is called with the current directory as
     "active/<assignment>/<user/s>/ATTEMPT", and the submission is
     saved in the file "handin". The checker function can change
-    "handin", and it can create additional files in this directory or
-    the parent directory. (Extra files in the current directory will
-    be preserved as it is later renamed to "SUCCESS-0", etc.) To hide
-    generated files from the HTTPS status web server interface, put
-    the files in a subdirectory, which is preserved but hidden from
-    the status interface.
+    "handin", and it can create additional files in this directory.
+    (Extra files in the current directory will be preserved as it is
+    later renamed to "SUCCESS-0", and copied to the submission's root
+    ("active/<assignment>/<user/s>/"), etc.) To hide generated files
+    from the HTTPS status web server interface, put the files in a
+    subdirectory, which is preserved but hidden from the status
+    interface.
 
     The checker should return either a string or a list of two
     strings. A single string result, such as "handin.scm", is used to
