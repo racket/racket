@@ -9,6 +9,8 @@
            require/sandbox+annotations
            load-module/annotate)
 
+  ;; Like REQUIRE/ANNOTATIONS but the evaluation happens under the given
+  ;; custodian and the given error display handler.
   (define (require/sandbox+annotations custodian err-display-handler initial-module annotate-module? annotator)
     (parameterize ([current-custodian custodian]
                    [current-namespace (make-namespace-with-mred)]
@@ -16,9 +18,13 @@
       (require/annotations initial-module annotate-module? annotator)))
 
 
+  ;; Like EVAL/ANNOTATION, but loads the required spec INITIAL-MODULE using EVAL.
   (define (require/annotations initial-module annotate-module? annotator)
     (eval/annotations #`(require #,initial-module) annotate-module? annotator))
 
+  ;; Evaluates STX. For each module loaded during the evaluation,
+  ;; ANNOTATE-MODULE? is queried, if it returns true, ANNOTATOR is ran on the
+  ;; expanded module being loaded, and the return value is loaded instead.
   (define (eval/annotations stx annotate-module? annotator)
     (parameterize
       ([current-load/use-compiled
@@ -30,6 +36,9 @@
                    (ocload/use-compiled fn m)])))])
       (eval-syntax (annotator stx))))
   
+  ;; Loads the file FN expecting a definition for a module called M.  The
+  ;; code read from the file is expanded, then it is annotated using the
+  ;; ANNOTATOR function, then it is evaluated
   (define (load-module/annotate annotator fn m)
     (let-values ([(base _ __) (split-path fn)]
                  [(in-port src) (build-input-port fn)])

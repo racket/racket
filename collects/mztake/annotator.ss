@@ -36,7 +36,23 @@
                                 mark-list))))
 
 
-
+  ;; annotate-for-single-stepping uses annotate-stx to create an annotated
+  ;; version of STX that pauses before and after each expression, in the style
+  ;; of a single stepping debugger.  
+  ;; 
+  ;; BREAK?, BREAK-BEFORE, BREAK-AFTER are inserted into the resulting syntax
+  ;; as 3D code.  When the resulting syntax is evaluated, before each
+  ;; expression is evaluated, BREAK? is called with the syntax position of
+  ;; that expression.  If BREAK? returns true, BREAK-BEFORE is called with two
+  ;; arguments: the debug-info structure representing the first stack frame
+  ;; and the current continuation marks representing the other stack frames
+  ;; (use the key DEBUG-KEY).  If BREAK-BEFORE returns some value, the
+  ;; evaluation skips the expression entirely and just returns that value.
+  ;; Otherwise, evaluation proceeds normally.  After the expression is
+  ;; evaluated BREAK-AFTER is called.  If BREAK-AFTER returns some value, the
+  ;; return value of the expression is replaced by that value.
+  ;;
+  ;; RECORD-BOUND-ID is simply passed to ANNOTATE-STX.  
   (define (annotate-for-single-stepping stx break? break-before break-after record-bound-id)
     (annotate-stx
      stx
@@ -79,8 +95,43 @@
      record-bound-id))
 
 
-  ; annotate-stx : (syntax? (syntax? . -> . syntax?)
-  ;                 (symbol? syntax? syntax? . -> . void?) . -> . syntax?)
+  ; annotate-stx : (syntax? 
+  ;                 (mark? syntax? syntax? boolean? . -> . syntax?)
+  ;                 (symbol? syntax? syntax? . -> . void?)
+  ;                 . -> .  
+  ;                 syntax?)
+
+
+  ;; annotate-stx consumes a syntax, transverses it, and gives the opportunity
+  ;; to the break-wrap to annotate every expression.  Once for each expression
+  ;; in the source program, annotate-stx will call break-wrap with that
+  ;; expression as an argument and insert the result in the original syntax.
+  ;; Expressions that were duplicated during the macro expansion are
+  ;; nevertheless only wrapped once.  
+  ;;
+  ;; annotate-stx inserts annotations around each expression that introduces a
+  ;; new scope: let, lambda, and function calls.  These annotations reify the
+  ;; call stack, and allows to list the current variable in scope, look up
+  ;; their value, as well as change their value.  The reified stack is accessed
+  ;; via the CURRENT-CONTINUATION-MARKS using the key DEBUG-KEY
+  ;;
+  ;; BREAK-WRAP is called with four arguments: 
+  ;;   debug-info : the top frame of the reified stack (which never changes
+  ;;   across execution)
+  ;;   annotate-stx : the syntax with its subbranches already
+  ;;   annotated. BREAK-WRAP should return a modified version of this syntax.  
+  ;;   original-stx : the original syntax before annoatations 
+  ;;   is-tail? : true when original syntax was in tail position
+  ;;
+  ;; The RECORD-BOUND-ID function is a callback that is invoked each time a
+  ;; new variable is introduced, looked up, or set in STX (lexically).
+  ;; RECORD-BOUND-ID takes three arguments: 
+  ;;   use-case : either 'bind or 'ref or 'set, respectively
+  ;;   bound-stx : syntax where the symbol is introduced, looked up, set, respectively 
+  ;;   binding-stx : syntax where the symbol was bound
+  ;;
+  ;; Naturally, when USE-CASE is 'bind, BOUND-STX and BINDING-STX are equal.  
+  ;;
   (define (annotate-stx stx break-wrap record-bound-id)
 
     (define breakpoints (make-hash-table))

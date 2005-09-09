@@ -26,7 +26,7 @@
   
   (define (heap-empty? heap)
     (= (heap-size heap) 0))
-
+  
   (define (heap-last heap)
     (- (dv:length (t-data heap)) 1))
   
@@ -60,7 +60,7 @@
   (define (heap-peak heap)
     (if (= (heap-size heap) 0) (error "heap-peak: empty")
 	(dv:ref (t-data heap) 1)))
-
+  
   (define (heap-pop heap)
     (if (= (heap-size heap) 0) (error "heap-pop: empty")
         (let ([result (dv:ref (t-data heap) 1)])
@@ -98,10 +98,10 @@
     (let ((pos (heap-find heap item)))
       (if (not pos) false
 	  (begin (heap-remove-pos heap pos) true))))
-
+  
   (define (heap-contains heap item)
     (if (heap-find heap item) true false))
-
+  
   (define (heap-find heap item)
     (let ((data (t-data heap))
 	  (equality (t-equality heap))
@@ -120,43 +120,51 @@
   (define (heap-resort heap item)
     (heap-remove heap item)
     (heap-insert heap item))
-
+  
   (define (heap-tostring heap . fns)
     (let* ((data (t-data heap))
 	   (data-list (let loop ((i 1))
 			(if (> i (heap-last heap)) empty
 			    (cons (dv:ref data i) (loop (+ i 1)))))))
       
-    (string-append "heap: sz " (number->string (heap-size heap)) ", "
-		   (apply to-string (cons data-list fns)))))
+      (string-append "heap: sz " (number->string (heap-size heap)) ", "
+                     (apply to-string (cons data-list fns)))))
   
   (define (test)
     (define f (make-heap > eq?))
     (define d (t-data f))
     (heap-insert f 99)
-    (debug "A " d) 
+    ;(debug "A " d) 
     (heap-remove-pos f 1)
-    (debug "B " d)
+    ;(debug "B " d)
     (for-each (lambda (x) (heap-insert f x)) '(1 2 3 4 5 6 7 8 9 10 11 12 13 14))
-    (debug "C " d)
-    (heap-remove f 10) (debug " " d)
-    (heap-remove f 5) (debug " " d)
-    (heap-remove f 8) (debug " " d)
-    (heap-remove f 13) (debug " " d)
-    (debug (heap-contains f 11))
-    (debug (heap-contains f 123))
+    ;(debug "C " d)
+    (heap-remove f 10) ;(debug " " d)
+    (heap-remove f 5) ;(debug " " d)
+    (heap-remove f 8) ;(debug " " d)
+    (heap-remove f 13) ;(debug " " d)
+    ;(debug (heap-contains f 11))
+    ;(debug (heap-contains f 123))
     (heap-pop f)
     (heap-pop f)
     (heap-pop f)
-    (heap-pop f) (debug " " d)
-    (debug (heap-contains f 11))
-    (debug (heap-contains f 4))
-    (debug (heap-tostring f))
+    (heap-pop f) ;(debug " " d)
+    ;(debug (heap-contains f 11))
+    ;(debug (heap-contains f 4))
+    ;(debug (heap-tostring f))
     (heap-remove f 2)
-    (debug (heap-tostring f))
+    ;(debug (heap-tostring f))
     (heap-remove f 3)
-    (debug (heap-tostring f))
+    ;(debug (heap-tostring f))
     )
-
+  
+  (define (test-speed)
+    (let loop ([count  3000]) 
+      (when (> count 0)
+        (test)
+        (loop (sub1 count)))))
+  
+;  (time (test-speed))
+  
   )
 
