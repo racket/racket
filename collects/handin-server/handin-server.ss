@@ -104,26 +104,22 @@
             (unless (member dir SUCCESS-GOOD)
               (LOG "*** USING AN UNEXPECTED SUBMISSION DIRECTORY: ~a"
                    (build-path (current-directory) dir)))
-            ;; We have a submission directory -- check if copying needed
-            ;; (assume that there are files, not all subdirs)
-            (when (ormap (lambda (f)
-                           (or (not (or (file-exists? f)
-                                        (directory-exists? f)))
-                               (and (file-exists? f)
-                                    (<= (file-or-directory-modify-seconds f)
-                                        (file-or-directory-modify-seconds
-                                         (build-path dir f))))))
-                         (directory-list dir))
-              ;; First remove everything from the base directory
-              (for-each (lambda (f)
-                          (unless (or (regexp-match ATTEMPT-RE f)
-                                      (regexp-match SUCCESS-RE f))
-                            (delete-directory/files f)))
-                        dirlist)
-              ;; Now copy everything from the SUCCESS directory
-              (for-each (lambda (f)
-                          (copy-directory/files (build-path dir f) f))
-                        (directory-list dir))))))))
+            ;; We have a submission directory -- copy all newer things
+            ;; (extra things that exist in the main submission directory but
+            ;; not in SUCCESS, or things that are newer in the main submission
+            ;; directory are kept (but subdirs in SUCCESS will are copied as
+            ;; is))
+            (for-each
+             (lambda (f)
+               (cond [(not (or (file-exists? f) (directory-exists? f)))
+                      ;; f is in dir but not in the working directory
+                      (copy-directory/files (build-path dir f) f)]
+                     [(<= (file-or-directory-modify-seconds f)
+                          (file-or-directory-modify-seconds (build-path dir f)))
+                      ;; f is newer in dir than in the working directory
+                      (delete-directory/files f)
+                      (copy-directory/files (build-path dir f) f)]))
+             (directory-list dir)))))))
 
   ;; On startup, we scan *all* submissions
   (LOG "Cleaning up submission directories")
