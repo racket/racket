@@ -73,10 +73,73 @@
     (let ([name (success-dir n)])
       (when (directory-exists? name)
 	(if (< n MAX-UPLOAD-KEEP)
-	    (begin 
+	    (begin
 	      (make-success-dir-available (add1 n))
 	      (rename-file-or-directory name (success-dir (add1 n))))
 	    (delete-directory/files name)))))
+
+  (define ATTEMPT-RE (regexp (format "^~a$" ATTEMPT-DIR)))
+  (define SUCCESS-RE (regexp (format "^~a$" (success-dir "[0-9]+"))))
+  (define SUCCESS-GOOD (map success-dir '(0 1)))
+
+  (define (cleanup-submission dir)
+    ;; This is called at a lock cleanup, so it is important that it does not
+    ;; throw an exception, or the whole server will be locked down.  It is
+    ;; invoked just before the lock is released, so fine to assume that we have
+    ;; exclusive access to the directory contents.
+    (when (directory-exists? dir)
+      (parameterize ([current-directory dir])
+        ;; Find the newest SUCCESS dir -- ignore ATTEMPT, since if it exist it
+        ;; means that there was a failed submission and the next one will
+        ;; re-create ATTEMPT.
+        (let* ([dirlist (map path->string (directory-list))]
+               [dir (quicksort
+                     (filter (lambda (d)
+                               (and (directory-exists? d)
+                                    (regexp-match SUCCESS-RE d)))
+                             dirlist)
+                     string<?)]
+               [dir (and (pair? dir) (car dir))])
+          (when dir
+            (unless (member dir SUCCESS-GOOD)
+              (LOG "*** USING AN UNEXPECTED SUBMISSION DIRECTORY: ~a"
+                   (build-path (current-directory) dir)))
+            ;; We have a submission directory -- check if copying needed
+            ;; (assume that there are files, not all subdirs)
+            (when (ormap (lambda (f)
+                           (or (not (or (file-exists? f)
+                                        (directory-exists? f)))
+                               (and (file-exists? f)
+                                    (<= (file-or-directory-modify-seconds f)
+                                        (file-or-directory-modify-seconds
+                                         (build-path dir f))))))
+                         (directory-list dir))
+              ;; First remove everything from the base directory
+              (for-each (lambda (f)
+                          (unless (or (regexp-match ATTEMPT-RE f)
+                                      (regexp-match SUCCESS-RE f))
+                            (delete-directory/files f)))
+                        dirlist)
+              ;; Now copy everything from the SUCCESS directory
+              (for-each (lambda (f)
+                          (copy-directory/files (build-path dir f) f))
+                        (directory-list dir))))))))
+
+  ;; On startup, we scan *all* submissions
+  (LOG "Cleaning up submission directories")
+  (for-each (lambda (top)
+              (parameterize ([current-directory top])
+                (for-each (lambda (pset)
+                            (when (directory-exists? pset) ; filter non-dirs
+                              (parameterize ([current-directory pset])
+                                (for-each (lambda (sub)
+                                            (when (directory-exists? sub)
+                                              (cleanup-submission sub)))
+                                          (directory-list)))))
+                          (directory-list))))
+            '("active" "inactive"))
+
+  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define (save-submission s part)
     (with-output-to-file part
@@ -95,7 +158,9 @@
              "max handin file size is ~s bytes, file to handin is too big (~s bytes)"
              MAX-UPLOAD len))
     (parameterize ([current-directory (build-path "active" assignment)])
-      (wait-for-lock dirname)
+      (wait-for-lock dirname
+        (lambda ()
+          (cleanup-submission (build-path (current-directory) dirname))))
       (when (and (pair? users) (pair? (cdr users)))
         ;; two or more users -- lock each one
         (for-each wait-for-lock users))
