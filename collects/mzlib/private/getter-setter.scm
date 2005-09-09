@@ -18,65 +18,35 @@
   ;; This function takes an expression and returns syntax which
   ;; represents a function that is able to set the value that the
   ;; expression points to.
-  (define setter (lambda (e ident let-bound)
-                   (let ((mk-setter (lambda (s)
-                                      (symbol-append 'set- s '!))))
-                     (syntax-case e (vector-ref unbox car cdr)
-                       (p
-                        (not (stx-pair? (syntax p)))
-                        (match:syntax-err
-                         ident
-                         "set! pattern should be nested inside of a list, vector or box"))
-                       ((vector-ref vector index)
-                        (quasisyntax/loc
-                            ident
-                          (let ((x #,(subst-bindings (syntax vector)
-                                                     let-bound)))
-                            (lambda (y)
-                              (vector-set!
-                               x
-                               index
-                               y)))))
-                       ((unbox boxed)
-                        (quasisyntax/loc
-                            ident (let ((x #,(subst-bindings (syntax boxed)
-                                                             let-bound)))
-                                    (lambda (y)
-                                      (set-box! x  y)))))
-                       ((car exp)
-                        (quasisyntax/loc
-                            ident
-                          (let ((x #,(subst-bindings (syntax exp)
-                                                     let-bound)))
-                            (lambda (y)
-                              (set-car! x y)))))
-                       ((cdr exp)
-                        (quasisyntax/loc
-                            ident
-                          (let ((x #,(subst-bindings (syntax exp)
-                                                     let-bound)))
-                            (lambda (y)
-                              (set-cdr! x y)))))
-                       ((acc exp)
-                        (let ((a (assq (syntax-object->datum (syntax acc))
-                                       get-c---rs)))
-                          (if a
-                              (quasisyntax/loc
-                                  ident
-                                (let ((x (#,(cadr a) 
-                                            #,(subst-bindings (syntax exp)
-                                                              let-bound))))
-                                  (lambda (y)
-                                    (#,(mk-setter (cddr a)) x y))))
-                              (quasisyntax/loc
-                                  ident
-                                (let ((x #,(subst-bindings (syntax exp)
-                                                           let-bound)))
-                                  (lambda (y)
-                                    (#,(datum->syntax-object #'acc
-                                                             (mk-setter 
-                                                              (syntax-object->datum (syntax acc))))
-                                       x y)))))))))))
+  (define (setter e ident let-bound)
+    (define (subst e) (subst-bindings e let-bound))
+    (define (mk-setter s cxt) (datum->syntax-object cxt (symbol-append 'set- s '!)))
+    (syntax-case e (vector-ref unbox car cdr)
+      [p
+       (not (stx-pair? #'p))
+       (match:syntax-err
+        ident
+        "set! pattern should be nested inside of a list, vector or box")]
+      [(vector-ref vector index)
+       #`(let ((x #,(subst #'vector)))
+           (lambda (y) (vector-set! x index y)))]
+      [(unbox boxed)
+       #`(let ((x #,(subst #'boxed)))
+           (lambda (y) (set-box! x y)))]
+      [(car exp)
+       #`(let ((x #,(subst #'exp)))
+           (lambda (y) (set-car! x y)))]
+      [(cdr exp)
+       #`(let ((x #,(subst #'exp)))
+           (lambda (y) (set-cdr! x y)))]
+      [(acc exp)
+       (let ([a (assq (syntax-object->datum #'acc) get-c---rs)])
+         (if a
+             #`(let ((x (#,(cadr a) #,(subst #'exp))))
+                 (lambda (y) (#,(mk-setter (cddr a) #'acc) x y)))
+             #`(let ((x #,(subst #'exp)))
+                 (lambda (y) 
+                   (#,(mk-setter (syntax-object->datum #'acc) #'acc) x y)))))]))
   
   ;;!(function getter
   ;;          (form (getter e ident let-bound) -> syntax)
@@ -87,54 +57,18 @@
   ;; This function takes an expression and returns syntax which
   ;; represents a function that is able to get the value that the
   ;; expression points to.
-  (define getter (lambda (e ident let-bound)
-                   (syntax-case e (vector-ref unbox car cdr)
-                     (p
-                      (not (stx-pair? (syntax p)))
-                      (match:syntax-err 
-                       ident
-                       "get! pattern should be nested inside of a list, vector or box"))
-                     ((vector-ref vector index)
-                      (quasisyntax/loc
-                          ident
-                        (let ((x #,(subst-bindings (syntax vector)
-                                                   let-bound)))
-                          (lambda ()
-                            (vector-ref
-                             x
-                             index)))))
-                     ((unbox boxed)
-                      (quasisyntax/loc
-                          ident
-                        (let ((x #,(subst-bindings (syntax boxed)
-                                                   let-bound)))
-                          (lambda () (unbox x)))))
-                     ((car exp)
-                      (quasisyntax/loc
-                          ident
-                        (let ((x #,(subst-bindings (syntax exp)
-                                                   let-bound)))
-                          (lambda () (car x)))))
-                     ((cdr exp)
-                      (quasisyntax/loc
-                          ident
-                        (let ((x #,(subst-bindings (syntax exp)
-                                                   let-bound)))
-                          (lambda () (cdr x)))))
-                     ((acc exp)
-                      (let ((a (assq (syntax-object->datum (syntax acc))
-                                     get-c---rs)))
-                        (if a
-                            (quasisyntax/loc
-                                ident
-                              (let ((x (#,(cadr a)
-                                          #,(subst-bindings (syntax exp)
-                                                            let-bound))))
-                                (lambda () (#,(cddr a) x))))
-                            (quasisyntax/loc
-                                ident
-                              (let ((x #,(subst-bindings (syntax exp)
-                                                         let-bound)))
-                                (lambda ()
-                                  (acc x))))))))))
-  )
+  (define (getter e ident let-bound)
+    (define (subst e) (subst-bindings e let-bound))
+    (syntax-case e (vector-ref unbox car cdr)
+      [p
+       (not (stx-pair? #'p))
+       (match:syntax-err 
+        ident
+        "get! pattern should be nested inside of a list, vector or box")]
+      [(vector-ref vector index)
+       #`(let ((x #,(subst #'vector)))
+           (lambda () (vector-ref x index)))]
+      [(acc exp)
+       #`(let ((x #,(subst #'exp)))
+           (lambda () (acc x)))]))
+)
