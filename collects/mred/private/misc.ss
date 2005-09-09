@@ -55,10 +55,10 @@
   (define (play-sound f async?)
     (if (not (eq? (system-type) 'unix))
 	(wx:play-sound f async?)
-	(begin
+	(let ([f (if (path? f) (path->string f))])
 	  (unless (string? f)
 	    (raise-type-error 'play-sound "string" f))
-	  (let* ([subpath (system-library-subpath)]
+	  (let* ([subpath (path->string (system-library-subpath))]
 		 [make-pattern (lambda (s) (string-append ".*" s ".*"))]
 		 [b (box 
 		     (cond 
