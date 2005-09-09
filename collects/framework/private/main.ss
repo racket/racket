@@ -264,7 +264,8 @@
       ;; groups
       
       (preferences:set-default 'framework:exit-when-no-frames #t boolean?)
-
+      (preferences:set 'framework:exit-when-no-frames #t)
+      
       (exit:insert-can?-callback
        (λ ()
          (send (group:get-the-frame-group) can-close-all?)))    

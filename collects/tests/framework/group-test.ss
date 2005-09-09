@@ -3,7 +3,7 @@
   
   (test
    'exit-on
-   (lambda (x) #t)
+   (lambda (x) (equal? x '("first")))
    (lambda ()
      (send-sexp-to-mred
       '(begin (send (make-object frame:basic% "first") show #t)
@@ -15,7 +15,8 @@
      (send-sexp-to-mred
       `(test:button-push "Cancel"))
      (wait-for-frame "first")
-     'passed))
+     (send-sexp-to-mred
+      `(map (lambda (x) (send x get-label)) (send (group:get-the-frame-group) get-frames)))))
   
   ;; after the first test, we should have one frame that will always
   ;; be in the group.

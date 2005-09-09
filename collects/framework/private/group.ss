@@ -47,10 +47,12 @@
                                   x
                                   #f))
                             menus)))))
+          
           (define/private (insert-windows-menu frame)
             (let ([menu (get-windows-menu frame)])
               (when menu
                 (set! windows-menus (cons menu windows-menus)))))
+          
           (define/private (remove-windows-menu frame)
             (let ([menu (get-windows-menu frame)])
               
@@ -149,109 +151,106 @@
                   get-active-frame set-active-frame insert-frame
                   remove-frame clear on-close-all can-close-all? locate-file get-frames
                   frame-shown/hidden)
-          [define get-mdi-parent
-            (λ ()
-              (when (and (eq? (system-type) 'windows)
-                         (preferences:get 'framework:windows-mdi)
-                         (not mdi-parent))
-                (set! mdi-parent (make-object frame% (application:current-app-name)
-                                   #f #f #f #f #f
-                                   '(mdi-parent)))
-                (send mdi-parent show #t))
-              mdi-parent)]
+          (define (get-mdi-parent)
+            (when (and (eq? (system-type) 'windows)
+                       (preferences:get 'framework:windows-mdi)
+                       (not mdi-parent))
+              (set! mdi-parent (make-object frame% (application:current-app-name)
+                                 #f #f #f #f #f
+                                 '(mdi-parent)))
+              (send mdi-parent show #t))
+            mdi-parent)
           
           (define (get-frames) (map frame-frame frames))
           
-          [define frame-label-changed
-            (λ (frame)
-              (when (memq frame (map frame-frame frames))
-                (update-windows-menus)))]
+          (define (frame-label-changed frame)
+            (when (memq frame (map frame-frame frames))
+              (update-windows-menus)))
           
-          [define frame-shown/hidden
-            (λ (frame)
-              (when (memq frame (map frame-frame frames))
-                (update-windows-menus)))]
+          (define (frame-shown/hidden frame)
+            (when (memq frame (map frame-frame frames))
+              (update-windows-menus)))
           
-          [define for-each-frame
-            (λ (f)
-              (for-each (λ (x) (f (frame-frame x))) frames)
-              (set! todo-to-new-frames
-                    (let ([old todo-to-new-frames])
-                      (λ (frame) (old frame) (f frame)))))]
+          (define (for-each-frame f)
+            (for-each (λ (x) (f (frame-frame x))) frames)
+            (set! todo-to-new-frames
+                  (let ([old todo-to-new-frames])
+                    (λ (frame) (old frame) (f frame)))))
+          
           (define (get-active-frame)
             (cond
               [active-frame active-frame]
               [(null? frames) #f]
               [else (frame-frame (car frames))]))
+          
           (define (set-active-frame f)
             (when (and active-frame
                        (not (eq? active-frame f)))
               (set! most-recent-window-box (make-weak-box active-frame)))
             (set! active-frame f))
-          [define insert-frame
-            (λ (new-frame)
-              (unless (memf (λ (fr) (eq? (frame-frame fr) new-frame))
-                            frames)
-                (set! frame-counter (add1 frame-counter))
-                (let ([new-frames (cons (make-frame new-frame frame-counter)
-                                        frames)])
-                  (set! frames new-frames)
-                  (update-close-menu-item-state)
-                  (insert-windows-menu new-frame)
-                  (update-windows-menus))
-                (todo-to-new-frames new-frame)))]
           
-          [define remove-frame
-            (λ (f)
-              (when (eq? f active-frame)
-                (set! active-frame #f))
-              (let ([new-frames
-                     (remove
-                      f frames
-                      (λ (f fr) (eq? f (frame-frame fr))))])
+          (define (insert-frame new-frame)
+            (unless (memf (λ (fr) (eq? (frame-frame fr) new-frame))
+                          frames)
+              (set! frame-counter (add1 frame-counter))
+              (let ([new-frames (cons (make-frame new-frame frame-counter)
+                                      frames)])
                 (set! frames new-frames)
                 (update-close-menu-item-state)
-                (remove-windows-menu f)
-                (update-windows-menus)))]
-          [define clear
-            (λ ()
-              (set! frames null)
-              #t)]
-          [define on-close-all
-            (λ ()
-              (for-each (λ (f)
-                          (let ([frame (frame-frame f)])
-                            (send frame on-close) 
-                            (send frame show #f)))
-                        frames))]
-          [define can-close-all?
-            (λ ()
-              (andmap (λ (f)
-                        (let ([frame (frame-frame f)])
-                          (send frame can-close?)))
-                      frames))]
-          [define locate-file
-            (λ (name)
-              (let* ([normalized
-                      ;; allow for the possiblity of filenames that are urls
-                      (with-handlers ([(λ (x) #t)
-                                       (λ (x) name)])
-                        (normal-case-path
-                         (normalize-path name)))]
-                     [test-frame
-                      (λ (frame)
-                        (and (is-a? frame frame:basic<%>)
-                             (send frame editing-this-file? normalized)))])
-                (let loop ([frames frames])
-                  (cond
-                    [(null? frames) #f]
-                    [else
-                     (let* ([frame (frame-frame (car frames))])
-                       (if (test-frame frame)
-                           frame
-                           (loop (cdr frames))))]))))]
+                (insert-windows-menu new-frame)
+                (update-windows-menus))
+              (todo-to-new-frames new-frame)))
           
-          (super-instantiate ())))
+          (define (remove-frame f)
+            (when (eq? f active-frame)
+              (set! active-frame #f))
+            (let ([new-frames
+                   (remove
+                    f frames
+                    (λ (f fr) (eq? f (frame-frame fr))))])
+              (set! frames new-frames)
+              (update-close-menu-item-state)
+              (remove-windows-menu f)
+              (update-windows-menus)))
+          
+          (define (clear)
+            (set! frames null)
+            #t)
+          
+          (define (on-close-all)
+            (for-each (λ (f)
+                        (let ([frame (frame-frame f)])
+                          (send frame on-close) 
+                          (send frame show #f)))
+                      frames))
+          
+          (define (can-close-all?)
+            (andmap (λ (f)
+                      (let ([frame (frame-frame f)])
+                        (send frame can-close?)))
+                    frames))
+          
+          (define (locate-file name)
+            (let* ([normalized
+                    ;; allow for the possiblity of filenames that are urls
+                    (with-handlers ([(λ (x) #t)
+                                     (λ (x) name)])
+                      (normal-case-path
+                       (normalize-path name)))]
+                   [test-frame
+                    (λ (frame)
+                      (and (is-a? frame frame:basic<%>)
+                           (send frame editing-this-file? normalized)))])
+              (let loop ([frames frames])
+                (cond
+                  [(null? frames) #f]
+                  [else
+                   (let* ([frame (frame-frame (car frames))])
+                     (if (test-frame frame)
+                         frame
+                         (loop (cdr frames))))]))))
+          
+          (super-new)))
       
       (define (choose-a-frame parent)
         (letrec-values ([(sorted-frames)
