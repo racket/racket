@@ -23,7 +23,7 @@
   
   (define frtime-version "0.3b -- Tue Nov 9 13:39:45 2004")
   
-  (define (compose-continuation-mark-sets s1 s2)
+  (define (compose-continuation-mark-sets2 s1 s2)
     s2)
   
   
@@ -150,7 +150,7 @@
         (begin
           #;(thread (lambda () (raise (make-exn:fail
                                      "extra marks present!" (extra-cont-marks)))))
-          (compose-continuation-mark-sets
+          (compose-continuation-mark-sets2
            (extra-cont-marks)
            (current-continuation-marks)))
         (current-continuation-marks)))
@@ -747,7 +747,7 @@
                                ;              (exn-continuation-marks exn) 'frtime))
                                 (set! exn (make-exn:fail
                                            (exn-message exn)
-                                           (compose-continuation-mark-sets
+                                           (compose-continuation-mark-sets2
                                             (signal-continuation-marks
                                              cur-beh)
                                             (exn-continuation-marks exn))));)
