@@ -24,9 +24,7 @@ account (i.e., changing the password, or creating a new account if the
 instructor configures the server to allow new accounts).
 
 On the instructor's side, the handin server can be configured to check
-the student's submission before accepting it. Other configuration of
-the server includes setting the list of currently active assignments
-(i.e., those for which handins are accepted).
+the student's submission before accepting it.
 
 The handin process uses SSL, so it is effectively as secure as the
 server and each user's password.
@@ -57,7 +55,7 @@ Quick Start for a Test Drive:
 
  7.  In your new directory, run
         mred -mvqM handin-server
-     
+
  8.  In the "handin-client" collection, edit "info.ss" and
      uncomment the line
         (define server:port "localhost:7979")
@@ -66,7 +64,7 @@ Quick Start for a Test Drive:
      username "tester" and password "pw".
 
      The submitted file will be .../active/test/tester/handin.scm.
- 
+
  10. Check the status of your submission by pointing a web browser at
         https://localhost:7980/servlets/status.ss
      Note the "s" in "https". Use the "tester" username and "pw"
@@ -156,15 +154,15 @@ sub-directories:
   * "server-cert.pem" --- the server's certificate. To create a
     certificate and key with openssl:
 
-     openssl req -new -nodes -x509 -days 365 -out server-cert.pem 
-                 -keyout private-key.pem 
+     openssl req -new -nodes -x509 -days 365 -out server-cert.pem
+                 -keyout private-key.pem
 
   * "private-key.pem" --- the private key to go with "server-cert.pem".
     Whereas "server-cert.pem" gets distributed to students with the
     handin client, "private-key.pem" is kept private.
 
   * "config.ss" (optional) --- configuration options. The file format
-    is 
+    is
 
          ((<key> <val>) ...)
 
@@ -197,12 +195,27 @@ sub-directories:
          oldest is in "BACKUP-0/handin.scm", next oldest is
          "BACKUP-1/handin.scm", etc.; the default is 9
 
-      'id-regexp : a regular expression used to validate a "free form"
-         user id (possibly a student id) for a created account; the
+      'user-regexp : a regular expression that is used to validate
+        usernames, young students often choose exotic usernames that
+        are impossible to remember, and forget capitalization; the
+        default is fairly strict: #rx"^[a-z][a-z0-9]+$"
+
+      'username-case-sensitive? : a boolean flag, when #f, usernames
+        are normalized to lower case for all messages; defaults to #f
+
+      'id-regexp : a regular expression that is used to validate a
+        "free form" user id (possibly a student id) for a created
+        account; the
          default is #rx"^.*$"
 
       'id-desc : a plain-words description of the acceptable format
          for a "free form" id; the default is "anything"
+
+      'email-regexp : a regular expression that is used to validate
+        emails, the #rx"^[^@<>\"`',]+@[a-zA-Z0-9_.-]+[.][a-zA-Z]+$"
+        default can be changed to "" if you don't care about emails,
+        or can be further restricted, for example requiring a
+        "@cs.foo.edu" suffix
 
       'allow-new-users : a boolean indicating whether to allow
          new-user requests from a client tool; the default is #f
@@ -211,13 +224,22 @@ sub-directories:
          allows login as any user; the default is #f, which disables
          the password
 
+      'web-base-dir : if #f (the default), the built-in web server
+        will use the "status-web-root" in this collection for its
+        configuration; to have complete control over the built in
+        server, you can copy and edit "status-web-root" to the
+        directory you're running the handin server server from, and
+        add this configuration entry with the name of your new copy
+        (relative to the handin server directory).
+
   * "users.ss" (created if not present if a user is added) --- keeps
     the list of user accounts, along with the associated password
     (actually the MD5 hash of the password), full name, and free-form
     id (perhaps a student id at a university) of the account. The file
     format is
 
-      ((<username-sym> (<pw-md5-str> <full-name-str> <id-str>)) ...)
+      ((<username-sym> (<pw-md5-str> <id-str> <full-name-str> <email-str>))
+        ...)
 
     If the 'allow-new-users configuration allows new users, the
     "users.ss" file can be updated by the server with new users. It
@@ -226,12 +248,12 @@ sub-directories:
     The username "solution" is special. It is used by the HTTPS status
     server.
 
-  * "active/" --- sub-directory for active assignments. A list of active
-    assignments is sent to a client tool when a student clicks
-    "Handin". The student then selects from the list. The list of
-    active assignments is built once by the server when it starts.
-    The assignments are ordered in the student's menu using `string<?',
-    and the first assignment is the default selection.
+  * "active/" --- sub-directory for active assignments. A list of
+    active assignments is sent to a client tool when a student clicks
+    "Handin", based on the contents of this directory. The student
+    then selects from the list.  The assignments are ordered in the
+    student's menu using `string<?', and the first assignment is the
+    default selection.
 
     Within each directory, the student id is used for a sub-directory
     name. Within each student sub-directory are directories for handin
@@ -261,21 +283,29 @@ sub-directories:
 
   * "active/<assignment>/checker.ss" (optional) --- a module that
     exports a `checker' function. This function receives two
-    strings. The first is a username and the second is the user's
-    submission as a byte string. (See also `unpack-submission', etc. from
-    "util.ss", below.) To reject the submission, the `checker'
-    function can raise an exception; the exception message will be
-    relayed back to the student.
+    strings. The first is a username list and the second is the
+    submission as a byte string. (See also `unpack-submission',
+    etc. from "util.ss", below.) To reject the submission, the
+    `checker' function can raise an exception; the exception message
+    will be relayed back to the student.
+
+    To submit an assignment as a group, students use "user1+user2"
+    etc.  The checker function will receive a list of usernames in
+    this case -- this list is always sorted, so it can check that the
+    list of students are in a list of authorized teams.  The same
+    syntax ("user1+user2") is used for the directory for shared
+    submissions; and the usernames are always sorted so the directory
+    name is deterinistic.
 
     The `checker' function is called with the current directory as
-    "active/<assignment>/<user>/ATTEMPT", and the submission is saved
-    in the file "handin". The checker function can change "handin",
-    and it can create additional files in this directory or the parent
-    directory. (Extra files in the current directory will be preserved
-    as it is later renamed to "SUCCESS-0", etc.) To hide generated
-    files from the HTTPS status web server interface, put the files in
-    a subdirectory, which is preserved but hidden from the status
-    interface.
+    "active/<assignment>/<user/s>/ATTEMPT", and the submission is
+    saved in the file "handin". The checker function can change
+    "handin", and it can create additional files in this directory or
+    the parent directory. (Extra files in the current directory will
+    be preserved as it is later renamed to "SUCCESS-0", etc.) To hide
+    generated files from the HTTPS status web server interface, put
+    the files in a subdirectory, which is preserved but hidden from
+    the status interface.
 
     The checker should return either a string or a list of two
     strings. A single string result, such as "handin.scm", is used to
@@ -297,13 +327,15 @@ sub-directories:
     most recent submission for <assignment> by <user> where <filename>
     was returned by the checker (or the value of the
     `default-file-name' configuration option if there's no checker).
+    If the submission is from multiple users, then "<user>" is
+    actually "<user1>+<user2>" etc.
 
   * "[in]active/<assignment>/<user>/grade" (optional) --- <user>'s grade
     for <assignment>, to be reported by the HTTPS status web server.
 
   * "[in]active/<assignment>/solution/<file>" --- the solution to the
     assignment, made available by the status server to any user who
-    logs in. Normall, <file> is the only file in the directory
+    logs in. Normally, <file> is the only file in the directory
     "<assignment>/solution/"; if there are multiple files in the
     directory, only one named "<assignment>sol.scm" is made available
     as the solution.
@@ -360,15 +392,31 @@ The _utils.ss_ module provides utilities helpful in implementing
 
 > (make-evaluator language teachpack-paths program-port) - returns a
   function of one argument for evaluating expressions in the
-  designated teaching language, one of 'beginner, 'beginner-abbr,
-  'intermediate, 'intermediate-lambda, or 'advanced. The
-  `teachpack-paths' list contains paths to teachpacks to load in the
-  evaluator. The `program-port' is an input port that produces the
-  content of the definitions window; use `(open-input-string "")'
-  for an empty definitions window.
+  designated language, and loading teachpacks that are specified in
+  `teachpack-paths'.  The `program-port' is an input port that
+  produces the content of the definitions window; use
+  `(open-input-string "")' for an empty definitions window.
+
+  The `language' can be:
+  * a symbol indicating a built-in language (currently, only
+    'mzscheme), or a teaching language -- one of 'beginner,
+    'beginner-abbr, 'intermediate, 'intermediate-lambda, or 'advanced.
+  * a list that begins with a 'lib symbol stands for the language
+    defined by this (quoted) module specification.
+  * a list that begins with a 'begin symbol means that the code will
+    not be evaluated in a module context at all, it will simply be
+    evaluated in a new namespace.
+
+  The `teachpack-paths' list specifies additional code to load, can be
+  one of:
+  * paths to teachpacks to load into the module.
+  * a list that begins with a 'begin symbol is arbitrary code that is
+    prefixed into the submitted program.
 
   The actual evaluation of expressions happens in a newly created
-  eventspace and namespace.
+  eventspace and namespace, and under the supervision of a strict
+  security guard that reading files only from PLT collections, and no
+  other operations.
 
 > (make-evaluator/submission language teachpack-paths bytes) - like
   `make-evaluator', but the definitions content is supplied as a
@@ -431,6 +479,11 @@ The _utils.ss_ module provides utilities helpful in implementing
   executed when the session ran out of memory. This status is only
   used when per-session memory limits are supported (i.e., under
   MrEd3m or MzScheme3m with memory accounting).
+
+> (current-value-printer proc) - a parameter that controls how values
+  are printed, a procedure that expects a Scheme value and returns a
+  string representation for it.  The default value printer uses
+  pretty-print, with DrScheme-like settings.
 
 > (reraise-exn-as-submission-problem thunk) - calls thunk in a context
   that catches exceptions and re-raises them in a form suitable as a

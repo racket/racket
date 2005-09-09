@@ -6,6 +6,7 @@
 	   (lib "file.ss")
 	   (lib "date.ss")
 	   (lib "list.ss")
+	   (lib "string.ss")
 	   "md5.ss"
 	   "lock.ss"
 	   "web-status-server.ss"
@@ -14,6 +15,10 @@
   (define log-port (open-output-file "log.ss" 'append))
 
   (define current-session (make-parameter 0))
+
+  (define (ffprintf port str . args)
+    (apply fprintf port str args)
+    (flush-output port))
 
   (define (LOG str . args)
     ;; Assemble log into into a single string, to make
@@ -28,25 +33,22 @@
       (flush-output log-port)))
 
   (define (get-config which default)
-    (get-preference which 
-		    (lambda () default)
-		    #f
-		    "config.ss"))
+    (get-preference which (lambda () default) #f "config.ss"))
 
-  (define PORT-NUMBER (get-config 'port-number 7979))
+  (define PORT-NUMBER       (get-config 'port-number 7979))
   (define HTTPS-PORT-NUMBER (get-config 'https-port-number (add1 PORT-NUMBER)))
-  (define SESSION-TIMEOUT (get-config 'session-timeout 300))
+  (define SESSION-TIMEOUT   (get-config 'session-timeout 300))
   (define SESSION-MEMORY-LIMIT (get-config 'session-memory-limit 40000000))
   (define DEFAULT-FILE-NAME (get-config 'default-file-name "handin.scm"))
-  (define MAX-UPLOAD (get-config 'max-upload 500000))
-  (define MAX-UPLOAD-KEEP (get-config 'max-upload-keep 9))
-  (define ID-REGEXP (get-config 'id-regexp #rx"^.*$"))
-  (define ID-DESC (get-config 'id-desc "anything"))
-  (define ALLOW-NEW-USERS? (get-config 'allow-new-users #f))
-  (define MASTER-PASSWD (get-config 'master-password #f))
-
-  (define (check-id s)
-    (regexp-match ID-REGEXP s))
+  (define MAX-UPLOAD        (get-config 'max-upload 500000))
+  (define MAX-UPLOAD-KEEP   (get-config 'max-upload-keep 9))
+  (define USER-REGEXP       (get-config 'user-regexp #rx"^[a-z][a-z0-9]+$"))
+  (define USERNAME-CASE-SENSITIVE? (get-config 'username-case-sensitive? #f))
+  (define ID-REGEXP         (get-config 'id-regexp #rx"^.*$"))
+  (define ID-DESC           (get-config 'id-desc "anything"))
+  (define EMAIL-REGEXP      (get-config 'email-regexp #rx"^[^@<>\"`',]+@[a-zA-Z0-9_.-]+[.][a-zA-Z]+$"))
+  (define ALLOW-NEW-USERS?  (get-config 'allow-new-users #f))
+  (define MASTER-PASSWD     (get-config 'master-password #f))
 
   (define orig-custodian (current-custodian))
 
@@ -65,7 +67,7 @@
 
   (define ATTEMPT-DIR "ATTEMPT")
 
-  (define (success-dir n) 
+  (define (success-dir n)
     (format "SUCCESS-~a" n))
   (define (make-success-dir-available n)
     (let ([name (success-dir n)])
@@ -80,64 +82,75 @@
     (with-output-to-file part
       (lambda () (display s))))
 
-  (define (accept-specific-submission user assignment r r-safe w)
+  (define (accept-specific-submission users assignment r r-safe w)
+    ;; Note: users are always sorted
+    (define dirname
+      (apply string-append (car users)
+             (map (lambda (u) (string-append "+" u)) (cdr users))))
+    (define len (read r-safe))
+    (unless (and (number? len) (integer? len) (positive? len))
+      (error 'handin "bad length: ~s" len))
+    (unless (len . < . MAX-UPLOAD)
+      (error 'handin
+             "max handin file size is ~s bytes, file to handin is too big (~s bytes)"
+             MAX-UPLOAD len))
     (parameterize ([current-directory (build-path "active" assignment)])
-      (unless (directory-exists? user)
-	(make-directory user))
-      (wait-for-lock user)
-      (parameterize ([current-directory user])
-	(let ([len (read r-safe)])
-	  (unless (and (number? len)
-		       (integer? len)
-		       (positive? len))
-	    (error 'handin "bad length: ~s" len))
-	  (unless (len . < . MAX-UPLOAD)
-	    (error 'handin
-		   "max handin file size is ~s bytes, file to handin is too big (~s bytes)"
-		   MAX-UPLOAD len))
-	  (fprintf w "go\n")
-	  (flush-output w)
-	  (unless (regexp-match #rx"[$]" r-safe)
-	    (error 'handin
-		   "did not find start-of-content marker"))
-	  (let ([s (read-bytes len r)])
-	    (unless (and (bytes? s) (= (bytes-length s) len))
-	      (error 'handin
-		     "error uploading (got ~e, expected ~s bytes)"
-		     (if (bytes? s) (bytes-length s) s)
-		     len))
-	    ;; Shift successful-attempt directories so that there's
-	    ;;  no SUCCESS-0:
-	    (make-success-dir-available 0)
-	    ;; Clear out old ATTEMPT, if any, and make a new one:
-	    (when (directory-exists? ATTEMPT-DIR)
-	      (delete-directory/files ATTEMPT-DIR))
-	    (make-directory ATTEMPT-DIR)
-	    (save-submission s (build-path ATTEMPT-DIR "handin"))
-	    (LOG "checking ~a for ~a" assignment user)
-	    (let ([part
-		   ;; Result is either a string or list of strings:
-		   (let ([checker (build-path 'up "checker.ss")])
-		     (if (file-exists? checker)
-			 (let ([checker (path->complete-path checker)])
-			   (parameterize ([current-directory ATTEMPT-DIR])
-			     ((dynamic-require checker 'checker)
-			      user s)))
-			 DEFAULT-FILE-NAME))])
-	      (fprintf w "confirm\n")
-		(flush-output w)
-		(let ([v (read (make-limited-input-port r 50))])
-		  (if (eq? v 'check)
-		      (begin
-			(LOG "saving ~a for ~a" assignment user)
-			(parameterize ([current-directory ATTEMPT-DIR])
-			  (rename-file-or-directory "handin" (if (pair? part) (car part) part)))
-			(rename-file-or-directory ATTEMPT-DIR (success-dir 0))
-			(if (pair? part)
-			    (write (list 'result (cadr part)) w)
-			    (fprintf w "done\n"))
-			(flush-output w))
-		      (error 'handin "upload not confirmed: ~s" v)))))))))
+      (wait-for-lock dirname)
+      (when (and (pair? users) (pair? (cdr users)))
+        ;; two or more users -- lock each one
+        (for-each wait-for-lock users))
+      (ffprintf w "go\n")
+      (unless (regexp-match #rx"[$]" r-safe)
+        (error 'handin "did not find start-of-content marker"))
+      (let ([s (read-bytes len r)])
+        (unless (and (bytes? s) (= (bytes-length s) len))
+          (error 'handin "error uploading (got ~e, expected ~s bytes)"
+                 (if (bytes? s) (bytes-length s) s) len))
+        ;; we have a submission, need to create a directory if needed, make
+        ;; sure that no users submitted work with someone else
+        (unless (directory-exists? dirname)
+          (for-each
+           (lambda (dir)
+             (for-each
+              (lambda (d)
+                (when (member d users)
+                  (error 'handin
+                         "bad submission: ~a has an existing submission (~a)"
+                         d dir)))
+              (regexp-split #rx"[+]" (path->string dir))))
+           (directory-list))
+          (make-directory dirname))
+        (parameterize ([current-directory dirname])
+          ;; Clear out old ATTEMPT, if any, and make a new one:
+          (when (directory-exists? ATTEMPT-DIR)
+            (delete-directory/files ATTEMPT-DIR))
+          (make-directory ATTEMPT-DIR)
+          (save-submission s (build-path ATTEMPT-DIR "handin"))
+          (LOG "checking ~a for ~a" assignment users)
+          (let ([part
+                 ;; Result is either a string or list of strings:
+                 (let ([checker (build-path 'up "checker.ss")])
+                   (if (file-exists? checker)
+                     (parameterize ([current-directory ATTEMPT-DIR])
+                       ((dynamic-require (path->complete-path checker) 'checker)
+                        users s))
+                     DEFAULT-FILE-NAME))])
+            (ffprintf w "confirm\n")
+            (let ([v (read (make-limited-input-port r 50))])
+              (if (eq? v 'check)
+                (begin
+                  (LOG "saving ~a for ~a" assignment users)
+                  (parameterize ([current-directory ATTEMPT-DIR])
+                    (rename-file-or-directory "handin" (if (pair? part) (car part) part)))
+                  ;; Shift successful-attempt directories so that there's
+                  ;;  no SUCCESS-0:
+                  (make-success-dir-available 0)
+                  (rename-file-or-directory ATTEMPT-DIR (success-dir 0))
+                  (if (pair? part)
+                    (write (list 'result (cadr part)) w)
+                    (fprintf w "done\n"))
+                  (flush-output w))
+                (error 'handin "upload not confirmed: ~s" v))))))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -153,18 +166,23 @@
 			(lambda (f)
 			  (error 
 			   'handin 
-			   "user database busy; please try again, and alert the adminstrator is problems persist"))
+			   "user database busy; please try again, and alert the adminstrator if problems persist"))
 			"users.ss"))
      orig-custodian))
 
   (define (add-new-user username r-safe w)
+    (thread (lambda () (sleep 5) (close-input-port r-safe)))
     (let ([full-name (read r-safe)]
-	  [id (read r-safe)]
-	  [passwd (read r-safe)])
+	  [id        (read r-safe)]
+	  [email     (read r-safe)]
+	  [passwd    (read r-safe)])
       (unless (and (string? full-name)
 		   (string? id)
+		   (string? email)
 		   (string? passwd))
 	(error 'handin "bad user-addition request"))
+      (unless (regexp-match USER-REGEXP username)
+        (error 'handin "bad user name: \"~a\"" username))
       ;; Since we're going to use the username in paths:
       (when (regexp-match #rx"[/\\:]" username)
 	(error 'handin "username must not contain a slash, backslash, or colon"))
@@ -173,12 +191,15 @@
 	(error 'handin "username must not be a Windows special file name"))
       (when (string=? "solution" username)
 	(error 'handin "the username \"solution\" is reserved"))
-      (unless (check-id id)
+      (unless (regexp-match ID-REGEXP id)
 	(error 'handin "id has wrong format: ~a; need ~a for id" id ID-DESC))
+      (unless (regexp-match EMAIL-REGEXP email)
+        (error 'handin "email has wrong format: ~a" email))
+      (LOG "create user: ~a" username)
       (put-user (string->symbol username)
-		(list (md5 passwd) id full-name))
+		(list (md5 passwd) id full-name email))
       (fprintf w "ok~n")))
-  
+
   (define (change-user-passwd username r-safe w old-user-data)
     (let ([new-passwd (read r-safe)])
       (LOG "change passwd for ~a" username)
@@ -189,46 +210,60 @@
       (fprintf w "ok~n")))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  
+
   (define (accept-submission-or-update active-assignments r r-safe w)
     (fprintf w "~s~n" active-assignments)
-    ;; Get username and password:
-    (let ([username (read r-safe)]
-	  [passwd (read r-safe)])
-      (let ([user-data
-	     (and (string? username)
-		  (get-preference (string->symbol username)
-				  (lambda () #f)
-				  #f
-				  "users.ss"))])
-	(cond
-	 [(eq? passwd 'create)
-	  (when user-data
-	    (error 'handin "username already exists: ~a" username))
-	  (unless ALLOW-NEW-USERS?
-	    (error 'handin "new users not allowed: ~a" username))
-	  (LOG "create user: ~a" username)
-	  (add-new-user username r-safe w)]
-	 [(and user-data
-	       (string? passwd)
-	       (let ([pw (md5 passwd)])
-		 (or (equal? pw (car user-data))
-		     (equal? pw MASTER-PASSWD))))
-	  (LOG "login: ~a" username)
-	  (let ([assignment (read r-safe)])
-	    (LOG "assignment for ~a: ~a" username assignment)
-	    (if (eq? assignment 'change)
-		(change-user-passwd username r-safe w user-data)
-		(if (member assignment active-assignments)
-		    (begin
-		      (fprintf w "ok\n")
-		      (accept-specific-submission username assignment r r-safe w))
-		    (error 'handin "not an active assignment: ~a" assignment))))]
-	 [else
-	  (LOG "failed login: ~a" username)
-	  (error 'handin "bad username or password for ~a" username)]))))
-  
-  (define assignment-list
+    ;; Get usernames and password:
+    (let* ([user-string
+            (let ([s (read r-safe)])
+              (and (string? s)
+                   (if USERNAME-CASE-SENSITIVE?
+                     s
+                     (let ([s (string-copy s)]) (string-lowercase! s) s))))]
+           [usernames
+            ;; User name lists must always be sorted
+            (if user-string
+              (quicksort (regexp-split #rx" *[+] *" user-string) string<?)
+              '())]
+           [user-datas (map (lambda (u)
+                              (get-preference (string->symbol u)
+                                              (lambda () #f) #f "users.ss"))
+                            usernames)]
+           [passwd (read r-safe)])
+      (cond
+       [(eq? passwd 'create)
+        (unless ALLOW-NEW-USERS?
+          (error 'handin "new users not allowed: ~a" user-string))
+        (unless (= 1 (length usernames))
+          (error 'handin "username must not contain a \"+\": ~a" user-string))
+        ;; we now know that there is a single username, and (car usernames) is
+        ;; the same at user-string
+        (when (car user-datas)
+          (error 'handin "username already exists: `~a'" user-string))
+        (add-new-user user-string r-safe w)]
+       [(and (pair? user-datas)
+             (not (memq #f user-datas))
+             (string? passwd)
+             (let ([pw (md5 passwd)])
+               (ormap (lambda (p) (equal? p pw))
+                      (cons MASTER-PASSWD (map car user-datas)))))
+        (LOG "login: ~a" usernames)
+        (let ([assignment (read r-safe)])
+          (LOG "assignment for ~a: ~a" usernames assignment)
+          (if (eq? assignment 'change)
+            (if (= 1 (length usernames))
+              (change-user-passwd (car usernames) r-safe w (car user-datas))
+              (error 'handin "cannot change a password on a joint login"))
+            (if (member assignment active-assignments)
+              (begin
+                (fprintf w "ok\n")
+                (accept-specific-submission usernames assignment r r-safe w))
+              (error 'handin "not an active assignment: ~a" assignment))))]
+       [else
+        (LOG "failed login: ~a" user-string)
+        (error 'handin "bad username or password for ~a" user-string)])))
+
+  (define (assignment-list)
     (quicksort (map path->string (directory-list "active")) string<?))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -289,14 +324,14 @@
 		  (channel-get session-channel))
 		;; Watcher didn't work:
 		(proc void))))))
-	      
+
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (LOG "server started ------------------------------")
 
-  (define stop-status (serve-status HTTPS-PORT-NUMBER))
-  
+  (define stop-status (serve-status HTTPS-PORT-NUMBER get-config))
+
   (define session-count 0)
 
   (parameterize ([error-display-handler
@@ -316,8 +351,7 @@
 	  w
 	  (lambda (kill-watcher)
 	    (let ([r-safe (make-limited-input-port r 1024)])
-	      (fprintf w "handin\n")
-	      (flush-output w)
+	      (ffprintf w "handin\n")
 	      ;; Check protocol:
 	      (with-handlers ([exn:fail?
 			       (lambda (exn)
@@ -326,17 +360,14 @@
 						(format "~e" exn))])
 				   (kill-watcher)
 				   (LOG "ERROR: ~a" msg)
-				   (fprintf w "~s\n" msg)
-				   (flush-output w)
+				   (ffprintf w "~s\n" msg)
 				   ;; see note on close-output-port below
 				   (close-output-port w)))])
 		(let ([protocol (read r-safe)])
 		  (if (eq? protocol 'original)
-		      (begin
-			(fprintf w "original\n")
-			(flush-output w))
+		      (ffprintf w "original\n")
 		      (error 'handin "unknown protocol: ~s" protocol)))
-		(accept-submission-or-update assignment-list r r-safe w)
+		(accept-submission-or-update (assignment-list) r r-safe w)
 		(LOG "normal exit")
 		(kill-watcher)
 		;; This close-output-port should not be necessary, and it's

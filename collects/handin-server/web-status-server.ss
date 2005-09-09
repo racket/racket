@@ -7,12 +7,21 @@
 	   (lib "ssl-tcp-unit.ss" "net")
 	   (lib "tcp-sig.ss" "net")
 	   (lib "tcp-unit.ss" "net")
-	   (lib "file.ss"))
+	   (lib "file.ss")
+	   (lib "etc.ss"))
 
   (provide serve-status)
 
-  (define (serve-status port-no)
-    
+  (define (serve-status port-no get-config)
+
+    (define WEB-BASE-DIR (get-config 'web-base-dir #f))
+
+    (define web-dir
+      (path->string
+       (if WEB-BASE-DIR
+         (build-path (current-directory) WEB-BASE-DIR)
+         (build-path (this-expression-source-directory) "status-web-root"))))
+
     (define config
       `((port ,port-no)
 	(max-waiting 40)
@@ -37,10 +46,10 @@
 	    (file-base-connection-timeout 30))
 	   (paths
 	    (configuration-root "conf")
-	    (host-root ,(path->string (build-path (collection-path "handin-server") "status-web-root")))
+	    (host-root ,web-dir)
 	    (log-file-path ,(path->string (build-path (current-directory) "web-status-log.ss")))
 	    (file-root "htdocs")
-	    (servlet-root ,(path->string (build-path (collection-path "handin-server") "status-web-root")))
+	    (servlet-root ,web-dir)
 	    (password-authentication ,(path->string (build-path (current-directory) "web-status-passwords"))))))
 	(virtual-host-table)))
 

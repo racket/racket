@@ -53,7 +53,7 @@
 
   (define handin-frame%
     (class dialog%
-      (inherit show is-shown?)
+      (inherit show is-shown? center)
       (super-new [label "Handin"])
 
       (init-field content)
@@ -138,8 +138,7 @@
       (define cancel  (new button%
 			   [label "Cancel"]
 			   [parent button-panel]
-			   [callback (lambda (b e)
-				       (do-cancel-button))]))
+			   [callback (lambda (b e) (do-cancel-button))]))
       (define (do-cancel-button)
 	(let ([go? (begin
 		     (semaphore-wait commit-lock)
@@ -245,6 +244,7 @@
 
       (init-comm)
       (send passwd focus)
+      (center)
       (show #t)))
 
   (define (manage-handin-account)
@@ -322,14 +322,16 @@
 	       (and (non-empty? new-username)
 		    (non-empty? full-name)
 		    (non-empty? student-id)
+		    (non-empty? email)
 		    (non-empty? add-passwd))))
        (define new-user-box (new vertical-panel%
 				 [parent single]
 				 [alignment '(center center)]))
        (define new-username (mk-txt "Username:" new-user-box activate-new))
        (send new-username set-value (remembered-user))
-       (define full-name (mk-txt "Full Name:" new-user-box activate-new))
+       (define full-name  (mk-txt "Full Name:" new-user-box activate-new))
        (define student-id (mk-txt "ID:" new-user-box activate-new))
+       (define email      (mk-txt "Email:" new-user-box activate-new))
        (define add-passwd (mk-passwd "Password:" new-user-box activate-new))
        (define new-button (new button%
 			       [label "Add User"]
@@ -416,10 +418,11 @@
 			    "The \"New\" and \"New again\" passwords are not the same.")
 	       (k (void))))
 	   (when new?
-	     (check-length username 50 "Username" k)
-	     (check-length full-name 100 "Full Name" k)
-	     (check-length student-id 100 "ID" k)
-	     (check-length add-passwd 50 "Password" k))
+	     (check-length username    50 "Username"  k)
+	     (check-length full-name  100 "Full Name" k)
+	     (check-length student-id 100 "ID"        k)
+	     (check-length email      100 "Email"     k)
+	     (check-length add-passwd  50 "Password"  k))
 	   (send tabs enable #f)
 	   (parameterize ([current-custodian comm-cust])
 	     (thread
@@ -432,19 +435,15 @@
 		  (remember-user (send username get-value))
 		  (send status set-label "Making secure connection...")
 		  (let-values ([(h l) (connect)])
+                    (define (run proc . fields)
+                      (apply proc h (map (lambda (f) (send f get-value))
+                                         fields)))
 		    (send status set-label "Updating server...")
 		    (if new?
-			(submit-addition
-			 h
-			 (send username get-value)
-			 (send full-name get-value)
-			 (send student-id get-value)
-			 (send add-passwd get-value))
-			(submit-password-change
-			 h
-			 (send username get-value)
-			 (send old-passwd get-value)
-			 (send new-passwd get-value))))
+			(run submit-addition
+                             username full-name student-id email add-passwd)
+			(run submit-password-change
+                             username old-passwd new-passwd)))
 		  (send status set-label "Success.")
 		  (send cancel set-label "Close")))))))
 
@@ -519,7 +518,7 @@
 
           (define/override (file-menu:between-open-and-revert file-menu)
             (new menu-item%
-		 (label (format "Manage ~a..." handin-name))
+		 (label (format "Manage ~a Account..." handin-name))
 		 (parent file-menu)
 		 (callback (lambda (m e) (manage-handin-account))))
             (super file-menu:between-open-and-revert file-menu))

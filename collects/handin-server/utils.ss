@@ -5,10 +5,11 @@
 	   "run-status.ss"
 	   (prefix pc: (lib "pconvert.ss"))
 	   (lib "pretty.ss")
-	   (lib "list.ss"))
+	   (lib "list.ss")
+	   (lib "string.ss"))
 
   (provide unpack-submission
-	   
+
 	   unpack-test-suite-submission
 	   is-test-suite-submission?
 
@@ -21,6 +22,7 @@
 	   call-with-evaluator/submission
 	   reraise-exn-as-submission-problem
 	   current-run-status
+           current-value-printer
 
 	   check-proc
 	   check-defined
@@ -130,6 +132,31 @@
 
       (super-new)))
 
+  ;; Protection ---------------------------------------
+
+  (define ok-path-re
+    (regexp
+     (string-append
+      "^(?:"
+      (apply string-append
+             (cdr (apply append (map (lambda (p) (list "|" (regexp-quote p)))
+                                     (current-library-collection-paths)))))
+      ")(?:/|$)")))
+
+  (define tight-security
+    (make-security-guard
+     (current-security-guard)
+     (lambda (what path modes)
+       (when (or (memq 'write modes)
+                 (memq 'execute modes)
+                 (memq 'delete modes)
+                 (not (regexp-match ok-path-re (path->string path))))
+         (error what "file access denied (~a)" path)))
+     (lambda (what host port mode) (error what "network access denied"))))
+
+  (define (safe-eval expr)
+    (parameterize ([current-security-guard tight-security])
+      (eval expr)))
 
   ;; Execution ----------------------------------------
 
@@ -149,27 +176,55 @@
 	     (lambda ()
 	       ;; First read program and evaluate it as a module:
 	       (with-handlers ([void (lambda (exn) (channel-put result-ch (cons 'exn exn)))])
-		 (let ([prog-body
-			(parameterize ([read-case-sensitive #t]
-				       [read-decimal-as-inexact #f])
-			  (let loop ([l null])
-			    (let ([expr (read-syntax 'program program-port)])
-			      (if (eof-object? expr)
-				  (reverse l)
-				  (loop (cons expr l))))))])
-		   (eval `(module m (lib ,(case language
-					    [(beginner) "htdp-beginner.ss"]
-					    [(beginner-abbr) "htdp-beginner-abbr.ss"]
-					    [(intermediate) "htdp-intermediate.ss"]
-					    [(intermediate-lambda) "htdp-intermediate-lambda.ss"]
-					    [(advanced) "htdp-advanced.ss"])
-					 "lang")
-			    ,@(map (lambda (tp)
-				     `(,#'require (file ,tp)))
-				   teachpacks)
-			    ,@prog-body))
-		   (eval `(require m))
-		   (current-namespace (module->namespace 'm)))
+		 (let* ([body
+                         (parameterize ([read-case-sensitive #t]
+                                        [read-decimal-as-inexact #f])
+                           (let loop ([l null])
+                             (let ([expr (read-syntax 'program program-port)])
+                               (if (eof-object? expr)
+                                 (reverse l)
+                                 (loop (cons expr l))))))]
+                        [body (append (if (and (pair? teachpacks)
+                                               (eq? 'begin (car teachpacks)))
+                                        (cdr teachpacks)
+                                        (map (lambda (tp)
+                                               `(,#'require
+                                                 ,(if (pair? tp)
+                                                    tp `(file ,tp))))
+                                             teachpacks))
+                                      body)]
+                        [body
+                         (cond
+                          [(and (symbol? language)
+                                (memq language '(beginner
+                                                 beginner-abbr
+                                                 intermediate
+                                                 intermediate-lambda
+                                                 advanced)))
+                           `(module m
+                                (lib ,(case language
+                                        [(beginner) "htdp-beginner.ss"]
+                                        [(beginner-abbr) "htdp-beginner-abbr.ss"]
+                                        [(intermediate) "htdp-intermediate.ss"]
+                                        [(intermediate-lambda) "htdp-intermediate-lambda.ss"]
+                                        [(advanced) "htdp-advanced.ss"])
+                                     "lang")
+                              ,@body)]
+                          [(or (and (pair? language) (eq? 'lib (car language)))
+                               (symbol? language))
+                           `(module m ,language ,@body)]
+                          [(and (pair? language)
+                                (eq? 'begin (car language)))
+                           `(begin ,language ,@body)]
+                          [else (error 'make-evaluator
+                                       "Bad language specification: ~e"
+                                       language)])])
+                   (safe-eval body)
+                   (when (and (pair? body) (eq? 'module (car body))
+                              (pair? (cdr body)) (symbol? (cadr body)))
+                     (let ([mod (cadr body)])
+                       (safe-eval `(require ,mod))
+                       (current-namespace (module->namespace mod)))))
 		 (channel-put result-ch 'ok))
 	       ;; Now wait for interaction expressions:
 	       (let loop ()
@@ -177,7 +232,7 @@
 		   (unless (eof-object? expr)
 		     (with-handlers ([void (lambda (exn)
 					     (channel-put result-ch (cons 'exn exn)))])
-		       (channel-put result-ch (cons 'val (eval expr))))
+		       (channel-put result-ch (cons 'val (safe-eval expr))))
 		     (loop))))
 	       (let loop ()
 		 (channel-put result-ch '(exn . no-more-to-evaluate))
@@ -297,14 +352,14 @@
 			   0))))))))
 
   (define list-abbreviation-enabled (make-parameter #f))
-      
+
   (define (value-converter v)
     (parameterize ([pc:booleans-as-true/false #t]
 		   [pc:abbreviate-cons-as-list (list-abbreviation-enabled)]
 		   [pc:constructor-style-printing #t])
       (pc:print-convert v)))
 
-  (define (value-printer v)
+  (define (default-value-printer v)
     (parameterize ([pretty-print-show-inexactness #t]
 		   [pretty-print-.-symbol-without-bars #t]
 		   [pretty-print-exact-as-decimal #t]
@@ -313,10 +368,11 @@
       (let ([p (open-output-string)])
 	(pretty-print (value-converter v) p)
 	(regexp-replace #rx"\n$" (get-output-string p) ""))))
+  (define current-value-printer (make-parameter default-value-printer))
 
   (define (call-with-evaluator lang teachpacks program-port go)
     (parameterize ([error-value->string-handler (lambda (v s)
-						  (value-printer v))]
+						  ((current-value-printer) v))]
 		   [list-abbreviation-enabled (not (or (eq? lang 'beginner)
 						       (eq? lang 'beginner-abbr)))])
       (reraise-exn-as-submission-problem
@@ -324,10 +380,9 @@
 	 (let ([e (make-evaluator lang teachpacks program-port)])
 	   (current-run-status "executing your code")
 	   (go e))))))
-  
+
   (define (call-with-evaluator/submission lang teachpacks str go)
     (let-values ([(defs interacts) (unpack-submission str)])
       (call-with-evaluator lang teachpacks (open-input-text-editor defs) go)))
-  
-  )
 
+  )

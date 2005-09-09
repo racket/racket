@@ -68,10 +68,10 @@
 	result-msg)))
 
 
-  (define (submit-addition h username full-name id passwd)
+  (define (submit-addition h username full-name id email passwd)
     (let ([r (handin-r h)]
 	  [w (handin-w h)])
-      (fprintf w "~s create ~s ~s ~s~n" username full-name id passwd)
+      (fprintf w "~s create ~s ~s ~s ~s~n" username full-name id email passwd)
       (let ([v (read r)])
 	(unless (eq? v 'ok)
 	  (error 'handin-connect "update error: ~a" v)))
