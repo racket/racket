@@ -31,6 +31,10 @@
   ;;            of bind-exp-stx
   ;; bind-count - is the number of times in the bind-exp is found in the
   ;;              test list in which this test is a member
+  ;; times-used-neg - ??? (this appears to never be used)
+  ;; used-set-neg - ???
+  ;; closest-shape-tst - ???
+  ;; equal-set - ???
   (define-struct test (tst
                        comp
                        shape
@@ -43,7 +47,7 @@
                        used-set-neg
                        closest-shape-tst
                        equal-set)
-    (make-inspector))
+    #f)
   
   ;;!(function make-shape-test
   ;;          (form (make-shape-test test exp comp) -> test-struct)

@@ -73,8 +73,9 @@
                                 (let ((x #,(subst-bindings (syntax exp)
                                                            let-bound)))
                                   (lambda (y)
-                                    (#,(mk-setter 
-                                        (syntax-object->datum (syntax acc)))
+                                    (#,(datum->syntax-object #'acc
+                                                             (mk-setter 
+                                                              (syntax-object->datum (syntax acc))))
                                        x y)))))))))))
   
   ;;!(function getter
