@@ -55,7 +55,7 @@
   (define (play-sound f async?)
     (if (not (eq? (system-type) 'unix))
 	(wx:play-sound f async?)
-	(let ([f (if (path? f) (path->string f))])
+	(let ([f (if (path? f) (path->string f) f)])
 	  (unless (string? f)
 	    (raise-type-error 'play-sound "string" f))
 	  (let* ([subpath (path->string (system-library-subpath))]
@@ -77,7 +77,7 @@
 	      (when (and r (string? r))
 		(set-box! b r)))
 	    ((if async? (lambda (x) (process x) #t) system)
-	     (format (unbox b) (expand-path f)))))))
+	     (format (unbox b) (path->string (expand-path f))))))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Timers:
