@@ -12,7 +12,7 @@
            (lib "framework.ss" "framework")
            (as-is:unchecked (lib "string.ss") expr->string)
            (as-is:unchecked (lib "etc.ss") build-vector)
-           (lifted mzscheme regexp-match)
+           ;(lifted mzscheme regexp-match)
            (as-is:unchecked mzscheme make-hash-table hash-table-put! hash-table-get
                             hash-table-remove! let*-values vector-set! make-string
                             exn?
@@ -346,10 +346,10 @@
        
        [scrollbar-updater
         (list
-         (lift #t (lambda (pg) (set-scroll-page 'horizontal (clip 1 (- pg chars-per-cell -1) 10000))) h-chars-per-page~)
-         (lift #t (lambda (pg) (set-scroll-page 'vertical (clip 1 (sub1 pg) 10000))) v-cells-per-page~)
-         (lift #t (lambda (rng) (set-scroll-range 'horizontal (clip 1 rng 10000))) h-scroll-range~)
-         (lift #t (lambda (rng) (set-scroll-range 'vertical (clip 1 rng 10000))) v-scroll-range~))]
+         (lift-strict (lambda (pg) (set-scroll-page 'horizontal (clip 1 (- pg chars-per-cell -1) 10000))) h-chars-per-page~)
+         (lift-strict (lambda (pg) (set-scroll-page 'vertical (clip 1 (sub1 pg) 10000))) v-cells-per-page~)
+         (lift-strict (lambda (rng) (set-scroll-range 'horizontal (clip 1 rng 10000))) h-scroll-range~)
+         (lift-strict (lambda (rng) (set-scroll-range 'vertical (clip 1 rng 10000))) v-scroll-range~))]
        
        [scroller ((merge-e (changes h-scroll-pos~)
                            (changes v-scroll-pos~)) . -=> . (refresh))]
@@ -409,7 +409,7 @@
        [focuser ((key-events . =#> . (lambda (ev) (eq? #\return (send ev get-key-code))))
                  . -=> . (send text-field focus))]
        
-       [text-field-switcher (lift #t (lambda (row col)
+       [text-field-switcher (lift-strict (lambda (row col)
                                        (unless (or (negative? row)
                                                    (negative? col))
                                          (send text-field set-value (ss-get-cell-text row col))))

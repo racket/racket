@@ -526,6 +526,92 @@
                        out)])
           (apply proc->signal thunk args)))))
   
+  (define current-emit (make-parameter #f))
+  (define current-select (make-parameter #f))
+  (define (emit ev)
+    (cond
+      [(current-emit) => (lambda (f) (f ev))]
+      [else (error 'emit "outside of general-event-processor")]))
+  (define (select-proc . clauses)
+    (cond
+      [(current-select) => (lambda (f) (apply f clauses))]
+      [else (error 'select "outside of general-event-processor")]))
+  
+  (define-syntax (select stx)
+    (syntax-case stx ()
+      [(select clause ...)
+       (with-syntax ([((e k) ...)
+                      (map (lambda (c)
+                             (syntax-case c (=>)
+                               [(e => k) #'(e k)]
+                               [(e exp0 exp1 ...) #'(e (lambda (_) exp0 exp1 ...))]))
+                           (syntax-e #'(clause ...)))])
+         #'(select-proc (list e k) ...))]))
+  
+  (define (flush . strs)
+    (select-proc (map (lambda (str) (list str void)) strs)))
+  
+  (define (general-event-processor2 proc)
+    (do-in-manager
+     (let* ([out (econs undefined undefined)]
+            [emit (lambda (val)
+                    (set-erest! out (econs val undefined))
+                    (set! out (erest out))
+                    val)]
+            [streams (make-hash-table 'weak)]
+            [extracted (make-hash-table 'weak)]
+            [top-esc #f]
+            [rtn (proc->signal void)]
+            [select (lambda e/k-list
+                      (let/ec esc
+                        (let loop ()
+                          (for-each (lambda (e/k)
+                                      (let* ([e (first e/k)]
+                                             [x (hash-table-get
+                                                 extracted e
+                                                 (lambda () empty))])
+                                        (when (cons? x)
+                                          (hash-table-put!
+                                           extracted e (rest x))
+                                          (esc ((second e/k) (first x))))))
+                                    e/k-list)
+                          (for-each (lambda (e/k)
+                                      (let* ([e (first e/k)])
+                                        (hash-table-get
+                                         streams e
+                                         (lambda ()
+                                           (register rtn e)
+                                           (hash-table-put!
+                                            streams e
+                                            (signal-value e))))))
+                                    e/k-list)
+                          (let/cc k
+                            (set! proc (lambda () (k (void))))
+                            (top-esc (void)))
+                          (loop))))])
+       (let ([thunk (lambda ()
+                      (hash-table-for-each
+                       streams
+                       (lambda (k v)
+                         ;; inefficient! appends each new event individually
+                         (let loop ([str v])
+                           (when (and (econs? str)
+                                      (not (undefined? (erest str))))
+                             (hash-table-put!
+                              extracted k
+                              (append (hash-table-get extracted k (lambda () empty))
+                                      (list (efirst (erest str)))))
+                             (loop (erest str))))
+                         (hash-table-put! streams k (signal-value k))))
+                      (let/cc k
+                        (set! top-esc k)
+                        (parameterize ([current-emit emit]
+                                       [current-select select])
+                          (proc)))
+                      out)])
+         (set-signal-thunk! rtn thunk)
+         (iq-enqueue rtn)
+         rtn))))
   
   (define (event-processor proc . args)
     (let* ([out (econs undefined undefined)]
@@ -546,7 +632,27 @@
                     out)])
       (apply proc->signal thunk args)))
   
+  ;; split : event[a] (a -> b) -> (b -> event[a])
+  (define (split ev fn)
+    (let* ([ht (make-hash-table 'weak)]
+           [sig (map-e (lambda (e)
+                         (let/ec k
+                           (send-event
+                            (hash-table-get ht (fn e) (lambda () (k (void))))
+                            e)))
+                       ev)])                             
+      (lambda (x)
+        sig
+        (hash-table-get
+         ht x (lambda ()
+                (let ([rtn (event-receiver)])
+                  (hash-table-put! ht x rtn)
+                  rtn))))))
   
+  (define-syntax event-select
+    (syntax-rules ()
+      [(_ [ev k] ...)
+       ()]))
   
     ;;;;;;;;;;;;;;;;;;;;;;
   ;; Command Lambda 
@@ -678,6 +784,9 @@
            nothing
            nothing?
            general-event-processor
+           general-event-processor2
+           emit
+           select
            event-processor
            switch
            merge-e
@@ -719,6 +828,7 @@
            mk-command-lambda
            until
            event-loop
+           split
            
            ;; from frp-core
            event-receiver

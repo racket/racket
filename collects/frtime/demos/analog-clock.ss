@@ -31,7 +31,8 @@
    (clicks-in-clock
     . -=> .
     (snapshot (mouse-pos clock-center)
-              (posn- mouse-pos clock-center)))))
+              (posn- mouse-pos clock-center)))
+   #;(make-posn 0 0)))
 
 ;; Define follow-mouse which is true when the center of the clock
 ;; should be at the mouse cursor; false when it is at the last 
@@ -47,9 +48,9 @@
   (rec p
     (inf-delay
      (until (make-posn 200 200)
-            (let ([p1 (posn- mouse-pos offset)])
+            (let ([p1 0])
               (if follow-mouse?
-                  p1
+                  (posn- mouse-pos offset)
                   p))))))
 
 ;; Define the length of the hands in terms of the radius of the clock.

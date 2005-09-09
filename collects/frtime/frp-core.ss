@@ -142,6 +142,17 @@
   ; update the given signal at the given time
   (define-struct alarm (time signal))  
   
+  (define extra-cont-marks (make-parameter #f))
+
+  (define (effective-continuation-marks)
+    (if (extra-cont-marks)
+        (begin
+          #;(thread (lambda () (raise (make-exn:fail
+                                     "extra marks present!" (extra-cont-marks)))))
+          (compose-continuation-mark-sets
+           (extra-cont-marks)
+           (current-continuation-marks)))
+        (current-continuation-marks)))
   
   ;; Simple Structure Combinators
   
@@ -162,7 +173,7 @@
       (apply proc->signal (lambda the-args (apply proc/emit the-args) out) deps)))
   
   (define (build-signal ctor thunk producers)
-    (let ([ccm (current-continuation-marks)])
+    (let ([ccm (effective-continuation-marks)])
       (do-in-manager
        (let* ([custs (current-custs)]
               [cust-sigs (map ft-cust-signal custs)]
@@ -172,7 +183,8 @@
                                                (map safe-signal-depth cust-sigs))))
                     ccm
                     (parameterize ([current-exception-handler
-                                    (lambda (exn) (exn-handler exn))])
+                                    (lambda (exn) (exn-handler exn))]
+                                   [extra-cont-marks ccm])
                       (current-parameterization))
                     (append cust-sigs producers))])
          ;(printf "~a custodians~n" (length custs))
@@ -187,7 +199,7 @@
          sig))))
   
   (define (proc->signal:switching thunk current-box trigger . producers)
-    (let ([ccm (current-continuation-marks)])
+    (let ([ccm (effective-continuation-marks)])
       (do-in-manager
        (let* ([custs (current-custs)]
               [cust-sigs (map ft-cust-signal custs)]
@@ -197,7 +209,8 @@
                                                (map safe-signal-depth cust-sigs))))
                     ccm
                     (parameterize ([current-exception-handler
-                                    (lambda (exn) (exn-handler exn))])
+                                    (lambda (exn) (exn-handler exn))]
+                                   [extra-cont-marks ccm])
                       (current-parameterization))
                     (append cust-sigs producers)
                     current-box
@@ -221,57 +234,59 @@
   
   ;; mutate! : compound num -> (any -> ())
   (define (procs->signal:compound ctor mutate! . args)
-    (do-in-manager
-     (let* ([custs (current-custs)]
-            [cust-sigs (map ft-cust-signal custs)]
-            [value (apply ctor (map value-now/no-copy args))]
-            #;[mutators
-             (foldl
-              (lambda (arg idx acc)
-                (if (signal? arg) ; behavior?
-                    (cons (proc->signal
-                           (let ([m (mutate! value idx)])
-                             (lambda ()
-                               (let ([v (value-now/no-copy arg)])
-                                 (m v)
-                                 'struct-mutator)))
-                           arg) acc)
-                    acc))
-              empty args (build-list (length args) identity))]
-            [sig (make-signal:compound
-                  undefined
-                  empty
-                  #f
-                  (lambda () ;mutators
-                    (let loop ([i 0] [args args] [val value])
-                      (if (cons? args)
-                          (let ([fd (value-now/no-copy (car args))])
-                            ((mutate! value i) fd)
-                            (loop (add1 i) (cdr args)
-                                  (if (undefined? fd)
-                                      undefined
-                                      val)))
-                          val)))
-                  (add1 (apply max 0 (append (map safe-signal-depth args)
-                                             (map safe-signal-depth cust-sigs))))
-                  (current-continuation-marks)
-                  (parameterize ([current-exception-handler
-                                    (lambda (exn) (exn-handler exn))])
-                      (current-parameterization))
-                  (append cust-sigs args)
-                  (apply ctor args)
-                   (lambda () (apply ctor (map value-now args))))])
-       ;(printf "mutators = ~a~n" mutators)
-       (when (cons? args)
-         (register sig args))
-       (when (cons? cust-sigs)
-         (register (make-non-scheduled sig) cust-sigs))
-       (for-each (lambda (g) (set-ft-cust-constructed-sigs!
-                              g (cons (make-weak-box sig) (ft-cust-constructed-sigs g))))
-                 custs)
-       (iq-enqueue sig)
-       ;(printf "~n*made a compound [~a]*~n~n" (value-now/no-copy sig))
-       sig)))
+    (let ([ccm (effective-continuation-marks)])
+      (do-in-manager
+       (let* ([custs (current-custs)]
+              [cust-sigs (map ft-cust-signal custs)]
+              [value (apply ctor (map value-now/no-copy args))]
+              #;[mutators
+                 (foldl
+                  (lambda (arg idx acc)
+                    (if (signal? arg) ; behavior?
+                        (cons (proc->signal
+                               (let ([m (mutate! value idx)])
+                                 (lambda ()
+                                   (let ([v (value-now/no-copy arg)])
+                                     (m v)
+                                     'struct-mutator)))
+                               arg) acc)
+                        acc))
+                  empty args (build-list (length args) identity))]
+                [sig (make-signal:compound
+                      undefined
+                      empty
+                      #f
+                      (lambda () ;mutators
+                        (let loop ([i 0] [args args] [val value])
+                          (if (cons? args)
+                              (let ([fd (value-now/no-copy (car args))])
+                                ((mutate! value i) fd)
+                                (loop (add1 i) (cdr args)
+                                      (if (undefined? fd)
+                                          undefined
+                                          val)))
+                              val)))
+                      (add1 (apply max 0 (append (map safe-signal-depth args)
+                                                 (map safe-signal-depth cust-sigs))))
+                      ccm
+                      (parameterize ([current-exception-handler
+                                      (lambda (exn) (exn-handler exn))]
+                                     [extra-cont-marks ccm])
+                        (current-parameterization))
+                      (append cust-sigs args)
+                      (apply ctor args)
+                      (lambda () (apply ctor (map value-now args))))])
+         ;(printf "mutators = ~a~n" mutators)
+         (when (cons? args)
+           (register sig args))
+         (when (cons? cust-sigs)
+           (register (make-non-scheduled sig) cust-sigs))
+         (for-each (lambda (g) (set-ft-cust-constructed-sigs!
+                                g (cons (make-weak-box sig) (ft-cust-constructed-sigs g))))
+                   custs)
+         (iq-enqueue sig)
+         ;(printf "~n*made a compound [~a]*~n~n" (value-now/no-copy sig))
+         sig))))
   
   
   
@@ -597,32 +612,34 @@
   
   (define (super-lift fun bhvr)
     (if (behavior? bhvr)
-        (do-in-manager
-         (let* ([cust (make-ft-cust (void) empty)]
-                [custs (cons cust (current-custs))]
-                [pfun (lambda (b)
-                        (parameterize ([current-custs custs])
-                          (fun b)))]
-                [current (box undefined)])
-           (letrec ([custodian-signal
-                     (proc->signal:unchanged
-                      (lambda ()
-                        (for-each kill-signal
-                                  (filter identity
-                                          (map weak-box-value (ft-cust-constructed-sigs cust))))
-                        (unregister rtn (unbox current))
-                        (set-box! current (pfun (value-now/no-copy bhvr)))
-                        (register rtn (unbox current))
-                        ;; keep rtn's producers up-to-date
-                        (set-car! (signal-producers rtn) (unbox current))
-                        (iq-resort)
-                        'custodian)
-                      bhvr)]
-                    [rtn (proc->signal:switching
-                          (lambda () custodian-signal (value-now/no-copy (unbox current)))
-                          current custodian-signal undefined bhvr custodian-signal)])
-             (set-ft-cust-signal! cust custodian-signal)
-             rtn)))
+        (parameterize ([extra-cont-marks
+                        (effective-continuation-marks)])
+          (do-in-manager
+           (let* ([cust (make-ft-cust (void) empty)]
+                  [custs (cons cust (current-custs))]
+                  [pfun (lambda (b)
+                          (parameterize ([current-custs custs])
+                            (fun b)))]
+                  [current (box undefined)])
+             (letrec ([custodian-signal
+                       (proc->signal:unchanged
+                        (lambda ()
+                          (for-each kill-signal
+                                    (filter identity
+                                            (map weak-box-value (ft-cust-constructed-sigs cust))))
+                          (unregister rtn (unbox current))
+                          (set-box! current (pfun (value-now/no-copy bhvr)))
+                          (register rtn (unbox current))
+                          ;; keep rtn's producers up-to-date
+                          (set-car! (signal-producers rtn) (unbox current))
+                          (iq-resort)
+                          'custodian)
+                        bhvr)]
+                      [rtn (proc->signal:switching
+                            (lambda () custodian-signal (value-now/no-copy (unbox current)))
+                            current custodian-signal undefined bhvr custodian-signal)])
+               (set-ft-cust-signal! cust custodian-signal)
+               rtn))))
         (fun bhvr)))
   
   
@@ -725,11 +742,14 @@
                           (lambda (exn)
                             (when (and cur-beh
                                        #;(not (undefined? (signal-value cur-beh))))
-                              #;(when (empty? (continuation-mark-set->list
-                                             (exn-continuation-marks exn) 'frtime))
-                                (set! exn (make-exn:fail (exn-message exn)
-                                                         (signal-continuation-marks
-                                                          cur-beh))))
+                              ;(when (empty? (continuation-mark-set->list
+                               ;              (exn-continuation-marks exn) 'frtime))
+                                (set! exn (make-exn:fail
+                                           (exn-message exn)
+                                           (compose-continuation-mark-sets
+                                            (signal-continuation-marks
+                                             cur-beh)
+                                            (exn-continuation-marks exn))));)
                               ;(raise exn)
                               (iq-enqueue (list exceptions (list exn cur-beh)))
                               (when (behavior? cur-beh)
