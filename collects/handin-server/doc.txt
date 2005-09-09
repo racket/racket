@@ -100,11 +100,11 @@ To customize the client:
 
        * For `name', choose a name for the handin tool as it will
          appear in DrScheme's interface (e.g., the "XXX" for the
-         "Manage XXX..."  menu item). Again, make the name specific to
-         the course, in case a student installs multiple handin tools.
-         It's a good idea to use "Handin" as the last part of the
-         name, as in "2010 Handin", since the button is always named
-         "Handin".
+         "Manage XXX Account..."  menu item). Again, make the name
+         specific to the course, in case a student installs multiple
+         handin tools.  It's a good idea to use "Handin" as the last
+         part of the name, as in "2010 Handin", since the button is
+         always named "Handin".
 
        * For `collection', use the name that you chose for your
          collection directory (i.e., whatever you changed
@@ -196,26 +196,25 @@ sub-directories:
          "BACKUP-1/handin.scm", etc.; the default is 9
 
       'user-regexp : a regular expression that is used to validate
-        usernames, young students often choose exotic usernames that
-        are impossible to remember, and forget capitalization; the
-        default is fairly strict: #rx"^[a-z][a-z0-9]+$"
+         usernames, young students often choose exotic usernames that
+         are impossible to remember, and forget capitalization; the
+         default is fairly strict: #rx"^[a-z][a-z0-9]+$"
 
-      'username-case-sensitive? : a boolean flag, when #f, usernames
-        are normalized to lower case for all messages; defaults to #f
+      'username-case-sensitive? : a boolean; when #f, usernames
+         are case-folded for all purposes; defaults to #f
 
       'id-regexp : a regular expression that is used to validate a
-        "free form" user id (possibly a student id) for a created
-        account; the
-         default is #rx"^.*$"
+         "free form" user id (possibly a student id) for a created
+         account; the default is #rx"^.*$"
 
       'id-desc : a plain-words description of the acceptable format
          for a "free form" id; the default is "anything"
 
       'email-regexp : a regular expression that is used to validate
-        emails, the #rx"^[^@<>\"`',]+@[a-zA-Z0-9_.-]+[.][a-zA-Z]+$"
-        default can be changed to "" if you don't care about emails,
-        or can be further restricted, for example requiring a
-        "@cs.foo.edu" suffix
+         emails, the #rx"^[^@<>\"`',]+@[a-zA-Z0-9_.-]+[.][a-zA-Z]+$"
+         default can be changed to "" if you don't care about emails,
+         or can be further restricted, for example requiring a
+         "@cs.foo.edu" suffix
 
       'allow-new-users : a boolean indicating whether to allow
          new-user requests from a client tool; the default is #f
@@ -225,12 +224,12 @@ sub-directories:
          the password
 
       'web-base-dir : if #f (the default), the built-in web server
-        will use the "status-web-root" in this collection for its
-        configuration; to have complete control over the built in
-        server, you can copy and edit "status-web-root" to the
-        directory you're running the handin server server from, and
-        add this configuration entry with the name of your new copy
-        (relative to the handin server directory).
+         will use the "status-web-root" in this collection for its
+         configuration; to have complete control over the built in
+         server, you can copy and edit "status-web-root" to the
+         directory you're running the handin server server from, and
+         add this configuration entry with the name of your new copy
+         (relative to the handin server directory)
 
   * "users.ss" (created if not present if a user is added) --- keeps
     the list of user accounts, along with the associated password
@@ -246,7 +245,10 @@ sub-directories:
     can always be updated by the server to change passwords.
 
     The username "solution" is special. It is used by the HTTPS status
-    server.
+    server. Independent of the 'user-regexp and 'username-case-sensitive?
+    configration items, usernames are not allowed to contain characters
+    that are illegal in Windows pathnames, they cannot end in spaces
+    or periods, and no to user ids can have the same case folding.
 
   * "active/" --- sub-directory for active assignments. A list of
     active assignments is sent to a client tool when a student clicks

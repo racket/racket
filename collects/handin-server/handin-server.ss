@@ -124,15 +124,16 @@
   ;; On startup, we scan *all* submissions
   (LOG "Cleaning up submission directories")
   (for-each (lambda (top)
-              (parameterize ([current-directory top])
-                (for-each (lambda (pset)
-                            (when (directory-exists? pset) ; filter non-dirs
-                              (parameterize ([current-directory pset])
-                                (for-each (lambda (sub)
-                                            (when (directory-exists? sub)
-                                              (cleanup-submission sub)))
-                                          (directory-list)))))
-                          (directory-list))))
+	      (when (directory-exists? top)
+		(parameterize ([current-directory top])
+		  (for-each (lambda (pset)
+			      (when (directory-exists? pset) ; filter non-dirs
+				(parameterize ([current-directory pset])
+				  (for-each (lambda (sub)
+					      (when (directory-exists? sub)
+						(cleanup-submission sub)))
+					    (directory-list)))))
+			    (directory-list)))))
             '("active" "inactive"))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -243,15 +244,19 @@
 		   (string? passwd))
 	(error 'handin "bad user-addition request"))
       (unless (regexp-match USER-REGEXP username)
-        (error 'handin "bad user name: \"~a\"" username))
+        (error 'handin "bad username: \"~a\"" username))
       ;; Since we're going to use the username in paths:
-      (when (regexp-match #rx"[/\\:]" username)
-	(error 'handin "username must not contain a slash, backslash, or colon"))
-      (when (regexp-match #rx"^((NUL)|(CON)|(PRN)|(AUX)|(CLOCK[$])|(COM[1-9])|(LPT[1-9]))[.]?" 
-			  (list->string (map char-upcase (string->list username))))
+      (when (regexp-match #rx"[/\\:|\"<>]" username)
+	(error 'handin "username must not contain one of the following: / \\ : | \" < >"))
+      (when (regexp-match #rx"^((nul)|(con)|(prn)|(aux)|(clock[$])|(com[1-9])|(lpt[1-9]))[.]?" 
+			  (string-foldcase username))
 	(error 'handin "username must not be a Windows special file name"))
+      (when (regexp-match #rx"[ .]$" username)
+	(error 'handin "username must not end with a space or period"))
       (when (string=? "solution" username)
 	(error 'handin "the username \"solution\" is reserved"))
+      (when (string=? "checker.ss" username)
+	(error 'handin "the username \"checker.ss\" is reserved"))
       (unless (regexp-match ID-REGEXP id)
 	(error 'handin "id has wrong format: ~a; need ~a for id" id ID-DESC))
       (unless (regexp-match EMAIL-REGEXP email)
@@ -280,9 +285,9 @@
               (and (string? s)
                    (if USERNAME-CASE-SENSITIVE?
                      s
-                     (let ([s (string-copy s)]) (string-lowercase! s) s))))]
+		     (string-foldcase s))))]
            [usernames
-            ;; User name lists must always be sorted
+            ;; Username lists must always be sorted
             (if user-string
               (quicksort (regexp-split #rx" *[+] *" user-string) string<?)
               '())]
@@ -293,14 +298,23 @@
            [passwd (read r-safe)])
       (cond
        [(eq? passwd 'create)
+	(wait-for-lock "+newuser+")
         (unless ALLOW-NEW-USERS?
           (error 'handin "new users not allowed: ~a" user-string))
         (unless (= 1 (length usernames))
           (error 'handin "username must not contain a \"+\": ~a" user-string))
         ;; we now know that there is a single username, and (car usernames) is
         ;; the same at user-string
-        (when (car user-datas)
-          (error 'handin "username already exists: `~a'" user-string))
+        (when (or (car user-datas)
+		  (and USERNAME-CASE-SENSITIVE?
+		       ;; Force case-folding for existing-username check:
+		       (get-preference (string->symbol (string-foldcase user-string))
+				       (lambda () #f) #f "users.ss")))
+          (error 'handin "~ausername already exists: `~a'" 
+		 (if (car user-datas)
+		     ""
+		     "case-folded equivalent ")
+		 user-string))
         (add-new-user user-string r-safe w)]
        [(and (pair? user-datas)
              (not (memq #f user-datas))
