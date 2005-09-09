@@ -23,7 +23,8 @@
   
   (define frtime-version "0.3b -- Tue Nov 9 13:39:45 2004")
   
-  
+  (define (compose-continuation-mark-sets s1 s2)
+    s2)
   
   
   
