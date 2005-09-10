@@ -155,6 +155,7 @@
   ;; On startup, we scan all submissions, then repeat at random intervals (only
   ;; if clients connected in that time), and check often for changes in the
   ;; active/inactive directories and run a cleanup if there was a change
+  (define connection-num 0)
   (thread (lambda ()
             (define last-active/inactive #f)
             (define last-connection-num #f)
@@ -442,6 +443,7 @@
     (run-server
      PORT-NUMBER
      (lambda (r w)
+       (set! connection-num (add1 connection-num))
        (when ((current-memory-use) . > . SESSION-MEMORY-LIMIT)
 	 (collect-garbage))
        (parameterize ([current-session (begin
