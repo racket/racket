@@ -97,9 +97,10 @@
     ;; throw an exception, or the whole server will be locked down.  It is
     ;; invoked just before the lock is released, so fine to assume that we have
     ;; exclusive access to the directory contents.
-    (with-handlers ([_ (lambda (e)
-                         (LOG "*** ERROR DURING (cleanup-submission ~s) : ~a"
-                              dir (if (exn? e) (exn-message e) e)))])
+    (with-handlers ([void
+                     (lambda (e)
+                       (LOG "*** ERROR DURING (cleanup-submission ~s) : ~a"
+                            dir (if (exn? e) (exn-message e) e)))])
       (parameterize ([current-directory dir])
         ;; Find the newest SUCCESS dir -- ignore ATTEMPT, since if it exist it
         ;; means that there was a failed submission and the next one will
