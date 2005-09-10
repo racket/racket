@@ -43,10 +43,12 @@
   (define MAX-UPLOAD        (get-config 'max-upload 500000))
   (define MAX-UPLOAD-KEEP   (get-config 'max-upload-keep 9))
   (define USER-REGEXP       (get-config 'user-regexp #rx"^[a-z][a-z0-9]+$"))
+  (define USER-DESC         (get-config 'user-desc "alphanumeric string"))
   (define USERNAME-CASE-SENSITIVE? (get-config 'username-case-sensitive? #f))
   (define ID-REGEXP         (get-config 'id-regexp #rx"^.*$"))
-  (define ID-DESC           (get-config 'id-desc "anything"))
+  (define ID-DESC           (get-config 'id-desc #f))
   (define EMAIL-REGEXP      (get-config 'email-regexp #rx"^[^@<>\"`',]+@[a-zA-Z0-9_.-]+[.][a-zA-Z]+$"))
+  (define EMAIL-DESC        (get-config 'email-desc "a valid email address"))
   (define ALLOW-NEW-USERS?  (get-config 'allow-new-users #f))
   (define MASTER-PASSWD     (get-config 'master-password #f))
 
@@ -92,17 +94,8 @@
                      (current-directory dir) #t)
                body ...))))]))
 
-  (define (cleanup-submission dir)
-    ;; This is called at a lock cleanup, so it is important that it does not
-    ;; throw an exception, or the whole server will be locked down.  It is
-    ;; invoked just before the lock is released, so fine to assume that we have
-    ;; exclusive access to the directory contents.
-    (with-handlers ([void
-                     (lambda (e)
-                       (LOG "*** ERROR DURING (cleanup-submission ~s) : ~a"
-                            dir (if (exn? e) (exn-message e) e)))])
-      (parameterize ([current-directory dir])
-        ;; Find the newest SUCCESS dir -- ignore ATTEMPT, since if it exist it
+  (define (cleanup-submission-body)
+    ;; Find the newest SUCCESS dir -- ignore ATTEMPT, since if it exist it
         ;; means that there was a failed submission and the next one will
         ;; re-create ATTEMPT.
         (let* ([dirlist (map path->string (directory-list))]
@@ -135,7 +128,20 @@
                       ;; f is newer in dir than in the working directory
                       (delete-directory/files f)
                       (copy-directory/files dir/f f)]))
-             (directory-list dir)))))))
+             (directory-list dir)))))
+
+  (define cleanup-sema (make-semaphore 1))
+  (define (cleanup-submission dir)
+    ;; This is called at a lock cleanup, so it is important that it does not
+    ;; throw an exception, or the whole server will be locked down.  It is
+    ;; invoked just before the lock is released, so fine to assume that we have
+    ;; exclusive access to the directory contents.
+    (with-handlers ([void
+                     (lambda (e)
+                       (LOG "*** ERROR DURING (cleanup-submission ~s) : ~a"
+                            dir (if (exn? e) (exn-message e) e)))])
+      (parameterize ([current-directory dir])
+        (call-with-semaphore cleanup-sema cleanup-submission-body))))
 
   (define (cleanup-all-submissions)
     (LOG "Cleaning up all submission directories")
@@ -280,7 +286,8 @@
 		   (string? passwd))
 	(error 'handin "bad user-addition request"))
       (unless (regexp-match USER-REGEXP username)
-        (error 'handin "bad username: \"~a\"" username))
+        (error 'handin "bad username: \"~a\"~a" username
+               (if USER-DESC (format "; need ~a" USER-DESC) "")))
       ;; Since we're going to use the username in paths:
       (when (regexp-match #rx"[/\\:|\"<>]" username)
 	(error 'handin "username must not contain one of the following: / \\ : | \" < >"))
@@ -294,9 +301,11 @@
       (when (string=? "checker.ss" username)
 	(error 'handin "the username \"checker.ss\" is reserved"))
       (unless (regexp-match ID-REGEXP id)
-	(error 'handin "id has wrong format: ~a; need ~a for id" id ID-DESC))
+	(error 'handin "id has wrong format: ~a~a" id
+               (if ID-DESC (format "; need ~a for id" ID-DESC) "")))
       (unless (regexp-match EMAIL-REGEXP email)
-        (error 'handin "email has wrong format: ~a" email))
+        (error 'handin "email has wrong format: ~a~a" email
+               (if EMAIL-DESC (format "; need ~a" EMAIL-DESC) "")))
       (LOG "create user: ~a" username)
       (put-user (string->symbol username)
 		(list (md5 passwd) id full-name email))

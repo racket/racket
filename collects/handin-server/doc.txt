@@ -200,6 +200,11 @@ sub-directories:
          are impossible to remember, and forget capitalization; the
          default is fairly strict: #rx"^[a-z][a-z0-9]+$"
 
+      'user-desc : a plain-words description of the acceptable
+         username format (according to user-regexp above); #f stands
+         for no description; the default is "alphanumeric string"
+         which matches the default user-regexp
+
       'username-case-sensitive? : a boolean; when #f, usernames
          are case-folded for all purposes; defaults to #f
          (note that you should not set this to #t on Windows, since
@@ -209,14 +214,20 @@ sub-directories:
          "free form" user id (possibly a student id) for a created
          account; the default is #rx"^.*$"
 
-      'id-desc : a plain-words description of the acceptable format
-         for a "free form" id; the default is "anything"
+      'id-desc : a plain-words description of the acceptable id format
+         (according to id-regexp above), eg, "Foo ID Number"; the
+         default is #f indicating no description
 
       'email-regexp : a regular expression that is used to validate
          emails, the #rx"^[^@<>\"`',]+@[a-zA-Z0-9_.-]+[.][a-zA-Z]+$"
          default can be changed to "" if you don't care about emails,
          or can be further restricted, for example requiring a
          "@cs.foo.edu" suffix
+
+      'email-desc : a plain-words description of the acceptable email
+         format (according to email-regexp above), eg, "Foo CS email";
+         #f stands for no description; the default is "a valid email
+         address"
 
       'allow-new-users : a boolean indicating whether to allow
          new-user requests from a client tool; the default is #f
