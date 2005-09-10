@@ -257,11 +257,11 @@ sub-directories:
     "users.ss" file can be updated by the server with new users. It
     can always be updated by the server to change passwords.
 
-    The username "solution" is special. It is used by the HTTPS status
-    server. Independent of the 'user-regexp and 'username-case-sensitive?
-    configration items, usernames are not allowed to contain characters
-    that are illegal in Windows pathnames, they cannot end in spaces
-    or periods, and no to user ids can have the same case folding.
+    Username that begin with "solution" are special.  They are used by
+    the HTTPS status server. Independent of the 'user-regexp and
+    'username-case-sensitive? configration items, usernames are not
+    allowed to contain characters that are illegal in Windows
+    pathnames, they cannot end or begin in spaces or periods.
 
   * "active/" --- sub-directory for active assignments. A list of
     active assignments is sent to a client tool when a student clicks
@@ -357,12 +357,13 @@ sub-directories:
   * "[in]active/<assignment>/<user>/grade" (optional) --- <user>'s grade
     for <assignment>, to be reported by the HTTPS status web server.
 
-  * "[in]active/<assignment>/solution/<file>" --- the solution to the
+  * "[in]active/<assignment>/solution*" --- the solution to the
     assignment, made available by the status server to any user who
-    logs in. Normally, <file> is the only file in the directory
-    "<assignment>/solution/"; if there are multiple files in the
-    directory, only one named "<assignment>sol.scm" is made available
-    as the solution.
+    logs in.  The solution can be either a file or a directory with a
+    name that begins with "solution".  In the first case, the status
+    web server will have a "Solution" link to the file, and in the
+    second case, all files in the "solution*" directory will be listed
+    and accessible.
 
 The server can be run within either MzScheme or MrEd, but "utils.ss"
 requires MrEd (which means that `checker' modules will likely require

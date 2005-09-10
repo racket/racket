@@ -221,7 +221,7 @@
                   (error 'handin
                          "bad submission: ~a has an existing submission (~a)"
                          d dir)))
-              (regexp-split #rx"[+]" (path->string dir))))
+              (regexp-split #rx" *[+] *" (path->string dir))))
            (directory-list))
           (make-directory dirname))
         (parameterize ([current-directory dirname])
@@ -296,8 +296,8 @@
 	(error 'handin "username must not be a Windows special file name"))
       (when (regexp-match #rx"^[ .]|[ .]$" username)
 	(error 'handin "username must not begin or end with a space or period"))
-      (when (string=? "solution" username)
-	(error 'handin "the username \"solution\" is reserved"))
+      (when (regexp-match #rx"^solution" username)
+	(error 'handin "the username prefix \"solution\" is reserved"))
       (when (string=? "checker.ss" username)
 	(error 'handin "the username \"checker.ss\" is reserved"))
       (unless (regexp-match ID-REGEXP id)
