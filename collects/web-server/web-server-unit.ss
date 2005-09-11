@@ -77,18 +77,20 @@
                                            (semaphore-post sema)
                                            ; Rethrow the error to this thread's error printer
                                            (raise e))])
-                     (server-loop get-ports))))))
+                     (server-loop get-ports
+                                  tcp-addresses))))))
             (semaphore-wait sema)
             (loop))))
       
-      ;; server-loop: (-> i-port o-port) -> void
+      ;; server-loop: (-> input-port output-port) (input-port -> string string) -> void
       ;; start a thread to handle each incoming connection
-      (define (server-loop get-ports)
+      (define (server-loop get-ports port-addresses)
         (let loop ()
           (let ([connection-cust (make-custodian)])
             (parameterize ([current-custodian connection-cust])
               (let-values ([(ip op) (get-ports)])
-                (serve-ports/inner ip op))))
+                (serve-ports/inner ip op
+                                   port-addresses))))
           (loop)))
       
       ;; serve-ports : input-port output-port -> void
@@ -102,11 +104,14 @@
                          [current-server-custodian server-cust])
             (let ([connection-cust (make-custodian)])
               (parameterize ([current-custodian connection-cust])
-                (serve-ports/inner ip op))))))
+                (serve-ports/inner ip op
+                                   (lambda (ip)
+                                     (values "127.0.0.1"
+                                             "127.0.0.1"))))))))
       
-      ;; serve-ports/inner : input-port output-port -> void
+      ;; serve-ports/inner : input-port output-port (input-port -> string string) -> void
       ;; returns immediately, spawning a thread to handle
-      (define (serve-ports/inner ip op)
+      (define (serve-ports/inner ip op port-addresses)
         (thread
          (lambda ()
            (let ([conn (new-connection config:initial-connection-timeout
@@ -116,13 +121,13 @@
                                 (set-connection-close?! conn #t)
                                 (kill-connection! conn)
                                 (raise e))])
-               (serve-connection conn))))))
+               (serve-connection conn port-addresses))))))
       
-      ;; serve-connection: connection -> void
+      ;; serve-connection: connection (input-port -> string string) -> void
       ;; respond to all requests on this connection
-      (define (serve-connection conn)
+      (define (serve-connection conn port-addresses)
         (let connection-loop ()
-          (let-values ([(req close?) (config:read-request conn)])
+          (let-values ([(req close?) (config:read-request conn port-addresses)])
             (set-connection-close?! conn close?)
             (adjust-connection-timeout! conn config:initial-connection-timeout)
             (config:dispatch conn req)
