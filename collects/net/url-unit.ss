@@ -72,7 +72,7 @@
                 (fragment (url-fragment url)))
             (cond
              ((and scheme (string=? scheme "file"))
-              (string-append "file:" path
+              (string-append "file:" (combine-path-strings path)
                              (or (and (not fragment) "")
                                  (string-append "#" fragment))))
              (else
