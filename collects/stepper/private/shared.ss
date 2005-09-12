@@ -3,7 +3,8 @@
   (require "my-macros.ss"
 	   (lib "contract.ss")
            (lib "list.ss")
-           (lib "etc.ss"))
+           (lib "etc.ss")
+           (lib "match.ss"))
 
   ; CONTRACTS
   
@@ -40,10 +41,9 @@
    varref-set-remove-bindings
    binding-set-varref-set-intersect
    step-result?
-   (struct before-after-result (finished-exprs exp post-exp after-exprs kind))
-   (struct before-error-result (finished-exprs exp err-msg after-exprs))
-   (struct error-result (finished-exprs err-msg))
-   (struct finished-result (finished-exprs))
+   (struct before-after-result (pre-exps post-exps kind))
+   (struct before-error-result (pre-exps err-msg))
+   (struct error-result (err-msg))
    (struct finished-stepping ())
    list-take
    list-partition
@@ -72,6 +72,7 @@
    ; get-binding-name
    ; bogus-binding?
    if-temp
+   set!-temp
    ; get-lifted-gensym
    ; expr-read
    ; set-expr-read!
@@ -83,18 +84,17 @@
    finished-xml-box-table)
   
   ; A step-result is either:
-  ; (make-before-after-result finished-exprs exp redex reduct)
-  ; or (make-before-error-result finished-exprs exp redex err-msg)
-  ; or (make-error-result finished-exprs err-msg)
-  ; or (make-finished-result finished-exprs)
+  ; (make-before-after-result finished-exps exp redex reduct)
+  ; or (make-before-error-result finished-exps exp redex err-msg)
+  ; or (make-error-result finished-exps err-msg)
+  ; or (make-finished-result finished-exps)
   
-  (define-struct before-after-result (finished-exprs exp post-exp after-exprs kind) (make-inspector))
-  (define-struct before-error-result (finished-exprs exp err-msg after-exprs) (make-inspector))
-  (define-struct error-result (finished-exprs err-msg) (make-inspector))
-  (define-struct finished-result (finished-exprs) (make-inspector))
+  (define-struct before-after-result (pre-exps post-exps kind) (make-inspector))
+  (define-struct before-error-result (pre-exps err-msg) (make-inspector))
+  (define-struct error-result (err-msg) (make-inspector))
   (define-struct finished-stepping () (make-inspector))
   
-  (define step-result? (union before-after-result? before-error-result? error-result? finished-result? finished-stepping?))
+  (define step-result? (union before-after-result? before-error-result? error-result? finished-stepping?))
   
   ; the closure record is placed in the closure table
 
@@ -215,7 +215,8 @@
                   (weak-assoc-add assoc-table stx new-binding)
                   new-binding)))))))
   
-  (define if-temp (syntax-property (datum->syntax-object #'here 'if-temp) 'stepper-binding-type 'stepper-temp))
+  (define if-temp (syntax-property (datum->syntax-object #`here `if-temp) 'stepper-binding-type 'stepper-temp))
+  (define set!-temp (syntax-property (datum->syntax-object #`here `set!-temp) 'stepper-binding-type 'stepper-temp))
 
   ; gensyms needed by many modules:
 
@@ -477,31 +478,46 @@
   ; attach-info : SYNTAX-OBJECT SYNTAX-OBJECT -> SYNTAX-OBJECT
   ; attach-info attaches to a generated piece of syntax the origin & source information of another.
   ; we do this so that macro unwinding can tell what reconstructed syntax came from what original syntax
-  (define (attach-info stx expr)
-    (let* ([it (syntax-property stx 'user-origin (syntax-property expr 'origin))]
-           [it (syntax-property it 'user-stepper-hint (syntax-property expr 'stepper-hint))]
-           [it (syntax-property it 'user-stepper-else (syntax-property expr 'stepper-else))]
-           [it (syntax-property it 'user-stepper-define-type (syntax-property expr 'stepper-define-type))]
-           [it (syntax-property it 'user-stepper-proc-define-name (syntax-property expr 'stepper-proc-define-name))]
-           [it (syntax-property it 'user-stepper-and/or-clauses-consumed (syntax-property expr 'stepper-and/or-clauses-consumed))]
-           [it (syntax-property it 'stepper-xml-hint (syntax-property expr 'stepper-xml-hint))]
-           [it (syntax-property it 'user-source (syntax-source expr))]
-           [it (syntax-property it 'user-position (syntax-position expr))])
-      it))
   
-  (define (transfer-info stx expr)
-    (let* ([it (syntax-property stx 'user-origin (syntax-property expr 'user-origin))]
-           [it (syntax-property it 'user-stepper-hint (syntax-property stx 'user-stepper-hint))]
-           [it (syntax-property it 'user-stepper-else (syntax-property expr 'user-stepper-else))]
-           [it (syntax-property it 'user-stepper-define-type (syntax-property expr 'user-stepper-define-type))]
-           [it (syntax-property it 'user-stepper-proc-define-name (syntax-property expr 'user-stepper-proc-define-name))]
-           [it (syntax-property it 'user-stepper-and/or-clauses-consumed (syntax-property expr 'user-stepper-and/or-clauses-consumed))]
-           [it (syntax-property it 'stepper-xml-hint (syntax-property expr 'stepper-xml-hint))]
-           [it (syntax-property it 'user-source (syntax-property expr 'user-source))]
-           [it (syntax-property it 'user-position (syntax-property expr 'user-position))]
-           [it (syntax-property it 'stepper-highlight (or (syntax-property expr 'stepper-highlight)
-                                                          (syntax-property it 'stepper-highlight)))])
-      it))
+  (define labels-to-attach
+    `((user-origin origin)
+      (user-stepper-hint stepper-hint)
+      (user-stepper-else stepper-else)
+      (user-stepper-define-type stepper-define-type)
+      (user-stepper-proc-define-name stepper-proc-define-name)
+      (user-stepper-and/or-clauses-consumed stepper-and/or-clauses-consumed)
+      (stepper-xml-hint stepper-xml-hint)))  ; I find it mildly worrisome that this breaks the pattern
+                                             ;  by failing to preface the identifier with 'user-'.  JBC, 2005-08
+  
+  ; take info from source expressions to reconstructed expressions 
+  ;  (from native property names to 'user-' style property names)
+  
+  (define (attach-info to-exp from-exp)
+    (let* ([attached (foldl (lambda (labels stx)
+                              (match labels
+                                [`(,new-label ,old-label)
+                                  (syntax-property stx new-label (syntax-property from-exp old-label))]))
+                            to-exp
+                            labels-to-attach)]
+           [attached (syntax-property attached 'user-source (syntax-source from-exp))]
+           [attached (syntax-property attached 'user-position (syntax-position from-exp))])
+      attached))
+  
+  ; transfer info from reconstructed expressions to other reconstructed expressions 
+  ;  (from 'user-' style names to 'user-' style names)
+  
+  (define (transfer-info to-stx from-exp)
+    (let* ([attached (foldl (lambda (labels stx)
+                              (match labels
+                              [`(,new-label ,old-label)
+                                (syntax-property stx new-label (syntax-property from-exp new-label))]))
+                            to-stx
+                            labels-to-attach)]
+           [attached (syntax-property attached 'user-source (syntax-property from-exp 'user-source))]
+           [attached (syntax-property attached 'user-position (syntax-property from-exp 'user-position))]
+           [attached (syntax-property attached 'stepper-highlight (or (syntax-property from-exp 'stepper-highlight)
+                                                                      (syntax-property attached 'stepper-highlight)))])
+      attached))
   
   (define (values-map fn . lsts)
   (apply values (apply map list
