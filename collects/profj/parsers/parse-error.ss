@@ -245,7 +245,7 @@
                 (parse-error 
                  (format "~a is close to 'package' but is either miscapitalized or mispelled" (token-value tok))
                  srt end)
-                (parse-package pre cur-tok 'start getter)))
+                (parse-program pre cur-tok 'start getter)))
            (else
             (parse-program pre cur-tok 'start getter))))
         ((semi-colon)
@@ -257,7 +257,7 @@
   
   ;parse-program: token token symbol (-> token) -> (U void bool)
   (define (parse-program pre cur-tok state getter)
-;    (printf "parse-program state: ~a pre: ~a cur-tok:~a~n" state pre cur-tok)
+    ;(printf "parse-program state: ~a pre: ~a cur-tok:~a~n" state pre cur-tok)
     (let* ((tok (get-tok cur-tok))
            (tokN (get-token-name tok))
            (srt (get-start cur-tok))
