@@ -139,8 +139,10 @@
      (string-append
       "^(?:"
       (apply string-append
-             (cdr (apply append (map (lambda (p) (list "|" (regexp-quote p)))
-                                     (current-library-collection-paths)))))
+             (cdr (apply append
+                         (map (lambda (p)
+                                (list "|" (regexp-quote (path->string p))))
+                              (current-library-collection-paths)))))
       ")(?:/|$)")))
 
   (define tight-security
@@ -150,7 +152,7 @@
        (when (or (memq 'write modes)
                  (memq 'execute modes)
                  (memq 'delete modes)
-                 (not (regexp-match ok-path-re (path->string path))))
+                 (and path (not (regexp-match ok-path-re (path->string path)))))
          (error what "file access denied (~a)" path)))
      (lambda (what host port mode) (error what "network access denied"))))
 
