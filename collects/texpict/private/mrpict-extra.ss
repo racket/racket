@@ -305,8 +305,6 @@
 		      [find-or-create-pen (the-pen-list find-or-create-pen)]
 		      [find-or-create-brush (the-brush-list find-or-create-brush)])
 
-	  (set-brush (find-or-create-brush "black" 'solid))
-	  
 	  (let loop ([dx dx][dy dy][l l])
 	    (unless (null? l)
 	      (let ([x (car l)])

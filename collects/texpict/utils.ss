@@ -862,20 +862,12 @@
 	(let ([new
 	       (dc
 		(lambda (dc x y)
-		  (define (reset-pen)
-		    (let ([p (send dc get-pen)])
-		      (send dc set-pen (send the-pen-list
-					     find-or-create-pen
-					     "white" 1 'transparent))
-		      (send dc set-pen p)))
 		  (let-values ([(xs ys) (send dc get-scale)])
 		    (send dc set-scale (* xs x-factor) (* ys y-factor))
-		    (reset-pen)
 		    (drawer dc
 			    (/ x x-factor)
 			    (/ y y-factor))
-		    (send dc set-scale xs ys)
-		    (reset-pen)))
+		    (send dc set-scale xs ys)))
 		(* (pict-width p) x-factor)
 		(* (pict-height p) y-factor)
 		(* (pict-ascent p) y-factor)

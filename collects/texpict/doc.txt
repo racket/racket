@@ -247,11 +247,11 @@ Basic Constructors:
    optional line width
       [MrEd only, in utils.ss]
 
->  (round-frame pict) -> pict
->  (color-round-frame pict color-string) -> pict
->  (color-round-frame pict color-string line-w) -> pict
+>  (round-frame pict radius-w) -> pict
+>  (color-round-frame pict radius-w color-string) -> pict
+>  (color-round-frame pict radius-w color-string line-w) -> pict
 
-   Rounded frames
+   Rounded frames, given a radius for the corners
       [MrEd only, in utils.ss]
 
 >  (circle diameter) -> pict
