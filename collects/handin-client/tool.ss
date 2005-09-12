@@ -34,10 +34,13 @@
   (define web-menu-name (#%info-lookup 'web-menu-name (lambda () #f)))
   (define web-address (#%info-lookup 'web-address (lambda () #f)))
 
-  (define preference-key (string->symbol
-			  (format "submit:username:~a" 
-				  this-collection)))
-				  
+  (define handin-dialog-name (string-append handin-name " Handin"))
+  (define button-label       (string-append handin-name " Handin"))
+  (define manage-dialog-name (string-append handin-name " Handin Account"))
+
+  (define preference-key
+    (string->symbol (format "submit:username:~a" this-collection)))
+
   (preferences:set-default preference-key "" string?)
   (define (remembered-user)
     (preferences:get preference-key))
@@ -45,16 +48,14 @@
     (preferences:set preference-key user))
 
   (define (connect)
-    (handin-connect server
-		    port-no
-		    (build-path
-		     (collection-path this-collection)
-		     "server-cert.pem")))
+    (handin-connect
+     server port-no
+     (build-path (collection-path this-collection) "server-cert.pem")))
 
   (define handin-frame%
     (class dialog%
       (inherit show is-shown? center)
-      (super-new [label "Handin"])
+      (super-new [label handin-dialog-name])
 
       (init-field content)
 
@@ -86,7 +87,7 @@
 				[stretchable-height #f]))
       (make-object vertical-pane% button-panel) ; spacer
       (define ok (new button%
-		      [label "Handin"]
+		      [label button-label]
 		      [parent button-panel]
 		      [callback (lambda (b e)
 				  (disable-interface)
@@ -250,31 +251,27 @@
   (define (manage-handin-account)
     (new
      (class dialog%
-       (inherit show is-shown?)
-       (super-new [label "Handin Account"]
+       (inherit show is-shown? center)
+       (super-new [label manage-dialog-name]
 		  [alignment '(left center)])
 
-       (define status (new message%
-			   [label (format "Manage ~a account at ~a." handin-name server)]
-			   [parent this]
-			   [stretchable-width #t]))
+       (define status
+         (new message%
+              [label (format "Manage ~a account at ~a." handin-name server)]
+              [parent this]
+              [stretchable-width #t]))
 
-       (define tabs (new tab-panel%
-			 [parent this]
-			 [choices '("Change Password"
-				    "New User"
-				    "Uninstall")]
-			 [callback
-			  (lambda (tp e)
-			    (send single active-child
-				  (list-ref 
-				   (list old-user-box
-					 new-user-box
-					 uninstall-box)
-				   (send tabs get-selection))))]))
+       (define tabs
+         (new tab-panel%
+              [parent this]
+              [choices '("New User" "Change Password" "Uninstall")]
+              [callback
+               (lambda (tp e)
+                 (send single active-child
+                       (list-ref (list new-user-box old-user-box uninstall-box)
+                                 (send tabs get-selection))))]))
 
-       (define single (new panel:single%
-			   [parent tabs]))
+       (define single (new panel:single% [parent tabs]))
 
        (define (mk-txt label parent activate-ok)
 	 (new text-field%
@@ -429,9 +426,7 @@
 	      (lambda ()
 		(with-handlers ([void (lambda (exn)
                                         (send tabs enable #t)
-					(report-error
-					 "Update failed."
-					 exn))])
+					(report-error "Update failed." exn))])
 		  (remember-user (send username get-value))
 		  (send status set-label "Making secure connection...")
 		  (let-values ([(h l) (connect)])
@@ -448,9 +443,14 @@
 		  (send cancel set-label "Close")))))))
 
        (send new-user-box show #f)
+       (send old-user-box show #f)
        (send uninstall-box show #f)
+       (let ([new? (equal? "" (remembered-user))])
+         (send (if new? new-user-box old-user-box) show #t)
+         (send tabs set-selection (if new? 0 1)))
        (activate-new)
        (activate-change)
+       (center)
        (show #t))))
 
   (define (scale-by-half file)
@@ -504,10 +504,7 @@
       (define phase1 void)
       (define phase2 void)
 
-      (define tool-button-label
-	(bitmap-label-maker
-	 "Handin"
-	 handin-icon))
+      (define tool-button-label (bitmap-label-maker button-label handin-icon))
 
       (define (make-new-unit-frame% super%)
 	(class super%
