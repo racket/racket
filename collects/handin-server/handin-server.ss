@@ -198,8 +198,8 @@
              MAX-UPLOAD len))
     (parameterize ([current-directory (build-path "active" assignment)])
       (wait-for-lock dirname
-        (lambda ()
-          (cleanup-submission (build-path (current-directory) dirname))))
+        (let ([dir (build-path (current-directory) dirname)])
+          (lambda () (cleanup-submission dir))))
       (when (and (pair? users) (pair? (cdr users)))
         ;; two or more users -- lock each one
         (for-each wait-for-lock users))
@@ -235,9 +235,9 @@
                  ;; Result is either a string or list of strings:
                  (let ([checker (build-path 'up "checker.ss")])
                    (if (file-exists? checker)
-                     (parameterize ([current-directory ATTEMPT-DIR])
-                       ((dynamic-require (path->complete-path checker) 'checker)
-                        users s))
+                     (let ([checker (path->complete-path checker)])
+                       (parameterize ([current-directory ATTEMPT-DIR])
+                         ((dynamic-require checker 'checker) users s)))
                      DEFAULT-FILE-NAME))])
             (ffprintf w "confirm\n")
             (let ([v (read (make-limited-input-port r 50))])
