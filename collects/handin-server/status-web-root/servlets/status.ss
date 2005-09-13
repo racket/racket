@@ -7,7 +7,8 @@
 	   (lib "unitsig.ss")
 	   (lib "servlet-sig.ss" "web-server")
 	   (lib "response.ss" "web-server")
-	   (lib "md5.ss" "handin-server"))
+	   (lib "md5.ss" "handin-server")
+	   (lib "uri-codec.ss" "net"))
 
   (provide status-servlet)
 
@@ -59,9 +60,11 @@
                 (if (path? handin-dir) (path->string handin-dir) handin-dir)
                 "/")))))
       (define (make-k k tag)
-	(let ([tag (if (path? tag) (path->string tag) tag)])
-          (format "~a~atag=~a" k (if (regexp-match #rx"^[^#]*[?]" k) "&" "?")
-                  (regexp-replace handin-prefix-re tag ""))))
+	(format "~a~atag=~a" k (if (regexp-match #rx"^[^#]*[?]" k) "&" "?")
+                (uri-encode (regexp-replace
+                             handin-prefix-re
+                             (if (path? tag) (path->string tag) tag)
+                             ""))))
       (define (select-k request)
 	(let ([a (assq 'tag (request-bindings request))])
 	  (and a (cdr a))))
