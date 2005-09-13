@@ -1,5 +1,6 @@
 (module plai-advanced mzscheme
   (require (rename (lib "htdp-advanced.ss" "lang") plai-else else)
+           (lib "contract.ss" "mzlib" "private")
 	   "private/datatype.ss"
            "test-harness.ss")
 
@@ -15,6 +16,7 @@
   (provide (rename advanced-type-case type-case)
 	   define-type
 	   require provide provide-type
+           (all-from-except (lib "contract.ss" "mzlib" "private") contract)
            (all-from "test-harness.ss"))
 
   (define-type-case advanced-type-case plai-else))

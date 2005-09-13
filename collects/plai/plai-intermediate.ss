@@ -1,5 +1,6 @@
 (module plai-intermediate mzscheme
   (require (rename (lib "htdp-intermediate-lambda.ss" "lang") plai-else else)
+           (lib "contract.ss" "mzlib" "private")
 	   "private/datatype.ss"
            "test-harness.ss")
 
@@ -15,6 +16,7 @@
   (provide (rename intermediate-type-case type-case)
 	   define-type
 	   require provide provide-type
+           (all-from (lib "contract.ss" "mzlib" "private"))
            (all-from "test-harness.ss"))
 
   (define-type-case intermediate-type-case plai-else))
