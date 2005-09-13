@@ -158,4 +158,6 @@
         (quicksort unsorted compare-directories))))
   
   (define (compare-directories a b)
-    (bytes<? (path->bytes a) (path->bytes b))))
+    (let-values ([(base1 name1 dir?1) (split-path a)]
+                 [(base2 name2 dir?2) (split-path b)])
+      (bytes<? (path->bytes name1) (path->bytes name2)))))
