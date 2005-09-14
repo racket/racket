@@ -416,7 +416,7 @@ The _utils.ss_ module provides utilities helpful in implementing
   to the submitted definitions and interactions windows.
 
 > (make-evaluator language teachpack-paths program-port) - returns a
-  function of one argument for evaluating expressions in the
+  function of one required argument for evaluating expressions in the
   designated language, and loading teachpacks that are specified in
   `teachpack-paths'.  The `program-port' is an input port that
   produces the content of the definitions window; use
@@ -443,9 +443,14 @@ The _utils.ss_ module provides utilities helpful in implementing
   security guard that reading files only from PLT collections, and no
   other operations.
 
+  Additional arguments to the evaluator function are special messages
+  that retrieve additional information.  Currently, only
+  'execute-counts is used (see below).
+
 > (make-evaluator/submission language teachpack-paths bytes) - like
   `make-evaluator', but the definitions content is supplied as a
-  submission byte string.
+  submission byte string.  The byte string is opened for reading, with
+  line-counting enabled.
 
 > (call-with-evaluator language teachpack-paths program-port proc) -
   calls `proc' with an evaluator for the given language, teachpack
@@ -456,8 +461,9 @@ The _utils.ss_ module provides utilities helpful in implementing
   them in a form suitable as a submission error.
 
 > (call-with-evaluator/submission language teachpack-paths bytes proc) -
-   like `call-with-evaluator', but the definitions content is supplied
-   as a submission string.
+  like `call-with-evaluator', but the definitions content is supplied
+  as a submission string.  The byte string is opened for reading,
+  with line-counting enabled.
 
 
 > (evaluate-all source input-port eval) - like `load' on an input
@@ -465,6 +471,17 @@ The _utils.ss_ module provides utilities helpful in implementing
 
 > (evaluate-submission bytes eval) - like `load' on a non-test-suite
   submission byte string.
+
+
+> coverage-enabled - parameter that controls whether coverage testing is
+  enabled.  If it set to true, the errortrace collection will be used
+  to collect coverage information during evaluation of the submission,
+  this information is collected before additional checker-evaluations.
+  To retrieve the collected information, apply the evaluation function
+  with a second argument of 'execute-counts (the first argument will
+  be ignored).  The resulting value is the same as the result of
+  errortrace's `get-execute-counts', with all non-submission entries
+  filtered out.
 
 
 > (check-proc eval expect-v compare-proc proc-name arg ...) - calls

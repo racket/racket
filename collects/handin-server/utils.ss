@@ -24,6 +24,8 @@
 	   current-run-status
            current-value-printer
 
+	   coverage-enabled
+
 	   check-proc
 	   check-defined
 	   look-for-tests
@@ -162,8 +164,12 @@
 
   ;; Execution ----------------------------------------
 
+  (define coverage-enabled (make-parameter #f))
+
   (define (make-evaluator language teachpacks program-port)
-    (let ([ns (make-namespace-with-mred)]
+    (let ([coverage-enabled (coverage-enabled)]
+          [execute-counts #f]
+          [ns (make-namespace-with-mred)]
 	  [orig-ns (current-namespace)]
 	  [posn-module ((current-module-name-resolver) '(lib "posn.ss" "lang") #f #f)])
       (parameterize ([current-namespace ns]
@@ -221,7 +227,16 @@
                           [else (error 'make-evaluator
                                        "Bad language specification: ~e"
                                        language)])])
+                   (when coverage-enabled
+                     (for-each safe-eval
+                               '((require (lib "errortrace.ss" "errortrace"))
+                                 (execute-counts-enabled #t))))
                    (safe-eval body)
+                   (when coverage-enabled
+                     (set! execute-counts
+                           (filter (lambda (x)
+                                     (eq? 'program (syntax-source (car x))))
+                                   (safe-eval '(get-execute-counts)))))
                    (when (and (pair? body) (eq? 'module (car body))
                               (pair? (cdr body)) (symbol? (cadr body)))
                      (let ([mod (cadr body)])
@@ -242,18 +257,28 @@
 	    (let ([r (channel-get result-ch)])
 	      (if (eq? r 'ok)
 		  ;; Initial program executed ok, so return an evaluator:
-		  (lambda (expr)
-		    (channel-put ch expr)
-		    (let ([r (channel-get result-ch)])
-		      (if (eq? (car r) 'exn)
-			  (raise (cdr r))
-			  (cdr r))))
+		  (lambda (expr . more)
+                    (if (pair? more)
+                      (case (car more)
+                        [(execute-counts) execute-counts]
+                        [else (error 'make-evaluator
+                                     "Bad arguments: ~e"
+                                     (cons expr more))])
+                      (begin (channel-put ch expr)
+                             (let ([r (channel-get result-ch)])
+                               (if (eq? (car r) 'exn)
+                                 (raise (cdr r))
+                                 (cdr r))))))
 		  ;; Program didn't execute:
 		  (raise (cdr r)))))))))
-      
+
+  (define (open-input-text-editor/lines str)
+    (let ([inp (open-input-text-editor str)])
+      (port-count-lines! inp) inp))
+
   (define (make-evaluator/submission language teachpacks str)
     (let-values ([(defs interacts) (unpack-submission str)])
-      (make-evaluator language teachpacks (open-input-text-editor defs))))
+      (make-evaluator language teachpacks (open-input-text-editor/lines defs))))
 
   (define (evaluate-all source port eval)
     (let loop ()
@@ -266,7 +291,7 @@
 
   (define (evaluate-submission str eval)
     (let-values ([(defs interacts) (unpack-submission str)])
-      (evaluate-all 'handin (open-input-text-editor defs) eval)))
+      (evaluate-all 'handin (open-input-text-editor/lines defs) eval)))
 
   (define (reraise-exn-as-submission-problem thunk)
     (with-handlers ([void (lambda (exn)
@@ -336,7 +361,7 @@
     (apply check-proc e func 'anything eq? args))
 
   (define (look-for-tests t name count)
-    (let ([p (open-input-text-editor t)])
+    (let ([p (open-input-text-editor/lines t)])
       (let loop ([found 0])
 	(let ([e (read p)])
 	  (if (eof-object? e)
@@ -385,6 +410,6 @@
 
   (define (call-with-evaluator/submission lang teachpacks str go)
     (let-values ([(defs interacts) (unpack-submission str)])
-      (call-with-evaluator lang teachpacks (open-input-text-editor defs) go)))
+      (call-with-evaluator lang teachpacks (open-input-text-editor/lines defs) go)))
 
   )
