@@ -79,7 +79,7 @@
   ; add secs to the timer, rather than replace
   (define (increment-timer timer secs)
     (revise-timer! timer
-                   (+ (timer-expire-seconds timer)
+                   (+ (- (timer-expire-seconds timer) (current-inexact-milliseconds))
                       (* 1000 secs))
                    (timer-action timer))))
 

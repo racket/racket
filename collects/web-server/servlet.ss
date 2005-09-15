@@ -49,6 +49,11 @@
   ;; send a response and clear the continuation table
   (define (send/finish resp)
     (clear-continuations! (thread-cell-ref current-servlet-instance))
+    ; If we readjust the timeout to something small, the session will expire shortly
+    ; we cannot wait for send/back to return, because it doesn't
+    ; Also, we cannot get the initial-connection-timeout variable from here
+    ; In the future, we should use the servlet's specific default-timeout
+    (adjust-timeout! 10)
     (send/back resp))
 
   ;; send/suspend: (url -> response) [(request -> response)] -> request
