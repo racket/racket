@@ -158,9 +158,9 @@
          (error what "file access denied (~a)" path)))
      (lambda (what host port mode) (error what "network access denied"))))
 
-  (define (safe-eval expr)
+  (define (safe-eval expr . more)
     (parameterize ([current-security-guard tight-security])
-      (eval expr)))
+      (apply eval expr more)))
 
   ;; Execution ----------------------------------------
 
@@ -232,16 +232,17 @@
                                '((require (lib "errortrace.ss" "errortrace"))
                                  (execute-counts-enabled #t))))
                    (safe-eval body)
-                   (when coverage-enabled
-                     (set! execute-counts
-                           (filter (lambda (x)
-                                     (eq? 'program (syntax-source (car x))))
-                                   (safe-eval '(get-execute-counts)))))
                    (when (and (pair? body) (eq? 'module (car body))
                               (pair? (cdr body)) (symbol? (cadr body)))
                      (let ([mod (cadr body)])
                        (safe-eval `(require ,mod))
-                       (current-namespace (module->namespace mod)))))
+                       (current-namespace (module->namespace mod))))
+                   (when coverage-enabled
+                     (set! execute-counts
+                           (map (lambda (x) (cons (car x) (cdr x)))
+                                (filter (lambda (x)
+                                          (eq? 'program (syntax-source (car x))))
+                                        (safe-eval '(get-execute-counts) ns))))))
 		 (channel-put result-ch 'ok))
 	       ;; Now wait for interaction expressions:
 	       (let loop ()

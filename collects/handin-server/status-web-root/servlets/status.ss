@@ -239,7 +239,7 @@
 				(cond [html? #"text/html"]
                                       [wxme? #"application/data"]
                                       [else  #"text/plain"])
-				`((Content-length . ,(number->string (bytes-length data)))
+				`((Content-Length . ,(number->string (bytes-length data)))
 				  ,@(if wxme?
                                       `((Content-Disposition
                                          .
