@@ -258,7 +258,7 @@
                            bodys)])
           (rebuild expr (map cons bodys bodyl))))
 
-      (define orig-inspector (current-inspector))
+      (define orig-inspector (current-code-inspector))
 
       (define (certify orig new)
         (syntax-recertify new orig orig-inspector #f))
