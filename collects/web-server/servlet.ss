@@ -32,23 +32,32 @@
   (define current-servlet-continuation-expiration-handler
     (make-parameter #f))
   
+  ;; get-current-servlet-instance : -> servlet
+  (define (get-current-servlet-instance)
+    (let ([inst (thread-cell-ref current-servlet-instance)])
+      (unless inst
+        (raise (make-exn:servlet:current-instance 
+                "(lib \"servlet.ss\" \"web-server\") used outside the dynamic-extent of a servlet-instance"
+                (current-continuation-marks))))
+      inst))
+  
   ;; adjust-timeout! : sec -> void
   ;; adjust the timeout on the servlet
   (define (adjust-timeout! secs)
-    (reset-timer (servlet-instance-timer (thread-cell-ref current-servlet-instance))
+    (reset-timer (servlet-instance-timer (get-current-servlet-instance))
                  secs))
 
   ;; send/back: response -> void
   ;; send a response and don't clear the continuation table
   (define (send/back resp)
-    (let ([ctxt (servlet-instance-context (thread-cell-ref current-servlet-instance))])
+    (let ([ctxt (servlet-instance-context (get-current-servlet-instance))])
       (output-response (execution-context-connection ctxt) resp)
       ((execution-context-suspend ctxt))))
 
   ;; send/finish: response -> void
   ;; send a response and clear the continuation table
   (define (send/finish resp)
-    (clear-continuations! (thread-cell-ref current-servlet-instance))
+    (clear-continuations! (get-current-servlet-instance))
     ; If we readjust the timeout to something small, the session will expire shortly
     ; we cannot wait for send/back to return, because it doesn't
     ; Also, we cannot get the initial-connection-timeout variable from here
@@ -61,7 +70,7 @@
   (define send/suspend
     (opt-lambda (response-generator [expiration-handler (current-servlet-continuation-expiration-handler)])
       (let/cc k
-        (let* ([inst (thread-cell-ref current-servlet-instance)]
+        (let* ([inst (get-current-servlet-instance)]
                [ctxt (servlet-instance-context inst)]
                [k-url (store-continuation!
                        k expiration-handler
@@ -75,7 +84,7 @@
   ;; clear the continuation table, then behave like send/suspend
   (define send/forward
     (opt-lambda (response-generator [expiration-handler (current-servlet-continuation-expiration-handler)])
-      (clear-continuations! (thread-cell-ref current-servlet-instance))
+      (clear-continuations! (get-current-servlet-instance))
       (send/suspend response-generator expiration-handler)))
   
   ;; send/suspend/callback : xexpr/callback? -> void
