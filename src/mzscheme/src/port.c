@@ -5535,21 +5535,40 @@ static long flush_fd(Scheme_Output_Port *op,
 	} else
 	  orig_len = 0; /* not used */
 
-	if (WriteFile((HANDLE)fop->fd, bufstr XFORM_OK_PLUS offset, buflen - offset, &winwrote, NULL)) {
-	  if (fop->textmode) {
-	    if (winwrote != buflen) {
-	      /* Trouble! This shouldn't happen. We pick an random error msg. */
-	      errsaved = ERROR_NEGATIVE_SEEK;
-	      len = -1;
-	    } else {
-	      len = orig_len;
-	      buflen = orig_len; /* so we don't loop! */
-	    }
-	  } else
-	    len = winwrote;
-	} else {
-	  errsaved = GetLastError();
-	  len = -1;
+	/* Write bytes. If we try to write too much at once, the result
+	   is ERROR_NOT_ENOUGH_MEMORY (as opposed to a partial write). */
+	{
+	  int ok;
+	  long towrite = buflen - offset;
+
+	  while (1) {
+	    ok = WriteFile((HANDLE)fop->fd, bufstr XFORM_OK_PLUS offset, towrite, &winwrote, NULL);
+	    if (!ok)
+	      errsaved = GetLastError();
+	    
+	    if (!ok && (errsaved == ERROR_NOT_ENOUGH_MEMORY)) {
+	      towrite = towrite >> 1;
+	      if (!towrite)
+		break;
+	    } else
+	      break;
+	  }
+
+	  if (ok) {
+	    if (fop->textmode) {
+	      if (winwrote != buflen) {
+		/* Trouble! This shouldn't happen. We pick an random error msg. */
+		errsaved = ERROR_NEGATIVE_SEEK;
+		len = -1;
+	      } else {
+		len = orig_len;
+		buflen = orig_len; /* so we don't loop! */
+	      }
+	    } else
+	      len = winwrote;
+	  } else {
+	    len = -1;
+	  }
 	}
       } else {
 	errsaved = 0;
@@ -5601,16 +5620,21 @@ static long flush_fd(Scheme_Output_Port *op,
 	         is not partial writes, but giving up entirely when
 	         the other end isn't being read. In other words, if we
 	         try to write too much and nothing is being pulled
-	         from the pipe, winwrote will be set to 0. Account for
-	         this by trying to write less each iteration when the
+	         from the pipe, winwrote will be set to 0. Also, if
+		 we try to write too much at once, the result is a
+		 ERROR_NOT_ENOUGH_MEMORY error. Account for these
+	         behaviors by trying to write less each iteration when the
 	         write fails. (Yuck.) */
 	      while (1) {
 		GetNamedPipeHandleState((HANDLE)fop->fd, &old, NULL, NULL, NULL, NULL, 0);
 		SetNamedPipeHandleState((HANDLE)fop->fd, &nonblock, NULL, NULL);
 		ok = WriteFile((HANDLE)fop->fd, bufstr XFORM_OK_PLUS offset, towrite, &winwrote, NULL);
+		if (!ok)
+		  errsaved = GetLastError();
 		SetNamedPipeHandleState((HANDLE)fop->fd, &old, NULL, NULL);
 
-		if (ok && !winwrote) {
+		if ((ok && !winwrote)
+		    || (!ok && (errsaved == ERROR_NOT_ENOUGH_MEMORY))) {
 		  towrite = towrite >> 1;
 		  if (!towrite) {
 		    break;
@@ -5630,8 +5654,6 @@ static long flush_fd(Scheme_Output_Port *op,
 	      } else {
 		len = winwrote;
 	      }
-	    } else {
-	      errsaved = GetLastError();
 	    }
 	  } else
 	    full_write_buffer = 0; /* and create the writer thread... */
