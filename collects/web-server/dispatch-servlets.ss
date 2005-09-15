@@ -247,8 +247,7 @@
                    (make-execution-context
                     conn req (lambda () (suspend #t))))
                   (increment-timer (servlet-instance-timer inst)
-                                   (timeouts-default-servlet
-                                    (host-timeouts host-info)))
+                                   (servlet-connection-interval-timeout the-servlet))
                   (let-values ([(k k-expiration-handler k-salt)
                                 (apply values
                                        (hash-table-get
@@ -330,6 +329,8 @@
                    [(unit/sig? s) 
                     (make-servlet (v0.servlet->v1.lambda s)
                                   (current-namespace)
+                                  (timeouts-default-servlet
+                                    (host-timeouts host-info))
                                   (make-default-servlet-instance-expiration-handler host-info))]
                    ; FIX - reason about exceptions from dynamic require (catch and report if not already)
                    ;; module servlet
@@ -342,13 +343,16 @@
                                [start (dynamic-require module-name 'start)])
                            (make-servlet (v1.module->v1.lambda timeout start)
                                          (current-namespace)
+                                         (timeouts-default-servlet
+                                          (host-timeouts host-info))
                                          (make-default-servlet-instance-expiration-handler host-info)))]
-                        [(v2) ; XXX: Undocumented
+                        [(v2-transitional) ; XXX: Undocumented
                          (let ([timeout (dynamic-require module-name 'timeout)]
                                [instance-expiration-handler (dynamic-require module-name 'instance-expiration-handler)]
                                [start (dynamic-require module-name 'start)])
                            (make-servlet (v1.module->v1.lambda timeout start)
                                          (current-namespace)
+                                         timeout
                                          instance-expiration-handler))]
                         [else
                          (raise (format "unknown servlet version ~e" version))]))]
@@ -356,6 +360,8 @@
                    [(response? s)
                     (make-servlet (v0.response->v1.lambda s a-path)
                                   (current-namespace)
+                                  (timeouts-default-servlet
+                                   (host-timeouts host-info))
                                   (make-default-servlet-instance-expiration-handler host-info))]
                    [else
                     (raise 'load-servlet/path "Loading ~e produced ~n~e~n instead of a servlet." a-path s)])))))

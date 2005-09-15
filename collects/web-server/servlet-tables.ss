@@ -6,7 +6,7 @@
   (provide (struct exn:servlet:instance ())
            (struct exn:servlet:no-current-instance ())
            (struct exn:servlet:continuation (expiration-handler))
-           (struct servlet (handler namespace instance-expiration-handler))
+           (struct servlet (handler namespace connection-interval-timeout instance-expiration-handler))
            (struct execution-context (connection request suspend))
            (struct servlet-instance (id k-table custodian context mutex timer))
            current-servlet-instance)
@@ -17,7 +17,7 @@
   ;; will be in affect for the entire dynamic extent of every
   ;; continuation associated with that instance.
   (define current-servlet-instance (make-thread-cell #f))
-  (define-struct servlet (handler namespace instance-expiration-handler))
+  (define-struct servlet (handler namespace connection-interval-timeout instance-expiration-handler))
   (define-struct servlet-instance (id k-table custodian context mutex timer))
   (define-struct execution-context (connection request suspend))
 
