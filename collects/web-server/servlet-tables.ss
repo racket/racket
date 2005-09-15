@@ -4,7 +4,7 @@
            (lib "list.ss")
            "timer.ss")
   (provide (struct exn:servlet:instance ())
-           (struct exn:servlet:current-instance ())
+           (struct exn:servlet:no-current-instance ())
            (struct exn:servlet:continuation (expiration-handler))
            (struct servlet (handler namespace instance-expiration-handler))
            (struct execution-context (connection request suspend))
@@ -48,7 +48,7 @@
   ;; not found in the continuatin table
   (define-struct (exn:servlet:continuation exn) (expiration-handler))
   ;; not in dynamic extent of servlet
-  (define-struct (exn:servlet:current-instance exn) ())
+  (define-struct (exn:servlet:no-current-instance exn) ())
 
   (define-values (make-k-table reset-k-table get-k-id!)
     (let ([id-slot 'next-k-id])

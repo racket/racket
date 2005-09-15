@@ -6,20 +6,13 @@
      (default-indices "index.html" "index.htm")
      (log-format parenthesized-default)
      (messages
-       (servlet-message
-         "servlet-error.html")
-       (authentication-message
-         "forbidden.html")
-       (servlets-refreshed
-         "servlet-refresh.html")
-       (passwords-refreshed
-         "passwords-refresh.html")
-       (file-not-found-message
-         "not-found.html")
-       (protocol-message
-         "protocol-error.html")
-       (collect-garbage
-         "collect-garbage.html"))
+       (servlet-message "servlet-error.html")
+       (authentication-message "forbidden.html")
+       (servlets-refreshed "servlet-refresh.html")
+       (passwords-refreshed "passwords-refresh.html")
+       (file-not-found-message "not-found.html")
+       (protocol-message "protocol-error.html")
+       (collect-garbage "collect-garbage.html"))
      (timeouts
        (default-servlet-timeout 30)
        (password-connection-timeout 300)
@@ -28,14 +21,9 @@
        (file-base-connection-timeout 30))
      (paths
       (configuration-root "conf")
-      (host-root
-        "default-web-root")
-      (log-file-path
-        "log")
-      (file-root
-        "htdocs")
-      (servlet-root
-        ".")
-      (password-authentication
-        "passwords"))))
+      (host-root "default-web-root")
+      (log-file-path "log")
+      (file-root "htdocs")
+      (servlet-root ".")
+      (password-authentication "passwords"))))
  (virtual-host-table))

@@ -203,6 +203,8 @@
     (define (invoke-servlet-continuation conn req k-ref host-info)
       (let-values ([(uk-instance uk-id uk-salt) (apply values k-ref)])
         (let* ([uri (request-uri req)]
+               [default-servlet-instance-expiration-handler
+                 (make-default-servlet-instance-expiration-handler host-info)]
                [default-servlet-continuation-expiration-handler
                  (make-default-servlet-continuation-expiration-handler host-info)]
                [real-servlet-path (url-path->path
@@ -219,7 +221,13 @@
                                 (request-method req)))]
                             [exn:servlet:continuation?
                              (lambda (the-exn)
-                               ((exn:servlet:continuation-expiration-handler the-exn) req))])
+                               ((exn:servlet:continuation-expiration-handler the-exn) req))]
+                            [exn:servlet:no-current-instance?
+                             (lambda (the-exn)
+                               (output-response/method
+                                conn
+                                ((default-servlet-instance-expiration-handler) req)
+                                (request-method req)))])
               (let* ([inst 
                       (hash-table-get config:instances uk-instance
                                       (lambda ()

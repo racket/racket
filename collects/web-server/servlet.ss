@@ -36,9 +36,7 @@
   (define (get-current-servlet-instance)
     (let ([inst (thread-cell-ref current-servlet-instance)])
       (unless inst
-        (raise (make-exn:servlet:current-instance 
-                "(lib \"servlet.ss\" \"web-server\") used outside the dynamic-extent of a servlet-instance"
-                (current-continuation-marks))))
+        (raise (make-exn:servlet:no-current-instance "" (current-continuation-marks))))
       inst))
   
   ;; adjust-timeout! : sec -> void
