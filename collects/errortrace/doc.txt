@@ -175,7 +175,9 @@ counting):
   instrumented expression.  The first element of the pair is a syntax
   object (usually containing source location information) for the
   original expression, and the second element of the pair is the
-  number of times that the expression has been evaluated.
+  number of times that the expression has been evaluated.  These
+  elements are destructively modified, so to take a snapshot you will
+  need to copy them.
 
 > (annotate-executed-file filename-path) - writes the named file to
   the current output port, inserting an additional line between each
