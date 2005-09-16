@@ -21,7 +21,8 @@ password and upload the current content of the definitions and
 interactions window to the course instructor's server. The "File" menu
 is also extended with a "Manage..." menu item for managing a handin
 account (i.e., changing the password, or creating a new account if the
-instructor configures the server to allow new accounts).
+instructor configures the server to allow new accounts). Students can
+submit joint work by submitting with a concatenation of usernames.
 
 On the instructor's side, the handin server can be configured to check
 the student's submission before accepting it.
@@ -100,11 +101,11 @@ To customize the client:
 
        * For `name', choose a name for the handin tool as it will
          appear in DrScheme's interface (e.g., the "XXX" for the
-         "Manage XXX Account..."  menu item). Again, make the name
-         specific to the course, in case a student installs multiple
-         handin tools.  It's a good idea to use "Handin" as the last
-         part of the name, as in "2010 Handin", since the button is
-         always named "Handin".
+         "Manage XXX Handin Account..."  menu item). Again, make the
+         name specific to the course, in case a student installs
+         multiple handin tools.  Do not use "Handin" as the last part
+         of the name, since "Handin" is always added for button and
+         menu names.
 
        * For `collection', use the name that you chose for your
          collection directory (i.e., whatever you changed
@@ -196,9 +197,11 @@ sub-directories:
          "BACKUP-1/handin.scm", etc.; the default is 9
 
       'user-regexp : a regular expression that is used to validate
-         usernames, young students often choose exotic usernames that
-         are impossible to remember, and forget capitalization; the
-         default is fairly strict: #rx"^[a-z][a-z0-9]+$"
+         usernames; young students often choose exotic usernames that
+         are impossible to remember, and forget capitalization, so the
+         default is fairly strict: #rx"^[a-z][a-z0-9]+$"; be sure to
+         disallow "+" in a username, since it is used in a submission
+         to specify joint work
 
       'user-desc : a plain-words description of the acceptable
          username format (according to user-regexp above); #f stands
@@ -207,27 +210,29 @@ sub-directories:
 
       'username-case-sensitive? : a boolean; when #f, usernames
          are case-folded for all purposes; defaults to #f
-         (note that you should not set this to #t on Windows, since
-         usernames are used as directory names)
+         (note that you should not set this to #t on Windows or when
+         using a case-insensitive filesystem, since usernames are used
+         as directory names)
 
       'id-regexp : a regular expression that is used to validate a
          "free form" user id (possibly a student id) for a created
          account; the default is #rx"^.*$"
 
       'id-desc : a plain-words description of the acceptable id format
-         (according to id-regexp above), eg, "Foo ID Number"; the
-         default is #f indicating no description
+         (according to id-regexp above), eg, "Utah ID Number with
+         exactly nine digits"; the default is #f indicating no
+         description
 
       'email-regexp : a regular expression that is used to validate
          emails, the #rx"^[^@<>\"`',]+@[a-zA-Z0-9_.-]+[.][a-zA-Z]+$"
          default can be changed to "" if you don't care about emails,
          or can be further restricted, for example requiring a
-         "@cs.foo.edu" suffix
+         "@cs.utah.edu" suffix
 
       'email-desc : a plain-words description of the acceptable email
-         format (according to email-regexp above), eg, "Foo CS email";
-         #f stands for no description; the default is "a valid email
-         address"
+         format (according to email-regexp above), eg, "Utah CS email
+         address"; #f stands for no description; the default is "a
+         valid email address"
 
       'allow-new-users : a boolean indicating whether to allow
          new-user requests from a client tool; the default is #f
@@ -278,20 +283,23 @@ sub-directories:
     handins; the lowest numbered such directory represents the latest
     handin.
 
-    Within an "ATTEMPT" or "SUCCESS-n" directory, a file "handin.scm"
-    (or some other name if `default-file-name' is set) contains the
-    actual submission. A `checker' procedure can change this default
-    file name, it can create additional files in an
-    "ATTEMPT"/"SUCCESS-n" directory or in the student directory; see
-    below on "checker.ss" for more details.
+    A cleanup process in the server copies successful submission to
+    the student directory -- one level up from the corresponding
+    "SUCCESS-n" directory.  This is done only for files and
+    directories that are newer in "SUCCESS-n" than in the submission
+    root, other files and directories are left intact.  If external
+    tools add new content to the student directory (eg, a "grade"
+    file, as described below) it will stay there. If the machine
+    crashes or the server is stopped, the cleanup process might not
+    finish. When the server is started, it automatically runs the
+    cleanup process for each student directory.
 
-    A cleanup process will copy successful submission to the
-    submission root -- one level up from the corresponding "SUCCESS-n"
-    directory.  This is done only for files and directories that are
-    newer in "SUCCESS-n" than in the submission root, other files and
-    directories are left intact.  This means that you can have
-    external tools that add new content to the submission directory
-    (eg, a "grade" file as described below) and it will stay there.
+    Within a student directory, a file "handin.scm" (or some other
+    name if `default-file-name' is set) contains the actual
+    submission. A `checker' procedure can change this default file
+    name, and it can create additional files in an "ATTEMPT" directory
+    (to be copied by the cleanup process); see below on "checker.ss"
+    for more details.
 
     For submissions from a normal DrScheme frame, a submission file
     contains a copy of the student's definitions and interactions
@@ -300,6 +308,14 @@ sub-directories:
     definitions part. To get both the definitions and interactions
     parts, the file can be parsed with `unpack-submission' from
     "utils.ss" (see below).
+
+    To submit an assignment as a group, students use a concatenation
+    of usernames separated by "+" and any number of spaces (e.g.,
+    "user1+user2").  The same syntax ("user1+user2") is used for the
+    directory for shared submissions, and the usernames are always
+    sorted so that the directory name is deterinistic. Multiple
+    submissions for a particular user in different groups will be
+    rejected.
 
   * "inactive/" --- sub-directory for inactive assignments, used by the
     HTTPS status web server.
@@ -312,16 +328,12 @@ sub-directories:
     `checker' function can raise an exception; the exception message
     will be relayed back to the student.
 
-    To submit an assignment as a group, students use "user1+user2"
-    etc.  The checker function will receive a list of usernames in
-    this case -- this list is always sorted, so it can check that the
-    list of students are in a list of authorized teams.  The same
-    syntax ("user1+user2") is used for the directory for shared
-    submissions; and the usernames are always sorted so the directory
-    name is deterinistic.
+    The first argument is a list of usernames to handle the case of a
+    joint submission (where the submission username was a
+    concatenation of usernames separated by "+").
 
     The `checker' function is called with the current directory as
-    "active/<assignment>/<user/s>/ATTEMPT", and the submission is
+    "active/<assignment>/<username(s)>/ATTEMPT", and the submission is
     saved in the file "handin". The checker function can change
     "handin", and it can create additional files in this directory.
     (Extra files in the current directory will be preserved as it is
@@ -352,10 +364,13 @@ sub-directories:
     was returned by the checker (or the value of the
     `default-file-name' configuration option if there's no checker).
     If the submission is from multiple users, then "<user>" is
-    actually "<user1>+<user2>" etc.
+    actually "<user1>+<user2>" etc. Also, if the cleanup process was
+    interrupted (by a machine failure, etc.), the submission may
+    actually be in "SUCCESS-n" as described above.
 
-  * "[in]active/<assignment>/<user>/grade" (optional) --- <user>'s grade
-    for <assignment>, to be reported by the HTTPS status web server.
+  * "[in]active/<assignment>/<user>/grade" (optional) --- <user>'s
+    grade for <assignment>, to be reported by the HTTPS status web
+    server
 
   * "[in]active/<assignment>/solution*" --- the solution to the
     assignment, made available by the status server to any user who
@@ -380,18 +395,18 @@ button for any network transaction. For handins, "cancel" is
 guaranteed to work up to the point that the client sends a "commit"
 command; this command is sent only after the server is ready to record
 the submission (having run it through the checker, if any), but before
-the server writes the "handin.scm" file. Also, the server responds to a
-commit with "ok" only after it has written the file. Thus, when the
-client-side tool reports that the handin was successful, the report is
+renaming "ATTEMPT". Also, the server responds to a commit with "ok"
+only after it has written the file. Thus, when the client-side tool
+reports that the handin was successful, the report is
 reliable. Meanwhile, the tool can also report successful cancels most
 of the time. In the (normally brief) time between a commit and an "ok"
 response, the tool gives the student a suitable warning that the
 cancel is unreliable.
 
 To minimize human error, the number of active assignments should be
-limited to 1 whenever possible. When multiple assignments are active,
-design a checker to help ensure that the student has selected the
-correct assignment in the handin dialog.
+limited to one whenever possible. When multiple assignments are
+active, design a checker to help ensure that the student has selected
+the correct assignment in the handin dialog.
 
 A student can download his/her own submissions through a web server
 that runs concurrently with the handin server. The starting URL is

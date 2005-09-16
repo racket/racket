@@ -3,7 +3,7 @@
   ;; Also replace the "icon.png" and "server-cert.pem" files.
   ;; Instead of uncommenting the definition of server:port, you
   ;; can set the PLT_HANDIN_SERVER_PORT environment variable.
-  (define name "Course Handin")
+  (define name "Course")
   (define collection "handin-client")
   ;(define server:port "localhost:7979")
 

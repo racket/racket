@@ -257,7 +257,7 @@
 
        (define status
          (new message%
-              [label (format "Manage ~a account at ~a." handin-name server)]
+              [label (format "Manage ~a handin account at ~a." handin-name server)]
               [parent this]
               [stretchable-width #t]))
 
@@ -515,7 +515,7 @@
 
           (define/override (file-menu:between-open-and-revert file-menu)
             (new menu-item%
-		 (label (format "Manage ~a Account..." handin-name))
+		 (label (format "Manage ~a Handin Account..." handin-name))
 		 (parent file-menu)
 		 (callback (lambda (m e) (manage-handin-account))))
             (super file-menu:between-open-and-revert file-menu))

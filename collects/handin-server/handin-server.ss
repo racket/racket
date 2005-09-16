@@ -54,7 +54,7 @@
 
   (define orig-custodian (current-custodian))
 
-  ;; On startup, check that the prefs file is not locked:
+  ;; On startup, check that the users file is not locked:
   (put-preferences null null 
 		   (lambda (f)
 		     (delete-file f)
@@ -84,51 +84,41 @@
   (define SUCCESS-RE (regexp (format "^~a$" (success-dir "[0-9]+"))))
   (define SUCCESS-GOOD (map success-dir '(0 1)))
 
-  (define-syntax careful-switch-directory-switch
-    (syntax-rules ()
-      [(_ ?dir body ...)
-       (let ([dir (with-handlers ([void (lambda _ #f)]) (normalize-path ?dir))])
-         (when (and dir (directory-exists? dir))
-           (parameterize ([current-directory (current-directory)])
-             (when (with-handlers ([void (lambda _ #f)])
-                     (current-directory dir) #t)
-               body ...))))]))
-
   (define (cleanup-submission-body)
     ;; Find the newest SUCCESS dir -- ignore ATTEMPT, since if it exist it
-        ;; means that there was a failed submission and the next one will
-        ;; re-create ATTEMPT.
-        (let* ([dirlist (map path->string (directory-list))]
-               [dir (quicksort
-                     (filter (lambda (d)
-                               (and (directory-exists? d)
-                                    (regexp-match SUCCESS-RE d)))
-                             dirlist)
-                     string<?)]
-               [dir (and (pair? dir) (car dir))])
-          (when dir
-            (unless (member dir SUCCESS-GOOD)
-              (LOG "*** USING AN UNEXPECTED SUBMISSION DIRECTORY: ~a"
-                   (build-path (current-directory) dir)))
-            ;; We have a submission directory -- copy all newer things (extra
-            ;; things that exist in the main submission directory but not in
-            ;; SUCCESS, or things that are newer in the main submission
-            ;; directory are kept (but subdirs in SUCCESS will are copied as
-            ;; is))
-            (for-each
-             (lambda (f)
-               (define dir/f (build-path dir f))
-               (cond [(not (or (file-exists? f) (directory-exists? f)))
-                      ;; f is in dir but not in the working directory
-                      (copy-directory/files dir/f f)]
-                     [(or (<= (file-or-directory-modify-seconds f)
-                              (file-or-directory-modify-seconds dir/f))
-                          (and (file-exists? f) (file-exists? dir/f)
-                               (not (= (file-size f) (file-size dir/f)))))
-                      ;; f is newer in dir than in the working directory
-                      (delete-directory/files f)
-                      (copy-directory/files dir/f f)]))
-             (directory-list dir)))))
+    ;; means that there was a failed submission and the next one will
+    ;; re-create ATTEMPT.
+    (let* ([dirlist (map path->string (directory-list))]
+	   [dir (quicksort
+		 (filter (lambda (d)
+			   (and (directory-exists? d)
+				(regexp-match SUCCESS-RE d)))
+			 dirlist)
+		 string<?)]
+	   [dir (and (pair? dir) (car dir))])
+      (when dir
+	(unless (member dir SUCCESS-GOOD)
+	  (LOG "*** USING AN UNEXPECTED SUBMISSION DIRECTORY: ~a"
+	       (build-path (current-directory) dir)))
+	;; We have a submission directory -- copy all newer things (extra
+	;; things that exist in the main submission directory but not in
+	;; SUCCESS, or things that are newer in the main submission
+	;; directory are kept (but subdirs in SUCCESS will are copied as
+	;; is))
+	(for-each
+	 (lambda (f)
+	   (define dir/f (build-path dir f))
+	   (cond [(not (or (file-exists? f) (directory-exists? f)))
+		  ;; f is in dir but not in the working directory
+		  (copy-directory/files dir/f f)]
+		 [(or (<= (file-or-directory-modify-seconds f)
+			  (file-or-directory-modify-seconds dir/f))
+		      (and (file-exists? f) (file-exists? dir/f)
+			   (not (= (file-size f) (file-size dir/f)))))
+		  ;; f is newer in dir than in the working directory
+		  (delete-directory/files f)
+		  (copy-directory/files dir/f f)]))
+	 (directory-list dir)))))
 
   (define cleanup-sema (make-semaphore 1))
   (define (cleanup-submission dir)
@@ -168,7 +158,11 @@
             (let loop ()
               (let loop ([n (+ 20 (random 20))]) ; 10-20 minute delay
                 (when (>= n 0)
-                  (let ([new (map directory-list '("active" "inactive"))])
+                  (let ([new (map (lambda (x) 
+				    (if (directory-exists? x) 
+					(directory-list x)
+					null))
+				  '("active" "inactive"))])
                     (if (equal? new last-active/inactive)
                       (begin (sleep 30) (loop (sub1 n)))
                       (begin (set! last-active/inactive new)
@@ -389,6 +383,8 @@
 	;; Try making a watcher:
 	(let ([session-cust (make-custodian)]
 	      [session-channel (make-channel)]
+	      [timeout (+ (current-inexact-milliseconds)
+			  (* 1000 SESSION-TIMEOUT))]
 	      [status-box (box #f)])
 	  (let ([watcher
 		 (with-handlers ([exn:fail:unsupported? 
@@ -400,25 +396,36 @@
 		   (parameterize ([current-custodian orig-custodian])
 		     (thread (lambda ()
 			       (let ([session-thread (channel-get session-channel)])
-				 (let loop ()
-				   (if (sync/timeout 3 session-thread)
-				       (begin
-					 (LOG "session killed while ~s" (unbox status-box))
-					 (fprintf w "~s\n"
-						  (format
-						   "handin terminated due to excessive memory computation~a"
-						   (if (unbox status-box)
-						       (format " while ~a" (unbox status-box))
-						       "")))
-					 (close-output-port w)
-					 (channel-put session-channel 'done))
-				       (begin
-					 (collect-garbage)
-					 (LOG "running ~a (~a  ~a)"
-					      (current-memory-use session-cust)
-					      (current-memory-use orig-custodian)
-					      (current-memory-use))
-					 (loop)))))))))])
+				 (let loop ([timed-out? #f])
+				   (cond
+				    [(sync/timeout 3 session-thread)
+				     (LOG "session killed ~awhile ~s" 
+					  (if timed-out? "(timeout) " "")
+					  (unbox status-box))
+				     (fprintf w "~s\n"
+					      (format
+					       "handin terminated due to ~a (program doesn't terminate?)~a"
+					       (if timed-out?
+						   "time limit"
+						   "excessive memory use")
+					       (if (unbox status-box)
+						   (format " while ~a" (unbox status-box))
+						   "")))
+				     (close-output-port w)
+				     (channel-put session-channel 'done)]
+				    [((current-inexact-milliseconds) . > . timeout)
+				     ;; Shutdown here to get the handin-terminated error
+				     ;;  message, instead of relying on
+				     ;;  SESSION-TIMEOUT at the run-server level
+				     (custodian-shutdown-all session-cust)
+				     (loop #t)]
+				    [else
+				     (collect-garbage)
+				     (LOG "running ~a (~a  ~a)"
+					  (current-memory-use session-cust)
+					  (current-memory-use orig-custodian)
+					  (current-memory-use))
+				     (loop #f)])))))))])
 	    (if watcher
 		;; Run proc in a thread under session-cust:
 		(let ([session-thread
@@ -490,7 +497,7 @@
 		;; flushes an internal buffer that's not supposed to exist, while
 		;; the shutdown gives up immediately.
 		(close-output-port w)))))))
-     SESSION-TIMEOUT
+     (+ SESSION-TIMEOUT 30) ; extra 30 seconds gives watcher thread time to produce a nice message
      (lambda (exn)
        (printf "~a~n" (if (exn? exn)
 			  (exn-message exn)
