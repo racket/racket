@@ -288,14 +288,14 @@ ushort wxGIF::get_next_code()
 	   */
 	  pbytes = 0;
 	  navail_bytes = get_byte();
-	  if (navail_bytes)
-	    {
-	      for (i = 0; i < navail_bytes; ++i)
-		{
-		  x = get_byte();
-		  byte_buff[i] = x;
-		}
-            }
+	  if (navail_bytes) {
+	    for (i = 0; i < navail_bytes; ++i)
+	      {
+		x = get_byte();
+		byte_buff[i] = x;
+	      }
+	  } else
+	    navail_bytes = 1; /* to avoid underflow */
 	}
       b1 = byte_buff[pbytes++];
       nbits_left = 8;
@@ -312,14 +312,14 @@ ushort wxGIF::get_next_code()
 	   */
 	  pbytes = 0;
 	  navail_bytes = get_byte();
-	  if (navail_bytes)
-            {
-	      for (i = 0; i < navail_bytes; ++i)
-		{
-		  x = get_byte();
-		  byte_buff[i] = x;
-		}
-            }
+	  if (navail_bytes) {
+	    for (i = 0; i < navail_bytes; ++i)
+	      {
+		x = get_byte();
+		byte_buff[i] = x;
+	      }
+	  } else
+	    navail_bytes = 1; /* to avoid underflow */
 	}
       b1 = byte_buff[pbytes++];
       ret |= b1 << nbits_left;
@@ -477,6 +477,8 @@ ushort  wxGIF::decoder(ushort linewidth)
 	      if (code > slot)
 		++bad_code_count;
 	      code = oc;
+	      if (sp > MAX_CODES)
+		return BAD_CODE_SIZE;
 	      stack[sp++] = fc;
 	    }
 
@@ -485,8 +487,14 @@ ushort  wxGIF::decoder(ushort linewidth)
 	   */
 	  while (code >= newcodes)
 	    {
+	      if (sp > MAX_CODES)
+		return BAD_CODE_SIZE;
 	      stack[sp++] = suffix[code];
 	      code = prefix[code];
+	      if (code >= slot) {
+		++bad_code_count;
+		code = oc;
+	      }
 	    }
 
 	  /* Push the last character on the stack, and set up the new
@@ -496,6 +504,8 @@ ushort  wxGIF::decoder(ushort linewidth)
 	   * suffix and prefix...  I'm not certain if this is correct...
 	   * it might be more proper to overwrite the last code...
 	   */
+	  if (sp > MAX_CODES)
+	    return BAD_CODE_SIZE;
 	  stack[sp++] = code;
 	  if (slot < top_slot)
 	    {
