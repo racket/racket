@@ -1138,4 +1138,52 @@
 
 ; ----------------------------------------
 
+(let ([c (make-thread-cell 10)]
+      [c2 (make-thread-cell -10 #t)]
+      [c3 (make-thread-cell 3 #t)])
+  (test 10 thread-cell-ref c)
+  (test -10 thread-cell-ref c2)
+  (let ([orig (current-preserved-thread-cell-values)])
+    (test (void) thread-cell-set! c 11)
+    (test (void) thread-cell-set! c2 -11)
+    (test 11 thread-cell-ref c)
+    (test -11 thread-cell-ref c2)
+    (test 3 thread-cell-ref c3)
+    (let ([check-sub
+	   (lambda ()
+	     (thread-wait (thread (lambda () 
+				    (test 10 thread-cell-ref c)
+				    (test -11 thread-cell-ref c2)
+				    (test 3 thread-cell-ref c3)
+				    (test (void) thread-cell-set! c 12)
+				    (test 12 thread-cell-ref c)
+				    (test (void) thread-cell-set! c2 -12)
+				    (test -12 thread-cell-ref c2)
+				    (test (void) thread-cell-set! c3 13)
+				    (test 13 thread-cell-ref c3)))))]
+	  [post (current-preserved-thread-cell-values)])
+      (check-sub)
+      (current-preserved-thread-cell-values orig)
+      (test 11 thread-cell-ref c)
+      (test -10 thread-cell-ref c2)
+      (test 3 thread-cell-ref c3)
+      (test (void) thread-cell-set! c3 23)
+      (test 23 thread-cell-ref c3)
+      (current-preserved-thread-cell-values post)
+      (test 11 thread-cell-ref c)
+      (test -11 thread-cell-ref c2)
+      (test 3 thread-cell-ref c3)
+      (check-sub)
+      (thread-wait (thread (lambda () 
+			     (current-preserved-thread-cell-values post)
+			     (test 10 thread-cell-ref c)
+			     (test -11 thread-cell-ref c2)
+			     (test 3 thread-cell-ref c3)
+			     (test (void) thread-cell-set! c3 13)
+			     (test 13 thread-cell-ref c3)
+			     (current-preserved-thread-cell-values post)
+			     (test 3 thread-cell-ref c3)))))))
+
+; --------------------
+
 (report-errs)
