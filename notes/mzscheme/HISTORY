@@ -1,5 +1,9 @@
+Version 299.402
+Added current-preserved-thread-cell-values
+
+
 Version 299.400, Setember 2005
-Improved Windows path support
+Improved Windows path support (e.g., \\?\ paths)
 Added optional argument to simplify-path
 Added 'pair-shape property to reader
 Inside MzScheme: added scheme_get_port_file_descriptor()
