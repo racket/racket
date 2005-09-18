@@ -1434,6 +1434,15 @@ mark_thread_set {
   gcBYTES_TO_WORDS(sizeof(Scheme_Thread_Set));
 }
 
+mark_thread_cell {
+ mark:
+  Thread_Cell *c = (Thread_Cell *)p;
+ 
+  gcMARK(c->def_val);
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(Thread_Cell));
+}
 
 END thread;
 

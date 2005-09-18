@@ -3582,6 +3582,32 @@ int mark_thread_set_FIXUP(void *p) {
 #define mark_thread_set_IS_CONST_SIZE 1
 
 
+int mark_thread_cell_SIZE(void *p) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Thread_Cell));
+}
+
+int mark_thread_cell_MARK(void *p) {
+  Thread_Cell *c = (Thread_Cell *)p;
+ 
+  gcMARK(c->def_val);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Thread_Cell));
+}
+
+int mark_thread_cell_FIXUP(void *p) {
+  Thread_Cell *c = (Thread_Cell *)p;
+ 
+  gcFIXUP(c->def_val);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Thread_Cell));
+}
+
+#define mark_thread_cell_IS_ATOMIC 0
+#define mark_thread_cell_IS_CONST_SIZE 1
+
 
 #endif  /* THREAD */
 

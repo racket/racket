@@ -214,6 +214,7 @@ scheme_init_type (Scheme_Env *env)
 
   set_name(scheme_thread_set_type, "<thread-set>");
   set_name(scheme_thread_cell_type, "<thread-cell>");
+  set_name(scheme_thread_cell_values_type, "<thread-cell-values>");
 
   set_name(scheme_string_converter_type, "<string-converter>");
 
@@ -524,9 +525,9 @@ void scheme_register_traversers(void)
 
   GC_REG_TRAV(scheme_progress_evt_type, twoptr_obj);
 
-  GC_REG_TRAV(scheme_thread_cell_type, iptr_obj);
-
   GC_REG_TRAV(scheme_already_comp_type, iptr_obj);
+
+  GC_REG_TRAV(scheme_thread_cell_values_type, small_object);
 }
 
 END_XFORM_SKIP;

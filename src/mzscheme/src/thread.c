@@ -214,6 +214,18 @@ extern long GC_get_memory_use(void *c);
 extern MZ_DLLIMPORT long GC_get_memory_use();
 #endif
 
+typedef struct Thread_Cell {
+  Scheme_Object so;
+  char inherited;
+  Scheme_Object *def_val;
+  /* A thread's thread_cell table maps cells to keys weakly.
+     This table maps keys to values weakly. The two weak
+     levels ensure that thread cells are properly GCed
+     when the value of a thread cell references the thread
+     cell. */
+  Scheme_Bucket_Table *vals;
+} Thread_Cell;
+
 static Scheme_Object *empty_symbol, *initial_symbol;
 
 static Scheme_Object *read_symbol, *write_symbol, *execute_symbol, *delete_symbol, *exists_symbol;
@@ -288,6 +300,7 @@ static Scheme_Object *make_thread_cell(int argc, Scheme_Object *args[]);
 static Scheme_Object *thread_cell_p(int argc, Scheme_Object *args[]);
 static Scheme_Object *thread_cell_get(int argc, Scheme_Object *args[]);
 static Scheme_Object *thread_cell_set(int argc, Scheme_Object *args[]);
+static Scheme_Object *thread_cell_values(int argc, Scheme_Object *args[]);
 
 static Scheme_Object *make_security_guard(int argc, Scheme_Object *argv[]);
 static Scheme_Object *security_guard_p(int argc, Scheme_Object *argv[]);
@@ -605,6 +618,11 @@ void scheme_init_thread(Scheme_Env *env)
 			     scheme_make_prim_w_arity(thread_cell_set,
 						      "thread-cell-set!", 
 						      2, 2), 
+			     env);
+  scheme_add_global_constant("current-preserved-thread-cell-values", 
+			     scheme_make_prim_w_arity(thread_cell_values,
+						      "current-preserved-thread-cell-values", 
+						      0, 1), 
 			     env);
 
   
@@ -3219,7 +3237,7 @@ void scheme_push_break_enable(Scheme_Cont_Frame_Data *cframe, int on, int post_c
   Scheme_Object *v = NULL;
 
   if (recycle_cell) {
-    if (!SCHEME_TRUEP(SCHEME_IPTR_VAL(recycle_cell)) == !on) {
+    if (!SCHEME_TRUEP(((Thread_Cell *)recycle_cell)->def_val) == !on) {
       v = recycle_cell;
       recycle_cell = NULL;
     }
@@ -4552,7 +4570,7 @@ static int resume_suspend_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
 static Scheme_Object *make_thread_dead(int argc, Scheme_Object *argv[])
 {
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_thread_type))
-    scheme_wrong_type("thread-resume-evt", "thread", 0, argc, argv);
+    scheme_wrong_type("thread-dead-evt", "thread", 0, argc, argv);
 
   return scheme_get_thread_dead((Scheme_Thread *)argv[0]);
 }
@@ -5331,14 +5349,14 @@ static Scheme_Object *evts_to_evt(int argc, Scheme_Object *argv[])
 
 Scheme_Object *scheme_make_thread_cell(Scheme_Object *def_val, int inherited)
 {
-  Scheme_Object *c;
+  Thread_Cell *c;
 
-  c = scheme_alloc_object();
-  c->type = scheme_thread_cell_type;
-  SCHEME_IPTR_VAL(c) = def_val;
-  SCHEME_PINT_VAL(c) = inherited;
+  c = MALLOC_ONE_TAGGED(Thread_Cell);
+  c->so.type = scheme_thread_cell_type;
+  c->def_val = def_val;
+  c->inherited = !!inherited;
 
-  return c;
+  return (Scheme_Object *)c;
 }
 
 Scheme_Object *scheme_thread_cell_get(Scheme_Object *cell, Scheme_Thread_Cell_Table *cells)
@@ -5349,7 +5367,7 @@ Scheme_Object *scheme_thread_cell_get(Scheme_Object *cell, Scheme_Thread_Cell_Ta
   if (v)
     return v;
   else
-    return SCHEME_IPTR_VAL(cell);
+    return ((Thread_Cell *)cell)->def_val;
 }
 
 void scheme_thread_cell_set(Scheme_Object *cell, Scheme_Thread_Cell_Table *cells, Scheme_Object *v)
@@ -5357,9 +5375,10 @@ void scheme_thread_cell_set(Scheme_Object *cell, Scheme_Thread_Cell_Table *cells
   scheme_add_to_table(cells, (const char *)cell, (void *)v, 0);
 }
 
-Scheme_Thread_Cell_Table *scheme_inherit_cells(Scheme_Thread_Cell_Table *cells)
+static Scheme_Thread_Cell_Table *inherit_cells(Scheme_Thread_Cell_Table *cells,
+					       Scheme_Thread_Cell_Table *t,
+					       int inherited)
 {
-  Scheme_Bucket_Table *t;
   Scheme_Bucket *bucket;
   Scheme_Object *cell, *v;
   int i;
@@ -5367,14 +5386,14 @@ Scheme_Thread_Cell_Table *scheme_inherit_cells(Scheme_Thread_Cell_Table *cells)
   if (!cells)
     cells = scheme_current_thread->cell_values;
   
-  t = scheme_make_bucket_table(20, SCHEME_hash_weak_ptr);
-  
+  if (!t)
+    t = scheme_make_bucket_table(20, SCHEME_hash_weak_ptr);
   
   for (i = cells->size; i--; ) {
     bucket = cells->buckets[i];
     if (bucket && bucket->val && bucket->key) {
       cell = (Scheme_Object *)HT_EXTRACT_WEAK(bucket->key);
-      if (cell && SCHEME_PINT_VAL(cell)) {
+      if (cell && (((Thread_Cell *)cell)->inherited == inherited)) {
 	v = (Scheme_Object *)bucket->val;
 	scheme_add_to_table(t, (const char *)cell, v, 0);
       }
@@ -5384,9 +5403,43 @@ Scheme_Thread_Cell_Table *scheme_inherit_cells(Scheme_Thread_Cell_Table *cells)
   return t;
 }
 
+Scheme_Thread_Cell_Table *scheme_inherit_cells(Scheme_Thread_Cell_Table *cells)
+{
+  return inherit_cells(cells, NULL, 1);
+}
+
+static Scheme_Object *thread_cell_values(int argc, Scheme_Object *argv[])
+{
+  if (argc == 1) {
+    Scheme_Thread_Cell_Table *naya;
+
+    if (!SAME_TYPE(scheme_thread_cell_values_type, SCHEME_TYPE(argv[0]))) {
+      scheme_wrong_type("current-preserved-thread-cell-values", "thread cell values", 0, argc, argv);
+      return NULL;
+    }
+
+    naya = inherit_cells(NULL, NULL, 0);
+    inherit_cells((Scheme_Thread_Cell_Table *)SCHEME_PTR_VAL(argv[0]), naya, 1);
+
+    scheme_current_thread->cell_values = naya;
+
+    return scheme_void;
+  } else {
+    Scheme_Object *o, *ht;
+
+    ht = (Scheme_Object *)inherit_cells(NULL, NULL, 1);
+
+    o = scheme_alloc_small_object();
+    o->type = scheme_thread_cell_values_type;
+    SCHEME_PTR_VAL(o) = ht;
+
+    return o;
+  }
+}
+
 static Scheme_Object *make_thread_cell(int argc, Scheme_Object *argv[])
 {
-  return scheme_make_thread_cell(argv[0], argc && SCHEME_TRUEP(argv[1]));
+  return scheme_make_thread_cell(argv[0], (argc > 1) && SCHEME_TRUEP(argv[1]));
 }
 
 static Scheme_Object *thread_cell_p(int argc, Scheme_Object *argv[])
@@ -5757,7 +5810,7 @@ void scheme_set_root_param(int p, Scheme_Object *v)
 {
   Scheme_Parameterization *paramz;
   paramz = (Scheme_Parameterization *)scheme_current_thread->init_config->cell;
-  SCHEME_IPTR_VAL(paramz->prims[p]) = v;
+  ((Thread_Cell *)(paramz->prims[p]))->def_val = v;
 }
 
 static void make_initial_config(Scheme_Thread *p)
@@ -6702,6 +6755,7 @@ static void register_traversers(void)
   GC_REG_TRAV(scheme_evt_set_type, mark_evt_set);
   GC_REG_TRAV(scheme_thread_set_type, mark_thread_set);
   GC_REG_TRAV(scheme_config_type, mark_config);
+  GC_REG_TRAV(scheme_thread_cell_type, mark_thread_cell);
 
   GC_REG_TRAV(scheme_rt_namespace_option, mark_namespace_option);
   GC_REG_TRAV(scheme_rt_param_data, mark_param_data);

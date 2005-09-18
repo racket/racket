@@ -7298,21 +7298,22 @@ static Scheme_Object *sch_shell_execute(int c, Scheme_Object *argv[])
     scheme_wrong_type("shell-execute", SCHEME_PATH_STRING_STR, 3, c, argv);
   {
     show = 0;
-# define mzseCMP(id) \
-    if (SAME_OBJ(scheme_intern_symbol(# id), argv[4])) \
+# define mzseCMP(id, str)			       \
+    if (SAME_OBJ(scheme_intern_symbol(str), argv[4])   \
+        SAME_OBJ(scheme_intern_symbol(# id), argv[4])) \
       show = mzseSHOW(id)
-    mzseCMP(SW_HIDE);
-    mzseCMP(SW_MAXIMIZE);
-    mzseCMP(SW_MINIMIZE);
-    mzseCMP(SW_RESTORE);
-    mzseCMP(SW_SHOW);
-    mzseCMP(SW_SHOWDEFAULT);
-    mzseCMP(SW_SHOWMAXIMIZED);
-    mzseCMP(SW_SHOWMINIMIZED);
-    mzseCMP(SW_SHOWMINNOACTIVE);
-    mzseCMP(SW_SHOWNA);
-    mzseCMP(SW_SHOWNOACTIVATE);
-    mzseCMP(SW_SHOWNORMAL);
+    mzseCMP(SW_HIDE, "sw_hide");
+    mzseCMP(SW_MAXIMIZE, "sw_maximize");
+    mzseCMP(SW_MINIMIZE, "sw_minimize");
+    mzseCMP(SW_RESTORE, "sw_restore");
+    mzseCMP(SW_SHOW, "sw_show");
+    mzseCMP(SW_SHOWDEFAULT, "sw_showdefault");
+    mzseCMP(SW_SHOWMAXIMIZED, "sw_showmaximized");
+    mzseCMP(SW_SHOWMINIMIZED, "sw_showminimized");
+    mzseCMP(SW_SHOWMINNOACTIVE, "sw_showminnoactive");
+    mzseCMP(SW_SHOWNA, "sw_showna");
+    mzseCMP(SW_SHOWNOACTIVATE, "sw_shownoactivate");
+    mzseCMP(SW_SHOWNORMAL, "sw_shownormal");
 
     if (!show)
       scheme_wrong_type("shell-execute", "show-mode symbol", 4, c, argv);

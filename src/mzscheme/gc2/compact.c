@@ -4646,11 +4646,13 @@ static void check_not_freed(MPage *page, const void *p)
 static long dump_info_array[BIGBLOCK_MIN_SIZE];
 
 #if KEEP_BACKPOINTERS
-# define MAX_FOUND_OBJECTS 500
+# define MAX_FOUND_OBJECTS 5000
+int GC_show_trace = 0;
 int GC_trace_for_tag = 57;
 int GC_path_length_limit = 1000;
 static int found_object_count;
 static void *found_objects[MAX_FOUND_OBJECTS];
+void (*GC_for_each_found)(void *p) = NULL;
 #endif
 
 static long scan_tagged_mpage(void **p, MPage *page)
@@ -4688,8 +4690,12 @@ static long scan_tagged_mpage(void **p, MPage *page)
       dump_info_array[tag + _num_tags_] += size;
 
 #if KEEP_BACKPOINTERS
-      if (tag == GC_trace_for_tag && (found_object_count < MAX_FOUND_OBJECTS)) {
-	found_objects[found_object_count++] = p;
+      if (tag == GC_trace_for_tag) {
+	if (found_object_count < MAX_FOUND_OBJECTS) {
+	  found_objects[found_object_count++] = p;
+	}
+	if (GC_for_each_found)
+	  GC_for_each_found(p);
       }
 #endif
 
@@ -4805,6 +4811,8 @@ void GC_dump(void)
 
 #if KEEP_BACKPOINTERS
   found_object_count = 0;
+  if (GC_for_each_found)
+    avoid_collection++;
 #endif
 
   GCPRINT(GCOUTF, "t=tagged a=atomic v=array x=xtagged g=tagarray\n");
@@ -4947,9 +4955,11 @@ void GC_dump(void)
 	    && (page->type == kind)
 	    && (((GC_trace_for_tag >= (BIGBLOCK_MIN_SIZE >> LOG_WORD_SIZE))
 		 && (page->u.size > GC_trace_for_tag))
-		|| (page->u.size == -GC_trace_for_tag))
-	    && (found_object_count < MAX_FOUND_OBJECTS)) {
-	  found_objects[found_object_count++] = page->block_start;
+		|| (page->u.size == -GC_trace_for_tag))) {
+	  if (found_object_count < MAX_FOUND_OBJECTS)
+	    found_objects[found_object_count++] = page->block_start;
+	  if (GC_for_each_found)
+	    GC_for_each_found(page->block_start);
 	}
 #endif
       }
@@ -5038,20 +5048,24 @@ void GC_dump(void)
 	  (100.0 * ((double)page_reservations - memory_in_use)) / memory_in_use);
 
 #if KEEP_BACKPOINTERS
-  avoid_collection++;
-  GCPRINT(GCOUTF, "Begin Trace\n");
-  for (i = 0; i < found_object_count; i++) {
-    void *p;
-    int limit = GC_path_length_limit;
-    p = found_objects[i];
-    p = print_out_pointer("==* ", p);
-    while (p && limit) {
-      p = print_out_pointer(" <- ", p);
-      limit--;
+  if (GC_show_trace) {
+    avoid_collection++;
+    GCPRINT(GCOUTF, "Begin Trace\n");
+    for (i = 0; i < found_object_count; i++) {
+      void *p;
+      int limit = GC_path_length_limit;
+      p = found_objects[i];
+      p = print_out_pointer("==* ", p);
+      while (p && limit) {
+	p = print_out_pointer(" <- ", p);
+	limit--;
+      }
     }
+    GCPRINT(GCOUTF, "End Trace\n");
+    GC_trace_for_tag = 57;
+    --avoid_collection;
   }
-  GCPRINT(GCOUTF, "End Trace\n");
-  GC_trace_for_tag = 57;
-  --avoid_collection;
+  if (GC_for_each_found)
+    avoid_collection++;
 #endif
 }

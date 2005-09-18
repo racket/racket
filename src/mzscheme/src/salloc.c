@@ -930,8 +930,16 @@ static void count_managed(Scheme_Custodian *m, int *c, int *a, int *u, int *t,
 #endif
 
 #if MZ_PRECISE_GC_TRACE
+extern int GC_show_trace;
 extern int GC_trace_for_tag;
 extern int GC_path_length_limit;
+extern void (*GC_for_each_found)(void *p);
+
+static Scheme_Object *cons_accum_result;
+static void cons_onto_list(void *p)
+{
+  cons_accum_result = scheme_make_pair((Scheme_Object *)p, cons_accum_result);
+}
 #endif
 
 #if defined(USE_TAGGED_ALLOCATION) || MZ_PRECISE_GC_TRACE
@@ -978,7 +986,8 @@ void scheme_print_tagged_value(const char *prefix,
 
   if (!xtagged) {
     type = scheme_write_to_string_w_max((Scheme_Object *)v, &len, max_w);
-    if (!scheme_strncmp(type, "#<thread", 8)) {
+    if (!scheme_strncmp(type, "#<thread", 8) 
+	&& ((type[8] == '>') || (type[8] == ':'))) {
       char buffer[256];
       char *run, *sus, *kill, *clean, *deq, *all, *t2;
       int state = ((Scheme_Thread *)v)->running, len2;
@@ -1316,6 +1325,9 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
 
 # if MZ_PRECISE_GC_TRACE
   GC_trace_for_tag = -1;
+  GC_show_trace = 0;
+  GC_for_each_found = NULL;
+  cons_accum_result = scheme_void;
   if (c && SCHEME_SYMBOLP(p[0])) {
     Scheme_Object *sym;
     char *s;
@@ -1331,15 +1343,21 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
       tn = scheme_get_type_name(i);
       if (tn && !strcmp(tn, s)) {
 	GC_trace_for_tag = i;
+	GC_show_trace = 1;
 	break;
       }
     }
   } else if (SCHEME_INTP(p[0])) {
     GC_trace_for_tag = SCHEME_INT_VAL(p[0]);
+    GC_show_trace = 1;
   }
   if ((c > 1) && SCHEME_INTP(p[1]))
     GC_path_length_limit = SCHEME_INT_VAL(p[1]);
-  else
+  else if ((c > 1) && SCHEME_SYMBOLP(p[1]) && !strcmp("cons", SCHEME_SYM_VAL(p[1]))) {
+    GC_for_each_found = cons_onto_list;
+    cons_accum_result = scheme_null;
+    GC_show_trace = 0;
+  } else
     GC_path_length_limit = 1000;
 #endif
 
@@ -1420,7 +1438,11 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
   scheme_console_printf(" (dump-memory-stats num) - prints paths to objects with tag num.\n");
   scheme_console_printf(" (dump-memory-stats -num) - prints paths to objects of size num.\n");
   scheme_console_printf(" (dump-memory-stats sym/num len) - limits path to size len.\n");
+  scheme_console_printf(" (dump-memory-stats sym/num 'cons) - builds list instead of showing paths.\n");
   scheme_console_printf("End Help\n");
+
+  result = cons_accum_result;
+  cons_accum_result = scheme_void;
 # endif
 
   scheme_console_printf("End Dump\n");

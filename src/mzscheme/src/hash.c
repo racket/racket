@@ -823,6 +823,7 @@ void scheme_init_hash_key_procs(void)
   PROC(scheme_namespace_type, hash_general);
   PROC(scheme_config_type, hash_general);
   PROC(scheme_thread_cell_type, hash_general);
+  PROC(scheme_thread_cell_values_type, hash_general);
   PROC(scheme_will_executor_type, hash_general);
   PROC(scheme_stx_type, hash_general);
   PROC(scheme_module_index_type, hash_general);
