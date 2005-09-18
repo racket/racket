@@ -52,10 +52,15 @@
 	 (flat-contract c))))
 
   ;; Syntax:
-  ;;   (define-datatype-core orig-form d-v (option ...) name (alpha ...) pred-name variant ...)
+  ;;   (define-datatype-core orig-form (option ...) d-v name (alpha ...) pred-name variant ...)
   ;; where the syntax is like `define-datatype' starting with `pred-name'.
+  ;;
   ;; The `orig-stx' part is used for syntax-error reporting.
-  ;; The `d-v' is used in place of `define-values' to binding procedures.
+  ;; The `d-v' is used in place of `define-values' to bind procedures. Beware
+  ;;   that variant-constructor procedures are bound as syntax and an different
+  ;;   name is bound to the actual procedure; if this "actual" binding itself
+  ;;   turns out to be a macro, then uses of the constructor name are expanded
+  ;;   by directly calling the macro from the "actual" binding
   ;; Each `alpha' is a parameter to the contract expressions of each variant field;
   ;;   using `x-of' for variant `x' allows the parameter contracts to be supplied, 
   ;;   while using `x' directly instantiates each parameter as `any/c'.
@@ -69,6 +74,16 @@
   ;;                      requires define-selectors
   ;;   define-compatibility: include `make-x' for each variant `x'
   ;;   (kind "str") : uses "str" to name the result, either "type" or "datatype"
+  ;;
+  ;; Internals:
+  ;;  The `name' is bound as syntax to a dt record, which supplies an id
+  ;;   for the datatype's predicate, and also lists the ;;  datatype's variants
+  ;;   through vt records.
+  ;;  Each variant constructor name is bound as syntax to a dtvt record,
+  ;;   which gives the variant's vt record as well as its datatype's dt
+  ;;   record.
+  ;;  (See "core-utils.ss" for the dt, vt, and dtvt records.)
+  ;;
   (define-syntax define-datatype-core
     (lambda (stx)
       (syntax-case stx ()
@@ -109,7 +124,9 @@
 			  (map (lambda (n) 
 				 (datum->syntax-object (quote-syntax here) n #f))
 			       (map length field-nameses))]
-			 [(variant-name/no-contract ...)
+			 [(orig-variant-name ...)
+			  (generate-dt-temporaries variant-names)]
+                         [(variant-name/no-contract ...)
 			  (generate-dt-temporaries variant-names)]
                          [(variant-of ...)
 			  (map (lambda (variant-name) 
@@ -186,29 +203,35 @@
 					   "datatype")])
 	     (quasisyntax
 	      (begin
-		(define-syntax name 
+		(define-syntaxes (name variant-name ...)
 		  ;; Note: we're back to the transformer environment, here.
 		  ;; Also, this isn't a transformer function, so any direct
 		  ;;  use of the name will trigger a syntax error. The name
 		  ;;  can be found by `syntax-local-value', though.
 		  (let ([cert (syntax-local-certifier)])
-		    (make-set!-transformer
-		     (make-dt (cert (syntax pred-name))
-			      (list
-			       (make-vt (cert (quote-syntax variant-name))
-					(cert (quote-syntax variant?))
-					(cert (quote-syntax variant-accessor))
-					(list (quote-syntax selector-name) ...)
-					variant-field-count)
-			       ...)
-			      datatype-str))))
+		    (let-values ([(variant-name ...)
+				  (values
+				   (make-vt (cert (quote-syntax variant-name))
+					    (cert (quote-syntax variant?))
+					    (cert (quote-syntax variant-accessor))
+					    (list (quote-syntax selector-name) ...)
+					    variant-field-count)
+				   ...)])
+		      (let ([dt (make-dt (cert (syntax pred-name))
+					 (list variant-name ...)
+					 datatype-str)])
+			(values
+			 (make-set!-transformer dt)
+			 (make-set!-transformer
+			  (make-dtvt dt variant-name (quote-syntax orig-variant-name)))
+			 ...)))))
 		;; Bind the predicate and selector functions:
 		(define-proc-values (pred-name
 				     variant-name/no-contract ...
 				     variant? ...
 				     variant-accessor ...
 				     selector-name ... ...
-				     variant-name ...)
+				     orig-variant-name ...)
 		  ;; Create a new structure for the datatype (using the
 		  ;; datatype name in `struct', so it prints nicely).
 		  (let-values ([(struct:x make-x x? acc mut)

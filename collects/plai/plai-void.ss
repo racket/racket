@@ -1,3 +1,9 @@
+
+;; Like PLAI Advanced, but all functions must accept one
+;;  argument, and the result is always changed to void.
+;; To enforce void returns, tail call are broken, currently.
+;; No `lambda', `local', `let', `let*', or `letrec'.
+
 (module plai-void mzscheme
   (require (rename (lib "htdp-advanced.ss" "lang") plai-else else)
 	   (rename (lib "htdp-advanced.ss" "lang") advanced-define define)
