@@ -6049,7 +6049,7 @@ Scheme_Object *scheme_param_config(char *name, Scheme_Object *pos,
 	    r = NULL;
 	  
 	  if (!r) {
-	    scheme_wrong_type(name, expected, 0, argc, argv);
+	    scheme_wrong_type(name, expected, 0, 1, argv);
 	    return NULL;
 	  }
 	  
