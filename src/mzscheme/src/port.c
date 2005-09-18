@@ -7300,7 +7300,7 @@ static Scheme_Object *sch_shell_execute(int c, Scheme_Object *argv[])
     show = 0;
 # define mzseCMP(id, str)			       \
     if (SAME_OBJ(scheme_intern_symbol(str), argv[4])   \
-        SAME_OBJ(scheme_intern_symbol(# id), argv[4])) \
+        || SAME_OBJ(scheme_intern_symbol(# id), argv[4])) \
       show = mzseSHOW(id)
     mzseCMP(SW_HIDE, "sw_hide");
     mzseCMP(SW_MAXIMIZE, "sw_maximize");
