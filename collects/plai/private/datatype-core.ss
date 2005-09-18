@@ -283,7 +283,7 @@
 		#,@(if (memq 'define-compatibility options)
 		      #`((define-proc-values (make-variant-name ...) (values variant-name ...)))
 		      null)))))]
-        [(_ orig-stx (option ...) name pred-name variant ...)
+        [(_ orig-stx (option ...) define-proc-values name (alpha ...) pred-name variant ...)
          ;; Must be a bad variant...
          (for-each (lambda (variant)
                      (syntax-case variant ()
