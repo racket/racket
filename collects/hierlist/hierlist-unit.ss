@@ -620,7 +620,11 @@
       (send list-keymap map-function "m:down" "page-down")
       (send list-keymap map-function "d:up" "select-first")
       (send list-keymap map-function "d:down" "select-last")
-
+      (send list-keymap map-function "esc;v" "page-up")
+      (send list-keymap map-function "c:v" "page-down")
+      (send list-keymap map-function "esc;>" "select-last")
+      (send list-keymap map-function "esc;<" "select-first")
+      
       (send list-keymap add-function "toggle-open/closed"
 	    (lambda (list event) (send list toggle-open/closed)))
       (send list-keymap map-function "return" "toggle-open/closed")
