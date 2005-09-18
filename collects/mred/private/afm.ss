@@ -252,7 +252,7 @@
 				     [r (read i)]
 				     [b (read i)])
 				 (set! bbox-down t))]
-		   [(capheight) (set! cap-height (read i))]
+		   [(ascender) (set! cap-height (read i))]
 		   [(characterset) (let ([m (regexp-match #rx#"[a-zA-Z_0-9-]+" (read-bytes-line i))])
 				     (when m
 				       (set! char-set-name (car m))
