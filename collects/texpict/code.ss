@@ -7,6 +7,52 @@
 
   (provide define-code code^ code-params^ code@)
 
+  (define-struct (code-pict pict) (bottom-line))
+
+
+  (define (to-code-pict p extension)
+    (make-code-pict (pict-draw p)
+		    (pict-width p)
+		    (pict-height p)
+		    (pict-ascent p)
+		    (pict-descent p)
+		    (pict-children p)
+		    (pict-panbox p)
+		    (if (code-pict? extension)
+			(code-pict-bottom-line extension)
+			extension)))
+
+  (define (make-code-append htl-append)
+    (case-lambda
+     [(a b) (if (code-pict? a)
+		(let ([extension (htl-append (ghost (code-pict-bottom-line a)) b)])
+		  (let ([p (lt-superimpose
+			    a
+			    (let-values ([(x y) (lt-find a (code-pict-bottom-line a))])
+			      (inset extension x y 0 0)))])
+		    (to-code-pict p (if (code-pict? b)
+					(code-pict-bottom-line b)
+					extension))))
+		(let ([p (htl-append a b)])
+		  (if (code-pict? b)
+		      (to-code-pict p (code-pict-bottom-line b))
+		      p)))]
+     [(a) a]
+     [(a . rest)
+      ((make-code-append htl-append)
+       a
+       (apply (make-code-append htl-append) rest))]))
+
+  (define code-htl-append (make-code-append htl-append))
+  (define code-hbl-append (make-code-append hbl-append))
+
+  (define code-vl-append
+    (case-lambda
+     [(a b) (to-code-pict (vl-append a b) b)]
+     [(a) a]
+     [(a . rest)
+      (code-vl-append a (apply code-vl-append rest))]))
+
   (define-syntax (define-code stx)
     (syntax-case stx ()
       [(_ code typeset-code uncode)
@@ -46,11 +92,12 @@
       [(_ code typeset-code) #'(define-code code typeset-code unsyntax)]))
   
   (define-signature code^
-    (typeset-code 
+    (typeset-code code-pict-bottom-line-pict pict->code-pict
      comment-color keyword-color id-color const-color literal-color
      code-align current-code-tt
      current-keyword-list current-const-list current-literal-list 
-     code-colorize-enabled code-colorize-quote-enabled
+     code-colorize-enabled code-colorize-quote-enabled 
+     code-italic-underscore-enabled code-scripts-enabled
      current-comment-color current-keyword-color 
      current-base-color current-id-color current-literal-color
      current-reader-forms
@@ -84,6 +131,16 @@
 
       (define (code-align p)
 	(lift (inset p 0 (pict-height p) 0 0) (pict-height p)))
+
+      (define (code-pict-bottom-line-pict p)
+	(if (code-pict? p)
+	    (code-pict-bottom-line p)
+	    #f))
+
+      (define (pict->code-pict p bottom-line)
+	(if bottom-line
+	    (to-code-pict p bottom-line)
+	    p))
       
       (define mzscheme-ns (let ([n (make-namespace 'empty)]
 				[orig (current-namespace)])
@@ -119,6 +176,9 @@
 
       (define code-colorize-quote-enabled
 	(make-parameter #t))
+
+      (define code-italic-underscore-enabled (make-parameter #t))
+      (define code-scripts-enabled (make-parameter #t))
 
       (define (maybe-colorize p c)
 	(if (code-colorize-enabled)
@@ -205,44 +265,49 @@
 	 [(memq (caar closes) '(contract line))
 	  (add-close p (cdr closes))]
 	 [else
-	  (add-close (hbl-append p (get-close (caar closes) (cdar closes)))
+	  (add-close (code-hbl-append p (get-close (caar closes) (cdar closes)))
 		     (cdr closes))]))
 
       (define (pad-left space p)
 	(if (= 0 space)
 	    p
-	    (htl-append (tt (make-string space #\space)) p)))
+	    (code-htl-append (tt (make-string space #\space)) p)))
 
       (define (pad-bottom space p)
 	(if (= 0 space)
 	    p
-	    (vl-append line-sep (tt " ") (pad-bottom (sub1 space) p))))
+	    (code-vl-append line-sep (tt " ") (pad-bottom (sub1 space) p))))
 
       (define (colorize-id str mode)
 	(cond
-	 [(and ((string-length str) . > . 1)
+	 [(and (code-italic-underscore-enabled)
+	       ((string-length str) . > . 1)
 	       (char=? #\_ (string-ref str 0))
 	       (not (char=? #\_ (string-ref str 1))))
 	  (mode-colorize
 	   mode 'id
 	   (text (substring str 1) `(bold italic . modern) (current-font-size)))]
-	 [(regexp-match #rx"^(.+)_([0-9a-z]+)\\^([0-9a-z]+)$" str)
+	 [(and (code-scripts-enabled)
+	       (regexp-match #rx"^(.+)_([0-9a-z]+)\\^([0-9a-z]+)$" str))
 	  => (lambda (m)
 	       (hbl-append (colorize-id (cadr m) mode)
 			   (cc-superimpose
 			    (text (caddr m) `(subscript bold . modern) (current-font-size))
 			    (text (cadddr m) `(superscript bold . modern) (current-font-size)))))]
-	 [(regexp-match #rx"^(.+)\\^([0-9a-z]+)_([0-9a-z]+)$" str)
+	 [(and (code-scripts-enabled)
+	       (regexp-match #rx"^(.+)\\^([0-9a-z]+)_([0-9a-z]+)$" str))
 	  => (lambda (m)
 	       (hbl-append (colorize-id (cadr m) mode)
 			   (cc-superimpose
 			    (text (cadddr m) `(subscript bold . modern) (current-font-size))
 			    (text (caddr m) `(superscript bold . modern) (current-font-size)))))]
-	 [(regexp-match #rx"^(.+)\\^([0-9a-z]+)$" str)
+	 [(and (code-scripts-enabled)
+	       (regexp-match #rx"^(.+)\\^([0-9a-z]+)$" str))
 	  => (lambda (m)
 	       (hbl-append (colorize-id (cadr m) mode)
 			   (text (caddr m) `(superscript bold . modern) (current-font-size))))]
-	 [(regexp-match #rx"^(.+)_([0-9a-z]+)$" str)
+	 [(and (code-scripts-enabled)
+	       (regexp-match #rx"^(.+)_([0-9a-z]+)$" str))
 	  => (lambda (m)
 	       (hbl-append (colorize-id (cadr m) mode)
 			   (text (caddr m) `(subscript bold . modern) (current-font-size))))]
@@ -289,8 +354,8 @@
 					 #f
 					 (sub1 mode))]
 		     [else mode])])
-	  (htl-append (mode-colorize mode 'keyword unquote-p) 
-		      (loop x closes mode))))
+	  (code-htl-append (mode-colorize mode 'keyword unquote-p) 
+			   (loop x closes mode))))
 
       (define (typeset-code stx)
 	(let loop ([stx stx][closes null][mode #f])
@@ -306,11 +371,11 @@
 	    [$ (colorize-id "|" closes)]
 	    [(quote x)
 	     (memq 'quote (current-reader-forms))
-	     (htl-append (mode-colorize mode 'literal quote-p) 
-			 (loop #'x closes (if (or (not (code-colorize-quote-enabled))
-						  (comment-mode? mode))
-					      mode
-					      'literal)))]
+	     (code-htl-append (mode-colorize mode 'literal quote-p) 
+			      (loop #'x closes (if (or (not (code-colorize-quote-enabled))
+						       (comment-mode? mode))
+						   mode
+						   'literal)))]
 	    [(unquote x)
 	     (memq 'unquote (current-reader-forms))
 	     (add-unquote unquote-p loop #'x closes mode)]
@@ -319,28 +384,28 @@
 	     (add-unquote unquote-splicing-p loop #'x closes mode)]
 	    [(quasiquote x)
 	     (memq 'quasiquote (current-reader-forms))
-	     (htl-append (mode-colorize mode 'keyword quasiquote-p) 
-			 (loop #'x closes (cond
-					   [(not (code-colorize-quote-enabled)) mode]
-					   [(comment-mode? mode) mode]
-					   [(number? mode) (add1 mode)]
-					   [else 0])))]
+	     (code-htl-append (mode-colorize mode 'keyword quasiquote-p) 
+			      (loop #'x closes (cond
+						[(not (code-colorize-quote-enabled)) mode]
+						[(comment-mode? mode) mode]
+						[(number? mode) (add1 mode)]
+						[else 0])))]
 	    [(syntax x)
 	     (memq 'syntax (current-reader-forms))
-	     (htl-append (mode-colorize mode 'literal syntax-p) 
-			 (loop #'x closes mode))]
+	     (code-htl-append (mode-colorize mode 'literal syntax-p) 
+			      (loop #'x closes mode))]
 	    [(unsyntax x)
 	     (memq 'unsyntax (current-reader-forms))
-	     (htl-append (mode-colorize mode 'literal unsyntax-p) 
-			 (loop #'x closes mode))]
+	     (code-htl-append (mode-colorize mode 'literal unsyntax-p) 
+			      (loop #'x closes mode))]
 	    [(unsyntax-splicing x)
 	     (memq 'unsyntax-splicing (current-reader-forms))
-	     (htl-append (mode-colorize mode 'literal unsyntax-splicing-p) 
-			 (loop #'x closes mode))]
+	     (code-htl-append (mode-colorize mode 'literal unsyntax-splicing-p) 
+			      (loop #'x closes mode))]
 	    [(quasisyntax x)
 	     (memq 'unsyntax-splicing (current-reader-forms))
-	     (htl-append (mode-colorize mode 'literal quasisyntax-p) 
-			 (loop #'x closes mode))]
+	     (code-htl-append (mode-colorize mode 'literal quasisyntax-p) 
+			      (loop #'x closes mode))]
 	    [(code:contract i ...)
 	     (add-semis (loop (datum->syntax-object #f (syntax->list #'(i ...)))
 			      closes 'contract))]
@@ -392,13 +457,13 @@
 					 (inexact->exact
 					  (max (if always-space? 1 0) (- (syntax-column (car stxs)) col)))
 					 (if always-space? 1 0))]
-			      [p (htl-append
+			      [p (code-htl-append
 				  line-so-far
 				  (pad-left space (car ps)))])
 			 (unless (equal? +inf.0 (+ space col))
 			   (hash-table-put! col->width 
 					    (+ space col) 
-					    (pict-width (htl-append line-so-far (pad-left space (blank))))))
+					    (pict-width (code-htl-append line-so-far (pad-left space (blank))))))
 			 (if (null? (cdr stxs))
 			     p
 			     (loop (cdr stxs)
@@ -411,13 +476,14 @@
 				   #t
                                    col->width)))]
 		      [else
-		       (vl-append
+		       ;; Start on next line:
+		       (code-vl-append
 			line-sep
 			line-so-far
 			(let* ([space (max 0 (- (or (syntax-column (car stxs)) 0) left))]
 			       [p 
                                 (let/ec k
-                                  (htl-append
+                                  (code-htl-append
                                    (blank (hash-table-get col->width 
                                                           (+ space left)
                                                           (lambda ()
@@ -437,9 +503,9 @@
 	     (identifier? stx)
 	     (add-close (colorize-id (symbol->string (syntax-e stx)) mode) closes)]
 	    [(a . b)
-	     (hbl-append (mode-colorize mode #f open-paren-p) (loop #'a null mode)
-			 (mode-colorize mode #f dot-p)
-			 (loop #'b (cons (cons mode stx) closes) mode))]
+	     (code-hbl-append (mode-colorize mode #f open-paren-p) (loop #'a null mode)
+			      (mode-colorize mode #f dot-p)
+			      (loop #'b (cons (cons mode stx) closes) mode))]
 	    [else
 	     (add-close (if (pict? (syntax-e stx))
 			    (syntax-e stx)

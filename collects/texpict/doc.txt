@@ -1089,11 +1089,20 @@ The _code^_ unit supplies the following
   combined using `htl-append', so use `code-align' (see below) as
   necessary to add an ascent to ascentless picts.
 
-  An identifier that starts with an underscore is italicized in
-  the pict. Underscores and carets in the middle of a word
-  create superscripts and subscripts (like TeX). For example
-  `foo_^4_ok' is displayed as the identifier "foo" with a "4"
-  superscript and an "ok" subscript.
+  The resulting pict is actually an instance of code-pict, which is a
+  sub-type of `pict'. When an embedded pict in `stx' is a code-pict,
+  then elements (such as closing parens) are added after the code-pict
+  based on the code-pict's bottom line, instead of the code-pict's
+  bounding box. See also `code-pict-bottom-line-pict' and
+  `pict->code-pict'.
+
+  An identifier that starts with an underscore is italicized in the
+  pict and the underscore is dropped, unless the
+  `code-italic-underscore-enabled' parameter is set to false. Also,
+  unless `code-scripts-enabled' is set to false, underscores and
+  carets in the middle of a word create superscripts and subscripts
+  (like TeX); for example `foo^4_ok' is displayed as the identifier
+  "foo" with a "4" superscript and an "ok" subscript.
 
   Further, uses of certain keywords in `stx' typeset specially:
 
@@ -1155,6 +1164,23 @@ The following four are for backward compatibility:
 > code-colorize-quote-enabled - a parameter to control whether everything
   under a quote is colorized as a literal (like DrScheme's Check Syntax,
   and unlike DrScheme's interactive text coloring); the default is #t
+
+> code-italic-underscore-enabled - a boolean parameter to control
+  whether underscore-prefixed identifiers are italicized (dropping
+  the underscore); the default is #t
+
+> code-scripts-enabled - a boolean parameter to control whether
+  TeX-style subscripts and subscripts are recognized in an identifier
+
+> (code-pict-bottom-line-pict pict) - returns a pict inside of the
+  given code-pict that represents the end of the code-pict's bottom
+  line; if `pict' is a pict but not a code-pict, the result is #f
+
+> (pict->code-pict pict bl-pict-or-false) - returns a code-pict if
+  `bl-pict-of-false' is not false; the code-pict is like the given
+  `pict', except that it reports `bl-pict-or-false' as its bottom-line
+  pict (for adding closing parens after, etc.)
+
 
 In addition to the `code@' unit, the "code.ss" module exports a
 `define-code' macro for defining other macros:
