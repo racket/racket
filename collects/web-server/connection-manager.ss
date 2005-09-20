@@ -33,6 +33,7 @@
   ;; kill-connection!: connection -> void
   ;; kill this connection
   (define (kill-connection! conn-demned)    
+    (cancel-timer! (connection-timer conn-demned))
     (close-output-port (connection-o-port conn-demned))
     (close-input-port (connection-i-port conn-demned))
     (set-connection-close?! conn-demned #t)

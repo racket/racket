@@ -20,6 +20,7 @@
    [send/suspend/callback (xexpr/callback? . -> . any)])
 
   (provide
+   clear-continuation-table!
    send/suspend/dispatch
    current-servlet-continuation-expiration-handler
    (all-from "servlet-helpers.ss")
@@ -45,6 +46,10 @@
     (reset-timer (servlet-instance-timer (get-current-servlet-instance))
                  secs))
 
+  ;; ext:clear-continuations! -> void
+  (define (clear-continuation-table!)
+    (clear-continuations! (get-current-servlet-instance)))
+  
   ;; send/back: response -> void
   ;; send a response and don't clear the continuation table
   (define (send/back resp)
@@ -55,7 +60,7 @@
   ;; send/finish: response -> void
   ;; send a response and clear the continuation table
   (define (send/finish resp)
-    (clear-continuations! (get-current-servlet-instance))
+    (clear-continuation-table!)
     ; If we readjust the timeout to something small, the session will expire shortly
     ; we cannot wait for send/back to return, because it doesn't
     ; Also, we cannot get the initial-connection-timeout variable from here
@@ -82,7 +87,7 @@
   ;; clear the continuation table, then behave like send/suspend
   (define send/forward
     (opt-lambda (response-generator [expiration-handler (current-servlet-continuation-expiration-handler)])
-      (clear-continuations! (get-current-servlet-instance))
+      (clear-continuation-table!)
       (send/suspend response-generator expiration-handler)))
   
   ;; send/suspend/callback : xexpr/callback? -> void

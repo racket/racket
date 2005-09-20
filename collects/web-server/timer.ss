@@ -3,6 +3,7 @@
   (require (lib "list.ss"))
   (provide timer? 
            start-timer reset-timer increment-timer
+           cancel-timer!
            start-timer-manager)
 
   (define timer-ch (make-channel))
