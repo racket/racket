@@ -130,8 +130,9 @@
                      (lambda (e)
                        (LOG "*** ERROR DURING (cleanup-submission ~s) : ~a"
                             dir (if (exn? e) (exn-message e) e)))])
-      (parameterize ([current-directory dir])
-        (call-with-semaphore cleanup-sema cleanup-submission-body))))
+      (when (directory-exists? dir) ; submissions can fail before mkdir
+        (parameterize ([current-directory dir])
+          (call-with-semaphore cleanup-sema cleanup-submission-body)))))
 
   (define (cleanup-all-submissions)
     (LOG "Cleaning up all submission directories")
