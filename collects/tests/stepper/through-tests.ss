@@ -198,50 +198,12 @@
   ;;     manually to avoid collisions.
   
   
-  ;; NEW TEST CASES
   (t mz-app
      (test-mz-sequence "(+ 3 4)"
                        `((before-after ((hilite (+ 3 4))) ((hilite 7)))
                          (finished-stepping))))
   
-  (t top-ref-to-lifted
-     (test-advanced-sequence "(define a (local ((define i1 0) (define (i2 x) i1)) i2)) (+ 3 4)"
-                             (let ([defs `((define i1_0 0) (define (i2_0 x) i1_0))])
-                             `((before-after ((define a (hilite (local ((define i1 0) (define (i2 x) i1)) i2))))
-                                             ((hilite (define i1_0 0)) (hilite (define (i2_0 x) i1_0)) (define a (hilite i2_0))))
-                               (before-after (,@defs (define a (hilite i2_0)))
-                                             (,@defs (define a (hilite (lambda (x) i1_0)))))
-                               (before-after (,@defs (define a (lambda (x) i1_0)) (hilite (+ 3 4)))
-                                             (,@defs (define a (lambda (x) i1_0)) (hilite 7)))))))
-  
-  (t set!
-     (test-advanced-sequence "(define a 3) (set! a (+ 4 5)) a"
-                       `((before-after ((define a 3) (set! a (hilite (+ 4 5))))
-                                       ((define a 3) (set! a (hilite 9))))
-                         (before-after ((hilite (define a 3)) (hilite (set! a 9)))
-                                       ((hilite (define a 9)) (hilite (void))))
-                         (before-after ((define a 9) (void) (hilite a))
-                                       ((define a 9) (void) (hilite 9)))
-                         (finished-stepping))))
-  
-  (t local-set! 
-     (test-advanced-sequence
-      "(define a (local ((define in 14) (define (getter dc) in) (define (modder n) (set! in n))) modder)) (a 15)"
-      (let ([d1 `(define in_0 14)]
-            [d2 `(define (getter_0 dc) in_0)]
-            [d3 `(define (modder_0 n) (set! in_0 n))]
-            [d4 `(define a (lambda (n) (set! in_0 n)))])
-        `((before-after ((define a (hilite (local ((define in 14) (define (getter dc) in) (define (modder n) (set! in n))) modder))))
-                        ((hilite ,d1) (hilite ,d2) (hilite ,d3) (define a (hilite modder_0))))
-          (before-after (,d1 ,d2 ,d3 (define a (hilite modder_0)))
-                        (,d1 ,d2 ,d3 (define a (hilite (lambda (n) (set! in_0 n))))))
-          (before-after (,d1 ,d2 ,d3 ,d4 ((hilite a) 15))
-                        (,d1 ,d2 ,d3 ,d4 ((hilite (lambda (n) (set! in_0 n))) 15)))
-          (before-after (,d1 ,d2 ,d3 ,d4 (hilite ((lambda (n) (set! in_0 n)) 15)))
-                        (,d1 ,d2 ,d3 ,d4 (hilite (set! in_0 15))))
-          (before-after ((hilite ,d1) ,d2 ,d3 , d4 (hilite (set! in_0 15)))
-                        ((hilite (define in_0 15)) ,d2 ,d3 ,d4 (void)))
-          (finished-stepping)))))
+
   
   
   ;; OLD TEST CASES
@@ -484,15 +446,15 @@
                        (finished-stepping))))
   
   ;  reconstruct can't handle 'begin'
-  ;  (test-mz-sequence "(cond [#f 3 4] [#t (+ 3 4) (+ 4 9)])"
-  ;                    `((before-after ((hilite (cond (#f 3 4) (#t (+ 3 4) (+ 4 9))))) 
-;				      ((hilite (cond (#t (+ 3 4) (+ 4 9))))))
-;                        (before-after ((hilite (cond (#t (+ 3 4) (+ 4 9))))) ((hilite (begin (+ 3 4) (+ 4 9)))))
-;                        (before-after ((begin (hilite (+ 3 4)) (+ 4 9)))
-;    				    ((begin (hilite 7) (+ 4 9))))
-;                        (before-after ((hilite (begin 7 (+ 4 9)))) ((hilite (+ 4 9))))
-;                        (before-after ((hilite (+ 4 9))) ((hilite 13)))
-;			(finished-stepping)))
+  (test-mz-sequence "(cond [#f 3 4] [#t (+ 3 4) (+ 4 9)])"
+                    `((before-after ((hilite (cond (#f 3 4) (#t (+ 3 4) (+ 4 9))))) 
+                                    ((hilite (cond (#t (+ 3 4) (+ 4 9))))))
+                      (before-after ((hilite (cond (#t (+ 3 4) (+ 4 9))))) ((hilite (begin (+ 3 4) (+ 4 9)))))
+                      (before-after ((begin (hilite (+ 3 4)) (+ 4 9)))
+    				    ((begin (hilite 7) (+ 4 9))))
+                      (before-after ((hilite (begin 7 (+ 4 9)))) ((hilite (+ 4 9))))
+                      (before-after ((hilite (+ 4 9))) ((hilite 13)))
+                      (finished-stepping)))
   
   (t nested-cond2
   (test-upto-int/lam "(cond [false 3] [else (cond [true 4])])"
@@ -1356,14 +1318,74 @@
   ;;  Set!
   ;;
   ;;;;;;;;;;;;;
+  
+  (t top-ref-to-lifted
+     (test-advanced-sequence "(define a (local ((define i1 0) (define (i2 x) i1)) i2)) (+ 3 4)"
+                             (let ([defs `((define i1_0 0) (define (i2_0 x) i1_0))])
+                               `((before-after ((define a (hilite (local ((define i1 0) (define (i2 x) i1)) i2))))
+                                               ((hilite (define i1_0 0)) (hilite (define (i2_0 x) i1_0)) (define a (hilite i2_0))))
+                                 (before-after (,@defs (define a (hilite i2_0)))
+                                               (,@defs (define a (hilite (lambda (x) i1_0)))))
+                                 (before-after (,@defs (define a (lambda (x) i1_0)) (hilite (+ 3 4)))
+                                               (,@defs (define a (lambda (x) i1_0)) (hilite 7)))))))
+  
+  (t set!
+     (test-advanced-sequence "(define a 3) (set! a (+ 4 5)) a"
+                             `((before-after ((define a 3) (set! a (hilite (+ 4 5))))
+                                             ((define a 3) (set! a (hilite 9))))
+                               (before-after ((hilite (define a 3)) (hilite (set! a 9)))
+                                             ((hilite (define a 9)) (hilite (void))))
+                               (before-after ((define a 9) (void) (hilite a))
+                                             ((define a 9) (void) (hilite 9)))
+                               (finished-stepping))))
+  
+  (t local-set! 
+     (test-advanced-sequence
+      "(define a (local ((define in 14) (define (getter dc) in) (define (modder n) (set! in n))) modder)) (a 15)"
+      (let ([d1 `(define in_0 14)]
+            [d2 `(define (getter_0 dc) in_0)]
+            [d3 `(define (modder_0 n) (set! in_0 n))]
+            [d4 `(define a (lambda (n) (set! in_0 n)))])
+        `((before-after ((define a (hilite (local ((define in 14) (define (getter dc) in) (define (modder n) (set! in n))) modder))))
+                        ((hilite ,d1) (hilite ,d2) (hilite ,d3) (define a (hilite modder_0))))
+          (before-after (,d1 ,d2 ,d3 (define a (hilite modder_0)))
+                        (,d1 ,d2 ,d3 (define a (hilite (lambda (n) (set! in_0 n))))))
+          (before-after (,d1 ,d2 ,d3 ,d4 ((hilite a) 15))
+                        (,d1 ,d2 ,d3 ,d4 ((hilite (lambda (n) (set! in_0 n))) 15)))
+          (before-after (,d1 ,d2 ,d3 ,d4 (hilite ((lambda (n) (set! in_0 n)) 15)))
+                        (,d1 ,d2 ,d3 ,d4 (hilite (set! in_0 15))))
+          (before-after ((hilite ,d1) ,d2 ,d3 , d4 (hilite (set! in_0 15)))
+                        ((hilite (define in_0 15)) ,d2 ,d3 ,d4 (void)))
+          (finished-stepping)))))
 
-  #;(t simple-set!
-     "(define a 3) a (set! a 4) a"
-     `((before-after-finished ((define a 3))
-                              ((hilite a))
-                              ((hilite 3)))
-       (before-after-finished ((3))
-                              ((hilite (set!))))))
+  ;;;;;;;;;;;
+  ;;
+  ;;  BEGIN
+  ;;
+  ;;;;;;;;;;;
+  
+  
+  (t begin
+     (test-advanced-sequence "(begin (+ 3 4) (+ 4 5) (+ 9 8))"
+      `((before-after ((begin (hilite (+ 3 4)) (+ 4 5) (+ 9 8)))
+                      ((begin (hilite 7) (+ 4 5) (+ 9 8))))
+        (before-after ((hilite (begin 7 (+ 4 5) (+ 9 8))))
+                      ((hilite (begin (+ 4 5) (+ 9 8)))))
+        (before-after ((begin (hilite (+ 4 5)) (+ 9 8)))
+                      ((begin (hilite 9) (+ 9 8))))
+        (before-after ((hilite (begin 9 (+ 9 8))))
+                      ((hilite (begin (+ 9 8)))))
+        (before-after ((hilite (begin (+ 9 8))))
+                      ((hilite (+ 9 8))))
+        (before-after ((hilite (+ 9 8)))
+                      ((hilite 17)))
+        (finished-stepping))))
+     
+  (t empty-begin
+     (test-advanced-sequence "(begin)"
+      `(error "begin: expected a sequence of expressions after `begin', but nothing's there")))
+  
+  
   
   #;(t teachpack-callbacks
      (test-teachpack-sequence " (define (f2c x) x) (convert-gui f2c)" `() ; placeholder
