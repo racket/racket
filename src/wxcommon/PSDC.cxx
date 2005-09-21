@@ -967,7 +967,7 @@ void wxPostScriptDC::SetFont (wxFont * the_font)
   size = current_font->GetPointSize();
 
   next_font_name = name;
-  next_font_size = YSCALEREL(size);
+  next_font_size = size;
 }
 
 static void set_pattern(wxPostScriptDC *dc, wxPSStream *pstream, wxBitmap *bm, int rop, wxColour *col)
@@ -1368,20 +1368,27 @@ void wxPostScriptDC::DrawText(DRAW_TEXT_CONST char *text, double x, double y,
   if (angle != 0.0) {
     pstream->Out(XSCALE(x)); pstream->Out(" "); pstream->Out(YSCALE(y)); 
     pstream->Out(" translate\n");
+    if ((user_scale_x != 1) || (user_scale_y != 1)) {
+      pstream->Out(user_scale_x); pstream->Out(" "); pstream->Out(user_scale_y); pstream->Out(" scale\n");
+    }
     pstream->Out(angle * 180 / pie);
     pstream->Out(" rotate 0 ");
-    pstream->Out(YSCALEREL(-size));
+    pstream->Out(-size);
     pstream->Out(" moveto\n"); 
   } else {
     pstream->Out(XSCALE(x)); pstream->Out(" "); pstream->Out(YSCALE(y + size)); 
     pstream->Out(" moveto\n");
+    if ((user_scale_x != 1) || (user_scale_y != 1)) {
+      pstream->Out("gsave\n");
+      pstream->Out(user_scale_x); pstream->Out(" "); pstream->Out(user_scale_y); pstream->Out(" scale\n");
+    }
   }
 
   sym_map = current_font->GetFamily() == wxSYMBOL;
   wxPostScriptDrawText((Scheme_Object *)pstream->f, name, text, dt, combine, use16, current_font_size,
 		       sym_map);
 
-  if (angle != 0.0) {
+  if ((angle != 0.0) || (user_scale_x != 1) || (user_scale_y != 1)) {
     pstream->Out("grestore\n"); 
   }
 
