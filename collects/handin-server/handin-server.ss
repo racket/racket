@@ -480,8 +480,8 @@
 				   ;; see note on close-output-port below
 				   (close-output-port w)))])
 		(let ([protocol (read r-safe)])
-		  (if (eq? protocol 'ver1)
-		      (write+flush w 'ver1)
+		  (if (eq? protocol 'original)
+		      (write+flush w 'original)
 		      (error 'handin "unknown protocol: ~s" protocol)))
 		(accept-submission-or-update (assignment-list) r r-safe w)
 		(LOG "normal exit")
