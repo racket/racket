@@ -199,9 +199,9 @@ sub-directories:
       'user-regexp : a regular expression that is used to validate
          usernames; young students often choose exotic usernames that
          are impossible to remember, and forget capitalization, so the
-         default is fairly strict: #rx"^[a-z][a-z0-9]+$"; be sure to
-         disallow "+" in a username, since it is used in a submission
-         to specify joint work
+         default is fairly strict: #rx"^[a-z][a-z0-9]+$"; a "+" is
+         always disallowed in a username, since it is used in a
+         submission username to specify joint work
 
       'user-desc : a plain-words description of the acceptable
          username format (according to user-regexp above); #f stands

@@ -16,9 +16,8 @@
 
   (define current-session (make-parameter 0))
 
-  (define (ffprintf port str . args)
-    (apply fprintf port str args)
-    (flush-output port))
+  (define (write+flush port x)
+    (write x port) (newline port) (flush-output port))
 
   (define (LOG str . args)
     ;; Assemble log into into a single string, to make
@@ -198,7 +197,7 @@
       (when (and (pair? users) (pair? (cdr users)))
         ;; two or more users -- lock each one
         (for-each wait-for-lock users))
-      (ffprintf w "go\n")
+      (write+flush w 'go)
       (unless (regexp-match #rx"[$]" r-safe)
         (error 'handin "did not find start-of-content marker"))
       (let ([s (read-bytes len r)])
@@ -234,7 +233,7 @@
                        (parameterize ([current-directory ATTEMPT-DIR])
                          ((dynamic-require checker 'checker) users s)))
                      DEFAULT-FILE-NAME))])
-            (ffprintf w "confirm\n")
+            (write+flush w 'confirm)
             (let ([v (read (make-limited-input-port r 50))])
               (if (eq? v 'check)
                 (begin
@@ -246,9 +245,8 @@
                   (make-success-dir-available 0)
                   (rename-file-or-directory ATTEMPT-DIR (success-dir 0))
                   (if (pair? part)
-                    (write (list 'result (cadr part)) w)
-                    (fprintf w "done\n"))
-                  (flush-output w))
+                    (write+flush w (list 'result (cadr part)))
+                    (write+flush w 'done)))
                 (error 'handin "upload not confirmed: ~s" v))))))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -304,7 +302,7 @@
       (LOG "create user: ~a" username)
       (put-user (string->symbol username)
 		(list (md5 passwd) id full-name email))
-      (fprintf w "ok~n")))
+      (write+flush w 'ok)))
 
   (define (change-user-passwd username r-safe w old-user-data)
     (let ([new-passwd (read r-safe)])
@@ -313,19 +311,19 @@
 	(error 'handin "bad password-change request"))
       (put-user (string->symbol username)
 		(cons (md5 new-passwd) (cdr old-user-data)))
-      (fprintf w "ok~n")))
+      (write+flush w 'ok)))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define (accept-submission-or-update active-assignments r r-safe w)
-    (fprintf w "~s~n" active-assignments)
+    (write+flush w active-assignments)
     ;; Get usernames and password:
     (let* ([user-string
             (let ([s (read r-safe)])
               (and (string? s)
                    (if USERNAME-CASE-SENSITIVE?
                      s
-		     (string-foldcase s))))]
+                     (string-foldcase s))))]
            [usernames
             ;; Username lists must always be sorted
             (if user-string
@@ -363,7 +361,7 @@
               (error 'handin "cannot change a password on a joint login"))
             (if (member assignment active-assignments)
               (begin
-                (fprintf w "ok\n")
+                (write+flush w 'ok)
                 (accept-specific-submission usernames assignment r r-safe w))
               (error 'handin "not an active assignment: ~a" assignment))))]
        [else
@@ -403,15 +401,12 @@
 				     (LOG "session killed ~awhile ~s" 
 					  (if timed-out? "(timeout) " "")
 					  (unbox status-box))
-				     (fprintf w "~s\n"
-					      (format
-					       "handin terminated due to ~a (program doesn't terminate?)~a"
-					       (if timed-out?
-						   "time limit"
-						   "excessive memory use")
-					       (if (unbox status-box)
-						   (format " while ~a" (unbox status-box))
-						   "")))
+				     (write+flush
+                                      w (format "handin terminated due to ~a (program doesn't terminate?)~a"
+                                                (if timed-out? "time limit" "excessive memory use")
+                                                (if (unbox status-box)
+                                                  (format " while ~a" (unbox status-box))
+                                                  "")))
 				     (close-output-port w)
 				     (channel-put session-channel 'done)]
 				    [((current-inexact-milliseconds) . > . timeout)
@@ -472,7 +467,7 @@
 	  w
 	  (lambda (kill-watcher)
 	    (let ([r-safe (make-limited-input-port r 1024)])
-	      (ffprintf w "handin\n")
+	      (write+flush w 'handin)
 	      ;; Check protocol:
 	      (with-handlers ([exn:fail?
 			       (lambda (exn)
@@ -481,12 +476,12 @@
 						(format "~e" exn))])
 				   (kill-watcher)
 				   (LOG "ERROR: ~a" msg)
-				   (ffprintf w "~s\n" msg)
+				   (write+flush w msg)
 				   ;; see note on close-output-port below
 				   (close-output-port w)))])
 		(let ([protocol (read r-safe)])
-		  (if (eq? protocol 'original)
-		      (ffprintf w "original\n")
+		  (if (eq? protocol 'ver1)
+		      (write+flush w 'ver1)
 		      (error 'handin "unknown protocol: ~s" protocol)))
 		(accept-submission-or-update (assignment-list) r r-safe w)
 		(LOG "normal exit")
