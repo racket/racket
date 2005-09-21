@@ -9,6 +9,10 @@
 
   (define-struct handin (r w))
 
+  (define (write+flush port . xs)
+    (for-each (lambda (x) (write x port) (newline port)) xs)
+    (flush-output port))
+
   (define (handin-connect server port pem)
     (let ([ctx (ssl-make-client-context)])
       (ssl-set-verify! ctx #t)
@@ -19,8 +23,7 @@
 	  (unless (equal? #"handin" s)
 	    (error 'handin-connect "bad handshake from server: ~e" s)))
 	;; Tell server protocol = 'original:
-	(fprintf w "original\n")
-	(flush-output w)
+	(write+flush w 'original)
 	;; One more sanity check: server recognizes protocol:
 	(let ([s (read r)])
 	  (unless (eq? s 'original)
@@ -36,13 +39,11 @@
   (define (submit-assignment h username passwd assignment content on-commit)
     (let ([r (handin-r h)]
 	  [w (handin-w h)])
-      (fprintf w "~s ~s ~s\n" username passwd assignment)
-      (flush-output w)
+      (write+flush w username passwd assignment)
       (let ([v (read r)])
 	(unless (eq? v 'ok)
 	  (error 'handin-connect "login error: ~a" v)))
-      (fprintf w "~s\n" (bytes-length content))
-      (flush-output w)
+      (write+flush w (bytes-length content))
       (let ([v (read r)])
 	(unless (eq? v 'go)
 	  (error 'handin-connect "upload error: ~a" v)))
@@ -53,9 +54,8 @@
 	(unless (eq? v 'confirm)
 	  (error 'handin-connect "submit error: ~a" v)))
       (on-commit)
-      (fprintf w "check\n")
-      (flush-output w)
-      (let ([result-msg 
+      (write+flush w 'check)
+      (let ([result-msg
 	     (let ([v (read r)])
 	       (cond
 		[(eq? v 'done) #f]
@@ -71,7 +71,7 @@
   (define (submit-addition h username full-name id email passwd)
     (let ([r (handin-r h)]
 	  [w (handin-w h)])
-      (fprintf w "~s create ~s ~s ~s ~s~n" username full-name id email passwd)
+      (write+flush w username 'create full-name id email passwd)
       (let ([v (read r)])
 	(unless (eq? v 'ok)
 	  (error 'handin-connect "update error: ~a" v)))
@@ -81,7 +81,7 @@
   (define (submit-password-change h username old-passwd new-passwd)
     (let ([r (handin-r h)]
 	  [w (handin-w h)])
-      (fprintf w "~s ~s change ~s~n" username old-passwd new-passwd)
+      (write+flush w username old-passwd 'change new-passwd)
       (let ([v (read r)])
 	(unless (eq? v 'ok)
 	  (error 'handin-connect "update error: ~a" v)))

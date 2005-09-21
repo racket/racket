@@ -484,7 +484,6 @@
       (write-editor-version stream base)
       (write-editor-global-header stream)
       (for-each (lambda (ed)
-		  (send ed write-to-file stream)
 		  (send ed write-to-file stream))
 		editors)
       (write-editor-global-footer stream)
