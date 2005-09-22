@@ -1,12 +1,13 @@
 (module timer mzscheme
   (require "timer-structs.ss")
-  (require (lib "list.ss"))
+  (require (lib "list.ss")
+           (lib "async-channel.ss"))
   (provide timer? 
            start-timer reset-timer increment-timer
            cancel-timer!
            start-timer-manager)
 
-  (define timer-ch (make-channel))
+  (define timer-ch (make-async-channel))
 
   ; start-timer-manager : custodian -> void
   ; Thanks to Matthew!
@@ -46,7 +47,7 @@
             (make-timer (alarm-evt (+ now msecs))
                         (+ now msecs)
                         thunk)])
-      (channel-put timer-ch 
+      (async-channel-put timer-ch 
                    (lambda (timers)
                      (cons timer timers)))
       timer))
@@ -55,7 +56,7 @@
   ; revise the timer to ring msecs from now
   (define (revise-timer! timer msecs thunk)
     (let ([now (current-inexact-milliseconds)])
-      (channel-put 
+      (async-channel-put 
        timer-ch 
        (lambda (timers)
          (set-timer-evt! timer (alarm-evt (+ now msecs)))
