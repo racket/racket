@@ -18,31 +18,21 @@
       (and (>= (length l) ddk-num) 
            (andmap test l)))
     (define (dep-first-test head rest tests)
-      (cond ((null? tests) 
+      (cond [(null? tests) 
              (if last-test 
                  (handle-last-test last-test (cons head rest)) 
-                 #f))
-            ((null? rest)
+                 #f)]
+            [(null? rest)
              (if last-test
                  (and (= 0 ddk-num)
                       (= 1 (length tests))
                       ((car tests) head))
                  (and (= 1 (length tests))
-                      ((car tests) head))))
-            (else (and (pair? tests)
+                      ((car tests) head)))]
+            [else (and (pair? tests)
                        ((car tests) head)
                        (match:test-no-order (cdr tests) 
                                             rest 
                                             last-test 
-                                            ddk-num)))))
-    ; I think this is equivalent to 
-    #;(ormap (lambda (elem) 
-               (dep-first-test elem 
-                               (remove elem l)
-                               tests))
-             l)
-    (let loop ((lst l))
-      (if (null? lst) 
-          #f
-          (or (dep-first-test (car lst) (remove (car lst) l) tests)
-              (loop (cdr lst)))))))
+                                            ddk-num))]))
+    (ormap (lambda (elem) (dep-first-test elem (remove elem l) tests)) l)))

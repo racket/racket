@@ -117,8 +117,7 @@
    match-equality-test
    exn:misc:match?
    exn:misc:match-value
-   define-match-expander
-   match:test-no-order)
+   define-match-expander)
   
   ;; FIXME: match-helper and match-error should each be split
   ;; into a compile-time part and a run-time part.

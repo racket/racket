@@ -142,8 +142,7 @@
    exn:misc:match?
    exn:misc:match-value
    match-equality-test
-   define-match-expander
-   match:test-no-order) 
+   define-match-expander) 
   
   (require "private/match-internal-func.ss"
            "private/match-expander.ss"

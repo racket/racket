@@ -4,7 +4,7 @@
   
   (require (lib "etc.ss"))
   (require (lib "stx.ss" "syntax"))    
-  (require (rename (lib "1.ss" "srfi") map-append append-map ))
+  (require (rename (lib "1.ss" "srfi") map-append append-map))
   
   (require "match-error.ss"
            "match-helper.ss"
@@ -28,13 +28,18 @@
 			"test-no-order.ss"
                         "match-helper.ss")
   
+  (define-syntax define/opt
+    (syntax-rules ()
+      [(_ (nm args ...) body ...)
+       (define nm (opt-lambda (args ...) body ...))]))
+  
    ;; BEGIN SPECIAL-GENERATORS.SCM
 
       ;;!(function or-gen
-    ;;         (form (or-gen exp orpatlist stx sf bv ks kf let-bound)
+    ;;         (form (or-gen exp orpatlist sf bv ks kf let-bound)
     ;;               ->
     ;;               syntax)
-    ;;         (contract (syntax list syntax list list (list list -> syntax) 
+    ;;         (contract (syntax list list list (list list -> syntax) 
     ;;                    (list list -> syntax) list)
     ;;                   ->
     ;;                   syntax))
@@ -45,29 +50,24 @@
     ;; larger pattern and the state of compilation has information
     ;; that will help optimaize its compilation.  And the success of
     ;; any pattern results in the same outcome.
-    (define or-gen
-      (lambda (exp orpatlist stx sf bv ks kf let-bound)
-        (let ((rendered-list
-               (map
-                (lambda (pat) 
-                  (cons (render-test-list pat exp stx)
-                        (lambda (fail let-bound)
-                          (lambda (sf bv)
-                            (let ((bv (map
-                                       (lambda (bind)
-                                         (cons (car bind)
+    (define (or-gen exp orpatlist sf bv ks kf let-bound)
+      (define rendered-list
+        (map
+         (lambda (pat) 
+           (cons (render-test-list pat exp)
+                 (lambda (fail let-bound)
+                   (lambda (sf bv)
+                     (let ((bv (map
+                                (lambda (bind)
+                                  (cons (car bind)
                                                (subst-bindings (cdr bind) 
                                                                let-bound)))
-                                       bv)))
-                              (ks sf bv))))))
-                orpatlist)))
-          (update-counts rendered-list)
-          (update-binding-counts rendered-list)
-          (let* ((rendered-list 
-                  (reorder-all-lists rendered-list)
-                  )
-                 (output ((meta-couple rendered-list kf let-bound bv) sf bv)))
-            output))))
+                                bv)))
+                       (ks sf bv))))))
+         orpatlist))
+      (update-counts rendered-list)
+      (update-binding-counts rendered-list)
+      ((meta-couple (reorder-all-lists rendered-list) kf let-bound bv) sf bv))
     
     ;;!(function next-outer
     ;;          (form (next-outer p ae sf bv let-bound kf ks syntax bool)
@@ -84,18 +84,18 @@
     ;; inside of test constructs that cannot be eliminated because of
     ;; a related presence in the test-so-far list.  So, instead of
     ;; partially compiling patterns this function fully compiles patterns.
-    (define next-outer
-      (opt-lambda (p
-                   ae ;; this is the actual expression
-                   sf
-                   bv
-                   let-bound
-                   kf
-                   ks
-                   [stx (syntax '())]
-                   [opt #f])
-        (next-outer-helper p ae sf bv let-bound 
-                           (lambda (x) kf) (lambda (a b) ks) stx opt)))
+    (define/opt (next-outer
+                 p
+                 ae ;; this is the actual expression
+                 sf
+                 bv
+                 let-bound
+                 kf
+                 ks
+                 [stx (syntax '())]
+                 [opt #f])
+      (next-outer-helper p ae sf bv let-bound 
+                         (lambda (x) kf) (lambda (a b) ks) stx opt))
     
     ;;!(function next-outer-helper
     ;;          (form (next-outer p ae sf bv let-bound kf-func ks-func syntax bool)
@@ -110,24 +110,24 @@
     ;; ks-func and kf-func that will be given compile time imformation
     ;; about let-bindings etc. which in turn will allow the programmer
     ;; to take advantage of this info.
-    (define next-outer-helper
-      (opt-lambda (p
-                   ae ;; this is the actual expression
-                   sf
-                   bv
-                   let-bound
-                   kf-func
-                   ks-func
-                   [stx (syntax '())]
-                   [opt #f])
-        ;; right now this does not bind new variables
-        (let ((rendered-list (render-test-list p ae stx)))
+    (define/opt (next-outer-helper
+                 p
+                 ae ;; this is the actual expression
+                 sf
+                 bv
+                 let-bound
+                 kf-func
+                 ks-func
+                 [stx (syntax '())]
+                 [opt #f])
+      ;; right now this does not bind new variables
+      (let ((rendered-list (render-test-list p ae stx)))
           ;; no need to reorder lists although I suspect that it may be
           ;; better to put shape tests first
-          (update-binding-count rendered-list)
-          ((couple-tests rendered-list ks-func kf-func let-bound) sf bv))))
+        (update-binding-count rendered-list)
+        ((couple-tests rendered-list ks-func kf-func let-bound) sf bv)))
 
-      ;;!(function create-test-func
+    ;;!(function create-test-func
     ;;          (form (create-test-func p sf let-bound bind-map last-test)
     ;;                ->
     ;;                syntax)
@@ -140,9 +140,7 @@
     ;; last-test - a boolean value that indicates whether this function
     ;; is collecting one value or a list of values.</pre>
     (define (create-test-func p sf let-bound bind-map last-test)
-      (quasisyntax/loc
-          p
-        (lambda (exp)
+      #`(lambda (exp)
           #,(next-outer-helper 
              p #'exp sf '() let-bound
              (lambda (let-bound)
@@ -161,7 +159,7 @@
                                      #`(set! #,binding-name
                                              #,exp-to-bind))))
                              bv)
-                     #t)))))))
+                     #t))))))
   
   ;;!(function getbindings
     ;;          (form (getbindings pat-syntax) -> list)
@@ -199,14 +197,13 @@
     
     ;;!(function handle-end-ddk-list
     ;;          (form (handle-end-ddk-list ae kf ks pat
-    ;;                                     dot-dot-k stx
+    ;;                                     dot-dot-k
     ;;                                     let-bound)
     ;;                ->
     ;;                ((list list) -> syntax))
     ;;          (contract (syntax
     ;;                     ((list list) -> syntax)
     ;;                     ((list list) -> syntax)
-    ;;                     syntax
     ;;                     syntax
     ;;                     syntax
     ;;                     list)
@@ -221,9 +218,8 @@
     ;; ks - a success function
     ;; pat - the pattern to be matched repeatedly
     ;; dot-dot-k - the ddk pattern
-    ;; stx - the source stx for error purposes
     ;; let-bound - a list of let bindings
-  (define ((handle-end-ddk-list ae kf ks pat dot-dot-k stx let-bound) sf bv)
+  (define ((handle-end-ddk-list ae kf ks pat dot-dot-k let-bound) sf bv)
     (let* ((k (stx-dot-dot-k? dot-dot-k))
            (ksucc (lambda (sf bv) 
                           (let ((bound (getbindings pat)))
@@ -252,14 +248,10 @@
                                                           (syntax exp-sym)))
                                                     (syntax pred))
                                                    (whatever
-                                                    (quasisyntax/loc 
-                                                        stx 
-                                                      (lambda (exp-sym)
-                                                        #,ptst))))))
-                                       (assm (quasisyntax/loc 
-                                                 stx 
-                                               (andmap #,tst 
-                                                       #,(subst-bindings ae let-bound)))
+                                                    #`(lambda (exp-sym)
+                                                        #,ptst)))))
+                                       (assm #`(andmap #,tst 
+                                                       #,(subst-bindings ae let-bound))
                                              (kf sf bv)
                                              (ks sf bv)))))
                                   (id
@@ -276,21 +268,13 @@
                                                    (gensym (syntax-object->datum x))
                                                    '-bindings)))
                                                bound))
-                                         (loop-name (quasisyntax/loc 
-                                                        (syntax the-pat) 
-                                                      #,(gensym 'loop)))
-                                         (exp-name (quasisyntax/loc 
-                                                       (syntax the-pat) 
-                                                     #,(gensym 'exp))))
-                                     (quasisyntax/loc
-                                         stx
-                                       (let #,loop-name
+                                         (loop-name (gensym 'loop))
+                                         (exp-name (gensym 'exp)))
+                                    #`(let #,loop-name
                                          ((#,exp-name #,(subst-bindings ae let-bound))
                                           #,@(map
                                               (lambda (x)
-                                                (quasisyntax/loc
-                                                    stx
-                                                  (#,x '())))
+                                                #`(#,x '()))
                                               binding-list-names))
                                          (if (null? #,exp-name)
                                              #,(ks sf
@@ -299,15 +283,11 @@
                                                          bound
                                                          (map
                                                           (lambda (x)
-                                                            (quasisyntax/loc 
-                                                                stx 
-                                                              (reverse #,x)))
+                                                            #`(reverse #,x))
                                                           binding-list-names))
                                                     bv))
-                                             #,(next-outer (syntax the-pat)
-                                                           (quasisyntax/loc 
-                                                               (syntax the-pat) 
-                                                             (car #,exp-name))
+                                             #,(next-outer #'the-pat
+                                                           #`(car #,exp-name)
                                                            sf
                                                            bv  ;; we always start
                                                            ;; over with the old
@@ -315,43 +295,38 @@
                                                            let-bound
                                                            kf
                                                            (lambda (sf bv)
-                                                             (quasisyntax/loc
-                                                                 stx
-                                                               (#,loop-name
+                                                             #`(#,loop-name
                                                                   (cdr #,exp-name)
                                                                   #,@(map
                                                                       (lambda
                                                                           (b-var
                                                                            bindings-var)
-                                                                        (quasisyntax/loc
-                                                                            stx
-                                                                          (cons
+                                                                        #`(cons
                                                                            #,(get-bind-val
                                                                               b-var
                                                                               bv)
-                                                                           #,bindings-var)))
-                                                                      bound binding-list-names))))))))))))))))
+                                                                           #,bindings-var))
+                                                                      bound binding-list-names))))))))))))))
             (case k
               ((0) (ksucc sf bv))
-              ((1) (emit (lambda (exp) (quasisyntax/loc stx (pair? #,exp)))
+              ((1) (emit (lambda (exp) #`(pair? #,exp))
                          ae
                          let-bound
                          sf bv kf ksucc))
-              (else (emit (lambda (exp) (quasisyntax/loc stx (>= (length #,exp) #,k)))
+              (else (emit (lambda (exp) #`(>= (length #,exp) #,k))
                           ae
                           let-bound
                           sf bv kf ksucc)))))
     
     ;;!(function handle-inner-ddk-list
     ;;          (form (handle-inner-ddk-list ae kf ks pat
-    ;;                                     dot-dot-k pat-rest stx
+    ;;                                     dot-dot-k pat-rest
     ;;                                     let-bound)
     ;;                ->
     ;;                ((list list) -> syntax))
     ;;          (contract (syntax
     ;;                     ((list list) -> syntax)
     ;;                     ((list list) -> syntax)
-    ;;                     syntax
     ;;                     syntax
     ;;                     syntax
     ;;                     syntax
@@ -370,9 +345,8 @@
   ;; pat - the pattern that preceeds the ddk
   ;; dot-dot-k - the ddk pattern
   ;; pat-rest - the rest of the list pattern that occurs after the ddk
-  ;; stx - the source stx for error purposes
   ;; let-bound - a list of let bindings
-  (define ((handle-inner-ddk-list ae kf ks pat dot-dot-k pat-rest stx let-bound) sf bv)
+  (define ((handle-inner-ddk-list ae kf ks pat dot-dot-k pat-rest let-bound) sf bv)
     (let* ((k (stx-dot-dot-k? dot-dot-k)))
       (let ((bound (getbindings pat)))
         (if (syntax? bound)
@@ -402,8 +376,7 @@
                                       (syntax exp-sym)))
                                 (syntax pred))
                                (whatever
-                                (quasisyntax/loc stx (lambda (exp-sym)
-                                                       #,ptst)))))
+                                #`(lambda (exp-sym) #,ptst))))
                         (loop-name (gensym 'ddnnl))
                         (exp-name (gensym 'exp))
                         (count-name (gensym 'count)))
@@ -461,8 +434,7 @@
                                (map cons
                                     bound
                                     (map
-                                     (lambda (x)
-                                       (quasisyntax/loc stx (reverse #,x)))
+                                     (lambda (x) #`(reverse #,x))
                                      binding-list-names)) bv)))
                  (quasisyntax/loc
                      (syntax the-pat)
@@ -510,32 +482,27 @@
                                                (syntax the-pat) 
                                              (#,fail-name)))
                                          (lambda (sf bv)
-                                           (quasisyntax/loc
-                                               stx
-                                             (#,loop-name
+                                           #`(#,loop-name
                                                 (cdr #,exp-name)
                                                 (add1 #,count-name)
                                                 #,@(map
                                                     (lambda
                                                         (b-var
                                                          bindings-var)
-                                                      (quasisyntax/loc 
-                                                          stx 
-                                                        (cons
+                                                      #`(cons
                                                          #,(get-bind-val
                                                             b-var
                                                             bv)
-                                                         #,bindings-var)))
+                                                         #,bindings-var))
                                                     bound
-                                                    binding-list-names))))))))))))))))
+                                                    binding-list-names)))))))))))))))
   ;;!(function handle-ddk-vector
-  ;;          (form (handle-ddk-vector ae kf ks pt let-bound)
+  ;;          (form (handle-ddk-vector ae kf ks let-bound)
   ;;                ->
   ;;                ((list list) -> syntax))
   ;;          (contract (syntax
   ;;                     ((list list) -> syntax)
   ;;                     ((list list) -> syntax)
-  ;;                     syntax
   ;;                     list)
   ;;                    ->
   ;;                    ((list list) -> syntax)))
@@ -548,7 +515,7 @@
   ;; ks - a success function
   ;; pt - the whole vector pattern
   ;; let-bound - a list of let bindings
-  (define (handle-ddk-vector ae kf ks pt stx let-bound)
+  (define (handle-ddk-vector ae kf ks pt let-bound)
     (let* ((vec-stx (syntax-e pt))
            (vlen (- (vector-length vec-stx) 2)) ;; length minus
            ;; the pat ...
@@ -564,9 +531,7 @@
             (quasisyntax/loc
                 pt
               (let ((#,exp-name #,(subst-bindings ae let-bound)))
-                #,(assm (quasisyntax/loc
-                            stx
-                          (>= (vector-length #,exp-name) #,minlen))
+                #,(assm #`(>= (vector-length #,exp-name) #,minlen)
                         (kf sf bv)
                         ((let vloop ((n 0))
                            (lambda (sf bv)
@@ -574,9 +539,7 @@
                                ((not (= n vlen))
                                 (next-outer
                                  (vector-ref vec-stx n)
-                                 (quasisyntax/loc
-                                     stx
-                                   (vector-ref #,exp-name #,n))
+                                 #`(vector-ref #,exp-name #,n)
                                  sf
                                  bv
                                  let-bound
@@ -597,12 +560,9 @@
                                              bound))
                                        (vloop-name (gensym 'vloop))
                                        (index-name (gensym 'index)))
-                                  (quasisyntax/loc
-                                      stx
-                                    (let #,vloop-name
+                                  #`(let #,vloop-name
                                       ((#,index-name (- (vector-length #,exp-name) 1))
-                                       #,@(map (lambda (x) 
-                                                 (quasisyntax/loc stx (#,x '())))
+                                       #,@(map (lambda (x) #`(#,x '()))
                                                binding-list-names))
                                       (if (> #,vlen #,index-name)
                                           #,(ks sf
@@ -611,30 +571,25 @@
                                                         bv))
                                           #,(next-outer
                                              (vector-ref vec-stx n)
-                                             (quasisyntax/loc
-                                                 stx
-                                               (vector-ref #,exp-name #,index-name))
+                                             #`(vector-ref #,exp-name #,index-name)
                                              sf
                                              bv ;; we alway start over
                                              ;; with the old bindings
                                              let-bound
                                              kf
                                              (lambda (sf bv)
-                                               (quasisyntax/loc
-                                                   stx (#,vloop-name
+                                               #`(#,vloop-name
                                                           (- #,index-name 1)
                                                           #,@(map
                                                               (lambda (b-var
                                                                        bindings-var)
-                                                                (quasisyntax/loc
-                                                                    stx
-                                                                  (cons
+                                                                #`(cons
                                                                    #,(get-bind-val
                                                                       b-var
                                                                       bv)
-                                                                   #,bindings-var)))
+                                                                   #,bindings-var))
                                                               bound
-                                                              binding-list-names)))))))))))))
+                                                              binding-list-names)))))))))))
                          sf
                          bv))))))))
     
@@ -658,8 +613,7 @@
     ;; ks - a success function
     ;; pt - the whole vector pattern
     ;; let-bound - a list of let bindings
-    (define handle-ddk-vector-inner
-      (lambda (ae kf ks pt stx let-bound)
+    (define (handle-ddk-vector-inner ae kf ks pt let-bound)
         (let* ((vec-stx (syntax-e pt))
                ;; vlen as an index points at the pattern before the ddk
                (vlen (- (vector-length vec-stx) 2)) ;; length minus
@@ -677,16 +631,12 @@
           ;; if so handle that case else handle the pattern
           (lambda (sf bv)
             ;; minlen here could be the lentgh plus the k's - 1 for each ddk
-            (quasisyntax/loc
-                pt
-              (let ((#,exp-name #,(subst-bindings ae let-bound)))
+            #`(let ((#,exp-name #,(subst-bindings ae let-bound)))
                 (let ((#,length-of-vector-name (vector-length #,exp-name)))
-                  #,(assm (quasisyntax/loc pt (>= #,length-of-vector-name #,minlen))
+                  #,(assm #`(>= #,length-of-vector-name #,minlen)
                           (kf sf bv)
                           (let ((current-index-name (gensym 'curr-ind)))
-                            (quasisyntax/loc
-                                pt
-                              (let ((#,current-index-name 0))
+                            #`(let ((#,current-index-name 0))
                                 #,((let vloop ((n 0)
                                                (count-offset-name-passover 
                                                 current-index-name))
@@ -703,7 +653,7 @@
                                          ((stx-dot-dot-k? (vector-ref vec-stx n))  
                                           ;;this could be it
                                           (match:syntax-err
-                                           stx
+                                           pt
                                            "should not get here"))
                                          ;; if the next one is not a ddk do a normal pattern match
                                          ;; on element
@@ -717,9 +667,7 @@
                                                 #,(kf sf bv)
                                                 #,(next-outer
                                                    (vector-ref vec-stx n) ;this could be it
-                                                   (quasisyntax/loc
-                                                       stx
-                                                     (vector-ref #,exp-name #,count-offset-name-passover))
+                                                   #`(vector-ref #,exp-name #,count-offset-name-passover)
                                                    '() ;we don't want these tests to take part in future
                                                    ; elimination or to be eliminated
                                                    bv
@@ -728,10 +676,8 @@
                                                    (lambda (bsf bv)
                                                      ;(set! current-index-name #`(add1 #,current-index-name))
                                                      (let ((cindnm (gensym 'cindnm)))
-                                                       (quasisyntax/loc
-                                                           pt
-                                                         (let ((#,cindnm (add1 #,count-offset-name-passover)))
-                                                           #,((vloop (+ 1 n) cindnm) sf bv)))))))))
+                                                       #`(let ((#,cindnm (add1 #,count-offset-name-passover)))
+                                                           #,((vloop (+ 1 n) cindnm) sf bv))))))))
                                          ((and (eq? (syntax-object->datum
                                                      (vector-ref vec-stx n)) ;this could be it
                                                     '_)
@@ -754,19 +700,15 @@
                                                        (vloop-name (gensym 'vloop))
                                                        (count-name (gensym 'count))
                                                        (index-name (gensym 'index)))
-                                                  (quasisyntax/loc
-                                                      stx
-                                                    (let #,vloop-name
+                                                  #`(let #,vloop-name
                                                       ((#,count-name #,count-offset-name-passover)
-                                                       #,@(map (lambda (x) (quasisyntax/loc stx (#,x '())))
+                                                       #,@(map (lambda (x) #`(#,x '()))
                                                                binding-list-names))
                                                       #,(let ((fail-name (gensym 'fail))
                                                               (count-offset-name (gensym 'count-offset))
                                                               (index-name (gensym 'index))
                                                               )
-                                                          (quasisyntax/loc
-                                                              pt
-                                                            (let ((#,fail-name
+                                                          #`(let ((#,fail-name
                                                                      (lambda (#,count-offset-name #,index-name)
                                                                        #,(let ((body ((vloop (+ n 2) index-name) sf
                                                                                                                  (append (map (lambda (b bln)
@@ -791,52 +733,38 @@
                                                                      #,count-name)
                                                                   #,(next-outer
                                                                      (vector-ref vec-stx n) ;this could be it
-                                                                     (quasisyntax/loc
-                                                                         stx
-                                                                       (vector-ref #,exp-name #,count-name))
+                                                                     #`(vector-ref #,exp-name #,count-name)
                                                                      '() ;sf
                                                                      bv ;; we alway start over
                                                                      ;; with the old bindings
                                                                      let-bound
                                                                      (lambda (sf bv)
-                                                                       (quasisyntax/loc
-                                                                           pt
-                                                                         (#,fail-name
+                                                                       #`(#,fail-name
                                                                             (- #,count-name
                                                                                #,count-offset-name-passover)
-                                                                            #,count-name)))
+                                                                            #,count-name))
                                                                      (lambda (sf bv)
-                                                                       (quasisyntax/loc
-                                                                           stx
-                                                                         (let ((arglist
+                                                                       #`(let ((arglist
                                                                                 (list
                                                                                  #,@(map
                                                                                      (lambda (b-var
                                                                                               bindings-var)
-                                                                                       (quasisyntax/loc
-                                                                                           stx
-                                                                                         (cons
+                                                                                       #`(cons
                                                                                           #,(get-bind-val
                                                                                              b-var
                                                                                              bv)
-                                                                                          #,bindings-var)))
+                                                                                          #,bindings-var))
                                                                                      bound
                                                                                      binding-list-names))))
                                                                            (apply
                                                                             #,vloop-name
                                                                             (add1 #,count-name)
-                                                                            arglist))))))))))))))))))
+                                                                            arglist)))))))))))))))
                                    sf
-                                   bv))))))))))))
+                                   bv)))))))))
     
     ;; END DDK-HANDLERS.SCM
-    
-    ;(include "ddk-handlers.scm")
-    ;(include "getter-setter.scm")
-    ;(include "emit-assm.scm")
-    ;(include "parse-quasi.scm")
-    ;(include "pattern-predicates.scm")
-  
+
   ;; some convenient syntax for make-reg-test and make-shape-test
   (define make-test-gen
     (case-lambda
@@ -906,7 +834,7 @@
   ;; forward in the argument list of next and then test for it later and
   ;; then take the appropriate action.  To understand this better take a
   ;; look at how proper and improper lists are handled.
-  (define (render-test-list p ae stx)
+  (define/opt (render-test-list p ae [stx #'here])
     (syntax-case*
         p
       (_ list quote quasiquote vector box ? app and or not struct set! var
@@ -1052,7 +980,7 @@
               (lambda (ks kf let-bound)
                 (lambda (sf bv)
                   (or-gen ae (syntax-e #'pats)
-                          stx sf bv ks kf let-bound))))))
+                          sf bv ks kf let-bound))))))
       
       
       ((not pat)
@@ -1204,11 +1132,11 @@
                (syntax-case cur-pat (set! get!)
                  [(set! . rest)
                   (unless cur-mutator (match:syntax-err cur-pat "Cannot use set! pattern with immutable fields"))
-                  (set/get-matcher 'set! ae stx (syntax rest)
+                  (set/get-matcher 'set! ae p #'rest
                                    #`(lambda (y)
                                        (#,cur-mutator #,ae y)))]
                  [(get! . rest)
-                  (set/get-matcher 'get! ae stx (syntax rest)
+                  (set/get-matcher 'get! ae p #'rest
                                    #`(lambda ()
                                        (#,cur-accessor #,ae)))]
                  [_ (render-test-list 
@@ -1254,13 +1182,12 @@
                (handle-end-ddk-list ae kf ks
                                     (syntax pat)
                                     (syntax dot-dot-k)
-                                    stx let-bound)
+                                    let-bound)
                (handle-inner-ddk-list ae kf ks
                                       (syntax pat)
                                       (syntax dot-dot-k)
                                       (append-if-necc 'list
                                                       (syntax (pat-rest ...)))
-                                      stx
                                       let-bound))))))
       
       ;; list-rest pattern with a ooo or ook pattern
@@ -1287,7 +1214,6 @@
                 (stx-car (syntax (pat-rest ...)))
                 (append-if-necc  'list-rest
                                  (syntax (pat-rest ...))))
-            stx
             let-bound)))))
       
       ;; list-rest pattern for improper lists
@@ -1363,7 +1289,7 @@
          (lambda (ks kf let-bound)
            (handle-ddk-vector ae kf ks
                               #'#(pats ...)
-                              stx let-bound)))))
+                              let-bound)))))
       
       ;; vector pattern with ooo or ook, but not at end
       ((vector pats ...)
@@ -1385,7 +1311,7 @@
          (lambda (ks kf let-bound)
            (handle-ddk-vector-inner ae kf ks
                                     #'#(pats ...)
-                                    stx let-bound)))))
+                                    let-bound)))))
       
       ;; plain old vector pattern
       ((vector pats ...)

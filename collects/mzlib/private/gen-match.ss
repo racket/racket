@@ -68,54 +68,50 @@
   ;; result is a function which takes a failure function and a list
   ;; of let-bound expressions and returns a success-function.
   (define (test-list-with-success-func exp car-patlist stx success-func)
-    (let-values ([(pat body fail-sym) (parse-clause (car car-patlist))])            
-      (define (success fail let-bound)
-        (if (not success-func)
-            (lambda (sf bv)
-              ;; mark this pattern as reached
-              (set-cdr! car-patlist #t)
-              (if fail-sym
-                  (quasisyntax/loc
-                      stx
-                    (let/ec fail-cont
-                      (let
-                          ((failure
-                            (lambda ()
-                              (fail-cont
-                               ; it seems like fail is called
-                               ; twice in this situation
-                               #,( fail sf bv)))))
-                        ((lambda (#,fail-sym
-                                    #,@(map car bv))
-                           #,@body)
-                         failure
-                         #,@(map (lambda (b)
-                                   (subst-bindings
+    (define-values (pat body fail-sym) (parse-clause (car car-patlist)))
+    (define (success fail let-bound)
+      (if (not success-func)
+          (lambda (sf bv)
+            ;; mark this pattern as reached
+            (set-cdr! car-patlist #t)
+            (if fail-sym
+                #`(let/ec fail-cont
+                    (let
+                        ((failure
+                          (lambda ()
+                            (fail-cont
+                             ; it seems like fail is called
+                             ; twice in this situation
+                             #,( fail sf bv)))))
+                      ((lambda (#,fail-sym
+                                  #,@(map car bv))
+                         #,@body)
+                       failure
+                       #,@(map (lambda (b)
+                                 (subst-bindings
+                                  (cdr b)
+                                  let-bound))
+                               bv))))
+                #`((lambda #,(map car bv)
+                     #,@body)
+                   #,@(map
+                       (lambda (b) (subst-bindings
                                     (cdr b)
                                     let-bound))
-                                 bv)))))
-                  (quasisyntax/loc
-                      stx
-                    ((lambda #,(map car bv)
-                       #,@body)
-                     #,@(map
-                         (lambda (b) (subst-bindings
-                                      (cdr b)
-                                      let-bound))
-                         bv)))))
-            (lambda (sf bv)
-              ;; mark this pattern as reached
-              (set-cdr! car-patlist #t)
-              (let ((bv (map
-                         (lambda (bind)
-                           (cons (car bind)
-                                 (subst-bindings
-                                  (cdr bind)
-                                  let-bound)))
-                         bv)))
-                (success-func sf bv)))))
-      (define test-list (render-test-list pat exp stx))
-      (cons test-list success)))
+                       bv))))
+          (lambda (sf bv)
+            ;; mark this pattern as reached
+            (set-cdr! car-patlist #t)
+            (let ((bv (map
+                       (lambda (bind)
+                         (cons (car bind)
+                               (subst-bindings
+                                (cdr bind)
+                                let-bound)))
+                       bv)))
+              (success-func sf bv)))))
+    (define test-list (render-test-list pat exp stx))
+    (cons test-list success))
   
   ;;!(function gen-match
   ;;          (form (gen-match exp tsf patlist stx [success-func])
@@ -169,20 +165,16 @@
       ;; also wraps the final compilation in syntax which binds the
       ;; match-failure function.
       (define (gen-help opt)
-        ;(opt-lambda (exp tsf patlist stx opt [success-func #f])
         (when (stx-null? patlist)
           (match:syntax-err stx "null clause list"))
-        (let* ((marked-clauses (mark-patlist patlist))
-               (compiled-match
-                (quasisyntax/loc stx
-                  (let ((match-failure
-                         (lambda ()
-                           (match:error #,exp (quote #,stx)))))
+        (let* ([marked-clauses (mark-patlist patlist)]
+               [compiled-match
+                #`(let ([match-failure (lambda () (match:error #,exp '#,stx))])
                     #,(gen exp tsf marked-clauses
                            stx
-                           (syntax (match-failure))
+                           #'(match-failure)
                            opt
-                           success-func)))))
+                           success-func))])
           (unreachable marked-clauses stx)
           compiled-match))
       
@@ -213,31 +205,20 @@
       ;; determind which supexpressions of the expression to be matched
       ;; need to be bound by let expressions.  After all of this the
       ;; tests are "coupled" together for final compilation.
-      (define gen
-        (opt-lambda (exp tsf patlist stx failure-func opt [success-func #f])
+      (define (gen exp tsf patlist stx failure-func opt success-func)
           ;; iterate through list and render each pattern to a list of tests
           ;; and success functions
-          (let ((rendered-list
-                 (let loop ((clause-list patlist))
-                   (if (null? clause-list)
-                       '()
-                       (cons (test-list-with-success-func exp
-                                                          (car clause-list)
-                                                          stx
-                                                          success-func)
-                             (loop (cdr clause-list)))))))
-            (update-counts rendered-list)
-            (tag-negate-tests rendered-list)
-            (update-binding-counts rendered-list)
-            (let* ((rendered-list (reorder-all-lists rendered-list))
-                   (output
-                    (begin 
-                      ;(pretty-print rendered-list)(newline)      
-                      ((meta-couple rendered-list
-                                    (lambda (sf bv) failure-func)
-                                    '()
-                                    '())
-                       '() '()))))
-              output))))
+          (define rendered-list
+            (map (lambda (clause) (test-list-with-success-func 
+                                   exp clause stx success-func)) 
+                 patlist))
+          (update-counts rendered-list)
+          (tag-negate-tests rendered-list)
+          (update-binding-counts rendered-list)
+          ((meta-couple (reorder-all-lists rendered-list)
+                        (lambda (sf bv) failure-func)
+                        '()
+                        '())
+           '() '()))
       (gen-help #f)))
   )
