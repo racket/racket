@@ -1,7 +1,73 @@
 (module utils mzscheme
-  (require "ast.ss")
-  (require (lib "list.ss" "srfi" "1"))
-  (require (only (lib "list.ss") quicksort))
+
+  (require (lib "contract.ss")
+           (prefix srfi1: (lib "list.ss" "srfi" "1"))
+           (lib "list.ss"))
+
+  (require-for-template (lib "contract.ss"))
+
+  (provide define/p)
+  (define-syntax (define/p stx)
+    (syntax-case stx ()
+      [(_ (NAME . ARGS) BODY ...)
+       #`(begin
+           (define (NAME . ARGS) BODY ...)
+           (provide NAME))]
+      [(_ NAME BODY ...)
+       #`(begin
+           (define NAME BODY ...)
+           (provide NAME))]
+      ))
+
+  (provide define/c)
+  (define-syntax (define/c stx)
+    (syntax-case stx ()
+      [(_ (NAME . ARGS) CONTRACT BODY ...)
+       #`(begin
+           (define (NAME . ARGS) BODY ...)
+           (provide/contract [NAME CONTRACT]))]
+      [(_ NAME CONTRACT BODY ...)
+       #`(begin
+           (define NAME BODY ...)
+           (provide/contract [NAME CONTRACT]))]
+      ))
+
+  (provide define-struct/p)
+  (define-syntax (define-struct/p stx)
+    (syntax-case stx ()
+      [(_ (NAME SUPER) (FIELD ...) REST ...)
+       #`(begin
+           (define-struct (NAME SUPER) (FIELD ...) REST ...)
+           (provide (struct NAME (FIELD ...))))]
+      [(_ NAME (FIELD ...) REST ...)
+       #`(begin
+           (define-struct NAME (FIELD ...) REST ...)
+           (provide (struct NAME (FIELD ...))))]))
+
+  (provide define-struct/c)
+  (define-syntax (define-struct/c stx)
+    (syntax-case stx ()
+      [(_ (NAME SUPER) ([FIELD CONTRACT] ...) REST ...)
+       #`(begin
+           (define-struct (NAME SUPER) (FIELD ...) REST ...)
+           (provide/contract (struct NAME ([FIELD CONTRACT] ...))))]
+      [(_ NAME ([FIELD CONTRACT] ...) REST ...)
+       #`(begin
+           (define-struct NAME (FIELD ...) REST ...)
+           (provide/contract (struct NAME ([FIELD CONTRACT] ...))))]))
+
+  (define (map-values-rev-accs f lists accs)
+    (cond [(andmap empty? lists) (apply values (map reverse accs))]
+          [(ormap empty? lists) (error 'map-values "expects lists of equal length")]
+          [else (call-with-values (lambda () (apply f (map first lists)))
+                  (lambda vs (map-values-rev-accs f (map rest lists) (map cons vs accs))))]))
+  
+  (define/p (map-values f . lists)
+    (cond [(empty? lists) (error 'map-values "expects 1 or more input lists")]
+          [(ormap empty? lists) (error 'map-values "expects non-empty lists")]
+          [else
+           (call-with-values (lambda () (apply f (map first lists)))
+             (lambda vs (map-values-rev-accs f (map rest lists) (map list vs))))]))
 
   (define (identifier<? a b)
     (string<? (symbol->string (syntax-e a))
@@ -32,10 +98,10 @@
                     #t cs))
   
   (define (get-names ds p f)
-    (filter-map (lambda (defn)
-                  (and (p defn)
-                       (f defn)))
-                ds))    
+    (srfi1:filter-map (lambda (defn)
+                        (and (p defn)
+                             (f defn)))
+                      ds))
   
   (provide map-and-fold)
   (define (map-and-fold f i l)
@@ -54,7 +120,7 @@
     (let loop ((lists lists)
                (map1  '())
                (map2  '()))
-      (if (any null? lists)
+      (if (ormap empty? lists)
           (values (reverse map1) (reverse map2))
           (let-values ([(m1 m2) (apply f (map car lists))])
             (loop (map cdr lists)
@@ -72,4 +138,4 @@
          (values (car lis) (append (reverse passed) (cdr lis)))]
         [else
          (loop (cdr lis) (cons (car lis) passed))])))
-    )
+  )

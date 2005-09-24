@@ -15,38 +15,13 @@
            "honu-context.ss"
            "ast.ss"
            "tenv.ss"
+           "utils.ss"
            )
 
-  (require-for-template (lib "contract.ss"))
+  (define/c top:current-tenv parameter? (make-parameter (empty-tenv)))
+  (define/c top:current-lenv parameter? (make-parameter (get-builtin-lenv)))
 
-  (define-syntax (define/provide stx)
-    (syntax-case stx ()
-        [(_ (NAME ARG ...) BODY ...)
-         #`(begin
-             (define (NAME ARG ...) BODY ...)
-             (provide NAME))]
-        [(_ NAME BODY ...)
-         #`(begin
-             (define NAME BODY ...)
-             (provide NAME))]
-        ))
-
-  (define-syntax (def/pro/con stx)
-    (syntax-case stx ()
-        [(_ (NAME ARG ...) CONTRACT BODY ...)
-         #`(begin
-             (define (NAME ARG ...) BODY ...)
-             (provide/contract [NAME CONTRACT]))]
-        [(_ NAME CONTRACT BODY ...)
-         #`(begin
-             (define NAME BODY ...)
-             (provide/contract [NAME CONTRACT]))]
-        ))
-
-  (def/pro/con top:current-tenv parameter? (make-parameter (empty-tenv)))
-  (def/pro/con top:current-lenv parameter? (make-parameter (get-builtin-lenv)))
-
-  (def/pro/con (top:reset-env) (-> void?)
+  (define/c (top:reset-env) (-> void?)
     (top:current-tenv (empty-tenv))
     (top:current-lenv (get-builtin-lenv)))
 
@@ -63,16 +38,16 @@
        #`(parameterize ([current-compile-context honu-compile-context])
            BODY ...)]))
 
-  (def/pro/con (top:parse-file file) (path-string? . -> . (listof honu:defn?))
+  (define/c (top:parse-file file) (path-string? . -> . (listof honu:defn?))
     (with-env
      (post-parse-program
       (add-defns-to-tenv
        (parse-port (open-input-file file) file)))))
 
-  (def/pro/con (top:check-defns defns) ((listof honu:defn?) . -> . (listof honu:defn?))
+  (define/c (top:check-defns defns) ((listof honu:defn?) . -> . (listof honu:defn?))
     (with-env (typecheck defns)))
 
-  (def/pro/con (top:translate-defns defns) ((listof honu:defn?) . -> . (syntax/c any/c))
+  (define/c (top:translate-defns defns) ((listof honu:defn?) . -> . (syntax/c any/c))
     (with-env
      (with-context
        (let-values
@@ -108,15 +83,13 @@
           (printf "WILL test ~s [~s]~n" def name)
           (printf "WONT test ~s [~s]~n" def name))))
   
-  (define/provide (top:run-program file)
-    #;(path-string? . -> . (values (listof (list/c symbol? any/c)) (listof (list/c symbol? any/c))))
+  (define/c (top:run-program file) (path-string? . -> . (values (listof symbol?) (listof symbol?)))
     (top:reset-env)
     (eval-syntax (top:translate-defns (top:check-defns (top:parse-file file))))
     (values (tenv-names) (lenv-names)))
 
-  (define/provide (top:test-program file)
-    (top:reset-env)
-    (eval-syntax (top:translate-defns (top:check-defns (top:parse-file file))))
-    (for-each run-test-class-from-name (tenv-names)))
-
+  (define/c (top:run-programs files)
+    ((listof path-string?) . -> . (values (listof (listof symbol?)) (listof (listof symbol?))))
+    (map-values top:run-program files))
+  
   )

@@ -74,7 +74,11 @@
                                   (make-honu:type-tuple #f
                                     (list (make-honu:type-prim #f 'string)
                                           (make-honu:type-prim #f 'int)))
-                                  (make-honu:type-prim #f 'char)))))
+                                  (make-honu:type-prim #f 'char)))
+          (cons #'sqrt          (make-honu:type-func #f
+                                  (make-honu:type-prim #f 'float)
+                                  (make-honu:type-prim #f 'float)))
+          ))
  
   (provide tenv?)
   (define tenv? bound-identifier-mapping?)
