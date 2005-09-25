@@ -55,11 +55,17 @@
 
       (define current-line-sep (make-parameter line-sep))
 
+      (define commentary-content-scale 0.8)
+
       (when (not (and (= use-screen-w screen-w)
 		      (= use-screen-h screen-h)
-		      (= pixel-scale 1)))
-	(current-expected-text-scale (list (* (/ use-screen-w screen-w) pixel-scale)
-					   (* (/ use-screen-h screen-h) pixel-scale))))
+		      (= pixel-scale 1)
+		      (not commentary-on-slide?)))
+	(let ([c-scale (if commentary-on-slide?
+			   commentary-content-scale
+			   1)])
+	  (current-expected-text-scale (list (* (/ use-screen-w screen-w) pixel-scale c-scale)
+					     (* (/ use-screen-h screen-h) pixel-scale c-scale)))))
 
       (define red "red")
       (define green "forest green")
@@ -165,9 +171,43 @@
       
       (define page-number 1)
 
+      (define (add-commentary p comment)
+	(if commentary-on-slide?
+	    (let ([p (scale (frame
+			     (inset (let ([tp (launder full-page)])
+				      (refocus (lt-superimpose p tp) tp))
+				    margin))
+			    commentary-content-scale)]
+		  [t (if comment
+			 (let ([comments (let loop ([l (just-a-comment-content comment)]
+						    [current-line null])
+					   (cond
+					    [(null? l) (list (reverse current-line))]
+					    [(pict? (car l))
+					     (loop (cdr l) (cons (car l) (current-line)))]
+					    [else (let ([m (regexp-match #rx"^(.*?)(?:\n|\r\n|\r)[ \t]*(.*)$" (car l))])
+						    (if m
+							(cons
+							 (reverse (cons (cadr m) current-line))
+							 (loop (cons (caddr m) (cdr l))
+							       null))
+							(loop (cdr l) (cons (car l) current-line))))]))])
+			   (parameterize ([current-font-size 9])
+			     (apply vl-append
+				    1
+				    (map (lambda (l) 
+					   (apply para (- (* screen-w (- 1 commentary-content-scale))
+							  margin margin 2)
+						  l))
+					 comments))))
+			 (blank))])
+	      (ht-append 2 p t))
+	    p))
+
       (define (add-slide! pict title comment page-count inset)
 	(viewer:add-talk-slide! 
-	 (make-sliderec (make-pict-drawer pict)
+	 (make-sliderec (make-pict-drawer (add-commentary pict
+							  comment))
 			title 
 			comment
 			page-number
@@ -406,7 +446,9 @@
 	   (make-sliderec
 	    (let ([orig (sliderec-drawer s)]
 		  [extra (if addition
-			     (make-pict-drawer addition)
+			     (make-pict-drawer 
+			      (add-commentary addition
+					      #f))
 			     void)])
 	      (lambda (dc x y)
 		(orig dc x y)

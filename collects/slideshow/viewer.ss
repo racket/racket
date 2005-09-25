@@ -1047,7 +1047,8 @@
 	(when (send bm ok?)
 	  (send f set-icon bm (and (send mbm ok?) mbm) 'both)))
       
-      (when config:commentary?
+      (when (and config:commentary?
+		 (not config:commentary-on-slide?))
 	(send c-frame show #t)
 	(message-box "Instructions"
 		     (format "Keybindings:~

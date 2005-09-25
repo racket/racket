@@ -49,6 +49,7 @@
 	(define printing? #f)
 	(define native-printing? #f)
 	(define commentary? #f)
+	(define commentary-on-slide? #f)
 	(define show-gauge? #f)
 	(define keep-titlebar? #f)
 	(define show-page-numbers? #t)
@@ -133,8 +134,11 @@
 	     (set! use-prefetch-in-preview? #t))
 	    (("--keep-titlebar") "give the slide window a title bar and resize border"
 	     (set! keep-titlebar? #t))
-	    (("--comment") "display commentary"
+	    (("--comment") "display commentary in window"
 	     (set! commentary? #t))
+	    (("--comment-on-slide") "display commentary on slide"
+	     (set! commentary? #t)
+	     (set! commentary-on-slide? #t))
 	    (("--time") "time seconds per slide" (set! print-slide-seconds? #t))]
 	   [args slide-module-file
 		 (cond

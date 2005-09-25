@@ -38,7 +38,8 @@
 				       (define pixel-scale 1)
 				       (define condense? c?)
 				       (define printing? #f)
-                                       (define smoothing? #t)))]
+                                       (define smoothing? #t)
+                                       (define commentary-on-slide? #f)))]
 		  [CORE : core^ (core@ CONFIG (VIEWER : viewer^))]
 		  [VIEWER : viewer^ ((unit/sig viewer^
 				       (import)

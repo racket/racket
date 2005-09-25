@@ -12,7 +12,8 @@
      use-screen-w use-screen-h  ; "pixel" size
      pixel-scale                ; amount the "pixels" are scaled (e.g., for quad)
      condense? printing?        ; mode
-     smoothing?))
+     smoothing?
+     commentary-on-slide?))
      
   ;; Viewer inputs to the core unit:
   (define-signature viewer^
