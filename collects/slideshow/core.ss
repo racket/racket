@@ -53,6 +53,8 @@
 			    'swiss))
       (define current-main-font (make-parameter main-font))
 
+      (define current-line-sep (make-parameter line-sep))
+
       (when (not (and (= use-screen-w screen-w)
 		      (= use-screen-h screen-h)
 		      (= pixel-scale 1)))
@@ -100,7 +102,7 @@
 	(parameterize ([current-main-font f])
 	  (k)))
 
-      (define (tt* . l) (apply vl-append line-sep (map tt l)))
+      (define (tt* . l) (apply vl-append (current-line-sep) (map tt l)))
 
       (define bullet (if (send (dc-for-text-size) glyph-exists? #\u2022)
 			 (t "\u2022")
@@ -544,12 +546,12 @@
 		(if (null? rest)
 		    p
 		    (v-append
-		     line-sep
+		     (current-line-sep)
 		     p
 		     (loop #f rest null)))]
 	       [else
 		(v-append
-		 line-sep
+		 (current-line-sep)
 		 pre
 		 (loop p rest null))]))])))
 
