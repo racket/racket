@@ -65,6 +65,7 @@
                                          the-path)))
                            (lambda ()
                              (make-servlet the-servlet
+                                           (make-custodian)
                                            (i:make-servlet-namespace)
                                            30
                                            (lambda (request)
