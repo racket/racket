@@ -66,10 +66,6 @@ before the pattern compiler is invoked.
       (define-struct none ())
       (make-none)))
   (define (none? x) (eq? x none))
-  (define hole
-    (let ()
-      (define-struct hole ())
-      (make-hole)))
   
   ;; compiled-lang : (make-compiled-lang (listof nt) 
   ;;                                     hash-table[sym -o> compiled-pattern]
@@ -344,27 +340,40 @@ before the pattern compiler is invoked.
       (match pattern
         [`any
           (values
-           (lambda (exp hole-info) (list (make-mtch (make-bindings null) exp none)))
+           (lambda (exp hole-info) (list (make-mtch 
+                                          (make-bindings null)
+                                          (build-flat-context exp)
+                                          none)))
            #f)]
         [`number 
           (values 
-           (lambda (exp hole-info) (and (number? exp) (list (make-mtch (make-bindings null) exp none))))
+           (lambda (exp hole-info) (and (number? exp) (list (make-mtch
+                                                             (make-bindings null)
+                                                             (build-flat-context exp)
+                                                             none))))
            #f)]
         [`string
           (values 
-           (lambda (exp hole-info) (and (string? exp) (list (make-mtch (make-bindings null) exp none))))
+           (lambda (exp hole-info) (and (string? exp) (list (make-mtch
+                                                             (make-bindings null)
+                                                             (build-flat-context exp)
+                                                             none))))
            #f)]
         [`variable 
           (values
            (lambda (exp hole-info)
-             (and (symbol? exp) (list (make-mtch (make-bindings null) exp none))))
+             (and (symbol? exp) (list (make-mtch (make-bindings null) 
+                                                 (build-flat-context exp)
+                                                 none))))
            #f)]
         [`(variable-except ,@(vars ...))
           (values
            (lambda (exp hole-info)
              (and (symbol? exp)
                   (not (memq exp vars))
-                  (list (make-mtch (make-bindings null) exp none))))
+                  (list (make-mtch (make-bindings null)
+                                   (build-flat-context exp)
+                                   none))))
            #f)]
         [`hole (values (match-hole none) #t)]
         [`(hole ,hole-id) (values (match-hole hole-id) #t)]
@@ -373,7 +382,9 @@ before the pattern compiler is invoked.
           (lambda (exp hole-info)
             (and (string? exp)
                  (string=? exp pattern)
-                 (list (make-mtch (make-bindings null) exp none))))
+                 (list (make-mtch (make-bindings null)
+                                  (build-flat-context exp)
+                                  none))))
           #f)]
         [(? symbol?)
          (cond
@@ -392,7 +403,9 @@ before the pattern compiler is invoked.
               (compile-pattern/cache `(name ,pattern ,before)))]
            [else
             (values
-             (lambda (exp hole-info) (and (eq? exp pattern) (list (make-mtch (make-bindings null) exp none))))
+             (lambda (exp hole-info) (and (eq? exp pattern) (list (make-mtch (make-bindings null)
+                                                                             (build-flat-context exp)
+                                                                             none))))
              #f)])]
         
         [`(cross ,(? symbol? pre-id))
@@ -461,12 +474,13 @@ before the pattern compiler is invoked.
          (values
           (lambda (exp hole-info)
             (and (eqv? pattern exp)
-                 (list (make-mtch (make-bindings null) exp none))))
+                 (list (make-mtch (make-bindings null)
+                                  (build-flat-context exp)
+                                  none))))
           #f)]))
     
     (compile-pattern/cache pattern))
   
-
   ;; split-underscore : symbol -> symbol
   ;; returns the text before the underscore in a symbol (as a symbol)
   ;; raise an error if there is more than one underscore in the input
@@ -580,17 +594,12 @@ before the pattern compiler is invoked.
                                       (make-mtch (make-bindings
                                                   (append (bindings-table contractum-bindings)
                                                           (bindings-table bindings)))
-                                                 (plug (mtch-context mtch) (mtch-context contractum-mtch))
+                                                 (build-nested-context 
+                                                  (mtch-context mtch)
+                                                  (mtch-context contractum-mtch))
                                                  (mtch-hole contractum-mtch))
                                       acc)))]))
                         (loop (cdr mtches) acc)))]))))))
-  
-  (define (plug exp hole-stuff)
-    (let loop ([exp exp])
-      (cond
-        [(pair? exp) (cons (loop (car exp)) (loop (cdr exp)))]
-        [(eq? exp hole) hole-stuff]
-        [else exp])))
   
   ;; match-list : (listof (union repeat compiled-pattern)) sexp hole-info -> (union #f (listof bindings))
   (define (match-list patterns exp hole-info)
@@ -638,7 +647,7 @@ before the pattern compiler is invoked.
                 (if (or (null? exp) (pair? exp))
                     (let ([r-pat (repeat-pat fst-pat)]
                           [r-mt (make-mtch (make-bindings (repeat-empty-bindings fst-pat))
-                                           '()
+                                           (build-flat-context '())
                                            none)])
                       (apply 
                        append
@@ -675,7 +684,7 @@ before the pattern compiler is invoked.
                           [match (fst-pat fst-exp hole-info)])
                      (if match
                          (let ([exp-match (map (λ (mtch) (make-mtch (mtch-bindings mtch)
-                                                                    (list (mtch-context mtch))
+                                                                    (build-list-context (mtch-context mtch))
                                                                     (mtch-hole mtch)))
                                                match)])
                            (map (lambda (x) (cons exp-match x))
@@ -709,8 +718,9 @@ before the pattern compiler is invoked.
                             (hash-table-put! ht key (cons (rib-exp single-rib) rst))))
                         (bindings-table single-bindings))
                        (make-mtch (make-bindings (hash-table-map ht make-rib))
-                                  (cons (mtch-context single-match)
-                                        (mtch-context multiple-match))
+                                  (build-cons-context
+                                   (mtch-context single-match)
+                                   (mtch-context multiple-match))
                                   (pick-hole (mtch-hole single-match)
                                              (mtch-hole multiple-match))))))
                  bindingss)))
@@ -734,7 +744,7 @@ before the pattern compiler is invoked.
                       (make-rib (rib-name rib)
                                 (reverse (rib-exp rib))))
                     (bindings-table bindings)))
-              (reverse (mtch-context match))
+              (reverse-context (mtch-context match))
               (mtch-hole match))))
          matches))
   
@@ -842,7 +852,7 @@ before the pattern compiler is invoked.
   (define (combine-matches matchess)
     (let loop ([matchess matchess])
       (cond
-        [(null? matchess) (list (make-mtch (make-bindings null) '() none))]
+        [(null? matchess) (list (make-mtch (make-bindings null) (build-flat-context '()) none))]
         [else (combine-pair (car matchess) (loop (cdr matchess)))])))
   
   ;; combine-pair : (listof mtch) (listof mtch) -> (listof mtch)
@@ -855,7 +865,7 @@ before the pattern compiler is invoked.
             (set! mtchs (cons (make-mtch 
                                (make-bindings (append (bindings-table (mtch-bindings mtch1))
                                                       (bindings-table (mtch-bindings mtch2))))
-                               (append (mtch-context mtch1) (mtch-context mtch2))
+                               (build-append-context (mtch-context mtch1) (mtch-context mtch2))
                                (pick-hole (mtch-hole mtch1) 
                                           (mtch-hole mtch2)))
                               mtchs)))
@@ -867,6 +877,51 @@ before the pattern compiler is invoked.
     (let/ec k
       (hash-table-get ht key (lambda () (k #f)))
       #t))
+  
+  
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;
+  ;; context adt
+  ;;
+  
+  #|
+  This ADT isn't right yet -- need to figure out what to do about (name ...) patterns.
+
+  (define-values (struct:context make-context context? context-ref context-set!)
+    (make-struct-type 'context #f 1 0 #f '() #f 0))
+  (define hole values)
+  (define (build-flat-context exp) (make-context (lambda (x) exp)))
+  (define (build-cons-context c1 c2) (make-context (lambda (x) (cons (c1 x) (c2 x)))))
+  (define (build-append-context l1 l2) (make-context (lambda (x) (append (l1 x) (l2 x)))))
+  (define (build-list-context l) (make-context (lambda (x) (list (l x)))))
+  (define (build-nested-context c1 c2) (make-context (lambda (x) (c1 (c2 x)))))
+  (define (plug exp hole-stuff) (exp hole-stuff))
+  (define (reverse-context c) (make-context (lambda (x) (reverse (c x)))))
+|#  
+  (define (context? x) #t)
+  (define hole
+    (let ()
+      (define-struct hole ())
+      (make-hole)))
+  
+  (define (build-flat-context exp) exp)
+  (define (build-cons-context e1 e2) (cons e1 e2))
+  (define (build-append-context e1 e2) (append e1 e2))
+  (define (build-list-context x) (list x))
+  (define (reverse-context x) (reverse x))
+  (define (build-nested-context c1 c2) (plug c1 c2))
+  (define (plug exp hole-stuff)
+    (let loop ([exp exp])
+      (cond
+        [(pair? exp) (cons (loop (car exp)) (loop (cdr exp)))]
+        [(eq? exp hole) hole-stuff]
+        [else exp])))
+
+  ;;
+  ;; end context adt
+  ;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   
   
   (provide/contract
@@ -887,6 +942,11 @@ before the pattern compiler is invoked.
    (rib? (any/c . -> . boolean?))
    (rib-name (rib? . -> . symbol?))
    (rib-exp (rib? . -> . any/c)))
+  
+  ;; for test suite
+  (provide build-cons-context
+           build-flat-context
+           context?)
   
   (provide (struct nt (name rhs))
            (struct rhs (pattern))
