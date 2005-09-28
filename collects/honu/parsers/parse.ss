@@ -7,40 +7,6 @@
            "../utils.ss"
            "../private/typechecker/type-utils.ss")
   
-  (define (make-struct-type-decls inits mfidefns)
-    (define (convert-to-decl d)
-      (cond
-        [(honu:formal? d)
-         (make-honu:field-decl (honu:ast-stx d)
-                               (honu:formal-name d)
-                               (honu:formal-type d))]
-        [(honu:init-field? d)
-         (make-honu:field-decl (honu:ast-stx d)
-                               (honu:init-field-name d)
-                               (honu:init-field-type d))]
-        [(honu:field? d)
-         (make-honu:field-decl (honu:ast-stx d)
-                               (honu:field-name d)
-                               (honu:field-type d))]
-        [(honu:method? d)
-         (make-honu:method-decl (honu:ast-stx d)
-                                (honu:method-name d)
-                                (honu:method-type d)
-                                (map honu:formal-type (honu:method-formals d)))]))
-    (map convert-to-decl (append inits mfidefns)))
-  
-  (define (make-struct-exports typ inits members)
-    (define (grab-name d)
-      (cond
-        [(honu:formal? d)     (honu:formal-name d)]
-        [(honu:init-field? d) (honu:init-field-name d)]
-        [(honu:field? d)      (honu:field-name d)]
-        [(honu:method? d)     (honu:method-name d)]))
-    (let ([binds (map (lambda (m)
-                        (let ([name (grab-name m)])
-                          (make-honu:exp-bind name name))) (append inits members))])
-      (list (make-honu:export #f typ binds))))
-  
   (define (generate-honu-parser source-name)
     (define honu-parser
       (parser

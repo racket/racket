@@ -25,7 +25,11 @@
         ([exn:fail? (lambda (exn) `(error ,(exn-message exn)))])
       (let* ([honu-path (if (path? file) file (string->path file))]
              [test-path (path-replace-suffix honu-path "-test.ss")])
+        (unless (file-exists? honu-path)
+          (error 'test-file "~s not found" (path->string honu-path)))
         (top:run-program honu-path)
+        (unless (file-exists? test-path)
+          (error 'test-file "~s not found" (path->string test-path)))
         (load test-path))))
 
   (define/c (run-tests) (-> (listof any/c))

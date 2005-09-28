@@ -5,8 +5,16 @@
   (define-syntax (define-honu-struct stx)
     (syntax-case stx ()
       [(_ (id sup) (field ...))
-       (with-syntax [(new-id  (datum->syntax-object #'id (string->symbol (string-append "honu:" (symbol->string (syntax-e #'id)))) #'id #'id))
-                     (new-sup (datum->syntax-object #'sup (string->symbol (string-append "honu:" (symbol->string (syntax-e #'sup)))) #'sup #'sup))]
+       (with-syntax [(new-id
+                      (datum->syntax-object
+                       #'id
+                       (string->symbol
+                        (string-append "honu:" (symbol->string (syntax-e #'id)))) #'id #'id))
+                     (new-sup
+                      (datum->syntax-object
+                       #'sup
+                       (string->symbol
+                        (string-append "honu:" (symbol->string (syntax-e #'sup)))) #'sup #'sup))]
          #'(define-struct (new-id new-sup) (field ...) #f))]
       [(_ id (field ...))
        (with-syntax [(new-id (datum->syntax-object #'id (string->symbol (string-append "honu:" (symbol->string (syntax-e #'id)))) #'id #'id))]

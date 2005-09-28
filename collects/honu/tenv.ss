@@ -22,7 +22,8 @@
   
   (define-struct tenv:member (stx name type) #f)
  
-  ;; members will be a hashtable from member names to types -- if I ever get around to it
+  ;; members will be a hashtable from member names to types
+  ;; -- if I ever get around to it
   (define-struct (tenv:type  tenv:entry) (supers members inherited) #f)
   (define-struct (tenv:class tenv:entry) (sub-type impls inits final? super) #f)
   (define-struct (tenv:mixin tenv:entry) (arg-type sub-type impls inits
