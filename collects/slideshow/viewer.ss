@@ -1065,7 +1065,8 @@
       
       (define (do-print)
 	(let ([ps-dc (dc-for-text-size)])
-	  (send ps-dc set-smoothing 'aligned) ; for printer-dc%
+	  (when config:smoothing?
+	    (send ps-dc set-smoothing 'aligned)) ; for printer-dc%
 	  (let loop ([start? #f][l (list-tail talk-slide-list current-page)][n current-page])
 	    (unless (null? l)
 	      (set! current-page n)
