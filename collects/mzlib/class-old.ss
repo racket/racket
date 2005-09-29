@@ -932,7 +932,7 @@
 			  init-vars
 			  clauses ...)))])))
 
-  (define-syntax :class
+  (define-syntax _class
     (lambda (stx)
       (syntax-case stx ()
 	[(_ super-expr
@@ -955,7 +955,7 @@
 	 (syntax/loc stx (class* super () args
 			   body ...))])))
   
-  (define-syntax :interface
+  (define-syntax _interface
     (lambda (stx)
       (syntax-case stx ()
 	[(_ (interface-expr ...) var ...)
@@ -983,9 +983,9 @@
 	       (list interface-expr ...)
 	       '(var ...)))))])))
 
-  (provide (rename :class class) class* class*/names
+  (provide (rename _class class) class* class*/names
 	   class-asi class*-asi
-	   (rename :interface interface)
+	   (rename _interface interface)
 	   make-object object? is-a? subclass? class? interface?
 	   class->interface object-interface
 	   implementation? interface-extension?
