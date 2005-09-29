@@ -1,7 +1,3 @@
-(require (lib "class.ss"))
-
-(define (mixin? obj) (null? obj))
-
 (append (map interface? (list MovingPoint<%>
                               Point3D<%>
                               Point<%>

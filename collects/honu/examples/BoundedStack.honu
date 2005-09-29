@@ -324,22 +324,22 @@ class ConsList(Any car, List cdr) : List impl List {
 //                                                        
 
 
-Stack empty = emptyBoundedStack(5);
-Stack s1 = empty.push(new IntegerC(value = 5));
-Stack s2 = s1.push(new IntegerC(value = 3));
-Stack s3 = s2.push(new IntegerC(value = 10));
-Stack s4 = s3.push(new IntegerC(value = 20));
-Stack s5 = s4.push(new IntegerC(value = 40));
+// Stack empty = emptyBoundedStack(5);
+// Stack s1 = empty.push(new IntegerC(value = 5));
+// Stack s2 = s1.push(new IntegerC(value = 3));
+// Stack s3 = s2.push(new IntegerC(value = 10));
+// Stack s4 = s3.push(new IntegerC(value = 20));
+// Stack s5 = s4.push(new IntegerC(value = 40));
 
 // use foreach + don't care(about binding) syntax
 
-_ = s5.foreach(void fun(Any x) {
-                 cond {
-                   x isa Integer => printLine(intToString((x : Integer).value));
-                   else             printLine("Unknown type of value");
-                 };
-               });
+// _ = s5.foreach(void fun(Any x) {
+//                  cond {
+//                    x isa Integer => printLine(intToString((x : Integer).value));
+//                    else             printLine("Unknown type of value");
+//                  };
+//                });
 
 // Now try adding something to s5!
 
-Stack s6 = s5.push(new IntegerC(value = 50));
+// Stack s6 = s5.push(new IntegerC(value = 50));

@@ -70,19 +70,27 @@
     (cond [(tenv:type? entry) (syntax-e (translate-iface-name (make-iface-type id id)))]
           [(tenv:class? entry) (syntax-e (translate-class-name id))]
           [(tenv:mixin? entry) (syntax-e (translate-mixin-name id))]))
-  
+
   (define (tenv-names)
     (let* ([tenv (top:current-tenv)])
       (bound-identifier-mapping-map tenv tenv:entry-mangled-name)))
 
   (define test<%> (interface ()))
-  
+
   (define (run-test-class-from-name name)
     (let ([def (eval name)])
       (if (and (class? def) (implementation? def test<%>))
           (printf "WILL test ~s [~s]~n" def name)
           (printf "WONT test ~s [~s]~n" def name))))
-  
+
+  (define/p (top:eval-after-program file stx) (path-string? syntax? . -> . any)
+    (top:reset-env)
+    (let* ([ast (top:parse-file file)]
+           [ast (top:check-defns ast)]
+           [defs (top:translate-defns ast)])
+      (eval
+       #`(begin #,defs #,stx))))
+
   (define/c (top:run-program file) (path-string? . -> . (values (listof symbol?) (listof symbol?)))
     (top:reset-env)
     (eval-syntax (top:translate-defns (top:check-defns (top:parse-file file))))
@@ -91,5 +99,50 @@
   (define/c (top:run-programs files)
     ((listof path-string?) . -> . (values (listof (listof symbol?)) (listof (listof symbol?))))
     (map-values top:run-program files))
+
+  (define/p top:examples
+    (list "examples/BoundedStack.honu"
+          "examples/EvenOddClass.honu"
+          "examples/List.honu"
+          "examples/Y.honu"
+          "examples/bind-tup-top.honu"
+          "examples/cond-test.honu"
+          "examples/even-odd.honu"
+          "examples/exprs.honu"
+          "examples/point.honu"
+          "examples/struct.honu"
+          "examples/tup-bind.honu"
+          "examples/types-error.honu"
+          "examples/types.honu"
+          "examples/nonexistent.honu"))
+
+  (define (program-syntax file)
+    (let* ([port (open-input-file file)])
+      #`(begin
+          #,@(let read-loop
+                 ([sexps (list)]
+                  [input (read-syntax file port)])
+               (if (eof-object? input)
+                   (reverse sexps)
+                   (read-loop (cons input sexps) (read-syntax file port)))))))
   
+  (define/c (top:test-file file) (path-string? . -> . any)
+    (with-handlers
+        ([exn:fail? (lambda (exn) `(error ,(exn-message exn)))])
+      (let* ([honu-path (if (path? file) file (string->path file))]
+             [test-path (path-replace-suffix honu-path "-test.ss")])
+        (unless (file-exists? honu-path)
+          (error 'test-file "~s not found" (path->string honu-path)))
+        (unless (file-exists? test-path)
+          (error 'test-file "~s not found" (path->string test-path)))
+        (let* ([stx (program-syntax test-path)])
+          (top:eval-after-program
+           honu-path
+           #`(begin
+               (require (lib "test.ss" "honu"))
+               #,stx))))))
+
+  (define/c (top:run-tests) (-> (listof any/c))
+    (map top:test-file top:examples))
+
   )
