@@ -18,18 +18,18 @@
            "utils.ss"
            )
 
-  (define/c top:current-tenv parameter? (make-parameter (empty-tenv)))
-  (define/c top:current-lenv parameter? (make-parameter (get-builtin-lenv)))
+  (define/c current-tenv parameter? (make-parameter (empty-tenv)))
+  (define/c current-lenv parameter? (make-parameter (get-builtin-lenv)))
 
-  (define/c (top:reset-env) (-> void?)
-    (top:current-tenv (empty-tenv))
-    (top:current-lenv (get-builtin-lenv)))
+  (define/c (reset-env) (-> void?)
+    (current-tenv (empty-tenv))
+    (current-lenv (get-builtin-lenv)))
 
   (define-syntax (with-env stx)
     (syntax-case stx ()
       [(_ BODY ...)
-       #`(parameterize ([current-type-environment (top:current-tenv)]
-                        [current-lexical-environment (top:current-lenv)])
+       #`(parameterize ([current-type-environment (current-tenv)]
+                        [current-lexical-environment (current-lenv)])
            BODY ...)]))
 
   (define-syntax (with-context stx)
@@ -38,16 +38,16 @@
        #`(parameterize ([current-compile-context honu-compile-context])
            BODY ...)]))
 
-  (define/c (top:parse-file file) (path-string? . -> . (listof honu:defn?))
+  (define/c (ast-from-file file) (path-string? . -> . (listof honu:defn?))
     (with-env
      (post-parse-program
       (add-defns-to-tenv
        (parse-port (open-input-file file) file)))))
 
-  (define/c (top:check-defns defns) ((listof honu:defn?) . -> . (listof honu:defn?))
+  (define/c (check-defns defns) ((listof honu:defn?) . -> . (listof honu:defn?))
     (with-env (typecheck defns)))
 
-  (define/c (top:translate-defns defns) ((listof honu:defn?) . -> . (syntax/c any/c))
+  (define/c (translate-defns defns) ((listof honu:defn?) . -> . (syntax/c any/c))
     (with-env
      (with-context
        (let-values
@@ -55,7 +55,7 @@
          (namespace-syntax-introduce (datum->syntax-object #f (cons 'begin syntax) #f))))))
 
   (define (lenv-names)
-    (let* ([lenv (top:current-lenv)]
+    (let* ([lenv (current-lenv)]
            [orig (get-builtin-lenv)]
            [ids '()])
       (bound-identifier-mapping-for-each
@@ -72,50 +72,25 @@
           [(tenv:mixin? entry) (syntax-e (translate-mixin-name id))]))
 
   (define (tenv-names)
-    (let* ([tenv (top:current-tenv)])
+    (let* ([tenv (current-tenv)])
       (bound-identifier-mapping-map tenv tenv:entry-mangled-name)))
 
-  (define test<%> (interface ()))
-
-  (define (run-test-class-from-name name)
-    (let ([def (eval name)])
-      (if (and (class? def) (implementation? def test<%>))
-          (printf "WILL test ~s [~s]~n" def name)
-          (printf "WONT test ~s [~s]~n" def name))))
-
-  (define/p (top:eval-after-program file stx) (path-string? syntax? . -> . any)
-    (top:reset-env)
-    (let* ([ast (top:parse-file file)]
-           [ast (top:check-defns ast)]
-           [defs (top:translate-defns ast)])
+  (define/p (eval-after-program file stx) (path-string? syntax? . -> . any)
+    (reset-env)
+    (let* ([ast (ast-from-file file)]
+           [ast (check-defns ast)]
+           [defs (translate-defns ast)])
       (eval
        #`(begin #,defs #,stx))))
 
-  (define/c (top:run-program file) (path-string? . -> . (values (listof symbol?) (listof symbol?)))
-    (top:reset-env)
-    (eval-syntax (top:translate-defns (top:check-defns (top:parse-file file))))
+  (define/c (run-program file) (path-string? . -> . (values (listof symbol?) (listof symbol?)))
+    (reset-env)
+    (eval-syntax (translate-defns (check-defns (ast-from-file file))))
     (values (tenv-names) (lenv-names)))
 
-  (define/c (top:run-programs files)
+  (define/c (run-programs files)
     ((listof path-string?) . -> . (values (listof (listof symbol?)) (listof (listof symbol?))))
-    (map-values top:run-program files))
-
-  (define/p top:examples
-    (list "examples/BoundedStack.honu"
-          "examples/EvenOddClass.honu"
-          "examples/List.honu"
-          "examples/Y.honu"
-          "examples/bind-tup-top.honu"
-          "examples/cond-test.honu"
-          "examples/even-odd.honu"
-          "examples/exprs.honu"
-          "examples/point.honu"
-          "examples/struct.honu"
-          "examples/tup-bind.honu"
-;          "examples/types-error.honu"
-          "examples/types.honu"
-;          "examples/nonexistent.honu"
-          ))
+    (map-values run-program files))
 
   (define (program-syntax file)
     (let* ([port (open-input-file file)])
@@ -127,7 +102,7 @@
                    (reverse sexps)
                    (read-loop (cons input sexps) (read-syntax file port)))))))
   
-  (define/c (top:test-file file) (path-string? . -> . any)
+  (define/c (test-file file) (path-string? . -> . any)
     (with-handlers
         ([exn:fail? (lambda (exn) `(error ,(exn-message exn)))])
       (let* ([honu-path (if (path? file) file (string->path file))]
@@ -137,13 +112,10 @@
         (unless (file-exists? test-path)
           (error 'test-file "~s not found" (path->string test-path)))
         (let* ([stx (program-syntax test-path)])
-          (top:eval-after-program
+          (eval-after-program
            honu-path
            #`(begin
-               (require (lib "test.ss" "honu"))
+               (require (lib "test-tools.ss" "honu"))
                #,stx))))))
-
-  (define/c (top:run-tests) (-> (listof any/c))
-    (map top:test-file top:examples))
-
+  
   )
