@@ -1,0 +1,25 @@
+doc.txt: implementation notes
+tool.ss: definition of language level
+compile.ss: top-level compilation functions
+util.ss: general functions (similar to list.ss)
+tenv.ss: definition of type environment
+- don't understand all the types defined
+tenv-utils.ss: manipulate environments
+base.ss: top-level honu definitions
+ast.ss: ast structs
+private/typechecker/type-utils.ss: simple type operations
+
+------------------------------------------------------------
+
+Mixins: new form NYI
+
+------------------------------------------------------------
+
+3 phases:
+- parser tools (-> AST)
+- post-parsing
+  - static references to "my" references (my.x for static fields, etc.)
+  - references to "this" only in member access (this.x) or in casts ((IFace)this)
+  - adds casts to this.x
+  - simplify-ast : gather asts/sequences into big lets/sequences
+

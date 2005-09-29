@@ -112,9 +112,10 @@
           "examples/point.honu"
           "examples/struct.honu"
           "examples/tup-bind.honu"
-          "examples/types-error.honu"
+;          "examples/types-error.honu"
           "examples/types.honu"
-          "examples/nonexistent.honu"))
+;          "examples/nonexistent.honu"
+          ))
 
   (define (program-syntax file)
     (let* ([port (open-input-file file)])

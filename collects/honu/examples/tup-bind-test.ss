@@ -1,0 +1,5 @@
+(list (interface? T<%>)
+      (class? C%)
+      (equal? (f 'dummy) '(dummy dummy))
+      (= (send (new C%) T<%>-x-get '()) 3)
+      (= (send (new C%) T<%>-y-get '()) 3))

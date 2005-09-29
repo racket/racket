@@ -1,0 +1,7 @@
+(list (interface? T<%>)
+      (class? Y%)
+      (= (main 5) 120)
+      (= ((fix (lambda (f)
+                 (lambda (n)
+                   (if (zero? n) 0 (+ n (f (- n 1))))))) 5)
+         15))
