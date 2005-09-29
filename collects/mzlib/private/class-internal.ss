@@ -1,4 +1,5 @@
 
+#kd
 (module class-internal mzscheme
   (require (lib "list.ss")
            (lib "etc.ss")
@@ -67,7 +68,7 @@
   ;;  class macros
   ;;--------------------------------------------------------------------
 
-  (define-syntaxes (class* :class class/derived)
+  (define-syntaxes (class* _class class/derived)
     (let ()
       ;; Start with Helper functions
 
@@ -3177,7 +3178,7 @@
 		    extract-vtable
 		    extract-method-ht)
            
-           (rename :class class) class* class/derived
+           (rename _class class) class* class/derived
            define-serializable-class define-serializable-class*
            class?
            mixin
