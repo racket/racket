@@ -153,30 +153,30 @@
                      (compatible-closure red iswim-grammar 'M))
                    (cons beta_v delta)))
   
-  ;; :->v
-  (define :->v (map (lambda (red)
+  ;; /->v
+  (define /->v (map (lambda (red)
                       (context-closure red iswim-grammar 'E))
                     (cons beta_v delta)))
 
-  ;; :->v+letcc
-  (define :->v+letcc (append
-		      :->v
-		      (list
+  ;; /->v+letcc
+  (define /->v+letcc (append
+		      /->v
+			 (list
 
-		       ;; letcc rule:
-		       (reduction
-			iswim-grammar
-			(in-hole E_1 ("letcc" X_1 M_1))
-			(plug (term E_1) 
-                              (iswim-subst (term M_1) (term X_1) `("[" 
-                                                                   ,(plug (term E_1) '||) 
-                                                                   "]"))))
+			  ;; letcc rule:
+			  (reduction
+			   iswim-grammar
+			   (in-hole E_1 ("letcc" X_1 M_1))
+			   (plug (term E_1) 
+				 (iswim-subst (term M_1) (term X_1) `("[" 
+								      ,(plug (term E_1) '||) 
+								      "]"))))
 
-		       ;; cc rule:
-		       (reduction
-			iswim-grammar
-			(in-hole E ("cc" ("[" (in-hole E_2 ||) "]") V_1))
-			(plug (term E_2) (term V_1))))))
+			  ;; cc rule:
+			  (reduction
+			   iswim-grammar
+			   (in-hole E ("cc" ("[" (in-hole E_2 ||) "]") V_1))
+			   (plug (term E_2) (term V_1))))))
 			
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -242,8 +242,8 @@
 		    (delta*2 (o2? V? V? . -> .  (union false/c V?)))
 		    (delta*n (on? (listof V?) . -> .  (union false/c V?)))
 		    (->v (listof red?))
-		    (:->v (listof red?))
-		    (:->v+letcc (listof red?))
+		    (/->v (listof red?))
+		    (/->v+letcc (listof red?))
 		    (if0 (M? M? M? . -> . M?))
 		    (true M?)
 		    (false M?)
