@@ -294,7 +294,7 @@ Help Desk looks for html documentation in two places:
   1) If an info.ss file defines _'html-docs_ to be a list of
      path strings, Help Desk looks inside those directories
      for html documentation (the paths are treated as
-     relative to the location of the info.ss file)Ï
+     relative to the location of the info.ss file)
 
   2) Help Desk also looks inside each sub-directory in any
      `doc' collection (Help Desk searches all doc
