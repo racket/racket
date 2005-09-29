@@ -447,7 +447,7 @@
 			  (hash-table-remove! table obj)
 			  cycle)))))))
 
-     (define ::dummy::
+     (define __dummy__
        (when found-cycle
 	 (let loop ([obj obj])
 	   (if (or (vector? obj)
