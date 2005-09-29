@@ -1,5 +1,4 @@
 
-#kd
 (module class-internal mzscheme
   (require (lib "list.ss")
            (lib "etc.ss")
@@ -1973,7 +1972,7 @@
   
   ;; >> Simplistic implementation for now <<
 
-  (define-syntax :interface
+  (define-syntax _interface
     (lambda (stx)
       (syntax-case stx ()
 	[(_ (interface-expr ...) var ...)
@@ -3171,7 +3170,7 @@
                      mixin-expr)))))))]))
 
   (define externalizable<%>
-    (:interface () externalize internalize))
+    (_interface () externalize internalize))
   
   (provide (protect make-wrapper-class
 		    wrapper-object-wrapped
@@ -3182,7 +3181,7 @@
            define-serializable-class define-serializable-class*
            class?
            mixin
-	   (rename :interface interface) interface?
+	   (rename _interface interface) interface?
 	   object% object? object=? externalizable<%>
            new make-object instantiate
            get-field field-bound? field-names
