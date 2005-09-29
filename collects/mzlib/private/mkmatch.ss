@@ -2,7 +2,7 @@
 ;; Utilities for match
 
 (module mkmatch mzscheme
-  (provide genmatch genletrec gendefine pattern-var? match:syntax-err re:..k :ucall)
+  (provide genmatch genletrec gendefine pattern-var? match:syntax-err re:..k)
 
  (define re:..k (regexp "[.][.][0-9]+"))
 
@@ -1156,12 +1156,4 @@
   (define rac (lambda (l) (if (null? (cdr l)) (car l) (rac (cdr l)))))
   (define rdc
     (lambda (l)
-      (if (null? (cdr l)) '() (cons (car l) (rdc (cdr l))))))
-
- (define-syntax :ucall
-   (lambda (stx)
-     (syntax-case stx ()
-       [(_ name arg ...)
-	(syntax
-	 (let ([name (syntax-local-value (quote-syntax name))])
-	   (name arg ...)))]))))
+      (if (null? (cdr l)) '() (cons (car l) (rdc (cdr l)))))))
