@@ -11,19 +11,28 @@
     (test-empty 'any "a" (list (make-test-mtch (make-bindings null) "a" none)))
     (test-empty 'any '(a b) (list (make-test-mtch (make-bindings null) '(a b) none)))
     (test-empty 1 1 (list (make-test-mtch (make-bindings null) 1 none)))
+    (test-empty 1 '() #f)
     (test-empty 99999999999999999999999999999999999999999999999
                 99999999999999999999999999999999999999999999999
                 (list (make-test-mtch (make-bindings null) 
                                  99999999999999999999999999999999999999999999999
                                  none)))
+    (test-empty 99999999999999999999999999999999999999999999999
+                '()
+                #f)
     (test-empty 'x 'x (list (make-test-mtch (make-bindings null) 'x none)))
+    (test-empty 'x '() #f)
     (test-empty 1 2 #f)
     (test-empty "a" "b" #f)
+    (test-empty "a" '(x) #f)
+    (test-empty "a" '() #f)
     (test-empty "a" "a" (list (make-test-mtch (make-bindings null) "a" none)))
     (test-empty 'number 1 (list (make-test-mtch (make-bindings null) 1 none)))
     (test-empty 'number 'x #f)
+    (test-empty 'number '() #f)
     (test-empty 'string "a" (list (make-test-mtch (make-bindings null) "a" none)))
     (test-empty 'string 1 #f)
+    (test-empty 'string '() #f)
     (test-empty 'variable 'x (list (make-test-mtch (make-bindings null) 'x none)))
     (test-empty 'variable 1 #f)
     (test-empty '(variable-except x) 1 #f)
@@ -200,6 +209,12 @@
     (test-empty '(a ... b) '(b c) #f)
     (test-empty '(a ... b) '(a b c) #f)
     
+    (test-xab 'lsts '() (list (make-test-mtch (make-bindings null) '() none)))
+    (test-xab 'lsts '(x) (list (make-test-mtch (make-bindings null) '(x) none)))
+    (test-xab 'lsts 'x (list (make-test-mtch (make-bindings null) 'x none)))
+    (test-xab 'lsts #f (list (make-test-mtch (make-bindings null) #f none)))
+    (test-xab 'split-out '1 (list (make-test-mtch (make-bindings null) '1 none)))
+
     (test-xab 'exp 1 (list (make-test-mtch (make-bindings null) 1 none)))
     (test-xab 'exp '(+ 1 2) (list (make-test-mtch (make-bindings null) '(+ 1 2) none)))
     (test-xab '(in-hole ctxt any)
@@ -486,6 +501,16 @@
                                                    (make-rhs '(+ exp (hole xx)))))
 
                                     (make-nt 'same-in-nt (list (make-rhs '((name x any) (name x any)))))
+                                    
+                                    (make-nt 'lsts
+                                             (list (make-rhs '())
+                                                   (make-rhs '(x))
+                                                   (make-rhs 'x)
+                                                   (make-rhs '#f)))
+                                    (make-nt 'split-out
+                                             (list (make-rhs 'split-out2)))
+                                    (make-nt 'split-out2
+                                             (list (make-rhs 'number)))
                                     
                                     (make-nt 'nesting-names
                                              (list (make-rhs '(a (name x nesting-names)))
