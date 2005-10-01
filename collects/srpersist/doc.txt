@@ -387,7 +387,7 @@
    'sql-driver-prompt              prompt for required information
    'sql-driver-complete            prompt if DSN not in connect-string
    'sql-driver-complete-required   prompt if DSN not in connect-string
-   'sql-driver-noprompt            do not prompt for information
+   'sql-driver-no-prompt           do not prompt for information
  
  driver-connect returns a connection string indicating all the
  keywords and values that were passed to the data source.
