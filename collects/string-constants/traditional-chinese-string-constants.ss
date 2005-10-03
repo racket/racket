@@ -1,46 +1,1212 @@
-#|
-
-Got the codes below by sending a utf-8 encoded email to myself, via Mail.
-
---Apple-Mail-1--910733453
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain;
-	charset=UTF-8;
-	format=flowed
-
-
-On Feb 7, 2004, at 12:46 PM, Robby Findler wrote:
-
-> =E6=AD=A1=E8=BF=8E=E4=BD=BF=E7=94=A8 DrScheme
->
-> Robby=
-
---Apple-Mail-1--910733453
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/enriched;
-	charset=UTF-8
-
-
-
-On Feb 7, 2004, at 12:46 PM, Robby Findler wrote:
-
-
-<excerpt><fontfamily><param>Apple LiGothic</param>=E6=AD=A1=E8=BF=8E=E4=BD=
-=BF=E7=94=A8 DrScheme
-
-
-Robby</fontfamily></excerpt>=
-
---Apple-Mail-1--910733453--
-
- |#
-
+;                                                              
+;           #                    #                             
+;       #   ##             ##    #     #       #       #       
+;       #   ##             #     #     #       #   ##  #   ##  
+;      ##   ##    ##       ###### ######       #   #   #   #   
+;      # #########               #             ##  #   #   #   
+;     #     ##            #      #      #    # # # #### ####   
+;    #      ##            ####### #######    # #          #    
+;   #################    #           #      ## #    ###### #   
+;          ####             #########          #           #   
+;         #### #                        #      #           #   
+;        ## ## ##        ###############       #    ########   
+;       ##  ##  ##           ##  #             #    #          
+;      #    ##   ###        ##   #  ##         #    #       #  
+;     #     ##     ##      #     #    ##       #    #       #  
+;   ##      ##           ##   ####     ##      #    #       ## 
+;           #                   #                    #######   
+;                                                              
 (module traditional-chinese-string-constants "string-constant-lang.ss"
- (is-this-your-native-language "Is Chinese (in Traditional Characters) Your Native Language?")
- (interact-with-drscheme-in-language "Interact with DrScheme in Traditional Chinese")
- (welcome-to-drscheme-version/language "\u6b61\u8fce\u4f7f\u7528 DrScheme, version ~a, ~a")
- (welcome-to-drscheme "\u6b61\u8fce\u4f7f\u7528 DrScheme")
- (welcome-to "\u6b61\u8fce\u4f7f\u7528")
- (wizard-next "\u4e0b\u4e00\u6b65")
- (wizard-back "\u4e0a\u4e00\u6b65"))
-
+  (is-this-your-native-language "你的母語是繁体中文嗎？")
+  
+  (are-you-sure-you-want-to-switch-languages
+    "爲了改變界面語言，現在需要重新啓動DrScheme。你確定嗎？")
+  
+  (interact-with-drscheme-in-language "使用繁体中文作爲DrScheme界面語言")
+  
+  ;; these two should probably be the same in all languages excepet English.
+  ;; they are the button labels (under macos and windows, respectively)
+  ;; that go the with the string above.
+  (accept-and-quit "接受並退出")
+  (accept-and-exit "接受並退出")
+  
+  ;;; general purpose (DrScheme is hereby a word in every language, by decree of Robby :)
+  (plt "PLT")
+  (drscheme "DrScheme")
+  (ok "確定")
+  (cancel "取消")
+  (abort "中止")
+  (untitled "未命名")
+  (untitled-n "未命名~a")
+  (warning "警告")
+  (error "錯誤")
+  (close "關閉") ;; as in, close an open window. must match close-menu-item
+  ;; in the sense that, when the &s have been stripped from
+  ;; close-menu-item, it must be the same string as this.
+  (stop "停止")   
+  (&stop "停止(&S)") ;; for use in button and menu item labels, with short cut.
+  (are-you-sure-delete? "確定要刪除~a嗎？") ;; ~a is a filename or directory name
+  (ignore "忽略")
+  (revert "復原")
+  
+  ;; label for a generic check box, often supported on dialogs
+  ;; that ask a binary choice of the user. If checked, the
+  ;; dialog isn't going to be shown again.
+  (dont-ask-again "不再詢問(總是使用當前設置)")
+  
+  ;;; important urls
+  (web-materials "相關網站") ;; menu item title
+  (tool-web-sites "Tools網站")   ;; menu item title
+  (drscheme-homepage "DrScheme")
+  (plt-homepage "PLT")
+  (how-to-use-scheme "How to Use Scheme") ;; title of a book.
+  (teachscheme!-homepage "TeachScheme!") ;; probably this should be a `word' in all languages
+  
+  ;;; bug report form
+  (cancel-bug-report? "取消故障報告？")
+  (are-you-sure-cancel-bug-report?
+    "你確定要取消報告故障嗎？")
+  (bug-report-form "故障報告表")
+  (bug-report-field-name "姓名")
+  (bug-report-field-email "電子郵件")
+  (bug-report-field-summary "標題")
+  (bug-report-field-severity "嚴重度")
+  (bug-report-field-class "類別")
+  (bug-report-field-priority "優先級")
+  (bug-report-field-description "詳細描述")
+  (bug-report-field-reproduce1 "再現故障")
+  (bug-report-field-reproduce2 "的步驟")
+  (bug-report-field-environment "環境")
+  (bug-report-field-tools "Tools")
+  (bug-report-field-docs-installed "已安裝文檔")
+  (bug-report-field-language "語言")
+  (bug-report-field-teachpacks "教學包")
+  (bug-report-field-collections "Collections")
+  (bug-report-field-human-language "自然語言")
+  (bug-report-field-version "版本")
+  (bug-report-synthesized-information "綜合信息")  ;; dialog title
+  (bug-report-show-synthesized-info "顯示綜合信息")
+  (bug-report- "提交")
+  (bug-report--menu-item "提交故障報告") ;; in Help Menu (drs & help desk)
+  (sending-bug-report "送出故障報告")
+  (error-sending-bug-report "故障報告傳輸出錯")
+  (error-sending-bug-report-expln "在傳輸故障報告的過程中出現了錯誤。如果你能夠正常瀏覽網絡，請訪問：\n\n    http://bugs.plt-scheme.org/\n\n使用網頁上的表單提交錯誤報告。對於由此產生的不便，我們表示抱歉。\n\n傳輸錯誤詳情：\n~a")
+  (bug-report-sent "故障報告已送出")
+  (bug-report-sent-detail "感謝你的報告。在30分鐘內，您將會收到電子郵件確認。如果您沒有收到郵件，請聯系scheme@plt-scheme.org.")
+  (illegal-bug-report "非法的故障報告")
+  (pls-fill-in-field "請填寫\"~a\"欄目")
+  (malformed-email-address "電子郵件地址不符合格式")
+  (pls-fill-in-either-description-or-reproduce "在“詳細描述”和“再現故障的步驟”兩欄中，請至少填寫一項。")
+  
+  ;;; check syntax
+  (check-syntax "檢查語法")
+  (cs-italic "斜體")
+  (cs-bold "黑體")
+  (cs-underline "下劃線")
+  (cs-change-color "改變顏色")
+  (cs-tack/untack-arrow "附加/取消 箭頭")
+  (cs-jump-to-next-bound-occurrence "下一個被綁定出現")
+  (cs-jump-to-binding "綁定出現")
+  (cs-jump-to-definition "定義")
+  (cs-error-message "出錯信息")
+  (cs-open-file "打開~a")
+  (cs-rename-var "重命名~a")
+  (cs-rename-id "重命名標識符")
+  (cs-rename-var-to "將~a重命名為：")
+  (cs-name-duplication-error "你所選擇的新名稱~s與當前轄域內現有標識符相同。")
+  (cs-rename-anyway "強制重命名")
+  (cs-status-init "語法檢查：為用戶代碼初始化環境")
+  (cs-status-coloring-program "語法檢查：用顏色標注表達式")
+  (cs-status--compile-time "語法檢查：編譯時")
+  (cs-status-expanding-expression "語法檢查：擴展表達式")
+  (cs-mouse-over-import "綁定~s為由~s導入")
+  
+  (cs-lexical-variable "詞匯變量")
+  (cs-lexical-syntax "詞匯的語法")
+  (cs-imported-variable "導入變量")
+  (cs-imported-syntax "導入的語法")
+  
+  ;;; info bar at botttom of drscheme frame
+  (collect-button-label "垃圾收集")
+  (read-only "只讀")
+  (read/write "讀/寫")
+  (auto-extend-selection "自動擴展")
+  (overwrite "覆蓋")
+  (running "運行中")
+  (not-running "停止中")
+  
+  ;;; misc
+  (welcome-to-something "歡迎來到~a")
+  
+  ; this appears in the drscheme about box.
+  (welcome-to-drscheme-version/language "歡迎使用DrScheme，版本~a，~a")
+  
+  ; these appear on subsequent lines in the `Help|Welcome to DrScheme' dialog.
+  (welcome-to-drscheme "歡迎使用DrScheme")
+  (version/language "版本~a，~a")
+  
+  (goto-line "跳至...行")
+  (goto-line-invalid-number
+    "~a不是合法的行號。必須提供一個在1和~a之間的數字")
+  (goto-position "跳至...位置")
+  (no-full-name-since-not-saved
+    "當前文件還沒有被命名，因為從來沒有對它進行保存。")
+  (cannot-open-because-dne "無法打開~a，文件不存在。")
+  (interactions-out-of-sync
+    "警告：交互窗口和定義窗口不同步。請單擊“運行”按鈕。")
+  (file-is-not-saved "文件\"~a\"還沒有保存過")
+  (save "保存")
+  (please-choose-either "請在“~a”和“~a”之間進行選擇")
+  (close-anyway "強制關閉")
+  (clear-anyway "強制清空")
+  
+  ;; menu item title
+  (log-definitions-and-interactions "記錄定義和交互的日至...")
+  (stop-logging "不再記錄日至")
+  (please-choose-a-log-directory "請選擇日志目錄")
+  (logging-to "記錄日至到：")
+  (erase-log-directory-contents "刪除日至目錄~a中的內容？")
+  (error-erasing-log-directory "刪除日至出錯。\n\n~a\n")
+  
+  ;; modes
+  (mode-submenu-label "模式")
+  (scheme-mode "Scheme模式")
+  (text-mode "文本模式")
+  
+  (scheme-mode-color-symbol "符號")
+  (scheme-mode-color-keyword "關鍵字")
+  (scheme-mode-color-comment "注釋")
+  (scheme-mode-color-string "字符串")
+  (scheme-mode-color-constant "常量")
+  (scheme-mode-color-parenthesis "括號")
+  (scheme-mode-color-error "錯誤")
+  (scheme-mode-color-other "其他")
+  ;; the ~a is filled in with one of the above (scheme-mode-*)
+  (syntax-coloring-choose-color "為~a選擇顏色")
+  (preferences-colors "顏色") ;; used in the preferences dialog
+  
+  (url "URL")
+  (url: "URL:")
+  (open-url... "打開URL...")
+  (open-url "打開URL")
+  (browse... "瀏覽...")
+  (bad-url "錯誤的URL")
+  (bad-url:this "錯誤的URL: ~a")
+  
+  ;; Help Desk
+  (help "幫助")
+  (help-desk "Help Desk")
+  (plt:hd:search-results "搜索結果")
+  (plt:hd:search "搜索")
+  (plt:hd:search-for "搜索")
+  (plt:hd:lucky "手氣！")
+  (plt:hd:feeling-lucky "手氣不錯")
+  (plt:hd:stop "停止")   
+  (plt:hd:options "選項") 
+  (plt:hd:configure "設置")
+  (plt:hd:home "Help Desk首頁") 
+  (plt:hd:show-manuals "顯示手冊") 
+  (plt:hd:send-bug-report "發送故障報告")
+  (plt:hd:query-bug-reports "查詢故障報告")
+  ; next 3 are popup menu choices in help desk search frame
+  (plt:hd:search-for-keyword "關鍵字")
+  (plt:hd:search-for-keyword-or-index "關鍵字或索引")
+  (plt:hd:search-for-keyword-or-index-or-text "關鍵字、索引或普通文本")
+  (plt:hd:exact-match "精確匹配")
+  (plt:hd:containing-match "包含")
+  (plt:hd:regexp-match "正則表達式匹配")
+  (plt:hd:find-docs-for "搜索：")
+  (plt:hd:nothing-found-for-search-key "找不到關於“~a”的文檔。")
+  (plt:hd:searching "搜索中")
+  (plt:hd:search-stopped "[搜索已停止。]")
+  (plt:hd:search-stopped-too-many-matches "[搜索中斷：過多的匹配結果]")
+  (plt:hd:nothing-found-for "找不到任何關於~a的信息")
+  (plt:hd:error-finding-docs "找不到文檔。\n\n~a")
+  (plt:hd:and "並且")
+  (plt:hd:refresh "更新")
+  (plt:hd:refresh-all-manuals "更新所有手冊")
+  (plt:hd:manual-installed-date "(~a已安裝)")
+  ; Help Desk configuration
+  (plt:hd:configuration "PLT Help Desk設置")
+  (plt:hd:no-frames "無框架")
+  (plt:hd:use-frames "使用框架")
+  (plt:hd:use-html-frames "使用HTML框架")
+  (plt:hd:search-pane-options "搜索面板設置")
+  (plt:hd:height "高度")
+  (plt:hd:bg-color "背景顏色")
+  (plt:hd:pixels "像素")
+  (plt:hd:text-color "文本顏色")
+  (plt:hd:link-color "鏈接顏色")
+  (plt:hd:text-sample "搜索面板中的文字是這個顏色的")
+  (plt:hd:link-sample "搜索面板中的鏈接是這個顏色的")
+  (plt:hd:save-changes "保存修改")
+  (plt:hd:reset "重置")
+  (plt:hd:defaults "使用默認")
+  (plt:hd:javascript-note
+    "如果你安裝了Javascript和一個標準的瀏覽器，那麼這裡就能看到你所作的選擇。")
+  ;; refreshing manuals
+  (plt:hd:refresh-downloading "下載~a")
+  (plt:hd:refresh-installing "安裝~a")
+  (plt:hd:refresh-progress "PLT手冊下載進行中")
+  (plt:hd:refresh-done "手冊更新完成")
+  (plt:hd:refresh-installation-log "安裝日至")
+  (plt:hd:refresh-stopped "PLT手冊下載已停止")
+  (plt:hd:refreshing-manuals "重新下載手冊")
+  (plt:hd:refresh-downloading... "正在下載~a...")
+  (plt:hd:refresh-deleting... "刪除舊版本的~a...")
+  (plt:hd:refresh-installing... "安裝新版本的~a...")
+  (plt:hd:refresh-clearing-indicies "清除緩存中的索引")
+  (plt:hd:refreshing-manuals-finished "完成。")
+  (plt:hd:about-help-desk "關於Help Desk")
+  (plt:hd:help-desk-about-string
+    "Help Desk是PLT軟件的信息來源，其中包含了DrScheme，MzScheme和MrEd的全部信息。\n\n版本~a\n版權所有(c)1995-2005 PLT")
+  (plt:hd:help-on-help "關於幫助的幫助")
+  (plt:hd:help-on-help-details "如果你需要使用Help Desk的幫助，請在Help Desk的主頁中點擊鏈接“How to use Help Desk”。（要進入Help Desk的主頁，請單擊Help Desk窗口上方的“主頁”按鈕。）")
+  (reload "刷新") ;; refresh the page in a web browser
+  (plt:hd:ask-about-separate-browser
+    "你選擇了一個指向萬維網的鏈接。請問您是要在Help Desk中打開該頁面，還是想使用瀏覽器程序瀏覽網頁？")
+  (plt:hd:homebrew-browser "Help Desk") ;; choice for the above string (in a button)
+  (plt:hd:separate-browser "網絡瀏覽器") ;; other choice for the above string (also in a button)
+  (plt:hd:external-link-in-help "在Help中的外部URL")
+  (plt:hd:use-homebrew-browser "對於外部URL，使用Help Desk瀏覽")
+  (plt:hd:new-help-desk "新的Help Desk窗口")
+  (plt:hd:teaching-manuals "學生的手冊")
+  (plt:hd:professional-manuals "專家的手冊")
+  (plt:hd:all-manuals "全部手冊")
+  
+  ;; in the Help Desk language dialog, title on the right.
+  (plt:hd:manual-search-ordering "搜索手冊的順序")
+  
+  
+  ;; Help desk htty proxy
+  (http-proxy "HTTP代理")
+  (proxy-direct-connection "直接連接")
+  (proxy-use-proxy "使用代理服務器：")
+  (proxy-host "地址")
+  (proxy-port "端口")
+  (proxy-bad-host "非法的代理服務器")
+  
+  ;; browser
+  (rewind-in-browser-history "後退")
+  (forward-in-browser-history "前進")
+  (home "主頁")
+  (browser "瀏覽器")
+  (external-browser-choice-title "外部瀏覽器") ; title for radio-button set
+  (browser-command-line-label "命令行：") ; label for radio button that is followed by text boxes
+  (choose-browser "選擇瀏覽器")
+  (no-browser "以後再詢問")
+  (use-internal-browser-for-help "使用內置的PLT瀏覽器閱讀幫助") ; radio-button label
+  (use-external-browser-for-help "使用外部網絡瀏覽器閱讀幫助") ; radio-button label
+  (browser-cmdline-expl-line-1 "(命令行由pre-text，URL和post-text連接而成，") ; explanatory text for dialog, line 1
+  (browser-cmdline-expl-line-2 "中間不含任何空格)") ; ... line 2. (Anyone need more lines?)
+  (cannot-display-url "無法顯示URL ~s：~a")
+  (install? "安裝？")  ;; if a .plt file is found (title of dialog)
+  (you-have-selected-an-installable-package "你選擇了一個可以安裝的軟件包。")
+  (do-you-want-to-install-it? "是否安裝？")
+  (paren-file-size "(該文件的長度是~a字節)")
+  (download-and-install "下載並安裝") ;; button label
+  (download "下載") ;; button label
+  (save-downloaded-file/size "下載文件(~a字節)並保存為") ;; label for get-file dialog
+  (save-downloaded-file "下載文件並保存為")  ;; label for get-file dialog
+  (downloading "下載中") ;; dialog title
+  (downloading-file... "下載文件中...")
+  (package-was-installed "安裝已完成。")
+  (download-was-saved "文件已保存。")
+  (getting-page "獲取網頁中") ;; dialog title
+  
+  (install-plt-file-menu-item... "安裝.plt文件...")
+  (install-plt-file-dialog-title "安裝.plt文件")
+  (install-plt-web-tab "網絡文件")
+  (install-plt-file-tab "本地文件")
+  (install-plt-filename "文件名：")
+  (install-plt-url "URL:")
+  
+  ;; install plt file when opened in drscheme strings
+  (install-plt-file "安裝~a，還是打開以供編輯？")
+  (install-plt-file/yes "安裝")
+  (install-plt-file/no "編輯")
+  
+  (plt-installer-progress-window-title "安裝程序") ;; frame title
+  (plt-installer-abort-installation "取消安裝") ;; button label
+  (plt-installer-aborted "安裝中止。") ;; msg that appears in the installation window when installation is aborted
+  
+  ;;; about box
+  (about-drscheme-frame-title "關於DrScheme")
+  (take-a-tour "教程")
+  (release-notes "發行記錄")
+  (parenthetical-last-version "(前一版本~a)")
+  (parenthetical-last-language "(前一語言~a)")
+  (parenthetical-last-version/language "(前一版本~a，語言~a)")
+  
+  
+  ;;; save file in particular format prompting.
+  (save-as-plain-text "保存本文件為純文本？")
+  (save-in-drs-format "保存本文件為drscheme(非純文本)格式？")
+  (yes "是")
+  (no "否")
+  
+  ;;; preferences
+  (preferences "參數設置")
+  (saving-preferences "保存參數")
+  (error-unmarshalling "錯誤的組合參數：~a")
+  (error-saving-preferences "保存參數時出錯:~a")
+  (error-reading-preferences "讀取參數設置時出錯")
+  (expected-list-of-length2 "需要一個長度為2的表")
+  (scheme-prefs-panel-label "Scheme")
+  (warnings-prefs-panel-label "警告")
+  (editor-prefs-panel-label "編輯")
+  (general-prefs-panel-label "常規")
+  (highlight-parens "加亮顯示匹配的括號")
+  (fixup-parens "自動修改括號類型以保持匹配")
+  (flash-paren-match "高亮顯示括號匹配")
+  (auto-save-files "自動保存文件")
+  (backup-files "保存備份文件")
+  (map-delete-to-backspace "將delete轉換成backspace")
+  (verify-exit "退出時確認")
+  (ask-before-changing-format "改變保存方式時確認")
+  (wrap-words-in-editor-buffers "在編輯器緩存中自動換行")
+  (show-status-line "顯示狀態行")
+  (count-columns-from-one "從一開始計算行號")
+  (display-line-numbers "在緩沖區中顯示行號和列號")
+  (enable-keybindings-in-menus "允許使用菜單中的快捷鍵")
+  (automatically-to-ps "自動打印成postscript文件")
+  (option-as-meta "將option鍵當作meta") ;; macos/macos x only
+  (use-mdi "使用MDI Windows") ;;; ms windows only -- use that window in a window thingy
+  (separate-dialog-for-searching "使用單獨的搜索對話框")
+  (reuse-existing-frames "在打開新文件時，使用現有的框架")
+  (default-fonts "默認字體")
+  (paren-match-color "高亮顯示括號所使用的顏色") ; in prefs dialog
+  (choose-color "選擇顏色") ; in prefs dialog
+  (online-coloring-active "實時根據語法用顏色標記程序")
+  (open-files-in-tabs "在不同的標簽下打開多個文件（不使用多個窗口）")
+  (show-interactions-on-ute "在運行程序時自動打開交互窗口")
+  (limit-interactions-size "限制交互窗口的大小")
+  (background-color "背景顏色")
+  (default-text-color "默認顏色") ;; used for configuring colors, but doesn't need the word "color"
+  (choose-a-background-color "請選擇背景顏色")
+  
+  ; title of the color choosing dialog
+  (choose-paren-highlight-color "請選擇高亮顯示括號所用的顏色")
+  
+  ; should have entire alphabet
+  (font-example-string "簡體中文 by 朱崇愷") 
+  
+  (change-font-button-label "更改")
+  (fonts "字體")
+  
+  ; filled with type of font, eg modern, swiss, etc.
+  (choose-a-new-font "請選擇一種新的“~a”字體")
+  
+  (font-size-slider-label "字號")
+  (restart-to-see-font-changes "重新啟動，使修改生效")
+  
+  (font-prefs-panel-title "字體")
+  (font-name "字體")
+  (font-size "字號")
+  (set-font "設置字體...")
+  (font-smoothing-label  "字體平滑度設置")
+  (font-smoothing-none "無")
+  (font-smoothing-some "部分")
+  (font-smoothing-all "全部")
+  (font-smoothing-default "使用系統默認")
+  (select-font-name "選擇字體")
+  (example-text "示例文字")
+  (only-warn-once "當定義窗口和交互窗口不同步時，僅警告一次")
+  
+  ; warning message when lockfile is around
+  (waiting-for-pref-lock "等待參數設置文件解鎖...")
+  (pref-lock-not-gone
+   "參數設置封鎖文件：\n\n ~a\n\n禁止保存參數設置。請確定沒有其他PLT軟件正在運行中，然後刪除該封鎖文件。")
+  (still-locked-exit-anyway? "參數無法保存。仍然退出？")
+  
+  ;;; indenting preferences panel
+  (indenting-prefs-panel-label "縮進")
+  (indenting-prefs-extra-regexp "其他表達式")
+  
+  ; filled with define, lambda, or begin
+  (enter-new-keyword "請輸入一個類似於~a的關鍵字：")
+  (x-keyword "~a關鍵字")
+  (x-like-keywords "~a類型的關鍵字")
+  
+  (expected-a-symbol "需要一個符號，得到a")
+  (already-used-keyword "“~a”已經是縮進關鍵字了")
+  (add-keyword "添加")
+  (remove-keyword "刪除")
+  
+  ;;; find/replace
+  (find-and-replace "查找並替換")
+  (find "查找")
+  (replace "替換")
+  (dock "面板")
+  (undock "對話框")
+  (use-separate-dialog-for-searching "使用單獨的對話框進行查找")
+  (replace&find-again "替換並查找下一個") ;;; need double & to get a single &
+  (replace-to-end "全部替換")
+  (forward "下一個")
+  (backward "上一個")
+  (hide "隱藏")
+  
+  ;;; multi-file-search
+  (mfs-multi-file-search-menu-item "在文件中搜索...")
+  (mfs-string-match/graphics "字符串匹配(可用與包含圖像的文件)")
+  (mfs-regexp-match/no-graphics "正則表達式匹配(只適用於純文本文件)")
+  (mfs-searching... "搜索...")
+  (mfs-configure-search "搜索設置") ;; dialog title
+  (mfs-files-section "文件")   ;; section in config dialog
+  (mfs-search-section "搜索") ;; section in config dialog
+  (mfs-dir "目錄")
+  (mfs-recur-over-subdirectories "包含子目錄")
+  (mfs-regexp-filename-filter "文件名篩選(正則表達式)")
+  (mfs-search-string "查找字符串")
+  (mfs-drscheme-multi-file-search "DrScheme──多文件查找") ;; results window and error message title
+  (mfs-not-a-dir "\"~a\"不是目錄")
+  (mfs-open-file "打開文件")
+  (mfs-stop-search "停止搜索")
+  (mfs-case-sensitive-label "大小寫敏感")
+  (mfs-no-matches-found "沒有找到匹配結果。")
+  (mfs-search-interrupted "搜索中止。")
+  
+  ;;; reverting a file
+  (error-reverting "DrScheme──錯誤恢復")
+  (could-not-read "無法讀取\"~a\"")
+  (are-you-sure-revert
+    "你確定要恢復這個文件嗎？這一操作無法撤銷。")
+  (are-you-sure-revert-title
+    "恢復？")
+  
+  ;;; saving a file
+  ; ~a is filled with the filename
+  (error-saving "無法保存") ;; title of error message dialog
+  (error-saving-file/name "在保存文件~a時出現錯誤。")
+  (error-loading "無法讀取")
+  (error-loading-file/name "在讀取~a時出現錯誤.")
+  (unknown-filename "<<未知>>")
+  
+  ;;; finder dialog
+  (must-specify-a-filename "你必須指定一個文件名")
+  (file-does-not-exist "文件\"~a\"不存在。")
+  (ask-because-file-exists "文件\"~a\"已存在。是否替換？")
+  (dne-or-cycle "文件\"~a\"中包含一個不存在的目錄，或者一個循環")
+  (get-file "Get file")
+  (put-file "Put file")
+  (full-pathname "完整路徑")
+  (show-dot-files "顯示點號開始文件/目錄名。")
+  (up-directory-button-label "上層目錄")
+  (add-button-label "添加") ;;; for multi-file selection
+  (add-all-button-label "全部添加") ;;; for multi-file selection
+  (remove-button-label "移除") ;;; for multi-file selection
+  (file-wrong-form "該文件名格式不正確")
+  (select-files "選擇多個文件")
+  (select-file "選擇單個文件")
+  (dir-dne "該目錄不存在。")
+  (file-dne "該文件不存在。")
+  (empty-filename "文件名中必須包含文字。")
+  (that-is-dir-name "這是一個目錄的名字。")
+  
+  ;;; raw menu names -- these must match the 
+  ;;; versions below, once the &s have been stripped.
+  ;;; if they don't, DrScheme's menus will appear
+  ;;; in the wrong order.
+  (file-menu "文件(F)")
+  (edit-menu "編輯(E)")
+  (help-menu "幫助(H)")
+  (windows-menu "窗口(W)")
+  
+  ;;; menus
+  ;;; - in menu labels, the & indicates a alt-key based shortcut.
+  ;;; - sometimes, things are stuck in the middle of 
+  ;;; menu item labels. For instance, in the case of
+  ;;; the "Save As" menu, you might see: "Save Definitions As". 
+  ;;; be careful of spacing, follow the English, if possible.
+  ;;; - the ellipses in the `after' strings indicates that
+  ;;; more information is required from the user before completing
+  ;;; the command.
+  
+  (file-menu-label "文件(&F)")
+  
+  (new-info  "新建文件")
+  (new-menu-item "新建(&N)")
+  (new-...-menu-item "新建(&N)...")
+  
+  (open-info "打開現有文件")
+  (open-menu-item "打開(&O)...")
+  (open-here-menu-item "從這裡打開(&O)...")
+  
+  (open-recent-info "最近使用過文件的列表")
+  (open-recent-menu-item "最近使用過的文件")
+  
+  (revert-info "將當前文件恢復為磁盤上的副本")
+  (revert-menu-item "恢復(&R)")
+  
+  (save-info "保存當前文件")
+  (save-menu-item "保存(&S)")
+  
+  (save-as-info "輸入新的文件名,保存當前文件")
+  (save-as-menu-item "另存為(&A)...")
+  
+  (print-info "打印當前文件")
+  (print-menu-item "打印(&P)...")
+  
+  (close-info "關閉當前文件")
+  (close-menu-item "關閉(&C)")
+  
+  (quit-info "關閉所有窗口")
+  (quit-menu-item-windows "退出(&X)")
+  (quit-menu-item-others "退出(&Q)")
+  
+  (edit-menu-label "編輯(&E)")
+  
+  (undo-info "撤銷最近的操作")
+  (undo-menu-item "撤銷(&U)")
+  
+  (redo-info "取消最近的撤銷操作")
+  (redo-menu-item "重復(&R)")
+  
+  (cut-info "將當前選中的對象移入剪貼版")
+  (cut-menu-item "剪切(&T)")
+  
+  (copy-info "將當前選中的對象復制到剪貼版")
+  (copy-menu-item "復制(&C)")
+  
+  (paste-info "將剪貼版中個內容復制到當前位置")
+  (paste-menu-item "粘貼(&P)")
+  
+  (clear-info "刪除當前選中的對象")
+  (clear-menu-item-others "清除")
+  (clear-menu-item-windows "刪除(&D)")
+  
+  (select-all-info "選中整個文件")
+  (select-all-menu-item "全選(&L)")
+  
+  (find-info "搜索某個字符串")
+  (find-menu-item "查找...")
+  
+  (find-again-info "繼續搜索該字符串")
+  (find-again-menu-item "查找下一個")
+  
+  (replace-and-find-again-info "替換當前文本，然後繼續查找原字符串")
+  (replace-and-find-again-menu-item "替換並查找下一個")
+  
+  (preferences-info "設置控制參數")
+  (preferences-menu-item "參數設置...")
+  
+  (keybindings-info "顯示當前熱鍵綁定")
+  (keybindings-menu-item "熱鍵綁定")
+  (keybindings-show-active "顯示熱鍵綁定")
+  (keybindings-frame-title "熱鍵綁定")
+  (keybindings-sort-by-name "按名稱排序")
+  (keybindings-sort-by-key "按鍵名排序")
+  (keybindings-add-user-defined-keybindings "添加自定義熱鍵綁定...")
+  (keybindings-menu-remove "取消~a")
+  (keybindings-choose-user-defined-file "請選擇一個包含熱鍵綁定的文件")
+  
+  (user-defined-keybinding-error "熱鍵綁定出錯~a\n\n~a")
+  (user-defined-keybinding-malformed-file "文件~a並不是一個按照(lib \"keybinding-lang.ss\" \"framework\")語言編寫的module.")  
+  
+  ;; menu items in the "special" menu
+  (insert-text-box-item "插入文本框")
+  (insert-pb-box-item "插入紙牌框")
+  (insert-image-item "插入圖片...")
+  (insert-comment-box-menu-item-label "插入注釋框")
+  (insert-lambda "插入λ")
+  (insert-delta "插入定義(&D)")
+  
+  (wrap-text-item "自動換行")
+  
+  (windows-menu-label "窗口(&W)")
+  (bring-frame-to-front "前端顯示")       ;;; title of dialog
+  (bring-frame-to-front... "前端顯示...") ;;; corresponding title of menu item
+  (next-window "下一窗口")
+  (previous-window "前一窗口")
+  (most-recent-window "最近的窗口")
+  
+  (view-menu-label "視圖(&V)")
+  (show-overview "顯示程序輪廓") 
+  (hide-overview "隱藏程序輪廓")
+  (show-module-browser "顯示module瀏覽器")
+  (hide-module-browser "隱藏module瀏覽器")
+  
+  (help-menu-label "幫助(&H)")
+  (about-info "本程序的詳細信息以及致謝名單")
+  (about-menu-item "關於...")
+  (help-menu-check-for-updates "檢查更新...")
+  
+  ;; open here's new menu item
+  (create-new-window-or-clear-current
+    "您是想打開一個新窗口，還是清空當前窗口？")
+  (clear-current "清空當前")
+  (new-window "新窗口")
+  
+  ;;; exiting and quitting ``are you sure'' dialog
+  ;;; exit is used on windows, quit on macos, in English. Other
+  ;;; languages probably use the same word on both platforms.
+  (exit "退出")
+  (quit "退出")
+  (are-you-sure-exit "你確定要退出嗎?")
+  (are-you-sure-quit "你確定要退出嗎?")
+  
+  ;;; autosaving
+  (error-autosaving "自動保存為\"~a\"時出錯。") ;; ~a will be a filename
+  (autosaving-turned-off "在一個文件沒有被手工保存之間，自動保存也不會進行")
+  (recover-autosave-files-frame-title "從自動保存中恢復")
+  (autosave-details "詳細情況")
+  (autosave-recover "恢復")
+  (autosave-unknown-filename "<<未知>>")
+  
+  ;; these are labels in a dialog that drscheme displays
+  ;; if you have leftover autosave files. to see the dialog,
+  ;; start up drscheme and modify (but don't save) a file
+  ;; (also, do this with an unsaved file). Wait for the autosave
+  ;; files to appear (typically 5 minutes). Kill DrScheme
+  ;; and restart it. You'll see the dialog
+  (autosave-autosave-label: "自動保存文件：")
+  (autosave-original-label: "原始文件：")
+  (autosave-autosave-label "自動保存文件")
+  (autosave-original-label "原始文件")
+  (autosave-compare-files "比較自動保存文件")
+  
+  (autosave-show-autosave "自動保存文件") ;; title of a window showing the autosave file
+  
+  (autosave-explanation "DrScheme發現了自動保存的文件，其中可能包含你沒有保存過的程序")
+  
+  (autosave-recovered! "已恢復！") ;; status of an autosave file
+  (autosave-deleted "已刪除")       ;; status of an autosave file
+  
+  (autosave-error-deleting "刪除~a出錯\n\n~a") ;; first is a filename, second is an error message from mz.
+  (autosave-delete-button "刪除")
+  (autosave-delete-title "刪除")  ;; title of a dialog asking for deletion confirmation
+  (autosave-done "完成")
+  
+  ;; appears in the file dialog
+  (autosave-restore-to-where? "請選擇自動保存文件的位置")
+  
+  
+  ;;; file modified warning
+  (file-has-been-modified
+    "要保存你所作的更改嗎？")
+  (overwrite-file-button-label "保存")
+  
+  (definitions-modified 
+    "當前磁盤文件已被修改；請保存或恢復文件。")
+  (drscheme-internal-error "DrScheme內部錯誤")
+  
+  ;;; tools
+  (invalid-tool-spec "Collection ~a中info.ss的tool定義不正確。需要一個字符串或者一個非空表，得到：~e")
+  (error-loading-tool-title "DrScheme──載入tool ~s時出錯；~s")
+  (error-invoking-tool-title "調用tool ~s出錯；~s")
+  (tool-tool-names-same-length
+    "在~s的info.ss文件中，“tool-names”和“tools”應該是等長的表，得到~e和~e")
+  (tool-tool-icons-same-length
+    "在~s的info.ss文件中，“tool-icons”和“tools”應該是等長的表，得到~e和~e")
+  (tool-tool-urls-same-length
+    "在~s的info.ss文件中，“tool-urls”和“tools”應該是等長的表，得到~e和~e")
+  (error-getting-info-tool
+   "載入~s的info.ss出錯")
+  (tool-error-phase1 "tool ~s第一階段出錯;~s")
+  (tool-error-phase2 "tool ~s第二階段出錯;~s")
+  
+  
+  ;;; define popup menu
+  (end-of-buffer-define "<<緩沖區結束>>")
+  (sort-by-name "按名字排序")
+  (sort-by-position "按文件中的位置排序")
+  (no-definitions-found "<<沒有任何定義>>")
+  (jump-to-defn "跳至~a的定義")
+  
+  (recent-items-sort-by-age "按時間排序")
+  (recent-items-sort-by-name "按名字排序")
+  
+  ;;; view menu
+  (hide-definitions-menu-item-label "隱藏定義(&D)")
+  (show-definitions-menu-item-label "顯示定義(&D)")
+  (definitions-menu-item-help-string "顯示/隱藏定義窗口")
+  (show-interactions-menu-item-label "顯示交互(&I)")
+  (hide-interactions-menu-item-label "隱藏交互(&I)")
+  (interactions-menu-item-help-string "顯示/隱藏交互窗口")
+  (show-toolbar "顯示工具欄(&T)")
+  (hide-toolbar "隱藏工具欄(&T)")
+  
+  ;;; file menu
+  (save-definitions-as "將定義另存為(&A)")
+  (save-definitions "保存定義")
+  (print-definitions "打印定義...")
+  (about-drscheme "關於DrScheme")
+  (save-other "其他保存方式")
+  (save-definitions-as-text "將定義保存為文本...")
+  (save-interactions "保存交互")
+  (save-interactions-as "將交互另存為...")
+  (save-interactions-as-text "將交互保存為文本...")
+  (print-interactions "打印交互...")
+  (new-tab "新建標簽")
+  (close-tab "關閉標簽") ;; must not have any &s in it.
+  
+  ;;; edit-menu
+  (split-menu-item-label "分屏(&S)")
+  (collapse-menu-item-label "合並(&O)")
+  
+  ;;; language menu
+  (language-menu-name "語言(&L)")
+  
+  ;;; scheme-menu
+  (scheme-menu-name "S&cheme")
+  (ute-menu-item-label "運行")
+  (ute-menu-item-help-string "運行定義窗口中的程序")
+  (break-menu-item-label "中斷")
+  (break-menu-item-help-string "中斷當前計算")
+  (kill-menu-item-label "終止")
+  (kill-menu-item-help-string "終止當前計算")
+  (clear-error-highlight-menu-item-label "清除錯誤高亮顯示")
+  (clear-error-highlight-item-help-string "清除錯誤區域的粉紅色高亮顯示")
+  (reindent-menu-item-label "調整縮進(&R)")
+  (reindent-all-menu-item-label "全文調整縮進(&A)")
+  (semicolon-comment-out-menu-item-label "用分號注釋(&C)")
+  (box-comment-out-menu-item-label "用注釋框注釋(&C)")
+  (uncomment-menu-item-label "取消注釋(&U)")
+  
+  (convert-to-semicolon-comment "轉化為分號注釋")
+  
+  ;;; utables
+  (create-utable-menu-item-label "創建可執行程序...")
+  (create-utable-title "創建可執行程序")
+  (must-save-before-utable "在創建可執行程序之前，你必須保存源程序")
+  (save-an-utable "保存為可執行程序")
+  (save-a-mred-launcher "保存為MrEd程序")
+  (save-a-mzscheme-launcher "保存為MzScheme程序")
+  (save-a-mred-stand-alone-utable "保存為MrEd可執行程序")
+  (save-a-mzscheme-stand-alone-utable "保存為MzScheme可執行程序")
+  
+  (definitions-not-saved "當前定義窗口中的程序並沒有被保存過。將使用最近保存過的版本來生成可執行程序。繼續？")
+  (inline-saved-program-in-utable?
+    "是否將程序嵌入到可執行文件中？如果選擇是，那麼你可以將可執行文件復制到其他~a計算機上使用，但是這將會大大增加可執行文件的大小；否則，那麼你可以得到一個小得多的可執行文件，但是無法將它復制到其它計算機上使用。此外，如果選擇否，該可執行文件每次運行時都會自動載入最新保存的程序。")
+  (use-mred-binary?
+    "是否使用mred庫？\n\n如果選擇是，那麼你的可執行程序就可以使用庫(lib \"mred.ss\" \"mred\")；否則，該可執行程序就只能使用mzscheme庫。\n\n如果你無法確定，請選擇是。")
+  (inline-saved-program-in-utable/windows/path
+    "注意！生成的程序文件運行時需要三個DLL庫：libmred.dll、libmzsch.gll和libgc.dll。它們位於\n\n~a\n\n程序文件執行時會在當前目錄或者PATH環境變量中尋找DLL庫。\n\nDrScheme在安裝時已經將這些DLL所在的目錄放入PATH變量。請不要手工修改這些設置。\n\n如果你要將該可執行文件復制到其它計算機上，必須同時復制這幾個DLL文件──你可以將DLL文件和可執行程序放在同一個目錄下，也可以將DLL文件放在一個PATH目錄中。")
+  (launcher "啟動程序")
+  (stand-alone "獨立的")
+  (utable-type "類型")
+  (utable-base "基")
+  (filename "文件名：")
+  (create "創建")
+  (please-choose-an-utable-filename "請選擇可執行文件的名稱。")
+  (windows-utables-must-end-with-exe
+    "文件名\n\n  ~a\n\n不合法。Windows可執行文件必須以.exe結尾。")
+  (macosx-utables-must-end-with-app
+    "文件名\n\n  ~a\n\n不合法。MacOS X可執行文件必須以.app結尾。")
+  (warning-directory-will-be-replaced
+    "警告：目錄：\n\n  ~a\n\n將會被重置。繼續操作？")
+  
+  (create-servlet "創建Servlet...")
+  
+  ; the ~a is a language such as "module" or "algol60"
+  (create-servlet-unsupported-language
+    "無法為~a語言程序創建Servlet。")
+  
+  ;;; buttons
+  (ute-button-label "運行") 
+  (save-button-label "保存")
+  (break-button-label "停止")
+  
+  ;;; search help desk popup menu
+  (search-help-desk-for "在Help Desk中搜索“~a”")
+  (exact-lucky-search-help-desk-for "在Help Desk中搜索最符合“~a”的一個頁面")
+  
+  ;; collapse and expand popup menu items
+  (collapse-sexp "折疊sexpression")
+  (expand-sexp "擴展sexpression")
+  
+  ;;; fraction dialog
+  (enter-fraction "輸入分數")
+  (whole-part "整數部分")
+  (numerator "分子")
+  (denominator "分母")
+  (invalid-number "無效的輸入：必須輸入一個精確的、不是整數的實數")
+  (insert-fraction-menu-item-label "插入分數...")
+  
+  ;; number snip popup menu
+  (show-decimal-expansion "用十進制表示")
+  (show-fraction-view "用分數表示")
+  (show-mixed-fraction-view "用帶分數表示")
+  (show-improper-fraction-view "用假分數表示")
+  (show-more-decimal-places "先是更多小數位")
+  
+  ;;; Teachpack messages
+  (select-a-teachpack "選擇教學包")
+  (clear-teachpack "卸載教學包~a")
+  (teachpack-error-label "DrScheme──教學包出錯")
+  (teachpack-dne/cant-read "教學包~a不存在，或者無法讀取。")
+  (teachpack-didnt-load "無法裝載教學包~a。")
+  (teachpack-error-invoke "調用教學包~a是產生了錯誤。")
+  (add-teachpack-menu-item-label "加載教學包...")
+  (clear-all-teachpacks-menu-item-label "卸載全部教學包")
+  (drscheme-teachpack-message-title "DrScheme教學包")
+  (already-added-teachpack "教學包~a已裝載")
+  
+  ;;; Language dialog
+  (introduction-to-language-dialog
+    "請選擇語言。大部分入門級的學生都可以使用默認語言。")
+  (language-dialog-title "語言選擇")
+  (case-sensitive-label "大小寫敏感")
+  (output-style-label "輸出格式")
+  (constructor-printing-style "構造器")
+  (quasiquote-printing-style "Quasiquote")
+  (write-printing-style "write")
+  (print-printing-style "current-print")
+  (sharing-printing-label "Show sharing in values")
+  (use-pretty-printer-label "print多個對象時自動換行")
+  (input-syntax "輸入語法")
+  (dynamic-properties "Dynamic Properties")
+  (output-syntax "輸出語法")
+  (no-debugging-or-profiling "No debugging or profiling")
+  (debugging "Debugging")
+  (debugging-and-profiling "Debugging and profiling")
+  (test-coverage "Syntactic test suite coverage")
+  (whole/fractional-exact-numbers-label "以分數形式輸出數字")
+  (booleans-as-true/false-label "輸出布爾值為true/false")
+  (show-details-button-label "顯示詳情")
+  (hide-details-button-label "隱藏詳情")
+  (choose-language-menu-item-label "選擇語言...")
+  (revert-to-language-defaults "恢復默認語言設置")
+  (language-docs-button-label "語言文檔")
+  (fraction-style "分數格式")
+  (use-mixed-fractions "帶分數")
+  (use-repeating-decimals "循環小數")
+  (decimal-notation-for-rationals "使用十進制表示有理數")
+  (please-select-a-language "請選擇語言")
+  
+  
+  ;;; languages
+  (beginning-student "初級")
+  (beginning-one-line-summary "define、cond、結構體、常量和基本操作")
+  (beginning-student/abbrev "初級+縮寫的表")
+  (beginning/abbrev-one-line-summary "在初級的基礎上，用縮寫形式輸出表")
+  (intermediate-student "中級")
+  (intermediate-one-line-summary "在初級的基礎上增加詞法作用域")
+  (intermediate-student/lambda "中級+lambda")
+  (intermediate/lambda-one-line-summary "在中級的基礎上，增加高階函數")
+  (advanced-student "高級")
+  (advanced-one-line-summary "在中級的基礎上，增加lambda和賦值")
+  (full-language "Full") ;; also in the HtDP languages section
+  (how-to-design-programs "程序設計方法/How to Design Programs") ;; should agree with MIT Press on this one...
+  (r5rs-like-languages "R5RS-like")
+  (pretty-big-scheme "Pretty Big (包括MrEd和高級)")
+  (pretty-big-scheme-one-line-summary "Adds syntax and functions from the HtDP languages")
+  (r5rs-lang-name "標準(R5RS)")
+  (r5rs-one-line-summary "Scheme語言標準第5修改稿")
+  (expander "Expander")
+  (expander-one-line-summary "Expands, rather than uates, expressions")
+  (professional-languages "正式語言")
+  (teaching-languages "教學語言")
+  (experimental-languages "實驗語言")
+  
+  (module-language-one-line-summary "Run creates a REPL in the context of the module, including the module's declared language")
+  
+  
+  ;;; debug language
+  (unknown-debug-frame "[unknown]")
+  (backtrace-window-title "Backtrace - DrScheme")
+  (files-interactions "~a's interactions") ;; filled with a filename
+  (current-interactions "interactions")
+  (current-definitions "definitions")
+  (mzscheme-w/debug "Textual (MzScheme, 包含R5RS)")
+  (mzscheme-one-line-summary "PLT的Scheme實現")
+  (mred-w/debug "Graphical (MrEd, 包含 MzScheme)")
+  (mred-one-line-summary "在MzScheme的基礎上增加GUI支持")
+  
+  ;; profiling
+  (profiling-low-color "Low")
+  (profiling-high-color "High")
+  (profiling-choose-low-color "Please select a low color")
+  (profiling-choose-high-color "Please select a high color")
+  (profiling "Profiling")
+  (profiling-example-text "(define (whee) (whee))")
+  (profiling-color-config "Profiling Color Range") 
+  (profiling-scale "Profiling Color Scale")
+  (profiling-sqrt "Square root")
+  (profiling-linear "Linear")
+  (profiling-square "Square")
+  (profiling-number "Number of Calls")
+  (profiling-time "Cumulative Time")
+  (profiling-update "Update Profile")
+  (profiling-col-percent-time "% Time")
+  (profiling-col-function "Function")
+  (profiling-col-name "Name")
+  (profiling-col-time-in-msec "Msec")
+  (profiling-col-calls "Calls")
+  (profiling-show-profile "Show Profile")
+  (profiling-hide-profile "Hide Profile")
+  (profiling-unknown-src "<< unknown >>")
+  (profiling-no-information-available "There is no profiling information available. Please be sure that profiling is enabled in your language and you have run your program.")
+  (profiling-clear? "Changing the definitions window invalidates the profiling information. Continue?")
+  
+  ;; test coverage
+  (test-coverage-clear? "Changing the definitions window invalidates the test coverage information. Continue?")
+  (test-coverage-clear-and-do-not-ask-again "Yes, and don't ask again")
+  (test-coverage-ask? "Ask about clearing test coverage")
+  
+  ;; tracing
+  (tracing-enable-tracing "Enable tracing")
+  (tracing-show-tracing-window "Show Tracing")
+  (tracing-hide-tracing-window "Hide Tracing")
+  (tracing-tracing-nothing-to-show "No tracing results are available. Be sure your language supports tracing and it is enabled.")
+  
+  ;;; repl stuff
+  (uation-terminated "uation Terminated")
+  (uation-terminated-explanation
+    "The uation thread is no longer running, so no uation can take place until the next ution.")
+  (last-stack-frame "show the last stack frame")
+  (last-stack-frames "show the last ~a stack frames")
+  (next-stack-frames "show the next ~a stack frames")
+  
+  ;;; welcoming message in repl
+  (language "語言")
+  (custom "自定義")
+  (teachpack "教學包")
+  (welcome-to "歡迎使用")
+  (version "版本")
+  
+  ;;; kill uation dialog
+  (kill-uation? "是否要終止計算？")
+  (just-break "中斷")
+  (kill "終止")
+  (kill? "終止？")
+  
+  ;;; version checker
+  ;; the next two are used in the initial wizard dialog.
+  ;; Note that vc-wizard-check-prompt can (should) have newlines so
+  ;; it will not make the dialog too wide.
+  (vc-wizard-check-note "你正要安裝的可能不是最新版本。DrScheme能夠自動檢查版本。")
+  (vc-wizard-check-button "檢查更新")
+  (vc-update-check "檢查更新")
+  (vc-please-wait "請稍等")
+  (vc-connecting-version-server "連接PLT版本服務器")
+  (vc-network-timeout "網絡超時") 
+  (vc-cannot-connect  "無法連接到PLT版本服務器")
+  (vc-network-failure "網絡失效")
+  (vc-old-binaries "當前安裝的DrScheme(或MzScheme)並不是最新版本")
+  (vc-binary-information-format "當前安裝的版本號：~a(修改號~a)")
+  (vc-details-format "~a~n詳細：~n~a")
+  (vc-details-text "詳細：~n")
+  (vc-error-format "錯誤：~a") 
+  (vc-current-format "~a v.~a(修改號~a)是最新版本")
+  (vc-update-format "~a v.~a(修改號~a)，需要升級到v.~a(修改號~a)")
+  (vc-binary-name "安裝程序")
+  (vc-updates-available "升級版本可以下載：")
+  (vc-latest-binary-information-format "最新發布的版本：~a(修改號~a)")
+  (vc-update-dialog-title "PLT省級信息")
+  (vc-need-update-string "需要升級")
+  (vc-no-update-string "已經是最新版本了")
+  
+  ;; special menu
+  (special-menu "特殊符號(&P)")
+  
+  ;; large semi colon letters
+  (insert-large-letters... "插入大字...")
+  (large-semicolon-letters "帶分號的大字")
+  (text-to-insert "要插入的文字")
+  
+  (module-browser-filename-format "Full Filename: ~a (~a lines)")
+  (module-browser-root-filename "Root Filename: ~a")
+  (module-browser-font-size-gauge-label "Font Size")
+  (module-browser-progress-label "Module overview progress")
+  (module-browser-adding-file "Adding file: ~a...")
+  (module-browser-laying-out-graph-label "Laying out graph")
+  (module-browser-open-file-format "Open ~a")
+  (module-browser "Module瀏覽器") ;; frame title
+  (module-browser... "Module瀏覽器...") ;; menu item title
+  (module-browser-error-expanding "Error expanding the program:\n\n~a")
+  (module-browser-show-lib-paths "Show files loaded by (lib ..) paths")
+  (module-browser-progress "Module瀏覽器：~a") ;; prefix in the status line
+  (module-browser-compiling-defns "Module瀏覽器：compiling definitions")
+  (module-browser-show-lib-paths/short "Follow lib requires") ;; check box label in show module browser pane in drscheme window.
+  (module-browser-refresh "Refresh") ;; button label in show module browser pane in drscheme window.
+  (module-browser-only-in-plt-and-module-langs
+    "Module瀏覽器只能在PLT語言和module語言(並且要求程序中有module)中使用。")
+  (module-browser-name-length "Name length")
+  (module-browser-name-short "Short")
+  (module-browser-name-medium "Medium")
+  (module-browser-name-long "Long")
+  (module-browser-open-all "Open all files shown here")
+  
+  (happy-birthday-matthias "Happy Birthday, Matthias!")
+  (happy-birthday-matthew "Happy Birthday, Matthew!")
+  (happy-birthday-shriram "Happy Birthday, Shriram!")
+  
+  (mrflow-using-default-language-title "Default Language Used")
+  (mrflow-using-default-language "The language currently used does not have a type table defined for its primitives. Using R5RS Scheme instead.")
+  (mrflow-button-title "Analyze")
+  ;(mrflow-unknown-style-delta-error-title "Unknown Box Style Delta")
+  ;(mrflow-unknown-style-delta-error "Unknown box style delta: ~a")
+  (mrflow-coloring-error-title "Unknown Color")
+  (mrflow-coloring-error "No style defined for color: ~a")
+  (mrflow-popup-menu-show-type "Show Type")
+  (mrflow-popup-menu-hide-type "Hide Type")
+  (mrflow-popup-menu-show-errors "Show Errors")
+  (mrflow-popup-menu-hide-errors "Hide Errors")
+  ;(mrflow-read-exception-title "Read Exception")
+  ;(mrflow-read-exception "Read exception: ~a")
+  ;(mrflow-syntax-exception-title "Syntax Exception")
+  ;(mrflow-syntax-exception "Syntax exception: ~a")
+  ;(mrflow-unknown-exception-title "Unknown Exception")
+  ;(mrflow-unknown-exception "Unknown exception: ~a")
+  ;(mrflow-language-primitives-error-title "Language Primitives Error")
+  ;(mrflow-language-primitives-error "Wrong filename for language primitives types table: ~a")
+  
+  (snips-and-arrows-popup-menu-tack-all-arrows "Tack All Arrows")
+  (snips-and-arrows-popup-menu-untack-all-arrows "Untack All Arrows")
+  (snips-and-arrows-user-action-disallowed-title "User Changes Currently Disallowed")
+  (snips-and-arrows-user-action-disallowed "User changes are disallowed in editors that contain tool-inserted snips.  Hide all snips before modifying the content of the editor.")
+  ;(snips-and-arrows-changing-terms-warning-title "Changing terms will be undoable")
+  ;(snips-and-arrows-changing-terms-warning "Changing terms in an editor containing snips cannot be undone.  You can either cancel this action, remove the snips, and try the change again, or you can continue with the change, in which case the change will not be undoable (all others changes made before and afterward will still be undoable though).")
+  (snips-and-arrows-hide-all-snips-in-editor "Hide all snips in editor")
+  
+  (xml-tool-menu "XML")
+  (xml-tool-insert-xml-box "插入XML框")
+  (xml-tool-insert-scheme-box "插入Scheme框")
+  (xml-tool-insert-scheme-splice-box "插入Scheme接合框")
+  (xml-tool-xml-box "XML框")
+  (xml-tool-scheme-box "Scheme框")
+  (xml-tool-scheme-splice-box "Scheme接合框")
+  (xml-tool-switch-to-scheme "轉變成Scheme框")
+  (xml-tool-switch-to-scheme-splice "轉變成Scheme接合框")
+  (xml-tool-eliminate-whitespace-in-empty-tags
+    "Eliminiate whitespace in empty tags")
+  (xml-tool-leave-whitespace-alone
+    "Leave whitespace alone")
+  
+  (show-recent-items-window-menu-item "在單獨窗口中顯示最近使用的文件")
+  (show-recent-items-window-label "最近使用的文件")
+  (number-of-open-recent-items "Number of recent items")
+  (switch-anyway "Switch File Anyway")
+  
+  (stepper-program-has-changed "注意：程序已改變。")
+  (stepper-program-window-closed "注意：程序窗口已關閉。")
+  
+  (stepper-home "還原")
+  (stepper-name "單步執行器")
+  (stepper-language-level-message
+    "您選擇的語言是“~a”。目前，stepper只支持“~a”和“~a”之間的語言。")
+  (stepper-button-label "單步執行")
+  (stepper-previous-application "|< 調用")
+  (stepper-previous "< 上一步")
+  (stepper-next "下一步 >")
+  (stepper-next-application "調用 >|")
+  
+  
+  (wizard-next "前進")
+  (wizard-back "後退")
+  (wizard-finish "完成")
+  
+  ;; warnings about closing a drscheme frame when the program
+  ;; might still be doing something interesting
+  (program-is-still-running "定義窗口中的程序還在運行中。強制退出？")
+  (program-has-open-windows "定義窗口中的打開了其他窗口。強行關閉這些窗口？")
+  
+  ;; ml-command-line-arguments is for the command line arguments
+  ;; label in the module language details in the language dialog.
+  (ml-command-line-arguments "Command-line arguments as a vector of strings, in read syntax")
+  
+  ;; ml-cp names are all for the module language collection path
+  ;; configuration. See the details portion of the language dialog
+  ;; for the module language (at the bottom).
+  (ml-cp-default-collection-path "<<default collection paths>>")
+  
+  ;; in std get-directory 
+  (ml-cp-choose-a-collection-path "Please choose a collection path")
+  
+  ;; err msg when adding default twice
+  (ml-cp-default-already-present
+    "Default collection paths are already present")
+  
+  ;; title of this section of the dialog (possibly the word
+  ;; `Collection' should not be translated)
+  (ml-cp-collection-paths "Collection Paths")
+  
+  ;; button labels
+  (ml-cp-add "Add")
+  (ml-cp-add-default "Add Default")
+  (ml-cp-remove "Remove")
+  (ml-cp-raise "Raise")
+  (ml-cp-lower "Lower")
+  
+  ;; Profj
+  (profj-java "Java")
+  (profj-java-mode "Java模式")
+  (profj-java-mode-color-keyword "keyword")
+  (profj-java-mode-color-string "string")
+  (profj-java-mode-color-literal "literal")
+  (profj-java-mode-color-comment "comment")
+  (profj-java-mode-color-error "error")
+  (profj-java-mode-color-identifier "identifier")
+  (profj-java-mode-color-default "default")
+  
+  (profj-insert-java-comment-box "插入Java注釋框")
+  (profj-insert-java-interactions-box "插入Java交互框")
+  
+  ;; The Test Suite Tool
+  ;; Errors
+  (test-case-empty-error "Empty test case")
+  (test-case-too-many-expressions-error "Too many expressions in a test case.")
+  (test-case-not-at-top-level "Test case box not at top level")
+  ;; Dr. Scheme window menu items
+  (test-case-insert "插入Test Case")
+  (test-case-disable-all "禁用所有Test Cases")
+  (test-case-enable-all "允許所有Test Cases")
+  
+  ;; NOTE: The following string constants are labels of the test-case fields. The width
+  ;;       of the field is determined by the length of the longest of the following three words.
+  ;;       if the words are too long the test case will take up too much horizontal room and
+  ;;       not look very good.
+  ;; This string is the label of the expression that is being tested in a test case.
+  (test-case-to-test "Test")
+  ;; This string is the label of the expression that is the expected value of the to-test expression.
+  (test-case-expected "Should be")
+  ;; This string is the label of the actual result of the to test expression.
+  (test-case-actual "Actual")
+  (test-case-predicate "Predicate")
+  (test-case-should-raise "Should Raise")
+  ;; The label of a field of the test-case that describes the expected error message of a test case
+  (test-case-error-message "Error Message")
+  
+  (test-case-menu-title "Test Case")
+  (test-case-switch-to-error-box "Switch to Error Test Box")
+  (test-case-switch-to-nonerror-box "Switch to Nonerror Test box")
+  (test-case-collapse "Collapse Test Case")
+  (test-case-show-actual "Show Actual Value")
+  (test-case-enable "Enable Test Case")
+  (test-case-show-predicate "Show Predicate")
+  (test-case-show-error-message "Show Error Message")
+  (test-case-convert-to-text "Convert to text")
+  
+  ;; Profj Boxes
+  (profjBoxes-empty-error "Empty interaction")
+  (profjBoxes-too-many-expressions-error "Too many expressions in a box")
+  (profjBoxes-interactions-label "Interactions")
+  (profjBoxes-bad-java-id-error "Malformed Java ID")
+  (profjBoxes-examples-label "Examples")
+  (profjBoxes-add-new-example-button "Add new example")
+  (profjBoxes-type "Type")
+  ;; The Java identifier of an example of data
+  (profjBoxes-name "Name")
+  (profjBoxes-value "Value")
+  (profjBoxes-insert-java-examples "插入Java Examples")
+  (profjBoxes-insert-java-interactions "插入Java Interactions")
+  
+  ;; Slideshow
+  (slideshow-show-slideshow-panel "顯示Slideshow面板")
+  (slideshow-hide-slideshow-panel "隱藏Slideshow面板")
+  (slideshow-freeze-picts "Freeze These Picts")
+  (slideshow-thaw-picts "Show Picts Under Mouse")
+  (slideshow-hide-picts "Show Nested Boxes")
+  (slideshow-show-picts "Show Picts")
+  (slideshow-cannot-show-picts "Cannot show picts; run program to cache sizes first")
+  (slideshow-insert-pict-box "插入Pict框") 
+  
+  ;; GUI Tool
+  (gui-tool-heading "GUI工具")
+  (gui-tool-before-clicking-message "在點擊工具圖標之前，請先使用“特殊符號”菜單中的“插入GUI”命令插入一個GUI根對象，或先選中另一個GUI。")
+  (gui-tool-show-gui-toolbar "顯示GUI工具欄")
+  (gui-tool-hide-gui-toolbar "隱藏GUI工具欄")
+  (gui-tool-insert-gui "插入GUI")
+  )
+ 
