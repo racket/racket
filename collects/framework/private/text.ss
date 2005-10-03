@@ -884,6 +884,7 @@ WARNING: printf is rebound in the body of the unit to always
           set-allow-edits
           get-allow-edits
           insert-between
+          insert-before
           submit-to-port?
           on-submit
           send-eof-to-in-port
@@ -988,11 +989,21 @@ WARNING: printf is rebound in the body of the unit to always
           (define/public-final (insert-between str/snp)
             (insert str/snp unread-start-point unread-start-point)
             (set! unread-start-point (+ unread-start-point 
-                                        (cond
-                                          [(string? str/snp) (string-length str/snp)]
-                                          [(is-a? str/snp snip%)
-                                           (send str/snp get-count)]))))
-                                           
+                                        (amt-of-space str/snp))))
+          
+          ;; insert-before : string/snp -> void
+          ;; inserts something before both the insertion point and the unread region
+          (define/public-final (insert-before str/snp)
+            (insert str/snp insertion-point insertion-point)
+            (let ([amt (amt-of-space str/snp)])
+              (set! insertion-point (+ insertion-point amt))
+              (set! unread-start-point (+ unread-start-point amt))))
+          
+          (define/private (amt-of-space str/snp)
+            (cond
+              [(string? str/snp) (string-length str/snp)]
+              [(is-a? str/snp snip%)
+               (send str/snp get-count)]))
           
           (define/public-final (get-insertion-point) insertion-point)
           (define/public-final (set-insertion-point ip) (set! insertion-point ip))

@@ -501,6 +501,7 @@ TODO
                    get-value-port
                    in-edit-sequence?
                    insert
+                   insert-before
                    insert-between
                    invalidate-bitmap-cache
                    is-frozen?
@@ -812,12 +813,12 @@ TODO
           
           (define/private (insert-warning)
             (begin-edit-sequence)
-            (insert-between "\n")
-            (let ([start (get-unread-start-point)])
-              (insert-between
+            (let ([start (get-insertion-point)])
+              (insert-before
                (string-constant interactions-out-of-sync))
-              (let ([end (get-unread-start-point)])
+              (let ([end (get-insertion-point)])
                 (change-style warning-style-delta start end)))
+            (insert-before "\n")
             (end-edit-sequence))
           
           (field (already-warned? #f))
