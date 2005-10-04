@@ -95,6 +95,11 @@ String operations:
     - The zero-based index cannot be negative and must be less
       than the string length.
 
+Numeric operations:
+
+> sqrt(float f) => float
+    - Produces the square root of its argument.
+
 _Operators_
 
 Unary operators:

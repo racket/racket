@@ -536,9 +536,11 @@
                    [honu:let-body     e1])
                  t1))]
       [(struct honu:seq (_ effects value))
-       (let-values ([(effects _) (map-two-values (lambda (e)
-                                                   (typecheck-expression lenv (make-void-type (honu:ast-stx e)) e))
-                                                 effects)]
+       (let-values ([(effects _)
+                     (map-two-values
+                      (lambda (e)
+                        (typecheck-expression lenv (make-void-type (honu:ast-stx e)) e))
+                      effects)]
                      [(e1 t1) (typecheck-expression lenv ctype value)])
          (values (copy-struct honu:seq expr
                    [honu:seq-effects effects]

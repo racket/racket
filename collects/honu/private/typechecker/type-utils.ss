@@ -57,7 +57,7 @@
        (symbol->string name)]
       [(struct honu:type-tuple (_ args))
        (if (null? args)
-           "<>"
+           "void"
            (string-append "<"
                           (fold (lambda (t i)
                                   (string-append i ", " (printable-type t)))
