@@ -250,6 +250,6 @@
 					  headers
 					  extra-depends)
 				  (lambda ()
-				    (xform xform-src.c file.c (list mz-inc-dir)))))
+				    (xform #f xform-src.c file.c (list mz-inc-dir)))))
 		      null))
 		 #()))))))))))))
