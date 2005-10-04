@@ -12,7 +12,7 @@
 	  [headers (apply append
 			  (map (current-make-compile-include-strings)
 			       header-dirs))])
-      (xform:xform #f
+      (xform:xform quiet?
 		   (cons exe
 			 (append flags headers))
 		   src

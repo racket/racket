@@ -31,7 +31,8 @@
 	   (lib "compile.ss" "dynext")
 	   (lib "link.ss" "dynext")
 	   (lib "pack.ss" "setup")
-	   (lib "getinfo.ss" "setup"))
+	   (lib "getinfo.ss" "setup")
+	   (lib "plthome.ss" "setup"))
 
   (define dest-dir (make-parameter #f))
   (define auto-dest-dir (make-parameter #f))
@@ -117,6 +118,11 @@
 		   (extract-suffix append-object-suffix)
 		   (extract-suffix append-extension-suffix))
 	  "extension")]
+	[("--xform")
+	 ,(lambda (f) 'xform)
+	 (,(format "Convert for 3m compilation: ~a -> ~a" 
+		   (extract-suffix append-c-suffix)
+		   (extract-suffix append-c-suffix)))]
 	[("--exe")
 	 ,(lambda (f name) (exe-output name) 'exe)
 	 (,(format "Embed module in MzScheme to create <exe>")
@@ -231,6 +237,24 @@
 	    (printf "C linker libraries: ~s~n" (expand-for-link-variant
 						(current-standard-link-libraries))))
 	 ("Show C linker libraries")]]
+       [multi
+	[("++cppf") 
+	 ,(lambda (f v) (current-extension-preprocess-flags
+			 (append (current-extension-preprocess-flags)
+				 (list v))))
+	 ("Add C preprocess (xform) flag" "flag")]
+	[("--cppf") 
+	 ,(lambda (f v) (current-extension-preprocess-flags
+			 (remove v (current-extension-preprocess-flags))))
+	 ("Remove C preprocess (xform) flag" "flag")]
+	[("--cppf-clear") 
+	 ,(lambda (f) (current-extension-preprocess-flags null))
+	 ("Clear C preprocess (xform) flags")]
+	[("--cppf-show") 
+	 ,(lambda (f) 
+	    (printf "C compiler flags: ~s~n" (expand-for-link-variant
+					      (current-extension-preprocess-flags))))
+	 ("Show C preprocess (xform) flags")]]
        [help-labels
 	"--------------------- executable configuration flags ------------------------"]
        [once-each
@@ -455,6 +479,16 @@
 		       source-files
 		       dest)
        (printf " [output to \"~a\"]~n" dest))]
+    [(xform)
+     (for-each (lambda (file)
+		 (let ([out-file (path-replace-suffix file ".3m.c")])
+		   ((dynamic-require '(lib "xform.ss" "compiler") 'xform)
+		    (not (compiler:option:verbose))
+		    file
+		    out-file
+		    (list (build-path plthome "include")))
+		   (printf " [output to \"~a\"]~n" out-file)))
+	       source-files)]
     [(exe gui-exe)
      (unless (= 1 (length source-files))
        (error 'mzc "expected a single module source file to embed; given: ~e"

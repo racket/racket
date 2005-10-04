@@ -248,7 +248,7 @@
 	   (lambda (start-process quiet?)
 	     (do-stdio start-process quiet? (lambda (s) (error 'compile-extension "~a" s)))))))
       
-      (define unix/windows-compile
+      (define (make-compile-extension current-extension-compiler-flags)
 	(lambda (quiet? in out includes)
 	  (let ([c (current-extension-compiler)])
 	    (if c
@@ -270,14 +270,8 @@
 				   (apply my-process* command)))
 			       quiet?)
 		(error 'compile-extension "can't find an installed C compiler")))))
-      
-      (include (build-path "private" "macinc.ss"))
-      
-      (define (macos-compile quiet? input-file output-file includes)
-	(macos-make 'compile-extension "extension-project" "lib" quiet? 
-		    (list input-file) output-file includes))
-      
-      (define compile-extension
-	(case (system-type)
-	  [(unix windows macosx) unix/windows-compile]
-	  [(macos) macos-compile])))))
+
+      (define compile-extension (make-compile-extension
+				 current-extension-compiler-flags))
+      (define preprocess-extension (make-compile-extension
+				    current-extension-compiler-flags)))))

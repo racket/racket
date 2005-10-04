@@ -6,6 +6,7 @@
   
   (define-signature dynext:compile^
     (compile-extension
+     preprocess-extension
      current-extension-compiler 
      current-extension-compiler-flags
      current-extension-preprocess-flags
