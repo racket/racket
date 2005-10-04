@@ -243,8 +243,8 @@
   (define-token? cond? '?)
   (define-token? id-token? 'IDENTIFIER)
   
-  ;keyword? lex-token -> bool
-  (define (keyword? t)
+  ;java-keyword? lex-token -> bool
+  (define (java-keyword? t)
     (or (memq (get-token-name t) `(? this super new instanceof while try throw synchronized switch return if goto for finally
                                      else do default continue catch case break void throws const interface implements extends
                                      class import package))
@@ -259,7 +259,7 @@
         (let ((s (string-copy (token-value t))))
           (string-lowercase! s)
           (if (null? args)
-              (or (keyword? (string->symbol s))
+              (or (java-keyword? (string->symbol s))
                   (member s all-words))
               (or (eq? (string->symbol s) (car args))
                   (member s (select-words (car args))))))
