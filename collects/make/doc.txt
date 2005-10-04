@@ -214,7 +214,8 @@ inspecting "/usr/lib". More generally, the "last chance" argument to
                unix-libs
                windows-libs
 	       extra-depends
-               last-chance-k)
+               last-chance-k
+               [3m-too? #t])
 
 The arguments are as follows:
 
@@ -277,3 +278,7 @@ The arguments are as follows:
     add parameterizations before the final build. For example, the
     "readline" installer adds an AIX-specific compile flag in this
     step when under AIX.
+
+  * 3m-too?--- a boolean. If true, when MzScheme3m is installed, use
+    the equivalent to mzc --xform to transform the source file and
+    then compile and link for 3m.

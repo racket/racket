@@ -7,6 +7,9 @@
 	   (lib "file.ss")
 	   (lib "list.ss")
 	   (lib "process.ss")
+	   (lib "etc.ss")
+	   (lib "launcher.ss" "launcher")
+	   (lib "xform.ss" "compiler")
 	   (rename (lib "plthome.ss" "setup") plthome* plthome))
 
   (provide pre-install
@@ -28,7 +31,46 @@
   (define (string-path->string s)
     (if (string? s) s (path->string s)))
 
-  (define (pre-install plthome collection-dir file.c . rest)
+  (define pre-install 
+    (opt-lambda (plthome 
+		 collection-dir 
+		 file.c
+		 default-lib-dir
+		 include-subdirs
+		 find-unix-libs
+		 find-windows-libs
+		 unix-libs
+		 windows-libs
+		 extra-depends
+		 last-chance-k
+		 3m-too?)
+      ;; Compile and link one file:
+      (define (go file.c xform-src.c)
+	(pre-install/check-precompiled plthome
+				       collection-dir 
+				       file.c
+				       default-lib-dir
+				       include-subdirs
+				       find-unix-libs
+				       find-windows-libs
+				       unix-libs
+				       windows-libs
+				       extra-depends
+				       last-chance-k
+				       xform-src.c))
+      ;; Do normal mode:
+      (go file.c #f)
+      ;; Maybe do 3m mode:
+      (when (and 3m-too?
+		 (memq '3m (available-mzscheme-variants)))
+	(let ([3m-dir (build-path "compiled" "native" (system-library-subpath #f) "3m")])
+	  (make-directory* 3m-dir)
+	  (parameterize ([link-variant '3m])
+	    (go (build-path 3m-dir (let-values ([(base name dir?) (split-path file.c)])
+				     name))
+		file.c))))))
+
+  (define (pre-install/check-precompiled plthome collection-dir file.c . rest)
     (let* ([base-dir (build-path collection-dir
 				 "precompiled"
 				 "native"
@@ -66,7 +108,8 @@
 			      unix-libs
 			      windows-libs
 			      extra-depends
-			      last-chance-k)
+			      last-chance-k
+			      xform-src.c)
     (parameterize ([current-directory collection-dir])
       (define mach-id (string->symbol (path->string (system-library-subpath #f))))
       (define is-win? (eq? mach-id 'win32\\i386))
@@ -177,27 +220,36 @@
 	     (last-chance-k
 	      (lambda ()
 		(make/proc
-		 (list (list file.so 
-			     (list file.o)
-			     (lambda ()
-			       (link-extension #f (append (list file.o) 
-							  (if is-win?
-							      null
-							      (map (lambda (l)
-								     (string-append "-l" (string-path->string l)))
-								   (append find-unix-libs unix-libs))))
-					       file.so)))
-		       
-		       (list file.o 
-			     (append (list file.c)
-				     (filter (lambda (x)
-					       (regexp-match #rx#"mzdyn[a-z0-9]*[.]o" 
-							     (if (string? x)
-								 x
-								 (path->string x))))
-					     (expand-for-link-variant (current-standard-link-libraries)))
-				     headers
-				     extra-depends)
-			     (lambda ()
-			       (compile-extension #f file.c file.o ()))))
+		 (append
+		  (list (list file.so 
+			      (list file.o)
+			      (lambda ()
+				(link-extension #f (append (list file.o) 
+							   (if is-win?
+							       null
+							       (map (lambda (l)
+								      (string-append "-l" (string-path->string l)))
+								    (append find-unix-libs unix-libs))))
+						file.so)))
+			
+			(list file.o 
+			      (append (list file.c)
+				      (filter (lambda (x)
+						(regexp-match #rx#"mzdyn[a-z0-9]*[.]o" 
+							      (if (string? x)
+								  x
+								  (path->string x))))
+					      (expand-for-link-variant (current-standard-link-libraries)))
+				      headers
+				      extra-depends)
+			      (lambda ()
+				(compile-extension #f file.c file.o null))))
+		  (if xform-src.c
+		      (list (list file.c
+				  (append (list xform-src.c)
+					  headers
+					  extra-depends)
+				  (lambda ()
+				    (xform xform-src.c file.c (list mz-inc-dir)))))
+		      null))
 		 #()))))))))))))
