@@ -27,16 +27,17 @@ and Unix:
 >  current-extension-compiler-flags - list of paths/strings and thunks
     (see `expand-for-compile-variant' below) for strings passed to the
     compiler as flags. Under Windows, the default is (list "/c" "/O2"
-    3m-flag-thunk) for cl.exe and (list "-c" "-O2" 3m-flag-thunk) for
-    gcc.exe and bcc32.exe, where 3m-flag-thunk returns (list
-    "-DMZ_PRECISE_GC") for the '3m variant and null for any other
-    variant; under Unix, (list "-c" "-O2" 3m-flag-thunk).
+    "/MT" 3m-flag-thunk) for cl.exe and (list "-c" "-O2" "-fPIC"
+    3m-flag-thunk) for gcc.exe and bcc32.exe, where 3m-flag-thunk
+    returns (list "-DMZ_PRECISE_GC") for the '3m variant and null for
+    any other variant; under Unix, the default is usually
+    (list "-c" "-O2" "-fPIC" 3m-flag-thunk).
 
 >  current-make-compile-include-strings - procedure that takes an
     include directory path/string and returns a list of strings for
     the command line.  Windows: "dir" -> (list "/Idir") for cl.exe,
     (list "-Idir") for gcc.exe and bcc32.exe; Unix: "dir" -> (list
-    "-Idir")
+    "-Idir").
 
 >  current-make-compile-input-strings - procedure that takes an
     input file path/string and returns a list of strings for the
@@ -46,7 +47,14 @@ and Unix:
     output file path/string and returns a list of strings for the
     command line.  Windows: "file" -> (list "/Fofile") for cl.exe,
     (list "-o" "file") for gcc.exe and bcc32.exe; Unix: "file" ->
-    (list "-o" "file")
+    (list "-o" "file").
+
+>  current-extension-preprocess-flags - list of paths/strings and thunks
+    (see `expand-for-compile-variant' below) for strings passed to the
+    compiler as flags to pre-process instead of compile; use these
+    flags for preprocessing instead of `current-extension-compiler-flags'.
+    The defaults are similar to `current-extension-compiler-flags', but
+    with "/E" (Windows cl.exe) or "-E" and without non-"-D" flags.
 
 >  compile-variant - a symbol, either 'normal or '3m, that indicates the
     target for compilation.

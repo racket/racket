@@ -50,16 +50,46 @@
 	(let ([c (current-extension-compiler)])
 	  (and c (regexp-match #"[^g]cc$" (path->bytes c)))))
 
+      (define (add-variant-flags l)
+	(append l (list (lambda ()
+			  (if (eq? '3m (compile-variant))
+			      '("-DMZ_PRECISE_GC")
+			      null)))))
+
+      (define gcc-cpp-flags 
+	(add-variant-flags (case (string->symbol (path->string (system-library-subpath #f)))
+			     [(parisc-hpux) '("-D_HPUX_SOURCE")]
+			     [(ppc-macosx) '("-DOS_X")]
+			     [(ppc-darwin) '("-DOS_X" "-DXONX")]
+			     [else null])))
+
       (define gcc-compile-flags (append '("-c" "-O2" "-fPIC")
 					(case (string->symbol (path->string (system-library-subpath #f)))
-					  [(parisc-hpux) '("-D_HPUX_SOURCE")]
-					  [(ppc-macosx) '("-fno-common" "-DOS_X" )]
-					  [(ppc-darwin) '("-fno-common" "-DOS_X" "-DXONX" )]
-					  [else null])))
+					  [(ppc-macosx) '("-fno-common")]
+					  [(ppc-darwin) '("-fno-common")]
+					  [else null])
+					gcc-cpp-flags))
+
+      (define unix-cpp-flags 
+	(add-variant-flags (case (string->symbol (path->string (system-library-subpath #f)))
+			     [(parisc-hpux) '("-D_HPUX_SOURCE")]
+			     [else gcc-cpp-flags])))
+
       (define unix-compile-flags (case (string->symbol (path->string (system-library-subpath #f)))
-				   [(parisc-hpux) '("-c" "-O2" "-Aa" "-D_HPUX_SOURCE" "+z" "+e")]
+				   [(parisc-hpux) (append '("-c" "-O2" "-Aa" "+z" "+e")
+							  unix-cpp-flags)]
 				   [else gcc-compile-flags]))
-      (define msvc-compile-flags '("/c" "/MT" "/O2"))
+
+      (define msvc-compile-flags 
+	(add-variant-flags '("/c" "/MT" "/O2")))
+
+      (define (make-flags-guard who)
+	(lambda (l)
+	  (unless (and (list? l) (andmap (lambda (s) (or (path-string? s)
+							 (and (procedure? s) (procedure-arity-includes? s 0))))
+					 l))
+	    (raise-type-error who "list of paths/strings and thunks" l))
+	  l))
 
       (define current-extension-compiler-flags
 	(make-parameter
@@ -71,12 +101,19 @@
 			  gcc-compile-flags
 			  msvc-compile-flags)]
 	   [(macos) '()])
-	 (lambda (l)
-	   (unless (and (list? l) (andmap (lambda (s) (or (path-string? s)
-							  (and (procedure? s) (procedure-arity-includes? s 0))))
-					  l))
-	     (raise-type-error 'current-extension-compiler-flags "list of paths/strings and thunks" l))
-	   l)))
+	 (make-flags-guard 'current-extension-compiler-flags)))
+
+      (define current-extension-preprocess-flags
+	(make-parameter
+	 (case (system-type)
+	   [(unix macosx) (cons "-E" (if unix-cc?
+					 unix-cpp-flags
+					 gcc-cpp-flags))]
+	   [(windows) (if (or win-gcc? win-borland?)
+			  (cons "-E" gcc-cpp-flags)
+			  '("/E"))]
+	   [(macos) '()])
+	 (make-flags-guard 'current-extension-preprocess-flags)))
 
       (define compile-variant (make-parameter 
 			       'normal
@@ -84,12 +121,6 @@
 				 (unless (memq s '(normal 3m))
 				   (raise-type-error 'compile-variant "'normal or '3m" s))
 				 s)))
-
-      (define (add-variant-flags l)
-	(append l (list (lambda ()
-			  (if (eq? '3m (compile-variant))
-			      '("-DMZ_PRECISE_GC")
-			      null)))))
 
       (define (expand-for-compile-variant l)
 	(apply append (map (lambda (s) (if (path-string? s) (list s) (s))) l)))
@@ -164,7 +195,7 @@
 	     [(cc gcc) (let* ([n (if (eq? name 'gcc) "gcc" "cc")]
 			      [f (find-executable-path n n)])
 			 (unless f
-			   (error 'use-standard-linker "cannot find ~a" n))
+			   (error 'use-standard-compiler "cannot find ~a" n))
 			 (current-extension-compiler f))
 	      (current-extension-compiler-flags (add-variant-flags
 						 (if (eq? name 'gcc)
@@ -178,7 +209,7 @@
 	   (case name
 	     [(gcc) (let ([f (find-executable-path "gcc.exe" #f)])
 		      (unless f
-			(error 'use-standard-linker "cannot find gcc.exe"))
+			(error 'use-standard-compiler "cannot find gcc.exe"))
 		      (current-extension-compiler f))
 	      (current-extension-compiler-flags (add-variant-flags gcc-compile-flags))
 	      (current-make-compile-include-strings unix-compile-include-strings)
@@ -186,7 +217,7 @@
 	      (current-make-compile-output-strings unix-compile-output-strings)]
 	     [(borland) (let ([f (find-executable-path "bcc32.exe" #f)])
 			  (unless f
-			    (error 'use-standard-linker "cannot find bcc32.exe"))
+			    (error 'use-standard-compiler "cannot find bcc32.exe"))
 			  (current-extension-compiler f))
 	      (current-extension-compiler-flags (add-variant-flags gcc-compile-flags))
 	      (current-make-compile-include-strings unix-compile-include-strings)
@@ -194,7 +225,7 @@
 	      (current-make-compile-output-strings unix-compile-output-strings)]
 	     [(msvc) (let ([f (find-executable-path "cl.exe" #f)])
 		       (unless f
-			 (error 'use-standard-linker "cannot find MSVC's cl.exe"))
+			 (error 'use-standard-compiler "cannot find MSVC's cl.exe"))
 		       (current-extension-compiler f))
 	      (current-extension-compiler-flags (add-variant-flags msvc-compile-flags))
 	      (current-make-compile-include-strings msvc-compile-include-strings)
