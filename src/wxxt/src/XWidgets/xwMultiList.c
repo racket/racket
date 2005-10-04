@@ -79,7 +79,7 @@ Pixmap XmuCreateStippledPixmap();
 extern void XawInitializeWidgetSet();
 extern int wxGetMultiClickTime(Display*);
 
-#define	SUPERCLASS	&(simpleClassRec)
+#define	SUPERCLASS	&(coreClassRec)
 
 #ifdef WX_USE_XFT
 # define	FontAscent(f, xf)	(xf ? (xf)->ascent : (f)->max_bounds.ascent)
@@ -106,7 +106,6 @@ extern int wxGetMultiClickTime(Display*);
 #define	StrCopyRetLength(s,lp)	strcpy(TypeAlloc(char,(*lp=(strlen(s)+1))),s)
 
 #define CoreFieldOffset(f)	XtOffset(Widget,core.f)
-#define	SimpleFieldOffset(f)	XtOffset(XfwfMultiListWidget,simple.f)
 #define MultiListFieldOffset(f)	XtOffset(XfwfMultiListWidget,multiList.f)
 
 /*===========================================================================*
@@ -200,8 +199,6 @@ static XtResource resources[] =
 	{XtNbackground, XtCBackground, XtRPixel, sizeof(Pixel),
 	    CoreFieldOffset(background_pixel),XtRString,"XtDefaultBackground"},
 
-	{XtNcursor, XtCCursor, XtRCursor, sizeof(Cursor),
-	    SimpleFieldOffset(cursor), XtRString, "left_ptr"},
 	{XtNhighlightForeground, XtCHForeground, XtRPixel, sizeof(Pixel),
 	    MultiListFieldOffset(highlight_fg), XtRString, "XtDefaultBackground"},
 	{XtNhighlightBackground, XtCHBackground, XtRPixel, sizeof(Pixel),
@@ -328,10 +325,7 @@ XfwfMultiListClassRec xfwfMultiListClassRec =
 							PreferredGeometry,
 		/* display_accelerator  */	XtInheritDisplayAccelerator,
 		/* extension            */	NULL
-	}, /* Core Part */
-	{
-		/* change_sensitive     */	XtInheritChangeSensitive
-	}
+	} /* Core Part */
 };
 
 WidgetClass xfwfMultiListWidgetClass = (WidgetClass)&xfwfMultiListClassRec;

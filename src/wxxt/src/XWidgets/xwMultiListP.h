@@ -54,7 +54,7 @@
 #ifndef _MULTILISTP_H_
 #define _MULTILISTP_H_
 
-#include <X11/Xaw/SimpleP.h>
+#include <X11/CoreP.h>
 #include <xwMultiList.h>
 
 /*---------------------------------------------------------------------------*
@@ -84,7 +84,6 @@ typedef struct
 typedef struct _XfwfMultiListClassRec
 {
 	CoreClassPart		core_class;
-	SimpleClassPart		simple_class;
 	XfwfMultiListClassPart	multiList_class;
 } XfwfMultiListClassRec;
 
@@ -139,7 +138,6 @@ typedef struct
 typedef struct _XfwfMultiListRec
 {
 	CorePart		core;
-	SimplePart		simple;
 	XfwfMultiListPart	multiList;
 } XfwfMultiListRec;
 
@@ -154,7 +152,6 @@ typedef struct _XfwfMultiListRec
 #define	MultiListItemString(i)		((i)->string)
 
 #define	InstanceCore(w)			(&((w)->core))
-#define	InstanceSimple(w)		(&((w)->simple))
 #define	InstanceMultiList(w)		(&((w)->multiList))
 
 #define	MultiListWidth(w)		(InstanceCore(w)->width)

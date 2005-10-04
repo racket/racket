@@ -116,8 +116,7 @@ COBJS =\
 \
  XWidgets/xwMenu.@LTO@\
 \
- XWidgets/xwMultiList.@LTO@\
- XWidgets/xwScrollText.@LTO@
+ XWidgets/xwMultiList.@LTO@
 
 WOBJS =\
  XWidgets/xwCommon.@LTO@\
@@ -334,8 +333,6 @@ XWidgets/xwMultiList.@LTO@: $(srcdir)/XWidgets/xwMultiList.c
 	$(CC) -c $(CFLAGS) $(_WX_C_FLAGS) -o XWidgets/xwMultiList.@LTO@ $(srcdir)/XWidgets/xwMultiList.c
 XWidgets/xwRowCol.@LTO@: $(srcdir)/XWidgets/xwRowCol.c
 	$(CC) -c $(CFLAGS) $(_WX_C_FLAGS) -o XWidgets/xwRowCol.@LTO@ $(srcdir)/XWidgets/xwRowCol.c
-XWidgets/xwScrollText.@LTO@: $(srcdir)/XWidgets/xwScrollText.c
-	$(CC) -c $(CFLAGS) $(_WX_C_FLAGS) -o XWidgets/xwScrollText.@LTO@ $(srcdir)/XWidgets/xwScrollText.c
 XWidgets/xwScrollWin.@LTO@: $(srcdir)/XWidgets/xwScrollWin.c
 	$(CC) -c $(CFLAGS) $(_WX_C_FLAGS) -o XWidgets/xwScrollWin.@LTO@ $(srcdir)/XWidgets/xwScrollWin.c
 XWidgets/xwScrollbar.@LTO@: $(srcdir)/XWidgets/xwScrollbar.c
@@ -784,9 +781,6 @@ XWidgets/xwMenu.@LTO@:\
 XWidgets/xwMultiList.@LTO@:\
 	$(srcdir)/XWidgets/xwMultiList.c $(srcdir)/XWidgets/xwMultiList.h $(srcdir)/XWidgets/xwMultiListP.h
 
-XWidgets/xwScrollText.@LTO@:\
-	$(srcdir)/XWidgets/xwScrollText.c $(srcdir)/XWidgets/xwScrollText.h $(srcdir)/XWidgets/xwScrollTextP.h
-
 XWidgets/xwCommon.@LTO@:	 $(xwCommon_w_dep) $(srcdir)/XWidgets/wxAllocColor.c
 
 XWidgets/xwFrame.@LTO@:	 $(xwFrame_w_dep)
@@ -881,7 +875,6 @@ XWidgets/xwScrollWin.@LTO@:	 $(xwScrollWin_w_dep)
 @INCLUDEDEP@ XWidgets/xwscroll.d
 @INCLUDEDEP@ XWidgets/xwMenu.d
 @INCLUDEDEP@ XWidgets/xwMultiList.d
-@INCLUDEDEP@ XWidgets/xwScrollText.d
 @INCLUDEDEP@ XWidgets/xwCommon.d
 @INCLUDEDEP@ XWidgets/xwFrame.d
 @INCLUDEDEP@ XWidgets/xwBoard.d
