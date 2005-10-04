@@ -19,7 +19,8 @@ LIBS = @LIBS@
 
 PRE_MZ@OSX@ = env DYLD_FRAMEWORK_PATH="`pwd`/.."
 PRE_MZ@NOT_OSX@ = 
-XFORM = $(PRE_MZ) ../mzscheme -rq $(srcdir)/xform.ss --setup "$(CPP) $(CPPFLAGS)"
+XFORM_SETUP = $(PRE_MZ) ../mzscheme -rq $(srcdir)/xform.ss --setup
+XFORM = $(XFORM_SETUP) --cpp "$(CPP) $(CPPFLAGS)" -o
 XSRCDIR = xsrc
 SRCDIR = $(srcdir)/../src
 
@@ -116,83 +117,83 @@ xobjects: $(OBJS) main.@LTO@
 XFORMDEP = $(srcdir)/gc2.h $(srcdir)/xform.ss $(srcdir)/xform-mod.ss
 
 $(XSRCDIR)/salloc.c: ../src/salloc.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/salloc.c $(XSRCDIR)/salloc.c
+	$(XFORM) $(XSRCDIR)/salloc.c $(SRCDIR)/salloc.c
 $(XSRCDIR)/bignum.c: ../src/bignum.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/bignum.c $(XSRCDIR)/bignum.c
+	$(XFORM) $(XSRCDIR)/bignum.c $(SRCDIR)/bignum.c
 $(XSRCDIR)/bool.c: ../src/bool.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/bool.c $(XSRCDIR)/bool.c
+	$(XFORM) $(XSRCDIR)/bool.c $(SRCDIR)/bool.c
 $(XSRCDIR)/builtin.c: ../src/builtin.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/builtin.c $(XSRCDIR)/builtin.c
+	$(XFORM) $(XSRCDIR)/builtin.c $(SRCDIR)/builtin.c
 $(XSRCDIR)/char.c: ../src/char.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/char.c $(XSRCDIR)/char.c
+	$(XFORM) $(XSRCDIR)/char.c $(SRCDIR)/char.c
 $(XSRCDIR)/complex.c: ../src/complex.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/complex.c $(XSRCDIR)/complex.c
+	$(XFORM) $(XSRCDIR)/complex.c $(SRCDIR)/complex.c
 $(XSRCDIR)/dynext.c: ../src/dynext.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/dynext.c $(XSRCDIR)/dynext.c
+	$(XFORM) $(XSRCDIR)/dynext.c $(SRCDIR)/dynext.c
 $(XSRCDIR)/env.c: ../src/env.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/env.c $(XSRCDIR)/env.c
+	$(XFORM) $(XSRCDIR)/env.c $(SRCDIR)/env.c
 $(XSRCDIR)/error.c: ../src/error.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/error.c $(XSRCDIR)/error.c
+	$(XFORM) $(XSRCDIR)/error.c $(SRCDIR)/error.c
 $(XSRCDIR)/eval.c: ../src/eval.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/eval.c $(XSRCDIR)/eval.c
+	$(XFORM) $(XSRCDIR)/eval.c $(SRCDIR)/eval.c
 $(XSRCDIR)/file.c: ../src/file.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/file.c $(XSRCDIR)/file.c
+	$(XFORM) $(XSRCDIR)/file.c $(SRCDIR)/file.c
 $(XSRCDIR)/fun.c: ../src/fun.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/fun.c $(XSRCDIR)/fun.c
+	$(XFORM) $(XSRCDIR)/fun.c $(SRCDIR)/fun.c
 $(XSRCDIR)/hash.c: ../src/hash.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/hash.c $(XSRCDIR)/hash.c
+	$(XFORM) $(XSRCDIR)/hash.c $(SRCDIR)/hash.c
 $(XSRCDIR)/image.c: ../src/image.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/image.c $(XSRCDIR)/image.c
+	$(XFORM) $(XSRCDIR)/image.c $(SRCDIR)/image.c
 $(XSRCDIR)/module.c: ../src/module.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/module.c $(XSRCDIR)/module.c
+	$(XFORM) $(XSRCDIR)/module.c $(SRCDIR)/module.c
 $(XSRCDIR)/list.c: ../src/list.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/list.c $(XSRCDIR)/list.c
+	$(XFORM) $(XSRCDIR)/list.c $(SRCDIR)/list.c
 $(XSRCDIR)/network.c: ../src/network.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/network.c $(XSRCDIR)/network.c
+	$(XFORM) $(XSRCDIR)/network.c $(SRCDIR)/network.c
 $(XSRCDIR)/numarith.c: ../src/numarith.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/numarith.c $(XSRCDIR)/numarith.c
+	$(XFORM) $(XSRCDIR)/numarith.c $(SRCDIR)/numarith.c
 $(XSRCDIR)/number.c: ../src/number.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/number.c $(XSRCDIR)/number.c
+	$(XFORM) $(XSRCDIR)/number.c $(SRCDIR)/number.c
 $(XSRCDIR)/numcomp.c: ../src/numcomp.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/numcomp.c $(XSRCDIR)/numcomp.c
+	$(XFORM) $(XSRCDIR)/numcomp.c $(SRCDIR)/numcomp.c
 $(XSRCDIR)/numstr.c: ../src/numstr.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/numstr.c $(XSRCDIR)/numstr.c
+	$(XFORM) $(XSRCDIR)/numstr.c $(SRCDIR)/numstr.c
 $(XSRCDIR)/port.c: ../src/port.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/port.c $(XSRCDIR)/port.c
+	$(XFORM) $(XSRCDIR)/port.c $(SRCDIR)/port.c
 $(XSRCDIR)/portfun.c: ../src/portfun.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/portfun.c $(XSRCDIR)/portfun.c
+	$(XFORM) $(XSRCDIR)/portfun.c $(SRCDIR)/portfun.c
 $(XSRCDIR)/print.c: ../src/print.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/print.c $(XSRCDIR)/print.c
+	$(XFORM) $(XSRCDIR)/print.c $(SRCDIR)/print.c
 $(XSRCDIR)/rational.c: ../src/rational.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/rational.c $(XSRCDIR)/rational.c
+	$(XFORM) $(XSRCDIR)/rational.c $(SRCDIR)/rational.c
 $(XSRCDIR)/read.c: ../src/read.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/read.c $(XSRCDIR)/read.c
+	$(XFORM) $(XSRCDIR)/read.c $(SRCDIR)/read.c
 $(XSRCDIR)/regexp.c: ../src/regexp.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/regexp.c $(XSRCDIR)/regexp.c
+	$(XFORM) $(XSRCDIR)/regexp.c $(SRCDIR)/regexp.c
 $(XSRCDIR)/sema.c: ../src/sema.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/sema.c $(XSRCDIR)/sema.c
+	$(XFORM) $(XSRCDIR)/sema.c $(SRCDIR)/sema.c
 $(XSRCDIR)/setjmpup.c: ../src/setjmpup.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/setjmpup.c $(XSRCDIR)/setjmpup.c
+	$(XFORM) $(XSRCDIR)/setjmpup.c $(SRCDIR)/setjmpup.c
 $(XSRCDIR)/string.c: ../src/string.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/string.c $(XSRCDIR)/string.c -I$(OBJDIR)
+	$(XFORM_SETUP) --cpp "$(CPP) -I$(OBJDIR) $(CPPFLAGS)" -o $(XSRCDIR)/string.c $(SRCDIR)/string.c
 $(XSRCDIR)/struct.c: ../src/struct.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/struct.c $(XSRCDIR)/struct.c
+	$(XFORM) $(XSRCDIR)/struct.c $(SRCDIR)/struct.c
 $(XSRCDIR)/stxobj.c: ../src/stxobj.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/stxobj.c $(XSRCDIR)/stxobj.c
+	$(XFORM) $(XSRCDIR)/stxobj.c $(SRCDIR)/stxobj.c
 $(XSRCDIR)/symbol.c: ../src/symbol.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/symbol.c $(XSRCDIR)/symbol.c
+	$(XFORM) $(XSRCDIR)/symbol.c $(SRCDIR)/symbol.c
 $(XSRCDIR)/syntax.c: ../src/syntax.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/syntax.c $(XSRCDIR)/syntax.c
+	$(XFORM) $(XSRCDIR)/syntax.c $(SRCDIR)/syntax.c
 $(XSRCDIR)/thread.c: ../src/thread.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/thread.c $(XSRCDIR)/thread.c
+	$(XFORM) $(XSRCDIR)/thread.c $(SRCDIR)/thread.c
 $(XSRCDIR)/type.c: ../src/type.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/type.c $(XSRCDIR)/type.c
+	$(XFORM) $(XSRCDIR)/type.c $(SRCDIR)/type.c
 $(XSRCDIR)/vector.c: ../src/vector.@LTO@ $(XFORMDEP)
-	$(XFORM) $(SRCDIR)/vector.c $(XSRCDIR)/vector.c
+	$(XFORM) $(XSRCDIR)/vector.c $(SRCDIR)/vector.c
 $(XSRCDIR)/foreign.c: ../../foreign/foreign.@LTO@ $(XFORMDEP)
-	$(XFORM)" -I../../foreign/gcc/libffi/include -I${SRCDIR}/../../mzscheme/src" $(SRCDIR)/../../foreign/foreign.c $(XSRCDIR)/foreign.c
+	$(XFORM_SETUP) --cpp "$(CPP) $(CPPFLAGS) -I../../foreign/gcc/libffi/include -I${SRCDIR}/../../mzscheme/src" -o $(XSRCDIR)/foreign.c $(SRCDIR)/../../foreign/foreign.c
 $(XSRCDIR)/main.c: ../main.@LTO@ $(XFORMDEP)
-	$(XFORM) $(srcdir)/../main.c $(XSRCDIR)/main.c
+	$(XFORM) $(XSRCDIR)/main.c $(srcdir)/../main.c
 
 
 salloc.@LTO@: $(XSRCDIR)/salloc.c
@@ -276,7 +277,7 @@ main.@LTO@: $(XSRCDIR)/main.c
 
 gc2.@LTO@: $(srcdir)/gc2.c $(srcdir)/newgc.c $(srcdir)/compact.c $(srcdir)/newgc.c $(srcdir)/gc2.h \
        $(srcdir)/vm_osx.c $(srcdir)/vm_mmap.c $(srcdir)/vm_osk.c $(srcdir)/alloc_cache.c $(srcdir)/my_qsort.c \
-       $(srcdir)/../include/scheme.h $(srcdir)/../src/schpriv.h
+       $(srcdir)/weak.c $(srcdir)/../include/scheme.h $(srcdir)/../src/schpriv.h
 	$(CC) $(CFLAGS) -c $(srcdir)/gc2.c -o gc2.@LTO@
 
 FOREIGN_OBJS = ../../foreign/gcc/libffi/src/*.@LTO@ ../../foreign/gcc/libffi/src/*/*.@LTO@

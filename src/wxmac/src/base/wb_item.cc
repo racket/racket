@@ -658,6 +658,7 @@ wxbGauge::~wxbGauge (void)
 
 
 wbMenuItem::wbMenuItem()
+: wxObject(WXGC_NO_CLEANUP)
 { 
   itemId = 0; itemName = NULL; topMenu = NULL; subMenu = NULL;
   menuBar = NULL; helpString = NULL;

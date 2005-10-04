@@ -1240,10 +1240,14 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
     }
   }
 
-  if (SCHEME_SYMBOLP(obj))
+  if (SCHEME_SYMBOLP(obj)
+      || SCHEME_KEYWORDP(obj))
     {
       int l;
       Scheme_Object *idx;
+      int is_kw;
+
+      is_kw = SCHEME_KEYWORDP(obj);
 
       if (compact)
 	idx = scheme_hash_get(symtab, obj);
@@ -1259,12 +1263,14 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 
 	weird = SCHEME_SYM_WEIRDP(obj);
 	l = SCHEME_SYM_LEN(obj);
-	if (!weird && (l < CPT_RANGE(SMALL_SYMBOL))) {
+	if (!weird && !is_kw && (l < CPT_RANGE(SMALL_SYMBOL))) {
 	  unsigned char s[1];
 	  s[0] = l + CPT_SMALL_SYMBOL_START;
 	  print_this_string(pp, (char *)s, 0, 1);
 	} else {
-	  print_compact(pp, (weird ? CPT_WEIRD_SYMBOL : CPT_SYMBOL));
+	  print_compact(pp, (is_kw
+			     ? CPT_KEYWORD
+			     : (weird ? CPT_WEIRD_SYMBOL : CPT_SYMBOL)));
 	  if (weird) {
 	    print_compact_number(pp, SCHEME_SYM_UNINTERNEDP(obj) ? 1 : 0);
 	  }
@@ -1283,7 +1289,10 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       } else if (notdisplay) {
 	if (pp->honu_mode) {
 	  /* Honu symbol... */
-	  print_utf8_string(pp, "sym(", 0, 4);
+	  if (is_kw)
+	    print_utf8_string(pp, "key(", 0, 4);
+	  else
+	    print_utf8_string(pp, "sym(", 0, 4);
 	  {
 	    int i;
 	    /* Check for fast case: */
@@ -1308,16 +1317,23 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	} else {
 	  const char *s;
 	  
+	  if (is_kw)
+	    print_utf8_string(pp, "#:", 0, 2);
 	  s = scheme_symbol_name_and_size(obj, (unsigned int *)&l, 
 					  ((pp->can_read_pipe_quote 
 					    ? SCHEME_SNF_PIPE_QUOTE
 					    : SCHEME_SNF_NO_PIPE_QUOTE)
 					   | (pp->case_sens
 					      ? 0
-					      : SCHEME_SNF_NEED_CASE)));
+					      : SCHEME_SNF_NEED_CASE)
+					   | (is_kw
+					      ? SCHEME_SNF_KEYWORD
+					      : 0)));
 	  print_utf8_string(pp, s, 0, l);
 	}
       } else {
+	if (is_kw)
+	  print_utf8_string(pp, "#:", 0, 2);
 	print_utf8_string(pp, (char *)obj, ((char *)(SCHEME_SYM_VAL(obj))) - ((char *)obj), 
 			  SCHEME_SYM_LEN(obj));
       }

@@ -478,6 +478,8 @@
   scheme_extension_table->scheme_symbol_name = scheme_symbol_name;
   scheme_extension_table->scheme_symbol_name_and_size = scheme_symbol_name_and_size;
   scheme_extension_table->scheme_symbol_val = scheme_symbol_val;
+  scheme_extension_table->scheme_intern_exact_keyword = scheme_intern_exact_keyword;
+  scheme_extension_table->scheme_intern_exact_char_keyword = scheme_intern_exact_char_keyword;
   scheme_extension_table->scheme_make_struct_values = scheme_make_struct_values;
   scheme_extension_table->scheme_make_struct_names = scheme_make_struct_names;
   scheme_extension_table->scheme_make_struct_type = scheme_make_struct_type;
@@ -518,6 +520,8 @@
   scheme_extension_table->scheme_unbox = scheme_unbox;
   scheme_extension_table->scheme_set_box = scheme_set_box;
   scheme_extension_table->scheme_make_weak_box = scheme_make_weak_box;
+  scheme_extension_table->scheme_make_ephemeron = scheme_make_ephemeron;
+  scheme_extension_table->scheme_ephemeron_value = scheme_ephemeron_value;
   scheme_extension_table->scheme_load = scheme_load;
   scheme_extension_table->scheme_load_extension = scheme_load_extension;
   scheme_extension_table->scheme_register_extension_global = scheme_register_extension_global;

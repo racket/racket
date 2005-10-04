@@ -133,6 +133,7 @@ scheme_init_type (Scheme_Env *env)
   set_name(scheme_proc_struct_type, "<struct>");
 #endif
   set_name(scheme_symbol_type, "<symbol>");
+  set_name(scheme_keyword_type, "<keyword>");
   set_name(scheme_syntax_compiler_type, "<syntax-compiler>");
   set_name(scheme_macro_type, "<macro>");
   set_name(scheme_lazy_macro_type, "<lazy-macro>");
@@ -149,6 +150,7 @@ scheme_init_type (Scheme_Env *env)
   set_name(scheme_multiple_values_type, "<multiple-values>");
   set_name(scheme_placeholder_type, "<placeholder>");
   set_name(scheme_weak_box_type, "<weak-box>");
+  set_name(scheme_ephemeron_type, "<ephemeron>");
   set_name(scheme_rational_type, "<fractional-number>");
   set_name(scheme_complex_type, "<complex-number>");
   set_name(scheme_complex_izi_type, "<inexactly-real-number>");
@@ -455,6 +457,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_byte_string_type, bstring_obj);
   GC_REG_TRAV(scheme_path_type, bstring_obj);
   GC_REG_TRAV(scheme_symbol_type, symbol_obj);
+  GC_REG_TRAV(scheme_keyword_type, symbol_obj);
   GC_REG_TRAV(scheme_null_type, char_obj); /* small */
   GC_REG_TRAV(scheme_pair_type, cons_cell);
   GC_REG_TRAV(scheme_vector_type, vector_obj);

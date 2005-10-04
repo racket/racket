@@ -1074,153 +1074,15 @@ inline static void reset_weak_finalizers(void)
 /*****************************************************************************/
 /* weak boxes and arrays                                                     */
 /*****************************************************************************/
-struct weak_box {
-  unsigned short type;
-  short keyex;
-  void *val;
-  void **secondary_erase;
-  int soffset;
-  struct weak_box *next;
-};
 
+static const unsigned short gc_weak_array_tag = 256;
 static unsigned short weak_box_tag;
-static struct weak_box *weak_boxes = NULL;
+static unsigned short ephemeron_tag;
 
-void *GC_malloc_weak_box(void *p, void **secondary, int soffset)
-{
-  struct weak_box *wb;
+#define is_marked(p) marked(p)
+typedef short Type_Tag;
 
-  park[0] = p; park[1] = secondary;
-  wb = GC_malloc_one_tagged(sizeof(struct weak_box));
-  p = park[0]; secondary = park[1]; park[0] = park[1] = NULL;
-
-  wb->type = weak_box_tag; wb->val = p; 
-  wb->secondary_erase = secondary; wb->soffset = soffset;
-  return wb;
-}
-
-inline static int size_weak_box(void *p)
-{
-  return gcBYTES_TO_WORDS(sizeof(struct weak_box));
-}
-
-static int mark_weak_box(void *p)
-{
-  struct weak_box *wb = (struct weak_box *)p;
-
-  gcMARK(wb->secondary_erase);
-  wb->next = weak_boxes;
-  weak_boxes = wb;
-  if(!gc_full) gcMARK(wb->val);
-
-  return size_weak_box(p);
-}
-
-static int repair_weak_box(void *p)
-{
-  struct weak_box *wb = (struct weak_box *)p;
-
-  gcFIXUP(wb->secondary_erase);
-
-  return size_weak_box(p);
-}
-
-inline static void clean_up_weak_boxes(void)
-{
-  struct weak_box *work;
-
-  gcFIXUP(weak_boxes);
-  for(work = weak_boxes; work; work = work->next) {
-    if(!marked(work->val)) {
-      work->val = NULL;
-      if(work->secondary_erase)
-	*(work->secondary_erase + work->soffset) = NULL;
-      work->secondary_erase = NULL;
-    } else { 
-      work->val = GC_resolve(work->val); 
-    }
-    gcFIXUP(work->next);
-  }
-  weak_boxes = NULL;
-}
-
-struct weak_array {
-  unsigned short type;
-  short keyex;
-  long count;
-  void *replace_val;
-  struct weak_array *next;
-  void *data[1];
-};
-
-static unsigned short weak_array_tag = 256;
-static struct weak_array *weak_arrays = NULL;
-
-void *GC_malloc_weak_array(size_t size, void *replace_val)
-{
-  struct weak_array *wa;
-
-  park[0] = replace_val; 
-  wa = GC_malloc_one_tagged(size + sizeof(struct weak_array) - sizeof(void*));
-  replace_val = park[0]; park[0] = NULL;
-
-  wa->type = weak_array_tag;
-  wa->replace_val = replace_val;
-  wa->count = gcBYTES_TO_WORDS(size);
-  return wa;
-}
-
-inline static int size_weak_array(void *p)
-{
-  return gcBYTES_TO_WORDS(sizeof(struct weak_array)
-			  + ((((struct weak_array *)p)->count - 1) 
-			     * sizeof(void*)));
-}
-
-static int mark_weak_array(void *p)
-{
-  struct weak_array *wa = (struct weak_array *)p;
-
-  gcMARK(wa->replace_val);
-  wa->next = weak_arrays;
-  weak_arrays = wa;
-  return size_weak_array(p);
-}
-
-static int repair_weak_array(void *p)
-{
-  struct weak_array *wa = (struct weak_array *)p;
-
-  gcFIXUP(wa->replace_val);
-  return size_weak_array(p);
-}
-
-inline static void clean_up_weak_arrays()
-{
-  struct weak_array *work;
-
-  gcFIXUP(weak_arrays);
-  for(work = weak_arrays; work; work = work->next) {
-    void **data;
-    int i;
-    
-    for(data = work->data, i = work->count; i--; ) {
-      void *p = data[i];
-      
-      if(p) {
-	if(!marked(p)) {
-	  GCDEBUG((DEBUGOUTF, "Replacing %p in %p because marked is %i (%p/%i)\n",
-		   p, work, marked(p), find_page(p), find_page(p)->previous_size));
-	  data[i] = work->replace_val;
-	} else {
-	  data[i] = GC_resolve(p);
-	}
-      }
-    }
-    gcFIXUP(work->next);
-  }
-  weak_arrays = NULL;
-}
+#include "weak.c"
 
 /*****************************************************************************/
 /* thread list                                                               */
@@ -1835,11 +1697,13 @@ void designate_modified(void *p)
 
 #include "sighand.c"
 
-void GC_init_type_tags(int count, int weakbox)
+void GC_init_type_tags(int count, int weakbox, int ephemeron)
 {
   static int initialized = 0;
 
   weak_box_tag = weakbox;
+  ephemeron_tag = ephemeron;
+
   if(!initialized) {
     initialized = 1;
     max_heap_size = determine_max_heap_size();
@@ -1848,10 +1712,12 @@ void GC_init_type_tags(int count, int weakbox)
     
     resize_gen0(INIT_GEN0_SIZE);
     
-    GC_register_traversers(weakbox, size_weak_box, mark_weak_box,
-			   repair_weak_box, 0, 0);
-    GC_register_traversers(weak_array_tag, size_weak_array, mark_weak_array,
-			   repair_weak_array, 0, 0);
+    GC_register_traversers(weak_box_tag, size_weak_box, mark_weak_box,
+			   fixup_weak_box, 0, 0);
+    GC_register_traversers(ephemeron_tag, size_ephemeron, mark_ephemeron,
+			   fixup_ephemeron, 0, 0);
+    GC_register_traversers(gc_weak_array_tag, size_weak_array, mark_weak_array,
+			   fixup_weak_array, 0, 0);
     initialize_signal_handler();
   }
 }
@@ -2188,8 +2054,9 @@ static void prepare_pages_for_collection(void)
   }
 
   /* we do this here because, well, why not? */
-  weak_boxes = NULL;
-  weak_arrays = NULL;
+  init_weak_boxes();
+  init_weak_arrays();
+  init_ephemerons();
 }
 
 static void mark_backpointers(void)
@@ -2545,9 +2412,9 @@ static void garbage_collect(int force_full)
 
   /* now propagate/repair the marks we got from these roots, and do the
      finalizer passes */
-  propagate_marks();
-  check_finalizers(1); propagate_marks();
-  check_finalizers(2); propagate_marks();
+  mark_ready_ephemerons(); propagate_marks();
+  check_finalizers(1); mark_ready_ephemerons(); propagate_marks();
+  check_finalizers(2); mark_ready_ephemerons(); propagate_marks();
   if(gc_full) zero_weak_finalizers();
   do_ordered_level3(); propagate_marks();
   check_finalizers(3); propagate_marks();
@@ -2564,13 +2431,15 @@ static void garbage_collect(int force_full)
   clear_stack_pages();  
 #endif
 
+  zero_weak_boxes(); 
+  zero_weak_arrays();
+  zero_remaining_ephemerons();
+
   if(gc_full) do_heap_compact();
 
   /* do some cleanup structures that either change state based on the
      heap state after collection or that become useless based on changes
      in state after collection */
-  clean_up_weak_boxes(); 
-  clean_up_weak_arrays();
   clean_up_thread_list();
   clean_up_owner_table();
   clean_up_account_hooks();

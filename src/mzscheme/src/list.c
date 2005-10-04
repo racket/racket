@@ -108,6 +108,10 @@ static Scheme_Object *make_weak_box(int argc, Scheme_Object *argv[]);
 static Scheme_Object *weak_box_value(int argc, Scheme_Object *argv[]);
 static Scheme_Object *weak_boxp(int argc, Scheme_Object *argv[]);
 
+static Scheme_Object *make_ephemeron(int argc, Scheme_Object *argv[]);
+static Scheme_Object *ephemeron_value(int argc, Scheme_Object *argv[]);
+static Scheme_Object *ephemeronp(int argc, Scheme_Object *argv[]);
+
 #define BOX "box"
 #define BOXP "box?"
 #define UNBOX "unbox"
@@ -500,6 +504,22 @@ scheme_init_list (Scheme_Env *env)
   scheme_add_global_constant("weak-box?",
 			     scheme_make_folding_prim(weak_boxp,
 						      "weak-box?",
+						      1, 1, 1),
+			     env);
+
+  scheme_add_global_constant("make-ephemeron",
+			     scheme_make_prim_w_arity(make_ephemeron,
+						      "make-ephemeron",
+						      2, 2),
+			     env);
+  scheme_add_global_constant("ephemeron-value",
+			     scheme_make_prim_w_arity(ephemeron_value,
+						      "ephemeron-value",
+						      1, 1),
+			     env);
+  scheme_add_global_constant("ephemeron?",
+			     scheme_make_folding_prim(ephemeronp,
+						      "ephemeron?",
 						      1, 1, 1),
 			     env);
 
@@ -1698,3 +1718,183 @@ Scheme_Object * scheme_make_null (void)
 {
   return scheme_null;
 }
+
+/************************************************************/
+/*                      ephemerons                          */
+/************************************************************/
+
+typedef struct Scheme_Ephemeron {
+  Scheme_Object so;
+  Scheme_Object *key, *val;
+  struct Scheme_Ephemeron *next;
+} Scheme_Ephemeron;
+
+#ifndef MZ_PRECISE_GC
+
+static Scheme_Ephemeron *ephemerons, *done_ephemerons; /* not registered as a root! */
+
+#ifdef USE_SENORA_GC
+# define GC_is_marked(p) GC_base(p)
+# define GC_did_mark_stack_overflow() 0
+#else
+extern MZ_DLLIMPORT int GC_is_marked(void *);
+extern MZ_DLLIMPORT int GC_did_mark_stack_overflow(void);
+#endif
+extern MZ_DLLIMPORT void GC_push_all_stack(void *, void *);
+extern MZ_DLLIMPORT void GC_flush_mark_stack(void);
+
+#endif
+
+Scheme_Object *scheme_make_ephemeron(Scheme_Object *key, Scheme_Object *val)
+{
+#ifdef MZ_PRECISE_GC
+  return GC_malloc_ephemeron(key, val);
+#else
+  Scheme_Ephemeron *e;
+
+  e = (Scheme_Ephemeron *)scheme_malloc_atomic(sizeof(Scheme_Ephemeron));
+  e->so.type = scheme_ephemeron_type;
+  e->next = ephemerons;
+  ephemerons = e;
+  e->key = key;
+  e->val = val;
+
+  return (Scheme_Object *)e;
+#endif
+}
+
+Scheme_Object *scheme_ephemeron_value(Scheme_Object *o)
+{
+  return ((Scheme_Ephemeron *)o)->val;
+}
+
+#ifndef MZ_PRECISE_GC
+
+static void set_ephemerons(Scheme_Ephemeron *ae, Scheme_Ephemeron *be, Scheme_Ephemeron *ce, Scheme_Ephemeron *de)
+{
+  if (be) {
+    Scheme_Ephemeron *e;
+    for (e = be; e->next; e = e->next) { }
+    be->next = ae;
+    ae = be;
+  }
+
+  if (ce)
+    set_ephemerons(ae, ce, de, NULL);
+  else if (de)
+    set_ephemerons(ae, de, NULL, NULL);
+  else
+    ephemerons = ae;
+}
+
+static int mark_ephemerons()
+{
+  Scheme_Ephemeron *e, *ae, *be, *next;
+  int did_one, mix, ever_done = 0;
+
+  mix = scheme_get_milliseconds();
+  mix = mix >> 8;
+
+  do {
+    did_one = 0;
+    ae = be = NULL;
+
+    for (e = ephemerons; e; e = next) {
+      next = e->next;
+
+      if (e->key) {
+	if (!GC_is_marked(e)
+	    || (!SCHEME_INTP(e->key) && !GC_is_marked(e->key))) {
+	  /* No reason to mark, yet. Randomly put this one back
+	     into one of the keep lists: */
+	  if (mix & 0x1) {
+	    e->next = ae;
+	    ae = e;
+	  } else {
+	    e->next = be;
+	    be = e;
+	  }
+	  mix += ((long)e >> 5) + ((long)e >> 2);
+	} else {
+	  did_one = 1;
+	  ever_done = 1;
+	  GC_push_all_stack(&e->val, &e->val + 1);
+	  if (GC_did_mark_stack_overflow()) {
+	    /* printf("mark stack overflow\n"); */
+	    set_ephemerons(ae, be, done_ephemerons, e);
+	    return 0;
+	  } else {
+	    GC_flush_mark_stack();
+	    if (GC_did_mark_stack_overflow()) {
+	      /* printf("mark stack overflow (late)\n"); */
+	      set_ephemerons(ae, be, done_ephemerons, e);
+	      return 0;
+	    }
+	  }
+	  /* Done with this one: */
+	  e->next = done_ephemerons;
+	  done_ephemerons = e;
+	}
+      } else {
+	/* Ephemeron previously done, so drop it. This case
+	   shouldn't happen, because it should have been
+	   dropped earlier. */
+      }
+    }
+
+    /* Combine ae & be back into ephemerons list: */
+    set_ephemerons(ae, be, NULL, NULL);
+  } while (did_one);
+
+  return ever_done;
+}
+
+#endif
+
+static Scheme_Object *make_ephemeron(int argc, Scheme_Object **argv)
+{
+  return scheme_make_ephemeron(argv[0], argv[1]);
+}
+
+static Scheme_Object *ephemeron_value(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *v;
+
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_ephemeron_type))
+    scheme_wrong_type("ephemeron-value", "ephemeron", 0, argc, argv);
+  v = scheme_ephemeron_value(argv[0]);
+
+  if (!v)
+    return scheme_false;
+  else
+    return v;
+}
+
+static Scheme_Object *ephemeronp(int argc, Scheme_Object *argv[])
+{
+  return (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_ephemeron_type)
+	  ? scheme_true 
+	  : scheme_false);
+}
+
+#ifndef MZ_PRECISE_GC
+
+int scheme_propagate_ephemeron_marks()
+{
+  return mark_ephemerons();
+}
+
+void scheme_clear_ephemerons()
+{
+  Scheme_Ephemeron *e;
+
+  for (e = ephemerons; e; e = e->next) {
+    e->val = NULL;
+    e->key = NULL;
+  }
+
+  ephemerons = done_ephemerons;
+  done_ephemerons = NULL;
+}
+
+#endif

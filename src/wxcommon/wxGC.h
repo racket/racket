@@ -120,6 +120,9 @@ public:
   /* Overridden in each subclass: */
   virtual inline void gcMark();
   virtual inline void gcFixup();
+# ifdef COMPACT_BACKTRACE_GC
+  virtual char *gcGetName();
+# endif
 #endif
 };
 

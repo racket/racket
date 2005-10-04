@@ -390,7 +390,7 @@ Bool wxStyleChangeRecord::Undo(wxMediaBuffer *buffer)
   return continued;
 }
 
-class StyleChangeSnip : public wxObject 
+class StyleChangeSnip /* : public wxObject  */
 {
  public:
   wxSnip *snip;

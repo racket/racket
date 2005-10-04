@@ -421,6 +421,8 @@ EXPORTS
  scheme_symbol_name
  scheme_symbol_name_and_size
  scheme_symbol_val
+ scheme_intern_exact_keyword
+ scheme_intern_exact_char_keyword
  scheme_make_struct_values
  scheme_make_struct_names
  scheme_make_struct_type
@@ -458,6 +460,8 @@ EXPORTS
  scheme_unbox
  scheme_set_box
  scheme_make_weak_box
+ scheme_make_ephemeron
+ scheme_ephemeron_value
  scheme_load
  scheme_load_extension
  scheme_register_extension_global

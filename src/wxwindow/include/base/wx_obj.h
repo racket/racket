@@ -48,6 +48,9 @@ class wxObject : public WXGC_CLEANUP_CLASS
   wxObject(void);
   wxObject(Bool cleanup);
   virtual ~wxObject(void);
+#ifdef COMPACT_BACKTRACE_GC
+  virtual char *gcGetName();
+#endif
 };
 
 

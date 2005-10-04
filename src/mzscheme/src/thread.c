@@ -5365,13 +5365,14 @@ Scheme_Object *scheme_thread_cell_get(Scheme_Object *cell, Scheme_Thread_Cell_Ta
 
   v = scheme_lookup_in_table(cells, (const char *)cell);
   if (v)
-    return v;
+    return scheme_ephemeron_value(v);
   else
     return ((Thread_Cell *)cell)->def_val;
 }
 
 void scheme_thread_cell_set(Scheme_Object *cell, Scheme_Thread_Cell_Table *cells, Scheme_Object *v)
 {
+  v = scheme_make_ephemeron(cell, v);
   scheme_add_to_table(cells, (const char *)cell, (void *)v, 0);
 }
 
@@ -5843,6 +5844,7 @@ static void make_initial_config(Scheme_Thread *p)
   init_param(cells, paramz, MZCONFIG_CAN_READ_DOT, scheme_true);
   init_param(cells, paramz, MZCONFIG_CAN_READ_QUASI, scheme_true);
   init_param(cells, paramz, MZCONFIG_READ_DECIMAL_INEXACT, scheme_true);
+  init_param(cells, paramz, MZCONFIG_CAN_READ_READER, scheme_false);
 
   init_param(cells, paramz, MZCONFIG_PRINT_GRAPH, scheme_false);
   init_param(cells, paramz, MZCONFIG_PRINT_STRUCT, scheme_false);

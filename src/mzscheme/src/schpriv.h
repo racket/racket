@@ -105,6 +105,9 @@ void scheme_reset_finalizations(void);
 
 extern unsigned long scheme_get_stack_base();
 
+int scheme_propagate_ephemeron_marks();
+void scheme_clear_ephemerons();
+
 #ifndef MZ_XFORM
 # define HIDE_FROM_XFORM(x) x
 #endif

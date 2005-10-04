@@ -47,6 +47,7 @@ extern int GC_is_marked(void *);
 #endif
 
 Scheme_Hash_Table *scheme_symbol_table = NULL;
+Scheme_Hash_Table *scheme_keyword_table = NULL;
 Scheme_Hash_Table *scheme_parallel_symbol_table = NULL;
 
 unsigned long scheme_max_found_symbol_name;
@@ -59,6 +60,9 @@ static Scheme_Object *symbol_p_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_to_symbol_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_to_uninterned_symbol_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *symbol_to_string_prim (int argc, Scheme_Object *argv[]);
+static Scheme_Object *keyword_p_prim (int argc, Scheme_Object *argv[]);
+static Scheme_Object *string_to_keyword_prim (int argc, Scheme_Object *argv[]);
+static Scheme_Object *keyword_to_string_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *gensym(int argc, Scheme_Object *argv[]);
 
 static int gensym_counter;
@@ -216,7 +220,9 @@ static void clean_one_symbol_table(Scheme_Hash_Table *symbol_table)
 static void clean_symbol_table(void)
 {
   clean_one_symbol_table(scheme_symbol_table);
+  clean_one_symbol_table(scheme_keyword_table);
   clean_one_symbol_table(scheme_parallel_symbol_table);
+  scheme_clear_ephemerons();
 }
 #endif
 
@@ -249,9 +255,11 @@ void
 scheme_init_symbol_table ()
 {
   REGISTER_SO(scheme_symbol_table);
+  REGISTER_SO(scheme_keyword_table);
   REGISTER_SO(scheme_parallel_symbol_table);
 
   scheme_symbol_table = init_one_symbol_table();
+  scheme_keyword_table = init_one_symbol_table();
   scheme_parallel_symbol_table = init_one_symbol_table();
 
 #ifndef MZ_PRECISE_GC
@@ -284,6 +292,21 @@ scheme_init_symbol (Scheme_Env *env)
   scheme_add_global_constant("symbol->string",
 			     scheme_make_prim_w_arity(symbol_to_string_prim,
 						      "symbol->string",
+						      1, 1),
+			     env);
+
+  scheme_add_global_constant("keyword?",
+			     scheme_make_folding_prim(keyword_p_prim,
+						      "keyword?",
+						      1, 1, 1),
+			     env);
+  scheme_add_global_constant("string->keyword",
+			     scheme_make_prim_w_arity(string_to_keyword_prim,
+						      "string->keyword",
+						      1, 1), env);
+  scheme_add_global_constant("keyword->string",
+			     scheme_make_prim_w_arity(keyword_to_string_prim,
+						      "keyword->string",
 						      1, 1),
 			     env);
 
@@ -372,6 +395,28 @@ scheme_intern_exact_char_symbol(const mzchar *name, unsigned int len)
   return scheme_intern_exact_symbol_in_table(scheme_symbol_table, 0, bs, blen);
 }
 
+Scheme_Object *
+scheme_intern_exact_keyword(const char *name, unsigned int len)
+{
+  Scheme_Object *s;
+  s = scheme_intern_exact_symbol_in_table(scheme_keyword_table, 0, name, len);
+  if (s->type == scheme_symbol_type)
+    s->type = scheme_keyword_type;
+  return s;
+}
+
+Scheme_Object *scheme_intern_exact_char_keyword(const mzchar *name, unsigned int len)
+{
+  char buf[64], *bs;
+  long blen;
+  Scheme_Object *s;
+  bs = scheme_utf8_encode_to_buffer_len(name, len, buf, 64, &blen);
+  s = scheme_intern_exact_symbol_in_table(scheme_keyword_table, 0, bs, blen);
+  if (s->type == scheme_symbol_type)
+    s->type = scheme_keyword_type;
+  return s;
+}
+
 #define MAX_SYMBOL_SIZE 256
 
 Scheme_Object *
@@ -441,15 +486,20 @@ const char *scheme_symbol_name_and_size(Scheme_Object *sym, unsigned int *length
 			   && (flags & SCHEME_SNF_FOR_TS)))
 
   if (len) {
-    digit_start = (isdigit((unsigned char)s[0]) || (s[0] == '.')
-		   || (s[0] == '+') || (s[0] == '-'));
-    if (s[0] == '#' && (len == 1 || s[1] != '%'))
-      has_special = 1;
-    if (s[0] == '.' && len == 1)
-      has_special = 1;
+    if (flags & SCHEME_SNF_KEYWORD) {
+      digit_start = 0;
+    } else {
+      digit_start = (isdigit((unsigned char)s[0]) || (s[0] == '.')
+		     || (s[0] == '+') || (s[0] == '-'));
+      if (s[0] == '#' && (len == 1 || s[1] != '%'))
+	has_special = 1;
+      if (s[0] == '.' && len == 1)
+	has_special = 1;
+    }
   } else {
     digit_start = 0;
-    has_space = 1;
+    if (!(flags & SCHEME_SNF_KEYWORD))
+      has_space = 1;
   }
 
   for (i = 0; i < len; i++) {
@@ -602,6 +652,32 @@ symbol_to_string_prim (int argc, Scheme_Object *argv[])
   if (!SCHEME_SYMBOLP(argv[0]))
     scheme_wrong_type("symbol->string", "symbol", 0, argc, argv);
 
+  return scheme_make_sized_offset_utf8_string((char *)(argv[0]),
+					      SCHEME_SYMSTR_OFFSET(argv[0]),
+					      SCHEME_SYM_LEN(argv[0]));
+}
+
+static Scheme_Object *
+keyword_p_prim (int argc, Scheme_Object *argv[])
+{
+  return SCHEME_KEYWORDP(argv[0]) ? scheme_true : scheme_false;
+}
+
+static Scheme_Object *
+string_to_keyword_prim (int argc, Scheme_Object *argv[])
+{
+  if (!SCHEME_CHAR_STRINGP(argv[0]))
+    scheme_wrong_type("string->keyword", "string", 0, argc, argv);
+  return scheme_intern_exact_char_keyword(SCHEME_CHAR_STR_VAL(argv[0]),
+					  SCHEME_CHAR_STRTAG_VAL(argv[0]));
+}
+
+static Scheme_Object *
+keyword_to_string_prim (int argc, Scheme_Object *argv[])
+{
+  if (!SCHEME_KEYWORDP(argv[0]))
+    scheme_wrong_type("keyword->string", "keyword", 0, argc, argv);
+  
   return scheme_make_sized_offset_utf8_string((char *)(argv[0]),
 					      SCHEME_SYMSTR_OFFSET(argv[0]),
 					      SCHEME_SYM_LEN(argv[0]));

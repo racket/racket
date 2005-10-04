@@ -46,3 +46,9 @@ wxObject::~wxObject(void)
   --wx_object_count;
 }
 
+# ifdef COMPACT_BACKTRACE_GC
+char *wxObject::gcGetName()
+{
+  wxGetTypeName(__type);
+}
+# endif

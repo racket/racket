@@ -174,6 +174,13 @@ static Scheme_Object *read_symbol(int init_ch,
 				  Scheme_Object *indentation,
 				  ReadParams *params,
 				  Readtable *table);
+static Scheme_Object *read_keyword(int init_ch,
+				   Scheme_Object *port, Scheme_Object *stxsrc,
+				   long line, long col, long pos,
+				   Scheme_Hash_Table **ht,
+				   Scheme_Object *indentation,
+				   ReadParams *params,
+				   Readtable *table);
 static Scheme_Object *read_character(Scheme_Object *port, Scheme_Object *stcsrc,
 				     long line, long col, long pos,
 				     Scheme_Hash_Table **ht,
@@ -983,6 +990,11 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	  if (!params->honu_mode) {
 	    scheme_ungetc('%', port);
 	    return read_symbol('#', port, stxsrc, line, col, pos, ht, indentation, params, table);
+	  }
+	  break;
+	case ':':
+	  if (!params->honu_mode) {
+	    return read_keyword(-1, port, stxsrc, line, col, pos, ht, indentation, params, table);
 	  }
 	  break;
 	case '(':
@@ -2732,7 +2744,7 @@ read_number_or_symbol(int init_ch, Scheme_Object *port,
 		      Scheme_Object *stxsrc, long line, long col, long pos,
 		      int is_float, int is_not_float,
 		      int radix, int radix_set,
-		      int is_symbol, int pipe_quote,
+		      int is_symbol, int is_kw, int pipe_quote,
 		      Scheme_Hash_Table **ht,
 		      Scheme_Object *indentation, ReadParams *params, Readtable *table)
 {
@@ -2825,12 +2837,12 @@ read_number_or_symbol(int init_ch, Scheme_Object *port,
       ch = scheme_getc_special_ok(port);
       if (ch == EOF) {
 	scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), EOF, indentation,
-			"read: EOF following `%c' in symbol", esc_ch);
+			"read: EOF following `%c' in %s", esc_ch, is_kw ? "keyword" : "symbol");
 	return NULL;
       } else if (ch == SCHEME_SPECIAL) {
 	scheme_get_ready_read_special(port, stxsrc, ht);
 	scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), SCHEME_SPECIAL, indentation,
-			"read: non-character following `%c' in symbol", esc_ch);
+			"read: non-character following `%c' in %s", esc_ch, is_kw ? "keyword" : "symbol");
 	return NULL;
       }
       quoted = 1;
@@ -2897,7 +2909,8 @@ read_number_or_symbol(int init_ch, Scheme_Object *port,
   if (running_quote && (ch == SCHEME_SPECIAL)) {
     scheme_get_ready_read_special(port, stxsrc, ht);
     scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), SCHEME_SPECIAL, indentation,
-		    "read: non-character following `%c' in symbol", running_quote_ch);
+		    "read: non-character following `%c' in %s", running_quote_ch,
+		    is_kw ? "keyword" : "symbol");
   }
 
   if (ungetc_ok)
@@ -2995,7 +3008,10 @@ read_number_or_symbol(int init_ch, Scheme_Object *port,
 		      "read: bad number: %5", buf);
       return NULL;
     }
-    o = scheme_intern_exact_char_symbol(buf, i);
+    if (is_kw) {
+      o = scheme_intern_exact_char_keyword(buf, i);
+    } else
+      o = scheme_intern_exact_char_symbol(buf, i);
   }
 
   if (stxsrc)
@@ -3016,7 +3032,7 @@ read_number(int init_ch,
   return read_number_or_symbol(init_ch,
 			       port, stxsrc, line, col, pos,
 			       is_float, is_not_float,
-			       radix, radix_set, 0,
+			       radix, radix_set, 0, 0,
 			       params->can_read_pipe_quote,
 			       ht, indentation, params, table);
 }
@@ -3030,7 +3046,21 @@ read_symbol(int init_ch,
 {
   return read_number_or_symbol(init_ch,
 			       port, stxsrc, line, col, pos,
-			       0, 0, 10, 0, 1,
+			       0, 0, 10, 0, 1, 0,
+			       params->can_read_pipe_quote,
+			       ht, indentation, params, table);
+}
+
+static Scheme_Object  *
+read_keyword(int init_ch,
+	     Scheme_Object *port,
+	     Scheme_Object *stxsrc, long line, long col, long pos,
+	     Scheme_Hash_Table **ht,
+	     Scheme_Object *indentation, ReadParams *params, Readtable *table)
+{
+  return read_number_or_symbol(init_ch,
+			       port, stxsrc, line, col, pos,
+			       0, 0, 10, 0, 1, 1,
 			       params->can_read_pipe_quote,
 			       ht, indentation, params, table);
 }
@@ -3790,6 +3820,16 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	   means that uninterned symbols are consistently re-created for
 	   a particular compiled expression. */
       }
+      break;
+    case CPT_KEYWORD:
+      l = read_compact_number(port);
+      RANGE_CHECK_GETS(l);
+      s = read_compact_chars(port, buffer, BLK_BUF_SIZE, l);
+      v = scheme_intern_exact_keyword(s, l);
+
+      l = read_compact_number(port);
+      RANGE_CHECK(l, < port->symtab_size);
+      port->symtab[l] = v;
       break;
     case CPT_BYTE_STRING:
       l = read_compact_number(port);

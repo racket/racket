@@ -931,6 +931,7 @@ static void count_managed(Scheme_Custodian *m, int *c, int *a, int *u, int *t,
 
 #if MZ_PRECISE_GC_TRACE
 extern int GC_show_trace;
+extern int GC_show_finals;
 extern int GC_trace_for_tag;
 extern int GC_path_length_limit;
 extern void (*GC_for_each_found)(void *p);
@@ -1326,6 +1327,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
 # if MZ_PRECISE_GC_TRACE
   GC_trace_for_tag = -1;
   GC_show_trace = 0;
+  GC_show_finals = 0;
   GC_for_each_found = NULL;
   cons_accum_result = scheme_void;
   if (c && SCHEME_SYMBOLP(p[0])) {
@@ -1347,6 +1349,9 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
 	break;
       }
     }
+
+    if (!strcmp("fnl", s))
+      GC_show_finals = 1;
   } else if (SCHEME_INTP(p[0])) {
     GC_trace_for_tag = SCHEME_INT_VAL(p[0]);
     GC_show_trace = 1;
@@ -1435,6 +1440,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
   scheme_console_printf("Begin Help\n");
   scheme_console_printf(" (dump-memory-stats sym) - prints paths to instances of type named by sym.\n");
   scheme_console_printf("   Example: (dump-memory-stats '<pair>)\n");
+  scheme_console_printf(" (dump-memory-stats 'fnl) - prints not-yet-finalized objects.\n");
   scheme_console_printf(" (dump-memory-stats num) - prints paths to objects with tag num.\n");
   scheme_console_printf(" (dump-memory-stats -num) - prints paths to objects of size num.\n");
   scheme_console_printf(" (dump-memory-stats sym/num len) - limits path to size len.\n");

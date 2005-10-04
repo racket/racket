@@ -846,6 +846,9 @@ MZ_EXTERN const char *scheme_symbol_name(Scheme_Object *sym);
 MZ_EXTERN const char *scheme_symbol_name_and_size(Scheme_Object *sym, unsigned int *l, int flags);
 MZ_EXTERN char *scheme_symbol_val(Scheme_Object *sym);
 
+MZ_EXTERN Scheme_Object *scheme_intern_exact_keyword(const char *name, unsigned int len);
+MZ_EXTERN Scheme_Object *scheme_intern_exact_char_keyword(const mzchar *name, unsigned int len);
+
 /*========================================================================*/
 /*                                structs                                 */
 /*========================================================================*/
@@ -929,6 +932,9 @@ MZ_EXTERN Scheme_Object *scheme_unbox(Scheme_Object *obj);
 MZ_EXTERN void scheme_set_box(Scheme_Object *b, Scheme_Object *v);
 
 MZ_EXTERN Scheme_Object *scheme_make_weak_box(Scheme_Object *v);
+
+MZ_EXTERN Scheme_Object *scheme_make_ephemeron(Scheme_Object *key, Scheme_Object *val);
+MZ_EXTERN Scheme_Object *scheme_ephemeron_value(Scheme_Object *o);
 
 MZ_EXTERN Scheme_Object *scheme_load(const char *file);
 MZ_EXTERN Scheme_Object *scheme_load_extension(const char *filename, Scheme_Env *env);

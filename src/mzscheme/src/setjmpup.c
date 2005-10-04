@@ -141,7 +141,9 @@ static void init_push_copied_stacks(void)
 
 static void update_push_copied_stacks(void)
 {
-  push_copied_stacks(0);
+  do {
+    push_copied_stacks(0);
+  } while (scheme_propagate_ephemeron_marks());
 }
 
 void scheme_init_setjumpup(void)

@@ -968,6 +968,9 @@ public:
 };
 
 wxsMenuItem::wxsMenuItem(void)
+#ifndef MZ_PRECISE_GC
+: wxObject(WXGC_NO_CLEANUP)
+#endif
 {
 #ifdef MZ_PRECISE_GC
   void *mid;

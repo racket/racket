@@ -24,6 +24,7 @@ wxMenuItem::wxMenuItem
 (
  void
  )
+/* wbMenuItem uses WXGC_NO_CLEANUP */
 {
   checkable = FALSE;
   cIsChecked = FALSE;
@@ -37,6 +38,7 @@ wxMenuItem::wxMenuItem
  wxMenu* theParentMenu,
  Bool	isCheckable
  )
+/* wbMenuItem uses WXGC_NO_CLEANUP */
 {
   checkable = isCheckable;
   cIsChecked = FALSE;

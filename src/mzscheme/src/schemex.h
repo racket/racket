@@ -696,6 +696,8 @@ Scheme_Object *(*scheme_make_exact_char_symbol)(const mzchar *name, unsigned int
 const char *(*scheme_symbol_name)(Scheme_Object *sym);
 const char *(*scheme_symbol_name_and_size)(Scheme_Object *sym, unsigned int *l, int flags);
 char *(*scheme_symbol_val)(Scheme_Object *sym);
+Scheme_Object *(*scheme_intern_exact_keyword)(const char *name, unsigned int len);
+Scheme_Object *(*scheme_intern_exact_char_keyword)(const mzchar *name, unsigned int len);
 /*========================================================================*/
 /*                                structs                                 */
 /*========================================================================*/
@@ -762,6 +764,8 @@ Scheme_Object *(*scheme_box)(Scheme_Object *v);
 Scheme_Object *(*scheme_unbox)(Scheme_Object *obj);
 void (*scheme_set_box)(Scheme_Object *b, Scheme_Object *v);
 Scheme_Object *(*scheme_make_weak_box)(Scheme_Object *v);
+Scheme_Object *(*scheme_make_ephemeron)(Scheme_Object *key, Scheme_Object *val);
+Scheme_Object *(*scheme_ephemeron_value)(Scheme_Object *o);
 Scheme_Object *(*scheme_load)(const char *file);
 Scheme_Object *(*scheme_load_extension)(const char *filename, Scheme_Env *env);
 void (*scheme_register_extension_global)(void *ptr, long size);

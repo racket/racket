@@ -386,6 +386,7 @@ typedef void (*Scheme_Type_Printer)(Scheme_Object *v, int for_display, Scheme_Pr
 #define SCHEME_PATH_STRING_STR "path or string"
 
 #define SCHEME_SYMBOLP(obj)  SAME_TYPE(SCHEME_TYPE(obj), scheme_symbol_type)
+#define SCHEME_KEYWORDP(obj)  SAME_TYPE(SCHEME_TYPE(obj), scheme_keyword_type)
 
 #define SCHEME_STRSYMP(obj) (SCHEME_CHAR_STRINGP(obj) || SCHEME_SYMBOLP(obj))
 
@@ -478,6 +479,8 @@ typedef void (*Scheme_Type_Printer)(Scheme_Object *v, int for_display, Scheme_Pr
 #define SCHEME_PATH_LEN(obj)  (((Scheme_Simple_Object *)(obj))->u.byte_str_val.tag_val)
 #define SCHEME_SYM_VAL(obj)  (((Scheme_Symbol *)((Scheme_Simple_Object *)(obj)))->s)
 #define SCHEME_SYM_LEN(obj)  (((Scheme_Symbol *)((Scheme_Simple_Object *)(obj)))->len)
+#define SCHEME_KEYWORD_VAL(obj) SCHEME_SYM_VAL(obj)
+#define SCHEME_KEYWORD_LEN(obj) SCHEME_SYM_LEN(obj)
 
 #define SCHEME_SYMSTR_OFFSET(obj) ((unsigned long)SCHEME_SYM_VAL(obj)-(unsigned long)(obj))
 
@@ -1546,6 +1549,8 @@ extern Scheme_Extension_Table *scheme_extension_table;
 #define SCHEME_SNF_PIPE_QUOTE 0x2
 #define SCHEME_SNF_NO_PIPE_QUOTE 0x4
 #define SCHEME_SNF_NEED_CASE 0x8
+#define SCHEME_SNF_KEYWORD 0x10
+#define SCHEME_SNF_NO_KEYWORDS 0x20
 
 /* For use with scheme_make_struct_values et al.: */
 #define SCHEME_STRUCT_NO_TYPE 0x01

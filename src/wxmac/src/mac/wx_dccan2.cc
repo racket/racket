@@ -643,7 +643,7 @@ void wxCanvasDC::DrawPath(wxPath *p, double xoffset, double yoffset, int fillSty
   PolyHandle thePolygon = 0;
 
   if (!Ok() || !cMacDC) return;
-  
+
   if (anti_alias) {
     CGContextRef cg;
     CGMutablePathRef path;
@@ -1217,7 +1217,7 @@ Bool wxCanvasDC::Blit(double xdest, double ydest, double width, double height,
       dstbm = GetPortBitMapForCopyBits(theMacGrafPort);
       srcbm = GetPortBitMapForCopyBits(source->x_pixmap);
       
-      if (mask) {
+      if (mask && !wxSubType(__type, wxTYPE_DC_PRINTER)) {
 	const BitMap *maskbm;
 	
 	maskbm = GetPortBitMapForCopyBits(mask->x_pixmap);

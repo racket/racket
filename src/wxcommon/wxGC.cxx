@@ -29,6 +29,10 @@ Authors: John R. Ellis and Jesse Hull
 #include <stddef.h>
 #include "wxGC.h"
 
+#ifdef COMPACT_BACKTRACE_GC  
+# include <stdio.h>
+#endif
+
 #ifdef MPW_CPLUS
 extern "C" {
   typedef void (*GC_F_PTR)(void *, void *);
@@ -124,6 +128,15 @@ void GC_cleanup(void *obj, void *)
   gc *clean = (gc *)gcPTR_TO_OBJ(obj);
 
 #ifdef MZ_PRECISE_GC
+# ifdef COMPACT_BACKTRACE_GC  
+#  if 0
+  {
+    char *s;
+    s = clean->gcGetName();
+    printf("CLeanup: %s\n", s ? s : "???");
+  }
+#  endif
+# endif
   GC_cpp_delete(clean);
 #else
   clean->~gc();
@@ -207,6 +220,11 @@ int GC_is_wx_object(void *v)
 
 # define ZERO_OUT_DISPATCH 1
 
+# ifdef COMPACT_BACKTRACE_GC
+static char *get_xtagged_name(void *p);
+extern char *(*GC_get_xtagged_name)(void *p);
+# endif
+
 typedef struct {
   short tag;
   short filler_used_for_hashing;
@@ -247,6 +265,10 @@ static void initize(void)
   /* Initialize: */
   GC_mark_xtagged = mark_cpp_object;
   GC_fixup_xtagged = fixup_cpp_object;
+
+# ifdef COMPACT_BACKTRACE_GC
+  GC_get_xtagged_name = get_xtagged_name;
+# endif
   
   is_initialized = 1;
 }
@@ -270,6 +292,24 @@ void GC_cpp_delete(gc *v)
   ((long *)v)[0] = 0;
 #endif
 }
+
+# ifdef COMPACT_BACKTRACE_GC
+
+static char name_buffer[256];
+
+static char *get_xtagged_name(void *p)
+{
+  char *s;
+  s = ((gc *)gcPTR_TO_OBJ(p))->gcGetName();
+  sprintf(name_buffer, "<%s>", (s ? s : "XTAGGED"));
+  return name_buffer;
+}
+
+char *gc::gcGetName() {
+  return NULL;
+}
+
+# endif
 
 #endif
 

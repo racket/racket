@@ -80,6 +80,9 @@ public:
 #ifdef MEMORY_USE_METHOD
   virtual long MemoryUse(void);
 #endif
+#ifdef COMPACT_BACKTRACE_GC
+  virtual char *gcGetName();
+#endif
 };
 
 

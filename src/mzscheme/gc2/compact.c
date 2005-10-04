@@ -160,6 +160,7 @@ void **GC_variable_stack;
 
 /********************* Type tags *********************/
 Type_Tag weak_box_tag = 42; /* set by client */
+Type_Tag ephemeron_tag = 42; /* set by client */
 
 #define gc_weak_array_tag 256
 #define gc_on_free_list_tag 257
@@ -466,9 +467,10 @@ void GC_set_stack_base(void *base)
   stack_base = (unsigned long)base;
 }
 
-void GC_init_type_tags(int count, int weakbox)
+void GC_init_type_tags(int count, int weakbox, int ephemeron)
 {
   weak_box_tag = weakbox;
+  ephemeron_tag = ephemeron;
 }
 
 void GC_register_traversers(Type_Tag tag, Size_Proc size, Mark_Proc mark, Fixup_Proc fixup, 
@@ -632,160 +634,9 @@ static int size_on_free_list(void *p)
 /*                           weak arrays and boxes                            */
 /******************************************************************************/
 
-/* The GC_Weak_Array structure is not externally visible, but
-   clients expect a specific structure. See README for more
-   information. */
-typedef struct GC_Weak_Array {
-  Type_Tag type;
-  short keyex;
-  long count;
-  void *replace_val;
-  struct GC_Weak_Array *next;
-  void *data[1]; /* must be the 5th longword! */
-} GC_Weak_Array;
+static int is_marked(void *p);
 
-static GC_Weak_Array *weak_arrays;
-
-static int size_weak_array(void *p)
-{
-  GC_Weak_Array *a = (GC_Weak_Array *)p;
-
-  return gcBYTES_TO_WORDS(sizeof(GC_Weak_Array) 
-			  + ((a->count - 1) * sizeof(void *)));
-}
-
-static int mark_weak_array(void *p)
-{
-  GC_Weak_Array *a = (GC_Weak_Array *)p;
-
-  gcMARK(a->replace_val);
-
-  a->next = weak_arrays;
-  weak_arrays = a;
-
-#if CHECKS
-  /* For now, weak arrays only used for symbols and falses: */
-  {
-    void **data;
-    int i;
-    data = a->data;
-    for (i = a->count; i--; ) {
-      if (data[i] 
-	  && (*(short *)(data[i]) != 45)
-	  && (*(short *)(data[i]) != 54))
-	CRASH(1);
-    }
-  }
-#endif
-
-  return gcBYTES_TO_WORDS(sizeof(GC_Weak_Array) 
-			  + ((a->count - 1) * sizeof(void *)));
-}
-
-static int fixup_weak_array(void *p)
-{
-  GC_Weak_Array *a = (GC_Weak_Array *)p;
-  int i;
-  void **data;
-
-  gcFIXUP(a->replace_val);
-
-  data = a->data;
-  for (i = a->count; i--; ) {
-    if (data[i])
-      gcFIXUP(data[i]);
-  }
-
-  return gcBYTES_TO_WORDS(sizeof(GC_Weak_Array) 
-			  + ((a->count - 1) * sizeof(void *)));
-}
-
-void *GC_malloc_weak_array(size_t size_in_bytes, void *replace_val)
-{
-  GC_Weak_Array *w;
-
-  /* Allcation might trigger GC, so we use park: */
-  park[0] = replace_val;
-
-  w = (GC_Weak_Array *)GC_malloc_one_tagged(size_in_bytes 
-					    + sizeof(GC_Weak_Array) 
-					    - sizeof(void *));
-
-  replace_val = park[0];
-  park[0] = NULL;
-
-  w->type = gc_weak_array_tag;
-  w->replace_val = replace_val;
-  w->count = (size_in_bytes >> LOG_WORD_SIZE);
-  
-  return w;
-}
-
-/* The GC_Weak_Box struct is not externally visible, but
-   first three fields are mandated by the GC interface */
-typedef struct GC_Weak_Box {
-  Type_Tag type;
-  short keyex;
-  void *val;
-  /* The rest is up to us: */
-  void **secondary_erase;
-  int soffset;
-  struct GC_Weak_Box *next;
-} GC_Weak_Box;
-
-static GC_Weak_Box *weak_boxes;
-
-static int size_weak_box(void *p)
-{
-  return gcBYTES_TO_WORDS(sizeof(GC_Weak_Box));
-}
-
-static int mark_weak_box(void *p)
-{
-  GC_Weak_Box *wb = (GC_Weak_Box *)p;
-    
-  gcMARK(wb->secondary_erase);
-
-  if (wb->val) {
-    wb->next = weak_boxes;
-    weak_boxes = wb;
-  }
-
-  return gcBYTES_TO_WORDS(sizeof(GC_Weak_Box));
-}
-
-static int fixup_weak_box(void *p)
-{
-  GC_Weak_Box *wb = (GC_Weak_Box *)p;
-    
-  gcFIXUP(wb->secondary_erase);
-  gcFIXUP(wb->val);
-
-  return gcBYTES_TO_WORDS(sizeof(GC_Weak_Box));
-}
-
-void *GC_malloc_weak_box(void *p, void **secondary, int soffset)
-{
-  GC_Weak_Box *w;
-
-  /* Allcation might trigger GC, so we use park: */
-  park[0] = p;
-  park[1] = secondary;
-
-  w = (GC_Weak_Box *)GC_malloc_one_tagged(sizeof(GC_Weak_Box));
-
-  p = park[0];
-  park[0] = NULL;
-  secondary = (void **)park[1];
-  park[1] = NULL;
-  
-  w->type = weak_box_tag;
-  w->val = p;
-  w->secondary_erase = secondary;
-  w->soffset = soffset;
-
-  return w;
-}
+#include "weak.c"
 
 /******************************************************************************/
 /*                             finalization                                   */
@@ -1037,7 +888,9 @@ static int is_marked(void *p)
  	  offset -= 1;
 
 	return OFFSET_COLOR(page->u.offsets, offset);
-      } else
+      } else if ((long)p & 0x1)
+	return 1;
+      else
 	return 0;
     }
   }
@@ -3165,6 +3018,7 @@ static void check_ptr(void **a)
       if ((tag < 0) || (tag >= _num_tags_) 
 	  || (!size_table[tag] 
 	      && (tag != weak_box_tag)
+	      && (tag != ephemeron_tag)
 	      && (tag != gc_weak_array_tag)
 	      && (tag != gc_on_free_list_tag))) {
 	GCPRINT(GCOUTF, "bad tag: %d at %lx, references from %lx\n", tag, (long)p, (long)a);
@@ -3261,6 +3115,7 @@ static void init(void)
 {
   if (!initialized) {
     GC_register_traversers(weak_box_tag, size_weak_box, mark_weak_box, fixup_weak_box, 1, 0);
+    GC_register_traversers(ephemeron_tag, size_ephemeron, mark_ephemeron, fixup_ephemeron, 1, 0);
     GC_register_traversers(gc_weak_array_tag, size_weak_array, mark_weak_array, fixup_weak_array, 0, 0);
 #if USE_FREELIST
     GC_register_traversers(gc_on_free_list_tag, size_on_free_list, size_on_free_list, size_on_free_list, 0, 0);
@@ -3363,8 +3218,6 @@ static void do_roots(int fixup)
 static void gcollect(int full)
 {
   int did_fnls;
-  GC_Weak_Box *wb;
-  GC_Weak_Array *wa;
 #if TIME
   struct rusage pre, post;
 #endif
@@ -3383,8 +3236,10 @@ static void gcollect(int full)
 
   set_ending_tags();
 
-  weak_boxes = NULL;
-  weak_arrays = NULL;
+  init_weak_boxes();
+  init_ephemerons();
+  init_weak_arrays();
+
   did_fnls = 0;
 
   gray_first = NULL;
@@ -3519,6 +3374,10 @@ static void gcollect(int full)
 	     GETTIMEREL()));
 
   iterations = 0;
+
+  /* Propagate, mark ready ephemerons */
+  propagate_all_mpages();
+  mark_ready_ephemerons();
 
   /* Propagate, loop to do finalization */
   while (1) { 
@@ -3685,11 +3544,12 @@ static void gcollect(int full)
 	  gcMARK(f->p);
 	  f = f->next;
 	}
+
+	mark_ready_ephemerons();
       }
 	
       did_fnls++;
     }
-
   }
 
 #if CHECKS
@@ -3722,33 +3582,9 @@ static void gcollect(int full)
 
   /******************************************************/
 
-  /* Do weak boxes: */
-  wb = weak_boxes;
-  while (wb) {
-    if (!is_marked(wb->val)) {
-      wb->val = NULL;
-      if (wb->secondary_erase) {
-	*(wb->secondary_erase + wb->soffset) = NULL;
-	wb->secondary_erase = NULL;
-      }
-    }
-    wb = wb->next;
-  }
-
-  /* Do weak arrays: */
-  wa = weak_arrays;
-  while (wa) {
-    void **data;
-    
-    data = wa->data;
-    for (i = wa->count; i--; ) {
-      void *p = data[i];
-      if (p && !is_marked(p))
-	data[i] = wa->replace_val;
-    }
-    
-    wa = wa->next;
-  }
+  zero_remaining_ephemerons();
+  zero_weak_boxes();
+  zero_weak_arrays();
 
   /* Cleanup weak finalization links: */
   {
@@ -4648,11 +4484,13 @@ static long dump_info_array[BIGBLOCK_MIN_SIZE];
 #if KEEP_BACKPOINTERS
 # define MAX_FOUND_OBJECTS 5000
 int GC_show_trace = 0;
+int GC_show_finals = 0;
 int GC_trace_for_tag = 57;
 int GC_path_length_limit = 1000;
 static int found_object_count;
 static void *found_objects[MAX_FOUND_OBJECTS];
 void (*GC_for_each_found)(void *p) = NULL;
+char *(*GC_get_xtagged_name)(void *p) = NULL;
 #endif
 
 static long scan_tagged_mpage(void **p, MPage *page)
@@ -4773,7 +4611,10 @@ void *print_out_pointer(const char *prefix, void *p)
   } else if (page->type == MTYPE_ATOMIC) {
     what = "ATOMIC";
   } else if (page->type == MTYPE_XTAGGED) {
-    what = "XTAGGED";
+    if (GC_get_xtagged_name)
+      what = GC_get_xtagged_name(p);
+    else
+      what = "XTAGGED";
   } else if (page->type == MTYPE_MALLOCFREE) {
     what = "MALLOCED";
   } else {
@@ -5063,6 +4904,16 @@ void GC_dump(void)
     }
     GCPRINT(GCOUTF, "End Trace\n");
     GC_trace_for_tag = 57;
+    --avoid_collection;
+  }
+  if (GC_show_finals) {
+    Fnl *f;
+    avoid_collection++;
+    GCPRINT(GCOUTF, "Begin Finalizations\n");
+    for (f = fnls; f; f = f->next) {
+      print_out_pointer("==@ ", f->p);
+    }
+    GCPRINT(GCOUTF, "End Finalizations\n");
     --avoid_collection;
   }
   if (GC_for_each_found)

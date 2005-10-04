@@ -64,13 +64,14 @@ GC2_EXTERN void GC_add_roots(void *start, void *end);
    Called by MzScheme to install roots. The memory between
    `start' (inclusive) and `end' (exclusive) contains pointers. */
 
-GC2_EXTERN void GC_init_type_tags(int count, int weakbox);
+GC2_EXTERN void GC_init_type_tags(int count, int weakbox, int ephemeron);
 /*
    Called by MzScheme to indicate the number of different type tags it
    uses, starting from 0. `count' is always less than 256. The weakbox
-   argument is the value to be used for tagging weak box. (The GC has
-   some freedom in the layout of a weak box, so it performs weak box
-   traversals itself, but MzScheme gets to choose the tag.) */
+   argument is the value to be used for tagging weak box, and the
+   ephemeron is the value to tagging an ephemeron. (The GC has some
+   freedom in the layout of a weak box or ephemeron, so it performs weak
+   box traversals itself, but MzScheme gets to choose the tag.) */
 
 GC2_EXTERN void GC_register_thread(void *, void *);
 /*
@@ -176,6 +177,10 @@ GC2_EXTERN void GC_free(void *);
 GC2_EXTERN void *GC_malloc_weak_box(void *p, void **secondary, int soffset);
 /* 
    Allocate a weak box. See README for details. */
+
+GC2_EXTERN void *GC_malloc_ephemeron(void *p, void *p2);
+/* 
+   Allocate an ephemeron. See README for details. */
 
 GC2_EXTERN void **GC_malloc_immobile_box(void *p);
 GC2_EXTERN void GC_free_immobile_box(void **b);

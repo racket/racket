@@ -293,6 +293,7 @@ class wxFontNameItem : public wxObject
 };
 
 wxFontNameItem::wxFontNameItem()
+: wxObject(WXGC_NO_CLEANUP)
 {
   screen = new wxSuffixMap;
   printing = new wxSuffixMap;

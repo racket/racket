@@ -667,6 +667,13 @@ void GC_finalize()
     /* PLTSCHEME: for resetting the disapearing link */
     struct disappearing_link *done_dl = NULL, *last_done_dl = NULL;
 
+    /* PLTSCHEME: it's important to "push roots again" before
+       making disappearing links disappear, because this
+       step includes marking from ephemerons whose keys are
+       reachable. We want to mark before disappearing links
+       are disappeared. */
+    if (GC_push_last_roots_again) GC_push_last_roots_again();
+
     /* Make disappearing links disappear */
     /* PLTSCHEME: handle NULL real_link and remember old values */
     for (i = 0; i < dl_size; i++) {

@@ -159,6 +159,22 @@ MzScheme allocates the following kinds of memory objects:
    of weak pointers to collectable objects. See GC_malloc_weak_array()
    in gc2.h for more details.
 
+ * Ephemeron - The object has the following initial structure:
+
+     struct {
+       short tag;
+       short filler_used_for_hashing;
+       void *key;
+       void *val;
+     }
+
+   See "Weak Box" above. The difference for an ephemeron is that
+   the ephemeron must hold `val' strongly as long as the wealy-held
+   `key' is accessible --- where `val' itself isn't traced unless
+   both the ephemeron and `key' are reachable. (In particular,
+   a reference from `val' to `key' doesn't prevent collection of
+   `key'.)
+
  * Immobile box - a longword-sized box that can contain a reference to
    a collectable object, but it not itself collectable or movable. An
    immobile box lets MzScheme refer to a collectable object (through
