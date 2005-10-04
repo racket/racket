@@ -1,3 +1,8 @@
+Version 299.403
+Added ephemerons
+Added keyword values (#: prefix) and keyword? predicate
+Added --xform mode to mzc
+
 Version 299.402
 Added current-preserved-thread-cell-values
 
