@@ -54,6 +54,8 @@ class wxItem: public wxbItem
    virtual Bool MSWOnDraw(DRAWITEMSTRUCT *WXUNUSED(item)) { return FALSE; };
    virtual Bool MSWOnMeasure(MEASUREITEMSTRUCT *WXUNUSED(item)) { return FALSE; };
 
+   void GetLabelExtent(const char *string, double *x, double *y);
+
    void SetFont(wxFont *f);
 };
 

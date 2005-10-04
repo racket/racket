@@ -394,7 +394,7 @@ void wxMenu::SetLabel(long Id,char *label)
 
 char *wxMenu::GetLabel(long Id)
 {
-  static char tmp[128];
+  static wchar_t tmp[128];
   int len, pos;
   wxMenuItem *item;
   HMENU mh;
@@ -406,12 +406,12 @@ char *wxMenu::GetLabel(long Id)
   mh = ms_handle ? (HMENU)ms_handle : (HMENU)save_ms_handle;
 
   if (mh)
-    len = GetMenuString(mh,pos,tmp,127,MF_BYPOSITION);
+    len = GetMenuStringW(mh,pos,tmp,127,MF_BYPOSITION);
   else
     len = 0;
 
   tmp[len] = '\0';
-  return copystring(tmp);
+  return copystring(wxNARROW_STRING(tmp));
 }
 
 BOOL wxMenu::MSWCommand(UINT WXUNUSED(param), WORD menuId)
@@ -663,9 +663,9 @@ void wxMenuBar::SetLabelTop(int pos,char *label)
     HMENU popup;
     was_flag &= 0xff;
     popup = GetSubMenu((HMENU)ms_handle,pos);
-    ModifyMenu((HMENU)ms_handle,pos,MF_BYPOSITION|MF_STRING|was_flag,(UINT)popup,label);
+    ModifyMenuW((HMENU)ms_handle,pos,MF_BYPOSITION|MF_STRING|was_flag,(UINT)popup,wxWIDE_STRING(label));
   } else
-    ModifyMenu((HMENU)ms_handle,pos,MF_BYPOSITION|MF_STRING|was_flag,pos,label);
+    ModifyMenuW((HMENU)ms_handle,pos,MF_BYPOSITION|MF_STRING|was_flag,pos,wxWIDE_STRING(label));
 
   if (menu_bar_frame) {
     menu_bar_frame->DrawMenuBar();

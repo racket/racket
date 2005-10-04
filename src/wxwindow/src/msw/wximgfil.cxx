@@ -488,6 +488,10 @@ ushort  wxGIF::decoder(ushort linewidth)
         {
           stack[sp++] = suffix[code];
           code = prefix[code];
+	  if (code >= slot) {
+	    ++bad_code_count;
+	    code = oc;
+	  }
         }
 
          /* Push the last character on the stack, and set up the new

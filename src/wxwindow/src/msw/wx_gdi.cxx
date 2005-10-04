@@ -196,6 +196,7 @@ static int glyph_exists_in_selected_font(HDC hdc, int c)
 typedef struct {
   HDC hdc;
   int c;
+  int just_tt;
   wchar_t *face;
 } GlyphFindData;
 
@@ -213,7 +214,12 @@ static int CALLBACK glyph_exists(ENUMLOGFONTW FAR* lpelf,
     /* This font might work...  */
     int ok = 1;
       
-    if (type == TRUETYPE_FONTTYPE) {
+    if (gfd->just_tt)
+      ok = (type == TRUETYPE_FONTTYPE);
+    else
+      ok = (type != TRUETYPE_FONTTYPE);
+    
+    if (ok && (type == TRUETYPE_FONTTYPE)) {
       /* Use the unicode bitfield to avoid unnecessary font loading */
       DWORD *usb;
       int x;
@@ -258,7 +264,15 @@ Bool wxFont::GlyphAvailable(int c, HDC hdc, int screen_font)
   gfd.c = c;
   gfd.face = NULL;
 
-  return !EnumFontFamiliesW(hdc, NULL, (FONTENUMPROCW)glyph_exists, (LPARAM)&gfd);
+  gfd.just_tt = 1;
+  if (!EnumFontFamiliesW(hdc, NULL, (FONTENUMPROCW)glyph_exists, (LPARAM)&gfd))
+    return 1;
+
+  gfd.just_tt = 0;
+  if (!EnumFontFamiliesW(hdc, NULL, (FONTENUMPROCW)glyph_exists, (LPARAM)&gfd))
+    return 1;
+
+  return 0;
 }
 
 Bool wxFont::GlyphAvailableNow(int c, HDC hdc, int screen_font)
@@ -338,6 +352,7 @@ wxFont *wxFont::Substitute(int c, HDC dc, Bool screen_font)
   if (node)
     sub = (wxFont *)node->Data();
   else {
+    int found;
     GlyphFindData gfd;
     wchar_t facebuf[LF_FACESIZE];
     
@@ -345,7 +360,15 @@ wxFont *wxFont::Substitute(int c, HDC dc, Bool screen_font)
     gfd.c = c;
     gfd.face = facebuf;
 
-    if (!EnumFontFamiliesW(dc, NULL, (FONTENUMPROCW)glyph_exists, (LPARAM)&gfd)) {
+    gfd.just_tt = 1;
+    found = !EnumFontFamiliesW(dc, NULL, (FONTENUMPROCW)glyph_exists, (LPARAM)&gfd);
+
+    if (!found) {
+      gfd.just_tt = 0;
+      found = !EnumFontFamiliesW(dc, NULL, (FONTENUMPROCW)glyph_exists, (LPARAM)&gfd);
+    }
+
+    if (found) {
       /* Found substitute font */
       int sid;
       sid = wxTheFontNameDirectory->FindOrCreateFontId(wxNARROW_STRING(facebuf), family);

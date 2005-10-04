@@ -538,3 +538,15 @@ int wxGetControlFontSize()
 {
   return 8;
 }
+
+void wxItem::GetLabelExtent(const char *string, double *x, double *y)
+{
+  GetTextExtent(string, x, y, NULL, NULL, font);
+  if (y && ms_handle) {
+    /* Keep min height consistent, even with substitutions */
+    int cx, cy;
+    wxGetCharSize((HWND)ms_handle, &cx, &cy, font);
+    if (*y < cy)
+      *y = cy;
+  }
+}

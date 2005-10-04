@@ -300,7 +300,7 @@ void wxSlider::SetLabel(char *label)
       ::ScreenToClient(cparent->handle, &point);
     }
 
-    GetTextExtent(label, &w, &h, NULL, NULL,font);
+    GetLabelExtent(wxStripMenuCodes(label), &w, &h);
     MoveWindow(static_label, point.x, point.y, (int)(w + 10), (int)h,
                TRUE);
     SetWindowTextW(static_label, wxWIDE_STRING(label));
@@ -431,7 +431,7 @@ void wxSlider::SetSize(int x, int y, int width, int height, int sizeFlags)
     wchar_t wbuf[300];
     wxGetCharSize((HWND)ms_handle, &cxs, &cys, font);
     GetWindowTextW(static_label, wbuf, 300);
-    GetTextExtent(wxStripMenuCodes(wxNARROW_STRING(wbuf)), &label_width, &cyf, NULL, NULL, font);
+    GetLabelExtent(wxStripMenuCodes(wxNARROW_STRING(wbuf)), &label_width, &cyf);
   }
 
   if ((windowStyle & wxVERTICAL) != wxVERTICAL) {

@@ -704,48 +704,26 @@ Bool wxWindow::Show(Bool show)
   return TRUE;
 }
 
+static wxMemoryDC *measure_dc;
+
 void wxWindow::GetTextExtent(const char *string, double *x, double *y,
 			     double *descent, double *externalLeading, 
 			     wxFont *theFont, Bool use16bit)
 {
   wxFont *fontToUse = theFont;
-  HWND hWnd;
-  HDC dc;
-  HFONT fnt = 0; 
-  HFONT was = 0;
-  SIZE sizeRect;
-  TEXTMETRIC tm;
-  int len;
-  wchar_t *ws;
   
   if (!fontToUse)
     fontToUse = font;
-    
-  hWnd = GetHWND();
-  dc = wxwmGetDC(hWnd);
 
-  if (fontToUse && (fnt = fontToUse->GetInternalFont(dc))) 
-    was = (HFONT)SelectObject(dc, fnt); 
-  else {
-    fnt = (HFONT)SendMessage(hWnd, WM_GETFONT, 0, 0L);
-    if (fnt)
-      was = (HFONT)SelectObject(dc, fnt);
+  if (!measure_dc) {
+    wxBitmap *bm;
+    wxREGGLOB(measure_dc);
+    bm = new wxBitmap(1, 1, 0);
+    measure_dc = new wxMemoryDC();
+    measure_dc->SelectObject(bm);
   }
 
-  ws = wxWIDE_STRING((char *)string);
-  len = wx_wstrlen(ws);
-  GetTextExtentPointW(dc, len ? ws : L" ", len ? len : 1, &sizeRect);
-  GetTextMetrics(dc, &tm);
-
-  if (fontToUse && fnt && was) 
-    SelectObject(dc,was); 
-
-  wxwmReleaseDC(hWnd, dc);
-
-  *x = (len ? (double)sizeRect.cx : (double)0.0);
-  *y = (double)sizeRect.cy;
-  if (descent) *descent = (double)tm.tmDescent;
-  if (externalLeading) *externalLeading = (double)tm.tmExternalLeading;
+  measure_dc->GetTextExtent(string, x, y, descent, externalLeading, fontToUse, 1, use16bit);
 }
 
 void wxWindow::Refresh(void)
@@ -1449,8 +1427,8 @@ void wxWnd::Create(wxWnd *parent, char *wclass, wxWindow *wx_win, char *title,
 
   if (is_dialog) {
     /* Creating a dialog */
-    handle = ::CreateDialog(wxhInstance, dialog_template, hParent,
-			    (DLGPROC)wxDlgProc);
+    handle = ::CreateDialogW(wxhInstance, wxWIDE_STRING(dialog_template), hParent,
+			     (DLGPROC)wxDlgProc);
     
     if (handle == 0) {
       char buf[300];

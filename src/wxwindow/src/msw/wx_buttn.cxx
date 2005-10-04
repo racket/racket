@@ -182,7 +182,7 @@ void wxButton::SetSize(int x, int y, int width, int height, int sizeFlags)
   int ww, hh;
   double current_width;
   double cyf;
-  char buf[300];
+  wchar_t buf[300];
 
   GetPosition(&currentX, &currentY);
   if (x == -1)
@@ -192,8 +192,8 @@ void wxButton::SetSize(int x, int y, int width, int height, int sizeFlags)
 
   GetSize(&ww, &hh);
 
-  GetWindowText(button, buf, 300);
-  GetTextExtent(buf, &current_width, &cyf,NULL,NULL,font);
+  GetWindowTextW(button, buf, 300);
+  GetLabelExtent(wxStripMenuCodes(wxNARROW_STRING(buf)), &current_width, &cyf);
 
   // If we're prepared to use the existing width, then...
   if (width == -1 && ((sizeFlags & wxSIZE_AUTO_WIDTH) != wxSIZE_AUTO_WIDTH))

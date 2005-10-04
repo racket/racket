@@ -156,7 +156,7 @@ void wxMessage::SetSize(int x, int y, int width, int height, int sizeFlags)
   int currentX, currentY;
   int actualWidth = width;
   int actualHeight = height;
-  char buf[300];
+  wchar_t buf[300];
   double current_width;
   double cyf;
   int ww, hh;
@@ -167,8 +167,8 @@ void wxMessage::SetSize(int x, int y, int width, int height, int sizeFlags)
   if (y == -1)
     y = currentY;
 
-  GetWindowText((HWND)ms_handle, buf, 300);
-  GetTextExtent(buf, &current_width, &cyf, NULL, NULL,font);
+  GetWindowTextW((HWND)ms_handle, buf, 300);
+  GetTextExtent(wxStripMenuCodes(wxNARROW_STRING(buf)), &current_width, &cyf, NULL, NULL,font);
 
   GetSize(&ww, &hh);
 

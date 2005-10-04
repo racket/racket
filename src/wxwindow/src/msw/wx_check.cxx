@@ -178,7 +178,7 @@ void wxCheckBox::SetLabel(wxBitmap *bitmap)
 void wxCheckBox::SetSize(int x, int y, int width, int height, int WXUNUSED(sizeFlags))
 {
   int currentX, currentY;
-  char buf[300];
+  wchar_t buf[300];
   double current_width;
   int cx;
   int cy;
@@ -194,8 +194,8 @@ void wxCheckBox::SetSize(int x, int y, int width, int height, int WXUNUSED(sizeF
   if (checkWidth < 0) {
     wxGetCharSize(button, &cx, &cy, font);
 
-    GetWindowText(button, buf, 300);
-    GetTextExtent(wxStripMenuCodes(buf), &current_width, &cyf,NULL,NULL,font);
+    GetWindowTextW(button, buf, 300);
+    GetLabelExtent(wxStripMenuCodes(wxNARROW_STRING(buf)), &current_width, &cyf);
     if (width < 0)
       width = (int)(current_width + RADIO_SIZE);
     if (height<0)

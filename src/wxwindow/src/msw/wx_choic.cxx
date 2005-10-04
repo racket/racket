@@ -251,7 +251,7 @@ void wxChoice::SetSize(int x, int y, int width, int height, int sizeFlags)
       {
         char *s;
 	s = GetString(i);
-        GetTextExtent(s, &len, &ht, NULL, NULL,font);
+        GetLabelExtent(s, &len, &ht);
         if ( len > longest) longest = len;
       }
 
@@ -268,8 +268,8 @@ void wxChoice::SetSize(int x, int y, int width, int height, int sizeFlags)
     // Find size of label
     wxGetCharSize((HWND)ms_handle, &clx, &cly,font);
     GetWindowTextW(static_label, (wchar_t *)wxBuffer, 300);
-    GetTextExtent(wxNARROW_STRING((wchar_t*)wxBuffer), 
-		  &label_width, &label_height, NULL, NULL,font);
+    GetLabelExtent(wxStripMenuCodes(wxNARROW_STRING((wchar_t*)wxBuffer)), 
+		   &label_width, &label_height);
 
     // Given size is total label + edit size, so find individual
     // control sizes on that basis.
@@ -402,7 +402,7 @@ void wxChoice::SetLabel(char *label)
       ::ScreenToClient(cparent->handle, &point);
     }
 
-    GetTextExtent(label, &w, &h, NULL, NULL,font);
+    GetLabelExtent(wxStripMenuCodes(label), &w, &h);
     MoveWindow(static_label, point.x, point.y, (int)(w + 10), (int)h,
                TRUE);
     SetWindowTextW(static_label, wxWIDE_STRING(label));
