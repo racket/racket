@@ -11,10 +11,10 @@
 	   (lib "launcher.ss" "launcher")
 	   (lib "xform.ss" "compiler")
 	   (rename (lib "plthome.ss" "setup") plthome* plthome))
-
+  
   (provide pre-install
 	   with-new-flags)
-
+  
   ;; Syntax used to add a command-line flag:
   (define-syntax with-new-flags
     (syntax-rules ()
@@ -23,14 +23,14 @@
 			      (param)
 			      flags)])
 	 body0 body ...)]))
-
+  
   (define (extract-base-filename file.c)
     (let-values ([(base name dir?) (split-path (extract-base-filename/c file.c 'pre-install))])
       name))
-
+  
   (define (string-path->string s)
     (if (string? s) s (path->string s)))
-
+  
   (define pre-install 
     (opt-lambda (plthome 
 		 collection-dir 
@@ -69,7 +69,7 @@
 	    (go (build-path 3m-dir (let-values ([(base name dir?) (split-path file.c)])
 				     name))
 		file.c))))))
-
+  
   (define (pre-install/check-precompiled plthome collection-dir file.c . rest)
     (let* ([base-dir (build-path collection-dir
 				 "precompiled"
@@ -97,7 +97,7 @@
 	    (copy-file file.so dest-file.so))
 	  ;; Normal build...
 	  (apply pre-install/normal plthome collection-dir file.c rest))))
-
+  
   (define (pre-install/normal plthome
 			      collection-dir
 			      file.c
@@ -113,7 +113,7 @@
     (parameterize ([current-directory collection-dir])
       (define mach-id (string->symbol (path->string (system-library-subpath #f))))
       (define is-win? (eq? mach-id 'win32\\i386))
-
+      
       ;; We look for libraries and includes in the 
       ;;  following places:
       (define search-path
@@ -155,13 +155,13 @@
 			  (string->path x)
 			  x)))
 	       search-path))
-
+      
       (unless sys-path
 	(error 'extension-installer
 	       "can't find needed include files and/or library; try setting the environment variable PLT_EXTENSION_LIB_PATHS"))
-
+      
       (parameterize ([make-print-checking #f])
-
+        
 	;; Used as make dependencies:
 	(define mz-inc-dir (build-path plthome* "include"))
 	(define headers (map (lambda (name)
@@ -175,81 +175,90 @@
 	(define base-file (extract-base-filename file.c))
 	(define file.so (build-path dir (append-extension-suffix base-file)))
 	(define file.o (build-path dir (append-object-suffix base-file)))
-
+        
 	(with-new-flags 
 	 current-extension-compiler-flags
 	 (list (format "-I~a" (path->string (build-path sys-path "include"))))
+         
+	 (with-new-flags 
+	  current-extension-preprocess-flags
+	  (list (format "-I~a" (path->string (build-path sys-path "include"))))
 	  
-	 ;; Add -L and -l for Unix:
-	 (with-new-flags
-	  current-extension-linker-flags 
-	  (if is-win?
-	      null
-	      (list (format "-L~a/lib" (path->string sys-path))))
-	  
-	  ;; Add libs for Windows:
-	  (with-new-flags
-	   current-standard-link-libraries
-	   (if is-win?
-	       (append (map 
-			(lambda (l)
-			  (build-path sys-path "lib" (format "~a.lib" l)))
-			find-windows-libs)
-		       windows-libs)
-	       null)
-
-	   ;; Extra stuff:
-	   (with-new-flags
-	    current-extension-linker-flags 
-	    (case mach-id
-	      [(rs6k-aix) (list "-lc")]
-	      [else null])
-	    
-	    (with-new-flags
-	     current-standard-link-libraries
-	     (case mach-id
-	       [(i386-cygwin) (list "-lc")]
-	       [else null])
-	     
-	     (define (delete/continue x)
-	       (with-handlers ([(lambda (x) #t) void])
-			      (delete-file x)))
-	     
-	     (make-directory* dir)
-	     
-	     (last-chance-k
-	      (lambda ()
-		(make/proc
-		 (append
-		  (list (list file.so 
-			      (list file.o)
-			      (lambda ()
-				(link-extension #f (append (list file.o) 
-							   (if is-win?
-							       null
-							       (map (lambda (l)
-								      (string-append "-l" (string-path->string l)))
-								    (append find-unix-libs unix-libs))))
-						file.so)))
-			
-			(list file.o 
-			      (append (list file.c)
-				      (filter (lambda (x)
-						(regexp-match #rx#"mzdyn[a-z0-9]*[.]o" 
-							      (if (string? x)
-								  x
-								  (path->string x))))
-					      (expand-for-link-variant (current-standard-link-libraries)))
-				      headers
-				      extra-depends)
-			      (lambda ()
-				(compile-extension #f file.c file.o null))))
-		  (if xform-src.c
-		      (list (list file.c
-				  (append (list xform-src.c)
-					  headers
-					  extra-depends)
-				  (lambda ()
-				    (xform #f xform-src.c file.c (list mz-inc-dir)))))
-		      null))
-		 #()))))))))))))
+          ;; Add -L and -l for Unix:
+          (with-new-flags
+           current-extension-linker-flags 
+           (if is-win?
+               null
+               (list (format "-L~a/lib" (path->string sys-path))))
+           
+           ;; Add libs for Windows:
+           (with-new-flags
+            current-standard-link-libraries
+            (if is-win?
+                (append (map 
+                         (lambda (l)
+                           (build-path sys-path "lib" (format "~a.lib" l)))
+                         find-windows-libs)
+                        windows-libs)
+                null)
+            
+            ;; Extra stuff:
+            (with-new-flags
+             current-extension-linker-flags 
+             (case mach-id
+               [(rs6k-aix) (list "-lc")]
+               [else null])
+             
+             (with-new-flags
+              current-standard-link-libraries
+              (case mach-id
+                [(i386-cygwin) (list "-lc")]
+                [else null])
+              
+              (define (delete/continue x)
+                (with-handlers ([(lambda (x) #t) void])
+                  (delete-file x)))
+              
+              (make-directory* dir)
+              
+              (last-chance-k
+               (lambda ()
+                 (make/proc
+                  (append
+                   (list (list file.so 
+                               (list file.o)
+                               (lambda ()
+                                 (link-extension #f (append (list file.o) 
+                                                            (if is-win?
+                                                                null
+                                                                (map (lambda (l)
+                                                                       (string-append "-l" (string-path->string l)))
+                                                                     (append find-unix-libs unix-libs))))
+                                                 file.so)))
+                         
+                         (list file.o 
+                               (append (list file.c)
+                                       (filter (lambda (x)
+                                                 (regexp-match #rx#"mzdyn[a-z0-9]*[.]o" 
+                                                               (if (string? x)
+                                                                   x
+                                                                   (path->string x))))
+                                               (expand-for-link-variant (current-standard-link-libraries)))
+                                       headers
+                                       extra-depends)
+                               (lambda ()
+                                 (compile-extension #f file.c file.o null))))
+                   (if xform-src.c
+                       (list (list file.c
+                                   (append (list xform-src.c)
+                                           headers
+                                           extra-depends)
+                                   (lambda ()
+                                     (xform #f xform-src.c file.c (list (let-values ([(base name dir?)
+                                                                                      (split-path xform-src.c)])
+                                                                          (if (path? base)
+                                                                              base
+                                                                              (current-directory)))
+                                                                        mz-inc-dir)))))
+                       null))
+                  #())))))))))))))
