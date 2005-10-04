@@ -30,14 +30,14 @@ typedef struct {
 #ifdef MZ_PRECISE_GC
 START_XFORM_SKIP;
 /* Traversal procedures for precise GC: */
-static long bm_size(void *p) { 
+static int bm_size(void *p) { 
   return gcBYTES_TO_WORDS(sizeof(Bitmatrix)); 
 }
-static long bm_mark(void *p) { 
+static int bm_mark(void *p) { 
   gcMARK(((Bitmatrix *)p)->matrix);
   return gcBYTES_TO_WORDS(sizeof(Bitmatrix));
 }
-static long bm_fixup(void *p) { 
+static int bm_fixup(void *p) { 
   gcFIXUP(((Bitmatrix *)p)->matrix);
   return gcBYTES_TO_WORDS(sizeof(Bitmatrix));
 }
