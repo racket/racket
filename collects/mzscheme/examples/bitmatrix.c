@@ -27,6 +27,23 @@ typedef struct {
   unsigned long *matrix;
 } Bitmatrix;
 
+#ifdef MZ_PRECISE_GC
+START_XFORM_SKIP;
+/* Traversal procedures for precise GC: */
+static long bm_size(void *p) { 
+  return gcBYTES_TO_WORDS(sizeof(Bitmatrix)); 
+}
+static long bm_mark(void *p) { 
+  gcMARK(((Bitmatrix *)p)->matrix);
+  return gcBYTES_TO_WORDS(sizeof(Bitmatrix));
+}
+static long bm_fixup(void *p) { 
+  gcFIXUP(((Bitmatrix *)p)->matrix);
+  return gcBYTES_TO_WORDS(sizeof(Bitmatrix));
+}
+END_XFORM_SKIP;
+#endif
+
 /* We'll get some Scheme primitives so we can calculate with numbers
    taht are potentially bignums: */
 static Scheme_Object *mult, *add, *sub, *modulo, *neg;
@@ -51,7 +68,7 @@ static int negative(Scheme_Object *o)
 Scheme_Object *make_bit_matrix(int argc, Scheme_Object **argv)
 {
   Scheme_Object *size, *rowlength, *a[2];
-  unsigned long w, h, s, l;
+  unsigned long w, h, s, l, *lp;
   Bitmatrix *bm;
 
   /* Really fancy: we allow any kind of positive integer for
@@ -92,25 +109,27 @@ Scheme_Object *make_bit_matrix(int argc, Scheme_Object **argv)
 
   /* Malloc the bit matrix structure. Since we use scheme_malloc, the
      bit matrix value is GC-able. */
-  bm = (Bitmatrix *)scheme_malloc(sizeof(Bitmatrix));
+  bm = (Bitmatrix *)scheme_malloc_tagged(sizeof(Bitmatrix));
   bm->type = bitmatrix_type;
 
   /* Try to allocate the bit matrix. Handle failure gracefully. Note
      that we use scheme_malloc_atomic since the allocated memory will
      never contain pointers to GC-allocated memory. */
   s = ((s + LONG_SIZE - 1) >> LOG_LONG_SIZE);
-  bm->matrix = (unsigned long *)scheme_malloc_fail_ok(scheme_malloc_atomic, 
-						      sizeof(long) * s);
-  if (!bm->matrix)
+  lp = (unsigned long *)scheme_malloc_fail_ok(scheme_malloc_atomic, 
+					      sizeof(long) * s);
+  if (!lp)
     scheme_raise_exn(MZEXN_FAIL, "make-bit-matrix: out of memory");
+  bm->matrix = lp;
 
   bm->w = w;
   bm->h = h;
   bm->l = l;
 
   /* Init matirx to all 0s: */
-  while (s--)
+  while (s--) {
     bm->matrix[s] = 0;
+  }
 
   return (Scheme_Object *)bm;
 }
@@ -207,10 +226,11 @@ Scheme_Object *bit_matrix_invert(int argc, Scheme_Object **argv)
     scheme_wrong_type("bit-matrix-invert!", "bit-matrix", 0, argc, argv);
 
   bm = (Bitmatrix *)argv[0];
-
+  
   i = (bm->l * bm->h) >> LOG_LONG_SIZE;
-  while (i--)
+  while (i--) {
     bm->matrix[i] = ~bm->matrix[i];
+  }
 
   return scheme_void;
 }
@@ -228,8 +248,9 @@ Scheme_Object *bit_matrix_clear(int argc, Scheme_Object **argv)
   bm = (Bitmatrix *)argv[0];
 
   i = (bm->l * bm->h) >> LOG_LONG_SIZE;
-  while (i--)
+  while (i--) {
     bm->matrix[i] = 0;
+  }
 
   return scheme_void;
 }
@@ -274,6 +295,11 @@ Scheme_Object *scheme_reload(Scheme_Env *env)
 Scheme_Object *scheme_initialize(Scheme_Env *env)
 {
   bitmatrix_type = scheme_make_type("<bit-matrix>");
+
+#ifdef MZ_PRECISE_GC
+  /* Register traversal procedures: */
+  GC_register_traversers(bitmatrix_type, bm_size, bm_mark, bm_fixup, 1, 0);
+#endif
 
   /* Get some Scheme primitives. Conservative garbage collection sees
      any local variables we use within a function, but we have to register

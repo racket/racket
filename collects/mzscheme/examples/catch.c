@@ -29,12 +29,14 @@ static Scheme_Object *exn_catching_apply, *exn_p, *exn_message;
 static void init_exn_catching_apply()
 {
   if (!exn_catching_apply) {
+    Scheme_Env *env;
     char *e = 
       "(lambda (thunk) "
 	"(with-handlers ([void (lambda (exn) (cons #f exn))]) "
 	  "(cons #t (thunk))))";
+
     /* make sure we have a namespace with the standard bindings: */
-    Scheme_Env *env = (Scheme_Env *)scheme_make_namespace(0, NULL);
+    env = (Scheme_Env *)scheme_make_namespace(0, NULL);
 
     scheme_register_extension_global(&exn_catching_apply, sizeof(Scheme_Object *));
     scheme_register_extension_global(&exn_p, sizeof(Scheme_Object *));

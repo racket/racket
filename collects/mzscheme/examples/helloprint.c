@@ -6,7 +6,8 @@
 Scheme_Object *scheme_reload(Scheme_Env *env)
 {
   /* Make the string: */
-  Scheme_Object *hw = scheme_make_utf8_string("Hello, World!\n");
+  Scheme_Object *hw;
+  hw = scheme_make_utf8_string("Hello, World!\n");
 
   /* Display it: */
   scheme_display(hw, scheme_get_param(scheme_current_config(), 
