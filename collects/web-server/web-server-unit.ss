@@ -60,14 +60,7 @@
             (let ([listener (tcp-listen config:port config:max-waiting
                                         #t config:listen-ip)])
               (let ([get-ports
-                     (lambda () 
-                       (let-values ([(ip op) (tcp-accept listener)])
-                         ;; Try to set buffer mode, and if it can't be set,
-                         ;;  assume that it doesn't matter. (Only happens
-                         ;;  when tcp-accept is not MzScheme's version.)
-                         (with-handlers ([exn:fail? void])
-                           (file-stream-buffer-mode op 'none))
-                         (values ip op)))])
+                     (lambda () (tcp-accept listener))])
                 (thread
                  (lambda ()
                    (with-handlers ([void (lambda (e)
