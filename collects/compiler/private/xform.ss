@@ -5,7 +5,8 @@
   
   (provide xform)
   
-  (define (xform cpp
+  (define (xform quiet?
+		 cpp
 		 file-in
 		 file-out
 		 palm? pgc? pgc-really?
@@ -390,6 +391,13 @@
         ;; Pre-process and S-expr-ize
         ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         
+	(define (verbose f)
+	  (if quiet?
+	      f
+	      (lambda args
+		(printf "xform-cpp: ~a\n" args)
+		(apply f args))))
+
         ;; To run cpp:
         (define process2
           (if (eq? (system-type) 'windows)
@@ -399,31 +407,31 @@
                                  (if m
                                      (cons (cadr m) (loop (caddr m)))
                                      (list s))))])
-                  (apply process* (find-executable-path (car split) #f)
+                  (apply (verbose process*) (find-executable-path (car split) #f)
                          (cdr split))))
-              process))
+              (verbose process)))
         
         (define cpp-process
-  	(if (string? cpp)
-  	    (process2 (format "~a~a~a ~a"
-  			      cpp
-  			      (if pgc?
-  				  (if pgc-really? 
-  				      " -DMZ_XFORM -DMZ_PRECISE_GC"
-  				      " -DMZ_XFORM")
-  				  "")
-  			      (if callee-restore? " -DGC_STACK_CALLEE_RESTORE" "")
-  			      file-in))
-  	    (apply process* 
-  		   (append
-  		    cpp
-  		    (if pgc-really? 
-  			'("-DMZ_XFORM" "-DMZ_PRECISE_GC")
-  			'("-DMZ_XFORM"))
-  		    (if callee-restore? 
-  			'("-DGC_STACK_CALLEE_RESTORE")
-  			null)
-  		    (list file-in)))))
+	  (if (string? cpp)
+	      (process2 (format "~a~a~a ~a"
+				cpp
+				(if pgc?
+				    (if pgc-really? 
+					" -DMZ_XFORM -DMZ_PRECISE_GC"
+					" -DMZ_XFORM")
+				    "")
+				(if callee-restore? " -DGC_STACK_CALLEE_RESTORE" "")
+				file-in))
+	      (apply (verbose process*)
+		     (append
+		      cpp
+		      (if pgc-really? 
+			  '("-DMZ_XFORM" "-DMZ_PRECISE_GC")
+			  '("-DMZ_XFORM"))
+		      (if callee-restore? 
+			  '("-DGC_STACK_CALLEE_RESTORE")
+			  null)
+		      (list file-in)))))
         (close-output-port (cadr cpp-process))
         
         (define (mk-error-thread proc)
@@ -531,8 +539,8 @@
         (let ([eh (error-escape-handler)])
           (error-escape-handler
            (lambda ()
-  	   (close-output-port (current-output-port))
-  	   (current-output-port (current-error-port))
+	     (close-output-port (current-output-port))
+	     (current-output-port (current-error-port))
              (when file-out
                (delete-file file-out))
              (eh))))
@@ -799,9 +807,9 @@
                scheme_rational_to_double scheme_bignum_to_double
                scheme_rational_to_float scheme_bignum_to_float
                |GetStdHandle| |__CFStringMakeConstantString|
-  	     _vswprintf_c
+		_vswprintf_c
                
-  	     scheme_make_small_bignum scheme_make_small_rational scheme_make_small_complex))
+		scheme_make_small_bignum scheme_make_small_rational scheme_make_small_complex))
         (define non-functions-table
           (let ([ht (make-hash-table)])
             (for-each (lambda (s)
@@ -3637,7 +3645,7 @@
         (define (foldl-statement e comma-sep? f a-init)
           (let loop ([e e][a a-init])
             (cond
-              [(null? e)	a]
+              [(null? e) a]
               [else
                (let-values ([(sube e) (get-one e comma-sep?)])
                  (loop e (f sube a)))])))

@@ -5,14 +5,15 @@
 
   (provide xform)
 
-  (define (xform src dest header-dirs)
+  (define (xform quiet? src dest header-dirs)
     (let ([exe (current-extension-compiler)]
 	  [flags (expand-for-compile-variant
 		  (current-extension-preprocess-flags))]
 	  [headers (apply append
 			  (map (current-make-compile-include-strings)
 			       header-dirs))])
-      (xform:xform (cons exe
+      (xform:xform #f
+		   (cons exe
 			 (append flags headers))
 		   src
 		   dest
