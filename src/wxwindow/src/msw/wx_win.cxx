@@ -1427,7 +1427,9 @@ void wxWnd::Create(wxWnd *parent, char *wclass, wxWindow *wx_win, char *title,
 
   if (is_dialog) {
     /* Creating a dialog */
-    handle = ::CreateDialogW(wxhInstance, wxWIDE_STRING(dialog_template), hParent,
+    wchar_t *ws;
+    ws = wxWIDE_STRING(dialog_template);
+    handle = ::CreateDialogW(wxhInstance, ws, hParent,
 			     (DLGPROC)wxDlgProc);
     
     if (handle == 0) {
