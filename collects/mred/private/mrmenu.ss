@@ -70,8 +70,13 @@
 	(lambda (s) 
 	  (car (regexp-match #rx"^[^\t]*" s)))
 	(lambda (s) 
-	  (regexp-replace* "&"
-			   (regexp-replace* "&(.)" (car (regexp-match #rx"^[^\t]*" s)) "\\1")
+	  (regexp-replace* #rx"&"
+			   (regexp-replace* #rx"&(.)" 
+					    (regexp-replace*
+					     #rx" *[(]&.[)] *"
+					     (car (regexp-match #rx"^[^\t]*" s))
+					     "")
+					    "\\1")
 			   "\\&\\&"))))
 
   (define basic-labelled-menu-item%

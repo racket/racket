@@ -2872,6 +2872,73 @@ int wxGetBoolPreference(const char *name, int *res)
 }
 
 /***********************************************************************/
+/*                         strip menu codes                            */
+/***********************************************************************/
+
+static int starts_paren_accel(char *label, int i)
+{
+  int cnt = 0;
+  while (label[i] == ' ') {
+    i++;
+    cnt++;
+  }
+  if ((label[i] == '(')
+      && (label[i+1] == '&')
+      && label[i+2]
+      && (label[i+3] == ')')) {
+    cnt += 4;
+    i += 4;
+    while (label[i] == ' ') {
+      i++;
+      cnt++;
+    }
+    return cnt;
+  }
+
+  return 0;
+}
+
+char *wxStripMenuCodes(char *label, char *target)
+{
+  int i, j, cnt;
+  char *naya;
+
+  if (!label)
+    return NULL;
+  
+  for (i = 0; label[i]; i++) {
+    if ((label[i] == '&')
+	|| (label[i] == '\t')) {
+      /* Strip it: */
+      if (target)
+	naya = target;
+      else
+	naya = new WXGC_ATOMIC char[strlen(label) + 1];
+      j = 0;
+      for (i = 0; label[i]; i++) {
+        if (label[i] == '&') {
+          if (label[i + 1]) {
+            naya[j++] = label[i + 1];
+            i++;
+          }
+        } else if (label[i] == '\t') {
+	  break;
+	} else if ((cnt = starts_paren_accel(label, i))) {
+	  i += (cnt - 1);
+	} else {
+          naya[j++] = label[i];
+	}
+      }
+      naya[j] = 0;
+      
+      return naya;
+    }
+  }
+  
+  return label;
+}
+
+/***********************************************************************/
 /*                            initialization                           */
 /***********************************************************************/
 

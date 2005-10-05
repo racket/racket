@@ -157,39 +157,3 @@ Bool wxGetEmailAddress (char *address, int maxSize)
   address[maxSize-1] = '\0';
   return TRUE;
 }
-
-/*
- * Strip out any menu codes
- */
-
-char *wxStripMenuCodes (char *in, char *out)
-{
-  int inp, outp;
-
-  if (!in)
-    return NULL;
-    
-  if (!out)
-    out = copystring(in);
-
-  inp = outp = 0;
-
-  while (in[inp]) {
-    if (in[inp] == '&') {
-      // Check && -> &, &x -> x
-      if (in[++inp] == '&')
-	out[outp++] = in[inp++];
-    } else if (in[inp] == '\t') {
-      // Remove all stuff after \t in X mode, and let the stuff as is
-      // in Windows mode.
-      // Accelerators are handled in wx_item.cc for Motif, and are not
-      // YET supported in XView
-      break;
-    } else
-      out[outp++] = in[inp++];
-  }
-
-  out[outp] = '\0';
-  
-  return out;
-}

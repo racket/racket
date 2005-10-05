@@ -212,48 +212,6 @@ wxGetEmailAddress (char *address, int maxSize)
   return TRUE;
 }
 
-/*
- * Strip out any menu codes
- */
-
-char *wxStripMenuCodes (char *in, char *out)
-{
-  char *tmpOut;
-
-  if (!in)
-    return NULL;
-  
-  if (!out)
-    out = copystring(in);
-
-  tmpOut = out;
-  
-  while (*in)
-    {
-      if (*in == '&')
-	{
-	  // Check && -> &, &x -> x
-	  if (*++in == '&')
-	    *out++ = *in++;
-	}
-      else if (*in == '\t')
-	{
-          // Remove all stuff after \t in X mode, and let the stuff as is
-          // in Windows mode.
-          // Accelerators are handled in wx_item.cc for Motif, and are not
-          // YET supported in XView
-	  break;
-	}
-      else
-	*out++ = *in++;
-    }				// while
-
-  *out = '\0';
-
-  return tmpOut;
-}
-
-
 // Returns menu item id or -1 if none.
 int 
 wxFindMenuItemId (wxFrame * frame, char *menuString, char *itemString)

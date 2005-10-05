@@ -23,6 +23,7 @@
 
 #include "wx_item.h"
 #include "wx_gdi.h"
+#include "wx_utils.h"
 
 extern Bool wx_ignore_key;
 Bool wx_propagate_key;
@@ -177,33 +178,7 @@ void wxGetBestControlRect(ControlRef c, Rect *r, SInt16 *offset,
 
 char *wxItemStripLabel(char *label)
 {
-  int i, j;
-  char *naya;
-
-  if (!label)
-    return NULL;
-  
-  for (i = 0; label[i]; i++) {
-    if (label[i] == '&') {
-      /* Strip it: */
-      naya = new WXGC_ATOMIC char[strlen(label) + 1];
-      j = 0;
-      for (i = 0; label[i]; i++) {
-        if (label[i] == '&') {
-          if (label[i + 1]) {
-            naya[j++] = label[i + 1];
-            i++;
-          }
-        } else
-          naya[j++] = label[i];
-      }
-      naya[j] = 0;
-      
-      return naya;
-    }
-  }
-  
-  return label;
+  return wxStripMenuCodes(label, NULL);
 }
 
 

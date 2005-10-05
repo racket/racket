@@ -74,33 +74,3 @@ void wxGetLabelAndKey(char *label, char **clean_label, char **clean_key)
     if (clean_key)
       *clean_key = key; // point to key binding in private copy
 }
-
-char *wxStripMenuCodes(char *in, char *out)
-{
-  char *tmpOut;
-
-  if (!in)
-    return NULL;
-  if (!out) {
-	out = copystring(in);
-  }
-  tmpOut = out;
-  
-  while (*in)  {
-    if (*in == '&') {
-      // Check && -> &, &x -> x
-      if (*++in == '&')
-	*out++ = *in++;
-    } else if (*in == '\t') {
-      // Remove all stuff after \t in X mode, and let the stuff as is
-      // in Windows mode.
-      // Accelerators are handled in wx_item.cc for Motif, and are not
-      // YET supported in XView
-      break;
-    } else
-      *out++ = *in++;
-  }
-
-  *out = '\0';
-  return tmpOut;
-}

@@ -231,13 +231,7 @@ char *wxBuildMacMenuString(StringPtr setupstr, char *itemName, Bool stripCmds)
   if (itemName[0] == '-') // Fix problem with leading hyphen
     showstr[d++] = ' ';
   for (s = 0; itemName[s] != '\0'; ) {
-    if (itemName[s] == '&') {
-      if (itemName[s+1] == '&') {
-	showstr[d++] = itemName[s++];
-      } else {
-	// spc = itemName[s];
-      }
-    } else if (itemName[s] == '\t') {
+    if (itemName[s] == '\t') {
       s++;
       if (strncmp("Cmd+", itemName + s, 4) == 0)
 	spc = itemName[s+4];
@@ -249,6 +243,8 @@ char *wxBuildMacMenuString(StringPtr setupstr, char *itemName, Bool stripCmds)
     s++;
   }
   showstr[d] = 0;
+  /* Now remove ampersands, etc.: */
+  showstr = wxItemStripLabel(showstr);
   if (setupstr) {
     setupstr[1] = 'X'; // temporary menu item name
     if (spc && !stripCmds) {

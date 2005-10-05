@@ -507,10 +507,10 @@
   ;;; versions below, once the &s have been stripped.
   ;;; if they don't, DrScheme's menus will appear
   ;;; in the wrong order.
-  (file-menu "文件(F)")
-  (edit-menu "编辑(E)")
-  (help-menu "帮助(H)")
-  (windows-menu "窗口(W)")
+  (file-menu "文件")
+  (edit-menu "编辑")
+  (help-menu "帮助")
+  (windows-menu "窗口")
   
   ;;; menus
   ;;; - in menu labels, the & indicates a alt-key based shortcut.
