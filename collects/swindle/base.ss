@@ -6,7 +6,8 @@
 (module base mzscheme
 
 (provide (all-from-except mzscheme
-          #%module-begin #%top #%app define let let* letrec lambda))
+          #%module-begin #%top #%app define let let* letrec lambda
+          keyword? keyword->string string->keyword))
 
 ;;>> (#%module-begin ...)
 ;;>   `base' is a language module -- it redefines `#%module-begin' to load
@@ -32,17 +33,17 @@
 
 ;;>> (#%top . id)
 ;;>   This special syntax is redefined to make keywords (symbols whose names
-;;>   begin with a ":") evaluate to themselves.  Note that this does not
-;;>   interfere with using such symbols for local bindings.
+;;>   begin with a ":") evaluate to themselves.
 (provide (rename top~ #%top))
 (define-syntax (top~ stx)
   (syntax-case stx ()
     [(_ . x)
-     (let ([x (syntax-object->datum #'x)])
-       (and (symbol? x) (not (eq? x '||))
-            (eq? #\: (string-ref (symbol->string x) 0))))
-     (syntax/loc stx (#%datum . x))]
-    [(_ . x) (syntax/loc stx (#%top . x))]))
+     (let ([s (syntax-e #'x)])
+       (if (and (symbol? s)
+                (not (eq? s '||))
+                (eq? #\: (string-ref (symbol->string s) 0)))
+         (syntax/loc stx (#%datum . x))
+         (syntax/loc stx (#%top . x))))]))
 
 ;;>> (#%app ...)
 ;;>   Redefined so it is possible to apply using dot notation: `(foo x . y)'
@@ -62,10 +63,18 @@
                        (quasisyntax/loc stx
                          (#%app apply . #,(reverse! (cons s r))))))]))]))
 
+;; these are defined as normal bindings so code that uses this module can use
+;; them, but for the syntax level of this module we need them too.
+(define-for-syntax (keyword*? x)
+  (and (symbol? x) (not (eq? x '||))
+       (eq? (string-ref (symbol->string x) 0) #\:)))
+(define-for-syntax (syntax-keyword? x)
+  (keyword*? (if (syntax? x) (syntax-e x) x)))
+
 ;;>> (define id-or-list ...)
-;;>   The standard `define' form is modified so instead of an identifier
-;;>   name for a function, a list can be used -- resulting in a curried
-;;>   function.
+;;>   The standard `define' form is modified so defining :keywords is
+;;>   forbidden, and if a list is used instead of an identifier name for a
+;;>   function then a curried function is defined.
 ;;>     => (define (((plus x) y) z) (+ x y z))
 ;;>     => plus
 ;;>     #<procedure:plus>
@@ -87,20 +96,35 @@
   ;;    #`(define~ name (lambda~ (arg ...) body ...))]
   ;;   [(_ name body ...) #'(define name body ...)])
   ;; this version makes created closures have meaningful names
+  ;; also -- forbid using :keyword identifiers
+  ;; also -- make (define (values ...) ...) a shortcut for define-values (this
+  ;;   is just a patch, a full solution should override `define-values', and
+  ;;   also deal with `let...' and `let...-values')
   ;; also -- if the syntax is top-level, then translate all defines into a
   ;;   define with (void) followed by a set! -- this is for the problem of
   ;;   defining something that is provided by some module, and re-binding a
   ;;   syntax
-  (syntax-case stx (values)
+  (define top-level? (eq? 'top-level (syntax-local-context)))
+  (syntax-case* stx (values)
+                ;; compare symbols if at the top-level
+                (if top-level?
+                  (lambda (x y) (eq? (syntax-e x) (syntax-e y)))
+                  module-identifier=?)
     [(_ name expr) (identifier? #'name)
-     (if (eq? 'top-level (syntax-local-context))
-       #'(begin (define-values (name) (void)) (set! name expr))
-       #'(define-values (name) expr))]
+     (cond [(syntax-keyword? #'name)
+            (raise-syntax-error #f "cannot redefine a keyword" stx #'name)]
+           [top-level?
+            #'(begin (define-values (name) (void)) (set! name expr))]
+           [else
+            #'(define-values (name) expr)])]
     [(_ (values name ...) expr)
-     (if (eq? 'top-level (syntax-local-context))
-       #'(begin (define name (void)) ...
-                (set!-values (name ...) expr))
-       #'(define-values (name ...) expr))]
+     (cond [(ormap (lambda (id) (and (syntax-keyword? id) id))
+                   (syntax->list #'(name ...)))
+            => (lambda (id)
+                 (raise-syntax-error #f "cannot redefine a keyword" stx id))]
+           [top-level?
+            #'(begin (define name (void)) ... (set!-values (name ...) expr))]
+           [else #'(define-values (name ...) expr)])]
     [(_ names body0 body ...) (pair? (syntax-e #'names))
      (let loop ([s #'names] [args '()])
        (syntax-case s ()
@@ -111,12 +135,16 @@
                        [as   (reverse (cdr args))]
                        [body #'(begin body0 body ...)])
               (if (zero? i)
-                (if (eq? 'top-level (syntax-local-context))
-                  (quasisyntax/loc stx
-                    (begin (define name (void))
-                           (set! name (lambda~ #,(car args) #,body))))
-                  (quasisyntax/loc stx
-                    (define name (lambda~ #,(car args) #,body))))
+                (cond [(syntax-keyword? #'name)
+                       (raise-syntax-error
+                        #f "cannot redefine a keyword" stx #'name)]
+                      [top-level?
+                       (quasisyntax/loc stx
+                         (begin (define name (void))
+                                (set! name (lambda~ #,(car args) #,body))))]
+                      [else
+                       (quasisyntax/loc stx
+                         (define name (lambda~ #,(car args) #,body)))])
                 (loop (sub1 i) (cdr as)
                       (syntax-property
                        (quasisyntax/loc stx (lambda~ #,(car as) #,body))
@@ -426,7 +454,7 @@
                            (let loop ([args #,rest] [keys '()])
                              (cond [(or (null? args)
                                         (null? (cdr args))
-                                        (not (keyword? (car args))))
+                                        (not (keyword*? (car args))))
                                     (values (reverse! keys) args)]
                                    [else (loop (cddr args)
                                                (list* (cadr args) (car args)
@@ -436,7 +464,7 @@
                            (let loop ([args #,rest])
                              (if (or (null? args)
                                      (null? (cdr args))
-                                     (not (keyword? (car args))))
+                                     (not (keyword*? (car args))))
                                args
                                (loop (cddr args))))])]
                       [all-keys
@@ -445,7 +473,7 @@
                            (let loop ([args #,rest] [keys '()])
                              (cond [(or (null? args)
                                         (null? (cdr args))
-                                        (not (keyword? (car args))))
+                                        (not (keyword*? (car args))))
                                     (reverse! keys)]
                                    [else (loop (cddr args)
                                                (list* (cadr args) (car args)
@@ -464,19 +492,35 @@
          (quasisyntax/loc stx
            (lambda (#,@vars . #,(or rest #'())) expr0 expr ...))]))]))
 
-;; Utilities for the above (note: no errors for odd length)
-(provide keyword? syntax-keyword?
-         getarg syntax-getarg getargs keys/args filter-out-keys)
+;; Keyword utilities
+(provide (rename keyword*? keyword?) syntax-keyword?
+         (rename keyword->string* keyword->string)
+         (rename string->keyword* string->keyword))
 ;;>> (keyword? x)
 ;;>   A predicate for keyword symbols (symbols that begin with a ":").
-(define (keyword? x)
+;;>   (Note: this is different from MzScheme's keywords!)
+(define (keyword*? x)
   (and (symbol? x) (not (eq? x '||))
        (eq? (string-ref (symbol->string x) 0) #\:)))
 ;;>> (syntax-keyword? x)
 ;;>   Similar to `keyword?' but also works for an identifier (a syntax
 ;;>   object) that contains a keyword.
 (define (syntax-keyword? x)
-  (keyword? (if (syntax? x) (syntax-e x) x)))
+  (keyword*? (if (syntax? x) (syntax-e x) x)))
+;;>> (keyword->string k)
+;;>> (string->keyword s)
+;;>   Convert a Swindle keyword to a string and back.
+(define (keyword->string* k)
+  (if (keyword*? k)
+    (substring (symbol->string k) 1)
+    (raise-type-error 'keyword->string "keyword" k)))
+(define (string->keyword* s)
+  (if (string? s)
+    (string->symbol (string-append ":" s))
+    (raise-type-error 'string->keyword "string" s)))
+
+;; Keyword searching utilities (note: no errors for odd length)
+(provide getarg syntax-getarg getargs keys/args filter-out-keys)
 ;;>> (getarg args keyword [not-found])
 ;;>   Searches the given list of arguments for a value matched with the
 ;;>   given keyword.  Similar to CL's `getf', except no error checking is
@@ -528,7 +572,7 @@
 ;;>     (3 4 5)
 (define (keys/args args)
   (let loop ([args args] [keys '()])
-    (cond [(or (null? args) (null? (cdr args)) (not (keyword? (car args))))
+    (cond [(or (null? args) (null? (cdr args)) (not (keyword*? (car args))))
            (values (reverse! keys) args)]
           [else (loop (cddr args) (list* (cadr args) (car args) keys))])))
 ;;>> (filter-out-keys outs args)

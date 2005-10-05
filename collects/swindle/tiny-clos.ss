@@ -1656,7 +1656,7 @@
               (concat "~s: no applicable next method to call"
                       (case (%method-qualifier method)
                         [(:before) " in a `before' method"]
-                        [(:before) " in an `after' method"]
+                        [(:after)  " in an `after' method"]
                         [else ""]))
               (%generic-name generic)))))
 (add-method no-next-method
