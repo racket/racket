@@ -4227,8 +4227,8 @@ unsigned short *scheme_ucs4_to_utf16(const mzchar *text, int start, int end,
   for (i = start, j = 0; i < end; i++) {
     v = text[i];
     if (v > 0xFFFF) {
-      utf16[j++] = 0xD8000 | ((v >> 10) & 0x3FF);
-      utf16[j++] = 0xDC000 | (v & 0x3FF);
+      utf16[j++] = 0xD800 | ((v >> 10) & 0x3FF);
+      utf16[j++] = 0xDC00 | (v & 0x3FF);
     } else
       utf16[j++] = v;
   }
