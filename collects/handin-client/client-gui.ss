@@ -1,4 +1,4 @@
-(module tool mzscheme
+(module client-gui mzscheme
   (require (lib "mred.ss" "mred")
 	   (lib "class.ss")
 	   (lib "unitsig.ss")
