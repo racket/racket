@@ -2934,6 +2934,9 @@ char *wxStripMenuCodes(char *label, char *target)
       return naya;
     }
   }
+
+  if (target)
+    strcpy(target, label);
   
   return label;
 }
