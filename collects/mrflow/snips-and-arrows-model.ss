@@ -100,7 +100,7 @@
            make-get-span-from-label-from-model-state
            (gui-model-state? . -> . (label? . -> . non-negative-exact-integer?)))
    
-   (for-each-source (gui-model-state? (any/c . -> . void?) . -> .void?))
+   (for-each-source (gui-model-state? (any/c . -> . void?) . -> . void?))
    (register-source-with-gui (gui-model-state? any/c . -> . any))
    (is-source-registered? (gui-model-state? any/c . -> . boolean?))
    
