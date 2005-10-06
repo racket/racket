@@ -85,9 +85,11 @@
 				       (list "--precompile"))
 				   (list
 				    "--depends"
+				    "--cpp"
 				    (format "cl.exe /MT /E ~a ~a" expand-extra-flags includes)
-				    src
-				    dest)))
+				    "-o"
+				    dest
+				    src)))
 				 void))
         (when (file-exists? dest)
 	  (delete-file dest))
