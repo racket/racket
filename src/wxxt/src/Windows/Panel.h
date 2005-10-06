@@ -69,6 +69,7 @@ public:
     // drawing
     wxPanelDC* GetPanelDC(void) { return dc; }
     virtual void ChangeToGray(Bool gray);
+    virtual void ReleaseAllFocus();
 protected:
     friend class wxButton;	// allow access to default_item
 

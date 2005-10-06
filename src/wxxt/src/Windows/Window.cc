@@ -753,8 +753,14 @@ void wxWindow::ChangeToGray(Bool gray)
   if (XtIsSubclass(X->frame, xfwfEnforcerWidgetClass))
     XtVaSetValues(X->frame, XtNdrawgray, (Boolean)gray, NULL);
 
+  if (gray)
+    ReleaseFocus();
+}
+
+void wxWindow::ReleaseFocus()
+{
   /* If disabling and this window has the focus, get rid of it: */
-  if (gray && (misc_flags & FOCUS_FLAG)) {
+  if (misc_flags & FOCUS_FLAG) {
     wxWindow *p;
     p = GetParent();
     while (p) {
@@ -765,6 +771,11 @@ void wxWindow::ChangeToGray(Bool gray)
       p = p->GetParent();
     }
   }
+}
+
+void wxWindow::ReleaseAllFocus()
+{
+  ReleaseFocus();
 }
 
 Bool wxWindow::IsGray(void)
@@ -925,6 +936,9 @@ Bool wxWindow::Show(Bool show)
 
     if (!X->handle) // forbid, if no widget associated
       return TRUE;
+
+    if (!show)
+      ReleaseAllFocus();
 
     /* Get rid of or restore focus traversal */
     if (XtIsSubclass(X->frame, xfwfCommonWidgetClass))

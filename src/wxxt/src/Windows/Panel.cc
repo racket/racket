@@ -196,6 +196,19 @@ void wxPanel::ChangeToGray(Bool gray)
   }
 }
 
+void wxPanel::ReleaseAllFocus()
+{
+  wxChildNode *cn;
+  wxChildList *cl;
+  cl = GetChildren();
+  for (cn = cl->First(); cn; cn = cn->Next()) {
+    wxWindow *w;
+    w = (wxWindow *)cn->Data();
+    w->ReleaseAllFocus();
+  }
+  ReleaseFocus();
+}
+
 //-----------------------------------------------------------------------------
 // positioning of items
 //-----------------------------------------------------------------------------

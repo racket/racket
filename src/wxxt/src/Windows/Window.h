@@ -159,6 +159,8 @@ public:
     void MakeModal(int on);
     void InternalEnable(Bool enable, Bool gray = FALSE);
     virtual void ChangeToGray(Bool gray);
+    void ReleaseFocus();
+    virtual void ReleaseAllFocus();
     Bool IsGray(void);
 
     Bool IsShown(void);
