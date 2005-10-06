@@ -99,7 +99,7 @@
   ;; also -- forbid using :keyword identifiers
   ;; also -- make (define (values ...) ...) a shortcut for define-values (this
   ;;   is just a patch, a full solution should override `define-values', and
-  ;;   also deal with `let...' and `let...-values')
+  ;;   also deal with `let...' and `let...-values' and lambda binders)
   ;; also -- if the syntax is top-level, then translate all defines into a
   ;;   define with (void) followed by a set! -- this is for the problem of
   ;;   defining something that is provided by some module, and re-binding a
@@ -495,7 +495,11 @@
 ;; Keyword utilities
 (provide (rename keyword*? keyword?) syntax-keyword?
          (rename keyword->string* keyword->string)
-         (rename string->keyword* string->keyword))
+         (rename string->keyword* string->keyword)
+         ;; also provide the builtin as `real-keyword'
+         (rename keyword? real-keyword?)
+         (rename keyword->string real-keyword->string)
+         (rename string->keyword string->real-keyword))
 ;;>> (keyword? x)
 ;;>   A predicate for keyword symbols (symbols that begin with a ":").
 ;;>   (Note: this is different from MzScheme's keywords!)
