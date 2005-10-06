@@ -20,9 +20,10 @@ toolbar. Clicking the "Handin" button allows the student to type a
 password and upload the current content of the definitions and
 interactions window to the course instructor's server. The "File" menu
 is also extended with a "Manage..." menu item for managing a handin
-account (i.e., changing the password, or creating a new account if the
-instructor configures the server to allow new accounts). Students can
-submit joint work by submitting with a concatenation of usernames.
+account (i.e., changing the password and other information, or
+creating a new account if the instructor configures the server to
+allow new accounts). Students can submit joint work by submitting with
+a concatenation of usernames separated by a "+".
 
 On the instructor's side, the handin server can be configured to check
 the student's submission before accepting it.
@@ -197,11 +198,13 @@ sub-directories:
          "BACKUP-1/handin.scm", etc.; the default is 9
 
       'user-regexp : a regular expression that is used to validate
-         usernames; young students often choose exotic usernames that
-         are impossible to remember, and forget capitalization, so the
-         default is fairly strict: #rx"^[a-z][a-z0-9]+$"; a "+" is
-         always disallowed in a username, since it is used in a
-         submission username to specify joint work
+         usernames; alternatively, this can be #f meaning no
+         restriction, or a list of permitted strings.  Young students
+         often choose exotic usernames that are impossible to
+         remember, and forget capitalization, so the default is fairly
+         strict: #rx"^[a-z][a-z0-9]+$"; a "+" is always disallowed in
+         a username, since it is used in a submission username to
+         specify joint work
 
       'user-desc : a plain-words description of the acceptable
          username format (according to user-regexp above); #f stands
@@ -214,28 +217,12 @@ sub-directories:
          using a case-insensitive filesystem, since usernames are used
          as directory names)
 
-      'id-regexp : a regular expression that is used to validate a
-         "free form" user id (possibly a student id) for a created
-         account; the default is #rx"^.*$"
-
-      'id-desc : a plain-words description of the acceptable id format
-         (according to id-regexp above), eg, "Utah ID Number with
-         exactly nine digits"; the default is #f indicating no
-         description
-
-      'email-regexp : a regular expression that is used to validate
-         emails, the #rx"^[^@<>\"`',]+@[a-zA-Z0-9_.-]+[.][a-zA-Z]+$"
-         default can be changed to "" if you don't care about emails,
-         or can be further restricted, for example requiring a
-         "@cs.utah.edu" suffix
-
-      'email-desc : a plain-words description of the acceptable email
-         format (according to email-regexp above), eg, "Utah CS email
-         address"; #f stands for no description; the default is "a
-         valid email address"
-
       'allow-new-users : a boolean indicating whether to allow
          new-user requests from a client tool; the default is #f
+
+      'allow-change-info : a boolean indicating whether to allow
+         changing user information from a client tool (changing
+         passwords is always possible); the default is #f
 
       'master-password : a string for an MD5 hash for a password that
          allows login as any user; the default is #f, which disables
@@ -249,24 +236,89 @@ sub-directories:
          add this configuration entry with the name of your new copy
          (relative to the handin server directory)
 
+      'extra-fields : a list that describes extra fields of (string)
+         information for students; each element in this list is a list
+         of three values -- the name of the field, the regexp (or #f,
+         or a list of permitted string values), and a plain-words
+         description of acceptable strings.  The default is
+
+           '(("Full Name" #f #f)
+             ("ID#" #f #f)
+             ("Email" #rx"^[^@<>\"`',]+@[a-zA-Z0-9_.-]+[.][a-zA-Z]+$"
+              "a valid email address"))
+
+         You can set this to a list of fields that you are interested
+         in keeping, for example:
+
+           '(("Full Name"
+              #rx"^[A-Z][a-zA-Z]+(?: [A-Z][a-zA-Z]+)+$"
+              "full name, no punctuations, properly capitalized")
+             ("Utah ID Number"
+              #rx"^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]$"
+              "Utah ID Number with exactly nine digits")
+             ("Email"
+              #rx"^[^@<>\"`',]+@cs\\.utah\\.edu$"
+              "A Utah CS email address"))
+
+         The order of these fields will be used both on the client GUI
+         side and in the "users.ss" file (see below).
+
   * "users.ss" (created if not present if a user is added) --- keeps
     the list of user accounts, along with the associated password
-    (actually the MD5 hash of the password), full name, and free-form
-    id (perhaps a student id at a university) of the account. The file
-    format is
+    (actually the MD5 hash of the password), and extra string fields
+    as specified by the 'extra-fields configuration entry (in the same
+    order). The file format is
 
-      ((<username-sym> (<pw-md5-str> <id-str> <full-name-str> <email-str>))
+      ((<username-sym> (<pw-md5-str> <extra-field> ...))
         ...)
 
-    If the 'allow-new-users configuration allows new users, the
-    "users.ss" file can be updated by the server with new users. It
-    can always be updated by the server to change passwords.
+    For example, the default 'extra-field setting will make this:
+
+      ((<username-sym> (<pw-md5-str> <full-name> <id> <email>))
+        ...)
 
     Username that begin with "solution" are special.  They are used by
     the HTTPS status server. Independent of the 'user-regexp and
     'username-case-sensitive? configration items, usernames are not
     allowed to contain characters that are illegal in Windows
     pathnames, they cannot end or begin in spaces or periods.
+
+    If the 'allow-new-users configuration allows new users, the
+    "users.ss" file can be updated by the server with new users. It
+    can always be updated by the server to change passwords.
+
+    If you have access to a standard Unix password file (from
+    "/etc/passwd" or "/etc/shadow"), then you can construct a
+    "users.ss" file that will allow users to use their normal
+    passwords.  To achieve this, use a list with 'unix as the first
+    element and the system's encrypted password string as the second
+    element.  Such passwords can be used, but when users change them,
+    a plain md5 hash will be used.
+
+    You can combine this with other fields from the password file to
+    create your "users.ss", but make sure you have information that
+    matches your 'extra-fields specification.  For example, given this
+    system file:
+
+      foo:wRzN1u5q2SqRD:1203:1203:Foo Moo:/home/foo:/bin/tcsh
+      bar:$1$dKlU0OkJ$t63NU/eTzKz:1205:1205:Bar Z. Lie:/home/bar:/bin/bash
+
+    you can create a "users.ss" file as
+
+      ((foo ((unix "wRzN1u5q2SqRD") "Foo Moo" "?"))
+       (bar ((unix "$1$dKlU0OkJ$t63NU/eTzKz") "Bar Z. Lie" "?")))
+
+    which can be combined with this setting for 'extra-fields in your
+    "config.ss":
+
+      ...
+      (extra-fields (("Full Name" #f #f)
+                     ("TA" '("Alice" "Bob") "Your TA")))
+      ...
+
+    and you can tell your students to use their department username
+    and password, and use the "Manage ..." dialog to properly set
+    their TA name.
 
   * "active/" --- sub-directory for active assignments. A list of
     active assignments is sent to a client tool when a student clicks
@@ -343,11 +395,8 @@ sub-directories:
     subdirectory, which is preserved but hidden from the status
     interface.
 
-    The checker should return either a string or a list of two
-    strings. A single string result, such as "handin.scm", is used to
-    rename the "handin" submission file. In a list result, the first
-    string names the submission, and the second string is a
-    successful-handin message to report back to the student.
+    The checker should return a string, such as "handin.scm", to use in
+    naming the submission file.
 
   * "log.ss" (created if not present, appended otherwise) --- records
     connections and actions, where each entry is of the form
@@ -529,13 +578,21 @@ The _utils.ss_ module provides utilities helpful in implementing
   handin client for any test failure. Set this parameter to true when
   testing programs that use state.
 
+> (message string [styles]) - if given only a string, this string will
+  be shown on the client's submission dialog; if `styles' is also
+  given, it will be used as a list of styles for a `message-box'
+  dialog on the client side, and the resulting value is returned as
+  the result of `message'.  You can use that to send warnings to the
+  student and wait for confirmation.
+
 > (current-run-status string-or-#f) - registers information about the
   current actions of the checker, in case the session is terminated
   due to excessive memory consumption. For example, a checker might
   set the status to indicate which instructor-supplied test was being
   executed when the session ran out of memory. This status is only
   used when per-session memory limits are supported (i.e., under
-  MrEd3m or MzScheme3m with memory accounting).
+  MrEd3m or MzScheme3m with memory accounting), but in both cases, a
+  string value will also be passed on to `message' above.
 
 > (current-value-printer proc) - a parameter that controls how values
   are printed, a procedure that expects a Scheme value and returns a

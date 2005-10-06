@@ -22,6 +22,7 @@
 	   call-with-evaluator/submission
 	   reraise-exn-as-submission-problem
 	   current-run-status
+	   message
            current-value-printer
 
 	   coverage-enabled

@@ -1,17 +1,28 @@
-
 (module client mzscheme
   (require (lib "mzssl.ss" "openssl"))
 
   (provide handin-connect
+	   retrieve-extra-fields
+	   retrieve-active-assignments
 	   submit-assignment
+	   retrieve-assignment
 	   submit-addition
-	   submit-password-change)
+	   submit-info-change
+	   retrieve-user-info)
 
   (define-struct handin (r w))
 
   (define (write+flush port . xs)
     (for-each (lambda (x) (write x port) (newline port)) xs)
     (flush-output port))
+
+  (define (close-handin-ports h)
+    (close-input-port (handin-r h))
+    (close-output-port (handin-w h)))
+
+  (define (wait-for-ok r who)
+    (let ([v (read r)])
+      (unless (eq? v 'ok) (error 'handin-connect "~a error: ~a" who v))))
 
   (define (handin-connect server port pem)
     (let ([ctx (ssl-make-client-context)])
@@ -22,68 +33,118 @@
 	(let ([s (read-bytes 6 r)])
 	  (unless (equal? #"handin" s)
 	    (error 'handin-connect "bad handshake from server: ~e" s)))
-	;; Tell server protocol = 'original:
-	(write+flush w 'original)
+	;; Tell server protocol = 'ver1:
+	(write+flush w 'ver1)
 	;; One more sanity check: server recognizes protocol:
 	(let ([s (read r)])
-	  (unless (eq? s 'original)
+	  (unless (eq? s 'ver1)
 	    (error 'handin-connect "bad protocol from server: ~e" s)))
-	;; Return connection and list of active assignments:
-	(values (make-handin r w)
-		(let ([v (read r)])
-		  (unless (and (list? v)
-			       (andmap string? v))
-		    (error 'handin-connect "failed to get active-assignment list from server"))
-		  v)))))
+	;; Return connection:
+        (make-handin r w))))
 
-  (define (submit-assignment h username passwd assignment content on-commit)
-    (let ([r (handin-r h)]
-	  [w (handin-w h)])
-      (write+flush w username passwd assignment)
+  (define (retrieve-extra-fields h)
+    (let ([r (handin-r h)] [w (handin-w h)])
+      (write+flush w 'get-extra-fields 'bye)
       (let ([v (read r)])
-	(unless (eq? v 'ok)
-	  (error 'handin-connect "login error: ~a" v)))
+        (unless (and (list? v)
+                     (andmap (lambda (l) (and (pair? l) (string? (car l)))) v))
+          (error 'handin-connect
+                 "failed to get extra-fields list from server"))
+        (wait-for-ok r "get-extra-fields")
+        (close-handin-ports h)
+        v)))
+
+  (define (retrieve-active-assignments h)
+    (let ([r (handin-r h)] [w (handin-w h)])
+      (write+flush w 'get-active-assignments)
+      (let ([v (read r)])
+        (unless (and (list? v) (andmap string? v))
+          (error 'handin-connect
+                 "failed to get active-assignment list from server"))
+        v)))
+
+  (define (submit-assignment h username passwd assignment content
+                             on-commit message message-box)
+    (let ([r (handin-r h)] [w (handin-w h)])
+      (write+flush w
+        'set 'username/s username
+        'set 'password   passwd
+        'set 'assignment assignment
+        'save-submission)
+      (wait-for-ok r "login")
       (write+flush w (bytes-length content))
       (let ([v (read r)])
 	(unless (eq? v 'go)
 	  (error 'handin-connect "upload error: ~a" v)))
-      (fprintf w "$")
+      (display "$" w)
       (display content w)
       (flush-output w)
-      (let ([v (read r)])
-	(unless (eq? v 'confirm)
-	  (error 'handin-connect "submit error: ~a" v)))
+      ;; during processing, we're waiting for 'confirm, in the meanwhile, we
+      ;; can get a 'message or 'message-box to show -- after 'message we expect
+      ;; a string to show using the `messenge' argument, and after 'message-box
+      ;; we expect a string and a style-list to be used with `message-box' and
+      ;; the resulting value written back
+      (let loop ()
+        (let ([v (read r)])
+          (case v
+            [(confirm) #t]
+            [(message) (message (read r)) (loop)]
+            [(message-box)
+             (write+flush w (message-box (read r) (read r))) (loop)]
+            [else (error 'handin-connect "submit error: ~a" v)])))
       (on-commit)
       (write+flush w 'check)
-      (let ([result-msg
-	     (let ([v (read r)])
-	       (cond
-		[(eq? v 'done) #f]
-		[(and (pair? v) (eq? (car v) 'result))
-		 (cadr v)]
-		[else
-		 (error 'handin-connect "commit probably unsucccesful: ~e" v)]))])
-	(close-input-port r)
-	(close-output-port w)
-	result-msg)))
+      (wait-for-ok r "commit")
+      (close-handin-ports h)))
 
+  (define (retrieve-assignment h username passwd assignment)
+    (let ([r (handin-r h)] [w (handin-w h)])
+      (write+flush w
+        'set 'username/s username
+        'set 'password   passwd
+        'set 'assignment assignment
+        'get-submission)
+      (let ([len (read r)])
+        (unless (and (number? len) (integer? len) (positive? len))
+          (error 'handin-connect "bad response from server: ~a" len))
+        (let ([buf (begin (regexp-match #rx"[$]" r) (read-bytes len r))])
+          (wait-for-ok r "get-submission")
+          (close-handin-ports h)
+          buf))))
 
-  (define (submit-addition h username full-name id email passwd)
+  (define (submit-addition h username passwd extra-fields)
+    (let ([r (handin-r h)] [w (handin-w h)])
+      (write+flush w
+        'set 'username/s   username
+        'set 'password     passwd
+        'set 'extra-fields extra-fields
+        'create-user)
+      (wait-for-ok r "create-user")
+      (close-handin-ports h)))
+
+  (define (submit-info-change h username old-passwd new-passwd extra-fields)
     (let ([r (handin-r h)]
 	  [w (handin-w h)])
-      (write+flush w username 'create full-name id email passwd)
-      (let ([v (read r)])
-	(unless (eq? v 'ok)
-	  (error 'handin-connect "update error: ~a" v)))
-      (close-input-port r)
-      (close-output-port w)))
+      (write+flush w
+        'set 'username/s   username
+        'set 'password     old-passwd
+        'set 'new-password new-passwd
+        'set 'extra-fields extra-fields
+        'change-user-info)
+      (wait-for-ok r "change-user-info")
+      (close-handin-ports h)))
 
-  (define (submit-password-change h username old-passwd new-passwd)
-    (let ([r (handin-r h)]
-	  [w (handin-w h)])
-      (write+flush w username old-passwd 'change new-passwd)
+  (define (retrieve-user-info h username passwd)
+    (let ([r (handin-r h)] [w (handin-w h)])
+      (write+flush w
+        'set 'username/s username
+        'set 'password   passwd
+        'get-user-info 'bye)
       (let ([v (read r)])
-	(unless (eq? v 'ok)
-	  (error 'handin-connect "update error: ~a" v)))
-      (close-input-port r)
-      (close-output-port w))))
+        (unless (and (list? v) (andmap string? v))
+          (error 'handin-connect "failed to get user-info list from server"))
+        (wait-for-ok r "get-user-info")
+        (close-handin-ports h)
+        v)))
+
+  )

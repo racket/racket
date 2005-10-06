@@ -57,7 +57,7 @@
       (inherit show is-shown? center)
       (super-new [label handin-dialog-name])
 
-      (init-field content)
+      (init-field content open-drscheme-window)
 
       (define status (new message%
 			  [label (format "Making secure connection to ~a..." server)]
@@ -86,49 +86,62 @@
 				[parent this]
 				[stretchable-height #f]))
       (make-object vertical-pane% button-panel) ; spacer
-      (define ok (new button%
-		      [label button-label]
-		      [parent button-panel]
-		      [callback (lambda (b e)
-				  (disable-interface)
-				  (send status set-label "Handing in...")
-				  (parameterize ([current-custodian
-						  comm-cust])
-				    (thread
-				     (lambda ()
-				       (with-handlers ([void
-							(lambda (exn)
-							  (report-error
-							   "Handin failed."
-							   exn))])
-					 (remember-user (send username get-value))
-					 (let ([result-msg
-						(submit-assignment
-						 connection
-						 (send username get-value)
-						 (send passwd get-value)
-						 (send assignment
-						       get-string
-						       (send assignment get-selection))
-						 content
-						 (lambda ()
-						   (semaphore-wait commit-lock)
-						   (send status set-label "Comitting...")
-						   (set! committing? #t)
-						   (semaphore-post commit-lock)))])
-					   (queue-callback
-					    (lambda ()
-					      (when abort-commit-dialog
-						(send abort-commit-dialog show #f))
-					      (send status set-label "Handin successful.")
-					      (set! committing? #f)
-					      (done-interface)
-					      (when result-msg
-						(message-box "Handin Result"
-							     result-msg
-							     this
-							     '(ok)))))))))))]
-		      [style '(border)]))
+
+      (define retrieve?
+        (new check-box%
+             [label "Retrieve"]
+             [parent button-panel]))
+
+      (define (submit-file)
+        (submit-assignment
+         connection
+         (send username get-value)
+         (send passwd get-value)
+         (send assignment get-string (send assignment get-selection))
+         content
+         (lambda ()
+           (semaphore-wait commit-lock)
+           (send status set-label "Comitting...")
+           (set! committing? #t)
+           (semaphore-post commit-lock))
+         (lambda (msg) (send status set-label msg))
+         (lambda (msg styles) (message-box "Handin" msg this styles)))
+        (queue-callback
+         (lambda ()
+           (when abort-commit-dialog (send abort-commit-dialog show #f))
+           (send status set-label "Handin successful.")
+           (set! committing? #f)
+           (done-interface))))
+      (define (retrieve-file)
+        (let ([buf (retrieve-assignment
+                    connection
+                    (send username get-value)
+                    (send passwd get-value)
+                    (send assignment get-string (send assignment get-selection)))])
+          (queue-callback
+           (lambda ()
+             (done-interface)
+             (do-cancel-button)
+             (string->editor! buf (send (open-drscheme-window) get-editor))))))
+
+      (define ok
+        (new button%
+          [label button-label]
+          [parent button-panel]
+          [style '(border)]
+          [callback
+           (lambda (b e)
+             (disable-interface)
+             (send status set-label "Handing in...")
+             (parameterize ([current-custodian comm-cust])
+               (thread
+                (lambda ()
+                  (remember-user (send username get-value))
+                  (with-handlers ([void (lambda (exn)
+                                          (report-error "Handin failed." exn))])
+                    (if (send retrieve? get-value)
+                      (retrieve-file)
+                      (submit-file)))))))]))
 
       (define ok-can-enable? #f)
       (define (activate-ok)
@@ -215,26 +228,26 @@
         (set! commit-lock (make-semaphore 1))
         (set! comm-cust (make-custodian))
 	(parameterize ([current-custodian comm-cust])
-	  (thread (lambda ()
-		    (let/ec escape
-		      (with-handlers ([void
-				       (lambda (exn)
-					 (report-error
-					  "Connection failed."
-					  exn)
-					 (escape))])
-			(semaphore-wait go-sema)
-			(let-values ([(h l) (connect)])
-			  (when (null? l)
-			    (error 'handin "there are no active assignments"))
-			  (set! connection h)
-			  (for-each (lambda (assign)
-				      (send assignment append assign))
-				    l)
-			  (send assignment enable #t)
-			  (set! ok-can-enable? #t)
-			  (activate-ok)
-			  (send status set-label (format "Connected securely for ~a." handin-name)))))))))
+	  (thread
+           (lambda ()
+             (let/ec escape
+               (with-handlers ([void
+                                (lambda (exn)
+                                  (report-error "Connection failed." exn)
+                                  (escape))])
+                 (semaphore-wait go-sema)
+                 (let* ([h (connect)]
+                        [l (retrieve-active-assignments h)])
+                   (when (null? l)
+                     (error 'handin "there are no active assignments"))
+                   (set! connection h)
+                   (for-each (lambda (assign) (send assignment append assign))
+                             l)
+                   (send assignment enable #t)
+                   (set! ok-can-enable? #t)
+                   (activate-ok)
+                   (send status set-label
+                         (format "Connected securely for ~a." handin-name)))))))))
 
       (define/augment (on-close)
 	(inner (void) on-close)
@@ -255,6 +268,12 @@
        (super-new [label manage-dialog-name]
 		  [alignment '(left center)])
 
+       (define EXTRA-FIELDS
+         (let ([ef #f])
+           (lambda ()
+             (unless ef (set! ef (retrieve-extra-fields (connect))))
+             ef)))
+
        (define status
          (new message%
               [label (format "Manage ~a handin account at ~a." handin-name server)]
@@ -264,7 +283,7 @@
        (define tabs
          (new tab-panel%
               [parent this]
-              [choices '("New User" "Change Password" "Uninstall")]
+              [choices '("New User" "Change Info" "Uninstall")]
               [callback
                (lambda (tp e)
                  (send single active-child
@@ -288,61 +307,86 @@
 	      [style '(single password)]
 	      [stretchable-width #t]))
 
-       (define (non-empty? t)
-	 (not (string=? "" (send t get-value))))
+       (define (non-empty? . ts)
+	 (andmap (lambda (t) (not (string=? "" (send t get-value)))) ts))
+
+       (define (same-value t1 t2)
+         (string=? (send t1 get-value) (send t2 get-value)))
 
        (define (activate-change)
+         (define an-extra-non-empty? (ormap non-empty? change-extra-fields))
+	 (send retrieve-old-info-button enable
+               (non-empty? old-username old-passwd))
 	 (send change-button enable
-	       (and (non-empty? old-username)
-		    (non-empty? old-passwd)
-		    (non-empty? new-passwd)
-		    (non-empty? confirm-passwd))))
+               (and (same-value new-passwd new-passwd2)
+                    (non-empty? old-username old-passwd)
+                    (or (non-empty? new-passwd) an-extra-non-empty?)))
+         (send change-button set-label
+               (if an-extra-non-empty? "Change Info" "Set Password")))
+
        (define old-user-box (new vertical-panel%
 				 [parent single]
 				 [alignment '(center center)]))
        (define old-username (mk-txt "Username:" old-user-box activate-change))
        (send old-username set-value (remembered-user))
 
-       (define old-passwd (mk-passwd "Old:" old-user-box activate-change))
-       (define new-passwd (mk-passwd "New:" old-user-box activate-change))
-       (define confirm-passwd (mk-passwd "New again:" old-user-box activate-change))
-       (define change-button (new button%
-				  [label "Set Password"]
-				  [parent old-user-box]
-				  [callback
-				   (lambda (b e)
-				     (do-change/add #f old-username b e))]
-				  [style '(border)]))
+       (define old-passwd
+         (mk-passwd "Old Password:" old-user-box activate-change))
+       (define change-extra-fields
+         (map (lambda (f)
+                (mk-txt (format "~a:" (car f)) old-user-box activate-change))
+              (EXTRA-FIELDS)))
+       (define new-passwd
+         (mk-passwd "New Password:" old-user-box activate-change))
+       (define new-passwd2
+         (mk-passwd "New Password again:" old-user-box activate-change))
+
+       (define-values (retrieve-old-info-button change-button)
+         (let ([p (new horizontal-pane%
+                       [parent old-user-box]
+                       [stretchable-height #f]
+                       [alignment '(center center)])])
+           (make-object vertical-pane% p)
+           (values
+            (begin0 (new button% [label "Get Current Info"] [parent p]
+                         [callback (lambda (b e) (do-retrieve old-username))])
+              (make-object vertical-pane% p))
+            (begin0 (new button% [label "Set Password"] [parent p] [style '(border)]
+                         [callback (lambda (b e)
+                                     (do-change/add #f old-username))])
+              (make-object vertical-pane% p)))))
 
        (define (activate-new)
 	 (send new-button enable
-	       (and (non-empty? new-username)
-		    (non-empty? full-name)
-		    (non-empty? student-id)
-		    (non-empty? email)
-		    (non-empty? add-passwd))))
+	       (and (apply non-empty? new-username add-passwd add-passwd2
+                           add-extra-fields)
+                    (same-value add-passwd add-passwd2))))
        (define new-user-box (new vertical-panel%
 				 [parent single]
 				 [alignment '(center center)]))
        (define new-username (mk-txt "Username:" new-user-box activate-new))
        (send new-username set-value (remembered-user))
-       (define full-name  (mk-txt "Full Name:" new-user-box activate-new))
-       (define student-id (mk-txt "ID:" new-user-box activate-new))
-       (define email      (mk-txt "Email:" new-user-box activate-new))
-       (define add-passwd (mk-passwd "Password:" new-user-box activate-new))
+       (define add-extra-fields
+         (map (lambda (f)
+                (mk-txt (format "~a:" (car f)) new-user-box activate-new))
+              (EXTRA-FIELDS)))
+       ;; (define full-name  (mk-txt "Full Name:" new-user-box activate-new))
+       ;; (define student-id (mk-txt "ID:" new-user-box activate-new))
+       ;; (define email      (mk-txt "Email:" new-user-box activate-new))
+       (define add-passwd  (mk-passwd "Password:" new-user-box activate-new))
+       (define add-passwd2 (mk-passwd "Password again:" new-user-box activate-new))
        (define new-button (new button%
 			       [label "Add User"]
 			       [parent new-user-box]
-			       [callback
-				(lambda (b e)
-				  (do-change/add #t new-username b e))]
+			       [callback (lambda (b e)
+                                           (do-change/add #t new-username))]
 			       [style '(border)]))
 
        (define uninstall-box (new vertical-panel%
 				 [parent single]
 				 [alignment '(center center)]))
        (define uninstall-button (new button%
-				     [label (format "Uninstall ~a" handin-name)]
+				     [label (format "Uninstall ~a Handin" handin-name)]
 				     [parent uninstall-box]
 				     [callback
 				      (lambda (b e)
@@ -405,42 +449,74 @@
 				name size))
 	   (k (void))))
 
-       (define (do-change/add new? username b e)
+       (define (do-change/add new? username)
 	 (let/ec k
-	   (unless new?
-	     (check-length new-passwd 50 "New password" k)
-	     (when (not (string=? (send new-passwd get-value)
-				  (send confirm-passwd get-value)))
-	       (message-box "Password Error"
-			    "The \"New\" and \"New again\" passwords are not the same.")
-	       (k (void))))
-	   (when new?
-	     (check-length username    50 "Username"  k)
-	     (check-length full-name  100 "Full Name" k)
-	     (check-length student-id 100 "ID"        k)
-	     (check-length email      100 "Email"     k)
-	     (check-length add-passwd  50 "Password"  k))
+           (check-length username 50 "Username" k)
+           (let* ([pw1 (if new? new-passwd  add-passwd)]
+                  [pw2 (if new? new-passwd2 add-passwd2)]
+                  [l1 (regexp-replace #rx" *:$" (send pw1 get-label) "")]
+                  [l2 (regexp-replace #rx" *:$" (send pw2 get-label) "")])
+             (check-length pw1 50 l1 k)
+             ;; not really needed, but leave just in case
+             (unless (string=? (send pw1 get-value) (send pw2 get-value))
+               (message-box "Password Error"
+                 (format "The \"~a\" and \"~a\" passwords are not the same."
+                         l1 l2))
+               (k (void))))
+           (for-each (lambda (t f) (check-length t 100 (car f) k))
+                     (if new? add-extra-fields change-extra-fields)
+                     (EXTRA-FIELDS))
+	   (send tabs enable #f)
+	   (parameterize ([current-custodian comm-cust])
+	     (thread
+	      (lambda ()
+		(with-handlers
+                    ([void (lambda (exn)
+                             (send tabs enable #t)
+                             (report-error
+                              (format "~a failed." (if new? "Creation" "Update"))
+                              exn))])
+		  (remember-user (send username get-value))
+		  (send status set-label "Making secure connection...")
+		  (let ([h (connect)])
+                    (define (run proc . fields)
+                      (apply proc h
+                             (let loop ([x fields])
+                               (if (list? x) (map loop x) (send x get-value)))))
+		    (send status set-label
+                          (if new? "Creating user..." "Updating server..."))
+		    (if new?
+			(run submit-addition username add-passwd
+                             add-extra-fields)
+			(run submit-info-change username old-passwd new-passwd
+                             change-extra-fields)))
+		  (send status set-label "Success.")
+		  (send cancel set-label "Close")))))))
+
+       (define (do-retrieve username)
+         (let/ec k
 	   (send tabs enable #f)
 	   (parameterize ([current-custodian comm-cust])
 	     (thread
 	      (lambda ()
 		(with-handlers ([void (lambda (exn)
                                         (send tabs enable #t)
-					(report-error "Update failed." exn))])
+					(report-error "Retrieve failed." exn))])
 		  (remember-user (send username get-value))
 		  (send status set-label "Making secure connection...")
-		  (let-values ([(h l) (connect)])
+		  (let ([h (connect)])
                     (define (run proc . fields)
-                      (apply proc h (map (lambda (f) (send f get-value))
-                                         fields)))
-		    (send status set-label "Updating server...")
-		    (if new?
-			(run submit-addition
-                             username full-name student-id email add-passwd)
-			(run submit-password-change
-                             username old-passwd new-passwd)))
-		  (send status set-label "Success.")
-		  (send cancel set-label "Close")))))))
+                      (apply proc h
+                             (let loop ([x fields])
+                               (if (list? x) (map loop x) (send x get-value)))))
+		    (send status set-label "Retrieving information...")
+                    (let ([vals (run retrieve-user-info username old-passwd)])
+                      (send status set-label
+                            "Success, you can now edit fields.")
+                      (send tabs enable #t)
+                      (for-each (lambda (f val) (send f set-value val))
+                                change-extra-fields vals)
+                      (activate-change)))))))))
 
        (send new-user-box show #f)
        (send old-user-box show #f)
@@ -489,6 +565,14 @@
       (write-editor-global-footer stream)
       (send base get-bytes)))
 
+  (define (string->editor! str defs)
+    (let* ([base (make-object editor-stream-in-bytes-base% str)]
+           [stream (make-object editor-stream-in% base)])
+      (read-editor-version stream base #t)
+      (read-editor-global-header stream)
+      (send defs read-from-file stream)
+      (read-editor-global-footer stream)))
+
   (add-test-suite-extension
    "Handin"
    handin-icon
@@ -529,15 +613,20 @@
             (super help-menu:after-about menu))
 
 	  (define button
-	    (new button% 
+	    (new button%
 		 [label (tool-button-label this)]
 		 [parent (get-button-panel)]
 		 [callback (lambda (button evt)
 			     (let ([content (editors->string
 					     (list (get-definitions-text)
 						   (get-interactions-text)))])
-			       (new handin-frame% [parent this] [content content])))]
+			       (new handin-frame%
+                                    [parent this]
+                                    [content content]
+                                    [open-drscheme-window
+                                     drscheme:unit:open-drscheme-window])))]
 		 [style '(deleted)]))
+
 	  (send (get-button-panel) change-children
 		(lambda (l) (cons button l)))))
 
