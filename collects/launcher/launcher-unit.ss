@@ -528,16 +528,21 @@
 	  [else (mred-program-launcher-path name)]))
       
       (define (mred-launcher-is-directory?)
+	#f)
+      (define (mzscheme-launcher-is-directory?)
+	#f)
+
+      (define (mred-launcher-is-actually-directory?)
 	(and (eq? 'macosx (system-type))
 	     (not (memq (current-launcher-variant) '(script script-3m)))))
-      (define (mzscheme-launcher-is-directory?)
+      (define (mzscheme-launcher-is-actually-directory?)
 	#f)
 
       ;; Helper:
       (define (put-file-extension+style+filters type)
 	(case type
 	  [(windows) (values ".exe" null '(("Executable" "*.exe")))]
-	  [(macosx) (values ".app" '(enter-packages) #f)]
+	  [(macosx) (values ".app" '(packages) '(("App" "*.app")))]
 	  [else (values #f null null)]))
       
       (define (mred-launcher-add-suffix path)

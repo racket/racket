@@ -131,10 +131,17 @@ executables.
 
 
 > (mred-launcher-is-directory?) - Returns #t if MrEd launchers for the
-  current platform correspond to directories (as on Mac OS X).
+  current platform are directories from the user's perspective.
 
 > (mzscheme-launcher-is-directory?) - Returns #t if MzScheme launchers
-  for the current platform correspond to directories.
+  for the current platform are directories from the user's perspective.
+
+
+> (mred-launcher-is-actually-directory?) - Returns #t if MrEd
+  launchers for the current platform are implemented as directories.
+
+> (mzscheme-launcher-is-actually-directory?) - Returns #t if MzScheme
+  launchers for the current platform are implemented as directories.
 
 
 > (mred-launcher-add-suffix path) - Returns a path with a suitable
@@ -147,10 +154,10 @@ executables.
 > (mred-launcher-put-file-extension+style+filters) - Returns three
   values suitable for use as the `extension', `style', and `filters'
   arguments to `put-file', respectively. If MrEd launchers for this
-  platform are directories, the `style' result is suitable for use
-  with `get-directory', and the `extension' result may be a string
-  indicating a required extension for the directory name (e.g., ".app"
-  for Mac OS X).
+  platform are directories from the user perspective, the `style'
+  result is suitable for use with `get-directory', and the `extension'
+  result may be a string indicating a required extension for the
+  directory name (e.g., ".app" for Mac OS X).
 
 > (mzscheme-launcher-put-file-extension+style+filters) - Like
   `mred-launcher-get-file-extension+style+filters', but for MzScheme

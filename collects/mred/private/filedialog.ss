@@ -47,7 +47,6 @@
       (check-top-level-parent/false who parent)
       (check-path/false who directory) (check-path/false who filename) (check-string/false who extension)
       (check-style who #f (cond
-			   [put? null]
 			   [dir? '(enter-packages)]
 			   [else '(packages enter-packages)]) style)
       (unless (and (list? filters)

@@ -244,6 +244,10 @@ int wxMessageBox(char* message, char* caption, long style,
   return wxsMessageBox(message, caption, style, parent);
 }
 
+//****************************************************************************
+// File selector
+//****************************************************************************
+
 #ifndef OS_X
 extern "C" {
 #endif
@@ -252,8 +256,11 @@ extern "C" {
 #ifndef OS_X
 }
 #endif
-
-//= T.P. ==============================================================================
+extern "C" {
+  extern char *scheme_expand_filename(char* filename, int ilen, const char *errorin, int *ex, int guards);
+  extern int scheme_is_complete_path(const char *s, long len);
+  extern char *scheme_find_completion(char *fn);
+}
 
 static int navinited = 0;
 
@@ -275,17 +282,290 @@ static int log_base_10(int i)
 
 class wxCallbackInfo {
 public:
+  NavDialogRef dialog;
+  int has_parent;
   char *initial_directory;
-  char *force_extension;
 };
+
+//-----------------------------------------------------------------------------
+// Text path dialog
+//-----------------------------------------------------------------------------
+/* Cocoa's navigation dialog let's the user type "/" to get a dialog
+   for entering an aboslute path in text, and tab implements path
+   completion. Carbon's navigation dialog doesn't do that, so we roll
+   our own. */
+
+class wxCallbackCallbackInfo {
+ public:
+  WindowRef dialog;
+  ControlRef txt;
+  NavCBRecPtr callBackParms;
+  wxCallbackInfo *cbi;
+};
+
+static char *extract_string(wxCallbackCallbackInfo *ccbi)
+{
+  int len;
+  char *result;
+  CFStringRef str;
+  Size sz;
+
+  ::GetControlData(ccbi->txt, kControlEntireControl, 
+		   kControlEditTextCFStringTag, sizeof(CFStringRef), &str, &sz);
+  
+  len = ::CFStringGetLength(str);
+  result = new WXGC_ATOMIC char[len * 6 + 1];
+  ::CFStringGetCString(str, result, len * 6 + 1, kCFStringEncodingUTF8);
+  ::CFRelease(str);
+
+  return result;
+}
+
+static OSStatus ok_evt_handler(EventHandlerCallRef inHandlerCallRef, 
+			       EventRef inEvent, 
+			       void *inUserData)
+{
+  char *result;
+  FSSpec spec;
+  wxCallbackCallbackInfo *ccbi = (wxCallbackCallbackInfo *)GET_SAFEREF(inUserData);
+  WindowRef dialog = ccbi->dialog;
+
+  result = extract_string(ccbi);
+  
+  result = scheme_expand_filename(result, -1, NULL, NULL, 0);
+  
+  if (result && scheme_mac_path_to_spec(result, &spec)) {
+    AEDesc desc;
+    NavCBRecPtr callBackParms;
+    callBackParms = ccbi->callBackParms;
+    AECreateDesc (typeFSS, &spec, sizeof(FSSpec), &desc);
+    NavCustomControl(callBackParms->context, kNavCtlSetLocation, &desc);
+    AEDisposeDesc(&desc);
+    if (!ccbi->cbi->has_parent) {
+      ::HideSheetWindow(dialog);
+    } else {
+      ::HideWindow(dialog);
+    }
+    ::QuitAppModalLoopForWindow(dialog);
+  } else
+    wxBell();
+
+  return noErr;
+}
+
+static OSStatus cancel_evt_handler(EventHandlerCallRef inHandlerCallRef, 
+				   EventRef inEvent, 
+				   void *inUserData)
+{
+  wxCallbackCallbackInfo *cbbi = (wxCallbackCallbackInfo *)GET_SAFEREF(inUserData);
+  WindowRef dialog = cbbi->dialog;
+
+  ::HideWindow(dialog);
+  ::QuitAppModalLoopForWindow(dialog);
+
+  return noErr;
+}
+
+static OSStatus key_evt_handler(EventHandlerCallRef inHandlerCallRef, 
+				EventRef inEvent, 
+				void *inUserData)
+{
+  char c;
+
+  GetEventParameter(inEvent, kEventParamKeyMacCharCodes, typeChar, 
+		    NULL, sizeof(c), NULL, &c);
+
+  if (c == 13) {
+    return ok_evt_handler(inHandlerCallRef, NULL, inUserData);
+  } else if (c == 27) {
+    return cancel_evt_handler(inHandlerCallRef, NULL, inUserData);
+  } else
+    return eventNotHandledErr;
+}
+
+static OSStatus tab_evt_handler(EventHandlerCallRef inHandlerCallRef, 
+				EventRef inEvent, 
+				void *inUserData)
+{
+  char c;
+
+  GetEventParameter(inEvent, kEventParamKeyMacCharCodes, typeChar, 
+		    NULL, sizeof(c), NULL, &c);
+
+  if (c == 9) {
+    char *result;
+    int len;
+    wxCallbackCallbackInfo *ccbi = (wxCallbackCallbackInfo *)GET_SAFEREF(inUserData);
+    
+    result = extract_string(ccbi);
+    len = strlen(result);
+
+    if (scheme_is_complete_path(result, len)) {
+      result = scheme_find_completion(result);
+    } else
+      result = NULL;
+
+    if (result) {
+      CFStringRef str;
+      str = wxCFString(result);
+      ::SetControlData(ccbi->txt, kControlEntireControl, 
+		       kControlEditTextCFStringTag, sizeof(CFStringRef), &str);
+      ::CFRelease(str);
+      ::Draw1Control(ccbi->txt);
+    } else
+      wxBell();
+    return noErr;
+  } else
+    return eventNotHandledErr;
+}
+
+static char *extract_current_dir(NavCBRecPtr callBackParms)
+{
+  AEDesc here, there;
+  FSRef fsref;
+  OSErr err;
+  char *dir = NULL;
+  
+  NavCustomControl(callBackParms->context, kNavCtlGetLocation, &here);
+  
+  err = AECoerceDesc(&here, typeFSRef, &there);
+  if (err != noErr) {
+    if (err == errAECoercionFail) {
+      /* Try FSSpec: */
+      FSSpec spec;
+      
+      err = AECoerceDesc(&here, typeFSRef, &there);
+      if (err == noErr) {	    
+	err = AEGetDescData(&there, &spec, sizeof(FSSpec));
+	if (err == noErr)
+	  dir = scheme_mac_spec_to_path(&spec);
+	AEDisposeDesc(&there);
+      }
+    }
+  } else {
+    err = AEGetDescData(&there, &fsref, sizeof(fsref));
+    if (err == noErr)
+      dir = wxFSRefToPath(fsref);
+    AEDisposeDesc(&there);
+  }
+
+  return dir;
+}
+
+static void do_text_path_dialog(wxCallbackInfo *cbi,
+				NavCBRecPtr callBackParms)
+{
+  int width = 500;
+  WindowRef parent, dialog;
+  ControlRef ok, lbl, txt, cancel;
+  EventTypeSpec spec[1];
+  Rect r, pr;
+  char byteFlag = 1, *init;
+  ControlFontStyleRec style;
+  ControlEditTextSelectionRec sel;
+  wxCallbackCallbackInfo *info;
+  CFStringRef str;
+  void *info_sr;
+
+  info = new wxCallbackCallbackInfo;
+  info_sr = WRAP_SAFEREF(info);
+
+  init = extract_current_dir(callBackParms);
+  if (!init)
+    init = "/";
+
+  parent = ::NavDialogGetWindow(cbi->dialog);
+  GetWindowBounds(parent, kWindowContentRgn, &pr);
+ 
+  ::SetRect(&r, 0, 0, width, 90);
+  r.top += ((pr.top + pr.bottom) - r.bottom) / 2;
+  r.bottom += r.top;
+  r.left = ((pr.left + pr.right) - r.right) / 2;
+  r.right += r.left;
+
+  ::CreateNewWindow(cbi->has_parent ? kMovableModalWindowClass : kSheetWindowClass,
+		    kWindowCompositingAttribute, &r, &dialog);
+  ::InstallStandardEventHandler(GetWindowEventTarget(dialog));
+  spec[0].eventClass = kEventClassKeyboard;
+  spec[0].eventKind = kEventRawKeyDown;
+  info->dialog = dialog;
+  info->cbi = cbi;
+  ::InstallEventHandler(GetWindowEventTarget(dialog), key_evt_handler, 1, spec, info_sr, NULL);
+
+  style.flags = kControlUseFontMask;
+  style.font = kControlFontBigSystemFont;
+      
+  ::SetRect(&r, 10, 10, width - 10, 26);
+  ::CreateStaticTextControl(dialog, &r, CFSTR("Go to the folder:"), &style, &lbl);
+  ::ShowControl(lbl);
+
+  ::SetRect(&r, 10, 32, width - 10, 48);
+  str = wxCFString(init);
+  ::CreateEditTextControl(dialog, &r, str, 0, 0, &style, &txt);
+  :: CFRelease(str);
+  spec[0].eventClass = kEventClassKeyboard;
+  spec[0].eventKind = kEventRawKeyDown;
+  ::InstallEventHandler(GetControlEventTarget(txt), tab_evt_handler, 1, spec, info_sr, NULL);
+  ::ShowControl(txt);
+
+  info->txt = txt;
+  info->callBackParms = callBackParms;
+
+  ::SetRect(&r, width - 75, 60, width - 10, 80);
+  ::CreatePushButtonControl(dialog, &r, CFSTR("Goto"), &ok);
+  ::ShowControl(ok);
+  spec[0].eventClass = kEventClassControl;
+  spec[0].eventKind = kEventControlHit;
+  ::InstallEventHandler(GetControlEventTarget(ok), ok_evt_handler, 1, spec, info_sr, NULL);
+  ::SetControlData(ok, kControlEntireControl, kControlPushButtonDefaultTag, 1, &byteFlag);
+
+  ::SetRect(&r, width - 150, 60, width - 85, 80);
+  ::CreatePushButtonControl(dialog, &r, CFSTR("Cancel"), &cancel);
+  ::ShowControl(cancel);
+  ::InstallEventHandler(GetControlEventTarget(cancel), cancel_evt_handler, 1, spec, info_sr, NULL);
+
+  ::SetKeyboardFocus(dialog, txt, kControlFocusNextPart);
+  sel.selStart = 1;
+  sel.selEnd = 1000;
+  ::SetControlData(txt, kControlEntireControl, kControlEditTextSelectionTag, sizeof(sel), &sel);
+      
+  if (!cbi->has_parent) {
+    ::ShowSheetWindow(dialog, parent);
+  } else {
+    ::ShowWindow(dialog);
+  }
+
+  ::RunAppModalLoopForWindow(dialog);
+
+  ::DisposeControl(lbl);
+  ::DisposeControl(txt);
+  ::DisposeControl(ok);
+  ::DisposeControl(cancel);
+  ::DisposeWindow(dialog);
+
+  FREE_SAFEREF(info_sr);
+  info_sr = NULL;
+}
+
+//-----------------------------------------------------------------------------
+// File-selector callback
+//-----------------------------------------------------------------------------
+/* Sets the right initial directory, if one is supplied, and
+   redirects '/' to open the text path dialog. */
 
 static void ExtensionCallback(NavEventCallbackMessage callBackSelector, 
 			      NavCBRecPtr callBackParms, 
 			      void *callBackUD)
 {
-  wxCallbackInfo *cbi = (wxCallbackInfo *)callBackUD;
+  wxCallbackInfo *cbi = (wxCallbackInfo *)GET_SAFEREF(callBackUD);
 
   switch (callBackSelector) {
+  case kNavCBEvent:
+    if ((callBackParms->eventData.eventDataParms.event->what == keyUp)
+	&& ((callBackParms->eventData.eventDataParms.event->message & charCodeMask) == '/')) {
+      do_text_path_dialog(cbi, callBackParms);
+    }
+    break;
   case kNavCBStart:
     if (cbi->initial_directory) {
       FSSpec spec;
@@ -298,93 +578,6 @@ static void ExtensionCallback(NavEventCallbackMessage callBackSelector,
     }
     break;
   case kNavCBAccept:
-    if (cbi->force_extension) {
-      Str255 sv;
-      StringPtr s;
-      char *c, *suffix = cbi->force_extension;
-      int i, sl;
-
-      s = sv;
-      NavCustomControl(callBackParms->context, kNavCtlGetEditFileName, s);
-
-      c = wxP2C(s);
-      for (i = s[0]; i--; ) {
-	if (c[i] == '.')
-	  break;
-      }
-      if (i < 0)
-	i = 0;
-      if (strcmp(c + i, suffix)) {
-	unsigned char *s2;
-	sl = strlen(suffix);
-	s2 = (unsigned char *)(new WXGC_ATOMIC char[s[0] + sl + 1]);
-	memcpy(s2 + 1, s + 1, s[0]);
-	memcpy(s2 + 1 + s[0], suffix, sl);
-	s2[0] = s[0] + sl;
-	NavCustomControl(callBackParms->context, kNavCtlSetEditFileName, s2);
-	s = s2;
-      }
-
-      {
-	AEDesc here, there;
-	FSRef fsref;
-	OSErr err;
-	char *dir = NULL;
-
-	NavCustomControl(callBackParms->context, kNavCtlGetLocation, &here);
-
-	err = AECoerceDesc(&here, typeFSRef, &there);
-	if (err != noErr) {
-	  if (err == errAECoercionFail) {
-	    /* Try FSSpec: */
-	    FSSpec spec;
-
-	    err = AECoerceDesc(&here, typeFSRef, &there);
-	    if (err == noErr) {	    
-	      err = AEGetDescData(&there, &spec, sizeof(FSSpec));
-	      if (err == noErr)
-		dir = scheme_mac_spec_to_path(&spec);
-	      AEDisposeDesc(&there);
-	    }
-	  }
-	} else {
-	  err = AEGetDescData(&there, &fsref, sizeof(fsref));
-	  if (err == noErr)
-	    dir = wxFSRefToPath(fsref);
-	  AEDisposeDesc(&there);
-	}
-
-	if (!dir)
-	  printf("NoDir! %d\n", err);
-
-	if (dir) {
-	  AlertStdAlertParamRec rec;
-	  SInt16 which;
-
-	  rec.movable = FALSE;
-	  rec.helpButton = FALSE;
-	  rec.filterProc = NULL;
-	  rec.defaultText = "\pReplace";
-	  rec.cancelText = (ConstStringPtr)kAlertDefaultCancelText;
-	  rec.otherText = NULL;
-	  rec.defaultButton = kAlertStdAlertCancelButton;
-	  rec.cancelButton = 0;
-	  rec.position = kWindowAlertPositionParentWindowScreen;
-
-	  which = kAlertStdAlertCancelButton;
-
-	  err = StandardAlert(kAlertCautionAlert,
-			      "\pReally replace?",
-			      NULL,
-			      &rec,
-			      &which);
-
-	  if (which == kAlertStdAlertCancelButton) {
-	    /* ??????? */
-	  }
-	}
-      }
-    }
   case kNavCBCancel: /* ^^^^^^^^^^ FALLTHROUGH ^^^^^^^^^^^^ */
     QuitAppModalLoopForWindow(callBackParms->window);
     break;
@@ -431,6 +624,7 @@ char *wxFileSelector(char *message, char *default_path,
     OSErr derr;
     NavDialogCreationOptions dialogOptions;
     wxCallbackInfo *cbi;
+    void *cbi_sr;
     NavUserAction action;
     NavReplyRecord *reply;
     char *temp;
@@ -448,14 +642,10 @@ char *wxFileSelector(char *message, char *default_path,
 
     cbi = new wxCallbackInfo();
     cbi->initial_directory = default_path;
-    cbi->force_extension = NULL;
 
     NavGetDefaultDialogCreationOptions(&dialogOptions);
-    if (default_filename)  {
-      dialogOptions.saveFileName = CFStringCreateWithCString(NULL,default_filename,CFStringGetSystemEncoding());
-    }
     if (message) {
-      dialogOptions.message = CFStringCreateWithCString(NULL,message,CFStringGetSystemEncoding());
+      dialogOptions.message = wxCFString(message);
     }
     dialogOptions.modality = kWindowModalityAppModal;
 
@@ -466,10 +656,48 @@ char *wxFileSelector(char *message, char *default_path,
     if (!(flags & wxMULTIOPEN))
       dialogOptions.optionFlags -= (dialogOptions.optionFlags & kNavAllowMultipleFiles);
 
-    if (cbi->force_extension)
-      dialogOptions.optionFlags |= kNavDontConfirmReplacement;
+    /* Check whether to enforce a particular suffix */
+    if (default_extension && wildcard && flags && !(flags & (wxOPEN | wxMULTIOPEN | wxGETDIR))) {
+      GC_CAN_IGNORE char *s1, *s2;
 
-#ifdef OS_X
+      s1 = strchr(wildcard, '|');
+      if (s1) {
+	s1++;
+	s2 = strchr(s1, '|');
+	if (s2) {
+	  int len, flen;
+	  len = strlen(default_extension);
+	  if ((s1[0] == '*')
+	      && (s1[1] == '.')
+	      && ((s2 - s1) == (len + 2))
+	      && !strncmp(default_extension, s1+2, len)) {
+	    dialogOptions.optionFlags |= kNavPreserveSaveFileExtension;
+	    /* Make sure initial name has specified extension: */
+	    if (!default_filename)
+	      default_filename = "?";
+	    flen = strlen(default_filename);
+	    if ((flen < len + 1)
+		|| (default_filename[flen -len - 1] != '.')
+		|| strcmp(default_extension, default_filename + flen - len)) {
+	      /* Need to add extension */
+	      char *naya;
+	      naya = new WXGC_ATOMIC char[flen + len +2];
+	      memcpy(naya, default_filename, flen);
+	      memcpy(naya + flen + 1, default_extension, len + 1);
+	      naya[flen] = '.';
+	      default_filename  = naya;
+	    }
+	  }
+	}
+      }
+    }
+
+    if (default_filename)  {
+      dialogOptions.saveFileName = wxCFString(default_filename);
+    }
+
+    cbi->has_parent = 1;
+
     if (parent) {
       wxFrame *f;
 
@@ -490,24 +718,28 @@ char *wxFileSelector(char *message, char *default_path,
 	graf = mdc->macGrafPort();
 	dialogOptions.parentWindow = GetWindowFromPort(graf);
 	dialogOptions.modality = kWindowModalityWindowModal;
+	cbi->has_parent = 1;
       }
     }
-#endif
+
+    cbi_sr = WRAP_SAFEREF(cbi);
 
     // create the dialog:
     if (flags & wxGETDIR) {
       derr = NavCreateChooseFolderDialog(&dialogOptions,
-					 extProc, NULL, cbi, 
+					 extProc, NULL, cbi_sr, 
 					 &outDialog);
     } else if ((flags == 0) || (flags & wxOPEN) || (flags & wxMULTIOPEN)) {
       derr = NavCreateGetFileDialog(&dialogOptions, NULL,
-				    extProc, NULL, NULL, cbi, 
+				    extProc, NULL, NULL, cbi_sr, 
 				    &outDialog);
     } else {
       derr = NavCreatePutFileDialog(&dialogOptions, 'TEXT', 'mReD',
-				    extProc, cbi,
+				    extProc, cbi_sr,
 				    &outDialog);
     }
+
+    cbi->dialog = outDialog;
 
     if (derr != noErr) {
       if (default_filename) 
@@ -527,6 +759,8 @@ char *wxFileSelector(char *message, char *default_path,
 	CFRelease(dialogOptions.message);
       NavDialogDispose(outDialog);
       wxTheApp->AdjustCursor();
+      FREE_SAFEREF(cbi_sr);
+      cbi_sr = NULL;
       return NULL;
     }
     
@@ -536,6 +770,9 @@ char *wxFileSelector(char *message, char *default_path,
 
     wxPrimDialogCleanUp();
     
+    FREE_SAFEREF(cbi_sr);
+    cbi_sr = NULL;
+
     // dump those strings:
     if (default_filename)
       CFRelease(dialogOptions.saveFileName);

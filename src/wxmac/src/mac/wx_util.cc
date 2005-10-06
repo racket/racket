@@ -145,29 +145,6 @@ extern "C" {
 
 CFStringRef wxCFString(const char *s)
 {
-  int l, ul, i;
-  unsigned int *us;
-
-  /* Look for a character that is beyond the official Unicode
-     range, which ends at 0x10FFFDL. */
-  l = strlen(s);
-  us = new WXGC_ATOMIC unsigned[l + 1];
-  ul = scheme_utf8_decode_all((unsigned char *)s, l, us, 0);
-  for (i = 0; i < ul; i++) {
-    if (us[i] > 0x10FFFD) {
-      us[i] = '?';
-      s = NULL;
-    }
-  }
-
-  if (!s) {
-    /* Found a too-large char. Convert back to utf-8.
-       (The result will be smaller than the old l.) */
-    s = new WXGC_ATOMIC char[l + 1];
-    l = scheme_utf8_encode_all(us, ul, (unsigned char *)s);
-    ((char *)s)[l] = 0;
-  }
-
   return CFStringCreateWithCString(NULL, s, kCFStringEncodingUTF8);
 }
 

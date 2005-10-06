@@ -4326,7 +4326,7 @@ static Scheme_Object *expand_path(int argc, Scheme_Object *argv[])
     return scheme_make_sized_path(filename, strlen(filename), 1);
 }
 
-static Scheme_Object *directory_list(int argc, Scheme_Object *argv[])
+static Scheme_Object *do_directory_list(int break_ok, int argc, Scheme_Object *argv[])
 {
 #if !defined(NO_READDIR) || defined(USE_MAC_FILE_TOOLBOX) || defined(USE_FINDFIRST)
   char *filename;
@@ -4366,9 +4366,11 @@ static Scheme_Object *directory_list(int argc, Scheme_Object *argv[])
     while (1) {
 # endif
       filename = do_expand_filename(path, NULL, 0, 
-				    "directory-list", 
+				    break_ok ? "directory-list" : NULL, 
 				    NULL, 1, 259 - 4 /* leave room for \*.* in Windows */, 
-				    SCHEME_GUARD_FILE_READ);
+				    break_ok ? SCHEME_GUARD_FILE_READ : 0);
+      if (!filename)
+	return NULL;
 #ifdef USE_FINDFIRST
       /* Eliminate "." and "..": */
       if (SAME_OBJ(path, argv[0])) {
@@ -4383,14 +4385,19 @@ static Scheme_Object *directory_list(int argc, Scheme_Object *argv[])
 #endif
   } else {
     filename = SCHEME_PATH_VAL(CURRENT_WD());
-    scheme_security_check_file("directory-list", NULL, SCHEME_GUARD_FILE_EXISTS);
-    scheme_security_check_file("directory-list", filename, SCHEME_GUARD_FILE_READ);
+    if (break_ok) {
+      scheme_security_check_file("directory-list", NULL, SCHEME_GUARD_FILE_EXISTS);
+      scheme_security_check_file("directory-list", filename, SCHEME_GUARD_FILE_READ);
+    }
   }
 
-  if (filename && !scheme_directory_exists(filename))
-    scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-		     "directory-list: could not open \"%q\"",
-		     filename);
+  if (filename && !scheme_directory_exists(filename)) {
+    if (break_ok)
+      scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+		       "directory-list: could not open \"%q\"",
+		       filename);
+    return NULL;
+  }
 #endif
 
 #ifdef USE_MAC_FILE_TOOLBOX
@@ -4403,9 +4410,11 @@ static Scheme_Object *directory_list(int argc, Scheme_Object *argv[])
       raise_null_error("directory-list", argv[0], "");
   } else {
     filename = SCHEME_PATH_VAL(CURRENT_WD());
-    scheme_security_check_file("directory-list", NULL, SCHEME_GUARD_FILE_EXISTS);
+    if (break_ok)
+      scheme_security_check_file("directory-list", NULL, SCHEME_GUARD_FILE_EXISTS);
   }
-  scheme_security_check_file("directory-list", filename, SCHEME_GUARD_FILE_READ);
+  if (break_ok)
+    scheme_security_check_file("directory-list", filename, SCHEME_GUARD_FILE_READ);
 
   if (!find_mac_file(filename, 0, &dir, 1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0)) {
     if (argc) {
@@ -4426,7 +4435,7 @@ static Scheme_Object *directory_list(int argc, Scheme_Object *argv[])
     
     find_position++;
 
-    if (!(find_position & 0x15)) {
+    if (break_ok && !(find_position & 0x15)) {
       scheme_thread_block(0);
       scheme_current_thread->ran_some = 1;
     }
@@ -4502,7 +4511,7 @@ static Scheme_Object *directory_list(int argc, Scheme_Object *argv[])
       last = elem;
     }
     counter++;
-    if (!(counter & 0x15)) {
+    if (break_ok && !(counter & 0x15)) {
       BEGIN_ESCAPEABLE(FIND_CLOSE, hfile);
       scheme_thread_block(0);
       END_ESCAPEABLE();
@@ -4540,7 +4549,7 @@ static Scheme_Object *directory_list(int argc, Scheme_Object *argv[])
     last = elem;
 
     counter++;
-    if (!(counter & 0xF)) {
+    if (break_ok && !(counter & 0xF)) {
       BEGIN_ESCAPEABLE(closedir, dir);
       scheme_thread_block(0);
       END_ESCAPEABLE();
@@ -4554,6 +4563,104 @@ static Scheme_Object *directory_list(int argc, Scheme_Object *argv[])
 #endif
 #endif
 #endif
+}
+
+static Scheme_Object *directory_list(int argc, Scheme_Object *argv[])
+{
+  return do_directory_list(1, argc, argv);
+}
+
+char *scheme_find_completion(char *fn)
+{
+  int len;
+  Scheme_Object *p, *l, *a[2], *f, *matches, *fst;
+  int isdir, max_match;
+  Scheme_Object *base;
+  
+  len = strlen(fn);
+
+  if (!len)
+    return NULL;
+  
+  f = scheme_split_path(fn, len, &base, &isdir);
+  if (isdir) {
+    /* Look for single file/prefix in directory: */
+    base = scheme_make_sized_path(fn, len, 0);
+    f = scheme_make_sized_path("", 0, 0);
+  } else {
+    if (!SCHEME_PATHP(base))
+      return NULL;
+  }
+
+  a[0] = base;
+  l = do_directory_list(0, 1, a);
+  if (!l)
+    return NULL;
+
+  matches = scheme_null;
+  while (SCHEME_PAIRP(l)) {
+    p = SCHEME_CAR(l);
+    if ((SCHEME_PATH_LEN(p) >= SCHEME_PATH_LEN(f))
+	&& !memcmp(SCHEME_PATH_VAL(f), SCHEME_PATH_VAL(p), SCHEME_PATH_LEN(f))) {
+      matches = scheme_make_pair(p, matches);
+    }
+    l = SCHEME_CDR(l);
+  }
+
+  if (SCHEME_NULLP(matches))
+    return NULL;
+
+  if (SCHEME_NULLP(SCHEME_CDR(matches))) {
+    /* One match */
+    a[0] = base;
+    a[1] = SCHEME_CAR(matches);
+    p = scheme_build_path(2, a);
+    a[0] = p;
+    if (SCHEME_TRUEP(directory_exists(1, a))) {
+      /* Add trailing separator if one is not there */
+      fn = SCHEME_PATH_VAL(p);
+      len = SCHEME_PATH_LEN(p);
+      if (!IS_A_SEP(fn[len-1])) {
+	char *naya;
+	naya = (char *)scheme_malloc_atomic(len + 2);
+	memcpy(naya, fn, len);
+	naya[len++] = FN_SEP;
+	naya[len] = 0;
+	fn = naya;
+      }
+    } else
+      fn = SCHEME_PATH_VAL(p);
+    return fn;
+  }
+
+  fst = SCHEME_CAR(matches);
+  max_match = SCHEME_PATH_LEN(fst);
+  for (l = SCHEME_CDR(matches); SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+    int i, l2;
+    p = SCHEME_CAR(l);
+    l2 = SCHEME_PATH_LEN(p);
+    if (max_match < l2)
+      l2 = max_match;
+    else if (l2 < max_match)
+      max_match = l2;
+    for (i = 0; i < l2; i++) {
+      if (SCHEME_PATH_VAL(fst)[i] != SCHEME_PATH_VAL(p)[i]) {
+	max_match = i;
+	break;
+      }
+    }
+  }
+
+  if (max_match <= SCHEME_PATH_LEN(f)) 
+    /* No longer match available: */
+    return NULL;
+
+  /* Build match */
+  a[0] = base;
+  a[1] = scheme_make_sized_path(SCHEME_PATH_VAL(fst), max_match, 0);
+  f = scheme_build_path(2, a);  
+
+  return SCHEME_PATH_VAL(f);
 }
 
 static Scheme_Object *filesystem_root_list(int argc, Scheme_Object *argv[])

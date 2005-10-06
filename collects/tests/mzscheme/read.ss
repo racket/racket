@@ -246,6 +246,8 @@
 (err/rt-test (readstr "( . 8 9)") exn:fail:read?)
 (err/rt-test (readstr "(1 . 2 3 . 4)") exn:fail:read?)
 (err/rt-test (readstr "(1 . 2 . 3 . 4)") exn:fail:read?)
+(err/rt-test (readstr "(1 . 2 .3)") exn:fail:read?)
+(err/rt-test (readstr "(1 . 2 .a)") exn:fail:read?)
 (err/rt-test (readstr "#(8 . )") exn:fail:read?)
 (err/rt-test (readstr "#( . )") exn:fail:read?)
 (err/rt-test (readstr "#( . 8)") exn:fail:read?)
@@ -284,6 +286,7 @@
 (test '(1 2 3) readstr "(2 . 1 . 3)")
 (test '(1 2 3 4) readstr "(2 . 1 . 3 4)")
 (test '(1 2 3 4) readstr "(2 3 . 1 . 4)")
+(test '(2 . 0.4) readstr "(2 . .4)")
 
 (err/rt-test (readstr "#ha") exn:fail:read:eof?)
 (err/rt-test (readstr "#ham") exn:fail:read?)

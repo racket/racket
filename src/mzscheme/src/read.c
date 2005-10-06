@@ -1950,6 +1950,33 @@ static Scheme_Object *attach_shape_property(Scheme_Object *list,
 					    ReadParams *params, 
 					    int closer);
 
+static int next_is_delim(Scheme_Object *port,
+			 ReadParams *params,
+			 int brackets,
+			 int braces)
+{
+  int next;
+  next = scheme_peekc_special_ok(port);
+  return ((next == EOF)
+	  || (next == SCHEME_SPECIAL)
+	  || (!params->table 
+	      && (scheme_isspace(next)
+		  || (next == '(')
+		  || (next == ')')
+		  || (next == '"')
+		  || (next == ';')
+		  || (next == '\'')
+		  || (next == '`')
+		  || (next == ',')
+		  || ((next == '[') && brackets)
+		  || ((next == '{') && braces)
+		  || ((next == ']') && brackets)
+		  || ((next == '}') && braces)))
+	  || (params->table 
+	      && (readtable_kind(params->table, next, params) 
+		  & (READTABLE_WHITESPACE | READTABLE_TERMINATING))));
+}
+
 static Scheme_Object *honu_add_module_wrapper(Scheme_Object *list,
 					      Scheme_Object *stxsrc,
 					      Scheme_Object *port);
@@ -1964,7 +1991,7 @@ read_list(Scheme_Object *port,
 	  ReadParams *params)
 {
   Scheme_Object *list = NULL, *last = NULL, *car, *cdr, *pair, *infixed = NULL, *prefetched = NULL;
-  int ch = 0, next, got_ch_already = 0;
+  int ch = 0, got_ch_already = 0;
   int brackets = params->square_brackets_are_parens;
   int braces = params->curly_braces_are_parens;
   long start, startcol, startline, dotpos, dotcol, dotline, dot2pos, dot2line, dot2col;
@@ -2154,25 +2181,7 @@ read_list(Scheme_Object *port,
     } else if (!params->honu_mode
 	       && params->can_read_dot
 	       && (ch == '.')
-	       && (next = scheme_peekc_special_ok(port),
-		   ((next == EOF)
-		    || (next == SCHEME_SPECIAL)
-		    || (!params->table 
-			&& (scheme_isspace(next)
-			    || (next == '(')
-			    || (next == ')')
-			    || (next == '"')
-			    || (next == ';')
-			    || (next == '\'')
-			    || (next == '`')
-			    || (next == ',')
-			    || ((next == '[') && brackets)
-			    || ((next == '{') && braces)
-			    || ((next == ']') && brackets)
-			    || ((next == '}') && braces)))
-		    || (params->table 
-			&& (readtable_kind(params->table, next, params) 
-			    & (READTABLE_WHITESPACE | READTABLE_TERMINATING)))))) {
+	       && next_is_delim(port, params, brackets, braces)) {
       scheme_tell_all(port, &dotline, &dotcol, &dotpos);
 
       track_indentation(indentation, dotline, dotcol);
@@ -2186,7 +2195,7 @@ read_list(Scheme_Object *port,
       cdr = read_inner(port, stxsrc, ht, indentation, params, 0);
       ch = skip_whitespace_comments(port, stxsrc, ht, indentation, params);
       if (ch != closer) {
-	if (ch == '.') {
+	if ((ch == '.') && next_is_delim(port, params, brackets, braces)) {
 	  /* Parse as infix: */
 
 	  if (shape == mz_shape_hash_elem) {

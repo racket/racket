@@ -1,4 +1,11 @@
 
+Version 299.403
+Changed label->plain-label to strip parenthesized mneumonics
+Added 'package and 'enter-package flags to put-file, and
+ changed Mac OS X put-file to use extension and filters args
+
+----------------------------------------------------------------------
+
 Version 299.400, September 2005
 
 No MrEd-specific changes
