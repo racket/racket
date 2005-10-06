@@ -195,7 +195,7 @@ If the namespace does not, they are colored the unbound color.
               ;;  1) it is already there, or
               ;;  2) it is a link to itself
               (define/private (add-to-bindings-table start-text start-left start-right
-                                                    end-text end-left end-right)
+                                                     end-text end-left end-right)
                 (cond
                   [(and (object=? start-text end-text)
                         (= start-left end-left)
@@ -240,7 +240,7 @@ If the namespace does not, they are colored the unbound color.
                  bindings-table
                  (λ (k v)
                    (hash-table-put! bindings-table k (quicksort v compare-bindings)))))
-                    
+              
               (define tacked-hash-table (make-hash-table))
               (define cursor-location #f)
               (define cursor-text #f)
@@ -370,7 +370,7 @@ If the namespace does not, they are colored the unbound color.
               ;; syncheck:add-mouse-over-status : text pos-left pos-right string -> void
               (define/public (syncheck:add-mouse-over-status text pos-left pos-right str)
                 (add-to-range/key text pos-left pos-right str #f #f))
-
+              
               ;; add-to-range/key : text number number any any boolean -> void
               ;; adds `key' to the range `start' - `end' in the editor
               ;; If use-key? is #t, it adds `to-add' with the key, and does not
@@ -405,9 +405,9 @@ If the namespace does not, they are colored the unbound color.
                           [else
                            (vector-set! arrow-vector p (cons to-add r))]))
                       (loop (add1 p))))))
-
+              
               (inherit get-top-level-window)
-
+              
               (define/augment (on-change)
                 (inner (void) on-change)
                 (when arrow-vectors
@@ -492,10 +492,10 @@ If the namespace does not, they are colored the unbound color.
               (define/private (for-each-tail-arrows f tail-arrow)
                 ;; call-f-ht ensures that `f' is only called once per arrow
                 (define call-f-ht (make-hash-table))
-
+                
                 (define (for-each-tail-arrows/to/from tail-arrow-pos tail-arrow-text
                                                       tail-arrow-other-pos tail-arrow-other-text)
-
+                  
                   ;; traversal-ht ensures that we don't loop in the arrow traversal.
                   (let ([traversal-ht (make-hash-table)])
                     (let loop ([tail-arrow tail-arrow])
@@ -553,107 +553,107 @@ If the namespace does not, they are colored the unbound color.
                                (values #f #f)))]
                         [else (values #f #f)])))))
               
-            (define/override (on-event event)
-              (if arrow-vectors
-                  (cond
-                    [(send event leaving?)
-                     (when (and cursor-location cursor-text)
-                       (set! cursor-location #f)
-                       (set! cursor-text #f)
-                       (let ([f (get-top-level-window)])
-                         (when f
-                           (send f update-status-line 'drscheme:check-syntax:mouse-over #f)))
-                       (invalidate-bitmap-cache))
-                     (super on-event event)]
-                    [(or (send event moving?)
-                         (send event entering?))
-                     (let-values ([(pos text) (get-pos/text event)])
-                       (cond
-                         [(and pos text)
-                          (unless (and (equal? pos cursor-location)
-                                       (eq? cursor-text text))
-                            (set! cursor-location pos)
-                            (set! cursor-text text)
-                            
-                            (let* ([arrow-vector (hash-table-get arrow-vectors cursor-text (λ () #f))]
-                                   [eles (and arrow-vector (vector-ref arrow-vector cursor-location))])
-                              (when eles
-                                (let ([has-txt? #f])
+              (define/override (on-event event)
+                (if arrow-vectors
+                    (cond
+                      [(send event leaving?)
+                       (when (and cursor-location cursor-text)
+                         (set! cursor-location #f)
+                         (set! cursor-text #f)
+                         (let ([f (get-top-level-window)])
+                           (when f
+                             (send f update-status-line 'drscheme:check-syntax:mouse-over #f)))
+                         (invalidate-bitmap-cache))
+                       (super on-event event)]
+                      [(or (send event moving?)
+                           (send event entering?))
+                       (let-values ([(pos text) (get-pos/text event)])
+                         (cond
+                           [(and pos text)
+                            (unless (and (equal? pos cursor-location)
+                                         (eq? cursor-text text))
+                              (set! cursor-location pos)
+                              (set! cursor-text text)
+                              
+                              (let* ([arrow-vector (hash-table-get arrow-vectors cursor-text (λ () #f))]
+                                     [eles (and arrow-vector (vector-ref arrow-vector cursor-location))])
+                                (when eles
+                                  (let ([has-txt? #f])
+                                    (for-each (λ (ele)
+                                                (cond
+                                                  [(string? ele)
+                                                   (set! has-txt? #t)
+                                                   (let ([f (get-top-level-window)])
+                                                     (when f
+                                                       (send f update-status-line 
+                                                             'drscheme:check-syntax:mouse-over 
+                                                             ele)))]))
+                                              eles)
+                                    (unless has-txt?
+                                      (let ([f (get-top-level-window)])
+                                        (when f
+                                          (send f update-status-line 'drscheme:check-syntax:mouse-over #f))))))
+                                
+                                (when eles
                                   (for-each (λ (ele)
                                               (cond
-                                                [(string? ele)
-                                                 (set! has-txt? #t)
-                                                 (let ([f (get-top-level-window)])
-                                                   (when f
-                                                     (send f update-status-line 
-                                                           'drscheme:check-syntax:mouse-over 
-                                                           ele)))]))
+                                                [(arrow? ele)
+                                                 (update-arrow-poss ele)]))
                                             eles)
-                                  (unless has-txt?
-                                    (let ([f (get-top-level-window)])
-                                      (when f
-                                        (send f update-status-line 'drscheme:check-syntax:mouse-over #f))))))
-                              
-                              (when eles
-                                (for-each (λ (ele)
-                                            (cond
-                                              [(arrow? ele)
-                                               (update-arrow-poss ele)]))
-                                          eles)
-                                (invalidate-bitmap-cache))))]
-                         [else
-                          (let ([f (get-top-level-window)])
-                            (when f
-                              (send f update-status-line 'drscheme:check-syntax:mouse-over #f)))
-                          (when (or cursor-location cursor-text)
-                            (set! cursor-location #f)
-                            (set! cursor-text #f)
-                            (invalidate-bitmap-cache))]))
-                     (super on-event event)]
-                    [(send event button-down? 'right)
-                     (let-values ([(pos text) (get-pos/text event)])
-                       (if (and pos text)
-                           (let ([arrow-vector (hash-table-get arrow-vectors text (λ () #f))])
-                             (when arrow-vector
-                               (let ([vec-ents (vector-ref arrow-vector pos)])
-                                 (cond
-                                   [(null? vec-ents)
-                                    (super on-event event)]
-                                   [else
-                                    (let* ([menu (make-object popup-menu% #f)]
-                                           [arrows (filter arrow? vec-ents)]
-                                           [def-links (filter def-link? vec-ents)]
-                                           [var-arrows (filter var-arrow? arrows)]
-                                           [add-menus (map cdr (filter cons? vec-ents))])
-                                      (unless (null? arrows)
-                                        (make-object menu-item%
-                                          (string-constant cs-tack/untack-arrow)
-                                          menu
-                                          (λ (item evt) (tack/untack-callback arrows))))
-                                      (unless (null? def-links)
-                                        (let ([def-link (car def-links)])
+                                  (invalidate-bitmap-cache))))]
+                           [else
+                            (let ([f (get-top-level-window)])
+                              (when f
+                                (send f update-status-line 'drscheme:check-syntax:mouse-over #f)))
+                            (when (or cursor-location cursor-text)
+                              (set! cursor-location #f)
+                              (set! cursor-text #f)
+                              (invalidate-bitmap-cache))]))
+                       (super on-event event)]
+                      [(send event button-down? 'right)
+                       (let-values ([(pos text) (get-pos/text event)])
+                         (if (and pos text)
+                             (let ([arrow-vector (hash-table-get arrow-vectors text (λ () #f))])
+                               (when arrow-vector
+                                 (let ([vec-ents (vector-ref arrow-vector pos)])
+                                   (cond
+                                     [(null? vec-ents)
+                                      (super on-event event)]
+                                     [else
+                                      (let* ([menu (make-object popup-menu% #f)]
+                                             [arrows (filter arrow? vec-ents)]
+                                             [def-links (filter def-link? vec-ents)]
+                                             [var-arrows (filter var-arrow? arrows)]
+                                             [add-menus (map cdr (filter cons? vec-ents))])
+                                        (unless (null? arrows)
                                           (make-object menu-item%
-                                            jump-to-definition
+                                            (string-constant cs-tack/untack-arrow)
                                             menu
-                                            (λ (item evt)
-                                              (jump-to-definition-callback def-link)))))
-                                      (unless (null? var-arrows)
-                                        (make-object menu-item%
-                                          jump-to-next-bound-occurrence
-                                          menu
-                                          (λ (item evt) (jump-to-next-callback pos text arrows)))
-                                        (make-object menu-item%
-                                          jump-to-binding
-                                          menu
-                                          (λ (item evt) (jump-to-binding-callback arrows))))
-                                      (for-each (λ (f) (f menu)) add-menus)
-                                      (send (get-canvas) popup-menu menu
-                                            (+ 1 (inexact->exact (floor (send event get-x))))
-                                            (+ 1 (inexact->exact (floor (send event get-y))))))]))))
-                           (super on-event event)))]
-                    [else (super on-event event)])
-                  (super on-event event)))
-
+                                            (λ (item evt) (tack/untack-callback arrows))))
+                                        (unless (null? def-links)
+                                          (let ([def-link (car def-links)])
+                                            (make-object menu-item%
+                                              jump-to-definition
+                                              menu
+                                              (λ (item evt)
+                                                (jump-to-definition-callback def-link)))))
+                                        (unless (null? var-arrows)
+                                          (make-object menu-item%
+                                            jump-to-next-bound-occurrence
+                                            menu
+                                            (λ (item evt) (jump-to-next-callback pos text arrows)))
+                                          (make-object menu-item%
+                                            jump-to-binding
+                                            menu
+                                            (λ (item evt) (jump-to-binding-callback arrows))))
+                                        (for-each (λ (f) (f menu)) add-menus)
+                                        (send (get-canvas) popup-menu menu
+                                              (+ 1 (inexact->exact (floor (send event get-x))))
+                                              (+ 1 (inexact->exact (floor (send event get-y))))))]))))
+                             (super on-event event)))]
+                      [else (super on-event event)])
+                    (super on-event event)))
+              
               ;; tack/untack-callback : (listof arrow) -> void
               ;; callback for the tack/untack menu item
               (define/private (tack/untack-callback arrows)
@@ -755,7 +755,7 @@ If the namespace does not, they are colored the unbound color.
                          [start-pos-right (var-arrow-start-pos-right arrow)])
                     (send start-text set-position start-pos-left start-pos-right)
                     (send start-text set-caret-owner #f 'global))))
-
+              
               ;; syncheck:jump-to-definition : text -> void
               (define/public (syncheck:jump-to-definition text)
                 (let ([pos (send text get-start-position)])
@@ -1297,8 +1297,8 @@ If the namespace does not, they are colored the unbound color.
                  (begin
                    (annotate-raw-keyword sexp varrefs)
                    (for-each (λ (bodies/stx) (annotate-tail-position/last sexp 
-                                                                               (syntax->list bodies/stx)
-                                                                               tail-ht))
+                                                                          (syntax->list bodies/stx)
+                                                                          tail-ht))
                              (syntax->list (syntax ((bodiess ...) ...))))
                    (for-each
                     (λ (args bodies)
@@ -1517,10 +1517,14 @@ If the namespace does not, they are colored the unbound color.
                                   tops
                                   requires
                                   require-for-syntaxes)
-        
-        (let ([unused-requires (make-hash-table 'equal)]
+      
+        (let ([rename-ht
+               ;; hash-table[(list source number number) -> (listof syntax)]
+               (make-hash-table 'equal)]
+              [unused-requires (make-hash-table 'equal)]
               [unused-require-for-syntaxes (make-hash-table 'equal)]
               [id-sets (list binders varrefs high-varrefs tops)])
+          
           (hash-table-for-each requires (λ (k v) (hash-table-put! unused-requires k #t)))
           (hash-table-for-each require-for-syntaxes (λ (k v) (hash-table-put! unused-require-for-syntaxes k #t)))
           
@@ -1528,7 +1532,7 @@ If the namespace does not, they are colored the unbound color.
                       (for-each (λ (var)
                                   (when (syntax-original? var)
                                     (color-variable var identifier-binding)
-                                    (make-rename-menu var id-sets)))
+                                    (record-renamable-var rename-ht var)))
                                 vars))
                     (get-idss binders))
           
@@ -1536,6 +1540,7 @@ If the namespace does not, they are colored the unbound color.
                                     (λ (var)
                                       (color-variable var identifier-binding)
                                       (connect-identifier var
+                                                          rename-ht
                                                           binders
                                                           unused-requires
                                                           requires
@@ -1550,6 +1555,7 @@ If the namespace does not, they are colored the unbound color.
                                     (λ (var)
                                       (color-variable var identifier-transformer-binding)
                                       (connect-identifier var
+                                                          rename-ht
                                                           binders 
                                                           unused-require-for-syntaxes
                                                           require-for-syntaxes
@@ -1564,12 +1570,20 @@ If the namespace does not, they are colored the unbound color.
            (λ (vars) 
              (for-each
               (λ (var) 
-                (color/connect-top user-namespace user-directory binders var id-sets))
+                (color/connect-top rename-ht user-namespace user-directory binders var id-sets))
               vars))
            (get-idss tops))
           
           (color-unused require-for-syntaxes unused-require-for-syntaxes)
-          (color-unused requires unused-requires)))
+          (color-unused requires unused-requires)
+          (hash-table-for-each rename-ht (lambda (k stxs) (make-rename-menu stxs id-sets)))))
+      
+      ;; record-renamable-var : rename-ht syntax -> void
+      (define (record-renamable-var rename-ht stx)
+        (let ([key (list (syntax-source stx) (syntax-position stx) (syntax-span stx))])
+          (hash-table-put! rename-ht
+                           key
+                           (cons stx (hash-table-get rename-ht key (λ () '()))))))
       
       ;; color-unused : hash-table[sexp -o> syntax] hash-table[sexp -o> #f] -> void
       (define (color-unused requires unused)
@@ -1589,10 +1603,10 @@ If the namespace does not, they are colored the unbound color.
       ;;                      directory
       ;;                   -> void
       ;; adds arrows and rename menus for binders/bindings
-      (define (connect-identifier var all-binders unused requires get-binding id-sets user-namespace user-directory)
+      (define (connect-identifier var rename-ht all-binders unused requires get-binding id-sets user-namespace user-directory)
         (connect-identifier/arrow var all-binders unused requires get-binding user-namespace user-directory)
         (when (get-ids all-binders var)
-          (make-rename-menu var id-sets)))
+          (record-renamable-var rename-ht var)))
       
       ;; connect-identifier/arrow : syntax
       ;;                            id-set 
@@ -1642,7 +1656,7 @@ If the namespace does not, they are colored the unbound color.
                   (cons mod-path #f)]))))
       
       ;; color/connect-top : namespace directory id-set syntax -> void
-      (define (color/connect-top user-namespace user-directory binders var id-sets)
+      (define (color/connect-top rename-ht user-namespace user-directory binders var id-sets)
         (let ([top-bound?
                (or (get-ids binders var)
                    (parameterize ([current-namespace user-namespace])
@@ -1650,7 +1664,7 @@ If the namespace does not, they are colored the unbound color.
           (if top-bound?
               (color var lexically-bound-variable-style-name)
               (color var error-style-name))
-          (connect-identifier var binders #f #f identifier-binding id-sets user-namespace user-directory)))
+          (connect-identifier var rename-ht binders #f #f identifier-binding id-sets user-namespace user-directory)))
       
       ;; color-variable : syntax (union identifier-binding identifier-transformer-binding) -> void
       (define (color-variable var get-binding)
@@ -1892,7 +1906,8 @@ If the namespace does not, they are colored the unbound color.
                      [rst (cdr e)])
                  (if (syntax? fst)
                      (begin
-                       (add-id id-set fst)
+                       (when (syntax-original? fst)
+                         (add-id id-set fst))
                        (loop rst))
                      (loop rst)))]
               [(null? e) (void)]
@@ -2014,17 +2029,20 @@ If the namespace does not, they are colored the unbound color.
                   (loop (send enclosing-snip-admin get-editor)))
                 ed))))
       
-      ;; make-rename-menu : stx[original] (listof id-set) -> void
-      (define (make-rename-menu stx id-sets)
-        (let ([source (syntax-source stx)])
+      ;; make-rename-menu : (cons stx[original,id] (listof stx[original,id])) (listof id-set) -> void
+      (define (make-rename-menu stxs id-sets)
+        (let ([source (syntax-source (car stxs))]) ;; all stxs in the list must have the same source
           (when (is-a? source text%)
             (let ([syncheck-text (find-syncheck-text source)])
               (when syncheck-text
-                (let* ([name-to-offer (format "~a" (syntax-object->datum stx))]
-                       [start (- (syntax-position stx) 1)]
-                       [fin (+ start (syntax-span stx))])
+                (let* ([name-to-offer (format "~a" (syntax-object->datum (car stxs)))]
+                       [start (- (syntax-position (car stxs)) 1)]
+                       [fin (+ start (syntax-span (car stxs)))])
                   (send syncheck-text syncheck:add-menu
-                        source start fin (syntax-e stx)
+                        source 
+                        start 
+                        fin 
+                        (syntax-e (car stxs))
                         (λ (menu)
                           (instantiate menu-item% ()
                             (parent menu)
@@ -2033,7 +2051,7 @@ If the namespace does not, they are colored the unbound color.
                              (λ (x y)
                                (let ([frame-parent (find-menu-parent menu)])
                                  (rename-callback name-to-offer
-                                                  stx
+                                                  stxs
                                                   id-sets
                                                   frame-parent)))))))))))))
       
@@ -2055,10 +2073,10 @@ If the namespace does not, they are colored the unbound color.
             [(is-a? menu menu-item<%>) (loop (send menu get-parent))]
             [else #f])))
 
-      ;; rename-callback : string syntax[original] (listof id-set) (union #f (is-a?/c top-level-window<%>)) -> void
+      ;; rename-callback : string (listof syntax[original]) (listof id-set) (union #f (is-a?/c top-level-window<%>)) -> void
       ;; callback for the rename popup menu item
-      (define (rename-callback name-to-offer stx id-sets parent)
-        (let ([new-sym 
+      (define (rename-callback name-to-offer stxs id-sets parent)
+        (let ([new-str
                (fw:keymap:call/text-keymap-initializer
                 (λ ()
                   (get-text-from-user
@@ -2066,44 +2084,48 @@ If the namespace does not, they are colored the unbound color.
                    (format (string-constant cs-rename-var-to) name-to-offer)
                    parent
                    name-to-offer)))])
-          (when new-sym
-            (let* ([to-be-renamed 
-                    (remove-duplicates
-                     (quicksort 
-                      (apply 
-                       append
-                       (map (λ (id-set) (or (get-ids id-set stx) '()))
-                            id-sets))
-                      (λ (x y) 
-                        ((syntax-position x) . >= . (syntax-position y)))))]
-                   [do-renaming?
-                    (or (not (name-duplication? to-be-renamed id-sets new-sym))
-                        (equal?
-                         (message-box/custom
-                          (string-constant check-syntax)
-                          (format (string-constant cs-name-duplication-error) 
-                                  new-sym)
-                          (string-constant cs-rename-anyway)
-                          (string-constant cancel)
-                          #f
-                          parent
-                          '(stop default=2))
-                         1))])
-              (when do-renaming?
-                (unless (null? to-be-renamed)
-                  (let ([first-one-source (syntax-source (car to-be-renamed))])
-                    (when (is-a? first-one-source text%)
-                      (send first-one-source begin-edit-sequence)
-                      (for-each (λ (stx) 
-                                  (let ([source (syntax-source stx)])
-                                    (when (is-a? source text%)
-                                      (let* ([start (- (syntax-position stx) 1)]
-                                             [end (+ start (syntax-span stx))])
-                                        (send source delete start end #f)
-                                        (send source insert new-sym start start #f)))))
-                                to-be-renamed)
-                      (send first-one-source invalidate-bitmap-cache)
-                      (send first-one-source end-edit-sequence)))))))))
+          (when new-str
+            (let ([new-sym (format "~s" (string->symbol new-str))])
+              (let* ([to-be-renamed 
+                      (remove-duplicates
+                       (quicksort 
+                        (apply 
+                         append
+                         (map (λ (id-set) 
+                                (apply
+                                 append
+                                 (map (λ (stx) (or (get-ids id-set stx) '())) stxs)))
+                              id-sets))
+                        (λ (x y) 
+                          ((syntax-position x) . >= . (syntax-position y)))))]
+                     [do-renaming?
+                      (or (not (name-duplication? to-be-renamed id-sets new-sym))
+                          (equal?
+                           (message-box/custom
+                            (string-constant check-syntax)
+                            (format (string-constant cs-name-duplication-error) 
+                                    new-sym)
+                            (string-constant cs-rename-anyway)
+                            (string-constant cancel)
+                            #f
+                            parent
+                            '(stop default=2))
+                           1))])
+                (when do-renaming?
+                  (unless (null? to-be-renamed)
+                    (let ([first-one-source (syntax-source (car to-be-renamed))])
+                      (when (is-a? first-one-source text%)
+                        (send first-one-source begin-edit-sequence)
+                        (for-each (λ (stx) 
+                                    (let ([source (syntax-source stx)])
+                                      (when (is-a? source text%)
+                                        (let* ([start (- (syntax-position stx) 1)]
+                                               [end (+ start (syntax-span stx))])
+                                          (send source delete start end #f)
+                                          (send source insert new-sym start start #f)))))
+                                  to-be-renamed)
+                        (send first-one-source invalidate-bitmap-cache)
+                        (send first-one-source end-edit-sequence))))))))))
       
       ;; name-duplication? : (listof syntax) (listof id-set) symbol -> boolean
       ;; returns #t if the name chosen would be the same as another name in this scope.
@@ -2154,8 +2176,9 @@ If the namespace does not, they are colored the unbound color.
       
       ;; add-id : id-set identifier -> void
       (define (add-id mapping id)
-        (let ([old (module-identifier-mapping-get mapping id (λ () '()))])
-          (module-identifier-mapping-put! mapping id (cons id old))))
+        (let* ([old (module-identifier-mapping-get mapping id (λ () '()))]
+               [new (cons id old)])
+          (module-identifier-mapping-put! mapping id new)))
       
       ;; get-idss : id-set -> (listof (listof identifier))
       (define (get-idss mapping)
