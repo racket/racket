@@ -867,10 +867,10 @@ void wxMediaEdit::BeginEditSequence(Bool undoable, Bool interruptSeqs)
 #if ALLOW_X_STYLE_SELECTION
     needXCopy = TRUE;
 #endif
-
+    delayRefresh++;
     OnEditSequence();
-  }
-  delayRefresh++;
+  } else
+    delayRefresh++;
 }
 
 void wxMediaEdit::EndEditSequence(void)
