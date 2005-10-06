@@ -737,17 +737,21 @@ TODO
           (define/augment (after-insert start len)
             (inner (void) after-insert start len)
             (cond
-              [(in-edit-sequence?) (set! had-an-insert? (cons start len))]
+              [(in-edit-sequence?) 
+               (set! had-an-insert (cons (cons start len) had-an-insert))]
               [else (update-after-insert)]))
           
-          (define had-an-insert? #f)
-          
-          (define/augment (on-edit-sequence)
-            (set! had-an-insert? #f))
+          ;; private field
+          (define had-an-insert '())
           
           (define/augment (after-edit-sequence)
-            (when had-an-insert?
-              (update-after-insert (car had-an-insert?) (cdr had-an-insert?))))
+            (inner (void) after-edit-sequence)
+            (let ([to-clean had-an-insert])
+              (set! had-an-insert '())
+              (for-each
+               (lambda (pr)
+                 (update-after-insert (car pr) (cdr pr)))
+               to-clean)))
           
           (define/private (update-after-insert start len)
             (unless inserting-prompt?
@@ -765,7 +769,6 @@ TODO
                     (when (space . > . max-space)
                       (let ([to-delete-end (+ start (- space max-space))])
                         (delete/io start to-delete-end))))))
-              
               (set! prompt-position (get-unread-start-point))
               (reset-region prompt-position 'end)))
           
