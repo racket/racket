@@ -199,6 +199,8 @@
    (,<string> ,<immutable-string> ,string->immutable-string)
    (,<string> ,<symbol> ,string->symbol)
    (,<symbol> ,<string> ,symbol->string)
+   (,<string> ,<keyword> ,string->keyword)
+   (,<keyword> ,<string> ,keyword->string)
    (,<exact> ,<inexact> ,exact->inexact)
    (,<inexact> ,<exact> ,inexact->exact)
    (,<number> ,<string> ,number->string)
