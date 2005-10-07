@@ -215,7 +215,7 @@ inspecting "/usr/lib". More generally, the "last chance" argument to
                windows-libs
 	       extra-depends
                last-chance-k
-               [3m-too? #t])
+               [3m-too? #f])
 
 The arguments are as follows:
 

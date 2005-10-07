@@ -43,7 +43,7 @@
 		 windows-libs
 		 extra-depends
 		 last-chance-k
-		 3m-too?)
+		 [3m-too? #f])
       ;; Compile and link one file:
       (define (go file.c xform-src.c)
 	(pre-install/check-precompiled plthome
