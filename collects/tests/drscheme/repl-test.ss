@@ -266,6 +266,18 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
                 void
                 void)
+
+     (make-test "#!/bin/sh\nxx"
+                "reference to undefined identifier: xx"
+                "reference to undefined identifier: xx"
+                #t
+                (cons (make-loc 1 0 10) (make-loc 1 2 12))
+                #f
+                #f
+                #f
+                void
+                void)
+     
      #|
      (make-test (list "#!\n" 
                       '("Special" "Insert XML Box")
@@ -341,6 +353,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
      |#
      
      ;; eval tests
+
      (make-test "    (eval '(values 1 2))"
                 "1\n2"
                 "1\n2"
@@ -1032,6 +1045,6 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
     
     ;(set-language-level! (list "PLT" "Graphical (MrEd)")) (kill-tests)
     
-    (run-test-in-language-level #t)
     (run-test-in-language-level #f)
+    (run-test-in-language-level #t)
     ))

@@ -16,6 +16,7 @@ module browser threading seems wrong.
            (lib "file.ss")
            (lib "etc.ss")
            (lib "list.ss")
+           (lib "port.ss")
            (lib "string-constant.ss" "string-constants")
 	   (lib "framework.ss" "framework")
            (lib "name-message.ss" "mrlib")
@@ -1918,13 +1919,20 @@ module browser threading seems wrong.
                                (send definitions-text paragraph-start-position 1)
                                0)])
                 (send definitions-text split-snip start)
-                (let ([prt (open-input-text-editor definitions-text start)])
-                  (port-count-lines! prt)
-                  (send interactions-text evaluate-from-port
-                        prt
-                        #t
-                        (λ ()
-                          (send interactions-text clear-undos)))))))
+                (let ([text-port (open-input-text-editor definitions-text start)])
+                  (port-count-lines! text-port)
+                  (let* ([line (send definitions-text position-paragraph start)]
+                         [column (- start (send definitions-text paragraph-start-position line))]
+                         [relocated-port (relocate-input-port text-port 
+                                                              (+ line 1)
+                                                              column
+                                                              (+ start 1))])
+                    (port-count-lines! relocated-port)
+                    (send interactions-text evaluate-from-port
+                          relocated-port
+                          #t
+                          (λ ()
+                            (send interactions-text clear-undos))))))))
           
           (inherit revert save)
           (define/private (check-if-save-file-up-to-date)
