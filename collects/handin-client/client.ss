@@ -20,8 +20,8 @@
     (close-input-port (handin-r h))
     (close-output-port (handin-w h)))
 
-  (define (wait-for-ok r who)
-    (let ([v (read r)])
+  (define (wait-for-ok r who . reader)
+    (let ([v (if (pair? reader) ((car reader)) (read r))])
       (unless (eq? v 'ok) (error 'handin-connect "~a error: ~a" who v))))
 
   (define (handin-connect server port pem)
@@ -66,6 +66,13 @@
   (define (submit-assignment h username passwd assignment content
                              on-commit message message-box)
     (let ([r (handin-r h)] [w (handin-w h)])
+      (define (read/message)
+        (let ([v (read r)])
+          (case v
+            [(message) (message (read r)) (read/message)]
+            [(message-box)
+             (write+flush w (message-box (read r) (read r))) (read/message)]
+            [else v])))
       (write+flush w
         'set 'username/s username
         'set 'password   passwd
@@ -84,17 +91,12 @@
       ;; a string to show using the `messenge' argument, and after 'message-box
       ;; we expect a string and a style-list to be used with `message-box' and
       ;; the resulting value written back
-      (let loop ()
-        (let ([v (read r)])
-          (case v
-            [(confirm) #t]
-            [(message) (message (read r)) (loop)]
-            [(message-box)
-             (write+flush w (message-box (read r) (read r))) (loop)]
-            [else (error 'handin-connect "submit error: ~a" v)])))
+      (let ([v (read/message)])
+        (unless (eq? 'confirm v)
+          (error 'handin-connect "submit error: ~a" v)))
       (on-commit)
       (write+flush w 'check)
-      (wait-for-ok r "commit")
+      (wait-for-ok r "commit" read/message)
       (close-handin-ports h)))
 
   (define (retrieve-assignment h username passwd assignment)
