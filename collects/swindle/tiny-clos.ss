@@ -1916,6 +1916,7 @@
 ;;>> <vector>
 ;;>> <char>
 ;;>> <string-like>
+;;>> <immutable-string-like>
 ;;>> <string>
 ;;>> <immutable-string>
 ;;>> <bytes>
@@ -2005,7 +2006,6 @@
 (defprimclass <bytes> <string-like>)
 (defprimclass <immutable-bytes> <immutable-string-like>)
 (defprimclass <path> <string-like>)
-(defprimclass <immutable-path> <immutable-string-like>)
 (defprimclass <symbol>)
 (defprimclass <keyword> <symbol>)
 (defprimclass <real-keyword>)
@@ -2191,15 +2191,16 @@
 ;;>               <immutable-nonempty-list> : <primitive-class>
 ;;>             <null> : <primitive-class>
 ;;>         <vector> : <primitive-class>
-;;>         <string> : <primitive-class>
-;;>           <immutable-string> : <primitive-class>
-;;>         <bytes> : <primitive-class>
-;;>           <immutable-bytes> : <primitive-class>
+;;>         <string-like> : <primitive-class>
+;;>           <string> : <primitive-class>
+;;>           <bytes> : <primitive-class>
 ;;>         <path> : <primitive-class>
 ;;>       <immutable> : <primitive-class>
 ;;>         <immutable-nonempty-list> : <primitive-class>
 ;;>         <immutable-pair> : <primitive-class>
-;;>         <immutable-string> : <primitive-class>
+;;>         <immutable-string-like> : <primitive-class>
+;;>           <immutable-string> : <primitive-class>
+;;>           <immutable-bytes> : <primitive-class>
 ;;>       <char> : <primitive-class>
 ;;>       <symbol> : <primitive-class>
 ;;>         <keyword> : <primitive-class>
