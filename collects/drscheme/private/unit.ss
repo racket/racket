@@ -5,10 +5,6 @@ closing:
 
 tab panels new behavior:
   - save all tabs (pr 6689?)
-
-tab panels todo:
-  - changing tabs needs to update all kinds of things, based on new context<%> interface setup
-  - need to update running when switching tabs ...
   
 module browser threading seems wrong.
 
@@ -1233,7 +1229,6 @@ module browser threading seems wrong.
             (when execute-menu-item
               (send execute-menu-item enable #f))
             (send execute-button enable #f)
-            ;(send file-menu:create-new-tab-item enable #f)
             (inner (void) disable-evaluation))
           
           (define/public-final (enable-evaluation-in-tab tab)
@@ -1244,7 +1239,6 @@ module browser threading seems wrong.
             (when execute-menu-item
               (send execute-menu-item enable #t))
             (send execute-button enable #t)
-            ;(send file-menu:create-new-tab-item enable #t)
             (inner (void) enable-evaluation))
           
           (inherit set-label)
@@ -1255,9 +1249,10 @@ module browser threading seems wrong.
               (if save-button
                   (unless (eq? mod? (send save-button is-shown?))
                     (send save-button show mod?))
-                  (set! save-init-shown? mod?))))
+                  (set! save-init-shown? mod?))
+              (update-tab-label current-tab)))
 
-          ;; update-save-message : (union #f string) -> void
+          ;; update-save-message : -> void
           ;; sets the save message. If input is #f, uses the frame's
           ;; title.
           (define/public (update-save-message)
@@ -1269,12 +1264,7 @@ module browser threading seems wrong.
             (update-tabs-labels))
           
           (define/private (update-tabs-labels)
-            (for-each
-             (λ (tab)
-               (let* ([label (get-defs-tab-label (send tab get-defs) tab)])
-                 (unless (equal? label (send tabs-panel get-item-label (send tab get-i)))
-                   (send tabs-panel set-item-label (send tab get-i) label))))
-             tabs)
+            (for-each (λ (tab) (update-tab-label tab)) tabs)
             (send tabs-panel set-selection (send current-tab get-i))
             (send (send tabs-panel get-parent)
                   change-children
@@ -1287,11 +1277,18 @@ module browser threading seems wrong.
                            l
                            (cons tabs-panel l))]))))
           
+          (define/private (update-tab-label tab)
+            (let ([label (get-defs-tab-label (send tab get-defs) tab)])
+              (unless (equal? label (send tabs-panel get-item-label (send tab get-i)))
+                (send tabs-panel set-item-label (send tab get-i) label))))
+          
           (define/private (get-defs-tab-label defs tab)
             (let ([fn (send defs get-filename)])
-              (if fn
-                  (get-tab-label-from-filename fn tab)
-                  (send defs get-filename/untitled-name))))
+              (add-modified-flag 
+               defs
+               (if fn
+                   (get-tab-label-from-filename fn tab)
+                   (send defs get-filename/untitled-name)))))
           
           (define/private (get-tab-label-from-filename fn tab)
             (let* ([take-n
@@ -1332,6 +1329,11 @@ module browser threading seems wrong.
                                 (loop (cdr other-exps)
                                       (max new-size size)))]))])
               (path->string (apply build-path (reverse (take-n size exp))))))
+          
+          (define/private (add-modified-flag text string)
+            (if (send text is-modified?)
+                (string-append "◆ " string)
+                string))
               
           [define/override get-canvas% (λ () (drscheme:get/extend:get-definitions-canvas))]
           
