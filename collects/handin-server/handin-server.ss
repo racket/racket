@@ -42,8 +42,14 @@
       (display line log-port)
       (flush-output log-port)))
 
+  (define server-dir (current-directory))
+  (define config-file (build-path server-dir "config.ss"))
+  (unless (file-exists? config-file)
+    (error 'handin-server
+           "must be started from a properly configured directory"))
+
   (define (get-config which default)
-    (get-preference which (lambda () default) #f "config.ss"))
+    (get-preference which (lambda () default) #f config-file))
 
   (define PORT-NUMBER        (get-config 'port-number 7979))
   (define HTTPS-PORT-NUMBER  (get-config 'https-port-number (add1 PORT-NUMBER)))
@@ -253,26 +259,52 @@
           (make-directory ATTEMPT-DIR)
           (save-submission s (build-path ATTEMPT-DIR "handin"))
           (LOG "checking ~a for ~a" assignment users)
-          (let ([part (let ([checker (build-path 'up "checker.ss")])
-                        (if (file-exists? checker)
-                          (let ([checker (path->complete-path checker)])
-                            (parameterize ([current-directory ATTEMPT-DIR])
-                              ((dynamic-require checker 'checker)
-                               users s)))
-                          DEFAULT-FILE-NAME))])
-            (current-messenger #f) ; no messages at this stage
-            (write+flush w 'confirm)
-            (let ([v (read (make-limited-input-port r 50))])
-              (if (eq? v 'check)
-                (begin
-                  (LOG "saving ~a for ~a" assignment users)
+          (let* ([checker* (path->complete-path (build-path 'up "checker.ss"))]
+                 [checker* (and (file-exists? checker*)
+                                (parameterize ([current-directory server-dir])
+                                  (dynamic-require checker* 'checker)))])
+            (define-values (pre checker post)
+              (cond [(not checker*) (values #f #f #f)]
+                    [(procedure? checker*) (values #f checker* #f)]
+                    [(and (list? checker*) (= 3 (length checker*)))
+                     (apply values checker*)]
+                    [else (error 'handin-configuration
+                                 "bad checker value: ~e" checker*)]))
+            (when pre
+              (let ([dir (current-directory)])
+                (with-handlers
+                    ([void (lambda (e)
+                             (parameterize ([current-directory dir])
+                               (unless (ormap
+                                        (lambda (d)
+                                          (and (directory-exists? d)
+                                               (regexp-match SUCCESS-RE d)))
+                                        (map path->string (directory-list)))
+                                 (parameterize ([current-directory ".."])
+                                   (when (directory-exists? dirname)
+                                     (delete-directory/files dirname)))))
+                             (raise e))])
                   (parameterize ([current-directory ATTEMPT-DIR])
-                    (rename-file-or-directory "handin" part))
-                  ;; Shift successful-attempt directories so that there's
-                  ;;  no SUCCESS-0:
-                  (make-success-dir-available 0)
-                  (rename-file-or-directory ATTEMPT-DIR (success-dir 0)))
-                (error 'handin "upload not confirmed: ~s" v))))))))
+                    (pre users s)))))
+            (let ([part (if checker
+                          (parameterize ([current-directory ATTEMPT-DIR])
+                            (checker users s))
+                          DEFAULT-FILE-NAME)])
+              (write+flush w 'confirm)
+              (let ([v (read (make-limited-input-port r 50))])
+                (if (eq? v 'check)
+                  (begin
+                    (LOG "saving ~a for ~a" assignment users)
+                    (parameterize ([current-directory ATTEMPT-DIR])
+                      (rename-file-or-directory "handin" part))
+                    ;; Shift successful-attempt directories so that there's
+                    ;;  no SUCCESS-0:
+                    (make-success-dir-available 0)
+                    (rename-file-or-directory ATTEMPT-DIR (success-dir 0))
+                    (when post
+                      (parameterize ([current-directory (success-dir 0)])
+                        (post users s))))
+                  (error 'handin "upload not confirmed: ~s" v)))))))))
 
   (define (retrieve-specific-submission data w)
     ;; Note: users are always sorted

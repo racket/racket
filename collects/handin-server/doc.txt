@@ -279,7 +279,7 @@ sub-directories:
 
     Username that begin with "solution" are special.  They are used by
     the HTTPS status server. Independent of the 'user-regexp and
-    'username-case-sensitive? configration items, usernames are not
+    'username-case-sensitive? configuration items, usernames are not
     allowed to contain characters that are illegal in Windows
     pathnames, they cannot end or begin in spaces or periods.
 
@@ -365,7 +365,7 @@ sub-directories:
     of usernames separated by "+" and any number of spaces (e.g.,
     "user1+user2").  The same syntax ("user1+user2") is used for the
     directory for shared submissions, and the usernames are always
-    sorted so that the directory name is deterinistic. Multiple
+    sorted so that the directory name is deterministic.  Multiple
     submissions for a particular user in different groups will be
     rejected.
 
@@ -373,16 +373,19 @@ sub-directories:
     HTTPS status web server.
 
   * "active/<assignment>/checker.ss" (optional) --- a module that
-    exports a `checker' function. This function receives two
-    strings. The first is a username list and the second is the
-    submission as a byte string. (See also `unpack-submission',
-    etc. from "util.ss", below.) To reject the submission, the
-    `checker' function can raise an exception; the exception message
-    will be relayed back to the student.
+    exports a `checker' function.  This function receives two strings.
+    The first is a username list and the second is the submission as a
+    byte string.  (See also `unpack-submission', etc. from "util.ss",
+    below.)  To reject the submission, the `checker' function can
+    raise an exception; the exception message will be relayed back to
+    the student.  The module is loaded when the current directory is
+    the main server directory, so it can read information from
+    "config.ss".
 
-    The first argument is a list of usernames to handle the case of a
-    joint submission (where the submission username was a
-    concatenation of usernames separated by "+").
+    The first argument is a list of usernames with at least one
+    username, and more than one if this is a joint submission (where
+    the submission username was a concatenation of usernames separated
+    by "+").
 
     The `checker' function is called with the current directory as
     "active/<assignment>/<username(s)>/ATTEMPT", and the submission is
@@ -397,6 +400,28 @@ sub-directories:
 
     The checker should return a string, such as "handin.scm", to use in
     naming the submission file.
+
+    Alternatively, the module can bind `checker' to a list of three
+    procedures: a pre-checker, a checker, and a post-checker.  All
+    three are applied in exactly the same way as the checker (same
+    arguments, and always within the submission directory), except
+    that:
+    - If there was an error during the pre-checker, and the submission
+      directory does not have a "SUCCESS-*" directory, then the whole
+      submission directory is removed.  This is useful for checking
+      that the user/s are valid -- if you allow a submission only when
+      `users' is '("foo" "bar"), and "foo" tries to submit alone, then
+      the submission directory for "foo" should be removed to allow a
+      proper submission later.
+    - The post-checker is used at the end of the process, after the
+      "ATTEMPT" directory was renamed to "SUCCESS-0".  At this stage,
+      the submission is considered successful, so this function should
+      avoid throwing an exception (it can, but the submission will
+      still be in place).  This is useful for things like notifying
+      the user of the successful submission (see message below), or
+      sending a `receipt' email.
+    To specify only pre/post-checker, use #f for the one you want to
+    omit.
 
   * "log.ss" (created if not present, appended otherwise) --- records
     connections and actions, where each entry is of the form
@@ -602,3 +627,190 @@ The _utils.ss_ module provides utilities helpful in implementing
 > (reraise-exn-as-submission-problem thunk) - calls thunk in a context
   that catches exceptions and re-raises them in a form suitable as a
   submission error.
+
+
+Extra Checker Utilities
+============================================
+
+The _extra-utils.ss_ module provides a higher-level of utilities,
+helpful in implementing `checker' functions that are intended for a
+more automated system.  This module is a language module -- a typical
+checker that uses it looks like this:
+
+   (module checker (lib "extra-utils.ss" "handin-server")
+     (check: :language  'intermediate
+             :users     pairs-or-singles-with-warning
+             :coverage? #t
+       (!procedure Fahrenheit->Celsius 1)
+       (!test (Fahrenheit->Celsius  32)   0)
+       (!test (Fahrenheit->Celsius 212) 100)
+       (!test (Fahrenheit->Celsius  -4) -20)
+       ...
+       (!all-covered)))
+
+> (check: :key val ... body ...)
+  Construct a checker procedure.
+
+The `check:' macro will construct an appropriate checker function,
+using keywords for features that you want, the body of the checker can
+contain arbitrary code, using all utilities from "utils.ss" (see
+above), as well as additional ones (see below).
+
+Keywords for configuring `check:':
+
+* :users -- specification of users that are acceptable for
+  submission.  Can be either a list of user lists, each representing a
+  known team, or procedure which will accept a list of users and throw
+  an exception if they are unacceptable.  The default is to accept
+  only single-user submissions.  `pairs-or-singles-with-warning' is a
+  useful value for pair submission where the pairs are unknown (see
+  below).
+
+* :eval? -- whether submissions should be evaluated.  Defaults to #t.
+
+* :language -- the language that is used for evaluating submissions,
+  same as the `language' argument for `make-evaluator' (see above).
+  There is no default for this, so it must be set or an error is
+  raised.
+
+* :teachpacks -- teachpacks for evaluating submissions, same as the
+  `teachpacks' argument for `make-evaluator' (see above).  Defaults to
+  null -- no teachpacks.
+
+* :create-text? -- if true, then a textual version of the submission
+  is saved as `text.scm' in a `grading' subdirectory.  This is
+  intended for printouts and grading, and is in a subdirectory so
+  students will not see it on the status web server.  Defaults to #t.
+
+* :textualize? -- if true, then all submissions are converted to text,
+  trying to convert objects like comment boxes and test cases to some
+  form of text.  Defaults to #f, meaning that an exception is raised
+  for submissions that are not all text.
+
+* :maxwidth -- a number that specifies maximum line lengths for
+  submissions (a helpful feature for reading student code).  Defaults
+  to 80.  This feature can be disabled if set to #f.
+
+* :output -- the name of the original handin file (unrelated to the
+  text-converted files).  Defaults to "hw.scm".
+
+* :student-line -- when a submission is converted to text, it begins
+  with lines describing the students that have submitted it; this is
+  used to specify the format of these lines.  It is a string with
+  holes that that `user-substs' (see below) fills out.  The default is
+  "Student: {username} ({Full Name} <{Email}>)", which requires a
+  "Full Name" and "Email" entries in the server's extra-fields
+  configuration.  These lines are always prefixed with ";;> ".
+
+* :extra-lines -- a list of lines to add after the student lines, all
+  with a ";;> " prefix too.  Defaults to a single line: "Maximum
+  points for this assignment: <+100>".
+
+* :value-printer -- if specified, this will be used for
+  `current-value-printer' (see above).
+
+* :coverage? -- collect coverage information when evaluating the
+  submission (not including additional checker tests).  This is needed
+  for the `!all-covered' procedure below.  Does not work with
+  non-textual submissions.
+
+Within the body of `check:', `users' and `submission' will be bound to
+the checker arguments -- a (sorted) list of usernames and the
+submission as a byte string.  In addition to the functionality below,
+you can use `((submission-eval) expr)' to evaluate expressions in the
+submitted code context, and you can use `(with-submission-bindings (id
+...) body ...)' to evaluate the body when `id's are bound to their
+value from the submission code.
+
+> (pre: body ...)
+> (post: body ...)
+  These two macros define a pre- and a post-checker.  In their body,
+  `users' and `submission' are bound as in `check:', but there is
+  nothing else special about these.  See the description of the
+  `pre-checker' and `post-checker' values for what can be done with
+  these, and note that the check for valid users is always first.
+
+> submission-eval
+  A parameter that holds an evaluation procedure for evaluating code
+  in the submission context.
+
+> (user-data user)
+  Returns a user information given a username.  The returned
+  information is a list of strings that corresponds to the configured
+  `extra-fields' (see above).
+
+> (user-substs user str)
+  Given a username, this procedure will lookup the user's extra-fields
+  information (see above) and then substitute field names in {braces}
+  by the corresponding value.  An error will be signaled if a field
+  name is missing.  Also, "{username}" will always be replaced by the
+  username.
+
+  This is used to process the `:student-line' value in the checker,
+  but it is provided for additional uses.  For example, the following
+  is an example of a post-checker that will send a submission receipt
+  email with CC to the TA (assuming a single TA), and pop-up a message
+  telling the student about it:
+
+  (require (lib "sendmail.ss" "net"))
+  (post:
+    (send-mail-message
+     "cour-staff@university.edu
+     "Submission Receipt"
+     (map (lambda (user) (user-substs user "{Full Name} <{Email}>"))
+          users)
+     (list (user-substs (first users) "{TA Name} <{TA Email}>"))
+     null
+     (list "Your submission was received"
+           ... provide details on hw.scm ...))
+    (message (string-append
+              "Your submission was successfully saved."
+              "  You will get an email receipt within 30 minutes;"
+              " if not, please contact the course staff.")
+             '(ok)))
+
+
+> (pairs-or-singles-with-warning users)
+  This procedure is intended for use as the :users entry in a checker.
+  It will do nothing if there are two users, and throw an error if
+  there are more.  If there is a single user, then the user will be
+  asked to verify a single submission -- if the students cancels, then
+  an exception is raised so the submission directory is retracted.  If
+  the student approves this, the question is not repeated (this is
+  marked by creating a directory with a known name).  This is useful
+  for cases where you want to allow free pair submissions -- students
+  will often try to submit their work alone, and later on re-submit
+  with a partner.
+
+> (procedure/arity? proc arity)
+  Returns #t if `proc' is a procedure that accepts `arity' arguments.
+
+> (!defined id ...)
+  A macro that checks that the given identifiers are defined in the
+  (evaluated) submission, and throws an error otherwise.
+
+> (!procedure id [arity])
+> (!procedure* expr [arity])
+  `!procedure' checks that `id' is defined, and is bound to a
+  procedure; `!*procedure' is similar but omits the defined check,
+  making it usable with any expression (which is evaluated in the
+  submission context).
+
+> (!integer id)
+> (!integer* expr)
+  Similar to `!procedure' and `!procedure*' for integers.
+
+> (!test expr)
+> (!test expr result [equal?])
+  The first form checks that the given expression evaluates to a
+  non-#f value in the submission context, throwing an error
+  otherwise.  The second form compares the result of evaluation,
+  requiring it to be equal to `result' (optionally specifying an
+  equality procedure).
+
+> (!all-covered)
+  When coverage information is enabled (see `:coverage?' above), this
+  procedure checks the collected coverage information and throws an
+  error with source information if some code is left uncovered.  The
+  collected information includes only execution coverage by submission
+  code, excluding additional checker tests.
