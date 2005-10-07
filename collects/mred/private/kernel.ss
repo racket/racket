@@ -520,6 +520,7 @@
     on-toolbar-click
     on-menu-click
     on-menu-command
+    on-mdi-activate
     enforce-size
     on-close
     on-activate

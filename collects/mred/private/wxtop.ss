@@ -628,7 +628,14 @@
 	 [on-toolbar-click 
 	  (entry-point
 	   (lambda ()
-	     (as-exit (lambda () (send (wx->mred this) on-toolbar-button-click)))))])
+	     (as-exit (lambda () (send (wx->mred this) on-toolbar-button-click)))))]
+	 [on-mdi-activate
+	  (entry-point
+	   (lambda (on?)
+	     (let ([mr (wx->mred this)])
+	       (queue-window-callback
+		this
+		(lambda () (send mr on-mdi-activate on?))))))])
        (public
 	 [handle-menu-key
 	  (lambda (event)

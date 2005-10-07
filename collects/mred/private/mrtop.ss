@@ -160,6 +160,7 @@
 		       (lambda (e)
 			 (check-instance '(method frame% on-menu-char) wx:key-event% 'key-event% #f e)
 			 (send wx handle-menu-key e)))]
+	[on-mdi-activate (lambda (on?) (void))]
 	[on-toolbar-button-click (lambda () (void))]
 	[create-status-line (entry-point (lambda () (unless status-line? (send wx create-status-line) (set! status-line? #t))))]
 	[set-status-text (lambda (s) (send wx set-status-text s))]

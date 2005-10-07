@@ -828,3 +828,7 @@ void wxFrame::OnMenuClick()
 void wxFrame::OnToolbarButton()
 {
 }
+
+void wxFrame::OnMDIActivate(Bool WXUNUSED(flag))
+{
+}

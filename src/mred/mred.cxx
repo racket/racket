@@ -235,6 +235,7 @@ static int exit_val = 0;
 MrEdContext *mred_contexts;
 static MrEdContext *mred_main_context;
 static MrEdContext *mred_only_context;
+static int only_context_just_once = 0;
 static MrEdContext *user_main_context;
 static MrEdContextFramesRef mred_frames; /* list of all frames (weak link to invisible ones) */
 static wxTimer *mred_timers;
@@ -417,9 +418,15 @@ MrEdContext *MrEdGetContext(wxObject *w)
 #endif
   }
 
-  if (mred_only_context)
-    return mred_only_context;
-  else
+  if (mred_only_context) {
+    if (only_context_just_once) {
+      MrEdContext *c = mred_only_context;
+      mred_only_context = NULL;
+      only_context_just_once = 0;
+      return c;
+    } else
+      return mred_only_context;
+  } else
     return (MrEdContext *)scheme_get_param(scheme_current_config(), mred_eventspace_param);
 }
 
@@ -2179,6 +2186,7 @@ void MrEdQueueInEventspace(void *context, Scheme_Object *thunk)
 
 #if REDIRECT_STDIO || WINDOW_STDIO || WCONSOLE_STDIO
 static void MrEdSchemeMessages(char *, ...);
+static Scheme_Object *stdin_pipe;
 #endif
 
 #if WINDOW_STDIO
@@ -2376,8 +2384,6 @@ Bool IOMediaEdit::CanDelete(long start, long)
     return (start >= ioFrame->endpos);
 }
 
-static Scheme_Object *stdin_pipe;
-
 static Bool RecordInput(void *m, wxEvent *event, void *data)
 {
   char *s;
@@ -2439,6 +2445,7 @@ static void MrEdSchemeMessages(char *msg, ...)
       else {
 	/* Set eventspace ... */
 	mred_only_context = mred_main_context;
+	only_context_just_once = 1;
 	ioFrame = new IOFrame;
 	mred_only_context = NULL;
       }
@@ -3812,10 +3819,12 @@ void wxDrop_Runtime(char **argv, int argc)
 
 void wxDrop_Quit()
 {
+#if WINDOW_STDIO
   if (ioFrame) {
     if (ioFrame->OnClose())
       ioFrame->Show(FALSE);
   }
+#endif
 
   wxDo(wxs_app_quit_proc, 0, NULL);
 }

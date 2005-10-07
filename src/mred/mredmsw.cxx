@@ -551,6 +551,7 @@ int wx_start_win_event(const char *who, HWND hWnd, UINT message, WPARAM wParam, 
       switch (message) {
 	/* These shouldn't happen; reject them if they do! */
       case WM_ACTIVATE:
+      case WM_NCACTIVATE:
       case WM_SETFOCUS:
       case WM_KILLFOCUS:
       case WM_SIZE:

@@ -104,6 +104,7 @@ public:
     virtual void OnChar(WORD wParam, LPARAM lParam, Bool isASCII = FALSE, Bool isRelease = FALSE);
 
     virtual BOOL OnActivate(BOOL flag, BOOL minimized, HWND activate);
+    virtual BOOL OnNCActivate(BOOL flag, HWND activate);
     virtual BOOL OnMDIActivate(BOOL flag, HWND activate, HWND deactivate);
 
     virtual LONG DefWindowProc(UINT nMsg, WPARAM wParam, LPARAM lParam);
@@ -235,6 +236,7 @@ public:
     ~wxMDIChild(void);
 
     BOOL OnMDIActivate(BOOL bActivate, HWND, HWND);
+    BOOL OnNCActivate(BOOL bActivate, HWND);
     BOOL OnClose(void);
     void OnSize(int x, int y, UINT);
     BOOL OnCommand(WORD id, WORD cmd, HWND control);
@@ -242,6 +244,7 @@ public:
     long Propagate(UINT nMsg, WPARAM wParam, LPARAM lParam);
     BOOL ProcessMessage(MSG *msg);
     void DestroyWindow(void);
+    virtual void OnChar(WORD wParam, LPARAM lParam, Bool isASCII = FALSE, Bool isRelease = FALSE);
 };
 
 #define         wxTYPE_XWND              1

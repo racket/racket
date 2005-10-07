@@ -142,6 +142,8 @@ class wxFrame: public wxbFrame
   virtual void OnEvent(wxMouseEvent *event);
   virtual void OnChar(wxKeyEvent *event);
   virtual void OnCommandEvent(wxCommandEvent *event) {};
+
+  virtual void OnMDIActivate(Bool flag);
       
   void DragFrame(Point startpt);
 

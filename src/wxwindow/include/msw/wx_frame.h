@@ -73,6 +73,7 @@ class wxFrame: public wxbFrame
 
   void SetFrameModified(Bool mod);
   virtual void OnToolbarButton(void);
+  virtual void OnMDIActivate(Bool act);
 
   void DrawMenuBar(void);
   void SystemMenu(void);

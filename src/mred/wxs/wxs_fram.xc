@@ -104,6 +104,8 @@ static void DesignateRootFrame(wxFrame *f)
 @SETMARK f = d
 @INCLUDE wxs_fram.xci
 
+@ v "on-mdi-activate" : void OnMDIActivate(bool)
+
 @ v "on-menu-command" : void OnMenuCommand(ExactLong)
 @ v "on-menu-click" : void OnMenuClick()
 @ v "on-toolbar-click" : void OnToolbarButton()

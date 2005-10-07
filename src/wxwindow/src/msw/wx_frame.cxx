@@ -364,7 +364,16 @@ Bool wxFrame::Show(Bool show)
   }
   
   tlw = wxTopLevelWindows(this);
-  tlw->Show(this, show);
+  if (frame_type != wxMDI_CHILD) {
+    tlw->Show(this, show);
+  } else {
+    wxWindow *p;
+    p = GetParent();
+    if (p->IsShown()) {
+      tlw->Show(this, show);
+    }
+  }
+
   if (window_parent) {
     wxChildList *cl;
     cl = window_parent->GetChildren();
@@ -395,11 +404,16 @@ Bool wxFrame::Show(Bool show)
     if (frame_type == wxMDI_CHILD) {
       wxMDIFrame *cparent;
       wxWindow *par;
+      WINDOWINFO winfo;
+
       par = GetParent();
       cparent = (wxMDIFrame *)par->handle;
-      if (cparent->current_child == (wxFrameWnd *)handle) {
-	if (cshow == SW_HIDE) {
+      if (cshow == SW_HIDE) {
+	if (cparent->current_child == (wxFrameWnd *)handle) {
 	  HMENU new_menu;
+	  HWND next;
+
+	  cparent->current_child = NULL;
 
 	  cparent->parent_frame_active = TRUE;
 	  new_menu = ((wxFrame *)par)->GetWinMenu();
@@ -415,6 +429,65 @@ Bool wxFrame::Show(Bool show)
 			(LPARAM)NULL);
 	  
 	  ::DrawMenuBar(cparent->handle);
+
+	  OnMDIActivate(FALSE);
+
+	  GetWindowInfo(cparent->handle, &winfo);
+	  if (winfo.dwWindowStatus == WS_ACTIVECAPTION)
+	    OnActivate(FALSE);
+
+	  next = GetNextWindow(GetHWND(), GW_HWNDNEXT);
+	  while (next) {
+	    wxWnd *nh;
+	    nh = wxFindWinFromHandle(next);
+	    if (nh && nh->wx_window 
+		&& wxSubType(nh->wx_window->__type, wxTYPE_FRAME)
+		&& (((wxFrame *)nh->wx_window)->frame_type == wxMDI_CHILD)) {
+	      ::SendMessage(cparent->client_hwnd, WM_MDIACTIVATE,
+			    (WPARAM)next,
+			    (LPARAM)NULL);
+	      next = NULL;
+	    } else
+	      next = GetNextWindow(next, GW_HWNDNEXT);
+	  }
+	}
+      } else if (cshow != SW_HIDE) {
+	HWND cur;
+	cur = (HWND)::SendMessage(cparent->client_hwnd, WM_MDIGETACTIVE, 0, 0);
+	if (cur == GetHWND()) {
+	  HMENU new_menu;
+	  cparent->current_child = (wxFrameWnd *)handle;
+	  cparent->parent_frame_active = FALSE;
+	  new_menu = GetWinMenu();
+	  if (new_menu) {
+	    ::SendMessage(cparent->client_hwnd, WM_MDISETMENU,
+			  (WPARAM)new_menu,
+			  (LPARAM)NULL);
+	    ::DrawMenuBar(cparent->handle);
+	  }
+	  OnMDIActivate(TRUE);
+	  GetWindowInfo(cparent->handle, &winfo);
+	  if (winfo.dwWindowStatus == WS_ACTIVECAPTION)
+	    OnActivate(TRUE);
+	}
+      }
+    }
+  }
+
+  if (frame_type == wxMDI_PARENT) {
+    /* Add/remove shown children in top-level-windows list */
+    wxChildList *cl;
+    wxChildNode *cn;
+    cl = GetChildren();
+    for (cn = cl->First(); cn; cn = cn->Next()) {
+      wxWindow *w;
+      w = (wxWindow *)cn->Data();
+      if (wxSubType(w->__type, wxTYPE_FRAME)) {
+	wxFrame *cf;
+	cf = (wxFrame *)w;
+	if ((cf->frame_type == wxMDI_CHILD)
+	    && cf->IsShown()) {
+	  tlw->Show(cf, show);
 	}
       }
     }
@@ -510,6 +583,10 @@ void wxFrame::SetFrameModified(Bool mod)
 }
  
 void wxFrame::OnToolbarButton(void)
+{
+}
+
+void wxFrame::OnMDIActivate(Bool WXUNUSED(act))
 {
 }
 
@@ -787,6 +864,8 @@ BOOL wxStatusWnd::OnPaint()
     ::SelectObject(cdc,penShadow) ;
     LineTo(cdc, wxTHICK_LINE_BORDER, wxTHICK_LINE_BORDER);
     LineTo(cdc, width-wxTHICK_LINE_BORDER, wxTHICK_LINE_BORDER);
+#else
+    old_pen = NULL;
 #endif
 
     SetTextColor(cdc, GetSysColor(COLOR_BTNTEXT) );
@@ -805,10 +884,10 @@ BOOL wxStatusWnd::OnPaint()
     ::SelectClipRgn(cdc, NULL);
     if (old_pen)
       SelectObject(cdc, old_pen);
-    old_pen = NULL ;
+    old_pen = NULL;
     if (old_brush)
       SelectObject(cdc, old_brush);
-    old_brush = NULL ;
+    old_brush = NULL;
 
     EndPaint(handle, &ps);
     cdc = NULL;
@@ -1338,12 +1417,17 @@ BOOL wxMDIChild::OnMDIActivate(BOOL bActivate, HWND WXUNUSED(one), HWND WXUNUSED
 
   cparent = (wxMDIFrame *)parent->handle;
   if (bActivate) {
-    active = TRUE;
-    cparent->current_child = this;
-    if (child)
-      child_menu = child->GetWinMenu();
-    else
+    if (child->IsShown()) {
+      active = TRUE;
+      cparent->current_child = this;
+      if (child)
+	child_menu = child->GetWinMenu();
+      else
+	child_menu = NULL;
+    } else {
+      cparent->current_child = NULL;
       child_menu = NULL;
+    }
   } else {
     if (cparent->current_child == this)
       cparent->current_child = NULL;
@@ -1374,10 +1458,34 @@ BOOL wxMDIChild::OnMDIActivate(BOOL bActivate, HWND WXUNUSED(one), HWND WXUNUSED
 		(LPARAM)NULL);
 
   ::DrawMenuBar(cparent->handle);
-  
-  wxFrameWnd::OnActivate(bActivate, 0, 0);
 
+  if (child->IsShown())
+    child->OnMDIActivate(bActivate);
+  
   return 0;
+}
+
+BOOL wxMDIChild::OnNCActivate(BOOL bActivate, HWND WXUNUSED(one))
+{
+  if (wx_window->IsShown())
+    return wxFrameWnd::OnActivate(bActivate, 0, 0);
+  else
+    return 1;
+}
+
+void wxMDIChild::OnChar(WORD wParam, LPARAM lParam, Bool isASCII, Bool isRelease)
+{
+  if (!wx_window || wx_window->IsShown())
+    wxFrameWnd::OnChar(wParam, lParam, isASCII, isRelease);
+  else {
+    wxFrame *parent;
+    wxMDIFrame *cparent;
+
+    parent = (wxFrame *)wx_window->GetParent();
+    cparent = (wxMDIFrame *)parent->handle;
+
+    cparent->OnChar(wParam, lParam, isASCII, isRelease);
+  }
 }
 
 wxMDIChild::~wxMDIChild(void)

@@ -1466,3 +1466,7 @@ long wxFrame::GetWindowHandle()
 
   return (long)win;
 }
+
+void wxFrame::OnMDIActivate(Bool flag)
+{
+}

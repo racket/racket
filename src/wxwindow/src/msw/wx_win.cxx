@@ -865,6 +865,13 @@ static LONG WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, in
       if (dialog) retval = 0;
       break;
     }
+  case WM_NCACTIVATE:
+    {
+      WORD state = LOWORD(wParam);
+      wnd->OnNCActivate(state, hWnd);
+      retval = wnd->DefWindowProc(message, wParam, lParam);
+      break;
+    }
   case WM_SETFOCUS:
     {
       HWND hwnd = (HWND)wParam;
@@ -1549,17 +1556,6 @@ BOOL wxWnd::OnActivate(BOOL state, BOOL minimized, HWND WXUNUSED(activate))
     wx_window->OnActivate(((state == WA_ACTIVE) 
 			   || (state == WA_CLICKACTIVE)));
 
-    // If this window is an MDI parent, we must also send an OnActivate message
-    // to the current child.
-    if (wxSubType(wx_window->__type, wxTYPE_FRAME)) {
-      wxFrame *frame = (wxFrame *)wx_window;
-      if (frame->frame_type == wxMDI_PARENT) {
-        wxMDIFrame *mdiFrame = (wxMDIFrame *)this;
-        if (mdiFrame->current_child) {
-          mdiFrame->current_child->OnActivate(state, 0, 0);
-	}
-      }
-    }
     return 0;
   } else 
     return TRUE;
@@ -1664,6 +1660,11 @@ BOOL wxWnd::ProcessMessage(MSG* WXUNUSED(pMsg))
 }
 
 BOOL wxWnd::OnMDIActivate(BOOL WXUNUSED(flag), HWND WXUNUSED(activate), HWND WXUNUSED(deactivate))
+{
+  return 1;
+}
+
+BOOL wxWnd::OnNCActivate(BOOL WXUNUSED(flag), HWND WXUNUSED(activate))
 {
   return 1;
 }

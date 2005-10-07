@@ -187,6 +187,7 @@ static void DesignateRootFrame(wxFrame *f)
 
 
 
+
 class os_wxFrame : public wxFrame {
  public:
 
@@ -201,6 +202,7 @@ class os_wxFrame : public wxFrame {
   void OnToolbarButton();
   void OnMenuClick();
   void OnMenuCommand(ExactLong x0);
+  void OnMDIActivate(Bool x0);
   Bool OnClose();
   void OnActivate(Bool x0);
 #ifdef MZ_PRECISE_GC
@@ -559,6 +561,41 @@ void os_wxFrame::OnMenuCommand(ExactLong x0)
   }
 }
 
+static Scheme_Object *os_wxFrameOnMDIActivate(int n, Scheme_Object *p[]);
+
+void os_wxFrame::OnMDIActivate(Bool x0)
+{
+  Scheme_Object *p[POFFSET+1] INIT_NULLED_ARRAY({ NULLED_OUT INA_comma NULLED_OUT });
+  Scheme_Object *v;
+  Scheme_Object *method INIT_NULLED_OUT;
+#ifdef MZ_PRECISE_GC
+  os_wxFrame *sElF = this;
+#endif
+  static void *mcache = 0;
+
+  SETUP_VAR_STACK(5);
+  VAR_STACK_PUSH(0, method);
+  VAR_STACK_PUSH(1, sElF);
+  VAR_STACK_PUSH_ARRAY(2, p, POFFSET+1);
+  SET_VAR_STACK();
+
+  method = objscheme_find_method((Scheme_Object *) ASSELF __gc_external, os_wxFrame_class, "on-mdi-activate", &mcache);
+  if (!method || OBJSCHEME_PRIM_METHOD(method, os_wxFrameOnMDIActivate)) {
+    SET_VAR_STACK();
+    READY_TO_RETURN; ASSELF wxFrame::OnMDIActivate(x0);
+  } else {
+  
+  p[POFFSET+0] = (x0 ? scheme_true : scheme_false);
+  
+  p[0] = (Scheme_Object *) ASSELF __gc_external;
+
+  v = WITH_VAR_STACK(scheme_apply(method, POFFSET+1, p));
+  
+  
+     READY_TO_RETURN;
+  }
+}
+
 static Scheme_Object *os_wxFrameOnClose(int n, Scheme_Object *p[]);
 
 Bool os_wxFrame::OnClose()
@@ -856,6 +893,31 @@ static Scheme_Object *os_wxFrameOnMenuCommand(int n,  Scheme_Object *p[])
     WITH_VAR_STACK(((os_wxFrame *)((Scheme_Class_Object *)p[0])->primdata)->wxFrame::OnMenuCommand(x0));
   else
     WITH_VAR_STACK(((wxFrame *)((Scheme_Class_Object *)p[0])->primdata)->OnMenuCommand(x0));
+
+  
+  
+  READY_TO_RETURN;
+  return scheme_void;
+}
+
+static Scheme_Object *os_wxFrameOnMDIActivate(int n,  Scheme_Object *p[])
+{
+  WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
+  REMEMBER_VAR_STACK();
+  objscheme_check_valid(os_wxFrame_class, "on-mdi-activate in frame%", n, p);
+  Bool x0;
+
+  SETUP_VAR_STACK_REMEMBERED(1);
+  VAR_STACK_PUSH(0, p);
+
+  
+  x0 = WITH_VAR_STACK(objscheme_unbundle_bool(p[POFFSET+0], "on-mdi-activate in frame%"));
+
+  
+  if (((Scheme_Class_Object *)p[0])->primflag)
+    WITH_VAR_STACK(((os_wxFrame *)((Scheme_Class_Object *)p[0])->primdata)->wxFrame::OnMDIActivate(x0));
+  else
+    WITH_VAR_STACK(((wxFrame *)((Scheme_Class_Object *)p[0])->primdata)->OnMDIActivate(x0));
 
   
   
@@ -1321,7 +1383,7 @@ void objscheme_setup_wxFrame(Scheme_Env *env)
 
   wxREGGLOB(os_wxFrame_class);
 
-  os_wxFrame_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "frame%", "window%", (Scheme_Method_Prim *)os_wxFrame_ConstructScheme, 25));
+  os_wxFrame_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "frame%", "window%", (Scheme_Method_Prim *)os_wxFrame_ConstructScheme, 26));
 
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxFrame_class, "on-drop-file" " method", (Scheme_Method_Prim *)os_wxFrameOnDropFile, 1, 1));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxFrame_class, "pre-on-event" " method", (Scheme_Method_Prim *)os_wxFramePreOnEvent, 2, 2));
@@ -1332,6 +1394,7 @@ void objscheme_setup_wxFrame(Scheme_Env *env)
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxFrame_class, "on-toolbar-click" " method", (Scheme_Method_Prim *)os_wxFrameOnToolbarButton, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxFrame_class, "on-menu-click" " method", (Scheme_Method_Prim *)os_wxFrameOnMenuClick, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxFrame_class, "on-menu-command" " method", (Scheme_Method_Prim *)os_wxFrameOnMenuCommand, 1, 1));
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxFrame_class, "on-mdi-activate" " method", (Scheme_Method_Prim *)os_wxFrameOnMDIActivate, 1, 1));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxFrame_class, "enforce-size" " method", (Scheme_Method_Prim *)os_wxFrameEnforceSize, 6, 6));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxFrame_class, "on-close" " method", (Scheme_Method_Prim *)os_wxFrameOnClose, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxFrame_class, "on-activate" " method", (Scheme_Method_Prim *)os_wxFrameOnActivate, 1, 1));
