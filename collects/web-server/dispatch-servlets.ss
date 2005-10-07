@@ -93,10 +93,14 @@
                           (make-execution-context
                            conn req (lambda () (suspend #t)))
                           sema
-                          (start-timer 0 void))]
-                   [real-servlet-path (url-path->path
-                                       (paths-servlet (host-paths host-info))
-                                       (url-path->string (url-path uri)))]
+                          (start-timer 0 void))]                   
+                   [real-servlet-path (with-handlers ([void (lambda (e)
+                                                              (raise (make-exn:fail:filesystem:exists:servlet
+                                                                      (exn-message e)
+                                                                      (exn-continuation-marks e))))])
+                                        (url-path->path
+                                         (paths-servlet (host-paths host-info))
+                                         (url-path->string (url-path uri))))]
                    [servlet-exit-handler (make-servlet-exit-handler inst)])
               (parameterize ([current-directory (get-servlet-base-dir real-servlet-path)]
                              [current-custodian servlet-custodian]
