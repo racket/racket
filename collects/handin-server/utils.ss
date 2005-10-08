@@ -6,7 +6,8 @@
 	   (prefix pc: (lib "pconvert.ss"))
 	   (lib "pretty.ss")
 	   (lib "list.ss")
-	   (lib "string.ss"))
+	   (lib "string.ss")
+	   (only "handin-server.ss" LOG))
 
   (provide unpack-submission
 
@@ -31,7 +32,9 @@
 	   check-defined
 	   look-for-tests
 	   user-construct
-	   test-history-enabled)
+	   test-history-enabled
+
+	   LOG)
 
   (define (unpack-submission str)
     (let* ([base (make-object editor-stream-in-bytes-base% str)]

@@ -30,6 +30,7 @@
           [(pair? default) (car default)]
           [else (error (alist-name alist) "no value for `~s'" key)]))
 
+  (provide LOG)
   (define (LOG str . args)
     ;; Assemble log into into a single string, to make
     ;;  interleaved log lines unlikely:

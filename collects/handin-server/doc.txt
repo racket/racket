@@ -629,6 +629,10 @@ The _utils.ss_ module provides utilities helpful in implementing
   submission error.
 
 
+> (LOG fmt args ...) - produces a line in the server log file, using
+  the given format string and arguments.
+
+
 Extra Checker Utilities
 ============================================
 
@@ -754,21 +758,24 @@ value from the submission code.
 
   (require (lib "sendmail.ss" "net"))
   (post:
+    (define info
+      (format "hw.scm: ~a ~a"
+              (file-size "hw.scm")
+              (file-or-directory-modify-seconds "hw.scm")))
+    (LOG "Sending a receipt: ~a" info)
     (send-mail-message
-     "cour-staff@university.edu
+     "course-staff@university.edu
      "Submission Receipt"
      (map (lambda (user) (user-substs user "{Full Name} <{Email}>"))
           users)
      (list (user-substs (first users) "{TA Name} <{TA Email}>"))
      null
-     (list "Your submission was received"
-           ... provide details on hw.scm ...))
+     `("Your submission was received" ,info))
     (message (string-append
               "Your submission was successfully saved."
               "  You will get an email receipt within 30 minutes;"
               " if not, please contact the course staff.")
              '(ok)))
-
 
 > (pairs-or-singles-with-warning users)
   This procedure is intended for use as the :users entry in a checker.
