@@ -64,12 +64,13 @@
         v)))
 
   (define (submit-assignment h username passwd assignment content
-                             on-commit message message-box)
+                             on-commit message message-final message-box)
     (let ([r (handin-r h)] [w (handin-w h)])
       (define (read/message)
         (let ([v (read r)])
           (case v
             [(message) (message (read r)) (read/message)]
+            [(message-final) (message-final (read r)) (read/message)]
             [(message-box)
              (write+flush w (message-box (read r) (read r))) (read/message)]
             [else v])))
@@ -93,7 +94,7 @@
       ;; the resulting value written back
       (let ([v (read/message)])
         (unless (eq? 'confirm v)
-          (error 'handin-connect "submit error: ~a" v)))
+          (error (format "submit error: ~a" v))))
       (on-commit)
       (write+flush w 'check)
       (wait-for-ok r "commit" read/message)

@@ -93,23 +93,27 @@
              [parent button-panel]))
 
       (define (submit-file)
+        (define final-message "Handin successful.")
         (submit-assignment
          connection
          (send username get-value)
          (send passwd get-value)
          (send assignment get-string (send assignment get-selection))
          content
+         ;; on-commit
          (lambda ()
            (semaphore-wait commit-lock)
            (send status set-label "Comitting...")
            (set! committing? #t)
            (semaphore-post commit-lock))
+         ;; message/message-final/message-box handlers
          (lambda (msg) (send status set-label msg))
+         (lambda (msg) (set! final-message msg))
          (lambda (msg styles) (message-box "Handin" msg this styles)))
         (queue-callback
          (lambda ()
            (when abort-commit-dialog (send abort-commit-dialog show #f))
-           (send status set-label "Handin successful.")
+           (send status set-label final-message)
            (set! committing? #f)
            (done-interface))))
       (define (retrieve-file)
