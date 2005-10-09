@@ -766,29 +766,10 @@ value from the submission code.
   `users' and `submission' are bound as in `check:', but there is
   nothing else special about these.  See the description of the
   `pre-checker' and `post-checker' values for what can be done with
-  these, and note that the check for valid users is always first.
-
-> submission-eval
-  A parameter that holds an evaluation procedure for evaluating code
-  in the submission context.
-
-> (user-data user)
-  Returns a user information given a username.  The returned
-  information is a list of strings that corresponds to the configured
-  `extra-fields' (see above).
-
-> (user-substs user str)
-  Given a username, this procedure will lookup the user's extra-fields
-  information (see above) and then substitute field names in {braces}
-  by the corresponding value.  An error will be signaled if a field
-  name is missing.  Also, "{username}" will always be replaced by the
-  username.
-
-  This is used to process the `:student-line' value in the checker,
-  but it is provided for additional uses.  For example, the following
-  is an example of a post-checker that will send a submission receipt
-  email with CC to the TA (assuming a single TA), and pop-up a message
-  telling the student about it:
+  these, and note that the check for valid users is always first.  An
+  example for a sophisticated `post:' block is below -- it will send a
+  email with a submission receipt, with CC to the TA (assuming a
+  single TA), and pop-up a message telling the student about it:
 
   (require (lib "sendmail.ss" "net"))
   (post:
@@ -810,6 +791,26 @@ value from the submission code.
               "  You will get an email receipt within 30 minutes;"
               " if not, please contact the course staff.")
              '(ok)))
+
+> submission-eval
+  A parameter that holds an evaluation procedure for evaluating code
+  in the submission context.
+
+> (user-data user)
+  Returns a user information given a username.  The returned
+  information is a list of strings that corresponds to the configured
+  `extra-fields' (see above).
+
+> (user-substs user str)
+  Given a username, this procedure will lookup the user's extra-fields
+  information (see above) and then substitute field names in {braces}
+  by the corresponding value.  An error will be signaled if a field
+  name is missing.  Also, "{username}" will always be replaced by the
+  username.
+
+  This is used to process the `:student-line' value in the checker,
+  but it is provided for additional uses.  See the above sample code
+  for `post:' for using this procedure.
 
 > (pairs-or-singles-with-warning users)
   This procedure is intended for use as the :users entry in a checker.
