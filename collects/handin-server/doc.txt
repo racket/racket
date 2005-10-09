@@ -606,12 +606,12 @@ The _utils.ss_ module provides utilities helpful in implementing
 > (message string [styles]) - if given only a string, this string will
   be shown on the client's submission dialog; if `styles' is also
   given, it can be the symbol 'final, which will be used as the text
-  on the handin dialog after a successful submission (useful for
-  submissions that were saved, but had problems); finally, `styles'
-  can be used as a list of styles for a `message-box' dialog on the
-  client side, and the resulting value is returned as the result of
-  `message'.  You can use that to send warnings to the student and
-  wait for confirmation.
+  on the handin dialog after a successful submission instead of
+  "Handin successful." (useful for submissions that were saved, but
+  had problems); finally, `styles' can be used as a list of styles for
+  a `message-box' dialog on the client side, and the resulting value
+  is returned as the result of `message'.  You can use that to send
+  warnings to the student and wait for confirmation.
 
 > (current-run-status string-or-#f) - registers information about the
   current actions of the checker, in case the session is terminated
@@ -718,7 +718,8 @@ Keywords for configuring `check:':
   additional tests).  It can be a plain string which will be used as
   the error message, or a string with single a "~a" (or "~e", "~s",
   "~v") that will be used as a format string with the actual error
-  message.  Examples of these:
+  message.  The default is "Error in your code --\n~a".  Examples of
+  these:
 
     "there is an error in your program, hit \"Run\" and debug your code"
     "There is an error in your program:\n----\n~a\n----\n
@@ -740,8 +741,8 @@ Keywords for configuring `check:':
                '(ok))
       (message "Handin saved as erroneous." 'final))
 
-    (Note that if you do this, then additional tests should be
-    adjusted to not raise an exception too.)
+  (Note that if you do this, then additional tests should be adjusted
+  to not raise an exception too.)
 
 * :value-printer -- if specified, this will be used for
   `current-value-printer' (see above).
