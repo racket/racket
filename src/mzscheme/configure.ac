@@ -201,6 +201,9 @@ PREFLAGS="$CPPFLAGS"
 ar_libtool_no_undefined=""
 LIBMZSCHEME_DEP=""
 
+XFT_EXTRA_FLAGS=
+XFT_EXTRA_LIBS=
+
 ###### OSKit stuff #######
 
 if test "${enable_oskit}" = "yes" ; then
@@ -497,6 +500,10 @@ case $OS in
     else
       PREFLAGS="$PREFLAGS -DXONX "
       X_EXTRA_LIBS="$X_EXTRA_LIBS -lz"
+
+      # need help finding fontconfig and freetype headers:
+      XFT_EXTRA_FLAGS="-I/usr/X11R6/include -I/usr/X11R6/include/freetype2"
+      XFT_EXTRA_LIBS="-lfontconfig"
     fi
     ;;
   *)
@@ -796,18 +803,21 @@ fi
 if test "${enable_xft}" = "yes" ; then  
   xft_config_ok=`xft-config --cflags  2> /dev/null`
   if test "$xft_config_ok" = "" ; then
+    save_cpp_flags="$CPPFLAGS"
+    CPPFLAGS="$CPPFLAGS $XFT_EXTRA_FLAGS $X_CFLAGS"
     AC_CHECK_HEADER(X11/Xft/Xft.h, enable_xft=yes, enable_xft=no)
     if test "${enable_xft}" = "yes" ; then  
       AC_CHECK_LIB(Xft, XftTextExtents8, enable_xft="yes", enable_xft="no", $X_LIBS -lX11 -lXext -Xrender -lXft)
       if test "${enable_xft}" = "yes" ; then  
-        MROPTIONS="$MROPTIONS -DWX_USE_XFT"
-        X_EXTRA_LIBS="$X_EXTRA_LIBS -lXft"
+        MROPTIONS="$MROPTIONS $XFT_EXTRA_FLAGS -DWX_USE_XFT"
+        X_EXTRA_LIBS="$X_EXTRA_LIBS $XFT_EXTRA_LIBS -lXft"
       else
         echo "no Xft libs; Xft support disabled"
       fi
     else
       echo "no Xft headers; Xft support disabled"
     fi
+    CPPFLAGS="$save_cpp_flags"
   else
     echo "Using xft-config..."
     xft_cflags=`xft-config --cflags`
