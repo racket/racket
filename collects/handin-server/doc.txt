@@ -418,7 +418,7 @@ sub-directories:
       the submission is considered successful, so this function should
       avoid throwing an exception (it can, but the submission will
       still be in place).  This is useful for things like notifying
-      the user of the successful submission (see message below), or
+      the user of the successful submission (see `message' below), or
       sending a `receipt' email.
     To specify only pre/post-checker, use #f for the one you want to
     omit.
@@ -605,10 +605,13 @@ The _utils.ss_ module provides utilities helpful in implementing
 
 > (message string [styles]) - if given only a string, this string will
   be shown on the client's submission dialog; if `styles' is also
-  given, it will be used as a list of styles for a `message-box'
-  dialog on the client side, and the resulting value is returned as
-  the result of `message'.  You can use that to send warnings to the
-  student and wait for confirmation.
+  given, it can be the symbol 'final, which will be used as the text
+  on the handin dialog after a successful submission (useful for
+  submissions that were saved, but had problems); finally, `styles'
+  can be used as a list of styles for a `message-box' dialog on the
+  client side, and the resulting value is returned as the result of
+  `message'.  You can use that to send warnings to the student and
+  wait for confirmation.
 
 > (current-run-status string-or-#f) - registers information about the
   current actions of the checker, in case the session is terminated
@@ -710,6 +713,36 @@ Keywords for configuring `check:':
   with a ";;> " prefix too.  Defaults to a single line: "Maximum
   points for this assignment: <+100>".
 
+* :user-error-message -- a string that is used to report an error that
+  occured during evaluation of the submitted code (not during
+  additional tests).  It can be a plain string which will be used as
+  the error message, or a string with single a "~a" (or "~e", "~s",
+  "~v") that will be used as a format string with the actual error
+  message.  Examples of these:
+
+    "there is an error in your program, hit \"Run\" and debug your code"
+    "There is an error in your program:\n----\n~a\n----\n
+     Hit \"Run\" and debug your code."
+
+  Alternatively, the value can be a procedure that will be invoked
+  with the error message.  The procedure can do anything it wants, and
+  if it does not raise an exception, then the checker will proceed as
+  usual.  For example:
+
+    (lambda (msg)
+      (add-header-line! "Erroneous submission!")
+      (add-header-line! (format "  --> ~a" msg))
+      (message (string-append
+                "You have an error in your program -- please hit"
+                " \"Run\" and debug your code.\n"
+                "Email the course staff if you think your code is fine.\n"
+                "(The submission has been saved but marked as erroneous.)")
+               '(ok))
+      (message "Handin saved as erroneous." 'final))
+
+    (Note that if you do this, then additional tests should be
+    adjusted to not raise an exception too.)
+
 * :value-printer -- if specified, this will be used for
   `current-value-printer' (see above).
 
@@ -788,6 +821,11 @@ value from the submission code.
   for cases where you want to allow free pair submissions -- students
   will often try to submit their work alone, and later on re-submit
   with a partner.
+
+> (add-header-line! line)
+  During the checker operation, this procedure can be used to add
+  header lines to the text version of the submitted file.  It will not
+  have an effect if `:create-text?' is false.
 
 > (procedure/arity? proc arity)
   Returns #t if `proc' is a procedure that accepts `arity' arguments.

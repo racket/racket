@@ -252,8 +252,10 @@
                         (case-lambda
                          [(msg) (write+flush w 'message msg)]
                          [(msg styles)
-                          (write+flush w 'message-box msg styles)
-                          (read (make-limited-input-port r 50))])])
+                          (if (eq? 'final styles)
+                            (write+flush w 'message-final msg)
+                            (begin (write+flush w 'message-box msg styles)
+                                   (read (make-limited-input-port r 50))))])])
           ;; Clear out old ATTEMPT, if any, and make a new one:
           (when (directory-exists? ATTEMPT-DIR)
             (delete-directory/files ATTEMPT-DIR))

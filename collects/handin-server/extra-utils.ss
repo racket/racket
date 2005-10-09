@@ -193,6 +193,13 @@
 ;; without this the primitive eval is not available
 (provide (rename eval prim-eval))
 
+;; for adding lines in the checker
+(define added-lines (make-thread-cell #f))
+(provide add-header-line!)
+(define (add-header-line! line)
+  (let ([new (list line)] [cur (thread-cell-ref added-lines)])
+    (if cur (append! cur new) (thread-cell-set! added-lines new))))
+
 (provide check:)
 (define-syntax (check: stx)
   (define (id s) (datum->syntax-object stx s stx))
@@ -225,6 +232,8 @@
             [value-printer* (get ':value-printer #'#f)]
             [coverage?*     (get ':coverage? #'#f)]
             [output*        (get ':output #'"hw.scm")]
+            [user-error-message*
+             (get ':user-error-message #'"Error in your code --\n~a")]
             [checker        (id 'checker)]
             [users          (id 'users)]
             [submission     (id 'submission)]
@@ -259,6 +268,7 @@
                    [value-printer  value-printer*]
                    [coverage?      coverage?*]
                    [output-file    output*]
+                   [user-error-message user-error-message*]
                    [execute-counts #f])
                ;; ========================================
                ;; verify submitting users
@@ -282,40 +292,63 @@
                ;; ========================================
                ;; convert to text, evaluate, check
                (define (check users submission)
-                 (when value-printer (current-value-printer value-printer))
+                 (define text-file "grading/text.scm")
+                 (define (write-text)
+                   (with-output-to-file text-file
+                     (lambda ()
+                       (define added (or (thread-cell-ref added-lines) '()))
+                       (for-each
+                        (lambda (user)
+                          (printf ";;> ~a\n" (user-substs user student-line)))
+                        users)
+                       (for-each (lambda (l) (printf ";;> ~a\n" l)) extra-lines)
+                       (for-each (lambda (l) (printf ";;> ~a\n" l)) added)
+                       (display submission-text))
+                     'truncate))
+                 (define submission-text
+                   (and create-text?
+                        (submission->string submission maxwidth textualize?)))
                  (when create-text?
-                   (current-run-status "creating your files on the server")
                    (make-directory "grading")
-                   (let ([str (submission->string
-                               submission maxwidth textualize?)])
-                     (when (regexp-match #rx";>" str)
-                       (error* "You cannot use \";>\" in your code!"))
-                     (with-output-to-file "grading/text.scm"
-                       (lambda ()
-                         (for-each
-                          (lambda (user)
-                            (printf ";;> ~a\n" (user-substs user student-line)))
-                          users)
-                         (for-each (lambda (l) (printf ";;> ~a\n" l))
-                                   extra-lines)
-                         (display str)))))
+                   (when (regexp-match #rx";>" submission-text)
+                     (error* "You cannot use \";>\" in your code!"))
+                   (write-text))
+                 (when value-printer (current-value-printer value-printer))
                  (when coverage? (coverage-enabled #t))
                  (current-run-status "checking submission")
                  (cond
                   [language
-                   (call-with-evaluator/submission
-                    language teachpacks submission
-                    (lambda (eval)
-                      (when coverage?
-                        (set! execute-counts (eval #f 'execute-counts)))
-                      (current-run-status "running tests")
-                      (parameterize ([submission-eval eval])
-                        (let-syntax ([with-submission-bindings
-                                      (syntax-rules ()
-                                        [(_ bindings body1 (... ...))
-                                         (with-bindings eval bindings
-                                           body1 (... ...))])])
-                          (let () body ...)))))]
+                   (let ([eval
+                          (with-handlers
+                              ([void
+                                (lambda (e)
+                                  (let ([m (if (exn? e)
+                                             (exn-message e)
+                                             (format "~a" e))])
+                                    (cond
+                                     [(procedure? user-error-message)
+                                      (user-error-message m)]
+                                     [(not (string? user-error-message))
+                                      (error*
+                                       "badly configured user-error-message")]
+                                     [(regexp-match #rx"~[aesvAESV]"
+                                                    user-error-message)
+                                      (error* user-error-message m)]
+                                     [else
+                                      (error* "~a" user-error-message)])))])
+                            (call-with-evaluator/submission
+                             language teachpacks submission values))])
+                     (when coverage?
+                       (set! execute-counts (eval #f 'execute-counts)))
+                     (current-run-status "running tests")
+                     (parameterize ([submission-eval eval])
+                       (let-syntax ([with-submission-bindings
+                                     (syntax-rules ()
+                                       [(_ bindings body*1 body* (... ...))
+                                        (with-bindings eval bindings
+                                          body*1 body* (... ...))])])
+                         (let () body ...))
+                       (when (thread-cell-ref added-lines) (write-text))))]
                   [(not eval?) #t]
                   [else (error* "no language configured for submissions")])
                  output-file)
