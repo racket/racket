@@ -349,7 +349,7 @@
                                           body*1 body* (... ...))])])
                          (let () body ...))
                        (when (thread-cell-ref added-lines) (write-text))))]
-                  [(not eval?) #t]
+                  [(not eval?) (let () body ...)]
                   [else (error* "no language configured for submissions")])
                  output-file)
                ;; ========================================

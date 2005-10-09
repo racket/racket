@@ -674,6 +674,9 @@ Keywords for configuring `check:':
   below).
 
 * :eval? -- whether submissions should be evaluated.  Defaults to #t.
+  Note that if it is specified as #f, then the checker body will not
+  be able to run any tests on the code, unless it contains code that
+  performs some evaluation (eg, using the facilities of "utils.ss").
 
 * :language -- the language that is used for evaluating submissions,
   same as the `language' argument for `make-evaluator' (see above).
