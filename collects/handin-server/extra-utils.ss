@@ -93,9 +93,10 @@
   ;; note that snip->text below already takes care of some snips
   (define (item->text x)
     (cond [(is-a? x snip%)
-           (format "{{~a}}" (or (send x get-text 0 (send x get-count) #t) x))]
+           (format "~a" (or (send x get-text 0 (send x get-count) #t) x))]
           [(special-comment? x)
            (format "#| ~a |#" (special-comment-value x))]
+          [(syntax? x) (syntax-object->datum x)]
           [else x]))
   (let-values ([(filter) (if (pair? filter) (car filter) item->text)]
                [(in out) (make-pipe 4096)])
@@ -146,9 +147,16 @@
               (display line) (newline) (loop (add1 n))))))
       (get-output-string (current-output-port)))))
 
-;; ---------------------------------------------
-;; This code will hack test boxes textualization
+;; ---------------------------------------------------------
+;; This code will hack textualization of test and text boxes
 
+(define (insert-to-editor editor . xs)
+  (for-each (lambda (x)
+              (send editor insert
+                    (if (string? x) x (make-object editor-snip% x))))
+            xs))
+
+;; support for "test-case-box%"
 (define test-sc
   (new (class snip-class%
          (define/override (read f)
@@ -174,15 +182,31 @@
       (send f get (box 0))) ; error-box
     (super-new)
     (set-snipclass test-sc)
-    (for-each (lambda (x)
-                (send (get-editor)
-                      insert (if (string? x) x (make-object editor-snip% x))))
-              (list "TEST:\n"
-                    "  expression: " to-test "\n"
-                    "  should be:  " expected "\n"))))
+    (insert-to-editor (get-editor)
+      "{{TEST:\n  expression: " to-test "\n  should be:  " expected "\n}}")))
 (send test-sc set-classname "test-case-box%")
 (send test-sc set-version 2)
 (send (get-the-snip-class-list) add test-sc)
+
+;; support for "text-box%"
+(define text-box-sc
+  (new (class snip-class%
+         (define/override (read f)
+           (let ([text (new text-box%)]) (send text read-from-file f) text))
+         (super-new))))
+(define text-box%
+  (class editor-snip%
+    (inherit set-snipclass get-editor)
+    (define text (new text%))
+    (define/public (read-from-file f)
+      (unless (eq? 1 (send text-box-sc reading-version f)) (error "BOOM"))
+      (send text read-from-file f))
+    (super-new)
+    (set-snipclass text-box-sc)
+    (insert-to-editor (get-editor) "{{TEXT: " text "}}")))
+(send text-box-sc set-classname "text-box%")
+(send text-box-sc set-version 2)
+(send (get-the-snip-class-list) add text-box-sc)
 
 ;; ============================================================================
 ;; Checker function
