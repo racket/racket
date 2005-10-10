@@ -95,6 +95,9 @@
                                (<= (max-difference s-normal s-bitmap) 2))))))))
 
 (test #t 'image? (image? (rectangle 10 10 'solid 'blue)))
+(test #t 'image? (image? (rectangle 10 10 "solid" 'blue)))
+(test #t 'image? (image? (rectangle 10 10 'outline 'blue)))
+(test #t 'image? (image? (rectangle 10 10 "outline" 'blue)))
 (test #f 'image? (image? 5))
 
 (define red (make-color 255 0 0))
