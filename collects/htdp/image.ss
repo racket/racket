@@ -91,21 +91,21 @@ plt/collects/tests/mzscheme/image-test.ss
       (error (format "cannot make ~a x ~a image" w h))))
   
   (define (mode? x)
-    (or (eq? x 'solid)
-        (eq? x 'outline)))
+    (member x '(solid "solid" outline "outline")))
   
-  (define mode-str "'solid or 'outline")
+  (define mode-str "'solid \"solid\" 'outline or \"outline\"")
   
   (define (mode->brush-symbol m)
-    (case m
-      [(solid) 'solid]
-      [(outline) 'transparent]))
+    (cond
+      [(member m '(solid "solid"))
+       'solid]
+      [(member m '(outline "outline"))
+       'transparent]))
   
   (define (mode->pen-symbol m)
-    (case m
-      [(solid) 'transparent]
-      [(outline) 'solid]))
-  
+    (cond
+      [(member m '(solid "solid")) 'transparent]
+      [(member m '(outline "outline")) 'solid]))
   
   (define (make-color% c)
     (cond

@@ -141,6 +141,27 @@
       'color-list
       (image->color-list (rectangle 2 2 'solid 'blue)))
 
+(test (list blue blue blue
+            blue blue blue
+            blue blue blue)
+      'color-list2
+      (image->color-list (rectangle 3 3 'solid 'blue)))
+(test (list blue blue blue
+            blue blue blue
+            blue blue blue)
+      'color-list2
+      (image->color-list (rectangle 3 3 "solid" 'blue)))
+(test (list blue blue blue
+            blue white blue
+            blue blue blue)
+      'color-list2
+      (image->color-list (rectangle 3 3 'outline 'blue)))
+(test (list blue blue blue
+            blue white blue
+            blue blue blue)
+      'color-list2
+      (image->color-list (rectangle 3 3 "outline" 'blue)))
+
 (test #t
       'color-list
       (image=? (color-list->image (list blue blue blue blue) 2 2 0 0)
@@ -160,15 +181,29 @@
               (car (image->alpha-color-list (rectangle 1 1 'solid 'red)))))
 (test #t
       'alpha-color-list2
+      (equal? (make-alpha-color 0 255 0 0)
+              (car (image->alpha-color-list (rectangle 1 1 "solid" 'red)))))
+
+(test #t
+      'alpha-color-list3
+      (andmap (lambda (x) (equal? x (make-alpha-color 0 255 0 0)))
+              (image->alpha-color-list (rectangle 1 1 "solid" 'red))))
+(test #t
+      'alpha-color-list4
+      (andmap (lambda (x) (equal? x (make-alpha-color 0 255 0 0)))
+              (image->alpha-color-list (rectangle 1 1 'solid 'red))))
+
+(test #t
+      'alpha-color-list5
       (equal? (make-alpha-color 0 0 255 0)
               (car (image->alpha-color-list (rectangle 1 1 'solid 'green)))))
 (test #t
-      'alpha-color-list3
+      'alpha-color-list6
       (equal? (make-alpha-color 0 0 0 255)
               (car (image->alpha-color-list (rectangle 1 1 'solid 'blue)))))
 
 (test #t
-      'alpha-color-list4
+      'alpha-color-list7
       (= (image-width
           (alpha-color-list->image
            (list ared aclr ared
@@ -180,7 +215,7 @@
          3))
 
 (test #t
-      'alpha-color-list5
+      'alpha-color-list8
       (= (image-height
           (alpha-color-list->image
            (list ared aclr ared
@@ -192,7 +227,7 @@
          2))
 
 (test #t
-      'alpha-color-list6
+      'alpha-color-list9
       (equal? (image->color-list
                (alpha-color-list->image
                 (list ared aclr ared
@@ -201,7 +236,7 @@
               (list red   white red
                     white white white)))
 (test #t
-      'alpha-color-list7
+      'alpha-color-list10
       (equal? (image->color-list
                (overlay
                 (p00 (rectangle 3 3 'solid 'blue))
