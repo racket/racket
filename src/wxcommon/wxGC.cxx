@@ -315,6 +315,14 @@ char *gc::gcGetName() {
 
 /**********************************************************************/
 
+/* The accounting shadow serves two purposes. First, it allocates
+   largely untouched atomic memory to reflect the allocation of
+   bitmaps outside the GC space, so that the nominal allocation total
+   is related to the total taking into accoun bitmaps. Second, because
+   bitmaps are released through finalizers, the accounting shadow
+   forces a GC more frequently than might otherwise happen as the
+   total size of bitmaps grows. */
+
 static long total, accum = 1024 * 1024 * 5;
 
 void *GC_malloc_accounting_shadow(long a)
@@ -326,7 +334,7 @@ void *GC_malloc_accounting_shadow(long a)
   accum -= a;
   if (accum <= 0) {
     GC_gcollect();
-    accum = total >> 2;
+    accum = total >> 1;
   }
   p = (long *)GC_malloc_atomic(a);
   *p = a;
@@ -335,6 +343,8 @@ void *GC_malloc_accounting_shadow(long a)
 
 void GC_free_accounting_shadow(void *p)
 {
-  if (p)
+  if (p) {
     total -= *(long *)p;
+    accum += *(long *)p;
+  }
 }
