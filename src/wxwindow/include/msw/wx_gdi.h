@@ -122,6 +122,7 @@ class wxBrush: public wxbBrush
 
 // Bitmap
 class wxDC;
+class wxMemoryDC;
 class wxItem;
 class wxGLConfig;
 
@@ -143,6 +144,7 @@ class wxBitmap: public wxObject
   void *accounting;
   wxDC *selectedInto; // So bitmap knows whether it's been selected into
                       // a device context (for error checking)
+  wxMemoryDC *mask_cache; // the cached mask
   Bool selectedIntoDC;
   wxGLConfig *gl_cfg;
 
@@ -188,6 +190,8 @@ class wxBitmap: public wxObject
 
   void SetGLConfig(wxGLConfig *gl_cfg);
   wxGLConfig *GetGLConfig(void);
+
+  void ReleaseCachedMask();
 };
 
 // Cursor

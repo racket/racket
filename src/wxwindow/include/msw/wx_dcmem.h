@@ -20,6 +20,7 @@ class wxMemoryDC: public wxbMemoryDC
 {
  public:
   Bool read_only;
+  Bool refcount; /* when used as a mask cache */
   wxMemoryDC(Bool read_only = 0);
   wxMemoryDC(wxCanvasDC *old_dc); // Create compatible DC
 

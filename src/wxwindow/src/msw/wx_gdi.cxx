@@ -2008,6 +2008,8 @@ wxBitmap::~wxBitmap(void)
 {
   COUNT_M(bitmap_count);
 
+  ReleaseCachedMask();
+
   if (selectedInto) {
     ((wxMemoryDC *)selectedInto)->SelectObject(NULL);
     selectedInto = NULL;

@@ -159,9 +159,10 @@ class wxDC: public wxbDC
   void SetRop(HDC cdc, int mode);
   void DoClipping(HDC cdc);
   void SelectOldObjects(HDC dc);
-   HDC ThisDC();
-   void DoneDC(HDC dc);
-   void ShiftXY(double x, double y, int *ix, int *iy);
+  HDC ThisDC(Bool flush_cache = TRUE);
+  void DoneDC(HDC dc);
+  void ReleaseSelectedCache();
+  void ShiftXY(double x, double y, int *ix, int *iy);
 
   Bool StartBrush(HDC dc, Bool no_stipple = FALSE);
   Bool StartPen(HDC dc);

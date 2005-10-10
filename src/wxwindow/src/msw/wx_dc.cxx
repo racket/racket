@@ -209,10 +209,13 @@ void wxDC::SelectOldObjects(HDC dc)
   }
 }
 
-HDC wxDC::ThisDC(void)
+HDC wxDC::ThisDC(Bool flush_cache)
 {
   HDC dc = NULL;
   wxWnd *wnd = NULL;
+
+  if (flush_cache)
+    ReleaseSelectedCache();
 
   if (canvas) wnd = (wxWnd *)canvas->handle;
   if (cdc)
@@ -240,6 +243,37 @@ void wxDC::DoneDC(HDC dc)
     if (!cdc && wnd) {
       ReleaseGraphics(dc);
       wnd->ReleaseHDC();
+    }
+  }
+}
+
+void wxDC::ReleaseSelectedCache()
+{
+  if (selected_bitmap) {
+    if (selected_bitmap->mask_cache) {
+      selected_bitmap->ReleaseCachedMask();
+    }
+  }
+}
+
+void wxBitmap::ReleaseCachedMask()
+{
+  wxBitmap *bm;
+  wxMemoryDC *mdc;
+
+  if (mask_cache) {
+    mdc = mask_cache;
+    mask_cache = NULL;
+    bm = mdc->selected_bitmap;
+    if (bm) {
+      mdc->SelectObject(NULL);
+      DELETE_OBJ bm;
+      bm = NULL;
+    }
+    mdc->refcount--;
+    if (!mdc->refcount) {
+      DELETE_OBJ mdc;
+      mdc = NULL;
     }
   }
 }
@@ -385,7 +419,7 @@ void wxDC::SetClippingRegion(wxRegion *c)
   if (clipping)
     clipping->locked++;
 
-  dc = ThisDC();
+  dc = ThisDC(FALSE);
   if (dc) DoClipping(dc);
   DoneDC(dc);
 }
@@ -420,7 +454,7 @@ Bool wxDC::CanGetTextExtent(void)
   HDC dc;
   Bool tok;
 
-  dc = ThisDC();
+  dc = ThisDC(FALSE);
   
   // What sort of display is it?
 
@@ -518,7 +552,7 @@ void wxDC::ReleaseGraphics(HDC given_dc)
     if (given_dc)
       dc = given_dc;
     else
-      dc = ThisDC();
+      dc = ThisDC(FALSE);
     if (dc) {
       DoClipping(dc);
       if (!given_dc)
@@ -540,7 +574,7 @@ void wxDC::OnCalcScroll(void)
   ReleaseGraphics();
   if (clipping) {
     HDC dc;
-    dc = ThisDC();
+    dc = ThisDC(FALSE);
     DoClipping(dc);
     DoneDC(dc);
   }
@@ -620,7 +654,7 @@ Bool wxDC::GlyphAvailable(int c, wxFont *f)
   if (!f)
     f = font;
 
-  dc = ThisDC();
+  dc = ThisDC(FALSE);
   if (!dc) return 0;
 
   r = f->GlyphAvailable(c, dc, screen_font);
@@ -637,7 +671,7 @@ Bool wxDC::GetPixel(double x, double y, wxColour *col)
   HDC dc;
   COLORREF pixelcolor;
 
-  dc = ThisDC();
+  dc = ThisDC(FALSE);
 
   if (!dc) return FALSE;
 
@@ -1473,7 +1507,7 @@ void wxDC::SetFont(wxFont *the_font)
 {
   HDC dc;
 
-  dc = ThisDC();
+  dc = ThisDC(FALSE);
   if (!dc) return;
 
   font = the_font;
@@ -1883,7 +1917,7 @@ void wxDC::SetBackground(wxColour *c)
   }
 #endif
   
-  dc = ThisDC();
+  dc = ThisDC(FALSE);
 
   new_color = c->pixel;
   if (new_color != cur_bk || dc != cur_dc) {
@@ -2067,7 +2101,7 @@ double wxDC::GetCharHeight(void)
   TEXTMETRIC lpTextMetric;
   HDC dc;
 
-  dc = ThisDC();
+  dc = ThisDC(FALSE);
 
   if (!dc) return 10;
 
@@ -2083,7 +2117,7 @@ double wxDC::GetCharWidth(void)
   TEXTMETRIC lpTextMetric;
   HDC dc;
 
-  dc = ThisDC();
+  dc = ThisDC(FALSE);
 
   if (!dc) return 5;
 
@@ -2121,7 +2155,7 @@ void wxDC::GetTextExtent(const char *string, double *x, double *y,
 
   fam = theFont->GetFamily();
 
-  dc = ThisDC();
+  dc = ThisDC(FALSE);
 
   ReleaseGraphics(dc);
 
@@ -2186,7 +2220,7 @@ void wxDC::ResetMapMode(HDC given_dc)
   if (given_dc)
     dc = given_dc;
   else {
-    dc = ThisDC();
+    dc = ThisDC(FALSE);
     
     if (!dc) return;
   }
@@ -2415,10 +2449,10 @@ Bool wxDC::Blit(double xdest, double ydest, double width, double height,
   sel = (wxMemoryDC *)source->selectedInto;
   if (sel) {
     sel->SetScaleMode(wxWX_SCALE);
-    dc_src = sel->ThisDC();
+    dc_src = sel->ThisDC(FALSE);
   } else {
     blit_dc->SelectObject(source);
-    dc_src = blit_dc->ThisDC();
+    dc_src = blit_dc->ThisDC(FALSE);
   }
 
   if (!dc_src) {
@@ -2443,7 +2477,7 @@ Bool wxDC::Blit(double xdest, double ydest, double width, double height,
       msel = (wxMemoryDC *)mask->selectedInto;
       if (msel) {
 	msel->SetScaleMode(wxWX_SCALE);
-	mdc = msel->ThisDC();
+	mdc = msel->ThisDC(FALSE);
       } else {
 	if (!blit_mdc) {
 	  wxREGGLOB(blit_mdc);
@@ -2451,119 +2485,146 @@ Bool wxDC::Blit(double xdest, double ydest, double width, double height,
 	}
 	
 	blit_mdc->SelectObject(mask);
-	mdc = blit_mdc->ThisDC();
+	mdc = blit_mdc->ThisDC(FALSE);
       }
     }
 
     mono_src = (source->GetDepth() == 1);
-    
-    invented = new wxBitmap(iw, ih, mono_src);
-    if (invented->Ok()) {
-      GC_CAN_IGNORE void *pBits = NULL; /* set with use_alpha... */
 
+    if (mask->mask_cache
+	&& (mask->mask_cache == source->mask_cache)
+	&& (mask != selected_bitmap)
+	&& (source != selected_bitmap)
+	&& (source->mask_cache->selected_bitmap)) {
+      invented = NULL;
+      invented_memdc = source->mask_cache;
+      invented_dc = invented_memdc->ThisDC();
       if (mask->GetDepth() > 1) {
-	if (!tried_ab) {
-	  HMODULE mod;
-	  mod = LoadLibrary("Msimg32.dll");
-	  if (mod)
-	    wxAlphaBlend = (wxALPHA_BLEND)GetProcAddress(mod, "AlphaBlend");
-	  tried_ab = 1;
-	}
 	if (wxAlphaBlend)
 	  use_alpha = 1;
-	/* Otherwise, no AlphaBlend. The result is somewhat unpredictable,
-	   but somewhat as intended --- especially if we happend
-	   to be drawing onto white. :) */
       }
+    } else {
+      invented = new wxBitmap(iw, ih, mono_src);
+      if (invented->Ok()) {
+	GC_CAN_IGNORE void *pBits = NULL; /* set with use_alpha... */
 
-      if (use_alpha) {
-	pBits = invented->ChangeToDIBSection();
-	if (!pBits) {
-	  use_alpha = 0;
-	  /* half-failure... act like AlphaBlend isn't there */
+	if (mask->GetDepth() > 1) {
+	  if (!tried_ab) {
+	    HMODULE mod;
+	    mod = LoadLibrary("Msimg32.dll");
+	    if (mod)
+	      wxAlphaBlend = (wxALPHA_BLEND)GetProcAddress(mod, "AlphaBlend");
+	    tried_ab = 1;
+	  }
+	  if (wxAlphaBlend)
+	    use_alpha = 1;
+	  /* Otherwise, no AlphaBlend. The result is somewhat unpredictable,
+	     but somewhat as intended --- especially if we happend
+	     to be drawing onto white. :) */
 	}
-      }
-
-      invented_memdc = new wxMemoryDC();
-      invented_memdc->SelectObject(invented);
-
-      if (invented_memdc->Ok()) {
-	invented_dc = invented_memdc->ThisDC();
-
-	/* Copy original src image here: */
-	BitBlt(invented_dc, 0, 0,
-	       iw, ih,
-	       dc_src, xsrc1, ysrc1,
-	       SRCCOPY);
 
 	if (use_alpha) {
-	  /* "Pre-compute" alpha in the invented DC */
-	  GC_CAN_IGNORE BYTE *pPixel;
-	  COLORREF mcol;
-	  int i, j, gray;
-
-	  GdiFlush();
-	  for (j = 0; j < ih; j++) {
-	    pPixel = (BYTE *) pBits + iw * 4 * (ih - j - 1);
-	    for (i = 0; i < iw; i++) {
-	      mcol = ::GetPixel(mdc, i + xsrc1, j + ysrc1);
-	      gray = ((int)GetRValue(mcol)
-		      + (int)GetGValue(mcol)
-		      + (int)GetBValue(mcol)) / 3;
-	      pPixel[0] = pPixel[0] * (255 - gray) / 255; 
-	      pPixel[1] = pPixel[1] * (255 - gray) / 255; 
-	      pPixel[2] = pPixel[2] * (255 - gray) / 255; 
-	      pPixel[3] = (255 - gray);
-	      
-	      pPixel += 4;
-            }
-	  }
-	} else {
-	  /* Want white where mask was white,
-	     src otherwise: */
-	  BitBlt(invented_dc, 0, 0,
-		 iw, ih,
-		 mdc, xsrc1, ysrc1,
-		 SRCPAINT /* DSo */);
-
-	  /* Ignore the mask and... */
-	  mask = NULL;
-	  if (mono_src) {
-	    /* Mono source: Now use invented_dc instead of src_dc,
-	       and it all works out. */
-	    xsrc1 = 0;
-	    xsrc1 = 0;
-	  } else {
-	    /* Paint on dest using mask, then "and" invented image
-	       with dest. */
-	    invented_col = 1;
+	  pBits = invented->ChangeToDIBSection();
+	  if (!pBits) {
+	    use_alpha = 0;
+	    /* half-failure... act like AlphaBlend isn't there */
 	  }
 	}
-      } else {
-	/* Failed (Rest of failure handling below since !invented_memdc) */
-	invented_memdc->SelectObject(NULL);
-	DELETE_OBJ invented_memdc;
-	invented_memdc = NULL;
-	DELETE_OBJ invented;
-      }
-    }
 
-    if (!invented_memdc) {
-      /* Failed */
-      if (msel) {
-	msel->DoneDC(mdc);
-      } else {
-	blit_mdc->DoneDC(mdc);
-	blit_mdc->SelectObject(NULL);
+	invented_memdc = new wxMemoryDC();
+	invented_memdc->SelectObject(invented);
+
+	if (invented_memdc->Ok()) {
+	  invented_dc = invented_memdc->ThisDC();
+
+	  /* Copy original src image here: */
+	  BitBlt(invented_dc, 0, 0,
+		 iw, ih,
+		 dc_src, xsrc1, ysrc1,
+		 SRCCOPY);
+
+	  if (use_alpha) {
+	    /* "Pre-compute" alpha in the invented DC */
+	    GC_CAN_IGNORE BYTE *pPixel;
+	    COLORREF mcol;
+	    int i, j, gray;
+
+	    GdiFlush();
+	    for (j = 0; j < ih; j++) {
+	      pPixel = (BYTE *) pBits + iw * 4 * (ih - j - 1);
+	      for (i = 0; i < iw; i++) {
+		mcol = ::GetPixel(mdc, i + xsrc1, j + ysrc1);
+		gray = ((int)GetRValue(mcol)
+			+ (int)GetGValue(mcol)
+			+ (int)GetBValue(mcol)) / 3;
+		pPixel[0] = pPixel[0] * (255 - gray) / 255; 
+		pPixel[1] = pPixel[1] * (255 - gray) / 255; 
+		pPixel[2] = pPixel[2] * (255 - gray) / 255; 
+		pPixel[3] = (255 - gray);
+	      
+		pPixel += 4;
+	      }
+	    }
+	  } else {
+	    /* Want white where mask was white,
+	       src otherwise: */
+	    BitBlt(invented_dc, 0, 0,
+		   iw, ih,
+		   mdc, xsrc1, ysrc1,
+		   SRCPAINT /* DSo */);
+
+	    /* Ignore the mask and... */
+	    mask = NULL;
+	    if (mono_src) {
+	      /* Mono source: Now use invented_dc instead of src_dc,
+		 and it all works out. */
+	      xsrc1 = 0;
+	      xsrc1 = 0;
+	    } else {
+	      /* Paint on dest using mask, then "and" invented image
+		 with dest. */
+	      invented_col = 1;
+	    }
+	  }
+	} else {
+	  /* Failed (Rest of failure handling below since !invented_memdc) */
+	  invented_memdc->SelectObject(NULL);
+	  DELETE_OBJ invented_memdc;
+	  invented_memdc = NULL;
+	  DELETE_OBJ invented;
+	}
       }
-      DoneDC(dc);
-      if (sel) {
-	sel->DoneDC(dc_src);
-      } else {
-	blit_dc->DoneDC(dc_src);
-	blit_dc->SelectObject(NULL);
+
+      if (!invented_memdc) {
+	/* Failed */
+	if (msel) {
+	  msel->DoneDC(mdc);
+	} else {
+	  blit_mdc->DoneDC(mdc);
+	  blit_mdc->SelectObject(NULL);
+	}
+	DoneDC(dc);
+	if (sel) {
+	  sel->DoneDC(dc_src);
+	} else {
+	  blit_dc->DoneDC(dc_src);
+	  blit_dc->SelectObject(NULL);
+	}
+	return 0;
       }
-      return 0;
+
+      if ((mask != selected_bitmap)
+	  && (source != selected_bitmap)) {
+	mask->ReleaseCachedMask();
+	source->ReleaseCachedMask();
+	mask->mask_cache = invented_memdc;
+	source->mask_cache = invented_memdc;
+	if (source == mask)
+	  invented_memdc->refcount = 1;
+	else
+	  invented_memdc->refcount = 2;
+	invented = NULL; /* indicates that we cached invented */
+      }
     }
   }
 
@@ -2658,10 +2719,13 @@ Bool wxDC::Blit(double xdest, double ydest, double width, double height,
     }
   }
   if (invented_memdc) {
-    invented_memdc->DoneDC(invented_dc);
-    invented_memdc->SelectObject(NULL);
-    DELETE_OBJ invented_memdc;
-    DELETE_OBJ invented;
+    /* If invented, then cached, so don't delete here. */
+    if (invented) {
+      invented_memdc->DoneDC(invented_dc);
+      invented_memdc->SelectObject(NULL);
+      DELETE_OBJ invented_memdc;
+      DELETE_OBJ invented;
+    }
   }
 
   return success;
@@ -2672,7 +2736,7 @@ void wxDC::GetSize(double *width, double *height)
   HDC dc;
   int w, h;
 
-  dc = ThisDC();
+  dc = ThisDC(FALSE);
 
   if (!dc) {
     *width = *height = 0;
@@ -2692,7 +2756,7 @@ void wxDC::GetSizeMM(double *width, double *height)
   HDC dc;
   int w, h;
 
-  dc = ThisDC();
+  dc = ThisDC(FALSE);
 
   if (!dc) {
     *width = *height = 0;
@@ -2755,7 +2819,7 @@ void wxCanvasDC::TryColour(wxColour *src, wxColour *dest)
   HDC dc;
   int r, gr, b;
 
-  dc = ThisDC();
+  dc = ThisDC(FALSE);
   if (!dc) {
     dest->Set(0, 0, 0);
     return;
