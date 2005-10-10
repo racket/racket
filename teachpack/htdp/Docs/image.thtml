@@ -5,12 +5,13 @@ This teachpack provides primitives for constructing and
 manipulating images.
 
 These functions create basic shapes. The mode can be either
-<code>'solid</code>, meaning the shape is filled in, or
-<code>'outline</code>, meaning the shape is hollow. Image
+<code>'solid</code> or <code>"solid"</code>, meaning the
+shape is filled in, or <code>'outline</code> or
+<code>"outline"</code>, meaning the shape is hollow. Image
 colors can be either symbols (like <code>'blue</code>),
 strings (like <code>"blue"</code>), or color structs (like
-<code>(make-color 0 0 255)</code>) -- see below for
-more information about color structs.
+<code>(make-color 0 0 255)</code>) -- see below for more
+information about color structs.
 
 <menu>
 <li><code>{(idx rectangle)}</code> :  int int mode image-color -> image <br>
