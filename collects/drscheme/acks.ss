@@ -51,6 +51,7 @@
      "Biep Durieux, "
      "Tim Hanson, "
      "Chihiro Kuraya, "
+     "Paulo Jorge Matos, "
      "Philippe Meunier, "
      "Jens Axel Søgaard, "
      "Francisco Solsona, "

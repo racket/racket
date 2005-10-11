@@ -1,0 +1,1284 @@
+#|
+
+When modifying the string constants files,
+please adhere to these guidelines:
+
+- All the entries in english-string-constants.ss have the same format
+  (name string).  If the purpose of an entry you are adding to the
+  file is not clear from just the name and string, put a comment next
+  to the entry explaining what the string is going to be used for and
+  in what context.
+  That's especially true for strings that contain things like "~a".
+  Systematically describe what the "~a" is going to be replaced with.
+  When we have to translate strings like "deleting ~a", we translators
+  need to know what "~a" is going to be (in particular, in some
+  languages like French, we need to know whether the "~a" is going to
+  be a masculine or feminine word, or whether it's going to be
+  singular or plural, etc).
+
+- When adding a bunch of new entries, put together in a section the
+  entries that logically belong together.  Give a title to your
+  section, so we have an idea of what the strings are for.  Don't mix
+  in the same section strings that have nothing to do with each other,
+  that's only going to confuse us.  Do not start a new section if
+  there's already one that deals with the same thing.  Dumping all the
+  new entries in random order at the end of the file is not a good way
+  to have your new entries translated in a timely manner...
+
+- Before adding strings for your new pet tool, check whether you can't
+  re-use strings that already exist.  There's no need for yet another
+  "Ok" string...
+
+- If you modify an existing string in english-string-constants.ss, go
+  through all the *-string-constants.ss files for the other languages,
+  comment out the old version of the modified string in each of these
+  files, and put a short comment there telling us the English string
+  has changed and needs to be re-translated.  Do not erase the old
+  version, it might help us translate the new one.  Do not move it
+  either.  Just comment it out and add the short comment.  After the
+  next svn update DrScheme will automatically tell us translators that
+  a new string needs to be translated, we will find your comment in
+  the file, and know what to do.
+	Some evil evil people might think that, since DrScheme automatically
+  informs us of new strings to be translated, an easier thing to do
+  when modifying an existing string would be to simply rename it at
+  the same time.  This works, except that if you do that, we
+  translators will get two warnings from DrScheme:
+		language english had but french does not:
+		(new-name "New String")
+		language french had but english does not:
+		(old-name "Old String")
+  then we translators will be left to wonder whether the two things
+  are related or not, and whether we can safely base our translation
+  of "New String" on the translation of "Old String" (since the two
+  strings are likely to be close in meaning).  Worse, we might not
+  even realize the two strings are related and translate "New String"
+  from scratch, just to realize later that it's only a variation of
+  "Old String".  I can tell you that nothing pisses off a translator
+  more than having to translate pretty much the same string twice
+  just because *you* were too lazy to inform us that it was just a
+  slight modification to an existing string rather than an entirely
+  new one.  Conclusion: do not change the name of a string unless you
+  have some really good reason to do so.
+
+- Please think hard before choosing a string and make sure it means
+  what you want it to mean.  That way you won't have to change it
+  later, and we won't have to retranslate it.
+
+- Please think hard before choosing the name for a string.  Use
+  meaningful names.  "error" or "ok" are not meaningful names.  Prefix
+  all related names with a common prefix (the name of your tool or
+  module).  String names are not the right place to save on typing.
+
+- If, for some reason, you really have to change the name of a string
+  (like, because the original name you gave it really sucked...),
+  change the name of the string in *ALL* the *-string-constants.ss
+  files.  That's a modification you can do without the help of a
+  translator, so do it yourself.  It's not the job of the translators
+  to clean up your naming mess for you.  Besides, you are the one who
+  knows what you changed, so leaving the translators having to guess
+  what you did is Not Nice(tm).
+
+- If, for some reason, you need to remove a string (i.e. you changed
+  your code and don't need the string anymore), remove the string in
+  *ALL* the *-string-constants.ss files.  Again, you don't need the
+  help of a translator to do that.  If you're not sure whether you
+  might need the string in the future or not, just comment it out in
+  *ALL* the files.
+
+|#
+
+(module portuguese-string-constants "string-constant-lang.ss"
+ ;;; when translating this constant, substitute name of actual language for `English'
+ (is-this-your-native-language "Português é a tua língua materna?")
+
+ (are-you-sure-you-want-to-switch-languages
+  "Isto vai modificar a língua da interface gráfica, o que requere que reinicie o DrScheme. Tem a certeza que deseja prosseguir?")
+
+ (interact-with-drscheme-in-language "Usar o DrScheme em Português")
+
+ ;; these two should probably be the same in all languages except English.
+ ;; they are the button labels (under macos and windows, respectively)
+ ;; that go the with the string above.
+ (accept-and-quit "Aceitar e Sair")
+ (accept-and-exit "Aceitar e Sair")
+ 
+ ;;; general purpose (DrScheme is hereby a word in every language, by decree of Robby :)
+ (plt "PLT")
+ (drscheme "DrScheme")
+ (ok "OK")
+ (cancel "Cancelar")
+ (abort "Abortar")
+ (untitled "SemNome")
+ (untitled-n "SemNOme ~a")
+ (warning "Aviso")
+ (error "Erro")
+ (close "Fechar") ;; as in, close an open window. must match close-menu-item
+                  ;; in the sense that, when the &s have been stripped from
+                  ;; close-menu-item, it must be the same string as this.
+ (stop "Parar")   
+ (&stop "&Parar") ;; for use in button and menu item labels, with short cut.
+ (are-you-sure-delete? "Tem a certeza que deseja apagar ~a?") ;; ~a is a filename or directory name
+ (ignore "Ignorar")
+ (revert "Reverter")
+
+ ;; label for a generic check box, often supported on dialogs
+ ;; that ask a binary choice of the user. If checked, the
+ ;; dialog isn't going to be shown again.
+ (dont-ask-again "Não voltar a perguntar (utilizar sempre a escolha actual)")
+
+ ;;; important urls
+ (web-materials "Sitios na Web Relacionados") ;; menu item title
+ (tool-web-sites "Sitios na Web de Ferramentas")   ;; menu item title
+ (drscheme-homepage "DrScheme")
+ (plt-homepage "PLT")
+ (how-to-use-scheme "Como Usar o Scheme") ;; title of a book.
+ (teachscheme!-homepage "AprenderScheme!") ;; probably this should be a `word' in all languages
+
+ ;;; bug report form
+ (cancel-bug-report? "Cancelar Relatório de Erro?")
+ (are-you-sure-cancel-bug-report?
+  "Tem a certeza que deseja cancelar o envio deste relatório de erro?")
+ (bug-report-form "Formulário de Relatório de Erro")
+ (bug-report-field-name "Nome")
+ (bug-report-field-email "Email")
+ (bug-report-field-summary "Sumário")
+ (bug-report-field-severity "Gravidade")
+ (bug-report-field-class "Categoria")
+ (bug-report-field-priority "Prioridade")
+ (bug-report-field-description "Descrição")
+ (bug-report-field-reproduce1 "Passos a")
+ (bug-report-field-reproduce2 "Reproduzir")
+ (bug-report-field-environment "Ambiente")
+ (bug-report-field-tools "Ferramentas")
+ (bug-report-field-docs-installed "Documentação Instalada")
+ (bug-report-field-language "Linguagem")
+ (bug-report-field-teachpacks "Pacotes de Aprendizagem")
+ (bug-report-field-collections "Colecções")
+ (bug-report-field-human-language "Língua")
+ (bug-report-field-version "Versão")
+ (bug-report-synthesized-information "Informação Sintetizada")  ;; dialog title
+ (bug-report-show-synthesized-info "Mostrar Informação Sintetizada")
+ (bug-report-submit "Enviar")
+ (bug-report-submit-menu-item "Enviar Relatório de Erro") ;; in Help Menu (drs & help desk)
+ (sending-bug-report "A Enviar Relatório de Erro")
+ (error-sending-bug-report "Erro a Enviar Relatório de Erro")
+ (error-sending-bug-report-expln "Um erro ocorreu enquanto o relatório de erro estava a ser enviado. Se a sua ligação à internet está a funcionar correctamente, por favor visite:\n\n http://bugs.plt-scheme.org/\n\ne envie o erro através do nosso formulário online. Pedimos desculpa pelo incómodo.\n\nA mensagem de erro é:\n~a")
+ (bug-report-sent "Relatório de Erro Enviado")
+ (bug-report-sent-detail "Obrigado pelo relatório. Deverá receber um email de confirmação nos próximos 30 minutos. Se tal não ocorrer, envie um email para scheme@plt-scheme.org.")
+ (illegal-bug-report "Relatório de Erro Ilegal")
+ (pls-fill-in-field "Por favor preencha o campo \"~a\"")
+ (malformed-email-address "Endereço de email mal formado")
+ (pls-fill-in-either-description-or-reproduce "Por favor preencha o campo de Descrição ou o campo com os Passos para Reproduzir.")
+
+ ;;; check syntax
+ (check-syntax "Verificar Sintaxe")
+ (cs-italic "Itálico")
+ (cs-bold "Negrito")
+ (cs-underline "Sublinhado")
+ (cs-change-color "Modificar cor")
+ (cs-tack/untack-arrow "Tack/Untack Arrow(s)")
+ (cs-jump-to-next-bound-occurrence "Saltar para a Próxima Ocorrência")
+ (cs-jump-to-binding "Ir para a Próxima Atribuição")
+ (cs-jump-to-definition "Ir para a Definição")
+ (cs-error-message "Mensagem de Erro")
+ (cs-open-file "Abrir ~a")
+ (cs-rename-var "Renomear ~a")
+ (cs-rename-id "Renomear Identificador")
+ (cs-rename-var-to "Renomear ~a para:")
+ (cs-name-duplication-error "O novo nome que escolheu, ~s, entra em conflito com um nome já existente no ambiente corrente.")
+ (cs-rename-anyway "Renomear na Mesma")
+ (cs-status-init "Verificar Sintaxe: A Inicializar ambiente para o código do utilizador")
+ (cs-status-coloring-program "Verificar Sintaxe: a colorir expressão")
+ (cs-status-eval-compile-time "Veriricar Sintaxe: tempo de compilação do eval")
+ (cs-status-expanding-expression "Verificar Sintaxe: a expandir a expressão")
+ (cs-mouse-over-import "a ligar ~s importada de ~s")
+
+ (cs-lexical-variable "variável léxica")
+ (cs-lexical-syntax "sintaxe léxica")
+ (cs-imported-variable "variável importada")
+ (cs-imported-syntax "sintaxe importada")
+
+ ;;; info bar at botttom of drscheme frame
+ (collect-button-label "GC")
+ (read-only "Apenas Leitura")
+ (read/write "Leitura/Escrita")
+ (auto-extend-selection "Auto-Extensível")
+ (overwrite "Reescrever")
+ (running "a executar")
+ (not-running "parado")
+ 
+ ;;; misc
+ (welcome-to-something "Benvindo a ~a")
+ 
+ ; this appears in the drscheme about box.
+ (welcome-to-drscheme-version/language "Benvindo ao DrScheme, versão ~a, ~a")
+
+ ; these appear on subsequent lines in the `Help|Welcome to DrScheme' dialog.
+ (welcome-to-drscheme "Benvindo ao DrScheme")
+ (version/language "versão ~a, ~a")
+
+ (goto-line "Ir para a Linha")
+ (goto-line-invalid-number
+  "~a não é um número de linha válido. Deve ser um inteiro entre 1 e ~a")
+ (goto-position "Ir para a Posição")
+ (no-full-name-since-not-saved
+  "O ficheiro não tem um nome completo porque ainda não foi gravado.")
+ (cannot-open-because-dne "Impossível abrir ~a porque não existe.")
+ (interactions-out-of-sync
+  "AVISO: Janela de Interacções não está sincronizada com a janela das definições. Clica em Correr.")
+ (file-is-not-saved "O ficheiro \"~a\" não está gravado.")
+ (save "Gravar")
+ (please-choose-either "Por favor, escolha \"~a\" ou \"~a\"")
+ (close-anyway "Fechar na Mesma")
+ (clear-anyway "Limpar na Mesma")
+
+ ;; menu item title
+ (log-definitions-and-interactions "Arquivar Definições e Interacções...")
+ (stop-logging "Parar Arquivação")
+ (please-choose-a-log-directory "Por favor escolha uma directoria de arquivação")
+ (logging-to "A arquivar para: ")
+ (erase-log-directory-contents "Apagar todo o conteúdo da directoria de arquivação: ~a?")
+ (error-erasing-log-directory "Erro a apagar o conteúdo da directoria de arquivação.\n\n~a\n")
+
+ ;; modes
+ (mode-submenu-label "Modos")
+ (scheme-mode "Modo Scheme")
+ (text-mode "Modo Texto")
+
+ (scheme-mode-color-symbol "Símbolo")
+ (scheme-mode-color-keyword "Palavra-Chave")
+ (scheme-mode-color-comment "Comentário")
+ (scheme-mode-color-string "String")
+ (scheme-mode-color-constant "Constante")
+ (scheme-mode-color-parenthesis "Parêntesis")
+ (scheme-mode-color-error "Erro")
+ (scheme-mode-color-other "Outro")
+ ;; the ~a is filled in with one of the above (scheme-mode-*)
+ (syntax-coloring-choose-color "Escolher uma cor para ~a")
+ (preferences-colors "Cores") ;; used in the preferences dialog
+ 
+ (url "URL")
+ (url: "URL:")
+ (open-url... "Abrir URL...")
+ (open-url "Abrir URL")
+ (browse... "Procurar...")
+ (bad-url "URL Errado")
+ (bad-url:this "URL Errado: ~a")
+ 
+ ;; Help Desk
+ (help "Ajuda")
+ (help-desk "Directorio de Ajuda")
+ (plt:hd:search-results "Resultados da procura")
+ (plt:hd:search "Procurar")
+ (plt:hd:search-for "Procurar por")
+ (plt:hd:lucky "Sortudo!")
+ (plt:hd:feeling-lucky "Sinto-me Sortudo")
+ (plt:hd:stop "Parar")   
+ (plt:hd:options "Opções") 
+ (plt:hd:configure "Configurar")
+ (plt:hd:home "Início do Directorio de Ajuda") 
+ (plt:hd:show-manuals "Mostrar Manuais") 
+ (plt:hd:send-bug-report "Enviar relatório de erro")
+ (plt:hd:query-bug-reports "Procurar Relatório de Erros")
+ ; next 3 are popup menu choices in help desk search frame
+ (plt:hd:search-for-keyword "Procurara por palavra-chave")
+ (plt:hd:search-for-keyword-or-index "Procurar por palavra-chave ou índice")
+ (plt:hd:search-for-keyword-or-index-or-text "Procurar por palavra-chave, índice ou texto")
+ (plt:hd:exact-match "Procura exacta")
+ (plt:hd:containing-match "A conter a procura")
+ (plt:hd:regexp-match "Procura de expressão regular (regexp)")
+ (plt:hd:find-docs-for "Procurar documentos por:")
+ (plt:hd:nothing-found-for-search-key "Nada foi encontrado para \"~a\".")
+ (plt:hd:searching "A Procurar...")
+ (plt:hd:search-stopped "[Procura Parada.]")
+ (plt:hd:search-stopped-too-many-matches "[Procura Abortada: demasiados resultados]")
+ (plt:hd:nothing-found-for "Nada encontrado para ~a")
+ (plt:hd:error-finding-docs "Não foi possível encontrar a documentação.\n\n~a")
+ (plt:hd:and "e")
+ (plt:hd:refresh "Refrescar")
+ (plt:hd:refresh-all-manuals "Refrescar todos os manuais")
+ (plt:hd:manual-installed-date "(instalado a ~a)")
+ ; Help Desk configuration
+ (plt:hd:configuration "Configuração do Directorio de Ajuda PLT")
+ (plt:hd:no-frames "Sem Janelas")
+ (plt:hd:use-frames "Usar Janelas")
+ (plt:hd:use-html-frames "Usar Janelas HTML")
+ (plt:hd:search-pane-options "Procurar opções de painel")
+ (plt:hd:height "Altura")
+ (plt:hd:bg-color "Cor de fundo")
+ (plt:hd:pixels "pixels")
+ (plt:hd:text-color "Cor do texto")
+ (plt:hd:link-color "Cor da ligação")
+ (plt:hd:text-sample "O texto do painel de procura aparece com esta cor")
+ (plt:hd:link-sample "O texto do painel de ligações aparece com esta cor")
+ (plt:hd:save-changes "Gravar modificações")
+ (plt:hd:reset "Reset")
+ (plt:hd:defaults "Opções por defeito")
+ (plt:hd:javascript-note
+  "As selecções que fizer serão mostradas aqui se tiver Javascript ligado e um navegador recente compatível com os standards actuais.")
+ ;; refreshing manuals
+ (plt:hd:refresh-downloading "A tirar ~a")
+ (plt:hd:refresh-installing "A instalar ~a")
+ (plt:hd:refresh-progress "Progresso de download do manual PLT")
+ (plt:hd:refresh-done "Terminou de actualizar os manuais")
+ (plt:hd:refresh-installation-log "Arquivo de Instalação")
+ (plt:hd:refresh-stopped "Actualização de manuais PLT parada")
+ (plt:hd:refreshing-manuals "Reactualização de manuais")
+ (plt:hd:refresh-downloading... "A tirar ~a...")
+ (plt:hd:refresh-deleting... "A apagar a versão antiga de ~a...")
+ (plt:hd:refresh-installing... "A instalar nova versão de ~a...")
+ (plt:hd:refresh-clearing-indicies "A apagar os índices em cache")
+ (plt:hd:refreshing-manuals-finished "Concluído.")
+ (plt:hd:about-help-desk "Sobre o Directorio de Ajuda")
+ (plt:hd:help-desk-about-string
+  "O Directorio de Ajuda é um recurso completo de informação sobre o software da PLT, incluindo o DrScheme, MzScheme e o MrEd.\n\nVersão ~a\n Copyright (c) 1995-2003 PLT")
+ (plt:hd:help-on-help "Ajuda sobre a Ajuda")
+ (plt:hd:help-on-help-details "Para ajuda sobre como utilizar o Directorio de Ajuda, seguir a ligação `Como usar o Directorio de Ajuda' no inicio do Directorio de Ajuda. (Para ir para o inicio se ainda não estiver lá, clique no botão `Início' no topo da janela do Directorio de Ajuda.)")
+  (reload "Actualizar") ;; refresh the page in a web browser
+  (plt:hd:ask-about-separate-browser
+   "Seleccionou uma ligação para um conteúdo na web. Quer visualizá-lo no navegador do Directorio de Ajuda, ou prefere usar um navegador independente?")
+  (plt:hd:homebrew-browser "Navegador do Directorio de Ajuda") ;; choice for the above string (in a button)
+  (plt:hd:separate-browser "Navegador Independente") ;; other choice for the above string (also in a button)
+  (plt:hd:external-link-in-help "URLs Externos na Ajuda")
+  (plt:hd:use-homebrew-browser "Usar o navegador do Directorio da Ajuda para URLs Externos")
+  (plt:hd:new-help-desk "Novo Directorio de Ajuda")
+  (plt:hd:teaching-manuals "Manuais de Estudantes")
+  (plt:hd:professional-manuals "Manuais Profissionais")
+  (plt:hd:all-manuals "Todos os Manuais")
+
+  ;; in the Help Desk language dialog, title on the right.
+  (plt:hd:manual-search-ordering "Ordem de Procura dos Manuais")
+
+
+ ;; Help desk htty proxy
+ (http-proxy "HTTP Proxy")
+ (proxy-direct-connection "Conexão Directa")
+ (proxy-use-proxy "Usar Proxy:")
+ (proxy-host "Host")
+ (proxy-port "Porto")
+ (proxy-bad-host "Host de Proxy Incorrecto")
+
+ ;; browser
+ (rewind-in-browser-history "Para Trás")
+ (forward-in-browser-history "Avançar")
+ (home "Início")
+ (browser "Navegador")
+ (external-browser-choice-title "Navegador Externo") ; title for radio-button set
+ (browser-command-line-label "Linha de Comandos:") ; label for radio button that is followed by text boxes
+ (choose-browser "Escolher um Navegador")
+ (no-browser "Perguntar mais tarde")
+ (use-internal-browser-for-help "Ler ajuda no navegador interno da PLT") ; radio-button label
+ (use-external-browser-for-help "Ler ajuda com um navegador de web externo") ; radio-button label
+ (browser-cmdline-expl-line-1 "(Linha de comando formada pela concatenação do texto inicial, URL,") ; explanatory text for dialog, line 1
+ (browser-cmdline-expl-line-2 "e o texto final, sem espaços extra entre eles.)") ; ... line 2. (Anyone need more lines?)
+ (cannot-display-url "Impossível mostrar URL ~s: ~a")
+ (install? "Instalar?")  ;; if a .plt file is found (title of dialog)
+ (you-have-selected-an-installable-package "Seleccionou um pacote instalável.")
+ (do-you-want-to-install-it? "Deseja instalá-lo?")
+ (paren-file-size "(Este ficheiro tem ~a bytes)")
+ (download-and-install "Tirar && Instalar") ;; button label
+ (download "Tirar") ;; button label
+ (save-downloaded-file/size "Gravar ficheiro tirado (~a bytes) como") ;; label for get-file dialog
+ (save-downloaded-file "Gravar ficheiro tirado como")  ;; label for get-file dialog
+ (downloading "A tirar") ;; dialog title
+ (downloading-file... "A tirar...")
+ (package-was-installed "O pacote foi instalado.")
+ (download-was-saved "O ficheiro tirado foi gravado.")
+ (getting-page "A buscar página") ;; dialog title
+
+ (install-plt-file-menu-item... "Instalar ficheiro .plt...")
+ (install-plt-file-dialog-title "Instalar ficheiro .plt")
+ (install-plt-web-tab "Web")
+ (install-plt-file-tab "Ficheiro")
+ (install-plt-filename "Nome do Ficheiro:")
+ (install-plt-url "URL:")
+ 
+ ;; install plt file when opened in drscheme strings
+ (install-plt-file "Instalar ~a ou abrir ficheiro para edição?")
+ (install-plt-file/yes "Instalar")
+ (install-plt-file/no "Editar")
+
+ (plt-installer-progress-window-title "Progresso da Instalação") ;; frame title
+ (plt-installer-abort-installation "Abortar Instalação") ;; button label
+ (plt-installer-aborted "Abortado.") ;; msg that appears in the installation window when installation is aborted
+
+ ;;; about box
+ (about-drscheme-frame-title "Sobre o DrScheme")
+ (take-a-tour "Dar uma Volta!")
+ (release-notes "Notas sobre esta Versão")
+ (parenthetical-last-version "(Versão anterior ~a)")
+ (parenthetical-last-language "(Linguagem anterior ~a)")
+ (parenthetical-last-version/language "(anterior versão ~a, linguagem ~a)")
+ 
+ 
+ ;;; save file in particular format prompting.
+ (save-as-plain-text "Gravar este ficheiro como texto?")
+ (save-in-drs-format "Gravar este ficheiro no formato específico de DrScheme?")
+ (yes "Sim")
+ (no "Não")
+ 
+ ;;; preferences
+ (preferences "Preferências")
+ (saving-preferences "Gravar Preferências")
+ (error-unmarshalling "Error unmarshalling ~a preference")
+ (error-saving-preferences "Erro a gravar preferências: ~a")
+ (error-reading-preferences "Erro a ler preferências")
+ (expected-list-of-length2 "esperava uma lista de tamanho 2")
+ (scheme-prefs-panel-label "Scheme")
+ (warnings-prefs-panel-label "Avisos")
+ (editor-prefs-panel-label "Editar")
+ (general-prefs-panel-label "Geral")
+ (highlight-parens "Iluminar entre parêntesis correctos")
+ (fixup-parens "Corrigir parêntesis")
+ (flash-paren-match "Iluminar correcção de parêntesis")
+ (auto-save-files "Auto-gravar ficheiros")
+ (backup-files "Gravar ficheiros como backup")
+ (map-delete-to-backspace "Mapar tecla de delete para backspace")
+ (verify-exit "Verificar Exit")
+ (ask-before-changing-format "Perguntar antes de modificar formato de gravação")
+ (wrap-words-in-editor-buffers "Wrap words in editor buffers")
+ (show-status-line "Mostrar linha de status")
+ (count-columns-from-one "Contar número de colunas a partir de um")
+ (display-line-numbers "Mostrar número da linha no buffer; sem offset de caracteres")
+ (enable-keybindings-in-menus "Activar ligações de teclas nos menus")
+ (automatically-to-ps "Imprimir automaticamente para um ficheiro postscript")
+ (option-as-meta "Tratar tecla option como meta") ;; macos/macos x only
+ (use-mdi "Usar Janelas MDI") ;;; ms windows only -- use that window in a window thingy
+ (separate-dialog-for-searching "Usar janela em separado para a procura")
+ (reuse-existing-frames "Reutilizar janelas já existentes para abrir novos ficheiros")
+ (default-fonts "Fontes por Defeito")
+ (paren-match-color "Cor de iluminação dos parêntesis"); in prefs dialog
+ (choose-color "Escolha uma Cor") ; in prefs dialog
+ (online-coloring-active "Coloração de sintaxe interactiva")
+ (open-files-in-tabs "Abrir ficheiros em tabs separados (não em janelas separadas)")
+ (show-interactions-on-execute "Abrir janela de interacções automaticamente quando correr um programa")
+ (limit-interactions-size "Limitar tamanho das interacções")
+ (background-color "Cor de fundo")
+ (default-text-color "Texto por defeito") ;; used for configuring colors, but doesn't need the word "color"
+ (choose-a-background-color "Por favor escolha uma cor de fundo")
+
+ ; title of the color choosing dialog
+ (choose-paren-highlight-color "Escolha uma Cor de Iluminação de Parêntesis")
+
+ ; should have entire alphabet
+ (font-example-string "The quick brown fox jumped over the lazy dogs.") 
+
+ (change-font-button-label "Modificar")
+ (fonts "Fontes")
+
+ ; filled with type of font, eg modern, swiss, etc.
+ (choose-a-new-font "Por favor, escolha uma nova \"~a\" fonte")
+
+ (font-size-slider-label "Tamanho")
+ (restart-to-see-font-changes "Reinicie para ver a mudança de fonte")
+
+ (font-prefs-panel-title "Fonte")
+ (font-name "Nome da Fonte")
+ (font-size "Tamanho da Fonte")
+ (set-font "Modificar Fonte...")
+ (font-smoothing-label  "Suavização da Fonte")
+ (font-smoothing-none "Nenhuma")
+ (font-smoothing-some "Alguma")
+ (font-smoothing-all "Total")
+ (font-smoothing-default "Usar opções por defeito do sistema")
+ (select-font-name "Seleccione o nome da fonte")
+ (example-text "Texto Exemplo:")
+ (only-warn-once "Avisar apenas uma vez quando as definições e as interacções não estiverem sincronizadas")
+ 
+ ; warning message when lockfile is around
+ (waiting-for-pref-lock "Waiting for the preferences lockfile...")
+ (pref-lock-not-gone
+  "The preferences lockfile:\n\n   ~a\n\nprevents the preferences from being saved. Ensure that no PLT software is running and delete this file.")
+ (still-locked-exit-anyway? "The preferences were not saved sucessfully. Exit anyway?")
+ 
+ ;;; indenting preferences panel
+ (indenting-prefs-panel-label "Indentação")
+ (indenting-prefs-extra-regexp "Expressões regulares extra")
+
+ ; filled with define, lambda, or begin
+ (enter-new-keyword "Insira nova palavra chave do tipo ~a:")
+ (x-keyword "Palavra Chave ~a")
+ (x-like-keywords "Palavras Chave do tipo ~a")
+
+ (expected-a-symbol "esperava um símbolo, recebeu: ~a")
+ (already-used-keyword "\"~a\" já é uma palavra chave na lista de indentação")
+ (add-keyword "Adicionar")
+ (remove-keyword "Remover")
+ 
+ ;;; find/replace
+ (find-and-replace "Procurar e SubstituirFind and Replace")
+ (find "Procurar")
+ (replace "Substituir")
+ (dock "Esconder")
+ (undock "Não Esconder")
+ (use-separate-dialog-for-searching "Usar uma janela separada para a procura")
+ (replace&find-again "Substituir && Procurar de Novo") ;;; need double & to get a single &
+ (replace-to-end "Substituir até ao Fim")
+ (forward "Avançar")
+ (backward "Recuar")
+ (hide "Esconder")
+ 
+ ;;; multi-file-search
+ (mfs-multi-file-search-menu-item "Procurar nos Ficheiros...")
+ (mfs-string-match/graphics "String match (handles files with graphics)")
+ (mfs-regexp-match/no-graphics "Expressão Regular (apenas com ficheiros de texto simples)")
+ (mfs-searching... "A Procurar...")
+ (mfs-configure-search "Configurar Procura") ;; dialog title
+ (mfs-files-section "Ficheiros")   ;; section in config dialog
+ (mfs-search-section "Procura") ;; section in config dialog
+ (mfs-dir "Directorio")
+ (mfs-recur-over-subdirectories "Recursão sobre subdirectorias")
+ (mfs-regexp-filename-filter "Expressão Regular para filtro do nome do ficheiro")
+ (mfs-search-string "String de Procura")
+ (mfs-drscheme-multi-file-search "DrScheme - Procura Multi Ficheiro") ;; results window and error message title
+ (mfs-not-a-dir "\"~a\" não é um directorio")
+ (mfs-open-file "Abrir Ficheiro")
+ (mfs-stop-search "Parar Procura")
+ (mfs-case-sensitive-label "Case sensitive")
+ (mfs-no-matches-found "No matches found.")
+ (mfs-search-interrupted "Procura Abortada.")
+ 
+ ;;; reverting a file
+ (error-reverting "DrScheme - Error Reverting")
+ (could-not-read "não foi possível ler \"~a\"")
+ (are-you-sure-revert
+  "Are you sure that you want to revert this file? This change cannot be undone.")
+ (are-you-sure-revert-title
+  "Revert?")
+ 
+ ;;; saving a file
+ ; ~a is filled with the filename
+ (error-saving "Erro a gravar") ;; title of error message dialog
+ (error-saving-file/name "Existiu um erro a gravar ~a.")
+ (error-loading "Erro a carregar")
+ (error-loading-file/name "Existiu um erro a carregar ~a.")
+ (unknown-filename "<< desconhecido >>")
+
+ ;;; finder dialog
+ (must-specify-a-filename "Deverá especificar um nome para o ficheiro")
+ (file-does-not-exist "O ficheiro \"~a\" não existe.")
+ (ask-because-file-exists "O ficheiro \"~a\" já existe. Deseja substituí-lo?")
+ (dne-or-cycle "The file \"~a\" contains a nonexistent directory or a cycle.")
+ (get-file "Get file")
+ (put-file "Put file")
+ (full-pathname "Full pathname")
+ (show-dot-files "Show files and directories that begin with a dot.")
+ (up-directory-button-label "Up directory")
+ (add-button-label "Add") ;;; for multi-file selection
+ (add-all-button-label "Add all") ;;; for multi-file selection
+ (remove-button-label "Remove") ;;; for multi-file selection
+ (file-wrong-form "That filename does not have the right form.")
+ (select-files "Select files")
+ (select-file "Select a file")
+ (dir-dne "That directory does not exist.")
+ (file-dne "That file does not exist.")
+ (empty-filename "The filename must have some letters in it.")
+ (that-is-dir-name "That is a directory name.")
+ 
+ ;;; raw menu names -- these must match the 
+ ;;; versions below, once the &s have been stripped.
+ ;;; if they don't, DrScheme's menus will appear
+ ;;; in the wrong order.
+ (file-menu "Ficheiro")
+ (edit-menu "Editar")
+ (help-menu "Ajuda")
+ (windows-menu "Janelas")
+ 
+ ;;; menus
+ ;;; - in menu labels, the & indicates a alt-key based shortcut.
+ ;;; - sometimes, things are stuck in the middle of 
+ ;;; menu item labels. For instance, in the case of
+ ;;; the "Save As" menu, you might see: "Save Definitions As". 
+ ;;; be careful of spacing, follow the English, if possible.
+ ;;; - the ellipses in the `after' strings indicates that
+ ;;; more information is required from the user before completing
+ ;;; the command.
+
+ (file-menu-label "&Ficheiro")
+
+ (new-info  "Abrir novo ficheiro")
+ (new-menu-item "&Novo")
+ (new-...-menu-item "&Novo...")
+
+ (open-info "Abrir ficheiro do disco")
+ (open-menu-item "&Abrir...")
+ (open-here-menu-item "&Abrir aqui...")
+
+ (open-recent-info "A lista dos ficheiros abertos mais recentes")
+ (open-recent-menu-item "Abrir Recente")
+ 
+ (revert-info "Revert this file to the copy on disk")
+ (revert-menu-item "&Revert")
+
+ (save-info "Gravar este ficheiro para o disco")
+ (save-menu-item "&Gravar")
+
+ (save-as-info "Prompt for a filename and save this file to disk")
+ (save-as-menu-item "Gravar &Como...")
+
+ (print-info "Enviar este ficheiro para a impressora")
+ (print-menu-item "&Imprimir...")
+
+ (close-info "Fechar este ficheiro")
+ (close-menu-item "&Fechar")
+
+ (quit-info "Fechar todas as janelas")
+ (quit-menu-item-windows "&Fechar")
+ (quit-menu-item-others "&Sair")
+ 
+ (edit-menu-label "&Editar")
+ 
+ (undo-info "Desfazer a acção mais recente")
+ (undo-menu-item "&Desfazer")
+
+ (redo-info "Undo the most recent undo")
+ (redo-menu-item "&Refazer")
+
+ (cut-info "Mover os items seleccionados para o clipboard para colar mais tarde")
+ (cut-menu-item "Cor&tar")
+
+ (copy-info "Copiar os items seleccionados para o clipboard para colar mais tarde")
+ (copy-menu-item "&Copiar")
+
+ (paste-info "Colar os items copiados ou cortados mais recentemente, em vez dos items seleccionados")
+ (paste-menu-item "&Colar")
+
+ (clear-info "Apagar os items seleccionados sem afectar o clipboard ou a colagem")
+ (clear-menu-item-others "Clear")
+ (clear-menu-item-windows "&Delete")
+
+ (select-all-info "Seleccionar o documento todo")
+ (select-all-menu-item "Se&leccionar Tudo")
+ 
+ (find-info "Procurar por uma string")
+ (find-menu-item "Procurar...")
+
+ (find-again-info "Procurar pela mesma string que anteriormente")
+ (find-again-menu-item "Procurar de novo")
+ 
+ (replace-and-find-again-info "Substituir o texto corrente e procurar pela mesma string que anteriormente")
+ (replace-and-find-again-menu-item "Substituir && Procurar de Novo")
+
+ (preferences-info "Configurar as tuas preferências")
+ (preferences-menu-item "Preferências...")
+
+ (keybindings-info "Show the currently active keybindings")
+ (keybindings-menu-item "Keybindings")
+ (keybindings-show-active "Show Active Keybindings")
+ (keybindings-frame-title "Keybindings")
+ (keybindings-sort-by-name "Sort by Name")
+ (keybindings-sort-by-key "Sort by Key")
+ (keybindings-add-user-defined-keybindings "Add User-defined Keybindings...")
+ (keybindings-menu-remove "Remove ~a")
+ (keybindings-choose-user-defined-file "Please choose a file containing keybindings.")
+
+ (user-defined-keybinding-error "Error running keybinding ~a\n\n~a")
+ (user-defined-keybinding-malformed-file "The file ~a does not contain a module written in the (lib \"keybinding-lang.ss\" \"framework\") language.")  
+  
+ ;; menu items in the "special" menu
+ (insert-text-box-item "Insert Text Box")
+ (insert-pb-box-item "Insert Pasteboard Box")
+ (insert-image-item "Insert Image...")
+ (insert-comment-box-menu-item-label "Insert Comment Box")
+ (insert-lambda "Insert λ")
+ (insert-delta "Insert &Delta (define)")
+
+ (wrap-text-item "Wrap Text")
+
+ (windows-menu-label "Janelas")
+ (bring-frame-to-front "Bring Frame to Front")       ;;; title of dialog
+ (bring-frame-to-front... "Bring Frame to Front...") ;;; corresponding title of menu item
+ (next-window "Next Window")
+ (previous-window "Previous Window")
+ (most-recent-window "Most Recent Window")
+
+ (view-menu-label "&View")
+ (show-overview "Show Program Contour") 
+ (hide-overview "Hide Program Contour")
+ (show-module-browser "Show Module Browser")
+ (hide-module-browser "Hide Module Browser")
+
+ (help-menu-label "Ajuda")
+ (about-info "Credits and details for this application")
+ (about-menu-item "About...")
+ (help-menu-check-for-updates "Check for Updates...")
+ 
+ ;; open here's new menu item
+ (create-new-window-or-clear-current
+  "Would you like to create a new window, or clear out the current one?")
+ (clear-current "Clear Current")
+ (new-window "New Window")
+
+ ;;; exiting and quitting ``are you sure'' dialog
+ ;;; exit is used on windows, quit on macos, in English. Other
+ ;;; languages probably use the same word on both platforms.
+ (exit "Sair")
+ (quit "Sair")
+ (are-you-sure-exit "Tem a certeza que deseja sair?")
+ (are-you-sure-quit "Tem a certeza que deseja sair?")
+ 
+ ;;; autosaving
+ (error-autosaving "Error autosaving \"~a\".") ;; ~a will be a filename
+ (autosaving-turned-off "Autosaving is turned off\nuntil the file is saved.")
+ (recover-autosave-files-frame-title "Recover Autosaved Files")
+ (autosave-details "Detalhes")
+ (autosave-recover "Recuperar")
+ (autosave-unknown-filename "<<desconhecido>>")
+  
+  ;; these are labels in a dialog that drscheme displays
+  ;; if you have leftover autosave files. to see the dialog,
+  ;; start up drscheme and modify (but don't save) a file
+  ;; (also, do this with an unsaved file). Wait for the autosave
+  ;; files to appear (typically 5 minutes). Kill DrScheme
+  ;; and restart it. You'll see the dialog
+  (autosave-autosave-label: "Autosave file:")
+  (autosave-original-label: "Original file:")
+  (autosave-autosave-label "Autosave file")
+  (autosave-original-label "Original file")
+  (autosave-compare-files "Compare autosave files")
+
+  (autosave-show-autosave "Autosave file") ;; title of a window showing the autosave file
+
+  (autosave-explanation "DrScheme found autosave files, which may contain your unsaved work.")
+
+  (autosave-recovered! "Recovered!") ;; status of an autosave file
+  (autosave-deleted "Deleted")       ;; status of an autosave file
+
+  (autosave-error-deleting "Error deleting ~a\n\n~a") ;; first is a filename, second is an error message from mz.
+  (autosave-delete-button "Delete")
+  (autosave-delete-title "Delete")  ;; title of a dialog asking for deletion confirmation
+  (autosave-done "Done")
+  
+  ;; appears in the file dialog
+  (autosave-restore-to-where? "Choose a place to save the autosave file.")
+  
+  
+ ;;; file modified warning
+ (file-has-been-modified
+  "The file has been modified since it was last saved. Overwrite the modifications?")
+ (overwrite-file-button-label "Overwrite")
+ 
+ (definitions-modified 
+  "The definitions text has been modified in the file-system; please save or revert the definitions text.")
+ (drscheme-internal-error "DrScheme Internal Error")
+ 
+ ;;; tools
+ (invalid-tool-spec "The tool specification in collection ~a's info.ss file is invalid. Expected either a string or a non-empty list of strings, got: ~e")
+ (error-loading-tool-title "DrScheme - Error loading tool ~s; ~s")
+ (error-invoking-tool-title "Error invoking tool ~s;~s")
+ (tool-tool-names-same-length
+  "expected `tool-names' and `tools' to be lists of the same length, in info.ss file for ~s, got ~e and ~e")
+ (tool-tool-icons-same-length
+  "expected `tool-icons' and `tools' to be lists of the same length, in info.ss file for ~s, got ~e and ~e")
+ (tool-tool-urls-same-length
+  "expected `tool-urls' and `tools' to be lists of the same length, in info.ss file for ~s, got ~e and ~e")
+ (error-getting-info-tool
+  "error loading info.ss file for ~s")
+ (tool-error-phase1 "Error in phase 1 for tool ~s; ~s")
+ (tool-error-phase2 "Error in phase 2 for tool ~s; ~s")
+
+
+ ;;; define popup menu
+ (end-of-buffer-define "<< end of buffer >>")
+ (sort-by-name "Sort by name")
+ (sort-by-position "Sort by position in file")
+ (no-definitions-found "<< no definitions found >>")
+ (jump-to-defn "Jump to definition of ~a")
+
+ (recent-items-sort-by-age "Sort by Age")
+ (recent-items-sort-by-name "Sort by Name")
+ 
+ ;;; view menu
+ (hide-definitions-menu-item-label "Esconder &Definições")
+ (show-definitions-menu-item-label "Mostrar &Definições")
+ (definitions-menu-item-help-string "Mostrar/Esconder janela de definições")
+ (show-interactions-menu-item-label "Mostrar &Interacções")
+ (hide-interactions-menu-item-label "Esconder &Interacções")
+ (interactions-menu-item-help-string "Mostrar/Esconder a janela de interacções")
+ (show-toolbar "Mostrar &Barra de Ferramentas")
+ (hide-toolbar "Esconder &Barra de Ferramentas")
+
+ ;;; file menu
+ (save-definitions-as "Gravar Definições &Como...")
+ (save-definitions "Gravar Definições")
+ (print-definitions "Imprimir Definições...")
+ (about-drscheme "Sobre DrScheme")
+ (save-other "Gravar Outro")
+ (save-definitions-as-text "Gravar Definições Como Texto...")
+ (save-interactions "Gravar Interacções")
+ (save-interactions-as "Gravar Interacções Como...")
+ (save-interactions-as-text "Gravar Interacções Como Texto...")
+ (print-interactions "Imprimir Interacções...")
+ (new-tab "Novo Tab")
+ (close-tab "Fechar Tab") ;; must not have any &s in it.
+ 
+ ;;; edit-menu
+ (split-menu-item-label "&Dividir")
+ (collapse-menu-item-label "C&olapsar")
+ 
+ ;;; language menu
+ (language-menu-name "&Linguagem")
+ 
+ ;;; scheme-menu
+ (scheme-menu-name "S&cheme")
+ (execute-menu-item-label "Correr")
+ (execute-menu-item-help-string "Reiniciar o programa na janela de definições")
+ (break-menu-item-label "Parar")
+ (break-menu-item-help-string "Break the current evaluation")
+ (kill-menu-item-label "Matar")
+ (kill-menu-item-help-string "Matar a avaliação actual")
+ (clear-error-highlight-menu-item-label "Clear Error Highlight")
+ (clear-error-highlight-item-help-string "Removes the pink error highlighting")
+ (reindent-menu-item-label "&Reindentar")
+ (reindent-all-menu-item-label "Reindentar &Tudo")
+ (semicolon-comment-out-menu-item-label "&Comentar com Ponto e Virgula")
+ (box-comment-out-menu-item-label "&Comentar com uma Caixa")
+ (uncomment-menu-item-label "&Descomentar")
+
+ (convert-to-semicolon-comment "Converter para Comentário Ponto e Virgula")
+ 
+ ;;; executables
+ (create-executable-menu-item-label "Criar Executável...")
+ (create-executable-title "Criar Executável")
+ (must-save-before-executable "Tem de gravar o seu programa antes de criar um executável.")
+ (save-an-executable "Save an Executable")
+ (save-a-mred-launcher "Save a MrEd Launcher")
+ (save-a-mzscheme-launcher "Save a MzScheme Launcher")
+ (save-a-mred-stand-alone-executable "Save a MrEd Stand-alone Executable")
+ (save-a-mzscheme-stand-alone-executable "Save a MzScheme Stand-alone Executable")
+
+ (definitions-not-saved "The definitions window has not been saved. The executable will use the latest saved version of the definitions window. Continue?")
+ (inline-saved-program-in-executable?
+  "Inline the saved program in the executable? If yes, you can copy the executable to another ~a computer but the executable will be quite large. If not, you cannot copy the executable to another computer, but it will be much smaller. Additionally, if not, the executable will load the latest version of the program.")
+ (use-mred-binary?
+  "Use the mred binary for this executable?\n\nIf yes, your program can use the (lib \"mred.ss\" \"mred\") library. If no, DrScheme will use mzscheme as the binary for this executable and you cannot use that library.\n\nIf unsure, choose yes.")
+ (inline-saved-program-in-executable/windows/path
+   "WARNING! The generated executable relies on three DLLs: libmred.dll, libmzsch.gll, and libgc.dll, which are located at\n\n~a\n\nThe executable finds the DLLs either in the executable's directory or through the PATH enviornment variable.\n\nWhen you installed DrScheme, the installer adjusted the user's PATH to include the directory where the DLLs were installed. Beware of configuration or user changes since installation.\n\nIf you move the executable to another machine, you must also copy the DLLs to the other machine --- either to the same directory as the executable, or to a directory in the other machine's PATH.")
+ (launcher "Launcher")
+ (stand-alone "Stand-alone")
+ (executable-type "Type")
+ (executable-base "Base")
+ (filename "Filename: ")
+ (create "Create")
+ (please-choose-an-executable-filename "Please choose a filename to save the executable.")
+ (windows-executables-must-end-with-exe
+  "The filename\n\n  ~a\n\nis illegal. Under Windows, executables must end with .exe.")
+ (macosx-executables-must-end-with-app
+  "The filename\n\n  ~a\n\nis illegal. Under MacOS X, an executable must be a directory whose name ends with .app.")
+ (warning-directory-will-be-replaced
+  "WARNING: the directory:\n\n  ~a\n\nwill be replaced. Proceed?")
+ 
+ (create-servlet "Create Servlet...")
+
+ ; the ~a is a language such as "module" or "algol60"
+ (create-servlet-unsupported-language
+  "Create Servlet does not work with the ~a language.")
+  
+ ;;; buttons
+ (execute-button-label "Correr") 
+ (save-button-label "Gravar")
+ (break-button-label "Parar")
+ 
+ ;;; search help desk popup menu
+ (search-help-desk-for "Procurar no Directorio de Ajuda por \"~a\"")
+ (exact-lucky-search-help-desk-for "Exact lucky search in Help Desk for \"~a\"")
+
+ ;; collapse and expand popup menu items
+ (collapse-sexp "Collapse sexpression")
+ (expand-sexp "Expand sexpression")
+ 
+ ;;; fraction dialog
+ (enter-fraction "Enter Fraction")
+ (whole-part "Whole Part")
+ (numerator "Numerator")
+ (denominator "Denominator")
+ (invalid-number "Invalid number: must be an exact, real, non-integral number.")
+ (insert-fraction-menu-item-label "Insert Fraction...")
+
+ ;; number snip popup menu
+ (show-decimal-expansion "View decimal expansion")
+ (show-fraction-view "View as fraction")
+ (show-mixed-fraction-view "View as mixed fraction")
+ (show-improper-fraction-view "View as improper fraction")
+ (show-more-decimal-places "Show more decimal places")
+ 
+ ;;; Teachpack messages
+ (select-a-teachpack "Select a Teachpack")
+ (clear-teachpack "Clear ~a Teachpack")
+ (teachpack-error-label "DrScheme - Teachpack error")
+ (teachpack-dne/cant-read "The teachpack file ~a does not exist or is not readable.")
+ (teachpack-didnt-load "The teachpack file ~a did not load properly.")
+ (teachpack-error-invoke "The teachpack file ~a raised an error when invoked.")
+ (add-teachpack-menu-item-label "Add Teachpack...")
+ (clear-all-teachpacks-menu-item-label "Clear All Teachpacks")
+ (drscheme-teachpack-message-title "DrScheme Teachpack")
+ (already-added-teachpack "Already added ~a teachpack")
+ 
+ ;;; Language dialog
+ (introduction-to-language-dialog
+  "Please select a language. Students in most introductory courses should use the default language.")
+ (language-dialog-title "Choose Language")
+ (case-sensitive-label "Case sensitive")
+ (output-style-label "Output Style")
+ (constructor-printing-style "Constructor")
+ (quasiquote-printing-style "Quasiquote")
+ (write-printing-style "write")
+ (print-printing-style "current-print")
+ (sharing-printing-label "Show sharing in values")
+ (use-pretty-printer-label "Insert newlines in printed values")
+ (input-syntax "Input Syntax")
+ (dynamic-properties "Dynamic Properties")
+ (output-syntax "Output Syntax")
+ (no-debugging-or-profiling "No debugging or profiling")
+ (debugging "Debugging")
+ (debugging-and-profiling "Debugging and profiling")
+ (test-coverage "Syntactic test suite coverage")
+ (whole/fractional-exact-numbers-label "Print numbers as fractions")
+ (booleans-as-true/false-label "Print booleans using true and false")
+ (show-details-button-label "Show Details")
+ (hide-details-button-label "Hide Details")
+ (choose-language-menu-item-label "Choose Language...")
+ (revert-to-language-defaults "Revert to Language Defaults")
+ (language-docs-button-label "Language Docs")
+ (fraction-style "Fraction Style")
+ (use-mixed-fractions "Mixed fractions")
+ (use-repeating-decimals "Repeating decimals")
+ (decimal-notation-for-rationals "Use decimal notation for rationals")
+ (please-select-a-language "Please select a language")
+
+ 
+ ;;; languages
+ (beginning-student "Beginning Student")
+ (beginning-one-line-summary "define, cond, structs, constants, and primitives")
+ (beginning-student/abbrev "Beginning Student with List Abbreviations")
+ (beginning/abbrev-one-line-summary "Beginner, with list style printing in the REPL")
+ (intermediate-student "Intermediate Student")
+ (intermediate-one-line-summary "Beginner plus lexical scope")
+ (intermediate-student/lambda "Intermediate Student with lambda")
+ (intermediate/lambda-one-line-summary "Intermediate plus higher-order functions")
+ (advanced-student "Advanced Student")
+ (advanced-one-line-summary "Intermediate plus lambda and mutation")
+ (full-language "Full") ;; also in the HtDP languages section
+ (how-to-design-programs "How to Design Programs") ;; should agree with MIT Press on this one...
+ (r5rs-like-languages "R5RS-like")
+ (pretty-big-scheme "Pretty Big (includes MrEd and Advanced)")
+ (pretty-big-scheme-one-line-summary "Adds syntax and functions from the HtDP languages")
+ (r5rs-lang-name "Standard (R5RS)")
+ (r5rs-one-line-summary "R5RS, with no frills")
+ (expander "Expander")
+ (expander-one-line-summary "Expands, rather than evaluates, expressions")
+ (professional-languages "Professional Languages")
+ (teaching-languages "Teaching Languages")
+ (experimental-languages "Experimental Languages")
+ 
+ (module-language-one-line-summary "Run creates a REPL in the context of the module, including the module's declared language")
+  
+
+ ;;; debug language
+ (unknown-debug-frame "[unknown]")
+ (backtrace-window-title "Backtrace - DrScheme")
+ (files-interactions "~a's interactions") ;; filled with a filename
+ (current-interactions "interactions")
+ (current-definitions "definitions")
+ (mzscheme-w/debug "Textual (MzScheme, includes R5RS)")
+ (mzscheme-one-line-summary "PLT's implementation Scheme")
+ (mred-w/debug "Graphical (MrEd, includes MzScheme)")
+ (mred-one-line-summary "Adds GUI support to MzScheme")
+
+ ;; profiling
+ (profiling-low-color "Low")
+ (profiling-high-color "High")
+ (profiling-choose-low-color "Please select a low color")
+ (profiling-choose-high-color "Please select a high color")
+ (profiling "Profiling")
+ (profiling-example-text "(define (whee) (whee))")
+ (profiling-color-config "Profiling Color Range") 
+ (profiling-scale "Profiling Color Scale")
+ (profiling-sqrt "Square root")
+ (profiling-linear "Linear")
+ (profiling-square "Square")
+ (profiling-number "Number of Calls")
+ (profiling-time "Cumulative Time")
+ (profiling-update "Update Profile")
+ (profiling-col-percent-time "% Time")
+ (profiling-col-function "Function")
+ (profiling-col-name "Name")
+ (profiling-col-time-in-msec "Msec")
+ (profiling-col-calls "Calls")
+ (profiling-show-profile "Show Profile")
+ (profiling-hide-profile "Hide Profile")
+ (profiling-unknown-src "<< unknown >>")
+ (profiling-no-information-available "There is no profiling information available. Please be sure that profiling is enabled in your language and you have run your program.")
+ (profiling-clear? "Changing the definitions window invalidates the profiling information. Continue?")
+ 
+ ;; test coverage
+ (test-coverage-clear? "Changing the definitions window invalidates the test coverage information. Continue?")
+ (test-coverage-clear-and-do-not-ask-again "Yes, and don't ask again")
+ (test-coverage-ask? "Ask about clearing test coverage")
+  
+ ;; tracing
+ (tracing-enable-tracing "Enable tracing")
+ (tracing-show-tracing-window "Show Tracing")
+ (tracing-hide-tracing-window "Hide Tracing")
+ (tracing-tracing-nothing-to-show "No tracing results are available. Be sure your language supports tracing and it is enabled.")
+
+ ;;; repl stuff
+ (evaluation-terminated "Evaluation Terminated")
+ (evaluation-terminated-explanation
+  "The evaluation thread is no longer running, so no evaluation can take place until the next execution.")
+ (last-stack-frame "show the last stack frame")
+ (last-stack-frames "show the last ~a stack frames")
+ (next-stack-frames "show the next ~a stack frames")
+ 
+ ;;; welcoming message in repl
+ (language "Language")
+ (custom "custom")
+ (teachpack "Teachpack")
+ (welcome-to "Welcome to")
+ (version "version")
+ 
+ ;;; kill evaluation dialog
+ (kill-evaluation? "Do you want to kill the evaluation?")
+ (just-break "Just Break")
+ (kill "Kill")
+ (kill? "Kill?")
+
+ ;;; version checker
+ ;; the next two are used in the initial wizard dialog.
+ ;; Note that vc-wizard-check-prompt can (should) have newlines so
+ ;; it will not make the dialog too wide.
+ (vc-wizard-check-note "The version you are about to install may not be the latest\n one. If you would like, DrScheme can check for you.")
+ (vc-wizard-check-button "Check for Updates")
+ (vc-update-check "Update check")
+ (vc-please-wait "Please wait")
+ (vc-connecting-version-server "Connecting to PLT version server")
+ (vc-network-timeout "Network timeout") 
+ (vc-cannot-connect  "Can't connect to PLT version server")
+ (vc-network-failure "Network failure")
+ (vc-old-binaries "Installed binaries for DrScheme (or MzScheme) are not up-to-date")
+ (vc-binary-information-format "Installed binary version: ~a (iteration ~a)")
+ (vc-details-format "~a~nDetails:~n~a")
+ (vc-details-text "Details:~n")
+ (vc-error-format "Error: ~a") 
+ (vc-current-format "~a v.~a (iteration ~a) is up-to-date")
+ (vc-update-format "~a v.~a (iteration ~a) needs updating to v.~a (iteration ~a)")
+ (vc-binary-name "Binary")
+ (vc-updates-available "Updates are available at")
+ (vc-latest-binary-information-format "Latest released version: ~a (iteration ~a)")
+ (vc-update-dialog-title "PLT update status")
+ (vc-need-update-string "One or more installed PLT software packages needs updating")
+ (vc-no-update-string "All installed PLT software packages are up-to-date")
+
+ ;; special menu
+ (special-menu "S&pecial")
+ 
+ ;; large semi colon letters
+ (insert-large-letters... "Insert Large Letters...")
+ (large-semicolon-letters "Large Semicolon Letters")
+ (text-to-insert "Text to insert")
+
+ (module-browser-filename-format "Full Filename: ~a (~a lines)")
+ (module-browser-root-filename "Root Filename: ~a")
+ (module-browser-font-size-gauge-label "Font Size")
+ (module-browser-progress-label "Module overview progress")
+ (module-browser-adding-file "Adding file: ~a...")
+ (module-browser-laying-out-graph-label "Laying out graph")
+ (module-browser-open-file-format "Open ~a")
+ (module-browser "Module Browser") ;; frame title
+ (module-browser... "Module Browser...") ;; menu item title
+ (module-browser-error-expanding "Error expanding the program:\n\n~a")
+ (module-browser-show-lib-paths "Show files loaded by (lib ..) paths")
+ (module-browser-progress "Module Browser: ~a") ;; prefix in the status line
+ (module-browser-compiling-defns "Module Browser: compiling definitions")
+ (module-browser-show-lib-paths/short "Follow lib requires") ;; check box label in show module browser pane in drscheme window.
+ (module-browser-refresh "Refresh") ;; button label in show module browser pane in drscheme window.
+ (module-browser-only-in-plt-and-module-langs
+  "The module browser is only available for programs in the PLT languages and in the module language (and only for programs that have modules in them).")
+ (module-browser-name-length "Name length")
+ (module-browser-name-short "Short")
+ (module-browser-name-medium "Medium")
+ (module-browser-name-long "Long")
+ (module-browser-open-all "Open all files shown here")
+
+ (happy-birthday-matthias "Happy Birthday, Matthias!")
+ (happy-birthday-matthew "Happy Birthday, Matthew!")
+ (happy-birthday-shriram "Happy Birthday, Shriram!")
+
+ (mrflow-using-default-language-title "Default Language Used")
+ (mrflow-using-default-language "The language currently used does not have a type table defined for its primitives. Using R5RS Scheme instead.")
+ (mrflow-button-title "Analyze")
+ ;(mrflow-unknown-style-delta-error-title "Unknown Box Style Delta")
+ ;(mrflow-unknown-style-delta-error "Unknown box style delta: ~a")
+ (mrflow-coloring-error-title "Unknown Color")
+ (mrflow-coloring-error "No style defined for color: ~a")
+ (mrflow-popup-menu-show-type "Show Type")
+ (mrflow-popup-menu-hide-type "Hide Type")
+ (mrflow-popup-menu-show-errors "Show Errors")
+ (mrflow-popup-menu-hide-errors "Hide Errors")
+ ;(mrflow-read-exception-title "Read Exception")
+ ;(mrflow-read-exception "Read exception: ~a")
+ ;(mrflow-syntax-exception-title "Syntax Exception")
+ ;(mrflow-syntax-exception "Syntax exception: ~a")
+ ;(mrflow-unknown-exception-title "Unknown Exception")
+ ;(mrflow-unknown-exception "Unknown exception: ~a")
+ ;(mrflow-language-primitives-error-title "Language Primitives Error")
+ ;(mrflow-language-primitives-error "Wrong filename for language primitives types table: ~a")
+  
+ (snips-and-arrows-popup-menu-tack-all-arrows "Tack All Arrows")
+ (snips-and-arrows-popup-menu-untack-all-arrows "Untack All Arrows")
+ (snips-and-arrows-user-action-disallowed-title "User Changes Currently Disallowed")
+ (snips-and-arrows-user-action-disallowed "User changes are disallowed in editors that contain tool-inserted snips.  Hide all snips before modifying the content of the editor.")
+ ;(snips-and-arrows-changing-terms-warning-title "Changing terms will be undoable")
+ ;(snips-and-arrows-changing-terms-warning "Changing terms in an editor containing snips cannot be undone.  You can either cancel this action, remove the snips, and try the change again, or you can continue with the change, in which case the change will not be undoable (all others changes made before and afterward will still be undoable though).")
+ (snips-and-arrows-hide-all-snips-in-editor "Hide all snips in editor")
+
+ (xml-tool-menu "XML")
+ (xml-tool-insert-xml-box "Insert XML Box")
+ (xml-tool-insert-scheme-box "Insert Scheme Box")
+ (xml-tool-insert-scheme-splice-box "Insert Scheme Splice Box")
+ (xml-tool-xml-box "XML Box")
+ (xml-tool-scheme-box "Scheme Box")
+ (xml-tool-scheme-splice-box "Scheme Splice Box")
+ (xml-tool-switch-to-scheme "Switch to Scheme box")
+ (xml-tool-switch-to-scheme-splice "Switch to Scheme splice box")
+ (xml-tool-eliminate-whitespace-in-empty-tags
+  "Eliminiate whitespace in empty tags")
+ (xml-tool-leave-whitespace-alone
+  "Leave whitespace alone")
+ 
+ (show-recent-items-window-menu-item "Show Recently Opened Files in Separate Window")
+ (show-recent-items-window-label "Recently Opened Files")
+ (number-of-open-recent-items "Number of recent items")
+ (switch-anyway "Switch File Anyway")
+
+ (stepper-program-has-changed "WARNING: The program has changed.")
+ (stepper-program-window-closed "WARNING: The program window is gone.")
+
+ (stepper-home "Home")
+ (stepper-name "Stepper")
+ (stepper-language-level-message
+  "The language level is set to \"~a\". Currently, the stepper works only for the \"~a\" through the \"~a\" language levels.")
+ (stepper-button-label "Step")
+ (stepper-previous-application "|< Application")
+ (stepper-previous "< Step")
+ (stepper-next "Step >")
+ (stepper-next-application "Application >|")
+ 
+
+ (wizard-next "Next")
+ (wizard-back "Back")
+ (wizard-finish "Finish")
+
+ ;; warnings about closing a drscheme frame when the program
+ ;; might still be doing something interesting
+ (program-is-still-running "The program in the definitions window is still running. Close anyway?")
+  (program-has-open-windows "The program in the definitions window has open windows. Close this window anyway?")
+ 
+  ;; ml-command-line-arguments is for the command line arguments
+  ;; label in the module language details in the language dialog.
+  (ml-command-line-arguments "Command-line arguments as a vector of strings, in read syntax")
+
+  ;; ml-cp names are all for the module language collection path
+  ;; configuration. See the details portion of the language dialog
+  ;; for the module language (at the bottom).
+  (ml-cp-default-collection-path "<<default collection paths>>")
+
+  ;; in std get-directory 
+  (ml-cp-choose-a-collection-path "Please choose a collection path")
+
+  ;; err msg when adding default twice
+  (ml-cp-default-already-present
+   "Default collection paths are already present")
+  
+  ;; title of this section of the dialog (possibly the word
+  ;; `Collection' should not be translated)
+  (ml-cp-collection-paths "Collection Paths")
+
+  ;; button labels
+  (ml-cp-add "Add")
+  (ml-cp-add-default "Add Default")
+  (ml-cp-remove "Remove")
+  (ml-cp-raise "Raise")
+  (ml-cp-lower "Lower")
+
+  ;; Profj
+  (profj-java "Java")
+  (profj-java-mode "Java mode")
+  (profj-java-mode-color-keyword "keyword")
+  (profj-java-mode-color-string "string")
+  (profj-java-mode-color-literal "literal")
+  (profj-java-mode-color-comment "comment")
+  (profj-java-mode-color-error "error")
+  (profj-java-mode-color-identifier "identifier")
+  (profj-java-mode-color-default "default")
+
+  (profj-insert-java-comment-box "Insert Java Comment Box")
+  (profj-insert-java-interactions-box "Insert Java Interactions Box")
+
+  ;; The Test Suite Tool
+  ;; Errors
+  (test-case-empty-error "Empty test case")
+  (test-case-too-many-expressions-error "Too many expressions in a test case.")
+  (test-case-not-at-top-level "Test case box not at top level")
+  ;; Dr. Scheme window menu items
+  (test-case-insert "Insert Test Case")
+  (test-case-disable-all "Disable all Test Cases")
+  (test-case-enable-all "Enable all Test Cases")
+  
+  ;; NOTE: The following string constants are labels of the test-case fields. The width
+  ;;       of the field is determined by the length of the longest of the following three words.
+  ;;       if the words are too long the test case will take up too much horizontal room and
+  ;;       not look very good.
+  ;; This string is the label of the expression that is being tested in a test case.
+  (test-case-to-test "Test")
+  ;; This string is the label of the expression that is the expected value of the to-test expression.
+  (test-case-expected "Should be")
+  ;; This string is the label of the actual result of the to test expression.
+  (test-case-actual "Actual")
+  (test-case-predicate "Predicate")
+  (test-case-should-raise "Should Raise")
+  ;; The label of a field of the test-case that describes the expected error message of a test case
+  (test-case-error-message "Error Message")
+
+  (test-case-menu-title "Test Case")
+  (test-case-switch-to-error-box "Switch to Error Test Box")
+  (test-case-switch-to-nonerror-box "Switch to Nonerror Test box")
+  (test-case-collapse "Collapse Test Case")
+  (test-case-show-actual "Show Actual Value")
+  (test-case-enable "Enable Test Case")
+  (test-case-show-predicate "Show Predicate")
+  (test-case-show-error-message "Show Error Message")
+  (test-case-convert-to-text "Convert to text")
+  
+  ;; Profj Boxes
+  (profjBoxes-empty-error "Empty interaction")
+  (profjBoxes-too-many-expressions-error "Too many expressions in a box")
+  (profjBoxes-interactions-label "Interactions")
+  (profjBoxes-bad-java-id-error "Malformed Java ID")
+  (profjBoxes-examples-label "Examples")
+  (profjBoxes-add-new-example-button "Add new example")
+  (profjBoxes-type "Type")
+  ;; The Java identifier of an example of data
+  (profjBoxes-name "Name")
+  (profjBoxes-value "Value")
+  (profjBoxes-insert-java-examples "Insert Java Examples")
+  (profjBoxes-insert-java-interactions "Insert Java Interactions")
+
+  ;; Slideshow
+  (slideshow-show-slideshow-panel "Mostrar Painel de Apresentação")
+  (slideshow-hide-slideshow-panel "Esconder Painel de Apresentação")
+  (slideshow-freeze-picts "Congelar estas Imagens")
+  (slideshow-thaw-picts "Mostrar Imagens Debaixo do Ponteiro")
+  (slideshow-hide-picts "Show Nested Boxes")
+  (slideshow-show-picts "Mostrar Imagens")
+  (slideshow-cannot-show-picts "Cannot show picts; run program to cache sizes first")
+  (slideshow-insert-pict-box "Insert Pict Box") 
+
+  ;; GUI Tool
+  (gui-tool-heading "Ferramenta GUI")
+  (gui-tool-before-clicking-message "Antes de clicar no ícone de uma ferramenta, use \"Inserir GUI\" do menu \"Especial\" para inserir um item GUI raíz, ou seleccionar um já inserido GUI.")
+  (gui-tool-show-gui-toolbar "Mostrar Barra de Ferramentas GUI")
+  (gui-tool-hide-gui-toolbar "Esconder Barra de Ferramentas GUI")
+  (gui-tool-insert-gui "Inserir GUI")
+  )
