@@ -34,7 +34,7 @@
     ;;XHTML '("XHTML 1.0 Transitional"
     ;;   "\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"")
     ))
-(define* *charset-type*     (make-parameter "ISO-8859-1"))
+(define* *charset-type*     (make-parameter "UTF-8"))
 (define* *prefix*           (make-parameter #f))
 (define* *current-html-obj* (make-parameter #f))
 
