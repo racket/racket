@@ -7,7 +7,7 @@
 	   (lib "pretty.ss")
 	   (lib "list.ss")
 	   (lib "string.ss")
-	   (only "handin-server.ss" LOG))
+	   (only "handin-server.ss" LOG timeout-control))
 
   (provide unpack-submission
 
@@ -34,7 +34,8 @@
 	   user-construct
 	   test-history-enabled
 
-	   LOG)
+	   LOG
+	   timeout-control)
 
   (define (unpack-submission str)
     (let* ([base (make-object editor-stream-in-bytes-base% str)]

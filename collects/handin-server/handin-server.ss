@@ -261,6 +261,7 @@
             (delete-directory/files ATTEMPT-DIR))
           (make-directory ATTEMPT-DIR)
           (save-submission s (build-path ATTEMPT-DIR "handin"))
+          (timeout-control 'reset)
           (LOG "checking ~a for ~a" assignment users)
           (let* ([checker* (path->complete-path (build-path 'up "checker.ss"))]
                  [checker* (and (file-exists? checker*)
@@ -531,11 +532,26 @@
 
   (define no-limit-warning? #f) ; will be set to #t if no memory limits
 
+  (define current-timeout-control (make-parameter #f))
+  (provide timeout-control)
+  (define (timeout-control msg)
+    (LOG "timeout-control: ~s" msg)
+    ((current-timeout-control) msg))
+
   (define (with-watcher w proc)
     (let ([session-cust (make-custodian)]
           [session-channel (make-channel)]
-          [timeout (+ (current-inexact-milliseconds) (* 1000 SESSION-TIMEOUT))]
+          [timeout #f]
           [status-box (box #f)])
+      (define (timeout-control msg)
+        (if (rational? msg)
+          (set! timeout (+ (current-inexact-milliseconds) (* 1000 msg)))
+          (case msg
+            [(reset) (timeout-control SESSION-TIMEOUT)]
+            [(disable) (set! timeout #f)]
+            [else (error 'timeout-control "bad argument: ~s" msg)])))
+      (current-timeout-control timeout-control)
+      (timeout-control 'reset)
       (unless no-limit-warning?
         (with-handlers ([exn:fail:unsupported?
                          (lambda (x)
@@ -561,7 +577,8 @@
                                       "")))
                          (close-output-port w)
                          (channel-put session-channel 'done)]
-                        [((current-inexact-milliseconds) . > . timeout)
+                        [(let ([t timeout]) ; grab value to avoid races
+                           (and t ((current-inexact-milliseconds) . > . t)))
                          ;; Shutdown here to get the handin-terminated error
                          ;;  message, instead of relying on
                          ;;  SESSION-TIMEOUT at the run-server level

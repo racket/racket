@@ -177,9 +177,11 @@ sub-directories:
          server; the default is one more than the main server's port
          (so the transitive default is 7980)
 
-      'session-timeout : number of seconds a session can last,
-         including execution of the submit-validation function;
-         the default is 300
+      'session-timeout : number of seconds before the session
+         times-out -- the client is given this many seconds for the
+         login stage and then starts again so the same number of
+         seconds is given for the submit-validation process; the
+         default is 300
 
       'session-memory-limit : maximum size in bytes of memory allowed
          for per-session computation, if per-session limits are
@@ -389,14 +391,15 @@ sub-directories:
 
     The `checker' function is called with the current directory as
     "active/<assignment>/<username(s)>/ATTEMPT", and the submission is
-    saved in the file "handin". The checker function can change
-    "handin", and it can create additional files in this directory.
-    (Extra files in the current directory will be preserved as it is
-    later renamed to "SUCCESS-0", and copied to the submission's root
-    ("active/<assignment>/<user/s>/"), etc.) To hide generated files
-    from the HTTPS status web server interface, put the files in a
-    subdirectory, which is preserved but hidden from the status
-    interface.
+    saved in the file "handin", and the timeout clock is reset to the
+    value of the 'session-timeout configuration.  The checker function
+    can change "handin", and it can create additional files in this
+    directory.  (Extra files in the current directory will be
+    preserved as it is later renamed to "SUCCESS-0", and copied to the
+    submission's root ("active/<assignment>/<user/s>/"), etc.)  To
+    hide generated files from the HTTPS status web server interface,
+    put the files in a subdirectory, which is preserved but hidden
+    from the status interface.
 
     The checker should return a string, such as "handin.scm", to use in
     naming the submission file.
@@ -412,7 +415,8 @@ sub-directories:
       that the user/s are valid -- if you allow a submission only when
       `users' is '("foo" "bar"), and "foo" tries to submit alone, then
       the submission directory for "foo" should be removed to allow a
-      proper submission later.
+      proper submission later.  Note that the timeout clock is reset
+      only once, before the pre-checker is used.
     - The post-checker is used at the end of the process, after the
       "ATTEMPT" directory was renamed to "SUCCESS-0".  At this stage,
       the submission is considered successful, so this function should
@@ -635,6 +639,16 @@ The _utils.ss_ module provides utilities helpful in implementing
 > (LOG fmt args ...) - produces a line in the server log file, using
   the given format string and arguments.
 
+> (timeout-control msg) - control the timeout for this session.  The
+  timeout is initialized by the value of the 'session-timeout
+  configuration entry, and the checker can use this procedure to
+  further control it: if msg is 'reset the timeout is reset to
+  'session-timeout seconds; if msg is a number the timeout will be set
+  to that many seconds in the future.  The timeout can be completely
+  disabled by (timeout-control #f).  (Note that before the checker is
+  used (after the pre-checker, if specified), the timer will be reset
+  to the 'session-timeout value.)
+
 
 Extra Checker Utilities
 ============================================
@@ -717,7 +731,7 @@ Keywords for configuring `check:':
   points for this assignment: <+100>".
 
 * :user-error-message -- a string that is used to report an error that
-  occured during evaluation of the submitted code (not during
+  occurred during evaluation of the submitted code (not during
   additional tests).  It can be a plain string which will be used as
   the error message, or a string with single a "~a" (or "~e", "~s",
   "~v") that will be used as a format string with the actual error
@@ -770,9 +784,10 @@ value from the submission code.
   nothing else special about these.  See the description of the
   `pre-checker' and `post-checker' values for what can be done with
   these, and note that the check for valid users is always first.  An
-  example for a sophisticated `post:' block is below -- it will send a
-  email with a submission receipt, with CC to the TA (assuming a
-  single TA), and pop-up a message telling the student about it:
+  example for a sophisticated `post:' block is below -- it will first
+  disable timeouts for this session, then it will send a email with a
+  submission receipt, with CC to the TA (assuming a single TA), and
+  pop-up a message telling the student about it:
 
   (require (lib "sendmail.ss" "net"))
   (post:
@@ -780,9 +795,10 @@ value from the submission code.
       (format "hw.scm: ~a ~a"
               (file-size "hw.scm")
               (file-or-directory-modify-seconds "hw.scm")))
+    (timeout-control 'disable)
     (LOG "Sending a receipt: ~a" info)
     (send-mail-message
-     "course-staff@university.edu
+     "course-staff@university.edu"
      "Submission Receipt"
      (map (lambda (user) (user-substs user "{Full Name} <{Email}>"))
           users)
