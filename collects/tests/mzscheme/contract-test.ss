@@ -378,6 +378,22 @@
                'neg)
      2))
 
+  (test/neg-blame
+   'contract-d3
+   '((contract (integer? . ->d . (lambda (x)  (let ([z (+ x 1)]) (lambda (y) (= z y)))))
+               (lambda (x) (+ x 1))
+               'pos
+               'neg)
+     "bad input"))
+  
+  (test/neg-blame
+   'contract-d4
+   '((contract (integer? . ->d . (lambda (x)  (lambda (y) (= (+ x 1) y))))
+               (lambda (x) (+ x 1))
+               'pos
+               'neg)
+     "bad input"))
+  
   (test/spec-passed
    'contract-arrow1
    '(contract (integer? . -> . integer?) (lambda (x) x) 'pos 'neg))

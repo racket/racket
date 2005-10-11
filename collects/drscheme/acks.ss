@@ -55,7 +55,8 @@
      "Jens Axel Søgaard, "
      "Francisco Solsona, "
      "Reini Urban, "
+     "Paolo Zoppetti, "
      "and "
-     "Paolo Zoppetti "
+     "Zhu Chongkai "
      "for their help translating DrScheme's GUI to other languages.")))
   

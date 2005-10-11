@@ -415,8 +415,8 @@
 			  [close-bg? #f]
 			  [label "Slideshow Preview"]
 			  [x 0] [y 0]
-			  [width (inexact->exact (floor config:actual-screen-w))]
-			  [height (inexact->exact (quotient (floor config:actual-screen-h) 2))]
+			  [width (inexact->exact (floor (* config:actual-screen-w 8/10 1)))]
+			  [height (inexact->exact (floor (* config:actual-screen-h 8/10 2/3)))]
 			  [style '()]))
       
       (define current-sinset zero-inset)
@@ -730,7 +730,7 @@
 	    (let ([dc (get-dc)])
 	      (let*-values ([(cw ch) (send dc get-size)])
 		(send dc set-scale 
-		      (/ (/ cw 2) (send prefetch-bitmap get-width))
+		      (/ (* cw 1/2) (send prefetch-bitmap get-width))
 		      (/ ch (send prefetch-bitmap get-height)))
 		(send dc set-origin (/ cw 2) 0)
 		(send dc draw-bitmap prefetch-bitmap 0 0)
@@ -751,7 +751,7 @@
 		    (send dc draw-bitmap now-bm 0 0)
 		    (cond
 		     [(equal? prefetched-page (add1 current-page))
-		      (send dc set-origin (/ cw 2) 0)
+		      (send dc set-origin (/ cw 3) 0)
 		      (send dc draw-bitmap prefetch-bitmap 0 0)]
 		     [else
 		      (when (< (add1 current-page) slide-count)
@@ -761,16 +761,17 @@
 			  (send dc set-brush b)))])
 		    (send dc set-scale 1 1))]
 		 [else
-		  (paint-slide dc current-page 1/2 1/2 cw (* 2 ch) cw (* 2 ch) #f)
-		  (send dc set-origin (/ cw 2) 0)
+		  (paint-slide dc current-page 2/3 1/2 cw ch cw ch #f)
+		  (send dc set-origin (* cw 2/3) 0)
 		  (when (< (add1 current-page) slide-count)
-		    (paint-slide dc
+		    (send dc draw-rectangle (* cw 2/3) 0 (* cw 1/3) ch)
+                    (paint-slide dc
 				 (+ current-page 1)
-				 1/2 1/2
-				 cw (* 2 ch) cw (* 2 ch)
+				 1/3 1/6
+				 cw ch cw ch
 				 #f))])
 		(send dc set-origin 0 0)
-		(send dc draw-line (/ cw 2) 0 (/ cw 2) ch))))
+		(send dc draw-line (* cw 2/3) 0 (* cw 2/3) ch))))
 	  
 	  (inherit get-top-level-window)
 	  (define/override (on-event e)

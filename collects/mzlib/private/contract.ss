@@ -1959,13 +1959,14 @@ add struct contracts for immutable structs?
               (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
                 (syntax
                  ((arg-x ...)
-                  (let ([rng-contract (rng-x arg-x ...)])
-                    (((coerce/select-contract ->d rng-contract)
-                      pos-blame
-                      neg-blame
-                      src-info
-                      orig-str)
-                     (val (dom-projection-x arg-x) ...)))))))))]))
+                  (let ([arg-x (dom-projection-x arg-x)] ...) 
+                    (let ([rng-contract (rng-x arg-x ...)])
+                      (((coerce/select-contract ->d rng-contract)
+                        pos-blame
+                        neg-blame
+                        src-info
+                        orig-str)
+                       (val arg-x ...))))))))))]))
     
     ;; ->d*/h : boolean stx -> (values (syntax -> syntax) (syntax -> syntax) (syntax -> syntax))
     (define (->d*/h method-proc? stx)
