@@ -637,7 +637,9 @@ before the pattern compiler is invoked.
         
         ;; an already comiled pattern
         [(? procedure?)
-         pattern]
+         ;; return #t here as a failsafe; no way to check better.
+         (values pattern 
+                 #t)]
         
         [else 
          (values
