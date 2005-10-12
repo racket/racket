@@ -47,17 +47,15 @@
   (define (get-translating-acks)
     (string-append
      "Thanks to "
+     "ChongKai Zhu, "
      "Ian Barland, "
      "Biep Durieux, "
      "Tim Hanson, "
      "Chihiro Kuraya, "
-     "Paulo Jorge Matos, "
      "Philippe Meunier, "
      "Jens Axel Søgaard, "
      "Francisco Solsona, "
      "Reini Urban, "
-     "Paolo Zoppetti, "
      "and "
-     "Zhu Chongkai "
+     "Paolo Zoppetti "
      "for their help translating DrScheme's GUI to other languages.")))
-  
