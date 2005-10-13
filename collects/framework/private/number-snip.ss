@@ -55,9 +55,14 @@
               snip))
           (super-new)))
       
+      (define old-number-snipclass (new -snip-class%))
+      (send old-number-snipclass set-version 3)
+      (send old-number-snipclass set-classname "drscheme:number")
+      (send (get-the-snip-class-list) add old-number-snipclass)
+      
       (define number-snipclass (new -snip-class%))
-      (send number-snipclass set-version 3)
-      (send number-snipclass set-classname "drscheme:number")
+      (send number-snipclass set-version 1)
+      (send number-snipclass set-classname (format "~s" '(lib "number-snip.ss" "drscheme" "private")))
       (send (get-the-snip-class-list) add number-snipclass)
       
       (define arrow-cursor (make-object cursor% 'arrow))
