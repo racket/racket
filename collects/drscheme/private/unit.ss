@@ -954,7 +954,7 @@ module browser threading seems wrong.
              (string-constant kill)
              (string-constant kill?)
              'diallow-close
-             this))
+             frame))
           
           ;; reset-offer-kill
           (define/public (reset-offer-kill)
