@@ -505,9 +505,11 @@
         [(bye) #t] ; <- general disconnection
         ;; other messages require a login: valid users and a good password
         [else
-         (let ([usernames  (a-ref data 'usernames)]
-               [user-datas (a-ref data 'user-datas)])
-           (memq #f user-datas)
+         (when (eof-object? msg)
+           (LOG "hangup")
+           (error 'handin "hangup" (a-ref data 'username/s)))
+         (let ([usernames  (a-ref data 'usernames #f)]
+               [user-datas (a-ref data 'user-datas #f)])
            (when (or (memq #f user-datas)
                      (not (has-password?
                            (a-ref data 'raw-password)
