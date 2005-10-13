@@ -1,8 +1,9 @@
 
 _texpict_ is a MzScheme/MrEd library for creating pictures using a
 MrEd dc<%> (including post-script-dc% for _PostScript_ output) or
-_LaTeX_ as the back-end. The library was originally designed for LaTeX
-output, hence the name.
+_LaTeX_ as the back-end. The two back-ends are incompatible; picts
+must be created for one or the other. The library was originally
+designed for LaTeX output, hence the name.
 
 Pictures are created as `pict' structures. Some procedures in the
 texpict library create new simple picts (e.g., `hline'). Others build
@@ -108,6 +109,9 @@ The LaTeX texpict function set is loaded by the _texpict.ss_ library.
 The library is available in unit form via _texpictr.ss_, which
 produces a unit with no imports. The _texpicts.ss_ library file
 defines the unit's signature.
+
+Pictures created with this library are incompatible with Slideshow
+and MrEd-based output.
 
 To create a LaTeX picture, assemble a pict and then
 call `pict->string'. This string can be `display'ed to obtain the
@@ -226,7 +230,8 @@ Basic Constructors:
 >  (vline w h) -> pict
 >  (dash-vline w h seg-length) -> pict ; default seg-length is 5
 
-   To draw other kinds of lines, use `picture' or `cons-picture'
+   To draw other kinds of lines, use `dc' [MrEd only] or `picture' or
+   `cons-picture' [LaTeX].
 
 >  (frame pict) -> pict
 >  (dash-frame pict seg-length) -> pict ; default seg-length is 5
@@ -453,7 +458,7 @@ Drawing Adjusters:
 
    Apply a color to a picture. If the given picture has a colorized
    sub-picture, the color of the sub-picture is not affected.
-   Be sure to use the LaTeX package `colordvi'.
+   [LaTeX: use the LaTeX package "colordvi"]
 
 >  (colorize pict color%) -> pict
 
