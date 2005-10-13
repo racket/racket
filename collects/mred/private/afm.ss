@@ -225,13 +225,15 @@
       (set-cdr! achar (list (cdr achar) null null)))
     (set-car! (cdddr achar) (cons (cons v amt) (cadddr achar))))
 
-  (define-struct font (descent ascent achars is-cid? char-set-name))
+  (define-struct font (height descent ascent internal-leading achars is-cid? char-set-name))
 
   (define re:hex #rx#"^<[0-9a-fA-F]>$")
 
   (define (parse-afm file)
     (let ([descender #f]
 	  [bbox-down #f]
+	  [bbox-up #f]
+	  [ascender #f]
 	  [cap-height #f]
 	  [achars (make-hash-table 'equal)]
 	  [kern-pairs null]
@@ -251,8 +253,10 @@
 				     [t (read i)]
 				     [r (read i)]
 				     [b (read i)])
+				 (set! bbox-up b)
 				 (set! bbox-down t))]
-		   [(ascender) (set! cap-height (read i))]
+		   [(ascender) (set! ascender (read i))]
+		   [(capheight) (set! cap-height (read i))]
 		   [(characterset) (let ([m (regexp-match #rx#"[a-zA-Z_0-9-]+" (read-bytes-line i))])
 				     (when m
 				       (set! char-set-name (car m))
@@ -320,11 +324,16 @@
 		    (let ([achar (hash-table-get achars c1 (lambda () (make-achar 0 0)))])
 		      (achar-add-kern! achar c2 amt))))
 		kern-pairs)
-      (make-font (- (or descender bbox-down 0))
-		 (or cap-height 1000)
-		 achars
-		 (and char-set #t)
-		 char-set-name)))
+      (let* ([descender (- (or descender bbox-down 0))]
+	     [ascender (or ascender bbox-up)]
+	     [cap-height (or cap-height ascender bbox-up)])
+	(make-font (+ bbox-up descender)
+		   descender
+		   ascender
+		   (- bbox-up cap-height)
+		   achars
+		   (and char-set #t)
+		   char-set-name))))
 
   (define (extract-ligatures rest)
     (let ([m (regexp-match #rx#"; *L +([a-zA-Z0-9-]+) +([a-zA-Z0-9-]+)(.*)$" rest)])
@@ -419,7 +428,7 @@
 
   (define (afm-get-text-extent font-name size string kern? sym-map?)
     (let* ([font (or (get-font font-name)
-		     (make-font 0 1000 #hash() #f #f))]
+		     (make-font 1000 0 1000 1000 #hash() #f #f))]
 	   [scale (/ size 1000.0)]
 	   [descent (* scale (font-descent font))])
       (values (* scale
@@ -456,14 +465,15 @@
 					 (+ width (achar-width achar) (cdr p))))]
 			     [else
 			      (loop (cdr cl) (+ width (achar-width achar)))]))])))
-	      (+ size descent)
+	      (* scale (font-height font))
 	      descent
-	      (* scale (- 1000 (font-ascent font))))))
+	      (* scale (font-internal-leading font)))))
 
+  ;; pen is positioned at text top-left:
   (define (afm-draw-text font-name size string out kern? sym-map?)
     (let* ([l (map-symbols sym-map? (string->list string))]
 	   [font (or (get-font font-name)
-		     (make-font 0 0 #hash() #f #f))]
+		     (make-font 0 0 0 0 #hash() #f #f))]
 	   [show-simples (lambda (simples special-font-name special-font)
 			   (unless (null? simples)
 			     (when special-font
@@ -505,6 +515,7 @@
 			     (when special-font
 			       ;; Uses result of currentfont above:
 			       (fprintf out "setfont~n"))))])
+      (fprintf out "0 -~a rmoveto\n" (/ (* size (- (font-height font) (font-descent font))) 1000.0))
       (let loop ([l l][simples null][special-font-name #f][special-font #f])
 	(cond
 	 [(null? l)
