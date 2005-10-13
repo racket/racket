@@ -238,6 +238,7 @@
                  (let* ([h (connect)]
                         [l (retrieve-active-assignments h)])
                    (when (null? l)
+                     (handin-disconnect h)
                      (error 'handin "there are no active assignments"))
                    (set! connection h)
                    (for-each (lambda (assign) (send assignment append assign))

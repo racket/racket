@@ -2,6 +2,7 @@
   (require (lib "mzssl.ss" "openssl"))
 
   (provide handin-connect
+	   handin-disconnect
 	   retrieve-extra-fields
 	   retrieve-active-assignments
 	   submit-assignment
@@ -41,6 +42,10 @@
 	    (error 'handin-connect "bad protocol from server: ~e" s)))
 	;; Return connection:
         (make-handin r w))))
+
+  (define (handin-disconnect h)
+    (write+flush (handin-w h) 'bye)
+    (close-handin-ports h))
 
   (define (retrieve-extra-fields h)
     (let ([r (handin-r h)] [w (handin-w h)])
