@@ -1,9 +1,9 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'kw-proc)
+(SECTION 'kw)
 
-(require (lib "kw-proc.ss"))
+(require (lib "kw.ss"))
 
 ;; make sure that lambda/kw behaves as lambda
 (test 1 (lambda/kw () 1))

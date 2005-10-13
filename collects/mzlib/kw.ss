@@ -1,4 +1,4 @@
-(module kw-proc mzscheme
+(module kw mzscheme
 
 (require-for-syntax (lib "define.ss" "syntax"))
 
@@ -51,11 +51,11 @@
                 (raise-syntax-error #f (apply format fmt args) stx sub))
               (cond
                [k (case k
-                    [(#:optional #:optionals #:opt #:opts)
+                    [(#:optional)
                      (if state
                        (serror #'formals "misplaced ~a argument" k)
                        (loop 'o #'xs))]
-                    [(#:key #:keys)
+                    [(#:key)
                      (if (memq state '(#f o r!))
                        (loop 'k #'xs)
                        (serror #'formals "misplaced ~a argument" k))]

@@ -40,7 +40,7 @@
 
 (load-relative "match-test.ss")
 
-(load-relative "kw-proc.ss")
+(load-relative "kw.ss")
 
 ; Next-to-last, because it `require's mzscheme
 (load-relative "shared.ss")
