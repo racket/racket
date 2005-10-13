@@ -288,7 +288,7 @@
 ;;>       (1 #f 3)
 ;;>       => ((lambda (x &optional y [z 3]) (list x y z)) 1 2 #f)
 ;;>       (1 2 #f)
-                  [(&optional &opt &opts)
+                  [(&optional &optionals &opt &opts)
                    (if state
                      (raise-syntax-error
                       #f "misplaced &optional argument" stx #'formals)
