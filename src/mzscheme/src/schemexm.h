@@ -444,6 +444,7 @@
 #define scheme_print_bytes (scheme_extension_table->scheme_print_bytes)
 #define scheme_print_utf8 (scheme_extension_table->scheme_print_utf8)
 #define scheme_print_string (scheme_extension_table->scheme_print_string)
+#define scheme_read_byte_string (scheme_extension_table->scheme_read_byte_string)
 #define scheme_make_namespace (scheme_extension_table->scheme_make_namespace)
 #define scheme_add_namespace_option (scheme_extension_table->scheme_add_namespace_option)
 #define scheme_require_from_original_env (scheme_extension_table->scheme_require_from_original_env)

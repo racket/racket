@@ -12,7 +12,7 @@ class wxMediaStreamInBase : public wxObject
   virtual void Seek(long) = 0;
   virtual void Skip(long) = 0;
   virtual Bool Bad(void) = 0;
-  virtual long Read(char *data, long len) = 0;
+  virtual long Read(char *data, long len, long delta = 0) = 0;
 };
 
 class wxMediaStreamOutBase : public wxObject
@@ -38,7 +38,7 @@ class wxMediaStreamInFileBase : public wxMediaStreamInBase
   void Seek(long);
   void Skip(long);
   Bool Bad(void);
-  long Read(char *data, long len);
+  long Read(char *data, long len, long delta = 0);
 };
 
 class wxMediaStreamOutFileBase : public wxMediaStreamOutBase
@@ -71,7 +71,7 @@ class wxMediaStreamInStringBase : public wxMediaStreamInBase
   void Seek(long);
   void Skip(long);
   Bool Bad(void);
-  long Read(char *data, long len);
+  long Read(char *data, long len, long delta = 0);
 };
 
 class wxMediaStreamOutStringBase : public wxMediaStreamOutBase
@@ -99,7 +99,7 @@ class wxMediaStreamOutStringBase : public wxMediaStreamOutBase
 #define MRED_START_STR_LEN 4
 #define MRED_FORMAT_STR "01"
 #define MRED_FORMAT_STR_LEN 2
-#define MRED_VERSION_STR "07"
+#define MRED_VERSION_STR "08"
 #define MRED_VERSION_STR_LEN 2
 
 #define WXME_VERSION_ONE(f) (f->read_version[1] == '1')
@@ -108,7 +108,8 @@ class wxMediaStreamOutStringBase : public wxMediaStreamOutBase
 #define WXME_VERSION_FOUR(f) (f->read_version[1] == '4')
 #define WXME_VERSION_FIVE(f) (f->read_version[1] == '5')
 #define WXME_VERSION_SIX(f) (f->read_version[1] == '6')
-#define WXME_VERSION_BEFORE_SEVEN(f) ((f->read_version[1] >= '1') && (f->read_version[1] <= '6'))
+#define WXME_VERSION_SEVEN(f) (f->read_version[1] == '7')
+#define WXME_VERSION_BEFORE_EIGHT(f) ((f->read_version[1] >= '1') && (f->read_version[1] <= '7'))
 
 class wxStandardSnipClassList;
 class wxBufferDataClassList;
@@ -182,8 +183,17 @@ class wxMediaStreamIn : public wxMediaStream
   long *boundaries;
   int boundalloc, boundcount;
   int bad;
+  int items;
+  void *pos_map;
 
   void Typecheck(char);
+
+  void GetNumber(long*, double*);
+  char *GetAString(long *n, long limit, char *target, int extra, int recur);
+  void IncItemCount();
+  void SkipOne(int recur);
+  char SkipWhitespace(char *buf = NULL);
+  int IsDelim(char c);
 
  public:
   wxMediaStreamIn(wxMediaStreamInBase *base);
@@ -215,7 +225,9 @@ class wxMediaStreamIn : public wxMediaStream
 class wxMediaStreamOut : public wxMediaStream
 {
   wxMediaStreamOutBase *f;
-  int bad;
+  int bad, col;
+  int items; /* position count in items */
+  void *pos_map; /* map from position count to stream location */
 
   void Typeset(char);
 
@@ -237,6 +249,9 @@ class wxMediaStreamOut : public wxMediaStream
   void JumpTo(long pos);
 
   Bool Ok(void);
+
+  void PrettyStart();
+  void PrettyFinish();
 };
 
 #endif /* wx_medio */

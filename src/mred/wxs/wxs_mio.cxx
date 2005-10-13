@@ -143,7 +143,7 @@ static l_TYPE l_POINT *l_MAKE_ARRAY(Scheme_Object *l, l_INTTYPE *c, char *who)
 
 
 
-static char *VectorToArray(char *r, Scheme_Object *vec, long *len)
+static char *VectorToArray(char *r, Scheme_Object *vec, long *len, long delta)
 {
   long c, i;
   Scheme_Object **a = NULL;
@@ -158,21 +158,23 @@ static char *VectorToArray(char *r, Scheme_Object *vec, long *len)
 
   c = *len = SCHEME_VEC_SIZE(vec);
 
-  if (!r)
+  if (!r) {
     r = WITH_VAR_STACK((char *)scheme_malloc_atomic(c));
+    delta = 0;
+  }
 
   for (a = SCHEME_VEC_ELS(vec), i = 0; i < c; i++) {
     if (!SCHEME_CHARP(a[i]))
       WITH_VAR_STACK(scheme_wrong_type(METHODNAME("editor-stream-in-base%","read"), 
 				       "character vector", -1, 0, &vec));
-    r[i] = SCHEME_CHAR_VAL(a[i]);
+    r[i+delta] = SCHEME_CHAR_VAL(a[i]);
   }
 
   READY_TO_RETURN;
   return r;
 }
 
-static Scheme_Object *ArrayToVector(char *r, Scheme_Object *vec, long len)
+static Scheme_Object *ArrayToVector(char *r, Scheme_Object *vec, long len, long delta)
 {
   long i;
   Scheme_Object **a = NULL;
@@ -188,7 +190,7 @@ static Scheme_Object *ArrayToVector(char *r, Scheme_Object *vec, long len)
 		                     "character vector", -1, 0, &vec));
   
   for (a = SCHEME_VEC_ELS(vec), i = 0; i < len; i++)
-    a[i] = WITH_VAR_STACK(scheme_make_char(r[i]));
+    a[i] = WITH_VAR_STACK(scheme_make_ascii_character(r[i+delta]));
 
   READY_TO_RETURN;
 
@@ -203,7 +205,7 @@ class os_wxMediaStreamInBase : public wxMediaStreamInBase {
 
   os_wxMediaStreamInBase CONSTRUCTOR_ARGS(());
   ~os_wxMediaStreamInBase();
-  long Read(char* x0, long x1);
+  long Read(char* x0, long x1, long x2);
   Bool Bad();
   void Skip(nnlong x0);
   void Seek(nnlong x0);
@@ -237,7 +239,7 @@ os_wxMediaStreamInBase::~os_wxMediaStreamInBase()
 
 static Scheme_Object *os_wxMediaStreamInBaseRead(int n, Scheme_Object *p[]);
 
-long os_wxMediaStreamInBase::Read(char* x0, long x1)
+long os_wxMediaStreamInBase::Read(char* x0, long x1, long x2)
 {
   Scheme_Object *p[POFFSET+1] INIT_NULLED_ARRAY({ NULLED_OUT INA_comma NULLED_OUT });
   Scheme_Object *v;
@@ -261,11 +263,11 @@ long os_wxMediaStreamInBase::Read(char* x0, long x1)
   } else {
   
   p[POFFSET+0] = NULL;
-  p[POFFSET] = ArrayToVector(x0, NULL, x1);
+  p[POFFSET] = ArrayToVector(x0, NULL, x1, x2);
   p[0] = (Scheme_Object *) ASSELF __gc_external;
 
   v = WITH_VAR_STACK(scheme_apply(method, POFFSET+1, p));
-  VectorToArray(x0, p[POFFSET], &x1);
+  VectorToArray(x0, p[POFFSET], &x1, x2);
   
   {
      long resval;
@@ -432,6 +434,7 @@ static Scheme_Object *os_wxMediaStreamInBaseRead(int n,  Scheme_Object *p[])
   objscheme_check_valid(os_wxMediaStreamInBase_class, "read in editor-stream-in-base%", n, p);
   char* x0 INIT_NULLED_OUT;
   long x1;
+  long x2;
 
   SETUP_VAR_STACK_REMEMBERED(2);
   VAR_STACK_PUSH(0, p);
@@ -440,13 +443,13 @@ static Scheme_Object *os_wxMediaStreamInBaseRead(int n,  Scheme_Object *p[])
   
   x0 = NULL;
 
-  x0 = VectorToArray(NULL, p[POFFSET], &x1);
+  x0 = VectorToArray(NULL, p[POFFSET], &x1, x2);
   if (((Scheme_Class_Object *)p[0])->primflag)
     r =  0;
   else
-    r = WITH_VAR_STACK(((wxMediaStreamInBase *)((Scheme_Class_Object *)p[0])->primdata)->Read(x0, x1));
+    r = WITH_VAR_STACK(((wxMediaStreamInBase *)((Scheme_Class_Object *)p[0])->primdata)->Read(x0, x1, x2));
 
-  ArrayToVector(x0, p[POFFSET], x1);
+  ArrayToVector(x0, p[POFFSET], x1, x2);
   
   READY_TO_RETURN;
   return scheme_make_integer(r);
@@ -1871,6 +1874,7 @@ class wxMediaStreamIn *objscheme_unbundle_wxMediaStreamIn(Scheme_Object *obj, co
 
 
 
+
 class os_wxMediaStreamOut : public wxMediaStreamOut {
  public:
 
@@ -1922,6 +1926,26 @@ static Scheme_Object *os_wxMediaStreamOutOk(int n,  Scheme_Object *p[])
   
   READY_TO_RETURN;
   return (r ? scheme_true : scheme_false);
+}
+
+static Scheme_Object *os_wxMediaStreamOutPrettyFinish(int n,  Scheme_Object *p[])
+{
+  WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
+  REMEMBER_VAR_STACK();
+  objscheme_check_valid(os_wxMediaStreamOut_class, "pretty-finish in editor-stream-out%", n, p);
+
+  SETUP_VAR_STACK_REMEMBERED(1);
+  VAR_STACK_PUSH(0, p);
+
+  
+
+  
+  WITH_VAR_STACK(((wxMediaStreamOut *)((Scheme_Class_Object *)p[0])->primdata)->PrettyFinish());
+
+  
+  
+  READY_TO_RETURN;
+  return scheme_void;
 }
 
 static Scheme_Object *os_wxMediaStreamOutJumpTo(int n,  Scheme_Object *p[])
@@ -2120,9 +2144,10 @@ void objscheme_setup_wxMediaStreamOut(Scheme_Env *env)
 
   wxREGGLOB(os_wxMediaStreamOut_class);
 
-  os_wxMediaStreamOut_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "editor-stream-out%", "object%", (Scheme_Method_Prim *)os_wxMediaStreamOut_ConstructScheme, 5));
+  os_wxMediaStreamOut_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "editor-stream-out%", "object%", (Scheme_Method_Prim *)os_wxMediaStreamOut_ConstructScheme, 6));
 
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaStreamOut_class, "ok?" " method", (Scheme_Method_Prim *)os_wxMediaStreamOutOk, 0, 0));
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaStreamOut_class, "pretty-finish" " method", (Scheme_Method_Prim *)os_wxMediaStreamOutPrettyFinish, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaStreamOut_class, "jump-to" " method", (Scheme_Method_Prim *)os_wxMediaStreamOutJumpTo, 1, 1));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaStreamOut_class, "tell" " method", (Scheme_Method_Prim *)os_wxMediaStreamOutTell, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaStreamOut_class, "put-fixed" " method", (Scheme_Method_Prim *)os_wxMediaStreamOutPutFixed, 1, 1));

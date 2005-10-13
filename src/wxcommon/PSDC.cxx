@@ -1265,7 +1265,7 @@ void wxPostScriptDC::DrawText(DRAW_TEXT_CONST char *text, double x, double y,
 {
   double tw, th;
   const char *name;
-  int size, sym_map;
+  int sym_map;
 
   if (!pstream)
     return;
@@ -1359,8 +1359,6 @@ void wxPostScriptDC::DrawText(DRAW_TEXT_CONST char *text, double x, double y,
       name = "Times-Roman";
   }
 
-  size = current_font->GetPointSize();
-
   if (angle != 0.0) {
     pstream->Out("gsave\n");
   }
@@ -1372,11 +1370,9 @@ void wxPostScriptDC::DrawText(DRAW_TEXT_CONST char *text, double x, double y,
       pstream->Out(user_scale_x); pstream->Out(" "); pstream->Out(user_scale_y); pstream->Out(" scale\n");
     }
     pstream->Out(angle * 180 / pie);
-    pstream->Out(" rotate 0 ");
-    pstream->Out(-size);
-    pstream->Out(" moveto\n"); 
+    pstream->Out(" rotate 0 0 moveto\n"); 
   } else {
-    pstream->Out(XSCALE(x)); pstream->Out(" "); pstream->Out(YSCALE(y + size)); 
+    pstream->Out(XSCALE(x)); pstream->Out(" "); pstream->Out(YSCALE(y)); 
     pstream->Out(" moveto\n");
     if ((user_scale_x != 1) || (user_scale_y != 1)) {
       pstream->Out("gsave\n");

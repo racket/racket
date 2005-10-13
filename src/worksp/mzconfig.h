@@ -20,3 +20,7 @@
 
 /* The size of a `long long', as computed by sizeof. */
 #undef SIZEOF_LONG_LONG
+
+
+/* whether nl_langinfo works */
+#undef HAVE_CODESET

@@ -75,6 +75,8 @@ static int get_iconv_errno(void)
   a = msvcrt_errno();
   return *a;
 }
+# undef HAVE_CODESET
+# define HAVE_CODESET 1
 # define CODESET 0
 # define ICONV_errno get_iconv_errno()
 static int iconv_ready = 0;
@@ -2143,7 +2145,12 @@ static Scheme_Object *locale_string_encoding(int argc, Scheme_Object *argv[])
   if (mzLOCALE_IS_UTF_8(current_locale_name) || !locale_on)
     return scheme_make_utf8_string("UTF-8");
   
+#if HAVE_CODESET
   return scheme_make_utf8_string(nl_langinfo(CODESET));
+#else
+  /* nl_langinfo doesn't work, so just make up something */
+  return scheme_make_utf8_string("UTF-8");
+#endif
 }
 
 #ifndef DONT_USE_LOCALE

@@ -651,6 +651,7 @@ void (*scheme_set_type_printer)(Scheme_Type stype, Scheme_Type_Printer printer);
 void (*scheme_print_bytes)(Scheme_Print_Params *pp, const char *str, int offset, int len);
 void (*scheme_print_utf8)(Scheme_Print_Params *pp, const char *str, int offset, int len);
 void (*scheme_print_string)(Scheme_Print_Params *pp, const mzchar *str, int offset, int len);
+Scheme_Object *(*scheme_read_byte_string)(Scheme_Object *port);
 /*========================================================================*/
 /*                        namespace/environment                           */
 /*========================================================================*/

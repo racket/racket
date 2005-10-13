@@ -551,6 +551,14 @@ if test "$inline" = "no" ; then
 fi
 AC_MSG_RESULT($inline) 
 
+AC_MSG_CHECKING([for nl_langinfo (CODESET)])
+AC_TRY_LINK([#include <langinfo.h>],
+	[char *codeset = nl_langinfo (CODESET);],
+   AC_DEFINE(HAVE_CODESET,1,[Have nl_langinfo (CODESET)])
+   have_codeset=yes,
+   have_codeset=no)
+AC_MSG_RESULT($have_codeset)
+
 iconv_lib_flag=""
 if test "${enable_iconv}" = "yes" ; then
   AC_CHECK_HEADER(iconv.h, enable_iconv=yes, enable_iconv=no)

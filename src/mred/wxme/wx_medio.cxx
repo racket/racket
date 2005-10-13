@@ -22,6 +22,8 @@ static int lsb_first;
 
 extern void wxmeError(const char *e);
 
+extern "C" Scheme_Object *scheme_read_byte_string(Scheme_Object *port);
+
 enum {
   st_STRING,
   st_NUMBER,
@@ -159,12 +161,12 @@ Bool wxMediaStreamInFileBase::Bad(void)
   return FALSE;
 }
 
-long wxMediaStreamInFileBase::Read(char *data, long len)
+long wxMediaStreamInFileBase::Read(char *data, long len, long delta)
 {
   if (len <= 0)
     return 0;
 
-  return scheme_get_byte_string("read in editor-stream-in%", f, data, 0, len, 0, 0, NULL);
+  return scheme_get_byte_string("read in editor-stream-in%", f, data, delta, len, 0, 0, NULL);
 }
 
 /****************************************************************/
@@ -265,14 +267,14 @@ Bool wxMediaStreamInStringBase::Bad(void)
   return bad;
 }
 
-long wxMediaStreamInStringBase::Read(char *data, long l)
+long wxMediaStreamInStringBase::Read(char *data, long l, long delta)
 {
   if (l + pos > len) {
     bad = TRUE;
     l = len - pos;
   }
 
-  memcpy(data, a_string + pos, l);
+  memcpy(data + delta, a_string + pos, l);
   pos += l;
 
   return l;
@@ -365,7 +367,7 @@ void wxMediaStreamIn::Typecheck(char WX_TYPESAFE_USED(v))
   if (bad)
     return;
 
-  if (boundcount && (f->Tell() >= boundaries[boundcount - 1])) {
+  if (boundcount && (Tell() >= boundaries[boundcount - 1])) {
     bad = TRUE;
     wxmeError("editor-stream-in%: overread (caused by file corruption?)");
     return;
@@ -395,6 +397,447 @@ void wxMediaStreamIn::Typecheck(char WX_TYPESAFE_USED(v))
 #endif
 }
 
+#if 0
+# define BAD_PRINTF(x) printf x
+#else
+# define BAD_PRINTF(x) /* disabled */
+#endif
+
+char wxMediaStreamIn::SkipWhitespace(char *_buf)
+{
+  char buf[1];
+
+  if (bad)
+    return 0;
+
+  do {
+    if (f->Read(buf, 1) != 1) {
+      BAD_PRINTF(("bad 1\n"));
+      bad = 1;
+      break;
+    }
+    if (buf[0] == '#') {
+      int pos;
+      pos = f->Tell();
+      if ((f->Read(buf, 1) == 1) && (buf[0] == '|')) {
+	/* Skip to end of comment */
+	int saw_bar = 0, saw_hash = 0, nesting = 0;
+	while (1) {
+	  if (f->Read(buf, 1) != 1) {
+	    BAD_PRINTF(("bad 1.1\n"));
+	    bad = 1;
+	    break;
+	  }
+	  if (saw_bar && (buf[0] == '#')) {
+	    buf[0] = ' ';
+	    if (nesting) {
+	      --nesting;
+	    } else
+	      break;
+	  } else if (saw_hash && (buf[0] == '|')) {
+	    nesting++;
+	    buf[0] = 0; /* So the bar doesn't count for closing */
+	  }
+	  saw_bar = (buf[0] == '|');
+	  saw_hash = (buf[0] == '#');
+	}
+	if (bad)
+	  break;
+      } else {
+	f->Seek(pos);
+	buf[0] = '#';
+      }
+    } else if (buf[0] == ';') {
+      /* Skip to end of comment */
+      while (1) {
+	if (f->Read(buf, 1) != 1) {
+	  BAD_PRINTF(("bad 1.1\n"));
+	  bad = 1;
+	  break;
+	}
+	if ((buf[0] == '\n') || (buf[0] == '\r'))
+	  break;
+      }
+      buf[0] = ' ';
+    }
+  } while (scheme_isspace(((unsigned char *)buf)[0]));
+
+  if (_buf)
+    _buf[0] = buf[0];
+
+  return buf[0];
+}
+
+int wxMediaStreamIn::IsDelim(char c)
+{
+  if (scheme_isspace((unsigned char)c))
+    return 1;
+  else if (c == '#') {
+    long pos;
+    char next[1];
+    pos = f->Tell();
+    f->Read(next, 1);
+    if (next[0] == '|') {
+      f->Seek(pos - 1);
+      return 1;
+    } else {
+      f->Seek(pos);
+      return 0;
+    }
+  } else if (c == ';') {
+    long pos;
+    pos = f->Tell();
+    f->Seek(pos - 1);
+    return 1;
+  } else
+    return 0;
+}
+
+void wxMediaStreamIn::GetNumber(long *_v, double *_fv)
+{
+  char buf[50];
+  int cnt = 1;
+
+  SkipWhitespace(buf);
+  if (bad)
+    cnt = 50;
+  
+  while (cnt < 50) {
+    if (f->Read(buf, 1, cnt) != 1) {
+      /* Assuming EOF */
+      break;
+    }
+    if (IsDelim(buf[cnt]))
+      break;
+    cnt++;
+  }
+
+  if (cnt == 50) {
+    BAD_PRINTF(("bad 3\n"));
+    bad = 1;
+    if (_v)
+      *_v = 0;
+    if (_fv)
+      *_fv = 0.0;
+  } else {
+    buf[cnt] = 0;
+    if (_fv) {
+      double fv;
+      GC_CAN_IGNORE char *p;
+      fv = strtod(buf, &p);
+      *_fv = fv;
+    } else {
+      long v = 0;
+      int i = 0, negate;
+
+      if (buf[i] == '-') {
+	negate = 1;
+	i = 1;
+      } else {
+	negate = 0;
+      }
+      if (cnt > 11) {
+	BAD_PRINTF(("bad 4 %d %s\n", cnt, buf));
+	bad = 1;
+      }
+
+      for (; buf[i]; i++) {
+	if ((buf[i] >= '0' && (buf[i] <= '9'))) {
+	  v = (v * 10) + (buf[i] - '0');
+	} else {
+	  bad = 1;
+	  BAD_PRINTF(("bad 6 %c\n", buf[i]));
+	}
+      }
+      if (negate)
+	v = -v;
+
+      *_v = v;
+    }
+  }
+
+  IncItemCount();
+}
+
+char *wxMediaStreamIn::GetAString(long *n, long limit, char *target, int extra, int recur)
+{
+  char *s, buf[32];
+  int alloc = 32, size = 0;
+  Scheme_Object *port, *str;
+  long len, orig_len, get_amt, got_amt;
+
+  if (recur) {
+    if (limit < 16)
+      orig_len = limit;
+    else
+      orig_len = 16;
+  } else {
+    Get(&orig_len);
+  }
+  get_amt = orig_len + 1;
+
+  if (recur) {
+    buf[0] = '#';
+  } else {
+    SkipWhitespace(buf);
+    if (bad)
+      buf[0] = 0;
+  }
+
+  if (buf[0] == '#') {
+    if (f->Read(buf, 1, 1) == 1) {
+      if (buf[1] == '"') {
+	size = 0;
+	s = buf;
+	while (1) {
+	  if ((size + get_amt + 1) >= alloc) {
+	    char *naya;
+	    alloc *= 2;
+	    naya = new WXGC_ATOMIC char[alloc];
+	    memcpy(naya, s, size);
+	    s = naya;
+	  }
+	  got_amt = f->Read(s, get_amt, size);
+	  if (got_amt == get_amt) {
+	    int i, eos = 0, orig_size = size;
+	    for (i = 0; i < get_amt; ) {
+	      if (s[orig_size + i] == '"') {
+		size++;
+		i++;
+		eos = 1;
+		break;
+	      } else if (s[orig_size + i] == '\\') {
+		if (i + 1 >= get_amt) {
+		  if (f->Read(s, 1, orig_size + i + 1) != 1) {
+		    bad = 1;
+		    BAD_PRINTF(("bad 8\n"));
+		    break;
+		  }
+		  i++;
+		} else
+		  i += 2;
+		size += 2;
+	      } else {
+		size++;
+		i++;
+	      }
+	    }
+	    if (i < get_amt) {
+	      bad = 1;
+	      BAD_PRINTF(("bad 8.5 %d %ld %ld %s\n", i, get_amt, limit, s));
+	    }
+	    get_amt = 1;
+	    if (eos || bad)
+	      break;
+	  } else {
+	    bad = 1;
+	    BAD_PRINTF(("bad 9 %ld %ld\n", get_amt, got_amt));
+	    break;
+	  }
+	}
+
+	if (!bad) {
+	  if (!recur)
+	    IncItemCount();
+
+	  port = scheme_make_sized_byte_string_input_port(s, size);
+	  str = scheme_read_byte_string(port);
+      
+	  if (str) {
+	    if (recur) {
+	      return (char *)str;
+	    } else {
+	      len = SCHEME_BYTE_STRLEN_VAL(str);
+
+	      if (len == orig_len) {
+		if (target) {
+		  long amt;
+		  amt = ((len > limit) ? limit : len);
+		  memcpy(target, SCHEME_BYTE_STR_VAL(str), amt);
+		  *n = amt;
+		  return target;
+		} else {
+		  /* extra is either 1 or 0 */
+		  if (n)
+		    *n = len + extra;
+		  return SCHEME_BYTE_STR_VAL(str);
+		}
+	      } else {
+		printf("bad 9.9 %ld %ld %s\n", orig_len, len, SCHEME_BYTE_STR_VAL(str));
+	      }
+	    }
+	  }
+	}
+      }
+    }
+  } else if (!recur && (buf[0] == '(')) {
+    /* Read a sequence of strings */
+    Scheme_Object *accum = scheme_null;
+    long left_to_get = orig_len;
+    while (1) {
+      SkipWhitespace(buf);
+
+      if (bad)
+	break;
+
+      if (buf[0] == ')') {
+	/* Got all byte strings */
+	break;
+      } else if (buf[0] == '#') {
+	str = (Scheme_Object *)GetAString(NULL, left_to_get, NULL, 0, 1);
+	if (bad)
+	  break;
+	accum = scheme_make_pair(str, accum);
+	left_to_get -= SCHEME_BYTE_STRLEN_VAL(str);
+
+	if (left_to_get < 0) {
+	  BAD_PRINTF(("bad 10.2\n"));
+	  bad = 1;
+	  break;
+	}
+      } else {
+	BAD_PRINTF(("bad 10.7\n"));
+	bad = 1;
+	break;
+      }
+    }
+
+    if (left_to_get) {
+      BAD_PRINTF(("bad 10.3\n"));
+      bad = 1;
+    }
+
+    if (!bad) {
+      long amt, i;
+
+      /* Reverse list */
+      str = scheme_null;
+      while (SCHEME_PAIRP(accum)) {
+	str = scheme_make_pair(SCHEME_CAR(accum), str);
+	accum = SCHEME_CDR(accum);
+      }
+
+      /* Prepare target: */
+      if (target) {
+	amt = ((orig_len > limit) ? limit : orig_len);
+	*n = amt;
+      } else {
+	/* extra is either 1 or 0 */
+	amt = orig_len;
+	if (n)
+	  *n = orig_len + extra;
+	target = new WXGC_ATOMIC char[orig_len + extra];
+	if (extra)
+	  target[orig_len] = 0;
+      }
+
+      /* Copy strings to target: */
+      i = 0;
+      accum = str;
+      while (amt) {
+	str = SCHEME_CAR(accum);
+	accum = SCHEME_CDR(accum);
+	get_amt = SCHEME_BYTE_STRLEN_VAL(str);
+	if (get_amt > amt)
+	  get_amt = amt;
+	memcpy(target + i, SCHEME_BYTE_STR_VAL(str), get_amt);
+	i += get_amt;
+	amt -= get_amt;
+      }
+
+      IncItemCount();
+
+      return target;
+    }
+  }
+   
+  bad = 1;
+  BAD_PRINTF(("bad 10\n"));
+  if (n)
+    *n = 0;
+  return "";
+}
+
+void wxMediaStreamIn::IncItemCount()
+{
+  items++;
+  Tell(); /* Adds mapping for items */
+}
+
+void wxMediaStreamIn::SkipOne(int recur)
+{
+  char buf[1];
+
+  if (recur) {
+    buf[0] = '#';
+  } else {
+    SkipWhitespace(buf);
+  }
+
+  if (!bad) {
+    if (buf[0] == '#') {
+      /* Byte string */
+      if (f->Read(buf, 1) == 1) {
+	if (buf[0] != '"') {
+	  bad = 1;
+	  BAD_PRINTF(("bad 12\n"));
+	} else {
+	  while (1) {
+	    if (f->Read(buf, 1) != 1) {
+	      bad = 1;
+	      BAD_PRINTF(("bad 13\n"));
+	      break;
+	    }
+	    if (buf[0] == '"') {
+	      break;
+	    } else if (buf[0] == '\\') {
+	      if (f->Read(buf, 1) != 1) {
+		bad = 1;
+		BAD_PRINTF(("bad 14\n"));
+		break;
+	      }
+	    }
+	  }
+	}
+      } else {
+	bad = 1;
+	BAD_PRINTF(("bad 15\n"));
+      }
+    } else if (buf[0] == '(') {
+      /* List of byte strings */
+      while (!bad) {
+	do {
+	  if (f->Read(buf, 1) != 1) {
+	    bad = 1;
+	    BAD_PRINTF(("bad 16\n"));
+	    break;
+	  }
+	} while (!IsDelim(buf[0]));
+	if (buf[0] == ')')
+	  break;
+	else if (buf[0] == '#') {
+	  SkipOne(TRUE);
+	} else {
+	  bad = 1;
+	  break;
+	}
+      }
+    } else {
+      /* Number */
+      do {
+	if (f->Read(buf, 1) != 1) {
+	  bad = 1;
+	  BAD_PRINTF(("bad 16\n"));
+	  break;
+	}
+      } while (!IsDelim(buf[0]));
+    }
+
+    if (!bad && !recur)
+      IncItemCount();
+  }
+}
+
 wxMediaStreamIn *wxMediaStreamIn::GetFixed(long *v)
 {
   Typecheck(st_FIXED);
@@ -404,28 +847,35 @@ wxMediaStreamIn *wxMediaStreamIn::GetFixed(long *v)
     return this;
   }
 
-  if (!lsb_first) {
-    if (f->Read((char *)v, sizeof(long)) != sizeof(long)) {
-      *v = 0;
-      bad = 1;
-    }
-  } else {
-    if (WXME_VERSION_ONE(this)) {
+  if (WXME_VERSION_BEFORE_EIGHT(this)) {
+    if (!lsb_first) {
       if (f->Read((char *)v, sizeof(long)) != sizeof(long)) {
-	bad = 1;
 	*v = 0;
+	bad = 1;
+	BAD_PRINTF(("bad 17\n"));
       }
     } else {
-      unsigned char bl[4];
-      
-      if (f->Read((char *)bl, 4) != 4) {
-	bad = 1;
-	*v = 0;
+      if (WXME_VERSION_ONE(this)) {
+	if (f->Read((char *)v, sizeof(long)) != sizeof(long)) {
+	  bad = 1;
+	  BAD_PRINTF(("bad 18\n"));
+	  *v = 0;
+	}
       } else {
-	*v = ((((long)bl[0]) << 24) + (((long)bl[1]) << 16)
-	      + (((long)bl[2]) << 8) + bl[3]);
+	unsigned char bl[4];
+      
+	if (f->Read((char *)bl, 4) != 4) {
+	  bad = 1;
+	  BAD_PRINTF(("bad 19\n"));
+	  *v = 0;
+	} else {
+	  *v = ((((long)bl[0]) << 24) + (((long)bl[1]) << 16)
+		+ (((long)bl[2]) << 8) + bl[3]);
+	}
       }
     }
+  } else {
+    GetNumber(v, NULL);
   }
 
   return this;
@@ -444,27 +894,33 @@ char *wxMediaStreamIn::GetString(long *n, int extra)
     return NULL;
   }
 
-  Get(&m);
+  if (WXME_VERSION_BEFORE_EIGHT(this)) {
+    Get(&m);
 
-  Typecheck(st_STRING);
+    Typecheck(st_STRING);
 
-  r = (char *)wxMallocAtomicIfPossible(m + extra);
-  if (!r) {
-    wxmeError("editor-stream-in%: string too large (out of memory) while reading stream");
-    bad = 1;
+    r = (char *)wxMallocAtomicIfPossible(m + extra);
+    if (!r) {
+      wxmeError("editor-stream-in%: string too large (out of memory) while reading stream");
+      bad = 1;
+      BAD_PRINTF(("bad 20\n"));
+      if (n)
+	*n = 0;
+      return NULL;
+    }
+    if (extra)
+      r[m] = 0;
+
+    if (f->Read(r, m) != m) {
+      bad = 1;
+      BAD_PRINTF(("bad 21\n"));
+      m = 0;
+    }
     if (n)
-      *n = 0;
-    return NULL;
+      *n = m;
+  } else {
+    r = GetAString(n, -1, NULL, extra, 0);
   }
-  if (extra)
-    r[m] = 0;
-
-  if (f->Read(r, m) != m) {
-    bad = 1;
-    m = 0;
-  }
-  if (n)
-    *n = m;
 
   return r;
 }
@@ -483,26 +939,32 @@ wxMediaStreamIn *wxMediaStreamIn::Get(long *n, char *str)
     return this;
   }
 
-  Get(&m);
+  if (WXME_VERSION_BEFORE_EIGHT(this)) {
+    Get(&m);
 
-  Typecheck(st_STRING);
+    Typecheck(st_STRING);
 
-  if (m <= *n) {
-    if (f->Read(str, m) != m) {
-      bad = 1;
-      m = 0;
-    }
-  } else {
-    int d;
-    d = f->Read(str, *n);
-    if (d != *n) {
-      bad = 1;
-      m = 0;
+    if (m <= *n) {
+      if (f->Read(str, m) != m) {
+	bad = 1;
+	BAD_PRINTF(("bad 22\n"));
+	m = 0;
+      }
     } else {
-      f->Skip(m - *n);
+      int d;
+      d = f->Read(str, *n);
+      if (d != *n) {
+	bad = 1;
+	BAD_PRINTF(("bad 23\n"));
+	m = 0;
+      } else {
+	f->Skip(m - *n);
+      }
     }
+    *n = m;
+  } else {
+    GetAString(n, *n, str, 0, 0);
   }
-  *n = m;
 
   return this;
 }
@@ -518,47 +980,56 @@ wxMediaStreamIn* wxMediaStreamIn::Get(long *v)
     return this;
   }
 
-  if (f->Read((char *)&b, sizeof(char)) != sizeof(char)) {
-    bad = 1;
-    b = 0;
-  }
-
-  if (b & 0x80) {
-    if (b & 0x40) {
-      if (b & 0x1) {
-	signed char bv;
-	if (f->Read((char *)&bv, 1) != 1) {
-	  bad = 1;
-	  *v = 0;
-	} else
-	  *v = bv;
-      } else if (b & 0x2) {
-	unsigned char bl[2];
-	if (f->Read((char *)bl, 2) != 2) {
-	  bad = 1;
-	  *v = 0;
-	} else
-	  *v = (((int)((signed char *)bl)[0]) << 8) + bl[1];
-      } else {
-	unsigned char bl[4];
-	if (f->Read((char *)bl, 4) != 4) {
-	  bad = 1;
-	  *v = 0;
-	} else
-	  *v = (((long)((signed char *)bl)[0]) << 24) 
-	    + (((long)bl[1]) << 16)
-	    + (((long)bl[2]) << 8) + bl[3];
-      }
-    } else {
-      unsigned char b2;
-      if (f->Read((char *)&b2, sizeof(char)) != sizeof(char)) {
-	bad = 1;
-	*v = 0;
-      } else
-	*v = (((int)(b & 0x3F)) << 8) | b2;
+  if (WXME_VERSION_BEFORE_EIGHT(this)) {
+    if (f->Read((char *)&b, sizeof(char)) != sizeof(char)) {
+      bad = 1;
+      BAD_PRINTF(("bad 24\n"));
+      b = 0;
     }
-  } else
-    *v = b;
+
+    if (b & 0x80) {
+      if (b & 0x40) {
+	if (b & 0x1) {
+	  signed char bv;
+	  if (f->Read((char *)&bv, 1) != 1) {
+	    bad = 1;
+	    printf("25\n");
+	    *v = 0;
+	  } else
+	    *v = bv;
+	} else if (b & 0x2) {
+	  unsigned char bl[2];
+	  if (f->Read((char *)bl, 2) != 2) {
+	    bad = 1;
+	    BAD_PRINTF(("bad 26\n"));
+	    *v = 0;
+	  } else
+	    *v = (((int)((signed char *)bl)[0]) << 8) + bl[1];
+	} else {
+	  unsigned char bl[4];
+	  if (f->Read((char *)bl, 4) != 4) {
+	    bad = 1;
+	    printf("27\n");
+	    *v = 0;
+	  } else
+	    *v = (((long)((signed char *)bl)[0]) << 24) 
+	      + (((long)bl[1]) << 16)
+	      + (((long)bl[2]) << 8) + bl[3];
+	}
+      } else {
+	unsigned char b2;
+	if (f->Read((char *)&b2, sizeof(char)) != sizeof(char)) {
+	  bad = 1;
+	  printf("28\n");
+	  *v = 0;
+	} else
+	  *v = (((int)(b & 0x3F)) << 8) | b2;
+      }
+    } else
+      *v = b;
+  } else {
+    GetNumber(v, NULL);
+  }
 
   return this;
 }
@@ -602,32 +1073,39 @@ wxMediaStreamIn *wxMediaStreamIn::Get(double *v)
     return this;
   }
 
-  if (!lsb_first) {
-    if (f->Read((char *)v, sizeof(double)) != sizeof(double)) {
-      bad = 1;
-      *v = 0.0;
-    }
-  } else {
-    if (WXME_VERSION_ONE(this)) {
+  if (WXME_VERSION_BEFORE_EIGHT(this)) {
+    if (!lsb_first) {
       if (f->Read((char *)v, sizeof(double)) != sizeof(double)) {
 	bad = 1;
+	BAD_PRINTF(("bad 29\n"));
 	*v = 0.0;
       }
     } else {
-      char num[sizeof(double)], num2[sizeof(double)];
-      int i, j;
-      
-      if (f->Read((char *)num, sizeof(double))  != sizeof(double)) {
-	bad = 1;
-	*v = 0.0;
-      } else {
-	for (i = 0, j = sizeof(double); i < (int)sizeof(double); ) {
-	  num2[i++] = num[--j];
+      if (WXME_VERSION_ONE(this)) {
+	if (f->Read((char *)v, sizeof(double)) != sizeof(double)) {
+	  bad = 1;
+	  BAD_PRINTF(("bad 30\n"));
+	  *v = 0.0;
 	}
+      } else {
+	char num[sizeof(double)], num2[sizeof(double)];
+	int i, j;
+      
+	if (f->Read((char *)num, sizeof(double))  != sizeof(double)) {
+	  bad = 1;
+	  BAD_PRINTF(("bad 31\n"));
+	  *v = 0.0;
+	} else {
+	  for (i = 0, j = sizeof(double); i < (int)sizeof(double); ) {
+	    num2[i++] = num[--j];
+	  }
 	
-	memcpy((char *)v, num2, sizeof(double));
+	  memcpy((char *)v, num2, sizeof(double));
+	}
       }
     }
+  } else {
+    GetNumber(NULL, v);
   }
 
   return this;
@@ -654,7 +1132,7 @@ void wxMediaStreamIn::SetBoundary(long n)
 
   {
     long m;
-    m = f->Tell() + n;
+    m = Tell() + n;
     boundaries[boundcount++] = m;
   }
 }
@@ -666,17 +1144,67 @@ void wxMediaStreamIn::RemoveBoundary()
 
 void wxMediaStreamIn::Skip(long n)
 {
-  f->Skip(n);
+  if (WXME_VERSION_BEFORE_EIGHT(this)) {
+    f->Skip(n);
+  } else {
+    JumpTo(n + items);
+  }
 }
 
 long wxMediaStreamIn::Tell(void)
 {
-  return f->Tell();
+  if (WXME_VERSION_BEFORE_EIGHT(this)) {
+    return f->Tell();
+  } else {
+    long pos;
+    Scheme_Hash_Table *ht;
+    
+    pos = f->Tell();
+    
+    ht = (Scheme_Hash_Table *)pos_map;
+    if (!ht) {
+      ht = scheme_make_hash_table(SCHEME_hash_ptr);
+      pos_map = (void *)ht;
+    }
+    
+    scheme_hash_set(ht, scheme_make_integer(items),
+		    scheme_make_integer_value(pos));
+    
+    
+    return items;
+  }
 }
 
 void wxMediaStreamIn::JumpTo(long pos)
 {
-  f->Seek(pos);
+  if (WXME_VERSION_BEFORE_EIGHT(this)) {
+    f->Seek(pos);
+  } else {
+    Scheme_Hash_Table *ht;
+    Scheme_Object *p;
+    
+    ht = (Scheme_Hash_Table *)pos_map;
+    if (ht) {
+      p = scheme_hash_get(ht, scheme_make_integer(pos));
+    } else
+      p = NULL;
+
+    if (!p) {
+      while ((items < pos) && !bad) {
+	SkipOne(FALSE);
+      }
+      if (items != pos) {
+	bad = 1;
+	BAD_PRINTF(("bad 32\n"));
+      }
+      return;
+    } else {
+      items = (int)pos;
+    }
+    
+    scheme_get_int_val(p, &pos);
+    f->Seek(pos);
+  }
 }
 
 Bool wxMediaStreamIn::Ok(void)
@@ -690,6 +1218,7 @@ wxMediaStreamOut::wxMediaStreamOut(wxMediaStreamOutBase *s)
 {
   f = s;
   bad = FALSE;
+  col = 72;
 }
 
 void wxMediaStreamOut::Typeset(char WX_TYPESAFE_USED(v))
@@ -711,30 +1240,109 @@ void wxMediaStreamOut::Typeset(char WX_TYPESAFE_USED(v))
 
 wxMediaStreamOut *wxMediaStreamOut::PutFixed(long v)
 {
+  char buf[13];
+  int spc;
+
   Typeset(st_FIXED);
 
-  if (!lsb_first) {
-    f->Write((char *)&v, sizeof(long));
+  if (col + 12 > 72) {
+    col = 11;
+    spc = '\n';
   } else {
-    char lb[4];
-    
-    lb[0] = (v >> 24) & 0xFF;
-    lb[1] = (v >> 16) & 0xFF;
-    lb[2] = (v >> 8) & 0xFF;
-    lb[3] = v & 0xFF;
-    f->Write(lb, 4);
+    spc = ' ';
+    col += 12;
   }
+
+  if (v < 0)
+    sprintf(buf, " %10.10ld", v);
+  else
+    sprintf(buf, " %11.11ld", v);
+  buf[0] = spc;
+  f->Write(buf, 12);
+
+  items++;
 
   return this;
 }
 
+static int estimate_size(char *s, int ds, int n)
+{
+  int i, c, len = 3;
+
+  for (i = 0; i < n; i++) {
+    c = ((unsigned char *)s)[i + ds];
+    if (!c)
+      len += 2;
+    else if (((c >= '_') && (c <= '~'))
+	     || ((c >= '#') && (c <= 'Z'))
+	     || (c == ' '))
+      len++;
+    else
+      len += 4; /* worst case */
+  }
+
+  return len;
+}
+
 wxMediaStreamOut* wxMediaStreamOut::Put(long n, char *str, int ds)
 {
+  long len;
+  char *s;
+  
   Put(n);
 
   Typeset(st_STRING);
 
-  f->Write(str, n, ds);
+  len = estimate_size(str, ds, n);
+
+  if (len > 72) {
+    /* Single byte string doesn't fit on a line */
+    int amt;
+    f->Write("\n(", 2);
+    while (n) {
+      if (n > 32)
+	amt = 32;
+      else
+	amt = n;
+      len = estimate_size(str, ds, amt);
+      if (len < 71) {
+	while (amt < n) {
+	  if (estimate_size(str, ds, amt + 1) < 71)
+	    amt++;
+	  else
+	    break;
+	}
+      } else {
+	while (1) {
+	  if (estimate_size(str, ds, amt) < 71)
+	    break;
+	  --amt;
+	}
+      }
+
+      s = scheme_write_to_string(scheme_make_sized_offset_byte_string(str, ds, amt, 0), &len);
+      f->Write("\n ", 2);
+      f->Write(s, len);
+      ds += amt;
+      n -= amt;
+    }
+    f->Write("\n)", 2);
+    col = 1;
+  } else {
+    s = scheme_write_to_string(scheme_make_sized_offset_byte_string(str, ds, n, 0), &len);
+    if (col + len + 1 > 72) {
+      f->Write("\n", 1);
+      col = 0;
+    } else {
+      f->Write(" ", 1);
+      col++;
+    }
+    f->Write(s, len);
+    // col += len;
+    col = 72; /* forcing a newline after every string makes the file more readable */
+  }
+
+  items++;
 
   return this;
 }
@@ -746,44 +1354,25 @@ wxMediaStreamOut *wxMediaStreamOut::Put(char *v)
 
 wxMediaStreamOut *wxMediaStreamOut::Put(long v)
 {
+  char buf[13];
+  int len;
+
   Typeset(st_NUMBER);
 
-  if (v >= 0) {
-    if (v <= 0x7F) {
-      char b = v;
-      f->Write(&b, 1);
-    } else if (v <= 0x1FFF) {
-      unsigned char b[2];
-      b[0] = (v >> 8) | 0x80;
-      b[1] = v & 0xFF;
-      f->Write((char *)b, 2);
-    } else {
-      char markb = 0xC0;
-      unsigned char lb[4];
-      lb[0] = (v >> 24) & 0xFF;
-      lb[1] = (v >> 16) & 0xFF;
-      lb[2] = (v >> 8) & 0xFF;
-      lb[3] = v & 0xFF;
-      f->Write(&markb, 1);
-      f->Write((char *)lb, 4);
-    }
+  sprintf(buf, " %ld", v);
+
+  len = strlen(buf);
+  
+  if (col + len > 72) {
+    col = len - 1;
+    buf[0] = '\n';
   } else {
-    char b = 0xC0;
-    if (v > ((signed char)0x80)) {
-      signed char b2 = v;
-      b |= 0x1;
-      f->Write(&b, 1);
-      f->Write((char *)&b2, 1);
-    } else {
-      unsigned char lb[4];
-      f->Write(&b, sizeof(char));
-      ((signed char *)lb)[0] = (v >> 24) & 0xFF;
-      lb[1] = (v >> 16) & 0xFF;
-      lb[2] = (v >> 8) & 0xFF;
-      lb[3] = v & 0xFF;
-      f->Write((char *)lb, 4);
-    }
+    col += len;
   }
+
+  f->Write(buf, len);
+
+  items++;
 
   return this;
 }
@@ -805,21 +1394,39 @@ wxMediaStreamOut* wxMediaStreamOut::Put(char v)
 
 wxMediaStreamOut* wxMediaStreamOut::Put(double v)
 {
+  int digits, len;
+  char buffer[50];
+
   Typeset(st_FLOAT);
 
-  if (!lsb_first) {
-    f->Write((char *)&v, sizeof(double));
-  } else {
-    char num[sizeof(double)], num2[sizeof(double)];
-    int i, j;
+  digits = 14;
+  while (digits < 30) {
+    double check;
+    GC_CAN_IGNORE char *ptr;
+
+    sprintf(buffer, "%.*g", digits, v);
     
-    memcpy(num2, (char *)&v, sizeof(double));
-    for (i = 0, j = sizeof(double); i < (int)sizeof(double); ) {
-      num[i++] = num2[--j];
-    }
+    /* Did we get read-write invariance, yet? */
+    check = strtod(buffer, &ptr);
+    if (check == v)
+      break;
     
-    f->Write((char *)num, sizeof(double));
+    digits++;
   }
+
+  len = strlen(buffer);
+
+  if (col + len + 1 > 72) {
+    col = len;
+    f->Write("\n", 1);
+  } else {
+    f->Write(" ", 1);
+    col += len + 1;
+  }
+  
+  f->Write(buffer, len);
+
+  items++;
 
   return this;
 }
@@ -831,15 +1438,79 @@ wxMediaStreamOut* wxMediaStreamOut::Put(float v)
 
 long wxMediaStreamOut::Tell(void)
 {
-  return f->Tell();
+  long pos;
+  Scheme_Hash_Table *ht;
+
+  pos = f->Tell();
+
+  ht = (Scheme_Hash_Table *)pos_map;
+  if (!ht) {
+    ht = scheme_make_hash_table(SCHEME_hash_ptr);
+    pos_map = (void *)ht;
+  }
+
+  scheme_hash_set(ht, scheme_make_integer(items),
+		  scheme_make_pair(scheme_make_integer_value(pos),
+				   scheme_make_integer(col)));
+
+  return items;
 }
 
-void wxMediaStreamOut::JumpTo(long pos)
+void wxMediaStreamOut::JumpTo(long icount)
 {
-  f->Seek(pos);
+  long pos;
+  Scheme_Hash_Table *ht;
+  Scheme_Object *p;
+
+  if (pos_map && !bad) {
+    ht = (Scheme_Hash_Table *)pos_map;
+    p = scheme_hash_get(ht, scheme_make_integer(icount));
+
+    if (p) {
+      scheme_get_int_val(SCHEME_CAR(p), &pos);
+      f->Seek(pos);
+
+      p = SCHEME_CDR(p);
+      col = SCHEME_INT_VAL(p);
+
+      items = icount;
+    }
+  }
 }
 
 Bool wxMediaStreamOut::Ok(void)
 {
   return !bad;
 }
+
+void wxMediaStreamOut::PrettyFinish()
+{
+  if (!bad && col) {
+    f->Write("\n", 1);
+    col = 0;
+  }
+}
+
+void wxMediaStreamOut::PrettyStart()
+{
+  if (!bad) {
+    char *s;
+    if (col) {
+      f->Write("\n", 1);
+    }
+    s = "#|\n   This file is in PLT Scheme editor format.\n";
+    f->Write(s, strlen(s));
+    s = "   Most likely, it was created by saving a program in DrScheme,\n";
+    f->Write(s, strlen(s));
+    s = "   and it probably contains a program with non-text elements (such\n";
+    f->Write(s, strlen(s));
+    s = "   as pictures, comment boxes, or test-cases boxes).\n";
+    f->Write(s, strlen(s));
+    s = "   Open this file in DrScheme to read its content.\n";
+    f->Write(s, strlen(s));
+    s = "                 www.plt-scheme.org\n|#\n";
+    f->Write(s, strlen(s));
+    col = 0;
+  }
+}
+

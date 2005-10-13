@@ -387,6 +387,7 @@ EXPORTS
  scheme_print_bytes
  scheme_print_utf8
  scheme_print_string
+ scheme_read_byte_string
  scheme_make_namespace
  scheme_add_namespace_option
  scheme_require_from_original_env

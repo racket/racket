@@ -733,6 +733,8 @@ Bool wxReadMediaGlobalFooter(wxMediaStreamIn *f)
 
 Bool wxWriteMediaGlobalHeader(wxMediaStreamOut *f)
 {
+  f->PrettyStart();
+
   f->scl->ResetHeaderFlags(f);
   if (!f->scl->Write(f))
     return FALSE;
@@ -746,6 +748,8 @@ Bool wxWriteMediaGlobalFooter(wxMediaStreamOut *f)
 {
   wxmbDoneStyleReadsWrites(f);
   f->scl->ResetHeaderFlags(f);
+
+  f->PrettyFinish();
 
   return TRUE;
 }
@@ -765,7 +769,8 @@ int wxmeCheckFormatAndVersion(wxMediaStreamIn *s, wxMediaStreamInBase *b, Bool s
       && strcmp(s->read_version, "03")
       && strcmp(s->read_version, "04")
       && strcmp(s->read_version, "05")
-      && strcmp(s->read_version, "06")) {
+      && strcmp(s->read_version, "06")
+      && strcmp(s->read_version, "07")) {
     if (showErrors)
       wxmeError("load-file: unknown version number in editor<%> file format");
     return 0;
@@ -780,7 +785,9 @@ int wxmeCheckFormatAndVersion(wxMediaStreamIn *s, wxMediaStreamInBase *b, Bool s
     if ((buf[0] != ' ')
 	|| (buf[1] != '#')
 	|| (buf[2] != '#')
-	|| (buf[3] != ' ')) {
+	|| ((buf[3] != ' ')
+	    && (buf[3] != '\r')
+	    && (buf[3] != '\n'))) {
       if (showErrors)
 	wxmeError("load-file: editor<%> file missing ' ## ' mark");
       return 0;

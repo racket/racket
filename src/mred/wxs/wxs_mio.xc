@@ -17,7 +17,7 @@
 
 @CLASSBASE wxMediaStreamInBase "editor-stream-in-base" : "object"
 
-static char *VectorToArray(char *r, Scheme_Object *vec, long *len)
+static char *VectorToArray(char *r, Scheme_Object *vec, long *len, long delta)
 {
   long c, i;
   Scheme_Object **a = NULL;
@@ -32,21 +32,23 @@ static char *VectorToArray(char *r, Scheme_Object *vec, long *len)
 
   c = *len = SCHEME_VEC_SIZE(vec);
 
-  if (!r)
+  if (!r) {
     r = WITH_VAR_STACK((char *)scheme_malloc_atomic(c));
+    delta = 0;
+  }
 
   for (a = SCHEME_VEC_ELS(vec), i = 0; i < c; i++) {
     if (!SCHEME_CHARP(a[i]))
       WITH_VAR_STACK(scheme_wrong_type(METHODNAME("editor-stream-in-base%","read"), 
 				       "character vector", -1, 0, &vec));
-    r[i] = SCHEME_CHAR_VAL(a[i]);
+    r[i+delta] = SCHEME_CHAR_VAL(a[i]);
   }
 
   READY_TO_RETURN;
   return r;
 }
 
-static Scheme_Object *ArrayToVector(char *r, Scheme_Object *vec, long len)
+static Scheme_Object *ArrayToVector(char *r, Scheme_Object *vec, long len, long delta)
 {
   long i;
   Scheme_Object **a = NULL;
@@ -62,7 +64,7 @@ static Scheme_Object *ArrayToVector(char *r, Scheme_Object *vec, long len)
 		                     "character vector", -1, 0, &vec));
   
   for (a = SCHEME_VEC_ELS(vec), i = 0; i < len; i++)
-    a[i] = WITH_VAR_STACK(scheme_make_char(r[i]));
+    a[i] = WITH_VAR_STACK(scheme_make_ascii_character(r[i+delta]));
 
   READY_TO_RETURN;
 
@@ -70,10 +72,10 @@ static Scheme_Object *ArrayToVector(char *r, Scheme_Object *vec, long len)
 }
 
 @MACRO setNULL = NULL
-@MACRO arrayToVector = p[POFFSET] = ArrayToVector(x0, NULL, x1);
-@MACRO copyArrayToVector = ArrayToVector(x0, p[POFFSET], x1);
-@MACRO vectorToArray = x0 = VectorToArray(NULL, p[POFFSET], &x1);
-@MACRO copyVectorToArray = VectorToArray(x0, p[POFFSET], &x1);
+@MACRO arrayToVector = p[POFFSET] = ArrayToVector(x0, NULL, x1, x2);
+@MACRO copyArrayToVector = ArrayToVector(x0, p[POFFSET], x1, x2);
+@MACRO vectorToArray = x0 = VectorToArray(NULL, p[POFFSET], &x1, x2);
+@MACRO copyVectorToArray = VectorToArray(x0, p[POFFSET], &x1, x2);
 
 @CREATOR ();
 
@@ -81,7 +83,7 @@ static Scheme_Object *ArrayToVector(char *r, Scheme_Object *vec, long len)
 @ V "seek" : void Seek(nnlong);
 @ V "skip" : void Skip(nnlong);
 @ V "bad?" : bool Bad(); : : : rZERO
-@ V "read" : long Read(char[]/setNULL/setNULL////push,-long); : /arrayToVector/copyVectorToArray : /vectorToArray/copyArrayToVector : rZERO
+@ V "read" : long Read(char[]/setNULL/setNULL////push,-long,-long); : /arrayToVector/copyVectorToArray : /vectorToArray/copyArrayToVector : rZERO
 
 @END
 
@@ -177,6 +179,8 @@ static double GetInexact(wxMediaStreamIn *s)
 
 @ "tell" : long Tell();
 @ "jump-to" : void JumpTo(nnlong);
+
+@ "pretty-finish" : void PrettyFinish();
 
 @ "ok?" : bool Ok();
 

@@ -238,8 +238,12 @@ wxObject *wxGetClipboardData(int dataFormat, long *len)
 
       GlobalUnlock(hGlobalMemory);
 
-      if ((dataFormat == CF_UNICODETEXT)
-	  && !(hsize & 0x1)) {
+      if (dataFormat == CF_UNICODETEXT) {
+	if (hsize & 0x1) {
+	  /* Why is a UTF-16 encoding odd sized? Try
+	     dropping a byte. */
+	  s[hsize - 1] = 0;
+	}
 	s = wxNARROW_STRING((wchar_t *)s);
       }
 
