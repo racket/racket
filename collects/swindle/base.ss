@@ -249,7 +249,9 @@
         (string-append ":" (symbol->string (syntax-object->datum var))))
        k k))
     (syntax-case k ()
-      [(var key default) (identifier? #'var) (list #'var #'key #'default)]
+      [(var key default)
+       (and (identifier? #'var) (syntax-keyword? #'key))
+       (list #'var #'key #'default)]
       [(var default) (identifier? #'var) (list #'var (key #'var) #'default)]
       [(var) (identifier? #'var) (list #'var (key #'var) #'#f)]
       [var (identifier? #'var) (list #'var (key #'var) #'#f)]
@@ -484,7 +486,7 @@
                            (filter-out-keys '#,(map cadr keys) #,all-keys)])
                        #'()))
                expr0 expr ...)))]
-        ;; common cases: no optional, keyword, or otherfancy stuff
+        ;; common cases: no optional, keyword, or other fancy stuff
         [(null? vars)
          (quasisyntax/loc stx
            (lambda #,(or rest #'()) expr0 expr ...))]
