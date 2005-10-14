@@ -526,33 +526,37 @@
            ccs-to-compile)))
       
       (do-install-part 'pre)
-      
-      (define (make-it desc compile-directory)
+
+      (define (make-it desc compile-directory get-namespace)
         ;; To avoid polluting the compilation with modules that are
         ;; already loaded, create a fresh namespace before calling
-        ;; this function
+        ;; this function.
+	;; To avoid keeping modules in memory across collections,
+	;; pass `make-namespace' as `get-namespace', otherwise use
+	;; `current-namespace' for `get-namespace'.
         (for-each (lambda (cc)
-                    (record-error
-                     cc
-                     (format "Compiling ~a" desc)
-                     (lambda ()
-                       (unless (control-io-apply
-                                (case-lambda 
-                                  [(p) 
-                                   ;; Main "doing something" message
-                                   (setup-fprintf p "Compiling ~a used by ~a" 
-                                                  desc (cc-name cc))]
-                                  [(p where)
-                                   ;; Doing something specifically in "where"
-                                   (setup-fprintf p "  in ~a" 
-                                                  (path->string
-                                                   (path->complete-path
-                                                    where
-                                                    (cc-path cc))))])
-                                compile-directory
-                                (list (cc-path cc) (cc-info cc)))
-                         (setup-printf "No more ~a to compile for ~a" 
-                                       desc (cc-name cc)))))
+		    (parameterize ([current-namespace (get-namespace)])
+		      (record-error
+		       cc
+		       (format "Compiling ~a" desc)
+		       (lambda ()
+			 (unless (control-io-apply
+				  (case-lambda 
+				   [(p) 
+				    ;; Main "doing something" message
+				    (setup-fprintf p "Compiling ~a used by ~a" 
+						   desc (cc-name cc))]
+				   [(p where)
+				    ;; Doing something specifically in "where"
+				    (setup-fprintf p "  in ~a" 
+						   (path->string
+						    (path->complete-path
+						     where
+						     (cc-path cc))))])
+				  compile-directory
+				  (list (cc-path cc) (cc-info cc)))
+			   (setup-printf "No more ~a to compile for ~a" 
+					 desc (cc-name cc))))))
                     (collect-garbage))
                   ccs-to-compile))
       
@@ -592,8 +596,8 @@
       (when (make-zo) 
         (with-specified-mode
          (lambda ()
-           (make-it ".zos" compile-directory-zos))))
-      (when (make-so) (make-it "extensions" compile-directory-extension))
+           (make-it ".zos" compile-directory-zos make-namespace))))
+      (when (make-so) (make-it "extensions" compile-directory-extension current-namespace))
       
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;;               Info-Domain Cache               ;;

@@ -2288,10 +2288,8 @@
             (with-handlers ([exn:fail:filesystem?
                              (λ (x) #f)])
               (let ([fw (collection-path "framework")])
-                (with-handlers ([exn:fail:filesystem?
-                                 (λ (x) #f)])
-                  (or (directory-exists? (build-path fw ".svn"))
-                      (directory-exists? (build-path fw "CVS"))))))))
+                (or (directory-exists? (build-path fw ".svn"))
+                    (directory-exists? (build-path fw "CVS")))))))
       
       (define bday-click-canvas%
         (class canvas%
