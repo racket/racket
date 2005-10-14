@@ -758,6 +758,13 @@
 ;                                  ;    ;                                               
 ;                                   ;;;;                                                
 
+  (drscheme:language-configuration:get-languages
+   (-> (listof (is-a?/c drscheme:language:language<%>)))
+   ()
+   "This can only be called after all of the tools initialization phases have completed."
+   ""
+   "Returns the list of all of the langauges installed in DrScheme.")
+  
   (drscheme:language-configuration:add-language
    ((and/c (is-a?/c drscheme:language:language<%>) language-object)
     . -> . void?)

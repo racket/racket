@@ -1,11 +1,3 @@
-#|
-
-This file is only here for backwards compatibility reasons.
-Old, saved number snips expect to find this file to be 
-load-able in mred.
-
-|#
-
 (module number-snip mzscheme
   (require (lib "mred.ss" "mred")
 	   (lib "class.ss")

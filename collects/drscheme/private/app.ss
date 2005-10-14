@@ -1,15 +1,17 @@
 
 (module app mzscheme
-  (require (lib "string-constant.ss" "string-constants")
-           (lib "unitsig.ss")
+  (require (lib "unitsig.ss")
 	   (lib "class.ss")
-	   (lib "mred.ss" "mred")
-           (lib "external.ss" "browser")
-           "drsig.ss"
-           "../acks.ss"
-           (lib "framework.ss" "framework")
+           (lib "list.ss")
            (lib "file.ss")
-           (lib "check-gui.ss" "version"))
+           (lib "string-constant.ss" "string-constants")
+           (lib "mred.ss" "mred")
+           (lib "framework.ss" "framework")
+           (lib "external.ss" "browser")
+           (lib "getinfo.ss" "setup")
+           (lib "check-gui.ss" "version")
+           "drsig.ss"
+           "../acks.ss")
   
   (provide app@)
   (define app@
@@ -42,7 +44,9 @@
         (let ([this-version (version)]
               [last-version (preferences:get 'drscheme:last-version)]
               [last-language (preferences:get 'drscheme:last-language)])
-          (when (or (not last-version)
+          (when (or (and (getenv "PLTDRWIZARD")
+                         (printf "PLTDRWIZARD: showing wizard\n"))
+                    (not last-version)
                     (not last-language)
                     (not (equal? last-version this-version))
                     (not (equal? last-language (this-language))))
@@ -160,28 +164,28 @@
           (case state
             [(natural-language)
              (when (okay-to-leave-nl-state?)
-               (set-state 'check-updates))]
-            [(check-updates)
-             (set-state 'programming-language)]
+               (set-state 'programming-language))]
             [(programming-language)
              (cond
                [(get-selected-language)
-                (send dlg show #f)]
+                (set-state 'check-updates)]
                [else
                 (message-box (string-constant drscheme)
-                             (string-constant please-select-a-language))])]))
+                             (string-constant please-select-a-language))])]
+            [(check-updates)
+             (send dlg show #f)]))
         
         ;; prev-state : -> void
         ;; pre: state != 'natural-language
         (define (prev-state)
           (case state
-            [(programming-language) (set-state 'check-updates)]
-            [(check-updates) (set-state 'natural-language)]
-            [else (error 'next-state "no next state from: ~s" state)]))
+            [(programming-language) (set-state 'natural-language)]
+            [(check-updates) (set-state 'programming-language)]
+            [else (error 'prev-state "no prev state from: ~s" state)]))
         
         ;; first-state?, last-state? : -> boolean
         (define (first-state?) (eq? state 'natural-language))
-        (define (last-state?) (eq? state 'programming-language))
+        (define (last-state?) (eq? state 'check-updates))
         
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;                                                        ;;
@@ -246,7 +250,7 @@
         
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;                                                        ;;
-        ;;                     State 2 GUI                        ;;
+        ;;                     State 3 GUI                        ;;
         ;;                                                        ;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         
@@ -286,33 +290,158 @@
         
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;                                                        ;;
-        ;;                     State 3 GUI                        ;;
+        ;;                     State 2 GUI                        ;;
         ;;                                                        ;;
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        
+        ;; need to sort these somehow ...
+        (define question/answer-table
+          (let* ([get-qa
+                  (λ (info-filename) 
+                    (let ([proc (get-info/full info-filename)])
+                      (if proc
+                          (let ([qs (proc 'splash-questions)])
+                            (unless (list? qs)
+                              (error 'splash-questions "expected a list, got ~e" qs))
+                            (for-each 
+                             (lambda (pr)
+                               (unless (and (pair? pr)
+                                            (pair? (cdr pr))
+                                            (andmap string? pr))
+                                 (error 
+                                  'splash-questions
+                                  "expected a list of lists of strings, with each inner list being at least two elements long, got ~e"
+                                  pr)))
+                             qs)
+                            qs)
+                          '())))]
+                 [all-qas
+                  (apply
+                   append
+                   (map get-qa (find-relevant-directories '(splash-questions))))]
+                 [item->index
+                  (lambda (x)
+                    (let loop ([lst all-qas]
+                               [i 0])
+                      (cond
+                        [(equal? (car lst) x) i]
+                        [else (loop (cdr lst)
+                                    (+ i 1))])))]
+                 [drs-qas (get-qa (collection-path "drscheme"))]
+                 [in-order
+                  (lambda (s1 s2)
+                    (cond
+                      [(equal? s1 (car drs-qas)) #t]
+                      [(equal? s2 (car (last-pair drs-qas))) #t]
+                      [else
+                       (<= (item->index s1) (item->index s2))]))])
+            (quicksort all-qas in-order)))
         
         (define programming-language-state-panel (instantiate vertical-panel% ()
                                                    (parent sp)
                                                    (alignment '(center center))))
-        (define pl-main-panel (instantiate vertical-panel% ()
-                                (parent programming-language-state-panel)
-                                (stretchable-width #t)
-                                (stretchable-height #t)))
+        (define pl-outer-panel (new vertical-panel% 
+                                    (parent programming-language-state-panel)))
+        (define pl-single-panel (new panel:single%
+                                     (parent pl-outer-panel)))
+        (define pl-button-panel (new horizontal-panel%
+                                     (parent pl-outer-panel)
+                                     (stretchable-height #f)))
+        (define pl-show-all-languages? #f)
+        (define pl-simple-lang-choice (cdr (car question/answer-table)))
+        (define pl-show-lang-btn
+          (new button%
+               (parent pl-button-panel)
+               (stretchable-width #t)
+               (label (string-constant show-all-languages))
+               (callback 
+                (lambda (a b)
+                  (set! pl-show-all-languages? (not pl-show-all-languages?))
+                  (send pl-single-panel active-child
+                        (if pl-show-all-languages?
+                            pl-all-languages-panel
+                            pl-questions-panel))
+                  (send pl-show-lang-btn set-label
+                        (if pl-show-all-languages?
+                            (string-constant show-drscheme-usage-questions)
+                            (string-constant show-all-languages)))))))
+        
+        (define pl-questions-panel (new vertical-panel%
+                                        (parent pl-single-panel)))
+        
+        (define pl-msg-rb-parent1
+          (new vertical-panel% 
+               (parent pl-questions-panel)
+               (alignment '(center center))))
+        (define pl-msg-rb-parent2
+          (new vertical-panel% 
+               (parent pl-msg-rb-parent1)
+               (alignment '(left center))))
+        (define pl-are-you-message
+          (new message%
+               (label (string-constant are-you...-kind-of-drscheme-user))
+               (parent pl-msg-rb-parent2)))
+        (define pl-radio-box
+          (new radio-box%
+               (label #f)
+               (choices (map car question/answer-table))
+               (parent pl-msg-rb-parent2)
+               (callback 
+                (lambda (a b)
+                  (let* ([i (send pl-radio-box get-selection)]
+                         [q/a (list-ref question/answer-table i)])
+                    (send pl-lang-message set-label
+                          (format 
+                           (string-constant pl-lang-choice-format)
+                           (car (last-pair q/a))))
+                    (set! pl-simple-lang-choice (cdr q/a)))))))
+        
+        (define pl-lang-message (new message%
+                                     (stretchable-width #t)
+                                     (label (format 
+                                             (string-constant pl-lang-choice-format)
+                                             (car (last-pair (car question/answer-table)))))
+                                     (parent pl-questions-panel)))
+        
+        (define pl-all-languages-panel
+          (instantiate vertical-panel% ()
+            (parent pl-single-panel)
+            (stretchable-width #t)
+            (stretchable-height #t)))
+
         (define pl-choose-language-message
           (instantiate message% ()
-            (parent pl-main-panel)
+            (parent pl-all-languages-panel)
             (label (string-constant please-select-a-language))))
-        (define language-config-panel (make-object vertical-panel% pl-main-panel))
+        (define language-config-panel (make-object vertical-panel% pl-all-languages-panel))
         (define language-config-button-panel (instantiate horizontal-panel% ()
-                                               (parent pl-main-panel)
+                                               (parent pl-all-languages-panel)
                                                (stretchable-height #f)))
                                                
-        (define-values (get-selected-language get-selected-language-settings)
+        (define-values (get-all-lang-selected-language get-all-lang-selected-language-settings)
           (drscheme:language-configuration:fill-language-dialog
            language-config-panel
            language-config-button-panel
            (preferences:get
             drscheme:language-configuration:settings-preferences-symbol)
            dlg))
+        
+        (define (get-selected-language)
+          (cond
+            [pl-show-all-languages? (get-all-lang-selected-language)]
+            [else 
+             (let ([langs (drscheme:language-configuration:get-languages)])
+               (or (ormap (λ (lang)
+                            (and (equal? pl-simple-lang-choice
+                                         (send lang get-language-position))
+                                 lang))
+                          langs)
+                   (car langs)))]))
+        
+        (define (get-selected-language-settings)
+          (cond
+            [pl-show-all-languages? (get-all-lang-selected-language-settings)]
+            [else (send (get-selected-language) default-settings)]))
         
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;                                                        ;;

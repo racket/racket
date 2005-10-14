@@ -945,9 +945,19 @@ please adhere to these guidelines:
  (use-mixed-fractions "Mixed fractions")
  (use-repeating-decimals "Repeating decimals")
  (decimal-notation-for-rationals "Use decimal notation for rationals")
- (please-select-a-language "Please select a language")
 
- 
+ ;; startup wizard screen language selection section
+ (please-select-a-language "Please select a language")
+ (show-all-languages "Show all languages")
+ (show-drscheme-usage-questions "Show DrScheme usage questions")
+  (are-you...-kind-of-drscheme-user "Are you...")
+ (use-with-htdp "... using DrScheme with How to Design Programs?")
+ (use-seasoned "... a seasoned PLT Schemer?")
+ (use-other "... using DrScheme for some other reason?")
+ (use-eopl "... using DrScheme with Essentials of Programming Languages?")
+  (pl-lang-choice-format "Initial language: ~a")
+  
+  
  ;;; languages
  (beginning-student "Beginning Student")
  (beginning-one-line-summary "define, cond, structs, constants, and primitives")
