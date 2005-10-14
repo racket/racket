@@ -13,7 +13,8 @@ needed to really make this work:
            (lib "class.ss")
            (lib "mred.ss" "mred")
            (lib "match.ss")
-           (lib "string.ss"))
+           (lib "string.ss")
+	   "include-bitmap.ss")
   
   (provide render-syntax/snip render-syntax/window snip-class)
   
@@ -440,10 +441,10 @@ needed to really make this work:
   
   (define (set-box/f! b v) (when (box? b) (set-box! b v)))
   
-  (define down-bitmap (make-object bitmap% (build-path (collection-path "icons") "turn-down.png")))
-  (define up-bitmap (make-object bitmap% (build-path (collection-path "icons") "turn-up.png")))
-  (define down-click-bitmap (make-object bitmap% (build-path (collection-path "icons") "turn-down-click.png")))
-  (define up-click-bitmap (make-object bitmap% (build-path (collection-path "icons") "turn-up-click.png")))
+  (define down-bitmap (include-bitmap (lib "turn-down.png" "icons")))
+  (define up-bitmap (include-bitmap (lib "turn-up.png" "icons")))
+  (define down-click-bitmap (include-bitmap (lib "turn-down-click.png" "icons")))
+  (define up-click-bitmap (include-bitmap (lib "turn-up-click.png" "icons")))
   (define arrow-snip-height
     (max 10
          (send up-bitmap get-height)
