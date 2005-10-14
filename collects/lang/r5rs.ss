@@ -57,7 +57,8 @@
 	 (let ((temp1 init1) ...)
 	   (set! var1 temp1)
 	   ...
-	   body ...)))
+	   (let ()
+	     body ...))))
       ((r5rs:letrec "generate_temp_names"
 	 (x y ...)
 	 (temp ...)
