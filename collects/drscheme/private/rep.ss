@@ -1095,8 +1095,7 @@ TODO
                           (parameterize ([current-eventspace (get-user-eventspace)])
                             (queue-callback
                              (λ ()
-                               (parameterize ([current-error-port drscheme:init:original-output-port])
-                                 (thnk))
+                               (thnk)
                                (semaphore-post wait))))
                           (semaphore-wait wait)))])
                 
