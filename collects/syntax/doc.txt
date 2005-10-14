@@ -525,3 +525,11 @@ less powerful code inspector to a sub-program should generally attach
 the class system work properly.
 
 
+======================================================================
+_to-string.ss_: rendering syntax objects with formatting
+======================================================================
+
+> (syntax->string stx-list) - builds a string with newlines
+  and indenting according to the source locations in stx-list
+
+  the outer pair of parens are not rendered from stx-list.
