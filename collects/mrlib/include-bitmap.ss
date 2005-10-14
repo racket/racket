@@ -46,7 +46,7 @@
   (define cached (make-hash-table 'equal))
 
   (define (get-or-load-bitmap content orig type)
-    (hash-table-get cached content
+    (hash-table-get cached (cons content type)
 		    (lambda ()
 		      (let ([bm (let ([fn (make-temporary-file)])
 				  (dynamic-wind
@@ -62,5 +62,5 @@
 			  (error 'include-bitmap
 				 "unable to parse image, originated from: ~a"
 				 (path->string (bytes->path orig))))
-			(hash-table-put! cached content bm)
+			(hash-table-put! cached (cons content type) bm)
 			bm)))))
