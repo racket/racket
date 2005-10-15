@@ -216,12 +216,12 @@
         (define nl-radio-box
           (instantiate radio-box% ()
             (label #f)
-            (choices (string-constants interact-with-drscheme-in-language))
+            (choices good-interact-strings)
             (parent natural-language-state-panel)
             (callback (λ (x y) (void)))))
         
         (define stupid-internal-define-syntax3
-	  (let loop ([languages (all-languages)]
+	  (let loop ([languages languages-with-good-labels]
                      [n 0])
             (cond
               [(null? languages) (void)]
@@ -955,5 +955,23 @@
                           (label native-lang-string)
                           (parent help-menu)
                           (callback (λ (x1 x2) (switch-language-to #f language))))))
-                    (string-constants interact-with-drscheme-in-language)
-                    (all-languages)))))))
+                    good-interact-strings 
+                    languages-with-good-labels)))
+      
+      (define-values (languages-with-good-labels good-interact-strings)
+        (let loop ([langs (all-languages)]
+                   [strs (string-constants interact-with-drscheme-in-language)]
+                   [good-langs '()]
+                   [good-strs '()])
+          (cond
+            [(null? strs) (values (reverse good-langs)
+                                  (reverse good-strs))]
+            [else (let ([str (car strs)]
+                        [lang (car langs)])
+                    (if (andmap (λ (char) (send normal-control-font screen-glyph-exists? char))
+                                (string->list str))
+                        (loop (cdr langs) 
+                              (cdr strs)
+                              (cons lang good-langs)
+                              (cons str good-strs))
+                        (loop (cdr langs) (cdr strs) good-langs good-strs)))]))))))

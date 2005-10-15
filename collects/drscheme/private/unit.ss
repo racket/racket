@@ -1333,8 +1333,20 @@ module browser threading seems wrong.
           
           (define/private (add-modified-flag text string)
             (if (send text is-modified?)
-                (string-append "◆ " string)
+                (let ([prefix (get-save-diamond-prefix)])
+                  (if prefix
+                      (string-append prefix string)
+                      string))
                 string))
+          
+          (define/private (get-save-diamond-prefix)
+            (let ([candidate-prefixes '("◆ " "* ")])
+              (ormap
+               (lambda (candidate)
+                 (and (andmap (λ (x) (send normal-control-font screen-glyph-exists? x))
+                              (string->list candidate))
+                      candidate))
+               candidate-prefixes)))
               
           [define/override get-canvas% (λ () (drscheme:get/extend:get-definitions-canvas))]
           
