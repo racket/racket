@@ -6,11 +6,13 @@
            "response.ss"
            "servlet-helpers.ss"
            "xexpr-callback.ss"
-           "timer.ss")
+           "timer.ss"
+           "web-cells.ss")
 
   ;; Weak contracts: the input is checked in output-response, and a message is
   ;; sent directly to the client (Web browser) instead of the terminal/log.
   (provide/contract
+   [redirect/get (-> request?)]
    [adjust-timeout! (number? . -> . any)]
    [send/back (any/c . -> . any)]
    [send/finish (any/c . -> . any)]
@@ -18,13 +20,21 @@
    [send/forward (((string? . -> . any/c)) ((request? . -> . any/c)) . opt-> . request?)]
    ;;; validate-xexpr/callback is not checked anywhere:
    [send/suspend/callback (xexpr/callback? . -> . any)])
-
+  
   (provide
    clear-continuation-table!
    send/suspend/dispatch
    current-servlet-continuation-expiration-handler
+   (all-from "web-cells.ss")
    (all-from "servlet-helpers.ss")
    (all-from "xexpr-callback.ss"))
+  
+  ;; ************************************************************
+  ;; HIGHER-LEVEL EXPORTS
+  
+  ; redirect/get : -> request
+  (define (redirect/get)
+    (send/suspend (lambda (k-url) (redirect-to k-url temporarily))))
   
   ;; ************************************************************
   ;; EXPORTS
@@ -72,16 +82,17 @@
   ;; send a response and apply the continuation to the next request
   (define send/suspend
     (opt-lambda (response-generator [expiration-handler (current-servlet-continuation-expiration-handler)])
-      (let/cc k
-        (let* ([inst (get-current-servlet-instance)]
-               [ctxt (servlet-instance-context inst)]
-               [k-url (store-continuation!
-                       k expiration-handler
-                       (request-uri (execution-context-request ctxt))
-                       inst)]
-               [response (response-generator k-url)])
-          (output-response (execution-context-connection ctxt) response)
-          ((execution-context-suspend ctxt))))))
+      (with-frame-after
+       (let/cc k
+         (let* ([inst (get-current-servlet-instance)]
+                [ctxt (servlet-instance-context inst)]
+                [k-url (store-continuation!
+                        k expiration-handler
+                        (request-uri (execution-context-request ctxt))
+                        inst)]
+                [response (response-generator k-url)])
+           (output-response (execution-context-connection ctxt) response)
+           ((execution-context-suspend ctxt)))))))
 
   ;; send/forward: (url -> response) [(request -> response)] -> request
   ;; clear the continuation table, then behave like send/suspend
