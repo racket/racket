@@ -1,113 +1,119 @@
-;;;
-;;; <cut.ss> ---- SRFI 26 port to PLT Scheme: Notation for Specializing Parameters without currying
-;;; Time-stamp: <02/06/20 03:04:59 noel>
-;;;
-;;; Usually, I would add a copyright notice, and the announce that
-;;; this code is under the LGPL licence.  However, I only did the
-;;; port to PLT Scheme, the original comment follows:
+;;; cut.ss  --  Jens Axel Soegaard
 
-; REFERENCE IMPLEMENTATION FOR SRFI-26 "CUT"
-; ==========================================
-;
-; Sebastian.Egner@philips.com, 5-Jun-2002.
-; adapted from the posting by Al Petrofsky <al@petrofsky.org>
-;
-; The code to handle the variable argument case was originally
-; proposed by Michael Sperber and has been adapted to the new
-; syntax of the macro using an explicit rest-slot symbol. The
-; code to evaluate the non-slots for cute has been proposed by
-; Dale Jordan. The code to allow a slot for the procedure position
-; and to process the macro using an internal macro is based on 
-; a suggestion by Al Petrofsky. The code found below is, with
-; exception of this header and some changes in variable names,
-; entirely written by Al Petrofsky.
-;
-; compliance:
-;   Scheme R5RS (including macros).
-;
-; history of this file:
-;   SE,  6-Feb-2002: initial version as 'curry' with ". <>" notation
-;   SE, 14-Feb-2002: revised for <...>
-;   SE, 27-Feb-2002: revised for 'cut'
-;   SE, 03-Jun-2002: revised for proc-slot, cute
-;   SE, 04-Jun-2002: rewritten with internal transformer (no "loop" pattern)
-;   SE, 05-Jun-2002: replace my code by Al's; substituted "constant" etc.
-;     to match the convention in the SRFI-document
+; This file reimplements srfi-26 for PLT.
+; The reimplementation provides better error messages.
 
-; (srfi-26-internal-cut slot-names combination . se)
-;   transformer used internally
-;     slot-names  : the internal names of the slots
-;     combination : procedure being specialized, followed by its arguments
-;     se          : slots-or-exprs, the qualifiers of the macro
-
-; $Id: cut.ss,v 1.1 2003/02/25 01:50:54 solsona Exp $
-
-;;; See: http://srfi.schemers.org for more information on SRFIs.
+; Examples of errors with better error messages:
+;   (cut)
+;   (cut <>)
+;   (cut <...>)
+;   ((cut cons <> <>) 1 2 3)
 
 (module cut mzscheme
 
-  (provide cut cute)
+    (provide cut cute)
 
-  (define-syntax srfi-26-internal-cut
-	(syntax-rules (<> <...>)
+      ; generate-names/exprs :
+      ;    Given the arguments for the macro call to cut (or cute) as a syntax-list,
+      ;  call build with four lists:
+      ;    1) a list of names given to each <>-slot
+      ;    2) [cut] a list of the macro arguments, except that all occurences
+      ;       of a <>-slots have been substituted with the chosen name.
+      ;    3) [cute] a list the names given to the exprs and the <>-slots
+      ;    4) [cute] a list of lists of name-expression pairs, i.e. the bindings
+      ;       used to bind the expressions to names, in order to evaluate
+      ;       the expressions at the time of the macro call to cute.
+    (define-for-syntax (generate-names/exprs slot-or-exprs build)
+      (let loop ([slot-or-exprs       (syntax->list slot-or-exprs)]
+                 [slot-names          '()]
+                 [cut-names-or-exprs  '()]
+                 [cute-names          '()]
+                 [bindings            '()])
+        (cond
+         [(null? slot-or-exprs)  (build (reverse slot-names)
+                                        (reverse cut-names-or-exprs)
+                                        (reverse cute-names)
+                                        (reverse bindings))]
+         [else                   (let ((name (car (generate-temporaries #'(x)))))
+                                   (syntax-case (car slot-or-exprs) (<> <...>)
+                                     [<>
+                                      (loop (cdr slot-or-exprs)
+                                            (cons name slot-names)
+                                            (cons name cut-names-or-exprs)
+                                            (cons name cute-names)
+                                            bindings)]
+                                     [_
+                                      (loop (cdr slot-or-exprs)
+                                            slot-names
+                                            (cons (car slot-or-exprs) cut-names-or-exprs)
+                                            (cons name cute-names)
+                                            (cons (list name (car slot-or-exprs))
+                                                  bindings))]))])))
+    
+    (define-syntax (cut stx)
+      (syntax-case stx (<> <...>)
+        [(cut)
+         (raise-syntax-error #f "cut expects 1 or more slots or expressions, given none"  stx)]
+        [(cut <>)
+         (raise-syntax-error #f "cut expects an expression at the first position, given a slot <>" stx)]
+        [(cut proc)
+         #'(lambda () (proc))]
+        [(cut <> slot-or-expr ...)
+         (raise-syntax-error #f "cut expects an expression at the first position, given a slot <>" stx)]
+        [(cut <...> slot-or-expr ...)
+         (raise-syntax-error #f "cut expects an expression at the first position, given <...>" stx)]
+        [(cut proc slot-or-expr ... <...>)
+         ;;   Applying a wrong number of arguments to the the lamba generated by cut, will provoke an
+         ;; error caused by the application (proc ...). The quasisyntax/loc makes sure DrScheme
+         ;; shows the cut-expression as the source of the error in stead of the showing an error in
+         ;; the code implementing the macro i.e. in this code.
+         ;;   Note: Is it possible to propagate the error to the location of the wrong application
+         ;;         in the user code?
+         (generate-names/exprs #'(slot-or-expr ...)
+                               (lambda (slot-names names-or-exprs . ignored)
+                                 #`(lambda (#,@slot-names . xs)
+                                     #,(quasisyntax/loc stx
+                                                        (apply proc #,@names-or-exprs xs)))))]
+        [(cut proc slot-or-expr ...)
+         (generate-names/exprs #'(slot-or-expr ...)
+                               (lambda (slot-names names-or-exprs . ignored)
+                                 #`(lambda #,slot-names
+                                     #,(quasisyntax/loc stx
+                                                        (proc #,@names-or-exprs)))))]))
+    
+          ;  In addition to cut, there is a variant called cute (a mnemonic for
+          ; "cut with evaluated non-slots") which evaluates the non-slot expressions
+          ; at the time the procedure is specialized, not at the time the specialized
+          ; procedure is called. For example,
+          ;     (cute cons (+ a 1) <>) is the same as (let ((a1 (+ a 1))) (lambda (x2) (cons a1 x2)))
+          ; As you see from comparing this example with the first example above, the
+          ; cute-variant will evaluate (+ a 1) once, while the cut-variant will evaluate
+          ; it during every invokation of the resulting procedure.
 
-      ;; construct fixed- or variable-arity procedure:
-	  ;;   (begin proc) throws an error if proc is not an <expression>
-	  ((srfi-26-internal-cut (slot-name ...) (proc arg ...))
-	   (lambda (slot-name ...) ((begin proc) arg ...)))
-	  ((srfi-26-internal-cut (slot-name ...) (proc arg ...) <...>)
-	   (lambda (slot-name ... . rest-slot) (apply proc arg ... rest-slot)))
+    (define-syntax (cute stx)
+      (syntax-case stx (<> <...>)
+        [(cute)
+         (raise-syntax-error #f "cute expects 1 or more slots or expressions, given none"  stx)]
+        [(cute <>)
+         (raise-syntax-error #f "cute expects an expression at the first position, given a slot <>" stx)]
+        [(cute proc)
+         #'(lambda () (proc))]
+        [(cute <> slot-or-expr ...)
+         (raise-syntax-error #f "cute expects an expression at the first position, given a slot <>" stx)]
+        [(cute <...> slot-or-expr ...)
+         (raise-syntax-error #f "cute expects an expression at the first position, given <...>" stx)]
+        [(cute proc slot-or-expr ... <...>)
+         (generate-names/exprs #'(slot-or-expr ...)
+                               (lambda (slot-names ignored names bindings)
+                                 #`(let #,bindings
+                                     (lambda (#,@slot-names . xs)
+                                       (apply proc #,@names xs)))))]
+        [(cute proc slot-or-expr ...)
+         (generate-names/exprs #'(slot-or-expr ...)
+                               (lambda (slot-names ignored names bindings)
+                                 #`(let #,bindings
+                                     (lambda #,slot-names
+                                       (proc #,@names)))))]))
+    )
 
-	  ;; process one slot-or-expr
-	  ((srfi-26-internal-cut (slot-name ...)   (position ...)      <>  . se)
-	   (srfi-26-internal-cut (slot-name ... x) (position ... x)        . se))
-	  ((srfi-26-internal-cut (slot-name ...)   (position ...)      nse . se)
-	   (srfi-26-internal-cut (slot-name ...)   (position ... nse)      . se))))
-
-  ; (srfi-26-internal-cute slot-names nse-bindings combination . se)
-  ;   transformer used internally
-  ;     slot-names     : the internal names of the slots
-  ;     nse-bindings   : let-style bindings for the non-slot expressions.
-  ;     combination    : procedure being specialized, followed by its arguments
-  ;     se             : slots-or-exprs, the qualifiers of the macro
-
-  (define-syntax srfi-26-internal-cute
-	(syntax-rules (<> <...>)
-
-      ;; If there are no slot-or-exprs to process, then:
-      ;; construct a fixed-arity procedure,
-      ((srfi-26-internal-cute
-        (slot-name ...) nse-bindings (proc arg ...))
-       (let nse-bindings (lambda (slot-name ...) (proc arg ...))))
-      ;; or a variable-arity procedure
-      ((srfi-26-internal-cute
-		(slot-name ...) nse-bindings (proc arg ...) <...>)
-	   (let nse-bindings (lambda (slot-name ... . x) (apply proc arg ... x))))
-
-	  ;; otherwise, process one slot:
-	  ((srfi-26-internal-cute
-		(slot-name ...)         nse-bindings  (position ...)   <>  . se)
-	   (srfi-26-internal-cute
-		(slot-name ... x)       nse-bindings  (position ... x)     . se))
-	  ;; or one non-slot expression
-	  ((srfi-26-internal-cute
-		slot-names              nse-bindings  (position ...)   nse . se)
-	   (srfi-26-internal-cute
-		slot-names ((x nse) . nse-bindings) (position ... x)       . se))))
-  
-; exported syntax
-
-  (define-syntax cut
-	(syntax-rules ()
-      ((cut . slots-or-exprs)
-	   (srfi-26-internal-cut () () . slots-or-exprs))))
-
-  (define-syntax cute
-	(syntax-rules ()
-      ((cute . slots-or-exprs)
-	   (srfi-26-internal-cute () () () . slots-or-exprs))))
-
-  )
-
-;;; cut.scm ends here
 
