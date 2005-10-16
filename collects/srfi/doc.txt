@@ -39,7 +39,7 @@ or,
 NOTE on SRFIs with name conflicts
 ---------------------------------
 
-Certain SRFIs (currently SRFIs 1, 13, 19, 43 and 45) provide names
+Certain SRFIs (currently SRFIs 1, 13, 19, 43, 45, and 48) provide names
 which conflict with names provided by the 'mzscheme' language.
 Attempting to require one of these SRFIs in a module written in the
 'mzscheme' language will result in an error.
@@ -103,6 +103,9 @@ number of the already ported SRFIs:
  SRFI-42	    comprehensions.ss             42
  SRFI-43            vector-lib.ss                 43
  SRFI-45(*3)        lazy.ss                       45
+ SRFI-48            format.ss                     48
+ SRFI-59            vicinity.ss                   59
+ SRFI-60            60.ss                         60
 
 Notes:
 ,--------------------
