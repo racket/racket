@@ -165,6 +165,7 @@
     (loc location)
     (interactions? #t)
     (types type-recs)
+    (class-name "interactions")
     (let ((reqs (send type-recs get-class-reqs))
           (syn (cond 
                  ((pair? prog)
@@ -861,7 +862,7 @@
                      (let* ((field-name (id-string (field-name field)))
                             (value `(,(create-get-name field-name) wrapped-obj)))
                        `(,(build-identifier (build-var-name field-name))
-                          ,(convert-value (if from-dynamic? (assert-value value (field-type field) #t) value)
+                          ,(convert-value (if from-dynamic? (assert-value value (field-type field) #t 'field field-name) value)
                                           (field-type field)
                                           from-dynamic?))))
                    fields)))
@@ -883,7 +884,7 @@
                                                          ,@(map (lambda (arg type) 
                                                                   (convert-value (assert-value arg type #f) type #f))
                                                                 list-of-args (method-record-atypes method)))
-                                                  (method-record-rtype method) from-dynamic?)
+                                                  (method-record-rtype method) from-dynamic? 'method-ret (method-record-name method))
                                     (method-record-rtype method)
                                     from-dynamic?)))
                (else
@@ -891,11 +892,11 @@
                    (unless (= (length args) ,(length list-of-args))
                      (raise (make-exn:fail:contract:arity
                              (string->immutable-string
-                              (format "~a broke the contract with ~a here, method ~a called with ~a args, instead of ~a"
-                                      pos-blame neg-blame ,(method-record-name method) (length args) ,(length list-of-args)))
+                              (format "~a broke the contract with ~a here, method ~a of ~a called with ~a args, instead of ~a"
+                                      neg-blame pos-blame ,(method-record-name method) ,(class-name) (length args) ,(length list-of-args)))
                              cc-marks)))
                    (let (,@(map (lambda (arg type ref)
-                                  `(,arg ,(convert-value (assert-value `(list-ref args ,ref) type #t) type #t)))
+                                  `(,arg ,(convert-value (assert-value `(list-ref args ,ref) type #t 'method-arg (method-record-name method)) type #t)))
                                 list-of-args (method-record-atypes method) (list-from 0 (length list-of-args))))
                      ,(convert-value `(send wrapped-obj ,(build-identifier call-name)
                                             ,@list-of-args) (method-record-rtype method) #f)))))))
@@ -943,26 +944,39 @@
       (else value)))
   
   ;assert-value: sexp type boolean -> sexp
-  (define (assert-value value type from-dynamic?)
-    (cond
-      ((symbol? type)
-       (let ((check
-              (lambda (ok?)
-                `(let ((v-1 ,value))
-                   (if (,ok? v-1) v-1
-                       (raise (make-exn:fail (string->immutable-string
-                                              (format "~a broke the contract with ~a here, type-mismatch expected ~a given ~a"
-                                                      pos-blame neg-blame (quote ,type) v-1)) cc-marks)))))))
-         (case type
-           ((int byte short long) (check 'integer?))
-           ((float double) (check 'real?))
-           ((char) (check 'char?))
-           ((string) (check 'string?))
-           ((boolean) (check 'boolean?))
-           ((dynamic) value))))
-      ((and (ref-type? type) (equal? string-type type))
-       (assert-value value 'string from-dynamic?))
-      (else value)))
+  (define assert-value 
+    (opt-lambda (value type from-dynamic? (kind 'unspecified) (name #f))
+      (cond
+        ((symbol? type)
+         (let ((check
+                (lambda (ok?)
+                  `(let ((v-1 ,value))
+                     (if (,ok? v-1) v-1
+                         (raise (make-exn:fail (string->immutable-string
+                                                ,(case kind
+                                                   ((unspecified)                                                
+                                                    `(format "~a broke the contract with ~a here, type-mismatch expected ~a given ~a"
+                                                             neg-blame pos-blame (quote ,type) v-1))
+                                                   ((field)
+                                                    `(format "~a broke the contract with ~a here, type-mismatch for field ~a of class ~a: expected ~a given ~a"
+                                                             neg-blame pos-blame ,name ,(class-name) (quote ,type) v-1))
+                                                   ((method-arg)
+                                                    `(format "~a broke the contract with ~a here, type-mismatch for method argument of ~a in class ~a: expected ~a given ~a"
+                                                             neg-blame pos-blame ,name ,(class-name) (quote ,type) v-1))
+                                                   ((method-ret)
+                                                    `(format "~a broke the contract with ~a here, type-mismatch for method return of ~a in ~a: expected ~a given ~a"
+                                                             neg-blame pos-blame ,name ,(class-name) (quote ,type) v-1)))
+                                                ) cc-marks)))))))
+           (case type
+             ((int byte short long) (check 'integer?))
+             ((float double) (check 'real?))
+             ((char) (check 'char?))
+             ((string) (check 'string?))
+             ((boolean) (check 'boolean?))
+             ((dynamic) value))))
+        ((and (ref-type? type) (equal? string-type type))
+         (assert-value value 'string from-dynamic? kind name))
+        (else value))))
                            
 
   
@@ -1896,7 +1910,7 @@
                              (apply string-append (map (lambda (s) (string-append s ".")) (ref-type-path type)))
                              "")))
              `(make-object ,(build-identifier (string-append prefix "guard-convert-" (ref-type-class/iface type)))
-                ,val (quote ,(string->symbol (class-name))) '|infered contract| #`,val (current-continuation-marks)))))
+                ,val (quote ,(string->symbol (class-name))) '|| #`,val (current-continuation-marks)))))
       (else val)))
   ;convert-assert-value: syntax type -> sexp
   (define (convert-assert-value val type) 
@@ -1927,7 +1941,7 @@
                             (apply string-append (map (lambda (s) (string-append s ".")) (ref-type-path type)))
                             "")))
             `(,(build-identifier (string-append prefix "wrap-convert-assert-" (ref-type-class/iface type)))
-               ,val (quote ,(string->symbol (class-name))) '|infered contract|  #`,val (current-continuation-marks))))))
+               ,val (quote ,(string->symbol (class-name))) '||  #`,val (current-continuation-marks))))))
       (else val)))
     
   ;------------------------------------------------------------------------------------------------------------------------
@@ -2072,13 +2086,13 @@
                    ((is-char? left-type)
                     (make-syntax #f `(char->integer ,left) #f))
                    ((and (dynamic-val? type) (not (memq op '(== != & ^ or && oror))))
-                    (create-syntax #f `(c:contract number? ,left (quote ,(string->symbol (class-name))) '|infered contract|) left))
+                    (create-syntax #f `(c:contract number? ,left (quote ,(string->symbol (class-name))) '||) left))
                    (else left)))
            (right (cond
                     ((is-char? right-type)
                      (make-syntax #f `(char->integer ,right) #f))
                     ((and (dynamic-val? type) (not (memq op '(== != & ^ or && oror))))
-                     (create-syntax #f `(c:contract number? ,right (quote ,(string->symbol (class-name))) '|infered contract|) right))
+                     (create-syntax #f `(c:contract number? ,right (quote ,(string->symbol (class-name))) '||) right))
                     (else right)))
            (result
             (case op
@@ -2137,7 +2151,7 @@
           (make-syntax #f
                        (convert-assert-value 
                         (make-syntax #f `(c:contract ,(type->contract (dynamic-val-type type)) ,result 
-                                                     (quote ,(string->symbol (class-name))) '|infered contract|) source)
+                                                     (quote ,(string->symbol (class-name))) '||) source)
                         type)
                        source)
           result)))
@@ -2147,7 +2161,7 @@
     (cond
       ((local-access? name)
        (let ((var (translate-id (build-var-name (id-string (local-access-name name)))
-                     (id-src (local-access-name name)))))
+                                (id-src (local-access-name name)))))
          (if (dynamic-val? type)
              (let ((local-syntax (cond 
                                    ((unknown-ref? (dynamic-val-type type))
@@ -2160,7 +2174,7 @@
                             (convert-assert-value 
                              (make-syntax #f
                                           `(c:contract ,(type->contract (dynamic-val-type type) #t)
-                                                       ,local-syntax (quote ,(string->symbol (class-name))) '|infered contract|)
+                                                       ,local-syntax (quote ,(string->symbol (class-name))) '||)
                                           (build-src (id-src (local-access-name name))))
                              (dynamic-val-type type)) (build-src (id-src (local-access-name name)))))
              var)))
@@ -2177,17 +2191,17 @@
               (if (dynamic-val? type)
                   (let ((access-syntax (cond 
                                          ((unknown-ref? (dynamic-val-type type))
-                                          `(let ((val-1 ,(translate-id static-name)))
+                                          `(let ((val-1 ,(translate-id static-name field-src)))
                                              (if (string? val-1)
                                                  (make-java-string val-1)
                                                  val-1)))
-                                         (else (translate-id static-name)))))
+                                         (else (translate-id static-name field-src)))))
                     (make-syntax #f
                                  (convert-assert-value
                                   (make-syntax #f
                                                `(c:contract ,(type->contract (dynamic-val-type type) #t)
                                                             ,access-syntax
-                                                            (quote ,(string->symbol (class-name))) '|infered contract|)
+                                                            (quote ,(string->symbol (class-name))) '||)
                                                (build-src field-src))
                                   (dynamic-val-type type)) (build-src field-src)))
                   (translate-id (build-var-name static-name) field-src))))
@@ -2220,7 +2234,7 @@
                                  (convert-assert-value
                                   (make-syntax #f
                                                `(c:contract ,(type->contract (dynamic-val-type type) #t)
-                                                            ,access-syntax (quote ,(string->symbol (class-name))) '|infered contract|)
+                                                            ,access-syntax (quote ,(string->symbol (class-name))) '||)
                                                (build-src field-src))
                                   (dynamic-val-type type)) (build-src field-src)))
                   get-syntax)))
@@ -2246,7 +2260,7 @@
                                  (convert-assert-value
                                   (make-syntax #f
                                                `(c:contract ,(type->contract (dynamic-val-type type) #t)
-                                                            ,access-syntax (quote ,(string->symbol (class-name))) '|infered contract|)
+                                                            ,access-syntax (quote ,(string->symbol (class-name))) '||)
                                                (build-src field-src))
                                   (dynamic-val-type type)) (build-src field-src)))
                    get-syntax))))))))
@@ -2349,7 +2363,7 @@
                  (make-syntax #f (convert-assert-value
                                   (create-syntax #f `((c:contract ,(type->contract method-record #t)
                                                                   ,(build-identifier m-name #;(java-name->scheme (method-contract-name method-record)))
-                                                                  (quote ,(string->symbol (class-name))) '|infered contract|)
+                                                                  (quote ,(string->symbol (class-name))) '||)
                                                       ,@translated-args) (build-src src))
                                   (method-contract-return method-record))
                               (build-src src)))
@@ -2558,7 +2572,7 @@
       ((dynamic-val? expr-type)
        (make-syntax #f (convert-assert-value 
                         (create-syntax #f `(c:contract ,(type->contract expr-type #t) ,expr 
-                                                       (quote ,(string->symbol (class-name))) '|infered contract|)
+                                                       (quote ,(string->symbol (class-name))) '||)
                                        (build-src src)) expr-type)
                     (build-src src)))      
     ((symbol? (type-spec-name type))

@@ -909,7 +909,8 @@
                                          (format-java-list (cadr current) full-print? style 
                                                            (cons value already-printed) newline?
                                                            (if newline? 
-                                                               (+ new-tabs (string-length (car current)) 3)
+                                                               (+ new-tabs (if (string? (car current))
+                                                                               (string-length (car current)) 1) 3)
                                                                num-tabs)))
                                      (list (format "~a~a" 
                                                    (if next "," "")
