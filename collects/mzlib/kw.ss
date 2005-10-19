@@ -21,6 +21,12 @@
     (raise-syntax-error #f (apply format fmt args) stx sub))
   ;; contents of syntax
   (define (syntax-e* x) (if (syntax? x) (syntax-e x) x))
+  ;; turns formals into a syntax list
+  (define (formals->list formals)
+    (syntax-case formals ()
+      [(formal ... . rest) ; dot is exactly like #:rest
+       (formals->list #'(formal ... #:rest rest))]
+      [(formal ...) (syntax->list formals)]))
   ;; is an expression simple? (=> evaluating cannot have side effects)
   (define (simple-expr? expr)
     (let ([expr (local-expand expr 'expression null)]) ; expand id macros
@@ -32,7 +38,7 @@
   ;; split a list of syntax objects based on syntax keywords:
   ;;   (x ... #:k1 ... #:k2 ... ...) --> ((x ...) (#:k1 ...) (#:k2 ...) ...)
   (define (split-by-keywords xs)
-    (let loop ([xs xs] [cur '()] [r '()])
+    (let loop ([xs (if (syntax? xs) (formals->list xs) xs)] [cur '()] [r '()])
       (if (null? xs)
         (reverse! (cons (reverse! cur) r))
         (let ([x (car xs)])
@@ -77,9 +83,13 @@
       (ormap (lambda (k) (and (assq k rests) #t)) enablers)))
   ;; --------------------------------------------------------------------------
   ;; test variables
-  (define (process-vars vars opts keys0 rests other-keys-mode body-mode)
+  (define (process-vars vars opts keys0 rests other-keys-mode body-mode
+                        . only-vars?)
+    (define (gensym x)
+      (car (generate-temporaries (list x))))
     (let*-values
-        ([(opts keys0) (values (map process-opt opts) (map process-key keys0))]
+        ([(only-vars?) (and (pair? only-vars?) (car only-vars?))]
+         [(opts keys0) (values (map process-opt opts) (map process-key keys0))]
          [(other-keys-mode body-mode)
           (values (process-mode other-keys-mode
                                 rests #:allow-other-keys other-keys-accessing)
@@ -90,35 +100,43 @@
                  (map (lambda (k) (cond [(assq k rests) => cdr] [else #f]))
                       '(#:rest #:body #:rest-keys #:all-keys #:other-keys)))]
          [(body-spec body)
-          (if (identifier? body) (values #f body) (values body #'body))]
-         [(rest* body* other-keys*) (values (or rest #'rest) (or body #'body)
-                                            (or other-keys #'other-keys))]
+          (if (identifier? body)
+            (values #f body)
+            (values body (gensym #'body)))]
+         [(rest* body* other-keys*)
+          (values (or rest (gensym #'rest))
+                  (or body (gensym #'body))
+                  (or other-keys (gensym #'other-keys)))]
          ;; turn (<id> <key> <default>) keys to (<id> <default>)
-         [(keys) (with-syntax ([r rest*])
-                   (map (lambda (k)
-                          (list (car k)
-                                (if (simple-expr? (caddr k))
-                                  ;; simple case => no closure
-                                  #`(getarg* r #,(cadr k) #,(caddr k))
-                                  #`(getarg r #,(cadr k)
-                                            (lambda () #,(caddr k))))))
-                        keys0))])
-      (let (; use identifiers from here if none given, so the tests work
-            [ids `(,@vars ,@(map car opts) ,@(map car keys) ,rest* ,body*
-                   ,(or rest-keys #'rest-keys)
-                   ,(or all-keys #'all-keys) ,(or other-keys #'other-keys))])
-        (cond [(ormap (lambda (x) (and (not (identifier? x)) x)) ids)
-               => (lambda (d) (serror d "not an identifier"))]
-              [(check-duplicate-identifier ids)
-               => (lambda (d) (serror d "duplicate argument name"))]))
-      (values vars opts keys rest rest* body body* body-spec
-              rest-keys all-keys other-keys other-keys*
-              other-keys-mode body-mode (map cadr keys0))))
+         [(keys)
+          (with-syntax ([r rest*])
+            (map (lambda (k)
+                   (list (car k)
+                         (if (simple-expr? (caddr k))
+                           ;; simple case => no closure
+                           #`(getarg* r #,(cadr k) #,(caddr k))
+                           #`(getarg r #,(cadr k) (lambda () #,(caddr k))))))
+                 keys0))]
+         [(all-ids)
+          `(,@vars ,@(map car opts) ,@(map car keys) ,rest* ,body*
+            ;; make up names if not specified, to make checking easy
+            ,(or rest-keys (gensym #'rest-keys))
+            ,(or all-keys (gensym #'all-keys))
+            ,(or other-keys (gensym #'other-keys))
+            ,@(if body-spec (parse-formals body-spec #t) '()))])
+      (cond [only-vars? all-ids]
+            [(ormap (lambda (x) (and (not (identifier? x)) x)) all-ids)
+             => (lambda (d) (serror d "not an identifier"))]
+            [(check-duplicate-identifier all-ids)
+             => (lambda (d) (serror d "duplicate argument name"))]
+            [else (values vars opts keys rest rest* body body* body-spec
+                          rest-keys all-keys other-keys other-keys*
+                          other-keys-mode body-mode (map cadr keys0))])))
   ;; --------------------------------------------------------------------------
   ;; parses formals, returns list of normal vars, optional var specs, key var
   ;; specs, an alist of rest-like kw+vars, and a mode for allowing other keys
   ;; or not; no duplicate names
-  (define (parse-formals formals)
+  (define (parse-formals formals . only-vars?)
     (let* ([formals (split-by-keywords formals)]
            [vars (car formals)]
            [formals (cdr formals)]
@@ -135,7 +153,8 @@
                  [other-keys-mode #f]
                  [body-mode #f])
         (if (null? formals)
-          (process-vars vars opts keys rests other-keys-mode body-mode)
+          (apply process-vars vars opts keys rests other-keys-mode body-mode
+                 only-vars?)
           (let* ([k-stx (caar formals)]
                  [k (syntax-e* k-stx)])
             (cond [(memq k '(#:optional #:key))
@@ -263,7 +282,15 @@
                     (error* 'name "keyword list not balanced: ~e" rest*))
                   #,(if allow-body?
                       (if body-spec
-                        #`(apply (lambda/kw #,body-spec expr) body*)
+                        (with-syntax ([name (string->symbol
+                                             (format "~a~~body"
+                                                     (syntax-e* #'name)))])
+                          (with-syntax ([subcall
+                                         (quasisyntax/loc stx
+                                           (let ([name (lambda/kw #,body-spec
+                                                         expr)])
+                                             name))])
+                            #'(apply subcall body*)))
                         #'expr)
                       #'(if (null? body*)
                           expr
@@ -297,10 +324,8 @@
         (with-syntax ([name name] [clauses clauses])
           (syntax/loc stx (letrec ([name (case-lambda . clauses)]) name))))]))
   (syntax-case stx ()
-    [(_ (formal ... . rest) expr0 expr ...) ; dot is exactly like #:rest
-     #'(_ (formal ... #:rest rest) expr0 expr ...)]
-    [(_ (formal ...) expr0 expr ...)
-     (generate-body (syntax->list #'(formal ...)) #'(begin expr0 expr ...))]))
+    [(_ formals expr0 expr ...)
+     (generate-body #'formals #'(begin expr0 expr ...))]))
 
 (provide define/kw)
 (define-syntax (define/kw stx)
