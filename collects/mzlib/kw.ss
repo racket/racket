@@ -267,8 +267,8 @@
                         #'expr)
                       #'(if (null? body*)
                           expr
-                          (error* 'name "non-keywords in arguments: ~e"
-                                  body*)))))))))
+                          (error* 'name "expecting a ~s keyword got: ~e"
+                                  'keywords (car body*))))))))))
     ;; ------------------------------------------------------------------------
     ;; generates the part of the body that deals with rest-related stuff
     (define (make-keys-body expr)
