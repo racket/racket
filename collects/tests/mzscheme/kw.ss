@@ -166,6 +166,9 @@
   (t '(3 4) (lambda/kw (#:key a #:body r) r) #:a 1 #:a 2 3 4)
   (err/rt-test ((lambda/kw (#:key a #:body r #:forbid-body) r) #:a 1 3))
   (t '(#:a 1 #:b 2) (lambda/kw (#:key a #:all-keys r #:allow-body) r) #:a 1 #:b 2 3)
+  (err/rt-test ((lambda/kw (#:key x y) (list x y)) #:x))
+  (err/rt-test ((lambda/kw (#:key x y) (list x y)) #:x 1 #:x))
+  (err/rt-test ((lambda/kw (#:key x y) (list x y)) #:x #:x #:x))
 
   ;; optionals and keys
   (let ([f (lambda/kw (#:optional a b #:key c d) (list a b c d))])
@@ -234,4 +237,11 @@
   (st #'(lambda/kw (x #:body (x)) 1))
   (st #'(lambda/kw (x #:body x #:allow-other-keys) 1))
   (st #'(lambda/kw (x #:optional ()) 1))
-  (st #'(lambda/kw (x #:optional (x y z)) 1)))
+  (st #'(lambda/kw (x #:optional (x y z)) 1))
+  (lambda/kw (x #:other-keys z) 1)
+  (lambda/kw (x #:rest-keys z) 1)
+  (lambda/kw (x #:all-keys z) 1)
+  (lambda/kw (x #:key y #:allow-other-keys z) 1)
+  (lambda/kw (x #:key y #:forbid-body z) 1)
+  (lambda/kw (x #:key y #:allow-body #:rest r #:forbid-body) 1)
+  (lambda/kw (x #:key y #:forbid-other-keys #:rest r #:allow-other-keys) 1))
