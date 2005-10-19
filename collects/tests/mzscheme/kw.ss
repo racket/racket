@@ -50,6 +50,10 @@
     (t '(0 1 1) f 0 1)
     (t '(0 1 2) f 0 1 2))
 
+  ;; keywords: basic stuff
+  (let ([f (lambda/kw (#:key x [y 1] [z #:zz #:z]) (list x y z))])
+    (t '(#f 1 #:z)     f)
+    (t '(#:zz 1 #:zzz) f #:zz #:zzz #:zz 123 #:x #:zz))
   ;; keywords: default-expr scope
   (let ([f (lambda/kw (#:key x y) (list x y))])
     (t '(#f #f) f)
@@ -88,6 +92,10 @@
                  (lambda/kw (#:key [x z]) y))))])
     (t 3 (f))
     (t 1 (f) #:x 1))
+  ;; keywords: make sure that getarg stops at end of keyword part
+  (let ([f (lambda/kw (#:key x y #:body b) (list x y b))])
+    (t '(#f #f (2 #:x 1)) f 2 #:x 1)
+    (t '(#f #f (2 3 #:x 1)) f 2 3 #:x 1))
 
   ;; exotic extras
   (let ([f (lambda/kw (#:key a b #:rest r) r)])
@@ -159,6 +167,33 @@
   (err/rt-test ((lambda/kw (#:key a #:body r #:forbid-body) r) #:a 1 3))
   (t '(#:a 1 #:b 2) (lambda/kw (#:key a #:all-keys r #:allow-body) r) #:a 1 #:b 2 3)
 
+  ;; optionals and keys
+  (let ([f (lambda/kw (#:optional a b #:key c d) (list a b c d))])
+    (t '(#f #f #f #f)    f)
+    (t '(1 #f #f #f)     f 1)
+    (t '(1 2 #f #f)      f 1 2)
+    (t '(#:c #:d #f #f)  f #:c #:d)
+    (t '(#:c 1 #f #f)    f #:c 1)
+    (t '(1 2 #:d #f)     f 1 2 #:c #:d)
+    (t '(#:c #:d #:d #f) f #:c #:d #:c #:d)
+    (t '(#:c 1 #:d #f)   f #:c 1 #:c #:d))
+
+  ;; multi-level arg lists with #:body specs
+  (let ([f (lambda/kw (#:key x y #:body (z)) (list x y z))])
+    (t '(#f #f 3) f 3)
+    (t '(#f 2 3)  f #:y 2 3)
+    (err/rt-test (f #:y 2))
+    (err/rt-test (f #:y 2 3 4)))
+  (let ([f (lambda/kw (#:key x y #:body (z . r)) (list x y z r))])
+    (t '(#f #f 3 ()) f 3)
+    (t '(#f 2 3 ())  f #:y 2 3)
+    (err/rt-test (f #:y 2))
+    (t '(#f 2 3 (4)) f #:y 2 3 4))
+  (let ([f (lambda/kw (#:key x y #:body (a #:key (xx #:x #f) (yy #:y #f)))
+             (list x y a xx yy))])
+    (t '(1 #f 2 3 #f)   f #:x 1 2 #:x 3)
+    (t '(1 #:x 2 3 #:x) f #:x 1 #:y #:x #:x 11 2 #:x 3 #:y #:x #:x 33))
+
   )
 
 ;; test syntax errors
@@ -185,12 +220,17 @@
   (st #'(lambda/kw (x #:optional [(x) 3]) 1))
   (st #'(lambda/kw (x #:key 3) 1))
   (st #'(lambda/kw (x #:key "3") 1))
-  (st #'(lambda/kw (x #:key [(x) 3]) 1))
+  (st #'(lambda/kw (x #:key [(y) 3]) 1))
+  (st #'(lambda/kw (x #:key [x]) 1))
+  (st #'(lambda/kw (x #:key [y 1 2]) 1))
+  (st #'(lambda/kw (x #:key [y #:y 1 2]) 1))
   (st #'(lambda/kw (x #:rest 3) 1))
   (st #'(lambda/kw (x #:rest "3") 1))
   (st #'(lambda/kw (x #:rest (x)) 1))
   (st #'(lambda/kw (x #:body 3) 1))
+  (st #'(lambda/kw (x #:key y #:body 3) 1))
   (st #'(lambda/kw (x #:body "3") 1))
+  (st #'(lambda/kw (x #:key y #:body "3") 1))
   (st #'(lambda/kw (x #:body (x)) 1))
   (st #'(lambda/kw (x #:body x #:allow-other-keys) 1))
   (st #'(lambda/kw (x #:optional ()) 1))

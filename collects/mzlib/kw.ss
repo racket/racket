@@ -89,6 +89,8 @@
           (apply values
                  (map (lambda (k) (cond [(assq k rests) => cdr] [else #f]))
                       '(#:rest #:body #:rest-keys #:all-keys #:other-keys)))]
+         [(body-spec body)
+          (if (identifier? body) (values #f body) (values body #'body))]
          [(rest* body* other-keys*) (values (or rest #'rest) (or body #'body)
                                             (or other-keys #'other-keys))]
          ;; turn (<id> <key> <default>) keys to (<id> <default>)
@@ -109,7 +111,7 @@
                => (lambda (d) (serror d "not an identifier"))]
               [(check-duplicate-identifier ids)
                => (lambda (d) (serror d "duplicate argument name"))]))
-      (values vars opts keys rest rest* body body*
+      (values vars opts keys rest rest* body body* body-spec
               rest-keys all-keys other-keys other-keys*
               other-keys-mode body-mode (map cadr keys0))))
   ;; --------------------------------------------------------------------------
@@ -171,6 +173,7 @@
                     rest*       ;   always an id
                     body        ; rest after all keyword-vals
                     body*       ;   always an id
+                    body-spec   ; syntax of body with sub-formals
                     rest-keys   ; rest without specified keys
                     all-keys    ; keyword-vals without body
                     other-keys  ; unprocessed keyword-vals
@@ -183,13 +186,13 @@
       (or (syntax-local-infer-name stx) (quote-syntax lambda/kw-proc)))
     ;; ------------------------------------------------------------------------
     ;; make case-lambda clauses for a procedure with optionals
-    (define (make-opt-clauses)
+    (define (make-opt-clauses expr rest)
       (let loop ([vars (reverse vars)]
                  [opts opts]
                  [clauses '()])
         (if (null? opts)
           ;; fast order: first the all-variable section, then from vars up
-          (cons (with-syntax ([vars (append! (reverse vars) (or rest '()))]
+          (cons (with-syntax ([vars (append! (reverse vars) rest)]
                               [expr expr])
                   #'[vars expr])
                 (reverse clauses))
@@ -203,7 +206,7 @@
                       clauses)))))
     ;; ------------------------------------------------------------------------
     ;; generates the part of the body that deals with rest-related stuff
-    (define (make-rest-body)
+    (define (make-rest-body expr)
       (define others? (or other-keys rest-keys))
       (with-syntax ([name        name]
                     [rest*       rest*]
@@ -259,11 +262,18 @@
                     next-loop
                     (error* 'name "keyword list not balanced: ~e" rest*))
                   #,(if allow-body?
-                      #'expr
+                      (if body-spec
+                        #`(apply (lambda/kw #,body-spec expr) body*)
+                        #'expr)
                       #'(if (null? body*)
                           expr
                           (error* 'name "non-keywords in arguments: ~e"
                                   body*)))))))))
+    ;; ------------------------------------------------------------------------
+    ;; generates the part of the body that deals with rest-related stuff
+    (define (make-keys-body expr)
+      (with-syntax ([body (make-rest-body expr)] [keys keys])
+        #'(let* keys body)))
     ;; ------------------------------------------------------------------------
     ;; body generation starts here
     (cond
@@ -273,18 +283,19 @@
         (syntax/loc stx (lambda vars expr)))]
      ;; no keys => make a case-lambda for optionals
      [(null? keys)
-      (let ([clauses (make-opt-clauses)])
+      (let ([clauses (make-opt-clauses expr (or rest '()))])
         (with-syntax ([name name] [clauses clauses])
           (syntax/loc stx (letrec ([name (case-lambda . clauses)]) name))))]
      ;; no opts => normal processing of keywords etc
      [(null? opts)
       (with-syntax ([vars (append! vars rest*)]
-                    [((kvar kexpr) ...) keys]
-                    [body (make-rest-body)])
-        (syntax/loc stx (lambda vars (let* ([kvar kexpr] ...) body))))]
+                    [body (make-keys-body expr)])
+        (syntax/loc stx (lambda vars body)))]
      ;; both opts and keys => combine the above two
      [else
-      '!!!]))
+      (let ([clauses (make-opt-clauses (make-keys-body expr) rest*)])
+        (with-syntax ([name name] [clauses clauses])
+          (syntax/loc stx (letrec ([name (case-lambda . clauses)]) name))))]))
   (syntax-case stx ()
     [(_ (formal ... . rest) expr0 expr ...) ; dot is exactly like #:rest
      #'(_ (formal ... #:rest rest) expr0 expr ...)]
@@ -305,12 +316,11 @@
            (apply format (string-append "~a: " fmt) who args))
           (current-continuation-marks))))
 
-;; Keyword searching utilities (note: no errors for odd length)
-(provide getarg getargs keys/args filter-out-keys)
-
+;; Keyword searching utility (note: no errors for odd length)
+(provide getarg)
 (define (getarg args keyword . not-found)
   (let loop ([args args])
-    (cond [(or (null? args) (null? (cdr args)))
+    (cond [(or (null? args) (null? (cdr args)) (not (keyword? (car args))))
            (and (pair? not-found)
                 (let ([x (car not-found)])
                   (cond [(procedure? x) (x)]
@@ -322,31 +332,9 @@
 ;; a private version of getarg that is always used with simple values
 (define (getarg* args keyword . not-found)
   (let loop ([args args])
-    (cond [(or (null? args) (null? (cdr args)))
+    (cond [(or (null? args) (null? (cdr args)) (not (keyword? (car args))))
            (and (pair? not-found) (car not-found))]
           [(eq? (car args) keyword) (cadr args)]
           [else (loop (cddr args))])))
-
-(define (getargs initargs keyword)
-  (define (scan tail)
-    (cond [(null? tail) '()]
-          [(null? (cdr tail)) (error 'getargs "keyword list not balanced")]
-          [(eq? (car tail) keyword) (cons (cadr tail) (scan (cddr tail)))]
-          [else (scan (cddr tail))]))
-  (scan initargs))
-
-(define (keys/args args)
-  (let loop ([args args] [keys '()])
-    (cond [(or (null? args) (null? (cdr args)) (not (keyword? (car args))))
-           (values (reverse! keys) args)]
-          [else (loop (cddr args) (list* (cadr args) (car args) keys))])))
-
-(define (filter-out-keys outs args)
-  (let loop ([as args] [r '()])
-    (cond [(null? as) (reverse! r)]
-          [(null? (cdr as)) (reverse! (cons (car as) r))]
-          [else
-           (loop (cddr as)
-                 (if (memq (car as) outs) r (list* (cadr as) (car as) r)))])))
 
 )
