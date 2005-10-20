@@ -63,7 +63,9 @@
       ;; Maybe do 3m mode:
       (when (and 3m-too?
 		 (memq '3m (available-mzscheme-variants)))
-	(let ([3m-dir (build-path "compiled" "native" (system-library-subpath #f) "3m")])
+	(let ([3m-dir (build-path collection-dir 
+				  "compiled" "native" 
+				  (system-library-subpath #f) "3m")])
 	  (make-directory* 3m-dir)
 	  (parameterize ([link-variant '3m])
 	    (go (build-path 3m-dir (let-values ([(base name dir?) (split-path file.c)])
