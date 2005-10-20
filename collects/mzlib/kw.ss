@@ -348,9 +348,7 @@
     (cond [(or (null? args) (null? (cdr args)) (not (keyword? (car args))))
            (and (pair? not-found)
                 (let ([x (car not-found)])
-                  (cond [(procedure? x) (x)]
-                        [(promise? x) (force x)]
-                        [else x])))]
+                  (if (procedure? x) (x) x)))]
           [(eq? (car args) keyword) (cadr args)]
           [else (loop (cddr args))])))
 
