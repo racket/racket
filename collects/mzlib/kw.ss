@@ -325,7 +325,7 @@
           (syntax/loc stx (letrec ([name (case-lambda . clauses)]) name))))]))
   (syntax-case stx ()
     [(_ formals expr0 expr ...)
-     (generate-body #'formals #'(begin expr0 expr ...))]))
+     (generate-body #'formals #'(let () expr0 expr ...))]))
 
 (provide define/kw)
 (define-syntax (define/kw stx)
