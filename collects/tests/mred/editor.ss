@@ -120,10 +120,37 @@
       (st "HowdyHelloHello" e get-flattened-text)
       (st (string->path "tmp95") e get-filename))))
     
+(define text-insert (lambda (e t) (send e insert t)))
+(define pb-insert (lambda (e t) (send e insert (make-object string-snip% t))))
+
 (map (lambda (reset?)
-       (run-save/load-tests text% (lambda (e t) (send e insert t)) reset?)
-       (run-save/load-tests pasteboard% (lambda (e t) (send e insert (make-object string-snip% t))) reset?))
+       (run-save/load-tests text% text-insert reset?)
+       (run-save/load-tests pasteboard% pb-insert reset?))
      '(#t #f))
+
+;; Test DrScheme-style format change in `on-save':
+(define (run-on-save-tests editor% insert)
+  (let* ([editor+% (if (eq? editor% text%)
+		       (class editor%
+			 (inherit set-file-format)
+			 (define/augment (on-save-file path -mode)
+			   (set-file-format 'standard))
+			 (super-new))
+		       editor%)]
+	 [e (make-object editor+%)])
+    (insert e "Hello")
+    (st #t e is-modified?)
+    (st #f e get-filename)
+    (when (eq? editor% text%)
+      (stv e set-file-format 'text)
+      (st 'text e get-file-format))
+    (st #t e save-file "tmp99" 'same)
+    (when (eq? editor% text%)
+      (st 'standard e get-file-format))
+    (send e load-file "tmp99" 'guess)
+    (st "Hello" e get-flattened-text)))
+(run-on-save-tests text% text-insert)
+(run-on-save-tests pasteboard% pb-insert)
 
 ;;;;;; Undo tests
 
