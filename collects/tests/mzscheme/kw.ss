@@ -197,6 +197,11 @@
     (t '(1 #f 2 3 #f)   f #:x 1 2 #:x 3)
     (t '(1 #:x 2 3 #:x) f #:x 1 #:y #:x #:x 11 2 #:x 3 #:y #:x #:x 33))
 
+  ;; make sure that internal definitions work
+  (let ([f (lambda/kw (#:key x) (define xx x) xx)])
+    (t #f f)
+    (t 1  f #:x 1))
+
   )
 
 ;; test syntax errors
