@@ -211,44 +211,44 @@
 				     old-filename)]
 				[(path? file) file]
 				[else (string->path file)])]
-			 [f-format (-format-filter/save format)]
-			 [actual-format (if (memq f-format '(copy same))
-					    (-get-file-format)
-					    f-format)]
-			 [text? (memq actual-format '(text text-force-cr))])
+			 [f-format (-format-filter/save format)])
 		    (and 
 		     file
 		     (can-save-file? file f-format)
 		     (begin
 		       (on-save-file file f-format)
-		       (let ([port (open-output-file file (if text? 'text 'binary) 'truncate/replace)]
-			     [finished? #f])
-			 (dynamic-wind
-			     void
-			     (lambda ()
-			       (wx:file-creator-and-type file #"mReD" (if text? #"TEXT" #"WXME"))
-			       (wx:begin-busy-cursor)
-			       (dynamic-wind
-				   void
-				   (lambda ()
-				     (super-save-port port format #t)
-				     (close-output-port port) ; close as soon as possible
-				     (unless (or (eq? format 'copy)
-						 (and (not (unbox temp-filename?-box))
-						      (equal? file old-filename)))
-				       (set-filename file #f))
-				     (unless (eq? format 'copy)
-				       (-set-file-format actual-format))) ; text% only
-				   (lambda ()
-				     (wx:end-busy-cursor)))
-			       (unless (eq? format 'copy)
-				 (set-modified #f))
-			       (set! finished? #t)
-			       #t)
-			     (lambda ()
-			       ;; In case it wasn't closed before:
-			       (close-output-port port)
-			       (after-save-file finished?)))))))))])
+		       (let* ([actual-format (if (memq f-format '(copy same))
+						 (-get-file-format)
+						 f-format)]
+			      [text? (memq actual-format '(text text-force-cr))])
+			 (let ([port (open-output-file file (if text? 'text 'binary) 'truncate/replace)]
+			       [finished? #f])
+			   (dynamic-wind
+			       void
+			       (lambda ()
+				 (wx:file-creator-and-type file #"mReD" (if text? #"TEXT" #"WXME"))
+				 (wx:begin-busy-cursor)
+				 (dynamic-wind
+				     void
+				     (lambda ()
+				       (super-save-port port format #t)
+				       (close-output-port port) ; close as soon as possible
+				       (unless (or (eq? format 'copy)
+						   (and (not (unbox temp-filename?-box))
+							(equal? file old-filename)))
+					 (set-filename file #f))
+				       (unless (eq? format 'copy)
+					 (-set-file-format actual-format))) ; text% only
+				     (lambda ()
+				       (wx:end-busy-cursor)))
+				 (unless (eq? format 'copy)
+				   (set-modified #f))
+				 (set! finished? #t)
+				 #t)
+			       (lambda ()
+				 ;; In case it wasn't closed before:
+				 (close-output-port port)
+				 (after-save-file finished?))))))))))])
 
 	    (public*
 	     [get-canvases (entry-point (lambda () (map wx->mred canvases)))]
