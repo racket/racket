@@ -101,7 +101,8 @@
 			   (lambda (x) (and (list? x) (andmap string? x))))
   (preferences:set-default 'sirmail:fields-to-show '("From" "To" "CC" "Subject" "Date" "X-Mailer" "X-Uptime")
 			   (lambda (x) (and (list? x) (andmap string? x))))
-
+  (preferences:set-default 'sirmail:bcc #f
+                           (λ (x) (or (not x) (string? x))))
 
   (let ([fw 560]
 	[fh 600])
@@ -479,6 +480,7 @@
 
 
       (make-text-field "Default \"To\" domain" p 20 'sirmail:default-to-domain #f check-host-address (lambda (x) x) (lambda (x) x))
+      (make-text-field "BCC line" p 20 'sirmail:bcc #t void (lambda (x) x) (lambda (x) x))
       (make-file/directory-button #f #f p
 				  'sirmail:aliases-file
 				  "Aliases File")

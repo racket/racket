@@ -626,6 +626,11 @@
               (send message-editor insert "Subject: ")
               (send message-editor insert (string-crlf->lf subject))
               (send message-editor insert #\newline)
+              (let ([bcc-header (get-pref 'sirmail:bcc)])
+                (when bcc-header
+                  (send message-editor insert "bcc: ")
+                  (send message-editor insert bcc-header)
+                  (send message-editor insert #\newline)))
               (send message-editor insert (string-crlf->lf other-headers))
               (send message-editor insert "X-Mailer: SirMail under MrEd ")
               (send message-editor insert (version))
