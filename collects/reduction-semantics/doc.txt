@@ -228,7 +228,7 @@ for two `term-let'-bound identifiers bound to lists of
 different lengths to appear together inside an ellipsis.
 
 > (reduction language pattern bodies ...)       SYNTAX
-
+> (reduction/name language pattern bodies ...)  SYNTAX
 This form defines a reduction. The first position must
 evaluate to a language defined by the `language' form. The
 pattern determines which terms this reductions apply to and
@@ -261,7 +261,12 @@ the result of evaluating the last argument to reduction.
 See `plug' below and lc-subst is defined by using the 
 subst.ss library below.
 
+The reduction/name form is the same as reduction, but
+additionally evaluates the `name' expression and names the
+reduction to be its result, which must be a string.
+
 > (reduction/context language context pattern bodies ...)   SYNTAX
+> (reduction/context/name name language context pattern bodies ...) SYNTAX
 
 reduction/context is a short-hand form of reduction. It
 automatically adds the `in-hole' pattern and the call to
@@ -275,6 +280,10 @@ example is this:
       (lc-subst (term (variable_i ...))
                 (term (v_i ...))
                 (term e_body))))
+
+reduction/context/name is the same as reduction/context, but
+additionally evaluates the `name' expression and names the
+reduction to be its result, which must be a string.
 
 > red? : (any? . -> . boolean?)
 
@@ -387,23 +396,24 @@ followed by an ellipsis.  Nested ellipses produce nested lists.
 
 The _gui.ss_ library provides three functions:
 
-> (traces language reductions expr [pp])
+> (traces language reductions expr [pp] [colors])
 
 This function calls traces/multiple with language, reductions
-and (list expr).
+and (list expr), and its optional arguments if supplied.
 
-> (traces/multiple lang reductions exprs [pp])
+> (traces/multiple lang reductions exprs [pp] [colors])
 
 This function calls traces/pred with the predicate
 (lambda (x) #t)
 
-> (traces/pred lang reductions exprs pred [pp])
+> (traces/pred lang reductions exprs pred [pp] [colors])
   lang : language
   reductions : (listof reduction)
   exprs : (listof sexp)
   pred : (sexp -> boolean)
   pp : (any -> string)
      | (any port number (is-a?/c text%) -> void)
+  colors : (listof (list string string))
 
 This function opens a new window and inserts each
 expr. Then, reduces the terms until either
@@ -427,11 +437,16 @@ instead invoked with a single argument, the s-expression to
 render, and it must return a string which the GUI will use
 as a representation of the given expression for display.
 
-The default pp uses MzLib's pretty-print function. See 
-threads.ss in the examples directory for an example use 
-of the one-argument form of this argument and 
-ho-contracts.ss in the examples directory for an example 
-use of its four-argument form.
+The default pp, provided as default-pretty-printer, uses
+MzLib's pretty-print function. See threads.ss in the
+examples directory for an example use of the one-argument
+form of this argument and ho-contracts.ss in the examples
+directory for an example use of its four-argument form.
+
+The colors argument, if provided, specifies a list of
+reduction-name/color-string pairs. The traces gui will color
+arrows drawn because of the given reduction name with the
+given color instead of using the default color.
 
 You can save the contents of the window as a postscript file
 from the menus.

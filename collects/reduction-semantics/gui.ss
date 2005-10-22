@@ -11,38 +11,42 @@
            (lib "pretty.ss")
            (lib "class.ss")
            (lib "contract.ss")
-           (lib "list.ss"))
+           (lib "list.ss")
+           (lib "match.ss"))
 
   (provide/contract
    [traces (opt-> (compiled-lang?
                    (listof red?)
                    any/c)
-                  (procedure?)
+                  (procedure? (listof any/c))
                   any)]
    [traces/pred (opt-> (compiled-lang?
                         (listof red?)
                         (listof any/c)
                         (any/c . -> . boolean?))
-                       (procedure?)
+                       (procedure? (listof any/c))
                        any)]
    [traces/multiple (opt-> (compiled-lang?
                             (listof red?)
                             (listof any/c))
-                           (procedure?)
+                           (procedure? (listof any/c))
                            any)])
                
    
   (provide reduction-steps-cutoff initial-font-size initial-char-width
-           dark-pen-color light-pen-color dark-brush-color light-brush-color)
+           dark-pen-color light-pen-color dark-brush-color light-brush-color
+           dark-text-color light-text-color
+           (rename default-pp default-pretty-printer))
 
-  
-  
   (preferences:set-default 'plt-reducer:show-bottom #t boolean?)
   
   (define dark-pen-color (make-parameter "blue"))
   (define light-pen-color (make-parameter "lightblue"))
   (define dark-brush-color (make-parameter "lightblue"))
   (define light-brush-color (make-parameter "white"))
+  (define dark-text-color (make-parameter "blue"))
+  (define light-text-color (make-parameter "lightblue"))
+  
   
   ;; after (about) this many steps, stop automatic, initial reductions
   (define reduction-steps-cutoff (make-parameter 20))
@@ -68,15 +72,15 @@
       (pretty-print v port)))
   
   (define traces
-    (opt-lambda (lang reductions expr [pp default-pp])
-      (traces/multiple lang reductions (list expr) pp)))
+    (opt-lambda (lang reductions expr [pp default-pp] [colors '()])
+      (traces/multiple lang reductions (list expr) pp colors)))
       
   (define traces/multiple
-    (opt-lambda (lang reductions exprs [pp default-pp])
-      (traces/pred lang reductions exprs (lambda (x) #t) pp)))
+    (opt-lambda (lang reductions exprs [pp default-pp] [colors '()])
+      (traces/pred lang reductions exprs (lambda (x) #t) pp colors)))
   
   (define traces/pred
-    (opt-lambda (lang reductions exprs pred [pp default-pp])
+    (opt-lambda (lang reductions exprs pred [pp default-pp] [colors '()])
       (define main-eventspace (current-eventspace))
       (define graph-pb (make-object graph-pasteboard%))
       (define f (instantiate red-sem-frame% ()
@@ -137,7 +141,10 @@
         
       ;; only changed on the reduction thread
       ;; frontier : (listof (is-a?/c graph-editor-snip%))
-      (define frontier (map (lambda (expr) (build-snip snip-cache #f expr pred pp)) exprs))
+      (define frontier (map (lambda (expr) (build-snip snip-cache #f expr pred pp 
+                                                       (dark-pen-color) (light-pen-color)
+                                                       (dark-text-color) (light-text-color) #f))
+                            exprs))
 
       ;; set-font-size : number -> void
       ;; =eventspace main thread=
@@ -149,6 +156,38 @@
           (send scheme-delta set-size-mult 0)
           (send scheme-delta set-size-add size)
           (send scheme-standard set-delta scheme-delta)))
+      
+      ;; color-spec-list->color-scheme : (list (union string? #f)^4) -> (list string?^4)
+      ;; converts a list of user-specified colors (including false) into a list of color strings, filling in
+      ;; falses with the default colors
+      (define (color-spec-list->color-scheme l)
+        (map (λ (c d) (or c d))
+             l 
+             (list (dark-pen-color) (light-pen-color) (dark-text-color) (light-text-color))))
+        
+        
+      (define name->color-ht 
+        (let ((ht (make-hash-table 'equal)))
+          (for-each 
+           (λ (c)
+             (hash-table-put! ht (car c) 
+                              (color-spec-list->color-scheme
+                               (match (cdr c)
+                                 [(color)
+                                  (list color color (dark-text-color) (light-text-color))]
+                                 [(dark-arrow-color light-arrow-color)
+                                  (list dark-arrow-color light-arrow-color (dark-text-color) (light-text-color))]
+                                 [(dark-arrow-color light-arrow-color text-color) 
+                                  (list dark-arrow-color light-arrow-color text-color text-color)]
+                                 [(_ _ _ _)
+                                  (cdr c)]))))
+           colors)
+          ht))
+
+      ;; red->colors : reduction -> (values string string string string)
+      (define (red->colors red)
+        (apply values (hash-table-get name->color-ht (reduction->name red) 
+                                      (λ () (list (dark-pen-color) (light-pen-color) (dark-text-color) (light-text-color))))))
       
       ;; reduce-frontier : -> void
       ;; =reduction thread=
@@ -166,11 +205,14 @@
                       [new-snips 
                        (filter 
                         (lambda (x) x)
-                        (map (lambda (sexp) 
-                               (call-on-eventspace-main-thread
-                                (λ ()
-                                  (build-snip snip-cache snip sexp pred pp))))
-                             (reduce reductions (send snip get-expr))))]
+                        (map (lambda (red+sexp)
+                               (let-values ([(red sexp) (apply values red+sexp)])
+                                 (call-on-eventspace-main-thread
+                                  (λ ()
+                                    (let-values ([(dark-arrow-color light-arrow-color dark-label-color light-label-color) (red->colors red)])
+                                      (build-snip snip-cache snip sexp pred pp light-arrow-color dark-arrow-color dark-label-color light-label-color
+                                                  (reduction->name red)))))))
+                             (reduce/tag-with-reduction reductions (send snip get-expr))))]
                       [new-y 
                        (call-on-eventspace-main-thread
                         (lambda () ; =eventspace main thread=
@@ -440,11 +482,13 @@
   ;;              sexp
   ;;              sexp -> boolean
   ;;              (any port number -> void)
+  ;;              color
+  ;;              (union #f string)
   ;;           -> (union #f (is-a?/c graph-editor-snip%))
   ;; returns #f if a snip corresponding to the expr has already been created.
   ;; also adds in the links to the parent snip
   ;; =eventspace main thread=
-  (define (build-snip cache parent-snip expr pred pp)
+  (define (build-snip cache parent-snip expr pred pp light-arrow-color dark-arrow-color dark-label-color light-label-color label)
     (let-values ([(snip new?)
                   (let/ec k
                     (k
@@ -457,11 +501,15 @@
                           (k new-snip #t))))
                      #f))])
       (when parent-snip
-        (add-links parent-snip snip
-                   (send the-pen-list find-or-create-pen (dark-pen-color) 0 'solid)
-                   (send the-pen-list find-or-create-pen (light-pen-color) 0 'solid)
+        (add-links/text-colors parent-snip snip
+                   (send the-pen-list find-or-create-pen dark-arrow-color 0 'solid)
+                   (send the-pen-list find-or-create-pen light-arrow-color 0 'solid)
                    (send the-brush-list find-or-create-brush (dark-brush-color) 'solid)
-                   (send the-brush-list find-or-create-brush (light-brush-color) 'solid)))
+                   (send the-brush-list find-or-create-brush (light-brush-color) 'solid)
+                   (make-object color% dark-label-color)
+                   (make-object color% light-label-color)
+                   0 0
+                   label))
       (and new? snip)))
   
   ;; make-snip : (union #f (is-a?/c graph-snip<%>)) 

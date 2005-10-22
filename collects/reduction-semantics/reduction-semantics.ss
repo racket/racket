@@ -13,15 +13,23 @@ incompatible changes to be done:
            (lib "etc.ss"))
   (require-for-syntax (lib "list.ss"))
 
+  
+  ;; type red = (make-red compiled-pat ((listof (cons sym tst) (union string #f)) -> any)
+  (define-struct red (contractum reduct name))
+
+  
   (provide reduction
+           reduction/name
            reduction/context
+           reduction/context/name
            language
            plug
 	   compiled-lang?
            red?
            term
            term-let
-           none?)
+           none?
+           (rename red-name reduction->name))
   
   (provide match-pattern
            compile-pattern
@@ -33,6 +41,8 @@ incompatible changes to be done:
   (provide/contract
    (language->predicate (compiled-lang? symbol? . -> . (any/c . -> . boolean?)))
    (reduce ((listof (lambda (x) (red? x))) any/c . -> . (listof any/c)))
+   (reduce/tag-with-reduction ((listof (lambda (x) (red? x))) any/c . -> . (listof any/c)))
+   (give-name ((λ (x) (red? x)) string? . -> . red?))
    (variable-not-in (any/c symbol? . -> . symbol?))
    (compatible-closure ((lambda (x) (red? x))
                         compiled-lang?
@@ -46,12 +56,14 @@ incompatible changes to be done:
                      (lambda (x) (red? x)))))
 
   
-  ;; type red = (make-red compiled-pat ((listof (cons sym tst)) -> any)
-  (define-struct red (contractum reduct))
 
-  ;; build-red : language pattern ((listof (cons sym tst)) -> any) -> red
-  (define (build-red lang contractum reduct)
-    (make-red (compile-pattern lang contractum) reduct))
+  ;; give-name : red (union string #f) -> red
+  ;; gives the reduction the given name
+  (define (give-name red name) (make-red (red-contractum red) (red-reduct red) name))
+  
+  ;; build-red : language pattern ((listof (cons sym tst)) -> any) (union string #f) -> red
+  (define (build-red lang contractum reduct name)
+    (make-red (compile-pattern lang contractum) reduct name))
   
   (define (compatible-closure red lang nt)
     (context-closure red lang `(cross ,nt)))
@@ -67,7 +79,7 @@ incompatible changes to be done:
                         [res ((red-reduct red) bindings)])
                     (plug context res))))))
   
-  (define-syntax-set (reduction/context reduction language)
+  (define-syntax-set (reduction/context reduction reduction/name reduction/context/name language)
     
     ;; (reduction/context lang ctxt pattern expression ...)
     (define (reduction/context/proc stx)
@@ -89,7 +101,15 @@ incompatible changes to be done:
                                       (term context)
                                       (begin
                                         (void)
-                                        bodies ...))))))))]))
+                                        bodies ...))))
+                         #f))))]))
+    
+   (define (reduction/context/name/proc stx)
+      (syntax-case stx ()
+        [(_ name-exp lang-exp ctxt pattern bodies ...)
+         #'(give-name (reduction/context lang-exp ctxt pattern bodies ...)
+                      name-exp)]))
+    
     
     ;; (reduction lang pattern expression ...)
     (define (reduction/proc stx)
@@ -106,7 +126,13 @@ incompatible changes to be done:
                          `side-condition-rewritten
                          (lambda (bindings)
                            (term-let ([name-ellipses (lookup-binding bindings 'name)] ...)
-                             bodies ...))))))]))
+                             bodies ...))
+                         #f))))]))
+    
+    (define (reduction/name/proc stx)
+      (syntax-case stx ()
+        [(_ name-exp lang-exp pattern bodies ...)
+         #`(give-name (reduction lang-exp pattern bodies ...) name-exp)]))
     
     (define (language/proc stx)
       (syntax-case stx ()
@@ -236,6 +262,14 @@ incompatible changes to be done:
     
   ;; reduce : (listof red) exp -> (listof exp)
   (define (reduce reductions exp)
+    (reduce/internal reductions exp (λ (red) (λ (mtch) ((red-reduct red) (mtch-bindings mtch))))))
+  
+  ; reduce/tag-with-reductions : (listof red) exp -> (listof (list red exp))
+  (define (reduce/tag-with-reduction reductions exp)
+    (reduce/internal reductions exp (λ (red) (λ (mtch) (list red ((red-reduct red) (mtch-bindings mtch)))))))
+  
+  ; reduce/internal : (listof red) exp (red -> match -> X) -> listof X
+  (define (reduce/internal reductions exp f)
     (let loop ([reductions reductions]
                [acc null])
       (cond
@@ -245,7 +279,7 @@ incompatible changes to be done:
                   (if mtchs
                       (loop (cdr reductions)
                             (map/mt
-                             (lambda (mtch) ((red-reduct red) (mtch-bindings mtch)))
+                             (f red) 
                              mtchs
                              acc))
                       (loop (cdr reductions) acc))))])))
