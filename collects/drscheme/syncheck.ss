@@ -943,12 +943,28 @@ If the namespace does not, they are colored the unbound color.
                               [user-directory #f]
                               [user-custodian #f]
                               [normal-termination? #f]
+                              
+                              [show-error-report/tab
+                               (λ () ; =drs=
+                                 (send the-tab turn-on-error-report)
+                                 (send (send the-tab get-error-report-text) scroll-to-position 0)
+                                 (when (eq? (get-current-tab) the-tab)
+                                   (show-error-report)))]
                               [cleanup
                                (λ () ; =drs=
                                  (send the-tab set-breakables old-break-thread old-custodian)
                                  (send the-tab enable-evaluation)
                                  (send definitions-text end-edit-sequence)
-                                 (close-status-line 'drscheme:check-syntax))]
+                                 (close-status-line 'drscheme:check-syntax)
+                                 
+                                 ;; do this with some lag ... not great, but should be okay.
+                                 (thread
+                                  (λ ()
+                                    (flush-output (send (send the-tab get-error-report-text) get-err-port))
+                                    (queue-callback
+                                     (λ ()
+                                       (unless (= 0 (send (send the-tab get-error-report-text) last-position))
+                                         (show-error-report/tab)))))))]
                               [kill-termination
                                (λ ()
                                  (unless normal-termination?
@@ -974,23 +990,21 @@ If the namespace does not, they are colored the unbound color.
                                (λ () ; =user=
                                  (send the-tab set-breakables (current-thread) (current-custodian))
                                  (set-directory definitions-text)
+                                 (current-error-port error-port)
                                  (error-display-handler 
                                   (λ (msg exn) ;; =user=
                                     (parameterize ([current-eventspace drs-eventspace])
                                       (queue-callback
                                        (λ () ;; =drs=
-                                         (send the-tab turn-on-error-report)
-                                         (when (eq? (get-current-tab) the-tab)
-                                           (show-error-report)))))
+                                         (show-error-report/tab))))
                                     
-                                    (parameterize ([current-error-port error-port])
-                                      (drscheme:debug:show-error-and-highlight 
-                                       msg exn 
-                                       (λ (src-to-display cms) ;; =user=
-                                         (parameterize ([current-eventspace drs-eventspace])
-                                           (queue-callback
-                                            (λ () ;; =drs=
-                                              (send (send the-tab get-ints) highlight-errors src-to-display cms)))))))
+                                    (drscheme:debug:show-error-and-highlight 
+                                     msg exn 
+                                     (λ (src-to-display cms) ;; =user=
+                                       (parameterize ([current-eventspace drs-eventspace])
+                                         (queue-callback
+                                          (λ () ;; =drs=
+                                            (send (send the-tab get-ints) highlight-errors src-to-display cms))))))
                                     
                                     (semaphore-post error-display-semaphore)))
                                  

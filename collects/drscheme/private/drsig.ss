@@ -179,8 +179,7 @@
      context<%>))
   
   (define-signature drscheme:app^
-    (check-new-version
-     about-drscheme
+    (about-drscheme
      invite-tour
      add-language-items-to-help-menu
      add-important-urls-to-help-menu

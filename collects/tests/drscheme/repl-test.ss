@@ -621,6 +621,17 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 void
                 void)
      
+     (make-test "(write-special 1)"
+                "1"
+                "1"
+                #f
+                'interactions
+                #f
+                #f
+                #f
+                void
+                void)
+     
      (make-test
       ;; the begin/void combo is to make sure that no value printout
       ;; comes and messes up the source location for the error.

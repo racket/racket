@@ -11,12 +11,13 @@
   
   ;; Define an order on the standard docs.
   (define (standard-html-doc-position d)
-    (if (equal? d (string->path "help"))
-        -1
-        (let ([line (assoc d docs-and-positions)])
-          (if line
-              (caddr line)
-              100))))
+    (let ([str (path->string d)])
+      (if (equal? str "help")
+          -1
+          (let ([line (assoc str docs-and-positions)])
+            (if line
+                (caddr line)
+                100)))))
 
   (define user-doc-positions '())
 
@@ -71,9 +72,9 @@
       ("tools" "PLT Tools: DrScheme Extension Manual" 30)
       ("insidemz" "Inside PLT MzScheme" 50)
 
-      ("swindle"    "Swindle Manual"    60)
-      ("plot"       "PLoT Manual"       61)
-      ("web-server" "Web Server Manual" 62)
+      ("web-server" "Web Server Manual" 60)
+      ("swindle"    "Swindle Manual"    61)
+      ("plot"       "PLoT Manual"       62)
 
       ("t-y-scheme" "Teach Yourself Scheme in Fixnum Days" 100)
       ("tex2page" "TeX2page" 101)))

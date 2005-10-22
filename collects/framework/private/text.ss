@@ -1256,7 +1256,7 @@ WARNING: printf is rebound in the body of the unit to always
                                    str/snp)
                                old-insertion-point
                                old-insertion-point
-                               #f)
+                               #t)
                        
                        ;; the idea here is that if you made a string snip, you
                        ;; could have made a string and gotten the style, so you
@@ -1361,7 +1361,13 @@ WARNING: printf is rebound in the body of the unit to always
                   [(eq? (current-thread) (eventspace-handler-thread eventspace))
                    (error 'write-bytes-proc "cannot write to port on eventspace main thread")]
                   [else
-                   (channel-put write-chan (cons special style))])
+                   (let ([str/snp (cond
+                                    [(string? special) special]
+                                    [(is-a? special snip%) special]
+                                    [else (format "~s" special)])])
+                     (channel-put 
+                      write-chan 
+                      (cons str/snp style)))])
                 #t))
             
             (let* ([add-standard

@@ -78,23 +78,26 @@
   
   (define hexifiable '(#\: #\; #\? #\& #\% #\# #\< #\> #\+))
   
-  ; string -> string
+  ;; hexify-string : string -> string
+  ;; exploits good properties of utf-8 encoding
+  ;; that if can-keep? returns true that the byte is
+  ;; the character index
   (define (hexify-string s)
     (apply string-append 
-	   (map (lambda (c) 
-		  (if (can-keep? c)
-		      (string c)
-		      (format "%~X" (char->integer c))))
-		(string->list s))))
+	   (map (λ (b) 
+		  (cond
+                    [(can-keep? b) (string (integer->char b))]
+                    [else (format "%~X" b)]))
+		(bytes->list (string->bytes/utf-8 s)))))
 
-  ;; can-keep? : char -> boolean
+  ;; can-keep? : byte -> boolean
   ;; source rfc 2396
-  (define (can-keep? c)
-    (let ([i (char->integer c)])
-      (or (<= (char->integer #\a) i (char->integer #\z))
-          (<= (char->integer #\A) i (char->integer #\Z))
-          (<= (char->integer #\0) i (char->integer #\9))
-          (memq c '(#\- #\_ #\; #\. #\! #\~ #\* #\' #\( #\))))))
+  (define (can-keep? i)
+    (or (<= (char->integer #\a) i (char->integer #\z))
+        (<= (char->integer #\A) i (char->integer #\Z))
+        (<= (char->integer #\0) i (char->integer #\9))
+        (memq i (map char->integer 
+                     '(#\- #\_ #\; #\. #\! #\~ #\* #\' #\( #\))))))
   
   ; string string -> xexpr
   (define (collection-doc-link coll txt)

@@ -727,6 +727,7 @@ TODO
           ;;
           
           (define/override (after-io-insertion)
+            (super after-io-insertion)
             (let ([canvas (get-active-canvas)])
               (when canvas
                 (let ([frame (send canvas get-top-level-window)])

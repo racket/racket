@@ -972,7 +972,7 @@ please adhere to these guidelines:
  (full-language "Full") ;; also in the HtDP languages section
  (how-to-design-programs "How to Design Programs") ;; should agree with MIT Press on this one...
  (r5rs-like-languages "R5RS-like")
- (pretty-big-scheme "Pretty Big (includes MrEd and Advanced)")
+ (pretty-big-scheme "Pretty Big (includes MrEd and Advanced Student)")
  (pretty-big-scheme-one-line-summary "Adds syntax and functions from the HtDP languages")
  (r5rs-lang-name "Standard (R5RS)")
  (r5rs-one-line-summary "R5RS, with no frills")
@@ -981,10 +981,32 @@ please adhere to these guidelines:
  (professional-languages "Professional Languages")
  (teaching-languages "Teaching Languages")
  (experimental-languages "Experimental Languages")
+  (not-really-languages "Not really languages")
+  (choose-a-language-language "Choose a language language")
  
  (module-language-one-line-summary "Run creates a REPL in the context of the module, including the module's declared language")
   
-
+  ;;; from the `not a language language' used initially in drscheme.
+  (must-choose-language "DrScheme cannot process programs until you choose a programming language.")
+  
+  ; intro to using a textbook
+  (using-a-text-book? "Are you using one of the these textbooks?")
+  ; next two are used with each textbook
+  (start-with-before "Start with ")
+  (start-with-after ".")
+  
+  ; next ones are the default choices at the end of the list in the not-a-language-language error message
+  (seasoned-plt-schemer-before "Are you a seasoned PLT Schemer? Try ")
+  (seasoned-plt-schemer-after ".")
+  (otherwise-use-before "Otherwise, use ")
+  (otherwise-use-between ",\nor choose for yourself from the ")
+  (otherwise-use-language-dialog "language dialog") ; this one will become clickable and will open the language dialog
+  (otherwise-use-after ".")
+  
+  ; after clicking a language, this tells you that its done. The ~a is filled in with
+  ; the name of the language
+  (drschemes-language-now-set "DrScheme's Language is now set to:\n  ~a")
+  
  ;;; debug language
  (unknown-debug-frame "[unknown]")
  (backtrace-window-title "Backtrace - DrScheme")

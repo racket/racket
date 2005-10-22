@@ -334,10 +334,6 @@
         [else
          (preferences:set 'framework:exit-when-no-frames #t)])
       
-      
-      (drscheme:app:check-new-version)
-      
-      ;;
       ;; Check for any files lost last time.
       ;; Ignore the framework's empty frames test, since
       ;;   the autosave information window may appear and then
