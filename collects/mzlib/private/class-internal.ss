@@ -2708,6 +2708,24 @@
     (unless (object? o)
       (raise-type-error 'object-interface "object" o))
     (class-self-interface (object-ref (unwrap-object o))))
+
+  (define (object-method-arity-includes? o name cnt)
+    (unless (object? o)
+      (raise-type-error 'object-method-arity-includes? "object" o))
+    (unless (symbol? name)
+      (raise-type-error 'object-method-arity-includes? "symbol" name))
+    (unless (and (integer? cnt)
+		 (exact? cnt)
+		 (not (negative? cnt)))
+      (raise-type-error 'object-method-arity-includes? "non-negative exact integer" cnt))
+    (let loop ([o o])
+      (let* ([c (object-ref o)]
+	     [pos (hash-table-get (class-method-ht c) name (lambda () #f))])
+	(cond
+	 [pos (procedure-arity-includes? (vector-ref (class-methods c) pos) 
+					 (add1 cnt))]
+	 [(wrapper-object? o) (loop (wrapper-object-wrapped o))]
+	 [else #f]))))
   
   (define (implementation? v i)
     (unless (interface? i)
@@ -3198,6 +3216,7 @@
 	   (rename generic/form generic) (rename make-generic/proc make-generic) send-generic
 	   is-a? subclass? implementation? interface-extension?
 	   object-interface object-info object->vector
+           object-method-arity-includes?
 	   method-in-interface? interface->method-names class->interface class-info
 	   (struct exn:fail:object ())
 	   make-primitive-class))

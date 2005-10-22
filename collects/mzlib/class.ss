@@ -26,6 +26,7 @@
 	   generic make-generic send-generic
 	   is-a? subclass? implementation? interface-extension?
 	   object-interface object-info object->vector
+	   object-method-arity-includes?
 	   method-in-interface? interface->method-names class->interface class-info
 	   (struct exn:fail:object ())
 	   make-primitive-class
