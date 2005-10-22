@@ -12,33 +12,36 @@
             *
             /)
      
-     (e-ctxt (binop e e-ctxt)
+     (e-ctxt (binop v e-ctxt)
              (binop e-ctxt e)
              (sqrt e-ctxt)
              hole)
      (v number)))
   
+  (define-syntax (--> stx)
+    (syntax-case stx ()
+      [(_ op from to)
+       (syntax (reduction/name op
+                               lang
+                               (in-hole e-ctxt_1 from)
+                               (term (in-hole e-ctxt_1 ,to))))]))
+  
   (define reductions
     (list
-     (reduction lang
-                (in-hole e-ctxt_1
-                         (+ number_1 number_2))
-                (plug (term e-ctxt_1) (+ (term number_1) (term number_2))))
-     (reduction/context lang
-                        e-ctxt
-                        (- number_1 number_2)
-                        (- (term number_1) (term number_2)))
-     (reduction/context lang
-                        e-ctxt
-                        (* number_1 number_2)
-                        (* (term number_1) (term number_2)))
-     (reduction/context lang
-                        e-ctxt
-                        (/ number_1 number_2)
-                        (/ (term number_1) (term number_2)))
-     (reduction/context lang
-                        e-ctxt
-                        (sqrt number_1)
-                        (sqrt (term number_1)))))
+     (--> "add"
+          (+ number_1 number_2)
+          (+ (term number_1) (term number_2)))
+     (--> "subtract"
+          (- number_1 number_2)
+          (- (term number_1) (term number_2)))
+     (--> "multiply"
+          (* number_1 number_2)
+          (* (term number_1) (term number_2)))
+     (--> "divide"
+          (/ number_1 number_2)
+          (/ (term number_1) (term number_2)))
+     (--> "sqrt"
+          (sqrt number_1)
+          (sqrt (term number_1)))))
      
   (traces lang reductions '(- (* (sqrt 36) (/ 1 2)) (+ 1 2))))

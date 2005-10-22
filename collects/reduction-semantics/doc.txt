@@ -228,7 +228,7 @@ for two `term-let'-bound identifiers bound to lists of
 different lengths to appear together inside an ellipsis.
 
 > (reduction language pattern bodies ...)       SYNTAX
-> (reduction/name language pattern bodies ...)  SYNTAX
+
 This form defines a reduction. The first position must
 evaluate to a language defined by the `language' form. The
 pattern determines which terms this reductions apply to and
@@ -261,12 +261,14 @@ the result of evaluating the last argument to reduction.
 See `plug' below and lc-subst is defined by using the 
 subst.ss library below.
 
+> (reduction/name name language pattern bodies ...)  SYNTAX
+
 The reduction/name form is the same as reduction, but
 additionally evaluates the `name' expression and names the
-reduction to be its result, which must be a string.
+reduction to be its result, which must be a string. The 
+names are used by `traces'.
 
 > (reduction/context language context pattern bodies ...)   SYNTAX
-> (reduction/context/name name language context pattern bodies ...) SYNTAX
 
 reduction/context is a short-hand form of reduction. It
 automatically adds the `in-hole' pattern and the call to
@@ -281,9 +283,13 @@ example is this:
                 (term (v_i ...))
                 (term e_body))))
 
+> (reduction/context/name name language context pattern bodies ...) SYNTAX
+
 reduction/context/name is the same as reduction/context, but
 additionally evaluates the `name' expression and names the
 reduction to be its result, which must be a string.
+The names are used by `traces'.
+
 
 > red? : (any? . -> . boolean?)
 
