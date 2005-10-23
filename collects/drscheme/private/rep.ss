@@ -879,17 +879,16 @@ TODO
                 (set! already-warned? #t)
                 (insert-warning)))
             
-            ;; put two eofs in the port; one to terminate a potentially incomplete sexp
-            ;; (or a non-self-terminating one, like a number) and the other to ensure that
-            ;; an eof really does come thru the calls to `read'. 
-            ;; the cleanup thunk clears out the extra eof, if one is still there after evaluation
+            ;; lets us know we are done with this one interaction
+            ;; (since there may be multiple expressions at the prompt)
             (send-eof-to-in-port)
-            (send-eof-to-in-port)
+            
             (set! prompt-position #f)
             (evaluate-from-port
              (get-in-port) 
              #f
              (λ ()
+               ;; clear out the eof object if it wasn't consumed
                (clear-input-port))))
           
           ;; prompt-position : (union #f integer)
@@ -924,6 +923,10 @@ TODO
           (define/public (set-submit-predicate p)
             (set! submit-predicate p))
           
+          ;; record this on an ivar in the class so that
+          ;; continuation jumps into old calls to evaluate-from-port
+          ;; continue to evaluate from the correct port.
+          (define get-sexp/syntax/eof #f)
           (define/public (evaluate-from-port port complete-program? cleanup) ; =Kernel=, =Handler=
               (send context disable-evaluation)
               (send context reset-offer-kill)
@@ -940,11 +943,11 @@ TODO
              (λ () ; =User=, =Handler=, =No-Breaks=
                (let* ([settings (current-language-settings)]
                       [lang (drscheme:language-configuration:language-settings-language settings)]
-                      [settings (drscheme:language-configuration:language-settings-settings settings)]
-                      [get-sexp/syntax/eof 
+                      [settings (drscheme:language-configuration:language-settings-settings settings)])
+                 (set! get-sexp/syntax/eof 
                        (if complete-program?
                            (send lang front-end/complete-program port settings user-teachpack-cache)
-                           (send lang front-end/interaction port settings user-teachpack-cache))])
+                           (send lang front-end/interaction port settings user-teachpack-cache)))
                  
                  ; Evaluate the user's expression. We're careful to turn on
                  ;   breaks as we go in and turn them off as we go out.

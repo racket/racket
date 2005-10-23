@@ -981,8 +981,8 @@ please adhere to these guidelines:
  (professional-languages "Professional Languages")
  (teaching-languages "Teaching Languages")
  (experimental-languages "Experimental Languages")
-  (not-really-languages "Not really languages")
-  (choose-a-language-language "Choose a language language")
+  (initial-language-category "Initial language")
+  (choose-a-language-language "Choose-a-language language")
  
  (module-language-one-line-summary "Run creates a REPL in the context of the module, including the module's declared language")
   

@@ -622,8 +622,8 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 void)
      
      (make-test "(write-special 1)"
-                "1"
-                "1"
+                "1#t"
+                "1#t"
                 #f
                 'interactions
                 #f
@@ -708,7 +708,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
                 void
                 void)
-
+     
      ;; graphical lambda tests
      (make-test (list "((" '("Special" "Insert λ") "(x) x) 1)")
                 "1"
@@ -1047,7 +1047,13 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
       (when (send (send drscheme-frame get-interactions-text) local-edit-sequence?)
         (error 'kill-test3 "in edit-sequence")))
     
-    
+    (define (callcc-test)
+      (error 'callcc-test)
+      "(define kont #f) (let/cc empty (set! kont empty))" ;; in defs
+      "(kont)" ;; in repl 1
+      "x" ;; in repl2
+      ;; make sure error message comes out
+      )
     ;; run the tests
     
     (when (file-exists? tmp-load-filename)
@@ -1058,4 +1064,6 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
     
     (run-test-in-language-level #f)
     (run-test-in-language-level #t)
+    (kill-tests)
+    (callcc-test)
     ))

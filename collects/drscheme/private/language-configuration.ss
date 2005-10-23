@@ -46,7 +46,11 @@
       ;; if a language is registered with this position, it is
       ;; considered the default language
       (define default-language-position
-        (list (string-constant not-really-languages)
+        (list (string-constant teaching-languages)
+              (string-constant how-to-design-programs)
+              (string-constant beginning-student))
+        #;
+        (list (string-constant initial-language-category)
               (string-constant choose-a-language-language)))
 
       ;; languages : (listof (instanceof language<%>))
@@ -1329,14 +1333,15 @@
                         (string-constant r5rs-one-line-summary)
                         r5rs-mixin))
           
-        (add-language
-         (make-simple 'mzscheme
-                      (list (string-constant not-really-languages)
-                            (string-constant choose-a-language-language))
-                      (list 10000 1000)
-                      #f
-                      "Helps the user choose an initial language"
-                      not-a-language-extra-mixin))))
+          #;
+          (add-language
+           (make-simple 'mzscheme
+                        (list (string-constant initial-language-category)
+                              (string-constant choose-a-language-language))
+                        (list 10000 1000)
+                        #f
+                        "Helps the user choose an initial language"
+                        not-a-language-extra-mixin))))
       
       (define (not-a-language-extra-mixin %)
         (class %
@@ -1471,6 +1476,24 @@
           (send link-sd set-delta-foreground "blue"))
         
         (define (display-text-pl lst)
+          (let ([icon-lst (car lst)]
+                [text-name (cadr lst)]
+                [lang (cddr lst)])
+            (display-two-line-choice 
+             icon-lst
+             lang
+             (λ (inner-txt)
+               (send inner-txt insert (format "~a\n~a" text-name (string-constant start-with-before)))
+               (send inner-txt change-style err-style-delta 0 (send inner-txt last-position))
+               (send inner-txt insert (lang-link-snip lang))
+               (let ([before-pos (send inner-txt last-position)])
+                 (send inner-txt insert (string-constant start-with-after))
+                 (send inner-txt change-style 
+                       err-style-delta 
+                       before-pos
+                       (send inner-txt last-position)))))))
+        
+        (define (display-two-line-choice icon-lst lang proc)
           (let* ([outer-txt (new text:standard-style-list%)]
                  [outer-es (new editor-snip% (editor outer-txt) (with-border? #f)
                                 [left-margin 0]
@@ -1480,22 +1503,11 @@
                  [inner-txt (new text:standard-style-list%)]
                  [inner-es (new editor-snip% (editor inner-txt) (with-border? #f)
                                 [top-margin 0] [bottom-margin 0])]
-                 [icon-lst (car lst)]
                  [icon-path
-                  (build-path (apply collection-path (cdr icon-lst)) (car icon-lst))]
-                 [name (cadr lst)]
-                 [lang (cddr lst)])style-delta%
+                  (build-path (apply collection-path (cdr icon-lst)) (car icon-lst))])
             (send outer-txt insert (make-object image-snip% icon-path))
             (send outer-txt insert inner-es)
-            (send inner-txt insert (format "~a\n~a" name (string-constant start-with-before)))
-            (send inner-txt change-style err-style-delta 0 (send inner-txt last-position))
-            (send inner-txt insert (lang-link-snip lang))
-            (let ([before-pos (send inner-txt last-position)])
-              (send inner-txt insert (string-constant start-with-after))
-              (send inner-txt change-style 
-                    err-style-delta 
-                    before-pos
-                    (send inner-txt last-position)))
+            (proc inner-txt)
             (send outer-txt change-style 
                   (make-object style-delta% 'change-alignment 'top)
                   0
