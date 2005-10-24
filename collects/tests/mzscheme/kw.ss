@@ -288,6 +288,7 @@
   ;; test syntax errors
   (t :st-err: <= (lambda/kw (x #:blah y) 1)
      :st-err: <= (lambda/kw (x #:rest) 1)
+     :st-err: <= (lambda/kw (x #:key k . r) 1)
      :st-err: <= (lambda/kw (x #:key k #:key o) 1)
      :st-err: <= (lambda/kw (x #:key k #:optional o) 1)
      :st-err: <= (lambda/kw (x #:optional k #:optional o) 1)

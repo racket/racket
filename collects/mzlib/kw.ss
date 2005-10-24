@@ -40,8 +40,17 @@
   ;; turns formals into a syntax list
   (define (formals->list formals)
     (syntax-case formals ()
-      [(formal ... . rest) ; dot is exactly like #:rest
-       (formals->list #'(formal ... #:rest rest))]
+      [(formal ... . rest)
+       ;; dot is exactly like #:rest, but don't allow it with other
+       ;; meta-keywords since its meaning is confusing
+       (let* ([formals (syntax->list #'(formal ...))]
+              [kwd (ormap (lambda (s) (and (keyword? (syntax-e* s)) s))
+                          formals)])
+         (if kwd
+           (serror #'rest "use #:rest or #:body instead of dot notation"
+                   ;; (syntax-e* kwd) <- confusing to show this
+                   )
+           (append formals (list #'#:rest #'rest))))]
       [(formal ...) (syntax->list formals)]))
   ;; is an expression simple? (=> evaluating cannot have side effects)
   (define (simple-expr? expr)
@@ -111,9 +120,9 @@
         ([(only-vars?) (and (pair? only-vars?) (car only-vars?))]
          [(opts keys0) (values (map process-opt opts) (map process-key keys0))]
          [(rest body rest-keys all-keys other-keys)
-          (apply values
-                 (map (lambda (k) (cond [(assq k rests) => cdr] [else #f]))
-                      '(#:rest #:body #:rest-keys #:all-keys #:other-keys)))]
+          (apply values (map (lambda (k)
+                               (cond [(assq k rests) => cdr] [else #f]))
+                             rest-like-kwds))]
          [(rest* body* other-keys*)
           (values (or rest (gensym #'rest))
                   (if (and body (identifier? body)) body (gensym #'body))
