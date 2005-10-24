@@ -311,12 +311,20 @@
                                next-loop
                                (error* 'name "unknown keyword: ~e"
                                        (car body*))))])
-            (if (not allow-anything?) ; normal code
+            (if (and allow-anything?
+                     (not body) (not rest-keys) (not all-keys) (not other-keys))
+              ;; allowing anything and don't need special rests, so no loop
+              #'expr
+              ;; normal code
               #`(let loop loop-vars
-                  (if (and (pair? body*) (keyword? (car body*)))
-                    (if (pair? (cdr body*))
-                      next-loop
-                      (error* 'name "keyword list not balanced: ~e" rest*))
+                  (if (and (pair? body*) (keyword? (car body*))
+                           #,@(if allow-anything? #'((pair? (cdr body*))) '()))
+                    #,(if allow-anything? ; already checker pair? above
+                        #'next-loop
+                        #'(if (pair? (cdr body*))
+                            next-loop
+                            (error* 'name "keyword list not balanced: ~e"
+                                    rest*)))
                     #,(if allow-body?
                         (if (and body (not (identifier? body)))
                           (with-syntax ([name (string->symbol
@@ -332,17 +340,7 @@
                         #'(if (null? body*)
                             expr
                             (error* 'name "expecting a ~s keyword got: ~e"
-                                    'keywords (car body*))))))
-              ;; allowing anything: can't use rest-like except for rest
-              (let ([bad (cond [body       `(,body       #:body)]
-                               [rest-keys  `(,rest-keys  #:rest-keys)]
-                               [all-keys   `(,all-keys   #:all-keys)]
-                               [other-keys `(,other-keys #:other-keys)]
-                               [else #f])])
-                (if bad
-                  (serror (car bad) "cannot use #:allow-anything with ~a"
-                          (cadr bad))
-                  #'expr)))))))
+                                    'keywords (car body*)))))))))))
     ;; ------------------------------------------------------------------------
     ;; generates the part of the body that deals with rest-related stuff
     (define (make-keys-body expr)

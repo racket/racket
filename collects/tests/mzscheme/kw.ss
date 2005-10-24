@@ -279,6 +279,7 @@
        (f #:x 1 #:x 2 #:y) => 1))
   (t '(#:x 1 #:z) <= ((lambda/kw (#:key x #:allow-anything #:rest r) r)
                       #:x 1 #:z))
+  (t '(#:z) <= ((lambda/kw (#:key x #:allow-anything #:body r) r) #:x 1 #:z))
 
   ;; make sure that internal definitions work
   (let ([f (lambda/kw (#:key x) (define xx x) xx)])
@@ -303,10 +304,6 @@
      :st-err: <= (lambda/kw (x #:rest r #:allow-anything #:forbid-anything) 1)
      :st-err: <= (lambda/kw (#:key a #:forbid-other-keys #:allow-anything) 1)
      :st-err: <= (lambda/kw (#:key a #:forbid-duplicate-keys #:allow-anything) 1)
-     :st-err: <= (lambda/kw (#:key a #:body r #:allow-anything) 1)
-     :st-err: <= (lambda/kw (#:key a #:rest-keys r #:allow-anything) 1)
-     :st-err: <= (lambda/kw (#:key a #:all-keys r #:allow-anything) 1)
-     :st-err: <= (lambda/kw (#:key a #:other-keys r #:allow-anything) 1)
      :st-err: <= (lambda/kw (#:key a #:forbid-other-keys #:allow-anything) 1)
      :st-err: <= (lambda/kw (#:key a #:forbid-duplicate-keys #:allow-anything) 1)
      :st-err: <= (lambda/kw (#:key a #:forbid-body #:allow-anything) 1)
