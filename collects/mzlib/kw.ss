@@ -95,20 +95,26 @@
   ;; --------------------------------------------------------------------------
   ;; helpers for process-vars
   (define ((process-mode modes rests) processed-spec)
-    (let ([allow  (memq (cadr processed-spec) modes)]
-          [forbid (memq (caddr processed-spec) modes)])
+    (let ([allow      (memq (cadr processed-spec) modes)]
+          [forbid     (memq (caddr processed-spec) modes)]
+          [allow-any  (memq #:allow-anything modes)]
+          [forbid-any (memq #:forbid-anything modes)])
       (cond
        [(and allow forbid)
         (serror #f "contradicting #:...-~a keywords" (car processed-spec))]
-       [(and forbid (memq #:allow-anything modes))
+       [(and forbid allow-any)
         (serror #f "~a contradicts #:allow-anything" (caddr processed-spec))]
+       [(and allow forbid-any)
+        (serror #f "~a contradicts #:forbid-anything" (cadr processed-spec))]
        [(ormap (lambda (k) (assq k rests)) (cadddr processed-spec))
         => ; forced?
         (lambda (r)
-          (when forbid (serror #f "cannot ~s with ~s" (car forbid) (car r)))
+          (when (or forbid forbid-any)
+            (serror #f "cannot ~s with ~s"
+                    (car (or forbid forbid-any)) (car r)))
           #t)]
-       [allow #t]
-       [forbid #f]
+       [(or allow allow-any) #t]
+       [(or forbid forbid-any) #f]
        [else (ormap (lambda (k) (and (assq k rests) #t)) ; suggested?
                     (car (cddddr processed-spec)))])))
   ;; --------------------------------------------------------------------------
