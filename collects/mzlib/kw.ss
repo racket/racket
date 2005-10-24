@@ -4,16 +4,17 @@
 
 (begin-for-syntax ; -> configuration for lambda/kw
   ;; must appear at the end, each with exactly one variable
-  (define rest-like-kwds '(#:rest #:body #:rest-keys #:all-keys #:other-keys))
+  (define rest-like-kwds
+    '(#:rest #:body #:all-keys #:other-keys #:other-keys+body))
   ;; mode keys are in the end, without variable, cannot have contradictions
   ;; each descriptor for #:allow-kwd and #:forbid-kwd is
   ;;   (kwd-sym (forcer ...) (enabler ...))
   ;; `forcer' is a rest-like keyword that forces the mode, `enabler' is a
   ;; rest-like keyword that makes it on by default
   (define mode-keyword-specs
-    '((other-keys     (#:other-keys) (#:rest #:rest-keys #:all-keys))
+    '((other-keys     (#:other-keys) (#:rest #:all-keys #:other-keys+body))
       (duplicate-keys ()             (#:rest #:all-keys))
-      (body           (#:body)       (#:rest #:rest-keys))
+      (body           (#:body)       (#:rest #:other-keys+body))
       (anything       ()             ())))
   ;; precomputed mode keyword stuff
   (define processed-keyword-specs
@@ -125,7 +126,7 @@
     (let*-values
         ([(only-vars?) (and (pair? only-vars?) (car only-vars?))]
          [(opts keys0) (values (map process-opt opts) (map process-key keys0))]
-         [(rest body rest-keys all-keys other-keys)
+         [(rest body all-keys other-keys other-keys+body)
           (apply values (map (lambda (k)
                                (cond [(assq k rests) => cdr] [else #f]))
                              rest-like-kwds))]
@@ -140,18 +141,19 @@
          [(keys)
           (with-syntax ([r rest*])
             (map (lambda (k)
-                   (list (car k)
-                         (if (simple-expr? (caddr k))
-                           ;; simple case => no closure
-                           #`(getarg* r #,(cadr k) #,(caddr k))
-                           #`(getarg r #,(cadr k) (lambda () #,(caddr k))))))
+                   (list
+                    (car k)
+                    (if (simple-expr? (caddr k))
+                      ;; simple case => no closure
+                      #`(keyword-get* r #,(cadr k) #,(caddr k))
+                      #`(keyword-get  r #,(cadr k) (lambda () #,(caddr k))))))
                  keys0))]
          [(all-ids)
           `(,@vars ,@(map car opts) ,@(map car keys) ,rest* ,body*
             ;; make up names if not specified, to make checking easy
-            ,(or rest-keys (gensym #'rest-keys))
-            ,(or all-keys (gensym #'all-keys))
-            ,(or other-keys (gensym #'other-keys))
+            ,(or all-keys        (gensym #'all-keys))
+            ,(or other-keys      (gensym #'other-keys))
+            ,(or other-keys+body (gensym #'other-keys+body))
             ,@(if (and body (not (identifier? body)))
                 (parse-formals body #t) '()))])
       (cond [only-vars? all-ids]
@@ -159,10 +161,10 @@
              => (lambda (d) (serror d "not an identifier"))]
             [(check-duplicate-identifier all-ids)
              => (lambda (d) (serror d "duplicate argument name"))]
-            [else (values vars opts keys rest rest* body body* rest-keys
-                          all-keys other-keys other-keys* other-keys-mode
-                          duplicate-keys-mode body-mode anything-mode
-                          (map cadr keys0))])))
+            [else (values vars opts keys rest rest* body body* all-keys
+                          other-keys other-keys* other-keys+body
+                          other-keys-mode duplicate-keys-mode body-mode
+                          anything-mode (map cadr keys0))])))
   ;; --------------------------------------------------------------------------
   ;; parses formals, returns list of normal vars, optional var specs, key var
   ;; specs, an alist of rest-like kw+vars, and a mode for allowing other keys
@@ -211,7 +213,7 @@
   (define (generate-body formals expr)
     ;; relations:
     ;;   rest = (append all-keys body)
-    ;;   rest-keys = (append other-keys body)
+    ;;   other-keys+body = (append other-keys body)
     (define-values (vars        ; plain variables
                     opts        ; optionals, each is (id default)
                     keys        ; keywords, each is (id key default)
@@ -219,10 +221,10 @@
                     rest*       ;   always an id
                     body        ; rest after all keyword-vals (id or formals)
                     body*       ;   always an id
-                    rest-keys   ; rest without specified keys
                     all-keys    ; keyword-vals without body
                     other-keys  ; unprocessed keyword-vals
                     other-keys* ;   always an id
+                    other-keys+body ; rest without specified keys
                     allow-other-keys?     ; allowing other keys?
                     allow-duplicate-keys? ; allowing duplicate keys?
                     allow-body?           ; allowing body after keys?
@@ -254,7 +256,7 @@
     ;; ------------------------------------------------------------------------
     ;; generates the part of the body that deals with rest-related stuff
     (define (make-rest-body expr)
-      (define others? (or other-keys rest-keys))
+      (define others? (or other-keys other-keys+body))
       (with-syntax ([name        name]
                     [rest*       rest*]
                     [body*       body*]
@@ -262,7 +264,7 @@
                     [expr        expr]
                     [all-keys*   all-keys]
                     [other-keys* other-keys*]
-                    [rest-keys*  rest-keys]
+                    [other-keys+body* other-keys+body]
                     [seen-keys   #'seen-keys])
         (with-syntax
             ([loop-vars
@@ -295,11 +297,11 @@
                          #,@(if others?
                               #'([other-keys* (reverse! other-keys*)])
                               '())
-                         #,@(cond [(and other-keys rest-keys)
-                                   #'([rest-keys*
+                         #,@(cond [(and other-keys other-keys+body)
+                                   #'([other-keys+body*
                                        (append other-keys* body*)])]
-                                  [rest-keys ; can destroy other-keys
-                                   #'([rest-keys*
+                                  [other-keys+body ; can destroy other-keys
+                                   #'([other-keys+body*
                                        (append! other-keys* body*)])]
                                   [else '()]))
                     expr)
@@ -311,8 +313,8 @@
                                next-loop
                                (error* 'name "unknown keyword: ~e"
                                        (car body*))))])
-            (if (and allow-anything?
-                     (not body) (not rest-keys) (not all-keys) (not other-keys))
+            (if (and allow-anything? (not body)
+                     (not other-keys+body) (not all-keys) (not other-keys))
               ;; allowing anything and don't need special rests, so no loop
               #'expr
               ;; normal code
@@ -387,16 +389,16 @@
           (current-continuation-marks))))
 
 ;; keyword searching utility (note: no errors for odd length)
-(provide getarg)
-(define (getarg args keyword . not-found)
+(provide keyword-get)
+(define (keyword-get args keyword . not-found)
   (let loop ([args args])
     (cond [(or (null? args) (null? (cdr args)) (not (keyword? (car args))))
            (and (pair? not-found) ((car not-found)))]
           [(eq? (car args) keyword) (cadr args)]
           [else (loop (cddr args))])))
 
-;; a private version of getarg that is used with simple values
-(define (getarg* args keyword . not-found)
+;; a private version of keyword-get that is used with simple values
+(define (keyword-get* args keyword . not-found)
   (let loop ([args args])
     (cond [(or (null? args) (null? (cdr args)) (not (keyword? (car args))))
            (and (pair? not-found) (car not-found))]
