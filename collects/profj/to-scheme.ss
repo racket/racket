@@ -626,7 +626,8 @@
                                                                   (accesses-protected methods))
                                                           overridden-methods))
                (dynamic-method-defs (generate-dyn-method-defs names-for-dynamic))
-               (wrapper-classes (append (generate-wrappers (class-name) 
+               (wrapper-classes (append (generate-wrappers (class-name)
+                                                           (parent-name)
                                                            (filter
                                                             (lambda (m) (not (or (private? (method-record-modifiers m))
                                                                                  (static? (method-record-modifiers m)))))
@@ -726,25 +727,28 @@
                                             (accesses-protected methods)
                                             (accesses-private methods)))
                              
-                             ,@dynamic-method-defs
+                             ;,@dynamic-method-defs
                              
                              (define/override (my-name) ,(class-name))
                              
-                             (define/override (field-names)
-                               (append (super field-names)
-                                       (list ,@(map (lambda (n) (id-string (field-name n)))
-                                                    (append (accesses-public fields)
-                                                            (accesses-package fields)
-                                                            (accesses-protected fields)
-                                                            (accesses-private fields))))))
-
-                             (define/override (field-values)
-                               (append (super field-values)
-                                       (list ,@(map (lambda (n) (build-identifier (build-var-name (id-string (field-name n)))))
-                                                    (append (accesses-public fields)
-                                                            (accesses-package fields)
-                                                            (accesses-protected fields)
-                                                            (accesses-private fields))))))
+                             ,@(let ((non-static-fields
+                                      (append (accesses-public fields)
+                                              (accesses-package fields)
+                                              (accesses-protected fields)
+                                              (accesses-private fields))))
+                                 (if (null? non-static-fields)
+                                     null
+                                     `((define/override (field-names)
+                                         (append (super field-names)
+                                                 (list ,@(map 
+                                                          (lambda (n) (id-string (field-name n)))
+                                                          non-static-fields
+                                                          ))))
+                                       (define/override (field-values)
+                                         (append (super field-values)
+                                                 (list ,@(map 
+                                                          (lambda (n) (build-identifier (build-var-name (id-string (field-name n)))))
+                                                          non-static-fields)))))))
                              
                              (define field-accessors ,(build-field-table create-get-name 'get fields))
                              (define field-setters ,(build-field-table create-set-name 'set fields))
@@ -757,6 +761,8 @@
                                     (members-init class-members))
                              
                              ))
+                          
+                          ,@wrapper-classes
                           
                           ,@(create-generic-methods (append (accesses-public methods)
                                                             (accesses-package methods)
@@ -789,7 +795,7 @@
                                                                    (initialize-src i)
                                                                    type-recs))
                                  (members-static-init class-members))
-                          ,@wrapper-classes
+                          
                           )
                   #f)))
             
@@ -817,16 +823,24 @@
                                (lambda (v) (is-a? v ,(build-identifier (string-append "guard-convert-" class-name))))))))
 
   ;generate-wrappers: string (list method-record) (list field) -> (list sexp)
-  (define (generate-wrappers class-name methods fields)
-    (let* ((normal-methods (filter 
-                            (lambda (m)
-                              (not (or (eq? (method-record-rtype m) 'ctor)
-                                       (method-record-override m)))) methods))
+  (define (generate-wrappers class-name super-name methods fields)
+    (let* ((wrapped-methods
+            (filter 
+             (lambda (m)
+               #;(printf "~a (~a : ~a ~a)~n" (method-record-name m) (method-record-class m) class-name
+                       (method-record-override m))
+               (and (not (eq? (method-record-rtype m) 'ctor))
+                    (equal? (car (method-record-class m)) class-name)
+                    (not (method-record-override m))))
+             methods))
+           (add-ca 
+            (lambda (name) (build-identifier (string-append "convert-assert-" name))))
+           (add-gc 
+            (lambda (name) (build-identifier (string-append "guard-convert-" name))))
            (class-text
-            (lambda (name from-dynamic? extra-methods)
+            (lambda (name super-name from-dynamic? extra-methods)
               `(define ,name
-                 (class object%
-                   (super-new)
+                 (class ,super-name
                    (init w p n s c)
                    (define-values (wrapped-obj pos-blame neg-blame src cc-marks) (values null null null null null))
                    (set! wrapped-obj w)
@@ -834,26 +848,25 @@
                    (set! neg-blame n)
                    (set! src s)
                    (set! cc-marks c)
+                   (super-instantiate (w p n s c))
                   
                    ,(generate-wrapper-fields fields from-dynamic?)
                    
-                   ,@(generate-wrapper-methods (filter (lambda (m) (not (eq? (method-record-rtype m) 'ctor))) 
-                                                       normal-methods) #f from-dynamic?)
+                   ,@(generate-wrapper-methods
+                      (filter (lambda (m) (not (eq? (method-record-rtype m) 'ctor)))
+                              wrapped-methods) #f from-dynamic?)
                    ,@extra-methods
-                   
-                   (define/public (my-name) (send wrapped-obj my-name))
-                   (define/public (field-names) (send wrapped-obj field-names))
-                   (define/public (field-values) (send wrapped-obj field-values))        
-                   (define/public (fields-for-display) (send wrapped-obj fields-for-display))
-                   
                    ))))
-           (dynamic-callables (refine-method-list methods)))
+           (dynamic-callables (refine-method-list wrapped-methods)))
       (list 
        `(define (,(build-identifier (string-append "wrap-convert-assert-" class-name)) obj p n s c)
-          (c:contract ,(methods->contract normal-methods) obj p n s)
-          (make-object ,(build-identifier (string-append "convert-assert-" class-name)) obj p n s c))
-       (class-text (build-identifier (string-append "convert-assert-" class-name)) #t null) 
-       (class-text (build-identifier (string-append "guard-convert-" class-name)) #f 
+          (and ,@(map method->check/error
+                      (filter (lambda (m) (not (eq? 'ctor (method-record-rtype m)))) methods)))
+          #;(c:contract ,(methods->contract (filter (lambda (m) (not (eq? 'ctor (method-record-rtype m))))
+                                                    methods)) obj p n s)
+          (make-object ,(add-ca class-name) obj p n s c))
+       (class-text (add-ca class-name) (add-ca super-name) #t null)
+       (class-text (add-gc class-name) (add-gc super-name) #f 
                    (generate-wrapper-methods dynamic-callables #t #f)))))
     
   ;generate-wrapper-fields: (list field) boolean -> sexp
@@ -914,6 +927,18 @@
                                                                         (method-record-atypes m)))
                                   (c:-> ,@(map (lambda (a) 'c:any/c) (method-record-atypes m)) c:any/c)))
                              methods)))
+  
+  ;method->check/error: method-record -> sexp
+  (define (method->check/error method)
+    (let* ((name (method-record-name method))
+           (m-name (mangle-method-name name (method-record-atypes method)))
+           (num-args (length (method-record-atypes method))))
+    `(or (object-method-arity-includes? obj
+                                        (quote ,(build-identifier m-name))
+                                        ,num-args)
+         (raise (make-exn:fail 
+                 (format "~a broke the contract with ~a here, expected an object with a method ~a accepting ~a args"
+                         n p ,name ,num-args) s)))))
 
   ;convert-value: sexp type boolean -> sexp
   (define (convert-value value type from-dynamic?)
@@ -977,8 +1002,6 @@
         ((and (ref-type? type) (equal? string-type type))
          (assert-value value 'string from-dynamic? kind name))
         (else value))))
-                           
-
   
   ;Removes from the list all methods that are not callable from a dynamic context
   ;refine-method-list: (list method-record) -> (list method-record)
@@ -1236,6 +1259,7 @@
                                             ,@(make-method-names (members-method members) null)))
                       ,@(create-static-fields static-field-names (members-field members))
                       ,@(append (generate-wrappers (class-name)
+                                                   "Object"
                                                    (class-record-methods 
                                                     (send type-recs get-class-record (list (class-name))))
                                                    null)
@@ -1432,14 +1456,31 @@
         null
         (let* ((field (car fields))
                (class (build-identifier (class-name)))
+               (ca-class (build-identifier (string-append "convert-assert-" (class-name))))
                (quote-name (build-identifier (build-var-name (id-string (field-name field)))))
                (getter (car names))
+               (setter (cadr names))
                (final (final? (map modifier-kind (field-modifiers field)))))
-          (append (cons (make-syntax #f `(define ,getter
-                                           (class-field-accessor ,class ,quote-name)) #f)
+          (append (cons (make-syntax #f
+                                     `(define ,getter
+                                        (let ((normal-get (class-field-accessor ,class ,quote-name))
+                                              (dyn-get (class-field-accessor ,ca-class ,quote-name)))
+                                          (lambda (obj)
+                                            (if (is-a? obj ,class)
+                                                (normal-get obj)
+                                                (dyn-get obj)))))
+                                     #f)
                         (if (not final)
-                            (list (make-syntax #f `(define ,(cadr names)
-                                                     (class-field-mutator ,class ,quote-name)) #f))
+                            (list 
+                             (make-syntax #f 
+                                          `(define ,setter
+                                             (let ((normal-set (class-field-mutator ,class ,quote-name))
+                                                   (dyn-set (class-field-mutator ,ca-class ,quote-name)))
+                                               (lambda (obj val)
+                                                 (if (is-a? obj ,class)
+                                                     (normal-set obj val)
+                                                     (dyn-set obj val)))))
+                                          #f))
                             null))
                   (create-field-accessors (if final (cdr names) (cddr names)) (cdr fields))))))
   
@@ -1468,9 +1509,9 @@
                (getter (create-get-name s-name))
                (setter (create-set-name s-name)))
           (append (list (make-syntax #f `(define/public (,getter my-val) ,name) (build-src (id-src (field-name field))))
-                        (make-syntax #f `(define/public (,setter m-obj my-val) (set! ,name my-val)) 
+                        (make-syntax #f `(define/public (,setter m-obj my-val) (set! ,name my-val))
                                      (build-src (id-src (field-name field)))))
-                  (create-private-setters/getters (cdr fields))))))  
+                  (create-private-setters/getters (cdr fields))))))
   
   ;make-static-fiel-names: (list field) -> (list string)
   (define (make-static-field-names fields)

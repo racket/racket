@@ -351,17 +351,20 @@
                        (datum->syntax-object #f `(parse-java-full-program ,(parse port name level)) #f)))))))
           (define/public (front-end/interaction port settings teachpack-cache)
             (mred? #t)
-            (let ([name (object-name port)])
+            (let ([name (object-name port)]
+                  [executed? #f])
               (lambda ()
-                (if (eof-object? (peek-char-or-special port))
+                (if executed? #;(eof-object? (peek-char-or-special port))
                     eof
-                    (syntax-as-top
-                     (datum->syntax-object 
-                      #f
-                      #;`(compile-interactions-helper ,(lambda (ast) (compile-interactions-ast ast name level execute-types))
-                                                    ,(parse-interactions port name level))
-                      `(parse-java-interactions ,(parse-interactions port name level) ,name)
-                      #f))))))
+                    (begin
+                      (set! executed? #t)
+                      (syntax-as-top
+                       (datum->syntax-object 
+                        #f
+                        #;`(compile-interactions-helper ,(lambda (ast) (compile-interactions-ast ast name level execute-types))
+                                                        ,(parse-interactions port name level))
+                          `(parse-java-interactions ,(parse-interactions port name level) ,name)
+                          #f)))))))
 
           ;process-extras: (list struct) type-record -> (list syntax)
           (define/private (process-extras extras type-recs)
@@ -543,7 +546,8 @@
               (else (add1 (total-length (cdr lst))))))
               
           (define/public (render-value/format value settings port width) 
-            (render-value value settings port)(newline port))
+            (render-value value settings port)
+            (newline port))
           
           (define/public (create-executable fn parent . args)
             (printf "create-exe called~n")

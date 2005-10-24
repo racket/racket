@@ -1,4 +1,3 @@
-#cs
 (module Object-composite mzscheme
   
   (require (lib "class.ss")
@@ -935,9 +934,11 @@
     (make-object convert-assert-Throwable obj p n s c))
   
   (define convert-assert-Throwable
-    (class object%
-      
+    (class convert-assert-Object
+
       (init w p n s c)
+      (super-instantiate (w p n s c))
+      
       (define-values  (wrapped pos-blame neg-blame src cc-marks) (values null null null null null))
       (set! wrapped w)
       (set! pos-blame p)
@@ -977,55 +978,16 @@
       (define/public (printStackTrace-PrintStream printStream) (send wrapped printStackTrace-PrintStream)) 
       (define/public (printStackTrace-PrintWriter pW) (send wrapped printStackTrace-PrintWriter))
       (define/public (fillInStackTrace) (send wrapped fillInStackTrace))      
-      (define/public (clone) (send wrapped clone))        
-      (define/public (equals-java.lang.Object obj)
-        (let ((val (send wrapped equals-java.lang.Object 
-                         (make-object guard-convert-Object obj pos-blame neg-blame src cc-marks))))
-          (unless (boolean? val)
-            (raise (make-exn:fail 
-                    (string->immutable-string
-                     (format "~a broke ~a contract here; Throwable's equals expects boolean return, given ~a"
-                             pos-blame neg-blame val)) cc-marks)))
-          val))
-              
-      (define/public (finalize) (send wrapped finalize))
-      (define/public (getClass) (send wrapped getClass))
-
-      (define/public (hashCode) 
-        (let ((val (send wrapped hashCode)))
-          (unless (integer? val)
-            (raise (make-exn:fail 
-                    (string->immutable-string
-                     (format "~a broke ~a contract here; Throwable's hashCode expects int return, given ~a"
-                             pos-blame neg-blame val)) cc-marks)))
-          val))
-      
-      (define/public (notify) (send wrapped notify))
-      (define/public (notifyAll) (send wrapped notifyAll))
-      (define/public (toString)
-        (let ((val (send wrapped toString)))
-          (unless (string? val)
-            (raise (make-exn:fail 
-                    (string->immutable-string
-                     (format "~a broke ~a contract here: Throwable's toString expects String return, given ~a"
-                             pos-blame neg-blame val)) cc-marks)))
-          (make-java-string val)))
-      (define/public (wait) (send wrapped wait))
-      (define/public (wait-long l) (send wrapped wait-long l))
-      (define/public (wait-long-int l i) (send wrapped wait-long l i))
-      (define/public (my-name) (send wrapped my-name))
-      (define/public (field-names) (send wrapped field-names))
-      (define/public (field-values) (send wrapped field-values))        
-      (define/public (fields-for-display) (send wrapped fields-for-display))
-      (super-instantiate ())))
+      ))
   
   (define dynamic-Throwable/c
     (c:flat-named-contract "Throwable" (lambda (v) (is-a? v convert-assert-Throwable))))
      
   (define guard-convert-Throwable
-    (class object%
-      
+    (class guard-convert-Object
+
       (init w p n s c)
+      (super-instantiate (w p n s c))
       (define-values (wrapped pos-blame neg-blame src cc-marks) (values null null null null null))
       (set! wrapped w)
       (set! pos-blame p)
@@ -1071,66 +1033,6 @@
       (define/public (fillInStackTrace) (send wrapped fillInStackTrace))
       (define/public (fill-in-stack-trace) (send wrapped fillInStackTrace))
       
-      (define/public (clone) (send wrapped clone))
-      (define/public (equals-java.lang.Object . obj)
-        (unless (= (length obj) 1)
-          (raise (make-exn:fail:contract:arity
-                  (string->immutable-string
-                   (format "~a broke ~a contract here: Throwable's equals expects to be called with 1 argument, given ~n"
-                           pos-blame neg-blame (length obj))) cc-marks)))
-        (send wrapped equals-java.lang.Object (wrap-convert-assert-Object (car obj) pos-blame neg-blame src cc-marks)))
-      (define/public (equals . obj)
-        (unless (= (length obj) 1)
-          (raise (make-exn:fail:contract:arity
-                  (string->immutable-string
-                   (format "~a broke ~a contract here: Throwable's equals expects to be called with 1 argument, given ~n"
-                           pos-blame neg-blame (length obj))) cc-marks)))
-        (send wrapped equals-java.lang.Object (wrap-convert-assert-Object (car obj) pos-blame neg-blame src cc-marks)))
-      (define/public (finalize) (send wrapped finalize))
-      (define/public (getClass) (send wrapped getClass))
-      (define/public (get-class) (send wrapped getClass))
-      (define/public (hashCode) (send wrapped hashCode))
-      (define/public (hash-code) (send wrapped hashCode))
-      (define/public (notify) (send wrapped notify))
-      (define/public (notifyAll) (send wrapped notifyAll))
-      (define/public (notify-all) (send wrapped notifyAll))        
-      (define/public (my-name) (send wrapped my-name))
-      (define/public (toString)
-        (send (send wrapped toString) get-mzscheme-string))
-      (define/public (to-string) (send (send wrapped toString) get-mzscheme-string))
-      (define/public (wait) (send wrapped wait))
-      (define/public (wait-long . l)
-        (unless (= (length l) 1)
-          (raise (make-exn:fail:contract:arity
-                  (string->immutable-string
-                   (format "~a broke ~a contract here: Throwable's wait-long expects to be called with 1 argument, given ~n"
-                           pos-blame neg-blame (length l))) cc-marks)))
-        (unless (integer? (car l))
-          (raise (make-exn:fail 
-                  (string->immutable-string
-                   (format "~a broke ~a contract here: Throwable's wait that takes a long argument expected long, given ~a"
-                           pos-blame neg-blame (car l))) cc-marks)))
-        (send wrapped wait-long (car l)))
-      (define/public (wait-long-int . l) 
-        (unless (= (length l) 2)
-          (raise (make-exn:fail:contract:arity
-                  (string->immutable-string
-                   (format "~a broke ~a contract here: Throwable's wait-long-int expects to be called with 2 arguments, given ~n"
-                           pos-blame neg-blame (length l))) cc-marks)))
-        (unless (integer? (car l))
-          (raise (make-exn:fail 
-                  (string->immutable-string
-                   (format "~a broke ~a contract here: Throwable's wait-long-int expected long, given ~a"
-                           pos-blame neg-blame (car l))) cc-marks)))
-        (unless (integer? (cadr l))
-          (raise (make-exn:fail 
-                  (string->immutable-string
-                   (format "~a broke ~a contract here: Throwable's wait-long-int expected int, given ~a"
-                           pos-blame neg-blame (cadr l))) cc-marks)))
-        (send wrapped wait-long (car l) (cadr l)))
-      (define/public (field-names) (send wrapped field-names))
-      (define/public (field-values) (send wrapped field-values))        
-      (define/public (fields-for-display) (send wrapped fields-for-display))
       (super-instantiate ())))
   
   (define static-Throwable/c
