@@ -262,11 +262,23 @@
        :rt-err:         <= (f #:x 1 #:y #:x #:x 11 2 #:x 3 #:y #:x #:x 33)))
   (let ([f (lambda/kw (#:key x y #:body (a #:key (xx #:x #f) (yy #:y #f)))
              (list x y a xx yy))])
-    (t '(1 #f 2 3 #f)   <= (f #:x 1 2 #:x 3))
-    (t '(1 #:x 2 3 #:x) <= (f #:x 1 #:y #:x        2 #:x 3 #:y #:x))
-    (t :rt-err:         <= (f #:x 1 #:y #:x #:x 11 2 #:x 3 #:y #:x))
-    (t :rt-err:         <= (f #:x 1 #:y #:x        2 #:x 3 #:y #:x #:x 33))
-    (t :rt-err:         <= (f #:x 1 #:y #:x #:x 11 2 #:x 3 #:y #:x #:x 33)))
+    (t '(1 #f 2 3 #f)   <= (f #:x 1 2 #:x 3)
+       '(1 #:x 2 3 #:x) <= (f #:x 1 #:y #:x        2 #:x 3 #:y #:x)
+       :rt-err:         <= (f #:x 1 #:y #:x #:x 11 2 #:x 3 #:y #:x)
+       :rt-err:         <= (f #:x 1 #:y #:x        2 #:x 3 #:y #:x #:x 33)
+       :rt-err:         <= (f #:x 1 #:y #:x #:x 11 2 #:x 3 #:y #:x #:x 33)))
+
+  ;; #:allow-anything does not check for imbalanced keyword-values
+  (let ([f (lambda/kw (#:key x #:allow-anything) x)])
+    (t (f #:x 1)           => 1
+       (f #:x 1 2)         => 1
+       (f #:x 1 #:y)       => 1
+       (f #:x 1 #:x)       => 1
+       (f #:x 1 #:y 1)     => 1
+       (f #:x 1 #:x 2)     => 1
+       (f #:x 1 #:x 2 #:y) => 1))
+  (t '(#:x 1 #:z) <= ((lambda/kw (#:key x #:allow-anything #:rest r) r)
+                      #:x 1 #:z))
 
   ;; make sure that internal definitions work
   (let ([f (lambda/kw (#:key x) (define xx x) xx)])
@@ -282,6 +294,21 @@
      :st-err: <= (lambda/kw (x #:rest r #:optional o) 1)
      :st-err: <= (lambda/kw (x #:rest r #:forbid-other-keys #:allow-other-keys) 1)
      :st-err: <= (lambda/kw (x #:rest r #:allow-other-keys #:forbid-other-keys) 1)
+     :st-err: <= (lambda/kw (x #:rest r #:forbid-duplicate-keys #:allow-duplicate-keys) 1)
+     :st-err: <= (lambda/kw (x #:rest r #:allow-duplicate-keys #:forbid-duplicate-keys) 1)
+     :st-err: <= (lambda/kw (x #:rest r #:forbid-body #:allow-body) 1)
+     :st-err: <= (lambda/kw (x #:rest r #:allow-body #:forbid-body) 1)
+     :st-err: <= (lambda/kw (x #:rest r #:forbid-anything #:allow-anything) 1)
+     :st-err: <= (lambda/kw (x #:rest r #:allow-anything #:forbid-anything) 1)
+     :st-err: <= (lambda/kw (#:key a #:forbid-other-keys #:allow-anything) 1)
+     :st-err: <= (lambda/kw (#:key a #:forbid-duplicate-keys #:allow-anything) 1)
+     :st-err: <= (lambda/kw (#:key a #:body r #:allow-anything) 1)
+     :st-err: <= (lambda/kw (#:key a #:rest-keys r #:allow-anything) 1)
+     :st-err: <= (lambda/kw (#:key a #:all-keys r #:allow-anything) 1)
+     :st-err: <= (lambda/kw (#:key a #:other-keys r #:allow-anything) 1)
+     :st-err: <= (lambda/kw (#:key a #:forbid-other-keys #:allow-anything) 1)
+     :st-err: <= (lambda/kw (#:key a #:forbid-duplicate-keys #:allow-anything) 1)
+     :st-err: <= (lambda/kw (#:key a #:forbid-body #:allow-anything) 1)
      :st-err: <= (lambda/kw (x #:rest r1 #:rest r2) 1)
      :st-err: <= (lambda/kw (x #:rest) 1)
      :st-err: <= (lambda/kw (x #:rest r1 r2) 1)

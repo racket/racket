@@ -13,7 +13,8 @@
   (define mode-keyword-specs
     '((other-keys     (#:other-keys) (#:rest #:rest-keys #:all-keys))
       (duplicate-keys ()             (#:rest #:all-keys))
-      (body           (#:body)       (#:rest #:rest-keys))))
+      (body           (#:body)       (#:rest #:rest-keys))
+      (anything       ()             ())))
   ;; precomputed mode keyword stuff
   (define processed-keyword-specs
     (map (lambda (ks)
@@ -31,10 +32,9 @@
 (define-syntax (lambda/kw stx)
   ;; --------------------------------------------------------------------------
   ;; easy syntax errors
-  (define original-formals #f)
   (define (serror sub fmt . args)
-    (raise-syntax-error
-     #f (apply format fmt args) stx (or sub original-formals)))
+    (apply raise-syntax-error
+           #f (apply format fmt args) stx (if sub (list sub) '())))
   ;; contents of syntax
   (define (syntax-e* x) (if (syntax? x) (syntax-e x) x))
   ;; turns formals into a syntax list
@@ -91,6 +91,8 @@
       (cond
        [(and allow forbid)
         (serror #f "contradicting #:...-~a keywords" (car processed-spec))]
+       [(and forbid (memq #:allow-anything modes))
+        (serror #f "~a contradicts #:allow-anything" (caddr processed-spec))]
        [(ormap (lambda (k) (assq k rests)) (cadddr processed-spec))
         => ; forced?
         (lambda (r)
@@ -112,15 +114,11 @@
           (apply values
                  (map (lambda (k) (cond [(assq k rests) => cdr] [else #f]))
                       '(#:rest #:body #:rest-keys #:all-keys #:other-keys)))]
-         [(body-spec body)
-          (if (identifier? body)
-            (values #f body)
-            (values body (gensym #'body)))]
          [(rest* body* other-keys*)
           (values (or rest (gensym #'rest))
-                  (or body (gensym #'body))
+                  (if (and body (identifier? body)) body (gensym #'body))
                   (or other-keys (gensym #'other-keys)))]
-         [(other-keys-mode duplicate-keys-mode body-mode)
+         [(other-keys-mode duplicate-keys-mode body-mode anything-mode)
           (apply values (map (process-mode modes rests)
                              processed-keyword-specs))]
          ;; turn (<id> <key> <default>) keys to (<id> <default>)
@@ -139,15 +137,16 @@
             ,(or rest-keys (gensym #'rest-keys))
             ,(or all-keys (gensym #'all-keys))
             ,(or other-keys (gensym #'other-keys))
-            ,@(if body-spec (parse-formals body-spec #t) '()))])
+            ,@(if (and body (not (identifier? body)))
+                (parse-formals body #t) '()))])
       (cond [only-vars? all-ids]
             [(ormap (lambda (x) (and (not (identifier? x)) x)) all-ids)
              => (lambda (d) (serror d "not an identifier"))]
             [(check-duplicate-identifier all-ids)
              => (lambda (d) (serror d "duplicate argument name"))]
-            [else (values vars opts keys rest rest* body body* body-spec
-                          rest-keys all-keys other-keys other-keys*
-                          other-keys-mode duplicate-keys-mode body-mode
+            [else (values vars opts keys rest rest* body body* rest-keys
+                          all-keys other-keys other-keys* other-keys-mode
+                          duplicate-keys-mode body-mode anything-mode
                           (map cadr keys0))])))
   ;; --------------------------------------------------------------------------
   ;; parses formals, returns list of normal vars, optional var specs, key var
@@ -203,9 +202,8 @@
                     keys        ; keywords, each is (id key default)
                     rest        ; rest variable (no optionals)
                     rest*       ;   always an id
-                    body        ; rest after all keyword-vals
+                    body        ; rest after all keyword-vals (id or formals)
                     body*       ;   always an id
-                    body-spec   ; syntax of body with sub-formals
                     rest-keys   ; rest without specified keys
                     all-keys    ; keyword-vals without body
                     other-keys  ; unprocessed keyword-vals
@@ -213,6 +211,7 @@
                     allow-other-keys?     ; allowing other keys?
                     allow-duplicate-keys? ; allowing duplicate keys?
                     allow-body?           ; allowing body after keys?
+                    allow-anything?       ; allowing anything?
                     keywords)   ; list of mentioned keywords
       (parse-formals formals))
     (define name
@@ -293,32 +292,42 @@
           (with-syntax ([next-loop
                          (if allow-other-keys?
                            #'next-loop
-                           ;;!!!
                            #'(if (memq (car body*) 'keywords)
                                next-loop
                                (error* 'name "unknown keyword: ~e"
                                        (car body*))))])
-            #`(let loop loop-vars
-                (if (and (pair? body*) (keyword? (car body*)))
-                  (if (pair? (cdr body*))
-                    next-loop
-                    (error* 'name "keyword list not balanced: ~e" rest*))
-                  #,(if allow-body?
-                      (if body-spec
-                        (with-syntax ([name (string->symbol
-                                             (format "~a~~body"
-                                                     (syntax-e* #'name)))])
-                          (with-syntax ([subcall
-                                         (quasisyntax/loc stx
-                                           (let ([name (lambda/kw #,body-spec
-                                                         expr)])
-                                             name))])
-                            #'(apply subcall body*)))
-                        #'expr)
-                      #'(if (null? body*)
-                          expr
-                          (error* 'name "expecting a ~s keyword got: ~e"
-                                  'keywords (car body*))))))))))
+            (if (not allow-anything?) ; normal code
+              #`(let loop loop-vars
+                  (if (and (pair? body*) (keyword? (car body*)))
+                    (if (pair? (cdr body*))
+                      next-loop
+                      (error* 'name "keyword list not balanced: ~e" rest*))
+                    #,(if allow-body?
+                        (if (and body (not (identifier? body)))
+                          (with-syntax ([name (string->symbol
+                                               (format "~a~~body"
+                                                       (syntax-e* #'name)))])
+                            (with-syntax ([subcall
+                                           (quasisyntax/loc stx
+                                             (let ([name (lambda/kw #,body
+                                                           expr)])
+                                               name))])
+                              #'(apply subcall body*)))
+                          #'expr)
+                        #'(if (null? body*)
+                            expr
+                            (error* 'name "expecting a ~s keyword got: ~e"
+                                    'keywords (car body*))))))
+              ;; allowing anything: can't use rest-like except for rest
+              (let ([bad (cond [body       `(,body       #:body)]
+                               [rest-keys  `(,rest-keys  #:rest-keys)]
+                               [all-keys   `(,all-keys   #:all-keys)]
+                               [other-keys `(,other-keys #:other-keys)]
+                               [else #f])])
+                (if bad
+                  (serror (car bad) "cannot use #:allow-anything with ~a"
+                          (cadr bad))
+                  #'expr)))))))
     ;; ------------------------------------------------------------------------
     ;; generates the part of the body that deals with rest-related stuff
     (define (make-keys-body expr)
@@ -348,8 +357,7 @@
           (syntax/loc stx (letrec ([name (case-lambda . clauses)]) name))))]))
   (syntax-case stx ()
     [(_ formals expr0 expr ...)
-     (begin (set! original-formals #'formals)
-            (generate-body #'formals #'(let () expr0 expr ...)))]))
+     (generate-body #'formals #'(let () expr0 expr ...))]))
 
 (provide define/kw)
 (define-syntax (define/kw stx)
