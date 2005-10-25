@@ -276,6 +276,14 @@ Scheme_Env *scheme_basic_env()
     }
   }
 
+#ifdef MZ_PRECISE_GC
+  scheme_register_traversers();
+  register_traversers();
+  scheme_init_hash_key_procs();
+#endif
+
+  scheme_init_true_false();
+
   REGISTER_SO(toplevels_ht);
   REGISTER_SO(locals_ht[0]);
   REGISTER_SO(locals_ht[1]);
@@ -288,14 +296,6 @@ Scheme_Env *scheme_basic_env()
     ht = scheme_make_hash_table(SCHEME_hash_ptr);
     locals_ht[1] = ht;
   }
-
-  scheme_init_true_false();
-
-#ifdef MZ_PRECISE_GC
-  scheme_register_traversers();
-  register_traversers();
-  scheme_init_hash_key_procs();
-#endif
 
 #ifdef TIME_STARTUP_PROCESS
   printf("pre-process @ %ld\n", scheme_get_process_milliseconds());

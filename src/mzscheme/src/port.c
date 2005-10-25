@@ -1379,8 +1379,7 @@ long scheme_get_byte_string_unless(const char *who,
       unsigned char *s;
 
       i = ip->ungotten_count;
-      s = (unsigned char *)ip->ungotten;
-      /* s is in reverse order */
+      /* s will be in reverse order */
 
       if (peek) {
 	if (!SCHEME_INTP(peek_skip) || (i < SCHEME_INT_VAL(peek_skip))) {
@@ -1398,9 +1397,11 @@ long scheme_get_byte_string_unless(const char *who,
 	l = size;
 
       size -= l;
+      s = (unsigned char *)ip->ungotten; /* Not GC-safe! */
       while (l--) {
 	buffer[offset + got++] = s[--i];
       }
+      s = NULL;
 
       if (!peek)
 	ip->ungotten_count = i;
