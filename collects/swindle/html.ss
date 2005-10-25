@@ -66,7 +66,7 @@
             [(: x . xs) (loop #'xs (cons #'x a))]
             [xs (values (reverse! a) #'xs)])))
       (orig-eval
-       (let loop ([expr (datum->syntax-object #f expr)] [q 0])
+       (let loop ([expr expr] [q 0])
          (syntax-case expr (: _)
            [(_ x _ . r) (string? (syntax-e #'x))
             (let ([strs (map (lambda (s) (datum->syntax-object #'x s))
