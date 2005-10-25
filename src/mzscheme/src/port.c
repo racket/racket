@@ -1861,12 +1861,13 @@ static Scheme_Object *return_data(void *data, int argc, Scheme_Object **argv)
 int scheme_peeked_read_via_get(Scheme_Input_Port *ip,
 			       long _size,
 			       Scheme_Object *unless_evt,
-			       Scheme_Object *target_evt)
+			       Scheme_Object *_target_evt)
 {
-  Scheme_Object *v, *sema, *a[3], **aa, *l;
+  Scheme_Object * volatile v, *sema, *a[3], ** volatile aa, * volatile l;
   volatile long size = _size;
-  int n, current_leader = 0;
+  volatile int n, current_leader = 0;
   Scheme_Type t;
+  Scheme_Object * volatile target_evt = _target_evt;
 
   /* Check whether t's even t value is known to be always itself: */
   t = SCHEME_TYPE(target_evt);

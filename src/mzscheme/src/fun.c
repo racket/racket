@@ -3294,6 +3294,7 @@ Scheme_Object *scheme_dynamic_wind(void (*pre)(void *),
       scheme_restore_env_stack_w_thread(dw->envss, p);
       err = 1;
     } else {
+      p = scheme_current_thread;
       p->suspend_break++;
       post(data);
       p = scheme_current_thread;
