@@ -256,7 +256,8 @@
     ;; ------------------------------------------------------------------------
     ;; generates the part of the body that deals with rest-related stuff
     (define (make-rest-body expr)
-      (define others? (or other-keys other-keys+body))
+      (define others?     (or other-keys other-keys+body))
+      (define track-seen? (or others? (not allow-duplicate-keys?)))
       (with-syntax ([name        name]
                     [rest*       rest*]
                     [body*       body*]
@@ -267,28 +268,46 @@
                     [other-keys+body* other-keys+body]
                     [seen-keys   #'seen-keys])
         (with-syntax
-            ([loop-vars
-              #`([body* rest*]
-                 #,@(if all-keys #`([all-keys* '()]) '())
-                 #,@(if others? #`([other-keys* '()]) '())
-                 #,@(if allow-duplicate-keys? '() #`([seen-keys '()])))]
+            ([loop-vars #`([body* rest*]
+                           #,@(if all-keys    #`([all-keys* '()]) '())
+                           #,@(if others?     #`([other-keys* '()]) '())
+                           #,@(if track-seen? #`([seen-keys '()]) '()))]
              [next-loop
-              #`(loop (cddr body*)
-                      #,@(if all-keys
-                           #`((list* (cadr body*) (car body*) all-keys*))
-                           '())
-                      #,@(if others?
-                           #`((if (memq (car body*) 'keywords)
-                                other-keys*
-                                (list* (cadr body*) (car body*) other-keys*)))
-                           '())
-                      #,@(if allow-duplicate-keys?
-                           '()
-                           #`((if (and (memq (car body*) seen-keys)
-                                       (memq (car body*) 'keywords))
-                                (error* 'name "duplicate keyword: ~e"
-                                        (car body*))
-                                (cons (car body*) seen-keys)))))]
+              (let ([nl #`(loop
+                           (cddr body*)
+                           #,@(if all-keys
+                                #`((list* (cadr body*) (car body*) all-keys*))
+                                '())
+                           #,@(if others?
+                                #`((if (and in-keys? (not in-seen?))
+                                     other-keys*
+                                     (list* (cadr body*) (car body*)
+                                            other-keys*)))
+                                '())
+                           #,@(if track-seen?
+                                #`((if (and in-seen? in-keys?)
+                                     #,(if allow-duplicate-keys?
+                                         #`seen-keys
+                                         #`(error* 'name "duplicate keyword: ~e"
+                                                   (car body*)))
+                                     (cons (car body*) seen-keys)))
+                                '()))])
+                (cond
+                 [(or track-seen? others?)
+                  #`(let ([in-keys? (memq (car body*) 'keywords)]
+                          [in-seen? (memq (car body*) seen-keys)])
+                      #,(if allow-other-keys?
+                          nl
+                          #`(if in-keys?
+                              #,nl
+                              (error* 'name "unknown keyword: ~e"
+                                      (car body*)))))]
+                 [(not allow-other-keys?)
+                  #`(if (memq (car body*) 'keywords)
+                      #,nl
+                      (error* 'name "unknown keyword: ~e"
+                              (car body*)))]
+                 [else nl]))]
              [expr
               (if (or all-keys others?)
                 #`(let* (#,@(if all-keys
@@ -306,43 +325,34 @@
                                   [else '()]))
                     expr)
                 #'expr)])
-          (with-syntax ([next-loop
-                         (if allow-other-keys?
-                           #'next-loop
-                           #'(if (memq (car body*) 'keywords)
-                               next-loop
-                               (error* 'name "unknown keyword: ~e"
-                                       (car body*))))])
-            (if (and allow-anything? (not body)
-                     (not other-keys+body) (not all-keys) (not other-keys))
-              ;; allowing anything and don't need special rests, so no loop
-              #'expr
-              ;; normal code
-              #`(let loop loop-vars
-                  (if (and (pair? body*) (keyword? (car body*))
-                           #,@(if allow-anything? #'((pair? (cdr body*))) '()))
-                    #,(if allow-anything? ; already checker pair? above
-                        #'next-loop
-                        #'(if (pair? (cdr body*))
-                            next-loop
-                            (error* 'name "keyword list not balanced: ~e"
-                                    rest*)))
-                    #,(if allow-body?
-                        (if (and body (not (identifier? body)))
-                          (with-syntax ([name (string->symbol
-                                               (format "~a~~body"
-                                                       (syntax-e* #'name)))])
-                            (with-syntax ([subcall
-                                           (quasisyntax/loc stx
-                                             (let ([name (lambda/kw #,body
-                                                           expr)])
-                                               name))])
-                              #'(apply subcall body*)))
-                          #'expr)
-                        #'(if (null? body*)
-                            expr
-                            (error* 'name "expecting a ~s keyword got: ~e"
-                                    'keywords (car body*)))))))))))
+          (if (and allow-anything? (not body)
+                   (not other-keys+body) (not all-keys) (not other-keys))
+            ;; allowing anything and don't need special rests, so no loop
+            #'expr
+            ;; normal code
+            #`(let loop loop-vars
+                (if (and (pair? body*) (keyword? (car body*))
+                         #,@(if allow-anything? #'((pair? (cdr body*))) '()))
+                  #,(if allow-anything? ; already checker pair? above
+                      #'next-loop
+                      #'(if (pair? (cdr body*))
+                          next-loop
+                          (error* 'name "keyword list not balanced: ~e" rest*)))
+                  #,(if allow-body?
+                      (if (and body (not (identifier? body)))
+                        (with-syntax ([name (string->symbol
+                                             (format "~a~~body"
+                                                     (syntax-e* #'name)))])
+                          (with-syntax ([subcall
+                                         (quasisyntax/loc stx
+                                           (let ([name (lambda/kw #,body expr)])
+                                             name))])
+                            #'(apply subcall body*)))
+                        #'expr)
+                      #'(if (null? body*)
+                          expr
+                          (error* 'name "expecting a ~s keyword got: ~e"
+                                  'keywords (car body*))))))))))
     ;; ------------------------------------------------------------------------
     ;; generates the part of the body that deals with rest-related stuff
     (define (make-keys-body expr)
