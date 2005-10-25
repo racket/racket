@@ -443,7 +443,7 @@ static Scheme_Object *os_wxMediaStreamInBaseRead(int n,  Scheme_Object *p[])
   
   x0 = NULL;
 
-  x0 = VectorToArray(NULL, p[POFFSET], &x1, x2);
+  x2 = 0; x0 = VectorToArray(NULL, p[POFFSET], &x1, x2);
   if (((Scheme_Class_Object *)p[0])->primflag)
     r =  0;
   else

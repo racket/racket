@@ -927,7 +927,11 @@ char *wxMediaStreamIn::GetString(long *n, int extra)
 
 char *wxMediaStreamIn::GetStringPlusOne(long *n)
 {
-  return GetString(n, 1);
+  char *s;
+  s = GetString(n, 1);
+  if (n && *n)
+    *n = (*n - 1);
+  return s;
 }
 
 wxMediaStreamIn *wxMediaStreamIn::Get(long *n, char *str)

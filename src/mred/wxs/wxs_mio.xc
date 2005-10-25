@@ -74,7 +74,7 @@ static Scheme_Object *ArrayToVector(char *r, Scheme_Object *vec, long len, long 
 @MACRO setNULL = NULL
 @MACRO arrayToVector = p[POFFSET] = ArrayToVector(x0, NULL, x1, x2);
 @MACRO copyArrayToVector = ArrayToVector(x0, p[POFFSET], x1, x2);
-@MACRO vectorToArray = x0 = VectorToArray(NULL, p[POFFSET], &x1, x2);
+@MACRO vectorToArray = x2 = 0; x0 = VectorToArray(NULL, p[POFFSET], &x1, x2);
 @MACRO copyVectorToArray = VectorToArray(x0, p[POFFSET], &x1, x2);
 
 @CREATOR ();
