@@ -136,10 +136,11 @@ Additional "info.ss" fields trigger additional setup actions:
    right after the `install-collection' procedure is executed.  The
    only difference between these is that the `--no-install' flag can
    be used to disable the previous two installers, but not this one.
-   It is therefore expected to do perform operations that are always
-   needed to be done (even after installation that contains
-   pre-compiled files).  The provided procedure should be named
-   `post-installer' in this case so it can share the same file.
+   It is therefore expected to perform operations that are always
+   needed, even after an installation that contains pre-compiled
+   files.  The provided procedure should be named `post-installer' in
+   this case so it can be provided by the same file that provides the
+   previous two.
 
 >  clean - a list of pathnames to be deleted when the --clean or -c
    flag is passed to Setup PLT. The pathnames must be relative to the
