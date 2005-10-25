@@ -127,9 +127,10 @@ Additional "info.ss" fields trigger additional setup actions:
    that it is called multiple times for the same installation.
 
 >  pre-install-collection - like `install-collection', except that the
-   corresponding installer is called *before* normal the .zo build,
+   corresponding installer is called *before* the normal .zo build,
    instead of after.  The provided procedure should be named
-   `pre-installer' in this case so it can share the same file.
+   `pre-installer' in this case so it can be provided by the same file
+   that provides an installer.
 
 >  post-install-collection - like `install-collection'.  It is called
    right after the `install-collection' procedure is executed.  The
