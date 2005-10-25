@@ -1,8 +1,8 @@
 _Algol 60_
 
-The "Algol 60" language for DrScheme implements the language define by
-the "Revised Report on the Algorithmic Language Algol 60", edited by
-Peter Naur.
+The "Algol 60" language for DrScheme implements the language defined
+by the "Revised Report on the Algorithmic Language Algol 60", edited
+by Peter Naur.
 
 
 The "algol60.ss" library provides an `include-algol' form for including

@@ -123,7 +123,7 @@
                       (hash-table-put! table (string->symbol (car name-req)) (cadr name-req)))
                     (list 
                      (list (string-constant r5rs-lang-name)
-                           `(lib "r5rs.ss" "lang"))
+                           `(lib "r5rs.ss" "r5rs"))
                      (list (string-constant beginning-student)
                            `(lib "htdp-beginner.ss" "lang"))
                      (list (string-constant beginning-student/abbrev)

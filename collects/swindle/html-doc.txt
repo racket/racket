@@ -47,10 +47,9 @@ I'm assuming general knowledge of Scheme, MzScheme and HTML.
 Documentations can be found on the PLT sites (http://www.drscheme.org/),
 
 * The Revised Scheme Report:
-  http://www.cs.rice.edu/CS/PLT/packages/doc/r5rs/index.htm
+  http://download.plt-scheme.org/doc/mzscheme/
 
-* MzScheme:
-  http://www.cs.rice.edu/CS/PLT/packages/doc/mzscheme/index.htm
+* MzScheme: http://www.plt-scheme.org/
 
 Also, good HTML reference can be found at:
   http://www.idocs.com/tags/
@@ -1653,8 +1652,8 @@ What I found most convenient is the following prefix:
 This will make it a /bin/sh script that will just execute mzscheme with
 the correct command-line arguments: `-r' is for running a script: short
 for `-fmv-' which stands for `-f' for loading an argument, `-m' for
-suppressing the banner, `-v' for no interactive read-eval-print loop, and
-`--' to specify that more arguments are passed to the script without
+suppressing the banner, `-v' for no interactive read-eval-print loop,
+and `--' to specify that more arguments are passed to the script without
 further processing.  The first "$0" argument is consumed by the `-f' --
 this is the actual script (the double-quotes are to protect file name
 with spaces from exploding to multiple arguments), and "$@" are other

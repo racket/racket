@@ -1322,7 +1322,7 @@
                         (string-constant expander-one-line-summary)
                         add-expand-to-front-end))
           (add-language
-           (make-simple '(lib "r5rs.ss" "lang")
+           (make-simple '(lib "r5rs.ss" "r5rs")
                         (list (string-constant professional-languages)
                               (string-constant r5rs-lang-name))
                         (list -1000 -1000)

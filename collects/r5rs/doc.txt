@@ -1,0 +1,27 @@
+_R5RS_
+
+The "r5rs.ss" module in the "r5rs" collection implements the language
+defined by the "Revised^5 Report on the Algorithmic Language Scheme".
+In addition, this module provides _#%provide_ (instead of `provide'),
+_#%require_ (instead of `#%require'), `#%app', `%datum', etc.  The
+`letrec' of this language is defined exactly as in R5RS, and not as in
+MzScheme.
+
+The module _r5rs.ss_ module is a language module.  You can use it in
+one of several ways:
+
+* Use the "Standard (R5RS)" language in DrScheme;
+
+* Start MzScheme using bindings from the R5RS language with
+
+    mzscheme -M r5rs
+
+  (but note that MzScheme bindings will still be visible);
+
+* Write code in a module that uses the R5RS language:
+
+    (module foo (lib "r5rs.ss" "r5rs")
+      ...)
+
+  in this case, you can `provide' bindings and `require' other modules
+  by using _#%require_ and _#%provide_.
