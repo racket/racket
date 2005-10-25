@@ -145,34 +145,7 @@
                                (λ x
                                  (send f close)))]
                [messages-panel (make-object vertical-panel% left-vp)]
-               
-               [this-version (version)]
-               [last-version (preferences:get 'drscheme:last-version)]
-               [last-language (preferences:get 'drscheme:last-language)]
-               [welcome-to-drs-msg (make-object message% (string-constant welcome-to-drscheme) messages-panel)]
-               [this-version-message (make-object message%
-                                       (format (string-constant version/language)
-                                               this-version 
-                                               (this-language))
-                                       messages-panel)]
-               [last-version-message
-                (let ([msg (cond
-                             [(and last-version
-                                   last-language
-                                   (not (equal? this-version last-version))
-                                   (not (equal? (this-language) last-language)))
-                              (format (string-constant parenthetical-last-version/language)
-                                      last-version last-language)]
-                             [(and last-language
-                                   (not (equal? (this-language) last-language)))
-                              (format (string-constant parenthetical-last-language)
-                                      last-language)]
-                             [(and last-version
-                                   (not (equal? this-version last-version)))
-                              (format (string-constant parenthetical-last-version)
-                                      last-version)]
-                             [else #f])])
-                  (and msg (make-object message% msg messages-panel)))])
+               [welcome-to-drs-msg (make-object message% (string-constant welcome-to-drscheme) messages-panel)])
           (for-each (λ (native-lang-string language)
                       (unless (equal? (this-language) language)
                         (instantiate button% ()

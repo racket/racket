@@ -46,10 +46,6 @@
       ;; if a language is registered with this position, it is
       ;; considered the default language
       (define default-language-position
-        (list (string-constant teaching-languages)
-              (string-constant how-to-design-programs)
-              (string-constant beginning-student))
-        #;
         (list (string-constant initial-language-category)
               (string-constant choose-a-language-language)))
 
@@ -119,9 +115,10 @@
 ;                      ;;;;                   ;;;;                                              ;;;;   
 
       
-      ;; language-dialog : (boolean language-setting -> language-setting)
+      ;; language-dialog : (boolean language-setting -> (union #f language-setting))
       ;;                   (boolean language-setting (union #f (instanceof top-level-window%))
-      ;;                    -> language-setting)
+      ;;                    -> 
+      ;;                    (union #f language-setting))
       ;; allows the user to configure their language. The input language-setting is used
       ;; as the defaults in the dialog and the output language setting is the user's choice
       ;; todo: when button is clicked, ensure language is selected
@@ -201,7 +198,7 @@
             (send dialog center 'both))
           (send dialog show #t)
           (if cancelled?
-              language-settings-to-show
+              #f
               (make-language-settings
                (get-selected-language)
                (get-selected-language-settings)))))
@@ -1333,7 +1330,6 @@
                         (string-constant r5rs-one-line-summary)
                         r5rs-mixin))
           
-          #;
           (add-language
            (make-simple 'mzscheme
                         (list (string-constant initial-language-category)
@@ -1356,62 +1352,88 @@
       (define (not-a-language-message)
         (define (main)
           (o (string-constant must-choose-language))
-          (o "\n\n")
-          (o (string-constant using-a-text-book?))
           (o "\n")
           (insert-text-pls)
-          (o "\n")
-          (o (string-constant seasoned-plt-schemer-before))
-          (o (lang-link-snip (list (string-constant professional-languages)
-                                   "(module ...)")))
-          (o (string-constant seasoned-plt-schemer-after))
-          (o "\n\n")
-          (o (string-constant otherwise-use-before))
-          (o (lang-link-snip (list (string-constant professional-languages)
-                                   (string-constant plt)
-                                   (string-constant pretty-big-scheme))))
-          (o (string-constant otherwise-use-between))
-          (o (new link-snip%
-                  [words (string-constant otherwise-use-language-dialog)]
-                  [callback
-                   (λ (snip)
-                     (let ([new-lang
-                            (language-dialog #f
-                                             (preferences:get settings-preferences-symbol)
-                                             (find-parent-from-snip snip))])
-                       (preferences:set settings-preferences-symbol 
-                                        new-lang)))]))
-          
-          (o (string-constant otherwise-use-after)))
+          (display-plt-schemer)
+          (display-standard-schemer)
+          (display-future-choice))
         
-        (define (find-parent-from-snip snip)
-          (let loop ([snip snip])
-            (let* ([admin (send snip get-admin)]
-                   [ed (send admin get-editor)])
-              (cond
-                [(send ed get-canvas)
-                 =>
-                 (λ (c)
-                   (send c get-top-level-window))]
-                [else
-                 (let ([admin (send ed get-admin)])
-                   (and (is-a? admin editor-snip-editor-admin<%>)
-                        (loop (send admin get-snip))))]))))
-        
-        (define o
-          (case-lambda
-            [(arg)
-             (cond
-               [(string? arg)
-                (fprintf (current-error-port) arg)]
-               [(is-a? arg snip%)
-                (write-special arg (current-error-port))])]
-            [args (apply fprintf (current-error-port) args)]))
+        (define (display-future-choice)
+          (let* ([txt (new text:standard-style-list%)]
+                 [es (new editor-snip%
+                          [with-border? #f]
+                          [left-margin 0]
+                          [top-margin 0]
+                          [bottom-margin 0]
+                          [right-margin 0]
+                          [editor txt])])
+            (send txt insert (string-constant use-language-menu-item-in-future))
+            (send txt change-style
+                  default-sd
+                  0
+                  (send txt last-position))
+            (o es)
+            (o "\n")))
         
         (define (insert-text-pls)
           (for-each
            display-text-pl
-           (apply append (map get-text-pls (find-relevant-directories '(textbook-pls))))))
+           (quicksort
+            (apply append (map get-text-pls (find-relevant-directories '(textbook-pls))))
+            (λ (x y)
+              (cond
+                [(string=? (cadr x) (string-constant how-to-design-programs))
+                 #t]
+                [(string=? (string-constant how-to-design-programs) (cadr y))
+                 #f]
+                [else
+                 (string<=? (cadr x) (cadr y))])))))
+        
+        (define (display-plt-schemer)
+          (question/answer (string-constant seasoned-plt-schemer?)
+                           (list (string-constant professional-languages)
+                                 "(module ...)")
+                           (list "PLT-206-small.png" "icons")
+                           void))
+        
+        (define (display-standard-schemer)
+          (question/answer (string-constant looking-for-standard-scheme?)
+                           (list (string-constant professional-languages)
+                                 (string-constant plt)
+                                 (string-constant pretty-big-scheme))
+                           (list "r5rs.png" "icons")
+                           void))
+        
+        (define (display-text-pl lst)
+          (let ([icon-lst (car lst)]
+                [text-name (cadr lst)]
+                [lang (cddr lst)]
+                [using-before (string-constant using-a-textbook-before)]
+                [using-after (string-constant using-a-textbook-after)])
+            (question/answer (string-append using-before text-name using-after)
+                             lang
+                             icon-lst
+                             (λ (txt)
+                               (send txt change-style
+                                     italic-sd
+                                     (string-length using-before)
+                                     (+ (string-length using-before)
+                                        (string-length text-name)))))))
+        
+        (define (question/answer question lang icon-lst proc)
+          (display-two-line-choice 
+           icon-lst
+           (λ (inner-txt)
+             (send inner-txt insert (format "~a\n~a" question (string-constant start-with-before)))
+             (send inner-txt change-style default-sd 0 (send inner-txt last-position))
+             (lang-link-snip lang inner-txt)
+             (let ([before-pos (send inner-txt last-position)])
+               (send inner-txt insert (string-constant start-with-after))
+               (send inner-txt change-style 
+                     default-sd
+                     before-pos
+                     (send inner-txt last-position)))
+             (proc inner-txt))))
         
         ;; get-text-pls : path -> (listof (list* string string (listof string))
         ;; gets the questions from an info.ss file.
@@ -1440,17 +1462,41 @@
                   qs)
                 '())))
         
-        (define (lang-link-snip lang)
-          (new link-snip%
-               [words (car (last-pair lang))]
-               [callback
-                (λ (snip)
-                  (change-current-lang-to lang))]))
-
+        (define (lang-link-snip lang txt)
+          #;
+          (let ([before (send txt last-position)])
+            (send txt insert (car (last-pair lang)))
+            (let ([after (send txt last-position)])
+              (send txt change-style link-sd before after)
+              (send txt set-clickback before after 
+                    (λ (txt start end)
+                      (change-current-lang-to lang txt)))))
+          
+          (send txt insert
+                (new link-snip%
+                     [words (car (last-pair lang))]
+                     [callback
+                      (λ (snip)
+                        (change-current-lang-to lang snip))])))
+        
+        (define o
+          (case-lambda
+            [(arg)
+             (cond
+               [(string? arg)
+                (fprintf (current-error-port) arg)]
+               [(is-a? arg snip%)
+                (write-special arg (current-error-port))])]
+            [args (apply fprintf (current-error-port) args)]))
+        
+        (define arrow-cursor (make-object cursor% 'arrow))
+        
         (define link-snip%
           (class editor-snip%
             (init-field words callback)
 
+            (define/override (adjust-cursor dc x y editorx editory event) arrow-cursor)
+            
             (define/override (on-event dc x y editorx editory event)
               (when (send event button-up?)
                 (callback this)))
@@ -1471,29 +1517,41 @@
             (send txt insert words)
             (send txt change-style link-sd 0 (send txt last-position))))
         
+        #;
+        (define link-snip%
+          (class string-snip%
+            (init-field words callback)
+
+            (define/override (adjust-cursor dc x y editorx editory event) arrow-cursor)
+            
+            (define/override (on-event dc x y editorx editory event)
+              (when (send event button-up?)
+                (callback this)))
+            
+            (define/override (copy)
+              (new link-snip% [words words] [callback callback]))
+            
+            (super-make-object words)
+            (inherit get-flags set-flags set-style)
+            (set-style link-style)
+            (set-flags (cons 'handles-events (remq 'is-text (get-flags))))))
+        
+        (define italic-sd (make-object style-delta% 'change-style 'slant))
+        
         (define link-sd (make-object style-delta% 'change-underline #t))
         (define stupid-internal-define-syntax1
-          (send link-sd set-delta-foreground "blue"))
+          (begin (send link-sd set-delta-foreground "blue")
+                 (send link-sd set-family 'default)))
         
-        (define (display-text-pl lst)
-          (let ([icon-lst (car lst)]
-                [text-name (cadr lst)]
-                [lang (cddr lst)])
-            (display-two-line-choice 
-             icon-lst
-             lang
-             (λ (inner-txt)
-               (send inner-txt insert (format "~a\n~a" text-name (string-constant start-with-before)))
-               (send inner-txt change-style err-style-delta 0 (send inner-txt last-position))
-               (send inner-txt insert (lang-link-snip lang))
-               (let ([before-pos (send inner-txt last-position)])
-                 (send inner-txt insert (string-constant start-with-after))
-                 (send inner-txt change-style 
-                       err-style-delta 
-                       before-pos
-                       (send inner-txt last-position)))))))
+        (define default-sd (make-object style-delta% 'change-family 'default))
         
-        (define (display-two-line-choice icon-lst lang proc)
+        (define link-style 
+          (send (editor:get-standard-style-list)
+                find-or-create-style
+                (send (editor:get-standard-style-list) find-named-style "Standard")
+                link-sd))
+        
+        (define (display-two-line-choice icon-lst proc)
           (let* ([outer-txt (new text:standard-style-list%)]
                  [outer-es (new editor-snip% (editor outer-txt) (with-border? #f)
                                 [left-margin 0]
@@ -1521,22 +1579,43 @@
             (let ([err-sd (make-object style-delta% 'change-italic)])
               (send err-sd set-delta-foreground (make-object color% 255 0 0))
               err-sd))
-          
+      
+        ;; change-current-lang-to : (listof string) -> void
+        (define (change-current-lang-to lang-strings snip)
+          (let ([parent (find-parent-from-snip snip)]
+                [lang (ormap
+                       (λ (x)
+                         (and (equal? lang-strings (send x get-language-position))
+                              x))
+                       (get-languages))])
+            (unless lang
+              (error 'change-current-lang-to "unknown language! ~s" lang-strings))
+            
+            (let ([new-lang
+                   (language-dialog #f
+                                    (make-language-settings lang
+                                                            (send lang default-settings))
+                                    parent)])
+              (when new-lang
+                (preferences:set settings-preferences-symbol new-lang)
+                (when (is-a? parent drscheme:unit:frame<%>)
+                  (send (send parent get-definitions-text) set-next-settings new-lang))))))
+        
         (main))
       
-      ;; change-current-lang-to : (listof string) -> void
-      (define (change-current-lang-to lang-strings)
-        (let ([lang (ormap
-                     (λ (x)
-                       (and (equal? lang-strings (send x get-language-position))
-                            x))
-                     (get-languages))])
-          (unless lang
-            (error 'change-current-lang-to "unknown language! ~s" lang-strings))
-          (preferences:set settings-preferences-symbol
-                           (make-language-settings lang
-                                                   (send lang default-settings)))
-          (message-box (string-constant drscheme)
-                       (format 
-                        (string-constant drschemes-language-now-set)
-                        (car (last-pair lang-strings)))))))))
+      ;; find-parent-from-editor : editor -> (union frame #f)
+      (define (find-parent-from-editor ed)
+        (cond
+          [(send ed get-canvas)
+           =>
+           (λ (c) (send c get-top-level-window))]
+          [else
+           (let ([admin (send ed get-admin)])
+             (and (is-a? admin editor-snip-editor-admin<%>)
+                  (find-parent-from-snip (send admin get-snip))))]))
+      
+      ;; find-parent-from-snip : snip -> (union frame #f)
+      (define (find-parent-from-snip snip)
+        (let* ([admin (send snip get-admin)]
+               [ed (send admin get-editor)])
+          (find-parent-from-editor ed))))))

@@ -320,12 +320,6 @@
                  (void))
                (super-new))])
       (handler:set-recent-items-frame-superclass drs-handler-recent-items-super%))
-      
-      ;;
-      ;; Show expanded language dialog when version changes
-      ;; 
-      (preferences:set-default 'drscheme:last-version #f (λ (x) (or (string? x) (not x))))
-      (preferences:set-default 'drscheme:last-language #f (λ (x) (or (symbol? x) (not x))))
 
       (cond
         [(current-eventspace-has-menu-root?)

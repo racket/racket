@@ -469,12 +469,13 @@ module browser threading seems wrong.
               (set! next-settings _next-settings)
               (change-mode-to-match))
             
-            (define/public (needs-execution?)
+            (define/public (needs-execution)
               (or needs-execution-state
-                  (not (equal? execute-settings next-settings))))
+                  (and (not (equal? execute-settings next-settings))
+                       (string-constant needs-execute-language-changed))))
             
             (define/pubment (teachpack-changed)
-              (set! needs-execution-state #t))
+              (set! needs-execution-state (string-constant needs-execute-teachpack-changed)))
             (define/pubment (just-executed)
               (set! execute-settings next-settings)
               (set! needs-execution-state #f)
@@ -484,10 +485,10 @@ module browser threading seems wrong.
             (define/pubment (already-warned)
               (set! already-warned-state #t))
             (define/augment (after-insert x y)
-              (set! needs-execution-state #t)
+              (set! needs-execution-state (string-constant needs-execute-defns-edited))
               (inner (void) after-insert x y))
             (define/augment (after-delete x y)
-              (set! needs-execution-state #t)
+              (set! needs-execution-state (string-constant needs-execute-defns-edited))
               (inner (void) after-delete x y))
             
             (inherit get-filename)
@@ -901,8 +902,8 @@ module browser threading seems wrong.
                   (let-values ([(base _1 _2) (split-path (mzlib:file:normalize-path filename))])
                     base)
                   #f)))
-          (define/public (needs-execution?)
-            (send defs needs-execution?))
+          (define/public (needs-execution)
+            (send defs needs-execution))
           
           (define/pubment (can-close?)
             (and (send defs can-close?)

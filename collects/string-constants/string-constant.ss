@@ -8,7 +8,6 @@
                       (prefix french: "french-string-constants.ss")
                       (prefix dutch: "dutch-string-constants.ss")
                       (prefix danish: "danish-string-constants.ss")
-		      (prefix italian: "italian-string-constants.ss")
                       (prefix portuguese: "portuguese-string-constants.ss")
 		      (prefix japanese: "japanese-string-constants.ss")
                       (prefix traditional-chinese: "traditional-chinese-string-constants.ss")
@@ -24,8 +23,42 @@
   (define (set-language-pref language)
     (put-preferences (list 'plt:human-language) (list language)))
   
+  ;; table : (listof (list symbol regexp regexp))
+  ;; this table indicates what the default value of the natural language
+  ;; preference is. the first regexp is used under Windows and the second
+  ;; is used on other platofmr.s All regexps are compared to the result
+  ;; of (system-language+country)
+  (define table
+    '((english #rx"^en_" #rx"^English_")
+      (spanish #rx"^es_" #rx"^Espanol_")
+      (german #rx"^de_" #rx"^German_")
+      (french #rx"^fr_" #rx"French_")
+      (dutch #rx"nl_" #rx"^Netherlands_")
+      (danish #rx"^da_DK" #rx"^Danish_")
+      (portuguese #rx"^pt_" #rx"Portuguese_")
+      (japanese #rx"^ja_" #rx"^Japan_")
+      (traditional-chinese #rx"^zh_(HK|TW)" #rx"Chinese_China")
+      (simplified-chinese #rx"^zh_CN" #rx"Chinese_(Hong|Taiwan)")))
+      
+  ;; default-language : -> symbol
+  ;; uses `table' and system-language+contry to find what language to start with
+  (define (default-language)
+    (let ([slc (system-language+country)])
+      (let loop ([table table])
+        (cond
+          [(null? table) 
+           'english]
+          [else
+           (let ([ent (car table)])
+             (if (or (regexp-match (cadr ent) slc)
+                     (and (cddr ent)
+                          (regexp-match (caddr ent) slc)))
+                 (car ent)
+                 (loop (cdr table))))]))))
+ 
+  
   ;; language : symbol
-  (define language (get-preference 'plt:human-language (lambda () 'english)))
+  (define language (get-preference 'plt:human-language (lambda () (default-language))))
     
   (define-syntax-set (string-constant string-constants this-language all-languages)
     ;; type sc = (make-sc symbol (listof (list symbol string)) (union #f hash-table[symbol -o> #t]))
@@ -39,7 +72,6 @@
        (make-sc 'german german:string-constants #f)
        (make-sc 'dutch dutch:string-constants #f)
        (make-sc 'danish danish:string-constants #f)
-       (make-sc 'italian italian:string-constants #f)
        (make-sc 'portuguese portuguese:string-constants #f)
        (make-sc 'japanese japanese:string-constants #f)
        (make-sc 'traditional-chinese traditional-chinese:string-constants #f)

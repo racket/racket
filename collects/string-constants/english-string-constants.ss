@@ -225,8 +225,14 @@ please adhere to these guidelines:
  (no-full-name-since-not-saved
   "The file does not have a full name because it has not yet been saved.")
  (cannot-open-because-dne "Cannot open ~a because it does not exist.")
- (interactions-out-of-sync
-  "WARNING: Interactions window is out of sync with the definitions window. Click Run.")
+
+  (needs-execute-language-changed
+   "WARNING: The language has changed. Click Run.")
+  (needs-execute-teachpack-changed
+   "WARNING: The teachpacks have changed. Click Run.")
+  (needs-execute-defns-edited
+   "WARNING: The definitions window has changed. Click Run.")
+  
  (file-is-not-saved "The file \"~a\" is not saved.")
  (save "Save")
  (please-choose-either "Please choose either \"~a\" or \"~a\"")
@@ -989,23 +995,23 @@ please adhere to these guidelines:
   ;;; from the `not a language language' used initially in drscheme.
   (must-choose-language "DrScheme cannot process programs until you choose a programming language.")
   
-  ; intro to using a textbook
-  (using-a-text-book? "Are you using one of the these textbooks?")
-  ; next two are used with each textbook
+  ; next two appear before and after the name of a text book (which will be in italics)
+  (using-a-textbook-before "Using ")
+  (using-a-textbook-after "?")
+  
+  ; next two are before and after a language
   (start-with-before "Start with ")
   (start-with-after ".")
+
+  (seasoned-plt-schemer? "Seasoned PLT Schemer?")
+  (looking-for-standard-scheme? "Looking for standard Scheme?")
+  (use-language-menu-item-in-future "Use the Language|Choose Language... menu item to change languages later.")
   
-  ; next ones are the default choices at the end of the list in the not-a-language-language error message
-  (seasoned-plt-schemer-before "Are you a seasoned PLT Schemer? Try ")
-  (seasoned-plt-schemer-after ".")
-  (otherwise-use-before "Otherwise, use ")
-  (otherwise-use-between ",\nor choose for yourself from the ")
-  (otherwise-use-language-dialog "language dialog") ; this one will become clickable and will open the language dialog
-  (otherwise-use-after ".")
-  
-  ; after clicking a language, this tells you that its done. The ~a is filled in with
-  ; the name of the language
-  (drschemes-language-now-set "DrScheme's Language is now set to:\n  ~a")
+  ; some of these belong ...
+  ;(otherwise-use-before "Otherwise, use ")
+  ;(otherwise-use-between ",\nor choose for yourself from the ")
+  ;(otherwise-use-language-dialog "language dialog") ; this one will become clickable and will open the language dialog
+  ;(otherwise-use-after ".")
   
  ;;; debug language
  (unknown-debug-frame "[unknown]")

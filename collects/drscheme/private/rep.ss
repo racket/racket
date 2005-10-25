@@ -103,7 +103,7 @@ TODO
           ensure-rep-shown   ;; (interactions-text -> void)
 	  ;; make the rep visible in the frame
 
-          needs-execution?   ;; (-> boolean)
+          needs-execution   ;; (-> boolean)
 	  ;; ask if things have changed that would mean the repl is out
 	  ;; of sync with the program being executed in it.
           
@@ -815,11 +815,10 @@ TODO
                  (ask-about-kill? #f))
           (define/public (get-in-evaluation?) in-evaluation?)
           
-          (define/private (insert-warning)
+          (define/private (insert-warning message)
             (begin-edit-sequence)
             (let ([start (get-insertion-point)])
-              (insert-before
-               (string-constant interactions-out-of-sync))
+              (insert-before message)
               (let ([end (get-insertion-point)])
                 (change-style warning-style-delta start end)))
             (insert-before "\n")
@@ -871,13 +870,13 @@ TODO
             (save-interaction-in-history prompt-position (- (last-position) 2))
             (freeze-colorer)
             
-            (let* ([needs-execution? (send context needs-execution?)])
+            (let ([needs-execution (send context needs-execution)])
               (when (if (preferences:get 'drscheme:execute-warning-once)
                         (and (not already-warned?)
-                             needs-execution?)
-                        needs-execution?)
+                             needs-execution)
+                        needs-execution)
                 (set! already-warned? #t)
-                (insert-warning)))
+                (insert-warning needs-execution)))
             
             ;; lets us know we are done with this one interaction
             ;; (since there may be multiple expressions at the prompt)

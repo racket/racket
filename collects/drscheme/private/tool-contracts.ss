@@ -830,7 +830,7 @@
     (boolean? drscheme:language-configuration:language-settings?)
     ((union false/c (is-a?/c top-level-window<%>))
      boolean?)
-    drscheme:language-configuration:language-settings?)
+    (union false/c drscheme:language-configuration:language-settings?))
    ((show-welcome? language-settings-to-show)
     ((parent #t)
      (manuals? #f)))
@@ -857,7 +857,10 @@
    ""
    "The \\var{manuals?} argument is passed to"
    "@flink drscheme:language-configuration:fill-language-dialog %"
-   ".")
+   "."
+   ""
+   "The result if \\scheme|#f| when the user cancells the dialog, and"
+   "the selected language if they hit ok.")
   
   (drscheme:language-configuration:fill-language-dialog
    (opt->
