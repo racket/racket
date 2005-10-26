@@ -163,6 +163,8 @@ Scheme_Env *scheme_basic_env()
 
     env = scheme_make_empty_env();
     scheme_install_initial_module_set(env);
+    scheme_set_param(scheme_current_config(), MZCONFIG_ENV, 
+		     (Scheme_Object *)env); 
 
     scheme_init_port_config();
     scheme_init_port_fun_config();

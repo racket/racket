@@ -3036,7 +3036,7 @@ static void check_ptr(void **a)
 }
 # endif
 
-static void check_variable_stack()
+void GC_check_variable_stack()
 {
   void **limit, **var_stack;
 # if CHECK_STACK_PTRS
@@ -4021,7 +4021,7 @@ void *GC_malloc_one_tagged(size_t size_in_bytes)
   void **m, **naya;
 
 #if CHECKS
-  check_variable_stack();
+  GC_check_variable_stack();
 #endif
 
   size_in_words = ((size_in_bytes + 3) >> LOG_WORD_SIZE);
@@ -4099,7 +4099,7 @@ static gcINLINE void *malloc_untagged(size_t size_in_bytes, mtype_t mtype, MSet 
   void **m, **naya;
 
 #if CHECKS
-  check_variable_stack();
+  GC_check_variable_stack();
 #endif
 
   if (!size_in_bytes)
