@@ -4,7 +4,7 @@ languages for other modules (i.e., as the initial import):
 
  * _r5rs.ss_ - provides R5RS Scheme, which is defined in the "r5rs"
    collection.  This file is here only for backward compatibility, use
-   (lib "r5rs.ss" "r5rs") instead.
+   (lib "lang.ss" "r5rs") instead.
 
  * _plt-pretty-big-text.ss_ - provides MzScheme plus the
    following MzLib libraries: etc.ss, file.ss, list.ss,
