@@ -259,6 +259,7 @@ extern "C" {
 extern "C" {
   extern char *scheme_expand_filename(char* filename, int ilen, const char *errorin, int *ex, int guards);
   extern int scheme_is_complete_path(const char *s, long len);
+  extern int scheme_file_exists(const char *s);
   extern char *scheme_find_completion(char *fn);
 }
 
@@ -283,7 +284,8 @@ static int log_base_10(int i)
 class wxCallbackInfo {
 public:
   NavDialogRef dialog;
-  int has_parent;
+  int has_parent, is_put;
+  int need_show_select;
   char *initial_directory;
 };
 
@@ -299,7 +301,6 @@ class wxCallbackCallbackInfo {
  public:
   WindowRef dialog;
   ControlRef txt;
-  NavCBRecPtr callBackParms;
   wxCallbackInfo *cbi;
 };
 
@@ -333,13 +334,18 @@ static OSStatus ok_evt_handler(EventHandlerCallRef inHandlerCallRef,
   result = extract_string(ccbi);
   
   result = scheme_expand_filename(result, -1, NULL, NULL, 0);
-  
+
   if (result && scheme_mac_path_to_spec(result, &spec)) {
     AEDesc desc;
-    NavCBRecPtr callBackParms;
-    callBackParms = ccbi->callBackParms;
     AECreateDesc (typeFSS, &spec, sizeof(FSSpec), &desc);
-    NavCustomControl(callBackParms->context, kNavCtlSetLocation, &desc);
+    if (scheme_file_exists(result)) {
+      NavCustomControl(ccbi->cbi->dialog, kNavCtlSetSelection, &desc);
+      if (ccbi->cbi->is_put) {
+	NavCustomControl(ccbi->cbi->dialog, kNavCtlSetEditFileName, spec.name);
+      }
+    } else
+      NavCustomControl(ccbi->cbi->dialog, kNavCtlSetLocation, &desc);
+    ccbi->cbi->need_show_select = 1;
     AEDisposeDesc(&desc);
     if (!ccbi->cbi->has_parent) {
       ::HideSheetWindow(dialog);
@@ -419,14 +425,14 @@ static OSStatus tab_evt_handler(EventHandlerCallRef inHandlerCallRef,
     return eventNotHandledErr;
 }
 
-static char *extract_current_dir(NavCBRecPtr callBackParms)
+static char *extract_current_dir(NavDialogRef context)
 {
   AEDesc here, there;
   FSRef fsref;
   OSErr err;
   char *dir = NULL;
   
-  NavCustomControl(callBackParms->context, kNavCtlGetLocation, &here);
+  NavCustomControl(context, kNavCtlGetLocation, &here);
   
   err = AECoerceDesc(&here, typeFSRef, &there);
   if (err != noErr) {
@@ -452,8 +458,7 @@ static char *extract_current_dir(NavCBRecPtr callBackParms)
   return dir;
 }
 
-static void do_text_path_dialog(wxCallbackInfo *cbi,
-				NavCBRecPtr callBackParms)
+static void do_text_path_dialog(wxCallbackInfo *cbi)
 {
   int width = 500;
   WindowRef parent, dialog;
@@ -470,7 +475,7 @@ static void do_text_path_dialog(wxCallbackInfo *cbi,
   info = new wxCallbackCallbackInfo;
   info_sr = WRAP_SAFEREF(info);
 
-  init = extract_current_dir(callBackParms);
+  init = extract_current_dir(cbi->dialog);
   if (!init)
     init = "/";
 
@@ -509,7 +514,6 @@ static void do_text_path_dialog(wxCallbackInfo *cbi,
   ::ShowControl(txt);
 
   info->txt = txt;
-  info->callBackParms = callBackParms;
 
   ::SetRect(&r, width - 75, 60, width - 10, 80);
   ::CreatePushButtonControl(dialog, &r, CFSTR("Goto"), &ok);
@@ -547,11 +551,29 @@ static void do_text_path_dialog(wxCallbackInfo *cbi,
   info_sr = NULL;
 }
 
+static OSStatus slash_key_evt_handler(EventHandlerCallRef inHandlerCallRef, 
+				      EventRef inEvent, 
+				      void *inUserData)
+{
+  char c;
+
+  GetEventParameter(inEvent, kEventParamKeyMacCharCodes, typeChar, 
+		    NULL, sizeof(c), NULL, &c);
+
+  if (c == '/') {
+    wxCallbackInfo *cbi = (wxCallbackInfo *)GET_SAFEREF(inUserData);
+    do_text_path_dialog(cbi);
+    return noErr;
+  } else
+    return eventNotHandledErr;
+}
+
 //-----------------------------------------------------------------------------
 // File-selector callback
 //-----------------------------------------------------------------------------
 /* Sets the right initial directory, if one is supplied, and
    redirects '/' to open the text path dialog. */
+
 
 static void ExtensionCallback(NavEventCallbackMessage callBackSelector, 
 			      NavCBRecPtr callBackParms, 
@@ -561,12 +583,19 @@ static void ExtensionCallback(NavEventCallbackMessage callBackSelector,
 
   switch (callBackSelector) {
   case kNavCBEvent:
-    if ((callBackParms->eventData.eventDataParms.event->what == keyUp)
-	&& ((callBackParms->eventData.eventDataParms.event->message & charCodeMask) == '/')) {
-      do_text_path_dialog(cbi, callBackParms);
+    if (cbi->need_show_select) {
+      cbi->need_show_select = 0;
+      NavCustomControl(cbi->dialog, kNavCtlShowSelection, NULL);
     }
     break;
   case kNavCBStart:
+    {
+      EventTypeSpec spec[1];
+      spec[0].eventClass = kEventClassKeyboard;
+      spec[0].eventKind = kEventRawKeyDown;
+      ::InstallEventHandler(GetWindowEventTarget(NavDialogGetWindow(callBackParms->context)), 
+			    slash_key_evt_handler, 1, spec, callBackUD, NULL);
+    }
     if (cbi->initial_directory) {
       FSSpec spec;
       if (scheme_mac_path_to_spec(cbi->initial_directory, &spec)) {
@@ -723,6 +752,7 @@ char *wxFileSelector(char *message, char *default_path,
     }
 
     cbi_sr = WRAP_SAFEREF(cbi);
+    cbi->is_put = 0;
 
     // create the dialog:
     if (flags & wxGETDIR) {
@@ -737,9 +767,11 @@ char *wxFileSelector(char *message, char *default_path,
       derr = NavCreatePutFileDialog(&dialogOptions, 'TEXT', 'mReD',
 				    extProc, cbi_sr,
 				    &outDialog);
+      cbi->is_put = 1;
     }
 
     cbi->dialog = outDialog;
+    cbi->need_show_select = 0;
 
     if (derr != noErr) {
       if (default_filename) 
