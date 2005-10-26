@@ -287,7 +287,7 @@
       ;; test for this preference, reverting back to the default.
       ;; In that case, the default is specified in the pref.ss file
       ;; of the default collection and may not be the default
-      ;; specified below.
+      ;; specified above (of course).
       (preferences:set-un/marshall
        drscheme:language-configuration:settings-preferences-symbol
        (λ (x)

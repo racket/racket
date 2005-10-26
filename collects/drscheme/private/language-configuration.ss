@@ -32,12 +32,8 @@
               [drscheme:help-desk : drscheme:help-desk^])
       
       ;; settings-preferences-symbol : symbol
-      ;; the preferences key for the language settings.
-      ;; depends on the version number, so people can use multiple versions
-      ;; of drscheme and maintain separate language settings for each
-      ;; of them.
-      (define settings-preferences-symbol 
-        (string->symbol (format "drscheme:~a-settings" (version:version))))
+      ;; this pref used to depend on `version', but no longer does.
+      (define settings-preferences-symbol 'drscheme:language-settings)
       
       ;; get-settings-preferences-symbol : -> symbol
       (define (get-settings-preferences-symbol) settings-preferences-symbol)
