@@ -10,7 +10,10 @@ BSTR schemeToBSTR (Scheme_Object * obj);
 static
 LPWSTR schemeUCS4ToUTF16 (const mzchar * buffer, int nchars, long * result_length)
 {
-  return scheme_ucs4_to_utf16 (buffer, 0, nchars, NULL, 0, result_length, 0);
+  LPWSTR s;
+  s = scheme_ucs4_to_utf16 (buffer, 0, nchars, NULL, 0, result_length, 1);
+  s[*result_length] = 0;
+  return s;
 }
 
 static
@@ -33,11 +36,9 @@ LPWSTR schemeByteStringToWideChar (Scheme_Object * obj, long * result_length)
 static
 LPWSTR schemeCharStringToWideChar (Scheme_Object * obj, long * result_length)
 {
-  return
-      scheme_ucs4_to_utf16 (SCHEME_CHAR_STR_VAL (obj),
-			    0, SCHEME_CHAR_STRLEN_VAL (obj),
-			    NULL, 0,
-			    result_length, 0);
+  return schemeUCS4ToUTF16(SCHEME_CHAR_STR_VAL (obj),
+			   SCHEME_CHAR_STRLEN_VAL (obj),
+			   result_length);
 }
 
 static
@@ -190,7 +191,9 @@ void updateSchemeByteStringFromBSTR (Scheme_Object * obj, BSTR bstr)
       scheme_signal_error ("String updated with longer string");
 
   long ncodes;
-  scheme_utf8_encode_to_buffer_len (string, nchars, NULL, 0, &ncodes);
+  scheme_utf8_encode_to_buffer_len (string, nchars, 
+				    SCHEME_BYTE_STR_VAL(obj), SCHEME_BYTE_STRLEN_VAL(obj), 
+				    &ncodes);
   SCHEME_BYTE_STRLEN_VAL(obj) = ncodes;
 }
 

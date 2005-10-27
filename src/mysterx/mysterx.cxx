@@ -55,7 +55,6 @@ HANDLE eventSinkMutex;
 const CLSID emptyClsId;
 
 static Scheme_Object *mx_omit_obj; /* omitted argument placeholder */
-static Scheme_Object *mx_name;     /* module name */
 
 /* Normally false, but when true, mysterx will marshal any scheme */
 /* object it would otherwise fail to marshal by simply sticking   */
@@ -4847,8 +4846,10 @@ Scheme_Object *scheme_initialize (Scheme_Env *env)
   HRESULT hr;
   Scheme_Object *mx_fun;
   int i;
+  Scheme_Object *mx_name;
 
   scheme_register_extension_global (&mx_omit_obj, sizeof (mx_omit_obj));
+  scheme_register_extension_global (&scheme_date_type, sizeof (scheme_date_type));
 
   // should not be necessary, but sometimes
   // this variable is not 0'd out - bug in VC++ or MzScheme?
