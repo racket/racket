@@ -523,7 +523,7 @@ The _utils.ss_ module provides utilities helpful in implementing
     defined by this (quoted) module specification.
   * a list that begins with a 'begin symbol means that the code will
     not be evaluated in a module context at all, it will simply be
-    evaluated in a new namespace.
+    evaluated in a new namespace, after evaluating this list.
 
   The `teachpack-paths' list specifies additional code to load, can be
   one of:
