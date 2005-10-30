@@ -405,10 +405,14 @@ plt/collects/tests/mzscheme/image-test.ss
                [height th]
                [px 0]
                [py 0])))))
-                    
+
+  (define cached-bdc-for-text-size (make-thread-cell #f))
   (define (get-text-size size string)
-    (let* ([bm (make-object bitmap% 1 1)]
-           [dc (make-object bitmap-dc% bm)])
+    (unless (thread-cell-ref cached-bdc-for-text-size)
+      (let* ([bm (make-object bitmap% 1 1)]
+             [dc (make-object bitmap-dc% bm)])
+        (thread-cell-set! cached-bdc-for-text-size dc)))
+    (let ([dc (thread-cell-ref cached-bdc-for-text-size)])
       (let-values ([(w h _1 _2) (send dc get-text-extent string (get-font size))])
         (values (inexact->exact (ceiling w)) 
                 (inexact->exact (ceiling h))))))
