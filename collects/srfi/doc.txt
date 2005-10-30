@@ -64,6 +64,15 @@ which supplies the colliding names with a prefix of 'srfi:'
 (e.g. "srfi:date?", "srfi:date-second") and is therefore suitable for
 requires in a module.
 
+For SRFI 13, this library is called string.ss, and should be required
+like this:
+
+                (require (lib "string.ss" "srfi" "13"))
+
+which supplies the colliding names with a prefix of 's:'
+(that is, s:string-upcase, s:string-downcase, and s:string-titlecase)
+and is therefore suitable for requires in a module.
+
 Supported SRFIs
 ---------------
 
