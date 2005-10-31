@@ -348,16 +348,23 @@
 	  ;; get/set-selected-language-settings (union #f (-> settings))
 	  (define get/set-selected-language-settings #f)
 
-	  ;; language-mixin : (implements language<%>) (implements area-container<%>) get/set ->
+	  (define details-computed? #f)
+          
+          ;; language-mixin : (implements language<%>) 
+          ;;                  (-> (implements area-container<%>))
+          ;;                  get/set 
+          ;;                  ->
           ;;                  ((implements hierlist<%>) -> (implements hierlist<%>))
 	  ;; a mixin that responds to language selections and updates the details-panel
-	  (define (language-mixin language language-details-panel get/set-settings)
+	  (define (language-mixin language get-language-details-panel get/set-settings)
             (λ (%)
               (class* % (hieritem-language<%>)
                 (init-rest args)
                 (public selected)
                 (define (selected)
-                  (send details-panel active-child language-details-panel)
+                  (let ([ldp (get-language-details-panel)])
+                    (when ldp
+                      (send details-panel active-child ldp)))
                   (send one-line-summary-message set-label (send language get-one-line-summary))
                   (send revert-to-defaults-button enable #t)
                   (update-manual-ordering-text language)
@@ -432,6 +439,9 @@
                       n-sp
                       (+ n-ep 1)))))
           
+          ;; construct-details : (union (-> void) #f)
+          (define construct-details void)
+          
           ;; add-language-to-dialog : (instanceof language<%>) -> void
 	  ;; adds the language to the dialog
 	  ;; opens all of the turn-down tags
@@ -469,44 +479,68 @@
                                      [second-number #f]) ;; only non-#f during the second iteration in which case it is the first iterations number
                 (cond
                   [(null? (cdr positions))
-                   (let-values ([(language-details-panel get/set-settings)
-                                 (make-details-panel language)])
-                     (let* ([position (car positions)]
-                            [number (car numbers)]
-                            [mixin (compose
-                                    number-mixin
-                                    (language-mixin language language-details-panel get/set-settings))]
-                            [item
-                             (send hier-list new-item
-                                   (if second-number
-                                       (compose second-number-mixin mixin)
-                                       mixin))]
-                            [text (send item get-editor)]
-                            [delta (send language get-style-delta)])
-                       (send item set-number number)
-                       (when second-number
-                         (send item set-second-number second-number))
-                       (send text insert position)
-                       (when delta
-                         (cond
-                           [(list? delta)
-                            (for-each (λ (x)
-                                        (send text change-style 
-                                              (car x)
-                                              (cadr x)
-                                              (caddr x)))
-                                      delta)]
-                           [(is-a? delta style-delta%)
-                            (send text change-style 
-                                  (send language get-style-delta)
-                                  0
-                                  (send text last-position))])))
-                     (cond
-                       [(equal? (send language-to-show get-language-position)
-                                (send language get-language-position))
-                        (get/set-settings settings-to-show)]
-                       [else
-                        (get/set-settings (send language default-settings))]))]
+                   (let* ([language-details-panel #f]
+                          [real-get/set-settings 
+                           (case-lambda
+                             [() 
+                              (cond
+                                [(equal? (send language-to-show get-language-position)
+                                         (send language get-language-position))
+                                 settings-to-show]
+                                [else
+                                 (send language default-settings)])]
+                             [(x) (void)])]
+                          [get-language-details-panel
+                           (lambda () language-details-panel)]
+                          [get/set-settings (lambda x (apply real-get/set-settings x))]
+                          [position (car positions)]
+                          [number (car numbers)]
+                          [mixin (compose
+                                  number-mixin
+                                  (language-mixin language get-language-details-panel get/set-settings))]
+                          [item
+                           (send hier-list new-item
+                                 (if second-number
+                                     (compose second-number-mixin mixin)
+                                     mixin))]
+                          [text (send item get-editor)]
+                          [delta (send language get-style-delta)])
+                     
+                     (set! construct-details
+                           (let ([old construct-details])
+                             (lambda ()
+                               (old)
+                               (let-values ([(language-details-panel-real get/set-settings)
+                                             (make-details-panel language)])
+                                 (set! language-details-panel language-details-panel-real)
+                                 (set! real-get/set-settings get/set-settings))
+                               
+                               (cond
+                                 [(equal? (send language-to-show get-language-position)
+                                          (send language get-language-position))
+                                  (get/set-settings settings-to-show)
+                                  (send details-panel active-child language-details-panel)]
+                                 [else
+                                  (get/set-settings (send language default-settings))]))))
+                     
+                     (send item set-number number)
+                     (when second-number
+                       (send item set-second-number second-number))
+                     (send text insert position)
+                     (when delta
+                       (cond
+                         [(list? delta)
+                          (for-each (λ (x)
+                                      (send text change-style 
+                                            (car x)
+                                            (cadr x)
+                                            (caddr x)))
+                                    delta)]
+                         [(is-a? delta style-delta%)
+                          (send text change-style 
+                                (send language get-style-delta)
+                                0
+                                (send text last-position))])))]
                   [else (let* ([position (car positions)]
                                [number (car numbers)]
                                [sub-ht/sub-hier-list
@@ -651,13 +685,21 @@
           ;; details-callback : -> void
           ;; flips the details-shown? flag and resets the GUI
           (define (details-callback)
-            (set! details-shown? (not details-shown?))
-            (when re-center
-              (send re-center begin-container-sequence))
-            (update-show/hide-details)
-            (when re-center
-              (send re-center center 'both)
-              (send re-center end-container-sequence)))
+            (let ([do-construction? (and construct-details #t)])
+              (when do-construction?
+                (send details-button enable #f)
+                (construct-details)
+                (set! construct-details #f))
+            
+              (set! details-shown? (not details-shown?))
+              (when re-center
+                (send re-center begin-container-sequence))
+              (update-show/hide-details)
+              (when re-center
+                (send re-center center 'both)
+                (send re-center end-container-sequence))
+              (when do-construction?
+                (send details-button enable #t))))
           
           ;; show/hide-details : -> void
           ;; udpates the GUI based on the details-shown? flag
