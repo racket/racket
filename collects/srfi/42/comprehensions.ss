@@ -14,6 +14,7 @@
     : :list :string :vector :integers :range :real-range :char-range 
       :port :dispatched :do :let :parallel :while :until
     :-dispatch-ref :-dispatch-set! make-initial-:-dispatch 
+    dispatch-union
     :generator-proc )
 
 ; There is a subtle point in defining a macro inside a module 
