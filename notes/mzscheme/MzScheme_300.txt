@@ -499,8 +499,12 @@ at nearly the top level of the hierarchy. In particular, most
 instead of the old (and now removed) `not-break-exn?' predicate.
 
 The "type" and "mismatch" exceptions have been merged into
-`exn:fail:contract'. Similarly, `exn:i/o:tcp' and `exn:i/o:udp'
-have been merged into `exn:fail:network'.
+`exn:fail:contract'. Similarly, `exn:i/o:tcp' and `exn:i/o:udp' have
+been merged into `exn:fail:network', `exn:i/o:filesystem' has moved to
+`exn:fail:filesystem', and other `exn:i/o' exceptions have been
+simplified to just `exn:fail'. The `exn:read' and `exn:syntax'
+hierarchies moved to `exn:fail:read' and `exn:fail:syntax'. Most other
+exceptions merged with `exn:fail:contract' or simply `exn:fail'.
 
 Many exception fields have been eliminated, but certain exceptions
 contain multiple source locations instead of just one. Instead of a
@@ -509,8 +513,8 @@ single type for all exceptions with source locations, the
 information.
 
 Field guards are triggered when an exception record is created, and it
- checks the "type" of the field arguments. Mutators are not exported
- for exception fields.
+checks the "type" of the field arguments. Mutators are not exported
+for exception fields.
 
 Structs:
 
@@ -533,17 +537,16 @@ Structs:
       exn:fail:unsupported
     exn:break  - continuation
 
-  special-comment  - width
-  ; Note: not exn:special-comment, because it doesn't need
-  ;  a message or marks
-
 Properties:
 
- exn:srclocs  - accessor
+  exn:srclocs  - accessor
 
 ======================================================================
  Inside MzScheme (extend MzScheme via C)
 ======================================================================
+
+[See "PLT Foreign Interface Manual" for a new alternative to extending
+MzScheme with C code.]
 
 A structure that represents a Scheme type should now start with a
 Scheme_Object, instead of Scheme_Type. A Scheme_Object contains only a
