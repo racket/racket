@@ -839,13 +839,13 @@ SSL_METHOD *check_encrypt_and_convert(const char *name, int argc, Scheme_Object 
     
   v = argv[pos];
 
-  if(!SAME_OBJ(v, scheme_intern_symbol("sslv2-or-v3"))) {
+  if (SAME_OBJ(v, scheme_intern_symbol("sslv2-or-v3"))) {
     return (c ? SSLv23_client_method() : SSLv23_server_method());
-  } else if(!SAME_OBJ(v, scheme_intern_symbol("sslv2"))) {
+  } else if(SAME_OBJ(v, scheme_intern_symbol("sslv2"))) {
     return (c ? SSLv2_client_method() : SSLv2_server_method());
-  } else if(!SAME_OBJ(v, scheme_intern_symbol("sslv3"))) {
+  } else if(SAME_OBJ(v, scheme_intern_symbol("sslv3"))) {
     return (c ? SSLv3_client_method() : SSLv3_server_method());
-  } else if(!SAME_OBJ(v, scheme_intern_symbol("tls"))) {
+  } else if(SAME_OBJ(v, scheme_intern_symbol("tls"))) {
     return (c ? TLSv1_client_method() : TLSv1_server_method());
   } else {
 #   define ALLOWED_SYMS "'sslv2-or-v3, 'sslv2, 'sslv3, or 'tls"
@@ -1457,7 +1457,7 @@ ssl_mk_ctx(int argc, Scheme_Object *argv[])
   SSL_METHOD *meth;
   SSL_CTX *ctx;
 
-  meth = check_encrypt_and_convert("ssl-make-context", argc, argv, 0, 1, 0);
+  meth = check_encrypt_and_convert("ssl-make-client-context", argc, argv, 0, 1, 0);
 
   c = (mzssl_ctx_t *)scheme_malloc_tagged(sizeof(mzssl_ctx_t));
   c->so.type = ssl_ctx_type;
@@ -1806,7 +1806,7 @@ Scheme_Object *scheme_reload(Scheme_Env *env)
   v = scheme_make_prim_w_arity(ssl_set_verify,"ssl-set-verify!",2,2);
   scheme_add_global("ssl-set-verify!", v, env);
 
-  v = scheme_make_prim_w_arity(ssl_mk_ctx,"ssl-make-client-context",0,0);
+  v = scheme_make_prim_w_arity(ssl_mk_ctx,"ssl-make-client-context",0,1);
   scheme_add_global("ssl-make-client-context", v, env);
 
   v = scheme_make_prim_w_arity(ssl_ctx_p,"ssl-client-context?",1,1);
@@ -1817,9 +1817,6 @@ Scheme_Object *scheme_reload(Scheme_Env *env)
 
   v = scheme_make_prim_w_arity(ssl_accept_break,"ssl-accept/enable-break",1,1);
   scheme_add_global("ssl-accept/enable-break", v, env);
-
-  v = scheme_make_prim_w_arity(ssl_mk_ctx,"ssl-make-context",0,1);
-  scheme_add_global("ssl-make-context", v, env);
 
   v = scheme_make_prim_w_everything(ssl_addresses, 0, "ssl-addresses", 1, 1, 0, 2, 2);
   scheme_add_global("ssl-addresses", v, env);

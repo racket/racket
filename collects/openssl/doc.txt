@@ -39,7 +39,7 @@ return values are as tcp-connect; an input port and an output port.
 The optional `ssl-context-or-protocol-symbol' argument determines
 which encryption protocol is used, whether the server's certificate is
 checked, etc. The argument can be either a client context created by
-`make-client-context' (see below), or one of the following symbols:
+`ssl-make-client-context' (see below), or one of the following symbols:
 'sslv2-or-v3 (the default), 'sslv2, 'sslv3, or 'tls; see
 `make-client-context' for further details (including the meanings of
 the protocol symbols.)
@@ -116,8 +116,8 @@ Analogous to `tcp-accept/enable-break'.
 > (ssl-load-certificate-chain! ssl-client-context-or-listener pathname)
 
 Loads a PEM-format certification chain file for connections to made
-with the given context (created by `ssl-make-context') or listener
-(created by `ssl-listener').
+with the given context (created by `ssl-make-client-context') or
+listener (created by `ssl-listener').
 
 This chain is used to identify the client or server when it connects
 or accepts connections. Loading a chain overwrites the old chain. Also
