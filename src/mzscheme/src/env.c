@@ -100,6 +100,8 @@ static Scheme_Object *read_resolve_prefix(Scheme_Object *obj);
 
 static void skip_certain_things(Scheme_Object *o, Scheme_Close_Custodian_Client *f, void *data);
 
+int scheme_is_module_begin_env(Scheme_Comp_Env *env);
+
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
 #endif

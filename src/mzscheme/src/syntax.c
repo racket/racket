@@ -3019,6 +3019,8 @@ quote_syntax_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_In
   if (len != 2)
     bad_form(form, len);
 
+  scheme_rec_add_certs(rec, drec, form);
+
   stx = SCHEME_STX_CDR(form);
   stx = SCHEME_STX_CAR(stx);
 

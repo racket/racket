@@ -1984,6 +1984,14 @@
 	[(_ stxe kl clause ...)
 	 (syntax (syntax-case** _ #f stxe kl module-identifier=? clause ...))])))
 
+  (-define loc-insp (current-code-inspector))
+  (-define (relocate loc stx)
+    (let ([new-stx (datum->syntax-object
+		    stx
+		    (syntax-e stx)
+		    loc)])
+      (syntax-recertify new-stx stx loc-insp #f)))
+
   ;; Like syntax, but also takes a syntax object
   ;; that supplies a source location for the
   ;; resulting syntax object.
@@ -1991,11 +1999,7 @@
     (lambda (stx)
       (syntax-case** #f #t stx () module-identifier=?
 	[(_ loc pattern)
-	 (syntax (let ([stx (syntax pattern)])
-		   (datum->syntax-object
-		    stx
-		    (syntax-e stx)
-		    loc)))])))
+	 (syntax (relocate loc (syntax pattern)))])))
 
   (provide syntax/loc syntax-case* syntax-case))
 
