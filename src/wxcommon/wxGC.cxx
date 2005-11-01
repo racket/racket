@@ -123,21 +123,35 @@ void gc_cleanup::install_cleanup(void)
 # endif
 }
 
+#define SHOW_CLEANUP_TIMES 0
+
+#if SHOW_CLEANUP_TIMES
+extern "C" long scheme_get_process_milliseconds();
+#endif
+
 void GC_cleanup(void *obj, void *)
 {
   gc *clean = (gc *)gcPTR_TO_OBJ(obj);
 
 #ifdef MZ_PRECISE_GC
 # ifdef COMPACT_BACKTRACE_GC  
-#  if 0
-  {
-    char *s;
-    s = clean->gcGetName();
-    printf("CLeanup: %s\n", s ? s : "???");
-  }
+#  if SHOW_CLEANUP_TIMES
+  long start;
+  start = scheme_get_process_milliseconds();
+  char *s;
+  s = clean->gcGetName();
+  printf("Cleanup: %s\n", s ? s : "???");
 #  endif
 # endif
+
   GC_cpp_delete(clean);
+
+# ifdef COMPACT_BACKTRACE_GC  
+#  if SHOW_CLEANUP_TIMES
+  start = scheme_get_process_milliseconds() - start;
+  printf("  done %d\n", start);
+#  endif
+# endif
 #else
   clean->~gc();
 #endif
