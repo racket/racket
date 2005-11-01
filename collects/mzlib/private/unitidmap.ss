@@ -28,7 +28,7 @@
 	   (binding
 	    the-binder (car (syntax-e sstx))
 	    (datum->syntax-object
-	     set!-stx
+	     sstx
 	     (cons unbox-stx (cdr (syntax-e sstx)))
 	     sstx))])))))
 
