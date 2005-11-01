@@ -1077,15 +1077,15 @@ static double DrawMeasUnicodeText(const char *text, int d, int theStrlen, int uc
 	  ATSUAttributeValuePtr ll_theValues[2];
 	  ATSLineLayoutOptions ll_attribs;
 
+	  ll_attribs = (kATSLineHasNoHangers
+			| kATSLineHasNoOpticalAlignment);
+
 	  if (qd_spacing) {
-	    ll_attribs = (kATSLineFractDisable 
-			  | kATSLineDisableAutoAdjustDisplayPos
-			  | kATSLineDisableAllLayoutOperations
-			  | kATSLineUseDeviceMetrics
-			  | (use_cgctx ? 0 : kATSLineUseQDRendering));
-	  } else {
-	    ll_attribs = (kATSLineHasNoHangers
-			  | kATSLineHasNoOpticalAlignment);
+	    ll_attribs |= (kATSLineFractDisable 
+			   | kATSLineDisableAutoAdjustDisplayPos
+			   | kATSLineDisableAllLayoutOperations
+			   | kATSLineUseDeviceMetrics
+			   | (use_cgctx ? 0 : kATSLineUseQDRendering));
 	  }
 	  ll_theTags[cnt] = kATSULineLayoutOptionsTag;
 	  ll_theSizes[cnt] = sizeof(ATSLineLayoutOptions);
