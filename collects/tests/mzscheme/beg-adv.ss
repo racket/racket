@@ -201,6 +201,6 @@
 (htdp-syntax-test #'(my-y 17) #rx"not defined, not an argument, and not a primitive name")
 (htdp-syntax-test #'(cond [true my-y 17]) #rx"not defined, not an argument, and not a primitive name")
 (htdp-syntax-test #'(define my-f 12) #rx"cannot be re-defined")
-(htdp-syntax-test #'(define my-x 12) #rx"cannot be re-defined")
+(htdp-syntax-test #'(define (my-x h) 12) #rx"cannot be re-defined")
 (htdp-top-pop 1)
 (htdp-top-pop 1)
