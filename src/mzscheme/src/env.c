@@ -3292,14 +3292,16 @@ certifier(void *_data, int argc, Scheme_Object **argv)
     scheme_wrong_type("certifier", "syntax", 0, argc, argv);
 
   if (argc > 2) {
-    if (SCHEME_CLSD_PRIMP(argv[2])
-	&& (((Scheme_Closed_Primitive_Proc *)argv[2])->prim_val == introducer_proc))
-      mark = (Scheme_Object *)((Scheme_Closed_Primitive_Proc *)argv[2])->data;
-    else {
-      scheme_wrong_type("certifier", 
-			"procedure from make-syntax-introducer", 
-			2, argc, argv);
-      return NULL;
+    if (SCHEME_TRUEP(argv[2])) {
+      if (SCHEME_CLSD_PRIMP(argv[2])
+	  && (((Scheme_Closed_Primitive_Proc *)argv[2])->prim_val == introducer_proc))
+	mark = (Scheme_Object *)((Scheme_Closed_Primitive_Proc *)argv[2])->data;
+      else {
+	scheme_wrong_type("certifier", 
+			  "procedure from make-syntax-introducer or #f", 
+			  2, argc, argv);
+	return NULL;
+      }
     }
   }
 
@@ -3307,14 +3309,14 @@ certifier(void *_data, int argc, Scheme_Object **argv)
     s = scheme_stx_cert(s, mark, 
 			(Scheme_Env *)(cert_data[1] ? cert_data[1] : cert_data[2]),
 			cert_data[0],
-			(argc > 1) ? argv[1] : NULL,
+			((argc > 1) && SCHEME_TRUEP(argv[1])) ? argv[1] : NULL,
 			0 /* inactive cert */);
     if (cert_data[1] && cert_data[2] && !SAME_OBJ(cert_data[1], cert_data[2])) {
       /* Have module we're expanding, in addition to module that bound
 	 the expander. */
       s = scheme_stx_cert(s, mark, (Scheme_Env *)cert_data[2],
 			  NULL,
-			  (argc > 1) ? argv[1] : NULL,
+			  ((argc > 1) && SCHEME_TRUEP(argv[1])) ? argv[1] : NULL,
 			  0  /* inactive cert */);
     }
   }

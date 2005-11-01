@@ -157,7 +157,10 @@ static Module_Renames *krn;
 
    Each wrap-elem has one of several shapes:
 
-   - A wrap-elem <num> is a mark
+   - A wrap-elem <+num> is a mark
+
+   - A wrap-elem <-num> is a certificate-only mark (doesn't conttribute to
+       id equivalence)
 
    - A wrap-elem (vector <sym> <ht> <stx> ... <sym-or-void> ...) is a lexical rename
                          env  (sym   var      var-resolved
@@ -187,6 +190,8 @@ static Module_Renames *krn;
   The lazy_prefix field of a syntax object keeps track of how many of
   the first wraps (items and chunks in the list) need to be propagated
   to sub-syntax.  */
+
+#define IS_POSMARK(x) (SCHEME_INTP(x) ? (SCHEME_INT_VAL(x) >= 0) : SCHEME_BIGPOS(x))
 
 /*========================================================================*/
 /*                            wrap chunks                                 */
@@ -742,6 +747,11 @@ Scheme_Object *scheme_new_mark()
 {
   mark_id = scheme_add1(1, &mark_id);
   return mark_id;
+}
+
+static Scheme_Object *negate_mark(Scheme_Object *n)
+{
+  return scheme_bin_minus(scheme_make_integer(0), n);
 }
 
 Scheme_Object *scheme_add_remove_mark(Scheme_Object *o, Scheme_Object *m)
@@ -1617,9 +1627,9 @@ Scheme_Object *scheme_stx_cert(Scheme_Object *o, Scheme_Object *mark, Scheme_Env
 			       int active)
      /* If `name' is module-bound, add the module's certification.
 	Also copy any certifications from plus_stx.
-	If mark is non-NULL, make inactive certificates active. */
+	If active and mark is non-NULL, make inactive certificates active. */
 {
-  if (mark)
+  if (mark && active)
     o = scheme_stx_activate_certs(o);
 
   if (plus_stx_or_certs) {
@@ -1646,8 +1656,9 @@ Scheme_Object *scheme_stx_cert(Scheme_Object *o, Scheme_Object *mark, Scheme_Env
     res->u.lazy_prefix = stx->u.lazy_prefix;
 
     if (SCHEME_FALSEP(mark)) {
-      /* Need to invent a mark and apply it */
+      /* Need to invent a certificate-only mark and apply it */
       mark = scheme_new_mark();
+      mark = negate_mark(mark);
       res = (Scheme_Stx *)scheme_add_remove_mark((Scheme_Object *)res, mark);
     }
 
@@ -1739,6 +1750,7 @@ Scheme_Object *scheme_stx_content(Scheme_Object *o)
 }
 
 Scheme_Object *scheme_stx_extract_marks(Scheme_Object *stx)
+/* Does not include negative marks */
 {
   WRAP_POS awl;
   Scheme_Object *acur_mark, *first = scheme_null, *last = NULL, *p;
@@ -1746,20 +1758,21 @@ Scheme_Object *scheme_stx_extract_marks(Scheme_Object *stx)
   WRAP_POS_INIT(awl, ((Scheme_Stx *)stx)->wraps);
 
   while (1) {
-    /* Skip over renames and cancelled marks: */
+    /* Skip over renames, cancelled marks, and negative marks: */
     acur_mark = NULL;
     while (1) {
       if (WRAP_POS_END_P(awl))
 	break;
-      if (SCHEME_NUMBERP(WRAP_POS_FIRST(awl))) {
+      p = WRAP_POS_FIRST(awl);
+      if (SCHEME_NUMBERP(p) && IS_POSMARK(p)) {
 	if (acur_mark) {
-	  if (SAME_OBJ(acur_mark, WRAP_POS_FIRST(awl))) {
+	  if (SAME_OBJ(acur_mark, p)) {
 	    acur_mark = NULL;
 	    WRAP_POS_INC(awl);
 	  } else
 	    break;
 	} else {
-	  acur_mark = WRAP_POS_FIRST(awl);
+	  acur_mark = p;
 	  WRAP_POS_INC(awl);
 	}
       } else {
@@ -2042,7 +2055,7 @@ static int same_marks(WRAP_POS *_awl, WRAP_POS *_bwl, int ignore_barrier,
     while (1) {
       if (WRAP_POS_END_P(awl))
 	break;
-      if (SCHEME_NUMBERP(WRAP_POS_FIRST(awl))) {
+      if (SCHEME_NUMBERP(WRAP_POS_FIRST(awl)) && IS_POSMARK(WRAP_POS_FIRST(awl))) {
 	if (acur_mark) {
 	  if (SAME_OBJ(acur_mark, WRAP_POS_FIRST(awl))) {
 	    acur_mark = NULL;
@@ -2084,7 +2097,7 @@ static int same_marks(WRAP_POS *_awl, WRAP_POS *_bwl, int ignore_barrier,
     while (1) {
       if (WRAP_POS_END_P(bwl))
 	break;
-      if (SCHEME_NUMBERP(WRAP_POS_FIRST(bwl))) {
+      if (SCHEME_NUMBERP(WRAP_POS_FIRST(bwl)) && IS_POSMARK(WRAP_POS_FIRST(bwl))) {
 	if (bcur_mark) {
 	  if (SAME_OBJ(bcur_mark, WRAP_POS_FIRST(bwl))) {
 	    bcur_mark = NULL;
@@ -2134,6 +2147,7 @@ static int same_marks(WRAP_POS *_awl, WRAP_POS *_bwl, int ignore_barrier,
 }
 
 static int includes_mark(Scheme_Object *wraps, Scheme_Object *mark)
+/* Checks for positive or negative (certificate-only) mark */
 {
   WRAP_POS awl;
   Scheme_Object *acur_mark;
@@ -2172,6 +2186,7 @@ static int includes_mark(Scheme_Object *wraps, Scheme_Object *mark)
 }
 
 static void add_all_marks(Scheme_Object *wraps, Scheme_Hash_Table *marks)
+/* Adds both positive and negative marks to marks table */
 {
   WRAP_POS awl;
   Scheme_Object *acur_mark;
@@ -2756,44 +2771,6 @@ int scheme_stx_parallel_is_used(Scheme_Object *sym, Scheme_Object *stx)
   return 0;
 }
 
-
-static void hash_marks(Scheme_Hash_Table *ht, Scheme_Object *wraps)
-{
-  WRAP_POS awl;
-  Scheme_Object *acur_mark;
-
-  WRAP_POS_INIT(awl, wraps);
-
-  while (1) {
-    /* Skip over renames, etc., but ignore mark barriers: */
-    acur_mark = NULL;
-    while (1) {
-      if (WRAP_POS_END_P(awl))
-	break;
-      if (SCHEME_NUMBERP(WRAP_POS_FIRST(awl))) {
-	if (acur_mark) {
-	  if (SAME_OBJ(acur_mark, WRAP_POS_FIRST(awl))) {
-	    acur_mark = NULL;
-	    WRAP_POS_INC(awl);
-	  } else
-	    break;
-	} else {
-	  acur_mark = WRAP_POS_FIRST(awl);
-	  WRAP_POS_INC(awl);
-	}
-      } else {
-	WRAP_POS_INC(awl);
-      }
-    }
-
-    if (acur_mark)
-      scheme_hash_set(ht, acur_mark, scheme_true);
-
-    if (WRAP_POS_END_P(awl))
-      return;
-  }
-}
-
 int scheme_stx_has_more_certs(Scheme_Object *id, Scheme_Object *id_certs,
 			      Scheme_Object *than_id, Scheme_Object *than_id_certs)
   /* There's a good chance that certs is an extension of than_certs. */
@@ -2811,7 +2788,7 @@ int scheme_stx_has_more_certs(Scheme_Object *id, Scheme_Object *id_certs,
     id_marks_ht = NULL;
   } else
     ht = scheme_make_hash_table(SCHEME_hash_ptr);
-  hash_marks(ht, ((Scheme_Stx *)id)->wraps);
+  add_all_marks(((Scheme_Stx *)id)->wraps, ht);
 
   for (i = 0; i < 2; i++) {
     if (i)
@@ -2827,7 +2804,7 @@ int scheme_stx_has_more_certs(Scheme_Object *id, Scheme_Object *id_certs,
 	    than_id_marks_ht = NULL;
 	  } else
 	    t_ht = scheme_make_hash_table(SCHEME_hash_ptr);
-	  hash_marks(t_ht, ((Scheme_Stx *)than_id)->wraps);
+	  add_all_marks(((Scheme_Stx *)than_id)->wraps, t_ht);
 	}
 	if (scheme_hash_get(t_ht, certs->mark)) {
 	  /* than_id has the same mark */
@@ -3772,11 +3749,11 @@ int scheme_syntax_is_graph(Scheme_Object *stx)
 /*                            datum->wraps                                */
 /*========================================================================*/
 
-static Scheme_Object *unmarshal_mark(Scheme_Object *a, Scheme_Hash_Table *rns)
+static Scheme_Object *unmarshal_mark(Scheme_Object *_a, Scheme_Hash_Table *rns)
 {
-  Scheme_Object *n;
+  Scheme_Object *n, *a = _a;
 
-  if (SCHEME_INTP(a))
+  if (SCHEME_INTP(a) && IS_POSMARK(a))
     a = scheme_make_integer(-SCHEME_INT_VAL(a));
   else
     a = scheme_intern_symbol(scheme_number_to_string(10, a));
@@ -3786,6 +3763,10 @@ static Scheme_Object *unmarshal_mark(Scheme_Object *a, Scheme_Hash_Table *rns)
   if (!n) {
     /* Map marshaled mark to a new mark. */
     n = scheme_new_mark();
+    if (!IS_POSMARK(_a)) {
+      /* Map negative mark to negative mark: */
+      n = negate_mark(n);
+    }
     scheme_hash_set(rns, a, n);
   }
   
