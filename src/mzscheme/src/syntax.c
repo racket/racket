@@ -3096,7 +3096,8 @@ do_define_syntaxes_execute(Scheme_Object *form, Scheme_Env *dm_env, int for_stx)
 
   rhs_env = scheme_new_comp_env(scheme_get_env(NULL), NULL, SCHEME_TOPLEVEL_FRAME);
 
-  dm_env = scheme_environment_from_dummy(dummy);
+  if (!dm_env)
+    dm_env = scheme_environment_from_dummy(dummy);
 
   scheme_on_next_top(rhs_env, NULL, scheme_false, NULL, dm_env, dm_env->link_midx);
   return define_execute(SCHEME_CAR(form), SCHEME_CDR(form), for_stx ? 2 : 1, rp, dm_env);
