@@ -3780,19 +3780,19 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
 	    /* Check that it's not yet defined: */
 	    if (scheme_lookup_in_table(env->genv->toplevel, (const char *)name)) {
-	      scheme_wrong_syntax("module", name, e, "duplicate definition for identifier");
+	      scheme_wrong_syntax("module", orig_name, e, "duplicate definition for identifier");
 	      return NULL;
 	    }
 
 	    /* Not required: */
 	    if (scheme_hash_get(required, name)) {
-	      scheme_wrong_syntax("module", name, e, "identifier is already imported");
+	      scheme_wrong_syntax("module", orig_name, e, "identifier is already imported");
 	      return NULL;
 	    }
 
 	    /* Not syntax: */
 	    if (scheme_lookup_in_table(env->genv->syntax, (const char *)name)) {
-	      scheme_wrong_syntax("module", name, e, "duplicate definition for identifier");
+	      scheme_wrong_syntax("module", orig_name, e, "duplicate definition for identifier");
 	      return NULL;
 	    }
 
@@ -3847,7 +3847,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	    name = scheme_tl_id_sym(oenv->genv, name, 2);
 	    
 	    if (scheme_lookup_in_table(oenv->genv->syntax, (const char *)name)) {
-	      scheme_wrong_syntax("module", name, e, 
+	      scheme_wrong_syntax("module", orig_name, e, 
 				  (for_stx
 				   ? "duplicate for-syntax definition for identifier"
 				   : "duplicate definition for identifier"));
@@ -3856,7 +3856,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	    
 	    /* Check that it's not yet defined: */
 	    if (scheme_lookup_in_table(oenv->genv->toplevel, (const char *)name)) {
-	      scheme_wrong_syntax("module", name, e, 
+	      scheme_wrong_syntax("module", orig_name, e, 
 				  (for_stx
 				   ? "duplicate for-syntax definition for identifier"
 				   : "duplicate definition for identifier"));
@@ -3865,7 +3865,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
 	    /* Not required: */
 	    if (scheme_hash_get(for_stx ? et_required : required, name)) {
-	      scheme_wrong_syntax("module", name, e, 
+	      scheme_wrong_syntax("module", orig_name, e, 
 				  (for_stx
 				   ? "identifier is already imported for syntax"
 				   : "identifier is already imported"));
