@@ -23,4 +23,6 @@
 (htdp-error-test #'1)
 (htdp-top-pop 1)
 
-
+(htdp-top (define (my-f x) (+ x 5)))
+(htdp-syntax-test #'my-f #rx"a procedure, so it must be applied")
+(htdp-top-pop 1)

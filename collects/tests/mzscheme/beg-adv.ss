@@ -65,6 +65,8 @@
 (htdp-test 9 'app-f (f 4))
 (htdp-top (define f2 (lambda (y) (+ x y))))
 (htdp-test 15 'app-f (f 10))
+(htdp-top-pop 1)
+(htdp-top-pop 1)
 
 (htdp-top (define-struct a0 ()))
 (htdp-top (define-struct a1 (b)))
@@ -145,18 +147,21 @@
 (htdp-error-test #'(define (an-example-structure x) 5))
 (htdp-error-test #'(define-struct an-example-structure (y)))
 (htdp-error-test #'(define-struct an-example (structure y)))
+(htdp-top-pop 1)
 
 (htdp-top (define an-example-value 12))
 (htdp-error-test #'(define an-example-value 5))
 (htdp-error-test #'(define (an-example-value x) 5))
 (htdp-error-test #'(define-struct an-example-value (y)))
 (htdp-error-test #'(define-struct an-example (value y)))
+(htdp-top-pop 1)
 
 (htdp-top (define (an-example-function x) x))
 (htdp-error-test #'(define an-example-function 5))
 (htdp-error-test #'(define (an-example-function x) 5))
 (htdp-error-test #'(define-struct an-example-function (y)))
 (htdp-error-test #'(define-struct an-example (function y)))
+(htdp-top-pop 1)
 
 (htdp-test #t 'equal? (equal? 1 1))
 (htdp-test #t 'equal? (equal? (list 1) (list 1)))
@@ -184,3 +189,18 @@
 (htdp-test #t 'equal~? (equal~? (make-a1 #i2.0) (make-a1 2) #i0.2))
 (htdp-test #f 'equal~? (equal~? (make-a1 #i2.3) (make-a1 2) #i0.2))
 
+(htdp-top-pop 1)
+(htdp-top-pop 1)
+(htdp-top-pop 1)
+
+;; Error messages
+(htdp-top (define my-x 5))
+(htdp-top (define (my-f x) (+ x 5)))
+(htdp-syntax-test #'(cond [true my-x 5]) #rx"found a clause with 3 parts")
+(htdp-syntax-test #'(define foo17 my-x 5) #rx"found one extra part")
+(htdp-syntax-test #'(my-y 17) #rx"not defined, not an argument, and not a primitive name")
+(htdp-syntax-test #'(cond [true my-y 17]) #rx"not defined, not an argument, and not a primitive name")
+(htdp-syntax-test #'(define my-f 12) #rx"cannot be re-defined")
+(htdp-syntax-test #'(define my-x 12) #rx"cannot be re-defined")
+(htdp-top-pop 1)
+(htdp-top-pop 1)

@@ -1,10 +1,8 @@
 
-;; Implements the Teaching languages, at least in terms of the
-;; forms. The reader-level aspects of the language (e.g.,
-;; case-sensitivity) are not implemented here, and the procedures are
-;; in a separate module. Also, the "reference to uninitialized module
-;; identifier" message must be replaced with an "identifier used before
-;; its definition was evaluated" error that omits the name.
+;; Implements the syntactic forms for the HtDP teaching languages. The
+;; reader-level aspects of the language (e.g., case-sensitivity) are
+;; not implemented here, and the procedures are in a separate
+;; module.
 
 ;; To a first approximation, this module is one big error-checking
 ;; routine. In other words, most of the syntax implementations are
@@ -16,12 +14,24 @@
 ;;  - Report errors according to a left-to-right reading; e.g., the
 ;;    error in `(define 1 2 3)' is "expected an identifier, found 1",
 ;;    not "expected two parts after `define', but found three".
-;;  - Left-to-right reporting sometimes requires an explicit expression
-;;    check (via `local-expand') before reporting some other error. For
-;;    example, in the expression (define (f x) + 1 2), the reported
-;;    error should be for a misuse of "+", not that there are two extra
-;;    parts in the definition. Avoid using `local-expand' if there's
-;;    no error, however.
+;;  - The error message should always explain what is wrong, not simply
+;;    state a fact. For example, "f defined previously, so it cannot
+;;    be re-defined here" is a good error message; in contrast, "found
+;;    second definition of f here" doesn't say what's wrong with a second
+;;    definition.
+
+;; Left-to-right reporting sometimes requires an explicit expression
+;; check before reporting some other error. For example, in the
+;; expression (cond [true + 1 2]), the reported error should ideally
+;; be for a misuse of "+", not that there are two extra parts in the
+;; clause. This check requires local-expanding, so it doesn't work
+;; when checkign top-level forms like `define' (because not all of the
+;; definitions are ready, yet). For other cases, ensure that the
+;; expansion is in an expression position (not the top level) and use
+;; the `local-expand-for-error' function instead of `local-expand' to
+;; help declare that the expansion is merely for left-to-right error
+;; reporting. As always, avoid using `local-expand' if there's no
+;; error.
 
 (module teach mzscheme
   (require (lib "etc.ss")
@@ -169,6 +179,12 @@
 	    (raise-syntax-error form msg stx detail)
 	    (raise-syntax-error form msg stx))))
     
+    (define (binding-in-this-module? b)
+      (and (list? b)
+	   (module-path-index? (car b))
+	   (let-values ([(path base) (module-path-index-split (car b))])
+	     (and (not path) (not base)))))
+    
     ;; The syntax error when a form's name doesn't follow a "("
     (define (bad-use-error name stx)
       (teach-syntax-error
@@ -242,12 +258,6 @@
     (define (check-definition-new who stx name defn)
       (check-definitions-new who stx (list name) defn))
 
-    (define (binding-in-this-module? b)
-      (and (list? b)
-	   (module-path-index? (car b))
-	   (let-values ([(path base) (module-path-index-split (car b))])
-	     (and (not path) (not base)))))
-    
     ;; Check context for a `define' before even trying to
     ;; expand
     (define-struct expanding-for-intermediate-local ())
@@ -256,6 +266,19 @@
 	(or (memq ctx '(top-level module module-begin))
 	    (and (pair? ctx)
 		 (expanding-for-intermediate-local? (car ctx))))))
+
+    (define (local-expand-for-error stx ctx stops)
+      ;; This function should only be called in an 'expression
+      ;;  context. In case we mess up, avoid bogus error messages.
+      (when (memq (syntax-local-context) '(expression))
+	(local-expand stx ctx stops)))
+
+    (define (ensure-expression stx k)
+      (if (memq (syntax-local-context) '(expression))
+	  (k)
+	  (syntax-property #`(values #,stx)
+			   'stepper-skipto 
+			   (list syntax-e cdr syntax-e cdr car))))
 
     ;; Use to generate nicer error messages than direct pattern
     ;; matching. The `where' argument is an English description
@@ -278,8 +301,8 @@
 	;;  have to stop at advanced-set!, in case it's used with
 	;;  one of the identifiers in will-bind.
 	(when will-bind
-	  (local-expand (car exprs) 'expression (cons #'advanced-set!
-						      will-bind)))
+	  (local-expand-for-error (car exprs) 'expression (cons #'advanced-set!
+								will-bind)))
 	;; First expression seems ok, report an error for 2nd and later:
 	(teach-syntax-error
 	 who
@@ -448,8 +471,10 @@
 	   (check-single-result-expr (syntax->list (syntax (expr ...)))
 				     #f
 				     stx
-				     names)
-	   
+				     ;; can't local-expand function body, because
+				     ;;  not all top-level defns are ready:
+				     #f)
+
            (check-definition-new 
             'define
             stx
@@ -476,7 +501,9 @@
 					    (syntax-e (syntax name)))
 				    stx
 				    exprs
-				    (list (syntax name))))]
+				    ;; can't local-expand RHS, because
+				    ;;  not all top-level defns are ready:
+				    #f))]
 	;; Bad name/header:
 	[(_ non-name expr ...)
 	 (teach-syntax-error
@@ -847,96 +874,99 @@
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     (define (beginner-cond/proc stx)
-      (syntax-case stx ()
-	[(_)
-	 (teach-syntax-error
-	  'cond
-	  stx
-	  #f
-	  "expected a question--answer clause after `cond', but nothing's there")]
-	[(_ clause ...)
-	 (let* ([clauses (syntax->list (syntax (clause ...)))]
-		[check-preceding-exprs
-		 (lambda (stop-before)
-		   (let/ec k
-		     (for-each (lambda (clause)
-				 (if (eq? clause stop-before)
-				     (k #t)
-				     (syntax-case clause ()
-				       [(question answer)
-					(begin
-					  (unless (and (identifier? (syntax question))
-						       (module-identifier=? (syntax question) #'beginner-else))
-					    (local-expand (syntax question) 'expression null))
-					  (local-expand (syntax answer) 'expression null))])))
-			       clauses)))])
-	   (let ([checked-clauses
-		  (map
-		   (lambda (clause)
-		     (syntax-case clause (beginner-else)
-		       [(beginner-else answer)
-			(let ([lpos (memq clause clauses)])
-			  (when (not (null? (cdr lpos)))
-			    (teach-syntax-error
-			     'cond
-			     stx
-			     clause
-			     "found an `else' clause that isn't the last clause ~
+      (ensure-expression
+       stx
+       (lambda ()
+	 (syntax-case stx ()
+	   [(_)
+	    (teach-syntax-error
+	     'cond
+	     stx
+	     #f
+	     "expected a question--answer clause after `cond', but nothing's there")]
+	   [(_ clause ...)
+	    (let* ([clauses (syntax->list (syntax (clause ...)))]
+		   [check-preceding-exprs
+		    (lambda (stop-before)
+		      (let/ec k
+			(for-each (lambda (clause)
+				    (if (eq? clause stop-before)
+					(k #t)
+					(syntax-case clause ()
+					  [(question answer)
+					   (begin
+					     (unless (and (identifier? (syntax question))
+							  (module-identifier=? (syntax question) #'beginner-else))
+					       (local-expand-for-error (syntax question) 'expression null))
+					     (local-expand-for-error (syntax answer) 'expression null))])))
+				  clauses)))])
+	      (let ([checked-clauses
+		     (map
+		      (lambda (clause)
+			(syntax-case clause (beginner-else)
+			  [(beginner-else answer)
+			   (let ([lpos (memq clause clauses)])
+			     (when (not (null? (cdr lpos)))
+			       (teach-syntax-error
+				'cond
+				stx
+				clause
+				"found an `else' clause that isn't the last clause ~
                                     in its `cond' expression"))
-                          (with-syntax ([new-test (syntax-property (syntax #t) 'stepper-else #t)])
-                            (syntax/loc clause (new-test answer))))]
-		       [(question answer)
-                        (with-syntax ([verified (syntax-property (syntax (verify-boolean question 'cond)) 
-								 'stepper-skipto 
-								 (list syntax-e cdr syntax-e cdr car))])
-                          (syntax/loc clause (verified answer)))]
-		       [()
-			(check-preceding-exprs clause)
-			(teach-syntax-error
-			 'cond
-			 stx
-			 clause
-			 "expected a question--answer clause, but found an empty clause")]
-		       [(question?)
-			(check-preceding-exprs clause)
-			(teach-syntax-error
-			 'cond
-			 stx
-			 clause
-			 "expected a clause with a question and answer, but found a clause with only one part")]
-		       [(question? answer? ...)
-			(check-preceding-exprs clause)
-			(let ([parts (syntax->list clause)])
-			  ;; to ensure the illusion of left-to-right checking, make sure 
-			  ;; the question and first answer (if any) are ok:
-			  (unless (and (identifier? (car parts))
-				       (module-identifier=? (car parts) #'beginner-else))
-			    (local-expand (car parts) 'expression null))
-			  (unless (null? (cdr parts))
-			    (local-expand (cadr parts) 'expression null))
-			  ;; question and answer (if any) are ok, raise a count-based exception:
-			  (teach-syntax-error
-			   'cond
-			   stx
-			   clause
-			   "expected a clause with one question and one answer, but found a clause with ~a parts"
-			   (length parts)))]
-		       [_else
-			(teach-syntax-error
-			 'cond
-			 stx
-			 clause
-			 "expected a question--answer clause, but found ~a"
-			 (something-else clause))]))
-		   clauses)])
-             ;; Add `else' clause for error (always):
-             (let ([clauses (append checked-clauses 
-                                    (list 
-                                     (with-syntax ([error-call (syntax/loc stx (error 'cond "all question results were false"))])
-                                       (syntax [else error-call]))))])
-	       (with-syntax ([clauses clauses])
-		 (syntax/loc stx (cond . clauses))))))]
-	[_else (bad-use-error 'cond stx)]))
+			     (with-syntax ([new-test (syntax-property (syntax #t) 'stepper-else #t)])
+			       (syntax/loc clause (new-test answer))))]
+			  [(question answer)
+			   (with-syntax ([verified (syntax-property (syntax (verify-boolean question 'cond)) 
+								    'stepper-skipto 
+								    (list syntax-e cdr syntax-e cdr car))])
+			     (syntax/loc clause (verified answer)))]
+			  [()
+			   (check-preceding-exprs clause)
+			   (teach-syntax-error
+			    'cond
+			    stx
+			    clause
+			    "expected a question--answer clause, but found an empty clause")]
+			  [(question?)
+			   (check-preceding-exprs clause)
+			   (teach-syntax-error
+			    'cond
+			    stx
+			    clause
+			    "expected a clause with a question and answer, but found a clause with only one part")]
+			  [(question? answer? ...)
+			   (check-preceding-exprs clause)
+			   (let ([parts (syntax->list clause)])
+			     ;; to ensure the illusion of left-to-right checking, make sure 
+			     ;; the question and first answer (if any) are ok:
+			     (unless (and (identifier? (car parts))
+					  (module-identifier=? (car parts) #'beginner-else))
+			       (local-expand-for-error (car parts) 'expression null))
+			     (unless (null? (cdr parts))
+			       (local-expand-for-error (cadr parts) 'expression null))
+			     ;; question and answer (if any) are ok, raise a count-based exception:
+			     (teach-syntax-error
+			      'cond
+			      stx
+			      clause
+			      "expected a clause with one question and one answer, but found a clause with ~a parts"
+			      (length parts)))]
+			  [_else
+			   (teach-syntax-error
+			    'cond
+			    stx
+			    clause
+			    "expected a question--answer clause, but found ~a"
+			    (something-else clause))]))
+		      clauses)])
+		;; Add `else' clause for error (always):
+		(let ([clauses (append checked-clauses 
+				       (list 
+					(with-syntax ([error-call (syntax/loc stx (error 'cond "all question results were false"))])
+					  (syntax [else error-call]))))])
+		  (with-syntax ([clauses clauses])
+		    (syntax/loc stx (cond . clauses))))))]
+	   [_else (bad-use-error 'cond stx)]))))
 
     (define beginner-else/proc
       (make-set!-transformer
@@ -957,23 +987,28 @@
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     (define (beginner-if/proc stx)
-      (syntax-case stx ()
-	[(_ test then else)
-         (with-syntax ([new-test (syntax-property (syntax (verify-boolean test 'if)) 'stepper-skipto (list syntax-e cdr syntax-e cdr car))])
-           (syntax/loc stx
-             (if new-test
-                 then
-                 else)))]
-	[(_ . rest)
-	 (let ([n (length (syntax->list (syntax rest)))])
-	   (teach-syntax-error
-	    'if
-	    stx
-	    #f
-	    "expected one question expression and two answer expressions, but found ~a expression~a"
-	    (if (zero? n) "no" n)
-	    (if (= n 1) "" "s")))]
-	[_else (bad-use-error 'if stx)]))
+      (ensure-expression
+       stx
+       (lambda ()
+	 (syntax-case stx ()
+	   [(_ test then else)
+	    (with-syntax ([new-test (syntax-property (syntax (verify-boolean test 'if)) 
+						     'stepper-skipto 
+						     (list syntax-e cdr syntax-e cdr car))])
+	      (syntax/loc stx
+		(if new-test
+		    then
+		    else)))]
+	   [(_ . rest)
+	    (let ([n (length (syntax->list (syntax rest)))])
+	      (teach-syntax-error
+	       'if
+	       stx
+	       #f
+	       "expected one question expression and two answer expressions, but found ~a expression~a"
+	       (if (zero? n) "no" n)
+	       (if (= n 1) "" "s")))]
+	   [_else (bad-use-error 'if stx)]))))
     
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; or, and
@@ -985,42 +1020,45 @@
                (let ([stepper-tag (case where
                                     [(or) 'comes-from-or]
                                     [(and) 'comes-from-and])])
-	       (with-syntax ([swhere where])
-		 (lambda (stx)
-		   (syntax-case stx ()
-		     [(_ . clauses)
-		      (let ([n (length (syntax->list (syntax clauses)))])
-			(when (n . < . 2)
-			  (teach-syntax-error
-			   where
-			   stx
-			   #f
-			   "expected at least two expressions after `~a', but found ~a"
-			   where
-                           (if (zero? n) "no expressions" "only one expression")))
-                        (let loop ([clauses-consumed 0]
-                                   [remaining (syntax->list #`clauses)])
-                          (if (null? remaining)
-                              (case where
-                                [(or) #`#f]
-                                [(and) #`#t])
-                              (syntax-property
-                               (syntax-property
-                                (quasisyntax/loc 
-                                 stx
-                                 (if #,(syntax-property (quasisyntax/loc stx (verify-boolean #,(car remaining) 'swhere))
-                                                        `stepper-skipto
-                                                        (list syntax-e cdr syntax-e cdr car))
-                                     #,@(case where
-                                          [(or) #`(#t
-                                                   #,(loop (+ clauses-consumed 1) (cdr remaining)))]
-                                          [(and) #`(#,(loop (+ clauses-consumed 1) (cdr remaining))
-                                                     #f)])))
-                                'stepper-hint
-                                stepper-tag)
-                               'stepper-and/or-clauses-consumed
-                               clauses-consumed))))]
-		     [_else (bad-use-error where stx)])))))])
+		 (with-syntax ([swhere where])
+		   (lambda (stx)
+		     (ensure-expression
+		      stx
+		      (lambda ()
+			(syntax-case stx ()
+			  [(_ . clauses)
+			   (let ([n (length (syntax->list (syntax clauses)))])
+			     (when (n . < . 2)
+			       (teach-syntax-error
+				where
+				stx
+				#f
+				"expected at least two expressions after `~a', but found ~a"
+				where
+				(if (zero? n) "no expressions" "only one expression")))
+			     (let loop ([clauses-consumed 0]
+					[remaining (syntax->list #`clauses)])
+			       (if (null? remaining)
+				   (case where
+				     [(or) #`#f]
+				     [(and) #`#t])
+				   (syntax-property
+				    (syntax-property
+				     (quasisyntax/loc 
+					 stx
+				       (if #,(syntax-property (quasisyntax/loc stx (verify-boolean #,(car remaining) 'swhere))
+							      `stepper-skipto
+							      (list syntax-e cdr syntax-e cdr car))
+					   #,@(case where
+						[(or) #`(#t
+							 #,(loop (+ clauses-consumed 1) (cdr remaining)))]
+						[(and) #`(#,(loop (+ clauses-consumed 1) (cdr remaining))
+							  #f)])))
+				     'stepper-hint
+				     stepper-tag)
+				    'stepper-and/or-clauses-consumed
+				    clauses-consumed))))]
+			  [_else (bad-use-error where stx)])))))))])
 	(values (mk 'or) (mk 'and))))
 
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1047,150 +1085,153 @@
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     (define (intermediate-local/proc stx)
-      (syntax-case stx ()
-	[(_ (definition ...) . exprs)
-	 (let ([defns (syntax->list (syntax (definition ...)))]
-	       ;; The following context value lets teaching-language definition
-	       ;;  forms know that it's ok to expand in this internal
-	       ;;  definition context.
-	       [int-def-ctx (build-expand-context (make-expanding-for-intermediate-local))])
-	   (let* ([partly-expanded-defns 
-		   (map (lambda (d)
-			  (local-expand
-			   d
-			   int-def-ctx
-			   (kernel-form-identifier-list (quote-syntax here))))
-			defns)]
-		  [flattened-defns
-		   (let loop ([l partly-expanded-defns][origs defns])
-		     (apply
-		      append
-		      (map (lambda (d orig)
-			     (syntax-case d (begin define-values define-syntaxes)
-			       ;; we don't have to check for ill-formed `define-values'
-			       ;; or `define-syntaxes', because only macros can generate
-			       ;; them
-			       [(begin defn ...)
-				(let ([l (syntax->list (syntax (defn ...)))])
-				  (loop l l))]
-			       [(define-values . _)
-				(list d)]
-			       [(define-syntaxes . _)
-				(list d)]
-			       [_else
-				(teach-syntax-error
-				 'local
-				 stx
-				 orig
-				 "expected only definitions within the definition sequence, but found ~a"
-				 (something-else orig))]))
-			   l origs)))]
-		  [val-defns
-		   (apply
-		    append
-		    (map (lambda (partly-expanded)
-			   (syntax-case partly-expanded (define-values)
-			     [(define-values (id ...) expr)
-			      (list partly-expanded)]
-			     [_else
-			      null]))
-			 flattened-defns))]
-		  [stx-defns
-		   (apply
-		    append
-		    (map (lambda (partly-expanded)
-			   (syntax-case partly-expanded (define-syntaxes)
-			     [(define-syntaxes (id ...) expr)
-			      (list partly-expanded)]
-			     [_else
-			      null]))
-			 flattened-defns))]
-		  [get-ids (lambda (l)
-			     (apply
-			      append
-			      (map (lambda (partly-expanded)
-				     (syntax-case partly-expanded ()
-				       [(_ (id ...) expr)
-					(syntax->list (syntax (id ...)))]))
-				   l)))]
-		  [val-ids (get-ids val-defns)]
-		  [stx-ids (get-ids stx-defns)])
-	     (let ([dup (check-duplicate-identifier (append val-ids stx-ids))])
-	       (when dup
-		 (teach-syntax-error
-		  'local
-		  stx
-		  dup
-		  "found a name that was defined locally more than once: ~a"
-		  (syntax-e dup)))
-	       (let ([exprs (syntax->list (syntax exprs))])
-		 (check-single-expression 'local
-					  "after the local definition sequence"
-					  stx
-					  exprs
-					  (append val-ids stx-ids)))
-	       (with-syntax ([((d-v (def-id ...) def-expr) ...) val-defns]
-			     [(stx-def ...) stx-defns])
-		 (with-syntax ([(((tmp-id def-id/prop) ...) ...)
-				;; Generate tmp-ids that at least look like the defined
-				;;  ids, for the purposes of error reporting, etc.:
-				(map (lambda (def-ids)
-				       (map (lambda (def-id)
-					      (list
-					       (syntax-property
-						(datum->syntax-object
-						 #f
-						 (string->uninterned-symbol
-						  (symbol->string (syntax-e def-id))))
-						'stepper-orig-name
-						def-id)
-					       (syntax-property
-						def-id
-						'bind-as-variable
-						#t)))
-					    (syntax->list def-ids)))
-				     (syntax->list (syntax ((def-id ...) ...))))])
-                   (with-syntax ([(mapping ...)
-				  (let ([mappers
-					 (syntax->list
-					  (syntax
-					   ((define-syntaxes (def-id/prop ...)
-					      (values
-					       (make-undefined-check
-						(quote-syntax check-not-undefined)
-						(quote-syntax tmp-id))
-					       ...))
-					    ...)))])
-				    (map syntax-track-origin
-					 mappers
-					 val-defns
-					 (syntax->list (syntax (d-v ...)))))])
-                     (syntax-property
-                      (quasisyntax/loc stx
-                        (let ()
-                          (define #,(gensym) 1) ; this ensures that the expansion of 'local' looks
-                                                ; roughly the same, even if the local has no defs.
-                          mapping ...
-                          stx-def ...
-                          (define-values (tmp-id ...) def-expr)
-                          ...
-                          . exprs))
-                      'stepper-hint
-                      'comes-from-local)))))))]
-	[(_ def-non-seq . __)
-	 (teach-syntax-error
-	  'local
-	  stx
-	  (syntax def-non-seq)
-	  "expected a parenthesized definition sequence after `local', but found ~a"
-	  (something-else (syntax def-non-seq)))]
-	[(_)
-	 (teach-syntax-error
-	  'local
-	  stx
-	  #f
-	  "expected a parenthesized definition sequence after `local', but nothing's there")]
-	[_else (bad-use-error 'local stx)]))
+      (ensure-expression
+       stx
+       (lambda ()
+	 (syntax-case stx ()
+	   [(_ (definition ...) . exprs)
+	    (let ([defns (syntax->list (syntax (definition ...)))]
+		  ;; The following context value lets teaching-language definition
+		  ;;  forms know that it's ok to expand in this internal
+		  ;;  definition context.
+		  [int-def-ctx (build-expand-context (make-expanding-for-intermediate-local))])
+	      (let* ([partly-expanded-defns 
+		      (map (lambda (d)
+			     (local-expand
+			      d
+			      int-def-ctx
+			      (kernel-form-identifier-list (quote-syntax here))))
+			   defns)]
+		     [flattened-defns
+		      (let loop ([l partly-expanded-defns][origs defns])
+			(apply
+			 append
+			 (map (lambda (d orig)
+				(syntax-case d (begin define-values define-syntaxes)
+				  ;; we don't have to check for ill-formed `define-values'
+				  ;; or `define-syntaxes', because only macros can generate
+				  ;; them
+				  [(begin defn ...)
+				   (let ([l (syntax->list (syntax (defn ...)))])
+				     (loop l l))]
+				  [(define-values . _)
+				   (list d)]
+				  [(define-syntaxes . _)
+				   (list d)]
+				  [_else
+				   (teach-syntax-error
+				    'local
+				    stx
+				    orig
+				    "expected only definitions within the definition sequence, but found ~a"
+				    (something-else orig))]))
+			      l origs)))]
+		     [val-defns
+		      (apply
+		       append
+		       (map (lambda (partly-expanded)
+			      (syntax-case partly-expanded (define-values)
+				[(define-values (id ...) expr)
+				 (list partly-expanded)]
+				[_else
+				 null]))
+			    flattened-defns))]
+		     [stx-defns
+		      (apply
+		       append
+		       (map (lambda (partly-expanded)
+			      (syntax-case partly-expanded (define-syntaxes)
+				[(define-syntaxes (id ...) expr)
+				 (list partly-expanded)]
+				[_else
+				 null]))
+			    flattened-defns))]
+		     [get-ids (lambda (l)
+				(apply
+				 append
+				 (map (lambda (partly-expanded)
+					(syntax-case partly-expanded ()
+					  [(_ (id ...) expr)
+					   (syntax->list (syntax (id ...)))]))
+				      l)))]
+		     [val-ids (get-ids val-defns)]
+		     [stx-ids (get-ids stx-defns)])
+		(let ([dup (check-duplicate-identifier (append val-ids stx-ids))])
+		  (when dup
+		    (teach-syntax-error
+		     'local
+		     stx
+		     dup
+		     "found a name that was defined locally more than once: ~a"
+		     (syntax-e dup)))
+		  (let ([exprs (syntax->list (syntax exprs))])
+		    (check-single-expression 'local
+					     "after the local definition sequence"
+					     stx
+					     exprs
+					     (append val-ids stx-ids)))
+		  (with-syntax ([((d-v (def-id ...) def-expr) ...) val-defns]
+				[(stx-def ...) stx-defns])
+		    (with-syntax ([(((tmp-id def-id/prop) ...) ...)
+				   ;; Generate tmp-ids that at least look like the defined
+				   ;;  ids, for the purposes of error reporting, etc.:
+				   (map (lambda (def-ids)
+					  (map (lambda (def-id)
+						 (list
+						  (syntax-property
+						   (datum->syntax-object
+						    #f
+						    (string->uninterned-symbol
+						     (symbol->string (syntax-e def-id))))
+						   'stepper-orig-name
+						   def-id)
+						  (syntax-property
+						   def-id
+						   'bind-as-variable
+						   #t)))
+					       (syntax->list def-ids)))
+					(syntax->list (syntax ((def-id ...) ...))))])
+		      (with-syntax ([(mapping ...)
+				     (let ([mappers
+					    (syntax->list
+					     (syntax
+					      ((define-syntaxes (def-id/prop ...)
+						 (values
+						  (make-undefined-check
+						   (quote-syntax check-not-undefined)
+						   (quote-syntax tmp-id))
+						  ...))
+					       ...)))])
+				       (map syntax-track-origin
+					    mappers
+					    val-defns
+					    (syntax->list (syntax (d-v ...)))))])
+			(syntax-property
+			 (quasisyntax/loc stx
+			   (let ()
+			     (define #,(gensym) 1) ; this ensures that the expansion of 'local' looks
+					; roughly the same, even if the local has no defs.
+			     mapping ...
+			     stx-def ...
+			     (define-values (tmp-id ...) def-expr)
+			     ...
+			     . exprs))
+			 'stepper-hint
+			 'comes-from-local)))))))]
+	   [(_ def-non-seq . __)
+	    (teach-syntax-error
+	     'local
+	     stx
+	     (syntax def-non-seq)
+	     "expected a parenthesized definition sequence after `local', but found ~a"
+	     (something-else (syntax def-non-seq)))]
+	   [(_)
+	    (teach-syntax-error
+	     'local
+	     stx
+	     #f
+	     "expected a parenthesized definition sequence after `local', but nothing's there")]
+	   [_else (bad-use-error 'local stx)]))))
 
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; letrec and let (intermediate)
@@ -1200,85 +1241,94 @@
     ;; put all error checking in `bad-let-form'.
 
     (define (intermediate-letrec/proc stx)
-      (syntax-case stx ()
-	[(_ ([name rhs-expr] ...) expr)
-	 (let ([names (syntax->list (syntax (name ...)))])
-	   (and (andmap identifier/non-kw? names)
-		(not (check-duplicate-identifier names))))
-	 (with-syntax ([(tmp-id ...)
-                          ;; Generate tmp-ids that at least look like the defined
-                          ;;  ids, for the purposes of error reporting, etc.:
-                          (map (lambda (name)
-                                 (syntax-property
-                                  (datum->syntax-object
-                                   #f
-                                   (string->uninterned-symbol
-                                    (symbol->string (syntax-e name))))
-                                  'stepper-orig-name
-                                  name))
-                               (syntax->list #`(name ...)))]
-                       [(rhs-expr ...) (map allow-local-lambda 
-					    (syntax->list (syntax (rhs-expr ...))))])
-           (quasisyntax/loc stx
-             (letrec-syntaxes+values ([(name) (make-undefined-check
-                                               (quote-syntax check-not-undefined)
-                                               (quote-syntax tmp-id))]
-                                      ...)
-                                     ([(tmp-id) rhs-expr] 
-                                      ...)
-                                     expr)))]
-	[_else (bad-let-form 'letrec stx stx)]))
+      (ensure-expression
+       stx
+       (lambda ()
+	 (syntax-case stx ()
+	   [(_ ([name rhs-expr] ...) expr)
+	    (let ([names (syntax->list (syntax (name ...)))])
+	      (and (andmap identifier/non-kw? names)
+		   (not (check-duplicate-identifier names))))
+	    (with-syntax ([(tmp-id ...)
+			   ;; Generate tmp-ids that at least look like the defined
+			   ;;  ids, for the purposes of error reporting, etc.:
+			   (map (lambda (name)
+				  (syntax-property
+				   (datum->syntax-object
+				    #f
+				    (string->uninterned-symbol
+				     (symbol->string (syntax-e name))))
+				   'stepper-orig-name
+				   name))
+				(syntax->list #`(name ...)))]
+			  [(rhs-expr ...) (map allow-local-lambda 
+					       (syntax->list (syntax (rhs-expr ...))))])
+	      (quasisyntax/loc stx
+		(letrec-syntaxes+values ([(name) (make-undefined-check
+						  (quote-syntax check-not-undefined)
+						  (quote-syntax tmp-id))]
+					 ...)
+		    ([(tmp-id) rhs-expr] 
+		     ...)
+		  expr)))]
+	   [_else (bad-let-form 'letrec stx stx)]))))
     
     (define (intermediate-let/proc stx)
-      (syntax-case stx ()
-	[(_ ([name rhs-expr] ...) expr)
-	 (let ([names (syntax->list (syntax (name ...)))])
-	   (and (andmap identifier/non-kw? names)
-		(not (check-duplicate-identifier names))))
-         (with-syntax ([(tmp-id ...)
-                          ;; Generate tmp-ids that at least look like the defined
-                          ;;  ids, for the purposes of error reporting, etc.:
-                          (map (lambda (name)
-                                 (syntax-property
-                                  (datum->syntax-object
-                                   #f
-                                   (string->uninterned-symbol
-                                    (symbol->string (syntax-e name))))
-                                  'stepper-orig-name
-                                  name))
-                               (syntax->list #`(name ...)))]
-                         [(rhs-expr ...) (map allow-local-lambda 
-                                              (syntax->list (syntax (rhs-expr ...))))])
-           (quasisyntax/loc stx
-             (let-values ([(tmp-id) rhs-expr] ...)
-               (let-syntaxes ([(name) (make-undefined-check
-                                            (quote-syntax check-not-undefined)
-                                            (quote-syntax tmp-id))]
-                                   ...)
-                      expr))))]
-	[_else (bad-let-form 'let stx stx)]))
+      (ensure-expression
+       stx
+       (lambda ()
+	 (syntax-case stx ()
+	   [(_ ([name rhs-expr] ...) expr)
+	    (let ([names (syntax->list (syntax (name ...)))])
+	      (and (andmap identifier/non-kw? names)
+		   (not (check-duplicate-identifier names))))
+	    (with-syntax ([(tmp-id ...)
+			   ;; Generate tmp-ids that at least look like the defined
+			   ;;  ids, for the purposes of error reporting, etc.:
+			   (map (lambda (name)
+				  (syntax-property
+				   (datum->syntax-object
+				    #f
+				    (string->uninterned-symbol
+				     (symbol->string (syntax-e name))))
+				   'stepper-orig-name
+				   name))
+				(syntax->list #`(name ...)))]
+			  [(rhs-expr ...) (map allow-local-lambda 
+					       (syntax->list (syntax (rhs-expr ...))))])
+	      (quasisyntax/loc stx
+		(let-values ([(tmp-id) rhs-expr] ...)
+		  (let-syntaxes ([(name) (make-undefined-check
+					  (quote-syntax check-not-undefined)
+					  (quote-syntax tmp-id))]
+				 ...)
+				expr))))]
+	   [_else (bad-let-form 'let stx stx)]))))
 
     (define (intermediate-let*/proc stx)
-      (syntax-case stx ()
-	[(_ () expr)
-         (syntax-property
-          #`(let () expr)
-          'stepper-skipto
-          (list syntax-e cdr cdr car))]
-	[(_ ([name0 rhs-expr0] [name rhs-expr] ...) expr)
-	 (let ([names (syntax->list (syntax (name0 name ...)))])
-	   (andmap identifier/non-kw? names))
-	 (with-syntax ([rhs-expr0 (allow-local-lambda (syntax rhs-expr0))])
-           (syntax-property
-            (quasisyntax/loc stx
-              (intermediate-let ([name0 rhs-expr0])
-                                #,(quasisyntax/loc stx 
-                                    (intermediate-let* ([name rhs-expr]
-                                                        ...)
-                                                       expr))))
-            'stepper-hint
-            'comes-from-let*))]
-	[_else (bad-let-form 'let* stx stx)]))
+      (ensure-expression
+       stx
+       (lambda ()
+	 (syntax-case stx ()
+	   [(_ () expr)
+	    (syntax-property
+	     #`(let () expr)
+	     'stepper-skipto
+	     (list syntax-e cdr cdr car))]
+	   [(_ ([name0 rhs-expr0] [name rhs-expr] ...) expr)
+	    (let ([names (syntax->list (syntax (name0 name ...)))])
+	      (andmap identifier/non-kw? names))
+	    (with-syntax ([rhs-expr0 (allow-local-lambda (syntax rhs-expr0))])
+	      (syntax-property
+	       (quasisyntax/loc stx
+		 (intermediate-let ([name0 rhs-expr0])
+				   #,(quasisyntax/loc stx 
+				       (intermediate-let* ([name rhs-expr]
+							   ...)
+							  expr))))
+	       'stepper-hint
+	       'comes-from-let*))]
+	   [_else (bad-let-form 'let* stx stx)]))))
 
     ;; Helper function: allows `beginner-lambda' instead
     ;; of rejecting it:
@@ -1385,56 +1435,59 @@
       (let ([mk
 	     (lambda (empty-ok?)
 	       (lambda (stx)
-		 (syntax-case stx ()
-		   [(_ fname ([name rhs-expr] ...) expr)
-		    (and (identifier/non-kw? (syntax fname))
-			 (let ([names (syntax->list (syntax (name ...)))])
-			   (and (andmap identifier/non-kw? names)
-				(or empty-ok? (pair? names))
-				(not (check-duplicate-identifier names)))))
-		    (syntax-property
-                     (quasisyntax/loc stx
-		      ((intermediate-letrec ([fname
-					      #,(syntax-property
-                                                 (syntax-property 
-                                                  #`(lambda (name ...)
-                                                      expr)
-                                                  'stepper-define-type
-                                                  'shortened-proc-define)
-                                                 'stepper-proc-define-name
-                                                 #`fname)])
-					    fname)
-		       rhs-expr ...))
-                     'stepper-hint
-                     'comes-from-recur)]
-		   [(_form fname empty-seq . rest)
-		    (and (not empty-ok?)
-			 (identifier/non-kw? (syntax fname))
-			 (null? (syntax-e (syntax empty-seq))))
-		    (teach-syntax-error
-		     'recur
-		     stx
-		     (syntax empty-seq)
-		     "expected a non-empty sequence of bindings after the function name, ~
+		 (ensure-expression
+		  stx
+		  (lambda ()
+		    (syntax-case stx ()
+		      [(_ fname ([name rhs-expr] ...) expr)
+		       (and (identifier/non-kw? (syntax fname))
+			    (let ([names (syntax->list (syntax (name ...)))])
+			      (and (andmap identifier/non-kw? names)
+				   (or empty-ok? (pair? names))
+				   (not (check-duplicate-identifier names)))))
+		       (syntax-property
+			(quasisyntax/loc stx
+			  ((intermediate-letrec ([fname
+						  #,(syntax-property
+						     (syntax-property 
+						      #`(lambda (name ...)
+							  expr)
+						      'stepper-define-type
+						      'shortened-proc-define)
+						     'stepper-proc-define-name
+						     #`fname)])
+						fname)
+			   rhs-expr ...))
+			'stepper-hint
+			'comes-from-recur)]
+		      [(_form fname empty-seq . rest)
+		       (and (not empty-ok?)
+			    (identifier/non-kw? (syntax fname))
+			    (null? (syntax-e (syntax empty-seq))))
+		       (teach-syntax-error
+			'recur
+			stx
+			(syntax empty-seq)
+			"expected a non-empty sequence of bindings after the function name, ~
                     but found an empty sequence")]
-		   [(_form fname . rest)
-		    (identifier/non-kw? (syntax fname))
-		    (bad-let-form 'recur (syntax (_form . rest)) stx)]
-		   [(_form fname . rest)
-		    (teach-syntax-error
-		     'recur
-		     stx
-		     #f
-		     "expected a function name after `recur', but found ~a"
-		     (something-else/kw (syntax fname)))]
-		   [(_form)
-		    (teach-syntax-error
-		     'recur
-		     stx
-		     #f
-		     "expected a function name after `recur', but nothing's there")]
-		   [_else
-		    (bad-use-error 'recur stx)])))])
+		      [(_form fname . rest)
+		       (identifier/non-kw? (syntax fname))
+		       (bad-let-form 'recur (syntax (_form . rest)) stx)]
+		      [(_form fname . rest)
+		       (teach-syntax-error
+			'recur
+			stx
+			#f
+			"expected a function name after `recur', but found ~a"
+			(something-else/kw (syntax fname)))]
+		      [(_form)
+		       (teach-syntax-error
+			'recur
+			stx
+			#f
+			"expected a function name after `recur', but nothing's there")]
+		      [_else
+		       (bad-use-error 'recur stx)])))))])
 	(values (mk #f) (mk #t))))
 
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1442,55 +1495,58 @@
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     (define (intermediate-lambda/proc stx)
-      (syntax-case stx ()
-	[(_ arg-seq lexpr ...)
-	 (syntax-case (syntax arg-seq) () [(arg ...) #t][_else #f])
-	 (let ([args (syntax->list (syntax arg-seq))])
-	   (for-each (lambda (arg)
-		       (unless (identifier/non-kw? arg)
-			 (teach-syntax-error
-			  'lambda
-			  stx
-			  arg
-			  "expected a name for a function argument, but found ~a"
-			  (something-else/kw arg))))
-		     args)
-	   (when (null? args)
-	     (teach-syntax-error
-	      'lambda
-	      stx
-	      (syntax arg-seq)
-	      "expected at least one argument name in the sequence after `lambda', but found none"))
-	   (let ([dup (check-duplicate-identifier args)])
-	     (when dup
-	       (teach-syntax-error
-		'lambda
-		stx
-		dup
-		"found an argument name that is used more than once: ~a"
-		(syntax-e dup))))
-	   (check-single-expression 'lambda
-				    "within lambda"
-				    stx
-				    (syntax->list (syntax (lexpr ...)))
-				    args)
-	   (syntax/loc stx (lambda arg-seq lexpr ...)))]
-	;; Bad lambda because bad args:
-	[(_ args . __)
-	 (teach-syntax-error
-	  'lambda
-	  stx
-	  (syntax args)
-	  "expected a sequence of function arguments after `lambda', but found ~a"
-	  (something-else (syntax args)))]
-	[(_)
-	 (teach-syntax-error
-	  'lambda
-	  stx
-	  #f
-	  "expected a sequence of argument names after `lambda', but nothing's there")]
-	[_else
-	 (bad-use-error 'lambda stx)]))
+      (ensure-expression
+       stx
+       (lambda ()
+	 (syntax-case stx ()
+	   [(_ arg-seq lexpr ...)
+	    (syntax-case (syntax arg-seq) () [(arg ...) #t][_else #f])
+	    (let ([args (syntax->list (syntax arg-seq))])
+	      (for-each (lambda (arg)
+			  (unless (identifier/non-kw? arg)
+			    (teach-syntax-error
+			     'lambda
+			     stx
+			     arg
+			     "expected a name for a function argument, but found ~a"
+			     (something-else/kw arg))))
+			args)
+	      (when (null? args)
+		(teach-syntax-error
+		 'lambda
+		 stx
+		 (syntax arg-seq)
+		 "expected at least one argument name in the sequence after `lambda', but found none"))
+	      (let ([dup (check-duplicate-identifier args)])
+		(when dup
+		  (teach-syntax-error
+		   'lambda
+		   stx
+		   dup
+		   "found an argument name that is used more than once: ~a"
+		   (syntax-e dup))))
+	      (check-single-expression 'lambda
+				       "within lambda"
+				       stx
+				       (syntax->list (syntax (lexpr ...)))
+				       args)
+	      (syntax/loc stx (lambda arg-seq lexpr ...)))]
+	   ;; Bad lambda because bad args:
+	   [(_ args . __)
+	    (teach-syntax-error
+	     'lambda
+	     stx
+	     (syntax args)
+	     "expected a sequence of function arguments after `lambda', but found ~a"
+	     (something-else (syntax args)))]
+	   [(_)
+	    (teach-syntax-error
+	     'lambda
+	     stx
+	     #f
+	     "expected a sequence of argument names after `lambda', but nothing's there")]
+	   [_else
+	    (bad-use-error 'lambda stx)]))))
 
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; quote (intermediate)
@@ -1505,7 +1561,8 @@
 				      "after the `quote' keyword"
 				      stx
 				      (syntax->list (syntax (expr ...)))
-				      null)
+				      ;; Don't expand expr!
+				      #f)
 	     (syntax (quote expr ...)))]
 	  [_else (bad-use-error 'quote stx)])))
 
@@ -1589,19 +1646,22 @@
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     (define (intermediate-time/proc stx)
-      (syntax-case stx ()
-	[(_ . exprs)
-	 (check-single-expression 'time 
-				  "after `time'"
-				  stx
-				  (syntax->list (syntax exprs))
-				  null)
-	 (syntax-property 
-          (syntax/loc stx (time . exprs))
-          'stepper-skipto
-          (list syntax-e cdr car syntax-e car syntax-e cdr car syntax-e cdr syntax-e cdr car syntax-e cdr cdr car))]
-	[_else
-	 (bad-use-error 'time stx)]))
+      (ensure-expression
+       stx
+       (lambda ()
+	 (syntax-case stx ()
+	   [(_ . exprs)
+	    (check-single-expression 'time 
+				     "after `time'"
+				     stx
+				     (syntax->list (syntax exprs))
+				     null)
+	    (syntax-property 
+	     (syntax/loc stx (time . exprs))
+	     'stepper-skipto
+	     (list syntax-e cdr car syntax-e car syntax-e cdr car syntax-e cdr syntax-e cdr car syntax-e cdr cdr car))]
+	   [_else
+	    (bad-use-error 'time stx)]))))
 
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; define (advanced)
@@ -1638,64 +1698,70 @@
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     (define (advanced-lambda/proc stx)
-      (syntax-case stx ()
-	[(_  (name ...) . exprs)
-	 (let ([names (syntax->list (syntax (name ...)))])
-	   (for-each (lambda (name)
-		       (unless (identifier/non-kw? name)
-			 (teach-syntax-error
-			  'lambda
-			  stx
-			  name
-			  "expected a name for an argument, but found ~a"
-			  (something-else/kw name))))
-		     names)
-	   (let ([dup (check-duplicate-identifier names)])
-	     (when dup
-	       (teach-syntax-error
-		'lambda
-		stx
-		dup
-		"found an argument name that is used more than once: ~a"
-		(syntax-e dup))))
-	   (check-single-expression 'lambda 
-				    "after the argument-name sequence"
-				    stx
-				    (syntax->list (syntax exprs))
-				    names)
-	   (syntax/loc stx (lambda (name ...) . exprs)))]
-	[(_ arg-non-seq . exprs)
-	 (teach-syntax-error
-	  'lambda
-	  stx
-	  (syntax arg-non-seq)
-	  "expected a parenthesized sequence of argument names after `lambda', but found ~a"
-	  (something-else (syntax arg-non-seq)))]
-	[(_)
-	 (teach-syntax-error
-	  'lambda
-	  stx
-	  #f
-	  "expected a sequence of argument names after `lambda', but nothing's there")]
-	[_else
-	 (bad-use-error 'lambda stx)]))
+      (ensure-expression
+       stx
+       (lambda ()
+	 (syntax-case stx ()
+	   [(_  (name ...) . exprs)
+	    (let ([names (syntax->list (syntax (name ...)))])
+	      (for-each (lambda (name)
+			  (unless (identifier/non-kw? name)
+			    (teach-syntax-error
+			     'lambda
+			     stx
+			     name
+			     "expected a name for an argument, but found ~a"
+			     (something-else/kw name))))
+			names)
+	      (let ([dup (check-duplicate-identifier names)])
+		(when dup
+		  (teach-syntax-error
+		   'lambda
+		   stx
+		   dup
+		   "found an argument name that is used more than once: ~a"
+		   (syntax-e dup))))
+	      (check-single-expression 'lambda 
+				       "after the argument-name sequence"
+				       stx
+				       (syntax->list (syntax exprs))
+				       names)
+	      (syntax/loc stx (lambda (name ...) . exprs)))]
+	   [(_ arg-non-seq . exprs)
+	    (teach-syntax-error
+	     'lambda
+	     stx
+	     (syntax arg-non-seq)
+	     "expected a parenthesized sequence of argument names after `lambda', but found ~a"
+	     (something-else (syntax arg-non-seq)))]
+	   [(_)
+	    (teach-syntax-error
+	     'lambda
+	     stx
+	     #f
+	     "expected a sequence of argument names after `lambda', but nothing's there")]
+	   [_else
+	    (bad-use-error 'lambda stx)]))))
 
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; application (advanced)
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     (define (advanced-app/proc stx)
-      (syntax-case stx ()
-	[(_ rator rand ...)
-	 (syntax/loc stx (#%app rator rand ...))]
-	[(_)
-	 (teach-syntax-error
-	  '|function call|
-	    stx
-	    #f
-	    "expected a defined name or a primitive operation name after an ~
-         open parenthesis, but nothing's there")]
-	[_else (bad-use-error '#%app stx)]))
+      (ensure-expression
+       stx
+       (lambda ()
+	 (syntax-case stx ()
+	   [(_ rator rand ...)
+	    (syntax/loc stx (#%app rator rand ...))]
+	   [(_)
+	    (teach-syntax-error
+	     '|function call|
+	       stx
+	       #f
+	       "expected a defined name or a primitive operation name after an ~
+                open parenthesis, but nothing's there")]
+	   [_else (bad-use-error '#%app stx)]))))
 
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; set! (advanced)
@@ -1709,82 +1775,85 @@
       (let ([proc
 	     (lambda (continuing?)
 	       (lambda (stx)
-		 (syntax-case stx ()
-		   [(_ id expr ...)
-		    (identifier? (syntax id))
-		    (let ([exprs (syntax->list (syntax (expr ...)))])
-		      ;; Check that id isn't syntax, and not lexical.
-		      (when ((with-handlers ([exn:fail? (lambda (exn) (lambda () #t))])
-			       ;; First try syntax:
-			       (let ([binding (syntax-local-value (syntax id))])
-				 ;; If it's a transformer binding, then it can take care of itself...
-				 (if (set!-transformer? binding)
-				     (lambda () #f) ;; no lex check wanted
-				     (lambda ()
-				       (teach-syntax-error
-					'set!
-					stx
-					(syntax id)
-					"expected a defined name after `set!', but found a keyword"))))))
-			;; Now try lexical:
-			(when (eq? 'lexical (identifier-binding (syntax id)))
-			  (teach-syntax-error
-			   'set!
-			   stx
-			   (syntax id)
-			   "expected a defined name after `set!', but found a function argument name")))
-		      ;; If we're in a module, we'd like to check here whether
-		      ;;  the identier is bound, but we need to delay that check
-		      ;;  in case the id is defined later in the module. So only
-		      ;;  do this in continuing mode:
-		      (when continuing?
-			(let ([binding (identifier-binding #'id)])
-			  (cond
-			   [(and (not binding)
-				 (syntax-source-module #'id))
-			    (teach-syntax-error
-			     'unknown
-			     #'id
-			     #f
-			     "name is not defined")]
-			   [(and (list? binding)
-				 (or (not (module-path-index? (car binding)))
-				     (let-values ([(path rel) (module-path-index-split (car binding))])
-				       path)))
-			    (teach-syntax-error
-			     'unknown
-			     #'id
-			     #f
-			     "cannot set a primitive name")])))
-		      ;; Check the RHS
-		      (check-single-expression 'set!
-					       "for the new value"
-					       stx
-					       exprs
-					       null)
-		      (if continuing?
-			  (syntax-property
-                           (syntax/loc stx (begin (set! id expr ...) set!-result))
-                           'stepper-skipto
-                           (list syntax-e cdr syntax-e car))
-			  (syntax-property
-                           (syntax/loc stx (#%app values (advanced-set!-continue id expr ...)))
-                           'stepper-skipto
-                           (list syntax-e cdr syntax-e cdr car))))]
-		   [(_ id . __)
-		    (teach-syntax-error
-		     'set!
-		     stx
-		     (syntax id)
-		     "expected a defined name after `set!', but found ~a"
-		     (something-else (syntax id)))]
-		   [(_)
-		    (teach-syntax-error
-		     'set!
-		     stx
-		     (syntax id)
-		     "expected a defined name after `set!', but nothing's there")]
-		   [_else (bad-use-error 'set! stx)])))])
+		 (ensure-expression
+		  stx
+		  (lambda ()
+		    (syntax-case stx ()
+		      [(_ id expr ...)
+		       (identifier? (syntax id))
+		       (let ([exprs (syntax->list (syntax (expr ...)))])
+			 ;; Check that id isn't syntax, and not lexical.
+			 (when ((with-handlers ([exn:fail? (lambda (exn) (lambda () #t))])
+				  ;; First try syntax:
+				  (let ([binding (syntax-local-value (syntax id))])
+				    ;; If it's a transformer binding, then it can take care of itself...
+				    (if (set!-transformer? binding)
+					(lambda () #f) ;; no lex check wanted
+					(lambda ()
+					  (teach-syntax-error
+					   'set!
+					   stx
+					   (syntax id)
+					   "expected a defined name after `set!', but found a keyword"))))))
+			   ;; Now try lexical:
+			   (when (eq? 'lexical (identifier-binding (syntax id)))
+			     (teach-syntax-error
+			      'set!
+			      stx
+			      (syntax id)
+			      "expected a defined name after `set!', but found a function argument name")))
+			 ;; If we're in a module, we'd like to check here whether
+			 ;;  the identier is bound, but we need to delay that check
+			 ;;  in case the id is defined later in the module. So only
+			 ;;  do this in continuing mode:
+			 (when continuing?
+			   (let ([binding (identifier-binding #'id)])
+			     (cond
+			      [(and (not binding)
+				    (syntax-source-module #'id))
+			       (teach-syntax-error
+				'unknown
+				#'id
+				#f
+				"name is not defined")]
+			      [(and (list? binding)
+				    (or (not (module-path-index? (car binding)))
+					(let-values ([(path rel) (module-path-index-split (car binding))])
+					  path)))
+			       (teach-syntax-error
+				'unknown
+				#'id
+				#f
+				"cannot set a primitive name")])))
+			 ;; Check the RHS
+			 (check-single-expression 'set!
+						  "for the new value"
+						  stx
+						  exprs
+						  null)
+			 (if continuing?
+			     (syntax-property
+			      (syntax/loc stx (begin (set! id expr ...) set!-result))
+			      'stepper-skipto
+			      (list syntax-e cdr syntax-e car))
+			     (syntax-property
+			      (syntax/loc stx (#%app values (advanced-set!-continue id expr ...)))
+			      'stepper-skipto
+			      (list syntax-e cdr syntax-e cdr car))))]
+		      [(_ id . __)
+		       (teach-syntax-error
+			'set!
+			stx
+			(syntax id)
+			"expected a defined name after `set!', but found ~a"
+			(something-else (syntax id)))]
+		      [(_)
+		       (teach-syntax-error
+			'set!
+			stx
+			(syntax id)
+			"expected a defined name after `set!', but nothing's there")]
+		      [_else (bad-use-error 'set! stx)])))))])
 	(values (proc #f)
 		(proc #t))))
     
@@ -1796,27 +1865,30 @@
       (let ([mk
 	     (lambda (who target-stx)
 	       (lambda (stx)
-		 (syntax-case stx ()
-		   [(_ q expr ...)
-		    (let ([exprs (syntax->list (syntax (expr ...)))])
-		      (check-single-expression who
-					       (format "for the answer in `~a'"
-						       who)
-					       stx
-					       exprs
-					       null)
-		      (with-syntax ([who who]
-				    [target target-stx])
-			(syntax/loc stx (target (verify-boolean q 'who) expr ...))))]
-		   [(_)
-		    (teach-syntax-error
-		     who
-		     stx
-		     #f
-		     "expected a question expression after `~a', but nothing's there"
-		     who)]
-		   [_else
-		    (bad-use-error who stx)])))])
+		 (ensure-expression
+		  stx
+		  (lambda ()
+		    (syntax-case stx ()
+		      [(_ q expr ...)
+		       (let ([exprs (syntax->list (syntax (expr ...)))])
+			 (check-single-expression who
+						  (format "for the answer in `~a'"
+							  who)
+						  stx
+						  exprs
+						  null)
+			 (with-syntax ([who who]
+				       [target target-stx])
+			   (syntax/loc stx (target (verify-boolean q 'who) expr ...))))]
+		      [(_)
+		       (teach-syntax-error
+			who
+			stx
+			#f
+			"expected a question expression after `~a', but nothing's there"
+			who)]
+		      [_else
+		       (bad-use-error who stx)])))))])
 	(values (mk 'when (quote-syntax when))
 		(mk 'unless (quote-syntax unless)))))
 
@@ -1832,21 +1904,24 @@
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     (define (advanced-let/proc stx)
-      (syntax-case stx ()
-	[(_ name ids body)
-	 (identifier/non-kw? (syntax name))
-	 (syntax/loc stx (let name ids body))]
-	[(_ name . rest)
-	 (identifier/non-kw? (syntax name))
-	 (teach-syntax-error
-	  'let
-	  stx
-	  #f
-	  "bad syntax for named `let'")]
-	[(_ . rest)
-	 (syntax/loc stx (intermediate-let . rest))]
-	[_else
-	 (bad-use-error 'let stx)]))
+      (ensure-expression
+       stx
+       (lambda ()
+	 (syntax-case stx ()
+	   [(_ name ids body)
+	    (identifier/non-kw? (syntax name))
+	    (syntax/loc stx (let name ids body))]
+	   [(_ name . rest)
+	    (identifier/non-kw? (syntax name))
+	    (teach-syntax-error
+	     'let
+	     stx
+	     #f
+	     "bad syntax for named `let'")]
+	   [(_ . rest)
+	    (syntax/loc stx (intermediate-let . rest))]
+	   [_else
+	    (bad-use-error 'let stx)]))))
 
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; begin (advanced)
@@ -1888,103 +1963,106 @@
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     (define (advanced-case/proc stx)
-      (syntax-case stx ()
-	[(_)
-	 (teach-syntax-error
-	  'case
-	  stx
-	  #f
-	  "expected an expression after `case', but nothing's there")]
-	[(_ expr)
-	 (teach-syntax-error
-	  'case
-	  stx
-	  #f
-	  "expected a choices--answer clause after the expression following `case', but nothing's there")]
-	[(_ v-expr clause ...)
-	 (let ([clauses (syntax->list (syntax (clause ...)))])
-	   (for-each
-	    (lambda (clause)
-	      (syntax-case clause (beginner-else)
-		[(beginner-else answer ...)
-		 (let ([lpos (memq clause clauses)])
-		   (when (not (null? (cdr lpos)))
-		     (teach-syntax-error
-		      'case
-		      stx
-		      clause
-		      "found an `else' clause that isn't the last clause ~
+      (ensure-expression
+       stx
+       (lambda ()
+	 (syntax-case stx ()
+	   [(_)
+	    (teach-syntax-error
+	     'case
+	     stx
+	     #f
+	     "expected an expression after `case', but nothing's there")]
+	   [(_ expr)
+	    (teach-syntax-error
+	     'case
+	     stx
+	     #f
+	     "expected a choices--answer clause after the expression following `case', but nothing's there")]
+	   [(_ v-expr clause ...)
+	    (let ([clauses (syntax->list (syntax (clause ...)))])
+	      (for-each
+	       (lambda (clause)
+		 (syntax-case clause (beginner-else)
+		   [(beginner-else answer ...)
+		    (let ([lpos (memq clause clauses)])
+		      (when (not (null? (cdr lpos)))
+			(teach-syntax-error
+			 'case
+			 stx
+			 clause
+			 "found an `else' clause that isn't the last clause ~
                                     in its `case' expression"))
-		   (let ([answers (syntax->list (syntax (answer ...)))])
-		     (check-single-expression 'case
-					      "for the answer in a case clause"
-					      clause
-					      answers
-					      null)))]
-		[(choices answer ...)
-		 (let ([choices (syntax choices)]
-		       [answers (syntax->list (syntax (answer ...)))])
-		   (syntax-case choices ()
-		     [(elem ...)
-		      (let ([elems (syntax->list (syntax (elem ...)))])
-			(for-each (lambda (e)
-				    (let ([v (syntax-e e)])
-				      (unless (or (number? v)
-						  (symbol? v))
-					(teach-syntax-error
-					 'case
-					 stx
-					 e
-					 "expected a name (for a symbol) or a number as a choice value, but found ~a"
-					 (something-else e)))))
-				  elems))]
-		     [_else (teach-syntax-error
-			     'case
-			     stx
-			     choices
-			     "expected a parenthesized sequence of choice values, but found ~a"
-			     (something-else choices))])
-		   (when (stx-null? choices)
-		     (teach-syntax-error
-		      'case
-		      stx
-		      choices
-		      "expected at least once choice in a parenthesized sequence of choice values, but nothing's there"))
-		   (check-single-expression 'case
-					    "for the answer in a `case' clause"
-					    clause
-					    answers
-					    null))]
-		[()
-		 (teach-syntax-error
-		  'case
-		  stx
-		  clause
-		  "expected a choices--answer clause, but found an empty clause")]
-		[_else
-		 (teach-syntax-error
-		  'case
-		  stx
-		  clause
-		  "expected a choices--answer clause, but found ~a"
-		  (something-else clause))]))
-	    clauses)
-	   ;; Add `else' clause for error, if necessary:
-	   (let ([clauses (let loop ([clauses clauses])
-			    (cond
-			     [(null? clauses)
-			      (list
-			       (syntax/loc stx
-				 [else (error 'cases "the expression matched none of the choices")]))]
-			     [(syntax-case (car clauses) (beginner-else)
-				[(beginner-else . _) (syntax/loc (car clauses) (else . _))]
-				[_else #f])
-			      => 
-			      (lambda (x) (cons x (cdr clauses)))]
-			     [else (cons (car clauses) (loop (cdr clauses)))]))])
-	     (with-syntax ([clauses clauses])
-	       (syntax/loc stx (case v-expr . clauses)))))]
-	[_else (bad-use-error 'case stx)]))
+		      (let ([answers (syntax->list (syntax (answer ...)))])
+			(check-single-expression 'case
+						 "for the answer in a case clause"
+						 clause
+						 answers
+						 null)))]
+		   [(choices answer ...)
+		    (let ([choices (syntax choices)]
+			  [answers (syntax->list (syntax (answer ...)))])
+		      (syntax-case choices ()
+			[(elem ...)
+			 (let ([elems (syntax->list (syntax (elem ...)))])
+			   (for-each (lambda (e)
+				       (let ([v (syntax-e e)])
+					 (unless (or (number? v)
+						     (symbol? v))
+					   (teach-syntax-error
+					    'case
+					    stx
+					    e
+					    "expected a name (for a symbol) or a number as a choice value, but found ~a"
+					    (something-else e)))))
+				     elems))]
+			[_else (teach-syntax-error
+				'case
+				stx
+				choices
+				"expected a parenthesized sequence of choice values, but found ~a"
+				(something-else choices))])
+		      (when (stx-null? choices)
+			(teach-syntax-error
+			 'case
+			 stx
+			 choices
+			 "expected at least once choice in a parenthesized sequence of choice values, but nothing's there"))
+		      (check-single-expression 'case
+					       "for the answer in a `case' clause"
+					       clause
+					       answers
+					       null))]
+		   [()
+		    (teach-syntax-error
+		     'case
+		     stx
+		     clause
+		     "expected a choices--answer clause, but found an empty clause")]
+		   [_else
+		    (teach-syntax-error
+		     'case
+		     stx
+		     clause
+		     "expected a choices--answer clause, but found ~a"
+		     (something-else clause))]))
+	       clauses)
+	      ;; Add `else' clause for error, if necessary:
+	      (let ([clauses (let loop ([clauses clauses])
+			       (cond
+				[(null? clauses)
+				 (list
+				  (syntax/loc stx
+				    [else (error 'cases "the expression matched none of the choices")]))]
+				[(syntax-case (car clauses) (beginner-else)
+				   [(beginner-else . _) (syntax/loc (car clauses) (else . _))]
+				   [_else #f])
+				 => 
+				 (lambda (x) (cons x (cdr clauses)))]
+				[else (cons (car clauses) (loop (cdr clauses)))]))])
+		(with-syntax ([clauses clauses])
+		  (syntax/loc stx (case v-expr . clauses)))))]
+	   [_else (bad-use-error 'case stx)]))))
 
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; delay (advanced)
@@ -1992,16 +2070,19 @@
 
     (define advanced-delay/proc
       (lambda (stx)
-	(syntax-case stx ()
-	  [(_ expr ...)
-	   (begin
-	     (check-single-expression 'delay
-				      "after the `delay' keyword"
-				      stx
-				      (syntax->list (syntax (expr ...)))
-				      null)
-	     (syntax (delay expr ...)))]
-	  [_else (bad-use-error 'delay stx)])))
+	(ensure-expression
+	 stx
+	 (lambda ()
+	   (syntax-case stx ()
+	     [(_ expr ...)
+	      (begin
+		(check-single-expression 'delay
+					 "after the `delay' keyword"
+					 stx
+					 (syntax->list (syntax (expr ...)))
+					 null)
+		(syntax (delay expr ...)))]
+	     [_else (bad-use-error 'delay stx)])))))
 
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; shared (advanced)
@@ -2012,72 +2093,75 @@
 
     (define advanced-shared/proc
       (lambda (stx)
-	;; Helper for the main implementation
-	(define (make-check-cdr name)
-	  (with-syntax ([name name])
-	    (syntax (unless (cyclic-list? (cdr name))
-		      (raise-type-error
-		       'cons
-		       "list or cyclic list"
-		       1
-		       (car name)
-		       (cdr name))))))
+	(ensure-expression
+	 stx
+	 (lambda ()
+	   ;; Helper for the main implementation
+	   (define (make-check-cdr name)
+	     (with-syntax ([name name])
+	       (syntax (unless (cyclic-list? (cdr name))
+			 (raise-type-error
+			  'cons
+			  "list or cyclic list"
+			  1
+			  (car name)
+			  (cdr name))))))
 
-	;; Check the syntax before letting the main implementation go:
-	(syntax-case stx ()
-	  [(_ (binding ...) . exprs)
-	   (let ([bindings (syntax->list (syntax (binding ...)))])
-	     (for-each
-	      (lambda (binding)
-		(syntax-case binding ()
-		  [(id . exprs)
-		   (identifier/non-kw? (syntax id))
-		   (check-single-expression 'shared
-					    "after the binding name"
-					    binding
-					    (syntax->list (syntax exprs))
-					    #f)]
-		  [(a . rest)
-		   (not (identifier/non-kw? (syntax a)))
-		   (teach-syntax-error
-		    'shared
-		    stx
-		    (syntax a)
-		    "expected a name for the binding, but found ~a"
-		    (something-else/kw (syntax a)))]
-		  [()
-		   (teach-syntax-error
-		    'shared
-		    stx
-		    (syntax a)
-		    "expected a name for a binding, but nothing's there")]
-		  [_else
-		   (teach-syntax-error
-		    'shared
-		    stx
-		    binding
-		    "expected a name--expression pair for a binding, but found ~a"
-		    (something-else binding))]))
-	      bindings)
-	     (check-single-expression 'shared
-				      "after the bindings"
-				      stx
-				      (syntax->list (syntax exprs))
-				      #f))]
-	  [(_ bad-bind . exprs)
-	   (teach-syntax-error
-	    'shared
-	    stx
-	    (syntax bad-bind)
-	    "expected a sequence of bindings after `shared', but found ~a"
-	    (something-else (syntax bad-bind)))]
-	  [(_)
-	   (teach-syntax-error
-	    'shared
-	    stx
-	    (syntax bad-bind)
-	    "expected a sequence of bindings after `shared', but nothing's there")]
-	  [_else (bad-use-error 'shared stx)])
+	   ;; Check the syntax before letting the main implementation go:
+	   (syntax-case stx ()
+	     [(_ (binding ...) . exprs)
+	      (let ([bindings (syntax->list (syntax (binding ...)))])
+		(for-each
+		 (lambda (binding)
+		   (syntax-case binding ()
+		     [(id . exprs)
+		      (identifier/non-kw? (syntax id))
+		      (check-single-expression 'shared
+					       "after the binding name"
+					       binding
+					       (syntax->list (syntax exprs))
+					       #f)]
+		     [(a . rest)
+		      (not (identifier/non-kw? (syntax a)))
+		      (teach-syntax-error
+		       'shared
+		       stx
+		       (syntax a)
+		       "expected a name for the binding, but found ~a"
+		       (something-else/kw (syntax a)))]
+		     [()
+		      (teach-syntax-error
+		       'shared
+		       stx
+		       (syntax a)
+		       "expected a name for a binding, but nothing's there")]
+		     [_else
+		      (teach-syntax-error
+		       'shared
+		       stx
+		       binding
+		       "expected a name--expression pair for a binding, but found ~a"
+		       (something-else binding))]))
+		 bindings)
+		(check-single-expression 'shared
+					 "after the bindings"
+					 stx
+					 (syntax->list (syntax exprs))
+					 #f))]
+	     [(_ bad-bind . exprs)
+	      (teach-syntax-error
+	       'shared
+	       stx
+	       (syntax bad-bind)
+	       "expected a sequence of bindings after `shared', but found ~a"
+	       (something-else (syntax bad-bind)))]
+	     [(_)
+	      (teach-syntax-error
+	       'shared
+	       stx
+	       (syntax bad-bind)
+	       "expected a sequence of bindings after `shared', but nothing's there")]
+	     [_else (bad-use-error 'shared stx)])
 
-	;; The main implementation
-	(include (build-path up up "mzlib" "private" "shared-body.ss"))))))
+	   ;; The main implementation
+	   (include (build-path up up "mzlib" "private" "shared-body.ss"))))))))

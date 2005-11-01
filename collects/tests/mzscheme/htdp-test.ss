@@ -1,8 +1,4 @@
 
-(define (htdp-syntax-test stx)
-  (syntax-test #`(module m #,current-htdp-lang
-		   #,stx)))
-
 (define body-accum null)
 (define-syntax (htdp-top stx)
   (syntax-case stx (quote)
@@ -13,6 +9,17 @@
 		     (if (null? (cdr body-accum))
 			 null
 			 (cons (car body-accum) (loop (cdr body-accum)))))))
+
+(define htdp-syntax-test
+  (case-lambda
+   [(stx) (htdp-syntax-test stx #rx".")]
+   [(stx rx)
+    (error-test #`(module m #,current-htdp-lang
+		    #,@body-accum
+		    #,stx)
+		(lambda (x)
+		  (and (exn:fail:syntax? x)
+		       (regexp-match rx (exn-message x)))))]))
 
 (define-syntax (htdp-test stx)
   (syntax-case stx ()

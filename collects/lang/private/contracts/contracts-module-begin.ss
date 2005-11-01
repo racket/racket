@@ -2,13 +2,16 @@
   
   (require "contracts.ss")
   
-  (require-for-syntax (lib "list.ss"))
+  (require-for-syntax (lib "list.ss")
+		      (lib "boundmap.ss" "syntax"))
   
   (provide beginner-module-begin intermediate-module-begin advanced-module-begin)
   
-  (define-syntaxes (beginner-module-begin intermediate-module-begin advanced-module-begin)
+  (define-syntaxes (beginner-module-begin intermediate-module-begin advanced-module-begin
+					  beginner-continue intermediate-continue advanced-continue)
     (let ()
-      (define (parse-contracts language-level-contract language-level-define-data)
+      (define (parse-contracts language-level-contract language-level-define-data
+			       module-begin-continue-id)
 	;; takes a list of syntax objects (the result of syntax-e) and returns all the syntax objects that correspond to
 	;; a contract declaration. Syntax: (contract function-name (domain ... -> range))
 	(define extract-contracts
@@ -138,8 +141,8 @@
                    (syntax (begin ))
                    (raise-syntax-error 'contracts "this contract has no corresponding def" (car cnt-list)))]
               [else
-               ;      (let ([expanded (local-expand (car exprs) (syntax-local-context) local-expand-stop-list)])
-               (let ([expanded (local-expand (car exprs) 'module local-expand-stop-list)])
+               (let ([expanded (car exprs)])
+
                  (syntax-case expanded (begin define-values define-data)
                    [(define-values (func) e1 ...)
                     (contract-defined? cnt-list expanded)
@@ -156,15 +159,13 @@
                         (#,ll-define-data name c1 c2 ...)
                         #,(loop cnt-list (cdr exprs))))]
                    [(begin e1 ...)
-                    (loop cnt-list (append (syntax-e (syntax (e1 ...)))(cdr exprs)))]
-                   [_else 
-                    (quasisyntax/loc (car exprs)
-                      (begin
-                        #,(car exprs)
-                        #,(loop cnt-list (cdr exprs))))]))])))
+                    (loop cnt-list (append (syntax-e (syntax (e1 ...))) (cdr exprs)))]
+		   [_else 
+		    (quasisyntax/loc (car exprs)
+		      (begin
+			#,(car exprs)
+			#,(loop cnt-list (cdr exprs))))]))])))
 	
-
-
 	;; contract transformations!
 	;; this is the macro, abstracted over which language level we are using. 
 	;; parse-contracts : 
@@ -174,26 +175,76 @@
 	;; ====>>>> (lang-lvl-contract f (number -> number) ...)
 	;; where ll-contract is either beginner-contract, intermediate-contract, or advanced-contract
 	;; and (define-data name ....) to (lang-lvl-define-data name ...)
-	
-        (lambda (stx)
-	  (syntax-case stx ()
-	    [(_ e1 ...)
-	     (let* ([top-level (syntax-e (syntax (e1 ...)))]
-		    [cnt-list (extract-contracts top-level)]
-		    [expr-list (extract-not-contracts top-level)])
-	       (with-syntax ([rest (parse-contract-expressions language-level-contract
-                                                               language-level-define-data
-                                                               cnt-list
-                                                               expr-list)])
-		 (syntax/loc stx (#%plain-module-begin rest))))])))
+
+	(values
+	 ;; module-begin (for a specific language:)
+	 (lambda (stx)
+	   (syntax-case stx ()
+	     [(_ e1 ...)
+	      ;; module-begin-continue takes a sequence of expanded
+	      ;; exprs and a sequence of to-expand exprs; that way,
+	      ;; the module-expansion machinery can be used to handle
+	      ;; requires, etc.:
+	      #`(#%plain-module-begin
+		 (#,module-begin-continue-id () (e1 ...) ()))]))
+
+	 ;; module-continue (for a specific language:)
+	 (lambda (stx)
+	   (syntax-case stx ()
+	     [(_ (e1 ...) () (defined-id ...))
+	      ;; Local-expanded all body elements, lifted out requires, etc.
+	      ;; Now process the result.
+	      (begin
+		;; The expansion for contracts breaks the way that beginner-define, etc.,
+		;;  check for duplicate definitions, so we have to re-check here.
+		;; A better strategy might be to turn every define into a define-syntax
+		;;  to redirect the binding, and then the identifier-binding check in
+		;;  beginner-define, etc. will work.
+		(let ([defined-ids (make-bound-identifier-mapping)])
+		  (for-each (lambda (id)
+			      (when (bound-identifier-mapping-get defined-ids id (lambda () #f))
+				(raise-syntax-error
+				 #f
+				 "this name was defined previously and cannot be re-defined"
+				 id))
+			      (bound-identifier-mapping-put! defined-ids id #t))
+			    (reverse (syntax->list #'(defined-id ...)))))
+		;; Now handle contracts:
+		(let* ([top-level (reverse (syntax->list (syntax (e1 ...))))]
+		       [cnt-list (extract-contracts top-level)]
+		       [expr-list (extract-not-contracts top-level)])
+		  (parse-contract-expressions language-level-contract
+					      language-level-define-data
+					      cnt-list
+					      expr-list)))]
+	     [(_ e1s (e2 . e3s) def-ids)
+	      (let ([e2 (local-expand #'e2 'module local-expand-stop-list)])
+		;; Lift out certain forms to make them visible to the module
+		;;  expander:
+		(syntax-case e2 (require define-syntaxes define-values-for-syntax define-values begin)
+		  [(require . __)
+		   #`(begin #,e2 (_ e1s e3s def-ids))]
+		  [(define-syntaxes (id ...) . __)
+		   #`(begin #,e2 (_ e1s e3s (id ... . def-ids)))]
+		  [(define-values-for-syntax . __)
+		   #`(begin #,e2 (_ e1s e3s def-ids))]
+		  [(begin b1 ...)
+		   #`(_ e1s (b1 ... . e3s) def-ids)]
+		  [(define-values (id ...) . __)
+		   #`(_ (#,e2 . e1s) e3s (id ... . def-ids))]
+		  [else
+		   #`(_ (#,e2 . e1s) e3s def-ids)]))]))))
       
-      (define parse-beginner-contract/func 
-        (parse-contracts #'beginner-contract #'beginner-define-data))
-      (define parse-intermediate-contract/func 
-        (parse-contracts #'intermediate-contract  #'intermediate-define-data))
-      (define parse-advanced-contract/func
-        (parse-contracts #'advanced-contract #'advanced-define-data))
+      (define-values (parse-beginner-contract/func continue-beginner-contract/func)
+        (parse-contracts #'beginner-contract #'beginner-define-data #'beginner-continue))
+      (define-values (parse-intermediate-contract/func continue-intermediate-contract/func)
+        (parse-contracts #'intermediate-contract  #'intermediate-define-data #'intermediate-continue))
+      (define-values (parse-advanced-contract/func continue-advanced-contract/func)
+        (parse-contracts #'advanced-contract #'advanced-define-data #'advanced-continue))
     
       (values parse-beginner-contract/func
               parse-intermediate-contract/func
-              parse-advanced-contract/func))))
+              parse-advanced-contract/func
+	      continue-beginner-contract/func
+              continue-intermediate-contract/func
+              continue-advanced-contract/func))))
