@@ -24,7 +24,8 @@
 #endif
 
 #ifdef USE_WINSOCK_TCP
-# include <winsock.h>
+# include <winsock2.h>
+# include <ws2tcpip.h>
 # define SOCK_ERRNO() WSAGetLastError()
 # define NOT_WINSOCK(x) 0
 # define WAS_EINPROGRESS(e) ((e == WSAEWOULDBLOCK))
