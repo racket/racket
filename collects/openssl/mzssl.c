@@ -815,7 +815,7 @@ unsigned short check_port_and_convert(const char *name, int argc, Scheme_Object 
   if(SCHEME_INTP(argv[pos]))
     if(SCHEME_INT_VAL(argv[pos]) >= 1)
       if(SCHEME_INT_VAL(argv[pos]) <= 65535)
-	return htons(SCHEME_INT_VAL(argv[pos]));
+	return SCHEME_INT_VAL(argv[pos]);
   scheme_wrong_type(name, "exact integer in [1, 65535]", pos, argc,argv);
   return 0; /* unnessary and wrong, but it makes GCC happy */
 }

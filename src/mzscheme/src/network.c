@@ -1564,9 +1564,8 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
   scheme_custodian_check_available(NULL, "tcp-connect", "network");
 
 #ifdef USE_TCP
-  /* Set id in network order: */
-  id = htons(origid);
-  src_id = htons(src_origid);
+  id = origid;
+  src_id = src_origid;
 #endif
 
 #ifdef USE_SOCKETS_TCP
@@ -1615,10 +1614,10 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
 	  scheme_file_open_count++;
 	  
 	  if (tcp_connect_src) {
-	    freeaddrinfo(tcp_connect_src);
+	    // freeaddrinfo(tcp_connect_src);
 	    tcp_connect_src = NULL;
 	  }
-	  freeaddrinfo(tcp_connect_dest);
+	  // freeaddrinfo(tcp_connect_dest);
 	  tcp_connect_dest = NULL;
 	    
 	  if (inprogress) {
@@ -1755,8 +1754,7 @@ tcp_listen(int argc, Scheme_Object *argv[])
   scheme_custodian_check_available(NULL, "tcp-listen", "network");
 
 #ifdef USE_TCP
-  /* Set id in network order: */
-  id = htons(origid);
+  id = origid;
 #endif
 
   {
@@ -2282,7 +2280,7 @@ static Scheme_Object *make_udp(int argc, Scheme_Object *argv[])
     GC_CAN_IGNORE struct addrinfo *udp_bind_addr = NULL;
     if (!origid)
       origid = 1025;
-    id = htons(origid);
+    id = origid;
     udp_bind_addr = scheme_get_host_address(address, id, &err, -1, 1, 0);
     if (!udp_bind_addr) {
       scheme_raise_exn(MZEXN_FAIL_NETWORK,
@@ -2454,8 +2452,7 @@ static Scheme_Object *udp_bind_or_connect(const char *name, int argc, Scheme_Obj
     return NULL;
   }
 
-  /* Set id in network order: */
-  id = htons(origid);
+  id = origid;
 
   udp_bind_addr = scheme_get_host_address(address, id, &err, -1, do_bind, 0);
   if (udp_bind_addr) {
@@ -2685,8 +2682,7 @@ static Scheme_Object *udp_send_it(const char *name, int argc, Scheme_Object *arg
 
     scheme_security_check_network(name, address, origid, 1);
 
-    /* Set id in network order: */
-    id = htons(origid);
+    id = origid;
   } else {
     address = NULL;
     id = origid = 0;
