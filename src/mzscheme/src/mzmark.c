@@ -3145,6 +3145,7 @@ int mark_udp_evt_MARK(void *p) {
 
   gcMARK(uw->udp);
   gcMARK(uw->str);
+  gcMARK(uw->dest_addr);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_UDP_Evt));
@@ -3155,6 +3156,7 @@ int mark_udp_evt_FIXUP(void *p) {
 
   gcFIXUP(uw->udp);
   gcFIXUP(uw->str);
+  gcFIXUP(uw->dest_addr);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_UDP_Evt));
