@@ -138,7 +138,7 @@ instead of putting them at the top of the slide:
     (t "Goodbye Dlrow!")))
 
 Various functions format paragraphs and generate bulleted items for
-lists. For example, `item/page' creates a bulleted paragraph that
+lists. For example, `page-item' creates a bulleted paragraph that
 spaces the width of the slide:
 
  (module hello-world (lib "slideshow.ss" "slideshow")
