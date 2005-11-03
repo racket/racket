@@ -83,7 +83,7 @@
                            ((responders-servlet-loading 
                              (host-responders host-info))
                             uri the-exn)
-                           (request-method req)))])        
+                           (request-method req)))])
          (let ([sema (make-semaphore 0)]
                [last-inst (thread-cell-ref current-servlet-instance)])
            (let/cc suspend

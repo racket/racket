@@ -11,4 +11,7 @@
     (correct-xexpr? x 
                     (lambda () #t)
                     (lambda (exn)
-                      (procedure? (exn:invalid-xexpr-code exn))))))
+                      (if (procedure? (exn:invalid-xexpr-code exn))
+                          #t
+                          (begin ((error-display-handler) (exn-message exn) exn)
+                                  #f))))))

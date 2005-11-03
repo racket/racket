@@ -14,16 +14,16 @@
   ;; The part of the URL path that gets passed to the servlet as arguments.
 
   (provide/contract
-   [read-request ((connection? ((input-port?) . ->* . (string? string?))) . ->* . (request? boolean?))]
+   [read-request ((connection? number? ((input-port?) . ->* . (string? string?))) . ->* . (request? boolean?))]
    [read-bindings (connection? symbol? url? (listof header?)
                                . -> . (union (listof binding?) string?))])
   
   
   ;; **************************************************
-  ;; read-request: connection (input-port -> string string) -> request boolean?
+  ;; read-request: connection number (input-port -> string string) -> request boolean?
   ;; read the request line, and the headers, determine if the connection should
   ;; be closed after servicing the request and build a request structure
-  (define (read-request conn port-addresses)
+  (define (read-request conn host-port port-addresses)
     (call-with-semaphore
      (connection-mutex conn)
      (lambda ()
@@ -33,7 +33,7 @@
            (let ([headers (read-headers ip)])
              (let-values ([(host-ip client-ip) (port-addresses ip)])
                (values
-                (make-request method uri headers '() host-ip client-ip)
+                (make-request method uri headers '() host-ip host-port client-ip)
                 (close-connection?
                  headers major-version minor-version client-ip host-ip)))))))))
 

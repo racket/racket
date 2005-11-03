@@ -1,14 +1,36 @@
 ;; Default choice for writing module servlets
 (module servlet mzscheme
   (require (lib "contract.ss")
-           (lib "etc.ss"))
+           (lib "etc.ss")
+           (lib "xml.ss" "xml"))
   (require "servlet-tables.ss"
            "response.ss"
            "servlet-helpers.ss"
-           "xexpr-callback.ss"
            "timer.ss"
            "web-cells.ss")
 
+  ;; ************************************************************
+  ;; HELPERS
+  
+  ;; Is it a Xexpr, or an Xexpr with procedures?
+  (define (xexpr/callback? x)
+    (correct-xexpr? x 
+                    (lambda () #t)
+                    (lambda (exn)
+                      (if (procedure? (exn:invalid-xexpr-code exn))
+                          #t
+                          (begin ((error-display-handler) (exn-message exn) exn)
+                                  #f)))))
+
+  ;; replace-procedures : (proc -> url) xexpr/callbacks? -> xexpr?
+  ;; Change procedures to the send/suspend of a k-url
+  (define (xexpr/callback->xexpr p->a p-exp)
+    (cond
+      [(list? p-exp) (map (lambda (p-e) (xexpr/callback->xexpr p->a p-e))
+                          p-exp)]
+      [(procedure? p-exp) (p->a p-exp)]
+      [else p-exp]))
+  
   ;; Weak contracts: the input is checked in output-response, and a message is
   ;; sent directly to the client (Web browser) instead of the terminal/log.
   (provide/contract
@@ -25,9 +47,10 @@
    clear-continuation-table!
    send/suspend/dispatch
    current-servlet-continuation-expiration-handler
+   xexpr/callback?
+   xexpr/callback->xexpr
    (all-from "web-cells.ss")
-   (all-from "servlet-helpers.ss")
-   (all-from "xexpr-callback.ss"))
+   (all-from "servlet-helpers.ss"))
   
   ;; ************************************************************
   ;; HIGHER-LEVEL EXPORTS
@@ -101,13 +124,6 @@
       (clear-continuation-table!)
       (send/suspend response-generator expiration-handler)))
   
-  ;; send/suspend/callback : xexpr/callback? -> void
-  ;; send/back a response with callbacks in it; send/suspend those callbacks.
-  (define (send/suspend/callback p-exp)
-    (send/suspend/dispatch
-     (lambda (embed/url)
-       (replace-procedures p-exp embed/url))))
-    
   ;; send/suspend/dispatch : ((proc -> url) -> response) [(request -> response)] -> request
   ;; send/back a response generated from a procedure that may convert
   ;; procedures to continuation urls
@@ -117,18 +133,10 @@
        (response-generator
         (opt-lambda (proc [expiration-handler (current-servlet-continuation-expiration-handler)])
           (let/ec k1 (k0 (proc (send/suspend k1 expiration-handler)))))))))
-
-
-  ;; ************************************************************
-  ;; HELPERS
-
-  ;; replace-procedures : xexpr/callbacks? (xexpr/callbacks? -> xexpr?) -> xexpr?
-  ;; Change procedures to the send/suspend of a k-url
-  (define (replace-procedures p-exp p->a)
-    (cond
-      ((list? p-exp) (map (lambda (p-e) (replace-procedures p-e p->a))
-                          p-exp))
-      ((procedure? p-exp) (p->a p-exp))
-      (else p-exp)))
-
-)
+  
+  ;; send/suspend/callback : xexpr/callback? -> void
+  ;; send/back a response with callbacks in it; send/suspend those callbacks.
+  (define (send/suspend/callback p-exp)
+    (send/suspend/dispatch
+     (lambda (embed/url)
+       (xexpr/callback->xexpr embed/url p-exp)))))

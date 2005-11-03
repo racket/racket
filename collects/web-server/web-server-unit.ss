@@ -120,7 +120,7 @@
       ;; respond to all requests on this connection
       (define (serve-connection conn port-addresses)
         (let connection-loop ()
-          (let-values ([(req close?) (config:read-request conn port-addresses)])
+          (let-values ([(req close?) (config:read-request conn config:port port-addresses)])
             (set-connection-close?! conn close?)
             (adjust-connection-timeout! conn config:initial-connection-timeout)
             (config:dispatch conn req)
