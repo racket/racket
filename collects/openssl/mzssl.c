@@ -39,13 +39,6 @@
 # define MZ_NONBLOCKING FNDELAY
 #endif
 
-/* stolen from $(PLTHOME)/src/mzscheme/src/network.c */
-# ifdef PROTOENT_IS_INT
-#  define PROTO_P_PROTO PROTOENT_IS_INT
-# else
-#  define PROTO_P_PROTO proto->p_proto
-# endif
-
 /* stolen from $(PLTHOME)/src/mzscheme/src/schfd.h */
 #ifdef USE_FAR_MZ_FDCALLS
 # define DECL_FDSET(n, c) static fd_set *n
@@ -1038,11 +1031,8 @@ static Scheme_Object *ssl_connect(int argc, Scheme_Object *argv[])
   int status;
   const char *errstr = "Unknown error";
   int err = 0;
-  GC_CAN_IGNORE struct sockaddr_in addr;
+  GC_CAN_IGNORE struct addrinfo *addr;
   int sock;
-#ifndef PROTOENT_IS_INT
-  struct protoent *proto;
-#endif
 
   address = check_host_and_convert("ssl-connect", argc, argv, 0);
   nport = check_port_and_convert("ssl-connect", argc, argv, 1);
@@ -1061,14 +1051,17 @@ static Scheme_Object *ssl_connect(int argc, Scheme_Object *argv[])
 
   TCP_INIT("ssl-connect");
 
-  /* try to create the socket */
-#ifndef PROTOENT_IS_INT
-  proto = getprotobyname("tcp");
-  if(!proto) { 
-    errstr = "couldn't find tcp protocol id"; goto clean_up_and_die; 
+  /* lookup hostname and get a reasonable structure */
+  addr = scheme_get_host_address(address, nport, &err, -1, 0, 1);
+  if (!addr) {
+    sock = INVALID_SOCKET;
+    errstr = gai_strerror(err);
+    err = 0;
+    goto clean_up_and_die;
   }
-#endif
-  sock = socket(PF_INET, SOCK_STREAM, PROTO_P_PROTO);
+
+  /* try to create the socket */
+  sock = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
   if (sock == INVALID_SOCKET)  { errstr = NULL; err = SOCK_ERRNO(); goto clean_up_and_die; }
 #ifdef USE_WINSOCK_TCP
   {
@@ -1079,14 +1072,9 @@ static Scheme_Object *ssl_connect(int argc, Scheme_Object *argv[])
   fcntl(sock, F_SETFL, MZ_NONBLOCKING);
 #endif
   
-  /* lookup hostname and get a reasonable structure */
-  if (!scheme_get_host_address(address, nport, &addr)) {
-    err = 0; 
-    errstr = "Unknown error resolving address"; 
-    goto clean_up_and_die;
-  }
+  status = connect(sock, (struct sockaddr *)addr->ai_addr, addr->ai_addrlen);
+  freeaddrinfo(addr);
 
-  status = connect(sock, (struct sockaddr *)&addr, sizeof(addr));
   /* here's the complicated bit */
   if (status) {
     int errid;
@@ -1150,9 +1138,6 @@ ssl_listen(int argc, Scheme_Object *argv[])
   int backlog, errid;
   int reuse = 0;
   const char *address = NULL;
-# ifndef PROTOENT_IS_INT
-  struct protoent *proto;
-# endif
   SSL_METHOD *meth;
   SSL_CTX *ctx;
 
@@ -1199,17 +1184,20 @@ ssl_listen(int argc, Scheme_Object *argv[])
     }
   }
 
-# ifndef PROTOENT_IS_INT
-  proto = getprotobyname("tcp");
-  if (proto)
-# endif
   {
-    GC_CAN_IGNORE struct sockaddr_in tcp_listen_addr;
+    GC_CAN_IGNORE struct addrinfo *tcp_listen_addr;
+    int err;
 
-    if (scheme_get_host_address(address, id, &tcp_listen_addr)) {
+    tcp_listen_addr = scheme_get_host_address(address, id, &err,
+					      !address ? PF_INET : -1, 
+					      1, 1);
+    if (tcp_listen_addr) {
       int s;
 
-      s = socket(PF_INET, SOCK_STREAM, PROTO_P_PROTO);
+      s = socket(tcp_listen_addr->ai_family,
+		 tcp_listen_addr->ai_socktype,
+		 tcp_listen_addr->ai_protocol);
+
       if (s != INVALID_SOCKET) {
 #ifdef USE_WINSOCK_TCP
 	unsigned long ioarg = 1;
@@ -1222,7 +1210,7 @@ ssl_listen(int argc, Scheme_Object *argv[])
 	  setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int));
 	}
       
-	if (!bind(s, (struct sockaddr *)&tcp_listen_addr, sizeof(tcp_listen_addr))) {
+	if (!bind(s, (struct sockaddr *)tcp_listen_addr->ai_addr, tcp_listen_addr->ai_addrlen)) {
 	  if (!listen(s, backlog)) {
 	    listener_t *l;
 
@@ -1239,6 +1227,8 @@ ssl_listen(int argc, Scheme_Object *argv[])
 					1);
 	      l->mref = mref;
 	    }
+
+	    freeaddrinfo(tcp_listen_addr);
 	    
 	    return (Scheme_Object *)l;
 	  }
@@ -1247,22 +1237,20 @@ ssl_listen(int argc, Scheme_Object *argv[])
 	errid = SOCK_ERRNO();
 
 	closesocket(s);
-      } else
+	freeaddrinfo(tcp_listen_addr);
+      } else {
+	freeaddrinfo(tcp_listen_addr);
 	errid = SOCK_ERRNO();
+      }
     } else {
       if (ctx && meth)
 	SSL_CTX_free(ctx);
       scheme_raise_exn(MZEXN_FAIL_NETWORK,
-		       "ssl-listen: host not found: %s",
-		       address);
+		       "ssl-listen: host not found: %s (%N)",
+		       address, 1, err);
       return NULL;
     }
   }
-# ifndef PROTOENT_IS_INT
-  else {
-    errid = SOCK_ERRNO();
-  }
-# endif
 
   if (ctx && meth)
     SSL_CTX_free(ctx);
