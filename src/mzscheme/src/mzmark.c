@@ -3006,36 +3006,34 @@ int mark_print_params_FIXUP(void *p) {
 #ifdef MARKS_FOR_NETWORK_C
 
 int mark_listener_SIZE(void *p) {
+  listener_t *l = (listener_t *)p;
+
   return
-  gcBYTES_TO_WORDS(sizeof(listener_t));
+  gcBYTES_TO_WORDS(sizeof(listener_t) + ((l->count - 1) * sizeof(tcp_t)));
 }
 
 int mark_listener_MARK(void *p) {
   listener_t *l = (listener_t *)p;
 
+
   gcMARK(l->mref);
-#ifdef USE_MAC_TCP
-  gcMARK(l->datas);
-#endif
 
   return
-  gcBYTES_TO_WORDS(sizeof(listener_t));
+  gcBYTES_TO_WORDS(sizeof(listener_t) + ((l->count - 1) * sizeof(tcp_t)));
 }
 
 int mark_listener_FIXUP(void *p) {
   listener_t *l = (listener_t *)p;
 
+
   gcFIXUP(l->mref);
-#ifdef USE_MAC_TCP
-  gcFIXUP(l->datas);
-#endif
 
   return
-  gcBYTES_TO_WORDS(sizeof(listener_t));
+  gcBYTES_TO_WORDS(sizeof(listener_t) + ((l->count - 1) * sizeof(tcp_t)));
 }
 
 #define mark_listener_IS_ATOMIC 0
-#define mark_listener_IS_CONST_SIZE 1
+#define mark_listener_IS_CONST_SIZE 0
 
 
 #ifdef USE_TCP
@@ -3049,10 +3047,6 @@ int mark_tcp_MARK(void *p) {
 
   gcMARK(tcp->b.buffer);
   gcMARK(tcp->b.out_buffer);
-# ifdef USE_MAC_TCP
-  gcMARK(tcp->tcp);
-  gcMARK(tcp->activeRcv);
-# endif
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Tcp));
@@ -3063,10 +3057,6 @@ int mark_tcp_FIXUP(void *p) {
 
   gcFIXUP(tcp->b.buffer);
   gcFIXUP(tcp->b.out_buffer);
-# ifdef USE_MAC_TCP
-  gcFIXUP(tcp->tcp);
-  gcFIXUP(tcp->activeRcv);
-# endif
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Tcp));
@@ -3075,35 +3065,6 @@ int mark_tcp_FIXUP(void *p) {
 #define mark_tcp_IS_ATOMIC 0
 #define mark_tcp_IS_CONST_SIZE 1
 
-
-# ifdef USE_MAC_TCP
-int mark_write_data_SIZE(void *p) {
-  return
-  gcBYTES_TO_WORDS(sizeof(WriteData));
-}
-
-int mark_write_data_MARK(void *p) {
-  WriteData *d = (WriteData *)p;
-    
-  gcMARK(d->xpb);
-
-  return
-  gcBYTES_TO_WORDS(sizeof(WriteData));
-}
-
-int mark_write_data_FIXUP(void *p) {
-  WriteData *d = (WriteData *)p;
-    
-  gcFIXUP(d->xpb);
-
-  return
-  gcBYTES_TO_WORDS(sizeof(WriteData));
-}
-
-#define mark_write_data_IS_ATOMIC 0
-#define mark_write_data_IS_CONST_SIZE 1
-
-# endif
 
 # ifdef UDP_IS_SUPPORTED
 int mark_udp_SIZE(void *p) {

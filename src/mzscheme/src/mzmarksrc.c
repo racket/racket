@@ -1204,16 +1204,14 @@ END print;
 START network;
 
 mark_listener {
- mark:
   listener_t *l = (listener_t *)p;
 
+ mark:
+
   gcMARK(l->mref);
-#ifdef USE_MAC_TCP
-  gcMARK(l->datas);
-#endif
 
  size:
-  gcBYTES_TO_WORDS(sizeof(listener_t));
+  gcBYTES_TO_WORDS(sizeof(listener_t) + ((l->count - 1) * sizeof(tcp_t)));
 }
 
 #ifdef USE_TCP
@@ -1223,26 +1221,10 @@ mark_tcp {
 
   gcMARK(tcp->b.buffer);
   gcMARK(tcp->b.out_buffer);
-# ifdef USE_MAC_TCP
-  gcMARK(tcp->tcp);
-  gcMARK(tcp->activeRcv);
-# endif
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Tcp));
 }
-
-# ifdef USE_MAC_TCP
-mark_write_data {
- mark:
-  WriteData *d = (WriteData *)p;
-    
-  gcMARK(d->xpb);
-
- size:
-  gcBYTES_TO_WORDS(sizeof(WriteData));
-}
-# endif
 
 # ifdef UDP_IS_SUPPORTED
 mark_udp {

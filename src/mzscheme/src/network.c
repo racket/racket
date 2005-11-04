@@ -111,8 +111,9 @@ typedef SOCKET tcp_t;
 #ifdef USE_SOCKETS_TCP
 typedef struct {
   Scheme_Object so;
-  tcp_t s;
   Scheme_Custodian_Reference *mref;
+  int count;
+  tcp_t s[1];
 } listener_t;
 #endif
 
@@ -834,7 +835,7 @@ static void TCP_INIT(char *name)
 /*========================================================================*/
 
 #ifdef USE_SOCKETS_TCP
-#define LISTENER_WAS_CLOSED(x) (((listener_t *)(x))->s == INVALID_SOCKET)
+#define LISTENER_WAS_CLOSED(x) (((listener_t *)(x))->s[0] == INVALID_SOCKET)
 #endif
 #ifndef LISTENER_WAS_CLOSED
 #define LISTENER_WAS_CLOSED(x) 0
@@ -843,14 +844,15 @@ static void TCP_INIT(char *name)
 /* Forward declaration */
 static int stop_listener(Scheme_Object *o);
 
-static int tcp_check_accept(Scheme_Object *listener)
+static int tcp_check_accept(Scheme_Object *_listener)
 {
 #ifdef USE_SOCKETS_TCP
-  tcp_t s;
+  tcp_t s, mx;
+  listener_t *listener = (listener_t *)_listener;
   DECL_FDSET(readfds, 1);
   DECL_FDSET(exnfds, 1);
   struct timeval time = {0, 0};
-  int sr;
+  int sr, i;
 
   INIT_DECL_FDSET(readfds, 1);
   INIT_DECL_FDSET(exnfds, 1);
@@ -858,32 +860,51 @@ static int tcp_check_accept(Scheme_Object *listener)
   if (LISTENER_WAS_CLOSED(listener))
     return 1;
 
-  s = ((listener_t *)listener)->s;
-
   MZ_FD_ZERO(readfds);
   MZ_FD_ZERO(exnfds);
-  MZ_FD_SET(s, readfds);
-  MZ_FD_SET(s, exnfds);
+
+  mx = 0;
+  for (i = 0; i < listener->count; i++) {
+    s = listener->s[i];
+    MZ_FD_SET(s, readfds);
+    MZ_FD_SET(s, exnfds);
+    if (s > mx)
+      mx = s;
+  }
   
   do {
-    sr = select(s + 1, readfds, NULL, exnfds, &time);
+    sr = select(mx + 1, readfds, NULL, exnfds, &time);
   } while ((sr == -1) && (NOT_WINSOCK(errno) == EINTR));
+
+  if (sr) {
+    for (i = 0; i < listener->count; i++) {
+      s = listener->s[i];
+      if (FD_ISSET(s, readfds)
+	  || FD_ISSET(s, exnfds))
+	return i + 1;
+    }
+  }
 
   return sr;
 #endif
 }
 
-static void tcp_accept_needs_wakeup(Scheme_Object *listener, void *fds)
+static void tcp_accept_needs_wakeup(Scheme_Object *_listener, void *fds)
 {
 #ifdef USE_SOCKETS_TCP
-  if (!LISTENER_WAS_CLOSED(listener)) {
-    tcp_t s = ((listener_t *)listener)->s;
+  if (!LISTENER_WAS_CLOSED(_listener)) {
+    listener_t *listener = (listener_t *)_listener;
+    int i;
+    tcp_t s;
     void *fds2;
 
     fds2 = MZ_GET_FDSET(fds, 2);
     
-    MZ_FD_SET(s, (fd_set *)fds);
-    MZ_FD_SET(s, (fd_set *)fds2);
+    for (i = 0; i < listener->count; i++) {
+      s = listener->s[i];
+      MZ_FD_SET(s, (fd_set *)fds);
+      MZ_FD_SET(s, (fd_set *)fds2);
+    }
   }
 #endif
 }
@@ -903,8 +924,9 @@ static int tcp_check_connect(Scheme_Object *connector_p)
   s = *(tcp_t *)connector_p;
 
   MZ_FD_ZERO(writefds);
-  MZ_FD_SET(s, writefds);
   MZ_FD_ZERO(exnfds);
+
+  MZ_FD_SET(s, writefds);
   MZ_FD_SET(s, exnfds);
     
   do {
@@ -1493,9 +1515,17 @@ make_tcp_output_port(void *data, const char *name)
 /*========================================================================*/
 
 #ifdef USE_SOCKETS_TCP
-static void closesocket_w_decrement(tcp_t s)
+typedef struct Close_Socket_Data {
+  tcp_t s;
+  struct addrinfo *src_addr, *dest_addr;
+} Close_Socket_Data;
+
+static void closesocket_w_decrement(Close_Socket_Data *csd)
 {
-  closesocket(s);
+  closesocket(csd->s);
+  if (csd->src_addr)
+    freeaddrinfo(csd->src_addr);
+  freeaddrinfo(csd->dest_addr);  
   --scheme_file_open_count;
 }
 #endif
@@ -1576,108 +1606,112 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
     else
       tcp_connect_src = scheme_get_host_address(src_address, src_id, &errid, -1, 1, 1);
     if (no_local_spec || tcp_connect_src) {
-      tcp_t s;
-      s = socket(tcp_connect_dest->ai_family,
-		 tcp_connect_dest->ai_socktype,
-		 tcp_connect_dest->ai_protocol);
-      if (s != INVALID_SOCKET) {
-	int status, inprogress;
-	if (no_local_spec
-	    || !bind(s, tcp_connect_src->ai_addr, tcp_connect_src->ai_addrlen)) {
+      GC_CAN_IGNORE struct addrinfo *addr;
+      for (addr = tcp_connect_dest; addr; addr = addr->ai_next) {
+	tcp_t s;
+	s = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+	if (s != INVALID_SOCKET) {
+	  int status, inprogress;
+	  if (no_local_spec
+	      || !bind(s, tcp_connect_src->ai_addr, tcp_connect_src->ai_addrlen)) {
 #ifdef USE_WINSOCK_TCP
-	  unsigned long ioarg = 1;
-	  ioctlsocket(s, FIONBIO, &ioarg);
+	    unsigned long ioarg = 1;
+	    ioctlsocket(s, FIONBIO, &ioarg);
 #else
-	  int size = TCP_SOCKSENDBUF_SIZE;
-	  fcntl(s, F_SETFL, MZ_NONBLOCKING);
+	    int size = TCP_SOCKSENDBUF_SIZE;
+	    fcntl(s, F_SETFL, MZ_NONBLOCKING);
 # ifndef CANT_SET_SOCKET_BUFSIZE
-	  setsockopt(s, SOL_SOCKET, SO_SNDBUF, (char *)&size, sizeof(int));
+	    setsockopt(s, SOL_SOCKET, SO_SNDBUF, (char *)&size, sizeof(int));
 # endif
 #endif
-	  status = connect(s, tcp_connect_dest->ai_addr, tcp_connect_dest->ai_addrlen);
+	    status = connect(s, addr->ai_addr, addr->ai_addrlen);
 #ifdef USE_UNIX_SOCKETS_TCP
-	  if (status)
-	    status = errno;
-	  if (status == EINTR)
-	    status = EINPROGRESS;
+	    if (status)
+	      status = errno;
+	    if (status == EINTR)
+	      status = EINPROGRESS;
 	
-	  inprogress = (status == EINPROGRESS);
+	    inprogress = (status == EINPROGRESS);
 #endif
 #ifdef USE_WINSOCK_TCP
-	  if (status)
-	    status = WSAGetLastError();
+	    if (status)
+	      status = WSAGetLastError();
 
-	  inprogress = (status == WSAEWOULDBLOCK);
-	  errno = status;
+	    inprogress = (status == WSAEWOULDBLOCK);
+	    errno = status;
 #endif
 
-	  scheme_file_open_count++;
+	    scheme_file_open_count++;
 	  
-	  if (tcp_connect_src) {
-	    // freeaddrinfo(tcp_connect_src);
-	    tcp_connect_src = NULL;
-	  }
-	  // freeaddrinfo(tcp_connect_dest);
-	  tcp_connect_dest = NULL;
-	    
-	  if (inprogress) {
-	    tcp_t *sptr;
+	    if (inprogress) {
+	      tcp_t *sptr;
+	      Close_Socket_Data *csd;
 
-	    sptr = (tcp_t *)scheme_malloc_atomic(sizeof(tcp_t));
-	    *sptr = s;
+	      sptr = (tcp_t *)scheme_malloc_atomic(sizeof(tcp_t));
+	      *sptr = s;
 
-	    BEGIN_ESCAPEABLE(closesocket_w_decrement, s);
-	    scheme_block_until(tcp_check_connect, tcp_connect_needs_wakeup, (void *)sptr, (float)0.0);
-	    END_ESCAPEABLE();
+	      csd = (Close_Socket_Data *)scheme_malloc_atomic(sizeof(Close_Socket_Data));
+	      csd->s = s;
+	      csd->src_addr = tcp_connect_src;
+	      csd->dest_addr = tcp_connect_dest;
 
-	    /* Check whether connect succeeded, or get error: */
-	    {
-	      int so_len = sizeof(status);
-	      if (getsockopt(s, SOL_SOCKET, SO_ERROR, (void *)&status, &so_len) != 0) {
-		status = SOCK_ERRNO();
+	      BEGIN_ESCAPEABLE(closesocket_w_decrement, csd);
+	      scheme_block_until(tcp_check_connect, tcp_connect_needs_wakeup, (void *)sptr, (float)0.0);
+	      END_ESCAPEABLE();
+
+	      /* Check whether connect succeeded, or get error: */
+	      {
+		int so_len = sizeof(status);
+		if (getsockopt(s, SOL_SOCKET, SO_ERROR, (void *)&status, &so_len) != 0) {
+		  status = SOCK_ERRNO();
+		}
+		errno = status; /* for error reporting, below */
 	      }
-	      errno = status; /* for error reporting, below */
-	    }
 
 #ifdef USE_WINSOCK_TCP
-	    if (scheme_stupid_windows_machine > 0) {
-	      /* getsockopt() seems not to work in Windows 95, so use the
-		 result from select(), which seems to reliably detect an error condition */
-	      if (!status) {
-		if (tcp_check_connect((Scheme_Object *)sptr) == -1) {
-		  status = 1;
-		  errno = WSAECONNREFUSED; /* guess! */
+	      if (scheme_stupid_windows_machine > 0) {
+		/* getsockopt() seems not to work in Windows 95, so use the
+		   result from select(), which seems to reliably detect an error condition */
+		if (!status) {
+		  if (tcp_check_connect((Scheme_Object *)sptr) == -1) {
+		    status = 1;
+		    errno = WSAECONNREFUSED; /* guess! */
+		  }
 		}
 	      }
-	    }
 #endif
-	  }
+	    }
 	
-	  if (!status) {
-	    Scheme_Object *v[2];
-	    Scheme_Tcp *tcp;
+	    if (!status) {
+	      Scheme_Object *v[2];
+	      Scheme_Tcp *tcp;
 
-	    tcp = make_tcp_port_data(s, 2);
-	      
-	    v[0] = make_tcp_input_port(tcp, address);
-	    v[1] = make_tcp_output_port(tcp, address);
-	      
-	    REGISTER_SOCKET(s);
+	      if (tcp_connect_src)
+		freeaddrinfo(tcp_connect_src);
+	      freeaddrinfo(tcp_connect_dest);
 
-	    return scheme_values(2, v);
+	      tcp = make_tcp_port_data(s, 2);
+	      
+	      v[0] = make_tcp_input_port(tcp, address);
+	      v[1] = make_tcp_output_port(tcp, address);
+	      
+	      REGISTER_SOCKET(s);
+
+	      return scheme_values(2, v);
+	    } else {
+	      errid = errno;
+	      closesocket(s);
+	      --scheme_file_open_count;
+	      errpart = 6;
+	    }
 	  } else {
-	    errid = errno;
-	    closesocket(s);
-	    --scheme_file_open_count;
-	    errpart = 6;
+	    errpart = 5;
+	    errid = SOCK_ERRNO();
 	  }
 	} else {
-	  errpart = 5;
+	  errpart = 4;
 	  errid = SOCK_ERRNO();
 	}
-      } else {
-	errpart = 4;
-	errid = SOCK_ERRNO();
       }
       if (tcp_connect_src)
 	freeaddrinfo(tcp_connect_src);
@@ -1687,7 +1721,7 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
       errmsg = "; local host not found";
     } 
     if (tcp_connect_dest)
-    freeaddrinfo(tcp_connect_dest);
+      freeaddrinfo(tcp_connect_dest);
   } else {
     errpart = 1;
     nameerr = 1;
@@ -1758,63 +1792,84 @@ tcp_listen(int argc, Scheme_Object *argv[])
 #endif
 
   {
-    GC_CAN_IGNORE struct addrinfo *tcp_listen_addr;
-    int err;
+    GC_CAN_IGNORE struct addrinfo *tcp_listen_addr, *addr;
+    int err, count = 0, pos = 0, i;
+    listener_t *l = NULL;
 
-    tcp_listen_addr = scheme_get_host_address(address, id, &err, 
-					      !address ? MZ_PF_INET : -1, 
-					      1, 1);
+    tcp_listen_addr = scheme_get_host_address(address, id, &err, -1, 1, 1);
 
+    for (addr = tcp_listen_addr; addr; addr = addr->ai_next) {
+      count++;
+    }
+		
     if (tcp_listen_addr) {
       tcp_t s;
 
-      s = socket(tcp_listen_addr->ai_family,
-		 tcp_listen_addr->ai_socktype,
-		 tcp_listen_addr->ai_protocol);
+      errid = 0;
+      for (addr = tcp_listen_addr; addr; addr = addr->ai_next) {
+	s = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
 
-      if (s != INVALID_SOCKET) {
+	if (s != INVALID_SOCKET) {
 #ifdef USE_WINSOCK_TCP
-	unsigned long ioarg = 1;
-	ioctlsocket(s, FIONBIO, &ioarg);
+	  unsigned long ioarg = 1;
+	  ioctlsocket(s, FIONBIO, &ioarg);
 #else
-	fcntl(s, F_SETFL, MZ_NONBLOCKING);
+	  fcntl(s, F_SETFL, MZ_NONBLOCKING);
 #endif
 
-	if (reuse) {
-	  setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *)(&reuse), sizeof(int));
-	}
-      
-	if (!bind(s, tcp_listen_addr->ai_addr, tcp_listen_addr->ai_addrlen)) {
-	  if (!listen(s, backlog)) {
-	    listener_t *l;
-
-	    l = MALLOC_ONE_TAGGED(listener_t);
-	    l->so.type = scheme_listener_type;
-	    l->s = s;
-	    {
-	      Scheme_Custodian_Reference *mref;
-	      mref = scheme_add_managed(NULL,
-					(Scheme_Object *)l,
-					(Scheme_Close_Custodian_Client *)stop_listener,
-					NULL,
-					1);
-	      l->mref = mref;
-	    }
-
-	    scheme_file_open_count++;
-	    REGISTER_SOCKET(s);
-
-	    freeaddrinfo(tcp_listen_addr);
-
-	    return (Scheme_Object *)l;
+	  if (reuse) {
+	    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *)(&reuse), sizeof(int));
 	  }
+      
+	  if (!bind(s, addr->ai_addr, addr->ai_addrlen)) {
+	    if (!listen(s, backlog)) {
+	      if (!pos) {
+		l = scheme_malloc_tagged(sizeof(listener_t) + ((count - 1) * sizeof(tcp_t)));
+		l->so.type = scheme_listener_type;
+		l->count = count;
+		{
+		  Scheme_Custodian_Reference *mref;
+		  mref = scheme_add_managed(NULL,
+					    (Scheme_Object *)l,
+					    (Scheme_Close_Custodian_Client *)stop_listener,
+					    NULL,
+					    1);
+		  l->mref = mref;
+		}
+	      }
+	      l->s[pos++] = s;
+	    
+	      scheme_file_open_count++;
+	      REGISTER_SOCKET(s);
+
+	      if (pos == count) {
+		freeaddrinfo(tcp_listen_addr);
+
+		return (Scheme_Object *)l;
+	      }
+	    } else {
+	      errid = SOCK_ERRNO();
+	      closesocket(s);
+	      break;
+	    }
+	  } else {
+	    errid = SOCK_ERRNO();
+	    closesocket(s);
+	    break;
+	  }
+	} else {
+	  errid = SOCK_ERRNO();
+	  break;
 	}
+      }
 
-	errid = SOCK_ERRNO();
-
+      for (i = 0; i < pos; i++) {
+	s = l->s[i];
+	UNREGISTER_SOCKET(s);
 	closesocket(s);
-      } else
-	errid = SOCK_ERRNO();
+	--scheme_file_open_count;
+      }
+      
       freeaddrinfo(tcp_listen_addr);
     } else {
       scheme_raise_exn(MZEXN_FAIL_NETWORK,
@@ -1843,19 +1898,24 @@ static int stop_listener(Scheme_Object *o)
 
 #ifdef USE_SOCKETS_TCP
   {
-    tcp_t s = ((listener_t *)o)->s;
+    listener_t *listener = (listener_t *)o;
+    int i;
+    tcp_t s;
+    s = listener->s[0];
     if (s == INVALID_SOCKET)
       was_closed = 1;
     else {
-      UNREGISTER_SOCKET(s);
-      closesocket(s);
-      ((listener_t *)o)->s = INVALID_SOCKET;
-      --scheme_file_open_count;
+      for (i = 0; i < listener->count; i++) {
+	s = listener->s[i];
+	UNREGISTER_SOCKET(s);
+	closesocket(s);
+	listener->s[i] = INVALID_SOCKET;
+	--scheme_file_open_count;
+      }
       scheme_remove_managed(((listener_t *)o)->mref, o);
     }
   }
 #endif
-
 
   return was_closed;
 }
@@ -1917,7 +1977,7 @@ static Scheme_Object *
 tcp_accept(int argc, Scheme_Object *argv[])
 {
 #ifdef USE_TCP
-  int was_closed = 0, errid;
+  int was_closed = 0, errid, ready_pos;
   Scheme_Object *listener;
 # ifdef USE_SOCKETS_TCP
   tcp_t s;
@@ -1935,11 +1995,14 @@ tcp_accept(int argc, Scheme_Object *argv[])
   was_closed = LISTENER_WAS_CLOSED(listener);
 
   if (!was_closed) {
-    if (!tcp_check_accept(listener)) {
+    ready_pos = tcp_check_accept(listener);
+    if (!ready_pos) {
       scheme_block_until(tcp_check_accept, tcp_accept_needs_wakeup, listener, 0.0);
+      ready_pos = tcp_check_accept(listener);
     }
     was_closed = LISTENER_WAS_CLOSED(listener);
-  }
+  } else
+    ready_pos = 0;
 
   if (was_closed) {
     scheme_raise_exn(MZEXN_FAIL_NETWORK,
@@ -1950,7 +2013,7 @@ tcp_accept(int argc, Scheme_Object *argv[])
   scheme_custodian_check_available(NULL, "tcp-accept", "network");
   
 # ifdef USE_SOCKETS_TCP
-  s = ((listener_t *)listener)->s;
+  s = ((listener_t *)listener)->s[ready_pos-1];
 
   l = sizeof(tcp_accept_addr);
 
