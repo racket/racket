@@ -2504,6 +2504,7 @@ Bool wxDC::Blit(double xdest, double ydest, double width, double height,
 	  use_alpha = 1;
       }
     } else {
+      wxBitmap *orig_mask = mask;
       invented = new wxBitmap(iw, ih, mono_src);
       if (invented->Ok()) {
 	GC_CAN_IGNORE void *pBits = NULL; /* set with use_alpha... */
@@ -2613,13 +2614,13 @@ Bool wxDC::Blit(double xdest, double ydest, double width, double height,
 	return 0;
       }
 
-      if ((mask != selected_bitmap)
+      if ((orig_mask != selected_bitmap)
 	  && (source != selected_bitmap)) {
-	mask->ReleaseCachedMask();
+	orig_mask->ReleaseCachedMask();
 	source->ReleaseCachedMask();
-	mask->mask_cache = invented_memdc;
+	orig_mask->mask_cache = invented_memdc;
 	source->mask_cache = invented_memdc;
-	if (source == mask)
+	if (source == orig_mask)
 	  invented_memdc->refcount = 1;
 	else
 	  invented_memdc->refcount = 2;
