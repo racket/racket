@@ -1006,7 +1006,6 @@ please adhere to these guidelines:
 
   (seasoned-plt-schemer? "Seasoned PLT Schemer?")
   (looking-for-standard-scheme? "Looking for standard Scheme?")
-  (use-language-menu-item-in-future "Use the Language|Choose Language... menu item to change languages later.")
   
   ; some of these belong ...
   ;(otherwise-use-before "Otherwise, use ")

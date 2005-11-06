@@ -1412,12 +1412,12 @@
         (define (main)
           (o (string-constant must-choose-language))
           (o "\n")
-          (let ([rep (drscheme:rep:current-rep)])
-            (when rep
-              (parameterize ([current-eventspace drscheme:init:system-eventspace])
-                (queue-callback
-                 (λ ()
-                   (not-a-language-dialog rep)))))))
+          (o "Either select the \"Choose Language...\" item in the \"Language\" menu, or ")
+          (o (new link-snip%
+                  [words "get guidance"]
+                  [callback (lambda (snip)
+                              (not-a-language-dialog (find-parent-from-snip snip)))]))
+          (o "."))
         
         (define o
           (case-lambda
@@ -1429,10 +1429,42 @@
                 (write-special arg (current-error-port))])]
             [args (apply fprintf (current-error-port) args)]))
         
+        (define arrow-cursor (make-object cursor% 'arrow))
+        
+        (define link-snip%
+          (class editor-snip%
+            (init-field words callback)
+
+            (define/override (adjust-cursor dc x y editorx editory event) arrow-cursor)
+            
+            (define/override (on-event dc x y editorx editory event)
+              (when (send event button-up?)
+                (callback this)))
+            
+            (define/override (copy)
+              (new link-snip% [words words] [callback callback]))
+            
+            (define txt (new text:standard-style-list%))
+            
+            (super-new [editor txt] [with-border? #f]
+                       [left-margin 0]
+                       [right-margin 0]
+                       [top-margin 0]
+                       [bottom-margin 0])
+            (inherit get-flags set-flags set-style)
+            (set-flags (cons 'handles-events (get-flags)))
+            
+            (send txt insert words)
+            (send txt change-style link-sd 0 (send txt last-position))))
+        
+        (define link-sd (make-object style-delta% 'change-underline #t))
+        (define stupid-internal-define-syntax1
+          (begin (send link-sd set-delta-foreground "blue")
+                 (send link-sd set-family 'default)))
+
         (main))
       
-      (define (not-a-language-dialog rep)
-        (define drs-frame (send (send rep get-canvas) get-top-level-window))
+      (define (not-a-language-dialog drs-frame)
         (define dialog (new dialog%
                             (parent drs-frame)
                             (label (string-constant drscheme))))
@@ -1442,38 +1474,19 @@
                                   (stretchable-height #f)
                                   (alignment '(right center))))
         
-        (define close (new button%
+        (define cancel (new button%
                            (parent button-panel)
                            (callback (lambda (x y) (send dialog show #f)))
-                           (label (string-constant close))))
-        
-        (define run (new button%
-                         (parent button-panel)
-                         (style '(border))
-                         (callback (λ (x y) (run-callback)))
-                         (label (make-bitmap-label 
-                                 (string-constant execute-button-label)
-                                 (build-path (collection-path "icons") "run.png")))))
+                           (label (string-constant cancel))))
         
         (define language-chosen? #f)
         
         (define (main)
-          (insert-red-message)
           (insert-text-pls)
           (display-plt-schemer)
           (display-standard-schemer)
-          (display-future-choice)
           (space-em-out)
           (send dialog show #t))
-        
-        (define (run-callback)
-          (cond
-            [language-chosen?
-             (send dialog show #f)
-             (send drs-frame execute-callback)]
-            [else
-             (message-box (string-constant drscheme)
-                          (string-constant choose-new-language-before-running))]))
         
         (define (insert-red-message)
           (new canvas-message% 
@@ -1500,12 +1513,6 @@
                                       (loop (car r)
                                             (cdr r)))]))]))))
                                      
-        
-        (define (display-future-choice)
-          (new message%
-               (label (string-constant use-language-menu-item-in-future))
-               (parent qa-panel)))
-        
         (define (insert-text-pls)
           (for-each
            display-text-pl
@@ -1625,7 +1632,9 @@
                   (label (car (last-pair lang)))
                   (color (send the-color-database find-color "blue"))
                   (callback
-                   (λ () (change-current-lang-to lang)))
+                   (λ () 
+                     (send dialog show #f)
+                     (change-current-lang-to lang)))
                   (font (get-font #:underlined #t))))))
         
         ;; get-text-pls : path -> (listof (list* string string (listof string))
