@@ -1006,13 +1006,13 @@ please adhere to these guidelines:
 
   (seasoned-plt-schemer? "Seasoned PLT Schemer?")
   (looking-for-standard-scheme? "Looking for standard Scheme?")
-  
-  ; some of these belong ...
-  ;(otherwise-use-before "Otherwise, use ")
-  ;(otherwise-use-between ",\nor choose for yourself from the ")
-  ;(otherwise-use-language-dialog "language dialog") ; this one will become clickable and will open the language dialog
-  ;(otherwise-use-after ".")
-  
+
+  ; the three string constants are concatenated together and the middle
+  ; one is hyperlinked to the dialog that suggests various languages
+  (get-guidance-before "Either select the “Choose Language...” item in the “Language” menu, or ")
+  (get-guidance-during "get guidance")
+  (get-guidance-after ".")
+    
  ;;; debug language
  (unknown-debug-frame "[unknown]")
  (backtrace-window-title "Backtrace - DrScheme")

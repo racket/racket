@@ -49,6 +49,7 @@
           front-end/interaction
 	  config-panel
 	  on-execute
+          first-opened
           render-value/format
           render-value
           
@@ -502,6 +503,7 @@
 	  (inherit get-module get-transformer-module use-namespace-require/copy?
                    get-init-code use-mred-launcher get-reader)
           
+          (define/public (first-opened) (void))
           (define/public (get-comment-character) (values ";  " #\;))
           (define/public (order-manuals x) (values x #t))
           

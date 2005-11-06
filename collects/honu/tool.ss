@@ -29,6 +29,7 @@
       
       (define (honu-lang-mixin level)
         (class* object% (drscheme:language:language<%>)
+          (define/public (first-opened) (void))
           (define/public (get-comment-character) (values "//" #\*))
           
           (define/public (default-settings)

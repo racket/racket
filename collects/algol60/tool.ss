@@ -47,6 +47,7 @@
 
       (define lang%
         (class* object% (drscheme:language:language<%>)
+          (define/public (first-opened) (void))
           (define/public (config-panel parent)
             (case-lambda
               [() null]

@@ -1380,8 +1380,12 @@
                         not-a-language-extra-mixin))))
       
       (define (not-a-language-extra-mixin %)
-        (class %
+        (class* % (not-a-language-language<%>)
           (define/override (get-style-delta) drscheme:rep:error-delta)
+          
+          (define/override (first-opened) 
+            (not-a-language-message)
+            (fprintf (current-error-port) "\n"))
           
           (define/override (front-end/interaction input settings teachpack-cache)
             (not-a-language-message)
@@ -1389,7 +1393,11 @@
           (define/override (front-end/complete-program input settings teachpack-cache)
             (not-a-language-message)
             (λ () eof))
-          (super-new))) 
+          (super-new)))
+      
+      ;; used for identification only
+      (define not-a-language-language<%>
+        (interface ()))
       
       
 ;                                                                                                    
@@ -1410,14 +1418,28 @@
       
       (define (not-a-language-message)
         (define (main)
-          (o (string-constant must-choose-language))
-          (o "\n")
-          (o "Either select the \"Choose Language...\" item in the \"Language\" menu, or ")
-          (o (new link-snip%
-                  [words "get guidance"]
-                  [callback (lambda (snip)
-                              (not-a-language-dialog (find-parent-from-snip snip)))]))
-          (o "."))
+          (when (language-still-unchanged?)
+            (o (string-constant must-choose-language))
+            (o "\n")
+            (o (string-constant get-guidance-before))
+            (o (new link-snip%
+                    [words (string-constant get-guidance-during)]
+                    [callback (lambda (snip)
+                                (not-a-language-dialog (find-parent-from-snip snip)))]))
+            (o (string-constant get-guidance-after))))
+        
+        (define (language-still-unchanged?)
+          (let ([rep (drscheme:rep:current-rep)])
+            (cond
+              [rep 
+               (let* ([next-settings (send (send rep get-definitions-text) get-next-settings)]
+                      [next-lang (language-settings-language next-settings)])
+                 (is-a? next-lang not-a-language-language<%>))]
+              
+              ;; if we cannot get the REP
+              ;; (because a tool is processing the progrm like check syntax)
+              ;; then just assume it has not changed.
+              [else #t])))
         
         (define o
           (case-lambda

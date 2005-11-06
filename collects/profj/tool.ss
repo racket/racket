@@ -132,6 +132,7 @@
       (define (java-lang-mixin level name number one-line dyn?)
         (when dyn? (dynamic? #t))
         (class* object% (drscheme:language:language<%>)
+          (define/public (first-opened) (void))
           
           (define/public (order-manuals x)
             (let* ((beg-list '(#"profj-beginner" #"tour" #"drscheme" #"help"))
