@@ -2,6 +2,7 @@
   (require (lib "unitsig.ss")
            (lib "string-constant.ss" "string-constants")
            (lib "class.ss")
+           (lib "list.ss")
            (lib "framework.ss" "framework")
            "drsig.ss")
   
@@ -24,6 +25,11 @@
           (set! modes (cons new-mode modes))
           new-mode))
       
+      (define (not-a-language-language? l)
+        (and (not (null? l))
+             (equal? (car (last-pair l))
+                     (string-constant no-language-chosen))))
+      
       (define (add-initial-modes)
         
         ;; must be added first, to make it last in mode list,
@@ -39,4 +45,6 @@
          #f
          (λ (text prompt-position) #t)
          (λ (l) 
-           (and l (ormap (λ (x) (regexp-match #rx"Algol" x)) l))))))))
+           (and l
+                (or (not-a-language-language? l)
+                    (ormap (λ (x) (regexp-match #rx"Algol" x)) l)))))))))

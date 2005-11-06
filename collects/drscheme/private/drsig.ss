@@ -174,6 +174,7 @@
      current-language-settings
      current-value-port
      get-drs-bindings-keymap
+     error-delta
      text%
      text<%>
      context<%>))

@@ -4,6 +4,7 @@
            (lib "hierlist.ss" "hierlist")
            (lib "class.ss")
 	   (lib "contract.ss")
+           (lib "kw.ss")
            "drsig.ss"
            (lib "string-constant.ss" "string-constants")
 	   (lib "mred.ss" "mred")
@@ -12,6 +13,7 @@
            (lib "etc.ss")
            (lib "file.ss")
            (lib "pconvert.ss")
+           (lib "bitmap-label.ss" "mrlib")
            (lib "getinfo.ss" "setup")
            (lib "toplevel.ss" "syntax"))
   
@@ -43,7 +45,7 @@
       ;; considered the default language
       (define default-language-position
         (list (string-constant initial-language-category)
-              (string-constant choose-a-language-language)))
+              (string-constant no-language-chosen)))
 
       ;; languages : (listof (instanceof language<%>))
       ;; all of the languages supported in DrScheme
@@ -135,16 +137,16 @@
                                       (string-constant language-dialog-title)))
                            (parent parent)
                            (style '(resize-border))))
-          (define welcome-before-panel (instantiate horizontal-panel% ()
+          (define welcome-before-panel (instantiate horizontal-pane% ()
                                          (parent dialog)
                                          (stretchable-height #f)))
-          (define language-dialog-meat-panel (make-object vertical-panel% dialog))
+          (define language-dialog-meat-panel (make-object vertical-pane% dialog))
 
-          (define welcome-after-panel (instantiate vertical-panel% () 
+          (define welcome-after-panel (instantiate vertical-pane% () 
                                         (parent dialog)
                                         (stretchable-height #f)))
           
-          (define button-panel (instantiate horizontal-panel% ()
+          (define button-panel (instantiate horizontal-pane% ()
                                  (parent dialog)
                                  (stretchable-height #f)))
           
@@ -176,7 +178,7 @@
           (define show-details-label (string-constant show-details-button-label))
           (define hide-details-label (string-constant hide-details-button-label))
           
-          (define button-gap (make-object horizontal-panel% button-panel))
+          (define button-gap (make-object horizontal-pane% button-panel))
 	  (define-values (ok-button cancel-button)
             (gui-utils:ok/cancel-buttons
              button-panel
@@ -316,9 +318,9 @@
                   (send i toggle-open/closed)))
               (super-instantiate (parent))))
 
-          (define outermost-panel (make-object horizontal-panel% parent))
+          (define outermost-panel (make-object horizontal-pane% parent))
           (define languages-hier-list (make-object selectable-hierlist% outermost-panel))
-          (define details-outer-panel (make-object vertical-panel% outermost-panel))
+          (define details-outer-panel (make-object vertical-pane% outermost-panel))
           (define details/manual-parent-panel (make-object vertical-panel% details-outer-panel))
 	  (define details-panel (make-object panel:single% details/manual-parent-panel))
           (define manual-ordering-panel (new vertical-panel% (parent details/manual-parent-panel)))
@@ -731,7 +733,7 @@
                                    (λ (x y)
                                      (details-callback))))
           
-          (define revert-to-defaults-outer-panel (make-object horizontal-panel% show-details-parent))
+          (define revert-to-defaults-outer-panel (make-object horizontal-pane% show-details-parent))
           (define revert-to-defaults-button (make-object button% 
                                               (string-constant revert-to-language-defaults)
                                               revert-to-defaults-outer-panel
@@ -1371,7 +1373,7 @@
           (add-language
            (make-simple 'mzscheme
                         (list (string-constant initial-language-category)
-                              (string-constant choose-a-language-language))
+                              (string-constant no-language-chosen))
                         (list 10000 1000)
                         #f
                         "Helps the user choose an initial language"
@@ -1379,39 +1381,130 @@
       
       (define (not-a-language-extra-mixin %)
         (class %
+          (define/override (get-style-delta) drscheme:rep:error-delta)
+          
           (define/override (front-end/interaction input settings teachpack-cache)
             (not-a-language-message)
             (λ () eof))
           (define/override (front-end/complete-program input settings teachpack-cache)
             (not-a-language-message)
             (λ () eof))
-          (super-new)))
+          (super-new))) 
+      
+      
+;                                                                                                    
+;                                                                                                    
+;                                              @@                                                    
+;                  @                            @                                                    
+;  @@:@@:   $@$   @@@@@          $@$:           @     $@$: @@:@@:   $@-@@@@  @@   $@$:   $@-@@ -@@$  
+;   @+ :@  $- -$   @               -@           @       -@  @+ :@  $* :@  @   @     -@  $* :@  $  -$ 
+;   @   @  @   @   @     @@@@@  -$@$@  @@@@@    @    -$@$@  @   @  @   @  @   @  -$@$@  @   @  @@@@@ 
+;   @   @  @   @   @            $*  @           @    $*  @  @   @  @   @  @   @  $*  @  @   @  $     
+;   @   @  $- -$   @: :$        @- *@           @    @- *@  @   @  $* :@  @: +@  @- *@  $* :@  +:    
+;  @@@ @@@  $@$    :@@$-        -$$-@@        @@@@@  -$$-@@@@@ @@@  $@:@  :@$-@@ -$$-@@  $@:@   $@@+ 
+;                                                                     -$                   -$        
+;                                                                  -@@$                 -@@$         
+;                                                                                                    
+;                                                                                                    
+
       
       (define (not-a-language-message)
         (define (main)
           (o (string-constant must-choose-language))
           (o "\n")
+          (let ([rep (drscheme:rep:current-rep)])
+            (when rep
+              (parameterize ([current-eventspace drscheme:init:system-eventspace])
+                (queue-callback
+                 (λ ()
+                   (not-a-language-dialog rep)))))))
+        
+        (define o
+          (case-lambda
+            [(arg)
+             (cond
+               [(string? arg)
+                (fprintf (current-error-port) arg)]
+               [(is-a? arg snip%)
+                (write-special arg (current-error-port))])]
+            [args (apply fprintf (current-error-port) args)]))
+        
+        (main))
+      
+      (define (not-a-language-dialog rep)
+        (define drs-frame (send (send rep get-canvas) get-top-level-window))
+        (define dialog (new dialog%
+                            (parent drs-frame)
+                            (label (string-constant drscheme))))
+        (define qa-panel (new vertical-pane% (parent dialog)))
+        (define button-panel (new horizontal-pane% 
+                                  (parent dialog) 
+                                  (stretchable-height #f)
+                                  (alignment '(right center))))
+        
+        (define close (new button%
+                           (parent button-panel)
+                           (callback (lambda (x y) (send dialog show #f)))
+                           (label (string-constant close))))
+        
+        (define run (new button%
+                         (parent button-panel)
+                         (style '(border))
+                         (callback (λ (x y) (run-callback)))
+                         (label (make-bitmap-label 
+                                 (string-constant execute-button-label)
+                                 (build-path (collection-path "icons") "run.png")))))
+        
+        (define language-chosen? #f)
+        
+        (define (main)
+          (insert-red-message)
           (insert-text-pls)
           (display-plt-schemer)
           (display-standard-schemer)
-          (display-future-choice))
+          (display-future-choice)
+          (space-em-out)
+          (send dialog show #t))
+        
+        (define (run-callback)
+          (cond
+            [language-chosen?
+             (send dialog show #f)
+             (send drs-frame execute-callback)]
+            [else
+             (message-box (string-constant drscheme)
+                          (string-constant choose-new-language-before-running))]))
+        
+        (define (insert-red-message)
+          (new canvas-message% 
+               (parent qa-panel)
+               (font (get-font #:style 'italic))
+               (label (string-constant must-choose-language))
+               (color (send the-color-database find-color "red"))))
+        
+        (define (space-em-out)
+          (send qa-panel change-children
+                (lambda (l)
+                  (cond
+                    [(null? l) l]
+                    [else
+                     (let loop ([x (car l)]
+                                [r (cdr l)])
+                       (cond
+                         [(null? r) (list x)]
+                         [else (list* x
+                                      (new vertical-pane%
+                                           (parent qa-panel)
+                                           (min-height 5)
+                                           (stretchable-height #f))
+                                      (loop (car r)
+                                            (cdr r)))]))]))))
+                                     
         
         (define (display-future-choice)
-          (let* ([txt (new text:standard-style-list%)]
-                 [es (new editor-snip%
-                          [with-border? #f]
-                          [left-margin 0]
-                          [top-margin 0]
-                          [bottom-margin 0]
-                          [right-margin 0]
-                          [editor txt])])
-            (send txt insert (string-constant use-language-menu-item-in-future))
-            (send txt change-style
-                  default-sd
-                  0
-                  (send txt last-position))
-            (o es)
-            (o "\n")))
+          (new message%
+               (label (string-constant use-language-menu-item-in-future))
+               (parent qa-panel)))
         
         (define (insert-text-pls)
           (for-each
@@ -1428,19 +1521,24 @@
                  (string<=? (cadr x) (cadr y))])))))
         
         (define (display-plt-schemer)
-          (question/answer (string-constant seasoned-plt-schemer?)
+          (question/answer (lambda (parent)
+                             (new canvas-message% 
+                                  (parent parent)
+                                  (label (string-constant seasoned-plt-schemer?))))
                            (list (string-constant professional-languages)
                                  "(module ...)")
-                           (list "PLT-206-small.png" "icons")
-                           void))
+                           (list "PLT-206-small.png" 
+                                 "icons")))
         
         (define (display-standard-schemer)
-          (question/answer (string-constant looking-for-standard-scheme?)
+          (question/answer (lambda (parent)
+                             (new canvas-message% 
+                                  (parent parent)
+                                  (label (string-constant looking-for-standard-scheme?))))
                            (list (string-constant professional-languages)
                                  (string-constant plt)
                                  (string-constant pretty-big-scheme))
-                           (list "r5rs.png" "icons")
-                           void))
+                           (list "r5rs.png" "icons")))
         
         (define (display-text-pl lst)
           (let ([icon-lst (car lst)]
@@ -1448,30 +1546,87 @@
                 [lang (cddr lst)]
                 [using-before (string-constant using-a-textbook-before)]
                 [using-after (string-constant using-a-textbook-after)])
-            (question/answer (string-append using-before text-name using-after)
+            (question/answer (lambda (parent)
+                               (new canvas-message%
+                                    (parent parent)
+                                    (label using-before))
+                               (new canvas-message%
+                                    (parent parent)
+                                    (font (get-font #:style 'italic))
+                                    (label text-name))
+                               (new canvas-message%
+                                    (parent parent)
+                                    (label using-after)))
                              lang
-                             icon-lst
-                             (λ (txt)
-                               (send txt change-style
-                                     italic-sd
-                                     (string-length using-before)
-                                     (+ (string-length using-before)
-                                        (string-length text-name)))))))
+                             icon-lst)))
         
-        (define (question/answer question lang icon-lst proc)
+        (define default-font (send the-font-list find-or-create-font
+                                   12
+                                   'default
+                                   'normal
+                                   'normal))
+        
+        (define/kw (get-font #:key
+                             (point-size (send default-font get-point-size))
+                             (family (send default-font get-family))
+                             (style (send default-font get-style))
+                             (weight (send default-font get-weight))
+                             (underlined (send default-font get-underlined))
+                             (smoothing (send default-font get-smoothing)))
+          (send the-font-list find-or-create-font
+                point-size
+                family
+                style
+                weight
+                underlined
+                smoothing))
+        
+        (define canvas-message%
+          (class canvas%
+            (init-field label
+                        [font (get-font)]
+                        [callback void]
+                        [color (send the-color-database find-color "black")])
+            
+            (define/override (on-event evt)
+              (cond
+                [(send evt button-up?)
+                 (callback)]
+                [else 
+                 (super on-event evt)]))
+            
+            (define/override (on-paint)
+              (let* ([dc (get-dc)]
+                     [old-font (send dc get-font)]
+                     [old-tf (send dc get-text-foreground)])
+                (send dc set-text-foreground color)
+                (send dc set-font font)
+                (send dc draw-text label 0 0 #t)
+                (send dc set-font old-font)
+                (send dc set-text-foreground old-tf)))
+            
+            (super-new [stretchable-width #f]
+                       [stretchable-height #f]
+                       [style '(transparent)])
+            
+            (inherit min-width min-height get-dc)
+            (let-values ([(w h _1 _2) (send (get-dc) get-text-extent label font #t)])
+              (min-width (inexact->exact (floor w)))
+              (min-height (inexact->exact (floor h))))))
+        
+        (define (question/answer line1 lang icon-lst)
           (display-two-line-choice 
            icon-lst
-           (λ (inner-txt)
-             (send inner-txt insert (format "~a\n~a" question (string-constant start-with-before)))
-             (send inner-txt change-style default-sd 0 (send inner-txt last-position))
-             (lang-link-snip lang inner-txt)
-             (let ([before-pos (send inner-txt last-position)])
-               (send inner-txt insert (string-constant start-with-after))
-               (send inner-txt change-style 
-                     default-sd
-                     before-pos
-                     (send inner-txt last-position)))
-             (proc inner-txt))))
+           (λ (panel1 panel2)
+             (line1 panel1)
+             (new canvas-message% (parent panel2) (label (string-constant start-with-before)))
+             (new canvas-message%
+                  (parent panel2) 
+                  (label (car (last-pair lang)))
+                  (color (send the-color-database find-color "blue"))
+                  (callback
+                   (λ () (change-current-lang-to lang)))
+                  (font (get-font #:underlined #t))))))
         
         ;; get-text-pls : path -> (listof (list* string string (listof string))
         ;; gets the questions from an info.ss file.
@@ -1500,128 +1655,27 @@
                   qs)
                 '())))
         
-        (define (lang-link-snip lang txt)
-          #;
-          (let ([before (send txt last-position)])
-            (send txt insert (car (last-pair lang)))
-            (let ([after (send txt last-position)])
-              (send txt change-style link-sd before after)
-              (send txt set-clickback before after 
-                    (λ (txt start end)
-                      (change-current-lang-to lang txt)))))
-          
-          (send txt insert
-                (new link-snip%
-                     [words (car (last-pair lang))]
-                     [callback
-                      (λ (snip)
-                        (change-current-lang-to lang snip))])))
-        
-        (define o
-          (case-lambda
-            [(arg)
-             (cond
-               [(string? arg)
-                (fprintf (current-error-port) arg)]
-               [(is-a? arg snip%)
-                (write-special arg (current-error-port))])]
-            [args (apply fprintf (current-error-port) args)]))
-        
-        (define arrow-cursor (make-object cursor% 'arrow))
-        
-        (define link-snip%
-          (class editor-snip%
-            (init-field words callback)
-
-            (define/override (adjust-cursor dc x y editorx editory event) arrow-cursor)
-            
-            (define/override (on-event dc x y editorx editory event)
-              (when (send event button-up?)
-                (callback this)))
-            
-            (define/override (copy)
-              (new link-snip% [words words] [callback callback]))
-            
-            (define txt (new text:standard-style-list%))
-            
-            (super-new [editor txt] [with-border? #f]
-                       [left-margin 0]
-                       [right-margin 0]
-                       [top-margin 0]
-                       [bottom-margin 0])
-            (inherit get-flags set-flags set-style)
-            (set-flags (cons 'handles-events (get-flags)))
-            
-            (send txt insert words)
-            (send txt change-style link-sd 0 (send txt last-position))))
-        
-        #;
-        (define link-snip%
-          (class string-snip%
-            (init-field words callback)
-
-            (define/override (adjust-cursor dc x y editorx editory event) arrow-cursor)
-            
-            (define/override (on-event dc x y editorx editory event)
-              (when (send event button-up?)
-                (callback this)))
-            
-            (define/override (copy)
-              (new link-snip% [words words] [callback callback]))
-            
-            (super-make-object words)
-            (inherit get-flags set-flags set-style)
-            (set-style link-style)
-            (set-flags (cons 'handles-events (remq 'is-text (get-flags))))))
-        
-        (define italic-sd (make-object style-delta% 'change-style 'slant))
-        
-        (define link-sd (make-object style-delta% 'change-underline #t))
-        (define stupid-internal-define-syntax1
-          (begin (send link-sd set-delta-foreground "blue")
-                 (send link-sd set-family 'default)))
-        
-        (define default-sd (make-object style-delta% 'change-family 'default))
-        
-        (define link-style 
-          (send (editor:get-standard-style-list)
-                find-or-create-style
-                (send (editor:get-standard-style-list) find-named-style "Standard")
-                link-sd))
-        
         (define (display-two-line-choice icon-lst proc)
-          (let* ([outer-txt (new text:standard-style-list%)]
-                 [outer-es (new editor-snip% (editor outer-txt) (with-border? #f)
-                                [left-margin 0]
-                                [right-margin 0]
-                                [top-margin 0]
-                                [bottom-margin 0])]
-                 [inner-txt (new text:standard-style-list%)]
-                 [inner-es (new editor-snip% (editor inner-txt) (with-border? #f)
-                                [top-margin 0] [bottom-margin 0])]
-                 [icon-path
-                  (build-path (apply collection-path (cdr icon-lst)) (car icon-lst))])
-            (send outer-txt insert (make-object image-snip% icon-path))
-            (send outer-txt insert inner-es)
-            (proc inner-txt)
-            (send outer-txt change-style 
-                  (make-object style-delta% 'change-alignment 'top)
-                  0
-                  (send outer-txt last-position))
-            (send inner-txt lock #t)
-            (send outer-txt lock #t)
-            (o outer-es)
-            (o "\n")))
-        
-          (define err-style-delta
-            (let ([err-sd (make-object style-delta% 'change-italic)])
-              (send err-sd set-delta-foreground (make-object color% 255 0 0))
-              err-sd))
-      
+          (let* ([hp (new horizontal-pane% 
+                          (parent qa-panel)
+                          (alignment '(center top))
+                          (stretchable-height #f))]
+                 [icon (new message% 
+                            (label (make-object bitmap%
+                                     (build-path (apply collection-path (cdr icon-lst))
+                                                 (car icon-lst))
+                                     'unknown/mask))
+                            (parent hp))]
+                 [vp (new vertical-pane% 
+                          (parent hp)
+                          (alignment '(left top))
+                          (stretchable-height #f))])
+            (proc (new horizontal-pane% (parent vp))
+                  (new horizontal-pane% (parent vp)))))
+              
         ;; change-current-lang-to : (listof string) -> void
-        (define (change-current-lang-to lang-strings snip)
-          (let ([parent (find-parent-from-snip snip)]
-                [lang (ormap
+        (define (change-current-lang-to lang-strings)
+          (let ([lang (ormap
                        (λ (x)
                          (and (equal? lang-strings (send x get-language-position))
                               x))
@@ -1633,11 +1687,11 @@
                    (language-dialog #f
                                     (make-language-settings lang
                                                             (send lang default-settings))
-                                    parent)])
+                                    drs-frame)])
               (when new-lang
+                (set! language-chosen? #t)
                 (preferences:set settings-preferences-symbol new-lang)
-                (when (is-a? parent drscheme:unit:frame<%>)
-                  (send (send parent get-definitions-text) set-next-settings new-lang))))))
+                (send (send drs-frame get-definitions-text) set-next-settings new-lang)))))
         
         (main))
       

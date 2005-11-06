@@ -962,6 +962,7 @@ please adhere to these guidelines:
  (use-other "... using DrScheme for some other reason?")
  (use-eopl "... using DrScheme with Essentials of Programming Languages?")
   (pl-lang-choice-format "Initial language: ~a")
+  (choose-new-language-before-running "Please choose a new language before running.")
   
   
  ;;; languages
@@ -988,7 +989,7 @@ please adhere to these guidelines:
  (teaching-languages "Teaching Languages")
  (experimental-languages "Experimental Languages")
   (initial-language-category "Initial language")
-  (choose-a-language-language "Choose-a-language language")
+  (no-language-chosen "No language chosen")
  
  (module-language-one-line-summary "Run creates a REPL in the context of the module, including the module's declared language")
   
