@@ -1508,6 +1508,7 @@
           (display-plt-schemer)
           (display-standard-schemer)
           (space-em-out)
+          (fix-button-sizes)
           (send dialog show #t))
         
         (define (insert-red-message)
@@ -1646,6 +1647,7 @@
         (define (question/answer line1 lang icon-lst)
           (display-two-line-choice 
            icon-lst
+           lang
            (λ (panel1 panel2)
              (line1 panel1)
              (new canvas-message% (parent panel2) (label (string-constant start-with-before)))
@@ -1653,10 +1655,7 @@
                   (parent panel2) 
                   (label (car (last-pair lang)))
                   (color (send the-color-database find-color "blue"))
-                  (callback
-                   (λ () 
-                     (send dialog show #f)
-                     (change-current-lang-to lang)))
+                  (callback (λ () (change-current-lang-to lang)))
                   (font (get-font #:underlined #t))))))
         
         ;; get-text-pls : path -> (listof (list* string string (listof string))
@@ -1686,26 +1685,36 @@
                   qs)
                 '())))
         
-        (define (display-two-line-choice icon-lst proc)
+        (define buttons '())
+        (define (fix-button-sizes)
+          (let ([w (apply max (map (λ (x) (send x get-width)) buttons))])
+            (for-each (λ (b) (send b min-width w))
+                      buttons)))
+        
+        (define (display-two-line-choice icon-lst lang proc)
           (let* ([hp (new horizontal-pane% 
                           (parent qa-panel)
                           (alignment '(center top))
                           (stretchable-height #f))]
-                 [icon (new message% 
-                            (label (make-object bitmap%
-                                     (build-path (apply collection-path (cdr icon-lst))
-                                                 (car icon-lst))
-                                     'unknown/mask))
-                            (parent hp))]
+                 [button (new button% 
+                              (callback (lambda (x y) (change-current-lang-to lang)))
+                              (label (make-object bitmap%
+                                       (build-path (apply collection-path (cdr icon-lst))
+                                                   (car icon-lst))
+                                       'unknown/mask))
+                              (parent hp))]
                  [vp (new vertical-pane% 
                           (parent hp)
                           (alignment '(left top))
                           (stretchable-height #f))])
+            (set! buttons (cons button buttons))
             (proc (new horizontal-pane% (parent vp))
                   (new horizontal-pane% (parent vp)))))
               
         ;; change-current-lang-to : (listof string) -> void
+        ;; closed the guidance dialog and opens the language dialog
         (define (change-current-lang-to lang-strings)
+          (send dialog show #f)
           (let ([lang (ormap
                        (λ (x)
                          (and (equal? lang-strings (send x get-language-position))
