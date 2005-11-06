@@ -1508,7 +1508,7 @@
           (display-plt-schemer)
           (display-standard-schemer)
           (space-em-out)
-          (fix-button-sizes)
+          (fix-msg-sizes)
           (send dialog show #t))
         
         (define (insert-red-message)
@@ -1685,29 +1685,28 @@
                   qs)
                 '())))
         
-        (define buttons '())
-        (define (fix-button-sizes)
-          (let ([w (apply max (map (λ (x) (send x get-width)) buttons))])
+        (define msgs '())
+        (define (fix-msg-sizes)
+          (let ([w (apply max (map (λ (x) (send x get-width)) msgs))])
             (for-each (λ (b) (send b min-width w))
-                      buttons)))
+                      msgs)))
         
         (define (display-two-line-choice icon-lst lang proc)
           (let* ([hp (new horizontal-pane% 
                           (parent qa-panel)
                           (alignment '(center top))
                           (stretchable-height #f))]
-                 [button (new button% 
-                              (callback (lambda (x y) (change-current-lang-to lang)))
-                              (label (make-object bitmap%
-                                       (build-path (apply collection-path (cdr icon-lst))
-                                                   (car icon-lst))
-                                       'unknown/mask))
-                              (parent hp))]
+                 [msg (new message%
+                           (label (make-object bitmap%
+                                    (build-path (apply collection-path (cdr icon-lst))
+                                                (car icon-lst))
+                                    'unknown/mask))
+                           (parent hp))]
                  [vp (new vertical-pane% 
                           (parent hp)
                           (alignment '(left top))
                           (stretchable-height #f))])
-            (set! buttons (cons button buttons))
+            (set! msgs (cons msg msgs))
             (proc (new horizontal-pane% (parent vp))
                   (new horizontal-pane% (parent vp)))))
               
