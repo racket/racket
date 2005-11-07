@@ -373,3 +373,37 @@ NOTE: Here's the precedence and associativity of things above.
              | ( <bind> [, <bind>]* ) = <expr> ;
 
 <expr-sc>  ::= <expr> ;
+
+_Mixin Definitions_
+
+Assume a mixin of the following form:
+
+[final] mixin MixinName( initType1 initArg1, ..., initTypeN initArgN ) :
+    ParentIFace( superType1 superArg1, ..., superTypeM superArgM ) -> SelfIFace
+    [implements IFace1, ..., IFaceK]
+{
+    Member1; ... MemberI;
+    SuperNew;
+    MemberI+1; ... MemberJ;
+    Exports;
+}
+
+This defines a mixin called MixinName.  This mixin consumes a class with
+selftype ParentIFace and produces one with selftype SelfIFace.  The parent class
+must have the initialization arguments listed after ParentIFace.  These
+arguments are supplied by the new class's initialization.  The new class
+provides interfaces IFace1 through IFaceK for clients and interface SelfIFace
+(its selftype) for further mixins.
+
+The new class introduces the arguments listed after MixinName as well as all
+init fields declared in the members (Member1 through MemberJ).  All init
+arguments, whether declared in the header or the body of the mixin definition,
+are both initialization arguments to the new class and fields usable within
+the body of the class.  Init field declarations in the body may include default
+values.  All other initialization arguments to the new class are passed on to
+its superclass initializer.
+
+Member definitions include fields, init fields, and methods, and exactly one
+call to the superclass initializer; as mentioned above, init arguments are also
+implicit field definitions.  Export declarations define a mapping from exported
+names to internal member names.
