@@ -67,7 +67,7 @@
 	   (mk 'extract-base-filename/ss 
 	       #"[sS][sS]|[sS][cC][mM]" "Scheme" ".ss or .scm")
 	   (mk 'extract-base-filename/c
-	       #"[cC]|[cC][cC]|[cC][xX][xX]|[cC][pP][pP]|[cC][+][+]" "C" ".c, .cc, .cxx, .cpp, or .c++")
+	       #"[cC]|[cC][cC]|[cC][xX][xX]|[cC][pP][pP]|[cC][+][+]|[mM]" "C" ".c, .cc, .cxx, .cpp, .c++, or .m")
 	   (mk 'extract-base-filename/kp
 	       #"[kK][pP]" "constant pool" ".kp")
 	   (mk 'extract-base-filename/o
