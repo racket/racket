@@ -2135,7 +2135,7 @@ static Scheme_Object *tcp_addresses(int argc, Scheme_Object *argv[])
 		NI_NUMERICHOST | NI_NUMERICSERV);
     result[0] = scheme_make_utf8_string(host_buf);
 
-    getnameinfo((struct sockaddr *)here, here_len, 
+    getnameinfo((struct sockaddr *)there, there_len, 
 		host_buf, sizeof(host_buf),
 		NULL, 0,
 		NI_NUMERICHOST | NI_NUMERICSERV);
