@@ -33,6 +33,12 @@
 # define mz_hstrerror(x) NULL
 #endif
 
+/* stolen from $(PLTHOME}/src/mzscheme/src/network.c */
+/* For getting connection names: */
+#define MZ_SOCK_NAME_MAX_LEN 256
+#define MZ_SOCK_HOST_NAME_MAX_LEN 64
+#define MZ_SOCK_SVC_NAME_MAX_LEN 32
+
 /* stolen from $(PLTHOME}/src/mzscheme/src/schpriv.h */
 #ifdef USE_FCNTL_O_NONBLOCK
 # define MZ_NONBLOCKING O_NONBLOCK
@@ -49,7 +55,6 @@
 # define DECL_FDSET(n, c) fd_set n[c]
 # define INIT_DECL_FDSET(n, c) /* empty */
 #endif
-
 struct sslplt {
 #ifdef MZ_PRECISE_GC
   Scheme_Type type;
@@ -1567,10 +1572,7 @@ static Scheme_Object *ssl_addresses(int argc, Scheme_Object *argv[])
   GC_CAN_IGNORE struct sockaddr_in tcp_here_addr, tcp_there_addr;
   int l, closed;
   struct sslplt *wrapper = NULL;
-  unsigned long here_a, there_a;
-  unsigned char *b;
   Scheme_Object *result[2];
-  char sa[20];
   int fd;
 
   if (SCHEME_OUTPORTP(argv[0])) {
@@ -1599,29 +1601,41 @@ static Scheme_Object *ssl_addresses(int argc, Scheme_Object *argv[])
     scheme_raise_exn(MZEXN_FAIL,
 		     "ssl-addresses: port is closed");
 
-  l = sizeof(tcp_here_addr);
-  if (getsockname(fd, (struct sockaddr *)&tcp_here_addr, &l)) {
-    scheme_raise_exn(MZEXN_FAIL_NETWORK,
-		     "ssl-addresses: could not get local address (%e)",
-		     SOCK_ERRNO());
-  }
-  l = sizeof(tcp_there_addr);
-  if (getpeername(fd, (struct sockaddr *)&tcp_there_addr, &l)) {
-    scheme_raise_exn(MZEXN_FAIL_NETWORK,
-		     "ssl-addresses: could not get peer address (%e)",
-		     SOCK_ERRNO());
-  }
-  
-  here_a = *(unsigned long *)&tcp_here_addr.sin_addr;
-  there_a = *(unsigned long *)&tcp_there_addr.sin_addr;
+  {
+    int l;
+    char here[MZ_SOCK_NAME_MAX_LEN], there[MZ_SOCK_NAME_MAX_LEN];
+    char host_buf[MZ_SOCK_HOST_NAME_MAX_LEN];
+    int here_len, there_len;
 
-  b = (unsigned char *)&here_a;
-  sprintf(sa, "%d.%d.%d.%d", b[0], b[1], b[2], b[3]);
-  result[0] = scheme_make_utf8_string(sa);
+    l = sizeof(here);
+    if (getsockname(fd, (struct sockaddr *)here, &l)) {
+      scheme_raise_exn(MZEXN_FAIL_NETWORK,
+		       "tcp-addresses: could not get local address (%e)",
+		       SOCK_ERRNO());
+    }
+    here_len = l;
 
-  b = (unsigned char *)&there_a;
-  sprintf(sa, "%d.%d.%d.%d", b[0], b[1], b[2], b[3]);
-  result[1] = scheme_make_utf8_string(sa);
+    l = sizeof(there);
+    if (getpeername(fd, (struct sockaddr *)there, &l)) {
+      scheme_raise_exn(MZEXN_FAIL_NETWORK,
+		       "tcp-addresses: could not get peer address (%e)",
+		       SOCK_ERRNO());
+    }
+    there_len = l;
+
+    getnameinfo((struct sockaddr *)here, here_len, 
+		host_buf, sizeof(host_buf),
+		NULL, 0,
+		NI_NUMERICHOST | NI_NUMERICSERV);
+    result[0] = scheme_make_utf8_string(host_buf);
+
+    getnameinfo((struct sockaddr *)there, there_len, 
+		host_buf, sizeof(host_buf),
+		NULL, 0,
+		NI_NUMERICHOST | NI_NUMERICSERV);
+    result[1] = scheme_make_utf8_string(host_buf);
+  }
+
 
   return scheme_values(2, result);
 }
