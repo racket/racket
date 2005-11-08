@@ -371,8 +371,8 @@ sub-directories:
     submissions for a particular user in different groups will be
     rejected.
 
-  * "inactive/" --- sub-directory for inactive assignments, used by the
-    HTTPS status web server.
+  * "inactive/" --- sub-directory for inactive assignments, used by
+    the HTTPS status web server.
 
   * "active/<assignment>/checker.ss" (optional) --- a module that
     exports a `checker' function.  This function receives two strings.
@@ -401,8 +401,8 @@ sub-directories:
     put the files in a subdirectory, which is preserved but hidden
     from the status interface.
 
-    The checker should return a string, such as "handin.scm", to use in
-    naming the submission file.
+    The checker should return a string, such as "handin.scm", to use
+    in naming the submission file.
 
     Alternatively, the module can bind `checker' to a list of three
     procedures: a pre-checker, a checker, and a post-checker.  All
@@ -566,15 +566,15 @@ The _utils.ss_ module provides utilities helpful in implementing
   submission byte string.
 
 
-> coverage-enabled - parameter that controls whether coverage testing is
-  enabled.  If it set to true, the errortrace collection will be used
-  to collect coverage information during evaluation of the submission,
-  this information is collected before additional checker-evaluations.
-  To retrieve the collected information, apply the evaluation function
-  with a second argument of 'execute-counts (the first argument will
-  be ignored).  The resulting value is the same as the result of
-  errortrace's `get-execute-counts', with all non-submission entries
-  filtered out.
+> coverage-enabled - parameter that controls whether coverage testing
+  is enabled.  If it set to true, the errortrace collection will be
+  used to collect coverage information during evaluation of the
+  submission, this information is collected before additional
+  checker-evaluations.  To retrieve the collected information, apply
+  the evaluation function with a second argument of 'execute-counts
+  (the first argument will be ignored).  The resulting value is the
+  same as the result of errortrace's `get-execute-counts', with all
+  non-submission entries filtered out.
 
 
 > (check-proc eval expect-v compare-proc proc-name arg ...) - calls
@@ -842,6 +842,19 @@ value from the submission code.
   for cases where you want to allow free pair submissions -- students
   will often try to submit their work alone, and later on re-submit
   with a partner.
+
+> (teams-in-file team-file)
+  This procedure *returns* a procedure that can be used for the :users
+  entry in a checker.  The team file (relative from the server's main
+  directory) is expected to have user entries -- a sequence of
+  s-expressions, each one a string or a list of strings.  The
+  resulting procedure will allow submission only by teams that are
+  specified in this file.  Furthermore, if this file is modified, the
+  new contents will be used immediately, so there is no need to
+  restart the server of you want to change student teams.  (But
+  remember that if you change ("foo" "bar") to ("foo" "baz"), and
+  there is already a "bar+foo" submission directory, then the system
+  will not allow "foo" to submit with "bar".)
 
 > (add-header-line! line)
   During the checker operation, this procedure can be used to add

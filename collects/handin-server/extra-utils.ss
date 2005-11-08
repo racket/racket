@@ -453,6 +453,33 @@
     [(1) (warn-single (car users))]
     [else (error* "too many users in the team: ~a" users)]))
 
+(provide teams-in-file)
+(define (teams-in-file file)
+  (define last-time 0)
+  (define teams '())
+  (define file* (build-path server-dir file))
+  (define (read-teams!)
+    (let ([cur-time (file-or-directory-modify-seconds file*)])
+      (unless (equal? last-time cur-time)
+        (set! last-time cur-time)
+        (set! teams
+              (with-input-from-file file*
+                (lambda ()
+                  (let loop ([r '()])
+                    (let ([x (read)])
+                      (cond [(eof-object? x) (reverse! r)]
+                            [(null? x) (loop r)]
+                            [(list? x) (loop (cons (quicksort x string<?) r))]
+                            [else      (loop (cons (list x) r))])))))))))
+  (lambda (users)
+    (read-teams!)
+    (unless (member users teams)
+      (error* "You are not registered ~a for this submission"
+              (case (length users)
+                [(1) "for individual submission"]
+                [(2) "as a pair"]
+                [else "as a group"])))))
+
 ;; ============================================================================
 ;; Checker utilities
 
