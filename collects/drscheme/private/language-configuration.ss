@@ -1419,14 +1419,29 @@
       (define (not-a-language-message)
         (define (main)
           (when (language-still-unchanged?)
-            (o (string-constant must-choose-language))
+            (o (green-snip (string-constant must-choose-language)))
             (o "\n")
-            (o (string-constant get-guidance-before))
+            (o (green-snip (string-constant get-guidance-before)))
             (o (new link-snip%
                     [words (string-constant get-guidance-during)]
                     [callback (lambda (snip)
                                 (not-a-language-dialog (find-parent-from-snip snip)))]))
-            (o (string-constant get-guidance-after))))
+            (o (green-snip (string-constant get-guidance-after)))))
+        
+        (define (green-snip str)
+          (let ([snp (make-object string-snip% str)])
+            (send snp set-style green-style)
+            snp))
+        
+        (define green-style
+          (let ([list (editor:get-standard-style-list)]
+                [green-style-delta (make-object style-delta% 'change-family 'default)])
+            (send green-style-delta set-delta-foreground "DarkViolet")
+            (send green-style-delta set-delta 'change-italic)
+            (send list
+                  find-or-create-style
+                  (send list find-named-style "Standard")
+                  green-style-delta)))
         
         (define (language-still-unchanged?)
           (let ([rep (drscheme:rep:current-rep)])
