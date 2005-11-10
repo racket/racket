@@ -1283,7 +1283,7 @@
 (err/rt-test (udp-send-ready-evt 5))
 (err/rt-test (udp-receive-ready-evt 5))
 
-(arity-test udp-open-socket 0 0)
+(arity-test udp-open-socket 0 2)
 (arity-test udp-close 1 1)
 (arity-test udp? 1 1)
 (arity-test udp-bound? 1 1)
@@ -1389,7 +1389,7 @@
   (err/rt-test (tcp-connect "other" 123)  (net-reject? 'tcp-connect "other" 123 'client))
   (err/rt-test (tcp-listen 123)  (net-reject? 'tcp-listen #f 123 'server))
   (unless (eq? 'macos (system-type)) ; no UDP in Mac OS Classic
-    (err/rt-test (udp-open-socket)  (net-reject? 'udp-open-socket #f #f 'client))
+    (err/rt-test (udp-open-socket)  (net-reject? 'udp-open-socket #f #f 'server))
     (err/rt-test (udp-bind! early-udp "localhost" 40000)  (net-reject? 'udp-bind! "localhost" 40000 'server))
     (err/rt-test (udp-connect! early-udp "localhost" 40000)  (net-reject? 'udp-connect! "localhost" 40000 'client))
     (err/rt-test (udp-send-to early-udp "localhost" 40000 #"hi")  (net-reject? 'udp-send-to "localhost" 40000 'client))))
