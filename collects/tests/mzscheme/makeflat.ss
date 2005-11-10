@@ -13,12 +13,19 @@
 		    +inf.0))])
   (namespace-variable-value 'lines-per-file))
 
+(with-handlers ([exn:fail:contract:variable?
+		 (lambda (exn)
+		   (namespace-set-variable-value!
+		    'flat-number
+		    ""))])
+  (namespace-variable-value 'flat-number))
+
 (require (lib "pretty.ss"))
 
 (define line-count 0)
 (define file-count 0)
 
-(define flatp (open-output-file "flat.ss" 'replace))
+(define flatp (open-output-file (format "flat~a.ss" flat-number) 'replace))
 (define old-eval (current-eval))
 (define old-namespace (current-namespace))
 
