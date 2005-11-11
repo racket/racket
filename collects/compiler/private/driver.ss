@@ -638,20 +638,22 @@
 		      [_else (void)]))
 		  
 		  ;;-----------------------------------------------------------------------
-		  ;; ensure that no `module' expression is inside a `begin'
-		  ;;
+		  ;; ensure that no `module', `require', or `require-for-syntax'
+		  ;; expression is inside a `begin'
 
 		  (letrec ([needs-split?
 			    (lambda (stx saw-begin?)
-			      (syntax-case stx (begin module)
+			      (syntax-case stx (begin module require require-for-syntax)
 				[(module . _) saw-begin?]
+				[(require . _) saw-begin?]
+				[(require-for-syntax . _) saw-begin?]
 				[(begin . e)
 				 (ormap (lambda (x) (needs-split? x #t))
 					(syntax->list #'e))]
 				[_else #f]))]
 			   [split
 			    (lambda (stx)
-			      (syntax-case stx (begin module)
+			      (syntax-case stx (begin)
 				[(begin . e)
 				 (apply append (map split (syntax->list #'e)))]
 				[_else (list stx)]))])
@@ -674,25 +676,26 @@
 
 		  (let ([core-thunk
 			 (lambda ()
-			   (let ([sources+bytecodes+magics
-				  (map (lambda (src)
-					 (let-values ([(src bytecode magic-sym)
-						       (top-level-to-core src 
-									  #`'#,zodiac:global-lookup-id
-									  #`'#,zodiac:global-assign-id
-									  #`'#,zodiac:safe-vector-ref-id
-									  #`'#,zodiac:global-prepare-id)])
-					   (list (zodiac:syntax->zodiac src) 
-						 bytecode magic-sym)))
-				       (block-source s:file-block))])
-			     (set-block-source! s:file-block (map car sources+bytecodes+magics))
-			     (set-block-bytecodes! s:file-block 
-						   (parameterize ([current-namespace elaborate-namespace])
+			   (parameterize ([current-namespace elaborate-namespace]
+					  [current-load-relative-directory input-directory])
+			     (let ([sources+bytecodes+magics
+				    (map (lambda (src)
+					   (let-values ([(src bytecode magic-sym)
+							 (top-level-to-core src 
+									    #`'#,zodiac:global-lookup-id
+									    #`'#,zodiac:global-assign-id
+									    #`'#,zodiac:safe-vector-ref-id
+									    #`'#,zodiac:global-prepare-id)])
+					     (list (zodiac:syntax->zodiac src) 
+						   bytecode magic-sym)))
+					 (block-source s:file-block))])
+			       (set-block-source! s:file-block (map car sources+bytecodes+magics))
+			       (set-block-bytecodes! s:file-block 
 						     (map compile
-							  (map cadr sources+bytecodes+magics))))
-			     (set-block-magics! s:file-block (map caddr sources+bytecodes+magics))))])
+							  (map cadr sources+bytecodes+magics)))
+			       (set-block-magics! s:file-block (map caddr sources+bytecodes+magics)))))])
 		    (verbose-time core-thunk))
-	      
+
 		  ;;-----------------------------------------------------------------------
 		  ;; Run a preprocessing phase on the input
 		  ;;

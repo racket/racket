@@ -5,7 +5,12 @@
            (lib "boundmap.ss" "syntax"))
 
   (provide top-level-to-core)
-    
+
+  ;; `module', `require', and `require-for-syntax' declarations must
+  ;;  not be embedded in a `begin' sequence. For `require' and
+  ;;  `require-for-syntax', it's a timing issue. For `module', it's
+  ;;  because the transformation can only handle a single `module'
+  ;;  declaration.
   (define (top-level-to-core stx lookup-stx set-stx safe-vector-ref-stx extract-stx)
     (syntax-case stx (module begin)
       [(module m lang (plain-module-begin decl ...))
@@ -154,7 +159,17 @@
                   (filter is-run-time? decls))]
             [ct-rhs #`((let ([magic (car (cons '#,magic-sym 2))])
                          (if (symbol? magic) 
-                             (lambda (x) (make-vector #,(length decls) void))
+                             (lambda (x) (vector
+					  #,@(map (lambda (stx)
+						    (syntax-case stx ()
+						      [(def (id) . _)
+						       #'void]
+						      [(def (id ...) . _)
+						       (with-syntax ([(v ...) (map (lambda (x) #f)
+										   (syntax->list #'(id ...)))])
+							 
+							 #`(lambda () (values v ...)))]))
+						  (filter (lambda (x) (not (is-run-time? x))) decls))))
                              (car magic)))
                        (vector #,@(vars-sequence ct-vars)))]
             [rt-rhs #`((cdr '#,magic-sym) (vector #,@(vars-sequence rt-vars)))]
@@ -184,7 +199,15 @@
                  (lambda (#,run-time)
                    #,@(extract-vars rt-vars run-time extract-stx)
                    (vector #,@rt-converted)))
-         #`(;; Lift define-for-values binding to front, so they can be referenced
+         #`(;; Lift require and require-for-syntaxes to the front, so they're ready for
+	    ;;  variable references
+	    #,@(filter (lambda (decl)
+			 (syntax-case decl (require require-for-syntax)
+			   [(require . _) #t]
+			   [(require-for-syntax . _) #t]
+			   [_else #f]))
+		       decls)
+	    ;; Lift define-for-values binding to front, so they can be referenced
             ;;  in compile-time definition
             #,@(let ([ids (apply
                            append
@@ -212,9 +235,9 @@
                             [(provide . _)
                              (car decls)]
                             [(require . _)
-                             (car decls)]
+                             #'(void)]
                             [(require-for-syntax . _)
-                             (car decls)]
+                             #'(void)]
                             [(require-for-template . _)
                              (car decls)]
                             [(define-values (id ...) rhs)
