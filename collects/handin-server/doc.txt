@@ -802,7 +802,7 @@ value from the submission code.
      "Submission Receipt"
      (map (lambda (user) (user-substs user "{Full Name} <{Email}>"))
           users)
-     (list (user-substs (first users) "{TA Name} <{TA Email}>"))
+     (list (user-substs (car users) "{TA Name} <{TA Email}>"))
      null
      `("Your submission was received" ,info))
     (message (string-append
