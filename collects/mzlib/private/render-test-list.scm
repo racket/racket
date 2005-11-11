@@ -177,24 +177,7 @@
          (lambda (sf bv) #'(dummy-symbol))
          (lambda (sf bv) (out (map car bv))))))
  
-     ;; END SPECIAL-GENERATORS.SCM
-  
-  ;; BEGIN DDK
-
      
-  ;; END DDK
-
-
-    
-    
-    
-    
-    ;; BEGIN DDK-HANDLERS.SCM
-    
-    
- 
-    
-    
     ;;!(function handle-end-ddk-list
     ;;          (form (handle-end-ddk-list ae kf ks pat
     ;;                                     dot-dot-k
@@ -360,12 +343,12 @@
                (with-syntax ((exp-sym (syntax exp-sym)))
                  (let* ((ptst (next-outer
                                pat
-                               (syntax exp-sym)
+                               #'exp-sym
                                sf
                                bv
                                let-bound
-                               (lambda (sf bv) (syntax #f))
-                               (lambda (sf bv) (syntax #t))))
+                               (lambda (sf bv) #'#f)
+                               (lambda (sf bv) #'#t)))
                         (tst (syntax-case ptst ()
                                ((pred eta)
                                 (and (identifier?
@@ -380,9 +363,7 @@
                         (loop-name (gensym 'ddnnl))
                         (exp-name (gensym 'exp))
                         (count-name (gensym 'count)))
-                   (quasisyntax/loc
-                       (syntax the-pat)
-                     (let #,loop-name ((#,exp-name 
+                   #`(let #,loop-name ((#,exp-name 
                                           #,(subst-bindings ae let-bound))
                                        (#,count-name 0))
                        (if (and (not (null? #,exp-name))
@@ -395,8 +376,7 @@
                            ;; if the count is zero
                            #,(let ((succ (next-outer
                                           pat-rest
-                                          (quasisyntax/loc
-                                              (syntax the-pat) #,exp-name)
+                                          #`#,exp-name
                                           sf
                                           bv
                                           let-bound
@@ -404,11 +384,9 @@
                                           ks)))
                                (if (zero? k)
                                    succ
-                                   (quasisyntax/loc
-                                       (syntax the-pat)
-                                     (if (>= #,count-name #,k)
+                                   #`(if (>= #,count-name #,k)
                                          #,succ
-                                         #,(kf sf bv)))))))))))
+                                         #,(kf sf bv)))))))))
               (the-pat
                (let* ((binding-list-names
                        (map (lambda (x)
@@ -418,41 +396,27 @@
                                 (gensym (syntax-object->datum x))
                                 '-bindings)))
                             bound))
-                      (loop-name (quasisyntax/loc 
-                                     (syntax the-pat) 
-                                   #,(gensym 'loop)))
-                      (exp-name (quasisyntax/loc 
-                                    (syntax the-pat) 
-                                  #,(gensym 'exp)))
-                      (fail-name (quasisyntax/loc 
-                                     (syntax the-pat) 
-                                   #,(gensym 'fail)))
-                      (count-name (quasisyntax/loc 
-                                      (syntax the-pat) 
-                                    #,(gensym 'count)))
+                      (loop-name #`#,(gensym 'loop))
+                      (exp-name #`#,(gensym 'exp))
+                      (fail-name #`#,(gensym 'fail))
+                      (count-name #`#,(gensym 'count))
                       (new-bv (append
                                (map cons
                                     bound
                                     (map
                                      (lambda (x) #`(reverse #,x))
                                      binding-list-names)) bv)))
-                 (quasisyntax/loc
-                     (syntax the-pat)
-                   (let #,loop-name
+                 #`(let #,loop-name
                      ((#,exp-name #,(subst-bindings ae let-bound))
                       (#,count-name 0)
                       #,@(map
-                          (lambda (x) (quasisyntax/loc 
-                                          (syntax the-pat) 
-                                        (#,x '())))
+                          (lambda (x) #`(#,x '()))
                           binding-list-names))
                      (let ((#,fail-name
                               (lambda ()
                                 #,(let ((succ (next-outer
                                                pat-rest
-                                               (quasisyntax/loc 
-                                                   (syntax the-pat) 
-                                                 #,exp-name)
+                                               #`#,exp-name
                                                sf
                                                new-bv
                                                let-bound
@@ -460,27 +424,21 @@
                                                ks)))
                                     (if (zero? k)
                                         succ
-                                        (quasisyntax/loc 
-                                            (syntax the-pat) 
-                                          (if (>= #,count-name #,k)
+                                        #`(if (>= #,count-name #,k)
                                               #,succ
-                                              #,(kf sf new-bv))))))))
+                                              #,(kf sf new-bv)))))))
                        (if (or (null? #,exp-name)
                                (not (pair? #,exp-name)))
                            (#,fail-name)
-                           #,(next-outer (syntax the-pat)
-                                         (quasisyntax/loc 
-                                             (syntax the-pat) 
-                                           (car #,exp-name))
+                           #,(next-outer #'the-pat
+                                         #`(car #,exp-name)
                                          sf
                                          bv  ;; we always start
                                          ;; over with the old
                                          ;; bindings
                                          let-bound
                                          (lambda (sf bv)
-                                           (quasisyntax/loc 
-                                               (syntax the-pat) 
-                                             (#,fail-name)))
+                                           #`(#,fail-name))
                                          (lambda (sf bv)
                                            #`(#,loop-name
                                                 (cdr #,exp-name)
@@ -495,7 +453,7 @@
                                                             bv)
                                                          #,bindings-var))
                                                     bound
-                                                    binding-list-names)))))))))))))))
+                                                    binding-list-names))))))))))))))
   ;;!(function handle-ddk-vector
   ;;          (form (handle-ddk-vector ae kf ks let-bound)
   ;;                ->
@@ -763,8 +721,6 @@
                                    sf
                                    bv)))))))))
     
-    ;; END DDK-HANDLERS.SCM
-
   ;; some convenient syntax for make-reg-test and make-shape-test
   (define make-test-gen
     (case-lambda
@@ -795,7 +751,7 @@
        (with-syntax ([sym (syntax-case  #'set!/get! (set! get!) ['set! #''set!-pat] ['get! #''get!-pat])])
        #`(syntax-case arg ()
              [(ident)
-              (identifier? (syntax ident))
+              (identifier? #'ident)
               (list (make-act
                      sym
                      ae
