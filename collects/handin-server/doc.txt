@@ -713,7 +713,7 @@ Keywords for configuring `check:':
 
 * :maxwidth -- a number that specifies maximum line lengths for
   submissions (a helpful feature for reading student code).  Defaults
-  to 80.  This feature can be disabled if set to #f.
+  to 79.  This feature can be disabled if set to #f.
 
 * :output -- the name of the original handin file (unrelated to the
   text-converted files).  Defaults to "hw.scm".

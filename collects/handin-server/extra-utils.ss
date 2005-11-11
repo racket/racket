@@ -63,7 +63,7 @@
         w
         (loop (cdr l)
               (if (char=? #\tab (car l)) (+ 8 (- w (modulo w 8))) (add1 w))))))
-  (unless (< (bytes-length line) len)
+  (unless (<= (bytes-length line) len)
     (let ([line (bytes->string/utf-8 line)])
       (unless (or (< (string-length line) len)
                   (< (string-width line) len))
@@ -246,7 +246,7 @@
             [teachpacks*    (get ':teachpacks #''())]
             [create-text?*  (get ':create-text? #'#t)]
             [textualize?*   (get ':textualize? #'#f)]
-            [maxwidth*      (get ':maxwidth #'80)]
+            [maxwidth*      (get ':maxwidth #'79)]
             [student-line*
              (get ':student-line
                   #'"Student: {username} ({Full Name} <{Email}>)")]
