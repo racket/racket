@@ -370,7 +370,6 @@
                (quasisyntax/loc stx (set! x #,(loop #'e)))
                (quasisyntax/loc stx
                  (#,set-stx #,id #,(add-identifier/pos (apply-certs certs #'x) li trans?) #,(loop #'e))))]
-          #;
           [(#%variable-reference e)
            (add-literal stx li)]
           [(if e ...)

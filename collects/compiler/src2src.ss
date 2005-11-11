@@ -1657,6 +1657,8 @@
 		b))
 	  var)))
 
+  (define dummy 'dummy) ; for #%variable-reference
+
   (define (make-parse top?)
     (lambda (stx env trans? in-module? tables)
       (kernel-syntax-case stx trans?
@@ -1672,6 +1674,9 @@
 	
 	[(#%datum . val)
 	 (make-object constant% (syntax-object->datum (syntax val)) stx)]
+
+	[(#%variable-reference . val)
+	 (make-object constant% (#%variable-reference dummy) stx)]
 
 	[(define-values names rhs)
 	 (make-object variable-def% 

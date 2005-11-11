@@ -152,6 +152,7 @@
             [(quote-syntax _) (syntax (begin e expr))]
             [(#%datum . d) (syntax (begin e expr))]
             [(#%top . d) (syntax (begin e expr))]
+            [(#%variable-reference . d) (syntax (begin e expr))]
 
             ;; No tail effect, and we want to account for the time
             [(lambda . _) (syntax (begin0 expr e))]
@@ -347,6 +348,9 @@
               ;; might be undefined/uninitialized
               (with-mark expr expr)]
              [(#%datum . _)
+              ;; no error possible
+              expr]
+	     [(#%variable-reference . _)
               ;; no error possible
               expr]
 
