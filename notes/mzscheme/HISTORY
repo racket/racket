@@ -1,3 +1,7 @@
+Version 299.406
+Generalized network-address handling, includes IPv6
+Added #%variable-reference
+
 Version 299.405
 Added syntax-language+country
 MzLib: added object-method-arity-includes? to class.ss
