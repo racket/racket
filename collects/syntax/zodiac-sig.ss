@@ -91,6 +91,18 @@
      create-module-form
      (struct require/provide-form ())                create-require/provide-form
 
+     ;; These forms are highly mzc-specific. They are recongized
+     ;;  as applications of the corresponding quoted symbols to the
+     ;;  right kinds of arguments.
+     (struct global-prepare (vec pos))             create-global-prepare
+     (struct global-lookup (vec pos))              create-global-lookup
+     (struct global-assign (vec pos expr))         create-global-assign
+     (struct safe-vector-ref (vec pos))            create-safe-vector-ref
+     global-prepare-id
+     global-lookup-id
+     global-assign-id
+     safe-vector-ref-id
+
      ;; args:
      (struct arglist (vars))
      (struct sym-arglist ())

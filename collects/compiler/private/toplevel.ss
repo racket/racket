@@ -21,8 +21,10 @@
       ;;
       (define-struct block (source ; list of top-level ASTs
 			    codes  ; list of `code' structures (in parallel with source)
+			    bytecodes ; list of S-exps in parallel
+			    magics ; list of symbols in parallel
 			    max-arity))
-      (define make-empty-block (lambda () (make-block null null 0)))
+      (define make-empty-block (lambda () (make-block null null null null 0)))
 
       (define block:register-max-arity!
 	(lambda (b n)

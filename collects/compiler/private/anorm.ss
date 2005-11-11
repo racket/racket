@@ -268,25 +268,6 @@
 			(set-annotation! begin0-exp tbound)
 			(k begin0-exp))]
 
-		     ;;-----------------------------------------------------------
-		     ;; MODULE
-		     ;;
-		     [(zodiac:module-form? ast)
-		      (k (zodiac:make-module-form
-			  (zodiac:zodiac-stx ast)
-			  (zodiac:parsed-back ast)
-			  (zodiac:module-form-name ast)
-			  (zodiac:module-form-requires ast)
-			  (zodiac:module-form-for-syntax-requires ast)
-			  (zodiac:module-form-for-template-requires ast)
-			  (a-normalize (zodiac:module-form-body ast) identity)
-			  #f ; see split-module in driver.ss
-			  (zodiac:module-form-provides ast)
-			  (zodiac:module-form-syntax-provides ast)
-			  (zodiac:module-form-indirect-provides ast)
-			  (zodiac:module-form-kernel-reprovide-hint ast)
-			  (zodiac:module-form-self-path-index ast)))]
-
 		     ;;---------------------------------------------------------------
 		     ;; SET! EXPRESSIONS / DEFINE EXPRESSIONS
 		     ;;    
@@ -310,6 +291,26 @@
 			  (zodiac:define-values-form-vars ast)
 			  (a-normalize (zodiac:define-values-form-val ast) identity)))]
 		     
+		     ;;-----------------------------------------------------------
+		     ;; GLOBALS
+		     ;;
+		     [(zodiac:global-prepare? ast)
+		      (k ast)]
+		     [(zodiac:global-lookup? ast)
+		      (k ast)]
+		     [(zodiac:global-assign? ast)
+		      (normalize-name 
+		       (zodiac:global-assign-expr ast)
+		       (lambda (norm-expr)
+			 (k (zodiac:make-global-assign
+			     (zodiac:zodiac-stx ast)
+			     (zodiac:parsed-back ast)
+			     (zodiac:global-assign-vec ast)
+			     (zodiac:global-assign-pos ast)
+			     norm-expr))))]
+		     [(zodiac:safe-vector-ref? ast)
+		      (k ast)]
+
 		     ;;----------------------------------------------------------
 		     ;; DEFINE-SYNTAX
 		     ;;

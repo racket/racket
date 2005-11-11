@@ -1294,6 +1294,7 @@ const char *scheme_compile_stx_string = "compile";
 const char *scheme_expand_stx_string = "expand";
 const char *scheme_application_stx_string = "application";
 const char *scheme_set_stx_string = "set!";
+const char *scheme_var_ref_string = "#%variable-reference";
 const char *scheme_begin_stx_string = "begin";
 
 void scheme_wrong_syntax(const char *where,
@@ -1337,6 +1338,7 @@ void scheme_wrong_syntax(const char *where,
     nomwho = who;
     mod = scheme_intern_symbol("mzscheme");
   } else if ((where == scheme_set_stx_string)
+	     || (where == scheme_var_ref_string)
 	     || (where == scheme_begin_stx_string)) {
     who = scheme_intern_symbol(where);
     nomwho = who;

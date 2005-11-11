@@ -2778,7 +2778,7 @@ static Scheme_Object *sch_default_read_handler(void *ignore, int argc, Scheme_Ob
   else
     src = NULL;
 
-  return scheme_internal_read(argv[0], src, -1, 0, 0, 0, -1, NULL);
+  return scheme_internal_read(argv[0], src, -1, 0, 0, 0, -1, NULL, NULL, NULL);
 }
 
 static int extract_recur_args(const char *who, int argc, Scheme_Object **argv, int delta, Scheme_Object **_readtable)
@@ -2829,7 +2829,7 @@ static Scheme_Object *do_read_f(const char *who, int argc, Scheme_Object *argv[]
     if (port == scheme_orig_stdin_port)
       scheme_flush_orig_outputs();
 
-    return scheme_internal_read(port, NULL, -1, 0, honu_mode, recur, pre_char, readtable);
+    return scheme_internal_read(port, NULL, -1, 0, honu_mode, recur, pre_char, readtable, NULL, NULL);
   }
 }
 
@@ -2892,7 +2892,7 @@ static Scheme_Object *do_read_syntax_f(const char *who, int argc, Scheme_Object 
     if (port == scheme_orig_stdin_port)
       scheme_flush_orig_outputs();
 
-    return scheme_internal_read(port, src, -1, 0, honu_mode, recur, pre_char, readtable);
+    return scheme_internal_read(port, src, -1, 0, honu_mode, recur, pre_char, readtable, NULL, NULL);
   }
 }
 
@@ -4061,7 +4061,7 @@ static Scheme_Object *do_load_handler(void *data)
   Scheme_Env *genv;
   int save_count = 0, got_one = 0;
 
-  while ((obj = scheme_internal_read(port, lhd->stxsrc, 1, 0, 0, 0, -1, NULL))
+  while ((obj = scheme_internal_read(port, lhd->stxsrc, 1, 0, 0, 0, -1, NULL, NULL, NULL))
 	 && !SCHEME_EOFP(obj)) {
     save_array = NULL;
     got_one = 1;
@@ -4134,7 +4134,7 @@ static Scheme_Object *do_load_handler(void *data)
       }
 
       /* Check no more expressions: */
-      d = scheme_internal_read(port, lhd->stxsrc, 1, 0, 0, 0, -1, NULL);
+      d = scheme_internal_read(port, lhd->stxsrc, 1, 0, 0, 0, -1, NULL, NULL, NULL);
       if (!SCHEME_EOFP(d)) {
 	scheme_raise_exn(MZEXN_FAIL,
 			 "default-load-handler: expected only a `module' declaration for `%S', but found an extra expression in: %V",

@@ -27,23 +27,27 @@
       ;; Block statements
       (define-struct (vm:sequence zodiac:zodiac) (vals))
       (define-struct (vm:if zodiac:zodiac) (test then else))
-      (define-struct (vm:module-body zodiac:zodiac) (vals invoke syntax?))
 
       ;; Tail position statements
-      (define-struct (vm:void zodiac:zodiac) (val))
-      (define-struct (vm:return zodiac:zodiac) (val))
+      (define-struct (vm:void zodiac:zodiac) (val magic?))
+      (define-struct (vm:return zodiac:zodiac) (val magic?))
       (define-struct (vm:tail-apply zodiac:zodiac) (closure argc prim))
       (define-struct (vm:tail-call zodiac:zodiac) (label closure set-env?))
       (define-struct (vm:continue zodiac:zodiac) ())
 
       ;; non-tail imperative statements
       (define-struct (vm:set! zodiac:zodiac) (vars val mode))
-      (define-struct (vm:generic-args zodiac:zodiac) (closure tail? prim vals))
+      (define-struct (vm:generic-args zodiac:zodiac) (closure tail? magic? prim vals))
       (define-struct (vm:register-args zodiac:zodiac) (vars vals))
       (define-struct (vm:args zodiac:zodiac) (type vals))
       (define-struct (vm:begin0-mark! zodiac:zodiac) (var val))
       (define-struct (vm:begin0-setup! zodiac:zodiac) (var))
       (define-struct (vm:syntax! zodiac:zodiac) (vars val in-mod?))
+
+      (define-struct (vm:global-prepare zodiac:zodiac) (vec pos))
+      (define-struct (vm:global-lookup zodiac:zodiac) (vec pos))
+      (define-struct (vm:global-assign zodiac:zodiac) (vec val pos))
+      (define-struct (vm:safe-vector-ref zodiac:zodiac) (vec pos))
 
       ;; r-values (1 step computations)
       (define-struct (vm:alloc zodiac:zodiac) (type))
@@ -56,7 +60,7 @@
       (define-struct (vm:apply zodiac:zodiac) 
 	(closure argc known? multi? prim simple-tail-prim?))
       (define-struct (vm:macro-apply zodiac:zodiac) 
-	(name primitive args tail? bool?))
+	(name primitive args tail? magic? bool?))
       (define-struct (vm:call zodiac:zodiac) (label closure))
       (define-struct (vm:begin0-extract zodiac:zodiac) (var))
       (define-struct (vm:wcm-mark! zodiac:zodiac) (key val))
@@ -71,7 +75,6 @@
       (define-struct (vm:global-varref zodiac:zodiac) (var))
       (define-struct (vm:bucket zodiac:zodiac) (var))
       (define-struct (vm:per-load-statics-table zodiac:zodiac) ())
-      (define-struct (vm:per-invoke-statics-table zodiac:zodiac) ())
       (define-struct (vm:cast zodiac:zodiac) (val rep)) ; last resort
 
       ;; l-values (locations in memory)
@@ -79,9 +82,7 @@
       (define-struct (vm:static-varref zodiac:zodiac) (var))
       (define-struct (vm:static-varref-from-lift vm:static-varref) (lambda))
       (define-struct (vm:per-load-static-varref vm:static-varref) ())
-      (define-struct (vm:per-invoke-static-varref vm:static-varref) ())
       (define-struct (vm:per-load-static-varref-from-lift vm:per-load-static-varref) (lambda))
-      (define-struct (vm:per-invoke-static-varref-from-lift vm:per-invoke-static-varref) (lambda))
       (define-struct (vm:primitive-varref zodiac:zodiac) (var))
       (define-struct (vm:symbol-varref zodiac:zodiac) (var))
       (define-struct (vm:inexact-varref zodiac:zodiac) (var))

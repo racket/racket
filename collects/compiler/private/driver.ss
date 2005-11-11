@@ -73,8 +73,9 @@
 	   (lib "link-sig.ss" "dynext")
 	   (lib "file-sig.ss" "dynext"))
 
-  (require "../sig.ss")
-  (require "sig.ss")
+  (require "../sig.ss"
+	   "sig.ss"
+	   "to-core.ss")
 
   (provide driver@)
 
@@ -223,7 +224,7 @@
 					  expand-top-level-with-compile-time-evals
 					  expand) 
 				      expr)])
-		       (zodiac:syntax->zodiac 
+		       (values ; use to be zodiac:syntax->zodiac here
 			(let ([p (src2src:optimize expanded #t)])
 			  '(with-output-to-file "/tmp/l.ss"
 			     (lambda () (pretty-print (syntax-object->datum p)))
@@ -249,71 +250,7 @@
 			   (require-for-syntax mzscheme))))))))
 
       ;;----------------------------------------------------------------------
-      ;; Misc utils
-
-      ;; see (single) use for info:
-      (define (split-module m)
-	(let ([info (get-annotation m)])
-	  (let ([mk
-		 (lambda (expr mode)
-		   (let ([ast (zodiac:make-module-form
-			       (zodiac:zodiac-stx expr)
-			       (make-empty-box)
-			       (zodiac:module-form-name m)
-			       (zodiac:module-form-requires m)
-			       (zodiac:module-form-for-syntax-requires m)
-			       (zodiac:module-form-for-template-requires m)
-			       expr #f
-			       (zodiac:module-form-provides m)
-			       (zodiac:module-form-syntax-provides m)
-			       (zodiac:module-form-indirect-provides m)
-			       (zodiac:module-form-kernel-reprovide-hint m)
-			       (zodiac:module-form-self-path-index m))])
-		     (set-annotation! 
-		      ast 
-		      (make-module-info ((if (eq? mode 'syntax-body)
-					     module-info-syntax-invoke
-					     module-info-invoke)
-					 info)
-					#f 
-					mode))
-		     ast))]
-		[body->list
-		 (lambda (expr)
-		   (if (zodiac:begin-form? expr)
-		       (zodiac:begin-form-bodies expr)
-		       (list expr)))])
-	    (append
-	     (map (lambda (x) (mk x 'body))
-		  (body->list
-		   (zodiac:module-form-body m)))
-	     (map (lambda (x) (mk x 'syntax-body))
-		  (body->list
-		   (zodiac:module-form-syntax-body m)))
-	     (list (mk 
-		    ;; Construct constant expression for module construction info:
-		    (let ([q (zodiac:make-quote-form
-			      (zodiac:zodiac-stx m)
-			      (make-empty-box)
-			      (zodiac:make-zread
-			       (datum->syntax-object
-				#f
-				(list (zodiac:module-form-name m)
-				      (zodiac:module-form-requires m)
-				      (zodiac:module-form-for-syntax-requires m)
-				      (zodiac:module-form-for-template-requires m)
-				      (filter (if (zodiac:module-form-kernel-reprovide-hint m)
-						  (lambda (x) (or (symbol? x)
-								  (not (eq? '#%kernel (car x)))))
-						  (lambda (x) #t))
-					      (zodiac:module-form-provides m))
-				      (zodiac:module-form-syntax-provides m)
-				      (zodiac:module-form-indirect-provides m)
-				      (zodiac:module-form-kernel-reprovide-hint m))
-				(zodiac:zodiac-stx m))))])
-		      (set-annotation! q 'immutable)
-		      q)
-		    'constructor))))))
+      ;; Misc utils      
 
       ;; takes a list of a-normalized expressions and analyzes them
       ;; returns the analyzed code, a list of local variable lists, 
@@ -344,11 +281,6 @@
 			     (reverse! children-acc))
 			max-arity)
 		(begin
-		  (varref:current-invoke-module 
-		   (and (zodiac:module-form? (car sexps))
-			(let ([info (get-annotation (car sexps))])
-			  (and (not (eq? (module-info-part info) 'constructor))
-			       (module-info-invoke info)))))
 
 		  ;; (printf "~a~n" (syntax-line (zodiac:zodiac-stx (car sexps))))
 
@@ -357,22 +289,8 @@
 				(analyze-expression! (car sexps) empty-set null (null? (cdr sexps)))])
 
 		    
-		    (let ([sc-max-arity
-			   ;; Adds to const, per-load-const, per-invoke-const lists:
-			   (if (or (null? (cdr sexps))
-				   (not (zodiac:module-form? (car sexps)))
-				   (not (zodiac:module-form? (cadr sexps)))
-				   (let ([a1 (get-annotation (car sexps))]
-					 [a2 (get-annotation (cadr sexps))])
-				     (not (and (eq? (module-info-part a1)
-						    (module-info-part a2))
-					       (eq? (module-info-invoke a1)
-						    (module-info-invoke a2))))))
-			       (compiler:finish-syntax-constants!)
-			       0)])
+		    (let ([sc-max-arity 0])
 
-		      (varref:current-invoke-module #f)
-		      
 		      (loop (cdr sexps) 
 			    (cons exp source-acc) 
 			    (cons local-vars locals-acc)
@@ -404,13 +322,21 @@
 			     [l l][c c]
 			     [pll-acc null][plc-acc null])
 		    (if (zero? n)
-			(begin
+			(let ([lifted-lambdas (compiler:get-lifted-lambdas)]
+			      [once-closures (compiler:get-once-closures-list)])
+			  
+			  (let ([naya (append lifted-lambdas once-closures)])
+			    (set-block-magics! s:file-block (append (map (lambda (x) #f) naya)
+								    (block-magics s:file-block)))
+			    (set-block-bytecodes! s:file-block (append (map (lambda (x) #f) naya)
+								       (block-bytecodes s:file-block))))
+	    
 			  (set-block-source! 
 			   s:file-block
 			   (append (reverse l-acc)
-				   (compiler:get-lifted-lambdas)
+				   lifted-lambdas
 				   (reverse pll-acc)
-				   (compiler:get-once-closures-list)
+				   once-closures
 				   (map car l)))
 			  (set-block-codes!
 			   s:file-block 
@@ -438,9 +364,7 @@
 						     (list
 						      (get-annotation 
 						       (zodiac:define-values-form-val 
-							(if (zodiac:module-form? ll)
-							    (zodiac:module-form-body ll)
-							    ll))))))
+							ll)))))
 					(compiler:get-once-closures-list)
 					(compiler:get-once-closures-globals-list))
 				   (map reset-globals c (map cdr l)))))
@@ -457,7 +381,7 @@
 	(lambda (file-block l)
 	  (set-block-codes!
 	   file-block
-	   (append!
+	   (append
 	    (map
 	     (lambda (glob)
 	       (make-code empty-set
@@ -470,7 +394,15 @@
 	    (block-codes file-block)))
 	  (set-block-source! 
 	   file-block
-	   (append! l (block-source file-block)))))
+	   (append l (block-source file-block)))
+	  (set-block-bytecodes! 
+	   file-block
+	   (append (map (lambda (x) #f) l)
+		   (block-bytecodes file-block)))
+	  (set-block-magics! 
+	   file-block
+	   (append (map (lambda (x) #f) l)
+		   (block-magics file-block)))))
 
       (define (open-input-scheme-file path)
 	(let ([p (let ([open (with-handlers ([exn:fail? (lambda (x) #f)])
@@ -630,7 +562,6 @@
 	  (set! c-lambdas null)
 	  (const:init-tables!)
 	  (compiler:init-closure-lists!)
-	  (varref:reset-module-id!)
 	  ; process the input string - try to open the input file
 	  (let-values ([(input-path c-output-path 
 				    constant-pool-output-path obj-output-path dll-output-path 
@@ -695,14 +626,73 @@
 
 		  ;;-----------------------------------------------------------------------
 		  ;; record module name, if a single declaration
+		  ;;
 
 		  (set-single-module-mode! #f)
-		  (when (and (= 1 (length (block-source s:file-block)))
-			     (zodiac:module-form? (car (block-source s:file-block))))
-		    (set-single-module-mode! #t)
-		    (set! compiler:module-decl-name 
-			  (syntax-e (zodiac:module-form-name (car (block-source s:file-block))))))
+		  (when (= 1 (length (block-source s:file-block)))
+		    (syntax-case (car (block-source s:file-block)) (module)
+		      [(module name . _)
+		       (begin
+			 (set-single-module-mode! #t)
+			 (set! compiler:module-decl-name (syntax-e #'name)))]
+		      [_else (void)]))
+		  
+		  ;;-----------------------------------------------------------------------
+		  ;; ensure that no `module' expression is inside a `begin'
+		  ;;
 
+		  (letrec ([needs-split?
+			    (lambda (stx saw-begin?)
+			      (syntax-case stx (begin module)
+				[(module . _) saw-begin?]
+				[(begin . e)
+				 (ormap (lambda (x) (needs-split? x #t))
+					(syntax->list #'e))]
+				[_else #f]))]
+			   [split
+			    (lambda (stx)
+			      (syntax-case stx (begin module)
+				[(begin . e)
+				 (apply append (map split (syntax->list #'e)))]
+				[_else (list stx)]))])
+		    (set-block-source! 
+		     s:file-block
+		     (apply
+		      append
+		      (map (lambda (e)
+			     (if (needs-split? e #f)
+				 (split e)
+				 (list e)))
+			   (block-source s:file-block)))))
+		  
+		  ;;-----------------------------------------------------------------------
+		  ;; Extract stateless, phaseless core, leaving the rest of bytecode
+		  ;;
+		  
+		  (when (compiler:option:verbose) (printf " extracting core expressions~n"))
+		  (when (compiler:option:debug) (debug " = CORE =~n"))
+
+		  (let ([core-thunk
+			 (lambda ()
+			   (let ([sources+bytecodes+magics
+				  (map (lambda (src)
+					 (let-values ([(src bytecode magic-sym)
+						       (top-level-to-core src 
+									  #`'#,zodiac:global-lookup-id
+									  #`'#,zodiac:global-assign-id
+									  #`'#,zodiac:safe-vector-ref-id
+									  #`'#,zodiac:global-prepare-id)])
+					   (list (zodiac:syntax->zodiac src) 
+						 bytecode magic-sym)))
+				       (block-source s:file-block))])
+			     (set-block-source! s:file-block (map car sources+bytecodes+magics))
+			     (set-block-bytecodes! s:file-block 
+						   (parameterize ([current-namespace elaborate-namespace])
+						     (map compile
+							  (map cadr sources+bytecodes+magics))))
+			     (set-block-magics! s:file-block (map caddr sources+bytecodes+magics))))])
+		    (verbose-time core-thunk))
+	      
 		  ;;-----------------------------------------------------------------------
 		  ;; Run a preprocessing phase on the input
 		  ;;
@@ -722,17 +712,7 @@
 				    (if (eq? errors compiler:messages)
 					
 					;; no errors here
-					(if (zodiac:module-form? ast)
-					    ;; If it's a module, split it into three parts:
-					    ;;   - body
-					    ;;   - syntax definitions
-					    ;;   - module registration
-					    ;; That way, the global variable sets, etc., are
-					    ;; kept separate.
-					    (append (split-module ast) (loop (cdr source) errors))
-
-					    ;; Normal expr
-					    (cons ast (loop (cdr source) errors)))
+					(cons ast (loop (cdr source) errors))
 					
 					;; error, drop this one
 					(loop (cdr source) compiler:messages)))))))])
@@ -793,7 +773,6 @@
 
 	      ; analyze top level expressions, cataloguing local variables
 	      (compiler:init-define-lists!)
-	      (const:reset-syntax-constants!)
 	      (let ([bnorm-thunk
 		     (lambda ()
 		       (let-values ([(new-source new-codes max-arity)
@@ -803,20 +782,18 @@
 			 (set-block-codes! s:file-block new-codes)
 			 (block:register-max-arity! s:file-block max-arity)
 			 (s:register-max-arity! max-arity))
-		       
-		       ; take constant construction code and place it in front of the 
-		       ; previously generated code. True constants first.
+
+		       ;; take constant construction code and place it in front of the 
+		       ;; previously generated code. True constants first.
 		       (set! number-of-true-constants (length (compiler:get-define-list)))
-		       (set! number-of-per-load-constants (+ (length (compiler:get-per-load-define-list))
-							     (length (compiler:get-per-invoke-define-list))))
+		       (set! number-of-per-load-constants (+ (length (compiler:get-per-load-define-list))))
 		       (s:append-block-sources! s:file-block 
 						(append
 						 (compiler:get-define-list)
-						 (compiler:get-per-load-define-list)
-						 (compiler:get-per-invoke-define-list))))])
+						 (compiler:get-per-load-define-list))))])
 		(verbose-time bnorm-thunk))
 	      (compiler:report-messages! #t)
-	      
+
 	      ; (map (lambda (ast) (pretty-print (zodiac->sexp/annotate ast))) (block-source s:file-block))
 
 	      ;;-----------------------------------------------------------------------
@@ -833,7 +810,7 @@
 	      (compiler:report-messages! #t)
 	      
 	      ; (map (lambda (ast) (pretty-print (zodiac->sexp/annotate ast))) (block-source s:file-block))
-
+	      
 	      ;;-----------------------------------------------------------------------
 	      ;; Closure conversion and explicit control transformation
 	      ;;
@@ -847,7 +824,7 @@
 			s:file-block
 			(map closure-expression! (block-source s:file-block))))])
 		(verbose-time closure-thunk))
-
+	      
 	      ;;-----------------------------------------------------------------------
 	      ;; Vehicle assignment
 	      ;;
@@ -928,7 +905,8 @@
 		       ; top-level.  The last expression will be in tail position and should
 		       ; return its value
 		       (let loop ([s (block-source s:file-block)]
-				  [l (block-codes s:file-block)])
+				  [l (block-codes s:file-block)]
+				  [m (block-magics s:file-block)])
 			 (unless (null? s)
 			   (let-values ([(vm new-locals)
 					 (vm-phase (car s) 
@@ -938,15 +916,18 @@
 						       (lambda (ast)
 							 (make-vm:return 
 							  (zodiac:zodiac-stx ast)
-							  ast))
+							  ast
+							  (and (car m) #t)))
 						       (lambda (ast)
 							 (make-vm:void
 							  (zodiac:zodiac-stx ast)
-							  ast)))
-						   (null? (cdr s)))])
+							  ast
+							  (and (car m) #t))))
+						   (null? (cdr s))
+						   (and (car m) #t))])
 			     (set-car! s vm)
 			     (add-code-local+used-vars! (car l) new-locals))
-			   (loop (cdr s) (cdr l))))
+			   (loop (cdr s) (cdr l) (cdr m))))
 		       ; code-bodies
 		       (for-each 
 			(lambda (L)
@@ -954,7 +935,8 @@
 				 [tail-pos (lambda (ast)
 					     (make-vm:return 
 					      (zodiac:zodiac-stx ast)
-					      ast))]
+					      ast
+					      #f))]
 				 [new-locals
 				  (cond
 				   [(zodiac:case-lambda-form? L)
@@ -968,7 +950,7 @@
 								; empty: already added via case
 								empty-set) 
 							(let-values ([(vm new-locals)
-								      (vm-phase (car l) #t #f tail-pos #t)])
+								      (vm-phase (car l) #t #f tail-pos #t #f)])
 							  (add-code-local+used-vars! 
 							   (car case-codes)
 							   new-locals )
@@ -1083,11 +1065,24 @@
 				 (fprintf c-port "#include \"mzc.h\"~n~n")
 				 (vm->c:emit-struct-definitions! (compiler:get-structs) c-port)
 				 (vm->c:emit-symbol-declarations! c-port)
-				 (vm->c:emit-syntax-string-declarations! c-port)
 				 (vm->c:emit-inexact-declarations! c-port)
 				 (vm->c:emit-string-declarations! c-port)
 				 (vm->c:emit-prim-ref-declarations! c-port)
 				 (vm->c:emit-static-declarations! c-port)
+
+				 (let loop ([c 0][l (block-bytecodes s:file-block)][m (block-magics s:file-block)])
+				   (cond
+				    [(null? l) (void)]
+				    [(not (car l)) (loop c (cdr l) (cdr m))]
+				    [else
+				     (vm->c:emit-bytecode-string-definition! 
+				      (format "top_level_bytecode_~a" c)
+				      (car l)
+				      c-port)
+				     (fprintf c-port "#define top_level_magic_sym_~a ~s\n\n"
+					      c
+					      (symbol->string (car m)))
+				     (loop (add1 c) (cdr l) (cdr m))]))
 				 
 				 (let loop ([n 0])
 				   (unless (= n (compiler:get-total-vehicles))
@@ -1100,10 +1095,6 @@
 				   (vm->c:emit-symbol-definitions! c-port)
 				   (fprintf c-port "}~n"))
 
-				 (fprintf c-port "~nstatic void make_syntax_strings()~n{~n")
-				 (vm->c:emit-syntax-string-definitions! c-port)
-				 (fprintf c-port "}~n")
-				 
 				 (unless (zero? (const:get-inexact-counter))
 				   (fprintf c-port "~nstatic void make_inexacts()~n{~n")
 				   (vm->c:emit-inexact-definitions! c-port)
@@ -1135,31 +1126,6 @@
 								     (block-max-arity s:file-block)
 								     #f #f ; no module entries
 								     c-port))]
-					[invoke-counts
-					 (let loop ([i 0])
-					   (if (= i (get-num-module-invokes))
-					       null
-					       (cons
-						(let loop ([syntax? #f])
-						  (cons
-						   (vm->c:emit-top-levels! (format "module~a_body_~a" 
-										   (if syntax? "_syntax" "")
-										   i)
-									   #f #f #f -1
-									   (block-source s:file-block)
-									   locals
-									   globals
-									   (block-max-arity s:file-block)
-									   i syntax?
-									   c-port)
-						   (if syntax? 
-						       null
-						       (loop #t))))
-						(loop (add1 i)))))]
-					[_ (let loop ([i 0][counts invoke-counts])
-					     (unless (= i (get-num-module-invokes))
-					       (vm->c:emit-module-glue! c-port i (caar counts) (cadar counts))
-					       (loop (add1 i) (cdr counts))))]
 					[top-level-count
 					 (vm->c:emit-top-levels! "top_level" #t #t #f -1
 								 (list-tail (block-source s:file-block) number-of-true-constants)
@@ -1198,8 +1164,6 @@
 				   (unless (compiler:multi-o-constant-pool)
 				     (fprintf c-port "~amake_symbols();~n"
 					      vm->c:indent-spaces))
-				   (fprintf c-port "~amake_syntax_strings();~n"
-					    vm->c:indent-spaces)
 				   (unless (zero? (const:get-inexact-counter))
 				     (fprintf c-port "~amake_inexacts();~n"
 					      vm->c:indent-spaces))
@@ -1296,7 +1260,8 @@
 										 code
 										 c-port
 										 (* (if suffix? 3 2) vm->c:indent-by)
-										 #f)
+										 #f
+										 -1)
 							       (vm->c:emit-case-epilogue L i undefines indent c-port)
 							       (when suffix?
 								 (fprintf c-port "~a~a} /* end case ~a */~n" 

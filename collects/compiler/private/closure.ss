@@ -64,9 +64,7 @@
 	  ;; Set the closure's liftable field to a new top-level-varref
 	  (let* ([code (get-annotation lam)]
 		 [var (gensym (if pls? 
-				  (if (varref:current-invoke-module)
-				      'pmilifted
-				      'pllifted)
+				  'pllifted
 				  'lifted))]
 		 [sv (make-top-level-varref/bind-from-lift
 		      (zodiac:zodiac-stx lam)
@@ -78,7 +76,7 @@
 		      #f
 		      #f
 		      lam
-		      (and pls? (or (varref:current-invoke-module) pls?)))]
+		      pls?)]
 		 [def (zodiac:make-define-values-form 
 		       (zodiac:zodiac-stx lam)
 		       (make-empty-box)
@@ -92,32 +90,11 @@
 	    (set-procedure-code-liftable! code (list sv)) 
 
 	    (if pls?
-		(let ([def (if (varref:current-invoke-module)
-			       (let ([def (zodiac:make-module-form
-					   (zodiac:zodiac-stx def)
-					   (make-empty-box)
-					   #f #f #f #f
-					   def #f
-					   #f #f #f #f #f)])
-				 (set-annotation! 
-				  def 
-				  (let ([mi (varref:current-invoke-module)])
-				    (make-module-info mi
-						      #f
-						      (if (varref:module-invoke-syntax? mi)
-							  'syntax-body
-							  'body))))
-				 def)
-			       def)])
-		  
-		  (let ([mi (varref:current-invoke-module)])
-		    (varref:add-attribute! sv (or mi varref:per-load-static))
-		    ((if mi
-			 (lambda (v) (compiler:add-per-invoke-static-list! v mi))
-			 compiler:add-per-load-static-list!)
-		     var)
-		    (set! compiler:once-closures-list (cons def compiler:once-closures-list))
-		    (set! compiler:once-closures-globals-list (cons (code-global-vars code) compiler:once-closures-globals-list))))
+		(begin
+		  (varref:add-attribute! sv varref:per-load-static)
+		  (compiler:add-per-load-static-list! var)
+		  (set! compiler:once-closures-list (cons def compiler:once-closures-list))
+		  (set! compiler:once-closures-globals-list (cons (code-global-vars code) compiler:once-closures-globals-list)))
 		(begin
 		  (set! compiler:lifted-lambda-vars (cons sv compiler:lifted-lambda-vars))
 		  (set! compiler:lifted-lambdas (cons def compiler:lifted-lambdas)))))))
@@ -272,16 +249,32 @@
 		   (transform! (zodiac:with-continuation-mark-form-body ast)))
 		  
 		  ast]
-		 
+
 		 ;;-----------------------------------------------------------
-		 ;; MODULE
+		 ;; GLOBALS
 		 ;;
-		 [(zodiac:module-form? ast)
-		  
-		  (zodiac:set-module-form-body!
+		 [(zodiac:global-prepare? ast)
+		  (zodiac:set-global-prepare-vec!
 		   ast
-		   (transform! (zodiac:module-form-body ast)))
-		  
+		   (transform! (zodiac:global-prepare-vec ast)))
+		  ast]
+		 [(zodiac:global-lookup? ast)
+		  (zodiac:set-global-lookup-vec!
+		   ast
+		   (transform! (zodiac:global-lookup-vec ast)))
+		  ast]
+		 [(zodiac:global-assign? ast)
+		  (zodiac:set-global-assign-vec!
+		   ast
+		   (transform! (zodiac:global-assign-vec ast)))
+		  (zodiac:set-global-assign-expr!
+		   ast
+		   (transform! (zodiac:global-assign-expr ast)))
+		  ast]
+		 [(zodiac:safe-vector-ref? ast)
+		  (zodiac:set-safe-vector-ref-vec!
+		   ast
+		   (transform! (zodiac:safe-vector-ref-vec ast)))
 		  ast]
 		 
 		 [else (compiler:internal-error 

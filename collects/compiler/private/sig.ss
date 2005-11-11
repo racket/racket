@@ -57,24 +57,15 @@
     (varref:empty-attributes
      varref:add-attribute!
      varref:has-attribute?
-     varref:invoke-module
 
      varref:static
      varref:per-load-static
-     varref:per-invoke-static
      varref:primitive
      varref:symbol
      varref:inexact
      varref:env
      varref:in-module
      varref:module-stx-string
-
-     (struct varref:module-invoke (id syntax? context-path-index))
-     make-module-invokes
-     get-num-module-invokes
-     is-module-invoke?
-
-     varref:reset-module-id!
 
      (struct compiler:make-closure (lambda free-vars args name))
      
@@ -105,10 +96,6 @@
      (struct case-code (has-continue?))
 
      (struct app (tail? prim? prim-name))
-
-     (struct module-info (invoke syntax-invoke part))
-
-     varref:current-invoke-module
 
      compiler:bound-varref->binding 
 
@@ -191,20 +178,10 @@
 
      compiler:get-static-list
      compiler:get-per-load-static-list
-     compiler:get-per-invoke-static-list
      
      compiler:add-per-load-static-list!
-     compiler:add-per-invoke-static-list!
 
      compiler:make-const-constructor
-
-     const:make-syntax-constant
-
-     const:reset-syntax-constants!
-     const:finish-syntax-constants!
-
-     (struct syntax-string (str mi uposes ustart id))
-     const:get-syntax-strings
 
      (struct compiled-string (id len))))
 
@@ -214,8 +191,6 @@
      (struct rep:pointer (to))
      (struct rep:struct (name orig-name fields))
      (struct rep:struct-field (name orig-name rep))
-
-     (struct rep:atomic/invoke (module-invoke))
 
      compiler:get-structs
      compiler:init-structs!
@@ -239,7 +214,6 @@
 
      compiler:get-define-list
      compiler:get-per-load-define-list
-     compiler:get-per-invoke-define-list
 
      compiler:init-define-lists!
 
@@ -248,14 +222,11 @@
 
      compiler:add-local-define-list!
      compiler:add-local-per-load-define-list!
-     compiler:add-local-per-invoke-define-list!
      
      (struct case-info (body case-code global-vars used-vars captured-vars max-arity))
 
      (struct mod-glob (cname modname varname position exp-time? exp-def? in-module?))
      compiler:get-module-path-constant
-
-     compiler:finish-syntax-constants!
 
      analyze-expression!))
 
@@ -303,29 +274,33 @@
   (define-signature compiler:vmstructs^
     ((struct vm:sequence (vals))
      (struct vm:if (test then else))
-     (struct vm:module-body (vals invoke syntax?))
 
-     (struct vm:void (val))
-     (struct vm:return (val))
+     (struct vm:void (val magic?))
+     (struct vm:return (val magic?))
      (struct vm:tail-apply (closure argc prim))
      (struct vm:tail-call (label closure set-env?))
      (struct vm:continue ())
      
      (struct vm:set! (vars val mode))
-     (struct vm:generic-args (closure tail? prim vals))
+     (struct vm:generic-args (closure tail? magic? prim vals))
      (struct vm:register-args (vars vals))
      (struct vm:args (type vals))
      (struct vm:begin0-mark! (var val))
      (struct vm:begin0-setup! (var))
      (struct vm:syntax! (vars val in-mod?))
      
+     (struct vm:global-prepare (vec pos))
+     (struct vm:global-lookup (vec pos))
+     (struct vm:global-assign (vec val pos))
+     (struct vm:safe-vector-ref (vec pos))
+
      (struct vm:alloc (type))
      (struct vm:build-constant (text))
      (struct vm:make-closure (closure))
      (struct vm:make-procedure-closure (vehicle min-arity max-arity name empty? method?))
      (struct vm:make-case-procedure-closure (vehicle num-cases case-arities name empty? method?))
      (struct vm:apply (closure argc known? multi? prim simple-tail-prim?))
-     (struct vm:macro-apply (name primitive args tail? bool?))
+     (struct vm:macro-apply (name primitive args tail? magic? bool?))
      (struct vm:call (label closure))
      (struct vm:begin0-extract (var))
      (struct vm:wcm-mark! (key val))
@@ -339,16 +314,13 @@
      (struct vm:global-varref (var))
      (struct vm:bucket (var))
      (struct vm:per-load-statics-table ())
-     (struct vm:per-invoke-statics-table ())
      (struct vm:cast (val rep)) ; last resort
 
      (struct vm:local-varref (var binding))
      (struct vm:static-varref (var))
      (struct vm:static-varref-from-lift (lambda))
      (struct vm:per-load-static-varref ())
-     (struct vm:per-invoke-static-varref ())
      (struct vm:per-load-static-varref-from-lift (lambda))
-     (struct vm:per-invoke-static-varref-from-lift (lambda))
      (struct vm:primitive-varref (var))
      (struct vm:symbol-varref (var))
      (struct vm:inexact-varref (var))
@@ -408,7 +380,7 @@
 
   (provide compiler:top-level^)
   (define-signature compiler:top-level^
-    ((struct block (source codes max-arity))
+    ((struct block (source codes bytecodes magics max-arity))
      make-empty-block
      block:register-max-arity!
 
@@ -427,8 +399,7 @@
      vm->c:emit-symbol-list!
      vm->c:emit-symbol-declarations!
      vm->c:emit-symbol-definitions!
-     vm->c:emit-syntax-string-declarations!
-     vm->c:emit-syntax-string-definitions!
+     vm->c:emit-bytecode-string-definition!
      vm->c:emit-inexact-declarations!
      vm->c:emit-inexact-definitions!
      vm->c:emit-string-declarations!
@@ -439,7 +410,6 @@
      vm->c:emit-registration!
      vm->c:emit-case-arities-definitions!
      vm->c:emit-top-levels!
-     vm->c:emit-module-glue!
      vm->c:emit-vehicle-prototype
      vm->c:emit-vehicle-declaration
      vm->c:emit-vehicle-header

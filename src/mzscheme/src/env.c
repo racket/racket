@@ -209,6 +209,7 @@ Scheme_Env *scheme_basic_env()
 
 #ifndef MZ_PRECISE_GC
   scheme_init_setjumpup();
+  scheme_init_ephemerons();
 #endif
 
 #ifdef TIME_STARTUP_PROCESS
@@ -1472,10 +1473,10 @@ static Scheme_Local *get_frame_loc(Scheme_Comp_Env *frame,
 /* Generates a Scheme_Local record for a static distance coodinate, and also
    marks the variable as used for closures. */
 {
-  COMPILE_DATA(frame)->use[i] |= (((flags & (SCHEME_APP_POS | SCHEME_SETTING))
+  COMPILE_DATA(frame)->use[i] |= (((flags & (SCHEME_APP_POS | SCHEME_SETTING | SCHEME_REFERENCING))
 				   ? CONSTRAINED_USE
 				   : ARBITRARY_USE)
-				  | ((flags & (SCHEME_SETTING | SCHEME_LINKING_REF))
+				  | ((flags & (SCHEME_SETTING | SCHEME_REFERENCING | SCHEME_LINKING_REF))
 				     ? WAS_SET_BANGED
 				     : 0));
   
@@ -2241,8 +2242,11 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 
     if (genv->module && !genv->rename) {
       /* Free variable. Maybe don't continue. */
-      if (flags & SCHEME_SETTING) {
-	scheme_wrong_syntax(scheme_set_stx_string, NULL, src_find_id, "unbound variable in module");
+      if (flags & (SCHEME_SETTING | SCHEME_REFERENCING)) {
+	scheme_wrong_syntax(((flags & SCHEME_SETTING) 
+			     ? scheme_set_stx_string
+			     : scheme_var_ref_string),
+			    NULL, src_find_id, "unbound variable in module");
 	return NULL;
       }
       if (flags & SCHEME_NULL_FOR_UNBOUND)
@@ -2300,10 +2304,13 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     return NULL;
   }
 
-  if (!modname && (flags & SCHEME_SETTING) && (genv->module && !genv->rename)) {
+  if (!modname && (flags & (SCHEME_SETTING | SCHEME_REFERENCING)) && (genv->module && !genv->rename)) {
     /* Check for set! of unbound variable: */    
     if (!scheme_lookup_in_table(genv->toplevel, (const char *)find_global_id)) {
-      scheme_wrong_syntax(scheme_set_stx_string, NULL, src_find_id, "unbound variable in module");
+      scheme_wrong_syntax(((flags & SCHEME_SETTING) 
+			     ? scheme_set_stx_string
+			     : scheme_var_ref_string), 
+			  NULL, src_find_id, "unbound variable in module");
       return NULL;
     }
   }
@@ -2333,7 +2340,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 				       modpos, mod_defn_phase);
   }
 
-  if (!modname && (flags & SCHEME_SETTING) && genv->module) {
+  if (!modname && (flags & (SCHEME_SETTING | SCHEME_REFERENCING)) && genv->module) {
     /* Need to return a variable reference in this case, too. */
     return scheme_hash_module_variable(env->genv, genv->module->self_modidx, find_global_id, 
 				       genv->module->insp,

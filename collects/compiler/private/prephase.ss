@@ -654,24 +654,31 @@
 		      ast]
 
 		     ;;-----------------------------------------------------------
-		     ;; MODULE
+		     ;; GLOBALS
 		     ;;
-		     [(zodiac:module-form? ast)
-
-		      (let-values ([(mi smi) (make-module-invokes
-					      (zodiac:module-form-self-path-index ast))])
-			(set-annotation! ast (make-module-info mi smi #f)))
-
-		      (zodiac:set-module-form-body!
+		     [(zodiac:global-prepare? ast)
+		      (zodiac:set-global-prepare-vec!
 		       ast
-		       (prephase! (zodiac:module-form-body ast)
-				  #t #f #f))
-		      (zodiac:set-module-form-syntax-body!
-		       ast
-		       (prephase! (zodiac:module-form-syntax-body ast)
-				  #t #f #f))
+		       (prephase! (zodiac:global-prepare-vec ast) in-mod? #t #f))
 		      ast]
-		     
+		     [(zodiac:global-lookup? ast)
+		      (zodiac:set-global-lookup-vec!
+		       ast
+		       (prephase! (zodiac:global-lookup-vec ast) in-mod? #t #f))
+		      ast]
+		     [(zodiac:global-assign? ast)
+		      (zodiac:set-global-assign-vec!
+		       ast
+		       (prephase! (zodiac:global-assign-vec ast) in-mod? #t #f))
+		      (zodiac:set-global-assign-expr!
+		       ast
+		       (prephase! (zodiac:global-assign-expr ast) in-mod? #t #f))
+		      ast]
+		     [(zodiac:safe-vector-ref? ast)
+		      (zodiac:set-safe-vector-ref-vec!
+		       ast
+		       (prephase! (zodiac:safe-vector-ref-vec ast) in-mod? #t #f))
+		      ast]
 
 		     ;;-----------------------------------------------------------
 		     ;; Unsupported forms

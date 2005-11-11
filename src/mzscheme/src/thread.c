@@ -3105,7 +3105,7 @@ static int check_sleep(int need_activity, int sleep_now)
       }
 
       scheme_sleep(mst, fds);
-    } else
+    } else if (scheme_wakeup_on_input)
       scheme_wakeup_on_input(fds);
 
     return 1;

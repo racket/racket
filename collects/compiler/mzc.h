@@ -9,6 +9,36 @@
 				    "invoke-unit: cannot link to undefined identifier: %S", \
 				    (Scheme_Object*)(x)->key);
 
+#ifdef NO_INLINE_KEYWORD
+# define MZC_INLINE /* */
+#else
+# define MZC_INLINE MSC_IZE(inline)
+#endif
+
+#define MZC_GLOBAL_PREPARE(vec, pos) (SCHEME_VEC_ELS(vec)[pos] = SCHEME_PTR_VAL(SCHEME_VEC_ELS(vec)[pos]))
+static MZC_INLINE Scheme_Object *MZC_GLOBAL_LOOKUP(Scheme_Object *vec, int pos) {
+  Scheme_Bucket *bucket = (Scheme_Bucket *)SCHEME_VEC_ELS(vec)[pos];
+  Scheme_Object *o = bucket->val;
+  if (o)
+    return o;
+  else {
+    scheme_unbound_global(bucket);
+    return NULL;
+  }
+}
+
+static MZC_INLINE Scheme_Object *MZC_GLOBAL_ASSIGN(Scheme_Object *vec, int pos, Scheme_Object *val) {
+  Scheme_Bucket *bucket = (Scheme_Bucket *)SCHEME_VEC_ELS(vec)[pos];
+  scheme_set_global_bucket("set!", bucket, val, 0);
+  return scheme_void;
+}
+
+#define MZC_KNOWN_SAFE_VECTOR_REF(vec, pos) (SCHEME_VEC_ELS(vec)[pos])
+
+#define MZC_APPLY_MAGIC(val, n) \
+  scheme_eval_compiled_sized_string_with_magic(top_level_bytecode_ ## n, sizeof(top_level_bytecode_ ## n), NULL, \
+                                               scheme_intern_symbol(top_level_magic_sym_ ## n), val, 1)
+
 #define DO_FUEL_POLL ((scheme_fuel_counter-- <= 0) ? (scheme_process_block(0), 0) : 0)
 
 #define _scheme_direct_apply_primitive_multi_poll(prim, argc, argv) \

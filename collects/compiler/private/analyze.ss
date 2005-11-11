@@ -167,19 +167,15 @@
       
       (define compiler:define-list null)
       (define compiler:per-load-define-list null)
-      (define compiler:per-invoke-define-list null)
       (define compiler:local-define-list null)
       (define compiler:local-per-load-define-list null)
-      (define compiler:local-per-invoke-define-list null)
 
       (define (compiler:get-define-list) compiler:define-list)
       (define (compiler:get-per-load-define-list) compiler:per-load-define-list)
-      (define (compiler:get-per-invoke-define-list) compiler:per-invoke-define-list)
       
       (define (compiler:init-define-lists!)
 	(set! compiler:define-list null)
 	(set! compiler:per-load-define-list null)
-	(set! compiler:per-invoke-define-list null)
 	(set! compiler:global-symbols (make-hash-table))
 	(set! compiler:primitive-refs empty-set))
       
@@ -189,14 +185,10 @@
       (define (compiler:add-local-per-load-define-list! def)
 	(set! compiler:local-per-load-define-list 
 	      (cons def compiler:local-per-load-define-list)))
-      (define (compiler:add-local-per-invoke-define-list! def)
-	(set! compiler:local-per-invoke-define-list 
-	      (cons def compiler:local-per-invoke-define-list)))
 
       (define (prepare-local-lists)
 	(set! compiler:local-define-list null)
-	(set! compiler:local-per-load-define-list null)
-	(set! compiler:local-per-invoke-define-list null))
+	(set! compiler:local-per-load-define-list null))
 
       (define (move-over-local-lists)
 	(set! compiler:define-list
@@ -205,38 +197,9 @@
 	(set! compiler:per-load-define-list
 	      (append! compiler:per-load-define-list 
 		       (reverse! compiler:local-per-load-define-list)))
-	(set! compiler:per-invoke-define-list
-	      (append! compiler:per-invoke-define-list 
-		       (reverse! compiler:local-per-invoke-define-list)))
 	
 	(set! compiler:local-define-list null)
-	(set! compiler:local-per-load-define-list null)
-	(set! compiler:local-per-invoke-define-list null))
-
-      (define (compiler:finish-syntax-constants!)
-	(set! compiler:local-define-list null)
-	(set! compiler:local-per-load-define-list null)
-	(set! compiler:local-per-invoke-define-list null)
-
-	(begin0
-	 ;; Return this result - it's a number
-	 (const:finish-syntax-constants!)
-
-	 (unless (and (null? compiler:local-per-load-define-list)
-		      (null? compiler:local-per-invoke-define-list))
-	   (set! compiler:define-list
-		 (append! compiler:define-list 
-			  (reverse! compiler:local-define-list)))
-	   (set! compiler:per-load-define-list
-		 (append! compiler:per-load-define-list 
-			  (reverse! compiler:local-per-load-define-list)))
-	   (set! compiler:per-invoke-define-list
-		 (append! compiler:per-invoke-define-list 
-			  (reverse! compiler:local-per-invoke-define-list)))
-
-	   (set! compiler:local-define-list null)
-	   (set! compiler:local-per-load-define-list null)
-	   (set! compiler:local-per-invoke-define-list null))))
+	(set! compiler:local-per-load-define-list null))
       
       ;; Temporary structure used in building up case-lambda info
       (define-struct case-info 
@@ -429,6 +392,9 @@
 						      (+ size 1)
 						      (lambda (size)
 							(bloop size (cdr exprs))))))]
+	       [(zodiac:global-lookup? body) (k size)]
+	       [(zodiac:safe-vector-ref? body) (k size)]
+	       [(zodiac:global-assign? body) (loop (zodiac:global-assign-expr body) env (+ size 1) k)]
 	       [else (* 2 (compiler:option:max-inline-size))]))))
 
       ;; We copy inlined bodies to generate unique structure values
@@ -538,6 +504,25 @@
 	   (make-empty-box)
 	   (map (lambda (x) (copy-inlined-body x binding-map))
 		(zodiac:begin-form-bodies ast)))]
+	 [(zodiac:global-lookup? ast)
+	  (zodiac:make-global-lookup
+	   (zodiac:zodiac-stx ast)
+	   (make-empty-box)
+	   (copy-inlined-body (zodiac:global-lookup-vec ast) binding-map)
+	   (zodiac:global-lookup-pos ast))]
+	 [(zodiac:safe-vector-ref? ast)
+	  (zodiac:make-safe-vector-ref
+	   (zodiac:zodiac-stx ast)
+	   (make-empty-box)
+	   (copy-inlined-body (zodiac:safe-vector-ref-vec ast) binding-map)
+	   (zodiac:safe-vector-ref-pos ast))]
+	 [(zodiac:global-assign? ast)
+	  (zodiac:make-global-assign
+	   (zodiac:zodiac-stx ast)
+	   (make-empty-box)
+	   (copy-inlined-body (zodiac:global-assign-vec ast) binding-map)
+	   (zodiac:global-assign-pos ast)
+	   (copy-inlined-body (zodiac:global-assign-expr ast) binding-map))]
 	 [else (compiler:internal-error
 		ast
 		(format "copy-inlined-body: can't copy ~a"
@@ -749,9 +734,6 @@
 			    (when (and (zodiac:varref? c)
 				       (varref:has-attribute? c varref:per-load-static))
 			      (add-global-var! const:the-per-load-statics-table))
-			    (when (and (zodiac:varref? c)
-				       (varref:has-attribute? c varref:per-invoke-static))
-			      (add-global-var! (varref:invoke-module ast)))
 			    
 			    c)]
 			 
@@ -793,8 +775,6 @@
 			(compiler:add-primitive-varref! ast)]
 		       [(varref:has-attribute? ast varref:per-load-static)
 			(add-global-var! const:the-per-load-statics-table)]
-		       [(varref:has-attribute? ast varref:per-invoke-static)
-			(add-global-var! (varref:invoke-module ast))]
 		       [(varref:has-attribute? ast varref:static)
 			(void)]
 		       [else
@@ -834,9 +814,6 @@
 		      (when (and (zodiac:top-level-varref? ret)
 				 (varref:has-attribute? ret varref:per-load-static))
 			(add-global-var! const:the-per-load-statics-table))
-		      (when (and (zodiac:top-level-varref? ret)
-				 (varref:has-attribute? ret varref:per-invoke-static))
-			(add-global-var! (varref:invoke-module ret)))
 		      
 		      ret))]
 		 
@@ -1060,7 +1037,6 @@
 					 ;; can't eliminiate if a letrec->let variable
 					 (not (binding-letrec-set? binding))
 					 ;; can't eliminate if it is used by a bad application
-					 ;;   or by invoke
 					 (not (binding-known-but-used? binding)))
 				    
 				    ;; discard the let:
@@ -1248,10 +1224,9 @@
 		      (zodiac:set-define-values-form-vars!
 		       ast
 		       (map (lambda (v) 
-			      (let ([v (if (varref:current-invoke-module)
-					   v
-					   ;; Make sure v is not mapped to an import:
-					   (ensure-top-level v))])
+			      (let ([v 
+				     ;; Make sure v is not mapped to an import:
+				     (ensure-top-level v)])
 				(analyze-varref! v env #f #t)))
 			    (zodiac:define-values-form-vars ast)))
 
@@ -1365,32 +1340,32 @@
 
 			(values ast body-multi))]
 
-		     ;;-----------------------------------------------------------------
-		     ;; QUOTE-SYNTAX
-		     ;;
-		     ;; Construct constant.
-		     ;;
-		     [(zodiac:quote-syntax-form? ast)
-		      (let ([ret (const:make-syntax-constant (zodiac:quote-syntax-form-expr ast))])
-			;; Put a pointer to the constructed constant in the quote-form's backbox
-			(set-annotation! ast ret)
-
-			;; This variable is per-load:
-			(add-global-var! const:the-per-load-statics-table)
-			
-			(values ret #f))]
-		     
 		     ;;-----------------------------------------------------------
-		     ;; MODULE
+		     ;; GLOBALS
 		     ;;
-		     [(zodiac:module-form? ast)
-
-		      (zodiac:set-module-form-body!
+		     [(zodiac:global-prepare? ast)
+		      (zodiac:set-global-prepare-vec!
 		       ast
-		       (analyze!-ast (zodiac:module-form-body ast) env inlined))
-		      
+		       (analyze!-ast (zodiac:global-prepare-vec ast) env inlined))
 		      (values ast #f)]
-		     
+		     [(zodiac:global-lookup? ast)
+		      (zodiac:set-global-lookup-vec!
+		       ast
+		       (analyze!-ast (zodiac:global-lookup-vec ast) env inlined))
+		      (values ast #f)]
+		     [(zodiac:global-assign? ast)
+		      (zodiac:set-global-assign-vec!
+		       ast
+		       (analyze!-ast (zodiac:global-assign-vec ast) env inlined))
+		      (zodiac:set-global-assign-expr!
+		       ast
+		       (analyze!-ast (zodiac:global-assign-expr ast) env inlined))
+		      (values ast #f)]
+		     [(zodiac:safe-vector-ref? ast)
+		      (zodiac:set-safe-vector-ref-vec!
+		       ast
+		       (analyze!-ast (zodiac:safe-vector-ref-vec ast) env inlined))
+		      (values ast #f)]
 
 		     [else (compiler:internal-error
 			    ast

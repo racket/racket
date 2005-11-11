@@ -1897,4 +1897,12 @@ void scheme_clear_ephemerons()
   done_ephemerons = NULL;
 }
 
+extern MZ_DLLIMPORT void (*GC_custom_finalize)(void);
+
+void scheme_init_ephemerons(void)
+{
+  /* symbol.c will overwrite this, later */
+  GC_custom_finalize = scheme_clear_ephemerons;
+}
+
 #endif

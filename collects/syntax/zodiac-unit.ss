@@ -22,6 +22,11 @@
 		      p))
 	       l))
 
+      (define global-prepare-id (gensym))
+      (define global-lookup-id (gensym))
+      (define global-assign-id (gensym))
+      (define safe-vector-ref-id (gensym))
+
       ;; Back boxes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
       (define-struct secure-box (value))
@@ -473,6 +478,40 @@
 		  (loop (syntax v) env trans?)
 		  (loop (syntax body) env trans?))]
 
+		[(#%app 'gp vec (#%datum . pos))
+		 (and (eq? (syntax-e #'gp) global-prepare-id)
+		      (number? (syntax-e #'pos)))
+		 (make-global-prepare
+		  stx
+		  (mk-back)
+		  (loop (syntax vec) env trans?)
+		  (syntax-e #'pos))]
+		[(#%app 'gl vec (#%datum . pos))
+		 (and (eq? (syntax-e #'gl) global-lookup-id)
+		      (number? (syntax-e #'pos)))
+		 (make-global-lookup
+		  stx
+		  (mk-back)
+		  (loop (syntax vec) env trans?)
+		  (syntax-e #'pos))]
+		[(#%app 'ga vec (#%datum . pos) val)
+		 (and (eq? (syntax-e #'ga) global-assign-id)
+		      (number? (syntax-e #'pos)))
+		 (make-global-assign
+		  stx
+		  (mk-back)
+		  (loop (syntax vec) env trans?)
+		  (syntax-e #'pos)
+		  (loop (syntax val) env trans?))]
+		[(#%app 'svr vec (#%datum . pos))
+		 (and (eq? (syntax-e #'svr) safe-vector-ref-id)
+		      (number? (syntax-e #'pos)))
+		 (make-safe-vector-ref
+		  stx
+		  (mk-back)
+		  (loop (syntax vec) env trans?)
+		  (syntax-e #'pos))]
+		
 		[(#%app)
 		 (make-quote-form
 		  (syntax/loc stx ())
@@ -725,6 +764,22 @@
       (define-struct (require/provide-form parsed) ())
       (define (create-require/provide-form z)
 	(make-require/provide-form (zodiac-stx z) (mk-back)))
+      
+      (define-struct (global-prepare parsed) (vec pos))
+      (define (create-global-prepare z vec pos)
+	(make-global-prepare (zodiac-stx z) (mk-back) vec pos))
+
+      (define-struct (global-lookup parsed) (vec pos))
+      (define (create-global-lookup z vec pos)
+	(make-global-lookup (zodiac-stx z) (mk-back) vec pos))
+
+      (define-struct (global-assign parsed) (vec pos expr))
+      (define (create-global-assign z vec pos expr)
+	(make-global-assign (zodiac-stx z) (mk-back) vec pos expr))
+
+      (define-struct (safe-vector-ref parsed) (vec pos))
+      (define (create-safe-vector-ref z vec pos)
+	(make-safe-vector-ref (zodiac-stx z) (mk-back) vec pos))
 
       (define-struct arglist (vars))
       (define-struct (sym-arglist arglist) ())

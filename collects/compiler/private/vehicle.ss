@@ -221,12 +221,6 @@
 		 [(zodiac:with-continuation-mark-form? ast)
 		  (relate! current-lambda (zodiac:with-continuation-mark-form-body ast))]
 		 
-		 ;;-----------------------------------------------------------
-		 ;; MODULE
-		 ;;
-		 [(zodiac:module-form? ast)
-		  (relate! current-lambda (zodiac:module-form-body ast))]
-		 
 		 ;;-----------------------------------------------------------------
 		 ;; APPLICATIONS
 		 ;;

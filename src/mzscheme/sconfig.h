@@ -232,6 +232,14 @@
 
 # define USE_TIMEZONE_VAR
 
+# include <linux/version.h>
+# if LINUX_VERSION_CODE > KERNEL_VERSION(2,4,20)
+#  define MZ_TCP_LISTEN_IPV6_ONLY_SOCKOPT
+#  define MZ_TCP_LISTEN_IPV4_DEFAULT
+# else
+#  define MZ_TCP_LISTEN_IPV4_ONLY
+# endif
+
 # define FLAGS_ALREADY_SET
 
 #endif
@@ -1012,6 +1020,19 @@
 
  /* MZ_BINARY is combinaed with other flags in all calls to open();
     it can be defined to O_BINARY in Cygwin, for example. */
+
+ /* MZ_TCP_LISTEN_IPV6_ONLY_SOCKOPT uses IPV6_V6ONLY for IPv6 listeners,
+    which means that the listener accepts only IPv6 connections. This is
+    used with Linux, for example, because a port cannot have both an
+    IPv4 and IPv6 listener if the IPv6 one doesn't use IPV6_V6ONLY. */
+
+ /* MZ_TCP_LISTEN_IPV4_DEFAULT creates an IPv4 listener, only, when no
+    hostname is specified. */
+
+ /* MZ_TCP_LISTEN_IPV4_ONLY ignores any IPv6 addresses for an listener
+    hostname. This is used for Linux versions that do not support
+    IPV6_V6ONLY, which is needed to support both IPv6 and IPv4
+    listeners. */
 
   /***********************/
  /* Threads & Signals  */

@@ -75,7 +75,7 @@
 		     ;; LAMBDA EXPRESSIONS
 		     ;;
 		     [(zodiac:case-lambda-form? ast)
-		      (set! procedures (cons (cons ast (varref:current-invoke-module )) procedures))
+		      (set! procedures (cons (cons ast #f) procedures))
 		      (for-each find! (zodiac:case-lambda-form-bodies ast))]
 		     
 		     ;;--------------------------------------------------------------
@@ -158,12 +158,17 @@
 		      (find! (zodiac:with-continuation-mark-form-body ast))]
 
 		     ;;-----------------------------------------------------------
-		     ;; MODULE
+		     ;; GLOBALS
 		     ;;
-		     [(zodiac:module-form? ast)
-		      (parameterize ([varref:current-invoke-module 
-				      (module-info-invoke (get-annotation ast))])
-			(find! (zodiac:module-form-body ast)))]
+		     [(zodiac:global-prepare? ast)
+		      (find! (zodiac:global-prepare-vec ast))]
+		     [(zodiac:global-lookup? ast)
+		      (find! (zodiac:global-lookup-vec ast))]
+		     [(zodiac:global-assign? ast)
+		      (find! (zodiac:global-assign-vec ast))
+		      (find! (zodiac:global-assign-expr ast))]
+		     [(zodiac:safe-vector-ref? ast)
+		      (find! (zodiac:safe-vector-ref-vec ast))]
 		     
 		     [else (compiler:internal-error
 			    ast
@@ -297,8 +302,7 @@
 				      (remove-code-free-vars! code (make-singleton-set 
 								    (zodiac:bound-varref-binding ast))))
 				    (when (top-level-varref/bind-from-lift-pls? lifted)
-				      (add-global! (or (varref:current-invoke-module)
-						       const:the-per-load-statics-table)))
+				      (add-global! const:the-per-load-statics-table))
 				    lifted)
 				  
 				  ;; No change
@@ -314,8 +318,6 @@
 			(void)]
 		       [(varref:has-attribute? ast varref:per-load-static)
 			(add-global! const:the-per-load-statics-table)]
-		       [(varref:has-attribute? ast varref:per-invoke-static)
-			(add-global! (varref:invoke-module ast))]
 		       [(varref:has-attribute? ast varref:static)
 			(void)]
 		       [else (add-global! (compiler:add-global-varref! ast))])
@@ -365,8 +367,7 @@
 				(if (top-level-varref/bind-from-lift-pls? lifted)
 				    (set! globals (set-union-singleton 
 						   save-globals
-						   (or (varref:current-invoke-module)
-						       const:the-per-load-statics-table)))
+						   const:the-per-load-statics-table))
 				    (set! globals save-globals))
 				
 				lifted))))]
@@ -552,15 +553,30 @@
 		      ast]
 
 		     ;;-----------------------------------------------------------
-		     ;; MODULE
+		     ;; GLOBALS
 		     ;;
-		     [(zodiac:module-form? ast)
-
-		      (parameterize ([varref:current-invoke-module (module-info-invoke (get-annotation ast))])
-			(zodiac:set-module-form-body!
-			 ast
-			 (lift! (zodiac:module-form-body ast) code)))
-		      
+		     [(zodiac:global-prepare? ast)
+		      (zodiac:set-global-prepare-vec!
+		       ast
+		       (lift! (zodiac:global-prepare-vec ast) code))
+		      ast]
+		     [(zodiac:global-lookup? ast)
+		      (zodiac:set-global-lookup-vec!
+		       ast
+		       (lift! (zodiac:global-lookup-vec ast) code))
+		      ast]
+		     [(zodiac:global-assign? ast)
+		      (zodiac:set-global-assign-vec!
+		       ast
+		       (lift! (zodiac:global-assign-vec ast) code))
+		      (zodiac:set-global-assign-expr!
+		       ast
+		       (lift! (zodiac:global-assign-expr ast) code))
+		      ast]
+		     [(zodiac:safe-vector-ref? ast)
+		      (zodiac:set-safe-vector-ref-vec!
+		       ast
+		       (lift! (zodiac:safe-vector-ref-vec ast) code))
 		      ast]
 
 		     [else (compiler:internal-error
@@ -596,10 +612,8 @@
 
 	    ;; Set liftable flags
 	    (for-each (lambda (l)
-			(let ([l (car l)]
-			      [mi (cdr l)])
-			  (parameterize ([varref:current-invoke-module mi])
-			    (set-liftable! l))))
+			(let ([l (car l)])
+			  (set-liftable! l)))
 		      procedures)
 
 	    (set! globals empty-set)

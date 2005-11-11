@@ -199,6 +199,11 @@
 			  [(zodiac:case-lambda-form? fun) (simple-case-lambda? fun)]
 			  [else #f])))))]
 
+	   [(zodiac:global-prepare? v) #t]
+	   [(zodiac:global-lookup? v) #f]
+	   [(zodiac:global-assign? v) #f]
+	   [(zodiac:safe-vector-ref? v) #t]
+
 	   [else #f])))
 
       ;; extract-ast-known-value tries to extract a useful value from a known-value AST
@@ -544,14 +549,30 @@
 		      ast]
 		     
 		     ;;-----------------------------------------------------------
-		     ;; MODULE
+		     ;; GLOBALS
 		     ;;
-		     [(zodiac:module-form? ast)
-
-		      (zodiac:set-module-form-body!
+		     [(zodiac:global-prepare? ast)
+		      (zodiac:set-global-prepare-vec!
 		       ast
-		       (analyze! (zodiac:module-form-body ast)))
-
+		       (analyze! (zodiac:global-prepare-vec ast)))
+		      ast]
+		     [(zodiac:global-lookup? ast)
+		      (zodiac:set-global-lookup-vec!
+		       ast
+		       (analyze! (zodiac:global-lookup-vec ast)))
+		      ast]
+		     [(zodiac:global-assign? ast)
+		      (zodiac:set-global-assign-vec!
+		       ast
+		       (analyze! (zodiac:global-assign-vec ast)))
+		      (zodiac:set-global-assign-expr!
+		       ast
+		       (analyze! (zodiac:global-assign-expr ast)))
+		      ast]
+		     [(zodiac:safe-vector-ref? ast)
+		      (zodiac:set-safe-vector-ref-vec!
+		       ast
+		       (analyze! (zodiac:safe-vector-ref-vec ast)))
 		      ast]
 		     
 

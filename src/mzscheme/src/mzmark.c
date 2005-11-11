@@ -3964,6 +3964,8 @@ int mark_cport_MARK(void *p) {
   gcMARK(cp->ht);
   gcMARK(cp->symtab);
   gcMARK(cp->insp);
+  gcMARK(cp->magic_sym);
+  gcMARK(cp->magic_val);
   return
   gcBYTES_TO_WORDS(sizeof(CPort));
 }
@@ -3975,6 +3977,8 @@ int mark_cport_FIXUP(void *p) {
   gcFIXUP(cp->ht);
   gcFIXUP(cp->symtab);
   gcFIXUP(cp->insp);
+  gcFIXUP(cp->magic_sym);
+  gcFIXUP(cp->magic_val);
   return
   gcBYTES_TO_WORDS(sizeof(CPort));
 }
@@ -4016,6 +4020,8 @@ int mark_read_params_SIZE(void *p) {
 int mark_read_params_MARK(void *p) {
   ReadParams *rp = (ReadParams *)p;
   gcMARK(rp->table);
+  gcMARK(rp->magic_sym);
+  gcMARK(rp->magic_val);
   return
   gcBYTES_TO_WORDS(sizeof(ReadParams));
 }
@@ -4023,6 +4029,8 @@ int mark_read_params_MARK(void *p) {
 int mark_read_params_FIXUP(void *p) {
   ReadParams *rp = (ReadParams *)p;
   gcFIXUP(rp->table);
+  gcFIXUP(rp->magic_sym);
+  gcFIXUP(rp->magic_val);
   return
   gcBYTES_TO_WORDS(sizeof(ReadParams));
 }

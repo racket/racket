@@ -54,15 +54,11 @@
 
       (define compiler:static-list null)
       (define compiler:per-load-static-list null)
-      (define compiler:per-invoke-static-list null)
 
       (define (compiler:get-static-list) compiler:static-list)
       (define (compiler:get-per-load-static-list) compiler:per-load-static-list)
-      (define (compiler:get-per-invoke-static-list) compiler:per-invoke-static-list)
 
       (define new-uninterned-symbols null) ; list of (cons sym pos)
-
-      (define syntax-strings null) ; list of syntax-string structs
 
       (define (const:init-tables!)
 	(set! const:symbol-table (make-hash-table))
@@ -75,10 +71,8 @@
 	(set! const:string-counter 0)
 	(set! compiler:static-list null)
 	(set! compiler:per-load-static-list null)
-	(set! compiler:per-invoke-static-list null)
 	(set! vector-table (make-hash-table))
-	(set! new-uninterned-symbols null)
-	(set! syntax-strings null))
+	(set! new-uninterned-symbols null))
 
       (define (const:intern-string s)
 	(let ([table
@@ -98,31 +92,11 @@
 	(set! compiler:per-load-static-list
 	      (cons var compiler:per-load-static-list)))
 
-      (define (compiler:add-per-invoke-static-list! var mi)
-	(set! compiler:per-invoke-static-list
-	      (cons (cons var mi) compiler:per-invoke-static-list)))
-
       (define-values (const:the-per-load-statics-table
 		      const:per-load-statics-table?)
 	(let-struct const:per-load-statics-table ()
 		    (values (make-const:per-load-statics-table)
 			    const:per-load-statics-table?)))
-
-      (define (wrap-module-definition def mi)
-	(let ([def (zodiac:make-module-form
-		    (zodiac:zodiac-stx def)
-		    (make-empty-box)
-		    #f #f #f #f
-		    def #f
-		    #f #f #f #f #f)])
-	  (set-annotation! 
-	   def 
-	   (make-module-info mi 
-			     #f
-			     (if (varref:module-invoke-syntax? mi)
-				 'syntax-body
-				 'body)))
-	  def))
 
       ;; we need to make this in a-normalized, analyzed form from the beginning
       (define compiler:add-const!
@@ -149,11 +123,6 @@
 	      (set! compiler:per-load-static-list
 		    (cons var compiler:per-load-static-list)) 
 	      (compiler:add-local-per-load-define-list! def)]
-	     [(varref:module-invoke? attr)
-	      (set! compiler:per-invoke-static-list
-		    (cons (cons var attr) compiler:per-invoke-static-list)) 
-	      (let ([def (wrap-module-definition def attr)])
-		(compiler:add-local-per-invoke-define-list! def))]
 	     [else
 	      (set! compiler:static-list (cons var compiler:static-list))
 	      (compiler:add-local-define-list! def)])
@@ -198,17 +167,6 @@
 	(begin0
 	 new-uninterned-symbols
 	 (set! new-uninterned-symbols null)))
-
-      (define-struct syntax-string (str mi uposes ustart id))
-
-      (define (compiler:add-syntax-string! str mi uninterned-positions uninterned-start)
-	(let ([naya (make-syntax-string str mi uninterned-positions uninterned-start
-					(length syntax-strings))])
-	  (set! syntax-strings (cons naya syntax-strings))
-	  naya))
-
-      (define (const:get-syntax-strings)
-	syntax-strings)
 
       (define compiler:get-inexact-real-const!
 	(lambda (v ast)
@@ -463,10 +421,9 @@
 						(compiler:construct-const-code!
 						 (wrap base)
 						 known-immutable?)))
-					 (or (varref:current-invoke-module)
-					     (if known-immutable?
-						 varref:static
-						 varref:per-load-static))))
+					 (if known-immutable?
+					     varref:static
+					     varref:per-load-static)))
 		  (zodiac:make-special-constant 'self_modidx)))]
 
 	   ;; other atomic constants that must be built
@@ -475,151 +432,5 @@
 		      (bytes? (zodiac:zread-object ast)))
 	      (const:intern-string (zodiac:zread-object ast)))
 	    (compiler:add-const! (compiler:re-quote ast) 
-				 varref:static)])))
-
-      (define syntax-constants null)
-
-      (define (const:reset-syntax-constants!)
-	(set! syntax-constants null))
-
-      (define (const:make-syntax-constant stx)
-	;; Marhsall to a string constant, and read back out at run-time.
-	;;  For sharing of syntax info, put all syntax objects for a given
-	;;  top-level expression into one marshal step.
-	(let* ([var (gensym 'conststx)]
-	       [sv (zodiac:make-top-level-varref 
-		    stx
-		    (make-empty-box) 
-		    var
-		    #f
-		    (box '())
-		    #f
-		    #f
-		    #f)])
-	  (set! syntax-constants (cons (cons sv stx)
-				       syntax-constants))
-	  (set-annotation! sv (varref:empty-attributes))
-	  (varref:add-attribute! sv varref:static)
-	  (varref:add-attribute! sv (or (varref:current-invoke-module)
-					varref:per-load-static))
-	  (if (varref:current-invoke-module)
-	      (set! compiler:per-invoke-static-list
-		    (cons (cons var (varref:current-invoke-module))
-			  compiler:per-invoke-static-list))
-	      (set! compiler:per-load-static-list
-		    (cons var compiler:per-load-static-list)))
-	  sv))
-
-      ;; We collect syntax objects together to share the cost of of
-      ;; the rename tables. More gnerally, to get the expansion-time
-      ;; info to use-time, we use the bytecode writer built into
-      ;; MzScheme, putting multiple syntax objects together into a
-      ;; syntax vector. The scheme_eval_compiled_stx_string() will
-      ;; unpack it, and perform any necessary phase shifts. To perform
-      ;; the module mapping associated with the phase shift,
-      ;; scheme_eval_compiled_stx_string() expects the "syntax" vector
-      ;; to have a module index path (the "self" path) as its last
-      ;; element.
-      ;; Returns a max-arity.
-      (define (const:finish-syntax-constants!)
-	(if (null? syntax-constants)
-	    0
-	    (let* ([s (open-output-bytes)]
-		   [uninterned-symbol-info (get-new-uninterned-symbols!)]
-		   [c (compile `(quote-syntax ,(list->vector 
-						(let ([l (map cdr syntax-constants)]
-						      [mi (varref:current-invoke-module)])
-						  (append 
-						   l 
-						   (map car uninterned-symbol-info) ; car gets the syms
-						   (if mi
-						       (list (varref:module-invoke-context-path-index mi))
-						       null))))))])
-	      (display c s)
-	      (let ([syntax-string (get-output-bytes s)])
-		(let* ([strvar (compiler:add-syntax-string! 
-				syntax-string
-				(varref:current-invoke-module)
-				(map cdr uninterned-symbol-info) ; cdr gets positions
-				(length syntax-constants))] ; starting place for symbols
-		       [vecvar (gensym 'conststxvec)]
-		       [sv (zodiac:make-top-level-varref
-			    #f
-			    (make-empty-box) 
-			    vecvar
-			    #f
-			    (box '())
-			    #f
-			    #f
-			    #f)])
-
-		  (set-annotation! sv (varref:empty-attributes))
-		  (varref:add-attribute! sv varref:static)
-		  (varref:add-attribute! sv (or (varref:current-invoke-module)
-						varref:per-load-static))
-		  (if (varref:current-invoke-module)
-		      (set! compiler:per-invoke-static-list
-			    (cons (cons vecvar (varref:current-invoke-module))
-				  compiler:per-invoke-static-list))
-		      (set! compiler:per-load-static-list
-			    (cons vecvar compiler:per-load-static-list)))
-
-		  ((if (varref:current-invoke-module)
-		       compiler:add-local-per-invoke-define-list!
-		       compiler:add-local-per-load-define-list!)
-		   (let ([def
-			  (zodiac:make-define-values-form 
-			   #f
-			   (make-empty-box) (list sv)
-			   (compiler:re-quote 
-			    (zodiac:make-zread
-			     (datum->syntax-object
-			      #f
-			      strvar ;; <------ HACK! See "HACK!" in vm2c.ss
-			      #f))))])
-		     (if (varref:current-invoke-module)
-			 (wrap-module-definition def (varref:current-invoke-module))
-			 def)))
-
-		  ;; Create construction code for each
-		  ;;  syntax variable:
-		  (let loop ([l syntax-constants]
-			     [pos 0])
-		    (unless (null? l)
-		      (let ([app (zodiac:make-app
-				  (cdar l)
-				  (make-empty-box) 
-				  (zodiac:make-top-level-varref
-				   (cdar l)
-				   (make-empty-box) 
-				   'vector-ref
-				   '#%kernel
-				   (box '())
-				   #f
-				   #f
-				   #f)
-				  (list
-				   sv
-				   (compiler:re-quote
-				    (zodiac:make-zread
-				     (datum->syntax-object
-				      #f
-				      pos
-				      (cdar l))))))])
-			(set-annotation! app (make-app #f #t 'vector-ref))
-			((if (varref:current-invoke-module)
-			     compiler:add-local-per-invoke-define-list!
-			     compiler:add-local-per-load-define-list!)
-			 (let ([def
-				(zodiac:make-define-values-form 
-				 (cdar l)
-				 (make-empty-box) (list (caar l))
-				 app)])
-			   (if (varref:current-invoke-module)
-			       (wrap-module-definition def (varref:current-invoke-module))
-			       def)))
-			(loop (cdr l) (add1 pos)))))))
-	      (set! syntax-constants null)
-	      ;; We make an application with 2 arguments
-	      2))))))
+				 varref:static)]))))))
 

@@ -1598,6 +1598,8 @@ mark_cport {
   gcMARK(cp->ht);
   gcMARK(cp->symtab);
   gcMARK(cp->insp);
+  gcMARK(cp->magic_sym);
+  gcMARK(cp->magic_val);
  size:
   gcBYTES_TO_WORDS(sizeof(CPort));
 }
@@ -1615,6 +1617,8 @@ mark_read_params {
  mark:
   ReadParams *rp = (ReadParams *)p;
   gcMARK(rp->table);
+  gcMARK(rp->magic_sym);
+  gcMARK(rp->magic_val);
  size:
   gcBYTES_TO_WORDS(sizeof(ReadParams));
 }

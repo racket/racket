@@ -33,6 +33,7 @@
 
 /* globals */
 Scheme_Object *scheme_define_values_syntax, *scheme_define_syntaxes_syntax;
+Scheme_Object *scheme_ref_syntax;
 Scheme_Object *scheme_begin_syntax;
 Scheme_Object *scheme_lambda_syntax;
 Scheme_Object *scheme_compiled_void_code;
@@ -48,6 +49,8 @@ static Scheme_Object *lambda_syntax(Scheme_Object *form, Scheme_Comp_Env *env, S
 static Scheme_Object *lambda_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
 static Scheme_Object *define_values_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
 static Scheme_Object *define_values_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
+static Scheme_Object *ref_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
+static Scheme_Object *ref_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
 static Scheme_Object *quote_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
 static Scheme_Object *quote_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
 static Scheme_Object *if_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
@@ -89,6 +92,7 @@ static Scheme_Object *letrec_syntaxes_syntax(Scheme_Object *form, Scheme_Comp_En
 static Scheme_Object *letrec_syntaxes_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
 
 static Scheme_Object *define_values_execute(Scheme_Object *data);
+static Scheme_Object *ref_execute(Scheme_Object *data);
 static Scheme_Object *set_execute(Scheme_Object *data);
 static Scheme_Object *define_syntaxes_execute(Scheme_Object *expr);
 static Scheme_Object *define_for_syntaxes_execute(Scheme_Object *expr);
@@ -100,6 +104,7 @@ static Scheme_Object *bangboxenv_execute(Scheme_Object *data);
 static Scheme_Object *bangboxvalue_execute(Scheme_Object *data);
 
 static Scheme_Object *define_values_resolve(Scheme_Object *data, Resolve_Info *info);
+static Scheme_Object *ref_resolve(Scheme_Object *data, Resolve_Info *info);
 static Scheme_Object *set_resolve(Scheme_Object *data, Resolve_Info *info);
 static Scheme_Object *define_syntaxes_resolve(Scheme_Object *expr, Resolve_Info *info);
 static Scheme_Object *define_for_syntaxes_resolve(Scheme_Object *expr, Resolve_Info *info);
@@ -108,6 +113,8 @@ static Scheme_Object *begin0_resolve(Scheme_Object *data, Resolve_Info *info);
 
 static void define_values_validate(Scheme_Object *data, Mz_CPort *port, char *stack, int depth, int letlimit, int delta, 
 				   int num_toplevels, int num_stxes);
+static void ref_validate(Scheme_Object *data, Mz_CPort *port, char *stack, int depth, int letlimit, int delta, 
+			 int num_toplevels, int num_stxes);
 static void set_validate(Scheme_Object *data, Mz_CPort *port, char *stack, int depth, int letlimit, int delta, 
 			 int num_toplevels, int num_stxes);
 static void define_syntaxes_validate(Scheme_Object *data, Mz_CPort *port, char *stack, int depth, int letlimit, int delta, 
@@ -212,6 +219,9 @@ scheme_init_syntax (Scheme_Env *env)
   scheme_register_syntax(SET_EXPD,
 			 set_resolve, set_validate,
 			 set_execute, 2);
+  scheme_register_syntax(REF_EXPD, 
+			 ref_resolve, ref_validate, 
+			 ref_execute, 0);
   scheme_register_syntax(DEFINE_SYNTAX_EXPD, 
 			 define_syntaxes_resolve, define_syntaxes_validate,
 			 define_syntaxes_execute, 4);
@@ -284,6 +294,10 @@ scheme_init_syntax (Scheme_Env *env)
   scheme_add_global_keyword("set!", 
 			    scheme_make_compiled_syntax(set_syntax, 
 							set_expand), 
+			    env);
+  scheme_add_global_keyword("#%variable-reference", 
+			    scheme_make_compiled_syntax(ref_syntax,
+							ref_expand), 
 			    env);
 
   scheme_add_global_keyword("case-lambda", 
@@ -1364,6 +1378,110 @@ set_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, 
 				form,
 				form, 
 				0, 2);
+}
+
+/**********************************************************************/
+/*                              #%variable-reference                                 */
+/**********************************************************************/
+
+static Scheme_Object *
+ref_execute (Scheme_Object *tl)
+{
+  Scheme_Object **toplevels, *o;
+  Scheme_Bucket *var;
+
+  toplevels = (Scheme_Object **)MZ_RUNSTACK[SCHEME_TOPLEVEL_DEPTH(tl)];
+  var = (Scheme_Bucket *)toplevels[SCHEME_TOPLEVEL_POS(tl)];
+  
+  o = scheme_alloc_small_object();
+  o->type = scheme_global_ref_type;
+  SCHEME_PTR_VAL(o) = (Scheme_Object *)var;
+
+  return o;
+}
+
+static void ref_validate(Scheme_Object *tl, Mz_CPort *port, 
+			 char *stack, int depth, int letlimit, int delta, int num_toplevels, int num_stxes)
+{
+  scheme_validate_toplevel(tl,  port, stack, depth, delta, num_toplevels, num_stxes);
+}
+
+static Scheme_Object *
+ref_resolve(Scheme_Object *tl, Resolve_Info *rslv)
+{
+  return scheme_make_syntax_resolved(REF_EXPD, scheme_resolve_expr(tl, rslv));
+}
+
+static Scheme_Object *
+ref_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
+{
+  Scheme_Env *menv = NULL;
+  Scheme_Object *var, *name, *rest;
+  int l, ok;
+
+  l = check_form(form, form);
+  if (l != 2)
+    bad_form(form, l);
+
+  rest = SCHEME_STX_CDR(form);
+  name = SCHEME_STX_CAR(rest);
+
+  if (SCHEME_STX_PAIRP(name)) {
+    rest = SCHEME_STX_CAR(name);
+    if (env->genv->phase == 0) {
+      var = scheme_top_stx;
+    } else {
+      var = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_top_stx), scheme_false, scheme_sys_wraps(env), 0, 0);
+    }
+    ok = scheme_stx_module_eq(rest, var, env->genv->phase);
+  } else 
+    ok = SCHEME_STX_SYMBOLP(name);
+
+  if (!ok) {
+    scheme_wrong_syntax("#%variable-reference", name, 
+			form, 
+			"not an identifier or #%%top form");
+    return NULL;
+  }
+
+  if (SCHEME_STX_PAIRP(name)) {
+    var = scheme_expand_expr(name, env, rec, drec);
+  } else {
+    scheme_rec_add_certs(rec, drec, form);
+
+    var = scheme_lookup_binding(name, env, 
+				SCHEME_REFERENCING 
+				+ SCHEME_GLOB_ALWAYS_REFERENCE
+				+ (rec[drec].dont_mark_local_use 
+				   ? SCHEME_DONT_MARK_USE 
+				   : 0)
+				+ (rec[drec].resolve_module_ids
+				   ? SCHEME_RESOLVE_MODIDS
+				   : 0),
+				rec[drec].certs, env->in_modidx, 
+				&menv, NULL);
+
+    if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
+	|| SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type)) {
+      var = scheme_register_toplevel_in_prefix(var, env, rec, drec);
+    } else {
+      scheme_wrong_syntax(NULL, name, form, "identifier does not refer to a top-level or module variable");
+    }
+
+    scheme_compile_rec_done_local(rec, drec);
+  }
+
+  return scheme_make_syntax_compiled(REF_EXPD, var);
+}
+
+static Scheme_Object *
+ref_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
+{
+  /* Error checking: */
+  ref_syntax(form, env, erec, drec);
+
+  /* No change: */
+  return form;
 }
 
 /**********************************************************************/

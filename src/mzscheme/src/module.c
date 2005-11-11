@@ -127,7 +127,7 @@ static Scheme_Object *require_for_template_stx;
 static Scheme_Object *provide_stx;
 static Scheme_Object *set_stx;
 static Scheme_Object *app_stx;
-static Scheme_Object *top_stx;
+Scheme_Object *scheme_top_stx;
 static Scheme_Object *lambda_stx;
 static Scheme_Object *case_lambda_stx;
 static Scheme_Object *let_values_stx;
@@ -137,7 +137,7 @@ static Scheme_Object *begin0_stx;
 static Scheme_Object *set_stx;
 static Scheme_Object *with_continuation_mark_stx;
 static Scheme_Object *letrec_syntaxes_stx;
-static Scheme_Object *fluid_let_syntax_stx;
+static Scheme_Object *var_ref_stx;
 
 static Scheme_Env *initial_modules_env;
 static int num_initial_modules;
@@ -450,7 +450,7 @@ void scheme_finish_kernel(Scheme_Env *env)
   REGISTER_SO(provide_stx);
   REGISTER_SO(set_stx);
   REGISTER_SO(app_stx);
-  REGISTER_SO(top_stx);
+  REGISTER_SO(scheme_top_stx);
   REGISTER_SO(lambda_stx);
   REGISTER_SO(case_lambda_stx);
   REGISTER_SO(let_values_stx);
@@ -460,7 +460,7 @@ void scheme_finish_kernel(Scheme_Env *env)
   REGISTER_SO(set_stx);
   REGISTER_SO(with_continuation_mark_stx);
   REGISTER_SO(letrec_syntaxes_stx);
-  REGISTER_SO(fluid_let_syntax_stx);
+  REGISTER_SO(var_ref_stx);
 
   w = scheme_sys_wraps0;
   scheme_module_stx = scheme_datum_to_syntax(scheme_intern_symbol("module"), scheme_false, w, 0, 0);
@@ -474,7 +474,7 @@ void scheme_finish_kernel(Scheme_Env *env)
   provide_stx = scheme_datum_to_syntax(scheme_intern_symbol("provide"), scheme_false, w, 0, 0);
   set_stx = scheme_datum_to_syntax(scheme_intern_symbol("set!"), scheme_false, w, 0, 0);
   app_stx = scheme_datum_to_syntax(scheme_intern_symbol("#%app"), scheme_false, w, 0, 0);
-  top_stx = scheme_datum_to_syntax(scheme_intern_symbol("#%top"), scheme_false, w, 0, 0);
+  scheme_top_stx = scheme_datum_to_syntax(scheme_intern_symbol("#%top"), scheme_false, w, 0, 0);
   lambda_stx = scheme_datum_to_syntax(scheme_intern_symbol("lambda"), scheme_false, w, 0, 0);
   case_lambda_stx = scheme_datum_to_syntax(scheme_intern_symbol("case-lambda"), scheme_false, w, 0, 0);
   let_values_stx = scheme_datum_to_syntax(scheme_intern_symbol("let-values"), scheme_false, w, 0, 0);
@@ -484,7 +484,7 @@ void scheme_finish_kernel(Scheme_Env *env)
   set_stx = scheme_datum_to_syntax(scheme_intern_symbol("set!"), scheme_false, w, 0, 0);
   with_continuation_mark_stx = scheme_datum_to_syntax(scheme_intern_symbol("with-continuation-mark"), scheme_false, w, 0, 0);
   letrec_syntaxes_stx = scheme_datum_to_syntax(scheme_intern_symbol("letrec-syntaxes+values"), scheme_false, w, 0, 0);
-  fluid_let_syntax_stx = scheme_datum_to_syntax(scheme_intern_symbol("fluid-let-syntax"), scheme_false, w, 0, 0);
+  var_ref_stx = scheme_datum_to_syntax(scheme_intern_symbol("#%variable-reference"), scheme_false, w, 0, 0);
 
   REGISTER_SO(prefix_symbol);
   REGISTER_SO(only_symbol);
@@ -3572,7 +3572,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
     scheme_set_local_syntax(7, provide_stx, stop, xenv);
     scheme_set_local_syntax(8, set_stx, stop, xenv);
     scheme_set_local_syntax(9, app_stx, stop, xenv);
-    scheme_set_local_syntax(10, top_stx, stop, xenv);
+    scheme_set_local_syntax(10, scheme_top_stx, stop, xenv);
     scheme_set_local_syntax(11, case_lambda_stx, stop, xenv);
     scheme_set_local_syntax(12, let_values_stx, stop, xenv);
     scheme_set_local_syntax(13, letrec_values_stx, stop, xenv);
@@ -3581,7 +3581,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
     scheme_set_local_syntax(16, set_stx, stop, xenv);
     scheme_set_local_syntax(17, with_continuation_mark_stx, stop, xenv);
     scheme_set_local_syntax(18, letrec_syntaxes_stx, stop, xenv);
-    scheme_set_local_syntax(19, fluid_let_syntax_stx, stop, xenv);
+    scheme_set_local_syntax(19, var_ref_stx, stop, xenv);
   }
 
   first = scheme_null;
@@ -4522,7 +4522,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   if ((reprovide_kernel == (kernel->num_provides - 1))
       && SCHEME_FALSEP(exclude_hint)) {
     exclude_hint = scheme_make_pair(module_begin_symbol, scheme_null);
-    exclude_hint = scheme_datum_to_syntax(exclude_hint, scheme_false, top_stx, 0, 0);
+    exclude_hint = scheme_datum_to_syntax(exclude_hint, scheme_false, scheme_top_stx, 0, 0);
   }
 
   /* Re-providing all of the kernel without prefixing? */

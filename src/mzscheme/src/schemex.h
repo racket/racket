@@ -234,6 +234,9 @@ Scheme_Object *(*scheme_eval_compiled_stx_string)(Scheme_Object *expr, Scheme_En
 Scheme_Object *(*scheme_load_compiled_stx_string)(const char *str, long len);
 Scheme_Object *(*scheme_compiled_stx_symbol)(Scheme_Object *stx);
 Scheme_Object *(*scheme_eval_compiled_sized_string)(const char *str, int len, Scheme_Env *env);
+Scheme_Object *(*scheme_eval_compiled_sized_string_with_magic)(const char *str, int len, Scheme_Env *env, 
+								      Scheme_Object *magic_symbol, Scheme_Object *magic_val,
+								      int multi_ok);
 /*========================================================================*/
 /*                           memory management                            */
 /*========================================================================*/

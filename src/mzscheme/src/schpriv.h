@@ -239,6 +239,7 @@ extern Scheme_Object *scheme_module_stx;
 extern Scheme_Object *scheme_begin_stx;
 extern Scheme_Object *scheme_define_values_stx;
 extern Scheme_Object *scheme_define_syntaxes_stx;
+extern Scheme_Object *scheme_top_stx;
 
 extern Scheme_Object *scheme_recur_symbol, *scheme_display_symbol, *scheme_write_special_symbol;
 
@@ -797,7 +798,11 @@ void scheme_ensure_stack_start(Scheme_Thread *p, void *d);
 void scheme_jmpup_free(Scheme_Jumpup_Buf *);
 void *scheme_enlarge_runstack(long size, void *(*k)());
 int scheme_check_runstack(long size);
+
+#ifndef MZ_PRECISE_GC
 void scheme_init_setjumpup(void);
+void scheme_init_ephemerons(void);
+#endif
 
 #ifdef MZ_PRECISE_GC
 void scheme_flush_stack_copy_cache(void);
@@ -1346,7 +1351,8 @@ Scheme_Object *_scheme_apply_to_list (Scheme_Object *rator, Scheme_Object *rands
 Scheme_Object *_scheme_tail_apply_to_list (Scheme_Object *rator, Scheme_Object *rands);
 
 Scheme_Object *scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int cantfail, 
-				    int honu_mode, int recur, int pre_char, Scheme_Object *readtable);
+				    int honu_mode, int recur, int pre_char, Scheme_Object *readtable,
+				    Scheme_Object *magic_sym, Scheme_Object *magic_val);
 void scheme_internal_display(Scheme_Object *obj, Scheme_Object *port);
 void scheme_internal_write(Scheme_Object *obj, Scheme_Object *port);
 void scheme_internal_print(Scheme_Object *obj, Scheme_Object *port);
@@ -1599,7 +1605,8 @@ int scheme_is_sub_env(Scheme_Comp_Env *stx_env, Scheme_Comp_Env *env);
 #define REQUIRE_EXPD       8
 #define QUOTE_SYNTAX_EXPD  9
 #define DEFINE_FOR_SYNTAX_EXPD 10
-#define _COUNT_EXPD_       11
+#define REF_EXPD           11
+#define _COUNT_EXPD_       12
 
 #define scheme_register_syntax(i, fr, fv, fe, pa) \
      (scheme_syntax_resolvers[i] = fr, \
@@ -1718,6 +1725,7 @@ int *scheme_env_get_flags(Scheme_Comp_Env *frame, int start, int count);
 #define SCHEME_NULL_FOR_UNBOUND 512
 #define SCHEME_RESOLVE_MODIDS 1024
 #define SCHEME_NO_CERT_CHECKS 2048
+#define SCHEME_REFERENCING 4096
 
 Scheme_Hash_Table *scheme_map_constants_to_globals(void);
 
@@ -1997,6 +2005,7 @@ extern const char *scheme_compile_stx_string;
 extern const char *scheme_expand_stx_string;
 extern const char *scheme_application_stx_string;
 extern const char *scheme_set_stx_string;
+extern const char *scheme_var_ref_string;
 extern const char *scheme_begin_stx_string;
 
 void scheme_wrong_rator(Scheme_Object *rator, int argc, Scheme_Object **argv);

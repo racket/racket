@@ -32,7 +32,9 @@
 #endif
 #endif
 
-Scheme_Object *scheme_eval_compiled_sized_string(const char *str, int len, Scheme_Env *env)
+Scheme_Object *scheme_eval_compiled_sized_string_with_magic(const char *str, int len, Scheme_Env *env,
+							    Scheme_Object *magic_sym, Scheme_Object *magic_val,
+							    int multi_ok)
 {
   Scheme_Object *port, *expr;
   Scheme_Config *config;
@@ -44,9 +46,17 @@ Scheme_Object *scheme_eval_compiled_sized_string(const char *str, int len, Schem
   if (!env)
     env = scheme_get_env(NULL);
     
-  expr = scheme_internal_read(port, NULL, 1, 1, 0, 0, -1, NULL);
+  expr = scheme_internal_read(port, NULL, 1, 1, 0, 0, -1, NULL, magic_sym, magic_val);
 
-  return _scheme_eval_compiled(expr, env);
+  if (multi_ok)
+    return _scheme_eval_compiled_multi(expr, env);
+  else
+    return _scheme_eval_compiled(expr, env);
+}
+
+Scheme_Object *scheme_eval_compiled_sized_string(const char *str, int len, Scheme_Env *env)
+{
+  return scheme_eval_compiled_sized_string_with_magic(str, len, env, NULL, NULL, 0);
 }
 
 void scheme_add_embedded_builtins(Scheme_Env *env)

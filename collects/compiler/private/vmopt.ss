@@ -64,7 +64,7 @@
       (define a-val/l-val/immediate? (one-of vm:global-varref? vm:primitive-varref? vm:local-varref? 
 					     vm:symbol-varref? vm:inexact-varref? 
 					     vm:static-varref? vm:bucket?
-					     vm:per-load-statics-table? vm:per-invoke-statics-table?
+					     vm:per-load-statics-table?
 					     vm:struct-ref? vm:deref? vm:immediate?))
 
       (define vm-optimize!
@@ -77,8 +77,7 @@
 				(cond
 				 [(or (vm:local-varref? closure)
 				      (vm:static-varref-from-lift? closure)
-				      (vm:per-load-static-varref-from-lift? closure)
-				      (vm:per-invoke-static-varref-from-lift? closure))
+				      (vm:per-load-static-varref-from-lift? closure))
 				  (let ([known 
 					 (cond
 					  [(vm:local-varref? closure) (extract-varref-known-val 
@@ -86,9 +85,7 @@
 					  [(vm:static-varref-from-lift? closure)
 					   (vm:static-varref-from-lift-lambda closure)]
 					  [(vm:per-load-static-varref-from-lift? closure)
-					   (vm:per-load-static-varref-from-lift-lambda closure)]
-					  [else
-					   (vm:per-invoke-static-varref-from-lift-lambda closure)])])
+					   (vm:per-load-static-varref-from-lift-lambda closure)])])
 				    (and known
 					 (zodiac:case-lambda-form? known)
 					 (begin (set! L known) #t)
@@ -148,12 +145,6 @@
 			(set-vm:sequence-vals! ast
 					       (apply append! 
 						      (map process! (vm:sequence-vals ast))))
-			ast]
-
-		       [(vm:module-body? ast)
-			(set-vm:module-body-vals! ast
-						  (apply append! 
-							 (map process! (vm:module-body-vals ast))))
 			ast]
 		       
 		       ;;--------------------------------------------------------------------
@@ -422,7 +413,7 @@
 							       ;; Normal set
 							       (let*-values ([(vref) 
 									      (zodiac:binding->lexical-varref binding)]
-									     [(vm _) (vm-phase vref #f #f identity #f)]
+									     [(vm _) (vm-phase vref #f #f identity #f #f)]
 									     [(vm) (car (vm:sequence-vals vm))])
 								 (cons (make-vm:set! 
 									(zodiac:zodiac-stx val)
@@ -536,9 +527,21 @@
 		       [(vm:macro-apply? ast) (list ast)]
 
 		       ;;--------------------------------------------------------------------
-		       ;; MODULE CONSTRUCTION
+		       ;; GLOBALS
 		       ;;
-		       [(vm:module-create? ast) (list ast)]
+		       [(vm:global-prepare? ast)
+			(set-vm:global-prepare-vec! ast (car (process! (vm:global-prepare-vec ast))))
+			(list ast)]
+		       [(vm:global-lookup? ast)
+			(set-vm:global-lookup-vec! ast (car (process! (vm:global-lookup-vec ast))))
+			(list ast)]
+		       [(vm:global-assign? ast)
+			(set-vm:global-assign-vec! ast (car (process! (vm:global-assign-vec ast))))
+			(set-vm:global-assign-val! ast (car (process! (vm:global-assign-val ast))))
+			(list ast)]
+		       [(vm:safe-vector-ref? ast)
+			(set-vm:safe-vector-ref-vec! ast (car (process! (vm:safe-vector-ref-vec ast))))
+			(list ast)]
 		       
 		       ;;--------------------------------------------------------------------
 		       ;; WITH-CONTINUATION-MARK

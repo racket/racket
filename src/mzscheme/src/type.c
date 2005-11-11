@@ -226,6 +226,8 @@ scheme_init_type (Scheme_Env *env)
 
   set_name(scheme_certifications_type, "<certifications>");
 
+  set_name(scheme_global_ref_type, "<variable-reference>");
+
   set_name(scheme_intdef_context_type, "<internal-definition-context>");
   set_name(scheme_lexical_rib_type, "<internal:lexical-rib>");
 
@@ -529,8 +531,10 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_progress_evt_type, twoptr_obj);
 
   GC_REG_TRAV(scheme_already_comp_type, iptr_obj);
-
+  
   GC_REG_TRAV(scheme_thread_cell_values_type, small_object);
+
+  GC_REG_TRAV(scheme_global_ref_type, small_object);
 }
 
 END_XFORM_SKIP;

@@ -121,6 +121,7 @@ typedef struct ReadParams {
   int can_read_quasi;
   int honu_mode;
   Readtable *table;
+  Scheme_Object *magic_sym, *magic_val;
 } ReadParams;
 
 #define THREAD_FOR_LOCALS scheme_current_thread
@@ -203,7 +204,8 @@ static Scheme_Object *read_reader(Scheme_Object *port, Scheme_Object *stxsrc,
 				  Scheme_Object *indentation,
 				  ReadParams *params);
 static Scheme_Object *read_compiled(Scheme_Object *port,
-				    Scheme_Hash_Table **ht);
+				    Scheme_Hash_Table **ht,
+				    ReadParams *params);
 static void unexpected_closer(int ch,
 			      Scheme_Object *port, Scheme_Object *stxsrc,
 			      long line, long col, long pos,
@@ -1167,7 +1169,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	  if (!params->honu_mode) {
 	    if (params->can_read_compiled) {
 	      Scheme_Object *cpld;
-	      cpld = read_compiled(port, ht);
+	      cpld = read_compiled(port, ht, params);
 	      if (stxsrc)
 		cpld = scheme_make_stx_w_offset(cpld, line, col, pos, SPAN(port, pos), stxsrc, STX_SRCTAG);
 	      return cpld;
@@ -1768,7 +1770,8 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
 
 Scheme_Object *
 _scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int honu_mode, 
-		      int recur, int extra_char, Scheme_Object *init_readtable)
+		      int recur, int extra_char, Scheme_Object *init_readtable,
+		      Scheme_Object *magic_sym, Scheme_Object *magic_val)
 {
   Scheme_Object *v, *v2;
   Scheme_Config *config;
@@ -1806,6 +1809,8 @@ _scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int h
   params.honu_mode = honu_mode;
   if (honu_mode)
     params.table = NULL;
+  params.magic_sym = magic_sym;
+  params.magic_val = magic_val;
 
   ht = NULL;
   if (recur) {
@@ -1889,18 +1894,24 @@ static void *scheme_internal_read_k(void)
   Scheme_Object *port = (Scheme_Object *)p->ku.k.p1;
   Scheme_Object *stxsrc = (Scheme_Object *)p->ku.k.p2;
   Scheme_Object *init_readtable = (Scheme_Object *)p->ku.k.p3;
+  Scheme_Object *magic_sym = (Scheme_Object *)p->ku.k.p4;
+  Scheme_Object *magic_val = (Scheme_Object *)p->ku.k.p5;
 
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
   p->ku.k.p3 = NULL;
+  p->ku.k.p4 = NULL;
+  p->ku.k.p5 = NULL;
 
   return (void *)_scheme_internal_read(port, stxsrc, p->ku.k.i1, p->ku.k.i2, 
-				       p->ku.k.i3, p->ku.k.i4, init_readtable);
+				       p->ku.k.i3, p->ku.k.i4, init_readtable,
+				       magic_sym, magic_val);
 }
 
 Scheme_Object *
 scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int cantfail, int honu_mode, 
-		     int recur, int pre_char, Scheme_Object *init_readtable)
+		     int recur, int pre_char, Scheme_Object *init_readtable, 
+		     Scheme_Object *magic_sym, Scheme_Object *magic_val)
 {
   Scheme_Thread *p = scheme_current_thread;
 
@@ -1912,7 +1923,7 @@ scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int ca
     scheme_alloc_list_stack(p);
 
   if (cantfail) {
-    return _scheme_internal_read(port, stxsrc, crc, honu_mode, recur, -1, NULL);
+    return _scheme_internal_read(port, stxsrc, crc, honu_mode, recur, -1, NULL, magic_sym, magic_val);
   } else {
     p->ku.k.p1 = (void *)port;
     p->ku.k.p2 = (void *)stxsrc;
@@ -1921,6 +1932,8 @@ scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int ca
     p->ku.k.i3 = recur;
     p->ku.k.i4 = pre_char;
     p->ku.k.p3 = (void *)init_readtable;
+    p->ku.k.p4 = (void *)magic_sym;
+    p->ku.k.p5 = (void *)magic_val;
 
     return (Scheme_Object *)scheme_top_level_do(scheme_internal_read_k, 0);
   }
@@ -1928,12 +1941,12 @@ scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int ca
 
 Scheme_Object *scheme_read(Scheme_Object *port)
 {
-  return scheme_internal_read(port, NULL, -1, 0, 0, 0, -1, NULL);
+  return scheme_internal_read(port, NULL, -1, 0, 0, 0, -1, NULL, NULL, NULL);
 }
 
 Scheme_Object *scheme_read_syntax(Scheme_Object *port, Scheme_Object *stxsrc)
 {
-  return scheme_internal_read(port, stxsrc, -1, 0, 0, 0, -1, NULL);
+  return scheme_internal_read(port, stxsrc, -1, 0, 0, 0, -1, NULL, NULL, NULL);
 }
 
 Scheme_Object *scheme_resolve_placeholders(Scheme_Object *obj, int mkstx)
@@ -3622,6 +3635,7 @@ typedef struct CPort {
   Scheme_Hash_Table **ht;
   Scheme_Object **symtab;
   Scheme_Object *insp; /* inspector for module-variable access */
+  Scheme_Object *magic_sym, *magic_val;
 } CPort;
 #define CP_GETC(cp) ((int)(cp->start[cp->pos++]))
 #define CP_TELL(port) (port->pos + port->base)
@@ -3818,6 +3832,9 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       RANGE_CHECK_GETS(l);
       s = read_compact_chars(port, buffer, BLK_BUF_SIZE, l);
       v = scheme_intern_exact_symbol(s, l);
+
+      if (SAME_OBJ(v, port->magic_sym))
+	v = port->magic_val;
 
       l = read_compact_number(port);
       RANGE_CHECK(l, < port->symtab_size);
@@ -4150,6 +4167,9 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	s = read_compact_chars(port, buffer, BLK_BUF_SIZE, l);
 	v = scheme_intern_exact_symbol(s, l);
 
+	if (SAME_OBJ(v, port->magic_sym))
+	  v = port->magic_val;
+
 	l = read_compact_number(port);
 	RANGE_CHECK(l, < port->symtab_size);
 	port->symtab[l] = v;
@@ -4444,7 +4464,8 @@ static long read_compact_number_from_port(Scheme_Object *port)
 
 /* "#~" has been read */
 static Scheme_Object *read_compiled(Scheme_Object *port,
-				    Scheme_Hash_Table **ht)
+				    Scheme_Hash_Table **ht,
+				    ReadParams *params)
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Object *result, *insp;
@@ -4533,9 +4554,12 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
   rp->symtab_size = symtabsize;
   rp->ht = ht;
   rp->symtab = symtab;
-
+  
   insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
   rp->insp = insp;
+
+  rp->magic_sym = params->magic_sym;
+  rp->magic_val = params->magic_val;
 
   result = read_marshalled(scheme_compilation_top_type, rp);
 

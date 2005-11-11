@@ -407,10 +407,10 @@ void scheme_init_network(Scheme_Env *env)
 #define UNREGISTER_SOCKET(s) /**/
 
 #ifdef USE_UNIX_SOCKETS_TCP
-typedef struct sockaddr_in tcp_address;
+typedef struct sockaddr_in mz_unspec_address;
 #endif
 #ifdef USE_WINSOCK_TCP
-typedef struct SOCKADDR_IN tcp_address;
+typedef struct SOCKADDR_IN mz_unspec_address;
 # undef REGISTER_SOCKET
 # undef UNREGISTER_SOCKET
 # define REGISTER_SOCKET(s) winsock_remember(s)
@@ -1796,7 +1796,17 @@ tcp_listen(int argc, Scheme_Object *argv[])
     int err, count = 0, pos = 0, i;
     listener_t *l = NULL;
 
-    tcp_listen_addr = scheme_get_host_address(address, id, &err, -1, 1, 1);
+    tcp_listen_addr = scheme_get_host_address(address, id, &err, 
+#ifdef MZ_TCP_LISTEN_IPV4_ONLY
+					      MZ_PF_INET,
+#else
+# ifdef MZ_TCP_LISTEN_IPV4_DEFAULT
+					      !address ? MZ_PF_INET : -1,
+# else
+					      -1, 
+# endif
+#endif
+					      1, 1);
 
     for (addr = tcp_listen_addr; addr; addr = addr->ai_next) {
       count++;
@@ -1808,6 +1818,12 @@ tcp_listen(int argc, Scheme_Object *argv[])
       errid = 0;
       for (addr = tcp_listen_addr; addr; addr = addr->ai_next) {
 	s = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+#ifdef MZ_TCP_LISTEN_IPV6_ONLY_SOCKOPT
+	if (addr->ai_family == PF_INET6) {
+	  int on = 1;
+	  setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on));
+	}
+#endif
 
 	if (s != INVALID_SOCKET) {
 #ifdef USE_WINSOCK_TCP
@@ -2474,8 +2490,8 @@ static Scheme_Object *udp_bind_or_connect(const char *name, int argc, Scheme_Obj
     scheme_wrong_type(name, "udp socket", 0, argc, argv);
 
 #ifdef UDP_IS_SUPPORTED
-  if ((!do_bind || !SCHEME_FALSEP(argv[1])) && !SCHEME_CHAR_STRINGP(argv[1]))
-    scheme_wrong_type(name, (do_bind ? "string or #f" : "string"), 1, argc, argv);
+  if (!SCHEME_FALSEP(argv[1]) && !SCHEME_CHAR_STRINGP(argv[1]))
+    scheme_wrong_type(name, "string or #f", 1, argc, argv);
   if ((do_bind || !SCHEME_FALSEP(argv[2])) && !CHECK_PORT_ID(argv[2]))
     scheme_wrong_type(name, (do_bind ? PORT_ID_TYPE : PORT_ID_TYPE " or #f"), 2, argc, argv);
 		      
@@ -2517,8 +2533,12 @@ static Scheme_Object *udp_bind_or_connect(const char *name, int argc, Scheme_Obj
 
   id = origid;
 
-  udp_bind_addr = scheme_get_host_address(address, id, &err, -1, do_bind, 0);
-  if (udp_bind_addr) {
+  if (address || id)
+    udp_bind_addr = scheme_get_host_address(address, id, &err, -1, do_bind, 0);
+  else
+    udp_bind_addr = NULL;
+
+  if (udp_bind_addr || !origid) {
     if (do_bind) {
       if (!bind(udp->s, udp_bind_addr->ai_addr, udp_bind_addr->ai_addrlen)) {
 	udp->bound = 1;
@@ -2537,7 +2557,20 @@ static Scheme_Object *udp_bind_or_connect(const char *name, int argc, Scheme_Obj
 	  ok = 1;
       } else
 #endif
-	ok = !connect(udp->s, udp_bind_addr->ai_addr, udp_bind_addr->ai_addrlen);
+	{
+	  if (udp_bind_addr)
+	    ok = !connect(udp->s, udp_bind_addr->ai_addr, udp_bind_addr->ai_addrlen);
+#ifndef USE_NULL_TO_DISCONNECT_UDP
+	  else {
+	    GC_CAN_IGNORE mz_unspec_address ua;
+	    ua.sin_family = AF_UNSPEC;
+	    ua.sin_port = 0;
+	    memset(&(ua.sin_addr), 0, sizeof(ua.sin_addr));
+	    memset(&(ua.sin_zero), 0, sizeof(ua.sin_zero));
+	    ok = !connect(udp->s, (struct sockaddr *)&ua, sizeof(ua));
+	  }
+#endif
+	}
       
       if (!ok)
 	errid = SOCK_ERRNO();
@@ -2554,12 +2587,14 @@ static Scheme_Object *udp_bind_or_connect(const char *name, int argc, Scheme_Obj
 	  udp->connected = 1;
 	else
 	  udp->connected = 0;
-	freeaddrinfo(udp_bind_addr);
+	if (udp_bind_addr)
+	  freeaddrinfo(udp_bind_addr);
 	return scheme_void;
       }
     }
 
-    freeaddrinfo(udp_bind_addr);
+    if (udp_bind_addr)
+      freeaddrinfo(udp_bind_addr);
 
     scheme_raise_exn(MZEXN_FAIL_NETWORK,
 		     "%s: can't %s to port: %d on address: %s (%E)", 

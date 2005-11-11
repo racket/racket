@@ -25,27 +25,18 @@
       ;; VARREF ATTRIBUTES
       ;;  Used as the annotation for zodiac:varref objects
 
-      (define-struct va (flags invoke-module))
+      (define-struct va (flags i-n-v-oke-module))
 
       (define (varref:empty-attributes) (make-va 0 #f))
       (define (varref:add-attribute! ast attr)
 	(let ([va (get-annotation ast)])
-	  (let ([attr (if (varref:module-invoke? attr)
-			  (begin
-			    (set-va-invoke-module! va attr)
-			    varref:per-invoke-static)
-			  attr)])
-	    (set-va-flags! va (bitwise-ior attr (va-flags va))))))
+	  (set-va-flags! va (bitwise-ior attr (va-flags va)))))
       (define (varref:has-attribute? ast attr)
 	(let ([anno (get-annotation ast)])
 	  (and (va? anno) (positive? (bitwise-and (va-flags anno) attr)))))
-      (define (varref:invoke-module ast)
-	(let ([anno (get-annotation ast)])
-	  (and (va? anno) (va-invoke-module anno))))
 
       (define varref:static 1)
       (define varref:per-load-static 2)
-      (define varref:per-invoke-static 4)
       (define varref:primitive 8)
       (define varref:symbol 16)
       (define varref:inexact 32)
@@ -53,22 +44,6 @@
       (define varref:in-module 128)
       (define varref:module-stx-string 256)
 
-      (define mi-counter -1)
-      (define-struct varref:module-invoke (id syntax? context-path-index))
-      (define (make-module-invokes self-path-index)
-	(set! mi-counter (add1 mi-counter))
-	(values (make-varref:module-invoke mi-counter #f self-path-index)
-		(make-varref:module-invoke mi-counter #t self-path-index)))
-
-      (define (get-num-module-invokes)
-	(add1 mi-counter))
-
-      (define (is-module-invoke? mi num)
-	(and (varref:module-invoke? mi)
-	     (= num (varref:module-invoke-id mi))))
-
-      (define (varref:reset-module-id!) (set! mi-counter -1))
-      
       ;;----------------------------------------------------------------------------
       ;; AST NODES
       ;;  New AST nodes to augment the zodiac set:
@@ -84,7 +59,7 @@
       ;; analysis phase
       (define-struct binding (rec?       ; part of a letrec recursive binding set
 			      mutable?   ; set!ed? (but not for unit or letrec definitions)
-			      unit-i/e?  ; is imported/exported (including uses by invoke)
+			      unit-i/e?  ; is imported/exported (including uses by in-voke)
 			      anchor     ; zodiac:binding - anchor binding for this binding
 			      letrec-set?; set! to implement a letrec
 			      ivar?      ; is a class ivar?
@@ -182,7 +157,7 @@
 	 max-arity
 	 ;; max number of args in applications
 	 ;; within the closure (which is unrelated
-	 ;; to the number of arguments used to invoke
+	 ;; to the number of arguments used to call
 	 ;; this closure, if it happens to be a
 	 ;; lambda)
 	 
@@ -228,16 +203,6 @@
 			  prim-name
 			  ;; MzScheme name for the known primitive, or #f
 			  ))
-
-      (define-struct module-info (invoke
-				  ;; a module-invoke record
-				  syntax-invoke
-				  ;; another module-invoke record
-				  part
-				  ;; 'body, 'syntax-body, or 'constructor
-				  ))
-
-      (define varref:current-invoke-module (make-parameter #f))
 
       ;;----------------------------------------------------------------------------
       ;; ACCESSOR

@@ -122,17 +122,13 @@
 		   (vm->c:SYMBOLS-name)
 		   (const:get-symbol-counter))))
 
-      (define (vm->c:emit-syntax-string-declarations! port)
-	(let ([l (const:get-syntax-strings)])
-	  (unless (null? l)
-	    (fprintf port "static Scheme_Object *SS[~a];~n~n" (length l))
-	    (for-each
-	     (lambda (ss)
-	       (emit-string port
-			    "char"
-			    (syntax-string-str ss)
-			    (format "SYNTAX_STRING_~a" (syntax-string-id ss))))
-	     l))))
+      (define (vm->c:emit-bytecode-string-definition! name bytecode port)
+	(emit-string port
+		     "char"
+		     (let ([p (open-output-bytes)])
+		       (display bytecode p)
+		       (get-output-bytes p))
+		     name))
 
       (define (vm->c:emit-inexact-list! port comma comment?)
 	(vm->c:emit-list! port comma comment? (const:get-inexact-table) (const:get-inexact-counter)
@@ -198,23 +194,6 @@
 	       (let ([pos (zodiac:varref-var b)])
 		 (fprintf port "  SYMBOLS[~a] = scheme_make_exact_symbol(SYMBOL_STRS[~a], SYMBOL_LENS[~a]); /* uninterned */~n"
 			  pos pos pos)))))))
-
-      (define (vm->c:emit-syntax-string-definitions! port)
-	(let ([l (const:get-syntax-strings)])
-	  (unless (null? l)
-	    (for-each
-	     (lambda (ss)
-	       (let ([id (syntax-string-id ss)]
-		     [symbols (vm->c:SYMBOLS-name)])
-		 (fprintf port "  SS[~a] = scheme_load_compiled_stx_string(SYNTAX_STRING_~a, ~a);~n"
-			  id id (bytes-length (syntax-string-str ss)))
-		 ;; Reset uninterned symbols:
-		 (let loop ([uposes (syntax-string-uposes ss)][i (syntax-string-ustart ss)])
-		   (unless (null? uposes)
-		     (fprintf port "  ~a[~a] = scheme_compiled_stx_symbol(SCHEME_VEC_ELS(SS[~a])[~a]);~n"
-			      symbols (car uposes) id i)
-		     (loop (cdr uposes) (add1 i))))))
-	     l))))
 
       (define (vm->c:emit-inexact-definitions! port)
 	(unless (zero? (const:get-inexact-counter))
@@ -309,44 +288,7 @@
 	      (fprintf port "  int dummy;~n")
 	      (emit-static-variable-fields! port (compiler:get-per-load-static-list)))
 	  (fprintf port "} Scheme_Per_Load_Statics;~n")
-	  (newline port)
-
-	  (let ([ht (make-hash-table)])
-	    ;; Gather per-invoke statics with the same invoke id
-	    (let ([l (compiler:get-per-invoke-static-list)])
-	      (for-each (lambda (p)
-			  (let ([mi (cdr p)]
-				[var (car p)])
-			    (hash-table-put! ht (varref:module-invoke-id mi)
-					     (cons (cons var (varref:module-invoke-syntax? mi))
-						   (hash-table-get
-						    ht
-						    (varref:module-invoke-id mi)
-						    (lambda () null))))))
-			l)
-	      ;; Make sure that every module has a struct:
-	      (let loop ([i 0])
-		(unless (= i (get-num-module-invokes))
-		  (hash-table-get ht i (lambda ()
-					 (hash-table-put! ht i null)))
-		  (loop (add1 i))))
-	      (hash-table-for-each
-	       ht
-	       (lambda (id vars)
-		 (fprintf port "/* compiler-written per-invoke variables for module ~a */~n" id)
-		 (let ([vars (map car (filter (lambda (i) (not (cdr i))) vars))]
-		       [syntax-vars (map car (filter (lambda (i) (cdr i)) vars))])
-		   (fprintf port "typedef struct Scheme_Per_Invoke_Statics_~a {~n" id)
-		   (if (null? vars)
-		       (fprintf port "  int dummy;~n")
-		       (emit-static-variable-fields! port vars))
-		   (fprintf port "} Scheme_Per_Invoke_Statics_~a;~n" id)
-		   (fprintf port "typedef struct Scheme_Per_Invoke_Syntax_Statics_~a {~n" id)
-		   (if (null? syntax-vars)
-		       (fprintf port "  int dummy;~n")
-		       (emit-static-variable-fields! port syntax-vars))
-		   (fprintf port "} Scheme_Per_Invoke_Syntax_Statics_~a;~n" id)
-		   (newline port))))))))
+	  (newline port)))
       
       ;; when statics have binding information, this need only register
       ;; pointer declarations
@@ -365,9 +307,7 @@
 	    (unless (set-empty? (compiler:get-primitive-refs))
 	      (register "P"))
 	    (unless (not (compiler:any-statics?))
-	      (register "S"))
-	    (unless (null? (const:get-syntax-strings))
-	      (register "SS")))
+	      (register "S")))
 	  (newline port)))
 
       (define (vm->c:emit-case-arities-definitions! port)
@@ -397,7 +337,7 @@
 		    (fprintf port "~a}~n" vm->c:indent-spaces))))
 	    (caloop (cdr l) (add1 pos)))))
 
-      (define (vm->c:emit-top-levels! kind return? per-load? null-self-modidx? count vm-list locals-list 
+      (define (vm->c:emit-top-levels! kind return? per-load? null-self-modidx? count vm-list locals-list
 				      globals-list max-arity module mod-syntax? c-port)
 	;; count == -1 => go to the end of the list
 	(let tls-loop ([i 0]
@@ -406,24 +346,16 @@
 		       [ll locals-list]
 		       [bl globals-list])
 	  (fprintf c-port
-		   "static ~a ~a_~a(Scheme_Env * env~a~a)~n{~n"
+		   "static ~a ~a_~a(Scheme_Env * env~a)~n{~n"
 		   (if return? "Scheme_Object *" "void")
 		   kind i
-		   (if (or per-load? module) ", Scheme_Per_Load_Statics *PLS" "")
-		   (if module
-		       (format 
-			", long phase_shift, Scheme_Object *self_modidx, Scheme_Per_Invoke_~aStatics_~a *PMIS" 
-			(if mod-syntax? "Syntax_" "")
-			module)
-		       ""))
+		   (if (or per-load? module) ", Scheme_Per_Load_Statics *PLS" ""))
 	  (when null-self-modidx? (fprintf c-port "#define self_modidx NULL~n"))
 	  (when (> max-arity 0)
 	    (fprintf c-port
 		     "~aScheme_Object * arg[~a];~n"
 		     vm->c:indent-spaces
 		     max-arity)
-	    (fprintf c-port "~aScheme_Thread * pr = scheme_current_thread;~n"
-		     vm->c:indent-spaces)
 	    (fprintf c-port "~aScheme_Object ** tail_buf;~n"
 		     vm->c:indent-spaces))
 	  (let loop ([c (compiler:option:max-exprs-per-top-level-set)][n n][vml vml][ll ll][bl bl])
@@ -437,12 +369,7 @@
 		  (if (or (null? vml) (= n count))
 		      i
 		      (tls-loop (add1 i) n vml ll bl)))
-		(if (not (or (and (not module)
-				  (not (vm:module-body? (car vml))))
-			     (and module
-				  (vm:module-body? (car vml))
-				  (is-module-invoke? (vm:module-body-invoke (car vml))  module)
-				  (eq? (vm:module-body-syntax? (car vml)) mod-syntax?))))
+		(if module
 		    (loop c n (cdr vml) (cdr ll) (cdr bl))
 		    (begin
 		      (let ([start (zodiac:zodiac-start (car vml))])
@@ -463,32 +390,11 @@
 		       (string-append vm->c:indent-spaces vm->c:indent-spaces)
 		       c-port)
 		      
-		      (vm->c-expression (car vml) #f c-port vm->c:indent-by #t)
+		      (vm->c-expression (car vml) #f c-port vm->c:indent-by #t n)
 		      
 		      (fprintf c-port "~a}~n" vm->c:indent-spaces)
 		      
 		      (loop (sub1 c) (add1 n) (cdr vml) (cdr ll) (cdr bl))))))))
-
-      (define (vm->c:emit-module-glue! port id num num-syntax)
-	(define (out syntax? n)
-	  (fprintf port "static void module_invoke~a_~a(" 
-		   (if syntax? "_syntax" "") id)
-	  (fprintf port "Scheme_Env *env, long phase_shift, Scheme_Object *self_modidx, void *pls)~n")
-	  (fprintf port "{~n~aScheme_Per_Invoke_~aStatics_~a *PMIS;~n" 
-		   vm->c:indent-spaces (if syntax? "Syntax_" "") id)
-	  (let ([s (format "Scheme_Per_Invoke_~aStatics_~a"
-			   (if syntax? "Syntax_" "") id)])
-	    (fprintf port "~aPMIS = (~a *)scheme_malloc(sizeof(~a));~n" 
-		     vm->c:indent-spaces s s))
-	  (let loop ([j 0])
-	    (unless (j . > . n)
-	      (fprintf port "~amodule_~abody_~a_~a(env, (Scheme_Per_Load_Statics *)pls, phase_shift, self_modidx, PMIS);~n"
-		       vm->c:indent-spaces (if syntax? "syntax_" "") id j)
-	      (loop (add1 j))))
-	  (fprintf port "}~n~n"))
-
-	(out #f num)
-	(out #t num-syntax))
 
       (define vm->c:emit-vehicle-prototype
 	(lambda (port number)
@@ -536,8 +442,6 @@
 		  (loop (+ n 1)))))
 	    (when (> max-arity 0)
 					; tail-buffer-setup
-	      (fprintf port "~aScheme_Thread * pr = scheme_current_thread;~n"
-		       vm->c:indent-spaces)
 	      (fprintf port "~aScheme_Object ** tail_buf;~n"
 		       vm->c:indent-spaces)))
 
@@ -577,13 +481,6 @@
 				[(scheme-object) "Scheme_Object *"]
 				[(scheme-bucket) "Scheme_Bucket *"]
 				[(scheme-per-load-static) "struct Scheme_Per_Load_Statics *"]
-				[(scheme-per-invoke-static) 
-				 (let ([mi (rep:atomic/invoke-module-invoke rep)])
-				   (format "struct Scheme_Per_Invoke_~aStatics_~a *"
-					   (if (varref:module-invoke-syntax? mi)
-					       "Syntax_"
-					       "")
-					   (varref:module-invoke-id mi)))]
 				[(label) "int"]
 				[(prim) "Scheme_Closed_Primitive_Proc"]
 				[(prim-case) "Scheme_Closed_Case_Primitive_Proc"]
@@ -633,10 +530,6 @@
 	       (unless top-level?
 		 (fprintf port "~aScheme_Per_Load_Statics * PLS;~n"
 			  indent))]
-	      [(varref:module-invoke? var)
-	       (unless top-level?
-		 (fprintf port "~aScheme_Per_Invoke_Statics_~a * PMIS;~n"
-			  indent (varref:module-invoke-id var)))]
 	      [else
 	       (fprintf port "~aScheme_Bucket * G~a;~n"
 			indent
@@ -647,8 +540,7 @@
 	(lambda (globals indent port)
 	  (for-each 
 	   (lambda (var)
-	     (unless (or (const:per-load-statics-table? var)
-			 (varref:module-invoke? var))
+	     (unless (const:per-load-statics-table? var)
 	       (let* ([name (vm->c:convert-symbol (mod-glob-cname var))]
 		      [et? (mod-glob-exp-time? var)]
 		      [ed? (mod-glob-exp-def? var)]
@@ -673,7 +565,6 @@
 				   "~a~a"
 				   (cond
 				    [(varref:has-attribute? modidx varref:per-load-static) "PLS->"]
-				    [(varref:has-attribute? modidx varref:per-invoke-static) "PMIS->"]
 				    [else "S."])
 				   (vm->c:convert-symbol (zodiac:varref-var modidx))))
 			      "")
@@ -874,17 +765,6 @@
 			    (if (compiler:option:unpack-environments)
 				undefines
 				(cons "PLS" undefines))))]
-		   [(varref:module-invoke? var)
-		    (begin
-		      (fprintf port 
-			       (if (compiler:option:unpack-environments)
-				   "~aPMIS = env->pmis;~n"
-				   "#~adefine PMIS env->pmis~n")
-			       indent)
-		      (loop (cdr vars)
-			    (if (compiler:option:unpack-environments)
-				undefines
-				(cons "PMIS" undefines))))]
 		   [else
 		    (let* ([vname (mod-glob-cname var)]
 			   [name (vm->c:convert-symbol vname)]
@@ -1038,7 +918,7 @@
       
 
       (define vm->c:block-statement?
-	(one-of vm:if? vm:sequence? vm:module-body?))
+	(one-of vm:if? vm:sequence?))
 
       (define vm->c:extract-inferred-name
 	(let ([nullsym (string->symbol "NULL")])
@@ -1076,7 +956,7 @@
 	(one-of primitive? primitive-closure?))
 
       (define vm->c-expression
-	(lambda (ast code port indent-level no-seq-braces?)
+	(lambda (ast code port indent-level no-seq-braces? top_level_n)
 	  (let process ([ast ast] [indent-level indent-level] [own-line? #t] [braces? (not no-seq-braces?)])
 	    (letrec ([emit-indentation (lambda () (display
 						   (make-string indent-level #\ )
@@ -1099,9 +979,8 @@
 	      (cond
 	       
 	       ;; (%sequence V ...) -> { M; ... }
-	       [(or (vm:sequence? ast)
-		    (vm:module-body? ast))
-		(let* ([seq ((if (vm:sequence? ast) vm:sequence-vals vm:module-body-vals) ast)])
+	       [(vm:sequence? ast)
+		(let* ([seq (vm:sequence-vals ast)])
 		  (when braces? (emit-indentation) (emit "{~n"))
 		  (for-each (lambda (v)
 			      (process v (indent) #t #t)
@@ -1153,6 +1032,8 @@
 		  (emit-indentation)
 		  (emit "if (~a.val == SCHEME_MULTIPLE_VALUES) {~n" var)
 		  (emit-indentation)
+		  (emit "  Scheme_Thread *pr = scheme_current_thread;\n")
+		  (emit-indentation)
 		  (emit "  ~a.array = pr->ku.multiple.array;~n" var)
 		  (emit-indentation)
 		  (emit "  ~a.count = pr->ku.multiple.count;~n" var)
@@ -1163,8 +1044,8 @@
 	       [(vm:begin0-extract? ast)
 		(let ([var (vm->c:convert-symbol
 			    (vm:local-varref-var (vm:begin0-extract-var ast)))])
-		  (emit "(pr->ku.multiple.array = ~a.array," var)
-		  (emit " pr->ku.multiple.count = ~a.count, " var)
+		  (emit "(scheme_current_thread->ku.multiple.array = ~a.array," var)
+		  (emit " scheme_current_thread->ku.multiple.count = ~a.count, " var)
 		  (emit " ~a.val)" var))]
 
 	       ;; single value: (set! L R) -> L = R;
@@ -1239,82 +1120,36 @@
 			      (emit ";~n")
 			      (aloop (cdr vars) (+ n 1))))
 			  ))))]
-	       
-	       
-	       ;; (define-syntax! x R) or (define-for-syntax! x R)
-	       [(vm:syntax!? ast)
-		(let* ([process-set!
-			(lambda (target val process-val? return-arity-ok?)
-			  (let ([sym
-				 (vm->c:make-symbol-const-string 
-				  (compiler:get-symbol-const! #f (zodiac:varref-var target)))]
-				[in-module? (varref:has-attribute? target varref:in-module)])
-			    (when process-val? 
-			      (emit "{ Scheme_Object *mcv = ")
-			      (process val indent-level #f #t)
-			      (emit "; "))
-			    (unless return-arity-ok?
-			      (emit " if (mcv != SCHEME_MULTIPLE_VALUES || scheme_multiple_count) {")
-			      (emit " NO_MULTIPLE_VALUES(mcv); "))
-			    (let ([for-stx? (zodiac:top-level-varref-expdef? target)])
-			      (emit "scheme_~a(~ascheme_global_~abucket(~a, ~a), "
-				    (if for-stx? "set_global_bucket" "install_macro")
-				    (if for-stx? "NULL, " "")
-				    (if for-stx? "" "keyword_")
-				    sym
-				    (if in-module? "env" "SCHEME_CURRENT_ENV(pr)"))
-			      (if process-val? 
-				  (emit "mcv")
-				  (emit val))
-			      (when for-stx?
-				(emit ", 1"))
-			      (emit ")"))
-			    (when (or (not return-arity-ok?) process-val?)
-			      (emit ";"))
-			    (unless return-arity-ok?
-			      (emit " }"))
-			    (when process-val?
-			      (emit " }"))))]
-		       [vars (vm:syntax!-vars ast)]
-		       [val (vm:syntax!-val ast)]
-		       [in-mod? (vm:syntax!-in-mod? ast)]
-		       [num-to-set (length vars)]
-		       [return-arity (if (single-arity? val) 
-					 1
-					 #f)])
-		  (emit-indentation)
-		  (let ([return-arity-ok?
-			 (and return-arity
-			      (number? return-arity)
-			      (= return-arity num-to-set))])
-		    (if (= num-to-set 1)		      
-			
-			(process-set! (car vars) val #t return-arity-ok?)
-			
-			(begin
-			  (emit "{ Scheme_Object * res = ")
-			  (process val indent-level #f #t)
-			  (emit "; ")
-			  (unless return-arity-ok?
-			    (unless in-mod?
-			      (emit "if (res != SCHEME_MULTIPLE_VALUES || scheme_multiple_count) "))
-			    (emit "CHECK_MULTIPLE_VALUES(res, ~a);" num-to-set))
-			  (emit "}")
-			  (if (not (null? vars))
-			      (emit "~n"))
-			  (unless in-mod?
-			    (emit-indentation)
-			    (emit "if (scheme_multiple_count) {~n"))
-			  (let aloop ([vars vars] [n 0])
-			    (unless (null? vars)
-			      (emit-indentation)
-			      (process-set! (car vars) (format "scheme_multiple_array[~a]" n) #f #t)
-			      (emit ";~n")
-			      (aloop (cdr vars) (+ n 1))))
-			  (unless in-mod?
-			    (emit-indentation)
-			    (emit "}~n"))
-			  ))))]
+
+	       [(or (vm:global-prepare? ast)
+		    (vm:global-lookup? ast)
+		    (vm:global-assign? ast)
+		    (vm:safe-vector-ref? ast))
+		(let-values ([(get-vec get-pos proc)
+			      (cond
+			       [(vm:global-prepare? ast)
+				(values vm:global-prepare-vec
+					vm:global-prepare-pos
+					"MZC_GLOBAL_PREPARE")]
+			       [(vm:global-lookup? ast)
+				(values vm:global-lookup-vec
+					vm:global-lookup-pos
+					"MZC_GLOBAL_LOOKUP")]
+			       [(vm:global-assign? ast)
+				(values vm:global-assign-vec
+					vm:global-assign-pos
+					"MZC_GLOBAL_ASSIGN")]
+			       [(vm:safe-vector-ref? ast)
+				(values vm:safe-vector-ref-vec
+					vm:safe-vector-ref-pos
+					"MZC_KNOWN_SAFE_VECTOR_REF")])])
+		  (emit "~a(" proc)
+		  (process (get-vec ast) indent-level #f #t)
+		  (emit ", ~a" (get-pos ast))
+		  (when (vm:global-assign? ast)
+		    (emit ", ")
+		    (process (vm:global-assign-val ast) indent-level #f #t))
+		  (emit ")"))]
 
 	       ;; (%args A ...) -> arg[0] = A; ...
 	       [(vm:args? ast)
@@ -1322,7 +1157,7 @@
 		(when (and (eq? arg-type:tail-arg (vm:args-type ast))
 			   (not (null? (vm:args-vals ast))))
 		  (emit-indentation)
-		  (emit "tail_buf = scheme_tail_apply_buffer_wp(~a, pr);~n"
+		  (emit "tail_buf = scheme_tail_apply_buffer_wp(~a, scheme_current_thread);~n"
 			(length (vm:args-vals ast))))
 		(if (null? (vm:args-vals ast))
 		    (emit-indentation)
@@ -1421,13 +1256,6 @@
 		(emit-expr (format "CHECK_GLOBAL_BOUND(G~a)"
 				   (vm->c:convert-symbol
 				    (mod-glob-cname (vm:check-global-var ast)))))]
-	       
-	       [(vm:module-create? ast)
-		(emit-expr "scheme_declare_module(")
-		(process (vm:module-create-shape ast) indent-level #f #f)
-		(emit ", module_invoke_~a, module_invoke_syntax_~a, PLS, SCHEME_CURRENT_ENV(pr)"
-		      (vm:module-create-id ast) (vm:module-create-id ast))
-		(emit ")")]
 
 	       ;; with-continuation-mark
 	       [(vm:wcm-mark!? ast)
@@ -1474,7 +1302,7 @@
 		(emit-expr "return _scheme_tail_apply_no_copy_wp(")
 		(process (vm:tail-apply-closure ast) indent-level #f #t)
 		(let ([c (vm:tail-apply-argc ast)])
-		  (emit ", ~a, ~a, pr)" c (if (zero? c) "NULL" 'tail_buf)))]
+		  (emit ", ~a, ~a, scheme_current_thread)" c (if (zero? c) "NULL" 'tail_buf)))]
 	       
 	       ;; (tail-call <label> <closure>) -> void_param = SCHEME_CLSD_PRIM_DATA(<closure>);
 	       ;;                                  goto LOC<label>;
@@ -1500,13 +1328,21 @@
 	       [(vm:return? ast)
 		(emit-indentation)
 		(emit "return ")
-		(process (vm:return-val ast) indent-level #f #t)]
+		(when (vm:return-magic? ast)
+		  (emit "MZC_APPLY_MAGIC("))
+		(process (vm:return-val ast) indent-level #f #t)
+		(when (vm:return-magic? ast)
+		  (emit ", ~a)" top_level_n))]
 
 	       ;; fortunately, void contexts can accept any number of values,
 	       ;; so there's no need to check for return arity
 	       [(vm:void? ast)
 		(emit-indentation)
-		(process (vm:void-val ast) indent-level #f #t)]
+		(when (vm:void-magic? ast)
+		  (emit "MZC_APPLY_MAGIC("))
+		(process (vm:void-val ast) indent-level #f #t)
+		(when (vm:void-magic? ast)
+		  (emit ", ~a)" top_level_n))]
 	       
 	       ;; (global-varref x) --> GLOBAL_VARREF(x)
 	       [(vm:global-varref? ast)
@@ -1522,9 +1358,6 @@
 
 	       [(vm:per-load-statics-table? ast)
 		(emit-expr "PLS")]
-
-	       [(vm:per-invoke-statics-table? ast)
-		(emit-expr "PMIS")]
 
 	       ;; use apply-known? flag
 	       ;; 0 args => pass NULL for arg vector
@@ -1569,9 +1402,13 @@
 		(emit-expr "")
 		(when (vm:macro-apply-tail? ast)
 		  (emit "return "))
+		(when (vm:macro-apply-magic? ast)
+		  (emit "MZC_APPLY_MAGIC("))
 		(when (vm:macro-apply-bool? ast) (emit "(("))
 		(emit-macro-application ast)
-		(when (vm:macro-apply-bool? ast) (emit ") ? scheme_true : scheme_false)"))]
+		(when (vm:macro-apply-bool? ast) (emit ") ? scheme_true : scheme_false)"))
+		(when (vm:macro-apply-magic? ast)
+		  (emit ", ~a)" top_level_n))]
 	       
 	       [(vm:call? ast)
 		(emit-expr "_scheme_force_value(compiled(SCHEME_CLSD_PRIM_DATA(")
@@ -1602,9 +1439,6 @@
 
 	       [(vm:per-load-static-varref? ast)
 		(emit-expr "PLS->~a" (vm->c:convert-symbol (vm:static-varref-var ast)))]
-	       
-	       [(vm:per-invoke-static-varref? ast)
-		(emit-expr "PMIS->~a" (vm->c:convert-symbol (vm:static-varref-var ast)))]
 	       
 	       [(vm:static-varref? ast)
 		(emit-expr "S.~a" (vm->c:convert-symbol (vm:static-varref-var ast)))]
@@ -1707,16 +1541,6 @@
 				 (symbol->string (c-lambda-scheme-name cl))
 				 (c-lambda-arity cl)
 				 (c-lambda-arity cl)))]
-		   
-		   ;; HACK! - abused constants to communicate
-		   ;;  a direct call to scheme_read_compiled_stx_string():
-		   [(syntax-string? (zodiac:zread-object ast))
-		    (let ([id (syntax-string-id (zodiac:zread-object ast))]
-			  [for-mod? (syntax-string-mi (zodiac:zread-object ast))])
-		      (emit-expr "scheme_eval_compiled_stx_string(SS[~a], SCHEME_CURRENT_ENV(pr), ~a, ~a)"
-				 id
-				 (if for-mod? "phase_shift" "0")
-				 (if for-mod? "self_modidx" "NULL")))]
 		   
 		   ;; HACK! - abused constants to communicate
 		   ;;  a direct call to scheme_eval_compiled_string():

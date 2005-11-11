@@ -140,7 +140,7 @@
       ;; 1) a vm-scheme sequence
       ;; 2) new local variables introduced
 
-      (define vm-phase
+      (define (vm-phase ast multi? leaf tail-pos tail? magic?)
 	(letrec 
 	    ([new-locals empty-set]
 	     [add-new-local! (lambda (l)
@@ -223,9 +223,6 @@
 					[(const:per-load-statics-table? 
 					  (rep:struct-field-orig-name field))
 					 (make-vm:per-load-statics-table #f)]
-					[(varref:module-invoke?
-					  (rep:struct-field-orig-name field))
-					 (make-vm:per-invoke-statics-table #f)]
 					[else
 					 (make-vm:bucket #f var)])])
 			     (make-vm:set! #f 
@@ -263,7 +260,7 @@
 			  (lambda (b) (convert b 
 					       #t
 					       list 
-					       (lambda (x) (make-vm:void #f x))
+					       (lambda (x) (make-vm:void #f x #f))
 					       #f
 					       #f))
 			  ;; tail
@@ -605,7 +602,7 @@
 			 [get-args (if (null? make-args)
 				       ()
 				       (list (make-vm:generic-args (zodiac:zodiac-stx ast)
-								   #f #f #f make-args)))])
+								   #f #f #f #f make-args)))])
 		    (set-closure-code-label! code label)
 		    (when new-bound
 		      (add-new-local! new-bound))
@@ -627,7 +624,7 @@
 		 ;;-----------------------------------------------------------------
 		 ;; SET! FORM
 		 ;;
-		 ;; we need to distinguish between setting a global & reffing it
+		 ;; we need to distinguish between setting a global & reffing it;
 		 ;; if we are in tail position, we need to do the void thing
 		 ;;
 		 [(zodiac:set!-form? ast)
@@ -860,11 +857,13 @@
 							  closure
 							  arg-locals
 							  tail?
+							  magic?
 							  bool?)))))
 		     (lambda ()
 		       (cons (make-vm:generic-args (zodiac:zodiac-stx ast)
 						   closure
 						   (and tail? (not simple-tail-prim?))
+						   magic?
 						   prim
 						   converted-args)
 			     (if tail?
@@ -921,15 +920,11 @@
 			   [(top-level-varref/bind-from-lift? ast)
 			    (lambda (a d ast)
 			      ((if (top-level-varref/bind-from-lift-pls? ast)
-				   (if (varref:module-invoke? (top-level-varref/bind-from-lift-pls? ast))
-				       make-vm:per-invoke-static-varref-from-lift
-				       make-vm:per-load-static-varref-from-lift)
+				   make-vm:per-load-static-varref-from-lift
 				   make-vm:static-varref-from-lift)
 			       a d (top-level-varref/bind-from-lift-lambda ast)))]
 			   [(varref:has-attribute? ast varref:per-load-static)
 			    (ignore-ast make-vm:per-load-static-varref)]
-			   [(varref:has-attribute? ast varref:per-invoke-static)
-			    (ignore-ast make-vm:per-invoke-static-varref)]
 			   [(varref:has-attribute? ast varref:primitive)
 			    (convert-global make-vm:primitive-varref)]
 			   [(varref:has-attribute? ast varref:symbol)
@@ -960,45 +955,55 @@
 		    (if tail-pos
 			(leaf (tail-pos vm))
 			(leaf vm)))]
-		 
-		 ;;-----------------------------------------------------------------
-		 ;; MODULE
+
+		 ;;-----------------------------------------------------------
+		 ;; GLOBALS
 		 ;;
-		 ;;  If we get here, this is the module construction/registration
-		 ;;
-		 [(zodiac:module-form? ast)
-		  (let ([vm (make-vm:module-create
-			     (zodiac:zodiac-stx ast)
-			     ;; constant reprsenting the module form:
-			     (car (convert (zodiac:module-form-body ast) #f list #f #f #t))
-			     (varref:module-invoke-id (module-info-invoke (get-annotation ast))))])
+		 [(zodiac:global-prepare? ast)
+		  (let ([expr (make-vm:global-prepare 
+			       (zodiac:zodiac-stx ast)
+			       (convert (zodiac:global-prepare-vec ast) #f identity #f #f #t)
+			       (zodiac:global-prepare-pos ast))])
 		    (if tail-pos
-			(leaf (tail-pos vm))
-			(leaf vm)))]
+			(leaf (tail-pos expr))
+			(leaf expr)))]
+		 [(zodiac:global-lookup? ast)
+		  (let ([expr (make-vm:global-lookup 
+			       (zodiac:zodiac-stx ast)
+			       (convert (zodiac:global-lookup-vec ast) #f identity #f #f #t)
+			       (zodiac:global-lookup-pos ast))])
+		    (if tail-pos
+			(leaf (tail-pos expr))
+			(leaf expr)))]
+		 [(zodiac:global-assign? ast)
+		  (let ([expr (make-vm:global-assign 
+			       (zodiac:zodiac-stx ast)
+			       (convert (zodiac:global-assign-vec ast) #f identity #f #f #t)
+			       (convert (zodiac:global-assign-expr ast) #f identity #f #f #t)
+			       (zodiac:global-assign-pos ast))])
+		    (if tail-pos
+			(leaf (tail-pos expr))
+			(leaf expr)))]
+		 [(zodiac:safe-vector-ref? ast)
+		  (let ([expr (make-vm:safe-vector-ref 
+			       (zodiac:zodiac-stx ast)
+			       (convert (zodiac:safe-vector-ref-vec ast) #f identity #f #f #t)
+			       (zodiac:safe-vector-ref-pos ast))])
+		    (if tail-pos
+			(leaf (tail-pos expr))
+			(leaf expr)))]
 
 		 [else 
 		  (compiler:internal-error 
 		   ast 
 		   (format "vm-phase: form not supported ~a" ast))]))])
 	  
-	  (lambda (ast multi? leaf tail-pos tail?)
+	  (begin
 	    (set! new-locals empty-set)
 	    ;; l->r evaluation necessary for convert to get called before new-locals
 	    ;; is evaluated
-	    (values ((if (zodiac:module-form? ast)
-			 (let ([info (get-annotation ast)])
-			   (if (eq? 'constructor (module-info-part info))
-			       make-vm:sequence
-			       (lambda (stx vals)
-				 (make-vm:module-body
-				  stx vals
-				  (module-info-invoke info)
-				  (eq? 'syntax-body (module-info-part info))))))
-			 make-vm:sequence)
+	    (values (make-vm:sequence
 		     (zodiac:zodiac-stx ast)
-		     (convert (if (and (zodiac:module-form? ast)
-				       (not (eq? 'constructor (module-info-part (get-annotation ast)))))
-				  (zodiac:module-form-body ast)
-				  ast)
+		     (convert ast
 			      multi? (or leaf list) tail-pos tail? (not tail?)))
 		    new-locals)))))))
