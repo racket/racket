@@ -116,11 +116,8 @@
      html-keywords
      doc
      (lambda ()
-       (with-handlers ([exn:fail:read? (λ (x) null)]
-                       [exn:fail:filesystem? (λ (x) null)])
-         (transform-keywords
-          (with-input-from-file (build-path doc "keywords")
-            read))))))
+       (transform-keywords
+        (build-path doc "keywords")))))
       
   (define html-indices (make-hash-table 'equal))
   (define (load-html-index doc)
@@ -128,53 +125,65 @@
      html-indices
      doc
      (lambda ()
-       (with-handlers ([exn:fail:read? (lambda (x) null)]
-                       [exn:fail:filesystem? (lambda (x) null)])
-         (transform-hdindex
-          (with-input-from-file (build-path doc "hdindex")
-            read))))))
+       (transform-hdindex
+        (build-path doc "hdindex")))))
   
   ;; transform-hdindex : any -> (listof (list string path string string)
   ;; makes sure the input from the file is well-formed and changes
   ;; the bytes to paths.
-  (define (transform-hdindex l)
-    (let/ec k
-      (let ([fail (lambda () (k '()))])
-        (unless (list? l) (fail))
-        (map (lambda (l)
-               (match l
-                 [`(,(? string? index)
-                     ,(? string? file)
-                     ,(? string? label)
-                     ,(? string? title))
-                   (list index
-                         file
-                         label 
-                         title)]
-                 [else
-                  (fail)]))
-             l))))
+  (define (transform-hdindex filename)
+    (verify-file filename
+                 (λ (l) 
+                   (match l
+                     [`(,(? string? index)
+                         ,(? string? file)
+                         ,(? string? label)
+                         ,(? string? title))
+                       #t]
+                     [else 
+                      #f]))))
   
   ;; transform-keywords : any -> (listof (list string string path string string)
   ;; as with transform-hdindex
-  (define (transform-keywords l)
+  (define (transform-keywords filename)
+    (verify-file filename
+                 (λ (l)
+                   (match l
+                     [`(,(? string? keyword)
+                         ,(? string? result)
+                         ,(? path-string? file)
+                         ,(? string? label)
+                         ,(? string? title))
+                       #t]
+                     [else
+                      #f]))))
+
+  (define (verify-file filename ele-ok?)
     (let/ec k
-      (let ([fail (lambda () (k '()))])
-        (unless (list? l) (fail))
-        (map (lambda (l)
-               (match l
-                 [`(,(? string? keyword)
-                     ,(? string? result)
-                     ,(? path-string? file)
-                     ,(? string? label)
-                     ,(? string? title))
-                   (list keyword
-                         result
-                         file
-                         label 
-                         title)]
-                 [else (fail)]))
-             l))))
+      (let ([fail (lambda (why)
+                    (fprintf (current-error-port) 
+                             "loading docs from ~a failed: ~a\n"
+                             (path->string filename)
+                             why)
+                    (k '()))])
+        (with-handlers ([exn:fail:read? (lambda (x) 
+                                          (fail 
+                                           (format "read error when opening the file ~a"
+                                                   (exn-message x))))]
+                        [exn:fail:filesystem? 
+                         (lambda (x) 
+                           (fail (format
+                                  "filesystem error when opening the file ~a" 
+                                  (exn-message x))))])
+          (let ([l (if (file-exists? filename)
+                       (call-with-input-file filename read)
+                       '())])
+            (unless (list? l) (fail "not a list"))
+            (for-each (lambda (l)
+                        (unless (ele-ok? l)
+                          (fail (format "line ~s is malformed" l))))
+                      l)
+            l)))))
     
   (define (parse-txt-file doc ht handle-one)
     (with-hash-table
@@ -351,7 +360,6 @@
              (unless (< hit-count MAX-HIT-COUNT)
                (maxxed-out)))
 
-           
            ; Keyword search
            (let ([keys (case doc-kind
                          [(html) (load-html-keywords doc)]
@@ -378,7 +386,7 @@
                                                 (build-path doc file))))
                                       (list-ref v 3) ; label
                                       ckey)))])
-
+             
              (unless regexp?
                (for-each
                 (lambda (v)
