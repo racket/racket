@@ -687,21 +687,23 @@
           ;; details-callback : -> void
           ;; flips the details-shown? flag and resets the GUI
           (define (details-callback)
-            (let ([do-construction? (and construct-details #t)])
-              (when do-construction?
-                (send details-button enable #f)
-                (construct-details)
-                (set! construct-details #f))
-            
-              (set! details-shown? (not details-shown?))
-              (when re-center
-                (send re-center begin-container-sequence))
-              (update-show/hide-details)
-              (when re-center
-                (send re-center center 'both)
-                (send re-center end-container-sequence))
-              (when do-construction?
-                (send details-button enable #t))))
+            (do-construct-details)
+            (set! details-shown? (not details-shown?))
+            (when re-center
+              (send re-center begin-container-sequence))
+            (update-show/hide-details)
+            (when re-center
+              (send re-center center 'both)
+              (send re-center end-container-sequence)))
+          
+          ;; do-construct-details : -> void
+          ;; construct the details panels, if they have not been constructed
+          (define (do-construct-details)
+            (when construct-details
+              (send details-button enable #f)
+              (construct-details)
+              (set! construct-details #f)
+              (send details-button enable #t)))
           
           ;; show/hide-details : -> void
           ;; udpates the GUI based on the details-shown? flag
@@ -814,6 +816,8 @@
 	  (send languages-hier-list min-client-height (text-height (send languages-hier-list get-editor)))
           (when get/set-selected-language-settings
             (get/set-selected-language-settings settings-to-show))
+          (when details-shown?
+            (do-construct-details))
           (send languages-hier-list focus)
           (values
            (λ () selected-language)
