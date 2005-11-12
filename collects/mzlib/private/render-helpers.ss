@@ -4,11 +4,11 @@
   
   (require "match-helper.ss"
            "match-error.ss"
-  
 	   "emit-assm.scm"
 	   "getter-setter.scm"
 	   "parse-quasi.scm"
-           (lib "list.ss"))
+           "test-structure.scm"
+           (lib "etc.ss"))
 
   (require-for-template mzscheme
 			(lib "list.ss")
@@ -18,12 +18,18 @@
            (all-from "getter-setter.scm")
            (all-from "parse-quasi.scm"))
   
+  (define-syntax define/opt
+    (syntax-rules ()
+      [(_ (nm args ...) body ...)
+       (define nm (opt-lambda (args ...) body ...))]))
+  
+      
+  
   (define (append-if-necc sym stx)
     (syntax-case stx ()
-      (() (syntax (list)))
-      ((a ...)
-       (quasisyntax/loc stx (#,sym a ...)))
-      (p (syntax p))))
+      [() #'(list)]
+      [(a ...) #`(#,sym a ...)]
+      [p #'p]))
 
   (define (get-bind-val b-var bv-list)
     (let ((res (assq
@@ -40,7 +46,6 @@
             (if res (cdr res) (error 'var-not-found))))))
   
   
-      ;; BEGIN PATTERN-PREDICATE.SCM
     ;;!(function proper-hash-table-pattern?
     ;;          (form (proper-hash-table-pattern? pat-list) -> bool)
     ;;          (contract list-of-syntax -> bool))
@@ -164,7 +169,5 @@
                                               (add1 index)))))))))
                 (let ((res (check-vec (vector-ref vec 0) 1)))
                   (if flag res #f)))))))
-    ;; END PATTERN-PREDICATES.SCM
-
   
   )
