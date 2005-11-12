@@ -473,7 +473,8 @@
            (when (a-ref data key #f) (perror "multiple values for ~e" key))
            (case key
              [(username/s)
-              (when USERNAME-CASE-SENSITIVE? (set! val (string-foldcase val)))
+              (unless USERNAME-CASE-SENSITIVE?
+                (set! val (string-foldcase val)))
               (let ([usernames
                      ;; Username lists must always be sorted, and never empty
                      ;; (regexp-split will not return an empty list)
@@ -507,7 +508,7 @@
         [else
          (when (eof-object? msg)
            (LOG "hangup")
-           (error 'handin "hangup" (a-ref data 'username/s)))
+           (error 'handin "hangup (~a)" (a-ref data 'username/s)))
          (let ([usernames  (a-ref data 'usernames #f)]
                [user-datas (a-ref data 'user-datas #f)])
            (when (or (memq #f user-datas)

@@ -214,10 +214,10 @@ sub-directories:
          which matches the default user-regexp
 
       'username-case-sensitive? : a boolean; when #f, usernames
-         are case-folded for all purposes; defaults to #f
-         (note that you should not set this to #t on Windows or when
-         using a case-insensitive filesystem, since usernames are used
-         as directory names)
+         are case-folded for all purposes; defaults to #f (note that
+         you should not set this to #t on Windows or when using other
+         case-insensitive filesystems, since usernames are used as
+         directory names)
 
       'allow-new-users : a boolean indicating whether to allow
          new-user requests from a client tool; the default is #f

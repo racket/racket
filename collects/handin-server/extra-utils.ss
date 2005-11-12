@@ -377,6 +377,10 @@
                   [else (error* "no language configured for submissions")])
                  output-file)
                ;; ========================================
+               ;; indirection for user-post (may be set after `check:')
+               (define (post users submission)
+                 (when user-post (user-post users submission)))
+               ;; ========================================
                ;; configuration sanity checks
                (let ([bad (cond [(and eval? (not language))
                                  "`eval?' without `language'"]
@@ -390,7 +394,7 @@
                  (when bad
                    (error* "bad checker specifications: cannot use ~a" bad)))
                ;; ========================================
-               (list pre check user-post))))])))
+               (list pre check post))))])))
 
 (define-syntax (with-bindings stx)
   (syntax-case stx ()
