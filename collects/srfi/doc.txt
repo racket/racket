@@ -11,8 +11,8 @@ If you need more information on SRFI, please visit:
 Loading
 -------
 
-To load a SRFI with name conflicts (currently SRFI's 1, 19, 43 and 45)
-in a module, please see the note below.
+To load a SRFI with name conflicts (currently SRFIs 1, 19, 43, 45,
+48 and 69) in a module, please see the note below.
 
 To load a SRFI, use the following form:
 
@@ -28,19 +28,19 @@ if you know the `informative name' of the SRFI.
 N, is a number corresponding to the sub-collection that holds a
 particular SRFI, and NAME is a more descriptive name we assigned to
 the main file in which the SRFI is defined.  For instance, to load
-SRFI-13 you have to do either one of:
+SRFI-34 you have to do either one of:
 
-		    (require (lib "13.ss" "srfi"))
+		    (require (lib "34.ss" "srfi"))
 
 or,
 
-	       (require (lib "string.ss" "srfi" "13"))
+	       (require (lib "exception.ss" "srfi" "34"))
 
 NOTE on SRFIs with name conflicts
 ---------------------------------
 
-Certain SRFIs (currently SRFIs 1, 13, 19, 43, 45, and 48) provide names
-which conflict with names provided by the 'mzscheme' language.
+Certain SRFIs (currently SRFIs 1, 13, 19, 43, 45, 48 and 69) provide
+names which conflict with names provided by the 'mzscheme' language.
 Attempting to require one of these SRFIs in a module written in the
 'mzscheme' language will result in an error.
 
@@ -63,15 +63,6 @@ like this:
 which supplies the colliding names with a prefix of 'srfi:'
 (e.g. "srfi:date?", "srfi:date-second") and is therefore suitable for
 requires in a module.
-
-For SRFI 13, this library is called string.ss, and should be required
-like this:
-
-                (require (lib "string.ss" "srfi" "13"))
-
-which supplies the colliding names with a prefix of 's:'
-(that is, s:string-upcase, s:string-downcase, and s:string-titlecase)
-and is therefore suitable for requires in a module.
 
 Supported SRFIs
 ---------------
@@ -113,8 +104,10 @@ number of the already ported SRFIs:
  SRFI-43            vector-lib.ss                 43
  SRFI-45(*3)        lazy.ss                       45
  SRFI-48            format.ss                     48
+ SRFI-57            records.ss                    57
  SRFI-59            vicinity.ss                   59
  SRFI-60            60.ss                         60
+ SRFI-69            hash.ss                       69
 
 Notes:
 ,--------------------
