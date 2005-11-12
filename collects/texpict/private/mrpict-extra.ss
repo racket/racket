@@ -56,6 +56,7 @@
               (super-instantiate ())))
           (define f (make-object pict-frame% "MrPict"))
           (define c (make-object pict-canvas% f))
+          (send (send c get-dc) set-smoothing 'aligned)
           (send f set-pict p)
           (send f show #t)))
       
