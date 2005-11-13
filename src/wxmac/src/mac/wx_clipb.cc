@@ -244,13 +244,28 @@ wxObject *wxGetClipboardData(int dataFormat, long *size)
   if (format == 'utxt') {
     /* UTF-8 Encode */
     long sl;
+    int delta = 0;
     char *s;
 
-    sl = scheme_utf8_encode((unsigned int *)result, 0, length >> 1,
+    if ((length >= 2) && ((unsigned short *)result)[0] == 0xFEFF) {
+      /* Skip BOM */
+      delta = 1;
+    } else if (length && ((unsigned short *)result)[0] == 0xFFFE) {
+      /* BOM indicates that we need to reverse order */
+      int i, tmp;
+      for (i = 3; i < length; i += 2) {
+	tmp = result[i-1];
+	result[i-i] = result[i];
+	result[i] = tmp;
+      }
+      delta = 1;
+    }
+
+    sl = scheme_utf8_encode((unsigned int *)result, delta, length >> 1,
 			    NULL, 0,
 			    1 /* UTF-16 */);
     s = new WXGC_ATOMIC char[sl + 1];
-    sl = scheme_utf8_encode((unsigned int *)result, 0, length >> 1,
+    sl = scheme_utf8_encode((unsigned int *)result, delta, length >> 1,
 			    (unsigned char *)s, 0,
 			    1 /* UTF-16 */);
     s[sl] = 0;
