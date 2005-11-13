@@ -103,7 +103,7 @@
          ;; on-commit
          (lambda ()
            (semaphore-wait commit-lock)
-           (send status set-label "Comitting...")
+           (send status set-label "Committing...")
            (set! committing? #t)
            (semaphore-post commit-lock))
          ;; message/message-final/message-box handlers
