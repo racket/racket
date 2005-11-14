@@ -174,7 +174,7 @@
     }"
    'intermediate #f "Book Test Date")
 
-    (execute-test
+  (execute-test
    "abstract class AZooAnimal{
      String name;
      int weight; 
@@ -222,7 +222,7 @@
            }"
    'intermediate #f "Calling super")
 
-    (execute-test
+  (execute-test
    "interface foo {
                int size();
                    }
@@ -231,7 +231,7 @@
                                              }"
    'intermediate #f "Interface implemented")
 
-    (execute-test
+  (execute-test
     "abstract class Path { abstract boolean isOk(); }
      abstract class Success extends Path {
       boolean isOk() { return true; }
@@ -242,6 +242,14 @@
      }"
     'intermediate #f "Abstract method implemented, class subclassed")
 
+  (execute-test
+   "class X {
+     boolean equals( Object o ) {
+      return o instanceof X;
+    }
+  }"
+   'intermediate #f "Correct instanceof usage")
+  
   ;;Execute tests with errors
 
   (execute-test
