@@ -126,8 +126,9 @@
                     (:? "\\" bad-id-escapes))
                 "\\"
                 bad-id-escapes)]
-             
-  
+    
+   [keyword (:: "#:" (:* identifier-escapes identifier-chars))]
+    
    [reader-command (:or (:: "#" c s) (:: "#" c i))]
    [sharing (:or (:: "#" (make-uinteger digit10) "=")
                  (:: "#" (make-uinteger digit10) "#"))])
@@ -258,8 +259,9 @@
         
   (define scheme-lexer
     (lexer
-     [(:+ scheme-whitespace) (ret lexeme 'white-space #f start-pos end-pos)]
-     [(:or "#t" "#f" "#T" "#F" character
+     [(:+ scheme-whitespace)
+      (ret lexeme 'white-space #f start-pos end-pos)]
+     [(:or "#t" "#f" "#T" "#F" character keyword
            (make-num digit2 radix2)
            (make-num digit8 radix8)
            (make-num digit10 (:? radix10))
@@ -270,19 +272,21 @@
       (ret lexeme 'comment #f start-pos end-pos)]
      ["#|" (read-nested-comment 1 start-pos input-port)]
      [(:: (:or "" "#hash" "#hasheq" (:: "#" (:* digit10))) "(")
-      (values lexeme 'parenthesis '|(| (position-offset start-pos) (position-offset end-pos))]
+      (ret lexeme 'parenthesis '|(| start-pos end-pos)]
      [(:: (:or "" "#hash" "#hasheq" (:: "#" (:* digit10))) "[")
-      (values lexeme 'parenthesis '|[| (position-offset start-pos) (position-offset end-pos))]
+      (ret lexeme 'parenthesis '|[| start-pos end-pos)]
      [(:: (:or "" "#hash" "#hasheq" (:: "#" (:* digit10))) "{")
-      (values lexeme 'parenthesis '|{| (position-offset start-pos) (position-offset end-pos))]
+      (ret lexeme 'parenthesis '|{| start-pos end-pos)]
      [(:or ")" "]" "}")
-      (values lexeme 'parenthesis (string->symbol lexeme) (position-offset start-pos) (position-offset end-pos))]
+      (ret lexeme 'parenthesis (string->symbol lexeme) start-pos end-pos)]
      [(:or "'" "`" "#'" "#`" "#&")
-      (values lexeme 'constant #f (position-offset start-pos) (position-offset end-pos))]
+      (ret lexeme 'constant #f start-pos end-pos)]
      [(:or script sharing reader-command "." "," ",@" "#," "#,@")
-      (values lexeme 'other #f (position-offset start-pos) (position-offset end-pos))]
-     [identifier (values lexeme 'symbol #f (position-offset start-pos) (position-offset end-pos))]
-     ["#<<" (get-here-string (position-offset start-pos) input-port)]
+      (ret lexeme 'other #f start-pos end-pos)]
+     [identifier
+      (ret lexeme 'symbol #f start-pos end-pos)]
+     ["#<<"
+      (get-here-string (position-offset start-pos) input-port)]
      [(special)
       (ret "" 'no-color #f start-pos end-pos)]
      [(special-comment)
@@ -290,7 +294,8 @@
      [(eof) (values lexeme 'eof #f #f #f)]
      [(:or bad-char bad-str 
            (:& bad-id
-               (complement (:: (:or (:: "#" (:or f t)) reader-command sharing "#<<" "#\\" "#|" "#;" "#&" script) any-string))))
+               (complement (:: (:or (:: "#" (:or f t)) reader-command sharing "#<<" "#\\" "#|" "#;" "#&" script)
+                               any-string))))
       (ret lexeme 'error #f start-pos end-pos)]
      [any-char (extend-error lexeme start-pos end-pos input-port)]))
   
