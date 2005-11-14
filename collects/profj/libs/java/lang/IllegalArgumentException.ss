@@ -6,6 +6,4 @@
    convert-assert-IllegalArgumentException
    wrap-convert-assert-IllegalArgumentException
    dynamic-IllegalArgumentException/c
-   static-IllegalArgumentException/c
-   IllegalArgumentException-IllegalArgumentException-constructor~generic
-   IllegalArgumentException-IllegalArgumentException-constructor-java.lang.String~generic))
+   static-IllegalArgumentException/c))

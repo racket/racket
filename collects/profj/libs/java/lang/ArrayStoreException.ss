@@ -6,6 +6,4 @@
    convert-assert-ArrayStoreException
    wrap-convert-assert-ArrayStoreException
    dynamic-ArrayStoreException/c
-   static-ArrayStoreException/c
-   ArrayStoreException-ArrayStoreException-constructor~generic
-   ArrayStoreException-ArrayStoreException-constructor-java.lang.String~generic))
+   static-ArrayStoreException/c))

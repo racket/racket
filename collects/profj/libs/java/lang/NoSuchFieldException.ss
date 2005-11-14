@@ -6,6 +6,4 @@
    convert-assert-NoSuchFieldException
    wrap-convert-assert-NoSuchFieldException
    dynamic-NoSuchFieldException/c
-   static-NoSuchFieldException/c
-   NoSuchFieldException-NoSuchFieldException-constructor~generic
-   NoSuchFieldException-NoSuchFieldException-constructor-java.lang.String~generic))
+   static-NoSuchFieldException/c))

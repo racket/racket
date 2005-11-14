@@ -6,6 +6,4 @@
    convert-assert-UnsupportedOperationException
    wrap-convert-assert-UnsupportedOperationException
    dynamic-UnsupportedOperationException/c
-   static-UnsupportedOperationException/c
-   UnsupportedOperationException-UnsupportedOperationException-constructor~generic
-   UnsupportedOperationException-UnsupportedOperationException-constructor-java.lang.String~generic))
+   static-UnsupportedOperationException/c))

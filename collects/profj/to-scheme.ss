@@ -300,109 +300,6 @@
         
         strongly-connecteds)))
   
-  ;This is the old find-dependent-defs: unreliable and known to have inifite-loop causing bugs
-  ;find-dependent-defs: (list defs) -> (list (list defs))
-  #;(define (find-dependent-defs defs type-recs)
-    (letrec ((not-found
-              (lambda (def msg tbl)
-                (lambda ()
-                  (hash-table-put! tbl def msg) msg)))
-             ;completed: maps def -> symbol
-             (completed (make-hash-table))  
-             ;completed? def -> bool
-             (completed? 
-              (lambda (def)
-                (eq? 'completed (hash-table-get completed def (not-found def 'started completed)))))
-             ;cycles: (list (list defs))
-             (cycles null)  
-             ;path maps def -> symbol
-             (cycle (make-hash-table))
-             ;in-cycle? def -> bool
-             (in-cycle? 
-              (lambda (def)
-                (eq? 'in-cycle (hash-table-get cycle def (not-found def 'not-in-cycle cycle)))))
-             
-             ;find-cycle: def -> void
-             (find-cycle 
-              (lambda (def)
-                ;(printf "find-cycle for def ~a with reqs ~a~n" (id-string (def-name def))
-                ;        (map req-class (def-uses def)))
-                ;(printf "find-cycle required defs found were ~a~n" 
-                ;       (map id-string (map def-name (filter (lambda (x) x) (map find (def-uses def)))))) 
-                (for-each (lambda (reqD)
-                            (cond
-                              ((or (completed? reqD) (in-cycle? reqD)) (void))
-                              ((or (dependence-on-cycle reqD) (exists-path-to-cycle? reqD null))
-                               (hash-table-put! cycle reqD 'in-cycle)
-                               (find-cycle reqD))))
-                          (filter (lambda (x) x) (map find (def-uses def))))))
-             
-             ;exists-path-to-cycle: def (list def)-> bool
-             (exists-path-to-cycle? 
-              (lambda (def explored-list)
-                ;(printf "exists-path-to-cycle? for ~a~n" (id-string (def-name def)))
-                (let ((reqs-in-cycle (filter (lambda (req)
-                                               ;(printf "reqs-in-cycle: looking at ~a~n" (id-string (def-name req)))
-                                               (and (not (completed? req))
-                                                    (or (in-cycle? req)
-                                                        (and (dependence-on-cycle req)
-                                                             (hash-table-put! cycle req 'in-cycle))
-                                                        (and (not (memq req explored-list))
-                                                             (exists-path-to-cycle? req (cons def explored-list))))))
-                                             (filter (lambda (x) x) (map find (def-uses def))))))
-                  ;(printf "exists-path-to-cycle? reqs-in-cycle for ~a is ~a~n" (id-string (def-name def))
-                  ;        (map id-string (map def-name reqs-in-cycle)))
-                  (and (not (null? reqs-in-cycle))
-                       (hash-table-put! cycle def 'in-cycle)))))
-             
-             ;dependence-on-cycle: req -> bool
-             (dependence-on-cycle
-              (lambda (reqD)
-                (ormap (lambda (x) x)
-                       (hash-table-map cycle (lambda (def v) (and (eq? v 'in-cycle)
-                                                                  (dependence? reqD def)))))))
-             
-             ;to Determine if reqD directly depends on def
-             (dependence? 
-              (lambda (reqD def)
-                (member (make-req (id-string (def-name def)) (get-package def type-recs))
-                        (def-uses reqD))))
-             
-             ;find: req -> (U #f def)
-             (find 
-              (lambda (req)
-                (letrec ((walker 
-                          (lambda (defs)
-                            (and (not (null? defs))
-                                 (if (and (equal? (req-path req)
-                                                  (get-package (car defs) type-recs))
-                                          (equal? (req-class req)
-                                                  (id-string (def-name (car defs)))))
-                                     (car defs)
-                                     (walker (cdr defs)))))))
-                  (walker defs)))))
-      
-      (for-each (lambda (def)
-                  (unless (completed? def)
-                    ;(printf "Started on def ~a~n" (id-string (def-name def)))
-                    (set! cycle (make-hash-table))
-                    (hash-table-put! cycle def 'in-cycle)
-                    (find-cycle def)
-                    ;(printf "Completed looking for cycle for def ~a~n" (id-string (def-name def)))
-                    ;(printf "hashtable for def ~a includes ~a~n" (id-string (def-name def))
-                    ;        (hash-table-map cycle (lambda (k v) (cons (id-string (def-name k)) v))))
-                    (let ((cyc (filter (lambda (d)
-                                         (eq? (hash-table-get cycle d) 'in-cycle))
-                                       (hash-table-map cycle (lambda (k v) k)))))
-                      (for-each (lambda (c) (hash-table-put! completed c 'completed))
-                                cyc)
-                      ;(printf "cycle for ~a is ~a~n" (id-string (def-name def)) (map id-string (map def-name cyc)))
-                      ;(printf "completed table after ~a is ~a" (id-string (def-name def))
-                      ;        (hash-table-map completed (lambda (k v) (list (id-string (def-name k)) v))))
-                      (set! cycles (cons cyc cycles)))))
-                defs)
-      cycles))
-  
   ;order-defs: (list def) -> (list def)
   (define (order-defs defs)
     (reverse
@@ -609,23 +506,23 @@
                (restricted-methods (make-method-names ;(append (accesses-package methods)
                                     (accesses-protected methods);)
                                     overridden-methods))
-               (make-gen-name 
+               #;(make-gen-name 
                 (lambda (m)
                   (build-generic-name (class-name)
                                       ((if (constructor? (id-string (method-name m))) build-constructor-name mangle-method-name)
                                        (id-string (method-name m))
                                        (method-record-atypes (method-rec m))))))
-               (providable-generics 
+               #;(providable-generics 
                 (map make-gen-name 
                      (append (accesses-public methods)
                              (accesses-package methods)
                              (accesses-protected methods))))
-               (private-generics (map make-gen-name (accesses-private methods)))
+               #;(private-generics (map make-gen-name (accesses-private methods)))
                (names-for-dynamic (generate-dynamic-names (append (accesses-public methods)
                                                                   (accesses-package methods)
                                                                   (accesses-protected methods))
                                                           overridden-methods))
-               (dynamic-method-defs (generate-dyn-method-defs names-for-dynamic))
+               #;(dynamic-method-defs (generate-dyn-method-defs names-for-dynamic))
                (wrapper-classes (append (generate-wrappers (class-name)
                                                            (parent-name)
                                                            (filter
@@ -646,15 +543,15 @@
                                                                          (accesses-protected fields))))
                (provides `(provide ,(build-identifier (class-name))
                                    ,@(map build-identifier (list (format "guard-convert-~a" (class-name))
-                                                                   (format "convert-assert-~a" (class-name))
-                                                                   (format "wrap-convert-assert-~a" (class-name))
-                                                                   (format "dynamic-~a/c" (class-name))
-                                                                   (format "static-~a/c" (class-name))))
+                                                                 (format "convert-assert-~a" (class-name))
+                                                                 (format "wrap-convert-assert-~a" (class-name))
+                                                                 (format "dynamic-~a/c" (class-name))
+                                                                 (format "static-~a/c" (class-name))))
                                    ;,@restricted-methods
                                    ,@(map build-identifier static-method-names)
                                    ,@(map build-identifier static-field-names)
                                    ,@static-field-setters
-                                   ,@(map build-identifier providable-generics)
+                                   #;,@(map build-identifier providable-generics)
                                    ,@field-getters/setters)))
 
           (let ((class-syntax
@@ -664,8 +561,10 @@
                                        (eq? 'anonymous kind)
                                        (eq? 'statement kind))
                              provides)
-                          ,(create-local-names (append (make-method-names (accesses-private methods) null)
-                                                       restricted-methods))
+                          ,@(if (null? restricted-methods)
+                                null
+                                (list (create-local-names (append (make-method-names (accesses-private methods) null)
+                                                                  restricted-methods))))
                           (define ,class
                             (,class* ,(if extends-object?
                                           (translate-id parent parent-src)
@@ -752,7 +651,10 @@
                              
                              (define field-accessors ,(build-field-table create-get-name 'get fields))
                              (define field-setters ,(build-field-table create-set-name 'set fields))
-                             (define private-methods ,(build-method-table (accesses-private methods) private-generics))
+                             (define private-methods
+                               ,(if (null? (accesses-private methods))
+                                    '(make-hash-table)
+                                    (build-method-table (accesses-private methods) null #;private-generics)))
                                                           
                              ,@(map (lambda (i) (translate-initialize (initialize-static i)
                                                                       (initialize-block i)
@@ -764,7 +666,7 @@
                           
                           ,@wrapper-classes
                           
-                          ,@(create-generic-methods (append (accesses-public methods)
+                          #;,@(create-generic-methods (append (accesses-public methods)
                                                             (accesses-package methods)
                                                             (accesses-protected methods)
                                                             (accesses-private methods)))
@@ -860,8 +762,13 @@
            (dynamic-callables (refine-method-list wrapped-methods)))
       (list 
        `(define (,(build-identifier (string-append "wrap-convert-assert-" class-name)) obj p n s c)
-          (and ,@(map method->check/error
-                      (filter (lambda (m) (not (eq? 'ctor (method-record-rtype m)))) methods)))
+          (let ((raise-error 
+                 (lambda (method-name num-args)
+                   (raise (make-exn:fail 
+                           (format "~a broke the contract with ~a here, expected an object with a method ~a accepting ~a args"
+                                   n p method-name num-args) s)))))
+            (and ,@(map method->check/error
+                        (filter (lambda (m) (not (eq? 'ctor (method-record-rtype m)))) wrapped-methods))))
           #;(c:contract ,(methods->contract (filter (lambda (m) (not (eq? 'ctor (method-record-rtype m))))
                                                     methods)) obj p n s)
           (make-object ,(add-ca class-name) obj p n s c))
@@ -936,10 +843,8 @@
     `(or (object-method-arity-includes? obj
                                         (quote ,(build-identifier m-name))
                                         ,num-args)
-         (raise (make-exn:fail 
-                 (format "~a broke the contract with ~a here, expected an object with a method ~a accepting ~a args"
-                         n p ,name ,num-args) s)))))
-
+         (raise-error ,name ,num-args))))
+  
   ;convert-value: sexp type boolean -> sexp
   (define (convert-value value type from-dynamic?)
     (cond
@@ -1256,7 +1161,7 @@
         
         (list `(begin ,provides
                       (define ,syntax-name (,interface ,(translate-parents (header-extends header))
-                                            ,@(make-method-names (members-method members) null)))
+                                            ,@(make-iface-method-names (members-method members))))
                       ,@(create-static-fields static-field-names (members-field members))
                       ,@(append (generate-wrappers (class-name)
                                                    "Object"
@@ -1317,6 +1222,21 @@
                                 (generic ,(build-identifier (class-name)) ,(build-identifier name)))
                           (build-src (method-src method)))))
          methods))
+  
+  ;make-iface-method-names: (list method) -> (list symbol)
+  (define (make-iface-method-names methods)
+    (letrec ((mangle-name (lambda (method)
+                            (build-identifier
+                             (mangle-method-name (method-record-name (method-rec method))
+                                                 (method-record-atypes (method-rec method))))))
+             (maker
+              (lambda (methods)
+                (cond
+                  ((null? methods) methods)
+                  ((method-record-override (method-rec (car methods)))
+                   (maker (cdr methods)))
+                  (else (cons (mangle-name (car methods)) (maker (cdr methods))))))))
+      (maker methods)))
   
   ;make-method-names: (list methods) (list methods) -> (list symbol)
   (define (make-method-names methods minus-methods)

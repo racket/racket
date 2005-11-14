@@ -6,8 +6,4 @@
    convert-assert-Exception
    wrap-convert-assert-Exception
    dynamic-Exception/c
-   static-Exception/c
-   Exception-Exception-constructor~generic
-   Exception-Exception-constructor-java.lang.String~generic
-   Exception-Exception-constructor-java.lang.String-java.lang.Throwable~generic
-   Exception-Exception-constructor-java.lang.Throwable~generic))
+   static-Exception/c))

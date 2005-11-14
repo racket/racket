@@ -6,6 +6,4 @@
    convert-assert-IndexOutOfBoundsException
    wrap-convert-assert-IndexOutOfBoundsException
    dynamic-IndexOutOfBoundsException/c
-   static-IndexOutOfBoundsException/c
-   IndexOutOfBoundsException-IndexOutOfBoundsException-constructor~generic
-   IndexOutOfBoundsException-IndexOutOfBoundsException-constructor-java.lang.String~generic))
+   static-IndexOutOfBoundsException/c))

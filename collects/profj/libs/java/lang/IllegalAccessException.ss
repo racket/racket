@@ -6,6 +6,4 @@
    convert-assert-IllegalAccessException
    wrap-convert-assert-IllegalAccessException
    dynamic-IllegalAccessException/c
-   static-IllegalAccessException/c
-   IllegalAccessException-IllegalAccessException-constructor~generic
-   IllegalAccessException-IllegalAccessException-constructor-java.lang.String~generic))
+   static-IllegalAccessException/c))

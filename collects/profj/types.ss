@@ -231,7 +231,7 @@
   ;;                    (list method-records) (list inner-record) (list (list strings)) (list (list strings)))
   ;; After full processing fields and methods should contain all inherited fields 
   ;; and methods.  Also parents and ifaces should contain all super-classes/ifaces
-  (define-struct class-record (name modifiers class? object? fields methods inners parents ifaces))
+  (define-struct class-record (name modifiers class? object? fields methods inners parents ifaces) (make-inspector))
 
   (define interactions-record (make-class-record (list "interactions") null #f #f null null null null null))
   
@@ -655,7 +655,7 @@
 ;                                          
 
   
-  (define type-version "version2")
+  (define type-version "version3")
   (define type-length 10)
   
   ;; read-record: path -> (U class-record #f)

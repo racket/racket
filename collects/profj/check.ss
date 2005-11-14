@@ -400,7 +400,7 @@
            (static-env (get-static-fields-env field-env))
            (setting-fields null)
            (inherited-fields null))
-      (when (eq? level 'beginner)
+      #;(when (eq? level 'beginner)
         (let ((parent (send type-recs get-class-record (car (class-record-parents class-record)))))
           (when (memq 'abstract (class-record-modifiers parent))
             (set! inherited-fields 
@@ -451,12 +451,12 @@
               ))))
       (let ((assigns (get-assigns members level (car c-class)))
             (static-assigns (get-static-assigns members level)))
-        (when (eq? level 'beginner)
-          (for-each (lambda (f)
-                      (andmap (lambda (assign)
-                                (inherited-field-set? f assign extend-src))
-                              assigns))
-                    inherited-fields))
+        #;(when (eq? level 'beginner)
+            (for-each (lambda (f)
+                        (andmap (lambda (assign)
+                                  (inherited-field-set? f assign extend-src))
+                                assigns))
+                      inherited-fields))
         (for-each (lambda (field)
                     (if (memq 'static (map modifier-kind (field-modifiers field)))
                         (andmap
@@ -515,7 +515,7 @@
   ;field-needs-set?: field symbol bool-> bool
   (define (field-needs-set? field level abst-class?)
     (cond
-      ((and (eq? level 'beginner) (not abst-class?) #t))
+      ((and (memq level '(beginner #;intermediate)) (not abst-class?) #t))
       ((memq 'final (map modifier-kind (field-modifiers field))) #t)
       (else #f)))
   
@@ -940,6 +940,7 @@
         ((return? statement)
          (check-return (return-expr statement)
                        return
+                       env
                        check-e-no-change
                        (return-src statement)
                        interactions?
@@ -1062,8 +1063,8 @@
          (send type-recs add-req (make-req "Throwable" (list "java" "lang")))))
       exp/env))
     
-  ;check-return: expression type (expression -> type/env) src bool symbol type-records -> type/env
-  (define (check-return ret-expr return check src interact? level type-recs)
+  ;check-return: expression type env (expression -> type/env) src bool symbol type-records -> type/env
+  (define (check-return ret-expr return env check src interact? level type-recs)
     (cond
       (interact? (void))
       ((and ret-expr (not (eq? 'void return)))
@@ -1074,13 +1075,14 @@
       ((and ret-expr (eq? 'void return) (not (eq? level 'full)))
        (return-error 'void #f return src))
       ((and (not ret-expr) (not (eq? 'void return)))
-       (return-error 'val #f return src))))
+       (return-error 'val #f return src))
+      (else (make-type/env 'void env))))
   
   ;check-while: type/env  src -> void
   (define (check-while cond/env src check-s loop-body)
     ((check-cond 'while) (type/env-t cond/env) src)
     (check-s loop-body (type/env-e cond/env) #t #f)
-    (make-type/env 'void cond/env))
+    (make-type/env 'void (type/env-t cond/env)))
         
   ;check-do: (exp env -> type/env) exp src type/env -> type/env
   (define (check-do check-e exp src loop/env)
@@ -2487,7 +2489,9 @@
        (cond 
          ((and (ref-type? exp-type) (ref-type? type)
                (or (is-eq-subclass? exp-type type type-recs)
-                   (is-eq-subclass? type exp-type type-recs))) 'boolean)
+                   (is-eq-subclass? type exp-type type-recs)
+                   (implements? exp-type type type-recs)
+                   (implements? type exp-type type-recs))) 'boolean)
          ((and (ref-type? exp-type) (ref-type? type))
           (instanceof-error 'not-related-type type exp-type src))
          ((ref-type? exp-type)
@@ -2764,8 +2768,7 @@
        (format "attempted to call method ~a on ~a which does not have methods. ~nOnly values with ~a types have methods"
                n t
                (case level 
-                 ((beginner) "class")
-                 ((intermediate) "class or interface")
+                 ((beginner intermediate) "class or interface")
                  (else "class, interface, or array")))
        n src)))
   
@@ -2973,7 +2976,7 @@
     (let ((n (id->ext-name name))
           (t (get-call-type exp)))
     (raise-error n
-                 (if (memq level '(beginner abstract))
+                 (if (memq level '(beginner intermediate abstract))
                      (format "~a does not contain a method named ~a" t n)
                      (case kind
                        ((pro) 

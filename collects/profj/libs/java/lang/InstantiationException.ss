@@ -6,6 +6,4 @@
    convert-assert-InstantiationException
    wrap-convert-assert-InstantiationException
    dynamic-InstantiationException/c
-   static-InstantiationException/c
-   InstantiationException-InstantiationException-constructor~generic
-   InstantiationException-InstantiationException-constructor-java.lang.String~generic))
+   static-InstantiationException/c))

@@ -1,11 +1,12 @@
-#cs
 (module profj-testing mzscheme
   
   (require (lib "compile.ss" "profj")
            (lib "parameters.ss" "profj")
            (lib "tool.ss" "profj")
            (lib "class.ss"))
-  
+
+  (define report-expected-error-messages (make-parameter #t))
+
   (define interaction-errors (make-parameter 0))
   (define execution-errors (make-parameter 0))
   (define file-errors (make-parameter 0))
@@ -59,8 +60,7 @@
                     null
                     (cons (send v access c)
                           (build-up (add1 c)))))))
-      (build-up 0)))
-  
+      (build-up 0)))  
   
   ;already-seen?: 'a 'a (list 'a) (list 'a)-> bool
   (define (already-seen? v1 v2 visited-v1 visited-v2)
@@ -215,7 +215,6 @@
     (file-errors 0)
     (file-msgs null))
   
-  (define report-expected-error-messages (make-parameter #f))
   
   ;report-test-results: -> void
   (define (report-test-results)

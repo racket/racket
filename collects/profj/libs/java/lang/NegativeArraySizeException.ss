@@ -6,6 +6,4 @@
    convert-assert-NegativeArraySizeException
    wrap-convert-assert-NegativeArraySizeException
    dynamic-NegativeArraySizeException/c
-   static-NegativeArraySizeException/c
-   NegativeArraySizeException-NegativeArraySizeException-constructor~generic
-   NegativeArraySizeException-NegativeArraySizeException-constructor-java.lang.String~generic))
+   static-NegativeArraySizeException/c))

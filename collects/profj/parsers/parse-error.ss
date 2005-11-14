@@ -280,18 +280,20 @@
                        (parse-program after-id (getter) 'start getter))
                       (else
                        (parse-error 
-                        (format "'import' must have a name followed by ';'. ~a is not allowed" 
-                                (format-out (get-tok next))) 
+                        (format "'import' must have a name followed by ';'. ~a is not allowed"
+                                (format-out (get-tok next)))
                         srt (get-end after-id)))))
                   (parse-error (format "'import' must have a name followed by ';'. ~a is not allowed" out)
                                srt (get-end next)))))
            ((IDENTIFIER)
             (if (close-to-keyword? tok 'import)
-                (parse-error 
-                 (format "~a is close to 'import' but is either miscapitalized or mispelled" (token-value tok))
-                 srt end)
+                (if (miscapitalized? tok "import")
+                    (parse-error "keyword 'import' must be all lower-case letters, and here is not" srt end)
+                    (parse-error 
+                     (format "~a is close to keyword 'import' but is mispelled" (token-value tok))
+                     srt end))
                 (parse-definition pre cur-tok 'start getter)))
-           ((INTERACTIONS_BOX TEST_SUITE CLASS_BOX) (parse-definition cur-tok (getter) 'start getter))
+           ((INTERACTIONS_BOX TEST_SUITE) (parse-definition cur-tok (getter) 'start getter))
            (else
             (parse-definition pre cur-tok 'start getter))))
         ((semi-colon)
@@ -322,25 +324,28 @@
          (case tokN
            ((EOF) #t)
            ((class) (parse-definition cur-tok (getter) 'class-id getter))
-           ((abstract) 
-            (let* ((next (getter))
-                   (next-tok (get-tok next)))
-              (cond
-                ((class? next-tok) (parse-definition cur-tok next state getter))
-                ((eof? next-tok) (parse-error "abstract should be followed by class definition" srt end))
-                (else 
-                 (if (close-to-keyword? next-tok 'class)
-                     (parse-error (format "expected 'class' after 'abstract,' found ~a which is incorrectly spelled or capitalized"
-                                          (token-value next-tok))
-                                  srt
-                                  (get-end next))
-                     (parse-error (format "abstract must be immediately followed by 'class' not ~a" (format-out next-tok))
-                                  srt
-                                  (get-end next)))))))
+           ((abstract)
+            (if (beginner?)
+                (parse-error "Expected class or interface definition, 'abstract' not allowed here" srt end)
+                (let* ((next (getter))
+                       (next-tok (get-tok next)))
+                  (cond
+                    ((class? next-tok) (parse-definition cur-tok next state getter))
+                    ((eof? next-tok) (parse-error "abstract should be followed by class definition" srt end))
+                    (else 
+                     (if (close-to-keyword? next-tok 'class)
+                         (parse-error (format "expected 'class' after 'abstract', found ~a which is incorrectly spelled or capitalized"
+                                              (token-value next-tok))
+                                      srt
+                                      (get-end next))
+                         (parse-error (format "abstract must be immediately followed by 'class' not ~a" (format-out next-tok))
+                                      srt
+                                      (get-end next))))))))
            ((interface) 
-            (if (or (intermediate?) (advanced?))
-                (parse-definition cur-tok (getter) 'interface-id getter)
-                (parse-error (format "Expected class definition, found ~a which may not be written here" out) srt end)))
+            ;(if (or (intermediate?) (advanced?))
+            (parse-definition cur-tok (getter) 'interface-id getter)
+            ;(parse-error (format "Expected class definition, found ~a which may not be written here" out) srt end)))
+            )
            ((public)
             (if (advanced?)
                 (parse-definition cur-tok (getter) 'start getter)
@@ -359,10 +364,12 @@
                                      (token-value tok))
                              srt end))
               ((close-to-keyword? tok 'abstract)
-               (parse-error (format "Expected 'abstract class' or 'class', found ~a which is incorrectly spelled or capitalized"
-                                    (token-value tok))
-                            srt end))
-              ((and (or (intermediate?) (advanced?)) (close-to-keyword? tok 'interface))
+               (if (beginner?)
+                   (parse-error (format "Excepted class or interface definition, found ~a" (token-value tok)) srt end)
+                   (parse-error (format "Expected 'abstract class' or 'class', found ~a which is incorrectly spelled or capitalized"
+                                        (token-value tok))
+                                srt end)))
+              ((close-to-keyword? tok 'interface)
                (parse-error (format "Expected 'interface' or 'class', found ~a which is incorrectly spelled or capitalized"
                                     (token-value tok)) srt end))
               ((and (advanced?) (close-to-keyword? tok 'public))
@@ -393,14 +400,15 @@
                    (next-tok (get-tok next)))
               (cond
                 ((eof? next-tok) (parse-error (format "expected class body after ~a" (token-value tok)) srt end))
-                ((extends? next-tok) (parse-definition next (getter) 'extends getter))
-                ((and (or (intermediate?) (advanced?)) (implements? next-tok))
+                ((and (extends? next-tok) (or (intermediate?) (advanced?)))
+                 (parse-definition next (getter) 'extends getter))
+                ((implements? next-tok)
                  (parse-definition next (getter) 'implements getter))
                 ((o-brace? next-tok) (parse-definition cur-tok next 'class-body getter))
-                ((close-to-keyword? next-tok 'extends) 
+                ((and (or (intermediate?) (advanced?)) (close-to-keyword? next-tok 'extends) )
                  (parse-error (format "found ~a, which is similar to 'extends'" (token-value next-tok))
                               (get-start next) (get-end next)))
-                ((and (or (intermediate?) (advanced?)) (close-to-keyword? next-tok 'implements))
+                ((close-to-keyword? next-tok 'implements)
                  (parse-error (format "found ~a, which is similar to 'implements'" (token-value next-tok))
                               (get-start next) (get-end next)))
                 ((open-separator? next-tok)
@@ -411,8 +419,8 @@
                               (get-start next) (get-end next)))
                 (else
                  (parse-error 
-                  (format "class name must be followed by 'extends' or ~a a { to start class body, found ~a"
-                          (if (not (beginner?)) "'implements' clause or " "") 
+                  (format "class name must be followed by ~a 'implements' or a { to start class body, found ~a"
+                          (if (not (beginner?)) "'extends' clause or " "") 
                           (format-out next-tok)) srt (get-end next))))))
            (else 
             (if (java-keyword? tok) 
@@ -426,7 +434,7 @@
                    (next-tok (get-tok next)))
               (cond
                 ((eof? next-tok) (parse-error (format "Expected interface body after ~a" (token-value tok)) srt end))
-                ((extends? next-tok) (parse-definition cur-tok next 'iface-extends getter))
+                ((extends? next-tok) (parse-definition next (getter) 'iface-extends getter))
                 ((o-brace? next-tok) (parse-definition cur-tok next 'iface-body getter))
                 ((close-to-keyword? next-tok 'extends)
                  (parse-error (format "found ~a, which is similar to 'extends'" (token-value next-tok)) 
@@ -450,19 +458,19 @@
          (cond
            ((eof? tok) (parse-error "Expected parent class after extends" ps pe))
            ((id-token? tok)
-            (if (beginner?)
-                (parse-definition cur-tok (getter) 'class-body getter)
-                (let* ((next (getter))
-                       (next-tok (get-tok next)))
-                  (cond
-                    ((implements? next-tok) (parse-definition next (getter) 'implements getter))
-                    ((close-to-keyword? next-tok 'implements)
-                     (parse-error (format "Expected 'implements', found ~a which is close to 'implements'" (token-value next-tok))
-                                  (get-start next) (get-end next)))
-                    (else (parse-definition cur-tok next 'class-body getter))))))
+            ;(if (beginner?)
+            ;    (parse-definition cur-tok (getter) 'class-body getter)
+            (let* ((next (getter))
+                   (next-tok (get-tok next)))
+              (cond
+                ((implements? next-tok) (parse-definition next (getter) 'implements getter))
+                ((close-to-keyword? next-tok 'implements)
+                 (parse-error (format "Expected 'implements', found ~a which is close to 'implements'" (token-value next-tok))
+                              (get-start next) (get-end next)))
+                (else (parse-definition cur-tok next 'class-body getter)))))
            ((o-brace? tok) (parse-error "Expected a parent name after extends and before the class body starts" srt end))
            ((java-keyword? tok)
-            (parse-error (format "parent may not be named after reserved word ~a" tokN) srt end))
+            (parse-error (format "Expected a name after extends, found reserved word ~a" tokN) srt end))
            (else (parse-error (format "extends must be followed by parent name, found ~a" out) ps end))))
         ;Intermediate
         ((implements)
@@ -473,7 +481,11 @@
                    (next-tok (get-tok next)))
               (cond
                 ((eof? next-tok) (parse-error "Expected more implemented interfaces or class body" srt end))
-                ((comma? next-tok) (parse-definition next (getter) 'implements-list getter))
+                ((comma? next-tok) 
+                 (if (beginner?)
+                     (parse-error "Only one interface may be implemented, found ',' which should not appear here"
+                                  (get-start next) (get-end next))
+                     (parse-definition next (getter) 'implements-list getter)))
                 ((o-brace? next-tok) (parse-definition cur-tok next 'class-body getter))
                 ((id-token? next-tok)
                  (parse-error "Implemented interfaces must be separated by a comma" srt (get-end next)))
@@ -583,7 +595,6 @@
                    (parse-error "Unnecessary }, interface body is already closed" srt (get-end next))
                    (parse-definition cur-tok next 'start getter))))
             (else (parse-error (format "Expected a } to close interface body, found ~a" out) ps end)))))))
-
   
   ;parse-type: token token symbol (->token) -> void
   (define (parse-type pre cur state getter)
@@ -657,7 +668,8 @@
            ((eof? tok) cur)
            ((and (c-brace? tok) (not just-method?)) cur)
            ((and (c-brace? tok) just-method?) (parse-error "Encountered extra }" srt end))
-           ((abstract? tok) (parse-members cur (getter) 'method getter #t just-method?))
+           ((and (or (intermediate?) (advanced?)) (abstract? tok))
+            (parse-members cur (getter) 'method getter #t just-method?))
            ((prim-type? tok) (parse-members cur (getter) 'method-or-field getter #f just-method?))
            ;Intermediate & Advanced
            ((and (or (intermediate?) (advanced?)) (void-token? tok)) (parse-members cur (getter) 'method-id getter #f just-method?))
@@ -677,7 +689,7 @@
              (format "Only fields, methods and a constructor may be within the class body, found ~a" out) srt end))))
         ((member)
          (cond
-           ((eof? tok) (parse-error "Class member may not end here, class body still requires a }" ps pe))
+           ((eof? tok) (parse-error "This class may not end here, class body still requires a }" ps pe))
            ((dot? tok) 
             (if (beginner?)
                 (parse-error "The name of a type or class may not contain a '.'" ps end)
@@ -749,8 +761,12 @@
                           (format "Fields must be separated by commas, method paramters must be in ()s, ~a not allowed" n-out)
                           (format "Fields must be separatley declared, method paramters must be in ()s, ~a not allowed" n-out))
                       srt ne)))
-                (else (parse-error 
-                       (format "Expected ';' to end field or abstract method parameter list, found ~a" n-out) srt ne)))))
+                (else 
+                 (if (or (intermediate?) (advanced?))
+                     (parse-error 
+                      (format "Expected ';' to end field or abstract method parameter list, found ~a" n-out) srt ne)
+                     (parse-error 
+                      (format "Expected ';' to end field. Found ~a" n-out) srt ne))))))
            (else 
             (if (and (advanced?) (o-bracket? tok))
                 (let* ((next (getter))
@@ -829,9 +845,9 @@
                  (if (beginner?)
                      (parse-error "The name of a type or class may not contain '.'" srt next-end)
                      (parse-members next (parse-name (getter) getter #f) 'method-id getter abstract-method? just-method?)))
-                ((o-paren? next-tok) 
+                ((o-paren? next-tok)
                  (parse-error "Declaration is similar to constructor, which cannot be abstract" ps next-end))
-                ((semi-colon? next-tok) 
+                ((semi-colon? next-tok)
                  (parse-error "Declaration is similar to a field, which cannot be abstract" ps next-end))
                 ((id-token? next-tok) (parse-members cur next 'method-id getter abstract-method? just-method?))
                 ((java-keyword? next-tok) 
@@ -1048,7 +1064,11 @@
                  (if abstract-method?
                      (parse-error (format "abstract methods should end with ';', found ~a" next-out) next-start next-end) 
                      (parse-error (format "Method body begins with a '{', found ~a" next-out) next-start next-end)))
-                ((semi-colon? next-tok) (parse-members next (getter) 'start getter #f just-method?))
+                ((semi-colon? next-tok) 
+                 (cond
+                   ((or (beginner?) (not abstract-method?))
+                    (parse-error "Method must have a body, beginning with '{'. ';' not allowed" next-start next-end))
+                   (else (parse-members next (getter) 'start getter #f just-method?))))
                 (else
                  (if abstract-method?
                      (parse-error (format "Expected a ';' to end abstract method, found ~a" next-out) next-start next-end)
@@ -1209,9 +1229,11 @@
       ((start)          
        (cond
          ((or (eof? tok) (c-brace? tok)) cur)
-         ((abstract? tok) (parse-iface-body cur (getter) 'method-type getter))
+         ((and (not (beginner?)) (abstract? tok))
+          (parse-iface-body cur (getter) 'method-type getter))
          ((prim-type? tok) (parse-iface-body cur (getter) 'method-id getter))
-         ((void-token? tok) (parse-iface-body cur (getter) 'method-id getter))
+         ((and (not (beginner?)) (void-token? tok))
+          (parse-iface-body cur (getter) 'method-id getter))
          ((id-token? tok) (parse-iface-body cur (getter) 'method-id getter))
          (else 
           (parse-error 
@@ -1219,7 +1241,9 @@
       ((method-type)
        (cond
          ((eof? tok) (parse-error "Expected method, and interface body still requires a }" ps pe))
-         ((or (prim-type? tok) (void-token? tok)) (parse-iface-body cur (getter) 'method-id getter))
+         ((prim-type? tok) (parse-iface-body cur (getter) 'method-id getter))
+         ((and (not (beginner?)) (void-token? tok))
+          (parse-iface-body cur (getter) 'method-id getter))
          ((id-token? tok) (parse-iface-body cur (getter) 'method-id getter))
          ((java-keyword? tok)
           (parse-error 
@@ -1348,8 +1372,11 @@
   (define (parse-ctor-body pre cur-tok getter)
     (case (get-token-name (get-tok cur-tok))
       ((EOF C_BRACE) cur-tok)
-      ((super) 
-       (parse-ctor-call cur-tok (getter) 'start getter))
+      ((super)
+       (if (beginner?)
+           (parse-error "Constructor may only initialize the fields of this class. Found super, which is not allowed"
+                        (get-start cur-tok) (get-end cur-tok))
+           (parse-ctor-call cur-tok (getter) 'start getter)))
       ((this)
        (cond
          ((advanced?) (parse-ctor-call cur-tok (getter) 'start getter))
@@ -2075,8 +2102,12 @@
                 (parse-expression cur-tok (getter) 'dot-op-or-end getter statement-ok? stmt-exp?)
                 (parse-error "Expected an expression. null may not be used here" start end)))
            ((TRUE_LIT FALSE_LIT STRING_LIT CHAR_LIT INTEGER_LIT 
-                      LONG_LIT FLOAT_LIT DOUBLE_LIT this super)
+                      LONG_LIT FLOAT_LIT DOUBLE_LIT this)
             (parse-expression cur-tok (getter) 'dot-op-or-end getter statement-ok? stmt-exp?))
+           ((super)
+            (if (beginner?)
+                (parse-error "An expression may not begin with reserved word 'super'" start end)
+                (parse-expression cur-tok (getter) 'dot-op-or-end getter statement-ok? stmt-exp?)))
            ((O_PAREN)
             (if (or (advanced?) (intermediate?))
                 (parse-expression cur-tok (getter) 'cast-or-parened getter statement-ok? stmt-exp?)
@@ -2214,8 +2245,13 @@
                    (next-tok (get-tok next)))
               (case (get-token-name next-tok)
                 ((~ ! - + TRUE_LIT FALSE_LIT STRING_LIT CHAR_LIT INTEGER_LIT 
-                      LONG_LIT FLOAT_LIT DOUBLE_LIT this O_PAREN new IDENTIFIER super)
+                      LONG_LIT FLOAT_LIT DOUBLE_LIT this O_PAREN new IDENTIFIER)
                  (parse-expression cur-tok next 'start getter #f stmt-exp?))
+                ((super)
+                 (if (beginner?)
+                     (parse-error "Reserved word 'super' maynot appear in an expression" 
+                                  (get-start next) (get-end next))
+                     (parse-expression cur-tok next 'start getter #f stmt-exp?)))
                 ((NULL_LIT)
                  (if (or (advanced?) (intermediate?))
                      (parse-expression cur-tok next 'start getter #f stmt-exp?)

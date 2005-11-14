@@ -6,6 +6,4 @@
    convert-assert-CloneNotSupportedException
    wrap-convert-assert-CloneNotSupportedException
    dynamic-CloneNotSupportedException/c
-   static-CloneNotSupportedException/c
-   CloneNotSupportedException-CloneNotSupportedException-constructor~generic
-   CloneNotSupportedException-CloneNotSupportedException-constructor-java.lang.String~generic))
+   static-CloneNotSupportedException/c))

@@ -6,6 +6,4 @@
    convert-assert-SecurityException
    wrap-convert-assert-SecurityException
    dynamic-SecurityException/c
-   static-SecurityException/c
-   SecurityException-SecurityException-constructor~generic
-   SecurityException-SecurityException-constructor-java.lang.String~generic))
+   static-SecurityException/c))

@@ -1,4 +1,3 @@
-#cs
 (module beginner-parser mzscheme
   
   (require "general-parsing.ss"
@@ -56,7 +55,6 @@
                                              (- (position-offset (cadr $1)) (position-offset $1-start-pos))
                                              (file-path))
                                    (car $1))])
-;       [(NULL_LIT) (make-literal 'null (build-src 1) #f)])
       
       ;; 19.4
       (Type
@@ -93,6 +91,9 @@
       (ClassType
        [(ClassOrInterfaceType) $1])
       
+      (InterfaceType
+       [(ClassOrInterfaceType) $1])
+      
       ;;19.5
       (Name
        [(IDENTIFIER) (make-name (make-id $1 (build-src 1)) null (build-src 1))]
@@ -113,19 +114,19 @@
       
       (TypeDeclaration
        [(ClassDeclaration) $1]
+       [(InterfaceDeclaration) $1]
        [(INTERACTIONS_BOX) $1]
        [(EXAMPLE) $1]
-       [(CLASS_BOX) (parse-class-box $1 (build-src 1) 'beginner)]
+       #;[(CLASS_BOX) (parse-class-box $1 (build-src 1) 'beginner)]
        [(TEST_SUITE) $1]
        [(SEMI_COLON) #f])
       
       ;; 19.7
-      (Modifiers
-       [(Modifier) (list $1)])
-;       [(Modifiers Modifier) (cons $2 $1)])
+      #;(Modifiers
+         [(Modifier) (list $1)])
       
-      (Modifier
-       [(abstract) (make-modifier 'abstract (build-src 1))])
+        #;(Modifier
+           [(abstract) (make-modifier 'abstract (build-src 1))])
 
       (ImportDeclarations
        [(ImportDeclaration) (list $1)]
@@ -138,31 +139,20 @@
       
       ;; 19.8.1
       (ClassDeclaration
-       [(class IDENTIFIER Super ClassBody)
+       [(class IDENTIFIER Interface ClassBody)
 	(make-class-def (make-header (make-id $2 (build-src 2 2))
                                      (list (make-modifier 'public #f))
-                                     $3 null null (build-src 3))
+                                     null $3 null (build-src 3))
                         $4
                         (build-src 1)
                         (build-src 4)
                         (file-path)
                         'beginner
-                        null 'top null)]
-       [(abstract class IDENTIFIER Super ClassBody)
-        (make-class-def (make-header (make-id $3 (build-src 3 3))
-                                     (list (make-modifier 'public #f)
-                                           (make-modifier 'abstract #f))
-                                     $4 null null (build-src 4))
-                        $5
-                        (build-src 2 2)
-                        (build-src 5)
-                        (file-path)
-                        'beginner
                         null 'top null)])
-      
-      (Super
+
+      (Interface
        [() null]
-       [(extends ClassType) (list $2)])
+       [(implements InterfaceType) (list $2)])
       
       (ClassBody
        [(O_BRACE ClassBodyDeclarations C_BRACE) (reverse $2)])
@@ -213,21 +203,10 @@
                                           #t
                                           #f
                                           (build-src 2))]
-       [(MethodHeader SEMI_COLON) (make-method (method-modifiers $1)
-                                               (method-type $1)
-                                               (method-type-parms $1)
-                                               (method-name $1)
-                                               (method-parms $1)
-                                               (method-throws $1)
-                                               #f
-                                               #t
-                                               #f
-                                               (build-src 2))])
+       )
       
       (MethodHeader
-       [(Modifiers Type MethodDeclarator) (construct-method-header (cons (make-modifier 'public #f) $1) null $2 $3 null)]
        [(Type MethodDeclarator) (construct-method-header (list (make-modifier 'public #f)) null $1 $2 null)])
-
       
       (MethodDeclarator
        [(IDENTIFIER O_PAREN FormalParameterList C_PAREN) (list (make-id $1 (build-src 1)) (reverse $3) 0)]
@@ -251,9 +230,9 @@
        [(IDENTIFIER O_PAREN C_PAREN) (list (make-id $1 (build-src 1)) null)])
       
       (ConstructorBody
-       [(O_BRACE ExplicitConstructorInvocation BlockStatements C_BRACE)
+       #;[(O_BRACE ExplicitConstructorInvocation BlockStatements C_BRACE)
 	(make-block (cons $2 (reverse $3)) (build-src 4))]
-       [(O_BRACE ExplicitConstructorInvocation C_BRACE)
+      #; [(O_BRACE ExplicitConstructorInvocation C_BRACE)
 	(make-block (list $2) (build-src 3))]
        [(O_BRACE BlockStatements C_BRACE)
 	(make-block 
@@ -264,7 +243,7 @@
         (make-block (cons (make-call #f (build-src 2) #f (make-special-name #f #f "super") null #f)
                           null) (build-src 2))])
  
-      (ExplicitConstructorInvocation
+      #;(ExplicitConstructorInvocation
        [(super O_PAREN ArgumentList C_PAREN SEMI_COLON)
 	(make-call #f (build-src 5) 
 		       #f (make-special-name #f (build-src 1) "super") (reverse $3) #f)]
@@ -272,6 +251,50 @@
 	(make-call #f (build-src 4) 
 		       #f (make-special-name #f (build-src 1) "super") null #f)])
       
+      ;; 19.9.1
+      
+      (InterfaceDeclaration
+       [(interface IDENTIFIER ExtendsInterfaces InterfaceBody)
+       	(make-interface-def (make-header (make-id $2 (build-src 2 2)) (list (make-modifier 'public #f))
+                                         $3 null null (build-src 3))
+                                $4
+                                (build-src 1)
+                                (build-src 4)
+                                (file-path)
+                                'intermedaite
+                                null 'top null)]
+       [(interface IDENTIFIER InterfaceBody)
+	(make-interface-def (make-header (make-id $2 (build-src 2 2))(list (make-modifier 'public #f))
+                                         null null null (build-src 2))
+                                $3
+                                (build-src 1)
+                                (build-src 3)
+                                (file-path)
+                                'intermdediate
+                                null 'top null)])
+      
+      (ExtendsInterfaces
+       [(extends InterfaceType) (list $2)]
+       [(ExtendsInterfaces COMMA InterfaceType) (cons $3 $1)])
+
+      (InterfaceBody
+       [(O_BRACE InterfaceMemberDeclarations C_BRACE) $2])
+      
+      (InterfaceMemberDeclarations
+       [() null]
+       [(InterfaceMemberDeclarations InterfaceMemberDeclaration)
+        (cond
+          ((not $2) $1)
+          ((list? $2) (append $2 $1))
+          (else (cons $2 $1)))])
+      
+      (InterfaceMemberDeclaration
+       [(AbstractMethodDeclaration) $1]
+       [(SEMI_COLON) #f])
+      
+      (AbstractMethodDeclaration
+       [(MethodHeader SEMI_COLON) $1])
+            
       ;; 19.11
       (Block
        [(O_BRACE Statement C_BRACE) (make-block (list $2) (build-src 3))])
@@ -335,11 +358,11 @@
         (make-call #f (build-src 6) $1 (make-id $3 (build-src 3 3)) (reverse $5) #f)]
        [(Primary PERIOD IDENTIFIER O_PAREN C_PAREN)
         (make-call #f (build-src 5) $1 (make-id $3 (build-src 3 3)) null #f)]
-       [(super PERIOD IDENTIFIER O_PAREN ArgumentList C_PAREN)
+       #;[(super PERIOD IDENTIFIER O_PAREN ArgumentList C_PAREN)
         (make-call #f (build-src 6) 
                    (make-special-name #f (build-src 1) "super") 
                    (make-id $3 (build-src 3 3)) (reverse $5) #f)]
-       [(super PERIOD IDENTIFIER O_PAREN C_PAREN)
+      #; [(super PERIOD IDENTIFIER O_PAREN C_PAREN)
         (make-call #f (build-src 5) 
                    (make-special-name #f (build-src 1) "super") 
                    (make-id $3 (build-src 3 3)) null #f)])

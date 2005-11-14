@@ -6,6 +6,4 @@
    convert-assert-ArithmeticException
    wrap-convert-assert-ArithmeticException
    dynamic-ArithmeticException/c
-   static-ArithmeticException/c
-   ArithmeticException-ArithmeticException-constructor~generic
-   ArithmeticException-ArithmeticException-constructor-java.lang.String~generic))
+   static-ArithmeticException/c))

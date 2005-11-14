@@ -6,6 +6,4 @@
    convert-assert-InterruptedException
    wrap-convert-assert-InterruptedException
    dynamic-InterruptedException/c
-   static-InterruptedException/c
-   InterruptedException-InterruptedException-constructor~generic
-   InterruptedException-InterruptedException-constructor-java.lang.String~generic))
+   static-InterruptedException/c))

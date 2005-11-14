@@ -6,6 +6,4 @@
    convert-assert-IllegalThreadStateException
    wrap-convert-assert-IllegalThreadStateException
    dynamic-IllegalThreadStateException/c
-   static-IllegalThreadStateException/c
-   IllegalThreadStateException-IllegalThreadStateException-constructor~generic
-   IllegalThreadStateException-IllegalThreadStateException-constructor-java.lang.String~generic))
+   static-IllegalThreadStateException/c))

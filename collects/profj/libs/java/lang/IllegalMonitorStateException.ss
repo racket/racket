@@ -6,6 +6,4 @@
    convert-assert-IllegalMonitorStateException
    wrap-convert-assert-IllegalMonitorStateException
    dynamic-IllegalMonitorStateException/c
-   static-IllegalMonitorStateException/c
-   IllegalMonitorStateException-IllegalMonitorStateException-constructor~generic
-   IllegalMonitorStateException-IllegalMonitorStateException-constructor-java.lang.String~generic))
+   static-IllegalMonitorStateException/c))

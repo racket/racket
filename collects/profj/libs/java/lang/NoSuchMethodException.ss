@@ -6,6 +6,4 @@
    convert-assert-NoSuchMethodException
    wrap-convert-assert-NoSuchMethodException
    dynamic-NoSuchMethodException/c
-   static-NoSuchMethodException/c
-   NoSuchMethodException-NoSuchMethodException-constructor~generic
-   NoSuchMethodException-NoSuchMethodException-constructor-java.lang.String~generic))
+   static-NoSuchMethodException/c))

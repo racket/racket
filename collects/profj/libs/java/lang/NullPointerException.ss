@@ -6,6 +6,4 @@
    convert-assert-NullPointerException
    wrap-convert-assert-NullPointerException
    dynamic-NullPointerException/c
-   static-NullPointerException/c
-   NullPointerException-NullPointerException-constructor~generic
-   NullPointerException-NullPointerException-constructor-java.lang.String~generic))
+   static-NullPointerException/c))
