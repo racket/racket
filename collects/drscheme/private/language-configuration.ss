@@ -735,7 +735,7 @@
                                    (λ (x y)
                                      (details-callback))))
           
-          (define revert-to-defaults-outer-panel (make-object horizontal-pane% show-details-parent))
+          (define revert-to-defaults-outer-panel (make-object horizontal-panel% show-details-parent))
           (define revert-to-defaults-button (make-object button% 
                                               (string-constant revert-to-language-defaults)
                                               revert-to-defaults-outer-panel

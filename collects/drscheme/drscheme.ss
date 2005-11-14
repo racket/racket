@@ -14,7 +14,8 @@
     (let-values ([(zo-compile
                    make-compilation-manager-load/use-compiled-handler
                    manager-trace-handler)
-                  (parameterize ([current-namespace (make-namespace)])
+                  (parameterize ([current-namespace (make-namespace)]
+                                 [use-compiled-file-paths '()])
                     (values
                      (dynamic-require '(lib "zo-compile.ss" "errortrace") 'zo-compile)
                      (dynamic-require '(lib "cm.ss") 'make-compilation-manager-load/use-compiled-handler)
