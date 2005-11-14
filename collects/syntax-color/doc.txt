@@ -1,7 +1,7 @@
 _syntax-color_
 
 The syntax-color collection provides the underlying data structures
-and some helpful utilities for the color-text% class of the framework
+and some helpful utilities for the color:text% class of the framework
 (collects/framework/private/color.ss).
 
 _token-tree.ss_
@@ -12,8 +12,8 @@ _paren-tree.ss_
 Parenthesis matching code built on top of token-tree.
 
 _scheme-lexer.ss_
-A lexer for Scheme (including all mzscheme extensions) build
-specifically for color-text%.
+A lexer for Scheme (including mzscheme extensions) build
+specifically for color:text%.
 
 scheme-lexer returns 5 values:
 
@@ -32,7 +32,7 @@ scheme-lexer returns 5 values:
 
 _default-lexer.ss_
 A lexer that only identifies the following: ( ) [ ] { }
-also build specifically for color-text%.
+also build specifically for color:text%.
 
 default-lexer returns 5 values:
 
