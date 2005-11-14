@@ -2137,7 +2137,7 @@
                                   'if-exp-colon getter #f stmt-exp?))
                ((and (advanced?) (o-bracket? tok))
                 (parse-expression cur-tok (getter) 'array-acc getter statement-ok? stmt-exp?))
-               ((and (advanced?) (instanceof-token? tok))
+               ((and (or (advanced?) (intermediate?)) (instanceof-token? tok))
                 (parse-expression cur-tok (getter) 'instanceof getter #f stmt-exp?))
                (else cur-tok))))
         ((dot-op-or-end)
@@ -2168,7 +2168,7 @@
              ((and (advanced?) (if-exp? tok))
               (parse-expression cur-tok (parse-expression cur-tok (getter) 'start getter #f #f) 'if-exp-colon getter #f stmt-exp?))
              ((and (advanced?) (o-bracket? tok)) (parse-expression cur-tok (getter) 'array-acc getter statement-ok? stmt-exp?))
-             ((and (advanced?) (instanceof-token? tok)) (parse-expression cur-tok (getter) 'instanceof getter #f stmt-exp?))
+             ((and (or (advanced?) (intermediate?)) (instanceof-token? tok)) (parse-expression cur-tok (getter) 'instanceof getter #f stmt-exp?))
              (else cur-tok)))
         ;Advanced
         ((array-acc)
@@ -2291,13 +2291,15 @@
         ;Advanced
         ((instanceof-array)
          (case kind
-           ((O_BRACKET) 
-            (let ((next (getter)))
-              (if (c-bracket? (get-tok next))
-                  (parse-expression next (getter) 'instanceof-array getter statement-ok? stmt-exp?)
-                  (parse-error (format "Array types are of the form type[], expected ] found ~a" 
-                                       (format-out (get-tok next)))
-                               start (get-end next)))))
+           ((O_BRACE) 
+            (if (intermediate?)
+                (parse-error "'[' may not follow the name of a type" start end)
+                (let ((next (getter)))
+                  (if (c-brace? (get-tok next))
+                      (parse-expression next (getter) 'instanceof-array getter statement-ok? stmt-exp?)
+                      (parse-error (format "Array types are of the form type[], expected ] found ~a" 
+                                           (format-out (get-tok next)))
+                                   start (get-end next))))))
            (else (parse-expression pre cur-tok 'op-or-end getter statement-ok? stmt-exp?))))
         ;Advanced
         ((if-exp-colon)

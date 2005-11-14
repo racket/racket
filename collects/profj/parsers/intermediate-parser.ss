@@ -536,7 +536,10 @@
        [(RelationalExpression <= ShiftExpression)
 	(make-bin-op #f (build-src 3) '<= $1 $3 (build-src 2 2))]	
        [(RelationalExpression >= ShiftExpression)
-	(make-bin-op #f (build-src 3) '>= $1 $3 (build-src 2 2))])      
+	(make-bin-op #f (build-src 3) '>= $1 $3 (build-src 2 2))]
+       [(RelationalExpression instanceof ReferenceType)
+	(make-instanceof #f (build-src 3) $1 $3 (build-src 2 2))]
+       )
 
       (EqualityExpression
        [(RelationalExpression) $1]

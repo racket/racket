@@ -405,7 +405,7 @@
                                            #f))
                     (_ tc))) (process-extras (cdr extras) type-recs))
                #;(cons (test-case-test (car extras)) (process-extras (cdr extras) type-recs)))
-              ((interact-case? (car extras))
+              #;((interact-case? (car extras))
                (let ((interact-box (interact-case-box (car extras))))
                  (send interact-box set-level level)
                  (send interact-box set-records execute-types)
