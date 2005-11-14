@@ -575,12 +575,12 @@ Other constructors:
 >  pin-arrow-line          ; arrow-size pict 
                            ; src-pict (pict pict -> x y)
                            ; dest-pict (pict pict -> x y)
-                           ; [line-w [color-string [lines-under?]]]
+                           ; [line-w [color-string [lines-under? [solid-head?]]]]
                            ; -> pict
 >  pin-arrows-line         ; arrow-size pict 
                            ; src-pict (pict pict -> x y)
                            ; dest-pict (pict pict -> x y)
-                           ; [line-w [color-string [lines-under?]]] 
+                           ; [line-w [color-string [lines-under? [solid-head?]]]] 
                            ; -> pict
 
    Adds a line or line-with-arrows onto a pict, using
