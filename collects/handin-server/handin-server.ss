@@ -507,8 +507,9 @@
         ;; other messages require a login: valid users and a good password
         [else
          (when (eof-object? msg)
-           (LOG "hangup")
-           (error 'handin "hangup (~a)" (a-ref data 'username/s)))
+           (let ([username/s (a-ref data 'username/s #f)])
+             (apply error 'handin
+                    (if username/s `("hangup (~a)" ,username/s) `("hangup")))))
          (let ([usernames  (a-ref data 'usernames #f)]
                [user-datas (a-ref data 'user-datas #f)])
            (when (or (memq #f user-datas)
