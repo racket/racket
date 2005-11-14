@@ -66,7 +66,7 @@
                              $3)]
          [(FNCT OP exp CP) ($1 $3)]
          [(exp + exp) (+ $1 $3)]
-         [(exp - exp) (+ $1 $3)]
+         [(exp - exp) (- $1 $3)]
          [(exp * exp) (* $1 $3)]
          [(exp / exp) (/ $1 $3)]
          [(- exp) (prec NEG) (- $2)]
@@ -85,4 +85,4 @@
 		      (one-line)))))))
     (one-line)))
 
-(calc (open-input-string "(1 + 2 * 3 3) 3)\n(1.2 + 3.3) / 44 \n !"))
+(calc (open-input-string "(1 + 2 * 3) - (1+2)*3"))
