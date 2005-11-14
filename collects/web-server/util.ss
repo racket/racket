@@ -16,7 +16,6 @@
            url-path->string)
   
   (provide/contract
-   [xml->string (document? . -> . string?)]
    [decompose-request ((request?) . ->* . (url? symbol? string?))]
    [network-error ((symbol? string?) (listof any/c) . ->* . (void))]
    [path->list  (path? . -> . (cons/c (union path? (symbols 'up 'same))
@@ -27,13 +26,7 @@
    [exn->string ((union exn? any/c) . -> . string?)]
    [get-mime-type (path? . -> . bytes?)]
    [build-path-unless-absolute (path? (union string? path?) . -> . path?)])
-  
-  ;; xml->string: xml -> string
-  (define (xml->string some-xml)
-    (let ([o-port (open-output-string)])
-      (write-xml/content some-xml o-port)
-      (get-output-string o-port)))
-  
+    
   ;; ripped this off from url-unit.ss
   (define (url-path->string strs)
     (apply

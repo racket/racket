@@ -17,7 +17,7 @@
   ;; ************************************************************
   ;; ************************************************************
   ;; SERVING FILES
-    
+  
   ;; serve-file : connection symbol uri host -> void
   ;; to find the file, including searching for implicit index files, and serve it out
   (define (serve-file conn method uri host-info)
@@ -66,12 +66,11 @@
       TEXT/HTML-MIME-TYPE
       `([Location . ,(string-append url-path-str "/")])
       (list
-       (xml->string
-        (xexpr->xml
-         `(html
-           (head (title "Add a Slash"))
-           (body "Please use "
-                 (a ([href ,(string-append
-                             url-path-str "/")])
-                    "this url") " instead."))))))
+       (xexpr->string
+        `(html
+          (head (title "Add a Slash"))
+          (body "Please use "
+                (a ([href ,(string-append
+                            url-path-str "/")])
+                   "this url") " instead.")))))
      method)))
