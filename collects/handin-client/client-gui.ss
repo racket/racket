@@ -35,7 +35,8 @@
   (define web-address (#%info-lookup 'web-address (lambda () #f)))
 
   (define handin-dialog-name (string-append handin-name " Handin"))
-  (define button-label       (string-append handin-name " Handin"))
+  (define button-label/h     (string-append handin-name " Handin"))
+  (define button-label/r     (string-append handin-name " Retrieve"))
   (define manage-dialog-name (string-append handin-name " Handin Account"))
 
   (define preference-key
@@ -90,7 +91,11 @@
       (define retrieve?
         (new check-box%
              [label "Retrieve"]
-             [parent button-panel]))
+             [parent button-panel]
+             [callback (lambda _
+                         (define r? (send retrieve? get-value))
+                         (send ok set-label
+                               (if r? button-label/r button-label/h)))]))
 
       (define (submit-file)
         (define final-message "Handin successful.")
@@ -130,7 +135,8 @@
 
       (define ok
         (new button%
-          [label button-label]
+          [label ; can change to button-label/r, so use extra spaces
+           (string-append " " button-label/h " ")]
           [parent button-panel]
           [style '(border)]
           [callback
@@ -587,7 +593,7 @@
       (define phase1 void)
       (define phase2 void)
 
-      (define tool-button-label (bitmap-label-maker button-label handin-icon))
+      (define tool-button-label (bitmap-label-maker button-label/h handin-icon))
 
       (define (make-new-unit-frame% super%)
 	(class super%
