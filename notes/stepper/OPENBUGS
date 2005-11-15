@@ -1,3 +1,7 @@
+The reduction of 'recur' does not conform to a sensible reduction
+semantics.  Can you figure out why?  (For the answer, see the comment
+in the 'recur' section of collects/tests/stepper/through-tests.ss.)
+
 Primitives like 'make-number/make-numeric' that are renamed
 as module provides are not displayed using their renamed
 names.

@@ -805,6 +805,28 @@ outside in?  Feh.
 
 *************
 
+Well, the dang summer is almost over, and I've still got a long, long way to
+go.
+
+The basic change to the model is that instead of storing completed definitions
+as pre-formatted s-expressions, I'm now storing them as 2-element lists
+containing the syntax object associated with the definition and a 'getter'
+which returns the value that the binding refers to.  The actual definition is
+reformatted for each step.  This is a bit silly, but it would be easy to cache
+the definitions along with the present values if this is actually a performance
+bottleneck. I suspect it won't matter a bit.
+
+In the presence of mutation, the existing separators don't make sense, either.
+I'm scrapping them, for the moment.  A nice interface change would be to
+separate only the definitions that had changed. For them moment, they'll all be
+separated.
+
+The first order of business, after mucking around in the model for some time to
+get the flavor of how things will work, is to go and set up the interface so I
+can get things running.
+
+*************
+
 Okay, I've "completed" the google project, but there are still things
 to wrap up.  Right now I'm working on the highlighting for mutated
 bindings, which is inferred from differences in the rendered steps.
@@ -841,4 +863,9 @@ hide in the "syntax?" contract.
 
 **************
 
+Time to clean up for v300.  Let's see if we can get begin and begin0 working.
+
+2005-11-14
+
+*************
 
