@@ -3,7 +3,7 @@
   (require (lib "contract.ss")
            (lib "plt-match.ss")
            (lib "struct.ss")
-           (all-except (lib "list.ss" "srfi" "1") any)
+           (prefix srfi1: (lib "list.ss" "srfi" "1"))
            "../../ast.ss"
            "../../readerr.ss"
            "../../tenv.ss"
@@ -27,7 +27,7 @@
         ;; we allow functions to be mutually recursive in Algol-like fashion
         ;; (i.e. if they are no intervening non-function definitions)
         [(honu:function? (car defns))
-         (let-values ([(funcs remaining) (span honu:function? defns)])
+         (let-values ([(funcs remaining) (srfi1:span honu:function? defns)])
            (loop remaining (append (typecheck-functions funcs) results)))]
         [else (loop (cdr defns) (cons (typecheck-defn (car defns)) results))])))
   
@@ -66,14 +66,16 @@
           new-funcs
           (match (car funcs)
             [(struct honu:function (stx name type args body))
-             (let-values ([(e1 t1) (parameterize ([current-return-type type])
-                                     (typecheck-expression (fold (lambda (a e)
-                                                                   (extend-fenv (honu:formal-name a)
-                                                                                (honu:formal-type a)
-                                                                                e))
-                                                                 (wrap-lenv)
-                                                                 args)
-                                                           type body))])
+             (let-values
+                 ([(e1 t1)
+                   (parameterize ([current-return-type type])
+                     (typecheck-expression (srfi1:fold (lambda (a e)
+                                                         (extend-fenv (honu:formal-name a)
+                                                                      (honu:formal-type a)
+                                                                      e))
+                                                       (wrap-lenv)
+                                                       args)
+                                           type body))])
                (loop (cdr funcs)
                      (cons (copy-struct honu:function (car funcs)
                              [honu:function-body e1])
@@ -151,7 +153,7 @@
                         "Type of init slot is undefined"
                         (honu:ast-stx type))))
                  (map honu:formal-type inits))
-       (let ([cenv (fold (lambda (a e)
+       (let ([cenv (srfi1:fold (lambda (a e)
                            (extend-fenv (honu:formal-name a)
                                         (honu:formal-type a)
                                         e))
@@ -216,7 +218,7 @@
                         "Type of expected init slot is undefined"
                         (honu:ast-stx type))))
                  (map honu:formal-type withs))
-       (let ([cenv (fold (lambda (a e)
+       (let ([cenv (srfi1:fold (lambda (a e)
                            (extend-fenv (honu:formal-name a)
                                         (honu:formal-type a)
                                         e))
