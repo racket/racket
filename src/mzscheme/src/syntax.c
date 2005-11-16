@@ -1445,7 +1445,10 @@ ref_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
   }
 
   if (SCHEME_STX_PAIRP(name)) {
-    var = scheme_expand_expr(name, env, rec, drec);
+    if (rec[drec].comp)
+      var = scheme_compile_expr(name, env, rec, drec);
+    else
+      var = scheme_expand_expr(name, env, rec, drec);
   } else {
     scheme_rec_add_certs(rec, drec, form);
 
@@ -1463,15 +1466,20 @@ ref_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
 
     if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
 	|| SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type)) {
-      var = scheme_register_toplevel_in_prefix(var, env, rec, drec);
+      if (rec[drec].comp)
+	var = scheme_register_toplevel_in_prefix(var, env, rec, drec);
     } else {
       scheme_wrong_syntax(NULL, name, form, "identifier does not refer to a top-level or module variable");
     }
 
-    scheme_compile_rec_done_local(rec, drec);
+    if (rec[drec].comp)
+      scheme_compile_rec_done_local(rec, drec);
   }
 
-  return scheme_make_syntax_compiled(REF_EXPD, var);
+  if (rec[drec].comp)
+    return scheme_make_syntax_compiled(REF_EXPD, var);
+  else
+    return scheme_void;
 }
 
 static Scheme_Object *
