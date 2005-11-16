@@ -129,6 +129,7 @@ static Scheme_Hash_Table *global_constants_ht;
 # define ZERO_SIZED(closure) closure->zero_sized
 #endif
 
+static Scheme_Hash_Table *cache_ht;
 
 void scheme_init_print(Scheme_Env *env)
 {
@@ -151,6 +152,8 @@ void scheme_init_print(Scheme_Env *env)
 #ifdef MZ_PRECISE_GC
   register_traversers();
 #endif
+
+  REGISTER_SO(cache_ht);
 }
 
 Scheme_Object *scheme_make_svector(mzshort c, mzshort *a)
@@ -694,18 +697,34 @@ static void setup_graph_table(Scheme_Object *obj, Scheme_Hash_Table *ht,
   }
 }
 
+#define CACHE_HT_SIZE_LIMIT 32
+
 Scheme_Hash_Table *scheme_setup_datum_graph(Scheme_Object *o, void *for_print)
 {
   Scheme_Hash_Table *ht;
   int counter = 1;
 
-  ht = scheme_make_hash_table(SCHEME_hash_ptr);
+  if (cache_ht) {
+    ht = cache_ht;
+    cache_ht = NULL;
+  } else
+    ht = scheme_make_hash_table(SCHEME_hash_ptr);
+
   setup_graph_table(o, ht, &counter, (PrintParams *)for_print);
 
   if (counter > 1)
     return ht;
-  else
+  else {
+    if (ht->size < CACHE_HT_SIZE_LIMIT) {
+      int i;
+      for (i = 0; i < ht->size; i++) {
+	ht->keys[i] = NULL;
+	ht->vals[i] = NULL;
+      }
+      cache_ht = ht;
+    }
     return NULL;
+  }
 }
 
 static char *

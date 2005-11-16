@@ -2354,7 +2354,7 @@ static Scheme_Object *resolve_env(Scheme_Object *a, long phase,
       vec = SCHEME_PTR_VAL(WRAP_POS_FIRST(wraps));
       n = SCHEME_VEC_ELS(vec)[0];
       phase -= SCHEME_INT_VAL(n);
-      
+     
       src = SCHEME_VEC_ELS(vec)[1];
       dest = SCHEME_VEC_ELS(vec)[2];
 
@@ -2475,7 +2475,6 @@ static Scheme_Object *resolve_env(Scheme_Object *a, long phase,
       did_rib = NULL;
     }
 
-
     if (!rib)
       WRAP_POS_INC(wraps);
   }
@@ -2503,7 +2502,7 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, long phase)
 	result = SCHEME_STX_VAL(a);
 
       ((Scheme_Stx *)a)->u.modinfo_cache = result;
-      
+ 
       return result;
     } else if (SCHEME_RENAMESP(WRAP_POS_FIRST(wraps))) {
       Module_Renames *mrn = (Module_Renames *)WRAP_POS_FIRST(wraps);

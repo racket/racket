@@ -1790,8 +1790,9 @@ static void remove_extra(void *ip_v)
     }
   }
 
-  /* Tell the main commit thread to reset */
-  scheme_post_sema_all(ip->input_giveup);
+  /* Tell the main commit thread (if any) to reset */
+  if (ip->input_giveup)
+    scheme_post_sema_all(ip->input_giveup);
 }
 
 static int complete_peeked_read_via_get(Scheme_Input_Port *ip,
