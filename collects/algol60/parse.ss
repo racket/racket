@@ -1,7 +1,8 @@
 #cs(module parse mzscheme
      (require (lib "lex.ss" "parser-tools")
               (prefix : (lib "lex-sre.ss" "parser-tools"))
-              (lib "yacc.ss" "parser-tools")
+              "cfg-parser.ss"
+	      (lib "yacc.ss" "parser-tools")
               (lib "readerr.ss" "syntax")
               "prims.ss")
      
@@ -120,7 +121,7 @@
         [any-char (token UNPARSEABLE (string->symbol lexeme))]))
      
      (define parse
-       (parser
+       (cfg-parser
         (tokens non-terminals)
         (start <program>)
         (end EOF)
