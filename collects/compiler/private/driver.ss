@@ -75,7 +75,7 @@
 
   (require "../sig.ss"
 	   "sig.ss"
-	   "to-core.ss")
+	   "../to-core.ss")
 
   (provide driver@)
 
@@ -251,6 +251,12 @@
 
       ;;----------------------------------------------------------------------
       ;; Misc utils      
+
+      (define (simple-constant? s)
+	(or (identifier? s)
+	    (number? (syntax-e s))
+	    (empty? (syntax-e s))
+	    (memq (syntax-e s) '(#t #f))))
 
       ;; takes a list of a-normalized expressions and analyzes them
       ;; returns the analyzed code, a list of local variable lists, 
@@ -685,7 +691,8 @@
 									    #`'#,zodiac:global-lookup-id
 									    #`'#,zodiac:global-assign-id
 									    #`'#,zodiac:safe-vector-ref-id
-									    #`'#,zodiac:global-prepare-id)])
+									    #`'#,zodiac:global-prepare-id
+									    simple-constant?)])
 					     (list (zodiac:syntax->zodiac src) 
 						   bytecode magic-sym)))
 					 (block-source s:file-block))])

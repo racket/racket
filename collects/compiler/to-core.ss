@@ -11,13 +11,14 @@
   ;;  `require-for-syntax', it's a timing issue. For `module', it's
   ;;  because the transformation can only handle a single `module'
   ;;  declaration.
-  (define (top-level-to-core stx lookup-stx set-stx safe-vector-ref-stx extract-stx)
+  (define (top-level-to-core stx lookup-stx set-stx safe-vector-ref-stx extract-stx simple-constant?)
     (syntax-case stx (module begin)
       [(module m lang (plain-module-begin decl ...))
        (let-values ([(expr new-decls magic-sym) 
                      (lift-sequence (flatten-decls (syntax->list #'(decl ...)))
                                     lookup-stx set-stx safe-vector-ref-stx extract-stx
-                                    #t)])
+                                    #t
+				    simple-constant?)])
          (values (expand-syntax expr)
                  #`(module m lang (#%plain-module-begin #,@new-decls))
 		 magic-sym))]
@@ -25,12 +26,14 @@
        (let-values ([(expr new-decls magic-sym) 
                      (lift-sequence (flatten-decls (syntax->list #'(decl ...)))
                                     lookup-stx set-stx safe-vector-ref-stx extract-stx
-                                    #f)])
+                                    #f
+				    simple-constant?)])
          (values (expand-syntax expr)
                  #`(begin #,@new-decls)
 		 magic-sym))]
       [else
-       (top-level-to-core #`(begin #,stx) lookup-stx set-stx safe-vector-ref-stx extract-stx)]))
+       (top-level-to-core #`(begin #,stx) lookup-stx set-stx safe-vector-ref-stx extract-stx
+			  simple-constant?)]))
   
   (define (flatten-decls l)
     (apply append
@@ -108,7 +111,13 @@
 	  (generate-magic decls)
 	  magic-sym)))
 
-  (define (lift-sequence decls lookup-stx set-stx safe-vector-ref-stx extract-stx in-module?)
+  (define (need-thunk? rhs)
+    (not (and (stx-pair? rhs)
+	      (or (module-identifier=? #'lambda (stx-car rhs))
+		  (module-identifier=? #'case-lambda (stx-car rhs))))))
+
+  (define (lift-sequence decls lookup-stx set-stx safe-vector-ref-stx extract-stx 
+			 in-module? simple-constant?)
     (let ([ct-vars (make-vars)]
           [rt-vars (make-vars)]
           [compile-time (datum->syntax-object #f (gensym 'compile-time))]
@@ -123,7 +132,8 @@
                              (let ([cvted (convert #'rhs #t 
                                                    lookup-stx set-stx safe-vector-ref-stx
                                                    compile-time ct-vars
-                                                   in-module?)])
+                                                   in-module?
+						   simple-constant?)])
                                (if (and (not in-module?)
                                         (module-identifier=? #'def #'define-syntaxes))
                                    ;; Don't try to name macro procedures, because it
@@ -134,29 +144,33 @@
                   (filter (lambda (x) (not (is-run-time? x))) decls))]
             [rt-converted
              (map (lambda (stx)
-                    #`(lambda ()
-                        #,(syntax-case stx (define-values provide require require-for-syntax require-for-template)
-                            [(provide . _)
-                             #'(void)]
-                            [(require . _)
-                             #'(void)]
-                            [(require-for-syntax . _)
-                             #'(void)]
-                            [(require-for-template . _)
-                             #'(void)]
-                            [(define-values ids rhs)
-                             #`(let-values ([ids
-                                             #,(convert #'rhs #f
-                                                        lookup-stx set-stx safe-vector-ref-stx
-                                                        run-time rt-vars
-                                                        in-module?)])
-                                 (values . ids))]
-                            [else
-                             (convert stx #f 
-                                      lookup-stx set-stx safe-vector-ref-stx
-                                      run-time rt-vars
-                                      in-module?)])))
-                  (filter is-run-time? decls))]
+		    (syntax-case stx (define-values provide require require-for-syntax require-for-template)
+		      [(provide . _)
+		       #'void]
+		      [(require . _)
+		       #'void]
+		      [(require-for-syntax . _)
+		       #'void]
+		      [(require-for-template . _)
+		       #'void]
+		      [(define-values ids rhs)
+		       (let ([converted (convert #'rhs #f
+						 lookup-stx set-stx safe-vector-ref-stx
+						 run-time rt-vars
+						 in-module?
+						 simple-constant?)])
+			 (if (need-thunk? #'rhs)
+			     #`(lambda () #,converted)
+			     #`(let-values ([ids #,converted])
+				 (values . ids))))]
+		      [else
+		       #`(lambda ()
+			   #,(convert stx #f 
+				      lookup-stx set-stx safe-vector-ref-stx
+				      run-time rt-vars
+				      in-module?
+				      simple-constant?))]))
+		  (filter is-run-time? decls))]
             [ct-rhs #`((let ([magic (car (cons '#,magic-sym 2))])
                          (if (symbol? magic) 
                              (lambda (x) (vector
@@ -241,8 +255,11 @@
                             [(require-for-template . _)
                              (car decls)]
                             [(define-values (id ...) rhs)
-                             #`(define-values (id ...)
-                                 ((vector-ref #,(if just-one-rt? rt-rhs run-time) #,rt-pos)))]
+			     #`(define-values (id ...)
+				 #,(let ([lookup #`(vector-ref #,(if just-one-rt? rt-rhs run-time) #,rt-pos)])
+				     (if (need-thunk? #'rhs)
+					 #`(#,lookup)
+					 lookup)))]
                             [else
                              #`((vector-ref #,(if just-one-rt? rt-rhs run-time) #,rt-pos))])
                           (loop (cdr decls) ct-pos (add1 rt-pos)))]
@@ -278,12 +295,6 @@
 	(datum->syntax-object #'here (cadr b) stx stx)]
        [else #f])))
 
-  (define (simple-constant? s)
-    (or (identifier? s)
-        (number? (syntax-e s))
-        (empty? (syntax-e s))
-        (memq (syntax-e s) '(#t #f))))
-  
   (define (add-literal/pos stx li)
     (let ([pos (lifted-info-counter li)])
       (hash-table-put! (lifted-info-slot-map li) pos stx)
@@ -314,7 +325,7 @@
   (define (add-identifier stx li trans? lookup-stx id)
     #`(#,lookup-stx #,id #,(add-identifier/pos stx li trans?)))
 
-  (define (convert stx trans? lookup-stx set-stx safe-vector-ref-stx id li in-module?)
+  (define (convert stx trans? lookup-stx set-stx safe-vector-ref-stx id li in-module? simple-constant?)
     (define ((loop certs) stx)
       (let ([loop (loop (apply-certs stx certs))])
         (kernel-syntax-case stx trans?
