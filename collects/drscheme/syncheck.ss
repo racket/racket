@@ -1674,7 +1674,9 @@ If the namespace does not, they are colored the unbound color.
         (let ([top-bound?
                (or (get-ids binders var)
                    (parameterize ([current-namespace user-namespace])
-                     (namespace-variable-value (syntax-e var) #t (λ () #f))))])
+                     (let/ec k
+                       (namespace-variable-value (syntax-e var) #t (λ () (k #f)))
+                       #t)))])
           (if top-bound?
               (color var lexically-bound-variable-style-name)
               (color var error-style-name))
