@@ -90,6 +90,12 @@
       (super-new)
       (load-file image)))
   
+  (define BUTTON-H-SPACE 5)
+  (define BUTTON-V-SPACE 2)
+
+  (define UNCLICKED-COLOR (make-object color% 220 220 175))
+  (define CLICKED-COLOR (make-object color% 100 100 50))
+
   ;; a textual button of the same type
   (define text-button-snip%
     (class string-snip%
@@ -99,21 +105,64 @@
        [got-click? false]
        [inside? false])
 
+      (define/private (inc b v)
+	(when b
+	  (set-box! b (+ v (unbox b)))))
+
+      (define/override get-extent 
+	(opt-lambda (dc x y [w #f] [h #f] [db #f] [dt #f] [dl #f] [dr #f])
+	  (super get-extent dc (+ x BUTTON-H-SPACE) (+ y BUTTON-V-SPACE) w h db dt dl dr)
+	  (inc w (* 2 BUTTON-H-SPACE))
+	  (inc h (* 2 BUTTON-V-SPACE))
+	  (inc db BUTTON-V-SPACE)
+	  (inc dt BUTTON-V-SPACE)
+	  (inc dl BUTTON-H-SPACE)
+	  (inc dr BUTTON-H-SPACE)))
+
+      (define/override (draw dc x y t l r b dx dy caret)
+	(let ([p (send dc get-pen)]
+	      [b (send dc get-brush)]
+	      [smoothing (send dc get-smoothing)])
+	  (send dc set-pen "black" 1 'solid)
+	  (send dc set-brush 
+		(if got-click? CLICKED-COLOR UNCLICKED-COLOR)
+		'solid)
+	  (send dc set-smoothing 'aligned)
+	  (let ([w (box 0)]
+		[h (box 0)])
+	    (get-extent dc x y w h)
+	    (send dc draw-rounded-rectangle x y (unbox w) (unbox h) BUTTON-H-SPACE))
+	  (send dc set-pen p)
+	  (send dc set-brush b)
+	  (send dc set-smoothing smoothing))
+	(super draw dc (+ x BUTTON-H-SPACE) (+ y BUTTON-V-SPACE) 
+	       t l r b 
+	       (+ dx BUTTON-H-SPACE) (+ dy BUTTON-V-SPACE)
+	       caret))
+
       (define/override (on-event dc x y editorx editory event)
         (case (send event get-event-type)
           [(left-down)
            (set! got-click? true)
-           (set! inside? true)]
+           (set! inside? true)
+	   (refresh)]
           [(left-up)
            (when (and got-click? inside?)
              (callback this event))
            (set! got-click? false)
-           (set! inside? false)]
+           (set! inside? false)
+	   (refresh)]
           [(enter)
            (set! inside? true)]
           [(leave)
            (set! inside? false)]
           [else (void)]))
+
+      (inherit get-admin)
+      (define/private (refresh)
+	(let ([a (get-admin)])
+	  (when a
+	    (send a needs-update this 0 0 1000 100))))
       
       (super-make-object label)
       (inherit set-style)

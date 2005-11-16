@@ -19,7 +19,7 @@
   
   (define cue-text-mixin
     (mixin ((class->interface text%)) ()
-      (inherit insert change-style erase)
+      (inherit insert change-style erase clear-undos)
       (init [cue-text ""]
             [color "gray"])
       (init-field
@@ -31,7 +31,8 @@
       (define (clear-cue-text)
         (when first-focus?
           (set! first-focus? false)
-          (erase)))
+          (erase)
+	  (clear-undos)))
       
       #;(boolean? . -> . void)
       ;; Called when this text% gains or loses focus

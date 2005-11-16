@@ -30,7 +30,7 @@
       
       ;; A readable-snip<%> of an examples box to allow GUI contruction of data examples.
       (define example-box%
-        (class* editor-snip% (readable-snip<%>)
+        (class* (decorated-editor-snip-mixin editor-snip%) (readable-snip<%>)
           (inherit set-snipclass)
           
           (init [examples-to-copy #f])
@@ -117,6 +117,8 @@
           ;;;;;;;;;;
           ;; Layout
           
+          (define/override (get-color) "purple")
+
           (field [pb (new aligned-pasteboard%)])
           (send pb lock-alignment true)
           (field [main (new vertical-alignment% (parent pb))]
@@ -233,7 +235,7 @@
           (new horizontal-alignment% (parent this)) ; spacer
           (new embedded-text-button%
                (parent this)
-               (label "Del")
+               (label "Delete")
                (callback (lambda (b e) (send (get-parent) delete-child this))))
           (send (get-pasteboard) lock-alignment false)
           ))

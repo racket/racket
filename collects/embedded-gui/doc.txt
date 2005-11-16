@@ -84,7 +84,7 @@ _alignment-parent<%>_s implement the following methods.
 
 The pasteboard that this alignment is being displayed to
       
-> (send an-alignment-parent add-child) -> void
+> (send an-alignment-parent add-child child) -> void
   child : (is-a?/c alignment<%>)
   after : (union (is-a?/c alignment<%>) false?) = false
 
