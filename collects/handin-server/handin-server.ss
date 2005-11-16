@@ -318,8 +318,11 @@
     (define dirname
       (apply string-append (car users)
              (map (lambda (u) (string-append "+" u)) (cdr users))))
+    (define submission-dir (build-path "active" assignment dirname))
     (unless (member assignment assignments)
       (error 'handin "not an active assignment: ~a" assignment))
+    (unless (directory-exists? submission-dir)
+      (error 'handin "no ~a submission directory for ~a" assignment users))
     (LOG "retrieving assignment for ~a: ~a" users assignment)
     (parameterize ([current-directory (build-path "active" assignment dirname)])
       (define file
@@ -335,11 +338,13 @@
                            (> (file-or-directory-modify-seconds f) time)))
                 (loop (cdr files) f (file-or-directory-modify-seconds f))
                 (loop (cdr files) file time))))))
-      (let ([len (file-size file)])
-        (write+flush w len)
-        (display "$" w)
-        (display (with-input-from-file file (lambda () (read-bytes len))) w)
-        (flush-output w))))
+      (if file
+        (let ([len (file-size file)])
+          (write+flush w len)
+          (display "$" w)
+          (display (with-input-from-file file (lambda () (read-bytes len))) w)
+          (flush-output w))
+        (error 'handin "no ~a submission file found for ~a" assignment users))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
