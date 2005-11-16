@@ -3,22 +3,21 @@
 ;; `parser', except that it works on an arbitrary CFG (returning
 ;; the first sucecssful parse).
 
-;; I think this is probably a packrat parser, except that
-;; left-recursion is not transformed away. Instead, alternative
-;; solutions are computed in parallel, and multiple attempts to
-;; compute the same result block until the first one completes.
-;; If you get into deadlock, such as when trying to match
+;; It's a backtracking parser. Alternative for a non-terminal are
+;; computed in parallel, and multiple attempts to compute the same
+;; result block until the first one completes.  If you get into
+;; deadlock, such as when trying to match
 ;;    <foo> := <foo>
 ;; then it means that there's no successful parse, so everything
-;; that's blocked should fail.
+;; that's blocked fails.
 
-;; The packrat-ness is caching the series of results for a particular
-;; non-terminal at a particular starting location. Otherwise, it's
-;; backtracking search. Backtracking is implemented through explicit
-;; success and failure continuations. Multiple results for a
-;; particular nonterminal and location are kept only when they have
-;; different lengths. (Otherwise, in the spirit of finding one
-;; successful parse, only the first result is kept.)
+;; Caching remember the series of results for a particular
+;; non-terminal at a particular starting location. Otherwise, the
+;; parser uses backtracking search. Backtracking is implemented
+;; through explicit success and failure continuations. Multiple
+;; results for a particular nonterminal and location are kept only
+;; when they have different lengths. (Otherwise, in the spirit of
+;; finding one successful parse, only the first result is kept.)
 
 ;; The parser-tools's `parse' is used to transform tokens in the
 ;; grammar to tokens specific to this parser. In other words, this
