@@ -743,11 +743,15 @@ char *wxFileSelector(char *message, char *default_path,
       if (f) {
 	CGrafPtr graf;
 	wxMacDC *mdc;
+	WindowPtr win;
 	mdc = f->MacDC();
 	graf = mdc->macGrafPort();
-	dialogOptions.parentWindow = GetWindowFromPort(graf);
-	dialogOptions.modality = kWindowModalityWindowModal;
-	cbi->has_parent = 1;
+	win = GetWindowFromPort(graf);
+	if (IsWindowVisible(win)) {
+	  dialogOptions.parentWindow = win;
+	  dialogOptions.modality = kWindowModalityWindowModal;
+	  cbi->has_parent = 1;
+	}
       }
     }
 
