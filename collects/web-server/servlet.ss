@@ -35,6 +35,7 @@
   ;; sent directly to the client (Web browser) instead of the terminal/log.
   (provide/contract
    [redirect/get (-> request?)]
+   [redirect/get/forget (-> request?)]
    [adjust-timeout! (number? . -> . any)]
    [send/back (any/c . -> . any)]
    [send/finish (any/c . -> . any)]
@@ -50,14 +51,7 @@
    xexpr/callback?
    xexpr/callback->xexpr
    (all-from "web-cells.ss")
-   (all-from "servlet-helpers.ss"))
-  
-  ;; ************************************************************
-  ;; HIGHER-LEVEL EXPORTS
-  
-  ; redirect/get : -> request
-  (define (redirect/get)
-    (send/suspend (lambda (k-url) (redirect-to k-url temporarily))))
+   (all-from "servlet-helpers.ss"))    
   
   ;; ************************************************************
   ;; EXPORTS
@@ -139,4 +133,14 @@
   (define (send/suspend/callback p-exp)
     (send/suspend/dispatch
      (lambda (embed/url)
-       (xexpr/callback->xexpr embed/url p-exp)))))
+       (xexpr/callback->xexpr embed/url p-exp))))
+  
+  ;; ************************************************************
+  ;; HIGHER-LEVEL EXPORTS
+  
+  (define ((make-redirect/get send/suspend))
+    (send/suspend (lambda (k-url) (redirect-to k-url temporarily))))
+  
+  ; redirect/get : -> request
+  (define redirect/get (make-redirect/get send/suspend))
+  (define redirect/get/forget (make-redirect/get send/forward)))
