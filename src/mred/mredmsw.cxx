@@ -62,7 +62,23 @@ public:
   wxWindow *wnd;
   int x, y, flags;
   LeaveEvent *next;
+  void *saferef;
 };
+
+#ifdef MZ_PRECISE_GC
+# define WRAP_SAFEREF(x) (void *)GC_malloc_immobile_box(GC_malloc_weak_box(gcOBJ_TO_PTR(x), NULL, 0))
+# define FREE_SAFEREF(x) GC_free_immobile_box((void **)x)
+typedef struct {
+  short tag;
+  short filler_used_for_hashing;
+  void *val;
+} wxWeak_Box;
+# define GET_SAFEREF(x) ((*(void **)x) ? gcPTR_TO_OBJ((*(wxWeak_Box **)x)->val) : NULL)
+#else
+# define WRAP_SAFEREF(x) (scheme_dont_gc_ptr(x), x)
+# define FREE_SAFEREF(x) scheme_gc_ptr_ok(x)
+# define GET_SAFEREF(x) x
+#endif
 
 static void CALLBACK HETRunSome(HWND hwnd, UINT uMsg, UINT idEvent, DWORD dwTime);
 static Scheme_Object *call_wnd_proc(void *data, int argc, Scheme_Object **argv);
@@ -150,7 +166,14 @@ static BOOL CALLBACK CheckWindow(HWND wnd, LPARAM param)
 	info->wnd = wnd;
 	info->c_return = c;
 	info->msg->message = WM_MRED_LEAVE;
-	info->msg->lParam = (long)c->queued_leaves;
+	{
+	  if (!c->queued_leaves->saferef) {
+	    void *sr;
+	    sr = WRAP_SAFEREF(c->queued_leaves);
+	    c->queued_leaves->saferef = sr;
+	  }
+	}
+	info->msg->lParam = (long)c->queued_leaves->saferef;
 	c->queued_leaves = c->queued_leaves->next;
       }
       return FALSE;
@@ -276,7 +299,10 @@ void MrEdDispatchEvent(MSG *msg)
 
   if (WM_MRED_LEAVE && (msg->message == WM_MRED_LEAVE)) {
     /* Queued leave event */
-    LeaveEvent *e = (LeaveEvent *)msg->lParam;
+    void *sr = (void *)msg->lParam;
+    LeaveEvent *e;
+    e = (LeaveEvent *)GET_SAFEREF(sr);
+    FREE_SAFEREF(sr);
     wxDoLeaveEvent(e->wnd, e->x, e->y, e->flags);
   } else if (!wxTheApp->ProcessMessage(msg)) {
 #if wxLOG_EVENTS
