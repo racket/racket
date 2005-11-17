@@ -1080,7 +1080,7 @@
                   (send edit begin-edit-sequence)
                   (let ([status (send edit load-file/gui-error
                                       filename
-                                      'same
+                                      'guess
                                       #f)])
                     (if status
                         (begin

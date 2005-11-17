@@ -380,12 +380,12 @@
 
       (define open-file
 	(λ ()
-	  (let ([file 
-		 (parameterize ([finder:dialog-parent-parameter
-				 (and (preferences:get 'framework:open-here?)
-                                      (get-top-level-focus-window))])
-		   (finder:get-file
-		    (send *open-directory* get)))])
+	  (let* ([parent (and (preferences:get 'framework:open-here?)
+                              (get-top-level-focus-window))]
+                 [file 
+                  (parameterize ([finder:dialog-parent-parameter parent])
+                    (finder:get-file
+                     (send *open-directory* get)))])
 	    (when file
 	      (send *open-directory*
 		    set-from-file! file))

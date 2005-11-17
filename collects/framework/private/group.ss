@@ -138,14 +138,14 @@
           (define/public (set-open-here-frame fr) (set! open-here-frame fr))
           (define/public (get-open-here-frame)
 	    (cond
-	      [open-here-frame open-here-frame]
-	      [else
-	       (let ([candidates
-		      (filter (λ (x) (is-a? (frame-frame x) frame:open-here<%>))
-			      frames)])
-		 (if (null? candidates)
-		     #f
-		     (frame-frame (car candidates))))]))
+              [open-here-frame open-here-frame]
+              [else
+               (let ([candidates
+                      (filter (λ (x) (is-a? (frame-frame x) frame:open-here<%>))
+                              frames)])
+                 (if (null? candidates)
+                     #f
+                     (frame-frame (car candidates))))]))
           
           (public get-mdi-parent frame-label-changed for-each-frame
                   get-active-frame set-active-frame insert-frame
