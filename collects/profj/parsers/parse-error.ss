@@ -434,11 +434,18 @@
                    (next-tok (get-tok next)))
               (cond
                 ((eof? next-tok) (parse-error (format "Expected interface body after ~a" (token-value tok)) srt end))
-                ((extends? next-tok) (parse-definition next (getter) 'iface-extends getter))
+                ((extends? next-tok) 
+                 (if (beginner?)
+                     (parse-error "Expected '{' to begin interface body, found 'extends' which is not allowed here" 
+                                  (get-start next) (get-end next))
+                     (parse-definition next (getter) 'iface-extends getter)))
                 ((o-brace? next-tok) (parse-definition cur-tok next 'iface-body getter))
                 ((close-to-keyword? next-tok 'extends)
-                 (parse-error (format "found ~a, which is similar to 'extends'" (token-value next-tok)) 
-                              (get-start next) (get-end next)))
+                 (if (beginner?)
+                     (parse-error (format "Expected '{' to begin interface body, ~a cannot appear here" (token-value next-tok))
+                                  (get-start next) (get-end next))
+                     (parse-error (format "found ~a, which is similar to 'extends'" (token-value next-tok)) 
+                                  (get-start next) (get-end next))))
                 ((open-separator? next-tok)
                  (parse-error (format "Expected { to begin interface body, but found ~a" (format-out next-tok))
                               (get-start next) (get-end next)))
@@ -1363,10 +1370,14 @@
              cur-tok
              (parse-error "A name may not contain a *" start stop)))
         (else 
-         (if (java-keyword? tok)
-             (parse-error (format "Expected variable after ., found reserved word ~a, which may not be a variable" kind)
-                          start stop)
-             (parse-error (format "Expected variable after . in name, found ~a" (format-out tok)) start stop))))))
+         (cond
+           ((eq? 'this kind)
+            (parse-error "'this' cannot occur after a '.', only before" start stop))
+           ((java-keyword? tok)
+            (parse-error (format "Expected name after '.', found reserved word ~a, which may not appear here" kind)
+                         start stop))
+           (else
+            (parse-error (format "Expected name after '.', found ~a" (format-out tok)) start stop)))))))
   
   ;parse-ctor-body: token token (->token) -> token
   (define (parse-ctor-body pre cur-tok getter)
@@ -2064,7 +2075,7 @@
                              'statement-expr-snd getter ctor? super-seen?))))
            (else (parse-error (format "Expected a ')' or a ','. Found ~a which is not allowed" out) start end))))
         )))
-                 
+
   ;parse-expression: token token state (->token) bool bool -> token
   (define (parse-expression pre cur-tok state getter statement-ok? stmt-exp?)
     ;(printf "parse-expression state ~a pre ~a cur-tok ~a statement-ok? ~a stmt-exp? ~a ~n" 
@@ -2158,9 +2169,11 @@
                       (parse-expression next (parse-expression afterID (getter) 'start getter #f #f)
                                         'assign-end getter statement-ok? stmt-exp?))
                      (else (parse-expression next afterID 'dot-op-or-end getter statement-ok? stmt-exp?)))))
-                ((java-keyword? next-tok) 
-                 (parse-error (format "Expected a method name, reserved name ~a may not be a method name" name) ns ne))
-                (else (parse-error (format "Expected a method name, found ~a" (format-out next-tok)) ns ne)))))
+                ((eq? 'this name)
+                 (parse-error "Expected a name, 'this' may not appear after a dot" ns ne))
+                ((java-keyword? next-tok)
+                 (parse-error (format "Expected a name, reserved name ~a may not be a name" name) ns ne))
+                (else (parse-error (format "Expected a name, found ~a" (format-out next-tok)) ns ne)))))
            (stmt-exp? (parse-expression pre cur-tok 'op-or-end getter #f stmt-exp?))
            ((bin-operator? tok) (parse-expression cur-tok (getter) 'start getter #f stmt-exp?))
            ;Advanced

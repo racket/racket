@@ -254,15 +254,6 @@
       ;; 19.9.1
       
       (InterfaceDeclaration
-       [(interface IDENTIFIER ExtendsInterfaces InterfaceBody)
-       	(make-interface-def (make-header (make-id $2 (build-src 2 2)) (list (make-modifier 'public #f))
-                                         $3 null null (build-src 3))
-                                $4
-                                (build-src 1)
-                                (build-src 4)
-                                (file-path)
-                                'intermedaite
-                                null 'top null)]
        [(interface IDENTIFIER InterfaceBody)
 	(make-interface-def (make-header (make-id $2 (build-src 2 2))(list (make-modifier 'public #f))
                                          null null null (build-src 2))
@@ -270,13 +261,9 @@
                                 (build-src 1)
                                 (build-src 3)
                                 (file-path)
-                                'intermdediate
+                                'beginner
                                 null 'top null)])
       
-      (ExtendsInterfaces
-       [(extends InterfaceType) (list $2)]
-       [(ExtendsInterfaces COMMA InterfaceType) (cons $3 $1)])
-
       (InterfaceBody
        [(O_BRACE InterfaceMemberDeclarations C_BRACE) $2])
       

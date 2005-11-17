@@ -674,10 +674,27 @@
       (define/public (lastIndexOf-java.lang.String-int str offset) (find-last-string (send str get-mzscheme-string) str offset -1))
     
       ;int -> String
-      (define/public (substring-int index) (make-java-string (substring text index (string-length text))))
+      (define/public (substring-int index) 
+        (substring-int-int index (sub1 (string-length text))))
     
       ;... -> String
-      (define/public (substring-int-int begin end) (make-java-string (substring text begin end)))
+      (define/public (substring-int-int begin end)
+        (when (< begin 0) 
+          (raise (make-runtime-error 
+                  (format "First argument to substring must be greater than 0, given ~a." begin))))
+        (when (>= begin (string-length text))
+          (raise (make-runtime-error
+                  (format "First argument to substring must be smaller than the string's length ~a, given ~a." (string-length text) begin))))
+        (when (>= end (string-length text))
+          (raise (make-runtime-error
+                  (format "Second argument to substring must be smaller than the string's length ~a, given ~a." (string-length text) end))))
+        (when (< end 0)
+          (raise (make-runtime-error
+                  (format "Second argument to substring must be greater than 0, given ~a." end))))
+        (when (> begin end)
+          (raise (make-runtime-error
+                  (format "First argument to substring must be less than the second, given ~a and ~a." begin end))))
+        (make-java-string (substring text begin end)))
     
       (define/public (subSequence-int-int begin end)
         (error 'subSequence "Internal Error: subsequence is unimplemented because charSequence is unimplemented"))
@@ -825,7 +842,7 @@
         (send this Object-constructor))
       
       (define/public (Throwable-constructor-java.lang.Throwable cse)
-        (set! message (if (null? cse) null (send cse |toString|)))
+        (set! message (if (null? cse) null (send cse toString)))
         (set! cause cse)
         (set! stack (current-continuation-marks))
         (send this Object-constructor))    
@@ -904,6 +921,14 @@
       (constructor exn str)
       (send exn set-exception! scheme-exn)
       scheme-exn))
+  
+  (define (make-runtime-error t)
+    (create-java-exception 
+     RuntimeException (string->immutable-string t)
+     (lambda (exn str)
+       (send exn RuntimeException-constructor-java.lang.String
+             (make-java-string str)))
+     (current-continuation-marks)))
   
   (provide convert-assert-Throwable wrap-convert-assert-Throwable dynamic-Throwable/c 
            guard-convert-Throwable static-Throwable/c)

@@ -854,6 +854,26 @@
   ;valid-method-sigs? (list method-record) (list member) symbol type-records -> bool
   (define (valid-method-sigs? methods members level type-recs)
     (or (null? methods)
+        (and (equal? (method-record-name (car methods)) 
+                     (method-record-class (car methods)))
+             (not (eq? (method-record-rtype (car methods)) 'ctor))
+             (let ((m (find-member (car methods) members level type-recs))
+                   (class (method-record-class (car methods))))
+               (if (field? m)
+                   (method-error 'inherited-conflict-field
+                                 (field-name m)
+                                 null
+                                 #f
+                                 (car class)
+                                 (field-src m)
+                                 #f)
+                   (method-error 'ctor-ret-value 
+                                 (method-name m)
+                                 (map field-type (method-parms m))
+                                 (type-spec-to-type (method-type) #f level type-recs)
+                                 (car class)
+                                 (method-src m)
+                                 #f))))
         (let ((res (same-method-name? (car methods) (cdr methods)))
               (m (and (not (eq? 'ctor (method-record-rtype (car methods))))
                       (find-member (car methods) members level type-recs)))
@@ -886,26 +906,6 @@
                              (car class)
                              (method-src m)
                              (eq? (method-record-rtype (car methods)) 'ctor)))))
-        (and (equal? (method-record-name (car methods)) 
-                     (method-record-class (car methods)))
-             (not (eq? (method-record-rtype (car methods)) 'ctor))
-             (let ((m (find-member (car methods) members level type-recs))
-                   (class (method-record-class (car methods))))
-               (if (field? m)
-                   (method-error 'inherited-conflict-field
-                                 (field-name m)
-                                 null
-                                 #f
-                                 (car class)
-                                 (field-src m)
-                                 #f)
-                   (method-error 'ctor-ret-value 
-                                 (method-name m)
-                                 (map field-type (method-parms m))
-                                 (type-spec-to-type (method-type) #f level type-recs)
-                                 (car class)
-                                 (method-src m)
-                                 #f))))
         (and (memq level `(beginner intermediate))
              (not (eq? (method-record-rtype (car methods)) 'ctor))
              (shared-class-name? (car methods) (send type-recs get-class-env))
