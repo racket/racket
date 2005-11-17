@@ -22,7 +22,6 @@
              [so-name (build-path top-dir "compiled" "native"
                                   (system-library-subpath)
                                   (append-extension-suffix libname))])
-        (printf "plot: compiling \"~a\" -> \"~a\"...\n" lib so-name)
         (parameterize ([current-directory lib]
                        [current-extension-compiler-flags
                         (append (current-extension-compiler-flags)
@@ -42,7 +41,7 @@
                                (> (file-or-directory-modify-seconds f)
                                   so-time))
                              c-files)))
-            (printf "    Compiling \"~a\"\n" lib)
+            (printf "plot: compiling \"~a\" -> \"~a\"...\n" lib so-name)
             (make-directory* tmp-dir)
             (compile-c-extension-parts c-files tmp-dir)
             (parameterize ([current-directory tmp-dir])
