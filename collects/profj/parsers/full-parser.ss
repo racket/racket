@@ -753,7 +753,7 @@
        [(new PrimitiveType Dims ArrayInitializer) (make-array-alloc-init #f (build-src 4) $2 $3 $4)]
        ;; 1.1
        [(new ClassOrInterfaceType Dims ArrayInitializer) 
-        (make-array-alloc-init #f (build-src 4) (make-type-spec $2 (build-src 2 2)) $3 $4)])
+        (make-array-alloc-init #f (build-src 4) (make-type-spec $2  $3 (build-src 2 2)) $3 $4)])
       
       (DimExprs
        [(DimExpr) (list $1)]
