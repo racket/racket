@@ -242,19 +242,26 @@
     (remq root-menu-frame (map wx->mred (wx:get-top-level-windows))))
 
   (define (get-top-level-focus-window)
-    (ormap (lambda (f) (and (send f is-act-on?) (wx->mred f))) (wx:get-top-level-windows)))
+    (ormap (lambda (f) (and (send f is-act-on?) 
+			    (let ([f (wx->mred f)])
+			      (and f
+				   (not (eq? f root-menu-frame))
+				   f))))
+	   (wx:get-top-level-windows)))
 
   (define (get-top-level-edit-target-window)
     (let loop ([l (wx:get-top-level-windows)][f #f][s 0][ms 0])
       (if (null? l)
-	  (and f (wx->mred f))
+	  f
 	  (let* ([f2 (car l)]
+		 [f2m (wx->mred f2)]
 		 [s2 (send f2 get-act-date/seconds)]
 		 [ms2 (send f2 get-act-date/milliseconds)])
-	    (if (or (not f)
-		    (> s2 s)
-		    (and (= s2 s) (> ms2 ms)))
-		(loop (cdr l) f2 s2 ms2)
+	    (if (and (or (not f)
+			 (> s2 s)
+			 (and (= s2 s) (> ms2 ms)))
+		     (not (eq? f2m root-menu-frame)))
+		(loop (cdr l) f2m s2 ms2)
 		(loop (cdr l) f s ms))))))
 
   (define (send-message-to-window x y m)
