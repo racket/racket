@@ -107,7 +107,11 @@
 				 '("/sw/bin/ispell"
 				   "/usr/bin/ispell"
 				   "/bin/ispell"
-				   "/usr/local/bin/ispell")))])
+				   "/usr/local/bin/ispell"))
+			  (find-executable-path (if (eq? (system-type) 'windows)
+						    "aspell.exe"
+						    "aspell")
+						#f))])
         (if (not existing)
             (set! has-ispell? #f)
             (begin
