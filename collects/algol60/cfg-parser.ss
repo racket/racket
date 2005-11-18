@@ -3,21 +3,25 @@
 ;; `parser', except that it works on an arbitrary CFG (returning
 ;; the first sucecssful parse).
 
-;; It's a backtracking parser. Alternative for a non-terminal are
-;; computed in parallel, and multiple attempts to compute the same
-;; result block until the first one completes.  If you get into
-;; deadlock, such as when trying to match
+;; I'm pretty sure that this is an implementation of Earley's
+;; algorithm.
+
+;; To a first approximation, it's a backtracking parser. Alternative
+;; for a non-terminal are computed in parallel, and multiple attempts
+;; to compute the same result block until the first one completes.  If
+;; you get into deadlock, such as when trying to match
 ;;    <foo> := <foo>
 ;; then it means that there's no successful parse, so everything
 ;; that's blocked fails.
 
-;; Caching remember the series of results for a particular
-;; non-terminal at a particular starting location. Otherwise, the
-;; parser uses backtracking search. Backtracking is implemented
-;; through explicit success and failure continuations. Multiple
-;; results for a particular nonterminal and location are kept only
-;; when they have different lengths. (Otherwise, in the spirit of
-;; finding one successful parse, only the first result is kept.)
+;; A cache holds the series of results for a particular non-terminal
+;; at a particular starting location. (A series is used, instead of a
+;; sinlge result, for backtracking.) Otherwise, the parser uses
+;; backtracking search. Backtracking is implemented through explicit
+;; success and failure continuations. Multiple results for a
+;; particular nonterminal and location are kept only when they have
+;; different lengths. (Otherwise, in the spirit of finding one
+;; successful parse, only the first result is kept.)
 
 ;; The parser-tools's `parse' is used to transform tokens in the
 ;; grammar to tokens specific to this parser. In other words, this
