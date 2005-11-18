@@ -258,7 +258,8 @@ END_XFORM_SKIP;
 # define GC_VAR_STACK_ARG      /* empty */
 #endif
 
-static void copy_stack(Scheme_Jumpup_Buf *b, void *base, void *start GC_VAR_STACK_ARG_DECL)
+/* This function must not be inlined! */
+void scheme_copy_stack(Scheme_Jumpup_Buf *b, void *base, void *start GC_VAR_STACK_ARG_DECL)
 {
   long size, msize;
   void *here;
@@ -404,7 +405,7 @@ int scheme_setjmpup_relative(Scheme_Jumpup_Buf *b, void *base,
     disguised_b = (long)b;
     b = NULL;
 
-    copy_stack((Scheme_Jumpup_Buf *)disguised_b, base, start GC_VAR_STACK_ARG);
+    scheme_copy_stack((Scheme_Jumpup_Buf *)disguised_b, base, start GC_VAR_STACK_ARG);
 
     /* Precise GC: ensure that this frame is pushed. */
     if (0) {
