@@ -98,7 +98,9 @@
 # include "uconfig.h"
 
 # define STACK_GROWS_DOWN
-# define SCHEME_BIG_ENDIAN
+# ifndef i386
+#  define SCHEME_BIG_ENDIAN
+# endif
 
 # define USE_EXPLICT_FP_FORM_CHECK
 # define POW_HANDLES_INF_CORRECTLY
