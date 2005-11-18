@@ -30,10 +30,12 @@
 
 (module cfg-parser mzscheme
   (require (lib "yacc.ss" "parser-tools")
+	   (lib "lex.ss" "parser-tools")
            (lib "list.ss")
            (lib "etc.ss"))
   (require-for-syntax (lib "boundmap.ss" "syntax")
-                      (lib "list.ss"))
+                      (lib "list.ss")
+		      (lib "token-syntax.ss" "parser-tools" "private-lex"))
 
   (provide cfg-parser)
   
@@ -43,6 +45,20 @@
   ;; Represents the thread scheduler:
   (define-struct tasks (active active-back waits multi-waits cache progress?))
 
+  (define-for-syntax make-token-identifier-mapping make-hash-table)
+  (define-for-syntax token-identifier-mapping-get
+    (case-lambda 
+     [(t tok)
+      (hash-table-get t (syntax-e tok))]
+     [(t tok fail)
+      (hash-table-get t (syntax-e tok) fail)]))
+  (define-for-syntax token-identifier-mapping-put!
+    (lambda (t tok v)
+      (hash-table-put! t (syntax-e tok) v)))
+  (define-for-syntax token-identifier-mapping-map
+    (lambda (t f)
+      (hash-table-map t f)))
+  
   ;; Used to calculate information on the grammar, such as whether
   ;; a particular non-terminal is "simple" instead of recursively defined.
   (define-for-syntax (nt-fixpoint nts proc nt-ids patss)
@@ -303,14 +319,15 @@
 
   ;; Finds the symbolic representative of a token class
   (define-for-syntax (map-token toks tok)
-    (bound-identifier-mapping-get toks tok
-                                  (lambda ()
-                                    (let ([id (gensym (syntax-e tok))])
-                                      (bound-identifier-mapping-put! toks tok id)
-                                      id))))
+    (car (token-identifier-mapping-get toks tok)))
+
+  (define no-pos-val (make-position 0 0 0))
+  (define-for-syntax no-pos 
+    (let ([npv ((syntax-local-certifier) #'no-pos-val)])
+      (lambda (stx) npv)))
     
   ;; Builds a matcher for a particular alternative
-  (define-for-syntax (build-match nts toks pat handle)
+  (define-for-syntax (build-match nts toks pat handle $ctx)
     (let loop ([pat pat]
                [pos 1])
       (if (null? pat)
@@ -318,7 +335,11 @@
                        (lambda (success-k fail-k max-depth tasks)
                          (fail-k max-depth tasks)))
           (let ([id (datum->syntax-object (car pat)
-                                          (string->symbol (format "$~a" pos)))])
+                                          (string->symbol (format "$~a" pos)))]
+		[id-start-pos (datum->syntax-object (car pat)
+						    (string->symbol (format "$~a-start-pos" pos)))]
+		[id-end-pos (datum->syntax-object (car pat)
+						  (string->symbol (format "$~a-end-pos" pos)))])
             (cond
               [(bound-identifier-mapping-get nts (car pat) (lambda () #f))
                ;; Match non-termimal
@@ -329,7 +350,9 @@
                           (andmap values (caddr l))))
                   #,(car pat)
                   (lambda (#,id stream depth end success-k fail-k max-depth tasks)
-                    #,(loop (cdr pat) (add1 pos)))
+		    (let-syntax ([#,id-start-pos no-pos]
+				 [#,id-end-pos no-pos])
+		      #,(loop (cdr pat) (add1 pos))))
                   stream depth 
                   #,(let ([cnt (apply +
                                       (map (lambda (item)
@@ -349,7 +372,9 @@
                              [stream (cdr stream)]
                              [depth (add1 depth)])
                          (let ([max-depth (max max-depth depth)])
-                           #,(loop (cdr pat) (add1 pos))))
+			   (let-syntax ([#,id-start-pos no-pos]
+					[#,id-end-pos no-pos])
+			     #,(loop (cdr pat) (add1 pos)))))
                        (fail-k max-depth tasks)))])))))
   
   ;; Starts parsing to match a non-terminal. There's a minor
@@ -447,181 +472,227 @@
       [(_ clause ...)
        (let ([clauses (syntax->list #'(clause ...))])
          (let-values ([(start grammar cfg-error parser-clauses)
-                       (let loop ([clauses clauses]
-                                  [cfg-start #f]
-                                  [cfg-grammar #f]
-                                  [cfg-error #f]
-                                  [parser-clauses null])
-                         (if (null? clauses)
-                             (values cfg-start
-                                     cfg-grammar
-                                     cfg-error
-                                     (reverse parser-clauses))
-                             (syntax-case (car clauses) (start error grammar)
-                               [(start tok)
-                                (loop (cdr clauses) #'tok cfg-grammar cfg-error parser-clauses)]
-                               [(error expr)
-                                (loop (cdr clauses) cfg-start cfg-grammar #'expr parser-clauses)]
-                               [(grammar [nt [pat handle0 handle ...] ...] ...)
-                                (let ([nts (make-bound-identifier-mapping)]
-                                      [toks (make-bound-identifier-mapping)]
-                                      [nt-ids (syntax->list #'(nt ...))]
-                                      [patss (map (lambda (stx)
-                                                    (map syntax->list (syntax->list stx)))
-                                                  (syntax->list #'((pat ...) ...)))])
-                                  (for-each (lambda (nt)
-                                              (bound-identifier-mapping-put! nts nt (list 0)))
-                                            nt-ids)
-                                  ;; Compute min max size for each non-term:
-                                  (nt-fixpoint
-                                   nts
-                                   (lambda (nt pats old-list)
-                                     (let ([new-cnt
-                                            (apply
-                                             min
-                                             (map (lambda (pat)
-                                                    (apply
-                                                     +
-                                                     (map (lambda (elem)
-                                                            (car
-                                                             (bound-identifier-mapping-get nts
-                                                                                           elem
-                                                                                           (lambda () (list 1)))))
-                                                          pat)))
-                                                  pats))])
-                                       (if (new-cnt . > . (car old-list))
-                                           (cons new-cnt (cdr old-list))
-                                           old-list)))
-                                   nt-ids patss)
-                                  ;; Compute set of toks that must appear at the beginning
-                                  ;;  for a non-terminal
-                                  (nt-fixpoint
-                                   nts
-                                   (lambda (nt pats old-list)
-                                     (let ([new-list
-                                            (apply
-                                             append
-                                             (map (lambda (pat)
-                                                    (let loop ([pat pat])
-                                                      (if (pair? pat)
-                                                          (let ([l (bound-identifier-mapping-get 
-                                                                    nts
-                                                                    (car pat)
-                                                                    (lambda ()
-                                                                      (list 1 (map-token toks (car pat)))))])
-                                                            ;; If the non-terminal can match 0 things,
-                                                            ;;  then it might match something from the
-                                                            ;;  next pattern element. Otherwise, it must
-                                                            ;;  match the first element:
-                                                            (if (zero? (car l))
-                                                                (append (cdr l) (loop (cdr pat)))
-                                                                (cdr l)))
-                                                          null)))
-                                                  pats))])
-                                       (let ([new (filter (lambda (id)
-                                                            (andmap (lambda (id2)
-                                                                      (not (eq? id id2)))
-                                                                    (cdr old-list)))
-                                                          new-list)])
-                                         (if (pair? new)
-                                             ;; Drop dups in new list:
-                                             (let ([new (let loop ([new new])
-                                                          (if (null? (cdr new))
-                                                              new
-                                                              (if (ormap (lambda (id)
-                                                                           (eq? (car new) id))
-                                                                         (cdr new))
-                                                                  (loop (cdr new))
-                                                                  (cons (car new) (loop (cdr new))))))])
-                                               (cons (car old-list) (append new (cdr old-list))))
-                                             old-list))))
-                                   nt-ids patss)
-                                  ;; Determine left-recursive clauses:
-                                  (for-each (lambda (nt pats)
-                                              (let ([l (bound-identifier-mapping-get nts nt)])
-                                                (bound-identifier-mapping-put! nts nt (list (car l)
-                                                                                            (cdr l)
-                                                                                            (map (lambda (x) #f) pats)))))
-                                            nt-ids patss)
-                                  (nt-fixpoint
-                                   nts
-                                   (lambda (nt pats old-list)
-                                     (list (car old-list)
-                                           (cadr old-list)
-                                           (map (lambda (pat simple?)
-                                                  (or simple?
-                                                      (let ([l (map (lambda (elem)
-                                                                      (bound-identifier-mapping-get 
-                                                                       nts
-                                                                       elem
-                                                                       (lambda () #f)))
-                                                                    pat)])
-                                                        (andmap (lambda (i)
-                                                                  (or (not i)
-                                                                      (andmap values (caddr i))))
-                                                                l))))
-                                                pats (caddr old-list))))
-                                   nt-ids patss)
-                                  ;; Build a definiton for each non-term:
-                                  (loop (cdr clauses)
-                                        cfg-start
-                                        (map (lambda (nt pats handles)
-                                               (define info (bound-identifier-mapping-get nts nt))
-                                               (list nt
-                                                     #`(let ([key (gensym '#,nt)])
-                                                         (lambda (stream depth end success-k fail-k max-depth tasks)
-                                                           (parse-nt/share
-                                                            key #,(car info) '#,(cadr info) stream depth end
-                                                            max-depth tasks
-                                                            success-k fail-k
-                                                            (lambda (end max-depth tasks success-k fail-k)
-                                                              #,(let loop ([pats pats]
-                                                                           [handles (syntax->list handles)]
-                                                                           [simple?s (caddr info)])
-                                                                  (if (null? pats)
-                                                                      #'(fail-k max-depth tasks)
-                                                                      #`(#,(if (or (null? (cdr pats))
-                                                                                   (car simple?s))
-                                                                               #'parse-or
-                                                                               #'parse-parallel-or)
-                                                                         (lambda (stream depth end success-k fail-k max-depth tasks)
-                                                                           #,(build-match nts
-                                                                                          toks 
-                                                                                          (car pats)
-                                                                                          (car handles)))
-                                                                         (lambda (stream depth end success-k fail-k max-depth tasks)
-                                                                           #,(loop (cdr pats)
-                                                                                   (cdr handles)
-                                                                                   (cdr simple?s)))
-                                                                         stream depth end success-k fail-k max-depth tasks)))))))))
-                                             nt-ids
-                                             patss
-                                             (syntax->list #'(((begin handle0 handle ...) ...) ...)))
-                                        cfg-error
-                                        (list*
-                                         (with-syntax ([((tok . tok-id) ...)
-                                                        (bound-identifier-mapping-map toks cons)])
-                                           (with-syntax ([($tok ...)
-                                                          (map (lambda (id)
-                                                                 (datum->syntax-object id '$1))
-                                                               (syntax->list #'(tok ...)))])
-                                             #`(grammar (start [() null]
-                                                               [(atok start) (cons $1 $2)])
-                                                        (atok [(tok) (make-tok 'tok-id 'tok $tok)] ...))))
-                                         #`(start start)
-                                         parser-clauses)))]
-                               [(grammar . _)
-                                (raise-syntax-error
-                                 #f
-                                 "bad grammar clause"
-                                 stx
-                                 (car #f))]
-                               [_else
-                                (loop (cdr clauses)
-                                      cfg-start
-                                      cfg-grammar
-                                      cfg-error
-                                      (cons (car clauses) parser-clauses))])))])
+		       (let ([all-toks (apply
+					append
+					(map (lambda (clause)
+					       (syntax-case clause (tokens)
+						 [(tokens t ...)
+						  (apply
+						   append
+						   (map (lambda (t)
+							  (let ([v (syntax-local-value t (lambda () #f))])
+							    (cond
+							     [(terminals-def? v)
+							      (map (lambda (v)
+								     (cons v #f))
+								   (syntax->list (terminals-def-t v)))]
+							     [(e-terminals-def? v)
+							      (map (lambda (v)
+								     (cons v #t))
+								   (syntax->list (e-terminals-def-t v)))]
+							     [else null])))
+							(syntax->list #'(t ...))))]
+						 [_else null]))
+					     clauses))]
+			     [all-end-toks (apply
+					    append
+					    (map (lambda (clause)
+						   (syntax-case clause (end)
+						     [(end t ...)
+						      (syntax->list #'(t ...))]
+						     [_else null]))
+						 clauses))])
+			 (let loop ([clauses clauses]
+				    [cfg-start #f]
+				    [cfg-grammar #f]
+				    [cfg-error #f]
+				    [parser-clauses null])
+			   (if (null? clauses)
+			       (values cfg-start
+				       cfg-grammar
+				       cfg-error
+				       (reverse parser-clauses))
+			       (syntax-case (car clauses) (start error grammar)
+				 [(start tok)
+				  (loop (cdr clauses) #'tok cfg-grammar cfg-error parser-clauses)]
+				 [(error expr)
+				  (loop (cdr clauses) cfg-start cfg-grammar #'expr parser-clauses)]
+				 [(grammar [nt [pat handle0 handle ...] ...] ...)
+				  (let ([nts (make-bound-identifier-mapping)]
+					[toks (make-token-identifier-mapping)]
+					[end-toks (make-token-identifier-mapping)]
+					[nt-ids (syntax->list #'(nt ...))]
+					[patss (map (lambda (stx)
+						      (map syntax->list (syntax->list stx)))
+						    (syntax->list #'((pat ...) ...)))])
+				    (for-each (lambda (nt)
+						(bound-identifier-mapping-put! nts nt (list 0)))
+					      nt-ids)
+				    (for-each (lambda (t)
+						(token-identifier-mapping-put! end-toks t #t))
+					      all-end-toks)
+				    (for-each (lambda (t)
+						(unless (token-identifier-mapping-get end-toks (car t) (lambda () #f))
+						  (let ([id (gensym (syntax-e (car t)))])
+						    (token-identifier-mapping-put! toks (car t)
+										   (cons id (cdr t))))))
+					      all-toks)
+				    ;; Compute min max size for each non-term:
+				    (nt-fixpoint
+				     nts
+				     (lambda (nt pats old-list)
+				       (let ([new-cnt
+					      (apply
+					       min
+					       (map (lambda (pat)
+						      (apply
+						       +
+						       (map (lambda (elem)
+							      (car
+							       (bound-identifier-mapping-get nts
+											     elem
+											     (lambda () (list 1)))))
+							    pat)))
+						    pats))])
+					 (if (new-cnt . > . (car old-list))
+					     (cons new-cnt (cdr old-list))
+					     old-list)))
+				     nt-ids patss)
+				    ;; Compute set of toks that must appear at the beginning
+				    ;;  for a non-terminal
+				    (nt-fixpoint
+				     nts
+				     (lambda (nt pats old-list)
+				       (let ([new-list
+					      (apply
+					       append
+					       (map (lambda (pat)
+						      (let loop ([pat pat])
+							(if (pair? pat)
+							    (let ([l (bound-identifier-mapping-get 
+								      nts
+								      (car pat)
+								      (lambda ()
+									(list 1 (map-token toks (car pat)))))])
+							      ;; If the non-terminal can match 0 things,
+							      ;;  then it might match something from the
+							      ;;  next pattern element. Otherwise, it must
+							      ;;  match the first element:
+							      (if (zero? (car l))
+								  (append (cdr l) (loop (cdr pat)))
+								  (cdr l)))
+							    null)))
+						    pats))])
+					 (let ([new (filter (lambda (id)
+							      (andmap (lambda (id2)
+									(not (eq? id id2)))
+								      (cdr old-list)))
+							    new-list)])
+					   (if (pair? new)
+					       ;; Drop dups in new list:
+					       (let ([new (let loop ([new new])
+							    (if (null? (cdr new))
+								new
+								(if (ormap (lambda (id)
+									     (eq? (car new) id))
+									   (cdr new))
+								    (loop (cdr new))
+								    (cons (car new) (loop (cdr new))))))])
+						 (cons (car old-list) (append new (cdr old-list))))
+					       old-list))))
+				     nt-ids patss)
+				    ;; Determine left-recursive clauses:
+				    (for-each (lambda (nt pats)
+						(let ([l (bound-identifier-mapping-get nts nt)])
+						  (bound-identifier-mapping-put! nts nt (list (car l)
+											      (cdr l)
+											      (map (lambda (x) #f) pats)))))
+					      nt-ids patss)
+				    (nt-fixpoint
+				     nts
+				     (lambda (nt pats old-list)
+				       (list (car old-list)
+					     (cadr old-list)
+					     (map (lambda (pat simple?)
+						    (or simple?
+							(let ([l (map (lambda (elem)
+									(bound-identifier-mapping-get 
+									 nts
+									 elem
+									 (lambda () #f)))
+								      pat)])
+							  (andmap (lambda (i)
+								    (or (not i)
+									(andmap values (caddr i))))
+								  l))))
+						  pats (caddr old-list))))
+				     nt-ids patss)
+				    ;; Build a definiton for each non-term:
+				    (loop (cdr clauses)
+					  cfg-start
+					  (map (lambda (nt pats handles $ctxs)
+						 (define info (bound-identifier-mapping-get nts nt))
+						 (list nt
+						       #`(let ([key (gensym '#,nt)])
+							   (lambda (stream depth end success-k fail-k max-depth tasks)
+							     (parse-nt/share
+							      key #,(car info) '#,(cadr info) stream depth end
+							      max-depth tasks
+							      success-k fail-k
+							      (lambda (end max-depth tasks success-k fail-k)
+								#,(let loop ([pats pats]
+									     [handles (syntax->list handles)]
+									     [$ctxs (syntax->list $ctxs)]
+									     [simple?s (caddr info)])
+								    (if (null? pats)
+									#'(fail-k max-depth tasks)
+									#`(#,(if (or (null? (cdr pats))
+										     (car simple?s))
+										 #'parse-or
+										 #'parse-parallel-or)
+									   (lambda (stream depth end success-k fail-k max-depth tasks)
+									     #,(build-match nts
+											    toks 
+											    (car pats)
+											    (car handles)
+											    (car $ctxs)))
+									   (lambda (stream depth end success-k fail-k max-depth tasks)
+									     #,(loop (cdr pats)
+										     (cdr handles)
+										     (cdr $ctxs)
+										     (cdr simple?s)))
+									   stream depth end success-k fail-k max-depth tasks)))))))))
+					       nt-ids
+					       patss
+					       (syntax->list #'(((begin handle0 handle ...) ...) ...))
+					       (syntax->list #'((handle0 ...) ...)))
+					  cfg-error
+					  (list*
+					   (with-syntax ([((tok tok-id . $e) ...)
+							  (token-identifier-mapping-map toks
+											(lambda (k v)
+											  (list* k
+												 (car v)
+												 (if (cdr v)
+												     #f
+												     '$1))))])
+					     #`(grammar (start [() null]
+							       [(atok start) (cons $1 $2)])
+							(atok [(tok) (make-tok 'tok-id 'tok $e)] ...)))
+					   #`(start start)
+					   parser-clauses)))]
+				 [(grammar . _)
+				  (raise-syntax-error
+				   #f
+				   "bad grammar clause"
+				   stx
+				   (car #f))]
+				 [_else
+				  (loop (cdr clauses)
+					cfg-start
+					cfg-grammar
+					cfg-error
+					(cons (car clauses) parser-clauses))]))))])
            #`(let ([orig-parse (parser 
                                 [error (lambda (a b c)
                                          (error 'cfg-parser "unexpected ~a token: ~a" b c))]
@@ -658,8 +729,6 @@
 #|
   ;; Tests used during development
 
-  (require (lib "lex.ss" "parser-tools"))
-  
   (define-tokens non-terminals (PLUS MINUS STAR BAR COLON EOF))
   
   (define lex
@@ -700,7 +769,5 @@
 	      ;; This one fails:
 	      #;"+*")])
       (time (parse (lambda () (lex p))))))
-
 |#
-
   )
