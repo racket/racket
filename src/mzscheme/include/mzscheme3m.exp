@@ -462,6 +462,7 @@ scheme_hash_key
 scheme_equal_hash_key
 scheme_equal_hash_key2
 scheme_build_list
+scheme_build_list_offset
 scheme_make_list_immutable
 scheme_list_length
 scheme_proper_list_length

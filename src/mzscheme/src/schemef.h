@@ -914,6 +914,7 @@ MZ_EXTERN long scheme_equal_hash_key(Scheme_Object *o);
 MZ_EXTERN long scheme_equal_hash_key2(Scheme_Object *o);
 
 MZ_EXTERN Scheme_Object *scheme_build_list(int argc, Scheme_Object **argv);
+MZ_EXTERN Scheme_Object *scheme_build_list_offset(int argc, Scheme_Object **argv, int delta);
 MZ_EXTERN void scheme_make_list_immutable(Scheme_Object *l);
 
 MZ_EXTERN int scheme_list_length(Scheme_Object *list);

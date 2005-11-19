@@ -565,6 +565,18 @@ Scheme_Object *scheme_build_list(int size, Scheme_Object **argv)
   return pair;
 }
 
+Scheme_Object *scheme_build_list_offset(int size, Scheme_Object **argv, int delta)
+{
+  Scheme_Object *pair = scheme_null;
+  int i;
+
+  for (i = size; i-- > delta; ) {
+    pair = scheme_make_pair(argv[i], pair);
+  }
+
+  return pair;
+}
+
 Scheme_Object *scheme_alloc_list(int size)
 {
   Scheme_Object *pair = scheme_null;

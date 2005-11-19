@@ -752,6 +752,7 @@ long (*scheme_hash_key)(Scheme_Object *o);
 long (*scheme_equal_hash_key)(Scheme_Object *o);
 long (*scheme_equal_hash_key2)(Scheme_Object *o);
 Scheme_Object *(*scheme_build_list)(int argc, Scheme_Object **argv);
+Scheme_Object *(*scheme_build_list_offset)(int argc, Scheme_Object **argv, int delta);
 void (*scheme_make_list_immutable)(Scheme_Object *l);
 int (*scheme_list_length)(Scheme_Object *list);
 int (*scheme_proper_list_length)(Scheme_Object *list);

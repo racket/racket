@@ -29,6 +29,7 @@
       (define debug (make-parameter #f))
       (define test (make-parameter #f))
       (define clean-intermediate-files (make-parameter #t))
+      (define 3m (make-parameter #f))
 
       (define max-exprs-per-top-level-set (make-parameter 25))
       

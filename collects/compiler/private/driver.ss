@@ -71,11 +71,13 @@
 	   (lib "toplevel.ss" "syntax")
 	   (lib "compile-sig.ss" "dynext")
 	   (lib "link-sig.ss" "dynext")
-	   (lib "file-sig.ss" "dynext"))
+	   (lib "file-sig.ss" "dynext")
+	   (lib "plthome.ss" "setup"))
 
   (require "../sig.ss"
 	   "sig.ss"
-	   "../to-core.ss")
+	   "../to-core.ss"
+	   "../xform.ss")
 
   (provide driver@)
 
@@ -118,7 +120,7 @@
       ;; FILE PROCESSING FUNCTIONS
       ;;
       
-      ;; takes an input-name from the compile command and returns 4 values
+      ;; takes an input-name from the compile command and returns many values:
       ;; 1) an input path
       ;; 2) a C output path
       ;; 3) a constant pool output path
@@ -126,30 +128,41 @@
       ;; 5) a dll output path
       ;; 6) a scheme_setup suffix
       (define s:process-filenames
-	(lambda (input-name dest-dir from-c? tmp-c? tmp-o?)
+	(lambda (input-name dest-dir from-c? 3m? tmp-c? tmp-c3m? tmp-o?)
 	  (let-values ([(basedir file dir?) (split-path input-name)])
 	    (let* ([dest-dir (if (eq? dest-dir 'auto)
-				 (let ([d (build-path (if (eq? basedir 'relative)
-							  'same
-							  basedir)
-						      "compiled"
-						      "native"
-						      (system-library-subpath))])
+				 (let* ([d0 (build-path (if (eq? basedir 'relative)
+							    'same
+							    basedir)
+							"compiled"
+							"native"
+							(system-library-subpath #f))]
+					[d (if 3m?
+					       (build-path d0 "3m")
+					       d0)])
 				   (unless (directory-exists? d)
 				     (make-directory* d))
 				   d)
 				 dest-dir)]
 		   [path-prefix (lambda (a b)
 				  (bytes->path (bytes-append a (path->bytes b))))]
+		   [path-suffix (lambda (b a)
+				  (bytes->path (bytes-append (path->bytes b) a)))]
 		   [sbase (extract-base-filename/ss file (if from-c? #f 'mzc))]
 		   [cbase (extract-base-filename/c file (if from-c? 'mzc #f))]
 		   [base (or sbase cbase)]
 		   [c-dir (if tmp-c?
 			      (find-system-path 'temp-dir)
 			      dest-dir)]
+		   [c3m-dir (if tmp-c3m?
+				(find-system-path 'temp-dir)
+				dest-dir)]
 		   [c-prefix (if tmp-c?
 				 (lambda (s) (path-prefix #"mzcTMP" s))
 				 values)]
+		   [c3m-prefix (if tmp-c3m?
+				   (lambda (s) (path-prefix #"mzcTMP" s))
+				   values)]
 		   [o-dir (if tmp-o?
 			      (find-system-path 'temp-dir)
 			      dest-dir)]
@@ -164,6 +177,8 @@
 		      (if cbase 
 			  input-name 
 			  (build-path c-dir (c-prefix (append-c-suffix base))))
+		      (and 3m?
+			   (build-path c3m-dir (c-prefix (append-c-suffix (path-suffix base #"3m")))))
 		      (build-path o-dir (o-prefix (append-constant-pool-suffix base)))
 		      (build-path o-dir (o-prefix (append-object-suffix base)))
 		      (build-path dest-dir (append-extension-suffix base))
@@ -569,12 +584,14 @@
 	  (const:init-tables!)
 	  (compiler:init-closure-lists!)
 	  ; process the input string - try to open the input file
-	  (let-values ([(input-path c-output-path 
+	  (let-values ([(input-path c-output-path c3m-output-path
 				    constant-pool-output-path obj-output-path dll-output-path 
 				    setup-suffix)
-			(s:process-filenames input-name dest-directory from-c? 
+			(s:process-filenames input-name dest-directory from-c?
+					     (compiler:option:3m)
 					     (and (compiler:option:clean-intermediate-files)
 						  (not c-only?))
+					     (compiler:option:clean-intermediate-files)
 					     (and (compiler:option:clean-intermediate-files)
 						  (not multi-o?)))])
 	    (unless (or (not input-path) (file-exists? input-path))
@@ -588,6 +605,7 @@
 			(when (file-exists? path) (delete-file path)))
 		      (list (if input-path c-output-path obj-output-path) 
 			    (if input-path constant-pool-output-path obj-output-path) 
+			    (or c3m-output-path obj-output-path)
 			    obj-output-path dll-output-path))
 	
 	    (when (compiler:option:debug)
@@ -692,7 +710,8 @@
 									    #`'#,zodiac:global-assign-id
 									    #`'#,zodiac:safe-vector-ref-id
 									    #`'#,zodiac:global-prepare-id
-									    simple-constant?)])
+									    simple-constant?
+									    '(mzc-cffi))])
 					     (list (zodiac:syntax->zodiac src) 
 						   bytecode magic-sym)))
 					 (block-source s:file-block))])
@@ -1036,10 +1055,10 @@
 		       (parameterize ([read-case-sensitive #t]) ;; so symbols containing uppercase print like we want
 			 (let ([c-port #f])
 			   (dynamic-wind 
-					;pre
+			       ;;pre
 			       (lambda () (set! c-port (open-output-file c-output-path)))
 			       
-					;value
+			       ;;value
 			       (lambda ()
 				 (fprintf c-port "#define MZC_SRC_FILE ~s~n" input-name)
 				 (when (compiler:option:unsafe) (fprintf c-port "#define MZC_UNSAFE 1~n"))
@@ -1310,6 +1329,37 @@
 		    (vm->c:emit-symbol-list! port "" #f)
 		    (fprintf port "  )~n )~n")))))))
 
+	;;-----------------------------------------------------------------------
+	;; 3m xform
+	;;
+	
+        (when c3m-output-path
+	  (when (compiler:option:verbose)
+	    (printf " [xforming C to \"~a\"]~n" 
+		    c3m-output-path))
+
+	  (let ([clean-up-src-c
+		 (lambda ()
+		   (when (and (compiler:option:clean-intermediate-files)
+			      (not from-c?)
+			      (file-exists? c-output-path))
+		     (delete-file c-output-path)))])
+	    (with-handlers ([void
+			     (lambda (exn)
+			       (when (compiler:option:clean-intermediate-files)
+				 (when (file-exists? c3m-output-path)
+				   (delete-file c3m-output-path)))
+			       (clean-up-src-c)
+			       (raise exn))])
+	      
+	      (xform (not (compiler:option:verbose)) 
+		     (path->string c-output-path)
+		     c3m-output-path
+		     (list (build-path plthome "include")
+			   (collection-path "compiler")))
+
+	      (clean-up-src-c))))
+
 	;;--------------------------------------------------------------------
 	;; COMPILATION TO NATIVE CODE
 	;;
@@ -1319,7 +1369,7 @@
 	    
 	    (begin
 	      (unless input-path
-		(printf "\"~a\": ~n" c-output-path))
+		(printf "\"~a\": ~n" (or c3m-output-path c-output-path)))
 	      
 	      (when (compiler:option:verbose) (printf " [compiling native code to \"~a\"]~n"
 						      obj-output-path))
@@ -1329,6 +1379,7 @@
 		     (lambda ()
 		       (with-handlers
 			   ([void (lambda (exn)
+				    (exit)
 				    (compiler:fatal-error
 				     #f
 				     (string-append
@@ -1337,14 +1388,16 @@
 				      (exn-message exn)))
 				    (compiler:report-messages! #t))])
 			 (compile-extension (not (compiler:option:verbose)) 
-					    c-output-path obj-output-path
+					    (or c3m-output-path c-output-path) obj-output-path
 					    (list (collection-path "compiler")))))])
 		(verbose-time compile-thunk))
 	      
 	      ;; clean-up
 	      (when (and (compiler:option:clean-intermediate-files)
 			 input-path)
-		(delete-file c-output-path))
+		(if c3m-output-path
+		    (delete-file c3m-output-path)
+		    (delete-file c-output-path)))
 	      
 	      (if multi-o?
 		  (printf " [output to \"~a\"]~n" obj-output-path)

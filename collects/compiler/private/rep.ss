@@ -47,7 +47,9 @@
       ;;  'scheme-per-load-static
       ;;  'label
       ;;  'prim
+      ;;  'prim-empty
       ;;  'prim-case
+      ;;  'prim-case-empty
       ;;  'begin0-saver
       ;;  'wcm-saver
       (define-struct rep:pointer (to))
@@ -199,8 +201,12 @@
 				      (make-rep:struct-field 'prim
 							     'prim
 							     (if (= 1 (length (procedure-code-case-codes code)))
-								 (make-rep:atomic 'prim)
-								 (make-rep:atomic 'prim-case))))]
+								 (if struct
+								     (make-rep:atomic 'prim)
+								     (make-rep:atomic 'prim-empty))
+								 (if struct
+								     (make-rep:atomic 'prim-case)
+								     (make-rep:atomic 'prim-case-empty)))))]
 				    [else
 				     (compiler:internal-error
 				      #f

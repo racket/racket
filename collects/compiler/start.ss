@@ -56,8 +56,6 @@
   (define plt-setup-collections (make-parameter null))
   (define plt-include-compiled (make-parameter #f))
 
-  (define use-3m (make-parameter #f))
-
   (define (extract-suffix appender)
     (bytes->string/latin-1
      (subbytes
@@ -144,7 +142,7 @@
 	 ,(lambda (f) (module-mode #t))
 	 ("Skip eval of top-level syntax, etc. for -e/-c/-o/-z")]
 	[("--3m")
-	 ,(lambda (f) (use-3m #t))
+	 ,(lambda (f) (compiler:option:3m #t))
 	 ("Compile/link for 3m, with -e/-c/-o/etc.")]
 	[("--embedded")
 	 ,(lambda (f) (compiler:option:compile-for-embedded #t))
@@ -167,7 +165,7 @@
 	    (auto-dest-dir #t))
 	 (,(format "Output -z to \"compiled\", -e to ~s"
 		   (path->string
-		    (build-path "compiled" "native" (system-library-subpath)))))]]
+		    (build-path "compiled" "native" (system-library-subpath #f)))))]]
 
        [help-labels
 	"------------------- compiler/linker configuration flags ---------------------"]
@@ -385,7 +383,7 @@
 		   (void)))))))
      (list "file/directory/collection" "file/directory/sub-collection")))
 
-  (printf "MzScheme compiler (mzc) version ~a, Copyright (c) 2005 PLT Scheme, Inc.~n"
+  (printf "mzc version ~a, Copyright (c) 2004-2005 PLT Scheme Inc.~n"
 	  (version))
 
   (define-values (mode source-files prefix)
@@ -399,7 +397,7 @@
     (when (compiler:option:compile-for-embedded)
       (error 'mzc "cannot ~a an extension for an embedded MzScheme" action)))
   
-  (when (use-3m)
+  (when (compiler:option:3m)
     (link-variant '3m)
     (compile-variant '3m))
   

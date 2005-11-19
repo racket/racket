@@ -680,8 +680,14 @@ int closed_prim_proc_SIZE(void *p) {
   ((c->pp.flags & SCHEME_PRIM_IS_MULTI_RESULT)
    ? gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Prim_W_Result_Arity))
    : ((c->mina == -2)
-      ? gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Case_Primitive_Proc))
-      : gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Primitive_Proc))));
+      ? ((c->pp.flags & SCHEME_PRIM_IS_POST_DATA)
+	 ? (gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Case_Primitive_Post_Ext_Proc))
+	    + ((Scheme_Closed_Case_Primitive_Post_Proc *)c)->len - 1)
+	 : gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Case_Primitive_Proc)))
+      : ((c->pp.flags & SCHEME_PRIM_IS_POST_DATA)
+	 ? (gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Primitive_Post_Ext_Proc))
+	    + ((Scheme_Closed_Primitive_Post_Proc *)c)->len - 1)
+	 : gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Primitive_Proc)))));
 }
 
 int closed_prim_proc_MARK(void *p) {
@@ -689,13 +695,39 @@ int closed_prim_proc_MARK(void *p) {
 
   gcMARK(c->name);
   gcMARK(SCHEME_CLSD_PRIM_DATA(c));
+  if (c->pp.flags & SCHEME_PRIM_IS_POST_DATA) {
+    if (c->mina == -2) {
+      Scheme_Closed_Case_Primitive_Post_Ext_Proc *cc;
+      int i;
+      cc = (Scheme_Closed_Case_Primitive_Post_Ext_Proc *)c;
+      for (i = cc->p.len; i--; ) {
+	gcMARK(cc->a[i]);
+      }
+    } else {
+      Scheme_Closed_Primitive_Post_Ext_Proc *cc;
+      int i;
+      cc = (Scheme_Closed_Primitive_Post_Ext_Proc *)c;
+      for (i = cc->p.len; i--; ) {
+	gcMARK(cc->a[i]);
+      }
+    }
+  }
+  if (c->mina == -2) {
+    gcMARK(((Scheme_Closed_Case_Primitive_Proc *)c)->cases);
+  }
   
   return
   ((c->pp.flags & SCHEME_PRIM_IS_MULTI_RESULT)
    ? gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Prim_W_Result_Arity))
    : ((c->mina == -2)
-      ? gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Case_Primitive_Proc))
-      : gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Primitive_Proc))));
+      ? ((c->pp.flags & SCHEME_PRIM_IS_POST_DATA)
+	 ? (gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Case_Primitive_Post_Ext_Proc))
+	    + ((Scheme_Closed_Case_Primitive_Post_Proc *)c)->len - 1)
+	 : gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Case_Primitive_Proc)))
+      : ((c->pp.flags & SCHEME_PRIM_IS_POST_DATA)
+	 ? (gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Primitive_Post_Ext_Proc))
+	    + ((Scheme_Closed_Primitive_Post_Proc *)c)->len - 1)
+	 : gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Primitive_Proc)))));
 }
 
 int closed_prim_proc_FIXUP(void *p) {
@@ -703,13 +735,39 @@ int closed_prim_proc_FIXUP(void *p) {
 
   gcFIXUP(c->name);
   gcFIXUP(SCHEME_CLSD_PRIM_DATA(c));
+  if (c->pp.flags & SCHEME_PRIM_IS_POST_DATA) {
+    if (c->mina == -2) {
+      Scheme_Closed_Case_Primitive_Post_Ext_Proc *cc;
+      int i;
+      cc = (Scheme_Closed_Case_Primitive_Post_Ext_Proc *)c;
+      for (i = cc->p.len; i--; ) {
+	gcFIXUP(cc->a[i]);
+      }
+    } else {
+      Scheme_Closed_Primitive_Post_Ext_Proc *cc;
+      int i;
+      cc = (Scheme_Closed_Primitive_Post_Ext_Proc *)c;
+      for (i = cc->p.len; i--; ) {
+	gcFIXUP(cc->a[i]);
+      }
+    }
+  }
+  if (c->mina == -2) {
+    gcFIXUP(((Scheme_Closed_Case_Primitive_Proc *)c)->cases);
+  }
   
   return
   ((c->pp.flags & SCHEME_PRIM_IS_MULTI_RESULT)
    ? gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Prim_W_Result_Arity))
    : ((c->mina == -2)
-      ? gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Case_Primitive_Proc))
-      : gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Primitive_Proc))));
+      ? ((c->pp.flags & SCHEME_PRIM_IS_POST_DATA)
+	 ? (gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Case_Primitive_Post_Ext_Proc))
+	    + ((Scheme_Closed_Case_Primitive_Post_Proc *)c)->len - 1)
+	 : gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Case_Primitive_Proc)))
+      : ((c->pp.flags & SCHEME_PRIM_IS_POST_DATA)
+	 ? (gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Primitive_Post_Ext_Proc))
+	    + ((Scheme_Closed_Primitive_Post_Proc *)c)->len - 1)
+	 : gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Primitive_Proc)))));
 }
 
 #define closed_prim_proc_IS_ATOMIC 0

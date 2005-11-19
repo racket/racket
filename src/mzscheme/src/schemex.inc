@@ -506,6 +506,7 @@
   scheme_extension_table->scheme_equal_hash_key = scheme_equal_hash_key;
   scheme_extension_table->scheme_equal_hash_key2 = scheme_equal_hash_key2;
   scheme_extension_table->scheme_build_list = scheme_build_list;
+  scheme_extension_table->scheme_build_list_offset = scheme_build_list_offset;
   scheme_extension_table->scheme_make_list_immutable = scheme_make_list_immutable;
   scheme_extension_table->scheme_list_length = scheme_list_length;
   scheme_extension_table->scheme_proper_list_length = scheme_proper_list_length;

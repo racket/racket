@@ -506,6 +506,7 @@
 #define scheme_equal_hash_key (scheme_extension_table->scheme_equal_hash_key)
 #define scheme_equal_hash_key2 (scheme_extension_table->scheme_equal_hash_key2)
 #define scheme_build_list (scheme_extension_table->scheme_build_list)
+#define scheme_build_list_offset (scheme_extension_table->scheme_build_list_offset)
 #define scheme_make_list_immutable (scheme_extension_table->scheme_make_list_immutable)
 #define scheme_list_length (scheme_extension_table->scheme_list_length)
 #define scheme_proper_list_length (scheme_extension_table->scheme_proper_list_length)

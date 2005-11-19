@@ -11,14 +11,15 @@
   ;;  `require-for-syntax', it's a timing issue. For `module', it's
   ;;  because the transformation can only handle a single `module'
   ;;  declaration.
-  (define (top-level-to-core stx lookup-stx set-stx safe-vector-ref-stx extract-stx simple-constant?)
+  (define (top-level-to-core stx lookup-stx set-stx safe-vector-ref-stx extract-stx 
+			     simple-constant? stop-properties)
     (syntax-case stx (module begin)
       [(module m lang (plain-module-begin decl ...))
        (let-values ([(expr new-decls magic-sym) 
                      (lift-sequence (flatten-decls (syntax->list #'(decl ...)))
                                     lookup-stx set-stx safe-vector-ref-stx extract-stx
                                     #t
-				    simple-constant?)])
+				    simple-constant? stop-properties)])
          (values (expand-syntax expr)
                  #`(module m lang (#%plain-module-begin #,@new-decls))
 		 magic-sym))]
@@ -27,13 +28,13 @@
                      (lift-sequence (flatten-decls (syntax->list #'(decl ...)))
                                     lookup-stx set-stx safe-vector-ref-stx extract-stx
                                     #f
-				    simple-constant?)])
+				    simple-constant? stop-properties)])
          (values (expand-syntax expr)
                  #`(begin #,@new-decls)
 		 magic-sym))]
       [else
        (top-level-to-core #`(begin #,stx) lookup-stx set-stx safe-vector-ref-stx extract-stx
-			  simple-constant?)]))
+			  simple-constant? stop-properties)]))
   
   (define (flatten-decls l)
     (apply append
@@ -117,7 +118,7 @@
 		  (module-identifier=? #'case-lambda (stx-car rhs))))))
 
   (define (lift-sequence decls lookup-stx set-stx safe-vector-ref-stx extract-stx 
-			 in-module? simple-constant?)
+			 in-module? simple-constant? stop-properties)
     (let ([ct-vars (make-vars)]
           [rt-vars (make-vars)]
           [compile-time (datum->syntax-object #f (gensym 'compile-time))]
@@ -133,7 +134,7 @@
                                                    lookup-stx set-stx safe-vector-ref-stx
                                                    compile-time ct-vars
                                                    in-module?
-						   simple-constant?)])
+						   simple-constant? stop-properties)])
                                (if (and (not in-module?)
                                         (module-identifier=? #'def #'define-syntaxes))
                                    ;; Don't try to name macro procedures, because it
@@ -158,7 +159,7 @@
 						 lookup-stx set-stx safe-vector-ref-stx
 						 run-time rt-vars
 						 in-module?
-						 simple-constant?)])
+						 simple-constant? stop-properties)])
 			 (if (need-thunk? #'rhs)
 			     #`(lambda () #,converted)
 			     #`(let-values ([ids #,converted])
@@ -169,7 +170,7 @@
 				      lookup-stx set-stx safe-vector-ref-stx
 				      run-time rt-vars
 				      in-module?
-				      simple-constant?))]))
+				      simple-constant? stop-properties))]))
 		  (filter is-run-time? decls))]
             [ct-rhs #`((let ([magic (car (cons '#,magic-sym 2))])
                          (if (symbol? magic) 
@@ -325,79 +326,108 @@
   (define (add-identifier stx li trans? lookup-stx id)
     #`(#,lookup-stx #,id #,(add-identifier/pos stx li trans?)))
 
-  (define (convert stx trans? lookup-stx set-stx safe-vector-ref-stx id li in-module? simple-constant?)
+  (define-syntax quasisyntax/loc+props
+    (syntax-rules ()
+      [(_ stx e) (let ([old-s stx]
+		       [new-s (quasisyntax e)])
+		   (syntax-recertify
+		    (datum->syntax-object new-s
+					  (syntax-e new-s)
+					  old-s
+					  old-s)
+		    new-s
+		    code-insp
+		    #f))]))
+  (define code-insp (current-code-inspector))
+
+  (define (convert stx trans? lookup-stx set-stx safe-vector-ref-stx id li in-module? 
+		   simple-constant? stop-properties)
     (define ((loop certs) stx)
       (let ([loop (loop (apply-certs stx certs))])
-        (kernel-syntax-case stx trans?
-          [_
-           (identifier? stx)
-           (or (simple-identifier stx trans?)
-               (add-identifier (apply-certs certs stx) li trans? lookup-stx id))]
-          [(provide . _)
-           stx]
-          [(lambda formals e ...)
-           (quasisyntax/loc stx
-             (lambda formals #,@(map loop (syntax->list #'(e ...)))))]
-          [(case-lambda [formals e ...] ...)
-           (with-syntax ([((e ...) ...)
-                          (map (lambda (l)
-                                 (map loop (syntax->list l)))
-                               (syntax->list #'((e ...) ...)))])
-             (quasisyntax/loc stx
-               (case-lambda [formals e ...] ...)))]
-          [(let-values ([(id ...) rhs] ...) e ...)
-           (with-syntax ([(rhs ...)
-                          (map loop (syntax->list #'(rhs ...)))])
-             (quasisyntax/loc stx
-               (let-values ([(id ...) rhs] ...) #,@(map loop (syntax->list #'(e ...))))))]
-          [(letrec-values ([(id ...) rhs] ...) e ...)
-           (with-syntax ([(rhs ...)
-                          (map loop (syntax->list #'(rhs ...)))])
-             (quasisyntax/loc stx
-               (letrec-values ([(id ...) rhs] ...) #,@(map loop (syntax->list #'(e ...))))))]
-          [(quote e)
-           (if (simple-constant? #'e)
-               #'(quote e)
-               (add-literal stx li safe-vector-ref-stx id))]
-          [(quote-syntax e)
-           (add-literal stx li safe-vector-ref-stx id)]
-          [(#%top . tid)
-           (let ([target (let ([b ((if trans?
-                                       identifier-transformer-binding
-                                       identifier-binding)
-                                   #'tid)])
-                           (if (or (eq? b 'lexical) 
-                                   (and (not in-module?)
-                                        b))
-                               #`(#%top . tid)
-                               #'tid))])
-             (add-identifier (apply-certs certs target) li trans? lookup-stx id))]
-          [(#%datum . e)
-           (if (simple-constant? #'e)
-               #'(#%datum . e)
-               (add-literal stx li safe-vector-ref-stx id))]
-          [(set! x e)
-           (if (local-identifier? #'x trans?)
-               (quasisyntax/loc stx (set! x #,(loop #'e)))
-               (quasisyntax/loc stx
-                 (#,set-stx #,id #,(add-identifier/pos (apply-certs certs #'x) li trans?) #,(loop #'e))))]
-          [(#%variable-reference e)
-           (add-literal stx li)]
-          [(if e ...)
-           (quasisyntax/loc stx
-             (if #,@(map loop (syntax->list #'(e ...)))))]
-          [(begin e ...)
-           (quasisyntax/loc stx
-             (begin #,@(map loop (syntax->list #'(e ...)))))]
-          [(begin0 e ...)
-           (quasisyntax/loc stx
-             (begin0 #,@(map loop (syntax->list #'(e ...)))))]
-          [(with-continuation-mark e ...)
-           (quasisyntax/loc stx
-             (with-continuation-mark #,@(map loop (syntax->list #'(e ...)))))]
-          [(#%app e ...)
-           (quasisyntax/loc stx
-             (#%app #,@(map loop (syntax->list #'(e ...)))))])))
+	(if (ormap (lambda (prop)
+		     (syntax-property stx prop))
+		   stop-properties)
+	    stx
+	    (kernel-syntax-case stx trans?
+	      [_
+	       (identifier? stx)
+	       (or (simple-identifier stx trans?)
+		   (add-identifier (apply-certs certs stx) li trans? lookup-stx id))]
+	      [(provide . _)
+	       stx]
+	      [(lambda formals e ...)
+	       (quasisyntax/loc+props 
+		stx
+		(lambda formals #,@(map loop (syntax->list #'(e ...)))))]
+	      [(case-lambda [formals e ...] ...)
+	       (with-syntax ([((e ...) ...)
+			      (map (lambda (l)
+				     (map loop (syntax->list l)))
+				   (syntax->list #'((e ...) ...)))])
+		 (quasisyntax/loc+props 
+		  stx
+		  (case-lambda [formals e ...] ...)))]
+	      [(let-values ([(id ...) rhs] ...) e ...)
+	       (with-syntax ([(rhs ...)
+			      (map loop (syntax->list #'(rhs ...)))])
+		 (quasisyntax/loc+props 
+		  stx
+		  (let-values ([(id ...) rhs] ...) #,@(map loop (syntax->list #'(e ...))))))]
+	      [(letrec-values ([(id ...) rhs] ...) e ...)
+	       (with-syntax ([(rhs ...)
+			      (map loop (syntax->list #'(rhs ...)))])
+		 (quasisyntax/loc+props 
+		  stx
+		  (letrec-values ([(id ...) rhs] ...) #,@(map loop (syntax->list #'(e ...))))))]
+	      [(quote e)
+	       (if (simple-constant? #'e)
+		   #'(quote e)
+		   (add-literal stx li safe-vector-ref-stx id))]
+	      [(quote-syntax e)
+	       (add-literal stx li safe-vector-ref-stx id)]
+	      [(#%top . tid)
+	       (let ([target (let ([b ((if trans?
+					   identifier-transformer-binding
+					   identifier-binding)
+				       #'tid)])
+			       (if (or (eq? b 'lexical) 
+				       (and (not in-module?)
+					    b))
+				   #`(#%top . tid)
+				   #'tid))])
+		 (add-identifier (apply-certs certs target) li trans? lookup-stx id))]
+	      [(#%datum . e)
+	       (if (simple-constant? #'e)
+		   #'(#%datum . e)
+		   (add-literal stx li safe-vector-ref-stx id))]
+	      [(set! x e)
+	       (if (local-identifier? #'x trans?)
+		   (quasisyntax/loc+props stx (set! x #,(loop #'e)))
+		   (quasisyntax/loc+props 
+		    stx
+		    (#,set-stx #,id #,(add-identifier/pos (apply-certs certs #'x) li trans?) #,(loop #'e))))]
+	      [(#%variable-reference e)
+	       (add-literal stx li)]
+	      [(if e ...)
+	       (quasisyntax/loc+props 
+		stx
+		(if #,@(map loop (syntax->list #'(e ...)))))]
+	      [(begin e ...)
+	       (quasisyntax/loc+props 
+		stx
+		(begin #,@(map loop (syntax->list #'(e ...)))))]
+	      [(begin0 e ...)
+	       (quasisyntax/loc+props 
+		stx
+		(begin0 #,@(map loop (syntax->list #'(e ...)))))]
+	      [(with-continuation-mark e ...)
+	       (quasisyntax/loc+props 
+		stx
+		(with-continuation-mark #,@(map loop (syntax->list #'(e ...)))))]
+	      [(#%app e ...)
+	       (quasisyntax/loc+props 
+		stx
+		(#%app #,@(map loop (syntax->list #'(e ...)))))]))))
     ((loop #'certs) stx))
   
   (define (apply-certs from to)

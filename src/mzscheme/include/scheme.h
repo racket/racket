@@ -573,6 +573,7 @@ typedef void (*Scheme_Type_Printer)(Scheme_Object *v, int for_display, Scheme_Pr
 #define SCHEME_PRIM_IS_GENERIC 512
 #define SCHEME_PRIM_IS_USER_PARAMETER 1024
 #define SCHEME_PRIM_IS_METHOD 2048
+#define SCHEME_PRIM_IS_POST_DATA 4096
 
 typedef struct Scheme_Object *
 (Scheme_Prim)(int argc, struct Scheme_Object *argv[]);
@@ -608,13 +609,58 @@ typedef struct {
 
 typedef struct {
   Scheme_Closed_Primitive_Proc p;
-  mzshort minr, maxr;
-} Scheme_Closed_Prim_W_Result_Arity;
+  mzshort *cases;
+} Scheme_Closed_Case_Primitive_Proc;
 
 typedef struct {
   Scheme_Closed_Primitive_Proc p;
-  mzshort *cases;
-} Scheme_Closed_Case_Primitive_Proc;
+  mzshort minr, maxr;
+} Scheme_Closed_Prim_W_Result_Arity;
+
+/* ------------------------------------------------- */
+/*                 mzc closure glue
+    The following structures are used by mzc to implement closures
+    where the closure data is allocated as part of the
+    Scheme_Closed_Primitive_Proc record.  In 3m mode, a length must be
+    included, and all of the closur-data elements are assumed to be
+    pointers. Furthermore, in 3m mode, a cases and non-cases closure
+    must have closure data starting at the same point, since two
+    kinds can flow to the same MZC_PARAM_TO_SWITCH().
+*/
+
+typedef struct {
+  union {
+    Scheme_Closed_Primitive_Proc p;
+#ifdef MZ_PRECISE_GC
+    Scheme_Closed_Case_Primitive_Proc other;
+#endif
+  } u;
+#ifdef MZ_PRECISE_GC
+  mzshort len;
+#endif
+} Scheme_Closed_Primitive_Post_Proc;
+
+typedef struct {
+  Scheme_Closed_Primitive_Post_Proc p;
+  void *a[1];
+} Scheme_Closed_Primitive_Post_Ext_Proc;
+
+typedef struct {
+  union {
+    Scheme_Closed_Case_Primitive_Proc p;
+#ifdef MZ_PRECISE_GC
+    Scheme_Closed_Primitive_Proc other;
+#endif
+  } u;
+#ifdef MZ_PRECISE_GC
+  mzshort len;
+#endif
+} Scheme_Closed_Case_Primitive_Post_Proc;
+
+typedef struct {
+  Scheme_Closed_Case_Primitive_Post_Proc p;
+  void *a[1];
+} Scheme_Closed_Case_Primitive_Post_Ext_Proc;
 
 #define _scheme_fill_prim_closure(rec, cfunc, dt, nm, amin, amax, flgs) \
   ((rec)->pp.so.type = scheme_closed_prim_type, \
@@ -626,6 +672,16 @@ typedef struct {
    (rec)->pp.flags = flgs, \
    rec)
 
+#ifdef MZ_PRECISE_GC
+# define _scheme_fill_prim_closure_post(rec, cfunc, dt, nm, amin, amax, flgs, ln) \
+  ((rec)->len = ln,							\
+   _scheme_fill_prim_closure(&(rec)->u.p, cfunc, dt, nm, amin, amax,	\
+			     flgs | SCHEME_PRIM_IS_POST_DATA))
+#else
+# define _scheme_fill_prim_closure_post(rec, cfunc, dt, nm, amin, amax, flgs, ln) \
+  _scheme_fill_prim_closure(&(rec)->u.p, cfunc, dt, nm, amin, amax, flgs)
+#endif
+
 #define _scheme_fill_prim_case_closure(rec, cfunc, dt, nm, ccount, cses, flgs) \
   ((rec)->p.pp.so.type = scheme_closed_prim_type, \
    (rec)->p.prim_val = cfunc, \
@@ -636,6 +692,18 @@ typedef struct {
    (rec)->p.pp.flags = flgs, \
    (rec)->cases = cses, \
    rec)
+
+#ifdef MZ_PRECISE_GC
+# define _scheme_fill_prim_case_closure_post(rec, cfunc, dt, nm, ccount, cses, flgs, ln) \
+  ((rec)->len = ln,							\
+   _scheme_fill_prim_case_closure(&(rec)->u.p, cfunc, dt, nm, ccount, cses, \
+				  flgs | SCHEME_PRIM_IS_POST_DATA))
+#else
+# define _scheme_fill_prim_case_closure_post(rec, cfunc, dt, nm, ccount, cses, flgs, ln) \
+  _scheme_fill_prim_case_closure(&(rec)->u.p, cfunc, dt, nm, ccount, cses, flgs)
+#endif
+
+/* ------------------------------------------------- */
 
 #define SCHEME_PROCP(obj)  (!SCHEME_INTP(obj) && ((_SCHEME_TYPE(obj) >= scheme_prim_type) && (_SCHEME_TYPE(obj) <= scheme_proc_struct_type)))
 #define SCHEME_SYNTAXP(obj)  SAME_TYPE(SCHEME_TYPE(obj), scheme_syntax_compiler_type)

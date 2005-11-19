@@ -183,23 +183,28 @@
 
       (define (vm->c:emit-symbol-definitions! port)
 	(unless (zero? (const:get-symbol-counter))
-	  (fprintf port "  int i;~n")
-	  (fprintf port "  for (i = ~a; i--; )~n    SYMBOLS[i] = scheme_intern_exact_symbol(SYMBOL_STRS[i], SYMBOL_LENS[i]);~n"
+	  (fprintf port "  int i;\n  Scheme_Object *s;\n")
+	  (fprintf port "  for (i = ~a; i--; ) {\n"
 		   (const:get-symbol-counter))
+	  (fprintf port "    s = scheme_intern_exact_symbol(SYMBOL_STRS[i], SYMBOL_LENS[i]);\n")
+	  (fprintf port "    SYMBOLS[i] = s; \n   }\n")
 	  ;; Some symbols might be uninterned...
 	  (hash-table-for-each
 	   (const:get-symbol-table)
 	   (lambda (sym b)
 	     (unless (interned? sym)
 	       (let ([pos (zodiac:varref-var b)])
-		 (fprintf port "  SYMBOLS[~a] = scheme_make_exact_symbol(SYMBOL_STRS[~a], SYMBOL_LENS[~a]); /* uninterned */~n"
-			  pos pos pos)))))))
+		 (fprintf port "  s = scheme_make_exact_symbol(SYMBOL_STRS[~a], SYMBOL_LENS[~a]); /* uninterned */~n"
+			  pos pos)
+		 (fprintf port "  SYMBOLS[~a] = s;\n" pos)))))))
 
       (define (vm->c:emit-inexact-definitions! port)
 	(unless (zero? (const:get-inexact-counter))
-	  (fprintf port "  int i;~n")
-	  (fprintf port "  for (i = ~a; i--; )~n    INEXACTS[i] = scheme_make_double(INEXACT_NUMBERS[i]);~n"
-		   (const:get-inexact-counter))))
+	  (fprintf port "  int i;\n  Scheme_Object *n;\n")
+	  (fprintf port "  for (i = ~a; i--; ) {\n"
+		   (const:get-inexact-counter))
+	  (fprintf port "    n = scheme_make_double(INEXACT_NUMBERS[i]);\n")
+	  (fprintf port "    INEXACTS[i] = n; \n   }\n")))
 
       (define vm->c:emit-prim-ref-declarations!
 	(lambda (port)
@@ -255,6 +260,7 @@
 
       (define (emit-static-variable-fields! port l)
 	(unless (null? l)
+	  (fprintf port "#ifndef MZ_PRECISE_GC~n")
 	  (fprintf port "  /* Write fields as an array to help C compilers */~n")
 	  (fprintf port "  /* that don't like really big records. */~n")
 	  (fprintf port "  Scheme_Object * _consts_[~a];~n" (length l))
@@ -262,7 +268,13 @@
 	    (unless (null? l)
 	      (fprintf port "# define ~a _consts_[~a]~n"
 		       (vm->c:convert-symbol (car l)) n)
-	      (svloop (cdr l) (add1 n))))))
+	      (svloop (cdr l) (add1 n))))
+	  (fprintf port "#else~n")
+	  (for-each (lambda (c)
+		      (fprintf port "  Scheme_Object * ~a;~n"
+			       (vm->c:convert-symbol c)))
+		    l)
+	  (fprintf port "#endif~n")))
 
       ;; when statics have binding information, this will look more like 
       ;; emit-local-variable-declarations!
@@ -430,18 +442,18 @@
 			      (procedure-vehicle-max-args vehicle)
 			      0)])
 	    (when (> max-arity 0)
-					; emit declaration of argument stack 
+	      ;; emit declaration of argument stack 
 	      (fprintf port "~aScheme_Object * arg[~a];~n" 
 		       vm->c:indent-spaces 
 		       max-arity))
 	    (when (> max-args 0)
-					; emit declaration of global variables for argument passing
+	      ;; emit declaration of global variables for argument passing
 	      (let loop ([n 0])
 		(unless (= n max-args)
 		  (fprintf port "~aregister long reg~a;~n" vm->c:indent-spaces n)
 		  (loop (+ n 1)))))
 	    (when (> max-arity 0)
-					; tail-buffer-setup
+	      ;; tail-buffer-setup
 	      (fprintf port "~aScheme_Object ** tail_buf;~n"
 		       vm->c:indent-spaces)))
 
@@ -452,10 +464,10 @@
 		 (vm->c:emit-local-variable-declarations! locals vm->c:indent-spaces port)))
 	     (vehicle-lambdas vehicle)))
 	  
-					; emit jump to function...
+	  ;; emit jump to function...
 	  (when (> (vehicle-total-labels vehicle) 1)
-					; emit switch dispatcher
-	    (fprintf port "~aswitch(*(unsigned int*)void_param)~n~a{ " 
+	    ;; emit switch dispatcher
+	    (fprintf port "~aswitch(MZC_PARAM_TO_SWITCH(void_param))~n~a{ " 
 		     vm->c:indent-spaces
 		     vm->c:indent-spaces )
 	    (let loop ([n 0])
@@ -482,8 +494,10 @@
 				[(scheme-bucket) "Scheme_Bucket *"]
 				[(scheme-per-load-static) "struct Scheme_Per_Load_Statics *"]
 				[(label) "int"]
-				[(prim) "Scheme_Closed_Primitive_Proc"]
-				[(prim-case) "Scheme_Closed_Case_Primitive_Proc"]
+				[(prim) "Scheme_Closed_Primitive_Post_Proc"]
+				[(prim-empty) "Scheme_Closed_Primitive_Proc"]
+				[(prim-case) "Scheme_Closed_Case_Primitive_Post_Proc"]
+				[(prim-case-empty) "Scheme_Closed_Case_Primitive_Proc"]
 				[(begin0-saver) "_Scheme_Begin0_Rec"]
 				[(wcm-saver) "_Scheme_WCM_Rec"]
 				[else (compiler:internal-error 
@@ -505,8 +519,19 @@
 	(lambda (rep)
 	  (let ([s (if (rep:struct? rep)
 		       (string-append "struct " (vm->c:convert-symbol (rep:struct-name rep)))
-		       (vm->c:convert-type-definition rep))])
-	  (format "(~a *)scheme_malloc(sizeof(~a))" s s))))
+		       (vm->c:convert-type-definition rep))]
+		[tagged (if (let tagged? ([rep rep])
+			      (or (and (rep:atomic? rep) 
+				       (memq (rep:atomic-type rep)
+					     '(prim prim-empty prim-case prim-case-empty)))
+				  (and (rep:struct? rep)
+				       (pair? (rep:struct-fields rep))
+				       (tagged? (car (rep:struct-fields rep))))
+				  (and (rep:struct-field? rep)
+				       (tagged? (rep:struct-field-rep rep)))))
+			    "_tagged"
+			    "")])
+	  (format "(~a *)scheme_malloc~a(sizeof(~a))" s tagged s))))
 
       (define vm->c:emit-local-variable-declarations!
 	(lambda (locals indent port)
@@ -617,7 +642,7 @@
 			     (get-dest n)
 			     (get-cast n #f)))
 		  (fprintf port 
-			   "~a~a~a = ~ascheme_build_list(argc-~a, argv+~a);~n"
+			   "~a~a~a = ~ascheme_build_list_offset(argc, argv, ~a);~n"
 			   indent
 			   (if (dest-boxed? n)
 			       "*(Scheme_Object * *)" 
@@ -626,7 +651,6 @@
 			   (if (dest-boxed? n)
 			       ""
 			       (get-cast n #t))
-			   n
 			   n)
 
 		  (loop (cdr args) (sub1 n) #f)]))))))
@@ -820,10 +844,13 @@
 	    
 	    (let ([r (closure-code-rep code)])
 	      (when r
-					; (fprintf port "~aconst ~a * env;~n" indent (vm->c:convert-type-definition r))
-		(fprintf port "#~adefine env ((const ~a *)void_param)~n" indent (vm->c:convert-type-definition r))))
+		;; (fprintf port "~aconst ~a * env;~n" indent (vm->c:convert-type-definition r))
+		(fprintf port "#~adefine env MZC_ENV_POINTER(~a, ~a, void_param)~n" 
+			 indent 
+			 (vm->c:convert-type-definition r)
+			 (vm->c:convert-type-definition (closure-code-alloc-rep code)))))
 	    
-					; Registers into local vars
+	    ;; Registers into local vars
 	    (let* ([args (zodiac:arglist-vars (list-ref (zodiac:case-lambda-form-args L) which))])
 	      (vm->c:extract-arguments-into-variables!
 	       args
@@ -1105,7 +1132,7 @@
 			(process-set! (car vars) val #t)
 			
 			(begin
-			  (emit "{ Scheme_Object * res = ")
+			  (emit "{ Scheme_Object * res; res = ")
 			  (process val indent-level #f #t)
 			  (emit "; ")
 			  (unless return-arity-ok?
@@ -1366,7 +1393,7 @@
 		(emit-expr "")
 		(when (vm:apply-simple-tail-prim? ast)
 		  (emit "return "))
-		(emit "_scheme_~a("
+		(emit "_mzc_~a("
 		      (let ([v (global-defined-value* (vm:apply-prim ast))])
 			(cond
 			 [(and (primitive-closure? v) 
