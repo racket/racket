@@ -107,6 +107,7 @@ number of the already ported SRFIs:
  SRFI-57            records.ss                    57
  SRFI-59            vicinity.ss                   59
  SRFI-60            60.ss                         60
+ SRFI-67            compare.ss                    67
  SRFI-69            hash.ss                       69
 
 Notes:
