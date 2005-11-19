@@ -22,6 +22,9 @@
    
       clean-intermediate-files ; #t => keep intermediate .c/.o files
                                ; default = #f
+
+      3m ; #t => build for 3m
+         ; default = #f
    
       compile-subcollections   ; #t => use 'compile-subcollections
                                ;  from infor for collection compiling
