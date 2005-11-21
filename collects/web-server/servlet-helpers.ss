@@ -2,12 +2,13 @@
   (require (lib "list.ss")
            (lib "etc.ss")
            (lib "xml.ss" "xml")
-           (lib "base64.ss" "net"))
+           (lib "base64.ss" "net")
+           (lib "url.ss" "net"))
   (require "util.ss"
            "response.ss"
            "request-parsing.ss")
-
-  (provide extract-binding/single
+  (provide get-host
+           extract-binding/single
            extract-bindings
            exists-binding?
            extract-user-pass
@@ -21,6 +22,17 @@
            (all-from "request-parsing.ss")
            (rename get-parsed-bindings request-bindings)
            translate-escapes)
+  
+  ;; get-host : Url (listof (cons Symbol String)) -> Symbol
+  ;; host names are case insesitive---Internet RFC 1034
+  (define DEFAULT-HOST-NAME '<none>)
+  (define (get-host uri headers)
+    (cond
+      [(url-host uri) => string->symbol]
+      [(assq 'host headers)
+       =>
+       (lambda (h) (string->symbol (bytes->string/utf-8 (cdr h))))]
+      [else DEFAULT-HOST-NAME]))
 
   ;; get-parsed-bindings : request -> (listof (cons sym str))
   (define (get-parsed-bindings r)

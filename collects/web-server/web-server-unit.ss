@@ -11,30 +11,16 @@
            (prefix passwords: "dispatch-passwords.ss")
            (prefix files: "dispatch-files.ss")
            (prefix servlets: "dispatch-servlets.ss")
-           (prefix path-procedure: "dispatch-pathprocedure.ss"))
+           (prefix path-procedure: "dispatch-pathprocedure.ss")
+           (prefix log: "dispatch-log.ss")
+           (prefix host: "dispatch-host.ss"))
   (require (lib "tcp-sig.ss" "net")
            (lib "unitsig.ss")
            (lib "string.ss")
            (lib "url.ss" "net"))
-  (provide web-server@) 
+  (provide web-server@)  
   
-  ;; ****************************************
-  ;; stick this auxilliary outside the unit so
-  ;; I can get at it with require/expose
-  
-  ;; get-host : Url (listof (cons Symbol String)) -> Symbol
-  ;; host names are case insesitive---Internet RFC 1034
-  (define DEFAULT-HOST-NAME '<none>)
-  (define (get-host uri headers)
-    (cond
-      [(url-host uri) => string->symbol]
-      [(assq 'host headers)
-       =>
-       (lambda (h) (string->symbol (bytes->string/utf-8 (cdr h))))]
-      [else DEFAULT-HOST-NAME]))
-  
-  ;; ****************************************
-  
+  ;; ****************************************  
   (define dispatch-server@
     (unit/sig dispatch-server^
       (import net:tcp^ (config : dispatch-server-config^))
@@ -55,25 +41,23 @@
       ;; listener-loop : -> void
       ;; loops around starting a listener if the current listener dies
       (define (listener-loop)
-        (let ([sema (make-semaphore 0)])
-          (let loop ()
-            (let ([listener (tcp-listen config:port config:max-waiting
-                                        #t config:listen-ip)])
-              (let ([get-ports
-                     (lambda () (tcp-accept listener))])
-                (thread
-                 (lambda ()
-                   (with-handlers ([void (lambda (e)
-                                           ; If the exception did not kill the listener
-                                           (with-handlers ([void void])
-                                             (tcp-close listener))
-                                           (semaphore-post sema)
-                                           ; Rethrow the error to this thread's error printer
-                                           (raise e))])
-                     (server-loop get-ports
-                                  tcp-addresses))))))
-            (semaphore-wait sema)
-            (loop))))
+        (let loop ()
+          (thread-wait
+           (let* ([listener (tcp-listen config:port config:max-waiting
+                                        #t config:listen-ip)]
+                  [get-ports
+                   (lambda () (tcp-accept listener))])
+             (thread
+              (lambda ()
+                (with-handlers ([void (lambda (e)
+                                        ; If the exception did not kill the listener
+                                        (with-handlers ([void void])
+                                          (tcp-close listener))
+                                        ; Rethrow the error to this thread's error printer
+                                        (raise e))])
+                  (server-loop get-ports
+                               tcp-addresses))))))
+          (loop)))
       
       ;; server-loop: (-> input-port output-port) (input-port -> string string) -> void
       ;; start a thread to handle each incoming connection
@@ -138,39 +122,41 @@
       (define max-waiting config:max-waiting)
       (define initial-connection-timeout config:initial-connection-timeout)
       
-      ;; dispatch: connection request host -> void
-      ;; NOTE: (Jay) First step towards a different way of doing dispatching. Initially,
-      ;;       the dispatchers will be hard-coded based on the configuration file.
-      ;;       Eventually, they will be more configurable and extensible.
-      ;; NOTE: (GregP) I'm going to use the dispatch logic out of v208 for now.
-      ;;       I will move the other  dispatch logic out of the prototype
-      ;;       at a later time.
+      ;; dispatch : connection request -> void
       (define dispatch 
-        (let* ([cache (make-cache-table)]
-               [lookup-dispatcher
-                (lambda (host host-info)
-                  (cache-table-lookup!
-                   cache host
-                   (lambda ()
-                     (host-info->dispatcher host-info))))])
-          (lambda (conn req)
-            (let* ([host (get-host (request-uri req) (request-headers req))]
-                   [host-info (config:virtual-hosts (symbol->string host))])
-              ((host-log-message host-info) (request-host-ip req)
-                                            (request-client-ip req) (request-method req) (request-uri req) host)
-              ((lookup-dispatcher host host-info)
-               conn req)))))
+        (let* ([cache (make-cache-table)])
+          (host:gen-dispatcher
+           (lambda (host)
+             (cache-table-lookup!
+              cache host
+              (lambda ()
+                (host-info->dispatcher
+                 (config:virtual-hosts (symbol->string host)))))))))
       
+      ;; host-info->dispatcher : host-info -> conn request -> void
       (define (host-info->dispatcher host-info)
         (sequencer:gen-dispatcher
-         (passwords:gen-dispatcher host-info config:access)
+         (log:gen-dispatcher (host-log-format host-info)
+                             (host-log-path host-info))
+         (passwords:gen-dispatcher (host-passwords host-info)
+                                   (timeouts-password (host-timeouts host-info))
+                                   (responders-authentication (host-responders host-info))
+                                   (responders-passwords-refreshed (host-responders host-info)))
          (path-procedure:gen-dispatcher "/conf/collect-garbage"
                                         (lambda ()
                                           (collect-garbage)
                                           ((responders-collect-garbage (host-responders host-info)))))
-         (servlets:gen-dispatcher host-info
-                                  config:instances config:scripts config:make-servlet-namespace)
-         (files:gen-dispatcher host-info)))))
+         (servlets:gen-dispatcher config:instances config:scripts config:make-servlet-namespace
+                                  (paths-servlet (host-paths host-info))
+                                  (responders-servlets-refreshed (host-responders host-info))
+                                  (responders-servlet-loading (host-responders host-info))
+                                  (responders-servlet (host-responders host-info))
+                                  (responders-file-not-found (host-responders host-info))
+                                  (timeouts-servlet-connection (host-timeouts host-info))
+                                  (timeouts-default-servlet (host-timeouts host-info)))
+         (files:gen-dispatcher (paths-htdocs (host-paths host-info))
+                               (host-indices host-info)
+                               (responders-file-not-found (host-responders host-info)))))))
   
   (define web-server@
     (compound-unit/sig 

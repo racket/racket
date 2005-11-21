@@ -10,7 +10,6 @@
   (define timer-ch (make-async-channel))
 
   ; start-timer-manager : custodian -> void
-  ; Thanks to Matthew!
   ; The timer manager thread   
   (define (start-timer-manager server-custodian)
     (parameterize ([current-custodian server-custodian])

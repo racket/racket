@@ -1,4 +1,3 @@
-
 (module gui-launch mzscheme
   (require "launch.ss"
 	   (lib "class.ss")

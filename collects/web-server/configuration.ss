@@ -8,9 +8,7 @@
            "cache-table.ss"
            "response.ss")
   (require (lib "unitsig.ss")
-           (lib "contract.ss")
-           (lib "url.ss" "net")
-           (lib "date.ss"))
+           (lib "contract.ss"))
 
   (provide complete-configuration
            build-developer-configuration
@@ -57,11 +55,11 @@
      table     
      (let ([default-host
              (apply-default-functions-to-host-table
-              base (configuration-table-default-host table) ignore-log)]
+              base (configuration-table-default-host table))]
            [expanded-virtual-host-table
             (map (lambda (x)
                    (list (regexp (string-append (car x) "(:[0-9]*)?"))
-                         (apply-default-functions-to-host-table base (cdr x) ignore-log)))
+                         (apply-default-functions-to-host-table base (cdr x))))
                  (configuration-table-virtual-hosts table))])
        (gen-virtual-hosts expanded-virtual-host-table default-host))))
   
@@ -71,11 +69,11 @@
      table
      (let ([default-host
              (apply-default-functions-to-host-table
-              base (configuration-table-default-host table) gen-log-message)]
+              base (configuration-table-default-host table))]
            [expanded-virtual-host-table
             (map (lambda (x)
                    (list (regexp (string-append (car x) "(:[0-9]*)?"))
-                         (apply-default-functions-to-host-table base (cdr x) gen-log-message)))
+                         (apply-default-functions-to-host-table base (cdr x))))
                  (configuration-table-virtual-hosts table))])
        (gen-virtual-hosts expanded-virtual-host-table default-host))))
 
@@ -85,7 +83,7 @@
      table
      (gen-virtual-hosts null (apply-default-functions-to-host-table
                               base
-                              (configuration-table-default-host table) ignore-log))))
+                              (configuration-table-default-host table)))))
 
   ; : configuration-table host-table -> configuration
   (define (build-configuration table the-virtual-hosts)
@@ -235,55 +233,18 @@
       (lambda (str)
         (regexp-match servlets-regexp str))))
 
-  ; access-denied? : str sym str -> (U #f str)
-  ; (define (access-denied? client-ip user-name password) ???)
-  ; The configuration needs a simple way to combine ip and username authentication with
-  ; boolean-and, boolean-or, and perhaps others operations.
-  ; Using quote in the old password system enabled abstraction, which
-  ; I never used.
-  ; ...
-
-  ; gen-log-message : sym str -> str str sym url str -> str
-  ; more here - check apache log configuration formats
-  ; other server's include the original request line,
-  ; including the major and minor HTTP version numbers
-  ; to produce a string that is displayed into the log file
-  (define (gen-log-message log-format log-path)
-    (let ([outsem (make-semaphore 1)]
-          [log-p #f])
-      (lambda (host-ip client-ip method uri host)
-        (call-with-semaphore
-         outsem
-         (lambda ()
-           (with-handlers ([exn? (lambda (e) (set! log-p #f))])
-             (unless (and log-p (file-exists? log-path))
-               (unless (eq? log-p #f)
-                 (close-output-port log-p))
-               (set! log-p (open-output-file log-path 'append))
-               (file-stream-buffer-mode log-p 'line))
-             ; do the display all at once by formating first
-             (when log-p
-               (display
-                (format "~s~n"
-                        (list 'from client-ip 'to host-ip 'for (url->string uri) 'at
-                              (date->string (seconds->date (current-seconds)) #t)))
-                log-p))))))))
-  
-  ; ignore-log : sym str -> str str sym url str -> str
-  (define (ignore-log log-format log-path) void)
-
   ; read-file : str -> str
   (define (read-file path)
     (call-with-input-file path
       (lambda (in) (read-string (file-size path) in))))
 
-  ; apply-default-functions-to-host-table : str host-table (sym str -> str str sym url str -> str) -> host
+  ; apply-default-functions-to-host-table : str host-table -> host
   ;; Greg P: web-server-root is the directory-part of the path to the configuration-table (I don't think I like this.)
-  (define (apply-default-functions-to-host-table web-server-root host-table gen-log-message-maybe)
+  (define (apply-default-functions-to-host-table web-server-root host-table)
     (let ([paths (expand-paths web-server-root (host-table-paths host-table))])
       (make-host
        (host-table-indices host-table)
-       (gen-log-message-maybe (host-table-log-format host-table) (paths-log paths))
+       (host-table-log-format host-table) (paths-log paths)
        (paths-passwords paths)
        (let ([m (host-table-messages host-table)]
              [conf (paths-conf paths)])

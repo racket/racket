@@ -6,10 +6,10 @@
 
   ; configuration is now a unit.  See sig.ss
 
-  ; host = (make-host (listof str) (str str sym url str -> str)
+  ; host = (make-host (listof str) sym string
   ;                   passwords resopnders timeouts paths)
   (provide-define-struct
-   host (indices log-message passwords responders timeouts paths))
+   host (indices log-format log-path passwords responders timeouts paths))
 
   ; passwords = (listof (list* relm:str protected-dir-regexp:str
   ;                            (listof (list user:sym password:str))))
