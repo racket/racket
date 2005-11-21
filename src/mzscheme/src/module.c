@@ -979,6 +979,8 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 
   from_env = (Scheme_Env *)argv[0];
   if (argc > 2) {
+    if (!SCHEME_NAMESPACEP(argv[2]))
+      scheme_wrong_type("namespace-attach-module", "namespace", 2, argc, argv);
     to_env = (Scheme_Env *)argv[2];
     skip_notify = 1;
   } else
