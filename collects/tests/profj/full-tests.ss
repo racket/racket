@@ -3,6 +3,18 @@
   
   (prepare-for-tests "Full")
   
+  (interact-test 
+   "class A {
+     class B {
+       A m = A.this;
+     }
+     B b = new B();
+    }"
+   'full
+   (list "A a = new A();" "A.B b = a.new B();" "a.new B().m")
+   (list '(void) '(void) 'a~f)
+   "Inner class creation")
+  
   (execute-test "/* empty */"
                 'full
                 #f
