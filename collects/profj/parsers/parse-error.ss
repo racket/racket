@@ -1531,7 +1531,6 @@
   ;Intermediate - addition of parameter id-ok?
   ;parse-statement: token token symbol (->token) bool bool bool-> token
   (define (parse-statement pre cur-tok state getter id-ok? ctor? super-seen?)
-    ;(printf "parse-statement state: ~a pre: ~a cur-tok: ~a~n" state pre cur-tok)
     (let* ((tok (get-tok cur-tok))
            (kind (get-token-name tok))
            (out (format-out tok))
@@ -1854,21 +1853,26 @@
                  (parse-error (format "Variables must be separated by commas, ~a not allowed" n-out) start ne))
                 (else (parse-error (format "Expected ';' or more variables, found ~a" n-out) start ne)))))
            (else 
-            (if (and (advanced?) (o-bracket? tok))
-                (let* ((next (getter))
-                       (n-tok (get-tok next)))
-                  (cond
-                    ((c-bracket? n-tok)
-                     (parse-statement next (getter) 'local getter id-ok? ctor? super-seen?))
-                    ((o-bracket? n-tok)
-                     (parse-error "Array types may not have [[. A closing ] is necessary before opening a new [" start 
-                                  (get-end next)))
-                    (else (parse-error (format "Array types are of form type[]. ~a is not allowed" (format-out n-tok))
-                                       start (get-end next)))))
-                (parse-error 
-                 (if (java-keyword? tok)
-                     (format "Expected a name for this variable, cannot be named reserved word ~a" kind)
-                     (format "Expected a name for this variable, found ~a" out)) start end)))))
+            (cond
+              ((and (advanced?) (o-bracket? tok))
+               (let* ((next (getter))
+                      (n-tok (get-tok next)))
+                 (cond
+                   ((c-bracket? n-tok)
+                    (parse-statement next (getter) 'local getter id-ok? ctor? super-seen?))
+                   ((o-bracket? n-tok)
+                    (parse-error "Array types may not have [[. A closing ] is necessary before opening a new [" start 
+                                 (get-end next)))
+                   (else (parse-error (format "Array types are of form type[]. ~a is not allowed" (format-out n-tok))
+                                      start (get-end next))))))
+              ((teaching-assignment-operator? tok)
+               (parse-error (format "Expected a type and name before ~a, found ~a ~a" 
+                                    kind (format-out (get-tok pre)) kind)
+                            ps end))
+              (else (parse-error 
+                     (if (java-keyword? tok)
+                         (format "Expected a name for this variable, cannot be named reserved word ~a" kind)
+                         (format "Expected a name for this variable, found ~a" out)) start end))))))
         ;Intermediate
         ((local-list)
          (case kind

@@ -917,7 +917,7 @@
   (define (create-java-exception class msg constructor marks)
     (let* ((exn (make-object class))
            (str (make-java-string msg))
-           (scheme-exn (make-java:exception msg marks exn)))
+           (scheme-exn (make-java:exception (string->immutable-string msg) marks exn)))
       (constructor exn str)
       (send exn set-exception! scheme-exn)
       scheme-exn))

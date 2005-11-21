@@ -169,7 +169,8 @@
        [(protected) (make-modifier 'protected (build-src 1))]
        [(private) (make-modifier 'private (build-src 1))]
        [(static) (make-modifier 'static (build-src 1))]
-       [(abstract) (make-modifier 'abstract (build-src 1))])
+       [(abstract) (make-modifier 'abstract (build-src 1))]
+       [(final) (make-modifier 'final (build-src 1))])
        
       ;; 19.8.1
       (ClassDeclaration
