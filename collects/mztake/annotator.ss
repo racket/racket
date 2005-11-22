@@ -135,6 +135,11 @@
   (define (annotate-stx stx break-wrap record-bound-id)
 
     (define breakpoints (make-hash-table))
+
+    (define (previous-bindings bound-vars)
+      (if (null? bound-vars)
+	  #'null
+	  #'(debugger-local-bindings)))
     
     (define (top-level-annotate stx)
       (kernel:kernel-syntax-case
@@ -160,10 +165,14 @@
        stx #f
        [(define-values (var ...) expr)
         #`(define-values (var ...)
-            #,(annotate #`expr (syntax->list #`(var ...)) #t))]
+            #,(annotate #`expr null #;(syntax->list #`(var ...)) #t))]
        [(define-syntaxes (var ...) expr)
         stx]
        [(define-values-for-syntax (var ...) expr)
+	stx
+	;; define-values-for-syntax's RHS is compile time, so treat it
+	;;  like define-syntaxes
+	#;
         #`(define-values-for-syntax (var ...) 
             #,(annotate #`expr #`(syntax->list #'(var ...)) #t))]      
        [(begin . top-level-exprs)
@@ -212,26 +221,42 @@
           (let* ([new-bindings (apply append
                                       (map syntax->list
                                            (syntax->list #`((var ...) ...))))]
-                 [new-rhs (if letrec?
-                              (map (lambda (expr)
-                                     (annotate expr (append new-bindings bound-vars) #f))
-                                   (syntax->list #'(rhs ...)))
-                              (map (lambda (expr) (annotate expr bound-vars #f))
-                                   (syntax->list #'(rhs ...))))]
+		 [all-bindings (append new-bindings bound-vars)]
+                 [new-rhs (map (lambda (expr)
+				 (annotate expr 
+					   (if letrec? all-bindings bound-vars)
+					   #f))
+			       (syntax->list #'(rhs ...)))]
                  [last-body (car (reverse (syntax->list #'bodies)))]
                  [all-but-last-body (reverse (cdr (reverse (syntax->list #'bodies))))]
                  [bodies (append (map (lambda (expr)
-                                        (annotate expr
-                                                  (append new-bindings bound-vars) #f))
+                                        (annotate expr all-bindings #f))
                                       all-but-last-body)
                                  (list (annotate
                                         last-body
-                                        (append new-bindings bound-vars) is-tail?)))])
+					all-bindings 
+					is-tail?)))]
+		 [local-debug-info (assemble-debug-info new-bindings new-bindings 'normal #f)]
+		 [previous-bindings (previous-bindings bound-vars)])
             (for-each (lambda (id) (record-bound-id 'bind id id)) new-bindings)
-            (with-syntax ([(new-rhs/trans ...) new-rhs])
-              (quasisyntax/loc expr
-                               (label (((var ...) new-rhs/trans) ...)
-                                      #,@bodies))))]))
+            (with-syntax ([(new-rhs/trans ...) new-rhs]
+			  [previous-bindings previous-bindings])
+	      (if letrec?
+		  (quasisyntax/loc expr
+		    (let ([old-bindings previous-bindings])
+		      (label (((debugger-local-bindings) (lambda ()
+							   (list*
+							    #,@local-debug-info
+							    old-bindings)))
+			      ((var ...) new-rhs/trans) ...)
+			     #,@bodies)))
+		  (quasisyntax/loc expr
+		    (label (((var ...) new-rhs/trans) ...)
+			   (let ([debugger-local-bindings (lambda ()
+							    (list*
+							     #,@local-debug-info
+							     previous-bindings))])
+			     #,@bodies))))))]))
       
       (define (lambda-clause-annotator clause)
         (kernel:kernel-syntax-case
@@ -246,7 +271,13 @@
                                          (loop (cdr bodies)))))])
             (for-each (lambda (id) (record-bound-id 'bind id id)) new-bound-vars)
             (quasisyntax/loc clause
-                             (arg-list #,@new-bodies)))]))
+                             (arg-list 
+			      (let ([debugger-local-bindings
+				     (lambda ()
+				       (list*
+					#,@(assemble-debug-info new-bound-vars new-bound-vars 'normal #f)
+					#,(previous-bindings bound-vars)))])
+				#,@new-bodies))))]))
       
       (define annotated
         (syntax-recertify
@@ -320,7 +351,7 @@
                                 (syntax->list #'exprs))])
              (if is-tail?
                  (quasisyntax/loc expr #,subexprs)
-                 (wcm-wrap (make-debug-info expr bound-vars bound-vars 'normal #f)
+                 (wcm-wrap (make-debug-info expr bound-vars bound-vars 'normal #f (previous-bindings bound-vars))
                            (quasisyntax/loc expr #,subexprs))))]
           
           [(#%datum . _) expr]
@@ -335,7 +366,7 @@
       
       (if annotate-break?
           (break-wrap
-           (make-debug-info expr bound-vars bound-vars 'at-break #f)
+           (make-debug-info expr bound-vars bound-vars 'at-break #f (previous-bindings bound-vars))
            annotated
            expr
            is-tail?)

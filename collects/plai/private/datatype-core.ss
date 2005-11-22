@@ -14,13 +14,8 @@
 	   cases-core
 	   provide-datatype-core)
 
-  ;; Temporary workaround for problem in debugger:
   (define-for-syntax (generate-dt-temporaries l)
-    (if (list? l)
-	(map (lambda (x)
-	       (gensym (if (symbol? x) x (syntax-e x))))
-	     l)
-	(generate-dt-temporaries (syntax->list l))))
+    (generate-temporaries l))
 
   (define (projection-contract name proc)
     (let ([name `(,(car name) ,@(map (lambda (c)

@@ -22,6 +22,7 @@
   
   (provide
    make-debug-info
+   assemble-debug-info
    wcm-wrap
    skipto-mark?
    skipto-mark
@@ -67,13 +68,13 @@
   
   ; the 'varargs' creator is used to avoid an extra cons cell in every mark:
   (define (make-make-full-mark-varargs source label bindings)
-    (lambda values 
+    (lambda (values)
       (make-full-mark-struct source label bindings values)))
   
   ; see module top for type
-  (define (make-full-mark location label bindings)
+  (define (make-full-mark location label bindings assembled-info-stx)
     (datum->syntax-object #'here `(lambda () (,(make-make-full-mark-varargs location label bindings)
-                                              ,@(map make-mark-binding-stx bindings)))))
+					      ,assembled-info-stx))))
   
   (define (mark-source mark)
     (full-mark-struct-source (mark)))
@@ -165,22 +166,11 @@
   ;;
   ;;;;;;;;;;
      
-  (define (make-debug-info source tail-bound free-vars label lifting?)
-       (let*-2vals ([kept-vars (binding-set-varref-set-intersect tail-bound free-vars)])
-         (if lifting?
-             (let*-2vals ([let-bindings (filter (lambda (var) 
-                                                  (case (syntax-property var 'stepper-binding-type)
-                                                    ((let-bound macro-bound) #t)
-                                                    ((lambda-bound stepper-temp non-lexical) #f)
-                                                    (else (error 'make-debug-info 
-                                                                 "varref ~a's binding-type info was not recognized: ~a"
-                                                                 (syntax-e var)
-                                                                 (syntax-property var 'stepper-binding-type)))))
-                                                kept-vars)]
-                          [lifter-syms (map get-lifted-var let-bindings)])
-               (make-full-mark source label (append kept-vars lifter-syms)))
-             (make-full-mark source label kept-vars))))
+  (define (make-debug-info source tail-bound free-vars label lifting? assembled-info-stx)
+    (make-full-mark source label free-vars assembled-info-stx))
   
+  (define (assemble-debug-info tail-bound free-vars label lifting?)
+    (map make-mark-binding-stx free-vars))
   
   (define (make-top-level-mark source-expr)
     (make-full-mark source-expr 'top-level null)))
