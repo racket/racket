@@ -123,7 +123,7 @@
                                   py)))])
           (send f put str)))
       
-      (define/override (get-num-scroll-steps) (inexact->exact (+ (quotient height 20) 1)))
+      (define/override (get-num-scroll-steps) (inexact->exact (+ (floor (/ height 20)) 1)))
       (define/override (find-scroll-step y) (inexact->exact (floor (/ y 20))))
       (define/override (get-scroll-step-offset offset) (* offset 20))
       
