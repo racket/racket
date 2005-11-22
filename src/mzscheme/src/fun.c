@@ -157,6 +157,9 @@ typedef struct Scheme_Dynamic_Wind_List {
   struct Scheme_Dynamic_Wind_List *next;
 } Scheme_Dynamic_Wind_List;
 
+static Scheme_Object *cached_beg_stx, *cached_dv_stx, *cached_ds_stx;
+int cached_stx_phase;
+
 /*========================================================================*/
 /*                             initialization                             */
 /*========================================================================*/
@@ -177,6 +180,10 @@ scheme_init_fun (Scheme_Env *env)
   scheme_tail_call_waiting = scheme_alloc_eternal_object();
   scheme_tail_call_waiting->type = scheme_tail_call_waiting_type;
 #endif
+
+  REGISTER_SO(cached_beg_stx);
+  REGISTER_SO(cached_dv_stx);
+  REGISTER_SO(cached_ds_stx);
 
   scheme_add_global_constant("procedure?",
 			     scheme_make_folding_prim(procedure_p,
@@ -1344,7 +1351,8 @@ _scheme_tail_apply_to_list (Scheme_Object *rator, Scheme_Object *rands)
 
 static Scheme_Object *
 cert_with_specials(Scheme_Object *code, Scheme_Object *mark, Scheme_Env *menv, 
-		   Scheme_Object *orig_code, int phase, int deflt, int cadr_deflt)
+		   Scheme_Object *orig_code, Scheme_Comp_Env *cenv, int phase, 
+		   int deflt, int cadr_deflt)
 {
   Scheme_Object *prop;
   int next_cadr_deflt = 0;
@@ -1379,11 +1387,34 @@ cert_with_specials(Scheme_Object *code, Scheme_Object *mark, Scheme_Env *menv,
 	Scheme_Object *name;
 	name = SCHEME_STX_CAR(code);
 	if (SCHEME_STX_SYMBOLP(name)) {
-	  if (scheme_stx_module_eq(scheme_begin_stx, name, phase)) {
+	  Scheme_Object *beg_stx, *dv_stx, *ds_stx;
+
+	  if (!phase) {
+	    beg_stx = scheme_begin_stx;
+	    dv_stx = scheme_define_values_stx;
+	    ds_stx = scheme_define_syntaxes_stx;
+	  } else if (phase == cached_stx_phase) {
+	    beg_stx = cached_beg_stx;
+	    dv_stx = cached_dv_stx;
+	    ds_stx = cached_ds_stx;
+	  } else {
+	    beg_stx = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_begin_stx), scheme_false, 
+					     scheme_sys_wraps(cenv), 0, 0);
+	    dv_stx = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_define_values_stx), scheme_false, 
+					    scheme_sys_wraps(cenv), 0, 0);
+	    ds_stx = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_define_syntaxes_stx), scheme_false, 
+					    scheme_sys_wraps(cenv), 0, 0);
+	    cached_beg_stx = beg_stx;
+	    cached_dv_stx = dv_stx;
+	    cached_ds_stx = ds_stx;
+	    cached_stx_phase = phase;
+	  }
+
+	  if (scheme_stx_module_eq(beg_stx, name, phase)) {
 	    trans = 1;
 	    next_cadr_deflt = 0;
-	  } else if (scheme_stx_module_eq(scheme_define_values_stx, name, phase)
-		     || scheme_stx_module_eq(scheme_define_syntaxes_stx, name, phase)) {
+	  } else if (scheme_stx_module_eq(dv_stx, name, phase)
+		     || scheme_stx_module_eq(ds_stx, name, phase)) {
 	    trans = 1;
 	    next_cadr_deflt = 1;
 	  }
@@ -1399,9 +1430,9 @@ cert_with_specials(Scheme_Object *code, Scheme_Object *mark, Scheme_Env *menv,
     Scheme_Object *a, *d, *v;
     
     a = SCHEME_STX_CAR(code);
-    a = cert_with_specials(a, mark, menv, orig_code, phase, cadr_deflt, 0);
+    a = cert_with_specials(a, mark, menv, orig_code, cenv, phase, cadr_deflt, 0);
     d = SCHEME_STX_CDR(code);
-    d = cert_with_specials(d, mark, menv, orig_code, phase, 1, next_cadr_deflt);
+    d = cert_with_specials(d, mark, menv, orig_code, cenv, phase, 1, next_cadr_deflt);
 
     v = scheme_make_pair(a, d);
 
@@ -1449,7 +1480,7 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
      code = scheme_datum_to_syntax(code, orig_code, scheme_sys_wraps(env), 0, 0);
    }
 
-   code = cert_with_specials(code, mark, menv, orig_code, env->genv->phase, 0, 0);
+   code = cert_with_specials(code, mark, menv, orig_code, env, env->genv->phase, 0, 0);
 
    code = scheme_stx_track(code, orig_code, name);
 
@@ -1480,7 +1511,7 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
 
    code = scheme_add_remove_mark(code, mark);
 
-   code = cert_with_specials(code, mark, menv, orig_code, env->genv->phase, 0, 0);
+   code = cert_with_specials(code, mark, menv, orig_code, env, env->genv->phase, 0, 0);
 
    code = scheme_stx_track(code, orig_code, name);
 
