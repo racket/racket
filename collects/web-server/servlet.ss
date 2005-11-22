@@ -31,6 +31,13 @@
       [(procedure? p-exp) (p->a p-exp)]
       [else p-exp]))
   
+  ;; get-current-servlet-instance : -> servlet
+  (define (get-current-servlet-instance)
+    (let ([inst (thread-cell-ref current-servlet-instance)])
+      (unless inst
+        (raise (make-exn:servlet:no-current-instance "" (current-continuation-marks))))
+      inst))
+  
   ;; Weak contracts: the input is checked in output-response, and a message is
   ;; sent directly to the client (Web browser) instead of the terminal/log.
   (provide/contract
@@ -59,14 +66,7 @@
   ;; current-servlet-continuation-expiration-handler : request -> response
   (define current-servlet-continuation-expiration-handler
     (make-parameter #f))
-  
-  ;; get-current-servlet-instance : -> servlet
-  (define (get-current-servlet-instance)
-    (let ([inst (thread-cell-ref current-servlet-instance)])
-      (unless inst
-        (raise (make-exn:servlet:no-current-instance "" (current-continuation-marks))))
-      inst))
-  
+    
   ;; adjust-timeout! : sec -> void
   ;; adjust the timeout on the servlet
   (define (adjust-timeout! secs)

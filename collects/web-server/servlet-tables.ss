@@ -175,8 +175,4 @@
        (url-port in-url)
        new-path
        '()
-       (url-fragment in-url))))
-
-  ;; **************************************************
-
-  )
+       (url-fragment in-url)))))
