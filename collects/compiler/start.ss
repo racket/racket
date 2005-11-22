@@ -85,7 +85,7 @@
 		   (extract-suffix append-constant-pool-suffix)))]
 	[("-l" "--link-extension")
 	 ,(lambda (f) 'link)
-	 (,(format "Link multiple ~a and ~a files into a ~a file"
+	 (,(format "Link ~a and ~a from Scheme sources into a ~a file"
 		   (extract-suffix append-object-suffix)
 		   (extract-suffix append-constant-pool-suffix)
 		   (extract-suffix append-extension-suffix)))]
