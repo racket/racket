@@ -9942,8 +9942,13 @@ if test "${enable_xft}" = "" ; then
 fi
 
 if test "${enable_xft}" = "yes" ; then
-  xft_config_ok=`xft-config --cflags  2> /dev/null`
-  if test "$xft_config_ok" = "" ; then
+  xft_config_prog="pkg-config xft"
+  xft_config_ok=`$xft_config_prog --cflags  2> /dev/null`
+  if test "$?" != 0 ; then
+    xft_config_prog="xft-config"
+    xft_config_ok=`$xft_config_prog --cflags  2> /dev/null`
+  fi
+  if test "$?" != 0 ; then
     save_cpp_flags="$CPPFLAGS"
     CPPFLAGS="$CPPFLAGS $XFT_EXTRA_FLAGS $X_CFLAGS"
     if test "${ac_cv_header_X11_Xft_Xft_h+set}" = set; then
@@ -10172,9 +10177,9 @@ fi
     fi
     CPPFLAGS="$save_cpp_flags"
   else
-    echo "Using xft-config..."
-    xft_cflags=`xft-config --cflags`
-    xft_libs=`xft-config --libs`
+    echo "Using $xft_config_prog..."
+    xft_cflags=`$xft_config_prog --cflags`
+    xft_libs=`$xft_config_prog --libs`
     echo "Xft flags: $xft_cflags"
     echo "Xft libs: $xft_libs"
     MROPTIONS="$MROPTIONS -DWX_USE_XFT"
@@ -10191,7 +10196,7 @@ fi
 
 if test "${enable_cairo}" = "yes" ; then
   cairo_config_ok=`pkg-config --cflags cairo 2> /dev/null`
-  if test "$cairo_config_ok" = "" ; then
+  if test "$?" != 0 ; then
     echo "no information from pkg-config; Cairo support disabled"
   else
     echo "Using pkg-config for Cairo..."
