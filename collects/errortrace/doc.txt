@@ -33,7 +33,7 @@ handler or the error display handler.
 Exception Information
 ---------------------
 
-Invoking the errortrace.ss module sets the compilation handler to
+Invoking the _errortrace.ss_ module sets the compilation handler to
 instrument Scheme source code.  It also sets the error display handler
 to report source information for an exception, and it sets the
 `use-compiled-file-paths' parameter to trigger the use of
@@ -43,6 +43,9 @@ errortrace-specific .zo files.
   (i.e., from a .zo file) or native code (i.e., from a .dll or .so
   file).  But use the "--mode errortrace" flag to Setup PLT to create
   .zo files with errortrace information.
+
+Explicitly requiring "errortrace.ss" within a module is generally a
+bad idea, since "errortrace.ss" sets various parameters.
 
 Errortrace's instrumentation can be explicitly disabled via the
 `instrumenting-enabled' boolean parameter.  Instrumentation is on by
