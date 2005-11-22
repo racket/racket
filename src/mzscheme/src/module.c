@@ -1982,7 +1982,7 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
       || (env->module->primitive)
       /* For now[?], we're pretending that all definitions exists for
 	 non-0 local phase. */
-      || (env->mod_phase != env->phase)) {
+      || env->mod_phase) {
     if (want_pos)
       return scheme_make_integer(-1);
     else
