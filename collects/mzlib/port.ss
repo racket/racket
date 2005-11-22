@@ -19,7 +19,8 @@
 	   convert-stream
 	   make-limited-input-port
 	   reencode-input-port
-	   reencode-output-port)
+	   reencode-output-port
+	   strip-shell-command-start)
 
   (define (exact-non-negative-integer? i)
     (and (number? i) (exact? i) (integer? i) (i . >= . 0)))
@@ -74,6 +75,14 @@
 				    (input-port-with-progress-evts? . -> . evt?)
 				    (input-port-with-progress-evts? line-mode-symbol? . -> . evt?)))
 		    (eof-evt (input-port-with-progress-evts? . -> . evt?)))
+
+  ;; ----------------------------------------
+
+  (define (strip-shell-command-start in)
+    (when (regexp-match-peek #rx#"^#![^\r\n]*" in)
+      (let loop ([s (read-line in)])
+	(when (regexp-match #rx#"\\\\$" s)
+	  (loop (read-line in))))))
 
   ;; ----------------------------------------
 

@@ -1,6 +1,7 @@
 
 (module compile mzscheme
-  (require "file.ss")
+  (require "file.ss" 
+	   "port.ss")
   (provide compile-file)
   
   ;; (require (lib "src2src.ss" "compiler"))
@@ -23,7 +24,8 @@
 	(dynamic-wind
 	 void
 	 (lambda ()
-	   (port-count-lines! (current-input-port))
+	   (port-count-lines! in)
+	   (strip-shell-command-start in)
 	   (with-handlers ([void
 			    (lambda (exn)
 			      (with-handlers ([void void])

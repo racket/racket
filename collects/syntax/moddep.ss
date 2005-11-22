@@ -1,6 +1,7 @@
 
 (module moddep mzscheme
   (require (lib "etc.ss")
+	   (lib "port.ss")
            (lib "resolver.ss" "planet"))
   
 
@@ -95,7 +96,9 @@
 
   (define (read-one path src?)
     (let ([p ((moddep-current-open-input-file) path)])
-      (when src? (port-count-lines! p))
+      (when src? 
+	(port-count-lines! p)
+	(strip-shell-command-start p))
       (dynamic-wind
        void
        (lambda ()

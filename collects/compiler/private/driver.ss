@@ -63,6 +63,7 @@
   (require (lib "unitsig.ss")
 	   (lib "list.ss")
 	   (lib "file.ss")
+	   (lib "port.ss")
 	   (lib "etc.ss")
 	   (lib "pretty.ss")
 	   (prefix src2src: "../src2src.ss"))
@@ -440,11 +441,7 @@
 				  path))
 			 p)))])
 	  ;; Skip leading "#!:
-	  (let loop ([s (regexp-match-peek #rx"^#![^\r\n]*" p)])
-	    (when s
-	      (read-line p)
-	      (when (regexp-match #rx"\\\\$" (car s))
-		(loop (regexp-match-peek #rx"^[^\r\n]*" p)))))
+	  (strip-shell-command-start p)
 	  p))
 
       ;;-------------------------------------------------------------------------------
