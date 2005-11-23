@@ -1753,6 +1753,9 @@ tcp_listen(int argc, Scheme_Object *argv[])
   unsigned short id, origid;
   int backlog, errid;
   int reuse = 0;
+#ifdef MZ_TCP_LISTEN_IPV6_ONLY_SOCKOPT
+  int no_ipv6 = 0;
+#endif
   const char *address;
   
   if (!CHECK_PORT_ID(argv[0]))
@@ -1791,37 +1794,82 @@ tcp_listen(int argc, Scheme_Object *argv[])
   id = origid;
 #endif
 
+ retry:
+
   {
     GC_CAN_IGNORE struct addrinfo *tcp_listen_addr, *addr;
     int err, count = 0, pos = 0, i;
     listener_t *l = NULL;
+#ifdef MZ_TCP_LISTEN_IPV6_ONLY_SOCKOPT
+    int any_v4 = 0, any_v6 = 0;
+#endif
 
     tcp_listen_addr = scheme_get_host_address(address, id, &err, 
-#ifdef MZ_TCP_LISTEN_IPV4_ONLY
-					      MZ_PF_INET,
+#ifdef MZ_TCP_LISTEN_IPV6_ONLY_SOCKOPT
+					      no_ipv6 ? MZ_PF_INET : -1,
 #else
-# ifdef MZ_TCP_LISTEN_IPV4_DEFAULT
-					      !address ? MZ_PF_INET : -1,
-# else
 					      -1, 
-# endif
 #endif
 					      1, 1);
 
     for (addr = tcp_listen_addr; addr; addr = addr->ai_next) {
+#ifdef MZ_TCP_LISTEN_IPV6_ONLY_SOCKOPT
+      if (addr->ai_family == MZ_PF_INET)
+	any_v4 = 1;
+      else if (addr->ai_family == PF_INET6)
+	any_v6 = 1;
+#endif
       count++;
     }
 		
     if (tcp_listen_addr) {
       tcp_t s;
+#ifdef MZ_TCP_LISTEN_IPV6_ONLY_SOCKOPT
+      /* Try IPv6 listeners first, so we can retry and use just IPv4 if
+	 IPv6 doesn't work right. */
+      int v6_loop = (any_v6 && any_v4), skip_v6 = 0;
+#endif
 
       errid = 0;
-      for (addr = tcp_listen_addr; addr; addr = addr->ai_next) {
-	s = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+      for (addr = tcp_listen_addr; addr; ) {
 #ifdef MZ_TCP_LISTEN_IPV6_ONLY_SOCKOPT
-	if (addr->ai_family == PF_INET6) {
-	  int on = 1;
-	  setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on));
+	if ((v6_loop && (addr->ai_family != PF_INET6))
+	    || (skip_v6 && (addr->ai_family == PF_INET6))) {
+	  addr = addr->ai_next;
+	  continue;
+	}
+#endif
+
+	s = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+
+#ifdef MZ_TCP_LISTEN_IPV6_ONLY_SOCKOPT
+	if (s == INVALID_SOCKET) {
+	  /* Maybe it failed because IPv6 is not available: */
+	  if ((addr->ai_family == PF_INET6) && (errno == EAFNOSUPPORT)) {
+	    if (any_v4 && !pos) {
+	      /* Maybe we can make it work with just IPv4. Try again. */
+	      no_ipv6 = 1;
+	      freeaddrinfo(tcp_listen_addr);
+	      goto retry;
+	    }
+	  }
+	}
+	if (s != INVALID_SOCKET) {
+	  if (any_v4 && (addr->ai_family == PF_INET6)) {
+	    int ok;
+# ifdef IPV6_V6ONLY
+	    int on = 1;
+	    ok = setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on));
+# else
+	    ok = -1;
+# endif
+	    if (ok && !pos) {
+	      /* IPV6_V6ONLY doesn't work */
+	      no_ipv6 = 1;
+	      freeaddrinfo(tcp_listen_addr);
+	      goto retry;
+	    }
+	  }
 	}
 #endif
 
@@ -1877,6 +1925,16 @@ tcp_listen(int argc, Scheme_Object *argv[])
 	  errid = SOCK_ERRNO();
 	  break;
 	}
+
+	addr = addr->ai_next;
+
+#ifdef MZ_TCP_LISTEN_IPV6_ONLY_SOCKOPT
+	if (!addr && v6_loop) {
+	  v6_loop = 0;
+	  skip_v6 = 1;
+	  addr = tcp_listen_addr;
+	}
+#endif
       }
 
       for (i = 0; i < pos; i++) {
