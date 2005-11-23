@@ -1838,6 +1838,11 @@ tcp_listen(int argc, Scheme_Object *argv[])
 	if ((v6_loop && (addr->ai_family != PF_INET6))
 	    || (skip_v6 && (addr->ai_family == PF_INET6))) {
 	  addr = addr->ai_next;
+	  if (v6_loop && !addr) {
+	    v6_loop = 0;
+	    skip_v6 = 1;
+	    addr = tcp_listen_addr;
+	  }
 	  continue;
 	}
 #endif
@@ -1865,11 +1870,18 @@ tcp_listen(int argc, Scheme_Object *argv[])
 # else
 	    ok = -1;
 # endif
-	    if (ok && !pos) {
-	      /* IPV6_V6ONLY doesn't work */
-	      no_ipv6 = 1;
-	      freeaddrinfo(tcp_listen_addr);
-	      goto retry;
+	    if (ok) {
+	      if (!pos) {
+		/* IPV6_V6ONLY doesn't work */
+		no_ipv6 = 1;
+		freeaddrinfo(tcp_listen_addr);
+		goto retry;
+	      } else {
+		errid = errno;
+		closesocket(s);
+		errno = errid;
+		s = INVALID_SOCKET;
+	      }
 	    }
 	  }
 	}
