@@ -743,14 +743,14 @@
             (lambda (name super-name from-dynamic? extra-methods)
               `(define ,name
                  (class ,super-name
-                   (init w p n s c)
-                   (define-values (wrapped-obj pos-blame neg-blame src cc-marks) (values null null null null null))
-                   (set! wrapped-obj w)
-                   (set! pos-blame p)
-                   (set! neg-blame n)
-                   (set! src s)
-                   (set! cc-marks c)
-                   (super-instantiate (w p n s c))
+                   (init w* p* n* s* c*)
+                   (define-values (wrapped-obj pos-blame neg-blame src* cc-marks) (values null null null null null))
+                   (set! wrapped-obj w*)
+                   (set! pos-blame p*)
+                   (set! neg-blame n*)
+                   (set! src* s*)
+                   (set! cc-marks c*)
+                   (super-instantiate (w* p* n* s* c*))
                   
                    ,(generate-wrapper-fields fields from-dynamic?)
                    
@@ -857,8 +857,8 @@
       ((dynamic-val? type) value)
       ((array-type? type) value
        #;(if from-dynamic?
-           `(wrap-convert-assert-array ,value pos-blame neg-blame src cc-marks)
-           `(make-object guard-convert-array ,value pos-blame neg-blame src cc-marks)))
+           `(wrap-convert-assert-array ,value pos-blame neg-blame src* cc-marks)
+           `(make-object guard-convert-array ,value pos-blame neg-blame src* cc-marks)))
       ((ref-type? type) 
        (cond 
          ((and (equal? string-type type) from-dynamic?) `(make-java-string ,value))
@@ -868,9 +868,9 @@
                         (make-ref-type "PrintStream" '("java" "io"))
                         (make-ref-type "PrintWriter" '("java" "io")))) value)
          (from-dynamic? `(,(build-identifier (string-append "wrap-convert-assert-" (ref-type-class/iface type)))
-                           ,value pos-blame neg-blame src cc-marks))
+                           ,value pos-blame neg-blame src* cc-marks))
          (else `(make-object ,(build-identifier (string-append "guard-convert-" (ref-type-class/iface type)))
-                  ,value pos-blame neg-blame src cc-marks))))
+                  ,value pos-blame neg-blame src* cc-marks))))
       (else value)))
   
   ;assert-value: sexp type boolean -> sexp
