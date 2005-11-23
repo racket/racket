@@ -1794,7 +1794,9 @@ tcp_listen(int argc, Scheme_Object *argv[])
   id = origid;
 #endif
 
+#ifdef MZ_TCP_LISTEN_IPV6_ONLY_SOCKOPT
  retry:
+#endif
 
   {
     GC_CAN_IGNORE struct addrinfo *tcp_listen_addr, *addr;
