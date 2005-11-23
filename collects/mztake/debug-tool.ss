@@ -15,7 +15,7 @@
            "annotator.ss"
            "load-sandbox.ss"
            ;(lib "framework.ss" "framework")
-           #;(lib "string-constant.ss" "string-constants")
+           (lib "string-constant.ss" "string-constants")
            )
   
   (provide tool@)
@@ -23,13 +23,24 @@
   ; QUESTIONS/IDEAS
   ; what is the right way to deal with macros?
   ; how can the three tool classes communicate with each other safely
-  
+
   (define tool@
     (unit/sig drscheme:tool-exports^
       (import drscheme:tool^)
       
       (define phase1 void)
       (define phase2 void)
+
+      (define (extract-language-level settings)
+	(let* ([language (drscheme:language-configuration:language-settings-language settings)])
+	  (car (last-pair (send language get-language-position)))))
+
+      (define (debugger-does-not-work-for? lang)
+	(member lang (list (string-constant beginning-student)
+			   (string-constant beginning-student/abbrev)
+			   (string-constant intermediate-student)
+			   (string-constant intermediate-student/lambda)
+			   (string-constant advanced-student))))
       
       (define (break-at bp p)
         (hash-table-get bp p))
@@ -404,7 +415,11 @@
                             [else    (send dc set-pen pc-pen)
                                      (send dc set-brush pc-brush)]))
                         (drscheme:arrow:draw-arrow dc xm0 ym0 xr ym dx dy)
-                        (loop start-pos (rest marks)))))))))))
+                        (loop start-pos (rest marks)))))))))
+
+	  (define/augment (after-set-next-settings s)
+	    (send (get-top-level-window) check-current-language-for-debugger)
+	    (inner (void) after-set-next-settings s))))
       
       (define (debug-interactions-text-mixin super%)
         (class super%
@@ -728,7 +743,7 @@
               ((bitmap-label-maker
                 "Debug"
                 (build-path (collection-path "mztake" "icons") "icon-small.png")) this)
-              (get-button-panel)
+              (make-object vertical-pane% (get-button-panel))
               (lambda (button evt)
                 (my-execute #t))))
           
@@ -778,11 +793,26 @@
               [label ""]
               [parent debug-panel]
               [stretchable-width #t]))
+
+	  (define/augment (on-tab-change old new)
+	    (check-current-language-for-debugger)
+	    (inner (void) on-tab-change old new))
+
+	  (define/public (check-current-language-for-debugger)
+	    (if (debugger-does-not-work-for? (extract-language-level 
+					      (send (get-definitions-text) get-next-settings)))
+		(when (send debug-button is-shown?)
+		  (send (send debug-button get-parent) delete-child debug-button))
+		(unless (send debug-button is-shown?)
+		  (send (send debug-button get-parent) add-child debug-button))))
           
           (send (get-button-panel) change-children
                 (lambda (_)
-                  (cons debug-button
-                        (remq debug-button _))))))
+                  (cons (send debug-button get-parent)
+                        (remq (send debug-button get-parent) _))))
+
+	  ; hide debug button if it's not supported for the initial language:
+	  (check-current-language-for-debugger)))
       (drscheme:get/extend:extend-definitions-text debug-definitions-text-mixin)
       (drscheme:get/extend:extend-interactions-text debug-interactions-text-mixin)
       (drscheme:get/extend:extend-unit-frame debug-unit-frame-mixin))))

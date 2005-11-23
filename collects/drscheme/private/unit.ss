@@ -86,7 +86,8 @@ module browser threading seems wrong.
       (define definitions-text<%> 
         (interface ()
           get-tab
-          change-mode-to-match))
+	  get-next-settings
+	  after-set-next-settings))
       
       (keymap:add-to-right-button-menu
        (let ([old (keymap:add-to-right-button-menu)])
@@ -420,7 +421,7 @@ module browser threading seems wrong.
                                                get-language-position))])
                 (let loop ([modes (drscheme:modes:get-modes)])
                   (cond
-                    [(null? modes) (error 'change-mode-to-match-filename
+                    [(null? modes) (error 'change-mode-to-match
                                           "didn't find a matching mode")]
                     [else (let ([mode (car modes)])
                             (if ((drscheme:modes:mode-matches-language mode) language-name)
@@ -467,7 +468,11 @@ module browser threading seems wrong.
             (define/pubment (get-next-settings) next-settings)
             (define/pubment (set-next-settings _next-settings)
               (set! next-settings _next-settings)
-              (change-mode-to-match))
+              (change-mode-to-match)
+	      (after-set-next-settings _next-settings))
+
+	    (define/pubment (after-set-next-settings s)
+	      (inner (void) after-set-next-settings s))
             
             (define/public (needs-execution)
               (or needs-execution-state

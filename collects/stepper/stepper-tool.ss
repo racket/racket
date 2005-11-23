@@ -31,7 +31,7 @@
           (string-constant intermediate-student)
           (string-constant intermediate-student/lambda)
           (string-constant advanced-student)))
-  
+
   (provide stepper-tool@)
   
   (define stepper-tool@
@@ -48,6 +48,14 @@
       (define stepper-initial-height 500)
       
       (define drscheme-eventspace (current-eventspace))
+
+      (define (extract-language-level settings)
+	(let* ([language (drscheme:language-configuration:language-settings-language settings)])
+	  (car (last-pair (send language get-language-position)))))
+	       
+      (define (stepper-works-for? language-level)
+	(or (member language-level stepper-works-for)
+	    (getenv "PLTSTEPPERUNSAFE")))
       
       ;; the stepper's frame:
       
@@ -477,17 +485,15 @@
           (define stepper-button 
             (make-object button%
               (x:stepper-bitmap this)
-              (get-button-panel)
+              (make-object vertical-pane% (get-button-panel))
               (lambda (button evt)
                 (if stepper-frame
                     (send stepper-frame show #t)
-                    (let* ([settings (send (get-definitions-text) get-next-settings)]
-                           [language (drscheme:language-configuration:language-settings-language settings)]
-                           [language-level (car (last-pair (send language get-language-position)))])
-                      (if (or (member language-level stepper-works-for)
-                              (getenv "PLTSTEPPERUNSAFE"))
-                          (set! stepper-frame (view-controller-go this program-expander))
-                          (message-box (string-constant stepper-name)
+		    (let ([language-level (extract-language-level
+					   (send (get-definitions-text) get-next-settings))])
+		      (if (stepper-works-for? language-level)
+			  (set! stepper-frame (view-controller-go this program-expander))
+			  (message-box (string-constant stepper-name)
 				       (format (string-constant stepper-language-level-message)
 					       language-level
 					       (car stepper-works-for)
@@ -506,10 +512,26 @@
             (when stepper-frame
               (send stepper-frame original-program-gone))
             (inner (void) on-close))
+
+	  (define/augment (on-tab-change old new)
+	    (check-current-language-for-stepper)
+	    (inner (void) on-tab-change old new))
+
+	  (define/public (check-current-language-for-stepper)
+	    (if (stepper-works-for? (extract-language-level 
+				     (send (get-definitions-text) get-next-settings)))
+		(unless (send stepper-button is-shown?)
+		  (send (send stepper-button get-parent) add-child stepper-button))
+		(when (send stepper-button is-shown?)
+		  (send (send stepper-button get-parent) delete-child stepper-button))))
           
           ; add the stepper button to the button panel:
-          (send (get-button-panel) change-children
-                (lx (cons stepper-button (remq stepper-button _))))))
+	  (let ([p (send stepper-button get-parent)])
+	    (send (get-button-panel) change-children
+		  (lx (cons p (remq p _)))))
+
+	  ; hide stepper button if it's not supported for the initial language:
+	  (check-current-language-for-stepper)))
       
       ;; stepper-definitions-text-mixin : a mixin for the definitions text that alerts thet stepper when the definitions
       ;;  text is altered or destroyed
@@ -531,6 +553,10 @@
           (define/augment (on-delete x y)
             (notify-stepper-frame-of-change)
             (inner (void) on-delete x y))
+
+	  (define/augment (after-set-next-settings s)
+	    (send (get-top-level-window) check-current-language-for-stepper)
+	    (inner (void) after-set-next-settings s))
           
           (super-instantiate ())))
       
