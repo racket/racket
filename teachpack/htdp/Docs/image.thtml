@@ -22,10 +22,10 @@ information about color structs.
  to create an ellipse using the given width, height, and color
 <li><code>{(idx triangle)}</code> : int mode iamge-color -> image <br>
  to create an upward pointing equilateral triangle using the given edge size and color
-<li><code>{(idx line)}</code> : int int image-color -> image <br>
+<li><code>{(idx line)}</code> : number number image-color -> image <br>
  to create an image with a colored line from (0,0) to the
  point with the given coordinates
-<li><code>{(idx add-line)}</code> : image int int int int image-color -> image <br>
+<li><code>{(idx add-line)}</code> : image number number number number image-color -> image <br>
  to add a line to an existing image, drawn between the two given points
 <li><code>{(idx text)}</code> : string size image-color -> image <br>
  to create an image of the text in the given string, with the point size, and color specified by the last two arguments
