@@ -518,7 +518,7 @@
                                  (set! real-get/set-settings get/set-settings))
                                
                                (cond
-                                 [(equal? (send language-to-show get-language-position)
+                                 [(equal? (send (or selected-language language-to-show) get-language-position)
                                           (send language get-language-position))
                                   (get/set-settings settings-to-show)
                                   (send details-panel active-child language-details-panel)]
