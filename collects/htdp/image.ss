@@ -210,8 +210,8 @@ plt/collects/tests/mzscheme/image-test.ss
                [top (min 0 delta-y)]
                [right (max (+ delta-x b-w) a-w)]
                [bottom (max (+ delta-y b-h) a-h)]
-               [new-w (ceiling (- right left))]
-               [new-h (ceiling (- bottom top))]
+               [new-w (inexact->exact (ceiling (- right left)))]
+               [new-h (inexact->exact (ceiling (- bottom top)))]
                [a-dx (- left)]
                [a-dy (- top)]
                [b-dx (- delta-x left)]
@@ -482,18 +482,20 @@ plt/collects/tests/mzscheme/image-test.ss
         (make-simple-cache-image-snip w h (floor (/ w 2)) (floor (/ h 2)) draw mask-draw))))
         
   (define (make-simple-cache-image-snip w h px py dc-proc mask-proc)
-    (let ([argb-proc 
-           (lambda (argb-vector dx dy)
-             (let ([c-bm (build-bitmap (lambda (dc) (dc-proc dc 0 0)) w h)]
-                   [m-bm (build-bitmap (lambda (dc) (mask-proc dc 0 0)) w h)])
-               (overlay-bitmap argb-vector dx dy c-bm m-bm)))])
-      (new cache-image-snip%
-           [dc-proc dc-proc]
-           [argb-proc argb-proc]
-           [width w]
-           [height h]
-           [px px]
-           [py py])))
+    (let ([w (inexact->exact (ceiling w))]
+	  [h (inexact->exact (ceiling h))])
+      (let ([argb-proc 
+	     (lambda (argb-vector dx dy)
+	       (let ([c-bm (build-bitmap (lambda (dc) (dc-proc dc 0 0)) w h)]
+		     [m-bm (build-bitmap (lambda (dc) (mask-proc dc 0 0)) w h)])
+		 (overlay-bitmap argb-vector dx dy c-bm m-bm)))])
+	(new cache-image-snip%
+	     [dc-proc dc-proc]
+	     [argb-proc argb-proc]
+	     [width w]
+	     [height h]
+	     [px px]
+	     [py py]))))
   
   (define (make-color-wrapper color-in brush pen rest)
     (let ([color (make-color% color-in)])
