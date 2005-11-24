@@ -163,8 +163,10 @@
         (for-each (λ (snip-class) (send (get-the-snip-class-list) add snip-class))
                   snip-classes)
         
-        (current-thread-group (make-thread-group))        
+        (current-thread-group (make-thread-group))
         (current-command-line-arguments #())
+        (current-pseudo-random-generator (make-pseudo-random-generator))
+        (current-evt-pseudo-random-generator (make-pseudo-random-generator))
         (read-curly-brace-as-paren #t)
         (read-square-bracket-as-paren #t)
         (error-print-width 250)
