@@ -8,7 +8,7 @@
            "servlet-helpers.ss"
            "timer.ss"
            "web-cells.ss")
-
+  
   ;; ************************************************************
   ;; HELPERS
   
@@ -20,8 +20,8 @@
                       (if (procedure? (exn:invalid-xexpr-code exn))
                           #t
                           (begin ((error-display-handler) (exn-message exn) exn)
-                                  #f)))))
-
+                                 #f)))))
+  
   ;; replace-procedures : (proc -> url) xexpr/callbacks? -> xexpr?
   ;; Change procedures to the send/suspend of a k-url
   (define (xexpr/callback->xexpr p->a p-exp)
@@ -66,13 +66,13 @@
   ;; current-servlet-continuation-expiration-handler : request -> response
   (define current-servlet-continuation-expiration-handler
     (make-parameter #f))
-    
+  
   ;; adjust-timeout! : sec -> void
   ;; adjust the timeout on the servlet
   (define (adjust-timeout! secs)
     (reset-timer (servlet-instance-timer (get-current-servlet-instance))
                  secs))
-
+  
   ;; ext:clear-continuations! -> void
   (define (clear-continuation-table!)
     (clear-continuations! (get-current-servlet-instance)))
@@ -83,7 +83,7 @@
     (let ([ctxt (servlet-instance-context (get-current-servlet-instance))])
       (output-response (execution-context-connection ctxt) resp)
       ((execution-context-suspend ctxt))))
-
+  
   ;; send/finish: response -> void
   ;; send a response and clear the continuation table
   (define (send/finish resp)
@@ -94,7 +94,7 @@
     ; In the future, we should use the servlet's specific default-timeout
     (adjust-timeout! 10)
     (send/back resp))
-
+  
   ;; send/suspend: (url -> response) [(request -> response)] -> request
   ;; send a response and apply the continuation to the next request
   (define send/suspend
@@ -110,7 +110,7 @@
                 [response (response-generator k-url)])
            (output-response (execution-context-connection ctxt) response)
            ((execution-context-suspend ctxt)))))))
-
+  
   ;; send/forward: (url -> response) [(request -> response)] -> request
   ;; clear the continuation table, then behave like send/suspend
   (define send/forward
@@ -122,11 +122,18 @@
   ;; send/back a response generated from a procedure that may convert
   ;; procedures to continuation urls
   (define (send/suspend/dispatch response-generator)
-    (let/ec k0
-      (send/back
-       (response-generator
-        (opt-lambda (proc [expiration-handler (current-servlet-continuation-expiration-handler)])
-          (let/ec k1 (k0 (proc (send/suspend k1 expiration-handler)))))))))
+    ; This restores the tail position.
+    ; Note: Herman's syntactic strategy would fail without the new-request capture.
+    ;       (Moving this to the tail-position is not possible anyway, by the way.)
+    (let ([thunk 
+           (let/ec k0
+             (send/back
+              (response-generator
+               (opt-lambda (proc [expiration-handler (current-servlet-continuation-expiration-handler)])
+                 (let/ec k1 
+                   (let ([new-request (send/suspend k1 expiration-handler)])
+                     (k0 (lambda () (proc new-request)))))))))])
+      (thunk)))
   
   ;; send/suspend/callback : xexpr/callback? -> void
   ;; send/back a response with callbacks in it; send/suspend those callbacks.
