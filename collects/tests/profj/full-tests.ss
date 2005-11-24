@@ -3,9 +3,19 @@
   
   (prepare-for-tests "Full")
   
+  (execute-test
+   "class A {
+     void n() { }
+     void s() { }
+     void src() { }
+     void p() { }
+     void c() { } }"
+   'full #f "Names that used to get clobbered")
+  
   (interact-test 
    "class A {
      class B {
+       B() { }
        A m = A.this;
      }
      B b = new B();
