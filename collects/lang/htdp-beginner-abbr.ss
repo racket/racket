@@ -7,6 +7,7 @@
 
   ;; Implements the forms:
   (require "private/teach.ss"
+	   "private/contract-forms.ss"
 	   "private/teachprims.ss")
 
   ;; syntax:
@@ -20,11 +21,13 @@
 	   (rename beginner-if if)
 	   (rename beginner-and and)
 	   (rename beginner-or or)
+	   ;; (rename beginner-contract contract)
+	   ;; (rename beginner-define-data define-data)
 	   (rename intermediate-quote quote)
 	   (rename intermediate-quasiquote quasiquote)
 	   (rename intermediate-unquote unquote)
 	   (rename intermediate-unquote-splicing unquote-splicing)
-	   (rename #%plain-module-begin #%module-begin)
+	   (rename beginner-module-begin #%module-begin)
 	   #%datum
 	   empty true false)
 

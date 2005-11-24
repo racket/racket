@@ -1,6 +1,7 @@
 
 (module htdp-intermediate-lambda mzscheme
   (require "private/teach.ss"
+	   "private/contract-forms.ss"
 	   (lib "etc.ss")
 	   (lib "list.ss")
 	   (lib "docprovide.ss" "syntax"))
@@ -26,7 +27,9 @@
 	   (rename intermediate-unquote unquote)
 	   (rename intermediate-unquote-splicing unquote-splicing)
 	   (rename intermediate-time time)
-	   (rename #%plain-module-begin #%module-begin)
+	   (rename intermediate-module-begin #%module-begin)
+	   ;; (rename intermediate-contract contract)
+	   ;; (rename intermediate-define-data define-data)
 	   #%datum
 	   empty true false)
 

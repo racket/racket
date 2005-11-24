@@ -29,8 +29,8 @@
 	   (rename intermediate-unquote-splicing unquote-splicing)
 	   (rename intermediate-time time)
 	   (rename intermediate-module-begin #%module-begin)
-	   (rename intermediate-contract contract)
-	   (rename intermediate-define-data define-data)
+	   ;; (rename intermediate-contract contract)
+	   ;; (rename intermediate-define-data define-data)
 	   #%datum
 	   empty true false)
 

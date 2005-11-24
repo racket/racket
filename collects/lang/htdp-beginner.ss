@@ -25,8 +25,8 @@
 	   (rename beginner-or or)
 	   (rename beginner-quote quote)
 	   (rename beginner-module-begin #%module-begin)
-	   (rename beginner-contract contract)
-	   (rename beginner-define-data define-data)
+	   ; (rename beginner-contract contract)
+	   ; (rename beginner-define-data define-data)
 	   #%datum
 	   empty true false)
   

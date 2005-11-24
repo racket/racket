@@ -39,8 +39,8 @@
 	   (rename advanced-case case)
 	   (rename advanced-delay delay)
 	   (rename advanced-module-begin #%module-begin)
-	   (rename advanced-contract contract)
-	   (rename advanced-define-data define-data)
+	   ;; (rename advanced-contract contract)
+	   ;; (rename advanced-define-data define-data)
 	   #%datum
 	   empty true false)
 
