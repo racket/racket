@@ -664,6 +664,16 @@
                  20 20
                  'red)))
 
+(test 5
+      image-width
+      (add-line (line 0 0 'red) 3.141597 3 0 0 'black))
+
+(test 'ignore
+      (lambda (x) 'ignore)
+      ;; Make sure that inexact coordinate doesn't create inexact
+      ;;  width:
+      (send (add-line (line 0 0 'red) 3.141597 3 0 0 'black) get-argb))
+
 (test (list 3 4)
       'ph-ellipse
       (list (pinhole-x (ellipse 6 8 'solid 'red))
