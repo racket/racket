@@ -4,6 +4,18 @@
   (prepare-for-tests "Full")
   
   (execute-test
+   "class C {
+     void x() { return 1; }
+    }"
+   'full #t "Trying to return value from void method")
+  
+  (interact-test
+   'full
+   (list "return 1 + true;")
+   (list 'error)
+   "Make sure returns are type-checked in interactions")
+  
+  (execute-test
    "class A {
      void n() { }
      void s() { }
