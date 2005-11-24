@@ -701,10 +701,23 @@ tracing todo:
                                (fprintf sp "~v" arg))
                              (loop (cdr args))]))
                         (fprintf sp ")")
-                        (parameterize ([current-eventspace drs-eventspace])
-                          (queue-callback
-                           (lambda ()
-                             (send tab tracing:add-line (get-output-string sp))))))))))))))
+			(let ([sema (make-semaphore)])
+			  ;; Disable breaks, so an exn handler can't
+			  ;;  grab the DrScheme eventspacae:
+			  (parameterize-break #f
+			    ;; Queue callback to write trace line ---
+			    ;; low priority, so that infinite loops don't stop the user
+			    ;;  from clicking "Break"
+			    (parameterize ([current-eventspace drs-eventspace])
+			      (queue-callback
+			       (lambda ()
+				 (send tab tracing:add-line (get-output-string sp))
+				 (semaphore-post sema))
+			       #f)))
+			  ;; Wait for th eline to get written, so that the
+			  ;;  trace output doesn't get too far behind (which
+			  ;;  matters, again, for infinite loops)
+			  (semaphore-wait sema)))))))))))
 
       (define-values/invoke-unit/sig tr:stacktrace^ tr:stacktrace@ tr tr:stacktrace-imports^)
       
@@ -744,6 +757,8 @@ tracing todo:
             (set! any-results? #f)
             (send show-tracing-text lock #f)
             (send show-tracing-text erase)
+	    (send show-tracing-text auto-wrap #t)
+	    (send show-tracing-text insert sc-tracing-nothing-to-show)
             (send show-tracing-text lock #t))
           
           (define show-tracing-text (new text:hide-caret/selection%))
@@ -757,6 +772,9 @@ tracing todo:
                 (send (get-frame) show-tracing))
               (send show-tracing-text begin-edit-sequence)
               (send show-tracing-text lock #f)
+	      (unless old-any?
+		(send show-tracing-text erase)
+		(send show-tracing-text auto-wrap #f))
               (let ([insert
                      (lambda (s)
                        (send show-tracing-text insert s (send show-tracing-text last-position) 'same #f))])
@@ -815,27 +833,22 @@ tracing todo:
                        (callback (lambda (x y) (toggle-tracing))))))
           
           (define/public (show-tracing)
-            (set! tracing-visible? #t)
-            (send show-tracing-menu-item set-label sc-hide-tracing-window)
-            (send dragable-parent change-children
-                  (lambda (l)
-                    (let ([without (remq show-tracing-canvas l)])
-                      (append without (list show-tracing-canvas)))))
-            (send dragable-parent set-percentages '(3/4 1/4)))
+	    (set! tracing-visible? #t)
+	    (send show-tracing-menu-item set-label sc-hide-tracing-window)
+	    (send dragable-parent begin-container-sequence)
+	    (send dragable-parent change-children
+		  (lambda (l)
+		    (let ([without (remq show-tracing-canvas l)])
+		      (append without (list show-tracing-canvas)))))
+	    (send dragable-parent set-percentages '(3/4 1/4))
+	    (send dragable-parent end-container-sequence))
           
           (define/private (hide-tracing)
-            (cond
-              [(not (send (get-current-tab) get-any-results?))
-               (message-box (string-constant drscheme)
-                            sc-tracing-nothing-to-show
-                            this
-                            '(ok stop))]
-              [else
-               (set! tracing-visible? #f)
-               (send show-tracing-menu-item set-label sc-show-tracing-window)
-               (send dragable-parent change-children
-                     (lambda (l)
-                       (remq show-tracing-canvas l)))]))
+	    (set! tracing-visible? #f)
+	    (send show-tracing-menu-item set-label sc-show-tracing-window)
+	    (send dragable-parent change-children
+		  (lambda (l)
+		    (remq show-tracing-canvas l))))
           
           (define/private (toggle-tracing)
             (if tracing-visible?

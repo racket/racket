@@ -1059,7 +1059,7 @@ please adhere to these guidelines:
  (tracing-enable-tracing "Enable tracing")
  (tracing-show-tracing-window "Show Tracing")
  (tracing-hide-tracing-window "Hide Tracing")
- (tracing-tracing-nothing-to-show "No tracing results are available. Be sure your language supports tracing and it is enabled.")
+ (tracing-tracing-nothing-to-show "No tracing results are available, yet. (Make sure that your language supports tracing and that tracing is enabled.)")
 
  ;;; repl stuff
  (evaluation-terminated "Evaluation Terminated")
@@ -1295,7 +1295,7 @@ please adhere to these guidelines:
   (profjBoxes-interactions-label "Interactions")
   (profjBoxes-bad-java-id-error "Malformed Java ID")
   (profjBoxes-examples-label "Examples")
-  (profjBoxes-add-new-example-button "Add new example")
+  (profjBoxes-add-new-example-button "Add New Example")
   (profjBoxes-type "Type")
   ;; The Java identifier of an example of data
   (profjBoxes-name "Name")
