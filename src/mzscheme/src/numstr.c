@@ -145,9 +145,9 @@ void scheme_init_numstr(Scheme_Env *env)
 						       "current-pseudo-random-generator",
 						       MZCONFIG_RANDOM_STATE),
 			     env);
-  scheme_add_global_constant("current-sync-pseudo-random-generator", 
+  scheme_add_global_constant("current-evt-pseudo-random-generator", 
 			     scheme_register_parameter(current_sched_pseudo_random_generator,
-						       "current-sync-pseudo-random-generator",
+						       "current-evt-pseudo-random-generator",
 						       MZCONFIG_SCHEDULER_RANDOM_STATE),
 			     env);
 
@@ -2078,7 +2078,7 @@ static Scheme_Object *current_pseudo_random_generator(int argc, Scheme_Object *a
 
 static Scheme_Object *current_sched_pseudo_random_generator(int argc, Scheme_Object *argv[])
 {
-  return scheme_param_config("current-sync-pseudo-random-generator", 
+  return scheme_param_config("current-evt-pseudo-random-generator", 
 			     scheme_make_integer(MZCONFIG_SCHEDULER_RANDOM_STATE),
 			     argc, argv,
 			     -1, pseudo_random_generator_p, "pseudo-random-generator", 0);
