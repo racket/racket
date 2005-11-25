@@ -3072,9 +3072,4 @@ module browser threading seems wrong.
                [frame (new drs-frame% (filename filename))])
           (send (send frame get-interactions-text) initialize-console)
           (send frame show #t)
-          frame))
-      
-      (handler:insert-format-handler 
-       "Units"
-       (λ (filename) #t)
-       open-drscheme-window))))
+          frame)))))

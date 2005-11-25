@@ -722,7 +722,9 @@
     ". If \\var{pred} is a list of strings, they are each matched with the extension of a filename by"
     "@flink handler:find-format-handler %"
     ". If it is a function, the filename is applied to the function and the"
-    "functions result determines if this is the handler to use.")
+    "functions result determines if this is the handler to use."
+    ""
+    "The most recently added format handler takes precedence over all other format handlers.")
    (handler:find-named-format-handler
     (string? . -> . (path? . -> . (is-a?/c frame:editor<%>)))
     (name)

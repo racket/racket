@@ -247,23 +247,31 @@
 		(drscheme:unit:open-drscheme-window filename))])
 	 drscheme-current-create-new-window))
 
+      ;; add a catch-all handler to open drscheme files
+      (handler:insert-format-handler 
+       "Units"
+       (λ (filename) #t)
+       drscheme:unit:open-drscheme-window)
+      
       ;; add a handler to open .plt files.
       (handler:insert-format-handler 
        "PLT Files"
        (λ (filename)
-         (and (equal? "plt" (filename-extension filename))
-              (gui-utils:get-choice 
-               (format (string-constant install-plt-file) filename)
-               (string-constant install-plt-file/yes)
-               (string-constant install-plt-file/no))))
+         (let ([ext (filename-extension filename)])
+           (and ext
+                (or (bytes=? #"PLT" ext)
+                    (bytes=? #"plt" ext))
+                (gui-utils:get-choice 
+                 (format (string-constant install-plt-file) filename)
+                 (string-constant install-plt-file/yes)
+                 (string-constant install-plt-file/no)))))
        (λ (filename)
          (run-installer filename)
 	 #f))
       
       (drscheme:tools:load/invoke-all-tools
-       (λ ()
-         (void))
-       (λ ()
+       (λ () (void))
+       (λ () 
          (drscheme:language-configuration:add-built-in-languages)
          (drscheme:module-language:add-module-language)
          (drscheme:language-configuration:add-info-specified-languages)))
