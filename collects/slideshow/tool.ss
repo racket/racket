@@ -563,13 +563,15 @@ pict snip :
             (super update-shown)
             (if slideshow-panel-visible?
                 (begin
-                  (unless slideshow-panel (build-slideshow-panel))
+                  (send slideshow-parent-panel begin-container-sequence)
+		  (unless slideshow-panel (build-slideshow-panel))
                   (when (is-a? view-menu-item menu-item%)
                     (send view-menu-item set-label sc-hide-slideshow-panel))
-                  (send slideshow-parent-panel
+		  (send slideshow-parent-panel
                         change-children
                         (lambda (l)
-                          (list everything-else-panel slideshow-panel))))
+                          (list everything-else-panel slideshow-panel)))
+		  (send slideshow-parent-panel end-container-sequence))
                 (begin
                   (when (is-a? view-menu-item menu-item%)
                     (send view-menu-item set-label sc-show-slideshow-panel))
