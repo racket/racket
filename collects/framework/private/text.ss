@@ -918,6 +918,8 @@ WARNING: printf is rebound in the body of the unit to always
       
       (define (set-box/f! b v) (when (box? b) (set-box! b v)))
       
+      (define arrow-cursor (make-object cursor% 'arrow))
+      
       (define eof-snip%
         (class image-snip%
           (init-field port-text)
@@ -928,9 +930,11 @@ WARNING: printf is rebound in the body of the unit to always
           (define/override (on-event dc x y editorx editory event)
             (when (send event button-up? 'left)
               (send port-text send-eof-to-box-in-port)))
+          (define/override (adjust-cursor dc x y edx edy e)
+            arrow-cursor)
           (super-make-object (icon:get-eof-bitmap))
           (inherit set-flags get-flags)
-          (set-flags (list* 'handles-events 'hard-newline (get-flags)))))
+          (set-flags (list* 'handles-events (get-flags)))))
       
       (define ports-mixin
         (mixin (wide-snip<%>) (ports<%>)
@@ -952,7 +956,11 @@ WARNING: printf is rebound in the body of the unit to always
                    position-paragraph
                    release-snip
                    set-caret-owner
-                   split-snip)
+                   split-snip
+                   get-focus-snip
+                   get-view-size
+                   scroll-to-position
+                   position-location)
           
           ;; private field
           (define eventspace (current-eventspace))
@@ -1145,27 +1153,48 @@ WARNING: printf is rebound in the body of the unit to always
                 (lock l?))
               (set! box-input #f)))
           
+          (define/private (adjust-box-input-width)
+            (when box-input
+              (let ([w (box 0)]
+                    [x (box 0)]
+                    [bw (send (icon:get-eof-bitmap) get-width)])
+                (get-view-size w #f)
+                (let ([pos (- (last-position) 2)])
+                  (position-location pos x #f #t
+                                     (not (= pos (paragraph-start-position (position-paragraph pos))))))
+                (let ([size (- (unbox w) (unbox x) bw 24)])
+                  (when (positive? size)
+                    (send box-input set-min-width size))))))
+          
+          (define/augment (on-display-size)
+            (adjust-box-input-width)
+            (inner (void) on-display-size))
+          
           (define/private (on-box-peek)
             (unless box-input
               (let* ([ed (new (get-box-input-text%))]
                      [es (new (get-box-input-editor-snip%) 
                               (editor ed))]
                      [locked? (is-locked?)])
+                (begin-edit-sequence)
                 (send ed set-port-text this)
                 (lock #f)
-                (unless (= unread-start-point (paragraph-start-position (position-paragraph unread-start-point)))
-                  (insert-between "\n"))
+                #;(unless (= unread-start-point (paragraph-start-position (position-paragraph unread-start-point)))
+                    (insert-between "\n"))
                 (insert-between es)
                 (insert-between eof-button)
-                (send (get-canvas) add-wide-snip es)
+                #;(send (get-canvas) add-wide-snip es)
                 (set! box-input es)
+                (adjust-box-input-width)
                 (set-caret-owner es 'display)
-                (lock locked?))))
+                (lock locked?)
+                (end-edit-sequence))))
           
           (define/public (new-box-input ed)
             (when (eq? ed (send box-input get-editor)) ;; just in case things get out of sync.
               (let ([locked? (is-locked?)])
                 (begin-edit-sequence)
+                (send box-input set-min-width 'none)
                 (lock #f)
                 
                 (let ([old-insertion-point insertion-point])
@@ -1178,7 +1207,8 @@ WARNING: printf is rebound in the body of the unit to always
                                        [(is-a? snip string-snip%)
                                         (send snip get-text 0 (send snip get-count))]
                                        [else snip])
-                                     (make-object style-delta%))))
+                                     (make-object style-delta%)))
+                         #t)
                         (loop next))))
                   
                   ;; this is copied code ...
@@ -1194,6 +1224,7 @@ WARNING: printf is rebound in the body of the unit to always
                                   (bytes->list (string->bytes/utf-8 (string s/c))))]))))
                 
                 (lock locked?)
+                (adjust-box-input-width)
                 (end-edit-sequence))))
           
           ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1225,12 +1256,12 @@ WARNING: printf is rebound in the body of the unit to always
             (parameterize ([current-eventspace eventspace])
               (queue-callback
                (λ ()
-                 (do-insertion txts)
+                 (do-insertion txts #f)
                  (sync signal)))))
           
-          ;; do-insertion : (listof (cons (union string snip) style-delta)) -> void
+          ;; do-insertion : (listof (cons (union string snip) style-delta)) boolean -> void
           ;; thread: eventspace main thread
-          (define/private (do-insertion txts)
+          (define/private (do-insertion txts showing-input?)
             (let ([locked? (is-locked?)])
               (begin-edit-sequence)
               (lock #f)
@@ -1266,6 +1297,11 @@ WARNING: printf is rebound in the body of the unit to always
                    (loop (cdr txts))]))
               (set! allow-edits? #f)
               (lock locked?)
+              (unless showing-input?
+                (when box-input
+                  (adjust-box-input-width)
+                  (when (eq? box-input (get-focus-snip))
+                    (scroll-to-position (last-position)))))
               (end-edit-sequence)
               (unless (null? txts)
                 (after-io-insertion))))
