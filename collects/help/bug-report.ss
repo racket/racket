@@ -86,6 +86,8 @@
                                 (enabled #f)
                                 (callback (lambda (x y) (cleanup-frame)))
                                 (label (string-constant close))))
+    (define stupid-internal-define-syntax1
+      (new grow-box-spacer-pane% (parent response-button-panel)))
     
     (define top-panel (make-object vertical-panel% outermost-panel))
     
