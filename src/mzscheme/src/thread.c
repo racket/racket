@@ -129,6 +129,8 @@ extern void scheme_gmp_tls_unload(long *s);
 extern void scheme_gmp_tls_snapshot(long *s, long *save);
 extern void scheme_gmp_tls_restore_snapshot(long *s, long *save, int do_free);
 
+extern int scheme_num_read_syntax_objects;
+
 /*========================================================================*/
 /*                    local variables and prototypes                      */
 /*========================================================================*/
@@ -6693,6 +6695,8 @@ static Scheme_Object *current_stats(int argc, Scheme_Object *argv[])
     
     switch (SCHEME_VEC_SIZE(v)) {
     default:
+    case 8:
+      SCHEME_VEC_ELS(v)[7] = scheme_make_integer(scheme_num_read_syntax_objects);
     case 7:
       SCHEME_VEC_ELS(v)[6] = scheme_make_integer(num_running_threads);
     case 6:

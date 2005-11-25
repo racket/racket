@@ -51,6 +51,8 @@
 int scheme_square_brackets_are_parens = 1;
 int scheme_curly_braces_are_parens = 1;
 
+int scheme_num_read_syntax_objects;
+
 /* local function prototypes */
 
 static Scheme_Object *read_case_sensitive(int, Scheme_Object *[]);
@@ -4011,6 +4013,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	v = read_compact(port, 1);
 	v = scheme_datum_to_syntax(v, scheme_false, (Scheme_Object *)local_rename_memory,
 				   ch == CPT_GSTX, 0);
+	scheme_num_read_syntax_objects++;
 	if (!v)
 	  scheme_ill_formed_code(port);
       }
