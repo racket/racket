@@ -437,7 +437,7 @@
 			 (when (regexp-match-peek "^WXME01[0-9][0-9] ## " p)
 			   (close-input-port p)
 			   (error 'compile-file
-				  "file appears to have graphical syntax (try graphical-mzc): ~a"
+				  "file appears to have graphical syntax (try gmzc): ~a"
 				  path))
 			 p)))])
 	  ;; Skip leading "#!:
