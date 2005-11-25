@@ -303,16 +303,16 @@
                         (let* ([m1 (vector-ref argb-vector argb-i)]
                                [m2 (bytes-ref mask-bytes (+ str-i 1))] ;; get red coordinate
                                [m3 (build-m3 m1 m2)]
+			       [bang (lambda (i v) (vector-set! argb-vector i (floor v)))]
                                [do-b
                                 (lambda (off)
-                                  (vector-set! argb-vector
-                                               (+ argb-i off)
-                                               (build-b3 m1
-                                                         (vector-ref argb-vector (+ argb-i off))
-                                                         m2
-                                                         (bytes-ref color-bytes (+ str-i off))
-                                                         m3)))])
-                          (vector-set! argb-vector argb-i m3)
+                                  (bang (+ argb-i off)
+					(build-b3 m1
+						  (vector-ref argb-vector (+ argb-i off))
+						  m2
+						  (bytes-ref color-bytes (+ str-i off))
+						  m3)))])
+                          (bang argb-i m3)
                           (do-b 1)
                           (do-b 2)
                           (do-b 3)))))
