@@ -126,7 +126,7 @@
 	(emit-string port
 		     "char"
 		     (let ([p (open-output-bytes)])
-		       (display bytecode p)
+		       (write bytecode p)
 		       (get-output-bytes p))
 		     name))
 
