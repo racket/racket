@@ -73,6 +73,69 @@ add struct contracts for immutable structs?
 ;                                          ;                                                         
 ;                                                                                                    
 
+
+  (define-for-syntax (make-define/contract-transformer contract-id id)
+    (make-set!-transformer
+     (lambda (stx)
+       (with-syntax ([neg-blame-str (or (a:build-src-loc-string stx) "")]
+		     [contract-id contract-id]
+		     [id id])
+	 (syntax-case stx (set!)
+	   [(set! _ arg) 
+	    (raise-syntax-error 'define/contract
+				"cannot set! a define/contract variable" 
+				stx 
+				(syntax _))]
+	   [(_ arg ...)
+	    (syntax/loc stx
+	      ((-contract contract-id
+			  id
+			  (syntax-object->datum (quote-syntax _))
+			  (string->symbol neg-blame-str)
+			  (quote-syntax _))
+	       arg
+	       ...))]
+	   [_
+	    (identifier? (syntax _))
+	    (syntax/loc stx
+	      (-contract contract-id
+			 id  
+			 (syntax-object->datum (quote-syntax _)) 
+			 (string->symbol neg-blame-str)
+			 (quote-syntax _)))])))))
+
+  (define-for-syntax (make-provide/contract-transformer contract-id id pos-module-source)
+    (make-set!-transformer
+     (lambda (stx)
+       (with-syntax ([neg-stx (datum->syntax-object stx 'here)]
+		     [contract-id contract-id]
+		     [id id]
+		     [pos-module-source pos-module-source])
+	 (syntax-case stx (set!)
+	   [(set! _ body) (raise-syntax-error
+			   #f 
+			   "cannot set! provide/contract identifier"
+			   stx
+			   (syntax _))]
+	   [(_ arg ...)
+	    (syntax 
+	     ((begin-lifted
+	       (-contract contract-id
+			  id
+			  pos-module-source
+			  (module-source-as-symbol #'neg-stx)
+			  (quote-syntax _)))
+	      arg
+	      ...))]
+	   [_
+	    (identifier? (syntax _))
+	    (syntax 
+	     (begin-lifted
+	      (-contract contract-id
+			 id  
+			 pos-module-source 
+			 (module-source-as-symbol #'neg-stx)
+			 (quote-syntax _))))])))))
   
   ;; (define/contract id contract expr)
   ;; defines `id' with `contract'; initially binding
@@ -81,8 +144,7 @@ add struct contracts for immutable structs?
     (syntax-case define-stx ()
       [(_ name contract-expr expr)
        (identifier? (syntax name))
-       (with-syntax ([pos-blame-stx (datum->syntax-object define-stx 'here)]
-                     [contract-id 
+       (with-syntax ([contract-id 
                       (a:mangle-id define-stx
                                    "define/contract-contract-id"
                                    (syntax name))]
@@ -93,32 +155,8 @@ add struct contracts for immutable structs?
           (begin
             (define contract-id contract-expr)
             (define-syntax name
-              (make-set!-transformer
-               (lambda (stx)
-                 (with-syntax ([neg-blame-str (or (a:build-src-loc-string stx) "")])
-                   (syntax-case stx (set!)
-                     [(set! _ arg) 
-                      (raise-syntax-error 'define/contract
-                                          "cannot set! a define/contract variable" 
-                                          stx 
-                                          (syntax _))]
-                     [(_ arg (... ...))
-                      (syntax/loc stx
-                       ((-contract contract-id
-                                   id
-                                   (syntax-object->datum (quote-syntax _))
-                                   (string->symbol neg-blame-str)
-                                   (quote-syntax _))
-                        arg
-                        (... ...)))]
-                     [_
-                      (identifier? (syntax _))
-                      (syntax/loc stx
-                       (-contract contract-id
-                                  id  
-                                  (syntax-object->datum (quote-syntax _)) 
-                                  (string->symbol neg-blame-str)
-                                  (quote-syntax _)))])))))
+	      (make-define/contract-transformer (quote-syntax contract-id)
+						(quote-syntax id)))
             (define id (let ([name expr]) name))  ;; let for procedure naming
             )))]
       [(_ name contract-expr expr)
@@ -556,34 +594,9 @@ add struct contracts for immutable structs?
                                 (define pos-module-source (module-source-as-symbol #'pos-stx))
                                 (define contract-id (let ([id ctrct]) id))
                                 (define-syntax id-rename
-                                  (make-set!-transformer
-                                   (lambda (stx)
-                                     (with-syntax ([neg-stx (datum->syntax-object stx 'here)])
-                                       (syntax-case stx (set!)
-                                         [(set! _ body) (raise-syntax-error
-                                                         #f 
-                                                         "cannot set! provide/contract identifier"
-                                                         stx
-                                                         (syntax _))]
-                                         [(_ arg (... ...))
-                                          (syntax 
-                                           ((begin-lifted
-                                              (-contract contract-id
-                                                         id
-                                                         pos-module-source
-                                                         (module-source-as-symbol #'neg-stx)
-                                                         (quote-syntax _)))
-                                            arg
-                                            (... ...)))]
-                                         [_
-                                          (identifier? (syntax _))
-                                          (syntax 
-                                           (begin-lifted
-                                             (-contract contract-id
-                                                        id  
-                                                        pos-module-source 
-                                                        (module-source-as-symbol #'neg-stx)
-                                                        (quote-syntax _))))])))))))])
+				  (make-provide/contract-transformer (quote-syntax contract-id)
+								     (quote-syntax id)
+								     (quote-syntax pos-module-source)))))])
                (syntax (code id-rename)))))
          
          (with-syntax ([(bodies ...) (code-for-each-clause (syntax->list (syntax (p/c-ele ...))))])

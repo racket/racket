@@ -3089,6 +3089,43 @@
   ;;
   ;; mixin
   ;;
+
+  (define (check-mixin-super mixin-name super% from-ids)
+    (let ([mixin-name (or mixin-name 'mixin)])
+      (unless (class? super%)
+	(error mixin-name "argument is not a class: ~e" super%))
+      (for-each (lambda (from-id)
+		  (unless (implementation? super% from-id)
+		    (error mixin-name "argument does not implement ~e: ~e" from-id super%)))
+		from-ids)))
+
+  (define (check-mixin-from-interfaces all-from)
+    (for-each (lambda (from-id)
+		(unless (interface? from-id)
+		  (error 'mixin
+			 "expected from-interface, got: ~e; others ~e"
+			 from-id
+			 all-from)))
+	      all-from))
+
+  (define (check-mixin-to-interfaces all-to)
+    (for-each (lambda (to-id)
+		(unless (interface? to-id)
+		  (error 'mixin
+			 "expected to-interface, got: ~e; others ~e"
+			 to-id
+			 all-to)))
+	      all-to))
+
+
+  (define (check-interface-includes xs from-ids)
+    (for-each
+     (lambda (x)
+       (unless (ormap (lambda (i) (method-in-interface? x i)) from-ids)
+	 (error 'mixin
+		"method `~a' was referenced in definition, but is not in any of the from-interfaces: ~e"
+		x from-ids)))
+     xs))
   
   (define-syntax (mixin stx)
     (syntax-case stx ()
@@ -3148,43 +3185,17 @@
              (with-syntax ([mixin-expr
                             (syntax/loc stx
                               (λ (super%)
-                                (unless (class? super%)
-                                  (error mixin-name "argument ~a not a class" super%))
-                                (unless (implementation? super% from-ids)
-                                  (error mixin-name "argument ~s does not implement ~s" super% from-ids))
-                                ...
+			        (check-mixin-super mixin-name super% (list from-ids ...))
                                 class-expr))])
                
                ;; Finally, build the complete mixin expression:
                (syntax/loc stx
                  (let ([from-ids from] ...)
                    (let ([to-ids to] ...)
-                     
-                     (let ([all-from (list from-ids ...)])
-                       (void)
-                       (unless (interface? from-ids)
-                         (error 'mixin
-                                "expected interfaces for from, got: ~e, others ~e"
-                                from-ids
-                                all-from)) ...)
-                     
-                     (let ([all-to (list to-ids ...)])
-                       (void)
-                       (unless (interface? to-ids)
-                         (error 'mixin
-                                "expected interfaces for to, got: ~e, others ~e"
-                                to-ids
-                                all-to)) ...)
-                     
-                     (let ([ensure-interface-has?
-                            (λ (x)
-                              (unless (or (method-in-interface? x from-ids) ...)
-                                (error 'mixin
-                                       "method `~a' not in any of ~a, but was referenced in definition"
-                                       x (list from-ids ...))))])
-                       (void)
-                       (ensure-interface-has? (quote super-vars)) ...)
-                     
+		     (check-mixin-from-interfaces (list from-ids ...))
+		     (check-mixin-to-interfaces (list to-ids ...))
+                     (check-interface-includes (list (quote super-vars) ...)
+					       (list from-ids ...))
                      mixin-expr)))))))]))
 
   (define externalizable<%>
