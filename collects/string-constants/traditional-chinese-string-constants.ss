@@ -63,10 +63,10 @@
   (teachscheme!-homepage "TeachScheme!") ;; probably this should be a `word' in all languages
   
   ;;; bug report form
-  (cancel-bug-report? "取消故障報告？")
+  (cancel-bug-report? "取消問題報告？")
   (are-you-sure-cancel-bug-report?
-    "你確定要取消報告故障嗎？")
-  (bug-report-form "故障報告表")
+    "你確定要取消報告問題嗎？")
+  (bug-report-form "問題報告表")
   (bug-report-field-name "姓名")
   (bug-report-field-email "電子郵件")
   (bug-report-field-summary "標題")
@@ -74,7 +74,7 @@
   (bug-report-field-class "類別")
   (bug-report-field-priority "優先級")
   (bug-report-field-description "詳細描述")
-  (bug-report-field-reproduce1 "再現故障")
+  (bug-report-field-reproduce1 "再現問題")
   (bug-report-field-reproduce2 "的步驟")
   (bug-report-field-environment "環境")
   (bug-report-field-tools "Tools")
@@ -87,16 +87,16 @@
   (bug-report-synthesized-information "綜合信息")  ;; dialog title
   (bug-report-show-synthesized-info "顯示綜合信息")
   (bug-report- "提交")
-  (bug-report--menu-item "提交故障報告") ;; in Help Menu (drs & help desk)
-  (sending-bug-report "送出故障報告")
-  (error-sending-bug-report "故障報告傳輸出錯")
-  (error-sending-bug-report-expln "在傳輸故障報告的過程中出現了錯誤。如果你能夠正常瀏覽網絡，請訪問：\n\n    http://bugs.plt-scheme.org/\n\n使用網頁上的表單提交錯誤報告。對於由此產生的不便，我們表示抱歉。\n\n傳輸錯誤詳情：\n~a")
-  (bug-report-sent "故障報告已送出")
+  (bug-report--menu-item "提交問題報告") ;; in Help Menu (drs & help desk)
+  (sending-bug-report "送出問題報告")
+  (error-sending-bug-report "問題報告傳輸出錯")
+  (error-sending-bug-report-expln "在傳輸問題報告的過程中出現了錯誤。如果你能夠正常瀏覽網絡，請訪問：\n\n    http://bugs.plt-scheme.org/\n\n使用網頁上的表單提交錯誤報告。對於由此產生的不便，我們表示抱歉。\n\n傳輸錯誤詳情：\n~a")
+  (bug-report-sent "問題報告已送出")
   (bug-report-sent-detail "感謝你的報告。在30分鐘內，您將會收到電子郵件確認。如果您沒有收到郵件，請聯系scheme@plt-scheme.org.")
-  (illegal-bug-report "非法的故障報告")
+  (illegal-bug-report "非法的問題報告")
   (pls-fill-in-field "請填寫\"~a\"欄目")
   (malformed-email-address "電子郵件地址不符合格式")
-  (pls-fill-in-either-description-or-reproduce "在“詳細描述”和“再現故障的步驟”兩欄中，請至少填寫一項。")
+  (pls-fill-in-either-description-or-reproduce "在“詳細描述”和“再現問題的步驟”兩欄中，請至少填寫一項。")
   
   ;;; check syntax
   (check-syntax "檢查語法")
@@ -196,18 +196,18 @@
   ;; Help Desk
   (help "幫助")
   (help-desk "Help Desk")
-  (plt:hd:search-results "搜索結果")
-  (plt:hd:search "搜索")
-  (plt:hd:search-for "搜索")
+  (plt:hd:search-results "搜尋結果")
+  (plt:hd:search "搜尋")
+  (plt:hd:search-for "搜尋")
   (plt:hd:lucky "手氣！")
-  (plt:hd:feeling-lucky "手氣不錯")
+  (plt:hd:feeling-lucky "好手氣")
   (plt:hd:stop "停止")   
   (plt:hd:options "選項") 
   (plt:hd:configure "設置")
   (plt:hd:home "Help Desk首頁") 
   (plt:hd:show-manuals "顯示手冊") 
-  (plt:hd:send-bug-report "發送故障報告")
-  (plt:hd:query-bug-reports "查詢故障報告")
+  (plt:hd:send-bug-report "發送問題報告")
+  (plt:hd:query-bug-reports "查詢問題報告")
   ; next 3 are popup menu choices in help desk search frame
   (plt:hd:search-for-keyword "關鍵字")
   (plt:hd:search-for-keyword-or-index "關鍵字或索引")
@@ -215,11 +215,11 @@
   (plt:hd:exact-match "精確匹配")
   (plt:hd:containing-match "包含")
   (plt:hd:regexp-match "正則表達式匹配")
-  (plt:hd:find-docs-for "搜索：")
+  (plt:hd:find-docs-for "搜尋：")
   (plt:hd:nothing-found-for-search-key "找不到關於“~a”的文檔。")
-  (plt:hd:searching "搜索中")
-  (plt:hd:search-stopped "[搜索已停止。]")
-  (plt:hd:search-stopped-too-many-matches "[搜索中斷：過多的匹配結果]")
+  (plt:hd:searching "搜尋中")
+  (plt:hd:search-stopped "[搜尋已停止。]")
+  (plt:hd:search-stopped-too-many-matches "[搜尋中斷：過多的匹配結果]")
   (plt:hd:nothing-found-for "找不到任何關於~a的信息")
   (plt:hd:error-finding-docs "找不到文檔。\n\n~a")
   (plt:hd:and "並且")
@@ -231,14 +231,14 @@
   (plt:hd:no-frames "無框架")
   (plt:hd:use-frames "使用框架")
   (plt:hd:use-html-frames "使用HTML框架")
-  (plt:hd:search-pane-options "搜索面板設置")
+  (plt:hd:search-pane-options "搜尋面板設置")
   (plt:hd:height "高度")
   (plt:hd:bg-color "背景顏色")
   (plt:hd:pixels "像素")
   (plt:hd:text-color "文本顏色")
   (plt:hd:link-color "鏈接顏色")
-  (plt:hd:text-sample "搜索面板中的文字是這個顏色的")
-  (plt:hd:link-sample "搜索面板中的鏈接是這個顏色的")
+  (plt:hd:text-sample "搜尋面板中的文字是這個顏色的")
+  (plt:hd:link-sample "搜尋面板中的鏈接是這個顏色的")
   (plt:hd:save-changes "保存修改")
   (plt:hd:reset "重置")
   (plt:hd:defaults "使用默認")
@@ -259,7 +259,7 @@
   (plt:hd:refreshing-manuals-finished "完成。")
   (plt:hd:about-help-desk "關於Help Desk")
   (plt:hd:help-desk-about-string
-    "Help Desk是PLT軟件的信息來源，其中包含了DrScheme，MzScheme和MrEd的全部信息。\n\n版本~a\n版權所有(c)1995-2005 PLT")
+    "Help Desk是PLT軟體的信息來源，其中包含了DrScheme，MzScheme和MrEd的全部信息。\n\n版本~a\n版權所有(c)1995-2005 PLT")
   (plt:hd:help-on-help "關於幫助的幫助")
   (plt:hd:help-on-help-details "如果你需要使用Help Desk的幫助，請在Help Desk的主頁中點擊鏈接“How to use Help Desk”。（要進入Help Desk的主頁，請單擊Help Desk窗口上方的“主頁”按鈕。）")
   (reload "刷新") ;; refresh the page in a web browser
@@ -275,7 +275,7 @@
   (plt:hd:all-manuals "全部手冊")
   
   ;; in the Help Desk language dialog, title on the right.
-  (plt:hd:manual-search-ordering "搜索手冊的順序")
+  (plt:hd:manual-search-ordering "搜尋手冊的順序")
   
   
   ;; Help desk htty proxy
@@ -301,7 +301,7 @@
   (browser-cmdline-expl-line-2 "中間不含任何空格)") ; ... line 2. (Anyone need more lines?)
   (cannot-display-url "無法顯示URL ~s：~a")
   (install? "安裝？")  ;; if a .plt file is found (title of dialog)
-  (you-have-selected-an-installable-package "你選擇了一個可以安裝的軟件包。")
+  (you-have-selected-an-installable-package "你選擇了一個可以安裝的軟體包。")
   (do-you-want-to-install-it? "是否安裝？")
   (paren-file-size "(該文件的長度是~a字節)")
   (download-and-install "下載並安裝") ;; button label
@@ -372,7 +372,7 @@
   (automatically-to-ps "自動打印成postscript文件")
   (option-as-meta "將option鍵當作meta") ;; macos/macos x only
   (use-mdi "使用MDI Windows") ;;; ms windows only -- use that window in a window thingy
-  (separate-dialog-for-searching "使用單獨的搜索對話框")
+  (separate-dialog-for-searching "使用單獨的搜尋對話框")
   (reuse-existing-frames "在打開新文件時，使用現有的框架")
   (default-fonts "默認字體")
   (paren-match-color "高亮顯示括號所使用的顏色") ; in prefs dialog
@@ -389,7 +389,7 @@
   (choose-paren-highlight-color "請選擇高亮顯示括號所用的顏色")
   
   ; should have entire alphabet
-  (font-example-string "簡體中文 by 朱崇愷") 
+  (font-example-string "繁體中文 by 朱崇愷") 
   
   (change-font-button-label "更改")
   (fonts "字體")
@@ -416,7 +416,7 @@
   ; warning message when lockfile is around
   (waiting-for-pref-lock "等待參數設置文件解鎖...")
   (pref-lock-not-gone
-   "參數設置封鎖文件：\n\n ~a\n\n禁止保存參數設置。請確定沒有其他PLT軟件正在運行中，然後刪除該封鎖文件。")
+   "參數設置封鎖文件：\n\n ~a\n\n禁止保存參數設置。請確定沒有其他PLT軟體正在運行中，然後刪除該封鎖文件。")
   (still-locked-exit-anyway? "參數無法保存。仍然退出？")
   
   ;;; indenting preferences panel
@@ -447,13 +447,13 @@
   (hide "隱藏")
   
   ;;; multi-file-search
-  (mfs-multi-file-search-menu-item "在文件中搜索...")
+  (mfs-multi-file-search-menu-item "在文件中搜尋...")
   (mfs-string-match/graphics "字符串匹配(可用與包含圖像的文件)")
   (mfs-regexp-match/no-graphics "正則表達式匹配(只適用於純文本文件)")
-  (mfs-searching... "搜索...")
-  (mfs-configure-search "搜索設置") ;; dialog title
+  (mfs-searching... "搜尋...")
+  (mfs-configure-search "搜尋設置") ;; dialog title
   (mfs-files-section "文件")   ;; section in config dialog
-  (mfs-search-section "搜索") ;; section in config dialog
+  (mfs-search-section "搜尋") ;; section in config dialog
   (mfs-dir "目錄")
   (mfs-recur-over-subdirectories "包含子目錄")
   (mfs-regexp-filename-filter "文件名篩選(正則表達式)")
@@ -461,10 +461,10 @@
   (mfs-drscheme-multi-file-search "DrScheme──多文件查找") ;; results window and error message title
   (mfs-not-a-dir "\"~a\"不是目錄")
   (mfs-open-file "打開文件")
-  (mfs-stop-search "停止搜索")
+  (mfs-stop-search "停止搜尋")
   (mfs-case-sensitive-label "大小寫敏感")
   (mfs-no-matches-found "沒有找到匹配結果。")
-  (mfs-search-interrupted "搜索中止。")
+  (mfs-search-interrupted "搜尋中止。")
   
   ;;; reverting a file
   (error-reverting "DrScheme──錯誤恢復")
@@ -578,10 +578,10 @@
   (select-all-info "選中整個文件")
   (select-all-menu-item "全選(&L)")
   
-  (find-info "搜索某個字符串")
+  (find-info "搜尋某個字符串")
   (find-menu-item "查找...")
   
-  (find-again-info "繼續搜索該字符串")
+  (find-again-info "繼續搜尋該字符串")
   (find-again-menu-item "查找下一個")
   
   (replace-and-find-again-info "替換當前文本，然後繼續查找原字符串")
@@ -808,8 +808,8 @@
   (break-button-label "停止")
   
   ;;; search help desk popup menu
-  (search-help-desk-for "在Help Desk中搜索“~a”")
-  (exact-lucky-search-help-desk-for "在Help Desk中搜索最符合“~a”的一個頁面")
+  (search-help-desk-for "在Help Desk中搜尋“~a”")
+  (exact-lucky-search-help-desk-for "在Help Desk中搜尋最符合“~a”的一個頁面")
   
   ;; collapse and expand popup menu items
   (collapse-sexp "折疊sexpression")
@@ -887,14 +887,14 @@
   (advanced-student "高級")
   (advanced-one-line-summary "在中級的基礎上，增加lambda和賦值")
   (full-language "Full") ;; also in the HtDP languages section
-  (how-to-design-programs "程序設計方法/How to Design Programs") ;; should agree with MIT Press on this one...
+  (how-to-design-programs "How to Design Programs") ;; should agree with MIT Press on this one...
   (r5rs-like-languages "R5RS-like")
   (pretty-big-scheme "Pretty Big (包括MrEd和高級)")
   (pretty-big-scheme-one-line-summary "Adds syntax and functions from the HtDP languages")
   (r5rs-lang-name "標準(R5RS)")
   (r5rs-one-line-summary "Scheme語言標準第5修改稿")
   (expander "Expander")
-  (expander-one-line-summary "Expands, rather than uates, expressions")
+  (expander-one-line-summary "Expands, rather than evaluates, expressions")
   (professional-languages "正式語言")
   (teaching-languages "教學語言")
   (experimental-languages "實驗語言")
