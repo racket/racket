@@ -119,14 +119,16 @@
                       (let* ([path (url-path url)]
                              [coll (and (pair? path)
                                         (pair? (cdr path))
-                                        (cadr path))])
+                                        (cadr path))]
+                             [coll-path (and coll (string->path coll))]
+                             [doc-pr (and coll-path (assoc coll-path known-docs))])
+                        
                         ;; check to see if the docs are installed
-                        (if (and coll
-                                 (assoc coll known-docs)
-                                 (not (has-index-installed? (string->path coll))))
-                            (let ([doc-pr (assoc coll known-docs)]
-                                  [url-str (url->string url)])
-                              (make-missing-manual-url  coll (cdr doc-pr) url-str))
+                        (if (and doc-pr
+                                 (not (has-index-installed? coll-path)))
+                            (let ([url-str (url->string url)])
+                              (string->url 
+                               (make-missing-manual-url coll (cdr doc-pr) url-str)))
                             url))]
                      
                      [(and (equal? addon-host (url-host url))

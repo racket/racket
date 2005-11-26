@@ -30,7 +30,7 @@
                       string?))
    (flush-manuals-url string?)
    (flush-manuals-path string?)
-   (make-missing-manual-url (string? string? string? string? . -> . string?))
+   (make-missing-manual-url (string? string? string? . -> . string?))
    (get-hd-location ((lambda (sym) (memq sym hd-location-syms))
                      . -> . 
                      string))
@@ -60,7 +60,7 @@
 
   (define home-page-url (format "http://~a:~a/servlets/home.ss" internal-host internal-port))
   
-  (define (make-missing-manual-url cookie coll name link)
+  (define (make-missing-manual-url coll name link)
     (format "http://~a:~a/servlets/missing-manual.ss?manual=~a&name=~a&link=~a"
             internal-host
             internal-port
