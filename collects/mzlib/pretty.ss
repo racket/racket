@@ -729,7 +729,8 @@
 				    (and (hash-table? obj) print-hash-table?)))]
 		[graph-ref (if can-multi
 			       (and found (hash-table-get found obj (lambda () #f)))
-			       #f)])
+			       #f)]
+		[old-counter cycle-counter])
 	   (if (and can-multi
 		    (or (not graph-ref) 
 			(not (unbox (mark-def graph-ref)))))
@@ -753,6 +754,7 @@
 		       ;; Doesn't fit on one line, so start over
 		       (begin
 			 (tentative-pretty-print-port-cancel a-pport)
+			 (set! cycle-counter old-counter)
 			 (when graph-ref
 			   (expr-found pport graph-ref))
 			 (pre-print pport obj)
