@@ -2,7 +2,7 @@
 ; do not remove all these blank lines, I use them to make sure a translation 
 ; in this file appears on the same line as in english-string-constants.ss
 
-; "aâàbcçdeéêèëfghiîïjklmnoôpqrstuûùüvwxyz"
+; "aâàbcçdeéêèëfghiîïjklmnoôpqrstuûùüvwxyz" "AÂÀBCÇDEÉÊÈËFGHIÎÏJKLMNOÔPQRSTUÛÙÜVWXYZ"
 
 ; Note: http://www.linux-france.org/prj/jargonf/ peut etre utile... Les dictionnaires online
 ; anglais->francais sont tres pauvres en ce qui concerne le jargon technique, et l'academie
@@ -225,8 +225,14 @@
   (no-full-name-since-not-saved
    "Le fichier n'a pas encore de nom complet car il n'a pas encore été sauvegardé.")
   (cannot-open-because-dne "Impossible d'ouvrir ~a car le fichier n'existe pas.")
-  (interactions-out-of-sync
-   "ATTENTION : la fenêtre d'interaction et la fenêtre de définition ne sont pas synchronisées. Cliquez sur Exécuter.")
+
+  (needs-execute-language-changed
+   "ATTENTION : le langage a changé. Cliquez sur Exécuter.")
+  (needs-execute-teachpack-changed
+   "ATTENTION : les teachpacks ont changé. Cliquez sur Exécuter.")
+  (needs-execute-defns-edited
+   "ATTENTION : la fenêtre de définition a changé. Cliquez sur Exécuter.")
+
   (file-is-not-saved "Le fichier \"~a\" n'a pas été sauvegardé.")
   (save "Sauvegarder")
   (please-choose-either "Choisissez \"~a\" ou \"~a\".")
@@ -918,7 +924,7 @@
   ;;; Language dialog
   (introduction-to-language-dialog
    "Veuillez sélectionner un langage. Un étudiant dans un cours d'introduction préférera le langage par défaut.")
-  (language-dialog-title "Configurer le langage")
+  (language-dialog-title "Sélectionner le langage")
   (case-sensitive-label "Différentier les lettres majuscules des minuscules.")
   (output-style-label "Style d'impression des résultats")
   (constructor-printing-style "Constructeur")
@@ -945,7 +951,18 @@
   (use-mixed-fractions "Fractions mêlées")
   (use-repeating-decimals "Décimales répétitives")
   (decimal-notation-for-rationals "Utiliser la notation décimale pour les nombres rationnels")
+
+  ;; startup wizard screen language selection section
   (please-select-a-language "Veuillez sélectionner un langage")
+  (show-all-languages "Montrer tous les langages")
+  (show-drscheme-usage-questions "Montrer les questions sur l'usage de DrScheme")
+  (are-you...-kind-of-drscheme-user "Utilisez-vous DrScheme...")
+  (use-with-htdp "... en conjonction avec How to Design Programs ?")
+  (use-seasoned "... en tant que programmeur PLT Scheme chevronné ?") ; aguerri?
+  (use-other "... pour une autre raison ?")
+  (use-eopl "... en conjonction avec Essentials of Programming Languages ?")
+  (pl-lang-choice-format "Langage initial: ~a")
+  (choose-new-language-before-running "Veuillez sélectionner un nouveau langage avant d'exécuter le programme.")
   
   
   ;;; languages
@@ -971,9 +988,30 @@
   (professional-languages "Langages professionnels")
   (teaching-languages "Langages d'enseignement")
   (experimental-languages "Langages expérimentaux")
+  (initial-language-category "Langage initial")
+  (no-language-chosen "Aucun langage sélectionné")
   
-  (module-language-one-line-summary "Langage avec module comme seule forme")
+  (module-language-one-line-summary "Exécuter crée une fenêtre d'interaction dans le contexte du module, incluant le langage du module lui-même")
   
+  ;;; from the `not a language language' used initially in drscheme.
+  (must-choose-language "DrScheme ne peut pas traiter un programme avant que vous aillez sélectionné un langage.")
+  
+  ; next two appear before and after the name of a text book (which will be in italics)
+  (using-a-textbook-before "Utilisant ")
+  (using-a-textbook-after " ?")
+  
+  ; next two are before and after a language
+  (start-with-before "Commencer avec ")
+  (start-with-after ".")
+
+  (seasoned-plt-schemer? "Programmeur PLT Scheme chevronné ?")
+  (looking-for-standard-scheme? "À la recherche d'un langage Scheme standard ?")
+
+  ; the three string constants are concatenated together and the middle
+  ; one is hyperlinked to the dialog that suggests various languages
+  (get-guidance-before "Choisissez l'entrée Sélectionner le langage...” dans le menu Langage, ou ")
+  (get-guidance-during "recevez de l'aide")
+  (get-guidance-after ".")
   
   ;;; debug language
   (unknown-debug-frame "[inconnu]")
