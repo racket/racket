@@ -2500,8 +2500,12 @@ Bool wxDC::Blit(double xdest, double ydest, double width, double height,
       invented_memdc = source->mask_cache;
       invented_dc = invented_memdc->ThisDC();
       if (mask->GetDepth() > 1) {
-	if (wxAlphaBlend)
-	  use_alpha = 1;
+	if (wxAlphaBlend) {
+	  invented = invented_memdc->selected_bitmap;
+	  if (invented->IsDIB())
+	    use_alpha = 1;
+	  invented = NULL;
+	}
       }
     } else {
       wxBitmap *orig_mask = mask;
@@ -2567,25 +2571,7 @@ Bool wxDC::Blit(double xdest, double ydest, double width, double height,
 	      }
 	    }
 	  } else {
-	    /* Want white where mask was white,
-	       src otherwise: */
-	    BitBlt(invented_dc, 0, 0,
-		   iw, ih,
-		   mdc, xsrc1, ysrc1,
-		   SRCPAINT /* DSo */);
-
-	    /* Ignore the mask and... */
-	    mask = NULL;
-	    if (mono_src) {
-	      /* Mono source: Now use invented_dc instead of src_dc,
-		 and it all works out. */
-	      xsrc1 = 0;
-	      xsrc1 = 0;
-	    } else {
-	      /* Paint on dest using mask, then "and" invented image
-		 with dest. */
-	      invented_col = 1;
-	    }
+	    /* Continues below */
 	  }
 	} else {
 	  /* Failed (Rest of failure handling below since !invented_memdc) */
@@ -2626,6 +2612,28 @@ Bool wxDC::Blit(double xdest, double ydest, double width, double height,
 	  invented_memdc->refcount = 2;
 	invented = NULL; /* indicates that we cached invented */
       }
+    }
+  }
+
+  if (invented_dc && !use_alpha) {
+    /* Want white where mask was white,
+       src otherwise: */
+    BitBlt(invented_dc, 0, 0,
+	   iw, ih,
+	   mdc, xsrc1, ysrc1,
+	   SRCPAINT /* DSo */);
+
+    /* Ignore the mask and... */
+    mask = NULL;
+    if (source->GetDepth() == 1) {
+      /* Mono source: Now use invented_dc instead of src_dc,
+	 and it all works out. */
+      xsrc1 = 0;
+      xsrc1 = 0;
+    } else {
+      /* Paint on dest using mask, then "and" invented image
+	 with dest. */
+      invented_col = 1;
     }
   }
 

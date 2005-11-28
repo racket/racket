@@ -1745,7 +1745,8 @@ void *wxBitmap::ChangeToDIBSection(Bool copy_old)
   BITMAPINFO bmp;
   HBITMAP bm;
   void *pBits;
-  
+
+  memset(&bmp, 0, sizeof(bmp));
   bmp.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
   bmp.bmiHeader.biWidth = width;
   bmp.bmiHeader.biHeight = height;
