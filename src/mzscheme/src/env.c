@@ -2333,7 +2333,8 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 
   /* Used to have `&& !SAME_OBJ(modidx, modname)' below, but that was a bad
      idea, because it causes module instances to be preserved. */
-  if (modname && !(flags & SCHEME_RESOLVE_MODIDS) && !SAME_OBJ(modidx, kernel_symbol)) {
+  if (modname && !(flags & SCHEME_RESOLVE_MODIDS) 
+      && (!SAME_OBJ(modidx, kernel_symbol) || (flags & SCHEME_REFERENCING))) {
     /* Create a module variable reference, so that idx is preserved: */
     return scheme_hash_module_variable(env->genv, modidx, find_id, 
 				       genv->module->insp,
@@ -3500,6 +3501,8 @@ static Scheme_Object *read_toplevel(Scheme_Object *obj)
 }
 
 static Scheme_Object *write_variable(Scheme_Object *obj)
+  /* WARNING: phase-0 module variables and #%kernel references
+     are handled in print.c, instead */
 {
   if (SAME_TYPE(scheme_variable_type, SCHEME_TYPE(obj))) {
     Scheme_Object *sym;
@@ -3532,6 +3535,8 @@ static Scheme_Object *write_variable(Scheme_Object *obj)
 }
 
 static Scheme_Object *read_variable(Scheme_Object *obj)
+  /* WARNING: phase-0 module variables and #%kernel references
+     are handled in read.c, instead */
 {
   Scheme_Env *env;
 
@@ -3558,9 +3563,9 @@ static Scheme_Object *read_variable(Scheme_Object *obj)
 
     varname = SCHEME_CDR(obj);
 
-    if (SAME_OBJ(modname, kernel_symbol) && !mod_phase)
+    if (SAME_OBJ(modname, kernel_symbol) && !mod_phase) {
       return (Scheme_Object *)scheme_global_bucket(varname, scheme_initial_env);
-    else {
+    } else {
       Module_Variable *mv;
       Scheme_Object *insp;
 
