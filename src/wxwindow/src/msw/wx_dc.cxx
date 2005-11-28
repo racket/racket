@@ -2615,7 +2615,7 @@ Bool wxDC::Blit(double xdest, double ydest, double width, double height,
     }
   }
 
-  if (invented_dc && !use_alpha) {
+  if (invented_memdc && !use_alpha) {
     /* Want white where mask was white,
        src otherwise: */
     BitBlt(invented_dc, 0, 0,
