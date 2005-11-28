@@ -77,7 +77,7 @@
 		(lambda (fg)
 		  (for-each (lambda (target)
 			      (try target
-				   'solid 
+				   mode
 				   fg
 				   (make-object color% "green")
 				   sx sy))
