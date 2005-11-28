@@ -4,7 +4,6 @@
 
 ;This module provides functions needed at runtime for compiled Java code
 
-#cs
 (module runtime mzscheme
   
   (require (lib "class.ss")
@@ -15,7 +14,7 @@
            (lib "ClassCastException.ss" "profj" "libs" "java" "lang")
            (lib "NullPointerException.ss" "profj" "libs" "java" "lang"))
   
-  (provide convert-to-string shift not-equal bitwise mod divide-int 
+  (provide convert-to-string shift not-equal bitwise mod divide-dynamic divide-int 
            divide-float and or cast-primitive cast-reference instanceof-array nullError)
   
   ;convert-to-string: (U string int real bool char Object) -> string
@@ -58,6 +57,12 @@
                     (or left right)))
           ((or) (or left right)))))
 
+  ;divide-dynamic: number number -> number
+  (define (divide-dynamic left right)
+    (if (or (inexact? left) (inexact? right))
+        (divide-float left right)
+        (divide-int left right)))
+  
   ;divide-int: int int -> int
   (define (divide-int left right)
     (when (zero? right)

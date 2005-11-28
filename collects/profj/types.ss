@@ -147,7 +147,7 @@
   ;; assignment-conversion: type type type-records -> boolean
   (define (assignment-conversion to from type-recs)
     (cond
-      ((dynamic-val? to) 
+      ((dynamic-val? to)
        (cond
          ((dynamic-val-type to) => (lambda (t) (assignment-conversion t from type-recs)))
          (else (set-dynamic-val-type! to from) #t)))

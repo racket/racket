@@ -1692,8 +1692,9 @@
                 (unless (eq? level 'full)
                   (when (is-field-restricted? fname field-class)
                     (restricted-field-access-err (field-access-field acc) field-class src)))
-                (make-type/env (field-record-type record) 
-                               (if (type/env? obj-type/env) (type/env-e obj-type/env) env))))
+                (make-type/env 
+                 (if (eq? 'dynamic (field-record-type record)) (make-dynamic-val #f) (field-record-type record))
+                 (if (type/env? obj-type/env) (type/env-e obj-type/env) env))))
              ((and (dynamic-val? record) (dynamic-val-type record))
               (set-field-access-access! acc (make-var-access #f #t #t 'public 'unknown))
               (make-type/env (field-contract-type (unknown-ref-access (dynamic-val-type record)))
@@ -2026,11 +2027,11 @@
                                             type-recs)))
                       (else (prim-call-error call-exp name src level)))))
                  (else 
-                  (if (eq? level 'beginner)
+                  (if (and (eq? level 'beginner) (not interact?))
                       (beginner-method-access-error name (id-src name))
                       (let ((rec (if static? (send type-recs get-class-record c-class) this)))
                         (cond 
-                          ((and (null? rec) (dynamic?) (lookup-var-in-env name-string env)) =>
+                          ((and (dynamic?) (lookup-var-in-env name-string env)) =>
                            (lambda (var-type)
                              (if (eq? 'dynamic (var-type-type var-type))
                                  (list (make-method-contract (string-append name-string "~f") #f #f #f))
@@ -2057,7 +2058,10 @@
            (cond
              ((close-to-keyword? name-string)
               (close-to-keyword-error 'method name src))
-             (interact? (interaction-call-error name src level))
+             (interact? 
+              (if (or class? field?)
+                  (no-method-error 'interact sub-kind exp-type name src)
+                  (interaction-call-error name src level)))
              (else
               (no-method-error 'this sub-kind exp-type name src)))))))
       
@@ -2789,11 +2793,11 @@
           (let ((line1 
                  (format "Class ~a is inappropriately being used as a method." n))
                 (line2
-                 "Parenthesis typically follow the class name when creating an instance, perhaps 'new' was forgotten"))
+                 "Parenthesis typically follow the class name when creating an instance, perhaps 'new' was forgotten."))
           (format "~a~n~a" line1 line2)))
          ((field-name)
           (format 
-           "Field ~a is being inappropriately used as a method, parentheses are not used in interacting with a field"
+           "Field ~a is being inappropriately used as a method, parentheses are not used in interacting with a field."
            n)))                     
        n src)))
   
@@ -2804,12 +2808,12 @@
                    (case kind
                      ((method) 
                       (string-append
-                       (format "this method call uses an unfound method ~a, which is similar to a reserved word~n"
+                       (format "This method call uses an unfound method ~a, which is similar to a reserved word~n"
                                n)
                        "Perhaps it is miscapitalized or misspelled"))
                      ((field)
                        (string-append
-                        (format "this unknown variable, ~a, is similar to a reserved word.~n" n)
+                        (format "This unknown variable, ~a, is similar to a reserved word.~n" n)
                         "Perhaps it is miscaptialzed or misspelled")))
                    n src)))
 
@@ -2827,7 +2831,7 @@
   (define (beginner-method-access-error name src)
     (let ((n (id->ext-name name)))
       (raise-error n
-                   (format "method ~a from the current class must be called on 'this'" n)
+                   (format "Method ~a from the current class must be called on 'this'" n)
                    n src)))
 
   
@@ -2835,7 +2839,7 @@
   (define (restricted-method-call name class src)
     (let ((n (id->ext-name name)))
       (raise-error n
-                   (format "method ~a from ~a may not be called" n (car class))
+                   (format "Method ~a from ~a may not be called." n (car class))
                    n src)))
   
   ;ctor-called-error: type id src -> void
@@ -2843,7 +2847,7 @@
     (let ((t (if exp (type->ext-name exp) "the current class"))
           (n (id->ext-name name)))
       (raise-error n
-                   (format "Constructor ~a from ~a cannot be used as a method" n t)
+                   (format "Constructor ~a from ~a cannot be used as a method." n t)
                    n src)))
   
   ;non-static-called-error: id (list string) src bool -> void
@@ -2851,24 +2855,24 @@
     (let ((n (id->ext-name name)))
       (raise-error n
                    (if (memq level '(advanced full))
-                       (format "Non-static method ~a from ~a cannot be called directly from a static context"
+                       (format "Non-static method ~a from ~a cannot be called directly from a static context."
                                n (car class))
-                       (format "Method ~a from ~a cannot be called here" n (car class)))
+                       (format "Method ~a from ~a cannot be called here." n (car class)))
                    n src)))
   
   ;interaction-call-error
   (define (interaction-call-error name src level)
     (let ((n (id->ext-name name)))
       (raise-error n
-                   (string-append (format "method ~a cannot be called in the interactions window.~n" n)
-                                  (format "Only ~a methods or methods on objects may be called here" 
+                   (string-append (format "Method ~a cannot be called in the interactions window.~n" n)
+                                  (format "Only ~a methods or methods on objects may be called here." 
                                           (if (memq level '(beginner intermediate)) "certain library" "static")))
                    n src)))
 
   
   (define (illegal-ctor-call name src level)
     (let ((n (string->symbol name)))
-      (raise-error n (format "calls to ~a may only occur in ~a"
+      (raise-error n (format "Calls to ~a may only occur in ~a"
                              n
                              (if (memq level `(full advanced)) "other constructors" "the super constructor"))
                    n src)))

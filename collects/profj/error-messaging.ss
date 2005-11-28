@@ -1,4 +1,3 @@
-#cs
 (module error-messaging mzscheme
   
   (require "ast.ss")
@@ -11,7 +10,7 @@
   ;make-error: 'a string 'a src -> void
   (define (make-error-pass parm)
     (lambda (kind message so src)
-      (raise-syntax-error kind message (make-so so src parm))))
+      (raise-syntax-error 'Error #;kind message (make-so so src parm))))
   
   ;make-so: symbol src (-> location) -> syntax-object
   (define (make-so id src parm)

@@ -1826,7 +1826,7 @@
       ((symbol? type)
        (case type
          ((int short long byte) 'integer?)
-         ((double float) '(c:and/c number? inexact?))
+         ((double float) '(c:and/c number? (c:union inexact? integer?)))
          ((boolean) 'boolean?)
          ((char) 'char?)
          ((string String) 
@@ -2037,6 +2037,10 @@
   (define is-int? (make-is-test 'int))
   ;;is-char? type -> bool
   (define is-char? (make-is-test 'char))
+  ;;is-double?
+  (define (is-double? type)
+    (or ((make-is-test 'float) type)
+        ((make-is-test 'double) type)))  
   
   ;translate-bin-op: symbol syntax type syntax type src src type-> syntax
   (define (translate-bin-op op left left-type right right-type key src type)
@@ -2074,13 +2078,15 @@
               ((- *)
                (create-syntax #f `(,op-syntax ,left ,right) source))
               ((/) 
-               (make-syntax 
-                #f
-                (cond
-                  ((or (is-int? type) (and (dynamic-val? type) (is-int? (dynamic-val-type type))))
-                   `(,(create-syntax #f 'javaRuntime:divide-int key-src) ,left ,right))
-                  (else
-                   `(,(create-syntax #f 'javaRuntime:divide-float key-src) ,left ,right))) source))
+               (let ((div-op                 
+                      (cond
+                        ((or (is-double? left-type) (is-double? right-type))
+                         'javaRuntime:divide-float)
+                        ((or (dynamic-val? left-type) (dynamic-val? right-type))
+                         'javaRuntime:divide-dynamic)
+                        (else
+                         'javaRuntime:divide-int))))
+                 (make-syntax #f `(,(create-syntax #f div-op key-src) ,left ,right) source)))
               ((%) (make-syntax #f `(,(create-syntax #f 'javaRuntime:mod key-src) ,left ,right) source))
               ;Shift operations
               ((<< >> >>>) 
@@ -2111,7 +2117,7 @@
       (if (dynamic-val? type)
           (make-syntax #f
                        (convert-assert-value 
-                        (make-syntax #f `(c:contract ,(type->contract (dynamic-val-type type)) ,result 
+                        (make-syntax #f `(c:contract ,(type->contract (dynamic-val-type type) #t) ,result 
                                                      (quote ,(string->symbol (class-name))) '||) source)
                         type)
                        source)

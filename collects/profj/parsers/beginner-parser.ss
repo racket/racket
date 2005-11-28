@@ -287,8 +287,8 @@
        [(O_BRACE Statement C_BRACE) (make-block (list $2) (build-src 3))])
       
       (BlockStatements
-       [(Statement) (if (list? $1) $1 (list $1))]
-       [(BlockStatements Statement) (if (list? $2) (append (reverse $2) $1) (cons $2 $1))])
+       [(Assignment SEMI_COLON) (if (list? $1) $1 (list $1))]
+       [(BlockStatements Assignment SEMI_COLON) (if (list? $2) (append (reverse $2) $1) (cons $2 $1))])
       
       (BeginnerInteractions
        [(Statement) $1]
