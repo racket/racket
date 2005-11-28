@@ -1,7 +1,42 @@
 (module full-tests mzscheme
-  (require (lib "profj-testing.ss" "profj"))
+  (require (lib "profj-testing.ss" "profj")
+           (lib "parameters.ss" "profj"))
   
   (prepare-for-tests "Full")
+  
+  (interact-test
+   'full
+   (list "float x = 3/2;" "x" "double y = 3.2/2;" "y")
+   (list '(void) 1 '(void) 1.6) "Test of choosing integer vs floating point division")
+  
+  (parameterize ((dynamic? #t))
+    (execute-test
+     "class X { int m(dynamic x) { return x(1); } }"
+     'full #f "Using a dynamic parameter as a method"))
+  
+  (parameterize ((dynamic? #t))
+    (execute-test
+     "class X { dynamic x; }"
+     'full #f "Dynamic variable (unused) in class")
+    (execute-test
+     "class X { dynamic x; int foo() { return x; } }"
+     'full #f "Dynamic variable used, but not executed in class")
+    (execute-test
+     "class X { dynamic f() { return 3; } }"
+     'full #f "Method returning dynamic with actual an int")
+    (execute-test
+     "class X { int f(dynamic x) { return 3; }}"
+     'full #f "Method with dynamic parm, not used")
+    (execute-test
+     "class X {float f(dynamic x, dynamic y) { return x + y; }}"
+     'full #f "Method adding two dynamics, returning a float")
+    (interact-test
+     "class X { float f( dynamic x, dynamic y) { return x + y; }}"
+     'full (list "new X().f(1,1);")
+     (list 2) 
+     "Method adding two dynamics (returning a float), called"))
+    
+  
   
   (execute-test
    "class C {
