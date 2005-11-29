@@ -11,6 +11,7 @@
 	   (lib "utils.ss" "texpict")
 	   (lib "math.ss")
 	   (lib "list.ss")
+	   (lib "include-bitmap.ss" "mrlib")
 	   "sig.ss"
 	   "core.ss"
 	   "util.ss")
@@ -1059,8 +1060,13 @@
 
       (refresh-page)
       
-      (let* ([bm (make-object bitmap% (build-path (collection-path "slideshow") "slideshow.png"))]
-	     [mbm (make-object bitmap% (build-path (collection-path "slideshow") "mask.xbm"))])
+      (define slideshow-bm
+	(include-bitmap (lib "slideshow.png" "slideshow")))
+      (define slideshow-mbm
+	(include-bitmap (lib "mask.xbm" "slideshow")))
+
+      (let* ([bm slideshow-bm]
+	     [mbm slideshow-mbm])
 	(when (send bm ok?)
 	  (send f set-icon bm (and (send mbm ok?) mbm) 'both)))
       
