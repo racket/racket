@@ -11,14 +11,12 @@
   
   (provide help-desk-frame<%>)
   
-  (define (goto-hd-location x) (error 'goto-hd-location "no"))
-  
   (provide/contract 
    (set-bug-report-info! any/c)
    (find-doc-names (-> (listof (cons/c path? string?))))
    (goto-manual-link (any/c string? string? . -> . any))
    
-   (goto-hd-location (symbol? . -> . any))
+   (goto-hd-location ((symbols 'hd-tour 'release-notes 'plt-license) . -> . any))
    (new-help-desk (-> (is-a?/c help-desk-frame<%>)))
    (show-help-desk (-> any))
    (add-help-desk-mixin (-> mixin-contract void?))

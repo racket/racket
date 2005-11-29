@@ -496,7 +496,9 @@
             (goto-url link f)
             f)))
       
-      (define (goto-hd-location sym) (goto-url (get-hd-location sym)))
+      (define (goto-hd-location sym)
+        (let ([loc (get-hd-location sym)])
+          (goto-url loc)))
       
       (define (search-for-docs search-string search-type match-type lucky? docs)
         (let ([fr (or (find-help-desk-frame)

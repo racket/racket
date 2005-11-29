@@ -33,7 +33,7 @@
    (make-missing-manual-url (string? string? string? . -> . string?))
    (get-hd-location ((lambda (sym) (memq sym hd-location-syms))
                      . -> . 
-                     string))
+                     string?))
    [make-docs-plt-url (string? . -> . string?)]
    [make-docs-html-url (string? . -> . string?)])
 
@@ -48,7 +48,7 @@
   (define (make-docs-html-url manual-name)
     (format "~a/html/~a/index.htm" (base-docs-url) manual-name))
 
-  (define (prefix-with-server cookie suffix)
+  (define (prefix-with-server suffix)
     (format "http://~a:~a~a" internal-host internal-port suffix))
   
   (define results-url-prefix (format "http://~a:~a/servlets/results.ss?" internal-host internal-port))

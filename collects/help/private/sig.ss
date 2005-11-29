@@ -8,5 +8,6 @@
      new-help-desk
      find-help-desk-frame
      show-help-desk
+     goto-hd-location
      search-for-docs
      search-for-docs/in-frame)))
