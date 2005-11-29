@@ -4,15 +4,58 @@
 	   (lib "mred.ss" "mred")
 	   (lib "class.ss"))
 
+  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; Path utilities
+
+  (define (resolve-path/complete p base)
+    (let ([p2 (resolve-path p)])
+      (if (complete-path? p2)
+	  p2
+	  (path->complete-path p2 base))))
+
+  (define (normal-path p)
+    (let loop ([p (simplify-path (expand-path (path->complete-path p)))])
+      (let-values ([(base name dir?) (split-path p)])
+	(if (path? base)
+	    (let ([base (loop base)])
+	      (let ([p (build-path base name)])
+		(resolve-path/complete p base)))
+	    (resolve-path/complete p base)))))
+
+  (define (same-path? a b)
+    (let-values ([(abase aname adir?) (split-path a)]
+		 [(bbase bname bdir?) (split-path b)])
+      (and (equal? aname bname)
+	   (or (equal? abase bbase)
+	       (and (path? abase)
+		    (path? bbase)
+		    (same-path? abase bbase))))))
+
+  (define (sub-path? a b)
+    (let-values ([(abase aname adir?) (split-path a)]
+		 [(bbase bname bdir?) (split-path b)])
+      (or (and (equal? aname bname)
+	       (or (and (not abase) (not bbase))
+		   (and (path? abase)
+			(path? bbase)
+			(same-path? abase bbase))))
+	  (and (path? abase)
+	       (sub-path? abase b)))))
+      
+  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; Loader with security guard
+
   (define (load-content content)
     (unless (trust-me?)
       (current-security-guard
        (make-security-guard (current-security-guard)
 			    (lambda (who what mode)
 			      (when (memq 'write mode)
-				(error 'slideshow
-				       "slide program attempted to write to filesystem: ~e"
-				       what))
+				(unless (sub-path? (normal-path what)
+						   (normal-path (find-system-path 'temp-dir)))
+				  (error 'slideshow
+					 "slide program attempted to write to filesystem: ~e"
+					 what)))
 			      (when (memq 'execute mode)
 				(error 'slideshow
 				       "slide program attempted to execute external code: ~e"
@@ -25,6 +68,9 @@
 
   (when (file-to-load)
     (load-content (string->path (file-to-load))))
+
+  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; Run tutorial
 
   (unless (most-recent-slide)
     (let ([link (lambda (label thunk)

@@ -36,7 +36,13 @@ On in DrScheme:
 
    When you use the "Slideshow" executable or "slideshow" command-line
    program, however, the slide program is prevented from writing to
-   the filesystem or creating network connections.
+   the filesystem or creating network connections, except that writes
+   to the system temporary directory are allowed.
+
+   (The system temporary directory is determined by calling
+   `find-system-path' with 'temp-dir; file writes are checked by
+   expanding the file path to resolve all symbolic links, and then
+   checking that the path starts with the tempoary-directory path.)
 
 
 Slideshow Overview
