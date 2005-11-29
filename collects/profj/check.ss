@@ -2007,6 +2007,8 @@
                     (cond
                       ;List of methods found
                       ((list? call-exp) call-exp)
+                      ((eq? call-exp 'null)
+                       (prim-call-error call-exp name src level))
                       ((array-type? call-exp)
                        (set! exp-type call-exp)
                        (get-method-records name-string
@@ -2769,11 +2771,13 @@
           (t (type->ext-name exp)))
       (raise-error
        n
-       (format "attempted to call method ~a on ~a which does not have methods. ~nOnly values with ~a types have methods"
-               n t
-               (case level 
-                 ((beginner intermediate) "class or interface")
-                 (else "class, interface, or array")))
+       (if (eq? exp 'null)
+           (format "Attempted to call method ~a directly on null. The null value does not have any methods." n)
+           (format "Attempted to call method ~a on ~a which does not have methods. ~nOnly values with ~a types have methods"
+                   n t
+                   (case level 
+                     ((beginner intermediate) "class or interface")
+                     (else "class, interface, or array"))))
        n src)))
   
   ;no-method-error: symbol symbol type id src -> void

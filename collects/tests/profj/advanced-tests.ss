@@ -4,6 +4,12 @@
   (prepare-for-tests "Advanced")
   
   ;;Execution tests without errors
+
+  (interact-test
+   'advanced
+   '("null.m()")
+   '(error)
+   "Calling a method on null")
   
   (execute-test
    "public class Something {

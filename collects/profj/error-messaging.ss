@@ -9,8 +9,10 @@
   
   ;make-error: 'a string 'a src -> void
   (define (make-error-pass parm)
-    (lambda (kind message so src)
-      (raise-syntax-error 'Error #;kind message (make-so so src parm))))
+    (lambda (_ message syn-obj src)
+      (raise (make-exn:fail:syntax (string->immutable-string message)
+                                   (current-continuation-marks) (list-immutable (make-so syn-obj src parm))))))
+  
   
   ;make-so: symbol src (-> location) -> syntax-object
   (define (make-so id src parm)
