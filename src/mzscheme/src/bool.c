@@ -156,10 +156,21 @@ int scheme_eqv (Scheme_Object *obj1, Scheme_Object *obj2)
 # ifdef NAN_EQUALS_ANYTHING
       if (MZ_IS_NAN(b))
 	return 0;
-      else
+      else {
+	if (a == 0.0) {
+	  if (b == 0.0) {
+	    return scheme_minus_zero_p(a) == scheme_minus_zero_p(b);
+	  }
+	}
 	return (a == b);
+      }
 # else
       return 0;
+    }
+    if (a == 0.0) {
+      if (b == 0.0) {
+	return scheme_minus_zero_p(a) == scheme_minus_zero_p(b);
+      }
     }
     return 1;
 # endif
@@ -182,13 +193,24 @@ int scheme_eqv (Scheme_Object *obj1, Scheme_Object *obj2)
 # ifdef NAN_EQUALS_ANYTHING
       if (MZ_IS_NAN(b))
 	return 0;
-      else
+      else {
+	if (a == 0.0) {
+	  if (b == 0.0) {
+	    return scheme_minus_zero_p(a) == scheme_minus_zero_p(b);
+	  }
+	}
 	return (a == b);
+      }
 # else
       return 0;
     }
-# endif
+    if (a == 0.0) {
+      if (b == 0.0) {
+	return scheme_minus_zero_p(a) == scheme_minus_zero_p(b);
+      }
+    }
     return 1;
+# endif
   } else if (t1 == scheme_bignum_type)
     return scheme_bignum_eq(obj1, obj2);
   else if (t1 == scheme_rational_type)

@@ -3986,14 +3986,13 @@ static Scheme_Object *write_case_lambda(Scheme_Object *obj)
 {
   Scheme_Case_Lambda *cl = (Scheme_Case_Lambda *)obj;
   int i;
-  Scheme_Object **a, *l;
+  Scheme_Object *l;
 
   i = cl->count;
-  a = cl->array;
 
   l = scheme_null;
   for (; i--; ) {
-    l = cons(a[i], l);
+    l = cons(cl->array[i], l);
   }
   
   return cons((cl->name ? cl->name : scheme_null),
