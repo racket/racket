@@ -99,7 +99,7 @@
      code-colorize-enabled code-colorize-quote-enabled 
      code-italic-underscore-enabled code-scripts-enabled
      current-comment-color current-keyword-color 
-     current-base-color current-id-color current-literal-color
+     current-base-color current-id-color current-literal-color current-const-color
      current-reader-forms
      mzscheme-const-list))
 

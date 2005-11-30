@@ -14,7 +14,7 @@
   (define sym:infinity (symbol #x221E))
   (define sym:times (symbol 215))
   (define sym:implies (symbol #x21D2))
-  (define sym:emdash (symbol 8212))
+  (define sym:emdash (symbol #x2014))
   (define sym:therefore (symbol #x2234)))
 
 
