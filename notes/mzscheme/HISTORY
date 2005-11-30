@@ -1,6 +1,7 @@
 Version 299.406
 Generalized network-address handling, includes IPv6
 Added #%variable-reference
+0.0 and -0.0 are different by eqv?
 
 Version 299.405
 Added syntax-language+country
@@ -227,7 +228,6 @@ Misc:
  Struct property types are now overridable in subtypes
  Added module-compiled-exports
  Added hash-table-copy and hash-table-count
- 0.0 and -0.0 are now considered the same by eqv?
  Changed the random-number generator to use L'Ecuyer's MRG32k3a
   algorithm, as encouraged by SRFI-37
  Changed random to accept 0 arguments to generate a random real
