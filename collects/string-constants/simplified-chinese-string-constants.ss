@@ -913,51 +913,6 @@
   (mred-w/debug "Graphical (MrEd, 包含 MzScheme)")
   (mred-one-line-summary "在MzScheme的基础上增加GUI支持")
   
-  ;; profiling
-  (profiling-low-color "Low")
-  (profiling-high-color "High")
-  (profiling-choose-low-color "Please select a low color")
-  (profiling-choose-high-color "Please select a high color")
-  (profiling "Profiling")
-  (profiling-example-text "(define (whee) (whee))")
-  (profiling-color-config "Profiling Color Range") 
-  (profiling-scale "Profiling Color Scale")
-  (profiling-sqrt "Square root")
-  (profiling-linear "Linear")
-  (profiling-square "Square")
-  (profiling-number "Number of Calls")
-  (profiling-time "Cumulative Time")
-  (profiling-update "Update Profile")
-  (profiling-col-percent-time "% Time")
-  (profiling-col-function "Function")
-  (profiling-col-name "Name")
-  (profiling-col-time-in-msec "Msec")
-  (profiling-col-calls "Calls")
-  (profiling-show-profile "Show Profile")
-  (profiling-hide-profile "Hide Profile")
-  (profiling-unknown-src "<< unknown >>")
-  (profiling-no-information-available "There is no profiling information available. Please be sure that profiling is enabled in your language and you have run your program.")
-  (profiling-clear? "Changing the definitions window invalidates the profiling information. Continue?")
-  
-  ;; test coverage
-  (test-coverage-clear? "Changing the definitions window invalidates the test coverage information. Continue?")
-  (test-coverage-clear-and-do-not-ask-again "Yes, and don't ask again")
-  (test-coverage-ask? "Ask about clearing test coverage")
-  
-  ;; tracing
-  (tracing-enable-tracing "Enable tracing")
-  (tracing-show-tracing-window "Show Tracing")
-  (tracing-hide-tracing-window "Hide Tracing")
-  (tracing-tracing-nothing-to-show "No tracing results are available. Be sure your language supports tracing and it is enabled.")
-  
-  ;;; repl stuff
-  (evaluation-terminated "Evaluation Terminated")
-  (evaluation-terminated-explanation
-    "The evaluation thread is no longer running, so no evaluation can take place until the next execution.")
-  (last-stack-frame "show the last stack frame")
-  (last-stack-frames "show the last ~a stack frames")
-  (next-stack-frames "show the next ~a stack frames")
-  
   ;;; welcoming message in repl
   (language "语言")
   (custom "自定义")
@@ -1005,13 +960,13 @@
   (large-semicolon-letters "带分号的大字")
   (text-to-insert "要插入的文字")
   
-  (module-browser-filename-format "Full Filename: ~a (~a lines)")
-  (module-browser-root-filename "Root Filename: ~a")
-  (module-browser-font-size-gauge-label "Font Size")
+  (module-browser-filename-format "文件全名: ~a (共~a行)")
+  (module-browser-root-filename "根文件名: ~a")
+  (module-browser-font-size-gauge-label "字号")
   (module-browser-progress-label "Module overview progress")
-  (module-browser-adding-file "Adding file: ~a...")
+  (module-browser-adding-file "添加文件: ~a...")
   (module-browser-laying-out-graph-label "Laying out graph")
-  (module-browser-open-file-format "Open ~a")
+  (module-browser-open-file-format "打开~a")
   (module-browser "Module浏览器") ;; frame title
   (module-browser... "Module浏览器...") ;; menu item title
   (module-browser-error-expanding "Error expanding the program:\n\n~a")
@@ -1028,13 +983,9 @@
   (module-browser-name-long "Long")
   (module-browser-open-all "Open all files shown here")
   
-  (happy-birthday-matthias "Happy Birthday, Matthias!")
-  (happy-birthday-matthew "Happy Birthday, Matthew!")
-  (happy-birthday-shriram "Happy Birthday, Shriram!")
-  
   (mrflow-using-default-language-title "Default Language Used")
   (mrflow-using-default-language "The language currently used does not have a type table defined for its primitives. Using R5RS Scheme instead.")
-  (mrflow-button-title "Analyze")
+  (mrflow-button-title "分析")
   ;(mrflow-unknown-style-delta-error-title "Unknown Box Style Delta")
   ;(mrflow-unknown-style-delta-error "Unknown box style delta: ~a")
   (mrflow-coloring-error-title "Unknown Color")
@@ -1051,14 +1002,6 @@
   ;(mrflow-unknown-exception "Unknown exception: ~a")
   ;(mrflow-language-primitives-error-title "Language Primitives Error")
   ;(mrflow-language-primitives-error "Wrong filename for language primitives types table: ~a")
-  
-  (snips-and-arrows-popup-menu-tack-all-arrows "Tack All Arrows")
-  (snips-and-arrows-popup-menu-untack-all-arrows "Untack All Arrows")
-  (snips-and-arrows-user-action-disallowed-title "User Changes Currently Disallowed")
-  (snips-and-arrows-user-action-disallowed "User changes are disallowed in editors that contain tool-inserted snips.  Hide all snips before modifying the content of the editor.")
-  ;(snips-and-arrows-changing-terms-warning-title "Changing terms will be undoable")
-  ;(snips-and-arrows-changing-terms-warning "Changing terms in an editor containing snips cannot be undone.  You can either cancel this action, remove the snips, and try the change again, or you can continue with the change, in which case the change will not be undoable (all others changes made before and afterward will still be undoable though).")
-  (snips-and-arrows-hide-all-snips-in-editor "Hide all snips in editor")
   
   (xml-tool-menu "XML")
   (xml-tool-insert-xml-box "插入XML框")
@@ -1102,43 +1045,16 @@
   (program-is-still-running "定义窗口中的程序还在运行中。强制退出？")
   (program-has-open-windows "定义窗口中的打开了其他窗口。强行关闭这些窗口？")
   
-  ;; ml-command-line-arguments is for the command line arguments
-  ;; label in the module language details in the language dialog.
-  (ml-command-line-arguments "Command-line arguments as a vector of strings, in read syntax")
-  
-  ;; ml-cp names are all for the module language collection path
-  ;; configuration. See the details portion of the language dialog
-  ;; for the module language (at the bottom).
-  (ml-cp-default-collection-path "<<default collection paths>>")
-  
-  ;; in std get-directory 
-  (ml-cp-choose-a-collection-path "Please choose a collection path")
-  
-  ;; err msg when adding default twice
-  (ml-cp-default-already-present
-    "Default collection paths are already present")
-  
-  ;; title of this section of the dialog (possibly the word
-  ;; `Collection' should not be translated)
-  (ml-cp-collection-paths "Collection Paths")
-  
-  ;; button labels
-  (ml-cp-add "Add")
-  (ml-cp-add-default "Add Default")
-  (ml-cp-remove "Remove")
-  (ml-cp-raise "Raise")
-  (ml-cp-lower "Lower")
-  
   ;; Profj
   (profj-java "Java")
   (profj-java-mode "Java模式")
-  (profj-java-mode-color-keyword "keyword")
-  (profj-java-mode-color-string "string")
-  (profj-java-mode-color-literal "literal")
-  (profj-java-mode-color-comment "comment")
-  (profj-java-mode-color-error "error")
-  (profj-java-mode-color-identifier "identifier")
-  (profj-java-mode-color-default "default")
+  (profj-java-mode-color-keyword "关键字")
+  (profj-java-mode-color-string "字符串")
+  (profj-java-mode-color-literal "文字")
+  (profj-java-mode-color-comment "注释")
+  (profj-java-mode-color-error "错误")
+  (profj-java-mode-color-identifier "标示符")
+  (profj-java-mode-color-default "默认值")
   
   (profj-insert-java-comment-box "插入Java注释框")
   (profj-insert-java-interactions-box "插入Java交互框")
@@ -1152,31 +1068,6 @@
   (test-case-insert "插入Test Case")
   (test-case-disable-all "禁用所有Test Cases")
   (test-case-enable-all "允许所有Test Cases")
-  
-  ;; NOTE: The following string constants are labels of the test-case fields. The width
-  ;;       of the field is determined by the length of the longest of the following three words.
-  ;;       if the words are too long the test case will take up too much horizontal room and
-  ;;       not look very good.
-  ;; This string is the label of the expression that is being tested in a test case.
-  (test-case-to-test "Test")
-  ;; This string is the label of the expression that is the expected value of the to-test expression.
-  (test-case-expected "Should be")
-  ;; This string is the label of the actual result of the to test expression.
-  (test-case-actual "Actual")
-  (test-case-predicate "Predicate")
-  (test-case-should-raise "Should Raise")
-  ;; The label of a field of the test-case that describes the expected error message of a test case
-  (test-case-error-message "Error Message")
-  
-  (test-case-menu-title "Test Case")
-  (test-case-switch-to-error-box "Switch to Error Test Box")
-  (test-case-switch-to-nonerror-box "Switch to Nonerror Test box")
-  (test-case-collapse "Collapse Test Case")
-  (test-case-show-actual "Show Actual Value")
-  (test-case-enable "Enable Test Case")
-  (test-case-show-predicate "Show Predicate")
-  (test-case-show-error-message "Show Error Message")
-  (test-case-convert-to-text "Convert to text")
   
   ;; Profj Boxes
   (profjBoxes-empty-error "Empty interaction")
@@ -1209,4 +1100,3 @@
   (gui-tool-hide-gui-toolbar "隐藏GUI工具栏")
   (gui-tool-insert-gui "插入GUI")
   )
- 
