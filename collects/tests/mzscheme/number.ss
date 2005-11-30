@@ -127,7 +127,11 @@
      '(+inf.0 -inf.0 +nan.0 -nan.0 0.0 -0.0 0 1/2 3.4 1+2i))
 
 (test #t = 0.0 -0.0)
-(test #t eqv? 0.0 -0.0)
+(test #f eqv? 0.0 -0.0)
+(test #f equal? 0.0 -0.0)
+(test #f eqv? -0.0 0.0)
+(test #t eqv? 0.0 0.0)
+(test #t eqv? -0.0 -0.0)
 
 (test #t = 22 22 22)
 (test #t = 22 22)
@@ -210,7 +214,10 @@
 (test #t = 1 1.0+0i)
 (test #t = 1 1.0+0.0i)
 (test #f eqv? 1.0 1.0+0.0i)
-(test #t eqv? 1.0-0.0i 1.0+0.0i)
+(test #f eqv? 1.0-0.0i 1.0+0.0i)
+(test #f eqv? 1.0+0.0i 1.0-0.0i)
+(test #t eqv? 1.0+0.0i 1.0+0.0i)
+(test #t eqv? 1.0-0.0i 1.0-0.0i)
 
 (test #f = 1+2i 2+i)
 
@@ -1947,12 +1954,12 @@
 (test #f 'generator-not-preserved (equal? x (list (random 10) (random 20) (random 30))))
 (test #t pseudo-random-generator? (make-pseudo-random-generator))
 (test #t pseudo-random-generator? (current-pseudo-random-generator))
-(test #t pseudo-random-generator? (current-sync-pseudo-random-generator))
+(test #t pseudo-random-generator? (current-evt-pseudo-random-generator))
 (test #f pseudo-random-generator? 10)
 (arity-test pseudo-random-generator? 1 1)
 (arity-test make-pseudo-random-generator 0 0)
 (arity-test current-pseudo-random-generator 0 1)
-(arity-test current-sync-pseudo-random-generator 0 1)
+(arity-test current-evt-pseudo-random-generator 0 1)
 (err/rt-test (current-pseudo-random-generator 10))
 
 
