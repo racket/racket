@@ -517,13 +517,18 @@
                                  (set! language-details-panel language-details-panel-real)
                                  (set! real-get/set-settings get/set-settings))
                                
-                               (cond
-                                 [(equal? (send (or selected-language language-to-show) get-language-position)
-                                          (send language get-language-position))
-                                  (get/set-settings settings-to-show)
-                                  (send details-panel active-child language-details-panel)]
-                                 [else
-                                  (get/set-settings (send language default-settings))]))))
+                               (let-values ([(vis-lang vis-settings)
+                                             (if selected-language
+                                                 (values selected-language
+                                                         (send selected-language default-settings))
+                                                 (values language-to-show settings-to-show))])
+                                 (cond
+                                   [(equal? (send vis-lang get-language-position)
+                                            (send language get-language-position))
+                                    (get/set-settings vis-settings)
+                                    (send details-panel active-child language-details-panel)]
+                                   [else
+                                    (get/set-settings (send language default-settings))])))))
                      
                      (send item set-number number)
                      (when second-number
