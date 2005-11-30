@@ -2196,6 +2196,8 @@ static int stdio_kills_prog = 0;
 static Bool RecordInput(void *media, wxEvent *event, void *data);
 static Bool SendBreak(void *media, wxEvent *event, void *data);
 static void break_console_reading_threads();
+static char utf8_leftover[8];
+static int utf8_leftover_count;
 
 class IOMediaEdit : public wxMediaEdit
 {
@@ -2479,7 +2481,8 @@ static void MrEdSchemeMessages(char *msg, ...)
     vfprintf(stderr, msg, args);
   } else if (!msg) {
     char *s;
-    long d, l;
+    wxchar *us;
+    long d, l, ulen, ipos;
 
     s = HIDE_FROM_XFORM(va_arg(args, char*));
     d = HIDE_FROM_XFORM(va_arg(args, long));
@@ -2489,11 +2492,31 @@ static void MrEdSchemeMessages(char *msg, ...)
       ioFrame->media->BeginEditSequence();
       ioFrame->beginEditSeq = 1;
     }
-    s = COPYSTRING_TO_ALIGNED(s, d);
-    ioFrame->media->Insert(l, s, ioFrame->endpos);
-    ioFrame->endpos += l;
+    
+    if (utf8_leftover_count) {
+      char *naya;
+      naya = new WXGC_ATOMIC char[l + utf8_leftover_count];
+      memcpy(naya, utf8_leftover, utf8_leftover_count);
+      memcpy(naya + utf8_leftover_count, s + d, l);
+      s = naya;
+      d = 0;
+      l += utf8_leftover_count;
+    }
 
-    if (l != 1 || s[0] == '\n') {
+    ulen = scheme_utf8_decode_as_prefix((unsigned char *)s, d, l,
+					NULL, 0, -1,
+					&ipos, 0, '?');
+    utf8_leftover_count = (l - ipos);
+    memcpy(utf8_leftover, s + d + ipos, utf8_leftover_count);
+    
+    us = (wxchar *)scheme_malloc_atomic(sizeof(wxchar) * ulen);
+    scheme_utf8_decode_as_prefix((unsigned char *)s, d, l,
+				 us, 0, -1,
+				 &ipos, 0, '?');
+    ioFrame->media->Insert(ulen, us, ioFrame->endpos);
+    ioFrame->endpos += ulen;
+
+    if (ulen != 1 || s[0] == '\n') {
       ioFrame->media->EndEditSequence();
       ioFrame->beginEditSeq = 0;
     }
