@@ -15,11 +15,10 @@
       get-children 
       add-child
       remove-child
-
+      
       get-parents
       add-parent
       remove-parent
-      has-self-loop?
       
       find-shortest-path))
   
@@ -37,17 +36,6 @@
 		       (union false/c (is-a?/c pen%))
 		       (union false/c (is-a?/c brush%))
 		       (union false/c (is-a?/c brush%))
-		       number?
-                       number?
-                       . -> .
-		       void?)
-                      ((is-a?/c graph-snip<%>)
-		       (is-a?/c graph-snip<%>)
-		       (union false/c (is-a?/c pen%))
-		       (union false/c (is-a?/c pen%))
-		       (union false/c (is-a?/c brush%))
-		       (union false/c (is-a?/c brush%))
-                       (union false/c string?)
 		       . -> .
 		       void?)
                       ((is-a?/c graph-snip<%>)
@@ -59,22 +47,8 @@
 		       number?
                        number?
                        . -> .
-		       void?)))
-                    (add-links/text-colors
-                     ((is-a?/c graph-snip<%>)
-		       (is-a?/c graph-snip<%>)
-		       (union false/c (is-a?/c pen%))
-		       (union false/c (is-a?/c pen%))
-		       (union false/c (is-a?/c brush%))
-		       (union false/c (is-a?/c brush%))
-                       (union false/c (is-a?/c color%))
-                       (union false/c (is-a?/c color%))
-		       number?
-                       number?
-                       (union false/c string?)
-                       . -> .
-		       void?)))
-
+		       void?))))
+  
   (define self-offset 10)
   
   ;; (or-2v arg ...)
@@ -98,12 +72,8 @@
   (define default-light-pen (send the-pen-list find-or-create-pen "light blue" 1 'solid))
   (define default-dark-brush (send the-brush-list find-or-create-brush "light blue" 'solid))
   (define default-light-brush (send the-brush-list find-or-create-brush "white" 'solid))
-  (define default-dark-text "blue")
-  (define default-light-text "light blue")
   
-  
-  ;; label is boolean or string
-  (define-struct link (snip dark-pen light-pen dark-brush light-brush dark-text light-text dx dy label))
+  (define-struct link (snip dark-pen light-pen dark-brush light-brush dx dy))
   
   ;; add-links : (is-a?/c graph-snip<%>) (is-a?/c graph-snip<%>) -> void
   ;;           : (is-a?/c graph-snip<%>) (is-a?/c graph-snip<%>) pen pen brush brush -> void
@@ -112,20 +82,12 @@
       [(parent child) (add-links parent child #f #f #f #f)]
       [(parent child dark-pen light-pen dark-brush light-brush)
        (add-links parent child dark-pen light-pen dark-brush light-brush 0 0)]
-      [(parent child dark-pen light-pen dark-brush light-brush label)
-       (add-links parent child dark-pen light-pen dark-brush light-brush 0 0 label)]
       [(parent child dark-pen light-pen dark-brush light-brush dx dy)
-       (add-links parent child dark-pen light-pen dark-brush light-brush dx dy #f)]
-      [(parent child dark-pen light-pen dark-brush light-brush dx dy label)
        (send parent add-child child)
-       (send child add-parent parent dark-pen light-pen dark-brush light-brush dx dy label)]))
+       (send child add-parent parent dark-pen light-pen dark-brush light-brush dx dy)]))
   
-  (define (add-links/text-colors parent child dark-pen light-pen dark-brush light-brush dark-text light-text dx dy label)
-    (send parent add-child child)
-    (send child add-parent parent dark-pen light-pen dark-brush light-brush dark-text light-text dx dy label))
-  
-  (define graph-snip-mixin
-    (mixin ((class->interface editor-snip%)) (graph-snip<%>)
+  (define (graph-snip-mixin %)
+    (class* % (graph-snip<%>)
       (field (children null))
       (define/public (get-children) children)
       (define/public (add-child child)
@@ -144,10 +106,6 @@
           [(parent dark-pen light-pen dark-brush light-brush)
            (add-parent parent dark-pen light-pen dark-brush light-brush 0 0)]
           [(parent dark-pen light-pen dark-brush light-brush dx dy)
-           (add-parent parent dark-pen light-pen dark-brush light-brush dx dy #f)]
-          [(parent dark-pen light-pen dark-brush light-brush dx dy)
-           (add-parent parent dark-pen light-pen dark-brush light-brush #f #f dx dy #f)]
-          [(parent dark-pen light-pen dark-brush light-brush dark-text light-text dx dy label)
            (unless (memf (lambda (parent-link) (eq? (link-snip parent-link) parent)) parent-links)
              (set! parent-links 
                    (cons (make-link parent
@@ -155,11 +113,8 @@
                                     (or light-pen default-light-pen)
                                     (or dark-brush default-dark-brush)
                                     (or light-brush default-light-brush)
-                                    (or dark-text default-dark-text)
-                                    (or light-text default-light-text)
                                     dx 
-                                    dy
-                                    label)
+                                    dy)
                          parent-links)))]))
       (define/public (remove-parent parent) 
         (when (memf (lambda (parent-link) (eq? (link-snip parent-link) parent)) parent-links)
@@ -168,9 +123,6 @@
                  parent
                  parent-links
                  (lambda (parent parent-link) (eq? (link-snip parent-link) parent))))))
-      
-      (define/public (has-self-loop?)
-        (memq this (get-children)))
       
       (define/public (find-shortest-path other)
         (define visited-ht (make-hash-table))
@@ -195,29 +147,7 @@
                       (map (lambda (child) (cons child path)) (filter first-view? (send (car path) get-children)))
                       acc)))]))])))
       
-      (init-field [left-margin 1]
-                  [right-margin 1]
-                  [top-margin 1]
-                  [bottom-margin 1]
-                  
-                  [left-inset 0]
-                  [right-inset 0]
-                  [top-inset 0]
-                  [bottom-inset 0]
-                  )
-      
-      (super-new [left-margin left-margin]
-                 [right-margin right-margin]
-                 [top-margin top-margin]
-                 [bottom-margin bottom-margin]
-                 
-                 [left-inset left-inset]
-                 [right-inset right-inset]
-                 [top-inset top-inset]
-                 [bottom-inset bottom-inset]
-                 )
-      
-      
+      (super-instantiate ())
       
       (inherit set-snipclass)
       (set-snipclass snipclass)))
@@ -246,19 +176,19 @@
                 arrowhead-long-side
                 arrowhead-short-side))
     
-      (inherit dc-location-to-editor-location get-canvas get-dc)
+      (inherit dc-location-to-editor-location get-canvas)
       (field (currently-overs null))
       (define/override (on-event evt)
         (cond
           [(send evt leaving?)
-           (change-currently-overs null (get-dc))
+           (change-currently-overs null)
            (super on-event evt)]
           [(or (send evt entering?)
                (send evt moving?))
            (let ([ex (send evt get-x)]
                  [ey (send evt get-y)])
              (let-values ([(x y) (dc-location-to-editor-location ex ey)])
-               (change-currently-overs (find-snips-under-mouse x y) (get-dc))))
+               (change-currently-overs (find-snips-under-mouse x y))))
            (super on-event evt)]
           [else 
            (super on-event evt)]))
@@ -273,11 +203,11 @@
         #;(super on-interactive-move evt))
       
       (define/override (interactive-adjust-move snip x y)
-        (invalidate-to-children/parents snip (get-dc))
+        (invalidate-to-children/parents snip)
         (super interactive-adjust-move snip x y))
       
       (define/augment (after-insert snip before x y)
-        (invalidate-to-children/parents snip (get-dc))
+        (invalidate-to-children/parents snip)
         #;(super after-insert snip before x y))
       
       ;; invalidate-selected-snips : -> void
@@ -286,7 +216,7 @@
       (define/private (invalidate-selected-snips)
         (let loop ([snip (find-next-selected-snip #f)])
           (when snip
-            (invalidate-to-children/parents snip (get-dc))
+            (invalidate-to-children/parents snip)
             (loop (find-next-selected-snip snip)))))
       
       (define/private (add-to-rect from to rect)
@@ -306,6 +236,7 @@
                (max (+ yf hf) (+ yt ht) (rect-bottom rect))
                (max (+ yf hf) (+ yt ht))))))
       
+      
       ;; find-snips-under-mouse : num num -> (listof graph-snip<%>)
       (define/private (find-snips-under-mouse x y)
         (let loop ([snip (find-first-snip)])
@@ -320,7 +251,7 @@
             [else null])))
       
       ;; change-currently-overs : (listof snip) -> void
-      (define/private (change-currently-overs new-currently-overs dc)
+      (define/private (change-currently-overs new-currently-overs)
         (unless (set-equal new-currently-overs currently-overs)
           (let ([old-currently-overs currently-overs])
             (set! currently-overs new-currently-overs)
@@ -328,11 +259,11 @@
 	    (on-mouse-over-snips currently-overs)
             (for-each 
              (lambda (old-currently-over)
-               (invalidate-to-children/parents old-currently-over dc))
+               (invalidate-to-children/parents old-currently-over))
              old-currently-overs)
             (for-each
              (lambda (new-currently-over)
-               (invalidate-to-children/parents new-currently-over dc))
+               (invalidate-to-children/parents new-currently-over))
              new-currently-overs))))
 
       (define/public (on-mouse-over-snips snips)
@@ -346,29 +277,24 @@
              (andmap (lambda (s2) (memq s2 los1)) los2)
              #t))
       
-      ;; invalidate-to-children/parents : snip dc -> void
+      ;; invalidate-to-children/parents : snip -> void
       ;; invalidates the region containing this snip and
       ;; all of its children and parents.
       (inherit invalidate-bitmap-cache)
-      (define/private (invalidate-to-children/parents snip dc)
+      (define/private (invalidate-to-children/parents snip)
         (when (is-a? snip graph-snip<%>)
           (let* ([parents-and-children (append (get-all-parents snip)
                                                (get-all-children snip))]
                  [rects (eliminate-redundancies (get-rectangles snip parents-and-children))]
                  [union (union-rects rects)]
-                 [text-height (call-with-values 
-                               (λ () (send dc get-text-extent "Label" #f #f 0))
-                               (λ (w h a s) h))]
                  [invalidate-rect
                   (lambda (rect)
-                    (invalidate-bitmap-cache (- (rect-left rect) text-height)
-                                             (- (rect-top rect)  text-height)
-                                             (+ (- (rect-right rect)
-                                                   (rect-left rect))
-                                                text-height)
-                                             (+ (- (rect-bottom rect)
-                                                   (rect-top rect))
-                                                   text-height)))])
+                    (invalidate-bitmap-cache (rect-left rect)
+                                             (rect-top rect)
+                                             (- (rect-right rect)
+                                                (rect-left rect))
+                                             (- (rect-bottom rect)
+                                                (rect-top rect))))])
             (cond
               [(< (rect-area union)
                   (apply + (map (lambda (x) (rect-area x)) rects)))
@@ -412,24 +338,20 @@
                (let* ([c/p (car c/p-snips)]
                       [rect
                        (if (eq? c/p main-snip)
-                           (let-values ([(sx sy sw sh) (get-position c/p)]
-                                        [(_1 h _2 _3) (send (get-dc) get-text-extent "yX")])
+                           (let-values ([(sx sy sw sh) (get-position c/p)])
                              (make-rect (- sx self-offset)
                                         sy
                                         (+ (+ sx sw) self-offset)
-                                        (+ (+ sy sh) self-offset h)))
+                                        (+ (+ sy sh) self-offset)))
                            (union-rects (list main-snip-rect
                                               (snip->rect c/p))))])
                  (cons rect (loop (cdr c/p-snips))))]))))
 
       (define/private (snip->rect snip)
-        (let-values ([(sx sy sw sh) (get-position snip)]
-                     [(_1 h _2 _3) (send (get-dc) get-text-extent "yX")])
-          (make-rect sx 
-                     sy 
-                     (+ sx sw) 
-                     (max (+ sy sh) (+ sy (/ sh 2) (* 2 (sin (/ arrowhead-angle-width 2)) arrowhead-long-side) h)))))
+        (let-values ([(sx sy sw sh) (get-position snip)])
+          (make-rect sx sy (+ sx sw) (+ sy sh))))
 
+      
       (define/private (rect-area rect)
         (* (- (rect-right rect)
               (rect-left rect))
@@ -631,15 +553,11 @@
                   (cond
                     [(eq? from to)
                      (set-pen/brush from-link dark-lines?)
-                     (draw-self-connection dx dy (link-snip from-link) from-link dark-lines?)]
+                     (draw-self-connection dx dy (link-snip from-link))]
                     [else
                      (draw-non-self-connection dx dy from-link dark-lines? to)])))))
           
-          (define (get-text-length txt) 
-            (let-values ([(text-len h d v) (send dc get-text-extent txt)])
-              text-len))
-          
-          (define (draw-self-connection dx dy snip the-link dark-lines?)
+          (define (draw-self-connection dx dy snip)
             (let*-values ([(sx sy sw sh) (get-position snip)]
                           [(s1x s1y) (values (+ sx sw) (+ sy (* sh 1/2)))]
                           [(s2x s2y) (values (+ sx sw self-offset) (+ sy (* 3/4 sh) (* 1/2 self-offset)))]
@@ -660,19 +578,6 @@
               (send dc draw-spline (+ dx s1x) (+ dy s1y) (+ dx b12x) (+ dy b12y) (+ dx s2x) (+ dy s2y))
               (send dc draw-spline (+ dx s2x) (+ dy s2y) (+ dx b23x) (+ dy b23y) (+ dx s3x) (+ dy s3y))
               (send dc draw-line (+ dx s3x) (+ dy s3y) (+ dx s6x) (+ dy s6y))
-              
-              (let* ((textlen (get-text-length (link-label the-link)))
-                     (linelen (- s6x s3x))
-                     (offset (* 1/2 (- linelen textlen))))
-                (when #t (> sw textlen)
-                  (send dc draw-text 
-                        (link-label the-link)
-                        (+ dx s3x offset)
-                        (+ dy s3y)
-                        #f
-                        0
-                        0)))
-              
               (send dc draw-spline (+ dx s4x) (+ dy s4y) (+ dx b45x) (+ dy b45y) (+ dx s5x) (+ dy s5y))
               (send dc draw-spline (+ dx s5x) (+ dy s5y) (+ dx b56x) (+ dy b56y) (+ dx s6x) (+ dy s6y))
               (send dc draw-polygon points dx dy)))
@@ -708,8 +613,7 @@
                                        (find-intersection x1 y1 x2 y2 
                                                           rt tt rt bt))])
                     (when (and from-x from-y to-x to-y)
-                      (let ((from-pt (make-rectangular from-x from-y))
-                            (to-pt   (make-rectangular to-x to-y)))
+                      (let ()
                         (define (arrow-point-ok? point-x point-y)
                           (and (in-rectangle? point-x point-y
                                               (min lt rt lf rf) (min tt bt tf bf)
@@ -736,31 +640,7 @@
                                       (arrow-point-ok? (send point4 get-x) (send point4 get-y)))
                              ;; the arrowhead is not overlapping the snips, so draw it
                              ;; (this is only an approximate test, but probably good enough)
-                             (send dc draw-polygon points dx dy))
-                           (when (named-link? from-link)
-                             (let*-values ([(text-len h d v) (send dc get-text-extent (link-label from-link))]
-                                           [(x) (/ (+ from-x to-x) 2)]
-                                           [(y) (/ (+ from-y to-y) 2)]
-                                           [(theta) (- (angle (- to-pt from-pt)))] 
-                                           [(flip?) #f #;(negative? (- to-x from-x))]
-                                           [(text-angle) 
-                                            (if flip?
-                                                (+ theta pi)
-                                                theta)]
-                                           [(x)   
-                                            (- x (* h (cos (if flip? (+ (- theta) pi) (- theta)))))]
-                                           [(y) 
-                                            (- y (* h (sin (if flip? (+ (- theta) pi) (- theta)))))]
-                                           [(sqr) (λ (x) (* x x))])
-                               (when (> (sqrt (+ (sqr (- to-x from-x)) (sqr (- to-y from-y)))) text-len)
-                                 (send dc draw-text (link-label from-link)
-                                       (+ dx x)
-                                       (+ dy y)
-                                       #f
-                                       0
-                                       text-angle))
-                                 ))]))))))))
-          (define (named-link? l) (link-label l))
+                             (send dc draw-polygon points dx dy))]))))))))
           
           (define (set-pen/brush from-link dark-lines?)
             (send dc set-brush 
@@ -770,17 +650,12 @@
             (send dc set-pen
                   (if dark-lines?
                       (link-dark-pen from-link)
-                      (link-light-pen from-link)))
-            (send dc set-text-foreground
-                  (if dark-lines?
-                      (link-dark-text from-link)
-                      (link-light-text from-link))))
+                      (link-light-pen from-link))))
           
           ;;; body of on-paint
           (when before?
             (let ([old-pen (send dc get-pen)]
                   [old-brush (send dc get-brush)]
-                  [old-fg (send dc get-text-foreground)]
                   [os (send dc get-smoothing)])
               (send dc set-smoothing 'aligned)
               
@@ -801,7 +676,6 @@
               
               (send dc set-smoothing os)
               (send dc set-pen old-pen)
-              (send dc set-text-foreground old-fg)
               (send dc set-brush old-brush)))
           
           (super on-paint before? dc left top right bottom dx dy draw-caret)))
@@ -891,7 +765,6 @@
           (send point3 set-y t6y)
           (send point4 set-x t5x)
           (send point4 set-y t5y)))
-      ;; HERE!!!
       
       (define/private (should-hilite? snip)
         (let ([check-one-way
