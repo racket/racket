@@ -18,7 +18,6 @@
    (lib "readerr.ss" "syntax")
    (lib "string-constant.ss" "string-constants")
    (lib "embedded-gui.ss" "embedded-gui")
-   (lib "string-constant.ss" "string-constants")
    "make-snipclass.ss"
    "convert-to-string.ss"
    "text-syntax-object.ss"
