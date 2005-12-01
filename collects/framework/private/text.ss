@@ -1857,20 +1857,23 @@ WARNING: printf is rebound in the body of the unit to always
         (define (peek-proc bstr skip-count progress-evt)
           (poll-guard-evt
            (lambda (polling?)
-             (if polling?
-                 (let ([answer 
-                        (sync
-                         (nack-guard-evt
-                          (λ (nack)
-                            (let ([chan (make-channel)])
-                              (channel-put peek-chan (make-peeker bstr skip-count progress-evt chan nack #t))
-                              chan))))])
-                   (wrap-evt always-evt (λ (_) answer)))
-                 (nack-guard-evt
-                  (λ (nack)
-                    (let ([chan (make-channel)])
-                      (channel-put peek-chan (make-peeker bstr skip-count progress-evt chan nack #f))
-                      chan)))))))
+             (let ([evt 
+                    (nack-guard-evt
+                     (λ (nack)
+                       (let ([chan (make-channel)])
+                         (channel-put peek-chan (make-peeker bstr skip-count progress-evt chan nack polling?))
+                         chan)))])
+               (if polling? 
+                   (let ([v (sync evt)])
+                     (if (eq? v 0)
+                         ;; Don't return 0, because that means something is
+                         ;; probably ready. We want to indicate that nothing is
+                         ;; ready.
+                         never-evt
+                         ;; Even on success, package it as an event, because
+                         ;; `read-bytes-proc' expects an event
+                         (wrap-evt always-evt (lambda (_) v))))
+                   evt)))))
         
         (define (progress-evt-proc)
           (sync
