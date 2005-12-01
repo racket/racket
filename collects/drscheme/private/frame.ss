@@ -7,7 +7,6 @@
            (lib "string.ss")
            (lib "list.ss")
            "drsig.ss"
-           (lib "check-gui.ss" "version")
            (lib "mred.ss" "mred")
            (lib "framework.ss" "framework")
            (lib "url.ss" "net")
@@ -121,10 +120,10 @@
           
           (define/public (get-additional-important-urls) '())
           (define/override (help-menu:after-about menu)
-            (instantiate menu-item% ()
-              (label (string-constant help-menu-check-for-updates))
-              (parent menu)
-              (callback (λ (item evt) (check-version this))))
+            ;; (instantiate menu-item% ()
+            ;;   (label (string-constant help-menu-check-for-updates))
+            ;;   (parent menu)
+            ;;   (callback (λ (item evt) (check-version this))))
             (drscheme:app:add-important-urls-to-help-menu
              menu 
              (get-additional-important-urls))

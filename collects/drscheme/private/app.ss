@@ -9,7 +9,6 @@
            (lib "framework.ss" "framework")
            (lib "external.ss" "browser")
            (lib "getinfo.ss" "setup")
-           (lib "check-gui.ss" "version")
            "drsig.ss"
            "../acks.ss")
   
