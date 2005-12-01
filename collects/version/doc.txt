@@ -1,44 +1,40 @@
-_Version_ or _version_: PLT software online version checking
-============================================================
+_version_: PLT version checking
+===============================
 
-The version collection allows online version checking of PLT software.
-The user-side software sends version information about installed
-software to a server that compares that information against the latest
-released versions.
-
-In particular, the user-side software sends to the server
-
- - the binary version as reported by (version), a MzScheme primitive,
-   and
- - the values of the release-version and release-iteration fields in
-   the info.ss file for collections, if those fields exist
-
-If the binary version is out of date, that information is reported to
-the user.  Otherwise, the status of each package is reported.  The
-determination of whether a package is up-to-date is made on the server
-side.
-
-Two files may be used to run version checks from MrEd and MzScheme:
-_check-text.ss_ for (MrEd or MzScheme), and _check-gui.ss_ (for MrEd).
-These files contain modules that export a procedure named
-check-version:
-
- (require (lib "check-gui.ss" "version"))
-
-and
-
- (require (lib "check-text.ss" "version"))
-
-For check-text.ss, the procedure is called with
+The version collection contains several version-related pieces that
+are used by PLT Scheme.  First, the "check.ss" module provides a
+single function:
 
 > (check-version)
 
-For check-gui.ss, the procedure is called with
+This procedure checks the currently available version on the PLT
+website (doanload.plt-scheme.org), and returns a value that indicates
+your current state -- one of these:
 
-> (check-version [frame] [sync?])
+  * `ok
+    You're fine.
+  * `(ok-but ,version)
+    You have a fine stable version, but note that there is a newer
+    alpha version available
+  * `(newer ,version)
+    You have an old version, please upgrade to `version'
+  * `(newer ,version ,alpha)
+    You have an old-but-stable version, please upgrade to `version';
+    you may consider also the newer alpha version
+  * `(error ,message [,additional-info])
+    An error occured, the message is a string that indicates the
+    error, and the third (optional) value can be shown as the system
+    error that happened (it may be a string for system errors, or a
+    datum for an unexpected input from the web).
 
-where the optional argument `frame' is either a frame% instance or #f,
-the default.  The optional `sync?' argument is any Scheme value, #f by
-default.  If `sync?' is #f, the procedure returns immediately;
-otherwise, it returns after the user clicks OK on the dialog box that
-appears (or when an error occurs).
+
+The second functionality that is provided by this collection is in the
+_patchlevel_ module.  This module provides a single value:
+
+> patchlevel
+
+which is an integer that indicates the current patch level.  This is
+normally zero, but may be updated by patches to DrScheme.
+Furthermore, the "tool.ss" module makes this patchlevel appear in
+DrScheme (but the binary version as reported by `(version)' is not
+changed).
