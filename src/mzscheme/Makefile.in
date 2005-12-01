@@ -251,6 +251,10 @@ clean@OSX@:
 	rm -rf PLT_MzScheme.framework
 	$(MAKE) clean@NOT_OSX@
 
+LIBIDIR=`(cd $(prefix); pwd)`/lib
+BUILDINFO=$(LIBIDIR)/buildinfo
+ICP=@ICP@
+
 install:
 	$(MAKE) headers
 	$(MAKE) @MZINSTALLTARGET@
@@ -262,10 +266,6 @@ install-3m-basic:
 install-3m@NOT_OSX@:
 	$(MAKE) install-3m-basic
 	cd ..; $(ICP) mzscheme/libmzscheme3m.@LIBSFX@ $(LIBIDIR)/libmzscheme3m.@LIBSFX@
-
-LIBIDIR=`(cd $(prefix); pwd)`/lib
-BUILDINFO=$(LIBIDIR)/buildinfo
-ICP=@ICP@
 
 # Prefix might be relative to srcdir, or it might be absolute, so we
 # have to go up and install things from there.
