@@ -551,7 +551,7 @@
                          (lambda (b e)
                            (let ([f (get-file)])
                              (when f
-                               (send t set-value (string-append "file:" f))
+                               (send t set-value (string-append "file:" (path->string f)))
                                (update-ok))))))
         (define spacer (make-object vertical-pane% p))
         (define result #f)
