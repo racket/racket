@@ -574,6 +574,33 @@
   (test (char->integer #\h) peek-byte r))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  Check that breaks are enabled properly:
+
+(let ([try
+       (lambda (read-char)
+	 (let ([p (make-input-port
+		   'test
+		   (lambda (bstr) never-evt)
+		   (lambda (bstr skip-count progress-evt) never-evt)
+		   void)])
+	   (let ([t (thread (lambda () (with-handlers ([exn:break? void])
+					 (read-char p))))])
+	     (sleep 0.1)
+	     (break-thread t)
+	     (sleep 0.1)
+	     (test #f thread-running? t))))])
+  (try sync)
+  (try sync/enable-break)
+  (parameterize-break #f (try sync/enable-break))
+  (try read-char)
+  (try peek-char)
+  (try (lambda (x) (read-bytes-avail! (make-bytes 10) x)))
+  (try (lambda (x) (read-bytes-avail!/enable-break (make-bytes 10) x)))
+  (parameterize-break 
+   #f 
+   (try (lambda (x) (read-bytes-avail!/enable-break (make-bytes 10) x)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 (report-errs)

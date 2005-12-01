@@ -1031,5 +1031,18 @@
 	     (mk-capturing 'act))))))
 
 ;; ----------------------------------------
+;; Check wrap-evt result superceded by internally
+;;  installed constant (i.e., the input port):
+
+(let ([p (make-input-port
+	  'test
+	  (lambda (bstr) never-evt)
+	  (lambda (bstr skip-count progress-evt)
+	    (wrap-evt always-evt (lambda (_) 17)))
+	  void)])
+  ;; Make sure we don't get 17
+  (test p sync p))
+
+;; ----------------------------------------
 
 (report-errs)
