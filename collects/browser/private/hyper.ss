@@ -262,7 +262,7 @@ A test case:
                                    (when busy?
                                      (set! busy? #f)
                                      (end-busy-cursor)))])
-                 (with-handlers ([(lambda (x) (and #f (exn:fail? x) busy?))
+                 (with-handlers ([(lambda (x) (and (exn:fail? x) busy?))
                                   (lambda (x) 
                                     (call/input-url 
                                      url
@@ -273,7 +273,8 @@ A test case:
                                          get-pure-port)
                                      (lambda (p)
                                        (stop-busy)
-                                       (read-from-port p empty-header progress))))])
+                                       (read-from-port p empty-header progress)
+				       empty-header)))])
                    (call/input-url 
                     url 
                     (if post-data 
@@ -298,11 +299,14 @@ A test case:
                  (erase)
                  (clear-undos)
                  (let* ([mime-type (extract-field "content-type" mime-headers)]
-                        [html? (and mime-type (regexp-match #rx"text/html" mime-type))])
+                        [html? (and mime-type (regexp-match #rx"text/html" mime-type))]
+                        [text? (and mime-type (regexp-match #rx"text/plain" mime-type))])
+		   
                    (cond
                      [(or (and mime-type (regexp-match #rx"application/" mime-type))
                           (and (url? url)
                                (not (null? (url-path url)))
+			       (not text?)
                                ; document-not-found produces HTML:
                                (not html?)))
                       ; Save the file
