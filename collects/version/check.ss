@@ -5,26 +5,33 @@
 
   (require (lib "url.ss" "net"))
 
-  (define (error-value what . more)
-    `(error ,what ,@more))
+  (define error-value
+    (case-lambda
+     [(what) `(error ,what)]
+     [(what more)
+      `(error ,what
+              ,(cond [(list? more) (format "~a" more)]
+                     [(exn? more)  (format "(~a)" (exn-message more))]
+                     [else         (format "(~a)" more)]))]))
 
   (define (with-timeout timeout thunk)
     (define result #f)
     (let ([r (sync/timeout timeout
-               (thread (lambda () (set! result (thunk)))))])
+               (thread (lambda ()
+                         (set! result
+                               (with-handlers
+                                   ([void (lambda (e)
+                                            (error-value "internal error" e))])
+                                 (thunk))))))])
       (if r result (error-value "timeout"))))
 
   (define (check-version/timeout)
     (let/ec escape
-      (define (err . args)
-        (escape (apply error-value args)))
+      (define (err . args) (escape (apply error-value args)))
       (define-syntax try
         (syntax-rules ()
           [(_ expr error-message)
-           (with-handlers
-               ([void (lambda (e)
-                        (err error-message (if (exn? e) (exn-message e) e)))])
-             expr)]))
+           (with-handlers ([void (lambda (e) (err error-message e))]) expr)]))
       ;; Get server information, carefully
       (define version-info
         (parameterize ([current-input-port
@@ -37,8 +44,9 @@
       (unless (and (list? version-info)
                    (andmap (lambda (x)
                              (and (list? x)
+                                  (= 2 (length x))
                                   (symbol? (car x))
-                                  (= 2 (length x))))
+                                  (string? (cadr x))))
                            version-info))
         (err "bad response from server" version-info))
       ;; Make a decision
@@ -71,7 +79,7 @@
   ;;   also the alpha version
   ;; * `(error ,message [,additional-info])
   ;;   An error occured, the third (optional) value can be shown as the system
-  ;;   error that happened.
+  ;;   error that happened or the value that caused an error.
   (provide check-version)
   (define (check-version)
     (with-timeout timeout check-version/timeout))

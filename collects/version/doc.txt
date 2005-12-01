@@ -23,10 +23,11 @@ your current state -- one of these:
     you may consider also the newer alpha version
   * `(error ,message [,additional-info])
     An error occured, the message is a string that indicates the
-    error, and the third (optional) value can be shown as the system
-    error that happened (it may be a string for system errors, or a
-    datum for an unexpected input from the web).
-
+    error.
+    The third (optional) value is a string that can be shown as the
+    system error that happened.  This string will always be
+    parenthesized, so `message' is a short error and
+    `(string-append message " " additional-info)' is a verbose one.
 
 The second functionality that is provided by this collection is in the
 _patchlevel_ module.  This module provides a single value:
