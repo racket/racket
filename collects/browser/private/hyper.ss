@@ -56,6 +56,7 @@ A test case:
       
       (define-struct (exn:file-saved-instead exn) (pathname))
       (define-struct (exn:cancelled exn) ())
+      (define-struct (exn:tcp-problem exn) ())
       
       (define history-limit 20)
       
@@ -144,15 +145,7 @@ A test case:
             (opt-lambda (url-string [post-data #f])
               (on-url-click
                (lambda (url-string post-data)
-                 (with-handlers ([(lambda (x) #t)
-                                  (lambda (x)
-                                    (unless (or (exn:break? x)
-                                                (exn:file-saved-instead? x)
-                                                (exn:cancelled? x))
-                                      ((error-display-handler)
-                                       (if (exn? x) (exn-message x) (format "~s" x))
-                                       x)))])
-                   (send (get-canvas) goto-url url-string (get-url) void post-data)))
+                 (send (get-canvas) goto-url url-string (get-url) void post-data))
                url-string
                post-data)))
           
@@ -310,7 +303,6 @@ A test case:
                      [(or (and mime-type (regexp-match #rx"application/" mime-type))
                           (and (url? url)
                                (not (null? (url-path url)))
-                               (regexp-match "[.]plt$" (car (last-pair (url-path url))))
                                ; document-not-found produces HTML:
                                (not html?)))
                       ; Save the file
@@ -416,7 +408,9 @@ A test case:
                             ; Let thread run only after the dialog is shown
                             (queue-callback (lambda () (semaphore-post wait-to-start)))
                             (send d show #t)
-                            (when exn (raise exn)))
+                            (when exn 
+                              (raise (make-exn:tcp-problem (exn-message exn) 
+                                                           (current-continuation-marks)))))
                           (let ([sema (make-semaphore 0)])
                             (when (and tmp-plt-filename install?)
                               (run-installer tmp-plt-filename
@@ -651,46 +645,53 @@ A test case:
               (let ([tlw (get-top-level-window)])
                 (when (and tlw
                            (is-a? tlw hyper-frame<%>))
-                  (let ([pre-url (cond
-                                   [(url? in-url) in-url]
-                                   [(port? in-url) in-url]
-                                   [(string? in-url)
-                                    (if relative
-                                        (combine-url/relative relative in-url)
-                                        (string->url in-url))]
-                                   [else (error 'goto-url "unknown url ~e\n" in-url)])]
-                        [killable-cust (make-custodian)]
-                        [hyper-panel (send tlw get-hyper-panel)])
-                    (let-values ([(e url)
-                                  (let ([e-now (get-editor)])
-                                    (cond
-                                      [(and e-now
-                                            (not post-data)
-                                            (same-page-url? pre-url (send e-now get-url)))
-                                       (progress #t)
-                                       (values e-now pre-url)]
-                                      [else
-                                       (send hyper-panel set-stop-callback 
-                                             (lambda ()
-                                               (custodian-shutdown-all killable-cust)))
-                                       (send hyper-panel enable-browsing #f)
-                                       (begin0
-                                         (make-editor/setup-kill killable-cust 
-                                                                 (get-editor%)
-                                                                 tlw
-                                                                 pre-url
-                                                                 progress
-                                                                 post-data
-                                                                 (lambda (x) (remap-url x)))
-                                         (send hyper-panel set-stop-callback void)
-                                         (send hyper-panel enable-browsing #t))]))])
-                      (when e
-                        (let* ([tag-pos (send e find-tag (and (url? url) (url-fragment url)))])
-                          
-                          (unless (and tag-pos (positive? tag-pos))
-                            (send e hide-caret #t))
-                          (set-page (list e (or tag-pos 0) (send e last-position)) #t)
-                          (when tag-pos (send e set-position tag-pos))))))))))
+                  (let* ([pre-url (cond
+                                    [(url? in-url) in-url]
+                                    [(port? in-url) in-url]
+                                    [(string? in-url)
+                                     (if relative
+                                         (combine-url/relative relative in-url)
+                                         (string->url in-url))]
+                                    [else (error 'goto-url "unknown url ~e\n" in-url)])]
+                         [killable-cust (make-custodian)]
+                         [hyper-panel (send tlw get-hyper-panel)]
+                         [result
+                          (let ([e-now (get-editor)])
+                            (cond
+                              [(and e-now
+                                    (not post-data)
+                                    (same-page-url? pre-url (send e-now get-url)))
+                               (progress #t)
+                               (cons e-now pre-url)]
+                              [else
+                               (send hyper-panel set-stop-callback 
+                                     (lambda ()
+                                       (custodian-shutdown-all killable-cust)))
+                               (send hyper-panel enable-browsing #f)
+                               (begin0
+                                 (make-editor/setup-kill killable-cust 
+                                                         (get-editor%)
+                                                         tlw
+                                                         pre-url
+                                                         progress
+                                                         post-data
+                                                         (lambda (x) (remap-url x)))
+                                 (send hyper-panel set-stop-callback void)
+                                 (send hyper-panel enable-browsing #t))]))])
+                    (cond
+                      [(pair? result)
+                       (let* ([e (car result)]
+                              [url (cdr result)]
+                              [tag-pos (send e find-tag (and (url? url) (url-fragment url)))])
+                         (unless (and tag-pos (positive? tag-pos))
+                           (send e hide-caret #t))
+                         (set-page (list e (or tag-pos 0) (send e last-position)) #t)
+                         (when tag-pos (send e set-position tag-pos)))]
+                      [(exn? result) 
+                       (message-box (string-constant drscheme)
+                                    (exn-message result)
+                                    tlw)]
+                      [else (void)]))))))
           
           ;; remap-url : url? -> (union #f url?)
           ;; this method is intended to be overridden so that derived classes can change
@@ -724,7 +725,7 @@ A test case:
       
       ;; make-editor/setup-kill : custodian editor-class frame%-instance 
       ;;                          url (boolean??? -> void) ??? (url -> (union port #f url))
-      ;;                       -> (values (union #f editor) (union #f url))
+      ;;                       -> (union (cons editor (union #f url)) exn #f)
       ;; if cust is shutdown, the url will stop being loaded and a dummy editor is returned.
       (define (make-editor/setup-kill cust html-editor% tlw init-url progress post-data remap-url)
         (let* ([c (make-channel)]
@@ -751,7 +752,7 @@ A test case:
                                         (progress void))])
                             (send t insert "Stopped.")
                             (set! ans (cons t #f)))))))
-          (values (car ans) (cdr ans))))
+          ans))
       
       ;; make-editor/follow-redirections : editor-class frame%-instance
       ;;                                   url (boolean??? -> void) ??? (url -> (union port #f url))
@@ -760,33 +761,38 @@ A test case:
       ;; but stops after 10 redirections (just in case there are too many
       ;; of these things, give the user a chance to stop)
       (define (make-editor/follow-redirections html-editor% tlw init-url progress post-data remap-url)
-        (let loop ([n 10]
-                   [unmapped-url init-url])
-          (let ([url (if (url? unmapped-url)
-                         (let ([rurl (remap-url unmapped-url)])
-                           (unless (or (url? rurl)
-                                       (input-port? rurl)
-                                       (not rurl))
-                             (error 'remap-url
-                                    "expected a url struct, an input-port, or #f, got ~e"
-                                    rurl))
-                           rurl)
-                         unmapped-url)])
-            (if url
-                (let ([html-editor (new html-editor%
-                                        [url url]
-                                        [top-level-window tlw]
-                                        [progress progress]
-                                        [post-data post-data])])
-                  (cond
-                    [(zero? n) 
-                     (cons html-editor url)]
-                    [(send html-editor get-redirection)
-                     =>
-                     (lambda (new-url) (loop (- n 1) new-url))]
-                    [else
-                     (cons html-editor url)]))
-                (cons #f #f)))))
+        (with-handlers ([(lambda (x) 
+                           (or (exn:file-saved-instead? x)
+                               (exn:cancelled? x)
+                               (exn:tcp-problem? x)))
+                         values])
+          (let loop ([n 10]
+                     [unmapped-url init-url])
+            (let ([url (if (url? unmapped-url)
+                           (let ([rurl (remap-url unmapped-url)])
+                             (unless (or (url? rurl)
+                                         (input-port? rurl)
+                                         (not rurl))
+                               (error 'remap-url
+                                      "expected a url struct, an input-port, or #f, got ~e"
+                                      rurl))
+                             rurl)
+                           unmapped-url)])
+              (if url
+                  (let ([html-editor (new html-editor%
+                                          [url url]
+                                          [top-level-window tlw]
+                                          [progress progress]
+                                          [post-data post-data])])
+                    (cond
+                      [(zero? n) 
+                       (cons html-editor url)]
+                      [(send html-editor get-redirection)
+                       =>
+                       (lambda (new-url) (loop (- n 1) new-url))]
+                      [else
+                       (cons html-editor url)]))
+                  (cons #f #f))))))
       
       (define hyper-canvas% (hyper-canvas-mixin canvas:basic%))
       
