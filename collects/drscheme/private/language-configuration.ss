@@ -12,8 +12,6 @@
            (lib "list.ss")
            (lib "etc.ss")
            (lib "file.ss")
-           (lib "pconvert.ss")
-           (lib "bitmap-label.ss" "mrlib")
            (lib "getinfo.ss" "setup")
            (lib "toplevel.ss" "syntax"))
   
@@ -43,7 +41,7 @@
       ;; default-language-position : (listof string)
       ;; if a language is registered with this position, it is
       ;; considered the default language
-      (define default-language-position
+      (define initial-language-position
         (list (string-constant initial-language-category)
               (string-constant no-language-chosen)))
 
@@ -85,7 +83,7 @@
 	  (error 'get-default-language-settings "no languages registered!"))
 	(let ([lang (or (ormap (λ (x)
 				 (and (equal? (send x get-language-position)
-					      default-language-position)
+					      initial-language-position)
 				      x))
 			       (get-languages))
 			(first (get-languages)))])
@@ -210,9 +208,16 @@
       (define fill-language-dialog
         (opt-lambda (parent show-details-parent language-settings-to-show [re-center #f] [manuals? #f])
 
-	  (define language-to-show (language-settings-language language-settings-to-show))
-	  (define settings-to-show (language-settings-settings language-settings-to-show))
-          
+          (define-values (language-to-show settings-to-show)
+            (let ([request-lang-to-show (language-settings-language language-settings-to-show)])
+              (cond
+                [(equal? initial-language-position (send request-lang-to-show get-language-position))
+                 (values (first (get-languages))
+                         (send (first (get-languages)) default-settings))
+                 (values #f #f)]
+                [else (values request-lang-to-show
+                              (language-settings-settings language-settings-to-show))])))
+
           ;; hier-list items that implement this interface correspond to
 	  ;; actual language selections
 	  (define hieritem-language<%>
@@ -452,19 +457,22 @@
           (define (add-language-to-dialog language)
             (let ([positions (send language get-language-position)]
                   [numbers (send language get-language-numbers)])
-              (unless (and (list? positions)
-                           (list? numbers)
-                           (pair? positions)
-                           (pair? numbers)
-                           (andmap number? numbers)
-                           (andmap string? positions)
-                           (= (length positions) (length numbers))
-                           ((length numbers) . >= . 2))
-                (error 'drscheme:language
-                       "languages position and numbers must be lists of strings and numbers, respectively, must have the same length,  and must each contain at least two elements, got: ~e ~e"
-                       positions numbers))
               
-              #|
+              ;; don't show the initial language ...
+              (unless (equal? positions initial-language-position)
+                (unless (and (list? positions)
+                             (list? numbers)
+                             (pair? positions)
+                             (pair? numbers)
+                             (andmap number? numbers)
+                             (andmap string? positions)
+                             (= (length positions) (length numbers))
+                             ((length numbers) . >= . 2))
+                  (error 'drscheme:language
+                         "languages position and numbers must be lists of strings and numbers, respectively, must have the same length,  and must each contain at least two elements, got: ~e ~e"
+                         positions numbers))
+                
+                #|
               
               inline the first level of the tree into just items in the hierlist
               keep track of the starting (see call to sort method below) by
@@ -472,137 +480,143 @@
               what the sorting number is for its level above (in the second-number mixin)
               
               |#
-              
-              (let add-sub-language ([ht languages-table]
-                                     [hier-list languages-hier-list]
-                                     [positions positions]
-                                     [numbers numbers]
-                                     [first? #t]
-                                     [second-number #f]) ;; only non-#f during the second iteration in which case it is the first iterations number
-                (cond
-                  [(null? (cdr positions))
-                   (let* ([language-details-panel #f]
-                          [real-get/set-settings 
-                           (case-lambda
-                             [() 
-                              (cond
-                                [(equal? (send language-to-show get-language-position)
-                                         (send language get-language-position))
-                                 settings-to-show]
-                                [else
-                                 (send language default-settings)])]
-                             [(x) (void)])]
-                          [get-language-details-panel
-                           (lambda () language-details-panel)]
-                          [get/set-settings (lambda x (apply real-get/set-settings x))]
-                          [position (car positions)]
-                          [number (car numbers)]
-                          [mixin (compose
-                                  number-mixin
-                                  (language-mixin language get-language-details-panel get/set-settings))]
-                          [item
-                           (send hier-list new-item
-                                 (if second-number
-                                     (compose second-number-mixin mixin)
-                                     mixin))]
-                          [text (send item get-editor)]
-                          [delta (send language get-style-delta)])
-                     
-                     (set! construct-details
-                           (let ([old construct-details])
-                             (lambda ()
-                               (old)
-                               (let-values ([(language-details-panel-real get/set-settings)
-                                             (make-details-panel language)])
-                                 (set! language-details-panel language-details-panel-real)
-                                 (set! real-get/set-settings get/set-settings))
-                               
-                               (let-values ([(vis-lang vis-settings)
-                                             (if selected-language
-                                                 (values selected-language
-                                                         (send selected-language default-settings))
-                                                 (values language-to-show settings-to-show))])
-                                 (cond
-                                   [(equal? (send vis-lang get-language-position)
-                                            (send language get-language-position))
-                                    (get/set-settings vis-settings)
-                                    (send details-panel active-child language-details-panel)]
-                                   [else
-                                    (get/set-settings (send language default-settings))])))))
-                     
-                     (send item set-number number)
-                     (when second-number
-                       (send item set-second-number second-number))
-                     (send text insert position)
-                     (when delta
-                       (cond
-                         [(list? delta)
-                          (for-each (λ (x)
-                                      (send text change-style 
-                                            (car x)
-                                            (cadr x)
-                                            (caddr x)))
-                                    delta)]
-                         [(is-a? delta style-delta%)
-                          (send text change-style 
-                                (send language get-style-delta)
-                                0
-                                (send text last-position))])))]
-                  [else (let* ([position (car positions)]
-                               [number (car numbers)]
-                               [sub-ht/sub-hier-list
-                                (hash-table-get
-                                 ht
-                                 (string->symbol position)
-                                 (λ ()
-                                   (if first?
-                                       (let* ([item (send hier-list new-item number-mixin)]
-                                              [x (list (make-hash-table) hier-list item)])
-                                         (hash-table-put! ht (string->symbol position) x)
-                                         (send item set-number number)
-                                         (send item set-allow-selection #f)
-                                         (let* ([editor (send item get-editor)]
-                                                [pos (send editor last-position)])
-                                           (send editor insert "\n")
-                                           (send editor insert position)
-                                           (send editor change-style small-size-delta pos (+ pos 1))
-                                           (send editor change-style section-style-delta 
-                                                 (+ pos 1) (send editor last-position)))
-                                         x)
-                                       (let* ([new-list (send hier-list new-list 
-                                                              (if second-number
-                                                                  (compose second-number-mixin number-mixin)
-                                                                  number-mixin))]
-                                              [x (list (make-hash-table) new-list #f)])
-                                         (send new-list set-number number)
-                                         (when second-number
-                                           (send new-list set-second-number second-number))
-                                         (send new-list set-allow-selection #f)
-                                         (send new-list open)
-                                         (send (send new-list get-editor) insert position)
-                                         (hash-table-put! ht (string->symbol position) x)
-                                         x))))])
-                          (cond
-                            [first? 
-                             (unless (= number (send (caddr sub-ht/sub-hier-list) get-number))
-                               (error 'add-language "language ~s; expected number for ~e to be ~e, got ~e"
-                                      (send language get-language-name)
-                                      position
-                                      (send (caddr sub-ht/sub-hier-list) get-number)
-                                      number))]
-                            [else
-                             (unless (= number (send (cadr sub-ht/sub-hier-list) get-number))
-                               (error 'add-language "language ~s; expected number for ~e to be ~e, got ~e"
-                                      (send language get-language-name)
-                                      position
-                                      (send (cadr sub-ht/sub-hier-list) get-number)
-                                      number))])
-                          (add-sub-language (car sub-ht/sub-hier-list)
-                                            (cadr sub-ht/sub-hier-list)
-                                            (cdr positions)
-                                            (cdr numbers)
-                                            #f
-                                            (if first? number #f)))]))))
+                
+                (let add-sub-language ([ht languages-table]
+                                       [hier-list languages-hier-list]
+                                       [positions positions]
+                                       [numbers numbers]
+                                       [first? #t]
+                                       [second-number #f]) ;; only non-#f during the second iteration in which case it is the first iterations number
+                  (cond
+                    [(null? (cdr positions))
+                     (let* ([language-details-panel #f]
+                            [real-get/set-settings 
+                             (case-lambda
+                               [() 
+                                (cond
+                                  [(and language-to-show 
+                                        settings-to-show
+                                        (equal? (send language-to-show get-language-position)
+                                                (send language get-language-position)))
+                                   settings-to-show]
+                                  [else
+                                   (send language default-settings)])]
+                               [(x) (void)])]
+                            [get-language-details-panel
+                             (lambda () language-details-panel)]
+                            [get/set-settings (lambda x (apply real-get/set-settings x))]
+                            [position (car positions)]
+                            [number (car numbers)]
+                            [mixin (compose
+                                    number-mixin
+                                    (language-mixin language get-language-details-panel get/set-settings))]
+                            [item
+                             (send hier-list new-item
+                                   (if second-number
+                                       (compose second-number-mixin mixin)
+                                       mixin))]
+                            [text (send item get-editor)]
+                            [delta (send language get-style-delta)])
+                       
+                       (set! construct-details
+                             (let ([old construct-details])
+                               (lambda ()
+                                 (old)
+                                 (let-values ([(language-details-panel-real get/set-settings)
+                                               (make-details-panel language)])
+                                   (set! language-details-panel language-details-panel-real)
+                                   (set! real-get/set-settings get/set-settings))
+                                 
+                                 (let-values ([(vis-lang vis-settings)
+                                               (cond
+                                                 [selected-language
+                                                  (values selected-language
+                                                          (send selected-language default-settings))]
+                                                 [(and language-to-show  settings-to-show)
+                                                  (values language-to-show settings-to-show)]
+                                                 [else (values #f #f)])])
+                                   (cond
+                                     [(not vis-lang) (void)]
+                                     [(equal? (send vis-lang get-language-position)
+                                              (send language get-language-position))
+                                      (get/set-settings vis-settings)
+                                      (send details-panel active-child language-details-panel)]
+                                     [else
+                                      (get/set-settings (send language default-settings))])))))
+                       
+                       (send item set-number number)
+                       (when second-number
+                         (send item set-second-number second-number))
+                       (send text insert position)
+                       (when delta
+                         (cond
+                           [(list? delta)
+                            (for-each (λ (x)
+                                        (send text change-style 
+                                              (car x)
+                                              (cadr x)
+                                              (caddr x)))
+                                      delta)]
+                           [(is-a? delta style-delta%)
+                            (send text change-style 
+                                  (send language get-style-delta)
+                                  0
+                                  (send text last-position))])))]
+                    [else (let* ([position (car positions)]
+                                 [number (car numbers)]
+                                 [sub-ht/sub-hier-list
+                                  (hash-table-get
+                                   ht
+                                   (string->symbol position)
+                                   (λ ()
+                                     (if first?
+                                         (let* ([item (send hier-list new-item number-mixin)]
+                                                [x (list (make-hash-table) hier-list item)])
+                                           (hash-table-put! ht (string->symbol position) x)
+                                           (send item set-number number)
+                                           (send item set-allow-selection #f)
+                                           (let* ([editor (send item get-editor)]
+                                                  [pos (send editor last-position)])
+                                             (send editor insert "\n")
+                                             (send editor insert position)
+                                             (send editor change-style small-size-delta pos (+ pos 1))
+                                             (send editor change-style section-style-delta 
+                                                   (+ pos 1) (send editor last-position)))
+                                           x)
+                                         (let* ([new-list (send hier-list new-list 
+                                                                (if second-number
+                                                                    (compose second-number-mixin number-mixin)
+                                                                    number-mixin))]
+                                                [x (list (make-hash-table) new-list #f)])
+                                           (send new-list set-number number)
+                                           (when second-number
+                                             (send new-list set-second-number second-number))
+                                           (send new-list set-allow-selection #f)
+                                           (send new-list open)
+                                           (send (send new-list get-editor) insert position)
+                                           (hash-table-put! ht (string->symbol position) x)
+                                           x))))])
+                            (cond
+                              [first? 
+                               (unless (= number (send (caddr sub-ht/sub-hier-list) get-number))
+                                 (error 'add-language "language ~s; expected number for ~e to be ~e, got ~e"
+                                        (send language get-language-name)
+                                        position
+                                        (send (caddr sub-ht/sub-hier-list) get-number)
+                                        number))]
+                              [else
+                               (unless (= number (send (cadr sub-ht/sub-hier-list) get-number))
+                                 (error 'add-language "language ~s; expected number for ~e to be ~e, got ~e"
+                                        (send language get-language-name)
+                                        position
+                                        (send (cadr sub-ht/sub-hier-list) get-number)
+                                        number))])
+                            (add-sub-language (car sub-ht/sub-hier-list)
+                                              (cadr sub-ht/sub-hier-list)
+                                              (cdr positions)
+                                              (cdr numbers)
+                                              #f
+                                              (if first? number #f)))])))))
 
           (define number<%>
             (interface ()
@@ -662,24 +676,25 @@
 	  ;; opens the tabs that lead to the current language
 	  ;; and selects the current language
 	  (define (open-current-language)
-	    (let loop ([hi languages-hier-list]
-                       
-                       ;; skip the first position, since it is flattened into the dialog
-		       [first-pos (cadr (send language-to-show get-language-position))]
-		       [position (cddr (send language-to-show get-language-position))])
-		 (let ([child
-			;; know that this `car' is okay by construction of the dialog
-			(car 
-			 (filter (λ (x)
-				   (equal? (send (send x get-editor) get-text)
-					   first-pos))
-				 (send hi get-items)))])
-		   (cond
-		     [(null? position)
-		      (send child select #t)]
-		     [else
-		      (send child open)
-		      (loop child (car position) (cdr position))]))))
+            (when (and language-to-show settings-to-show)
+              (let loop ([hi languages-hier-list]
+                         
+                         ;; skip the first position, since it is flattened into the dialog
+                         [first-pos (cadr (send language-to-show get-language-position))]
+                         [position (cddr (send language-to-show get-language-position))])
+                (let ([child
+                       ;; know that this `car' is okay by construction of the dialog
+                       (car 
+                        (filter (λ (x)
+                                  (equal? (send (send x get-editor) get-text)
+                                          first-pos))
+                                (send hi get-items)))])
+                  (cond
+                    [(null? position)
+                     (send child select #t)]
+                    [else
+                     (send child open)
+                     (loop child (car position) (cdr position))])))))
 
           ;; docs-callback : -> void
           (define (docs-callback)
@@ -687,7 +702,9 @@
           
           ;; details-shown? : boolean
           ;; indicates if the details are currently visible in the dialog
-          (define details-shown? (not (send language-to-show default-settings? settings-to-show)))
+          (define details-shown? (and language-to-show
+                                      settings-to-show 
+                                      (not (send language-to-show default-settings? settings-to-show))))
 
           ;; details-callback : -> void
           ;; flips the details-shown? flag and resets the GUI
