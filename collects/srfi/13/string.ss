@@ -1,11 +1,8 @@
 ;;;
 ;;; <string.ss> ---- SRFI 13 port to PLT Scheme
-;;; Time-stamp: <2004-02-12 20:31:13 solsona>
+;;; revised by Chongkai Zhu, based on the orgianl port
 ;;;
-;;; Usually, I would add a copyright notice, and the announce that
-;;; this code is under the LGPL licence.  Nevertheless, I only did the
-;;; port to PLT Scheme, and here is the copyright notice, and licence
-;;; from the original source:
+;;; Here is the copyright notice, and licence from the original source:
 
 ;;; Copyright (c) 1988-1994 Massachusetts Institute of Technology.
 ;;; Copyright (c) 1998, 1999, 2000 Olin Shivers. All rights reserved.
@@ -92,8 +89,6 @@
 	   (lib "etc.ss");; for opt-lambda (instead of let-optionals*)
 	   )
   (provide
-   ;; Provide char-sets:
-   (all-from (lib "char-set.ss" "srfi" "14"))
    ;; String procedures:
    string-map string-map!
    string-fold string-unfold
@@ -105,7 +100,7 @@
    string=    string<    string>    string<=    string>=    string<>
    string-ci= string-ci< string-ci> string-ci<= string-ci>= string-ci<> 
    s:string-downcase  s:string-upcase  s:string-titlecase  
-   string-downcase! string-upcase! string-titlecase! 
+   string-downcase! string-upcase! string-titlecase!
    string-take string-take-right
    string-drop string-drop-right
    string-pad string-pad-right
@@ -904,54 +899,39 @@
 
   
   ;; Hash
-  ;; 
-  ;; Compute (c + 37 c + 37^2 c + ...) modulo BOUND, with sleaze thrown in
-  ;; to keep the intermediate values small. (We do the calculation with just
-  ;; enough bits to represent BOUND, masking off high bits at each step in
-  ;; calculation. If this screws up any important properties of the hash
-  ;; function I'd like to hear about it. -Olin)
-  ;; 
-  ;; If you keep BOUND small enough, the intermediate calculations will 
-  ;; always be fixnums. How small is dependent on the underlying Scheme system; 
-  ;; we use a default BOUND of 2^22 = 4194304, which should hack it in
-  ;; Schemes that give you at least 29 signed bits for fixnums. The core 
-  ;; calculation that you don't want to overflow is, worst case,
-  ;;     (+ 65535 (* 37 (- bound 1)))
-  ;; where 65535 is the max character code. Choose the default BOUND to be the
-  ;; biggest power of two that won't cause this expression to fixnum overflow, 
-  ;; and everything will be copacetic.
-
-  (define (%string-hash s char->int bound start end)
-    (let ((iref (lambda (s i) (char->int (string-ref s i))))
-	  ;; Compute a 111...1 mask that will cover BOUND-1:
-	  (mask (let lp ((i #x10000))	; Let's skip first 16 iterations, eh?
-		  (if (>= i bound) (- i 1) (lp (+ i i))))))
-      (let lp ((i start) (ans 0))
-	(if (>= i end) (modulo ans bound)
-	    (lp (+ i 1) (bitwise-and mask (+ (* 37 ans) (iref s i))))))))
 
   (define string-hash
-    (opt-lambda (s (bound 4194304) (rest '()))
+    (opt-lambda (s (bound 0) . rest)
       (check-arg (lambda (x)
 		   (and (integer? x)
 			(exact? x)
 			(<= 0 x)))
 		 bound 'string-hash)
-      (let ((bound (if (zero? bound) 4194304 bound))) ; 0 means default.
-	(let-string-start+end (start end) 'string-hash s rest
-			      (%string-hash s char->integer bound start end)))))
+      ((lambda (r)
+         (if (zero? bound)
+             r
+             (modulo r bound)))
+       (equal-hash-code
+         (if (null? rest)
+             s
+             (apply substring/shared s rest))))))
 
   (define string-hash-ci
-    (opt-lambda (s (bound 4194304) (rest '()))
+    (opt-lambda (s (bound 0) . rest)
       (check-arg (lambda (x)
 		   (and (integer? x)
 			(exact? x)
 			(<= 0 x)))
 		 bound 'string-hash-ci)
-      (let ((bound (if (zero? bound) 4194304 bound))) ; 0 means default.
-	(let-string-start+end (start end) 'string-hash-ci s rest
-			      (%string-hash s (lambda (c) (char->integer (char-downcase c)))
-					    bound start end)))))
+      ((lambda (r)
+         (if (zero? bound)
+             r
+             (modulo r bound)))
+       (equal-hash-code
+         (string-downcase
+           (if (null? rest)
+               s
+               (apply substring/shared s rest)))))))
   
   ;; Case hacking
   ;; 
@@ -1055,21 +1035,21 @@
 
 
   (define string-trim
-    (opt-lambda (s (criterion char-set:whitespace) (rest '()))
+    (opt-lambda (s (criterion char-set:whitespace) . rest)
       (let-string-start+end (start end) 'string-trim s rest
 			    (cond ((string-skip s criterion start end) =>
 				   (lambda (i) (%substring/shared s i end)))
 				  (else "")))))
 
   (define string-trim-right
-    (opt-lambda (s (criterion char-set:whitespace) (rest '()))
+    (opt-lambda (s (criterion char-set:whitespace) . rest)
       (let-string-start+end (start end) 'string-trim-right s rest
 			    (cond ((string-skip-right s criterion start end) =>
 				   (lambda (i) (%substring/shared s 0 (+ 1 i))))
 				  (else "")))))
 
   (define string-trim-both
-    (opt-lambda (s (criterion char-set:whitespace) (rest '()))
+    (opt-lambda (s (criterion char-set:whitespace) . rest)
       (let-string-start+end (start end) 'string-trim-both s rest
 			    (cond ((string-skip s criterion start end) =>
 				   (lambda (i)
@@ -1077,7 +1057,7 @@
 				  (else "")))))
 
   (define string-pad-right
-    (opt-lambda (s n (char #\space) (rest '()))
+    (opt-lambda (s n (char #\space) . rest)
       (check-arg char? char 'string-pad-right)
       (let-string-start+end (start end) 'string-pad-right s rest
 			    (check-arg (lambda (n) (and (integer? n) (exact? n) (<= 0 n)))
@@ -1090,7 +1070,7 @@
 				    ans))))))
 
   (define string-pad
-    (opt-lambda (s n (char #\space) (rest '()))
+    (opt-lambda (s n (char #\space) . rest)
       (check-arg char? char 'string-pad)
       (let-string-start+end (start end) 'string-pad s rest
 			    (check-arg (lambda (n) (and (integer? n) (exact? n) (<= 0 n)))
