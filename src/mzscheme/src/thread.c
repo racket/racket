@@ -5247,20 +5247,22 @@ static Scheme_Object *do_sync(const char *name, int argc, Scheme_Object *argv[],
       if (l) {
 	for (; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
 	  a = SCHEME_CAR(l);
+	  if (to_call) {
+	    args[0] = o;
+	    
+	    /* Call wrap proc with breaks disabled */
+	    scheme_push_break_enable(&cframe, 0, 0);
+	    
+	    o = scheme_apply(to_call, 1, args);
+	    
+	    scheme_pop_break_enable(&cframe, 0);
+
+	    to_call = NULL;
+	  }
 	  if (SCHEME_BOXP(a) || SCHEME_PROCP(a)) {
 	    if (SCHEME_BOXP(a)) {
 	      a = SCHEME_BOX_VAL(a);
 	      to_call_is_cont = 1;
-	    }
-	    if (to_call) {
-	      args[0] = o;
-
-	      /* Call wrap proc with breaks disabled */
-	      scheme_push_break_enable(&cframe, 0, 0);
-
-	      o = scheme_apply(to_call, 1, args);
-
-	      scheme_pop_break_enable(&cframe, 0);
 	    }
 	    to_call = a;
 	  } else if (SAME_TYPE(scheme_thread_suspend_type, SCHEME_TYPE(a))

@@ -1042,7 +1042,7 @@ static long user_read_result(const char *who, Scheme_Input_Port *port,
       } else if (evt_ok && scheme_is_evt(val)) {
 	/* A peek/read failed, and we were given a evt that unblocks
 	   when the read/peek (at some offset) succeeds. */
-	if (nonblock) {
+	if (nonblock > 0) {
 	  if (sinfo) {
 	    scheme_set_sync_target(sinfo, val, (Scheme_Object *)port, NULL, 0, 1);
 	    return 0;
@@ -1155,6 +1155,7 @@ user_get_or_peek_bytes(Scheme_Input_Port *port,
     fun = uip->read_proc;
 
   while (1) {
+    int nb;
 
     if (uip->reuse_str && (size == SCHEME_BYTE_STRLEN_VAL(uip->reuse_str))) {
       bstr = uip->reuse_str;
@@ -1168,6 +1169,13 @@ user_get_or_peek_bytes(Scheme_Input_Port *port,
     a[1] = peek_skip;
     a[2] = unless ? unless : scheme_false;
 
+    nb = nonblock;
+    if (!nb) {
+      if (scheme_can_break(scheme_current_thread)) {
+	nb = -1;
+      }
+    }
+
     /* Disable breaks while calling the port's function: */
     scheme_push_break_enable(&cframe, 0, 0);
 
@@ -1180,7 +1188,7 @@ user_get_or_peek_bytes(Scheme_Input_Port *port,
     }
 
     r = user_read_result(peek ? "user port peek" : "user port read",
-			 port, val, bstr, peek, nonblock,
+			 port, val, bstr, peek, nb,
 			 1, !!uip->peek_proc, unless && SCHEME_CDR(unless), sinfo);
 
     scheme_pop_break_enable(&cframe, 1);

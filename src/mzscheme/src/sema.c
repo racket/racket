@@ -749,6 +749,8 @@ int scheme_wait_semas_chs(int n, Scheme_Object **o, int just_try, Syncing *synci
 		--semas[i]->value;
 	      break;
 	    }
+	  }  else if (semas[i]->so.type == scheme_never_evt_type) {
+	    /* Never ready. */
 	  } else if (try_channel(semas[i], syncing, i, NULL))
 	    break;
 	}
