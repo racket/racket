@@ -233,6 +233,7 @@
   
   (define (update-frame pict)
     (unless the-frame (error 'update SEQUENCE-ERROR))
+    (check-result 'update (lambda (x) (beg:image? x)) "image" pict)
     (send txt begin-edit-sequence)
     (send txt lock #f)
     (send txt delete 0 (send txt last-position) #f)
