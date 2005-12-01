@@ -274,7 +274,7 @@
       ((#\|) "$\\vert$")
       ((#\~) "\\~{}")
       ((#\@) "{\\atsign}")
-      ((#\") "{\\tt\\dq}")
+      ((#\") "{\\dq}")
       (else (string c)))))
 
 (define slatex::token=?
