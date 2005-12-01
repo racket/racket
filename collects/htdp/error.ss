@@ -39,7 +39,7 @@
   (define (check-result pname pred? expected given)
     (if (pred? given)
 	given
-	(tp-error pname "expected ~a result, given: ~e" expected given)))
+	(tp-error pname "result of type <~a> expected, given: ~e" expected given)))
 
   ;; check-arg : sym bool str str TST -> void
   (define (check-arg pname condition expected arg-posn given)

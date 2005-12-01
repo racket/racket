@@ -2,46 +2,47 @@
    I need
     color? ;; Symbol -> Boolean 
 |#
+;; Thu Dec  1 17:03:03 EST 2005: fixed place-image; all coordinates okay now
 (module world mzscheme
-  (require ; (lib "unitsig.ss")
-   (lib "etc.ss")
-   (lib "class.ss")
-   (lib "mred.ss" "mred")
-   (lib "error.ss" "htdp")
-   (lib "image.ss" "htdp")
-   (prefix beg: (lib "htdp-beginner.ss" "lang"))
-   (lib "prim.ss" "lang"))
+  (require				; (lib "unitsig.ss")
+    (lib "etc.ss")
+    (lib "class.ss")
+    (lib "mred.ss" "mred")
+    (lib "error.ss" "htdp")
+    (lib "image.ss" "htdp")
+    (prefix beg: (lib "htdp-beginner.ss" "lang"))
+    (lib "prim.ss" "lang"))
   
   ;; --- provide ---------------------------------------------------------------
   (provide (all-from (lib "image.ss" "htdp")))
   
   (provide     ;; forall(World):
-   big-bang    ;; Number Number Number World -> true 
-   end-of-time ;; -> World
+    big-bang   ;; Number Number Number World -> true 
+    end-of-time	;; -> World
 
-   nw:rectangle ;; Number Number Mode Color -> Image
-   place-image  ;; Image Number Number Scence -> Scene
-   empty-scene  ;; Number Number -> Scene 
-   run-movie    ;; (Listof Image) -> true 
-   )
+    nw:rectangle ;; Number Number Mode Color -> Image
+    place-image  ;; Image Number Number Scence -> Scene
+    empty-scene  ;; Number Number -> Scene 
+    run-movie    ;; (Listof Image) -> true 
+    )
   
   (provide
-   update produce ;; (update <exp> produce <exp>)
-   )
+    update produce ;; (update <exp> produce <exp>)
+    )
   
   (provide-higher-order-primitive
-   on-tick-event (tock) ;; (World -> World) -> true
-   )
+    on-tick-event (tock) ;; (World -> World) -> true
+    )
   
   (provide-higher-order-primitive ;; (KeyEvent World -> World) -> true 
-   on-key-event 
-   (tock)
-   )
+    on-key-event 
+    (tock)
+    )
   ;; ---------------------------------------------------------------------------
 
   ;; Symbol Any String -> Void
   (define (check-pos tag c rank)
-    (check-arg tag (and (number? c) (>= c 0)) "positive number" rank c))
+    (check-arg tag (and (number? c) (integer? c) (>= c 0)) "positive integer" rank c))
   
   ;; Symbol Any String [String] -> Void
   (define (check-image tag i rank . other-message)
@@ -65,30 +66,38 @@
   
   (define (place-image image x y scene)
     (check-image 'place-image image "first")
-    (check-pos 'place-image x "second")
-    (check-pos 'place-image y "third")
+    (check-arg 'place-image (and (number? x) (real? x)) 'number "second" x)
+    (check-arg 'place-image (and (number? y) (real? x)) 'number "third" y)
     (check-image 'place-image scene "fourth" "scene")
-    (overlay/xy scene x y image))
+    (let ()
+      (define sw (image-width scene))
+      (define sh (image-height scene))
+      (define ns (overlay/xy scene x y image))
+      (define nw (image-width ns))
+      (define nh (image-height ns))
+      (if (and (= sw nw) (= sh nh)) 
+	  ns
+	  (shrink ns 0 0 sw sh))))
   
   (define (empty-scene width height)
     (check-pos 'empty-scene width "first")
     (check-pos 'empty-scene height "second")    
     (move-pinhole 
-     (rectangle width height 'outline 'black)
-     (/ width -2) (/ height -2))
-   )
+      (rectangle width height 'outline 'black)
+      (/ width -2) (/ height -2))
+    )
   
   ;; display all images in list in the canvas
   (define (run-movie movie)
     (check-arg 'run-movie (list? movie) "list (of images)" "first" movie)
     (for-each (lambda (cand) (check-image 'run-movie cand "first" "list of images"))
-              movie)
+      movie)
     (let run-movie ([movie movie])
       (cond [(null? movie) #t]
-            [(pair? movie)
-             (update (car movie) produce #t)
-             (sleep/yield .05)
-             (run-movie (cdr movie))])))
+	[(pair? movie)
+	 (update (car movie) produce #t)
+	 (sleep/yield .05)
+	 (run-movie (cdr movie))])))
   
   ;; ---------------------------------------------------------------------------
   
@@ -109,36 +118,36 @@
   ;; Number Number Number World -> true
   ;; create the visible world (canvas)
   (define (big-bang w h delta world)
-    (check-arg 'big-bang (and (integer? w) (> w 0)) "positive integer" "first" w)
-    (check-arg 'big-bang (and (integer? h) (> h 0)) "positive integer" "second" h)
+    (check-pos 'big-bang w "first")
+    (check-pos 'big-bang h "second")
     (check-arg 'big-bang
-               (and (number? delta) (>= delta 0))
-               "number [of seconds] between 0 and 1000000"
-               "first"
-               delta)
+      (and (number? delta) (<= 0 delta 1000))
+      "number [of seconds] between 0 and 1000"
+      "first"
+      delta)
     (when the-frame (error 'big-bang "big-bang already called once"))
     (set! the-delta delta) 
     (set! the-world world)
     (set! the-frame
-          (new (class frame%
-                 (super-new)
-                 (define/augment (on-close)        
-                   ;; shut down the timer when the window is destroyed
-                   (send the-time stop)
-                   (inner (void) on-close)))
-               (label "DrScheme")))
+      (new (class frame%
+	     (super-new)
+	     (define/augment (on-close)        
+	       ;; shut down the timer when the window is destroyed
+	       (send the-time stop)
+	       (inner (void) on-close)))
+	(label "DrScheme")))
     (send 
-     (new (class editor-canvas%
-            (super-new)
-            (define/override (on-char e)
-              (on-char-proc (send e get-key-code))))
-          (parent the-frame) 
-          (editor txt)
-          (style '(no-hscroll no-vscroll))
-          ;; this 20 stuff is a hack, for now
-          (min-width (+ w 20))
-          (min-height (+ h 20)))
-     focus)
+      (new (class editor-canvas%
+	     (super-new)
+	     (define/override (on-char e)
+	       (on-char-proc (send e get-key-code))))
+	(parent the-frame) 
+	(editor txt)
+	(style '(no-hscroll no-vscroll))
+	;; this 20 stuff is a hack, for now
+	(min-width (+ w 20))
+	(min-height (+ h 20)))
+      focus)
     (send txt hide-caret #t)
     (send the-frame show #t)
     #t)
@@ -156,14 +165,14 @@
     (check-world 'on-tick-event)
     (if (eq? timer-callback void)
         (set! timer-callback 
-              (lambda ()
-                (with-handlers ([exn:break? break-handler]
-                                [exn? exn-handler])
-                  (set! the-world (f the-world)))))
+	  (lambda ()
+	    (with-handlers ([exn:break? break-handler]
+			    [exn? exn-handler])
+	      (set! the-world (f the-world)))))
         (error 'on-tick "the timing action has been set already"))
     (send the-time start
-          (let* ([w (ceiling (* 1000 the-delta))])
-            (if (exact? w) w (inexact->exact w))))
+      (let* ([w (ceiling (* 1000 the-delta))])
+	(if (exact? w) w (inexact->exact w))))
     #t]
   
   ;; --- key events 
@@ -181,14 +190,14 @@
       (if (eq? on-char-proc void)
           (begin 
             (set! on-char-proc 
-                  (lambda (e)
-                    (parameterize ([current-eventspace esp])
-                      (queue-callback 
-                       (lambda ()
-                         (with-handlers ([exn:break? break-handler]
-                                         [exn? exn-handler])
-                           (set! the-world (f e the-world))))
-                       #t))))
+	      (lambda (e)
+		(parameterize ([current-eventspace esp])
+		  (queue-callback 
+		    (lambda ()
+		      (with-handlers ([exn:break? break-handler]
+				      [exn? exn-handler])
+			(set! the-world (f e the-world))))
+		    #t))))
             #t)
           (error 'on-event "the event action has been set already")))]
   
@@ -229,7 +238,7 @@
       [(_ stmt produce exp exp2 ...)
        (raise-syntax-error 'update "produce must be followed by exactly one expression" s)]
       [_
-       (raise-syntax-error 'update "use as (update <image> produce <expression>)")]))
+	(raise-syntax-error 'update "use as (update <image> produce <expression>)")]))
   
   (define (update-frame pict)
     (unless the-frame (error 'update SEQUENCE-ERROR))
