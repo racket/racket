@@ -86,10 +86,11 @@
         (send bitmap-dc clear)
         (send bitmap-dc set-pen (send the-pen-list find-or-create-pen "black" 1 'solid))
         (send bitmap-dc set-brush (send the-brush-list find-or-create-brush "black" 'solid))
+	;; Black rectangle to be masked by text:
         (send bitmap-dc draw-rectangle 
-              (+ outside-margin img-width middle-margin)
-              (- (/ new-height 2) (/ height 2))
-              width height)
+              (sub1 (+ outside-margin img-width middle-margin))
+	      0
+              (add1 width) new-height)
         (send bitmap-dc draw-bitmap
               img-bitmap
               outside-margin
