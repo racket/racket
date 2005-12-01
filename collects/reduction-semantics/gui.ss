@@ -4,7 +4,7 @@
 
 (module gui mzscheme
   (require (lib "etc.ss")
-           (lib "graph.ss" "mrlib")
+           (lib "graph.ss" "reduction-semantics")
            "reduction-semantics.ss"
            (lib "mred.ss" "mred")
            (lib "framework.ss" "framework")

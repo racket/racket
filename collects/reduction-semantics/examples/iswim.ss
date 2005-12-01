@@ -153,14 +153,14 @@
                      (compatible-closure red iswim-grammar 'M))
                    (cons beta_v delta)))
   
-  ;; /->v
-  (define /->v (map (lambda (red)
+  ;; :->v
+  (define :->v (map (lambda (red)
                       (context-closure red iswim-grammar 'E))
                     (cons beta_v delta)))
 
-  ;; /->v+letcc
-  (define /->v+letcc (append
-		      /->v
+  ;; :->v+letcc
+  (define :->v+letcc (append
+		      :->v
 			 (list
 
 			  ;; letcc rule:
@@ -242,8 +242,8 @@
 		    (delta*2 (o2? V? V? . -> .  (union false/c V?)))
 		    (delta*n (on? (listof V?) . -> .  (union false/c V?)))
 		    (->v (listof red?))
-		    (/->v (listof red?))
-		    (/->v+letcc (listof red?))
+		    (:->v (listof red?))
+		    (:->v+letcc (listof red?))
 		    (if0 (M? M? M? . -> . M?))
 		    (true M?)
 		    (false M?)
