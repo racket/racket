@@ -120,10 +120,6 @@
           
           (define/public (get-additional-important-urls) '())
           (define/override (help-menu:after-about menu)
-            ;; (instantiate menu-item% ()
-            ;;   (label (string-constant help-menu-check-for-updates))
-            ;;   (parent menu)
-            ;;   (callback (λ (item evt) (check-version this))))
             (drscheme:app:add-important-urls-to-help-menu
              menu 
              (get-additional-important-urls))
