@@ -61,6 +61,11 @@
                                            args)))))
             (raise (make-url-exception s (current-continuation-marks))))))
 
+      (define (url->file-path url)
+	(path->string
+	 (apply build-path (or (url-host url) 'same)
+		(map (lambda (x) (if (equal? x "") 'same x)) (url-path url)))))
+
       (define url->string
         (lambda (url)
           (let ((scheme (url-scheme url))
@@ -72,7 +77,8 @@
                 (fragment (url-fragment url)))
             (cond
              ((and scheme (string=? scheme "file"))
-              (string-append "file:" (combine-path-strings path)
+              (string-append "file:" 
+			     (url->file-path url)
                              (or (and (not fragment) "")
                                  (string-append "#" fragment))))
              (else
@@ -142,9 +148,7 @@
       ;; file://get-pure-port : url -> in-port
       (define file://get-pure-port
         (lambda (url)
-          (when (url-host url)
-            (url-error "Don't know how to get files from remote hosts"))
-          (open-input-file (apply build-path (url-path url)))))
+          (open-input-file (url->file-path url))))
 
       (define (schemeless-url url)
         (url-error "Missing protocol (usually \"http:\") at the beginning of URL: ~a" url))
@@ -343,13 +347,28 @@
                           [fragment (caddr path+fragment)])
                       (if (or (relative-path? path)
                               (absolute-path? path))
-                          (make-url "file"
-                                    #f  ; user
-                                    #f  ; host
-                                    #f  ; port
-                                    (separate-path-strings path)
-                                    '()  ; query
-                                    fragment)
+			  (let-values ([(root elems kind)
+					(let loop ([path (simplify-path path)][accum null][kind #f])
+					  (let-values ([(base name dir?) (split-path path)])
+					    (let ([kind (or kind
+							    (if dir? 'dir 'file))])
+					      (cond
+					       [(path? base)
+						(loop base (cons name accum) kind)]
+					       [(eq? base 'relative)
+						(values #f (cons name accum) kind)]
+					       [else
+						(values path accum kind)]))))])
+			    (make-url "file"
+				      #f  ; user
+				      (and root (path->string root))  ; host
+				      #f  ; port
+				      (append (map path->string elems)
+					      (if (eq? kind 'dir)
+						  '("")
+						  null))
+				      '()  ; query
+				      fragment))
                           (url-error "scheme 'file' path ~s neither relative nor absolute" path))))
                   ;; Other scheme:
                   (let ((match (regexp-match-positions rx str)))

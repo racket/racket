@@ -48,10 +48,15 @@ TYPES ----------------------------------------------------------------
   5 = path,  6 = param, 7 = query, 8 = fragment
 
   If the scheme is "file", then the path is a platform-dependent
-  string assumed to have been constructed using build-path.  The library
-  does, however, check for the presence of a fragment designator and, if
-  there is one, separates it from the rest of the path.  For non-"file"
-  schemes, the path is a URL path as defined in the standard.
+  string. The library does, however, check for the presence of a
+  fragment designator and, if there is one, separates it from the rest
+  of the path. If the path is syntactically a directory, the last
+  string the resulting structure's `path' list is an empty string.
+  If the path is absolute, the `host' is the root path, otherwise
+  `host' is #f.
+
+  For non-"file" schemes, the path is a URL path as defined in the
+  standard.
 
   If a path segment has a parameter, it is represented with
   an instance of the path/param struct. Otherwise, it is
@@ -156,6 +161,8 @@ PROCEDURES -----------------------------------------------------------
 > (url->string url) -> string
 
   Generates a string corresponding to the contents of the url struct.
+  For a "file:" URL, empty strings in the path list are treated as
+  'same for `build-path'.
 
   The `url->string' procedure uses `alist->form-urlencoded' when
   formatting the query, so it it sensitive to the
