@@ -134,8 +134,15 @@
  (no-full-name-since-not-saved
   "El archivo no tienen un nombre completo porque no ha sido salvado aún.")
  (cannot-open-because-dne "~a no puede ser abierto, porque no existe.")
- (interactions-out-of-sync
-  "ADVERTENCIA: La ventana de interacción está fuera de sincronía con la ventana de definición.  Presione el botón Ejecutar.")
+
+ (needs-execute-language-changed
+  "ADVERTENCIA: El lenguaje ha cambiado. Haz click en Ejecutar.")
+ (needs-execute-teachpack-changed
+  "ADVERTENCIA: Los paquetes de enseñanza han cambiado. Haz click en Ejecutar.")
+ (needs-execute-defns-edited
+  "ADVERTENCIA: La ventana de definiciones ha cambiado. Haz click en Ejecutar.")
+
+
  (file-is-not-saved "El archivo \"~a\" no ha sido salvado.")
  (save "Salvar")
  (please-choose-either "Por favor seleccione una de \"~a\" o \"~a\"")
@@ -230,7 +237,8 @@
  (plt:hd:refresh-downloading "Bajando ~a")
  (plt:hd:refresh-installing "Instalando ~a")
  (plt:hd:refresh-progress "Progreso de la descarga del manual del PLT")
-;; should not mention `SVN' (plt:hd:refresh-done "Refresco de los manuales via SVN terminado")
+ (plt:hd:refresh-done "Actualización de manuales terminada")
+ ;; should not mention `SVN' (plt:hd:refresh-done "Refresco de los manuales via SVN terminado")
  (plt:hd:refresh-installation-log "Bitácora de instalación")
  (plt:hd:refresh-stopped "Refresco de manuales del PLT detenido")
  (plt:hd:refresh-clearing-indicies "Eliminando índices guardados")
@@ -842,7 +850,7 @@
  (booleans-as-true/false-label "Imprimir valores booleanos usando true y false")
  (show-details-button-label "Mostrar Detalles")
  (hide-details-button-label "Esconder Detalles")
- (choose-language-menu-item-label "Escoger Lenguaje...")
+ (choose-language-menu-item-label "Seleccionar Lenguaje...")
  (revert-to-language-defaults "Revertir a los Valores por Omisión del Lenguaje")
  (language-docs-button-label "Documentación de Lenguajes")
  (fraction-style "Estilo de Fracciones")
@@ -850,6 +858,16 @@
  (use-repeating-decimals "Decimales repetidos")
  (decimal-notation-for-rationals "Usar notación decimal para racionales")
  (please-select-a-language "Por favor selecciona un lenguaje")
+ (show-all-languages "¿Mostrar todos los lenguajes?")
+ (show-drscheme-usage-questions "¿Mostrar pregunta de utilización de DrScheme?")
+ (are-you...-kind-of-drscheme-user "¿Utilizas...")
+ (use-with-htdp "...  DrScheme con el libro How to Design Programs?")
+ (use-seasoned "... DrScheme porque eres un programador de PLT Scheme experimentado?")
+ (use-other "...  DrScheme por otras razones?")
+ (use-eopl "...  DrScheme con el libro Essentials of Programming Languages?")
+ (pl-lang-choice-format "Lenguaje inicial: ~a")
+ (choose-new-language-before-running "Por favor selecciona un nuevo lenguaje antes de ejecutar.")
+
  
  ;;; languages
  (beginning-student "Estudiante Principiante")
@@ -865,19 +883,45 @@
  (full-language "Completo")
  (how-to-design-programs "How to Design Programs") ;; should agree with MIT Press on this one...
  (r5rs-like-languages "Similar a R5RS")
- (expander "Expander")
- (expander-one-line-summary "Expande, en lugar de evaluar, expresiones")
  (professional-languages "Languajes Profesionales")
  (teaching-languages "Languajes de Enseñanza")
  (experimental-languages "Languajes Experimentales") 
+ (no-language-chosen "No ha seleccionado un lenguaje")
  (pretty-big-scheme "Muy Grande (incluye MrEd y Avanzado)")
  (pretty-big-scheme-one-line-summary "Añade syntaxis y funciones de los lenguajes HtDP")
  (r5rs-lang-name "R5RS estándar")
  (r5rs-one-line-summary "R5RS, sin ornamentos")
+ (expander "Expandir")
+ (expander-one-line-summary "Expande expresiones en lugar de evaluarlas")
+ 
+ 
+ 
+ (initial-language-category "Lenguaje inicial")
  (unknown-debug-frame "[desconocido]")
  
  (module-language-one-line-summary "Ejecutar crea un REPL en el contexto del módulo, incluyendo el lenguaje declarado para el módulo")
 
+  ;;; from the `not a language language' used initially in drscheme.
+ (must-choose-language "DrScheme no puede procesar programas hasta que selecciones un lenguaje de programación.")
+ 
+ ; next two appear before and after the name of a text book (which will be in italics)
+ (using-a-textbook-before "¿Utilizas ")
+ (using-a-textbook-after "?")
+ 
+                                        ; next two are before and after a language
+ (start-with-before "Empezar con ")
+ (start-with-after ".")
+
+ (seasoned-plt-schemer? "¿Usurio experimentado de PLT Scheme?")
+ (looking-for-standard-scheme? "¿Buscas un Scheme estándar?")
+
+                                        ; the three string constants are concatenated together and the middle
+                                        ; one is hyperlinked to the dialog that suggests various languages
+ (get-guidance-before "Selecciona la opción  “Seleccionar lenguaje...”  en el menú “Languaje, o ")
+ (get-guidance-during "permitenos orientarte")
+ (get-guidance-after ".")
+
+ 
  ;;; debug language
  (backtrace-window-title "Backtrace - DrScheme")
  (files-interactions "Interacciones de ~a") ;; filled with a filename
@@ -902,7 +946,6 @@
  (profiling-square "Cuadrado")
  (profiling-number "Número de llamadas")
  (profiling-time "Tiempo acumulado")
- (profiling-clear "Limpiar delineado")
  (profiling-update "Actualiza Delineado")
  (profiling-col-percent-time "% Tiempo")
  (profiling-col-function "Función")
@@ -1055,6 +1098,14 @@
  (stepper-program-has-changed "ADVERTENCIA: El programa ha cambiado.")
  (stepper-program-window-closed "ADVERTENCIA: La ventana del programa ha desaparecido.")
 
+ (stepper-home "Hogar")
+ (stepper-name "Stepper")
+ (stepper-language-level-message
+  "El nivel del lenguaje es \"~a\".  Actualmente el Stepper funciona para los niveles \"~a\" al \"~a\".")
+ (stepper-button-label "Paso")
+ (stepper-previous-application "|< Aplicación")
+ (stepper-previous "< Paso")
+ 
  (wizard-next "Siguiente")
  (wizard-back "Atrás")
  (wizard-finish "Finalizar")
@@ -1100,6 +1151,10 @@
  (profj-java-mode-color-error "error")
  (profj-java-mode-color-identifier "identificador")
  (profj-java-mode-color-default "por omisión")
+
+ (profj-insert-java-comment-box "Insertar Caja para Comentarios Java")
+ (profj-insert-java-interactions-box "Insertar Caja de Interacciones Java")
+
  
  ;; The Test Suite Tool
  ;; Errors
@@ -1146,6 +1201,25 @@
  ;; The Java identifier of an example of data
  (profjBoxes-name "Nombre")
  (profjBoxes-value "Valor")
+ (profjBoxes-insert-java-examples "Insertar Ejemplos de Java")
+ (profjBoxes-insert-java-interactions "Insertar Interacciones Java")
 
+ ;; Slideshow
+ (slideshow-show-slideshow-panel "Mostrar Panel de Slideshow")
+ (slideshow-hide-slideshow-panel "Esconder Panel de Slideshow")
+ (slideshow-freeze-picts "Congelar Estas Imágenes")
+ (slideshow-thaw-picts "Mostrar las Imágenes debajo del Puntero")
+ (slideshow-hide-picts "Mostrar Cajas Anidadas")
+ (slideshow-show-picts "Mostrar Imágenes")
+ (slideshow-cannot-show-picts "No puedo mostrar imágenes; ejecuta el programa para capturar primero sus tamaños")
+ (slideshow-insert-pict-box "Insertar Caja de Imagen") 
+
+ 
+ ;; GUI Tool
+ (gui-tool-heading "Herramienta IGU")
+ (gui-tool-before-clicking-message "Antes de seleccionar un ícono de herramienta, utiliza \"Insertar IGU\" del menú \"Especial\" para insertar un elemento raíz IGU, o bien selecciona un IGU previamente insertado.")
+ (gui-tool-show-gui-toolbar "Mostrar la barra de herramientas IGU")
+ (gui-tool-hide-gui-toolbar "Esconder la barra de herramientas IGU")
+ (gui-tool-insert-gui "Insertar IGU")
  
  )
