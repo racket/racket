@@ -74,9 +74,15 @@
           `(ok-but ,recent)]
          ;; new version out -- no alphas or we have an alpha => show recent
          ;; (also for svn builds of a stable version -- anything with ".")
-         [(or (equal? recent stable) (regexp-match #rx"[.]" current))
+         [(or (equal? recent stable)
+              (and (regexp-match #rx"[.]" current)
+                   ;; but if we have an alpha that is older then the current
+                   ;; stable then go to the next case
+                   (string>=? current stable)))
           `(newer ,recent)]
          ;; new version out, we have an outdated stable, there is also an alpha
+         ;; (alternatively, we have an alpha that is older than the current
+         ;; stable)
          [else `(newer ,stable ,recent)]))))
 
   ;; Check the version on the server and compare to our version.
