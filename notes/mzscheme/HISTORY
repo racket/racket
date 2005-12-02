@@ -1,20 +1,14 @@
-Version 299.406
+
+Version 300, December 2005
 Generalized network-address handling, includes IPv6
-Added #%variable-reference
-0.0 and -0.0 are different by eqv?
-
-Version 299.405
-Added syntax-language+country
-MzLib: added object-method-arity-includes? to class.ss
-
-Version 299.403
 Added ephemerons
+0.0 and -0.0 are different by eqv?
 Added keyword values (#: prefix) and keyword? predicate
-Added --xform mode to mzc
-
-Version 299.402
+Added syntax-language+country
 Added current-preserved-thread-cell-values
-
+Added #%variable-reference
+MzLib: added object-method-arity-includes? to class.ss
+Added --xform mode to mzc
 
 Version 299.400, Setember 2005
 Improved Windows path support (e.g., \\?\ paths)
@@ -24,8 +18,6 @@ Inside MzScheme: added scheme_get_port_file_descriptor()
  and scheme_get_port_socket()
 
 Version 299.200, August 2005
->> See MzScheme_300.txt for information on major changes since
-   version 209. Relatively minor changes are listed here.
 Ports:
  TCP output ports are now block-buffered by default
  Changed file-stream-buffer-mode to work on more port types,
@@ -96,8 +88,6 @@ Misc:
   a Windows-style installation (e.g., system-type is 'unix)
 
 Version 299.100, March 2005
->> See MzScheme_300.txt for information on major changes since
-   version 209. Relatively minor changes are listed here.
 Unicode and Strings:
  Removed char-locale... operations
  Removed char->latin-1-integer and latin-1-integer->char

@@ -1,9 +1,7 @@
 
-Version 299.404
+Version 300, Decmber 2005
 Changed editor file format to an ASCII encoding
 Changed measurement of text for post-script-dc%
-
-Version 299.403
 Changed label->plain-label to strip parenthesized mneumonics
 Added 'package and 'enter-package flags to put-file, and
  changed Mac OS X put-file to use extension and filters args
