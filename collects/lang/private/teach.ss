@@ -852,7 +852,8 @@
 		  (syntax-source-module #'id))
 	     ;; ... but it might be defined later in the module, so
 	     ;; delay the check.
-	     (syntax/loc stx (#%app values (beginner-top-continue id)))
+	     (let ([tc (syntax/loc stx (beginner-top-continue id))])
+	       (ensure-expression tc (lambda () tc)))
 	     (syntax/loc stx (#%top . id)))]))
 
     (define (beginner-top-continue/proc stx)
