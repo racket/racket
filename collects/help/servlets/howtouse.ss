@@ -29,13 +29,13 @@
          "1) Navigate the Help Desk information pages by "
          "clicking on hyperlinks.")
        (UL 
-        (LI  "The " (B  (TT  ,(string-constant home))) " button "
+        (LI  "The " (B   ,(string-constant home)) " button "
              "at the top of the page always takes "
              "you back to the starting page.")
-        (LI  "The " (B  (TT  "Manuals")) " link "
+        (LI  "The " (B  "Manuals") " link "
              " displays a list "
              " of manuals and other documentation.")
-        (LI  "The " (B  (TT  "Send a bug report")) 
+        (LI  "The " (B   "Send a bug report")
              " link "
              "allows you to submit bug reports to PLT."))
        (P)
@@ -43,11 +43,11 @@
        (A ((NAME "search")))
        ,(color-highlight
          "2) Search for terms using the " 
-         `(B  (TT  "Find docs for"))  
+         `(B  "Find docs for")
          " field at the bottom of Help Desk.")
        (UL  
         (LI  "Enter one or more terms into the " 
-             (B  (TT  "Find docs for")) " field.")
+             (B   "Find docs for") " field.")
         (LI  "Click the " (B  "Search") " button "
              "(or hit Enter) to start a search, "
              "or choose the " (B "Feeling Lucky") " menu item.")
@@ -76,7 +76,7 @@
        (p)
        "If you open Help Desk inside DrScheme, the search results are "
        "filtered based on the language you are using. Use " 
-            (tt "Choose Language...")
-            " menu item from the "
-            (tt "Language")
-            " menu to change the language."))))
+       (B "Choose Language...")
+       " menu item from the "
+       (B "Language")
+       " menu to change the language."))))

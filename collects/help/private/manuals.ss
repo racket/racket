@@ -131,7 +131,7 @@
   
   ; manual is doc collection subdirectory, e.g. "mred"
   (define (main-manual-page manual)
-    (let* ([entry (assoc manual known-docs)]
+    (let* ([entry (assoc (string->path manual) known-docs)]
 	   [name (or (and entry (cdr entry))
                      manual)]
 	   [href (string-append "/doc/" manual "/")])

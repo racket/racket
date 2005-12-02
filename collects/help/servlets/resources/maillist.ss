@@ -61,18 +61,18 @@
        (A ((NAME "mail-es") (VALUE "Spanish mailing lists")))
        (A ((NAME "mail-es2") (VALUE "Lista de Correo")))
        (B "Lista de Correo") (BR)
-       "Si tienes problemas con la instalación o preguntas sobre el "
-       "uso de PLT Scheme, envía un mensaje a la lista "
+       "Si tienes problemas con la instalaciÃ³n o preguntas sobre el "
+       "uso de PLT Scheme, envÃ­a un mensaje a la lista "
        (BLOCKQUOTE 
         (A ((HREF "mailto:plt-scheme-es@list.cs.brown.edu")) "plt-scheme-es@list.cs.brown.edu"))
-       "Para reducir la recepción de mensajes no deseados (SPAM), "
-       "hemos adoptado la política de que sólo los suscriptores a la lista "
-       "pueden enviar mensajes. Para suscribirte, visita la página de Web "
+       "Para reducir la recepciÃ³n de mensajes no deseados (SPAM), "
+       "hemos adoptado la polÃ­tica de que sÃ³lo los suscriptores a la lista "
+       "pueden enviar mensajes. Para suscribirte, visita la pÃ¡gina de Web "
        (BLOCKQUOTE
         (A ((HREF "http://list.cs.brown.edu/mailman/listinfo/plt-scheme-es/")
             (TARGET "_top")) "http://list.cs.brown.edu/mailman/listinfo/plt-scheme-es/"))
-       " o envía un mensaje a "
+       " o envÃ­a un mensaje a "
        (BLOCKQUOTE
         (A ((HREF "mailto:plt-scheme-es-request@list.cs.brown.edu")) "plt-scheme-es-request@list.cs.brown.edu"))
        " con la palabra `help' en el asunto o en el cuerpo de tu mensaje. "
-       "Recibirás un mensaje de regreso con instrucciones."))))
+       "RecibirÃ¡s un mensaje de regreso con instrucciones."))))

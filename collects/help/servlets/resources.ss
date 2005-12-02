@@ -19,8 +19,7 @@
        (P)
        "DrScheme is created by "
        (A ((HREF "http://www.plt-scheme.org/") (TARGET "_top")) "PLT") 
-       ", the Programming Languages Team "
-       "based at Northeastern University, the University of Utah, "
+       " based at Northeastern University, the University of Utah, "
        "Brown University, and the University of Chicago. "
        "Here are some links related to our activities."
        (P)

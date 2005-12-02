@@ -43,7 +43,7 @@
        "The following dialects are specifically designed for "
        "teaching computer science.  In DrScheme's "
        (A ((HREF "/servlets/scheme/what.ss#lang-sel")) "language selection menu")
-       ", they are found under the heading " (B (TT "How to Design Programs")) "."
+       ", they are found under the heading " (B "How to Design Programs") "."
        (UL  
         (LI 
          (A ((NAME "beg") (VALUE "Beginning Student language"))) 
@@ -84,7 +84,7 @@
        "In DrScheme's "
        (A ((HREF "/servlets/scheme/what.ss#lang-sel")) "language selection menu")
        ", the following languages "
-       "are found under the heading " (B (TT "PLT")) ":"
+       "are found under the heading " (B "PLT") ":"
        (UL
         (LI  
          ,(standout-text "Textual (MzScheme)")
@@ -101,7 +101,7 @@
          " includes the " (standout-text "Textual (MzScheme)") " language "
          "and adds a graphical toolbox, "
          "described in "
-         ,(main-manual-page "mred"))
+         ,(main-manual-page "mred") ".")
         (LI
          ,(standout-text "Pretty Big")
          " is a superset of the "
@@ -134,6 +134,6 @@
        (A ((NAME "lang-sel") (VALUE "language, setting")))
        "DrScheme's default language is Beginning Student. "
        "To change the language, select the " 
-       (B (TT  "Set Language...")) 
+       (B  "Choose Language...")
        " item in the " 
-       (B (TT "Language")) " menu."))))
+       (B "Language") " menu."))))
