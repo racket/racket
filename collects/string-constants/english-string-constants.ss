@@ -448,7 +448,7 @@ please adhere to these guidelines:
  (count-columns-from-one "Count column numbers from one")
  (display-line-numbers "Display line numbers in buffer; not character offsets")
  (enable-keybindings-in-menus "Enable keybindings in menus")
- (automatically-to-ps "Automatically print to postscript file")
+ (automatically-to-ps "Automatically print to PostScript file")
  (option-as-meta "Treat option key as meta") ;; macos/macos x only
  (use-mdi "Use MDI Windows") ;;; ms windows only -- use that window in a window thingy
  (separate-dialog-for-searching "Use separate dialog for searching")
@@ -460,7 +460,7 @@ please adhere to these guidelines:
  (open-files-in-tabs "Open files in separate tabs (not separate windows)")
  (show-interactions-on-execute "Automatically open interactions window when running a program")
  (limit-interactions-size "Limit interactions size")
- (background-color "Background color")
+ (background-color "Background Color")
  (default-text-color "Default text") ;; used for configuring colors, but doesn't need the word "color"
  (choose-a-background-color "Please choose a background color")
 
