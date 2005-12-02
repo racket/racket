@@ -100,3 +100,11 @@
 (htdp-syntax-test #'(time 1 2))
 (htdp-syntax-test #'(time (define x 5)))
 
+(htdp-err/rt-test (foldr car 2 '(1 2 3))
+  "foldr : first argument must be a <procedure> that accepts two arguments, given #<primitive:car>")
+
+(htdp-err/rt-test (foldl car 2 '(1 2 3))
+  "foldl : first argument must be a <procedure> that accepts two arguments, given #<primitive:car>")
+
+(htdp-err/rt-test (build-string 2 add1)
+  "build-string : second argument must be a <procedure> that produces a <char>, given #<primitive:add1>, which produced 1 for 0")
