@@ -87,7 +87,7 @@ exit 1
        This is a `one-time option' that is intended to be used with\n\
        installers or after retrieving a fresh plt tree.  This will re-use\n\
        existing zos (making only missing ones), and recreate the launchers.\n\
-       It should be again in this mode only if the PLT tree was moved."
+       Also, use this if you move the PLT installation to a different place."
       (set! install-mode? #t)))
     (help-labels
      "Additional arguments (after a \"--\" are passed on to setup-plt")
@@ -95,8 +95,16 @@ exit 1
         '("setup-flags")
         more-help)))
 
+(define (ask? title prompt)
+  (printf ">>> ~a <<<\n~a [y/n]: " title prompt)
+  (flush-output)
+  (not (regexp-match #rx"^[ \t\r\n]*[nN]"
+                     (read-line (current-input-port) 'any))))
+
 ;; Set up GUI if we're using MrEd
-(when (namespace-variable-value 'make-eventspace #t (lambda () #f))
+(define gui? (namespace-variable-value 'make-eventspace #t (lambda () #f)))
+(define error-message "INSTALLATION FAILED") ; used only for the GUI
+(when gui?
   ;; no console input
   (current-input-port (open-input-string ""))
   (let ([evt (make-eventspace)] [orig-exit (exit-handler)])
@@ -108,7 +116,7 @@ exit 1
                                     "Ok to stop the installation?"
                                     f '(ok-cancel)))
           (exit 1)))
-      (define (fail msg exit-code)
+      (define (done msg exit-code)
         (do-callback
          (lambda ()
            (send e lock #f)
@@ -135,6 +143,8 @@ exit 1
       (send c allow-tab-exit #t)
       (send e lock #t)
       (send e auto-wrap #t)
+      (set! ask? (lambda (title prompt)
+                   (eq? 'yes (message-box title prompt f '(yes-no stop)))))
       (let ([out (make-output-port 'gui-output
                    always-evt
                    (lambda (bstring start end flush? breaks?)
@@ -154,15 +164,42 @@ exit 1
       (exit-handler
        (lambda (v)
          ;; can use an explicit (exit 0) to show the output
-         (fail (if (zero? v) "Done" "INSTALLATION FAILED") v)))
+         (done (if (zero? v) "Done" error-message) v)))
       (current-exception-handler
        (lambda (e)
          (if (exn:break? e)
            (orig-exit 1) ; don't lock up if the process is killed
-           (fail (format "INSTALLATION FAILED: ~a"
-                         (if (exn? e) (exn-message e) e))
+           (done (format "~a: ~a"
+                         error-message (if (exn? e) (exn-message e) e))
                  1))))
       (initial-exception-handler (current-exception-handler)))))
+
+(define (check-version)
+  (printf "Checking version...") (flush-output)
+  (let ([r ((dynamic-require '(lib "check.ss" "version") 'check-version))])
+    (set! r '(newer "100"))
+    (if (eq? 'ok r)
+      (printf " ok.\n")
+      (case (and (pair? r) (car r))
+        [(error)
+         (printf " error: ~a\n" (cadr r))
+         (sleep 1)]
+        [(ok-but)
+         (printf " ok\n  (note that there is a newer alpha version: ~a)"
+                 (cadr r))
+         (sleep 2)]
+        [(newer)
+         (newline)
+         (unless (ask? "Outdated Version"
+                       (string-append
+                        "The version you are installing is outdated,\n"
+                        "PLT v"(cadr r)" is now available from plt-scheme.org\n"
+                        (if (null? (cddr r))
+                          "(There is also an even newer alpha version)\n"
+                          "")
+                        "Are you sure you want to continue?"))
+           (error "Aborting..."))]
+        [else (error 'check-version "internal error: ~e" r)]))))
 
 (define (create-zos)
   (let/ec return
@@ -214,13 +251,15 @@ exit 1
   (setup-environment)
   (process-command-line (cdr args))
   (when (and install-mode? (equal? (path->string plthome) oldrun-plthome))
-    (parameterize ([current-output-port (current-error-port)])
-      (for-each display
-                `("This program should be used again only when the PLT tree "
-                  "was moved.\nYou should use "
-                  ,(if (eq? 'unix (system-type)) "bin/setup-plt" "Setup PLT")
-                  " instead.\n"))
-      (exit 1)))
+    (for-each
+     (lambda (x) (display x (current-error-port)))
+     `("Run this again only when the PLT installation directory was moved.\n"
+       "For normal installation tasks, use "
+       ,(if (eq? 'unix (system-type)) "bin/setup-plt" "Setup PLT")
+       " instead.\n"))
+    (set! error-message "No installation needed")
+    (exit 1))
+  (when install-mode? (check-version))
   (create-zos)
   (display "PLT installation done.\n")
   (cond [(not install-mode?)
@@ -230,21 +269,4 @@ exit 1
                                "menu,\nor run bin/help-desk.\n")))
          ;; if we're using GUI, and not in install mode, don't close the window
          (exit 0)]
-        [this-script
-         #| Instead of deleting this, detect when running from the same place.
-         ;; Delete this script when finished running in install-mode, it
-         ;; doesn't make sense to do this twice.  Experienced users should just
-         ;; use setup-plt from now on.
-         (when (file-exists? this-script) (delete-file this-script))
-         ;; Also remove Win/OSX stuff that just use this script.
-         (when (file-exists? "install.bat") (delete-file "install.bat"))
-         (when (file-exists? "Finish Install.exe")
-           ;; this will fail if called from `Finish Install.exe' itself
-           (with-handlers ([void void]) (delete-file "Finish Install.exe")))
-         (when (directory-exists? "Finish Install.app")
-           ((dynamic-require '(lib "file.ss") 'delete-directory/files)
-            "Finish Install.app"))
-         (when (file-exists? "finish install.command")
-           (delete-file "finish install.command"))
-         |#
-         (when (file-exists? this-script) (remember-this-path!))]))
+        [this-script (when (file-exists? this-script) (remember-this-path!))]))

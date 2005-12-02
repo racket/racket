@@ -6,8 +6,8 @@ if not "%OS%"=="Windows_NT" goto NoDPHack
 rem  On Windows NT %~dp0 is expanded dir+path of %0
 set PLTDIR=%~dp0
 if not "%PLTDIR%"=="" goto FoundPLTDIR
-:NoDPHack
 
+:NoDPHack
 rem  %~dp0 didn't work -- try to hack into our own directory
 cd "%0\.."
 if not exist "install" goto NoPathFound
