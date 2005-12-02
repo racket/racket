@@ -235,28 +235,29 @@ A test case:
 		(let ([s (make-semaphore)]
 		      [closer-t #f]
 		      [this-t (current-thread)])
-		  (queue-callback
-		   (lambda ()
-		     (init-browser-status-line top-level-window)
-		     (update-browser-status-line 
-		      top-level-window 
-		      (format "Visiting ~a"
-			      (cond
-			       [(url? url) (url->string url)]
-			       [else "page"])))
-		     ;; Yikes! We need to ensure that the browser status
-		     ;;  line is closed, even if the reload thread dies.
-		     ;; We use the usual trick of setting up a watcher
-		     ;;  thread and then killing it off if its work
-		     ;;  is not needed.
-		     (set! closer-t 
-			   (thread (lambda ()
-				     (sync (thread-dead-evt this-t))
-				     (queue-callback
-				      (lambda ()
-					(close-browser-status-line top-level-window))))))
-		     (semaphore-post s)))
-		  (yield s)
+		  (when top-level-window
+		    (queue-callback
+		     (lambda ()
+		       (init-browser-status-line top-level-window)
+		       (update-browser-status-line 
+			top-level-window 
+			(format "Visiting ~a"
+				(cond
+				 [(url? url) (url->string url)]
+				 [else "page"])))
+		       ;; Yikes! We need to ensure that the browser status
+		       ;;  line is closed, even if the reload thread dies.
+		       ;; We use the usual trick of setting up a watcher
+		       ;;  thread and then killing it off if its work
+		       ;;  is not needed.
+		       (set! closer-t 
+			     (thread (lambda ()
+				       (sync (thread-dead-evt this-t))
+				       (queue-callback
+					(lambda ()
+					  (close-browser-status-line top-level-window))))))
+		       (semaphore-post s)))
+		    (yield s))
 		  (let ([headers (get-headers/read-from-port progress)])
 		    ;; Page is a redirection?
 		    (let ([m (regexp-match "^HTTP/[^ ]+ 301 " headers)])
@@ -269,12 +270,13 @@ A test case:
 				    (combine-url/relative url loc)]
 				   [else
 				    (string->url loc)])))))))
-		  (queue-callback
-		   (lambda ()
-		     (kill-thread closer-t)
-		     (close-browser-status-line top-level-window)
-		     (semaphore-post s)))
-		  (yield s)))))
+		  (when top-level-window
+		    (queue-callback
+		     (lambda ()
+		       (kill-thread closer-t)
+		       (close-browser-status-line top-level-window)
+		       (semaphore-post s)))
+		    (yield s))))))
           
           (define/private (get-headers/read-from-port progress)
             (cond
@@ -473,18 +475,19 @@ A test case:
                                   (current-load-relative-directory))])
                         (parameterize ([html-status-handler 
                                         (lambda (s)
-					  (let ([t (current-thread)]
-						[sema (make-semaphore)])
-					    (queue-callback
-					     (lambda ()
-					       (when (thread-running? t)
-						 ;; Since t is running, the status line hasn't been
-						 ;;  closed by the watcher thread (and there's no
-						 ;;  race, because it can only be closed in the
-						 ;;  handler thread)
-						 (update-browser-status-line top-level-window s))
-					       (semaphore-post sema)))
-					    (semaphore-wait sema)))]
+					  (when top-level-window
+					    (let ([t (current-thread)]
+						  [sema (make-semaphore)])
+					      (queue-callback
+					       (lambda ()
+						 (when (thread-running? t)
+						   ;; Since t is running, the status line hasn't been
+						   ;;  closed by the watcher thread (and there's no
+						   ;;  race, because it can only be closed in the
+						   ;;  handler thread)
+						   (update-browser-status-line top-level-window s))
+						 (semaphore-post sema)))
+					      (yield sema))))]
                                        [current-load-relative-directory directory]
                                        [html-eval-ok (url-allows-evaling? url)])
                           (html-convert p this)))]
@@ -795,7 +798,7 @@ A test case:
 			  (lambda (_)
 			    (let ([t (new hyper-text% 
 					  (url #f)
-					  (top-level-window tlw)
+					  (top-level-window #f)
 					  (progress void))])
 			      (send t insert "Stopped.")
 			      (set! ans (cons t #f))))))))
