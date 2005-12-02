@@ -35,7 +35,7 @@
 			 pubment overment augment
 			 public-final override-final augment-final
 			 field init init-field
-			 rename-super rename-inner inherit
+			 rename-super rename-inner inherit inherit-field
 			 inspect)
 
   (define-syntax define/provide-context-keyword

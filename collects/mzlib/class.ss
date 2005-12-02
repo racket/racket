@@ -36,7 +36,7 @@
 	   pubment overment augride
            public-final override-final augment-final
 	   field init init-field
-	   rename-super rename-inner inherit
+	   rename-super rename-inner inherit inherit-field
 	   this super inner
 	   super-make-object super-instantiate super-new
 	   inspect))
