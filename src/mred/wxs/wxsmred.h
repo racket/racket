@@ -41,6 +41,8 @@ extern int wxGetPreference(const char *name, int *res);
 
 extern int wxIsUserMainEventspace(Scheme_Object *o);
 
+extern int mred_current_thread_is_handler(void *ctx);
+
 void wxscheme_early_gl_init(void);
 
 #ifdef MPW_CPLUS

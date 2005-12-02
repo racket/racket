@@ -2098,21 +2098,35 @@ static Scheme_Object *queue_callback(int argc, Scheme_Object **argv)
 
 void *wxSchemeYield(void *sema)
 {
+  int is_handler;
+
   if (!wait_symbol) {
     wxREGGLOB(wait_symbol);
     wait_symbol = scheme_intern_symbol("wait");
   }
 
+  is_handler = mred_current_thread_is_handler(NULL);
+
   if (sema == wait_symbol) {
-    mred_wait_eventspace();
-    return scheme_true;
+    if (is_handler) {
+      mred_wait_eventspace();
+      return scheme_true;
+    } else
+      return scheme_false;
   } else if (sema) {
     if (!scheme_is_evt((Scheme_Object *)sema))
       scheme_wrong_type("yield", "evt or 'wait", -1, 0, (Scheme_Object **)&sema);
 
-    return wxDispatchEventsUntilWaitable((wxDispatch_Check_Fun)NULL, NULL, (Scheme_Object *)sema);
+    if (is_handler)
+      return wxDispatchEventsUntilWaitable((wxDispatch_Check_Fun)NULL, NULL, (Scheme_Object *)sema);
+    else {
+      Scheme_Object *a[1];
+      a[0] = sema;
+      scheme_sync(1, a);
+      return scheme_false;
+    }
   } else {
-    if (wxYield())
+    if (is_handler && wxYield())
       return scheme_true;
     else
       return scheme_false;

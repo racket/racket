@@ -1016,7 +1016,7 @@ static int check_eventspace_inactive(void *_c)
 
 void mred_wait_eventspace(void)
 {
-  MrEdContext * volatile c;
+  MrEdContext *c;
   c = MrEdGetContext();
   if (c && (c->handler_running == scheme_current_thread)) {
     wxDispatchEventsUntilWaitable(check_eventspace_inactive, c, NULL);
@@ -1025,6 +1025,9 @@ void mred_wait_eventspace(void)
 
 int mred_current_thread_is_handler(void *ctx)
 {
+  if (!ctx)
+    ctx = MrEdGetContext();
+
   return (((MrEdContext *)ctx)->handler_running == scheme_current_thread);
 }
 
