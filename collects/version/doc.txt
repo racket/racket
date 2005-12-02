@@ -22,7 +22,7 @@ your current state -- one of these:
     You have an old-but-stable version, please upgrade to `version';
     you may consider also the newer alpha version
   * `(error ,message [,additional-info])
-    An error occured, the message is a string that indicates the
+    An error occurred, the message is a string that indicates the
     error.
     The third (optional) value is a string that can be shown as the
     system error that happened.  This string will always be
@@ -36,6 +36,12 @@ _patchlevel_ module.  This module provides a single value:
 
 which is an integer that indicates the current patch level.  This is
 normally zero, but may be updated by patches to DrScheme.
-Furthermore, the "tool.ss" module makes this patchlevel appear in
-DrScheme (but the binary version as reported by `(version)' is not
-changed).
+
+
+Finally, the "tool.ss" makes DrScheme use both features:
+
+* the patchlevel appears as a version `pN' suffix in DrScheme (but the
+  binary version as reported by `(version)' is not changed);
+
+* it is possible to periodically check whether a new PLT Scheme
+  distribution is available for download.
