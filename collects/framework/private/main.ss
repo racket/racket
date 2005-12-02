@@ -227,9 +227,7 @@
       (preferences:set-default 'framework:autosaving-on? #t boolean?)
       (preferences:set-default 'framework:backup-files? #t boolean?)
       (preferences:set-default 'framework:verify-exit #t boolean?)
-      (preferences:set-default 'framework:delete-forward? 
-			       (not (eq? (system-type) 'unix))
-			       boolean?)
+      (preferences:set-default 'framework:delete-forward? #t boolean?)
       (preferences:set-default 'framework:show-periods-in-dirlist #f boolean?)
       (preferences:set-default
        'framework:file-dialogs
