@@ -228,28 +228,53 @@ A test case:
             (send top-level-window close-status-line 'browser:hyper.ss))
           
           (define/public reload
+	    ;; The reload function is called in a non-main thread,
+	    ;;  since this class is instantiated in a non-main thread.
             (opt-lambda ([progress void])
               (when url
-                (init-browser-status-line top-level-window)
-                (update-browser-status-line 
-                 top-level-window 
-                 (format "Visiting ~a"
-                         (cond
-                           [(url? url) (url->string url)]
-                           [else "page"])))
-                (let ([headers (get-headers/read-from-port progress)])
-                  ;; Page is a redirection?
-                  (let ([m (regexp-match "^HTTP/[^ ]+ 301 " headers)])
-                    (when m
-                      (let ([loc (extract-field "location" headers)])
-                        (when loc
-                          (set! redirection 
-                                (cond
-                                  [(url? url)
-                                   (combine-url/relative url loc)]
-                                  [else
-                                   (string->url loc)])))))))
-                (close-browser-status-line top-level-window))))
+		(let ([s (make-semaphore)]
+		      [closer-t #f]
+		      [this-t (current-thread)])
+		  (queue-callback
+		   (lambda ()
+		     (init-browser-status-line top-level-window)
+		     (update-browser-status-line 
+		      top-level-window 
+		      (format "Visiting ~a"
+			      (cond
+			       [(url? url) (url->string url)]
+			       [else "page"])))
+		     ;; Yikes! We need to ensure that the browser status
+		     ;;  line is closed, even if the reload thread dies.
+		     ;; We use the usual trick of setting up a watcher
+		     ;;  thread and then killing it off if its work
+		     ;;  is not needed.
+		     (set! closer-t 
+			   (thread (lambda ()
+				     (sync (thread-dead-evt this-t))
+				     (queue-callback
+				      (lambda ()
+					(close-browser-status-line top-level-window))))))
+		     (semaphore-post s)))
+		  (yield s)
+		  (let ([headers (get-headers/read-from-port progress)])
+		    ;; Page is a redirection?
+		    (let ([m (regexp-match "^HTTP/[^ ]+ 301 " headers)])
+		      (when m
+			(let ([loc (extract-field "location" headers)])
+			  (when loc
+			    (set! redirection 
+				  (cond
+				   [(url? url)
+				    (combine-url/relative url loc)]
+				   [else
+				    (string->url loc)])))))))
+		  (queue-callback
+		   (lambda ()
+		     (kill-thread closer-t)
+		     (close-browser-status-line top-level-window)
+		     (semaphore-post s)))
+		  (yield s)))))
           
           (define/private (get-headers/read-from-port progress)
             (cond
@@ -260,8 +285,7 @@ A test case:
                (let* ([busy? #t]
                       [stop-busy (lambda ()
                                    (when busy?
-                                     (set! busy? #f)
-                                     (end-busy-cursor)))])
+                                     (set! busy? #f)))])
                  (with-handlers ([(lambda (x) (and (exn:fail? x) busy?))
                                   (lambda (x) 
                                     (call/input-url 
@@ -367,7 +391,6 @@ A test case:
                                    #f ; should be calling window!
                                    #f
                                    orig-name))])
-                        (begin-busy-cursor) ; turn the cursor back on
                         (when tmp-plt-filename
                           (let* ([d (make-object dialog% (string-constant downloading) top-level-window)]
                                  [message (make-object message% 
@@ -450,7 +473,15 @@ A test case:
                                   (current-load-relative-directory))])
                         (parameterize ([html-status-handler 
                                         (lambda (s)
-                                          (update-browser-status-line top-level-window s))]
+					  (let ([t (current-thread)])
+					    (queue-callback
+					     (lambda ()
+					       (when (thread-running? t)
+						 ;; Since t is running, the status line hasn't been
+						 ;;  closed by the watcher thread (and there's no
+						 ;;  race, because it can only be closed in the
+						 ;;  handler thread)
+						 (update-browser-status-line top-level-window s))))))]
                                        [current-load-relative-directory directory]
                                        [html-eval-ok (url-allows-evaling? url)])
                           (html-convert p this)))]
@@ -470,7 +501,6 @@ A test case:
                       (end-edit-sequence)])))
                (lambda ()
                  (end-edit-sequence)
-                 (end-busy-cursor)
                  (set! htmling? #f)
                  (set-modified #f)
                  (auto-wrap wrapping-on?)
@@ -733,29 +763,41 @@ A test case:
       ;; if cust is shutdown, the url will stop being loaded and a dummy editor is returned.
       (define (make-editor/setup-kill cust html-editor% tlw init-url progress post-data remap-url)
         (let* ([c (make-channel)]
+	       [progs (make-channel)]
+	       [sent-prog? #f]
                [t (parameterize ([current-custodian cust])
                     (thread
                      (lambda ()
-                       (channel-put
-                        c
-                        (make-editor/follow-redirections html-editor%
-                                                         tlw
-                                                         init-url
-                                                         progress
-                                                         post-data
-                                                         remap-url)))))]
+		       (with-handlers ([exn? (lambda (exn)
+					       (channel-put c exn))])
+			 (channel-put
+			  c
+			  (make-editor/follow-redirections html-editor%
+							   tlw
+							   init-url
+							   (lambda (v)
+							     (channel-put progs v))
+							   post-data
+							   remap-url))))))]
                [ans #f])
-          (yield
-           (choice-evt
-            (handle-evt c (lambda (x) (set! ans x)))
-            (handle-evt (thread-dead-evt t)
-                        (lambda (_)
-                          (let ([t (new hyper-text% 
-                                        (url #f)
-                                        (top-level-window tlw)
-                                        (progress void))])
-                            (send t insert "Stopped.")
-                            (set! ans (cons t #f)))))))
+	  (let loop ()
+	    (yield
+	     (choice-evt
+	      (handle-evt c (lambda (x) (set! ans x)))
+	      (handle-evt progs (lambda (v)
+				  (set! sent-prog? #t)
+				  (progress v)
+				  (loop)))
+	      (handle-evt (thread-dead-evt t)
+			  (lambda (_)
+			    (let ([t (new hyper-text% 
+					  (url #f)
+					  (top-level-window tlw)
+					  (progress void))])
+			      (send t insert "Stopped.")
+			      (set! ans (cons t #f))))))))
+	  (unless sent-prog?
+	    (progress #f))
           ans))
       
       ;; make-editor/follow-redirections : editor-class frame%-instance
@@ -873,6 +915,7 @@ A test case:
             (cond
               [on?
                (send stop-button enable #f)
+               (when choice (send choice enable #t))
                (update-buttons)]
               [else 
                (send stop-button enable #t)
