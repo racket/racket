@@ -623,8 +623,15 @@ void wxMediaEdit::OnDefaultChar(wxKeyEvent *event)
 
   switch(code) {
   case WXK_BACK:
-  case WXK_DELETE:
     Delete();
+    return;
+  case WXK_DELETE:
+    if (startpos == endpos) {
+      if (endpos < len) {
+	Delete(endpos, endpos + 1);
+      }
+    } else
+      Delete();
     return;
   case WXK_RIGHT:
   case WXK_LEFT:
