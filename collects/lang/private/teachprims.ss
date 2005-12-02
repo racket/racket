@@ -292,7 +292,8 @@
       (build-string n (lambda (i)
 			(define r (f i))
 			(unless (char? r)
-			  (qcheck 'build-string "second argument must be a <procedure> that produces a <char>, given ~e which produced ~e for ~e" f r i))
+			  (qcheck 'build-string
+			    "second argument must be a <procedure> that produces a <char>, given ~e, which produced ~e for ~e" f r i))
 			r))))
 	
 			  
