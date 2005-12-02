@@ -600,8 +600,8 @@
  (exact-lucky-search-help-desk-for "Geef hulp omtremt \"~a\"")
 
  ;; collapse and expand popup menu items
- (collapse-sexp "Sexpressie samenvouwen")
- (expand-sexp "Sexpressie ontvouwen")
+ (collapse-sexp "S-expressie samenvouwen")
+ (expand-sexp "S-expressie ontvouwen")
  
  ;;; fraction dialog
  (enter-fraction "Geef breuk")

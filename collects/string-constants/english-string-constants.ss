@@ -891,8 +891,8 @@ please adhere to these guidelines:
  (exact-lucky-search-help-desk-for "Exact lucky search in Help Desk for \"~a\"")
 
  ;; collapse and expand popup menu items
- (collapse-sexp "Collapse sexpression")
- (expand-sexp "Expand sexpression")
+ (collapse-sexp "Collapse S-expression")
+ (expand-sexp "Expand S-expression")
  
  ;;; fraction dialog
  (enter-fraction "Enter Fraction")
