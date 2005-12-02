@@ -473,7 +473,8 @@ A test case:
                                   (current-load-relative-directory))])
                         (parameterize ([html-status-handler 
                                         (lambda (s)
-					  (let ([t (current-thread)])
+					  (let ([t (current-thread)]
+						[sema (make-semaphore)])
 					    (queue-callback
 					     (lambda ()
 					       (when (thread-running? t)
@@ -481,7 +482,9 @@ A test case:
 						 ;;  closed by the watcher thread (and there's no
 						 ;;  race, because it can only be closed in the
 						 ;;  handler thread)
-						 (update-browser-status-line top-level-window s))))))]
+						 (update-browser-status-line top-level-window s))
+					       (semaphore-post sema)))
+					    (semaphore-wait sema)))]
                                        [current-load-relative-directory directory]
                                        [html-eval-ok (url-allows-evaling? url)])
                           (html-convert p this)))]
