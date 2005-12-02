@@ -3,7 +3,20 @@
   (define version-url "http://download.plt-scheme.org/version")
   (define timeout 30)
 
-  (require (lib "url.ss" "net"))
+  ;; This file is invoked from the installer, without using zo files -- so
+  ;; using net/url.ss is extremely slow.  Instead, do things directly.
+  ;; (require (lib "url.ss" "net"))
+  ;; (define (url->port url)
+  ;;   (get-pure-port (string->url url)))
+  (define (url->port url)
+    (define-values (host path)
+      (apply values (cdr (regexp-match #rx"^http://([^/:@]+)(/.*)$" url))))
+    (define-values (i o) (tcp-connect host 80))
+    (fprintf o "GET ~a HTTP/1.0\r\nHost: ~a\r\n\r\n" path host)
+    (flush-output o)
+    (close-output-port o)
+    (regexp-match #rx"^HTTP/[0-9.]+ 200 OK\r\n.*?\r\n\r\n" i)
+    i)
 
   (define error-value
     (case-lambda
@@ -35,7 +48,7 @@
       ;; Get server information, carefully
       (define version-info
         (parameterize ([current-input-port
-                        (try (get-pure-port (string->url version-url))
+                        (try (url->port version-url)
                              "could not connect to website")])
           (try (read) "unexpected response from server")))
       (define (get key)
