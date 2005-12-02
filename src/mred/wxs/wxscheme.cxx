@@ -2121,7 +2121,7 @@ void *wxSchemeYield(void *sema)
       return wxDispatchEventsUntilWaitable((wxDispatch_Check_Fun)NULL, NULL, (Scheme_Object *)sema);
     else {
       Scheme_Object *a[1];
-      a[0] = sema;
+      a[0] = (Scheme_Object *)sema;
       scheme_sync(1, a);
       return scheme_false;
     }
