@@ -217,6 +217,7 @@
 (class-keyword-test #'rename-super)
 (class-keyword-test #'rename-inner)
 (class-keyword-test #'inherit)
+(class-keyword-test #'inherit-field)
 (class-keyword-test #'public*)
 (class-keyword-test #'private*)
 (class-keyword-test #'pubment*)
