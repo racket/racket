@@ -299,8 +299,8 @@ is stored in a module top-level and that's namespace-specific.
            (let ([parsed (read-from-string manuals)])
              (cond
                [(and (list? parsed)
-                     (andmap symbol? parsed))
-                (map symbol->string parsed)]
+                     (andmap bytes? parsed))
+                (map bytes->path parsed)]
                [else (map car (find-doc-names))]))]
           [else (map car (find-doc-names))]))
       
