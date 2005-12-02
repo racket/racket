@@ -927,11 +927,13 @@ void wxFrame::ShowAsActive(Bool flag)
       if (!(cStyle & wxFLOAT_FRAME)
 	  || !(cStyle & wxNO_CAPTION)) {
 	TakeoverFocus();
-	cFocusWindow->OnSetFocus();
+	if (cFocusWindow)
+	  cFocusWindow->OnSetFocus();
       }
     } else {
       ReleaseFocus();
-      cFocusWindow->OnKillFocus();
+      if (cFocusWindow)
+	cFocusWindow->OnKillFocus();
     }
   }
 }
