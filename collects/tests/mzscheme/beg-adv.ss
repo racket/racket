@@ -95,7 +95,8 @@
 (htdp-test 19 'cond (cond [(zero? 10) 0] [else 19]))
 
 (htdp-err/rt-test (cond [#f 10]) exn:fail?) ;; Should it be a different exception?
-(htdp-err/rt-test (cond [1 10]))
+(define rx:not-true-or-false "not true or false")
+(htdp-err/rt-test (cond [1 10]) rx:not-true-or-false)
 
 (htdp-syntax-test #'if)
 (htdp-syntax-test #'(if))
@@ -103,22 +104,22 @@
 (htdp-syntax-test #'(if #t 1))
 (htdp-syntax-test #'(if #t 1 2 3))
 
-(htdp-err/rt-test (if 1 2 3))
+(htdp-err/rt-test (if 1 2 3) rx:not-true-or-false)
 
 (htdp-syntax-test #'and)
 (htdp-syntax-test #'(and))
 (htdp-syntax-test #'(and #t))
 
-(htdp-err/rt-test (and 1 #t))
-(htdp-err/rt-test (and #t 1))
+(htdp-err/rt-test (and 1 #t) rx:not-true-or-false)
+(htdp-err/rt-test (and #t 1) rx:not-true-or-false)
 (htdp-test #f 'ok-and (and #t #f 1))
 
 (htdp-syntax-test #'or)
 (htdp-syntax-test #'(or))
 (htdp-syntax-test #'(or #t))
 
-(htdp-err/rt-test (or 1 #f))
-(htdp-err/rt-test (or #f 1))
+(htdp-err/rt-test (or 1 #f) rx:not-true-or-false)
+(htdp-err/rt-test (or #f 1) rx:not-true-or-false)
 (htdp-test #t 'ok-or (or #f #t 1))
 
 (htdp-test #t 'empty? (empty? empty))

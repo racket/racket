@@ -26,16 +26,21 @@
     [(_ expect f . args)
      #'(do-htdp-test #'(test expect f . args) #f #f)]))
 
+(define (htdp-string-to-pred exn?/rx)
+  (if (string? exn?/rx)
+      (lambda (x)
+	(regexp-match exn?/rx (exn-message x)))
+      exn?/rx))
+
 (define-syntax (htdp-err/rt-test stx)
   (syntax-case stx ()
     [(_ expr)
      #'(do-htdp-test #'expr #f exn:application:type?)]
     [(_ expr exn?)
-     #'(do-htdp-test #'expr #f exn?)]))
+     #'(do-htdp-test #'expr #f (htdp-string-to-pred exn?))]))
 
 (define (htdp-error-test stx)
   (do-htdp-test stx #t #f))
-
 
 (module helper mzscheme
   (define-syntax (module-begin stx)
