@@ -10,15 +10,22 @@
   
   (define interface-version 'v1)
   (define (gen-dispatcher log-format log-path)
-    (let ([log-message (gen-log-message log-format log-path)])
-      (lambda (conn req)
-        (let ([host (get-host (request-uri req) (request-headers req))])
-          (log-message (request-host-ip req)
-                       (request-client-ip req)
-                       (request-method req)
-                       (request-uri req)
-                       host)
-          (next-dispatcher)))))
+    (if log-path
+        (case log-format
+          [(parenthesized-default)
+           (let ([log-message (gen-log-message log-format log-path)])
+             (lambda (conn req)
+               (let ([host (get-host (request-uri req) (request-headers req))])
+                 (log-message (request-host-ip req)
+                              (request-client-ip req)
+                              (request-method req)
+                              (request-uri req)
+                              host)
+                 (next-dispatcher))))]
+          [else
+           (lambda (conn req) (next-dispatcher))])
+        (lambda (conn req)
+          (next-dispatcher))))
   
   ; gen-log-message : sym str -> str str sym url str -> str
   ; XXX: check apache log configuration formats

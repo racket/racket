@@ -36,7 +36,7 @@
                 (paths
                  (configuration-root "conf")
                  (host-root ,host-root)
-                 (log-file-path "log")
+                 (log-file-path #f)
                  (file-root ,file-root)
                  (servlet-root ,servlet-root)
                  (password-authentication "passwords"))))])
