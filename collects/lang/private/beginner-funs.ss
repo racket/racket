@@ -365,6 +365,8 @@
 	"to determine whether a value is a string")
       (string-length (string -> nat)
 	"to determine the length of a string")
+      (string (char ... -> string)
+	"(string c1 c2 ...) builds a string")
       (make-string (nat char -> string)
 	"to produce a string of given length"
 	"from a single given character")

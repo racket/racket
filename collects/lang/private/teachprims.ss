@@ -2,18 +2,19 @@
 (module teachprims mzscheme
 
   (require "../imageeq.ss" 
-           (lib "list.ss"))
+    (lib "list.ss")
+    (lib "etc.ss"))
   
   (define-syntax (define-teach stx)
     (syntax-case stx ()
       [(_ level id expr)
        (with-syntax ([level-id (datum->syntax-object
-				(syntax id)
-				(string->symbol
-				 (format "~a-~a"
-					 (syntax-object->datum (syntax level))
-					 (syntax-object->datum (syntax id))))
-				(syntax id))])
+				 (syntax id)
+				 (string->symbol
+				   (format "~a-~a"
+				     (syntax-object->datum (syntax level))
+				     (syntax-object->datum (syntax id))))
+				 (syntax id))])
 	 (syntax (define level-id
 		   (let ([id expr])
 		     id))))]))
@@ -26,36 +27,36 @@
   #;
   (define cyclic-list?
     (lambda (l)
-       (or (list? l)
-	   (and (pair? l)
-		(let loop ([hare (cdr l)][turtle l])
-		  (cond
-		   [(eq? hare turtle) #t]
-		   [(not (pair? hare)) #f]
-		   [(eq? (cdr hare) turtle) #t]
-		   [(not (pair? (cdr hare))) #f]
-		   [else (loop (cddr hare) (cdr turtle))]))))))
+      (or (list? l)
+	  (and (pair? l)
+	    (let loop ([hare (cdr l)][turtle l])
+	      (cond
+		[(eq? hare turtle) #t]
+		[(not (pair? hare)) #f]
+		[(eq? (cdr hare) turtle) #t]
+		[(not (pair? (cdr hare))) #f]
+		[else (loop (cddr hare) (cdr turtle))]))))))
 
   (define cyclic-list? beginner-list?)
 
   (define (build-arg-list args)
     (let loop ([args args][n 0])
       (cond
-       [(null? args) ""]
-       [(= n 5) " ..."]
-       [else
-	(format " ~e~a" (car args) (loop (cdr args) (add1 n)))])))
+	[(null? args) ""]
+	[(= n 5) " ..."]
+	[else
+	  (format " ~e~a" (car args) (loop (cdr args) (add1 n)))])))
 
   (define (mk-check-second ok? type)
     (lambda (prim-name a b)
       (unless (ok? b)
 	(raise
-	 (make-exn:fail:contract
-	  (string->immutable-string
-	   (format "~a: second argument must be of type <~a>, given ~e and ~e"
-		   prim-name type
-		   a b))
-	  (current-continuation-marks))))))
+	  (make-exn:fail:contract
+	    (string->immutable-string
+	      (format "~a: second argument must be of type <~a>, given ~e and ~e"
+		prim-name type
+		a b))
+	    (current-continuation-marks))))))
 
   (define check-second 
     (mk-check-second beginner-list? "list"))
@@ -67,23 +68,23 @@
     (lambda (prim-name args)
       (let loop ([l args])
 	(cond
-	 [(null? l) (void)]
-	 [(null? (cdr l))
-	  (let ([last (car l)])
-	    (unless (ok? last)
-	      (raise
-	       (make-exn:fail:contract
-		(string->immutable-string
-		 (format "~a: last argument must be of type <~a>, given ~e; other args:~a"
-			 prim-name type
-			 last
-			 (build-arg-list
-			  (let loop ([args args])
-			    (cond
+	  [(null? l) (void)]
+	  [(null? (cdr l))
+	   (let ([last (car l)])
+	     (unless (ok? last)
+	       (raise
+		 (make-exn:fail:contract
+		   (string->immutable-string
+		     (format "~a: last argument must be of type <~a>, given ~e; other args:~a"
+		       prim-name type
+		       last
+		       (build-arg-list
+			 (let loop ([args args])
+			   (cond
 			     [(null? (cdr args)) null]
 			     [else (cons (car args) (loop (cdr args)))])))))
-		(current-continuation-marks)))))]
-	 [else (loop (cdr l))]))))
+		   (current-continuation-marks)))))]
+	  [else (loop (cdr l))]))))
 
   (define check-last 
     (mk-check-last beginner-list? "list"))
@@ -93,14 +94,14 @@
 
   (define (check-three a b c prim-name ok1? 1type ok2? 2type ok3? 3type)
     (let ([bad
-	   (lambda (v which type)
-	     (raise
-	      (make-exn:fail:contract
-	       (string->immutable-string
-		(format "~a: ~a argument must be of type <~a>, given ~e, ~e, and ~e"
-			prim-name which type
-			a b c))
-	       (current-continuation-marks))))])
+	    (lambda (v which type)
+	      (raise
+		(make-exn:fail:contract
+		  (string->immutable-string
+		    (format "~a: ~a argument must be of type <~a>, given ~e, ~e, and ~e"
+		      prim-name which type
+		      a b c))
+		  (current-continuation-marks))))])
       (unless (ok1? a)
 	(bad a "first" 1type))
       (unless (ok2? b)
@@ -115,11 +116,11 @@
     (lambda (a)
       (unless (boolean? a)
 	(raise
-	 (make-exn:fail:contract
-	  (string->immutable-string
-	   (format "not: expected either true or false; given ~e"
-		   a))
-	  (current-continuation-marks))))
+	  (make-exn:fail:contract
+	    (string->immutable-string
+	      (format "not: expected either true or false; given ~e"
+		a))
+	    (current-continuation-marks))))
       (not a)))
 
   (define-teach beginner +
@@ -157,13 +158,13 @@
   (define-teach beginner error
     (lambda (sym str)
       (unless (and (symbol? sym)
-		   (string? str))
+		(string? str))
 	(raise
-	 (make-exn:fail:contract
-	  (string->immutable-string
-	   (format "error: expected a symbol and a string, got ~e and ~e"
-		   sym str))
-	  (current-continuation-marks))))
+	  (make-exn:fail:contract
+	    (string->immutable-string
+	      (format "error: expected a symbol and a string, got ~e and ~e"
+		sym str))
+	    (current-continuation-marks))))
       (error sym "~a" str)))
 
   (define-teach beginner struct?
@@ -190,49 +191,49 @@
     (let ? ([a a][b b])
       (or (equal? a b)
 	  (cond
-	   [(box? a)
-	    (and (box? b)
-		 (? (unbox a) (unbox b)))]
-	   [(pair? a)
-	    (and (pair? b)
-		 (? (car a) (car b))
-		 (? (cdr a) (cdr b)))]
-	   [(vector? a)
-	    (and (vector? b)
-		 (= (vector-length a) (vector-length b))
-		 (andmap ?
-			 (vector->list a)
-			 (vector->list b)))]
-	   [(image? a)
-	    (and (image? b)
-		 (image=? a b))]
-	   [(real? a)
-	    (and epsilon
-		 (real? b)
-		 (beginner-=~ a b epsilon))]
-	   [(struct? a)
-	    (and (struct? b)
-		 (let-values ([(ta sa?) (struct-info a)]
-			      [(tb sb?) (struct-info b)])
-		   (and (not sa?)
-			(not sb?)
-			(eq? ta tb)
-			(? (struct->vector a)
-			   (struct->vector b)))))]
-	   [(hash-table? a)
-	    (and (hash-table? b)
-		 (eq? (immutable? a) (immutable? b))
-		 (eq? (hash-table? a 'weak) (hash-table? b 'weak))
-		 (eq? (hash-table? a 'equal) (hash-table? b 'equal))
-		 (let ([al (hash-table-map a cons)]
-		       [bl (hash-table-map b cons)])
-		   (and (= (length al) (length bl))
-			(for-each 
-			 (lambda (ai)
-			   (? (hash-table-get b (car ai) (lambda () (not (cdr ai))))
-			      (cdr ai)))
-			 al))))]
-	   [else #f]))))
+	    [(box? a)
+	     (and (box? b)
+	       (? (unbox a) (unbox b)))]
+	    [(pair? a)
+	     (and (pair? b)
+	       (? (car a) (car b))
+	       (? (cdr a) (cdr b)))]
+	    [(vector? a)
+	     (and (vector? b)
+	       (= (vector-length a) (vector-length b))
+	       (andmap ?
+		 (vector->list a)
+		 (vector->list b)))]
+	    [(image? a)
+	     (and (image? b)
+	       (image=? a b))]
+	    [(real? a)
+	     (and epsilon
+	       (real? b)
+	       (beginner-=~ a b epsilon))]
+	    [(struct? a)
+	     (and (struct? b)
+	       (let-values ([(ta sa?) (struct-info a)]
+			    [(tb sb?) (struct-info b)])
+		 (and (not sa?)
+		   (not sb?)
+		   (eq? ta tb)
+		   (? (struct->vector a)
+		      (struct->vector b)))))]
+	    [(hash-table? a)
+	     (and (hash-table? b)
+	       (eq? (immutable? a) (immutable? b))
+	       (eq? (hash-table? a 'weak) (hash-table? b 'weak))
+	       (eq? (hash-table? a 'equal) (hash-table? b 'equal))
+	       (let ([al (hash-table-map a cons)]
+		     [bl (hash-table-map b cons)])
+		 (and (= (length al) (length bl))
+		   (for-each 
+		     (lambda (ai)
+		       (? (hash-table-get b (car ai) (lambda () (not (cdr ai))))
+			  (cdr ai)))
+		     al))))]
+	    [else #f]))))
 
   (define-teach beginner equal?
     (lambda (a b)
@@ -248,25 +249,54 @@
       (check-three a b c 'equal~? values 'any values 'any positive-real? 'non-negative-real)
       (tequal? a b c)))
 
-  (define (qcheck fmt-str x)
+  (define (qcheck quicksort fmt-str . x)
     (raise
-     (make-exn:fail:contract
-      (string->immutable-string
-       (string-append "quicksort: " (format fmt-str x)))
-      (current-continuation-marks))))
+      (make-exn:fail:contract
+	(string->immutable-string
+	  (string-append (format "~a : " quicksort) (apply format fmt-str x)))
+	(current-continuation-marks))))
     
   (define-teach intermediate quicksort
     (lambda (l cmp?)
       (unless (beginner-list? l) 
-        (qcheck "first argument must be of type <list>, given ~e" l))
+        (qcheck 'quicksort "first argument must be of type <list>, given ~e" l))
       (unless (and (procedure? cmp?) (procedure-arity-includes? cmp? 2))
-        (qcheck "second argument must be a <procedure> that accepts two arguments, given ~e" cmp?))
+        (qcheck 'quicksort "second argument must be a <procedure> that accepts two arguments, given ~e" cmp?))
       (quicksort l (lambda (x y) 
                      (define r (cmp? x y))
                      (unless (boolean? r)
-                       (qcheck "the results of the procedure argument must be of type <boolean>, produced ~e" r))
+                       (qcheck 'quicksort "the results of the procedure argument must be of type <boolean>, produced ~e" r))
                      r))))
-  
+  (define-teach intermediate foldr
+    (lambda (f e l)
+      (unless (and (procedure? f) (procedure-arity-includes? f 2))
+        (qcheck 'foldr "first argument must be a <procedure> that accepts two arguments, given ~e" f))
+      (unless (beginner-list? l) 
+        (qcheck 'foldr "third argument must be of type <list>, given ~e" l))
+      (foldr f e l)))
+
+  (define-teach intermediate foldl
+    (lambda (f e l)
+      (unless (and (procedure? f) (procedure-arity-includes? f 2))
+        (qcheck 'foldl "first argument must be a <procedure> that accepts two arguments, given ~e" f))
+      (unless (beginner-list? l) 
+        (qcheck 'foldl "third argument must be of type <list>, given ~e" l))
+      (foldl f e l)))
+
+  (define-teach intermediate build-string
+    (lambda (n f)
+      (unless (and (procedure? f) (procedure-arity-includes? f 1))
+        (qcheck 'build-string "second argument must be a <procedure> that accepts one argument, given ~e" f))
+      (unless (and (number? n) (integer? n) (>= n 0))
+        (qcheck 'build-string "first argument must be of type <natural number>, given ~e" n))
+      (build-string n (lambda (i)
+			(define r (f i))
+			(unless (char? r)
+			  (qcheck 'build-string "second argument must be a <procedure> that produces a <char>, given ~e which produced ~e for ~e" f r i))
+			r))))
+	
+			  
+
   (define-teach advanced cons 
     (lambda (a b)
       (check-second/cycle 'cons a b)
@@ -298,25 +328,28 @@
       (apply append! x)))
 
   (provide beginner-not
-	   beginner-+
-	   beginner-/
-	   beginner-*
-	   beginner-list?
-           beginner-member
-	   beginner-cons
-	   beginner-list*
-	   beginner-append
-	   beginner-error
-	   beginner-struct?
-	   beginner-exit
-	   beginner-equal?
-	   beginner-equal~?
-	   beginner-=~
-           intermediate-quicksort
-	   advanced-cons
-	   advanced-set-cdr!
-	   advanced-set-rest!
-	   advanced-list*
-	   advanced-append
-	   advanced-append!
-	   cyclic-list?))
+    beginner-+
+    beginner-/
+    beginner-*
+    beginner-list?
+    beginner-member
+    beginner-cons
+    beginner-list*
+    beginner-append
+    beginner-error
+    beginner-struct?
+    beginner-exit
+    beginner-equal?
+    beginner-equal~?
+    beginner-=~
+    intermediate-quicksort
+    intermediate-foldr
+    intermediate-foldl
+    intermediate-build-string
+    advanced-cons
+    advanced-set-cdr!
+    advanced-set-rest!
+    advanced-list*
+    advanced-append
+    advanced-append!
+    cyclic-list?))
