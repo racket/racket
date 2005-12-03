@@ -3,8 +3,19 @@
   (require (lib "draw.ss" "htdp")
            (lib "posn.ss" "lang")
            (lib "class.ss")
-	   (lib "String.ss" "profj" "libs" "java" "lang"))
+	   (lib "String.ss" "profj" "libs" "java" "lang")
+           (lib "Throwable.ss" "profj" "libs""java""lang")
+           (lib "RuntimeException.ss" "profj" "libs" "java" "lang"))
   ;(require "Posn.ss")
+  
+  ;raises a Java exception with the specified error message
+  ;raise-error: String -> void
+  (define (raise-error message)
+    (raise
+     (create-java-exception RuntimeException message 
+                            (lambda (exn str)
+                              (send exn RuntimeException-constructor-java.lang.String str))
+                            (current-continuation-marks))))
   
   (define-syntax (define/provide stx)
     (syntax-case stx ()
@@ -74,6 +85,16 @@
 
   (define/provide (bigBang-int-int-double-native this accs gets privates width height i)
     (define theCanvas ((hash-table-get accs 'theCanvas) this))
+    (unless (> width 0)
+      (raise-error
+       (format "The method bigBang(int,int,double) expected first argument to be greather than 0, given ~a" width)))
+    (unless (> height 0)
+      (raise-error
+       (format "The method bigBang(int,int,double) expected second argument to be greater than 0, given ~a" height)))
+
+    (unless (>= i 0)
+      (raise-error 
+       (format "The method bigBang(int,int,double) expected third argument to be 0 or greater, given ~a" i)))
     (send theCanvas start-int-int width height)
     (big-bang i this)
     (on-tick-event

@@ -3,8 +3,27 @@
   (require (lib "draw.ss" "htdp")
            (lib "posn.ss" "lang")
            (lib "class.ss")
-	   (lib "String.ss" "profj" "libs" "java" "lang"))
+	   (lib "String.ss" "profj" "libs" "java" "lang")
+           (lib "Throwable.ss" "profj" "libs" "java" "lang")
+           (lib "RuntimeException.ss" "profj" "libs" "java" "lang"))
   ;(require "Posn.ss")
+  
+  ;raises a Java exception with the specified error message
+  ;raise-error: String -> void
+  (define (raise-error message)
+    (raise
+     (create-java-exception RuntimeException message 
+                            (lambda (exn str)
+                              (send exn RuntimeException-constructor-java.lang.String str))
+                            (current-continuation-marks))))                                    
+  
+  (define-syntax (wrap-start-check stx)
+    (syntax-case stx ()
+      [(_ body)
+       #'(with-handlers 
+             ((exn:fail? 
+               (lambda (e) (raise-error "The method start(int,int) must be called on the canvas before using any drawing methods"))))
+           body)]))
   
   (define-syntax (define/provide stx)
     (syntax-case stx ()
@@ -25,6 +44,13 @@
     (make-posn (Posn-x-get posnO) (Posn-y-get posnO)))
   (define (color->symbol colorO)
     (string->symbol (to-lower-case (send colorO my-name))))
+
+  ;Raises an error if value less than or equal to 0
+  ;check-arg: num string string -> boolean
+  (define (check-arg value method argument)
+    (or (> value 0)
+        (raise-error (format "Method ~a expects an int greater than 0 for ~a argument, given ~a"
+                             method argument value))))
   
   (define (to-lower-case s)
     (letrec ((lower 
@@ -36,36 +62,55 @@
       (list->string (lower (string->list s)))))
   
   (define/provide (start-int-int-native this accs gets privates x y)
-     (start x y))
+    (and (check-arg x "start(int,int)" "first")
+         (check-arg x "start(int,int)" "second")
+         (start x y)))
   
   (define/provide (stop-native this accs gets privates) (stop))
   
   (define/provide (drawCircle-draw.Posn-int-draw.Color-native this accs gets privates posn r c)
-     (draw-circle (build-posn posn) r (color->symbol c)))
+    (wrap-start-check
+     (and (check-arg r "drawCircle(Posn, int, Color)" "second")
+          (draw-circle (build-posn posn) r (color->symbol c)))))
   
   (define/provide (drawDisk-draw.Posn-int-draw.Color-native this accs gets privates posn r c)
-     (draw-solid-disk (build-posn posn) r (color->symbol c)))
+    (wrap-start-check
+     (and (check-arg r "drawDisk(Posn, int, Color)" "second")
+          (draw-solid-disk (build-posn posn) r (color->symbol c)))))
   
   (define/provide (drawRect-draw.Posn-int-int-draw.Color-native this accs gets privates posn w h c)
-     (draw-solid-rect (build-posn posn) w h (color->symbol c)))
+    (wrap-start-check
+     (and (check-arg w "drawRect(Posn, int, int, Color)" "second")
+          (check-arg h "drawRect(Posn, int, int, Color)" "third")
+          (draw-solid-rect (build-posn posn) w h (color->symbol c)))))
 
   (define/provide (drawLine-draw.Posn-draw.Posn-draw.Color-native this accs gets privates p0 p1 c)
-     (draw-solid-line (build-posn p0) (build-posn p1) (color->symbol c)))
-
+    (wrap-start-check
+     (draw-solid-line (build-posn p0) (build-posn p1) (color->symbol c))))
+    
   (define/provide (drawString-draw.Posn-java.lang.String-native this accs gets privates p s)
-     (draw-solid-string (build-posn p) (send s get-mzscheme-string)))
+    (wrap-start-check
+     (draw-solid-string (build-posn p) (send s get-mzscheme-string))))
 
   (define/provide (clearCircle-draw.Posn-int-draw.Color-native this accs gets privates p r c)
-     (clear-circle (build-posn p) r (color->symbol c)))
+    (wrap-start-check
+     (and (check-arg r "clearCircle(Posn, int, Color)" "second")
+          (clear-circle (build-posn p) r (color->symbol c)))))
 
   (define/provide (clearDisk-draw.Posn-int-draw.Color-native this accs gets privates p r c)
-     (clear-solid-disk (build-posn p) r (color->symbol c)))
+    (wrap-start-check
+     (and (check-arg r "clearDisk(Posn, int, Color)" "second")
+          (clear-solid-disk (build-posn p) r (color->symbol c)))))
 
   (define/provide (clearRect-draw.Posn-int-int-draw.Color-native this accs gets privates p w h c)
-     (clear-solid-rect (build-posn p) w h (color->symbol c)))
+    (wrap-start-check
+     (and (check-arg w "clearRect(Posn, int, int, Color)" "second")
+          (check-arg h "clearRect(Posn, int, int, Color)" "third")
+          (clear-solid-rect (build-posn p) w h (color->symbol c)))))
 
   (define/provide (clearLine-draw.Posn-draw.Posn-draw.Color-native this accs gets privates p0 p1 c)
-     (clear-solid-line (build-posn p0) (build-posn p1) (color->symbol c)))
+    (wrap-start-check
+     (clear-solid-line (build-posn p0) (build-posn p1) (color->symbol c))))
 
 #|
   (define/provide (sleepForAWhile-int-native this accs gets privates s)
