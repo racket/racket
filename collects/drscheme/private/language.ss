@@ -826,7 +826,7 @@
                                                           init-code
                                                           gui?
                                                           use-copy?)
-        
+      
         (with-handlers ([(λ (x) #f) ;exn:fail?
                          (λ (x)
                            (message-box 

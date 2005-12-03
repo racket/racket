@@ -20,6 +20,7 @@ tracing todo:
            (lib "class.ss")
            (lib "list.ss")
            (lib "file.ss")
+           (lib "port.ss")
            (lib "tool.ss" "drscheme")
            (lib "mred.ss" "mred")
            (lib "bday.ss" "framework" "private")
@@ -309,7 +310,7 @@ tracing todo:
               (when executable-filename
                 (let ([wrapper-filename (make-temporary-file "drs-htdp-lang-executable~a.ss")]
                       [teachpack-specs
-                       (map (lambda (x) `(file ,x))
+                       (map (lambda (x) `(file ,(path->string x)))
                             (drscheme:teachpack:teachpack-cache-filenames teachpack-cache))])
                   (call-with-output-file wrapper-filename
                     (lambda (outp)
@@ -327,11 +328,7 @@ tracing todo:
                       (fprintf outp "(module #%htdp-lang-executable #%htdp-lang-language\n")
                       (call-with-input-file program-filename
                         (lambda (inp)
-                          (let loop ()
-                            (let ([c (read-char inp)])
-                              (unless (eof-object? c)
-                                (display c outp)
-                                (loop))))))
+                          (copy-port inp outp)))
                       (fprintf outp "\n)\n\n")
                       (write `(require #%htdp-lang-executable) outp)
                       (newline outp))

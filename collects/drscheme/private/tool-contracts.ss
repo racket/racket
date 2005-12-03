@@ -970,7 +970,7 @@
    ".")
   
   (drscheme:language:put-executable
-   ((is-a?/c top-level-window<%>) string? boolean? boolean? string? . -> . (union false/c string?))
+   ((is-a?/c top-level-window<%>) path? boolean? boolean? string? . -> . (union false/c path?))
    (parent program-filename mred? launcher? title)
    "Calls the MrEd primitive"
    "@flink put-file"
@@ -1017,7 +1017,8 @@
    "otherwise it will indicate the user's choice.")
   
   (drscheme:language:create-module-based-stand-alone-executable 
-   (string? string? any/c any/c any/c boolean? boolean?
+   ((union path? string?)
+    (union path? string?) any/c any/c any/c boolean? boolean?
             . -> .
             void?)
    (program-filename
@@ -1054,7 +1055,7 @@
    "\\rawscm{namespace-require}. ")
   
   (drscheme:language:create-module-based-launcher
-   (string? string? any/c any/c any/c boolean? boolean?
+   ((union path? string?) (union path? string?) any/c any/c any/c boolean? boolean?
             . -> .
             void?)
    (program-filename
@@ -1305,7 +1306,7 @@
                     (case-> (any/c . -> . void?) (-> any/c))))
      (create-executable (any/c
                          (union (is-a?/c dialog%) (is-a?/c frame%))
-                         string?
+                         path?
                          drscheme:teachpack:teachpack-cache?
                          . -> .
                          void?))
