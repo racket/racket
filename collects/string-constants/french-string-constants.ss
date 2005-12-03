@@ -1194,9 +1194,9 @@
   (stepper-program-window-closed "Avertissement : la fenêtre du programme a disparu.")
   
   (stepper-home "Début") ; Accueil?
-  (stepper-name "Stepper")
+  (stepper-name "Pas à Pas")
   (stepper-language-level-message
-   "Le langage actuellement utilisé est \"~a\". Le Stepper ne fonctionne pour l'instant que pour les langages de \"~a\" à \"~a\"")
+   "Le langage actuellement utilisé est \"~a\". Le Pas à Pas ne fonctionne pour l'instant que pour les langages de \"~a\" à \"~a\"")
   (stepper-button-label "Pas")
   (stepper-previous-application "|< Application")
   (stepper-previous "< Pas")
