@@ -55,7 +55,7 @@
      "Philippe Meunier, "
      "Jens Axel Søgaard, "
      "Francisco Solsona, "
-     "Michael Sperber, "
+     "Mike Sperber, "
      "Reini Urban, "
      "and "
      "Paolo Zoppetti "
