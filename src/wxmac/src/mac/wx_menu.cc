@@ -720,6 +720,7 @@ void wxMenuBar::Install(wxWindow *for_frame)
   int i;
   wxMenu* menu;
 
+  wxPrepareMenuDraw();
   ::ClearMenuBar();
   wxSetUpAppleMenu(this);
   for (i = 0; i < n; i ++) {
