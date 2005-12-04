@@ -181,7 +181,7 @@ exit 1
       (printf " ok.\n")
       (case (and (pair? r) (car r))
         [(error)
-         (printf " error: ~a\n" (cadr r))
+         (printf " skipping due to error: ~a\n" (cadr r))
          (sleep 1)]
         [(ok-but)
          (printf " ok\n  (note that there is a newer alpha version: ~a)"
