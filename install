@@ -177,7 +177,6 @@ exit 1
 (define (check-version)
   (printf "Checking version...") (flush-output)
   (let ([r ((dynamic-require '(lib "check.ss" "version") 'check-version))])
-    (set! r '(newer "100"))
     (if (eq? 'ok r)
       (printf " ok.\n")
       (case (and (pair? r) (car r))
