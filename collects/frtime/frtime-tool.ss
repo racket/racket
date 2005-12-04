@@ -14,7 +14,7 @@
     (unit/sig drscheme:tool-exports^
       (import drscheme:tool^)
 
-      (define basic-frtime-language%
+      #;(define basic-frtime-language%
 	(class* object% (drscheme:language:simple-module-based-language<%>)
 	  (define/public (get-language-numbers)
 	    '(1000 -400 1))
@@ -36,13 +36,13 @@
       (define big-frtime-language%
 	(class* object% (drscheme:language:simple-module-based-language<%>)
 	  (define/public (get-language-numbers)
-	    '(1000 -400 0))
+	    '(1000 -400))
 	  (define/public (get-language-position)
-	    (list (string-constant experimental-languages) "FrTime" "Standard"))
+	    (list (string-constant experimental-languages) "FrTime"))
 	  (define/public (get-module)
 	    '(lib "frtime-big.ss" "frtime"))
 	  (define/public (get-one-line-summary)
-	    "Standard FrTime (includes common libraries)")
+	    "Language for functional programming of event-driven systems")
           (define/public (get-language-url) #f)
 	  (define/public (get-reader)
 	    (lambda (name port)
@@ -79,11 +79,7 @@
           (field (watch-list empty))
           (inherit get-language-position)
           (define/override (get-language-name)
-            (let* ([pos (get-language-position)]
-                   [last-part (first (last-pair pos))])
-              (if (equal? last-part "Standard")
-                  "FrTime"
-                  (string-append "FrTime: " last-part))))
+            "FrTime")
           (define/override (on-execute settings run-in-user-thread)
             (let ([drs-eventspace (current-eventspace)])
               (super on-execute settings run-in-user-thread)
@@ -110,7 +106,7 @@
 
       (define (phase1) (void))
       (define (phase2)
-	(drscheme:language-configuration:add-language 
+	#;(drscheme:language-configuration:add-language 
 	 (make-object ((drscheme:language:get-default-mixin) (make-frtime-language basic-frtime-language%))))
         (drscheme:language-configuration:add-language 
 	 (make-object ((drscheme:language:get-default-mixin) (make-frtime-language big-frtime-language%))))))))
