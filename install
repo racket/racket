@@ -95,11 +95,10 @@ exit 1
         '("setup-flags")
         more-help)))
 
-(define (ask? title prompt)
-  (printf ">>> ~a <<<\n~a [y/n]: " title prompt)
+(define (tell title prompt)
+  (printf ">>> ~a <<<\n~a\n[enter to continue]" title prompt)
   (flush-output)
-  (not (regexp-match #rx"^[ \t\r\n]*[nN]"
-                     (read-line (current-input-port) 'any))))
+  (read-line (current-input-port) 'any))
 
 ;; Set up GUI if we're using MrEd
 (define gui? (namespace-variable-value 'make-eventspace #t (lambda () #f)))
@@ -143,8 +142,7 @@ exit 1
       (send c allow-tab-exit #t)
       (send e lock #t)
       (send e auto-wrap #t)
-      (set! ask? (lambda (title prompt)
-                   (eq? 'yes (message-box title prompt f '(yes-no stop)))))
+      (set! tell (lambda (title prompt) (message-box title prompt f)))
       (let ([out (make-output-port 'gui-output
                    always-evt
                    (lambda (bstring start end flush? breaks?)
@@ -189,15 +187,13 @@ exit 1
          (sleep 2)]
         [(newer)
          (newline)
-         (unless (ask? "Outdated Version"
-                       (string-append
-                        "The version you are installing is outdated,\n"
-                        "PLT v"(cadr r)" is now available from plt-scheme.org\n"
-                        (if (null? (cddr r))
-                          "(There is also an even newer alpha version)\n"
-                          "")
-                        "Are you sure you want to continue?"))
-           (error "Aborting..."))]
+         (tell "Outdated Version"
+               (string-append
+                "The version you are installing is outdated,\n"
+                "PLT v"(cadr r)" is now available from plt-scheme.org\n"
+                (if (null? (cddr r))
+                  "(There is also an even newer alpha version)\n"
+                  "")))]
         [else (error 'check-version "internal error: ~e" r)]))))
 
 (define (create-zos)
