@@ -15,7 +15,8 @@
     (fprintf o "GET ~a HTTP/1.0\r\nHost: ~a\r\n\r\n" path host)
     (flush-output o)
     (close-output-port o)
-    (regexp-match #rx"^HTTP/[0-9.]+ 200 OK\r\n.*?\r\n\r\n" i)
+    (unless (regexp-match #rx"^HTTP/[0-9.]+ 200 OK\r\n.*?\r\n\r\n" i)
+      (error 'url->port "bad reply from server: ~a" (read-line)))
     i)
 
   (define error-value
