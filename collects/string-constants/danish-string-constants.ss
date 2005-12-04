@@ -1,5 +1,95 @@
+#|
+
+When modifying the string constants files,
+please adhere to these guidelines:
+
+- All the entries in english-string-constants.ss have the same format
+  (name string).  If the purpose of an entry you are adding to the
+  file is not clear from just the name and string, put a comment next
+  to the entry explaining what the string is going to be used for and
+  in what context.
+  That's especially true for strings that contain things like "~a".
+  Systematically describe what the "~a" is going to be replaced with.
+  When we have to translate strings like "deleting ~a", we translators
+  need to know what "~a" is going to be (in particular, in some
+  languages like French, we need to know whether the "~a" is going to
+  be a masculine or feminine word, or whether it's going to be
+  singular or plural, etc).
+
+- When adding a bunch of new entries, put together in a section the
+  entries that logically belong together.  Give a title to your
+  section, so we have an idea of what the strings are for.  Don't mix
+  in the same section strings that have nothing to do with each other,
+  that's only going to confuse us.  Do not start a new section if
+  there's already one that deals with the same thing.  Dumping all the
+  new entries in random order at the end of the file is not a good way
+  to have your new entries translated in a timely manner...
+
+- Before adding strings for your new pet tool, check whether you can't
+  re-use strings that already exist.  There's no need for yet another
+  "Ok" string...
+
+- If you modify an existing string in english-string-constants.ss, go
+  through all the *-string-constants.ss files for the other languages,
+  comment out the old version of the modified string in each of these
+  files, and put a short comment there telling us the English string
+  has changed and needs to be re-translated.  Do not erase the old
+  version, it might help us translate the new one.  Do not move it
+  either.  Just comment it out and add the short comment.  After the
+  next svn update DrScheme will automatically tell us translators that
+  a new string needs to be translated, we will find your comment in
+  the file, and know what to do.
+	Some evil evil people might think that, since DrScheme automatically
+  informs us of new strings to be translated, an easier thing to do
+  when modifying an existing string would be to simply rename it at
+  the same time.  This works, except that if you do that, we
+  translators will get two warnings from DrScheme:
+		language english had but french does not:
+		(new-name "New String")
+		language french had but english does not:
+		(old-name "Old String")
+  then we translators will be left to wonder whether the two things
+  are related or not, and whether we can safely base our translation
+  of "New String" on the translation of "Old String" (since the two
+  strings are likely to be close in meaning).  Worse, we might not
+  even realize the two strings are related and translate "New String"
+  from scratch, just to realize later that it's only a variation of
+  "Old String".  I can tell you that nothing pisses off a translator
+  more than having to translate pretty much the same string twice
+  just because *you* were too lazy to inform us that it was just a
+  slight modification to an existing string rather than an entirely
+  new one.  Conclusion: do not change the name of a string unless you
+  have some really good reason to do so.
+
+- Please think hard before choosing a string and make sure it means
+  what you want it to mean.  That way you won't have to change it
+  later, and we won't have to retranslate it.
+
+- Please think hard before choosing the name for a string.  Use
+  meaningful names.  "error" or "ok" are not meaningful names.  Prefix
+  all related names with a common prefix (the name of your tool or
+  module).  String names are not the right place to save on typing.
+
+- If, for some reason, you really have to change the name of a string
+  (like, because the original name you gave it really sucked...),
+  change the name of the string in *ALL* the *-string-constants.ss
+  files.  That's a modification you can do without the help of a
+  translator, so do it yourself.  It's not the job of the translators
+  to clean up your naming mess for you.  Besides, you are the one who
+  knows what you changed, so leaving the translators having to guess
+  what you did is Not Nice(tm).
+
+- If, for some reason, you need to remove a string (i.e. you changed
+  your code and don't need the string anymore), remove the string in
+  *ALL* the *-string-constants.ss files.  Again, you don't need the
+  help of a translator to do that.  If you're not sure whether you
+  might need the string in the future or not, just comment it out in
+  *ALL* the files.
+
+|#
+
 (module danish-string-constants "string-constant-lang.ss"
- ;;; when translating this constant, substitue name of actual langauge for `English'
+ ;;; when translating this constant, substitute name of actual langauge for `English'
  (is-this-your-native-language "Foretrækker du dansk?")
 
  (are-you-sure-you-want-to-switch-languages
@@ -18,6 +108,7 @@
  (drscheme "DrScheme")
  (ok "Ok")
  (cancel "Fortryd")
+ (abort "Afbryd")
  (untitled "Uden navn")
  (untitled-n "Uden navn ~a")
  (warning "Advarsel")
@@ -67,6 +158,7 @@
  (bug-report-synthesized-information "Indsamlet information")  ;; dialog title
  (bug-report-show-synthesized-info "Vis indsamlet information")
  (bug-report-submit "Send")
+ (bug-report-submit-menu-item "Send fejlrapport") ;; in Help Menu (drs & help desk)
  (sending-bug-report "Afsender fejlrapport")
  (error-sending-bug-report "Fejl under afsendelse af fejlrapport")
  (error-sending-bug-report-expln "Der opstod en fejl ved afsendelse af fejlrapporten. Hvis din internetforbindelse ellers er velfungerende, besøg venligst:\n\n    http://bugs.plt-scheme.org/\n\nog send fejlrapporten ved hjælp af vores online fejlrapporteringsside. Vi er kede af besværet.\n\nFejlmeddelelsen er:\n~a")
@@ -87,23 +179,23 @@
  (cs-jump-to-next-bound-occurrence "Hop til næste bundne forekomst")
  (cs-jump-to-binding "Hop til den bindende forekomst")
  (cs-jump-to-definition "Hop til definition")
-; (cs-jump "Hop")
  (cs-error-message "Fejlmeddelelse")
  (cs-open-file "Åbn ~a")
  (cs-rename-var "Omdøb ~a")
  (cs-rename-id "Omdøb navn")
  (cs-rename-var-to "Omdøb ~a til:")
  (cs-name-duplication-error "Det nye navn, du har valgt, ~s, er i konflikt med et allerede eksisterende navn i dette virkefelt.")
+ (cs-rename-anyway "Rename ~a to:")
  (cs-status-init "Syntakstjek: Initialiserer omgivelser for brugerkode")
  (cs-status-coloring-program "Syntakstjek: farver udtryk")
  (cs-status-eval-compile-time "Syntakstjek: evaluering på oversættelsestid")
  (cs-status-expanding-expression "Syntakstjek: Udvider (expanding) udtryk")
- ;(cs-status-teachpacks "Syntakstjek: installerer undervisningspakke")
+ (cs-mouse-over-import "bindingen ~a er importeret fra ~s")
  (cs-mouse-over-variable-import "variabel ~s importeret fra ~s")
  (cs-mouse-over-syntax-import "syntaks ~s importeret fra ~s")
 
- (cs-lexical-variable "leksikalsk varaibel")
- (cs-lexical-syntax "leksikalsl syntaks")
+ (cs-lexical-variable "leksikalsk variabel")
+ (cs-lexical-syntax "leksikalsk syntaks")
  (cs-imported-variable "importeret variabel")
  (cs-imported-syntax "importeret syntaks")
 
@@ -133,8 +225,14 @@
  (no-full-name-since-not-saved
   "Filen har ikke et fuldt navn, for den er endnu ikke gemt.")
  (cannot-open-because-dne "Kan ikke åbne ~a, for den findes ikke")
- (interactions-out-of-sync
-  "ADVARSEL: Interaktionsvinduet er ude af trit med definitionsvinduet. Klik på Kør.")
+  
+  (needs-execute-language-changed
+   "ADVARSEL: Sproget er skiftet. Klik Kør.")
+  (needs-execute-teachpack-changed
+   "ADVARSEL: Undervisningspakkerne er ændrede. Klik Kør.")
+  (needs-execute-defns-edited
+   "ADVARSEL: Definitionsvinduet er ændret. Klik Kør.")
+
  (file-is-not-saved "Filen \"~a\" er endnu ikke gemt.")
  (save "Gem")
  (please-choose-either "Vælg venligst enten \"~a\" eller \"~a\"")
@@ -162,6 +260,9 @@
  (scheme-mode-color-parenthesis "Parentes")
  (scheme-mode-color-error "Fejl")
  (scheme-mode-color-other "Andet")
+ ;; the ~a is filled in with one of the above (scheme-mode-*)
+ (syntax-coloring-choose-color "Vælg en farve for ~a")
+ (preferences-colors "Farver") ;; used in the preferences dialog
 
  (url "URL")
  (url: "URL:")
@@ -227,6 +328,7 @@
  (plt:hd:refresh-installing "Installerer ~a")
  (plt:hd:refresh-clearing-indicies "Renser forgemte indekser")
  (plt:hd:refresh-progress "PLT-manualhentningsfremskridt")
+ (plt:hd:refresh-done "Opdatering af manualer afsluttet")
 ;; should not mention `SVN' (plt:hd:refresh-done "Færdig med at opdatere SVN-manualer")
  (plt:hd:refresh-installation-log "Installationslog")
  (plt:hd:refresh-stopped "Opdatering af PLT-manualer stoppet")
@@ -348,7 +450,8 @@
  (display-line-numbers "Vis linjenumre i bufferen; ikke tegn-offsets")
  (enable-keybindings-in-menus "Slå tastaturgenveje i menuer til")
  (automatically-to-ps "Udskriv automatisk til postscriptfil")
- (use-mdi "Brug MDI vinduer") ;;; ms windows only -- use that window in a window thingy
+ (option-as-meta "Brugtion option-tasten som meta") ;; macos/macos x only  
+ (use-mdi "Brug MDI-vinduer") ;;; ms windows only -- use that window in a window thingy
  (separate-dialog-for-searching "Brug separat dialog til søgning")
  (reuse-existing-frames "Genbrug gamle vinduer, når nye filer åbnes")
  (default-fonts "Standardskrifttyper")
@@ -356,7 +459,13 @@
  (choose-color "Vælg farve") ; in prefs dialog
  (online-coloring-active "Interaktiv syntaksfarvelægning")
  (open-files-in-tabs "Åbn filer i separate faneblade (ikke separate vinduer)")
+ (show-interactions-on-execute "Vis automatisk interaktionsvinduet ved kørsel")
+ (limit-interactions-size "Afgræns interaktionernes størrelse")
+ (background-color "Baggrundsfarve")
+ (default-text-color "Default-tekst") ;; used for configuring colors, but doesn't need the word "color"
+ (choose-a-background-color "Vælg en baggrundsfarve")
 
+  
  ; title of the color choosing dialog
  (choose-paren-highlight-color "Vælg farve til parentesfremhævning")
 
@@ -393,6 +502,7 @@
 
  ;;; indenting preferences panel
  (indenting-prefs-panel-label "Indrykning")
+ (indenting-prefs-extra-regexp "Ekstra regexp")
 
  ; filled with define, lambda, or begin
  (enter-new-keyword "Indtast et nyt ~a-lignende nøgleord:")
@@ -562,10 +672,18 @@
 
  (keybindings-info "Vis de gældende, aktive tastebindinger")
  (keybindings-menu-item "Tastebindinger")
+ (keybindings-show-active "Vis aktive tastebindinger")
  (keybindings-frame-title "Tastebindinger")
- (keybindings-sort-by-name "Sortér efter Navn")
- (keybindings-sort-by-key "Sortér efter Tast")
+ (keybindings-sort-by-name "Sorter efter navn")
+ (keybindings-sort-by-key "Sorter efter taster")
+ (keybindings-add-user-defined-keybindings "Tilføj en brugerdefineret tastebinding...")
+ (keybindings-menu-remove "Fjern ~a")
+ (keybindings-choose-user-defined-file "Vælg en fil med tastebindinger.")
 
+ (user-defined-keybinding-error "Fejl ved kørsel af brugerdefineret tastebinding ~a\n\n~a")
+ (user-defined-keybinding-malformed-file "Filen ~a indeholder ikke et modul skrevet i sproget (lib \"keybinding-lang.ss\" \"framework\").")  
+
+ ;; menu items in the "special" menu
  (insert-text-box-item "Indsæt tekstkasse")
  (insert-pb-box-item   "Indsæt pasteboard-kasse")
  (insert-image-item    "Indsæt billede...")
@@ -832,8 +950,19 @@
  (use-mixed-fractions "Uægte brøker")
  (use-repeating-decimals "Periodeiske decimalbrøker")
  (decimal-notation-for-rationals "Brug decimaltalsnotation for brøker")
- (please-select-a-language "Vælg venligst et sprog")
 
+
+ ;; startup wizard screen language selection section
+ (please-select-a-language "Vælg et sprog")
+ (show-all-languages "Vis alle sprog")
+ (show-drscheme-usage-questions "Vis DrScheme-brugsspørgsmål")
+ (are-you...-kind-of-drscheme-user "Bruger du...")
+ (use-with-htdp "... DrScheme sammen med bogen How to Design Programs?")
+ (use-seasoned "... som en rutineret PLT Schemer?")
+ (use-other "... DrScheme af andre årsager?")
+ (use-eopl "... DrScheme sammen med bogen Essentials of Programming Languages?")
+  (pl-lang-choice-format "Startsprog: ~a")
+  (choose-new-language-before-running "Vælg et nyt sprog før kørslen.")
 
  ;;; languages
  (beginning-student "Begynder")
@@ -844,7 +973,7 @@
  (intermediate-one-line-summary "Begynder med leksikalske virkefelter")
  (intermediate-student/lambda "Øvet med lambda")
  (intermediate/lambda-one-line-summary "Øvet med funktioner af højere orden")
- (advanced-student "Avanceret")
+ (advanced-student "Rutineret")
  (advanced-one-line-summary "Øvet med lambda og mutation")
  (full-language "Fuldstændig") ;; also in the HtDP languages section
  (how-to-design-programs "How to Design Programs") ;; should agree with MIT Press on this one...
@@ -854,13 +983,34 @@
  (r5rs-lang-name "Standard (R5RS)")
  (r5rs-one-line-summary "R5RS, uden dikkedarer")
  (expander "Ekspanderen")
- (expander-one-line-summary "Ekspandere, snarere end evaluerer udtryk")
+ (expander-one-line-summary "Ekspanderer, snarere end evaluerer udtryk")
  (professional-languages "Professionelle sprog")
  (teaching-languages "Undervisningssprog")
- (experimental-languages "Eksperimentale sprog")
+ (experimental-languages "Eksperimentelle sprog")
+  (initial-language-category "Startsprog")
+  (no-language-chosen "Intet sprog valgt")
 
- (module-language-one-line-summary "Sprog med modul som eneste konstruktion")
+ (module-language-one-line-summary "En kørsel åbner en REPL i i modulets sammenhæng, inkluderer modulets deklarede sprog")
 
+  ;;; from the `not a language language' used initially in drscheme.
+  (must-choose-language "DrScheme kan ikke køre programmer før du vælger et programmeringssprog.")
+  
+  ; next two appear before and after the name of a text book (which will be in italics)
+  (using-a-textbook-before "Bruger du ")
+  (using-a-textbook-after "?")
+  
+  ; next two are before and after a language
+  (start-with-before "Begynd med ")
+  (start-with-after ".")
+
+  (seasoned-plt-schemer? "Rutineret PLT-Schemer?")
+  (looking-for-standard-scheme? "Leder efter standard-Scheme?")
+
+  ; the three string constants are concatenated together and the middle
+  ; one is hyperlinked to the dialog that suggests various languages
+  (get-guidance-before "Vælg enten “Vælg sprog...”-punktet i “Sprog”-menuen, eller ")
+  (get-guidance-during "følg guiden")
+  (get-guidance-after ".")
 
  ;;; debug language
  (unknown-debug-frame "[ukendt]")
@@ -906,6 +1056,13 @@
  (test-coverage-clear? "Ændringer i definitionsvinduet ugyldiggør testdækningsinformationen. Fortsæt?")
  (test-coverage-clear-and-do-not-ask-again "Ja og spørg ikke igen")
  (test-coverage-ask? "Spørg om at rense dækningen af testen")
+
+ ;; tracing
+ (tracing-enable-tracing "Slå sporing til")
+ (tracing-show-tracing-window "Vis sporing")
+ (tracing-hide-tracing-window "Skjul sporing")
+ (tracing-tracing-nothing-to-show "Ingen sporingsresultater er tilstede endnu. (Sørg for at dit sprog understøtter sporing og at sporing er slået til.)")
+
 
  ;;; repl stuff
  (evaluation-terminated "Evaluering termineret")
@@ -976,8 +1133,13 @@
  (module-browser-show-lib-paths/short "Følg lib requires") ;; check box label in show module browser pane in drscheme window.
  (module-browser-refresh "Opdater") ;; button label in show module browser pane in drscheme window.
  (module-browser-only-in-plt-and-module-langs
-  "Moduloversigten er kun tilgængelig for programmer i PLT-sprogene og i modul-sproget (og kun for de programmer, som benytter moduler).")
-
+ "Moduloversigten er kun tilgængelig for programmer i PLT-sprogene og i modul-sproget (og kun for de programmer, som benytter moduler).")
+ (module-browser-name-length "Navnelængde")
+ (module-browser-name-short "Kort")
+ (module-browser-name-medium "Mellem")
+ (module-browser-name-long "Lanf")
+ (module-browser-open-all "Åbn alle filer vist her")
+  
  (happy-birthday-matthias "Tillykke med fødselsdagen, Matthias!")
  (happy-birthday-matthew  "Tillykke med fødselsdagen, Matthew!")
  (happy-birthday-shriram  "Tillykke med fødselsdagen, Shriram!")
@@ -1028,9 +1190,20 @@
  (number-of-open-recent-items "Antal nye ting")
  (switch-anyway "Skift fil alligevel")
 
- (stepper-program-has-changed "ADVARSEL: Programmer er ændret.")
+ (stepper-program-has-changed "ADVARSEL: Programmet er ændret.")
  (stepper-program-window-closed "ADVARSEL: Programvinduet er væk.")
 
+ (stepper-home "Hjemp")
+ (stepper-name "Stepper")
+ (stepper-language-level-message
+  "Sprogniveauet er sat til \"~a\". For nu virker stepperen kun for sprogniveauerne fra \"~a\" til \"~a\".")
+ (stepper-button-label "Step")
+ (stepper-previous-application "|< Anvendelse")
+ (stepper-previous "< Step")
+ (stepper-next "Step >")
+ (stepper-next-application "Anvendelse >|")
+
+  
  (wizard-next "Næste")
  (wizard-back "Tilbage")
  (wizard-finish "Færdig")
@@ -1070,33 +1243,82 @@
 
   ;; Profj
   (profj-java "Java")
-  (profj-java-mode "Java-tilstands")
+  (profj-java-mode "Java-tilstande")
   (profj-java-mode-color-keyword "nøgleord")
   (profj-java-mode-color-string "streng")
-  (profj-java-mode-color-literal "bogstavelighed")
+  (profj-java-mode-color-literal "bogstavelighed (literal)")
   (profj-java-mode-color-comment "kommentar")
   (profj-java-mode-color-error "fejl")
   (profj-java-mode-color-identifier "navn")
   (profj-java-mode-color-default "andet")
   
+  (profj-insert-java-comment-box "Indsæt Java-kommentarkasse")
+  (profj-insert-java-interactions-box "Indsæt Java-interaktionskasse")
+
   ;; The Test Suite Tool
   ;; Errors
-  (test-case-empty-error "Tom test")
-  (test-case-too-many-expressions-error "For mange udtryk i en test")
-  (test-case-not-at-top-level "Test-boks ikke på top-niveaue")
+  (test-case-empty-error "Tomt test")
+  (test-case-too-many-expressions-error "For mange udtryk i testen.")
+  (test-case-not-at-top-level "Testkassen ikke i topniveau")
   ;; Dr. Scheme window menu items
   (test-case-insert "Indsæt test")
   (test-case-disable-all "Slå alle tests fra")
-  (test-case-enable-all "Slå alle tests til")
-  ;; NOTE: The following three string constants are labels of the test-case fields. The width
+  (test-case-enable-all "Slp alle tests til")
+  
+  ;; NOTE: The following string constants are labels of the test-case fields. The width
   ;;       of the field is determined by the length of the longest of the following three words.
   ;;       if the words are too long the test case will take up too much horizontal room and
   ;;       not look very good.
   ;; This string is the label of the expression that is being tested in a test case.
-  ;(test-case-to-test "Skal testes")
+  (test-case-to-test "Test")
   ;; This string is the label of the expression that is the expected value of the to-test expression.
-  ;(test-case-expected "Forventet")
+  (test-case-expected "Forventet")
   ;; This string is the label of the actual result of the to test expression.
   (test-case-actual "Faktisk")
+  (test-case-predicate "Prædikat")
+  (test-case-should-raise "Skulle smide")
+  ;; The label of a field of the test-case that describes the expected error message of a test case
+  (test-case-error-message "Fejlbeskeden")
+
+  (test-case-menu-title "Test")
+  (test-case-switch-to-error-box "Sktift til fejl-testkasse")
+  (test-case-switch-to-nonerror-box "Skift til ikke-fejl-testkasse")
+  (test-case-collapse "Skjul testen")
+  (test-case-show-actual "Vis faktisk værdi")
+  (test-case-enable "Slå testen til")
+  (test-case-show-predicate "Vis prædikat")
+  (test-case-show-error-message "Vis fejlbeskeden")
+  (test-case-convert-to-text "Konverter til tekst")
+  
+  ;; Profj Boxes
+  (profjBoxes-empty-error "Tom interaktion")
+  (profjBoxes-too-many-expressions-error "For mange udtryk i en kasse")
+  (profjBoxes-interactions-label "Interaktioner")
+  (profjBoxes-bad-java-id-error "Ulovlig Java-ID")
+  (profjBoxes-examples-label "Eksempler")
+  (profjBoxes-add-new-example-button "Tilføj nyt eksempel")
+  (profjBoxes-type "Type")
+  ;; The Java identifier of an example of data
+  (profjBoxes-name "Navn")
+  (profjBoxes-value "Værdi")
+  (profjBoxes-insert-java-examples "Indsæt Java-eksempler")
+  (profjBoxes-insert-java-interactions "Indsæt Java-interaktioner")
+
+  ;; Slideshow
+  (slideshow-show-slideshow-panel "Vis diasshow-panel")
+  (slideshow-hide-slideshow-panel "Skjul diasshow-panel")
+  (slideshow-freeze-picts "Frys disse billeder")
+  (slideshow-thaw-picts "Vis billeder under mus")
+  (slideshow-hide-picts "Vis indlejrede kasser")
+  (slideshow-show-picts "Vis billeder")
+  (slideshow-cannot-show-picts "Kan ikke vise billeder; kør programmet for at cache størrelserne først")
+  (slideshow-insert-pict-box "Indsæt billed-kasse (Pict Box)") 
+
+  ;; GUI Tool
+  (gui-tool-heading "GUI-værktøj")
+  (gui-tool-before-clicking-message "Før værktøjsikonerne bruges, vælg \"Indsæt GUI\" fra \"Speciel\"-menuen for at indsætte et rod-GUI-element, eller vælg et allerede indsat GUI.")
+  (gui-tool-show-gui-toolbar "Vis GUI-værktøjslinjen")
+  (gui-tool-hide-gui-toolbar "Skjul GUI-værktøjslinjen")
+  (gui-tool-insert-gui "Indsæt GUI")
 
  )
