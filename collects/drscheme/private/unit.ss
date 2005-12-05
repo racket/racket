@@ -1304,6 +1304,7 @@ module browser threading seems wrong.
                                  [lst lst])
                         (cond
                           [(zero? n) null]
+                          [(null? lst) null]
                           [else (cons (car lst) (loop (- n 1) (cdr lst)))])))]
                    [find-exp-diff
                     (λ (p1 p2)
