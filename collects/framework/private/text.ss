@@ -1655,9 +1655,7 @@ WARNING: printf is rebound in the body of the unit to always
                            [resp-chan (cdr pr)])
                        (set! positioners (cons pr positioners))
                        (loop))))
-                  (if position
-                      (apply choice-evt (map service-positioner positioners))
-                      never-evt)
+                  (apply choice-evt (map service-positioner positioners))
                   (handle-evt
                    read-chan
                    (λ (ent)
@@ -1748,7 +1746,11 @@ WARNING: printf is rebound in the body of the unit to always
                      [resp-evt (cdr pr)])
                  (handle-evt
                   (choice-evt nack-evt 
-                              (channel-put-evt resp-evt position))
+                              (channel-put-evt resp-evt (or position 
+                                                            
+                                                            ;; a bogus position for when 
+                                                            ;; nothing has happened yet.
+                                                            (list 1 0 1))))
                   (let ([sent-position position])
                     (λ (_)
                       (set! positioners (remq pr positioners))

@@ -905,7 +905,9 @@
 	   (if (method-in-interface? 'on-event (object-interface window))
 	       (send window on-event event)
 	       (error mouse-tag "focused window does not have on-event"))]
-	  [(send (car l) on-subwindow-event window event)  #f]
+	  [(and (is-a? (car l) window<%>)
+                (send (car l) on-subwindow-event window event))
+           #f]
 	  [else  (loop (cdr l))]))))
   
   ;;

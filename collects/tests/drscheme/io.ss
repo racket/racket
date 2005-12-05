@@ -29,8 +29,7 @@ add this test:
         (clear-definitions drs-frame)
         (type-in-definitions drs-frame expression)
         (do-execute drs-frame)
-        (let* ([text (send drs-frame get-interactions-text)]
-               [got (get-string/style-desc text (send text paragraph-start-position 2))])
+        (let* ([got (get-annotated-output)])
           (unless (andmap (λ (exp got)
                             (and (string=? (car exp) (car got))
                                  (or (equal? (cadr exp) (cadr got))
@@ -38,12 +37,32 @@ add this test:
                                           ((cadr exp) (cadr got))))))
                           expected 
                           got)
-            (error 'io.ss "expected ~s, got ~s for ~s" expected got expression)))))
+            (fprintf (current-error-port)
+                     "expected ~s, got ~s for ~s\n\n"
+                     expected
+                     got
+                     expression)))))
+    
+    (define (get-annotated-output)
+      (let ([chan (make-channel)])
+        (queue-callback
+         (λ ()
+           (let ([text (send drs-frame get-interactions-text)])
+             (channel-put chan 
+                          (get-string/style-desc text
+                                                 (send text paragraph-start-position 2))))))
+        (channel-get chan)))
     
     (define (output-style x) (equal? (list-ref x 9) '(150 0 150)))
     (define (error-style x) (equal? (list-ref x 9) '(255 0 0)))
     
     (define prompt '("\n> " default-color))
+    
+    ;; this test has to be first to test an uninitialized state of the port
+    ;; NOTE: missing a name for the "value" style ... so this test appears to fail (altho it actually passes)
+    (check-output "(port-next-location (current-input-port))" 
+                  (list '("1\n0\n1\n" value-style)
+                        prompt))
     
     (check-output "(display 1)" (list (list "1" output-style) prompt))
     (check-output "(display 1 (current-output-port))" (list (list "1" output-style) prompt))
@@ -166,7 +185,7 @@ add this test:
   (set-language-level! (list "PLT" (regexp "Textual")))
   
   (define (run-test)
+    (output-err-port-checking) ;; must come first
     ;(long-io/execute-test)
-    ;(output-err-port-checking)
     (reading-test)
     ))
