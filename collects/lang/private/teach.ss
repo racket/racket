@@ -92,6 +92,10 @@
   ;; produces a new closure (instead of using a closure
   ;; that's allocated once)
   (define make-lambda-generative 5)
+  
+  ;; A consistent pattern for stepper-skipto:
+  (define-for-syntax (stepper-ignore-checker stx)
+    (syntax-property stx 'stepper-skipto (list syntax-e cdr syntax-e cdr car)))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; syntax implementations
@@ -232,13 +236,12 @@
 				  (syntax/loc stx
 				    (check-top-level-not-defined 'who #'name))))
 			      (stx->list names))])
-	    (syntax-property
+            ;; this use of stepper-ignore-checker will behave badly on multiple-name defines:
+            (stepper-ignore-checker
 	     (syntax/loc stx
 	       (begin
 		 check ...
-		 defn))
-	     'stepper-skipto
-	     (list syntax-e cdr syntax-e cdr car))))]
+		 defn)))))]
        [(eq? (syntax-local-context) 'module)
 	(for-each (lambda (name)
 		    (let ([b (identifier-binding name)])
@@ -276,9 +279,7 @@
     (define (ensure-expression stx k)
       (if (memq (syntax-local-context) '(expression))
 	  (k)
-	  (syntax-property #`(values #,stx)
-			   'stepper-skipto 
-			   (list syntax-e cdr syntax-e cdr car))))
+          (stepper-ignore-checker #`(values #,stx))))
 
     ;; Use to generate nicer error messages than direct pattern
     ;; matching. The `where' argument is an English description
@@ -852,8 +853,8 @@
 		  (syntax-source-module #'id))
 	     ;; ... but it might be defined later in the module, so
 	     ;; delay the check.
-	     (let ([tc (syntax/loc stx (beginner-top-continue id))])
-	       (ensure-expression tc (lambda () tc)))
+             (stepper-ignore-checker 
+              (syntax/loc stx (#%app values (beginner-top-continue id))))
 	     (syntax/loc stx (#%top . id)))]))
 
     (define (beginner-top-continue/proc stx)
@@ -917,9 +918,7 @@
 			     (with-syntax ([new-test (syntax-property (syntax #t) 'stepper-else #t)])
 			       (syntax/loc clause (new-test answer))))]
 			  [(question answer)
-			   (with-syntax ([verified (syntax-property (syntax (verify-boolean question 'cond)) 
-								    'stepper-skipto 
-								    (list syntax-e cdr syntax-e cdr car))])
+			   (with-syntax ([verified (stepper-ignore-checker (syntax (verify-boolean question 'cond)))])
 			     (syntax/loc clause (verified answer)))]
 			  [()
 			   (check-preceding-exprs clause)
@@ -993,9 +992,7 @@
        (lambda ()
 	 (syntax-case stx ()
 	   [(_ test then else)
-	    (with-syntax ([new-test (syntax-property (syntax (verify-boolean test 'if)) 
-						     'stepper-skipto 
-						     (list syntax-e cdr syntax-e cdr car))])
+	    (with-syntax ([new-test (stepper-ignore-checker (syntax (verify-boolean test 'if)))])
 	      (syntax/loc stx
 		(if new-test
 		    then
@@ -1047,9 +1044,7 @@
 				    (syntax-property
 				     (quasisyntax/loc 
 					 stx
-				       (if #,(syntax-property (quasisyntax/loc stx (verify-boolean #,(car remaining) 'swhere))
-							      `stepper-skipto
-							      (list syntax-e cdr syntax-e cdr car))
+				       (if #,(stepper-ignore-checker (quasisyntax/loc stx (verify-boolean #,(car remaining) 'swhere)))
 					   #,@(case where
 						[(or) #`(#t
 							 #,(loop (+ clauses-consumed 1) (cdr remaining)))]
@@ -1837,10 +1832,7 @@
 			      (syntax/loc stx (begin (set! id expr ...) set!-result))
 			      'stepper-skipto
 			      (list syntax-e cdr syntax-e car))
-			     (syntax-property
-			      (syntax/loc stx (#%app values (advanced-set!-continue id expr ...)))
-			      'stepper-skipto
-			      (list syntax-e cdr syntax-e cdr car))))]
+			     (stepper-ignore-checker (syntax/loc stx (#%app values (advanced-set!-continue id expr ...))))))]
 		      [(_ id . __)
 		       (teach-syntax-error
 			'set!
@@ -1938,7 +1930,9 @@
 	  #f
 	  "expected a sequence of expressions after `begin', but nothing's there")]
 	[(_ e ...)
-	 (syntax/loc stx (let () e ...))]
+	 (syntax-property (syntax/loc stx (let () e ...))
+                          'stepper-hint
+                          'comes-from-begin)]
 	[_else
 	 (bad-use-error 'begin stx)]))
 
