@@ -171,7 +171,7 @@ static int glyph_exists_in_selected_font(HDC hdc, int c)
   if (wxGetFontUnicodeRanges) {
     DWORD sz;
     sz = wxGetFontUnicodeRanges(hdc, NULL);
-    if (sz && (sz < 4096)) {
+    if (sz) {
       wxGLYPHSET *gs;
       char *bytes;
       int i;
