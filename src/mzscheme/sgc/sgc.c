@@ -3528,6 +3528,7 @@ static void prepare_stack_collect()
 #endif
   e = collect_stack[--collect_stack_count];
   s = collect_stack[--collect_stack_count];
+  e += PTR_ALIGNMENT - 1;
 
   PUSH_COLLECT(s, e, source);
   semi_collect_stack(0);
@@ -4112,6 +4113,8 @@ static void do_disappear_and_finals()
       dl->saved_value = NULL;
     }
   }
+
+  if (GC_push_last_roots_again) { GC_push_last_roots_again(); collect(); }
 
   /* Deregister dangling disappearings: */
   trim_disappearing(&disappearing);

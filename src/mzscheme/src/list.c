@@ -1763,11 +1763,21 @@ Scheme_Object *scheme_make_ephemeron(Scheme_Object *key, Scheme_Object *val)
   return GC_malloc_ephemeron(key, val);
 #else
   Scheme_Ephemeron *e;
+  int can_gc = 1;
 
-  e = (Scheme_Ephemeron *)scheme_malloc_atomic(sizeof(Scheme_Ephemeron));
+  if (SCHEME_INTP(val) || !GC_base(val)) 
+    can_gc = 0;
+
+  if (can_gc) {
+    e = (Scheme_Ephemeron *)scheme_malloc_atomic(sizeof(Scheme_Ephemeron));
+  } else {
+    e = (Scheme_Ephemeron *)scheme_malloc(sizeof(Scheme_Ephemeron));
+  }
   e->so.type = scheme_ephemeron_type;
-  e->next = ephemerons;
-  ephemerons = e;
+  if (can_gc) {
+    e->next = ephemerons;
+    ephemerons = e;
+  }
   e->key = key;
   e->val = val;
 
@@ -1814,9 +1824,8 @@ static int mark_ephemerons()
     for (e = ephemerons; e; e = next) {
       next = e->next;
 
-      if (e->key) {
-	if (!GC_is_marked(e)
-	    || (!SCHEME_INTP(e->key) && !GC_is_marked(e->key))) {
+      if (e->key) {      
+	if (!GC_is_marked(e) || !GC_is_marked(e->key)) {
 	  /* No reason to mark, yet. Randomly put this one back
 	     into one of the keep lists: */
 	  if (mix & 0x1) {
