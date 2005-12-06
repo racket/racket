@@ -741,7 +741,7 @@
           (define debug-button
             (make-object button%
               ((bitmap-label-maker
-                "Debug"
+		(string-constant debug-tool-button-name)
                 (build-path (collection-path "mztake" "icons") "icon-small.png")) this)
               (make-object vertical-pane% (get-button-panel))
               (lambda (button evt)

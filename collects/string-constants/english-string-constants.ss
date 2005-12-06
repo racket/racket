@@ -1203,6 +1203,7 @@ please adhere to these guidelines:
  (stepper-next "Step >")
  (stepper-next-application "Application >|")
  
+ (debug-tool-button-name "Debug")
 
  (wizard-next "Next")
  (wizard-back "Back")

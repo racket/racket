@@ -580,10 +580,10 @@ please adhere to these guidelines:
  ;;; versions below, once the &s have been stripped.
  ;;; if they don't, DrScheme's menus will appear
  ;;; in the wrong order.
- (file-menu "ファイル(F)")
- (edit-menu "編集(E)")
- (help-menu "ヘルプ(H)")
- (windows-menu "ウィンドウ(W)")
+ (file-menu "ファイル")
+ (edit-menu "編集")
+ (help-menu "ヘルプ")
+ (windows-menu "ウィンドウ")
 
  ;;; menus
  ;;; - in menu labels, the & indicates a alt-key based shortcut.
