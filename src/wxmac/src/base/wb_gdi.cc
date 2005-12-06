@@ -270,7 +270,9 @@ wxColour *wxColourDatabase::FindColour(const char *colour)
     char *naya;
     naya = new char[strlen(colour) + 1];
     for (q = 0; colour[q]; q++) {
-      naya[q] = toupper(colour[q]);
+      naya[q] = colour[q];
+      if ((naya[q] >= 'a') && (naya[q] <= 'z'))
+	naya[q] -= ('a' - 'A');
     }
     naya[q] = 0;
     colour = naya;

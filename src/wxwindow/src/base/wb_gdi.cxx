@@ -207,7 +207,9 @@ wxColour *wxColourDatabase::FindColour(const char *colour)
   wxNode *node;
 
   for (i = 0; colour[i] && i < 255; i++) {
-    uc_colour[i] = toupper(colour[i]);
+    uc_colour[i] = colour[i];
+    if ((uc_colour[i] >= 'a') && (uc_colour[i] <= 'z'))
+      uc_colour[i] -= ('a' - 'A');
   }
   uc_colour[i] = 0;
   colour = uc_colour;
