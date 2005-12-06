@@ -2216,6 +2216,10 @@ static unsigned int *convert_to_drawable_format(const char *s, int ds, long *_ul
 #endif
 static unsigned int cvt_buf[WX_CVT_BUF_SIZE];
 
+/* Xft measurements use a `short'. Avoid string lengths that are
+   likely to overflow it. */
+#define MAX_TEXT_LENGTH_FOR_MEASURE 100
+
 void wxWindowDC::DrawText(char *orig_text, double x, double y, 
 			  Bool combine, Bool isUnicode, int dt,
 			  double angle)
@@ -2352,6 +2356,12 @@ void wxWindowDC::DrawText(char *orig_text, double x, double y,
       try_sub = 1;
 
       while(textlen) {
+	int nowlen;
+	nowlen = textlen;
+	if (nowlen > MAX_TEXT_LENGTH_FOR_MEASURE) {
+	  nowlen = MAX_TEXT_LENGTH_FOR_MEASURE;
+	}
+
 	if (angle != 0.0)
 	  no_rotate = (wxFontStruct*)current_font->GetInternalAAFont(e_scale_x, e_scale_y, 0.0);
 	else
@@ -2381,7 +2391,7 @@ void wxWindowDC::DrawText(char *orig_text, double x, double y,
 	  
 	  /* Get a longer range that won't need a substitution */
 	  if (this_time == xfontinfo) {
-	    while (partlen < textlen) {
+	    while (partlen < nowlen) {
 	      cval = text[dt + partlen];
 	      if (((this_time != xfontinfo)
 		   && XftGlyphExists(DPY, xfontinfo, cval))
@@ -2391,7 +2401,7 @@ void wxWindowDC::DrawText(char *orig_text, double x, double y,
 	    }
 	  }
 	} else {
-	  partlen = textlen;
+	  partlen = nowlen;
 	  this_time = xfontinfo;
 	  this_time_no_rotate = no_rotate;
 	}
@@ -2532,10 +2542,17 @@ void wxGetTextExtent(Display *dpy, double scale_x, double scale_y,
     w = 0;
 
     while (textlen) {
+      int nowlen;
+      nowlen = textlen;
+      if (nowlen > MAX_TEXT_LENGTH_FOR_MEASURE) {
+	nowlen = MAX_TEXT_LENGTH_FOR_MEASURE;
+      }
+
       if (try_sub) {
 	int index = 1, cval;
 	partlen = 1;
 	this_time = xfontinfo;
+	
 	while (1) {
 	  cval = s[dt];
 	  if (!XftGlyphExists(dpy, this_time, cval)) {
@@ -2550,7 +2567,7 @@ void wxGetTextExtent(Display *dpy, double scale_x, double scale_y,
 
 	/* Get a longer range that won't need a substitution */
 	if (this_time == xfontinfo) {
-	  while (partlen < textlen) {
+	  while (partlen < nowlen) {
 	    cval = s[dt + partlen];
 	    if (((this_time != xfontinfo)
 		 && XftGlyphExists(dpy, xfontinfo, cval))
@@ -2560,7 +2577,7 @@ void wxGetTextExtent(Display *dpy, double scale_x, double scale_y,
 	  }
 	}
       } else {
-	partlen = textlen;
+	partlen = nowlen;
 	this_time = xfontinfo;
       }
       
