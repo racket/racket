@@ -119,15 +119,20 @@
  (welcome-to-drscheme "Willkommen bei DrScheme")
  (version/language "Version ~a, ~a")
 
- (goto-line "Springe zu Zeile")
+ (goto-line "Zu Zeile springen")
  (goto-line-invalid-number
   "~a ist keine gültige Zeilennummer. Es muss eine ganze Zahl zwischen 1 und ~a sein.")
- (goto-position "Springe zu Position")
+ (goto-position "Zu Position springen")
  (no-full-name-since-not-saved
   "Die Datei hat noch keinen Namen, weil sie noch nicht abgespeichert wurde.")
  (cannot-open-because-dne "Die Datei ~a kann nicht geöffnet werden, weil sie nicht existiert.")
- (interactions-out-of-sync
-  "WARNUNG: Das Interaktionsfenster ist nicht mehr mit dem Definitionsfensters synchron. Bitte 'Ausführen' anklicken.")
+ (needs-execute-language-changed
+   "WARNUNG: Die Sprache hat sich geändert. \"Start\" drücken.")
+ (needs-execute-teachpack-changed
+  "WARNUNG: Die Teachpacks haben sich geändert. \"Start\" drücken.")
+ (needs-execute-defns-edited
+  "WARNUNG: Die Definitionen haben sich geändert. \"Start\" drücken.")
+
  (file-is-not-saved "Die Datei \"~a\" ist nicht gespeichert.")
  (save "Speichern")
  (please-choose-either "Bitte entweder \"~a\" oder \"~a\" wählen")
@@ -161,7 +166,7 @@
  (url: "URL:")
  (open-url... "URL öffnen...")
  (open-url "URL öffnen")
- (browse... "Brausen...")
+ (browse... "Browsen...")
  (bad-url "Ungültige URL")
  (bad-url:this "Ungültige URL: ~a")
  
@@ -215,11 +220,12 @@
  (plt:hd:reset "Zurücksetzen")
  (plt:hd:defaults "Werkseinstellungen")
  (plt:hd:javascript-note
-    "Ihre Selektionen werden hier erscheinen, falls Sie Javascript eingeschaltet haben und einen aktuellen standardkompatiblen Brauser benutzen.")
+    "Ihre Selektionen werden hier erscheinen, falls Sie Javascript eingeschaltet haben und einen aktuellen standardkompatiblen Browser benutzen.")
  ;; refreshing manuals
  (plt:hd:refresh-downloading "~a herunterladen")
  (plt:hd:refresh-installing "~a installieren")
  (plt:hd:refresh-progress "Fortschritt beim Herunterladen von PLT-Handbuch")
+ (plt:hd:refresh-done "Aktualisierung der Handbücher abgeschlossen")
 ;; should not mention `SVN' (plt:hd:refresh-done "Aktualisierung der Handbücher aus SVN abgeschlossen")
  (plt:hd:refresh-installation-log "Installations-Protokoll")
  (plt:hd:refresh-stopped "PLT-Handbuch-Aktualisierung gestoppt")
@@ -236,11 +242,11 @@
  (plt:hd:help-on-help-details "Hilfe zum Hilfezentrum finden Sie auf der Hilfezentrum-Hompage unter 'Help Desk'. (Um auf diese Homepage zu gelangen, drücken Sie den 'Home'-Knopf oben im Hilfezentrum.)")
   (reload "Aktualisieren") ;; refresh the page in a web browser
   (plt:hd:ask-about-separate-browser
-   "Sie haben einen Link selektiert, der ins Web zeigt. Wollen Sie die Seite im Hilfe-Brauser oder im externen Brauser anzeigen?")
-  (plt:hd:homebrew-browser "Hilfe-Brauser") ;; choice for the above string (in a button)
-  (plt:hd:separate-browser "Externer Brauser") ;; other choice for the above string (also in a button)
-  (plt:hd:external-link-in-help "Externe URLs im Hilfe-Brauser")
-  (plt:hd:use-homebrew-browser "Den Hilfe-Brauser für externe URLs benutzen")
+   "Sie haben einen Link selektiert, der ins Web zeigt. Wollen Sie die Seite im Hilfe-Browser oder im externen Browser anzeigen?")
+  (plt:hd:homebrew-browser "Hilfe-Browser") ;; choice for the above string (in a button)
+  (plt:hd:separate-browser "Externer Browser") ;; other choice for the above string (also in a button)
+  (plt:hd:external-link-in-help "Externe URLs im Hilfe-Browser")
+  (plt:hd:use-homebrew-browser "Den Hilfe-Browser für externe URLs benutzen")
   (plt:hd:new-help-desk "Neues Hilfezentrum")
   (plt:hd:teaching-manuals "Handbücher für Lehrende und Lernende")
   (plt:hd:professional-manuals "Handbücher für Anwender")
@@ -262,13 +268,13 @@
  (rewind-in-browser-history "Zurück")
  (forward-in-browser-history "Vor")
  (home "Home")
- (browser "Brauser")
- (external-browser-choice-title "Externer Brauser")
+ (browser "Browser")
+ (external-browser-choice-title "Externer Browser")
  (browser-command-line-label "Kommandzeile:")
- (choose-browser "Brauser auswählen")
+ (choose-browser "Browser auswählen")
  (no-browser "Später")
- (use-internal-browser-for-help "Hilfe mit internem PLT-Brauser lesen")
- (use-external-browser-for-help "Hilfe mit externam Brauser lesen")
+ (use-internal-browser-for-help "Hilfe mit internem PLT-Browser lesen")
+ (use-external-browser-for-help "Hilfe mit externam Browser lesen")
  (browser-cmdline-expl-line-1 "(Kommandozeile konstruiert durch Aneinanderhängen von Vor-Text, URL,")
  (browser-cmdline-expl-line-2 " und Nach-Text, ohne zusätzliche Leerzeichen dazwischen.")
  (cannot-display-url "Kann URL ~s nicht anzeigen: ~a")
@@ -594,8 +600,8 @@
  (view-menu-label "&Anzeigen")
  (show-overview "Programm-Umriss einblenden") 
  (hide-overview "Programm-Umriss ausblenden")
- (show-module-browser "Modul-Brauser einblenden")
- (hide-module-browser "Modul-Brauser ausblenden")
+ (show-module-browser "Modul-Browser einblenden")
+ (hide-module-browser "Modul-Browser ausblenden")
 
  (help-menu-label "&Hilfe")
  (about-info "Mehr über dieses Programm und seine Entstehung")
@@ -845,6 +851,18 @@
  (decimal-notation-for-rationals "Dezimalnotation für Brüche")
  (please-select-a-language "Bitte Sprache auswählen")
 
+ ;; startup wizard screen language selection section
+ (please-select-a-language "Sprache auswählen")
+ (show-all-languages "Alle sprachen anzeigen")
+ (show-drscheme-usage-questions "Fragen zur Benutzung von DrScheme anzeigen")
+ (are-you...-kind-of-drscheme-user "Sind Sie ...")
+ (use-with-htdp "... ein DrScheme-Benutzer, der mit \"How to Design Programs\" arbeitet?")
+ (use-seasoned "... ein erfahrener PLT-Schemer?")
+ (use-other "... ein DrScheme-Benutzer aus anderen Gründen?")
+ (use-eopl "... ein DrScheme-Benutzer, der mit \"Essentials of Programming Languages\" arbeitet?")
+ (pl-lang-choice-format "Sprache am Anfang: ~a")
+ (choose-new-language-before-running "Bitte wählen Sie eine andere Sprache vor dem Start aus.")
+
  
  ;;; languages
  (beginning-student "Anfänger")
@@ -869,9 +887,30 @@
  (professional-languages "Sprachen für Entwickler")
  (teaching-languages "Lehrsprachen")
  (experimental-languages "Experimentelle Sprachen")
- 
+ (initial-language-category "Sprache am Anfang")
+ (no-language-chosen "Keine Sprache ausgewählt")
+
  (module-language-one-line-summary "Start erzeugt eine REPL im Kontext des Moduls inklusive der deklarierten Sprache des Moduls.")
   
+  ;;; from the `not a language language' used initially in drscheme.
+ (must-choose-language "DrScheme kann keine Programme verarbeiten, bis Sie eine Sprache auswählen.")
+ 
+ ;; next two appear before and after the name of a text book (which will be in italics)
+ (using-a-textbook-before "Benutzen Sie ")
+ (using-a-textbook-after "?")
+ 
+ ;; next two are before and after a language
+ (start-with-before "Anfangen mit ")
+ (start-with-after ".")
+
+ (seasoned-plt-schemer? "Erfahrener PLT-Schemer?")
+ (looking-for-standard-scheme? "Wollen Sie Standard-Scheme?")
+ 
+ ;; the three string constants are concatenated together and the middle
+ ;; one is hyperlinked to the dialog that suggests various languages
+ (get-guidance-before "Wählen Sie “Sprache auswählen...” im “Sprache”-Menü oder ")
+ (get-guidance-during "Hilfe anfordern")
+ (get-guidance-after ".")
 
  ;;; debug language
  (unknown-debug-frame "[unbekannt]")
@@ -898,7 +937,6 @@
  (profiling-square "Quadrat")
  (profiling-number "Aufrufanzahl")
  (profiling-time "Gesamtzeit")
- (profiling-clear "Profile löschen")
  (profiling-update "Profile atkualisieren")
  (profiling-col-percent-time "% Zeit")
  (profiling-col-function "Prozedur")
@@ -984,16 +1022,16 @@
  (module-browser-adding-file "Datei ~a hinzufügen...")
  (module-browser-laying-out-graph-label "Graph-Layout")
  (module-browser-open-file-format "~a öffnen")
- (module-browser "Modul-Brauser") ;; frame title
- (module-browser... "Modul-Brauser...") ;; menu item title
+ (module-browser "Modul-Browser") ;; frame title
+ (module-browser... "Modul-Browser...") ;; menu item title
  (module-browser-error-expanding "Fehler beim Expandieren des Programms:\n\n~a")
  (module-browser-show-lib-paths "Dateien anzeigen, die über (lib ..)-Pfade eingebunden wurden")
- (module-browser-progress "Modul-Brauser: ~a") ;; prefix in the status line
- (module-browser-compiling-defns "Modul-Brauser: Definition compilieren")
+ (module-browser-progress "Modul-Browser: ~a") ;; prefix in the status line
+ (module-browser-compiling-defns "Modul-Browser: Definition compilieren")
  (module-browser-show-lib-paths/short "\"lib\"-requires folgen") ;; check box label in show module browser pane in drscheme window.
  (module-browser-refresh "Aktualisieren") ;; button label in show module browser pane in drscheme window.
  (module-browser-only-in-plt-and-module-langs
-  "Der Modul-Brauser ist nur für Programme in den PLT-Sprachen und in der Modul-Sprache verfügbar (und nur für Programme mit Modulen).")
+  "Der Modul-Browser ist nur für Programme in den PLT-Sprachen und in der Modul-Sprache verfügbar (und nur für Programme mit Modulen).")
  (module-browser-name-length "Länge der Namen")
  (module-browser-name-short "Kurz")
  (module-browser-name-medium "Mittel")
