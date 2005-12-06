@@ -1294,10 +1294,10 @@ module browser threading seems wrong.
               (add-modified-flag 
                defs
                (if fn
-                   (get-tab-label-from-filename fn tab)
+                   (get-tab-label-from-filename fn)
                    (send defs get-filename/untitled-name)))))
           
-          (define/private (get-tab-label-from-filename fn tab)
+          (define/private (get-tab-label-from-filename fn)
             (let* ([take-n
                     (λ (n lst)
                       (let loop ([n n]
@@ -1321,12 +1321,12 @@ module browser threading seems wrong.
                    [exp (reverse (explode-path fn))]
                    [other-exps
                     (filter
-                     (λ (x) x)
+                     (λ (x) (and x 
+                                 (not (equal? exp x))))
                      (map (λ (other-tab) 
-                            (and (not (eq? other-tab tab))
-                                 (let ([fn (send (send other-tab get-defs) get-filename)])
-                                   (and fn 
-                                        (reverse (explode-path fn))))))
+                            (let ([fn (send (send other-tab get-defs) get-filename)])
+                              (and fn 
+                                   (reverse (explode-path fn)))))
                           tabs))]
                    [size
                     (let loop ([other-exps other-exps]
@@ -2036,7 +2036,7 @@ module browser threading seems wrong.
                 (send new-tab set-ints ints)
                 (set! tabs (append tabs (list new-tab)))
                 (send tabs-panel append (if filename
-                                            (get-tab-label-from-filename filename #f)
+                                            (get-tab-label-from-filename filename)
                                             (get-defs-tab-label defs #f)))
                 (init-definitions-text new-tab)
                 (when filename (send defs load-file filename))
