@@ -21,10 +21,29 @@
 		  (and (exn:fail:syntax? x)
 		       (regexp-match rx (exn-message x)))))]))
 
+(require (rename mzscheme mz-let let))
+
 (define-syntax (htdp-test stx)
   (syntax-case stx ()
     [(_ expect f . args)
-     #'(do-htdp-test #'(test expect f . args) #f #f)]))
+     #'(begin
+	 (do-htdp-test #'(test expect f . args) #f #f)
+	 (htdp-try-direct-module f . args))]))
+
+(define-syntax (htdp-try-direct-module stx)
+  (syntax-case stx ()
+    [(_ 'nm expr)
+     ;; double-check that there's no error, at least,
+     ;;  when using the real module-begin:
+     #'(mz-let ([name (gensym)])
+	       (eval
+		#`(module #,name #,current-htdp-lang
+		    #,@body-accum
+		    expr))
+	       (dynamic-require name #f))]
+    [_ 
+     (printf "~s\n" (syntax-object->datum stx))
+     #'(void)]))
 
 (define (htdp-string-to-pred exn?/rx)
   (if (string? exn?/rx)

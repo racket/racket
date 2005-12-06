@@ -49,12 +49,17 @@
 (test 2 'begin (begin 1 2))
 (test 3 'begin (begin 1 2 3))
 
+(htdp-top (define ex 12))
+(htdp-test 13 'begin+set! (begin (set! ex 13) ex))
+(htdp-test 12 'begin+set! (begin 12 ex))
+(htdp-top-pop 1)
+
 (htdp-syntax-test #'begin0)
 (htdp-syntax-test #'(begin0))
 
-(test 1 'begin0 (begin0 1))
-(test 2 'begin0 (begin0 2 1))
-(test 3 'begin0 (begin0 3 2 1))
+(htdp-test 1 'begin0 (begin0 1))
+(htdp-test 2 'begin0 (begin0 2 1))
+(htdp-test 3 'begin0 (begin0 3 2 1))
 
 (htdp-syntax-test #'set!)
 (htdp-syntax-test #'(set!))
