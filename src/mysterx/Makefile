@@ -4,7 +4,7 @@
 
 MZC="..\..\mzc"
 HTMLHELP="C:\Program Files\HTML Help Workshop"
-SHELL32="C:\Program Files\Microsoft Visual Studio .NET\VC7\PlatformSDK"
+SHELL32="C:\Program Files\Microsoft Visual Studio .NET 2003\VC7\PlatformSDK"
 REGSVR32="$(WINDIR)\System32\REGSVR32"
 
 all : 
