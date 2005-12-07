@@ -34,6 +34,7 @@
    (get-hd-location ((lambda (sym) (memq sym hd-location-syms))
                      . -> . 
                      string?))
+   [prefix-with-server (string? . -> . string?)]
    [make-docs-plt-url (string? . -> . string?)]
    [make-docs-html-url (string? . -> . string?)])
 

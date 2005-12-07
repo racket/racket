@@ -25,8 +25,6 @@
                     [find-doc-directories (-> (listof path?))]
                     [find-doc-directory (path? . -> . (union false/c path?))]
                     [find-doc-names (-> (listof (cons/c path? string?)))]
-                    
-                    [goto-manual-link (any/c string? string? . -> . any)]
                     [get-index-file (path? . -> . (union false/c path?))])
   
   (provide find-manuals)
@@ -52,9 +50,6 @@
           (make-sec "Writing extensions" #rx"Tools|Inside|Foreign" '())
           (make-sec "Other" #rx"" '())))
   
-  (define (goto-manual-link cookie manual index-key)
-    (error 'goto-manual-link "broken ~s ~s ~s\n" cookie manual index-key))
-    
   ;; Creates a "file:" link into the indicated manual.
   ;; The link doesn't go to a particular anchor,
   ;; because "file:" does not support that.

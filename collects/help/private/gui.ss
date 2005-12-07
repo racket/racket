@@ -500,6 +500,9 @@
         (let ([loc (get-hd-location sym)])
           (goto-url loc)))
       
+      (define (goto-manual-link manual index-key)
+        (goto-url (prefix-with-server (finddoc-page-anchor manual index-key))))
+      
       (define (search-for-docs search-string search-type match-type lucky? docs)
         (let ([fr (or (find-help-desk-frame)
                       (new-help-desk))])

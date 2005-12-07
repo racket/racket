@@ -619,6 +619,7 @@
                               (string-constant help)
                               type/base/help-panel
                               (λ (x y)
+                                (send dlg show #f)
                                 (drscheme:help-desk:goto-help "drscheme" "Executables"))))
 
         (define button-panel (instantiate horizontal-panel% ()
