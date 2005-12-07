@@ -163,8 +163,10 @@
          (error what "file access denied (~a)" path)))
      (lambda (what host port mode) (error what "network access denied"))))
 
+  (define null-input (open-input-string ""))
   (define (safe-eval expr . more)
-    (parameterize ([current-security-guard tight-security])
+    (parameterize ([current-security-guard tight-security]
+                   [current-input-port null-input])
       (apply eval expr more)))
 
   ;; Execution ----------------------------------------
