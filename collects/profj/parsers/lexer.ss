@@ -1,4 +1,3 @@
-#cs
 (module lexer mzscheme
   
   ;; Lexical Analysis according to the Java Language Specification First Edition 
@@ -51,8 +50,7 @@
                  (STRING_LIT CHAR_LIT INTEGER_LIT LONG_LIT FLOAT_LIT DOUBLE_LIT 
                              IDENTIFIER STRING_ERROR NUMBER_ERROR HEX_LIT OCT_LIT HEXL_LIT OCTL_LIT))
   
-  (define-tokens special-toks (CLASS_BOX INTERACTIONS_BOX EXAMPLE TEST_SUITE 
-                                         IMAGE_SPECIAL OTHER_SPECIAL))
+  (define-tokens special-toks (EXAMPLE TEST_SUITE IMAGE_SPECIAL OTHER_SPECIAL))
   
   (define (trim-string s f l)
     (substring s f (- (string-length s) l)))
@@ -319,15 +317,16 @@
      #;("/**" (begin (read-document-comment input-port) (return-without-pos (get-token input-port))))
        
      ((special)
-      (syntax-case lexeme ()
-        ((parse-example-box examples) (token-EXAMPLE (make-example-box (syntax examples))))
-        (_ 
-         (cond
-           ((and (syntax? lexeme) (syntax-property lexeme 'test-case-box))
-            (token-TEST_SUITE (make-test-case lexeme)))
-           ((is-a? lexeme (image-snip%))
-            (token-IMAGE_SPECIAL lexeme))
-           ((token-OTHER_SPECIAL (list lexeme start-pos end-pos)))))))
+      (cond
+        ((and (syntax? lexeme) (syntax-property lexeme 'test-case-box))
+         (token-TEST_SUITE (make-test-case lexeme)))
+        ((and (syntax? lexeme) (syntax-property lexeme 'example-box))
+         (syntax-case lexeme ()
+           ((parse-example-box examples) (token-EXAMPLE (make-example-box (syntax examples))))))
+        ((is-a? lexeme (image-snip%))
+         (token-IMAGE_SPECIAL lexeme))
+        (else
+         (token-OTHER_SPECIAL (list lexeme start-pos end-pos)))))
      
       #;(cond
         ((class-case? lexeme) (token-CLASS_BOX lexeme))

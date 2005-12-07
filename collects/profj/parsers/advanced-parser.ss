@@ -153,8 +153,8 @@
       (TypeDeclaration
        [(ClassDeclaration) $1]
        [(InterfaceDeclaration) $1]
-       [(INTERACTIONS_BOX) $1]
-       [(CLASS_BOX) (parse-class-box $1 (build-src 1) 'advanced)]
+       #;[(INTERACTIONS_BOX) $1]
+         #;[(CLASS_BOX) (parse-class-box $1 (build-src 1) 'advanced)]
        [(TEST_SUITE) $1]
        [(EXAMPLE) $1]
        [(SEMI_COLON) #f])

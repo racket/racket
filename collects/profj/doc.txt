@@ -1,18 +1,38 @@
 _professorj_
 
-This documentation details available resources, recent additions, and
-constructs which do not currently work in ProfessorJ overall. For
-details of the specific language levels, please see the language level
-specific manuals.
+ProfessorJ is a compiler for Java and related languages. The languages 
+include three teaching languages, Java 1.1 (with some incomplete 
+features, see below), and an experimental language supporting interoperability
+between Java and Scheme. For details about the teaching languages, please
+see the language manuals.
 
-The interactions window accepts variable declaration, statements and
-expressions legal for the language level. If the text is not sending,
-type Alt+Enter.
+In all of the ProfessorJ language levels, the interactions window accepts variable 
+declaration, statements and expressions legal for the language level. If the text 
+is not sending, type Alt+Enter to force the text to send.
 
 The definitions window expects class and interface definitions,
-interaction boxes, and test-suite boxes. (i.e. what would be given to
+Java examples boxes, and test suite boxes. (i.e. what would be given to
 javac plus two graphical boxes). Descriptions of these boxes can be
 found in the DrScheme manual.
+
+_ProfessorJ Beginner
+ In Version 300, the Beginner language level has undergone significant changes.
+ Largest among these is that interfaces are supported within the language, but
+ abstract classes are no longer allowed. Further, interface implementation is supported
+ but class extension is not. For further details please see the language manual.
+
+_ProfessorJ Intermediate
+ In Version 300, instanceof is now allowed. For further language details please see
+ the language manual.
+ 
+_ProfessorJ Advanced
+ For details, please see the language manual.
+ 
+_ProfessorJ Full
+ Supports Java 1.1, no 1.5 features have been included. Few libraries are available.
+ Where the libraries are supported, they are from version 1.4 (there are no language
+ differences between 1.1 and 1.4). Please see the list of unsupported features to see
+ what constructs are not available within this language level. 
 
 _Java + dynamic_ language level
  Version 299.200 +
@@ -72,23 +92,21 @@ _Java + dynamic_ language level
  
 _Libraries available to ProfessorJ:
 
-*NEW* Items are new to either DrScheme 207 or DrScheme 208
-
   java.lang.Object
   java.lang.String (see exceptions)
   java.lang.Throwable
   java.lang.*Exception
-  *NEW* java.lang.System (only currentTimeMillis, gc, and identityHashCode)
-  *NEW* java.lang.Comparable
-  *NEW* java.lang.Number
-  *NEW* java.lang.Double (see exceptions) 
-  *NEW* java.lang.Float (see exceptions) 
-  *NEW* java.lang.Boolean (see exceptions) 
-  *NEW* java.io.Serializable
-  *NEW* java.util.Random
+  java.lang.System (only currentTimeMillis, gc, and identityHashCode)
+  java.lang.Comparable
+  java.lang.Number
+  java.lang.Double (see exceptions) 
+  java.lang.Float (see exceptions) 
+  java.lang.Boolean (see exceptions) 
+  java.io.Serializable
+  java.util.Random
 
-  *NEW* Teachpacks (PLT/collects/htdch)
-  *NEW* draw.*
+  Teachpacks (PLT/collects/htdch)
+  draw.*
 
   exceptions:
    String: String(byte[],int,int,String) -- incorrect
@@ -106,49 +124,13 @@ _Libraries available to ProfessorJ:
    Float:  floatToIntBits, floatToRawBits, longBitsToFloat -- not implemented
    Boolean: getBoolean(String) not implemented
 
-_General New Items (New to 207 and 208)
-
-  New to all teaching language levels:
-    import package.name.*;
-    a teachpack directory (PLT/collects/htdch)
-    access to draw.* teachpack
-
-  New to Beginner:
-    super calls reallowed. For example
-      class A { 
-        int x;
-        A(int x) {
-          this.x = x;
-        }
-        int adder() { return x + 1; }
-      }
-      class B extends A {
-        int y;
-        B( int x, int y) {
-          super(x);
-          this.y = y;
-        }
-        int adder() { return y + super.adder(); }
-      }
-    now works
- 
-    == is restricted to comparing byte, short, int, long, char, and boolean
-    values
-
-    Classes may have initialized fields (i.e. int x = 3;)
 
 _Unfinished constructs:
-  nested classes
+  static nested classes
   switch
   labeled statements (compiles but does not work correctly)
   reflection
   unicode
   synchronized (compiles but is ignored)
   strictfp (compiles but is ignored)
-
-
-
-
-
-
 

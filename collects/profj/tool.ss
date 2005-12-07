@@ -701,7 +701,6 @@
       (drscheme:get/extend:extend-unit-frame java-comment-box-mixin)
       
       ;;Java interactions box
-      #;(define ji-gif (include-bitmap (lib "java-interactions-box.gif" "icons")))
       (define ji-gif (include-bitmap (lib "j.gif" "icons")))
       
       (define snipclass-java-interactions%
@@ -762,7 +761,7 @@
                                                                                   (editor-filter #t))
                                                           ed type-recs level))
                                   (reverse inputs-list))))
-;                (printf "~a~n~a~n" syntax-list (map remove-requires syntax-list))
+                ;(printf "~a~n~a~n" syntax-list (map remove-requires syntax-list))
                 (if ret-list?
                     syntax-list
                     (datum->syntax-object #f `(begin ,@(map remove-requires syntax-list)) #f)))))
