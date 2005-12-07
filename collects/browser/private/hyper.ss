@@ -325,9 +325,18 @@ A test case:
                  (erase)
                  (clear-undos)
                  (let* ([mime-type (extract-field "content-type" mime-headers)]
-                        [html? (and mime-type (regexp-match #rx"text/html" mime-type))]
-                        [text? (and mime-type (regexp-match #rx"text/plain" mime-type))])
-		   
+			[path-extension (and (not mime-type)
+					     (url? url)
+					     (let ([p (url-path url)])
+					       (and (not (null? p))
+						    (regexp-match #rx"[.][^.]*$"
+								  (car (last-pair p))))))]
+                        [html? (or (and mime-type (regexp-match #rx"text/html" mime-type))
+				   (member path-extension '(".html" ".htm")))]
+                        [text? (or (and mime-type (regexp-match #rx"text/plain" mime-type))
+				   (member path-extension '(".txt"))
+				   (and (url? url)
+					(equal? (url-scheme url) "file")))])
                    (cond
                      [(or (and mime-type (regexp-match #rx"application/" mime-type))
                           (and (url? url)
