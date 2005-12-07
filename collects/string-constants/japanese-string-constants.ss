@@ -36,7 +36,7 @@ please adhere to these guidelines:
   has changed and needs to be re-translated.  Do not erase the old
   version, it might help us translate the new one.  Do not move it
   either.  Just comment it out and add the short comment.  After the
-  next cvs update DrScheme will automatically tell us translators that
+  next svn update DrScheme will automatically tell us translators that
   a new string needs to be translated, we will find your comment in
   the file, and know what to do.
 	Some evil evil people might think that, since DrScheme automatically
@@ -225,8 +225,14 @@ please adhere to these guidelines:
  (no-full-name-since-not-saved
   "このファイルはまだ保存されていないため、完全な名前を持っていません。")
  (cannot-open-because-dne "~a が存在しなため、開くことができません。")
- (interactions-out-of-sync
-  "警告: 対話ウィンドウは定義ウィンドウと同期していません。実行ボタンを押してください。")
+
+  (needs-execute-language-changed
+   "警告: 言語が変更されました。[実行] をクリックしてください。")
+  (needs-execute-teachpack-changed
+   "警告: ティーチパックが変更されました。[実行] をクリックしてください。")
+  (needs-execute-defns-edited
+   "警告: 定義ウィンドウが変更されました。[実行] をクリックしてください。")
+
  (file-is-not-saved "ファイル \"~a\" は保存されていません。")
  (save "保存")
  (please-choose-either "\"~a\" または \"~a\" のいずれかを選択してください。")
@@ -321,7 +327,7 @@ please adhere to these guidelines:
  (plt:hd:refresh-downloading "~a をダウンロードしています")
  (plt:hd:refresh-installing "~a をインストールしています")
  (plt:hd:refresh-progress "PLT マニュアルのダウンロードの進行状況")
- (plt:hd:refresh-done "CVS マニュアルの更新が終わりました")
+ (plt:hd:refresh-done "マニュアルの更新が終わりました")
  (plt:hd:refresh-installation-log "インストール ログ")
  (plt:hd:refresh-stopped "PLT マニュアルの更新を中止しました")
  (plt:hd:refreshing-manuals "マニュアルを再ダウンロードしています")
@@ -865,7 +871,7 @@ please adhere to these guidelines:
  (windows-executables-must-end-with-exe
   "ファイル名\n\n  ~a\n\nは正しくありません。Windows では、実行ファイルは .exe という拡張子を持たなければなりません。")
  (macosx-executables-must-end-with-app
-  "ファイル名\n\n  ~a\n\nは正しくありません。MacOS X では、実行ファイルは .app という拡張子を持たなければなりません。")
+  "ファイル名\n\n  ~a\n\nは正しくありません。MacOS X では、実行ファイルは .app という名前で終わるディレクトリでなければなりません。")
  (warning-directory-will-be-replaced
   "警告: ディレクトリ:\n\n  ~a\n\nは削除または上書きされます。よろしいですか？")
 
@@ -904,7 +910,7 @@ please adhere to these guidelines:
  (show-more-decimal-places "小数の桁数を増やす")
 
  ;;; Teachpack messages
- (select-a-teachpack "ティーチパックを選択")
+ (select-a-teachpack "ティーチパックの選択")
  (clear-teachpack "ティーチパック ~a を消去")
  (teachpack-error-label "DrScheme - ティーチパック エラー")
  (teachpack-dne/cant-read "ティーチパック ファイル ~a は存在しないか読み取れません。")
@@ -945,7 +951,18 @@ please adhere to these guidelines:
  (use-mixed-fractions "帯分数")
  (use-repeating-decimals "循環小数")
  (decimal-notation-for-rationals "有理数を10進数で表示する")
+
+ ;; startup wizard screen language selection section
  (please-select-a-language "言語を選択してください")
+ (show-all-languages "すべての言語を表示する")
+ (show-drscheme-usage-questions "DrScheme の使い方に関する質問を表示")
+  (are-you...-kind-of-drscheme-user "あなたは ...")
+ (use-with-htdp "... 「How to Design Programs」を読みながら DrScheme を使っていますか？")
+ (use-seasoned "... 経験豊かな PLT Scheme のユーザーですか？")
+ (use-other "... その他の理由で DrScheme を使っていますか？")
+ (use-eopl "... 「Essentials of Programming Languages」を読みながら DrScheme を使っていますか？")
+  (pl-lang-choice-format "初期言語: ~a")
+  (choose-new-language-before-running "実行する前に新しい言語を選択してください。")
 
 
  ;;; languages
@@ -962,7 +979,7 @@ please adhere to these guidelines:
  (full-language "Full") ;; also in the HtDP languages section
  (how-to-design-programs "How to Design Programs") ;; should agree with MIT Press on this one...
  (r5rs-like-languages "R5RS-like")
- (pretty-big-scheme "Pretty Big (MrEd と Advanced を含む)")
+ (pretty-big-scheme "Pretty Big (MrEd と Advanced Student を含む)")
  (pretty-big-scheme-one-line-summary "syntax と HtDP 言語の関数を追加")
  (r5rs-lang-name "Standard (R5RS)")
  (r5rs-one-line-summary "純粋な R5RS")
@@ -971,9 +988,30 @@ please adhere to these guidelines:
  (professional-languages "プロフェッショナル用の言語")
  (teaching-languages "学習用の言語")
  (experimental-languages "実験的な言語")
+  (initial-language-category "初期言語")
+  (no-language-chosen "言語が選択されていません")
 
  (module-language-one-line-summary "実行するとモジュールのコンテキスト内で REPL を作成する。モジュールで宣言された言語を含む。")
 
+  ;;; from the `not a language language' used initially in drscheme.
+  (must-choose-language "DrScheme は、プログラミング言語を選択しなければプログラムを実行できません。")
+
+  ; next two appear before and after the name of a text book (which will be in italics)
+  (using-a-textbook-before "")
+  (using-a-textbook-after " を読みながら？")
+
+  ; next two are before and after a language
+  (start-with-before "")
+  (start-with-after "で開始。")
+
+  (seasoned-plt-schemer? "経験豊かな PLT Scheme のユーザーですか？")
+  (looking-for-standard-scheme? "標準的な Scheme をお探しですか？")
+
+  ; the three string constants are concatenated together and the middle
+  ; one is hyperlinked to the dialog that suggests various languages
+  (get-guidance-before "メニューから [言語]-[言語の選択] を選択するか、または、")
+  (get-guidance-during "ガイド")
+  (get-guidance-after "を参照してください。")
 
  ;;; debug language
  (unknown-debug-frame "[unknown]")
@@ -1000,7 +1038,6 @@ please adhere to these guidelines:
  (profiling-square "二乗")
  (profiling-number "呼び出しの回数")
  (profiling-time "累積時間")
- (profiling-clear "プロファイルの消去")
  (profiling-update "プロファイルの更新")
  (profiling-col-percent-time "% Time")
  (profiling-col-function "関数")
@@ -1022,7 +1059,7 @@ please adhere to these guidelines:
  (tracing-enable-tracing "トレースを有効にする")
  (tracing-show-tracing-window "トレースを表示")
  (tracing-hide-tracing-window "トレースを非表示")
- (tracing-tracing-nothing-to-show "トーレス結果がありません。お使いの言語でトレースがサポートされていることを確認し、トレースを有効にしてください。")
+ (tracing-tracing-nothing-to-show "トーレス結果がありません。(お使いの言語でトレースがサポートされていることを確認し、トレースを有効にしてください。)")
 
  ;;; repl stuff
  (evaluation-terminated "評価が終了しました。")
@@ -1092,8 +1129,8 @@ please adhere to these guidelines:
  (module-browser-show-lib-paths "(lib ..) のパスでロードされたファイルを表示する")
  (module-browser-progress "モジュール ブラウザ: ~a") ;; prefix in the status line
  (module-browser-compiling-defns "モジュール ブラウザ: 定義をコンパイル中です")
- (module-browser-show-lib-paths/short "Follow lib requires") ;; check box label in show module browser pane in drscheme window.
- (module-browser-refresh "Refresh") ;; button label in show module browser pane in drscheme window.
+ (module-browser-show-lib-paths/short "必要なライブラリを含める") ;; check box label in show module browser pane in drscheme window.
+ (module-browser-refresh "更新") ;; button label in show module browser pane in drscheme window.
  (module-browser-only-in-plt-and-module-langs
   "モジュール ブラウザは PLT 言語、または、モジュール言語のプログラム (あるいは、それらの言語のモジュールを持つプログラム) でのみ利用可能です。")
  (module-browser-name-length "名前の長さ")
@@ -1274,7 +1311,7 @@ please adhere to these guidelines:
   (slideshow-hide-picts "Show Nested Boxes")
   (slideshow-show-picts "Show Picts")
   (slideshow-cannot-show-picts "Cannot show picts; run program to cache sizes first")
-  (slideshow-insert-pict-box "Insert Pict Box")
+  (slideshow-insert-pict-box "Pict ボックスを挿入")
 
   ;; GUI Tool
   (gui-tool-heading "GUI Tool")
