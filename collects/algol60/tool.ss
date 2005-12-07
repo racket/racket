@@ -6,12 +6,14 @@
            "parse.ss"
            "simplify.ss"
            "compile.ss"
-	   "get-base.ss"
 	   (lib "embed.ss" "compiler")
 	   (lib "string-constant.ss" "string-constants")
 	   (prefix bd: "bd-tool.ss"))
 
   (provide tool@)
+
+  (define base-importing-stx (dynamic-require '(lib "base.ss" "algol60")
+					     'base-importing-stx))
 
   (define tool@
     (unit/sig drscheme:tool-exports^
