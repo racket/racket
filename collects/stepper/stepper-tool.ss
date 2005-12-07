@@ -197,6 +197,10 @@
              (lambda () 
                (simple-module-based-language-convert-value val simple-settings)))))
         
+        (define (>>> x) 
+          (fprintf (current-error-port) ">>> ~v\n" x)
+          x)
+        
         ; channel for incoming views
         (define view-channel (make-async-channel))
         

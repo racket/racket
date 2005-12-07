@@ -72,6 +72,7 @@
    ; get-binding-name
    ; bogus-binding?
    if-temp
+   begin-temp
    set!-temp
    ; get-lifted-gensym
    ; expr-read
@@ -216,6 +217,7 @@
                   new-binding)))))))
   
   (define if-temp (syntax-property (datum->syntax-object #`here `if-temp) 'stepper-binding-type 'stepper-temp))
+  (define begin-temp (syntax-property (datum->syntax-object #`here `begin-temp) 'stepper-binding-type 'stepper-temp))
   (define set!-temp (syntax-property (datum->syntax-object #`here `set!-temp) 'stepper-binding-type 'stepper-temp))
 
   ; gensyms needed by many modules:

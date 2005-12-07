@@ -53,8 +53,8 @@
         (or (and (procedure? val)
                  (object-name val))
             (print-convert val)))))
-    
-  ; FIXME : #f totally unacceptable as 'render-to-string'
+  
+    ; FIXME : #f totally unacceptable as 'render-to-string'
   (define fake-beginner-render-settings
     (make-render-settings #t #t #f (make-fake-render-to-sexp #t #t #f) #t))
   

@@ -82,6 +82,52 @@
          
          (define basic-eval (current-eval))
          
+         ;; highlight-mutated-expressions : 
+         ;; ((listof (list/c syntax? syntax?)) (listof (list/c syntax? syntax?)) . -> . (list/c (listof syntax?) (listof syntax?)))
+         ;; highlights changes occurring due to mutation.  This function accepts the left-hand-side
+         ;; expressions and the right-hand-side expressions, and matches them against each other 
+         ;; to see which ones have changed due to mutation, and highlights these.  
+         ;; POSSIBLE RESEARCH POINT: if, say, (list 3 4) is mutated to (list 4 5), should the 4 & 5 be 
+         ;;  highlighted individually or should the list as a whole be highlighted.  Is either one "wrong?"
+         ;;  equivalences between reduction semantics?
+         ;;
+         ;; 2005-11-14: punting. just highlight the whole damn thing if there are any differences.
+         ;;  in fact, just test for eq?-ness.
+         
+         #;(define (highlight-mutated-expressions lefts rights)
+           (if (or (null? lefts) (null? rights))
+               (list lefts rights)
+               (let ([left-car (car lefts)]
+                     [right-car (car rights)])
+               (if (eq? (syntax-property left-car 'user-source)
+                        (syntax-property right-car 'user-source))
+                   (let ([highlights-added (highlight-mutated-expression left-car right-car)]
+                         [rest (highlight-mutated-expressions (cdr lefts) (cdr rights))])
+                     (cons (cons (car highlights-added) (car rest))
+                           (cons (cadr highlights-added) (cadr rest))))))))
+         
+         ;; highlight-mutated-expression: syntax? syntax? -> syntax?
+         ;; given two expressions, highlight 'em both if they differ at all. 
+         
+         ;; notes: wanted to use simple "eq?" test... but this will fail when a being-stepped definition (e.g.
+         ;; in a let) turns into a permanent one.  We pay a terrible price for the lifting thing.  And, for the fact
+         ;; that the highlighting follows from the reductions but can't obviously be deduced from them.
+         
+         #;(define (highlight-mutated-expression left right)
+           (cond 
+             ;; if either one is already highlighted, leave them alone.
+             [(or (syntax-property left 'stepper-highlight)
+                      (syntax-property right 'stepper-highlight))
+                  (list left right)]
+             
+             ;; first pass: highlight if not eq?.  Should be broken for local-bound things
+             ;; as they pass into permanence.
+             [(eq? left right)
+              (list left right)]
+             
+             [else (list (syntax-property left 'stepper-highlight)
+                         (syntax-property right 'stepper-highlight))]))
+
          ;; REDIVIDE MAKES NO SENSE IN THE NEW INTERFACE.  THIS WILL BE DELETED AFTER BEING PARTED OUT.
          ; redivide takes a list of sexps and divides them into the 'before', 'during', and 'after' lists,
          ; where the before and after sets are maximal-length lists where none of the s-expressions contain
@@ -120,9 +166,13 @@
 ;         (redivide `(1 2 ,highlight-placeholder 3 ,highlight-placeholder 4 5))
 ;         (values `(1 2) `(,highlight-placeholder 3 ,highlight-placeholder) `(4 5))
          
+         (define (>>> x)
+           (fprintf (current-output-port) ">>> ~v\n" x)
+           x)
          
          (define break 
            (opt-lambda (mark-set break-kind [returned-value-list null])
+
              
              (let* ([mark-list (and mark-set (extract-mark-list mark-set))])
                
@@ -190,7 +240,7 @@
                             (receive-result result)))]
                      
                      [(double-break)
-                      ; a double-break occurs at the beginning of a let's evaluation.
+                      ;; a double-break occurs at the beginning of a let's evaluation.
                       (when (not (eq? held-exp-list no-sexp))
                         (error 'break-reconstruction
                                "held-exp-list not empty when a double-break occurred"))
@@ -215,6 +265,9 @@
                                 returned-value-list)]
                      
                      [else (error 'break "unknown label on break")])))))
+         
+         
+
          
          (define (step-through-expression expanded expand-next-expression)
            (let* ([annotated (a:annotate expanded break track-inferred-names?)])

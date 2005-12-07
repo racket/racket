@@ -215,6 +215,11 @@ stepper-test-suite-hint :
   be annotated, even though it's not in one of the expected top-level
   shapes.
 
+stepper-highlight :
+  this expression will be highlighted.
+  (Not currently tranferred...?)
+  
+  
 STEPPER-HINT COLLISIONS
 
  The major concern with the stepper-hint is that two of them may

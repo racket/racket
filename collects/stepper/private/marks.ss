@@ -173,6 +173,7 @@
                                                 kept-vars)]
                           [lifter-syms (map get-lifted-var let-bindings)])
                (make-full-mark source label (append kept-vars lifter-syms)))
+             ;; I'm not certain that non-lifting is currently tested: 2005-12, JBC
              (make-full-mark source label kept-vars))))
   
   

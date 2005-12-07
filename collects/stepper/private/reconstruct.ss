@@ -101,6 +101,10 @@
   ; prints the name attached to the procedure, unless we're on the right-hand-side
   ; of a let, or unless there _is_ no name.
   
+  (define (>>> x) 
+    (fprintf (current-error-port) ">>> ~v\n" x)
+    x)
+  
   (define recon-value
     (opt-lambda (val render-settings [assigned-name #f])
       (if (hash-table-get finished-xml-box-table val (lambda () #f))
@@ -151,7 +155,11 @@
       [(normal-break)
        (skip-redex-step? mark-list render-settings)]
       [(double-break)
-       (not (render-settings-lifting? render-settings))]
+       (or 
+        ;; don't stop for a double-break on a let that is the expansion of a 'begin'
+        (let ([expr (mark-source (car mark-list))])
+          (eq? (syntax-property expr 'stepper-hint) 'comes-from-begin))
+        (not (render-settings-lifting? render-settings)))]
       [(expr-finished-break define-struct-break late-let-break) #f]))
   
   (define (skip-redex-step? mark-list render-settings)
@@ -362,6 +370,9 @@
                   [(comes-from-recur)
                    (unwind-recur stx)]
                   
+                  [(comes-from-begin)
+                   (unwind-begin stx)]
+                  
                   (else (fall-through)))
                 (fall-through))
             stx))
@@ -471,6 +482,12 @@
                                 (error 'unwind-cond "expected a cond clause expansion, got: ~e" (syntax-object->datum stx))))])
              (syntax (cond . clauses))))
          
+         (define (unwind-begin stx)
+           (syntax-case stx (let-values)
+             [(let-values () body ...)
+              (with-syntax ([(new-body ...) (map inner (syntax->list #`(body ...)))])
+                #`(begin new-body ...))]))
+         
          (define (unwind-and/or stx user-source user-position label)
            (let ([clause-padder (case label
                                   [(and) #`true]
@@ -543,16 +560,18 @@
                           #`(label #,@(map recur (filter-skipped (syntax->list (syntax bodies)))))))]
                      [recon-let/rec
                       (lambda (rec?)
-                        (with-syntax ([(label  ((vars val) ...) body) expr])
+                        
+                        (with-syntax ([(label  ((vars val) ...) body ...) expr])
                           (let* ([bindings (map syntax->list (syntax->list (syntax (vars ...))))]
                                  [binding-list (apply append bindings)]
                                  [recur-fn (if rec? 
                                                (lambda (expr) (let-recur expr binding-list))
                                                recur)]
                                  [right-sides (map recur-fn (syntax->list (syntax (val ...))))]
-                                 [recon-body (let-recur (syntax body) binding-list)])
+                                 [recon-bodies (map (lambda (x) (let-recur x binding-list))
+                                                    (syntax->list #`(body ...)))])
                             (with-syntax ([(recon-val ...) right-sides]
-                                          [recon-body recon-body]
+                                          [(recon-body ...) recon-bodies]
                                           [(new-vars ...) (map (lx (map (lx (if (ormap (lambda (binding)
                                                                                          (bound-identifier=? binding _))
                                                                                        use-lifted-names)
@@ -562,7 +581,7 @@
                                                                                 _))
                                                                         _))
                                                                bindings)])
-                              (syntax (label ((new-vars recon-val) ...) recon-body))))))]
+                              (syntax (label ((new-vars recon-val) ...) recon-body ...))))))]
                      [recon-lambda-clause
                       (lambda (clause)
                         (with-syntax ([(args . bodies-stx) clause])
@@ -606,7 +625,7 @@
                                  #`(set! #,rendered-var #,(recur #'rhs)))]
                               
                               ; quote 
-                              [(quote body) (recon-value (syntax-e (syntax body)) render-settings)]
+                              [(quote body) (recon-value (eval-quoted expr) render-settings)]
                               
                               ; quote-syntax : like set!, the current stepper cannot handle quote-syntax
                               
@@ -699,7 +718,18 @@
 	  (datum->syntax-object s (string->symbol (cadr m)) s s)
 	  s)))
   (define re:beginner: (regexp "^beginner:(.*)$"))
-                                                                                                        ;                         ; 
+  
+ 
+  ;; eval-quoted : take a syntax-object that is an application of quote, and evaluate it (for display)
+  ;; Frankly, I'm worried by the fact that this isn't done at expansion time.
+  
+  (define (eval-quoted stx)
+    (syntax-case stx (quote)
+      [(quote . dont-care) (eval stx)]
+      [else (error 'eval-quoted "eval-quoted called with syntax that is not a quote: ~v" stx)]))
+  
+  
+                                       ;                     ; 
                                        ;                     ;                                          ;         ;               ; 
  ; ;;  ;;;    ;;;   ;;;   ; ;;    ;;; ;;;; ; ;; ;   ;   ;;; ;;;;         ;;;   ;;;   ; ;;; ;;   ; ;;;   ;   ;;;  ;;;;  ;;;    ;;; ; 
  ;;   ;   ;  ;     ;   ;  ;;  ;  ;     ;   ;;   ;   ;  ;     ;          ;     ;   ;  ;;  ;;  ;  ;;   ;  ;  ;   ;  ;   ;   ;  ;   ;; 
@@ -962,9 +992,45 @@
                  exp)]
                
                ; quote : there is no break on a quote.
+
+               ;; advanced-begin : okay, here comes advanced-begin.
                
-               ; begin : may not occur directly, but will occur in the expansion of cond, now that I'm no longer
-               ; masking that out with stepper-skipto. Furthermore, exactly one expression can occur inside it.
+               [(begin . terms)
+                ;; copied from app:
+                
+                (attach-info
+                 (let* ([sub-exprs (syntax->list (syntax terms))]
+                        [arg-temps (build-list (length sub-exprs) get-arg-var)]
+                        [arg-vals (map (lambda (arg-temp) 
+                                         (lookup-binding mark-list arg-temp))
+                                       arg-temps)])
+                   (case (mark-label (car mark-list))
+                     ((not-yet-called)
+                      (let*-2vals ([(evaluated unevaluated) (split-list (lambda (x) (eq? (cadr x) *unevaluated*))
+                                                                        (zip sub-exprs arg-vals))]
+                                   [rectified-evaluated (map (lx (recon-value _ render-settings)) (map cadr evaluated))])
+                        (if (null? unevaluated)
+                            #`(#%app . #,rectified-evaluated)
+                            #`(#%app 
+                               #,@rectified-evaluated
+                               #,so-far 
+                               #,@(map recon-source-current-marks (cdr (map car unevaluated)))))))
+                     ((called)
+                      (if (eq? so-far nothing-so-far)
+                          (datum->syntax-object #'here `(,#'#%app ...)) ; in unannotated code
+                          (datum->syntax-object #'here `(,#'#%app ... ,so-far ...))))
+                     (else
+                      (error "bad label in application mark in expr: ~a" exp))))
+                 exp)]
+
+               ; begin : in the current expansion of begin, there are only two-element begin's, one-element begins, and 
+               ;; zero-element begins
+               
+               [(begin stx-a stx-b)
+                (attach-info 
+                 (if (eq? so-far nothing-so-far)
+                     #`(begin #,(recon-source-current-marks #`stx-a) #,(recon-source-current-marks #`stx-b))
+                     #`(begin #,so-far #,(recon-source-current-marks #`stx-b))))]
                
                [(begin clause)
                 (attach-info
@@ -974,6 +1040,14 @@
                       'recon-inner
                       "stepper:reconstruct: one-clause begin appeared as context: ~a" (syntax-object->datum exp)))
                  exp)]
+               
+               [(begin)
+                (attach-info
+                 (if (eq? so-far nothing-so-far)
+                     #`(begin)
+                     (error 
+                      'recon-inner
+                      "stepper-reconstruct: zero-clause begin appeared as context: ~a" (syntax-object->datum exp))))]
                
                ; begin0 : may not occur directly except in advanced
                
