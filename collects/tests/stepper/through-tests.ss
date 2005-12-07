@@ -34,7 +34,7 @@
                           (fprintf (current-error-port) "test-sequence: steps do not match.\ngiven: ~v\nexpected: ~v\n" result (car all-steps)))
 
                         ; uncomment for testing:
-                         (when (compare-steps result (car all-steps))
+                        #; (when (compare-steps result (car all-steps))
                            (printf "test-sequence: steps match for expected result: ~v\n"(car all-steps)))
 
                         (set! all-steps (cdr all-steps)))))]
@@ -446,7 +446,7 @@
                        (finished-stepping))))
   
   ;  reconstruct can't handle 'begin'
-  (test-mz-sequence "(cond [#f 3 4] [#t (+ 3 4) (+ 4 9)])"
+  #;(test-mz-sequence "(cond [#f 3 4] [#t (+ 3 4) (+ 4 9)])"
                     `((before-after ((hilite (cond (#f 3 4) (#t (+ 3 4) (+ 4 9))))) 
                                     ((hilite (cond (#t (+ 3 4) (+ 4 9))))))
                       (before-after ((hilite (cond (#t (+ 3 4) (+ 4 9))))) ((hilite (begin (+ 3 4) (+ 4 9)))))
@@ -616,6 +616,12 @@
   (t quoted-list
   (test-beginner-wla-sequence "'(3 4 5)"
                               `((finished-stepping))))
+  
+  (t quoted-list-display
+     (test-bwla-to-int/lam "(define (f x) '((a))) (+ 3 4)"
+                           `((before-after ((define (f x) (list (list 'a))) (hilite (+ 3 4)))
+                                           ((define (f x) (list (list 'a))) (hilite 7)))
+                             (finished-stepping))))
   
   
   ;;;;;;;;;;;;;
@@ -1303,7 +1309,8 @@
   (before-after ((inform (number->string (+ 10 (single-query (hilite (make-number "enter 20")))))))
                 ((inform (number->string (+ 10 (single-query (hilite (make-numeric "enter 20"))))))))
   (before-after ((inform (number->string (+ 10 (hilite (single-query (make-numeric "enter 20")))))))
-                ((inform (number->string (+ 10 (hilite 20))))))
+                ((inform (nut
+                          mber->string (+ 10 (hilite 20))))))
   (before-after ((inform (number->string (hilite (+ 10 20))))) 
                 ((inform (number->string (hilite 30)))))
   (before-after ((inform (hilite (number->string 30)))) 
@@ -1391,6 +1398,6 @@
      (test-teachpack-sequence " (define (f2c x) x) (convert-gui f2c)" `() ; placeholder
                                ))
   
-  (run-tests '(local-set!))
-  #;(run-all-tests)
+  #;(run-tests '(begin))
+  (run-all-tests)
   )
