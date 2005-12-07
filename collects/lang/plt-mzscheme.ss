@@ -1,6 +1,6 @@
 (module plt-mzscheme mzscheme
-  (define argv #())
-  (define program "mzscheme")
+  (define argv (current-command-line-arguments))
+  (define program (find-system-path 'exec-file))
   (provide argv 
            program
            (all-from mzscheme)))

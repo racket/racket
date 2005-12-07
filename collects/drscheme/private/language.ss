@@ -585,7 +585,7 @@
         (define filename-text-field (instantiate text-field% ()
                                       (label (string-constant filename))
                                       (parent filename-panel)
-                                      (init-value (path->string (default-executable-filename program-filename #t)))
+                                      (init-value (path->string (default-executable-filename program-filename #f)))
                                       (min-width 400)
                                       (callback void)))
         (define filename-browse-button (instantiate button% ()
@@ -629,13 +629,9 @@
           (gui-utils:ok/cancel-buttons
            button-panel
            (λ (x y)
-             (cond
-               [(filename-ok?)
-                (set! cancelled? #f)
-                (send dlg show #f)]
-               [else (message-box (string-constant drscheme)
-                                  (string-constant please-choose-an-executable-filename)
-                                  dlg)]))
+             (when (check-filename)
+               (set! cancelled? #f)
+               (send dlg show #f)))
            (λ (x y) (send dlg show #f))
            (string-constant create)
            (string-constant cancel)))
@@ -653,8 +649,8 @@
                        dlg
                        base
                        name
-                       (not mzscheme?)
                        launcher?
+                       (not mzscheme?)
                        (if launcher?
                            (if mzscheme?
                                (string-constant save-a-mzscheme-launcher)
@@ -663,7 +659,7 @@
                                (string-constant save-a-mzscheme-stand-alone-executable)
                                (string-constant save-a-mred-stand-alone-executable))))])
                 (when filename
-                  (send filename-text-field set-value filename))))))
+                  (send filename-text-field set-value (path->string filename)))))))
         
         (define (currently-mzscheme-binary?)
           (cond
@@ -677,20 +673,28 @@
              (= 0 (send type-rb get-selection))]
             [else (eq? show-type 'launcher)]))
         
-        (define (filename-ok?)
+        (define (check-filename)
           (let ([filename-str (send filename-text-field get-value)]
-                [launcher-is-dir?
-                 (cond
-                   [(currently-mzscheme-binary?)
-                    (mzscheme-launcher-is-directory?)]
-                   [else
-                    (mred-launcher-is-directory?)])])
-            (cond
-              [(string=? "" filename-str) #f]
-              [(or (directory-exists? filename-str)
-                   (file-exists? filename-str))
-               (ask-user-can-clobber? filename-str)]
-              [else #t])))
+                [mred? (not (currently-mzscheme-binary?))])
+            (let-values ([(extension style filters)
+                          (if (currently-launcher?)
+                              (if mred?
+                                  (mred-launcher-put-file-extension+style+filters)
+                                  (mzscheme-launcher-put-file-extension+style+filters))
+                              (embedding-executable-put-file-extension+style+filters mred?))])
+              
+              (cond
+                [(string=? "" filename-str)
+                 (message-box (string-constant drscheme)
+                              (string-constant please-choose-an-executable-filename)
+                              dlg)
+                 #f]
+                [(not (users-name-ok? extension dlg (string->path filename-str)))
+                 #f]
+                [(or (directory-exists? filename-str)
+                     (file-exists? filename-str))
+                 (ask-user-can-clobber? filename-str)]
+                [else #t]))))
            
         ;; ask-user-can-clobber-directory? : (is-a?/c top-level-window<%>) string -> boolean
         (define (ask-user-can-clobber? filename)
@@ -758,7 +762,7 @@
                                 style
                                 filters))])
             (and users-name
-                 (users-name-ok? dir? parent users-name)
+                 (users-name-ok? extension parent users-name)
                  (or (not dir?)
                      (gui-utils:get-choice
                       (format (string-constant warning-directory-will-be-replaced)
@@ -770,32 +774,30 @@
                       parent))
                  users-name))))
       
-      ;; users-name-ok? : boolean? (union #f frame% dialog%) string -> boolean
+      ;; users-name-ok? : string (union #f frame% dialog%) string -> boolean
       ;; returns #t if the string is an acceptable name for
       ;; a saved executable, and #f otherwise.
-      (define (users-name-ok? dir? parent name)
-        (case (system-type)
-          [(macosx) 
-           (cond
-             [(not dir?) #t] ;; non dir executables are shell scripts and all names are okay
-             [(regexp-match #rx#".app$" (path->bytes name)) #t]
-             [else
-              (message-box (string-constant drscheme)
-                           (format
-                            (string-constant macosx-executables-must-end-with-app)
-                            name)
-                           parent)
-              #f])]
-          [(windows) 
-           (cond
-             [(regexp-match #rx#".exe$" (path->bytes name)) #t]
-             [else
-              (message-box (string-constant drscheme)
-                           (format (string-constant windows-executables-must-end-with-exe)
-                                   name)
-                           parent)
-              #f])]
-          [else #t]))
+      (define (users-name-ok? extension parent name)
+        (or (not extension)
+            (let ([suffix-m (regexp-match #rx"[.][^.]*$" (path->string name))])
+              (or (and suffix-m
+                       (string=? (substring (car suffix-m) 1) extension))
+                  (begin
+                    ;; FIXME: change the message to be platform-neutral and to
+                    ;; use `extension' for the message
+                    (case (system-type)
+                      [(macosx) 
+                       (message-box (string-constant drscheme)
+                                    (format
+                                     (string-constant macosx-executables-must-end-with-app)
+                                     name)
+                                    parent)]
+                      [(windows) 
+                       (message-box (string-constant drscheme)
+                                    (format (string-constant windows-executables-must-end-with-exe)
+                                            name)
+                                    parent)])
+                    #f)))))
       
       ;; default-executable-filename : path -> path
       (define (default-executable-filename program-filename mred?)

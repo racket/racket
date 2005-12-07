@@ -1324,8 +1324,8 @@
 			       (drscheme:language:put-executable
 				parent
 				program-filename
-				mred-launcher?
 				#t
+				mred-launcher?
 				(if mred-launcher?
 				    (string-constant save-a-mred-launcher)
 				    (string-constant save-a-mzscheme-launcher)))])

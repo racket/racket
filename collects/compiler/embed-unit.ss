@@ -19,12 +19,17 @@
       (import)
 
       (define (embedding-executable-is-directory? mred?)
-	(eq? 'macosx (system-type)))
+	#f)
+      
+      (define (embedding-executable-is-actually-directory? mred?)
+	(and mred? (eq? 'macosx (system-type))))
       
       (define (embedding-executable-put-file-extension+style+filters mred?)
 	(case (system-type)
-	  [(windows) (values ".exe" null '(("Executable" "*.exe")))]
-	  [(macosx) (values ".app" '(enter-packages) #f)]
+	  [(windows) (values "exe" null '(("Executable" "*.exe")))]
+	  [(macosx) (if mred?
+			(values "app" '(enter-packages) '(("App" "*.app")))
+			(values #f null null))]
 	  [else (values #f null null)]))
 
       (define (embedding-executable-add-suffix path mred?)

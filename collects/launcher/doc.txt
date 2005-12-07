@@ -157,7 +157,7 @@ executables.
   platform are directories from the user perspective, the `style'
   result is suitable for use with `get-directory', and the `extension'
   result may be a string indicating a required extension for the
-  directory name (e.g., ".app" for Mac OS X).
+  directory name (e.g., "app" for Mac OS X).
 
 > (mzscheme-launcher-put-file-extension+style+filters) - Like
   `mred-launcher-get-file-extension+style+filters', but for MzScheme

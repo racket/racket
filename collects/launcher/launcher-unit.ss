@@ -541,8 +541,8 @@
       ;; Helper:
       (define (put-file-extension+style+filters type)
 	(case type
-	  [(windows) (values ".exe" null '(("Executable" "*.exe")))]
-	  [(macosx) (values ".app" '(packages) '(("App" "*.app")))]
+	  [(windows) (values "exe" null '(("Executable" "*.exe")))]
+	  [(macosx) (values "app" '(packages) '(("App" "*.app")))]
 	  [else (values #f null null)]))
       
       (define (mred-launcher-add-suffix path)

@@ -537,7 +537,11 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
 
 > (embedding-executable-is-directory? mred?) - Returns #t if
   Mzscheme/MrEd executables for the current platform correspond to
-  directories (as on Mac OS X).
+  directories from the user's perspective.
+
+> (embedding-executable-is-actually-directory? mred?) - Returns #t if
+  Mzscheme/MrEd executables for the current platform are implemented
+  as directories (as on Mac OS X).
 
 
 > (embedding-executable-put-file-extension+style+filters mred?) -
@@ -546,7 +550,7 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
   MzScheme/MrEd launchers for this platform are directories, the
   `style' result is suitable for use with `get-directory', and the
   `extension' result may be a string indicating a required extension
-  for the directory name (e.g., ".app" for Mac OS X).
+  for the directory name (e.g., "app" for Mac OS X).
 
 
 > (embedding-executable-add-suffix path mred?) - Returns a path with a
