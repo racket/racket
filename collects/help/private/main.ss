@@ -35,7 +35,7 @@
                 [cb (instantiate check-box% ()
                       (label (string-constant plt:hd:use-homebrew-browser))
                       (parent cbp)
-                      (value (preferences:get 'drscheme:help-desk:separate-browser))
+                      (value (not (preferences:get 'drscheme:help-desk:separate-browser)))
                       (callback
                        (lambda (cb evt)
                          (preferences:set 'drscheme:help-desk:separate-browser

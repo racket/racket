@@ -853,7 +853,7 @@ A test case:
                        (lambda (new-url) (loop (- n 1) new-url))]
                       [else
                        (cons html-editor url)]))
-                  (cons #f #f))))))
+                  #f)))))
       
       (define hyper-canvas% (hyper-canvas-mixin canvas:basic%))
       
