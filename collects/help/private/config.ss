@@ -28,11 +28,11 @@
                  (protocol-message "protocol-error.html")
 		 (collect-garbage "collect-garbage.html"))
                 (timeouts
-                 (default-servlet-timeout 120)
-                 (password-connection-timeout 300)
-                 (servlet-connection-timeout 86400)
-                 (file-per-byte-connection-timeout 1/20)
-                 (file-base-connection-timeout 30))
+                 (default-servlet-timeout 12000)
+                 (password-connection-timeout 3000)
+                 (servlet-connection-timeout 864000)
+                 (file-per-byte-connection-timeout 10)
+                 (file-base-connection-timeout 30000))
                 (paths
                  (configuration-root "conf")
                  (host-root ,host-root)
