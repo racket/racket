@@ -30,7 +30,7 @@
           (string-constant beginning-student/abbrev)
           (string-constant intermediate-student)
           (string-constant intermediate-student/lambda)
-          (string-constant advanced-student)))
+          #;(string-constant advanced-student)))
 
   (provide stepper-tool@)
   
