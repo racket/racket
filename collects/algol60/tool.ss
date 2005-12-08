@@ -74,7 +74,9 @@
           (define/public (order-manuals x) 
             (values 
              (list #"drscheme" #"tour" #"help")
-             #f))
+	     ;; We allow doc.txt search results, because the Algol60
+	     ;; docs are in doc.txt:
+             #t))
           (define/public (get-language-name) "Algol 60")
           (define/public (get-language-url) #f)
           (define/public (get-language-numbers) (list 1000 10))
