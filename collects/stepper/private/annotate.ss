@@ -650,7 +650,7 @@
                        (let*-2vals ([free-varrefs (list var)]
                                     [varref-break-wrap
                                      (lambda ()
-                                       (wcm-break-wrap (make-debug-info-normal free-varrefs)
+				       (wcm-break-wrap (make-debug-info-normal free-varrefs)
                                                        (return-value-wrap var)))]
                                     [varref-no-break-wrap
                                      (lambda ()
@@ -683,7 +683,9 @@
                      (lambda (vals)
                        (let*-2vals ([(new-exp bindings) vals])
                                    (2vals (syntax-recertify new-exp exp (current-code-inspector) #f)
-                                          bindings)))]
+					  (map (lambda (b)
+						 (syntax-recertify b exp (current-code-inspector) #f))
+					       bindings))))]
                     
                     )
                  ; find the source expression and associate it with the parsed expression
