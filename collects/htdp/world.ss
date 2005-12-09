@@ -230,7 +230,7 @@
   
   (define-syntax (update s)
     (syntax-case s (produce)
-      [(_ pict produce exp) (syntax (begin (update-frame pict) exp))]
+      [(_ pict produce exp) (syntax (update-frame/proc pict (lambda () exp)))]
       [(_ pict pict2 ... produce exp)
        (raise-syntax-error 'update "you can place only one picture in the canvas" s)]
       [(_ stmt produce) 
@@ -240,6 +240,11 @@
       [_
 	(raise-syntax-error 'update "use as (update <image> produce <expression>)")]))
   
+  (define (update-frame/proc pict thunk)
+    (begin
+      (update-frame pict)
+      (thunk)))
+
   (define (update-frame pict)
     (unless the-frame (error 'update SEQUENCE-ERROR))
     (check-result 'update (lambda (x) (beg:image? x)) "image" pict)
