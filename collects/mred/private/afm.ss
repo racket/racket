@@ -71,12 +71,11 @@
   ;;  table has been loaded.
   (define got-long-name-list? #f)
 
-  ;; Reads the Adobe char name -> Unicode table
-  (define (read-names! gl.txt long?)
+  (define (read-glyph-names gl.txt)
     (let ([ht (make-hash-table 'equal)])
       (with-handlers ([exn:fail? report-exn])
 	(call-with-input-file* 
-	 (find-path (current-ps-afm-file-paths) gl.txt)
+	 gl.txt
 	 (lambda (i)
 	   (let loop ()
 	     (let ([l (read-bytes-line i)])
@@ -88,21 +87,46 @@
 				      (cadr m)
 				      (bytes->number (caddr m) 16))))
 		 (loop)))))))
-      (set! adobe-name-to-code-point ht)
-      (set! got-long-name-list? long?)))
+      ht))
 
-  ;; Maps Adbobe char name to Unicode, loading the table as necesary
-  (define (find-unicode name)
-    (unless adobe-name-to-code-point
-      (read-names! "glyphshortlist.txt" #f))
-    (hash-table-get adobe-name-to-code-point
-		    name
-		    (lambda ()
-		      (if got-long-name-list?
-			  #f
-			  (begin
-			    (read-names! "glyphlist.txt" #t)
-			    (find-unicode name))))))
+  ;; Reads a font-specific glyphname mapping
+  (define (read-font-glyphnames file)
+    (let-values ([(base name dir?) (split-path file)])
+      (let ([file (build-path base
+			      (bytes->path
+			       (bytes-append 
+				(path->bytes (path-replace-suffix name #""))
+				#"-glyphlist.txt")))])
+	(if (file-exists? file)
+	    ;; Read glyph names:
+	    (read-glyph-names file)
+	    ;; Make empty hash table:
+	    (make-hash-table)))))
+
+  ;; Reads the Adobe char name -> Unicode table
+  (define (read-names! gl.txt long?)
+    (set! adobe-name-to-code-point (read-glyph-names
+				    (find-path (current-ps-afm-file-paths) gl.txt)))
+    (set! got-long-name-list? long?))
+
+  ;; Maps Adobe char name to Unicode, loading the table as necesary
+  (define (find-unicode font-glyphnames name)
+    (hash-table-get 
+     font-glyphnames
+     name
+     (lambda ()
+       (unless adobe-name-to-code-point
+	 (read-names! "glyphshortlist.txt" #f))
+       (hash-table-get adobe-name-to-code-point
+		       name
+		       (lambda ()
+			 (if got-long-name-list?
+			     (let ([m (regexp-match #rx#"^uni([0-9a-fA-Z]+)" name)])
+			       (and m
+				    (string->number (bytes->string/latin-1 (cadr m)) 16)))
+			     (begin
+			       (read-names! "glyphlist.txt" #t)
+			       (find-unicode font-glyphnames name))))))))
 
   
   ;; ------------------------------------------------------------
@@ -239,7 +263,8 @@
 	  [kern-pairs null]
 	  [char-set #f]
 	  [char-set-name #f]
-	  [is-cid? #f])
+	  [is-cid? #f]
+	  [font-glyphnames (read-font-glyphnames file)])
       (parameterize ([read-case-sensitive #f])
 	(call-with-input-file*
 	 file
@@ -271,7 +296,7 @@
 				    (eq? n 'ch))
 			    (let ([v (read i)]
 				  [rest (read-bytes-line i)])
-			      (let ([nm (regexp-match #rx#"; *N +([a-zA-Z0-9]+) *;" rest)]
+			      (let ([nm (regexp-match #rx#"; *N +([a-zA-Z0-9_.-]+) *;" rest)]
 				    [wm (regexp-match #rx#"; *W.?X +([0-9]+) *;" rest)])
 				(when (or (and (eq? n 'c)
 					       (integer? v))
@@ -287,7 +312,7 @@
 				     achars
 				     (if (and char-set is-cid?)
 					 (hash-table-get char-set name (lambda () 0))
-					 (find-unicode name))
+					 (find-unicode font-glyphnames name))
 				     (make-achar
 				      (let ([v (if (eq? n 'c)
 						   v
@@ -297,7 +322,7 @@
 					    name
 					    v))
 				      (or (and wm (bytes->number (cadr wm))) 500)
-				      (extract-ligatures rest)))))))
+				      (extract-ligatures font-glyphnames rest)))))))
 			    (loop)))))]
 		   [(startkernpairs)
 		    (let ([cnt (read i)])
@@ -311,8 +336,8 @@
 					(read i))]
 				  [amt (read i)])
 			      (read-bytes-line i)
-			      (let ([v1 (find-unicode (string->bytes/utf-8 (symbol->string v1)))]
-				    [v2 (find-unicode (string->bytes/utf-8 (symbol->string v2)))])
+			      (let ([v1 (find-unicode font-glyphnames (string->bytes/utf-8 (symbol->string v1)))]
+				    [v2 (find-unicode font-glyphnames (string->bytes/utf-8 (symbol->string v2)))])
 				(set! kern-pairs (cons (list v1 v2 amt) kern-pairs))))
 			    (loop)))))]
 		   [else (read-bytes-line i)])
@@ -335,15 +360,15 @@
 		   (and char-set #t)
 		   char-set-name))))
 
-  (define (extract-ligatures rest)
+  (define (extract-ligatures font-glyphnames rest)
     (let ([m (regexp-match #rx#"; *L +([a-zA-Z0-9-]+) +([a-zA-Z0-9-]+)(.*)$" rest)])
       (if m
 	  (let ([next (cadr m)]
 		[ligature (caddr m)]
 		[rest (cadddr m)])
-	    (cons (cons (find-unicode next)
-			(find-unicode ligature))
-		  (extract-ligatures rest)))
+	    (cons (cons (find-unicode font-glyphnames next)
+			(find-unicode font-glyphnames ligature))
+		  (extract-ligatures font-glyphnames rest)))
 	  null)))
 
   (define fonts (make-hash-table 'equal))
