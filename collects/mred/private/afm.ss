@@ -352,6 +352,10 @@
       (let* ([descender (- (or descender bbox-down 0))]
 	     [ascender (or ascender bbox-up)]
 	     [cap-height (or cap-height ascender bbox-up)])
+	(unless bbox-up
+	  (error 'afm "bbox-up missing for ~a" file))
+	(unless descender
+	  (error 'afm "bbox-down missing for ~a" file))
 	(make-font (+ bbox-up descender)
 		   descender
 		   ascender
