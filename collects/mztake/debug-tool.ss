@@ -521,10 +521,11 @@
                        (case-lambda
                          [(top-mark ccm val)
                           (let* ([debug-marks (continuation-mark-set->list ccm debug-key)])
-                            (send parent suspend oeh (cons top-mark debug-marks) (list 'exit-break val)))]
+                            (car (send parent suspend oeh (cons top-mark debug-marks) (list 'exit-break val))))]
                          [(top-mark ccm . vals) 
                           (let* ([debug-marks (continuation-mark-set->list ccm debug-key)])
-                            (send parent suspend oeh (cons top-mark debug-marks) (cons 'exit-break vals)))])))
+                            (apply values
+				   (send parent suspend oeh (cons top-mark debug-marks) (cons 'exit-break vals))))])))
                      (current-exception-handler
                       (lambda (exn)
                         (if (and (exn:break? exn) (send parent suspend-on-break?))
@@ -572,11 +573,11 @@
             (set! break-status stat))
           (define control-panel #f)
           (define/public (resume)
-	    (let ([v (if (cons? break-status)
-			 (apply values (rest break-status))
-			 #f)])
+	    (let ([v break-status])
 	      (resume-gui)
-	      (channel-put resume-ch v)))
+	      (channel-put resume-ch (if (pair? v)
+					 (cdr v)
+					 #f))))
           (define/public (set-mouse-over-msg msg)
             (when (not (string=? msg (send mouse-over-message get-label)))
               (send mouse-over-message set-label msg)))
@@ -670,7 +671,9 @@
 					       (thunk)
 					       (loop)))))
 		       (semaphore-post suspend-sema))))
-		  #f)))
+		  (if (pair? status)
+		      (cdr status)
+		      #f))))
           
           (define (my-execute debug?)
             (set! want-debug? debug?)
