@@ -258,6 +258,7 @@
       (preferences:add-callback 'framework:default-text-color
                                 (λ (p v)
                                   (editor:set-default-font-color v)))
+      (editor:set-default-font-color (preferences:get 'framework:default-text-color))
       
       ;; groups
       
