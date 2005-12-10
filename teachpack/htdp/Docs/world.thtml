@@ -12,19 +12,35 @@ students to simulate a small world of animated drawings and games:
    and makes w the first world
 
 <li><code>on-tick-event : (World -> World) -> true</code><br>
-   <code>(on-tick-event tock)</code>
-   calls tock on the current world for every clock tick;
-   the result is the next world 
+   <code>(on-tick-event tock)</code> means that DrScheme must call <code>tock</code>
+   on the current world every time the clock ticks; it uses the result as the next world 
 
 <li><code>on-key-event  : (KeyEvent World -> World) -> true</code><br>
-   <code>(on-key-event react)</code>
-   calls react on every keystroke event, 
-   with a char or a symbol representing the keystroke, 
-   and the current world; the result is the next world 
+   <code>(on-key-event change)</code> means that DrScheme must call
+   <code>change</code> on the current world for every keystroke event; it uses
+   the result as the next world
 
-<li><code>end-of-time   : -> World</code><br>
-   <code>(end-of-time)</code>
-   stops the clock. 
+<pre>
+<code>
+   ;; A KeyEvent is one of: 
+   ;; -- Char (char?)
+   ;; -- Symbol (symbol?)
+</code>
+   When the Keyevent is a char, the programmer (user of the computer) has hit an
+   alphanumeric key. Symbols such as <code>'left</code>, <code>'right</code>,
+   <code>'up</code>, <code>'down</code>, <code>'release</code> denote arrow keys
+   or the events of releasing a key on the keypad. 
+</pre>
+
+<li><code>on-redraw : (World -> Image) -> true</code><br>
+   <code>(on-tick-event world->image)</code> means that DrScheme 
+   calls <code>world->image</code> whenever the canvas must be redrawn; the
+   result is displayed in the teachpack's canvas 
+
+<li><code>end-of-time   : -> World</code><br> 
+   When DrScheme evaluates <code>(end-of-time)</code>, it stops the clock; no
+   further tick events, key events, or redraw events take place until the world
+   is created again. 
 </menu></p>
 
 <p>The rest are functions for creating scenes:
@@ -47,17 +63,7 @@ students to simulate a small world of animated drawings and games:
    shows the list of images in loi, time-delayed
 </menu></p>
 
-<p>Finally, the teachpack also adds some one new form of syntax to the
-language: 
-<menu>
-<li><code>
-   (<b>update</b> &lt;expression&gt; <b>produce</b> &lt;expression&gt;)</code><br>
-   update the canvas of the world with the first expression; the result
-   is the value of the second expression. 
-</menu>
- Both update and produce are new keywords. </p>
-
-<p>The teachpack provides all the functions that image.ss provides. </p>
+<p>Finally, the teachpack provides all the functions that image.ss provides. </p>
 
 {(include "foot.tinc")}
 
