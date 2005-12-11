@@ -1,7 +1,5 @@
-#| TODO
-   I need
-    color? ;; Symbol -> Boolean 
-|#
+;; Sat Dec 10 19:39:03 EST 2005: fixed name, changed interface to on-key-event
+;; Fri Dec  9 21:39:03 EST 2005: remoevd (update ... produce ...); added on-redraw 
 ;; Thu Dec  1 17:03:03 EST 2005: fixed place-image; all coordinates okay now
 (module world mzscheme
   (require				; (lib "unitsig.ss")
@@ -16,9 +14,9 @@
   ;; --- provide ---------------------------------------------------------------
   (provide (all-from (lib "image.ss" "htdp")))
   
-  (provide     ;; forall(World):
-   big-bang   ;; Number Number Number World -> true 
-   end-of-time	;; -> World
+  (provide      ;; forall(World):
+   big-bang     ;; Number Number Number World -> true 
+   end-of-time	;; String u Symbol -> World
    
    nw:rectangle ;; Number Number Mode Color -> Image
    place-image  ;; Image Number Number Scence -> Scene
@@ -34,10 +32,15 @@
    on-redraw (world-image) ;; (World -> Image) -> true
    )
   
-  (provide-higher-order-primitive ;; (KeyEvent World -> World) -> true 
+  ;; KeyEvent is one of: 
+  ;; -- Char 
+  ;; -- Symbol 
+
+  (provide-higher-order-primitive ;; (World KeyEvent -> World) -> true 
    on-key-event 
    (tock)
    )
+
   ;; ---------------------------------------------------------------------------
   
   ;; Symbol Any String -> Void
@@ -157,9 +160,7 @@
   
   ;; (World -> World)
   [define timer-callback void]
-  
-  ;; (World -> World) -> true
-  ;; set the click handler 
+
   [define (on-tick-event f)
     (check-proc 'on-tick-event f 1 "on-tick-event" "one argument")
     (check-world 'on-tick-event)
@@ -177,13 +178,10 @@
     #t]
   
   ;; --- key events 
-  ;; KeyEvent = (union Symbol Char)
   
   ;; KeyEvent -> Void
   [define on-char-proc void]
   
-  ;; (KeyEvent World -> World) -> true
-  ;; effect: set on-char-proc so that it deals with keyboard events
   [define (on-key-event f)
     (check-proc 'on-key-event f 2 "on-key-event" "two arguments")
     (check-world 'on-key-event)
@@ -197,14 +195,14 @@
                        (lambda ()
                          (with-handlers ([exn:break? break-handler]
                                          [exn? exn-handler])
-                           (set! the-world (f e the-world))
+                           (set! the-world (f the-world e))
                            (on-redraw-proc))))
                       #t)))
             #t)
           (error 'on-event "the event action has been set already")))]
   
-  [define (end-of-time)
-    (printf "end of time~n")
+  [define (end-of-time s)
+    (printf "end of time: ~a~n" s)
     (stop-it)
     the-world]
   
