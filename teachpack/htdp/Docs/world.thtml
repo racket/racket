@@ -15,9 +15,10 @@ students to simulate a small world of animated drawings and games:
    <code>(on-tick-event tock)</code> means that DrScheme must call <code>tock</code>
    on the current world every time the clock ticks; it uses the result as the next world 
 
-<li><code>on-key-event  : (KeyEvent World -> World) -> true</code><br>
+<li><code>on-key-event  : (World KeyEvent -> World) -> true</code><br>
    <code>(on-key-event change)</code> means that DrScheme must call
-   <code>change</code> on the current world for every keystroke event; it uses
+   <code>change</code> on the current world and a (representation of the)
+   keyevent for every keystroke the programmer (user of the computer) makes; it uses
    the result as the next world
 
 <pre>
@@ -37,11 +38,10 @@ students to simulate a small world of animated drawings and games:
    calls <code>world->image</code> whenever the canvas must be redrawn; the
    result is displayed in the teachpack's canvas 
 
-<li><code>end-of-time   : -> World</code><br> 
-   When DrScheme evaluates <code>(end-of-time)</code>, it stops the clock; no
-   further tick events, key events, or redraw events take place until the world
-   is created again. 
-</menu></p>
+<li><code>end-of-time String u Symbol : -> World</code><br> When DrScheme
+   evaluates <code>(end-of-time)</code>, it stops the clock and displays the
+   given string or symbol; no further tick events, key events, or redraw events
+   take place until the world is created again.  </menu></p>
 
 <p>The rest are functions for creating scenes:
 <menu>
@@ -66,6 +66,3 @@ students to simulate a small world of animated drawings and games:
 <p>Finally, the teachpack provides all the functions that image.ss provides. </p>
 
 {(include "foot.tinc")}
-
-
-
