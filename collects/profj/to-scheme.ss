@@ -729,8 +729,6 @@
     (let* ((wrapped-methods
             (filter 
              (lambda (m)
-               #;(printf "~a (~a : ~a ~a)~n" (method-record-name m) (method-record-class m) class-name
-                       (method-record-override m))
                (and (not (eq? (method-record-rtype m) 'ctor))
                     (equal? (car (method-record-class m)) class-name)
                     (not (method-record-override m))))
@@ -1977,7 +1975,8 @@
                                       (expr-src expr)))
       ((cast? expr) (translate-cast (cast-type expr)
                                     (translate-expression (cast-expr expr))
-                                    (expr-types expr)
+                                    (expr-types (cast-expr expr))
+                                    ;(expr-types expr)
                                     (expr-src expr)))
       ((instanceof? expr) (translate-instanceof (translate-expression (instanceof-expr expr))
                                                 (instanceof-type expr)
@@ -2541,7 +2540,7 @@
                         (create-syntax #f `(c:contract ,(type->contract expr-type #t) ,expr 
                                                        (quote ,(string->symbol (class-name))) '||)
                                        (build-src src)) expr-type)
-                    (build-src src)))      
+                    (build-src src)))
     ((symbol? (type-spec-name type))
      (make-syntax #f `(javaRuntime:cast-primitive ,expr (quote ,(type-spec-name type)) ,(type-spec-dim type))
                   (build-src src)))

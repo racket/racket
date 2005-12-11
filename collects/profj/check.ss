@@ -1519,16 +1519,10 @@
          ((or (and (prim-numeric-type? l) (prim-numeric-type? r))
               (and (eq? 'boolean l) (eq? 'boolean r)))
           'boolean)
-         ((and (reference-type? l) (reference-type? r))
-          (let* ((dl? (dynamic-val? l))
-                (dr? (dynamic-val? r))
-                (dlt (when dl? (dynamic-val-type l)))
-                (drt (when dr? (dynamic-val-type r)))
-                (right-to-left (assignment-conversion l r type-recs))
-                (left-to-right (assignment-conversion r l type-recs)))
-            (when (and dl? (not dlt)) (set-dynamic-val-type! l #f))
-            (when (and dr? (not drt)) (set-dynamic-val-type! r #f))
-            (cond
+         ((and (reference-or-array-type? l) (reference-or-array-type? r))
+          (let ((right-to-left (castable? l r type-recs))
+                (left-to-right (castable? r l type-recs)))
+            (cond 
               ((or right-to-left left-to-right) 'boolean)
               (else (bin-op-equality-error 'both op l r src)))))
          (else 
@@ -2472,8 +2466,18 @@
           (set-dynamic-val-type! exp-type type)
           type)
          ((eq? 'dynamic type) (make-dynamic-val #f))
-         ((and (reference-type? exp-type) (reference-type? type)) type)
-         ((and (not (reference-type? exp-type)) (not (reference-type? type))) type)
+         ((and (reference-or-array-type? exp-type) (reference-or-array-type? type))               
+          (unless (castable? exp-type type type-recs) (cast-error 'incompatible exp-type type src))
+          type)
+         ((and (not (reference-type? exp-type)) (not (reference-type? type))) 
+          (unless (or (and (prim-numeric-type? exp-type)
+                           (prim-numeric-type? type)
+                           (or (widening-prim-conversion exp-type type)
+                               (widening-prim-conversion type exp-type))) 
+                      (and (eq? 'boolean type)
+                           (eq? 'boolean exp-type)))
+            (cast-error 'incompatible-prim exp-type type src))
+          type)
          ((reference-type? exp-type) (cast-error 'from-prim exp-type type src))
          (else (cast-error 'from-ref exp-type type src)))
        (type/env-e exp-type/env))))
@@ -2627,7 +2631,7 @@
        op
        (case type
          ((both) 
-          (format "~a expects one argument to be assignable to the other, neither ~a nor ~a can be" op lt rt))
+          (format "~a expects one argument to be castable to the other, neither ~a nor ~a can be" op lt rt))
          (else 
           (format "~a expects its arguments to be equivalent types, given non-equivalent ~a and ~a" 
                   op lt rt)))
@@ -3182,7 +3186,12 @@
         (let ((line1 (format "Illegal cast from class or interface ~a to primitive, ~a."
                              (type->ext-name exp) (type->ext-name cast)))
               (line2 "Class or interface types may not be cast to non-class or interface types"))
-          (format "~a~n~a" line1 line2))))
+          (format "~a~n~a" line1 line2)))
+       ((incompatible)
+        (format "Illegal cast from class or interface ~a to class or interface ~a, incompatible types"
+                (type->ext-name exp) (type->ext-name cast)))
+       ((incompatible-prim)
+         (format "Illegal cast from ~a to ~a, incompatible types" (type->ext-name exp) (type->ext-name cast))))
      'cast src))
   
   ;;Instanceof errors
