@@ -4,6 +4,76 @@
   
   (prepare-for-tests "Full")
   
+  (parameterize ((dynamic? #t))
+    (interact-test
+     "class X{ int x( int i) { return i; }}"
+     'full 
+     '("((dynamic) new X()).x(1)" "((dynamic) new X()).x()")
+     '(1 error)
+     "Test of casting known values to dynamic"))
+     
+  (execute-test
+   "interface A {}
+    interface B {}
+    class C implements A, B {
+    static void go() {
+	C c = new C();
+	A a = c;
+	B b = c;
+	
+	if (a == b) {
+	    b=b;
+	}
+	if (a == c) {
+	    a=a;
+	}
+	if (c == b) {
+	    b=b;
+	}
+    }
+  }" 'full #f "test of ==, using castable")
+  
+  (execute-test
+   "class A { }
+    class B extends A { }
+    class C extends A { }
+    class X {
+      A a = new B();
+      C b = new C();
+      boolean e() {
+        return a == b;
+      }
+    }" 'full #f "Test of ==")
+  
+  (execute-test
+   "class A { }
+    class B extends A { }
+    class C extends A { }
+    class X { 
+      B a = new B();
+      C b = new C();
+      boolean e() {
+        return a == b;
+      }
+    }" 'full #t "Incompatible type test ==")
+  
+  (execute-test
+   "class A {
+      boolean b() {
+        return \"hi\" == new Object();
+      }
+    }" 'full #f "Comparing String and Object")
+  
+  (execute-test
+   "final class A {
+    }
+    interface B { }
+    class X {
+      Object o( A a ) {
+        return (B) a;
+      }
+    }" 'full #t "Cast from final class to unimpl interface")
+  
   (interact-test
    'full
    (list "float x = 3/2;" "x" "double y = 3.2/2;" "y")

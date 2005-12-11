@@ -250,6 +250,56 @@
   }"
    'intermediate #f "Correct instanceof usage")
   
+  (execute-test
+   "class A { }
+    class B extends A { }
+    class C {
+      A a = new B();
+      Object o () { 
+        return ((B) a);
+      }
+      Object ob( B b) {
+        return ((A) b);
+      }
+    }" 'intermediate #f "Simple correct casting")
+  
+  (execute-test
+   "interface A { }
+    class C {
+      Object e( C c ) {
+        return (A) c;
+      }
+    }" 'intermediate #f "Cast of non-final class to empty interface")
+  
+  (execute-test
+   "interface A { }
+    interface B { int foo(); }
+    class C {
+      Object e( A a ) {
+        return (B) a;
+      }
+    }" 'intermediate #f "Cast of empty interface to non-empty interface")
+  
+  (execute-test
+   "interface A { int foo(); }
+    interface B { boolean foo(int i); }
+    class C {
+      Object e( A a) {
+        return (B) a;
+      }
+    }" 'intermediate #f "Cast of two non-same non-conflicting interfaces")
+  
+  (execute-test
+   "interface A { }
+    class C implements A {
+       Object e ( C c) {
+         return ((A) c);
+       }
+       Object e2( A a) {
+         return ((C) a);
+       }
+     }" 'intermediate #f "Casts of class to implementing iface, and reverse")
+  
   ;;Execute tests with errors
 
   (execute-test
@@ -330,6 +380,29 @@
     }
    }" 'intermediate #t "Incompatible return type from inherited interface")
 
+  (execute-test
+   "class X {
+      int c (Object o) {
+        return (int) o;
+      }
+    }" 'intermediate #t "Cast of object to primitive")
+  
+  (execute-test
+   "class X {
+     int c () {
+       return (int) false;
+     }
+   }" 'intermediate #t "cast of boolean to integer")
+  
+  (execute-test
+   "interface A { int x();}
+    interface B { boolean x(); }
+    class X {
+      Object o(A a) {
+        return (B) a;
+      }
+    }" 'intermediate #t "cast of incompatible interfaces")
+     
   
   ;;Interact tests
   
