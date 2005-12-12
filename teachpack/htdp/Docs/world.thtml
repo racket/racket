@@ -4,18 +4,18 @@
 <p>The teachpack provides two kinds of functions. The first four allow
 students to simulate a small world of animated drawings and games: 
 <menu>
-<li><code>big-bang : Number Number Number World -> true</code><br>
+<li><code>{(idx big-bang)} : Number Number Number World -> true</code><br>
     <code>(big-bang width height n w)</code>
    creates and shows a width x height canvas, 
    starts the clock, 
    makes it tick every n seconds, 
    and makes w the first world
 
-<li><code>on-tick-event : (World -> World) -> true</code><br>
+<li><code>{(idx on-tick-event)} : (World -> World) -> true</code><br>
    <code>(on-tick-event tock)</code> means that DrScheme must call <code>tock</code>
    on the current world every time the clock ticks; it uses the result as the next world 
 
-<li><code>on-key-event  : (World KeyEvent -> World) -> true</code><br>
+<li><code>{(idx on-key-event)}  : (World KeyEvent -> World) -> true</code><br>
    <code>(on-key-event change)</code> means that DrScheme must call
    <code>change</code> on the current world and a (representation of the)
    keyevent for every keystroke the programmer (user of the computer) makes; it uses
@@ -33,32 +33,32 @@ students to simulate a small world of animated drawings and games:
    or the events of releasing a key on the keypad. 
 </pre>
 
-<li><code>on-redraw : (World -> Image) -> true</code><br>
+<li><code>{(idx on-redraw)} : (World -> Image) -> true</code><br>
    <code>(on-tick-event world->image)</code> means that DrScheme 
    calls <code>world->image</code> whenever the canvas must be redrawn; the
    result is displayed in the teachpack's canvas 
 
-<li><code>end-of-time String u Symbol : -> World</code><br> When DrScheme
+<li><code>{(idx end-of-time)} : String u Symbol -> World</code><br> When DrScheme
    evaluates <code>(end-of-time)</code>, it stops the clock and displays the
    given string or symbol; no further tick events, key events, or redraw events
    take place until the world is created again.  </menu></p>
 
 <p>The rest are functions for creating scenes:
 <menu>
-<li><code>nw:rectangle   : Number Number Mode Color -> Image</code><br>
+<li><code>{(idx nw:rectangle)}   : Number Number Mode Color -> Image</code><br>
    <code>(nw:rectangle width height mode color)</code>
    creates a width x height rectangle, solid or outlined, 
    with its anchor in the NW corner
 
-<li><code>empty-scene : Number Number -> Scene</code><br>
+<li><code>{(idx empty-scene)} : Number Number -> Scene</code><br>
    <code>(empty-scene width height)</code>
    creates a width x height "scene" (frame with origin in NW)
 
-<li><code>place-image : Image Number Number Scence -> Scene</code><br>
+<li><code>{(idx place-image)} : Image Number Number Scence -> Scene</code><br>
    <code>(place-image image x y scene)</code>
    places image at (x,y) into scene; (x,y) are comp. graph. coordinates
    
-<li><code>run-movie   : (Listof Image) -> true </code><br>
+<li><code>{(idx run-movie)}   : (Listof Image) -> true </code><br>
    <code>(run-movie loi)</code>
    shows the list of images in loi, time-delayed
 </menu></p>
