@@ -1,12 +1,12 @@
 \" dummy line
-.TH MRED 1 "January 2005"
+.TH MRED 1 "December 2005"
 .UC 4
 .SH NAME
 mred \- The PLT Graphical Scheme implementation
 .SH SYNOPSIS
 .B mred
 [
-.I X option ...
+.I Xoption ...
 ]
 [
 .I option ...
@@ -31,9 +31,8 @@ applications.
 
 .SH X OPTIONS
 
-MrEd accepts the following standard
-.I X flags
-:
+When running in X11, MrEd accepts the following standard
+.IR Xoption s:
 .B -display
 .IR disp ,
 .B -geometry
@@ -65,7 +64,7 @@ MrEd accepts the following standard
 .IR lang ,
 .B -xrm
 .IR file .
-These flags must appear before all other flags.
+These options must appear before all other options.
 .PP
 
 .SH STARTUP FILE AND EXPRESSION OPTIONS
@@ -158,7 +157,7 @@ Same as
 .B \-r
 .TP
 .B --script
-Script mode: use as last flag for scripts.
+Script mode: use as last option for scripts.
 Same as
 .BR -fmv- .
 .TP

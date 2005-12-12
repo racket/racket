@@ -1,10 +1,13 @@
 .\" dummy line
-.TH HELP-DESK 1 "January 2005"
+.TH HELP-DESK 1 "Decmber 2005"
 .UC 4
 .SH NAME
 help-desk \- The PLT Scheme documentation center
 .SH SYNOPSIS
 .B help-desk
+[
+.I Xoption ...
+]
 .SH DESCRIPTION
 .I Help Desk 
 contains all of the documentation for
@@ -17,6 +20,41 @@ documentation and other information available at
 .PP
 .ce 1
 http://www.drscheme.org/
+.SH X OPTIONS
+When running in X11, Help Desk accepts the following standard
+.IR Xoption s:
+.B -display
+.IR disp ,
+.B -geometry
+.IR geom ,
+.B -bg
+.IR color ,
+.B -background
+.IR color ,
+.B -fg
+.IR color ,
+.B -foreground
+.IR color ,
+.B -fn
+.IR font ,
+.B -font
+.IR font ,
+.BR -iconic ,
+.B -name
+.IR name ,
+.BR -rv ,
+.BR -reverse ,
+.BR +rv ,
+.B -selectionTimeout
+.IR time ,
+.BR -synchronous ,
+.B -title
+.IR name ,
+.B -xnllanguage
+.IR lang ,
+.B -xrm
+.IR file .
+.PP
 .SH FILES
 .I Help Desk
 looks for its libraries using the environment variables
@@ -38,7 +76,7 @@ or by e-mail to
 bugs@plt-scheme.org (discouraged)
 .SH AUTHOR
 .I Help Desk 
-was implemented by Paul Steckler, Robby Findler, and Matthew Flatt.
+was implemented by Robby Findler, Matthew Flatt, and Paul Steckler.
 The documentation was written by PLT.
 .SH SEE ALSO
 .BR mred(1),
