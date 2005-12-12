@@ -60,7 +60,7 @@
 			   write-bytes-avail))
 		   s p start end)])
 	   (if (and (zero? v) (not (= start end)))
-	       (wrap-evt p (lambda (x) 0))
+	       (wrap-evt p (lambda (x) #f))
 	       v)))
        (lambda ()
 	 (when close?
