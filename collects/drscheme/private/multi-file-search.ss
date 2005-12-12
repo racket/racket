@@ -89,7 +89,10 @@
                                (λ (x) (and (pair? x)
                                                 (number? (car x))
                                                 (number? (cdr x)))))
-      (preferences:set-default 'drscheme:multi-file-search:directory #f
+      (preferences:set-default 'drscheme:multi-file-search:directory 
+                               ;; The default is #f because
+                               ;; filesystem-root-list is expensive under Windows
+                               #f 
                                (lambda (x) (or (not x) (path? x))))
       (preferences:set-un/marshall 
        'drscheme:multi-file-search:directory
