@@ -50,6 +50,9 @@ class wxFont: public wxbFont
 
   Bool GlyphAvailableNow(int c, HDC hdc, int screen_font);
   wxFont *Substitute(int c, HDC hdc, int screen_font);
+
+  Bool ScreenGlyphAvailabilityCached(int c, Bool for_label, Bool *avail);
+  void CacheScreenGlyphAvailability(int c, Bool for_label, Bool avail);
 };
 
 class wxColourMap: public wxObject
