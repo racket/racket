@@ -763,8 +763,9 @@
           (let ((raise-error 
                  (lambda (method-name num-args)
                    (raise (make-exn:fail 
-                           (format "~a broke the contract with ~a here, expected an object with a method ~a accepting ~a args"
-                                   n p method-name num-args) s)))))
+                           (string->immutable-string
+                            (format "~a broke the contract with ~a here, expected an object with a method ~a accepting ~a args"
+                                   n p method-name num-args)) s)))))
             (and ,@(map method->check/error
                         (filter (lambda (m) (not (eq? 'ctor (method-record-rtype m)))) wrapped-methods))))
           #;(c:contract ,(methods->contract (filter (lambda (m) (not (eq? 'ctor (method-record-rtype m))))
@@ -2533,7 +2534,6 @@
                          ((+) expr))
                    (build-src src))))
   
-  ;converted
   ;translate-cast: type-spec syntax type src
   (define (translate-cast type expr expr-type src)
     (cond
@@ -2549,10 +2549,13 @@
      (make-syntax #f `(javaRuntime:cast-primitive ,expr (quote ,(type-spec-name type)) ,(type-spec-dim type))
                   (build-src src)))
     (else
-     (make-syntax #f `(javaRuntime:cast-reference ,expr ,(get-class-name type) 
-                                                  ,(type-spec-dim type) 
-                                                  (quote ,(get-class-name type)))
-                  (build-src src)))))
+     (let*  ((class (get-class-name type))
+             (ca-class (string->symbol (format "convert-assert-~a" (syntax-object->datum class))))
+             (gc-class (string->symbol (format "guard-convert-~a" (syntax-object->datum class)))))
+       (make-syntax #f `(javaRuntime:cast-reference ,expr ,class ,ca-class ,gc-class
+                                                    ,(type-spec-dim type)
+                                                    (quote ,(get-class-name type)))
+                    (build-src src))))))
   
   ;translate-instanceof: syntax type-spec src -> syntax
   (define (translate-instanceof expr type src)

@@ -5,6 +5,13 @@
   (prepare-for-tests "Full")
   
   (parameterize ((dynamic? #t))
+    (interact-test "class A { }"
+                   'full
+                   '("dynamic x = new A();" "A a = x;" "(A) a")
+                   '((void) (void) a~f)
+                   "Casting a guarded/asserted value back to the original type"))
+  
+  (parameterize ((dynamic? #t))
     (interact-test
      "interface I { int m( int x); }
       class C implements I {

@@ -143,8 +143,8 @@
              (else (raise-class-cast (format "Cast to ~a failed for ~a" type
                                              (send (convert-to-string val) get-mzscheme-string)))))))))
   
-  ;cast-reference: value class int symbol-> value
-  (define (cast-reference val type dim name)
+  ;cast-reference: value class class class int symbol-> value
+  (define (cast-reference val type ca-type gc-type dim name)
     (if (> dim 0)
         (if (send val check-ref-type type dim)
             val
@@ -152,6 +152,8 @@
              (format "Cast to ~a~a failed for ~a" name (make-brackets dim) (send (convert-to-string val) get-mzscheme-string))))
         (cond
           ((and (eq? Object type) (is-a? val ObjectI)) val)
+          ((and (is-a? val convert-assert-Object) (is-a? val ca-type)) val)
+          ((and (is-a? val guard-convert-Object) (is-a? val gc-type)) val)
           ((is-a? val type) val)
           (else (raise-class-cast (format "Cast to ~a failed for ~a" name (send val my-name)))))))
   

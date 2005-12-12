@@ -90,6 +90,21 @@ _Java + dynamic_ language level
    JName.*[%]            <-> Jname.*[Obj]        i.e. object%       <->   objectObj
    
  
+Known bugs for dynamic:
+  Programs of the following form will not produce the expected result:
+    Object o = new Object();
+    dynamic x = o; 
+    boolean  t = x == o;
+  In this program, t will have the value false, not true as expected.
+  Some casts will fail and instanceof's return false that aught to succeed:
+    interface I { }
+    class C implements I { }
+    I ic = new C();
+    dynamic x = ic;
+    C c = (C) x; 
+  In this program, the cast of x to C will fail, even though the value is an intstanceof C.
+  These issues will be addressed in future versions.
+ 
 _Libraries available to ProfessorJ:
 
   java.lang.Object
