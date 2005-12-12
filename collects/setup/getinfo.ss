@@ -5,7 +5,9 @@
            (lib "list.ss")
            (lib "etc.ss")
            
-           (lib "contract.ss"))
+           (lib "contract.ss")
+           
+           (lib "planet-archives.ss" "planet"))
 
   (define info? (opt-> (symbol?) ((-> any/c)) any/c))
   (define path-or-string? (lambda (x) (or (path? x) (string? x))))
@@ -23,7 +25,7 @@
   ;; in addition to infodomain/compiled/cache.ss, getinfo will look in this 
   ;; file to find mappings. PLaneT uses this to put info about installed
   ;; planet packages.
-  (define user-infotable (build-path (find-system-path 'addon-dir) "cache.ss"))
+  (define user-infotable (get-planet-cache-path))
   
   (define (get-info coll-path)
     (let* ([coll-path (map (lambda (x) (if (path? x) (path->string x) x)) coll-path)]

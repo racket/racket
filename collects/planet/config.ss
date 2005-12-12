@@ -8,7 +8,7 @@
     (PLANET-CODE-VERSION      "300")
     (PLANET-DIR               (if (getenv "PLTPLANETDIR")
                                   (string->path (getenv "PLTPLANETDIR"))
-                                  (build-path (find-system-path 'addon-dir) "planet" (PLANET-CODE-VERSION))))
+                                  (build-path (find-system-path 'addon-dir) "planet" (PLANET-CODE-VERSION) (version))))
     (CACHE-DIR                (build-path (PLANET-DIR) "cache"))
     (LINKAGE-FILE             (build-path (PLANET-DIR) "LINKAGE"))
     (LOGGING-ENABLED?         #t)

@@ -162,7 +162,8 @@
              path
              name
              info
-             (build-path (find-system-path 'addon-dir) "cache.ss")
+             #;(build-path (find-system-path 'addon-dir) "cache.ss")
+             (get-planet-cache-path)
              (list `(planet ,owner ,pkg-file ,@extra-path) maj min)))))
       
       ;; this is an awful hack
