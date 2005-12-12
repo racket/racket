@@ -89,13 +89,14 @@
                                (λ (x) (and (pair? x)
                                                 (number? (car x))
                                                 (number? (cdr x)))))
-      (preferences:set-default 'drscheme:multi-file-search:directory (car (filesystem-root-list)) path?)
+      (preferences:set-default 'drscheme:multi-file-search:directory #f
+                               (lambda (x) (or (not x) (path? x))))
       (preferences:set-un/marshall 
        'drscheme:multi-file-search:directory
        (λ (v) (path->string v))
        (λ (p) (if (path-string? p)
                        (string->path p)
-                       (car (filesystem-root-list)))))
+                       #f)))
       
       
       ;; open-search-window : search-info -> void
@@ -553,7 +554,13 @@
         (send filter-check-box set-value (preferences:get 'drscheme:multi-file-search:filter?))
         (send search-text-field set-value (preferences:get 'drscheme:multi-file-search:search-string))
         (send filter-text-field set-value (preferences:get 'drscheme:multi-file-search:filter-string))
-        (send dir-field set-value (path->string (preferences:get 'drscheme:multi-file-search:directory)))
+        (send dir-field set-value (path->string 
+                                   (let ([p (preferences:get 'drscheme:multi-file-search:directory)])
+                                     (if (not p)
+                                         (let ([p (car (filesystem-root-list))])
+                                           (preferences:set 'drscheme:multi-file-search:directory p)
+                                           p)
+                                         p))))
         
         (send outer-method-panel stretchable-height #f)
         (send outer-method-panel set-alignment 'left 'center)
