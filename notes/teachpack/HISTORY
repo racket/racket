@@ -1,4 +1,14 @@
 ------------------------------------------------------------------------
+VERSION 300				  [Mon Dec 12 15:59:02 EST 2005]
+
+ * The world.ss teachpack has changed. It no longer supports 
+   (update ... produce ...) but instead provides a function 
+   on-redraw. 
+
+ * servlet.ss and servlet2.ss are still missing. Expect their arrival
+   for 301. 
+
+------------------------------------------------------------------------
 VERSION 299.200				  [Tue Aug  2 17:37:24 EDT 2005]
 
  * servlet.ss and servlet2.ss are still missing. Expect their arrival
