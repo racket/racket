@@ -317,7 +317,7 @@
 	(make-ifS $3 $5 $7 (build-src 1) (build-src 7))])
       
       (ReturnStatement
-       [(return Expression SEMI_COLON) (make-return $2 #t (build-src 3))])
+       [(return Expression SEMI_COLON) (make-return $2 #f #t (build-src 3))])
       
       ;; 19.12
       (Primary

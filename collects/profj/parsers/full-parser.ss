@@ -639,8 +639,8 @@
        [(continue SEMI_COLON) (make-continue #f (build-src 2))])
        
       (ReturnStatement
-       [(return Expression SEMI_COLON) (make-return $2 #f (build-src 3))]
-       [(return SEMI_COLON) (make-return #f #f (build-src 2))])
+       [(return Expression SEMI_COLON) (make-return $2 #f #f (build-src 3))]
+       [(return SEMI_COLON) (make-return #f #f #f (build-src 2))])
       
       (ThrowStatement
        [(throw Expression SEMI_COLON) (make-throw $2 (build-src 1) (build-src 3))])

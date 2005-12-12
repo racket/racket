@@ -938,7 +938,8 @@
                       interactions?
                       type-recs))
         ((return? statement)
-         (check-return (return-expr statement)
+         (check-return statement
+                       (return-expr statement)
                        return
                        env
                        check-e-no-change
@@ -1063,15 +1064,16 @@
          (send type-recs add-req (make-req "Throwable" (list "java" "lang")))))
       exp/env))
     
-  ;check-return: expression type env (expression -> type/env) src bool symbol type-records -> type/env
-  (define (check-return ret-expr return env check src interact? level type-recs)
+  ;check-return: statement expression type env (expression -> type/env) src bool symbol type-records -> type/env
+  (define (check-return stmt ret-expr return env check src interact? level type-recs)
     (cond
       (interact? (check ret-expr))
       ((and ret-expr (not (eq? 'void return)))
-         (let ((ret/env (check ret-expr)))
-           (if (assignment-conversion return (type/env-t ret/env) type-recs)
-               ret/env
-               (return-error 'not-equal (type/env-t ret/env) return src))))
+       (set-return-exp-type! stmt return)
+       (let ((ret/env (check ret-expr)))
+         (if (assignment-conversion return (type/env-t ret/env) type-recs)
+             ret/env
+             (return-error 'not-equal (type/env-t ret/env) return src))))
       ((and ret-expr (eq? 'void return))
        (return-error 'void #f return src))
       ((and (not ret-expr) (not (eq? 'void return)))

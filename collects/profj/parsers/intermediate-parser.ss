@@ -422,8 +422,8 @@
        [(StatementExpressionList COMMA StatementExpression) (cons $3 $1)])
       
       (ReturnStatement
-       [(return Expression SEMI_COLON) (make-return $2 #f (build-src 3))]
-       [(return SEMI_COLON) (make-return #f #f (build-src 2))])
+       [(return Expression SEMI_COLON) (make-return $2 #f #f (build-src 3))]
+       [(return SEMI_COLON) (make-return #f #f #f (build-src 2))])
       
       ;; 19.12
       

@@ -128,8 +128,8 @@
   ;(make-throw Expression src src)
   (p-define-struct throw (expr key-src src))
 
-  ;(make-return Expression boolean src)
-  (p-define-struct return (expr in-tail? src))
+  ;(make-return Expression (U #f type) boolean src)
+  (p-define-struct return (expr exp-type in-tail? src))
   
   ;(make-while Expression Statement src)
   (p-define-struct while (cond loop src))

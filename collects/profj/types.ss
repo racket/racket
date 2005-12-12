@@ -315,13 +315,13 @@
   (define-struct scheme-record (name path dir provides))
   
   ;;(make-dynamic-val (U type method-contract unknown-ref))
-  (define-struct dynamic-val (type))
+  (define-struct dynamic-val (type) (make-inspector))
   
   ;;(make-unknown-ref (U method-contract field-contract))
-  (define-struct unknown-ref (access))
+  (define-struct unknown-ref (access) (make-inspector))
   
   ;;(make-method-contract string type (list type) (U #f string))
-  (define-struct method-contract (name return args prefix))
+  (define-struct method-contract (name return args prefix) (make-inspector))
   
   ;;(make-field-contract string type)
   (define-struct field-contract (name type))

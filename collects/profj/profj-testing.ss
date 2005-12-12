@@ -94,7 +94,8 @@
                                                         msg ent (exn-message exn)) (interaction-msgs))))))])
                     (let ((new-val (eval `(begin
                                             (require (lib "class.ss")
-                                                     (prefix javaRuntime: (lib "runtime.scm" "profj" "libs" "java")))
+                                                     (prefix javaRuntime: (lib "runtime.scm" "profj" "libs" "java"))
+                                                     (prefix c: (lib "contract.ss")))
                                             ,(compile-interactions st st type-recs level)))))
                       (unless (java-equal? (eval val) new-val null null)
                         (interaction-errors (add1 (interaction-errors)))

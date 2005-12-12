@@ -6,6 +6,18 @@
   
   (parameterize ((dynamic? #t))
     (interact-test
+     "interface I { int m( int x); }
+      class C implements I {
+        int m(int x) { return x; }
+        boolean n(boolean y) { return !y; }
+        dynamic q(I x) { return x; }
+      }" 'full
+         '("(new C().q(new C())).n(true)" "(new C().q(new C())).m(5)")
+         '(error 5)
+         "Returning a dynamic value, properly quarded. Should not be send"))
+  
+  (parameterize ((dynamic? #t))
+    (interact-test
      "class X{ int x( int i) { return i; }}"
      'full 
      '("((dynamic) new X()).x(1)" "((dynamic) new X()).x()")
