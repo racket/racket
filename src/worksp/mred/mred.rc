@@ -20,8 +20,8 @@ APPLICATION             ICON    DISCARDABLE     "mred.ico"
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 299,400,0,0
- PRODUCTVERSION 299,400,0,0
+ FILEVERSION 300,0,0,0
+ PRODUCTVERSION 300,0,0,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -38,12 +38,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "PLT Inc.\0"
             VALUE "FileDescription", "mred\0"
-            VALUE "FileVersion", "299, 400, 0, 0\0"
+            VALUE "FileVersion", "300, 0, 0, 0\0"
             VALUE "InternalName", "mred\0"
             VALUE "LegalCopyright", "Copyright © 1995-2005\0"
             VALUE "OriginalFilename", "MrEd.exe\0"
             VALUE "ProductName", "MrEd\0"
-            VALUE "ProductVersion", "299, 400, 0, 0\0"
+            VALUE "ProductVersion", "300, 0, 0, 0\0"
         END
     END
     BLOCK "VarFileInfo"
