@@ -1347,13 +1347,18 @@ module browser threading seems wrong.
                 string))
           
           (define/private (get-save-diamond-prefix)
-            (let ([candidate-prefixes '("◆ " "* ")])
-              (ormap
-               (lambda (candidate)
-                 (and (andmap (λ (x) (send normal-control-font screen-glyph-exists? x))
-                              (string->list candidate))
-                      candidate))
-               candidate-prefixes)))
+	    ;; As of v300, there's a mismtach between MrEd's idea of
+	    ;;  "does a glyph exists?" and Windows's idea, so we
+	    ;;  avoid the problem by always using "*".
+            (if (eq? 'windows (system-type))
+                "* "
+                (let ([candidate-prefixes '("◆ " "* ")])
+                  (ormap
+                   (lambda (candidate)
+                     (and (andmap (λ (x) (send normal-control-font screen-glyph-exists? x))
+                                  (string->list candidate))
+                          candidate))
+                   candidate-prefixes))))
               
           [define/override get-canvas% (λ () (drscheme:get/extend:get-definitions-canvas))]
           
