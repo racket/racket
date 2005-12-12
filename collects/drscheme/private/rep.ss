@@ -967,13 +967,13 @@ TODO
                         (let loop ()
                           (let ([sexp/syntax/eof (get-sexp/syntax/eof)])
                             (unless (eof-object? sexp/syntax/eof)
-                              (call-with-values
+                              (call-with-break-parameterization
+                               (get-user-break-parameterization)
                                (λ ()
-                                 (call-with-break-parameterization
-                                  (get-user-break-parameterization)
+                                 (call-with-values
                                   (λ ()
-                                    (eval-syntax sexp/syntax/eof))))
-                               (λ x (display-results x)))
+                                    (eval-syntax sexp/syntax/eof))
+                                  (λ x (display-results x)))))
                               (loop))))
                         (set! cleanup? #t))
                       (λ () 
