@@ -223,7 +223,7 @@
   ; gen-collect-garbage-responder : str -> -> response
   (define (gen-collect-garbage-responder file)
     (lambda ()
-      (error-response 200 "Garbage collectedd" file)))
+      (error-response 200 "Garbage collected" file)))
   
   (define servlet?
     (let ([servlets-regexp (regexp "^/servlets/.*")])
