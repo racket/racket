@@ -135,7 +135,7 @@ exit 1
       (define f (make-object
                  (class frame% ()
                    (define/augment (can-close?) (quit) #f)
-                   (super-instantiate ("PLT Installer" #f 600 480)))))
+                   (super-instantiate ("PLT Installer" #f 600 450)))))
       (define e (make-object text%))
       (define c (make-object editor-canvas% f e '(no-hscroll)))
       (define b (make-object button% "Stop Installation" f (lambda _ (quit))))
