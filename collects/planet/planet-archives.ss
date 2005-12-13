@@ -37,5 +37,4 @@
   ;; SIDE EFFECT: creates the directory if it doesn't already exist
   (define (get-planet-cache-path)
     (let ((path (build-path (PLANET-DIR) "cache.ss")))
-      (make-directory* (PLANET-DIR))
       path)))
