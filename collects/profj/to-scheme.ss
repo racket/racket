@@ -765,7 +765,7 @@
                    (raise (make-exn:fail 
                            (string->immutable-string
                             (format "~a broke the contract with ~a here, expected an object with a method ~a accepting ~a args"
-                                   n p method-name num-args)) s)))))
+                                   n p method-name num-args)) c)))))
             (and ,@(map method->check/error
                         (filter (lambda (m) (not (eq? 'ctor (method-record-rtype m)))) wrapped-methods))))
           #;(c:contract ,(methods->contract (filter (lambda (m) (not (eq? 'ctor (method-record-rtype m))))

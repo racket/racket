@@ -103,7 +103,8 @@ Known bugs for dynamic:
     dynamic x = ic;
     C c = (C) x; 
   In this program, the cast of x to C will fail, even though the value is an intstanceof C.
-  These issues will be addressed in future versions.
+  These issues will be addressed in future versions. 
+  Some assignments (with implicit downcasts) will also fail.
  
 _Libraries available to ProfessorJ:
 
