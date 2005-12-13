@@ -563,7 +563,10 @@ module browser threading seems wrong.
             
             (field [error-arrows #f])
             
-            (super-new))))
+            (super-new)
+
+	    (inherit set-max-undo-history)
+	    (set-max-undo-history 5000))))
       
       
                                                        
