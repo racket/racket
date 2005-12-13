@@ -20,8 +20,10 @@
   (define (parse-ttf p)
     (begin-with-definitions
 
-     (unless (= (read-fixed p) #x10000)
-       (error "Doesn't start with snft version 1.0"))
+     (let ([v (read-fixed p)])
+       (unless (or (= v #x10000)
+		   (= v (integer-bytes->integer #"true" #f #t)))
+	 (error "Doesn't start with snft version #x10000 or 'true'; got #x~x" v)))
      
      (define num-tables (read-short p))
      (read-short p)
