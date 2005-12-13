@@ -499,7 +499,7 @@
                                   (reverse good-strs))]
             [else (let ([str (car strs)]
                         [lang (car langs)])
-                    (if (andmap (λ (char) (send normal-control-font screen-glyph-exists? char))
+                    (if (andmap (λ (char) (send normal-control-font screen-glyph-exists? char #t))
                                 (string->list str))
                         (loop (cdr langs) 
                               (cdr strs)
