@@ -1203,7 +1203,7 @@
   (stepper-next "Pas >")
   (stepper-next-application "Application >|")
   
-  (debug-tool-button-name "Déboger")
+  (debug-tool-button-name "Déboguer")
   
   (wizard-next "Suivant")
   (wizard-back "Précédent")
