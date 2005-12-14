@@ -22,5 +22,5 @@
               [sin-x (+ 200 (* 100 sin-x))])
           (history-b (changes (make-cute-circle x sin-x)) 50))))
 
-(set-running! (even? seconds))
+(set-running! #t)
 

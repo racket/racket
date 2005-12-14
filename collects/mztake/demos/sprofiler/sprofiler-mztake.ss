@@ -10,7 +10,7 @@
 
 (define pings (make-hash 'equal))
 
-((changes where)
+((changes (where))
  . ==> . (match-lambda [(line function context rest ...) 
                         (hash-table-increment! pings (list function context))]
                        [_ (void)]))
@@ -19,3 +19,6 @@
 
 (set-running-e! (merge-e (clicks . -=> . false)
                          (clicks . -=> . true)))
+
+(define (show-profile)
+  (quicksort (hash-pairs pings) (lambda (a b) (> (second a) (second b)))))
