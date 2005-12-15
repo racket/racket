@@ -61,5 +61,14 @@ None.
 
 Changes for v300: 
 
-updated for compatibility.
+Major changes.  The stepper now handles mutation, though it doesn't yet handle 'begin', so
+the advanced language is not defaultly steppable.  Enable stepping for the advanced language
+using the PLTSTEPPERUNSAFE environment variable.
+
+This change has also prompted an interface change; rather than splitting the stepper window
+into three panes, there is just one pane, with a simple left-right split between before & after.
+The reason for this is that in the presence of mutation, it's no longer the case that the
+"finished" expressions never change, which means that they can't always be shared between the
+left and right hand sides.
+
 
