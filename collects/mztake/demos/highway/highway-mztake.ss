@@ -2,7 +2,7 @@
 	 (lib "animation.ss" "frtime")
          (lib "useful-code.ss" "mztake"))
 
-(define/bind (loc "highway.ss" 3) speed)
+(define/bind (loc "highway.ss" 4) speed)
 
 (printf-b "current speed: ~a" speed)
 

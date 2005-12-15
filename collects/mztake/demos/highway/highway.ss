@@ -1,5 +1,6 @@
 (module highway mzscheme
-  (let loop ([speed 0])
-    (sleep 1)
-    ;; Generate some fake speeds readings:
-    (loop (+ speed 4))))
+  (let ([nap-time 0.8])
+    (let loop ([speed 0])
+      (sleep nap-time)
+      ;; Generate some fake speeds readings:
+      (loop (+ speed 4)))))

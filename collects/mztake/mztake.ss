@@ -31,7 +31,7 @@
                     [kill-all (-> void?)]
                     [set-running-e! ((frp:event?) (debug-process?) . opt-> . any)]
                     [set-running! ((frp:value-nowable?) (debug-process?) . opt-> . any)]
-                    [where (() (debug-process?) . opt-> . frp:behavior?)]
+                    [where (() (debug-process?) . opt-> . frp:event?)]
                     [current-policy (case-> (-> any)
                                             (any/c . -> . void?))]
                     [current-process (case-> (-> debug-process?)
@@ -76,7 +76,7 @@
   (define where
     (opt-lambda ([p (current-process)])
       (unless (debug-process-where p)
-        (set-debug-process-where! p (frp:new-cell empty)))
+        (set-debug-process-where! p (frp:event-receiver)))
       (debug-process-where p)))
   
   (define current-process (make-parameter (create-debug-process)))

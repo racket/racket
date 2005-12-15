@@ -115,7 +115,7 @@
                     [else (frp:send-synchronous-events (traces->events traces))])
 
               ;; With a where event to generate
-              (let ([where-event ((frp:signal-thunk (debug-process-where process)) #t)]
+              (let ([where-event (debug-process-where process)]
                     [w (map (compose syntax-local-infer-name mark-source) marks)])
                 (if no-traces?
                     (frp:send-synchronous-event where-event w)
