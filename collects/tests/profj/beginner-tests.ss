@@ -96,6 +96,15 @@
       B() { this.var = new A(); }
      }" language #f "Two classes with cycles: cannot be instantiated")
   
+  (execute-test
+   "interface X { }
+    class O {
+     O() { }
+     String happy( X x ) {
+       return x.toString();
+     }
+   }" language #f "Test that interface types have Object methods")
+  
   ;;Execution tests that should produce errors
 
   (execute-test

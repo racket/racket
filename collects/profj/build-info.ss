@@ -704,6 +704,7 @@
                       (super-records (map (lambda (n sc) (get-parent-record n sc iname level type-recs))
                                           super-names
                                           (header-extends info)))
+                      (object-methods (class-record-methods (send type-recs get-class-record object-type)))
                       (members (def-members iface))
                       (reqs (map (lambda (name-list) (make-req (car name-list) (cdr name-list)))
                                  super-names)))

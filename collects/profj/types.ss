@@ -586,11 +586,16 @@
   ;get-field-records: class-record -> (list field-record)
   (define (get-field-records c) (class-record-fields c))
   
-  ;; get-method-records: string class-record -> (list method-record)
-  (define (get-method-records mname c)
+  ;; get-method-records: string class-record type-records -> (list method-record)
+  (define (get-method-records mname c type-recs)
     (filter (lambda (m)
               (string=? (method-record-name m) mname))
-            (class-record-methods c)))
+            (if (class-record-class? c)
+                (class-record-methods c)
+                (append (class-record-methods c) (get-object-methods type-recs)))))
+  
+  (define (get-object-methods type-recs)
+    (class-record-methods (send type-recs get-class-record object-type)))
 
   ;remove-dups: (list method-record) -> (list method-record)
   (define (remove-dups methods)

@@ -1621,7 +1621,7 @@
                          (get-field-record fname class-rec
                                            (lambda () 
                                              (let* ((class? (member fname (send type-recs get-class-env)))
-                                                    (method? (not (null? (get-method-records fname class-rec)))))
+                                                    (method? (not (null? (get-method-records fname class-rec type-recs)))))
                                                (field-lookup-error (if class? 'class-name 
                                                                        (if method? 'method-name 'not-found))
                                                                    (string->symbol fname)
@@ -1790,7 +1790,7 @@
                                (cdr acc))))))
                    (else 
                     (let ((class? (member (id-string (car acc)) (send type-recs get-class-env)))
-                          (method? (not (null? (get-method-records (id-string (car acc)) (lookup-this type-recs env))))))
+                          (method? (not (null? (get-method-records (id-string (car acc)) (lookup-this type-recs env) type-recs)))))
                       (cond
                         ((or class? method?)
                          (variable-not-found-error (if class? 'class-name 'method-name) (car acc) (id-src (car acc))))
@@ -1822,7 +1822,7 @@
            (get-field-record fname obj-record
                              (lambda () 
                                (let* ((class? (member fname (send type-recs get-class-env)))
-                                      (method? (not (null? (get-method-records fname obj-record)))))
+                                      (method? (not (null? (get-method-records fname obj-record type-recs)))))
                                  (field-lookup-error 
                                   (if class? 'class-name 
                                       (if method? 'method-name 'not-found)) name obj-type src))))))
@@ -1939,7 +1939,7 @@
                                                                      (car (class-record-name record))
                                                                      (lambda () null))
                                                                (cdr (class-record-name record))))))
-                       (get-method-records name-string record))
+                       (get-method-records name-string record type-recs))
                       ((scheme-record? record)
                        (module-has-binding? record  name-string 
                                             (lambda () (no-method-error 'class 'not-found
@@ -1970,7 +1970,7 @@
                                                                (send type-recs lookup-path 
                                                                      (car (class-record-name record))
                                                                      (lambda () null)))))
-                           (let ((methods (get-method-records name-string record)))
+                           (let ((methods (get-method-records name-string record type-recs)))
                              (unless (andmap (lambda (x) x) 
                                              (map (lambda (mrec) (memq 'static (method-record-modifiers mrec)))
                                                   methods))
@@ -1986,8 +1986,8 @@
                  (if (string=? n "super")
                      (let ((parent (car (class-record-parents this))))
                        (get-method-records (car parent)
-                                           (get-record (send type-recs get-class-record parent) type-recs)))
-                     (get-method-records (car (class-record-name this)) this))))
+                                           (get-record (send type-recs get-class-record parent) type-recs) type-recs))
+                     (get-method-records (car (class-record-name this)) this type-recs))))
               (else
                (cond
                  ((and (special-name? expr) (equal? (special-name-name expr) "super"))
@@ -1996,7 +1996,7 @@
                   (let ((parent (car (class-record-parents this))))
                     (set! exp-type 'super)
                     (get-method-records name-string
-                                        (send type-recs get-class-record parent))))
+                                        (send type-recs get-class-record parent) type-recs)))
                  (expr
                   (let* ((call-exp/env 
                           (with-handlers ((exn:fail:syntax? handle-call-error))
@@ -2014,7 +2014,7 @@
                       ((array-type? call-exp)
                        (set! exp-type call-exp)
                        (get-method-records name-string
-                                           (send type-recs get-class-record object-type)))
+                                           (send type-recs get-class-record object-type) type-recs))
                       ((dynamic-val? call-exp) 
                        (let ((m-contract (make-method-contract name-string #f #f #f)))
                          (set-dynamic-val-type! call-exp (make-unknown-ref m-contract))
@@ -2028,7 +2028,7 @@
                                                   ((get-importer type-recs) 
                                                    (cons (ref-type-class/iface call-exp) (ref-type-path call-exp))
                                                    type-recs level src))
-                                            type-recs)))
+                                            type-recs) type-recs))
                       (else (prim-call-error call-exp name src level)))))
                  (else 
                   (if (and (eq? level 'beginner) (not interact?))
@@ -2041,7 +2041,7 @@
                                  (list (make-method-contract (string-append name-string "~f") #f #f #f))
                                  null)))
                           ((null? rec) null)
-                          (else (get-method-records name-string rec)))))))))))
+                          (else (get-method-records name-string rec type-recs)))))))))))
       
       (when (null? methods)
         (let* ((rec (if exp-type 
@@ -2193,7 +2193,7 @@
             (if inner-lookup?
                 (inner-rec-record inner-lookup?)
                 (get-record (send type-recs get-class-record type c-class) type-recs)))
-           (methods (get-method-records (id-string (name-id name)) class-record)))
+           (methods (get-method-records (id-string (name-id name)) class-record type-recs)))
       (unless (or (equal? (car (class-record-name class-record)) (ref-type-class/iface type)))
         (set-id-string! (name-id name) (car (class-record-name class-record)))
         (set-class-alloc-class-inner?! exp #t))
