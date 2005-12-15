@@ -7,7 +7,7 @@
     (cond [(regexp-match #rx"^([0-9]+(?:p[0-9])?)(?:[.]([0-9]+))?$"
                          (version))
            => (lambda (m)
-                (let ([major (cadr m)] [minor (or (caddr m) #"")])
+                (let ([major (cadr m)] [minor (or (caddr m) "")])
                   (string-append major "_"
                                  (make-string (- (string-length "xxxxxxx")
                                                  1
