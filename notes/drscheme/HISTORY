@@ -1,5 +1,5 @@
 ------------------------------
-        Version 299
+        Version 300
 ------------------------------
 
  - Added support for user-definable keybindings. See the new
@@ -19,7 +19,7 @@
  - the PLTDRDEBUG environment variable now works much
    better. Thanks to improvements in cm, setting it now
    builds .zos with errortrace and should make porting tools
-   to v299 much easier.
+   to v300 much easier.
 
  - set the PLTDRBREAK environment variable to get a window
    with two buttons that are useful for debugging deadlocks
