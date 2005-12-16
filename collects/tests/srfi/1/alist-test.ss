@@ -1,0 +1,459 @@
+;;;
+;;; <alist-test.ss> ---- Association list tests
+;;; Time-stamp: <05/12/16 21:14:22 noel>
+;;;
+;;; Copyright (C) 2002 by Noel Welsh.
+;;;
+;;; This file is part of SRFI-1.
+
+;;; SRFI-1 is free software; you can redistribute it and/or
+;;; modify it under the terms of the GNU Lesser General Public
+;;; License as published by the Free Software Foundation; either
+;;; version 2.1 of the License, or (at your option) any later version.
+
+;;; SRFI-1 is distributed in the hope that it will be useful,
+;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;;; Lesser General Public License for more details.
+
+;;; You should have received a copy of the GNU Lesser General Public
+;;; License along with SRFI-1; if not, write to the Free Software
+;;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
+
+;;; Author: Noel Welsh <noelwelsh@yahoo.com>
+;;
+;;
+;; Commentary:
+
+;; Originally created by:
+
+;; John David Stone
+;; Department of Mathematics and Computer Science
+;; Grinnell College
+;; stone@math.grin.edu
+
+(module alist-test mzscheme
+
+  (require (planet "test.ss" ("schematics" "schemeunit.plt" 1 1))
+           (all-except (lib "alist.ss" "srfi" "1") assoc)
+           (rename (lib "alist.ss" "srfi" "1") s:assoc assoc))
+
+  (provide alist-tests)
+
+  (define alist-tests
+    (make-test-suite
+     "Association list tests"
+
+     ;; ALIST-CONS
+
+     (make-test-case
+      "alist-cons:null-list"
+      (assert-equal? (alist-cons 'Manawa 'Manchester '())
+                     '((Manawa . Manchester))))
+
+     (make-test-case
+      "alist-cons:singleton-list"
+      (let* ((base '((Manilla . Manly)))
+             (result (alist-cons 'Manning 'Manson base)))
+        (assert-equal? result '((Manning . Manson)
+                                (Manilla . Manly)))
+        (assert-eq? (cdr result) base)))
+
+     (make-test-case
+      "alist-cons:longer-list"
+      (let* ((base '((Manteno . Mapleside)
+                     (Mapleton . Maquoketa)
+                     (Marathon . Marcus)
+                     (Marengo . Marietta)
+                     (Marion . Mark)))
+             (result (alist-cons 'Marne 'Marquette base)))
+        (assert-equal? result
+                       '((Marne . Marquette)
+                         (Manteno . Mapleside)
+                         (Mapleton . Maquoketa)
+                         (Marathon . Marcus)
+                         (Marengo . Marietta)
+                         (Marion . Mark)))
+        (assert-eq? (cdr result) base)))
+
+     (make-test-case
+      "alist-cons:longer-list-with-duplicate-key"
+      (let* ((base '((Marquisville . Marsh)
+                     (Marshalltown . Martelle)
+                     (Martensdale . Martinsburg)
+                     (Martinstown . Marysville)
+                     (Masonville . Massena)
+                     (Massey . Massilon)
+                     (Matlock . Maud)))
+             (result (alist-cons 'Masonville 'Maurice base)))
+        (assert-equal? result '((Masonville . Maurice)
+                                (Marquisville . Marsh)
+                                (Marshalltown . Martelle)
+                                (Martensdale . Martinsburg)
+                                (Martinstown . Marysville)
+                                (Masonville . Massena)
+                                (Massey . Massilon)
+                                (Matlock . Maud)))
+        (assert-eq? (cdr result) base)))
+
+     ;; ALIST-COPY
+
+     (make-test-case
+      "alist-copy:null-list"
+      (assert-true (null? (alist-copy '()))))
+
+     (make-test-case
+      "alist-copy:flat-list"
+      (let* ((original '((Maxon . Maxwell)
+                         (Maynard . Maysville)
+                         (McCallsburg . McCausland)
+                         (McClelland . McGregor)
+                         (McIntire . McNally)))
+             (result (alist-copy original)))
+        (assert-true
+         (and (equal? result original)
+              (not (eq? result original))
+              (not (eq? (car result) (car original)))
+              (not (eq? (cdr result) (cdr original)))
+              (not (eq? (cadr result) (cadr original)))
+              (not (eq? (cddr result) (cddr original)))
+              (not (eq? (caddr result) (caddr original)))
+              (not (eq? (cdddr result) (cdddr original)))
+              (not (eq? (cadddr result) (cadddr original)))
+              (not (eq? (cddddr result) (cddddr original)))
+              (not (eq? (car (cddddr result))
+                        (car (cddddr original))))))))
+
+     (make-test-case
+      "alist-copy:bush"
+      (let* ((first '(McPaul))
+             (second '(McPherson
+                       Mechanicsville
+                       Mederville
+                       (Mediapolis Medora)
+                       ((Mekee Melbourne Melcher))))
+             (third 'Melrose)
+             (original (list (cons 'Meltonville first)
+                             (cons 'Melvin second)
+                             (cons 'Menlo third)))
+             (result (alist-copy original)))
+        (assert-true
+         (and (equal? result original)
+              (not (eq? result original))
+              (not (eq? (car result) (car original)))
+              (eq? (cdar result) first)
+              (not (eq? (cdr result) (cdr original)))
+              (not (eq? (cadr result) (cadr original)))
+              (eq? (cdadr result) second)
+              (not (eq? (cddr result) (cddr original)))
+              (not (eq? (caddr result) (caddr original)))
+              (eq? (cdaddr result) third)))))
+
+     ;; ALIST-DELETE
+
+     (make-test-case
+      "alist-delete:null-list"
+      (assert-true (null? (alist-delete 'Mercer '() (lambda (x y) #t)))))
+
+     (make-test-case
+      "alist-delete:singleton-list"
+      (assert-equal?
+       (alist-delete 'Meriden
+                     '((Merrill . Merrimac)))
+       '((Merrill . Merrimac))))
+
+     (make-test-case
+      "alist-delete:all-elements-removed"
+      (assert-true
+       (null? (alist-delete 'Meservey
+                            '((Metz . Meyer)
+                              (Middleburg . Middletwon)
+                              (Midvale . Midway)
+                              (Miles . Milford)
+                              (Miller . Millersburg))
+                            (lambda (x y) #t)))))
+
+     (make-test-case
+      "alist-delete:some-elements-removed"
+      (assert-equal?
+       (alist-delete 561
+                     '((562 . 563)
+                       (565 . 564)
+                       (566 . 567)
+                       (569 . 568)
+                       (570 . 571))
+                     (lambda (x y) (odd? (+ x y))))
+       '((565 . 564) (569 . 568))))
+
+     (make-test-case
+      "alist-delete:no-elements-removed"
+      (assert-equal?
+       (alist-delete 'Millerton
+                     '((Millman . Millnerville)
+                       (Millville . Milo)
+                       (Milton . Minburn)
+                       (Minden . Mineola)
+                       (Minerva . Mingo))
+                     (lambda (x y) #f))
+       '((Millman . Millnerville)
+         (Millville . Milo)
+         (Milton . Minburn)
+         (Minden . Mineola)
+         (Minerva . Mingo))))
+
+     ;; ALIST-DELETE!
+
+     (make-test-case
+      "alist-delete!:null-list"
+      (assert-true (null? (alist-delete! 'Mitchell '() (lambda (x y) #t)))))
+
+     (make-test-case
+      "alist-delete!:singleton-list"
+      (assert-equal?
+       (alist-delete! 'Mitchellville
+                      (list (cons 'Modale 'Moingona)))
+       '((Modale . Moingona))))
+
+     (make-test-case
+      "alist-delete!:all-elements-removed"
+      (assert-true
+       (null?
+        (alist-delete! 'Mona
+                       (list (cons 'Mondamin 'Moneta)
+                             (cons 'Moningers 'Monmouth)
+                             (cons 'Monona 'Monroe)
+                             (cons 'Monteith 'Monterey)
+                             (cons 'Montezuma 'Montgomery))
+                       (lambda (x y) #t)))))
+
+     (make-test-case
+      "alist-delete!:some-elements-removed"
+      (assert-equal?
+       (alist-delete! 572
+                      (list (cons 573 574)
+                            (cons 576 575)
+                            (cons 577 578)
+                            (cons 580 579)
+                            (cons 581 582))
+                      (lambda (x y) (even? (+ x y))))
+       '((573 . 574) (577 . 578) (581 . 582))))
+
+     (make-test-case
+      "alist-delete!:no-elements-removed"
+      (assert-equal?
+       (alist-delete! 'Monti
+                      (list (cons 'Monticello 'Montour)
+                            (cons 'Montpelier 'Montrose)
+                            (cons 'Mooar 'Moorhead)
+                            (cons 'Moorland 'Moran)
+                            (cons 'Moravia 'Morley)))
+       '((Monticello . Montour)
+         (Montpelier . Montrose)
+         (Mooar . Moorhead)
+         (Moorland . Moran)
+         (Moravia . Morley))))
+
+     ;; ALIST-DELETE
+
+     (make-test-case
+      "alist-delete:null-list"
+      (assert-true (null? (alist-delete '(Reasnor . Redding) '()))))
+
+     (make-test-case
+      "alist-delete:in-singleton-list"
+      (assert-true (null?
+                    (alist-delete '(Redfield . Reeceville)
+                                  '(((Redfield . Reeceville) . Reinbeck))))))
+
+     (make-test-case
+      "alist-delete:not-in-singleton-list"
+      (assert-equal?
+       (alist-delete '(Rembrandt . Remsen)
+                     '(((Renwick . Republic) . Rhodes)))
+       '(((Renwick . Republic) . Rhodes))))
+
+     (make-test-case
+      "alist-delete:at-beginning-of-longer-list"
+      (assert-equal?
+       (alist-delete '(Riceville . Richard)
+                     '(((Riceville . Richard) . Richfield)
+                       ((Richland . Richmond) . Rickardsville)
+                       ((Ricketts . Rider) . Ridgeport)
+                       ((Ridgeway . Riggs) . Rinard)
+                       ((Ringgold . Ringsted) . Rippey)))
+       '(((Richland . Richmond) . Rickardsville)
+         ((Ricketts . Rider) . Ridgeport)
+         ((Ridgeway . Riggs) . Rinard)
+         ((Ringgold . Ringsted) . Rippey))))
+
+     (make-test-case
+      "alist-delete:in-middle-of-longer-list"
+      (assert-equal?
+       (alist-delete '(Ritter . Riverdale)
+                     '(((Riverside . Riverton) . Roberts)
+                       ((Robertson . Robins) . Robinson)
+                       ((Rochester . Rockdale) . Rockford)
+                       ((Rockville . Rockwell) . Rodman)
+                       ((Ritter . Riverdale) . Rodney)
+                       ((Roelyn . Rogers) . Roland)
+                       ((Rolfe . Rome) . Roscoe)))
+       '(((Riverside . Riverton) . Roberts)
+         ((Robertson . Robins) . Robinson)
+         ((Rochester . Rockdale) . Rockford)
+         ((Rockville . Rockwell) . Rodman)
+         ((Roelyn . Rogers) . Roland)
+         ((Rolfe . Rome) . Roscoe))))
+
+     (make-test-case
+      "alist-delete:at-end-of-longer-list"
+      (assert-equal?
+       (alist-delete '(Rose . Roselle)
+                     '(((Roseville . Ross) . Rosserdale)
+                       ((Rossie . Rossville) . Rowan)
+                       ((Rowley . Royal) . Rubio)
+                       ((Ruble . Rudd) . Runnells)
+                       ((Rose . Roselle) . Russell)))
+       '(((Roseville . Ross) . Rosserdale)
+         ((Rossie . Rossville) . Rowan)
+         ((Rowley . Royal) . Rubio)
+         ((Ruble . Rudd) . Runnells))))
+
+     (make-test-case
+      "alist-delete:not-in-longer-list"
+      (assert-equal?
+       (alist-delete '(Ruthven . Rutland)
+                     '(((Rutledge . Ryan) . Sabula)
+                       ((Sageville . Salem) . Salina)
+                       ((Salix . Sanborn) . Sandusky)
+                       ((Sandyville . Santiago) . Saratoga)
+                       ((Sattre . Saude) . Savannah)))
+       '(((Rutledge . Ryan) . Sabula)
+         ((Sageville . Salem) . Salina)
+         ((Salix . Sanborn) . Sandusky)
+         ((Sandyville . Santiago) . Saratoga)
+         ((Sattre . Saude) . Savannah))))
+
+     (make-test-case
+      "alist-delete:several-matches-in-longer-list"
+      (assert-equal?
+       (alist-delete '(Sawyer . Saylor)
+                     '(((Saylorville . Scarville) . Schaller)
+                       ((Schleswig . Schley) . Sciola)
+                       ((Sawyer . Saylor) . Scranton)
+                       ((Searsboro . Sedan) . Selma)
+                       ((Sawyer . Saylor) . Seneca)
+                       ((Seney . Sewal) . Sexton)
+                       ((Sawyer . Saylor) . Seymour)))
+       '(((Saylorville . Scarville) . Schaller)
+         ((Schleswig . Schley) . Sciola)
+         ((Searsboro . Sedan) . Selma)
+         ((Seney . Sewal) . Sexton))))
+
+     ;; ALIST-DELETE!
+
+     (make-test-case
+      "alist-delete!:null-list"
+      (assert-true (null? (alist-delete! (cons 'Unionville 'Unique) (list)))))
+
+     (make-test-case
+      "alist-delete!:in-singleton-list"
+      (assert-true
+       (null?
+        (alist-delete! (cons 'Updegraff 'Urbana)
+                       (list (cons (cons 'Updegraff 'Urbana)
+                                   'Summitville))))))
+
+     (make-test-case
+      "alist-delete!:not-in-singleton-list"
+      (assert-equal?
+       (alist-delete! (cons 'Urbandale 'Ute)
+                      (list (cons (cons 'Utica 'Vail) 'Valeria)))
+       '(((Utica . Vail) . Valeria))))
+
+     (make-test-case
+      "alist-delete!:at-beginning-of-longer-list"
+      (assert-equal?
+       (alist-delete! (cons 'Valley 'Vandalia)
+                      (list (cons (cons 'Valley 'Vandalia) 'Varina)
+                            (cons (cons 'Ventura 'Vernon) 'Victor)
+                            (cons (cons 'Viele 'Villisca) 'Vincennes)
+                            (cons (cons 'Vincent 'Vining) 'Vinje)
+                            (cons (cons 'Vinton 'Viola) 'Volga)))
+       '(((Ventura . Vernon) . Victor)
+         ((Viele . Villisca) . Vincennes)
+         ((Vincent . Vining) . Vinje)
+         ((Vinton . Viola) . Volga))))
+
+     (make-test-case
+      "alist-delete!:in-middle-of-longer-list"
+      (assert-equal?
+       (alist-delete! (cons 'Volney 'Voorhies)
+                      (list (cons (cons 'Wadena 'Wahpeton) 'Walcott)
+                            (cons (cons 'Wald 'Wales) 'Walford)
+                            (cons (cons 'Walker 'Wallin) 'Wallingford)
+                            (cons (cons 'Walnut 'Wapello) 'Ward)
+                            (cons (cons 'Volney 'Voorhies) 'Ware)
+                            (cons (cons 'Washburn 'Washington) 'Washta)
+                            (cons (cons 'Waterloo 'Waterville)
+                                  'Watkins)))
+       '(((Wadena . Wahpeton) . Walcott)
+         ((Wald . Wales) . Walford)
+         ((Walker . Wallin) . Wallingford)
+         ((Walnut . Wapello) . Ward)
+         ((Washburn . Washington) . Washta)
+         ((Waterloo . Waterville) . Watkins))))
+
+     (make-test-case
+      "alist-delete!:at-end-of-longer-list"
+      (assert-equal?
+       (alist-delete! (cons 'Watson 'Watterson)
+                      (list (cons (cons 'Waubeek 'Waucoma) 'Waukee)
+                            (cons (cons 'Waukon 'Waupeton) 'Waverly)
+                            (cons (cons 'Wayland 'Webb) 'Webster)
+                            (cons (cons 'Weldon 'Weller) 'Wellman)
+                            (cons (cons 'Watson 'Watterson) 'Wellsburg)))
+       '(((Waubeek . Waucoma) . Waukee)
+         ((Waukon . Waupeton) . Waverly)
+         ((Wayland . Webb) . Webster)
+         ((Weldon . Weller) . Wellman))))
+
+     (make-test-case
+      "alist-delete!:not-in-longer-list"
+      (assert-equal?
+       (alist-delete! (cons 'Welton 'Wesley)
+                      (list (cons (cons 'Western 'Westerville)
+                                  'Westfield)
+                            (cons (cons 'Westgate 'Weston) 'Westphalia)
+                            (cons (cons 'Westside 'Westview) 'Wever)
+                            (cons (cons 'Wheatland 'Whiting)
+                                  'Whittemore)
+                            (cons (cons 'Whitten 'Whittier) 'Wichita)))
+       '(((Western . Westerville) . Westfield)
+         ((Westgate . Weston) . Westphalia)
+         ((Westside . Westview) . Wever)
+         ((Wheatland . Whiting) . Whittemore)
+         ((Whitten . Whittier) . Wichita))))
+
+     (make-test-case
+      "alist-delete!:several-matches-in-longer-list"
+      (assert-equal?
+       (alist-delete! (cons 'Wick 'Wightman)
+                      (list (cons (cons 'Wilke 'Willey) 'Williams)
+                            (cons (cons 'Williamsburg 'Williamson)
+                                  'Williamstown)
+                            (cons (cons 'Wick 'Wightman) 'Wilmar)
+                            (cons (cons 'Wilton 'Winchester) 'Windham)
+                            (cons (cons 'Wick 'Wightman) 'Winfield)
+                            (cons (cons 'Winkelmans 'Winterset)
+                                  'Winthrop)
+                            (cons (cons 'Wick 'Wightman) 'Wiota)))
+       '(((Wilke . Willey) . Williams)
+         ((Williamsburg . Williamson)
+          . Williamstown)
+         ((Wilton . Winchester) . Windham)
+         ((Winkelmans . Winterset) . Winthrop))))
+
+     ))
+  )
+
+;;; alist-test.ss ends here
