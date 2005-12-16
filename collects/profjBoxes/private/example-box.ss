@@ -80,12 +80,13 @@
                                                         (send example get-value)
                                                         level)])
                                     #'(define name value)))))
-              #`(parse-example-box (list #,@(send examples map-children
-                                                  (lambda (example)
-                                                    (with-syntax ([type (send example get-type)]
-                                                                  [id (send example get-name)]
-                                                                  [value (send example get-value)])
-                                                      #'(list type id value))))))
+              (syntax-property #`(parse-example-box (list #,@(send examples map-children
+                                                                   (lambda (example)
+                                                                     (with-syntax ([type (send example get-type)]
+                                                                                   [id (send example get-name)]
+                                                                                   [value (send example get-value)])
+                                                                       #'(list type id value))))))
+                               'example-box #t)
               ))
           
           #;(-> void?)

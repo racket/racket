@@ -44,7 +44,7 @@
                       (send text end-edit-sequence)))))
                (demand-callback has-editor-on-demand))
           
-          (new menu-item%
+          #;(new menu-item%
                (label (string-constant profjBoxes-insert-java-interactions))
                (parent (get-special-menu))
                (callback
