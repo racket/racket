@@ -42,7 +42,7 @@
            (rename (lib "lang-ext.ss" "frtime") undefined undefined)
            (rename (lib "lang-ext.ss" "frtime") undefined? undefined?)
 	   (lib "class.ss"))
-  
+  (require (lib "list.ss"))  
   
   (define-syntax (lifted-send stx)
     (syntax-case stx ()
@@ -181,7 +181,9 @@
       (if (behavior? args)
           (super-lift
            (lambda (args)
-             (apply apply fn args))
+             (if (and (list? args) (list? (last-pair args)))
+                 (apply apply fn args)
+                 undefined))
            args)
           (apply apply fn args))))
   #|
