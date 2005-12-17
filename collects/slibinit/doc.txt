@@ -3,7 +3,7 @@ _SLIB_ Initialization File
 --------------------------
 
 The "init.ss" file in the _slibinit_ collection is an SLIB
-initialization file (tested with version 2d2).
+initialization file (tested with version 3a2).
 
 To use SLIB in MzScheme:
 

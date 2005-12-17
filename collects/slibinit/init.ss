@@ -73,7 +73,7 @@
 			   (lambda (x)
 			     (error 'slib-init
 				    "can't find SCHEME_LIBRARY_PATH environment variable or \"slib\" collection"))])
-	    (collection-path "slib")))))
+	    (path->string (collection-path "slib"))))))
     (lambda () library-path)))
 
 ;;; (home-vicinity) should return the vicinity of the user's HOME
@@ -81,7 +81,22 @@
 ;;; customize a computer environment for a user.
 
 (define (home-vicinity)
-  (find-system-path 'home-dir))
+  (path->string (find-system-path 'home-dir)))
+
+(define (user-vicinity)
+  (path->string (build-path 'same)))
+
+(define (program-vicinity)
+  (path->string
+   (or (current-load-relative-directory)
+       (current-directory))))
+
+(define with-load-pathname
+  (lambda (a thunk) (thunk)))
+
+(define sub-vicinity
+  (lambda (vic name)
+    (path->string (build-path vic name))))
 
 ;;; *FEATURES* should be set to a list of symbols describing features
 ;;; of this implementation.  Suggestions for features are:
@@ -266,9 +281,13 @@
 (define (defmacro:load <pathname>)
   (slib:eval-load <pathname> defmacro:eval))
 
+(define (ensure-path-string p)
+  (if (path? p) (path->string p) p))
+
 (define (slib:eval-load <pathname> evl)
   (if (not (file-exists? <pathname>))
-      (set! <pathname> (string-append <pathname> (scheme-file-suffix))))
+      (set! <pathname> (string-append (ensure-path-string <pathname>)
+				      (scheme-file-suffix))))
   (call-with-input-file <pathname>
     (lambda (port)
       (let ((old-load-pathname *load-pathname*))
@@ -303,12 +322,13 @@
 
 (define in-vicinity 
   (lambda args
-    (let loop ([args args])
-      (cond
-       [(null? (cdr args)) (car args)]
-       [(string=? "" (car args)) (loop (cdr args))]
-       [else (let ([v (loop (cdr args))])
-	       (build-path (car args) v))]))))
+    (path->string
+     (let loop ([args args])
+       (cond
+	[(null? (cdr args)) (car args)]
+	[(string=? "" (car args)) (loop (cdr args))]
+	[else (let ([v (loop (cdr args))])
+		(build-path (car args) v))])))))
 
 ;;; Define SLIB:EXIT to be the implementation procedure to exit or
 ;;; return if exitting not supported.
@@ -324,13 +344,13 @@
 ;;; (SLIB:LOAD-SOURCE "foo") should load "foo.scm" or with whatever
 ;;; suffix all the module files in SLIB have.  See feature 'SOURCE.
 
-(define (slib:load-source f) (load (string-append f ".scm")))
+(define (slib:load-source f) (load (string-append (ensure-path-string f) ".scm")))
 
 ;;; (SLIB:LOAD-COMPILED "foo") should load the file that was produced
 ;;; by compiling "foo.scm" if this implementation can compile files.
 ;;; See feature 'COMPILED.
 
-(define (slib:load-compiled f) (load (string-append f ".zo")))
+(define (slib:load-compiled f) (load (string-append (ensure-path-string f) ".zo")))
 
 ;;; At this point SLIB:LOAD must be able to load SLIB files.
 
