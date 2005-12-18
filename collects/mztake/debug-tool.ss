@@ -737,7 +737,7 @@
           
           (define status-message
             (instantiate message% ()
-              [label ""]
+              [label " "]
               [parent debug-panel]
               [stretchable-width #t]))
           
@@ -793,7 +793,7 @@
 
           (define mouse-over-message
             (instantiate message% ()
-              [label ""]
+              [label " "]
               [parent debug-panel]
               [stretchable-width #t]))
 
