@@ -20,7 +20,7 @@ exec mred -u  "$0" "$@"
             [expected-file-name    (string-append file-name ".png")])
        (plot args ... (out-file result-file-name))
        ;; WILL COMPARE by MD5 hash.
-       (printf "testing \"~a\" : ~a ... " description '(plot args ...) )
+       (printf "testing \"~a\" ... " description)
        (if (equal? (md5 (read-file result-file-name))
                    (md5 (read-file expected-file-name)))
          (begin (display "passed\n") (delete-file result-file-name))
