@@ -368,11 +368,13 @@ Bool wxFont::ScreenGlyphAvailable(int c, Bool for_label)
 			     0, KEY_READ,
 			     &key)) {
 	  int i = 0;
-	  nlen = 256;
-	  vlen = 0;
-	  while (ERROR_SUCCESS
-		 == RegEnumValueW(key, i, value_name, &nlen,
-				  NULL, NULL, NULL, &vlen)) {
+	  while (1) {
+	    nlen = 256;
+	    vlen = 0;
+	    if (ERROR_SUCCESS
+		!= RegEnumValueW(key, i, value_name, &nlen,
+				 NULL, NULL, NULL, &vlen))
+              break;
 	    if (!strcmp(face, wxNARROW_STRING(value_name))) {
 	      value = (wchar_t *)(new WXGC_ATOMIC char[vlen]);
 	      vlen2 = vlen;
