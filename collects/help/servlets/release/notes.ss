@@ -51,10 +51,4 @@
                  ("Stepper release notes"
                   "stepper" "HISTORY")
                  ("MrFlow release notes"
-                  "mrflow" "HISTORY")
-                 ("MysterX release notes"
-                  "mysterx" "HISTORY")
-                 ("MzCOM release notes"
-                  "mzcom" "HISTORY")
-                 ("SrPersist release notes"
-                  "srpersist" "HISTORY"))))))))
+                  "mrflow" "HISTORY"))))))))
