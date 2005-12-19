@@ -2,7 +2,6 @@
 (module bug-report mzscheme
   (require (lib "string-constant.ss" "string-constants")
            (lib "head.ss" "net")
-           (lib "smtp.ss" "net")
            (lib "mred.ss" "mred")
            (lib "framework.ss" "framework")
            (lib "class.ss")
@@ -12,17 +11,12 @@
            (lib "htmltext.ss" "browser")
            "private/buginfo.ss"
            "private/manuals.ss")
-  
+
   (provide help-desk:report-bug)
-  
-  (define bug-report-recipient "bugs")
-  (define bug-email-server "bugs.plt-scheme.org")
-  (define bug-email-server-port 1025)
+
   (define bug-www-server "bugs.plt-scheme.org")
   (define bug-www-server-port 80)
-  (define bug-report-email-address 
-    (string-append bug-report-recipient "@plt-scheme.org"))
-  
+
   ;; this one should be defined by help desk.
   (define frame-mixin
     (namespace-variable-value 'help-desk:frame-mixin #f (lambda () (lambda (x) x))))
@@ -338,60 +332,7 @@
                                      (car extra)
                                      (send (cdr extra) get-value)))
                            extras))))
-        
-    ;; smtp-send-bug-report : -> void
-    (define (smtp-send-bug-report)
-      (smtp-send-message
-       bug-email-server
-       (preferences:get 'drscheme:email)
-       (list bug-report-recipient)
-       (insert-field
-        "X-Mailer"
-        (format "Help Desk ~a (bug report form)" (version:version))
-        (insert-field     
-         "Subject" 
-         (send summary get-value)
-         (insert-field
-          "To"
-          bug-report-email-address
-          (insert-field
-           "From"
-           (format "~a <~a>" 
-                   (preferences:get 'drscheme:full-name)
-                   (preferences:get 'drscheme:email))
-           empty-header))))
-       `(">Category:       all"
-         ,(format ">Synopsis:       ~a" (send summary get-value))
-         ">Confidential:   no"
-         ,(format ">Severity:       ~a" (send severity get-string-selection))
-         ,(format ">Priority:       medium")
-         ,(format ">Class:          ~a" (translate-class (send bug-class get-string-selection)))
-         ">Submitter-Id:   unknown"
-         ,(format ">Originator:     ~a" (preferences:get 'drscheme:full-name))
-         ">Organization:"
-         "titan"
-         ,(format ">Release:        ~a" (send version get-value))
-         ">Environment:"
-         ,(format "~a" (send environment get-value))
-         "Docs Installed:" 
-         ,(format "~a" (send (send docs-installed get-editor) get-text))
-         "Collections: "
-         ,(format "~a" (send (send collections get-editor) get-text))
-         " "
-         ,(format "Human Language: ~a" (send human-language get-value))
-         " "
-         ,@(map (lambda (extra)
-                  (format "~a: ~a"
-                          (car extra)
-                          (send (cdr extra) get-value)))
-                extras)
-         ">Fix: "
-         ">Description:"
-         ,@(get-strings description)
-         ">How-To-Repeat:"
-         ,@(get-strings reproduce))
-       bug-email-server-port))
-    
+
     ; send-bug-report : (-> void)
     ;; initiates sending the bug report and switches the GUI's mode
     (define (send-bug-report)
@@ -475,7 +416,7 @@
                           (string-constant pls-fill-in-either-description-or-reproduce))
              (done-checking #f))
           
-          (unless (member #\@ (string->list (or (preferences:get 'drscheme:email) "")))
+          (unless (regexp-match #rx"@" (or (preferences:get 'drscheme:email) ""))
             (message-box (string-constant illegal-bug-report)
                          (string-constant malformed-email-address))
             (done-checking #f))
@@ -490,7 +431,9 @@
     
     (define (cleanup-frame)
       (send bug-frame close))
-        
+
+    (send response-ec enable #f)
+
     (send severity set-selection 1)
     (send version set-value   
           (format "~a"
