@@ -812,13 +812,11 @@
                                   (not (= e #xFFFE))
                                   (not (<= #xD800 e #xDFFF))
                                   (send default-font screen-glyph-exists? (integer->char e)))
-                             ;; The call to `string' here should be removed. It
-                             ;; was here to avoid a v299.6 bug.
-                             (insert (string (integer->char e)))
+                             (insert (integer->char e))
                              void]
                             [(<= 913 e 969)
                              (let ([lp (current-pos)])
-                               (insert (string (integer->char (+ (- e 913) (char->integer #\A)))))
+                               (insert (integer->char (+ (- e 913) (char->integer #\A))))
                                (lambda ()
                                  (change-style delta:symbol lp (+ lp 1))))]
                             
