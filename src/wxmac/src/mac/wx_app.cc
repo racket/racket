@@ -827,9 +827,11 @@ void wxApp::doMacKeyUpDown(Bool down)
 						GetScriptManagerVariable(smKeyScript),
 						kCFAllocatorNull);
 	  if (str) {
-	    if (CFStringGetLength(str) > 0)
-	      CFStringGetCharacters(str, CFRangeMake(0, 1), keys);
-	    else
+	    if (CFStringGetLength(str) > 0) {
+	      GC_CAN_IGNORE CFRange rng;
+	      rng = CFRangeMake(0, 1);
+	      CFStringGetCharacters(str, rng, keys);
+	    } else
 	      keys[0] = '?';
 	    CFRelease(str);
 	  } else
