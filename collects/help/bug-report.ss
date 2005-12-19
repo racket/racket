@@ -84,12 +84,17 @@
       (new grow-box-spacer-pane% (parent response-button-panel)))
     
     (define top-panel (make-object vertical-panel% outermost-panel))
-    
-    (define (switch-to-respose-view) (send single active-child response-panel))
-    (define (switch-to-compose-view) 
+
+    (define (switch-to-response-view)
       (send response-text erase)
+      (render-html-to-text ; hack to get nice text in
+       (open-input-string
+        "&nbsp;<br><br><br><br><br><div align=\"center\"><h2><b>Submitting bug report...</b></h2></div>")
+       response-text #t #f)
+      (send single active-child response-panel))
+    (define (switch-to-compose-view)
       (send single active-child outermost-panel))
-    
+
     (define lps null)
     
     ; build/label : ((union string (list-of string))
@@ -370,7 +375,9 @@
                           (case-lambda
                             [(x) (post-pure-port x post-data)]
                             [(x y) (post-pure-port x post-data y)])
-                          (lambda (port) (render-html-to-text port response-text #t #f))))
+                          (lambda (port)
+                            (send response-text erase)
+                            (render-html-to-text port response-text #t #f))))
                        (queue-callback
                         (lambda ()
                           (send response-abort enable #f)
@@ -380,7 +387,7 @@
                           (send bug-frame set-ok-to-close #t)))))))])
         (set! cancel-kill-thread http-thread)
         (send response-abort enable #t)
-        (switch-to-respose-view)))
+        (switch-to-response-view)))
     
     (define (get-strings canvas)
       (let ([t (send canvas get-editor)])
