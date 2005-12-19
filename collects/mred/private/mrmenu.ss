@@ -222,8 +222,9 @@
 					     (send keymap add-function "menu-item" 
 						   ;; keymap function callback already in exit mode:
 						   (lambda (edit event)
-						     (when (is-enabled?)
-						       (callback this (make-object wx:control-event% 'menu)))))
+						     (if (is-enabled?)
+							 (callback this (make-object wx:control-event% 'menu))
+							 (wx:bell))))
 					     (send keymap map-function key-binding "menu-item")
 					     keymap))])
 			 (values new-label keymap)))])

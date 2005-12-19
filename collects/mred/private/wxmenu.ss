@@ -160,11 +160,6 @@
 		  ;; Only called if the item is not deleted
 		  (unless (eq? (send iwx is-enabled?) (and on? #t))
 		    (send iwx set-enabled (and on? #t))
-		    (let ([k (send iwx get-keymap)])
-		      (when k
-			(if on?
-			    (send keymap chain-to-keymap k #f)
-			    (send keymap remove-chained-keymap k))))
 		    (super-enable id on?)))])
       (sequence
 	(super-init popup-label popup-callback font)))))
