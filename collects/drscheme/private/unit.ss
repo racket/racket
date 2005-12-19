@@ -1967,7 +1967,7 @@ module browser threading seems wrong.
                       (string-constant revert)
                       #f
                       this
-                      '(caution no-default number-order)
+                      '(caution default=2 number-order)
                       1)])
                 (case user-choice
                   [(1) (void)]
