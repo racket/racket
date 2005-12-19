@@ -2975,6 +2975,7 @@ mzchar *do_native_recase(int to_up, mzchar *in, int delta, int len, long *olen)
 {
   CFMutableStringRef mstr;
   CFStringRef str;
+  GC_CAN_IGNORE CFRange rng;
   char *result;
 
   str = CFStringCreateWithBytes(NULL, ((char *)in) XFORM_OK_PLUS (delta * 2), (len * 2), kCFStringEncodingUnicode, FALSE);
@@ -2991,7 +2992,8 @@ mzchar *do_native_recase(int to_up, mzchar *in, int delta, int len, long *olen)
 
   result = (char *)scheme_malloc_atomic((len + 1) * 2);
 
-  CFStringGetCharacters(mstr, CFRangeMake(0, len), (UniChar *)result);
+  rng = CFRangeMake(0, len);
+  CFStringGetCharacters(mstr, rng, (UniChar *)result);
   CFRelease(mstr);
 
   ((UniChar *)result)[len] = 0;
