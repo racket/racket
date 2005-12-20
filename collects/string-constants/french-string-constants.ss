@@ -322,7 +322,7 @@
 ;!  (plt:hd:reset "Réinitialisation des options")
 ;!  (plt:hd:defaults "Valeurs par défaut")
 ;!  (plt:hd:javascript-note
-   "Les choix que vous faites sont montrés ici si vous avez Javascript et un navigateur récent")
+;!   "Les choix que vous faites sont montrés ici si vous avez Javascript et un navigateur récent")
   ;; refreshing manuals
 ;!  (plt:hd:refresh-downloading "Téléchargement de ~a")
 ;!  (plt:hd:refresh-installing "Installation de la nouvelle version de ~a")
@@ -856,11 +856,11 @@
   
   (definitions-not-saved "La fenêtre de définition n'a pas été sauvegardée. L'exécutable va utiliser la dernière version sauvegardée de la fenêtre de définition. Continuer ?")
 ;!  (inline-saved-program-in-executable?
-   "Insérer dans l'exécutable le programme sauvegardé ? Si oui, vous pourrez copier l'exécutable sur un autre ordinateur ~a, mais l'exécutable sera probablement gros. Si vous choisissez non, vous ne pourrez pas copier l'exécutable sur un autre ordinateur, mais il sera bien plus petit. De plus, si vous choisissez non, l'exécutable utilisera toujours la version la plus récente du programme.")
+;!   "Insérer dans l'exécutable le programme sauvegardé ? Si oui, vous pourrez copier l'exécutable sur un autre ordinateur ~a, mais l'exécutable sera probablement gros. Si vous choisissez non, vous ne pourrez pas copier l'exécutable sur un autre ordinateur, mais il sera bien plus petit. De plus, si vous choisissez non, l'exécutable utilisera toujours la version la plus récente du programme.")
 ;!  (use-mred-binary?
-   "Utiliser le binaire de mred pour cet exécutable ?\n\nSi oui, votre program peut utiliser la bibliothèque (lib \"mred.ss\" \"mred\"). Si non, DrScheme va choisir mzscheme comme binaire pour cet exécutable.\n\nASi vous n'êtes pas sûr, choisissez oui.")
+;!   "Utiliser le binaire de mred pour cet exécutable ?\n\nSi oui, votre program peut utiliser la bibliothèque (lib \"mred.ss\" \"mred\"). Si non, DrScheme va choisir mzscheme comme binaire pour cet exécutable.\n\nASi vous n'êtes pas sûr, choisissez oui.")
 ;!  (inline-saved-program-in-executable/windows/path
-   "ATTENTION ! L'exécutable généré a besoin de trois DLLs : libmred.dll, libmzsch.gll et libgc.dll, qui sont localisées dans\n\n~a\n\nL'exécutable trouve les DLLs soit dans le répertoire ou se trouve l'exécutable soit en utilisant la variable d'environnement PATH.\n\nQuand vous avez installé DrScheme, l'installateur a modifié le PATH de l'utilisateur pour y inclure le répertoire dans lequel les DLLs se trouvent. Méfiez-vous des changements de configuration ou des changements faits par l'utilisateur depuis l'installation.\n\nSi vous déplacez l'exécutable sur une autre machine, vous devez également copier les DLLS sur l'autre machine, soit dans le même répertoire que l'exécutable, soit dans un répertoire qui figure dans le PATH sur l'autre machine.")
+;!   "ATTENTION ! L'exécutable généré a besoin de trois DLLs : libmred.dll, libmzsch.gll et libgc.dll, qui sont localisées dans\n\n~a\n\nL'exécutable trouve les DLLs soit dans le répertoire ou se trouve l'exécutable soit en utilisant la variable d'environnement PATH.\n\nQuand vous avez installé DrScheme, l'installateur a modifié le PATH de l'utilisateur pour y inclure le répertoire dans lequel les DLLs se trouvent. Méfiez-vous des changements de configuration ou des changements faits par l'utilisateur depuis l'installation.\n\nSi vous déplacez l'exécutable sur une autre machine, vous devez également copier les DLLS sur l'autre machine, soit dans le même répertoire que l'exécutable, soit dans un répertoire qui figure dans le PATH sur l'autre machine.")
   (launcher "Lanceur")
   (stand-alone "Autonome")
   (executable-type "Type")

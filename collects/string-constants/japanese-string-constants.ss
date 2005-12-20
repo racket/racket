@@ -322,7 +322,7 @@ please adhere to these guidelines:
 ;! (plt:hd:reset "リセット")
 ;! (plt:hd:defaults "既定")
 ;! (plt:hd:javascript-note
-    "The selections you make will be shown here if you have Javascript enabled and a recent, standards-compliant browser.")
+;!    "The selections you make will be shown here if you have Javascript enabled and a recent, standards-compliant browser.")
  ;; refreshing manuals
 ;! (plt:hd:refresh-downloading "~a をダウンロードしています")
 ;! (plt:hd:refresh-installing "~a をインストールしています")
@@ -856,11 +856,11 @@ please adhere to these guidelines:
 
  (definitions-not-saved "定義ウィンドウが保存されていません。実行ファイルでは定義ウィンドウの最新の保存が使われます。よろしいですか？")
 ;! (inline-saved-program-in-executable?
-  "Inline the saved program in the executable? If yes, you can copy the executable to another ~a computer but the executable will be quite large. If not, you cannot copy the executable to another computer, but it will be much smaller. Additionally, if not, the executable will load the latest version of the program.")
+;!  "Inline the saved program in the executable? If yes, you can copy the executable to another ~a computer but the executable will be quite large. If not, you cannot copy the executable to another computer, but it will be much smaller. Additionally, if not, the executable will load the latest version of the program.")
 ;! (use-mred-binary?
-  "Use the mred binary for this executable?\n\nIf yes, your program can use the (lib \"mred.ss\" \"mred\") library. If no, DrScheme will use mzscheme as the binary for this executable and you cannot use that library.\n\nIf unsure, choose yes.")
+;!  "Use the mred binary for this executable?\n\nIf yes, your program can use the (lib \"mred.ss\" \"mred\") library. If no, DrScheme will use mzscheme as the binary for this executable and you cannot use that library.\n\nIf unsure, choose yes.")
 ;! (inline-saved-program-in-executable/windows/path
-   "WARNING! The generated executable relies on three DLLs: libmred.dll, libmzsch.gll, and libgc.dll, which are located at\n\n~a\n\nThe executable finds the DLLs either in the executable's directory or through the PATH enviornment variable.\n\nWhen you installed DrScheme, the installer adjusted the user's PATH to include the directory where the DLLs were installed. Beware of configuration or user changes since installation.\n\nIf you move the executable to another machine, you must also copy the DLLs to the other machine --- either to the same directory as the executable, or to a directory in the other machine's PATH.")
+;!   "WARNING! The generated executable relies on three DLLs: libmred.dll, libmzsch.gll, and libgc.dll, which are located at\n\n~a\n\nThe executable finds the DLLs either in the executable's directory or through the PATH enviornment variable.\n\nWhen you installed DrScheme, the installer adjusted the user's PATH to include the directory where the DLLs were installed. Beware of configuration or user changes since installation.\n\nIf you move the executable to another machine, you must also copy the DLLs to the other machine --- either to the same directory as the executable, or to a directory in the other machine's PATH.")
  (launcher "ランチャ")
  (stand-alone "スタンドアロン")
  (executable-type "Type")

@@ -322,7 +322,7 @@ please adhere to these guidelines:
 ;! (plt:hd:reset "Reset")
 ;! (plt:hd:defaults "Standardindstillinger")
 ;! (plt:hd:javascript-note
-    "De valg du gør vil blive vist her, hvis du har JavaScript sat til, og en ny moderne standard-følgende browser.")
+;!    "De valg du gør vil blive vist her, hvis du har JavaScript sat til, og en ny moderne standard-følgende browser.")
  ;; refreshing manuals
 ;! (plt:hd:refresh-downloading "Henter ~a")
 ;! (plt:hd:refresh-installing "Installerer ~a")
@@ -857,9 +857,9 @@ please adhere to these guidelines:
  (definitions-not-saved "Definitionsvinduet har ikke været gemt. Den binære kørselsfil vil bruge den senest gemte version af definitionsvinduet. Fortsæt?")
 ;! (inline-saved-program-in-executable?  "Indlejr det gemte program i en binær kørselsfil? Hvis ja, så kan du kopiere kørselsfilen til en anden ~a computer, men kørselsfilen vil være ret stor. Hvis ikke, kan du ikke kopiere det gemte program til en anden computer, men den vil være meget mindre. I tilgift, hvis ikke, vil kørselsfilen bruge den seneste version af programmet.")
 ;! (use-mred-binary?
-  "Brug mred til denne kørselsfil?\n\nHvis ja, så kan dit program bruge biblioteket (lib \"mred.ss\" \"mred\"). Hvis nej, så vil DrScheme bruge mzscheme til kørselsfilen and du kan ikke bruge mred-biblioteket.\n\nHvis du er i tvivl, så vælg ja.")
+;!  "Brug mred til denne kørselsfil?\n\nHvis ja, så kan dit program bruge biblioteket (lib \"mred.ss\" \"mred\"). Hvis nej, så vil DrScheme bruge mzscheme til kørselsfilen and du kan ikke bruge mred-biblioteket.\n\nHvis du er i tvivl, så vælg ja.")
 ;! (inline-saved-program-in-executable/windows/path
-   "ADVARSEL! Den frembragte kørselsfil afhænger af tre DLL'er: libmred.dll, libmzsch.gll og libgc.dll, som findes i \n\n~a\n\nKørselsfilen finder DLL'erne enten i kørselsfilens mappe eller gennem miljøvariablen PATH.\n\nDa du installerede DrScheme, tilføjede installationsprogrammet mappen med DLL'erne til brugerens PATH. Vær opmærksom på konfigurationsændringer efter installationen.\n\nHvis du flytter kørselsfilen til en anden maskine, skal du også kopiere DLL'erne til den anden maskine --- enten til samme mappe som kørselsfilen, eller til en mappe i den anden maskines PATH.")
+;!   "ADVARSEL! Den frembragte kørselsfil afhænger af tre DLL'er: libmred.dll, libmzsch.gll og libgc.dll, som findes i \n\n~a\n\nKørselsfilen finder DLL'erne enten i kørselsfilens mappe eller gennem miljøvariablen PATH.\n\nDa du installerede DrScheme, tilføjede installationsprogrammet mappen med DLL'erne til brugerens PATH. Vær opmærksom på konfigurationsændringer efter installationen.\n\nHvis du flytter kørselsfilen til en anden maskine, skal du også kopiere DLL'erne til den anden maskine --- enten til samme mappe som kørselsfilen, eller til en mappe i den anden maskines PATH.")
  (launcher "Starter")
  (stand-alone "Selvstænding")
  (executable-type "Type")
@@ -1087,7 +1087,7 @@ please adhere to these guidelines:
 
  ;;; version checker
 ;! (vc-wizard-check-note 
-"Den version, du er ved at installere, er måske ikke den seneste.\n Hvis du vil kan DrScheme tjekke det for dig.")
+;!"Den version, du er ved at installere, er måske ikke den seneste.\n Hvis du vil kan DrScheme tjekke det for dig.")
 ;! (vc-wizard-check-button "Tjek om der findes en opdatering")
 ;! (vc-update-check "Opdateringstjek")
 ;! (vc-please-wait "Vent venligst")

@@ -232,7 +232,7 @@
 ;! (plt:hd:reset "Reajuste")
 ;! (plt:hd:defaults "Valores por omisión")
 ;! (plt:hd:javascript-note
-  "La selección que hagas aparecerá aquí si haz habilitado javascript y tienes un navegador estándar reciente.")
+;!  "La selección que hagas aparecerá aquí si haz habilitado javascript y tienes un navegador estándar reciente.")
  ;; refreshing manuals
 ;! (plt:hd:refresh-downloading "Bajando ~a")
 ;! (plt:hd:refresh-installing "Instalando ~a")
@@ -763,10 +763,10 @@
 
  (definitions-not-saved "La ventana de definiciones no ha sido salvada. El ejecutable usará la última versión salvada de la ventana de definiciones. ¿Desea continuar?")
 ;! (inline-saved-program-in-executable?
-  "¿Deseas que ponga \"en línea\" (auto-contenido) el programa salvado en el ejecutable? Si sí, puedes copiar el ejecutable ~a a otra computadora, pero el ejecutable será muy grande.  Si no, no podrás copiar el ejecutable a otra computadora pero será más pequeño.  Adicionalmente, si escojes no, el ejecutable siempre cargará la última versión del programa.")
+;!  "¿Deseas que ponga \"en línea\" (auto-contenido) el programa salvado en el ejecutable? Si sí, puedes copiar el ejecutable ~a a otra computadora, pero el ejecutable será muy grande.  Si no, no podrás copiar el ejecutable a otra computadora pero será más pequeño.  Adicionalmente, si escojes no, el ejecutable siempre cargará la última versión del programa.")
 ;! (use-mred-binary? "¿Utilizar el binario mred para este ejecutable?\n\nSi sí, tu programa puede usar la biblioteca  (lib \"mred.ss\" \"mred\").  Si no, DrScheme usará mzscheme como binario para este ejecutable y no podrás usar la biblioteca mencionada.\n\nSi no está seguro(a) escoga Sí") 
 ;! (inline-saved-program-in-executable/windows/path
-  "ADVERTENCIA: El ejecutable generado requiere tres DLLs: libmred.dll, libmzsch.dll, y libmzgc.dll, que están localizadas en\n\n~a\n\nEl ejecutable encuentra las DLLs ya sea en el directorio de ejecutables o a través de la variable de ambiente PATH.\n\nCuando instalaste DrScheme, el instalador ajustó la variable PATH para que incluyera el directorio donde las DLLs fueron instaladas.  Toma en cuenta los cambios de usuario y configuración desde la instalación.\n\nSi mueves el ejecutable a otra máquina, también debes copiar las DLLs a la otra máquina --- ya sea al mismo direcotorio que el ejecutable o a un directorio en el PATH de la otra máquina.")
+;!  "ADVERTENCIA: El ejecutable generado requiere tres DLLs: libmred.dll, libmzsch.dll, y libmzgc.dll, que están localizadas en\n\n~a\n\nEl ejecutable encuentra las DLLs ya sea en el directorio de ejecutables o a través de la variable de ambiente PATH.\n\nCuando instalaste DrScheme, el instalador ajustó la variable PATH para que incluyera el directorio donde las DLLs fueron instaladas.  Toma en cuenta los cambios de usuario y configuración desde la instalación.\n\nSi mueves el ejecutable a otra máquina, también debes copiar las DLLs a la otra máquina --- ya sea al mismo direcotorio que el ejecutable o a un directorio en el PATH de la otra máquina.")
  (launcher "Lanzador")
  (stand-alone "Auto-contenido")
  (executable-type "Tipo")

@@ -243,7 +243,7 @@
 ;!  (plt:hd:reset "重置")
 ;!  (plt:hd:defaults "使用默認")
 ;!  (plt:hd:javascript-note
-    "如果你安裝了Javascript和一個標準的瀏覽器，那麼這裡就能看到你所作的選擇。")
+;!    "如果你安裝了Javascript和一個標準的瀏覽器，那麼這裡就能看到你所作的選擇。")
   ;; refreshing manuals
 ;!  (plt:hd:refresh-downloading "下載~a")
 ;!  (plt:hd:refresh-installing "安裝~a")
@@ -779,7 +779,7 @@
   (inline-saved-program-in-utable?
     "是否將程式嵌入到可執行文檔中？如果選擇是，那麼你可以將可執行文檔復制到其他~a計算機上使用，但是這將會大大增加可執行文檔的大小；否則，那麼你可以得到一個小得多的可執行文檔，但是無法將它復制到其它計算機上使用。此外，如果選擇否，該可執行文檔每次運行時都會自動載入最新保存的程式。")
 ;!  (use-mred-binary?
-    "是否使用mred庫？\n\n如果選擇是，那麼你的可執行程式就可以使用庫(lib \"mred.ss\" \"mred\")；否則，該可執行程式就只能使用mzscheme庫。\n\n如果你無法確定，請選擇是。")
+;!    "是否使用mred庫？\n\n如果選擇是，那麼你的可執行程式就可以使用庫(lib \"mred.ss\" \"mred\")；否則，該可執行程式就只能使用mzscheme庫。\n\n如果你無法確定，請選擇是。")
   (inline-saved-program-in-utable/windows/path
     "注意！生成的程式文檔運行時需要三個DLL庫：libmred.dll、libmzsch.gll和libgc.dll。它們位於\n\n~a\n\n程式文檔執行時會在當前目錄或者PATH環境變量中尋找DLL庫。\n\nDrScheme在安裝時已經將這些DLL所在的目錄放入PATH變量。請不要手工修改這些設置。\n\n如果你要將該可執行文檔復制到其它計算機上，必須同時復制這幾個DLL文檔──你可以將DLL文檔和可執行程式放在同一個目錄下，也可以將DLL文檔放在一個PATH目錄中。")
   (launcher "啟動程式")

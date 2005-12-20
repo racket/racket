@@ -243,7 +243,7 @@
 ;!  (plt:hd:reset "重置")
 ;!  (plt:hd:defaults "使用默认")
 ;!  (plt:hd:javascript-note
-    "如果你安装了Javascript和一个标准的浏览器，那么这里就能看到你所作的选择。")
+;!    "如果你安装了Javascript和一个标准的浏览器，那么这里就能看到你所作的选择。")
   ;; refreshing manuals
 ;!  (plt:hd:refresh-downloading "下载~a")
 ;!  (plt:hd:refresh-installing "安装~a")
@@ -777,11 +777,11 @@
   
   (definitions-not-saved "当前定义窗口中的程序并没有被保存过。将使用最近保存过的版本来生成可执行程序。继续？")
 ;!  (inline-saved-program-in-executable?
-    "是否将程序嵌入到可执行文件中？如果选择是，那么你可以将可执行文件复制到其他~a计算机上使用，但是这将会大大增加可执行文件的大小；否则，那么你可以得到一个小得多的可执行文件，但是无法将它复制到其它计算机上使用。此外，如果选择否，该可执行文件每次运行时都会自动载入最新保存的程序。")
+;!    "是否将程序嵌入到可执行文件中？如果选择是，那么你可以将可执行文件复制到其他~a计算机上使用，但是这将会大大增加可执行文件的大小；否则，那么你可以得到一个小得多的可执行文件，但是无法将它复制到其它计算机上使用。此外，如果选择否，该可执行文件每次运行时都会自动载入最新保存的程序。")
 ;!  (use-mred-binary?
-    "是否使用mred库？\n\n如果选择是，那么你的可执行程序就可以使用库(lib \"mred.ss\" \"mred\")；否则，该可执行程序就只能使用mzscheme库。\n\n如果你无法确定，请选择是。")
+;!    "是否使用mred库？\n\n如果选择是，那么你的可执行程序就可以使用库(lib \"mred.ss\" \"mred\")；否则，该可执行程序就只能使用mzscheme库。\n\n如果你无法确定，请选择是。")
 ;!  (inline-saved-program-in-executable/windows/path
-    "注意！生成的程序文件运行时需要三个DLL库：libmred.dll、libmzsch.gll和libgc.dll。它们位于\n\n~a\n\n程序文件执行时会在当前目录或者PATH环境变量中寻找DLL库。\n\nDrScheme在安装时已经将这些DLL所在的目录放入PATH变量。请不要手工修改这些设置。\n\n如果你要将该可执行文件复制到其它计算机上，必须同时复制这几个DLL文件——你可以将DLL文件和可执行程序放在同一个目录下，也可以将DLL文件放在一个PATH目录中。")
+;!    "注意！生成的程序文件运行时需要三个DLL库：libmred.dll、libmzsch.gll和libgc.dll。它们位于\n\n~a\n\n程序文件执行时会在当前目录或者PATH环境变量中寻找DLL库。\n\nDrScheme在安装时已经将这些DLL所在的目录放入PATH变量。请不要手工修改这些设置。\n\n如果你要将该可执行文件复制到其它计算机上，必须同时复制这几个DLL文件——你可以将DLL文件和可执行程序放在同一个目录下，也可以将DLL文件放在一个PATH目录中。")
   (launcher "启动程序")
   (stand-alone "独立的")
   (executable-type "类型")

@@ -220,7 +220,7 @@
 ;! (plt:hd:reset "Zurücksetzen")
 ;! (plt:hd:defaults "Werkseinstellungen")
 ;! (plt:hd:javascript-note
-    "Ihre Selektionen werden hier erscheinen, falls Sie Javascript eingeschaltet haben und einen aktuellen standardkompatiblen Browser benutzen.")
+;!    "Ihre Selektionen werden hier erscheinen, falls Sie Javascript eingeschaltet haben und einen aktuellen standardkompatiblen Browser benutzen.")
  ;; refreshing manuals
 ;! (plt:hd:refresh-downloading "~a herunterladen")
 ;! (plt:hd:refresh-installing "~a installieren")
@@ -754,11 +754,11 @@
 
  (definitions-not-saved "Die Definitionen sind nicht gespeichert. Die Programmdatei wird von der letzten gespeicherten Version gezogen. Weitermachen?")
 ;! (inline-saved-program-in-executable?
-  "Scheme-Code in das Programm einbinden? Dann könnten Sie die Programmdatei zu einem anderen ~a-Computer transferieren, aber die Programmdatei wird dann ziemlich groß. Falls nicht, können Sie die Programmdatei nicht transferieren, aber sie wird deutlich kleiner. Außerdem wird die Programmdatei dann die jeweils neueste Version des Scheme-Codes benutzen.")
+;!  "Scheme-Code in das Programm einbinden? Dann könnten Sie die Programmdatei zu einem anderen ~a-Computer transferieren, aber die Programmdatei wird dann ziemlich groß. Falls nicht, können Sie die Programmdatei nicht transferieren, aber sie wird deutlich kleiner. Außerdem wird die Programmdatei dann die jeweils neueste Version des Scheme-Codes benutzen.")
 ;! (use-mred-binary?
-  "MrEd für diese Programmdatei verwenden?\n\nFalls ja, kann das Programm die Bibliothek (lib \"mred.ss\" \"mred\") verwenden. Falls nein, wird DrScheme MzScheme verwenden - dann kann das Programm die Bibliothek nicht verwenden.n\nFalls Sie nicht sicher sind, wählen Sie \"ja\".")
+;!  "MrEd für diese Programmdatei verwenden?\n\nFalls ja, kann das Programm die Bibliothek (lib \"mred.ss\" \"mred\") verwenden. Falls nein, wird DrScheme MzScheme verwenden - dann kann das Programm die Bibliothek nicht verwenden.n\nFalls Sie nicht sicher sind, wählen Sie \"ja\".")
 ;! (inline-saved-program-in-executable/windows/path
-   "WARNUNG! Die generierte Programmdatei benötigt drei DLLs: libmred.dll, libmzsch.gll und libgc.dll, die sich in folgendem Verzeichnis befinden:\n\n~a\n\nDie Programmdatei findet DLLs entweder im selben Verzeichnis wie die Programmdatei selbst oder durch die Umgebungsvariable PATH.\n\nAls Sie DrScheme installierten, hat der Installer PATH derart verwändert, dass das DLL-Verzeichnis dabei ist. Diese Einstellung könnte seitdem geändert worden sein.\n\nFalls Sie die Programmdatei auf eine andere Maschine tranferieren, müssen Sie die DLLs ebenfalls transferieren - entweder in das gleiche Verzeichnis wie die Programmdatei oder in ein Verzeichnis im PATH der anderen Maschine.")
+;!   "WARNUNG! Die generierte Programmdatei benötigt drei DLLs: libmred.dll, libmzsch.gll und libgc.dll, die sich in folgendem Verzeichnis befinden:\n\n~a\n\nDie Programmdatei findet DLLs entweder im selben Verzeichnis wie die Programmdatei selbst oder durch die Umgebungsvariable PATH.\n\nAls Sie DrScheme installierten, hat der Installer PATH derart verwändert, dass das DLL-Verzeichnis dabei ist. Diese Einstellung könnte seitdem geändert worden sein.\n\nFalls Sie die Programmdatei auf eine andere Maschine tranferieren, müssen Sie die DLLs ebenfalls transferieren - entweder in das gleiche Verzeichnis wie die Programmdatei oder in ein Verzeichnis im PATH der anderen Maschine.")
  (launcher "Launcher")
  (stand-alone "Stand-alone")
  (executable-type "Typ")
