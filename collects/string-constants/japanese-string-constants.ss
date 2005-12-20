@@ -145,15 +145,15 @@ please adhere to these guidelines:
  (bug-report-field-summary "概要")
  (bug-report-field-severity "深刻度")
  (bug-report-field-class "分類")
- (bug-report-field-priority "優先度")
+;! (bug-report-field-priority "優先度")
  (bug-report-field-description "説明")
  (bug-report-field-reproduce1 "再現の手順")
  (bug-report-field-reproduce2 "")
  (bug-report-field-environment "環境")
- (bug-report-field-tools "ツール")
+;! (bug-report-field-tools "ツール")
  (bug-report-field-docs-installed "インストールされている文書")
- (bug-report-field-language "言語")
- (bug-report-field-teachpacks "ティーチパック")
+;! (bug-report-field-language "言語")
+;! (bug-report-field-teachpacks "ティーチパック")
  (bug-report-field-collections "コレクション")
  (bug-report-field-human-language "自然言語")
  (bug-report-field-version "バージョン")
@@ -161,11 +161,11 @@ please adhere to these guidelines:
  (bug-report-show-synthesized-info "詳細情報の表示")
  (bug-report-submit "送信")
  (bug-report-submit-menu-item "バグ報告の送信") ;; in Help Menu (drs & help desk)
- (sending-bug-report "バグ報告を送信中です")
+;! (sending-bug-report "バグ報告を送信中です")
  (error-sending-bug-report "バグ報告の送信エラー")
  (error-sending-bug-report-expln "バグ報告の送信中にエラーが発生しました。もし、インターネット接続が正常であるなら、\n\n    http://bugs.plt-scheme.org/\n\nを開いて、オンラインのウェブフォームからバグ報告を行ってください。お手間をかけて申し訳ありません。\n\nエラーメッセージ:\n~a")
- (bug-report-sent "バグ報告を送信しました")
- (bug-report-sent-detail "バグ報告を行っていただき有難うございました。30分以内に確認のメールがあなたに送られます。もし送られて来こない場合は、scheme@plt-scheme.org にご連絡ください。")
+;! (bug-report-sent "バグ報告を送信しました")
+;! (bug-report-sent-detail "バグ報告を行っていただき有難うございました。30分以内に確認のメールがあなたに送られます。もし送られて来こない場合は、scheme@plt-scheme.org にご連絡ください。")
  (illegal-bug-report "バグ報告が正しく入力されていません")
  (pls-fill-in-field "フィールド \"~a\" を入力してください。")
  (malformed-email-address "メールアドレスの形式が正しくありません。")
@@ -195,9 +195,9 @@ please adhere to these guidelines:
  (cs-mouse-over-import "束縛 ~s が ~s がインポートされました")
 
  (cs-lexical-variable "レキシカル変数")
- (cs-lexical-syntax "レキシカル構文")
+;! (cs-lexical-syntax "レキシカル構文")
  (cs-imported-variable "インポート変数")
- (cs-imported-syntax "インポート構文")
+;! (cs-imported-syntax "インポート構文")
 
  ;;; info bar at botttom of drscheme frame
  (collect-button-label "GC")
@@ -216,7 +216,7 @@ please adhere to these guidelines:
 
  ; these appear on subsequent lines in the `Help|Welcome to DrScheme' dialog.
  (welcome-to-drscheme "Welcome to DrScheme")
- (version/language "version ~a, ~a")
+;! (version/language "version ~a, ~a")
 
  (goto-line "行番号を指定して移動")
  (goto-line-invalid-number
@@ -235,7 +235,7 @@ please adhere to these guidelines:
 
  (file-is-not-saved "ファイル \"~a\" は保存されていません。")
  (save "保存")
- (please-choose-either "\"~a\" または \"~a\" のいずれかを選択してください。")
+;! (please-choose-either "\"~a\" または \"~a\" のいずれかを選択してください。")
  (close-anyway "とにかく閉じる")
  (clear-anyway "とにかく消去する")
 
@@ -264,7 +264,7 @@ please adhere to these guidelines:
  (syntax-coloring-choose-color "~aのカラーを選択してください。")
  (preferences-colors "カラー") ;; used in the preferences dialog
 
- (url "URL")
+;! (url "URL")
  (url: "URL:")
  (open-url... "URL を開く...")
  (open-url "URL を開く")
@@ -275,18 +275,18 @@ please adhere to these guidelines:
  ;; Help Desk
  (help "ヘルプ")
  (help-desk "ヘルプデスク")
- (plt:hd:search-results "検索結果")
+;! (plt:hd:search-results "検索結果")
  (plt:hd:search "検索")
- (plt:hd:search-for "検索語")
- (plt:hd:lucky "Lucky!")
+;! (plt:hd:search-for "検索語")
+;! (plt:hd:lucky "Lucky!")
  (plt:hd:feeling-lucky "Feeling Lucky")
- (plt:hd:stop "停止")
- (plt:hd:options "オプション")
- (plt:hd:configure "設定")
+;! (plt:hd:stop "停止")
+;! (plt:hd:options "オプション")
+;! (plt:hd:configure "設定")
  (plt:hd:home "ヘルプデスクのホーム")
- (plt:hd:show-manuals "マニュアルの表示")
- (plt:hd:send-bug-report "バグ報告の送信")
- (plt:hd:query-bug-reports "バグ報告の検索")
+;! (plt:hd:show-manuals "マニュアルの表示")
+;! (plt:hd:send-bug-report "バグ報告の送信")
+;! (plt:hd:query-bug-reports "バグ報告の検索")
  ; next 3 are popup menu choices in help desk search frame
  (plt:hd:search-for-keyword "キーワードが")
  (plt:hd:search-for-keyword-or-index "キーワードか索引が")
@@ -295,41 +295,41 @@ please adhere to these guidelines:
  (plt:hd:containing-match "含んでいる")
  (plt:hd:regexp-match "正規表現にマッチ")
  (plt:hd:find-docs-for "検索:")
- (plt:hd:nothing-found-for-search-key "情報はありません \"~a\".")
- (plt:hd:searching "検索中...")
- (plt:hd:search-stopped "[検索を停止しました]")
+;! (plt:hd:nothing-found-for-search-key "情報はありません \"~a\".")
+;! (plt:hd:searching "検索中...")
+;! (plt:hd:search-stopped "[検索を停止しました]")
  (plt:hd:search-stopped-too-many-matches "[検索を中止しました: ヒット件数が多過ぎます]")
  (plt:hd:nothing-found-for "情報はありません ~a")
- (plt:hd:error-finding-docs "ドキュメントが見つかりません\n\n~a")
+;! (plt:hd:error-finding-docs "ドキュメントが見つかりません\n\n~a")
  (plt:hd:and "and")
  (plt:hd:refresh "更新")
  (plt:hd:refresh-all-manuals "すべてのマニュアルを更新する")
  (plt:hd:manual-installed-date "(installed ~a)")
  ; Help Desk configuration
- (plt:hd:configuration "PLT ヘルプデスクの設定")
- (plt:hd:no-frames "フレームなし")
- (plt:hd:use-frames "フレームを使う")
- (plt:hd:use-html-frames "HTML フレームを使う")
- (plt:hd:search-pane-options "検索ペインのオプション")
- (plt:hd:height "高さ")
- (plt:hd:bg-color "背景色")
- (plt:hd:pixels "ピクセル")
- (plt:hd:text-color "テキストのカラー")
- (plt:hd:link-color "リンクのカラー")
- (plt:hd:text-sample "検索ペインのテキストはこのカラーで表示されます")
- (plt:hd:link-sample "検索ペインのリンクはこのカラーで表示されます")
- (plt:hd:save-changes "設定を保存")
- (plt:hd:reset "リセット")
- (plt:hd:defaults "既定")
- (plt:hd:javascript-note
+;! (plt:hd:configuration "PLT ヘルプデスクの設定")
+;! (plt:hd:no-frames "フレームなし")
+;! (plt:hd:use-frames "フレームを使う")
+;! (plt:hd:use-html-frames "HTML フレームを使う")
+;! (plt:hd:search-pane-options "検索ペインのオプション")
+;! (plt:hd:height "高さ")
+;! (plt:hd:bg-color "背景色")
+;! (plt:hd:pixels "ピクセル")
+;! (plt:hd:text-color "テキストのカラー")
+;! (plt:hd:link-color "リンクのカラー")
+;! (plt:hd:text-sample "検索ペインのテキストはこのカラーで表示されます")
+;! (plt:hd:link-sample "検索ペインのリンクはこのカラーで表示されます")
+;! (plt:hd:save-changes "設定を保存")
+;! (plt:hd:reset "リセット")
+;! (plt:hd:defaults "既定")
+;! (plt:hd:javascript-note
     "The selections you make will be shown here if you have Javascript enabled and a recent, standards-compliant browser.")
  ;; refreshing manuals
- (plt:hd:refresh-downloading "~a をダウンロードしています")
- (plt:hd:refresh-installing "~a をインストールしています")
- (plt:hd:refresh-progress "PLT マニュアルのダウンロードの進行状況")
- (plt:hd:refresh-done "マニュアルの更新が終わりました")
- (plt:hd:refresh-installation-log "インストール ログ")
- (plt:hd:refresh-stopped "PLT マニュアルの更新を中止しました")
+;! (plt:hd:refresh-downloading "~a をダウンロードしています")
+;! (plt:hd:refresh-installing "~a をインストールしています")
+;! (plt:hd:refresh-progress "PLT マニュアルのダウンロードの進行状況")
+;! (plt:hd:refresh-done "マニュアルの更新が終わりました")
+;! (plt:hd:refresh-installation-log "インストール ログ")
+;! (plt:hd:refresh-stopped "PLT マニュアルの更新を中止しました")
  (plt:hd:refreshing-manuals "マニュアルを再ダウンロードしています")
  (plt:hd:refresh-downloading... "~a をダウンロードしています...")
  (plt:hd:refresh-deleting... "古いバージョンの ~a を削除しています...")
@@ -349,9 +349,9 @@ please adhere to these guidelines:
   (plt:hd:external-link-in-help "ヘルプ内の外部 URL")
   (plt:hd:use-homebrew-browser "ヘルプデスク ブラウザで外部 URL を開く")
   (plt:hd:new-help-desk "新規ヘルプデスク")
-  (plt:hd:teaching-manuals "学生用のマニュアル")
-  (plt:hd:professional-manuals "プロフェッショナル用のマニュアル")
-  (plt:hd:all-manuals "すべてのマニュアル")
+;!  (plt:hd:teaching-manuals "学生用のマニュアル")
+;!  (plt:hd:professional-manuals "プロフェッショナル用のマニュアル")
+;!  (plt:hd:all-manuals "すべてのマニュアル")
 
   ;; in the Help Desk language dialog, title on the right.
   (plt:hd:manual-search-ordering "マニュアルの検索順序")
@@ -374,11 +374,11 @@ please adhere to these guidelines:
  (browser-command-line-label "コマンドライン:") ; label for radio button that is followed by text boxes
  (choose-browser "ブラウザを選択してください")
  (no-browser "後で尋ねる")
- (use-internal-browser-for-help "内部 PLT ブラウザでヘルプを読む") ; radio-button label
- (use-external-browser-for-help "外部ウェブ ブラウザでヘルプを読む") ; radio-button label
+;! (use-internal-browser-for-help "内部 PLT ブラウザでヘルプを読む") ; radio-button label
+;! (use-external-browser-for-help "外部ウェブ ブラウザでヘルプを読む") ; radio-button label
  (browser-cmdline-expl-line-1 "(Command line formed by concatenating pre-text, URL,") ; explanatory text for dialog, line 1
  (browser-cmdline-expl-line-2 "and post-text, with no extra spaces between them.)") ; ... line 2. (Anyone need more lines?)
- (cannot-display-url "URL を表示できません ~s: ~a")
+;! (cannot-display-url "URL を表示できません ~s: ~a")
  (install? "インストールしますか？")  ;; if a .plt file is found (title of dialog)
  (you-have-selected-an-installable-package "インストール可能なパッケージを選択しました。")
  (do-you-want-to-install-it? "これをインストールしますか？")
@@ -391,7 +391,7 @@ please adhere to these guidelines:
  (downloading-file... "ファイルをダウンロード中...")
  (package-was-installed "パッケージがインストールされました。")
  (download-was-saved "ダウンロードされたファイルが保存されました。")
- (getting-page "ページを読み込んでいます") ;; dialog title
+;! (getting-page "ページを読み込んでいます") ;; dialog title
 
  (install-plt-file-menu-item... ".plt ファイルのインストール...")
  (install-plt-file-dialog-title ".plt ファイルのインストール")
@@ -413,9 +413,9 @@ please adhere to these guidelines:
  (about-drscheme-frame-title "DrScheme について")
  (take-a-tour "ツアーの紹介！")
  (release-notes "リリースノート")
- (parenthetical-last-version "(前のバージョン ~a)")
- (parenthetical-last-language "(前の言語 ~a)")
- (parenthetical-last-version/language "(前のバージョン ~a, 言語 ~a)")
+;! (parenthetical-last-version "(前のバージョン ~a)")
+;! (parenthetical-last-language "(前の言語 ~a)")
+;! (parenthetical-last-version/language "(前のバージョン ~a, 言語 ~a)")
 
 
  ;;; save file in particular format prompting.
@@ -426,11 +426,11 @@ please adhere to these guidelines:
 
  ;;; preferences
  (preferences "環境設定")
- (saving-preferences "保存の設定")
- (error-unmarshalling "環境設定 ~a を読み取るときにエラーが発生しました")
+;! (saving-preferences "保存の設定")
+;! (error-unmarshalling "環境設定 ~a を読み取るときにエラーが発生しました")
  (error-saving-preferences "環境設定を保存時にエラーが発生しました: ~a")
  (error-reading-preferences "環境設定を読み取り時にエラーが発生しました")
- (expected-list-of-length2 "長さ 2 のリストでなければなりません")
+;! (expected-list-of-length2 "長さ 2 のリストでなければなりません")
  (scheme-prefs-panel-label "Scheme")
  (warnings-prefs-panel-label "警告")
  (editor-prefs-panel-label "編集")
@@ -450,12 +450,12 @@ please adhere to these guidelines:
  (enable-keybindings-in-menus "メニューのキーバインドを有効にする")
  (automatically-to-ps "自動的に PostScript ファイルに印刷する")
  (option-as-meta "Option キーを Meta キーとして処理する") ;; macos/macos x only
- (use-mdi "MDI ウィンドウを使用する") ;;; ms windows only -- use that window in a window thingy
+;! (use-mdi "MDI ウィンドウを使用する") ;;; ms windows only -- use that window in a window thingy
  (separate-dialog-for-searching "検索に別のダイアログを使う")
  (reuse-existing-frames "新しいファイルを開くときに既存のフレームを再利用する")
  (default-fonts "既定のフォント")
  (paren-match-color "括弧の強調表示のカラー") ; in prefs dialog
- (choose-color "カラーの選択") ; in prefs dialog
+;! (choose-color "カラーの選択") ; in prefs dialog
  (online-coloring-active "入力と同時に構文の色付けをする")
  (open-files-in-tabs "ファイルを別のタブに開く (別のウィンドウではなく)")
  (show-interactions-on-execute "プログラムを実行するときは、自動的に対話ウィンドウを開く")
@@ -465,7 +465,7 @@ please adhere to these guidelines:
  (choose-a-background-color "背景色を選択してください")
 
  ; title of the color choosing dialog
- (choose-paren-highlight-color "括弧の強調表示のカラーを選択してください")
+;! (choose-paren-highlight-color "括弧の強調表示のカラーを選択してください")
 
  ; should have entire alphabet
  (font-example-string "The quick brown fox jumped over the lazy dogs.")
@@ -518,7 +518,7 @@ please adhere to these guidelines:
  (replace "置換")
  (dock "結合")
  (undock "分離")
- (use-separate-dialog-for-searching "分離した検索ダイアログを使用する")
+;! (use-separate-dialog-for-searching "分離した検索ダイアログを使用する")
  (replace&find-again "置換＋再検索") ;;; need double & to get a single &
  (replace-to-end "最後まで置換")
  (forward "前方")
@@ -546,8 +546,8 @@ please adhere to these guidelines:
  (mfs-search-interrupted "検索は中止されました。")
 
  ;;; reverting a file
- (error-reverting "DrScheme - 復元に失敗しました")
- (could-not-read "\"~a\" を読み取ることができません")
+;! (error-reverting "DrScheme - 復元に失敗しました")
+;! (could-not-read "\"~a\" を読み取ることができません")
  (are-you-sure-revert
   "このファイルをディスク上の内容に復元しますか？この操作はやり直すことができないので注意してください。")
  (are-you-sure-revert-title
@@ -651,7 +651,7 @@ please adhere to these guidelines:
  (paste-menu-item "貼り付け(&P)")
 
  (clear-info "選択項目を削除します")
- (clear-menu-item-others "削除")
+;! (clear-menu-item-others "削除")
  (clear-menu-item-windows "削除(&D)")
 
  (select-all-info "文書全体を選択します")
@@ -684,19 +684,19 @@ please adhere to these guidelines:
 
  ;; menu items in the "special" menu
  (insert-text-box-item "テキストボックスを挿入")
- (insert-pb-box-item "ペーストボード ボックスを挿入")
+;! (insert-pb-box-item "ペーストボード ボックスを挿入")
  (insert-image-item "画像を挿入...")
  (insert-comment-box-menu-item-label "コメント ボックスを挿入")
  (insert-lambda "ラムダ(λ)を挿入")
- (insert-delta "デルタ(定義)を挿入(&D)")
+;! (insert-delta "デルタ(定義)を挿入(&D)")
 
  (wrap-text-item "テキストを折り返す")
 
  (windows-menu-label "ウィンドウ(&W)")
  (bring-frame-to-front "フレームを前面に移動")       ;;; title of dialog
  (bring-frame-to-front... "フレームを前面に移動...") ;;; corresponding title of menu item
- (next-window "次のウィンドウ")
- (previous-window "前のウィンドウ")
+;! (next-window "次のウィンドウ")
+;! (previous-window "前のウィンドウ")
  (most-recent-window "最近使用したウィンドウ")
 
  (view-menu-label "表示(&V)")
@@ -771,7 +771,7 @@ please adhere to these guidelines:
 
  ;;; tools
  (invalid-tool-spec "コレクション ~a の info.ss ファイルに記述されているツール仕様が不正です。文字列か空でない文字列リストでなければなりませんが、次の値が記述されています: ~e")
- (error-loading-tool-title "DrScheme - ツール ~s をロード時にエラーが発生しました: ~s")
+;! (error-loading-tool-title "DrScheme - ツール ~s をロード時にエラーが発生しました: ~s")
  (error-invoking-tool-title "ツール ~s を起動時にエラーが発生しました: ~s")
  (tool-tool-names-same-length
   "expected `tool-names' and `tools' to be lists of the same length, in info.ss file for ~s, got ~e and ~e")
@@ -848,18 +848,18 @@ please adhere to these guidelines:
  (create-executable-menu-item-label "実行ファイルの作成...")
  (create-executable-title "実行ファイルの作成")
  (must-save-before-executable "実行ファイルを作成する前に、プログラムを保存してください。")
- (save-an-executable "実行ファイルの保存")
+;! (save-an-executable "実行ファイルの保存")
  (save-a-mred-launcher "MrEd ランチャの保存")
  (save-a-mzscheme-launcher "MzScheme ランチャの保存")
  (save-a-mred-stand-alone-executable "MrEd スタンドアロン実行ファイルの保存")
  (save-a-mzscheme-stand-alone-executable "MzScheme スタンドアロン実行ファイルの保存")
 
  (definitions-not-saved "定義ウィンドウが保存されていません。実行ファイルでは定義ウィンドウの最新の保存が使われます。よろしいですか？")
- (inline-saved-program-in-executable?
+;! (inline-saved-program-in-executable?
   "Inline the saved program in the executable? If yes, you can copy the executable to another ~a computer but the executable will be quite large. If not, you cannot copy the executable to another computer, but it will be much smaller. Additionally, if not, the executable will load the latest version of the program.")
- (use-mred-binary?
+;! (use-mred-binary?
   "Use the mred binary for this executable?\n\nIf yes, your program can use the (lib \"mred.ss\" \"mred\") library. If no, DrScheme will use mzscheme as the binary for this executable and you cannot use that library.\n\nIf unsure, choose yes.")
- (inline-saved-program-in-executable/windows/path
+;! (inline-saved-program-in-executable/windows/path
    "WARNING! The generated executable relies on three DLLs: libmred.dll, libmzsch.gll, and libgc.dll, which are located at\n\n~a\n\nThe executable finds the DLLs either in the executable's directory or through the PATH enviornment variable.\n\nWhen you installed DrScheme, the installer adjusted the user's PATH to include the directory where the DLLs were installed. Beware of configuration or user changes since installation.\n\nIf you move the executable to another machine, you must also copy the DLLs to the other machine --- either to the same directory as the executable, or to a directory in the other machine's PATH.")
  (launcher "ランチャ")
  (stand-alone "スタンドアロン")
@@ -904,7 +904,7 @@ please adhere to these guidelines:
 
  ;; number snip popup menu
  (show-decimal-expansion "小数で表示")
- (show-fraction-view "分数で表示")
+;! (show-fraction-view "分数で表示")
  (show-mixed-fraction-view "帯分数で表示")
  (show-improper-fraction-view "仮分数で表示")
  (show-more-decimal-places "小数の桁数を増やす")
@@ -913,9 +913,9 @@ please adhere to these guidelines:
  (select-a-teachpack "ティーチパックの選択")
  (clear-teachpack "ティーチパック ~a を消去")
  (teachpack-error-label "DrScheme - ティーチパック エラー")
- (teachpack-dne/cant-read "ティーチパック ファイル ~a は存在しないか読み取れません。")
+;! (teachpack-dne/cant-read "ティーチパック ファイル ~a は存在しないか読み取れません。")
  (teachpack-didnt-load "ティーチパック ファイル ~a は、正しくロードされませんでした。")
- (teachpack-error-invoke "ティーチパック ファイル ~a は、起動時にエラーを発生しました。")
+;! (teachpack-error-invoke "ティーチパック ファイル ~a は、起動時にエラーを発生しました。")
  (add-teachpack-menu-item-label "ティーチパックの追加...")
  (clear-all-teachpacks-menu-item-label "すべてのティーチパックを消去")
  (drscheme-teachpack-message-title "DrScheme ティーチパック")
@@ -940,13 +940,13 @@ please adhere to these guidelines:
  (debugging "デバッグ")
  (debugging-and-profiling "デバッグとプロファイリング")
  (test-coverage "構文上のテストスイート カバレージ")
- (whole/fractional-exact-numbers-label "数値を分数で表示する")
- (booleans-as-true/false-label "ブール値を true と false で表示する")
+;! (whole/fractional-exact-numbers-label "数値を分数で表示する")
+;! (booleans-as-true/false-label "ブール値を true と false で表示する")
  (show-details-button-label "詳細を表示")
  (hide-details-button-label "詳細を隠す")
  (choose-language-menu-item-label "言語の選択...")
  (revert-to-language-defaults "言語の既定値に戻す")
- (language-docs-button-label "言語のドキュメント")
+;! (language-docs-button-label "言語のドキュメント")
  (fraction-style "分数のスタイル")
  (use-mixed-fractions "帯分数")
  (use-repeating-decimals "循環小数")
@@ -954,15 +954,15 @@ please adhere to these guidelines:
 
  ;; startup wizard screen language selection section
  (please-select-a-language "言語を選択してください")
- (show-all-languages "すべての言語を表示する")
- (show-drscheme-usage-questions "DrScheme の使い方に関する質問を表示")
-  (are-you...-kind-of-drscheme-user "あなたは ...")
- (use-with-htdp "... 「How to Design Programs」を読みながら DrScheme を使っていますか？")
- (use-seasoned "... 経験豊かな PLT Scheme のユーザーですか？")
- (use-other "... その他の理由で DrScheme を使っていますか？")
- (use-eopl "... 「Essentials of Programming Languages」を読みながら DrScheme を使っていますか？")
-  (pl-lang-choice-format "初期言語: ~a")
-  (choose-new-language-before-running "実行する前に新しい言語を選択してください。")
+;! (show-all-languages "すべての言語を表示する")
+;! (show-drscheme-usage-questions "DrScheme の使い方に関する質問を表示")
+;!  (are-you...-kind-of-drscheme-user "あなたは ...")
+;! (use-with-htdp "... 「How to Design Programs」を読みながら DrScheme を使っていますか？")
+;! (use-seasoned "... 経験豊かな PLT Scheme のユーザーですか？")
+;! (use-other "... その他の理由で DrScheme を使っていますか？")
+;! (use-eopl "... 「Essentials of Programming Languages」を読みながら DrScheme を使っていますか？")
+;!  (pl-lang-choice-format "初期言語: ~a")
+;!  (choose-new-language-before-running "実行する前に新しい言語を選択してください。")
 
 
  ;;; languages
@@ -976,9 +976,9 @@ please adhere to these guidelines:
  (intermediate/lambda-one-line-summary "Intermediate ＋ 高階関数")
  (advanced-student "Advanced Student")
  (advanced-one-line-summary "Intermediate ＋ lambda と mutation")
- (full-language "Full") ;; also in the HtDP languages section
+;! (full-language "Full") ;; also in the HtDP languages section
  (how-to-design-programs "How to Design Programs") ;; should agree with MIT Press on this one...
- (r5rs-like-languages "R5RS-like")
+;! (r5rs-like-languages "R5RS-like")
  (pretty-big-scheme "Pretty Big (MrEd と Advanced Student を含む)")
  (pretty-big-scheme-one-line-summary "syntax と HtDP 言語の関数を追加")
  (r5rs-lang-name "Standard (R5RS)")
@@ -1002,7 +1002,7 @@ please adhere to these guidelines:
 
   ; next two are before and after a language
   (start-with-before "")
-  (start-with-after "で開始。")
+;!  (start-with-after "で開始。")
 
   (seasoned-plt-schemer? "経験豊かな PLT Scheme のユーザーですか？")
   (looking-for-standard-scheme? "標準的な Scheme をお探しですか？")
@@ -1041,7 +1041,7 @@ please adhere to these guidelines:
  (profiling-update "プロファイルの更新")
  (profiling-col-percent-time "% Time")
  (profiling-col-function "関数")
- (profiling-col-name "名前")
+;! (profiling-col-name "名前")
  (profiling-col-time-in-msec "ミリ秒")
  (profiling-col-calls "Calls")
  (profiling-show-profile "プロファイルを表示")
@@ -1086,27 +1086,27 @@ please adhere to these guidelines:
  ;; the next two are used in the initial wizard dialog.
  ;; Note that vc-wizard-check-prompt can (should) have newlines so
  ;; it will not make the dialog too wide.
- (vc-wizard-check-note "今からインストールするバージョンは最新でない可能性があります。\n最新バージョンがあるか確認しますか？")
- (vc-wizard-check-button "アップデートを確認する")
- (vc-update-check "アップデートの確認")
- (vc-please-wait "お待ちください")
- (vc-connecting-version-server "PLT バージョン サーバーに接続しています")
- (vc-network-timeout "ネットワークがタイムアウトしました")
- (vc-cannot-connect  "PLT バージョン サーバーに接続できません")
- (vc-network-failure "ネットワークに問題があります")
- (vc-old-binaries "インストールされている DrScheme (または MzScheme) は最新ではありません")
- (vc-binary-information-format "インストールされているバイナリのバージョン: ~a (iteration ~a)")
- (vc-details-format "~a~n詳細:~n~a")
- (vc-details-text "詳細:~n")
- (vc-error-format "エラー: ~a")
- (vc-current-format "~a v.~a (iteration ~a) は最新です")
- (vc-update-format "~a v.~a (iteration ~a) は v.~a (iteration ~a) にアップデートする必要があります")
- (vc-binary-name "バイナリ")
- (vc-updates-available "アップデートは次の場所から入手できます: ")
- (vc-latest-binary-information-format "最新のリリース バージョン: ~a (iteration ~a)")
- (vc-update-dialog-title "PLT アップデートの状態")
- (vc-need-update-string "インストールされている 1 つ以上の PLT ソフトウェア パッケージは、アップデートする必要があります")
- (vc-no-update-string "インストールされているすべての PLT ソフトウェア パッケージは最新です")
+;! (vc-wizard-check-note "今からインストールするバージョンは最新でない可能性があります。\n最新バージョンがあるか確認しますか？")
+;! (vc-wizard-check-button "アップデートを確認する")
+;! (vc-update-check "アップデートの確認")
+;! (vc-please-wait "お待ちください")
+;! (vc-connecting-version-server "PLT バージョン サーバーに接続しています")
+;! (vc-network-timeout "ネットワークがタイムアウトしました")
+;! (vc-cannot-connect  "PLT バージョン サーバーに接続できません")
+;! (vc-network-failure "ネットワークに問題があります")
+;! (vc-old-binaries "インストールされている DrScheme (または MzScheme) は最新ではありません")
+;! (vc-binary-information-format "インストールされているバイナリのバージョン: ~a (iteration ~a)")
+;! (vc-details-format "~a~n詳細:~n~a")
+;! (vc-details-text "詳細:~n")
+;! (vc-error-format "エラー: ~a")
+;! (vc-current-format "~a v.~a (iteration ~a) は最新です")
+;! (vc-update-format "~a v.~a (iteration ~a) は v.~a (iteration ~a) にアップデートする必要があります")
+;! (vc-binary-name "バイナリ")
+;! (vc-updates-available "アップデートは次の場所から入手できます: ")
+;! (vc-latest-binary-information-format "最新のリリース バージョン: ~a (iteration ~a)")
+;! (vc-update-dialog-title "PLT アップデートの状態")
+;! (vc-need-update-string "インストールされている 1 つ以上の PLT ソフトウェア パッケージは、アップデートする必要があります")
+;! (vc-no-update-string "インストールされているすべての PLT ソフトウェア パッケージは最新です")
 
  ;; special menu
  (special-menu "特殊(&P)")
@@ -1148,8 +1148,8 @@ please adhere to these guidelines:
  (mrflow-button-title "解析")
  ;(mrflow-unknown-style-delta-error-title "Unknown Box Style Delta")
  ;(mrflow-unknown-style-delta-error "Unknown box style delta: ~a")
- (mrflow-coloring-error-title "未知のカラー")
- (mrflow-coloring-error "No style defined for color: ~a")
+;! (mrflow-coloring-error-title "未知のカラー")
+;! (mrflow-coloring-error "No style defined for color: ~a")
  (mrflow-popup-menu-show-type "Show Type")
  (mrflow-popup-menu-hide-type "Hide Type")
  (mrflow-popup-menu-show-errors "表示エラー")
@@ -1171,7 +1171,7 @@ please adhere to these guidelines:
  ;(snips-and-arrows-changing-terms-warning "Changing terms in an editor containing snips cannot be undone.  You can either cancel this action, remove the snips, and try the change again, or you can continue with the change, in which case the change will not be undoable (all others changes made before and afterward will still be undoable though).")
  (snips-and-arrows-hide-all-snips-in-editor "Hide all snips in editor")
 
- (xml-tool-menu "XML")
+;! (xml-tool-menu "XML")
  (xml-tool-insert-xml-box "XML ボックスを挿入")
  (xml-tool-insert-scheme-box "Scheme ボックスを挿入")
  (xml-tool-insert-scheme-splice-box "Scheme Splice ボックスを挿入")
@@ -1204,9 +1204,9 @@ please adhere to these guidelines:
  (stepper-next-application "Application >|")
 
 
- (wizard-next "次へ")
- (wizard-back "戻る")
- (wizard-finish "完了")
+ (dialog-back "戻る")
+;! (wizard-next "次へ")
+;! (wizard-finish "完了")
 
  ;; warnings about closing a drscheme frame when the program
  ;; might still be doing something interesting
@@ -1258,7 +1258,7 @@ please adhere to these guidelines:
   ;; Errors
   (test-case-empty-error "空のテストケース")
   (test-case-too-many-expressions-error "テストケース内に式が多過ぎます。")
-  (test-case-not-at-top-level "テストケース ボックスはトップレベルではありません")
+;!  (test-case-not-at-top-level "テストケース ボックスはトップレベルではありません")
   ;; Dr. Scheme window menu items
   (test-case-insert "テストケースを挿入")
   (test-case-disable-all "すべてのテストケースを無効にする")

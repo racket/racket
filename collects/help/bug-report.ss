@@ -63,7 +63,7 @@
     (define response-reset (new button%
                                 (parent response-button-panel)
                                 (enabled #f)
-                                (label (string-constant wizard-back))
+                                (label (string-constant dialog-back))
                                 (callback
                                  (lambda (x y)
                                    (switch-to-compose-view)))))
