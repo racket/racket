@@ -197,9 +197,9 @@
     (let ([lst (extract-bindings name bindings)])
       (cond
         [(null? lst)
-         (error 'extract-binding/single "~a not found in ~a" name bindings)]
+         (error 'extract-binding/single "~e not found in ~e" name bindings)]
         [(null? (cdr lst)) (car lst)]
-        [else (error 'extract-binding/single "~a occurs multiple times in ~a" name bindings)])))
+        [else (error 'extract-binding/single "~e occurs multiple times in ~e" name bindings)])))
   
   ; extract-bindings : sym (listof (cons str str)) -> (listof str)
   (define (extract-bindings name bindings)
