@@ -72,15 +72,11 @@
   (bug-report-field-summary "标题")
   (bug-report-field-severity "严重度")
   (bug-report-field-class "类别")
-;!  (bug-report-field-priority "优先级")
   (bug-report-field-description "详细描述")
   (bug-report-field-reproduce1 "再现故障")
   (bug-report-field-reproduce2 "的步骤")
   (bug-report-field-environment "环境")
-;!  (bug-report-field-tools "Tools")
   (bug-report-field-docs-installed "已安装文档")
-;!  (bug-report-field-language "语言")
-;!  (bug-report-field-teachpacks "教学包")
   (bug-report-field-collections "Collections")
   (bug-report-field-human-language "自然语言")
   (bug-report-field-version "版本")
@@ -88,11 +84,8 @@
   (bug-report-show-synthesized-info "显示综合信息")
   (bug-report-submit "提交")
   (bug-report-submit-menu-item "提交故障报告") ;; in Help Menu (drs & help desk)
-;!  (sending-bug-report "送出故障报告")
   (error-sending-bug-report "故障报告传输出错")
   (error-sending-bug-report-expln "在传输故障报告的过程中出现了错误。如果你能够正常浏览网络，请访问：\n\n    http://bugs.plt-scheme.org/\n\n使用网页上的表单提交错误报告。对于由此产生的不便，我们表示抱歉。\n\n传输错误详情：\n~a")
-;!  (bug-report-sent "故障报告已送出")
-;!  (bug-report-sent-detail "感谢你的报告。在30分钟内，您将会收到电子邮件确认。如果您没有收到邮件，请联系scheme@plt-scheme.org.")
   (illegal-bug-report "非法的故障报告")
   (pls-fill-in-field "请填写\"~a\"栏目")
   (malformed-email-address "电子邮件地址不符合格式")
@@ -122,9 +115,7 @@
   (cs-mouse-over-import "绑定~s为由~s导入")
   
   (cs-lexical-variable "词汇变量")
-;!  (cs-lexical-syntax "词汇的语法")
   (cs-imported-variable "导入变量")
-;!  (cs-imported-syntax "导入的语法")
   
   ;;; info bar at botttom of drscheme frame
   (collect-button-label "垃圾收集")
@@ -143,7 +134,6 @@
   
   ; these appear on subsequent lines in the `Help|Welcome to DrScheme' dialog.
   (welcome-to-drscheme "欢迎使用DrScheme")
-;!  (version/language "版本~a，~a")
   
   (goto-line "跳至...行")
   (goto-line-invalid-number
@@ -156,7 +146,6 @@
     "警告：交互窗口和定义窗口不同步。请单击“运行”按钮。")
   (file-is-not-saved "文件\"~a\"还没有保存过")
   (save "保存")
-;!  (please-choose-either "请在“~a”和“~a”之间进行选择")
   (close-anyway "强制关闭")
   (clear-anyway "强制清空")
   
@@ -185,7 +174,6 @@
   (syntax-coloring-choose-color "为~a选择颜色")
   (preferences-colors "颜色") ;; used in the preferences dialog
   
-;!  (url "URL")
   (url: "URL:")
   (open-url... "打开URL...")
   (open-url "打开URL")
@@ -196,18 +184,9 @@
   ;; Help Desk
   (help "帮助")
   (help-desk "Help Desk")
-;!  (plt:hd:search-results "搜索结果")
   (plt:hd:search "搜索")
-;!  (plt:hd:search-for "搜索")
-;!  (plt:hd:lucky "手气！")
   (plt:hd:feeling-lucky "手气不错")
-;!  (plt:hd:stop "停止")   
-;!  (plt:hd:options "选项") 
-;!  (plt:hd:configure "设置")
   (plt:hd:home "Help Desk首页") 
-;!  (plt:hd:show-manuals "显示手册") 
-;!  (plt:hd:send-bug-report "发送故障报告")
-;!  (plt:hd:query-bug-reports "查询故障报告")
   ; next 3 are popup menu choices in help desk search frame
   (plt:hd:search-for-keyword "关键字")
   (plt:hd:search-for-keyword-or-index "关键字或索引")
@@ -216,41 +195,14 @@
   (plt:hd:containing-match "包含")
   (plt:hd:regexp-match "正则表达式匹配")
   (plt:hd:find-docs-for "搜索：")
-;!  (plt:hd:nothing-found-for-search-key "找不到关于“~a”的文档。")
-;!  (plt:hd:searching "搜索中")
-;!  (plt:hd:search-stopped "[搜索已停止。]")
   (plt:hd:search-stopped-too-many-matches "[搜索中断：过多的匹配结果]")
   (plt:hd:nothing-found-for "找不到任何关于~a的信息")
-;!  (plt:hd:error-finding-docs "找不到文档。\n\n~a")
   (plt:hd:and "并且")
   (plt:hd:refresh "更新")
   (plt:hd:refresh-all-manuals "更新所有手册")
   (plt:hd:manual-installed-date "(~a已安装)")
   ; Help Desk configuration
-;!  (plt:hd:configuration "PLT Help Desk设置")
-;!  (plt:hd:no-frames "无框架")
-;!  (plt:hd:use-frames "使用框架")
-;!  (plt:hd:use-html-frames "使用HTML框架")
-;!  (plt:hd:search-pane-options "搜索面板设置")
-;!  (plt:hd:height "高度")
-;!  (plt:hd:bg-color "背景颜色")
-;!  (plt:hd:pixels "像素")
-;!  (plt:hd:text-color "文本颜色")
-;!  (plt:hd:link-color "链接颜色")
-;!  (plt:hd:text-sample "搜索面板中的文字是这个颜色的")
-;!  (plt:hd:link-sample "搜索面板中的链接是这个颜色的")
-;!  (plt:hd:save-changes "保存修改")
-;!  (plt:hd:reset "重置")
-;!  (plt:hd:defaults "使用默认")
-;!  (plt:hd:javascript-note
-;!    "如果你安装了Javascript和一个标准的浏览器，那么这里就能看到你所作的选择。")
   ;; refreshing manuals
-;!  (plt:hd:refresh-downloading "下载~a")
-;!  (plt:hd:refresh-installing "安装~a")
-;!  (plt:hd:refresh-progress "PLT手册下载进行中")
-;!  (plt:hd:refresh-done "手册更新完成")
-;!  (plt:hd:refresh-installation-log "安装日至")
-;!  (plt:hd:refresh-stopped "PLT手册下载已停止")
   (plt:hd:refreshing-manuals "重新下载手册")
   (plt:hd:refresh-downloading... "正在下载~a...")
   (plt:hd:refresh-deleting... "删除旧版本的~a...")
@@ -270,9 +222,6 @@
   (plt:hd:external-link-in-help "在Help中的外部URL")
   (plt:hd:use-homebrew-browser "对于外部URL，使用Help Desk浏览")
   (plt:hd:new-help-desk "新的Help Desk窗口")
-;!  (plt:hd:teaching-manuals "学生的手册")
-;!  (plt:hd:professional-manuals "专家的手册")
-;!  (plt:hd:all-manuals "全部手册")
   
   ;; in the Help Desk language dialog, title on the right.
   (plt:hd:manual-search-ordering "搜索手册的顺序")
@@ -295,11 +244,8 @@
   (browser-command-line-label "命令行：") ; label for radio button that is followed by text boxes
   (choose-browser "选择浏览器")
   (no-browser "以后再询问")
-;!  (use-internal-browser-for-help "使用内置的PLT浏览器阅读帮助") ; radio-button label
-;!  (use-external-browser-for-help "使用外部网络浏览器阅读帮助") ; radio-button label
   (browser-cmdline-expl-line-1 "(命令行由pre-text，URL和post-text连接而成，") ; explanatory text for dialog, line 1
   (browser-cmdline-expl-line-2 "中间不含任何空格)") ; ... line 2. (Anyone need more lines?)
-;!  (cannot-display-url "无法显示URL ~s：~a")
   (install? "安装？")  ;; if a .plt file is found (title of dialog)
   (you-have-selected-an-installable-package "你选择了一个可以安装的软件包。")
   (do-you-want-to-install-it? "是否安装？")
@@ -312,7 +258,6 @@
   (downloading-file... "下载文件中...")
   (package-was-installed "安装已完成。")
   (download-was-saved "文件已保存。")
-;!  (getting-page "获取网页中") ;; dialog title
   
   (install-plt-file-menu-item... "安装.plt文件...")
   (install-plt-file-dialog-title "安装.plt文件")
@@ -334,9 +279,6 @@
   (about-drscheme-frame-title "关于DrScheme")
   (take-a-tour "教程")
   (release-notes "发行记录")
-;!  (parenthetical-last-version "(前一版本~a)")
-;!  (parenthetical-last-language "(前一语言~a)")
-;!  (parenthetical-last-version/language "(前一版本~a，语言~a)")
   
   
   ;;; save file in particular format prompting.
@@ -347,11 +289,8 @@
   
   ;;; preferences
   (preferences "参数设置")
-;!  (saving-preferences "保存参数")
-;!  (error-unmarshalling "错误的组合参数：~a")
   (error-saving-preferences "保存参数时出错:~a")
   (error-reading-preferences "读取参数设置时出错")
-;!  (expected-list-of-length2 "需要一个长度为2的表")
   (scheme-prefs-panel-label "Scheme")
   (warnings-prefs-panel-label "警告")
   (editor-prefs-panel-label "编辑")
@@ -371,12 +310,10 @@
   (enable-keybindings-in-menus "允许使用菜单中的快捷键")
   (automatically-to-ps "自动打印成postscript文件")
   (option-as-meta "将option键当作meta") ;; macos/macos x only
-;!  (use-mdi "使用MDI Windows") ;;; ms windows only -- use that window in a window thingy
   (separate-dialog-for-searching "使用单独的搜索对话框")
   (reuse-existing-frames "在打开新文件时，使用现有的框架")
   (default-fonts "默认字体")
   (paren-match-color "高亮显示括号所使用的颜色") ; in prefs dialog
-;!  (choose-color "选择颜色") ; in prefs dialog
   (online-coloring-active "实时根据语法用颜色标记程序")
   (open-files-in-tabs "在不同的标签下打开多个文件（不使用多个窗口）")
   (show-interactions-on-execute "在运行程序时自动打开交互窗口")
@@ -386,7 +323,6 @@
   (choose-a-background-color "请选择背景颜色")
   
   ; title of the color choosing dialog
-;!  (choose-paren-highlight-color "请选择高亮显示括号所用的颜色")
   
   ; should have entire alphabet
   (font-example-string "简体中文 by 朱崇恺") 
@@ -439,7 +375,6 @@
   (replace "替换")
   (dock "面板")
   (undock "对话框")
-;!  (use-separate-dialog-for-searching "使用单独的对话框进行查找")
   (replace&find-again "替换并查找下一个") ;;; need double & to get a single &
   (replace-to-end "全部替换")
   (forward "下一个")
@@ -467,8 +402,6 @@
   (mfs-search-interrupted "搜索中止。")
   
   ;;; reverting a file
-;!  (error-reverting "DrScheme——错误恢复")
-;!  (could-not-read "无法读取\"~a\"")
   (are-you-sure-revert
     "你确定要恢复这个文件吗？这一操作无法撤销。")
   (are-you-sure-revert-title
@@ -572,7 +505,6 @@
   (paste-menu-item "粘贴(&P)")
   
   (clear-info "删除当前选中的对象")
-;!  (clear-menu-item-others "清除")
   (clear-menu-item-windows "删除(&D)")
   
   (select-all-info "选中整个文件")
@@ -605,19 +537,15 @@
   
   ;; menu items in the "special" menu
   (insert-text-box-item "插入文本框")
-;!  (insert-pb-box-item "插入纸牌框")
   (insert-image-item "插入图片...")
   (insert-comment-box-menu-item-label "插入注释框")
   (insert-lambda "插入λ")
-;!  (insert-delta "插入定义(&D)")
   
   (wrap-text-item "自动换行")
   
   (windows-menu-label "窗口(&W)")
   (bring-frame-to-front "前端显示")       ;;; title of dialog
   (bring-frame-to-front... "前端显示...") ;;; corresponding title of menu item
-;!  (next-window "下一窗口")
-;!  (previous-window "前一窗口")
   (most-recent-window "最近的窗口")
   
   (view-menu-label "视图(&V)")
@@ -692,7 +620,6 @@
   
   ;;; tools
   (invalid-tool-spec "Collection ~a中info.ss的tool定义不正确。需要一个字符串或者一个非空表，得到：~e")
-;!  (error-loading-tool-title "DrScheme——载入tool ~s时出错；~s")
   (error-invoking-tool-title "调用tool ~s出错；~s")
   (tool-tool-names-same-length
     "在~s的info.ss文件中，“tool-names”和“tools”应该是等长的表，得到~e和~e")
@@ -769,19 +696,12 @@
   (create-executable-menu-item-label "创建可执行程序...")
   (create-executable-title "创建可执行程序")
   (must-save-before-executable "在创建可执行程序之前，你必须保存源程序")
-;!  (save-an-executable "保存为可执行程序")
   (save-a-mred-launcher "保存为MrEd程序")
   (save-a-mzscheme-launcher "保存为MzScheme程序")
   (save-a-mred-stand-alone-executable "保存为MrEd可执行程序")
   (save-a-mzscheme-stand-alone-executable "保存为MzScheme可执行程序")
   
   (definitions-not-saved "当前定义窗口中的程序并没有被保存过。将使用最近保存过的版本来生成可执行程序。继续？")
-;!  (inline-saved-program-in-executable?
-;!    "是否将程序嵌入到可执行文件中？如果选择是，那么你可以将可执行文件复制到其他~a计算机上使用，但是这将会大大增加可执行文件的大小；否则，那么你可以得到一个小得多的可执行文件，但是无法将它复制到其它计算机上使用。此外，如果选择否，该可执行文件每次运行时都会自动载入最新保存的程序。")
-;!  (use-mred-binary?
-;!    "是否使用mred库？\n\n如果选择是，那么你的可执行程序就可以使用库(lib \"mred.ss\" \"mred\")；否则，该可执行程序就只能使用mzscheme库。\n\n如果你无法确定，请选择是。")
-;!  (inline-saved-program-in-executable/windows/path
-;!    "注意！生成的程序文件运行时需要三个DLL库：libmred.dll、libmzsch.gll和libgc.dll。它们位于\n\n~a\n\n程序文件执行时会在当前目录或者PATH环境变量中寻找DLL库。\n\nDrScheme在安装时已经将这些DLL所在的目录放入PATH变量。请不要手工修改这些设置。\n\n如果你要将该可执行文件复制到其它计算机上，必须同时复制这几个DLL文件——你可以将DLL文件和可执行程序放在同一个目录下，也可以将DLL文件放在一个PATH目录中。")
   (launcher "启动程序")
   (stand-alone "独立的")
   (executable-type "类型")
@@ -825,7 +745,6 @@
   
   ;; number snip popup menu
   (show-decimal-expansion "用十进制表示")
-;!  (show-fraction-view "用分数表示")
   (show-mixed-fraction-view "用带分数表示")
   (show-improper-fraction-view "用假分数表示")
   (show-more-decimal-places "先是更多小数位")
@@ -834,9 +753,7 @@
   (select-a-teachpack "选择教学包")
   (clear-teachpack "卸载教学包~a")
   (teachpack-error-label "DrScheme——教学包出错")
-;!  (teachpack-dne/cant-read "教学包~a不存在，或者无法读取。")
   (teachpack-didnt-load "无法装载教学包~a。")
-;!  (teachpack-error-invoke "调用教学包~a是产生了错误。")
   (add-teachpack-menu-item-label "加载教学包...")
   (clear-all-teachpacks-menu-item-label "卸载全部教学包")
   (drscheme-teachpack-message-title "DrScheme教学包")
@@ -861,13 +778,10 @@
   (debugging "Debugging")
   (debugging-and-profiling "Debugging and profiling")
   (test-coverage "Syntactic test suite coverage")
-;!  (whole/fractional-exact-numbers-label "以分数形式输出数字")
-;!  (booleans-as-true/false-label "输出布尔值为true/false")
   (show-details-button-label "显示详情")
   (hide-details-button-label "隐藏详情")
   (choose-language-menu-item-label "选择语言...")
   (revert-to-language-defaults "恢复默认语言设置")
-;!  (language-docs-button-label "语言文档")
   (fraction-style "分数格式")
   (use-mixed-fractions "带分数")
   (use-repeating-decimals "循环小数")
@@ -886,9 +800,7 @@
   (intermediate/lambda-one-line-summary "在中级的基础上，增加高阶函数")
   (advanced-student "高级")
   (advanced-one-line-summary "在中级的基础上，增加lambda和赋值")
-;!  (full-language "Full") ;; also in the HtDP languages section
   (how-to-design-programs "程序设计方法/How to Design Programs") ;; should agree with MIT Press on this one...
-;!  (r5rs-like-languages "R5RS-like")
   (pretty-big-scheme "Pretty Big (包括MrEd和高级)")
   (pretty-big-scheme-one-line-summary "Adds syntax and functions from the HtDP languages")
   (r5rs-lang-name "标准(R5RS)")
@@ -930,27 +842,6 @@
   ;; the next two are used in the initial wizard dialog.
   ;; Note that vc-wizard-check-prompt can (should) have newlines so
   ;; it will not make the dialog too wide.
-;!  (vc-wizard-check-note "你正要安装的可能不是最新版本。DrScheme能够自动检查版本。")
-;!  (vc-wizard-check-button "检查更新")
-;!  (vc-update-check "检查更新")
-;!  (vc-please-wait "请稍等")
-;!  (vc-connecting-version-server "连接PLT版本服务器")
-;!  (vc-network-timeout "网络超时") 
-;!  (vc-cannot-connect  "无法连接到PLT版本服务器")
-;!  (vc-network-failure "网络失效")
-;!  (vc-old-binaries "当前安装的DrScheme(或MzScheme)并不是最新版本")
-;!  (vc-binary-information-format "当前安装的版本号：~a(修改号~a)")
-;!  (vc-details-format "~a~n详细：~n~a")
-;!  (vc-details-text "详细：~n")
-;!  (vc-error-format "错误：~a") 
-;!  (vc-current-format "~a v.~a(修改号~a)是最新版本")
-;!  (vc-update-format "~a v.~a(修改号~a)，需要升级到v.~a(修改号~a)")
-;!  (vc-binary-name "安装程序")
-;!  (vc-updates-available "升级版本可以下载：")
-;!  (vc-latest-binary-information-format "最新发布的版本：~a(修改号~a)")
-;!  (vc-update-dialog-title "PLT省级信息")
-;!  (vc-need-update-string "需要升级")
-;!  (vc-no-update-string "已经是最新版本了")
   
   ;; special menu
   (special-menu "特殊符号(&P)")
@@ -988,8 +879,6 @@
   (mrflow-button-title "分析")
   ;(mrflow-unknown-style-delta-error-title "Unknown Box Style Delta")
   ;(mrflow-unknown-style-delta-error "Unknown box style delta: ~a")
-;!  (mrflow-coloring-error-title "Unknown Color")
-;!  (mrflow-coloring-error "No style defined for color: ~a")
   (mrflow-popup-menu-show-type "Show Type")
   (mrflow-popup-menu-hide-type "Hide Type")
   (mrflow-popup-menu-show-errors "Show Errors")
@@ -1003,7 +892,6 @@
   ;(mrflow-language-primitives-error-title "Language Primitives Error")
   ;(mrflow-language-primitives-error "Wrong filename for language primitives types table: ~a")
   
-;!  (xml-tool-menu "XML")
   (xml-tool-insert-xml-box "插入XML框")
   (xml-tool-insert-scheme-box "插入Scheme框")
   (xml-tool-insert-scheme-splice-box "插入Scheme接合框")
@@ -1037,8 +925,6 @@
   
   
   (dialog-back "后退")
-;!  (wizard-next "前进")
-;!  (wizard-finish "完成")
   
   ;; warnings about closing a drscheme frame when the program
   ;; might still be doing something interesting
@@ -1063,7 +949,6 @@
   ;; Errors
   (test-case-empty-error "Empty test case")
   (test-case-too-many-expressions-error "Too many expressions in a test case.")
-;!  (test-case-not-at-top-level "Test case box not at top level")
   ;; Dr. Scheme window menu items
   (test-case-insert "插入Test Case")
   (test-case-disable-all "禁用所有Test Cases")

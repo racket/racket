@@ -143,15 +143,11 @@ please adhere to these guidelines:
  (bug-report-field-summary "Resumé")
  (bug-report-field-severity "Alvorlighedsgrad")
  (bug-report-field-class "Klasse")
-;! (bug-report-field-priority "Prioritet")
  (bug-report-field-description "Beskrivelse")
  (bug-report-field-reproduce1 "Skridt for at")
  (bug-report-field-reproduce2 "reproducere fejlen")
  (bug-report-field-environment "Omgivelse")
-;! (bug-report-field-tools "Værktøjer")
  (bug-report-field-docs-installed "Installeret dokumentation")
-;! (bug-report-field-language "Sprog")
-;! (bug-report-field-teachpacks "Undervisningspakker")
  (bug-report-field-collections "Samlinger (Collections)")
  (bug-report-field-human-language "Modersmål")
  (bug-report-field-version "Version")
@@ -159,11 +155,8 @@ please adhere to these guidelines:
  (bug-report-show-synthesized-info "Vis indsamlet information")
  (bug-report-submit "Send")
  (bug-report-submit-menu-item "Send fejlrapport") ;; in Help Menu (drs & help desk)
-;! (sending-bug-report "Afsender fejlrapport")
  (error-sending-bug-report "Fejl under afsendelse af fejlrapport")
  (error-sending-bug-report-expln "Der opstod en fejl ved afsendelse af fejlrapporten. Hvis din internetforbindelse ellers er velfungerende, besøg venligst:\n\n    http://bugs.plt-scheme.org/\n\nog send fejlrapporten ved hjælp af vores online fejlrapporteringsside. Vi er kede af besværet.\n\nFejlmeddelelsen er:\n~a")
-;! (bug-report-sent "Fejlrapporten er afsendt")
-;! (bug-report-sent-detail "Tak for fejlrapporten. Du bør modtage en bekræftigelse via e-email indenfor den næste halve time. Hvis du ikke får en bekræftigelse, så send en e-mail til scheme@plt-scheme.org.")
  (illegal-bug-report "Ugyldig fejlrapport")
  (pls-fill-in-field "Udfyld venligst feltet \"~a\" ")
  (malformed-email-address "Ugyldig e-mail-adresse")
@@ -195,9 +188,7 @@ please adhere to these guidelines:
  (cs-mouse-over-syntax-import "syntaks ~s importeret fra ~s")
 
  (cs-lexical-variable "leksikalsk variabel")
-;! (cs-lexical-syntax "leksikalsk syntaks")
  (cs-imported-variable "importeret variabel")
-;! (cs-imported-syntax "importeret syntaks")
 
  ;;; info bar at botttom of drscheme frame
  (collect-button-label "GC")
@@ -216,7 +207,6 @@ please adhere to these guidelines:
 
  ; these appear on subsequent lines in the `Help|Welcome to DrScheme' dialog.
  (welcome-to-drscheme "Velkommen til DrScheme")
-;! (version/language "version ~a, ~a")
 
  (goto-line "Gå til linje")
  (goto-line-invalid-number
@@ -235,7 +225,6 @@ please adhere to these guidelines:
 
  (file-is-not-saved "Filen \"~a\" er endnu ikke gemt.")
  (save "Gem")
-;! (please-choose-either "Vælg venligst enten \"~a\" eller \"~a\"")
  (close-anyway "Luk alligevel")
  (clear-anyway "Rens Anyway")
 
@@ -264,7 +253,6 @@ please adhere to these guidelines:
  (syntax-coloring-choose-color "Vælg en farve for ~a")
  (preferences-colors "Farver") ;; used in the preferences dialog
 
-;! (url "URL")
  (url: "URL:")
  (open-url... "Åbn URL...")
  (open-url "Åbn URL")
@@ -275,18 +263,9 @@ please adhere to these guidelines:
  ;; Help Desk
  (help "Hjælp")
  (help-desk "Hjælpebord")
-;! (plt:hd:search-results "Søgeresultater")
  (plt:hd:search "Søg")
-;! (plt:hd:search-for "Søg efter")
-;! (plt:hd:lucky "Heldig!")
  (plt:hd:feeling-lucky "Jeg føler mig heldig")
-;! (plt:hd:stop "Stop")   
-;! (plt:hd:options "Indstillinger") 
-;! (plt:hd:configure "Konfigurer")
  (plt:hd:home "Hjælpebordets start") 
-;! (plt:hd:show-manuals "Vis manualer") 
-;! (plt:hd:send-bug-report "Send fejlrapport")
-;! (plt:hd:query-bug-reports "Søg efter fejlrapporter")
  ; next 3 are popup menu choices in help desk search frame
  (plt:hd:search-for-keyword "Nøgleord")
  (plt:hd:search-for-keyword-or-index "Nøgleord eller indekseret opslag")
@@ -295,43 +274,16 @@ please adhere to these guidelines:
  (plt:hd:containing-match "indeholdende match")
  (plt:hd:regexp-match "regulært udtryk")
  (plt:hd:find-docs-for "Find dokumentation om:")
-;! (plt:hd:nothing-found-for-search-key "Intet fundet om \"~a\".")
-;! (plt:hd:searching "Søger...")
-;! (plt:hd:search-stopped "[Søgning stoppet.]")
  (plt:hd:search-stopped-too-many-matches "[Søgning afbrudt: for mange resultater")
  (plt:hd:nothing-found-for "Intet fundet om ~a")
-;! (plt:hd:error-finding-docs "Kunne ikke finde dokumentation.\n\n~a")
  (plt:hd:and "og")
  (plt:hd:refresh "opdater")
  (plt:hd:refresh-all-manuals "opdater alle manualer")
  (plt:hd:manual-installed-date "(~a installeret)")
  ; Help Desk configuration
-;! (plt:hd:configuration "PLT Hjælpebordskonfiguration")
-;! (plt:hd:no-frames "Ingen rammer (frames)")
-;! (plt:hd:use-frames "Brug rammer (frames)")
-;! (plt:hd:use-html-frames "Brug HTML-rammer")
-;! (plt:hd:search-pane-options "Indstillinger for søgepanel")
-;! (plt:hd:height "Højde")
-;! (plt:hd:bg-color "Baggrundsfarve")
-;! (plt:hd:pixels "pixels")
-;! (plt:hd:text-color "Tekstfarve")
-;! (plt:hd:link-color "Linkfarve")
-;! (plt:hd:text-sample "Søgepanelet har denne farve")
-;! (plt:hd:link-sample "Links i søgepanelet har denne farve")
-;! (plt:hd:save-changes "Gem ændringer")
-;! (plt:hd:reset "Reset")
-;! (plt:hd:defaults "Standardindstillinger")
-;! (plt:hd:javascript-note
-;!    "De valg du gør vil blive vist her, hvis du har JavaScript sat til, og en ny moderne standard-følgende browser.")
  ;; refreshing manuals
-;! (plt:hd:refresh-downloading "Henter ~a")
-;! (plt:hd:refresh-installing "Installerer ~a")
  (plt:hd:refresh-clearing-indicies "Renser forgemte indekser")
-;! (plt:hd:refresh-progress "PLT-manualhentningsfremskridt")
-;! (plt:hd:refresh-done "Opdatering af manualer afsluttet")
 ;; should not mention `SVN' (plt:hd:refresh-done "Færdig med at opdatere SVN-manualer")
-;! (plt:hd:refresh-installation-log "Installationslog")
-;! (plt:hd:refresh-stopped "Opdatering af PLT-manualer stoppet")
  (plt:hd:refreshing-manuals "Genhenter manualer")
  (plt:hd:refresh-downloading... "Henter ~a...")
  (plt:hd:refresh-deleting... "Sletter gammel version af ~a...")
@@ -350,9 +302,6 @@ please adhere to these guidelines:
   (plt:hd:external-link-in-help "Eksterne URL'er i hjælp")
   (plt:hd:use-homebrew-browser "Brug hjælpebordsbrowseren til eksterne URL'er")
   (plt:hd:new-help-desk "Nyt hjælpebord")
-;!  (plt:hd:teaching-manuals "Elev-dokumentation")
-;!  (plt:hd:professional-manuals "Professionel dokumentation")
-;!  (plt:hd:all-manuals "Al dokumentation")
 
   ;; in the Help Desk language dialog, title on the right.
   (plt:hd:manual-search-ordering "Søgeorden")
@@ -374,11 +323,8 @@ please adhere to these guidelines:
  (browser-command-line-label "Kommandolinje:") ; label for radio button that is followed by text boxes
  (choose-browser "Vælg en browser")
  (no-browser "Spørg senere") ; English changed from "None" to "Ask Later"
-;! (use-internal-browser-for-help "Læs hjælpen i den interne PLT webbrowser") ; radio-button label
-;! (use-external-browser-for-help "Læs hjælpen med en ekstern webbrowser") ; radio-button label
  (browser-cmdline-expl-line-1 "(Kommandolinjen konstrueret ved at sætte den forudgående tekst, URL'en,") ; explanatory text for dialog, line 1
  (browser-cmdline-expl-line-2 "og den efterfølgende tekst sammen uden brug af mellemrum mellem dem.)") ; ... line 2. (Anyone need more lines?)
-;! (cannot-display-url "Kan ikke vise URL ~s: ~a")
  (install? "Installér?")  ;; if a .plt file is found (title of dialog)
  (you-have-selected-an-installable-package "Du har valgt en pakke, som kan installeres.")
  (do-you-want-to-install-it? "Vil du installere den?")
@@ -391,7 +337,6 @@ please adhere to these guidelines:
  (downloading-file... "Downloader fil...")
  (package-was-installed "Pakken blev installeret.")
  (download-was-saved "Den downloadede fil blev gemt.")
-;! (getting-page "Henter side") ;; dialog title
 
  (install-plt-file-menu-item... "Installer .plt-fil...")
  (install-plt-file-dialog-title "Installer .plt-fil")
@@ -414,9 +359,6 @@ please adhere to these guidelines:
  (about-drscheme-frame-title "Om DrScheme")
  (take-a-tour "Tag en rundvisning!")
  (release-notes "Udgivelsesbemærkninger")
-;! (parenthetical-last-version "(tidligere version ~a)")
-;! (parenthetical-last-language "(tidligere language ~a)")
-;! (parenthetical-last-version/language "(tidligere version ~a, modersmål ~a)")
 
 
  ;;; save file in particular format prompting.
@@ -427,11 +369,8 @@ please adhere to these guidelines:
 
  ;;; preferences
  (preferences "Indstillinger")
-;! (saving-preferences "Gemmer indstillinger")
-;! (error-unmarshalling "Error unmarshalling ~a preference")
  (error-saving-preferences "Fejl under lagring af indstillinger: ~a")
  (error-reading-preferences "Fejl ved indlæsning af indstillinger")
-;! (expected-list-of-length2 "forventede en liste af længde 2")
  (scheme-prefs-panel-label "Scheme")
  (warnings-prefs-panel-label "Advarsler")
  (editor-prefs-panel-label "Redigering")
@@ -451,12 +390,10 @@ please adhere to these guidelines:
  (enable-keybindings-in-menus "Slå tastaturgenveje i menuer til")
  (automatically-to-ps "Udskriv automatisk til postscriptfil")
  (option-as-meta "Brugtion option-tasten som meta") ;; macos/macos x only  
-;! (use-mdi "Brug MDI-vinduer") ;;; ms windows only -- use that window in a window thingy
  (separate-dialog-for-searching "Brug separat dialog til søgning")
  (reuse-existing-frames "Genbrug gamle vinduer, når nye filer åbnes")
  (default-fonts "Standardskrifttyper")
  (paren-match-color "Parentesfremhævningsfarve") ; in prefs dialog
-;! (choose-color "Vælg farve") ; in prefs dialog
  (online-coloring-active "Interaktiv syntaksfarvelægning")
  (open-files-in-tabs "Åbn filer i separate faneblade (ikke separate vinduer)")
  (show-interactions-on-execute "Vis automatisk interaktionsvinduet ved kørsel")
@@ -467,7 +404,6 @@ please adhere to these guidelines:
 
   
  ; title of the color choosing dialog
-;! (choose-paren-highlight-color "Vælg farve til parentesfremhævning")
 
  ; should have entire alphabet
  (font-example-string "Høj bly gom vandt fræk sexquiz på wc.")
@@ -520,7 +456,6 @@ please adhere to these guidelines:
  (replace "Erstat")
  (dock "Minimer")
  (undock "Gendan")
-;! (use-separate-dialog-for-searching "Brug separat dialog til søgning")
  (replace&find-again "Erstat og Søg igen") ;;; need double & to get a single &
  (replace-to-end "Erstat til slutning")
  (forward "Frem")
@@ -548,8 +483,6 @@ please adhere to these guidelines:
  (mfs-search-interrupted "Søgning afbrudt.")
 
  ;;; reverting a file
-;! (error-reverting "DrScheme - Fejl ved gendanning")
-;! (could-not-read "kunne ikke læse \"~a\"")
  (are-you-sure-revert
   "Er du sikker på, at du vil gendanne denne fil? En gendannen kan ikke fortrydes.")
  (are-you-sure-revert-title "Gendan?")
@@ -652,7 +585,6 @@ please adhere to these guidelines:
  (paste-menu-item "&Indsæt")
 
  (clear-info "Slet de valgte elementer uden at påvirke klippebordet eller indsætning")
-;! (clear-menu-item-others "Rens")
  (clear-menu-item-windows "&Rens")
 
  (select-all-info "Marker alt")
@@ -685,19 +617,15 @@ please adhere to these guidelines:
 
  ;; menu items in the "special" menu
  (insert-text-box-item "Indsæt tekstkasse")
-;! (insert-pb-box-item   "Indsæt pasteboard-kasse")
  (insert-image-item    "Indsæt billede...")
  (insert-comment-box-menu-item-label "Indsæt kommentarkasse")
  (insert-lambda "Indsæt &Lambda")
-;! (insert-delta "Indsæt &Delta (define)")
 
  (wrap-text-item       "Ombryd tekst")
 
  (windows-menu-label "&Vinduer")
  (bring-frame-to-front "Skift til andet vindue")       ;;; title of dialog
  (bring-frame-to-front... "Skift til andet vindue...") ;;; corresponding title of menu item
-;! (next-window "Næste vindue")
-;! (previous-window "Forrige vindue")
  (most-recent-window "Sidst besøgte vindue")
 
  (view-menu-label "&Vis")
@@ -773,7 +701,6 @@ please adhere to these guidelines:
 
  ;;; tools
  (invalid-tool-spec "Værkstøjsspecifikationen i collection ~a's info.ss filen er ugyldig. Forventede enten en streng eller en ikke-tom liste af strenge, fik: ~e")
-;! (error-loading-tool-title "DrScheme - Fejl under hentning af værktøj ~s; ~s")
  (error-invoking-tool-title "Fejl ved kørsel af værktøj ~s;~s")
  (tool-tool-names-same-length "forventede `tool-names' og `tools' var to lister af samme længde i info.ss for ~s, fik ~e og ~e")
  (tool-tool-icons-same-length  "forventede `tool-icons' og `tools' var to lister af samme længde i info.ss  for ~s, fik ~e and ~e")
@@ -849,17 +776,11 @@ please adhere to these guidelines:
  (create-executable-menu-item-label "Lav binær kørselfil...")
  (create-executable-title "Lav binær kørselsfil")
  (must-save-before-executable "Du skal gemme dit program, før du laver en binær fil")
-;! (save-an-executable "Gem en selvstændig kørselsfil (binary)")
  (save-a-mred-launcher "Gem en MrEd-starter")
  (save-a-mzscheme-launcher "Gem en MzScheme-starter")
  (save-a-mred-stand-alone-executable "Gem en selvstændig MrEd-kørselsfil")
  (save-a-mzscheme-stand-alone-executable "Gen en selvstændig MzScheme kørselsfil")
  (definitions-not-saved "Definitionsvinduet har ikke været gemt. Den binære kørselsfil vil bruge den senest gemte version af definitionsvinduet. Fortsæt?")
-;! (inline-saved-program-in-executable?  "Indlejr det gemte program i en binær kørselsfil? Hvis ja, så kan du kopiere kørselsfilen til en anden ~a computer, men kørselsfilen vil være ret stor. Hvis ikke, kan du ikke kopiere det gemte program til en anden computer, men den vil være meget mindre. I tilgift, hvis ikke, vil kørselsfilen bruge den seneste version af programmet.")
-;! (use-mred-binary?
-;!  "Brug mred til denne kørselsfil?\n\nHvis ja, så kan dit program bruge biblioteket (lib \"mred.ss\" \"mred\"). Hvis nej, så vil DrScheme bruge mzscheme til kørselsfilen and du kan ikke bruge mred-biblioteket.\n\nHvis du er i tvivl, så vælg ja.")
-;! (inline-saved-program-in-executable/windows/path
-;!   "ADVARSEL! Den frembragte kørselsfil afhænger af tre DLL'er: libmred.dll, libmzsch.gll og libgc.dll, som findes i \n\n~a\n\nKørselsfilen finder DLL'erne enten i kørselsfilens mappe eller gennem miljøvariablen PATH.\n\nDa du installerede DrScheme, tilføjede installationsprogrammet mappen med DLL'erne til brugerens PATH. Vær opmærksom på konfigurationsændringer efter installationen.\n\nHvis du flytter kørselsfilen til en anden maskine, skal du også kopiere DLL'erne til den anden maskine --- enten til samme mappe som kørselsfilen, eller til en mappe i den anden maskines PATH.")
  (launcher "Starter")
  (stand-alone "Selvstænding")
  (executable-type "Type")
@@ -903,7 +824,6 @@ please adhere to these guidelines:
 
  ;; number snip popup menu
  (show-decimal-expansion "Vis som decimaltal")
-;! (show-fraction-view "Vis som brøk")
  (show-mixed-fraction-view "Vis som blandet tal")
  (show-improper-fraction-view "Vis som uægte brøk")
  (show-more-decimal-places "Vis flere decimaler")
@@ -912,9 +832,7 @@ please adhere to these guidelines:
  (select-a-teachpack "Vælg undervisningspakke")
  (clear-teachpack "Fjern undervisningspakken ~a")
  (teachpack-error-label "DrScheme - Undervisningspakkefejl")
-;! (teachpack-dne/cant-read "Undervisningspakkefilen ~a findes ikke, eller er ikke læselig.")
  (teachpack-didnt-load "Undervisningspakkefilen ~a blev ikke hentet rigtigt.")
-;! (teachpack-error-invoke "Undervisningspakkefilen ~a gav en fejl ved kørsel af undervisningspakke...")
  (add-teachpack-menu-item-label "Tilføj Undervisningspakke")
  (clear-all-teachpacks-menu-item-label "Fjern alle undervisningspakker")
  (drscheme-teachpack-message-title "DrScheme Undervisningspakke")
@@ -939,13 +857,10 @@ please adhere to these guidelines:
  (debugging "Debugging")
  (debugging-and-profiling "Debugning og profilering")
  (test-coverage "Syntaktisk dækning af testsuiten")
-;! (whole/fractional-exact-numbers-label "Skriv tal som brøker")
-;! (booleans-as-true/false-label "Skriv sandhedsværdier som true og false")
  (show-details-button-label "Vis detaljer")
  (hide-details-button-label "Skjul detaljer")
  (choose-language-menu-item-label "Vælg sprog...")
  (revert-to-language-defaults "Vend tilbage til standardsproget")
-;! (language-docs-button-label "Sprogdokumentation")
  (fraction-style "Brøkvisning")
  (use-mixed-fractions "Uægte brøker")
  (use-repeating-decimals "Periodeiske decimalbrøker")
@@ -954,15 +869,6 @@ please adhere to these guidelines:
 
  ;; startup wizard screen language selection section
  (please-select-a-language "Vælg et sprog")
-;! (show-all-languages "Vis alle sprog")
-;! (show-drscheme-usage-questions "Vis DrScheme-brugsspørgsmål")
-;! (are-you...-kind-of-drscheme-user "Bruger du...")
-;! (use-with-htdp "... DrScheme sammen med bogen How to Design Programs?")
-;! (use-seasoned "... som en rutineret PLT Schemer?")
-;! (use-other "... DrScheme af andre årsager?")
-;! (use-eopl "... DrScheme sammen med bogen Essentials of Programming Languages?")
-;!  (pl-lang-choice-format "Startsprog: ~a")
-;!  (choose-new-language-before-running "Vælg et nyt sprog før kørslen.")
 
  ;;; languages
  (beginning-student "Begynder")
@@ -975,9 +881,7 @@ please adhere to these guidelines:
  (intermediate/lambda-one-line-summary "Øvet med funktioner af højere orden")
  (advanced-student "Rutineret")
  (advanced-one-line-summary "Øvet med lambda og mutation")
-;! (full-language "Fuldstændig") ;; also in the HtDP languages section
  (how-to-design-programs "How to Design Programs") ;; should agree with MIT Press on this one...
-;! (r5rs-like-languages "R5RS-lignende")
  (pretty-big-scheme "Temmelig omfattende Scheme (inklusiv MrEd og Avanceret)")
  (pretty-big-scheme-one-line-summary "Grafisk, med mange standardbiblioteker")
  (r5rs-lang-name "Standard (R5RS)")
@@ -1001,7 +905,6 @@ please adhere to these guidelines:
   
   ; next two are before and after a language
   (start-with-before "Begynd med ")
-;!  (start-with-after ".")
 
   (seasoned-plt-schemer? "Rutineret PLT-Schemer?")
   (looking-for-standard-scheme? "Leder efter standard-Scheme?")
@@ -1043,7 +946,6 @@ please adhere to these guidelines:
  (profiling-update "Opdater profil")
  (profiling-col-percent-time "% tid")
  (profiling-col-function "Funktion")
-;! (profiling-col-name "Navn")
  (profiling-col-time-in-msec "millisekunder")
  (profiling-col-calls "Kald")
  (profiling-show-profile "Vis profil")
@@ -1086,28 +988,6 @@ please adhere to these guidelines:
  (kill? "Ihjel?")
 
  ;;; version checker
-;! (vc-wizard-check-note 
-;!"Den version, du er ved at installere, er måske ikke den seneste.\n Hvis du vil kan DrScheme tjekke det for dig.")
-;! (vc-wizard-check-button "Tjek om der findes en opdatering")
-;! (vc-update-check "Opdateringstjek")
-;! (vc-please-wait "Vent venligst")
-;! (vc-connecting-version-server "Skaber forbindelse til PLT's versionsserver")
-;! (vc-network-timeout "Netværkstimeout")
-;! (vc-cannot-connect  "Kan ikke skabe forbindelse til PLT's versionsserver")
-;! (vc-network-failure "Netværksfejl")
-;! (vc-old-binaries "De instalerede binaries for DrScheme (eller MzScheme) er ikke up-to-date")
-;! (vc-binary-information-format "Installeret binær version: ~a (iteration ~a)")
-;! (vc-details-format "~a~nDetaljer:~n~a")
-;! (vc-details-text "Detaljer:~n")
-;! (vc-error-format "Fejl: ~a") 
-;! (vc-current-format "~a v.~a (iteration ~a) er up-to-date")
-;! (vc-update-format "~a v.~a (iteration ~a) behøver opdatering til v.~a (iteration ~a)")
-;! (vc-binary-name "Binær")
-;! (vc-updates-available "Opdateringer kan hentes hos")
-;! (vc-latest-binary-information-format "Sidste offentliggjorte version: ~a (iteration ~a)")
-;! (vc-update-dialog-title "PLT opdateringsstatus")
-;! (vc-need-update-string "En eller flere installerede PLT software-pakker behøver opdatering")
-;! (vc-no-update-string "Alle installerede softwarepakker fra PLT er allerede opdaterede")
 
  ;; special menu
  (special-menu "Speciel")
@@ -1149,8 +1029,6 @@ please adhere to these guidelines:
  (mrflow-button-title "Analyser")
  ;(mrflow-unknown-style-delta-error-title "Unknown Box Style Delta")
  ;(mrflow-unknown-style-delta-error "Unknown box style delta: ~a")
-;! (mrflow-coloring-error-title "Ukendt farve")
-;! (mrflow-coloring-error "Der er ikke defineret en stil for farven: ~a")
  (mrflow-popup-menu-show-type "Vis type")
  (mrflow-popup-menu-hide-type "Skjul type")
  (mrflow-popup-menu-show-errors "Vis fejl")
@@ -1173,7 +1051,6 @@ please adhere to these guidelines:
  ;(snips-and-arrows-changing-terms-warning "Changing terms in an editor containing snips cannot be undone.  You can either cancel this action, remove the snips, and try the change again, or you can continue with the change, in which case the change will not be undoable (all others changes made before and afterward will still be undoable though).")
  (snips-and-arrows-hide-all-snips-in-editor "Skjul alle snips i editoren")
   
-;! (xml-tool-menu "XML")
  (xml-tool-insert-xml-box "Indsæt XML-kasse")
  (xml-tool-insert-scheme-box "Indsæt Scheme-kasse")
  (xml-tool-insert-scheme-splice-box "Indsæt Scheme-splejningskasse (Splice Box)")
@@ -1205,8 +1082,6 @@ please adhere to these guidelines:
 
   
  (dialog-back "Tilbage")
-;! (wizard-next "Næste")
-;! (wizard-finish "Færdig")
 
 
  ;; warnings about closing a drscheme frame when the program
@@ -1259,7 +1134,6 @@ please adhere to these guidelines:
   ;; Errors
   (test-case-empty-error "Tomt test")
   (test-case-too-many-expressions-error "For mange udtryk i testen.")
-;!  (test-case-not-at-top-level "Testkassen ikke i topniveau")
   ;; Dr. Scheme window menu items
   (test-case-insert "Indsæt test")
   (test-case-disable-all "Slå alle tests fra")

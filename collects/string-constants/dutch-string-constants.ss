@@ -46,26 +46,19 @@
  (bug-report-field-summary "Samenvatting")
  (bug-report-field-severity "Ernst")
  (bug-report-field-class "Aard")
-;! (bug-report-field-priority "Belang")
  (bug-report-field-description "Omschrijving")
  (bug-report-field-reproduce1 "Hoe te")
  (bug-report-field-reproduce2 "veroorzaken")
  (bug-report-field-environment "Omgeving")
-;! (bug-report-field-tools "Tools") ; <**> -- Where is this used?
  (bug-report-field-docs-installed "Geïnstalleerde documentatie") ; if allowed, add \n
-;! (bug-report-field-language "Programmeertaal")
-;! (bug-report-field-teachpacks "Lespakketten")
  (bug-report-field-collections "Collecties")
  (bug-report-field-human-language "Spreektaal")
  (bug-report-field-version "Versie")
  (bug-report-synthesized-information "Systeeminformatie")  ;; dialog title
  (bug-report-show-synthesized-info "Toon systeeminformatie")
  (bug-report-submit "Stuur")
-;! (sending-bug-report "Bezig de defectmelding te versturen")
  (error-sending-bug-report "Fout bij het versturen van de defectmelding")
  (error-sending-bug-report-expln "Het versturen van de defectmelding mislukte.  Mocht uw internetverbinding verder goed werken, ga dan naar:\n\n    http://bugs.plt-scheme.org/\n\nen verstuur de melding via het webformulier.  Sorry voor het ongemak.\n\nDe foutmelding is:\n~a")
-;! (bug-report-sent "defectmelding verzonden")
-;! (bug-report-sent-detail "Dank u voor de melding.  Als u niet binnen 30 minuten een bevestigingsmail ontvangt, mail dan naar scheme@plt-scheme.org.")
  (illegal-bug-report "Ongeldige defectmelding")
  (pls-fill-in-field "Gelieve het \"~a\"-veld in te vullen")
  (malformed-email-address "Onmogelijk emailadres")
@@ -103,7 +96,6 @@
 
  ; these appear on subsequent lines in the `Help|Welcome to DrScheme' dialog.
  (welcome-to-drscheme "Welkom bij DrScheme")
-;! (version/language "versie ~a, ~a")
 
  (goto-line "Ga naar regel")
  (goto-line-invalid-number
@@ -115,11 +107,9 @@
   "WAARSCHUWING: Interactie- en definitievenster komen niet overeen.  Druk op Doen!.")
  (file-is-not-saved "Het bestand \"~a\" is niet opgeslagen.")
  (save "Opslaan")
-;! (please-choose-either "Gelieve te kiezen tussen \"~a\" en \"~a\"")
  (close-anyway "Toch sluiten")
  (clear-anyway "Toch wissen") ; <**> -- check with actual usage
 
-;! (url "URL")
  (url: "URL:")
  (open-url... "Open URL...")
  (open-url "Open URL")
@@ -180,7 +170,6 @@
  (browser "Browser")
  (choose-browser "Kies een surfer") ; -- translated as Internet browser
  (no-browser "Geen")
-;! (cannot-display-url "Kan URL ~s niet tonen: ~a")
  (install? "Installeren?")  ;; if a .plt file is found (title of dialog)
  (you-have-selected-an-installable-package "U hebt een installeerbaar pakket gekozen.")
  (do-you-want-to-install-it? "Wilt u het installeren?")
@@ -193,7 +182,6 @@
  (downloading-file... "Bestand aan het ophalen...")
  (package-was-installed "Het pakket is geïnstalleerd.")
  (download-was-saved "Het opgehaalde bestand is opgeslagen.")
-;! (getting-page "Getting Page") ;; dialog title
 
  (install-plt-file-menu-item... "Installeer .plt-bestand...")
  (install-plt-file-dialog-title "Installeer .plt-bestand")
@@ -211,9 +199,6 @@
  (about-drscheme-frame-title "Omtrent DrScheme")
  (take-a-tour "Rondleiding!")
  (release-notes "Versienotities")
-;! (parenthetical-last-version "(vorige versie ~a)")
-;! (parenthetical-last-language "(vorige taal ~a)")
-;! (parenthetical-last-version/language "(vorige versie ~a, taal ~a)")
  
  
  ;;; save file in particular format prompting.
@@ -224,11 +209,8 @@
  
  ;;; preferences
  (preferences "Voorkeuren")
-;! (saving-preferences "Voorkeuren opslaan")
-;! (error-unmarshalling "Error unmarshalling ~a preference") ; <**> -- What does that mean?
  (error-saving-preferences "Fout bij opslaan voorkeuren: ~a")
  (error-reading-preferences "Fout bij lezen voorkeuren")
-;! (expected-list-of-length2 "verwachtte een lijst van 2 lang")
  (scheme-prefs-panel-label "Scheme")
  (warnings-prefs-panel-label "Waarschuwingen")
  (editor-prefs-panel-label "Bewerken")
@@ -246,7 +228,6 @@
  (display-line-numbers "Toon regelnummers (geen letternummers) in buffer") ; -- 'buffer' is not wrong, but unclear
  (enable-keybindings-in-menus "Gebruik sneltoetsen in menus")
  (automatically-to-ps "Automatically print to postscript file")
-;! (use-mdi "Vensters in vensters") ;;; ms windows only -- use that window in a window thingy
  (separate-dialog-for-searching "Use separate dialog for searching")
  (reuse-existing-frames "Reuse existing frames when opening new files")
  (default-fonts "Verstek-lettertypen")
@@ -296,7 +277,6 @@
  (replace "Vervang")
  (dock "Aanhaken")
  (undock "Zweven")
-;! (use-separate-dialog-for-searching "Gebruik een apart zoekvenster")
  (replace&find-again "Vervang && Zoek opnieuw") ;;; need double & to get a single &
  (replace-to-end "Vervang tot einde")
  (forward "Voorwaarts")
@@ -324,8 +304,6 @@
  (mfs-search-interrupted "Zoeken afgebroken.")
  
  ;;; reverting a file
-;! (error-reverting "DrScheme - Fout bij herladen")
-;! (could-not-read "kan \"~a\" niet lezen")
  (are-you-sure-revert "Herladen kan niet ongedaan gemaakt worden.  Toch doen?")
  (are-you-sure-revert-title
   "Herladen?")
@@ -425,7 +403,6 @@
  (paste-menu-item "&Plakken")
 
  (clear-info "Gooi de selectie weg")
-;! (clear-menu-item-others "Wissen")
  (clear-menu-item-windows "&Wissen")
 
  (select-all-info "Selecteer het gehele document")
@@ -450,7 +427,6 @@
  (keybindings-sort-by-key "Op toets")
 
  (insert-text-box-item "Tekst")
-;! (insert-pb-box-item "Pasteboard Box") ;<**>
  (insert-image-item "Plaatje...")
  (insert-comment-box-menu-item-label "Commentaarblok")
  (wrap-text-item "Wrap Text") ; <**>
@@ -460,8 +436,6 @@
  (windows-menu-label "&Vensters")
  (bring-frame-to-front "Kies venster")       ;;; title of dialog
  (bring-frame-to-front... "Kies venster...") ;;; corresponding title of menu item
-;! (next-window "Volgend venster")
-;! (previous-window "Vorig venster")
 
  (view-menu-label "&Tonen")
  (show-overview "Overzicht") 
@@ -504,7 +478,6 @@
  
  ;;; tools <**>
  (invalid-tool-spec "The tool specification in collection ~a's info.ss file is invalid. Expected either a string or a non-empty list of strings, got: ~e")
-;! (error-loading-tool-title "DrScheme - Error loading tool ~s; ~s")
  (error-invoking-tool-title "Error invoking tool ~s;~s")
  (tool-tool-names-same-length
   "expected `tool-names' and `tools' to be lists of the same length, in info.ss file for ~s, got ~e and ~e")
@@ -572,14 +545,7 @@
  (create-executable-menu-item-label "Maak Exe...")
  (create-executable-title "Maak Exe")
  (must-save-before-executable "You must save your program before creating an executable.")
-;! (save-an-executable "Sla Exe op")
  (definitions-not-saved "The definitions window has not been saved. The executable will use the latest saved version of the definitions window. Continue?")
-;! (inline-saved-program-in-executable?
-;!  "Inline the saved program in the executable? If yes, you can copy the executable to another ~a computer but the executable will be quite large. If not, you cannot copy the executable to another computer, but it will be much smaller. Additionally, if not, the executable will load the latest version of the program.")
-;! (use-mred-binary?
-;!  "Use the mred binary for this executable?\n\nIf yes, your program can use the (lib \"mred.ss\" \"mred\") library. If no, DrScheme will use mzscheme as the binary for this executable and you cannot use that library.\n\nIf unsure, choose yes.")
-;! (inline-saved-program-in-executable/windows/path
-;!   "WARNING! The generated executable relies on three DLLs: libmred.dll, libmzsch.gll, and libgc.dll, which are located at\n\n~a\n\nThe executable finds the DLLs either in the executable's directory or through the PATH enviornment variable.\n\nWhen you installed DrScheme, the installer adjusted the user's PATH to include the directory where the DLLs were installed. Beware of configuration or user changes since installation.\n\nIf you move the executable to another machine, you must also copy the DLLs to the other machine --- either to the same directory as the executable, or to a directory in the other machine's PATH.") ; -- error in English: enviornment
  (launcher "Launcher")
  (stand-alone "Stand-alone")
  (executable-type "Type")
@@ -613,16 +579,13 @@
 
  ;; number snip popup menu
  (show-decimal-expansion "Toon als decimaal getal")
-;! (show-fraction-view "Toon als breuk")
  (show-more-decimal-places "Toon meer decimalen")
  
  ;;; Teachpack messages
  (select-a-teachpack "Kies een lespakket")
  (clear-teachpack "Verwijder lespakket ~a")
  (teachpack-error-label "DrScheme - fout in lespakket") ; -- translated as "error in Teachpack".
-;! (teachpack-dne/cant-read "Lespakket ~a bestaat niet of is onleesbaar.")
  (teachpack-didnt-load "Lespakket ~a niet correct geladen.")
-;! (teachpack-error-invoke "Lespakket ~a veroorzaakte bij aanroep een fout.")
  (add-teachpack-menu-item-label "Lespakket toevoegen...")
  (clear-all-teachpacks-menu-item-label "Alle lespakketten verwijderen")
  (teachpack-not-only-one-import "Lespakket unit/sig in ~a moet precies één 'import' hebben.") ; <**> -- ??
@@ -646,13 +609,10 @@
  (no-debugging-or-profiling "Geen ontwikkelhulp")
  (debugging "Alleen foutvinden")
  (debugging-and-profiling "Foutvinden en klokken")
-;! (whole/fractional-exact-numbers-label "Rationale getallen als breuken") ; -- 'rational numbers as fractions'
-;! (booleans-as-true/false-label "Schrijf true/false in plaats van #T/#F")
  (show-details-button-label "Toon details")
  (hide-details-button-label "Toon details niet")
  (choose-language-menu-item-label "Kies taal...")
  (revert-to-language-defaults "Herstel verstekwaarden")
-;! (language-docs-button-label "Taaldocumenten")
  (fraction-style "Breukweergave")
  (use-mixed-fractions "Gemengde breuken")
  (use-repeating-decimals "Repeterende breuken")
@@ -671,9 +631,7 @@
  (intermediate/lambda-one-line-summary "Middenmoot, plus hogere-ordefuncties")
  (advanced-student "Gevorderde")
  (advanced-one-line-summary "Middenmoot, plus lambda en mutatie")
-;! (full-language "Compleet") ;; also in the HtDP languages section
  (how-to-design-programs "How to Design Programs") ;; should agree with MIT Press on this one...
-;! (r5rs-like-languages "R5RS-achtig")
  (pretty-big-scheme "Vrij groot (bevat MrEd en Gevorderde)")
  (pretty-big-scheme-one-line-summary "Inclusief syntaxis and functies van de HtDP-talen")
  (r5rs-lang-name "Standaard (R5RS)")
@@ -710,7 +668,6 @@
  (profiling-update "Werk klokgegevens bij")
  (profiling-col-percent-time "% Tijd")
  (profiling-col-function "Functie")
-;! (profiling-col-name "Naam")
  (profiling-col-time-in-msec "Msec")
  (profiling-col-calls "Aanroepen")
  (profiling-show-profile "Klokgegevens")
@@ -742,25 +699,6 @@
  (kill? "Beëindigen?")
 
  ;;; version checker
-;! (vc-update-check "Versie bijwerken")
-;! (vc-please-wait "Even wachten a.u.b.")
-;! (vc-connecting-version-server "Legt verbinding met PLT versieleverancier")
-;! (vc-network-timeout "Netwerk plat") 
-;! (vc-cannot-connect  "Geen verbinding met PLT versieleverancier")
-;! (vc-network-failure "Networkprobleem")
-;! (vc-old-binaries "Binaire code voor DrScheme (of MzScheme) is verouderd")
-;! (vc-binary-information-format "Binaire code heeft versie: ~a (stap ~a)")
-;! (vc-details-format "~a~nDetails:~n~a")
-;! (vc-details-text "Details:~n")
-;! (vc-error-format "Fout: ~a") 
-;! (vc-current-format "~a v.~a (stap ~a) is bij")
-;! (vc-update-format "~a v.~a (stap ~a) moet bijgewerkt worden tot v.~a (stap ~a)")
-;! (vc-binary-name "Binair") ; <**> - translated as adjective.  Actual use not checked.
-;! (vc-updates-available "Nieuwere versies verkrijgbaar te")
-;! (vc-latest-binary-information-format "Jongste vrijgegeven versie: ~a (stap ~a)")
-;! (vc-update-dialog-title "Status PLT-versie")
-;! (vc-need-update-string "Sommige PLT-programmatuur is verouderd")
-;! (vc-no-update-string "Alle geïnstalleerde PLT-programmatuur is bij")
 
  ;; special menu
  (special-menu "Invoegen")
@@ -788,8 +726,6 @@
  (mrflow-button-title "Analyseer")
  ;(mrflow-unknown-style-delta-error-title "Unknown Box Style Delta")
  ;(mrflow-unknown-style-delta-error "Unknown box style delta: ~a")
-;! (mrflow-coloring-error-title "Onbekende kleur")
-;! (mrflow-coloring-error "Geen stijl opgegeven voor kleur: ~a")
  (mrflow-popup-menu-show-type "Toon type")
  (mrflow-popup-menu-hide-type "Toon type niet")
  (mrflow-popup-menu-show-errors "Toon fouten")
@@ -805,7 +741,6 @@
  ;(mrflow-language-primitives-error-title "Fout in basisfuncties")
  ;(mrflow-language-primitives-error "Onjuiste bestandsnaam voor typentabel basisfuncties: ~a")
 
-;! (xml-tool-menu "XML")
  (xml-tool-insert-xml-box "XMLblok")
  (xml-tool-insert-scheme-box "Schemeblok")
  (xml-tool-insert-scheme-splice-box "Scheme Splice Box")

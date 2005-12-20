@@ -145,15 +145,11 @@ please adhere to these guidelines:
  (bug-report-field-summary "Summary")
  (bug-report-field-severity "Severity")
  (bug-report-field-class "Class")
-;! (bug-report-field-priority "Priority")
  (bug-report-field-description "Description")
  (bug-report-field-reproduce1 "Steps to")
  (bug-report-field-reproduce2 "Reproduce")
  (bug-report-field-environment "Environment")
-;! (bug-report-field-tools "Tools")
  (bug-report-field-docs-installed "Docs Installed")
-;! (bug-report-field-language "Language")
-;! (bug-report-field-teachpacks "Teachpacks")
  (bug-report-field-collections "Collections")
  (bug-report-field-human-language "Human Language")
  (bug-report-field-version "Version")
@@ -161,11 +157,8 @@ please adhere to these guidelines:
  (bug-report-show-synthesized-info "Show Synthesized Info")
  (bug-report-submit "Submit")
  (bug-report-submit-menu-item "Submit Bug Report") ;; in Help Menu (drs & help desk)
-;! (sending-bug-report "Sending Bug Report")
  (error-sending-bug-report "Error Sending Bug Report")
  (error-sending-bug-report-expln "An error occurred when sending this bug report. If your internet connection is otherwise working fine, please visit:\n\n    http://bugs.plt-scheme.org/\n\nand submit the bug via our online web-form. Sorry for the difficulties.\n\nThe error message is:\n~a")
-;! (bug-report-sent "Bug Report Sent")
-;! (bug-report-sent-detail "Thanks for the report. You should receive a confirmation email in the next 30 minutes. If you do not, send email to scheme@plt-scheme.org.")
  (illegal-bug-report "Illegal Bug Report")
  (pls-fill-in-field "Please fill in the \"~a\" field")
  (malformed-email-address "Malformed email address")
@@ -195,9 +188,7 @@ please adhere to these guidelines:
  (cs-mouse-over-import "binding ~s imported from ~s")
 
  (cs-lexical-variable "lexical variable")
-;! (cs-lexical-syntax "lexical syntax")
  (cs-imported-variable "imported variable")
-;! (cs-imported-syntax "imported syntax")
 
  ;;; info bar at botttom of drscheme frame
  (collect-button-label "GC")
@@ -216,7 +207,6 @@ please adhere to these guidelines:
 
  ; these appear on subsequent lines in the `Help|Welcome to DrScheme' dialog.
  (welcome-to-drscheme "Welcome to DrScheme")
-;! (version/language "version ~a, ~a")
 
  (goto-line "Goto line")
  (goto-line-invalid-number
@@ -235,7 +225,6 @@ please adhere to these guidelines:
   
  (file-is-not-saved "The file \"~a\" is not saved.")
  (save "Save")
-;! (please-choose-either "Please choose either \"~a\" or \"~a\"")
  (close-anyway "Close Anyway")
  (clear-anyway "Clear Anyway")
 
@@ -264,7 +253,6 @@ please adhere to these guidelines:
  (syntax-coloring-choose-color "Choose a color for ~a")
  (preferences-colors "Colors") ;; used in the preferences dialog
  
-;! (url "URL")
  (url: "URL:")
  (open-url... "Open URL...")
  (open-url "Open URL")
@@ -275,18 +263,9 @@ please adhere to these guidelines:
  ;; Help Desk
  (help "Help")
  (help-desk "Help Desk")
-;! (plt:hd:search-results "Search results")
  (plt:hd:search "Search")
-;! (plt:hd:search-for "Search for")
-;! (plt:hd:lucky "Lucky!")
  (plt:hd:feeling-lucky "Feeling Lucky")
-;! (plt:hd:stop "Stop")   
-;! (plt:hd:options "Options") 
-;! (plt:hd:configure "Configure")
  (plt:hd:home "Help Desk home") 
-;! (plt:hd:show-manuals "Show manuals") 
-;! (plt:hd:send-bug-report "Send bug report")
-;! (plt:hd:query-bug-reports "Query bug reports")
  ; next 3 are popup menu choices in help desk search frame
  (plt:hd:search-for-keyword "Keyword entry")
  (plt:hd:search-for-keyword-or-index "Keyword or index entry")
@@ -295,41 +274,14 @@ please adhere to these guidelines:
  (plt:hd:containing-match "Containing match")
  (plt:hd:regexp-match "Regexp match")
  (plt:hd:find-docs-for "Find docs for:")
-;! (plt:hd:nothing-found-for-search-key "Nothing found for \"~a\".")
-;! (plt:hd:searching "Searching...")
-;! (plt:hd:search-stopped "[Search stopped.]")
  (plt:hd:search-stopped-too-many-matches "[Search aborted: too many matches]")
  (plt:hd:nothing-found-for "Nothing found for ~a")
-;! (plt:hd:error-finding-docs "Could not find documentation.\n\n~a")
  (plt:hd:and "and")
  (plt:hd:refresh "refresh")
  (plt:hd:refresh-all-manuals "refresh all manuals")
  (plt:hd:manual-installed-date "(installed ~a)")
  ; Help Desk configuration
-;! (plt:hd:configuration "PLT Help Desk configuration")
-;! (plt:hd:no-frames "No Frames")
-;! (plt:hd:use-frames "Use Frames")
-;! (plt:hd:use-html-frames "Use HTML frames")
-;! (plt:hd:search-pane-options "Search pane options")
-;! (plt:hd:height "Height")
-;! (plt:hd:bg-color "Background color")
-;! (plt:hd:pixels "pixels")
-;! (plt:hd:text-color "Text color")
-;! (plt:hd:link-color "Link color")
-;! (plt:hd:text-sample "Search pane text appears in this color")
-;! (plt:hd:link-sample "Search pane links appear in this color")
-;! (plt:hd:save-changes "Save changes")
-;! (plt:hd:reset "Reset")
-;! (plt:hd:defaults "Defaults")
-;! (plt:hd:javascript-note
-;!    "The selections you make will be shown here if you have Javascript enabled and a recent, standards-compliant browser.")
  ;; refreshing manuals
-;! (plt:hd:refresh-downloading "Downloading ~a")
-;! (plt:hd:refresh-installing "Installing ~a")
-;! (plt:hd:refresh-progress "PLT manual download progress")
-;! (plt:hd:refresh-done "Done refreshing manuals")
-;! (plt:hd:refresh-installation-log "Installation log")
-;! (plt:hd:refresh-stopped "PLT manuals refresh stopped")
  (plt:hd:refreshing-manuals "Re-downloading Manuals")
  (plt:hd:refresh-downloading... "Downloading ~a...")
  (plt:hd:refresh-deleting... "Deleting old version of ~a...")
@@ -349,9 +301,6 @@ please adhere to these guidelines:
   (plt:hd:external-link-in-help "External URLs in Help")
   (plt:hd:use-homebrew-browser "Use Help Desk browser for external URLs")
   (plt:hd:new-help-desk "New Help Desk")
-;!  (plt:hd:teaching-manuals "Student manuals")
-;!  (plt:hd:professional-manuals "Professional manuals")
-;!  (plt:hd:all-manuals "All manuals")
 
   ;; in the Help Desk language dialog, title on the right.
   (plt:hd:manual-search-ordering "Manual Search Order")
@@ -374,11 +323,8 @@ please adhere to these guidelines:
  (browser-command-line-label "Command Line:") ; label for radio button that is followed by text boxes
  (choose-browser "Choose a Browser")
  (no-browser "Ask Later")
-;! (use-internal-browser-for-help "Read help with internal PLT browser") ; radio-button label
-;! (use-external-browser-for-help "Read help with external web browser") ; radio-button label
  (browser-cmdline-expl-line-1 "(Command line formed by concatenating pre-text, URL,") ; explanatory text for dialog, line 1
  (browser-cmdline-expl-line-2 "and post-text, with no extra spaces between them.)") ; ... line 2. (Anyone need more lines?)
-;! (cannot-display-url "Cannot display URL ~s: ~a")
  (install? "Install?")  ;; if a .plt file is found (title of dialog)
  (you-have-selected-an-installable-package "You have selected an installable package.")
  (do-you-want-to-install-it? "Do you want to install it?")
@@ -391,7 +337,6 @@ please adhere to these guidelines:
  (downloading-file... "Downloading file...")
  (package-was-installed "The package was installed.")
  (download-was-saved "The downloaded file was saved.")
-;! (getting-page "Getting Page") ;; dialog title
 
  (install-plt-file-menu-item... "Install .plt File...")
  (install-plt-file-dialog-title "Install .plt File")
@@ -413,9 +358,6 @@ please adhere to these guidelines:
  (about-drscheme-frame-title "About DrScheme")
  (take-a-tour "Take a Tour!")
  (release-notes "Release Notes")
-;! (parenthetical-last-version "(previous version ~a)")
-;! (parenthetical-last-language "(previous language ~a)")
-;! (parenthetical-last-version/language "(previous version ~a, language ~a)")
  
  
  ;;; save file in particular format prompting.
@@ -426,11 +368,8 @@ please adhere to these guidelines:
  
  ;;; preferences
  (preferences "Preferences")
-;! (saving-preferences "Saving Prefs")
-;! (error-unmarshalling "Error unmarshalling ~a preference")
  (error-saving-preferences "Error saving preferences: ~a")
  (error-reading-preferences "Error reading preferences")
-;! (expected-list-of-length2 "expected a list of length 2")
  (scheme-prefs-panel-label "Scheme")
  (warnings-prefs-panel-label "Warnings")
  (editor-prefs-panel-label "Editing")
@@ -450,12 +389,10 @@ please adhere to these guidelines:
  (enable-keybindings-in-menus "Enable keybindings in menus")
  (automatically-to-ps "Automatically print to PostScript file")
  (option-as-meta "Treat option key as meta") ;; macos/macos x only
-;! (use-mdi "Use MDI Windows") ;;; ms windows only -- use that window in a window thingy
  (separate-dialog-for-searching "Use separate dialog for searching")
  (reuse-existing-frames "Reuse existing frames when opening new files")
  (default-fonts "Default Fonts")
  (paren-match-color "Parenthesis highlight color") ; in prefs dialog
-;! (choose-color "Choose Color") ; in prefs dialog
  (online-coloring-active "Color syntax interactively")
  (open-files-in-tabs "Open files in separate tabs (not separate windows)")
  (show-interactions-on-execute "Automatically open interactions window when running a program")
@@ -465,7 +402,6 @@ please adhere to these guidelines:
  (choose-a-background-color "Please choose a background color")
 
  ; title of the color choosing dialog
-;! (choose-paren-highlight-color "Choose Parenthesis Highlight Color")
 
  ; should have entire alphabet
  (font-example-string "The quick brown fox jumped over the lazy dogs.") 
@@ -518,7 +454,6 @@ please adhere to these guidelines:
  (replace "Replace")
  (dock "Dock")
  (undock "Undock")
-;! (use-separate-dialog-for-searching "Use separate dialog for searching")
  (replace&find-again "Replace && Find Again") ;;; need double & to get a single &
  (replace-to-end "Replace to End")
  (forward "Forward")
@@ -546,8 +481,6 @@ please adhere to these guidelines:
  (mfs-search-interrupted "Search aborted.")
  
  ;;; reverting a file
-;! (error-reverting "DrScheme - Error Reverting")
-;! (could-not-read "could not read \"~a\"")
  (are-you-sure-revert
   "Are you sure that you want to revert this file? This change cannot be undone.")
  (are-you-sure-revert-title
@@ -651,7 +584,6 @@ please adhere to these guidelines:
  (paste-menu-item "&Paste")
 
  (clear-info "Erase the selected items without affecting the clipboard or pasting")
-;! (clear-menu-item-others "Clear")
  (clear-menu-item-windows "&Delete")
 
  (select-all-info "Select the entire document")
@@ -684,19 +616,15 @@ please adhere to these guidelines:
   
  ;; menu items in the "special" menu
  (insert-text-box-item "Insert Text Box")
-;! (insert-pb-box-item "Insert Pasteboard Box")
  (insert-image-item "Insert Image...")
  (insert-comment-box-menu-item-label "Insert Comment Box")
  (insert-lambda "Insert λ")
-;! (insert-delta "Insert &Delta (define)")
 
  (wrap-text-item "Wrap Text")
 
  (windows-menu-label "&Windows")
  (bring-frame-to-front "Bring Frame to Front")       ;;; title of dialog
  (bring-frame-to-front... "Bring Frame to Front...") ;;; corresponding title of menu item
-;! (next-window "Next Window")
-;! (previous-window "Previous Window")
  (most-recent-window "Most Recent Window")
 
  (view-menu-label "&View")
@@ -771,7 +699,6 @@ please adhere to these guidelines:
  
  ;;; tools
  (invalid-tool-spec "The tool specification in collection ~a's info.ss file is invalid. Expected either a string or a non-empty list of strings, got: ~e")
-;! (error-loading-tool-title "DrScheme - Error loading tool ~s; ~s")
  (error-invoking-tool-title "Error invoking tool ~s;~s")
  (tool-tool-names-same-length
   "expected `tool-names' and `tools' to be lists of the same length, in info.ss file for ~s, got ~e and ~e")
@@ -848,19 +775,12 @@ please adhere to these guidelines:
  (create-executable-menu-item-label "Create Executable...")
  (create-executable-title "Create Executable")
  (must-save-before-executable "You must save your program before creating an executable.")
-;! (save-an-executable "Save an Executable")
  (save-a-mred-launcher "Save a MrEd Launcher")
  (save-a-mzscheme-launcher "Save a MzScheme Launcher")
  (save-a-mred-stand-alone-executable "Save a MrEd Stand-alone Executable")
  (save-a-mzscheme-stand-alone-executable "Save a MzScheme Stand-alone Executable")
 
  (definitions-not-saved "The definitions window has not been saved. The executable will use the latest saved version of the definitions window. Continue?")
-;! (inline-saved-program-in-executable?
-;!  "Inline the saved program in the executable? If yes, you can copy the executable to another ~a computer but the executable will be quite large. If not, you cannot copy the executable to another computer, but it will be much smaller. Additionally, if not, the executable will load the latest version of the program.")
-;! (use-mred-binary?
-;!  "Use the mred binary for this executable?\n\nIf yes, your program can use the (lib \"mred.ss\" \"mred\") library. If no, DrScheme will use mzscheme as the binary for this executable and you cannot use that library.\n\nIf unsure, choose yes.")
-;! (inline-saved-program-in-executable/windows/path
-;!   "WARNING! The generated executable relies on three DLLs: libmred.dll, libmzsch.gll, and libgc.dll, which are located at\n\n~a\n\nThe executable finds the DLLs either in the executable's directory or through the PATH enviornment variable.\n\nWhen you installed DrScheme, the installer adjusted the user's PATH to include the directory where the DLLs were installed. Beware of configuration or user changes since installation.\n\nIf you move the executable to another machine, you must also copy the DLLs to the other machine --- either to the same directory as the executable, or to a directory in the other machine's PATH.")
  (launcher "Launcher")
  (stand-alone "Stand-alone")
  (executable-type "Type")
@@ -904,7 +824,6 @@ please adhere to these guidelines:
 
  ;; number snip popup menu
  (show-decimal-expansion "View decimal expansion")
-;! (show-fraction-view "View as fraction")
  (show-mixed-fraction-view "View as mixed fraction")
  (show-improper-fraction-view "View as improper fraction")
  (show-more-decimal-places "Show more decimal places")
@@ -913,9 +832,7 @@ please adhere to these guidelines:
  (select-a-teachpack "Select a Teachpack")
  (clear-teachpack "Clear ~a Teachpack")
  (teachpack-error-label "DrScheme - Teachpack error")
-;! (teachpack-dne/cant-read "The teachpack file ~a does not exist or is not readable.")
  (teachpack-didnt-load "The teachpack file ~a did not load properly.")
-;! (teachpack-error-invoke "The teachpack file ~a raised an error when invoked.")
  (add-teachpack-menu-item-label "Add Teachpack...")
  (clear-all-teachpacks-menu-item-label "Clear All Teachpacks")
  (drscheme-teachpack-message-title "DrScheme Teachpack")
@@ -940,13 +857,10 @@ please adhere to these guidelines:
  (debugging "Debugging")
  (debugging-and-profiling "Debugging and profiling")
  (test-coverage "Syntactic test suite coverage")
-;! (whole/fractional-exact-numbers-label "Print numbers as fractions")
-;! (booleans-as-true/false-label "Print booleans using true and false")
  (show-details-button-label "Show Details")
  (hide-details-button-label "Hide Details")
  (choose-language-menu-item-label "Choose Language...")
  (revert-to-language-defaults "Revert to Language Defaults")
-;! (language-docs-button-label "Language Docs")
  (fraction-style "Fraction Style")
  (use-mixed-fractions "Mixed fractions")
  (use-repeating-decimals "Repeating decimals")
@@ -954,15 +868,6 @@ please adhere to these guidelines:
 
  ;; startup wizard screen language selection section
  (please-select-a-language "Please select a language")
-;! (show-all-languages "Show all languages")
-;! (show-drscheme-usage-questions "Show DrScheme usage questions")
-;!  (are-you...-kind-of-drscheme-user "Are you...")
-;! (use-with-htdp "... using DrScheme with How to Design Programs?")
-;! (use-seasoned "... a seasoned PLT Schemer?")
-;! (use-other "... using DrScheme for some other reason?")
-;! (use-eopl "... using DrScheme with Essentials of Programming Languages?")
-;!  (pl-lang-choice-format "Initial language: ~a")
-;!  (choose-new-language-before-running "Please choose a new language before running.")
   
   
  ;;; languages
@@ -976,9 +881,7 @@ please adhere to these guidelines:
  (intermediate/lambda-one-line-summary "Intermediate plus higher-order functions")
  (advanced-student "Advanced Student")
  (advanced-one-line-summary "Intermediate plus lambda and mutation")
-;! (full-language "Full") ;; also in the HtDP languages section
  (how-to-design-programs "How to Design Programs") ;; should agree with MIT Press on this one...
-;! (r5rs-like-languages "R5RS-like")
  (pretty-big-scheme "Pretty Big (includes MrEd and Advanced Student)")
  (pretty-big-scheme-one-line-summary "Adds syntax and functions from the HtDP languages")
  (r5rs-lang-name "Standard (R5RS)")
@@ -1002,7 +905,6 @@ please adhere to these guidelines:
   
   ; next two are before and after a language
   (start-with-before "Start with ")
-;!  (start-with-after ".")
 
   (seasoned-plt-schemer? "Seasoned PLT Schemer?")
   (looking-for-standard-scheme? "Looking for standard Scheme?")
@@ -1041,7 +943,6 @@ please adhere to these guidelines:
  (profiling-update "Update Profile")
  (profiling-col-percent-time "% Time")
  (profiling-col-function "Function")
-;! (profiling-col-name "Name")
  (profiling-col-time-in-msec "Msec")
  (profiling-col-calls "Calls")
  (profiling-show-profile "Show Profile")
@@ -1086,27 +987,6 @@ please adhere to these guidelines:
  ;; the next two are used in the initial wizard dialog.
  ;; Note that vc-wizard-check-prompt can (should) have newlines so
  ;; it will not make the dialog too wide.
-;! (vc-wizard-check-note "The version you are about to install may not be the latest\n one. If you would like, DrScheme can check for you.")
-;! (vc-wizard-check-button "Check for Updates")
-;! (vc-update-check "Update check")
-;! (vc-please-wait "Please wait")
-;! (vc-connecting-version-server "Connecting to PLT version server")
-;! (vc-network-timeout "Network timeout") 
-;! (vc-cannot-connect  "Can't connect to PLT version server")
-;! (vc-network-failure "Network failure")
-;! (vc-old-binaries "Installed binaries for DrScheme (or MzScheme) are not up-to-date")
-;! (vc-binary-information-format "Installed binary version: ~a (iteration ~a)")
-;! (vc-details-format "~a~nDetails:~n~a")
-;! (vc-details-text "Details:~n")
-;! (vc-error-format "Error: ~a") 
-;! (vc-current-format "~a v.~a (iteration ~a) is up-to-date")
-;! (vc-update-format "~a v.~a (iteration ~a) needs updating to v.~a (iteration ~a)")
-;! (vc-binary-name "Binary")
-;! (vc-updates-available "Updates are available at")
-;! (vc-latest-binary-information-format "Latest released version: ~a (iteration ~a)")
-;! (vc-update-dialog-title "PLT update status")
-;! (vc-need-update-string "One or more installed PLT software packages needs updating")
-;! (vc-no-update-string "All installed PLT software packages are up-to-date")
 
  ;; special menu
  (special-menu "S&pecial")
@@ -1148,8 +1028,6 @@ please adhere to these guidelines:
  (mrflow-button-title "Analyze")
  ;(mrflow-unknown-style-delta-error-title "Unknown Box Style Delta")
  ;(mrflow-unknown-style-delta-error "Unknown box style delta: ~a")
-;! (mrflow-coloring-error-title "Unknown Color")
-;! (mrflow-coloring-error "No style defined for color: ~a")
  (mrflow-popup-menu-show-type "Show Type")
  (mrflow-popup-menu-hide-type "Hide Type")
  (mrflow-popup-menu-show-errors "Show Errors")
@@ -1171,7 +1049,6 @@ please adhere to these guidelines:
  ;(snips-and-arrows-changing-terms-warning "Changing terms in an editor containing snips cannot be undone.  You can either cancel this action, remove the snips, and try the change again, or you can continue with the change, in which case the change will not be undoable (all others changes made before and afterward will still be undoable though).")
  (snips-and-arrows-hide-all-snips-in-editor "Hide all snips in editor")
 
-;! (xml-tool-menu "XML")
  (xml-tool-insert-xml-box "Insert XML Box")
  (xml-tool-insert-scheme-box "Insert Scheme Box")
  (xml-tool-insert-scheme-splice-box "Insert Scheme Splice Box")
@@ -1206,8 +1083,6 @@ please adhere to these guidelines:
  (debug-tool-button-name "Debug")
 
  (dialog-back "Back")
-;! (wizard-next "Next")
-;! (wizard-finish "Finish")
 
  ;; warnings about closing a drscheme frame when the program
  ;; might still be doing something interesting
@@ -1259,7 +1134,6 @@ please adhere to these guidelines:
   ;; Errors
   (test-case-empty-error "Empty test case")
   (test-case-too-many-expressions-error "Too many expressions in a test case.")
-;!  (test-case-not-at-top-level "Test case box not at top level")
   ;; Dr. Scheme window menu items
   (test-case-insert "Insert Test Case")
   (test-case-disable-all "Disable all Test Cases")
