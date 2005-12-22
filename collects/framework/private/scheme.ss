@@ -219,7 +219,7 @@
             (let loop ([snips (reverse snips)])
               (cond
                 [(null? snips) (void)]
-                [else (send text insert (car snips) pos pos)
+                [else (send text insert (send (car snips) copy) pos pos)
                       (loop (cdr snips))])))
           (send text end-edit-sequence)))
 
