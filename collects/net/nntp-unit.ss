@@ -44,7 +44,7 @@
 	(lambda (constructor format-string . args)
 	  (lambda exn-args
 	    (raise (apply constructor
-			  (apply format format-string args)
+			  (string->immutable-string (apply format format-string args))
 			  (current-continuation-marks)
 			  exn-args)))))
 
@@ -61,6 +61,7 @@
 	  [(receiver sender) (connect-to-server* receiver sender "unspecified"
 			                         "unspecified")]
 	  [(receiver sender server-name port-number)
+           (file-stream-buffer-mode sender 'line)
 	   (let ((communicator (make-communicator sender receiver server-name
 				                  port-number)))
 	     (let-values (((code response)
