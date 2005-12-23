@@ -235,8 +235,7 @@
 			 (let-values ([(new-label keymap) (calc-labels l)])
 			   (set! label (string->immutable-string l))
 			   (super-set-label new-label)
-			   (if (or (super-is-deleted?)
-				   (not (super-is-enabled?)))
+			   (if (super-is-deleted?)
 			       (send wx set-keymap keymap)
 			       (send wx swap-keymap menu keymap)))))])
       (override
