@@ -156,7 +156,7 @@
 
 (define* (input->output)
   ;; new buffer on every call in case of threading
-  (let* ([bufsize 4096] [buffer (make-string bufsize)])
+  (let* ([bufsize 4096] [buffer (make-bytes bufsize)])
     (let loop ()
       (let ([l (read-bytes-avail! buffer)])
         (unless (eof-object? l)
