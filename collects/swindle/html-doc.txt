@@ -1788,9 +1788,10 @@ expects a list of HTML objects as its first arguments (and again,
 optionally more keywords/values).  Finally, a convenient function is
 `make-defined-htmls' -- when called (with no arguments or
 keywords/values), it will go over all HTML objects in `*defined-htmls*',
-collected by `defhtml' forms, and create their files.  (Actually, it
-will check `*defined-html*' once it is done, since more HTML objects may
-be defined while creating pages.)
+collected by `defhtml' forms, and create their files.  Actually, it will
+empty `*defined-htmls*', and recheck it once it is done, since more HTML
+objects may be defined while creating pages.  `*all-html*' contains all
+html object and is never emptied.
 
 The following example is a complete script that will create three HTML
 files in the directory you run it from.  (The evaluation delay trick

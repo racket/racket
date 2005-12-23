@@ -746,6 +746,7 @@
 (defwrapper* ins:     )
 (defwrapper* del:     )
 (defwrapper* nobr:    )
+(defwrapper* nowrap:  )
 
 (defwrapper* big:     )
 (defwrapper* big~:    recform: ::tag 'big: ::1st-args ::n)
@@ -1097,8 +1098,10 @@
 ;; Website creation
 
 (define* *defined-htmls* '())
+(define* *all-htmls*     '())
 (define* (add-defined-html html)
-  (set! *defined-htmls* (cons html *defined-htmls*)))
+  (push! html *defined-htmls*)
+  (push! html *all-htmls*))
 
 (defsyntax* (html-obj! stx)
   (syntax-case stx ()
@@ -1218,7 +1221,7 @@
          [val (namespace-variable-value sym #f (lambda () #f))])
     (if (and val (list? val) (getarg val :name))
       val
-      (let loop ([hs *defined-htmls*])
+      (let loop ([hs *all-htmls*])
         (and (pair? hs) (let ([name (getarg (car hs) :name)])
                           (if (or (equal? str name)
                                   (equal? str (html-file-name name))
