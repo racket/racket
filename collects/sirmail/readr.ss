@@ -260,7 +260,7 @@
 									 main-frame
 									 ""
 									 '(password))])
-					      (unless p (error 'connect "connection cancelled"))
+					      (unless p (raise-user-error 'connect "connection cancelled"))
 					      p))])
 				(let*-values ([(imap count new) (let-values ([(server port-no)
 									      (parse-server-name (IMAP-SERVER)
@@ -323,8 +323,8 @@
 	  ;; This is really very unlikely, but we checked
 	  ;; to guard against disaster.
 	  (cleanup)
-	  (error 'connect "UID validity changed, ~a -> ~a! SirMail can't handle it."
-		 uid-validity v))
+	  (raise-user-error 'connect "UID validity changed, ~a -> ~a! SirMail can't handle it."
+	   uid-validity v))
 	(set! uid-validity v))
       
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -494,7 +494,7 @@
 					  (format "The message is ~s bytes.~nReally download?" size)
 					  main-frame))
 		  (status "")
-		  (error "download aborted"))))
+		  (raise-user-error "download aborted"))))
 	    (let*-values ([(imap count new?) (connect 'reuse break-bad break-ok)])
 	      (let ([body (with-handlers ([void
 					   (lambda (exn)
@@ -508,8 +508,8 @@
 					   '(uid body))])
 			       (if (equal? (caar reply) (message-uid v))
 				   (cadar reply)
-				   (error (string-append "server UID does not match local UID; "
-							 "update the message list and try again"))))
+				   (raise-user-error (string-append "server UID does not match local UID; "
+								    "update the message list and try again"))))
 			     (break-bad)))])
 		(status "Saving message ~a..." uid)
 		(with-output-to-file file
@@ -529,9 +529,10 @@
 	(status "Checking message mapping...")
 	(let ([ids (imap-get-messages imap (map message-position msgs) '(uid))])
 	  (unless (equal? (map car ids) (map message-uid msgs))
-	    (error 'position-check "server's position->id mapping doesn't match local copy. server: ~s local: ~s" 
-                   (map car ids) 
-                   (map message-uid msgs)))))
+	    (raise-user-error 
+	     'position-check "server's position->id mapping doesn't match local copy. server: ~s local: ~s" 
+	     (map car ids) 
+	     (map message-uid msgs)))))
       
       (define (remove-delete-flags imap)
 	(status "Removing old delete flags...")

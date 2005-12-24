@@ -1,4 +1,10 @@
 
+Version 300.2
+Added a "stack trace" to the default error display
+Added exn:fail:user and raise-user-error
+Made parameter/mark lookup amortized constant time,
+ instead of potentially O(stack depth)
+
 Version 300, December 2005
 Generalized network-address handling, includes IPv6
 Added ephemerons

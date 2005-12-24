@@ -5,8 +5,8 @@
 
 _Errortrace_ is a stack-trace-on-exceptions/profiler/coverage tool for
 MzScheme.  Errortrace is not a complete debugger, and a real debugger
-in DrScheme is expected soon; meanwhile, using errortrace might be
-better than nothing.
+in DrScheme is expected eventually; meanwhile, using errortrace might
+be better than MzScheme's limited stack-trace reporting.
 
 Quick instructions
 ------------------
@@ -21,7 +21,7 @@ Quick instructions
   2) When an exception occurs, the exception handler prints something
      like a stack trace, most recent contexts first
 
-The errortrace module is odd; don't import it into another module.
+The errortrace module is strange; don't import it into another module.
 Instead, the errortrace module is meant to be invoked from the
 top-level, so that it can install an evaluation handler, exception
 handler, etc.
@@ -60,12 +60,6 @@ is reported.
 
 The instrumentation for storing exception information slows most
 programs by a factor of 2 or 3.
-
-Do not load errortrace before writing .zo files.  Errortrace
-instruments S-expressions with unprintable values; this works fine if
-the instrumented S-expression is passed to the default eval handler,
-but neither the S-expression nor its byte-code form can be marshalled
-to a string.
 
 The `print-error-trace' procedure takes a port and exception and
 prints the errortrace-collected debugging information contained in the

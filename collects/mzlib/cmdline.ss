@@ -209,7 +209,7 @@
      [(program arguments table finish finish-help help)
       (parse-command-line program arguments table finish finish-help help
 			  (lambda (flag)
-			    (error (string->symbol program) "unknown flag: ~s" flag)))]
+			    (raise-user-error (string->symbol program) "unknown flag: ~s" flag)))]
      [(program arguments table finish finish-help help unknown-flag)
       (unless (string? program)
 	(raise-type-error 'parse-command-line "program name string" program))
@@ -425,26 +425,26 @@
 		      [c (length args)])
 		  (if (procedure-arity-includes? finish (add1 c))
 		      (apply finish options args)
-		      (error (string->symbol (format "~a" program))
-			     (format "expects~a on the command line, given ~a argument~a~a"
-				     (if (null? finish-help)
-					 " no arguments"
-					 (let ([s (open-output-string)])
-					   (parameterize ([current-output-port s])
-					     (print-args s finish-help finish))
-					   (let ([s (get-output-string s)])
-					     (if (equal? 2 (procedure-arity finish))
-						 (format " 1~a" s)
-						 s))))
-				     c
-				     (cond
-				      [(zero? c) "s"]
-				      [(= c 1) ": "]
-				      [else "s: "])
-				     (let loop ([args args])
-				       (if (null? args)
-					   ""
-					   (string-append (car args) " " (loop (cdr args))))))))))]
+		      (raise-user-error (string->symbol (format "~a" program))
+					(format "expects~a on the command line, given ~a argument~a~a"
+						(if (null? finish-help)
+						    " no arguments"
+						    (let ([s (open-output-string)])
+						      (parameterize ([current-output-port s])
+							(print-args s finish-help finish))
+						      (let ([s (get-output-string s)])
+							(if (equal? 2 (procedure-arity finish))
+							    (format " 1~a" s)
+							    s))))
+						c
+						(cond
+						 [(zero? c) "s"]
+						 [(= c 1) ": "]
+						 [else "s: "])
+						(let loop ([args args])
+						  (if (null? args)
+						      ""
+						      (string-append (car args) " " (loop (cdr args))))))))))]
 	     [call-handler
 	      (lambda (handler flag args r-acc k)
 		(let* ([a (procedure-arity handler)]
@@ -456,11 +456,11 @@
 				(sub1 a)
 				remaining)])
 		  (if (< remaining needed)
-		      (error (string->symbol (format "~a" program))
-			     "the ~s flag needs ~a argument~a, but ~a~a provided"
-			     flag needed (if (> needed 1) "s" "")
-                             (if (zero? remaining) "" "only ")
-			     remaining)
+		      (raise-user-error (string->symbol (format "~a" program))
+					"the ~s flag needs ~a argument~a, but ~a~a provided"
+					flag needed (if (> needed 1) "s" "")
+					(if (zero? remaining) "" "only ")
+					remaining)
 		      (let ([v (apply handler 
 				      flag
 				      (let loop ([n use][args args])
@@ -485,23 +485,24 @@
 		      (let ([set (caar table)])
 			(if (car set)
 			    (let ([flags (cdr set)])
-			      (error (string->symbol (format "~a" program))
-				     (let ([s (if (= 1 (length flags))
-						  (format "the ~a flag can only be specified once" (car flags))
-						  (format "only one instance of one flag from ~a is allowed" flags))])
-				       (if orig-multi
-					   (format "~a; note that ~s is shorthand for ~s, in contrast to ~s"
-						   s
-						   orig-multi
-						   (let loop ([prefix (string-ref orig-multi 0)]
-							      [flags (string->list (substring orig-multi 1 (string-length orig-multi)))]
-							      [sep ""])
-						     (if (null? flags)
-							 ""
-							 (format "~a~a~a~a" sep prefix (car flags)
-								 (loop prefix (cdr flags) " "))))
-						   (string-append (substring orig-multi 0 1) orig-multi))
-					   s))))
+			      (raise-user-error 
+			       (string->symbol (format "~a" program))
+			       (let ([s (if (= 1 (length flags))
+					    (format "the ~a flag can only be specified once" (car flags))
+					    (format "only one instance of one flag from ~a is allowed" flags))])
+				 (if orig-multi
+				     (format "~a; note that ~s is shorthand for ~s, in contrast to ~s"
+					     s
+					     orig-multi
+					     (let loop ([prefix (string-ref orig-multi 0)]
+							[flags (string->list (substring orig-multi 1 (string-length orig-multi)))]
+							[sep ""])
+					       (if (null? flags)
+						   ""
+						   (format "~a~a~a~a" sep prefix (car flags)
+							   (loop prefix (cdr flags) " "))))
+					     (string-append (substring orig-multi 0 1) orig-multi))
+				     s))))
 			    (set-car! set #t))))
 		    (call-handler (caddar table) flag args r-acc k)]
 		   [else (loop (cdr table))])))])

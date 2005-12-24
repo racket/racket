@@ -45,7 +45,7 @@
                                                 frame
                                                 ""
                                                 '(password))])
-                     (unless p (error 'connect "connection cancelled"))
+                     (unless p (raise-user-error 'connect "connection cancelled"))
                      p))])
           (let-values ([(server port-no)
                         (parse-server-name (IMAP-SERVER) (if (get-pref 'sirmail:use-ssl?) 993 143))])

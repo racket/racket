@@ -1,4 +1,9 @@
 
+Version 300.1
+Disabled menu-item shortcuts stay effective (to just beep)
+
+----------------------------------------------------------------------
+
 Version 300, Decmber 2005
 Changed editor file format to an ASCII encoding
 Changed measurement of text for post-script-dc%
