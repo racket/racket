@@ -42,6 +42,7 @@ long scheme_misc_count;
 
 /* locals */
 static Scheme_Object *error(int argc, Scheme_Object *argv[]);
+static Scheme_Object *raise_user_error(int argc, Scheme_Object *argv[]);
 static Scheme_Object *raise_syntax_error(int argc, Scheme_Object *argv[]);
 static Scheme_Object *raise_type_error(int argc, Scheme_Object *argv[]);
 static Scheme_Object *raise_mismatch_error(int argc, Scheme_Object *argv[]);
@@ -50,6 +51,7 @@ static Scheme_Object *error_display_handler(int, Scheme_Object *[]);
 static Scheme_Object *error_value_string_handler(int, Scheme_Object *[]);
 static Scheme_Object *exit_handler(int, Scheme_Object *[]);
 static Scheme_Object *error_print_width(int, Scheme_Object *[]);
+static Scheme_Object *error_print_context_length(int, Scheme_Object *[]);
 static Scheme_Object *error_print_srcloc(int, Scheme_Object *[]);
 static Scheme_Object *def_error_escape_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_error_display_proc(int, Scheme_Object *[]);
@@ -471,6 +473,11 @@ void scheme_init_error(Scheme_Env *env)
 						      "error",
 						      1, -1),
 			     env);
+  scheme_add_global_constant("raise-user-error",
+			     scheme_make_prim_w_arity(raise_user_error,
+						      "raise-user-error",
+						      1, -1),
+			     env);
   scheme_add_global_constant("raise-syntax-error",
 			     scheme_make_prim_w_arity(raise_syntax_error,
 						      "raise-syntax-error",
@@ -510,6 +517,11 @@ void scheme_init_error(Scheme_Env *env)
 			     scheme_register_parameter(error_print_width,
 						       "error-print-width",
 						       MZCONFIG_ERROR_PRINT_WIDTH),
+			     env);
+  scheme_add_global_constant("error-print-context-length",
+			     scheme_register_parameter(error_print_context_length,
+						       "error-print-context-length",
+						       MZCONFIG_ERROR_PRINT_CONTEXT_LENGTH),
 			     env);
   scheme_add_global_constant("error-print-source-location",
 			     scheme_register_parameter(error_print_srcloc,
@@ -665,6 +677,8 @@ static long get_print_width(void)
   w = scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_PRINT_WIDTH);
   if (SCHEME_INTP(w))
     print_width = SCHEME_INT_VAL(w);
+  else if (SCHEME_BIGNUMP(w))
+    print_width = 0x7FFFFFFF;
   else
     print_width = 10000;
 
@@ -1669,7 +1683,7 @@ char *scheme_make_provided_string(Scheme_Object *o, int count, int *lenout)
   return error_write_to_string_w_max(o, len, lenout);
 }
 
-static Scheme_Object *error(int argc, Scheme_Object *argv[])
+static Scheme_Object *do_error(int for_user, int argc, Scheme_Object *argv[])
 {
   Scheme_Object *newargs[2];
 
@@ -1732,7 +1746,7 @@ static Scheme_Object *error(int argc, Scheme_Object *argv[])
 
 #ifndef NO_SCHEME_EXNS
   newargs[1] = TMP_CMARK_VALUE;
-  do_raise(scheme_make_struct_instance(exn_table[MZEXN_FAIL].type,
+  do_raise(scheme_make_struct_instance(exn_table[for_user ? MZEXN_FAIL_USER : MZEXN_FAIL].type,
 				       2, newargs),
 	   0, 1);
 
@@ -1743,6 +1757,16 @@ static Scheme_Object *error(int argc, Scheme_Object *argv[])
   return _scheme_tail_apply(scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_ESCAPE_HANDLER),
 			    0, NULL);
 #endif
+}
+
+static Scheme_Object *error(int argc, Scheme_Object *argv[])
+{
+  return do_error(0, argc, argv);
+}
+
+static Scheme_Object *raise_user_error(int argc, Scheme_Object *argv[])
+{
+    return do_error(1, argc, argv);
 }
 
 static Scheme_Object *raise_syntax_error(int argc, Scheme_Object *argv[])
@@ -1841,9 +1865,15 @@ static Scheme_Object *raise_mismatch_error(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *good_print_width(int c, Scheme_Object **argv)
 {
-  return ((SCHEME_INTP(argv[0]) || (SCHEME_BIGNUMP(argv[0])))
-	  ? scheme_true
-	  : scheme_false);
+  int ok;
+
+  ok = (SCHEME_INTP(argv[0]) 
+	? (SCHEME_INT_VAL(argv[0]) > 3)
+	: (SCHEME_BIGNUMP(argv[0])
+	   ? SCHEME_BIGPOS(argv[0])
+	   : 0));
+
+  return ok ? scheme_true : scheme_false;
 }
 
 static Scheme_Object *error_print_width(int argc, Scheme_Object *argv[])
@@ -1852,6 +1882,27 @@ static Scheme_Object *error_print_width(int argc, Scheme_Object *argv[])
 			     scheme_make_integer(MZCONFIG_ERROR_PRINT_WIDTH),
 			     argc, argv,
 			     -1, good_print_width, "integer greater than three", 0);
+}
+
+static Scheme_Object *good_print_context_length(int c, Scheme_Object **argv)
+{
+  int ok;
+
+  ok = (SCHEME_INTP(argv[0]) 
+	? (SCHEME_INT_VAL(argv[0]) >= 0)
+	: (SCHEME_BIGNUMP(argv[0])
+	   ? SCHEME_BIGPOS(argv[0])
+	   : 0));
+
+  return ok ? scheme_true : scheme_false;
+}
+
+static Scheme_Object *error_print_context_length(int argc, Scheme_Object *argv[])
+{
+  return scheme_param_config("error-print-context-length",
+			     scheme_make_integer(MZCONFIG_ERROR_PRINT_CONTEXT_LENGTH),
+			     argc, argv,
+			     -1, good_print_context_length, "non-negative integer", 0);
 }
 
 static Scheme_Object *error_print_srcloc(int argc, Scheme_Object *argv[])
@@ -1881,6 +1932,41 @@ def_error_display_proc(int argc, Scheme_Object *argv[])
 			   SCHEME_BYTE_STRTAG_VAL(s),
 			   port);
   scheme_write_byte_string("\n", 1, port);
+
+  /* Print context, if available */
+  if (SCHEME_STRUCTP(argv[1])
+      && scheme_is_struct_instance(exn_table[MZEXN].type, argv[1])
+      && !scheme_is_struct_instance(exn_table[MZEXN_FAIL_USER].type, argv[1])) {
+    Scheme_Object *l, *w;
+    int print_width = 1024, max_cnt = 16;
+
+    w = scheme_get_param(config, MZCONFIG_ERROR_PRINT_CONTEXT_LENGTH);
+    if (SCHEME_INTP(w))
+      max_cnt = SCHEME_INT_VAL(w);
+    else
+      max_cnt = 0x7FFFFFFF;
+
+    if (max_cnt) {
+      w = scheme_get_param(config, MZCONFIG_ERROR_PRINT_WIDTH);
+      if (SCHEME_INTP(w))
+	print_width = SCHEME_INT_VAL(w);
+      else
+	print_width = 0x7FFFFFFF;
+      l = scheme_get_stack_trace(((Scheme_Structure *)argv[1])->slots[1]);
+      while (!SCHEME_NULLP(l)) {
+	if (!max_cnt) {
+	  scheme_write_byte_string("  at ...\n", 9, port);
+	  break;
+	} else {
+	  scheme_write_byte_string("  at ", 5, port);
+	  scheme_display_w_max(SCHEME_CAR(l), port, print_width);
+	  scheme_write_byte_string("\n", 1, port);
+	  l = SCHEME_CDR(l);
+	  --max_cnt;
+	}
+      }
+    }
+  }
 
   return scheme_void;
 }

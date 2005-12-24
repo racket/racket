@@ -148,21 +148,21 @@ enum {
   scheme_lexical_rib_type,              /* 130 */
   scheme_thread_cell_values_type,       /* 131 */
   scheme_global_ref_type,               /* 132 */
+  scheme_cont_mark_chain_type,          /* 133 */
 
 #ifdef MZTAG_REQUIRED
-  _scheme_last_normal_type_,            /* 133 */
+  _scheme_last_normal_type_,            /* 134 */
 
-  scheme_rt_comp_env,                   /* 134 */
-  scheme_rt_constant_binding,           /* 135 */
-  scheme_rt_resolve_info,               /* 136 */
-  scheme_rt_compile_info,               /* 137 */
-  scheme_rt_cont_mark,                  /* 138 */
-  scheme_rt_saved_stack,                /* 139 */
-  scheme_rt_reply_item,                 /* 140 */
-  scheme_rt_closure_info,               /* 141 */
-  scheme_rt_overflow,                   /* 142 */
-  scheme_rt_dyn_wind_cell,              /* 143 */
-  scheme_rt_cont_mark_chain,            /* 144 */
+  scheme_rt_comp_env,                   /* 135 */
+  scheme_rt_constant_binding,           /* 136 */
+  scheme_rt_resolve_info,               /* 137 */
+  scheme_rt_compile_info,               /* 138 */
+  scheme_rt_cont_mark,                  /* 139 */
+  scheme_rt_saved_stack,                /* 140 */
+  scheme_rt_reply_item,                 /* 141 */
+  scheme_rt_closure_info,               /* 142 */
+  scheme_rt_overflow,                   /* 143 */
+  scheme_rt_dyn_wind_cell,              /* 144 */
   scheme_rt_dyn_wind_info,              /* 145 */
   scheme_rt_dyn_wind,                   /* 146 */
   scheme_rt_dup_check,                  /* 147 */

@@ -245,6 +245,8 @@ extern Scheme_Object *scheme_recur_symbol, *scheme_display_symbol, *scheme_write
 
 extern Scheme_Object *scheme_none_symbol, *scheme_line_symbol, *scheme_block_symbol;
 
+extern Scheme_Object *scheme_stack_dump_key;
+
 /*========================================================================*/
 /*                    thread state and maintenance                        */
 /*========================================================================*/
@@ -837,12 +839,12 @@ typedef struct Scheme_Cont_Mark {
      is a pointer, then allocate with GC_malloc_allow_interior */
   Scheme_Object *key;
   Scheme_Object *val;
-  struct Scheme_Cont_Mark_Chain *cached_chain;
+  Scheme_Object *cache; /* chain and/or shortcut */
   MZ_MARK_POS_TYPE pos; /* Odd numbers - so they look like non-pointers */
 } Scheme_Cont_Mark;
 
 typedef struct Scheme_Cont_Mark_Chain {
-  MZTAG_IF_REQUIRED
+  Scheme_Object so;
   Scheme_Object *key;
   Scheme_Object *val;
   MZ_MARK_POS_TYPE pos;
@@ -894,6 +896,7 @@ typedef struct Scheme_Cont {
   Scheme_Thread **runstack_owner;
   Scheme_Cont_Mark *cont_mark_stack_copied;
   Scheme_Thread **cont_mark_stack_owner;
+  Scheme_Cont_Mark **orig_mark_segments;
   void *stack_start;
   void *o_start;
   Scheme_Config *init_config;
@@ -2065,6 +2068,8 @@ void scheme_dup_symbol_check(DupCheckRecord *r, const char *where,
 extern int scheme_exiting_result;
 
 Scheme_Object *scheme_special_comment_value(Scheme_Object *o);
+
+Scheme_Object *scheme_get_stack_trace(Scheme_Object *mark_set);
 
 /*========================================================================*/
 /*                         filesystem utilities                           */

@@ -20,6 +20,7 @@ enum {
   MZEXN_FAIL_NETWORK,
   MZEXN_FAIL_OUT_OF_MEMORY,
   MZEXN_FAIL_UNSUPPORTED,
+  MZEXN_FAIL_USER,
   MZEXN_BREAK,
   MZEXN_OTHER
 };
@@ -46,6 +47,7 @@ static exn_rec exn_table[] = {
   { 2, NULL, NULL, 0, NULL, 1 },
   { 2, NULL, NULL, 0, NULL, 11 },
   { 2, NULL, NULL, 0, NULL, 11 },
+  { 2, NULL, NULL, 0, NULL, 1 },
   { 2, NULL, NULL, 0, NULL, 1 },
   { 2, NULL, NULL, 0, NULL, 1 },
   { 2, NULL, NULL, 0, NULL, 1 },
@@ -78,6 +80,7 @@ static exn_rec *exn_table;
   exn_table[MZEXN_FAIL_NETWORK].args = 2;
   exn_table[MZEXN_FAIL_OUT_OF_MEMORY].args = 2;
   exn_table[MZEXN_FAIL_UNSUPPORTED].args = 2;
+  exn_table[MZEXN_FAIL_USER].args = 2;
   exn_table[MZEXN_BREAK].args = 3;
 #endif
 
@@ -119,6 +122,7 @@ static const char *MZEXN_BREAK_FIELDS[1] = { "continuation" };
   SETUP_STRUCT(MZEXN_FAIL_NETWORK, EXN_PARENT(MZEXN_FAIL), "exn:fail:network", 0, NULL, scheme_null, NULL)
   SETUP_STRUCT(MZEXN_FAIL_OUT_OF_MEMORY, EXN_PARENT(MZEXN_FAIL), "exn:fail:out-of-memory", 0, NULL, scheme_null, NULL)
   SETUP_STRUCT(MZEXN_FAIL_UNSUPPORTED, EXN_PARENT(MZEXN_FAIL), "exn:fail:unsupported", 0, NULL, scheme_null, NULL)
+  SETUP_STRUCT(MZEXN_FAIL_USER, EXN_PARENT(MZEXN_FAIL), "exn:fail:user", 0, NULL, scheme_null, NULL)
   SETUP_STRUCT(MZEXN_BREAK, EXN_PARENT(MZEXN), "exn:break", 1, MZEXN_BREAK_FIELDS, scheme_null, scheme_make_prim(break_field_check))
 
 #endif

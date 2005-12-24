@@ -37,7 +37,8 @@ propeties (the latter in curly braces), strings are contracts/comments.
 		       (version [] "version mismatch loading an extension"))
 	   (network [] "TCP and UDP errors")
 	   (out-of-memory [] "out of memory")
-	   (unsupported [] "unsupported feature"))
+	   (unsupported [] "unsupported feature")
+	   (user [] "for end users"))
      
      (break [break_field_check
 	     (continuation "escape continuation" "resumes from the break")]

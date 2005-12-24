@@ -219,7 +219,7 @@ Scheme_Object *(*scheme_tail_apply_to_list)(Scheme_Object *f, Scheme_Object *l);
 Scheme_Object *(*scheme_tail_eval_expr)(Scheme_Object *obj);
 void (*scheme_set_tail_buffer_size)(int s);
 Scheme_Object *(*scheme_force_value)(Scheme_Object *);
-void (*scheme_set_cont_mark)(Scheme_Object *key, Scheme_Object *val);
+void *(*scheme_set_cont_mark)(Scheme_Object *key, Scheme_Object *val);
 void (*scheme_push_continuation_frame)(Scheme_Cont_Frame_Data *);
 void (*scheme_pop_continuation_frame)(Scheme_Cont_Frame_Data *);
 void (*scheme_temp_dec_mark_depth)();

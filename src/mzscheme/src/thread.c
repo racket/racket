@@ -5872,6 +5872,7 @@ static void make_initial_config(Scheme_Thread *p)
 							      ? scheme_true : scheme_false));
 
   init_param(cells, paramz, MZCONFIG_ERROR_PRINT_WIDTH, scheme_make_integer(100));
+  init_param(cells, paramz, MZCONFIG_ERROR_PRINT_CONTEXT_LENGTH, scheme_make_integer(16));
   init_param(cells, paramz, MZCONFIG_ERROR_PRINT_SRCLOC, scheme_true);
 
   REGISTER_SO(main_custodian);

@@ -80,6 +80,8 @@ int scheme_cont_capture_count;
 
 static Scheme_Object *certify_mode_symbol, *transparent_symbol, *transparent_binding_symbol, *opaque_symbol;
 
+static Scheme_Object *null_val_key;
+
 /* locals */
 static Scheme_Object *procedure_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *apply (int argc, Scheme_Object *argv[]);
@@ -96,6 +98,7 @@ static Scheme_Object *cont_marks (int argc, Scheme_Object *argv[]);
 static Scheme_Object *cc_marks_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *extract_cc_marks (int argc, Scheme_Object *argv[]);
 static Scheme_Object *extract_cc_markses (int argc, Scheme_Object *argv[]);
+static Scheme_Object *extract_cc_proc_marks (int argc, Scheme_Object *argv[]);
 static Scheme_Object *extract_one_cc_mark (int argc, Scheme_Object *argv[]);
 static Scheme_Object *void_func (int argc, Scheme_Object *argv[]);
 static Scheme_Object *void_p (int argc, Scheme_Object *argv[]);
@@ -295,6 +298,11 @@ scheme_init_fun (Scheme_Env *env)
   scheme_add_global_constant("continuation-mark-set?",
 			     scheme_make_prim_w_arity(cc_marks_p,
 						      "continuation-mark-set?",
+						      1, 1),
+			     env);
+  scheme_add_global_constant("continuation-mark-set->context",
+			     scheme_make_prim_w_arity(extract_cc_proc_marks,
+						      "continuation-mark-set->context",
 						      1, 1),
 			     env);
 
@@ -729,7 +737,6 @@ Scheme_Object *scheme_source_to_name(Scheme_Object *code)
     char buf[50], src[20];
     Scheme_Object *name;
 
-    src[0] = 0;
     if (cstx->srcloc->src && SCHEME_PATHP(cstx->srcloc->src)) {
       if (SCHEME_BYTE_STRLEN_VAL(cstx->srcloc->src) < 20)
 	memcpy(src, SCHEME_BYTE_STR_VAL(cstx->srcloc->src), SCHEME_BYTE_STRLEN_VAL(cstx->srcloc->src) + 1);
@@ -739,6 +746,8 @@ Scheme_Object *scheme_source_to_name(Scheme_Object *code)
 	src[1] = '.';
 	src[2] = '.';
       }
+    } else {
+      return NULL;
     }
 
     if (cstx->srcloc->line >= 0) {
@@ -2668,6 +2677,19 @@ call_cc (int argc, Scheme_Object *argv[])
   msaved = copy_out_mark_stack(p, MZ_CONT_MARK_STACK);
   cont->cont_mark_stack_copied = msaved;
 
+  /* Remember the original mark-stack segments. */
+  {
+    long cnt;
+    Scheme_Cont_Mark **orig;
+    if (!MZ_CONT_MARK_STACK)
+      cnt = 0;
+    else
+      cnt = (((long)MZ_CONT_MARK_STACK - 1) >> SCHEME_LOG_MARK_SEGMENT_SIZE) + 1;
+    orig = (Scheme_Cont_Mark **)scheme_malloc(cnt * sizeof(Scheme_Cont_Mark*));
+    memcpy(orig, p->cont_mark_stack_segments, cnt * sizeof(Scheme_Cont_Mark*));
+    cont->orig_mark_segments = orig;
+  }
+
   cont->runstack_owner = p->runstack_owner;
   cont->cont_mark_stack_owner = p->cont_mark_stack_owner;
 
@@ -2753,7 +2775,7 @@ call_cc (int argc, Scheme_Object *argv[])
       /* In case there's a GC before we copy in marks: */
       MZ_CONT_MARK_STACK = 0;
     }
-
+    
     /* For dynamic-winds after the "common" intersection
        (see eval.c), execute the pre thunks. Make a list
        of these first because they have to be done in the
@@ -2800,7 +2822,36 @@ call_cc (int argc, Scheme_Object *argv[])
     MZ_CONT_MARK_STACK = cont->ss.cont_mark_stack;
     copy_in_mark_stack(p, cont->cont_mark_stack_copied, 
 		       MZ_CONT_MARK_STACK, copied_cms);
-    
+
+
+    /* If any mark-stack segment is different now than before, then
+       set the cache field of the *original* mark segment. Setting the
+       cache field ensures that any `pm' pointer in scheme_do_eval
+       will get reset to point to the new segment. */
+    {
+      long cnt, i, j;
+      Scheme_Cont_Mark *cm;
+      if (!MZ_CONT_MARK_STACK)
+	cnt = 0;
+      else
+	cnt = (((long)MZ_CONT_MARK_STACK - 1) >> SCHEME_LOG_MARK_SEGMENT_SIZE) + 1;
+      for (i = 0; i < cnt; i++) {
+	if (cont->orig_mark_segments[i] != p->cont_mark_stack_segments[i]) {
+	  if (i + 1 == cnt) {
+	    j = ((long)MZ_CONT_MARK_STACK) & SCHEME_MARK_SEGMENT_MASK;
+	  } else {
+	    j = SCHEME_MARK_SEGMENT_SIZE;
+	  }
+	  while (j--) {
+	    cm = cont->orig_mark_segments[i] + j;
+	    if (SAME_OBJ(cm->key, scheme_stack_dump_key)) {
+	      cm->cache = scheme_false;
+	    }
+	  }
+	}
+      }
+    }
+        
     /* We may have just re-activated breaking: */
     scheme_check_break_now();
 
@@ -2876,6 +2927,7 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
   Scheme_Cont *cont = (Scheme_Cont *)_cont;
   Scheme_Cont_Mark_Chain *first = NULL, *last = NULL;
   Scheme_Cont_Mark_Set *set;
+  Scheme_Object *cache;
   long findpos;
   long cmpos;
 
@@ -2907,24 +2959,36 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
       find = seg;
     }
 
-    if (find[pos].cached_chain) {
+    cache = find[pos].cache;
+    if (cache) {
+      if (SCHEME_FALSEP(cache))
+	cache = NULL;
+      else if (SCHEME_VECTORP(cache)) {
+	cache = SCHEME_VEC_ELS(cache)[0];
+      }
+    }
+
+    if (cache) {
       if (last)
-	last->next = find[pos].cached_chain;
+	last->next = (Scheme_Cont_Mark_Chain *)cache;
       else
-	first = find[pos].cached_chain;
+	first = (Scheme_Cont_Mark_Chain *)cache;
 
       break;
     } else {
       Scheme_Cont_Mark_Chain *pr;
       pr = MALLOC_ONE_RT(Scheme_Cont_Mark_Chain);
-#ifdef MZTAG_REQUIRED
-      pr->type = scheme_rt_cont_mark_chain;
-#endif
+      pr->so.type = scheme_cont_mark_chain_type;
       pr->key = find[pos].key;
       pr->val = find[pos].val;
       pr->pos = find[pos].pos;
       pr->next = NULL;
-      find[pos].cached_chain = pr;
+      cache = find[pos].cache;
+      if (cache && !SCHEME_FALSEP(cache)) {
+	SCHEME_VEC_ELS(cache)[0] = (Scheme_Object *)pr;
+      } else {
+	find[pos].cache = (Scheme_Object *)pr;
+      }
       if (last)
 	last->next = pr;
       else
@@ -3082,23 +3146,147 @@ extract_cc_markses(int argc, Scheme_Object *argv[])
 }
 
 Scheme_Object *
+scheme_get_stack_trace(Scheme_Object *mark_set)
+{
+  Scheme_Object *l, *n, *m;
+  Scheme_Object *a[2];
+
+  a[0] = mark_set;
+  a[1] = scheme_stack_dump_key;
+
+  l = extract_cc_marks(2, a);
+
+  /* Filter out NULLs */
+  while (SCHEME_PAIRP(l) && !SCHEME_CAR(l)) {
+    l = SCHEME_CDR(l);
+  }
+  for (n = l; SCHEME_PAIRP(n); ) { 
+    m = SCHEME_CDR(n);
+    if (SCHEME_NULLP(m))
+	break;
+    if (SCHEME_CAR(m)) {
+      n = m;
+    } else {
+      SCHEME_CDR(n) = SCHEME_CDR(m);
+    }
+  }
+
+  return l;
+}
+
+static Scheme_Object *
+extract_cc_proc_marks(int argc, Scheme_Object *argv[])
+{
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_cont_mark_set_type)) {
+    scheme_wrong_type("continuation-mark-set->context", "continuation-mark-set", 0, argc, argv);
+    return NULL;
+  }
+
+  return scheme_get_stack_trace(argv[0]);
+}
+
+Scheme_Object *
 scheme_extract_one_cc_mark(Scheme_Object *mark_set, Scheme_Object *key)
 {
-  Scheme_Cont_Mark_Chain *chain;
-
   if (mark_set) {
+    Scheme_Cont_Mark_Chain *chain;
     chain = ((Scheme_Cont_Mark_Set *)mark_set)->chain;
+    while (chain) {
+      if (chain->key == key)
+	return chain->val;
+      else 
+	chain = chain->next;
+    }
   } else {
-    chain = (Scheme_Cont_Mark_Chain *)continuation_marks(scheme_current_thread, NULL, NULL, 1);
+    long findpos;
+    long pos;
+    Scheme_Object *val = NULL;
+    Scheme_Object *cache;
+    GC_CAN_IGNORE Scheme_Cont_Mark *seg;
+    Scheme_Thread *p = scheme_current_thread;
+    
+    findpos = (long)MZ_CONT_MARK_STACK;
+    if (!p->cont_mark_stack_segments)
+      findpos = 0;
+
+    /* Search mark stack, checking caches along the way: */
+    while (findpos--) {
+      seg = p->cont_mark_stack_segments[findpos >> SCHEME_LOG_MARK_SEGMENT_SIZE];
+      pos = findpos & SCHEME_MARK_SEGMENT_MASK;
+
+      if (SAME_OBJ(seg[pos].key, key)) {
+	val = seg[pos].val;
+	break;
+      } else {
+	cache = seg[pos].cache;
+	if (cache && SCHEME_VECTORP(cache)) {
+	  /* If slot 1 has a key, this cache has just one key--value
+	     pair. Otherwise, slot 2 is a hash table. */
+	  if (SCHEME_VEC_ELS(cache)[1]) {
+	    if (SAME_OBJ(SCHEME_VEC_ELS(cache)[1], key)) {
+	      val = SCHEME_VEC_ELS(cache)[2];
+	      break;
+	    }
+	  } else {
+	    Scheme_Hash_Table *ht;
+	    ht = (Scheme_Hash_Table *)SCHEME_VEC_ELS(cache)[2];
+	    val = scheme_hash_get(ht, key);
+	    if (val) {
+	      /* In the hash table, null_val_key is used to indicate
+		 that there's no value for the key. */
+	      if (SAME_OBJ(val, null_val_key))
+		val = NULL;
+	      break;
+	    }
+	  }
+	}
+      }
+    }
+
+    pos = (long)MZ_CONT_MARK_STACK - findpos;
+    if (pos > 16) {
+      pos >>= 1;
+      findpos = findpos + pos;
+      seg = p->cont_mark_stack_segments[findpos >> SCHEME_LOG_MARK_SEGMENT_SIZE];
+      pos = findpos & SCHEME_MARK_SEGMENT_MASK;
+      cache = seg[pos].cache;
+      if (!cache || !SCHEME_VECTORP(cache)) {
+	/* No cache so far, so map one key */
+	cache = scheme_make_vector(3, NULL);
+	if (seg[pos].cache && !SCHEME_FALSEP(seg[pos].cache))
+	  SCHEME_VEC_ELS(cache)[0] = seg[pos].cache;
+	SCHEME_VEC_ELS(cache)[1] = key;
+	SCHEME_VEC_ELS(cache)[2] = val;
+	seg[pos].cache = cache;
+      } else {
+	if (!null_val_key) {
+	  REGISTER_SO(null_val_key);
+	  null_val_key = scheme_make_symbol("nul");
+	}
+
+	if (SCHEME_VEC_ELS(cache)[1]) {
+	  /* More than one cached key, now; create hash table */
+	  Scheme_Hash_Table *ht;
+	  Scheme_Object *v2;
+	  ht = scheme_make_hash_table(SCHEME_hash_ptr);
+	  scheme_hash_set(ht, key, val ? val : null_val_key);
+	  v2 = SCHEME_VEC_ELS(cache)[2];
+	  scheme_hash_set(ht, SCHEME_VEC_ELS(cache)[1], v2 ? v2 : null_val_key);
+	  SCHEME_VEC_ELS(cache)[1] = NULL;
+	  SCHEME_VEC_ELS(cache)[2] = (Scheme_Object *)ht;
+	} else {
+	  /* Already have a hash table */
+	  Scheme_Hash_Table *ht;
+	  ht = (Scheme_Hash_Table *)SCHEME_VEC_ELS(cache)[2];
+	  scheme_hash_set(ht, key, val ? val : null_val_key);
+	}
+      }
+    }
+
+    if (val)
+      return val;
   }
   
-  while (chain) {
-    if (chain->key == key)
-      return chain->val;
-    else 
-      chain = chain->next;
-  }
-
   if (key == scheme_parameterization_key) {
     return (Scheme_Object *)scheme_current_thread->init_config;
   }
@@ -3931,7 +4119,7 @@ static void register_traversers(void)
   GC_REG_TRAV(scheme_rt_closure_info, mark_closure_info);
   GC_REG_TRAV(scheme_rt_dyn_wind_cell, mark_dyn_wind_cell);
   GC_REG_TRAV(scheme_rt_dyn_wind_info, mark_dyn_wind_info);
-  GC_REG_TRAV(scheme_rt_cont_mark_chain, mark_cont_mark_chain);
+  GC_REG_TRAV(scheme_cont_mark_chain_type, mark_cont_mark_chain);
 }
 
 END_XFORM_SKIP;

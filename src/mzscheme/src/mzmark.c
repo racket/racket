@@ -868,6 +868,7 @@ int cont_proc_MARK(void *p) {
   gcMARK(c->runstack_owner);
   gcMARK(c->cont_mark_stack_copied);
   gcMARK(c->cont_mark_stack_owner);
+  gcMARK(c->orig_mark_segments);
   gcMARK(c->init_config);
   gcMARK(c->init_break_cell);
   
@@ -890,6 +891,7 @@ int cont_proc_FIXUP(void *p) {
   gcFIXUP(c->runstack_owner);
   gcFIXUP(c->cont_mark_stack_copied);
   gcFIXUP(c->cont_mark_stack_owner);
+  gcFIXUP(c->orig_mark_segments);
   gcFIXUP(c->init_config);
   gcFIXUP(c->init_break_cell);
   

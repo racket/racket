@@ -1749,6 +1749,7 @@ static Scheme_Ephemeron *ephemerons, *done_ephemerons; /* not registered as a ro
 # define GC_is_marked(p) GC_base(p)
 # define GC_did_mark_stack_overflow() 0
 #else
+extern MZ_DLLIMPORT void *GC_base(void *);
 extern MZ_DLLIMPORT int GC_is_marked(void *);
 extern MZ_DLLIMPORT int GC_did_mark_stack_overflow(void);
 #endif

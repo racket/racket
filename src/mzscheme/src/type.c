@@ -173,6 +173,7 @@ scheme_init_type (Scheme_Env *env)
 
   set_name(scheme_custodian_type, "<custodian>");
   set_name(scheme_cont_mark_set_type, "<continuation-mark-set>");
+  set_name(scheme_cont_mark_chain_type, "<chain>");
 
   set_name(scheme_inspector_type, "<inspector>");
   

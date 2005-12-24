@@ -141,6 +141,8 @@ static Scheme_Object *quick_stx;
 static int quick_stx_in_use;
 static int taking_shortcut;
 
+Scheme_Object *scheme_stack_dump_key;
+
 /* locals */
 static Scheme_Object *eval(int argc, Scheme_Object *argv[]);
 static Scheme_Object *compile(int argc, Scheme_Object *argv[]);
@@ -296,6 +298,9 @@ scheme_init_eval (Scheme_Env *env)
 
   REGISTER_SO(protected_symbol);
   protected_symbol = scheme_intern_symbol("protected");
+
+  REGISTER_SO(scheme_stack_dump_key);
+  scheme_stack_dump_key = scheme_make_symbol("stk"); /* uninterned! */
 
   scheme_install_type_writer(scheme_application_type, write_application);
   scheme_install_type_reader(scheme_application_type, read_application);
@@ -3115,7 +3120,7 @@ void scheme_pop_continuation_frame(Scheme_Cont_Frame_Data *d)
   MZ_CONT_MARK_STACK = d->cont_mark_stack;
 }
 
-void scheme_set_cont_mark(Scheme_Object *key, Scheme_Object *val)
+void *scheme_set_cont_mark(Scheme_Object *key, Scheme_Object *val)
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Cont_Mark *cm = NULL;
@@ -3137,7 +3142,7 @@ void scheme_set_cont_mark(Scheme_Object *key, Scheme_Object *val)
 	/* Assume that we'll mutate rather than allocate a new mark record. */
 	/* This is a bad assumption for a nasty program that repeatedly
 	   creates a new key for the same frame, but it's good enough. */
-	find->cached_chain = NULL;
+	find->cache = NULL;
       }
     }
   }
@@ -3173,7 +3178,9 @@ void scheme_set_cont_mark(Scheme_Object *key, Scheme_Object *val)
   cm->key = key;
   cm->val = val;
   cm->pos = MZ_CONT_MARK_POS; /* always odd */
-  cm->cached_chain = NULL;
+  cm->cache = NULL;
+
+  return cm;
 }
 
 void scheme_temp_dec_mark_depth()
@@ -3343,6 +3350,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 #if USE_LOCAL_RUNSTACK
   GC_MAYBE_IGNORE_INTERIOR Scheme_Object **runstack;
 #endif
+  GC_MAYBE_IGNORE_INTERIOR Scheme_Cont_Mark *pm = NULL;
 # define p scheme_current_thread
 
 #ifdef DO_STACK_CHECK
@@ -3393,6 +3401,8 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 
 #define UPDATE_THREAD_RSPTR_FOR_GC() UPDATE_THREAD_RSPTR()
 #define UPDATE_THREAD_RSPTR_FOR_ERROR() UPDATE_THREAD_RSPTR()
+
+#define UPDATE_THREAD_RSPTR_FOR_PROC_MARK() UPDATE_THREAD_RSPTR()
 
   MZ_CONT_MARK_POS += 2;
   old_runstack = RUNSTACK;
@@ -3611,6 +3621,35 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       }
 
       obj = data->code;
+
+      if (pm) { 
+	if (!pm->cache)
+	  pm->val = data->name; 
+	else {
+	  /* Need to clear caches and/or update pm, so do it the slow way */
+	  UPDATE_THREAD_RSPTR_FOR_PROC_MARK();
+	  pm = (Scheme_Cont_Mark *)scheme_set_cont_mark(scheme_stack_dump_key, data->name); 
+	}
+      } else { 
+	/* Allocate a new mark record: */
+	long segpos = ((long)MZ_CONT_MARK_STACK) >> SCHEME_LOG_MARK_SEGMENT_SIZE;
+	if (segpos >= p->cont_mark_seg_count) {
+	  UPDATE_THREAD_RSPTR_FOR_PROC_MARK();
+	  pm = (Scheme_Cont_Mark *)scheme_set_cont_mark(scheme_stack_dump_key, data->name); 
+	} else {
+	  long pos = ((long)MZ_CONT_MARK_STACK) & SCHEME_MARK_SEGMENT_MASK;
+	  GC_CAN_IGNORE Scheme_Cont_Mark *seg;
+	
+	  seg = p->cont_mark_stack_segments[segpos];
+	  pm = seg + pos;
+	  MZ_CONT_MARK_STACK++;
+
+	  pm->key = scheme_stack_dump_key;
+	  pm->val = data->name;
+	  pm->pos = MZ_CONT_MARK_POS;
+	  pm->cache = NULL;
+	}
+      }
 
       goto eval_top;
     } else if (type == scheme_closed_prim_type) {
