@@ -86,14 +86,20 @@
     (define top-panel (make-object vertical-panel% outermost-panel))
 
     (define (switch-to-response-view)
+      (send response-text lock #f)
       (send response-text erase)
       (render-html-to-text ; hack to get nice text in
        (open-input-string
         "&nbsp;<br><br><br><br><br><div align=\"center\"><h2><b>Submitting bug report...</b></h2></div>")
        response-text #t #f)
+      (send response-text lock #t)
       (send single active-child response-panel))
     (define (switch-to-compose-view)
-      (send single active-child outermost-panel))
+      (send single active-child outermost-panel)
+      (send (if (string=? "" (preferences:get 'drscheme:full-name))
+              name
+              summary)
+          focus))
 
     (define lps null)
     
@@ -376,15 +382,18 @@
                             [(x) (post-pure-port x post-data)]
                             [(x y) (post-pure-port x post-data y)])
                           (lambda (port)
+                            (send response-text lock #f)
                             (send response-text erase)
-                            (render-html-to-text port response-text #t #f))))
+                            (render-html-to-text port response-text #t #f)
+                            (send response-text lock #t))))
                        (queue-callback
                         (lambda ()
                           (send response-abort enable #f)
                           (send response-reset enable #t)
                           (send response-close enable #t)
                           (set! cancel-kill-thread #f)
-                          (send bug-frame set-ok-to-close #t)))))))])
+                          (send bug-frame set-ok-to-close #t)
+                          (send response-close focus)))))))])
         (set! cancel-kill-thread http-thread)
         (send response-abort enable #t)
         (switch-to-response-view)))
@@ -439,7 +448,7 @@
     (define (cleanup-frame)
       (send bug-frame close))
 
-    (send response-ec enable #f)
+    (send response-ec allow-tab-exit #t)
 
     (send severity set-selection 1)
     (send version set-value   
@@ -472,10 +481,7 @@
     (align-labels)
     (send button-panel set-alignment 'right 'center)
     (send button-panel stretchable-height #f)
-    (send (if (string=? "" (preferences:get 'drscheme:full-name))
-              name
-              summary)
-          focus)
+    (switch-to-compose-view)
     
     (send (send docs-installed get-editor) insert
           (format "~s" (find-doc-directories)))
