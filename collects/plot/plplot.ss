@@ -175,8 +175,8 @@
     (z-ops     : _string) (z-title   : _string) (z-spacing : _plflt) (z-ticks   : _int)
     -> _void)))
 
-(define* pl-poly3
-  (get-ffi-obj "c_plpoly3" libplplot
+(define* pl-line3
+  (get-ffi-obj "c_plline3" libplplot
    (_fun
     (n-points : _int = (length x-values))
     (x-values  : (_list i _plflt))
@@ -185,8 +185,8 @@
     -> _void)))
 
 
-(define* pl-line3
-  (get-ffi-obj "c_plline3" libplplot
+(define* pl-poly3
+  (get-ffi-obj "c_plpoly3" libplplot
    (_fun
     (n-points : _int = (length x-values))
     (x-values  : (_list i _plflt))
