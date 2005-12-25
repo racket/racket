@@ -176,7 +176,7 @@
     -> _void)))
 
 (define* pl-poly3
-  (get-ffi-obj "c_plline3" libplplot
+  (get-ffi-obj "c_plpoly3" libplplot
    (_fun
     (n-points : _int = (length x-values))
     (x-values  : (_list i _plflt))
@@ -186,7 +186,7 @@
 
 
 (define* pl-line3
-  (get-ffi-obj "c_plpoly3" libplplot
+  (get-ffi-obj "c_plline3" libplplot
    (_fun
     (n-points : _int = (length x-values))
     (x-values  : (_list i _plflt))
