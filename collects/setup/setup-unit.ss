@@ -729,10 +729,11 @@
                                (for-each
                                 (lambda (mzln mzll mzlf)
                                   (let ([p (program-launcher-path mzln)]
-                                        [aux (cons `(exe-name . ,mzln)
-                                                   (build-aux-from-path
-                                                    (build-path (cc-path cc)
-                                                                (path-replace-suffix (or mzll mzln) #""))))])
+                                        [aux (list* `(exe-name . ,mzln)
+						    '(framework-root . #f)
+						    (build-aux-from-path
+						     (build-path (cc-path cc)
+								 (path-replace-suffix (or mzll mzln) #""))))])
                                     (unless (up-to-date? p aux)
                                       (setup-printf "Installing ~a~a launcher ~a"
                                                     kind (if (eq? (current-launcher-variant) 'normal)

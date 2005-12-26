@@ -63,6 +63,7 @@ AC_ARG_ENABLE(noopt, [  --enable-noopt          drop -O C flags])
 
 AC_ARG_ENABLE(xonx, [  --enable-xonx           compile X11 (not Quartz) MrEd for Mac OS X])
 AC_ARG_ENABLE(libfw, [  --enable-libfw          install Mac OS X frameworks to /Library/Frameworks])
+AC_ARG_ENABLE(libfw, [  --enable-userfw         install Mac OS X frameworks to ~/Library/Frameworks])
 
 ###### Get OS Type #######
 
@@ -494,8 +495,13 @@ case $OS in
       enable_pthread=no
       if test "${enable_libfw}" = "yes" ; then
         FRAMEWORK_INSTALL_DIR=/Library/Frameworks
-      else
+        FRAMEWORK_REL_INSTALL=no
+      elif test "${enable_userfw}" = "yes" ; then
         FRAMEWORK_INSTALL_DIR=~/Library/Frameworks
+        FRAMEWORK_REL_INSTALL=no
+      else
+        FRAMEWORK_INSTALL_DIR='${LIBIDIR}'
+        FRAMEWORK_REL_INSTALL=yes
       fi
     else
       PREFLAGS="$PREFLAGS -DXONX "
@@ -1044,6 +1050,7 @@ AC_SUBST(EXTRA_GMP_OBJ)
 AC_SUBST(OSX)
 AC_SUBST(NOT_OSX)
 AC_SUBST(FRAMEWORK_INSTALL_DIR)
+AC_SUBST(FRAMEWORK_REL_INSTALL)
 
 AC_SUBST(MREDLINKER)
 AC_SUBST(LIBSFX)

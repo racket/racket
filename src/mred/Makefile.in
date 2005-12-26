@@ -108,10 +108,10 @@ MRFW = PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd
 MRFWRES = PLT_MrEd.framework/Versions/$(FWVERSION)/Resources/PLT_MrEd.rsrc
 
 $(MRFW) : $(MZSCHEME) $(MREDOBJECTS) $(@WXLIBS@) $(MRSTATIC_STUB)
-	$(MREDLINKER) $(MREDLDFLAGS) -dynamiclib -o $(MRFW) -F../mzscheme -framework PLT_MzScheme $(@WXLIBS@) $(GUILIBS_@WXVARIANT@) @X_EXTRA_LIBS@
+	$(MREDLINKER) $(MREDLDFLAGS) -dynamiclib -o $(MRFW) -Wl,-headerpad_max_install_names -F../mzscheme -framework PLT_MzScheme $(@WXLIBS@) $(GUILIBS_@WXVARIANT@) @X_EXTRA_LIBS@
 
 MrEd.app/Contents/MacOS/MrEd: $(MRFWRES) $(MRFW) mrmain.@LTO@ 
-	$(MREDLINKER) -o MrEd.app/Contents/MacOS/MrEd mrmain.@LTO@ -F. -F../mzscheme -framework PLT_MrEd -framework Carbon -framework PLT_MzScheme @PROFFLAGS@
+	$(MREDLINKER) -o MrEd.app/Contents/MacOS/MrEd mrmain.@LTO@ -Wl,-headerpad_max_install_names -F. -F../mzscheme -framework PLT_MrEd -framework Carbon -framework PLT_MzScheme @PROFFLAGS@
 
 $(MRFWRES): $(srcdir)/../mac/osx_appl.ss $(srcdir)/../mac/cw/MrEd.r
 	rm -rf PLT_MrEd.framework/Resources PLT_MrEd.framework/PLT_MrEd
@@ -234,6 +234,9 @@ install_wx_xt:
 	$(MAKE) @MRLIBINSTALL@
 	cd ..; $(ICP) mred/mred `(cd $(prefix); pwd)`/bin/
 
+LIBIDIR=$(prefix)/lib
+BUILDINFO=$(LIBIDIR)/buildinfo
+
 MRFWDIR = @FRAMEWORK_INSTALL_DIR@/PLT_MrEd.framework
 
 install_wx_mac:
@@ -241,6 +244,7 @@ install_wx_mac:
 	rm -rf $(MRFWDIR)/Versions/$(FWVERSION)/Resources
 	rm -f $(MRFWDIR)/PLT_MrEd
 	rm -rf $(MRFWDIR)/Resources
+	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then rm -rf $(MZFWDIR) ; fi
 	if [ ! -d @FRAMEWORK_INSTALL_DIR@ ] ; then mkdir @FRAMEWORK_INSTALL_DIR@ ; fi
 	if [ ! -d $(MRFWDIR) ] ; then mkdir $(MRFWDIR) ; fi
 	if [ ! -d $(MRFWDIR)/Versions ] ; then mkdir $(MRFWDIR)/Versions ; fi
@@ -255,9 +259,9 @@ install_wx_mac:
 	if [ ! -d $(prefix)/collects ] ; then mkdir $(prefix)/collects ; fi
 	if [ ! -d $(prefix)/collects/launcher ] ; then mkdir $(prefix)/collects/launcher ; fi
 	cd ..; $(ICP) -r mred/Starter.app $(prefix)/collects/launcher/.
-
-LIBIDIR=$(prefix)/lib
-BUILDINFO=$(LIBIDIR)/buildinfo
+	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then /usr/bin/install_name_tool -change "PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme" "@executable_path/../../../lib/PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme" "$(MRFWDIR)/Versions/$(FWVERSION)/PLT_MrEd" ; fi
+	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then /usr/bin/install_name_tool -change "PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme" "@executable_path/../../../lib/PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme" "$(prefix)/MrEd.app/Contents/MacOS/MrEd" ; fi
+	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then /usr/bin/install_name_tool -change "PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd" "@executable_path/../../../lib/PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd" "$(prefix)/MrEd.app/Contents/MacOS/MrEd" ; fi
 
 install:
 	$(MAKE) install_@WXVARIANT@
@@ -295,6 +299,9 @@ install-3m_wx_mac:
 	if [ ! -d $(prefix)/collects ] ; then mkdir $(prefix)/collects ; fi
 	if [ ! -d $(prefix)/collects/launcher ] ; then mkdir $(prefix)/collects/launcher ; fi
 	cd ..; $(ICP) -r mred/Starter3m.app $(prefix)/collects/launcher/.
+	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then /usr/bin/install_name_tool -change "PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "@executable_path/../../../lib/PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "$(MRFWDIR)/Versions/$(FWVERSION)_3m/PLT_MrEd" ; fi
+	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then /usr/bin/install_name_tool -change "PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "@executable_path/../../../lib/PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "$(prefix)/MrEd3m.app/Contents/MacOS/MrEd3m" ; fi
+	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then /usr/bin/install_name_tool -change "PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "@executable_path/../../../lib/PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "$(prefix)/MrEd3m.app/Contents/MacOS/MrEd3m" ; fi
 
 install-3m:
 	$(MAKE) install-3m_@WXVARIANT@

@@ -7,10 +7,11 @@
 	   (lib "port.ss")
 	   (lib "moddep.ss" "syntax")
 	   (lib "plist.ss" "xml")
-	   (lib "process.ss")
+	   (lib "plthome.ss" "setup")
 	   "embed-sig.ss"
 	   "private/winicon.ss"
-           "private/winsubsys.ss")
+           "private/winsubsys.ss"
+	   "private/macfw.ss")
 
   (provide compiler:embed@)
 
@@ -46,6 +47,14 @@
 			  (fixup #rx#"[.][aA][pP][pP]$" #".app")
 			  path)]
 	    [else path])))
+
+      (define (mac-dest->executable dest mred?)
+	(if mred?
+	    (let-values ([(base name dir?) (split-path dest)])
+	      (build-path dest
+			  "Contents" "MacOS"
+			  (path-replace-suffix name #"")))
+	    dest))
       
       ;; Find executable relative to the "mzlib"
       ;; collection.
@@ -336,7 +345,7 @@
 							       (format "~a~a" prefix name))
 						  mappings)
 					(unbox codes)))))))))))
-	    
+
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
       (define (make-module-name-resolver code-l)
@@ -512,28 +521,22 @@
 					  (when (file-exists? dest)
 					    (delete-file dest)))
 				      (raise x))])
-		(let ([m (and (eq? 'macosx (system-type))
-			      (assq 'framework-root aux))])
-		  (when m
-		    (for-each (lambda (p)
-				(system* "/usr/bin/install_name_tool"
-					 "-change"
-					 (format "~a.framework/Versions/~a/~a" p (version) p)
-					 (format "~a~a.framework/Versions/~a/~a" 
-						 (cdr m)
-						 p (version) p)
-					 (let ([dest (if mred?
-							 (let-values ([(base name dir?) (split-path dest)])
-							   (build-path dest
-								       "Contents" "MacOS"
-								       (path-replace-suffix name #"")))
-							 dest)])
-					   (if (path? dest)
-					       (path->string dest)
-					       dest))))
-			      (if mred?
-				  '("PLT_MzScheme" "PLT_MrEd")
-				  '("PLT_MzScheme")))))
+		(when (eq? 'macosx (system-type))
+		  (let ([m (assq 'framework-root aux)])
+		    (if m
+			(when (cdr m)
+			  (update-framework-path (cdr m) 
+						 (mac-dest->executable dest mred?)
+						 mred?))
+			;; Check whether we need an absolute path to frameworks:
+			(let ([dest (mac-dest->executable dest mred?)])
+			(when (regexp-match #rx"^@executable_path" 
+					    (get-current-framework-path dest "PLT_MzScheme"))
+			  (update-framework-path (string-append
+						  (path->string (build-path plthome "lib"))
+						  "/")
+						 dest
+						 mred?))))))
 		(let ([start (file-size dest-exe)])
 		  (with-output-to-file dest-exe
 		    (lambda ()

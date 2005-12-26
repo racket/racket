@@ -22,46 +22,20 @@ executables.
    The optional `aux' argument is an association list for
    platform-specific options (i.e., it is a list of pairs where the
    first element of the pair is a key symbol and the second element is
-   the value for that key). The currently supported keys are as
-   follows:
+   the value for that key). See `make-embedding-executable' (from the
+   "compiler" collection) for a list that applies to Windows launchers
+   and Mac OS X MrEd launchers; the following additional associations
+   apply to launchers:
 
-      _'icns_ (Mac OS X) - an icon file path (suffix ".icns") to
-              use for the executable's desktop icon
-
-      _'ico_ (Windows) - an icon file path (suffix ".ico") to
-              use for the executable's desktop icon; the executable
-              will have 16x16, 32x32, and 48x48 icons at 4-bit,
-              8-bit, and 32-bit (RBBA) depths; the icons are
-              copied and generated from any 16x16, 32x32, and 48x48
-              icons in the ".ico" file
- 
-      _'independent?_  (Windows) - a boolean; #t creates an old-style
+      _'independent?_ (Windows) - a boolean; #t creates an old-style
               launcher that is independent of the MzScheme or MrEd
-              binary, like "Setup PLT.exe"
+              binary, like "Setup PLT.exe"; no other `aux'
+              associations are used for an old-style launcher
 
       -'exe-name_ (Mac OS X, MrEd 'script[-3m] variant) - provides the
               base name for a 'normal variant launcher, which the
-              script will call ignoring `args'; if this name is not
+              script will call (ignoring `args'); if this name is not
               provided, the script will go through the MrEd executable
-
-      _'creator_ (Mac OS X) - provides a 4-character string to use as
-              the application signature.
-
-      _'file-types_ (Mac OS X) - provides a list of association lists,
-              one for each type of file handled by the application;
-              each association is a 2-element list, where the first (key)
-              element is a string recognized by Finder, and the second
-              element is a plist value (see doc.txt in the "xml" collection);
-              see plt/collects/drscheme/drscheme.filetypes for an example.
-
-      -'resource-files_ (Mac OS X) - extra files to copy into the
-              "Resources" directory of the generated executable
-
-      _'forget-exe?_ (Windows, Mac OS X) - a boolean; #t does not 
-              preserve the original executable name for
-              `(find-system-path 'exec-file)'; the main consequence is
-              that library collections will be found relative to the
-              launcher instead of the original executable
 
    See also `build-aux-from-path' below. The default `aux' is `null'.
 

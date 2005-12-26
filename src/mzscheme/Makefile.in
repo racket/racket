@@ -149,7 +149,7 @@ $(MZFW): libmzscheme.@LIBSFX@ libmzgc.@LIBSFX@ $(SPECIALIZINGOBJECTS)
 	ln -s Versions/$(FWVERSION)/PLT_MzScheme PLT_MzScheme.framework/PLT_MzScheme
 
 mzscheme@OSX@: $(MZFW) main.@LTO@
-	$(CC) -o mzscheme @PROFFLAGS@ main.@LTO@ -F. -framework PLT_MzScheme
+	$(CC) -o mzscheme @PROFFLAGS@ main.@LTO@ -Wl,-headerpad_max_install_names -F. -framework PLT_MzScheme
 
 # OSKit ----------------------------------------
 
@@ -252,6 +252,7 @@ clean@OSX@:
 	$(MAKE) clean@NOT_OSX@
 
 LIBIDIR=`(cd $(prefix); pwd)`/lib
+BINDIR=`(cd $(prefix); pwd)`/bin
 BUILDINFO=$(LIBIDIR)/buildinfo
 ICP=@ICP@
 
@@ -276,7 +277,7 @@ unix-install:
 	cd ..; if [ ! -d $(LIBIDIR) ] ; then mkdir $(LIBIDIR) ; fi
 	cd ..; $(ICP) mzscheme/libmzgc.@LIBSFX@ $(LIBIDIR)/libmzgc.@LIBSFX@
 	cd ..; $(ICP) mzscheme/libmzscheme.@LIBSFX@ $(LIBIDIR)/libmzscheme.@LIBSFX@
-	cd ..; $(ICP) mzscheme/mzscheme `(cd $(prefix); pwd)`/bin/mzscheme
+	cd ..; $(ICP) mzscheme/mzscheme "$(BINDIR)/mzscheme"
 	cd ..; echo 'CC=@CC@' > $(BUILDINFO)
 	cd ..; echo 'CFLAGS=@CFLAGS@ @PREFLAGS@ @COMPFLAGS@' >> $(BUILDINFO)
 	cd ..; echo 'OPTIONS=@OPTIONS@' >> $(BUILDINFO)
@@ -294,12 +295,14 @@ osx-install:
 	$(MAKE) normal-install
 	rm -f $(MZFWDIR)/Versions/$(FWVERSION)/PLT_MzScheme
 	rm -f $(MZFWDIR)/PLT_MzScheme
+	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then rm -rf $(MZFWDIR) ; fi
 	if [ ! -d @FRAMEWORK_INSTALL_DIR@ ] ; then mkdir @FRAMEWORK_INSTALL_DIR@ ; fi
 	if [ ! -d $(MZFWDIR) ] ; then mkdir $(MZFWDIR) ; fi
 	if [ ! -d $(MZFWDIR)/Versions ] ; then mkdir $(MZFWDIR)/Versions ; fi
 	if [ ! -d $(MZFWDIR)/Versions/$(FWVERSION) ] ; then mkdir $(MZFWDIR)/Versions/$(FWVERSION) ; fi
 	cp $(MZFW) $(MZFWDIR)/Versions/$(FWVERSION)/
 	ln -s Versions/$(FWVERSION)/PLT_MzScheme $(MZFWDIR)/
+	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then /usr/bin/install_name_tool -change "PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme" "@executable_path/../lib/PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme" "$(BINDIR)/mzscheme" ; fi
 
 MZFWMMM = PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme
 
@@ -308,6 +311,7 @@ install-3m@OSX@:
 	rm -f $(MZFWDIR)/Versions/$(FWVERSION)_3m/PLT_MzScheme
 	if [ ! -d $(MZFWDIR)/Versions/$(FWVERSION)_3m ] ; then mkdir $(MZFWDIR)/Versions/$(FWVERSION)_3m ; fi
 	cp $(MZFWMMM) $(MZFWDIR)/Versions/$(FWVERSION)_3m/
+	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then /usr/bin/install_name_tool -change "PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "@executable_path/../lib/PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "$(BINDIR)/mzscheme3m" ; fi
 
 WLIBIDIR=`(cd $(prefix); pwd)`/lib
 WBUILDINFO=$(WLIBIDIR)/buildinfo

@@ -488,7 +488,10 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
               prefix start "@executable_path/" works for a
               MzScheme-based application, the corresponding prefix
               start for a MrEd-based application is
-              "@executable_path/../../../"
+              "@executable_path/../../../"; if #f is supplied, the
+              executable's framework path is left as-is, otherwise
+              a relative path to a framework in the installation's "lib"
+              directory is converted to an absolute path
 
       _'subsystem_ (Windows) - a symbol, either 'console for a console
               application or 'windows for a consoleless application;

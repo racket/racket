@@ -314,7 +314,7 @@ ac_subdirs_all="$ac_subdirs_all foreign/gcc/libffi"
 ac_subdirs_all="$ac_subdirs_all llvm/llvm"
 ac_subdirs_all="$ac_subdirs_all wxcommon/jpeg"
 ac_subdirs_all="$ac_subdirs_all wxxt/src/x/wbuild"
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP EGREP CXX CXXFLAGS ac_ct_CXX CXXCPP RANLIB ac_ct_RANLIB PERL X_CFLAGS X_PRE_LIBS X_LIBS X_EXTRA_LIBS PREFLAGS COMPFLAGS PROFFLAGS SED AS AR STATIC_AR ARFLAGS WBUILD CC_FOR_BUILD REZ MZLINKER PLAIN_CC DYN_CFLAGS x_includes x_libraries OPTIONS MZOPTIONS CGCOPTIONS GC2OPTIONS MROPTIONS GCDIR MZBINTARGET MZINSTALLTARGET EXTRA_GMP_OBJ OSX NOT_OSX FRAMEWORK_INSTALL_DIR MREDLINKER LIBSFX WXLIBS WXVARIANT ICP MRLIBINSTALL LIBFINISH MAKE_MRED MAKE_MRED3M MAKE_MREDINSTALL MAKE_MREDINSTALL3M MAKE_WBUILD MAKE_COPYTREE MAKE_FINISH WXPRECOMP USE_WXPRECOMP INCLUDEDEP WX_MMD_FLAG JPEG_A JPEG_INC ZLIB_A ZLIB_INC PNG_A OSKHOME EXTRA_OSK_LIBS FOREIGN_OBJSLIB_IF_USED FOREIGN_LIB_IF_USED FOREIGN_OBJSLIB FOREIGN_CONVENIENCE FOREIGNTARGET LIBMZSCHEME_DEP LIBMRED_DEP LLVMTARGET LTO LTA subdirs LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP EGREP CXX CXXFLAGS ac_ct_CXX CXXCPP RANLIB ac_ct_RANLIB PERL X_CFLAGS X_PRE_LIBS X_LIBS X_EXTRA_LIBS PREFLAGS COMPFLAGS PROFFLAGS SED AS AR STATIC_AR ARFLAGS WBUILD CC_FOR_BUILD REZ MZLINKER PLAIN_CC DYN_CFLAGS x_includes x_libraries OPTIONS MZOPTIONS CGCOPTIONS GC2OPTIONS MROPTIONS GCDIR MZBINTARGET MZINSTALLTARGET EXTRA_GMP_OBJ OSX NOT_OSX FRAMEWORK_INSTALL_DIR FRAMEWORK_REL_INSTALL MREDLINKER LIBSFX WXLIBS WXVARIANT ICP MRLIBINSTALL LIBFINISH MAKE_MRED MAKE_MRED3M MAKE_MREDINSTALL MAKE_MREDINSTALL3M MAKE_WBUILD MAKE_COPYTREE MAKE_FINISH WXPRECOMP USE_WXPRECOMP INCLUDEDEP WX_MMD_FLAG JPEG_A JPEG_INC ZLIB_A ZLIB_INC PNG_A OSKHOME EXTRA_OSK_LIBS FOREIGN_OBJSLIB_IF_USED FOREIGN_LIB_IF_USED FOREIGN_OBJSLIB FOREIGN_CONVENIENCE FOREIGNTARGET LIBMZSCHEME_DEP LIBMRED_DEP LLVMTARGET LTO LTA subdirs LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -890,6 +890,7 @@ Optional Features:
   --enable-noopt          drop -O C flags
   --enable-xonx           compile X11 (not Quartz) MrEd for Mac OS X
   --enable-libfw          install Mac OS X frameworks to /Library/Frameworks
+  --enable-userfw         install Mac OS X frameworks to ~/Library/Frameworks
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -1502,6 +1503,11 @@ fi;
 # Check whether --enable-xonx or --disable-xonx was given.
 if test "${enable_xonx+set}" = set; then
   enableval="$enable_xonx"
+
+fi;
+# Check whether --enable-libfw or --disable-libfw was given.
+if test "${enable_libfw+set}" = set; then
+  enableval="$enable_libfw"
 
 fi;
 # Check whether --enable-libfw or --disable-libfw was given.
@@ -8622,8 +8628,13 @@ case $OS in
       enable_pthread=no
       if test "${enable_libfw}" = "yes" ; then
         FRAMEWORK_INSTALL_DIR=/Library/Frameworks
-      else
+        FRAMEWORK_REL_INSTALL=no
+      elif test "${enable_userfw}" = "yes" ; then
         FRAMEWORK_INSTALL_DIR=~/Library/Frameworks
+        FRAMEWORK_REL_INSTALL=no
+      else
+        FRAMEWORK_INSTALL_DIR='${LIBIDIR}'
+        FRAMEWORK_REL_INSTALL=yes
       fi
     else
       PREFLAGS="$PREFLAGS -DXONX "
@@ -11070,6 +11081,7 @@ LIBS="$LIBS $EXTRALIBS"
 
 
 
+
 mk_needed_dir()
 {
   if test ! -d "$1" ; then
@@ -11903,6 +11915,7 @@ s,@EXTRA_GMP_OBJ@,$EXTRA_GMP_OBJ,;t t
 s,@OSX@,$OSX,;t t
 s,@NOT_OSX@,$NOT_OSX,;t t
 s,@FRAMEWORK_INSTALL_DIR@,$FRAMEWORK_INSTALL_DIR,;t t
+s,@FRAMEWORK_REL_INSTALL@,$FRAMEWORK_REL_INSTALL,;t t
 s,@MREDLINKER@,$MREDLINKER,;t t
 s,@LIBSFX@,$LIBSFX,;t t
 s,@WXLIBS@,$WXLIBS,;t t

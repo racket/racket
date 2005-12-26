@@ -305,7 +305,7 @@ $(MZFWMMM): $(OBJS) $(EXTRA_OBJS_T)
 	ln -s Versions/$(FWVERSION)_3m/PLT_MzScheme PLT_MzScheme.framework/PLT_MzScheme	
 
 ../mzscheme3m@OSX@: $(MZFWMMM) main.@LTO@
-	$(CC) -o ../mzscheme3m main.@LTO@ -F. -framework PLT_MzScheme
+	$(CC) -o ../mzscheme3m main.@LTO@ -Wl,-headerpad_max_install_names -F. -framework PLT_MzScheme
 	if [ ! -d ../PLT_MzScheme.framework/Versions/$(FWVERSION)_3m ] ; then mkdir ../PLT_MzScheme.framework/Versions/$(FWVERSION)_3m ; fi
 	cp PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme ../PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme
 
