@@ -3,8 +3,8 @@
  * Purpose:	wxWindow class implementation
  * Author:	Julian Smart
  * Created:	1993
- * Updated:	August 1994     
- * Copyright:	(c) 2004-2005 PLT Scheme, Inc.
+ * Updated:	August 1994
+ * Copyright:	(c) 2004-2006 PLT Scheme Inc.
  * Copyright:	(c) 1993, AIAI, University of Edinburgh
  *
  * Renovated by Matthew for MrEd, 1995-2000

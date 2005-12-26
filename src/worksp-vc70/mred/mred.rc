@@ -40,7 +40,7 @@ BEGIN
             VALUE "FileDescription", "mred\0"
             VALUE "FileVersion", "299, 100, 0, 0\0"
             VALUE "InternalName", "mred\0"
-            VALUE "LegalCopyright", "Copyright © 1995-2005\0"
+            VALUE "LegalCopyright", "Copyright © 1995-2006\0"
             VALUE "OriginalFilename", "MrEd.exe\0"
             VALUE "ProductName", "MrEd\0"
             VALUE "ProductVersion", "299, 100, 0, 0\0"

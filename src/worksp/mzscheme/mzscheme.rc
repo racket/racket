@@ -49,7 +49,7 @@ BEGIN
             VALUE "FileDescription", "mzscheme\0"
             VALUE "FileVersion", "300, 0, 0, 0\0"
             VALUE "InternalName", "mzscheme\0"
-            VALUE "LegalCopyright", "Copyright Å© 1995-2005\0"
+            VALUE "LegalCopyright", "Copyright Å© 1995-2006\0"
             VALUE "OriginalFilename", "mzscheme.exe\0"
             VALUE "ProductName", "MzScheme\0"
             VALUE "ProductVersion", "300, 0, 0, 0\0"

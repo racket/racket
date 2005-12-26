@@ -383,7 +383,7 @@
 		   (void)))))))
      (list "file/directory/collection" "file/directory/sub-collection")))
 
-  (printf "mzc version ~a, Copyright (c) 2004-2005 PLT Scheme Inc.~n"
+  (printf "mzc version ~a, Copyright (c) 2004-2006 PLT Scheme Inc.~n"
 	  (version))
 
   (define-values (mode source-files prefix)

@@ -2,7 +2,7 @@
 ;;; <iteration.ss> ---- Vector iteration
 ;;; Time-stamp: <05/03/07 18:19:59 Zhu Chongkai>
 ;;;
-;;; Copyright (C) 2005 by Zhu Chongkai. 
+;;; Copyright (C) 2005-2006 by Zhu Chongkai. 
 ;;;
 ;;; This file is part of SRFI-43.
 

@@ -3,7 +3,7 @@
  * Purpose:	Tab group panel item
  * Author:	Matthew
  * Created:	2002
- * Copyright:	(c) 2004-2005 PLT Scheme, Inc.
+ * Copyright:	(c) 2004-2006 PLT Scheme Inc.
  * Copyright:	(c) 2002, PLT
  */
 

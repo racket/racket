@@ -14,7 +14,7 @@
                 `(DIV ,s (BR)))
               ss))))
   
-  (define copyright-year 2005)
+  (define copyright-year 2006)
   
   (define (start initial-request)
     (report-errors-to-browser send/finish)
@@ -26,7 +26,7 @@
       (BODY
        (A ((NAME "lic") (VALUE "License")))
        (B "PLT Software") (BR)
-       (B ,(format "Copyright (c) ~a PLT Scheme, Inc." copyright-year))
+       (B ,(format "Copyright (c) ~a PLT Scheme Inc." copyright-year))
        (P)
        "PLT software is distributed under the GNU Library General Public "
        " License (LGPL).  This means you can link PLT software (such as "
@@ -48,15 +48,15 @@
        ,@(map make-item 
               `(("DrScheme"
                  "Copyright (c) 1995-2003 PLT"
-                 ,(format "Copyright (c) ~a PLT Scheme, Inc." copyright-year)
+                 ,(format "Copyright (c) ~a PLT Scheme Inc." copyright-year)
                  "All rights reserved.")
                 ("MrEd"
                  "Copyright (c) 1995-2003 PLT"
-		 ,(format "Copyright (c) ~a PLT Scheme, Inc." copyright-year)
+		 ,(format "Copyright (c) ~a PLT Scheme Inc." copyright-year)
                  "All rights reserved.")
                 ("MzScheme" 
                  "Copyright (c) 1995-2003 PLT"
-		 ,(format "Copyright (c) ~a PLT Scheme, Inc." copyright-year)
+		 ,(format "Copyright (c) ~a PLT Scheme Inc." copyright-year)
                  "All rights reserved.")
                 ("libscheme" 
                  "Copyright (c) 1994 Brent Benson"

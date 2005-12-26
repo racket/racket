@@ -7536,7 +7536,7 @@
     (cond
      ((string=? not-a-file "--version")
       (write-log
-        "Copyright (c) 1997-2005, Dorai Sitaram.\n\nPermission to distribute and use this work for any\npurpose is hereby granted provided this copyright\nnotice is included in the copy.  This work is provided\nas is, with no warranty of any kind.\n\nFor more information on TeX2page, please see")
+        "Copyright (c) 1997-2006, Dorai Sitaram.\n\nPermission to distribute and use this work for any\npurpose is hereby granted provided this copyright\nnotice is included in the copy.  This work is provided\nas is, with no warranty of any kind.\n\nFor more information on TeX2page, please see")
       (write-log #\newline)
       (write-log *tex2page-website*)
       (write-log #\.)
