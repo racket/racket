@@ -7,8 +7,6 @@
     '("Swindle extensions for MzScheme -- CLOS and more."))
   (define help-desk-message
     "Mz/Mr: (require (lib \"swindle.ss\" \"swindle\"))")
-  ;;
-  ;; Can't use these since the startup parameters are hard-wired
   (define mzscheme-launcher-names '("swindle"))
   (define mzscheme-launcher-flags
     '(("-me"
