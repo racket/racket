@@ -13,11 +13,17 @@ Studio files for MzCOM.
 Visual Studio Express is available for free from Microsoft, and it is
 the recommended compiler for building PLT Scheme.
 
-MzScheme (but not MzCOM or MrEd) also compiles with Cygwin gcc (a
-free compiler from GNU and Cygnus Solutions); to compile with gcc,
+MzScheme and MrEd also compile with Cygwin gcc (a free compiler from
+GNU and Cygnus Solutions), but the result is a Unix-style
+installation, not a Window-style installation. To compile with gcc,
 follow the instructions in plt\src\README (there is a short
 Windows-specific section in that file).
 
+With an MSVC-built MzScheme, compatible extensions can be built with
+other compilers. Build with Cygwin and copy the installed plt\lib\gcc
+to a MSVC-based build to support Cygwin-built extensions. To support
+Borland-built extensions, cd to plt\src\mzscheme\dynsrc and run
+mkbordyn.bat (which requires bcc23.exe, of course).
 
 As always, please report bugs via one of the following:
   - Help Desk's "submit bug report" link  (preferred)
@@ -70,8 +76,8 @@ The make process for MrEd automatically builds
 In addition, building MzScheme executes
    plt\src\mzscheme\dynsrc\mkmzdyn.bat
 which copies .exp, .obj, and .lib files into plt\lib\, and also copies
-uniplt_xxxxxxx.dll to plt\.  The DLL is used only under Windows
-95/98/Me for Unicode.
+DLLs from the extradlls directory to to plt\.  uniplt_xxxxxxx.dll is
+used only under Windows 95/98/Me for Unicode.
 
 The pltgdi_xxxxxxx.dll is used for smoothed (i.e., anti-aliased)
 drawing, but only when gdiplus.dll is available. If pltgdi_xxxxxxx.dll
