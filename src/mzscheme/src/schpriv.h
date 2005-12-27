@@ -2114,6 +2114,8 @@ char *scheme_get_exec_path(void);
 
 Scheme_Object *scheme_get_fd_identity(Scheme_Object *port, long fd);
 
+Scheme_Object *scheme_extract_relative_to(Scheme_Object *obj, Scheme_Object *dir);
+
 #ifdef DOS_FILE_SYSTEM
 # define WIDE_PATH(s) scheme_convert_to_wchar(s, 0)
 # define WIDE_PATH_COPY(s) scheme_convert_to_wchar(s, 1)

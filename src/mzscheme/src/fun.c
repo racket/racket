@@ -765,6 +765,39 @@ Scheme_Object *scheme_source_to_name(Scheme_Object *code)
   return NULL;
 }
 
+Scheme_Object *combine_name_with_srcloc(Scheme_Object *name, Scheme_Object *code, int src_based_name)
+{
+  Scheme_Stx *cstx = (Scheme_Stx *)code;
+
+  if (((cstx->srcloc->col >= 0) || (cstx->srcloc->pos >= 0))
+      && cstx->srcloc->src) {
+    Scheme_Object *vec;
+    vec = scheme_make_vector(7, NULL);
+    SCHEME_VEC_ELS(vec)[0] = name;
+    SCHEME_VEC_ELS(vec)[1] = cstx->srcloc->src;
+    if (cstx->srcloc->line >= 0) {
+      SCHEME_VEC_ELS(vec)[2] = scheme_make_integer(cstx->srcloc->line);
+      SCHEME_VEC_ELS(vec)[3] = scheme_make_integer(cstx->srcloc->col-1);
+    } else {
+      SCHEME_VEC_ELS(vec)[2] = scheme_false;
+      SCHEME_VEC_ELS(vec)[3] = scheme_false;
+    }
+    if (cstx->srcloc->pos >= 0)
+      SCHEME_VEC_ELS(vec)[4] = scheme_make_integer(cstx->srcloc->pos);
+    else
+      SCHEME_VEC_ELS(vec)[4] = scheme_false;
+    if (cstx->srcloc->span >= 0)
+      SCHEME_VEC_ELS(vec)[5] = scheme_make_integer(cstx->srcloc->span);
+    else
+      SCHEME_VEC_ELS(vec)[5] = scheme_false;
+    SCHEME_VEC_ELS(vec)[6] = (src_based_name ? scheme_true : scheme_false);
+    
+    return vec;
+  }
+
+  return name;
+}
+
 Scheme_Object *
 scheme_make_closure_compilation(Scheme_Comp_Env *env, Scheme_Object *code,
 				Scheme_Compile_Info *rec, int drec)
@@ -823,13 +856,18 @@ scheme_make_closure_compilation(Scheme_Comp_Env *env, Scheme_Object *code,
 
   name = scheme_stx_property(code, scheme_inferred_name_symbol, NULL);
   if (name && SCHEME_SYMBOLP(name)) {
+    name = combine_name_with_srcloc(name, code, 0);
     data->name = name;
   } else {
-    data->name = rec[drec].value_name;
-    if (!data->name || SCHEME_FALSEP(data->name)) {
+    name = rec[drec].value_name;
+    if (!name || SCHEME_FALSEP(name)) {
       name = scheme_source_to_name(code);
-      data->name= name;
+      if (name)
+	name = combine_name_with_srcloc(name, code, 1);
+    } else {
+      name = combine_name_with_srcloc(name, code, 0);
     }
+    data->name = name;
   }
 
   scheme_compile_rec_done_local(rec, drec);
@@ -1891,12 +1929,16 @@ const char *scheme_get_proc_name(Scheme_Object *p, int *len, int for_error)
 
     data = SCHEME_COMPILED_CLOS_CODE(p);
     if (data->name) {
+      Scheme_Object *name;
+      name = data->name;
+      if (SCHEME_VECTORP(name))
+	name = SCHEME_VEC_ELS(name)[0];
       if (for_error < 0) {
-	s = (char *)data->name;
+	s = (char *)name;
 	*len = -1;
       } else {
-	*len = SCHEME_SYM_LEN(data->name);
-	s = scheme_symbol_val(data->name);
+	*len = SCHEME_SYM_LEN(name);
+	s = scheme_symbol_val(name);
       }
     } else
       return NULL;
@@ -3148,7 +3190,7 @@ extract_cc_markses(int argc, Scheme_Object *argv[])
 Scheme_Object *
 scheme_get_stack_trace(Scheme_Object *mark_set)
 {
-  Scheme_Object *l, *n, *m;
+  Scheme_Object *l, *n, *m, *name, *loc;
   Scheme_Object *a[2];
 
   a[0] = mark_set;
@@ -3163,12 +3205,31 @@ scheme_get_stack_trace(Scheme_Object *mark_set)
   for (n = l; SCHEME_PAIRP(n); ) { 
     m = SCHEME_CDR(n);
     if (SCHEME_NULLP(m))
-	break;
+      break;
     if (SCHEME_CAR(m)) {
       n = m;
     } else {
       SCHEME_CDR(n) = SCHEME_CDR(m);
     }
+  }
+
+  /* Make srclocs */
+  for (n = l; SCHEME_PAIRP(n); n = SCHEME_CDR(n)) { 
+    name = SCHEME_CAR(n);
+    if (SCHEME_VECTORP(name)) {
+      loc = scheme_make_location(SCHEME_VEC_ELS(name)[1],
+				 SCHEME_VEC_ELS(name)[2],
+				 SCHEME_VEC_ELS(name)[3],
+				 SCHEME_VEC_ELS(name)[4],
+				 SCHEME_VEC_ELS(name)[5]);
+      if (SCHEME_TRUEP(SCHEME_VEC_ELS(name)[6]))
+	name = scheme_make_pair(scheme_false, loc);
+      else
+	name = scheme_make_pair(SCHEME_VEC_ELS(name)[0], loc);
+    } else {
+      name = scheme_make_pair(name, scheme_false);
+    }
+    SCHEME_CAR(n) = name;
   }
 
   return l;
@@ -4034,13 +4095,32 @@ scheme_default_prompt_read_handler(int argc, Scheme_Object *argv[])
 static Scheme_Object *write_compiled_closure(Scheme_Object *obj)
 {
   Scheme_Closure_Data *data;
+  Scheme_Object *name;
 
   data = (Scheme_Closure_Data *)obj;
+
+  if (data->name) {
+    name = data->name;
+    if (SCHEME_VECTORP(name)) {
+      /* We can only save marshalable src names, which includes
+	 paths, symbols, and strings: */
+      Scheme_Object *src;
+      src = SCHEME_VEC_ELS(name)[1];
+      if (!SCHEME_PATHP(src)
+	  && !SCHEME_PATHP(src)
+	  && !SCHEME_SYMBOLP(src)) {
+	/* Just keep the name */
+	name = SCHEME_VEC_ELS(name)[0];
+      }
+    }
+  } else {
+    name = scheme_null;
+  }
 
   return CONS(scheme_make_integer(SCHEME_CLOSURE_DATA_FLAGS(data)),
 	      CONS(scheme_make_integer(data->num_params),
 		   CONS(scheme_make_integer(data->max_let_depth),
-			CONS(data->name ? data->name : scheme_null,
+			CONS(name,
 			     CONS(scheme_make_svector(data->closure_size,
 						      data->closure_map),
 				  scheme_protect_quote(data->code))))));

@@ -138,7 +138,12 @@
 	       (lambda (out)
 		 (with-handlers ((exn:fail?
 				  (lambda (ex) (compilation-failure mode path zo-name #f (exn-message ex)))))
-		   (write code out))
+		   (parameterize ([current-write-relative-directory
+				   (let-values ([(base name dir?) (split-path path)])
+				     (if (eq? base 'relative)
+					 (current-directory)
+					 (path->complete-path base (current-directory))))])
+		     (write code out)))
 		 ;; redundant, but close as early as possible:
 		 (close-output-port out)
 		 ;; Note that we check time and write .deps before returning from with-compile-output...

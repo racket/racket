@@ -1588,7 +1588,39 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
     }
   else if (SCHEME_PATHP(obj))
     {
-      if (compact || !pp->print_unreadable) {
+      if (compact) {
+	/* Needed for srclocs in procedure names */
+	Scheme_Object *idx;
+	int l;
+	
+	idx = scheme_hash_get(symtab, obj);
+	if (idx) {
+	  print_compact(pp, CPT_SYMREF);
+	  l = SCHEME_INT_VAL(idx);
+	  print_compact_number(pp, l);
+	} else {
+	  Scheme_Object *dir;
+
+	  /* Hash before making relative */
+	  idx = scheme_make_integer(symtab->count);
+	  scheme_hash_set(symtab, obj, idx);
+	  
+	  dir = scheme_get_param(scheme_current_config(),
+				 MZCONFIG_WRITE_DIRECTORY);
+	  if (SCHEME_PATHP(dir)) {
+	    obj = scheme_extract_relative_to(obj, dir);
+	  }
+
+	  print_compact(pp, CPT_PATH);
+
+	  l = SCHEME_PATH_LEN(obj);
+	  print_compact_number(pp, l);
+	  print_this_string(pp, SCHEME_PATH_VAL(obj), 0, l);
+
+	  l = SCHEME_INT_VAL(idx);
+	  print_compact_number(pp, l);
+	}
+      } else if (!pp->print_unreadable) {
 	cannot_print(pp, notdisplay, obj, ht, compact);
       } else {
 	if (notdisplay)

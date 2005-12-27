@@ -99,6 +99,7 @@ static Scheme_Object *write_byte (int, Scheme_Object *[]);
 static Scheme_Object *load (int, Scheme_Object *[]);
 static Scheme_Object *current_load (int, Scheme_Object *[]);
 static Scheme_Object *current_load_directory(int argc, Scheme_Object *argv[]);
+static Scheme_Object *current_write_directory(int argc, Scheme_Object *argv[]);
 static Scheme_Object *default_load (int, Scheme_Object *[]);
 static Scheme_Object *transcript_on(int, Scheme_Object *[]);
 static Scheme_Object *transcript_off(int, Scheme_Object *[]);
@@ -649,6 +650,11 @@ scheme_init_port_fun(Scheme_Env *env)
 			     scheme_register_parameter(current_load_directory,
 						       "current-load-relative-directory",
 						       MZCONFIG_LOAD_DIRECTORY),
+			     env);
+  scheme_add_global_constant("current-write-relative-directory",
+			     scheme_register_parameter(current_write_directory,
+						       "current-write-relative-directory",
+						       MZCONFIG_WRITE_DIRECTORY),
 			     env);
 
   scheme_add_global_constant ("transcript-on",
@@ -4348,7 +4354,7 @@ current_load(int argc, Scheme_Object *argv[])
 			     2, NULL, NULL, 0);
 }
 
-static Scheme_Object *abs_directory_p(int argc, Scheme_Object **argv)
+static Scheme_Object *abs_directory_p(const char *name, int argc, Scheme_Object **argv)
 {
   Scheme_Object *d = argv[0];
 
@@ -4367,10 +4373,11 @@ static Scheme_Object *abs_directory_p(int argc, Scheme_Object **argv)
 
     if (!scheme_is_complete_path(s, len))
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		       "current-load-relative-directory: not a complete path: \"%q\"",
+		       "%s: not a complete path: \"%q\"",
+		       name,
 		       s);
 
-    expanded = scheme_expand_string_filename(d, "current-load-relative-directory", NULL,
+    expanded = scheme_expand_string_filename(d, name, NULL,
 					     SCHEME_GUARD_FILE_EXISTS);
     ed = scheme_make_sized_path(expanded, strlen(expanded), 1);
 
@@ -4380,13 +4387,32 @@ static Scheme_Object *abs_directory_p(int argc, Scheme_Object **argv)
   return scheme_false;
 }
 
+static Scheme_Object *lr_abs_directory_p(int argc, Scheme_Object **argv)
+{
+  return abs_directory_p("current-load-relative-directory", argc, argv);
+}
+
 static Scheme_Object *
 current_load_directory(int argc, Scheme_Object *argv[])
 {
   return scheme_param_config("current-load-relative-directory",
 			     scheme_make_integer(MZCONFIG_LOAD_DIRECTORY),
 			     argc, argv,
-			     -1, abs_directory_p, "path, string, or #f", 1);
+			     -1, lr_abs_directory_p, "path, string, or #f", 1);
+}
+
+static Scheme_Object *wr_abs_directory_p(int argc, Scheme_Object **argv)
+{
+  return abs_directory_p("current-write-relative-directory", argc, argv);
+}
+
+static Scheme_Object *
+current_write_directory(int argc, Scheme_Object *argv[])
+{
+  return scheme_param_config("current-write-relative-directory",
+			     scheme_make_integer(MZCONFIG_WRITE_DIRECTORY),
+			     argc, argv,
+			     -1, wr_abs_directory_p, "path, string, or #f", 1);
 }
 
 Scheme_Object *scheme_load(const char *file)

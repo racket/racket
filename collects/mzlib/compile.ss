@@ -33,25 +33,26 @@
 			      (raise exn))])
 	     (let ([out (open-output-file dest 'truncate/replace)]
 		   [ok? #f])
-	       (parameterize ([current-load-relative-directory
-			       (let-values ([(base name dir?) (split-path src)])
-				 (if (eq? base 'relative)
-				     (current-directory)
-				     (path->complete-path base (current-directory))))])
-		 (dynamic-wind
-		     void
-		     (lambda ()
-		       (let loop ()
-			 (let ([r (read-syntax src in)])
-			   (unless (eof-object? r)
-			     (write (compile-syntax (filter (namespace-syntax-introduce r))) out)
-			     (loop))))
-		       (set! ok? #t))
-		     (lambda () 
-		       (close-output-port out)
-		       (unless ok?
-			 (with-handlers ([void void])
-			   (delete-file dest)))))))))
+	       (let ([dir (let-values ([(base name dir?) (split-path src)])
+			    (if (eq? base 'relative)
+				(current-directory)
+				(path->complete-path base (current-directory))))])
+		 (parameterize ([current-load-relative-directory dir]
+				[current-write-relative-directory dir])
+		   (dynamic-wind
+		       void
+		       (lambda ()
+			 (let loop ()
+			   (let ([r (read-syntax src in)])
+			     (unless (eof-object? r)
+			       (write (compile-syntax (filter (namespace-syntax-introduce r))) out)
+			       (loop))))
+			 (set! ok? #t))
+		       (lambda () 
+			 (close-output-port out)
+			 (unless ok?
+			   (with-handlers ([void void])
+			     (delete-file dest))))))))))
 	 (lambda () (close-input-port in))))
       dest])))
 

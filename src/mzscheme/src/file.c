@@ -3758,6 +3758,60 @@ char *scheme_find_completion(char *fn)
   return SCHEME_PATH_VAL(f);
 }
 
+static Scheme_Object *explode_path(Scheme_Object *p)
+{
+  Scheme_Object *l = scheme_null, *base, *name;
+  int isdir;
+
+  while (1) {
+    name = scheme_split_path(SCHEME_PATH_VAL(p), SCHEME_PATH_LEN(p), &base, &isdir);
+    l = scheme_make_pair(name, l);
+
+    if (!SCHEME_PATHP(base)) {
+      l = scheme_make_pair(base, l);
+      return l;
+    }
+    p = base;
+  }
+}
+
+Scheme_Object *scheme_extract_relative_to(Scheme_Object *obj, Scheme_Object *dir)
+{
+  Scheme_Object *de, *oe;
+
+  de = explode_path(dir);
+  oe = explode_path(obj);
+
+  while (SCHEME_PAIRP(de)
+	 && SCHEME_PAIRP(oe)) {
+    if (!scheme_equal(SCHEME_CAR(de), SCHEME_CAR(oe)))
+      return obj;
+    de = SCHEME_CDR(de);
+    oe = SCHEME_CDR(oe);
+  }
+
+  if (SCHEME_NULLP(de)) {
+    Scheme_Object *a[2];
+   
+    if (SCHEME_NULLP(oe)) {
+      a[0] = same_symbol;
+      obj = scheme_build_path(1, a);
+    } else {
+      obj = SCHEME_CAR(oe);
+      oe = SCHEME_CDR(oe);
+    }
+
+    while (SCHEME_PAIRP(oe)) {
+      a[0] = obj;
+      a[1] = SCHEME_CAR(oe);
+      obj = scheme_build_path(2, a);
+      oe = SCHEME_CDR(oe);
+    }
+  }
+
+  return obj;
+}
+
 static Scheme_Object *filesystem_root_list(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *first = scheme_null;

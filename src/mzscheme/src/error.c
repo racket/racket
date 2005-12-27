@@ -1947,6 +1947,7 @@ def_error_display_proc(int argc, Scheme_Object *argv[])
       max_cnt = 0x7FFFFFFF;
 
     if (max_cnt) {
+      int orig_max_cnt = max_cnt;
       w = scheme_get_param(config, MZCONFIG_ERROR_PRINT_WIDTH);
       if (SCHEME_INTP(w))
 	print_width = SCHEME_INT_VAL(w);
@@ -1955,15 +1956,52 @@ def_error_display_proc(int argc, Scheme_Object *argv[])
       l = scheme_get_stack_trace(((Scheme_Structure *)argv[1])->slots[1]);
       while (!SCHEME_NULLP(l)) {
 	if (!max_cnt) {
-	  scheme_write_byte_string("  at ...\n", 9, port);
+	  scheme_write_byte_string("...\n", 4, port);
 	  break;
 	} else {
-	  scheme_write_byte_string("  at ", 5, port);
-	  scheme_display_w_max(SCHEME_CAR(l), port, print_width);
+	  Scheme_Object *name, *loc;
+	  
+	  if (max_cnt == orig_max_cnt) {
+	    /* Starting label: */
+	    scheme_write_byte_string("\n === context ===\n", 18, port);
+	  }
+
+	  name = SCHEME_CAR(l);
+	  loc = SCHEME_CDR(name);
+	  name = SCHEME_CAR(name);
+
+	  if (SCHEME_TRUEP(loc)) {
+	    Scheme_Structure *sloc = (Scheme_Structure *)loc;
+	    scheme_display_w_max(sloc->slots[0], port, print_width);
+	    if (SCHEME_TRUEP(sloc->slots[1])) {
+	      /* Line + column */
+	      scheme_write_byte_string(":", 1, port);
+	      scheme_display_w_max(sloc->slots[1], port, print_width);
+	      scheme_write_byte_string(":", 1, port);
+	      scheme_display_w_max(sloc->slots[2], port, print_width);
+	    } else {
+	      /* Position */
+	      scheme_write_byte_string("::", 2, port);
+	      scheme_display_w_max(sloc->slots[3], port, print_width);
+	    }
+
+	    if (SCHEME_TRUEP(name)) {
+	      scheme_write_byte_string(": ", 2, port);
+	    }
+	  }
+
+	  if (SCHEME_TRUEP(name)) {
+	    scheme_display_w_max(name, port, print_width);
+	  }
 	  scheme_write_byte_string("\n", 1, port);
 	  l = SCHEME_CDR(l);
 	  --max_cnt;
 	}
+      }
+
+      if (max_cnt != orig_max_cnt) {
+	/* Extra ending newline */
+	scheme_write_byte_string("\n", 1, port);
       }
     }
   }

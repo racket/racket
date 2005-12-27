@@ -4136,6 +4136,29 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	port->symtab[l] = v;
       }
       break;
+    case CPT_PATH:
+      {
+	l = read_compact_number(port);
+	RANGE_CHECK_GETS(l);
+	s = read_compact_chars(port, buffer, BLK_BUF_SIZE, l);
+	v = scheme_make_sized_path(s, l, l < BLK_BUF_SIZE);
+	l = read_compact_number(port); /* symtab index */
+
+	if (scheme_is_relative_path(SCHEME_PATH_VAL(v), SCHEME_PATH_LEN(v))) {
+	  /* Resolve relative path using the current load-relative directory: */
+	  Scheme_Object *dir;
+	  dir = scheme_get_param(scheme_current_config(), MZCONFIG_LOAD_DIRECTORY);
+	  if (SCHEME_PATHP(dir)) {
+	    Scheme_Object *a[2];
+	    a[0] = dir;
+	    a[1] = v;
+	    v = scheme_build_path(2, a);
+	  }
+	}
+
+	port->symtab[l] = v;
+      }
+      break;
     case CPT_SMALL_LOCAL_START:
     case CPT_SMALL_LOCAL_UNBOX_START:
       {
