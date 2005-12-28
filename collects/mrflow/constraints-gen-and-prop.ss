@@ -13,6 +13,7 @@
            "labels.ss"
            "types.ss"
            "set-hash.ss"
+           "assoc-set-hash.ss"
            (prefix util: "util.ss")
            (prefix hc: "hashcons.ss")
            (prefix cst: "constants.ss")
@@ -2283,52 +2284,73 @@
       bound-label))
   
   
-  ; sba-state syntax-object (listof (cons symbol label)) label (listof label) -> label
-  (define (create-label-from-quote sba-state quoted-term gamma enclosing-lambda-label)
-    (let ([sexp-e (syntax-e quoted-term)])
-      (cond
-        [(list? sexp-e)
-         (let loop ([sexp-e sexp-e])
-           (if (null? sexp-e)
-               (let ([null-label
-                      (make-label-cst
-                       #f #f #f #f #t
-                       quoted-term
-                       (make-hash-table)
-                       (make-hash-table)
-                       '())])
-                 (initialize-label-set-for-value-source null-label)
-                 null-label)
-               (let ([cons-label
-                      (make-label-cons
-                       #f #f #f #f #t
-                       quoted-term
-                       (make-hash-table)
-                       (make-hash-table)
-                       (create-label-from-quote sba-state (car sexp-e) gamma enclosing-lambda-label)
-                       (loop (cdr sexp-e)))])
-                 (initialize-label-set-for-value-source cons-label)
-                 cons-label)))]
-        [(pair? sexp-e)
-         (let ([cons-label
-                (make-label-cons
-                 #f #f #f #f #t
-                 quoted-term
-                 (make-hash-table)
-                 (make-hash-table)
-                 (create-label-from-quote sba-state (car sexp-e) gamma enclosing-lambda-label)
-                 (create-label-from-quote sba-state (cdr sexp-e) gamma enclosing-lambda-label))])
-           (initialize-label-set-for-value-source cons-label)
-           cons-label)]
-        [else (let ([label (make-label-cst
-                            #f #f #f #f #f
-                            quoted-term
-                            (make-hash-table)
-                            (make-hash-table)
-                            sexp-e)])
-                (initialize-label-set-for-value-source label)
-                ((sba-state-register-label-with-gui sba-state) label)
-                label)])))
+  ; sba-state syntax-object sexp (assoc-setof sexp label) -> label
+  ; must take sharing into account...
+  (define (create-label-from-quote sba-state quoted-term unquoted-term assoc-set)
+    ;(printf "Q: ~a ~a~n" unquoted-term (assoc-set-in? assoc-set unquoted-term))
+    (if (assoc-set-in? assoc-set unquoted-term)
+        (assoc-set-get assoc-set unquoted-term)
+        (let ([sexp-e (syntax-e quoted-term)])
+          (cond
+            [(list? unquoted-term)
+             (let loop ([unquoted-term unquoted-term]
+                        [sexp-e sexp-e])
+               (if (null? unquoted-term)
+                   (let ([null-label
+                          (make-label-cst
+                           #f #f #f #f #t
+                           quoted-term
+                           (make-hash-table)
+                           (make-hash-table)
+                           unquoted-term)])
+                     (assoc-set-set assoc-set unquoted-term null-label)
+                     (initialize-label-set-for-value-source null-label)
+                     null-label)
+                   (let ([cons-label
+                          (make-label-cons
+                           #f #f #f #f #t
+                           quoted-term
+                           (make-hash-table)
+                           (make-hash-table)
+                           #f
+                           #f)])
+                     (assoc-set-set assoc-set unquoted-term cons-label)
+                     (set-label-cons-car!
+                      cons-label
+                      (create-label-from-quote sba-state (car sexp-e) (car unquoted-term) assoc-set))
+                     (set-label-cons-cdr!
+                      cons-label
+                      (loop (cdr unquoted-term) (cdr sexp-e)))
+                     (initialize-label-set-for-value-source cons-label)
+                   cons-label)))]
+          [(pair? unquoted-term)
+           (let ([cons-label
+                  (make-label-cons
+                   #f #f #f #f #t
+                   quoted-term
+                   (make-hash-table)
+                   (make-hash-table)
+                   #f
+                   #f)])
+             (assoc-set-set assoc-set unquoted-term cons-label)
+             (set-label-cons-car!
+              cons-label
+              (create-label-from-quote sba-state (car sexp-e) (car unquoted-term) assoc-set))
+             (set-label-cons-cdr!
+              cons-label
+              (create-label-from-quote sba-state (cdr sexp-e) (cdr unquoted-term) assoc-set))
+             (initialize-label-set-for-value-source cons-label)
+             cons-label)]
+          [else (let ([label (make-label-cst
+                              #f #f #f #f #f
+                              quoted-term
+                              (make-hash-table)
+                              (make-hash-table)
+                              unquoted-term)])
+                  (assoc-set-set assoc-set unquoted-term label)
+                  (initialize-label-set-for-value-source label)
+                  ((sba-state-register-label-with-gui sba-state) label)
+                  label)]))))
   
   ; Builds a list of labels of length n, with all labels being the same.
   ; This function should be seldom called, so it's not being made tail recursive...
@@ -2513,7 +2535,8 @@
         ((sba-state-register-label-with-gui sba-state) label)
         label)]
      [(quote sexp)
-      (create-label-from-quote sba-state (syntax sexp) gamma enclosing-lambda-label)]
+      (create-label-from-quote sba-state (syntax sexp)
+                               (syntax-object->datum (syntax sexp)) (assoc-set-make))]
      [(define-values vars exp)
       (let* (; scheme list of syntax objects
              [vars (syntax-e (syntax vars))]
