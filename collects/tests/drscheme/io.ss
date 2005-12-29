@@ -29,14 +29,16 @@ add this test:
         (clear-definitions drs-frame)
         (type-in-definitions drs-frame expression)
         (do-execute drs-frame)
-        (let* ([got (get-annotated-output)])
-          (unless (andmap (λ (exp got)
-                            (and (string=? (car exp) (car got))
-                                 (or (equal? (cadr exp) (cadr got))
-                                     (and (procedure? (cadr exp))
-                                          ((cadr exp) (cadr got))))))
-                          expected 
-                          got)
+        (let ([got (get-annotated-output)])
+          (unless (and (= (length expected)
+                          (length got))
+                       (andmap (λ (exp got)
+                                 (and (string=? (car exp) (car got))
+                                      (or (equal? (cadr exp) (cadr got))
+                                          (and (procedure? (cadr exp))
+                                               ((cadr exp) (cadr got))))))
+                               expected 
+                               got))
             (fprintf (current-error-port)
                      "expected ~s, got ~s for ~s\n\n"
                      expected

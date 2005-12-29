@@ -2,8 +2,7 @@
 ;; Fri Dec  9 21:39:03 EST 2005: remoevd (update ... produce ...); added on-redraw 
 ;; Thu Dec  1 17:03:03 EST 2005: fixed place-image; all coordinates okay now
 (module world mzscheme
-  (require				; (lib "unitsig.ss")
-   (lib "etc.ss")
+  (require
    (lib "class.ss")
    (lib "mred.ss" "mred")
    (lib "error.ss" "htdp")

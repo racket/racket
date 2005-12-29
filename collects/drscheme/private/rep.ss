@@ -172,9 +172,25 @@ TODO
       ;; the highlight must be set after the error message, because inserting into the text resets
       ;;     the highlighting.
       (define (drscheme-error-display-handler msg exn)
-        (let ([src-locs (if (exn:srclocs? exn)
-                            ((exn:srclocs-accessor exn) exn)
-                            '())])
+        (let* ([srclocs-stack 
+                (filter values (map cdr (continuation-mark-set->context (exn-continuation-marks exn))))]
+               [stack 
+                (filter
+                 values
+                 (map (λ (srcloc)
+                        (let ([source (srcloc-source srcloc)]
+                              [pos (srcloc-position srcloc)]
+                              [span (srcloc-span srcloc)])
+                          (and source pos span
+                               (cons source (cons pos span)))))
+                      srclocs-stack))]
+               [src-locs (if (exn:srclocs? exn)
+                             ((exn:srclocs-accessor exn) exn)
+                             (if (null? stack)
+                                 '()
+                                 (list (car srclocs-stack))))])
+          (unless (null? stack)
+            (drscheme:debug:print-bug-to-stderr msg stack))
           (for-each drscheme:debug:display-srcloc-in-error src-locs)
           (display msg (current-error-port))
           (when (exn:fail:syntax? exn)
@@ -187,7 +203,9 @@ TODO
               (parameterize ([current-eventspace drscheme:init:system-eventspace])
                 (queue-callback
                  (λ ()
-                   (send rep highlight-errors/exn exn))))))))
+                   (send rep highlight-errors
+                         src-locs 
+                         (filter (λ (x) (is-a? (car x) text%)) stack)))))))))
       
       ;; drscheme-error-value->string-handler : TST number -> string
       (define (drscheme-error-value->string-handler x n)

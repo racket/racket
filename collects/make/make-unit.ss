@@ -99,7 +99,8 @@
 		      (when (and (make-print-checking)
 				 (or line
 				     (make-print-dep-no-line)))
-			(printf "make: ~achecking ~a~n" indent s))
+			(printf "make: ~achecking ~a~n" indent s)
+                        (flush-output))
 
 		      (if line
 			  (let ([deps (cadr line)])
@@ -134,6 +135,7 @@
 						   (format " because (reason: ~a date: ~a)" 
 							   reason date))])
 						""))
+                                    (flush-output)
 				    (with-handlers ([exn:fail?
 						     (lambda (exn)
 						       (raise (make-exn:fail:make 
@@ -161,7 +163,8 @@
 
 	  (for-each (lambda (item)
 		      (printf "make: made ~a~n" (path-string->string item)))
-		    (reverse made))))
+		    (reverse made))
+          (flush-output)))
 
       (define make/proc
 	(case-lambda

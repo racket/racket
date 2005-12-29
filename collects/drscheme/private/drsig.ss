@@ -46,6 +46,7 @@
      make-debug-error-display-handler/text
      make-debug-eval-handler
      hide-backtrace-window
+     print-bug-to-stderr
      
      profile-definitions-text-mixin
      profile-tab-mixin

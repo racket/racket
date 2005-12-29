@@ -227,20 +227,24 @@ profile todo:
                (orig-error-display-handler msg exn)])))
         debug-error-display-handler)
       
+      (define (print-bug-to-stderr msg cms)
+        (let ([note% (if (mf-bday?) mf-note% bug-note%)])
+          (when note%
+            (let ([note (new note%)])
+              (send note set-callback (λ () (show-backtrace-window msg cms)))
+              (write-special note (current-error-port))
+              (display #\space (current-error-port))))))
+      
       (define (show-error-and-highlight msg exn highlight-errors)
-        (let* ([cms (and (exn? exn) 
-                         (continuation-mark-set? (exn-continuation-marks exn))
-                         (continuation-mark-set->list 
-                          (exn-continuation-marks exn)
-                          cm-key))])
+        (let ([cms
+               (and (exn? exn) 
+                    (continuation-mark-set? (exn-continuation-marks exn))
+                    (continuation-mark-set->list 
+                     (exn-continuation-marks exn)
+                     cm-key))])
           (when (and cms
                      (pair? cms))
-            (let ([note% (if (mf-bday?) mf-note% bug-note%)])
-              (when note%
-                (let ([note (new note%)])
-                  (send note set-callback (λ () (show-backtrace-window msg cms)))
-                  (write-special note (current-error-port))
-                  (display #\space (current-error-port))))))
+            (print-bug-to-stderr msg cms))
           
           (let ([srcs-to-display (find-src-to-display exn cms)])
             (for-each display-srcloc-in-error srcs-to-display)

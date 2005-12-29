@@ -1183,14 +1183,17 @@ the settings above should match r5rs
              (printf (make-err-msg defs-expected) 
                      'definitions (language) expression defs-expected got)))
          
-         (send definitions-text select-all)
-         (send definitions-text copy)
-         
-         (send interactions-text set-position
-               (send interactions-text last-position)
-               (send interactions-text last-position))
-         
-         (send interactions-text paste)
+         (let ([s (make-semaphore 0)])
+           (queue-callback
+            (λ ()
+              (send definitions-text select-all)
+              (send definitions-text copy)
+              (send interactions-text set-position
+                    (send interactions-text last-position)
+                    (send interactions-text last-position))
+              (send interactions-text paste)
+              (semaphore-post s)))
+           (semaphore-wait s))
          
          (let ([last-para (send interactions-text last-paragraph)])
            (type-in-interactions drs (string #\newline))
@@ -1220,11 +1223,11 @@ the settings above should match r5rs
     (let ([drs (wait-for-drscheme-frame)])
       (fw:test:menu-select "Language" "Clear All Teachpacks"))
 
+    (go mred)
+    (go mzscheme)
     (go beginner)
     (go beginner/abbrev)
     (go intermediate)
     (go intermediate/lambda)
     (go advanced)
-    (go r5rs)
-    (go mred)
-    (go mzscheme)))
+    (go r5rs)))
