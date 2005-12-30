@@ -212,8 +212,12 @@
                 (let* ([text (new (editor:standard-style-list-mixin
 				   (editor:keymap-mixin
 				    text:basic%)))]
-                       [canvas (make-object canvas:basic% panel text)])
+                       [canvas (new canvas:basic% 
+                                    (style '(hide-hscroll))
+                                    (parent panel) 
+                                    (editor text))])
                   (send text set-paste-text-only #t)
+                  (send text auto-wrap #t)
                   (send text set-styles-fixed #t)
                   canvas))
               #t
