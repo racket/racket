@@ -3,7 +3,7 @@
  */
 #include <X11/IntrinsicP.h>
 #include <X11/StringDefs.h>
-#include <X11/bitmaps/gray>
+#include "xwGray.h"
 #include <stdio.h>
 #include <./xwSlider2P.h>
 static void start(
@@ -201,7 +201,7 @@ static void create_thumblightgc(self)Widget self;
 	    values.stipple =
 		XCreateBitmapFromData(XtDisplay(self),
 				      RootWindowOfScreen(XtScreen(self)),
-				      gray_bits, gray_width, gray_height);
+				      wx_gray_bits, wx_gray_width, wx_gray_height);
 	}
 	break;
     }
@@ -244,7 +244,7 @@ static void create_thumbdarkgc(self)Widget self;
 	    values.stipple =
 		XCreateBitmapFromData(XtDisplay(self),
 				      RootWindowOfScreen(XtScreen(self)),
-				      gray_bits, gray_width, gray_height);
+				      wx_gray_bits, wx_gray_width, wx_gray_height);
 	}
 	break;
     }

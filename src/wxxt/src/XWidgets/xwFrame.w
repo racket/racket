@@ -820,7 +820,7 @@ used to compute the value of the |topShadowColor| relative to the
 {
   if (!$gray) {
     $gray = XCreateBitmapFromData(XtDisplay($), XtWindow($),
-        gray_bits, gray_width, gray_height);
+        wx_gray_bits, wx_gray_width, wx_gray_height);
   }
   return $gray;
 }
@@ -856,5 +856,5 @@ used to compute the value of the |topShadowColor| relative to the
 
 @ The stipple for the shadows is loaded from a bitmap file.
 
-@incl <X11/bitmaps/gray>
+@incl "xwGray.h"
 

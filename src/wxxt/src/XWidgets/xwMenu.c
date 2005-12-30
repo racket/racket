@@ -43,6 +43,7 @@ SOFTWARE.
 
 #include "wx_visual.h"
 #include "wxAllocColor.h"
+#include "xwGray.h"
 
 extern int wxUseMenuHiliteBorder();
 
@@ -706,9 +707,8 @@ static void CreateGCs(MenuWidget mw)
     XGCValues  xgcv;
     int        gcf_flag = 0;
 
-#   include <X11/bitmaps/gray>
     mw->menu.stipple_pxmap = XCreatePixmapFromBitmapData(dpy, win,
-				 gray_bits, gray_width, gray_height, 1, 0, 1);
+				 wx_gray_bits, wx_gray_width, wx_gray_height, 1, 0, 1);
 
     if (mw->menu.font) {
       xgcv.font = mw->menu.font->fid;

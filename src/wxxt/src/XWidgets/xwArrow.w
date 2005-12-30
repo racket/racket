@@ -359,7 +359,7 @@ resource. It is the same routine as for the shadows in the XfwfFrame widget.
 	    values.stipple =
 		XCreateBitmapFromData(XtDisplay($),
 				      RootWindowOfScreen(XtScreen($)),
-				      gray_bits, gray_width, gray_height);
+				      wx_gray_bits, wx_gray_width, wx_gray_height);
 	}
 	break;
     }
@@ -400,7 +400,7 @@ resource. It is the same routine as for the shadows in the XfwfFrame widget.
 	    values.stipple =
 		XCreateBitmapFromData(XtDisplay($),
 				      RootWindowOfScreen(XtScreen($)),
-				      gray_bits, gray_width, gray_height);
+				      wx_gray_bits, wx_gray_width, wx_gray_height);
 	}
 	break;
     }
@@ -411,7 +411,7 @@ resource. It is the same routine as for the shadows in the XfwfFrame widget.
 
 @ The stipple for the shadows are loaded from a bitmap file.
 
-@incl <X11/bitmaps/gray>
+@incl "xwGray.h"
 @incl <stdio.h>
 @incl <assert.h>
 @incl <wxtimeout.h>

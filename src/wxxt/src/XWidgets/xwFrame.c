@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <X11/Xmu/Converters.h>
 #include <X11/Xmu/CharSet.h>
-#include <X11/bitmaps/gray>
+#include "xwGray.h"
 #include <./xwFrameP.h>
 static void set_shadow(
 #if NeedFunctionPrototypes
@@ -842,7 +842,7 @@ Pixmap  GetGray(self)Widget self;
 {
   if (!((XfwfFrameWidget)self)->xfwfFrame.gray) {
     ((XfwfFrameWidget)self)->xfwfFrame.gray = XCreateBitmapFromData(XtDisplay(self), XtWindow(self),
-        gray_bits, gray_width, gray_height);
+        wx_gray_bits, wx_gray_width, wx_gray_height);
   }
   return ((XfwfFrameWidget)self)->xfwfFrame.gray;
 }

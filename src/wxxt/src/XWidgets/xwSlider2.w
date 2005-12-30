@@ -673,7 +673,7 @@ parts of the thumb's frame.
 	    values.stipple =
 		XCreateBitmapFromData(XtDisplay($),
 				      RootWindowOfScreen(XtScreen($)),
-				      gray_bits, gray_width, gray_height);
+				      wx_gray_bits, wx_gray_width, wx_gray_height);
 	}
 	break;
     }
@@ -715,7 +715,7 @@ thumb's frame.
 	    values.stipple =
 		XCreateBitmapFromData(XtDisplay($),
 				      RootWindowOfScreen(XtScreen($)),
-				      gray_bits, gray_width, gray_height);
+				      wx_gray_bits, wx_gray_width, wx_gray_height);
 	}
 	break;
     }
@@ -724,5 +724,5 @@ thumb's frame.
 
 @imports
 
-@incl <X11/bitmaps/gray>
+@incl "xwGray.h"
 @incl <stdio.h>
