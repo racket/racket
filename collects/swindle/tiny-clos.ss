@@ -1410,7 +1410,7 @@
          ;; check valid supers, and always have an object class
          (cond
           [(not default) supers] ; check disabled
-          [(or (not supers) (null? supers)) (list (*default-object-class*))]
+          [(or (not supers) (null? supers)) (list default)]
           [(not (list? supers)) (error 'class "bad superclasses: ~e" supers)]
           [else (let ([c (find-if
                           (lambda (c)
