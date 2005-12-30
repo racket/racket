@@ -13,7 +13,7 @@
 
 (define proc-depth (find-depth (lambda (n) (nontail-loop n (lambda (x) x)))))
 (printf "non-tail loop overflows at ~a~n" proc-depth)
-
+  
 (test (- proc-depth) 'deep-recursion (nontail-loop proc-depth (lambda (x) x)))
 
 (test 0 'deep-recursion-escape/ec
@@ -152,5 +152,65 @@
 (test #t 'equal?-forever/box (equal?-forever l1 l2 #f))
 
 (test #t 'equal?-forever/box (call-in-nested-thread (lambda () (equal?-forever l1 l2 #f))))
+
+;; ----------------------------------------
+;; Overflow in hashing:
+
+(define (hash-deep n)
+  (let loop ([n n][a null])
+    (if (zero? n)
+	a
+	(loop (sub1 n) (list a "apple")))))
+
+(define (init-hash-table ht)
+  (let loop ([n 25])
+    (unless (zero? n)
+      (hash-table-put! ht (gensym) (gensym))
+      (loop (sub1 n)))))
+
+(define hash-depth 
+  (let ([ht (make-hash-table 'equal)])
+    (init-hash-table ht)
+    (find-depth 
+     (lambda (n) 
+       (nontail-loop (quotient proc-depth 3) 
+		     (lambda (x)
+		       (hash-table-put! ht
+					(hash-deep n)
+					#t)
+		       x))))))
+(printf "hashing overflows at ~a\n" hash-depth)
+
+(define (try-deep-hash hash-depth put-depth get-depth)
+  (let* ([ht (make-hash-table 'equal)]
+	 [val (gensym)]
+	 [key (hash-deep hash-depth)]
+	 [code (equal-hash-code key)])
+    
+    (init-hash-table ht)
+    (nontail-loop put-depth
+		  (lambda (x) 
+		    (test code 'code (equal-hash-code key))
+		    (hash-table-put! ht key val) 
+		    x))
+    (nontail-loop get-depth
+		  (lambda (x)
+		    (test code 'code (equal-hash-code key))
+		    (test val 'deep-hash (hash-table-get ht key))
+		    x))))
+
+(for-each (lambda (hash-depth)
+	    (for-each (lambda (proc-depth)
+			(try-deep-hash hash-depth 0 proc-depth))
+		      (list 0
+			    (quotient proc-depth 2)
+			    (quotient proc-depth 3)
+			    (quotient proc-depth 4))))
+	  (list hash-depth
+		(* 2 hash-depth)
+		(quotient hash-depth 2)))
+		      
+
+;; ----------------------------------------
 
 (report-errs)
