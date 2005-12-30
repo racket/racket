@@ -20,7 +20,7 @@
   (is-this-your-native-language "你的母语是简体中文吗？")
   
   (are-you-sure-you-want-to-switch-languages
-    "为了改变界面语言，现在需要重新启动DrScheme。你确定吗？")
+   "为了改变界面语言，现在需要重新启动DrScheme。你确定吗？")
   
   (interact-with-drscheme-in-language "使用简体中文作为DrScheme界面语言")
   
@@ -65,18 +65,22 @@
   ;;; bug report form
   (cancel-bug-report? "取消故障报告？")
   (are-you-sure-cancel-bug-report?
-    "你确定要取消报告故障吗？")
+   "你确定要取消报告故障吗？")
   (bug-report-form "故障报告表")
   (bug-report-field-name "姓名")
   (bug-report-field-email "电子邮件")
   (bug-report-field-summary "标题")
   (bug-report-field-severity "严重度")
   (bug-report-field-class "类别")
+  ;(bug-report-field-priority "优先级")
   (bug-report-field-description "详细描述")
   (bug-report-field-reproduce1 "再现故障")
   (bug-report-field-reproduce2 "的步骤")
   (bug-report-field-environment "环境")
+  ;(bug-report-field-tools "Tools")
   (bug-report-field-docs-installed "已安装文档")
+  ;(bug-report-field-language "语言")
+  ;(bug-report-field-teachpacks "教学包")
   (bug-report-field-collections "Collections")
   (bug-report-field-human-language "自然语言")
   (bug-report-field-version "版本")
@@ -84,8 +88,11 @@
   (bug-report-show-synthesized-info "显示综合信息")
   (bug-report-submit "提交")
   (bug-report-submit-menu-item "提交故障报告") ;; in Help Menu (drs & help desk)
+  ;(sending-bug-report "送出故障报告")
   (error-sending-bug-report "故障报告传输出错")
   (error-sending-bug-report-expln "在传输故障报告的过程中出现了错误。如果你能够正常浏览网络，请访问：\n\n    http://bugs.plt-scheme.org/\n\n使用网页上的表单提交错误报告。对于由此产生的不便，我们表示抱歉。\n\n传输错误详情：\n~a")
+  ;(bug-report-sent "故障报告已送出")
+  ;(bug-report-sent-detail "感谢你的报告。在30分钟内，您将会收到电子邮件确认。如果您没有收到邮件，请联系scheme@plt-scheme.org.")
   (illegal-bug-report "非法的故障报告")
   (pls-fill-in-field "请填写\"~a\"栏目")
   (malformed-email-address "电子邮件地址不符合格式")
@@ -115,7 +122,6 @@
   (cs-mouse-over-import "绑定~s为由~s导入")
   
   (cs-lexical-variable "词汇变量")
-  (cs-imported-variable "导入变量")
   
   ;;; info bar at botttom of drscheme frame
   (collect-button-label "垃圾收集")
@@ -137,13 +143,17 @@
   
   (goto-line "跳至...行")
   (goto-line-invalid-number
-    "~a不是合法的行号。必须提供一个在1和~a之间的数字")
+   "~a不是合法的行号。必须提供一个在1和~a之间的数字")
   (goto-position "跳至...位置")
   (no-full-name-since-not-saved
-    "当前文件还没有被命名，因为从来没有对它进行保存。")
+   "当前文件还没有被命名，因为从来没有对它进行保存。")
   (cannot-open-because-dne "无法打开~a，文件不存在。")
-  (interactions-out-of-sync
-    "警告：交互窗口和定义窗口不同步。请单击“运行”按钮。")
+  (needs-execute-language-changed
+   "警告：语言已经改变，请双击“运行”按钮。")
+  (needs-execute-teachpack-changed
+   "警告：教学包已经改变，请双击“运行”按钮。")
+  (needs-execute-defns-edited
+   "警告：定义窗口已经改变，请双击“运行”按钮。")
   (file-is-not-saved "文件\"~a\"还没有保存过")
   (save "保存")
   (close-anyway "强制关闭")
@@ -186,7 +196,10 @@
   (help-desk "Help Desk")
   (plt:hd:search "搜索")
   (plt:hd:feeling-lucky "手气不错")
+  ;(plt:hd:stop "停止")   
   (plt:hd:home "Help Desk首页") 
+  ;(plt:hd:show-manuals "显示手册") 
+  ;(plt:hd:send-bug-report "发送故障报告")
   ; next 3 are popup menu choices in help desk search frame
   (plt:hd:search-for-keyword "关键字")
   (plt:hd:search-for-keyword-or-index "关键字或索引")
@@ -201,8 +214,12 @@
   (plt:hd:refresh "更新")
   (plt:hd:refresh-all-manuals "更新所有手册")
   (plt:hd:manual-installed-date "(~a已安装)")
-  ; Help Desk configuration
   ;; refreshing manuals
+  ;(plt:hd:refresh-downloading "下载~a")
+  ;(plt:hd:refresh-installing "安装~a")
+  ;(plt:hd:refresh-progress "PLT手册下载进行中")
+  ;(plt:hd:refresh-done "手册更新完成")
+  ;(plt:hd:refresh-stopped "PLT手册下载已停止")
   (plt:hd:refreshing-manuals "重新下载手册")
   (plt:hd:refresh-downloading... "正在下载~a...")
   (plt:hd:refresh-deleting... "删除旧版本的~a...")
@@ -211,12 +228,12 @@
   (plt:hd:refreshing-manuals-finished "完成。")
   (plt:hd:about-help-desk "关于Help Desk")
   (plt:hd:help-desk-about-string
-    "Help Desk是PLT软件的信息来源，其中包含了DrScheme，MzScheme和MrEd的全部信息。\n\n版本~a\n版权所有(c)1995-2006 PLT")
+   "Help Desk是PLT软件的信息来源，其中包含了DrScheme，MzScheme和MrEd的全部信息。\n\n版本~a\n版权所有(c)1995-2005 PLT")
   (plt:hd:help-on-help "关于帮助的帮助")
   (plt:hd:help-on-help-details "如果你需要使用Help Desk的帮助，请在Help Desk的主页中点击链接“How to use Help Desk”。（要进入Help Desk的主页，请单击Help Desk窗口上方的“主页”按钮。）")
   (reload "刷新") ;; refresh the page in a web browser
   (plt:hd:ask-about-separate-browser
-    "你选择了一个指向万维网的链接。请问您是要在Help Desk中打开该页面，还是想使用浏览器程序浏览网页？")
+   "你选择了一个指向万维网的链接。请问您是要在Help Desk中打开该页面，还是想使用浏览器程序浏览网页？")
   (plt:hd:homebrew-browser "Help Desk") ;; choice for the above string (in a button)
   (plt:hd:separate-browser "网络浏览器") ;; other choice for the above string (also in a button)
   (plt:hd:external-link-in-help "在Help中的外部URL")
@@ -233,7 +250,7 @@
   (proxy-use-proxy "使用代理服务器：")
   (proxy-host "地址")
   (proxy-port "端口")
-  (proxy-bad-host "非法的代理服务器")
+  (proxy-bad-host "错误的代理服务器")
   
   ;; browser
   (rewind-in-browser-history "后退")
@@ -280,7 +297,6 @@
   (take-a-tour "教程")
   (release-notes "发行记录")
   
-  
   ;;; save file in particular format prompting.
   (save-as-plain-text "保存本文件为纯文本？")
   (save-in-drs-format "保存本文件为drscheme(非纯文本)格式？")
@@ -321,8 +337,6 @@
   (background-color "背景颜色")
   (default-text-color "默认颜色") ;; used for configuring colors, but doesn't need the word "color"
   (choose-a-background-color "请选择背景颜色")
-  
-  ; title of the color choosing dialog
   
   ; should have entire alphabet
   (font-example-string "简体中文 by 朱崇恺") 
@@ -403,9 +417,9 @@
   
   ;;; reverting a file
   (are-you-sure-revert
-    "你确定要恢复这个文件吗？这一操作无法撤销。")
+   "你确定要恢复这个文件吗？这一操作无法撤销。")
   (are-you-sure-revert-title
-    "恢复？")
+   "恢复？")
   
   ;;; saving a file
   ; ~a is filled with the filename
@@ -561,7 +575,7 @@
   
   ;; open here's new menu item
   (create-new-window-or-clear-current
-    "您是想打开一个新窗口，还是清空当前窗口？")
+   "您是想打开一个新窗口，还是清空当前窗口？")
   (clear-current "清空当前")
   (new-window "新窗口")
   
@@ -611,22 +625,22 @@
   
   ;;; file modified warning
   (file-has-been-modified
-    "要保存你所作的更改吗？")
+   "要保存你所作的更改吗？")
   (overwrite-file-button-label "保存")
   
   (definitions-modified 
-    "当前磁盘文件已被修改；请保存或恢复文件。")
+   "当前磁盘文件已被修改；请保存或恢复文件。")
   (drscheme-internal-error "DrScheme内部错误")
   
   ;;; tools
   (invalid-tool-spec "Collection ~a中info.ss的tool定义不正确。需要一个字符串或者一个非空表，得到：~e")
   (error-invoking-tool-title "调用tool ~s出错；~s")
   (tool-tool-names-same-length
-    "在~s的info.ss文件中，“tool-names”和“tools”应该是等长的表，得到~e和~e")
+   "在~s的info.ss文件中，“tool-names”和“tools”应该是等长的表，得到~e和~e")
   (tool-tool-icons-same-length
-    "在~s的info.ss文件中，“tool-icons”和“tools”应该是等长的表，得到~e和~e")
+   "在~s的info.ss文件中，“tool-icons”和“tools”应该是等长的表，得到~e和~e")
   (tool-tool-urls-same-length
-    "在~s的info.ss文件中，“tool-urls”和“tools”应该是等长的表，得到~e和~e")
+   "在~s的info.ss文件中，“tool-urls”和“tools”应该是等长的表，得到~e和~e")
   (error-getting-info-tool
    "载入~s的info.ss出错")
   (tool-error-phase1 "tool ~s第一阶段出错;~s")
@@ -696,6 +710,7 @@
   (create-executable-menu-item-label "创建可执行程序...")
   (create-executable-title "创建可执行程序")
   (must-save-before-executable "在创建可执行程序之前，你必须保存源程序")
+  ;(save-an-executable "保存为可执行程序")
   (save-a-mred-launcher "保存为MrEd程序")
   (save-a-mzscheme-launcher "保存为MzScheme程序")
   (save-a-mred-stand-alone-executable "保存为MrEd可执行程序")
@@ -710,17 +725,17 @@
   (create "创建")
   (please-choose-an-executable-filename "请选择可执行文件的名称。")
   (windows-executables-must-end-with-exe
-    "文件名\n\n  ~a\n\n不合法。Windows可执行文件必须以.exe结尾。")
+   "文件名\n\n  ~a\n\n不合法。Windows可执行文件必须以.exe结尾。")
   (macosx-executables-must-end-with-app
-    "文件名\n\n  ~a\n\n不合法。MacOS X可执行文件必须以.app结尾。")
+   "文件名\n\n  ~a\n\n不合法。MacOS X可执行文件必须以.app结尾。")
   (warning-directory-will-be-replaced
-    "警告：目录：\n\n  ~a\n\n将会被重置。继续操作？")
+   "警告：目录：\n\n  ~a\n\n将会被重置。继续操作？")
   
   (create-servlet "创建Servlet...")
   
   ; the ~a is a language such as "module" or "algol60"
   (create-servlet-unsupported-language
-    "无法为~a语言程序创建Servlet。")
+   "无法为~a语言程序创建Servlet。")
   
   ;;; buttons
   (execute-button-label "运行") 
@@ -745,6 +760,7 @@
   
   ;; number snip popup menu
   (show-decimal-expansion "用十进制表示")
+  ;(show-fraction-view "用分数表示")
   (show-mixed-fraction-view "用带分数表示")
   (show-improper-fraction-view "用假分数表示")
   (show-more-decimal-places "先是更多小数位")
@@ -761,7 +777,7 @@
   
   ;;; Language dialog
   (introduction-to-language-dialog
-    "请选择语言。大部分入门级的学生都可以使用默认语言。")
+   "请选择语言。大部分入门级的学生都可以使用默认语言。")
   (language-dialog-title "语言选择")
   (case-sensitive-label "大小写敏感")
   (output-style-label "输出格式")
@@ -786,8 +802,9 @@
   (use-mixed-fractions "带分数")
   (use-repeating-decimals "循环小数")
   (decimal-notation-for-rationals "使用十进制表示有理数")
-  (please-select-a-language "请选择语言")
   
+  ;; startup wizard screen language selection section
+  (please-select-a-language "请选择语言")  
   
   ;;; languages
   (beginning-student "初级")
@@ -810,9 +827,29 @@
   (professional-languages "正式语言")
   (teaching-languages "教学语言")
   (experimental-languages "实验语言")
+  (initial-language-category "初始语言")
+  (no-language-chosen "还没有选择语言")
   
   (module-language-one-line-summary "Run creates a REPL in the context of the module, including the module's declared language")
   
+  ;;; from the `not a language language' used initially in drscheme.
+  (must-choose-language "你必须先选择一种语言。")
+  
+  ; next two appear before and after the name of a text book (which will be in italics)
+  (using-a-textbook-before "使用")
+  (using-a-textbook-after "？")
+  
+  ; next two are before and after a language
+  (start-with-before "")
+  
+  (seasoned-plt-schemer? "Seasoned PLT Schemer?")
+  (looking-for-standard-scheme? "标准Scheme?")
+  
+  ; the three string constants are concatenated together and the middle
+  ; one is hyperlinked to the dialog that suggests various languages
+  (get-guidance-before "请使用“语言”菜单中的“选择语言...”命令，或者")
+  (get-guidance-during "获得帮助")
+  (get-guidance-after "。")
   
   ;;; debug language
   (unknown-debug-frame "[unknown]")
@@ -838,11 +875,6 @@
   (kill "终止")
   (kill? "终止？")
   
-  ;;; version checker
-  ;; the next two are used in the initial wizard dialog.
-  ;; Note that vc-wizard-check-prompt can (should) have newlines so
-  ;; it will not make the dialog too wide.
-  
   ;; special menu
   (special-menu "特殊符号(&P)")
   
@@ -867,7 +899,7 @@
   (module-browser-show-lib-paths/short "Follow lib requires") ;; check box label in show module browser pane in drscheme window.
   (module-browser-refresh "Refresh") ;; button label in show module browser pane in drscheme window.
   (module-browser-only-in-plt-and-module-langs
-    "Module浏览器只能在PLT语言和module语言(并且要求程序中有module)中使用。")
+   "Module浏览器只能在PLT语言和module语言(并且要求程序中有module)中使用。")
   (module-browser-name-length "Name length")
   (module-browser-name-short "Short")
   (module-browser-name-medium "Medium")
@@ -901,9 +933,9 @@
   (xml-tool-switch-to-scheme "转变成Scheme框")
   (xml-tool-switch-to-scheme-splice "转变成Scheme接合框")
   (xml-tool-eliminate-whitespace-in-empty-tags
-    "Eliminiate whitespace in empty tags")
+   "Eliminiate whitespace in empty tags")
   (xml-tool-leave-whitespace-alone
-    "Leave whitespace alone")
+   "Leave whitespace alone")
   
   (show-recent-items-window-menu-item "在单独窗口中显示最近使用的文件")
   (show-recent-items-window-label "最近使用的文件")
@@ -916,13 +948,14 @@
   (stepper-home "还原")
   (stepper-name "单步执行器")
   (stepper-language-level-message
-    "您选择的语言是“~a”。目前，stepper只支持“~a”和“~a”之间的语言。")
+   "您选择的语言是“~a”。目前，stepper只支持“~a”和“~a”之间的语言。")
   (stepper-button-label "单步执行")
   (stepper-previous-application "|< 调用")
   (stepper-previous "< 上一步")
   (stepper-next "下一步 >")
   (stepper-next-application "调用 >|")
   
+  (debug-tool-button-name "调试")
   
   (dialog-back "后退")
   
