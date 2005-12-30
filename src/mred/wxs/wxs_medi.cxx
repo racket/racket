@@ -1258,13 +1258,13 @@ static Scheme_Object *os_wxMediaBufferSetMaxUndoHistory(int n,  Scheme_Object *p
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   objscheme_check_valid(os_wxMediaBuffer_class, "set-max-undo-history in editor<%>", n, p);
-  int x0;
+  long x0;
 
   SETUP_VAR_STACK_REMEMBERED(1);
   VAR_STACK_PUSH(0, p);
 
   
-  x0 = WITH_VAR_STACK(objscheme_unbundle_integer_in(p[POFFSET+0], 0, 100000, "set-max-undo-history in editor<%>"));
+  x0 = WITH_VAR_STACK(objscheme_unbundle_nonnegative_symbol_integer(p[POFFSET+0], "forever", "set-max-undo-history in editor<%>"));
 
   
   WITH_VAR_STACK(((wxMediaBuffer *)((Scheme_Class_Object *)p[0])->primdata)->SetMaxUndoHistory(x0));

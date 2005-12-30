@@ -724,6 +724,7 @@ scheme_init_port_fun(Scheme_Env *env)
 void scheme_init_port_fun_config(void)
 {
   scheme_set_root_param(MZCONFIG_LOAD_DIRECTORY, scheme_false);
+  scheme_set_root_param(MZCONFIG_WRITE_DIRECTORY, scheme_false);
   scheme_set_root_param(MZCONFIG_USE_COMPILED_KIND,
 			scheme_make_immutable_pair(scheme_make_path("compiled"),
 						   scheme_null));

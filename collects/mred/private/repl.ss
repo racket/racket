@@ -15,7 +15,7 @@
     ;; The REPL buffer class
     (define esq:text%
       (class100 text% ()
-	(inherit insert last-position get-text erase change-style clear-undos)
+	(inherit insert last-position get-text erase change-style clear-undos set-max-undo-history)
 	(rename [super-on-char on-char])
 	(private-field [prompt-pos 0] [locked? #f])
 	(augment
@@ -62,7 +62,8 @@
 	       (send (make-object wx:style-delta% 'change-italic) set-delta-foreground "RED")
 	       s e)))
 	  (insert "The current input port always returns eof.") (insert #\newline)
-	  (new-prompt))))
+	  (new-prompt)
+	  (set-max-undo-history 'forever))))
 
     ;; GUI creation
     (define frame (make-object (class100 frame% args

@@ -1,4 +1,9 @@
 
+Version 300.3
+Default max undo history for an editor<%> is 0; use
+ set-max-undo-history to enable undo
+Added |MrEd:emacsUndo| low-level preference
+
 Version 300.1
 Disabled menu-item shortcuts stay effective (to just beep)
 

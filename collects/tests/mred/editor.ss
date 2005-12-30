@@ -155,6 +155,7 @@
 ;;;;;; Undo tests
 
 (define e (make-object text%))
+(send e set-max-undo-history 1024)
 
 (stv e insert "Hello")
 (st #t e is-modified?)
@@ -173,9 +174,10 @@
 (stv e redo)
 (st #f e is-modified?)
 (stv e undo)
+(st "" e get-text)
 (stv e set-modified #f)
 (st #f e is-modified?)
-(stv e redo)
+(stv e redo) ; somehow cancel's redo action to set modified to #f...
 (st #t e is-modified?)
 (st "Hello" e get-text)
 (define undone? #f)
@@ -432,6 +434,44 @@
 (st 1 t position-paragraph 7)
 (st 2 t position-paragraph 8)
 (st 2 t position-paragraph 11)
+
+;; ----------------------------------------
+
+;; More undo tests, checking mainly that internal undo array grows
+;;  correctly
+
+(define (test-undos local-undo?)
+  
+  (define e (new text%))
+
+  (send e insert (make-string 1024 #\x))
+
+  (send e set-max-undo-history 10240)
+  (send e set-position 0)
+
+  (let loop ([n 1024])
+    (unless (zero? n)
+      (send e set-position (add1 (send e get-start-position)))
+      (send e delete)
+      (send e insert #\y)
+      (when local-undo?
+	(send e undo)
+	(send e redo))
+      (loop (sub1 n))))
+
+  (st (make-string 1024 #\y) e get-text 0 'eof)
+  
+  (let loop ([n 1023])
+    (unless (zero? n)
+      (send e undo)
+      (send e undo)
+      (loop (sub1 n))))
+
+  (st (string-append "y" (make-string 1023 #\x) )
+      e get-text 0 'eof))
+
+(test-undos #f)
+(test-undos #t)
 
 ;; ----------------------------------------
 

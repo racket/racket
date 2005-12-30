@@ -20,7 +20,7 @@
   (define text-field-text% 
     (class100 text% (cb ret-cb control set-cb-mgrs!)
       (rename [super-on-char on-char])
-      (inherit get-text last-position)
+      (inherit get-text last-position set-max-undo-history)
       (private-field
        [return-cb ret-cb])
       (private-field
@@ -60,7 +60,8 @@
 	       (lambda () (set! block-callback (sub1 block-callback)))))
 	 (lambda () 
 	   (set! block-callback 0)))
-	(super-init))))
+	(super-init)
+	(set-max-undo-history 'forever))))
   
   (define wx-text-editor-canvas% 
     (class100* wx-editor-canvas% (wx-text-editor-canvas<%>) (mred proxy control parent style)

@@ -1,6 +1,10 @@
 
 class wxcgList;
 
+#define CGREC_DEBUG 0
+
+class wxChangeRecordId;
+
 class wxChangeRecord 
 {
  public:
@@ -8,6 +12,13 @@ class wxChangeRecord
   virtual ~wxChangeRecord();
   virtual Bool Undo(wxMediaBuffer *media);
   virtual void DropSetUnmodified(void);
+  virtual Bool IsComposite();
+  virtual wxChangeRecordId *GetId();
+  virtual int GetParity();
+  virtual wxChangeRecord *Inverse();
+#if CGREC_DEBUG
+  virtual char *GetName();
+#endif
 };
 
 class wxSchemeModifyRecord : public wxChangeRecord
@@ -16,6 +27,9 @@ class wxSchemeModifyRecord : public wxChangeRecord
  public:
   wxSchemeModifyRecord(void *p);
   Bool Undo(wxMediaBuffer *media);
+#if CGREC_DEBUG
+  char *GetName();
+#endif
 };
 
 class wxUnmodifyRecord : public wxChangeRecord
@@ -25,6 +39,9 @@ class wxUnmodifyRecord : public wxChangeRecord
   wxUnmodifyRecord(void);
   Bool Undo(wxMediaBuffer *media);
   void DropSetUnmodified(void);
+#if CGREC_DEBUG
+  char *GetName();
+#endif
 };
 
 class wxInsertRecord : public wxChangeRecord
@@ -33,11 +50,12 @@ class wxInsertRecord : public wxChangeRecord
   long start, end;
   long startsel, endsel;
   Bool continued;
-
  public:
   wxInsertRecord(long position, long length, Bool cont, long startsel, long endsel);
-
   Bool Undo(wxMediaBuffer *media);
+#if CGREC_DEBUG
+  char *GetName();
+#endif
 };
 
 class wxInsertSnipRecord : public wxChangeRecord
@@ -45,11 +63,12 @@ class wxInsertSnipRecord : public wxChangeRecord
  private:
   wxSnip *snip;
   Bool continued;
-
  public:
   wxInsertSnipRecord(wxSnip *s, Bool cont);
-
   Bool Undo(wxMediaBuffer *media);
+#if CGREC_DEBUG
+  char *GetName();
+#endif
 };
 
 class wxDeleteRecord : public wxChangeRecord
@@ -70,6 +89,10 @@ class wxDeleteRecord : public wxChangeRecord
   void AddClickback(wxClickback *);
 
   Bool Undo(wxMediaBuffer *media);
+
+#if CGREC_DEBUG
+  char *GetName();
+#endif
 };
 
 class wxDeleteSnipRecord : public wxChangeRecord
@@ -87,6 +110,10 @@ class wxDeleteSnipRecord : public wxChangeRecord
   void InsertSnip(wxSnip *, wxSnip *, double, double);
 
   Bool Undo(wxMediaBuffer *media);
+
+#if CGREC_DEBUG
+  char *GetName();
+#endif
 };
 
 class wxStyleChangeRecord : public wxChangeRecord
@@ -103,6 +130,10 @@ class wxStyleChangeRecord : public wxChangeRecord
 
   void AddStyleChange(long start, long end, wxStyle *style);
   Bool Undo(wxMediaBuffer *media);
+
+#if CGREC_DEBUG
+  char *GetName();
+#endif
 };
 
 class wxStyleChangeSnipRecord : public wxChangeRecord
@@ -117,6 +148,10 @@ class wxStyleChangeSnipRecord : public wxChangeRecord
 
   void AddStyleChange(wxSnip *, wxStyle *style);
   Bool Undo(wxMediaBuffer *media);
+
+#if CGREC_DEBUG
+  char *GetName();
+#endif
 };
 
 class wxMoveSnipRecord : public wxChangeRecord
@@ -129,6 +164,9 @@ class wxMoveSnipRecord : public wxChangeRecord
  public:
   wxMoveSnipRecord(wxSnip *snip, double x, double y, Bool delta, Bool cont);
   Bool Undo(wxMediaBuffer *media);
+#if CGREC_DEBUG
+  char *GetName();
+#endif
 };
 
 class wxResizeSnipRecord : public wxChangeRecord
@@ -140,5 +178,51 @@ class wxResizeSnipRecord : public wxChangeRecord
  public:
   wxResizeSnipRecord(wxSnip *snip, double x, double y, Bool cont);
   Bool Undo(wxMediaBuffer *media);
+#if CGREC_DEBUG
+  char *GetName();
+#endif
 };
 
+class wxChangeRecordId {
+ public:
+  wxChangeRecord *positive, *negative;
+};
+
+class wxCompositeRecord : public wxChangeRecord
+{
+  int cnt;
+  int parity;
+  wxChangeRecordId *id;
+  wxChangeRecord **seq;
+ public:
+  wxCompositeRecord(int cnt, wxChangeRecordId *, int parity);
+  ~wxCompositeRecord();
+  Bool Undo(wxMediaBuffer *media);
+  void DropSetUnmodified(void);
+  void AddUndo(int pos, wxChangeRecord *c);
+  Bool IsComposite();
+  wxChangeRecordId *GetId();
+  int GetParity();
+  wxChangeRecord *Inverse();
+#if CGREC_DEBUG
+  char *GetName();
+#endif
+};
+
+class wxInverseRecord : public wxChangeRecord
+{
+  int parity;
+  wxChangeRecordId *id;
+  wxChangeRecord *Get();
+ public:
+  wxInverseRecord(wxChangeRecordId *, int parity);
+  ~wxInverseRecord();
+  Bool Undo(wxMediaBuffer *media);
+  void DropSetUnmodified(void);
+  wxChangeRecordId *GetId();
+  int GetParity();
+  wxChangeRecord *Inverse();
+#if CGREC_DEBUG
+  char *GetName();
+#endif
+};

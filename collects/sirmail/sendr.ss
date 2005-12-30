@@ -605,7 +605,7 @@
         
         (make-fixed-width c message-editor #t return-bitmap)
         (send message-editor set-paste-text-only #t)
-        (send message-editor set-max-undo-history 5000) ;; Many undos!
+        (send message-editor set-max-undo-history 'forever)
         (send c set-editor message-editor)
         
         (activate-spelling message-editor)

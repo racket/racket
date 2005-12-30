@@ -144,7 +144,7 @@ static void NoInsertFile(wxMediaBuffer *)
 
 @ "add-undo" : void AddSchemeUndo(UNKNOWN_OBJ//ubUndoer////push); : : /CHECKUNDOER
 
-@ "set-max-undo-history" : void SetMaxUndoHistory(rint[0|100000]);
+@ "set-max-undo-history" : void SetMaxUndoHistory(nnls[forever]);
 @ "get-max-undo-history" : int GetMaxUndoHistory();
 
 @ "do-edit-operation" : void DoEdit(SYM[editOp],bool=TRUE,ExactLong=0);

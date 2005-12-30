@@ -87,6 +87,34 @@ void wxChangeRecord::DropSetUnmodified(void)
 {
 }
 
+Bool wxChangeRecord::IsComposite()
+{
+  return FALSE;
+}
+
+wxChangeRecordId *wxChangeRecord::GetId()
+{
+  return NULL;
+}
+
+int wxChangeRecord::GetParity()
+{
+  return 0;
+}
+
+wxChangeRecord *wxChangeRecord::Inverse()
+{
+  return NULL;
+}
+
+#if CGREC_DEBUG
+char *wxChangeRecord::GetName()
+{
+  return "???";
+}
+#endif
+
+
 wxSchemeModifyRecord::wxSchemeModifyRecord(void *proc)
 {
   p = proc;
@@ -98,6 +126,14 @@ Bool wxSchemeModifyRecord::Undo(wxMediaBuffer *)
 {
   return wxsSchemeUndo(p);
 }
+
+#if CGREC_DEBUG
+char *wxSchemeModifyRecord::GetName()
+{
+  return "scheme-modify";
+}
+#endif
+
 
 wxUnmodifyRecord::wxUnmodifyRecord(void)
 {
@@ -115,6 +151,14 @@ void wxUnmodifyRecord::DropSetUnmodified(void)
 {
   ok = 0;
 }
+
+#if CGREC_DEBUG
+char *wxUnmodifyRecord::GetName()
+{
+  return "unmodify";
+}
+#endif
+
 
 wxInsertRecord::wxInsertRecord(long position, long length, Bool cont, long ss, long es)
 {
@@ -137,6 +181,13 @@ Bool wxInsertRecord::Undo(wxMediaBuffer *buffer)
   return continued;
 }
 
+#if CGREC_DEBUG
+char *wxInsertRecord::GetName()
+{
+  return "insert";
+}
+#endif
+
 wxInsertSnipRecord::wxInsertSnipRecord(wxSnip *thesnip, Bool cont)
 {
   snip = thesnip;
@@ -154,6 +205,13 @@ Bool wxInsertSnipRecord::Undo(wxMediaBuffer *buffer)
 
   return continued;
 }
+
+#if CGREC_DEBUG
+char *wxInsertSnipRecord::GetName()
+{
+  return "insert-snip";
+}
+#endif
 
 class DeleteSnipItem /* : public wxObject --- uncomment to GC */
 {
@@ -236,6 +294,13 @@ Bool wxDeleteSnipRecord::Undo(wxMediaBuffer *buffer)
 
   return continued;
 }
+
+#if CGREC_DEBUG
+char *wxDeleteSnipRecord::GetName()
+{
+  return "delete-snip";
+}
+#endif
 
 wxDeleteRecord::wxDeleteRecord(long startpos, long endpos, Bool cont, long ss, long es)
 {
@@ -322,6 +387,13 @@ Bool wxDeleteRecord::Undo(wxMediaBuffer *buffer)
   return continued;
 }
 
+#if CGREC_DEBUG
+char *wxDeleteRecord::GetName()
+{
+  return "delete";
+}
+#endif
+
 class StyleChange /* : public wxObject  */
 {
  public:
@@ -390,6 +462,13 @@ Bool wxStyleChangeRecord::Undo(wxMediaBuffer *buffer)
   return continued;
 }
 
+#if CGREC_DEBUG
+char *wxStyleChangeRecord::GetName()
+{
+  return "style-change";
+}
+#endif
+
 class StyleChangeSnip /* : public wxObject  */
 {
  public:
@@ -451,6 +530,13 @@ Bool wxStyleChangeSnipRecord::Undo(wxMediaBuffer *buffer)
   return continued;
 }
 
+#if CGREC_DEBUG
+char *wxStyleChangeSnipRecord::GetName()
+{
+  return "style-change-snip";
+}
+#endif
+
 wxMoveSnipRecord::wxMoveSnipRecord(wxSnip *s, double fx, double fy, 
 				   Bool d, Bool cont)
 {
@@ -475,6 +561,13 @@ Bool wxMoveSnipRecord::Undo(wxMediaBuffer *buffer)
   return continued;
 }
 
+#if CGREC_DEBUG
+char *wxMoveSnipRecord::GetName()
+{
+  return "move-snip";
+}
+#endif
+
 wxResizeSnipRecord::wxResizeSnipRecord(wxSnip *s, double fx, double fy, 
 				       Bool cont)
 {
@@ -494,4 +587,167 @@ Bool wxResizeSnipRecord::Undo(wxMediaBuffer *buffer)
 
   return continued;
 }
+
+#if CGREC_DEBUG
+char *wxResizeSnipRecord::GetName()
+{
+  return "resize-snip";
+}
+#endif
+
+
+wxCompositeRecord::wxCompositeRecord(int _cnt, wxChangeRecordId *_id, int _parity)
+{
+  cnt = _cnt;
+  seq = new wxChangeRecord*[cnt];
+  id = _id;
+  parity = _parity;
+  if (!id) {
+    id = new wxChangeRecordId;
+  }
+  if (parity)
+    id->positive = this;
+  else
+    id->negative = this;
+}
+
+wxCompositeRecord::~wxCompositeRecord()
+{
+  int i = cnt;
+  wxChangeRecord *cr;
+  while (i--) {
+    cr = seq[i];
+    DELETE_OBJ cr;
+  }
+  cnt = 0;
+  seq = NULL;
+  if (id) {
+    if (parity)
+      id->positive = NULL;
+    else
+      id->negative = NULL;
+    id = NULL;
+  }
+}
+
+Bool wxCompositeRecord::Undo(wxMediaBuffer *media)
+{
+  int i = cnt;
+  wxChangeRecord *cr;
+  while (i--) {
+    cr = seq[i];
+    cr->Undo(media);
+  }
+  return FALSE;
+}
+
+void wxCompositeRecord::DropSetUnmodified()
+{
+  int i = cnt;
+  wxChangeRecord *cr;
+  while (i--) {
+    cr = seq[i];
+    cr->DropSetUnmodified();
+  }
+}
+
+void wxCompositeRecord::AddUndo(int pos, wxChangeRecord *c)
+{
+  seq[pos] = c;
+}
+
+Bool wxCompositeRecord::IsComposite()
+{
+  return TRUE;
+}
+
+wxChangeRecordId *wxCompositeRecord::GetId()
+{
+  return id;
+}
+
+int wxCompositeRecord::GetParity()
+{
+  return parity;
+}
+
+wxChangeRecord *wxCompositeRecord::Inverse()
+{
+  return new wxInverseRecord(id, !parity);
+}
+
+#if CGREC_DEBUG
+char *wxCompositeRecord::GetName()
+{
+  if (cnt == 1) {
+    wxChangeRecord *cr;
+    cr = seq[0];
+    return cr->GetName();
+  } else
+    return "composite";
+}
+#endif
+
+wxInverseRecord::wxInverseRecord(wxChangeRecordId *_id, int _parity)
+{
+  id = _id;
+  parity = _parity;
+}
+
+wxInverseRecord::~wxInverseRecord()
+{
+  /* Avoid double-frees by not doing anything */
+}
+
+wxChangeRecord *wxInverseRecord::Get()
+{
+  if (parity)
+    return id->positive;
+  else
+    return id->negative;
+}
+
+Bool wxInverseRecord::Undo(wxMediaBuffer *media)
+{
+  wxChangeRecord *c;
+  c = Get();
+  return c->Undo(media);
+}
+
+void wxInverseRecord::DropSetUnmodified()
+{
+  wxChangeRecord *c;
+  c = Get();
+  if (c)
+    c->DropSetUnmodified();
+}
+
+wxChangeRecordId *wxInverseRecord::GetId()
+{
+  return id;
+}
+
+int wxInverseRecord::GetParity()
+{
+  return parity;
+}
+
+wxChangeRecord *wxInverseRecord::Inverse()
+{
+  wxChangeRecord *c;
+  c = Get();
+  return c->Inverse();
+}
+
+#if CGREC_DEBUG
+char *wxInverseRecord::GetName()
+{
+  wxChangeRecord *c;
+  c = Get();
+  if (c)
+    return c->GetName();
+  else
+    return "inverse";
+}
+#endif
 

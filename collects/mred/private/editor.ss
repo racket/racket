@@ -79,7 +79,8 @@
 	    (inherit get-max-width set-max-width get-admin
 		     get-keymap get-style-list
 		     set-modified set-filename
-		     get-file put-file)
+		     get-file put-file
+		     get-max-undo-history)
 	    (define canvases null)
 	    (define active-canvas #f)
 	    (define auto-set-wrap? #f)
@@ -360,6 +361,7 @@
 						     [else text%]))])
 				(send e set-keymap (get-keymap))
 				(send e set-style-list (get-style-list))
+				(send e set-max-undo-history (get-max-undo-history))
 				e))))])
 
 	    (apply super-make-object args)))
