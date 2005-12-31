@@ -1099,7 +1099,7 @@ long scheme_equal_hash_key(Scheme_Object *o)
       Scheme_Symbol *s = (Scheme_Symbol *)o;
       if (!(MZ_OPT_HASH_KEY(&s->iso) & 0x1)) {
 	/* Interned. Make key depend only on the content. */
-	if (!MZ_OPT_HASH_KEY(&s->iso) & 0xFFFC) {
+	if (!(MZ_OPT_HASH_KEY(&s->iso) & 0xFFFC)) {
 	  int i, h = 0;
 	  for (i = s->len; i--; ) {
 	    h += (h << 5) + h + s->s[i];
