@@ -1410,7 +1410,7 @@
          ;; check valid supers, and always have an object class
          (cond
           [(not default) supers] ; check disabled
-          [(or (not supers) (null? supers)) (list (*default-object-class*))]
+          [(or (not supers) (null? supers)) (list default)]
           [(not (list? supers)) (error 'class "bad superclasses: ~e" supers)]
           [else (let ([c (find-if
                           (lambda (c)
@@ -1905,21 +1905,27 @@
                                            :direct-supers (list supers ...)
                                            :direct-slots  '())))
 ;;>> <sequence>
+;;>> <mutable>
 ;;>> <immutable>
 ;;>> <improper-list>
 ;;>> <pair>
+;;>> <mutable-pair>
 ;;>> <immutable-pair>
 ;;>> <list>
 ;;>> <nonempty-list>
+;;>> <mutable-nonempty-list>
 ;;>> <immutable-nonempty-list>
 ;;>> <null>
 ;;>> <vector>
 ;;>> <char>
 ;;>> <string-like>
+;;>> <mutable-string-like>
 ;;>> <immutable-string-like>
 ;;>> <string>
+;;>> <mutable-string>
 ;;>> <immutable-string>
 ;;>> <bytes>
+;;>> <mutable-bytes>
 ;;>> <immutable-bytes>
 ;;>> <path>
 ;;>> <symbol>
@@ -1989,23 +1995,29 @@
 ;;>   <opaque-struct> can only appear in the cpl of a struct class that
 ;;>   inherits from a struct which is not under the current inspector).
 (defprimclass <sequence>)
+(defprimclass <mutable>)
 (defprimclass <immutable>)
 (defprimclass <improper-list> <sequence>)
 (defprimclass <pair> <improper-list>)
+(defprimclass <mutable-pair> <pair> <mutable>)
 (defprimclass <immutable-pair> <pair> <immutable>)
 (defprimclass <list> <improper-list>)
 (defprimclass <nonempty-list> <pair> <list>)
+(defprimclass <mutable-nonempty-list> <nonempty-list> <mutable>)
 (defprimclass <immutable-nonempty-list> <nonempty-list> <immutable>)
 (defprimclass <null> <list>)
-(defprimclass <vector> <sequence>)
+(defprimclass <vector> <sequence> <mutable>)
 (defprimclass <char>)
 (defprimclass <string-like> <sequence>)
+(defprimclass <mutable-string-like> <string-like> <mutable>)
 (defprimclass <immutable-string-like> <string-like> <immutable>)
 (defprimclass <string> <string-like>)
-(defprimclass <immutable-string> <immutable-string-like>)
+(defprimclass <mutable-string> <string> <mutable-string-like>)
+(defprimclass <immutable-string> <string> <immutable-string-like>)
 (defprimclass <bytes> <string-like>)
-(defprimclass <immutable-bytes> <immutable-string-like>)
-(defprimclass <path> <string-like>)
+(defprimclass <mutable-bytes> <bytes> <mutable-string-like>)
+(defprimclass <immutable-bytes> <bytes> <immutable-string-like>)
+(defprimclass <path> <immutable-string-like>)
 (defprimclass <symbol>)
 (defprimclass <keyword> <symbol>)
 (defprimclass <real-keyword>)
@@ -2035,7 +2047,7 @@
 (defprimclass <input-stream-port> <input-port> <stream-port>)
 (defprimclass <output-stream-port> <output-port> <stream-port>)
 (defprimclass <void>)
-(defprimclass <box>)
+(defprimclass <box> <mutable>)
 (defprimclass <weak-box> <box>)
 (defprimclass <regexp>)
 (defprimclass <byte-regexp>)
@@ -2088,34 +2100,36 @@
                                       [(primitive? x) <primitive-procedure>]
                                       [else <procedure>])]
               [(string?      x) (if (immutable? x) <immutable-string> <string>)]
-              [(pair?        x) (if (list? x)
-                                  (if (immutable? x)
-                                    <immutable-nonempty-list> <nonempty-list>)
-                                  (if (immutable? x)
-                                    <immutable-pair> <pair>))]
+              [(pair?        x)
+               (if (list? x)
+                 (if (immutable? x)
+                   <immutable-nonempty-list> <mutable-nonempty-list>)
+                 (if (immutable? x)
+                   <immutable-pair> <mutable-pair>))]
               [(null?        x) <null>]
               [(symbol?      x) (if (keyword? x) <keyword> <symbol>)]
-              [(number?      x) (if (exact? x)
-                                  (cond [(integer?  x) <exact-integer>]
-                                        [(rational? x) <exact-rational>]
-                                        [(real?     x) <exact-real>]
-                                        [(complex?  x) <exact-complex>]
-                                        [else <exact>]) ; should not happen
-                                  (cond [(integer?  x) <inexact-integer>]
-                                        [(rational? x) <inexact-rational>]
-                                        [(real?     x) <inexact-real>]
-                                        [(complex?  x) <inexact-complex>]
-                                        [else <inexact>]))] ; should not happen
+              [(number?      x)
+               (if (exact? x)
+                 (cond [(integer?  x) <exact-integer>]
+                       [(rational? x) <exact-rational>]
+                       [(real?     x) <exact-real>]
+                       [(complex?  x) <exact-complex>]
+                       [else <exact>]) ; should not happen
+                 (cond [(integer?  x) <inexact-integer>]
+                       [(rational? x) <inexact-rational>]
+                       [(real?     x) <inexact-real>]
+                       [(complex?  x) <inexact-complex>]
+                       [else <inexact>]))] ; should not happen
               [(boolean?     x) <boolean>]
               [(char?        x) <char>]
               [(bytes?       x) (if (immutable? x) <immutable-bytes> <bytes>)]
               [(path?        x) <path>]
               [(vector?      x) <vector>]
               [(eof-object?  x) <end-of-file>]
-              [(input-port?  x) (if (file-stream-port? x)
-                                  <input-stream-port> <input-port>)]
-              [(output-port? x) (if (file-stream-port? x)
-                                  <output-stream-port> <output-port>)]
+              [(input-port?  x)
+               (if (file-stream-port? x) <input-stream-port> <input-port>)]
+              [(output-port? x)
+               (if (file-stream-port? x) <output-stream-port> <output-port>)]
               ;; MzScheme stuff
               [(struct? x)
                (let-values ([(type _) (struct-info x)])
@@ -2126,15 +2140,15 @@
               [(regexp?         x) <regexp>]
               [(byte-regexp?    x) <byte-regexp>]
               [(promise?        x) <promise>]
-              [(exn?            x) (if (exn:break? x)
-                                     <break-exn> <non-break-exn>)]
+              [(exn?            x)
+               (if (exn:break? x) <break-exn> <non-break-exn>)]
               [(real-keyword?   x) <real-keyword>]
               [(semaphore?      x) <semaphore>]
               [(hash-table?     x) <hash-table>]
               [(thread?         x) <thread>]
               [(subprocess?     x) <subprocess>]
-              [(syntax?         x) (if (identifier? x)
-                                     <identifier-syntax> <syntax>)]
+              [(syntax?         x)
+               (if (identifier? x) <identifier-syntax> <syntax>)]
               [(namespace?      x) <namespace>]
               [(custodian?      x) <custodian>]
               [(tcp-listener?   x) <tcp-listener>]
@@ -2183,24 +2197,40 @@
 ;;>       <sequence> : <primitive-class>
 ;;>         <improper-list> : <primitive-class>
 ;;>           <pair> : <primitive-class>
+;;>             <mutable-pair> : <primitive-class>
 ;;>             <immutable-pair> : <primitive-class>
 ;;>             <nonempty-list> : <primitive-class>
+;;>               <mutable-nonempty-list> : <primitive-class>
 ;;>               <immutable-nonempty-list> : <primitive-class>
 ;;>           <list> : <primitive-class>
 ;;>             <nonempty-list> : <primitive-class>
+;;>               <mutable-nonempty-list> : <primitive-class>
 ;;>               <immutable-nonempty-list> : <primitive-class>
 ;;>             <null> : <primitive-class>
 ;;>         <vector> : <primitive-class>
 ;;>         <string-like> : <primitive-class>
 ;;>           <string> : <primitive-class>
+;;>             <mutable-string> : <primitive-class>
+;;>             <immutable-string> : <primitive-class>
 ;;>           <bytes> : <primitive-class>
-;;>         <path> : <primitive-class>
+;;>             <mutable-bytes> : <primitive-class>
+;;>             <immutable-bytes> : <primitive-class>
+;;>           <path> : <primitive-class>
+;;>       <mutable> : <primitive-class>
+;;>         <mutable-pair> : <primitive-class>
+;;>         <mutable-nonempty-list> : <primitive-class>
+;;>         <mutable-string-like> : <primitive-class>
+;;>           <mutable-string> : <primitive-class>
+;;>           <mutable-bytes> : <primitive-class>
+;;>         <vector>
+;;>         <box>
 ;;>       <immutable> : <primitive-class>
 ;;>         <immutable-nonempty-list> : <primitive-class>
 ;;>         <immutable-pair> : <primitive-class>
 ;;>         <immutable-string-like> : <primitive-class>
 ;;>           <immutable-string> : <primitive-class>
 ;;>           <immutable-bytes> : <primitive-class>
+;;>           <path> : <primitive-class>
 ;;>       <char> : <primitive-class>
 ;;>       <symbol> : <primitive-class>
 ;;>         <keyword> : <primitive-class>
