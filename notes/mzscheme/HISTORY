@@ -1,4 +1,8 @@
 
+Version 301, December 2005
+Fixed a bug in custom input port in certain cases where breaks
+ are enabled and a read or peek procedure returns an event
+
 Version 300, December 2005
 Generalized network-address handling, includes IPv6
 Added ephemerons

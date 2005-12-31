@@ -278,6 +278,7 @@ static void register_thread_sync();
 
 static Scheme_Object *sch_sync(int argc, Scheme_Object *args[]);
 static Scheme_Object *sch_sync_timeout(int argc, Scheme_Object *args[]);
+static Scheme_Object *sch_sync_enable_break(int argc, Scheme_Object *args[]);
 static Scheme_Object *sch_sync_timeout_enable_break(int argc, Scheme_Object *args[]);
 static Scheme_Object *evt_p(int argc, Scheme_Object *args[]);
 static Scheme_Object *evts_to_evt(int argc, Scheme_Object *args[]);
@@ -696,7 +697,7 @@ void scheme_init_thread(Scheme_Env *env)
 						      2, -1), 
 			     env);
   scheme_add_global_constant("sync/enable-break", 
-			     scheme_make_prim_w_arity(scheme_sync_enable_break,
+			     scheme_make_prim_w_arity(sch_sync_enable_break,
 						      "sync/enable-break", 
 						      1, -1),
 			     env);
@@ -5320,24 +5321,29 @@ Scheme_Object *scheme_sync_timeout(int argc, Scheme_Object *argv[])
   return do_sync("sync/timeout", argc, argv, 0, 1, 0);
 }
 
-static Scheme_Object *do_scheme_sync_enable_break(const char *who, int with_timeout, int argc, Scheme_Object *argv[])
+static Scheme_Object *do_scheme_sync_enable_break(const char *who, int with_timeout, int tailok, int argc, Scheme_Object *argv[])
 {
   if (argc == 2 && SCHEME_FALSEP(argv[0]) && SCHEME_SEMAP(argv[1])) {
     scheme_wait_sema(argv[1], -1);
     return scheme_void;
   }
 
-  return do_sync(who, argc, argv, 1, with_timeout, 1);
+  return do_sync(who, argc, argv, 1, with_timeout, tailok);
 }
 
 Scheme_Object *scheme_sync_enable_break(int argc, Scheme_Object *argv[])
 {
-  return do_scheme_sync_enable_break("sync/enable-break", 0, argc, argv);
+  return do_scheme_sync_enable_break("sync/enable-break", 0, 0, argc, argv);
+}
+
+static Scheme_Object *sch_sync_enable_break(int argc, Scheme_Object *argv[])
+{
+  return do_scheme_sync_enable_break("sync/enable-break", 0, 1, argc, argv);
 }
 
 static Scheme_Object *sch_sync_timeout_enable_break(int argc, Scheme_Object *argv[])
 {
-  return do_scheme_sync_enable_break("sync/timeout/enable-break", 1, argc, argv);
+  return do_scheme_sync_enable_break("sync/timeout/enable-break", 1, 1, argc, argv);
 }
 
 static Scheme_Object *evts_to_evt(int argc, Scheme_Object *argv[])
