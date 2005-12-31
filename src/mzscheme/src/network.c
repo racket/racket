@@ -439,19 +439,6 @@ static struct protoent *proto;
 #define MZ_SOCK_HOST_NAME_MAX_LEN 64
 #define MZ_SOCK_SVC_NAME_MAX_LEN 32
 
-#if defined(USE_WINSOCK_TCP) || defined(PTHREADS_OK_FOR_GHBN)
-
-# ifdef USE_WINSOCK_TCP
-#  ifdef __BORLANDC__
-#   define MZ_LPTHREAD_START_ROUTINE unsigned int (__stdcall*)(void*)
-#  else
-#   define MZ_LPTHREAD_START_ROUTINE LPTHREAD_START_ROUTINE
-#  endif
-# else
-#  include <pthread.h>
-#   define MZ_LPTHREAD_START_ROUTINE void *(*)(void *)
-# endif
-
 /* mz_addrinfo is defined in scheme.h */
 
 #ifdef HAVE_GETADDRINFO
@@ -514,6 +501,19 @@ const char *mz_gai_strerror(int ecode)
   return hstrerror(ecode);
 }
 #endif
+
+#if defined(USE_WINSOCK_TCP) || defined(PTHREADS_OK_FOR_GHBN)
+
+# ifdef USE_WINSOCK_TCP
+#  ifdef __BORLANDC__
+#   define MZ_LPTHREAD_START_ROUTINE unsigned int (__stdcall*)(void*)
+#  else
+#   define MZ_LPTHREAD_START_ROUTINE LPTHREAD_START_ROUTINE
+#  endif
+# else
+#  include <pthread.h>
+#   define MZ_LPTHREAD_START_ROUTINE void *(*)(void *)
+# endif
 
 static volatile int ghbn_lock;
 
