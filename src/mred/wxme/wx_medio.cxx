@@ -592,7 +592,9 @@ char *wxMediaStreamIn::GetAString(long *n, long limit, char *target, int extra, 
 	while (1) {
 	  if ((size + get_amt + 1) >= alloc) {
 	    char *naya;
-	    alloc *= 2;
+	    do {
+	      alloc *= 2;
+	    } while (alloc <= (size + get_amt + 1));
 	    naya = new WXGC_ATOMIC char[alloc];
 	    memcpy(naya, s, size);
 	    s = naya;
@@ -663,13 +665,17 @@ char *wxMediaStreamIn::GetAString(long *n, long limit, char *target, int extra, 
 		  return SCHEME_BYTE_STR_VAL(str);
 		}
 	      } else {
-		printf("bad 9.9 %ld %ld %s\n", orig_len, len, SCHEME_BYTE_STR_VAL(str));
+		BAD_PRINTF(("bad 9.9 %ld %ld %s\n", orig_len, len, SCHEME_BYTE_STR_VAL(str)));
 	      }
 	    }
 	  }
+	  BAD_PRINTF(("bad 10--1\n"));
 	}
+	BAD_PRINTF(("bad 10-0\n"));
       }
+      BAD_PRINTF(("bad 10-1\n"));
     }
+    BAD_PRINTF(("bad 10-2\n"));
   } else if (!recur && (buf[0] == '(')) {
     /* Read a sequence of strings */
     Scheme_Object *accum = scheme_null;
@@ -749,6 +755,9 @@ char *wxMediaStreamIn::GetAString(long *n, long limit, char *target, int extra, 
 
       return target;
     }
+    BAD_PRINTF(("bad 10-3\n"));
+  } else {
+    BAD_PRINTF(("bad 10-4 %d\n", buf[0]));
   }
    
   bad = 1;
@@ -997,7 +1006,7 @@ wxMediaStreamIn* wxMediaStreamIn::Get(long *v)
 	  signed char bv;
 	  if (f->Read((char *)&bv, 1) != 1) {
 	    bad = 1;
-	    printf("25\n");
+	    BAD_PRINTF(("25\n"));
 	    *v = 0;
 	  } else
 	    *v = bv;
@@ -1013,7 +1022,7 @@ wxMediaStreamIn* wxMediaStreamIn::Get(long *v)
 	  unsigned char bl[4];
 	  if (f->Read((char *)bl, 4) != 4) {
 	    bad = 1;
-	    printf("27\n");
+	    BAD_PRINTF(("27\n"));
 	    *v = 0;
 	  } else
 	    *v = (((long)((signed char *)bl)[0]) << 24) 
@@ -1024,7 +1033,7 @@ wxMediaStreamIn* wxMediaStreamIn::Get(long *v)
 	unsigned char b2;
 	if (f->Read((char *)&b2, sizeof(char)) != sizeof(char)) {
 	  bad = 1;
-	  printf("28\n");
+	  BAD_PRINTF(("28\n"));
 	  *v = 0;
 	} else
 	  *v = (((int)(b & 0x3F)) << 8) | b2;

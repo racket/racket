@@ -291,7 +291,7 @@ int WNE(EventRecord *e, double sleep_secs)
 
     if (!ok) {
       if ((GetEventClass(ref) == kEventClassMouse)
-		 && (GetEventKind(ref) == kEventMouseWheelMoved)) {
+	  && (GetEventKind(ref) == kEventMouseWheelMoved)) {
 	UInt32 modifiers;
 	EventMouseWheelAxis axis;
 	SInt32 delta;
