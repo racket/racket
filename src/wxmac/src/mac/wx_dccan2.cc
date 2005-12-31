@@ -698,11 +698,12 @@ void wxCanvasDC::DrawPath(wxPath *p, double xoffset, double yoffset, int fillSty
 
   SetCurrentDC();
 
-
   cnt = p->ToPolygons(&lens, &ptss, user_scale_x, user_scale_y);
 
-  if (!cnt)
+  if (!cnt) {
+    ReleaseCurrentDC();
     return;
+  }
 
   total_cnt = 0;
   for (i = 0; i < cnt; i++) {
