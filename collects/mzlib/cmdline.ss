@@ -337,10 +337,7 @@
 		(list #f (list "--help" "-h")
 		      (lambda (f)
 			(let* ([sp (open-output-string)])
-			  (fprintf sp "~a~a" program
-				   (if (null? table)
-				       ""
-				       " [ <flag> ... ]"))
+			  (fprintf sp "~a [ <flag> ... ]" program)
 			  (print-args sp finish-help finish)
 			  (fprintf sp "~n where <flag> is one of~n")
 			  (for-each
