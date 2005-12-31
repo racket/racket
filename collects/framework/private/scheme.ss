@@ -163,7 +163,8 @@
       ;; split/collapse-text : (instanceof menu%) (instanceof editor<%>) (instanceof mouse-event%) -> void
       (define (split/collapse-text menu text event)
         (when (and (is-a? text -text<%>)
-                   (not (send text is-frozen?)))
+                   (not (send text is-frozen?))
+                   (not (send text is-stopped?)))
           (let* ([on-it-box (box #f)]
                  [click-pos 
                   (call-with-values
