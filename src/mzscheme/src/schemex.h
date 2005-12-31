@@ -649,6 +649,9 @@ void (*scheme_security_check_file)(const char *who, const char *filename, int gu
 void (*scheme_security_check_network)(const char *who, const char *host, int port, int client);
 struct mz_addrinfo *(*scheme_get_host_address)(const char *address, int id, int *err, 
 						      int family, int passive, int tcp);
+void (*scheme_getnameinfo)(void *sa, int salen, 
+				  char *host, int hostlen,
+				  char *serv, int servlen);
 int (*scheme_get_port_file_descriptor)(Scheme_Object *p, long *_fd);
 int (*scheme_get_port_socket)(Scheme_Object *p, long *_s);
 void (*scheme_set_type_printer)(Scheme_Type stype, Scheme_Type_Printer printer);

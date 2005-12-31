@@ -2229,6 +2229,27 @@ static Scheme_Object *tcp_listener_p(int argc, Scheme_Object *argv[])
 	   : scheme_false);
 }
 
+void scheme_getnameinfo(void *sa, int salen, 
+			char *host, int hostlen,
+			char *serv, int servlen)
+{
+#ifdef HAVE_GETADDRINFO
+  getnameinfo(sa, salen, host, hostlen, serv, servlen,
+	      NI_NUMERICHOST | NI_NUMERICSERV);
+#else
+  if (host) {
+    unsigned char *b;
+    b = (unsigned char *)&((struct sockaddr_in *)sa)->sin_addr;
+    sprintf(host, "%d.%d.%d.%d", b[0], b[1], b[2], b[3]);
+  }
+  if (serv) {
+    int id;
+    id = ntohs(((struct sockaddr_in *)sa)->sin_port);
+    sprintf(serv, "%d", id);
+  }
+#endif
+}
+
 static Scheme_Object *tcp_addresses(int argc, Scheme_Object *argv[])
 {
 #ifdef USE_TCP
@@ -2280,16 +2301,14 @@ static Scheme_Object *tcp_addresses(int argc, Scheme_Object *argv[])
     }
     there_len = l;
 
-    getnameinfo((struct sockaddr *)here, here_len, 
-		host_buf, sizeof(host_buf),
-		NULL, 0,
-		NI_NUMERICHOST | NI_NUMERICSERV);
+    scheme_getnameinfo((struct sockaddr *)here, here_len, 
+		       host_buf, sizeof(host_buf),
+		       NULL, 0);
     result[0] = scheme_make_utf8_string(host_buf);
 
-    getnameinfo((struct sockaddr *)there, there_len, 
-		host_buf, sizeof(host_buf),
-		NULL, 0,
-		NI_NUMERICHOST | NI_NUMERICSERV);
+    scheme_getnameinfo((struct sockaddr *)there, there_len, 
+		       host_buf, sizeof(host_buf),
+		       NULL, 0);
     result[1] = scheme_make_utf8_string(host_buf);
   }
 # else
@@ -3100,10 +3119,9 @@ static int do_udp_recv(const char *name, Scheme_UDP *udp, char *bstr, long start
 
     v[0] = scheme_make_integer(x);
 
-    getnameinfo((struct sockaddr *)src_addr, asize,
-		host_buf, sizeof(host_buf),
-		svc_buf, sizeof(svc_buf),
-		NI_NUMERICHOST | NI_NUMERICSERV);
+    scheme_getnameinfo((struct sockaddr *)src_addr, asize,
+		       host_buf, sizeof(host_buf),
+		       svc_buf, sizeof(svc_buf));
     
     if (udp->previous_from_addr) {
       mzchar *s;
