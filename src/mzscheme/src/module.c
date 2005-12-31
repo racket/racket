@@ -1689,6 +1689,8 @@ int same_modidx(Scheme_Object *a, Scheme_Object *b)
   return scheme_equal(a, b);
 }
 
+static Scheme_Object *_module_resolve_k(void);
+
 static Scheme_Object *_module_resolve(Scheme_Object *modidx, Scheme_Object *stx)
 {
   if (SCHEME_SYMBOLP(modidx) || SCHEME_FALSEP(modidx))
@@ -1704,8 +1706,14 @@ static Scheme_Object *_module_resolve(Scheme_Object *modidx, Scheme_Object *stx)
     
     base = ((Scheme_Modidx *)modidx)->base;
     if (!SCHEME_FALSEP(base)) {
-      /* FIXME: this can go arbitrarily deep, in principle. */
-      base = _module_resolve(base, NULL);
+# include "mzstkchk.h"
+      {
+	Scheme_Thread *p = scheme_current_thread;
+	p->ku.k.p1 = (void *)base;
+	base = scheme_handle_stack_overflow(_module_resolve_k);
+      } else {
+	base = _module_resolve(base, NULL);
+      }
     }
 
     a[0] = ((Scheme_Modidx *)modidx)->path;
@@ -1723,6 +1731,16 @@ static Scheme_Object *_module_resolve(Scheme_Object *modidx, Scheme_Object *stx)
   }
 
   return ((Scheme_Modidx *)modidx)->resolved;
+}
+
+static Scheme_Object *_module_resolve_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *base = (Scheme_Object *)p->ku.k.p1;
+
+  p->ku.k.p1 = NULL;
+
+  return _module_resolve(base, NULL);
 }
 
 Scheme_Object *scheme_module_resolve(Scheme_Object *modidx)
