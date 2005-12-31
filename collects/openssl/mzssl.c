@@ -1037,7 +1037,7 @@ static Scheme_Object *ssl_connect(int argc, Scheme_Object *argv[])
   int status;
   const char *errstr = "Unknown error";
   int err = 0;
-  GC_CAN_IGNORE struct addrinfo *addr;
+  GC_CAN_IGNORE struct mz_addrinfo *addr;
   int sock;
 
   address = check_host_and_convert("ssl-connect", argc, argv, 0);
@@ -1191,7 +1191,7 @@ ssl_listen(int argc, Scheme_Object *argv[])
   }
 
   {
-    GC_CAN_IGNORE struct addrinfo *tcp_listen_addr;
+    GC_CAN_IGNORE struct mz_addrinfo *tcp_listen_addr;
     int err;
 
     tcp_listen_addr = scheme_get_host_address(address, id, &err,
@@ -1623,16 +1623,14 @@ static Scheme_Object *ssl_addresses(int argc, Scheme_Object *argv[])
     }
     there_len = l;
 
-    getnameinfo((struct sockaddr *)here, here_len, 
-		host_buf, sizeof(host_buf),
-		NULL, 0,
-		NI_NUMERICHOST | NI_NUMERICSERV);
+    scheme_getnameinfo((struct sockaddr *)here, here_len, 
+		       host_buf, sizeof(host_buf),
+		       NULL, 0);
     result[0] = scheme_make_utf8_string(host_buf);
 
-    getnameinfo((struct sockaddr *)there, there_len, 
-		host_buf, sizeof(host_buf),
-		NULL, 0,
-		NI_NUMERICHOST | NI_NUMERICSERV);
+    scheme_getnameinfo((struct sockaddr *)there, there_len, 
+		       host_buf, sizeof(host_buf),
+		       NULL, 0);
     result[1] = scheme_make_utf8_string(host_buf);
   }
 
