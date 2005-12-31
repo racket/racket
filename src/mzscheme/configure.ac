@@ -565,6 +565,16 @@ AC_TRY_LINK([#include <langinfo.h>],
    have_codeset=no)
 AC_MSG_RESULT($have_codeset)
 
+AC_MSG_CHECKING([for getaddrinfo])
+AC_TRY_LINK([#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>],
+	[getaddrinfo(NULL, NULL, NULL, NULL);],
+   AC_DEFINE(HAVE_GETADDRINFO,1,[Have getaddrinfo])
+   have_getaddrinfo=yes,
+   have_getaddrinfo=no)
+AC_MSG_RESULT($have_getaddrinfo)
+
 iconv_lib_flag=""
 if test "${enable_iconv}" = "yes" ; then
   AC_CHECK_HEADER(iconv.h, enable_iconv=yes, enable_iconv=no)

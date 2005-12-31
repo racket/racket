@@ -647,8 +647,8 @@ void (*scheme_add_fd_handle)(void *h, void *fds, int repost);
 void (*scheme_add_fd_eventmask)(void *fds, int mask);
 void (*scheme_security_check_file)(const char *who, const char *filename, int guards);
 void (*scheme_security_check_network)(const char *who, const char *host, int port, int client);
-struct addrinfo *(*scheme_get_host_address)(const char *address, int id, int *err, 
-						   int family, int passive, int tcp);
+struct mz_addrinfo *(*scheme_get_host_address)(const char *address, int id, int *err, 
+						      int family, int passive, int tcp);
 int (*scheme_get_port_file_descriptor)(Scheme_Object *p, long *_fd);
 int (*scheme_get_port_socket)(Scheme_Object *p, long *_s);
 void (*scheme_set_type_printer)(Scheme_Type stype, Scheme_Type_Printer printer);

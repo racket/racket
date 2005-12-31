@@ -24,3 +24,6 @@
 
 /* whether nl_langinfo works */
 #undef HAVE_CODESET
+
+/* whether getaddrinfo works */
+#define HAVE_GETADDRINFO 1

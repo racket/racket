@@ -1564,6 +1564,24 @@ MZ_EXTERN Scheme_Object *scheme_register_parameter(Scheme_Prim *function, char *
 #endif /* SCHEME_DIRECT_EMBEDDED */
 
 /*========================================================================*/
+/*                              addrinfo                                  */
+/*========================================================================*/
+
+#ifdef HAVE_GETADDRINFO
+# define mz_addrinfo addrinfo
+#else
+struct mz_addrinfo {
+  int ai_flags;
+  int ai_family;
+  int ai_socktype;
+  int ai_protocol;
+  size_t  ai_addrlen;
+  struct sockaddr *ai_addr;
+  struct mz_addrinfo *ai_next;
+};
+#endif
+
+/*========================================================================*/
 /*                              FFI functions                             */
 /*========================================================================*/
 
@@ -1663,6 +1681,8 @@ extern Scheme_Extension_Table *scheme_extension_table;
 # define MZ_FD_CLR(n, p) FD_CLR(n, p)
 # define MZ_FD_ISSET(n, p) FD_ISSET(n, p)
 #endif
+
+/*========================================================================*/
 
 #ifdef __cplusplus
 }

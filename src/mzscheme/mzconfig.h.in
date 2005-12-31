@@ -20,3 +20,6 @@
 
 /* whether nl_langinfo works */
 #undef HAVE_CODESET
+
+/* whether getaddrinfo works */
+#undef HAVE_GETADDRINFO

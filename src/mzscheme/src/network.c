@@ -452,6 +452,69 @@ static struct protoent *proto;
 #   define MZ_LPTHREAD_START_ROUTINE void *(*)(void *)
 # endif
 
+/* mz_addrinfo is defined in scheme.h */
+
+#ifdef HAVE_GETADDRINFO
+# define mzAI_PASSIVE AI_PASSIVE 
+# define mz_getaddrinfo getaddrinfo
+# define mz_freeaddrinfo freeaddrinfo
+# define mz_gai_strerror gai_strerror
+#else
+# define mzAI_PASSIVE 0
+static int mz_getaddrinfo(const char *nodename, const char *servname,
+			  const struct mz_addrinfo *hints, struct mz_addrinfo **res)
+{
+  struct hostent *h;
+
+  if (nodename)
+    h = gethostbyname(nodename);
+  else
+    h = NULL;
+
+  if (h || !nodename) {
+    struct mz_addrinfo *ai;
+    struct sockaddr_in *sa;
+    int j, id = 0;
+
+    ai = (struct mz_addrinfo *)malloc(sizeof(struct mz_addrinfo));
+    sa = (struct sockaddr_in *)malloc(sizeof(struct sockaddr_in));
+    ai->ai_addr = (struct sockaddr *)sa;
+
+    ai->ai_addrlen = sizeof(struct sockaddr_in);
+    if (servname) {
+      for (j = 0; servname[j]; j++) {
+	id = (id * 10) + (servname[j] - '0');
+      }
+    }
+
+    ai->ai_family = MZ_PF_INET;
+    ai->ai_socktype = hints->ai_socktype;
+    ai->ai_protocol = hints->ai_protocol;
+    ai->ai_next = NULL;
+
+    sa->sin_family = (id ? AF_INET : AF_UNSPEC);
+    sa->sin_port = htons(id);
+    memset(&(sa->sin_addr), 0, sizeof(sa->sin_addr));
+    memset(&(sa->sin_zero), 0, sizeof(sa->sin_zero));
+    if (h)
+      memcpy(&sa->sin_addr, h->h_addr_list[0], h->h_length); 
+    
+    *res = ai;
+    return 0;
+  }
+  return h_errno;
+}
+void mz_freeaddrinfo(struct mz_addrinfo *ai)
+{
+  free(ai->ai_addr);
+  free(ai);
+}
+const char *mz_gai_strerror(int ecode)
+{
+  return hstrerror(ecode);
+}
+#endif
+
 static volatile int ghbn_lock;
 
 typedef struct {
@@ -460,12 +523,12 @@ typedef struct {
 # else
   int pin;
 # endif
-  struct addrinfo *result;
+  struct mz_addrinfo *result;
   int err;
   int done;
 } GHBN_Rec;
 
-static struct addrinfo * volatile ghbn_result;
+static struct mz_addrinfo * volatile ghbn_result;
 static volatile int ghbn_err;
 
 /* For in-thread DNS: */
@@ -474,7 +537,7 @@ static volatile int ghbn_err;
 
 static char ghbn_hostname[MZ_MAX_HOSTNAME_LEN];
 static char ghbn_servname[MZ_MAX_SERVNAME_LEN];
-static struct addrinfo ghbn_hints;
+static struct mz_addrinfo ghbn_hints;
 # ifdef USE_WINSOCK_TCP
 HANDLE ready_sema;
 # else
@@ -488,14 +551,14 @@ START_XFORM_SKIP;
 static long getaddrinfo_in_thread(void *data)
 {
   int ok;
-  struct addrinfo *res, hints;
+  struct mz_addrinfo *res, hints;
   char hn_copy[MZ_MAX_HOSTNAME_LEN], sn_copy[MZ_MAX_SERVNAME_LEN];
 # ifndef USE_WINSOCK_TCP
   int fd = ready_fd;
 # endif
   
   if (ghbn_result) {
-    freeaddrinfo(ghbn_result);
+    mz_freeaddrinfo(ghbn_result);
     ghbn_result = NULL;
   }
 
@@ -509,9 +572,9 @@ static long getaddrinfo_in_thread(void *data)
   write(fd, "?", 1);
 # endif
 
-  ok = getaddrinfo(hn_copy[0] ? hn_copy : NULL, 
-		   sn_copy[0] ? sn_copy : NULL, 
-		   &hints, &res);
+  ok = mz_getaddrinfo(hn_copy[0] ? hn_copy : NULL, 
+		      sn_copy[0] ? sn_copy : NULL, 
+		      &hints, &res);
 
   ghbn_result = res;
   ghbn_err = ok;
@@ -595,7 +658,7 @@ static void ghbn_thread_need_wakeup(Scheme_Object *_rec, void *fds)
 # endif
 }
 
-static int MZ_GETADDRINFO(const char *name, const char *svc, struct addrinfo *hints, struct addrinfo **res)
+static int MZ_GETADDRINFO(const char *name, const char *svc, struct mz_addrinfo *hints, struct mz_addrinfo **res)
 {
   GHBN_Rec *rec;
   int ok;
@@ -603,7 +666,7 @@ static int MZ_GETADDRINFO(const char *name, const char *svc, struct addrinfo *hi
   if ((name && ((strlen(name) >= MZ_MAX_HOSTNAME_LEN) || !name[0]))
       || (svc && ((strlen(svc) >= MZ_MAX_SERVNAME_LEN) || !svc[0]))) {
     /* Give up on a separate thread. */
-    return getaddrinfo(name, svc, hints, res);
+    return mz_getaddrinfo(name, svc, hints, res);
   }
 
   rec = MALLOC_ONE_ATOMIC(GHBN_Rec);
@@ -690,17 +753,17 @@ static int MZ_GETADDRINFO(const char *name, const char *svc, struct addrinfo *hi
   return rec->err;
 }
 #else
-# define MZ_GETADDRINFO getaddrinfo
+# define MZ_GETADDRINFO mz_getaddrinfo
 #endif
 
 #ifdef USE_SOCKETS_TCP
 
-struct addrinfo *scheme_get_host_address(const char *address, int id, int *err, 
-					 int family, int passive, int tcp)
+struct mz_addrinfo *scheme_get_host_address(const char *address, int id, int *err, 
+					    int family, int passive, int tcp)
 {
   char buf[32], *service;
   int ok;
-  GC_CAN_IGNORE struct addrinfo *r, hints;
+  GC_CAN_IGNORE struct mz_addrinfo *r, hints;
 
   if (id) {
     service = buf;
@@ -713,10 +776,10 @@ struct addrinfo *scheme_get_host_address(const char *address, int id, int *err,
     return NULL;
   }
 
-  memset(&hints, 0, sizeof(struct addrinfo));
+  memset(&hints, 0, sizeof(struct mz_addrinfo));
   hints.ai_family = ((family < 0) ? PF_UNSPEC : family);
   if (passive) {
-    hints.ai_flags |= AI_PASSIVE;
+    hints.ai_flags |= mzAI_PASSIVE;
   }
   if (tcp) {
     hints.ai_socktype = SOCK_STREAM;
@@ -1517,15 +1580,15 @@ make_tcp_output_port(void *data, const char *name)
 #ifdef USE_SOCKETS_TCP
 typedef struct Close_Socket_Data {
   tcp_t s;
-  struct addrinfo *src_addr, *dest_addr;
+  struct mz_addrinfo *src_addr, *dest_addr;
 } Close_Socket_Data;
 
 static void closesocket_w_decrement(Close_Socket_Data *csd)
 {
   closesocket(csd->s);
   if (csd->src_addr)
-    freeaddrinfo(csd->src_addr);
-  freeaddrinfo(csd->dest_addr);  
+    mz_freeaddrinfo(csd->src_addr);
+  mz_freeaddrinfo(csd->dest_addr);  
   --scheme_file_open_count;
 }
 #endif
@@ -1533,7 +1596,7 @@ static void closesocket_w_decrement(Close_Socket_Data *csd)
 const char *scheme_hostname_error(int err)
 {
 #ifdef USE_SOCKETS_TCP
-  return gai_strerror(err);
+  return mz_gai_strerror(err);
 #else
   return "?";
 #endif
@@ -1546,7 +1609,7 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
   int errpart = 0, errid = 0, nameerr = 0, no_local_spec;
   Scheme_Object *bs, *src_bs;
 #ifdef USE_SOCKETS_TCP
-  GC_CAN_IGNORE struct addrinfo *tcp_connect_dest, *tcp_connect_src;
+  GC_CAN_IGNORE struct mz_addrinfo *tcp_connect_dest, *tcp_connect_src;
 #endif
 
   if (!SCHEME_CHAR_STRINGP(argv[0]))
@@ -1606,7 +1669,7 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
     else
       tcp_connect_src = scheme_get_host_address(src_address, src_id, &errid, -1, 1, 1);
     if (no_local_spec || tcp_connect_src) {
-      GC_CAN_IGNORE struct addrinfo *addr;
+      GC_CAN_IGNORE struct mz_addrinfo *addr;
       for (addr = tcp_connect_dest; addr; addr = addr->ai_next) {
 	tcp_t s;
 	s = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
@@ -1687,8 +1750,8 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
 	      Scheme_Tcp *tcp;
 
 	      if (tcp_connect_src)
-		freeaddrinfo(tcp_connect_src);
-	      freeaddrinfo(tcp_connect_dest);
+		mz_freeaddrinfo(tcp_connect_src);
+	      mz_freeaddrinfo(tcp_connect_dest);
 
 	      tcp = make_tcp_port_data(s, 2);
 	      
@@ -1714,14 +1777,14 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
 	}
       }
       if (tcp_connect_src)
-	freeaddrinfo(tcp_connect_src);
+	mz_freeaddrinfo(tcp_connect_src);
     } else {
       errpart = 2;
       nameerr = 1;
       errmsg = "; local host not found";
     } 
     if (tcp_connect_dest)
-      freeaddrinfo(tcp_connect_dest);
+      mz_freeaddrinfo(tcp_connect_dest);
   } else {
     errpart = 1;
     nameerr = 1;
@@ -1799,7 +1862,7 @@ tcp_listen(int argc, Scheme_Object *argv[])
 #endif
 
   {
-    GC_CAN_IGNORE struct addrinfo *tcp_listen_addr, *addr;
+    GC_CAN_IGNORE struct mz_addrinfo *tcp_listen_addr, *addr;
     int err, count = 0, pos = 0, i;
     listener_t *l = NULL;
 #ifdef MZ_TCP_LISTEN_IPV6_ONLY_SOCKOPT
@@ -1856,7 +1919,7 @@ tcp_listen(int argc, Scheme_Object *argv[])
 	    if (any_v4 && !pos) {
 	      /* Maybe we can make it work with just IPv4. Try again. */
 	      no_ipv6 = 1;
-	      freeaddrinfo(tcp_listen_addr);
+	      mz_freeaddrinfo(tcp_listen_addr);
 	      goto retry;
 	    }
 	  }
@@ -1874,7 +1937,7 @@ tcp_listen(int argc, Scheme_Object *argv[])
 	      if (!pos) {
 		/* IPV6_V6ONLY doesn't work */
 		no_ipv6 = 1;
-		freeaddrinfo(tcp_listen_addr);
+		mz_freeaddrinfo(tcp_listen_addr);
 		goto retry;
 	      } else {
 		errid = errno;
@@ -1921,7 +1984,7 @@ tcp_listen(int argc, Scheme_Object *argv[])
 	      REGISTER_SOCKET(s);
 
 	      if (pos == count) {
-		freeaddrinfo(tcp_listen_addr);
+		mz_freeaddrinfo(tcp_listen_addr);
 
 		return (Scheme_Object *)l;
 	      }
@@ -1958,7 +2021,7 @@ tcp_listen(int argc, Scheme_Object *argv[])
 	--scheme_file_open_count;
       }
       
-      freeaddrinfo(tcp_listen_addr);
+      mz_freeaddrinfo(tcp_listen_addr);
     } else {
       scheme_raise_exn(MZEXN_FAIL_NETWORK,
 		       "tcp-listen: host not found: %s (%N)",
@@ -2428,7 +2491,7 @@ static Scheme_Object *make_udp(int argc, Scheme_Object *argv[])
 
   if (address || origid) {
     int err;
-    GC_CAN_IGNORE struct addrinfo *udp_bind_addr = NULL;
+    GC_CAN_IGNORE struct mz_addrinfo *udp_bind_addr = NULL;
     if (!origid)
       origid = 1025;
     id = origid;
@@ -2442,7 +2505,7 @@ static Scheme_Object *make_udp(int argc, Scheme_Object *argv[])
     s = socket(udp_bind_addr->ai_family,
 	       udp_bind_addr->ai_socktype,
 	       udp_bind_addr->ai_protocol);
-    freeaddrinfo(udp_bind_addr);
+    mz_freeaddrinfo(udp_bind_addr);
   } else {
     s = socket(MZ_PF_INET, SOCK_DGRAM, 0);
   }
@@ -2552,7 +2615,7 @@ static Scheme_Object *udp_bind_or_connect(const char *name, int argc, Scheme_Obj
   Scheme_UDP *udp;
   char *address = "";
   unsigned short origid, id;
-  GC_CAN_IGNORE struct addrinfo *udp_bind_addr;
+  GC_CAN_IGNORE struct mz_addrinfo *udp_bind_addr;
   int errid, err;
 
   udp = (Scheme_UDP *)argv[0];
@@ -2614,7 +2677,7 @@ static Scheme_Object *udp_bind_or_connect(const char *name, int argc, Scheme_Obj
     if (do_bind) {
       if (!bind(udp->s, udp_bind_addr->ai_addr, udp_bind_addr->ai_addrlen)) {
 	udp->bound = 1;
-	freeaddrinfo(udp_bind_addr);
+	mz_freeaddrinfo(udp_bind_addr);
 	return scheme_void;
       }
       errid = SOCK_ERRNO();
@@ -2660,13 +2723,13 @@ static Scheme_Object *udp_bind_or_connect(const char *name, int argc, Scheme_Obj
 	else
 	  udp->connected = 0;
 	if (udp_bind_addr)
-	  freeaddrinfo(udp_bind_addr);
+	  mz_freeaddrinfo(udp_bind_addr);
 	return scheme_void;
       }
     }
 
     if (udp_bind_addr)
-      freeaddrinfo(udp_bind_addr);
+      mz_freeaddrinfo(udp_bind_addr);
 
     scheme_raise_exn(MZEXN_FAIL_NETWORK,
 		     "%s: can't %s to port: %d on address: %s (%E)", 
@@ -2819,7 +2882,7 @@ static Scheme_Object *udp_send_it(const char *name, int argc, Scheme_Object *arg
   long start, end;
   int delta, err;
   unsigned short origid, id;
-  GC_CAN_IGNORE struct addrinfo *udp_dest_addr;
+  GC_CAN_IGNORE struct mz_addrinfo *udp_dest_addr;
 
   udp = (Scheme_UDP *)argv[0];
 #endif
@@ -2874,7 +2937,7 @@ static Scheme_Object *udp_send_it(const char *name, int argc, Scheme_Object *arg
 	memcpy(s, udp_dest_addr->ai_addr, udp_dest_addr->ai_addrlen);
 	fill_evt->dest_addr = s;
 	fill_evt->dest_addr_len = udp_dest_addr->ai_addrlen;
-	freeaddrinfo(udp_dest_addr);
+	mz_freeaddrinfo(udp_dest_addr);
       }
       return scheme_void;
     } else {
@@ -2885,7 +2948,7 @@ static Scheme_Object *udp_send_it(const char *name, int argc, Scheme_Object *arg
 			 (udp_dest_addr ? udp_dest_addr->ai_addrlen : 0),
 			 can_block);
       if (udp_dest_addr)
-	freeaddrinfo(udp_dest_addr);
+	mz_freeaddrinfo(udp_dest_addr);
       return r;
     }
   } else {
