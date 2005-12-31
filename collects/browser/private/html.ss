@@ -549,9 +549,19 @@
               (letrec ([image-map-snips null]
                        [image-maps null]
                        
+                       [html-basic-style
+                        (let ([sl (send a-text get-style-list)])
+                          (or (send sl find-named-style "Html Standard")
+                              (send sl find-named-style "Standard")
+                              (send sl find-named-style "Basic")))]
+                       
+                       ;; inserts 
                        [insert 
-                        (lambda (what)
-                          (a-text-insert what (current-pos)))]
+                        (λ (what)
+                          (let ([pos-before (current-pos)])
+                            (a-text-insert what pos-before)
+                            (let ([pos-after (current-pos)])
+                              (change-style html-basic-style pos-before pos-after))))]
                        
                        [insert-newlines
                         (lambda (num forced-lines para-base)

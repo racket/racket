@@ -104,13 +104,14 @@ The html-eval-ok parameter controls the evaluation of
 
 ----------------------------------------
 
-> (hyper-text-mixin text%) - Extends the given text% class. The
-   initialization arguments are extended with a four new first
-   arguments: a url or a port to be loaded into the text% object, a
-   top-level-window or #f to use as a parent for status dialogs, a
-   progress procedure used as for `get-url', and either #f or a post
-   string to be sent to a web server (technically changing the GET to
-   a POST).
+> (hyper-text-mixin text%) - Extends the given text%
+   class. The initialization arguments are extended with a
+   four new first arguments: a url or a port to be loaded
+   into the text% object (using the `reload' method,
+   described below), a top-level-window or #f to use as a
+   parent for status dialogs, a progress procedure used as
+   for `get-url', and either #f or a post string to be sent
+   to a web server (technically changing the GET to a POST).
 
    Sets the autowrap-bitmap to #f.
    
@@ -171,6 +172,9 @@ The html-eval-ok parameter controls the evaluation of
 
     Reloads the current page.
      
+    The text defaultly uses the basic style named "Html
+    Standard" in the editor (if it exists).
+
 >  remap-url :: (send o remap-url url) -> url or string or #f
 
    When visiting a new page, this method is called to remap
@@ -414,6 +418,10 @@ Reads HTML from `input-port' and renders it to `html-text<%>-obj'.  If
 `load-img?' is false, then images are rendered as Xed-out boxes. If
 `eval-mz?' is false, then MZSCHEME hyperlink expressions and comments
 are not evaluated.
+
+Uses the style named "Html Standard" in the editor's
+style-list (if it exists) for all of the inserted text's
+default style. 
 
 ========================================
 _external.ss_

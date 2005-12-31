@@ -12,6 +12,7 @@
   (provide help-desk-frame<%>)
   
   (provide/contract 
+   (add-help-desk-font-prefs (boolean? . -> . any))
    (set-bug-report-info! any/c)
    (find-doc-names (-> (listof (cons/c path? string?))))
    (goto-manual-link (string? string? . -> . any))

@@ -40,11 +40,12 @@
        [browser : browser^ (browser@ plt-installer mred ic-tcp ic-url)]
        [gui : gui^ (gui@ browser ic-url)]
 
-       [m : () (main@)])
+       [main : main^ (main@)])
       (export (open gui)
+              (open main)
               (open web-server))))
   
-  (define-values/invoke-unit/sig ((open gui^) (open web-server^))
+  (define-values/invoke-unit/sig ((open gui^) (open web-server^) (open main^))
                                  help-desk@
                                  #f
                                  setup:plt-installer^
@@ -52,4 +53,5 @@
                                  net:tcp^)
   
   (provide-signature-elements gui^)
+  (provide-signature-elements main^)
   (provide-signature-elements web-server^))

@@ -197,7 +197,8 @@
      goto-plt-license
      help-desk
      get-docs
-     open-url))
+     open-url
+     add-help-desk-font-prefs))
   
   (define-signature drscheme:language^
     (get-default-mixin

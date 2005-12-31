@@ -6,7 +6,7 @@ It is only loaded when Help Desk is run by itself (outside DrScheme).
 |#
 
 (module help mzscheme 
-  (require "bug-report.ss" ;; load now to init the preferences early
+  (require "bug-report.ss" ;; load now to init the preferences early enough
            (lib "cmdline.ss")
            (lib "class.ss")
            (lib "framework.ss" "framework")
@@ -19,22 +19,7 @@ It is only loaded when Help Desk is run by itself (outside DrScheme).
    "help-desk"
    (current-command-line-arguments))
   
-  (preferences:add-panel
-   (list (string-constant font-prefs-panel-title))
-   (lambda (panel)
-     (let* ([hp (new horizontal-panel% (parent panel))]
-            [size (make-object slider% 
-                    (string-constant font-size)
-                    1
-                    72
-                    hp
-                    (lambda (size evt)
-                      (preferences:set 'framework:standard-style-list:font-size (send size get-value)))
-                    (preferences:get 'framework:standard-style-list:font-size))])
-       (preferences:add-callback
-        'framework:standard-style-list:font-size
-        (lambda (p v) (send size set-value v)))
-       hp)))
+  (add-help-desk-font-prefs #f)
   (color-prefs:add-background-preferences-panel)
   (preferences:add-warnings-checkbox-panel)
   (install-help-browser-preference-panel)

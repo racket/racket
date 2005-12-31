@@ -865,8 +865,6 @@ TODO
             (send context set-breakables #f #f)
             (send context enable-evaluation))
           
-          (inherit backward-containing-sexp)
-          
           (define/augment (submit-to-port? key) 
             (and prompt-position
                  (only-whitespace-after-insertion-point)

@@ -31,7 +31,8 @@
               [drscheme:debug : drscheme:debug^]
               [drscheme:frame : drscheme:frame^]
               [drscheme:font : drscheme:font^]
-              [drscheme:modes : drscheme:modes^])
+              [drscheme:modes : drscheme:modes^]
+              [drscheme:help-desk : drscheme:help-desk^])
 
       (application-file-handler
        (let ([default (application-file-handler)])
@@ -167,6 +168,7 @@
        drscheme:teachpack:unmarshall-teachpack-cache)
       
       (drscheme:font:setup-preferences)
+      (drscheme:help-desk:add-help-desk-font-prefs #t)
       (color-prefs:add-background-preferences-panel)
       (scheme:add-preferences-panel)
       (scheme:add-coloring-preferences-panel)

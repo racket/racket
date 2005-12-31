@@ -1,6 +1,10 @@
 (module sig mzscheme
   (require (lib "unitsig.ss"))
-  (provide gui^)
+  (provide gui^
+           main^)
+  
+  (define-signature main^
+    (add-help-desk-font-prefs))
   
   (define-signature gui^
     (help-desk-frame<%>

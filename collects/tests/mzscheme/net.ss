@@ -217,6 +217,9 @@
              "http://www.drscheme.org/a ; a/ b / c ")
   (test-s->u (vector "http" "robb y" "www.drscheme.org" #f '("") '() #f)
              "http://robb%20y@www.drscheme.org/")
+
+  (test-s->u (vector "mailto" #f #f #f '("robby@plt-scheme.org") () #f)
+             "mailto:robby@plt-scheme.org")
   
   (let ([empty-url (make-url #f #f #f #f '() '() #f)])
     (test-c-u/r (string->url "http://www.drscheme.org")

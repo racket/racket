@@ -20,7 +20,8 @@
       
       (define (setup-preferences)
         (preferences:add-panel
-         (list (string-constant font-prefs-panel-title))
+         (list (string-constant font-prefs-panel-title)
+               (string-constant drscheme))
          (λ (panel)
            (let* ([main (make-object vertical-panel% panel)]
 		  [min-size 1]

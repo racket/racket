@@ -122,7 +122,7 @@ A test case:
             (send mult set 0 0 0)
             (send add set 0 0 255))
           
-          (define/override (get-keymaps) (cons hyper-keymap (super get-keymaps)))
+          (define/override (get-keymaps) (list* space-page-keymap hyper-keymap (super get-keymaps)))
           (define/public (get-hyper-keymap) hyper-keymap)
           
           (define/augment (after-set-position)
@@ -585,6 +585,10 @@ A test case:
         
       (define hyper-text% (hyper-text-mixin text:keymap%))
 
+      (define space-page-keymap (make-object keymap%))
+      (add-text-keymap-functions space-page-keymap)
+      (send space-page-keymap map-function "space" "next-page")
+      
       (define hyper-keymap (make-object keymap%))
       (send hyper-keymap add-function "rewind" 
             (lambda (txt evt)
@@ -622,7 +626,6 @@ A test case:
       (send hyper-keymap map-function "pageup" "previous-page")
       (send hyper-keymap map-function "wheeldown" "do-wheel")
       (send hyper-keymap map-function "pagedown" "next-page")
-      ; (send hyper-keymap map-function "space" "next-page")
       
       ;; call-with-hyper-panel : object ((is-a?/c hyper-panel<%>) -> void) -> void
       (define (call-with-hyper-panel text f)

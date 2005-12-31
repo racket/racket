@@ -62,7 +62,8 @@
             [main : () (main@ 
                         app unit get/extend language-configuration language teachpack
                         module-language tools debug frame font
-                        modes)])
+                        modes
+                        help-desk)])
       (export
        (unit teachpack drscheme:teachpack)
        (unit language-configuration drscheme:language-configuration)))))

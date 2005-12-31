@@ -18,6 +18,9 @@
               [drscheme:language-configuration : drscheme:language-configuration/internal^]
               [drscheme:teachpack : drscheme:teachpack^])
       
+      (rename [-add-help-desk-font-prefs add-help-desk-font-prefs])
+      (define (-add-help-desk-font-prefs b) (add-help-desk-font-prefs b))
+      
       ;; : -> string
       (define (get-computer-language-info)
         (let* ([language/settings (preferences:get 

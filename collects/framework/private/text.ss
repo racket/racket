@@ -1434,7 +1434,9 @@ WARNING: printf is rebound in the body of the unit to always
                                                  (make-write-special-proc value-style)))
               (let ([install-handlers
                      (λ (port)
-                       (set-interactive-print-handler port)
+                       ;; don't want to set the port-print-handler here; 
+                       ;; instead drscheme sets the global-port-print-handler
+                       ;; to catch fractions and the like
                        (set-interactive-write-handler port)
                        (set-interactive-display-handler port))])
                 (install-handlers out-port)

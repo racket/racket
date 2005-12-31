@@ -29,9 +29,9 @@
   
   (define (set-interactive-print-handler port)
     (port-print-handler
-     port
-     (λ (val port)
-       (do-printing pretty-print val port))))
+      port
+      (λ (val port)
+        (do-printing pretty-print val port))))
             
   (define (use-number-snip? x)
     (and #f

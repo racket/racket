@@ -304,7 +304,14 @@ please adhere to these guidelines:
 
   ;; in the Help Desk language dialog, title on the right.
   (plt:hd:manual-search-ordering "Manual Search Order")
-
+  
+  ;; in the help-desk standalone font preference dialog, on a check box
+  (use-drscheme-font-size "Use DrScheme's font size")
+  
+  ;; in the preferences dialog in drscheme there is example text for help desk font size.
+  ;; clicking the links in that text produces a dialog with this message
+  (help-desk-this-is-just-example-text
+   "This is just example text for setting the font size. Open Help Desk proper (from Help menu) to follow these links.")
 
  ;; Help desk htty proxy
  (http-proxy "HTTP Proxy")
