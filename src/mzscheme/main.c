@@ -105,8 +105,14 @@ extern BOOL WINAPI DllMain(HINSTANCE inst, ULONG reason, LPVOID reserved);
 static char *get_init_filename(Scheme_Env *env)
 {
   Scheme_Object *f;
+  Scheme_Thread * volatile p;
+  mz_jmp_buf * volatile save, newbuf;
 
-  if (!scheme_setjmp(scheme_error_buf)) {
+  p = scheme_get_current_thread();
+  save = p->error_buf;
+  p->error_buf = &newbuf;
+
+  if (!scheme_setjmp(newbuf)) {
     f = scheme_builtin_value("find-system-path");
     if (f) {
       Scheme_Object *a[1];
@@ -115,10 +121,13 @@ static char *get_init_filename(Scheme_Env *env)
 
       f = _scheme_apply(f, 1, a);
 
-      if (SCHEME_PATHP(f))
+      if (SCHEME_PATHP(f)) {
+	p->error_buf = save;
 	return SCHEME_PATH_VAL(f);
+      }
     }
   }
+  p->error_buf = save;
 
   return NULL;
 }
@@ -141,6 +150,7 @@ extern Scheme_Object *scheme_initialize(Scheme_Env *env);
 #define PRINTF printf
 #define PROGRAM "MzScheme"
 #define PROGRAM_LC "mzscheme"
+#define INITIAL_BIN_TYPE "zi"
 #define BANNER scheme_banner()
 #define MZSCHEME_CMD_LINE
 
@@ -226,6 +236,16 @@ int MAIN(int argc, MAIN_char **MAIN_argv)
   char **argv;
 #endif
 
+#ifdef DOS_FILE_SYSTEM
+  /* Order matters: load dependencies first */
+  load_delayed_dll("msvcr71.dll");
+# ifndef MZ_PRECISE_GC
+  load_delayed_dll("libmzgcxxxxxxx.dll");
+# endif
+  load_delayed_dll("libmzsch" DLL_3M_SUFFIX "xxxxxxx.dll");
+  record_dll_path();
+#endif
+
   stack_start = (void *)&stack_start;
 
 #if defined(MZ_PRECISE_GC)
@@ -239,7 +259,7 @@ int MAIN(int argc, MAIN_char **MAIN_argv)
   oskit_prepare(&argc, &argv);
 #endif
 
-  scheme_actual_main = actual_main;
+  scheme_set_actual_main(actual_main);
 
 #ifdef WINDOWS_UNICODE_MAIN
  {

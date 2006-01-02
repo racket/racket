@@ -38,8 +38,8 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="Unicows.lib WSock32.lib User32.lib Advapi32.lib"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libmzschxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalDependencies="Unicows.lib WSock32.lib User32.lib Advapi32.lib delayimp.lib"
 				OutputFile="..\..\..\$(ProjectName).exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
@@ -94,8 +94,8 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="Unicows.lib WSock32.lib User32.lib Advapi32.lib"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libmzschxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalDependencies="Unicows.lib WSock32.lib User32.lib Advapi32.lib delayimp.lib"
 				OutputFile="..\..\..\$(ProjectName).exe"
 				SuppressStartupBanner="TRUE"
 				IgnoreDefaultLibraryNames="libcd.lib"

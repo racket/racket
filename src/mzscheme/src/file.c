@@ -4702,126 +4702,34 @@ char *scheme_get_exec_path(void)
 
 /********************************************************************************/
 
-#ifdef MAC_CLASSIC_PROCESS_CONTROL
+#ifdef DOS_FILE_SYSTEM
 
-static long check_four(char *name, int which, int argc, Scheme_Object **argv)
+static char *dlldir;
+
+__declspec(dllexport) char *scheme_get_dll_path(char *s);
+__declspec(dllexport) void scheme_set_dll_path(char *p);
+
+char *scheme_get_dll_path(char *s)
 {
-  Scheme_Object *o = argv[which];
-  
-  if (!SCHEME_BYTE_STRINGP(o))
-    scheme_wrong_type(name, "MacOS type/creator 4-character byte string", which, argc, argv);
-
-  if (SCHEME_BYTE_STRTAG_VAL(o) != 4) {
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		     "%s: string is not a 4-character type or creator signature: %V",
-		     name,
-		     o);
-  }
-  
-  return *(long *)SCHEME_BYTE_STR_VAL(o);
+  if (dlldir) {
+    int len1, len2;
+    char *p;
+    len1 = strlen(dlldir);
+    len2 = strlen(s);
+    p = (char *)scheme_malloc_atomic(len1 + len2 + 2);
+    memcpy(p, dlldir, len1);
+    if (p[len1 - 1] != '\\') {
+      p[len1++] = '\\';
+    }
+    memcpy(p + len1, s, len2 + 1);
+    return p;
+  } else
+    return s;
 }
 
-static int appl_name_to_spec(char *name, int find_path, Scheme_Object *o, FSSpec *spec)
+void scheme_set_dll_path(char *p)
 {
-  if (find_path) {
-    HVolumeParam volPB;
-    HIOParam paramPB;
-    GetVolParmsInfoBuffer volinfo;
-    DTPBRec rec;
-    Str255 nm;
-    short vrefnum;
-    long junk;
-    long creator = check_four(name, 0, 1, &o);
-
-    /* try current volume: */
-    scheme_os_setcwd(SCHEME_PATH_VAL(scheme_get_param(scheme_current_config(), 
-						      MZCONFIG_CURRENT_DIRECTORY)),
-		     0);
-    if (HGetVol(nm, &vrefnum, &junk) == noErr) {
-      rec.ioNamePtr = NULL;
-      rec.ioVRefNum = vrefnum;
-      
-      if (PBDTGetPath(&rec)) {
-	rec.ioIndex = 0;
-	rec.ioNamePtr = nm;
-	rec.ioFileCreator = creator;
-
-	if (PBDTGetAPPL(&rec, 0)) {
-	  memcpy(spec->name, nm, 32);
-	  spec->vRefNum = vrefnum;
-	  spec->parID = rec.ioAPPLParID;
-	  
-	  return 1;
-	}
-      }
-    }
-
-    volPB.ioNamePtr = NULL;
-    paramPB.ioNamePtr = NULL;
-    paramPB.ioBuffer = (Ptr)&volinfo;
-    paramPB.ioReqCount = sizeof(volinfo);
-
-    /* Loop over all volumes: */
-    for (volPB.ioVolIndex = 1; PBHGetVInfoSync ((HParmBlkPtr)&volPB) == noErr; volPB.ioVolIndex++) {
-      /* Call PBHGetVolParms call to ensure the volume is a local volume. */
-      paramPB.ioVRefNum = volPB.ioVRefNum;
-
-      if (PBHGetVolParmsSync ((HParmBlkPtr)&paramPB) == noErr && volinfo.vMServerAdr == 0) {
-	rec.ioNamePtr = NULL;
-	rec.ioVRefNum = volPB.ioVRefNum;
-	
-	if (PBDTGetPath(&rec))
-	  break;
-
-	rec.ioIndex = 0;
-	rec.ioNamePtr = nm;
-	rec.ioFileCreator = creator;
-
-	if (PBDTGetAPPL(&rec, 0))
-	  break;
-      
-	memcpy(spec->name, nm, 32);
-	spec->vRefNum = vrefnum;
-	spec->parID = rec.ioAPPLParID;
-
-	return 1;
-      }
-    }
-    return 0;
-  } else {
-    char *s;
-    
-    if (!SCHEME_PATH_STRINGP(o))
-      scheme_wrong_type(name, SCHEME_PATH_STRING_STR, 0, 1, &o);
-  
-    s = scheme_expand_string_filename(o,
-				      name,
-				      NULL,
-				      0);
-
-    if (!find_mac_file(s, 0, spec, 0, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0))
-      return 0;
-  }
-  
-  return 1;
-}
-
-int scheme_mac_start_app(char *name, int find_path, Scheme_Object *o)
-{
-  FSSpec spec;
-  LaunchParamBlockRec rec;
-
-  if (!appl_name_to_spec(name, find_path, o, &spec))
-    return 0;
-
-  rec.launchBlockID = extendedBlock;
-  rec.launchEPBLength = extendedBlockLen;
-  rec.launchFileFlags = 0;
-  rec.launchControlFlags = launchContinue | launchNoFileFlags;
-  rec.launchAppSpec = &spec;
-  rec.launchAppParameters = NULL;
-
-  return !LaunchApplication(&rec);
+  dlldir = p;
 }
 
 #endif

@@ -247,7 +247,7 @@ int wxWinMain(int wm_is_mred,
     } else {
       char name[1024], *s;
       int i;
-      ::GetModuleFileName(hInstance, name, 10923);
+      ::GetModuleFileName(hInstance, name, 1023);
 
        i = strlen(name) - 1;    
        while (i && (name[i] != '\\')) {

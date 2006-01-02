@@ -78,15 +78,17 @@ static void yield_indefinitely()
   void *dummy;
 #endif
   mz_jmp_buf * volatile save, newbuf;
+  Scheme_Thread * volatile p;
 
-  save = scheme_current_thread->error_buf;
-  scheme_current_thread->error_buf = &newbuf;
+  p = scheme_get_current_thread();
+  save = p->error_buf;
+  p->error_buf = &newbuf;
 
   if (!scheme_setjmp(newbuf)) {
     mred_wait_eventspace();
   }
 
-  scheme_current_thread->error_buf = save;
+  p->error_buf = save;
 
 #ifdef MZ_PRECISE_GC
   dummy = NULL; /* makes xform think that dummy is live, so we get a __gc_var_stack__ */
@@ -126,12 +128,15 @@ extern "C" Scheme_Object *scheme_initialize(Scheme_Env *env);
 #endif
 #define GET_INIT_FILENAME get_init_filename
 #if REDIRECT_STDIO || WINDOW_STDIO || WCONSOLE_STDIO
-# define PRINTF scheme_console_printf
+# define PRINTF mred_console_printf
+static void (*mred_console_printf)(char *str, ...);
+# define NEED_MRED_CONSOLE_PRINTF
 #else
 # define PRINTF printf
 #endif
 #define PROGRAM "MrEd"
 #define PROGRAM_LC "mred"
+#define INITIAL_BIN_TYPE "ri"
 
 #ifdef wx_mac
 # ifndef OS_X
@@ -190,9 +195,11 @@ static FinishArgs *xfa;
 static void do_graph_repl(Scheme_Env *env)
 {
   mz_jmp_buf * volatile save, newbuf;
+  Scheme_Thread * volatile p;
 
-  save = scheme_current_thread->error_buf;
-  scheme_current_thread->error_buf = &newbuf;
+  p = scheme_get_current_thread();
+  save = p->error_buf;
+  p->error_buf = &newbuf;
 
   if (!scheme_setjmp(newbuf)) {
     if (xfa->alternate_rep)
@@ -201,7 +208,7 @@ static void do_graph_repl(Scheme_Env *env)
       scheme_eval_string("(graphical-read-eval-print-loop)", env);
   }
 
-  scheme_current_thread->error_buf = save;
+  p->error_buf = save;
 
 #ifdef MZ_PRECISE_GC
   env = NULL; /* makes xform think that env is live, so we get a __gc_var_stack__ */
@@ -228,11 +235,14 @@ static int do_main_loop(FinishArgs *fa)
 
  {
    mz_jmp_buf * volatile save, newbuf;
-   save = scheme_current_thread->error_buf;
-   scheme_current_thread->error_buf = &newbuf;
+   Scheme_Thread * volatile p;
+
+   p = scheme_get_current_thread();
+   save = p->error_buf;
+   p->error_buf = &newbuf;
    if (!scheme_setjmp(newbuf))
      wxDoMainLoop();
-   scheme_current_thread->error_buf = save;
+   p->error_buf = save;
  }
 
   return 0;
@@ -240,6 +250,9 @@ static int do_main_loop(FinishArgs *fa)
 
 static void run_from_cmd_line(int argc, char **argv, Scheme_Env *(*mk_basic_env)(void))
 {
+#ifdef NEED_MRED_CONSOLE_PRINTF
+  mred_console_printf = scheme_get_console_printf();
+#endif
   run_from_cmd_line(argc, argv, mk_basic_env, do_main_loop);
 }
 
@@ -390,9 +403,9 @@ int main(int argc, char *argv[])
 # endif
 #endif
 
-  scheme_actual_main = CAST_ACTUAL_MAIN actual_main;
-  mred_run_from_cmd_line = run_from_cmd_line;
-  mred_finish_cmd_line_run = finish_cmd_line_run;
+  scheme_set_actual_main(actual_main);
+  mred_set_run_from_cmd_line(run_from_cmd_line);
+  mred_set_finish_cmd_line_run(finish_cmd_line_run);
 
   rval = scheme_image_main(argc, argv);
 
@@ -608,6 +621,15 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored
   LPWSTR m_lpCmdLine;
   long argc, j, l;
   char *a, **argv, *b, *normalized_path = NULL;
+
+  /* Order matters: load dependencies first */
+  load_delayed_dll("msvcr71.dll");
+# ifndef MZ_PRECISE_GC
+  load_delayed_dll("libmzgcxxxxxxx.dll");
+# endif
+  load_delayed_dll("libmzsch" DLL_3M_SUFFIX "xxxxxxx.dll");
+  load_delayed_dll("libmred" DLL_3M_SUFFIX "xxxxxxx.dll");
+  record_dll_path();
 
   /* Get command line: */
   m_lpCmdLine = GetCommandLineW();

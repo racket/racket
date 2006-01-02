@@ -165,9 +165,6 @@
                                 RelativePath="..\..\Mzscheme\Gc\Stubborn.c">
                         </File>
                         <File
-                                RelativePath="..\mzscheme\uniplt.c">
-                        </File>
-                        <File
                                 RelativePath="..\..\Mzscheme\Gc\win32_threads.c">
                         </File>
                 </Filter>

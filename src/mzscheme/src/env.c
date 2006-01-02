@@ -46,6 +46,9 @@
 /* globals */
 int scheme_allow_set_undefined;
 
+void scheme_set_allow_set_undefined(int v) { scheme_allow_set_undefined =  v; }
+int scheme_get_allow_set_undefined() { return scheme_allow_set_undefined; }
+
 int scheme_starting_up;
 
 Scheme_Object *scheme_local[MAX_CONST_LOCAL_POS][2];

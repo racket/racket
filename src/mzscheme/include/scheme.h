@@ -1490,12 +1490,20 @@ MZ_EXTERN int scheme_hash_percent_syntax_only; /* Defaults to 0 */
 MZ_EXTERN int scheme_hash_percent_globals_only; /* Defaults to 0 */
 MZ_EXTERN int scheme_binary_mode_stdio; /* Windows-MacOS-specific. Defaults to 0 */
 
+MZ_EXTERN void scheme_set_case_sensitive(int);
+MZ_EXTERN void scheme_set_allow_set_undefined(int);
+MZ_EXTERN void scheme_set_binary_mode_stdio(int);
+
+MZ_EXTERN int scheme_get_allow_set_undefined();
+
 MZ_EXTERN Scheme_Thread *scheme_current_thread;
 MZ_EXTERN Scheme_Thread *scheme_first_thread;
 
 /* Set these global hooks (optionally): */
 MZ_EXTERN void (*scheme_exit)(int v);
-MZ_EXTERN void (*scheme_console_printf)(char *str, ...);
+typedef void (*scheme_console_printf_t)(char *str, ...);
+MZ_EXTERN scheme_console_printf_t scheme_console_printf;
+MZ_EXTERN scheme_console_printf_t scheme_get_console_printf();
 MZ_EXTERN void (*scheme_console_output)(char *str, long len);
 MZ_EXTERN void (*scheme_sleep)(float seconds, void *fds);
 MZ_EXTERN void (*scheme_notify_multithread)(int on);
@@ -1536,6 +1544,7 @@ MZ_EXTERN int scheme_get_external_event_fd(void);
 /* image dump enabling startup: */
 MZ_EXTERN int scheme_image_main(int argc, char **argv);
 MZ_EXTERN int (*scheme_actual_main)(int argc, char **argv);
+MZ_EXTERN void scheme_set_actual_main(int (*m)(int argc, char **argv));
 
 /* GC registration: */
 #ifdef GC_MIGHT_USE_REGISTERED_STATICS

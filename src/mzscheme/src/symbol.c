@@ -55,6 +55,8 @@ unsigned long scheme_max_found_symbol_name;
 /* globals */
 int scheme_case_sensitive = 1;
 
+void scheme_set_case_sensitive(int v) { scheme_case_sensitive =  v; }
+
 /* locals */
 static Scheme_Object *symbol_p_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_to_symbol_prim (int argc, Scheme_Object *argv[]);

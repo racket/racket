@@ -49,6 +49,11 @@ extern void *GC_get_stack_base();
 
 MZ_DLLSPEC int (*scheme_actual_main)(int argc, char **argv);
 
+void scheme_set_actual_main(int (*m)(int argc, char **argv))
+{
+  scheme_actual_main = m;
+}
+
 #ifdef UNIX_IMAGE_DUMPS
 static Scheme_Object *(*scheme_dump_heap)(char *filename) = NULL;
 static Scheme_Object *(*scheme_load_heap)(char *filename, Scheme_Object *argvec) = NULL;

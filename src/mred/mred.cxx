@@ -184,7 +184,9 @@ extern "C" {
 /* Set by mrmain.cxx: */
 /* (The indirection is needed to avoid mutual .dll dependencies.) */
 MrEd_Finish_Cmd_Line_Run_Proc mred_finish_cmd_line_run;
+void mred_set_finish_cmd_line_run(MrEd_Finish_Cmd_Line_Run_Proc p) { mred_finish_cmd_line_run = p; }
 MrEd_Run_From_Cmd_Line_Proc mred_run_from_cmd_line;
+void mred_set_run_from_cmd_line(MrEd_Run_From_Cmd_Line_Proc p) { mred_run_from_cmd_line = p; }
 
 #if 0
 /* Force initialization of the garbage collector (currently needed

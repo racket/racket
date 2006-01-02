@@ -137,7 +137,7 @@
 	mz-inc
 	"xsrc/precomp.h"
 	""
-	""
+	"/D LIBMZ_EXPORTS "
 	"mz.pch"))
  srcs)
 
@@ -187,7 +187,7 @@
 
 (define libs "kernel32.lib user32.lib wsock32.lib shell32.lib advapi32.lib")
 
-(define (link-dll objs sys-libs dll link-options exe?)
+(define (link-dll objs delayloads sys-libs dll link-options exe?)
   (let ([ms (if (file-exists? dll)
 		(file-or-directory-modify-seconds dll)
 		0)])
@@ -196,7 +196,7 @@
 	     (> (file-or-directory-modify-seconds f)
 		ms))
 	   objs)
-      (unless (system- (format "cl.exe ~a /MT /Zi /Fe~a unicows.lib ~a ~a ~a"
+      (unless (system- (format "cl.exe ~a /MT /Zi /Fe~a unicows.lib ~a ~a ~a ~a"
 			       (if exe? "" "/LD /DLL")
 			       dll
 			       (let loop ([objs (append objs sys-libs)])
@@ -206,6 +206,14 @@
 				      (car objs)
 				      " "
 				      (loop (cdr objs)))))
+			       (let loop ([delayloads delayloads])
+				 (if (null? delayloads)
+				     ""
+				     (string-append
+				      "/DELAYLOAD:"
+				      (car delayloads)
+				      " "
+				      (loop (cdr delayloads)))))
 			       libs
 			       link-options))
 	(error 'winmake "~a link failed" (if exe? "EXE" "DLL"))))))
@@ -224,13 +232,15 @@
 	      (lambda (n)
 		(format "xsrc/~a.obj" n))
 	      srcs))])
-  (link-dll objs null dll "" #f))
+  (link-dll objs null null dll "" #f))
 
 (let ([objs (list
 	     "xsrc/main.obj"
-	     "../libmzsch/Release/uniplt.obj"
+	     "../mzscheme/Release/uniplt.obj"
 	     "../../../libmzsch3mxxxxxxx.lib")])
-  (link-dll objs null exe "" #t))
+  (link-dll objs 
+	    '("msvcrt71.dll" "libmzsch3mxxxxxxx.lib")
+	    null exe "" #t))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -388,7 +398,7 @@
 	 (string-append wx-inc " -DMZ_PRECISE_GC -DGC2_AS_IMPORT -Dwx_msw"))
 
 (let ([objs (append (list
-		     "../libmzsch/Release/uniplt.obj"
+		     "../libmred/Release/uniplt.obj"
 		     "xsrc/wxGC.obj"
 		     "xsrc/wxJPEG.obj"
 		     "xsrc/xcglue.obj")
@@ -411,7 +421,7 @@
 		 "gdi32.lib" "comdlg32.lib" "advapi32.lib" 
 		 "shell32.lib" "ole32.lib" "oleaut32.lib"
 		 "winmm.lib")])
-  (link-dll (append objs libs) win-libs "../../../libmred3mxxxxxxx.dll" "" #f))
+  (link-dll (append objs libs) null win-libs "../../../libmred3mxxxxxxx.dll" "" #f))
 
 (wx-try "mred" "mred" "mrmain" #f "cxx")
 
@@ -423,10 +433,12 @@
 (let ([objs (list
 	     "mred.res"
 	     "xsrc/mrmain.obj"
-	     "../libmzsch/Release/uniplt.obj"
+	     "../mred/Release/uniplt.obj"
 	     "../../../libmzsch3mxxxxxxx.lib"
 	     "../../../libmred3mxxxxxxx.lib")])
-  (link-dll objs (list "advapi32.lib") "../../../MrEd3m.exe" "/link /subsystem:windows" #t))
+  (link-dll objs 
+	    '("msvcrt71.dll" "libmzsch3mxxxxxxx.lib" "libmred3mxxxxxxx.lib")
+	    (list "advapi32.lib") "../../../MrEd3m.exe" "/link /subsystem:windows" #t))
 
 (system- "cl.exe /MT /O2 /DMZ_PRECISE_GC /I../../mzscheme/include /I.. /c ../../mzscheme/dynsrc/mzdyn.c /Fomzdyn3m.obj")
 (system- "lib.exe -def:../../mzscheme/dynsrc/mzdyn.def -out:mzdyn3m.lib")

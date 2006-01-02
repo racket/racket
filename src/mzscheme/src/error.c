@@ -32,7 +32,9 @@
 #define TMP_CMARK_VALUE scheme_parameterization_key
 
 /* globals */
-void (*scheme_console_printf)(char *str, ...);
+scheme_console_printf_t scheme_console_printf;
+scheme_console_printf_t scheme_get_console_printf() { return scheme_console_printf; }
+
 void (*scheme_console_output)(char *str, long len);
 void (*scheme_exit)(int v);
 

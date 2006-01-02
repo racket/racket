@@ -173,7 +173,9 @@ typedef int (*MrEd_Finish_Cmd_Line_Run_Proc)(void);
 typedef void (*MrEd_Run_From_Cmd_Line_Proc)(int argc, char **argv, Scheme_Env *(*mk_basic_env)(void));
 
 MRED_EXTERN MrEd_Finish_Cmd_Line_Run_Proc mred_finish_cmd_line_run;
+MRED_EXTERN void mred_set_finish_cmd_line_run(MrEd_Finish_Cmd_Line_Run_Proc);
 MRED_EXTERN MrEd_Run_From_Cmd_Line_Proc mred_run_from_cmd_line;
+MRED_EXTERN void mred_set_run_from_cmd_line(MrEd_Run_From_Cmd_Line_Proc);
 
 # include "../mzscheme/src/schvers.h"
 

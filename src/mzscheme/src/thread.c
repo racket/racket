@@ -147,6 +147,8 @@ Scheme_Thread *scheme_current_thread = NULL;
 Scheme_Thread *scheme_main_thread = NULL;
 Scheme_Thread *scheme_first_thread = NULL;
 
+Scheme_Thread *scheme_get_current_thread() { return scheme_current_thread; }
+
 typedef struct Scheme_Thread_Set {
   Scheme_Object so;
   struct Scheme_Thread_Set *parent;

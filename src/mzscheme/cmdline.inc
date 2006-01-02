@@ -6,9 +6,103 @@
 #define SDESC "Set! works on undefined identifiers.\n"
 
 char *cmdline_exe_hack = "[Replace me for EXE hack                                       ]";
+char *binary_type_hack = "bINARy tYPe:" INITIAL_BIN_TYPE;
 
 #ifdef DOS_FILE_SYSTEM
 # include <Windows.h>
+# ifdef MZ_PRECISE_GC
+#  define DLL_3M_SUFFIX "3m"
+# else
+#  define DLL_3M_SUFFIX ""
+# endif
+static char *_dlldir = "dLl dIRECTORy:" /* <- this tag stays, so we can find it again */
+                       "<DLL Directory: Replace This ***************"
+                       "********************************************"
+                       "********************************************"
+                       "********************************************"
+                       "********************************************"
+                       "********************************************>";
+static int _dlldir_offset = 14; /* Skip permanent tag */
+
+# ifdef MZ_PRECISE_GC
+START_XFORM_SKIP;
+# endif
+
+static void load_delayed_dll(char *lib) 
+{
+  /* Don't use the C library here! */
+  char *dlldir = _dlldir + _dlldir_offset;
+
+  if (dlldir[0] != '<') {
+    if ((dlldir[0] == '\\')
+	|| ((((dlldir[0] >= 'a') && (dlldir[0] <= 'z'))
+	     || ((dlldir[0] >= 'A') && (dlldir[0] <= 'Z')))
+	    && (dlldir[1] == ':'))) {
+      /* Absolute path */
+    } else {
+      /* Make it absolute, relative to this module */
+      char name[1024], *s;
+      int j, i;
+      GetModuleFileName(NULL, name, 1024);
+      name[1023] = 0;
+      s = (char *)GlobalAlloc(GMEM_FIXED, 2048);
+      for (i = 0; name[i]; i++) { }
+      --i;
+      while (i && (name[i] != '\\')) {
+	--i;
+      }
+      name[i+1] = 0;
+      for (i = 0; name[i]; i++) {
+	s[i] = name[i];
+      }
+      for (j = 0; dlldir[j]; j++, i++) {
+	s[i] = dlldir[j];
+      }
+      s[i] = 0;
+      dlldir = s;
+      _dlldir = s;
+      _dlldir_offset = 0;
+    }
+
+    {
+      char *t;
+      int j, i;
+
+      t = (char *)GlobalAlloc(GMEM_FIXED, 2048);
+      for (i = 0; dlldir[i]; i++) {
+	t[i] = dlldir[i];
+      }
+      if (t[i-1] != '\\')
+	t[i++] = '\\';
+      for (j = 0; lib[j]; j++, i++) {
+	t[i] = lib[j];
+      }
+      t[i] = 0;
+
+      if (!LoadLibrary(t)) {
+	MessageBox(NULL, t, "Failure: cannot load DLL", MB_OK);
+	ExitProcess(1);
+      }
+    }
+  }
+}
+
+extern 
+# ifdef __cplusplus
+"C"
+# endif
+__declspec(dllexport) void scheme_set_dll_path(char *s);
+
+static void record_dll_path(void)
+{
+  if (_dlldir[_dlldir_offset] != '<') {
+    scheme_set_dll_path(_dlldir + _dlldir_offset);
+  }
+}
+
+# ifdef MZ_PRECISE_GC
+END_XFORM_SKIP;
+# endif
 #endif
 
 #ifndef DONT_PARSE_COMMAND_LINE
@@ -246,19 +340,23 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
 	  break;
 	}
       } else if (fa->eval_kind[i] == mzcmd_EVAL) {
-	save = scheme_current_thread->error_buf;
-	scheme_current_thread->error_buf = &newbuf;
+	Scheme_Thread * volatile p;
+	p = scheme_get_current_thread();
+	save = p->error_buf;
+	p->error_buf = &newbuf;
 	if (!scheme_setjmp(newbuf))
 	  scheme_eval_string_all(fa->evals_and_loads[i], fa->global_env, 0);
 	else {
 	  exit_val = 1;
-	  scheme_current_thread->error_buf = save;
+	  p->error_buf = save;
 	  break;
 	}
-	scheme_current_thread->error_buf = save;
+	p->error_buf = save;
       } else if (fa->eval_kind[i] == mzcmd_MAIN) {
-	save = scheme_current_thread->error_buf;
-	scheme_current_thread->error_buf = &newbuf;
+	Scheme_Thread * volatile p;
+	p = scheme_get_current_thread();
+	save = p->error_buf;
+	p->error_buf = &newbuf;
 	if (!scheme_setjmp(newbuf)) {
 	  Scheme_Object *a[1], *m, *fn;
 	  
@@ -269,10 +367,10 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
 	  (void)scheme_apply(m, 1, a);
 	} else {
 	  exit_val = 1;
-	  scheme_current_thread->error_buf = save;
+	  p->error_buf = save;
 	  break;
 	}
-	scheme_current_thread->error_buf = save;
+	p->error_buf = save;
       }
     }
   }
@@ -282,11 +380,13 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
   {
     Scheme_Object *f, *a[1];
     mz_jmp_buf * volatile save, newbuf;
-    save = scheme_current_thread->error_buf;
-    scheme_current_thread->error_buf = &newbuf;
+    Scheme_Thread * volatile p;
+    p = scheme_get_current_thread();
+    save = p->error_buf;
+    p->error_buf = &newbuf;
     if (!scheme_setjmp(newbuf)) {
       f = scheme_initialize(fa->global_env);
-      a[0] = scheme_true;
+      a[0] = scheme_make_true();
       f = _scheme_apply_multi(f, 1, a);
       if (SAME_OBJ(f, SCHEME_MULTIPLE_VALUES)
 	  && (scheme_multiple_count == 2)) {
@@ -296,7 +396,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
     } else {
       exit_val = 1;
     }
-    scheme_current_thread->error_buf = save;
+    p->error_buf = save;
   }
 #endif
 
@@ -304,8 +404,10 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
   if (!fa->no_rep && !fa->script_mode) {
     /* enter read-eval-print loop */
     mz_jmp_buf * volatile save, newbuf;
-    save = scheme_current_thread->error_buf;
-    scheme_current_thread->error_buf = &newbuf;
+    Scheme_Thread * volatile p;
+    p = scheme_get_current_thread();
+    save = p->error_buf;
+    p->error_buf = &newbuf;
     if (!scheme_setjmp(newbuf)) {
       repl(fa->global_env);
       exit_val = 0;
@@ -315,19 +417,21 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
       fa->add_yield = 0;
 #endif
     }
-    scheme_current_thread->error_buf = save;
+    p->error_buf = save;
   }
 #endif /* DONT_RUN_REP */
 
 #ifdef VERSION_YIELD_FLAG
   if (fa->add_yield) {
     mz_jmp_buf * volatile save, newbuf;
-    save = scheme_current_thread->error_buf;
-    scheme_current_thread->error_buf = &newbuf;
+    Scheme_Thread * volatile p;
+    p = scheme_get_current_thread();
+    save = p->error_buf;
+    p->error_buf = &newbuf;
     if (!scheme_setjmp(newbuf)) {
       yield_indefinitely();
     }
-    scheme_current_thread->error_buf = save;
+    p->error_buf = save;
   }
 #endif
 
@@ -338,8 +442,10 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
 static void init_collection_paths(Scheme_Env *global_env)
 {		
   mz_jmp_buf * volatile save, newbuf;
-  save = scheme_current_thread->error_buf;
-  scheme_current_thread->error_buf = &newbuf;
+  Scheme_Thread * volatile p;
+  p = scheme_get_current_thread();
+  save = p->error_buf;
+  p->error_buf = &newbuf;
   if (!scheme_setjmp(newbuf)) {
     Scheme_Object *clcp, *flcp, *a[1];
 
@@ -351,7 +457,7 @@ static void init_collection_paths(Scheme_Env *global_env)
       _scheme_apply(clcp, 1, a);
     }
   }
-  scheme_current_thread->error_buf = save;
+  p->error_buf = save;
 }
 #endif
 
@@ -359,8 +465,10 @@ static void init_collection_paths(Scheme_Env *global_env)
 static void init_mred(Scheme_Env *global_env)
 {
   mz_jmp_buf * volatile save, newbuf;
-  save = scheme_current_thread->error_buf;
-  scheme_current_thread->error_buf = &newbuf;
+  Scheme_Thread * volatile p;
+  p = scheme_get_current_thread();
+  save = p->error_buf;
+  p->error_buf = &newbuf;
   if (!scheme_setjmp(newbuf)) {
     scheme_eval_string("(require (lib \"class.ss\"))", 
 		       global_env);
@@ -369,7 +477,7 @@ static void init_mred(Scheme_Env *global_env)
     scheme_eval_string("(current-load text-editor-load-handler)", 
 		       global_env);
   }
-  scheme_current_thread->error_buf = save;
+  p->error_buf = save;
 }
 #endif
 
@@ -667,13 +775,13 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  goto show_help;
 	  break;
 	case 'g':
-	  scheme_case_sensitive = 1;
+	  scheme_set_case_sensitive(1);
 	  break;
 	case 'G':
-	  scheme_case_sensitive = 0;
+	  scheme_set_case_sensitive(0);
 	  break;
 	case 's':
-	  scheme_allow_set_undefined = 1;
+	  scheme_set_allow_set_undefined(1);
 	  break;
 	case 'e':
 	  if (argc < 2) {
@@ -848,7 +956,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  no_more_switches = 1;
 	  break;
 	case 'b':
-	  scheme_binary_mode_stdio = 1;
+	  scheme_set_binary_mode_stdio(1);
 	  break;
 #ifndef MZSCHEME_CMD_LINE
 	case 'Z':
@@ -897,7 +1005,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 #endif
       PRINTF(BANNER);
 #ifdef MZSCHEME_CMD_LINE  
-    if (scheme_allow_set_undefined)
+    if (scheme_get_allow_set_undefined())
       PRINTF(SDESC);
 # ifdef DOS_FILE_SYSTEM
 #  if !defined(FILES_HAVE_FDS)
@@ -916,7 +1024,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
   
   global_env = mk_basic_env();
 
-  sch_argv = scheme_make_vector(argc, scheme_null);
+  sch_argv = scheme_make_vector(argc, NULL);
   for (i = 0; i < argc; i++) {
     Scheme_Object *so;
     so = scheme_make_locale_string(argv[i]);

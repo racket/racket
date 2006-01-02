@@ -3,7 +3,7 @@
 #include "wx_graphics.h"
 #include <gdiplus.h>
 
-#include "../../../mzscheme/src/schvers.h"
+extern "C" __declspec(dllimport) char *scheme_get_dll_path(char *);
 
 Bool wx_gdi_plus = FALSE;
 
@@ -223,16 +223,12 @@ void wxInitGraphicsPlus()
   HMODULE hm;
   hm = LoadLibrary("gdiplus.dll");
   if (hm) {
-    char s[40];
-    sprintf(s, "pltgdi_%d%d_000000", MZSCHEME_VERSION_MAJOR, MZSCHEME_VERSION_MINOR);
-    s[14] = '.';
-    s[15] = 'd';
-    s[16] = 'l';
-    s[17] = 'l';
-    s[18] = 0;
-    hm = LoadLibraryA(s);
-    if (!hm)
-      hm = LoadLibraryA("pltgdi_xxxxxxx.dll");
+    char *s;
+
+    /* Versioning will replace the "xxxxxxx" */
+    s = scheme_get_dll_path("pltgdi_xxxxxxx.dll");
+
+    hm = LoadLibrary(s);
     
     if (hm) {
       GetProcs(hm);

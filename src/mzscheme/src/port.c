@@ -255,6 +255,7 @@ Scheme_Object *(*scheme_make_stderr)(void) = NULL;
 int scheme_file_open_count;
 
 MZ_DLLSPEC int scheme_binary_mode_stdio;
+void scheme_set_binary_mode_stdio(int v) { scheme_binary_mode_stdio =  v; }
 
 static int special_is_ok;
 

@@ -75,6 +75,8 @@ MZ_EXTERN Scheme_Thread **scheme_current_thread_ptr;
 MZ_EXTERN volatile int *scheme_fuel_counter_ptr;
 #endif
 
+MZ_EXTERN Scheme_Thread *scheme_get_current_thread();
+
 MZ_EXTERN void scheme_start_atomic(void);
 MZ_EXTERN void scheme_end_atomic(void);
 MZ_EXTERN void scheme_end_atomic_no_swap(void);
