@@ -308,8 +308,8 @@
   ;; (make-method-record string (list symbol) type (list type) (list type) (U bool method-record) string)
   (define-struct method-record (name modifiers rtype atypes throws override class) (make-inspector))
 
-  ;;(make-inner-record string (list symbol) bool)
-  (define-struct inner-record (name modifiers class?) (make-inspector))
+  ;;(make-inner-record string string (list symbol) bool)
+  (define-struct inner-record (name full-name modifiers class?) (make-inspector))
 
   ;;(make-scheme-record string (list string) path (list dynamic-val))
   (define-struct scheme-record (name path dir provides))
@@ -380,11 +380,12 @@
                         ((inner-path) (if (null? key-path) (lookup-path key-inner (lambda () null)) key-path))
                         ((new-search)
                          (lambda ()
-                           (if (null? path) 
-                               (fail)
-                               (let ((back-path (reverse path)))
-                                 (search-for-record key (car back-path) 
-                                                    (reverse (cdr back-path)) (lambda () #f) fail))))))
+                           (cond
+                             ((null? path) (fail))
+                             (else
+                              (let ((back-path (reverse path)))
+                                (search-for-record key (car back-path)
+                                                   (reverse (cdr back-path)) (lambda () #f) fail)))))))
             ;(printf "get-class-record: ~a~n" ctype)
             ;(hash-table-for-each records (lambda (k v) (printf "~a -> ~a~n" k v)))
             (cond
@@ -710,7 +711,8 @@
                                               (string-append remainder "-" (string (char-downcase char))))))))
       (else name)))
 
-  
+  (define (inner-rec-member name inners)
+    (member name (map inner-record-name inners)))
                   
 ;                                          
 ;             ;                ;;          
@@ -765,7 +767,8 @@
               (lambda (input)
                 (make-inner-record (car input)
                                    (cadr input)
-                                   (symbol=? 'class (caddr input)))))
+                                   (caddr input)
+                                   (symbol=? 'class (cadddr input)))))
              (parse-type
               (lambda (input)
                 (cond
@@ -774,7 +777,7 @@
                    (make-array-type (parse-type (cadr input)) (car input)))
                   (else
                    (make-ref-type (car input) (cdr input)))))))
-      (parse-class/iface (call-with-input-file filename read))))
+        (parse-class/iface (call-with-input-file filename read))))
   
   ;; write-record: class-record port->
   (define (write-record rec port)
@@ -812,6 +815,7 @@
              (inner->list
               (lambda (i)
                 (list (inner-record-name i)
+                      (inner-record-full-name i)
                       (inner-record-modifiers i)
                       (if (inner-record-class? i) 'class 'interface))))
              (type->list

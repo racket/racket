@@ -475,8 +475,10 @@
     ;Let's grab onto the enclosing class-specific info incase depth > 0
     (let ((old-class-name (class-name))
           (old-parent-name (parent-name))
+          (old-inner-class (inner-class))
           (old-override-table (class-override-table)))
       (unless (> depth 0) (loc (def-file class)))
+      (when (> depth 0) (inner-class #t))
       
       (let*-values (((header) (def-header class))
                     ((kind) (def-kind class))
@@ -713,6 +715,7 @@
               (when (> depth 0)
                 (class-name old-class-name)
                 (parent-name old-parent-name)
+                (inner-class old-inner-class)
                 (class-override-table old-override-table))))))))
   
   ;generate-contract-defs: string -> (list sexp)
@@ -1303,6 +1306,7 @@
                 (create-static-methods (cdr names) (cdr methods) type-recs)))))
   
   (define static-method (make-parameter #f))
+  (define inner-class (make-parameter #f))
   
   ;translate-method-body: string (list field) statement (list symbol) type-spec bool bool bool int type-record -> syntax
   (define (translate-method-body method-name parms block modifiers rtype all-tail? ctor? inner? depth type-recs)
@@ -2184,7 +2188,7 @@
                                   (javaRuntime:nullError 'field)
                                   (send ,expr ,(translate-id field-string field-src)))
                              (build-src src))))
-           ((and (eq? (var-access-access access) 'private) (static-method))
+           ((and (eq? (var-access-access access) 'private) (or (static-method) (inner-class)))
             (let* ((id (create-get-name field-string (var-access-class access)))
                    (getter `(send ,expr ,id ,expr))
                    (get-syntax  (if cant-be-null?

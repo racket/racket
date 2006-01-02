@@ -3,6 +3,11 @@
            (lib "parameters.ss" "profj"))
   
   (prepare-for-tests "Full")
+
+  (execute-test
+   "package a; class a { int x; 
+                     Object get() { class b { int y() { return a.this.x; } }  return new b(); }}"
+   'full #f "Statement inner class accessing package field")
   
   (parameterize ((dynamic? #t))
     (interact-test "class A { }"
@@ -154,7 +159,7 @@
        B() { }
        A m = A.this;
      }
-     B b = new B();
+     //B b = new B();
     }"
    'full
    (list "A a = new A();" "A.B b = a.new B();" "a.new B().m")

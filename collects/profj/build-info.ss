@@ -9,6 +9,8 @@
   ;-------------------------------------------------------------------------------
   ;General helper functions for building information
   
+  (define class-name (make-parameter #f))
+  
   ;; name->list: name -> (list string)
   (define (name->list n)
     (cons (id-string (name-id n)) (map id-string (name-path n))))
@@ -93,6 +95,8 @@
                           ((not (null? (package-imports prog))) 
                            (import-file (car (package-imports prog)))))))
       (set-package-defs! prog defs)
+
+      ;(printf "~a~n" lang)
       
       ;Add lang to local environment
       (for-each (lambda (class) (send type-recs add-to-env class lang-pack current-loc)) lang)
@@ -177,11 +181,14 @@
   ;build-inner-info: def (U void string) (list string) symbol type-records loc bool -> class-record
   (define (build-inner-info def unique-name pname level type-recs current-loc look-in-table?)
     ;(add-def-info def pname type-recs current-loc look-in-table? level)
+    (class-name unique-name)
     (let ((record (process-class/iface def pname type-recs #f #f level)))
-      (when (string? unique-name) (set-class-record-name! record (list unique-name)))
+      (when (string? unique-name) (set-class-record-name! record (cons unique-name pname)))
       (send type-recs add-to-records 
-            (if (eq? (def-kind def) 'statement) (list unique-name) (id-string (def-name def)))
+            (cons (if (eq? (def-kind def) 'statement) unique-name (id-string (def-name def))) pname)
             record)
+      (send type-recs add-to-env unique-name pname current-loc)
+      (class-name #f)
       record))
   
   ;add-to-queue: (list definition) -> void
@@ -227,7 +234,8 @@
            (file-path (build-path dir (string-append class suffix))))
       (cond
         ((is-import-restricted? class path level) (used-restricted-import class path caller-src))
-        ((send type-recs get-class-record class-name #f (lambda () #f)) void)
+        ((send type-recs get-class-record class-name #f (lambda () #f)) 
+         void )
         ((and (file-exists? type-path)
               (or (core? class-name) (older-than? file-path type-path)) (read-record type-path))
          =>
@@ -402,6 +410,7 @@
                                  (filter (lambda (f) (equal? (filename-extension f) #"jinfo"))
                                          (directory-list (build-path (dir-path-path dir) "compiled"))))))
            (array (datum->syntax-object #f `(lib "array.ss" "profj" "libs" "java" "lang") #f)))
+      ;(printf "class-list ~a~n" class-list)
       (send type-recs add-package-contents lang class-list)
       (for-each (lambda (c) (import-class c lang dir #f type-recs 'full #f #f)) class-list)
       (send type-recs add-require-syntax (list 'array) (list array array))
@@ -563,7 +572,7 @@
                                           members
                                           level
                                           type-recs)
-                                      
+
                    (let ((record
                           (make-class-record 
                            cname
@@ -590,9 +599,9 @@
                      (when put-in-table? (send type-recs add-class-record record))
                      
                      (for-each (lambda (member)
-			     (when (def? member)
-			       (process-class/iface member package-name type-recs #f put-in-table? level)))
-			   members)
+                                 (when (def? member)
+                                   (process-class/iface member package-name type-recs #f put-in-table? level)))
+                               members)
                      
                      record))))))
         (cond
@@ -628,7 +637,8 @@
               (not (null? (method-record-throws super-ctor))))
          (default-ctor-error 'throws name (method-record-class super-ctor) (id-src name) level))
         (else
-         (let* ((rec (make-method-record (id-string name) `(public) 'ctor null null #f (list (id-string name))))
+         (let* ((rec (make-method-record (id-string name) `(public) 'ctor null null #f 
+                                         (if (class-name) (list (class-name)) (list (id-string name)))))
                 (method (make-method (list (make-modifier 'public #f))
                                      (make-type-spec 'ctor 0 #f)
                                      null
@@ -1141,7 +1151,7 @@
     (make-field-record (id-string (field-name field)) 
                        (check-field-modifiers level (field-modifiers field))
                        (var-init? field)
-                       cname 
+                       (if (class-name) (cons (class-name) (cdr cname)) cname)
                        (field-type field)))
                   
   ;; process-method: method (list method-record) (list string) type-records symbol -> method-record  
@@ -1176,7 +1186,7 @@
       (when (eq? ret 'ctor)
         (if (regexp-match "\\." (car cname))
             (begin
-              (unless (equal? name (filename-extension (car cname)))
+              (unless (equal? name (bytes->string/locale (filename-extension (car cname))))
                 (not-ctor-error name (car cname) (id-src (method-name method))))
               (set! name (car cname))
               (set-id-string! (method-name method) (car cname)))
@@ -1213,13 +1223,14 @@
                                         parms
                                         throws
                                         over?
-                                        cname)))
+                                        (if (class-name) (cons (class-name) (cdr cname)) cname))))
         (set-method-rec! method record)
         record)))
   
   ;process-inner def (list name) type-records symbol -> inner-record
   (define (process-inner def cname type-recs level)
     (make-inner-record (filename-extension (id-string (def-name def)))
+                       (id-string (def-name def))
                        (map modifier-kind (header-modifiers (def-header def)))
                        (class-def? def)))
 

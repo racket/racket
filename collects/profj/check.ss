@@ -7,7 +7,7 @@
            "restrictions.ss"
            "profj-pref.ss"
            "build-info.ss"
-           (lib "class.ss") (lib "list.ss") 
+           (lib "class.ss") (lib "list.ss") (lib "file.ss")
            (prefix srfi: (lib "1.ss" "srfi")) (lib "string.ss"))
   (provide check-defs check-interactions-types)
   
@@ -32,8 +32,8 @@
   ;; var-type => (make-var-type string type properties)
   (define-struct var-type (var type properties) (make-inspector))
   
-  ;;inner-rec ==> (make-inner-rec string (U symbol void) class-rec)
-  (define-struct inner-rec (name unique-name record))
+  ;;inner-rec ==> (make-inner-rec string (U symbol void) (list string) class-rec)
+  (define-struct inner-rec (name unique-name package record))
   
   ;;Environment variable properties
   ;;(make-properties bool bool bool bool bool bool)
@@ -211,12 +211,12 @@
     (member label (environment-labels env)))
 
   ;;add-local-inner-to-env: string symbol class-rec env -> env
-  (define (add-local-inner-to-env name unique-name rec env)
+  (define (add-local-inner-to-env name unique-name package rec env)
     (make-environment (environment-types env)
                       (environment-set-vars env)
                       (environment-exns env)
                       (environment-labels env)
-                      (cons (make-inner-rec name unique-name rec) (environment-local-inners env))))
+                      (cons (make-inner-rec name unique-name package rec) (environment-local-inners env))))
   
   ;;lookup-local-inner: string env -> (U inner-rec #f)
   (define (lookup-local-inner name env)
@@ -305,11 +305,17 @@
   
   ;check-class: class-def (list string) symbol type-records env -> void
   (define (check-class class package-name level type-recs class-env)
-    (let ((old-reqs (send type-recs get-class-reqs))
+    (let* ((old-reqs (send type-recs get-class-reqs))
           (old-update (update-class-with-inner))
-          (name (id-string (def-name class))))
+          (name (id-string (def-name class)))
+          (rec (send type-recs get-class-record (cons name package-name))))
       (update-class-with-inner (lambda (inner)
-                                 (set-def-members! class (cons inner (def-members class)))))
+                                 (let ((name (id-string (def-name inner))))
+                                   (set-def-members! class (cons inner (def-members class)))
+                                   (set-class-record-inners! rec 
+                                                             (cons (make-inner-record (filename-extension name) name 
+                                                                                      (map modifier-kind (header-modifiers (def-header inner)))
+                                                                                      (class-def? inner)) (class-record-inners rec))))))
       (send type-recs set-class-reqs (def-uses class))
       
       (send type-recs add-req (make-req "String" '("java" "lang")))
@@ -334,8 +340,17 @@
   ;check-interface: interface-def (list string) symbol type-recs -> void
   (define (check-interface iface p-name level type-recs)
     (let ((old-reqs (send type-recs get-class-reqs))
-          (old-update (update-class-with-inner)))
+          (old-update (update-class-with-inner))
+          (rec (send type-recs get-class-record (cons (id-string (def-name iface)) p-name))))
       (update-class-with-inner (lambda (inner)
+                                 (let ((name (id-string (def-name inner))))
+                                   (set-def-members! iface (cons inner (def-members iface)))
+                                   (set-class-record-inners! rec 
+                                                             (cons (make-inner-record (filename-extension name) name 
+                                                                                      (map modifier-kind (header-modifiers (def-header inner)))
+                                                                                      (class-def? inner)) (class-record-inners rec))))))
+
+      #;(update-class-with-inner (lambda (inner)
                                  (set-def-members! iface (cons inner (def-members iface)))))
       (send type-recs set-class-reqs (def-uses iface))
       
@@ -352,17 +367,19 @@
   (define (check-inner-def def level type-recs c-class env)
     (let* ((statement-inner? (eq? (def-kind def) 'statement))
            (local-inner? (or (eq? (def-kind def) 'anon) statement-inner?))
-           (p-name (if local-inner? null (cdr c-class)))
+           (p-name (cdr c-class))
            (inner-env (update-env-for-inner env))
            (this-type (var-type-type (lookup-var-in-env "this" env)))
            (unique-name 
             (when statement-inner? (symbol->string (gensym (string-append (id-string (def-name def)) "-")))))
            (inner-rec
             (when local-inner?
-              (build-inner-info def unique-name p-name level type-recs (def-file def) #t))))
-      (when local-inner? (add-init-args def env))
-      (when statement-inner?
-        (set-id-string! (header-id (def-header def)) unique-name))
+              (add-init-args def env)
+              (begin0
+                (build-inner-info def unique-name p-name level type-recs (def-file def) #t)
+                (when statement-inner?
+                  (set-id-string! (header-id (def-header def)) unique-name))
+                ((update-class-with-inner) def)))))
       (if (interface-def? def)
           (check-interface def p-name level type-recs)
           (check-class def p-name level type-recs (add-var-to-env "encl-this-1" this-type final-parm inner-env)))
@@ -370,7 +387,7 @@
       (for-each (lambda (use)
                   (add-required c-class (req-class use) (req-path use) type-recs))
                 (def-uses def))
-      (list unique-name inner-rec)))
+      (list unique-name p-name inner-rec)))
     
   ;add-init-args: def env -> void
   ;Updates the inner class with the names of the final variables visible within the class
@@ -1198,12 +1215,12 @@
       
   ;check-local-inner: def env symbol (list string) type-records -> type/env
   (define (check-local-inner def env level c-class type-recs)
-    ((update-class-with-inner) def)
+    ;((update-class-with-inner) def)
     (let ((original-name (id-string (def-name def)))
           (rec/new-name (check-inner-def def level type-recs c-class env)))
       (make-type/env 
        (make-ref-type original-name null) 
-       (add-local-inner-to-env original-name (car rec/new-name) (cadr rec/new-name) env))))
+       (add-local-inner-to-env original-name (car rec/new-name) (cadr rec/new-name) (caddr rec/new-name) env))))
   
   ;check-break: (U id #f) src bool bool symbol env-> type/env
   (define (check-break label src in-loop? in-switch? level env)
@@ -1587,6 +1604,13 @@
       ((or (eq? 'long t1) (eq? 'long t2)) 'long)
       (else 'int)))
 
+  (define (get-inners class type-recs)
+    (let ((rec (get-record (send type-recs get-class-record class) type-recs)))
+      (class-record-inners rec)))
+  
+  (define (inner-member class inners)
+    (member (car class) (map inner-record-full-name inners)))
+  
   ;;check-access: expression (expr env -> type/env) env symbol type-records (list string) bool bool bool -> type/env
   (define (check-access exp check-e env level type-recs c-class interact? static? assign-left?)
     (let ((acc (access-name exp)))
@@ -1663,10 +1687,12 @@
                 (when (and (eq? level 'beginner)
                            (eq? (car c-class) (car field-class))
                            (or (not obj) (and (special-name? obj) (not (expr-src obj)))))
-                  (beginner-field-access-error (string->symbol fname) src))
-           
-                (when (and private? (not (equal? c-class field-class)))
-                  (illegal-field-access 'private (string->symbol fname) level (car field-class) src))
+                  (beginner-field-access-error (string->symbol fname) src))                    
+                
+                (when private?
+                  (unless (or (equal? c-class field-class)
+                              (inner-member c-class (get-inners field-class type-recs)))
+                  (illegal-field-access 'private (string->symbol fname) level (car field-class) src)))
                 
                 (when (and protected? 
                            (not (or (equal? c-class field-class)
@@ -1674,7 +1700,7 @@
                                     (package-members? c-class field-class type-recs))))
                   (illegal-field-access 'protected (string->symbol fname) level (car field-class) src))
                           
-                (when (and (not private?) (not protected?) 
+                (when (and (not private?) (not protected?)
                            (not public?) (not (package-members? c-class field-class type-recs)))
                   (illegal-field-access 'package (string->symbol fname) level (car field-class) src))
            
@@ -2173,6 +2199,12 @@
                        (method-arg-error 'type (list arg) (cons atype atypes) name exp-type src)))
                    args atypes)))))
   
+  ;find-class: string rec-type env type-records -> (values boolean type record)
+  #;(define (find-class name this env type-recs)
+    (let ((local-inner? (lookup-local-inner name env))
+          ...)))
+    
+  
   ;; 15.9
   ;;check-class-alloc: expr (U name identifier) (list exp) (exp env -> type/env) src type-records 
   ;                   (list string) env symbol bool-> type/env
@@ -2185,14 +2217,15 @@
                     (make-name (def-name name/def) null (id-src (def-name name/def))))
                    ((id? name/def) (make-name name/def null (id-src name/def)))
                    (else name/def)))
-           (inner-lookup? (lookup-local-inner (id-string (name-id name)) env))      
+           (inner-lookup? (lookup-local-inner (id-string (name-id name)) env))
            (type (if inner-lookup?
-                     (make-ref-type (inner-rec-unique-name inner-lookup?) null)
+                     (make-ref-type (inner-rec-unique-name inner-lookup?) (inner-rec-package inner-lookup?))
                      (name->type name c-class (name-src name) level type-recs)))
            (class-record 
             (if inner-lookup?
                 (inner-rec-record inner-lookup?)
                 (get-record (send type-recs get-class-record type c-class) type-recs)))
+           (p (when (null? class-record) (printf "~a~n" type)))
            (methods (get-method-records (id-string (name-id name)) class-record type-recs)))
       (unless (or (equal? (car (class-record-name class-record)) (ref-type-class/iface type)))
         (set-id-string! (name-id name) (car (class-record-name class-record)))
@@ -2307,9 +2340,9 @@
             (if inner-lookup?
                 (if (> (type-spec-dim elt-type) 0)
                     (make-array-type
-                     (make-ref-type (inner-rec-unique-name inner-lookup?) null)
+                     (make-ref-type (inner-rec-unique-name inner-lookup?) (inner-rec-package inner-lookup?))
                      (type-spec-dim elt-type))
-                    (make-ref-type (inner-rec-unique-name inner-lookup?) null))
+                    (make-ref-type (inner-rec-unique-name inner-lookup?) (inner-rec-package inner-lookup?)))
                 (type-spec-to-type elt-type c-class level type-recs))))
       (when (and (ref-type? type) (not inner-lookup?))
         (add-required c-class (ref-type-class/iface type) (ref-type-path type) type-recs))
@@ -2339,9 +2372,9 @@
             (if inner-lookup?
                 (if (> (type-spec-dim elt-type) 0)
                     (make-array-type
-                     (make-ref-type (inner-rec-unique-name inner-lookup?) null)
+                     (make-ref-type (inner-rec-unique-name inner-lookup?) (inner-rec-package inner-lookup?))
                      (type-spec-dim elt-type))
-                    (make-ref-type (inner-rec-unique-name inner-lookup?) null))
+                    (make-ref-type (inner-rec-unique-name inner-lookup?) (inner-rec-package inner-lookup?)))
                 (type-spec-to-type elt-type c-class level type-recs)))
            (a-type/env (check-array-init (array-init-vals init) check-sub-exp env type type-recs))
            (a-type (type/env-t a-type/env)))
@@ -2455,9 +2488,9 @@
             (if inner-lookup?
                 (if (> (type-spec-dim cast-type) 0)
                     (make-array-type
-                     (make-ref-type (inner-rec-unique-name inner-lookup?) null)
+                     (make-ref-type (inner-rec-unique-name inner-lookup?) (inner-rec-package inner-lookup?))
                      (type-spec-dim cast-type))
-                    (make-ref-type (inner-rec-unique-name inner-lookup?) null))
+                    (make-ref-type (inner-rec-unique-name inner-lookup?) (inner-rec-package inner-lookup?)))
                 (type-spec-to-type cast-type current-class level type-recs))))
       (when (and (reference-type? type) (not inner-lookup?))
         (unless (equal? (car current-class) (ref-type-class/iface type))
@@ -2496,9 +2529,9 @@
             (if inner-lookup?
                 (if (> (type-spec-dim inst-type) 0)
                     (make-array-type
-                     (make-ref-type (inner-rec-unique-name inner-lookup?) null)
+                     (make-ref-type (inner-rec-unique-name inner-lookup?) (inner-rec-package inner-lookup?))
                      (type-spec-dim inst-type))
-                    (make-ref-type (inner-rec-unique-name inner-lookup?) null))
+                    (make-ref-type (inner-rec-unique-name inner-lookup?) (inner-rec-package inner-lookup?)))
                 (type-spec-to-type inst-type current-class level type-recs))))
       (when (and (ref-type? type) (not inner-lookup?))
         (unless (equal? (car current-class) (ref-type-class/iface type))
