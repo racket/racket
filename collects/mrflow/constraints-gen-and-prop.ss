@@ -2284,73 +2284,155 @@
       bound-label))
   
   
-  ; sba-state syntax-object sexp (assoc-setof sexp label) -> label
-  ; must take sharing into account...
-  (define (create-label-from-quote sba-state quoted-term unquoted-term assoc-set)
-    ;(printf "Q: ~a ~a~n" unquoted-term (assoc-set-in? assoc-set unquoted-term))
-    (if (assoc-set-in? assoc-set unquoted-term)
-        (assoc-set-get assoc-set unquoted-term)
-        (let ([sexp-e (syntax-e quoted-term)])
-          (cond
-            [(list? unquoted-term)
-             (let loop ([unquoted-term unquoted-term]
-                        [sexp-e sexp-e])
-               (if (null? unquoted-term)
-                   (let ([null-label
-                          (make-label-cst
-                           #f #f #f #f #t
-                           quoted-term
-                           (make-hash-table)
-                           (make-hash-table)
-                           unquoted-term)])
-                     (assoc-set-set assoc-set unquoted-term null-label)
-                     (initialize-label-set-for-value-source null-label)
-                     null-label)
-                   (let ([cons-label
-                          (make-label-cons
-                           #f #f #f #f #t
-                           quoted-term
-                           (make-hash-table)
-                           (make-hash-table)
-                           #f
-                           #f)])
-                     (assoc-set-set assoc-set unquoted-term cons-label)
-                     (set-label-cons-car!
-                      cons-label
-                      (create-label-from-quote sba-state (car sexp-e) (car unquoted-term) assoc-set))
-                     (set-label-cons-cdr!
-                      cons-label
-                      (loop (cdr unquoted-term) (cdr sexp-e)))
-                     (initialize-label-set-for-value-source cons-label)
-                   cons-label)))]
-          [(pair? unquoted-term)
-           (let ([cons-label
-                  (make-label-cons
-                   #f #f #f #f #t
-                   quoted-term
-                   (make-hash-table)
-                   (make-hash-table)
-                   #f
-                   #f)])
-             (assoc-set-set assoc-set unquoted-term cons-label)
-             (set-label-cons-car!
-              cons-label
-              (create-label-from-quote sba-state (car sexp-e) (car unquoted-term) assoc-set))
-             (set-label-cons-cdr!
-              cons-label
-              (create-label-from-quote sba-state (cdr sexp-e) (cdr unquoted-term) assoc-set))
-             (initialize-label-set-for-value-source cons-label)
-             cons-label)]
-          [else (let ([label (make-label-cst
-                              #f #f #f #f #f
-                              quoted-term
-                              (make-hash-table)
-                              (make-hash-table)
-                              unquoted-term)])
-                  (assoc-set-set assoc-set unquoted-term label)
-                  (initialize-label-set-for-value-source label)
-                  ((sba-state-register-label-with-gui sba-state) label)
-                  label)]))))
+  ; (label -> void) syntax-object (assoc-setof location-info label) -> label
+  ; We must take sharing into account.  We can't count on using syntax-e and eq?
+  ; because they don't preserve sharing (see the MzScheme manual) and using
+  ; syntax-object->datum and eq? might mistakenly result in too much sharing, since
+  ; some values like intergers, symbols, and '() are always eq?.  So we have to rely
+  ; on source locations and so on.  And the reason we must take sharing into account
+  ; is because otherwise things like '#0=(1 . #0#) will make this code fail to
+  ; terminate.  Try the foolowing code in DrScheme to see why syntax-e and
+  ; syntax-object->datum are not what we want:
+  ;  (define-syntax lst
+  ;    (syntax-rules ()
+  ;      [(_ a b) #'(a a b)]))
+  ;  (lst 1 1)
+  ;  (define w1 #`#,(lst 1 1))
+  ;  w1
+  ;  (define w2 (syntax-e w1))
+  ;  w2
+  ;  (define w3 w2)
+  ;  w3
+  ;  (eq? (car w3) (cadr w3))
+  ;  (eq? (car w3) (caddr w3))
+  ;  (define w4 (syntax-object->datum w1))
+  ;  w4
+  ;  (eq? (car w4) (cadr w4))
+  ;  (eq? (car w4) (caddr w4))
+  ;
+  ;  '(1 1 1)
+  ;  (define x1 #''(1 1 1))
+  ;  x1
+  ;  (define x2 (syntax-e x1))
+  ;  x2
+  ;  (define x3 (syntax-e (cadr x2)))
+  ;  x3
+  ;  (eq? (car x3) (cadr x3))
+  ;  (eq? (car x3) (caddr x3))
+  ;  (define x4 (syntax-object->datum (cadr x2)))
+  ;  x4
+  ;  (eq? (car x4) (cadr x4))
+  ;  (eq? (car x4) (caddr x4))
+  ;  
+  ;  '(#0=1 #0# 1)
+  ;  (define y1 #''(#0=1 #0# 1))
+  ;  y1
+  ;  (define y2 (syntax-e y1))
+  ;  y2
+  ;  (define y3 (syntax-e (cadr y2)))
+  ;  y3
+  ;  (eq? (car y3) (cadr y3))
+  ;  (eq? (car y3) (caddr y3))
+  ;  (define y4 (syntax-object->datum (cadr y2)))
+  ;  y4
+  ;  (eq? (car y4) (cadr y4))
+  ;  (eq? (car y4) (caddr y4))
+  ;
+  ;  '(#0=(1) #0# (1))
+  ;  (define z1 #''(#0=(1) #0# (1)))
+  ;  z1
+  ;  (define z2 (syntax-e z1))
+  ;  z2
+  ;  (define z3 (syntax-e (cadr z2)))
+  ;  z3
+  ;  (eq? (car z3) (cadr z3))
+  ;  (eq? (car z3) (caddr z3))
+  ;  (define z4 (syntax-object->datum (cadr z2)))
+  ;  z4
+  ;  (eq? (car z4) (cadr z4))
+  ;  (eq? (car z4) (caddr z4))
+  ;
+  (define (create-label-from-quote register-label-with-gui term-stx assoc-set)
+    (let ([term-loc-info (list (syntax-source term-stx)
+                               (syntax-position term-stx)
+                               (syntax-span term-stx))])
+      ;(printf "Q: ~a ~a ~a ~a~n" (syntax-object->datum term-stx) (syntax-e term-stx) term-stx (assoc-set-in? assoc-set term-loc-info))
+      ;(printf "L: ~a~n" term-loc-info)
+      (if (assoc-set-in? assoc-set term-loc-info)
+          (assoc-set-get assoc-set term-loc-info)
+          (let ([sexp-e (syntax-e term-stx)])
+            (cond
+              [(list? sexp-e)
+               (let loop ([sexp-e sexp-e]
+                          [top-label? #t])
+                 (if (null? sexp-e)
+                     (let ([null-label
+                            (make-label-cst
+                             #f #f #f #f #t
+                             term-stx
+                             (make-hash-table)
+                             (make-hash-table)
+                             sexp-e)])
+                       (initialize-label-set-for-value-source null-label)
+                       null-label)
+                     (let ([cons-label
+                            (make-label-cons
+                             #f #f #f #f (not top-label?)
+                             term-stx
+                             (make-hash-table)
+                             (make-hash-table)
+                             #f
+                             #f)])
+                       ; the top-most cons-label in the list is the only one in
+                       ; the list that might be associated with a #n name and
+                       ; therefore the only one that might have a #n# sharing
+                       ; reference somewhere else, so we need to remember it so
+                       ; sharing is dealt with correctly.  We need to memoize it
+                       ; before any recursive call so that we close the loop
+                       ; correctly.
+                       (when top-label?
+                         (assoc-set-set assoc-set term-loc-info cons-label)
+                         (register-label-with-gui cons-label))
+                       (set-label-cons-car!
+                        cons-label
+                        (create-label-from-quote register-label-with-gui
+                                                 (car sexp-e) assoc-set))
+                       (set-label-cons-cdr!
+                        cons-label
+                        (loop (cdr sexp-e) #f))
+                       (initialize-label-set-for-value-source cons-label)
+                       cons-label)))]
+              [(pair? sexp-e)
+               (let ([cons-label
+                      (make-label-cons
+                       #f #f #f #f #f
+                       term-stx
+                       (make-hash-table)
+                       (make-hash-table)
+                       #f
+                       #f)])
+                 (assoc-set-set assoc-set term-loc-info cons-label)
+                 (register-label-with-gui cons-label)
+                 (set-label-cons-car!
+                  cons-label
+                  (create-label-from-quote register-label-with-gui
+                                           (car sexp-e) assoc-set))
+                 (set-label-cons-cdr!
+                  cons-label
+                  (create-label-from-quote register-label-with-gui
+                                           (cdr sexp-e) assoc-set))
+                 (initialize-label-set-for-value-source cons-label)
+                 cons-label)]
+              [else (let ([label (make-label-cst
+                                  #f #f #f #f #f
+                                  term-stx
+                                  (make-hash-table)
+                                  (make-hash-table)
+                                  sexp-e)])
+                      (assoc-set-set assoc-set term-loc-info label)
+                      (initialize-label-set-for-value-source label)
+                      (register-label-with-gui label)
+                      label)])))))
   
   ; Builds a list of labels of length n, with all labels being the same.
   ; This function should be seldom called, so it's not being made tail recursive...
@@ -2535,8 +2617,8 @@
         ((sba-state-register-label-with-gui sba-state) label)
         label)]
      [(quote sexp)
-      (create-label-from-quote sba-state (syntax sexp)
-                               (syntax-object->datum (syntax sexp)) (assoc-set-make))]
+      (create-label-from-quote (sba-state-register-label-with-gui sba-state)
+                               (syntax sexp) (assoc-set-make 'equal))]
      [(define-values vars exp)
       (let* (; scheme list of syntax objects
              [vars (syntax-e (syntax vars))]
