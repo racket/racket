@@ -49,6 +49,10 @@ If one of the provided functions is not present on your system (e.g. if your
 system supports GL 1.3), the function will raise a run-time exception when
 invoked.
 
+The names exported from "gl.ss" are case-sensitive (e.g. `glBegin'
+instead of `glbegin'), so accessing the bindings from case-insensitive
+code is difficult.
+
 Types:
 The functions provided by gl.ss perform comparable checking to their
 C-language counterparts; they check the types of their arguments, but do not
