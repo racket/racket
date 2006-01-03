@@ -1,12 +1,8 @@
 
 #include "wx_pltgdi.h"
 
-#ifndef WX_GRAPHICS_EXPORT
-# define WX_GRAPHICS_EXPORT extern
-#endif
-#ifndef WX_GPROC
-# define WX_GPROC(x) (*x)
-#endif
+#define WX_GRAPHICS_EXPORT extern
+#define WX_GPROC(x) x
 
 WX_GRAPHICS_EXPORT void WX_GPROC(wxGStartup)();
 WX_GRAPHICS_EXPORT void WX_GPROC(wxGShutdown)();
@@ -42,9 +38,6 @@ WX_GRAPHICS_EXPORT void WX_GPROC(wxGDrawPolygon)(Graphics *g, Pen *p, PointF *pt
 WX_GRAPHICS_EXPORT void WX_GPROC(wxGFillPath)(Graphics *g, Brush *b, GraphicsPath *gp);
 WX_GRAPHICS_EXPORT void WX_GPROC(wxGDrawPath)(Graphics *g, Pen *p, GraphicsPath *gp);
 
-WX_GRAPHICS_EXPORT void WX_GPROC(wxGDrawString)(Graphics *g, wchar_t *w, int len, Font *f, PointF *pos, StringFormat *fmt, COLORREF c);
-WX_GRAPHICS_EXPORT void WX_GPROC(wxGMeasureString)(Graphics *g, wchar_t *w, int len, Font *f, PointF *pos, StringFormat *fmt, RectF *r);
-
 WX_GRAPHICS_EXPORT GraphicsPath *WX_GPROC(wxGPathNew)(FillMode m);
 WX_GRAPHICS_EXPORT void WX_GPROC(wxGPathRelease)(GraphicsPath *gp);
 
@@ -72,5 +65,3 @@ WX_GRAPHICS_EXPORT void WX_GPROC(wxGPenRelease)(Pen *b);
 
 WX_GRAPHICS_EXPORT Font *WX_GPROC(wxGFontNew)(HDC dc);
 WX_GRAPHICS_EXPORT void WX_GPROC(wxGFontRelease)(Font *f);
-
-WX_GRAPHICS_EXPORT StringFormat *WX_GPROC(wxGNewStringFormat)(int flags);
