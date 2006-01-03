@@ -25,6 +25,7 @@
   scheme_extension_table->scheme_current_thread_ptr = scheme_current_thread_ptr;
   scheme_extension_table->scheme_fuel_counter_ptr = scheme_fuel_counter_ptr;
 #endif
+  scheme_extension_table->scheme_get_current_thread = scheme_get_current_thread;
   scheme_extension_table->scheme_start_atomic = scheme_start_atomic;
   scheme_extension_table->scheme_end_atomic = scheme_end_atomic;
   scheme_extension_table->scheme_end_atomic_no_swap = scheme_end_atomic_no_swap;

@@ -19,6 +19,7 @@ EXPORTS
  scheme_current_break_cell
  scheme_current_thread DATA
  scheme_fuel_counter DATA
+ scheme_get_current_thread
  scheme_start_atomic
  scheme_end_atomic
  scheme_end_atomic_no_swap

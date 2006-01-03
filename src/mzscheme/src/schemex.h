@@ -60,6 +60,7 @@ volatile int scheme_fuel_counter;
 Scheme_Thread **scheme_current_thread_ptr;
 volatile int *scheme_fuel_counter_ptr;
 #endif
+Scheme_Thread *(*scheme_get_current_thread)();
 void (*scheme_start_atomic)(void);
 void (*scheme_end_atomic)(void);
 void (*scheme_end_atomic_no_swap)(void);
