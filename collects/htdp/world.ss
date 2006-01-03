@@ -1,9 +1,9 @@
+;; Tue Jan  3 11:17:50 EST 2006: changed add-line behavior in world.ss 
 ;; Sat Dec 10 19:39:03 EST 2005: fixed name, changed interface to on-key-event
 ;; Fri Dec  9 21:39:03 EST 2005: remoevd (update ... produce ...); added on-redraw 
 ;; Thu Dec  1 17:03:03 EST 2005: fixed place-image; all coordinates okay now
 (module world mzscheme
-  (require				; (lib "unitsig.ss")
-   (lib "etc.ss")
+  (require
    (lib "class.ss")
    (lib "mred.ss" "mred")
    (lib "error.ss" "htdp")
@@ -12,7 +12,7 @@
    (lib "prim.ss" "lang"))
   
   ;; --- provide ---------------------------------------------------------------
-  (provide (all-from (lib "image.ss" "htdp")))
+  (provide (all-from-except (lib "image.ss" "htdp") add-line))
   
   (provide      ;; forall(World):
    big-bang     ;; Number Number Number World -> true 
@@ -22,6 +22,8 @@
    place-image  ;; Image Number Number Scence -> Scene
    empty-scene  ;; Number Number -> Scene 
    run-movie    ;; (Listof Image) -> true 
+   (rename add-line-to-scene add-line)
+                ;; Scene Number Number Number Number Color -> Scene 
    )
 
   (provide-higher-order-primitive
@@ -76,6 +78,25 @@
       (define sw (image-width scene))
       (define sh (image-height scene))
       (define ns (overlay/xy scene x y image))
+      (define nw (image-width ns))
+      (define nh (image-height ns))
+      (if (and (= sw nw) (= sh nh)) 
+	  ns
+	  (shrink ns 0 0 sw sh))))
+  
+  (define (add-line-to-scene image x0 y0 x1 y1 color)
+    #|
+    (check-image 'add-line image "first")
+    (check-pos 'add-line x0 "second")
+    (check-pos 'add-line y0 "third")
+    (check-pos 'add-line x1 "fourth")
+    (check-pos 'add-line x2 "fifth")
+    (check-color 'add-line x2 "sixth")
+    |#
+    (let ()
+      (define sw (image-width image))
+      (define sh (image-height image))
+      (define ns (add-line image x0 y0 x1 y1 color))
       (define nw (image-width ns))
       (define nh (image-height ns))
       (if (and (= sw nw) (= sh nh)) 
