@@ -34,6 +34,7 @@
           stop-colorer
           force-stop-colorer
           
+          is-stopped?
           is-frozen?
           freeze-colorer
           thaw-colorer
@@ -343,6 +344,7 @@
               (set! token-sym->style #f)
               (set! get-token #f)))
           
+          (define/public (is-stopped?) stopped?)
           (define/public (is-frozen?) frozen?)
           
           ;; See docs

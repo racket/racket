@@ -162,7 +162,9 @@
       
       ;; split/collapse-text : (instanceof menu%) (instanceof editor<%>) (instanceof mouse-event%) -> void
       (define (split/collapse-text menu text event)
-        (when (is-a? text -text<%>)
+        (when (and (is-a? text -text<%>)
+                   (not (send text is-frozen?))
+                   (not (send text is-stopped?)))
           (let* ([on-it-box (box #f)]
                  [click-pos 
                   (call-with-values
@@ -219,7 +221,7 @@
             (let loop ([snips (reverse snips)])
               (cond
                 [(null? snips) (void)]
-                [else (send text insert (car snips) pos pos)
+                [else (send text insert (send (car snips) copy) pos pos)
                       (loop (cdr snips))])))
           (send text end-edit-sequence)))
 
