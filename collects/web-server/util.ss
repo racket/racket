@@ -292,21 +292,5 @@
                            (cond
                              ((char=? first #\+)
                               (values #\space rest))
-                             ((char=? first #\%)
-                              ; MF: I rewrote this code so that Spidey could eliminate all checks.
-                              ; I am more confident this way that this hairy expression doesn't barf.
-                              (if (pair? rest)
-                                  (let ([rest-rest (cdr rest)])
-                                    (if (pair? rest-rest)
-                                        (values (integer->char
-                                                 (or (string->number (string (car rest) (car rest-rest)) 16)
-                                                     (raise (make-invalid-%-suffix
-                                                             (if (string->number (string (car rest)) 16)
-                                                                 (car rest-rest)
-                                                                 (car rest))))))
-                                                (cdr rest-rest))
-                                        (raise (make-incomplete-%-suffix rest))))
-                                  (raise (make-incomplete-%-suffix rest))))
                              (else (values first rest)))))
-               (cons this (loop rest))))))))
-  )
+               (cons this (loop rest)))))))))

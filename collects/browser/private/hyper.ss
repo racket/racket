@@ -73,7 +73,8 @@ A test case:
                  
                  ;; assume that url-paths are all strings 
                  ;; (other wise the pages are treated as different)
-                 (equal? (url-path a) (url-path b))
+                 (equal? (map path/param-path (url-path a)) 
+                         (map path/param-path (url-path b)))
                  
                  (equal? (url-query a) (url-query b)))))
 		 
@@ -108,7 +109,8 @@ A test case:
                   (normal-case-path (normalize-path (build-path (collection-path "mzlib") 
                                                                 'up
                                                                 'up)))
-                  (normal-case-path (normalize-path (apply build-path (url-path url))))))]
+                  (normal-case-path (normalize-path (apply build-path 
+                                                           (map path/param-path (url-path url)))))))]
               [else (inner #f url-allows-evaling? url)]))
           
           (define doc-notes null)
@@ -330,7 +332,7 @@ A test case:
 					     (let ([p (url-path url)])
 					       (and (not (null? p))
 						    (regexp-match #rx"[.][^.]*$"
-								  (car (last-pair p))))))]
+								  (path/param-path (car (last-pair p)))))))]
                         [html? (or (and mime-type (regexp-match #rx"text/html" mime-type))
 				   (member path-extension '(".html" ".htm")))]
                         [text? (or (and mime-type (regexp-match #rx"text/plain" mime-type))
@@ -349,7 +351,9 @@ A test case:
                       (let* ([orig-name (and (url? url)
                                              (let ([p (url-path url)])
                                                (and (not (null? p))
-                                                    (car (last-pair p)))))]
+                                                    (let ([lp (path/param-path (car (last-pair p)))])
+                                                      (and (not (string=? "" lp))
+                                                           lp)))))]
                              [size (let ([s (extract-field "content-length" mime-headers)])
                                      (and s (let ([m (regexp-match #rx"[0-9]+" s)])
                                               (and m (string->number (car m))))))]
@@ -447,8 +451,7 @@ A test case:
                             (queue-callback (lambda () (semaphore-post wait-to-start)))
                             (send d show #t)
                             (when exn 
-                              (raise (make-exn:tcp-problem (exn-message exn) 
-                                                           (current-continuation-marks)))))
+                              (raise (make-exn:tcp-problem (exn-message exn) (current-continuation-marks)))))
                           (let ([sema (make-semaphore 0)])
                             (when (and tmp-plt-filename install?)
                               (run-installer tmp-plt-filename
@@ -467,7 +470,8 @@ A test case:
                                                  (current-continuation-marks)))))]
                      [(or (and (url? url)
                                (not (null? (url-path url)))
-                               (regexp-match "[.]html?$" (car (last-pair (url-path url)))))
+                               (regexp-match #rx"[.]html?$"
+                                             (path/param-path (car (last-pair (url-path url))))))
                           (port? url)
                           html?)
                       ; HTML
@@ -475,7 +479,7 @@ A test case:
                       (let* ([directory
                               (or (if (and (url? url)
                                            (string=? "file" (url-scheme url)))
-                                      (let ([path (url-path url)])
+                                      (let ([path (apply build-path (map path/param-path (url-path url)))])
                                         (let-values ([(base name dir?) (split-path path)])
                                           (if (string? base)
                                               base

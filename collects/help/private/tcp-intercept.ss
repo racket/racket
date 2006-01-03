@@ -39,7 +39,8 @@
 			      (url-user url)
 			      ""
 			      #f
-			      (url-path url)
+			      (url-path-absolute? url)
+                              (url-path url)
 			      (url-query url)
 			      (url-fragment url)))])
              (substring long 3 (string-length long)))]

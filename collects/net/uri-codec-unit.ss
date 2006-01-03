@@ -1,3 +1,7 @@
+;; 1/2/2006: Added a mapping for uri path segments 
+;; that allows more characters to remain decoded 
+;; -robby
+
 ;;;
 ;;; <uri-codec-unit.ss> ---- En/Decode URLs and form-urlencoded data
 ;;; Time-stamp: <03/04/25 10:31:31 noel>
@@ -75,6 +79,7 @@
            (lib "match.ss")
            (lib "string.ss")
 	   (lib "etc.ss")
+           (lib "list.ss")
            "uri-codec-sig.ss")
 
   (provide uri-codec@)
@@ -109,13 +114,19 @@
 
       ;; Characters that sometimes map to themselves
       (define safe-mapping
-        (map (lambda (char)
-               (cons char char))
+        (map (lambda (char) (cons char char))
              '(#\- #\_ #\. #\! #\~ #\* #\' #\( #\))))
 
       ;; The strict URI mapping
       (define uri-mapping
-        (append alphanumeric-mapping safe-mapping))
+        (append alphanumeric-mapping
+                safe-mapping))
+      
+      ;; The uri path segment mapping from RFC 3986
+      (define uri-path-segment-mapping
+        (append alphanumeric-mapping
+                safe-mapping
+                (map (λ (c) (cons c c)) (string->list "@+,=$&:"))))
 
       ;; The form-urlencoded mapping
       (define form-urlencoded-mapping
@@ -156,6 +167,10 @@
 
       (define-values (uri-encoding-vector uri-decoding-vector)
         (make-codec-tables uri-mapping))
+      
+      (define-values (uri-path-segment-encoding-vector
+                      uri-path-segment-decoding-vector)
+        (make-codec-tables uri-path-segment-mapping))
 
       (define-values (form-urlencoded-encoding-vector
                       form-urlencoded-decoding-vector)
@@ -198,7 +213,15 @@
       ;; string -> string
       (define (uri-decode str)
         (decode uri-decoding-vector str))
-
+      
+      ;; string -> string
+      (define (uri-path-segment-encode str)
+        (encode uri-path-segment-encoding-vector str))
+      
+      ;; string -> string
+      (define (uri-path-segment-decode str)
+        (decode uri-path-segment-decoding-vector str))
+      
       ;; string -> string
       (define (form-urlencoded-encode str)
         (encode form-urlencoded-encoding-vector str))

@@ -29,38 +29,31 @@ http://www.ietf.org/rfc/rfc2396.txt
 
 TYPES ----------------------------------------------------------------
 
-> url
-  struct url (scheme user host port path fragment)
-  scheme : string or #f
-  user : string or #f
-  host : string or #f
-  port : number or #f
-  path : (listof (union string path/param))
-  query : (listof (cons symbol string))
-  fragment : string or #f
+_url struct_
+ (define-struct url (scheme user host port path-absolute? path query fragment))
+> url-scheme : url -> (union false/c string?) 
+> url-user : url -> (union false/c string?)
+> url-host : url -> (union false/c string?)
+> url-port : url -> (union false/c number?)
+> url-path-absolute? : url -> boolean?
+> url-path : url -> (listof path/param?)
+> url-query : url -> (listof (cons/c symbol? string?))
+> url-fragment : url -> (union false/c string?)
+> url? : any -> boolean
+> make-url : ...as-above.. -> url
 
-  The basic structure for all URLs.
+  The basic structure for all URLs, as explained in rfc3986
+  http://www.ietf.org/rfc/rfc3986.txt
+
+For example, this url:
 
   http://sky@www.cs.brown.edu:801/cgi-bin/finger;xyz?name=shriram;host=nw#top
-  {-1}   {2} {----3---------} {4}{---5---------} {6} {----7-------------} {8}
+  {-1}   {2} {----3---------} {4}{---5-------------}{----7-------------} {8}
+                                                 {6}
 
   1 = scheme, 2 = user, 3 = host, 4 = port,
-  5 = path,  6 = param, 7 = query, 8 = fragment
-
-  If the scheme is "file", then the path is a platform-dependent
-  string. The library does, however, check for the presence of a
-  fragment designator and, if there is one, separates it from the rest
-  of the path. If the path is syntactically a directory, the last
-  string the resulting structure's `path' list is an empty string.
-  If the path is absolute, the `host' is the root path, otherwise
-  `host' is #f.
-
-  For non-"file" schemes, the path is a URL path as defined in the
-  standard.
-
-  If a path segment has a parameter, it is represented with
-  an instance of the path/param struct. Otherwise, it is
-  just represented as a string.
+  5 = path,  6 = param (or last path segment),
+  7 = query, 8 = fragment
 
   The strings inside the fields user, path, query, and fragment are
   represented directly as Scheme strings, ie without
@@ -74,16 +67,20 @@ TYPES ----------------------------------------------------------------
 
   An empty string at the end of the list of paths
   corresponds to a url that ends in a slash. For example,
-  this url: http://www.drscheme.org/a/ has a path field
-  '("a" "") and this url: http://www.drscheme.org/a
-  has a path field '("a").
+  this url: http://www.drscheme.org/a/ has a path field with
+  strings "a" and "" and this url: http://www.drscheme.org/a
+  has a path field with only the string "a".
 
-> path/param
+_ path/param struct_
+  (define-struct path/param (path param))
 
-  A pair of strings, accessible with _path/param-path_ and
-  path/param-params_ that joins a path segment with its
-  params in a url. The function _path/param?_ recognizes
-  such pairs.
+> path/param-path : path/param -> (union string? (symbols 'up 'same))
+> path/param-param : path/param -> (listof string)
+> path/param? : any -> boolean
+> make-path/param : (union string? (symbols 'up 'same)) (listof string) -> path/param
+
+  A pair, that joins a path segment with its params in a
+  url.
 
 > pure-port
 
@@ -114,42 +111,9 @@ PROCEDURES -----------------------------------------------------------
   Given a base URL and a relative path, combines the two and returns a
   new URL as per the URL combination specification.  Call the
   arguments base and relative.  They are combined according to the
-  following rules (applied in order until one matches):
-  - If either argument is an empty URL, the result is the other
-    argument.
-  - If relative sports a scheme, then the result is relative.
-  - If the base has scheme "file", the procedure uses the special rule
-    specified below.
-  - If relative specifies a host, then the result is relative.
-  Failing the above, relative inherit's base's host and port.  Then:
-  - If the path of relative begins with a "/", the result is relative.
-  - If the path of relative is empty, then relative inherits base's
-    params and query, and the result is relative.
-  - Otherwise base and relative are combined as per the standard
-    specification of merging and normalization.
+  rules in rfc3986 (above).
 
-  On combining "file" schemes:
-
-  If the base has scheme "file", relative is treated as a
-  slash-separated path (unless it contains an empty path --- only
-  params, queries, and fragments --- in which case the path is not
-  used).  These path fragments are combined using build-path, starting
-  with the base's path.  Three path segments are special: ".."
-  corresponds to an 'up directive to build-path, while "." and ""
-  correspond to 'same.  As a consequence, if relative begins with "/",
-  this does not make it an absolute URL: the leading slash is treated
-  as if the initial segment is "", so this has no effect, and base's
-  path remains the base path of the result.  If base refers to a
-  directory, relative is indexed from that directory; if base refers
-  to a file, relative is indexed from the directory containing the
-  file.  Note that if base does not refer to an actual directory that
-  exists on the filesystem, then it must syntactically be a directory
-  as understood by split-path.
-
-  The above algorithm tests for the presence of a directory to
-  correctly combine paths.  As a result, it can raise any exception
-  raised by directory-exists?.  None of these exceptions is trapped by
-  the procedure; consumers must be prepared for them.
+  This function does not raise any exceptions.
 
 > (netscape/string->url string) -> url
 

@@ -105,7 +105,7 @@
                      ;; they will be caught elsewhere.
                      [(and (url-path url)
                            (not (null? (url-path url)))
-                           (regexp-match #rx".plt$" (car (last-pair (url-path url)))))
+                           (regexp-match #rx".plt$" (path/param-path (car (last-pair (url-path url))))))
                       url]
                      
                      ;; files on download.plt-scheme.org in /doc are considered
@@ -119,7 +119,7 @@
                       (let* ([path (url-path url)]
                              [coll (and (pair? path)
                                         (pair? (cdr path))
-                                        (cadr path))]
+                                        (path/param-path (cadr path)))]
                              [coll-path (and coll (string->path coll))]
                              [doc-pr (and coll-path (assoc coll-path known-docs))])
                         
@@ -136,7 +136,9 @@
                       url]
                      
                      ;; send the url off to another browser
-                     [(or (and (preferences:get 'drscheme:help-desk:ask-about-external-urls)
+                     [(or (and (string? (url-scheme url))
+                               (not (equal? (url-scheme url) "http")))
+                          (and (preferences:get 'drscheme:help-desk:ask-about-external-urls)
                                (ask-user-about-separate-browser))
                           (preferences:get 'drscheme:help-desk:separate-browser))
                       (send-url (url->string url))
@@ -240,7 +242,7 @@
       (define (is-download.plt-scheme.org/doc-url? url)
         (and (equal? "download.plt-scheme.org" (url-host url))
              (not (null? (url-path url)))
-             (equal? (car (url-path url)) "^/doc")))
+             (equal? (path/param-path (car (url-path url))) "doc")))
       
       (define (ask-user-about-separate-browser)
         (define separate-default? (preferences:get 'drscheme:help-desk:separate-browser))

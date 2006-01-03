@@ -21,6 +21,7 @@
                 user
                 host
                 port
+                path-absolute?
                 path
                 query
                 fragment))

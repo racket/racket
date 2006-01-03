@@ -141,10 +141,11 @@
 
   ;; url->param: url -> (union string #f)
   (define (url->param a-url)
-    (let ([l (filter path/param? (url-path a-url))])
+    (let ([l (filter (λ (x) (not (null? (path/param-param x))))
+                     (url-path a-url))])
       (and (not (null? l))
-           (path/param-param (car l)))))
-
+           (car (path/param-param (car l))))))
+           
   ;; insert-param: url string -> string
   ;; add a path/param to the path in a url
   ;; (assumes that there is only one path/param)

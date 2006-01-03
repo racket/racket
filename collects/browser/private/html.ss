@@ -234,8 +234,7 @@
                                              (copy-port ip op)))))
                                       'truncate)
               (pop-status)
-              (let* ([upath (url-path url)]
-                     [bitmap (make-object bitmap% tmp-filename)])
+              (let ([bitmap (make-object bitmap% tmp-filename)])
                 (with-handlers ([exn:fail?
                                  (lambda (x)
                                    (message-box "Warning"
