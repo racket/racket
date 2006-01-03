@@ -1,4 +1,44 @@
 ------------------------------
+        Version 302
+------------------------------
+
+  . Help Desk's font size is now independently configurable
+    (from Drscheme's font size).
+
+  . Help Desk no longer asks about non-http urls; it always
+    just ships them off to the OS to handle.
+
+  . Various url struct changes to fix bugs related to
+    mailto: url handling and handling of multiple params in
+    a path segment.
+
+    . the scheme and host are now always lowercased by
+      string->url
+
+    . the library no longer adds an empty path to the end of
+      urls like "http://www.drscheme.org", meaning that the
+      url-path can sometimes now be an empty list (the
+      contract always allowed this, but it didn't happen
+      before).
+
+    . added path-absolute? field to url struct, following
+      rfc 3986's nomenclature -- when #t, it means the path
+      portion of the url began with a slash and when #f it
+      means that it didn't.
+
+    . more care is taken when quoting path portions of the url
+      and when turning urls into strings
+
+    . path segments are now always path/param structs and
+      the param part of a path/param struct is now a list of
+      strings
+
+    . add 'up and 'same as possible path segments (in the
+      path field of a path/param struct), in addition to
+      strings (as before).
+
+
+------------------------------
         Version 300
 ------------------------------
 
