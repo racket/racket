@@ -58,6 +58,12 @@ students to simulate a small world of animated drawings and games:
    <code>(place-image image x y scene)</code>
    places image at (x,y) into scene; (x,y) are comp. graph. coordinates
    
+<li><code>{(idx add-line)} : Scene Number Number Number Number Color -> Scene</code><br>
+   <code>(add-line scene x0 y0 x1 y1 c)</code>
+   places a line of color <code>c</code> from <code>(x0,y0)</code> to
+   <code>(x1,y1)</code> into <code>scene</code>;  
+   <code>(x,y)</code> are comp. graph. coordinates
+   
 <li><code>{(idx run-movie)}   : (Listof Image) -> true </code><br>
    <code>(run-movie loi)</code>
    shows the list of images in loi, time-delayed
