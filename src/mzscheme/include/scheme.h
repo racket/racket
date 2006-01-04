@@ -1408,12 +1408,10 @@ void *scheme_malloc(size_t size);
 #  define GC2_EXTERN MZ_EXTERN
 # endif
 # ifdef INCLUDE_WITHOUT_PATHS
-#  if SCHEME_DIRECT_EMBEDDED
-#   include "gc2.h"
-#  else
+#  if !SCHEME_DIRECT_EMBEDDED
 #   define GC2_JUST_MACROS_AND_TYPEDEFS
-#   include "schemegc2.h"
 #  endif
+#  include "schemegc2.h"
 # else
 #  include "../gc2/gc2.h"
 # endif

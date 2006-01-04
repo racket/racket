@@ -238,7 +238,6 @@ int MAIN(int argc, MAIN_char **MAIN_argv)
 
 #ifdef DOS_FILE_SYSTEM
   /* Order matters: load dependencies first */
-  load_delayed_dll("msvcr71.dll");
 # ifndef MZ_PRECISE_GC
   load_delayed_dll("libmzgcxxxxxxx.dll");
 # endif

@@ -623,7 +623,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored
   char *a, **argv, *b, *normalized_path = NULL;
 
   /* Order matters: load dependencies first */
-  load_delayed_dll("msvcr71.dll");
 # ifndef MZ_PRECISE_GC
   load_delayed_dll("libmzgcxxxxxxx.dll");
 # endif
