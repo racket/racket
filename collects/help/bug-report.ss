@@ -352,13 +352,10 @@
     ;; initiates sending the bug report and switches the GUI's mode
     (define (send-bug-report)
       (letrec ([query (get-query)]
-               [url (make-url "http"
-                              #f
-                              bug-www-server
-                              bug-www-server-port
-                              (list "cgi-bin" "bug-report")
-                              '() ;query
-                              #f)]
+               [url
+                (string->url (format "http://~a:~a/cgi-bin/bug-report"
+                                     bug-www-server
+                                     bug-www-server-port))]
                [post-data 
                 (parameterize ([current-alist-separator-mode 'amp])
                   (string->bytes/utf-8 (alist->form-urlencoded query)))]
