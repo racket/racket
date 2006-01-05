@@ -1,4 +1,12 @@
 ------------------------------
+        Version 301
+------------------------------
+
+ - Fixed debugger status display for Unix/X
+
+ - Fixed collapse S-expression
+
+------------------------------
         Version 300
 ------------------------------
 
