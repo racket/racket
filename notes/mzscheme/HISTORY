@@ -10,7 +10,7 @@ Generalized network-address handling, includes IPv6
 Added ephemerons
 0.0 and -0.0 are different by eqv?
 Added keyword values (#: prefix) and keyword? predicate
-Added syntax-language+country
+Added system-language+country
 Added current-preserved-thread-cell-values
 Added #%variable-reference
 MzLib: added object-method-arity-includes? to class.ss
