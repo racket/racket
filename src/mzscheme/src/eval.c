@@ -1034,16 +1034,20 @@ static Scheme_Object *resolve_branch(Scheme_Object *o, Resolve_Info *info)
   /*  Done here because `not' is easily recognized at this
       point, and we haven't yet resolved Scheme-stack locations
       so it's ok to remove an application. */
-  if (SAME_TYPE(SCHEME_TYPE(t), scheme_application2_type)) {
-    Scheme_App2_Rec *app;
-
-    app = (Scheme_App2_Rec *)t;
-    if (SAME_PTR(scheme_not_prim, app->rator)) {
-      t = tb;
-      tb = fb;
-      fb = t;
-      t = app->rand;
-    }
+  while (1) {
+    if (SAME_TYPE(SCHEME_TYPE(t), scheme_application2_type)) {
+      Scheme_App2_Rec *app;
+      
+      app = (Scheme_App2_Rec *)t;
+      if (SAME_PTR(scheme_not_prim, app->rator)) {
+	t = tb;
+	tb = fb;
+	fb = t;
+	t = app->rand;
+      } else
+	break;
+    } else
+      break;
   }
 
   t = scheme_resolve_expr(t, info);
