@@ -54,6 +54,9 @@
                  "...")
                 (substring str 0 (min n (string-length str))))))
       
+      (define (clean-status s)
+	(truncate (regexp-replace* #rx"\n" s " ") 200))
+
       (define (string-map! f str)
         (let loop ([i 0])
           (when (< i (string-length str))
@@ -246,7 +249,7 @@
                                                                                   get-user-namespace))))))]
                                                     [val (mark-binding-value
                                                           binding)])
-                                               (truncate (format "~a = ~a" id-sym (render val)) 200))))]
+                                               (clean-status (format "~a = ~a" id-sym (render val))))))]
                                      [""]))))))
 		     (super on-event event)]
                     [(send event button-down? 'right)
@@ -271,12 +274,11 @@
                                               [f (get-top-level-window)])
                                           (when (cons? stat)
                                             (send (make-object menu-item%
-                                                    (truncate
+                                                    (clean-status
                                                      (if (= 2 (length stat))
                                                          (format "value = ~a" (render (cadr stat)))
                                                          (format "~a" (cons 'values 
-									    (map (lambda (v) (render v)) (rest stat)))))
-                                                     200)
+									    (map (lambda (v) (render v)) (rest stat))))))
                                                     menu
                                                     void) enable #f))
                                           (when (not (eq? stat 'break))
@@ -327,9 +329,8 @@
                                                               binding)]
                                                         [menu (make-object popup-menu% #f)])
                                                (send (make-object menu-item%
-                                                       (truncate
-                                                        (format "~a = ~a" id-sym val)
-                                                        200)
+                                                       (clean-status
+                                                        (format "~a = ~a" id-sym val))
                                                        menu
                                                        (lambda (item evt)
                                                          (printf "~a" val))) enable #f)
@@ -621,7 +622,7 @@
 	    (when (cons? status)
 	      (let ([expr (mark-source (first frames))])
 		(send status-message set-label
-		      (truncate
+		      (clean-status
 		       (format "~a ==> ~a"
 			       (trim-expr-str
 				(send (get-definitions-text) get-text
@@ -629,8 +630,7 @@
 				      (+ -1 (syntax-position expr) (syntax-span expr))))
 			       (if (= 2 (length status))
 				   (render (cadr status))
-				   (cons 'values (map (lambda (v) (render v)) (rest status)))))
-		       200))))
+				   (cons 'values (map (lambda (v) (render v)) (rest status)))))))))
 	    (cond [(get-pc) => (lambda (pc) (send (get-definitions-text) scroll-to-position pc))])
 	    (send (get-definitions-text) invalidate-bitmap-cache))
 
