@@ -264,7 +264,7 @@ Typically, the correct printing of a path use the current locale's
 encoding, but there's no guarantee that the path is well-formed using
 the current locale's encoding.
 
-To mediate these view of paths, MzScheme now supplies a "path"
+To mediate this view of paths, MzScheme now supplies a "path"
 datatype, with operations `path->string', `string->path',
 `bytes->string', and `bytes->path'. Use `path->string' to print a path
 to the user, but use `path->bytes' to marshal a path (e.g., for saving
