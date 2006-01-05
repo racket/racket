@@ -1012,21 +1012,6 @@ scheme_make_branch(Scheme_Object *test, Scheme_Object *thenp,
   b = MALLOC_ONE_TAGGED(Scheme_Branch_Rec);
   b->so.type = scheme_branch_type;
 
-#if 0
-  /* Try optimize: (if (not x) y z) => (if x z y) */
-  if (SAME_TYPE(SCHEME_TYPE(test), scheme_application_type)) {
-    Scheme_App_Rec *app;
-
-    app = (Scheme_App_Rec *)test;
-    if ((app->num_args == 1) && SAME_PTR(scheme_not_prim, app->args[0])) {
-      test = thenp;
-      thenp = elsep;
-      elsep = test;
-      test = app->args[1];
-    }
-  }
-#endif
-
   b->test = test;
   b->tbranch = thenp;
   b->fbranch = elsep;
@@ -1041,9 +1026,29 @@ static Scheme_Object *resolve_branch(Scheme_Object *o, Resolve_Info *info)
 
   b = (Scheme_Branch_Rec *)o;
 
-  t = scheme_resolve_expr(b->test, info);
-  tb = scheme_resolve_expr(b->tbranch, info);
-  fb = scheme_resolve_expr(b->fbranch, info);
+  t = b->test;
+  tb = b->tbranch;
+  fb = b->fbranch;
+
+  /* Try optimize: (if (not x) y z) => (if x z y) */
+  /*  Done here because `not' is easily recognized at this
+      point, and we haven't yet resolved Scheme-stack locations
+      so it's ok to remove an application. */
+  if (SAME_TYPE(SCHEME_TYPE(t), scheme_application2_type)) {
+    Scheme_App2_Rec *app;
+
+    app = (Scheme_App2_Rec *)t;
+    if (SAME_PTR(scheme_not_prim, app->rator)) {
+      t = tb;
+      tb = fb;
+      fb = t;
+      t = app->rand;
+    }
+  }
+
+  t = scheme_resolve_expr(t, info);
+  tb = scheme_resolve_expr(tb, info);
+  fb = scheme_resolve_expr(fb, info);
   b->test = t;
   b->tbranch = tb;
   b->fbranch = fb;
