@@ -356,8 +356,6 @@
       ;(-> syntax? binding-set? boolean? (union false/c syntax? (list/p syntax? syntax?)) (vector/p syntax? binding-set?))
       (lambda (exp tail-bound pre-break? procedure-name-info)
         
-        (>>> (syntax-object->datum exp) "annotate/inner called with")
-        
         (cond [(syntax-property exp 'stepper-skipto)                
                (let* ([free-vars-captured #f] ; this will be set!'ed
                       ;[dont-care (printf "expr: ~a\nskipto: ~a\n" expr (syntax-property expr 'stepper-skipto))]
