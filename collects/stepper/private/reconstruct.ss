@@ -101,10 +101,6 @@
   ; prints the name attached to the procedure, unless we're on the right-hand-side
   ; of a let, or unless there _is_ no name.
   
-  (define (>>> x) 
-    (fprintf (current-error-port) ">>> ~v\n" x)
-    x)
-  
   (define recon-value
     (opt-lambda (val render-settings [assigned-name #f])
       (if (hash-table-get finished-xml-box-table val (lambda () #f))
@@ -953,7 +949,7 @@
                           (datum->syntax-object #'here `(,#'#%app ...)) ; in unannotated code
                           (datum->syntax-object #'here `(,#'#%app ... ,so-far ...))))
                      (else
-                      (error "bad label in application mark in expr: ~a" exp))))
+                      (error 'recon-inner "bad label (~v) in application mark in expr: ~a" (mark-label (car mark-list)) exp))))
                  exp)]
                
                ; define-struct 
@@ -997,8 +993,9 @@
                
                [(begin . terms)
                 ;; copied from app:
+                  (error 'reconstruct/inner "how did we get here?")
                 
-                (attach-info
+                #;(attach-info
                  (let* ([sub-exprs (syntax->list (syntax terms))]
                         [arg-temps (build-list (length sub-exprs) get-arg-var)]
                         [arg-vals (map (lambda (arg-temp) 

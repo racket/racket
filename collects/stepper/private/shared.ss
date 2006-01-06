@@ -82,7 +82,16 @@
    reset-profiling-table ; profiling info
    get-set-pair-union-stats ; profiling info
    re-intern-identifier
-   finished-xml-box-table)
+   finished-xml-box-table
+   >>>)
+  
+  ;; eli's debug operator:
+  ;; (I'm sure his version is more elegant.)
+  (define (>>> x . extra)
+    (begin (fprintf (current-error-port) "~a >>> ~v\n" 
+                    (if extra (apply string-append extra) "")
+                    x)
+           x))
   
   ; A step-result is either:
   ; (make-before-after-result finished-exps exp redex reduct)

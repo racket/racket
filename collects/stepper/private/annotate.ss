@@ -259,6 +259,7 @@
   ;
   
   (define (annotate main-exp break track-inferred-names?)
+    (define _ (fprintf (current-error-port) "input to annotate: ~v\n" (syntax-object->datum main-exp)))
 
     (define binding-indexer
       (let ([binding-index 0])
@@ -355,6 +356,8 @@
       ;(-> syntax? binding-set? boolean? (union false/c syntax? (list/p syntax? syntax?)) (vector/p syntax? binding-set?))
       (lambda (exp tail-bound pre-break? procedure-name-info)
         
+        (>>> (syntax-object->datum exp) "annotate/inner called with")
+        
         (cond [(syntax-property exp 'stepper-skipto)                
                (let* ([free-vars-captured #f] ; this will be set!'ed
                       ;[dont-care (printf "expr: ~a\nskipto: ~a\n" expr (syntax-property expr 'stepper-skipto))]
@@ -375,7 +378,8 @@
                (2vals (wcm-wrap 13 exp) null)]
 
               [else
-               (let* 
+               (let*
+                   ;; recurrence procedures, used to recur on sub-expressions:
                    ([tail-recur (lambda (exp) (annotate/inner exp tail-bound #t procedure-name-info))]
                     [non-tail-recur (lambda (exp) (annotate/inner exp null #f #f))]
                     [result-recur (lambda (exp) (annotate/inner exp null #f procedure-name-info))]
@@ -387,11 +391,29 @@
                                                  #f)])
                                        (annotate/inner exp null #f proc-name-info)))]
                     [lambda-body-recur (lambda (exp) (annotate/inner exp 'all #t #f))]
-                    ; note: no pre-break for the body of a let; it's handled by the break for the
-                    ; let itself.
-                    [let-body-recur (lambda (bindings)
-                                      (lambda (exp) 
-                                        (annotate/inner exp (binding-set-union (list tail-bound bindings)) #f procedure-name-info)))]
+
+                    ; let bodies have a startling number of recurrence patterns. ouch!  
+                    
+                    ;; no pre-break, tail w.r.t. new bindings:
+                    [let-body-recur/single 
+                     (lambda (exp bindings) 
+                         (annotate/inner exp (binding-set-union (list tail-bound bindings)) #f procedure-name-info))]
+                    
+                    ;; no pre-break, non-tail w.r.t. new bindings
+                    [let-body-recur/first
+                     ;; whoops! this one is just "non-tail-recur"
+                     non-tail-recur]
+                    
+                    ;; yes pre-break, non-tail w.r.t. new bindings
+                    [let-body-recur/middle
+                     (lambda (exp)
+                       (annotate/inner exp null #t #f))]
+                    
+                    ;; yes pre-break, tail w.r.t. new bindings:
+                    [let-body-recur/last
+                     (lambda (exp bindings)
+                         (annotate/inner exp (binding-set-union (list tail-bound bindings)) #f procedure-name-info))]
+                    
                     [make-debug-info-normal (lambda (free-bindings)
                                               (make-debug-info exp tail-bound free-bindings 'none #t))]
                     [make-debug-info-app (lambda (tail-bound free-bindings label)
@@ -503,6 +525,14 @@
                     ;  continuations; backing up a computation using a set! will not revert the
                     ;  counter, and the stepper may think that the computation is in a different 
                     ;  place.  To fix this, we must go to a pure let* with nested marks at each right-hand-side.
+            
+                    ; 2006-01: oh dear heaven.  Begin expands into a let-values.  This means that the 
+                    ;  let-values really has most of the complexity of the whole stepper, all in one 
+                    ;  place.  Re-formulating the bodies as a begin and re-calling annotate/inner broke
+                    ;  implied invariants (in particular, that annotate/inner was only called on subexprs)
+                    ;  and confused the heck out of me for some time today.  Bleah.  I'm just going to 
+                    ;  do the whole expansion here. Also, I'm going to make this expansion call/cc-clean, 
+                    ;  because I think it'll actually be easier to state & read this way.
                     
                     
                     [let-abstraction
@@ -516,59 +546,79 @@
                            [lifted-vars (apply append lifted-var-sets)]
                            [(annotated-vals free-varref-sets-vals)
                             (2vals-map let-rhs-recur vals binding-sets lifted-var-sets)]
+                           [bodies-list (syntax->list #'bodies)]
                            [(annotated-body free-varrefs-body)
-                            ((let-body-recur binding-list) 
-                             (if (= (length (syntax->list (syntax bodies))) 1)
-                                 (car (syntax->list (syntax bodies)))
-                                 (syntax (begin . bodies))))]
-                           [free-varrefs (varref-set-remove-bindings 
-                                          (varref-set-union (cons free-varrefs-body
-                                                                  free-varref-sets-vals)) 
-                                          binding-list)])
-                          
-                          
-                          (let* ([counter-id #`lifting-counter]
-                                 [unevaluated-list (make-init-list binding-list)]
-                                 [outer-initialization
-                                  #`([(#,@lifted-vars #,@binding-list #,let-counter)
-                                      (values #,@(append (map (lambda (dc_binding) counter-id)
-                                                              binding-list)
-                                                         unevaluated-list
-                                                         (list 0)))])]
-                                 [counter-clauses (build-list 
-                                                   (length binding-sets)
-                                                   (lambda (num)
-                                                     #`(set! #,let-counter #,(+ num 1))))]
-                                 [set!-clauses
-                                  (map (lambda (binding-set val)
-                                         #`(set!-values #,binding-set #,val))
-                                       binding-sets
-                                       annotated-vals)]
-                                 [exp-finished-clauses
+                            (if (= (length bodies-list) 1)
+                                (let-body-recur/single (car bodies-list) binding-list)
+                                ;; like a map, but must special-case first and last exps:
+                                (let*-2vals
+                                    ([first (car bodies-list)]
+                                     [reversed-rest (reverse (cdr bodies-list))]
+                                     [middle (reverse (cdr reversed-rest))]
+                                     [last (car reversed-rest)]
+                                     
+                                     [(first* fv-first) (let-body-recur/first first)]
+                                     [(middle* fv-middle) (2vals-map let-body-recur/middle middle)]
+                                     [(last* fv-last) (let-body-recur/last last binding-list)]
+                                     
+                                     [first** (return-value-wrap first*)]
+                                     [middle** (map return-value-wrap middle*)]
+                                     [last** last*])
                                   
-                                  (with-syntax  ([(_ let-clauses . dc) stx]
-                                                 [((lifted-var ...) ...) lifted-var-sets])
-                                    (with-syntax ([(exp-thunk ...) (map (lx (lambda () _))
-                                                                        (syntax->list #`let-clauses))])
-                                      #`(list (list exp-thunk
-                                                    (list lifted-var ...)
-                                                    (lambda () (list var ...))) ...)))]
-                                 ; time to work from the inside out again
-                                 ; without renaming, this would all be much much simpler.
-                                 [wrapped-begin (outer-wcm-wrap (make-debug-info-let free-varrefs
-                                                                                     binding-list
-                                                                                     let-counter) 
-                                                                (double-break-wrap
-                                                                 #`(begin #,@(apply append (zip set!-clauses counter-clauses))
-                                                                          (#,exp-finished-break #,exp-finished-clauses)
-                                                                          #,annotated-body)))])
-                            (2vals (quasisyntax/loc 
+                                  (2vals (quasisyntax/loc exp
+                                           (begin #,first** #,@middle** #,last**))
+                                         (varref-set-union (cons fv-first (cons fv-last fv-middle))))))])
+                          
+                          ((2vals (quasisyntax/loc 
                                        exp 
                                      (let ([#,counter-id (#,binding-indexer)])
                                        (#,output-identifier #,outer-initialization #,wrapped-begin))) 
-                                   free-varrefs)))))]
+                                   free-varrefs)
+                           
+                           . where .
+                           
+                           ([free-varrefs (varref-set-remove-bindings 
+                                           (varref-set-union (cons free-varrefs-body
+                                                                   free-varref-sets-vals)) 
+                                           binding-list)]
+                            [counter-id #`lifting-counter]
+                            [unevaluated-list (make-init-list binding-list)]
+                            [outer-initialization
+                             #`([(#,@lifted-vars #,@binding-list #,let-counter)
+                                 (values #,@(append (map (lambda (dc_binding) counter-id)
+                                                         binding-list)
+                                                    unevaluated-list
+                                                    (list 0)))])]
+                            [counter-clauses (build-list 
+                                              (length binding-sets)
+                                              (lambda (num)
+                                                #`(set! #,let-counter #,(+ num 1))))]
+                            [set!-clauses
+                             (map (lambda (binding-set val)
+                                    #`(set!-values #,binding-set #,val))
+                                  binding-sets
+                                  annotated-vals)]
+                            [exp-finished-clauses
+                             
+                             (with-syntax  ([(_ let-clauses . dc) stx]
+                                            [((lifted-var ...) ...) lifted-var-sets])
+                               (with-syntax ([(exp-thunk ...) (map (lx (lambda () _))
+                                                                   (syntax->list #`let-clauses))])
+                                 #`(list (list exp-thunk
+                                               (list lifted-var ...)
+                                               (lambda () (list var ...))) ...)))]
+                            ; time to work from the inside out again
+                            ; without renaming, this would all be much much simpler.
+                            [wrapped-begin (outer-wcm-wrap (make-debug-info-let free-varrefs
+                                                                                binding-list
+                                                                                let-counter) 
+                                                           (double-break-wrap
+                                                            #`(begin #,@(apply append (zip set!-clauses counter-clauses))
+                                                                     (#,exp-finished-break #,exp-finished-clauses)
+                                                                     #,annotated-body)))])))))]
                     
                     ;; pulling out begin abstraction!
+                    ;;; bLECCh!  I think I can do this with a MAP, rather than a fold.
                     [begin-abstraction
                       (lambda (bodies)
                         
@@ -718,7 +768,9 @@
                     [(if test then) (if-abstraction (syntax test) (syntax then) #f)]
 
                     [(begin . bodies-stx)
-                     (begin-abstraction (syntax->list #`bodies-stx))]
+                     (begin
+                       (error 'annotate-inner "nothing expands into begin! : ~v" (syntax-object->datum exp))
+                       (begin-abstraction (syntax->list #`bodies-stx)))]
                     
                     [(begin0 . bodies-stx)
                      (let*-2vals
