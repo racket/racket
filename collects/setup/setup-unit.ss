@@ -162,18 +162,19 @@
              path
              name
              info
-             #;(build-path (find-system-path 'addon-dir) "cache.ss")
              (get-planet-cache-path)
              (list `(planet ,owner ,pkg-file ,@extra-path) maj min)))))
       
+      ;; planet-cc->sub-cc : cc (listof bytes [encoded path]) -> cc
+      ;; builds a compilation job for the given subdirectory of the given cc
       ;; this is an awful hack
       (define (planet-cc->sub-cc cc subdir)
         (match-let ([(('planet owner pkg-file extra-path ...) maj min) (cc-shadowing-policy cc)])
-          (planet->cc 
-           (build-path (cc-path cc) subdir)
+          (planet->cc
+           (apply build-path (cc-path cc) (map bytes->path subdir))
            owner
            pkg-file
-           (append extra-path (list (path->string subdir)))
+           (append extra-path subdir)
            maj
            min)))
 
@@ -280,17 +281,28 @@
 		    (append
 		     (remove-falses
                       (map
-                       (lambda (p) (planet-cc->sub-cc cc p))
+                       (lambda (p) 
+                         (planet-cc->sub-cc 
+                          cc 
+                          (cond
+                            [(path? p) (list (path->bytes p))]
+                            [(and (list? p) (andmap bytes? p)) p]
+                            [else (map (λ (s) (path->bytes (string->path s))) p)])))
                        (call-info info 'compile-subcollections
                                   (lambda ()
-                                    (filter
-                                     (lambda (p)
-                                       (let ((d (build-path (cc-path cc) p)))
-                                         (and (directory-exists? d)
-                                              (file-exists? (build-path d "info.ss"))))) 
-                                     (directory-list (cc-path cc))))
+                                    (map (λ (p) (list (path->bytes p)))
+                                         (filter
+                                          (lambda (p)
+                                            (let ((d (build-path (cc-path cc) p)))
+                                              (and (directory-exists? d)
+                                                   (file-exists? (build-path d "info.ss")))))
+                                          (directory-list (cc-path cc)))))
                                   ;; Result checker:
-                                  path?)))
+                                  (λ (p)
+                                    (match p
+                                      [(((? (λ (v) (or (string? v) (bytes? v)))) ...) ...)
+                                       (void)]
+                                      [_ (error "result is not a list of lists of strings: " p)])))))
                      (list cc)
                      (loop (cdr l)))))))
 
