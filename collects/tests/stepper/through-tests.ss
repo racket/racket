@@ -205,8 +205,6 @@
   
 
   
-  
-  ;; OLD TEST CASES
   (t mz-app2
      (test-mz-sequence "((lambda (x) (+ x 3)) 4)"
 		       `((before-after ((hilite ((lambda (x) (+ x 3)) 4)))
@@ -1371,6 +1369,13 @@
   ;;
   ;;;;;;;;;;;
   
+  (t trivial-begin
+     (test-advanced-sequence "(+ 3 (begin 4 5))"
+       `((before-after ((+ 3 (hilite (begin 4 5)))) 
+                       ((+ 3 (hilite 5))))
+         (before-after ((hilite (+ 3 5)))
+                       ((hilite 8)))
+         (finished-stepping))))
   
   (t begin
      (test-advanced-sequence "(begin (+ 3 4) (+ 4 5) (+ 9 8))"
@@ -1398,6 +1403,6 @@
      (test-teachpack-sequence " (define (f2c x) x) (convert-gui f2c)" `() ; placeholder
                                ))
   
-  #;(run-tests '(begin))
-  (run-all-tests)
+  (run-tests '(trivial-begin))
+  #;(run-all-tests)
   )
