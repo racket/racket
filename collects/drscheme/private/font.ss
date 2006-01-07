@@ -140,7 +140,9 @@
                                        [(2) 'smoothed]
                                        [(3) 'default])))))]
                   
-                  [text (make-object (editor:standard-style-list-mixin text%))]
+                  [text (make-object (text:foreground-color-mixin
+                                      (editor:standard-style-list-mixin 
+                                       text:basic%)))]
                   [ex-panel (make-object horizontal-panel% main)]
                   [msg (make-object message% (string-constant example-text) ex-panel)]
                   [canvas (make-object canvas:color% main text)]
@@ -169,7 +171,7 @@
                      (send text set-position 0 0)
                      (send text lock #t)
                      (send text end-edit-sequence))])
-             
+             (send text set-styles-fixed #t)
              (preferences:add-callback
               'framework:standard-style-list:font-size
               (λ (p v) (send size-slider set-value v)))

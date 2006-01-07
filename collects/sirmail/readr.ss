@@ -879,7 +879,13 @@
           (send e end-edit-sequence)
           i))
 
-      (define display-text% (html-text-mixin text:standard-style-list%))
+      (define display-text%
+        (class (html-text-mixin
+                (text:foreground-color-mixin
+                 text:standard-style-list%))
+          (super-new)
+          (inherit set-styles-fixed)
+          (set-styles-fixed #t)))
       
       ;; Class for the panel that has columns titles and
       ;; supports clicks to change the sort order
@@ -1746,7 +1752,7 @@
 			     (vertical-inset 1)))
       (define header-list (make-object header-list% top-half))
       (send (send header-list get-editor) set-line-spacing 0)
-      (define message (new editor-canvas% 
+      (define message (new canvas:color% 
 			   [parent sizing-panel]
 			   [style '(auto-hscroll)]))
       (send header-list min-height 20)

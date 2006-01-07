@@ -345,13 +345,14 @@
                                           '(ok)))])
                        (delete-file t)))))))
         
-        (define c (new editor-canvas% 
+        (define c (new canvas:color% 
                        [parent (send mailer-frame get-area-container)]
                        [style '(auto-hscroll)]))
         (define message-editor-super%
           (color:text-mixin 
            (editor:backup-autosave-mixin
-            text:standard-style-list%)))
+            (text:foreground-color-mixin
+             text:standard-style-list%))))
         (define message-editor (make-object (class message-editor-super%
                                               (inherit reset-region)
                                               
@@ -649,6 +650,12 @@
                 (if (string=? to "")
                     (send message-editor set-position (send message-editor paragraph-end-position 0))
                     (send message-editor set-position message-start)))
+              (send message-editor change-style
+                    (send (send message-editor get-style-list)
+                          find-named-style
+                          (editor:get-default-color-style-name))
+                    0 
+                    (send message-editor last-position))
               (send message-editor clear-undos)))
         
         (send message-editor set-modified #f)
