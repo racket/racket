@@ -8,6 +8,7 @@
            (lib "etc.ss")
            (lib "unitsig.ss")
            (lib "list.ss")
+           (lib "file.ss")
            
            (lib "string-constant.ss" "string-constants")
            (lib "external.ss" "browser")
@@ -15,6 +16,7 @@
            (lib "browser-sig.ss" "browser")
            (lib "url-sig.ss" "net")
            (lib "url-structs.ss" "net")
+           (lib "uri-codec.ss" "net")
            "sig.ss"
            "../bug-report.ss"
            (lib "bday.ss" "framework" "private")
@@ -137,7 +139,7 @@
                      
                      ;; send the url off to another browser
                      [(or (and (string? (url-scheme url))
-                               (not (equal? (url-scheme url) "http")))
+                               (not (member (url-scheme url) '("http"))))
                           (and (preferences:get 'drscheme:help-desk:ask-about-external-urls)
                                (ask-user-about-separate-browser))
                           (preferences:get 'drscheme:help-desk:separate-browser))
@@ -556,8 +558,17 @@
                          (lambda (b e)
                            (let ([f (get-file)])
                              (when f
-                               (send t set-value (string-append "file:" (path->string f)))
+                               (send t set-value (encode-file-path-as-url f))
                                (update-ok))))))
+          
+        (define (encode-file-path-as-url f)
+          (apply
+           string-append
+           "file:"
+           (map
+            (λ (x) (string-append "/" (uri-path-segment-encode (path->string x))))
+            (explode-path f))))
+        
         (define spacer (make-object vertical-pane% p))
         (define result #f)
         (define (ok-callback b e)

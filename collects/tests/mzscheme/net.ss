@@ -180,6 +180,12 @@
              "/")
   (test-s->u (vector #f #f #f #f #f '() '() #f)
              "")
+  (test-s->u (vector "http" #f #f #f #t '(#("")) '() #f)
+             "http:/")
+  
+  (test-s->u (vector "http" #f "" #f #t '(#("")) '() #f)
+             "http:///")
+  
   (test-s->u (vector "http" #f "www.drscheme.org" #f #f '() '() #f)
              "http://www.drscheme.org")
   (test-s->u (vector "http" #f "www.drscheme.org" #f #t '(#("")) '() #f)
@@ -234,7 +240,14 @@
   (test-s->u (vector "http" #f "www.drscheme.org" #f #t (list #("." "") #(".." "") #(same "") #(up "") #("..." "") #("abc.def" "")) '() #f)
              "http://www.drscheme.org/%2e;/%2e%2e;/.;/..;/...;/abc.def;")
 
-
+  ;; test file: urls
+  (test-s->u (vector "file" #f #f #f #t '(#("abc") #("def.html")) '() #f)
+             "file:/abc/def.html")
+  
+  (test-s->u (vector "file" #f "localhost" #f #t '(#("abc") #("def.html")) '() #f)
+             "file://localhost/abc/def.html")
+  
+  ;; test case sensitivity
   (test (vector "http" "ROBBY" "www.drscheme.org" 80 #t '(#("INDEX.HTML" "XXX")) '((T . "P")) "YYY")
         string->url/vec
         "HTTP://ROBBY@WWW.DRSCHEME.ORG:80/INDEX.HTML;XXX?T=P#YYY")

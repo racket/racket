@@ -23,9 +23,9 @@
   (define url@
     (unit/sig net:url^
       (import net:tcp^)
-
+      
       (define-struct (url-exception exn:fail) ())
-
+      
       (define current-proxy-servers
         (make-parameter null (lambda (v)
                                (unless (and (list? v)
@@ -51,7 +51,7 @@
                                                        (string->immutable-string (cadr v))
                                                        (caddr v)))
                                      v)))))
-
+      
       (define url-error
         (lambda (fmt . args)
           (let ((s (string->immutable-string
@@ -61,14 +61,7 @@
                                                  arg))
                                            args)))))
             (raise (make-url-exception s (current-continuation-marks))))))
-
-      (define (url->file-path url)
-	(path->string
-	 (apply build-path (or (url-host url) 'same)
-		(map (lambda (x) (if (equal? x "") 'same x))
-                     (map path/param-path
-                          (url-path url))))))
-
+      
       (define url->string
         (lambda (url)
           (let ((scheme (url-scheme url))
@@ -78,29 +71,22 @@
                 (path (url-path url))
                 (query (url-query url))
                 (fragment (url-fragment url)))
-            (cond
-             ((and scheme (string=? scheme "file"))
-              (string-append "file:" 
-			     (url->file-path url)
-                             (or (and (not fragment) "")
-                                 (string-append "#" fragment))))
-             (else
-              (let ((sa string-append))
-                (sa (if scheme (sa scheme ":") "")
-                    (if (or user host port)
-                        (sa
-                         "//"
-                         (if user (sa (uri-encode user) "@") "")
-                         (if host host "")
-                         (if port (sa ":" (number->string port)) "")
-                         ; There used to be a "/" here, but that causes an
-                         ; extra leading slash -- wonder why it ever worked!
-                         )
-                        "")
-                    (combine-path-strings (url-path-absolute? url) path)
-                    ;(if query (sa "?" (uri-encode query)) "")
-                    (if (null? query) "" (sa "?"  (alist->form-urlencoded query)))
-                    (if fragment (sa "#" (uri-encode fragment)) ""))))))))
+            (let ((sa string-append))
+              (sa (if scheme (sa scheme ":") "")
+                  (if (or user host port)
+                      (sa
+                       "//"
+                       (if user (sa (uri-encode user) "@") "")
+                       (if host host "")
+                       (if port (sa ":" (number->string port)) "")
+                       ; There used to be a "/" here, but that causes an
+                       ; extra leading slash -- wonder why it ever worked!
+                       )
+                      "")
+                  (combine-path-strings (url-path-absolute? url) path)
+                  ;(if query (sa "?" (uri-encode query)) "")
+                  (if (null? query) "" (sa "?"  (alist->form-urlencoded query)))
+                  (if fragment (sa "#" (uri-encode fragment)) ""))))))
 
       ;; url->default-port : url -> num
       (define url->default-port
@@ -155,9 +141,13 @@
             server->client)))
 
       ;; file://get-pure-port : url -> in-port
-      (define file://get-pure-port
-        (lambda (url)
-          (open-input-file (url->file-path url))))
+      (define (file://get-pure-port url)
+        (open-input-file 
+         (apply
+          build-path
+          (map
+           path/param-path
+           (url-path url)))))
 
       (define (schemeless-url url)
         (url-error "Missing protocol (usually \"http:\") at the beginning of URL: ~a" url))
@@ -371,7 +361,7 @@
                            "("                ; <3  slashslash-opt
                            "//"
                            "([^:/@;?#]*@)?"   ; =4  user-at-opt
-                           "([^:/@;?#]+)?"    ; =5  host-opt
+                           "([^:/@;?#]*)?"    ; =5  host-opt
                            "(:[0-9]*)?"       ; =6  colon-port-opt
                            ")?"               ; >3  slashslash-opt
                            ")?"               ; >1  front-opt
@@ -381,79 +371,46 @@
                            "[ \t\f\r\n]*"
                            "$"))))
           (lambda (str)
-            (let ([m (regexp-match #rx"^[ \t\f\r\n]*file:(.*)$" str)])
-              ;; File scheme:
-              (if m
-                  (let ([path+fragment (regexp-match #rx"^([^#]*)(#(.*))?$" (cadr m))])
-                    (let ([path (cadr path+fragment)]
-                          [fragment (caddr path+fragment)])
-                      (if (or (relative-path? path)
-                              (absolute-path? path))
-			  (let-values ([(root elems kind)
-					(let loop ([path (simplify-path path)][accum null][kind #f])
-					  (let-values ([(base name dir?) (split-path path)])
-					    (let ([kind (or kind
-							    (if dir? 'dir 'file))])
-					      (cond
-					       [(path? base)
-						(loop base (cons name accum) kind)]
-					       [(eq? base 'relative)
-						(values #f (cons name accum) kind)]
-					       [else
-						(values path accum kind)]))))])
-			    (make-url "file"
-				      #f  ; user
-				      (and root (path->string root))  ; host
-				      #f  ; port
-				      (absolute-path? path)
-                                      (append (map (λ (x) (make-path/param (path->string x) '())) elems)
-					      (if (eq? kind 'dir)
-						  (list (make-path/param "" '()))
-						  null))
-				      '()  ; query
-				      fragment))
-                          (url-error "scheme 'file' path ~s neither relative nor absolute" path))))
-                  ;; Other scheme:
-                  (let ((match (regexp-match-positions rx str)))
-                    (if match
-                        (let* ((get-str (lambda (pos skip-left skip-right)
-                                          (let ((pair (list-ref match pos)))
-                                            (if pair
-                                                (substring str
-                                                           (+ (car pair) skip-left)
-                                                           (- (cdr pair) skip-right))
-                                                #f))))
-                               (get-num (lambda (pos skip-left skip-right)
-                                          (let ((s (get-str pos skip-left skip-right)))
-                                            (if s (string->number s) #f))))
-                               (host (get-str 5  0 0))
-                               (path (get-str 7 0 0))
-                               (scheme (get-str 2  0 1)))
-                          (when (string? scheme) (string-lowercase! scheme))
-                          (when (string? host) (string-lowercase! host))
-                          (make-url scheme
-                                    (uri-decode/maybe (get-str 4  0 1)) ; user
-                                    host
-                                    (get-num 6  1 0) ; port
-                                    (and (not (= 0 (string-length path)))
-                                         (char=? #\/ (string-ref path 0)))
-                                    (separate-path-strings
-                                     ;; If path is "" and the input is an absolute URL
-                                     ;; with a hostname, then the intended path is "/",
-                                     ;; but the URL is missing a "/" at the end.
-                                     path
-                                     #;
-                                     (if (and (string=? path "")
-                                              host)
-                                         "/"
-                                         path))
-                                    ;(uri-decode/maybe (get-str 8  1 0)) ;
-                                    ;query
-                                    (let ([q (get-str 8 1 0)])
-                                      (if q (form-urlencoded->alist q) '()))
-                                    (uri-decode/maybe (get-str 9  1 0)) ; fragment
-                                    ))
-                        (url-error "Invalid URL string: ~e" str))))))))
+            (let ((match (regexp-match-positions rx str)))
+              (if match
+                  (let* ((get-str (lambda (pos skip-left skip-right)
+                                    (let ((pair (list-ref match pos)))
+                                      (if pair
+                                          (substring str
+                                                     (+ (car pair) skip-left)
+                                                     (- (cdr pair) skip-right))
+                                          #f))))
+                         (get-num (lambda (pos skip-left skip-right)
+                                    (let ((s (get-str pos skip-left skip-right)))
+                                      (if s (string->number s) #f))))
+                         (host (get-str 5  0 0))
+                         (path (get-str 7 0 0))
+                         (scheme (get-str 2  0 1)))
+                    (when (string? scheme) (string-lowercase! scheme))
+                    (when (string? host) (string-lowercase! host))
+                    (make-url scheme
+                              (uri-decode/maybe (get-str 4  0 1)) ; user
+                              host
+                              (get-num 6  1 0) ; port
+                              (and (not (= 0 (string-length path)))
+                                   (char=? #\/ (string-ref path 0)))
+                              (separate-path-strings
+                               ;; If path is "" and the input is an absolute URL
+                               ;; with a hostname, then the intended path is "/",
+                               ;; but the URL is missing a "/" at the end.
+                               path
+                               #;
+                               (if (and (string=? path "")
+                                        host)
+                                   "/"
+                                   path))
+                              ;(uri-decode/maybe (get-str 8  1 0)) ;
+                              ;query
+                              (let ([q (get-str 8 1 0)])
+                                (if q (form-urlencoded->alist q) '()))
+                              (uri-decode/maybe (get-str 9  1 0)) ; fragment
+                              ))
+                  (url-error "Invalid URL string: ~e" str))))))
 
       (define (uri-decode/maybe f)
         ;; If #f, and leave unmolested any % that is followed by hex digit
