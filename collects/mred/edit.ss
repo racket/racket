@@ -152,6 +152,8 @@
 	(if (regexp-match "[.](gif|bmp|jpe?g|xbm|xpm|png)$" file)
 	    (send e insert (make-object image-snip% file))
 	    (send e load-file file)))
+
+      (send e set-max-undo-history 'forever)
       
       (send f show #t)
       f)))

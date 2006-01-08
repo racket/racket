@@ -226,6 +226,7 @@
     load-file
     insert-port
     save-port
+    get-default-style-name
     get-flattened-text
     put-file
     get-file
@@ -885,6 +886,7 @@
     get-end-position
     get-start-position
     get-position
+    get-default-style-name
     get-flattened-text
     put-file
     get-file
@@ -987,6 +989,7 @@
     get)
   (define-class editor-stream-out% object% #f
     ok?
+    pretty-finish
     jump-to
     tell
     put-fixed
@@ -1094,6 +1097,7 @@
     do-copy
     delete
     insert
+    get-default-style-name
     get-flattened-text
     put-file
     get-file
