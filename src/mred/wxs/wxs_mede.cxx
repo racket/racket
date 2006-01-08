@@ -1944,7 +1944,7 @@ string os_wxMediaEdit::GetDefaultStyleName()
   VAR_STACK_PUSH_ARRAY(2, p, POFFSET+0);
   SET_VAR_STACK();
 
-  method = objscheme_find_method((Scheme_Object *) ASSELF __gc_external, os_wxMediaEdit_class, "get-default-style-name", &mcache);
+  method = objscheme_find_method((Scheme_Object *) ASSELF __gc_external, os_wxMediaEdit_class, "default-style-name", &mcache);
   if (!method || OBJSCHEME_PRIM_METHOD(method, os_wxMediaEditGetDefaultStyleName)) {
     SET_VAR_STACK();
     READY_TO_RETURN; return ASSELF wxMediaEdit::GetDefaultStyleName();
@@ -1958,7 +1958,7 @@ string os_wxMediaEdit::GetDefaultStyleName()
   
   {
      string resval;
-     resval = (string)WITH_VAR_STACK(objscheme_unbundle_string(v, "get-default-style-name in text%"", extracting return value"));
+     resval = (string)WITH_VAR_STACK(objscheme_unbundle_string(v, "default-style-name in text%"", extracting return value"));
      READY_TO_RETURN;
      return resval;
   }
@@ -7132,7 +7132,7 @@ static Scheme_Object *os_wxMediaEditGetDefaultStyleName(int n,  Scheme_Object *p
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   string r;
-  objscheme_check_valid(os_wxMediaEdit_class, "get-default-style-name in text%", n, p);
+  objscheme_check_valid(os_wxMediaEdit_class, "default-style-name in text%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
   VAR_STACK_PUSH(0, p);
@@ -8671,7 +8671,7 @@ void objscheme_setup_wxMediaEdit(Scheme_Env *env)
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "get-end-position" " method", (Scheme_Method_Prim *)os_wxMediaEditGetEndPosition, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "get-start-position" " method", (Scheme_Method_Prim *)os_wxMediaEditGetStartPosition, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "get-position" " method", (Scheme_Method_Prim *)os_wxMediaEditGetPosition, 1, 2));
-  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "get-default-style-name" " method", (Scheme_Method_Prim *)os_wxMediaEditGetDefaultStyleName, 0, 0));
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "default-style-name" " method", (Scheme_Method_Prim *)os_wxMediaEditGetDefaultStyleName, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "get-flattened-text" " method", (Scheme_Method_Prim *)os_wxMediaEditGetFlattenedText, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "put-file" " method", (Scheme_Method_Prim *)os_wxMediaEditPutFile, 2, 2));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "get-file" " method", (Scheme_Method_Prim *)os_wxMediaEditGetFile, 1, 1));

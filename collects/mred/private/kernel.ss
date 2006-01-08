@@ -226,7 +226,7 @@
     load-file
     insert-port
     save-port
-    get-default-style-name
+    default-style-name
     get-flattened-text
     put-file
     get-file
@@ -886,7 +886,7 @@
     get-end-position
     get-start-position
     get-position
-    get-default-style-name
+    default-style-name
     get-flattened-text
     put-file
     get-file
@@ -1097,7 +1097,7 @@
     do-copy
     delete
     insert
-    get-default-style-name
+    default-style-name
     get-flattened-text
     put-file
     get-file

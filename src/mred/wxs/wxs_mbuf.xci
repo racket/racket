@@ -92,4 +92,4 @@
 
 @ X "get-flattened-text" : mzstring/makeNoCopyFlatString[_x0] GetFlattenedText(-long*);
 
-@ Z "get-default-style-name" : string GetDefaultStyleName()
+@ Z "default-style-name" : string GetDefaultStyleName()
