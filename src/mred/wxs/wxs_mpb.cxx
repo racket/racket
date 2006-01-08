@@ -371,6 +371,7 @@ static Scheme_Object *bundle_symset_bitmapType(int v) {
 
 
 
+
   
 
 
@@ -419,6 +420,7 @@ class os_wxMediaPasteboard : public wxMediaPasteboard {
   void DoPasteSelection(ExactLong x0);
   void DoPaste(ExactLong x0);
   void DoCopy(ExactLong x0, Bool x1);
+  string GetDefaultStyleName();
   npathname PutFile(nepathname x0, nepathname x1);
   npathname GetFile(nepathname x0);
   void AfterEditSequence();
@@ -1705,6 +1707,45 @@ void os_wxMediaPasteboard::DoCopy(ExactLong x0, Bool x1)
   
   
      READY_TO_RETURN;
+  }
+}
+
+static Scheme_Object *os_wxMediaPasteboardGetDefaultStyleName(int n, Scheme_Object *p[]);
+
+string os_wxMediaPasteboard::GetDefaultStyleName()
+{
+  Scheme_Object *p[POFFSET+0] INIT_NULLED_ARRAY({ NULLED_OUT });
+  Scheme_Object *v;
+  Scheme_Object *method INIT_NULLED_OUT;
+#ifdef MZ_PRECISE_GC
+  os_wxMediaPasteboard *sElF = this;
+#endif
+  static void *mcache = 0;
+
+  SETUP_VAR_STACK(5);
+  VAR_STACK_PUSH(0, method);
+  VAR_STACK_PUSH(1, sElF);
+  VAR_STACK_PUSH_ARRAY(2, p, POFFSET+0);
+  SET_VAR_STACK();
+
+  method = objscheme_find_method((Scheme_Object *) ASSELF __gc_external, os_wxMediaPasteboard_class, "get-default-style-name", &mcache);
+  if (!method || OBJSCHEME_PRIM_METHOD(method, os_wxMediaPasteboardGetDefaultStyleName)) {
+    SET_VAR_STACK();
+    READY_TO_RETURN; return ASSELF wxMediaPasteboard::GetDefaultStyleName();
+  } else {
+  
+  
+  p[0] = (Scheme_Object *) ASSELF __gc_external;
+
+  v = WITH_VAR_STACK(scheme_apply(method, POFFSET+0, p));
+  
+  
+  {
+     string resval;
+     resval = (string)WITH_VAR_STACK(objscheme_unbundle_string(v, "get-default-style-name in pasteboard%"", extracting return value"));
+     READY_TO_RETURN;
+     return resval;
+  }
   }
 }
 
@@ -5255,6 +5296,30 @@ static Scheme_Object *os_wxMediaPasteboardInsert(int n,  Scheme_Object *p[])
   return scheme_void;
 }
 
+static Scheme_Object *os_wxMediaPasteboardGetDefaultStyleName(int n,  Scheme_Object *p[])
+{
+  WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
+  REMEMBER_VAR_STACK();
+  string r;
+  objscheme_check_valid(os_wxMediaPasteboard_class, "get-default-style-name in pasteboard%", n, p);
+
+  SETUP_VAR_STACK_REMEMBERED(1);
+  VAR_STACK_PUSH(0, p);
+
+  
+
+  
+  if (((Scheme_Class_Object *)p[0])->primflag)
+    r = WITH_VAR_STACK(((os_wxMediaPasteboard *)((Scheme_Class_Object *)p[0])->primdata)->wxMediaPasteboard::GetDefaultStyleName());
+  else
+    r = WITH_VAR_STACK(((wxMediaPasteboard *)((Scheme_Class_Object *)p[0])->primdata)->GetDefaultStyleName());
+
+  
+  
+  READY_TO_RETURN;
+  return WITH_REMEMBERED_STACK(objscheme_bundle_string((char *)r));
+}
+
 static Scheme_Object *os_wxMediaPasteboardGetFlattenedText(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
@@ -6849,7 +6914,7 @@ void objscheme_setup_wxMediaPasteboard(Scheme_Env *env)
 
   wxREGGLOB(os_wxMediaPasteboard_class);
 
-  os_wxMediaPasteboard_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "pasteboard%", "editor%", (Scheme_Method_Prim *)os_wxMediaPasteboard_ConstructScheme, 113));
+  os_wxMediaPasteboard_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "pasteboard%", "editor%", (Scheme_Method_Prim *)os_wxMediaPasteboard_ConstructScheme, 114));
 
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaPasteboard_class, "set-scroll-step" " method", (Scheme_Method_Prim *)os_wxMediaPasteboardSetScrollStep, 1, 1));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaPasteboard_class, "get-scroll-step" " method", (Scheme_Method_Prim *)os_wxMediaPasteboardGetScrollStep, 0, 0));
@@ -6908,6 +6973,7 @@ void objscheme_setup_wxMediaPasteboard(Scheme_Env *env)
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaPasteboard_class, "do-copy" " method", (Scheme_Method_Prim *)os_wxMediaPasteboardDoCopy, 2, 2));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaPasteboard_class, "delete" " method", (Scheme_Method_Prim *)os_wxMediaPasteboardDelete, 0, 1));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaPasteboard_class, "insert" " method", (Scheme_Method_Prim *)os_wxMediaPasteboardInsert, 1, 4));
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaPasteboard_class, "get-default-style-name" " method", (Scheme_Method_Prim *)os_wxMediaPasteboardGetDefaultStyleName, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaPasteboard_class, "get-flattened-text" " method", (Scheme_Method_Prim *)os_wxMediaPasteboardGetFlattenedText, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaPasteboard_class, "put-file" " method", (Scheme_Method_Prim *)os_wxMediaPasteboardPutFile, 2, 2));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaPasteboard_class, "get-file" " method", (Scheme_Method_Prim *)os_wxMediaPasteboardGetFile, 1, 1));

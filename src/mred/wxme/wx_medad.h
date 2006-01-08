@@ -137,6 +137,8 @@ class wxMediaBuffer : public wxObject
   virtual void SettingAdmin(wxMediaAdmin *);
   virtual void InitNewAdmin(void); 
 
+  wxStyle *GetDefaultStyle();
+
  public:
   wxMediaBuffer();
   ~wxMediaBuffer();
@@ -333,6 +335,8 @@ class wxMediaBuffer : public wxObject
 
   void SetLoadOverwritesStyles(Bool);
   Bool GetLoadOverwritesStyles();
+
+  virtual char *GetDefaultStyleName();
 
   void AddBufferFunctions(wxKeymap *tab);
 

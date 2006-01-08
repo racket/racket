@@ -766,6 +766,7 @@ static int unbundle_symset_Bias(Scheme_Object *v, const char *where) {
 
 
 
+
 			
 
 
@@ -996,6 +997,7 @@ class os_wxMediaEdit : public wxMediaEdit {
   void DoPaste(nnlong x0, ExactLong x1);
   void DoCopy(nnlong x0, nnlong x1, ExactLong x2, Bool x3);
   void SetAnchor(Bool x0);
+  string GetDefaultStyleName();
   npathname PutFile(nepathname x0, nepathname x1);
   npathname GetFile(nepathname x0);
   void AfterEditSequence();
@@ -1921,6 +1923,45 @@ void os_wxMediaEdit::SetAnchor(Bool x0)
   
   
      READY_TO_RETURN;
+  }
+}
+
+static Scheme_Object *os_wxMediaEditGetDefaultStyleName(int n, Scheme_Object *p[]);
+
+string os_wxMediaEdit::GetDefaultStyleName()
+{
+  Scheme_Object *p[POFFSET+0] INIT_NULLED_ARRAY({ NULLED_OUT });
+  Scheme_Object *v;
+  Scheme_Object *method INIT_NULLED_OUT;
+#ifdef MZ_PRECISE_GC
+  os_wxMediaEdit *sElF = this;
+#endif
+  static void *mcache = 0;
+
+  SETUP_VAR_STACK(5);
+  VAR_STACK_PUSH(0, method);
+  VAR_STACK_PUSH(1, sElF);
+  VAR_STACK_PUSH_ARRAY(2, p, POFFSET+0);
+  SET_VAR_STACK();
+
+  method = objscheme_find_method((Scheme_Object *) ASSELF __gc_external, os_wxMediaEdit_class, "get-default-style-name", &mcache);
+  if (!method || OBJSCHEME_PRIM_METHOD(method, os_wxMediaEditGetDefaultStyleName)) {
+    SET_VAR_STACK();
+    READY_TO_RETURN; return ASSELF wxMediaEdit::GetDefaultStyleName();
+  } else {
+  
+  
+  p[0] = (Scheme_Object *) ASSELF __gc_external;
+
+  v = WITH_VAR_STACK(scheme_apply(method, POFFSET+0, p));
+  
+  
+  {
+     string resval;
+     resval = (string)WITH_VAR_STACK(objscheme_unbundle_string(v, "get-default-style-name in text%"", extracting return value"));
+     READY_TO_RETURN;
+     return resval;
+  }
   }
 }
 
@@ -7086,6 +7127,30 @@ static Scheme_Object *os_wxMediaEditGetPosition(int n,  Scheme_Object *p[])
   return scheme_void;
 }
 
+static Scheme_Object *os_wxMediaEditGetDefaultStyleName(int n,  Scheme_Object *p[])
+{
+  WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
+  REMEMBER_VAR_STACK();
+  string r;
+  objscheme_check_valid(os_wxMediaEdit_class, "get-default-style-name in text%", n, p);
+
+  SETUP_VAR_STACK_REMEMBERED(1);
+  VAR_STACK_PUSH(0, p);
+
+  
+
+  
+  if (((Scheme_Class_Object *)p[0])->primflag)
+    r = WITH_VAR_STACK(((os_wxMediaEdit *)((Scheme_Class_Object *)p[0])->primdata)->wxMediaEdit::GetDefaultStyleName());
+  else
+    r = WITH_VAR_STACK(((wxMediaEdit *)((Scheme_Class_Object *)p[0])->primdata)->GetDefaultStyleName());
+
+  
+  
+  READY_TO_RETURN;
+  return WITH_REMEMBERED_STACK(objscheme_bundle_string((char *)r));
+}
+
 static Scheme_Object *os_wxMediaEditGetFlattenedText(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
@@ -8504,7 +8569,7 @@ void objscheme_setup_wxMediaEdit(Scheme_Env *env)
 
   wxREGGLOB(os_wxMediaEdit_class);
 
-  os_wxMediaEdit_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "text%", "editor%", (Scheme_Method_Prim *)os_wxMediaEdit_ConstructScheme, 149));
+  os_wxMediaEdit_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "text%", "editor%", (Scheme_Method_Prim *)os_wxMediaEdit_ConstructScheme, 150));
 
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "call-clickback" " method", (Scheme_Method_Prim *)os_wxMediaEditCallClickback, 2, 2));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "remove-clickback" " method", (Scheme_Method_Prim *)os_wxMediaEditRemoveClickback, 2, 2));
@@ -8606,6 +8671,7 @@ void objscheme_setup_wxMediaEdit(Scheme_Env *env)
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "get-end-position" " method", (Scheme_Method_Prim *)os_wxMediaEditGetEndPosition, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "get-start-position" " method", (Scheme_Method_Prim *)os_wxMediaEditGetStartPosition, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "get-position" " method", (Scheme_Method_Prim *)os_wxMediaEditGetPosition, 1, 2));
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "get-default-style-name" " method", (Scheme_Method_Prim *)os_wxMediaEditGetDefaultStyleName, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "get-flattened-text" " method", (Scheme_Method_Prim *)os_wxMediaEditGetFlattenedText, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "put-file" " method", (Scheme_Method_Prim *)os_wxMediaEditPutFile, 2, 2));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "get-file" " method", (Scheme_Method_Prim *)os_wxMediaEditGetFile, 1, 1));

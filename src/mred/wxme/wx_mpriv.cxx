@@ -254,7 +254,7 @@ void wxMediaEdit::_ChangeStyle(long start, long end,
     return;
 
   if (!newStyle && !delta) {
-    newStyle = styleList->FindNamedStyle(STD_STYLE);
+    newStyle = GetDefaultStyle();
     if (!newStyle)
       newStyle = styleList->BasicStyle();
   }
@@ -802,13 +802,13 @@ void wxMediaEdit::MakeOnlySnip(void)
   wxMediaLine *line;
 
   snips = new wxTextSnip();
-  snips->style = styleList->FindNamedStyle(STD_STYLE);
+  snips->style = GetDefaultStyle();
   if (!snips->style) {
     snips->style = styleList->BasicStyle();
   }
 #if CHECK_CONSISTENCY
   if (!snips->style)
-    fprintf(stderr, "NULL style for STD_STYLE!\n");
+    fprintf(stderr, "NULL style for basic style!\n");
 #endif
   snips->count = 0;
   snips->SetAdmin(snipAdmin);
@@ -1153,7 +1153,7 @@ wxTextSnip *wxMediaEdit::InsertTextSnip(long start, wxStyle *style)
   }
   {
     wxStyle *styl;
-    styl = (style ? style : styleList->FindNamedStyle(STD_STYLE));
+    styl = (style ? style : GetDefaultStyle());
     snip->style = styl;
   }
   if (!snip->style) {
@@ -1164,7 +1164,7 @@ wxTextSnip *wxMediaEdit::InsertTextSnip(long start, wxStyle *style)
     /* Uh-oh. Resort to wxTextSnip() */
     wxStyle *styl;
     snip = new wxTextSnip();
-    styl = (style ? style : styleList->FindNamedStyle(STD_STYLE));
+    styl = (style ? style : GetDefaultStyle());
     snip->style = styl;
     if (!snip->style) {
       snip->style = styleList->BasicStyle();

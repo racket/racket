@@ -297,9 +297,11 @@ void wxMediaEdit::CopySelfTo(wxMediaBuffer *b)
 
   if (!m->LastPosition()) {
     wxStyle *bs;
+    char *sname;
     /* Make sure only snip in m has a good style (since we called
        m->styleList->Copy() in wxMediaBuffer::CopySelfTo). */
-    bs = m->styleList->FindNamedStyle(STD_STYLE);
+    sname = GetDefaultStyleName();
+    bs = m->styleList->FindNamedStyle(sname);
     m->snips->style = bs;
     if (!m->snips->style) {
       bs = m->styleList->BasicStyle();
@@ -1591,7 +1593,7 @@ void wxMediaEdit::_Insert(wxSnip *isnip, long strlen, wxchar *str, wxList *snips
       wxStyle *style;
       style = (stickyStyles 
 	       ? snips->style 
-	       : styleList->FindNamedStyle(STD_STYLE));
+	       : GetDefaultStyle());
       snip = InsertTextSnip(start, style);
       sPos = 0;
       caretStyle = NULL;
@@ -1608,14 +1610,14 @@ void wxMediaEdit::_Insert(wxSnip *isnip, long strlen, wxchar *str, wxList *snips
 	  || !(gsnip->flags & wxSNIP_IS_TEXT)
 	  || (gsnip->count + addlen > MAX_COUNT_FOR_SNIP)
 	  || (!stickyStyles
-	      && (gsnip->style != styleList->FindNamedStyle(STD_STYLE)))) {
+	      && (gsnip->style != GetDefaultStyle()))) {
 	style = (caretStyle
 		 ? caretStyle
 		 : (stickyStyles
 		    ? (gsnip
 		       ? gsnip->style
 		       : snips->style) // No style: use forward
-		    : styleList->FindNamedStyle(STD_STYLE)));
+		    : GetDefaultStyle()));
 	snip = InsertTextSnip(start, style);
 	caretStyle = NULL;
 	sPos = start;
@@ -1624,7 +1626,7 @@ void wxMediaEdit::_Insert(wxSnip *isnip, long strlen, wxchar *str, wxList *snips
 	if (!(snip->flags & wxSNIP_CAN_APPEND)) {
 	  style = (stickyStyles
 		   ? snip->style
-		   : styleList->FindNamedStyle(STD_STYLE));
+		   : GetDefaultStyle());
 	  snip = InsertTextSnip(start, style);
 	  sPos = start;
 	}
@@ -3335,7 +3337,7 @@ Bool wxMediaEdit::ReadFromFile(wxMediaStreamIn *f, long start, Bool overwritesty
 
   if (!LastPosition()) {
     /* We probably destructively changed the style list. Reset the dummy snip. */
-    snips->style = styleList->FindNamedStyle(STD_STYLE);
+    snips->style = GetDefaultStyle();
     if (!snips->style) {
       snips->style = styleList->BasicStyle();
     }

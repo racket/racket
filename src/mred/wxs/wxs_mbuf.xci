@@ -91,3 +91,5 @@
 @MACRO makeNoCopyFlatString[len] = WITH_VAR_STACK(scheme_make_sized_char_string(r, <len>, 0))
 
 @ X "get-flattened-text" : mzstring/makeNoCopyFlatString[_x0] GetFlattenedText(-long*);
+
+@ Z "get-default-style-name" : string GetDefaultStyleName()

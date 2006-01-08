@@ -511,14 +511,24 @@ void wxMediaBuffer::SetStyleList(wxStyleList *newList)
 				     this, 1);
   styleList = newList;
 
-  if (!styleList->FindNamedStyle(STD_STYLE))
-    styleList->NewNamedStyle(STD_STYLE, NULL);
+  /* Create STD_STYLE if it's not there: */
+  styleList->NewNamedStyle(STD_STYLE, NULL);
 }
 
 static void MediaStyleNotify(wxStyle *which, wxMediaBuffer *media)
 {
   if (media)
     media->StyleHasChanged(which);
+}
+
+char *wxMediaBuffer::GetDefaultStyleName()
+{
+  return STD_STYLE;
+}
+
+wxStyle *wxMediaBuffer::GetDefaultStyle()
+{
+  return styleList->FindNamedStyle(GetDefaultStyleName());
 }
 
 /******************************************************************/
@@ -611,13 +621,16 @@ void wxMediaBuffer::DoFont(int, Bool)
 void wxMediaBuffer::InsertBox(int type)
 {
   wxSnip *snip;
+  char *sname;
 
   snip = OnNewBox(type);
   if (!snip)
     return;
 
+  sname = GetDefaultStyleName();
+
   BeginEditSequence();
-  snip->style = styleList->FindNamedStyle(STD_STYLE);
+  snip->style = styleList->FindNamedStyle(sname);
   if (!snip->style) {
     wxStyle *bs;
     bs = styleList->BasicStyle();
