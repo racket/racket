@@ -233,6 +233,7 @@ wxMediaEdit::wxMediaEdit(double spacing, double *tabstops, int numtabs)
   prevPasteStart = -1;
 
   stickyStyles = 1;
+  initialStyleNeeded = 1;
 
   tabcount = numtabs;
   tabs = tabstops;
