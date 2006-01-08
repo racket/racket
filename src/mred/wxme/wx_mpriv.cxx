@@ -289,6 +289,7 @@ void wxMediaEdit::_ChangeStyle(long start, long end,
   if (!len) {
     startSnip = snips;
     endSnip = NULL;
+    initialStyleNeeded = 0;
   } else {
     startSnip = FindSnip(start, +1);
     endSnip = FindSnip(end, +2);

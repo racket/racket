@@ -1591,7 +1591,7 @@ void wxMediaEdit::_Insert(wxSnip *isnip, long strlen, wxchar *str, wxList *snips
 
     if (!len) {
       wxStyle *style;
-      style = (stickyStyles 
+      style = ((stickyStyles  & !initialStyleNeeded)
 	       ? snips->style 
 	       : GetDefaultStyle());
       snip = InsertTextSnip(start, style);
@@ -1789,6 +1789,8 @@ void wxMediaEdit::_Insert(wxSnip *isnip, long strlen, wxchar *str, wxList *snips
 
     len += addlen;
   }
+
+  initialStyleNeeded = 0;
 
   revision_count++;
   

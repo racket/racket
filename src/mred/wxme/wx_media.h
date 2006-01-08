@@ -506,6 +506,8 @@ class wxMediaEdit : public wxMediaBuffer
 
   TF_Flag( caretBlinked ); /* Whether we want to hide an active caret or not */
 
+  TF_Flag( initialStyleNeeded );
+
 #undef TF_Flag
 
   int lastDrawCaret;
