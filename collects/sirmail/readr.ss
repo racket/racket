@@ -880,12 +880,9 @@
           i))
 
       (define display-text%
-        (class (html-text-mixin
-                (text:foreground-color-mixin
-                 text:standard-style-list%))
-          (super-new)
-          (inherit set-styles-fixed)
-          (set-styles-fixed #t)))
+        (html-text-mixin
+         (text:foreground-color-mixin
+          text:standard-style-list%)))
       
       ;; Class for the panel that has columns titles and
       ;; supports clicks to change the sort order

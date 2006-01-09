@@ -171,7 +171,6 @@
                      (send text set-position 0 0)
                      (send text lock #t)
                      (send text end-edit-sequence))])
-             (send text set-styles-fixed #t)
              (preferences:add-callback
               'framework:standard-style-list:font-size
               (λ (p v) (send size-slider set-value v)))
