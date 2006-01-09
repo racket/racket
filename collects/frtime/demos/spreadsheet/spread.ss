@@ -630,7 +630,7 @@
       (send offscreen-dc set-brush highlight-brush)))
   
   (define canvas
-    (instantiate ss-canvas% (frame) (style (list 'hscroll 'vscroll 'no-autoclear))))
+    (instantiate ss-canvas% (frame) (style (list 'hscroll 'vscroll))))
   
   (send frame show #t)
   (send canvas focus))
