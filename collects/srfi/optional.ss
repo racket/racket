@@ -63,6 +63,8 @@
                              [(eq? pred integer?) "expected integer, "]
                              [(eq? pred pair?) "expected pair, "]
                              [(eq? pred procedure?) "expected procedure, "]
+                             [(eq? pred string?) "expected string, "]
+                             [(eq? pred vector?) "expected vector, "]
                              [else ""])])
 		(error caller (string-append expected-string "given ~s") val))
 		val)))
