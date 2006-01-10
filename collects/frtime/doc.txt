@@ -118,10 +118,10 @@ _Signal Processors_
   <undefined>) and an event source.  The value of the behavior is the
   value of the most recent event occurrence.
 
-> (switch behavior event[behavior]) -> behavior
+> (switch event[behavior] [behavior]) -> behavior
 
   Returns a behavior that "switches" each time the argument event
-  occurs.
+  occurs.  The second argument is an optional initializer.
 
 > (accum-e event[a -> a] a) -> event[a]
 
