@@ -58,7 +58,13 @@
 	(define check-arg
 	  (lambda (pred val caller)
 	    (if (not (pred val))
-		(error caller "given ~s" val)
+                (let ([expected-string
+                       (cond [(eq? pred number? ) "expected number, "]
+                             [(eq? pred integer?) "expected integer, "]
+                             [(eq? pred pair?) "expected pair, "]
+                             [(eq? pred procedure?) "expected procedure, "]
+                             [else ""])])
+		(error caller (string-append expected-string "given ~s") val))
 		val)))
 
 
