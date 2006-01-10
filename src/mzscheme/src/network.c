@@ -459,8 +459,8 @@ static int mz_getaddrinfo(const char *nodename, const char *servname,
     h = NULL;
 
   if (h || !nodename) {
-    struct mz_addrinfo *ai;
-    struct sockaddr_in *sa;
+    GC_CAN_IGNORE struct mz_addrinfo *ai;
+    GC_CAN_IGNORE struct sockaddr_in *sa;
     int j, id = 0;
 
     ai = (struct mz_addrinfo *)malloc(sizeof(struct mz_addrinfo));
@@ -480,7 +480,8 @@ static int mz_getaddrinfo(const char *nodename, const char *servname,
     ai->ai_next = NULL;
 
     sa->sin_family = (id ? AF_INET : AF_UNSPEC);
-    sa->sin_port = htons(id);
+    j = htons(id);
+    sa->sin_port = j;
     memset(&(sa->sin_addr), 0, sizeof(sa->sin_addr));
     memset(&(sa->sin_zero), 0, sizeof(sa->sin_zero));
     if (h)
