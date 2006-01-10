@@ -21,10 +21,7 @@
       (place-num->bool (sub1 loc) (quotient num 2))))
 
 
-(current-widget-parent (new ft-frame% 
-                            (its-width 0)
-                            (its-height 0)
-                            (label-text "Binary<-->Decimal")))
+(current-widget-parent (new ft-frame% (label "Binary<-->Decimal")))
 
 (define-values-rec
   [sld (mode value-b ft-slider%

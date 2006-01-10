@@ -85,7 +85,7 @@
       (define/public (get-value-b) (hold (get-value-e) default))))
   |#
   
-  (define (add-callback-access val-ext default-val super-class)
+  (define (add-callback-access val-ext super-class)
     (class ((callbacks->args-evts set-value-events
                                   set-value
                                   (v))
@@ -109,9 +109,9 @@
   ;; using events to drive object interaction
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
-  (define (add-callback-access/loop val-ext default-val super-class)
+  (define (add-callback-access/loop val-ext super-class)
     ((events->callbacks value-set set-value)
-     (add-callback-access val-ext default-val super-class)))
+     (add-callback-access val-ext super-class)))
   
   
   (define (add-focus-on-event super-class)
@@ -131,60 +131,13 @@
   
   
   (define ft-frame%
-    (class (add-mouse-access (add-keypress-split (add-signal-controls frame% (label set-label ""))))
-      ; Members, initialized
-      (init-field (its-width 800) (its-height 600) (label-text "") (x-loc 0) (y-loc 0))
-      #|
-      ;(make-prog-control label-text set-label)
-      
-      ; Private members, internal
-      (define width-e (event-receiver))
-      (define width-b (hold width-e its-width))
-      (define height-e (event-receiver))
-      (define height-b (hold height-e its-height))
-      
-      (define mouse-x-e (event-receiver))
-      (define mouse-x-b (hold mouse-x-e 0))
-      (define mouse-y-e (event-receiver))
-      (define mouse-y-b (hold mouse-y-e 0))
-      
-      ; Overridden methods
-      (override on-size on-subwindow-event)
-      
-      ; Overrides on-size from frame% to update width-e and height-e
-      (define (on-size new-width new-height)
-        (begin
-          (send-event width-e new-width)
-          (send-event height-e new-height)
-          
-          (super on-size new-width new-height)))
-      
-      (define (on-subwindow-event a-window event)
-        (begin
-          (case (send event get-event-type)
-            [(enter motion)
-             (send-event mouse-x-e (+ (send a-window get-x) (send event get-x)))
-             (send-event mouse-y-e (+ (send a-window get-y) (send event get-y)))])
-          (super on-subwindow-event a-window event)))
-      
-      ; Public Members    
-      (public get-width-b get-height-b get-mouse-x get-mouse-y)
-      
-      ; Returns a behavior of the width of the frame
-      (define (get-width-b) width-b)
-      
-      ; Returns a behavior of the height of the frame
-      (define (get-height-b) height-b)
-      
-      (define (get-mouse-x) mouse-x-b)
-      (define (get-mouse-y) mouse-y-b)
-      |#
-      (super-new (label (in-string (value-now label-text))) 
-                 (width its-width) 
-                 (height its-height)
-                 (x x-loc)
-                 (y y-loc)
-                 #;(style '(float metal)))))
+    (class ((callbacks->args-evts resize-events on-size (w h))
+            (add-mouse-access 
+             (add-keypress-split 
+              (add-signal-controls frame% 
+                                   (label set-label "")))))
+      (super-new)
+      ))
   
   
 
@@ -221,7 +174,6 @@
   (define ft-menu-item%
     (add-callback-access
      list
-     '()
      (add-void-set-value
       menu-item%)))
   
@@ -235,46 +187,44 @@
   
   
   ;; Standard mixin combinations
-  (define (standard-lift widget value-method value-default)
+  (define (standard-lift widget value-method)
     (add-mouse-access
      (add-focus-access
       (add-callback-access
        value-method
-       value-default
        (add-signal-controls (add-void-set-value widget) (label set-label "") (enabled enable #t))))))
   
-  (define (standard-lift/loop widget value-method value-default)
+  (define (standard-lift/loop widget value-method)
     (add-mouse-access
      (add-focus-access
       (add-callback-access/loop
        value-method
-       value-default
        (add-signal-controls widget (label set-label "") (enabled enable #t))))))
   
   
   
   (define ft-button%
-    (standard-lift button% (lambda (w e) e) undefined))  
+    (standard-lift button% (lambda (w e) e)))  
   
   (define ft-check-box%
-    (standard-lift/loop check-box% send-for-value #f))
+    (standard-lift/loop check-box% send-for-value))
   
   (define ft-radio-box%
-    (standard-lift radio-box% send-for-selection 0))
+    (standard-lift radio-box% send-for-selection))
   
   (define ft-choice%
-    (standard-lift choice% send-for-selection 0))
+    (standard-lift choice% send-for-selection))
   
   (define ft-slider%
-    (standard-lift/loop slider% send-for-value 0))
+    (standard-lift/loop slider% send-for-value))
   
   (define ft-list-box% 
-    (standard-lift list-box% send-for-selection 0))
+    (standard-lift list-box% send-for-selection))
   
   (define ft-text-field%
     (add-keypress-split
      (add-focus-on-event
-      (standard-lift/loop text-field% send-for-value ""))))
+      (standard-lift/loop text-field% send-for-value))))
   
  
   

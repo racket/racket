@@ -1,12 +1,12 @@
 (require "../simple.ss")
 
-(current-widget-parent (new ft-frame% (its-width 400) (its-height 0)))
+(current-widget-parent (new ft-frame% (label "Timer") (width 400) (height 100)))
 
 (define tenths (quotient milliseconds 100))
 
 (define-values-rec
   [range (* 10 (mode value-b ft-slider%
-                     (label "Range")
+                     (label "Range: ")
                      (min-value 10)
                      (max-value 30)
                      (init-value 10)))]
@@ -16,7 +16,7 @@
                                      reset)
                               (value-now tenths))))]
   [gauge (mode widget ft-gauge% 
-               (label "Timer") 
+               (label "Elapsed: ")
                (value gauge-value)
                (range range))]
   [msg (mode widget ft-message%
