@@ -2,6 +2,7 @@
   (require (lib "contract.ss")
            (lib "url.ss" "net")
            (lib "list.ss")
+           (lib "plt-match.ss")
            "timer.ss")
   (provide (struct exn:servlet:instance ())
            (struct exn:servlet:no-current-instance ())
@@ -34,9 +35,11 @@
   ;; * The servlet-instance-mutex is used to guarentee mutual-exclusion in the
   ;;   case when it is attempted to invoke multiple continuations
   ;;   simultaneously.
-
+  (provide
+   match-url-params)
   (provide/contract
    [continuation-url? (url? . -> . (union boolean? (list/c symbol? number? number?)))]
+   [embed-ids (symbol? number? number? url? . -> . string?)]
    [store-continuation! (procedure? procedure? url? servlet-instance? . -> . string?)]
    [create-new-instance! (hash-table? custodian? execution-context? semaphore? timer?
                                       . -> . servlet-instance?)]
@@ -122,7 +125,6 @@
   (define (match-url-params x) (regexp-match URL-PARAMS:REGEXP x))
 
   ;; embed-ids: number number number url -> string
-  ;; embedd the two numbers in a url
   (define (embed-ids inst-id k-id salt in-url)
     (insert-param
      in-url
@@ -132,35 +134,28 @@
   ;; determine if this url encodes a continuation and extract the instance id and
   ;; continuation id.
   (define (continuation-url? a-url)
-    (let ([str (url->param a-url)])
-      (and str
-           (let ([param-match (cdr (match-url-params str))])
-             (list (string->symbol (car param-match))
-                   (string->number (cadr param-match))
-                   (string->number (caddr param-match)))))))
-
-  ;; url->param: url -> (union string #f)
-  (define (url->param a-url)
-    (let ([l (filter (λ (x) (not (null? (path/param-param x))))
-                     (url-path a-url))])
-      (and (not (null? l))
-           (car (path/param-param (car l))))))
-           
+    (let ([k-params (filter match-url-params
+                            (apply append (map path/param-param (url-path a-url))))])
+      (if (empty? k-params)
+          #f
+          (match (match-url-params (first k-params))
+            [(list s instance k-id salt)
+             (list (string->symbol instance)
+                   (string->number k-id)
+                   (string->number salt))]))))
+             
   ;; insert-param: url string -> string
   ;; add a path/param to the path in a url
   ;; (assumes that there is only one path/param)
   (define (insert-param in-url new-param-str)
     (url->string
      (replace-path
-      (lambda (old-path)
-        (if (null? old-path)
-            (list (make-path/param "" new-param-str))
-            (let* ([car-old-path (car old-path)])
-              (cons (make-path/param (if (path/param? car-old-path)
-                                         (path/param-path car-old-path)
-                                         car-old-path)
-                                     new-param-str)
-                    (cdr old-path)))))
+      (lambda (old-path)        
+        (if (empty? old-path)
+            (list (make-path/param "" (list new-param-str)))
+            (list* (make-path/param (path/param-path (first old-path))
+                                    (list new-param-str))
+                   (rest old-path))))
       in-url)))
 
   ;; replace-path: (url-path -> url-path) url -> url
@@ -174,6 +169,7 @@
        (url-user in-url)
        (url-host in-url)
        (url-port in-url)
+       (url-path-absolute? in-url)
        new-path
-       '()
+       empty
        (url-fragment in-url)))))

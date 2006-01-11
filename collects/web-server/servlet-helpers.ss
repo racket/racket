@@ -32,34 +32,50 @@
            servlet-url->servlet-url/no-extra-path 
            request->servlet-url
            uri->servlet-url)
-  (define-struct servlet-url (protocol host port servlets-root instance-id k-id nonce servlet-path extra-path))
+  (define-struct servlet-url (protocol host port
+                                       servlets-root 
+                                       instance-id k-id nonce 
+                                       servlet-path extra-path))
   (define (servlet-url->url-string/no-continuation su)
     (url->string
      (make-url (servlet-url-protocol su)
                #f
                #f ;(servlet-url-host su)
                #f ;(servlet-url-port su)
-               (append (servlet-url-servlets-root su)
+               #t
+               (append (map (lambda (p/p)
+                              (if (and (not (empty? (path/param-param p/p)))
+                                       ; XXX: not robust
+                                       (match-url-params (first (path/param-param p/p))))
+                                  (make-path/param (path/param-path p/p) empty)
+                                  p/p))
+                            (servlet-url-servlets-root su))
                        (servlet-url-servlet-path su)
                        (servlet-url-extra-path su))
                empty
                #f)))
   (define (servlet-url->url-string su)
-    (url->string
-     (make-url (servlet-url-protocol su)
-               #f
-               #f ;(servlet-url-host su)
-               #f ;(servlet-url-port su)
-               (append (reverse (rest (reverse (servlet-url-servlets-root su))))
-                       (list (make-path/param (first (reverse (servlet-url-servlets-root su)))
-                                              (format "~a*~a*~a" 
-                                                      (servlet-url-instance-id su)
-                                                      (servlet-url-k-id su) 
-                                                      (servlet-url-nonce su))))
-                       (servlet-url-servlet-path su)
-                       (servlet-url-extra-path su))
-               empty
-               #f)))
+    (let ([the-url
+           (make-url (servlet-url-protocol su)
+                         #f
+                         #f ;(servlet-url-host su)
+                         #f ;(servlet-url-port su)
+                         #t
+                         (append (reverse (rest (reverse (servlet-url-servlets-root su))))
+                                 (list (make-path/param (path/param-path (first (reverse (servlet-url-servlets-root su))))
+                                                        empty))
+                                 (servlet-url-servlet-path su)
+                                 (servlet-url-extra-path su))
+                         empty
+                         #f)])
+      (if (and (servlet-url-instance-id su)
+               (servlet-url-k-id su) 
+               (servlet-url-nonce su))               
+          (embed-ids (servlet-url-instance-id su)
+                     (servlet-url-k-id su) 
+                     (servlet-url-nonce su)
+                     the-url)
+          (url->string the-url))))
   (define (servlet-url->servlet-url/no-extra-path su)
     (copy-struct servlet-url su
                  [servlet-url-extra-path empty]))
@@ -73,6 +89,31 @@
                     (let ([k-parts (continuation-url? uri)])
                       (if k-parts
                           (apply values k-parts)
+                          (values #f #f #f)))]
+                   [(servlet-path path)
+                    (let loop ([servlet-path empty]
+                               [path (rest (url-path uri))])
+                      (if (empty? path)
+                          (values servlet-path path)
+                          (let ([cur (first path)])
+                            (if (regexp-match "\\.ss$" (path/param-path cur))
+                                (values (append servlet-path (list cur))
+                                        (rest path))
+                                (loop (append servlet-path (list cur))
+                                      (rest path))))))])
+        (make-servlet-url (url-scheme uri)
+                          (or (url-host uri) default-host)
+                          (or (url-port uri) default-port)
+                          (list (first (url-path uri)))
+                          k-instance k-id k-salt
+                          servlet-path
+                          path))))
+  (define uri->servlet-url2
+    (opt-lambda (uri [default-host #f] [default-port #f])
+      (let-values ([(k-instance k-id k-salt)
+                    (let ([k-parts (continuation-url? uri)])
+                      (if k-parts
+                          (apply values k-parts)
                           (values #f #f #f)))])
         (let loop ([path (url-path uri)]
                    [servlets-root empty]
@@ -80,10 +121,11 @@
                    [servlet-path empty]
                    [found-servlet-path? #f]
                    [extra-path empty])
-          #;(printf "~S~n" (list path
-                                 servlets-root found-servlets-root?
-                                 servlet-path found-servlet-path?
-                                 extra-path))
+          (printf "~S~n" (list uri (list k-instance k-id k-salt)
+                               path
+                               servlets-root found-servlets-root?
+                               servlet-path found-servlet-path?
+                               extra-path))
           (let ([top (if (empty? path)
                          #f
                          (first path))])
@@ -149,7 +191,8 @@
                                  servlet-path
                                  path)]
               [(empty? path)
-               (error 'request->servlet-url "Not servlet-url: ~S; parsed: ~S" (url->string uri)
+               (error 'request->servlet-url "Not servlet-url: ~S; parsed: ~S"
+                      (url->string uri)
                       (list path
                             servlets-root found-servlets-root?
                             servlet-path found-servlet-path?
