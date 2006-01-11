@@ -139,7 +139,7 @@
 ;;>   symbol-macro that accesses the corresponding slot value of `obj'.
 ;;>   Each `slot' is either an identifier `id' which makes it stand for
 ;;>   `(slot-ref obj 'id)', or `(id slot)' which makes `id' stand for
-;;>   `(slot-ref obj 'slot)'.
+;;>   `(slot-ref obj slot)'.
 (defsubst* (with-slots obj (slot ...) body0 body ...)
   (process-with-slots obj (slot ...) () body0 body ...))
 
