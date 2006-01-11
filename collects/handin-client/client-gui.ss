@@ -340,7 +340,7 @@
          (mk-passwd "Old Password:" old-user-box activate-change))
        (define change-extra-fields
          (map (lambda (f)
-                (mk-txt (format "~a:" (car f)) old-user-box activate-change))
+                (mk-txt (string-appeng f ":") old-user-box activate-change))
               (EXTRA-FIELDS)))
        (define new-passwd
          (mk-passwd "New Password:" old-user-box activate-change))
@@ -374,7 +374,7 @@
        (send new-username set-value (remembered-user))
        (define add-extra-fields
          (map (lambda (f)
-                (mk-txt (format "~a:" (car f)) new-user-box activate-new))
+                (mk-txt (string-append f ":") new-user-box activate-new))
               (EXTRA-FIELDS)))
        ;; (define full-name  (mk-txt "Full Name:" new-user-box activate-new))
        ;; (define student-id (mk-txt "ID:" new-user-box activate-new))
@@ -469,7 +469,7 @@
                  (format "The \"~a\" and \"~a\" passwords are not the same."
                          l1 l2))
                (k (void))))
-           (for-each (lambda (t f) (check-length t 100 (car f) k))
+           (for-each (lambda (t f) (check-length t 100 f k))
                      (if new? add-extra-fields change-extra-fields)
                      (EXTRA-FIELDS))
 	   (send tabs enable #f)

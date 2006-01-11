@@ -51,8 +51,7 @@
     (let ([r (handin-r h)] [w (handin-w h)])
       (write+flush w 'get-extra-fields 'bye)
       (let ([v (read r)])
-        (unless (and (list? v)
-                     (andmap (lambda (l) (and (pair? l) (string? (car l)))) v))
+        (unless (and (list? v) (andmap string? v))
           (error 'handin-connect
                  "failed to get extra-fields list from server"))
         (wait-for-ok r "get-extra-fields")
