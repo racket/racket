@@ -45,12 +45,11 @@
 
   (define server-dir (current-directory))
   (define config-file (build-path server-dir "config.ss"))
-  (unless (file-exists? config-file)
-    (error 'handin-server
-           "must be started from a properly configured directory"))
 
   (define (get-config which default)
-    (get-preference which (lambda () default) #f config-file))
+    (if (file-exists? config-file)
+      (get-preference which (lambda () default) #f config-file)
+      default))
 
   (define PORT-NUMBER        (get-config 'port-number 7979))
   (define HTTPS-PORT-NUMBER  (get-config 'https-port-number (add1 PORT-NUMBER)))
