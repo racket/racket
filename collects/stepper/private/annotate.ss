@@ -277,6 +277,9 @@
     (define (result-value-break vals-list)
       (break (current-continuation-marks) 'result-value-break vals-list))
     
+    (define (result-value-break/begin vals-list)
+      (break (current-continuation-marks) 'result-value-break/begin vals-list))
+    
     (define (exp-finished-break info-list)
       (break #f 'expr-finished-break info-list))
     
@@ -287,22 +290,35 @@
     (define (wcm-pre-break-wrap debug-info exp)
       (wcm-wrap debug-info (pre-break-wrap exp)))
     
+    ;; wrap a pre-break around stx
     (define (pre-break-wrap stx)
       #`(begin (#,result-exp-break) #,stx))
     
+    ;; wrap a normal break around stx
     (define (break-wrap exp)
       #`(begin (#,normal-break) #,exp))
     
+    ;; wrap a double-break around exp
     (define (double-break-wrap exp)
       #`(begin (#,double-break) #,exp))
     
-    (define (return-value-wrap exp)
-      #`(call-with-values
-         (lambda () #,exp)
-         (lambda args
-           (#,result-value-break args)
-           (apply values args))))
+    ;; abstraction used in the next two defs
+    (define (return-value-wrap-maker break-proc) 
+      (lambda (exp)
+        #`(call-with-values
+           (lambda () #,exp)
+           (lambda args
+             (#,break-proc args)
+             (apply values args)))))
     
+    ;; wrap a return-value-break around exp
+    (define return-value-wrap 
+      (return-value-wrap-maker result-value-break))
+    
+    ;; wrap a return-value-break/begin around exp
+    (define return-value-wrap/begin
+      (return-value-wrap-maker result-value-break/begin))
+
     
     (define (make-define-struct-break exp)
       (lambda ()
@@ -399,13 +415,15 @@
                     
                     ;; no pre-break, non-tail w.r.t. new bindings
                     [let-body-recur/first
-                     ;; whoops! this one is just "non-tail-recur"
-                     non-tail-recur]
+                     (lambda (exp) 
+                       (return-value-wrap/begin
+                        (non-tail-recur exp)))]
                     
                     ;; yes pre-break, non-tail w.r.t. new bindings
                     [let-body-recur/middle
                      (lambda (exp)
-                       (annotate/inner exp null #t #f))]
+                       (return-value-wrap/begin
+                        (annotate/inner exp null #t #f)))]
                     
                     ;; yes pre-break, tail w.r.t. new bindings:
                     [let-body-recur/last
@@ -730,8 +748,9 @@
                     [recertifier
                      (lambda (vals)
                        (let*-2vals ([(new-exp bindings) vals])
-                                   (2vals (syntax-recertify new-exp exp (current-code-inspector) #f)
-					  (map (lambda (b)
+                                   (2vals (stepper-recertify new-exp exp)
+					  bindings
+                                          #;(map (lambda (b)
 						 (syntax-recertify b exp (current-code-inspector) #f))
 					       bindings))))]
                     
@@ -924,6 +943,9 @@
                     [else 
                      (error 'annotate "unexpected syntax for expression: ~v" (syntax-object->datum exp))])))])))
     
+    (define (stepper-recertify new-stx old-stx)
+      (syntax-recertify new-stx old-stx (current-code-inspector) #f))
+    
     
     ;; annotate/top-level : syntax-> syntax
     ;; expansion of teaching level language programs produces two kinds of 
@@ -966,11 +988,12 @@
                          [defined-name (if (and (pair? name-list) (null? (cdr name-list)))
                                            (car name-list)
                                            #f)])
-                    #`(begin
-                        (define-values (new-var ...)
-                          #,(top-level-annotate/inner (top-level-rewrite #`e) exp defined-name))
-                        ;; this next expression should deliver the newly computed values to an exp-finished-break
-                        (#,exp-finished-break (list (list #,(lambda () exp) #f (lambda () (list new-var ...)))))))]
+                    (stepper-recertify
+                     #`(begin
+                         (define-values (new-var ...)
+                           #,(top-level-annotate/inner (top-level-rewrite #`e) exp defined-name))
+                         ;; this next expression should deliver the newly computed values to an exp-finished-break
+                         (#,exp-finished-break (list (list #,(lambda () exp) #f (lambda () (list new-var ...))))))))]
                  [(define-syntaxes (new-vars ...) e)
                   exp]
                  [(require specs ...)
