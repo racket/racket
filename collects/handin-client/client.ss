@@ -3,7 +3,7 @@
 
   (provide handin-connect
 	   handin-disconnect
-	   retrieve-extra-fields
+	   retrieve-user-fields
 	   retrieve-active-assignments
 	   submit-assignment
 	   retrieve-assignment
@@ -47,14 +47,14 @@
     (write+flush (handin-w h) 'bye)
     (close-handin-ports h))
 
-  (define (retrieve-extra-fields h)
+  (define (retrieve-user-fields h)
     (let ([r (handin-r h)] [w (handin-w h)])
-      (write+flush w 'get-extra-fields 'bye)
+      (write+flush w 'get-user-fields 'bye)
       (let ([v (read r)])
         (unless (and (list? v) (andmap string? v))
           (error 'handin-connect
-                 "failed to get extra-fields list from server"))
-        (wait-for-ok r "get-extra-fields")
+                 "failed to get user-fields list from server"))
+        (wait-for-ok r "get-user-fields")
         (close-handin-ports h)
         v)))
 
@@ -119,24 +119,24 @@
           (close-handin-ports h)
           buf))))
 
-  (define (submit-addition h username passwd extra-fields)
+  (define (submit-addition h username passwd user-fields)
     (let ([r (handin-r h)] [w (handin-w h)])
       (write+flush w
-        'set 'username/s   username
-        'set 'password     passwd
-        'set 'extra-fields extra-fields
+        'set 'username/s  username
+        'set 'password    passwd
+        'set 'user-fields user-fields
         'create-user)
       (wait-for-ok r "create-user")
       (close-handin-ports h)))
 
-  (define (submit-info-change h username old-passwd new-passwd extra-fields)
+  (define (submit-info-change h username old-passwd new-passwd user-fields)
     (let ([r (handin-r h)]
 	  [w (handin-w h)])
       (write+flush w
         'set 'username/s   username
         'set 'password     old-passwd
         'set 'new-password new-passwd
-        'set 'extra-fields extra-fields
+        'set 'user-fields  user-fields
         'change-user-info)
       (wait-for-ok r "change-user-info")
       (close-handin-ports h)))

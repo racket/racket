@@ -274,15 +274,16 @@
        (super-new [label manage-dialog-name]
 		  [alignment '(left center)])
 
-       (define EXTRA-FIELDS
+       (define USER-FIELDS
          (let ([ef #f])
            (lambda ()
-             (unless ef (set! ef (retrieve-extra-fields (connect))))
+             (unless ef (set! ef (retrieve-user-fields (connect))))
              ef)))
 
        (define status
          (new message%
-              [label (format "Manage ~a handin account at ~a." handin-name server)]
+              [label (format "Manage ~a handin account at ~a."
+                             handin-name server)]
               [parent this]
               [stretchable-width #t]))
 
@@ -320,7 +321,7 @@
          (string=? (send t1 get-value) (send t2 get-value)))
 
        (define (activate-change)
-         (define an-extra-non-empty? (ormap non-empty? change-extra-fields))
+         (define an-extra-non-empty? (ormap non-empty? change-user-fields))
 	 (send retrieve-old-info-button enable
                (non-empty? old-username old-passwd))
 	 (send change-button enable
@@ -338,10 +339,10 @@
 
        (define old-passwd
          (mk-passwd "Old Password:" old-user-box activate-change))
-       (define change-extra-fields
+       (define change-user-fields
          (map (lambda (f)
-                (mk-txt (string-appeng f ":") old-user-box activate-change))
-              (EXTRA-FIELDS)))
+                (mk-txt (string-append f ":") old-user-box activate-change))
+              (USER-FIELDS)))
        (define new-passwd
          (mk-passwd "New Password:" old-user-box activate-change))
        (define new-passwd2
@@ -365,20 +366,17 @@
        (define (activate-new)
 	 (send new-button enable
 	       (and (apply non-empty? new-username add-passwd add-passwd2
-                           add-extra-fields)
+                           add-user-fields)
                     (same-value add-passwd add-passwd2))))
        (define new-user-box (new vertical-panel%
 				 [parent single]
 				 [alignment '(center center)]))
        (define new-username (mk-txt "Username:" new-user-box activate-new))
        (send new-username set-value (remembered-user))
-       (define add-extra-fields
+       (define add-user-fields
          (map (lambda (f)
                 (mk-txt (string-append f ":") new-user-box activate-new))
-              (EXTRA-FIELDS)))
-       ;; (define full-name  (mk-txt "Full Name:" new-user-box activate-new))
-       ;; (define student-id (mk-txt "ID:" new-user-box activate-new))
-       ;; (define email      (mk-txt "Email:" new-user-box activate-new))
+              (USER-FIELDS)))
        (define add-passwd  (mk-passwd "Password:" new-user-box activate-new))
        (define add-passwd2 (mk-passwd "Password again:" new-user-box activate-new))
        (define new-button (new button%
@@ -470,8 +468,8 @@
                          l1 l2))
                (k (void))))
            (for-each (lambda (t f) (check-length t 100 f k))
-                     (if new? add-extra-fields change-extra-fields)
-                     (EXTRA-FIELDS))
+                     (if new? add-user-fields change-user-fields)
+                     (USER-FIELDS))
 	   (send tabs enable #f)
 	   (parameterize ([current-custodian comm-cust])
 	     (thread
@@ -493,9 +491,9 @@
                           (if new? "Creating user..." "Updating server..."))
 		    (if new?
 			(run submit-addition username add-passwd
-                             add-extra-fields)
+                             add-user-fields)
 			(run submit-info-change username old-passwd new-passwd
-                             change-extra-fields)))
+                             change-user-fields)))
 		  (send status set-label "Success.")
 		  (send cancel set-label "Close")))))))
 
@@ -521,7 +519,7 @@
                             "Success, you can now edit fields.")
                       (send tabs enable #t)
                       (for-each (lambda (f val) (send f set-value val))
-                                change-extra-fields vals)
+                                change-user-fields vals)
                       (activate-change)))))))))
 
        (send new-user-box show #f)
