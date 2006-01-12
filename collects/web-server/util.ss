@@ -5,7 +5,8 @@
            (lib "url.ss" "net")
            (lib "xml.ss" "xml")
            (lib "plt-match.ss")
-           (lib "errortrace-lib.ss" "errortrace"))
+           (lib "errortrace-lib.ss" "errortrace")
+           (lib "uri-codec.ss" "net"))
   (require "response-structs.ss"
            "request-structs.ss")
   
@@ -283,29 +284,15 @@
   (define-struct (invalid-%-suffix servlet-error) (chars))
   (define-struct (incomplete-%-suffix invalid-%-suffix) ())
   (define (translate-escapes raw)
-    (list->string
-     (let loop ((chars (string->list raw)))
-       (if (null? chars) null
-           (let ((first (car chars))
-                 (rest (cdr chars)))
-             (let-values (((this rest)
-                           (cond
-                             ((char=? first #\+)
-                              (values #\space rest))
-                             ((char=? first #\%)
-                              ; MF: I rewrote this code so that Spidey could eliminate all checks.
-                              ; I am more confident this way that this hairy expression doesn't barf.
-                              (if (pair? rest)
-                                  (let ([rest-rest (cdr rest)])
-                                    (if (pair? rest-rest)
-                                        (values (integer->char
-                                                 (or (string->number (string (car rest) (car rest-rest)) 16)
-                                                     (raise (make-invalid-%-suffix
-                                                             (if (string->number (string (car rest)) 16)
-                                                                 (car rest-rest)
-                                                                 (car rest))))))
-                                                (cdr rest-rest))
-                                        (raise (make-incomplete-%-suffix rest))))
-                                  (raise (make-incomplete-%-suffix rest))))
-                             (else (values first rest)))))
-               (cons this (loop rest)))))))))
+    (let ([raw (uri-decode raw)])
+      (list->string
+       (let loop ((chars (string->list raw)))
+         (if (null? chars) null
+             (let ((first (car chars))
+                   (rest (cdr chars)))
+               (let-values (((this rest)
+                             (cond
+                               ((char=? first #\+)
+                                (values #\space rest))                             
+                               (else (values first rest)))))
+                 (cons this (loop rest))))))))))
