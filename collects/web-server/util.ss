@@ -26,7 +26,7 @@
    [exn->string ((union exn? any/c) . -> . string?)]
    [get-mime-type (path? . -> . bytes?)]
    [build-path-unless-absolute (path? (union string? path?) . -> . path?)])
-    
+  
   ;; ripped this off from url-unit.ss
   (define (url-path->string strs)
     (apply
@@ -178,7 +178,7 @@
         [(eq? 'relative base) (current-directory)]
         [(not base) (error 'directory-part "~a is a top-level directory" path)]
         [(path? base) base])))
-
+  
   ; more here - ".." should probably raise an error instead of disappearing.
   (define (url-path->path base p)
     (let ((path-elems (chop-string #\/ p)))
@@ -292,5 +292,20 @@
                            (cond
                              ((char=? first #\+)
                               (values #\space rest))
+                             ((char=? first #\%)
+                              ; MF: I rewrote this code so that Spidey could eliminate all checks.
+                              ; I am more confident this way that this hairy expression doesn't barf.
+                              (if (pair? rest)
+                                  (let ([rest-rest (cdr rest)])
+                                    (if (pair? rest-rest)
+                                        (values (integer->char
+                                                 (or (string->number (string (car rest) (car rest-rest)) 16)
+                                                     (raise (make-invalid-%-suffix
+                                                             (if (string->number (string (car rest)) 16)
+                                                                 (car rest-rest)
+                                                                 (car rest))))))
+                                                (cdr rest-rest))
+                                        (raise (make-incomplete-%-suffix rest))))
+                                  (raise (make-incomplete-%-suffix rest))))
                              (else (values first rest)))))
                (cons this (loop rest)))))))))
