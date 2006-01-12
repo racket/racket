@@ -112,6 +112,9 @@ Swindle environment.
 * info.ss (module)
   Compilation definitions.
 
+* install.ss (module)
+  This module is used to install the Swindle launcher.
+
 * tool.ss (module)
   Setup for Swindle in DrScheme -- makes some languages available in
   DrScheme, including custom Swindle-based languages.
@@ -137,7 +140,7 @@ Swindle environment.
 
 ====< Copyright Notice >================================================
 
-Copyright (C) 1998-2006 Eli Barzilay (eli@barzilay.org)
+Copyright (C) 1998-2005 Eli Barzilay (eli@barzilay.org)
 
     This library is free software; you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as

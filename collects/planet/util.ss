@@ -61,7 +61,7 @@
   ;; remove-infodomain-entries : path -> void
   (define (remove-infodomain-entries path)
     (let* ([pathbytes (path->bytes path)]
-           [cache-file (build-path (find-system-path 'addon-dir) "cache.ss")]
+           [cache-file (build-path (PLANET-DIR) "cache.ss")]
            [cache-lines (with-input-from-file cache-file read)])
       (with-output-to-file cache-file
        (lambda ()
