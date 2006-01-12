@@ -259,7 +259,7 @@
   ;
   
   (define (annotate main-exp break track-inferred-names?)
-    (define _ (fprintf (current-error-port) "input to annotate: ~v\n" (syntax-object->datum main-exp)))
+    #;(define _ (fprintf (current-error-port) "input to annotate: ~v\n" (syntax-object->datum main-exp)))
 
     (define binding-indexer
       (let ([binding-index 0])
@@ -415,19 +415,21 @@
                     ;; no pre-break, non-tail w.r.t. new bindings
                     [let-body-recur/first
                      (lambda (exp)
-                       (normal-break/values-wrap
+                       (apply-to-first-of-2vals
+                        normal-break/values-wrap
                         (non-tail-recur exp)))]
                     
                     ;; yes pre-break, non-tail w.r.t. new bindings
                     [let-body-recur/middle
                      (lambda (exp)
-                       (normal-break/values-wrap
+                       (apply-to-first-of-2vals
+                        normal-break/values-wrap
                         (annotate/inner exp null #t #f)))]
                     
                     ;; yes pre-break, tail w.r.t. new bindings:
                     [let-body-recur/last
                      (lambda (exp bindings)
-                         (annotate/inner exp (binding-set-union (list tail-bound bindings)) #f procedure-name-info))]
+                         (annotate/inner exp (binding-set-union (list tail-bound bindings)) #t procedure-name-info))]
                     
                     ;; different flavors of make-debug-info allow users to provide only the needed fields:
                     
@@ -598,14 +600,10 @@
                                      
                                      [(first* fv-first) (let-body-recur/first first)]
                                      [(middle* fv-middle) (2vals-map let-body-recur/middle middle)]
-                                     [(last* fv-last) (let-body-recur/last last binding-list)]
-                                     
-                                     [first** (return-value-wrap first*)]
-                                     [middle** (map return-value-wrap middle*)]
-                                     [last** last*])
+                                     [(last* fv-last) (let-body-recur/last last binding-list)])
                                   
                                   (2vals (quasisyntax/loc exp
-                                           (begin #,first** #,@middle** #,last**))
+                                           (begin #,first* #,@middle* #,last*))
                                          (varref-set-union (cons fv-first (cons fv-last fv-middle))))))])
                           
                           ((2vals (quasisyntax/loc 
@@ -785,11 +783,10 @@
                     [recertifier
                      (lambda (vals)
                        (let*-2vals ([(new-exp bindings) vals])
-                                   (2vals (stepper-recertify new-exp exp)
-					  bindings
-                                          #;(map (lambda (b)
-						 (syntax-recertify b exp (current-code-inspector) #f))
-					       bindings))))]
+                         (2vals (stepper-recertify new-exp exp)
+                                (map (lambda (b)
+                                       (syntax-recertify b exp (current-code-inspector) #f))
+                                     bindings))))]
                     
                     )
                  ; find the source expression and associate it with the parsed expression
@@ -1070,12 +1067,11 @@
                          [defined-name (if (and (pair? name-list) (null? (cdr name-list)))
                                            (car name-list)
                                            #f)])
-                    (stepper-recertify
-                     #`(begin
+                    #`(begin
                          (define-values (new-var ...)
                            #,(top-level-annotate/inner (top-level-rewrite #`e) exp defined-name))
                          ;; this next expression should deliver the newly computed values to an exp-finished-break
-                         (#,exp-finished-break (list (list #,(lambda () exp) #f (lambda () (list new-var ...))))))))]
+                         (#,exp-finished-break (list (list #,(lambda () exp) #f (lambda () (list new-var ...)))))))]
                  [(define-syntaxes (new-vars ...) e)
                   exp]
                  [(require specs ...)

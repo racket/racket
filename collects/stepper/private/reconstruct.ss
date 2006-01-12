@@ -24,11 +24,12 @@
    
    ;; front ends for reconstruct-current
    [reconstruct-left-side (mark-list?
+                           (union (listof any/c) false/c)
                            render-settings?
                            . -> .
                            (listof syntax?))]
    [reconstruct-right-side (mark-list?
-                            (listof any/c)
+                            (union (listof any/c) false/c)
                             render-settings?
                             . -> .
                             (listof syntax?))]
@@ -148,7 +149,7 @@
        (let ([and/or-clauses-consumed (syntax-property (mark-source (car mark-list)) 'stepper-and/or-clauses-consumed)])
          (and and/or-clauses-consumed
               (> and/or-clauses-consumed 0)))]
-      [(normal-break)
+      [(normal-break normal-break/values)
        (skip-redex-step? mark-list render-settings)]
       [(double-break)
        (or 
@@ -820,8 +821,8 @@
   
   ;; front ends for reconstruct-current:
   
-  (define (reconstruct-left-side mark-list render-settings)
-    (reconstruct-current mark-list 'left-side null render-settings))
+  (define (reconstruct-left-side mark-list returned-value-list render-settings)
+    (reconstruct-current mark-list 'left-side returned-value-list render-settings))
   
   
   (define (reconstruct-right-side mark-list returned-value-list render-settings)
@@ -967,25 +968,24 @@
                
                ; if
                [(if test then else)
-                (attach-info
-                 (let ([test-exp (if (eq? so-far nothing-so-far)
-                                     (recon-value (lookup-binding mark-list if-temp) render-settings)
-                                     so-far)])
-                   #`(if #,test-exp 
+                (begin
+                  (when (eq? so-far nothing-so-far)
+                    (error 'reconstruct "breakpoint before an if reduction should have a result value"))
+                  (attach-info
+                   #`(if #,so-far
                          #,(recon-source-current-marks (syntax then))
-                         #,(recon-source-current-marks (syntax else))))
-                 exp)]
+                         #,(recon-source-current-marks (syntax else)))
+                   exp))]
                
                ; one-armed if
                
                [(if test then)
-                (attach-info
-                 (let ([test-exp (if (eq? so-far nothing-so-far)
-                                     (recon-value (lookup-binding mark-list if-temp) render-settings)
-                                     so-far)])
-                   #`(if #,test-exp 
-                         #,(recon-source-current-marks (syntax then))))
-                 exp)]
+                (begin
+                  (when (eq? so-far nothing-so-far)
+                    (error 'reconstruct "breakpoint before an if reduction should have a result value"))
+                  (attach-info
+                   #`(if #,so-far #,(recon-source-current-marks (syntax then)))
+                   exp))]
                
                ; quote : there is no break on a quote.
 
@@ -1054,14 +1054,14 @@
                
                [(letrec-values . rest) (recon-let)]
                
-               [(set! var rhs) 
-                (attach-info
-                 (let ([rhs-exp (if (eq? so-far nothing-so-far)
-                                    (recon-value (lookup-binding mark-list set!-temp) render-settings)
-                                    so-far)]
-                       [rendered-var (reconstruct-set!-var mark-list #`var)])
-                   #`(set! #,rendered-var #,rhs-exp))
-                 exp)]
+               [(set! var rhs)
+                (begin
+                  (when (eq? so-far nothing-so-far)
+                    (error 'reconstruct "breakpoint before an if reduction should have a result value"))
+                  (attach-info
+                   (let ([rendered-var (reconstruct-set!-var mark-list #`var)])
+                     #`(set! #,rendered-var #,so-far))
+                   exp))]
                
                ; lambda : there is no break on a lambda
                
@@ -1094,18 +1094,27 @@
                         #f))])]))
 
          ; uncomment to see all breaks coming in:
-         #;(define _ (printf "break-kind: ~a\ninnermost source: ~a\n" break-kind
-                    (and (pair? mark-list)
-                         (syntax-object->datum (mark-source (car mark-list))))))
-         
+         #;(define _ (printf "break-kind: ~a\ninnermost source: ~a\nreturned-value-list: ~a\n" 
+                           break-kind
+                           (and (pair? mark-list)
+                                (syntax-object->datum (mark-source (car mark-list))))
+                           returned-value-list))
+             
          (define answer
            (case break-kind
              ((left-side)
-              (unwind (recon nothing-so-far mark-list #t) #f))
+              (let* ([innermost (if returned-value-list ; is it a normal-break/values?
+                                    (begin (unless (and (pair? returned-value-list) (null? (cdr returned-value-list)))
+                                             (error 'reconstruct "context expected one value, given ~v" returned-value-list))
+                                           (recon-value (car returned-value-list) render-settings))
+                                    nothing-so-far)])
+                (unwind (recon innermost mark-list #t) #f)))
              ((right-side)
-              (let* ([innermost (if (null? returned-value-list) ; is it an expr -> expr reduction?
-                                    (recon-source-expr (mark-source (car mark-list)) mark-list null null render-settings)
-                                    (recon-value (car returned-value-list) render-settings))])
+              (let* ([innermost (if returned-value-list ; is it an expr -> value reduction?
+                                    (begin (unless (and (pair? returned-value-list) (null? (cdr returned-value-list)))
+                                             (error 'reconstruct "context expected one value, given ~v" returned-value-list))
+                                           (recon-value (car returned-value-list) render-settings))
+                                    (recon-source-expr (mark-source (car mark-list)) mark-list null null render-settings))])
                 (unwind (recon (mark-as-highlight innermost) (cdr mark-list) #f) #f)))
              ((double-break)
               (let* ([source-expr (mark-source (car mark-list))]

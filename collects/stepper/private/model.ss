@@ -171,7 +171,7 @@
            x)
          
          (define break 
-           (opt-lambda (mark-set break-kind [returned-value-list null])
+           (opt-lambda (mark-set break-kind [returned-value-list #f])
 
              
              (let* ([mark-list (and mark-set (extract-mark-list mark-set))])
@@ -194,15 +194,23 @@
                      (error 'double-redivide "reconstructed after defs are not equal."))
                    (values (append finished-exps before) current current-2 after)))
                
+               #;(printf "break called with break-kind: ~a ..." break-kind)
                (if (r:skip-step? break-kind mark-list render-settings)
-                   (when (eq? break-kind 'normal-break)
-                     (set! held-exp-list skipped-step))
+                   (begin
+                     #;(printf " but it was skipped!\n")
+                   (when (or (eq? break-kind 'normal-break)
+                             (eq? break-kind 'nomal-break/values)) ;; not sure about this...
+                     (set! held-exp-list skipped-step)))
                    
+                   (begin
+                     #;(printf "and it wasn't skipped.\n")
                    (case break-kind
-                     [(normal-break)
+                     [(normal-break normal-break/values)
                       (begin
+                        (when (and (eq? break-kind 'normal-break) returned-value-list)
+                          (error 'break "broken invariant: normal-break can't have returned values"))
                         (set! held-finished-list (reconstruct-all-completed))
-                        (set! held-exp-list (r:reconstruct-left-side mark-list render-settings))
+                        (set! held-exp-list (r:reconstruct-left-side mark-list returned-value-list render-settings))
                         (set! held-step-was-app? (r:step-was-app? mark-list)))]
                      
                      [(result-exp-break result-value-break)
@@ -264,7 +272,7 @@
                                   (apply add-to-finished source/index/getter))
                                 returned-value-list)]
                      
-                     [else (error 'break "unknown label on break")])))))
+                     [else (error 'break "unknown label on break")]))))))
          
          
 
@@ -285,8 +293,8 @@
       (program-expander
        (lambda () 
          ; swap these to allow errors to escape (e.g., when debugging)
-         (error-display-handler err-display-handler)
-         #;(void)
+         #;(error-display-handler err-display-handler)
+         (void)
          )
        (lambda (expanded continue-thunk) ; iter
          (if (eof-object? expanded)

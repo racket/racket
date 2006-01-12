@@ -71,9 +71,6 @@
    binding-set? ; predicate
    ; get-binding-name
    ; bogus-binding?
-   if-temp
-   begin-temp
-   set!-temp
    ; get-lifted-gensym
    ; expr-read
    ; set-expr-read!
@@ -225,10 +222,6 @@
                   (weak-assoc-add assoc-table stx new-binding)
                   new-binding)))))))
   
-  (define if-temp (syntax-property (datum->syntax-object #`here `if-temp) 'stepper-binding-type 'stepper-temp))
-  (define begin-temp (syntax-property (datum->syntax-object #`here `begin-temp) 'stepper-binding-type 'stepper-temp))
-  (define set!-temp (syntax-property (datum->syntax-object #`here `set!-temp) 'stepper-binding-type 'stepper-temp))
-
   ; gensyms needed by many modules:
 
   ; no-sexp is used to indicate no sexpression for display.
@@ -365,7 +358,8 @@
                       #f))
   
   (define break-kind?
-    (symbols 'normal-break 'result-exp-break 'result-value-break 'double-break 'late-let-break 'expr-finished-break 'define-struct-break))
+    (symbols 'normal-break 'normal-break/values 'result-exp-break 'result-value-break 
+             'double-break 'late-let-break 'expr-finished-break 'define-struct-break))
 
   ; functional update package
 
