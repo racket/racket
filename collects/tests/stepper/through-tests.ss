@@ -1403,6 +1403,6 @@
      (test-teachpack-sequence " (define (f2c x) x) (convert-gui f2c)" `() ; placeholder
                                ))
   
-  (run-tests '(simple-begin))
+  (run-tests '(begin))
   #;(run-all-tests)
   )
