@@ -1369,7 +1369,7 @@
   ;;
   ;;;;;;;;;;;
   
-  (t trivial-begin
+  (t simple-begin
      (test-advanced-sequence "(+ 3 (begin 4 5))"
        `((before-after ((+ 3 (hilite (begin 4 5)))) 
                        ((+ 3 (hilite 5))))
@@ -1403,6 +1403,6 @@
      (test-teachpack-sequence " (define (f2c x) x) (convert-gui f2c)" `() ; placeholder
                                ))
   
-  (run-tests '(trivial-begin))
+  (run-tests '(simple-begin))
   #;(run-all-tests)
   )
