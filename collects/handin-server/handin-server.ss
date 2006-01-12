@@ -70,6 +70,9 @@
                   ("ID#" #f #f)
                   ("Email" #rx"^[^@<>\"`',]+@[a-zA-Z0-9_.-]+[.][a-zA-Z]+$"
                    "a valid email address"))))
+  ;; separate user-controlled fields, and hidden fields
+  (define USER-FIELDS
+    (filter (lambda (f) (not (eq? '- (cadr f)))) EXTRA-FIELDS))
 
   (define orig-custodian (current-custodian))
 
@@ -368,15 +371,26 @@
                    (regexp-match field-re value)]
                   [(list? field-re) (member value field-re)]
                   [(not field-re) #t]
+                  [(eq? field-re '-) #t] ; -> hidden field, no check
                   [else (error 'handin "bad spec: field-regexp is ~e"
                                field-re)])
       (error 'handin "bad ~a: \"~a\"~a" field-name value
              (if field-desc (format "; need ~a" field-desc) ""))))
 
+  ;; Utility for the next two functions: reconstruct a full list of
+  ;; extra-fields from user-fields, using "" for hidden fields
+  (define (add-hidden-to-user-fields user-fields)
+    (let ([user-field-name->user-field (map cons USER-FIELDS user-fields)])
+      (map (lambda (f)
+             (cond [(assq f user-field-name->user-field) => cdr]
+                   [else ""]))
+           EXTRA-FIELDS)))
+
   (define (add-new-user data)
     (define username     (a-ref data 'username/s))
     (define passwd       (a-ref data 'password))
-    (define extra-fields (a-ref data 'extra-fields))
+    (define user-fields  (a-ref data 'user-fields))
+    (define extra-fields (add-hidden-to-user-fields user-fields))
     (unless ALLOW-NEW-USERS?
       (error 'handin "new users not allowed: ~a" username))
     (check-field username USER-REGEXP "username" USER-DESC)
@@ -403,14 +417,16 @@
     (put-user-data username (cons passwd extra-fields)))
 
   (define (change-user-info data)
-    (define usernames  (a-ref data 'usernames))
-    (define user-datas (a-ref data 'user-datas))
-    (define passwd     (a-ref data 'new-password))
-    (define extra-fields (a-ref data 'extra-fields))
+    (define usernames    (a-ref data 'usernames))
+    (define user-datas   (a-ref data 'user-datas))
+    (define passwd       (a-ref data 'new-password))
+    (define user-fields  (a-ref data 'user-fields))
+    (define extra-fields (add-hidden-to-user-fields user-fields))
     (unless (= 1 (length usernames))
       (error 'handin "cannot change a password for multiple users: ~a"
              usernames))
-    ;; the new data is the same as the old one for every empty string
+    ;; the new data is the same as the old one for every empty string (includes
+    ;; hidden fields)
     (let ([new-data (map (lambda (old new) (if (equal? "" new) old new))
                          (car user-datas) (cons passwd extra-fields))])
       (unless (or ALLOW-CHANGE-INFO? (equal? (cdr new-data) (cdar user-datas)))
@@ -420,14 +436,18 @@
       (for-each
        (lambda (str info) (check-field str (cadr info) (car info) (caddr info)))
        (cdr new-data) EXTRA-FIELDS)
-      (LOG "change info for ~a ~s -> ~s" (car usernames) new-data (car user-datas))
+      (LOG "change info for ~a ~s -> ~s"
+           (car usernames) new-data (car user-datas))
       (put-user-data (car usernames) new-data)))
 
   (define (get-user-info data)
     (define usernames  (a-ref data 'usernames))
     (unless (= 1 (length usernames))
       (error 'handin "cannot get user-info for multiple users: ~a" usernames))
-    (cdar (a-ref data 'user-datas)))
+    ;; filter out hidden fields
+    (let ([all-data (cdar (a-ref data 'user-datas))])
+      (filter values (map (lambda (d f) (and (memq f USER-FIELDS) d))
+                          all-data EXTRA-FIELDS))))
 
   (define crypt
     (let ([c #f] [sema (make-semaphore 1)])
@@ -468,9 +488,9 @@
         [(set)
          (let* ([key (read r-safe)] [val (read r-safe)])
            (unless (symbol? key) (perror "bad key value: ~e" key))
-           (unless (if (eq? 'extra-fields key)
+           (unless (if (eq? 'user-fields key)
                      (and (list? val)
-                          (- (length val) (length EXTRA-FIELDS))
+                          (- (length val) (length USER-FIELDS))
                           (andmap string? val))
                      (string? val))
              (perror "bad value for set: ~e" val))
@@ -500,8 +520,8 @@
         [(get-active-assignments)
          (write+flush w active-assignments)
          (loop)]
-        [(get-extra-fields)
-         (write+flush w EXTRA-FIELDS)
+        [(get-user-fields)
+         (write+flush w (map car USER-FIELDS))
          (loop)]
         ;; ----------------------------------------
         ;; action handlers

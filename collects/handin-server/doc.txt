@@ -238,11 +238,11 @@ sub-directories:
          add this configuration entry with the name of your new copy
          (relative to the handin server directory)
 
-      'extra-fields : a list that describes extra fields of (string)
-         information for students; each element in this list is a list
-         of three values -- the name of the field, the regexp (or #f,
-         or a list of permitted string values), and a plain-words
-         description of acceptable strings.  The default is
+      'extra-fields : a list that describes extra string fields of
+         information for student records; each element in this list is
+         a list of three values -- the name of the field, the regexp
+         (or #f, or a list of permitted string values), and a string
+         describing of acceptable strings.  The default is
 
            '(("Full Name" #f #f)
              ("ID#" #f #f)
@@ -264,6 +264,17 @@ sub-directories:
 
          The order of these fields will be used both on the client GUI
          side and in the "users.ss" file (see below).
+
+         The second item in a field description can also be the symbol
+         '-, which marks this field as one that is hidden from the
+         user interface: students will not see it and will not be able
+         to provide or modify it; when a new student creates an
+         account, such fields will be left empty.  This is useful for
+         adding information that you have on students from another
+         source, for example, adding information from a course roster.
+         You should manually edit the "users.ss" file and fill in such
+         information.  (The third element for such descriptors is
+         ignored.)
 
   * "users.ss" (created if not present if a user is added) --- keeps
     the list of user accounts, along with the associated password
