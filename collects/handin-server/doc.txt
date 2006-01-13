@@ -313,12 +313,12 @@ sub-directories:
     matches your 'extra-fields specification.  For example, given this
     system file:
 
-      foo:wRzN1u5q2SqRD:1203:1203:Foo Moo:/home/foo:/bin/tcsh
+      foo:wRzN1u5q2SqRD:1203:1203:L.E. Foo:/home/foo:/bin/tcsh
       bar:$1$dKlU0OkJ$t63NU/eTzKz:1205:1205:Bar Z. Lie:/home/bar:/bin/bash
 
-    you can create a "users.ss" file as
+    you can create this "users.ss" file:
 
-      ((foo ((unix "wRzN1u5q2SqRD") "Foo Moo" "?"))
+      ((foo ((unix "wRzN1u5q2SqRD") "L.E. Foo" "?"))
        (bar ((unix "$1$dKlU0OkJ$t63NU/eTzKz") "Bar Z. Lie" "?")))
 
     which can be combined with this setting for 'extra-fields in your
@@ -332,6 +332,10 @@ sub-directories:
     and you can tell your students to use their department username
     and password, and use the "Manage ..." dialog to properly set
     their TA name.
+
+    Finally, a password value can be a list that begins with a
+    'plaintext symbol, which will be used without encryption.  This
+    may be useful for manually resetting a forgotten passwords.
 
   * "active/" --- sub-directory for active assignments. A list of
     active assignments is sent to a client tool when a student clicks

@@ -459,16 +459,21 @@
           (lambda () (bytes->string/utf-8 (c passwd salt)))))))
   (define (has-password? raw md5 passwords)
     (define (good? passwd)
+      (define (bad-password msg)
+        (LOG "ERROR: ~a -- ~s" log-args passwd)
+        (error 'handin "bad password in user database"))
       (cond [(string? passwd) (equal? md5 passwd)]
             [(and (list? passwd) (= 2 (length passwd))
-                  (eq? 'unix (car passwd)) (string? (cadr passwd))
-                  ;; find the salt part
-                  (regexp-match #rx"^([$][^$]+[$][^$]+[$]|..)" (cadr passwd)))
-             => (lambda (m)
-                  (equal? (crypt raw (car m)) (cadr passwd)))]
-            [else (LOG "ERROR: bad password in user database: ~s" passwd)
-                  ;; do not show the bad password...
-                  (error 'handin "bad password in user database")]))
+                  (symbol? (car passwd)) (string? (cadr passwd)))
+             (case (car passwd)
+               [(plaintext) (equal? raw (cadr passwd))]
+               [(unix)
+                (let ([salt (regexp-match #rx"^([$][^$]+[$][^$]+[$]|..)"
+                                          (cadr passwd))])
+                  (unless salt (bad-password "badly formatted unix password"))
+                  (equal? (crypt raw (car salt)) (cadr passwd)))]
+               [else (bad-password "bad password type in user database")])]
+            [else (bad-password "bad password value in user database")]))
     (or (member md5 passwords) ; very cheap search first
         (ormap good? passwords)))
 
