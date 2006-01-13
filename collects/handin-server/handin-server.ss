@@ -460,7 +460,7 @@
   (define (has-password? raw md5 passwords)
     (define (good? passwd)
       (define (bad-password msg)
-        (LOG "ERROR: ~a -- ~s" log-args passwd)
+        (LOG "ERROR: ~a -- ~s" msg passwd)
         (error 'handin "bad password in user database"))
       (cond [(string? passwd) (equal? md5 passwd)]
             [(and (list? passwd) (= 2 (length passwd))
