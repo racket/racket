@@ -4,17 +4,6 @@ Scheme.  The DLL files are moved into the PLT folder by
 which is, in turn, called by the MSVC projects.
 
 ----------------------------------------------------------------------
-msvcr71.dll
-
-This DLL has runtime support for applications built by DevStudio 7.1.
-It is installed into the Windows system directory with PLT, but is not
-removed when PLT is uninstalled.
-
-(Microsoft recommends keeping the file in the application directory,
-but this leads to problems with standalone executables, and renaming
-this file is difficult.)
-
-----------------------------------------------------------------------
 uniplt_xxxxxxx.dll
 
 This DLL is really Microsoft's UnicoWS.dll.  Microsoft allows
