@@ -192,8 +192,7 @@ exit 1
                 "The version you are installing is outdated,\n"
                 "PLT v"(cadr r)" is now available from plt-scheme.org\n"
                 (if (null? (cddr r))
-                  "(There is also an even newer alpha version)\n"
-                  "")))]
+                  "" "(There is also an even newer alpha version)\n")))]
         [else (error 'check-version "internal error: ~e" r)]))))
 
 (define (create-zos)
