@@ -869,3 +869,21 @@ Time to clean up for v300.  Let's see if we can get begin and begin0 working.
 
 *************
 
+Okay, it turns out that begin expands into a let-values with empty bindings,
+so I'm working on getting this going.  With this addition, the annotation for
+'let' is a complete monster, chewing up a substantial fraction of the annotation
+code all by itself.
+
+Also, I've come across a design optimization that improves if & set!, which is
+this:  there's no reason to have if-temp & set!-temp.  Putting these inline
+is a great improvement: it reduces code in the reconstructor, in the annotator,
+all over the place.  The caveat: I haven't finished it yet, so who knows what
+kind of horrible thing will crop up.
+
+The architecture change here is that we need a new kind of break that's like
+a normal-break (blecch! terrible name!) but carries a value along with it.
+I'm going to call this the normal-break/value break.  Blurrch!
+
+2006-01-12
+
+*************
