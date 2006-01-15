@@ -75,9 +75,9 @@
                              [honu:function-body e1])
                            new-funcs)))]))))
 
-  ;; typecheck-bind-top-defn : BindTop -> BindTop
+  ;; typecheck-bind-top : BindTop -> BindTop
   ;; Typechecks a top-level binding and produces the annotated version.
-  (define (typecheck-bind-top-defn bind-top)
+  (define (typecheck-bind-top bind-top)
     (match bind-top
       [(struct honu:bind-top (stx names types value))
        (for-each (lambda (n t)
@@ -92,9 +92,9 @@
          (copy-struct honu:bind-top bind-top
            [honu:bind-top-value e1]))]))
 
-  ;; typecheck-iface-defn : IFace -> IFace
+  ;; typecheck-iface : IFace -> IFace
   ;; Typechecks an interface definition and produces the annotated version.
-  (define (typecheck-iface-defn iface)
+  (define (typecheck-iface iface)
     (match iface
       [(struct honu:iface (stx name supers members))
        (for-each (curry check-valid-type! "interface supertype")
@@ -116,9 +116,9 @@
                  members)
        iface]))
 
-  ;; typecheck-class-defn : Class -> Class
+  ;; typecheck-class : Class -> Class
   ;; Typechecks a class definition and produces the annotated version.
-  (define (typecheck-class-defn class)
+  (define (typecheck-class class)
     (match class
       [(struct honu:class (stx name type final? impls inits members exports))
        (check-valid-type! "class self-type" type)
@@ -153,9 +153,9 @@
            (copy-struct honu:class class
              [honu:class-members members])))]))
 
-  ;; typecheck-mixin-defn : Mixin -> Mixin
+  ;; typecheck-mixin : Mixin -> Mixin
   ;; Typechecks a mixin definition and produces the annotated version.
-  (define (typecheck-mixin-defn mixin)
+  (define (typecheck-mixin mixin)
     (match mixin
       [(struct honu:mixin (stx name type arg-type final? impls inits withs
                            supernew members-before members-after exports))
@@ -210,9 +210,9 @@
              [honu:mixin-super-new      supernew]
              [honu:mixin-members-after  members-after])))]))
 
-  ;; typecheck-subclass-defn : Subclass -> Subclass
+  ;; typecheck-subclass : Subclass -> Subclass
   ;; Typechecks a subclass definition and produces the annotated version.
-  (define (typecheck-subclass-defn subclass)
+  (define (typecheck-subclass subclass)
     (match subclass
       ;; we basically do all the checks when we create the tenv entry for the subclass (plus typechecking the base
       ;; class and mixin), so no need to check again.
@@ -223,11 +223,11 @@
   ;; Typechecks a top-level definition and produces the annotated version.
   (define (typecheck-defn defn)
     (cond
-     [(honu:bind-top? defn) (typecheck-bind-top-defn defn)]
-     [(honu:iface? defn) (typecheck-iface-defn defn)]
-     [(honu:class? defn) (typecheck-class-defn defn)]
-     [(honu:mixin? defn) (typecheck-mixin-defn defn)]
-     [(honu:subclass? defn) (typecheck-subclass-defn defn)]
+     [(honu:bind-top? defn) (typecheck-bind-top defn)]
+     [(honu:iface? defn) (typecheck-iface defn)]
+     [(honu:class? defn) (typecheck-class defn)]
+     [(honu:mixin? defn) (typecheck-mixin defn)]
+     [(honu:subclass? defn) (typecheck-subclass defn)]
      [else (raise-read-error-with-stx
             "Haven't implemented typechecking for that type of definition yet."
             (honu:ast-stx defn))]))
