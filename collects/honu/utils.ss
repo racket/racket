@@ -6,7 +6,18 @@
 
   (require-for-template (lib "contract.ss"))
 
-  (provide define/p)
+  (provide define-struct/c
+           define-struct/p
+           define/c
+           define/p
+           fold-with-rest
+           get-first-non-unique-name
+           map-and-fold
+           map-two-values
+           partition-first
+           unique?
+           curry)
+  
   (define-syntax (define/p stx)
     (syntax-case stx ()
       [(_ (NAME . ARGS) BODY ...)
@@ -19,7 +30,6 @@
            (provide NAME))]
       ))
 
-  (provide define/c)
   (define-syntax (define/c stx)
     (syntax-case stx ()
       [(_ (NAME . ARGS) CONTRACT BODY ...)
@@ -32,7 +42,6 @@
            (provide/contract [NAME CONTRACT]))]
       ))
 
-  (provide define-struct/p)
   (define-syntax (define-struct/p stx)
     (syntax-case stx ()
       [(_ (NAME SUPER) (FIELD ...) REST ...)
@@ -44,7 +53,6 @@
            (define-struct NAME (FIELD ...) REST ...)
            (provide (struct NAME (FIELD ...))))]))
 
-  (provide define-struct/c)
   (define-syntax (define-struct/c stx)
     (syntax-case stx ()
       [(_ (NAME SUPER) ([FIELD CONTRACT] ...) REST ...)
@@ -73,7 +81,6 @@
     (string<? (symbol->string (syntax-e a))
               (symbol->string (syntax-e b))))
   
-  (provide get-first-non-unique-name)
   (define (get-first-non-unique-name lst)
     (let loop ([lst (quicksort lst identifier<?)])
       (cond
@@ -84,13 +91,11 @@
          (car lst)]
         [else #f])))
 
-  (provide fold-with-rest)
   (define (fold-with-rest f init l)
     (if (null? l)
         init
         (fold-with-rest f (f (car l) (cdr l) init) (cdr l))))
   
-  (provide unique?)
   (define (unique? cs)
     (fold-with-rest (lambda (c cs acc)
                       (and acc
@@ -103,7 +108,6 @@
                              (f defn)))
                       ds))
   
-  (provide map-and-fold)
   (define (map-and-fold f i l)
     (let loop ((l l)
                (mapped '())
@@ -115,7 +119,6 @@
                   (cons res mapped)
                   folded)))))
   
-  (provide map-two-values)
   (define (map-two-values f . lists)
     (let loop ((lists lists)
                (map1  '())
@@ -127,7 +130,6 @@
                   (cons m1 map1)
                   (cons m2 map2))))))
   
-  (provide partition-first)
   (define (partition-first f lis)
     (let loop ([lis    lis]
                [passed '()])
@@ -138,4 +140,9 @@
          (values (car lis) (append (reverse passed) (cdr lis)))]
         [else
          (loop (cdr lis) (cons (car lis) passed))])))
+
+  (define (curry f . args)
+    (lambda rest
+      (apply f (append args rest))))
+  
   )
