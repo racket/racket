@@ -7,15 +7,6 @@
            "parameters.ss"
            "readerr.ss")
   
-  (provide (struct tenv:entry  (stx))
-           (struct tenv:init   (name type optional?))
-           (struct tenv:member (stx name type))
-           (struct tenv:type   (supers members inherited))
-           (struct tenv:class  (sub-type impls inits final? super))
-           (struct tenv:mixin  (arg-type sub-type impls inits
-                                         withs final?))
-           (struct tenv:value  (type)))
-  
   (define-struct tenv:entry (stx) #f)
 
   (define-struct tenv:init (name type optional?) #f)
@@ -81,20 +72,8 @@
                                   (make-honu:type-prim #f 'float)))
           ))
  
-  (provide tenv?)
   (define tenv? bound-identifier-mapping?)
 
-  (provide/contract [printable-key (identifier? . -> . symbol?)]
-                    [tenv-key=?    (identifier? identifier? . -> . any)]
-                    [tenv-key<?    (identifier? identifier? . -> . any)]
-                    [tenv-map      (tenv?
-                                    (identifier? tenv:entry? . -> . any)
-                                    . -> .
-                                    list?)]
-                    [tenv-for-each (tenv?
-                                    (identifier? tenv:entry? . -> . void?)
-                                    . -> .
-                                    void?)])
   (define printable-key syntax-e)
   (define tenv-key=? bound-identifier=?)
   (define (tenv-key<? k1 k2)
@@ -103,12 +82,6 @@
   (define tenv-map bound-identifier-mapping-map)
   (define tenv-for-each bound-identifier-mapping-for-each)
 
-  (provide/contract [empty-tenv (-> tenv?)]
-                    [get-builtin-lenv (-> tenv?)]
-                    [extend-tenv (identifier? tenv:entry? . -> . void?)]
-                    [extend-lenv (identifier? tenv:value? . -> . void?)]
-                    [extend-tenv-without-checking (identifier? tenv:entry? . -> . void?)])
-  
   (define (empty-tenv) (make-bound-identifier-mapping))
   (define (get-builtin-lenv)
     (create-tenv (map car builtin-list)
@@ -142,21 +115,11 @@
              table)))
 
   ;; only use this if you a) don't want an error or b) don't know what you should get.
-  (provide/contract [get-tenv-entry   (identifier? . -> . (union tenv:entry? false/c))]
-                    [get-lenv-entry   (identifier? . -> . (union tenv:entry? false/c))])
   (define (get-tenv-entry key)
     (bound-identifier-mapping-get (current-type-environment) key (lambda () #f)))
   (define (get-lenv-entry key)
     (bound-identifier-mapping-get (current-lexical-environment) key (lambda () #f)))
   
-  (provide/contract [get-type-entry   ((union honu:type-iface?
-                                              honu:type-iface-top?) . -> . tenv:type?)]
-                    [get-class-entry  (identifier?                  . -> . tenv:class?)]
-                    [get-mixin-entry  (identifier?                  . -> . tenv:mixin?)]
-                    [get-member-type  ((union honu:type-iface?
-                                              honu:type-iface-top?)
-                                       identifier?                  . -> . honu:type?)]
-                    [get-value-entry  (identifier?                  . -> . tenv:value?)])
   (define (get-type-entry type)
     (if (honu:type-iface-top? type)
       (make-tenv:type #f (list) (list) (list))
@@ -224,8 +187,7 @@
           name)]
         [else entry])))
   
-  (provide wrap-lenv extend-fenv)
-  
+  (define (fenv? v) (and (procedure? v) (procedure-arity-includes? v 1)))
   (define (wrap-lenv) (wrap-as-function (current-lexical-environment)))
   (define (wrap-as-function tenv)
     (lambda (name)
@@ -238,4 +200,47 @@
           value
           (fenv name))))
 
+  (define empty-fenv (lambda (name) #f))
+
+  (provide (struct tenv:entry  (stx))
+           (struct tenv:init   (name type optional?))
+           (struct tenv:member (stx name type))
+           (struct tenv:type   (supers members inherited))
+           (struct tenv:class  (sub-type impls inits final? super))
+           (struct tenv:mixin  (arg-type sub-type impls inits
+                                         withs final?))
+           (struct tenv:value  (type)))
+  (provide/contract [tenv? (any/c . -> . boolean?)]
+                    [printable-key (identifier? . -> . symbol?)]
+                    [tenv-key=?    (identifier? identifier? . -> . any)]
+                    [tenv-key<?    (identifier? identifier? . -> . any)]
+                    [tenv-map      (tenv?
+                                    (identifier? tenv:entry? . -> . any)
+                                    . -> .
+                                    list?)]
+                    [tenv-for-each (tenv?
+                                    (identifier? tenv:entry? . -> . void?)
+                                    . -> .
+                                    void?)]
+                    [empty-tenv (-> tenv?)]
+                    [get-builtin-lenv (-> tenv?)]
+                    [extend-tenv (identifier? tenv:entry? . -> . void?)]
+                    [extend-lenv (identifier? tenv:value? . -> . void?)]
+                    [extend-tenv-without-checking (identifier? tenv:entry? . -> . void?)]
+                    [get-tenv-entry   (identifier? . -> . (union tenv:entry? false/c))]
+                    [get-lenv-entry   (identifier? . -> . (union tenv:entry? false/c))]
+                    [get-type-entry   ((union honu:type-iface?
+                                              honu:type-iface-top?) . -> . tenv:type?)]
+                    [get-class-entry  (identifier?                  . -> . tenv:class?)]
+                    [get-mixin-entry  (identifier?                  . -> . tenv:mixin?)]
+                    [get-member-type  ((union honu:type-iface?
+                                              honu:type-iface-top?)
+                                       identifier?                  . -> . honu:type?)]
+                    [get-value-entry  (identifier?                  . -> . tenv:value?)]
+                    [fenv? (any/c . -> . boolean?)]
+                    [wrap-lenv (-> fenv?)]
+                    [empty-fenv fenv?]
+                    [extend-fenv (identifier? honu:type? fenv? . -> . fenv?)]
+                    )
+  
   )

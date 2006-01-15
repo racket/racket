@@ -9,6 +9,7 @@
 
   (provide/contract
    [check-valid-type! (string? honu:type? . -> . void?)]
+   [check-valid-types! (string? (listof honu:type?) . -> . void?)]
    )
 
   ;; check-valid-type! : Name Type -> Void
@@ -18,5 +19,10 @@
         (raise-read-error-with-stx
          (format "~s is undefined" name)
          (honu:ast-stx type))))
+
+  ;; check-valid-types! : Name [Listof Type] -> Void
+  ;; Raises an error if any of the named types are not valid.
+  (define (check-valid-types! name types)
+    (for-each (curry check-valid-type! name) types))
 
   )

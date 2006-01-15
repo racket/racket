@@ -43,8 +43,7 @@
                 (format "Argument name ~a used more than once"
                         (printable-key conflicting-name))
                 conflicting-name)))
-         (for-each (curry check-valid-type! "function argument type")
-                   (map honu:formal-type args))
+         (check-valid-types! "function argument type" (map honu:formal-type args))
          (make-func-type stx (make-tuple-type stx (map honu:formal-type args)) type)]))
     ;; first we add the functions to the lexical environment so that when we typecheck
     ;; the bodies, they'll be in scope.
@@ -97,8 +96,7 @@
   (define (typecheck-iface iface)
     (match iface
       [(struct honu:iface (stx name supers members))
-       (for-each (curry check-valid-type! "interface supertype")
-                 supers)
+       (check-valid-types! "interface supertype" supers)
        (let ([conflicting-name (get-first-non-unique-name (map (lambda (d)
                                                                  (cond
                                                                    [(honu:field-decl? d)
@@ -122,8 +120,7 @@
     (match class
       [(struct honu:class (stx name type final? impls inits members exports))
        (check-valid-type! "class self-type" type)
-       (for-each (curry check-valid-type! "implemented type of class")
-                 impls)
+       (check-valid-types! "implemented type of class" impls)
        (let ([conflicting-name (get-first-non-unique-name (append (map honu:formal-name inits)
                                                                   (map (lambda (d)
                                                                          (cond
@@ -139,8 +136,7 @@
               (format "Init/field/method name ~a used more than once"
                       (printable-key conflicting-name))
               conflicting-name)))
-       (for-each (curry check-valid-type! "init slot type")
-                 (map honu:formal-type inits))
+       (check-valid-types! "init slot type" (map honu:formal-type inits))
        (let ([cenv (srfi1:fold (lambda (a e)
                            (extend-fenv (honu:formal-name a)
                                         (honu:formal-type a)
@@ -153,16 +149,12 @@
            (copy-struct honu:class class
              [honu:class-members members])))]))
 
-  ;; typecheck-mixin : Mixin -> Mixin
-  ;; Typechecks a mixin definition and produces the annotated version.
-  (define (typecheck-mixin mixin)
+  ;; check-mixin-internal-names! : Mixin -> Void
+  ;; Raises an error if defined names in a mixin conflict with each other.
+  (define (check-mixin-internal-names! mixin)
     (match mixin
       [(struct honu:mixin (stx name type arg-type final? impls inits withs
                            supernew members-before members-after exports))
-       (check-valid-type! "mixin argument type" arg-type)
-       (check-valid-type! "mixin result type" type)
-       (for-each (curry check-valid-type! "mixin implemented type")
-                 impls)
        (let* ([arg-tentry (get-type-entry arg-type)]
               [conflicting-name (get-first-non-unique-name (append (map tenv:member-name
                                                                         (append (tenv:type-members arg-tentry)
@@ -182,23 +174,40 @@
              (raise-read-error-with-stx
               (format "Init/field/method name ~a used more than once in mixin or conflicts with members of argument type"
                       (printable-key conflicting-name))
-              (honu:ast-stx mixin))))
-       (for-each (curry check-valid-type! "init slot type")
-                 (map honu:formal-type inits))
+              (honu:ast-stx mixin))))]))
+
+  ;; check-mixin-expected-init-names! : Mixin -> Void
+  ;; Raises an error if init arguments expected of mixin's argument contain conflicts
+  (define (check-mixin-expected-init-names! mixin)
+    (match mixin
+      [(struct honu:mixin (stx name type arg-type final? impls inits withs
+                           supernew members-before members-after exports))
        (let ([conflicting-name (get-first-non-unique-name (map honu:formal-name withs))])
          (if conflicting-name
              (raise-read-error-with-stx
               (format "Init name ~a used more than once in expected init slots"
                       (printable-key conflicting-name))
-              conflicting-name)))
-       (for-each (curry check-valid-type! "type of expected init slot")
-                 (map honu:formal-type withs))
+              conflicting-name)))]))
+  
+  ;; typecheck-mixin : Mixin -> Mixin
+  ;; Typechecks a mixin definition and produces the annotated version.
+  (define (typecheck-mixin mixin)
+    (match mixin
+      [(struct honu:mixin (stx name type arg-type final? impls inits withs
+                           supernew members-before members-after exports))
+       (check-valid-type! "mixin argument type" arg-type)
+       (check-valid-type! "mixin result type" type)
+       (check-valid-types! "mixin implemented type" impls)
+       (check-mixin-internal-names! mixin)
+       (check-valid-types! "init slot type" (map honu:formal-type inits))
+       (check-mixin-expected-init-names! mixin)
+       (check-valid-types! "type of expected init slot" (map honu:formal-type withs))
        (let ([cenv (srfi1:fold (lambda (a e)
-                           (extend-fenv (honu:formal-name a)
-                                        (honu:formal-type a)
-                                        e))
-                         (lambda (n) #f)
-                         inits)])
+                                 (extend-fenv (honu:formal-name a)
+                                              (honu:formal-type a)
+                                              e))
+                               empty-fenv
+                               inits)])
          (let*-values ([(lenv)                (extend-fenv #'this type (wrap-lenv))]
                        [(members-before cenv) (typecheck-members cenv lenv type  members-before)]
                        [(supernew)            (typecheck-supernew cenv lenv withs supernew)]
@@ -238,7 +247,6 @@
        (check-valid-type! "field type" type)]
       [(struct honu:method-decl (stx name type args))
        (check-valid-type! "method return type" type)
-       (for-each (curry check-valid-type! "method argument type")
-                 args)]))
+       (check-valid-types! "method argument type" args)]))
 
   )
