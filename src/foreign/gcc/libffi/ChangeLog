@@ -1,3 +1,130 @@
+2005-09-30  Geoffrey Keating  <geoffk@apple.com>
+
+	* testsuite/lib/libffi-dg.exp (libffi_target_compile): For
+	darwin, use -shared-libgcc not -lgcc_s, and explain why.
+
+2005-09-26  Tom Tromey  <tromey@redhat.com>
+
+	* testsuite/libffi.call/float1.c (value_type): New typedef.
+	(CANARY): New define.
+	(main): Check for result buffer overflow.
+	* src/powerpc/linux64.S: Handle linux64 long double returns.
+	* src/powerpc/ffi.c (FLAG_RETURNS_128BITS): New constant.
+	(ffi_prep_cif_machdep): Handle linux64 long double returns.
+
+2005-08-25  Alan Modra  <amodra@bigpond.net.au>
+
+	PR target/23404
+	* src/powerpc/ffi.c (ffi_prep_args_SYSV): Correct placement of stack
+	homed fp args.
+	(ffi_status ffi_prep_cif_machdep): Correct stack sizing for same.
+
+2005-08-11  Jakub Jelinek  <jakub@redhat.com>
+
+	* configure.ac (HAVE_HIDDEN_VISIBILITY_ATTRIBUTE): New test.
+	(AH_BOTTOM): Add FFI_HIDDEN definition.
+	* configure: Rebuilt.
+	* fficonfig.h.in: Rebuilt.
+	* src/powerpc/ffi.c (hidden): Remove.
+	(ffi_closure_LINUX64, ffi_prep_args64, ffi_call_LINUX64,
+	ffi_closure_helper_LINUX64): Use FFI_HIDDEN instead of hidden.
+	* src/powerpc/linux64_closure.S (ffi_closure_LINUX64,
+	.ffi_closure_LINUX64): Use FFI_HIDDEN instead of .hidden.
+	* src/x86/ffi.c (ffi_closure_SYSV, ffi_closure_raw_SYSV): Remove,
+	add FFI_HIDDEN to its prototype.
+	(ffi_closure_SYSV_inner): New.
+	* src/x86/sysv.S (ffi_closure_SYSV, ffi_closure_raw_SYSV): New.
+	* src/x86/win32.S (ffi_closure_SYSV, ffi_closure_raw_SYSV): New.
+
+2005-08-10  Alfred M. Szmidt  <ams@gnu.org>
+
+	PR libffi/21819:
+	* configure: Rebuilt.
+	* configure.ac: Handle i*86-*-gnu*.
+
+2005-08-09  Jakub Jelinek  <jakub@redhat.com>
+
+	* src/powerpc/ppc_closure.S (ffi_closure_SYSV): Use
+	DW_CFA_offset_extended_sf rather than
+	DW_CFA_GNU_negative_offset_extended.
+	* src/powerpc/sysv.S (ffi_call_SYSV): Likewise.
+
+2005-07-22  SUGIOKA Toshinobu  <sugioka@itonet.co.jp>
+
+	* src/sh/sysv.S (ffi_call_SYSV): Stop argument popping correctly
+	on sh3.
+	(ffi_closure_SYSV): Change the stack layout for sh3 struct argument.
+	* src/sh/ffi.c (ffi_prep_args): Fix sh3 argument copy, when it is
+	partially on register.
+	(ffi_closure_helper_SYSV): Likewise.
+	(ffi_prep_cif_machdep): Don't set too many cif->flags.
+
+2005-07-20  Kaz Kojima  <kkojima@gcc.gnu.org>
+
+	* src/sh/ffi.c (ffi_call): Handle small structures correctly.
+	Remove empty line.
+	* src/sh64/ffi.c (simple_type): Remove.
+	(return_type): Handle small structures correctly.
+	(ffi_prep_args): Likewise.
+	(ffi_call): Likewise.
+	(ffi_closure_helper_SYSV): Likewise.
+	* src/sh64/sysv.S (ffi_call_SYSV): Handle 1, 2 and 4-byte return.
+	Emit position independent code if PIC and remove wrong datalabel
+	prefixes from EH data.
+
+2005-07-19  Andreas Tobler  <a.tobler@schweiz.ch>
+
+	* Makefile.am (nodist_libffi_la_SOURCES): Add POWERPC_FREEBSD.
+	* Makefile.in: Regenerate.
+	* include/Makefile.in: Likewise.
+	* testsuite/Makefile.in: Likewise.
+	* configure.ac: Add POWERPC_FREEBSD rules.
+	* configure: Regenerate.
+	* src/powerpc/ffitarget.h: Add POWERPC_FREEBSD rules.
+	(FFI_SYSV_TYPE_SMALL_STRUCT): Define.
+	* src/powerpc/ffi.c: Add flags to handle small structure returns
+	in ffi_call_SYSV.
+	(ffi_prep_cif_machdep): Handle small structures for SYSV 4 ABI.
+	Aka FFI_SYSV.
+	(ffi_closure_helper_SYSV): Likewise.
+	* src/powerpc/ppc_closure.S: Add return types for small structures.
+	* src/powerpc/sysv.S: Add bits to handle small structures for
+	final SYSV 4 ABI.
+
+2005-07-10  Andreas Tobler  <a.tobler@schweiz.ch>
+
+	* testsuite/libffi.call/cls_5_1_byte.c: New test file.
+	* testsuite/libffi.call/cls_6_1_byte.c: Likewise.
+	* testsuite/libffi.call/cls_7_1_byte.c: Likewise.
+
+2005-07-05  Randolph Chung  <tausq@debian.org>
+
+	* src/pa/ffi.c (ffi_struct_type): Rename FFI_TYPE_SMALL_STRUCT1
+	as FFI_TYPE_SMALL_STRUCT3.  Break out handling for 5-7 byte
+	structures.  Kill compilation warnings.
+	(ffi_closure_inner_LINUX): Print return values as hex in debug
+	message.  Rename FFI_TYPE_SMALL_STRUCT1 as FFI_TYPE_SMALL_STRUCT3.
+	Properly handle 5-7 byte structure returns.
+	* src/pa/ffitarget.h (FFI_TYPE_SMALL_STRUCT1)
+	(FFI_TYPE_SMALL_STRUCT2): Remove.
+	(FFI_TYPE_SMALL_STRUCT3, FFI_TYPE_SMALL_STRUCT5)
+	(FFI_TYPE_SMALL_STRUCT6, FFI_TYPE_SMALL_STRUCT7): Define.
+	* src/pa/linux.S: Mark source file as using PA1.1 assembly.
+	(checksmst1, checksmst2): Remove.
+	(checksmst3): Optimize handling of 3-byte struct returns.
+	(checksmst567): Properly handle 5-7 byte struct returns.
+
+2005-06-15  Rainer Orth  <ro@TechFak.Uni-Bielefeld.DE>
+
+	PR libgcj/21943
+	* src/mips/n32.S: Enforce PIC code.
+	* src/mips/o32.S: Likewise.
+
+2005-06-15  Rainer Orth  <ro@TechFak.Uni-Bielefeld.DE>
+
+	* configure.ac: Treat i*86-*-solaris2.10 and up as X86_64.
+	* configure: Regenerate.
+	
 2005-06-01  Alan Modra  <amodra@bigpond.net.au>
 
 	* src/powerpc/ppc_closure.S (ffi_closure_SYSV): Don't use JUMPTARGET
