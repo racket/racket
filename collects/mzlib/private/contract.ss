@@ -1204,8 +1204,9 @@ add struct contracts for immutable structs?
             (obj-opt->/proc (syntax (opt-> (any/c req-contracts ...) (opt-contracts ...) res-contract)))
             (generate-opt->vars (syntax (req-contracts ...))
                                 (syntax (opt-contracts ...))))]
-          [else (let-values ([(x y z) (expand-mtd-arrow mtd-stx)])
-                  (values (x y) z))]))
+          [else 
+           (let-values ([(x y z) (expand-mtd-arrow mtd-stx)])
+             (values (x y) z))]))
       
       ;; generate-opt->vars : syntax[requried contracts] syntax[optional contracts] -> syntax[list of arg specs]
       (define (generate-opt->vars req-stx opt-stx)
@@ -1224,6 +1225,9 @@ add struct contracts for immutable structs?
         (syntax-case mtd-stx (-> ->* ->d ->d* ->r ->pp ->pp-rest)
           [(->) (raise-syntax-error 'object-contract "-> must have arguments" stx mtd-stx)]
           [(-> args ...)
+           ;; this case cheats a little bit --
+           ;; (args ...) contains the right number of arguments
+           ;; to the method because it also contains one arg for the result! urgh.
            (with-syntax ([(arg-vars ...) (generate-temporaries (syntax (args ...)))])
              (values obj->/proc
                      (syntax (-> any/c args ...))
@@ -1294,39 +1298,47 @@ add struct contracts for immutable structs?
           
           [(->r ([x dom] ...) rng)
            (andmap identifier? (syntax->list (syntax (x ...))))
-           (with-syntax ([(arg-vars ...) (generate-temporaries (syntax (x ...)))])
+           (with-syntax ([(arg-vars ...) (generate-temporaries (syntax (x ...)))]
+                         [(this-var) (generate-temporaries (syntax (this-var)))]
+                         [this (datum->syntax-object mtd-stx 'this)])
              (values
               obj->r/proc
-              (syntax (->r ([_this any/c] [x dom] ...) rng))
-              (syntax ((_this arg-vars ...)))))]
+              (syntax (->r ([this any/c] [x dom] ...) rng))
+              (syntax ((this-var arg-vars ...)))))]
           
           [(->r ([x dom] ...) rest-x rest-dom rng)
            (andmap identifier? (syntax->list (syntax (x ...))))
-           (with-syntax ([(arg-vars ...) (generate-temporaries (syntax (x ...)))])
+           (with-syntax ([(arg-vars ...) (generate-temporaries (syntax (x ...)))]
+                         [(this-var) (generate-temporaries (syntax (this-var)))]
+                         [this (datum->syntax-object mtd-stx 'this)])
              (values
               obj->r/proc
-              (syntax (->r ([_this any/c] [x dom] ...) rest-x rest-dom rng))
-              (syntax ((_this arg-vars ... . rest-var)))))]
+              (syntax (->r ([this any/c] [x dom] ...) rest-x rest-dom rng))
+              (syntax ((this-var arg-vars ... . rest-var)))))]
           
           [(->r . x)
            (raise-syntax-error 'object-contract "malformed ->r declaration")]
           [(->pp ([x dom] ...) . other-stuff)
            (andmap identifier? (syntax->list (syntax (x ...))))
-           (with-syntax ([(arg-vars ...) (generate-temporaries (syntax (x ...)))])
+           (with-syntax ([(arg-vars ...) (generate-temporaries (syntax (x ...)))]
+                         [(this-var) (generate-temporaries (syntax (this-var)))]
+                         [this (datum->syntax-object mtd-stx 'this)])
              (values
               obj->pp/proc
-              (syntax (->pp ([_this any/c] [x dom] ...) . other-stuff))
-              (syntax ((_this arg-vars ...)))))]
+              (syntax (->pp ([this any/c] [x dom] ...) . other-stuff))
+              (syntax ((this-var arg-vars ...)))))]
           [(->pp . x)
            (raise-syntax-error 'object-contract "malformed ->pp declaration")]
           [(->pp-rest ([x dom] ...) rest-id . other-stuff)
            (and (identifier? (syntax id))
                 (andmap identifier? (syntax->list (syntax (x ...)))))
-           (with-syntax ([(arg-vars ...) (generate-temporaries (syntax (x ...)))])
+           (with-syntax ([(arg-vars ...) (generate-temporaries (syntax (x ...)))]
+                         [(this-var) (generate-temporaries (syntax (this-var)))]
+                         [this (datum->syntax-object mtd-stx 'this)])
              (values
               obj->pp-rest/proc
-              (syntax (->pp ([_this any/c] [x dom] ...) rest-id . other-stuff))
-              (syntax ((_this arg-vars ... . rest-id)))))]
+              (syntax (->pp ([this any/c] [x dom] ...) rest-id . other-stuff))
+              (syntax ((this-var arg-vars ... . rest-id)))))]
           [(->pp-rest . x)
            (raise-syntax-error 'object-contract "malformed ->pp-rest declaration")]
           [else (raise-syntax-error 'object-contract "unknown method contract syntax" stx mtd-stx)]))
