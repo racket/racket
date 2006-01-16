@@ -526,6 +526,7 @@
        (send old-user-box show #f)
        (send uninstall-box show #f)
        (let ([new? (equal? "" (remembered-user))])
+         (send single active-child (if new? old-user-box new-user-box))
          (send single active-child (if new? new-user-box old-user-box))
          (send tabs set-selection (if new? 0 1)))
        (activate-new)
