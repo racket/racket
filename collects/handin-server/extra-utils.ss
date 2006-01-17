@@ -341,6 +341,7 @@
                  (when coverage? (coverage-enabled #t))
                  (current-run-status "checking submission")
                  (cond
+                  [(not eval?) (let () body ...)]
                   [language
                    (let ([eval
                           (with-handlers
@@ -373,7 +374,6 @@
                                           body*1 body* (... ...))])])
                          (let () body ...))
                        (when (thread-cell-ref added-lines) (write-text))))]
-                  [(not eval?) (let () body ...)]
                   [else (error* "no language configured for submissions")])
                  output-file)
                ;; ========================================
