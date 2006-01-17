@@ -183,9 +183,13 @@
           #;((is-a?/c editor-stream-out%) . -> . void?)
           ;; Write the example to file
           (define/public (write f)
-            (send type write-to-file f)
-            (send name write-to-file f)
-            (send value write-to-file f))
+            (for-each (lambda (t)
+                        (send* t 
+                          (begin-edit-sequence)
+                          (clear-cue-text)
+                          (write-to-file f)
+                          (end-edit-sequence)))
+                      (list type name value)))
           
           #;((is-a?/c editor-stream-out%) . -> . void?)
           ;; Read the state of the example in from file
