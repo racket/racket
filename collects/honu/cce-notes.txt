@@ -1,10 +1,7 @@
 Todo:
 
 Mixin Sealing
-- environments
-  - single value->type environment (remove class-env)
-  - implement applicative environments
-- define type equality
+- move to single, applicative environment
 Test Suite Improvements
 Numeric Library
 
