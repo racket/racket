@@ -163,13 +163,13 @@
               ((drscheme:unit:get-program-editor-mixin)
                (editor:keymap-mixin text:basic%))))]
            [type (new (single-line-text-mixin program-editor%)
-                      (cue-text (string-constant profjBoxes-type))
+                      (cue-text (if copy-constructor "" (string-constant profjBoxes-type)))
                       (behavior '(on-char)))]
            [name (new (single-line-text-mixin program-editor%)
-                      (cue-text (string-constant profjBoxes-name))
+                      (cue-text (if copy-constructor "" (string-constant profjBoxes-name)))
                       (behavior '(on-char)))]
            [value (new program-editor%
-                       (cue-text (string-constant profjBoxes-value))
+                       (cue-text (if copy-constructor "" (string-constant profjBoxes-value)))
                        (behavior '(on-char)))])
           
           #;(-> (is-a?/c text%))
@@ -190,14 +190,18 @@
           #;((is-a?/c editor-stream-out%) . -> . void?)
           ;; Read the state of the example in from file
           (define/public (read-from-file f)
-            (send type read-from-file f)
-            (send name read-from-file f)
-            (send value read-from-file f))
+	    (for-each (lambda (t)
+			(send* t
+			       (begin-edit-sequence)
+			       (clear-cue-text)
+			       (read-from-file f)
+			       (end-edit-sequence)))
+		      (list type name value)))
           
           (super-new)
           
           (when copy-constructor
-            (send (send copy-constructor get-type) copy-self-to type)
+	    (send (send copy-constructor get-type) copy-self-to type)
             (send (send copy-constructor get-name) copy-self-to name)
             (send (send copy-constructor get-value) copy-self-to value))
           

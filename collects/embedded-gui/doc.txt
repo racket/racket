@@ -324,6 +324,10 @@ _cue-text%_ is (cue-text-mixin text%)
   color : string = "gray"
   behavior : (listof (symbols 'on-focus 'on-char)) = '(on-focus)
 
+> (send a-cue-text clear-cue-text)
+
+Clears the cue text, if it's still present.
+
 ============================================================
 
 The following functions are useful for working with snips

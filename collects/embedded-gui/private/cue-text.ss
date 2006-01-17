@@ -28,7 +28,7 @@
       
       #;(-> void)
       ;; Clears the cue-text if it's still there.
-      (define (clear-cue-text)
+      (define/public (clear-cue-text)
         (when first-focus?
           (set! first-focus? false)
           (erase)
