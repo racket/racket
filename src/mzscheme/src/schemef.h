@@ -780,6 +780,8 @@ MZ_EXTERN void scheme_security_check_network(const char *who, const char *host, 
 
 MZ_EXTERN struct mz_addrinfo *scheme_get_host_address(const char *address, int id, int *err, 
 						      int family, int passive, int tcp);
+MZ_EXTERN void scheme_free_host_address(struct mz_addrinfo *a);
+MZ_EXTERN const char *scheme_host_address_strerror(int errnum);
 MZ_EXTERN void scheme_getnameinfo(void *sa, int salen, 
 				  char *host, int hostlen,
 				  char *serv, int servlen);

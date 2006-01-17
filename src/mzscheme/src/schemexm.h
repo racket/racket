@@ -440,6 +440,8 @@
 #define scheme_security_check_file (scheme_extension_table->scheme_security_check_file)
 #define scheme_security_check_network (scheme_extension_table->scheme_security_check_network)
 #define scheme_get_host_address (scheme_extension_table->scheme_get_host_address)
+#define scheme_free_host_address (scheme_extension_table->scheme_free_host_address)
+#define scheme_host_address_strerror (scheme_extension_table->scheme_host_address_strerror)
 #define scheme_getnameinfo (scheme_extension_table->scheme_getnameinfo)
 #define scheme_get_port_file_descriptor (scheme_extension_table->scheme_get_port_file_descriptor)
 #define scheme_get_port_socket (scheme_extension_table->scheme_get_port_socket)
