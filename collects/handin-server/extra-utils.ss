@@ -444,8 +444,7 @@
                  "You have chosen to submit your work individually;"
                  " if you continue, it will be impossible for you to"
                  " later submit with a partner.  Are you sure you want"
-                 " to continue?"
-                 (path->string (current-directory)))
+                 " to continue?")
                 '(yes-no)))
         (make-directory "wants-single-submission")
         (error* "Aborting single submission!")))))
