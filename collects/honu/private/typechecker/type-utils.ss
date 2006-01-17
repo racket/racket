@@ -1,5 +1,6 @@
 (module type-utils mzscheme
-  (require (lib "list.ss" "srfi" "1")
+  (require (prefix srfi1: (lib "list.ss" "srfi" "1"))
+           (lib "contract.ss")
            (lib "plt-match.ss")
            "../../ast.ss"
            "../../readerr.ss"
@@ -59,7 +60,7 @@
        (if (null? args)
            "void"
            (string-append "<"
-                          (fold (lambda (t i)
+                          (srfi1:fold (lambda (t i)
                                   (string-append i ", " (printable-type t)))
                                 (printable-type (car args))
                                 (cdr args))
@@ -174,7 +175,7 @@
       (match type-entry
         [(struct tenv:type (_ supers _ _))
          (let ([super-names (map get-type-name supers)])
-           (s:member (get-type-name t2) super-names tenv-key=?))])))
+           (srfi1:s:member (get-type-name t2) super-names tenv-key=?))])))
   
   ;; is t1 a (ref-trans-closed) subtype of t2?
   (provide <:_P)
@@ -254,6 +255,13 @@
                       (<:_P t t2))
                     (tenv:type-supers type-entry))))]
       [else #f]))
+
+  (provide/contract [type-member-names (honu:type? . -> . (listof identifier?))])
+  (define (type-member-names type)
+    (let* ([entry (get-type-entry type)])
+      (map tenv:member-name
+           (append (tenv:type-members entry)
+                   (tenv:type-inherited entry)))))
   
   (provide iface-name)
   (define (iface-name type)

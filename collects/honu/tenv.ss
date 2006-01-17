@@ -135,6 +135,7 @@
             (format "Definition of ~a is not a type" (printable-key name))
             name)]
           [else entry]))))
+  
   (define (get-class-entry name)
     (let ([entry (get-tenv-entry name)])
       (cond
@@ -200,6 +201,9 @@
           value
           (fenv name))))
 
+  (define (extend-fenv-honu:formal formal fenv)
+    (extend-fenv (honu:formal-name formal) (honu:formal-type formal) fenv))
+
   (define empty-fenv (lambda (name) #f))
 
   (provide (struct tenv:entry  (stx))
@@ -241,6 +245,7 @@
                     [wrap-lenv (-> fenv?)]
                     [empty-fenv fenv?]
                     [extend-fenv (identifier? honu:type? fenv? . -> . fenv?)]
+                    [extend-fenv-honu:formal (honu:formal? fenv? . -> . fenv?)]
                     )
   
   )

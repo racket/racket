@@ -16,7 +16,8 @@
            map-two-values
            partition-first
            unique?
-           curry)
+           curry
+           false?)
   
   (define-syntax (define/p stx)
     (syntax-case stx ()
@@ -144,5 +145,8 @@
   (define (curry f . args)
     (lambda rest
       (apply f (append args rest))))
+
+  (define (false? v)
+    (eq? v #f))
   
   )

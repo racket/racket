@@ -97,13 +97,7 @@
     (match iface
       [(struct honu:iface (stx name supers members))
        (check-valid-types! "interface supertype" supers)
-       (let ([conflicting-name (get-first-non-unique-name (map (lambda (d)
-                                                                 (cond
-                                                                   [(honu:field-decl? d)
-                                                                    (honu:field-decl-name d)]
-                                                                   [(honu:method-decl? d)
-                                                                    (honu:method-decl-name d)]))
-                                                               members))])
+       (let ([conflicting-name (get-first-non-unique-name (map honu:member-decl-name members))])
          (if conflicting-name
              (raise-read-error-with-stx
               (format "Field/method name ~a used more than once"
@@ -122,30 +116,22 @@
        (check-valid-type! "class self-type" type)
        (check-valid-types! "implemented type of class" impls)
        (let ([conflicting-name (get-first-non-unique-name (append (map honu:formal-name inits)
-                                                                  (map (lambda (d)
-                                                                         (cond
-                                                                           [(honu:init-field? d)
-                                                                            (honu:init-field-name d)]
-                                                                           [(honu:field? d)
-                                                                            (honu:field-name d)]
-                                                                           [(honu:method? d)
-                                                                            (honu:method-name d)]))
-                                                                       members)))])
+                                                                  (map honu:member-defn-name members)))])
          (if conflicting-name
              (raise-read-error-with-stx
               (format "Init/field/method name ~a used more than once"
                       (printable-key conflicting-name))
               conflicting-name)))
        (check-valid-types! "init slot type" (map honu:formal-type inits))
-       (let ([cenv (srfi1:fold (lambda (a e)
+       (let ([lenv (srfi1:fold (lambda (a e)
                            (extend-fenv (honu:formal-name a)
                                         (honu:formal-type a)
                                         e))
                          (lambda (n) #f)
                          inits)])
          (let*-values ([(lenv)         (extend-fenv #'this type (wrap-lenv))]
-                       [(members cenv) (typecheck-members cenv lenv type members)])
-           (typecheck-exports cenv type impls exports)
+                       [(members lenv) (typecheck-members lenv type members)])
+           (typecheck-exports lenv type impls exports)
            (copy-struct honu:class class
              [honu:class-members members])))]))
 
@@ -160,14 +146,7 @@
                                                                         (append (tenv:type-members arg-tentry)
                                                                                 (tenv:type-inherited arg-tentry)))
                                                                    (map honu:formal-name inits)
-                                                                   (map (lambda (d)
-                                                                          (cond
-                                                                            [(honu:init-field? d)
-                                                                             (honu:init-field-name d)]
-                                                                            [(honu:field? d)
-                                                                             (honu:field-name d)]
-                                                                            [(honu:method? d)
-                                                                             (honu:method-name d)]))
+                                                                   (map honu:member-defn-name
                                                                         (append members-before
                                                                                 members-after))))])
          (if conflicting-name
@@ -188,6 +167,20 @@
               (format "Init name ~a used more than once in expected init slots"
                       (printable-key conflicting-name))
               conflicting-name)))]))
+
+  ;; check-distinct-names! : String [Listof Identifier] -> Void
+  ;; Raises an error if any of the names are the same.
+  (define (check-distinct-names! desc names)
+    (cond
+     [(check-duplicate-identifier names) =>
+      (lambda (name)
+        (raise-read-error-with-stx (format "Duplicate name ~s found in ~s." name desc) name))]
+     [else (void)]))
+  
+  ;; check-distinct-types! : String [Listof Honu:Type] -> Void
+  ;; Raises an error if any of the types are the same.
+  (define (check-distinct-types! desc types)
+    (check-distinct-names! desc (map honu:type-iface-name types)))
   
   ;; typecheck-mixin : Mixin -> Mixin
   ;; Typechecks a mixin definition and produces the annotated version.
@@ -195,29 +188,35 @@
     (match mixin
       [(struct honu:mixin (stx name type arg-type final? impls inits withs
                            supernew members-before members-after exports))
+
+       (define members (append members-before members-after))
+       (define member-names (map honu:member-defn-name members))
+       (define init-names (map honu:formal-name inits))
+       (define super-member-names (type-member-names arg-type))
+       
        (check-valid-type! "mixin argument type" arg-type)
        (check-valid-type! "mixin result type" type)
        (check-valid-types! "mixin implemented type" impls)
-       (check-mixin-internal-names! mixin)
        (check-valid-types! "init slot type" (map honu:formal-type inits))
-       (check-mixin-expected-init-names! mixin)
-       (check-valid-types! "type of expected init slot" (map honu:formal-type withs))
-       (let ([cenv (srfi1:fold (lambda (a e)
-                                 (extend-fenv (honu:formal-name a)
-                                              (honu:formal-type a)
-                                              e))
-                               empty-fenv
-                               inits)])
-         (let*-values ([(lenv)                (extend-fenv #'this type (wrap-lenv))]
-                       [(members-before cenv) (typecheck-members cenv lenv type  members-before)]
-                       [(supernew)            (typecheck-supernew cenv lenv withs supernew)]
-                       [(cenv)                (extend-cenv-with-type-members cenv arg-type)]
-                       [(members-after  cenv) (typecheck-members cenv lenv type  members-after)])
-           (typecheck-exports cenv type impls exports)
-           (copy-struct honu:mixin mixin
-             [honu:mixin-members-before members-before]
-             [honu:mixin-super-new      supernew]
-             [honu:mixin-members-after  members-after])))]))
+       (check-valid-types! "superclass init slot type" (map honu:formal-type withs))
+       (check-distinct-types! "mixin implemented types" impls)
+       (check-distinct-names! "internally visible member/init names"
+                              (append super-member-names init-names member-names))
+       (check-distinct-names! "superclass init slot names"
+                              (map honu:formal-name withs))
+
+       (let*-values ([(lenv)                (wrap-lenv)]
+                     [(lenv)                (extend-fenv #'this type lenv)]
+                     [(lenv)                (srfi1:fold extend-fenv-honu:formal lenv inits)]
+                     [(members-before lenv) (typecheck-members lenv type members-before)]
+                     [(supernew)            (typecheck-supernew lenv withs supernew)]
+                     [(lenv)                (extend-lenv-with-type-members lenv arg-type)]
+                     [(members-after lenv)  (typecheck-members lenv type members-after)])
+         (typecheck-exports lenv type impls exports)
+         (copy-struct honu:mixin mixin
+                      [honu:mixin-members-before members-before]
+                      [honu:mixin-super-new      supernew]
+                      [honu:mixin-members-after  members-after]))]))
 
   ;; typecheck-subclass : Subclass -> Subclass
   ;; Typechecks a subclass definition and produces the annotated version.

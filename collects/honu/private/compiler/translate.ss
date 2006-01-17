@@ -142,9 +142,7 @@
                                             printable-smembers)))))))))
   
   (define (translate-member-formatter member indent-delta)
-    (let ([name (if (honu:field? member)
-                    (honu:field-name member)
-                    (honu:init-field-name member))])
+    (let ([name (honu:member-defn-name member)])
       `(format "~a~a = ~a;"
                (make-string (+ indent ,indent-delta) #\space)
                (quote ,(syntax-e name))

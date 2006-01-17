@@ -56,15 +56,15 @@
   (define-honu-struct (bind-top  defn) (names types value))                      ; used for top-level definitions
   
   ;; AST nodes for member declarations (in interfaces)
-  (define-honu-struct (member-decl ast)         ())                    ; member-decl?
-  (define-honu-struct (field-decl  member-decl) (name type))           ; used for field declarations
-  (define-honu-struct (method-decl member-decl) (name type arg-types)) ; used for method declarations
+  (define-honu-struct (member-decl ast)         (name))                    ; member-decl?
+  (define-honu-struct (field-decl  member-decl) (type))           ; used for field declarations
+  (define-honu-struct (method-decl member-decl) (type arg-types)) ; used for method declarations
   
   ;; AST nodes for member definitions (in classes/mixins)
-  (define-honu-struct (member-defn ast)         ())                       ; member-defn?
-  (define-honu-struct (init-field  member-defn) (name type value))        ; used for init fields (value can be #f or expression AST)
-  (define-honu-struct (field       member-defn) (name type value))        ; used for fields (value can be #f or expression AST)
-  (define-honu-struct (method      member-defn) (name type formals body)) ; used for methods
+  (define-honu-struct (member-defn ast)         (name))              ; member-defn?
+  (define-honu-struct (init-field  member-defn) (type value))        ; used for init fields (value can be #f or expression AST)
+  (define-honu-struct (field       member-defn) (type value))        ; used for fields (value can be #f or expression AST)
+  (define-honu-struct (method      member-defn) (type formals body)) ; used for methods
   
   ;; AST node for super call (just in mixins/subclasses)
   (define-honu-struct (super-new   ast) (args))

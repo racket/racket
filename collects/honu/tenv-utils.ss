@@ -4,6 +4,7 @@
            "ast.ss"
            "parameters.ss"
            "tenv.ss"
+           "utils.ss"
            "private/typechecker/type-utils.ss"
            (lib "plt-match.ss")
            (lib "struct.ss")
@@ -20,15 +21,15 @@
         ;; can come from mdidefns
         [(honu:init-field? d)
          (make-honu:field-decl (honu:ast-stx d)
-                               (honu:init-field-name d)
+                               (honu:member-defn-name d)
                                (honu:init-field-type d))]
         [(honu:field? d)
          (make-honu:field-decl (honu:ast-stx d)
-                               (honu:field-name d)
+                               (honu:member-defn-name d)
                                (honu:field-type d))]
         [(honu:method? d)
          (make-honu:method-decl (honu:ast-stx d)
-                                (honu:method-name d)
+                                (honu:member-defn-name d)
                                 (honu:method-type d)
                                 (map honu:formal-type (honu:method-formals d)))]))
     (map convert-to-decl (append inits mfidefns)))
@@ -41,9 +42,7 @@
         ;; can come from inits
         [(honu:formal? d)      (honu:formal-name d)]
         ;; can come from mdidefns
-        [(honu:init-field? d)  (honu:init-field-name d)]
-        [(honu:field? d)       (honu:field-name d)]
-        [(honu:method? d)      (honu:method-name d)]))
+        [(honu:member-defn? d) (honu:member-defn-name d)]))
     (let ([binds (map (lambda (m)
                         (let ([name (grab-name m)])
                           (make-honu:exp-bind name name))) (append inits mdidefns members))])
@@ -418,13 +417,9 @@
                                      #f))
                    inits)
               (map (lambda (d)
-                     (if (not (honu:init-field-value d))
-                         (make-tenv:init (honu:init-field-name d)
-                                         (honu:init-field-type d)
-                                         #f)
-                         (make-tenv:init (honu:init-field-name d)
-                                         (honu:init-field-type d)
-                                         #t)))
+                     (make-tenv:init (honu:member-defn-name d)
+                                     (honu:init-field-type d)
+                                     (not (false? (honu:init-field-value d)))))
                    init-fields))))
 
   (define (generate-subclass-tenv defn)

@@ -106,7 +106,7 @@
         [(null? members) (values (reverse results) env)]
         [(honu:method? (car members))
          (let-values ([(methods remaining) (span honu:method? members)])
-           (let ([env (append (map honu:method-name methods) env)])
+           (let ([env (append (map honu:member-defn-name methods) env)])
              (loop remaining
                    env
                    ;; reverse is here just to keep the order
@@ -115,9 +115,7 @@
                                          members))
                            results))))]
         [else
-         (let ([name (if (honu:field? (car members))
-                         (honu:field-name (car members))
-                         (honu:init-field-name (car members)))])
+         (let ([name (honu:member-defn-name (car members))])
            (loop (cdr members)
                  (cons name env)
                  (cons (convert-static-member (car members) env) results)))])))

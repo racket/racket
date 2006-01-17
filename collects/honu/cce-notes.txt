@@ -1,8 +1,12 @@
 Todo:
 
-mixin sealing
-improve test suite
-numeric functionality
+Mixin Sealing
+- environments
+  - single value->type environment (remove class-env)
+  - implement applicative environments
+- define type equality
+Test Suite Improvements
+Numeric Library
 
 ------------------------------------------------------------
 

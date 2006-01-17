@@ -328,7 +328,7 @@
                (raise-honu-type-error stx ctype ret-type))))]
       [(struct honu:member (stx 'my _ name _))
        (cond
-         [((current-class-environment) name)
+         [(lenv name)
           =>
           (lambda (t)
             (if (honu:type-disp? t)
