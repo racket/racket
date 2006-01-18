@@ -46,6 +46,59 @@
          #`(begin
              (define INSPECTOR-VAR INSPECTOR-EXPR)
              #,(build-define-struct #'STRUCT #'INSPECTOR-VAR) ...))]))
+
+  (define-syntax (define-structs/provide stx)
+
+    (define (build-define-struct struct-stx var-stx)
+      (syntax-case struct-stx ()
+        [(NAME (FIELD ...) STRUCT ...)
+         #`(begin
+             (define-struct NAME (FIELD ...) #,var-stx)
+             #,(build-define-struct #'STRUCT var-stx) ...)]))
+
+    (define (build-provide struct-stx)
+      (syntax-case struct-stx ()
+        [(NAME (FIELD ...) STRUCT ...)
+         #`(begin
+             (provide (struct NAME (FIELD ...)))
+             #,(build-provide #'STRUCT) ...)]))
+    
+    (syntax-case stx ()
+      [(_ INSPECTOR-EXPR STRUCT ...)
+       (with-syntax ([(INSPECTOR-VAR) (generate-temporaries #'(INSPECTOR-EXPR))])
+         #`(begin
+             (define INSPECTOR-VAR INSPECTOR-EXPR)
+             #,(build-define-struct #'STRUCT #'INSPECTOR-VAR) ...
+             #,(build-provide #'STRUCT) ...))]))
+
+  (define-syntax (define-structs/provide/contract stx)
+
+    (define (build-define-struct struct-stx var-stx)
+      (syntax-case struct-stx ()
+        [(NAME ([FIELD CONTRACT] ...) STRUCT ...)
+         #`(begin
+             (define-struct NAME (FIELD ...) #,var-stx)
+             #,(build-define-struct #'STRUCT var-stx) ...)]))
+
+    (define (build-provide/contract struct-stx parent-fields)
+      (syntax-case struct-stx ()
+        [(NAME ([FIELD CONTRACT-EXPR] ...) STRUCT ...)
+         (with-syntax ([(PARENT-FIELD ...) parent-fields]
+                       [(CONTRACT-VAR ...) (generate-temporaries #'(CONTRACT-EXPR ...))]
+                       [FIELDS #'(PARENT-FIELD ... [FIELD CONTRACT-VAR] ...)])
+           #`(begin
+               (define CONTRACT-VAR CONTRACT-EXPR) ...
+               (provide/contract
+                (struct NAME FIELDS))
+               #,(build-provide #'STRUCT #'FIELDS) ...))]))
+    
+    (syntax-case stx ()
+      [(_ INSPECTOR-EXPR STRUCT ...)
+       (with-syntax ([(INSPECTOR-VAR) (generate-temporaries #'(INSPECTOR-EXPR))])
+         #`(begin
+             (define INSPECTOR-VAR INSPECTOR-EXPR)
+             #,(build-define-struct #'STRUCT #'INSPECTOR-VAR) ...
+             #,(build-provide/contract #'STRUCT #'()) ...))]))
   
   (define-syntax (define-structs/provide stx)
     (syntax-case stx ()
