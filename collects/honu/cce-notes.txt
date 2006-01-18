@@ -1,5 +1,9 @@
 Todo:
 
+AST
+- changed names in ast.ss, propagate to everywhere else
+- added (some) contracts; add the rest and verify what's there
+- finish writing, and use, define-structs[/provide[/contract]]
 Mixin Sealing
 - move to single, applicative environment
 Test Suite Improvements

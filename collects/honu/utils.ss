@@ -1,69 +1,17 @@
 (module utils mzscheme
 
-  (require (lib "contract.ss")
-           (prefix srfi1: (lib "list.ss" "srfi" "1"))
+  (require (prefix srfi1: (lib "list.ss" "srfi" "1"))
            (lib "list.ss"))
 
-  (require-for-template (lib "contract.ss"))
-
-  (provide define-struct/c
-           define-struct/p
-           define/c
-           define/p
-           fold-with-rest
+  (provide fold-with-rest
            get-first-non-unique-name
            map-and-fold
            map-two-values
+           map-values
            partition-first
            unique?
            curry
            false?)
-  
-  (define-syntax (define/p stx)
-    (syntax-case stx ()
-      [(_ (NAME . ARGS) BODY ...)
-       #`(begin
-           (define (NAME . ARGS) BODY ...)
-           (provide NAME))]
-      [(_ NAME BODY ...)
-       #`(begin
-           (define NAME BODY ...)
-           (provide NAME))]
-      ))
-
-  (define-syntax (define/c stx)
-    (syntax-case stx ()
-      [(_ (NAME . ARGS) CONTRACT BODY ...)
-       #`(begin
-           (define (NAME . ARGS) BODY ...)
-           (provide/contract [NAME CONTRACT]))]
-      [(_ NAME CONTRACT BODY ...)
-       #`(begin
-           (define NAME BODY ...)
-           (provide/contract [NAME CONTRACT]))]
-      ))
-
-  (define-syntax (define-struct/p stx)
-    (syntax-case stx ()
-      [(_ (NAME SUPER) (FIELD ...) REST ...)
-       #`(begin
-           (define-struct (NAME SUPER) (FIELD ...) REST ...)
-           (provide (struct NAME (FIELD ...))))]
-      [(_ NAME (FIELD ...) REST ...)
-       #`(begin
-           (define-struct NAME (FIELD ...) REST ...)
-           (provide (struct NAME (FIELD ...))))]))
-
-  (define-syntax (define-struct/c stx)
-    (syntax-case stx ()
-      [(_ (NAME SUPER) ([FIELD CONTRACT] ...) REST ...)
-       #`(begin
-           (define-struct (NAME SUPER) (FIELD ...) REST ...)
-           (provide/contract (struct NAME ([FIELD CONTRACT] ...))))]
-      [(_ NAME ([FIELD CONTRACT] ...) REST ...)
-       #`(begin
-           (define-struct NAME (FIELD ...) REST ...)
-           (provide/contract (struct NAME ([FIELD CONTRACT] ...))))]))
 
   (define (map-values-rev-accs f lists accs)
     (cond [(andmap empty? lists) (apply values (map reverse accs))]
@@ -71,7 +19,7 @@
           [else (call-with-values (lambda () (apply f (map first lists)))
                   (lambda vs (map-values-rev-accs f (map rest lists) (map cons vs accs))))]))
   
-  (define/p (map-values f . lists)
+  (define (map-values f . lists)
     (cond [(empty? lists) (error 'map-values "expects 1 or more input lists")]
           [(ormap empty? lists) (error 'map-values "expects non-empty lists")]
           [else
