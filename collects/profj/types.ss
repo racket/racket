@@ -386,6 +386,7 @@
                               (let ((back-path (reverse path)))
                                 (search-for-record key (car back-path)
                                                    (reverse (cdr back-path)) (lambda () #f) fail)))))))
+            ;(printf "key ~a key-path ~a path ~a location ~a ~n" key key-path path location)
             ;(printf "get-class-record: ~a~n" ctype)
             ;(hash-table-for-each records (lambda (k v) (printf "~a -> ~a~n" k v)))
             (cond
@@ -456,9 +457,10 @@
       
       ;lookup-path: string ( -> 'a) -> (U (list string) #f)
       (define/public (lookup-path class fail)
+        ;(printf "class ~a location ~a~n" class location)
         ;(printf "lookup ~a~n" class)
-        ;(hash-table-for-each (hash-table-get class-environment location)
-        ;                    (lambda (k v) (printf "~a -> ~a~n" k v)))
+        #;(hash-table-for-each (hash-table-get class-environment location)
+                            (lambda (k v) (printf "~a -> ~a~n" k v)))
         (if location
             (hash-table-get (hash-table-get class-environment 
                                             location 
@@ -666,18 +668,7 @@
                                                   #f)))
             (with-handlers ((exn? (lambda (e) (fail))))
               (expand mod-syntax))
-            (set-scheme-record-provides! mod-ref (cons var (scheme-record-provides mod-ref))))
-                                    
-          #;(let ((old-namespace (current-namespace)))
-           (current-namespace (make-namespace))
-           (namespace-require (generate-require-spec (java-name->scheme (scheme-record-name mod-ref))
-                                                     (scheme-record-path mod-ref)))
-           (begin
-             (namespace-variable-value var #t  (lambda () 
-                                                 (current-namespace old-namespace)
-                                                 (fail)))
-             (set-scheme-record-provides! mod-ref (cons var (scheme-record-provides mod-ref)))
-             (current-namespace old-namespace))))))
+            (set-scheme-record-provides! mod-ref (cons var (scheme-record-provides mod-ref)))))))
           
   ;generate-require-spec: string (list string) -> (U string (list symbol string+))
   (define (generate-require-spec name path)
@@ -697,7 +688,7 @@
       ((regexp-match "[a-zA-Z0-9]+Set$" name)
        (java-name->scheme (regexp-replace "Set$" name "!")))
       ((regexp-match "[a-zA-Z0-9]+Obj$" name)
-       (java-name->scheme (regexp-replace "Obj%" name "%")))
+       (java-name->scheme (regexp-replace "Obj$" name "%")))
       ((regexp-match "[a-z0-9]+->[A-Z]" name) =>
        (lambda (substring)
          (let ((char (car (regexp-match "[A-Z]" (car substring)))))
@@ -791,7 +782,18 @@
                  (class-record-modifiers r)
                  (class-record-object? r)
                  (map field->list (class-record-fields r))
-                 (map method->list (filter (compose not method-record-override) (class-record-methods r)))
+                 (map method->list 
+                      (let* ((kept-overrides null)
+                            (methods
+                             (filter 
+                              (compose not
+                                       (lambda (meth-rec) 
+                                         (and (method-record-override meth-rec)
+                                              (or (equal? (method-record-modifiers meth-rec)
+                                                          (method-record-modifiers (method-record-override meth-rec)))
+                                                  (not (set! kept-overrides (cons (method-record-override meth-rec) kept-overrides)))))))
+                              (class-record-methods r))))
+                        (filter (compose not (lambda (m) (memq m kept-overrides))) methods)))
                  (map inner->list (class-record-inners r))
                  (class-record-parents r)
                  (class-record-ifaces r)

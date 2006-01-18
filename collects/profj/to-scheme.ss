@@ -477,7 +477,8 @@
           (old-parent-name (parent-name))
           (old-inner-class (inner-class))
           (old-override-table (class-override-table)))
-      (unless (> depth 0) (loc (def-file class)))
+      (unless (> depth 0)
+        (loc (def-file class)) (send type-recs set-location! (loc)))
       (when (> depth 0) (inner-class #t))
       
       (let*-values (((header) (def-header class))
@@ -525,12 +526,15 @@
                                                                   (accesses-protected methods))
                                                           overridden-methods))
                #;(dynamic-method-defs (generate-dyn-method-defs names-for-dynamic))
+               ;(p~ (printf "about to call class-record-methods : ~a ~a ~n" (class-name) (string? (class-name))))
                (wrapper-classes (append (generate-wrappers (class-name)
                                                            (parent-name)
                                                            (filter
                                                             (lambda (m) (not (or (private? (method-record-modifiers m))
                                                                                  (static? (method-record-modifiers m)))))
-                                                            (class-record-methods (send type-recs get-class-record (list (class-name)))))
+                                                            (begin0
+                                                              (class-record-methods (send type-recs get-class-record (list (class-name))))
+                                                              #;(printf "finished class-record-methods~n")))
                                                            (append (accesses-public fields) (accesses-package fields)
                                                                    (accesses-protected fields)))
                                         (generate-contract-defs (class-name))))
@@ -784,9 +788,10 @@
                      (let* ((field-name (id-string (field-name field)))
                             (value `(,(create-get-name field-name) wrapped-obj)))
                        `(,(build-identifier (build-var-name field-name))
-                          ,(convert-value (if from-dynamic? (assert-value value (field-type field) #t 'field field-name) value)
-                                          (field-type field)
-                                          from-dynamic?))))
+                          ,(convert-value 
+                            (if from-dynamic? (assert-value value (field-type field) #t 'field field-name) value)
+                            (field-type field)
+                            from-dynamic?))))
                    fields)))
   
   ;generate-wrapper-methods: (list method-record) boolean boolean -> (list sexp)
@@ -1389,9 +1394,9 @@
                                         (let ((normal-get (class-field-accessor ,class ,quote-name))
                                               (dyn-get (class-field-accessor ,ca-class ,quote-name)))
                                           (lambda (obj)
-                                            (if (is-a? obj ,class)
-                                                (normal-get obj)
-                                                (dyn-get obj)))))
+                                            (cond
+                                              ((is-a? obj ,class) (normal-get obj))
+                                              ((is-a? obj ,ca-class) (dyn-get obj))))))
                                      #f)
                         (if (not final)
                             (list 
@@ -1836,6 +1841,7 @@
          ((double float) '(c:and/c number? (c:union inexact? integer?)))
          ((boolean) 'boolean?)
          ((char) 'char?)
+         ((null) 'null?)
          ((string String) 
           (if from-dynamic?
               `string?

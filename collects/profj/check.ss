@@ -2225,7 +2225,7 @@
             (if inner-lookup?
                 (inner-rec-record inner-lookup?)
                 (get-record (send type-recs get-class-record type c-class) type-recs)))
-           (p (when (null? class-record) (printf "~a~n" type)))
+           ;(p (when (null? class-record) (print-struct #t) (printf "~a~n" type)))
            (methods (get-method-records (id-string (name-id name)) class-record type-recs)))
       (unless (or (equal? (car (class-record-name class-record)) (ref-type-class/iface type)))
         (set-id-string! (name-id name) (car (class-record-name class-record)))

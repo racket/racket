@@ -40,12 +40,13 @@
          (let-values  (((path-base file dir?) (split-path (path->complete-path (build-path name)))))
            (let ((compiled-path (build-path path-base "compiled" (path-replace-suffix file ".zo")))
                  (type-path (build-path path-base "compiled" (path-replace-suffix file ".jinfo"))))
-             (unless #f #;(and (and (file-exists? compiled-path)
-                                    (> (file-or-directory-modify-seconds compiled-path)
-                                       (file-or-directory-modify-seconds (build-path name))))
-                               (and (file-exists? type-path)
-                                    (read-record type-path)
-                                    (file-exists? compiled-path)))
+             (unless 
+                 (and (file-exists? compiled-path)
+                      (file-exists? type-path)
+                      (equal? (version) (call-with-input-file compiled-path get-version))
+                      (read-record type-path)
+                      (> (file-or-directory-modify-seconds compiled-path)
+                         (file-or-directory-modify-seconds (build-path name))))
                (call-with-input-file name (lambda (port) (compile-to-file port name level)))))))
         ((eq? dest 'file)
          (compile-to-file port loc level))
@@ -79,7 +80,9 @@
                   (let ((names (compilation-unit-contains dependents))
                         (syntaxes (compilation-unit-code dependents))
                         (locations (compilation-unit-locations dependents)))
+                    ;(print-struct #t)
                     ;(printf "names ~a~n" names)
+                    ;(printf "depends ~a~n~n" (compilation-unit-depends dependents))
                     (unless (= (length names) (length syntaxes))
                       ;(printf "Writing a composite file out~n")
                       ;(printf "~a~n~n" (syntax-object->datum (car syntaxes)))
@@ -308,5 +311,18 @@
           (main (list (contains-main? (def-members (car main-class)))
                       (id-string (header-id (def-header (car main-class)))))))))
     
+  ;Extracts the version from a .zo file. Will probably blow up on anything else.
+  ;get-version port -> string
+  (define (get-version port)
+    (let get-to-count ((n 0))
+      (unless (= n 2)
+        (read-bytes 1 port)
+        (get-to-count (add1 n))))
+    (let ((count (bytes-ref (read-bytes 1 port) 0)))
+      (list->string (let loop ((c count))
+                      (if (= c 0)
+                          null
+                          (cons (read-char port)
+                                (loop (sub1 c))))))))
   )
 

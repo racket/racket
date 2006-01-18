@@ -52,10 +52,6 @@
                           (if (or (not local?) profj-lib? htdch-lib? scheme-lib? (to-file))
                               (string-append n ".ss")
                               (string->symbol n))))))
-      #;(when (or htdch-lib? (equal? name "Image"))
-        (printf "build-require : class ~a path ~a ~a~n" name path (access (make-name))))
-      #;(printf "build-req of ~a profj-lib? ~a htdch-lib? ~a scheme-lib? ~a ~n"
-              (make-name) profj-lib? htdch-lib? scheme-lib?)
       (if scheme?
           (list (syn `(prefix ,(string->symbol
                                 (apply string-append
@@ -96,8 +92,6 @@
                            (import-file (car (package-imports prog)))))))
       (set-package-defs! prog defs)
 
-      ;(printf "~a~n" lang)
-      
       ;Add lang to local environment
       (for-each (lambda (class) (send type-recs add-to-env class lang-pack current-loc)) lang)
       (for-each (lambda (class) (send type-recs add-class-req (cons class lang-pack) #f current-loc)) lang)
@@ -187,6 +181,7 @@
       (send type-recs add-to-records 
             (cons (if (eq? (def-kind def) 'statement) unique-name (id-string (def-name def))) pname)
             record)
+      ;(printf "~a~n" unique-name)
       (send type-recs add-to-env unique-name pname current-loc)
       (class-name #f)
       record))
@@ -506,12 +501,13 @@
                                        (make-req (car name-list) 
                                                  (send type-recs lookup-path (car name-list) (lambda () null)))
                                        (make-req (car name-list) (cdr name-list))))
-                                 (cons super-name (map name->list (header-implements info))))))
+                                 (cons super-name (map name->list (header-implements info)))))
+                      (old-loc (send type-recs get-location)))
                  
                  (set! reqs
                        (remove-dup-reqs
                         (append (get-method-reqs (class-record-methods super-record))
-                                reqs)))                                                
+                                reqs)))
                  (send type-recs set-location! (def-file class))
                  (set-def-uses! class reqs)
                  
@@ -572,7 +568,7 @@
                                           members
                                           level
                                           type-recs)
-
+                   
                    (let ((record
                           (make-class-record 
                            cname
@@ -602,6 +598,7 @@
                                  (when (def? member)
                                    (process-class/iface member package-name type-recs #f put-in-table? level)))
                                members)
+                     (send type-recs set-location! old-loc)
                      
                      record))))))
         (cond
@@ -717,7 +714,8 @@
                       (object-methods (class-record-methods (send type-recs get-class-record object-type)))
                       (members (def-members iface))
                       (reqs (map (lambda (name-list) (make-req (car name-list) (cdr name-list)))
-                                 super-names)))
+                                 super-names))
+                      (old-loc (send type-recs get-location)))
                  (send type-recs set-location! (def-file iface))
                  (set-def-uses! iface reqs)                 
                  
@@ -754,6 +752,7 @@
                                                (map class-record-parents super-records)))
                            null)))
                      (send type-recs add-class-record record)
+                     (send type-recs set-location! old-loc)
                      record))))))
         (if look-in-table?
             (get-record (send type-recs get-class-record iname #f build-record) type-recs)
@@ -1623,7 +1622,7 @@
                       (if (eq? level 'full)
                           (format 
                            "Method ~a in ~a attempts to override final method from ~a, final methods may not be overridden"
-                           m-name (car class) parent)
+                           m-name (car class) (if (list? parent) (car parent) parent))
                           (format "Method ~a from ~a cannot be overridden in ~a" m-name parent (car class))))
                      ((static)
                       (format "Method ~a in ~a attempts to override static method from ~a, which is not allowed"
