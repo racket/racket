@@ -1,7 +1,8 @@
 (module utils mzscheme
 
   (require (prefix srfi1: (lib "list.ss" "srfi" "1"))
-           (lib "list.ss"))
+           (lib "list.ss")
+           "contract.ss")
 
   (provide fold-with-rest
            get-first-non-unique-name
@@ -11,7 +12,9 @@
            partition-first
            unique?
            curry
-           false?)
+           false?
+           define/c
+           define/p)
 
   (define (map-values-rev-accs f lists accs)
     (cond [(andmap empty? lists) (apply values (map reverse accs))]

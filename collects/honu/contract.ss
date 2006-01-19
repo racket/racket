@@ -7,7 +7,7 @@
 
   ;; Macro definitions
   
-  (define-syntax (define/provide stx)
+  (define-syntax (define/p stx)
     (syntax-case stx ()
       [(_ (NAME . ARGS) BODY ...)
        #`(begin
@@ -19,7 +19,7 @@
            (provide NAME))]
       ))
 
-  (define-syntax (define/provide/contract stx)
+  (define-syntax (define/c stx)
     (syntax-case stx ()
       [(_ (NAME . ARGS) CONTRACT BODY ...)
        #`(begin
@@ -31,97 +31,39 @@
            (provide/contract [NAME CONTRACT]))]
       ))
 
-  (define-syntax (define-structs stx)
-
-    (define (build-define-struct struct-stx var-stx)
-      (syntax-case struct-stx ()
-        [(NAME (FIELD ...) STRUCT ...)
-         #`(begin
-             (define-struct NAME (FIELD ...) #,var-stx)
-             #,(build-define-struct #'STRUCT var-stx) ...)]))
-    
-    (syntax-case stx ()
-      [(_ INSPECTOR-EXPR STRUCT ...)
-       (with-syntax ([(INSPECTOR-VAR) (generate-temporaries #'(INSPECTOR-EXPR))])
-         #`(begin
-             (define INSPECTOR-VAR INSPECTOR-EXPR)
-             #,(build-define-struct #'STRUCT #'INSPECTOR-VAR) ...))]))
-
-  (define-syntax (define-structs/provide stx)
-
-    (define (build-define-struct struct-stx var-stx)
-      (syntax-case struct-stx ()
-        [(NAME (FIELD ...) STRUCT ...)
-         #`(begin
-             (define-struct NAME (FIELD ...) #,var-stx)
-             #,(build-define-struct #'STRUCT var-stx) ...)]))
-
-    (define (build-provide struct-stx)
-      (syntax-case struct-stx ()
-        [(NAME (FIELD ...) STRUCT ...)
-         #`(begin
-             (provide (struct NAME (FIELD ...)))
-             #,(build-provide #'STRUCT) ...)]))
-    
-    (syntax-case stx ()
-      [(_ INSPECTOR-EXPR STRUCT ...)
-       (with-syntax ([(INSPECTOR-VAR) (generate-temporaries #'(INSPECTOR-EXPR))])
-         #`(begin
-             (define INSPECTOR-VAR INSPECTOR-EXPR)
-             #,(build-define-struct #'STRUCT #'INSPECTOR-VAR) ...
-             #,(build-provide #'STRUCT) ...))]))
-
   (define-syntax (define-structs/provide/contract stx)
 
-    (define (build-define-struct struct-stx var-stx)
-      (syntax-case struct-stx ()
-        [(NAME ([FIELD CONTRACT] ...) STRUCT ...)
-         #`(begin
-             (define-struct NAME (FIELD ...) #,var-stx)
-             #,(build-define-struct #'STRUCT var-stx) ...)]))
+    (define inspector-var
+      (with-syntax ([(VAR) (generate-temporaries #'(inspector))]) #'VAR))
 
-    (define (build-provide/contract struct-stx parent-fields)
-      (syntax-case struct-stx ()
-        [(NAME ([FIELD CONTRACT-EXPR] ...) STRUCT ...)
-         (with-syntax ([(PARENT-FIELD ...) parent-fields]
-                       [(CONTRACT-VAR ...) (generate-temporaries #'(CONTRACT-EXPR ...))]
-                       [FIELDS #'(PARENT-FIELD ... [FIELD CONTRACT-VAR] ...)])
-           #`(begin
-               (define CONTRACT-VAR CONTRACT-EXPR) ...
-               (provide/contract
-                (struct NAME FIELDS))
-               #,(build-provide #'STRUCT #'FIELDS) ...))]))
+    (define (build-define-struct spec-stx)
+      (syntax-case spec-stx ()
+        [(NAME ([FIELD CONTRACT] ...) SPEC ...)
+         #`(begin
+             (define-struct NAME (FIELD ...) #,inspector-var)
+             #,@(map build-define-struct (syntax->list #'(SPEC ...))))]))
+
+    (define (build-provide/contract parent inherit)
+      (lambda (spec-stx)
+        (syntax-case spec-stx ()
+          [(NAME ([FIELD CONTRACT] ...) SPEC ...)
+           (with-syntax ([(CONTRACT-VAR ...) (generate-temporaries #'(CONTRACT ...))]
+                         [(INHERIT ...) inherit])
+             (with-syntax ([(CURRENT ...) #'(INHERIT ... [FIELD CONTRACT-VAR] ...)])
+               #`(begin
+                   (provide/contract
+                    (struct #,(if parent #`(NAME #,parent) #'NAME) (CURRENT ...)))
+                   #,@(map (build-provide/contract #'NAME #'(CURRENT ...))
+                           (syntax->list #'(SPEC ...))))))])))
     
     (syntax-case stx ()
-      [(_ INSPECTOR-EXPR STRUCT ...)
-       (with-syntax ([(INSPECTOR-VAR) (generate-temporaries #'(INSPECTOR-EXPR))])
+      [(_ INSPECTOR SPEC ...)
+       (let* ([specs (syntax->list #'(SPEC ...))])
          #`(begin
-             (define INSPECTOR-VAR INSPECTOR-EXPR)
-             #,(build-define-struct #'STRUCT #'INSPECTOR-VAR) ...
-             #,(build-provide/contract #'STRUCT #'()) ...))]))
+             (define #,inspector-var INSPECTOR)
+             #,@(map build-define-struct specs)
+             #,@(map (build-provide/contract #f #'()) specs)))]))
   
-  (define-syntax (define-structs/provide stx)
-    (syntax-case stx ()
-      [(_ (NAME SUPER) (FIELD ...) REST ...)
-       #`(begin
-           (define-struct (NAME SUPER) (FIELD ...) REST ...)
-           (provide (struct NAME (FIELD ...))))]
-      [(_ NAME (FIELD ...) REST ...)
-       #`(begin
-           (define-struct NAME (FIELD ...) REST ...)
-           (provide (struct NAME (FIELD ...))))]))
-
-  (define-syntax (define-structs/provide/contract stx)
-    (syntax-case stx ()
-      [(_ (NAME SUPER) ([FIELD CONTRACT] ...) REST ...)
-       #`(begin
-           (define-struct (NAME SUPER) (FIELD ...) REST ...)
-           (provide/contract (struct NAME ([FIELD CONTRACT] ...))))]
-      [(_ NAME ([FIELD CONTRACT] ...) REST ...)
-       #`(begin
-           (define-struct NAME (FIELD ...) REST ...)
-           (provide/contract (struct NAME ([FIELD CONTRACT] ...))))]))
-
   ;; Value definitions
 
   ;; unknown/c : FlatContract
@@ -148,9 +90,8 @@
   
   (provide
    define/p
-   define/p/c
-   define-struct/p
-   define-struct/p/c
+   define/c
+   define-structs/provide/contract
    )
 
   ;; Value exports
