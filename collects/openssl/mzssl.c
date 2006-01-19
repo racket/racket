@@ -1061,7 +1061,7 @@ static Scheme_Object *ssl_connect(int argc, Scheme_Object *argv[])
   addr = scheme_get_host_address(address, nport, &err, -1, 0, 1);
   if (!addr) {
     sock = INVALID_SOCKET;
-    errstr = gai_strerror(err);
+    errstr = scheme_host_address_strerror(err);
     err = 0;
     goto clean_up_and_die;
   }
@@ -1079,7 +1079,7 @@ static Scheme_Object *ssl_connect(int argc, Scheme_Object *argv[])
 #endif
   
   status = connect(sock, (struct sockaddr *)addr->ai_addr, addr->ai_addrlen);
-  freeaddrinfo(addr);
+  scheme_free_host_address(addr);
 
   /* here's the complicated bit */
   if (status) {
@@ -1234,7 +1234,7 @@ ssl_listen(int argc, Scheme_Object *argv[])
 	      l->mref = mref;
 	    }
 
-	    freeaddrinfo(tcp_listen_addr);
+	    scheme_free_host_address(tcp_listen_addr);
 	    
 	    return (Scheme_Object *)l;
 	  }
@@ -1243,9 +1243,9 @@ ssl_listen(int argc, Scheme_Object *argv[])
 	errid = SOCK_ERRNO();
 
 	closesocket(s);
-	freeaddrinfo(tcp_listen_addr);
+	scheme_free_host_address(tcp_listen_addr);
       } else {
-	freeaddrinfo(tcp_listen_addr);
+	scheme_free_host_address(tcp_listen_addr);
 	errid = SOCK_ERRNO();
       }
     } else {

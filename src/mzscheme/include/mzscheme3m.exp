@@ -397,6 +397,8 @@ scheme_add_fd_eventmask
 scheme_security_check_file
 scheme_security_check_network
 scheme_get_host_address
+scheme_free_host_address
+scheme_host_address_strerror
 scheme_get_port_file_descriptor
 scheme_get_port_socket
 scheme_set_type_printer

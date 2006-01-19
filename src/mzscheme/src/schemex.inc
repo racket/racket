@@ -439,6 +439,8 @@
   scheme_extension_table->scheme_security_check_file = scheme_security_check_file;
   scheme_extension_table->scheme_security_check_network = scheme_security_check_network;
   scheme_extension_table->scheme_get_host_address = scheme_get_host_address;
+  scheme_extension_table->scheme_free_host_address = scheme_free_host_address;
+  scheme_extension_table->scheme_host_address_strerror = scheme_host_address_strerror;
   scheme_extension_table->scheme_get_port_file_descriptor = scheme_get_port_file_descriptor;
   scheme_extension_table->scheme_get_port_socket = scheme_get_port_socket;
   scheme_extension_table->scheme_set_type_printer = scheme_set_type_printer;

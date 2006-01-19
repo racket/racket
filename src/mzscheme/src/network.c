@@ -738,6 +738,16 @@ struct addrinfo *scheme_get_host_address(const char *address, int id, int *err,
   else
     return NULL;
 }
+
+void scheme_free_host_address(struct addrinfo *a)
+{
+  freeaddrinfo(a);
+}
+
+const char *scheme_host_address_strerror(int errnum)
+{
+  return gai_strerror(errnum);
+}
 #endif
 
 /******************************* WinSock ***********************************/
@@ -1543,10 +1553,12 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
 {
   char * volatile address = "", * volatile src_address, * volatile errmsg = "";
   unsigned short origid, id, src_origid, src_id;
-  int errpart = 0, errid = 0, nameerr = 0, no_local_spec;
+  int errpart = 0, errid = 0;
+  volatile int nameerr = 0, no_local_spec;
   Scheme_Object *bs, *src_bs;
 #ifdef USE_SOCKETS_TCP
-  GC_CAN_IGNORE struct addrinfo *tcp_connect_dest, *tcp_connect_src;
+  GC_CAN_IGNORE struct addrinfo *tcp_connect_dest;
+  GC_CAN_IGNORE struct addrinfo * volatile tcp_connect_src;
 #endif
 
   if (!SCHEME_CHAR_STRINGP(argv[0]))
@@ -1606,7 +1618,7 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
     else
       tcp_connect_src = scheme_get_host_address(src_address, src_id, &errid, -1, 1, 1);
     if (no_local_spec || tcp_connect_src) {
-      GC_CAN_IGNORE struct addrinfo *addr;
+      GC_CAN_IGNORE struct addrinfo * volatile addr;
       for (addr = tcp_connect_dest; addr; addr = addr->ai_next) {
 	tcp_t s;
 	s = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
