@@ -437,7 +437,7 @@
        (lambda (str info) (check-field str (cadr info) (car info) (caddr info)))
        (cdr new-data) EXTRA-FIELDS)
       (LOG "change info for ~a ~s -> ~s"
-           (car usernames) new-data (car user-datas))
+           (car usernames) (car user-datas) new-data)
       (put-user-data (car usernames) new-data)))
 
   (define (get-user-info data)
