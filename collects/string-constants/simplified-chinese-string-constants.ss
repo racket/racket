@@ -112,7 +112,7 @@
   (cs-status-coloring-program "语法检查：用颜色标注表达式")
   (cs-status-eval-compile-time "语法检查：编译时eval")
   (cs-status-expanding-expression "语法检查：扩展表达式")
-  (cs-mouse-over-import "绑定~s为由~s导入")
+  (cs-mouse-over-import "绑定~s由~s导入")
   
   (cs-lexical-variable "词汇变量")
   (cs-imported-variable "导入变量")
@@ -925,6 +925,7 @@
   (stepper-next "下一步 >")
   (stepper-next-application "调用 >|")
   
+  (debug-tool-button-name "调试")
   
   (dialog-back "后退")
   
