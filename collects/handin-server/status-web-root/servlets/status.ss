@@ -180,7 +180,8 @@
 			  [bm (regexp-match re:base b)])
 		      (if (and am bm
 			       (string=? (cadr am) (cadr bm)))
-			  (< (string->number (caddr am)) (string->number (caddr bm)))
+			  (or (< (string->number (caddr am)) (string->number (caddr bm)))
+                              (string<? a b))
 			  (string<? a b)))))]
 	      [user (get-status status 'user (lambda () "???"))])
 	  (let ([next
