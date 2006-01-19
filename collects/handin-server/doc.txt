@@ -717,9 +717,11 @@ Keywords for configuring `check:':
   null -- no teachpacks.
 
 * :create-text? -- if true, then a textual version of the submission
-  is saved as `text.scm' in a `grading' subdirectory.  This is
-  intended for printouts and grading, and is in a subdirectory so
-  students will not see it on the status web server.  Defaults to #t.
+  is saved as "text.scm" in a "grading" subdirectory (or any suffix
+  that is specified by :output below, for example "hw.java" is
+  converted into a textual "grading/text.java").  This is intended for
+  printouts and grading, and is in a subdirectory so students will not
+  see it on the status web server.  Defaults to #t.
 
 * :textualize? -- if true, then all submissions are converted to text,
   trying to convert objects like comment boxes and test cases to some
@@ -731,7 +733,18 @@ Keywords for configuring `check:':
   to 79.  This feature can be disabled if set to #f.
 
 * :output -- the name of the original handin file (unrelated to the
-  text-converted files).  Defaults to "hw.scm".
+  text-converted files).  Defaults to "hw.scm".  (The suffix changes
+  the defaults of the following two entries.)
+
+* :markup-prefix -- used as the prefix for :student-lines and
+  :extra-lines below.  The default is ";;> " or "//> ", depending on
+  the suffix of :output above.  (Note: if you change this, make sure
+  to change :prefix-re too.)
+
+* :prefix-re -- used to identify lines with markup (";>" or "//>"
+  etc), so students cannot fool the system by writing marked-up code.
+  The default is ";>" or "//>", depending on the suffix of :output
+  above.
 
 * :student-line -- when a submission is converted to text, it begins
   with lines describing the students that have submitted it; this is
@@ -739,11 +752,12 @@ Keywords for configuring `check:':
   holes that that `user-substs' (see below) fills out.  The default is
   "Student: {username} ({Full Name} <{Email}>)", which requires a
   "Full Name" and "Email" entries in the server's extra-fields
-  configuration.  These lines are always prefixed with ";;> ".
+  configuration.  These lines are prefixed with ";;> " or the prefix
+  specified by :makup-prefix above.
 
 * :extra-lines -- a list of lines to add after the student lines, all
-  with a ";;> " prefix too.  Defaults to a single line: "Maximum
-  points for this assignment: <+100>".
+  with a ";;> " or :markup-prefix too.  Defaults to a single line:
+  "Maximum points for this assignment: <+100>".
 
 * :user-error-message -- a string that is used to report an error that
   occurred during evaluation of the submitted code (not during

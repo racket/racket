@@ -247,6 +247,8 @@
             [create-text?*  (get ':create-text? #'#t)]
             [textualize?*   (get ':textualize? #'#f)]
             [maxwidth*      (get ':maxwidth #'79)]
+            [markup-prefix* (get ':markup-prefix #'#f)]
+            [prefix-re*     (get ':prefix-re #'#f)]
             [student-line*
              (get ':student-line
                   #'"Student: {username} ({Full Name} <{Email}>)")]
@@ -287,6 +289,8 @@
                    [create-text?   create-text?*]
                    [textualize?    textualize?*]
                    [maxwidth       maxwidth*]
+                   [markup-prefix  markup-prefix*]
+                   [prefix-re      prefix-re*]
                    [student-line   student-line*]
                    [extra-lines    extra-lines*]
                    [value-printer  value-printer*]
@@ -294,6 +298,20 @@
                    [output-file    output*]
                    [user-error-message user-error-message*]
                    [execute-counts #f])
+               ;; ========================================
+               ;; set defaults that depend on file name
+               (define suffix
+                 (let ([sfx (string->symbol
+                             (string-downcase
+                              (regexp-replace #rx"^.*[.]" output-file "")))])
+                   (case sfx
+                     [(java c cc c++)
+                      (unless markup-prefix (set! markup-prefix "//> "))
+                      (unless prefix-re     (set! prefix-re     #rx"//>"))]
+                     [else
+                      (unless markup-prefix (set! markup-prefix ";;> "))
+                      (unless prefix-re     (set! prefix-re     #rx";>"))])
+                   sfx))
                ;; ========================================
                ;; verify submitting users
                (define (pre users submission)
@@ -316,17 +334,19 @@
                ;; ========================================
                ;; convert to text, evaluate, check
                (define (check users submission)
-                 (define text-file "grading/text.scm")
+                 (define text-file (format "grading/text.~a" suffix))
+                 (define (prefix-line str)
+                   (printf "~a~a\n" markup-prefix str))
                  (define (write-text)
                    (with-output-to-file text-file
                      (lambda ()
                        (define added (or (thread-cell-ref added-lines) '()))
                        (for-each
                         (lambda (user)
-                          (printf ";;> ~a\n" (user-substs user student-line)))
+                          (prefix-line (user-substs user student-line)))
                         users)
-                       (for-each (lambda (l) (printf ";;> ~a\n" l)) extra-lines)
-                       (for-each (lambda (l) (printf ";;> ~a\n" l)) added)
+                       (for-each prefix-line extra-lines)
+                       (for-each prefix-line added)
                        (display submission-text))
                      'truncate))
                  (define submission-text
@@ -334,8 +354,10 @@
                         (submission->string submission maxwidth textualize?)))
                  (when create-text?
                    (make-directory "grading")
-                   (when (regexp-match #rx";>" submission-text)
-                     (error* "You cannot use \";>\" in your code!"))
+                   (when (regexp-match prefix-re submission-text)
+                     (error* "You cannot use \"~a\" in your code!"
+                             (if (regexp? prefix-re)
+                               (object-name prefix-re) prefix-re)))
                    (write-text))
                  (when value-printer (current-value-printer value-printer))
                  (when coverage? (coverage-enabled #t))
