@@ -2,7 +2,8 @@
          (lib "useful-code.ss" "mztake"))
 (require (lib "mztake.ss" "mztake"))
 
-(define/bind (loc "sine.ss" 5 ) x sin-x)
+;(define/bind (loc "sine.ss" 5 ) x sin-x)
+(define/bind (loc "sine.ss" '(if  _ ...) ) x sin-x)
 
 (define (pick-cute-color x y)
   (if (< 200 y)

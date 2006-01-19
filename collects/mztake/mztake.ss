@@ -18,14 +18,10 @@
            bind
            define/bind
            define/bind-e
+           [rename loc/opt-col loc]
            [rename mztake-top #%top])
   
-  (provide/contract [loc-reqspec (loc? . -> . require-spec?)]
-                    [loc-line (loc? . -> . number?)]
-                    [loc-col (loc? . -> . number?)]
-                    [rename loc/opt-col loc
-                            ((any/c number?) (number?) . opt-> . loc?)]
-                    [exceptions (() (debug-process?) . opt-> . frp:event?)]
+  (provide/contract [exceptions (() (debug-process?) . opt-> . frp:event?)]
                     [exited? (() (debug-process?) . opt-> . frp:behavior?)]
                     [kill (() (debug-process?) . opt-> . void?)]
                     [kill-all (-> void?)]
@@ -42,8 +38,10 @@
                     [bind* (debug-process? symbol? . -> . any)])
   
   (define loc/opt-col
-    (opt-lambda (reqspec line [col #f])
-      (loc reqspec line col)))
+    (opt-lambda (reqspec line/pattern [col #f])
+      (if (number? line/pattern)
+          (make-loc/lc reqspec line/pattern col)
+          (make-loc/p reqspec line/pattern))))
   
   (define exceptions
     (opt-lambda ([p (current-process)])

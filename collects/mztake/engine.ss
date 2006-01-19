@@ -7,8 +7,9 @@
            "more-useful-code.ss" ; mostly for hash- bindings
            "mztake-structs.ss"
            "load-sandbox.ss"
-           "annotator.ss")
-
+           "annotator.ss"
+           (lib "match.ss"))
+  
   (provide process:set-main!
            current-policy
            all-debug-processes
@@ -20,40 +21,44 @@
            process:paused->running 
            pause
            resume
-           trace*)
+           trace*
+           
+           read-all-syntax
+           pattern->pos)
   
   ;Keeps track of all debugging processes
   (define all-debug-processes null)  
   
+  ; produces a nested list of (line column offset) for all addressable syntax    
+  (define (unwrap-syntax stx)
+    (let ([elt (list (syntax-line stx)
+                     (syntax-column stx)
+                     (sub1 (syntax-position stx)))])
+      (syntax-case stx ()
+        [(item ...) (cons elt (map unwrap-syntax (syntax->list stx)))]
+        [x elt])))
+  
+  (define (read-all-syntax filename)
+    (parameterize ([port-count-lines-enabled #t])
+      (let ([port (open-input-file filename)])
+        (begin0
+          (let loop ([stx (read-syntax filename port)])
+            (if (eof-object? stx) '()
+                (cons stx 
+                      (loop (read-syntax filename port)))))
+          (close-input-port port)))))
+  
   ;; returns a memoized function that takes (line column) -> position
   ;; line-col->pos : (debug-file? . -> . (number? number? . -> . (union void? number?)))
-  (define (line-col->pos filename)
-    ; produces a nested list of (line column offset) for all addressable syntax
-    (define (unwrap-syntax stx)
-      (let ([elt (list (syntax-line stx)
-                       (syntax-column stx)
-                       (sub1 (syntax-position stx)))])
-        (syntax-case stx ()
-          [(item ...) (cons elt (map unwrap-syntax (syntax->list stx)))]
-          [x elt])))
-    
-    (let ([pos-list
-           (flatten (parameterize ([port-count-lines-enabled #t])
-                      (let ([port (open-input-file filename)])
-                        (begin0
-                          (let loop ([stx (read-syntax filename port)])
-                            (if (eof-object? stx) '()
-                                (cons (unwrap-syntax stx)
-                                      (loop (read-syntax filename port)))))
-                          (close-input-port port)))))])
-      
+  (define (line-col->pos stx)
+    (let ([pos-list (flatten (map unwrap-syntax stx))])    
       (lambda (line maybe-col)
         (let loop ([lst pos-list])
           (cond
             [(empty? lst)
              (error 'loc
-                    "No syntax found for trace at line/column ~a:~a in client `~a'"
-                    line maybe-col filename)]
+                    "No syntax found for trace at line/column ~a:~a in `~a'"
+                    line maybe-col (syntax-source stx))]
             [(and (<= line (first (first lst)))
                   (or (not maybe-col)
                       (<= maybe-col (second (first lst)))))
@@ -61,12 +66,58 @@
             
             [else (loop (rest lst))])))))
   
+  (define (pattern->pos stx-lst)
+    (define (quote-symbols lst)
+      (cond 
+        [(empty? lst) empty]
+        [(eq? lst '_) lst]
+        [(eq? lst '...) lst]
+        [(symbol? lst) `(quote ,lst)]
+        [else (cons (quote-symbols (first lst))
+                    (quote-symbols (rest lst)))]))
+    
+    (define (collect-locations h stx lst)
+      (let loop ([stx stx] [lst lst])
+        (cond 
+          [(empty? stx) (void)]
+          [(pair? stx)
+           (loop (first stx) (first lst))
+           (loop (rest stx) (rest lst))]
+          [else 
+           (when (syntax-line stx) 
+             (hash-put! h lst (sub1 (syntax-position stx))))
+           (when (pair? (syntax-e stx)) 
+             (loop (first (syntax-e stx)) (first lst))
+             (loop (rest (syntax-e stx)) (rest lst)))])))
+    
+    (define stx2line-col (make-hash))
+    (define lst (map syntax-object->datum stx-lst))
+    
+    (for-each (lambda (s l) (collect-locations stx2line-col s l))
+              stx-lst lst)
+    
+    (lambda (pattern) 
+      (let ([pred (eval `(begin (require (lib "match.ss"))
+                                (lambda (v) 
+                                  (match v 
+                                    [,(quote-symbols pattern) #t]
+                                    [_ #f]))))])
+        (let loop ([lst lst])
+          (let ([sub (if (pair? lst)
+                         (append (loop (first lst))
+                                 (loop (rest lst)))
+                         empty)])
+            (if (and (hash-mem? stx2line-col lst) (pred lst))
+                (cons (hash-get stx2line-col lst) sub)
+                sub))))))
+  
+  
   (define (find-client process modpath)
     (cond
       [(memf (lambda (c) (equal? (debug-client-modpath c) modpath))
              (debug-process-clients process)) => first]
       [else false]))
-
+  
   (define (find-client/create process modpath)
     (or (find-client process modpath)
         (create-debug-client process modpath)))
@@ -98,12 +149,12 @@
            [no-where? (not (debug-process-where process))]
            [no-events? (and no-traces? no-where?
                             (not (debug-process-pause-requested? process)))])
-
+      
       
       (unless no-events?
         (let* ([marks (cons top-mark (continuation-mark-set->list rest-marks debug-key))])
           (set-debug-process-marks! process marks)
-
+          
           (if no-where?
               ;; No where event to generate
               (cond [has-single-trace?
@@ -113,7 +164,7 @@
                                                    ((trace-struct-thunk t))))]
                     [no-traces? void]
                     [else (frp:send-synchronous-events (traces->events traces))])
-
+              
               ;; With a where event to generate
               (let ([where-event (debug-process-where process)]
                     [w (map (compose syntax-local-infer-name mark-source) marks)])
@@ -123,7 +174,7 @@
                     (let* ([where-event (list where-event w)]
                            [trace-events (traces->events traces)])
                       (frp:send-synchronous-events (cons where-event trace-events))))))
-
+          
           ;; Now that we processed the trace, do we want to pause or continue
           (when (debug-process-pause-requested? process)
             (let loop ()
@@ -134,8 +185,8 @@
             (set-debug-process-resume-requested?! process false))
           
           (set-debug-process-marks! process false)))))
-
-      
+  
+  
   
   
   (define ((break-after process client) top-mark marks . vals)
@@ -160,7 +211,7 @@
   (define (dir-contains? dir filename)
     (let ([dir-lst (unbuild-path dir)])
       (equal? dir-lst (head (unbuild-path filename) (length dir-lst)))))
-
+  
   (define (map-policy-tag tag)
     (cond [(eq? tag 'fast) false]
           [(eq? tag 'debuggable) true]
@@ -186,13 +237,13 @@
                                (path->string filename)));; TODO: harmonize path & string
            (debug-process-clients process))
      true))
-
+  
   
   (define (launch-sandbox process)
     (unless (debug-process-main-client process)
       (error 'launch-sandbox
              "No main file specified. Use TRACE or SET-MAIN! to indicate where to start execution"))
-
+    
     (parameterize ([current-inspector (make-inspector)])
       (require/sandbox+annotations
        (debug-process-custodian process)
@@ -201,10 +252,10 @@
          (lambda (msg exn)
            (frp:send-event (debug-process-exceptions process) exn)
            (orig-err-disp msg exn)))
-
+       
        ;; target file
        `(file ,(debug-client-modpath (debug-process-main-client process)))
-     
+       
        ;; annotate-module?
        (lambda (filename module-name)
          (or (process-has-file? process filename)
@@ -292,7 +343,8 @@
   (define (create-debug-client process modpath)
     ; throwaway namespace so the module-name-resolver doesn't load an unannotated module
     (parameterize ([current-namespace (make-namespace)])
-      (let ([client (create-empty-debug-client)])
+      (let ([client (create-empty-debug-client)]
+            [stx (read-all-syntax modpath)])
         (for-each (lambda (c)
                     (when (equal? modpath (debug-client-modpath c))
                       (raise-syntax-error 'mztake:script-error:create-debug-client
@@ -301,7 +353,8 @@
         
         (set-debug-client-modpath! client modpath)
         (set-debug-client-process! client process)
-        (set-debug-client-line-col->pos! client (line-col->pos modpath))
+        (set-debug-client-line-col->pos! client (line-col->pos stx))
+        (set-debug-client-pattern->pos! client (pattern->pos stx))
         (set-debug-process-clients! process
                                     (append (list client) (debug-process-clients process)))
         
@@ -324,16 +377,23 @@
            (substring modpath 1 (string-length modpath))
            modpath))))
   
+  (define (loc->positions client loc)
+    (if (loc/lc? loc)
+        (list ((debug-client-line-col->pos client) (loc/lc-line loc) (loc/lc-col loc)))
+        ((debug-client-pattern->pos client) (loc/p-pattern loc))))
+  
   (define (trace* p loc thunk)
     (let* ([modpath (reqspec->modpath (loc-reqspec loc))]
            [client (find-client/create p modpath)]
            [trace-hash (debug-client-tracepoints client)]
            [trace (make-trace-struct (frp:event-receiver) thunk)]
-           [pos ((debug-client-line-col->pos client) (loc-line loc) (loc-col loc))])
-      ; add the trace to the list of traces for that byte-offset
-      (hash-put! trace-hash pos
-                 (append (hash-get trace-hash pos (lambda () '()))
-                         (list trace)))
+           [positions (loc->positions client loc)])      
+      ; add the trace to the list of traces for these byte-offsets
+      (for-each (lambda (pos) 
+                  (hash-put! trace-hash pos
+                             (append (hash-get trace-hash pos (lambda () '()))
+                                     (list trace))))
+                positions)
       (trace-struct-evnt-rcvr trace)))
   
   (define (syntax-local-infer-name stx)
