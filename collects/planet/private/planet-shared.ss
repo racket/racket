@@ -1,32 +1,23 @@
 #| planet-shared.ss -- shared client/server utility functions
 
 Various common pieces of code that both the client and server need to access
-
 ==========================================================================================
-
 |#
 
 (module planet-shared mzscheme
   
   (require (lib "list.ss")
            (lib "etc.ss")
-           (lib "port.ss"))
+           (lib "port.ss")
+           (prefix srfi1: (lib "1.ss" "srfi"))
+           (lib "match.ss")
+           (lib "file.ss")
+           "../config.ss")
   
   (provide (all-defined))
   
-  (define-syntax (define-parameters stx)
-    (syntax-case stx ()
-      [(_ (name val) ...)
-       (andmap identifier? (syntax-e #'(name ...)))
-       #'(begin
-           (provide name ...)
-           (define name (make-parameter val)) ...)]))
-  
-  
   ; exn:i/o:protocol: exception indicating that a protocol error occured
   (define-struct (exn:i/o:protocol exn:fail:network) ())
-
-  (define BUILD "build")
   
   ; ==========================================================================================
   ; CACHE LOGIC
@@ -50,16 +41,111 @@ Various common pieces of code that both the client and server need to access
   (define (legal-language? l)
     (and (language-version->repository l) #t))
   
-  ; lookup-package : FULL-PKG-SPEC string[dirname] -> PKG | #f
-  ; returns the directory pointing to the appropriate package in the cache, or #f if the given package
-  ; isn't in the cache
-  (define (lookup-package pkg cache-dir)
-    (let ((pkg-dir (build-path (apply build-path cache-dir (pkg-spec-path pkg)) (pkg-spec-name pkg))))
-      (if (directory-exists? pkg-dir)
-          (get-best-match pkg pkg-dir)
-          #f)))
+  ; lookup-package : FULL-PKG-SPEC -> PKG | #f
+  ; returns the directory pointing to the appropriate package in the cache, the user's hardlink table,
+  ; or #f if the given package isn't in the cache or the hardlink table
+  (define (lookup-package pkg)
+    (let* ((at (build-assoc-table pkg)))
+      (get-best-match/t at pkg)))
   
-  ; get-best-match :FULL-PKG-SPEC (listof string[directory-name]) -> PKG | #f
+  ; build-assoc-table : FULL-PKG-SPEC -> assoc-table
+  ; returns a version-number -> directory association table for the given package
+  (define (build-assoc-table pkg)
+    (let ((path (build-path (apply build-path (CACHE-DIR) (pkg-spec-path pkg)) (pkg-spec-name pkg))))
+      (add-to-table 
+       (dir->assoc-table path)
+       (hard-links pkg))))
+  
+  ;; assoc-table ::= (listof (list n n path))
+  (define empty-table '())
+  
+  ; dir->assoc-table : path -> assoc-table
+  ; returns the association table for the given planet dir
+  (define (dir->assoc-table path)
+    
+    (define (tree-stuff->row-or-false p majs mins)
+      (let ((maj (string->number majs))
+            (min (string->number mins)))
+        (if (and (path? p) maj min)
+            (list maj min (build-path path majs mins))
+            #f)))
+    
+    (if (directory-exists? path)
+        (filter
+         (λ (x) x)
+         (tree-apply
+          tree-stuff->row-or-false
+          (directory->tree path (λ (x) #t) 2 (λ (x) x))))
+         empty-table))
+        
+  ; the link table format:
+  ; (listof (list string[name] (listof string[path]) num num bytes[directory])
+  
+  ; hard-links : FULL-PKG-SPEC -> (listof assoc-table-row)
+  (define (hard-links pkg)
+    
+    (unless (and (absolute-path? (HARD-LINK-FILE)) (path-only (HARD-LINK-FILE)))
+      (raise (make-exn:fail:contract 
+              (string->immutable-string
+               (format 
+                "The HARD-LINK-FILE setting must be an absolute path name specifying a file; given ~s" 
+                (HARD-LINK-FILE)))
+              (current-continuation-marks))))
+    
+    (let ((link-table 
+           (if (file-exists? (HARD-LINK-FILE))
+               (with-input-from-file (HARD-LINK-FILE) read)
+               '())))
+      (srfi1:filter-map
+       (λ (row)
+         (match row
+           [`(,(? (λ (name) (equal? name (pkg-spec-name pkg))))
+              ,(? (λ (path) (equal? path (pkg-spec-path pkg))))
+              ,maj ,min ,(? bytes? dir))
+             (list maj min (bytes->path dir))]
+           [_ #f]))
+       link-table)))
+       
+  ; add-to-table assoc-table (listof assoc-table-row) -> assoc-table
+  (define add-to-table append) 
+  
+  ; assoc-table-row->{maj,min,dir} : assoc-table-row -> {num,num,path}
+  ; retrieve the {major version, minor version, directory} of the given row
+  (define assoc-table-row->maj car)
+  (define assoc-table-row->min cadr)
+  (define assoc-table-row->dir caddr)
+  
+  ; get-best-match/t : assoc-table FULL-PKG-SPEC -> PKG | #f
+  (define (get-best-match/t table spec)
+    (let* ((target-maj 
+            (or (pkg-spec-maj spec)
+                (apply max (map assoc-table-row->maj table))))
+           (maj-matches (filter (λ (x) (equal? target-maj (assoc-table-row->maj x))) table))
+           (in-min-range
+            (let ((lo (pkg-spec-minor-lo spec))
+                  (hi (pkg-spec-minor-hi spec)))
+              (filter
+               (λ (x)
+                 (let ((n (assoc-table-row->min x)))
+                   (or (not lo) (>= n lo))
+                   (or (not hi) (<= n hi))))
+               maj-matches))))
+      (if (null? in-min-range)
+          #f
+          (let ((best-row
+                 (car 
+                  (quicksort 
+                   in-min-range 
+                   (λ (a b) (> (assoc-table-row->min a) (assoc-table-row->min b)))))))
+            (make-pkg
+             (pkg-spec-name spec)
+             (pkg-spec-path spec)
+             (assoc-table-row->maj best-row)
+             (assoc-table-row->min best-row)
+             (assoc-table-row->dir best-row))))))
+          
+
+  ; get-best-match : FULL-PKG-SPEC (listof string[directory-name]) -> PKG | #f
   ; gets the best version in the given subdirectory in the specified low and high version range
   ; or #f if there is no appropriate version
   (define (get-best-match pkg-spec path)
@@ -222,9 +308,7 @@ Various common pieces of code that both the client and server need to access
            (hash-table-put! ht key (cons i (hash-table-get ht key (lambda () '()))))))
        l)
       (hash-table-map ht cons)))
-  
-  
-  
+
   (define (drop-last l) (reverse (cdr (reverse l))))
   
   ;; note: this can be done faster by reading a copy-port'ed port with

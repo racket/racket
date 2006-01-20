@@ -38,8 +38,11 @@ provided, the default package is assumed.
 
 2. PLaneT protocol
 
-PLaneT clients communicate request PLaneT servers over a TCP connection using a specialized 
-protocol. The protocol is described below.
+PLaneT clients support two protocols for communicating with the PLaneT server: the standard HTTP
+GET/response system (currently the default) and a specialized TCP-based protocol that may become
+more important if PLaneT becomes smarter about downloading packages behind the scenes.
+
+In the following sections we describe the specialized protocol only.
 
 2.1 Overview
 
@@ -269,7 +272,7 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
 
   ; get-package-from-cache : FULL-PKG-SPEC -> PKG | #f
   (define (get-package-from-cache pkg-spec) 
-    (lookup-package pkg-spec (CACHE-DIR)))
+    (lookup-package pkg-spec))
   
   ; ==========================================================================================
   ; PHASE 3: SERVER RETRIEVAL

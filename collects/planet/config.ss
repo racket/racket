@@ -1,7 +1,5 @@
 (module config mzscheme
-  
-  (require "private/planet-shared.ss")
-  
+  (require "private/define-config.ss") 
   (define-parameters
     (PLANET-SERVER-NAME       "planet.plt-scheme.org")
     (PLANET-SERVER-PORT       270)
@@ -11,6 +9,7 @@
                                   (build-path (find-system-path 'addon-dir) "planet" (PLANET-CODE-VERSION) (version))))
     (CACHE-DIR                (build-path (PLANET-DIR) "cache"))
     (LINKAGE-FILE             (build-path (PLANET-DIR) "LINKAGE"))
+    (HARD-LINK-FILE           (build-path (PLANET-DIR) "HARD-LINKS"))
     (LOGGING-ENABLED?         #t)
     (LOG-FILE                 (build-path (PLANET-DIR) "INSTALL-LOG"))
     (DEFAULT-PACKAGE-LANGUAGE (version))
