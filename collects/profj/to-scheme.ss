@@ -757,7 +757,7 @@
                    (set! cc-marks c*)
                    (super-instantiate (w* p* n* s* c*))
                   
-                   ,(generate-wrapper-fields fields from-dynamic?)
+                   ,@(generate-wrapper-fields fields from-dynamic?)
                    
                    ,@(generate-wrapper-methods
                       (filter (lambda (m) (not (eq? (method-record-rtype m) 'ctor)))
@@ -784,16 +784,41 @@
     
   ;generate-wrapper-fields: (list field) boolean -> sexp
   (define (generate-wrapper-fields fields from-dynamic?)
-    `(field ,@(map (lambda (field)
-                     (let* ((field-name (id-string (field-name field)))
-                            (value `(,(create-get-name field-name) wrapped-obj)))
-                       `(,(build-identifier (build-var-name field-name))
-                          ,(convert-value 
-                            (if from-dynamic? (assert-value value (field-type field) #t 'field field-name) value)
-                            (field-type field)
-                            from-dynamic?))))
-                   fields)))
-  
+    (apply append
+           (map (lambda (field)
+                  (let* ((name (id-string (field-name field)))
+                         (dynamic-access-body
+                          (lambda (guard-body scheme-body)
+                            `(if (is-a? wrapped-obj guard-convert-Object)
+                                 ,guard-body
+                                 ,scheme-body)))
+                         (get-name (create-get-name name))
+                         (set-name (create-set-name name))
+                         (get-call `(,get-name wrapped-obj))
+                         (set-call `(lambda (new-val) (,set-name wrapped-obj new-val))))
+
+                    (list
+                     `(define/public (,(build-identifier  (format "~a-wrapped" get-name)))
+                        ,(convert-value 
+                          (if from-dynamic? 
+                              (assert-value 
+                               (dynamic-access-body get-call `(get-field wrapped-obj (quote ,(build-identifier name))))
+                               (field-type field) #t 'field name)
+                              get-call) (field-type field) from-dynamic?))
+                     (if (memq 'final (field-modifiers field))
+                         null
+                         `(define/public (,(build-identifier (format "~a-wrapped" set-name)) new-val)
+                            (,(if from-dynamic?
+                                  (dynamic-access-body set-call 
+                                                       `(lambda (new-val) 
+                                                          (define set-field null)
+                                                          (set-field wrapped-obj (quote ,(build-identifier name)) new-val)))
+                                  set-call)
+                              ,(convert-value (if (not from-dynamic?)
+                                                  (assert-value 'new-val (field-type field) #t 'field name)
+                                                  'new-val) (field-type field) from-dynamic?)))))))
+                fields)))
+                
   ;generate-wrapper-methods: (list method-record) boolean boolean -> (list sexp)
   ;When is dynamic-callable?, will define methods callable from a dynamic context
   (define (generate-wrapper-methods methods dynamic-callable? from-dynamic?)
@@ -1384,30 +1409,30 @@
         null
         (let* ((field (car fields))
                (class (build-identifier (class-name)))
-               (ca-class (build-identifier (string-append "convert-assert-" (class-name))))
-               (quote-name (build-identifier (build-var-name (id-string (field-name field)))))
+               (field-name (id-string (field-name field)))
+               (quote-name (build-identifier (build-var-name field-name)))
                (getter (car names))
                (setter (cadr names))
                (final (final? (map modifier-kind (field-modifiers field)))))
           (append (cons (make-syntax #f
                                      `(define ,getter
-                                        (let ((normal-get (class-field-accessor ,class ,quote-name))
-                                              (dyn-get (class-field-accessor ,ca-class ,quote-name)))
+                                        (let ((normal-get (class-field-accessor ,class ,quote-name)))
                                           (lambda (obj)
                                             (cond
                                               ((is-a? obj ,class) (normal-get obj))
-                                              ((is-a? obj ,ca-class) (dyn-get obj))))))
+                                              (else 
+                                               (send obj 
+                                                     ,(build-identifier (format "~a-wrapped" getter))))))))
                                      #f)
                         (if (not final)
                             (list 
                              (make-syntax #f 
                                           `(define ,setter
-                                             (let ((normal-set (class-field-mutator ,class ,quote-name))
-                                                   (dyn-set (class-field-mutator ,ca-class ,quote-name)))
+                                             (let ((normal-set (class-field-mutator ,class ,quote-name)))
                                                (lambda (obj val)
                                                  (if (is-a? obj ,class)
                                                      (normal-set obj val)
-                                                     (dyn-set obj val)))))
+                                                     (send obj ,(build-identifier (format "~a-wrapped" setter)) val)))))
                                           #f))
                             null))
                   (create-field-accessors (if final (cdr names) (cddr names)) (cdr fields))))))
@@ -2112,11 +2137,11 @@
                (make-syntax #f
                             (cond
                               ((or (dynamic-val? left-type) (dynamic-val? right-type))
-                               `(,(create-syntax #f 'eq? key-src) ,left ,right))
+                               `(,(create-syntax #f 'javaRuntime:dynamic-equal key-src) ,left ,right))
                               ((and (prim-numeric-type? left-type) (prim-numeric-type? right-type))
                                `(,(create-syntax #f '= key-src) ,left ,right))
                               (else
-                                `(,(create-syntax #f 'eq? key-src) ,left ,right))) source))
+                                `(,(create-syntax #f 'javaRuntime:check-eq? key-src) ,left ,right))) source))
               ((!=) 
                (make-syntax #f `(,(create-syntax #f 'javaRuntime:not-equal key-src) ,left ,right) source))
               ;logicals

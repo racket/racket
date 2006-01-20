@@ -720,7 +720,7 @@
 ;                                          
 
   
-  (define type-version "version3")
+  (define type-version "version4")
   (define type-length 10)
   
   ;; read-record: path -> (U class-record #f)

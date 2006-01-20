@@ -4,6 +4,20 @@
   
   (prepare-for-tests "Full")
 
+  (parameterize ((dynamic? #t))
+    "class X { }"
+    'full
+    '("X x = new X();" "X y = (dynamic) x;" "x.equals(y)" "y.equals(x)" "y==x" "x==y")
+    '((void) (void) #t #t #t #t)
+    "Equality test of a wrapped and unwrapped object")
+  
+  (parameterize ((dynamic? #t))
+    "class X { int y; X(int y) { this.y = y; } }"
+    'full 
+    '("X x = new X(3);" "X y = (dynamic) x;"  "x.y = 4"  "y.y" "y.y=5" "x.y")
+    '((void) (void) 4 4 5 5)
+    "Accessing fields of a dynamic value")
+  
   (execute-test
    "package a; class a { int x; 
                      Object get() { class b { int y() { return a.this.x; } }  return new b(); }}"

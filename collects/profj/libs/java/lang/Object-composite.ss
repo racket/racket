@@ -54,7 +54,10 @@
         ;Needs to do something
         (define/public clone (lambda () void))
         
-        (define/public (equals-java.lang.Object obj) (eq? this obj))
+        (define/public (equals-java.lang.Object obj) 
+          (or (eq? this obj)
+              (and (is-a? obj wrapper)
+                   (send obj compare this obj))))
         (define/public (equals obj) (send this equals-java.lang.Object obj))
         
         ;Needs to do something
@@ -119,9 +122,13 @@
                        (wait-long (c:-> c:any/c c:any/c))
                        (wait-long-int (c:-> c:any/c c:any/c c:any/c))) obj p n s)
           (make-object convert-assert-Object obj p n s c))))
+
+  (define-local-member-name get-wrapped)
+  (define wrapper (interface () get-wrapped))
+  (provide wrapper)  
   
   (define convert-assert-Object
-    (class object%
+    (class* object% (wrapper)
       
       (init w p n s c)
       (define-values (wrapped pos-blame neg-blame src cc-marks) (values null null null null null))
@@ -130,6 +137,26 @@
       (set! neg-blame n)
       (set! src s)
       (set! cc-marks c)
+
+      (define/public (get-wrapped) wrapped)
+      (define/public (compare obj1 obj2)
+        (cond
+          ((and (is-a? obj1 wrapper) (is-a? obj2 wrapper))
+           (compare (send obj1 get-wrapped) (send obj2 get-wrapped)))
+          ((is-a? obj1 wrapper)
+           (compare (send obj1 get-wrapped) obj2))
+          ((is-a? obj2 wrapper)
+           (compare obj1 (send obj2 get-wrapped)))
+          (else (eq? obj1 obj2))))
+      
+      (define/public (down-cast class wrapped-class)
+        (and (check-instance class)
+             (make-object wrapped-class wrapped pos-blame neg-blame src cc-marks)))
+      
+      (define/public (check-instance class)
+        (if (is-a? wrapped wrapper)
+            (send wrapped check-instance class)
+            (is-a? wrapped class)))
       
       (define/public (clone) (send wrapped clone))        
       (define/public (equals-java.lang.Object obj)
@@ -172,9 +199,9 @@
   
   (define dynamic-Object/c
     (c:flat-named-contract "Object" (lambda (v) (is-a? v convert-assert-Object))))
-     
+  
   (define guard-convert-Object
-    (class object%
+    (class* object% (wrapper)
       
       (init w p n s c)
       (define-values (wrapped pos-blame neg-blame src cc-marks) (values null null null null null))
@@ -183,6 +210,27 @@
       (set! neg-blame n)
       (set! src s)
       (set! cc-marks s)
+      
+      (define/public (get-wrapped) wrapped)
+      
+      (define/public (compare obj1 obj2)
+        (cond
+          ((and (is-a? obj1 wrapper) (is-a? obj2 wrapper))
+           (compare (send obj1 get-wrapped) (send obj2 get-wrapped)))
+          ((is-a? obj1 wrapper)
+           (compare (send obj1 get-wrapped) obj2))
+          ((is-a? obj2 wrapper)
+           (compare obj1 (send obj2 get-wrapped)))
+          (else (eq? obj1 obj2))))
+      
+      (define/public (down-cast class wrapped-class)
+        (and (check-instance class)
+             (make-object wrapped-class wrapped pos-blame neg-blame src cc-marks)))
+      
+      (define/public (check-instance class)
+        (if (is-a? wrapped wrapper)
+            (send wrapped check-instance class)
+            (is-a? wrapped class)))
       
       (define/public (clone) (send wrapped clone))
       (define/public (equals-java.lang.Object . obj)

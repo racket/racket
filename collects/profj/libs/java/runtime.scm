@@ -15,7 +15,20 @@
            (lib "NullPointerException.ss" "profj" "libs" "java" "lang"))
   
   (provide convert-to-string shift not-equal bitwise mod divide-dynamic divide-int 
-           divide-float and or cast-primitive cast-reference instanceof-array nullError)
+           divide-float and or cast-primitive cast-reference instanceof-array nullError
+           check-eq? dynamic-equal?)
+
+  (define (check-eq? obj1 obj2)
+    (or (eq? obj1 obj2)
+        (cond
+          ((is-a? obj1 wrapper) (send obj1 compare obj1 obj2))
+          ((is-a? obj2 wrapper) (send obj2 compare obj1 obj2))
+          (else #f))))
+  
+  (define (dynamic-equal? val1 val2)
+    (cond
+      ((number? val1) (= val1 val2))
+      (else (check-eq? val1 val2))))
   
   ;convert-to-string: (U string int real bool char Object) -> string
   (define (convert-to-string data)
@@ -153,7 +166,13 @@
         (cond
           ((and (eq? Object type) (is-a? val ObjectI)) val)
           ((and (is-a? val convert-assert-Object) (is-a? val ca-type)) val)
+          ((is-a? val convert-assert-Object)
+           (or (send val down-cast type ca-type) 
+               (raise-class-cast (format "Cast to ~a failed for ~a" name (send val my-name)))))
           ((and (is-a? val guard-convert-Object) (is-a? val gc-type)) val)
+          ((is-a? val guard-convert-Object)
+           (or (send val down-cast type gc-type)
+               (raise-class-cast (format "Cast to ~a failed for ~a" name (send val my-name)))))
           ((is-a? val type) val)
           (else (raise-class-cast (format "Cast to ~a failed for ~a" name (send val my-name)))))))
   
