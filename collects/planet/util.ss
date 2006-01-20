@@ -20,7 +20,9 @@
    make-planet-archive
    get-installed-planet-archives
    remove-pkg
-   unlink-all)
+   unlink-all
+   add-hard-link
+   remove-hard-link)
 
   ;; current-cache-contents : -> ((string ((string ((nat (nat ...)) ...)) ...)) ...)
   ;; returns the packages installed in the local PLaneT cache
@@ -148,4 +150,22 @@
                'file
                #f
                #f))
-       (normalize-path archive-name)])))
+       (normalize-path archive-name)]))
+  
+  ;; add-hard-link : string string num num path -> void
+  ;; adds an entry in the hard-links table associating the given
+  ;; require spec to the given path
+  (define (add-hard-link owner pkg-name maj min path)
+    (unless (directory-exists? path)
+      (if (file-exists? path)
+          (error 'add-hard-link "Hard links must point to directories, not files")
+          (fprintf (current-error-port) 
+                   "Warning: directory ~a does not exist\n"
+                   (path->string path))))
+    (add-hard-link! pkg-name (list owner) maj min path))
+   
+  ;; remove-hard-link : string string num num -> void
+  ;; removes any development association from the given package spec
+  (define (remove-hard-link owner pkg-name maj min)
+    (filter-link-table!
+     (lambda (row) (not (points-to? row pkg-name (list owner) maj min))))))

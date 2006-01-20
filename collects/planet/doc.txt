@@ -166,9 +166,11 @@ and are stored in a user-specific table called the linkage table.
 
 2. Acceptable local package
 
-If the PLaneT client doesn't have any previous linkage information,
-it checks its list of already-installed PLaneT packages for one that
-meets the requirement, and uses it if available.
+If the PLaneT client doesn't have any previous linkage information, it
+checks its list of already-installed PLaneT packages for one that
+meets the requirement, and uses it if available. Both PLaneT-installed
+packages and packages established through a development link are
+checked simultaneously at this stage.
 
 3. Acceptable remote package
 
@@ -225,6 +227,42 @@ List the current linkage table
 -U, --unlink-all
 
 Clear the linkage table, unlinking all packages and allowing upgrades.
+
+-a, --associate <owner> <pkg> <maj> <min> <dir>
+
+Create a development link from the given package specifier
+to the given directory, clearing any previous development
+links that may have been in place. (See below for an explanation
+of what development links are.)
+
+-u, --unassociate <owner> <pkg> <maj> <min>
+
+Remove any development links from the given package specifier.
+
+
+_Development links_
+-------------------
+
+To aid development, PLaneT allows users to establish direct
+associations between a particular planet package (e.g. myname
+myfirstpackage.plt 1 0) with an arbitrary directory on the filesystem
+(e.g., /home/myname/svn/mypackages/devel/). These associations are
+intended to allow developers to use their own directory structures,
+version control systems, etc. while developing PLaneT packages while
+still being able to use the packages they create as though they were
+distributed directly by PLaneT. Development links are local to a
+particular user and repository (but not to a particular MzScheme minor
+revision).
+
+To establish a development link, use the planet command-line tool:
+
+$ planet --associate myname mypackage.plt 1 0 ~/svn/mypackages/devel
+
+Once you are finished developing a package, you should remove any
+development links you have established for it, again using the planet
+command-line tool:
+
+$ planet --unassociate myname mypackage.plt 1 0
 
 _Distributing Packages with PLaneT_
 -----------------------------------

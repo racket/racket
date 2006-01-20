@@ -9,8 +9,6 @@ Various common pieces of code that both the client and server need to access
   (require (lib "list.ss")
            (lib "etc.ss")
            (lib "port.ss")
-           (prefix srfi1: (lib "1.ss" "srfi"))
-           (lib "match.ss")
            (lib "file.ss")
            "../config.ss")
   
@@ -83,37 +81,96 @@ Various common pieces of code that both the client and server need to access
   
   ; hard-links : FULL-PKG-SPEC -> (listof assoc-table-row)
   (define (hard-links pkg)
-    
+    (filter
+     (λ (row)
+       (and (equal? (assoc-table-row->name row) (pkg-spec-name pkg))
+            (equal? (assoc-table-row->path row) (pkg-spec-path pkg))))
+     (get-hard-link-table)))
+  
+  ;; verify-well-formed-hard-link-parameter! : -> void
+  ;; pitches a fit if the hard link table parameter isn't set right
+  (define (verify-well-formed-hard-link-parameter!)
     (unless (and (absolute-path? (HARD-LINK-FILE)) (path-only (HARD-LINK-FILE)))
       (raise (make-exn:fail:contract 
               (string->immutable-string
                (format 
                 "The HARD-LINK-FILE setting must be an absolute path name specifying a file; given ~s" 
                 (HARD-LINK-FILE)))
-              (current-continuation-marks))))
+              (current-continuation-marks)))))
+  
+  ;; get-hard-link-table : -> assoc-table
+  (define (get-hard-link-table)
+    (verify-well-formed-hard-link-parameter!)
+    (if (file-exists? (HARD-LINK-FILE))
+        (map 
+         (lambda (item) (update-element 4 bytes->path item))
+         (with-input-from-file (HARD-LINK-FILE) read-all))
+        '()))
+
+  ;; row-for-package? : row string (listof string) num num -> boolean
+  ;; determines if the row associates the given package with a dir
+  (define (points-to? row name path maj min)
+    (and (equal? name (assoc-table-row->name row))
+         (equal? path (assoc-table-row->path row))
+         (equal? maj  (assoc-table-row->maj row))
+         (equal? min  (assoc-table-row->min row))))
+  
+  ;; save-hard-link-table : assoc-table -> void
+  ;; saves the given table, overwriting any file that might be there
+  (define (save-hard-link-table table)
+    (verify-well-formed-hard-link-parameter!)
+    (with-output-to-file (HARD-LINK-FILE)
+      (lambda ()
+        (display "")
+        (for-each 
+         (lambda (row)
+           (write (update-element 4 path->bytes row))
+           (newline))
+         table))
+      'truncate))
+  
+  ;; add-hard-link! string (listof string) num num path -> void
+  ;; adds the given hard link, clearing any previous ones already in place
+  ;; for the same package
+  (define (add-hard-link! name path maj min dir)
+    (let* ([original-table (get-hard-link-table)]
+           [new-table (cons
+                       (list name path maj min dir)
+                       (filter
+                        (lambda (row) (not (points-to? row name path maj min)))
+                        original-table))])
+      (save-hard-link-table new-table)))
+  
+  ;; filter-link-table! : (row -> boolean) -> void
+  ;; removes all rows from the link table that don't match the given predicate
+  (define (filter-link-table! f)
+    (save-hard-link-table (filter f (get-hard-link-table))))
+
+  ;; update-element : number (x -> y) (listof any [x in position number]) -> (listof any [y in position number])
+  (define (update-element n f l)
+    (cond
+      [(null? l) (error 'update-element "Index too large")]
+      [(zero? n) (cons (f (car l)) (cdr l))]
+      [else (cons (car l) (update-element (sub1 n) f (cdr l)))]))
     
-    (let ((link-table 
-           (if (file-exists? (HARD-LINK-FILE))
-               (with-input-from-file (HARD-LINK-FILE) read)
-               '())))
-      (srfi1:filter-map
-       (λ (row)
-         (match row
-           [`(,(? (λ (name) (equal? name (pkg-spec-name pkg))))
-              ,(? (λ (path) (equal? path (pkg-spec-path pkg))))
-              ,maj ,min ,(? bytes? dir))
-             (list maj min (bytes->path dir))]
-           [_ #f]))
-       link-table)))
-       
   ; add-to-table assoc-table (listof assoc-table-row) -> assoc-table
   (define add-to-table append) 
   
-  ; assoc-table-row->{maj,min,dir} : assoc-table-row -> {num,num,path}
-  ; retrieve the {major version, minor version, directory} of the given row
-  (define assoc-table-row->maj car)
-  (define assoc-table-row->min cadr)
-  (define assoc-table-row->dir caddr)
+  ;; first-n-list-selectors : number -> (values (listof x -> x) ...)
+  ;; returns n list selectors for the first n elements of a list
+  ;; (useful for defining meaningful names to list-structured data)
+  (define (first-n-list-selectors n)
+    (apply values (build-list n (lambda (m) (lambda (row) (list-ref row m))))))
+  
+  ;; assoc-table-row->{name,path,maj,min,dir} : assoc-table-row -> {string,(listof string),num,num,path}
+  ;; retrieve the {package name, "package path", major version, minor version, directory}
+  ;; of the given row
+  (define-values (assoc-table-row->name
+                  assoc-table-row->path
+                  assoc-table-row->maj
+                  assoc-table-row->min
+                  assoc-table-row->dir)
+    (first-n-list-selectors 5))
   
   ; get-best-match/t : assoc-table FULL-PKG-SPEC -> PKG | #f
   (define (get-best-match/t table spec)
