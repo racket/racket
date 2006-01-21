@@ -120,7 +120,10 @@
   ;; gives the current "linkage table"; a table that links modules to particular versions
   ;; of planet requires that satisfy those linkages
   (define (current-linkage)
-    (let* ((links (with-input-from-file (LINKAGE-FILE) read-all))
+    (let* ((links 
+            (if (file-exists? (LINKAGE-FILE))
+                (with-input-from-file (LINKAGE-FILE) read-all)
+                '()))
            (buckets (categorize caar links)))
       (map
        (lambda (x) (cons (car x) (map (lambda (y) (drop-last (cadr y))) (cdr x))))

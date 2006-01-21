@@ -49,23 +49,23 @@ Various common pieces of code that both the client and server need to access
   ; build-assoc-table : FULL-PKG-SPEC -> assoc-table
   ; returns a version-number -> directory association table for the given package
   (define (build-assoc-table pkg)
-    (let ((path (build-path (apply build-path (CACHE-DIR) (pkg-spec-path pkg)) (pkg-spec-name pkg))))
-      (add-to-table 
-       (dir->assoc-table path)
-       (hard-links pkg))))
+    (add-to-table 
+     (dir->assoc-table pkg)
+     (hard-links pkg)))
   
   ;; assoc-table ::= (listof (list n n path))
   (define empty-table '())
   
-  ; dir->assoc-table : path -> assoc-table
-  ; returns the association table for the given planet dir
-  (define (dir->assoc-table path)
+  ; dir->assoc-table : FULL-PKG-SPEC -> assoc-table
+  ; returns the on-disk packages for the given planet dir
+  (define (dir->assoc-table pkg)
+    (define path (build-path (apply build-path (CACHE-DIR) (pkg-spec-path pkg)) (pkg-spec-name pkg)))
     
     (define (tree-stuff->row-or-false p majs mins)
       (let ((maj (string->number majs))
             (min (string->number mins)))
         (if (and (path? p) maj min)
-            (list maj min (build-path path majs mins))
+            (list (pkg-spec-name pkg) (pkg-spec-path pkg) maj min (build-path path majs mins))
             #f)))
     
     (if (directory-exists? path)
