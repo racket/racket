@@ -21,4 +21,4 @@
   (provide-define-struct timeouts (default-servlet password servlet-connection file-per-byte file-base))
   
   ; paths = (make-paths str^6)
-  (provide-define-struct paths (conf host-base log htdocs servlet passwords)))
+  (provide-define-struct paths (conf host-base log htdocs servlet mime-types passwords)))

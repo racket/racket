@@ -53,6 +53,7 @@
          (log-file-path ,log-file-path)
          (file-root ,file-root)
          (servlet-root ,servlet-root)
+         (mime-types ,mime-types)
          (password-authentication ,password-authentication)))
       (make-host-table
        default-indices log-format
@@ -68,7 +69,13 @@
                       servlet-connection-timeout
                       file-per-byte-connection-timeout
                       file-base-connection-timeout)
-       (make-paths configuration-root host-root log-file-path file-root servlet-root password-authentication))]
+       (make-paths configuration-root
+                   host-root
+                   log-file-path
+                   file-root
+                   servlet-root
+                   mime-types
+                   password-authentication))]
      [x (error 'parse-host "malformed host ~s" x)]))
   
   ; nat? : tst -> bool

@@ -270,6 +270,7 @@
                     (build-path-unless-absolute host-base (paths-log paths))
                     (build-path-unless-absolute host-base (paths-htdocs paths))
                     (build-path-unless-absolute host-base (paths-servlet paths))
+                    (build-path-unless-absolute host-base (paths-mime-types paths))                    
                     (build-path-unless-absolute host-base (paths-passwords paths))))))
   
   ; gen-virtual-hosts : (listof (list regexp host)) host ->

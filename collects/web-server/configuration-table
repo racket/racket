@@ -25,5 +25,6 @@
       (log-file-path "log")
       (file-root "htdocs")
       (servlet-root ".")
+      (mime-types "mime.types")
       (password-authentication "passwords"))))
  (virtual-host-table))

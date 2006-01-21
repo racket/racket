@@ -3,12 +3,9 @@
            (lib "string.ss")
            (lib "list.ss")
            (lib "url.ss" "net")
-           (lib "xml.ss" "xml")
-           (lib "plt-match.ss")
            (lib "errortrace-lib.ss" "errortrace")
            (lib "uri-codec.ss" "net"))
-  (require "response-structs.ss"
-           "request-structs.ss")
+  (require "request-structs.ss")
   
   (provide provide-define-struct
            extract-flag
@@ -25,7 +22,6 @@
    [directory-part (path? . -> . path?)]
    [lowercase-symbol! ((union string? bytes?) . -> . symbol?)]
    [exn->string ((union exn? any/c) . -> . string?)]
-   [get-mime-type (path? . -> . bytes?)]
    [build-path-unless-absolute (path? (union string? path?) . -> . path?)])
   
   ;; ripped this off from url-unit.ss
@@ -105,73 +101,7 @@
           (let ([next (string-append (substring prefix 0 (sub1 len))
                                      (string (integer->char (add1 ascii))))])
             (lambda (x)
-              (and (string<=? prefix x) (string<? x next)))))))
-  
-  
-  ;; get-mime-type: path -> bytes
-  ;; determine the mime type based on the filename's suffix
-  ;;
-  ;; Notes (GregP):
-  ;; 1. Can we determine the mime type based on file contents?
-  ;; 2. Assuming that 7-bit ASCII is correct for mime-type
-  (define get-mime-type
-    (let ([file-suffix-regexp (byte-regexp #".*\\.([^\\.]*$)")])
-      (lambda (path)
-        (match (regexp-match file-suffix-regexp (path->bytes path))
-          [(list path-bytes sffx)
-           (hash-table-get MIME-TYPE-TABLE
-                           (lowercase-symbol! sffx)
-                           (lambda () DEFAULT-MIME-TYPE))]
-          [_ DEFAULT-MIME-TYPE]))))
-  
-  
-  (define DEFAULT-MIME-TYPE #"text/plain")
-  
-  (define MIME-TYPE-TABLE
-    (let ([table (make-hash-table)])
-      (for-each (lambda (x) (hash-table-put! table (car x) (cdr x)))
-                '((htm  . #"text/html")
-                  (html . #"text/html")
-                  (css  . #"text/css")
-                  (txt  . #"text/plain")
-                  (hqx  . #"application/mac-binhex40")
-                  (doc  . #"application/msword")
-                  (plt  . #"application/octet-stream")
-                  (w02  . #"application/octet-stream")
-                  (w03  . #"application/octet-stream")
-                  (exe  . #"application/octet-stream")
-                  (bin  . #"application/octet-stream")
-                  (pdf  . #"application/pdf")
-                  (ps   . #"application/postscript")
-                  (rtf  . #"application/rtf")
-                  (dvi  . #"application/x-dvi")
-                  (tar  . #"application/x-tar")
-                  (tex  . #"application/x-tex")
-                  (zip  . #"application/zip")
-                  (xls  . #"application/msexcel")
-                  (ppt  . #"application/powerpoint")
-                  (pot  . #"application/powerpoint")
-                  (ppf  . #"application/persuasion")
-                  (fm   . #"application/filemaker")
-                  (pm6  . #"application/pagemaker")
-                  (psd  . #"application/x-photoshop")
-                  (pdd  . #"application/x-photoshop")
-                  (ram  . #"audio/x-pn-realaudio")
-                  (ra   . #"audio/x-realaudio")
-                  (swf  . #"application/x-shockwave-flash")
-                  (aif  . #"audio/aiff")
-                  (au   . #"audio/basic")
-                  (voc  . #"audio/voice")
-                  (wav  . #"audio/wave")
-                  (mov  . #"video/quicktime")
-                  (mpg  . #"video/mpeg")
-                  (png  . #"image/png")
-                  (bmp  . #"image/bmp")
-                  (gif  . #"image/gif")
-                  (jpg  . #"image/jpeg")
-                  (tif  . #"image/tiff")
-                  (pic  . #"image/x-pict")))
-      table))
+              (and (string<=? prefix x) (string<? x next)))))))      
   
   (define (directory-part path)
     (let-values ([(base name must-be-dir) (split-path path)])

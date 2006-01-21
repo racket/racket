@@ -155,6 +155,7 @@
                                   (timeouts-servlet-connection (host-timeouts host-info))
                                   (timeouts-default-servlet (host-timeouts host-info)))
          (files:gen-dispatcher (paths-htdocs (host-paths host-info))
+                               (paths-mime-types (host-paths host-info))
                                (host-indices host-info)
                                (responders-file-not-found (host-responders host-info)))))))
   

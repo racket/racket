@@ -39,6 +39,7 @@
                  (log-file-path #f)
                  (file-root ,file-root)
                  (servlet-root ,servlet-root)
+                 (mime-types "mime.types")
                  (password-authentication "passwords"))))])
       (build-developer-configuration/vhosts
        `((port ,internal-port)

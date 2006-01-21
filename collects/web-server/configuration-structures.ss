@@ -2,7 +2,7 @@
   (require "util.ss"
            "configuration-table-structs.ss")
   (provide (struct timeouts (default-servlet password servlet-connection file-per-byte file-base))
-           (struct paths (host-base log htdocs servlet)))
+           (struct paths (host-base log htdocs mime-types servlet)))
 
   ; configuration is now a unit.  See sig.ss
 

@@ -4,12 +4,14 @@
            (lib "list.ss"))
   (require "dispatch.ss"
            "util.ss"
+           "mime-types.ss"
            "response.ss")  
   (provide interface-version
            gen-dispatcher)
   
   (define interface-version 'v1)
-  (define (gen-dispatcher htdocs-path indices file-not-found-responder)
+  (define (gen-dispatcher htdocs-path mime-types-path indices file-not-found-responder)
+    (let ([get-mime-type (make-get-mime-type mime-types-path)])
     (lambda (conn req)
       (let-values ([(uri method path) (decompose-request req)])
         ;; ************************************************************
@@ -38,7 +40,7 @@
                  [else
                   (output-response/method conn (file-not-found-responder uri) method)]))]
             [else
-             (output-response/method conn (file-not-found-responder uri) method)])))))
+             (output-response/method conn (file-not-found-responder uri) method)]))))))
   
   ;; looks-like-directory : str -> bool
   ;; to determine if is url style path looks like it refers to a directory
