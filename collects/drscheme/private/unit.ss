@@ -2135,21 +2135,17 @@ module browser threading seems wrong.
           
           (define/private (save-visible-tab-regions)
             (define (get-visible-regions txt)
-              (map (λ (canvas) (get-visible-region txt canvas))
+              (map (λ (canvas) 
+                     (let-values ([(x y w h _) (get-visible-region canvas)])
+                       (list x y w h)))
                    (send txt get-canvases)))
-            (define (get-visible-region txt canvas)
-              (let ([xb (box 0)]
-                    [yb (box 0)]
-                    [wb (box 0)]
-                    [hb (box 0)])
-                (send canvas call-as-primary-owner
-                      (λ ()
-                        (let ([admin (send txt get-admin)])
-                          (when admin
-                            (send admin get-view xb yb wb hb)))))
-                (list (unbox xb) (unbox yb) (unbox wb) (unbox hb))))
-            (send current-tab set-visible-ints (get-visible-regions interactions-text) interactions-shown?)
-            (send current-tab set-visible-defs (get-visible-regions definitions-text) definitions-shown?)
+            
+            (send current-tab set-visible-ints
+                  (get-visible-regions interactions-text)
+                  interactions-shown?)
+            (send current-tab set-visible-defs 
+                  (get-visible-regions definitions-text)
+                  definitions-shown?)
             (send current-tab set-focus-d/i
                   (if (ormap (λ (x) (send x has-focus?)) interactions-canvases)
                       'ints
@@ -2162,20 +2158,23 @@ module browser threading seems wrong.
                   (when (equal? (length canvases) (length regions))
                     (for-each (λ (c r) (set-visible-region txt c r)) canvases regions)))))
             (define (set-visible-region txt canvas region)
-              (send canvas scroll-to 
-                    (first region)
-                    (second region)
-                    (third region)
-                    (fourth region)
-                    #t))
-            
-            (let-values ([(vi is?) (send current-tab get-visible-ints)])
-              (set-visible-regions interactions-text vi)
-              (set! interactions-shown? is?))
-            (let-values ([(vd ds?) (send current-tab get-visible-defs)])
+              (let ([admin (send txt get-admin)])
+                ;(printf "setting to ~s\n" region)
+                (send admin scroll-to 
+                      (first region)
+                      (second region)
+                      (third region)
+                      (fourth region))
+                #;
+                (let-values ([(x y w h _) (get-visible-region canvas)])
+                  (printf "    set to ~s\n" (list x y w h)))))
+            (let-values ([(vi is?) (send current-tab get-visible-ints)]
+                         [(vd ds?) (send current-tab get-visible-defs)])
+              (set! interactions-shown? is?)
+              (set! definitions-shown? ds?)
+              (update-shown)
               (set-visible-regions definitions-text vd)
-              (set! definitions-shown? ds?))
-            (update-shown)
+              (set-visible-regions interactions-text vi))
             (case (send current-tab get-focus-d/i)
               [(defs) (send (car definitions-canvases) focus)]
               [(ints) (send (car interactions-canvases) focus)]))
