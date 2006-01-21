@@ -509,7 +509,7 @@
                (restricted-methods (make-method-names ;(append (accesses-package methods)
                                     (accesses-protected methods);)
                                     overridden-methods))
-               #;(make-gen-name 
+               (make-gen-name 
                 (lambda (m)
                   (build-generic-name (class-name)
                                       ((if (constructor? (id-string (method-name m))) build-constructor-name mangle-method-name)
@@ -520,7 +520,7 @@
                      (append (accesses-public methods)
                              (accesses-package methods)
                              (accesses-protected methods))))
-               #;(private-generics (map make-gen-name (accesses-private methods)))
+               (private-generics (map make-gen-name (accesses-private methods)))
                (names-for-dynamic (generate-dynamic-names (append (accesses-public methods)
                                                                   (accesses-package methods)
                                                                   (accesses-protected methods))
@@ -660,7 +660,7 @@
                              (define private-methods
                                ,(if (null? (accesses-private methods))
                                     '(make-hash-table)
-                                    (build-method-table (accesses-private methods) null #;private-generics)))
+                                    (build-method-table (accesses-private methods) private-generics)))
                                                           
                              ,@(map (lambda (i) (translate-initialize (initialize-static i)
                                                                       (initialize-block i)

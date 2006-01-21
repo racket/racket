@@ -4,12 +4,12 @@
   (prepare-for-tests "Advanced")
   
   ;;Execution tests without errors
-
-  (interact-test
-   'advanced
-   '("null.m()")
-   '(error)
-   "Calling a method on null")
+  
+  (execute-test
+   "public class X {
+     private int x() { return 3; }
+    }"
+   'advanced #f "Class with private method")
   
   (execute-test
    "public class Something {
@@ -227,6 +227,20 @@ class WeeklyPlanner{
  " 'advanced #t "Parsing test from student program. Should mention {")
   
   ;;Interaction tests, mix of right and error
+  
+  (interact-test
+   "public class X {
+     private int x() { return 3; }
+    }"
+   'advanced '("X y = new X();" "y.x()")
+   '((void) error) "Creating class with private method, and trying to access the method")
+
+  
+  (interact-test
+   'advanced
+   '("null.m()")
+   '(error)
+   "Calling a method on null")
   
   (interact-test 'advanced
                  (list "new int[3] instanceof int[] && true"
