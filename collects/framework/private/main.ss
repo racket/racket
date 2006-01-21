@@ -168,6 +168,7 @@
                      
                      
                      λ lambda let let* letrec recur
+                     lambda/kw
                      letrec-values
                      with-syntax
 		     with-continuation-mark
