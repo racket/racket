@@ -1,12 +1,18 @@
 
 (module struct mzscheme
   (require (lib "etc.ss")
+           (lib "contract.ss")
 	   "stx.ss")
   (require-for-template mzscheme)
   
+  (provide/contract
+   [build-struct-names
+    (opt-> (identifier? (listof identifier?) boolean? boolean?)
+           ((union false/c syntax?))
+           (listof identifier?))])
+  
   (provide parse-define-struct
 
-	   build-struct-names
 	   build-struct-generation
 	   build-struct-expand-info
 	   struct-declaration-info?
