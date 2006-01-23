@@ -44,7 +44,7 @@ Various common pieces of code that both the client and server need to access
   ; or #f if the given package isn't in the cache or the hardlink table
   (define (lookup-package pkg)
     (let* ((at (build-assoc-table pkg)))
-      (get-best-match/t at pkg)))
+      (get-best-match at pkg)))
   
   ; build-assoc-table : FULL-PKG-SPEC -> assoc-table
   ; returns a version-number -> directory association table for the given package
@@ -65,7 +65,18 @@ Various common pieces of code that both the client and server need to access
       (let ((maj (string->number majs))
             (min (string->number mins)))
         (if (and (path? p) maj min)
-            (list (pkg-spec-name pkg) (pkg-spec-path pkg) maj min (build-path path majs mins))
+            (let* ((the-path             (build-path path majs mins))
+                   (minimum-core-version 
+                    (if (file-exists? (build-path the-path "minimum-core-version"))
+                        (with-input-from-file (build-path the-path "minimum-core-version")
+                          read-line)
+                        #f)))
+              (make-assoc-table-row 
+               (pkg-spec-name pkg) 
+               (pkg-spec-path pkg)
+               maj min
+               the-path
+               minimum-core-version))
             #f)))
     
     (if (directory-exists? path)
@@ -135,7 +146,7 @@ Various common pieces of code that both the client and server need to access
   (define (add-hard-link! name path maj min dir)
     (let* ([original-table (get-hard-link-table)]
            [new-table (cons
-                       (list name path maj min dir)
+                       (make-assoc-table-row name path maj min dir #f)
                        (filter
                         (lambda (row) (not (points-to? row name path maj min)))
                         original-table))])
@@ -162,37 +173,72 @@ Various common pieces of code that both the client and server need to access
   (define (first-n-list-selectors n)
     (apply values (build-list n (lambda (m) (lambda (row) (list-ref row m))))))
   
-  ;; assoc-table-row->{name,path,maj,min,dir} : assoc-table-row -> {string,(listof string),num,num,path}
-  ;; retrieve the {package name, "package path", major version, minor version, directory}
+  ;; assoc-table-row->{name,path,maj,min,dir,required-version} 
+  ;; : assoc-table-row ->
+  ;; {string,(listof string),num,num,path,string|#f}
+  ;; retrieve the {package name, "package path", major version, minor version, directory, required core version}
   ;; of the given row
   (define-values (assoc-table-row->name
                   assoc-table-row->path
                   assoc-table-row->maj
                   assoc-table-row->min
-                  assoc-table-row->dir)
-    (first-n-list-selectors 5))
+                  assoc-table-row->dir
+                  assoc-table-row->required-version)
+    (first-n-list-selectors 6))
   
-  ; get-best-match/t : assoc-table FULL-PKG-SPEC -> PKG | #f
-  (define (get-best-match/t table spec)
+  (define (make-assoc-table-row name path maj min dir required-version)
+    (list name path maj min dir required-version))
+  
+  (define-struct mz-version (major minor))
+
+  ;; string->mz-version : string -> mz-version | #f
+  (define (string->mz-version str)
+    (let ((ver (regexp-match #rx"^([0-9]+)(\\.([0-9]+))?$" str)))
+      (if ver
+          (make-mz-version (list-ref ver 1) (list-ref ver 3))
+          #f)))
+  
+  ;; version<= : mz-version mz-version -> boolean
+  ;; determines if a is the version string of an earlier mzscheme release than b
+  ;;   [n.b. this relies on a guarantee from Matthew that mzscheme version
+  ;;    x1.y1 is older than version x2.y2 iff x1<x2 or x1=x2 and y1<y2]
+  (define (version<= a b)
+    (or (<= (mz-version-major a) (mz-version-major b))
+        (and (= (mz-version-major a) (mz-version-major b))
+             (<= (mz-version-minor a) (mz-version-minor b)))))
+
+  ;; compatible-version? : assoc-table-row FULL-PKG-SPEC -> boolean
+  ;; determines if the given package constrint verstr can support the given package
+  (define (compatible-version? row spec)
+    (let ((required-version (assoc-table-row->required-version row)))
+      (or (not required-version)
+          (version<= (string->mz-version required-version) 
+                     (string->mz-version (pkg-spec-core-version spec))))))
+ 
+  ; get-best-match : assoc-table FULL-PKG-SPEC -> PKG | #f
+  ; return the best on-disk match for the given package spec
+  (define (get-best-match table spec)
     (let* ((target-maj 
             (or (pkg-spec-maj spec)
                 (apply max (map assoc-table-row->maj table))))
-           (maj-matches (filter (λ (x) (equal? target-maj (assoc-table-row->maj x))) table))
-           (in-min-range
-            (let ((lo (pkg-spec-minor-lo spec))
-                  (hi (pkg-spec-minor-hi spec)))
-              (filter
-               (λ (x)
-                 (let ((n (assoc-table-row->min x)))
-                   (and (or (not lo) (>= n lo))
-                        (or (not hi) (<= n hi)))))
-               maj-matches))))
-      (if (null? in-min-range)
+           (lo (pkg-spec-minor-lo spec))
+           (hi (pkg-spec-minor-hi spec))
+           (matches
+            (filter 
+             (λ (x) 
+               (let ((n (assoc-table-row->min x)))
+                 (and
+                  (equal? target-maj (assoc-table-row->maj x))
+                  (or (not lo) (>= n lo))
+                  (or (not hi) (<= n hi))
+                  (compatible-version? x spec))))
+             table)))
+      (if (null? matches)
           #f
           (let ((best-row
                  (car 
                   (quicksort 
-                   in-min-range 
+                   matches 
                    (λ (a b) (> (assoc-table-row->min a) (assoc-table-row->min b)))))))
             (make-pkg
              (pkg-spec-name spec)
@@ -200,53 +246,9 @@ Various common pieces of code that both the client and server need to access
              (assoc-table-row->maj best-row)
              (assoc-table-row->min best-row)
              (assoc-table-row->dir best-row))))))
-          
 
-  ; get-best-match : FULL-PKG-SPEC (listof string[directory-name]) -> PKG | #f
-  ; gets the best version in the given subdirectory in the specified low and high version range
-  ; or #f if there is no appropriate version
-  (define (get-best-match pkg-spec path)
-    (let ((major-version (if (pkg-spec-maj pkg-spec)
-                             (let ((specified-number (number->string (pkg-spec-maj pkg-spec))))
-                               (if (directory-exists? (build-path path specified-number))
-                                   specified-number
-                                   #f))
-                             (get-highest-numbered-subdir path #f #f))))
-      (if major-version
-          (let ((minor-version (get-highest-numbered-subdir 
-                                (build-path path major-version)
-                                (pkg-spec-minor-lo pkg-spec)
-                                (pkg-spec-minor-hi pkg-spec))))
-            (if minor-version
-                (make-pkg
-                 (pkg-spec-name pkg-spec)
-                 (pkg-spec-path pkg-spec)
-                 (string->number major-version) 
-                 (string->number minor-version)
-                 (build-path path major-version minor-version))
-                #f))
-          #f)))
-  
-  ; get-highest-numbered-subdir : string (Nat | #f) (Nat | #f) -> string[subdir] | #f
-  ; given a path, returns the subdirectory of that path with the highest numeric name or #f if
-  ; none exists. Does not return the full path.
-  (define (get-highest-numbered-subdir path lo hi)
-    (define (valid-dir? d) 
-      (and 
-       (directory-exists? (build-path path d)) 
-       (let ((n (string->number (path->string d))))
-         (and n
-              (or (not lo) (>= n lo))
-              (or (not hi) (<= n hi))))))
-    
-    (unless (directory-exists? path) 
-      (raise (make-exn:fail:filesystem 
-              "Internal PLaneT error: inconsistent cache, directory does not exist" 
-              (current-continuation-marks))))
-    (max-string (map path->string (filter valid-dir? (directory-list path)))))
-  
-  ; FULL-PKG-SPEC : (make-pkg-spec string (Nat | #f) (Nat | #f) (Nat | #f) (listof string) (syntax | #f))
-  (define-struct pkg-spec (name maj minor-lo minor-hi path stx) (make-inspector))
+  ; FULL-PKG-SPEC : (make-pkg-spec string (Nat | #f) (Nat | #f) (Nat | #f) (listof string) (syntax | #f)) string
+  (define-struct pkg-spec (name maj minor-lo minor-hi path stx core-version) (make-inspector))
   ; PKG : string Nat Nat path
   (define-struct pkg (name route maj min path))
   
@@ -280,24 +282,6 @@ Various common pieces of code that both the client and server need to access
                       bytes-read)))]))
        #f
        void))))
-  
-  ; max-string : listof string[digits] -> string | #f
-  ; this odd little guy takes a list of strings that represent a number and returns the string
-  ; that represents the maximum number among them, or #f if there were no numbers at all 
-  (define (max-string strs)
-    (if (null? strs)
-        #f
-        (let loop ((biggest (car strs))
-                   (big-n (string->number (car strs)))
-                   (rest (cdr strs)))
-          (cond
-            [(null? rest) biggest]
-            [else
-             (let* ([candidate (car rest)]
-                    [test-n    (string->number candidate)])
-               (if (> test-n big-n)
-                   (loop candidate test-n (cdr rest))
-                   (loop biggest big-n (cdr rest))))]))))
   
   ; write-line : X output-port -> void
   ; writes the given value followed by a newline to the given port

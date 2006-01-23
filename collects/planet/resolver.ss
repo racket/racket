@@ -230,6 +230,14 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
   (define (get-planet-module-path/pkg spec module-path stx)
     (match (cdr spec)
       [(file-name pkg-spec path ...)
+       (unless (string? file-name)
+         (raise-syntax-error #f (format "File name: expected a string, received: ~s" file-name) stx))
+       (unless (andmap string? path)
+         ;; special-case to catch a possibly common error:
+         (if (ormap number? path)
+             (raise-syntax-error #f (format "Module path must consist of strings only, received a number (maybe you intended to specify a package version number?): ~s" path) stx)
+             (raise-syntax-error #f (format "Module path must consist of strings only, received: ~s" path) stx)))
+       
        (match-let*
            ([pspec (pkg-spec->full-pkg-spec pkg-spec stx)]
             [pkg (or (get-linkage module-path pspec)
@@ -237,20 +245,19 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
                                    (or
                                     (get-package-from-cache pspec)
                                     (get-package-from-server pspec)
-                                    (raise-syntax-error #f (format "Could not find package matching ~s" (list (pkg-spec-name pspec)
-                                                                                                              (pkg-spec-maj pspec)
-                                                                                                              (list (pkg-spec-minor-lo pspec)
-                                                                                                                    (pkg-spec-minor-hi pspec))
-                                                                                                              (pkg-spec-path pspec)))
+                                    (raise-syntax-error #f (format "Could not find package matching ~s" 
+                                                                   (list (pkg-spec-name pspec)
+                                                                         (pkg-spec-maj pspec)
+                                                                         (list (pkg-spec-minor-lo pspec)
+                                                                               (pkg-spec-minor-hi pspec))
+                                                                         (pkg-spec-path pspec)))
                                                         stx))))])
          (values (apply build-path (pkg-path pkg) (append path (list file-name))) pkg))]
       [_ (raise-syntax-error 'require (format "Illegal PLaneT invocation: ~e" (cdr spec)) stx)]))
   
-  ;; get-path : planet-request  -> path
-  
   ; pkg-spec->full-pkg-spec : PKG-SPEC syntax -> FULL-PKG-SPEC
   (define (pkg-spec->full-pkg-spec spec stx)
-    (define (pkg name maj lo hi path) (make-pkg-spec name maj lo hi path stx))
+    (define (pkg name maj lo hi path) (make-pkg-spec name maj lo hi path stx (version)))
     (match spec
       [(? string?)            (pkg spec #f #f #f '())]
       [((? string? path) ...) (pkg (last path) #f 0 #f (drop-last path))]
