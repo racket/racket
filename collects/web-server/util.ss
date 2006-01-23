@@ -111,25 +111,35 @@
         [(path? base) base])))
   
   ; more here - ".." should probably raise an error instead of disappearing.
+  ; XXX: This is terrible. should re-write.
   (define (url-path->path base p)
-    (let ((path-elems (chop-string #\/ p)))
+    (let ([path-elems (chop-string #\/ p)])
       ;;; Hardcoded, bad, and wrong
       (if (or (string=? (car path-elems) "servlets")
               (and (string=? (car path-elems) "")
                    (string=? (cadr path-elems) "servlets")))
           ;; Servlets can have extra stuff after them
-          (let loop ((p-e (if (string=? (car path-elems) "")
-                              (cddr path-elems)
-                              (cdr path-elems)))
-                     (f (build-path base 
-                                    (if (string=? (car path-elems) "")
-                                        (cadr path-elems)
-                                        (car path-elems)))))
-            (cond
-              ((null? p-e) f)
-              ((directory-exists? f) (loop (cdr p-e) (build-path f (car p-e))))
-              ((file-exists? f) f)
-              (else f))) ;; Don't worry about e.g. links for now
+          (let ([build-path
+                 (lambda (b p)
+                   (if (string=? p "")
+                       b
+                       (build-path b p)))])
+            (let loop ([p-e (if (string=? (car path-elems) "")
+                                (cddr path-elems)
+                                (cdr path-elems))]
+                       [f (build-path base 
+                                      (if (string=? (car path-elems) "")
+                                          (cadr path-elems)
+                                          (car path-elems)))])
+              (cond
+                [(null? p-e)
+                 f]
+                [(directory-exists? f)
+                 (loop (cdr p-e) (build-path f (car p-e)))]
+                [(file-exists? f)
+                 f]
+                [else
+                 f]))) ;; Don't worry about e.g. links for now
           ; spidey can't check build-path's use of only certain symbols
           (apply build-path base
                  (foldr (lambda (x acc)
