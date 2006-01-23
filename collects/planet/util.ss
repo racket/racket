@@ -32,7 +32,7 @@
   ;; get-installed-package : string string nat nat -> PKG | #f
   ;; gets the package associated with this package, if any
   (define (get-installed-package owner name maj min)
-    (lookup-package (make-pkg-spec name maj min min (list owner) #f) (CACHE-DIR)))
+    (lookup-package (make-pkg-spec name maj min min (list owner) #f)))
   
   ;; just so it will be provided
   (define unlink-all remove-all-linkage!)

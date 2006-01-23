@@ -184,8 +184,8 @@ Various common pieces of code that both the client and server need to access
               (filter
                (λ (x)
                  (let ((n (assoc-table-row->min x)))
-                   (or (not lo) (>= n lo))
-                   (or (not hi) (<= n hi))))
+                   (and (or (not lo) (>= n lo))
+                        (or (not hi) (<= n hi)))))
                maj-matches))))
       (if (null? in-min-range)
           #f
