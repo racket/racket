@@ -140,10 +140,16 @@
           #f
           (match (match-url-params (first k-params))
             [(list s instance k-id salt)
-             (list (string->symbol instance)
-                   (string->number k-id)
-                   (string->number salt))]))))
-             
+             (let ([k-id/n (string->number k-id)]
+                   [salt/n (string->number salt)])
+               (if (and (number? k-id/n)
+                        (number? salt/n))
+                   (list (string->symbol instance)
+                         k-id/n
+                         salt/n)
+                   ; XXX: Maybe log this in some way?
+                   #f))]))))
+  
   ;; insert-param: url string -> string
   ;; add a path/param to the path in a url
   ;; (assumes that there is only one path/param)
