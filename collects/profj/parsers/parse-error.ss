@@ -2117,7 +2117,7 @@
                 (parse-expression cur-tok (getter) 'dot-op-or-end getter statement-ok? stmt-exp?)
                 (parse-error "Expected an expression. null may not be used here" start end)))
            ((TRUE_LIT FALSE_LIT STRING_LIT CHAR_LIT INTEGER_LIT 
-                      LONG_LIT FLOAT_LIT DOUBLE_LIT this)
+                      LONG_LIT FLOAT_LIT DOUBLE_LIT this IMAGE_SPECIAL)
             (parse-expression cur-tok (getter) 'dot-op-or-end getter statement-ok? stmt-exp?))
            ((super)
             (if (beginner?)
@@ -2262,7 +2262,7 @@
                    (next-tok (get-tok next)))
               (case (get-token-name next-tok)
                 ((~ ! - + TRUE_LIT FALSE_LIT STRING_LIT CHAR_LIT INTEGER_LIT 
-                      LONG_LIT FLOAT_LIT DOUBLE_LIT this O_PAREN new IDENTIFIER)
+                      LONG_LIT FLOAT_LIT DOUBLE_LIT this O_PAREN new IDENTIFIER IMAGE_SPECIAL)
                  (parse-expression cur-tok next 'start getter #f stmt-exp?))
                 ((super)
                  (if (beginner?)

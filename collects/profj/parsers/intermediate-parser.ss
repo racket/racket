@@ -59,7 +59,8 @@
                                               (- (position-offset (cadr $1)) (position-offset $1-start-pos))
                                               (file-path))
                                    (car $1))]
-       [(NULL_LIT) (make-literal 'null (build-src 1) #f)])
+       [(NULL_LIT) (make-literal 'null (build-src 1) #f)]
+       [(IMAGE_SPECIAL) (make-literal 'image (build-src 1) $1)])
       
       ;; 19.4
       (Type

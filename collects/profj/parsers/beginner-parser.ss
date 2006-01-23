@@ -54,7 +54,8 @@
                                              (+ (position-offset $1-start-pos) (interactions-offset))
                                              (- (position-offset (cadr $1)) (position-offset $1-start-pos))
                                              (file-path))
-                                   (car $1))])
+                                   (car $1))]
+       [(IMAGE_SPECIAL) (make-literal 'image (build-src 1) $1)])
       
       ;; 19.4
       (Type
