@@ -10,6 +10,7 @@ Various common pieces of code that both the client and server need to access
            (lib "etc.ss")
            (lib "port.ss")
            (lib "file.ss")
+           (lib "getinfo.ss" "setup")
            "../config.ss")
   
   (provide (all-defined))
@@ -56,6 +57,17 @@ Various common pieces of code that both the client and server need to access
   ;; assoc-table ::= (listof (list n n path))
   (define empty-table '())
   
+  ;; get-min-core-version : path -> string | #f
+  (define (get-min-core-version p)
+    (let ((info (with-handlers ([exn:fail? (lambda (e) #f)])
+                  (get-info/full p))))
+      (if info
+          (let ((core (info 'required-core-version (lambda () #f))))
+            (if (and core (string? core))
+                core
+                #f))
+          #f)))
+  
   ; dir->assoc-table : FULL-PKG-SPEC -> assoc-table
   ; returns the on-disk packages for the given planet dir
   (define (dir->assoc-table pkg)
@@ -65,18 +77,14 @@ Various common pieces of code that both the client and server need to access
       (let ((maj (string->number majs))
             (min (string->number mins)))
         (if (and (path? p) maj min)
-            (let* ((the-path             (build-path path majs mins))
-                   (minimum-core-version 
-                    (if (file-exists? (build-path the-path "minimum-core-version"))
-                        (with-input-from-file (build-path the-path "minimum-core-version")
-                          read-line)
-                        #f)))
+            (let* ((the-path         (build-path path majs mins))
+                   (min-core-version (get-min-core-version the-path)))
               (make-assoc-table-row 
                (pkg-spec-name pkg) 
                (pkg-spec-path pkg)
                maj min
                the-path
-               minimum-core-version))
+               min-core-version))
             #f)))
     
     (if (directory-exists? path)
@@ -195,7 +203,7 @@ Various common pieces of code that both the client and server need to access
   (define (string->mz-version str)
     (let ((ver (regexp-match #rx"^([0-9]+)(\\.([0-9]+))?$" str)))
       (if ver
-          (make-mz-version (list-ref ver 1) (list-ref ver 3))
+          (make-mz-version (string->number (list-ref ver 1)) (string->number (list-ref ver 3)))
           #f)))
   
   ;; version<= : mz-version mz-version -> boolean

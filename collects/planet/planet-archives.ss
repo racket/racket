@@ -1,7 +1,8 @@
 (module planet-archives mzscheme
   (require "private/planet-shared.ss"
 	   (lib "file.ss")
-           "config.ss")
+           "config.ss"
+           "cachepath.ss")
   
   (provide repository-tree get-installed-planet-archives get-planet-cache-path)
   
@@ -30,11 +31,4 @@
                    min)))
            x))
        (repository-tree)
-       3)))
-  
-  ;; get-planet-cache-path : -> path[absolute, file]
-  ;; the path to the cache.ss file for the planet installation
-  ;; SIDE EFFECT: creates the directory if it doesn't already exist
-  (define (get-planet-cache-path)
-    (let ((path (build-path (PLANET-DIR) "cache.ss")))
-      path)))
+       3))))
