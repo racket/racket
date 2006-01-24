@@ -451,5 +451,12 @@
    (list 'error)
    "Trying to create an instance of an interface")
   
+  (interact-test
+   "class X { X() { } double f() { return 2; } }"
+   language
+   (list "double x = 1;" "x" "new X().f()")
+   (list '(void) 1.0 2.0)
+   "Converting ints into doubles appropriately")
+  
   (report-test-results))
    

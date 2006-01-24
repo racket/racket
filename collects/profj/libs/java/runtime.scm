@@ -151,6 +151,8 @@
                                              (send (convert-to-string val) get-mzscheme-string))))))
           ((float double)
            (cond
+             ((and (number? val) (inexact? val)) val)
+             ((and (number? val) (exact? val)) (exact->inexact val))
              ((number? val) val)
              ((char? val) (char->integer val))
              (else (raise-class-cast (format "Cast to ~a failed for ~a" type

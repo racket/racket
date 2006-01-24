@@ -115,6 +115,7 @@
   ;; widening-prim-conversion: symbol-type symbol-type -> boolean
   (define (widening-prim-conversion to from)
     (cond
+      ((symbol=? to from) #t)
       ((symbol=? 'short to)
        (symbol=? 'byte from))
       ((symbol=? 'int to)

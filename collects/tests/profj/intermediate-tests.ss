@@ -440,6 +440,10 @@
    (list 5)
    "Calling a super method")
 
-
+  (interact-test
+   'intermediate
+   '("(double) 1" "(double) 1.0" "double x;" "x" "x = 1;" "(int) x")
+   '(1.0 1.0 (void) 0.0 1.0 1)
+   "Double-int conversions")
   
   (report-test-results))

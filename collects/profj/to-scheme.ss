@@ -84,6 +84,7 @@
       (if (> (type-spec-dim type) 0)
           (make-syntax #f 'null #f)
           (cond
+            ((memq name '(float double)) (make-syntax #f 0.0 #f))
             ((prim-numeric-type? name) (make-syntax #f 0 #f))
             ((eq? 'char name) (make-syntax #f '#\space #f))
             ((eq? 'boolean name) (make-syntax #f '#f #f))
@@ -1502,10 +1503,14 @@
                               (initialize-array (array-init-vals (var-init-init init?))
                                                 type)
                               (translate-expression (var-init-init init?)))))
-         (if (or (eq? 'dynamic (field-type init?))
-                 (dynamic-val? (field-type init?)))
-             (make-syntax #f (guard-convert-value body-syntax actual-type) body-syntax)
-             body-syntax)))
+         (cond
+           ((or (eq? 'dynamic (field-type init?))
+                (dynamic-val? (field-type init?)))
+            (make-syntax #f (guard-convert-value body-syntax actual-type) body-syntax))
+           ((and (memq (field-type init?) '(float double))
+                 (memq actual-type '(long int byte short)))
+            (make-syntax #f `(exact->inexact ,body-syntax) body-syntax))
+           (else body-syntax))))
       (else (get-default-value type))))
   
   ;translate-initialize: bool block src string type-records -> syntax
@@ -1615,9 +1620,14 @@
   ;Presently a no-op in the interactions window, although this is incorrect for advanced and full
   ;translate-return: syntax type type bool src -> syntax
   (define (translate-return expr expr-type exp-type in-tail? src)
-    (let ((expr (if (and expr-type (eq? 'dynamic exp-type))
-                    (guard-convert-value expr expr-type)
-                    expr)))
+    (let ((expr (cond
+                  ((and expr-type (eq? 'dynamic exp-type))
+                   (guard-convert-value expr expr-type))
+                  ((and expr-type
+                        (memq exp-type '(float double))
+                        (memq expr-type '(long int short byte)))
+                   (make-syntax #f `(exact->inexact ,expr) expr))
+                  (else expr))))
       (if (or (interactions?) in-tail?)
           (make-syntax #f expr #f)
           (make-syntax #f `(return-k ,expr) (build-src src)))))
@@ -2049,7 +2059,10 @@
                      temp-obj))))
       (create-syntax #f 
                      (case type
-                       ((char int long float double boolean) value)
+                       ((float double) (if (inexact? value)
+                                           value
+                                           (exact->inexact value)))
+                       ((char int long boolean) value)
                        ((String string) make-string)
                        ((image) (make-image))
                        ((null) 'null)
@@ -2618,11 +2631,15 @@
                                  ((>>=) `(javaRuntime:shift '>> ,name ,expr))
                                  ((<<=) `(javaRuntime:shift '<< ,name ,expr))
                                  ((>>>=) `(javaRuntime:shift '>>> ,name ,expr))
-                                 ((%= &= ^= or=) 
+                                 ((%= &= ^= or=)
                                   (error 'translate-assignment "Only supports =, +=, -=, *=, & /= >>= <<= >>>= at this time")))))
-                          (if (or (eq? type 'dynamic) (dynamic-val? type))
-                              (guard-convert-value (make-syntax #f expanded-expr (build-src src)) (expr-types assign-to))
-                              expanded-expr)))))
+                          (cond
+                            ((or (eq? type 'dynamic) (dynamic-val? type))
+                             (guard-convert-value (make-syntax #f expanded-expr (build-src src)) (expr-types assign-to)))
+                            ((and (memq type '(float double))
+                                  (memq (expr-types assign-to) '(long int short byte)))
+                             `(exact->inexact ,expanded-expr))
+                            (else expanded-expr))))))
       (cond 
         ((array-access? name)
          (translate-array-mutation name expression assign-to src))

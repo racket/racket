@@ -2508,7 +2508,7 @@
           (unless (or (and (prim-numeric-type? exp-type)
                            (prim-numeric-type? type)
                            (or (widening-prim-conversion exp-type type)
-                               (widening-prim-conversion type exp-type))) 
+                               (widening-prim-conversion type exp-type)))
                       (and (eq? 'boolean type)
                            (eq? 'boolean exp-type)))
             (cast-error 'incompatible-prim exp-type type src))
