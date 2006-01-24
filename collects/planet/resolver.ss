@@ -400,7 +400,9 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
          (state:abort (format "Unknown error ~a receiving package: ~a" code msg))]
         [bad-response  (state:abort (format "Server returned malformed message: ~e" bad-response))]))
     
-    (define (state:abort msg) (raise (make-exn:i/o:protocol msg (current-continuation-marks))))
+    (define (state:abort msg) 
+      (raise (make-exn:i/o:protocol (string->immutable-string msg)
+                                    (current-continuation-marks))))
     (define (state:failure msg) (list #f msg))
     
     (with-handlers ([void (lambda (e) (close-ports) (raise e))])
@@ -444,7 +446,8 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
       
       (define (abort msg)
         (close-input-port ip)
-        (raise (make-exn:i/o:protocol msg (current-continuation-marks))))
+        (raise (make-exn:i/o:protocol (string->immutable-string msg)
+                                      (current-continuation-marks))))
       
       (case response-code
         [(#f)  (abort (format "Server returned invalid HTTP response code ~s" response-code/str))]

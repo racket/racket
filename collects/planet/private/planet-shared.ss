@@ -203,7 +203,11 @@ Various common pieces of code that both the client and server need to access
   (define (string->mz-version str)
     (let ((ver (regexp-match #rx"^([0-9]+)(\\.([0-9]+))?$" str)))
       (if ver
-          (make-mz-version (string->number (list-ref ver 1)) (string->number (list-ref ver 3)))
+          (make-mz-version 
+           (string->number (list-ref ver 1))
+           (if (list-ref ver 3)
+               (string->number (list-ref ver 3))
+               0))
           #f)))
   
   ;; version<= : mz-version mz-version -> boolean
@@ -220,8 +224,11 @@ Various common pieces of code that both the client and server need to access
   (define (compatible-version? row spec)
     (let ((required-version (assoc-table-row->required-version row)))
       (or (not required-version)
-          (version<= (string->mz-version required-version) 
-                     (string->mz-version (pkg-spec-core-version spec))))))
+          (let ((required (string->mz-version required-version))
+                (provided (string->mz-version (pkg-spec-core-version spec))))
+            (or (not required) 
+                (not provided)
+                (version<= required provided))))))
  
   ; get-best-match : assoc-table FULL-PKG-SPEC -> PKG | #f
   ; return the best on-disk match for the given package spec
