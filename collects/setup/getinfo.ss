@@ -7,7 +7,7 @@
            
            (lib "contract.ss")
            
-           (lib "planet-archives.ss" "planet"))
+           (lib "cachepath.ss" "planet"))
 
   (define info? (opt-> (symbol?) ((-> any/c)) any/c))
   (define path-or-string? (lambda (x) (or (path? x) (string? x))))
