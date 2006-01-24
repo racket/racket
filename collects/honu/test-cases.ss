@@ -6,10 +6,9 @@
            "private/typechecker/typecheck-expression.ss"
            "tenv.ss"
            "ast.ss"
-           "utils.ss"
            "top.ss")
   
-  (define/p examples
+  (define example-files
     (list "examples/BoundedStack.honu"
           "examples/EvenOddClass.honu"
           "examples/List.honu"
@@ -26,10 +25,20 @@
 ;          "examples/nonexistent.honu"
           ))
 
+  (provide void-example example-files)
+  
+  (define (void-example)
+    (typecheck-expression
+     (wrap-lenv) #f
+     (make-ast:expr:sequence
+      #'()
+      (list (make-ast:expr:literal #'() (make-ast:type:primitive #'() 'int) #'5))
+      (make-ast:expr:literal #'() (make-ast:type:primitive #'() 'int) #'4))))
+  
   (define-test-suite honu-tests
     (test-case
      examples-simple
-     (map test-file examples)
+     (map test-file example-files)
      [pred: (lambda (all-results)
               (andmap (lambda (file-results)
                         (andmap (lambda (result) (eq? result #t))
@@ -38,15 +47,18 @@
     (test-suite typechecker
        (test-suite expression
           (test-case sequence-not-void
-                     (typecheck-expression
-                      (wrap-lenv) #f
-                      (make-honu:seq
-                       #'()
-                       (list (make-honu:lit #'() (make-honu:type-prim #'() 'int) 5))
-                       (make-honu:lit #'() (make-honu:type-prim #'() 'int) 4)))
+                     (void-example)
                      [error: (lambda (exn) (srfi13:string-contains (exn-message exn) "void"))]))))
+
+  (provide/contract
+   [run-tests (-> report?)]
+   [run-examples (-> void?)]
+   )
   
-  (define/c (run-tests) (-> report?)
+  (define (run-tests)
     (honu-tests))
+
+  (define (run-examples)
+    (for-each run-program example-files))
   
   )

@@ -15,13 +15,22 @@
            "honu-context.ss"
            "ast.ss"
            "tenv.ss"
-           "utils.ss"
+           "private/tools/general.ss"
            )
 
-  (define/c current-tenv parameter? (make-parameter (empty-tenv)))
-  (define/c current-lenv parameter? (make-parameter (get-builtin-lenv)))
+  (provide/contract
+   [current-tenv parameter?]
+   [current-lenv parameter?]
+   )
+  
+  (define current-tenv (make-parameter (empty-tenv)))
+  (define current-lenv (make-parameter (get-builtin-lenv)))
 
-  (define/c (reset-env) (-> void?)
+  (provide/contract
+   [reset-env (-> void?)]
+   )
+  
+  (define (reset-env)
     (current-tenv (empty-tenv))
     (current-lenv (get-builtin-lenv)))
 
@@ -38,16 +47,22 @@
        #`(parameterize ([current-compile-context honu-compile-context])
            BODY ...)]))
 
-  (define/c (ast-from-file file) (path-string? . -> . (listof honu:defn?))
+  (provide/contract
+   [ast-from-file (path-string? . -> . (listof ast:defn?))]
+   [check-defns ((listof ast:defn?) . -> . (listof ast:defn?))]
+   [translate-defns ((listof ast:defn?) . -> . (syntax/c any/c))]
+   )
+  
+  (define (ast-from-file file)
     (with-env
      (post-parse-program
       (add-defns-to-tenv
        (parse-port (open-input-file file) file)))))
 
-  (define/c (check-defns defns) ((listof honu:defn?) . -> . (listof honu:defn?))
+  (define (check-defns defns)
     (with-env (typecheck defns)))
 
-  (define/c (translate-defns defns) ((listof honu:defn?) . -> . (syntax/c any/c))
+  (define (translate-defns defns)
     (with-env
      (with-context
        (let-values
@@ -75,7 +90,14 @@
     (let* ([tenv (current-tenv)])
       (bound-identifier-mapping-map tenv tenv:entry-mangled-name)))
 
-  (define/p (eval-after-program file stx) (path-string? syntax? . -> . any)
+  (provide/contract
+   [eval-after-program (path-string? syntax? . -> . any)]
+   [run-program  (path-string? . -> . (values (listof symbol?) (listof symbol?)))]
+   [run-programs ((listof path-string?) . -> .
+                  (values (listof (listof symbol?)) (listof (listof symbol?))))]
+   )
+  
+  (define (eval-after-program file stx)
     (reset-env)
     (let* ([ast (ast-from-file file)]
            [ast (check-defns ast)]
@@ -83,13 +105,12 @@
       (eval
        #`(begin #,defs #,stx))))
 
-  (define/c (run-program file) (path-string? . -> . (values (listof symbol?) (listof symbol?)))
+  (define (run-program file)
     (reset-env)
     (eval-syntax (translate-defns (check-defns (ast-from-file file))))
     (values (tenv-names) (lenv-names)))
 
-  (define/c (run-programs files)
-    ((listof path-string?) . -> . (values (listof (listof symbol?)) (listof (listof symbol?))))
+  (define (run-programs files)
     (map-values run-program files))
 
   (define (program-syntax file)
@@ -101,8 +122,12 @@
                (if (eof-object? input)
                    (reverse sexps)
                    (read-loop (cons input sexps) (read-syntax file port)))))))
+
+  (provide/contract
+   [test-file (path-string? . -> . any)]
+   )
   
-  (define/c (test-file file) (path-string? . -> . any)
+  (define (test-file file)
     (with-handlers
         ([exn:fail? (lambda (exn) `(error ,(exn-message exn)))])
       (let* ([honu-path (if (path? file) file (string->path file))]

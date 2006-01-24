@@ -6,7 +6,7 @@
            "../../ast.ss"
            "../../readerr.ss"
            "../../tenv.ss"
-           "../../utils.ss"
+           "../tools/general.ss"
            "../typechecker/type-utils.ss"
            "translate-expression.ss"
            "translate-utils.ss")
@@ -61,27 +61,27 @@
       (if (null? exports)
           comp-exps
           (let* ([export     (car exports)]
-                 [type-entry (get-type-entry (honu:export-type export))])
-            (let loop2 ([exp-binds  (honu:export-binds export)]
+                 [type-entry (get-type-entry (ast:export-type export))])
+            (let loop2 ([exp-binds  (ast:export-members export)]
                         [members    (append (tenv:type-members type-entry)
                                             (tenv:type-inherited type-entry))]
                         [comp-binds '()])
               (if (null? exp-binds)
                   (let ([super-exports (generate-super-exports type-entry comp-binds)])
                     (loop (cdr exports)
-                          (cons (make-comp:export (honu:ast-stx export)
-                                                  (honu:export-type export)
+                          (cons (make-comp:export (ast-syntax export)
+                                                  (ast:export-type export)
                                                   comp-binds)
                                 (append super-exports comp-exps))))
                   (let-values ([(matched non-matches) (partition-first (lambda (m)
-                                                                         (tenv-key=? (honu:exp-bind-new (car exp-binds))
+                                                                         (tenv-key=? (ast:export/member-external (car exp-binds))
                                                                                      (tenv:member-name m)))
                                                                        members)])
                     (loop2 (cdr exp-binds)
                            non-matches
-                           (cons (make-comp:exp-bind (honu:exp-bind-old (car exp-binds))
-                                                     (honu:exp-bind-new (car exp-binds))
-                                                     (honu:type-disp? (tenv:member-type matched)))
+                           (cons (make-comp:exp-bind (ast:export/member-internal (car exp-binds))
+                                                     (ast:export/member-external (car exp-binds))
+                                                     (ast:type:method? (tenv:member-type matched)))
                                  comp-binds)))))))))
   
   (define (sort-binds export)
@@ -152,15 +152,15 @@
 
   (provide translate-super-new translate-inits translate-member)
   (define (translate-super-new super-new)
-    (at (honu:ast-stx super-new)
+    (at (ast-syntax super-new)
         (cons 'super-new (map (lambda (a)
-                                (list (at-ctxt (honu:name-arg-name a))
-                                      (translate-expression (honu:name-arg-value a))))
-                              (honu:super-new-args super-new)))))
+                                (list (at-ctxt (ast:named/arg-name a))
+                                      (translate-expression (ast:named/arg-actual a))))
+                              (ast:super-new-args super-new)))))
   
   (define (translate-inits inits)
     (cons 'init (map (lambda (i)
-                       (at-ctxt (honu:formal-name i)))
+                       (at-ctxt (ast:formal-name i)))
                      inits)))
   
   (define (mangle-init-name name)
@@ -168,16 +168,16 @@
   
   (define (translate-member member)
     (match member
-      [(struct honu:init-field (stx name type value))
+      [(struct ast:class/member:field/formal (stx name type value))
        (if value
            (at stx`(begin (init ([,(mangle-init-name name) ,(at-ctxt name)]
                                  ,(translate-expression value)))
                           (define ,(at-ctxt name) ,(mangle-init-name name))))
            (at stx `(begin (init ([,(mangle-init-name name) ,(at-ctxt name)]))
                            (define ,(at-ctxt name) ,(mangle-init-name name)))))]
-      [(struct honu:field (stx name type value))
+      [(struct ast:class/member:field (stx name type value))
        (at stx `(define ,(at-ctxt name) ,(translate-expression value)))]
-      [(struct honu:method (stx name type formals body))
+      [(struct ast:class/member:method (stx name type formals body))
        (translate-function stx name formals (translate-expression body))]))
   
   

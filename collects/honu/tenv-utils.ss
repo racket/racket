@@ -4,7 +4,7 @@
            "ast.ss"
            "parameters.ss"
            "tenv.ss"
-           "utils.ss"
+           "private/tools/general.ss"
            "private/typechecker/type-utils.ss"
            (lib "plt-match.ss")
            (lib "struct.ss")
@@ -14,24 +14,24 @@
     (define (convert-to-decl d)
       (cond
         ;; can come from inits
-        [(honu:formal? d)
-         (make-honu:field-decl (honu:ast-stx d)
-                               (honu:formal-name d)
-                               (honu:formal-type d))]
+        [(ast:formal? d)
+         (make-ast:iface/member:field (ast-syntax d)
+                               (ast:formal-name d)
+                               (ast:formal-type d))]
         ;; can come from mdidefns
-        [(honu:init-field? d)
-         (make-honu:field-decl (honu:ast-stx d)
-                               (honu:member-defn-name d)
-                               (honu:init-field-type d))]
-        [(honu:field? d)
-         (make-honu:field-decl (honu:ast-stx d)
-                               (honu:member-defn-name d)
-                               (honu:field-type d))]
-        [(honu:method? d)
-         (make-honu:method-decl (honu:ast-stx d)
-                                (honu:member-defn-name d)
-                                (honu:method-type d)
-                                (map honu:formal-type (honu:method-formals d)))]))
+        [(ast:class/member:field/formal? d)
+         (make-ast:iface/member:field (ast-syntax d)
+                               (ast:class/member-name d)
+                               (ast:class/member:field/formal-type d))]
+        [(ast:class/member:field? d)
+         (make-ast:iface/member:field (ast-syntax d)
+                               (ast:class/member-name d)
+                               (ast:class/member:field-type d))]
+        [(ast:class/member:method? d)
+         (make-ast:iface/member:method (ast-syntax d)
+                                (ast:class/member-name d)
+                                (ast:class/member:method-return-type d)
+                                (map ast:formal-type (ast:class/member:method-formals d)))]))
     (map convert-to-decl (append inits mfidefns)))
   
   (define (make-struct-export typ inits mdidefns members)
@@ -40,13 +40,13 @@
         ;; can come from members
         [(tenv:member? d)      (tenv:member-name d)]
         ;; can come from inits
-        [(honu:formal? d)      (honu:formal-name d)]
+        [(ast:formal? d)      (ast:formal-name d)]
         ;; can come from mdidefns
-        [(honu:member-defn? d) (honu:member-defn-name d)]))
+        [(ast:class/member? d) (ast:class/member-name d)]))
     (let ([binds (map (lambda (m)
                         (let ([name (grab-name m)])
-                          (make-honu:exp-bind name name))) (append inits mdidefns members))])
-      (make-honu:export #f typ binds)))
+                          (make-ast:export/member #f name name))) (append inits mdidefns members))])
+      (make-ast:export #f typ binds)))
   
   (define (tenv-create-error skipped)
     ;; only subclasses and substructs can be skipped, so if the base of one of them
@@ -61,31 +61,31 @@
     ;; (for example, it may give a cycle error when it turns out that the first thing
     ;; in the skipped list just depends on something else which just had stuff missing,
     ;; so there should have been a definitions needed missing error.  Will revisit later.
-    (if (honu:iface? (car skipped))
-        (let ([supers (honu:iface-supers (car skipped))])
+    (if (ast:defn:iface? (car skipped))
+        (let ([supers (ast:defn:iface-supers (car skipped))])
           (if (find (lambda (d)
                       (cond
-                        [(honu:iface? d) (s:member (honu:iface-name d) supers tenv-key=?)]
+                        [(ast:defn:iface? d) (s:member (ast:defn:iface-name d) supers tenv-key=?)]
                         [else            #f]))
                     (cdr skipped))
               (raise-read-error-with-stx
                (format "Type ~a is involved in a type hierarchy cycle"
-                       (printable-key (honu:iface-name (car skipped))))
-               (honu:iface-name (car skipped)))
+                       (printable-key (ast:defn:iface-name (car skipped))))
+               (ast:defn:iface-name (car skipped)))
               (raise-read-error-with-stx
                (format "At least one supertype of type ~a is missing"
-                       (printable-key (honu:iface-name (car skipped))))
-               (honu:iface-name (car skipped)))))
+                       (printable-key (ast:defn:iface-name (car skipped))))
+               (ast:defn:iface-name (car skipped)))))
         (let ([class-name (cond
-                            [(honu:subclass?  (car skipped)) (honu:subclass-name  (car skipped))]
-                            [(honu:substruct? (car skipped)) (honu:substruct-name (car skipped))])]
+                            [(ast:defn:subclass?  (car skipped)) (ast:defn:subclass-name  (car skipped))]
+                            [(ast:defn:substructure? (car skipped)) (ast:defn:substructure-name (car skipped))])]
               [base-name  (cond
-                            [(honu:subclass?  (car skipped)) (honu:subclass-base  (car skipped))]
-                            [(honu:substruct? (car skipped)) (honu:substruct-base (car skipped))])])
+                            [(ast:defn:subclass?  (car skipped)) (ast:defn:subclass-base  (car skipped))]
+                            [(ast:defn:substructure? (car skipped)) (ast:defn:substructure-super-class (car skipped))])])
           (if (find (lambda (d)
                       (cond
-                        [(honu:subclass?  d) (tenv-key=? base-name (honu:subclass-name  d))]
-                        [(honu:substruct? d) (tenv-key=? base-name (honu:substruct-name d))]
+                        [(ast:defn:subclass?  d) (tenv-key=? base-name (ast:defn:subclass-name  d))]
+                        [(ast:defn:substructure? d) (tenv-key=? base-name (ast:defn:substructure-name d))]
                         [else                #f]))
                     (cdr skipped))
               (raise-read-error-with-stx
@@ -116,11 +116,11 @@
              (tenv-create-error skipped))]
         ;; for functions and top level bindings, we
         ;; don't add them here, so just skip them.
-        [(or (honu:function? (car defns))
-             (honu:bind-top? (car defns)))
+        [(or (ast:defn:function? (car defns))
+             (ast:defn:binding? (car defns)))
          (loop (cdr defns) skipped #t (cons (car defns) new-defns))]
-        [(honu:iface? (car defns))
-         (let loop2 ([supers (map honu:type-iface-name (honu:iface-supers (car defns)))])
+        [(ast:defn:iface? (car defns))
+         (let loop2 ([supers (map ast:type:object:iface-name (ast:defn:iface-supers (car defns)))])
            (cond
              ;; if we went through all the supers with them being defined,
              ;; then we can add this type as well.
@@ -142,49 +142,49 @@
               (loop (cdr defns) (cons (car defns) skipped) changed? new-defns)]))]
         ;; for classes and mixins, we don't use the tenv to create
         ;; their entries, so we just run them through as we hit them.
-        [(or (honu:class? (car defns))
-             (honu:mixin? (car defns)))
+        [(or (ast:defn:class? (car defns))
+             (ast:defn:mixin? (car defns)))
          (loop (cdr defns) skipped #t (cons (add-defn-to-tenv (car defns)) new-defns))]
         ;; for structs, we will get back a list of two things: the new type
         ;; and the new class definition, so append those onto new-defns
-        [(honu:struct? (car defns))
+        [(ast:defn:structure? (car defns))
          (match (car defns)
-           [(struct honu:struct (stx name type final? impls inits members exports))
-            (let ([new-iface (make-honu:iface stx (honu:type-iface-name type) (list)
+           [(struct ast:defn:structure (stx name type final? impls inits members exports))
+            (let ([new-iface (make-ast:defn:iface stx (ast:type:object:iface-name type) (list)
                                               (make-struct-type-decls inits members))]
-                  [new-class (make-honu:class stx name type final? (cons type impls) inits members 
+                  [new-class (make-ast:defn:class stx name type final? (cons type impls) inits members 
                                               (cons (make-struct-export type inits members (list)) exports))])
               (loop (cdr defns) skipped #t (cons (add-defn-to-tenv new-class)
                                                  (cons (add-defn-to-tenv new-iface) new-defns))))])]
         ;; for subclasses, we check to make sure the base (and its self-type) and
         ;; the mixin (and its arg-type) are in the tenv.  If not, skip it.
         ;; Give appropriate errors for each thing that can go wrong.
-        [(honu:subclass? (car defns))
-         (let* ([base     (get-tenv-entry (honu:subclass-base (car defns)))]
+        [(ast:defn:subclass? (car defns))
+         (let* ([base     (get-tenv-entry (ast:defn:subclass-base (car defns)))]
                 [selftype (if (and base (tenv:class? base))
-                              (get-tenv-entry (honu:type-iface-name (tenv:class-sub-type base)))
+                              (get-tenv-entry (ast:type:object:iface-name (tenv:class-sub-type base)))
                               #f)]
-                [mixin    (get-tenv-entry (honu:subclass-mixin (car defns)))]
+                [mixin    (get-tenv-entry (ast:defn:subclass-mixin (car defns)))]
                 [argtype  (if (and mixin (tenv:mixin? mixin))
-                              (get-tenv-entry (honu:type-iface-name (tenv:mixin-arg-type mixin)))
+                              (get-tenv-entry (ast:type:object:iface-name (tenv:mixin-arg-type mixin)))
                               #f)])
            (cond
              [(and base (not (tenv:class? base)))
               (raise-read-error-with-stx
                "Base class for subclass definition is not a class"
-               (honu:subclass-base (car defns)))]
+               (ast:defn:subclass-base (car defns)))]
              [(and selftype (not (tenv:type? selftype)))
               (raise-read-error-with-stx
                "Selftype for class is not a type"
-               (honu:ast-stx (tenv:class-sub-type base)))]
+               (ast-syntax (tenv:class-sub-type base)))]
              [(and mixin (not (tenv:mixin? mixin)))
               (raise-read-error-with-stx
                "Mixin for subclass definition is not a mixin"
-               (honu:subclass-mixin (car defns)))]
+               (ast:defn:subclass-mixin (car defns)))]
              [(and argtype (not (tenv:type? argtype)))
               (raise-read-error-with-stx
                "Argument type for mixin is not a type"
-               (honu:ast-stx (tenv:mixin-arg-type mixin)))]
+               (ast-syntax (tenv:mixin-arg-type mixin)))]
              [(and base selftype mixin argtype)
               ;; if the base is final, then we can't extend it.
               (if (tenv:class-final? base)
@@ -197,11 +197,11 @@
               (if (not (<:_P (tenv:class-sub-type base) (tenv:mixin-arg-type mixin)))
                   (raise-read-error-with-stx
                    (format "Class ~a (~a) is not of an appropriate type (~a) for mixin ~a"
-                           (printable-key  (honu:subclass-base (car defns)))
+                           (printable-key  (ast:defn:subclass-base (car defns)))
                            (printable-type (tenv:class-sub-type base))
                            (printable-type (tenv:mixin-arg-type mixin))
-                           (printable-key  (honu:subclass-mixin (car defns))))
-                   (honu:subclass-base (car defns))))
+                           (printable-key  (ast:defn:subclass-mixin (car defns))))
+                   (ast:defn:subclass-base (car defns))))
               (loop (cdr defns) skipped #t (cons (add-defn-to-tenv (car defns)) new-defns))]
              ;; if we get here, we cannot yet make the entry for this subclass,
              ;; so skip it.
@@ -210,31 +210,31 @@
         ;; for substructs, we just deconstruct it and then let the subclass logic catch any problems.
         ;; we do a couple of checks, because getting the type right for the substruct requires having
         ;; the argtype of the substruct.
-        [(honu:substruct? (car defns))
+        [(ast:defn:substructure? (car defns))
          (match (car defns)
-           [(struct honu:substruct (stx name type base arg-type final? impls inits withs super-new
+           [(struct ast:defn:substructure (stx name type base arg-type final? impls inits withs super-new
                                         members-before members-after exports))
-            (let ([argtype (get-tenv-entry (honu:type-iface-name arg-type))])
+            (let ([argtype (get-tenv-entry (ast:type:object:iface-name arg-type))])
               (cond
                 [(and argtype (not (tenv:type? argtype)))
                   (raise-read-error-with-stx
                    "Type at which we are extending is not a type"
-                   (honu:ast-stx arg-type))]
+                   (ast-syntax arg-type))]
                 [argtype
-                 (let* ([new-iface  (make-honu:iface stx (honu:type-iface-name type) (list arg-type)
+                 (let* ([new-iface  (make-ast:defn:iface stx (ast:type:object:iface-name type) (list arg-type)
                                                      (make-struct-type-decls inits
                                                                              (append members-before members-after)))]
                         [mixin-name (datum->syntax-object name (string->symbol
                                                                 (string-append "$" (symbol->string (printable-key name))))
                                                           name)]
-                        [new-mixin  (make-honu:mixin stx mixin-name type arg-type final? (cons type impls) inits withs
+                        [new-mixin  (make-ast:defn:mixin stx mixin-name type arg-type final? (cons type impls) inits withs
                                                      super-new members-before members-after
                                                      (cons (make-struct-export type
                                                                          inits 
                                                                          (append members-before members-after)
                                                                          (tenv:type-members argtype))
                                                            exports))]
-                        [new-sclass (make-honu:subclass stx name base mixin-name)])
+                        [new-sclass (make-ast:defn:subclass stx name base mixin-name)])
                    (loop (cons new-sclass (cdr defns)) skipped #t  (cons (add-defn-to-tenv new-mixin)
                                                                          (cons (add-defn-to-tenv new-iface) new-defns))))]
                 [else
@@ -260,7 +260,7 @@
             (lambda (m)
               ;; if we eventually allow co-/contra-variance here, this is where
               ;; we'd do it.
-              (if (honu:type-disp? (tenv:member-type (car super-members)))
+              (if (ast:type:method? (tenv:member-type (car super-members)))
                   (if (<:_P (tenv:member-type m) (tenv:member-type (car super-members)))
                       (loop (cdr super-members) inherited)
                       (raise-read-error-with-stx
@@ -289,24 +289,24 @@
   
   (define (mangle-disp-type iface member)
     (let ([member-type (tenv:member-type member)])
-      (if (honu:type-disp? member-type)
+      (if (ast:type:method? member-type)
           (copy-struct tenv:member member
-            [tenv:member-type (make-method-type (honu:ast-stx member-type)
+            [tenv:member-type (make-method-type (ast-syntax member-type)
                                                 iface
-                                                (honu:type-disp-arg member-type)
-                                                (honu:type-disp-ret member-type))])
+                                                (ast:type:method-input member-type)
+                                                (ast:type:method-output member-type))])
           member)))
 
   (define (type-equal-modulo-disp? t1 t2)
-    (let ([t1 (if (honu:type-disp? t1)
-                  (make-func-type (honu:ast-stx  t1)
-                                  (honu:type-disp-arg t1)
-                                  (honu:type-disp-ret t1))
+    (let ([t1 (if (ast:type:method? t1)
+                  (make-func-type (ast-syntax  t1)
+                                  (ast:type:method-input t1)
+                                  (ast:type:method-output t1))
                   t1)]
-          [t2 (if (honu:type-disp? t2)
-                  (make-func-type (honu:ast-stx  t2)
-                                  (honu:type-disp-arg t2)
-                                  (honu:type-disp-ret t2))
+          [t2 (if (ast:type:method? t2)
+                  (make-func-type (ast-syntax  t2)
+                                  (ast:type:method-input t2)
+                                  (ast:type:method-output t2))
                   t2)])
       (type-equal? t1 t2)))
   
@@ -353,7 +353,7 @@
       ;;
       ;; If we get here, we know that all the supers are in the tenv and are type entries, so we can use
       ;; get-type-entry safely.
-      [(struct honu:iface (src-stx name supers members))
+      [(struct ast:defn:iface (src-stx name supers members))
        ;; we have to do this because members of the type can refer to the type itself.
        ;; this is only for <:_P checks.
        (extend-tenv name
@@ -361,7 +361,7 @@
        (let* ([tenv-members (convert-members (make-iface-type name name) members)]
               [inherited-decls
                (apply append (map (lambda (n) (check-super-for-members name tenv-members n)) 
-                                  (map honu:type-iface-name supers)))]
+                                  (map ast:type:object:iface-name supers)))]
               [unique-inherited
                ;; remove duplicate entries for the same member name, making sure they match.
                (check-and-remove-duplicate-members name inherited-decls)])
@@ -370,12 +370,12 @@
                                        (make-tenv:type src-stx supers tenv-members unique-inherited))
          defn)]
       ;; for classes and mixins, just add a new appropriate entry.
-      [(struct honu:class (src-stx name t f? impls inits defns _))
+      [(struct ast:defn:class (src-stx name t f? impls inits defns _))
        (extend-tenv name (make-tenv:class src-stx t impls
                                           (get-inits inits defns)
                                           f? #f))
        defn]
-      [(struct honu:mixin (src-stx name type arg-type final? impls inits
+      [(struct ast:defn:mixin (src-stx name type arg-type final? impls inits
                                    withs _ defns-before defns-after _))
        (extend-tenv name (make-tenv:mixin src-stx arg-type type impls
                                           (get-inits inits
@@ -386,7 +386,7 @@
       ;; all the heavy lifting of subclasses is in generate-subclass-tenv,
       ;; which does things like make sure that the withs of the mixin are satisfied
       ;; by the base, collects all the inits needed for the resulting class, etc.
-      [(struct honu:subclass (src-stx name base mixin))
+      [(struct ast:defn:subclass (src-stx name base mixin))
        (extend-tenv name (generate-subclass-tenv defn))
        defn]))
 
@@ -396,10 +396,10 @@
       (if (null? members)
           (reverse converted)
           (match (car members)
-            [(struct honu:field-decl (stx name type))
+            [(struct ast:iface/member:field (stx name type))
              (loop (cdr members)
                    (cons (make-tenv:member stx name type) converted))]
-            [(struct honu:method-decl (stx name type arg-types))
+            [(struct ast:iface/member:method (stx name type arg-types))
              (loop (cdr members)
                    (cons (make-tenv:member stx name (make-method-type stx
                                                                       iface
@@ -409,32 +409,32 @@
   
   (define (get-inits inits defns)
     (let ([init-fields (filter (lambda (d)
-                                 (honu:init-field? d))
+                                 (ast:class/member:field/formal? d))
                                defns)])
       (append (map (lambda (i)
-                     (make-tenv:init (honu:formal-name i)
-                                     (honu:formal-type i)
+                     (make-tenv:init (ast:formal-name i)
+                                     (ast:formal-type i)
                                      #f))
                    inits)
               (map (lambda (d)
-                     (make-tenv:init (honu:member-defn-name d)
-                                     (honu:init-field-type d)
-                                     (not (false? (honu:init-field-value d)))))
+                     (make-tenv:init (ast:class/member-name d)
+                                     (ast:class/member:field/formal-type d)
+                                     (not (false? (ast:class/member:field/formal-default d)))))
                    init-fields))))
 
   (define (generate-subclass-tenv defn)
-    (let ([base  (get-class-entry (honu:subclass-base defn))]
-          [mixin (get-mixin-entry (honu:subclass-mixin defn))])
+    (let ([base  (get-class-entry (ast:defn:subclass-base defn))]
+          [mixin (get-mixin-entry (ast:defn:subclass-mixin defn))])
       (let ([new-inits (remove-used-inits defn
                                           (tenv:class-inits base)
                                           (tenv:mixin-withs mixin))])
-        (make-tenv:class (honu:ast-stx defn)
+        (make-tenv:class (ast-syntax defn)
                          (tenv:mixin-sub-type mixin)
                          (tenv:mixin-impls mixin)
                          (append (tenv:mixin-inits mixin)
                                  new-inits)
                          (tenv:mixin-final? mixin)
-                         (honu:subclass-base defn)))))
+                         (ast:defn:subclass-base defn)))))
 
   (define (remove-used-inits defn old-inits withs)
     (let loop ([old-inits  old-inits]
@@ -444,25 +444,25 @@
           (if (not (null? withs))
               (raise-read-error-with-stx
                (format "Class ~a does not have an init arg ~a with the correct type"
-                       (printable-key (honu:subclass-base defn))
-                       (printable-key (honu:formal-name (car withs))))
-               (honu:subclass-base defn))
+                       (printable-key (ast:defn:subclass-base defn))
+                       (printable-key (ast:formal-name (car withs))))
+               (ast:defn:subclass-base defn))
               (reverse new-inits))
           (let* ([curr (car old-inits)]
                  [index (list-index (lambda (w)
-                                      (tenv-key=? (honu:formal-name w) (tenv:init-name curr)))
+                                      (tenv-key=? (ast:formal-name w) (tenv:init-name curr)))
                                     withs)])
             (if index
-                (if (<:_P (honu:formal-type (list-ref withs index)) (tenv:init-type curr))
+                (if (<:_P (ast:formal-type (list-ref withs index)) (tenv:init-type curr))
                     (loop (cdr old-inits)
                           (append (take withs index)
                                   (drop withs (+ index 1)))
                           new-inits)
                     (raise-read-error-with-stx
                      (format "Mixin ~a needs an incompatible type for init arg ~a"
-                             (printable-key (honu:subclass-mixin defn))
-                             (printable-key (honu:formal-name (car withs))))
-                     (honu:subclass-mixin defn)))
+                             (printable-key (ast:defn:subclass-mixin defn))
+                             (printable-key (ast:formal-name (car withs))))
+                     (ast:defn:subclass-mixin defn)))
                 (loop (cdr old-inits)
                       withs
                       (cons curr new-inits)))))))

@@ -2,14 +2,14 @@
 
   (require (lib "contract.ss")
            "../../ast.ss"
-           "../../utils.ss"
+           "../tools/general.ss"
            "../../readerr.ss"
            "type-utils.ss"
            )
 
   (provide/contract
-   [check-valid-type! (string? honu:type? . -> . void?)]
-   [check-valid-types! (string? (listof honu:type?) . -> . void?)]
+   [check-valid-type! (string? ast:type? . -> . void?)]
+   [check-valid-types! (string? (listof ast:type?) . -> . void?)]
    )
 
   ;; check-valid-type! : Name Type -> Void
@@ -18,7 +18,7 @@
     (if (not (type-valid? type))
         (raise-read-error-with-stx
          (format "~s is undefined" name)
-         (honu:ast-stx type))))
+         (ast-syntax type))))
 
   ;; check-valid-types! : Name [Listof Type] -> Void
   ;; Raises an error if any of the named types are not valid.

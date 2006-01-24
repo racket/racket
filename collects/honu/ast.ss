@@ -1,102 +1,298 @@
 (module ast mzscheme
-  
-  (provide (all-defined))
-  
-  (define-syntax (define-honu-struct stx)
-    (syntax-case stx ()
-      [(_ (id sup) (field ...))
-       (with-syntax [(new-id
-                      (datum->syntax-object
-                       #'id
-                       (string->symbol
-                        (string-append "honu:" (symbol->string (syntax-e #'id)))) #'id #'id))
-                     (new-sup
-                      (datum->syntax-object
-                       #'sup
-                       (string->symbol
-                        (string-append "honu:" (symbol->string (syntax-e #'sup)))) #'sup #'sup))]
-         #'(define-struct (new-id new-sup) (field ...) #f))]
-      [(_ id (field ...))
-       (with-syntax [(new-id (datum->syntax-object #'id (string->symbol (string-append "honu:" (symbol->string (syntax-e #'id)))) #'id #'id))]
-         #'(define-struct new-id (field ...) #f))]))
-  
-  (define-honu-struct ast (stx)) ; ensures that all nodes have a stx obj
-  
-  ;; Type AST nodes
-  (define-honu-struct (type           ast)  ())               ; used only for type?
-  (define-honu-struct (type-top       type) ())               ; used to represent "void" (i.e. unit)
-  (define-honu-struct (type-bot       type) ())               ; used to represent a term okay in _any_ context (like error)
-  (define-honu-struct (type-prim      type) (name))           ; used to represent primitive types (int, string, char, etc.)
-  (define-honu-struct (type-tuple     type) (args))           ; used to represent a tuple of types
-  (define-honu-struct (type-func      type) (arg ret))        ; used for functions (no dispatch)
-  (define-honu-struct (type-disp      type) (disp arg ret))   ; used for methods (single dispatch) or multi-dispatch (if later added)
-  (define-honu-struct (type-iface     type) (name))           ; used for interface types (except for next two, which are more specific)
-  (define-honu-struct (type-iface-top type) ())               ; used for the Any type
-  (define-honu-struct (type-iface-bot type) ())               ; used for the type that null has
-  
-  (define-honu-struct (type-select    type) (slot type))      ; used only for context type in the typechecker when #n is encountered
 
-  ;; Definition AST nodes
-  (define-honu-struct (defn      ast)  ())                                       ; used for defn?
-  (define-honu-struct (iface     defn) (name supers members))                    ; used for interface definitions
-  (define-honu-struct (class     defn) (name type final? impls inits             ; used for class definitions
-                                        members exports))
-  (define-honu-struct (mixin     defn) (name type sub-type final? impls          ; used for mixin definitions 
-                                        inits withs super-new
-                                        members-before members-after exports))       
-  (define-honu-struct (subclass  defn) (name base mixin))                        ; used for subclass definitions
+  (require (lib "contract.ss")
+           (planet "hierarchy.ss" ("dherman" "struct.plt" 2 1))
+           (planet "inspector.ss" ("dherman" "inspector.plt" 1 0))
+           (planet "contract-utils.ss" ("cobbe" "contract-utils.plt" 1 0))
+           )
 
-  (define-honu-struct (struct    defn) (name type final? impls inits             ; used for structs, later replaced with components
-                                        members exports))
-  (define-honu-struct (substruct defn) (name type base arg-type final? impls     ; same, but for structs that are subclasses
-                                        inits withs super-new
-                                        members-before members-after exports))
+  (with-public-inspector
+   (define-hierarchy/provide/contract
 
-  (define-honu-struct (function  defn) (name type formals body))                 ; used for function definitions
-  (define-honu-struct (bind-top  defn) (names types value))                      ; used for top-level definitions
-  
-  ;; AST nodes for member declarations (in interfaces)
-  (define-honu-struct (member-decl ast)         (name))                    ; member-decl?
-  (define-honu-struct (field-decl  member-decl) (type))           ; used for field declarations
-  (define-honu-struct (method-decl member-decl) (type arg-types)) ; used for method declarations
-  
-  ;; AST nodes for member definitions (in classes/mixins)
-  (define-honu-struct (member-defn ast)         (name))              ; member-defn?
-  (define-honu-struct (init-field  member-defn) (type value))        ; used for init fields (value can be #f or expression AST)
-  (define-honu-struct (field       member-defn) (type value))        ; used for fields (value can be #f or expression AST)
-  (define-honu-struct (method      member-defn) (type formals body)) ; used for methods
-  
-  ;; AST node for super call (just in mixins/subclasses)
-  (define-honu-struct (super-new   ast) (args))
-  
-  ;; Expression AST nodes
-  (define-honu-struct (expr   ast)  ())
-  (define-honu-struct (this   expr) ())
-  (define-honu-struct (var    expr) (name))
-  (define-honu-struct (assn   expr) (lhs rhs))
-  (define-honu-struct (call   expr) (func arg))
-  (define-honu-struct (lit    expr) (type value))
-  (define-honu-struct (un-op  expr) (op op-stx op-type arg))
-  (define-honu-struct (bin-op expr) (op op-stx op-type larg rarg))
-  (define-honu-struct (lambda expr) (type formals body))
-  (define-honu-struct (if     expr) (cond then else))
-  (define-honu-struct (cast   expr) (obj type))
-  (define-honu-struct (isa    expr) (obj type))
-  (define-honu-struct (member expr) (obj elab name method?)) ;; method is only needed for translation
-  (define-honu-struct (let    expr) (bindings body)) 
-  (define-honu-struct (seq    expr) (effects value))
-  (define-honu-struct (new    expr) (class type args))
-  (define-honu-struct (cond   expr) (clauses else))
-  (define-honu-struct (while  expr) (cond body))
-  (define-honu-struct (return expr) (body))
-  (define-honu-struct (tuple  expr) (vals))
-  (define-honu-struct (select expr) (slot arg))
-  
-  ;; Miscellaneous AST nodes
-  (define-honu-struct (binding     ast) (names types value)) ; used for bindings in lets
-  (define-honu-struct (export      ast) (type binds))        ; used for export statements
-  (define-honu-struct exp-bind          (old new))           ; used for export bindings
-  (define-honu-struct (formal      ast) (name type))         ; used for formal arguments
-  (define-honu-struct name-arg          (name value))        ; used for by-name arguments (like new)
-  (define-honu-struct (cond-clause ast) (pred rhs))          ; used for cond clauses
+     (ast ; parent structure for AST nodes
+       ([syntax (optional/c syntax?)] ; all nodes store syntax locations
+        )
+      
+       (ast:type () ; parent structure for types
+                
+         (ast:type:top ()) ; "void" or "unit" type
+         (ast:type:bot ()) ; "error" type, or for non-returning operations
+
+         (ast:type:object () ; Object type
+           (ast:type:object:any ()) ; Distinguished Any type, top of hierarchy
+           (ast:type:object:null ()) ; Type of null, bottom of hierarchy
+           (ast:type:object:iface ; Interface type
+             ([name identifier?] ; name of the interface
+              )))
+
+         (ast:type:primitive ; Builtin type (int, char, bool, etc.)
+           ([name symbol?] ; builtins come from a fixed set of names
+            ))
+
+         (ast:type:tuple ; Tuple type
+           ([elems (listof ast:type?)] ; types of each tuple element
+            ))
+
+         (ast:type:partial/tuple ; Tuple type as inferred from selector
+           ([position integer?] ; position at which type is known
+            [elem ast:type?] ; type at that position
+            ))
+
+         (ast:type:function ; Function type (without dispatch)
+           ([input ast:type?] ; input type
+            [output ast:type?] ; output type
+            ))
+
+         (ast:type:method ; Method type (with receiver dispatch)
+           ([receiver ast:type:object?] ; type of the method's receiver
+            [input ast:type?] ; input type
+            [output ast:type?] ; input type
+            ))
+         )
+
+       (ast:defn () ; parent structure for top-level definitions
+
+         (ast:defn:iface ; Interface definitions
+           ([name identifier?] ; interface name
+            [supers (listof ast:type:object?)] ; parent interfaces
+            [members (listof ast:iface/member?)] ; members (methods and fields)
+            ))
+
+         (ast:defn:class ; Class definitions
+           ([name identifier?] ; interface name
+            [self-type ast:type:object?] ; class's type internally and for subclassing
+            [final? boolean?] ; whether the class may be extended
+            [client-types (listof ast:type:object?)] ; implemented interfaces
+            [formals (listof ast:formal?)] ; constructor arguments
+            [members (listof ast:class/member?)] ; member definitions
+            [exports (listof ast:export?)] ; export declarations
+            ))
+
+         (ast:defn:mixin ; Mixin definition
+           ([name identifier?] ; mixin name
+            [self-type ast:type:object?] ; mixin's type internally and for subclassing
+            [super-type ast:type:object?] ; input interface
+            [final? boolean?] ; whether the mixin can be extended
+            [client-types (listof ast:type:object?)] ; implemented interfaces
+            [formals (listof ast:formal?)] ; constructor arguments
+            [super-formals (listof ast:formal?)] ; expected parent arguments
+            [super-new ast:super-new?] ; parent initialization
+            [pre-members (listof ast:class/member?)] ; members defined before super-new
+            [post-members (listof ast:class/member?)] ; members defined after super-new
+            [exports (listof ast:export?)] ; export declarations
+            ))
+
+         (ast:defn:subclass ; Subclass definition (applies a mixin to a class)
+           ([name identifier?] ; new class's name
+            [base identifier?] ; superclass
+            [mixin identifier?] ; applied mixin
+            ))
+
+         (ast:defn:structure ; Structure definition (class and type defined at once)
+           ([name identifier?] ; structure name
+            [self-type ast:type:object?] ; internal/subclassing type (how does this relate to "structure" type?)
+            [final? boolean?] ; whether the structure can be extended
+            [client-types (listof ast:type:object?)] ; implemented interfaces
+            [formals (listof ast:formal?)] ; constructor arguments
+            [members (listof ast:class/member?)] ; member definitions
+            [exports (listof ast:export?)] ; export declarations
+            ))
+
+         (ast:defn:substructure ; Substructure definition (defines and instantiates subclassing)
+           ([name identifier?] ; substructure name
+            [self-type ast:type:object?] ; internal/subclassing type
+            [super-class identifier?] ; parent class
+            [super-type ast:type:object?] ; parent interface
+            [final? boolean?] ; whether the substructure can be extended
+            [client-types (listof ast:type:object?)] ; implemented interfaces
+            [formals (listof ast:formal?)] ; constructor arguments
+            [super-formals (listof ast:formal?)] ; expected parent arguments
+            [super-new ast:super-new?] ; parent initialization
+            [pre-members (listof ast:class/member?)] ; members defined before super-new
+            [post-members (listof ast:class/member?)] ; members defined after super-new
+            [exports (listof ast:export?)] ; export declarations
+            ))
+
+         (ast:defn:function ; Function definition
+           ([name identifier?] ; function name
+            [return-type ast:type?] ; output type
+            [formals (listof ast:formal?)] ; input names and types
+            [body ast:expr?] ; function implementation
+            ))
+
+         (ast:defn:binding ; Top-level variable binding
+           ([names (listof identifier?)] ; variable name or names (if binding a tuple)
+            [types (listof ast:type?)] ; variable type(s)
+            [init ast:expr?] ; expression providing the bound value(s)
+            ))
+       
+         )
+
+       (ast:iface/member ; Member declared in an interface
+         ([name identifier?] ; member name
+          )
+         (ast:iface/member:field ; Field of an interface
+           ([type ast:type?] ; field type
+            ))
+         (ast:iface/member:method ; Method of an interface
+           ([return-type ast:type?] ; output type
+            [formal-types (listof ast:type?)] ; input types
+            )))
+
+       (ast:class/member ; Member defined in a class/mixin
+         ([name identifier?] ; member name
+          )
+         (ast:class/member:field ; Field of a class
+           ([type ast:type?] ; field type
+            [default (optional/c ast:expr?)] ; default value
+            ))
+         (ast:class/member:field/formal ; Field and constructor argument
+           ([type ast:type?] ; field type
+            [default (optional/c ast:expr?)] ; default value
+            ))
+         (ast:class/member:method ; Method of a class
+           ([return-type ast:type?] ; output type
+            [formals (listof ast:formal?)] ; method arguments
+            [body ast:expr?] ; method implementation
+            )))
+
+       (ast:super-new ; Parent class initializer
+         ([args (listof ast:named/arg?)] ; constructor arguments
+          ))
+
+       (ast:expr () ; Parent structure for expressions
+
+         (ast:expr:self ()) ; Self-reference within an object
+         
+         (ast:expr:var ; Variable reference
+           ([name identifier?] ; variable name
+            ))
+
+         (ast:expr:assign ; Assignment
+           ([lhs ast:expr?] ; assignment destination
+            [rhs ast:expr?] ; assignment source
+            ))
+
+         (ast:expr:apply ; Function call
+           ([func ast:expr?] ; invoked function
+            [arg ast:expr?] ; actual arguments
+            ))
+
+         (ast:expr:literal ; Primitive value
+           ([type ast:type?] ; literal type
+            [value syntax?] ; literal value
+            ))
+
+         (ast:expr:unary/op ; Prefix operation
+          (
+           [name symbol?] ; operator name
+           [rator-stx syntax?] ; operator syntax
+           [rator-type (optional/c ast:type?)] ; operator type (presumably added by typechecker)
+           [arg ast:expr?] ; operator argument
+           ))
+         
+         (ast:expr:binary/op ; Infix operation
+          (
+           [name symbol?] ; operator name
+           [rator-stx syntax?] ; operator syntax
+           [rator-type (optional/c ast:type?)] ; operator type (presumably added by typechecker)
+           [left ast:expr?] ; first argument
+           [right ast:expr?] ; second argument
+           ))
+
+         (ast:expr:function ; Anonymous function value
+           ([return-type ast:type?] ; output type
+            [formals (listof ast:formal?)] ; arguments
+            [body ast:expr?] ; function implementation
+            ))
+
+         (ast:expr:if ; Simple conditional
+           ([test ast:expr?] ; Boolean expression
+            [then ast:expr?] ; Result when true
+            [else ast:expr?] ; Result when false
+            ))
+
+         (ast:expr:cast ; Typecast
+           ([object ast:expr?] ; value to cast
+            [type ast:type:object?] ; type of cast
+            ))
+
+         (ast:expr:isa ; Type conditional
+           ([object ast:expr?] ; value to test
+            [type ast:type:object?] ; type of test
+            ))
+
+         (ast:expr:member ; Access field or method
+           ([object (union ast:expr? (symbols 'my))] ; receiver
+            [object-type (optional/c ast:type:object?)] ; receiver type
+            [name identifier?] ; member name
+            [method? (union boolean? (symbols 'unknown))] ; whether member is a method or field
+            ))
+
+         (ast:expr:let ; Local bindings
+           ([bindings (listof ast:defn:binding?)] ; new definitions
+            [body ast:expr?] ; expression in new scope
+            ))
+
+         (ast:expr:sequence ; Sequential statements
+           ([statements (listof ast:expr?)] ; executed in order for effect only
+            [result ast:expr?] ; executed last and returned
+            ))
+
+         (ast:expr:new ; Object construction
+           ([class identifier?] ; class to instantiate
+            [type (optional/c ast:type:object?)] ; static type of object (presumably added by typechecker)
+            [args (listof ast:named/arg?)] ; constructor arguments
+            ))
+
+         (ast:expr:cond ; Multiple-branch conditional
+           ([clauses (listof ast:cond/clause?)] ; conditional clauses
+            [else ast:expr?] ; result if all else fails
+            ))
+
+         (ast:expr:while ; Imperative recursion
+           ([test ast:expr?] ; controls loop
+            [body ast:expr?] ; loop body
+            ))
+
+         (ast:expr:return ; Escapes function/method
+           ([result ast:expr?] ; returned value
+            ))
+
+         (ast:expr:tuple ; Tuple constructor
+           ([elems (listof ast:expr?)] ; tuple elements
+            ))
+
+         (ast:expr:tuple/select ; Tuple projection
+           ([position integer?] ; selected element
+            [arg ast:expr?] ; tuple expression
+            )))
+
+       (ast:export ; Export declaration
+         ([type ast:type:object?] ; exported type
+          [members (listof ast:export/member?)] ; exported members
+          ))
+
+       (ast:formal ; Declared arguments
+         ([name identifier?] ; variable name
+          [type ast:type?] ; argument type
+          ))
+
+       (ast:cond/clause ; Conditional branches
+         ([test ast:expr?] ; condition
+          [result ast:expr?] ; result if true
+          ))
+
+       (ast:export/member ; Individual export specification
+        ([internal identifier?] ; name inside class/mixin
+         [external identifier?] ; name from interface
+         ))
+       
+       (ast:named/arg ; By-name arguments
+        ([name identifier?] ; argument name
+         [actual ast:expr?] ; argument value
+         ))
+
+       )))
+     
   )

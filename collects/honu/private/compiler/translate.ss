@@ -13,10 +13,10 @@
            "translate-unwanted-types.ss"
            "translate-utils.ss")
   
-  (provide/contract [translate (((listof honu:defn?))
+  (provide/contract [translate (((listof ast:defn?))
                                 . ->* .
                                 (any/c (listof (syntax/c any/c))))]
-                    [translate-defn (honu:defn?
+                    [translate-defn (ast:defn?
                                      . -> .
                                      (syntax/c any/c))])
   (define (translate defns)
@@ -26,11 +26,11 @@
         [(null? defns-to-go)
          (values (build-unwanted-type-syntax defns)
                (	reverse syntaxes))]
-        [(honu:subclass? (car defns-to-go))
+        [(ast:defn:subclass? (car defns-to-go))
          (let ([mixin (find (lambda (d)
-                              (and (honu:mixin? d) 
-                                   (tenv-key=? (honu:mixin-name d)
-                                               (honu:subclass-mixin (car defns-to-go)))))
+                              (and (ast:defn:mixin? d) 
+                                   (tenv-key=? (ast:defn:mixin-name d)
+                                               (ast:defn:subclass-mixin (car defns-to-go)))))
                             defns)])
            (loop (cdr defns-to-go) (cons (translate-subclass mixin (car defns-to-go)) syntaxes)))]
         [else
@@ -43,7 +43,7 @@
                  [names   '()])
         (if (null? members)
             (reverse names)
-            (if (honu:type-disp? (tenv:member-type (car members)))
+            (if (ast:type:method? (tenv:member-type (car members)))
                 (loop (cdr members)
                       (cons (translate-method-name iface (tenv:member-name (car members)))
                             names))
@@ -54,18 +54,18 @@
 
   (define (translate-defn defn)
     (match defn
-      [(struct honu:bind-top (stx names types value))
+      [(struct ast:defn:binding (stx names types value))
        (let-values ([(bound-names body) (translate-binding-clause names (translate-expression value))])
          (at stx `(define-values ,bound-names ,body)))]
-      [(struct honu:function (stx name type args body))
+      [(struct ast:defn:function (stx name type args body))
        (translate-function stx name args (translate-expression body))]
-      [(struct honu:iface (stx name supers members))
+      [(struct ast:defn:iface (stx name supers members))
        (at stx `(define ,(translate-iface-name (make-iface-type name name))
                   (interface ,(if (null? supers)
                                   (list (translate-iface-name (make-any-type #f)))
                                   (map translate-iface-name supers))
                     ,@(translate-iface-member-names name))))]
-      [(struct honu:class (stx name selftype _ impls inits members exports))
+      [(struct ast:defn:class (stx name selftype _ impls inits members exports))
        (at stx `(define ,(translate-class-name name)
                   (class* object% ,(map translate-iface-name impls)
                     (inspect #f)
@@ -75,18 +75,18 @@
                     ,(translate-impl-method impls)
                     ,(translate-formatter name members)
                     (super-new))))]
-      [(struct honu:mixin (stx name _ _ _ _ _ _ _ _ _ _))
+      [(struct ast:defn:mixin (stx name _ _ _ _ _ _ _ _ _ _))
        ;; just a dummy definition to get the bindings set up correctly
        (at stx `(define ,(translate-mixin-name name)
                   '()))]
       [else (raise-read-error-with-stx
              "Haven't translated that type of definition yet."
-             (honu:ast-stx defn))]))
+             (ast-syntax defn))]))
   
   (define (translate-subclass mixin-defn defn)
     (match (list mixin-defn defn)
-      [(list (struct honu:mixin (mstx mname selftype arg-type _ impls inits withs super-new members-before members-after exports))
-             (struct honu:subclass (stx name base mixin)))
+      [(list (struct ast:defn:mixin (mstx mname selftype arg-type _ impls inits withs super-new members-before members-after exports))
+             (struct ast:defn:subclass (stx name base mixin)))
        (parameterize ([current-mixin-argument-type arg-type])
          (let* ([base-entry (get-class-entry base)]
                 [base-types (cons (tenv:class-sub-type base-entry)
@@ -119,11 +119,11 @@
                    (format-class-name)
                    ,(cons 'string-append
                           (let ([printable-members (filter (lambda (m)
-                                                             (not (honu:method? m)))
+                                                             (not (ast:class/member:method? m)))
                                                            members)]
                                 [printable-smembers (if (current-mixin-argument-type)
                                                         (filter-map (lambda (m)
-                                                                      (if (not (honu:type-disp? (tenv:member-type m)))
+                                                                      (if (not (ast:type:method? (tenv:member-type m)))
                                                                           (tenv:member-name m)
                                                                           #f))
                                                                     (tenv:type-members (get-type-entry (current-mixin-argument-type))))
@@ -142,7 +142,7 @@
                                             printable-smembers)))))))))
   
   (define (translate-member-formatter member indent-delta)
-    (let ([name (honu:member-defn-name member)])
+    (let ([name (ast:class/member-name member)])
       `(format "~a~a = ~a;"
                (make-string (+ indent ,indent-delta) #\space)
                (quote ,(syntax-e name))

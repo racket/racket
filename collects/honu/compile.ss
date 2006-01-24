@@ -17,16 +17,16 @@
            "private/typechecker/typecheck-expression.ss")
   
   (provide/contract [compile/defns
-                     ((tenv? tenv? (listof honu:defn?))
+                     ((tenv? tenv? (listof ast:defn?))
                       . ->* . 
                       (any/c (listof (syntax/c any/c))))]
                     [compile/interaction
                      ((tenv? 
                        tenv?
-                       (union honu:bind-top? honu:expr?))
+                       (union ast:defn:binding? ast:expr?))
                       . ->* . 
                       ((syntax/c any/c)
-                       (union honu:type? false/c)))])
+                       (union ast:type? false/c)))])
   (define (compile/defns tenv lenv pgm)
     (parameterize ([current-type-environment    tenv]
                    [current-lexical-environment lenv])
@@ -47,7 +47,7 @@
     (parameterize ([current-type-environment    tenv]
                    [current-lexical-environment lenv])
       (match (post-parse-interaction ast)
-        [(struct honu:bind-top (stx names _ value))
+        [(struct ast:defn:binding (stx names _ value))
          (check-bound-names names)
          (let ([checked (typecheck-defn ast)])
            (parameterize ([current-compile-context honu-compile-context])

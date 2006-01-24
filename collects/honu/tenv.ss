@@ -23,53 +23,53 @@
   (define-struct (tenv:value tenv:entry) (type) #f)
   
   (define builtin-list
-    (list (cons #'error         (make-honu:type-func #f
-                                  (make-honu:type-prim #f 'string)
-                                  (make-honu:type-bot #f)))
-          (cons #'printString   (make-honu:type-func #f
-                                  (make-honu:type-prim #f 'string)
-                                  (make-honu:type-tuple #f '())))
-          (cons #'printLine     (make-honu:type-func #f
-                                  (make-honu:type-prim #f 'string)
-                                  (make-honu:type-tuple #f '())))
-          (cons #'readChar      (make-honu:type-func #f
-                                  (make-honu:type-tuple #f '())
-                                  (make-honu:type-prim #f 'char)))
-          (cons #'readLine      (make-honu:type-func #f
-                                  (make-honu:type-tuple #f '())
-                                  (make-honu:type-prim #f 'string)))
-          (cons #'intToString   (make-honu:type-func #f
-                                  (make-honu:type-prim #f 'int)
-                                  (make-honu:type-prim #f 'string)))
-          (cons #'floatToString (make-honu:type-func #f
-                                  (make-honu:type-prim #f 'float)
-                                  (make-honu:type-prim #f 'string)))
-          (cons #'charToString  (make-honu:type-func #f
-                                  (make-honu:type-prim #f 'char)
-                                  (make-honu:type-prim #f 'string)))
-          (cons #'stringToInt   (make-honu:type-func #f
-                                  (make-honu:type-prim #f 'string)
-                                  (make-honu:type-prim #f 'int)))
-          (cons #'stringToFloat (make-honu:type-func #f
-                                  (make-honu:type-prim #f 'string)
-                                  (make-honu:type-prim #f 'float)))
-          (cons #'strlen        (make-honu:type-func #f
-                                  (make-honu:type-prim #f 'string)
-                                  (make-honu:type-prim #f 'int)))
-          (cons #'substr        (make-honu:type-func #f
-                                  (make-honu:type-tuple #f
-                                    (list (make-honu:type-prim #f 'string)
-                                          (make-honu:type-prim #f 'int)
-                                          (make-honu:type-prim #f 'int)))
-                                  (make-honu:type-prim #f 'string)))
-          (cons #'charAt        (make-honu:type-func #f
-                                  (make-honu:type-tuple #f
-                                    (list (make-honu:type-prim #f 'string)
-                                          (make-honu:type-prim #f 'int)))
-                                  (make-honu:type-prim #f 'char)))
-          (cons #'sqrt          (make-honu:type-func #f
-                                  (make-honu:type-prim #f 'float)
-                                  (make-honu:type-prim #f 'float)))
+    (list (cons #'error         (make-ast:type:function #f
+                                  (make-ast:type:primitive #f 'string)
+                                  (make-ast:type:bot #f)))
+          (cons #'printString   (make-ast:type:function #f
+                                  (make-ast:type:primitive #f 'string)
+                                  (make-ast:type:tuple #f '())))
+          (cons #'printLine     (make-ast:type:function #f
+                                  (make-ast:type:primitive #f 'string)
+                                  (make-ast:type:tuple #f '())))
+          (cons #'readChar      (make-ast:type:function #f
+                                  (make-ast:type:tuple #f '())
+                                  (make-ast:type:primitive #f 'char)))
+          (cons #'readLine      (make-ast:type:function #f
+                                  (make-ast:type:tuple #f '())
+                                  (make-ast:type:primitive #f 'string)))
+          (cons #'intToString   (make-ast:type:function #f
+                                  (make-ast:type:primitive #f 'int)
+                                  (make-ast:type:primitive #f 'string)))
+          (cons #'floatToString (make-ast:type:function #f
+                                  (make-ast:type:primitive #f 'float)
+                                  (make-ast:type:primitive #f 'string)))
+          (cons #'charToString  (make-ast:type:function #f
+                                  (make-ast:type:primitive #f 'char)
+                                  (make-ast:type:primitive #f 'string)))
+          (cons #'stringToInt   (make-ast:type:function #f
+                                  (make-ast:type:primitive #f 'string)
+                                  (make-ast:type:primitive #f 'int)))
+          (cons #'stringToFloat (make-ast:type:function #f
+                                  (make-ast:type:primitive #f 'string)
+                                  (make-ast:type:primitive #f 'float)))
+          (cons #'strlen        (make-ast:type:function #f
+                                  (make-ast:type:primitive #f 'string)
+                                  (make-ast:type:primitive #f 'int)))
+          (cons #'substr        (make-ast:type:function #f
+                                  (make-ast:type:tuple #f
+                                    (list (make-ast:type:primitive #f 'string)
+                                          (make-ast:type:primitive #f 'int)
+                                          (make-ast:type:primitive #f 'int)))
+                                  (make-ast:type:primitive #f 'string)))
+          (cons #'charAt        (make-ast:type:function #f
+                                  (make-ast:type:tuple #f
+                                    (list (make-ast:type:primitive #f 'string)
+                                          (make-ast:type:primitive #f 'int)))
+                                  (make-ast:type:primitive #f 'char)))
+          (cons #'sqrt          (make-ast:type:function #f
+                                  (make-ast:type:primitive #f 'float)
+                                  (make-ast:type:primitive #f 'float)))
           ))
  
   (define tenv? bound-identifier-mapping?)
@@ -121,9 +121,9 @@
     (bound-identifier-mapping-get (current-lexical-environment) key (lambda () #f)))
   
   (define (get-type-entry type)
-    (if (honu:type-iface-top? type)
+    (if (ast:type:object:any? type)
       (make-tenv:type #f (list) (list) (list))
-      (let* ([name (honu:type-iface-name type)]
+      (let* ([name (ast:type:object:iface-name type)]
              [entry (get-tenv-entry name)])
         (cond
           [(not entry)
@@ -171,9 +171,9 @@
           (raise-read-error-with-stx
            (format "No member named ~a found for type ~a"
                    (printable-key name)
-                   (if (honu:type-iface-top? type)
+                   (if (ast:type:object:any? type)
                        'Any
-                       (printable-key (honu:type-iface-name type))))
+                       (printable-key (ast:type:object:iface-name type))))
            name))))
   (define (get-value-entry name)
     (let ([entry (get-lenv-entry name)])
@@ -201,8 +201,8 @@
           value
           (fenv name))))
 
-  (define (extend-fenv-honu:formal formal fenv)
-    (extend-fenv (honu:formal-name formal) (honu:formal-type formal) fenv))
+  (define (extend-fenv-ast:formal formal fenv)
+    (extend-fenv (ast:formal-name formal) (ast:formal-type formal) fenv))
 
   (define empty-fenv (lambda (name) #f))
 
@@ -233,19 +233,19 @@
                     [extend-tenv-without-checking (identifier? tenv:entry? . -> . void?)]
                     [get-tenv-entry   (identifier? . -> . (union tenv:entry? false/c))]
                     [get-lenv-entry   (identifier? . -> . (union tenv:entry? false/c))]
-                    [get-type-entry   ((union honu:type-iface?
-                                              honu:type-iface-top?) . -> . tenv:type?)]
+                    [get-type-entry   ((union ast:type:object:iface?
+                                              ast:type:object:any?) . -> . tenv:type?)]
                     [get-class-entry  (identifier?                  . -> . tenv:class?)]
                     [get-mixin-entry  (identifier?                  . -> . tenv:mixin?)]
-                    [get-member-type  ((union honu:type-iface?
-                                              honu:type-iface-top?)
-                                       identifier?                  . -> . honu:type?)]
+                    [get-member-type  ((union ast:type:object:iface?
+                                              ast:type:object:any?)
+                                       identifier?                  . -> . ast:type?)]
                     [get-value-entry  (identifier?                  . -> . tenv:value?)]
                     [fenv? (any/c . -> . boolean?)]
                     [wrap-lenv (-> fenv?)]
                     [empty-fenv fenv?]
-                    [extend-fenv (identifier? honu:type? fenv? . -> . fenv?)]
-                    [extend-fenv-honu:formal (honu:formal? fenv? . -> . fenv?)]
+                    [extend-fenv (identifier? ast:type? fenv? . -> . fenv?)]
+                    [extend-fenv-ast:formal (ast:formal? fenv? . -> . fenv?)]
                     )
   
   )

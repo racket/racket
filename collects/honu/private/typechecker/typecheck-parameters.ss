@@ -5,7 +5,7 @@
   ;; since the return type only changes when we go into a lambda in typecheck-expression, we
   ;; make it a parameter also.
   ;;
-  ;; rtype : (union honu:type? false/c)
+  ;; rtype : (union ast:type? false/c)
   ;;   return type for method/function
 
   (define current-return-type (make-parameter #f))
