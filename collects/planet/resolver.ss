@@ -471,6 +471,14 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
          (list #f (format "Server had no matching package: ~a" (read-line ip)))]
         [(400)
          (abort (format "Internal error (malformed request): ~a" (read-line ip)))]
+        [(500)
+         (abort (format "Server internal error: ~a"
+                        (apply string-append
+                               (let loop ()
+                                 (let ((line (read-line ip)))
+                                   (cond
+                                     [(eof-object? line) '()]
+                                     [else (list* line "\n" (loop))]))))))]
         [else
          (abort (format "Internal error (unknown HTTP response code ~a)" response-code))])))
 

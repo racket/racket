@@ -42,6 +42,15 @@ VER-SPEC is provided, the most recent version is assumed. If no
 owner-name/path ... clause is provided, the default package is
 assumed.
 
+For example, 
+
+  (require (planet "test-connection.ss" ("planet" "test-connection.plt" 1 0)))
+
+requires the file "test-connection.ss" from the package owned by
+"planet" called "test-connection.plt", and says that any package with
+major version 1 and any minor version greater than or equal to 0 will
+do.
+
 _config.ss_: client configuration
 
 This file provides several parameters useful for configuring how
@@ -147,6 +156,25 @@ numbers and major-version must be greater than zero.
 Removes the entire linkage table from the system, which will force all
 modules to relink themselves to PLaneT modules the next time they run.
 
+> (add-hard-link owner name major-version minor-version directory) -> void
+
+Adds a development link between the specified package and the given
+directory; once a link is established, PLaneT will treat the cache as
+having a package with the given owner, name, and version whose files
+are located in the given path. This is intended for package
+development; users only interested in using PLaneT packages
+available online should not need to create any development links. 
+
+owner and name must be strings, major-version and minor-version must
+be natural numbers, and directory must be a path (not a string)
+indicating a directory.
+
+If the specified package already has a development link, this function
+first removes the old link and then adds the new one.
+
+> (remove-hard-link owner name major-version minor-version) -> void
+
+Removes any hard link that may be associated with the given package.
 
 _The PLaneT search order_
 -------------------------
@@ -365,13 +393,25 @@ the name (without path) of the main Scheme source file of your
 package. PLaneT will direct casual users of your library to require
 this file.
 
+The _'required-core-version field_
+
+If present, the required-core-version field should be a string with
+the same syntax as the output of mzscheme's built-in (version)
+function. Defining this field indicates that PLaneT should only allow
+users of a version of mzscheme equal to or more recent than the
+version specified by this field. This allows you finer-grained control
+of your package's core-language requirements than its inclusion in a
+particular repository; for instance, setting this field to "300.2"
+would cause the PLaneT server not to serve it to MzScheme v300
+clients.
+
 The _'version field_
 
-If present, the version field should describe the version number
-of this code that should be presented to users (e.g., "0.15 alpha").
-This field does not override or in any way interact with your package's
-package version number, which is assigned by PLaneT, but may be useful
-to users.
+If present, the version field should describe the version number of
+this code that should be presented to users (e.g., "0.15 alpha").
+This field does not override or in any way interact with your
+package's package version number, which is assigned by PLaneT, but may
+be useful to users.
 
 
 In addition, PLaneT uses the setup-plt installer to install packages

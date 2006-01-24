@@ -22,7 +22,7 @@ Various common pieces of code that both the client and server need to access
   ; CACHE LOGIC
   ; Handles checking the cache for an appropriate module
   ; ==========================================================================================
-
+  
   ; language-version->repository : string -> string | #f
   ; finds the appropriate language version for the given repository
   (define (language-version->repository ver)
@@ -93,8 +93,8 @@ Various common pieces of code that both the client and server need to access
          (tree-apply
           tree-stuff->row-or-false
           (directory->tree path (λ (x) #t) 2 (λ (x) x))))
-         empty-table))
-        
+        empty-table))
+  
   ; the link table format:
   ; (listof (list string[name] (listof string[path]) num num bytes[directory])
   
@@ -125,7 +125,7 @@ Various common pieces of code that both the client and server need to access
          (lambda (item) (update-element 4 bytes->path item))
          (with-input-from-file (HARD-LINK-FILE) read-all))
         '()))
-
+  
   ;; row-for-package? : row string (listof string) num num -> boolean
   ;; determines if the row associates the given package with a dir
   (define (points-to? row name path maj min)
@@ -164,14 +164,14 @@ Various common pieces of code that both the client and server need to access
   ;; removes all rows from the link table that don't match the given predicate
   (define (filter-link-table! f)
     (save-hard-link-table (filter f (get-hard-link-table))))
-
+  
   ;; update-element : number (x -> y) (listof any [x in position number]) -> (listof any [y in position number])
   (define (update-element n f l)
     (cond
       [(null? l) (error 'update-element "Index too large")]
       [(zero? n) (cons (f (car l)) (cdr l))]
       [else (cons (car l) (update-element (sub1 n) f (cdr l)))]))
-    
+  
   ; add-to-table assoc-table (listof assoc-table-row) -> assoc-table
   (define add-to-table append) 
   
@@ -198,7 +198,7 @@ Various common pieces of code that both the client and server need to access
     (list name path maj min dir required-version))
   
   (define-struct mz-version (major minor))
-
+  
   ;; string->mz-version : string -> mz-version | #f
   (define (string->mz-version str)
     (let ((ver (regexp-match #rx"^([0-9]+)(\\.([0-9]+))?$" str)))
@@ -218,7 +218,7 @@ Various common pieces of code that both the client and server need to access
     (or (<= (mz-version-major a) (mz-version-major b))
         (and (= (mz-version-major a) (mz-version-major b))
              (<= (mz-version-minor a) (mz-version-minor b)))))
-
+  
   ;; compatible-version? : assoc-table-row FULL-PKG-SPEC -> boolean
   ;; determines if the given package constrint verstr can support the given package
   (define (compatible-version? row spec)
@@ -229,39 +229,41 @@ Various common pieces of code that both the client and server need to access
             (or (not required) 
                 (not provided)
                 (version<= required provided))))))
- 
+  
   ; get-best-match : assoc-table FULL-PKG-SPEC -> PKG | #f
   ; return the best on-disk match for the given package spec
   (define (get-best-match table spec)
-    (let* ((target-maj 
-            (or (pkg-spec-maj spec)
-                (apply max (map assoc-table-row->maj table))))
-           (lo (pkg-spec-minor-lo spec))
-           (hi (pkg-spec-minor-hi spec))
-           (matches
-            (filter 
-             (λ (x) 
-               (let ((n (assoc-table-row->min x)))
-                 (and
-                  (equal? target-maj (assoc-table-row->maj x))
-                  (or (not lo) (>= n lo))
-                  (or (not hi) (<= n hi))
-                  (compatible-version? x spec))))
-             table)))
-      (if (null? matches)
-          #f
-          (let ((best-row
-                 (car 
-                  (quicksort 
-                   matches 
-                   (λ (a b) (> (assoc-table-row->min a) (assoc-table-row->min b)))))))
-            (make-pkg
-             (pkg-spec-name spec)
-             (pkg-spec-path spec)
-             (assoc-table-row->maj best-row)
-             (assoc-table-row->min best-row)
-             (assoc-table-row->dir best-row))))))
-
+    (if (null? table)
+        #f
+        (let* ((target-maj 
+                (or (pkg-spec-maj spec)
+                    (apply max (map assoc-table-row->maj table))))
+               (lo (pkg-spec-minor-lo spec))
+               (hi (pkg-spec-minor-hi spec))
+               (matches
+                (filter 
+                 (λ (x) 
+                   (let ((n (assoc-table-row->min x)))
+                     (and
+                      (equal? target-maj (assoc-table-row->maj x))
+                      (or (not lo) (>= n lo))
+                      (or (not hi) (<= n hi))
+                      (compatible-version? x spec))))
+                 table)))
+          (if (null? matches)
+              #f
+              (let ((best-row
+                     (car 
+                      (quicksort 
+                       matches 
+                       (λ (a b) (> (assoc-table-row->min a) (assoc-table-row->min b)))))))
+                (make-pkg
+                 (pkg-spec-name spec)
+                 (pkg-spec-path spec)
+                 (assoc-table-row->maj best-row)
+                 (assoc-table-row->min best-row)
+                 (assoc-table-row->dir best-row)))))))
+  
   ; FULL-PKG-SPEC : (make-pkg-spec string (Nat | #f) (Nat | #f) (Nat | #f) (listof string) (syntax | #f)) string
   (define-struct pkg-spec (name maj minor-lo minor-hi path stx core-version) (make-inspector))
   ; PKG : string Nat Nat path
@@ -295,8 +297,8 @@ Various common pieces of code that both the client and server need to access
                     (begin
                       (set! to-read (- to-read bytes-read))
                       bytes-read)))]))
-       #f
-       void))))
+         #f
+         void))))
   
   ; write-line : X output-port -> void
   ; writes the given value followed by a newline to the given port
@@ -364,7 +366,7 @@ Various common pieces of code that both the client and server need to access
            (hash-table-put! ht key (cons i (hash-table-get ht key (lambda () '()))))))
        l)
       (hash-table-map ht cons)))
-
+  
   (define (drop-last l) (reverse (cdr (reverse l))))
   
   ;; note: this can be done faster by reading a copy-port'ed port with
@@ -418,7 +420,7 @@ Various common pieces of code that both the client and server need to access
                '()
                (let ((next-depth (if max-depth (sub1 max-depth) #f)))
                  (map (lambda (d) (directory->tree d valid-dir? next-depth)) files))))))))
-
+  
   ;; filter-pattern : (listof pattern-term)
   ;; pattern-term   : (x -> y) | (make-star (tst -> bool) (x -> y))
   (define-struct star (pred fun))
