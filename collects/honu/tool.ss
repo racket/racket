@@ -7,6 +7,7 @@
            (lib "class.ss")
            (lib "list.ss" "srfi" "1")
            (lib "match.ss")
+           (lib "port.ss")
            "parsers/lex.ss"
            "parsers/parse.ss"
            "private/typechecker/type-utils.ss"
@@ -100,7 +101,8 @@
           ;; InputPort HonuSetting TeachpackCache -> (-> (Union Syntax EOF))
           ;; Produces a thunk which compiles and returns a Honu definition when one
           ;; is available on the input port, or EOF when none are left.
-          (define/public (front-end/complete-program port settings teachpack-cache)
+          (define/public (front-end/complete-program original-port settings teachpack-cache)
+            (define port (single-stream-port original-port))
             (reset-evaluation!)
             (lambda ()
               (if (eof-object? (peek-char-or-special port))
@@ -124,7 +126,8 @@
           ;; InputPort HonuSetting TeachpackCache -> (-> (Union Syntax EOF))
           ;; Produces a thunk which compiles and returns a Honu expression or definition
           ;; when one is available on the input port, or EOF when none are left.
-          (define/public (front-end/interaction port settings teachpack-cache)
+          (define/public (front-end/interaction original-port settings teachpack-cache)
+            (define port (single-stream-port original-port))
             (lambda ()
               (if (eof-object? (peek-char-or-special port))
                   eof
@@ -343,4 +346,16 @@
                        (not (= open-braces 0))
                        (not (= open-curlies 0))
                        is-empty?))))
+
+          ;; single-stream-port : InputPort -> InputPort
+          ;; Consumes an arbitrary input port.
+          ;; Produces a port which produces the same data as its input
+          ;; up to EOF, then produces EOF constantly.
+          (define (single-stream-port port)
+            (let*-values ([(in-port out-port)
+                           (make-pipe #f (object-name port) (object-name port))])
+              (copy-port port out-port)
+              (close-output-port out-port)
+              in-port))
+          
           )))))
