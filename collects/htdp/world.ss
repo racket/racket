@@ -1,3 +1,4 @@
+;; Wed Jan 25 13:38:42 EST 2006: on-redraw: proc is now called on installation
 ;; Tue Jan  3 11:17:50 EST 2006: changed add-line behavior in world.ss 
 ;; Sat Dec 10 19:39:03 EST 2005: fixed name, changed interface to on-key-event
 ;; Fri Dec  9 21:39:03 EST 2005: remoevd (update ... produce ...); added on-redraw 
@@ -260,9 +261,8 @@
                     (check-result 'on-redraw (lambda (x) (beg:image? x)) "image" img)
                     (update-frame img)
                     #t)))
-          #t)
-        (error 'on-redraw "the redraw function has already been specified"))
-    #t)
+          (on-redraw-proc))
+        (error 'on-redraw "the redraw function has already been specified")))
   
   (define (update-frame pict)
     (send txt begin-edit-sequence)
