@@ -128,19 +128,17 @@
    )
   
   (define (test-file file)
-    (with-handlers
-        ([exn:fail? (lambda (exn) `(error ,(exn-message exn)))])
-      (let* ([honu-path (if (path? file) file (string->path file))]
-             [test-path (path-replace-suffix honu-path "-test.ss")])
-        (unless (file-exists? honu-path)
-          (error 'test-file "~s not found" (path->string honu-path)))
-        (unless (file-exists? test-path)
-          (error 'test-file "~s not found" (path->string test-path)))
-        (let* ([stx (program-syntax test-path)])
-          (eval-after-program
-           honu-path
-           #`(begin
-               (require (lib "test-tools.ss" "honu"))
-               #,stx))))))
+    (let* ([honu-path (if (path? file) file (string->path file))]
+           [test-path (path-replace-suffix honu-path "-test.ss")])
+      (unless (file-exists? honu-path)
+        (error 'test-file "~s not found" (path->string honu-path)))
+      (unless (file-exists? test-path)
+        (error 'test-file "~s not found" (path->string test-path)))
+      (let* ([stx (program-syntax test-path)])
+        (eval-after-program
+         honu-path
+         #`(begin
+             (require (lib "test-tools.ss" "honu"))
+             #,stx)))))
   
   )
