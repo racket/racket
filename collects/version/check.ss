@@ -49,7 +49,7 @@
       ;; Get server information, carefully
       (define version-info
         (parameterize ([current-input-port
-                        (try (url->port version-url)
+                        (try (url->port (format "~a?~a" version-url (version)))
                              "could not connect to website")])
           (try (read) "unexpected response from server")))
       (define (get key)
