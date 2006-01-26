@@ -12,7 +12,7 @@
                             srfi:date-year-day
                             srfi:date-week-day)
            (rename make-srfi:date make-date)
-           (rename srfi:date? date)
+           (rename srfi:date? date?)
            (rename srfi:date-second date-second)
            (rename srfi:date-minute date-minute)
            (rename srfi:date-hour date-hour)
