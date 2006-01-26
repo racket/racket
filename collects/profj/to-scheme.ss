@@ -1203,7 +1203,7 @@
                                                    null)
                                 (generate-contract-defs (class-name)))
                       )
-              (make-syntax #f `(module ,name mzscheme (requires ,(module-name)) ,provides) #f)))))
+              (make-syntax #f `(module ,name mzscheme (require ,(module-name)) ,provides) #f)))))
 
   ;-----------------------------------------------------------------------------------------------------------------
   ;Member translation functions
