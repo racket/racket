@@ -278,6 +278,7 @@
                annotated-stx)))))) 
   
   (define (process:new->running process)
+    (printf "mztake: starting ~a~n" (debug-client-modpath (debug-process-main-client process)))
     (set-debug-process-run-semaphore! process (make-semaphore))
     (set-debug-process-policy! process (current-policy))
     
@@ -289,6 +290,7 @@
     (process:->dead process))
   
   (define (process:->dead process)
+    (printf "mztake: finished ~a~n" (debug-client-modpath (debug-process-main-client process)))
     (set! all-debug-processes (remq process all-debug-processes))
     (custodian-shutdown-all (debug-process-custodian process))
     (frp:set-cell! (debug-process-exited? process) true))

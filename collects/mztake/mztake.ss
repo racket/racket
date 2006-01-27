@@ -1,5 +1,6 @@
 (module mztake mzscheme
   (require (lib "contract.ss")
+           (lib "match.ss")
            (prefix frp: (lib "lang-ext.ss" "frtime"))
            (rename (lib "frtime.ss" "frtime") frp:list list)
            (rename (lib "frtime.ss" "frtime") frp:value-nowable? value-nowable?)
@@ -29,20 +30,26 @@
                     [set-running-e! ((frp:event?) (debug-process?) . opt-> . any)]
                     [set-running! ((frp:value-nowable?) (debug-process?) . opt-> . any)]
                     [where (() (debug-process?) . opt-> . frp:event?)]
+                    
                     [current-policy (case-> (-> any)
                                             (any/c . -> . void?))]
                     [current-process (case-> (-> debug-process?)
                                              (debug-process? . -> . void?))]
+                    [current-reqspec (case-> (-> string?)
+                                          (string? . -> . void?))]  
                     [create-debug-process (-> debug-process?)]
                     [set-main! ((require-spec?) (debug-process?) . opt-> . void?)]
                     [trace* (debug-process? loc? (-> any) . -> . frp:event?)]
                     [bind* (debug-process? symbol? . -> . any)])
   
   (define (loc* after?)
-    (opt-lambda (reqspec line/pattern [col #f])
-      (if (number? line/pattern)
-          (make-loc/lc reqspec after? line/pattern col)
-          (make-loc/p reqspec after? line/pattern))))
+    (define (set-r r) (current-reqspec r))
+    (match-lambda*
+      [(arg) ((loc* after?) (current-reqspec) arg)]
+      [((and (not (? require-spec?)) arg) args ...) (apply (loc* after?) (current-reqspec) arg args)]
+      [((? require-spec? r) (? number? line)) (set-r r) (make-loc/lc r after? line false)]
+      [((? require-spec? r) (? number? line) (? number? col)) (set-r r) (make-loc/lc r after? line col)]
+      [((? require-spec? r) pattern) (set-r r) (make-loc/p r after? pattern)]))
   
   (define loc/r (loc* true))
   
@@ -83,9 +90,11 @@
       (debug-process-where p)))
   
   (define current-process (make-parameter (create-debug-process)))
+  (define current-reqspec (make-parameter false))
   
   (define set-main!
     (opt-lambda (reqspec [p (current-process)])
+      (current-reqspec  reqspec )
       (process:set-main! p reqspec)))
   
   (define-syntax trace

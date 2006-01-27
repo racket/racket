@@ -1,10 +1,16 @@
 (module mztake-structs mzscheme
-  (require (lib "more-useful-code.ss" "mztake"))
+  (require (lib "match.ss")
+           (lib "more-useful-code.ss" "mztake"))
   
   (provide (all-defined))
   
-  (define (require-spec? sexp)
-    (or string? list?))
+  (define require-spec?
+    (match-lambda
+      [(? string?) true]
+      [('file (? string?)) true]
+      [('lib (? string?) (? string?) ...) true]
+      [('planet . arg) true]
+      [else false]))
   
   ;    ;;;;;   ;                          ;          
   ;   ;     ;  ;                          ;          
