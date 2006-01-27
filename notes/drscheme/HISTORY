@@ -2,6 +2,9 @@
         Version 302
 ------------------------------
 
+  . Added `this', implicitly bound in ->r and ->pp contracts
+    when used inside `object-contract'
+
   . Help Desk's font size is now independently configurable
     (from Drscheme's font size).
 
