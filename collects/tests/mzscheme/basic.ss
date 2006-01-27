@@ -1,6 +1,16 @@
 
 (load-relative "loadtest.ss")
 
+(test "bbb" regexp-replace* "a" "aaa" "b")
+
+(define (test-weird-offset regexp-match regexp-match-positions)
+  (test #f regexp-match "e" (open-input-string ""))
+  (test #f regexp-match "e" (open-input-string "") (expt 2 100))
+  (test #f regexp-match "e" (open-input-string "") (expt 2 100) (expt 2 101))
+  (test '((3 . 4)) regexp-match-positions "e" (open-input-string "eaae") 2 (expt 2 101)))
+(test-weird-offset regexp-match regexp-match-positions)
+
+
 (test '() 'null null)
 (test '() 'null ())
 
@@ -1726,8 +1736,8 @@
       procedure-arity (case-lambda [(x) 0] [(x y z) 1] [(x y z w u . rest) 2]))
 (test (make-arity-at-least 0) procedure-arity (lambda x 1))
 (test (list 0 (make-arity-at-least 0)) procedure-arity (case-lambda 
-					       [() 10]
-					       [x 1]))
+							[() 10]
+							[x 1]))
 (test (make-arity-at-least 0) procedure-arity (lambda x x))
 (arity-test procedure-arity 1 1)
 

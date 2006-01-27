@@ -16,9 +16,10 @@
 		      (positive? (lambda (x) 'positive)))
 		     (raise 1)))
 (test 5 'with-handlers
-        (with-handlers ([void (lambda (x) 5)])
-	     (with-handlers ((zero? (lambda (x) 'zero)))
-		  (/ 0))))
+      (with-handlers ([void (lambda (x) 5)])
+	(with-handlers ((zero? (lambda (x) 'zero)))
+	  (/ 0))))
+
 (error-test #'(with-handlers ()
 	         (/ 0))
 	    exn:fail:contract:divide-by-zero?)
@@ -29,6 +30,7 @@
 			     (boolean? (lambda (x) 'boolean)))
 		 (/ 0))
 	    exn:application:type?)
+
 (syntax-test #'with-handlers)
 (syntax-test #'(with-handlers))
 (syntax-test #'(with-handlers . 1))
@@ -59,7 +61,7 @@
 	    arity?)
 
 (test-values '(1 2) (lambda () (with-handlers ([void void])
-					      (values 1 2))))
+				 (values 1 2))))
 
 (SECTION 4 1 2)
 (test '(quote a) 'quote (quote 'a))

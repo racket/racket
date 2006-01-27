@@ -9,16 +9,29 @@
 (define maybe-different-depths? #f)
 
 (define (comp=? c1 c2)
-  (let ([s1 (open-output-string)]
-	[s2 (open-output-string)])
+  (let ([s1 (open-output-bytes)]
+	[s2 (open-output-bytes)])
     (write c1 s1)
     (write c2 s2)
-    (let ([t1 (get-output-string s1)]
-	  [t2 (get-output-string s2)])
-      (or (string=? t1 t2)
+    (let ([t1 (get-output-bytes s1)]
+	  [t2 (get-output-bytes s2)]
+	  [skip-byte (+ 2 ; #~
+			1 ; version length
+			(string-length (version))
+			1 ; symtab count
+			1 ; length
+			1 ; CPT_MARSHALLED for top
+			1)])
+      (or (bytes=? t1 t2)
 	  (and maybe-different-depths?
-	       (string=? (substring t1 5 (string-length t1))
-			 (substring t2 5 (string-length t2))))))))
+	       (bytes=? (subbytes t1 0 (sub1 skip-byte))
+			(subbytes t2 0 (sub1 skip-byte)))
+	       (bytes=? (subbytes t1 skip-byte)
+			(subbytes t2 skip-byte)))
+	  (begin
+	    (printf "~s\n~s\n" t1 t2)
+	    #f
+	    )))))
 
 (define test-comp
   (case-lambda
@@ -101,6 +114,10 @@
 	   '(expt 5 (* 5 6)))
 (test-comp 88
 	   '(if (pair? null) 89 88))
+(test-comp '(if _x_ 2 1)
+	   '(if (not _x_) 1 2))
+(test-comp '(if _x_ 2 1)
+	   '(if (not (not (not _x_))) 1 2))
 
 (test-comp '(let ([x 3]) x)
 	   '((lambda (x) x) 3))

@@ -117,6 +117,7 @@ transcript.
     (set! number-of-error-tests (add1 number-of-error-tests))
     (write expr)
     (display "  =e=> ")
+    (flush-output)
     (call/ec (lambda (escape)
 	       (let* ([old-esc-handler (error-escape-handler)]
 		      [old-handler (current-exception-handler)]
