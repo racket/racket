@@ -595,7 +595,7 @@
 						  0)
 				      (semaphore-post s)))
 				   (semaphore-wait s)))]
-		     [shortcut #\K])
+		     [shortcut #\=])
         
         (add-preferences-menu-items edit-menu)
         
