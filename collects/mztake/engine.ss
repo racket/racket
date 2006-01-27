@@ -29,11 +29,12 @@
   ;Keeps track of all debugging processes
   (define all-debug-processes null)  
   
-  ; produces a nested list of (line column offset) for all addressable syntax    
+  ; produces a nested list of (line column offset span) for all addressable syntax    
   (define (unwrap-syntax stx)
     (let ([elt (list (syntax-line stx)
                      (syntax-column stx)
-                     (sub1 (syntax-position stx)))])
+                     (sub1 (syntax-position stx))
+                     (syntax-span stx))])
       (syntax-case stx ()
         [(item ...) (cons elt (map unwrap-syntax (syntax->list stx)))]
         [x elt])))
@@ -48,10 +49,10 @@
                       (loop (read-syntax filename port)))))
           (close-input-port port)))))
   
-  ;; returns a memoized function that takes (line column) -> position
+  ;; returns a memoized function that takes (line column) -> (list/c position span)
   ;; line-col->pos : (debug-file? . -> . (number? number? . -> . (union void? number?)))
   (define (line-col->pos stx)
-    (let ([pos-list (flatten (map unwrap-syntax stx))])    
+    (let ([pos-list (flatten (map unwrap-syntax stx))])
       (lambda (line maybe-col)
         (let loop ([lst pos-list])
           (cond
@@ -62,7 +63,7 @@
             [(and (<= line (first (first lst)))
                   (or (not maybe-col)
                       (<= maybe-col (second (first lst)))))
-             (third (first lst))]
+             (list (third (first lst)) (fourth (first lst)))]
             
             [else (loop (rest lst))])))))
   
@@ -84,8 +85,8 @@
            (loop (first stx) (first lst))
            (loop (rest stx) (rest lst))]
           [else 
-           (when (syntax-line stx) 
-             (hash-put! h lst (sub1 (syntax-position stx))))
+           (when (syntax-line stx)
+             (hash-put! h lst (list (sub1 (syntax-position stx)) (syntax-span stx))))
            (when (pair? (syntax-e stx)) 
              (loop (first (syntax-e stx)) (first lst))
              (loop (rest (syntax-e stx)) (rest lst)))])))
@@ -135,15 +136,14 @@
             (and tracepoints
                  (hash-get tracepoints (sub1 pos) (lambda () false)))))))
   
-  (define (traces->events traces)
+  (define (traces->events traces vals)
     (map (lambda (t)
            (list (trace-struct-evnt-rcvr t)
-                 ((trace-struct-thunk t))))
+                 (apply (trace-struct-thunk t) vals)))
          traces))
   
-  (define (receive-result process client top-mark rest-marks)
-    (let* ([byte-offset (sub1 (syntax-position (mark-source top-mark)))]
-           [traces (hash-get (debug-client-tracepoints client) byte-offset (lambda () empty))]
+  (define (receive-result process client byte-offset top-mark rest-marks vals)
+    (let* ([traces (hash-get (debug-client-tracepoints client) byte-offset (lambda () empty))]
            [no-traces? (empty? traces)]
            [has-single-trace? (and (not no-traces?) (empty? (rest traces)))]
            [no-where? (not (debug-process-where process))]
@@ -159,11 +159,10 @@
               ;; No where event to generate
               (cond [has-single-trace?
                      ;; fast-path
-                     (let ([t (first traces)])
-                       (frp:send-synchronous-event (trace-struct-evnt-rcvr t)
-                                                   ((trace-struct-thunk t))))]
-                    [no-traces? void]
-                    [else (frp:send-synchronous-events (traces->events traces))])
+                     (let* ([t (first traces)]
+                            [e (apply (trace-struct-thunk t) vals)])
+                       (frp:send-synchronous-event (trace-struct-evnt-rcvr t) e))]
+                    [else (frp:send-synchronous-events (traces->events traces vals))])
               
               ;; With a where event to generate
               (let ([where-event (debug-process-where process)]
@@ -172,7 +171,7 @@
                     (frp:send-synchronous-event where-event w)
                     
                     (let* ([where-event (list where-event w)]
-                           [trace-events (traces->events traces)])
+                           [trace-events (traces->events traces vals)])
                       (frp:send-synchronous-events (cons where-event trace-events))))))
           
           ;; Now that we processed the trace, do we want to pause or continue
@@ -190,12 +189,15 @@
   
   
   (define ((break-after process client) top-mark marks . vals)
-    (receive-result process client top-mark marks) ; TODO: have access to return value
-    (apply values vals)) ; TODO: allow modification of the return value
+    (let* ([stx (mark-source top-mark)]
+           [byte-offset (+ (syntax-position stx) (syntax-span stx) -2)])
+      (receive-result process client byte-offset top-mark marks vals)
+      (apply values vals))) ; TODO: allow modification of the return value
   
   (define ((break-before process client) top-mark marks)
-    (receive-result process client top-mark marks) ; TODO: allow substitute value
-    false)
+    (let ([byte-offset (sub1 (syntax-position (mark-source top-mark)))])
+      (receive-result process client byte-offset top-mark marks empty) ; TODO: allow substitute value
+      false))
   
   (define (unbuild-path path)
     (let-values ([(base name _) (split-path path)])
@@ -378,9 +380,13 @@
            modpath))))
   
   (define (loc->positions client loc)
-    (if (loc/lc? loc)
-        (list ((debug-client-line-col->pos client) (loc/lc-line loc) (loc/lc-col loc)))
-        ((debug-client-pattern->pos client) (loc/p-pattern loc))))
+    (let ([pos&spans
+           (if (loc/lc? loc)
+               (list ((debug-client-line-col->pos client) (loc/lc-line loc) (loc/lc-col loc)))
+               ((debug-client-pattern->pos client) (loc/p-pattern loc)))])
+      (if (loc-after? loc)
+          (map (lambda (p&s) (+ (first p&s) (second p&s) -1)) pos&spans)
+          (map first pos&spans))))
   
   (define (trace* p loc thunk)
     (let* ([modpath (reqspec->modpath (loc-reqspec loc))]

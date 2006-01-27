@@ -1,9 +1,7 @@
 (module mztake-structs mzscheme
   (require (lib "more-useful-code.ss" "mztake"))
   
-  (provide (all-defined-except loc make-loc)
-           (rename loc loc$)
-           (rename make-loc loc))
+  (provide (all-defined))
   
   (define (require-spec? sexp)
     (or string? list?))
@@ -45,7 +43,7 @@
                                 where         ; a behavior signaling each position where we pause
                                 marks))       ; while paused, the marks at the point of the pause (else false)
   
-  (define-struct loc (reqspec))
+  (define-struct loc (reqspec after?))
   (define-struct (loc/lc loc) (line col))
   (define-struct (loc/p loc) (pattern))
                       

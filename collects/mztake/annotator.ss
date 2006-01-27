@@ -49,7 +49,9 @@
   ;; (use the key DEBUG-KEY).  If BREAK-BEFORE returns some value, the
   ;; evaluation skips the expression entirely and just returns that value.
   ;; Otherwise, evaluation proceeds normally.  After the expression is
-  ;; evaluated BREAK-AFTER is called.  If BREAK-AFTER returns some value, the
+  ;; evaluated, BREAK? is called with the position of the end of the expression.
+  ;; If it returns true, BREAK-AFTER is called; otherwise, the expression returns
+  ;; normally.  If BREAK-AFTER returns some value, the
   ;; return value of the expression is replaced by that value.
   ;;
   ;; RECORD-BOUND-ID is simply passed to ANNOTATE-STX.  

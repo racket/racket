@@ -38,7 +38,8 @@
          (lib "match.ss"))
 
 (define inserts (trace (loc "heap.ss" 49 6) item))
-(define removes (trace (loc "heap.ss" 67 10) result))
+;(define removes (trace (loc "heap.ss" 67 10) result))
+(define removes (trace (loc/r "heap.ss" 66 22)))
 
 #| The following code merely observes the insertions and removals
    from the heap. We notice whether any of the removals are out

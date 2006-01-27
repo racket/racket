@@ -13,7 +13,8 @@
   ;; Turn struct printing on for MzTake users.
   (print-struct true)
 
-  (provide loc$
+  (provide (rename loc loc$)
+           loc/r
            trace
            bind
            define/bind
@@ -37,11 +38,15 @@
                     [trace* (debug-process? loc? (-> any) . -> . frp:event?)]
                     [bind* (debug-process? symbol? . -> . any)])
   
-  (define loc/opt-col
+  (define (loc* after?)
     (opt-lambda (reqspec line/pattern [col #f])
       (if (number? line/pattern)
-          (make-loc/lc reqspec line/pattern col)
-          (make-loc/p reqspec line/pattern))))
+          (make-loc/lc reqspec after? line/pattern col)
+          (make-loc/p reqspec after? line/pattern))))
+  
+  (define loc/r (loc* true))
+  
+  (define loc/opt-col (loc* false))
   
   (define exceptions
     (opt-lambda ([p (current-process)])
@@ -84,12 +89,17 @@
       (process:set-main! p reqspec)))
   
   (define-syntax trace
-    (syntax-rules ()
+    (syntax-rules (=>)
       [(_ loc)
-       (trace* (current-process) loc (lambda () true))]
+       (let ([loc* loc])
+         (if (loc-after? loc*)
+             (trace* (current-process) loc* identity)
+             (trace* (current-process) loc* (lambda () true))))]
+      [(_ loc => proc)
+       (trace* (current-process) loc proc)]
       [(_ loc body ...)
        (trace* (current-process) loc (lambda () body ...))]))
-  
+    
   (define-syntax (mztake-top stx)
     (syntax-case stx () 
       [(_ . name) 
