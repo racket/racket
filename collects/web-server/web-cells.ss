@@ -233,12 +233,15 @@
    
   (provide with-frame
            with-frame-after
+           (rename cell:global? web-cell:global?)
            (rename ext:make-cell:global make-web-cell:global)
            (rename cell:global-ref web-cell:global-ref)
            (rename cell:global-set! web-cell:global-set!)
+           (rename cell:session? web-cell:session?)
            (rename ext:make-cell:session make-web-cell:session)
            (rename cell:session-ref web-cell:session-ref)
            (rename cell:session-set! web-cell:session-set!)
+           (rename cell:local? web-cell:local?)
            (rename ext:make-cell:local make-web-cell:local)
            (rename cell:local-ref web-cell:local-ref)
            (rename cell:local-set! web-cell:local-set!)
