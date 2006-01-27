@@ -32,6 +32,7 @@
 	      sirmail:utils^
 	      sirmail:options^
 	      sirmail:read^
+	      (env : sirmail:environment^)
 	      mred^
 	      net:imap^
 	      net:smtp^
@@ -582,7 +583,19 @@
                 [demand-callback (lambda (m)
                                    (send m enable (send enclosure-list get-selected)))])
               enable #f)
-        
+	(instantiate menu-item% ("Clone Message" edit-menu)
+		     [callback (lambda (i e)
+				 (let ([p (open-input-text-editor message-editor)]
+				       [s (make-semaphore)])
+				   (env:start-new-window
+				    (lambda ()
+				      (new-mailer p "" "" "" "" "" 
+						  (map (lambda (i) (send i user-data)) 
+						       (send enclosure-list get-items))
+						  0)
+				      (semaphore-post s)))
+				   (semaphore-wait s)))]
+		     [shortcut #\K])
         
         (add-preferences-menu-items edit-menu)
         
@@ -613,9 +626,19 @@
         
         (send message-editor begin-edit-sequence)
         (if file
-            ;; Resume a composition...
-            (send message-editor load-file file)
-            ;; Build message skeleton
+            ;; Resume/clone a composition...
+	    (begin
+	      (if (port? file)
+		  (send message-editor insert-port file)
+		  (send message-editor load-file file))
+	      (let ([pos (send message-editor
+			       find-string (string-append "\n" SEPARATOR "\n")
+			       'forward 0)])
+		(when pos
+		  (send message-editor set-no-change-region 
+			pos
+			(+ pos 2 (string-length SEPARATOR))))))
+	    ;; Build message skeleton
             (begin
               (send message-editor insert "To: ")
               (send message-editor insert (string-crlf->lf to))
@@ -655,9 +678,9 @@
                           find-named-style
                           (editor:get-default-color-style-name))
                     0 
-                    (send message-editor last-position))
-              (send message-editor clear-undos)))
-        
+                    (send message-editor last-position))))
+
+	(send message-editor clear-undos)
         (send message-editor set-modified #f)
         (send message-editor scroll-to-position 0)
         (send message-editor end-edit-sequence)

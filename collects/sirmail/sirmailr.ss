@@ -49,6 +49,6 @@
 		  MRED IMAP SMTP HEAD BASE64 MIME QP HIER)]
 	   [SEND : sirmail:send^
 		 (send@
-		  (ENV : (exit-sirmail)) UTILS OPTIONS READ
+		  (ENV : (exit-sirmail)) UTILS OPTIONS READ ENV
 		  MRED IMAP SMTP HEAD BASE64 QP HIER)])
      (export))))
