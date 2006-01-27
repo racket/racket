@@ -1,0 +1,20 @@
+package graphics;
+
+import scheme.lib.htdch.graphics.rename;
+import scheme.lib.mred.mred;
+        
+public class DrawImage extends Command {
+  public Image i;
+  public Posn leftCorner;
+  public DrawImage( Image i, Posn left ) {
+    this.i = i;
+    this.leftCorner = left;
+  }
+
+  void issue(dynamic dc) {
+     dynamic bitmap = i.getBitmap();
+     dc.drawBitmap(bitmap, leftCorner.x, leftCorner.y, rename.toSymbol("solid"), 
+                         rename.newObject(mred.colorObj, "white"), bitmap.getLoadedMask());
+  }
+
+}

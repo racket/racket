@@ -1,5 +1,6 @@
 (module info (lib "infotab.ss" "setup")
   (define name "htdch")
   (define compile-subcollections (list (list "htdch" "draw")
-                                       ))
+                                       (list "htdch" "graphics")
+				       ))
   )
