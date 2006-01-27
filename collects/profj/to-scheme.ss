@@ -2052,8 +2052,8 @@
           (make-image
            (lambda ()
              `(let  ((temp-obj (make-object ,(if (send (types) require-prefix?
-                                                       '("Image" "draw2") (lambda () #f))
-                                                 'draw2.Image
+                                                       '("Image" "graphics") (lambda () #f))
+                                                 'graphics.Image
                                                  'Image))))
                      (send temp-obj Image-constructor-dynamic ,value)
                      temp-obj))))
@@ -2070,7 +2070,7 @@
                         (cond
                           ((eq? type string-type) make-string)
                           ((and (equal? "Image" (ref-type-class/iface type))
-                                (equal? '("draw2") (ref-type-path type)))
+                                (equal? '("graphics") (ref-type-path type)))
                            (make-image))
                           (else
                            (error 'translate-literal (format "Translate literal given unknown type: ~s" type))))))

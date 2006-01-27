@@ -1366,11 +1366,11 @@
              (add-required c-class "String" `("java" "lang") type-recs)
              (set-expr-type exp string-type))
             ((eq? (expr-types exp) 'image)
-             (get-record (send type-recs get-class-record '("Image" "draw2") #f
-                               ((get-importer type-recs) '("Image" "draw2")
+             (get-record (send type-recs get-class-record '("Image" "graphics") #f
+                               ((get-importer type-recs) '("Image" "graphics")
                                                          type-recs level (expr-src exp))) type-recs)
-             (add-required c-class "Image" `("draw2") type-recs)
-             (set-expr-type exp (make-ref-type "Image" '("draw2"))))
+             (add-required c-class "Image" `("graphics") type-recs)
+             (set-expr-type exp (make-ref-type "Image" '("graphics"))))
             (else (expr-types exp))) env))
         ((bin-op? exp)
          (set-expr-type exp 

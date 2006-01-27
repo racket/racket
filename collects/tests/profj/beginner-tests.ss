@@ -10,6 +10,16 @@
 
   ;;Execution tests that should pass
   
+  (execute-test 
+   "interface A {
+      boolean s( B b);
+    }
+    class B implements A {
+      B() { }
+      boolean s( B b ) { return true; }
+    }"
+   language #f "Interface and class with cyclic reference")               
+  
   (execute-test
    "class Simple {
      Simple() { }

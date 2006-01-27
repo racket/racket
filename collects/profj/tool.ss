@@ -887,7 +887,7 @@
        (cond 
          ((and (equal? "Image" (send value my-name))
                (object-method-arity-includes? value 'Image-constructor-dynamic 1)
-               (object-method-arity-includes? value 'movePinhole-draw2.Posn 1))
+               (object-method-arity-includes? value 'movePinhole-graphics.Posn 1))
           ;(printf "~a~n" ((send value fields-for-display)))
           (list (cadr ((send value fields-for-display)))))
          (else
