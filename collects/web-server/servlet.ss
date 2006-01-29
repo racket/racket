@@ -54,6 +54,7 @@
   (provide
    clear-continuation-table!
    send/suspend/dispatch
+   current-url-transform
    current-servlet-continuation-expiration-handler
    xexpr/callback?
    xexpr/callback->xexpr
@@ -62,6 +63,10 @@
   
   ;; ************************************************************
   ;; EXPORTS
+  
+  ;; current-url-transform : string? -> string?
+  (define current-url-transform
+    (make-parameter identity))
   
   ;; current-servlet-continuation-expiration-handler : request -> response
   (define current-servlet-continuation-expiration-handler
@@ -107,6 +112,7 @@
                         k expiration-handler
                         (request-uri (execution-context-request ctxt))
                         inst)]
+                [k-url ((current-url-transform) k-url)]
                 [response (response-generator k-url)])
            (output-response (execution-context-connection ctxt) response)
            ((execution-context-suspend ctxt)))))))
