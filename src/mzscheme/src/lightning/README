@@ -1,5 +1,5 @@
 
-This version of lightning version 1.2 is slightly modified for
+This variant of GNU Lightning version 1.2 is slightly modified for
 MzScheme.
 
 For PowerPC, branches can be generated in long-jump mode, so that
@@ -8,3 +8,12 @@ the current program counter.
 
 For PowerPC, arguments are extracted directly from the original
 registers by getarg.
+
+----------------------------------------
+
+GNU Lightning authors:
+
+ Paolo Bonzini <bonzini@gnu.org>
+ i386 and PPC assemblers by Ian Piumarta <piumarta@inria.fr>
+ Major PPC contributions by Laurent Michel <ldm@thorgal.homelinux.org>
+
