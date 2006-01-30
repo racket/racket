@@ -1,6 +1,5 @@
 (module search mzscheme
   (require (lib "string-constant.ss" "string-constants")
-           "docpos.ss"
            "colldocs.ss"
            "path.ss"
            "manuals.ss"
@@ -34,9 +33,6 @@
    
    (non-regexp (string? . -> . string?)))
 
-  (define (html-doc-position x)
-    (or (user-defined-doc-position x)
-	(standard-html-doc-position x)))
   
   ; These are set by reset-doc-lists:
   ; docs, doc-names and doc-kinds are parallel lists. doc-kinds
@@ -49,22 +45,14 @@
   (define doc-kinds null)
   ; doc-collection-date : (union #f number 'none)
   (define doc-collection-date #f)
-      
+  
   (define (reset-doc-lists)
   ; Locate standard HTML documentation
     (define-values (std-docs std-doc-names)
       (let* ([docs (find-doc-directories)]
              [doc-names (map get-doc-name docs)])
-        ; Order the standard docs:
-        (let ([ordered (quicksort
-                        (map list docs doc-names)
-                        (lambda (a b) ; html-doc-position expects collection name
-                          (let-values ([(_1 a-short _2) (split-path (car a))]
-                                       [(_3 b-short _4) (split-path (car b))])
-                            (< (html-doc-position a-short)
-                               (html-doc-position b-short)))))])
-          (values (map car ordered) (map cadr ordered))))) ; here we want the std title
-    
+        (values docs doc-names)))
+  
     ; Check collections for doc.txt files:
     (define-values (txt-docs txt-doc-names) (colldocs))
     
@@ -300,8 +288,7 @@
     (set! html-keywords (make-hash-table 'equal))
     (set! html-indices (make-hash-table 'equal))
     (set! text-keywords (make-hash-table 'equal))
-    (set! text-indices (make-hash-table 'equal))
-    (reset-doc-positions!))
+    (set! text-indices (make-hash-table 'equal)))
 
   (define max-reached #f)
 

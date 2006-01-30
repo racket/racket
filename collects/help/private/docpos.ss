@@ -4,10 +4,7 @@
 
   (provide/contract
    [standard-html-doc-position (path? . -> . number?)]
-   [user-defined-doc-position (path? . -> . (union false/c number?))]
-   [known-docs (listof (cons/c path? string?))]
-   [set-doc-position! (path? number? . -> . void?)]
-   [reset-doc-positions! (-> void?)])
+   [known-docs (listof (cons/c path? string?))])
   
   ;; Define an order on the standard docs.
   (define (standard-html-doc-position d)
@@ -19,22 +16,6 @@
                 (caddr line)
                 100)))))
 
-  (define user-doc-positions '())
-
-  (define (set-doc-position! manual weight)
-    (unless (assoc manual known-docs)
-      (error 'set-doc-position! "unknown manual ~s" manual))
-    (set! user-doc-positions
-          (cons (list manual weight)
-                (filter (lambda (x) (not (equal? (car x) manual)))
-                        user-doc-positions))))
-
-  (define (reset-doc-positions!)
-    (set! user-doc-positions '()))
-
-  (define (user-defined-doc-position manual)
-    (let ([result (assoc manual user-doc-positions)])
-      (and result (cadr result))))
   
   ;; (listof (list string string number))
   ;; the first string is the collection name
@@ -45,18 +26,7 @@
       ("mzscheme" "PLT MzScheme: Language Manual" -49)
       ("mred" "PLT MrEd: Graphical Toolbox Manual" -48)
             
-      ("beginning" "Beginning Student Language" -19)
-      ("beginning-abbr" "Beginning Student with List Abbreviations Language" -18)
-      ("intermediate" "Intermediate Student Language" -17)
-      ("intermediate-lambda" "Intermediate Student with Lambda Language" -16)
-      ("advanced" "Advanced Student Language" -15)
-      ("teachpack" "Teachpacks for How to Design Programs" -16)
-      
-      ("profj-beginner" "ProfessorJ Beginner Language" -10)
-      ("profj-intermediate" "ProfessorJ Intermediate Language" -9)
-      ("profj-advanced" "ProfessorJ Advanced Language" -8)
-      
-      ("tour" ,(format "A Brief Tour of DrScheme version ~a" (version)) 0)
+      ("tour" "A Brief Tour of DrScheme" 0)
       ("drscheme" "PLT DrScheme: Programming Environment Manual" 1)
       
       ("srfi" "SRFI documents inside PLT" 3)
@@ -77,6 +47,17 @@
       ("plot"       "PLoT Manual"       62)
 
       ("t-y-scheme" "Teach Yourself Scheme in Fixnum Days" 100)
-      ("tex2page" "TeX2page" 101)))
+      ("tex2page" "TeX2page" 101)
+      
+      ("beginning" "Beginning Student Language" 200)
+      ("beginning-abbr" "Beginning Student with List Abbreviations Language" 201)
+      ("intermediate" "Intermediate Student Language" 202)
+      ("intermediate-lambda" "Intermediate Student with Lambda Language" 203)
+      ("advanced" "Advanced Student Language" 204)
+      ("teachpack" "Teachpacks for How to Design Programs" 205)
+      
+      ("profj-beginner" "ProfessorJ Beginner Language" 210)
+      ("profj-intermediate" "ProfessorJ Intermediate Language" 211)
+      ("profj-advanced" "ProfessorJ Advanced Language" 212)))
   
   (define known-docs (map (lambda (x) (cons (string->path (car x)) (cadr x))) docs-and-positions)))

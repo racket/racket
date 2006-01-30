@@ -164,10 +164,18 @@
        uninstalled)))
   
   ;; find-doc-directories : -> (listof path)
-  ;; constructs a list of directories where documentation may reside.
+  ;; constructs a sorted list of directories where documentation may reside.
   (define (find-doc-directories)
-    (append (find-info.ss-doc-directories)
-            (find-doc-directories-in-doc-collection)))
+    (let ([unsorted
+           (append (find-info.ss-doc-directories)
+                   (find-doc-directories-in-doc-collection))])
+      (quicksort
+       unsorted
+       (λ (a b)
+         (let-values ([(_1 a-short _2) (split-path a)]
+                      [(_3 b-short _4) (split-path b)])
+           (< (standard-html-doc-position a-short)
+              (standard-html-doc-position b-short)))))))
   
   (define (find-info.ss-doc-directories)
     (let ([dirs (find-relevant-directories '(html-docs) 'all-available)])
