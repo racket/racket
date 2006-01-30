@@ -77,7 +77,7 @@ add struct contracts for immutable structs?
 			 (syntax-object->datum (quote-syntax _)) 
 			 (string->symbol neg-blame-str)
 			 (quote-syntax _)))])))))
-
+  
   (define-for-syntax (make-provide/contract-transformer contract-id id pos-module-source)
     (make-set!-transformer
      (lambda (stx)
@@ -555,7 +555,7 @@ add struct contracts for immutable structs?
                          [pos-module-source (a:mangle-id provide-stx "provide/contract-pos-module-source" id)]
                          [pos-stx (datum->syntax-object provide-stx 'here)]
                          [id id]
-                         [ctrct ctrct]
+                         [ctrct (syntax-property ctrct 'inferred-name id)]
                          [external-name (or user-rename-id id)])
              (with-syntax ([code
                             (syntax/loc stx
@@ -566,7 +566,7 @@ add struct contracts for immutable structs?
                                 (if #f id)
                                 
                                 (define pos-module-source (module-source-as-symbol #'pos-stx))
-                                (define contract-id (let ([id ctrct]) id))
+                                (define contract-id ctrct)
                                 (define-syntax id-rename
 				  (make-provide/contract-transformer (quote-syntax contract-id)
 								     (quote-syntax id)
