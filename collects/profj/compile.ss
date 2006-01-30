@@ -314,15 +314,18 @@
   ;Extracts the version from a .zo file. Will probably blow up on anything else.
   ;get-version port -> string
   (define (get-version port)
-    (let get-to-count ((n 0))
-      (unless (= n 2)
-        (read-bytes 1 port)
-        (get-to-count (add1 n))))
-    (let ((count (bytes-ref (read-bytes 1 port) 0)))
-      (list->string (let loop ((c count))
-                      (if (= c 0)
-                          null
-                          (cons (read-char port)
-                                (loop (sub1 c))))))))
+    (if (eof-object? (peek-char port))
+        ""
+        (begin
+          (let get-to-count ((n 0))
+            (unless (= n 2)
+              (read-bytes 1 port)
+              (get-to-count (add1 n))))
+          (let ((count (bytes-ref (read-bytes 1 port) 0)))
+            (list->string (let loop ((c count))
+                            (if (= c 0)
+                                null
+                                (cons (read-char port)
+                                      (loop (sub1 c))))))))))
   )
 

@@ -17,5 +17,5 @@
        ()
        (("Object" "java" "lang"))
        ()
-       "version4")
+       "version4" "ignore")
 

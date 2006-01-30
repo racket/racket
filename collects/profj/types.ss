@@ -722,7 +722,7 @@
 
   
   (define type-version "version4")
-  (define type-length 10)
+  (define type-length 11)
   
   ;; read-record: path -> (U class-record #f)
   (define (read-record filename)
@@ -730,6 +730,8 @@
               (lambda (input)
                 (and (= (length input) type-length)
                      (equal? type-version (list-ref input 9))
+                     (or (equal? (version) (list-ref input 10))
+                         (equal? "ignore" (list-ref input 10)))
                      (make-class-record (list-ref input 1)
                                         (list-ref input 2)
                                         (symbol=? 'class (car input))
@@ -798,7 +800,8 @@
                  (map inner->list (class-record-inners r))
                  (class-record-parents r)
                  (class-record-ifaces r)
-                 type-version)))
+                 type-version
+                 (version))))
              (field->list
               (lambda (f)
                 (list
