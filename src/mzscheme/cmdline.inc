@@ -733,6 +733,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
       argv[0] = "-v";
     else if (!strcmp("--no-init-file", argv[0]))
       argv[0] = "-q";
+    else if (!strcmp("--no-jit", argv[0]))
+      argv[0] = "-j";
     else if (!strcmp("--no-argv", argv[0]))
       argv[0] = "-A";
     else if (!strcmp("--mute-banner", argv[0]))
@@ -955,6 +957,9 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	case '-':
 	  no_more_switches = 1;
 	  break;
+	case 'j':
+	  scheme_set_startup_use_jit(0);
+	  break;
 	case 'b':
 	  scheme_set_binary_mode_stdio(1);
 	  break;
@@ -1021,7 +1026,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 #endif
   }
 #endif /* DONT_PARSE_COMMAND_LINE */
-  
+
   global_env = mk_basic_env();
 
   sch_argv = scheme_make_vector(argc, NULL);
@@ -1127,6 +1132,11 @@ static int run_from_cmd_line(int argc, char *_argv[],
          "  -x, --no-lib-path : Skips trying to set current-library-collection-paths.\n"
 	 "  -q, --no-init-file : Skips trying to load " INIT_FILENAME ".\n"
 	 "  -A : Skips defining `argv' and `program'.\n"
+# ifdef MZ_USE_JIT
+	 "  -j, --no-jit : Disables just-in-time compiler.\n"
+# else
+	 "  -j, --no-jit : No effect, since the just-in-time compiler is unavailable.\n"
+# endif
 	 " Language setting switches:\n"
 	 "  -g, --case-sens : Identifiers/symbols are initially case-sensitive.\n"
 	 "  -G, --case-insens : Identifiers/symbols are initially case-insensitive.\n"

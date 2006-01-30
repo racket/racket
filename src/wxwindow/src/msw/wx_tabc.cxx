@@ -66,7 +66,7 @@ wxTabChoice::wxTabChoice(wxPanel *panel, wxFunction func, char *label,
     wxGetCharSize(cparent->handle, &cx, &cy, font);
     
     for (i = 0; i < n; i++) {
-      GetTextExtent(wxStripMenuCodes(choices[i]), &current_width, &cyf, NULL, NULL, font);
+      GetLabelExtent(wxStripMenuCodes(choices[i]), &current_width, &cyf);
       if (current_width < 40)
 	current_width = 40;
       total_width += current_width + cy;

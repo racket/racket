@@ -134,6 +134,10 @@
 #  define FLUSH_SPARC_REGISTER_WINDOWS
 # endif
 
+#ifdef i386
+# define MZ_USE_JIT_I386
+#endif
+
 # define FLAGS_ALREADY_SET
 
 #endif
@@ -238,6 +242,13 @@
 
 # define FLAGS_ALREADY_SET
 
+#if defined(i386)
+# define MZ_USE_JIT_I386
+#endif
+#if defined(powerpc)
+# define MZ_USE_JIT_PPC
+#endif
+
 #endif
 
   /********************* NetBSD ***********************/
@@ -265,6 +276,13 @@
 #if defined(__alpha__)
 # define SIXTY_FOUR_BIT_INTEGERS
 # define USE_DIVIDE_MAKE_INFINITY
+#endif
+
+#if defined(i386)
+# define MZ_USE_JIT_I386
+#endif
+#if defined(powerpc)
+# define MZ_USE_JIT_PPC
 #endif
 
 # define FLAGS_ALREADY_SET
@@ -297,6 +315,8 @@
 # define REGISTER_POOR_MACHINE
 
 # define USE_TM_GMTOFF_FIELD
+
+# define MZ_USE_JIT_I386
 
 # define FLAGS_ALREADY_SET
 
@@ -332,6 +352,8 @@
 # define USE_TM_GMTOFF_FIELD
 
 # define REGISTER_POOR_MACHINE
+
+# define MZ_USE_JIT_I386
 
 # define FLAGS_ALREADY_SET
 
@@ -566,6 +588,8 @@
 # define USE_ICONV_DLL
 # define NO_MBTOWC_FUNCTIONS
 
+# define MZ_USE_JIT_I386
+
 # define FLAGS_ALREADY_SET
 
 #endif
@@ -611,13 +635,15 @@
 
 # define LINK_EXTENSIONS_BY_TABLE
 
+# define MZ_USE_JIT_I386
+
 # define FLAGS_ALREADY_SET
 
 #endif
 
   /************** Mac OS X  ****************/
 
-# if (defined(__APPLE__) && defined(__ppc__) && defined(__MACH__)) || defined(OS_X)
+# if defined(OS_X) || defined(XONX)
 
 #ifdef XONX 
 # define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-darwin"
@@ -658,6 +684,12 @@
 #  define OS_X 1
 # endif
 
+#ifdef __POWERPC__
+# define MZ_USE_JIT_PPC
+#else
+# define MZ_USE_JIT_I386
+#endif
+
 # define FLAGS_ALREADY_SET
 
 #endif
@@ -680,6 +712,8 @@
 # define USE_TM_GMTOFF_FIELD
 
 # define FLAGS_ALREADY_SET
+
+# define MZ_USE_JIT_I386
 
 # endif
 
@@ -1270,6 +1304,14 @@
  /* MZSCHEME_IS_CODEFRAGMENT exploits improved CFM linking when
     MzScheme is itself a shared library instead of embedded in
     an application */
+
+  /***********************/
+ /*         JIT         */
+/***********************/
+
+ /* MZ_USE_JIT_I386 enables the JIT for x86 */
+
+ /* MZ_USE_JIT_PPC enables the JIT for PowerPC */
 
   /***********************/
  /*     Heap Images     */

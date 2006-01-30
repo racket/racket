@@ -153,6 +153,9 @@ unclosed_proc {
   gcMARK(d->name);
   gcMARK(d->code);
   gcMARK(d->closure_map);
+#ifdef MZ_USE_JIT
+  gcMARK(d->native_code);
+#endif
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Closure_Data));
@@ -311,6 +314,9 @@ case_closure {
   for (i = c->count; i--; )
     gcMARK(c->array[i]);
   gcMARK(c->name);
+#ifdef MZ_USE_JIT
+  gcMARK(c->native_code);
+#endif
 
  size:
   gcBYTES_TO_WORDS((sizeof(Scheme_Case_Lambda)
@@ -630,6 +636,7 @@ cont_mark_set_val {
  mark:
   Scheme_Cont_Mark_Set *s = (Scheme_Cont_Mark_Set *)p;
   gcMARK(s->chain);
+  gcMARK(s->native_stack_trace);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Cont_Mark_Set));

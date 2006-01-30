@@ -175,7 +175,7 @@ $(XSRCDIR)/sema.c: ../src/sema.@LTO@ $(XFORMDEP)
 $(XSRCDIR)/setjmpup.c: ../src/setjmpup.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/setjmpup.c $(SRCDIR)/setjmpup.c
 $(XSRCDIR)/string.c: ../src/string.@LTO@ $(XFORMDEP)
-	$(XFORM_SETUP) --cpp "$(CPP) -I$(OBJDIR) $(CPPFLAGS)" -o $(XSRCDIR)/string.c $(SRCDIR)/string.c
+	$(XFORM_SETUP) --cpp "$(CPP) -I../src $(CPPFLAGS)" -o $(XSRCDIR)/string.c $(SRCDIR)/string.c
 $(XSRCDIR)/struct.c: ../src/struct.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/struct.c $(SRCDIR)/struct.c
 $(XSRCDIR)/stxobj.c: ../src/stxobj.@LTO@ $(XFORMDEP)

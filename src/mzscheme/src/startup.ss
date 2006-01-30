@@ -2577,6 +2577,16 @@
   (require #%small-scheme #%define #%paramz)
   (require-for-syntax #%kernel #%stx #%stxcase-scheme #%qqstx)
 
+  (define-syntax case-test
+    (lambda (x)
+      (syntax-case x ()
+	[(_ x (k))
+	 (if (symbol? (syntax-e #'k))
+	     (syntax (eq? x 'k))
+	     (syntax (eqv? x 'k)))]
+	[(_ x (k ...))
+	 (syntax (memv x '(k ...)))])))
+
   ;; From Dybvig:
   (define-syntax case
     (lambda (x)
@@ -2586,10 +2596,10 @@
 	((_ v (else e1 e2 ...))
 	 (syntax/loc x (begin v e1 e2 ...)))
 	((_ v ((k ...) e1 e2 ...))
-	 (syntax/loc x (if (memv v '(k ...)) (begin e1 e2 ...))))
+	 (syntax/loc x (if (case-test v (k ...)) (begin e1 e2 ...))))
 	((_ v ((k ...) e1 e2 ...) c1 c2 ...)
 	 (syntax/loc x (let ((x v))
-			 (if (memv x '(k ...))
+			 (if (case-test x (k ...))
 			     (begin e1 e2 ...)
 			     (case x c1 c2 ...)))))
 	((_ v (bad e1 e2 ...) . rest)

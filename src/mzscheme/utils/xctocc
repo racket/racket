@@ -430,7 +430,7 @@ sub ReadFields {
 
     ($methpre, $methprecall, $methpostcall, $methpost) 
 	= split('/', $methodpostmacros);
-    ($gluepre, $glueprecall, $gluepostcall, $gluepost) 
+    ($gluepre, $glueprecall, $gluepostcall, $gluepost, $gluepostschemebind) 
 	= split('/', $gluepostmacros);
 
     $methpre = &Wash($methpre);
@@ -442,6 +442,7 @@ sub ReadFields {
     $glueprecall = &Wash($glueprecall);
     $gluepost = &Wash($gluepost);
     $gluepostcall = &Wash($gluepostcall);
+    $gluepostschemebind = &Wash($gluepostschemebind);
 
     if ($virtualonly && ($vexception ne '')) {
 	$exception = &Wash($vexception);
@@ -1838,6 +1839,9 @@ sub PrintFunction
 	if ($classflags ne "nofnl") {
 	    print "  WITH_REMEMBERED_STACK(objscheme_register_primpointer(p[0], &((Scheme_Class_Object *)p[0])";
 	    print "->primdata));\n";
+	}
+	if ($gluepostschemebind ne undef) {
+	    print "  " . &ApplyMacros($gluepostschemebind) . "\n";
 	}
 	print "  return scheme_void;\n";
 	print "}\n";

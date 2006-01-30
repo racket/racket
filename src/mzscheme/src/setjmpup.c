@@ -383,6 +383,10 @@ int scheme_setjmpup_relative(Scheme_Jumpup_Buf *b, void *base,
   int local;
   long disguised_b;
 
+#ifdef MZ_USE_JIT
+  scheme_flush_stack_cache();
+#endif
+
   FLUSH_REGISTER_WINDOWS;
 
   if (STK_COMP((unsigned long)start, (unsigned long)&local))
@@ -422,6 +426,10 @@ void scheme_longjmpup(Scheme_Jumpup_Buf *b)
 {
   long z;
   long junk[200];
+
+#ifdef MZ_USE_JIT
+  scheme_flush_stack_cache();
+#endif
 
   uncopy_stack(STK_COMP((unsigned long)&z, DEEPPOS(b)), b, junk);
 }

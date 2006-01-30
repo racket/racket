@@ -42,6 +42,7 @@ Scheme_Object scheme_undefined[1];
 Scheme_Syntax_Resolver scheme_syntax_resolvers[_COUNT_EXPD_];
 Scheme_Syntax_Validater scheme_syntax_validaters[_COUNT_EXPD_];
 Scheme_Syntax_Executer scheme_syntax_executers[_COUNT_EXPD_];
+Scheme_Syntax_Jitter scheme_syntax_jitters[_COUNT_EXPD_];
 int scheme_syntax_protect_afters[_COUNT_EXPD_];
 
 /* locals */
@@ -132,6 +133,16 @@ static void bangboxenv_validate(Scheme_Object *data, Mz_CPort *port, char *stack
 static void bangboxvalue_validate(Scheme_Object *data, Mz_CPort *port, char *stack, int depth, int letlimit, int delta,
 				  int num_toplevels, int num_stxes);
 
+static Scheme_Object *define_values_jit(Scheme_Object *data);
+static Scheme_Object *ref_jit(Scheme_Object *data);
+static Scheme_Object *set_jit(Scheme_Object *data);
+static Scheme_Object *define_syntaxes_jit(Scheme_Object *expr);
+static Scheme_Object *define_for_syntaxes_jit(Scheme_Object *expr);
+static Scheme_Object *case_lambda_jit(Scheme_Object *expr);
+static Scheme_Object *begin0_jit(Scheme_Object *data);
+static Scheme_Object *quote_syntax_jit(Scheme_Object *data);
+static Scheme_Object *bangboxvalue_jit(Scheme_Object *data);
+
 static Scheme_Object *named_let_syntax (Scheme_Object *form, Scheme_Comp_Env *env, 
 					Scheme_Compile_Expand_Info *rec, int drec);
 
@@ -215,35 +226,35 @@ scheme_init_syntax (Scheme_Env *env)
 
   scheme_register_syntax(DEFINE_VALUES_EXPD, 
 			 define_values_resolve, define_values_validate, 
-			 define_values_execute, 1);
+			 define_values_execute, define_values_jit, 1);
   scheme_register_syntax(SET_EXPD,
 			 set_resolve, set_validate,
-			 set_execute, 2);
+			 set_execute, set_jit, 2);
   scheme_register_syntax(REF_EXPD, 
 			 ref_resolve, ref_validate, 
-			 ref_execute, 0);
+			 ref_execute, ref_jit, 0);
   scheme_register_syntax(DEFINE_SYNTAX_EXPD, 
 			 define_syntaxes_resolve, define_syntaxes_validate,
-			 define_syntaxes_execute, 4);
+			 define_syntaxes_execute, define_syntaxes_jit, 4);
   scheme_register_syntax(DEFINE_FOR_SYNTAX_EXPD, 
 			 define_for_syntaxes_resolve, define_for_syntaxes_validate,
-			 define_for_syntaxes_execute, 4);
+			 define_for_syntaxes_execute, define_for_syntaxes_jit, 4);
   scheme_register_syntax(CASE_LAMBDA_EXPD, 
 			 case_lambda_resolve, case_lambda_validate,
-			 case_lambda_execute, -1);
+			 case_lambda_execute, case_lambda_jit, -1);
   scheme_register_syntax(BEGIN0_EXPD, 
 			 begin0_resolve, begin0_validate,
-			 begin0_execute, -1);
+			 begin0_execute, begin0_jit, -1);
   scheme_register_syntax(QUOTE_SYNTAX_EXPD, 
 			 NULL, quote_syntax_validate,
-			 quote_syntax_execute, 2);
+			 quote_syntax_execute, quote_syntax_jit, 2);
 
   scheme_register_syntax(BOXENV_EXPD, 
 			 NULL, bangboxenv_validate,
-			 bangboxenv_execute, 1);
+			 bangboxenv_execute, NULL, 1);
   scheme_register_syntax(BOXVAL_EXPD, 
 			 NULL, bangboxvalue_validate,
-			 bangboxvalue_execute, 2);
+			 bangboxvalue_execute, bangboxvalue_jit, 2);
 
   scheme_install_type_writer(scheme_let_value_type, write_let_value);
   scheme_install_type_reader(scheme_let_value_type, read_let_value);
@@ -722,6 +733,16 @@ define_values_execute(Scheme_Object *data)
   return define_execute(SCHEME_CAR(data), SCHEME_CDR(data), 0, NULL, NULL);
 }
 
+static Scheme_Object *define_values_jit(Scheme_Object *data)
+{
+  Scheme_Object *orig = SCHEME_CDR(data), *naya;
+  naya = scheme_jit_expr(orig);
+  if (SAME_OBJ(naya, orig))
+    return data;
+  else
+    return scheme_make_pair(SCHEME_CAR(data), naya);
+}
+
 static void define_values_validate(Scheme_Object *data, Mz_CPort *port, 
 				   char *stack, int depth, int letlimit, int delta, int num_toplevels, int num_stxes)
 {
@@ -1161,6 +1182,23 @@ set_execute (Scheme_Object *data)
   return scheme_void;
 }
 
+static Scheme_Object *set_jit(Scheme_Object *data)
+{
+  Scheme_Object *orig_val, *naya_val;
+
+  orig_val = SCHEME_CDR(data);
+  orig_val = SCHEME_CDR(orig_val);
+
+  naya_val = scheme_jit_expr(orig_val);
+  
+  if (SAME_OBJ(naya_val, orig_val))
+    return data;
+  else
+    return scheme_make_pair(SCHEME_CAR(data),
+			    scheme_make_pair(SCHEME_CADR(data),
+					     naya_val));
+}
+
 static void set_validate(Scheme_Object *data, Mz_CPort *port, 
 			 char *stack, int depth, int letlimit, int delta, int num_toplevels, int num_stxes)
 {
@@ -1400,6 +1438,11 @@ ref_execute (Scheme_Object *tl)
   return o;
 }
 
+static Scheme_Object *ref_jit(Scheme_Object *data)
+{
+  return data;
+}
+
 static void ref_validate(Scheme_Object *tl, Mz_CPort *port, 
 			 char *stack, int depth, int letlimit, int delta, int num_toplevels, int num_stxes)
 {
@@ -1500,10 +1543,44 @@ static Scheme_Object *
 case_lambda_execute(Scheme_Object *expr)
 {
   Scheme_Case_Lambda *seqin, *seqout;
-  int i;
+  int i, cnt;
   Scheme_Thread *p = scheme_current_thread;
 
   seqin = (Scheme_Case_Lambda *)expr;
+
+#ifdef MZ_USE_JIT
+  if (seqin->native_code) {
+    Scheme_Native_Closure_Data *ndata;
+    Scheme_Native_Closure *nc, *na;
+    Scheme_Closure_Data *data;
+    Scheme_Object *val;
+    GC_CAN_IGNORE Scheme_Object **runstack;
+    GC_CAN_IGNORE mzshort *map;
+    int j, jcnt;
+
+    ndata = seqin->native_code;
+    nc = (Scheme_Native_Closure *)scheme_make_native_case_closure(ndata);
+
+    cnt = seqin->count;
+    for (i = 0; i < cnt; i++) {
+      val = seqin->array[i];
+      if (!SCHEME_PROCP(val)) {
+	data = (Scheme_Closure_Data *)val;
+	na = (Scheme_Native_Closure *)scheme_make_native_closure(data->native_code);
+	runstack = MZ_RUNSTACK;
+	jcnt = data->closure_size;
+	map = data->closure_map;
+	for (j = 0; j < jcnt; j++) {
+	  na->vals[j] = runstack[map[j]];
+	}
+	val = (Scheme_Object *)na;
+      }
+      nc->vals[i] = val;
+    }
+
+    return (Scheme_Object *)nc;
+  }
+#endif
 
   seqout = (Scheme_Case_Lambda *)
     scheme_malloc_tagged(sizeof(Scheme_Case_Lambda)
@@ -1512,7 +1589,8 @@ case_lambda_execute(Scheme_Object *expr)
   seqout->count = seqin->count;
   seqout->name = seqin->name;
 
-  for (i = 0; i < seqin->count; i++) {
+  cnt = seqin->count;
+  for (i = 0; i < cnt; i++) {
     if (SAME_TYPE(SCHEME_TYPE(seqin->array[i]), scheme_closure_type)) {
       /* An empty closure, created at compile time */
       seqout->array[i] = seqin->array[i];
@@ -1524,6 +1602,76 @@ case_lambda_execute(Scheme_Object *expr)
   }
 
   return (Scheme_Object *)seqout;
+}
+
+static Scheme_Object *case_lambda_jit(Scheme_Object *expr)
+{
+#ifdef MZ_USE_JIT
+  Scheme_Case_Lambda *seqin = (Scheme_Case_Lambda *)expr;
+
+  if (!seqin->native_code) {
+    Scheme_Case_Lambda *seqout;
+    Scheme_Native_Closure_Data *ndata;
+    Scheme_Object *val;
+    int i, cnt, size, all_closed = 1;
+
+    cnt = seqin->count;
+    
+    size = sizeof(Scheme_Case_Lambda) + ((cnt - 1) * sizeof(Scheme_Object *));
+
+    seqout = (Scheme_Case_Lambda *)scheme_malloc_tagged(size);
+    memcpy(seqout, seqin, size);
+
+    for (i = 0; i < cnt; i++) {
+      val = seqout->array[i];
+      if (SCHEME_PROCP(val)) {
+	/* Undo creation of empty closure */
+	val = (Scheme_Object *)((Scheme_Closure *)val)->code;
+	seqout->array[i] = val;
+      }
+      if (((Scheme_Closure_Data *)val)->closure_size)
+	all_closed = 0;
+    }
+
+    /* Generating the code may cause empty closures to be formed: */
+    ndata = scheme_generate_case_lambda(seqout);
+    seqout->native_code = ndata;
+
+    if (all_closed) {
+      /* Native closures do not refer back to the original bytecode,
+	 so no need to worry about clearing the reference. */
+      Scheme_Native_Closure *nc;
+      nc = (Scheme_Native_Closure *)scheme_make_native_case_closure(ndata);
+      for (i = 0; i < cnt; i++) {
+	val = seqout->array[i];
+	if (!SCHEME_PROCP(val)) {
+	  val = scheme_make_native_closure(((Scheme_Closure_Data *)val)->native_code);
+	}
+	nc->vals[i] = val;
+      }
+      return (Scheme_Object *)nc;
+    } else {
+      /* The case-lambda data must point to the original closure-data
+	 record, because that's where the closure maps are kept. But
+	 we don't need the bytecode, anymore. So clone the
+	 closure-data record and drop the bytecode in thte clone. */
+      for (i = 0; i < cnt; i++) {
+	val = seqout->array[i];
+	if (!SCHEME_PROCP(val)) {
+	  Scheme_Closure_Data *data;
+	  data = MALLOC_ONE_TAGGED(Scheme_Closure_Data);
+	  memcpy(data, val, sizeof(Scheme_Closure_Data));
+	  data->code = NULL;
+	  seqout->array[i] = (Scheme_Object *)data;
+	}
+      }
+    }
+
+    return (Scheme_Object *)seqout;
+  }
+#endif
+ 
+  return expr;
 }
 
 static void case_lambda_validate(Scheme_Object *data, Mz_CPort *port, char *stack, 
@@ -1540,16 +1688,63 @@ static void case_lambda_validate(Scheme_Object *data, Mz_CPort *port, char *stac
 static Scheme_Object *
 case_lambda_resolve(Scheme_Object *expr, Resolve_Info *rslv)
 {
-  int i;
+  int i, all_closed = 1;
   Scheme_Case_Lambda *seq = (Scheme_Case_Lambda *)expr;
 
   for (i = 0; i < seq->count; i++) {
     Scheme_Object *le;
-    le = scheme_resolve_expr(seq->array[i], rslv);
+    le = seq->array[i];
+    ((Scheme_Closure_Data *)le)->name = scheme_false; /* inidcates that it's a case */
+    le = scheme_resolve_expr(le, rslv);
     seq->array[i] = le;
+    if (!SCHEME_PROCP(le))
+      all_closed = 0;
+  }
+
+  if (all_closed) {
+    /* Produce closure directly */
+    return case_lambda_execute(expr);
   }
 
   return scheme_make_syntax_resolved(CASE_LAMBDA_EXPD, expr);
+}
+
+Scheme_Object *scheme_unclose_case_lambda(Scheme_Object *expr, int jit)
+{
+  Scheme_Case_Lambda *cl = (Scheme_Case_Lambda *)expr;
+  Scheme_Closure *c;
+  int i;
+
+  for (i = cl->count; i--; ) {
+    c = (Scheme_Closure *)cl->array[i];
+    if (!ZERO_SIZED_CLOSUREP(c)) {
+      break;
+    }
+  }
+
+  if (i < 0) {
+    /* We can reconstruct a case-lambda syntactic form. */
+    Scheme_Case_Lambda *cl2;
+
+    cl2 = (Scheme_Case_Lambda *)scheme_malloc_tagged(sizeof(Scheme_Case_Lambda)
+						     + ((cl->count - 1) * sizeof(Scheme_Object*)));
+    
+    cl2->so.type = scheme_case_lambda_sequence_type;
+    cl2->count = cl->count;
+    cl2->name = cl->name;
+
+    for (i = cl->count; i--; ) {
+      c = (Scheme_Closure *)cl->array[i];
+      cl2->array[i] = (Scheme_Object *)c->code;
+    }
+
+    if (jit)
+      return case_lambda_jit((Scheme_Object *)cl2);
+    else
+      return (Scheme_Object *)cl2;
+  }
+  
+  return expr;
 }
 
 static void case_lambda_check_line(Scheme_Object *line, Scheme_Object *form, Scheme_Comp_Env *env)
@@ -1814,6 +2009,21 @@ bangboxvalue_execute(Scheme_Object *data)
     val = scheme_make_envunbox(val);
 
   return val;
+}
+
+static Scheme_Object *bangboxvalue_jit(Scheme_Object *data)
+{
+  Scheme_Object *orig, *naya;
+
+  orig = SCHEME_CDR(data);
+  orig = SCHEME_CDR(orig);
+  naya = scheme_jit_expr(orig);
+  if (SAME_OBJ(naya, orig))
+    return data;
+  else
+    return cons(SCHEME_CAR(data),
+		cons(SCHEME_CADR(data),
+		     naya));
 }
 
 static void bangboxvalue_validate(Scheme_Object *data, Mz_CPort *port, 
@@ -2878,6 +3088,41 @@ begin0_execute(Scheme_Object *obj)
   return v;
 }
 
+static Scheme_Object *begin0_jit(Scheme_Object *data)
+{
+  Scheme_Sequence *seq = (Scheme_Sequence *)data, *seq2;
+  Scheme_Object *old, *naya = NULL;
+  int i, j, count;
+
+  count = seq->count;
+  for (i = 0; i < count; i++) {
+    old = seq->array[i];
+    naya = scheme_jit_expr(old);
+    if (!SAME_OBJ(old, naya))
+      break;
+  }
+
+  if (i >= count)
+    return data;
+
+  seq2 = (Scheme_Sequence *)scheme_malloc_tagged(sizeof(Scheme_Sequence)
+						 + (count - 1) 
+						 * sizeof(Scheme_Object *));
+  seq2->so.type = scheme_begin0_sequence_type;
+  seq2->count = count;
+  for (j = 0; j < i; j++) {
+    seq2->array[j] = seq->array[j];
+  }
+  seq2->array[i] = naya;
+  for (i++; i < count; i++) {
+    old = seq->array[i];
+    naya = scheme_jit_expr(old);
+    seq2->array[i] = naya;
+  }
+  
+  return (Scheme_Object *)seq2;
+}
+
 static void begin0_validate(Scheme_Object *data, Mz_CPort *port, char *stack, 
 			    int depth, int letlimit, int delta, int num_toplevels, int num_stxes)
 {
@@ -3113,11 +3358,17 @@ quote_syntax_execute(Scheme_Object *obj)
   globs = (Scheme_Object **)MZ_RUNSTACK[c];
   stx = globs[i+p+1];
   if (!stx) {
-    stx = ((Scheme_Object **)SCHEME_CDR(globs[p]))[i];
-    stx = scheme_add_rename(stx, SCHEME_CAR(globs[p]));
+    stx = globs[p];
+    stx = scheme_add_rename(((Scheme_Object **)SCHEME_CDR(stx))[i], 
+			    SCHEME_CAR(stx));
     globs[i+p+1] = stx;
   }
   return stx;
+}
+
+Scheme_Object *quote_syntax_jit(Scheme_Object *data)
+{
+  return data;
 }
 
 static void quote_syntax_validate(Scheme_Object *obj, Mz_CPort *port, char *stack, 
@@ -3239,6 +3490,43 @@ static Scheme_Object *
 define_for_syntaxes_execute(Scheme_Object *form)
 {
   return do_define_syntaxes_execute(form, NULL, 1);
+}
+
+static Scheme_Object *do_define_syntaxes_jit(Scheme_Object *expr)
+{
+  Scheme_Object *orig, *naya, *data = expr;
+  Scheme_Object *a, *ad, *add;
+  
+  a = SCHEME_CAR(data);
+  data = SCHEME_CDR(data);
+  ad = SCHEME_CAR(data);
+  data = SCHEME_CDR(data);
+  add = SCHEME_CAR(data);
+  data = SCHEME_CDR(data);
+
+  orig = SCHEME_CDR(data);
+  
+  naya = scheme_jit_expr(orig);
+  
+  if (SAME_OBJ(naya, orig))
+    return expr;
+  else {
+    return cons(a, 
+		cons(ad, 
+		     cons(add, 
+			  cons(SCHEME_CAR(data),
+			       naya))));
+  }
+}
+
+static Scheme_Object *define_syntaxes_jit(Scheme_Object *expr)
+{
+  return do_define_syntaxes_jit(expr);
+}
+
+static Scheme_Object *define_for_syntaxes_jit(Scheme_Object *expr)
+{
+  return do_define_syntaxes_jit(expr);
 }
 
 static void do_define_syntaxes_validate(Scheme_Object *data, Mz_CPort *port, 
@@ -3536,6 +3824,7 @@ Scheme_Object *scheme_bind_syntaxes(const char *where, Scheme_Object *names, Sch
   Scheme_Object **results, *l;
   Scheme_Comp_Env *eenv;
   Resolve_Prefix *rp;
+  Resolve_Info *ri;
   int vc, nc, j, i;
   Scheme_Compile_Info mrec;
 
@@ -3555,7 +3844,14 @@ Scheme_Object *scheme_bind_syntaxes(const char *where, Scheme_Object *names, Sch
      For letrec-syntaxes+values, don't simplify because it's too expensive. */
   rp = scheme_resolve_prefix(eenv->genv->phase, eenv->prefix, 0);
 
-  a = scheme_resolve_expr(a, scheme_resolve_info_create(rp));
+  ri = scheme_resolve_info_create(rp);
+  a = scheme_resolve_expr(a, ri);
+
+
+  /* To JIT:
+       if (ri->use_jit) a = scheme_jit_expr(a);
+     but it's not likely that a let-syntax-bound macro is going
+     to run lots of times, so JITting is probably not worth it. */
 
   a = eval_letmacro_rhs(a, rhs_env, mrec.max_let_depth, rp, eenv->genv->phase, certs);
 
@@ -4001,8 +4297,8 @@ static Scheme_Object *write_case_lambda(Scheme_Object *obj)
 
 static Scheme_Object *read_case_lambda(Scheme_Object *obj)
 {
-  Scheme_Object *s;
-  int count, i;
+  Scheme_Object *s, *a;
+  int count, i, all_closed = 1;
   Scheme_Case_Lambda *cl;
 
   if (!SCHEME_PAIRP(obj)) return NULL;
@@ -4023,9 +4319,20 @@ static Scheme_Object *read_case_lambda(Scheme_Object *obj)
 
   s = SCHEME_CDR(obj);
   for (i = 0; i < count; i++, s = SCHEME_CDR(s)) {
-    cl->array[i] = SCHEME_CAR(s);
+    a = SCHEME_CAR(s);
+    cl->array[i] = a;
+    if (!SCHEME_PROCP(a))
+      all_closed = 0;
   }
-  
+
+  if (all_closed) {
+    /* Empty closure: produce procedure value directly.
+       (We assume that this was generated by a direct write of
+        a case-lambda data record in print.c, and that it's not
+	in a CASE_LAMBDA_EXPD syntax record.) */
+    return case_lambda_execute((Scheme_Object *)cl);
+  }
+
   return (Scheme_Object *)cl;
 }
 

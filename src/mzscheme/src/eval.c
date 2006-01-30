@@ -127,6 +127,9 @@ volatile int scheme_fuel_counter;
 
 int scheme_stack_grows_up;
 
+int scheme_startup_use_jit = 1;
+void scheme_set_startup_use_jit(int v) { scheme_startup_use_jit =  v; }
+
 static Scheme_Object *app_symbol;
 static Scheme_Object *datum_symbol;
 static Scheme_Object *top_symbol;
@@ -167,6 +170,7 @@ static Scheme_Object *expand_stx_to_top_form(int argc, Scheme_Object **argv);
 static Scheme_Object *top_introduce_stx(int argc, Scheme_Object **argv);
 
 static Scheme_Object *allow_set_undefined(int argc, Scheme_Object **argv);
+static Scheme_Object *use_jit(int argc, Scheme_Object **argv);
 
 static Scheme_Object *app_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
 static Scheme_Object *app_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
@@ -429,6 +433,12 @@ scheme_init_eval (Scheme_Env *env)
 						       MZCONFIG_ALLOW_SET_UNDEFINED), 
 			     env);
 
+  scheme_add_global_constant("eval-jit-enabled", 
+			     scheme_register_parameter(use_jit, 
+						       "eval-jit-enabled",
+						       MZCONFIG_USE_JIT), 
+			     env);
+
   REGISTER_SO(app_symbol);
   REGISTER_SO(datum_symbol);
   REGISTER_SO(top_symbol);
@@ -613,6 +623,7 @@ void *scheme_enlarge_runstack(long size, void *(*k)())
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Saved_Stack *saved;
   void *v;
+  int cont_count;
 
   saved = MALLOC_ONE_RT(Scheme_Saved_Stack);
 
@@ -629,15 +640,30 @@ void *scheme_enlarge_runstack(long size, void *(*k)())
     size = SCHEME_STACK_SIZE;
 
   p->runstack_saved = saved;
+  if (p->spare_runstack && (size <= p->spare_runstack_size)) {
+    size = p->spare_runstack_size;
+    MZ_RUNSTACK_START = p->spare_runstack;
+    p->spare_runstack = NULL;
+  } else {
+    MZ_RUNSTACK_START = scheme_malloc_allow_interior(sizeof(Scheme_Object*) * size);
+  }
   p->runstack_size = size;
-  MZ_RUNSTACK_START = scheme_malloc_allow_interior(sizeof(Scheme_Object*) * size);
   MZ_RUNSTACK = MZ_RUNSTACK_START + size;
   
+  cont_count = scheme_cont_capture_count;
+
   v = k();
   /* If `k' escapes, the escape handler will restore the stack
      pointers. */
 
   p = scheme_current_thread; /* might have changed! */
+
+  if (cont_count == scheme_cont_capture_count) {
+    if (!p->spare_runstack || (p->runstack_size > p->spare_runstack_size)) {
+      p->spare_runstack = MZ_RUNSTACK_START;
+      p->spare_runstack_size = p->runstack_size;
+    }
+  }
 
   p->runstack_saved = saved->prev;
   MZ_RUNSTACK = saved->runstack;
@@ -1343,9 +1369,33 @@ static Scheme_Object *link_toplevel(Scheme_Object *expr, Scheme_Env *env,
   }
 }
 
+static Scheme_Object *resolve_k()
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *expr = (Scheme_Object *)p->ku.k.p1;
+  Resolve_Info *info = (Resolve_Info *)p->ku.k.p2;
+
+  p->ku.k.p1 = NULL;
+  p->ku.k.p2 = NULL;
+
+  return scheme_resolve_expr(expr, info);
+}
+
 Scheme_Object *scheme_resolve_expr(Scheme_Object *expr, Resolve_Info *info)
 {
   Scheme_Type type = SCHEME_TYPE(expr);
+
+#ifdef DO_STACK_CHECK
+# include "mzstkchk.h"
+  {
+    Scheme_Thread *p = scheme_current_thread;
+
+    p->ku.k.p1 = (void *)expr;
+    p->ku.k.p2 = (void *)info;
+
+    return scheme_handle_stack_overflow(resolve_k);
+  }
+#endif
 
   switch (type) {
   case scheme_local_type:
@@ -1428,6 +1478,326 @@ Scheme_Object *scheme_resolve_list(Scheme_Object *expr, Resolve_Info *info)
 
   return first;
 }
+
+/*========================================================================*/
+/*                                  JIT                                   */
+/*========================================================================*/
+
+#ifdef MZ_USE_JIT
+
+static Scheme_Object *jit_application(Scheme_Object *o)
+{
+  Scheme_Object *orig, *naya = NULL;
+  Scheme_App_Rec *app, *app2;
+  int i, n, size;
+
+  app = (Scheme_App_Rec *)o;
+  n = app->num_args + 1;
+
+  for (i = 0; i < n; i++) {
+    orig = app->args[i];
+    naya = scheme_jit_expr(orig);
+    if (!SAME_OBJ(orig, naya))
+      break;
+  }
+
+  if (i >= n)
+    return o;
+
+  size = (sizeof(Scheme_App_Rec) 
+	  + ((n - 1) * sizeof(Scheme_Object *))
+	  + n * sizeof(char));
+  app2 = (Scheme_App_Rec *)scheme_malloc_tagged(size);
+  memcpy(app2, app, size);
+  app2->args[i] = naya;
+
+  for (i++; i < n; i++) {
+    orig = app2->args[i];
+    naya = scheme_jit_expr(orig);
+    app2->args[i] = naya;
+  }
+  
+  return (Scheme_Object *)app2;
+}
+
+static Scheme_Object *jit_application2(Scheme_Object *o)
+{
+  Scheme_App2_Rec *app;
+  Scheme_Object *nrator, *nrand;
+
+  app = (Scheme_App2_Rec *)o;
+
+  nrator = scheme_jit_expr(app->rator);
+  nrand = scheme_jit_expr(app->rand);
+  
+  if (SAME_OBJ(nrator, app->rator)
+      && SAME_OBJ(nrand, app->rand))
+    return o;
+
+  app = MALLOC_ONE_TAGGED(Scheme_App2_Rec);
+  memcpy(app, o, sizeof(Scheme_App2_Rec));
+  app->rator = nrator;
+  app->rand = nrand;
+
+  return (Scheme_Object *)app;
+}
+
+static Scheme_Object *jit_application3(Scheme_Object *o)
+{
+  Scheme_App3_Rec *app;
+  Scheme_Object *nrator, *nrand1, *nrand2;
+
+  app = (Scheme_App3_Rec *)o;
+
+  nrator = scheme_jit_expr(app->rator);
+  nrand1 = scheme_jit_expr(app->rand1);
+  nrand2 = scheme_jit_expr(app->rand2);
+  
+  if (SAME_OBJ(nrator, app->rator)
+      && SAME_OBJ(nrand1, app->rand1)
+      && SAME_OBJ(nrand2, app->rand2))
+    return o;
+
+  app = MALLOC_ONE_TAGGED(Scheme_App3_Rec);
+  memcpy(app, o, sizeof(Scheme_App3_Rec));
+  app->rator = nrator;
+  app->rand1 = nrand1;
+  app->rand2 = nrand2;
+
+  return (Scheme_Object *)app;
+}
+
+static Scheme_Object *jit_sequence(Scheme_Object *o)
+{
+  Scheme_Object *orig, *naya = NULL;
+  Scheme_Sequence *seq, *seq2;
+  int i, n, size;
+
+  seq = (Scheme_Sequence *)o;
+  n = seq->count;
+
+  for (i = 0; i < n; i++) {
+    orig = seq->array[i];
+    naya = scheme_jit_expr(orig);
+    if (!SAME_OBJ(orig, naya))
+      break;
+  }
+
+  if (i >= n)
+    return o;
+
+  size = (sizeof(Scheme_Sequence) 
+	  + ((n - 1) * sizeof(Scheme_Object *)));
+  seq2 = (Scheme_Sequence *)scheme_malloc_tagged(size);
+  memcpy(seq2, seq, size);
+  seq2->array[i] = naya;
+
+  for (i++; i < n; i++) {
+    orig = seq2->array[i];
+    naya = scheme_jit_expr(orig);
+    seq2->array[i] = naya;
+  }
+  
+  return (Scheme_Object *)seq2;
+}
+
+static Scheme_Object *jit_branch(Scheme_Object *o)
+{
+  Scheme_Branch_Rec *b;
+  Scheme_Object *t, *tb, *fb;
+
+  b = (Scheme_Branch_Rec *)o;
+
+  t = scheme_jit_expr(b->test);
+  tb = scheme_jit_expr(b->tbranch);
+  fb = scheme_jit_expr(b->fbranch);
+
+  if (SAME_OBJ(t, b->test)
+      && SAME_OBJ(tb, b->tbranch)
+      && SAME_OBJ(fb, b->fbranch))
+    return o;
+
+  b = MALLOC_ONE_TAGGED(Scheme_Branch_Rec);
+  memcpy(b, o, sizeof(Scheme_Branch_Rec));
+  b->test = t;
+  b->tbranch = tb;
+  b->fbranch = fb;
+
+  return (Scheme_Object *)b;
+}
+
+static Scheme_Object *jit_let_value(Scheme_Object *o)
+{
+  Scheme_Let_Value *lv = (Scheme_Let_Value *)o;
+  Scheme_Object *body, *rhs;
+
+  rhs = scheme_jit_expr(lv->value);
+  body = scheme_jit_expr(lv->body);
+
+  if (SAME_OBJ(rhs, lv->value)
+      && SAME_OBJ(body, lv->body))
+    return o;
+
+  lv = MALLOC_ONE_TAGGED(Scheme_Let_Value);
+  memcpy(lv, o, sizeof(Scheme_Let_Value));
+  lv->value = rhs;
+  lv->body = body;
+
+  return (Scheme_Object *)lv;
+}
+
+static Scheme_Object *jit_let_one(Scheme_Object *o)
+{
+  Scheme_Let_One *lo = (Scheme_Let_One *)o;
+  Scheme_Object *body, *rhs;
+
+  rhs = scheme_jit_expr(lo->value);
+  body = scheme_jit_expr(lo->body);
+
+  if (SAME_OBJ(rhs, lo->value)
+      && SAME_OBJ(body, lo->body))
+    return o;
+
+  lo = MALLOC_ONE_TAGGED(Scheme_Let_One);
+  memcpy(lo, o, sizeof(Scheme_Let_One));
+  lo->value = rhs;
+  lo->body = body;
+
+  return (Scheme_Object *)lo;
+}
+
+static Scheme_Object *jit_let_void(Scheme_Object *o)
+{
+  Scheme_Let_Void *lv = (Scheme_Let_Void *)o;
+  Scheme_Object *body;
+
+  body = scheme_jit_expr(lv->body);
+
+  if (SAME_OBJ(body, lv->body))
+    return o;
+
+  lv = MALLOC_ONE_TAGGED(Scheme_Let_Void);
+  memcpy(lv, o, sizeof(Scheme_Let_Void));
+  lv->body = body;
+
+  return (Scheme_Object *)lv;
+}
+
+static Scheme_Object *jit_letrec(Scheme_Object *o)
+{
+  Scheme_Letrec *lr = (Scheme_Letrec *)o, *lr2;
+  Scheme_Object **procs, **procs2, *v;
+  int i, count;
+
+  count = lr->count;
+
+  lr2 = MALLOC_ONE_TAGGED(Scheme_Letrec);
+  memcpy(lr2, lr, sizeof(Scheme_Letrec));
+  
+  procs = lr->procs;
+  procs2 = MALLOC_N(Scheme_Object *, count);
+  lr2->procs = procs2;
+
+  for (i = 0; i < count; i++) {
+    v = scheme_jit_expr(procs[i]);
+    procs2[i] = v;
+  }
+
+  v = scheme_jit_expr(lr->body);
+  lr2->body = v;
+
+  return (Scheme_Object *)lr2;
+}
+
+static Scheme_Object *jit_wcm(Scheme_Object *o)
+{
+  Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)o;
+  Scheme_Object *k, *v, *b;
+
+  k = scheme_jit_expr(wcm->key);
+  v = scheme_jit_expr(wcm->val);
+  b = scheme_jit_expr(wcm->body);
+  if (SAME_OBJ(wcm->key, k)
+      && SAME_OBJ(wcm->val, v)
+      && SAME_OBJ(wcm->body, b))
+    return o;
+
+  wcm = MALLOC_ONE_TAGGED(Scheme_With_Continuation_Mark);
+  memcpy(wcm, o, sizeof(Scheme_With_Continuation_Mark));
+
+  wcm->key = k;
+  wcm->val = v;
+  wcm->body = b;
+
+  return (Scheme_Object *)wcm;
+}
+
+Scheme_Object *scheme_jit_expr(Scheme_Object *expr)
+{
+  Scheme_Type type = SCHEME_TYPE(expr);
+
+  switch (type) {
+  case scheme_syntax_type:
+    {
+      Scheme_Syntax_Jitter f;
+      Scheme_Object *orig, *naya;
+	  
+      f = scheme_syntax_jitters[SCHEME_PINT_VAL(expr)];
+      orig = SCHEME_IPTR_VAL(expr);
+      naya = f(orig);
+      if (SAME_OBJ(orig, naya))
+	return expr;
+      
+      return scheme_make_syntax_resolved(SCHEME_PINT_VAL(expr), naya);
+    }
+  case scheme_application_type:
+    return jit_application(expr);
+  case scheme_application2_type:
+    return jit_application2(expr);
+  case scheme_application3_type:
+    return jit_application3(expr);
+  case scheme_sequence_type:
+    return jit_sequence(expr);
+  case scheme_branch_type:
+    return jit_branch(expr);
+  case scheme_with_cont_mark_type:
+    return jit_wcm(expr);
+  case scheme_unclosed_procedure_type:
+    return scheme_jit_closure(expr);
+  case scheme_let_value_type:
+    return jit_let_value(expr);
+  case scheme_let_void_type:
+    return jit_let_void(expr);
+  case scheme_letrec_type:
+    return jit_letrec(expr);
+  case scheme_let_one_type:
+    return jit_let_one(expr);
+  case scheme_closure_type:
+    {
+      Scheme_Closure *c = (Scheme_Closure *)expr;
+      if (ZERO_SIZED_CLOSUREP(c)) {
+	/* JIT the closure body, producing a native closure: */
+	return scheme_jit_closure((Scheme_Object *)c->code);
+      } else
+	return expr;
+    }
+  case scheme_case_closure_type:
+    {
+      return scheme_unclose_case_lambda(expr, 1);
+    }
+  default:
+    return expr;
+  }
+}
+
+#else
+
+Scheme_Object *scheme_jit_expr(Scheme_Object *expr)
+{
+  return expr;
+}
+
+#endif
 
 /*========================================================================*/
 /*                       compilation info management                      */
@@ -1694,7 +2064,6 @@ static void *compile_k(void)
     }
   }
 
-
   tl_queue = scheme_null;
 
   insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
@@ -1745,7 +2114,7 @@ static void *compile_k(void)
       o = call_compile_handler(form, 1);
       top = (Scheme_Compilation_Top *)o;
     } else {
-      /* We want to simply compile form, but we have to loop in case
+      /* We want to simply compile `form', but we have to loop in case
 	 an expression is lifted in the process of compiling: */
       int max_let_depth = 0;
       Scheme_Object *l, *prev_o = NULL;
@@ -3269,6 +3638,38 @@ Scheme_Object *_scheme_apply_closed_prim(Scheme_Object *rator,
 #include "schapp.inc"
 }
 
+
+#ifdef MZ_USE_JIT
+Scheme_Object *_scheme_apply_from_native(Scheme_Object *rator,
+					 int argc,
+					 Scheme_Object **argv)
+{
+#define PRIM_CHECK_VALUE 1
+#define PRIM_CHECK_MULTI 1
+#include "schnapp.inc"
+}
+
+Scheme_Object *_scheme_apply_multi_from_native(Scheme_Object *rator,
+					       int argc,
+					       Scheme_Object **argv)
+{
+#define PRIM_CHECK_VALUE 1
+#define PRIM_CHECK_MULTI 0
+#include "schnapp.inc"
+}
+
+Scheme_Object *_scheme_tail_apply_from_native(Scheme_Object *rator,
+					      int argc,
+					      Scheme_Object **argv)
+{
+  /* It's ok to call primitive and closed primitives directly,
+     since they implement further tail by trampolining. */
+#define PRIM_CHECK_VALUE 0
+#define PRIM_CHECK_MULTI 0
+#include "schnapp.inc"
+}
+#endif
+
 Scheme_Object *scheme_check_one_value(Scheme_Object *v)
 {
   if (v == SCHEME_MULTIPLE_VALUES)
@@ -3446,23 +3847,26 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
     if (type == scheme_prim_type) {
       GC_CAN_IGNORE Scheme_Primitive_Proc *prim;
       
-      if (rands == p->tail_buffer) {
-	if (num_rands < TAIL_COPY_THRESHOLD) {
-	  int i;
-	  Scheme_Object **quick_rands;
+#define VACATE_TAIL_BUFFER_USE_RUNSTACK() \
+      if (rands == p->tail_buffer) {                                \
+	if (num_rands < TAIL_COPY_THRESHOLD) {                      \
+	  int i;                                                    \
+	  Scheme_Object **quick_rands;                              \
+                                                                    \
+	  quick_rands = PUSH_RUNSTACK(p, RUNSTACK, num_rands);      \
+	  RUNSTACK_CHANGED();                                       \
+                                                                    \
+	  for (i = num_rands; i--; ) {                              \
+	    quick_rands[i] = rands[i];                              \
+	  }                                                         \
+	  rands = quick_rands;                                      \
+	} else {                                                    \
+	  UPDATE_THREAD_RSPTR_FOR_GC();                             \
+	  make_tail_buffer_safe();                                  \
+	}                                                           \
+      }
 
-	  quick_rands = PUSH_RUNSTACK(p, RUNSTACK, num_rands);
-	  RUNSTACK_CHANGED();
-
-	  for (i = num_rands; i--; ) {
-	    quick_rands[i] = rands[i];
-	  }
-	  rands = quick_rands;
-	} else {
-	  UPDATE_THREAD_RSPTR_FOR_GC();
-	  make_tail_buffer_safe();
-	}
-      } 
+      VACATE_TAIL_BUFFER_USE_RUNSTACK();
 
       UPDATE_THREAD_RSPTR();
 
@@ -3485,7 +3889,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       int i, has_rest, num_params;
       
       DO_CHECK_FOR_BREAK(p, UPDATE_THREAD_RSPTR_FOR_GC(); if (rands == p->tail_buffer) make_tail_buffer_safe(););
-      
+
       data = SCHEME_COMPILED_CLOS_CODE(obj);
 
       if ((RUNSTACK - RUNSTACK_START) < data->max_let_depth) {
@@ -3600,7 +4004,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       } else {
 	if (num_rands) {
 	  if (has_rest) {
-	    /* 0 params and hash_rest => (lambda args E) where args is not in E,
+	    /* 0 params and has_rest => (lambda args E) where args is not in E,
 	       so accept any number of arguments and ignore them. */
 	    
 	  } else {
@@ -3665,24 +4069,8 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       GC_CAN_IGNORE Scheme_Closed_Primitive_Proc *prim;
       
       DO_CHECK_FOR_BREAK(p, UPDATE_THREAD_RSPTR_FOR_GC(); if (rands == p->tail_buffer) make_tail_buffer_safe(););
-      
-      if (rands == p->tail_buffer) {
-	if (num_rands < TAIL_COPY_THRESHOLD) {
-	  int i;
-	  Scheme_Object **quick_rands;
 
-	  quick_rands = PUSH_RUNSTACK(p, RUNSTACK, num_rands);
-	  RUNSTACK_CHANGED();
-
-	  for (i = num_rands; i--; ) {
-	    quick_rands[i] = rands[i];
-	  }
-	  rands = quick_rands;
-	} else {
-	  UPDATE_THREAD_RSPTR_FOR_GC();
-	  make_tail_buffer_safe();
-	}
-      }
+      VACATE_TAIL_BUFFER_USE_RUNSTACK();
 
       UPDATE_THREAD_RSPTR();
 
@@ -3722,6 +4110,42 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       scheme_wrong_count((char *)seq, -1, -1, num_rands, rands);
 
       return NULL; /* Doesn't get here. */
+#ifdef MZ_USE_JIT
+    } else if (type == scheme_native_closure_type) {
+      GC_CAN_IGNORE Scheme_Native_Closure_Data *data;
+      
+      VACATE_TAIL_BUFFER_USE_RUNSTACK();
+
+      UPDATE_THREAD_RSPTR();
+      
+      DO_CHECK_FOR_BREAK(p, );
+
+      if (!scheme_native_arity_check(obj, num_rands)) {
+	scheme_wrong_count_m((const char *)obj, -1, -1,
+			     num_rands, rands, 0);
+	return NULL;
+      }
+
+      data = ((Scheme_Native_Closure *)obj)->code;
+
+      /* Enlarge the runstack? This max_let_depth is in bytes instead of words. */
+      if (data->max_let_depth > ((unsigned long)RUNSTACK - (unsigned long)RUNSTACK_START)) {
+	p->ku.k.p1 = (void *)obj;
+	p->ku.k.i1 = num_rands;
+	p->ku.k.p2 = (void *)rands;
+	p->ku.k.i2 = -1;
+
+	MZ_CONT_MARK_POS -= 2;
+	v = (Scheme_Object *)scheme_enlarge_runstack(data->max_let_depth / sizeof(void *), 
+						     (void *(*)(void))do_eval_k);
+	MZ_CONT_MARK_POS += 2;
+	goto returnv;
+      }
+
+      v = data->code(obj, num_rands, rands);
+
+      DEBUG_CHECK_TYPE(v);
+#endif
     } else if (type == scheme_cont_type) {
       Scheme_Cont *c;
       Scheme_Dynamic_Wind *dw, *common;
@@ -3771,7 +4195,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       }
 	
       c->common = common;
-      /* For dynamaic-winds after `common' in this
+      /* For dynamic-winds after `common' in this
 	 continuation, execute the post-thunks */
       for (dw = p->dw; dw != common; dw = dw->prev) {
 	if (dw->post) {
@@ -3827,6 +4251,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       p->cjs.u.val = value;
       p->cjs.jumping_to_continuation = (Scheme_Escaping_Cont *)obj;
       scheme_longjmp(MZTHREADELEM(p, error_buf), 1);
+      return NULL;
     } else if (type == scheme_proc_struct_type) {
       int is_method;
 
@@ -4298,18 +4723,28 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	  /* Close them: */
 	  i = l->count;
 	  while (i--) {
-	    GC_CAN_IGNORE Scheme_Closure *closure;
-	    GC_CAN_IGNORE Scheme_Closure_Data *data;
+	    GC_CAN_IGNORE Scheme_Object *clos;
 	    GC_CAN_IGNORE Scheme_Object **dest;
 	    GC_CAN_IGNORE mzshort *map;
+	    GC_CAN_IGNORE Scheme_Closure_Data *data;
 	    int j;
 
-	    closure = (Scheme_Closure *)stack[i];
-	    data = (Scheme_Closure_Data *)a[i];
+	    clos = stack[i];
 
+#ifdef MZ_USE_JIT
+	    if (SAME_TYPE(_SCHEME_TYPE(clos), scheme_closure_type)) {
+	      dest = ((Scheme_Closure *)clos)->vals;
+	    } else {
+	      dest = ((Scheme_Native_Closure *)clos)->vals;
+	    }
+#else
+	    dest = ((Scheme_Closure *)clos)->vals;
+#endif
+	    
+	    data = (Scheme_Closure_Data *)a[i];
+	      
 	    map = data->closure_map;
 	    j = data->closure_size;
-	    dest = closure->vals;
 
 	    /* Beware - dest points to the middle of a block */
 
@@ -4446,7 +4881,7 @@ static void *eval_k(void)
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Object *v, **save_runstack;
   Scheme_Env *env;
-  int isexpr, multi;
+  int isexpr, multi, use_jit;
 
   v = (Scheme_Object *)p->ku.k.p1;
   env = (Scheme_Env *)p->ku.k.p2;
@@ -4455,7 +4890,15 @@ static void *eval_k(void)
   multi = p->ku.k.i1;
   isexpr = p->ku.k.i2;
 
+  {
+    Scheme_Object *b;
+    b = scheme_get_param(scheme_current_config(), MZCONFIG_USE_JIT);
+    use_jit = SCHEME_TRUEP(b);
+  }
+
   if (isexpr) {
+    if (use_jit)
+      v = scheme_jit_expr(v);
     if (multi)
       v = _scheme_eval_linked_expr_multi_wp(v, p);
     else
@@ -4474,6 +4917,9 @@ static void *eval_k(void)
     }
 
     v = top->code;
+
+    if (use_jit)
+      v = scheme_jit_expr(v);
 
     save_runstack = scheme_push_prefix(env, top->prefix, NULL, NULL, 0, env->phase);
 
@@ -5141,6 +5587,14 @@ static Scheme_Object *allow_set_undefined(int argc, Scheme_Object **argv)
 {
   return scheme_param_config("compile-allow-set!-undefined", 
 			     scheme_make_integer(MZCONFIG_ALLOW_SET_UNDEFINED),
+			     argc, argv,
+			     -1, NULL, NULL, 1);
+}
+
+static Scheme_Object *use_jit(int argc, Scheme_Object **argv)
+{
+  return scheme_param_config("eval-jit-enabled", 
+			     scheme_make_integer(MZCONFIG_USE_JIT),
 			     argc, argv,
 			     -1, NULL, NULL, 1);
 }

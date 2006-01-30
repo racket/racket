@@ -179,6 +179,9 @@
 				RelativePath="..\..\Mzscheme\Src\image.c">
 			</File>
 			<File
+				RelativePath="..\..\Mzscheme\Src\jit.c">
+			</File>
+			<File
 				RelativePath="..\..\Mzscheme\Src\List.c">
 			</File>
 			<File

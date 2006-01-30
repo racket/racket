@@ -225,6 +225,9 @@ static void clean_symbol_table(void)
   clean_one_symbol_table(scheme_keyword_table);
   clean_one_symbol_table(scheme_parallel_symbol_table);
   scheme_clear_ephemerons();
+# ifdef MZ_USE_JIT
+  scheme_clean_native_symtab();
+# endif
 }
 #endif
 
@@ -283,18 +286,18 @@ scheme_init_symbol (Scheme_Env *env)
 						      1, 1, 1),
 			     env);
   scheme_add_global_constant("string->symbol",
-			     scheme_make_prim_w_arity(string_to_symbol_prim,
-						      "string->symbol",
-						      1, 1), env);
+			     scheme_make_noncm_prim(string_to_symbol_prim,
+						    "string->symbol",
+						    1, 1), env);
   scheme_add_global_constant("string->uninterned-symbol",
-			     scheme_make_prim_w_arity(string_to_uninterned_symbol_prim,
-						      "string->uninterned-symbol",
-						      1, 1),
+			     scheme_make_noncm_prim(string_to_uninterned_symbol_prim,
+						    "string->uninterned-symbol",
+						    1, 1),
 			     env);
   scheme_add_global_constant("symbol->string",
-			     scheme_make_prim_w_arity(symbol_to_string_prim,
-						      "symbol->string",
-						      1, 1),
+			     scheme_make_noncm_prim(symbol_to_string_prim,
+						    "symbol->string",
+						    1, 1),
 			     env);
 
   scheme_add_global_constant("keyword?",
@@ -303,19 +306,19 @@ scheme_init_symbol (Scheme_Env *env)
 						      1, 1, 1),
 			     env);
   scheme_add_global_constant("string->keyword",
-			     scheme_make_prim_w_arity(string_to_keyword_prim,
-						      "string->keyword",
-						      1, 1), env);
+			     scheme_make_noncm_prim(string_to_keyword_prim,
+						    "string->keyword",
+						    1, 1), env);
   scheme_add_global_constant("keyword->string",
-			     scheme_make_prim_w_arity(keyword_to_string_prim,
-						      "keyword->string",
-						      1, 1),
+			     scheme_make_noncm_prim(keyword_to_string_prim,
+						    "keyword->string",
+						    1, 1),
 			     env);
 
   scheme_add_global_constant("gensym",
-			     scheme_make_prim_w_arity(gensym,
-						      "gensym",
-						      0, 1),
+			     scheme_make_noncm_prim(gensym,
+						    "gensym",
+						    0, 1),
 			     env);
 }
 

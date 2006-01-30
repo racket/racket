@@ -128,6 +128,7 @@ scheme_tail_apply_to_list
 scheme_tail_eval_expr
 scheme_set_tail_buffer_size
 scheme_force_value
+scheme_force_one_value
 scheme_set_cont_mark
 scheme_push_continuation_frame
 scheme_pop_continuation_frame
@@ -183,6 +184,7 @@ scheme_make_noneternal_prim
 scheme_make_closed_prim
 scheme_make_prim_w_arity
 scheme_make_folding_prim
+scheme_make_noncm_prim
 scheme_make_noneternal_prim_w_arity
 scheme_make_closed_prim_w_arity
 scheme_make_folding_closed_prim

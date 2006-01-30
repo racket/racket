@@ -109,6 +109,7 @@ scheme_init_type (Scheme_Env *env)
   set_name(scheme_prim_type, "<primitive>");
   set_name(scheme_closed_prim_type, "<primitive-closure>");
   set_name(scheme_closure_type, "<procedure>");
+  set_name(scheme_native_closure_type, "<procedure>");
   set_name(scheme_cont_type, "<continuation>");
   set_name(scheme_tail_call_waiting_type, "<tail-call-waiting>");
   set_name(scheme_null_type, "<empty-list>");

@@ -415,6 +415,9 @@ int unclosed_proc_MARK(void *p) {
   gcMARK(d->name);
   gcMARK(d->code);
   gcMARK(d->closure_map);
+#ifdef MZ_USE_JIT
+  gcMARK(d->native_code);
+#endif
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Closure_Data));
@@ -426,6 +429,9 @@ int unclosed_proc_FIXUP(void *p) {
   gcFIXUP(d->name);
   gcFIXUP(d->code);
   gcFIXUP(d->closure_map);
+#ifdef MZ_USE_JIT
+  gcFIXUP(d->native_code);
+#endif
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Closure_Data));
@@ -828,6 +834,9 @@ int case_closure_MARK(void *p) {
   for (i = c->count; i--; )
     gcMARK(c->array[i]);
   gcMARK(c->name);
+#ifdef MZ_USE_JIT
+  gcMARK(c->native_code);
+#endif
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Case_Lambda)
@@ -842,6 +851,9 @@ int case_closure_FIXUP(void *p) {
   for (i = c->count; i--; )
     gcFIXUP(c->array[i]);
   gcFIXUP(c->name);
+#ifdef MZ_USE_JIT
+  gcFIXUP(c->native_code);
+#endif
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Case_Lambda)
@@ -1623,6 +1635,7 @@ int cont_mark_set_val_SIZE(void *p) {
 int cont_mark_set_val_MARK(void *p) {
   Scheme_Cont_Mark_Set *s = (Scheme_Cont_Mark_Set *)p;
   gcMARK(s->chain);
+  gcMARK(s->native_stack_trace);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Cont_Mark_Set));
@@ -1631,6 +1644,7 @@ int cont_mark_set_val_MARK(void *p) {
 int cont_mark_set_val_FIXUP(void *p) {
   Scheme_Cont_Mark_Set *s = (Scheme_Cont_Mark_Set *)p;
   gcFIXUP(s->chain);
+  gcFIXUP(s->native_stack_trace);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Cont_Mark_Set));

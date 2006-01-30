@@ -220,6 +220,7 @@ Scheme_Object *(*scheme_tail_apply_to_list)(Scheme_Object *f, Scheme_Object *l);
 Scheme_Object *(*scheme_tail_eval_expr)(Scheme_Object *obj);
 void (*scheme_set_tail_buffer_size)(int s);
 Scheme_Object *(*scheme_force_value)(Scheme_Object *);
+Scheme_Object *(*scheme_force_one_value)(Scheme_Object *);
 void *(*scheme_set_cont_mark)(Scheme_Object *key, Scheme_Object *val);
 void (*scheme_push_continuation_frame)(Scheme_Cont_Frame_Data *);
 void (*scheme_pop_continuation_frame)(Scheme_Cont_Frame_Data *);
@@ -319,6 +320,9 @@ Scheme_Object *(*scheme_make_folding_prim)(Scheme_Prim *prim,
 					const char *name,
 					mzshort mina, mzshort maxa,
 					short functional);
+Scheme_Object *(*scheme_make_noncm_prim)(Scheme_Prim *prim,
+						const char *name,
+						mzshort mina, mzshort maxa);
 Scheme_Object *(*scheme_make_noneternal_prim_w_arity)(Scheme_Prim *prim,
 						   const char *name,
 						   mzshort mina, mzshort maxa);
@@ -332,7 +336,7 @@ Scheme_Object *(*scheme_make_folding_closed_prim)(Scheme_Closed_Prim *prim,
 Scheme_Object *(*scheme_make_prim_w_everything)(Scheme_Prim *fun, int eternal,
 						       const char *name,
 						       mzshort mina, mzshort maxa,
-						       short folding,
+						       int folding,
 						       mzshort minr, mzshort maxr);
 Scheme_Object *(*scheme_make_closed_prim_w_everything)(Scheme_Closed_Prim *fun,
 							      void *data,

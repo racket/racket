@@ -329,14 +329,14 @@ scheme_init_string (Scheme_Env *env)
 						      1, 1, 1),
 			     env);
   scheme_add_global_constant("make-string",
-			     scheme_make_prim_w_arity(make_string,
-						      "make-string",
-						      1, 2),
+			     scheme_make_noncm_prim(make_string,
+						    "make-string",
+						    1, 2),
 			     env);
   scheme_add_global_constant("string",
-			     scheme_make_prim_w_arity(string,
-						      "string",
-						      0, -1),
+			     scheme_make_noncm_prim(string,
+						    "string",
+						    0, -1),
 			     env);
   scheme_add_global_constant("string-length",
 			     scheme_make_folding_prim(string_length,
@@ -344,168 +344,168 @@ scheme_init_string (Scheme_Env *env)
 						      1, 1, 1),
 			     env);
   scheme_add_global_constant("string-ref",
-			     scheme_make_prim_w_arity(string_ref,
-						      "string-ref",
-						      2, 2),
+			     scheme_make_noncm_prim(string_ref,
+						    "string-ref",
+						    2, 2),
 			     env);
   scheme_add_global_constant("string-set!",
-			     scheme_make_prim_w_arity(string_set,
-						      "string-set!",
-						      3, 3),
+			     scheme_make_noncm_prim(string_set,
+						    "string-set!",
+						    3, 3),
 			     env);
   scheme_add_global_constant("string=?",
-			     scheme_make_prim_w_arity(string_eq,
-						      "string=?",
-						      2, -1),
+			     scheme_make_noncm_prim(string_eq,
+						    "string=?",
+						    2, -1),
 			     env);
   scheme_add_global_constant("string-locale=?",
-			     scheme_make_prim_w_arity(string_locale_eq,
-						      "string-locale=?",
-						      2, -1),
+			     scheme_make_noncm_prim(string_locale_eq,
+						    "string-locale=?",
+						    2, -1),
 			     env);
   scheme_add_global_constant("string-ci=?",
-			     scheme_make_prim_w_arity(string_ci_eq,
-						      "string-ci=?",
-						      2, -1),
+			     scheme_make_noncm_prim(string_ci_eq,
+						    "string-ci=?",
+						    2, -1),
 			     env);
   scheme_add_global_constant("string-locale-ci=?",
-			     scheme_make_prim_w_arity(string_locale_ci_eq,
-						      "string-locale-ci=?",
-						      2, -1),
+			     scheme_make_noncm_prim(string_locale_ci_eq,
+						    "string-locale-ci=?",
+						    2, -1),
 			     env);
   scheme_add_global_constant("string<?",
-			     scheme_make_prim_w_arity(string_lt,
-						      "string<?",
-						      2, -1),
+			     scheme_make_noncm_prim(string_lt,
+						    "string<?",
+						    2, -1),
 			     env);
   scheme_add_global_constant("string-locale<?",
-			     scheme_make_prim_w_arity(string_locale_lt,
-						      "string-locale<?",
-						      2, -1),
+			     scheme_make_noncm_prim(string_locale_lt,
+						    "string-locale<?",
+						    2, -1),
 			     env);
   scheme_add_global_constant("string>?",
-			     scheme_make_prim_w_arity(string_gt,
-						      "string>?",
-						      2, -1),
+			     scheme_make_noncm_prim(string_gt,
+						    "string>?",
+						    2, -1),
 			     env);
   scheme_add_global_constant("string-locale>?",
-			     scheme_make_prim_w_arity(string_locale_gt,
-						      "string-locale>?",
-						      2, -1),
+			     scheme_make_noncm_prim(string_locale_gt,
+						    "string-locale>?",
+						    2, -1),
 			     env);
   scheme_add_global_constant("string<=?",
-			     scheme_make_prim_w_arity(string_lt_eq,
-						      "string<=?",
-						      2, -1),
+			     scheme_make_noncm_prim(string_lt_eq,
+						    "string<=?",
+						    2, -1),
 			     env);
   scheme_add_global_constant("string>=?",
-			     scheme_make_prim_w_arity(string_gt_eq,
-						      "string>=?",
-						      2, -1),
+			     scheme_make_noncm_prim(string_gt_eq,
+						    "string>=?",
+						    2, -1),
 			     env);
   scheme_add_global_constant("string-ci<?",
-			     scheme_make_prim_w_arity(string_ci_lt,
-						      "string-ci<?",
-						      2, -1),
+			     scheme_make_noncm_prim(string_ci_lt,
+						    "string-ci<?",
+						    2, -1),
 			     env);
   scheme_add_global_constant("string-locale-ci<?",
-			     scheme_make_prim_w_arity(string_locale_ci_lt,
-						      "string-locale-ci<?",
-						      2, -1),
+			     scheme_make_noncm_prim(string_locale_ci_lt,
+						    "string-locale-ci<?",
+						    2, -1),
 			     env);
   scheme_add_global_constant("string-ci>?",
-			     scheme_make_prim_w_arity(string_ci_gt,
-						      "string-ci>?",
-						      2, -1),
+			     scheme_make_noncm_prim(string_ci_gt,
+						    "string-ci>?",
+						    2, -1),
 			     env);
   scheme_add_global_constant("string-locale-ci>?",
-			     scheme_make_prim_w_arity(string_locale_ci_gt,
-						      "string-locale-ci>?",
-						      2, -1),
+			     scheme_make_noncm_prim(string_locale_ci_gt,
+						    "string-locale-ci>?",
+						    2, -1),
 			     env);
   scheme_add_global_constant("string-ci<=?",
-			     scheme_make_prim_w_arity(string_ci_lt_eq,
-						      "string-ci<=?",
-						      2, -1),
+			     scheme_make_noncm_prim(string_ci_lt_eq,
+						    "string-ci<=?",
+						    2, -1),
 			     env);
   scheme_add_global_constant("string-ci>=?",
-			     scheme_make_prim_w_arity(string_ci_gt_eq,
-						      "string-ci>=?",
-						      2, -1),
+			     scheme_make_noncm_prim(string_ci_gt_eq,
+						    "string-ci>=?",
+						    2, -1),
 			     env);
 
   scheme_add_global_constant("substring",
-			     scheme_make_prim_w_arity(substring,
-						      "substring",
-						      2, 3),
+			     scheme_make_noncm_prim(substring,
+						    "substring",
+						    2, 3),
 			     env);
   scheme_add_global_constant("string-append",
-			     scheme_make_prim_w_arity(string_append,
-						      "string-append",
-						      0, -1),
+			     scheme_make_noncm_prim(string_append,
+						    "string-append",
+						    0, -1),
 			     env);
   scheme_add_global_constant("string->list",
-			     scheme_make_prim_w_arity(string_to_list,
-						      "string->list",
-						      1, 1),
+			     scheme_make_noncm_prim(string_to_list,
+						    "string->list",
+						    1, 1),
 			     env);
   scheme_add_global_constant("list->string",
-			     scheme_make_prim_w_arity(list_to_string,
-						      "list->string",
-						      1, 1),
+			     scheme_make_noncm_prim(list_to_string,
+						    "list->string",
+						    1, 1),
 			     env);
   scheme_add_global_constant("string-copy",
-			     scheme_make_prim_w_arity(string_copy,
-						      "string-copy",
-						      1, 1),
+			     scheme_make_noncm_prim(string_copy,
+						    "string-copy",
+						    1, 1),
 			     env);
   scheme_add_global_constant("string-copy!",
-			     scheme_make_prim_w_arity(string_copy_bang,
-						      "string-copy!",
-						      3, 5),
+			     scheme_make_noncm_prim(string_copy_bang,
+						    "string-copy!",
+						    3, 5),
 			     env);
   scheme_add_global_constant("string-fill!",
-			     scheme_make_prim_w_arity(string_fill,
-						      "string-fill!",
-						      2, 2),
+			     scheme_make_noncm_prim(string_fill,
+						    "string-fill!",
+						    2, 2),
 			     env);
   scheme_add_global_constant("string->immutable-string",
-			     scheme_make_prim_w_arity(string_to_immutable,
-						      "string->immutable-string",
-						      1, 1),
+			     scheme_make_noncm_prim(string_to_immutable,
+						    "string->immutable-string",
+						    1, 1),
 			     env);
 
 
   scheme_add_global_constant("string-upcase",
-			     scheme_make_prim_w_arity(string_upcase,
-						      "string-upcase",
-						      1, 1),
+			     scheme_make_noncm_prim(string_upcase,
+						    "string-upcase",
+						    1, 1),
 			     env);
   scheme_add_global_constant("string-downcase",
-			     scheme_make_prim_w_arity(string_downcase,
-						      "string-downcase",
-						      1, 1),
+			     scheme_make_noncm_prim(string_downcase,
+						    "string-downcase",
+						    1, 1),
 			     env);
   scheme_add_global_constant("string-titlecase",
-			     scheme_make_prim_w_arity(string_titlecase,
-						      "string-titlecase",
-						      1, 1),
+			     scheme_make_noncm_prim(string_titlecase,
+						    "string-titlecase",
+						    1, 1),
 			     env);
   scheme_add_global_constant("string-foldcase",
-			     scheme_make_prim_w_arity(string_foldcase,
-						      "string-foldcase",
-						      1, 1),
+			     scheme_make_noncm_prim(string_foldcase,
+						    "string-foldcase",
+						    1, 1),
 			     env);
 
   scheme_add_global_constant("string-locale-upcase",
-			     scheme_make_prim_w_arity(string_locale_upcase,
-						      "string-locale-upcase",
-						      1, 1),
+			     scheme_make_noncm_prim(string_locale_upcase,
+						    "string-locale-upcase",
+						    1, 1),
 			     env);
   scheme_add_global_constant("string-locale-downcase",
-			     scheme_make_prim_w_arity(string_locale_downcase,
-						      "string-locale-downcase",
-						      1, 1),
+			     scheme_make_noncm_prim(string_locale_downcase,
+						    "string-locale-downcase",
+						    1, 1),
 			     env);
 
   scheme_add_global_constant("current-locale",
@@ -514,20 +514,20 @@ scheme_init_string (Scheme_Env *env)
 						       MZCONFIG_LOCALE),
 			     env);
   scheme_add_global_constant("locale-string-encoding",
-			     scheme_make_prim_w_arity(locale_string_encoding,
-						      "locale-string-encoding",
-						      0, 0),
+			     scheme_make_noncm_prim(locale_string_encoding,
+						    "locale-string-encoding",
+						    0, 0),
 			     env);
   scheme_add_global_constant("system-language+country",
-			     scheme_make_prim_w_arity(system_language_country,
-						      "system-language+country",
-						      0, 0),
+			     scheme_make_noncm_prim(system_language_country,
+						    "system-language+country",
+						    0, 0),
 			     env);
 
   scheme_add_global_constant("bytes-converter?",
-			     scheme_make_prim_w_arity(byte_converter_p,
-						      "bytes-converter?",
-						      1, 1),
+			     scheme_make_noncm_prim(byte_converter_p,
+						    "bytes-converter?",
+						    1, 1),
 			     env);
   scheme_add_global_constant("bytes-convert",
 			     scheme_make_prim_w_arity2(byte_string_convert,
@@ -542,14 +542,14 @@ scheme_init_string (Scheme_Env *env)
 						       2, 2),
 			     env);
   scheme_add_global_constant("bytes-open-converter",
-			     scheme_make_prim_w_arity(byte_string_open_converter,
-						      "bytes-open-converter",
-						      2, 2),
+			     scheme_make_noncm_prim(byte_string_open_converter,
+						    "bytes-open-converter",
+						    2, 2),
 			     env);
   scheme_add_global_constant("bytes-close-converter",
-			     scheme_make_prim_w_arity(byte_string_close_converter,
-						      "bytes-close-converter",
-						      1, 1),
+			     scheme_make_noncm_prim(byte_string_close_converter,
+						    "bytes-close-converter",
+						    1, 1),
 			     env);
 
   scheme_add_global_constant("format",
@@ -558,14 +558,14 @@ scheme_init_string (Scheme_Env *env)
 						      1, -1, 1),
 			     env);
   scheme_add_global_constant("printf",
-			     scheme_make_prim_w_arity(sch_printf,
-						      "printf",
-						      1, -1),
+			     scheme_make_noncm_prim(sch_printf,
+						    "printf",
+						    1, -1),
 			     env);
   scheme_add_global_constant("fprintf",
-			     scheme_make_prim_w_arity(sch_fprintf,
-						      "fprintf",
-						      2, -1),
+			     scheme_make_noncm_prim(sch_fprintf,
+						    "fprintf",
+						    2, -1),
 			     env);
 
   scheme_add_global_constant("byte?",
@@ -580,14 +580,14 @@ scheme_init_string (Scheme_Env *env)
 						      1, 1, 1),
 			     env);
   scheme_add_global_constant("make-bytes",
-			     scheme_make_prim_w_arity(make_byte_string,
-						      "make-bytes",
-						      1, 2),
+			     scheme_make_noncm_prim(make_byte_string,
+						    "make-bytes",
+						    1, 2),
 			     env);
   scheme_add_global_constant("bytes",
-			     scheme_make_prim_w_arity(byte_string,
-						      "bytes",
-						      0, -1),
+			     scheme_make_noncm_prim(byte_string,
+						    "bytes",
+						    0, -1),
 			     env);
   scheme_add_global_constant("bytes-length",
 			     scheme_make_folding_prim(byte_string_length,
@@ -595,124 +595,124 @@ scheme_init_string (Scheme_Env *env)
 						      1, 1, 1),
 			     env);
   scheme_add_global_constant("bytes-ref",
-			     scheme_make_prim_w_arity(byte_string_ref,
-						      "bytes-ref",
-						      2, 2),
+			     scheme_make_noncm_prim(byte_string_ref,
+						    "bytes-ref",
+						    2, 2),
 			     env);
   scheme_add_global_constant("bytes-set!",
-			     scheme_make_prim_w_arity(byte_string_set,
-						      "bytes-set!",
-						      3, 3),
+			     scheme_make_noncm_prim(byte_string_set,
+						    "bytes-set!",
+						    3, 3),
 			     env);
   scheme_add_global_constant("bytes=?",
-			     scheme_make_prim_w_arity(byte_string_eq,
-						      "bytes=?",
-						      2, -1),
+			     scheme_make_noncm_prim(byte_string_eq,
+						    "bytes=?",
+						    2, -1),
 			     env);
   scheme_add_global_constant("bytes<?",
-			     scheme_make_prim_w_arity(byte_string_lt,
-						      "bytes<?",
-						      2, -1),
+			     scheme_make_noncm_prim(byte_string_lt,
+						    "bytes<?",
+						    2, -1),
 			     env);
   scheme_add_global_constant("bytes>?",
-			     scheme_make_prim_w_arity(byte_string_gt,
-						      "bytes>?",
-						      2, -1),
+			     scheme_make_noncm_prim(byte_string_gt,
+						    "bytes>?",
+						    2, -1),
 			     env);
 
   scheme_add_global_constant("subbytes",
-			     scheme_make_prim_w_arity(byte_substring,
-						      "subbytes",
-						      2, 3),
+			     scheme_make_noncm_prim(byte_substring,
+						    "subbytes",
+						    2, 3),
 			     env);
   scheme_add_global_constant("bytes-append",
-			     scheme_make_prim_w_arity(byte_string_append,
-						      "bytes-append",
-						      0, -1),
+			     scheme_make_noncm_prim(byte_string_append,
+						    "bytes-append",
+						    0, -1),
 			     env);
   scheme_add_global_constant("bytes->list",
-			     scheme_make_prim_w_arity(byte_string_to_list,
-						      "bytes->list",
-						      1, 1),
+			     scheme_make_noncm_prim(byte_string_to_list,
+						    "bytes->list",
+						    1, 1),
 			     env);
   scheme_add_global_constant("list->bytes",
-			     scheme_make_prim_w_arity(list_to_byte_string,
-						      "list->bytes",
-						      1, 1),
+			     scheme_make_noncm_prim(list_to_byte_string,
+						    "list->bytes",
+						    1, 1),
 			     env);
   scheme_add_global_constant("bytes-copy",
-			     scheme_make_prim_w_arity(byte_string_copy,
-						      "bytes-copy",
-						      1, 1),
+			     scheme_make_noncm_prim(byte_string_copy,
+						    "bytes-copy",
+						    1, 1),
 			     env);
   scheme_add_global_constant("bytes-copy!",
-			     scheme_make_prim_w_arity(byte_string_copy_bang,
-						      "bytes-copy!",
-						      3, 5),
+			     scheme_make_noncm_prim(byte_string_copy_bang,
+						    "bytes-copy!",
+						    3, 5),
 			     env);
   scheme_add_global_constant("bytes-fill!",
-			     scheme_make_prim_w_arity(byte_string_fill,
-						      "bytes-fill!",
-						      2, 2),
+			     scheme_make_noncm_prim(byte_string_fill,
+						    "bytes-fill!",
+						    2, 2),
 			     env);
   scheme_add_global_constant("bytes->immutable-bytes",
-			     scheme_make_prim_w_arity(byte_string_to_immutable,
-						      "bytes->immutable-bytes",
-						      1, 1),
+			     scheme_make_noncm_prim(byte_string_to_immutable,
+						    "bytes->immutable-bytes",
+						    1, 1),
 			     env);
 
 
   scheme_add_global_constant("bytes-utf-8-index",
-			     scheme_make_prim_w_arity(byte_string_utf8_index,
-						      "bytes-utf-8-index",
-						      2, 4),
+			     scheme_make_noncm_prim(byte_string_utf8_index,
+						    "bytes-utf-8-index",
+						    2, 4),
 			     env);
   scheme_add_global_constant("bytes-utf-8-length",
-			     scheme_make_prim_w_arity(byte_string_utf8_length,
-						      "bytes-utf-8-length",
-						      1, 4),
+			     scheme_make_noncm_prim(byte_string_utf8_length,
+						    "bytes-utf-8-length",
+						    1, 4),
 			     env);
   scheme_add_global_constant("bytes-utf-8-ref",
-			     scheme_make_prim_w_arity(byte_string_utf8_ref,
-						      "bytes-utf-8-ref",
-						      2, 4),
+			     scheme_make_noncm_prim(byte_string_utf8_ref,
+						    "bytes-utf-8-ref",
+						    2, 4),
 			     env);
 
   scheme_add_global_constant("bytes->string/utf-8",
-			     scheme_make_prim_w_arity(byte_string_to_char_string,
-						      "bytes->string/utf-8",
-						      1, 4),
+			     scheme_make_noncm_prim(byte_string_to_char_string,
+						    "bytes->string/utf-8",
+						    1, 4),
 			     env);
   scheme_add_global_constant("bytes->string/locale",
-			     scheme_make_prim_w_arity(byte_string_to_char_string_locale,
-						      "bytes->string/locale",
-						      1, 4),
+			     scheme_make_noncm_prim(byte_string_to_char_string_locale,
+						    "bytes->string/locale",
+						    1, 4),
 			     env);
   scheme_add_global_constant("bytes->string/latin-1",
-			     scheme_make_prim_w_arity(byte_string_to_char_string_latin1,
-						      "bytes->string/latin-1",
-						      1, 4),
+			     scheme_make_noncm_prim(byte_string_to_char_string_latin1,
+						    "bytes->string/latin-1",
+						    1, 4),
 			     env);
   scheme_add_global_constant("string->bytes/utf-8",
-			     scheme_make_prim_w_arity(char_string_to_byte_string,
-						      "string->bytes/utf-8",
-						      1, 4),
+			     scheme_make_noncm_prim(char_string_to_byte_string,
+						    "string->bytes/utf-8",
+						    1, 4),
 			     env);
   scheme_add_global_constant("string->bytes/locale",
-			     scheme_make_prim_w_arity(char_string_to_byte_string_locale,
-						      "string->bytes/locale",
-						      1, 4),
+			     scheme_make_noncm_prim(char_string_to_byte_string_locale,
+						    "string->bytes/locale",
+						    1, 4),
 			     env);
   scheme_add_global_constant("string->bytes/latin-1",
-			     scheme_make_prim_w_arity(char_string_to_byte_string_latin1,
-						      "string->bytes/latin-1",
-						      1, 4),
+			     scheme_make_noncm_prim(char_string_to_byte_string_latin1,
+						    "string->bytes/latin-1",
+						    1, 4),
 			     env);
 
   scheme_add_global_constant("string-utf-8-length",
-			     scheme_make_prim_w_arity(char_string_utf8_length,
-						      "string-utf-8-length",
-						      1, 3),
+			     scheme_make_noncm_prim(char_string_utf8_length,
+						    "string-utf-8-length",
+						    1, 3),
 			     env);
 
 
@@ -720,38 +720,38 @@ scheme_init_string (Scheme_Env *env)
      more problems than it solves... */
 
   scheme_add_global_constant("version",
-			     scheme_make_prim_w_arity(version,
-						      "version",
-						      0, 0),
+			     scheme_make_noncm_prim(version,
+						    "version",
+						    0, 0),
 			     env);
   scheme_add_global_constant("banner",
-			     scheme_make_prim_w_arity(banner,
-						      "banner",
-						      0, 0),
+			     scheme_make_noncm_prim(banner,
+						    "banner",
+						    0, 0),
 			     env);
 
   scheme_add_global_constant("getenv",
-			     scheme_make_prim_w_arity(sch_getenv,
-						      "getenv",
-						      1, 1),
+			     scheme_make_noncm_prim(sch_getenv,
+						    "getenv",
+						    1, 1),
 			     env);
   scheme_add_global_constant("putenv",
-			     scheme_make_prim_w_arity(sch_putenv,
-						      "putenv",
-						      2, 2),
+			     scheme_make_noncm_prim(sch_putenv,
+						    "putenv",
+						    2, 2),
 			     env);
 
   /* Don't make these folding, since they're platform-specific: */
 
   scheme_add_global_constant("system-type",
-			     scheme_make_prim_w_arity(system_type,
-						      "system-type",
-						      0, 1),
+			     scheme_make_noncm_prim(system_type,
+						    "system-type",
+						    0, 1),
 			     env);
   scheme_add_global_constant("system-library-subpath",
-			     scheme_make_prim_w_arity(system_library_subpath,
-						      "system-library-subpath",
-						      0, 1),
+			     scheme_make_noncm_prim(system_library_subpath,
+						    "system-library-subpath",
+						    0, 1),
 			     env);
 
   scheme_add_global_constant("current-command-line-arguments",
@@ -762,45 +762,6 @@ scheme_init_string (Scheme_Env *env)
 
 #ifdef MZ_PRECISE_GC
   register_traversers();
-#endif
-}
-
-void
-scheme_init_getenv(void)
-{
-#ifndef GETENV_FUNCTION
-  FILE *f = fopen("Environment", "r");
-  if (f) {
-    Scheme_Object *p = scheme_make_file_input_port(f);
-    mz_jmp_buf *savebuf, newbuf;
-    savebuf = scheme_current_thread->error_buf;
-    scheme_current_thread->error_buf = &newbuf;
-    if (!scheme_setjmp(newbuf)) {
-      while (1) {
-	Scheme_Object *v = scheme_read(p);
-	if (SCHEME_EOFP(v))
-	  break;
-
-	if (SCHEME_PAIRP(v) && SCHEME_PAIRP(SCHEME_CDR(v))
-	    && SCHEME_NULLP(SCHEME_CDR(SCHEME_CDR(v)))) {
-	  Scheme_Object *key = SCHEME_CAR(v);
-	  Scheme_Object *val = SCHEME_CADR(v);
-	  if (SCHEME_STRINGP(key) && SCHEME_STRINGP(val)) {
-	    Scheme_Object *a[2];
-	    a[0] = key;
-	    a[1] = val;
-	    sch_putenv(2, a);
-	    v = NULL;
-	  }
-	}
-
-	if (v)
-	  scheme_signal_error("bad environment specification: %V", v);
-      }
-    }
-    scheme_current_thread->error_buf = savebuf;
-    scheme_close_input_port(p);
-  }
 #endif
 }
 
@@ -1939,6 +1900,53 @@ static int mzPUTENV(char *var, char *val, char *together)
 # define mzGETENV getenv
 # define mzPUTENV(var, val, s) MSC_IZE(putenv)(s)
 #endif
+
+void
+scheme_init_getenv(void)
+{
+#ifndef GETENV_FUNCTION
+  FILE *f = fopen("Environment", "r");
+  if (f) {
+    Scheme_Object *p = scheme_make_file_input_port(f);
+    mz_jmp_buf *savebuf, newbuf;
+    savebuf = scheme_current_thread->error_buf;
+    scheme_current_thread->error_buf = &newbuf;
+    if (!scheme_setjmp(newbuf)) {
+      while (1) {
+	Scheme_Object *v = scheme_read(p);
+	if (SCHEME_EOFP(v))
+	  break;
+
+	if (SCHEME_PAIRP(v) && SCHEME_PAIRP(SCHEME_CDR(v))
+	    && SCHEME_NULLP(SCHEME_CDR(SCHEME_CDR(v)))) {
+	  Scheme_Object *key = SCHEME_CAR(v);
+	  Scheme_Object *val = SCHEME_CADR(v);
+	  if (SCHEME_STRINGP(key) && SCHEME_STRINGP(val)) {
+	    Scheme_Object *a[2];
+	    a[0] = key;
+	    a[1] = val;
+	    sch_putenv(2, a);
+	    v = NULL;
+	  }
+	}
+
+	if (v)
+	  scheme_signal_error("bad environment specification: %V", v);
+      }
+    }
+    scheme_current_thread->error_buf = savebuf;
+    scheme_close_input_port(p);
+
+    if (scheme_hash_get(putenv_str_table, (Scheme_Object *)"PLTNOMZJIT")) {
+      scheme_set_startup_use_jit(0);
+    }
+  }
+#else
+  if (mzGETENV("PLTNOMZJIT")) {
+    scheme_set_startup_use_jit(0);
+  }
+#endif
+}
 
 static Scheme_Object *sch_getenv(int argc, Scheme_Object *argv[])
 {

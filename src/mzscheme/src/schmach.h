@@ -31,11 +31,14 @@
 
 #ifdef STACK_GROWS_UP
 # define STK_COMP(a,b) ((a) > (b))
+# define STK_DIFF(a, b) ((a) - (b))
 #else
 # ifdef STACK_GROWS_DOWN
 #  define STK_COMP(a,b) ((a) < (b))
+# define STK_DIFF(a, b) ((b) - (a))
 # else
 #  define STK_COMP(a,b) (scheme_stack_grows_up == ((a) > (b)))
+#  define STK_DIFF(a,b) (scheme_stack_grows_up ? ((b) - (a)) : ((a) - (b)))
 # endif
 #endif
 

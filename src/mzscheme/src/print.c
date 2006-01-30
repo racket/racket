@@ -123,12 +123,6 @@ static Scheme_Hash_Table *global_constants_ht;
 #define ssALL(x, isbox) 1
 #define ssALLp(x, isbox) isbox
 
-#ifdef MZ_PRECISE_GC
-# define ZERO_SIZED(closure) !(closure->closure_size)
-#else
-# define ZERO_SIZED(closure) closure->zero_sized
-#endif
-
 static Scheme_Hash_Table *cache_ht;
 
 void scheme_init_print(Scheme_Env *env)
@@ -1668,14 +1662,29 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 
       closed = 1;
     }
-  else if (SCHEME_CLOSUREP(obj)) 
+  else if (SCHEME_CLOSUREP(obj)
+	   || SAME_TYPE(SCHEME_TYPE(obj), scheme_native_closure_type))
     {
       if (compact || !pp->print_unreadable) {
-	Scheme_Closure *closure = (Scheme_Closure *)obj;
-	if (compact && ZERO_SIZED(closure)) {
-	  /* Print original code: */
-	  compact = print((Scheme_Object *)SCHEME_COMPILED_CLOS_CODE(closure), notdisplay, compact, ht, symtab, rnht, pp);
-	} else
+	int done = 0;
+	if (compact) {
+	  if (SCHEME_TYPE(obj) == scheme_closure_type) {
+	    Scheme_Closure *closure = (Scheme_Closure *)obj;
+	    if (ZERO_SIZED_CLOSUREP(closure)) {
+	      /* Print original `lambda' code: */
+	      compact = print((Scheme_Object *)SCHEME_COMPILED_CLOS_CODE(closure), notdisplay, compact, ht, symtab, rnht, pp);
+	      done = 1;
+	    }
+	  } else if (SCHEME_TYPE(obj) == scheme_case_closure_type) {
+	    obj = scheme_unclose_case_lambda(obj, 0);
+	    if (!SCHEME_PROCP(obj)) {
+	      /* Print original `case-lambda' code: */
+	      compact = print(obj, notdisplay, compact, ht, symtab, rnht, pp);
+	      done = 1;
+	    }
+	  }
+	}
+	if (!done)
 	  cannot_print(pp, notdisplay, obj, ht, compact);
       } else {
 	int len;

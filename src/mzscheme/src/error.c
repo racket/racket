@@ -939,7 +939,7 @@ void scheme_wrong_count_m(const char *name, int minc, int maxc,
     p->tail_buffer = tb;
   }
 
-  /* minc = 1 -> name is really a case-lambda proc */
+  /* minc = 1 -> name is really a case-lambda or native proc */
 
   if (minc == -1) {
     /* Check for is_method in case-lambda */
@@ -954,6 +954,26 @@ void scheme_wrong_count_m(const char *name, int minc, int maxc,
 	/* See note in schpriv.h about the IS_METHOD hack */
 	is_method = 1;
       }
+#ifdef MZ_USE_JIT
+    } else if (SAME_TYPE(SCHEME_TYPE((Scheme_Object *)name), scheme_native_closure_type)) {
+      Scheme_Object *pa;
+      pa = scheme_get_native_arity((Scheme_Object *)name);
+      if (SCHEME_BOXP(pa)) {
+	pa = SCHEME_BOX_VAL(pa);
+	is_method = 1;
+      }
+      if (SCHEME_INTP(pa)) {
+	minc = SCHEME_INT_VAL(pa);
+	if (minc < 0) {
+	  minc = (-minc) - 1;
+	  maxc = -1;
+	} else
+	  maxc = minc;
+	name = scheme_get_proc_name((Scheme_Object *)name, NULL, 1);
+      } else {
+	/* complex; use "no matching case" msg */
+      }
+#endif
     }
   }
 

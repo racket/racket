@@ -168,7 +168,7 @@ void wxMessage::SetSize(int x, int y, int width, int height, int sizeFlags)
     y = currentY;
 
   GetWindowTextW((HWND)ms_handle, buf, 300);
-  GetTextExtent(wxStripMenuCodes(wxNARROW_STRING(buf)), &current_width, &cyf, NULL, NULL,font);
+  GetLabelExtent(wxStripMenuCodes(wxNARROW_STRING(buf)), &current_width, &cyf);
 
   GetSize(&ww, &hh);
 

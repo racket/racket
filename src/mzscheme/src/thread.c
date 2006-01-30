@@ -689,24 +689,28 @@ void scheme_init_thread(Scheme_Env *env)
 						      1, 1, 1), 
 			     env);
   scheme_add_global_constant("sync", 
-			     scheme_make_prim_w_arity(sch_sync,
-						      "sync", 
-						      1, -1), 
+			     scheme_make_prim_w_arity2(sch_sync,
+						       "sync", 
+						       1, -1,
+						       0, -1), 
 			     env);
   scheme_add_global_constant("sync/timeout", 
-			     scheme_make_prim_w_arity(sch_sync_timeout,
-						      "sync/timeout", 
-						      2, -1), 
+			     scheme_make_prim_w_arity2(sch_sync_timeout,
+						       "sync/timeout", 
+						       2, -1,
+						       0, -1), 
 			     env);
   scheme_add_global_constant("sync/enable-break", 
-			     scheme_make_prim_w_arity(sch_sync_enable_break,
-						      "sync/enable-break", 
-						      1, -1),
+			     scheme_make_prim_w_arity2(sch_sync_enable_break,
+						       "sync/enable-break", 
+						       1, -1,
+						       0, -1),
 			     env);
   scheme_add_global_constant("sync/timeout/enable-break", 
-			     scheme_make_prim_w_arity(sch_sync_timeout_enable_break,
-						      "sync/timeout/enable-break", 
-						      2, -1),
+			     scheme_make_prim_w_arity2(sch_sync_timeout_enable_break,
+						       "sync/timeout/enable-break", 
+						       2, -1,
+						       0, -1),
 			     env);
   scheme_add_global_constant("choice-evt", 
 			     scheme_make_prim_w_arity(evts_to_evt,
@@ -2126,6 +2130,7 @@ void scheme_swap_thread(Scheme_Thread *new_thread)
     printf("death\n");
   swapping = 1;
 #endif
+
   if (!swap_no_setjmp && SETJMP(scheme_current_thread)) {
     /* We're back! */
     /* See also initial swap in in start_child() */
@@ -2163,6 +2168,7 @@ void scheme_swap_thread(Scheme_Thread *new_thread)
     swap_no_setjmp = 0;
 
     /* We're leaving... */
+
     if (scheme_current_thread->init_break_cell) {
       int cb;
       cb = can_break_param(scheme_current_thread);
@@ -5867,6 +5873,8 @@ static void make_initial_config(Scheme_Thread *p)
 
   init_param(cells, paramz, MZCONFIG_HONU_MODE, scheme_false);
 
+  init_param(cells, paramz, MZCONFIG_USE_JIT, scheme_startup_use_jit ? scheme_true : scheme_false);
+
   {
     Scheme_Object *s;
     s = scheme_make_immutable_sized_utf8_string("", 0);
@@ -6515,6 +6523,8 @@ static void prepare_thread_for_GC(Scheme_Object *t)
 
   if (p->values_buffer)
     memset(p->values_buffer, 0, sizeof(Scheme_Object*) * p->values_buffer_size);
+
+  p->spare_runstack = NULL;
 
   /* zero ununsed part of list stack */
   scheme_clean_list_stack(p);

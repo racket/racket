@@ -364,78 +364,78 @@ void scheme_init_stx(Scheme_Env *env)
 			     env);
 
   scheme_add_global_constant("syntax-original?", 
-			     scheme_make_prim_w_arity(syntax_original_p,
-						      "syntax-original?",
-						      1, 1),
+			     scheme_make_noncm_prim(syntax_original_p,
+						    "syntax-original?",
+						    1, 1),
 			     env);
   scheme_add_global_constant("syntax-property", 
-			     scheme_make_prim_w_arity(syntax_property,
-						      "syntax-property",
-						      2, 3),
+			     scheme_make_noncm_prim(syntax_property,
+						    "syntax-property",
+						    2, 3),
 			     env);
   scheme_add_global_constant("syntax-property-symbol-keys", 
-			     scheme_make_prim_w_arity(syntax_property_keys,
-						      "syntax-property-symbol-keys",
-						      1, 1),
+			     scheme_make_noncm_prim(syntax_property_keys,
+						    "syntax-property-symbol-keys",
+						    1, 1),
 			     env);
 
   scheme_add_global_constant("syntax-track-origin", 
-			     scheme_make_prim_w_arity(syntax_track_origin,
-						      "syntax-track-origin",
-						      3, 3),
+			     scheme_make_noncm_prim(syntax_track_origin,
+						    "syntax-track-origin",
+						    3, 3),
 			     env);
 
   scheme_add_global_constant("bound-identifier=?", 
-			     scheme_make_prim_w_arity(bound_eq,
-						      "bound-identifier=?",
-						      2, 2),
+			     scheme_make_noncm_prim(bound_eq,
+						    "bound-identifier=?",
+						    2, 2),
 			     env);
   scheme_add_global_constant("free-identifier=?", 
-			     scheme_make_prim_w_arity(free_eq,
-						      "free-identifier=?",
-						      2, 2),
+			     scheme_make_noncm_prim(free_eq,
+						    "free-identifier=?",
+						    2, 2),
 			     env);
   scheme_add_global_constant("module-identifier=?", 
-			     scheme_make_prim_w_arity(module_eq,
-						      "module-identifier=?",
-						      2, 2),
+			     scheme_make_noncm_prim(module_eq,
+						    "module-identifier=?",
+						    2, 2),
 			     env);
   scheme_add_global_constant("module-transformer-identifier=?", 
-			     scheme_make_prim_w_arity(module_trans_eq,
-						      "module-transformer-identifier=?",
-						      2, 2),
+			     scheme_make_noncm_prim(module_trans_eq,
+						    "module-transformer-identifier=?",
+						    2, 2),
 			     env);
   scheme_add_global_constant("module-template-identifier=?", 
-			     scheme_make_prim_w_arity(module_templ_eq,
-						      "module-template-identifier=?",
-						      2, 2),
+			     scheme_make_noncm_prim(module_templ_eq,
+						    "module-template-identifier=?",
+						    2, 2),
 			     env);
 
   scheme_add_global_constant("identifier-binding", 
-			     scheme_make_prim_w_arity(module_binding,
-						      "identifier-binding",
-						      1, 1),
+			     scheme_make_noncm_prim(module_binding,
+						    "identifier-binding",
+						    1, 1),
 			     env);
   scheme_add_global_constant("identifier-transformer-binding", 
-			     scheme_make_prim_w_arity(module_trans_binding,
-						      "identifier-transformer-binding",
-						      1, 1),
+			     scheme_make_noncm_prim(module_trans_binding,
+						    "identifier-transformer-binding",
+						    1, 1),
 			     env);
   scheme_add_global_constant("identifier-template-binding", 
-			     scheme_make_prim_w_arity(module_templ_binding,
-						      "identifier-template-binding",
-						      1, 1),
+			     scheme_make_noncm_prim(module_templ_binding,
+						    "identifier-template-binding",
+						    1, 1),
 			     env);
 
   scheme_add_global_constant("identifier-binding-export-position",
-			     scheme_make_prim_w_arity(module_binding_pos,
-						      "identifier-binding-export-position",
-						      1, 1),
+			     scheme_make_noncm_prim(module_binding_pos,
+						    "identifier-binding-export-position",
+						    1, 1),
 			     env);
   scheme_add_global_constant("identifier-transformer-binding-export-position",
-			     scheme_make_prim_w_arity(module_trans_binding_pos,
-						      "identifier-transformer-binding-export-position",
-						      1, 1),
+			     scheme_make_noncm_prim(module_trans_binding_pos,
+						    "identifier-transformer-binding-export-position",
+						    1, 1),
 			     env);
 
   scheme_add_global_constant("syntax-source-module", 
@@ -445,9 +445,9 @@ void scheme_init_stx(Scheme_Env *env)
 			     env);
 
   scheme_add_global_constant("syntax-recertify", 
-			     scheme_make_prim_w_arity(syntax_recertify,
-						      "syntax-recertify",
-						      4, 4),
+			     scheme_make_noncm_prim(syntax_recertify,
+						    "syntax-recertify",
+						    4, 4),
 			     env);
 
   REGISTER_SO(barrier_symbol);

@@ -136,6 +136,7 @@
   scheme_extension_table->scheme_tail_eval_expr = scheme_tail_eval_expr;
   scheme_extension_table->scheme_set_tail_buffer_size = scheme_set_tail_buffer_size;
   scheme_extension_table->scheme_force_value = scheme_force_value;
+  scheme_extension_table->scheme_force_one_value = scheme_force_one_value;
   scheme_extension_table->scheme_set_cont_mark = scheme_set_cont_mark;
   scheme_extension_table->scheme_push_continuation_frame = scheme_push_continuation_frame;
   scheme_extension_table->scheme_pop_continuation_frame = scheme_pop_continuation_frame;
@@ -211,6 +212,7 @@
   scheme_extension_table->scheme_make_closed_prim = scheme_make_closed_prim;
   scheme_extension_table->scheme_make_prim_w_arity = scheme_make_prim_w_arity;
   scheme_extension_table->scheme_make_folding_prim = scheme_make_folding_prim;
+  scheme_extension_table->scheme_make_noncm_prim = scheme_make_noncm_prim;
   scheme_extension_table->scheme_make_noneternal_prim_w_arity = scheme_make_noneternal_prim_w_arity;
   scheme_extension_table->scheme_make_closed_prim_w_arity = scheme_make_closed_prim_w_arity;
   scheme_extension_table->scheme_make_folding_closed_prim = scheme_make_folding_closed_prim;

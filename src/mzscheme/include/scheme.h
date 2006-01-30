@@ -156,6 +156,12 @@ typedef struct FSSpec mzFSSpec;
 
 #define MZ_EXTERN extern MZ_DLLSPEC
 
+#ifndef MZ_PRECISE_GC
+# if defined(MZ_USE_JIT_PPC) || defined(MZ_USE_JIT_I386)
+#  define MZ_USE_JIT
+# endif
+#endif
+
 /* Define _W64 for MSC if needed. */
 #if defined(_MSC_VER) && !defined(_W64)
 # if !defined(__midl) && (defined(_X86_) || defined(_M_IX86)) && _MSC_VER >= 1300
@@ -574,6 +580,7 @@ typedef void (*Scheme_Type_Printer)(Scheme_Object *v, int for_display, Scheme_Pr
 #define SCHEME_PRIM_IS_USER_PARAMETER 1024
 #define SCHEME_PRIM_IS_METHOD 2048
 #define SCHEME_PRIM_IS_POST_DATA 4096
+#define SCHEME_PRIM_IS_NONCM 8192
 
 typedef struct Scheme_Object *
 (Scheme_Prim)(int argc, struct Scheme_Object *argv[]);
@@ -705,7 +712,7 @@ typedef struct {
 
 /* ------------------------------------------------- */
 
-#define SCHEME_PROCP(obj)  (!SCHEME_INTP(obj) && ((_SCHEME_TYPE(obj) >= scheme_prim_type) && (_SCHEME_TYPE(obj) <= scheme_proc_struct_type)))
+#define SCHEME_PROCP(obj)  (!SCHEME_INTP(obj) && ((_SCHEME_TYPE(obj) >= scheme_prim_type) && (_SCHEME_TYPE(obj) <= scheme_native_closure_type)))
 #define SCHEME_SYNTAXP(obj)  SAME_TYPE(SCHEME_TYPE(obj), scheme_syntax_compiler_type)
 #define SCHEME_PRIMP(obj)    SAME_TYPE(SCHEME_TYPE(obj), scheme_prim_type)
 #define SCHEME_CLSD_PRIMP(obj)    SAME_TYPE(SCHEME_TYPE(obj), scheme_closed_prim_type)
@@ -780,14 +787,21 @@ typedef long mz_pre_jmp_buf[8];
 # define mz_pre_jmp_buf jmp_buf
 #endif
 
+#ifdef MZ_USE_JIT
+typedef struct { mz_pre_jmp_buf jb; void *stack_frame; } mz_one_jit_jmp_buf;
+typedef mz_one_jit_jmp_buf mz_jit_jmp_buf[1];
+#else
+# define mz_jit_jmp_buf mz_pre_jmp_buf
+#endif
+
 #ifdef MZ_PRECISE_GC
 typedef struct {
-  mz_pre_jmp_buf jb;
+  mz_jit_jmp_buf jb;
   long gcvs; /* declared as `long' so it isn't pushed when on the stack! */
   long gcvs_cnt;
 } mz_jmp_buf;
 #else
-# define mz_jmp_buf mz_pre_jmp_buf
+# define mz_jmp_buf mz_jit_jmp_buf
 #endif
 
 /* Like setjmp & longjmp, but you can jmp to a deeper stack position */
@@ -877,6 +891,11 @@ typedef struct Scheme_Thread {
   struct Scheme_Saved_Stack *runstack_saved;
   Scheme_Object **runstack_tmp_keep;
 
+  /* in case of bouncing, we keep a recently
+     released runstack; it's dropped on GC, though */
+  Scheme_Object **spare_runstack;
+  long spare_runstack_size;
+
   struct Scheme_Thread **runstack_owner;
   struct Scheme_Saved_Stack *runstack_swapped;
 
@@ -930,6 +949,8 @@ typedef struct Scheme_Thread {
   Scheme_Object *(*overflow_k)(void);
   Scheme_Object *overflow_reply;
 
+   /* content of tail_buffer is zeroed on GC, unless
+      runstack_tmp_keep is set to tail_buffer */
   Scheme_Object **tail_buffer;
   int tail_buffer_size;
 
@@ -1067,6 +1088,7 @@ enum {
   MZCONFIG_ERROR_ESCAPE_HANDLER,
 
   MZCONFIG_ALLOW_SET_UNDEFINED,
+  MZCONFIG_USE_JIT,
 
   MZCONFIG_CUSTODIAN,
   MZCONFIG_INSPECTOR,
@@ -1350,18 +1372,27 @@ MZ_EXTERN Scheme_Object *scheme_eval_waiting;
 # endif
 #endif
 
+#ifdef MZ_USE_JIT
+MZ_EXTERN void scheme_jit_longjmp(mz_jit_jmp_buf b, int v);
+MZ_EXTERN void scheme_jit_setjmp_prepare(mz_jit_jmp_buf b);
+# define scheme_jit_setjmp(b) (scheme_jit_setjmp_prepare(b), scheme_mz_setjmp((b)->jb))
+#else
+# define scheme_jit_longjmp(b, v) scheme_mz_longjmp(b, v) 
+# define scheme_jit_setjmp(b) scheme_mz_setjmp(b) 
+#endif
+
 #ifdef MZ_PRECISE_GC
 /* Need to make sure that a __gc_var_stack__ is always available where
    setjmp & longjmp are used. */
 # define scheme_longjmp(b, v) (((long *)(void*)((b).gcvs))[1] = (b).gcvs_cnt, \
                                GC_variable_stack = (void **)(void*)(b).gcvs, \
-                               scheme_mz_longjmp((b).jb, v))
+                               scheme_jit_longjmp((b).jb, v))
 # define scheme_setjmp(b)     ((b).gcvs = (long)__gc_var_stack__, \
                                (b).gcvs_cnt = (long)(__gc_var_stack__[1]), \
-                               scheme_mz_setjmp((b).jb))
+                               scheme_jit_setjmp((b).jb))
 #else
-# define scheme_longjmp(b, v) scheme_mz_longjmp(b, v)
-# define scheme_setjmp(b) scheme_mz_setjmp(b)
+# define scheme_longjmp(b, v) scheme_jit_longjmp(b, v)
+# define scheme_setjmp(b) scheme_jit_setjmp(b)
 #endif
 
 /*========================================================================*/
@@ -1487,10 +1518,12 @@ MZ_EXTERN int scheme_curly_braces_are_parens; /* Defaults to 1 */
 MZ_EXTERN int scheme_hash_percent_syntax_only; /* Defaults to 0 */
 MZ_EXTERN int scheme_hash_percent_globals_only; /* Defaults to 0 */
 MZ_EXTERN int scheme_binary_mode_stdio; /* Windows-MacOS-specific. Defaults to 0 */
+MZ_EXTERN int scheme_startup_use_jit;
 
 MZ_EXTERN void scheme_set_case_sensitive(int);
 MZ_EXTERN void scheme_set_allow_set_undefined(int);
 MZ_EXTERN void scheme_set_binary_mode_stdio(int);
+MZ_EXTERN void scheme_set_startup_use_jit(int);
 
 MZ_EXTERN int scheme_get_allow_set_undefined();
 

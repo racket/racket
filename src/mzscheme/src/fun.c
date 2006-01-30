@@ -123,8 +123,6 @@ Scheme_Object *scheme_values(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_print(int argc, Scheme_Object **argv);
 static Scheme_Object *current_prompt_read(int, Scheme_Object **);
 
-static Scheme_Object *get_or_check_arity(Scheme_Object *p, long a);
-
 static Scheme_Object *write_compiled_closure(Scheme_Object *obj);
 static Scheme_Object *read_compiled_closure(Scheme_Object *obj);
 
@@ -431,7 +429,7 @@ Scheme_Object *
 scheme_make_prim_w_everything(Scheme_Prim *fun, int eternal,
 			      const char *name,
 			      mzshort mina, mzshort maxa,
-			      short folding,
+			      int flags,
 			      mzshort minr, mzshort maxr)
 {
   Scheme_Primitive_Proc *prim;
@@ -449,7 +447,7 @@ scheme_make_prim_w_everything(Scheme_Prim *fun, int eternal,
   prim->name = name;
   prim->mina = mina;
   prim->maxa = maxa;
-  prim->pp.flags = ((folding ? SCHEME_PRIM_IS_FOLDING : 0)
+  prim->pp.flags = (flags
 		    | (scheme_defining_primitives ? SCHEME_PRIM_IS_PRIMITIVE : 0)
 		    | (hasr ? SCHEME_PRIM_IS_MULTI_RESULT : 0));
 
@@ -485,7 +483,22 @@ scheme_make_folding_prim(Scheme_Prim *fun, const char *name,
 			 short folding)
 {
   return scheme_make_prim_w_everything(fun, 1, name, mina, maxa,
-				       folding, 1, 1);
+				       (folding 
+					? (SCHEME_PRIM_IS_FOLDING
+					   | SCHEME_PRIM_IS_NONCM)
+					: 0),
+				       1, 1);
+}
+
+Scheme_Object *
+scheme_make_noncm_prim(Scheme_Prim *fun, const char *name,
+		       mzshort mina, mzshort maxa)
+{
+  /* A non-cm primitive leaves the mark stack unchanged when it returns,
+     and it can't return multiple values. */
+  return scheme_make_prim_w_everything(fun, 1, name, mina, maxa,
+				       SCHEME_PRIM_IS_NONCM,
+				       1, 1);
 }
 
 Scheme_Object *
@@ -577,11 +590,34 @@ scheme_make_closure(Scheme_Thread *p, Scheme_Object *code, int close)
 {
   Scheme_Closure_Data *data;
   Scheme_Closure *closure;
-  Scheme_Object **runstack, **dest;
-  mzshort *map;
+  GC_CAN_IGNORE Scheme_Object **runstack;
+  GC_CAN_IGNORE Scheme_Object **dest;
+  GC_CAN_IGNORE mzshort *map;
   int i;
 
   data = (Scheme_Closure_Data *)code;
+  
+#ifdef MZ_USE_JIT
+  if (data->native_code) {
+    Scheme_Object *nc;
+
+    nc = scheme_make_native_closure(data->native_code);
+
+    if (close) {
+      runstack = MZ_RUNSTACK;
+      dest = ((Scheme_Native_Closure *)nc)->vals;
+      map = data->closure_map;
+      i = data->closure_size;
+      
+      /* Copy data into the closure: */
+      while (i--) {
+	dest[i] = runstack[map[i]];
+      }
+    }
+
+    return nc;
+  }
+#endif
 
   i = data->closure_size;
 
@@ -611,6 +647,32 @@ scheme_make_closure(Scheme_Thread *p, Scheme_Object *code, int close)
   }
 
   return (Scheme_Object *)closure;
+}
+
+Scheme_Object *scheme_jit_closure(Scheme_Object *code)
+{
+  Scheme_Closure_Data *data = (Scheme_Closure_Data *)code;
+  
+#ifdef MZ_USE_JIT
+  if (!data->native_code) {
+    Scheme_Native_Closure_Data *ndata;
+    
+    data  = MALLOC_ONE_TAGGED(Scheme_Closure_Data);
+    memcpy(data, code, sizeof(Scheme_Closure_Data));
+
+    ndata = scheme_generate_lambda(data, 1, NULL);
+    data->native_code = ndata;
+    
+    /* If it's zero-sized, then create closure now */
+    if (!data->closure_size) {
+      return scheme_make_native_closure(ndata);
+    }
+
+    return (Scheme_Object *)data;
+  }
+#endif
+
+  return code;
 }
 
 /* Closure_Info is used to store extra closure information
@@ -722,9 +784,9 @@ scheme_resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info)
   if (SCHEME_TYPE(data->code) > _scheme_compiled_values_types_)
     SCHEME_CLOSURE_DATA_FLAGS(data) |= CLOS_FOLDABLE;
 
+  /* If the closure is empty, create the closure now */
   if (!data->closure_size)
-    /* If the closure is empty, go ahead and finalize closure */
-    return scheme_make_closure(NULL, (Scheme_Object *)data, 0);
+    return scheme_make_closure(NULL, (Scheme_Object *)data, 1);
   else
     return (Scheme_Object *)data;
 }
@@ -1204,16 +1266,15 @@ void scheme_clear_cc_ok()
 /*                  procedure application evaluation                      */
 /*========================================================================*/
 
-Scheme_Object *
-scheme_force_value(Scheme_Object *obj)
-     /* Called where _scheme_apply() or _scheme_value() might return a
-	a tail-call-waiting trampoline token.  */
+static Scheme_Object *
+force_values(Scheme_Object *obj, int multi_ok)
+  /* Called where _scheme_apply() or _scheme_value() might return a
+     a tail-call-waiting trampoline token.  */
 {
   if (SAME_OBJ(obj, SCHEME_TAIL_CALL_WAITING)) {
     Scheme_Thread *p = scheme_current_thread;
-    Scheme_Object *v;
 
-    /* Watch out for use for use of tail buffer: */
+    /* Watch out for use of tail buffer: */
     if (p->ku.apply.tail_rands == p->tail_buffer) {
       GC_CAN_IGNORE Scheme_Object **tb;
       p->tail_buffer = NULL; /* so args aren't zeroed */
@@ -1221,17 +1282,36 @@ scheme_force_value(Scheme_Object *obj)
       p->tail_buffer = tb;
     }
 
-    v = _scheme_apply_multi(p->ku.apply.tail_rator,
-			    p->ku.apply.tail_num_rands,
-			    p->ku.apply.tail_rands);
-    return v;
+    if (multi_ok)
+      return _scheme_apply_multi(p->ku.apply.tail_rator,
+				 p->ku.apply.tail_num_rands,
+				 p->ku.apply.tail_rands);
+    else
+      return _scheme_apply(p->ku.apply.tail_rator,
+			   p->ku.apply.tail_num_rands,
+			   p->ku.apply.tail_rands);
   } else if (SAME_OBJ(obj, SCHEME_EVAL_WAITING)) {
     Scheme_Thread *p = scheme_current_thread;
-    return _scheme_eval_linked_expr_multi(p->ku.eval.wait_expr);
+    if (multi_ok)
+      return _scheme_eval_linked_expr_multi(p->ku.eval.wait_expr);
+    else
+      return _scheme_eval_linked_expr(p->ku.eval.wait_expr);
   } else if (obj)
     return obj;
   else
     return scheme_void;
+}
+
+Scheme_Object *
+scheme_force_value(Scheme_Object *obj)
+{
+  return force_values(obj, 1);
+}
+
+Scheme_Object *
+scheme_force_one_value(Scheme_Object *obj)
+{
+  return force_values(obj, 0);
 }
 
 static void *apply_k(void)
@@ -1590,7 +1670,7 @@ Scheme_Object *scheme_make_arity(mzshort mina, mzshort maxa)
   }
 }
 
-static Scheme_Object *get_or_check_arity(Scheme_Object *p, long a)
+Scheme_Object *scheme_get_or_check_arity(Scheme_Object *p, long a)
 /* a == -1 => get arity
    a == -2 => check for allowing varargs */
 {
@@ -1724,6 +1804,103 @@ static Scheme_Object *get_or_check_arity(Scheme_Object *p, long a)
       drop++;
     SCHEME_USE_FUEL(1);
     goto top;
+#ifdef MZ_USE_JIT
+  } else if (type == scheme_native_closure_type) {
+    if (a < 0) {
+      Scheme_Object *pa;
+
+      pa = scheme_get_native_arity(p);
+
+      if (SCHEME_BOXP(pa)) {
+	/* Is a method; pa already corrects for it */
+	pa = SCHEME_BOX_VAL(pa);
+      }
+
+      if (SCHEME_STRUCTP(pa)) {
+	/* This happens when a non-case-lambda is not yet JITted.
+	   It's an arity-at-least record. Convert it to the
+	   negative-int encoding. */
+	int v;
+	pa = ((Scheme_Structure *)pa)->slots[0];
+	v = -(SCHEME_INT_VAL(pa) + 1);
+	pa = scheme_make_integer(v);
+      }
+
+      if (SCHEME_INTP(pa)) {
+	mina = SCHEME_INT_VAL(pa);
+	if (mina < 0) {
+	  if (a == -2) {
+	    /* Yes, varargs */
+	    return scheme_true;
+	  }
+	  mina = (-mina) - 1;
+	  maxa = -1;
+	} else {
+	  if (a == -2) {
+	    /* No varargs */
+	    return scheme_false;
+	  }
+	  maxa = mina;
+	}
+      } else {
+	if (a == -2) {
+	  /* Check for varargs */
+	  Scheme_Object *a;
+	  while (!SCHEME_NULLP(pa)) {
+	    a = SCHEME_CAR(pa);
+	    if (SCHEME_STRUCTP(a))
+	      return scheme_true;
+	    pa = SCHEME_CDR(pa);
+	  }
+	  return scheme_false;
+	} else {
+	  if (drop) {
+	    /* Need to adjust elements (e.g., because this
+	       procedure is a struct's apply handler) */
+	    Scheme_Object *first = scheme_null, *last = NULL, *a;
+	    int v;
+	    while (SCHEME_PAIRP(pa)) {
+	      a = SCHEME_CAR(pa);
+	      if (SCHEME_INTP(a)) {
+		v = SCHEME_INT_VAL(a);
+		if (v < drop)
+		  a = NULL;
+		else {
+		  v -= drop;
+		  a = scheme_make_integer(v);
+		}
+	      } else {
+		/* arity-at-least */
+		a = ((Scheme_Structure *)a)->slots[0];
+		v = SCHEME_INT_VAL(a);
+		if (v >= drop) {
+		  a = scheme_make_arity(v - drop, -1);
+		} else {
+		  a = scheme_make_arity(0, -1);
+		}
+	      }
+	      if (a) {
+		a = scheme_make_pair(a, scheme_null);
+		if (last)
+		  SCHEME_CDR(last) = a;
+		else
+		  first = a;
+		last = a;
+	      }
+	      pa = SCHEME_CDR(pa);
+	    }
+	    return first;
+	  }
+	  return pa;
+	}
+      }
+    } else {
+      if (scheme_native_arity_check(p, a + drop))
+	return scheme_true;
+      else
+	return scheme_false;
+    }
+#endif
   } else {
     Scheme_Closure_Data *data;
 
@@ -1772,7 +1949,7 @@ int scheme_check_proc_arity2(const char *where, int a,
   if (false_ok && SCHEME_FALSEP(p))
     return 1;
 
-  if (!SCHEME_PROCP(p) || SCHEME_FALSEP(get_or_check_arity(p, a))) {
+  if (!SCHEME_PROCP(p) || SCHEME_FALSEP(scheme_get_or_check_arity(p, a))) {
     if (where) {
       char buffer[60];
 
@@ -1925,12 +2102,21 @@ const char *scheme_get_proc_name(Scheme_Object *p, int *len, int for_error)
       goto top;
     }
   } else {
-    Scheme_Closure_Data *data;
+    Scheme_Object *name;
 
-    data = SCHEME_COMPILED_CLOS_CODE(p);
-    if (data->name) {
-      Scheme_Object *name;
-      name = data->name;
+    if (type == scheme_closure_type) {
+      name = SCHEME_COMPILED_CLOS_CODE(p)->name;
+    } else {
+      /* Native closure: */
+      name = ((Scheme_Native_Closure *)p)->code->u2.name;
+      if (name && SAME_TYPE(SCHEME_TYPE(name), scheme_unclosed_procedure_type)) {
+	/* Not yet jitted. Use `name' as the other alternaive of 
+	   the union: */
+	name = ((Scheme_Closure_Data *)name)->name;
+      }
+    }
+
+    if (name) {
       if (SCHEME_VECTORP(name))
 	name = SCHEME_VEC_ELS(name)[0];
       if (for_error < 0) {
@@ -2031,7 +2217,7 @@ static Scheme_Object *object_name(int argc, Scheme_Object **argv)
 
 Scheme_Object *scheme_arity(Scheme_Object *p)
 {
-  return get_or_check_arity(p, -1);
+  return scheme_get_or_check_arity(p, -1);
 }
 
 static Scheme_Object *procedure_arity(int argc, Scheme_Object *argv[])
@@ -2039,7 +2225,7 @@ static Scheme_Object *procedure_arity(int argc, Scheme_Object *argv[])
   if (!SCHEME_PROCP(argv[0]))
     scheme_wrong_type("procedure-arity", "procedure", 0, argc, argv);
 
-  return get_or_check_arity(argv[0], -1);
+  return scheme_get_or_check_arity(argv[0], -1);
 }
 
 static Scheme_Object *procedure_arity_includes(int argc, Scheme_Object *argv[])
@@ -2051,7 +2237,7 @@ static Scheme_Object *procedure_arity_includes(int argc, Scheme_Object *argv[])
 
   n = scheme_extract_index("procedure-arity-includes?", 1, argc, argv, -2, 0);
 
-  return get_or_check_arity(argv[0], n);
+  return scheme_get_or_check_arity(argv[0], n);
 }
 
 static Scheme_Object *
@@ -2076,7 +2262,7 @@ apply(int argc, Scheme_Object *argv[])
   }
   num_rands += (argc - 2);
 
-  if (num_rands > p->tail_buffer_size) {
+  if (1 || num_rands > p->tail_buffer_size) {
     rand_vec = MALLOC_N(Scheme_Object *, num_rands);
     /* num_rands might be very big, so don't install it as the tail buffer */
   } else
@@ -2140,7 +2326,7 @@ do_map(int argc, Scheme_Object *argv[], char *name, int make_result,
     }
   }
 
-  if (SCHEME_FALSEP(get_or_check_arity(argv[0], argc - 1))) {
+  if (SCHEME_FALSEP(scheme_get_or_check_arity(argv[0], argc - 1))) {
     char *s;
     long aelen;
 
@@ -2969,7 +3155,7 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
   Scheme_Cont *cont = (Scheme_Cont *)_cont;
   Scheme_Cont_Mark_Chain *first = NULL, *last = NULL;
   Scheme_Cont_Mark_Set *set;
-  Scheme_Object *cache;
+  Scheme_Object *cache, *nt;
   long findpos;
   long cmpos;
 
@@ -3043,10 +3229,17 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
   if (just_chain)
     return (Scheme_Object *)first;
 
+#ifdef MZ_USE_JIT
+  nt = scheme_native_stack_trace();
+#else
+  nt = NULL;
+#endif
+
   set = MALLOC_ONE_TAGGED(Scheme_Cont_Mark_Set);
   set->so.type = scheme_cont_mark_set_type;
   set->chain = first;
   set->cmpos = cmpos;
+  set->native_stack_trace = nt;
 
   return (Scheme_Object *)set;
 }
@@ -3193,10 +3386,14 @@ scheme_get_stack_trace(Scheme_Object *mark_set)
   Scheme_Object *l, *n, *m, *name, *loc;
   Scheme_Object *a[2];
 
-  a[0] = mark_set;
-  a[1] = scheme_stack_dump_key;
+  l = ((Scheme_Cont_Mark_Set *)mark_set)->native_stack_trace;
 
-  l = extract_cc_marks(2, a);
+  if (!l) {
+    a[0] = mark_set;
+    a[1] = scheme_stack_dump_key;
+    
+    l = extract_cc_marks(2, a);
+  }
 
   /* Filter out NULLs */
   while (SCHEME_PAIRP(l) && !SCHEME_CAR(l)) {
@@ -3932,7 +4129,7 @@ static Scheme_Object *time_apply(int argc, Scheme_Object *argv[])
     num_rands++;
   }
 
-  if (SCHEME_FALSEP(get_or_check_arity(argv[0], num_rands))) {
+  if (SCHEME_FALSEP(scheme_get_or_check_arity(argv[0], num_rands))) {
     char *s;
     long aelen;
 
@@ -4176,8 +4373,8 @@ static Scheme_Object *read_compiled_closure(Scheme_Object *obj)
   if (SCHEME_TYPE(data->code) > _scheme_values_types_)
     SCHEME_CLOSURE_DATA_FLAGS(data) |= CLOS_FOLDABLE;
 
+ /* If the closure is empty, create the closure now */
   if (!data->closure_size)
-    /* If the closure is empty, go ahead and finalize */
     return scheme_make_closure(NULL, (Scheme_Object *)data, 0);
   else
     return (Scheme_Object *)data;

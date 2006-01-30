@@ -2125,7 +2125,7 @@ long scheme_get_char_string(const char *who,
 	special_is_ok = 1;
 	got = scheme_get_byte_string_unless(who, port,
 					    s, leftover, 1,
-					    0, 1, 
+					    0, 1 /* => peek */, 
 					    quick_plus(peek_skip, ahead_skip),
 					    NULL);
 	if (got > 0) {
@@ -2172,11 +2172,13 @@ long scheme_get_char_string(const char *who,
 	  }
 	} else {
 	  /* Either EOF or SPECIAL -- either one ends the leftover
-	     sequence in an error. */
-	  while (leftover) {
+	     sequence in an error. We may have more leftover chars
+	     than we need, but they haven't been read, yet. */
+	  while (leftover && size) {
 	    buffer[offset++] = '?';
 	    total_got++;
 	    --leftover;
+	    --size;
 	  }
 	  return total_got;
 	}

@@ -3633,6 +3633,7 @@ typedef struct CPort {
   unsigned char *start;
   unsigned long symtab_size;
   long base;
+  int flags;
   Scheme_Object *orig_port;
   Scheme_Hash_Table **ht;
   Scheme_Object **symtab;
@@ -4580,7 +4581,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
   rp->symtab_size = symtabsize;
   rp->ht = ht;
   rp->symtab = symtab;
-  
+
   insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
   rp->insp = insp;
 

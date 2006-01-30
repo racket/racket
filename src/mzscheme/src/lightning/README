@@ -1,0 +1,10 @@
+
+This version of lightning version 1.2 is slightly modified for
+MzScheme.
+
+For PowerPC, branches can be generated in long-jump mode, so that
+patched addresses are not limited to a 2^16 or 2^26 difference from
+the current program counter.
+
+For PowerPC, arguments are extracted directly from the original
+registers by getarg.

@@ -314,6 +314,8 @@ Scheme_Env *scheme_basic_env()
   scheme_init_thread_memory();
 #endif
     
+  scheme_init_getenv(); /* checks PLTNOJIT */
+
   scheme_make_thread();
 
 #ifdef TIME_STARTUP_PROCESS
@@ -342,7 +344,6 @@ Scheme_Env *scheme_basic_env()
 
   scheme_starting_up = 0;
 
-  scheme_init_getenv();
 #ifdef TIME_STARTUP_PROCESS
   printf("done @ %ld\n#endif\n", scheme_get_process_milliseconds());
 #endif
@@ -2600,6 +2601,7 @@ Resolve_Prefix *scheme_resolve_prefix(int phase, Comp_Prefix *cp, int simplify)
 Resolve_Info *scheme_resolve_info_create(Resolve_Prefix *rp)
 {
   Resolve_Info *naya;
+  Scheme_Object *b;
 
   naya = MALLOC_ONE_RT(Resolve_Info);
 #ifdef MZTAG_REQUIRED
@@ -2609,6 +2611,9 @@ Resolve_Info *scheme_resolve_info_create(Resolve_Prefix *rp)
   naya->count = 0;
   naya->next = NULL;
   naya->toplevel_pos = -1;
+
+  b = scheme_get_param(scheme_current_config(), MZCONFIG_USE_JIT);
+  naya->use_jit = SCHEME_TRUEP(b);
 
   return naya;
 }
@@ -2626,6 +2631,7 @@ Resolve_Info *scheme_resolve_info_extend(Resolve_Info *info, int size, int oldsi
 #endif
   naya->prefix = info->prefix;
   naya->next = info;
+  naya->use_jit = info->use_jit;
   naya->size = size;
   naya->oldsize = oldsize;
   naya->count = mapc;

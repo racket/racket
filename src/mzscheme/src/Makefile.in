@@ -29,6 +29,7 @@ OBJS =  salloc.@LTO@ \
         gmp.@LTO@ \
 	hash.@LTO@ \
 	image.@LTO@ \
+	jit.@LTO@ \
 	list.@LTO@ \
 	module.@LTO@ \
 	network.@LTO@ \
@@ -68,6 +69,7 @@ SRCS =  $(srcdir)/salloc.c \
 	$(srcdir)/gmp/gmp.c \
 	$(srcdir)/hash.c \
 	$(srcdir)/image.c \
+	$(srcdir)/jit.c \
 	$(srcdir)/list.c \
 	$(srcdir)/module.c \
 	$(srcdir)/network.c \
@@ -169,6 +171,8 @@ hash.@LTO@: $(srcdir)/hash.c
 	$(CC) $(CFLAGS) -c $(srcdir)/hash.c -o hash.@LTO@
 image.@LTO@: $(srcdir)/image.c
 	$(CC) $(CFLAGS) -c $(srcdir)/image.c -o image.@LTO@
+jit.@LTO@: $(srcdir)/jit.c
+	$(CC) $(CFLAGS) -c $(srcdir)/jit.c -o jit.@LTO@
 list.@LTO@: $(srcdir)/list.c
 	$(CC) $(CFLAGS) -c $(srcdir)/list.c -o list.@LTO@
 module.@LTO@: $(srcdir)/module.c
@@ -253,6 +257,8 @@ hash.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../inclu
         $(srcdir)/../src/stypes.h  
 image.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
         $(srcdir)/../src/stypes.h  $(srcdir)/schvers.h
+jit.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+        $(srcdir)/../src/stypes.h  $(srcdir)/schvers.h $(srcdir)/codetab.inc
 list.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
         $(srcdir)/../src/stypes.h  
 module.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
