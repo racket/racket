@@ -1,4 +1,8 @@
 
+Version 301.4
+Added just-in-time native-code compiler with a new eval-jit-enabled
+ parameter
+
 Version 300.2
 Added a "stack trace" to the default error display
 Added exn:fail:user and raise-user-error
