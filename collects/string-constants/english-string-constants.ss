@@ -658,7 +658,13 @@ please adhere to these guidelines:
  (quit "Quit")
  (are-you-sure-exit "Are you sure you want to exit?")
  (are-you-sure-quit "Are you sure you want to quit?")
- 
+  ; these next two are only used in the quit/exit dialog
+  ; on the button whose semantics is "dismiss this dialog".
+  ; they are there to provide more flexibility for translations
+  ; in English, they are just cancel.
+ (dont-exit "Cancel") 
+ (dont-quit "Cancel")
+  
  ;;; autosaving
  (error-autosaving "Error autosaving \"~a\".") ;; ~a will be a filename
  (autosaving-turned-off "Autosaving is turned off\nuntil the file is saved.")
