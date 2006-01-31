@@ -675,7 +675,7 @@ add struct contracts for immutable structs?
   (provide anaphoric-contracts
            flat-rec-contract
            flat-murec-contract
-	   union
+	   or/c union
 	   not/c
            =/c >=/c <=/c </c >/c 
            integer-in
@@ -769,7 +769,24 @@ add struct contracts for immutable structs?
       (lambda (v)
         (hash-table-get ht v (lambda () #f))))))     
   
-  (define (union . args)
+  (define-syntax (union stx)
+    (begin
+#;
+      (fprintf (current-error-port)
+               "WARNING: union is deprecated, use or/c (file ~a~a)\n"
+               (let ([file (syntax-source stx)])
+                 (if (path? file)
+                     (path->string file)
+                     (format "~s" file)))
+               (let ([line (syntax-line stx)])
+                 (if (number? line)
+                     (format ", line ~a" line)
+                     "")))
+      (syntax-case stx ()
+        [(_ args ...) (syntax (or/c args ...))]
+        [id (syntax or/c)])))
+  
+  (define (or/c . args)
     (for-each
      (lambda (x) 
        (unless (or (contract? x)
