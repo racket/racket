@@ -577,10 +577,25 @@ static int mz_remap_it(mz_jit_state *jitter, int i)
 #ifdef MZ_USE_JIT_PPC
 static int is_short(Scheme_Object *obj, int fuel)
 {
+  Scheme_Type t;
+
   if (fuel <= 0)
     return fuel;
 
-  switch (SCHEME_TYPE(obj)) {
+  t = SCHEME_TYPE(obj);
+
+  switch (t) {
+  case scheme_syntax_type:
+    {
+      int t;
+      t = SCHEME_PINT_VAL(obj); 
+      if ((t == CASE_LAMBDA_EXPD)
+	  || (t == QUOTE_SYNTAX_EXPD))
+	return fuel - 1;
+      else
+	return 0;
+    }
+    break;
   case scheme_application_type:
     {
       Scheme_App_Rec *app = (Scheme_App_Rec *)obj;
@@ -631,9 +646,12 @@ static int is_short(Scheme_Object *obj, int fuel)
   case scheme_local_type:
   case scheme_local_unbox_type:
   case scheme_unclosed_procedure_type:
-  default:
     return fuel - 1;
-    break;
+  default:
+    if (t > _scheme_values_types_)
+      return fuel - 1;
+    else
+      return 0;
   }
 }
 #endif
