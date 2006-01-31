@@ -96,7 +96,7 @@
             ; (type: tally-row (list-of (union 'off 'on 'unknown 'maybe-off 'maybe-on 'mixed)))
             ; (type: try-row (list-of (union 'maybe-off 'maybe-on 'unknown)))
             (define try-row? (listof (symbols 'maybe-off 'maybe-on 'unknown)))
-            (define try-batch? (listof (union number? (listof try-row?))))
+            (define try-batch? (listof (or/c number? (listof try-row?))))
             
             ;    
             ; (type: board (list-of board-row))

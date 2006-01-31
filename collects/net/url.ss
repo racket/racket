@@ -28,12 +28,12 @@
    (struct path/param (path param)))
 
   (provide/contract
-   (string->url ((union bytes? string?) . -> . url?))
+   (string->url ((or/c bytes? string?) . -> . url?))
    (url->string (url? . -> . string?))
 
    (get-pure-port (opt-> (url?) ((listof string?)) input-port?))
    (get-impure-port (opt-> (url?) ((listof string?)) input-port?))
-   (post-pure-port (opt-> (url? (union false/c bytes?)) ((listof string?)) input-port?))
+   (post-pure-port (opt-> (url? (or/c false/c bytes?)) ((listof string?)) input-port?))
    (post-impure-port (opt-> (url? bytes?) ((listof string?)) input-port?))
    (display-pure-port (input-port? . -> . void?))
    (purify-port (input-port? . -> . string?))
@@ -46,6 +46,6 @@
    (combine-url/relative (url? string? . -> . url?))
    (url-exception? (any/c . -> . boolean?))
    (current-proxy-servers
-    (case-> ((union false/c (listof (list/c string? string? number?))) . -> . void?)
-            (-> (union false/c (listof (list/c string? string? number?))))))))
+    (case-> ((or/c false/c (listof (list/c string? string? number?))) . -> . void?)
+            (-> (or/c false/c (listof (list/c string? string? number?))))))))
 

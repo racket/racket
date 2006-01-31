@@ -80,7 +80,7 @@
    ;; ((frame-has? p) f) =
    ;;    f is a frame and it has a child (in it or a subpanel) that responds #t to p
    (test:button-push
-    ((union (λ (str)
+    ((or/c (λ (str)
               (and (string? str)
                    (test:top-level-focus-window-has?
                     (λ (c)
@@ -104,7 +104,7 @@
     "active frame. Otherwise, it pushes the button argument.")
 
    (test:set-radio-box!
-    ((union string? (is-a?/c radio-box%)) (union string? number?) . -> . void?)
+    ((or/c string? (is-a?/c radio-box%)) (or/c string? number?) . -> . void?)
     (radio-box state)
     "Sets the radio-box to \\var{state}. If \\var{state} is a"
     "string, this function finds the choice with that label and"
@@ -122,7 +122,7 @@
     "Finds a \\iscmclass{radio-box} that has a label \\var{entry}"
     "and sets the radio-box to \\var{entry}.")
    (test:set-check-box!
-    ((union string? (is-a?/c check-box%)) boolean? . -> . void?)
+    ((or/c string? (is-a?/c check-box%)) boolean? . -> . void?)
     (check-box state)
     "Clears the \\iscmclass{check-box} item if \\var{state} is \\rawscm{\\#f}, and sets it"
     "otherwise."
@@ -132,7 +132,7 @@
     "otherwise it uses \\var{check-box} itself.")
 
    (test:set-choice!
-    ((union string? (is-a?/c choice%)) string? . -> . void?)
+    ((or/c string? (is-a?/c choice%)) string? . -> . void?)
     (choice str)
     "Selects \\var{choice}'s item \\var{str}. If \\var{choice} is a string,"
     "this function searches for a \\iscmclass{choice} with a label matching"
@@ -140,7 +140,7 @@
 
    (test:keystroke
     (opt->
-     ((union char? symbol?))
+     ((or/c char? symbol?))
      ((listof (symbols 'alt 'control 'meta 'shift 'noalt 'nocontrol 'nometea 'noshift)))
      void?)
     ((key)

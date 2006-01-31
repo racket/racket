@@ -63,12 +63,12 @@
    "Returns a list of all of the snipclasses in the current eventspace")
   
   (drscheme:eval:expand-program
-   ((union port? drscheme:language:text/pos?)
+   ((or/c port? drscheme:language:text/pos?)
     drscheme:language-configuration:language-settings?
     boolean?
     (-> void?)
     (-> void?)
-    ((union eof-object? syntax? (cons/c string? any/c))
+    ((or/c eof-object? syntax? (cons/c string? any/c))
      (-> any)
      . -> .
      any)
@@ -131,8 +131,8 @@
     (-> void?)
     (-> void?)
     . -> .
-    ((union port? drscheme:language:text/pos?)
-     ((union eof-object? syntax? (cons/c string? any/c))
+    ((or/c port? drscheme:language:text/pos?)
+     ((or/c eof-object? syntax? (cons/c string? any/c))
       (-> any)
       . -> .
       any)
@@ -154,8 +154,8 @@
     (-> void?)
     (-> void?)
     . -> .
-    ((union port? drscheme:language:text/pos?)
-     ((union eof-object? syntax? (cons/c string? any/c))
+    ((or/c port? drscheme:language:text/pos?)
+     ((or/c eof-object? syntax? (cons/c string? any/c))
       (-> any)
       . -> .
       any)
@@ -258,8 +258,8 @@
   
   (drscheme:debug:show-error-and-highlight
    (string? 
-    (union any/c exn?) 
-    (-> (listof srcloc?) (union false/c (listof (list/c (is-a?/c text%) number? number?))) any)
+    (or/c any/c exn?) 
+    (-> (listof srcloc?) (or/c false/c (listof (list/c (is-a?/c text%) number? number?))) any)
     . -> . 
     any)
    (msg exn highlight-errors)
@@ -271,9 +271,9 @@
    "This function should be called on the same thread/eventspace where the error happened.")
   
   (drscheme:debug:make-debug-error-display-handler
-   ((string? (union any/c exn?) . -> . any)
+   ((string? (or/c any/c exn?) . -> . any)
     . -> .
-    (string? (union any/c exn?) . -> . any))
+    (string? (or/c any/c exn?) . -> . any))
    
    (oedh)
    
@@ -419,7 +419,7 @@
   (drscheme:unit:open-drscheme-window
    (case->
     (-> (is-a?/c drscheme:unit:frame%))
-    ((union string? false/c) . -> . (is-a?/c drscheme:unit:frame%)))
+    ((or/c string? false/c) . -> . (is-a?/c drscheme:unit:frame%)))
    (() (filename))
    
    "Opens a drscheme frame that displays \\var{filename},"
@@ -447,9 +447,9 @@
   
   (drscheme:modes:add-mode
    (string?
-    (union false/c (is-a?/c mode:surrogate-text<%>))
+    (or/c false/c (is-a?/c mode:surrogate-text<%>))
     ((is-a?/c drscheme:rep:text%) number? . -> . boolean?)
-    ((union false/c (listof string?)) . -> . boolean?)
+    ((or/c false/c (listof string?)) . -> . boolean?)
     . -> .
     drscheme:modes:mode?)
    (name surrogate repl-submit matches-language)
@@ -517,7 +517,7 @@
    ".")
   
   (drscheme:modes:mode-surrogate
-   (drscheme:modes:mode? . -> . (union false/c (is-a?/c mode:surrogate-text<%>)))
+   (drscheme:modes:mode? . -> . (or/c false/c (is-a?/c mode:surrogate-text<%>)))
    (mode)
    "Extracts the surrogate of the mode."
    ""
@@ -535,7 +535,7 @@
    ".")
   
   (drscheme:modes:mode-matches-language
-   (drscheme:modes:mode? . -> . ((union false/c (listof string?)) . -> . boolean?))
+   (drscheme:modes:mode? . -> . ((or/c false/c (listof string?)) . -> . boolean?))
    (mode)
    "Extracts the language matching predicate of the mode."
    ""
@@ -573,7 +573,7 @@
    "windows. Also binds f5 to Execute and f1 to Help Desk.")
   
   (drscheme:rep:current-rep
-   (-> (union false/c (is-a?/c drscheme:rep:text%)))
+   (-> (or/c false/c (is-a?/c drscheme:rep:text%)))
    ()
    
    "This is a parameter whose value should not be set by tools."
@@ -584,7 +584,7 @@
    "in the context of a repl (eg, the test suite window).")
   
   (drscheme:rep:current-value-port
-   (-> (union false/c port?))
+   (-> (or/c false/c port?))
    ()
    "This is a parameter whose value is a port that"
    "prints in the REPL in blue. It is used to print"
@@ -785,7 +785,7 @@
    ".")
   
   (drscheme:language-configuration:make-language-settings
-   ((union (is-a?/c drscheme:language:language<%>) language-object)
+   ((or/c (is-a?/c drscheme:language:language<%>) language-object)
     any/c
     . -> .
     drscheme:language-configuration:language-settings?)
@@ -814,7 +814,7 @@
   (drscheme:language-configuration:language-settings-language
    (drscheme:language-configuration:language-settings?
     . -> .
-    (union (is-a?/c drscheme:language:language<%>) language-object))
+    (or/c (is-a?/c drscheme:language:language<%>) language-object))
    (ls)
    
    "Extracts the language field of a language-settings.")
@@ -828,9 +828,9 @@
   (drscheme:language-configuration:language-dialog
    (opt->
     (boolean? drscheme:language-configuration:language-settings?)
-    ((union false/c (is-a?/c top-level-window<%>))
+    ((or/c false/c (is-a?/c top-level-window<%>))
      boolean?)
-    (union false/c drscheme:language-configuration:language-settings?))
+    (or/c false/c drscheme:language-configuration:language-settings?))
    ((show-welcome? language-settings-to-show)
     ((parent #t)
      (manuals? #f)))
@@ -867,7 +867,7 @@
     ((is-a?/c vertical-panel%)
      (is-a?/c area-container<%>)
      drscheme:language-configuration:language-settings?)
-    ((union false/c (is-a?/c top-level-window<%>))
+    ((or/c false/c (is-a?/c top-level-window<%>))
      boolean?)
     drscheme:language-configuration:language-settings?)
    ((panel button-panel language-setting)
@@ -970,7 +970,7 @@
    ".")
   
   (drscheme:language:put-executable
-   ((is-a?/c top-level-window<%>) path? boolean? boolean? string? . -> . (union false/c path?))
+   ((is-a?/c top-level-window<%>) path? boolean? boolean? string? . -> . (or/c false/c path?))
    (parent program-filename mred? launcher? title)
    "Calls the MrEd primitive"
    "@flink put-file"
@@ -989,12 +989,12 @@
    "primitive.")
   
   (drscheme:language:create-executable-gui
-   ((union false/c (is-a?/c top-level-window<%>))
-    (union false/c string?)
-    (union (λ (x) (eq? x #t)) (symbols 'launcher 'standalone))
-    (union (λ (x) (eq? x #t)) (symbols 'mzscheme 'mred))
+   ((or/c false/c (is-a?/c top-level-window<%>))
+    (or/c false/c string?)
+    (or/c (λ (x) (eq? x #t)) (symbols 'launcher 'standalone))
+    (or/c (λ (x) (eq? x #t)) (symbols 'mzscheme 'mred))
     . -> .
-    (union false/c
+    (or/c false/c
            (list/c (symbols 'no-show 'launcher 'stand-alone)
                    (symbols 'no-show 'mred 'mzscheme)
                    string?)))
@@ -1017,8 +1017,8 @@
    "otherwise it will indicate the user's choice.")
   
   (drscheme:language:create-module-based-stand-alone-executable 
-   ((union path? string?)
-    (union path? string?) any/c any/c any/c boolean? boolean?
+   ((or/c path? string?)
+    (or/c path? string?) any/c any/c any/c boolean? boolean?
             . -> .
             void?)
    (program-filename
@@ -1055,7 +1055,7 @@
    "\\rawscm{namespace-require}. ")
   
   (drscheme:language:create-module-based-launcher
-   ((union path? string?) (union path? string?) any/c any/c any/c boolean? boolean?
+   ((or/c path? string?) (or/c path? string?) any/c any/c any/c boolean? boolean?
             . -> .
             void?)
    (program-filename
@@ -1305,7 +1305,7 @@
                     . -> .
                     (case-> (any/c . -> . void?) (-> any/c))))
      (create-executable (any/c
-                         (union (is-a?/c dialog%) (is-a?/c frame%))
+                         (or/c (is-a?/c dialog%) (is-a?/c frame%))
                          path?
                          drscheme:teachpack:teachpack-cache?
                          . -> .
@@ -1326,10 +1326,10 @@
      (get-language-name (-> string?))
      (get-language-numbers (-> (cons/c number? (listof number?))))
      (get-language-position (-> (cons/c string? (listof string?))))
-     (get-language-url (-> (union false/c string?)))
+     (get-language-url (-> (or/c false/c string?)))
      (get-one-line-summary (-> string?))
      (get-comment-character (-> (values string? char?)))
-     (get-style-delta (-> (union false/c
+     (get-style-delta (-> (or/c false/c
                                  (is-a?/c style-delta%)
                                  (listof (list/c (is-a?/c style-delta%) number? number?)))))
      (marshall-settings (any/c . -> . printable/c))

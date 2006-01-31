@@ -473,7 +473,7 @@
           ;; in the beginning of the editor
           ;; or #f if the beginning doesn't match "(module "
           (define/contract get-module-filename
-            (-> (union false/c string?))
+            (-> (or/c false/c string?))
             (λ ()
               (let ([open-paren (skip-whitespace 0)])
                 (or (match-paren open-paren "(")
@@ -481,7 +481,7 @@
                     (match-paren open-paren "{")))))
           
           (define/contract match-paren
-            (number? string? . -> . (union false/c string?))
+            (number? string? . -> . (or/c false/c string?))
             (λ (open-paren paren)
               (and (matches open-paren paren)
                    (let ([module (skip-whitespace (+ open-paren 1))])

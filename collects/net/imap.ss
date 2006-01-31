@@ -13,8 +13,8 @@
    [imap-get-hierarchy-delimiter (imap-connection? . -> . bytes?)]
    [imap-list-child-mailboxes
     (case->
-     (imap-connection? (union false/c bytes?) . -> . (listof (list/c (listof symbol?) bytes?)))
-     (imap-connection? (union false/c bytes?) (union false/c bytes?)
+     (imap-connection? (or/c false/c bytes?) . -> . (listof (list/c (listof symbol?) bytes?)))
+     (imap-connection? (or/c false/c bytes?) (or/c false/c bytes?)
                        . -> .
                        (listof (list/c (listof symbol?) bytes?))))])
    

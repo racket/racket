@@ -23,9 +23,9 @@
                     [finddoc-page (string? string? . -> . string?)]
                     [get-doc-name (path? . -> . string?)]
                     [find-doc-directories (-> (listof path?))]
-                    [find-doc-directory (path? . -> . (union false/c path?))]
+                    [find-doc-directory (path? . -> . (or/c false/c path?))]
                     [find-doc-names (-> (listof (cons/c path? string?)))]
-                    [get-index-file (path? . -> . (union false/c path?))])
+                    [get-index-file (path? . -> . (or/c false/c path?))])
   
   (provide find-manuals)
 

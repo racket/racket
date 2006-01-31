@@ -360,7 +360,7 @@
               (unless (eq? new-frame drs-frame)
                 (error 'set-language-level! "didn't get drscheme frame back, got: ~s\n" new-frame)))))))) 
 
-  (provide/contract [check-language-level ((union string? regexp?) . -> . void?)])
+  (provide/contract [check-language-level ((or/c string? regexp?) . -> . void?)])
   ;; checks that the language in the drscheme window is set to the given one.
   ;; clears the definitions, clicks execute and checks the interactions window.
   (define (check-language-level lang-spec)

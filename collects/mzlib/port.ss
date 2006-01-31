@@ -64,7 +64,7 @@
 		    (peek-string-evt (exact-non-negative-integer? exact-non-negative-integer? evt?/false
 								  input-port-with-progress-evts? 
 								  . -> . evt?))
-		    (regexp-match-evt ((union regexp? byte-regexp? string? bytes?)
+		    (regexp-match-evt ((or/c regexp? byte-regexp? string? bytes?)
 				       input-port-with-progress-evts? 
 				       . -> . evt?))
 

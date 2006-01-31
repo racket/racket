@@ -34,54 +34,54 @@
 		       void?)
 		      ((is-a?/c graph-snip<%>)
 		       (is-a?/c graph-snip<%>)
-		       (union false/c (is-a?/c pen%))
-		       (union false/c (is-a?/c pen%))
-		       (union false/c (is-a?/c brush%))
-		       (union false/c (is-a?/c brush%))
+		       (or/c false/c (is-a?/c pen%))
+		       (or/c false/c (is-a?/c pen%))
+		       (or/c false/c (is-a?/c brush%))
+		       (or/c false/c (is-a?/c brush%))
 		       . -> .
 		       void?)
                       ((is-a?/c graph-snip<%>)
 		       (is-a?/c graph-snip<%>)
-		       (union false/c (is-a?/c pen%))
-		       (union false/c (is-a?/c pen%))
-		       (union false/c (is-a?/c brush%))
-		       (union false/c (is-a?/c brush%))
-                       (union false/c string?)
+		       (or/c false/c (is-a?/c pen%))
+		       (or/c false/c (is-a?/c pen%))
+		       (or/c false/c (is-a?/c brush%))
+		       (or/c false/c (is-a?/c brush%))
+                       (or/c false/c string?)
 		       . -> .
 		       void?)
                       ((is-a?/c graph-snip<%>)
 		       (is-a?/c graph-snip<%>)
-		       (union false/c (is-a?/c pen%))
-		       (union false/c (is-a?/c pen%))
-		       (union false/c (is-a?/c brush%))
-		       (union false/c (is-a?/c brush%))
+		       (or/c false/c (is-a?/c pen%))
+		       (or/c false/c (is-a?/c pen%))
+		       (or/c false/c (is-a?/c brush%))
+		       (or/c false/c (is-a?/c brush%))
 		       number?
                        number?
                        . -> .
 		       void?)
                       ((is-a?/c graph-snip<%>)
 		       (is-a?/c graph-snip<%>)
-		       (union false/c (is-a?/c pen%))
-		       (union false/c (is-a?/c pen%))
-		       (union false/c (is-a?/c brush%))
-		       (union false/c (is-a?/c brush%))
+		       (or/c false/c (is-a?/c pen%))
+		       (or/c false/c (is-a?/c pen%))
+		       (or/c false/c (is-a?/c brush%))
+		       (or/c false/c (is-a?/c brush%))
 		       number?
                        number?
-                       (union false/c string?)
+                       (or/c false/c string?)
                        . -> .
 		       void?)))
                     (add-links/text-colors
                      ((is-a?/c graph-snip<%>)
 		       (is-a?/c graph-snip<%>)
-		       (union false/c (is-a?/c pen%))
-		       (union false/c (is-a?/c pen%))
-		       (union false/c (is-a?/c brush%))
-		       (union false/c (is-a?/c brush%))
-                       (union false/c (is-a?/c color%))
-                       (union false/c (is-a?/c color%))
+		       (or/c false/c (is-a?/c pen%))
+		       (or/c false/c (is-a?/c pen%))
+		       (or/c false/c (is-a?/c brush%))
+		       (or/c false/c (is-a?/c brush%))
+                       (or/c false/c (is-a?/c color%))
+                       (or/c false/c (is-a?/c color%))
 		       number?
                        number?
-                       (union false/c string?)
+                       (or/c false/c string?)
                        . -> .
 		       void?)))
 
@@ -351,7 +351,7 @@
           (let* ([parents-and-children (append (get-all-parents snip)
                                                (get-all-children snip))]
                  [rects (eliminate-redundancies (get-rectangles snip parents-and-children))]
-                 [union (union-rects rects)]
+                 [or/c (or/c-rects rects)]
                  [text-height (call-with-values 
                                (λ () (send dc get-text-extent "Label" #f #f 0))
                                (λ (w h a s) h))]
@@ -366,9 +366,9 @@
                                                    (rect-top rect))
                                                    text-height)))])
             (cond
-              [(< (rect-area union)
+              [(< (rect-area or/c)
                   (apply + (map (lambda (x) (rect-area x)) rects)))
-               (invalidate-rect union)]
+               (invalidate-rect or/c)]
               [else
                (for-each invalidate-rect rects)]))))
       
@@ -414,7 +414,7 @@
                                         sy
                                         (+ (+ sx sw) self-offset)
                                         (+ (+ sy sh) self-offset h)))
-                           (union-rects (list main-snip-rect
+                           (or/c-rects (list main-snip-rect
                                               (snip->rect c/p))))])
                  (cons rect (loop (cdr c/p-snips))))]))))
 
@@ -432,7 +432,7 @@
            (- (rect-bottom rect)
               (rect-top rect))))
       
-      (define/private (union-rects rects)
+      (define/private (or/c-rects rects)
         (cond
           [(null? rects) (make-rect 0 0 0 0)]
           [else
@@ -928,7 +928,7 @@
     (and (< (min p1x p2x) x (max p1x p2x))
          (< (min p1y p2y) y (max p1y p2y))))
   
-  ;; find-intersection : number^8 -> (values (union #f number) (union #f number))
+  ;; find-intersection : number^8 -> (values (or/c #f number) (or/c #f number))
   ;; calculates the intersection between two line segments, 
   ;; described as pairs of points. Returns #f if they do not intersect
   (define (find-intersection x1 y1 x2 y2 x3 y3 x4 y4)
@@ -975,7 +975,7 @@
             (values int-x int-y)
             (values #f #f)))))
   
-  ;; find-mb : number number number number -> (values (union #f number) (union #f number))
+  ;; find-mb : number number number number -> (values (or/c #f number) (or/c #f number))
   ;; finds the "m" and "b" constants that describe the
   ;; lines from (x1, y1) to (x2, y2)
   (define (find-mb x1 y1 x2 y2)

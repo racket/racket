@@ -75,7 +75,7 @@
 		    [slide/name/inset slide/title/inset-contract]
 		    [slide/name/tall/inset slide/title/inset-contract]
 		    [slide/name/center/inset slide/title/inset-contract]
-		    [comment (() (listof (union string? pict?)) . ->* . any)])
+		    [comment (() (listof (or/c string? pict?)) . ->* . any)])
   (provide most-recent-slide retract-most-recent-slide re-slide start-at-recent-slide
 	   scroll-transition pause-transition
 	   make-outline

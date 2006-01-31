@@ -20,12 +20,12 @@
                                any/c 
                                (listof path?)
                                any/c
-                               (union false/c string?) . -> . string?))
+                               (or/c false/c string?) . -> . string?))
    (make-results-url (string?
                       search-type? search-how? any/c 
                       (listof path?) 
                       any/c
-                      (union false/c string?)
+                      (or/c false/c string?)
                       . -> .
                       string?))
    (flush-manuals-url string?)

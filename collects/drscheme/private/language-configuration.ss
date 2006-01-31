@@ -1203,7 +1203,7 @@
                                          (port? (list/c (and/c number? integer? exact? (>=/c 0))
                                                         (and/c number? integer? exact? (>=/c 0))
                                                         (and/c number? integer? exact? (>=/c 0))))
-                                         (union syntax? eof-object?))
+                                         (or/c syntax? eof-object?))
                                   (dynamic-require reader-spec 'read-syntax)
                                   (string->symbol (format "~s" lang-position))
                                   'drscheme))

@@ -16,7 +16,7 @@
                      (opt-> (path-string?
                              any/c
                              any/c
-                             (listof (list/c (union boolean? symbol?) any/c))
+                             (listof (list/c (or/c boolean? symbol?) any/c))
                              (listof path-string?)
                              any/c
                              (listof string?))

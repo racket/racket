@@ -5,13 +5,13 @@
   (define-struct path/param (path param))
 
   (provide/contract
-   (struct url ([scheme (union false/c string?)]
-                [user (union false/c string?)]
-                [host (union false/c string?)]
-                [port (union false/c number?)]
+   (struct url ([scheme (or/c false/c string?)]
+                [user (or/c false/c string?)]
+                [host (or/c false/c string?)]
+                [port (or/c false/c number?)]
                 [path-absolute? boolean?]
                 [path (listof path/param?)]
                 [query (listof (cons/c symbol? string?))]
-                [fragment (union false/c string?)]))
-   (struct path/param ([path (union string? (symbols 'up 'same))]
+                [fragment (or/c false/c string?)]))
+   (struct path/param ([path (or/c string? (symbols 'up 'same))]
                        [param (listof string?)]))))

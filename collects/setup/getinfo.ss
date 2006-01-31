@@ -13,8 +13,8 @@
   (define path-or-string? (lambda (x) (or (path? x) (string? x))))
   
   (provide/contract
-   (get-info ((listof path-or-string?) . -> . (union info? boolean?)))
-   (get-info/full (path? . -> . (union info? boolean?)))
+   (get-info ((listof path-or-string?) . -> . (or/c info? boolean?)))
+   (get-info/full (path? . -> . (or/c info? boolean?)))
    (find-relevant-directories (opt-> ((listof symbol?))
                                      ((lambda (x) (or (eq? x 'preferred)
                                                       (eq? x 'all-available))))

@@ -11,7 +11,7 @@
   ;; a snip
   (define snip? (is-a?/c snip%))
   ;; a snip to act as the varying argument to a recursive functions
-  (define linked-snip? (union snip? false/c))
+  (define linked-snip? (or/c snip? false/c))
   ;; a function to act on snips being mapped
   (define snip-visitor? any/c #;((snip?) (listof any/c) . ->* . (void)))
   ;; the rest of the lists passed to a snip mapping function
@@ -24,7 +24,7 @@
    (snip-height (snip? . -> . number?))
    (snip-min-width (snip? . -> . number?))
    (snip-min-height (snip? . -> . number?))
-   (snip-parent (snip? . -> . (union editor? false/c)))
+   (snip-parent (snip? . -> . (or/c editor? false/c)))
    (fold-snip ((snip? any/c . -> . any/c) any/c linked-snip? . -> . any/c))
    (for-each-snip any/c #;((snip-visitor? linked-snip?) rest-lists? . ->* . (void)))
    (map-snip any/c #;((snip-visitor? linked-snip?) rest-lists? . ->* . ((listof any/c))))

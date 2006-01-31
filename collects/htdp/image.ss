@@ -330,37 +330,32 @@ plt/collects/tests/mzscheme/image-test.ss
                     (if (<= pre-x1 pre-x2)
                         (values pre-x1 pre-y1 pre-x2 pre-y2)
                         (values pre-x2 pre-y2 pre-x1 pre-y1))])
-        (let* ([line-w (+ (abs (- x2 x1)) 1)]
-               [line-h (+ (abs (- y2 y1)) 1)])
+        (let* ([line-w (abs (- x2 x1))]
+               [line-h (abs (- y2 y1))]
+               [build-snip
+                (λ (do-draw py-offset)
+                  (let* ([draw-proc 
+                          (make-color-wrapper color-in 'transparent 'solid do-draw)]
+                         [mask-proc
+                          (make-color-wrapper 'black 'transparent 'solid do-draw)]
+                         [line
+                          (make-simple-cache-image-snip (+ line-w 1) (+ line-h 1) px py draw-proc mask-proc)])
+                    (real-overlay/xy 'add-line i (+ px x1) (+ py py-offset) line)))])
           (if (y1 . <= . y2)
-              (let* ([do-draw
-                      (lambda (dc dx dy)
-                        (send dc draw-line 
-                              dx
-                              dy
-                              (+ dx (- x2 x1))
-                              (+ dy (- y2 y1))))]
-                     [draw-proc 
-                      (make-color-wrapper color-in 'transparent 'solid do-draw)]
-                     [mask-proc
-                      (make-color-wrapper 'black 'transparent 'solid do-draw)]
-                     [line
-                      (make-simple-cache-image-snip line-w line-h px py draw-proc mask-proc)])
-                (real-overlay/xy 'add-line i (+ px x1) (+ py y1) line))
-              (let* ([do-draw
-                      (lambda (dc dx dy)
-                        (send dc draw-line 
-                              dx
-                              (+ dy (- line-h 1))
-                              (+ dx (- line-w 1))
-                              dy))]
-                     [draw-proc 
-                      (make-color-wrapper color-in 'transparent 'solid do-draw)]
-                     [mask-proc
-                      (make-color-wrapper 'black 'transparent 'solid do-draw)]
-                     [line
-                      (make-simple-cache-image-snip line-w line-h px py draw-proc mask-proc)])
-                (real-overlay/xy 'add-line i (+ px x1) (+ py y2) line)))))))
+              (build-snip (λ (dc dx dy)
+                            (send dc draw-line 
+                                  dx
+                                  dy
+                                  (+ dx (- x2 x1))
+                                  (+ dy (- y2 y1))))
+                          y1)
+              (build-snip (λ (dc dx dy)
+                            (send dc draw-line 
+                                  dx
+                                  (+ dy line-h)
+                                  (+ dx line-w)
+                                  dy))
+                          y2))))))
 
   (define (text str size color-in)
     (check 'text string? str "string" "first")
@@ -484,6 +479,7 @@ plt/collects/tests/mzscheme/image-test.ss
   (define (make-simple-cache-image-snip w h px py dc-proc mask-proc)
     (let ([w (inexact->exact (ceiling w))]
 	  [h (inexact->exact (ceiling h))])
+      (printf "new w ~s new -h ~s\n" w h)
       (let ([argb-proc 
 	     (lambda (argb-vector dx dy)
 	       (let ([c-bm (build-bitmap (lambda (dc) (dc-proc dc 0 0)) w h)]

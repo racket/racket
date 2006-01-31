@@ -228,7 +228,7 @@
     "default preferences.")
 
    (preferences:add-panel
-    ((union string? (cons/c string? (listof string?)))
+    ((or/c string? (cons/c string? (listof string?)))
      ((is-a?/c area-container-window<%>) 
       . ->d .
       (λ (parent)
@@ -494,13 +494,13 @@
     (opt->
      ()
      (string?
-      (union false/c path?)
+      (or/c false/c path?)
       boolean?
       string?
-      (union false/c byte-regexp?)
+      (or/c false/c byte-regexp?)
       string?
-      (union (is-a?/c top-level-window<%>) false/c))
-     (union false/c path?))
+      (or/c (is-a?/c top-level-window<%>) false/c))
+     (or/c false/c path?))
     (()
      ((name "Untitled")
       (directory #f)
@@ -518,12 +518,12 @@
    (finder:common-get-file
     (opt->
      ()
-     ((union path? false/c)
+     ((or/c path? false/c)
       string?
-      (union byte-regexp? false/c)
+      (or/c byte-regexp? false/c)
       string?
-      (union false/c (is-a?/c top-level-window<%>)))
-     (union path? false/c))
+      (or/c false/c (is-a?/c top-level-window<%>)))
+     (or/c path? false/c))
     (()
      ((directory #f)
       (prompt "Select File")
@@ -540,13 +540,13 @@
     (opt->
      ()
      (string?
-      (union false/c path?)
+      (or/c false/c path?)
       boolean?
       string?
-      (union false/c byte-regexp?)
+      (or/c false/c byte-regexp?)
       string?
-      (union (is-a?/c top-level-window<%>) false/c))
-     (union false/c path?))
+      (or/c (is-a?/c top-level-window<%>) false/c))
+     (or/c false/c path?))
     (()
      ((name "Untitled")
       (directory #f)
@@ -564,12 +564,12 @@
    (finder:std-get-file
     (opt->
      ()
-     ((union path? false/c)
+     ((or/c path? false/c)
       string?
-      (union byte-regexp? false/c)
+      (or/c byte-regexp? false/c)
       string?
-      (union false/c (is-a?/c top-level-window<%>)))
-     (union path? false/c))
+      (or/c false/c (is-a?/c top-level-window<%>)))
+     (or/c path? false/c))
     (()
      ((directory #f)
       (prompt "Select File")
@@ -586,13 +586,13 @@
     (opt->
      ()
      (string?
-      (union false/c path?)
+      (or/c false/c path?)
       boolean?
       string?
-      (union false/c byte-regexp?)
+      (or/c false/c byte-regexp?)
       string?
-      (union (is-a?/c top-level-window<%>) false/c))
-     (union false/c path?))
+      (or/c (is-a?/c top-level-window<%>) false/c))
+     (or/c false/c path?))
     (()
      ((name "Untitled")
       (directory #f)
@@ -614,12 +614,12 @@
    (finder:get-file
     (opt->
      ()
-     ((union path? false/c)
+     ((or/c path? false/c)
       string?
-      (union byte-regexp? string? false/c)
+      (or/c byte-regexp? string? false/c)
       string?
-      (union false/c (is-a?/c top-level-window<%>)))
-     (union path? false/c))
+      (or/c false/c (is-a?/c top-level-window<%>)))
+     (or/c path? false/c))
     (()
      ((directory #f)
       (prompt "Select File")
@@ -639,12 +639,12 @@
    (finder:common-get-file-list
     (opt->
      ()
-     ((union false/c path?)
+     ((or/c false/c path?)
       string?
-      (union false/c byte-regexp?)
+      (or/c false/c byte-regexp?)
       string?
-      (union false/c (is-a?/c top-level-window<%>)))
-     (union (listof path?) false/c))
+      (or/c false/c (is-a?/c top-level-window<%>)))
+     (or/c (listof path?) false/c))
     (()
      ((directory #f)
       (prompt "Select File")
@@ -699,7 +699,7 @@
     (handler)
     "Extracts the name from a handler.")
    (handler:handler-extension
-    (handler:handler? . -> . (union (path? . -> . boolean?) (listof string?)))
+    (handler:handler? . -> . (or/c (path? . -> . boolean?) (listof string?)))
     (handler)
     "Extracts the extension from a handler.")
    (handler:handler-handler
@@ -708,8 +708,8 @@
     "Extracs the handler's handling function")
    (handler:insert-format-handler
     (string?
-     (union string? (listof string?) (path? . -> . boolean?))
-     (path? . -> . (union false/c (is-a?/c frame:editor<%>)))
+     (or/c string? (listof string?) (path? . -> . boolean?))
+     (path? . -> . (or/c false/c (is-a?/c frame:editor<%>)))
      . -> .
      void?)
     (name pred handler)
@@ -744,9 +744,9 @@
 
    (handler:edit-file
     (opt->
-     ((union path? false/c))
+     ((or/c path? false/c))
      ((-> (is-a?/c frame:editor<%>)))
-     (union false/c (is-a?/c frame:editor<%>)))
+     (or/c false/c (is-a?/c frame:editor<%>)))
     ((filename)
      ((make-default (λ () ((handler:current-create-new-window) filename)))))
     "This function creates a frame or re-uses an existing frame to edit a file. "
@@ -790,8 +790,8 @@
 
    (handler:current-create-new-window
     (case->
-     (((union false/c path?) . -> . (is-a?/c frame%)) . -> . void)
-     (-> ((union false/c string?) . -> . (is-a?/c frame%))))
+     (((or/c false/c path?) . -> . (is-a?/c frame%)) . -> . void)
+     (-> ((or/c false/c string?) . -> . (is-a?/c frame%))))
     ((new-window-handler) ())
     "This is a parameter that controls how the framework"
     "creates new application windows."
@@ -805,7 +805,7 @@
     "\\end{schemedisplay}")
 
    (handler:open-file
-    (-> (union false/c (is-a?/c frame:basic<%>)))
+    (-> (or/c false/c (is-a?/c frame:basic<%>)))
     ()
     "This function queries the user for a filename and opens the file for"
     "editing. It uses "
@@ -1298,7 +1298,7 @@
    (scheme:text-balanced?
     (opt->
      ((is-a?/c text%))
-     (number? (union false/c number?))
+     (number? (or/c false/c number?))
      boolean?)
    ((text)
     ((start 0) (end #f)))
@@ -1516,7 +1516,7 @@
      "Builds a printed representation for a style-delta.")
     
     (color-prefs:unmarshall-style
-     (-> printable/c (union false/c (is-a?/c style-delta%)))
+     (-> printable/c (or/c false/c (is-a?/c style-delta%)))
      (marshalled-style-delta)
      "Builds a style delta from its printed representation."
      "Returns \\scheme|#f| if the printed form cannot be parsed.")

@@ -20,16 +20,16 @@
      (-> any)
      (string? any/c . -> . void?)
      (string? any/c . -> . void?)
-     (string? string? string? path? (union string? number? false/c) any/c . -> . void?)
+     (string? string? string? path? (or/c string? number? false/c) any/c . -> . void?)
      . -> .
-     (union string? false/c))]
+     (or/c string? false/c))]
    
    (build-string-finds/finds (string? 
                               boolean?
                               boolean?
                               . -> . 
                               (values (listof string?) 
-                                      (listof (union regexp? string?)))))
+                                      (listof (or/c regexp? string?)))))
    
    (non-regexp (string? . -> . string?)))
 

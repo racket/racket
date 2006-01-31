@@ -7,12 +7,12 @@
   (provide/contract
    [make-bitmap-label (opt->
                        (string?
-                        (union path-string?
+                        (or/c path-string?
                                (is-a?/c bitmap%)))
                        ((is-a?/c font%))
                        (is-a?/c bitmap%))]
    [bitmap-label-maker (string?
-			(union path-string?
+			(or/c path-string?
 			       (is-a?/c bitmap%))
 			. -> .
 			(any/c . -> . (is-a?/c bitmap%)))])

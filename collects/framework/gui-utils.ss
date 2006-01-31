@@ -150,9 +150,9 @@
      (string?
       string?)
      (boolean?
-      (union false/c
-	     (is-a?/c frame%)
-	     (is-a?/c dialog%)))
+      (or/c false/c
+            (is-a?/c frame%)
+            (is-a?/c dialog%)))
      (symbols 'continue 'save 'cancel))
     ((filename action)
      ((can-save-now? #f)
@@ -175,7 +175,7 @@
       string?)
      (string?
       any/c
-      (union false/c (is-a?/c frame%) (is-a?/c dialog%))
+      (or/c false/c (is-a?/c frame%) (is-a?/c dialog%))
       (symbols 'app 'caution 'stop))
      any/c)
     ((message true-choice false-choice)
