@@ -59,7 +59,7 @@ static void *stack_cache_pop_code;
 
 typedef struct {
   jit_state js;
-  unsigned long limit;
+  char *limit;
   int extra_pushed, max_extra_pushed;
   int depth, max_depth;
   int *mappings; /* low bit indicates mode: orig pushed (0) or new pushed (1);
@@ -129,7 +129,7 @@ int stack_cache_stack_pos = 0;
 /*========================================================================*/
 
 #define _jit (jitter->js)
-#define PAST_LIMIT() ((unsigned long)jit_get_ip().ptr > jitter->limit)
+#define PAST_LIMIT() (jit_get_ip().ptr > jitter->limit)
 #define CHECK_LIMIT() if (PAST_LIMIT()) return 0;
 
 #define JIT_CACHE_SIZE_LIMIT 65536
@@ -198,7 +198,7 @@ static void *generate_one(mz_jit_state *old_jitter,
       /* this is a recursive generate, so use leftover space in
 	 old_jitter's buffer */
       buffer = get_end_pointer(old_jitter);
-      size = (old_jitter->limit - (unsigned long)buffer);
+      size = ((char *)old_jitter->limit - (char *)buffer);
       if (size < JIT_BUFFER_INIT_SIZE) {
 	old_jitter = NULL;
 	buffer = NULL;
@@ -221,7 +221,7 @@ static void *generate_one(mz_jit_state *old_jitter,
     }
       
     (void)jit_set_ip(buffer).ptr;
-    jitter->limit = (unsigned long)buffer + size_pre_retained - padding;
+    jitter->limit = (char *)buffer + size_pre_retained - padding;
     if (known_size)
       jitter->retain_start = (void *)jitter->limit;
     else
@@ -239,7 +239,7 @@ static void *generate_one(mz_jit_state *old_jitter,
       mz_retain_it(jitter, save_ptr);
     }
 
-    jitter->limit += padding;
+    jitter->limit = (char *)jitter->limit + padding;
     if (PAST_LIMIT() || (jitter->retain_start
 			 && (jitter->retained > num_retained))) {
       scheme_console_printf("JIT buffer overflow!!\n");
