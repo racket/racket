@@ -13,7 +13,7 @@
   (define mark-list? (listof procedure?))
   
   (provide/contract 
-   ;[make-debug-info (-> any/c binding-set? varref-set? any/c boolean? syntax?)] ; (location tail-bound free label lifting? -> mark-stx)
+   ;[make-debug-info (-> any/c binding-set? varref-set? any/c boolean? syntax?)] ; (location tail-bound free label lifting? offset-index -> mark-stx)
    [expose-mark (-> mark? (list/c any/c symbol? (listof (list/c identifier? any/c))))]
    [make-top-level-mark (syntax? . -> . syntax?)]
    [lookup-all-bindings ((identifier? . -> . boolean?) mark-list? . -> . (listof any/c))]
@@ -155,11 +155,11 @@
   ;;
   ;; make-debug-info builds the thunk which will be the mark at runtime.  It contains 
   ;; a source expression and a set of binding/value pairs.
-  ;; (syntax-object BINDING-SET VARREF-SET any boolean) -> debug-info)
+  ;; (syntax-object BINDING-SET VARREF-SET any boolean (union/c false/c integer?)) -> debug-info)
   ;;
   ;;;;;;;;;;
      
-  (define (make-debug-info source tail-bound free-vars label lifting?)
+  (define (make-debug-info source tail-bound free-vars label lifting? offset-index)
        (let*-2vals ([kept-vars (binding-set-varref-set-intersect tail-bound free-vars)])
          (if lifting?
              (let*-2vals ([let-bindings (filter (lambda (var) 
@@ -172,9 +172,9 @@
                                                                  (syntax-property var 'stepper-binding-type)))))
                                                 kept-vars)]
                           [lifter-syms (map get-lifted-var let-bindings)])
-               (make-full-mark source label (append kept-vars lifter-syms)))
+               (make-full-mark (syntax-property source 'stepper-offset-index offset-index) label (append kept-vars lifter-syms)))
              ;; I'm not certain that non-lifting is currently tested: 2005-12, JBC
-             (make-full-mark source label kept-vars))))
+             (make-full-mark (syntax-property source 'stepper-offset-index offset-index) label kept-vars))))
   
   
   (define (make-top-level-mark source-expr)

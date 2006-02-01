@@ -49,14 +49,14 @@
 
   (define program-expander-contract
     ((-> void?) ; init
-     ((union eof-object? syntax? (cons/c string? any/c)) (-> void?) . -> . void?) ; iter
+     ((or/c eof-object? syntax? (cons/c string? any/c)) (-> void?) . -> . void?) ; iter
      . -> .
      void?))
     
 
   (provide/contract [go (program-expander-contract       ; program-expander
                          (step-result? . -> . void?)     ; receive-result
-                         (union render-settings? false/c) ; render-settings
+                         (or/c render-settings? false/c) ; render-settings
                          boolean?                        ; track-inferred-names?
                          . -> .
                          void?)])
@@ -67,11 +67,11 @@
     
     (local
         
-        (;; finished-exps: (listof (list/c syntax-object? (union number? false?)( -> any)))
+        (;; finished-exps: (listof (list/c syntax-object? (or/c number? false?)( -> any)))
          ;;  because of mutation, these cannot be fixed renderings, but must be re-rendered at each step.
          (define finished-exps null)
          (define/contract add-to-finished
-           ((-> syntax?) (union (listof natural-number/c) false/c) (-> any) . -> . void?)
+           ((-> syntax?) (or/c (listof natural-number/c) false/c) (-> any) . -> . void?)
            (lambda (exp-thunk lifting-indices getter)
              (set! finished-exps (append finished-exps (list (list exp-thunk lifting-indices getter))))))
          

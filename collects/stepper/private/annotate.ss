@@ -22,7 +22,7 @@
   (provide/contract
    [annotate
     (-> syntax?                         ; syntax to annotate
-        (opt->* ((union continuation-mark-set? false/c) 
+        (opt->* ((or/c continuation-mark-set? false/c) 
                  break-kind?)
                 (list?)
                 (any/c))                 ; procedure for runtime break
@@ -328,7 +328,7 @@
 
     (define (top-level-annotate/inner exp source-exp defined-name)
       (let*-2vals ([(annotated dont-care)
-                    (annotate/inner exp 'all #f defined-name)])
+                    (annotate/inner exp 'all #f defined-name #f)])
         #`(with-continuation-mark #,debug-key 
             #,(make-top-level-mark source-exp)
             ;; inserting eta-expansion to prevent destruction of top-level mark
@@ -348,7 +348,7 @@
     ; a) an annotated s-expression
     ; b) a list of varrefs for the variables which occur free in the expression
     ;
-    ;(syntax-object BINDING-SET bool bool (union #f symbol (list binding symbol)) -> 
+    ;(syntax-object BINDING-SET bool bool (or/c #f symbol (list binding symbol)) -> 
     ;          sexp (list-of z:varref))
     
     
@@ -368,8 +368,9 @@
                                                       ;                                 
     
     (define annotate/inner
-      ;(-> syntax? binding-set? boolean? (union false/c syntax? (list/p syntax? syntax?)) (vector/p syntax? binding-set?))
-      (lambda (exp tail-bound pre-break? procedure-name-info)
+      #;(syntax? binding-set? boolean? (or/c false/c syntax? (list/p syntax? syntax?)) (or/c false/c integer?)
+               . -> . (vector/p syntax? binding-set?))
+      (lambda (exp tail-bound pre-break? procedure-name-info offset-counter)
         
         (cond [(syntax-property exp 'stepper-skipto)                
                (let* ([free-vars-captured #f] ; this will be set!'ed
@@ -379,7 +380,7 @@
                                   (syntax-property exp 'stepper-skipto) 
                                   exp 
                                   (lambda (subterm)
-                                    (let*-2vals ([(stx free-vars) (annotate/inner subterm tail-bound pre-break? procedure-name-info)])
+                                    (let*-2vals ([(stx free-vars) (annotate/inner subterm tail-bound pre-break? procedure-name-info offset-counter)])
                                       (set! free-vars-captured free-vars)
                                       stx)))])
                  (2vals (wcm-wrap
@@ -393,50 +394,50 @@
               [else
                (let*
                    ;; recurrence procedures, used to recur on sub-expressions:
-                   ([tail-recur (lambda (exp) (annotate/inner exp tail-bound #t procedure-name-info))]
-                    [non-tail-recur (lambda (exp) (annotate/inner exp null #f #f))]
-                    [result-recur (lambda (exp) (annotate/inner exp null #f procedure-name-info))]
-                    [set!-rhs-recur (lambda (exp name) (annotate/inner exp null #f name))]
+                   ([tail-recur (lambda (exp) (annotate/inner exp tail-bound #t procedure-name-info #f))]
+                    [non-tail-recur (lambda (exp) (annotate/inner exp null #f #f #f))]
+                    [result-recur (lambda (exp) (annotate/inner exp null #f procedure-name-info #f))]
+                    [set!-rhs-recur (lambda (exp name) (annotate/inner exp null #f name #f))]
                     [let-rhs-recur (lambda (exp binding-names dyn-index-syms)
                                      (let* ([proc-name-info 
                                              (if (not (null? binding-names))
                                                  (list (car binding-names) (car dyn-index-syms))
                                                  #f)])
-                                       (annotate/inner exp null #f proc-name-info)))]
-                    [lambda-body-recur (lambda (exp) (annotate/inner exp 'all #t #f))]
+                                       (annotate/inner exp null #f proc-name-info #f)))]
+                    [lambda-body-recur (lambda (exp) (annotate/inner exp 'all #t #f #f))]
 
                     ; let bodies have a startling number of recurrence patterns. ouch!  
                     
                     ;; no pre-break, tail w.r.t. new bindings:
                     [let-body-recur/single 
                      (lambda (exp bindings)
-                         (annotate/inner exp (binding-set-union (list tail-bound bindings)) #f procedure-name-info))]
+                         (annotate/inner exp (binding-set-union (list tail-bound bindings)) #f procedure-name-info #f))]
                     
                     ;; no pre-break, non-tail w.r.t. new bindings
                     [let-body-recur/first
-                     (lambda (exp)
+                     (lambda (exp-n-index)
                        (apply-to-first-of-2vals
                         normal-break/values-wrap
-                        (non-tail-recur exp)))]
+                        (annotate/inner (car exp-n-index) null #f #f (cadr exp-n-index))))]
                     
                     ;; yes pre-break, non-tail w.r.t. new bindings
                     [let-body-recur/middle
-                     (lambda (exp)
+                     (lambda (exp-n-index)
                        (apply-to-first-of-2vals
                         normal-break/values-wrap
-                        (annotate/inner exp null #t #f)))]
+                        (annotate/inner (car exp-n-index) null #t #f (cadr exp-n-index))))]
                     
                     ;; yes pre-break, tail w.r.t. new bindings:
                     [let-body-recur/last
-                     (lambda (exp bindings)
-                         (annotate/inner exp (binding-set-union (list tail-bound bindings)) #t procedure-name-info))]
+                     (lambda (exp-n-index bindings)
+                         (annotate/inner (car exp-n-index) (binding-set-union (list tail-bound bindings)) #t procedure-name-info (cadr exp-n-index)))]
                     
                     ;; different flavors of make-debug-info allow users to provide only the needed fields:
                     
                     [make-debug-info-normal (lambda (free-bindings)
-                                              (make-debug-info exp tail-bound free-bindings 'none #t))]
+                                              (make-debug-info exp tail-bound free-bindings 'none #t offset-counter))]
                     [make-debug-info-app (lambda (tail-bound free-bindings label)
-                                           (make-debug-info exp tail-bound free-bindings label #t))]
+                                           (make-debug-info exp tail-bound free-bindings label #t offset-counter))]
                     [make-debug-info-let (lambda (free-bindings binding-list let-counter)
                                            (make-debug-info exp 
                                                             (binding-set-union (list tail-bound 
@@ -446,7 +447,8 @@
                                                                                     binding-list
                                                                                     (list let-counter))) ; NB using bindings as varrefs
                                                             'let-body
-                                                            #t))]
+                                                            #t
+                                                            offset-counter))]
                     [outer-wcm-wrap (if pre-break?
                                         wcm-pre-break-wrap
                                         wcm-wrap)]
@@ -459,6 +461,14 @@
                                               annotated)
                               free-vars))]
                     
+                    ;; taken from SRFI 1:
+                    [iota 
+                     (lambda (n) (build-list n (lambda (x) x)))]
+                    
+                    [with-indices 
+                     (lambda (exps)
+                       (map list exps (iota (length exps))))]
+
                     
                     ;    @@                 @@         @@        
                     ;     @                  @          @        
@@ -587,10 +597,10 @@
                            [lifted-vars (apply append lifted-var-sets)]
                            [(annotated-vals free-varref-sets-vals)
                             (2vals-map let-rhs-recur vals binding-sets lifted-var-sets)]
-                           [bodies-list (syntax->list #'bodies)]
+                           [bodies-list (with-indices (syntax->list #'bodies))]
                            [(annotated-body free-varrefs-body)
                             (if (= (length bodies-list) 1)
-                                (let-body-recur/single (car bodies-list) binding-list)
+                                (let-body-recur/single (caar bodies-list) binding-list)
                                 ;; like a map, but must special-case first and last exps:
                                 (let*-2vals
                                     ([first (car bodies-list)]
@@ -710,7 +720,7 @@
                     ;     @     @    
                     ;   @@@@@  @@@@@ 
                     
-                    ; if-abstraction: (-> syntax? syntax? (union false/c syntax?) (values syntax? varref-set?))
+                    ; if-abstraction: (-> syntax? syntax? (or/c false/c syntax?) (values syntax? varref-set?))
                     [if-abstraction
                      (lambda (test then else) 
                        (let*-2vals

@@ -14,7 +14,7 @@
   
   (define program-expander-contract
     (-> (-> void?) ; init
-        (-> (union eof-object? syntax? (cons/c string? any/c)) (-> void?) void?) ; iter
+        (-> (or/c eof-object? syntax? (cons/c string? any/c)) (-> void?) void?) ; iter
         void?))
    
   (provide debugger-model@)

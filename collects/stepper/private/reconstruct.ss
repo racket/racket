@@ -16,7 +16,7 @@
 
   (provide/contract 
    [reconstruct-completed (syntax? 
-                           (union (listof natural-number/c) false/c)
+                           (or/c (listof natural-number/c) false/c)
                            (-> (listof any/c))
                            render-settings? 
                            . -> .
@@ -24,12 +24,12 @@
    
    ;; front ends for reconstruct-current
    [reconstruct-left-side (mark-list?
-                           (union (listof any/c) false/c)
+                           (or/c (listof any/c) false/c)
                            render-settings?
                            . -> .
                            (listof syntax?))]
    [reconstruct-right-side (mark-list?
-                            (union (listof any/c) false/c)
+                            (or/c (listof any/c) false/c)
                             render-settings?
                             . -> .
                             (listof syntax?))]
@@ -39,7 +39,7 @@
                               (list/c (listof syntax?) (listof syntax?)))]
    
    [final-mark-list? (-> mark-list? boolean?)]
-   [skip-step? (-> break-kind? (union mark-list? false/c) render-settings? boolean?)]
+   [skip-step? (-> break-kind? (or/c mark-list? false/c) render-settings? boolean?)]
    [step-was-app? (-> mark-list? boolean?)])
   
   (define nothing-so-far (gensym "nothing-so-far-"))
@@ -233,7 +233,7 @@
 ;                      new-index)]))))
   
   ; construct-lifted-name 
-  ; (-> syntax? (union num? false/c) symbol?)
+  ; (-> syntax? (or/c num? false/c) symbol?)
   
   (define/contract construct-lifted-name
     (-> syntax? number? syntax?)
@@ -522,7 +522,7 @@
  ;     ;;;;   ;;;   ;;;   ;   ;         ;;;    ;;;    ;; ;  ;     ;;;   ;;;;          ;;;; ;    ;  ; ;;;   ;   
                                                                                                    ;           
                                                                                                    ;           
-                                                                                                               
+                                                         7                                                      
 
   ; recon-source-expr 
   
@@ -539,7 +539,7 @@
   (define/contract recon-source-expr 
      (-> syntax? mark-list? binding-set? binding-set? render-settings? syntax?)
      (lambda (expr mark-list dont-lookup use-lifted-names render-settings)
-      (if (syntax-property expr 'stepper-skipto)
+       (if (syntax-property expr 'stepper-skipto)
           (skipto-reconstruct
            (syntax-property expr 'stepper-skipto)
            expr
@@ -857,6 +857,7 @@
                      (recon-source-expr expr mark-list null null render-settings))]
                   [top-mark (car mark-list)]
                   [exp (mark-source top-mark)]
+                  [iota (lambda (x) (build-list x (lambda (x) x)))]
                   
                   [recon-let
                    (lambda ()
@@ -910,8 +911,19 @@
                                                    (map reconstruct-remaining-def (cdr not-done-glumps))))
                                          null)]
                                     [recon-bindings (append before-bindings after-bindings)]
-                                    [rectified-bodies (map (lambda (body) (recon-source-expr body mark-list binding-list binding-list render-settings))
-                                                           (syntax->list (syntax bodies)))])
+                                    ;; there's a terrible tangle of invariants here.  Among them:  
+                                    ;; num-defns-done = (length binding-sets) IFF the so-far has a 'user-stepper-offset' index
+                                    ;; that is not #f (that is, we're evaluating the body...)                                    
+                                    [so-far-offset-index (>>> (and (not (eq? so-far nothing-so-far)) 
+                                                                   (syntax-property so-far 'user-stepper-offset-index)))]
+                                    [bodies (syntax->list (syntax bodies))]
+                                    [rectified-bodies 
+                                     (map (lambda (body offset-index)
+                                            (if (eq? offset-index so-far-offset-index)
+                                                so-far
+                                                (recon-source-expr body mark-list binding-list binding-list render-settings)))
+                                          bodies
+                                          (iota (length bodies)))])
                          (attach-info #`(label #,recon-bindings #,@rectified-bodies) exp))))])
              (kernel:kernel-syntax-case exp #f 
                ; variable references
@@ -1094,7 +1106,7 @@
                         #f))])]))
 
          ; uncomment to see all breaks coming in:
-         #;(define _ (printf "break-kind: ~a\ninnermost source: ~a\nreturned-value-list: ~a\n" 
+         (define _ (printf "break-kind: ~a\ninnermost source: ~a\nreturned-value-list: ~a\n" 
                            break-kind
                            (and (pair? mark-list)
                                 (syntax-object->datum (mark-source (car mark-list))))
@@ -1115,6 +1127,8 @@
                                              (error 'reconstruct "context expected one value, given ~v" returned-value-list))
                                            (recon-value (car returned-value-list) render-settings))
                                     (recon-source-expr (mark-source (car mark-list)) mark-list null null render-settings))])
+                (>>> innermost)
+                (>>> (syntax-property innermost 'user-stepper-offset-index))
                 (unwind (recon (mark-as-highlight innermost) (cdr mark-list) #f) #f)))
              ((double-break)
               (let* ([source-expr (mark-source (car mark-list))]
