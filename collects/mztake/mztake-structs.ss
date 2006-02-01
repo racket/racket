@@ -45,6 +45,7 @@
                                 exceptions    ; (an event stream) Exceptions thrown during the evaluation of the target
                                 main-client   ; the main client module that will be run
                                 clients       ; list of all the clients attached to this process
+                                top-level
                                 
                                 where         ; a behavior signaling each position where we pause
                                 marks))       ; while paused, the marks at the point of the pause (else false)

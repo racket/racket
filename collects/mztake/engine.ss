@@ -240,6 +240,13 @@
            (debug-process-clients process))
      true))
   
+  (define ((record-top-level-id process) module-name var-name val)
+    (let* ([modules (debug-process-top-level process)]
+           [bindings (hash-get modules module-name (lambda () (make-hash)))])
+      (unless (hash-mem? modules module-name)
+        (hash-put! modules module-name bindings))
+      (printf "record-top-level-id ~a ~a ~a ~n" module-name var-name val)
+      (hash-put! bindings var-name val)))
   
   (define (launch-sandbox process)
     (unless (debug-process-main-client process)
@@ -274,7 +281,8 @@
                              (break? process client)
                              (break-before process client)
                              (break-after process client)
-                             (lambda (kind bound binding) (void)))])
+                             (lambda (kind bound binding) (void))
+                             (record-top-level-id process))])
                annotated-stx)))))) 
   
   (define (process:new->running process)
@@ -337,6 +345,8 @@
                                           (frp:event-receiver) ; exceptions
                                           false ; main-client
                                           empty ; clients
+                                          (make-hash 'equal ) ; top-level
+                                          
                                           false ; where
                                           false)]) ; marks
       (set! all-debug-processes (cons process all-debug-processes))
