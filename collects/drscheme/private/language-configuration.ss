@@ -1148,7 +1148,6 @@
                                (λ ()
                                  (map (λ (lang-position) #f)
                                       lang-positions)))])
-              (printf "dir ~s lang-positions ~s\n" directory lang-positions)
               (cond
                 [(and (list? lang-positions)
                       (andmap (λ (lang-position numbers)
@@ -1178,7 +1177,7 @@
 				;; approximation (no good test, really)
 				;; since it depends on the value of a mz
 				;; parameter to interpret the module spec
-                                (or (eq? x #f) (symbol? x) (pair? x)))
+                                (or (string? x) (eq? x #f) (symbol? x) (pair? x)))
                               reader-specs)
                       
                       (= (length lang-positions)
@@ -1203,12 +1202,17 @@
                                                                    (format "uncaught exception: ~s" x)))
                                                   read-syntax/namespace-introduce)])
                                  (contract
-                                  (opt-> (any/c)
-                                         (port? (list/c (and/c number? integer? exact? (>=/c 0))
-                                                        (and/c number? integer? exact? (>=/c 0))
-                                                        (and/c number? integer? exact? (>=/c 0))))
+                                  (opt-> ()
+                                         (any/c port?)
                                          (or/c syntax? eof-object?))
-                                  (dynamic-require reader-spec 'read-syntax)
+                                  (dynamic-require
+                                   (cond
+                                     [(string? reader-spec)
+                                      (build-path
+                                       directory 
+                                       (platform-independent-string->path reader-spec))]
+                                     [else reader-spec])
+                                   'read-syntax)
                                   (string->symbol (format "~s" lang-position))
                                   'drscheme))
                                read-syntax/namespace-introduce)])
