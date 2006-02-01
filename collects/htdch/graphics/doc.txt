@@ -1,6 +1,9 @@
-This graphics package provides libraries for creating images and modeling in a visual world.
+This graphics package provides libraries for creating images and modeling
+in a visual world. 
 
-The package includes the following classes, each to be discussed in their own section:
+The package includes the following classes, each to be discussed in their
+own section: 
+
 Posn
 Image
 PictureFactory
@@ -43,13 +46,15 @@ class Image:
 | int height()                                |
 +---------------------------------------------+
 
-An Image is created either by inserting a Special Image into DrScheme or by building an Image using the PictureFactory.
+An Image is created either by inserting a Special Image into DrScheme or by 
+building an Image using the PictureFactory. 
 
 Headers & Purposes:
 //Return the pinhole for this Image, typically its center point
 Posn getPinhole()
 
-//Create an Image like this Image, with its pinhole offset by p from this pinhole
+//Create an Image like this Image, with its pinhole offset by p from this
+// pinhole 
 Image movePinhole( Posn p )
 
 //Create an Image like this Image, with its pinhole at p
@@ -58,7 +63,7 @@ Image putPinhole( Posn p )
 //Create an Image by placing i over this Image at the pinholes
 Image overlay( Image i )
 
-//Create an Image by placing i over this Image, centering i's pinhole at p
+//Create an Image by placing i over this Image, centering i's pinhole at p 
 Image overlayXY( Image i, Posn p)
 
 //Create an Image by adding a line to this Image
@@ -92,7 +97,8 @@ class PictureFactory :
 +-----------------------------------------------+
 
 A PictureFactory is created by calling new PictureFactory(boolean).
-If the boolean is true, then the pinhole of created images will be in the center, otherwise the top left.
+If the boolean is true, then the pinhole of created images will be in the
+center, otherwise the top left. 
 
 Possible values for mode, "solid" "outline"
 
@@ -106,7 +112,8 @@ Image makeRectangle( int width, int height, String mode, Color c)
 //Create an Ellipse with width and height and color c, in the style of mode
 Image makeEllipse( int width, int height, String mode, Color c) 
 
-//Create an equalateral triangle with edge length edge and color c, in the style of mode
+//Create an equalateral triangle with edge length edge and color c, 
+// in the style of mode
 Image makeTriangle( int edge, String mode, Color c)
 
 //Create a line with end position to (start is 0,0) and color c
@@ -115,29 +122,33 @@ Image makeLine( Posn to, Color c)
 //Create a text Image with the given text, of height ptSize and color c
 Image makeText( String text, int ptSize, Color c)
 
-Note: PictureWorld at present ignores the boolean argument and always assumes its true.
+Note: PictureWorld at present ignores the boolean argument and always
+assumes its true. 
 
 -----------------------
 
 abstract class Color:
 
-                                                             +-------+                                                             
-                                                             | Color |                                                             
-                                                             +-------+                                                             
-                                                             +-------+                                                             
-                                                                / \                                                                
-                                                                ---                                                                
-                                                                 |                                                                 
-      ----------------------------------------------------------------------------------------------------------------------       
-      |           |            |            |            |             |             |            |           |            |       
-  +-------+    +------+    +-------+    +-------+    +--------+    +--------+    +--------+    +-----+    +-------+    +--------+  
-  | Black |    | Blue |    | Brown |    | Green |    | Purple |    | Orange |    | Purple |    | Red |    | White |    | Yellow |  
-  +-------+    +------+    +-------+    +-------+    +--------+    +--------+    +--------+    +-----+    +-------+    +--------+  
-  +-------+    +------+    +-------+    +-------+    +--------+    +--------+    +--------+    +-----+    +-------+    +--------+  
+interface Color                                                              
+                                                                                                                                  
+class Black implements Color { ... }
+class Blue implements Color { ... }
+class Brown implements Color { ... }
+class Green implements Color { ... }
+class Purple implements Color { ... }
+class Orange implements Color { ... }
+class Purple implements Color { ... }
+class Red implements Color { ... }
+class White implements Color { ... }
+class Yellow    implements Color { ... }
+
                                                                                                                                    
-Each variant of Color is a color within the drawing system. Additional colors can be addded by subclassing Color.
-The toString method of a subclass of Color should return a string in all lower-case of color to be depicted:
-new Brown.toString().equals("brown")                                                                                                
+Each variant of Color is a color within the drawing system. Additional
+colors can be addded by subclassing Color. The toString method of a
+subclass of Color should return a string in all lower-case of color to be
+depicted: 
+
+  new Brown.toString().equals("brown")                                                                                                
 
 (Note: Color aught to be an interface)
 
@@ -167,10 +178,12 @@ View hide()
 //Produce a View with a visible canvas (display must have been called)
 View show()
 
-//Issue the drawing command, produce an Image that reflects what the canvas displays.
+//Issue the drawing command, produce an Image that reflects 
+// what the canvas displays.
 Image draw( Command c) 
 
-//Issue the drawing commands in the seqence, produce an Image that reflects what the canvas displays after all commands
+//Issue the drawing commands in the seqence, produce an Image 
+// that reflects what the canvas displays after all commands
 Image drawSequence( CommandSequence commands ) 
 
 --------------------------
