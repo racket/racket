@@ -5,6 +5,7 @@
            (lib "class.ss")
 	   (lib "contract.ss")
            (lib "kw.ss")
+           (lib "string.ss")
            "drsig.ss"
            (lib "string-constant.ss" "string-constants")
 	   (lib "mred.ss" "mred")
@@ -1121,7 +1122,8 @@
 
       
       (define (add-info-specified-languages)
-        (for-each add-info-specified-language (find-relevant-directories '(drscheme-language-positions))))
+        (for-each add-info-specified-language
+                  (find-relevant-directories '(drscheme-language-positions))))
       
       (define (add-info-specified-language directory)
         (let ([info-proc (get-info/full directory)])
@@ -1146,6 +1148,7 @@
                                (λ ()
                                  (map (λ (lang-position) #f)
                                       lang-positions)))])
+              (printf "dir ~s lang-positions ~s\n" directory lang-positions)
               (cond
                 [(and (list? lang-positions)
                       (andmap (λ (lang-position numbers)
@@ -1160,8 +1163,9 @@
                               numberss)
                       (list? lang-modules)
                       (andmap (λ (x)
-                                (and (list? x)
-                                     (andmap string? x)))
+                                (or (string? x)
+                                    (and (list? x)
+                                         (andmap string? x))))
                               lang-modules)
                       (list? summaries)
                       (andmap string? summaries)
@@ -1209,7 +1213,11 @@
                                   'drscheme))
                                read-syntax/namespace-introduce)])
                       (add-language (instantiate % ()
-                                      (module `(lib ,@lang-module))
+                                      (module (if (string? lang-module)
+                                                  (build-path
+                                                   directory 
+                                                   (platform-independent-string->path lang-module))
+                                                  `(lib ,@lang-module)))
                                       (language-position lang-position)
                                       (language-numbers lang-numbers)
                                       (one-line-summary one-line-summary)
@@ -1232,6 +1240,16 @@
 		  summaries
                   urls
 		  reader-specs))])))))
+      
+      (define (platform-independent-string->path str)
+        (apply
+         build-path
+         (map (λ (x) 
+                (cond
+                  [(string=? ".." x) 'up]
+                  [(string=? "." x) 'same]
+                  [else x]))
+              (regexp-split #rx"/" str))))
 
       (define read-syntax/namespace-introduce
         (opt-lambda (source-name-v [input-port (current-input-port)])
