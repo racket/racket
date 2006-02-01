@@ -4,7 +4,7 @@
            (lib "kerncase.ss" "syntax")
            (lib "file.ss"))
   
-  (provide/contract [build-stx-with-highlight ((union (listof any/c) string?) ; input with one or more '(hilite ...) tags
+  (provide/contract [build-stx-with-highlight ((or/c (listof any/c) string?) ; input with one or more '(hilite ...) tags
                                                . -> .
                                                (listof syntax?))]) ; result
   
