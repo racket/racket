@@ -1466,22 +1466,22 @@
 		(eq? (cadr t) (stx-cdr p)))))
       `(quote-syntax ,p)]
      [(syntax? stx)
-      ;; Keep location information
+      ;; Keep context and location information
       (let ([ctx (datum->syntax-object stx 'ctx stx)])
 	`(datum->syntax-object (quote-syntax ,ctx)
 			       ,(apply-cons #f h t p) 
 			       (quote-syntax ,ctx)))]
      ;; (cons X null) => (list X)
      [(eq? t 'null)
-      `(list ,h)]
+      `(list-immutable ,h)]
      ;; (cons X (list[*] Y ...)) => (list[*] X Y ...)
      [(and (pair? t)
-	   (memq (car t) '(list list*)))
+	   (memq (car t) '(list-immutable list*-immutable)))
       `(,(car t) ,h ,@(cdr t))]
      ;; (cons X (cons Y Z)) => (list* X Y Z)
      [(and (pair? t)
-	   (eq? (car t) 'cons))
-      `(list* ,h ,@(cdr t))]
+	   (eq? (car t) 'cons-immutable))
+      `(list*-immutable ,h ,@(cdr t))]
      ;; (cons (car X) (cdr X)) => X
      [(and (pair? h) (pair? t)
 	   (eq? (car h) 'car)
@@ -1490,7 +1490,7 @@
 	   (eq? (cadr h) (cadr t)))
       (cadr h)]
      [else
-      `(cons ,h ,t)]))
+      `(cons-immutable ,h ,t)]))
 
   ;; Generates a list-ref expression; if use-tail-pos
   ;;  is not #f, then the argument list is really a list*
@@ -1988,11 +1988,13 @@
 
   (-define loc-insp (current-code-inspector))
   (-define (relocate loc stx)
-    (let ([new-stx (datum->syntax-object
-		    stx
-		    (syntax-e stx)
-		    loc)])
-      (syntax-recertify new-stx stx loc-insp #f)))
+    (if (syntax-source loc)
+	(let ([new-stx (datum->syntax-object
+			stx
+			(syntax-e stx)
+			loc)])
+	  (syntax-recertify new-stx stx loc-insp #f))
+	stx))
 
   ;; Like syntax, but also takes a syntax object
   ;; that supplies a source location for the

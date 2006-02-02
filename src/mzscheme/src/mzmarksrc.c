@@ -919,6 +919,7 @@ mark_comp_env {
   gcMARK(e->base.dup_check);
   gcMARK(e->base.intdef_name);
   gcMARK(e->base.in_modidx);
+  gcMARK(e->base.skip_table);
   
   gcMARK(e->data.stat_dists);
   gcMARK(e->data.sd_depths);

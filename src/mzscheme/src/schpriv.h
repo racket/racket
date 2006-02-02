@@ -1452,7 +1452,10 @@ typedef struct Scheme_Comp_Env
 
   Scheme_Object *intdef_name;    /* syntax-local-context name for INTDEF frames */
 
-  Scheme_Object *in_modidx;     /* an implicit certificate for syntax-local lookup/expand in macro */
+  Scheme_Object *in_modidx;      /* an implicit certificate for syntax-local lookup/expand in macro */
+
+  Scheme_Hash_Table *skip_table; /* for jumping ahead in the chain */
+  int skip_depth;                /* depth in simple frames, used to trigger skip_table creation */
 
   struct Scheme_Comp_Env *next;
 } Scheme_Comp_Env;

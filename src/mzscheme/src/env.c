@@ -144,6 +144,9 @@ static void init_compile_data(Scheme_Comp_Env *env);
 /* Precise GC WARNING: this macro produces unaligned pointers: */
 #define COMPILE_DATA(e) (&((Scheme_Full_Comp_Env *)e)->data)
 
+#define SCHEME_NON_SIMPLE_FRAME (SCHEME_NO_RENAME | SCHEME_CAPTURE_WITHOUT_RENAME \
+                                 | SCHEME_FOR_STOPS | SCHEME_FOR_INTDEF | SCHEME_CAPTURE_LIFTED)
+
 /*========================================================================*/
 /*                             initialization                             */
 /*========================================================================*/
@@ -1100,6 +1103,13 @@ Scheme_Comp_Env *scheme_new_compilation_frame(int num_bindings, int flags,
   frame->prefix = base->prefix;
   frame->in_modidx = base->in_modidx;
 
+  if (flags & SCHEME_NON_SIMPLE_FRAME)
+    frame->skip_depth = 0;
+  else if (base->next)
+    frame->skip_depth = base->skip_depth + 1;
+  else
+    frame->skip_depth = 0;
+
   init_compile_data(frame);
 
   return frame;
@@ -1109,7 +1119,6 @@ Scheme_Comp_Env *scheme_new_comp_env(Scheme_Env *genv, Scheme_Object *insp, int 
 {
   Scheme_Comp_Env *e;
   Comp_Prefix *cp;
-
 
   if (!insp)
     insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
@@ -1188,6 +1197,7 @@ scheme_add_compilation_binding(int index, Scheme_Object *val, Scheme_Comp_Env *f
 			"index out of range: %d", index);
   
   frame->values[index] = val;
+  frame->skip_table = NULL;
 }
 
 void scheme_frame_captures_lifts(Scheme_Comp_Env *env, Scheme_Lift_Capture_Proc cp, Scheme_Object *data)
@@ -1232,6 +1242,7 @@ void scheme_set_local_syntax(int pos,
 {
   COMPILE_DATA(env)->const_names[pos] = name;
   COMPILE_DATA(env)->const_vals[pos] = val;
+  env->skip_table = NULL;
 }
 
 Scheme_Comp_Env *
@@ -2064,6 +2075,49 @@ void scheme_seal_env_renames(Scheme_Comp_Env *env)
 }
 
 /*********************************************************************/
+
+void create_skip_table(Scheme_Comp_Env *start_frame)
+{
+  Scheme_Comp_Env *end_frame, *frame;
+  int depth, dj = 0, dp = 0, i;
+  Scheme_Hash_Table *table;
+  int stride = 0;
+
+  depth = start_frame->skip_depth;
+
+  /* Find frames to be covered by the skip table.
+     The theory here is the same as the `mapped' table
+     in Scheme_Cert (see stxobj.c) */
+  for (end_frame = start_frame->next;
+       end_frame && ((depth & end_frame->skip_depth) != end_frame->skip_depth);
+       end_frame = end_frame->next) {
+    stride++;
+  }
+
+  table = scheme_make_hash_table(SCHEME_hash_ptr);
+  
+  for (frame = start_frame; frame != end_frame; frame = frame->next) {
+    if (frame->flags & SCHEME_LAMBDA_FRAME)
+      dj++;
+    dp += frame->num_bindings;
+    for (i = frame->num_bindings; i--; ) {
+      if (frame->values[i]) {
+	scheme_hash_set(table, SCHEME_STX_VAL(frame->values[i]), scheme_true);
+      }
+    }
+    for (i = COMPILE_DATA(frame)->num_const; i--; ) {
+      scheme_hash_set(table, SCHEME_STX_VAL(COMPILE_DATA(frame)->const_names[i]), scheme_true);
+    }
+  }
+
+  scheme_hash_set(table, scheme_make_integer(0), (Scheme_Object *)end_frame);
+  scheme_hash_set(table, scheme_make_integer(1), scheme_make_integer(dj));
+  scheme_hash_set(table, scheme_make_integer(2), scheme_make_integer(dp));
+
+  start_frame->skip_table = table;
+}
+
+/*********************************************************************/
 /* 
 
    scheme_lookup_binding() is the main resolver of lexical, module,
@@ -2101,14 +2155,31 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   phase = env->genv->phase;
   
   /* Walk through the compilation frames */
-  frame = env;
   for (frame = env; frame->next != NULL; frame = frame->next) {
     int i;
     Scheme_Object *uid;
 
-    if (frame->flags & SCHEME_LAMBDA_FRAME)
-      j++;      
+    while (1) {
+      if (frame->skip_table) {
+	if (!scheme_hash_get(frame->skip_table, SCHEME_STX_VAL(find_id))) {
+	  /* Skip ahead. 0 maps to frame, 1 maps to j delta, and 2 maps to p delta */
+	  val = scheme_hash_get(frame->skip_table, scheme_make_integer(1));
+	  j += SCHEME_INT_VAL(val);
+	  val = scheme_hash_get(frame->skip_table, scheme_make_integer(2));
+	  p += SCHEME_INT_VAL(val);
+	  frame = (Scheme_Comp_Env *)scheme_hash_get(frame->skip_table, scheme_make_integer(0));
+	} else
+	  break;
+      } else if (frame->skip_depth && !(frame->skip_depth & 0x1F)) {
+	/* We're some multiple of 32 frames deep. Build a skip table and try again. */
+	create_skip_table(frame);
+      } else
+	break;
+    }
     
+    if (frame->flags & SCHEME_LAMBDA_FRAME)
+      j++;
+
     if (!skip_stops || !(frame->flags & SCHEME_FOR_STOPS)) {
       if (frame->flags & SCHEME_FOR_STOPS)
 	skip_stops = 1;

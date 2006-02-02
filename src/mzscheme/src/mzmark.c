@@ -2323,6 +2323,7 @@ int mark_comp_env_MARK(void *p) {
   gcMARK(e->base.dup_check);
   gcMARK(e->base.intdef_name);
   gcMARK(e->base.in_modidx);
+  gcMARK(e->base.skip_table);
   
   gcMARK(e->data.stat_dists);
   gcMARK(e->data.sd_depths);
@@ -2351,6 +2352,7 @@ int mark_comp_env_FIXUP(void *p) {
   gcFIXUP(e->base.dup_check);
   gcFIXUP(e->base.intdef_name);
   gcFIXUP(e->base.in_modidx);
+  gcFIXUP(e->base.skip_table);
   
   gcFIXUP(e->data.stat_dists);
   gcFIXUP(e->data.sd_depths);
