@@ -53,31 +53,31 @@
     (wx:hide-cursor))
 
   (define (play-sound f async?)
+    (unless (or (path? f) (string? f))
+      (raise-type-error 'play-sound "string-or-path" f))
+    (unless (file-exists? f)
+      (error 'play-sound "file not found: ~e" f))
     (if (not (eq? (system-type) 'unix))
-	(wx:play-sound f async?)
-	(let ([f (if (path? f) (path->string f) f)])
-	  (unless (string? f)
-	    (raise-type-error 'play-sound "string" f))
-	  (let* ([subpath (path->string (system-library-subpath))]
-		 [make-pattern (lambda (s) (string-append ".*" s ".*"))]
-		 [b (box 
-		     (cond 
-		      [(regexp-match (make-pattern "linux") subpath)
-		       ;; use play interface to sox
-		       "play ~s"]
-		      [(regexp-match (make-pattern "solaris") subpath)
-		       "audioplay ~s"]
-		      [else
-		       (raise-mismatch-error
-			'play-sound
-			"not supported by default on this platform"
-			subpath)]))])
-					; see if user has overridden defaults 		  
-	    (let ([r (get-preference '|MrEd:playcmd| (lambda () #f))])
-	      (when (and r (string? r))
-		(set-box! b r)))
-	    ((if async? (lambda (x) (process x) #t) system)
-	     (format (unbox b) (path->string (expand-path f))))))))
+      (wx:play-sound f async?)
+      (let* (;; check user-set preference first
+             [cmd (get-preference '|MrEd:playcmd| (lambda () #f))]
+             [cmd (if (string? cmd)
+                    cmd
+                    (let ([subpath (path->string (system-library-subpath))])
+                      (cond [;; use play interface to sox
+                             (regexp-match #rx"linux" subpath) "play ~a"]
+                            [(regexp-match #rx"solaris" subpath) "audioplay ~a"]
+                            [else (raise-mismatch-error
+                                   'play-sound
+                                   "not supported by default on this platform"
+                                   subpath)])))])
+        ((if async? (lambda (x) (process x) #t) system)
+         (format cmd (string-append
+                      "\""
+                      (regexp-replace* #rx"([$\"\\])"
+                                       (path->string (expand-path f))
+                                       "\\\\\\1")
+                      "\""))))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Timers:
