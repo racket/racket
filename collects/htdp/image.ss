@@ -479,7 +479,6 @@ plt/collects/tests/mzscheme/image-test.ss
   (define (make-simple-cache-image-snip w h px py dc-proc mask-proc)
     (let ([w (inexact->exact (ceiling w))]
 	  [h (inexact->exact (ceiling h))])
-      (printf "new w ~s new -h ~s\n" w h)
       (let ([argb-proc 
 	     (lambda (argb-vector dx dy)
 	       (let ([c-bm (build-bitmap (lambda (dc) (dc-proc dc 0 0)) w h)]
