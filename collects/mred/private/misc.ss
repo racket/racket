@@ -71,7 +71,12 @@
                                    'play-sound
                                    "not supported by default on this platform"
                                    subpath)])))])
-        ((if async? (lambda (x) (process x) #t) system)
+        ((if async?
+           (lambda (x)
+             (process/ports
+              (current-output-port) (current-input-port) (current-error-port) x)
+             #t)
+           system)
          (format cmd (string-append
                       "\""
                       (regexp-replace* #rx"([$\"\\])"
