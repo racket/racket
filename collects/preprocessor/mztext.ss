@@ -320,11 +320,12 @@
                    (let ([arg (get-arg)])
                      (if (eof-object? arg)
                        (error 'include "expecting a file argument")
-                       (list (get-arg))))
+                       (list arg)))
                    files))
   (define curdir (cd))
   (define (cd+file f)
-    (let*-values ([(dir name dir?)
+    (let*-values ([(f) (if (bytes? f) (bytes->path f) f)]
+                  [(dir name dir?)
                    (if (input-port? f) (values #f #f #f) (split-path f))]
                   [(dir) (if (path? dir) dir (cd))])
       ;; could `add-to-input' and then `run' if we wrap this by a (cd dir), but
