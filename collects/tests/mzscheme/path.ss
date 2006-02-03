@@ -443,6 +443,7 @@
 		 (test #t file-exists? filestr)
 		 (test #f file-exists? (string-append filestr "\\"))
 		 (test (file-or-directory-modify-seconds file) file-or-directory-modify-seconds filestr)
+		 (test (file-size file) file-size filestr)
 		 ))
 	     '("\\" "\\\\"))))
 
