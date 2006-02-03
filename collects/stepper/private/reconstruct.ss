@@ -914,8 +914,8 @@
                                     ;; there's a terrible tangle of invariants here.  Among them:  
                                     ;; num-defns-done = (length binding-sets) IFF the so-far has a 'user-stepper-offset' index
                                     ;; that is not #f (that is, we're evaluating the body...)                                    
-                                    [so-far-offset-index (>>> (and (not (eq? so-far nothing-so-far)) 
-                                                                   (syntax-property so-far 'user-stepper-offset-index)))]
+                                    [so-far-offset-index (and (not (eq? so-far nothing-so-far)) 
+                                                                   (syntax-property so-far 'user-stepper-offset-index))]
                                     [bodies (syntax->list (syntax bodies))]
                                     [rectified-bodies 
                                      (map (lambda (body offset-index)
@@ -1106,7 +1106,7 @@
                         #f))])]))
 
          ; uncomment to see all breaks coming in:
-         (define _ (printf "break-kind: ~a\ninnermost source: ~a\nreturned-value-list: ~a\n" 
+         #;(define _ (printf "break-kind: ~a\ninnermost source: ~a\nreturned-value-list: ~a\n" 
                            break-kind
                            (and (pair? mark-list)
                                 (syntax-object->datum (mark-source (car mark-list))))
@@ -1127,8 +1127,6 @@
                                              (error 'reconstruct "context expected one value, given ~v" returned-value-list))
                                            (recon-value (car returned-value-list) render-settings))
                                     (recon-source-expr (mark-source (car mark-list)) mark-list null null render-settings))])
-                (>>> innermost)
-                (>>> (syntax-property innermost 'user-stepper-offset-index))
                 (unwind (recon (mark-as-highlight innermost) (cdr mark-list) #f) #f)))
              ((double-break)
               (let* ([source-expr (mark-source (car mark-list))]
