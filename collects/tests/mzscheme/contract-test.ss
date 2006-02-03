@@ -1222,33 +1222,63 @@
       (cf (lambda (x%) 'going-to-be-bad))))   
 
   (test/pos-blame
-   'union1
-   '(contract (union false/c) #t 'pos 'neg))
+   'or/c1
+   '(contract (or/c false/c) #t 'pos 'neg))
 
   (test/spec-passed
-   'union2
-   '(contract (union false/c) #f 'pos 'neg))
+   'or/c2
+   '(contract (or/c false/c) #f 'pos 'neg))
 
   (test/spec-passed
-   'union3
-   '((contract (union (-> integer? integer?)) (lambda (x) x) 'pos 'neg) 1))
+   'or/c3
+   '((contract (or/c (-> integer? integer?)) (lambda (x) x) 'pos 'neg) 1))
   
   (test/neg-blame
-   'union4
-   '((contract (union (-> integer? integer?)) (lambda (x) x) 'pos 'neg) #f))
+   'or/c4
+   '((contract (or/c (-> integer? integer?)) (lambda (x) x) 'pos 'neg) #f))
   
   (test/pos-blame
-   'union5
-   '((contract (union (-> integer? integer?)) (lambda (x) #f) 'pos 'neg) 1))
+   'or/c5
+   '((contract (or/c (-> integer? integer?)) (lambda (x) #f) 'pos 'neg) 1))
   
   (test/spec-passed
-   'union6
-   '(contract (union false/c (-> integer? integer?)) #f 'pos 'neg))
+   'or/c6
+   '(contract (or/c false/c (-> integer? integer?)) #f 'pos 'neg))
   
   (test/spec-passed
-   'union7
-   '((contract (union false/c (-> integer? integer?)) (lambda (x) x) 'pos 'neg) 1))
+   'or/c7
+   '((contract (or/c false/c (-> integer? integer?)) (lambda (x) x) 'pos 'neg) 1))
 
+  (test
+   '(1 2)
+   'or/c-ordering
+   (let ([x '()])
+     (contract (or/c (lambda (y) (set! x (cons 2 x)) #f) (lambda (y) (set! x (cons 1 x)) #t))
+               'anything
+               'pos
+               'neg)
+     x))
+  
+  (test
+   '(2)
+   'or/c-ordering2
+   (let ([x '()])
+     (contract (or/c (lambda (y) (set! x (cons 2 x)) #t) (lambda (y) (set! x (cons 1 x)) #t))
+               'anything
+               'pos
+               'neg)
+     x))
+  
+  (test
+   '(1 2)
+   'and/c-ordering
+   (let ([x '()])
+     (contract (and/c (lambda (y) (set! x (cons 2 x)) #t) (lambda (y) (set! x (cons 1 x)) #t))
+               'anything
+               'pos
+               'neg)
+     x))
+  
   (test/spec-passed
    'define/contract1
    '(let ()
@@ -3121,12 +3151,12 @@
   ;;                                                        ;;
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
-  (test #t flat-contract? (union))
-  (test #t flat-contract? (union integer? (lambda (x) (> x 0))))
-  (test #t flat-contract? (union (flat-contract integer?)
+  (test #t flat-contract? (or/c))
+  (test #t flat-contract? (or/c integer? (lambda (x) (> x 0))))
+  (test #t flat-contract? (or/c (flat-contract integer?)
 				 (flat-contract boolean?)))
-  (test-flat-contract '(union (flat-contract integer?) char?) #\a #t)
-  (test-flat-contract '(union (flat-contract integer?) char?) 1 #t)
+  (test-flat-contract '(or/c (flat-contract integer?) char?) #\a #t)
+  (test-flat-contract '(or/c (flat-contract integer?) char?) 1 #t)
   
   (test #t flat-contract? (and/c))
   (test #t flat-contract? (and/c number? integer?))
@@ -3198,7 +3228,7 @@
   (test-flat-contract '(box/c (flat-contract boolean?)) (box #t) #f)
   
   (test-flat-contract '(flat-rec-contract sexp (cons/c sexp sexp) number?) '(1 2 . 3) '(1 . #f))
-  (test-flat-contract '(flat-murec-contract ([even1 (union null? (cons/c number? even2))] 
+  (test-flat-contract '(flat-murec-contract ([even1 (or/c null? (cons/c number? even2))] 
                                              [even2 (cons/c number? even1)])
                                             even1)
                       '(1 2 3 4)
@@ -3297,13 +3327,13 @@
   (test-name '(case-> (-> integer? integer?) (-> integer? integer? integer?))
              (case-> (-> integer? integer?) (-> integer? integer? integer?)))
   
-  (test-name '(union) (union))
-  (test-name '(union integer? gt0?) (union integer? (let ([gt0? (lambda (x) (> x 0))]) gt0?)))
-  (test-name '(union integer? boolean?)
-             (union (flat-contract integer?)
+  (test-name '(or/c) (or/c))
+  (test-name '(or/c integer? gt0?) (or/c integer? (let ([gt0? (lambda (x) (> x 0))]) gt0?)))
+  (test-name '(or/c integer? boolean?)
+             (or/c (flat-contract integer?)
                     (flat-contract boolean?)))
-  (test-name '(union (-> (>=/c 5) (>=/c 5)) boolean?)
-             (union (-> (>=/c 5) (>=/c 5)) boolean?))
+  (test-name '(or/c (-> (>=/c 5) (>=/c 5)) boolean?)
+             (or/c (-> (>=/c 5) (>=/c 5)) boolean?))
   
   (test-name 'any/c (and/c))
   (test-name '(and/c any/c) (and/c any/c))

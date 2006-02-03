@@ -792,7 +792,7 @@ add struct contracts for immutable structs?
        (unless (or (contract? x)
                    (and (procedure? x)
                         (procedure-arity-includes? x 1)))
-         (error 'union "expected procedures of arity 1 or contracts, given: ~e" x)))
+         (error 'or/c "expected procedures of arity 1 or contracts, given: ~e" x)))
      args)
     (let-values ([(contract fc/predicates)
                   (let loop ([contract #f]
@@ -807,7 +807,7 @@ add struct contracts for immutable structs?
                                 (not (contract? arg)))
                             (loop contract (cons arg fc/predicates) (cdr args))]
                            [contract
-                            (error 'union "expected at most one non-flat contract, given ~e and ~e"
+                            (error 'or/c "expected at most one non-flat contract, given ~e and ~e"
                                    contract
                                    arg)]
                            [else (loop arg fc/predicates (cdr args))]))]))])
@@ -820,7 +820,7 @@ add struct contracts for immutable structs?
           [contract
            (let ([c-proc (contract-proc contract)])
              (make-contract
-              (apply build-compound-type-name 'union contract flat-contracts)
+              (apply build-compound-type-name 'or/c contract flat-contracts)
               (lambda (pos neg src-info orig-str)
                 (let ([partial-contract (c-proc pos neg src-info orig-str)])
                   (lambda (val)
@@ -831,7 +831,7 @@ add struct contracts for immutable structs?
                        (partial-contract val)]))))))]
           [else
            (build-flat-contract
-            (apply build-compound-type-name 'union flat-contracts)
+            (apply build-compound-type-name 'or/c flat-contracts)
             (lambda (x)
               (ormap (lambda (pred) (pred x)) predicates)))]))))
   
