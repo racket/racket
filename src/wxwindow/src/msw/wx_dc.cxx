@@ -217,11 +217,15 @@ HDC wxDC::ThisDC(Bool flush_cache)
   if (flush_cache)
     ReleaseSelectedCache();
 
-  if (canvas) wnd = (wxWnd *)canvas->handle;
   if (cdc)
     dc = cdc;
-  else if (wnd)
-    dc = wnd->GetHDC();
+  else {
+    if (canvas) {
+      wnd = (wxWnd *)canvas->handle;
+      if (wnd)
+	dc = wnd->GetHDC();
+    }
+  }
 
   if (!old_pen) {
     HPEN op;
@@ -230,6 +234,7 @@ HDC wxDC::ThisDC(Bool flush_cache)
     old_pen = op;
     ob = (HBRUSH)::SelectObject(dc, null_brush);
     old_brush = ob;
+    ResetMapMode(dc);
   }
 
   return dc;
@@ -1469,15 +1474,16 @@ void wxDC::DrawEllipse(double x, double y, double width, double height)
   HDC dc;
   int x1, y1, x2, y2;
 
+  if (anti_alias) {
+    DrawArc(x, y, width, height, 0, 2 * wxPI);
+    return;
+  }
+
   dc = ThisDC();
 
   if (!dc) return;
 
-  if (anti_alias) {
-    DrawArc(x, y, width, height, 0, 2 * wxPI);
-    return;
-  } else
-    ReleaseGraphics(dc);
+  ReleaseGraphics(dc);
 
   if (StippleBrush()) {
     wxRegion *r;
