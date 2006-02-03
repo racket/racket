@@ -11,6 +11,7 @@
            (lib "contract.ss"))
   
   (provide complete-configuration
+           get-configuration
            build-developer-configuration
            build-developer-configuration/vhosts ;; added 2/3/05 by Jacob
            default-configuration-table-path

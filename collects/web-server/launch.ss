@@ -26,7 +26,7 @@
         [("-p" "--port")
          ,(lambda (flag port)
             (let ([p (string->number port)])
-              (if (and (number? p) (integer? p) (exact? p) (<= 1 p 65535))
+              (if (valid-port? p)
                   (cons 'port p)
                   (error 'web-server "port expects an argument of type <exact integer in [1, 65535]>; given ~s" port))))
          ("Use an alternate network port." "port")]

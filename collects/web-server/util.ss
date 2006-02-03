@@ -14,6 +14,7 @@
            url-path->string)
   
   (provide/contract
+   [valid-port? (any/c . -> . boolean?)]
    [decompose-request ((request?) . ->* . (url? symbol? string?))]
    [network-error ((symbol? string?) (listof any/c) . ->* . (void))]
    [path->list  (path? . -> . (cons/c (union path? (symbols 'up 'same))
@@ -23,6 +24,10 @@
    [lowercase-symbol! ((union string? bytes?) . -> . symbol?)]
    [exn->string ((union exn? any/c) . -> . string?)]
    [build-path-unless-absolute (path? (union string? path?) . -> . path?)])
+  
+  ;; valid-port? : any/c -> boolean?
+  (define (valid-port? p)
+    (and (number? p) (integer? p) (exact? p) (<= 1 p 65535)))
   
   ;; ripped this off from url-unit.ss
   (define (url-path->string strs)

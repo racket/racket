@@ -11,8 +11,9 @@
                  default-configuration-table-path)
            (lib "configuration-table-structs.ss" "web-server")
            (lib "parse-table.ss" "web-server")
+           (lib "configuration-util.ss" "web-server")
            (all-except (lib "util.ss" "web-server") translate-escapes))
-
+  
   ;; FIX
   ; - fuss with changing absolute paths into relative ones internally
   ; - move old config files instead of copying default ones
@@ -24,46 +25,46 @@
   ;     - editing an individual path
   ; - change all configuration paths (in the configure servlet and in the server) to
   ;   use a platform independent representation (i.e. a listof strings)
-
+  
   ; servlet-maker : str -> (unit/sig servlet^ -> ())
   (define (servlet-maker default-configuration-path)
     (unit/sig ()
       (import servlet^)
-
+      
       (define CONFIGURE-SERVLET-NAME "configure.ss")
       (define WIDE "70")
-
+      
       (adjust-timeout! (* 12 60 60))
       (error-print-width 800) ; 10-ish lines
-
+      
       ; passwords = (listof realm)
       ; realm = (make-realm str str (listof user-pass))
       (define-struct realm (name pattern allowed))
-
+      
       ; user-pass = (make-user-pass sym str)
       (define-struct user-pass (user pass))
-
+      
       (define doc-dir "Defaults/documentation")
-
+      
       (define edit-host-button-name "Edit Minor Details")
-
+      
       ; build-footer : str -> html
       (define (build-footer base)
         (let ([scale (lambda (n) (number->string (round (/ n 4))))])
           `(p "Powered by "
               (a ([href "http://www.plt-scheme.org/"])
                  (img ([width ,(scale 211)] [height ,(scale 76)]
-                       [src ,(string-append base doc-dir "/plt-logo.gif")]))))))
-
+                                            [src ,(string-append base doc-dir "/plt-logo.gif")]))))))
+      
       (define footer (build-footer "/"))
-
+      
       ; access-error-page : html
       (define access-error-page
         `(html (head (title "Web Server Configuration Access Error"))
                (body ([bgcolor "white"])
                      (p "You must connect to the configuration tool from the machine the server runs on using 127.0.0.1 for the host part of the URL.")
                      ,footer)))
-
+      
       ; permission-error-page : path -> html
       (define (permission-error-page configuration-path)
         `(html (head (title "Web Server Configuration Permissions Error"))
@@ -71,27 +72,27 @@
                      (p "You must have read and write access to "
                         (code ,(path->string configuration-path))
                         " in order to configure the server."))))
-
+      
       ; check-ip-address : request -> request
       (define (check-ip-address request)
         (unless (string=? "127.0.0.1" (request-host-ip request))
           (send/finish access-error-page))
         request)
-
+      
       (check-ip-address initial-request)
-
+      
       (define web-base (directory-part default-configuration-path))
-
+      
       ; more here - abstract with static pages?
       (define web-server-icon
         `(img ([src ,(string-append "/" doc-dir "/web-server.gif")]
                ;[width "123"] [height "115"]
                [width "61"] [height "57"])))
-
+      
       ; interact : (str -> response) -> bindings
       (define (interact page)
         (request-bindings (check-ip-address (send/suspend page))))
-
+      
       ; choose-configuration-file : -> doesn't
       (define (choose-configuration-file)
         (let ([configuration-path (ask-for-configuration-path)])
@@ -109,7 +110,7 @@
                            (ensure-directory-shallow base))
                          (copy-file default-configuration-path configuration-path))
                        (loop))))))
-
+      
       ; copy-configuration-file : path -> html
       (define (copy-configuration-file configuration-path)
         (build-suspender
@@ -120,14 +121,14 @@
               "does not exist.  Would you like to copy the default configuration to this "
               "location?")
            (center (input ([type "submit"] [name "ok"] [value "Copy"]))))))
-
+      
       ; ask-for-configuration-path : -> path
       (define (ask-for-configuration-path)
         (build-path
          (extract-binding/single
           'path
           (request-bindings (send/suspend configuration-path-page)))))
-
+      
       ; configuration-path-page : str -> html
       (define configuration-path-page
         (build-suspender
@@ -140,10 +141,10 @@
               (blockquote (code ,(path->string default-configuration-path))))
            (table (tr (th "Configuration path")
                       (td (input ([type "text"] [name "path"] [size ,WIDE]
-                                  [value ,(path->string default-configuration-path)]))))
+                                                [value ,(path->string default-configuration-path)]))))
                   (tr (td ([colspan "2"] [align "center"])
                           (input ([type "submit"] [name "choose-path"] [value "Select"]))))))))
-
+      
       ; configure-top-level : path -> doesn't
       (define (configure-top-level configuration-path)
         (with-handlers ([exn:fail:filesystem:exists? send-exn])
@@ -172,7 +173,7 @@
                         [else form-configuration])])
                 (write-configuration new-configuration configuration-path)
                 (loop new-configuration))))))
-
+      
       ; switch-to-current-port : configuration-table -> (U #f configuration-table)
       ; doesn't work - the browser doesn't send the port and it wouldn't be reliable anyway
       ; perhaps the server could include it?
@@ -185,11 +186,11 @@
                  (configuration-table-initial-connection-timeout old)
                  (configuration-table-default-host old)
                  (configuration-table-virtual-hosts old)))))
-
+      
       ; send-exn : tst -> doesn't
       (define (send-exn exn)
         (send/back (exception-error-page exn)))
-
+      
       ; reverse-assoc : a (listof (cons b a)) -> (U #f (cons b a))
       (define (reverse-assoc x lst)
         (cond
@@ -197,13 +198,13 @@
           [else (if (equal? x (cdar lst))
                     (car lst)
                     (reverse-assoc x (cdr lst)))]))
-
+      
       ; add-virtual-host : configuration-table (listof str) -> configuration-table
       (define (add-virtual-host conf existing-prefixes)
         (update-hosts conf (cons (cons "my-host.my-domain.org"
                                        (configuration-table-default-host conf))
                                  (configuration-table-virtual-hosts conf))))
-
+      
       ; update-hosts : configuration-table (listof (cons str host-table))
       (define (update-hosts conf new-hosts)
         (make-configuration-table
@@ -212,13 +213,7 @@
          (configuration-table-initial-connection-timeout conf)
          (configuration-table-default-host conf)
          new-hosts))
-
-      ; write-to-file : str TST -> void
-      (define (write-to-file file-name x)
-        (call-with-output-file file-name
-          (lambda (out) (pretty-print x out))
-          'truncate))
-
+      
       ; delete-hosts : configuration-table (listof str) -> configuration-table
       ; pre: (>= (length (configuration-table-virtual-hosts conf)) (max to-delete))
       (define (delete-hosts conf to-delete)
@@ -228,7 +223,7 @@
             (update-hosts
              conf
              (drop (configuration-table-virtual-hosts conf) to-delete))))
-
+      
       ; drop : (listof a) (listof str) -> (listof a)
       ; pre: (apply < to-delete)
       ; to delete the entries in to-filter indexed by to-delete
@@ -239,7 +234,7 @@
             [else (if (= i (car to-delete))
                       (loop (cdr to-filter) (cdr to-delete) (add1 i))
                       (cons (car to-filter) (loop (cdr to-filter) to-delete (add1 i))))])))
-
+      
       ; configure-hosts : configuration-table (U #f nat) -> configuration-table
       ; n is either the virtual host number or #f for the default virtual host
       (define (configure-hosts old n)
@@ -261,7 +256,7 @@
              (configuration-table-initial-connection-timeout old)
              (configure-host (configuration-table-default-host old))
              (configuration-table-virtual-hosts old))))
-
+      
       ; configure-host : host-table -> host-table
       (define (configure-host old)
         (let* ([bindings (interact (request-new-host-table old))]
@@ -277,10 +272,10 @@
                 (write-to-file password-path ''()))
               (configure-passwords password-path)))
           new))
-
+      
       (define restart-message
         `((h3 (font ([color "red"]) "Restart the Web server to use the new settings."))))
-
+      
       ; request-new-configuration-table : configuration-table configuration-table -> str -> html
       (define (request-new-configuration-table old orig)
         (build-suspender
@@ -308,8 +303,8 @@
                       (th nbsp))
                   (tr (td ,"Default Host")
                       (td ,(make-field-size "text" 'default-host-root
-                                       (table->host-root (configuration-table-default-host old))
-                                       WIDE))
+                                            (table->host-root (configuration-table-default-host old))
+                                            WIDE))
                       (td ([align "center"])
                           (input ([type "submit"] [name "default"] [value ,edit-host-button-name])))
                       (td nbsp))
@@ -334,11 +329,11 @@
                   (tr (td (input ([type "submit"] [name "configure"] [value "Update Configuration"])))))
            (hr)
            ,footer)))
-
+      
       ; table->host-root : host-table -> str
       (define (table->host-root t)
         (path->string (build-path-unless-absolute web-base (paths-host-base (host-table-paths t)))))
-
+      
       ; gen-make-tr : nat -> xexpr sym str [xexpr ...] -> xexpr
       (define (gen-make-tr size-n)
         (let ([size-str (number->string size-n)])
@@ -346,38 +341,38 @@
             `(tr (td (a ([href ,(format "/~a/terms/~a.html" doc-dir tag)]) ,label))
                  (td ,(make-field-size "text" tag (format "~a" default-text) size-str))
                  . ,extra-tds))))
-
+      
       (define make-tr-num (gen-make-tr 20))
-
+      
       (define make-tr-str (gen-make-tr 70))
-
+      
       ; make-field : str sym str -> xexpr
       (define (make-field type label value)
         (make-field-size type label value "30"))
-
+      
       ; make-field-size : str sym str str -> xexpr
       (define (make-field-size type label value size)
         `(input ([type ,type] [name ,(symbol->string label)] [value ,value] [size ,size])))
-
+      
       ; update-configuration : configuration-table bindings -> configuration-table
       (define (update-configuration old bindings)
         (let ([ubp (un-build-path web-base)]) ;; web-base returned by directory-part is a path
-        (make-configuration-table
-         (string->nat (extract-binding/single 'port bindings))
-         (string->nat (extract-binding/single 'waiting bindings))
-         (string->num (extract-binding/single 'time-initial bindings))
-         (update-host-root (configuration-table-default-host old)
-                           (ubp (build-path (extract-binding/single 'default-host-root bindings))))
-         (map (lambda (h root pattern)
-                (cons pattern (update-host-root (cdr h) (ubp (build-path root)))))
-              (configuration-table-virtual-hosts old)
-              (extract-bindings 'host-roots bindings)
-              (extract-bindings 'host-regexps bindings)))))
-
+          (make-configuration-table
+           (string->nat (extract-binding/single 'port bindings))
+           (string->nat (extract-binding/single 'waiting bindings))
+           (string->num (extract-binding/single 'time-initial bindings))
+           (update-host-root (configuration-table-default-host old)
+                             (ubp (build-path (extract-binding/single 'default-host-root bindings))))
+           (map (lambda (h root pattern)
+                  (cons pattern (update-host-root (cdr h) (ubp (build-path root)))))
+                (configuration-table-virtual-hosts old)
+                (extract-bindings 'host-roots bindings)
+                (extract-bindings 'host-regexps bindings)))))
+      
       ; update-host-root : host-table str -> host-table
       (define (update-host-root host new-root)
         (host-table<-paths host (paths<-host-base (host-table-paths host) new-root)))
-
+      
       ; host-table<-paths : host-table paths -> host-table
       ; more here - create these silly functions automatically from def-struct macro
       (define (host-table<-paths host paths)
@@ -387,7 +382,7 @@
          (host-table-messages host)
          (host-table-timeouts host)
          paths))
-
+      
       ; paths<-host-base : paths str -> paths
       ; more here - create these silly functions automatically from def-struct macro
       (define (paths<-host-base paths host-base)
@@ -397,18 +392,18 @@
                     (paths-htdocs paths)
                     (paths-servlet paths)
                     (paths-passwords paths)))
-
+      
       ; string->num : str -> nat
       (define (string->num str)
         (or (string->number str) (error 'string->nat "~s is not a number" str)))
-
+      
       ; string->nat : str -> nat
       (define (string->nat str)
         (let ([n (string->number str)])
           (if (and n (integer? n) (exact? n) (>= n 0))
               n
               (error 'string->nat "~s is not exactly a natural number" str))))
-
+      
       ; request-new-host-table : host-table -> str -> response
       (define (request-new-host-table old)
         (let* ([timeouts (host-table-timeouts old)]
@@ -459,7 +454,7 @@
              (hr)
              (input ([type "submit"] [value "Save Configuration"]))
              ,footer))))
-
+      
       ; update-host-table : host-table (listof (cons sym str)) -> host-table
       (define (update-host-table old bindings)
         (let* ([eb (lambda (tag) (build-path (extract-binding/single tag bindings)))]
@@ -484,7 +479,7 @@
                     (paths-conf old-paths)
                     ((un-build-path web-base) (build-path (paths-host-base old-paths)))
                     (map eb-host-root '(path-log path-htdocs path-servlet path-password)))))))
-
+      
       ; un-build-path : path -> path -> string
       ; (GregP) Theory: this should return a string not a path so that the result can be
       ;                 written to the configuration file.
@@ -497,7 +492,7 @@
                  => (lambda (x) (path->string (apply build-path x)))]
                 [else
                  (path->string path)])))))
-
+      
       ; suffix : (listof a) (listof a) -> (U #f (listof a))
       ; to return the extra elements in b after removing all elements from a in order
       (define (suffix a b)
@@ -507,9 +502,9 @@
                   [(null? b) #f]
                   [else (and (equal? (car a) (car b))
                              (suffix (cdr a) (cdr b)))])]))
-
+      
       ; Password Configuration
-
+      
       ; configure-passwords : path -> void
       (define (configure-passwords password-path)
         (edit-passwords
@@ -517,7 +512,7 @@
          (if (file-exists? password-path)
              (call-with-input-file password-path read-passwords)
              null)))
-
+      
       ; edit-passwords : path passwords -> passwords
       (define (edit-passwords which-one passwords)
         (let* ([bindings (interact (password-updates which-one passwords))]
@@ -541,7 +536,7 @@
              (again (cons (make-realm "new realm" "" null)
                           (drop passwords to-deactivate)))]
             [else (drop passwords to-deactivate)])))
-
+      
       ; password-updates : path passwords -> request
       (define (password-updates which-one passwords)
         (let ([which-one (path->string which-one)])
@@ -563,7 +558,7 @@
              ,(make-field "submit" 'add "Add Realm")
              ,(make-field "submit" 'edit-button "Edit")
              ,footer))))
-
+      
       ; edit-realm : realm -> realm
       (define (edit-realm realm)
         (let* ([bindings (interact (realm-updates realm))]
@@ -582,7 +577,7 @@
             [(assq 'update bindings)
              (make-realm new-name new-pattern new-allowed)]
             [else (error 'edit-realm "Didn't find either 'add-user or 'update in ~s" bindings)])))
-
+      
       ; realm-updates : realm -> request
       (define (realm-updates realm)
         (build-suspender
@@ -603,7 +598,7 @@
            (input ([type "submit"] [name "add-user"] [value "Add User"]))
            (input ([type "submit"] [name "update"] [value "Update Realm"]))
            ,footer)))
-
+      
       ; read-passwords : iport -> passwords
       ; only works if the file starts with (quote ...)
       (define (read-passwords in)
@@ -618,7 +613,7 @@
                              (map (lambda (x) (make-user-pass (car x) (cadr x)))
                                   (cddr raw-realm))))
                (cadr raw))))
-
+      
       ; format-passwords : passwords -> s-expr
       (define (format-passwords passwords)
         (list 'quote
@@ -629,9 +624,9 @@
                                    (list (user-pass-user x) (user-pass-pass x)))
                                  (realm-allowed r))))
                    passwords)))
-
+      
       ; Little Helpers
-
+      
       ; initialization-error-page : response
       (define initialization-error-page
         `(html (head (title "Web Server Configuration Program Invocation Error"))
@@ -640,7 +635,7 @@
                         (a ([href ,(url->string (request-uri initial-request))]) "configuration program,")
                         " not through another URL.")
                      ,footer)))
-
+      
       ; done-page : html
       (define done-page
         ; more-here - consider adding more useful information
@@ -649,7 +644,7 @@
                      (h2 "Configuration Saved.")
                      (p "Click your browser's back button to continue configuring the server.")
                      ,footer)))
-
+      
       ; exception-error-page : TST -> html
       (define (exception-error-page exn)
         `(html (head (title "Error"))
@@ -657,41 +652,32 @@
                      (p "Servlet exception: "
                         (pre ,(exn->string exn)))
                      ,footer)))
-
+      
       (define must-select-host-page
         `(html (head (title "Web Server Configuration Error"))
                (body ([bgcolor "white"])
                      (p "Please select which host to edit before clicking the Edit button.")
                      ,footer)))
-
+      
       ; io
-
+      
       ; read-configuration : path -> configuration-table
       (define (read-configuration configuration-path)
         (parse-configuration-table (call-with-input-file configuration-path read)))
-
+      
       ; write-configuration : configuration-table path -> void
       ; writes out the new configuration file and
       ; also copies the configure.ss servlet to the default-host's servlet directory
       (define (write-configuration new configuration-path)
         (ensure-configuration-servlet configuration-path (configuration-table-default-host new))
         (ensure-configuration-paths new)
-        (write-to-file
-         configuration-path
-         `((port ,(configuration-table-port new))
-           (max-waiting ,(configuration-table-max-waiting new))
-           (initial-connection-timeout ,(configuration-table-initial-connection-timeout new))
-           (default-host-table
-            ,(format-host (configuration-table-default-host new)))
-           (virtual-host-table
-            . ,(map (lambda (h) (list (car h) (format-host (cdr h))))
-                    (configuration-table-virtual-hosts new))))))
-
+        (write-configuration-table new configuration-path))
+      
       ; ensure-configuration-servlet : path host-table -> void
       (define (ensure-configuration-servlet configuration-path host)
         (let* ([paths (host-table-paths host)]
                [root (build-path-unless-absolute web-base
-                                       (paths-host-base paths))]
+                                                 (paths-host-base paths))]
                [servlets-path
                 (build-path (build-path-unless-absolute root (paths-servlet paths)) "servlets")])
           (ensure-config-servlet configuration-path servlets-path)
@@ -699,14 +685,14 @@
             (ensure* (collection-path "web-server" "default-web-root" "htdocs")
                      (build-path-unless-absolute root (paths-htdocs paths))
                      defaults))))
-
+      
       ; ensure-configuration-paths : configuration-table -> void
       ; to ensure that all the referenced config files exist for an entire configuration
       (define (ensure-configuration-paths configuration)
         (ensure-host-configuration (configuration-table-default-host configuration))
         (for-each (lambda (x) (ensure-host-configuration (cdr x)))
                   (configuration-table-virtual-hosts configuration)))
-
+      
       ; ensure-host-configuration : host-table -> void
       ; to ensure that all the referenced config files exist for a virtual host
       (define (ensure-host-configuration host)
@@ -735,7 +721,7 @@
             (copy-conf "not-found.html" (messages-file-not-found messages))
             (copy-conf "servlet-error.html" (messages-servlet messages))
             (copy-conf "collect-garbage.html" (messages-collect-garbage messages)))))
-
+      
       ; ensure-file : path path path -> void
       ; to copy (build-path from name) to (build-path to name), creating directories as
       ; needed if the latter does not already exist.
@@ -745,14 +731,14 @@
           (let ([to-path (build-path to name)])
             (unless (file-exists? to-path)
               (copy-file (build-path from name) to-path)))))
-
+      
       ; copy-file* : str str -> void
       (define (copy-file* from-path to-path)
         (unless (file-exists? to-path)
           (let-values ([(to-path-base to-path-name must-be-dir?) (split-path to-path)])
             (ensure-directory-shallow to-path-base))
           (copy-file from-path to-path)))
-
+      
       ; ensure* : path path path -> void
       ;; GregP: Don't know what the heck this does (thanks Paul)
       ;;        but the first two arguments are now paths.
@@ -768,13 +754,13 @@
                            (directory-list p))))]
             [(file-exists? p)
              (ensure-file from to name)])))
-
+      
       ; ensure-directory-shallow : path -> void
       (define (ensure-directory-shallow to)
         (unless (directory-exists? to)
           ; race condition - someone else could make the directory
           (make-directory* to)))
-
+      
       ; ensure-config-servlet : str path -> void
       ; to create, if necessary, a stub configuration servlet that includes the main configuration servlet
       ; at the desired location in a new web tree
@@ -792,39 +778,7 @@
                 (pretty-print
                  `(servlet-maker ,(path->string configuration-path))
                  out))))))
-
-      ; format-host : host-table
-      (define (format-host host)
-        (let ([t (host-table-timeouts host)]
-              [p (host-table-paths host)]
-              [m (host-table-messages host)])
-          `(host-table
-            ; more here - configure
-            (default-indices "index.html" "index.htm")
-            ; more here - configure
-            (log-format parenthesized-default)
-            (messages
-             (servlet-message ,(messages-servlet m))
-             (authentication-message ,(messages-authentication m))
-             (servlets-refreshed ,(messages-servlets-refreshed m))
-             (passwords-refreshed ,(messages-passwords-refreshed m))
-             (file-not-found-message ,(messages-file-not-found m))
-             (protocol-message ,(messages-protocol m))
-             (collect-garbage ,(messages-collect-garbage m)))
-            (timeouts
-             (default-servlet-timeout ,(timeouts-default-servlet t))
-             (password-connection-timeout ,(timeouts-password t))
-             (servlet-connection-timeout ,(timeouts-servlet-connection t))
-             (file-per-byte-connection-timeout ,(timeouts-file-per-byte t))
-             (file-base-connection-timeout ,(timeouts-file-base t)))
-            (paths
-             (configuration-root ,(paths-conf p))
-             (host-root ,(paths-host-base p))
-             (log-file-path ,(paths-log p))
-             (file-root ,(paths-htdocs p))
-             (servlet-root ,(paths-servlet p))
-             (password-authentication ,(paths-passwords p))))))
-
+      
       ; extract-definition : sym (listof s-expr) -> s-expr
       ; to return the rhs from (def name rhs) not (def (name . args) body)
       (define (extract-definition name defs)
@@ -835,12 +789,12 @@
                           (caddr def)))
                    defs)
             (error 'extract-definition "definition for ~a not found" name)))
-
+      
       ; passwords = str (i.e. path to a file)
-
+      
       (define build-path-maybe-expression->file-name caddr)
-
+      
       ; main
       (choose-configuration-file)))
-
+  
   (define servlet (servlet-maker default-configuration-table-path)))
