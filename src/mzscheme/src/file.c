@@ -1657,11 +1657,12 @@ static time_t convert_date(const FILETIME *ft)
 # define MZ_UNC_WRITE 0x2
 # define MZ_UNC_EXEC 0x4
 
-static int UNC_stat(char *dirname, int len, int *flags, int *isdir, Scheme_Object **date)
+static int UNC_stat(char *dirname, int len, int *flags, int *isdir, Scheme_Object **date,
+		    mzlonglong *filesize)
   /* dirname must be absolute */
 {
   int strip_end, strip_char;
-  struct MSC_IZE(stat) buf;
+  struct MSC_IZE(_stat64) buf;
   int v;
 
   if (isdir)
@@ -1712,6 +1713,9 @@ static int UNC_stat(char *dirname, int len, int *flags, int *isdir, Scheme_Objec
       if (isdir) {
 	*isdir = (GET_FF_ATTRIBS(fd) & FF_A_DIR);
       }
+      if (filesize) {
+	*filesize = ((mzlonglong)fd.nFileSizeHigh << 32) | fd.nFileSizeLow;
+      }
       return 1;
     }
   } else if ((len > 1) && (dirname[len - 1] == '\\' || dirname[len - 1] == '/')
@@ -1725,7 +1729,7 @@ static int UNC_stat(char *dirname, int len, int *flags, int *isdir, Scheme_Objec
     strip_end = strip_char = 0;
 
   while (1) {
-    v = !MSC_W_IZE(stat)(MSC_WIDE_PATH(dirname), &buf);
+    v = !MSC_W_IZE(stat64)(MSC_WIDE_PATH(dirname), &buf);
     if (v || (errno != EINTR))
       break;
   }
@@ -1744,6 +1748,8 @@ static int UNC_stat(char *dirname, int len, int *flags, int *isdir, Scheme_Objec
       if (buf.st_mode & MSC_IZE(S_IWRITE))
 	*flags |= MZ_UNC_WRITE;
     }
+    if (filesize)
+      *filesize = buf.st_size;
   }
 
   if (strip_end)
@@ -1772,7 +1778,7 @@ int scheme_file_exists(char *filename)
 
   {
     int isdir;
-    return (UNC_stat(filename, strlen(filename), NULL, &isdir, NULL)
+    return (UNC_stat(filename, strlen(filename), NULL, &isdir, NULL, NULL)
 	    && !isdir);
   }
 #  else
@@ -1796,7 +1802,7 @@ int scheme_directory_exists(char *dirname)
 #  ifdef DOS_FILE_SYSTEM
   int isdir;
 
-  return (UNC_stat(dirname, strlen(dirname), NULL, &isdir, NULL)
+  return (UNC_stat(dirname, strlen(dirname), NULL, &isdir, NULL, NULL)
 	  && isdir);
 #  else
   struct MSC_IZE(stat) buf;
@@ -4035,7 +4041,7 @@ static Scheme_Object *file_modify_seconds(int argc, Scheme_Object **argv)
     int len = strlen(file);
     Scheme_Object *secs;
 
-    if (UNC_stat(file, len, NULL, NULL, &secs))
+    if (UNC_stat(file, len, NULL, NULL, &secs, NULL))
       return secs;
   } else 
 # endif
@@ -4232,7 +4238,7 @@ static Scheme_Object *file_or_dir_permissions(int argc, Scheme_Object *argv[])
     int len = strlen(filename);
     int flags;
     
-    if (UNC_stat(filename, len, &flags, NULL, NULL)) {
+    if (UNC_stat(filename, len, &flags, NULL, NULL, NULL)) {
       if (flags & MZ_UNC_READ)
 	l = scheme_make_pair(read_symbol, l);
       if (flags & MZ_UNC_WRITE)
@@ -4266,6 +4272,15 @@ static Scheme_Object *file_size(int argc, Scheme_Object *argv[])
 					   "file-size",
 					   NULL,
 					   SCHEME_GUARD_FILE_READ);
+
+#ifdef DOS_FILE_SYSTEM
+ {
+   mzlonglong filesize;
+   if (UNC_stat(filename, strlen(filename), NULL, NULL, NULL, &filesize)) {
+     return scheme_make_integer_value_from_long_long(filesize);
+   }
+ }
+#else
   {
     struct MSC_IZE(stat) buf;
 
@@ -4284,7 +4299,9 @@ static Scheme_Object *file_size(int argc, Scheme_Object *argv[])
 
   return scheme_make_integer_value_from_unsigned(len);
 
-failed:
+ failed:
+#endif
+
   scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
 		   "file-size: file not found: \"%q\"",
 		   filename_for_error(argv[0]));
