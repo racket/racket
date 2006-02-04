@@ -575,13 +575,13 @@
                (parse-error (format "Expected { to start class body, found ~a" out) srt end))))))
         ((class-body-end)
          (case tokN
-           ((EOF) (parse-error "Expected a } to close class body" ps pe))
+           ((EOF) (parse-error "Expected a '}' to close class body" ps end))
            ((C_BRACE) 
             (let ((next (getter)))
               (if (c-brace? (get-tok next))
-                  (parse-error "Unnecessary }, class body already closed" srt (get-end next))
+                  (parse-error "Unnecessary '}', class body already closed" srt (get-end next))
                   (parse-definition cur-tok next 'start getter))))
-           (else (parse-error (format "Expected a } to close class body, found ~a" out) ps end))))
+           (else (parse-error (format "Expected a '}' to close class body, found ~a" out) ps end))))
         ((iface-body)
          (case tokN
            ((EOF) (parse-error (format "Expected interface body to begin after ~a" (format-out (get-tok pre))) ps pe))
@@ -589,19 +589,19 @@
            (else
             (cond
               ((open-separator? tok)
-               (parse-error (format "Expected { to begne interface body, but found ~a" out) srt end))
+               (parse-error (format "Expected '{' to begne interface body, but found ~a" out) srt end))
               ((close-separator? tok)
-               (parse-error (format "Interface body must be opened with { before being closed, found ~a" out) srt end))
-              (else (parse-error (format "Expected { to start interface body, found ~a" out) srt end))))))
+               (parse-error (format "Interface body must be opened with '{' before being closed, found ~a" out) srt end))
+              (else (parse-error (format "Expected '{' to start interface body, found ~a" out) srt end))))))
         ((iface-body-end)
           (case tokN
-            ((EOF) (parse-error "Expected a } to close interface body" ps pe))
+            ((EOF) (parse-error "Expected a '}' to close interface body" ps end))
             ((C_BRACE)
              (let ((next (getter)))
                (if (c-brace? (get-tok next))
-                   (parse-error "Unnecessary }, interface body is already closed" srt (get-end next))
+                   (parse-error "Unnecessary '}', interface body is already closed" srt (get-end next))
                    (parse-definition cur-tok next 'start getter))))
-            (else (parse-error (format "Expected a } to close interface body, found ~a" out) ps end)))))))
+            (else (parse-error (format "Expected a '}' to close interface body, found ~a" out) ps end)))))))
   
   ;parse-type: token token symbol (->token) -> void
   (define (parse-type pre cur state getter)
@@ -1844,10 +1844,10 @@
                      ((eof? (get-tok assign-exp))
                       (parse-error (format "Expected an expression to bind to ~a" (token-value tok)) start end))
                      ((and (advanced?) (o-brace? (get-tok assign-exp)))
-                      (parse-statement next (parse-array-init assign-exp (getter) 'start getter) 'local-init-end getter #t ctor?
+                      (parse-statement cur-tok (parse-array-init assign-exp (getter) 'start getter) 'local-init-end getter #t ctor?
                                        super-seen?))
                      (else
-                      (parse-statement next (parse-expression null assign-exp 'start getter #f #f) 
+                      (parse-statement cur-tok (parse-expression null assign-exp 'start getter #f #f) 
                                        'local-init-end getter #t ctor? super-seen?)))))
                 ((id-token? n-tok)
                  (parse-error (format "Variables must be separated by commas, ~a not allowed" n-out) start ne))
@@ -1890,7 +1890,7 @@
                  (let ((assign-exp (getter)))
                    (if (eof? (get-tok assign-exp))
                        (parse-error (format "Expected an expression to bind to ~a" (token-value tok)) start end)
-                       (parse-statement next (parse-expression null assign-exp 'start getter #f #f) 
+                       (parse-statement cur-tok (parse-expression null assign-exp 'start getter #f #f) 
                                         'local-init-end getter id-ok? ctor? super-seen?))))
                 ((id-token? n-tok)
                  (parse-error (format "Variables must be separated by commas, ~a not allowed" n-out) start ne))
@@ -1903,11 +1903,11 @@
         ;Intermediate
         ((local-init-end)
          (case kind
-           ((EOF) (parse-error "Expected a ';' or ',' after variable" ps pe))
+           ((EOF) (parse-error "Expected a ';' after variable declaration" ps end))
            ((COMMA) (parse-statement cur-tok (getter) 'local-list getter id-ok? ctor? super-seen?))
            ((SEMI_COLON) (getter))
            ((IDENTIFIER) (parse-error (format "Variables must be separated by commas, ~a not allowed" out) start end))
-           (else (parse-error (format "Expected a ';' to end variable, or more variables, found ~a" out) start end))))
+           (else (parse-error (format "Expected a ';' to end variable declaration, or more variables, found ~a" out) start end))))
         ;Advanced
         ((for) 
          (case kind
