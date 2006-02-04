@@ -7,8 +7,22 @@
 (parameterize ([current-namespace (make-namespace)]
 	       [eval-jit-enabled #t])
   (namespace-require 'mzscheme)
-  (let* ([un0 (lambda (v op arg)
-		;; (printf "Trying ~a ~a\n" op arg);
+  (let* ([check-error-message (lambda (name proc)
+				(unless (memq name '(eq? not null? pair?))
+				  (let ([s (with-handlers ([exn? exn-message])
+					     (proc 'bad))]
+					[name (symbol->string name)])
+				    (test name
+					  (lambda (v)
+					    (and (string? v)
+						 (let ([v (regexp-match 
+							   (format "^~a"
+								   (regexp-replace* #rx"[*?+]" name "\\\\\\0"))
+							   v)])
+						   (and v (car v)))))
+					  s))))]
+	 [un0 (lambda (v op arg)
+		;; (printf "Trying ~a ~a\n" op arg)
 		(let ([name `(,op ,arg)])
 		  (test v name ((eval `(lambda (x) (,op x))) arg))
 		  (when (boolean? v)
@@ -16,6 +30,7 @@
 			  name 
 			  ((eval `(lambda (x) (if (,op x) 'yes 'no))) arg)))))]
 	 [un (lambda (v op arg)
+	       (check-error-message op (eval `(lambda (x) (,op x))))
 	       (un0 v op arg)
 	       (when (number? arg)
 		 (let ([iv (if (number? v)
@@ -33,6 +48,7 @@
 		     (test (if v 'yes 'no) name ((eval `(lambda (x) (if (,op x ,arg2) 'yes 'no))) arg1))
 		     (test (if v 'yes 'no) name ((eval `(lambda (x) (if (,op ,arg1 x) 'yes 'no))) arg2)))))]
 	 [bin (lambda (v op arg1 arg2)
+		(check-error-message op (eval `(lambda (x) (,op x ,arg2))))
 		(bin0 v op arg1 arg2)
 		(let ([iv (if (number? v)
 			      (exact->inexact v)
@@ -44,7 +60,7 @@
     (un #f 'null? 0)
     (un #f 'pair? 0)
 
-    (bin #f eq? 0 10)
+    (bin #f 'eq? 0 10)
 
     (un #t 'zero? 0)
     (un #f 'zero? 1)
@@ -84,9 +100,23 @@
 
     (un 3 'add1 2)
     (un -3 'add1 -4)
+    (un (expt 2 30) 'add1 (sub1 (expt 2 30)))
 
     (un 1 'sub1 2)
     (un -5 'sub1 -4)
+    (un (- (expt 2 30)) 'sub1 (- 1 (expt 2 30)))
+
+    (bin 11 '+ 4 7)
+    (bin -3 '+ 4 -7)
+    (bin (expt 2 30) '+ (expt 2 29) (expt 2 29))
+    (bin (- (expt 2 31) 2) '+ (sub1 (expt 2 30)) (sub1 (expt 2 30)))
+
+    (bin 3 '- 7 4)
+    (bin 11 '- 7 -4)
+    (bin 0 '- (expt 2 29) (expt 2 29))
+    (bin (expt 2 30) '- (expt 2 29) (- (expt 2 29)))
+    (bin (- (expt 2 30)) '- (- (expt 2 29)) (expt 2 29))
+    (bin (- 2 (expt 2 31)) '- (- 1 (expt 2 30)) (sub1 (expt 2 30)))
 
     ))
 
