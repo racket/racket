@@ -154,6 +154,35 @@
 		 v)
 	       'x))))
 
+;; full continuation, mark replaced
+(wcm-test '(11 10)
+	  (lambda ()
+	    (let ([k (with-continuation-mark 'x 10
+		       (begin0
+			(with-continuation-mark 'x 11
+			  (let/cc k 
+			    (with-continuation-mark 'x 12
+			      k)))
+			(+ 2 3)))])
+	      (continuation-mark-set->list 
+	       (continuation-marks k)
+	       'x))))
+
+;; nested full continuation, mark replaced
+(wcm-test '(12 10)
+	  (lambda ()
+	    (let ([k (with-continuation-mark 'x 10
+		       (begin0
+			(with-continuation-mark 'x 11
+			  (let/cc k0
+			    (with-continuation-mark 'x 12
+			      (let/cc k 
+				k))))
+			(+ 2 3)))])
+	      (continuation-mark-set->list 
+	       (continuation-marks k)
+	       'x))))
+
 ;; escape continuation, same thread
 (wcm-test '(11 10)
 	  (lambda ()

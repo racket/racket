@@ -3,6 +3,93 @@
 
 (SECTION 'optimization)
 
+;; Check JIT inlining of primitives:
+(parameterize ([current-namespace (make-namespace)]
+	       [eval-jit-enabled #t])
+  (namespace-require 'mzscheme)
+  (let* ([un0 (lambda (v op arg)
+		;; (printf "Trying ~a ~a\n" op arg);
+		(let ([name `(,op ,arg)])
+		  (test v name ((eval `(lambda (x) (,op x))) arg))
+		  (when (boolean? v)
+		    (test (if v 'yes 'no)
+			  name 
+			  ((eval `(lambda (x) (if (,op x) 'yes 'no))) arg)))))]
+	 [un (lambda (v op arg)
+	       (un0 v op arg)
+	       (when (number? arg)
+		 (let ([iv (if (number? v)
+			       (exact->inexact v)
+			       v)])
+		   (un0 iv op (exact->inexact arg)))))]
+	 [bin0 (lambda (v op arg1 arg2)
+		 ;; (printf "Trying ~a ~a ~a\n" op arg1 arg2);
+		 (let ([name `(,op ,arg1 ,arg2)])
+		   (test v name ((eval `(lambda (x) (,op x ,arg2))) arg1))
+		   (test v name ((eval `(lambda (x) (,op ,arg1 x))) arg2))
+		   (test v name ((eval `(lambda (x y) (,op x y))) arg1 arg2))
+		   (when (boolean? v)
+		     ;; (printf " for branch...\n")
+		     (test (if v 'yes 'no) name ((eval `(lambda (x) (if (,op x ,arg2) 'yes 'no))) arg1))
+		     (test (if v 'yes 'no) name ((eval `(lambda (x) (if (,op ,arg1 x) 'yes 'no))) arg2)))))]
+	 [bin (lambda (v op arg1 arg2)
+		(bin0 v op arg1 arg2)
+		(let ([iv (if (number? v)
+			      (exact->inexact v)
+			      v)])
+		  (bin0 iv op (exact->inexact arg1) arg2)
+		  (bin0 iv op arg1 (exact->inexact arg2))
+		  (bin0 iv op (exact->inexact arg1) (exact->inexact arg2))))])
+
+    (un #f 'null? 0)
+    (un #f 'pair? 0)
+
+    (bin #f eq? 0 10)
+
+    (un #t 'zero? 0)
+    (un #f 'zero? 1)
+    (un #f 'zero? -1)
+
+    (un #f 'positive? 0)
+    (un #t 'positive? 1)
+    (un #f 'positive? -1)
+
+    (un #f 'negative? 0)
+    (un #f 'negative? 1)
+    (un #t 'negative? -1)
+
+    (un #t 'not #f)
+    (un #f 'not #t)
+    (un #f 'not 10)
+
+    (bin #t '< 100 200)
+    (bin #f '< 200 100)
+    (bin #f '< 100 100)
+
+    (bin #t '<= 100 200)
+    (bin #f '<= 200 100)
+    (bin #t '<= 100 100)
+
+    (bin #f '> 100 200)
+    (bin #t '> 200 100)
+    (bin #f '> 100 100)
+
+    (bin #f '>= 100 200)
+    (bin #t '>= 200 100)
+    (bin #t '>= 100 100)
+
+    (bin #f '= 100 200)
+    (bin #f '= 200 100)
+    (bin #t '= 100 100)
+
+    (un 3 'add1 2)
+    (un -3 'add1 -4)
+
+    (un 1 'sub1 2)
+    (un -5 'sub1 -4)
+
+    ))
+
 ;; For some comparison, ignore the stack-depth
 ;;  part of the compilation result (since it's
 ;;  an approximation, anyway).
