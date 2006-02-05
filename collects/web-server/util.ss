@@ -68,15 +68,11 @@
         (build-path base path)))
   
   ;; exn->string : (union exn any) -> string
-  ;; builds an error message, including errortrace annotations (if present)
-  ;; TODO: do we really need this? Ask Robby about better ways to print exceptions.
   (define (exn->string exn)
     (if (exn? exn)
-        (let ([op (open-output-string)])
-          (display (exn-message exn) op)
-          (newline op)
-          (print-error-trace op exn)
-          (get-output-string op))
+        (parameterize ([current-error-port (open-output-string)])
+          ((error-display-handler) (exn-message exn) exn)
+          (get-output-string (current-error-port)))
         (format "~s\n" exn)))
   
   ; lowercase-symbol! : (union string bytes) -> symbol
