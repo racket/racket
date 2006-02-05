@@ -39,7 +39,10 @@ else
   exit 1
 fi
 
+LD_LIBRARY_PATH="$pltdir/lib:$LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH
 exec "$mz" -qC "$0" "$@"
+
 exit 1
 |#
 
