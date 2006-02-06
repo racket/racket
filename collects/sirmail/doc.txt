@@ -54,11 +54,11 @@ Sending panel:
 
   - Mail From: The user's email address.
 
-  - SMTP Server: The SMTP server's host name (outgoing mail).  Use a
-    ":<portno>" suffix on the host name to connect to port
-    <portno>. Supply multiple SMTP hosts by separating the addresses
-    with a comma; the "File" menu of mail-sending frame will let you
-    choose a specific server.
+  - SMTP Server: The SMTP server's host name (outgoing mail). General
+    syntax: [<type>:][<user>@]<host>[:<portno>] where <type> is "tcp"
+    (the default) or "ssl". Supply multiple SMTP hosts by separating
+    the addresses with a comma; the "File" menu of mail-sending frame
+    will let you choose a specific server.
 
   - Default To Domain: If a destination address that isn't declared as
     an alias doesn't include a domain name, SirMail automatically

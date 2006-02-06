@@ -11,7 +11,8 @@
   (require (lib "list.ss")
 	   (lib "file.ss")
 	   (lib "string.ss")
-	   (lib "process.ss"))
+	   (lib "process.ss")
+	   (lib "mzssl.ss" "openssl"))
 
   (require "sirmails.ss"
 	   "pref.ss"
@@ -24,6 +25,8 @@
 	   (lib "qp-sig.ss" "net"))
 
   (require (lib "hierlist-sig.ss" "hierlist"))
+
+  (define smtp-passwords (make-hash-table 'equal))
 
   (provide send@)
   (define send@
@@ -410,12 +413,20 @@
             w))
         
         (define (send-msg)
-          (define-values (smtp-server-to-use smtp-port-to-use)
-            (parse-server-name (SMTP-SERVER) 25))
+          (define-values (smtp-ssl? smtp-auth-user smtp-server-to-use smtp-port-to-use)
+            (parse-server-name+user+type (SMTP-SERVER) 25))
+	  (define smtp-auth-passwd (and smtp-auth-user
+					(or (hash-table-get smtp-passwords (cons smtp-auth-user smtp-server-to-use)
+							    (lambda () #f))
+					    (let ([p (get-pw-from-user smtp-auth-user mailer-frame)])
+					      (unless p (raise-user-error 'send "send canceled"))
+					      p))))
           (send-message
            (send message-editor get-text)
+	   smtp-ssl?
            smtp-server-to-use
            smtp-port-to-use
+	   smtp-auth-user smtp-auth-passwd
            (map (lambda (i) (send i user-data)) 
                 (send enclosure-list get-items))
            enable
@@ -433,7 +444,10 @@
                    (if f
                        (send message-editor save-file f 'text)
                        (loop))))))
-           message-count))
+           message-count)
+	  (when smtp-auth-passwd
+	    (hash-table-put! smtp-passwords (cons smtp-auth-user smtp-server-to-use) 
+			     smtp-auth-passwd)))
         
         ;; enq-msg : -> void
         ;; enqueues a message for a later send
@@ -592,7 +606,7 @@
 				      (new-mailer p "" "" "" "" "" 
 						  (map (lambda (i) (send i user-data)) 
 						       (send enclosure-list get-items))
-						  0)
+						  message-count)
 				      (semaphore-post s)))
 				   (semaphore-wait s)))]
 		     [shortcut #\=])
@@ -711,8 +725,9 @@
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
       (define (send-message message-str
+			    ssl?
                             smtp-server
-                            smtp-port
+                            smtp-port auth-user auth-pw
                             enclosures
                             enable 
                             status-message-starting
@@ -793,7 +808,10 @@
                                               tos
                                               new-header
                                               body-lines
-                                              smtp-port))))
+                                              #:port-no smtp-port
+					      #:tcp-connect (if ssl? ssl-connect tcp-connect)
+					      #:auth-user auth-user
+					      #:auth-passwd auth-pw))))
                        save-before-killing))
                   (status-done))
                 (message-box

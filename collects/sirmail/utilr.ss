@@ -230,6 +230,15 @@
 	      'yes
 	      'no)))
 
+      ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+      (define (get-pw-from-user username parent)
+	(get-text-from-user "Password" 
+			    (format "Password for ~a:" username)
+			    parent
+			    ""
+			    '(password)))
+
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;;  Decoding `from' names                                  ;;
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

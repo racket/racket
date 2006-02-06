@@ -497,7 +497,12 @@ EXCEPTIONS -----------------------------------------------------------
 PROCEDURES -----------------------------------------------------------
 
 > (smtp-send-message server-string from-string to-list-of-strings header
-                     message-list-of-strings/bytes [port]) -> void
+                     message-list-of-strings/bytes 
+		     [#:port-no k] 
+		     [#:auth-user user-string-or-#f]
+		     [#:auth-passwd pw-string-or-#f]
+		     [#:tcp-connect proc]
+		     [port-no]) -> void
 
   The first argument is the IP address of the SMTP server. The
   `from-string' argument specifies the mail address of the sender, and
@@ -509,11 +514,24 @@ PROCEDURES -----------------------------------------------------------
   message, where each string or byte string in the list corresponds to
   a single line of message text; no string in
   `message-list-of-strings' should contain a carriage return or
-  newline characters. The optional `port' argument specifies the IP
-  port to use in contacting the SMTP server; the default is 25.
+  newline characters.
 
-  See the head package for utilities that construct a message headers
-  and validate mail address strings.
+  The optional `port-no' argument --- which can be specified either
+  with the #:port-no keyword or, for backward compatibility, as an
+  extra argument after keywords --- specifies the IP port to use in
+  contacting the SMTP server; the default is 25.
+
+  The optional #:auth-user and #:auth-passwd keyword argument supply a
+  username and password for authenticated SMTP (using the AUTH PLAIN
+  protocol).
+
+  The optional #:tcp-connect keyword argument supplies a connection
+  procedure to be used in place of `tcp-connect'. For example, use
+  `ssl-connect' from `(lib "mzssl.ss" "openssl")' to connect to the
+  server via SSL.
+
+  See the "head.ss" library for utilities that construct a message
+  headers and validate mail address strings.
 
 > (smtp-sending-end-of-message [proc])
 

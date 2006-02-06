@@ -37,6 +37,8 @@
 
      confirm-box
 
+     get-pw-from-user
+
      generalize-encoding
      parse-encoded
      encode-for-header))
@@ -76,7 +78,8 @@
      
      USE-EXTERNAL-COMPOSER?
 
-     parse-server-name))
+     parse-server-name
+     parse-server-name+user+type))
 
   (provide sirmail:read^)
   (define-signature sirmail:read^

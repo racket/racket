@@ -29,6 +29,19 @@
 	      (values (cadr m) (string->number (caddr m)))
 	      (values s default-port))))
 
+      (define (parse-server-name+user+type s default-port)
+	(let ([m (regexp-match #rx"^(ssl|tcp):.*:.*" s)])
+	  (let-values ([(ssl? s) (if m
+				     (values (string=? "ssl" (substring s 0 3))
+					     (substring s 4))
+				     (values #f s))])
+	    (let ([m (regexp-match #rx"^(.*)@(.*)$" s)])
+	      (let-values ([(user s) (if m
+					 (values (cadr m) (caddr m))
+					 (values #f s))])
+		(let-values ([(server port) (parse-server-name s default-port)])
+		  (values ssl? user server port)))))))
+
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;;  Preferences                                            ;;
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

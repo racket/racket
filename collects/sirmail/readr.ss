@@ -255,12 +255,8 @@
                             ;; New connection
                             (begin
 			      (let ([pw (or (get-PASSWORD)
-					    (let ([p (get-text-from-user "Password" 
-									 (format "Password for ~a:" (USERNAME))
-									 main-frame
-									 ""
-									 '(password))])
-					      (unless p (raise-user-error 'connect "connection cancelled"))
+					    (let ([p (get-pw-from-user (USERNAME) main-frame)])
+					      (unless p (raise-user-error 'connect "connection canceled"))
 					      p))])
 				(let*-values ([(imap count new) (let-values ([(server port-no)
 									      (parse-server-name (IMAP-SERVER)

@@ -316,9 +316,21 @@
 	       (<= 1 (string->number (caddr m)) 65535)
 	       (is-host-address? (cadr m))))))
 
-  (define (is-host-address+port-list? s)
+  (define (is-host-address+port+user? s)
+    (or (is-host-address+port? s)
+	(let ([m (regexp-match "^(?:[-+a-zA-Z0-9_.]+)@(.*)$" s)])
+	  (and m
+	       (is-host-address+port? (cadr m))))))
+
+  (define (is-host-address+port+user+type? s)
+    (or (is-host-address+port+user? s)
+	(let ([m (regexp-match "^(?:ssl|tcp):(.*)$" s)])
+	  (and m
+	       (is-host-address+port+user? (cadr m))))))
+
+  (define (is-host-address+port+user+type-list? s)
     (let ([l (regexp-split ", *" s)])
-      (andmap is-host-address+port? l)))
+      (andmap is-host-address+port+user+type? l)))
 
   (define (check-address ok? who tl s port-ok? multi?)
     (or (ok? s)
@@ -352,8 +364,8 @@
     (check-address is-host-address? who tl s #f #f))
   (define (check-host-address/port who tl s)
     (check-address is-host-address+port? who tl s #t #f))
-  (define (check-host-address/port/multi who tl s)
-    (check-address is-host-address+port-list? who tl s #t #t))
+  (define (check-host-address/port/user/type/multi who tl s)
+    (check-address is-host-address+port+user+type-list? who tl s #t #t))
 
   ;; check-biff-delay : (union #f string) (union #f parent) string -> boolean
   ;; checks to see if the string in the biff delay field makes
@@ -472,7 +484,8 @@
     (let ([p (instantiate vertical-panel% (parent))])
       
       (make-text-field "Mail From" p 20 'sirmail:mail-from #f check-user-address (lambda (x) x) (lambda (x) x))
-      (make-text-field "SMTP Server" p 20 'sirmail:smtp-server #f check-host-address/port/multi (lambda (x) x) (lambda (x) x))
+      (make-text-field "SMTP Server" p 20 'sirmail:smtp-server #f check-host-address/port/user/type/multi 
+		       (lambda (x) x) (lambda (x) x))
 
       (make-file/directory-button #t #f p
 				  'sirmail:sent-directory
