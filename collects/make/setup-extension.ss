@@ -180,11 +180,11 @@
         
 	(with-new-flags 
 	 current-extension-compiler-flags
-	 (list (format "-I~a" (path->string (build-path sys-path "include"))))
+	 ((current-make-compile-include-strings) (build-path sys-path "include"))
          
 	 (with-new-flags 
 	  current-extension-preprocess-flags
-	  (list (format "-I~a" (path->string (build-path sys-path "include"))))
+	  ((current-make-compile-include-strings) (build-path sys-path "include"))
 	  
           ;; Add -L and -l for Unix:
           (with-new-flags
