@@ -115,7 +115,7 @@
   ;; output-response: connection response -> void
   (define (ext:output-response conn resp)
     (if (connection-close? conn)
-        (raise 'output-response "Attempt to output on closed connection.")
+        (error 'output-response "Attempt to output on closed connection.")
         (with-handlers ([exn? (lambda (exn)
                                 (kill-connection! conn)
                                 (raise exn))])
@@ -187,7 +187,7 @@
   ;; output-file: connection path symbol bytes -> void
   (define (ext:output-file conn file-path method mime-type)
     (if (connection-close? conn)
-        (raise 'output-response "Attempt to output on closed connection.")
+        (error 'output-response "Attempt to output on closed connection.")
         (with-handlers ([exn? (lambda (exn)
                                 (kill-connection! conn)
                                 (raise exn))])
@@ -213,7 +213,7 @@
   ;; If it is a head request output headers only, otherwise output as usual
   (define (ext:output-response/method conn resp meth)
     (if (connection-close? conn)
-        (raise 'output-response "Attempt to output on closed connection.")
+        (error 'output-response "Attempt to output on closed connection.")
         (with-handlers ([exn? (lambda (exn)
                                 (kill-connection! conn)
                                 (raise exn))])
