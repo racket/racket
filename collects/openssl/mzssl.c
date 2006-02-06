@@ -1022,10 +1022,10 @@ static void TCP_INIT(char *name)
 # define TCP_INIT(n) /* empty */
 #endif
 
-/*****************************************************************************
- * SCHEME EXTERNAL FUNCTION IMPLEMENTATIONS: These are the implemenations of *
- * the functions which are actually going to be exported to MzScheme userland*
- *****************************************************************************/
+/******************************************************************************
+ * SCHEME EXTERNAL FUNCTION IMPLEMENTATIONS: These are the implementations of *
+ * the functions which are actually going to be exported to MzScheme userland *
+ ******************************************************************************/
 
 static Scheme_Object *ssl_connect(int argc, Scheme_Object *argv[])
 {
@@ -1037,7 +1037,7 @@ static Scheme_Object *ssl_connect(int argc, Scheme_Object *argv[])
   int status;
   const char *errstr = "Unknown error";
   int err = 0;
-  GC_CAN_IGNORE struct mz_addrinfo *addr;
+  GC_CAN_IGNORE struct mz_addrinfo *addr = NULL;
   int sock;
 
   address = check_host_and_convert("ssl-connect", argc, argv, 0);
@@ -1080,6 +1080,7 @@ static Scheme_Object *ssl_connect(int argc, Scheme_Object *argv[])
   
   status = connect(sock, (struct sockaddr *)addr->ai_addr, addr->ai_addrlen);
   scheme_free_host_address(addr);
+  addr = NULL;
 
   /* here's the complicated bit */
   if (status) {
@@ -1117,6 +1118,7 @@ static Scheme_Object *ssl_connect(int argc, Scheme_Object *argv[])
 
  clean_up_and_die:
   if (sock != INVALID_SOCKET) closesocket(sock);
+  if (addr) scheme_free_host_address(addr);
   scheme_raise_exn(MZEXN_FAIL_NETWORK, 
 		   "ssl-connect: connection to %T, port %d failed (%Z)",
 		   argv[0], SCHEME_INT_VAL(argv[1]), 
