@@ -20,7 +20,7 @@
 
   #|
   (define in?
-    (union
+    (or/c
       (list-immutable/c (xexpr/callback? . -> . string?)
                         (listof (cons/c symbol? string?)))
       (symbols 'back 'forward)
@@ -38,7 +38,7 @@
 
   ;; A history is a
   ;; (make-history string? (listof (cons/p symbol? string?))
-  ;;                       (union #f (listof (cons/p symbol? string?)))
+  ;;                       (or/c #f (listof (cons/p symbol? string?)))
   (define-struct history (k-url bindings headers))
 
   ;; Go over the input list, resuming the servlet on each choice, until the
@@ -102,7 +102,7 @@
         ((l) (resumer (history/list l r)))
         ((? null?) r))))
 
-  ;; history/list : (union (list/p (xexpr? . -> . string?)
+  ;; history/list : (or/c (list/p (xexpr? . -> . string?)
   ;;                               (listof (cons/p symbol? string?)))
   ;;                       (list/p (xexpr? . -> . string?)
   ;;                               (listof (cons/p symbol? string?))
@@ -150,7 +150,7 @@
       (else #f)))
 
   ;; Produce the k-url used for the next part of the form
-  ;; (xexpr/callback? . -> . (union false? string?))
+  ;; (xexpr/callback? . -> . (or/c false? string?))
   (define-syntax hyperlink->k-url
     (syntax-rules ()
       ((_ str)

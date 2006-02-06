@@ -16,7 +16,7 @@
   (provide/contract
    [read-request ((connection? number? ((input-port?) . ->* . (string? string?))) . ->* . (request? boolean?))]
    [read-bindings (connection? symbol? url? (listof header?)
-                               . -> . (union (listof binding?) string?))])
+                               . -> . (or/c (listof binding?) string?))])
   
   
   ;; **************************************************
@@ -70,13 +70,13 @@
   ;; **************************************************
   ;; read-request-line
 
-  ; Method = (U 'get 'post 'head 'put 'delete 'trace)
+  ; Method = (or/c 'get 'post 'head 'put 'delete 'trace)
   (define METHOD:REGEXP
     (byte-regexp #"^(GET|HEAD|POST|PUT|DELETE|TRACE) (.+) HTTP/([0-9]+)\\.([0-9]+)$"))
 
   (define (match-method x)
     (regexp-match METHOD:REGEXP x))
-  ;:(define match-method (type: (str -> (union false (list str str str str str)))))
+  ;:(define match-method (type: (str -> (or/c false (list str str str str str)))))
 
 
   ; read-request-line : iport -> symbol url number number
@@ -106,7 +106,7 @@
 
   (define (match-colon s)
     (regexp-match COLON:REGEXP s))
-  ;:(define match-colon (type: (str -> (union false (list str str str)))))
+  ;:(define match-colon (type: (str -> (or/c false (list str str str)))))
 
 
   ; read-headers : iport -> (listof (cons symbol bytes))
@@ -143,7 +143,7 @@
 
   (define INPUT-BUFFER-SIZE 4096)
 
-  ;; read-bindings: connection symboll url (listof header?) -> (union (listof binding?) string?)
+  ;; read-bindings: connection symboll url (listof header?) -> (or/c (listof binding?) string?)
   (define (read-bindings conn meth uri headers)
     (case meth
       [(get) (url-query uri)]
@@ -231,7 +231,4 @@
                                null
                                (cdr body)))])))
 
-  (define CR-NL (format "~a~a" #\return #\newline))
-
-
-  )
+  (define CR-NL (format "~a~a" #\return #\newline)))

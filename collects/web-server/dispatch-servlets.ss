@@ -275,7 +275,7 @@
                  (string->immutable-string (format "Couldn't find ~a" servlet-filename))
                  (current-continuation-marks) ))]))
     
-    ;; load-servlet/path path -> (union #f cache-entry)
+    ;; load-servlet/path path -> (or/c #f cache-entry)
     ;; given a string path to a filename attempt to load a servlet
     ;; A servlet-file will contain either
     ;;;; A signed-unit-servlet

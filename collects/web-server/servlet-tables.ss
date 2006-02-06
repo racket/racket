@@ -38,7 +38,7 @@
   (provide
    match-url-params)
   (provide/contract
-   [continuation-url? (url? . -> . (union boolean? (list/c symbol? number? number?)))]
+   [continuation-url? (url? . -> . (or/c boolean? (list/c symbol? number? number?)))]
    [embed-ids (symbol? number? number? url? . -> . string?)]
    [store-continuation! (procedure? procedure? url? servlet-instance? . -> . string?)]
    [create-new-instance! (hash-table? custodian? execution-context? semaphore? timer?
@@ -130,7 +130,7 @@
      in-url
      (format "~a*~a*~a" inst-id k-id salt)))
 
-  ;; continuation-url?: url -> (union (list number number number) #f)
+  ;; continuation-url?: url -> (or/c (list number number number) #f)
   ;; determine if this url encodes a continuation and extract the instance id and
   ;; continuation id.
   (define (continuation-url? a-url)

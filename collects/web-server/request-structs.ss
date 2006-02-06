@@ -15,12 +15,12 @@
   ;; is this a binding
   (define binding?
     (cons/c symbol? 
-            (union string?
+            (or/c string?
                    bytes?)))
 
   (provide header? binding?)
   (provide/contract
    [struct request ([method symbol?] [uri url?] [headers (listof header?)]
-                    [bindings/raw (union (listof binding?) string?)]
+                    [bindings/raw (or/c (listof binding?) string?)]
                     [host-ip string?] [host-port number?]
                     [client-ip string?])]))

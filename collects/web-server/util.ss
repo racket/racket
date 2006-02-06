@@ -17,13 +17,13 @@
    [valid-port? (any/c . -> . boolean?)]
    [decompose-request ((request?) . ->* . (url? symbol? string?))]
    [network-error ((symbol? string?) (listof any/c) . ->* . (void))]
-   [path->list  (path? . -> . (cons/c (union path? (symbols 'up 'same))
-                                      (listof (union path? (symbols 'up 'same)))))]
-   [url-path->path ((union (symbols 'up 'same) path?) string? . -> . path?)]
+   [path->list  (path? . -> . (cons/c (or/c path? (symbols 'up 'same))
+                                      (listof (or/c path? (symbols 'up 'same)))))]
+   [url-path->path ((or/c (symbols 'up 'same) path?) string? . -> . path?)]
    [directory-part (path? . -> . path?)]
-   [lowercase-symbol! ((union string? bytes?) . -> . symbol?)]
-   [exn->string ((union exn? any/c) . -> . string?)]
-   [build-path-unless-absolute (path? (union string? path?) . -> . path?)])
+   [lowercase-symbol! ((or/c string? bytes?) . -> . symbol?)]
+   [exn->string ((or/c exn? any/c) . -> . string?)]
+   [build-path-unless-absolute (path? (or/c string? path?) . -> . path?)])
   
   ;; valid-port? : any/c -> boolean?
   (define (valid-port? p)
@@ -61,13 +61,13 @@
              (apply format (format "~a: ~a" src fmt) args))
             (current-continuation-marks))))
   
-  ;; build-path-unless-absolute : path (union string? path?) -> path?
+  ;; build-path-unless-absolute : path (or/c string? path?) -> path?
   (define (build-path-unless-absolute base path)
     (if (absolute-path? path)
         (build-path path)
         (build-path base path)))
   
-  ;; exn->string : (union exn any) -> string
+  ;; exn->string : (or/c exn any) -> string
   (define (exn->string exn)
     (if (exn? exn)
         (parameterize ([current-error-port (open-output-string)])
@@ -75,7 +75,7 @@
           (get-output-string (current-error-port)))
         (format "~s\n" exn)))
   
-  ; lowercase-symbol! : (union string bytes) -> symbol
+  ; lowercase-symbol! : (or/c string bytes) -> symbol
   (define (lowercase-symbol! s)
     (let ([s (if (bytes? s)
                  (bytes->string/utf-8 s)

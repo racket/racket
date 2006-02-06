@@ -45,8 +45,8 @@
   ;; pass-entry = (make-pass-entry str regexp (list sym str))
   (define-struct pass-entry (domain pattern users))
   
-  ;; access-denied? : Method string x-table denied? -> (+ false str)
-  ;; denied?: str sym str -> (U str #f)
+  ;; access-denied? : Method string x-table denied? -> (or/c false str)
+  ;; denied?: str sym str -> (or/c str #f)
   ;; the return string is the prompt for authentication
   (define (access-denied? method uri-str headers denied?)    
     (let ([user-pass (extract-user-pass headers)])
@@ -56,7 +56,7 @@
   
   (define-struct (exn:password-file exn) ())
   
-  ;; : host -> (str sym str -> (U str #f))
+  ;; : host -> (str sym str -> (or/c str #f))
   ;; to produce a function that checks if a given url path is accessible by a given user with a given
   ;; password.  If not, the produced function returns a string, prompting for the password.
   ;; If the password file does not exist, all accesses are allowed.  If the file is malformed, an
@@ -74,7 +74,7 @@
                    (map (lambda (x) (make-pass-entry (car x) (regexp (cadr x)) (cddr x)))
                         raw))])
             
-            ;; string symbol bytes -> (union #f string)
+            ;; string symbol bytes -> (or/c #f string)
             (lambda (request-path user-name password)
               (ormap (lambda (x)
                        (and (regexp-match (pass-entry-pattern x) request-path)

@@ -54,7 +54,7 @@
             [seconds number?]
             [mime bytes?]
             [extras (listof (cons/c symbol? string?))]
-            [body (listof (union string?
+            [body (listof (or/c string?
                                  bytes?))])]
    [struct (response/incremental response/basic)
            ([code number?]
@@ -62,6 +62,6 @@
             [seconds number?]
             [mime bytes?]
             [extras (listof (cons/c symbol? string?))]
-            [generator ((() (listof (union bytes? string?)) . ->* . any) . ->
+            [generator ((() (listof (or/c bytes? string?)) . ->* . any) . ->
                                                                          . any)])]
    [response? (any/c . -> . boolean?)]))

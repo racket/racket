@@ -118,7 +118,7 @@
          csw)))
     (list 0 0 0) questions answers))
 
- ;; end-quiz: (listof question) (listof (union number false)) -> request
+ ;; end-quiz: (listof question) (listof (or/c number false)) -> request
  ;; request bindings are not currently used.
  (define (end-quiz questions answers)
    (send/forward

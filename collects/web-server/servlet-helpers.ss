@@ -222,9 +222,9 @@
   
   (define AUTHENTICATION-REGEXP (regexp "([^:]*):(.*)"))
   (define (match-authentication x) (regexp-match AUTHENTICATION-REGEXP x))
-  ;:(define match-authentication (type: (str -> (union false (list str str str)))))
+  ;:(define match-authentication (type: (str -> (or/c false (list str str str)))))
   
-  ; extract-user-pass : (listof (cons sym bytes)) -> (U #f (cons str str))
+  ; extract-user-pass : (listof (cons sym bytes)) -> (or/c #f (cons str str))
   ;; Notes (GregP)
   ;; 1. This is Basic Authentication (RFC 1945 SECTION 11.1)
   ;;    e.g. an authorization header will look like this:
@@ -244,7 +244,7 @@
                      (cons (cadr user-pass) (caddr user-pass)))]
                [else #f])))))
   
-  ;; basic?: bytes -> (union (listof bytes) #f)
+  ;; basic?: bytes -> (or/c (listof bytes) #f)
   ;; does the second part of the authorization header start with #"Basic "
   (define basic?
     (let ([basic-regexp (byte-regexp #"^Basic .*")])
