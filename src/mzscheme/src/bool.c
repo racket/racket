@@ -35,8 +35,8 @@
 /* global_constants */
 Scheme_Object scheme_true[1];
 Scheme_Object scheme_false[1];
+
 Scheme_Object *scheme_not_prim;
-Scheme_Object *scheme_eq_prim;
 
 /* locals */
 static Scheme_Object *not_prim (int argc, Scheme_Object *argv[]);
@@ -57,20 +57,26 @@ void scheme_init_true_false(void)
 
 void scheme_init_bool (Scheme_Env *env)
 {
+  Scheme_Object *p;
+
   REGISTER_SO(scheme_not_prim);
-  REGISTER_SO(scheme_eq_prim);
 
-  scheme_not_prim = scheme_make_folding_prim(not_prim, "not", 1, 1, 1);
+  p = scheme_make_folding_prim(not_prim, "not", 1, 1, 1);
+  scheme_not_prim = p;
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
 
-  scheme_add_global_constant("not", scheme_not_prim, env);
+  scheme_add_global_constant("not", p, env);
+
   scheme_add_global_constant("boolean?",
 			     scheme_make_folding_prim(boolean_p_prim,
 						      "boolean?",
 						      1, 1, 1),
 			     env);
 
-  scheme_eq_prim = scheme_make_folding_prim(eq_prim, "eq?", 2, 2, 1);
-  scheme_add_global_constant("eq?", scheme_eq_prim, env);
+  p = scheme_make_folding_prim(eq_prim, "eq?", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("eq?", p, env);
+
   scheme_add_global_constant("eqv?",
 			     scheme_make_folding_prim(eqv_prim,
 						      "eqv?",

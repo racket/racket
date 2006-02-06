@@ -33,7 +33,6 @@ static Scheme_Object *graph_syntax_p(int argc, Scheme_Object **argv);
 static Scheme_Object *syntax_to_datum(int argc, Scheme_Object **argv);
 static Scheme_Object *datum_to_syntax(int argc, Scheme_Object **argv);
 
-static Scheme_Object *syntax_e(int argc, Scheme_Object **argv);
 static Scheme_Object *syntax_line(int argc, Scheme_Object **argv);
 static Scheme_Object *syntax_col(int argc, Scheme_Object **argv);
 static Scheme_Object *syntax_pos(int argc, Scheme_Object **argv);
@@ -317,15 +316,16 @@ static void DO_WRAP_POS_REVINIT(Wrap_Pos *w, Scheme_Object *k)
 
 void scheme_init_stx(Scheme_Env *env)
 {
+  Scheme_Object *p;
+
 #ifdef MZ_PRECISE_GC
   register_traversers();
 #endif
 
-  scheme_add_global_constant("syntax?", 
-			     scheme_make_folding_prim(syntax_p,
-						      "syntax?",
-						      1, 1, 1),
-			     env);
+  p = scheme_make_folding_prim(syntax_p, "syntax?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("syntax?", p, env);
+
   scheme_add_global_constant("syntax-graph?", 
 			     scheme_make_folding_prim(graph_syntax_p,
 						      "syntax-graph?",
@@ -346,11 +346,11 @@ void scheme_init_stx(Scheme_Env *env)
 			     scheme_datum_to_syntax_proc,
 			     env);
 
-  scheme_add_global_constant("syntax-e", 
-			     scheme_make_folding_prim(syntax_e,
-						      "syntax-e",
-						      1, 1, 1),
-			     env);
+  
+  p = scheme_make_folding_prim(scheme_checked_syntax_e, "syntax-e", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("syntax-e", p, env);
+
   scheme_add_global_constant("syntax-line", 
 			     scheme_make_folding_prim(syntax_line,
 						      "syntax-line",
@@ -1956,6 +1956,8 @@ Scheme_Object *scheme_stx_content(Scheme_Object *o)
      /* Propagates wraps while getting a syntax object's content. */
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
+
+  /* The fast-past tests are duplicated in jit.c. */
 
   if ((STX_KEY(stx) & STX_SUBSTX_FLAG) && stx->u.lazy_prefix) {
     Scheme_Object *v = stx->val, *result;
@@ -4947,7 +4949,7 @@ static Scheme_Object *datum_to_syntax(int argc, Scheme_Object **argv)
 }
 
 
-static Scheme_Object *syntax_e(int argc, Scheme_Object **argv)
+Scheme_Object *scheme_checked_syntax_e(int argc, Scheme_Object **argv)
 {
   if (!SCHEME_STXP(argv[0]))
     scheme_wrong_type("syntax-e", "syntax", 0, argc, argv);

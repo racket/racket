@@ -339,6 +339,8 @@ void scheme_copy_stack(Scheme_Jumpup_Buf *b, void *base, void *start GC_VAR_STAC
 static void uncopy_stack(int ok, Scheme_Jumpup_Buf *b, long *prev)
 {
   Scheme_Jumpup_Buf *c;
+  long top_delta = 0, bottom_delta = 0, size;
+  void *cfrom, *cto;
 
   if (!ok) {
     unsigned long z;
@@ -361,10 +363,26 @@ static void uncopy_stack(int ok, Scheme_Jumpup_Buf *b, long *prev)
   START_XFORM_SKIP;
   c = b;
   while (c) {
-    memcpy(c->stack_from,
-	   get_copy(c->stack_copy),
-	   c->stack_size);
-    c = c->cont;
+    size = c->stack_size - top_delta;
+    cto = (char *)c->stack_from + bottom_delta;
+    cfrom = (char *)get_copy(c->stack_copy) + bottom_delta;
+
+    memcpy(cto, cfrom, size);
+
+    if (c->cont) {
+      if (scheme_stack_grows_up) {
+	top_delta = ((unsigned long)c->stack_from 
+		     - ((unsigned long)c->cont->buf.stack_from
+			+ c->cont->buf.stack_size));
+      } else {
+	bottom_delta = ((unsigned long)c->stack_from 
+			+ c->stack_size
+			- (unsigned long)c->cont->buf.stack_from);
+	top_delta = bottom_delta;
+      }
+      c = &c->cont->buf;
+    } else
+      c = NULL;
   }
   END_XFORM_SKIP;
 
@@ -377,8 +395,58 @@ static void uncopy_stack(int ok, Scheme_Jumpup_Buf *b, long *prev)
   scheme_longjmp(b->buf, 1);
 }
 
+#ifdef MZ_PRECISE_GC
+START_XFORM_SKIP;
+#endif
+
+static long find_same(char *p, char *low, long max_size)
+{
+  long cnt = 0;
+
+  /* We assume a max possible amount of the current stack that should
+     not be shared with the saved stack. This is ok (or not) in the same
+     sense as assuming that STACK_SAFETY_MARGIN is enough wiggle room to
+     prevent stack overflow. */
+# define MAX_STACK_DIFF 4096
+
+  if (max_size > MAX_STACK_DIFF) {
+    cnt = max_size - MAX_STACK_DIFF;
+    max_size = MAX_STACK_DIFF;
+  }
+
+  if (scheme_stack_grows_up) {
+    while (max_size--) {
+      if (p[cnt] != low[cnt])
+	break;
+      cnt++;
+    }
+  } else {
+    while (max_size--) {
+      if (p[max_size] != low[max_size])
+	break;
+      cnt++;
+    }
+  }
+
+  return cnt;
+}
+
+#ifdef MZ_PRECISE_GC
+static void *align_var_stack(void **vs, void *s)
+{
+  while (STK_COMP((unsigned long)vs, (unsigned long)s)) {
+    vs = (void **)(*vs);
+  }
+  return (void *)vs;
+}
+#define ALIGN_VAR_STACK(vs, s) s = align_var_stack(vs, s)
+END_XFORM_SKIP;
+#else
+# define ALIGN_VAR_STACK(vs, s) /* empty */
+#endif
+
 int scheme_setjmpup_relative(Scheme_Jumpup_Buf *b, void *base,
-			     void * volatile start, Scheme_Jumpup_Buf *c)
+			     void * volatile start, struct Scheme_Cont *c)
 {
   int local;
   long disguised_b;
@@ -394,12 +462,32 @@ int scheme_setjmpup_relative(Scheme_Jumpup_Buf *b, void *base,
 
   if (!(local = scheme_setjmp(b->buf))) {
     if (c) {
+      /* We'd like to re-use the stack copied for a continuation
+	 that encloses the current one --- but we dont' know exactly
+	 how much the stack is supposed to be shared, since call/cc
+	 is implemented with a trampoline; certainly, the shallowest
+	 bit of the old continuation is not right for this one. So,
+	 we just start from the deepest part of the stack and find
+	 how many bytes match (using find_same)
+	 For chains of continuations C1 < C2 < C3, we assume that the 
+	 discovered-safe part of C1 to be used for C2 is also valid
+	 for C3, so checking for C3 starts with the fresh part in C2,
+	 and that's where asymptotic benefits start to kick in. 
+         Unfortunately, I can't quite convince myself that this
+         assumption is definitely correct. I think it's likely correct,
+         but watch out. */
+      long same_size;
+      START_XFORM_SKIP;
+      same_size = find_same(get_copy(c->buf.stack_copy), c->buf.stack_from, c->buf.stack_size);
       b->cont = c;
       if (scheme_stack_grows_up) {
-	start = (void *)((char *)c->stack_from + c->stack_size);
+	start = (void *)((char *)c->buf.stack_from + same_size);
       } else {
-	start = c->stack_from;
+	start = (void *)((char *)c->buf.stack_from + (c->buf.stack_size - same_size));
       }
+      /* In 3m-mode, we need to copy on a var-stack boundary: */
+      ALIGN_VAR_STACK(__gc_var_stack__, start);
+      END_XFORM_SKIP;
     } else
       b->cont = NULL;
 

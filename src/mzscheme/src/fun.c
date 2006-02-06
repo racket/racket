@@ -80,7 +80,7 @@ int scheme_cont_capture_count;
 
 static Scheme_Object *certify_mode_symbol, *transparent_symbol, *transparent_binding_symbol, *opaque_symbol;
 
-static Scheme_Object *null_val_key;
+static Scheme_Object *null_val_key, *cont_key;
 
 /* locals */
 static Scheme_Object *procedure_p (int argc, Scheme_Object *argv[]);
@@ -90,6 +90,7 @@ static Scheme_Object *for_each (int argc, Scheme_Object *argv[]);
 static Scheme_Object *andmap (int argc, Scheme_Object *argv[]);
 static Scheme_Object *ormap (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_cc (int argc, Scheme_Object *argv[]);
+static Scheme_Object *internal_call_cc (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_with_continuation_barrier (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_with_sema (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_with_sema_enable_break (int argc, Scheme_Object *argv[]);
@@ -150,6 +151,8 @@ typedef void (*DW_PrePost_Proc)(void *);
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
 #endif
+
+static Scheme_Object *internal_call_cc_prim;
 
 /* See call_cc: */
 typedef struct Scheme_Dynamic_Wind_List {
@@ -239,6 +242,12 @@ scheme_init_fun (Scheme_Env *env)
 				0, -1),
   scheme_add_global_constant("call-with-escape-continuation", o, env);
   scheme_add_global_constant("call/ec", o, env);
+
+  REGISTER_SO(internal_call_cc_prim);
+  internal_call_cc_prim = scheme_make_prim_w_arity2(internal_call_cc,
+						    "call-with-current-continuation",
+						    1, 1,
+						    0, -1);
 
   o = scheme_make_prim_w_arity2(call_cc,
 				"call-with-current-continuation",
@@ -411,8 +420,10 @@ scheme_init_fun (Scheme_Env *env)
 
   REGISTER_SO(is_method_symbol);
   REGISTER_SO(scheme_inferred_name_symbol);
+  REGISTER_SO(cont_key);
   is_method_symbol = scheme_intern_symbol("method-arity-error");
   scheme_inferred_name_symbol = scheme_intern_symbol("inferred-name");
+  cont_key = scheme_make_symbol("k"); /* uninterned */
 }
 
 Scheme_Object *
@@ -649,16 +660,20 @@ scheme_make_closure(Scheme_Thread *p, Scheme_Object *code, int close)
   return (Scheme_Object *)closure;
 }
 
-Scheme_Object *scheme_jit_closure(Scheme_Object *code)
+Scheme_Object *scheme_jit_closure(Scheme_Object *code, Scheme_Letrec *lr)
+  /* If lr is supplied as a letrec binding this closure, it may be used
+     for JIT compilation. */
 {
+#ifdef MZ_USE_JIT
   Scheme_Closure_Data *data = (Scheme_Closure_Data *)code;
   
-#ifdef MZ_USE_JIT
   if (!data->native_code) {
     Scheme_Native_Closure_Data *ndata;
     
     data  = MALLOC_ONE_TAGGED(Scheme_Closure_Data);
     memcpy(data, code, sizeof(Scheme_Closure_Data));
+
+    data->context = (Scheme_Object *)lr;
 
     ndata = scheme_generate_lambda(data, 1, NULL);
     data->native_code = ndata;
@@ -1312,6 +1327,30 @@ Scheme_Object *
 scheme_force_one_value(Scheme_Object *obj)
 {
   return force_values(obj, 0);
+}
+
+Scheme_Object *
+scheme_force_value_same_mark(Scheme_Object *obj)
+{
+  Scheme_Object *v;
+  
+  MZ_CONT_MARK_POS -= 2;
+  v = force_values(obj, 1);
+  MZ_CONT_MARK_POS += 2;
+
+  return v;
+}
+
+Scheme_Object *
+scheme_force_one_value_same_mark(Scheme_Object *obj)
+{
+  Scheme_Object *v;
+  
+  MZ_CONT_MARK_POS -= 2;
+  v = force_values(obj, 0);
+  MZ_CONT_MARK_POS += 2;
+
+  return v;
 }
 
 static void *apply_k(void)
@@ -2711,62 +2750,89 @@ call_with_sema_enable_break(int argc, Scheme_Object *argv[])
 
 static Scheme_Saved_Stack *copy_out_runstack(Scheme_Thread *p,
 					     Scheme_Object **runstack,
-					     Scheme_Object **runstack_start)
+					     Scheme_Object **runstack_start,
+					     Scheme_Cont *share_from)
 {
-  Scheme_Saved_Stack *saved, *isaved, *csaved;
+  Scheme_Saved_Stack *saved, *isaved, *csaved, *share_saved, *ss;
+  Scheme_Object **start;
   long size;
 
-  /* Copy out stack: */
+  /* Copy out current runstack: */
   saved = MALLOC_ONE_RT(Scheme_Saved_Stack);
 #ifdef MZTAG_REQUIRED
   saved->type = scheme_rt_saved_stack;
 #endif
-  size = p->runstack_size - (runstack XFORM_OK_MINUS runstack_start);
-  saved->runstack_size = size;
-  {
-    Scheme_Object **start;
-    start = MALLOC_N(Scheme_Object*, size);
-    saved->runstack_start = start;
+  if (share_from && (share_from->ss.runstack_start == runstack_start)) {
+    /* Copy just the difference between share_from's runstack and current runstack */
+    size = (share_from->ss.runstack XFORM_OK_MINUS runstack);
+  } else {
+    size = p->runstack_size - (runstack XFORM_OK_MINUS runstack_start);
   }
+
+  saved->runstack_size = size;
+  start = MALLOC_N(Scheme_Object*, size);
+  saved->runstack_start = start;
   memcpy(saved->runstack_start, runstack, size * sizeof(Scheme_Object *));
+
+  /* Copy saved runstacks: */
   isaved = saved;
+  share_saved = NULL;
+  if (share_from) {
+    /* We can share all saved runstacks */
+    share_saved = share_from->ss.runstack_saved;
+  }
   for (csaved = p->runstack_saved; csaved; csaved = csaved->prev) {
-    {
-      Scheme_Saved_Stack *ss;
-      ss = MALLOC_ONE_RT(Scheme_Saved_Stack);
-#ifdef MZTAG_REQUIRED
-      ss->type = scheme_rt_saved_stack;
-#endif
-      isaved->prev = ss;
+    if (share_saved && (csaved->runstack_start == share_saved->runstack_start)) {
+      /* Share */
+      isaved->prev = share_saved;
+      break;
     }
-    isaved = isaved->prev;
+    
+    ss = MALLOC_ONE_RT(Scheme_Saved_Stack);
+#ifdef MZTAG_REQUIRED
+    ss->type = scheme_rt_saved_stack;
+#endif
+    isaved->prev = ss;
+    isaved = ss;
+
     size = csaved->runstack_size - (csaved->runstack XFORM_OK_MINUS csaved->runstack_start);
     isaved->runstack_size = size;
-    {
-      Scheme_Object **start;
-      start = MALLOC_N(Scheme_Object*, size);
-      isaved->runstack_start = start;
-    }
+
+    start = MALLOC_N(Scheme_Object*, size);
+    isaved->runstack_start = start;
     memcpy(isaved->runstack_start, csaved->runstack, size * sizeof(Scheme_Object *));
   }
-  isaved->prev = NULL;
 
   return saved;
 }
 
 static Scheme_Cont_Mark *copy_out_mark_stack(Scheme_Thread *p, 
-					     MZ_MARK_POS_TYPE pos)
+					     MZ_MARK_STACK_TYPE pos,
+					     Scheme_Cont *sub_cont,
+					     long *_offset)
 {
-  long cmcount;
+  long cmcount, offset = 0;
   Scheme_Cont_Mark *cont_mark_stack_copied;
 
   /* Copy cont mark stack: */
   cmcount = (long)pos;
+  offset = 0;
+
+  if (sub_cont) {
+    /* Rely on copy of marks in a tail of this continuation. */
+    long sub_count = sub_cont->cont_mark_shareable;
+    cmcount -= sub_count;
+    offset += sub_count;
+  }
+
+  if (_offset) *_offset = offset;
+
   if (cmcount) {
     cont_mark_stack_copied = MALLOC_N(Scheme_Cont_Mark, cmcount);
     while (cmcount--) {
-      Scheme_Cont_Mark *seg = p->cont_mark_stack_segments[cmcount >> SCHEME_LOG_MARK_SEGMENT_SIZE];
-      long pos = cmcount & SCHEME_MARK_SEGMENT_MASK;
+      int cms = cmcount + offset;
+      Scheme_Cont_Mark *seg = p->cont_mark_stack_segments[cms >> SCHEME_LOG_MARK_SEGMENT_SIZE];
+      long pos = cms & SCHEME_MARK_SEGMENT_MASK;
       Scheme_Cont_Mark *cm = seg + pos;
       
       memcpy(cont_mark_stack_copied + cmcount, cm, sizeof(Scheme_Cont_Mark));
@@ -2777,13 +2843,15 @@ static Scheme_Cont_Mark *copy_out_mark_stack(Scheme_Thread *p,
     return NULL;
 }
 
-static void copy_in_runstack(Scheme_Thread *p, Scheme_Saved_Stack *isaved)
+static void copy_in_runstack(Scheme_Thread *p, Scheme_Saved_Stack *isaved, int set_runstack)
 {
   Scheme_Saved_Stack *csaved;
   long size;
 
   size = isaved->runstack_size;
-  MZ_RUNSTACK = MZ_RUNSTACK_START + (p->runstack_size - size);
+  if (set_runstack) {
+    MZ_RUNSTACK = MZ_RUNSTACK_START + (p->runstack_size - size);
+  }
   memcpy(MZ_RUNSTACK, isaved->runstack_start, size * sizeof(Scheme_Object *));
   for (csaved = p->runstack_saved; csaved; csaved = csaved->prev) {
     isaved = isaved->prev;
@@ -2794,13 +2862,16 @@ static void copy_in_runstack(Scheme_Thread *p, Scheme_Saved_Stack *isaved)
 }
 
 static void copy_in_mark_stack(Scheme_Thread *p, Scheme_Cont_Mark *cont_mark_stack_copied,
-			       MZ_MARK_STACK_TYPE cms, MZ_MARK_STACK_TYPE base_cms)
+			       MZ_MARK_STACK_TYPE cms, MZ_MARK_STACK_TYPE base_cms,
+			       long copied_offset, Scheme_Object **_sub_conts)
      /* Copies in the mark stack up to depth cms, but assumes that the
 	stack up to depth base_cms is already in place (probably in
 	place for a dynamic-wind context in an continuation
 	restoration.) */
 {
-  long cmcount, base_cmcount;
+  long cmcount, base_cmcount, cmoffset;
+  Scheme_Cont_Mark *cm_src;
+  Scheme_Cont *sub_cont = NULL;
 
   cmcount = (long)cms;
   base_cmcount = (long)base_cms;
@@ -2834,27 +2905,130 @@ static void copy_in_mark_stack(Scheme_Thread *p, Scheme_Cont_Mark *cont_mark_sta
       p->cont_mark_stack_segments = segs;
     }
   }
-  while (cmcount-- > base_cmcount) {
-    Scheme_Cont_Mark *seg = p->cont_mark_stack_segments[cmcount >> SCHEME_LOG_MARK_SEGMENT_SIZE];
-    long pos = cmcount & SCHEME_MARK_SEGMENT_MASK;
+
+  if (_sub_conts) {
+    if (*_sub_conts) {
+      sub_cont = (Scheme_Cont *)SCHEME_CAR(*_sub_conts);
+    }
+  }
+
+  while (base_cmcount < cmcount) {
+    Scheme_Cont_Mark *seg = p->cont_mark_stack_segments[base_cmcount >> SCHEME_LOG_MARK_SEGMENT_SIZE];
+    long pos = base_cmcount & SCHEME_MARK_SEGMENT_MASK;
     Scheme_Cont_Mark *cm = seg + pos;
     
-    memcpy(cm, cont_mark_stack_copied + cmcount, sizeof(Scheme_Cont_Mark));
+    cm_src = cont_mark_stack_copied;
+    cmoffset = base_cmcount - copied_offset;
+
+    if (sub_cont) {
+      while (base_cmcount >= sub_cont->cont_mark_shareable) {
+	*_sub_conts = SCHEME_CDR(*_sub_conts);
+	if (*_sub_conts) {
+	  sub_cont = (Scheme_Cont *)SCHEME_CAR(*_sub_conts);
+	} else {
+	  sub_cont = NULL;
+	  break;
+	}
+      }
+      if (sub_cont) {
+	cm_src = sub_cont->cont_mark_stack_copied;
+	cmoffset = base_cmcount - sub_cont->cont_mark_offset;
+      }
+    }
+
+    memcpy(cm, cm_src + cmoffset, sizeof(Scheme_Cont_Mark));
+
+    base_cmcount++;
   }
+}
+
+static MZ_MARK_STACK_TYPE find_sharable_marks()
+{
+  Scheme_Thread *p = scheme_current_thread;
+  long cmcount, delta = 0;
+
+  cmcount = (long)MZ_CONT_MARK_STACK;
+
+  while (cmcount--) {
+    Scheme_Cont_Mark *seg = p->cont_mark_stack_segments[cmcount >> SCHEME_LOG_MARK_SEGMENT_SIZE];
+    long pos = cmcount & SCHEME_MARK_SEGMENT_MASK;
+
+    if (seg[pos].pos < MZ_CONT_MARK_POS)
+      break;
+    if (SAME_OBJ(seg[pos].key, cont_key))
+      delta = 1;
+    else
+      delta = 0;
+  }
+
+  return cmcount + 1 + delta;
+}
+
+static Scheme_Cont_Mark **copy_out_segment_array(Scheme_Cont *sub_cont)
+{
+  long cnt;
+  Scheme_Cont_Mark **orig;
+
+  if (!MZ_CONT_MARK_STACK)
+    cnt = 0;
+  else
+    cnt = (((long)MZ_CONT_MARK_STACK - 1) >> SCHEME_LOG_MARK_SEGMENT_SIZE) + 1;
+
+  if (sub_cont) {
+    /* Already saved this set? */
+    int scnt;
+    if (!sub_cont->ss.cont_mark_stack)
+      scnt = 0;
+    else
+      scnt = (((long)(sub_cont->ss.cont_mark_stack) - 1) >> SCHEME_LOG_MARK_SEGMENT_SIZE) + 1;
+    if (scnt == cnt) {
+      return sub_cont->orig_mark_segments;
+    }
+  }
+
+  orig = (Scheme_Cont_Mark **)scheme_malloc(cnt * sizeof(Scheme_Cont_Mark*));
+  memcpy(orig, scheme_current_thread->cont_mark_stack_segments, cnt * sizeof(Scheme_Cont_Mark*));
+  return orig;
 }
 
 static Scheme_Object *
 call_cc (int argc, Scheme_Object *argv[])
 {
+  scheme_check_proc_arity("call-with-current-continuation", 1,
+			  0, argc, argv);
+
+  /* Trampoline to internal_call_cc. This trampoline ensures that
+     the runstack is flushed before we try to grab the continuation. */
+  return _scheme_tail_apply(internal_call_cc_prim, argc, argv);
+}
+
+static Scheme_Object *
+internal_call_cc (int argc, Scheme_Object *argv[])
+{
   Scheme_Object *ret;
   Scheme_Cont * volatile cont;
+  Scheme_Cont *sub_cont;
   Scheme_Dynamic_Wind *dw;
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Saved_Stack *saved;
   Scheme_Cont_Mark *msaved;
 
-  scheme_check_proc_arity("call-with-current-continuation", 1,
-			  0, argc, argv);
+  sub_cont = (Scheme_Cont *)scheme_extract_one_cc_mark(NULL, cont_key);
+  if (sub_cont && (sub_cont->save_overflow != p->overflow))
+    sub_cont = NULL;
+  if (sub_cont && (sub_cont->ss.cont_mark_pos == MZ_CONT_MARK_POS)) {
+    /* Old cont is the same as this one, except that it may
+       have different marks --- not counting cont_key! */
+    if ((sub_cont->cont_mark_shareable == (long)sub_cont->ss.cont_mark_stack)
+	&& (find_sharable_marks() == MZ_CONT_MARK_STACK)) {
+      /* Just use this one. */
+      Scheme_Object *argv2[1];
+      argv2[0] = (Scheme_Object *)sub_cont;
+      return _scheme_tail_apply(argv[0], 1, argv2);
+    } else {
+      sub_cont = sub_cont->buf.cont;
+    }
+  }
 
   cont = MALLOC_ONE_TAGGED(Scheme_Cont);
   cont->so.type = scheme_cont_type;
@@ -2896,25 +3070,21 @@ call_cc (int argc, Scheme_Object *argv[])
     }
   }
 
-  /* Hide call/cc's arg off of stack */
-  p->ku.k.p1 = argv[0];
-  argv[0] = NULL;
-
-  saved = copy_out_runstack(p, MZ_RUNSTACK, MZ_RUNSTACK_START);
+  saved = copy_out_runstack(p, MZ_RUNSTACK, MZ_RUNSTACK_START, sub_cont);
   cont->runstack_copied = saved;
-  msaved = copy_out_mark_stack(p, MZ_CONT_MARK_STACK);
-  cont->cont_mark_stack_copied = msaved;
+  {
+    long offset;
+    msaved = copy_out_mark_stack(p, cont->ss.cont_mark_stack, sub_cont, &offset);
+    cont->cont_mark_stack_copied = msaved;
+    cont->cont_mark_offset = offset;
+    offset = find_sharable_marks();
+    cont->cont_mark_shareable = offset;
+  }
 
   /* Remember the original mark-stack segments. */
   {
-    long cnt;
     Scheme_Cont_Mark **orig;
-    if (!MZ_CONT_MARK_STACK)
-      cnt = 0;
-    else
-      cnt = (((long)MZ_CONT_MARK_STACK - 1) >> SCHEME_LOG_MARK_SEGMENT_SIZE) + 1;
-    orig = (Scheme_Cont_Mark **)scheme_malloc(cnt * sizeof(Scheme_Cont_Mark*));
-    memcpy(orig, p->cont_mark_stack_segments, cnt * sizeof(Scheme_Cont_Mark*));
+    orig = copy_out_segment_array(sub_cont);
     cont->orig_mark_segments = orig;
   }
 
@@ -2930,10 +3100,12 @@ call_cc (int argc, Scheme_Object *argv[])
 
   scheme_flatten_config(scheme_current_config());
 
-  if (scheme_setjmpup(&cont->buf, cont, p->next ? p->stack_start : p->o_start)) {
+  scheme_set_cont_mark(cont_key, (Scheme_Object *)cont);
+
+  if (scheme_setjmpup_relative(&cont->buf, cont, p->next ? p->stack_start : p->o_start, sub_cont)) {
     /* We arrive here when the continuation is applied */
     MZ_MARK_STACK_TYPE copied_cms = 0;
-    Scheme_Object *result, **mv;
+    Scheme_Object *result, **mv, *sub_conts = NULL;
     int mc;
     
     result = cont->value;
@@ -2975,16 +3147,34 @@ call_cc (int argc, Scheme_Object *argv[])
       Scheme_Thread *op;
       op = *p->runstack_owner;
       if (op) {
-	saved = copy_out_runstack(op, op->runstack, op->runstack_start);
+	saved = copy_out_runstack(op, op->runstack, op->runstack_start, NULL);
 	op->runstack_swapped = saved;
       }
       *p->runstack_owner = p;
     }
 
-    /* Copy stack back in: (p->runstack and p->runstack_saved arrays
+    /* Copy stack back in: p->runstack and p->runstack_saved arrays
        are already restored, so the shape is certainly the same as
-       when cont->runstack_copied was made) */
-    copy_in_runstack(p, cont->runstack_copied);
+       when cont->runstack_copied was made. If we have a derived
+       continuation, then we're sharing it's base runstack. */
+    copy_in_runstack(p, cont->runstack_copied, 0);
+    {
+      long done = cont->runstack_copied->runstack_size, size;
+      sub_cont = cont;
+      while (sub_cont) {
+	if (sub_cont->buf.cont
+	    && (sub_cont->ss.runstack_start == sub_cont->buf.cont->ss.runstack_start)) {
+	  /* Copy shared part in: */
+	  sub_cont = sub_cont->buf.cont;
+	  size = sub_cont->runstack_copied->runstack_size;
+	  memcpy(MZ_RUNSTACK XFORM_OK_PLUS done, 
+		 sub_cont->runstack_copied->runstack_start, 
+		 size * sizeof(Scheme_Object *));
+	  done += size;
+	} else
+	  break;
+      }
+    }
     
     if (p->cont_mark_stack_owner
 	&& (*p->cont_mark_stack_owner == p))
@@ -2996,12 +3186,18 @@ call_cc (int argc, Scheme_Object *argv[])
       Scheme_Thread *op;
       op = *p->cont_mark_stack_owner;
       if (op) {
-	msaved = copy_out_mark_stack(op, op->cont_mark_stack);
+	msaved = copy_out_mark_stack(op, op->cont_mark_stack, NULL, NULL);
 	op->cont_mark_stack_swapped = msaved;
       }
       *p->cont_mark_stack_owner = p;
       /* In case there's a GC before we copy in marks: */
       MZ_CONT_MARK_STACK = 0;
+    }
+
+    /* For copying cont marks back in, we need a list of sub_conts,
+       deepest to shallowest: */
+    for (sub_cont = cont->buf.cont; sub_cont; sub_cont = sub_cont->buf.cont) {
+      sub_conts = scheme_make_pair((Scheme_Object *)sub_cont, sub_conts);
     }
     
     /* For dynamic-winds after the "common" intersection
@@ -3032,7 +3228,9 @@ call_cc (int argc, Scheme_Object *argv[])
 	  MZ_CONT_MARK_POS = dwl->dw->envss.cont_mark_pos;
 	  MZ_CONT_MARK_STACK = dwl->dw->envss.cont_mark_stack;
 	  copy_in_mark_stack(p, cont->cont_mark_stack_copied, 
-			     MZ_CONT_MARK_STACK, copied_cms);
+			     MZ_CONT_MARK_STACK, copied_cms,
+			     cont->cont_mark_offset, &sub_conts);
+	  copied_cms = MZ_CONT_MARK_STACK;
 
 	  p->dw = dwl->dw->prev;
 	  pre(dwl->dw->data);
@@ -3049,8 +3247,8 @@ call_cc (int argc, Scheme_Object *argv[])
     MZ_CONT_MARK_POS = cont->ss.cont_mark_pos;
     MZ_CONT_MARK_STACK = cont->ss.cont_mark_stack;
     copy_in_mark_stack(p, cont->cont_mark_stack_copied, 
-		       MZ_CONT_MARK_STACK, copied_cms);
-
+		       MZ_CONT_MARK_STACK, copied_cms,
+		       cont->cont_mark_offset, &sub_conts);
 
     /* If any mark-stack segment is different now than before, then
        set the cache field of the *original* mark segment. Setting the
@@ -3092,11 +3290,6 @@ call_cc (int argc, Scheme_Object *argv[])
   } else {
     Scheme_Object *argv2[1];
 
-    /* Restore call/cc's arg to stack. */
-    /* (We aren't actually allowed to modify argv! :) */
-    argv[0] = p->ku.k.p1;
-    p->ku.k.p1 = NULL;
-
     argv2[0] = (Scheme_Object *)cont;
     ret = _scheme_tail_apply(argv[0], 1, argv2);
     return ret;
@@ -3115,11 +3308,11 @@ void scheme_takeover_stacks(Scheme_Thread *p)
     Scheme_Saved_Stack *swapped;
     op = *p->runstack_owner;
     if (op) {
-      swapped = copy_out_runstack(op, op->runstack, op->runstack_start);
+      swapped = copy_out_runstack(op, op->runstack, op->runstack_start, NULL);
       op->runstack_swapped = swapped;
     }
     *(p->runstack_owner) = p;
-    copy_in_runstack(p, p->runstack_swapped);
+    copy_in_runstack(p, p->runstack_swapped, 1);
     p->runstack_swapped = NULL;
   }
 
@@ -3128,11 +3321,11 @@ void scheme_takeover_stacks(Scheme_Thread *p)
     Scheme_Cont_Mark *swapped;
     op = *p->cont_mark_stack_owner;
     if (op) {
-      swapped = copy_out_mark_stack(op, op->cont_mark_stack);
+      swapped = copy_out_mark_stack(op, op->cont_mark_stack, NULL, NULL);
       op->cont_mark_stack_swapped = swapped;
     }
     *(p->cont_mark_stack_owner) = p;
-    copy_in_mark_stack(p, p->cont_mark_stack_swapped, MZ_CONT_MARK_STACK, 0);
+    copy_in_mark_stack(p, p->cont_mark_stack_swapped, MZ_CONT_MARK_STACK, 0, 0, NULL);
     p->cont_mark_stack_swapped = NULL;
   }
 }

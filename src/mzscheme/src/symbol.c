@@ -280,11 +280,12 @@ scheme_init_symbol_type (Scheme_Env *env)
 void
 scheme_init_symbol (Scheme_Env *env)
 {
-  scheme_add_global_constant("symbol?",
-			     scheme_make_folding_prim(symbol_p_prim,
-						      "symbol?",
-						      1, 1, 1),
-			     env);
+  Scheme_Object *p;
+
+  p = scheme_make_folding_prim(symbol_p_prim, "symbol?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("symbol?", p, env);
+
   scheme_add_global_constant("string->symbol",
 			     scheme_make_noncm_prim(string_to_symbol_prim,
 						    "string->symbol",

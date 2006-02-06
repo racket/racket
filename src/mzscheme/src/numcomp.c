@@ -38,46 +38,40 @@ static Scheme_Object *sch_min (int argc, Scheme_Object *argv[]);
 
 void scheme_init_numcomp(Scheme_Env *env)
 {
-  scheme_add_global_constant("=", 
-			     scheme_make_folding_prim(eq,
-						      "=",
-						      2, -1, 1),
-			     env);
-  scheme_add_global_constant("<", 
-			     scheme_make_folding_prim(lt,
-						      "<",
-						      2, -1, 1),
-			     env);
-  scheme_add_global_constant(">", 
-			     scheme_make_folding_prim(gt,
-						      ">",
-						      2, -1, 1),
-			     env);
-  scheme_add_global_constant("<=", 
-			     scheme_make_folding_prim(lt_eq,
-						      "<=",
-						      2, -1, 1),
-			     env);
-  scheme_add_global_constant(">=", 
-			     scheme_make_folding_prim(gt_eq,
-						      ">=",
-						      2, -1, 1),
-			     env);
-  scheme_add_global_constant("zero?", 
-			     scheme_make_folding_prim(scheme_zero_p,
-						      "zero?",
-						      1, 1, 1),
-			     env);
-  scheme_add_global_constant("positive?", 
-			     scheme_make_folding_prim(scheme_positive_p,
-						      "positive?",
-						      1, 1, 1),
-			     env);
-  scheme_add_global_constant("negative?", 
-			     scheme_make_folding_prim(scheme_negative_p,
-						      "negative?",
-						      1, 1, 1),
-			     env);
+  Scheme_Object *p;
+
+  p = scheme_make_folding_prim(eq, "=", 2, -1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("=", p, env);
+
+  p = scheme_make_folding_prim(lt, "<", 2, -1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("<", p, env);
+
+  p = scheme_make_folding_prim(gt, ">", 2, -1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant(">", p, env);
+
+  p = scheme_make_folding_prim(lt_eq, "<=", 2, -1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("<=", p, env);
+
+  p = scheme_make_folding_prim(gt_eq, ">=", 2, -1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant(">=", p, env);
+
+  p = scheme_make_folding_prim(scheme_zero_p, "zero?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("zero?", p, env);
+
+  p = scheme_make_folding_prim(scheme_positive_p, "positive?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("positive?", p, env);
+
+  p = scheme_make_folding_prim(scheme_negative_p, "negative?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("negative?", p, env);
+
   scheme_add_global_constant("max", 
 			     scheme_make_folding_prim(sch_max,
 						      "max",

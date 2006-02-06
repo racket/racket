@@ -28,7 +28,7 @@ typedef struct {
 /*========================================================================*/
 void (*scheme_init_jmpup_buf)(Scheme_Jumpup_Buf *b);
 int (*scheme_setjmpup_relative)(Scheme_Jumpup_Buf *b, void *base,
-				       void * volatile start, Scheme_Jumpup_Buf *cont);
+				       void * volatile start, struct Scheme_Cont *cont);
 void (*scheme_longjmpup)(Scheme_Jumpup_Buf *b);
 void (*scheme_reset_jmpup_buf)(Scheme_Jumpup_Buf *b);
 #ifdef USE_MZ_SETJMP

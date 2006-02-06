@@ -1699,7 +1699,7 @@ static Scheme_Object *jit_letrec(Scheme_Object *o)
   lr2->procs = procs2;
 
   for (i = 0; i < count; i++) {
-    v = scheme_jit_expr(procs[i]);
+    v = scheme_jit_closure(procs[i], lr2);
     procs2[i] = v;
   }
 
@@ -1763,7 +1763,7 @@ Scheme_Object *scheme_jit_expr(Scheme_Object *expr)
   case scheme_with_cont_mark_type:
     return jit_wcm(expr);
   case scheme_unclosed_procedure_type:
-    return scheme_jit_closure(expr);
+    return scheme_jit_closure(expr, NULL);
   case scheme_let_value_type:
     return jit_let_value(expr);
   case scheme_let_void_type:
@@ -1777,7 +1777,7 @@ Scheme_Object *scheme_jit_expr(Scheme_Object *expr)
       Scheme_Closure *c = (Scheme_Closure *)expr;
       if (ZERO_SIZED_CLOSUREP(c)) {
 	/* JIT the closure body, producing a native closure: */
-	return scheme_jit_closure((Scheme_Object *)c->code);
+	return scheme_jit_closure((Scheme_Object *)c->code, NULL);
       } else
 	return expr;
     }

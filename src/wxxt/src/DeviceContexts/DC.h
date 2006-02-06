@@ -135,10 +135,14 @@ public:
 	{ return XDEV2LOG(x); }
     virtual double DeviceToLogicalXRel(int x)
 	{ return XDEV2LOGREL(x); }
+    virtual double UnscrolledDeviceToLogicalX(int x)
+	{ return XDEV2LOG(x); }
     virtual double DeviceToLogicalY(int y)
 	{ return YDEV2LOG(y); }
     virtual double DeviceToLogicalYRel(int y)
 	{ return YDEV2LOGREL(y); }
+    virtual double UnscrolledDeviceToLogicalY(int y)
+	{ return YDEV2LOG(y); }
     void  DrawSpline(int n, wxPoint pts[]);
     void  DrawSpline(wxList *pts);
     virtual void DrawSpline(double x1,double y1, double x2,double y2, double x3,double y3);
@@ -172,18 +176,26 @@ public:
 	{ return XLOG2DEV(x); }
     virtual int LogicalToDeviceXRel(double x)
 	{ return XLOG2DEVREL(x); }
+    virtual int LogicalToUnscrolledDeviceX(double x)
+	{ return XLOG2DEV(x); }
     virtual int LogicalToDeviceY(double y)
 	{ return YLOG2DEV(y); }
     virtual int LogicalToDeviceYRel(double y)
 	{ return YLOG2DEVREL(y); }
+    virtual int LogicalToUnscrolledDeviceY(double y)
+	{ return YLOG2DEV(y); }
     virtual double FLogicalToDeviceX(double x)
 	{ return XLOG2DEV(x); }
     virtual double FLogicalToDeviceXRel(double x)
 	{ return XLOG2DEVREL(x); }
+    virtual double FLogicalToUnscrolledDeviceX(double x)
+	{ return XLOG2DEV(x); }
     virtual double FLogicalToDeviceY(double y)
 	{ return YLOG2DEV(y); }
     virtual double FLogicalToDeviceYRel(double y)
 	{ return YLOG2DEVREL(y); }
+    virtual double FLogicalToUnscrolledDeviceY(double y)
+	{ return YLOG2DEV(y); }
     virtual Bool Ok(void)
 	{ return ok; }
     void SetBackgroundMode(int mode)

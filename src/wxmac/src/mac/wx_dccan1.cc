@@ -291,10 +291,12 @@ void wxCanvasDC::SetCanvasClipping(void)
       current_reg = ::NewRgn();
       CheckMemOK(current_reg);
     }
-  } else if (onpaint_reg && clipping) {
-    ::SectRgn(clipping->rgn, onpaint_reg, current_reg) ;
   } else if (clipping) {
-    ::CopyRgn(clipping->rgn, current_reg) ;
+    ::CopyRgn(clipping->rgn, current_reg);
+    ::OffsetRgn(current_reg, auto_device_origin_x, auto_device_origin_y); 
+    if (onpaint_reg) {
+      ::SectRgn(current_reg, onpaint_reg, current_reg) ;
+    }
   } else if (onpaint_reg) {
     ::CopyRgn(onpaint_reg, current_reg);
   }
@@ -565,10 +567,16 @@ double wxCanvasDC::DeviceToLogicalX(int x) { return XDEV2LOG(x); }
 double wxCanvasDC::DeviceToLogicalXRel(int x) { return XDEV2LOGREL(x); }
 
 //-----------------------------------------------------------------------------
+double wxCanvasDC::UnscrolledDeviceToLogicalX(int x) { return XUDEV2LOG(x); }
+
+//-----------------------------------------------------------------------------
 double wxCanvasDC::DeviceToLogicalY(int y) { return YDEV2LOG(y); }
 
 //-----------------------------------------------------------------------------
 double wxCanvasDC::DeviceToLogicalYRel(int y) { return YDEV2LOGREL(y); }
+
+//-----------------------------------------------------------------------------
+double wxCanvasDC::UnscrolledDeviceToLogicalY(int y) { return YUDEV2LOG(y); }
 
 //-----------------------------------------------------------------------------
 int wxCanvasDC::LogicalToDeviceX(double x) { return XLOG2DEV(x); }
@@ -577,10 +585,16 @@ int wxCanvasDC::LogicalToDeviceX(double x) { return XLOG2DEV(x); }
 int wxCanvasDC::LogicalToDeviceXRel(double x) { return XLOG2DEVREL(x); }
 
 //-----------------------------------------------------------------------------
+int wxCanvasDC::LogicalToUnscrolledDeviceX(double x) { return XLOG2UDEV(x); }
+
+//-----------------------------------------------------------------------------
 int wxCanvasDC::LogicalToDeviceY(double y) { return YLOG2DEV(y); }
 
 //-----------------------------------------------------------------------------
 int wxCanvasDC::LogicalToDeviceYRel(double y) { return YLOG2DEVREL(y); }
+
+//-----------------------------------------------------------------------------
+int wxCanvasDC::LogicalToUnscrolledDeviceY(double y) { return YLOG2UDEV(y); }
 
 //-----------------------------------------------------------------------------
 double wxCanvasDC::FLogicalToDeviceX(double x) { return XLOG2DEV(x); }
@@ -589,10 +603,16 @@ double wxCanvasDC::FLogicalToDeviceX(double x) { return XLOG2DEV(x); }
 double wxCanvasDC::FLogicalToDeviceXRel(double x) { return XLOG2DEVREL(x); }
 
 //-----------------------------------------------------------------------------
+double wxCanvasDC::FLogicalToUnscrolledDeviceX(double x) { return XLOG2UDEV(x); }
+
+//-----------------------------------------------------------------------------
 double wxCanvasDC::FLogicalToDeviceY(double y) { return YLOG2DEV(y); }
 
 //-----------------------------------------------------------------------------
 double wxCanvasDC::FLogicalToDeviceYRel(double y) { return YLOG2DEVREL(y); }
+
+//-----------------------------------------------------------------------------
+double wxCanvasDC::FLogicalToUnscrolledDeviceY(double y) { return YLOG2UDEV(y); }
 
 //-----------------------------------------------------------------------------
 void wxCanvasDC::wxMacSetClip(void)
@@ -959,8 +979,11 @@ CGContextRef wxCanvasDC::GetCG()
   CGContextTranslateCTM(cg, gdx, (float)(portRect.bottom - portRect.top - gdy));
   CGContextScaleCTM(cg, 1.0, -1.0 );
  
-  if (clipping)
+  if (clipping) {
+    CGContextTranslateCTM(cg, auto_device_origin_x, auto_device_origin_y);
     clipping->Install((long)cg, AlignSmoothing());
+    CGContextTranslateCTM(cg, -auto_device_origin_x, -auto_device_origin_y);
+  }
   
   if (!AlignSmoothing()) {
     CGContextTranslateCTM(cg, device_origin_x, device_origin_y);

@@ -2016,6 +2016,11 @@ double wxPostScriptDC::DeviceToLogicalXRel(int x)
   return x / user_scale_x;
 }
 
+double wxPostScriptDC::UnscrolledDeviceToLogicalX(int x)
+{
+  return DeviceToLogicalX(x);
+}
+
 double wxPostScriptDC::DeviceToLogicalY(int y)
 {
   double y2 = -(y - paper_h);
@@ -2025,6 +2030,11 @@ double wxPostScriptDC::DeviceToLogicalY(int y)
 double wxPostScriptDC::DeviceToLogicalYRel(int y)
 {
   return y / user_scale_y;
+}
+
+double wxPostScriptDC::UnscrolledDeviceToLogicalY(int y)
+{
+  return DeviceToLogicalY(y);
 }
 
 int wxPostScriptDC::LogicalToDeviceX(double x)
@@ -2037,6 +2047,11 @@ int wxPostScriptDC::LogicalToDeviceXRel(double x)
   return (int)floor(XSCALEREL(x));
 }
 
+int wxPostScriptDC::LogicalToUnscrolledDeviceX(double x)
+{
+  return LogicalToDeviceX(x);
+}
+
 int wxPostScriptDC::LogicalToDeviceY(double y)
 {
   return (int)floor(YSCALE(y));
@@ -2045,6 +2060,11 @@ int wxPostScriptDC::LogicalToDeviceY(double y)
 int wxPostScriptDC::LogicalToDeviceYRel(double y)
 {
   return (int)floor(YSCALEREL(y));
+}
+
+int wxPostScriptDC::LogicalToUnscrolledDeviceY(double y)
+{
+  return LogicalToDeviceY(y);
 }
 
 double wxPostScriptDC::FLogicalToDeviceX(double x)
@@ -2057,6 +2077,11 @@ double wxPostScriptDC::FLogicalToDeviceXRel(double x)
   return XSCALEREL(x);
 }
 
+double wxPostScriptDC::FLogicalToUnscrolledDeviceX(double x)
+{
+  return FLogicalToDeviceX(x);
+}
+
 double wxPostScriptDC::FLogicalToDeviceY(double y)
 {
   return YSCALE(y);
@@ -2065,6 +2090,11 @@ double wxPostScriptDC::FLogicalToDeviceY(double y)
 double wxPostScriptDC::FLogicalToDeviceYRel(double y)
 {
   return YSCALEREL(y);
+}
+
+double wxPostScriptDC::FLogicalToUnscrolledDeviceY(double y)
+{
+  return FLogicalToDeviceY(y);
 }
 
 double wxPostScriptDC::FsLogicalToDeviceX(double x, double device_origin_x, double user_scale_x)

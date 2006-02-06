@@ -26,11 +26,6 @@
 #include "nummacs.h"
 #include <math.h>
 
-Scheme_Object *scheme_add1_prim;
-Scheme_Object *scheme_sub1_prim;
-Scheme_Object *scheme_plus_prim;
-Scheme_Object *scheme_minus_prim;
-
 static Scheme_Object *plus (int argc, Scheme_Object *argv[]);
 static Scheme_Object *minus (int argc, Scheme_Object *argv[]);
 static Scheme_Object *mult (int argc, Scheme_Object *argv[]);
@@ -43,22 +38,23 @@ static Scheme_Object *quotient_remainder (int argc, Scheme_Object *argv[]);
 
 void scheme_init_numarith(Scheme_Env *env)
 {
-  REGISTER_SO(scheme_add1_prim);
-  REGISTER_SO(scheme_sub1_prim);
-  REGISTER_SO(scheme_plus_prim);
-  REGISTER_SO(scheme_minus_prim);
+  Scheme_Object *p;
 
-  scheme_add1_prim = scheme_make_folding_prim(scheme_add1, "add1", 1, 1, 1);
-  scheme_add_global_constant("add1", scheme_add1_prim, env);
+  p = scheme_make_folding_prim(scheme_add1, "add1", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("add1", p, env);
 
-  scheme_sub1_prim = scheme_make_folding_prim(scheme_sub1, "sub1", 1, 1, 1);
-  scheme_add_global_constant("sub1", scheme_sub1_prim, env);
+  p = scheme_make_folding_prim(scheme_sub1, "sub1", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("sub1", p, env);
 
-  scheme_plus_prim = scheme_make_folding_prim(plus, "+", 0, -1, 1);
-  scheme_add_global_constant("+", scheme_plus_prim, env);
+  p = scheme_make_folding_prim(plus, "+", 0, -1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("+", p, env);
 
-  scheme_minus_prim = scheme_make_folding_prim(minus, "-", 1, -1, 1);
-  scheme_add_global_constant("-", scheme_minus_prim, env);
+  p = scheme_make_folding_prim(minus, "-", 1, -1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("-", p, env);
 
   scheme_add_global_constant("*", 
 			     scheme_make_folding_prim(mult,

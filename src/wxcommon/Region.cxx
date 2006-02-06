@@ -101,11 +101,11 @@ void wxRegion::SetRectangle(double x, double y, double width, double height)
 
   xw = x + width;
   yh = y + height;
-  x = dc->FLogicalToDeviceX(x);
-  y = dc->FLogicalToDeviceY(y);
-  xw = dc->FLogicalToDeviceX(xw);
+  x = dc->FLogicalToUnscrolledDeviceX(x);
+  y = dc->FLogicalToUnscrolledDeviceY(y);
+  xw = dc->FLogicalToUnscrolledDeviceX(xw);
   width = xw - x;
-  yh = dc->FLogicalToDeviceY(yh);
+  yh = dc->FLogicalToUnscrolledDeviceY(yh);
   height = yh - y;
 
   if (is_ps) {
@@ -198,10 +198,10 @@ void wxRegion::SetRoundedRectangle(double x, double y, double width, double heig
   /* Windows and Mac */
   xw = x + width;
   yh = y + height;
-  x = dc->FLogicalToDeviceX(x);
-  y = dc->FLogicalToDeviceY(y);
-  width = dc->FLogicalToDeviceX(xw) - x;
-  height = dc->FLogicalToDeviceY(yh) - y;
+  x = dc->FLogicalToUnscrolledDeviceX(x);
+  y = dc->FLogicalToUnscrolledDeviceY(y);
+  width = dc->FLogicalToUnscrolledDeviceX(xw) - x;
+  height = dc->FLogicalToUnscrolledDeviceY(yh) - y;
   xradius = (int)(dc->FLogicalToDeviceXRel(radius));
   yradius = (int)(dc->FLogicalToDeviceYRel(radius));
 
@@ -271,10 +271,10 @@ void wxRegion::SetEllipse(double x, double y, double width, double height)
 
   xw = x + width;
   yh = y + height;
-  x = dc->FLogicalToDeviceX(x);
-  y = dc->FLogicalToDeviceY(y);
-  width = dc->FLogicalToDeviceX(xw) - x;
-  height = dc->FLogicalToDeviceY(yh) - y;
+  x = dc->FLogicalToUnscrolledDeviceX(x);
+  y = dc->FLogicalToUnscrolledDeviceY(y);
+  width = dc->FLogicalToUnscrolledDeviceX(xw) - x;
+  height = dc->FLogicalToUnscrolledDeviceY(yh) - y;
 
   if (is_ps) {
     /* So bitmap-based region is right */
@@ -355,14 +355,14 @@ void wxRegion::SetPolygon(int n, wxPoint points[], double xoffset, double yoffse
   cpoints = new POINT[n];
   fpoints = (is_ps ? new FPoint[n] : (FPoint *)NULL);
   for (i = 0; i < n; i++) {
-    v = dc->LogicalToDeviceX(points[i+delta].x + xoffset);
+    v = dc->LogicalToUnscrolledDeviceX(points[i+delta].x + xoffset);
     cpoints[i].x = v;
-    v = dc->LogicalToDeviceY(points[i+delta].y + yoffset);
+    v = dc->LogicalToUnscrolledDeviceY(points[i+delta].y + yoffset);
     cpoints[i].y = v;
     if (fpoints) {
-      vf = dc->FLogicalToDeviceX(points[i+delta].x + xoffset);
+      vf = dc->FLogicalToUnscrolledDeviceX(points[i+delta].x + xoffset);
       fpoints[i].x = vf;
-      vf = dc->FLogicalToDeviceY(points[i+delta].y + yoffset);
+      vf = dc->FLogicalToUnscrolledDeviceY(points[i+delta].y + yoffset);
       fpoints[i].y = vf;
     }
   }
@@ -811,9 +811,9 @@ void wxRegion::BoundingBox(double *x, double *y, double *w, double *h)
       *y = -(*y);
     }
     
-    v = dc->DeviceToLogicalX((int)*x);
+    v = dc->UnscrolledDeviceToLogicalX((int)*x);
     *x = v;
-    v = dc->DeviceToLogicalY((int)*y);
+    v = dc->UnscrolledDeviceToLogicalY((int)*y);
     *y = v;
     v = dc->DeviceToLogicalXRel((int)*w);
     *w = v;
@@ -851,8 +851,8 @@ Bool wxRegion::IsInRegion(double x, double y)
 
   if (!rgn) return FALSE;
 
-  x = dc->FLogicalToDeviceX(x);
-  y = dc->FLogicalToDeviceY(y);
+  x = dc->FLogicalToUnscrolledDeviceX(x);
+  y = dc->FLogicalToUnscrolledDeviceY(y);
   
 
   ix = (int)floor(x);

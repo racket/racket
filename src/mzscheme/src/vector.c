@@ -30,7 +30,6 @@ static Scheme_Object *make_vector (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_immutable (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_length (int argc, Scheme_Object *argv[]);
-static Scheme_Object *vector_ref (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_set (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_to_list (int argc, Scheme_Object *argv[]);
 static Scheme_Object *list_to_vector (int argc, Scheme_Object *argv[]);
@@ -42,6 +41,8 @@ static Scheme_Object *zero_length_vector;
 void
 scheme_init_vector (Scheme_Env *env)
 {
+  Scheme_Object *p;
+
   REGISTER_SO(zero_length_vector);
   zero_length_vector = (Scheme_Object *)scheme_malloc_tagged(sizeof(Scheme_Vector)
 							     - sizeof(Scheme_Object *));
@@ -73,11 +74,15 @@ scheme_init_vector (Scheme_Env *env)
 						      "vector-length", 
 						      1, 1, 1), 
 			     env);
+
+  p = scheme_make_noncm_prim(scheme_checked_vector_ref, 
+			     "vector-ref", 
+			     2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant("vector-ref", 
-			     scheme_make_noncm_prim(vector_ref, 
-						    "vector-ref", 
-						    2, 2), 
+			     p, 
 			     env);
+
   scheme_add_global_constant("vector-set!", 
 			     scheme_make_noncm_prim(vector_set, 
 						    "vector-set!", 
@@ -229,8 +234,8 @@ bad_index(char *name, Scheme_Object *i, Scheme_Object *vec)
   return NULL;
 }
 
-static Scheme_Object *
-vector_ref (int argc, Scheme_Object *argv[])
+Scheme_Object *
+scheme_checked_vector_ref (int argc, Scheme_Object *argv[])
 {
   long i, len;
 

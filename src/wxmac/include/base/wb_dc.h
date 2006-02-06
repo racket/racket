@@ -180,14 +180,20 @@ class wxbDC: public wxObject
   virtual double DeviceToLogicalY(int y) = 0;
   virtual double DeviceToLogicalXRel(int x) = 0;
   virtual double DeviceToLogicalYRel(int y) = 0;
+  virtual double UnscrolledDeviceToLogicalX(int x) = 0;
+  virtual double UnscrolledDeviceToLogicalY(int y) = 0;
   virtual int LogicalToDeviceX(double x) = 0;
   virtual int LogicalToDeviceY(double y) = 0;
   virtual int LogicalToDeviceXRel(double x) = 0;
   virtual int LogicalToDeviceYRel(double y) = 0;
+  virtual int LogicalToUnscrolledDeviceX(double x) = 0;
+  virtual int LogicalToUnscrolledDeviceY(double y) = 0;
   virtual double FLogicalToDeviceX(double x) = 0;
   virtual double FLogicalToDeviceY(double y) = 0;
   virtual double FLogicalToDeviceXRel(double x) = 0;
   virtual double FLogicalToDeviceYRel(double y) = 0;
+  virtual double FLogicalToUnscrolledDeviceX(double x) = 0;
+  virtual double FLogicalToUnscrolledDeviceY(double y) = 0;
   // Only works for PostScript *after* you've printed an image.
   // Gives width and height of image.
   virtual void GetSize(double *width, double *height);

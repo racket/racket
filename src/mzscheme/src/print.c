@@ -1653,8 +1653,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 		      -1, pp);
 	} else {
 	  print_utf8_string(pp, "#<", 0, 2);
-	  print_string_in_angle(pp, ((Scheme_Closed_Primitive_Proc *)obj)->name, 
-				SCHEME_GENERICP(obj) ? "" : "primitive:", -1);
+	  print_string_in_angle(pp, ((Scheme_Closed_Primitive_Proc *)obj)->name, "primitive:", -1);
 	  PRINTADDRESS(pp, obj);
 	  print_utf8_string(pp, ">", 0, 1);
 	}

@@ -434,9 +434,10 @@ static HRGN empty_rgn;
 void wxDC::DoClipping(HDC dc)
 {
   if (clipping) {
-    if (clipping->rgn)
+    if (clipping->rgn) {
       SelectClipRgn(dc, clipping->rgn);
-    else {
+      OffsetClipRgn(dc, canvas_scroll_dx, canvas_scroll_dy);
+    } else {
       if (!empty_rgn)
 	empty_rgn = CreateRectRgn(0, 0, 0, 0);
       SelectClipRgn(dc, empty_rgn);
@@ -800,8 +801,8 @@ static void FillWithStipple(wxDC *dc, wxRegion *r, wxBrush *brush)
   bw = bm->GetWidth();
   bh = bm->GetHeight();
 
-  x = dc->LogicalToDeviceX(x);
-  y = dc->LogicalToDeviceY(y);
+  x = dc->LogicalToUnscrolledDeviceX(x);
+  y = dc->LogicalToUnscrolledDeviceY(y);
   w = dc->LogicalToDeviceXRel(w);
   h = dc->LogicalToDeviceYRel(h);
   
@@ -815,8 +816,8 @@ static void FillWithStipple(wxDC *dc, wxRegion *r, wxBrush *brush)
 
   for (i = xstart; i < xend; i++) {
     for (j = ystart; j < yend; j++) {
-      dc->Blit(dc->DeviceToLogicalX(i * bw), 
-	       dc->DeviceToLogicalY(j * bh), 
+      dc->Blit(dc->UnscrolledDeviceToLogicalX(i * bw), 
+	       dc->UnscrolledDeviceToLogicalY(j * bh), 
 	       dc->DeviceToLogicalXRel(bw), 
 	       dc->DeviceToLogicalYRel(bh),
 	       bm, 0, 0, style, c);
@@ -2350,6 +2351,11 @@ double wxDC::DeviceToLogicalXRel(int x)
   return (double)MS_XDEV2LOGREL(x);
 }
 
+double wxDC::UnscrolledDeviceToLogicalX(int x)
+{
+  return (double)MS_XUDEV2LOG(x);
+}
+
 double wxDC::DeviceToLogicalY(int y)
 {
   return (double)MS_YDEV2LOG(y);
@@ -2358,6 +2364,11 @@ double wxDC::DeviceToLogicalY(int y)
 double wxDC::DeviceToLogicalYRel(int y)
 {
   return (double)MS_YDEV2LOGREL(y);
+}
+
+double wxDC::UnscrolledDeviceToLogicalY(int y)
+{
+  return (double)MS_YUDEV2LOG(y);
 }
 
 int wxDC::LogicalToDeviceX(double x)
@@ -2370,6 +2381,11 @@ int wxDC::LogicalToDeviceXRel(double x)
   return MS_XLOG2DEVREL(x);
 }
 
+int wxDC::LogicalToUnscrolledDeviceX(double x)
+{
+  return MS_XLOG2UDEV(x);
+}
+
 int wxDC::LogicalToDeviceY(double y)
 {
   return MS_YLOG2DEV(y);
@@ -2378,6 +2394,11 @@ int wxDC::LogicalToDeviceY(double y)
 int wxDC::LogicalToDeviceYRel(double y)
 {
   return MS_YLOG2DEVREL(y);
+}
+
+int wxDC::LogicalToUnscrolledDeviceY(double y)
+{
+  return MS_YLOG2UDEV(y);
 }
 
 double wxDC::FLogicalToDeviceX(double x)
@@ -2390,6 +2411,11 @@ double wxDC::FLogicalToDeviceXRel(double x)
   return MS_XLOG2DEVREL(x);
 }
 
+double wxDC::FLogicalToUnscrolledDeviceX(double x)
+{
+  return MS_XLOG2UDEV(x);
+}
+
 double wxDC::FLogicalToDeviceY(double y)
 {
   return MS_YLOG2DEV(y);
@@ -2398,6 +2424,11 @@ double wxDC::FLogicalToDeviceY(double y)
 double wxDC::FLogicalToDeviceYRel(double y)
 {
   return MS_YLOG2DEVREL(y);
+}
+
+double wxDC::FLogicalToUnscrolledDeviceY(double y)
+{
+  return MS_YLOG2UDEV(y);
 }
 
 #define wxKEEPDEST (DWORD)0x00AA0029

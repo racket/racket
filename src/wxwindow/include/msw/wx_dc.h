@@ -138,14 +138,20 @@ class wxDC: public wxbDC
   double DeviceToLogicalY(int y);
   double DeviceToLogicalXRel(int x);
   double DeviceToLogicalYRel(int y);
+  double UnscrolledDeviceToLogicalX(int x);
+  double UnscrolledDeviceToLogicalY(int y);
   int LogicalToDeviceX(double x);
   int LogicalToDeviceY(double y);
   int LogicalToDeviceXRel(double x);
   int LogicalToDeviceYRel(double y);
+  int LogicalToUnscrolledDeviceX(double x);
+  int LogicalToUnscrolledDeviceY(double y);
   double FLogicalToDeviceX(double x);
   double FLogicalToDeviceY(double y);
   double FLogicalToDeviceXRel(double x);
   double FLogicalToDeviceYRel(double y);
+  double FLogicalToUnscrolledDeviceX(double x);
+  double FLogicalToUnscrolledDeviceY(double y);
 
   Bool GlyphAvailable(int c, wxFont *f = NULL);
 
@@ -214,8 +220,14 @@ HDC wxGetPrinterDC(void);
 
 // Logical to device
 // Absolute
-#define MS_XLOG2DEV(x) ((int)floor((x)*logical_scale_x*user_scale_x + (device_origin_x+canvas_scroll_dx)*logical_scale_x))
-#define MS_YLOG2DEV(y) ((int)floor((y)*logical_scale_y*user_scale_y + (device_origin_y+canvas_scroll_dy)*logical_scale_y))
+#define _MS_XLOG2DEV(x, cdx) ((int)floor((x)*logical_scale_x*user_scale_x + (device_origin_x+cdx)*logical_scale_x))
+#define _MS_YLOG2DEV(y, cdy) ((int)floor((y)*logical_scale_y*user_scale_y + (device_origin_y+cdy)*logical_scale_y))
+
+#define MS_XLOG2DEV(x) _MS_XLOG2DEV(x, canvas_scroll_dx)
+#define MS_YLOG2DEV(y) _MS_YLOG2DEV(y, canvas_scroll_dy)
+
+#define MS_XLOG2UDEV(x) _MS_XLOG2DEV(x, 0)
+#define MS_YLOG2UDEV(y) _MS_YLOG2DEV(y, 0)
 
 // Logical to device
 #define XLOG2DEV(x) MS_XLOG2DEV(x)
@@ -227,8 +239,14 @@ HDC wxGetPrinterDC(void);
 
 // Device to logical
 // Absolute
-#define MS_XDEV2LOG(x) (((x)/(logical_scale_x*user_scale_x)) - (device_origin_x + canvas_scroll_dx)/logical_scale_x)
-#define MS_YDEV2LOG(y) (((y)/(logical_scale_y*user_scale_y)) - (device_origin_y + canvas_scroll_dy)/logical_scale_y)
+#define _MS_XDEV2LOG(x, cdx) ((((x) - (device_origin_x + cdx)/logical_scale_x)/(logical_scale_x*user_scale_x)))
+#define _MS_YDEV2LOG(y, cdy) ((((y) - (device_origin_y + cdy)/logical_scale_y)/(logical_scale_y*user_scale_y)))
+
+#define MS_XDEV2LOG(x) _MS_XDEV2LOG(x, canvas_scroll_dx)
+#define MS_YDEV2LOG(y) _MS_YDEV2LOG(y, canvas_scroll_dy)
+
+#define MS_XUDEV2LOG(x) _MS_XDEV2LOG(x, 0)
+#define MS_YUDEV2LOG(y) _MS_YDEV2LOG(y, 0)
 
 // Relative
 #define MS_XDEV2LOGREL(x) ((x)/(logical_scale_x*user_scale_x))

@@ -30,7 +30,7 @@
 
 MZ_EXTERN void scheme_init_jmpup_buf(Scheme_Jumpup_Buf *b);
 MZ_EXTERN int scheme_setjmpup_relative(Scheme_Jumpup_Buf *b, void *base,
-				       void * volatile start, Scheme_Jumpup_Buf *cont);
+				       void * volatile start, struct Scheme_Cont *cont);
 MZ_EXTERN void scheme_longjmpup(Scheme_Jumpup_Buf *b);
 MZ_EXTERN void scheme_reset_jmpup_buf(Scheme_Jumpup_Buf *b);
 

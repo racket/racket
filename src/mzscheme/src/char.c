@@ -68,6 +68,7 @@ void scheme_init_portable_case(void)
 
 void scheme_init_char (Scheme_Env *env)
 {
+  Scheme_Object *p;
   int i;
 
   REGISTER_SO(scheme_char_constants);
@@ -84,11 +85,10 @@ void scheme_init_char (Scheme_Env *env)
     scheme_char_constants[i] = sc;
   }
 
-  scheme_add_global_constant("char?", 
-			     scheme_make_folding_prim(char_p, 
-						      "char?", 
-						      1, 1, 1), 
-			     env);
+  p = scheme_make_folding_prim(char_p, "char?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("char?", p, env);
+
   scheme_add_global_constant("char=?", 
 			     scheme_make_folding_prim(char_eq, 
 						      "char=?", 

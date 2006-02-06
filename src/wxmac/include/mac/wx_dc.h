@@ -56,12 +56,18 @@ extern "C" {
 
 // Logical to device
 // Absolute
-#define XLOG2DEV(x) (int)floor(((x) - logical_origin_x)*logical_scale_x*user_scale_x + device_origin_x)
-#define YLOG2DEV(y) (int)floor(((y) - logical_origin_y)*logical_scale_y*user_scale_y + device_origin_y)
+#define _XLOG2DEV(x,dox) (int)floor(((x) - logical_origin_x)*logical_scale_x*user_scale_x + dox)
+#define _YLOG2DEV(y,doy) (int)floor(((y) - logical_origin_y)*logical_scale_y*user_scale_y + doy)
+
+#define XLOG2DEV(x) _XLOG2DEV(x, device_origin_x)
+#define YLOG2DEV(y) _YLOG2DEV(y, device_origin_y)
+
+#define XLOG2UDEV(x) _XLOG2DEV(x, (device_origin_x - auto_device_origin_x))
+#define YLOG2UDEV(y) _YLOG2DEV(y, (device_origin_y - auto_device_origin_y))
 
 // Logical to device without the device translation
-#define XLOG2DEV_2(x) (int)floor(((x) - logical_origin_x)*logical_scale_x*user_scale_x)
-#define YLOG2DEV_2(y) (int)floor(((y) - logical_origin_y)*logical_scale_y*user_scale_y)
+#define XLOG2DEV_2(x) _XLOG2DEV(x, 0)
+#define YLOG2DEV_2(y) _YLOG2DEV(y, 0)
 
 // Relative
 #define XLOG2DEVREL(x) (int)floor((x)*logical_scale_x*user_scale_x)
@@ -69,9 +75,14 @@ extern "C" {
 
 // Device to logical
 // Absolute
-#define XDEV2LOG(x) (((x) - device_origin_x)/(logical_scale_x*user_scale_x) + logical_origin_x)
+#define _XDEV2LOG(x, dox) (((x) - dox)/(logical_scale_x*user_scale_x) + logical_origin_x)
+#define _YDEV2LOG(y, doy) (((y) - doy)/(logical_scale_y*user_scale_y) + logical_origin_y)
 
-#define YDEV2LOG(y) (((y) - device_origin_y)/(logical_scale_y*user_scale_y) + logical_origin_y)
+#define XDEV2LOG(x) _XDEV2LOG(x, device_origin_x)
+#define YDEV2LOG(y) _YDEV2LOG(y, device_origin_y)
+
+#define XUDEV2LOG(x) _XDEV2LOG(x, (device_origin_x - auto_device_origin_x))
+#define YUDEV2LOG(y) _YDEV2LOG(y, (device_origin_y - auto_device_origin_y))
 
 // Relative
 #define XDEV2LOGREL(x) ((x)/(logical_scale_x*user_scale_x))

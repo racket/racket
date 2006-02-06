@@ -576,11 +576,14 @@ typedef void (*Scheme_Type_Printer)(Scheme_Object *v, int for_display, Scheme_Pr
 #define SCHEME_PRIM_IS_STRUCT_PRED 64
 #define SCHEME_PRIM_IS_STRUCT_CONSTR 128
 #define SCHEME_PRIM_IS_MULTI_RESULT 256
-#define SCHEME_PRIM_IS_GENERIC 512
+#define SCHEME_PRIM_IS_BINARY_INLINED 512
 #define SCHEME_PRIM_IS_USER_PARAMETER 1024
 #define SCHEME_PRIM_IS_METHOD 2048
 #define SCHEME_PRIM_IS_POST_DATA 4096
 #define SCHEME_PRIM_IS_NONCM 8192
+#define SCHEME_PRIM_IS_UNARY_INLINED 16384
+
+#define SCHEME_PRIM_PROC_FLAGS(x) (((Scheme_Prim_Proc_Header *)x)->flags)
 
 typedef struct Scheme_Object *
 (Scheme_Prim)(int argc, struct Scheme_Object *argv[]);
@@ -721,7 +724,6 @@ typedef struct {
 #define SCHEME_CONT_MARK_SETP(obj)    SAME_TYPE(SCHEME_TYPE(obj), scheme_cont_mark_set_type)
 #define SCHEME_PROC_STRUCTP(obj) SAME_TYPE(SCHEME_TYPE(obj), scheme_proc_struct_type)
 #define SCHEME_STRUCT_PROCP(obj) (SCHEME_CLSD_PRIMP(obj) && (((Scheme_Closed_Primitive_Proc *)(obj))->pp.flags & SCHEME_PRIM_IS_STRUCT_PROC))
-#define SCHEME_GENERICP(obj) (SCHEME_CLSD_PRIMP(obj) && (((Scheme_Closed_Primitive_Proc *)(obj))->pp.flags & SCHEME_PRIM_IS_GENERIC))
 #define SCHEME_CLOSUREP(obj) (SAME_TYPE(SCHEME_TYPE(obj), scheme_closure_type) || SAME_TYPE(SCHEME_TYPE(obj), scheme_case_closure_type))
 
 #define SCHEME_PRIM(obj)     (((Scheme_Primitive_Proc *)(obj))->prim_val)
@@ -809,7 +811,7 @@ typedef struct {
 typedef struct Scheme_Jumpup_Buf {
   void *stack_from, *stack_copy;
   long stack_size, stack_max_size;
-  struct Scheme_Jumpup_Buf *cont;
+  struct Scheme_Cont *cont; /* for sharing continuation tails */
   mz_jmp_buf buf;
 #ifdef MZ_PRECISE_GC
   void *gc_var_stack;

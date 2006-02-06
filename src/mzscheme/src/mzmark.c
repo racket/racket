@@ -1475,6 +1475,7 @@ int thread_val_MARK(void *p) {
   gcMARK(pr->runstack_saved);
   gcMARK(pr->runstack_owner);
   gcMARK(pr->runstack_swapped);
+  pr->spare_runstack = NULL; /* just in case */
   
   gcMARK(pr->cont_mark_stack_segments);
   gcMARK(pr->cont_mark_stack_owner);
@@ -1561,6 +1562,7 @@ int thread_val_FIXUP(void *p) {
   gcFIXUP(pr->runstack_saved);
   gcFIXUP(pr->runstack_owner);
   gcFIXUP(pr->runstack_swapped);
+  pr->spare_runstack = NULL; /* just in case */
   
   gcFIXUP(pr->cont_mark_stack_segments);
   gcFIXUP(pr->cont_mark_stack_owner);

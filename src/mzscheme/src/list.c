@@ -26,16 +26,10 @@
 
 /* globals */
 Scheme_Object scheme_null[1];
-Scheme_Object *scheme_null_p_prim;
-Scheme_Object *scheme_pair_p_prim;
-Scheme_Object *scheme_car_prim;
-Scheme_Object *scheme_cdr_prim;
 
 /* locals */
 static Scheme_Object *pair_p_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *cons_prim (int argc, Scheme_Object *argv[]);
-static Scheme_Object *car_prim (int argc, Scheme_Object *argv[]);
-static Scheme_Object *cdr_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *set_car_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *set_cdr_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *cons_immutable (int argc, Scheme_Object *argv[]);
@@ -126,28 +120,29 @@ static Scheme_Object *weak_symbol, *equal_symbol;
 void
 scheme_init_list (Scheme_Env *env)
 {
-  REGISTER_SO(scheme_null_p_prim);
-  REGISTER_SO(scheme_pair_p_prim);
-  REGISTER_SO(scheme_car_prim);
-  REGISTER_SO(scheme_cdr_prim);
-
+  Scheme_Object *p;
+  
   scheme_null->type = scheme_null_type;
 
   scheme_add_global_constant ("null", scheme_null, env);
 
-  scheme_pair_p_prim = scheme_make_folding_prim(pair_p_prim, "pair?", 1, 1, 1);
-  scheme_add_global_constant ("pair?", scheme_pair_p_prim, env);
+  p = scheme_make_folding_prim(pair_p_prim, "pair?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("pair?", p, env);
 
   scheme_add_global_constant ("cons",
 			      scheme_make_prim_w_arity(cons_prim,
 						       "cons",
 						       2, 2),
 			      env);
-  scheme_car_prim = scheme_make_noncm_prim(car_prim, "car", 1, 1);
-  scheme_add_global_constant ("car", scheme_car_prim, env);
 
-  scheme_cdr_prim = scheme_make_noncm_prim(cdr_prim, "cdr", 1, 1);
-  scheme_add_global_constant ("cdr", scheme_cdr_prim, env);
+  p = scheme_make_noncm_prim(scheme_checked_car, "car", 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("car", p, env);
+
+  p = scheme_make_noncm_prim(scheme_checked_cdr, "cdr", 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("cdr", p, env);
 
   scheme_add_global_constant ("set-car!",
 			      scheme_make_noncm_prim(set_car_prim,
@@ -165,8 +160,9 @@ scheme_init_list (Scheme_Env *env)
 						     2, 2),
 			      env);
 
-  scheme_null_p_prim = scheme_make_folding_prim(null_p_prim, "null?", 1, 1, 1);
-  scheme_add_global_constant ("null?", scheme_null_p_prim, env);
+  p = scheme_make_folding_prim(null_p_prim, "null?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("null?", p, env);
 
   scheme_add_global_constant ("list?",
 			      scheme_make_noncm_prim(list_p_prim,
@@ -733,16 +729,16 @@ cons_immutable (int argc, Scheme_Object *argv[])
   return (cons);
 }
 
-static Scheme_Object *
-car_prim (int argc, Scheme_Object *argv[])
+Scheme_Object *
+scheme_checked_car (int argc, Scheme_Object *argv[])
 {
   if (!SCHEME_PAIRP(argv[0]))
     scheme_wrong_type("car", "pair", 0, argc, argv);
   return (SCHEME_CAR (argv[0]));
 }
 
-static Scheme_Object *
-cdr_prim (int argc, Scheme_Object *argv[])
+Scheme_Object *
+scheme_checked_cdr (int argc, Scheme_Object *argv[])
 {
   if (!SCHEME_PAIRP(argv[0]))
     scheme_wrong_type("cdr", "pair", 0, argc, argv);

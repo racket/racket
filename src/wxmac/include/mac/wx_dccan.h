@@ -134,14 +134,20 @@ class wxCanvasDC: public wxbCanvasDC
   double DeviceToLogicalY(int y);
   double DeviceToLogicalXRel(int x);
   double DeviceToLogicalYRel(int y);
+  double UnscrolledDeviceToLogicalX(int x);
+  double UnscrolledDeviceToLogicalY(int y);
   int LogicalToDeviceX(double x);
   int LogicalToDeviceY(double y);
   int LogicalToDeviceXRel(double x);
   int LogicalToDeviceYRel(double y);
+  int LogicalToUnscrolledDeviceX(double x);
+  int LogicalToUnscrolledDeviceY(double y);
   double FLogicalToDeviceX(double x);
   double FLogicalToDeviceY(double y);
   double FLogicalToDeviceXRel(double x);
   double FLogicalToDeviceYRel(double y);
+  double FLogicalToUnscrolledDeviceX(double x);
+  double FLogicalToUnscrolledDeviceY(double y);
 
   Bool Blit(double xdest, double ydest, double width, double height,
             wxBitmap* source, double xsrc, double ysrc, int rop = wxSOLID, wxColour *c = NULL,
