@@ -891,42 +891,44 @@
           ;(printf "~a~n" ((send value fields-for-display)))
           (list (cadr ((send value fields-for-display)))))
          (else
-          (case style
-            ((type) (list (send value my-name)))
-            ((field)
-             (let* ((retrieve-fields (send value fields-for-display))
-                    (st (format "~a(" (send value my-name)))
-                    (new-tabs (+ num-tabs 3))
-                    (fields null))
-               (let loop ((current (retrieve-fields)))
-                 (let ((next (retrieve-fields)))
-                   (when current
-                     (set! fields 
-                           (append fields 
-                                   (cons
-                                    (format "~a~a = "
-                                            (if newline? (if (eq? fields null)
-                                                             (format "~n~a" (get-n-spaces new-tabs))
-                                                             (get-n-spaces new-tabs)) "")
-                                            (car current))
-                                    (append
-                                     (if (memq (cadr current) already-printed)
-                                         (format-java-list (cadr current) full-print? 'type already-printed #f 0)
-                                         (format-java-list (cadr current) full-print? style 
-                                                           (cons value already-printed) newline?
-                                                           (if newline? 
-                                                               (+ new-tabs (if (string? (car current))
-                                                                               (string-length (car current)) 1) 3)
-                                                               num-tabs)))
-                                     (list (format "~a~a" 
-                                                   (if next "," "")
-                                                   (if newline? (format "~n") " ")))))))
-                     (loop next))))
-               (cons st 
-                     (append
-                      (if (> (length fields) 1) 
-                          (reverse (cdr (reverse fields))) null) (list ")")))))
-            (else (list (send value my-name)))))))
+          (if (memq value already-printed)
+              (list (send value my-name))
+              (case style
+                ((type) (list (send value my-name)))
+                ((field)
+                 (let* ((retrieve-fields (send value fields-for-display))
+                        (st (format "~a(" (send value my-name)))
+                        (new-tabs (+ num-tabs 3))
+                        (fields null))
+                   (let loop ((current (retrieve-fields)))
+                     (let ((next (retrieve-fields)))
+                       (when current
+                         (set! fields 
+                               (append fields 
+                                       (cons
+                                        (format "~a~a = "
+                                                (if newline? (if (eq? fields null)
+                                                                 (format "~n~a" (get-n-spaces new-tabs))
+                                                                 (get-n-spaces new-tabs)) "")
+                                                (car current))
+                                        (append
+                                         (if (memq (cadr current) already-printed)
+                                             (format-java-list (cadr current) full-print? 'type already-printed #f 0)
+                                             (format-java-list (cadr current) full-print? style 
+                                                               (cons value already-printed) newline?
+                                                               (if newline? 
+                                                                   (+ new-tabs (if (string? (car current))
+                                                                                   (string-length (car current)) 1) 3)
+                                                                   num-tabs)))
+                                         (list (format "~a~a" 
+                                                       (if next "," "")
+                                                       (if newline? (format "~n") " ")))))))
+                         (loop next))))
+                   (cons st 
+                         (append
+                          (if (> (length fields) 1) 
+                              (reverse (cdr (reverse fields))) null) (list ")")))))
+                (else (list (send value my-name))))))))
           (else (list value))))
 
   ;format-array->list: java-value int int bool symbol (list value) -> (list val)
