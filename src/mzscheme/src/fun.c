@@ -3586,6 +3586,19 @@ scheme_get_stack_trace(Scheme_Object *mark_set)
     a[1] = scheme_stack_dump_key;
     
     l = extract_cc_marks(2, a);
+  } else {
+    /* Copy l: */
+    Scheme_Object *first = scheme_null, *last = NULL;
+    while (SCHEME_PAIRP(l)) {
+      n = scheme_make_pair(SCHEME_CAR(l), scheme_null);
+      if (last)
+	SCHEME_CDR(last) = n;
+      else
+	first = n;
+      last = n;
+      l = SCHEME_CDR(l);
+    }
+    l = first;
   }
 
   /* Filter out NULLs */
