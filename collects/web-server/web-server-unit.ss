@@ -95,7 +95,6 @@
                                        ip op (current-custodian) #f)])
              (with-handlers ([exn:fail:network?
                               (lambda (e)
-                                (set-connection-close?! conn #t)
                                 (kill-connection! conn)
                                 (raise e))])
                (serve-connection conn port-addresses))))))
@@ -105,9 +104,12 @@
       (define (serve-connection conn port-addresses)
         (let connection-loop ()
           (let-values ([(req close?) (config:read-request conn config:port port-addresses)])
-            (set-connection-close?! conn close?)
+            (unless close?
+              (set-connection-close?! conn #f))
             (adjust-connection-timeout! conn config:initial-connection-timeout)
             (config:dispatch conn req)
+            (when close?
+              (set-connection-close?! conn #t))
             (cond
               [(connection-close? conn) (kill-connection! conn)]
               [else (connection-loop)]))))))
