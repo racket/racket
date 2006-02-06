@@ -114,15 +114,13 @@
   ;; **************************************************
   ;; output-response: connection response -> void
   (define (ext:output-response conn resp)
-    (if (connection-close? conn)
-        (error 'output-response "Attempt to output on closed connection.")
-        (with-handlers ([exn? (lambda (exn)
-                                (kill-connection! conn)
-                                (raise exn))])
-          (call-with-semaphore (connection-mutex conn)
-                               (lambda ()
-                                 (output-response conn resp)
-                                 (flush-output (connection-o-port conn)))))))
+    (with-handlers ([exn? (lambda (exn)
+                            (kill-connection! conn)
+                            (raise exn))])
+      (call-with-semaphore (connection-mutex conn)
+                           (lambda ()
+                             (output-response conn resp)
+                             (flush-output (connection-o-port conn))))))
   
   (define (output-response conn resp)
     (cond
@@ -186,15 +184,13 @@
   ;; **************************************************
   ;; output-file: connection path symbol bytes -> void
   (define (ext:output-file conn file-path method mime-type)
-    (if (connection-close? conn)
-        (error 'output-response "Attempt to output on closed connection.")
-        (with-handlers ([exn? (lambda (exn)
-                                (kill-connection! conn)
-                                (raise exn))])
-          (call-with-semaphore (connection-mutex conn)
-                               (lambda ()
-                                 (output-file conn file-path method mime-type)
-                                 (flush-output (connection-o-port conn)))))))
+    (with-handlers ([exn? (lambda (exn)
+                            (kill-connection! conn)
+                            (raise exn))])
+      (call-with-semaphore (connection-mutex conn)
+                           (lambda ()
+                             (output-file conn file-path method mime-type)
+                             (flush-output (connection-o-port conn))))))
   
   (define (output-file conn file-path method mime-type)
     (output-headers conn 200 "Okay"
@@ -212,15 +208,13 @@
   ;; output-response/method: connection response/full symbol -> void
   ;; If it is a head request output headers only, otherwise output as usual
   (define (ext:output-response/method conn resp meth)
-    (if (connection-close? conn)
-        (error 'output-response "Attempt to output on closed connection.")
-        (with-handlers ([exn? (lambda (exn)
-                                (kill-connection! conn)
-                                (raise exn))])
-          (call-with-semaphore (connection-mutex conn)
-                               (lambda ()
-                                 (output-response/method conn resp meth)
-                                 (flush-output (connection-o-port conn)))))))
+    (with-handlers ([exn? (lambda (exn)
+                            (kill-connection! conn)
+                            (raise exn))])
+      (call-with-semaphore (connection-mutex conn)
+                           (lambda ()
+                             (output-response/method conn resp meth)
+                             (flush-output (connection-o-port conn))))))
   
   (define (output-response/method conn resp meth)
     (cond
