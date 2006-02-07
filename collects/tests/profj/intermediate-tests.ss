@@ -303,6 +303,15 @@
   ;;Execute tests with errors
 
   (execute-test
+   "class Foo {
+  Foo() {}
+  boolean compare(int x, int y, int z) {
+    return (x == y) (y == z);
+  }
+}"
+   'intermediate #t "Parse error, two expressions (one parened) without an operator")
+  
+  (execute-test
    "abstract class F{ abstract int f(); }
     class G extends F { }"
    'intermediate #t "Extending abstract class without method")
