@@ -4,19 +4,37 @@
   
   (prepare-for-tests "Full")
 
+  (execute-test
+   "class X {
+     int x = y;
+     int y;
+   }" 'full #t "Forward reference error")
+  
+  (interact-test 
+   "class X {
+     int x = this.y;
+     int y = 2;
+    }"
+   'full
+   '("new X().x" "new X().y")
+   '(0 2)
+   "Testing no undefined fields")
+  
   (parameterize ((dynamic? #t))
+    (interact-test
     "class X { }"
     'full
     '("X x = new X();" "X y = (dynamic) x;" "x.equals(y)" "y.equals(x)" "y==x" "x==y")
     '((void) (void) #t #t #t #t)
-    "Equality test of a wrapped and unwrapped object")
+    "Equality test of a wrapped and unwrapped object"))
   
   (parameterize ((dynamic? #t))
+    (interact-test
     "class X { int y; X(int y) { this.y = y; } }"
     'full 
     '("X x = new X(3);" "X y = (dynamic) x;"  "x.y = 4"  "y.y" "y.y=5" "x.y")
     '((void) (void) 4 4 5 5)
-    "Accessing fields of a dynamic value")
+    "Accessing fields of a dynamic value"))
   
   (execute-test
    "package a; class a { int x; 

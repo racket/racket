@@ -118,6 +118,13 @@
   ;;Execution tests that should produce errors
 
   (execute-test
+   "class X {
+     int x = this.y;
+     int y = 3;
+     X() { }
+   }" language #t "Should be forward field error")
+  
+  (execute-test
    "interface Z { 
      int x(); 
     }

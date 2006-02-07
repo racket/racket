@@ -177,14 +177,16 @@
                                               prog))
                                #f))
                  ((field? prog) 
-                  (translate-field `(private)
-                                   (field-type-spec prog)
-                                   (field-name prog)
-                                   (and (var-init? prog) prog)
-                                   (if (var-init? prog)
-                                       (var-init-src prog)
-                                       (var-decl-src prog))
-                                   #f))
+                  (create-syntax #f
+                                 `(begin ,@(translate-field `(private)
+                                                            (field-type-spec prog)
+                                                            (field-name prog)
+                                                            (and (var-init? prog) prog)
+                                                            (if (var-init? prog)
+                                                                (var-init-src prog)
+                                                                (var-decl-src prog))
+                                                            #f))
+                                 #f))
                  ((statement? prog) (translate-statement prog type-recs))
                  ((expr? prog) (translate-expression prog))
                  (else 
@@ -599,18 +601,24 @@
                                             ((null? args) null)
                                             (else (cons (string->symbol (format "~a~~f" (car args)))
                                                         (loop (cdr args)))))))))
-                             ,@(map (lambda (f) (translate-field (map modifier-kind (field-modifiers f))
-                                                                 (field-type-spec f)
-                                                                 (field-name f)
-                                                                 (and (var-init? f) f)
-                                                                 (if (var-init? f)
-                                                                     (var-init-src f)
-                                                                     (var-decl-src f))
-                                                                 #f))
-                                    (append (accesses-public fields)
-                                            (accesses-package fields)
-                                            (accesses-protected fields)
-                                            (accesses-private fields)))
+                             ,@(let ((translated-fields (map 
+                                                         (lambda (f) (translate-field (map modifier-kind (field-modifiers f))
+                                                                                      (field-type-spec f)
+                                                                                      (field-name f)
+                                                                                      (and (var-init? f) f)
+                                                                                      (if (var-init? f)
+                                                                                          (var-init-src f)
+                                                                                          (var-decl-src f))
+                                                                                      #f))
+                                                         (append (accesses-public fields)
+                                                                 (accesses-package fields)
+                                                                 (accesses-protected fields)
+                                                                 (accesses-private fields)))))
+                                 (append
+                                  (map car translated-fields)
+                                  (map cadr translated-fields)))
+                                 
+                                 
                              ,@(create-private-setters/getters (accesses-private fields))
                              
                              ,@(generate-inner-makers (members-inner class-members) 
@@ -1479,39 +1487,43 @@
               (f (car fields)))
           (cons (make-syntax #f
                              `(define ,(translate-id name (id-src (field-name f))) 
-                                ,(translate-field-body (and (var-init? f) f) (field-type-spec f)))
+                                ,(cadr (translate-field-body (and (var-init? f) f) (field-type-spec f))))
                              (build-src (if (var-init? f) (var-init-src f) (var-decl-src f))))
                 (create-static-fields (cdr names) (cdr fields))))))
   
-  ;translate-field: (list symbol) type-spec id (U #f var-init) src bool -> syntax
+  ;translate-field: (list symbol) type-spec id (U #f var-init) src bool -> (list syntax)
   (define (translate-field access type name init? src static?)
-    (let ((value (translate-field-body init? type))
+    (let ((values (translate-field-body init? type))
           (field-name (translate-id (build-var-name (if static? (build-static-name (id-string name)) (id-string name)))
                                     (id-src name))))
-      (if (or static? (private? access))
-          (make-syntax #f `(define ,field-name ,value) (build-src src))
-          (make-syntax #f `(field (,field-name ,value)) (build-src src)))))
+      (list (if (or static? (private? access))
+                (make-syntax #f `(define ,field-name ,(car values)) (build-src src))
+                (make-syntax #f `(field (,field-name ,(car values))) (build-src src)))
+            (create-syntax #f `(set! ,field-name ,(cadr values)) #f))))
   
-  ;translate-field-body (U bool var-init) type-spec -> syntax
+  ;translate-field-body (U bool var-init) type-spec -> (list syntax)
   (define (translate-field-body init? type)
-    (cond 
-      (init?
-       (let ((actual-type (if (array-init? (var-init-init init?))
-                              'dynamic ;Problem: array type needed here
-                              (expr-types (var-init-init init?))))             
-             (body-syntax (if (array-init? (var-init-init init?))
-                              (initialize-array (array-init-vals (var-init-init init?))
-                                                type)
-                              (translate-expression (var-init-init init?)))))
-         (cond
-           ((or (eq? 'dynamic (field-type init?))
-                (dynamic-val? (field-type init?)))
-            (make-syntax #f (guard-convert-value body-syntax actual-type) body-syntax))
-           ((and (memq (field-type init?) '(float double))
-                 (memq actual-type '(long int byte short)))
-            (make-syntax #f `(exact->inexact ,body-syntax) body-syntax))
-           (else body-syntax))))
-      (else (get-default-value type))))
+    (let ((default-val (get-default-value type)))
+      (list 
+       default-val
+       (cond 
+         (init?
+          (let ((actual-type (if (array-init? (var-init-init init?))
+                                 'dynamic ;Problem: array type needed here
+                                 (expr-types (var-init-init init?))))             
+                (body-syntax (if (array-init? (var-init-init init?))
+                                 (initialize-array (array-init-vals (var-init-init init?))
+                                                   type)
+                                 (translate-expression (var-init-init init?)))))
+            (cond
+              ((or (eq? 'dynamic (field-type init?))
+                   (dynamic-val? (field-type init?)))
+               (make-syntax #f (guard-convert-value body-syntax actual-type) body-syntax))
+              ((and (memq (field-type init?) '(float double))
+                    (memq actual-type '(long int byte short)))
+               (make-syntax #f `(exact->inexact ,body-syntax) body-syntax))
+              (else body-syntax))))
+         (else default-val)))))
   
   ;translate-initialize: bool block src string type-records -> syntax
   (define (translate-initialize static? body src type-recs)

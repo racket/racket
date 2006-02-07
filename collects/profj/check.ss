@@ -409,7 +409,7 @@
            (fields (class-record-fields class-record))
            (field-env (create-field-env fields env (car c-class)))
            (base-fields (create-field-env (filter (lambda (field)
-                                                    (not (equal? (field-record-class field) (car c-class))))
+                                                    (not (equal? (field-record-class field) c-class)))
                                                   fields) env (car c-class)))
            (ctor-throw-env (if iface? field-env
                                (consolidate-throws 
@@ -446,9 +446,9 @@
                    (add-required c-class (ref-type-class/iface type) (ref-type-path type) type-recs))
                  (if (var-init? member)
                      (check-var-init (var-init-init member)
-                                     (lambda (e env) 
+                                     (lambda (e env)
                                        (check-expr e env
-                                                   level type-recs c-class #f 
+                                                   level type-recs c-class #f
                                                    static? #f #f))
                                      (if static? statics fields)
                                      type
@@ -724,6 +724,13 @@
     (raise-error (string->symbol name)
                  (format "Inherited field ~a must be set in the constructor for the current class" name)
                  (string->symbol name) src))
+  
+  ;raise-forward-reference: id src -> void
+  (define (raise-forward-reference field src)
+    (let ((name (id->ext-name (id-string field))))
+      (raise-error name 
+                   (format "Field ~a cannot be referenced before its declaration." name)
+                   name src)))
   
   ;check-method: method env type-records (list string) boolean boolean-> void
   (define (check-method method env level type-recs c-class static? iface?)
@@ -1675,7 +1682,8 @@
                       (and (null? (cdr field-class))
                            (lookup-local-inner (car field-class) env))))
                 
-                (when (and (special-name? obj)
+                (when (and (memq level '(beginner intermediate))
+                           (special-name? obj)
                            (not (lookup-var-in-env fname env)))
                   (access-before-define (string->symbol fname) src))
                 
@@ -1822,6 +1830,12 @@
                          (variable-not-found-error (if class? 'class-name 'method-name) (car acc) (id-src (car acc))))
                         ((close-to-keyword? (id-string (car acc)))
                          (close-to-keyword-error 'field (car acc) (id-src (car acc))))
+                        ((and (not static?) (not interact?)
+                              (get-field-record (id-string (car acc)) 
+                                                (send type-recs get-class-record 
+                                                      (var-type-type (lookup-var-in-env "this" env))) (lambda () #f)))
+                         (access-before-define (string->symbol (id-string (car acc)))
+                                               (id-src (car acc))))
                         (else
                          (variable-not-found-error 'not-found (car acc) (id-src (car acc))))))))))
            (set-access-name! exp new-acc)
@@ -2721,7 +2735,7 @@
       (raise-error
        field
        (case kind
-         ((not-found) (format "field ~a not found for object with type ~a" field t))
+         ((not-found) (format "Field ~a not found for object with type ~a." field t))
          ((class-name)
           (format "Class named ~a is being erroneously accessed as a field" field))
          ((method-name)
@@ -2732,26 +2746,26 @@
          ((array)
           (format "~a only has a length field, attempted to access ~a" t field))
          ((primitive)
-          (format "attempted to access field ~a on ~a, this value does not have fields" field t)))
+          (format "Attempted to access field ~a on ~a; this value does not have fields." field t)))
        field src)))
 
   ;unusable-var-error: symbol src -> void
   (define (unusable-var-error name src)
     (raise-error 
      name
-     (format "field ~a cannot be used in this class, as two or more parents contain a field with this name" name)
+     (format "Field ~a cannot be used in this class, as two or more parents contain a field with this name." name)
      name src))
 
   ;unset-var-error: symbol src -> void
   (define (unset-var-error name src)
     (raise-error name
-                 (format "local variable ~a was not set along all paths reaching this point, and cannot be used"
+                 (format "Local variable ~a was not set along all paths reaching this point, and cannot be used."
                          name)
                  name src))     
   ;access-before-defined: symbol src -> void
   (define (access-before-define name src)
     (raise-error name
-                 (format "field ~a cannot be accessed before its definition" name)
+                 (format "Field ~a cannot be accessed before its declaration." name)
                  name src))
   
   ;not-static-field-access-error symbol symbol src -> void
