@@ -896,11 +896,10 @@ typedef struct Scheme_Dynamic_Wind {
 
 typedef struct Scheme_Cont {
   Scheme_Object so;
-  Scheme_Object *value;
+  Scheme_Object *value; /* Set just before jump */
   Scheme_Jumpup_Buf buf;
   long *ok;
   Scheme_Dynamic_Wind *dw, *common;
-  Scheme_Thread *home;
   Scheme_Continuation_Jump_State cjs;
   mz_jmp_buf *save_overflow_buf;
   int suspend_break;
@@ -910,7 +909,7 @@ typedef struct Scheme_Cont {
   Scheme_Cont_Mark *cont_mark_stack_copied;
   Scheme_Thread **cont_mark_stack_owner;
   Scheme_Cont_Mark **orig_mark_segments;
-  long cont_mark_shareable, cont_mark_recycleable, cont_mark_offset;
+  long cont_mark_shareable, cont_mark_offset;
   void *stack_start;
   void *o_start;
   Scheme_Config *init_config;

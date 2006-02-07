@@ -4229,6 +4229,13 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       
       DO_CHECK_FOR_BREAK(p, ;);
 
+      if (!c->runstack_copied) {
+	/* This continuation is the same as another, except
+	   that its mark stack is different. The different part
+	   of the mark stack won't be visible, so we use the other. */
+	c = c->buf.cont;
+      }
+
       if (c->ok && !*c->ok) {
 	UPDATE_THREAD_RSPTR_FOR_ERROR();
 	scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION,

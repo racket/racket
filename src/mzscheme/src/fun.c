@@ -2942,7 +2942,7 @@ static void copy_in_mark_stack(Scheme_Thread *p, Scheme_Cont_Mark *cont_mark_sta
   }
 }
 
-static MZ_MARK_STACK_TYPE find_shareable_marks(int for_recycle)
+static MZ_MARK_STACK_TYPE find_shareable_marks()
 {
   Scheme_Thread *p = scheme_current_thread;
   long cmcount, delta = 0;
@@ -2955,9 +2955,8 @@ static MZ_MARK_STACK_TYPE find_shareable_marks(int for_recycle)
 
     if (seg[pos].pos < MZ_CONT_MARK_POS)
       break;
-    if (SAME_OBJ(seg[pos].key, cont_key)
-	|| (for_recycle && SAME_OBJ(seg[pos].key, scheme_stack_dump_key)))
-      delta++;
+    if (SAME_OBJ(seg[pos].key, cont_key))
+      delta = 1;
     else
       delta = 0;
   }
@@ -3018,24 +3017,42 @@ internal_call_cc (int argc, Scheme_Object *argv[])
   if (sub_cont && (sub_cont->save_overflow != p->overflow))
     sub_cont = NULL;
   if (sub_cont && (sub_cont->ss.cont_mark_pos == MZ_CONT_MARK_POS)) {
+    Scheme_Object *argv2[1];
     /* Old cont is the same as this one, except that it may
-       have different marks --- not counting cont_key or stack-trace 
-       info. (By not counting stack-trace info, we make debugging
-       info weaker. We might do a little better by checking that the
-       stack-trace info is actually the same.) */
-    if ((sub_cont->cont_mark_recycleable == (long)sub_cont->ss.cont_mark_stack)
-	&& (find_shareable_marks(1) == MZ_CONT_MARK_STACK)) {
+       have different marks (not counting cont_key). */
+    if ((sub_cont->cont_mark_shareable == (long)sub_cont->ss.cont_mark_stack)
+	&& (find_shareable_marks() == MZ_CONT_MARK_STACK)) {
       /* Just use this one. */
-      Scheme_Object *argv2[1];
-      argv2[0] = (Scheme_Object *)sub_cont;
-      return _scheme_tail_apply(argv[0], 1, argv2);
+      cont = sub_cont;
     } else {
+      /* Only continuation marks can be different. Mostly just re-use sub_cont. */
+      long offset;
+
+      cont = MALLOC_ONE_TAGGED(Scheme_Cont);
+      cont->so.type = scheme_cont_type;
+      cont->buf.cont = sub_cont;
       sub_cont = sub_cont->buf.cont;
+
+      /* This mark stack won't be restored, but it may be
+	 used by `continuation-marks'. */
+      cont->ss.cont_mark_stack = MZ_CONT_MARK_STACK;
+      msaved = copy_out_mark_stack(p, cont->ss.cont_mark_stack, sub_cont, &offset);
+      cont->cont_mark_stack_copied = msaved;
+      cont->cont_mark_offset = offset;
+      offset = find_shareable_marks();
+      cont->cont_mark_shareable = offset;
     }
+
+    argv2[0] = (Scheme_Object *)cont;
+    return _scheme_tail_apply(argv[0], 1, argv2);
   }
 
   cont = MALLOC_ONE_TAGGED(Scheme_Cont);
   cont->so.type = scheme_cont_type;
+
+  /* Set cont_key mark before capturing marks: */
+  scheme_set_cont_mark(cont_key, (Scheme_Object *)cont);
+
   scheme_init_jmpup_buf(&cont->buf);
   cont->ok = p->cc_ok;
   *(p->cc_ok) = 2; /* Marks it as used */
@@ -3056,9 +3073,6 @@ internal_call_cc (int argc, Scheme_Object *argv[])
     }
   }
   scheme_cont_capture_count++;
-
-  /* Set cont_key mark before capturing marks: */
-  scheme_set_cont_mark(cont_key, (Scheme_Object *)cont);
 
   if (p->cc_ok == thread_init_cc_ok) {
     /* This continuation can be used by other threads,
@@ -3084,10 +3098,8 @@ internal_call_cc (int argc, Scheme_Object *argv[])
     msaved = copy_out_mark_stack(p, cont->ss.cont_mark_stack, sub_cont, &offset);
     cont->cont_mark_stack_copied = msaved;
     cont->cont_mark_offset = offset;
-    offset = find_shareable_marks(0);
+    offset = find_shareable_marks();
     cont->cont_mark_shareable = offset;
-    offset = find_shareable_marks(1);
-    cont->cont_mark_recycleable = offset;
   }
 
   /* Remember the original mark-stack segments. */
@@ -3357,11 +3369,21 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
   Scheme_Cont_Mark_Set *set;
   Scheme_Object *cache, *nt;
   long findpos;
-  long cmpos;
+  long cmpos, cdelta = 0;
 
   if (cont) {
     findpos = (long)cont->ss.cont_mark_stack;
     cmpos = (long)cont->ss.cont_mark_pos;
+    if (cont->buf.cont) {
+      if (cont->runstack_copied)
+	cdelta = cont->buf.cont->cont_mark_shareable;
+      else {
+	/* Current cont was just a mark-stack variation of
+	     next cont, so skip the next cont. */
+	if (cont->buf.cont->buf.cont)
+	  cdelta = cont->buf.cont->buf.cont->cont_mark_shareable;
+      }
+    }
   } else if (econt) {
     findpos = (long)((Scheme_Escaping_Cont *)econt)->envss.cont_mark_stack;
     cmpos = (long)((Scheme_Escaping_Cont *)econt)->envss.cont_mark_pos;
@@ -3377,8 +3399,20 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
     long pos;
 
     if (cont) {
+      while (findpos < cdelta) {
+	if (!cont->runstack_copied) {
+	  /* Current cont was just a mark-stack variation of
+	     next cont, so skip the next cont. */
+	  cont = cont->buf.cont;
+	}
+	cont = cont->buf.cont;
+	if (cont->buf.cont)
+	  cdelta = cont->buf.cont->cont_mark_shareable;
+	else
+	  cdelta = 0;
+      }
       find = cont->cont_mark_stack_copied;
-      pos = findpos;
+      pos = findpos - cdelta;
     } else {
       GC_CAN_IGNORE Scheme_Cont_Mark *seg;
 
