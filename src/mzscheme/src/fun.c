@@ -2956,7 +2956,7 @@ static MZ_MARK_STACK_TYPE find_shareable_marks(int for_recycle)
     if (seg[pos].pos < MZ_CONT_MARK_POS)
       break;
     if (SAME_OBJ(seg[pos].key, cont_key)
-	|| (for_recycle && SAME_OBJ(seg[pos].key, scheme_stack_dump_key)))
+	|| (0 && for_recycle && SAME_OBJ(seg[pos].key, scheme_stack_dump_key)))
       delta++;
     else
       delta = 0;
@@ -3057,6 +3057,9 @@ internal_call_cc (int argc, Scheme_Object *argv[])
   }
   scheme_cont_capture_count++;
 
+  /* Set cont_key mark before capturing marks: */
+  scheme_set_cont_mark(cont_key, (Scheme_Object *)cont);
+
   if (p->cc_ok == thread_init_cc_ok) {
     /* This continuation can be used by other threads,
        so we need to track ownership of the runstack */
@@ -3105,8 +3108,6 @@ internal_call_cc (int argc, Scheme_Object *argv[])
   scheme_zero_unneeded_rands(p);
 
   scheme_flatten_config(scheme_current_config());
-
-  scheme_set_cont_mark(cont_key, (Scheme_Object *)cont);
 
   if (scheme_setjmpup_relative(&cont->buf, cont, p->next ? p->stack_start : p->o_start, sub_cont)) {
     /* We arrive here when the continuation is applied */
