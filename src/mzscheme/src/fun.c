@@ -2942,7 +2942,7 @@ static void copy_in_mark_stack(Scheme_Thread *p, Scheme_Cont_Mark *cont_mark_sta
   }
 }
 
-static MZ_MARK_STACK_TYPE find_sharable_marks()
+static MZ_MARK_STACK_TYPE find_shareable_marks(int for_recycle)
 {
   Scheme_Thread *p = scheme_current_thread;
   long cmcount, delta = 0;
@@ -2955,8 +2955,9 @@ static MZ_MARK_STACK_TYPE find_sharable_marks()
 
     if (seg[pos].pos < MZ_CONT_MARK_POS)
       break;
-    if (SAME_OBJ(seg[pos].key, cont_key))
-      delta = 1;
+    if (SAME_OBJ(seg[pos].key, cont_key)
+	|| (for_recycle && SAME_OBJ(seg[pos].key, scheme_stack_dump_key)))
+      delta++;
     else
       delta = 0;
   }
@@ -3018,9 +3019,12 @@ internal_call_cc (int argc, Scheme_Object *argv[])
     sub_cont = NULL;
   if (sub_cont && (sub_cont->ss.cont_mark_pos == MZ_CONT_MARK_POS)) {
     /* Old cont is the same as this one, except that it may
-       have different marks --- not counting cont_key! */
-    if ((sub_cont->cont_mark_shareable == (long)sub_cont->ss.cont_mark_stack)
-	&& (find_sharable_marks() == MZ_CONT_MARK_STACK)) {
+       have different marks --- not counting cont_key or stack-trace 
+       info. (By not counting stack-trace info, we make debugging
+       info weaker. We might do a little better by checking that the
+       stack-trace info is actually the same.) */
+    if ((sub_cont->cont_mark_recycleable == (long)sub_cont->ss.cont_mark_stack)
+	&& (find_shareable_marks(1) == MZ_CONT_MARK_STACK)) {
       /* Just use this one. */
       Scheme_Object *argv2[1];
       argv2[0] = (Scheme_Object *)sub_cont;
@@ -3077,8 +3081,10 @@ internal_call_cc (int argc, Scheme_Object *argv[])
     msaved = copy_out_mark_stack(p, cont->ss.cont_mark_stack, sub_cont, &offset);
     cont->cont_mark_stack_copied = msaved;
     cont->cont_mark_offset = offset;
-    offset = find_sharable_marks();
+    offset = find_shareable_marks(0);
     cont->cont_mark_shareable = offset;
+    offset = find_shareable_marks(1);
+    cont->cont_mark_recycleable = offset;
   }
 
   /* Remember the original mark-stack segments. */
