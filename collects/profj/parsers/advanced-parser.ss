@@ -676,7 +676,13 @@
         (if (access? $2)
             (make-cast #f (build-src 4) 
                            (make-type-spec (access->name $2) 0 (build-src 2 2)) $4)
-            (error 'bad-cast))]
+            (raise-read-error "An operator is needed to combine these expressions."
+                              (file-path)
+                              (position-line $1-start-pos)
+                              (position-col $1-start-pos)
+                              (+ (position-offset $1-start-pos) (interactions-offset))
+                              (- (position-offset $4-end-pos)
+                                 (position-offset $1-start-pos))))]
        ;; GJ - Not sure if this is in spec or not.
        ;;[(O_PAREN Name < ReferenceTypeList1 C_PAREN UnaryExpressionNotPlusMinus) #t]
        [(O_PAREN Name Dims C_PAREN UnaryExpressionNotPlusMinus)

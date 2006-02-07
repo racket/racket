@@ -11,6 +11,8 @@
    find-intermediate-error find-intermediate-error-interactions find-intermediate-error-expression find-intermediate-error-type
    find-advanced-error find-advanced-error-interactions find-advanced-error-expression find-advanced-error-type)
 
+  ;(print-struct #t)
+  
   (define level (make-parameter 'beginner))
   (define (beginner?) (eq? (level) 'beginner))
   (define (intermediate?) (eq? (level) 'intermediate))
@@ -1538,6 +1540,7 @@
            (end (get-end cur-tok))
            (ps (if (null? pre) null (get-start pre)))
            (pe (if (null? pre) null (get-end pre))))
+      ;(printf "parse-statement: ~a pre ~a cur-tok ~a ~n" state pre cur-tok)
       (case state
         ((start)
          (case kind
