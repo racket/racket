@@ -1328,11 +1328,11 @@
   (make-generic-combination :init #f :combine (lambda (x y) x)))
 (define* generic-and-combination
   (make-generic-combination
-   :init #t :combine (lambda (x y) (and x y))
+   :init #t
    :control (lambda (loop val this tail) (and val (loop (this) tail)))))
 (define* generic-or-combination
   (make-generic-combination
-   :init #f :combine (lambda (x y) (and x y))
+   :init #f
    :control (lambda (loop val this tail) (or (this) (loop #f tail)))))
 
 ;;>>...
