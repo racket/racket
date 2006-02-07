@@ -2956,7 +2956,7 @@ static MZ_MARK_STACK_TYPE find_shareable_marks(int for_recycle)
     if (seg[pos].pos < MZ_CONT_MARK_POS)
       break;
     if (SAME_OBJ(seg[pos].key, cont_key)
-	|| (0 && for_recycle && SAME_OBJ(seg[pos].key, scheme_stack_dump_key)))
+	|| (for_recycle && SAME_OBJ(seg[pos].key, scheme_stack_dump_key)))
       delta++;
     else
       delta = 0;
