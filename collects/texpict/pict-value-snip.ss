@@ -26,7 +26,10 @@ the user has to move the mouse first.
       (define white? #f)
       (define pict-drawer (make-pict-drawer pict))
       (define/override (draw dc x y left top right bottom dx dy draw-caret)
-        (pict-drawer dc x y)
+	(let ([smoothing (send dc get-smoothing)])
+	  (send dc set-smoothing 'aligned)
+	  (pict-drawer dc x y)
+	  (send dc set-smoothing smoothing))
         (let ([old-pen (send dc get-pen)]
               [old-brush (send dc get-brush)])
           (send dc set-brush (send the-brush-list find-or-create-brush "black" 'transparent))
@@ -111,6 +114,7 @@ the user has to move the mouse first.
                  [str (make-bytes (* w h 4))]
                  [bdc (make-object bitmap-dc% bm)])
             (send bdc clear)
+	    (send bdc set-smoothing 'aligned)
             (pict-drawer bdc 0 0)
             (send bdc get-argb-pixels 0 0 w h str)
             (send bdc set-bitmap #f)
