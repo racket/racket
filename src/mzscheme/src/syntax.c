@@ -2343,6 +2343,43 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
   return first;
 }
 
+Scheme_Object *
+scheme_resolve_lets_for_test(Scheme_Object *form, Resolve_Info *info)
+/* Special case for when the `let' expression appears in an `if' test */
+{
+  Scheme_Let_Header *head = (Scheme_Let_Header *)form;
+
+  /* Special case: (let ([x M]) (if x x N)), where x is not in N,
+     to (if M #t #f), since we're in a test position. */
+  if (!SCHEME_LET_RECURSIVE(head) && (head->count == 1) && (head->num_clauses == 1)) {
+    Scheme_Compiled_Let_Value *clv;
+    clv = (Scheme_Compiled_Let_Value *)head->body;
+    if (SAME_TYPE(SCHEME_TYPE(clv->body), scheme_branch_type)
+	&& (((clv->flags[0] & SCHEME_USE_COUNT_MASK) >> SCHEME_USE_COUNT_SHIFT)
+	    == 2)) {
+      Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)clv->body;
+      if (SAME_TYPE(SCHEME_TYPE(b->test), scheme_local_type)
+	  && SAME_TYPE(SCHEME_TYPE(b->tbranch), scheme_local_type)
+	  && !SCHEME_LOCAL_POS(b->test)
+	  && !SCHEME_LOCAL_POS(b->tbranch)) {
+	Scheme_Branch_Rec *b3;
+	b3 = MALLOC_ONE_TAGGED(Scheme_Branch_Rec);
+	b3->so.type = scheme_branch_type;
+	b3->test = clv->value;
+	b3->tbranch = scheme_true;
+	b3->fbranch = b->fbranch;
+	
+	info = scheme_resolve_info_extend(info, 0, 1, 0);
+
+	return scheme_resolve_expr((Scheme_Object *)b3, info);
+      }
+    }
+  }
+
+
+  return scheme_resolve_lets(form, info);
+}
+
 static Scheme_Object *
 gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
 		int star, int recursive, int multi, Scheme_Compile_Info *rec, int drec,

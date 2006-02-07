@@ -992,6 +992,16 @@ static Scheme_Object *resolve_application2(Scheme_Object *o, Resolve_Info *info)
   return (Scheme_Object *)app;
 }
 
+static int eq_testable_constant(Scheme_Object *v)
+{
+  if (SCHEME_SYMBOLP(v)
+      || SCHEME_FALSEP(v)
+      || SAME_OBJ(v, scheme_true)
+      || SCHEME_VOIDP(v))
+    return 1;
+  return 0;
+}
+
 static Scheme_Object *resolve_application3(Scheme_Object *o, Resolve_Info *info)
 {
   Scheme_App3_Rec *app;
@@ -1010,6 +1020,15 @@ static Scheme_Object *resolve_application3(Scheme_Object *o, Resolve_Info *info)
 
   le = scheme_resolve_expr(app->rand2, info);
   app->rand2 = le;
+
+  /* Optimize `equal?' or `eqv?' test on certain types
+     to `eq?'. This is especially helpful for the JIT. */
+  if ((SAME_OBJ(app->rator, scheme_equal_prim)
+       || SAME_OBJ(app->rator, scheme_eqv_prim))
+      && (eq_testable_constant(app->rand1)
+	  || eq_testable_constant(app->rand2))) {
+    app->rator = scheme_eq_prim;
+  }
 
   et = scheme_get_eval_type(app->rand2);
   et = et << 3;
@@ -1058,7 +1077,7 @@ static Scheme_Object *resolve_branch(Scheme_Object *o, Resolve_Info *info)
 
   /* Try optimize: (if (not x) y z) => (if x z y) */
   /*  Done here because `not' is easily recognized at this
-      point, and we haven't yet resolved Scheme-stack locations
+      point. Also, we haven't yet resolved Scheme-stack locations,
       so it's ok to remove an application. */
   while (1) {
     if (SAME_TYPE(SCHEME_TYPE(t), scheme_application2_type)) {
@@ -1076,9 +1095,46 @@ static Scheme_Object *resolve_branch(Scheme_Object *o, Resolve_Info *info)
       break;
   }
 
-  t = scheme_resolve_expr(t, info);
+  if (SAME_TYPE(SCHEME_TYPE(t), scheme_compiled_let_void_type)) {
+    /* Maybe convert: (let ([x M]) (if x x N)) => (if M #t N) */
+    t = scheme_resolve_lets_for_test(t, info);
+  } else
+    t = scheme_resolve_expr(t, info);
+
   tb = scheme_resolve_expr(tb, info);
   fb = scheme_resolve_expr(fb, info);
+
+  /* Try optimize: (if x x #f) => x */
+  if (SAME_TYPE(SCHEME_TYPE(t), scheme_local_type)
+      && SAME_TYPE(SCHEME_TYPE(tb), scheme_local_type)
+      && (SCHEME_LOCAL_POS(t) == SCHEME_LOCAL_POS(tb))
+      && SCHEME_FALSEP(fb)) {
+    return t;
+  }
+
+  /* Convert: (if (if M N #f) M2 K) => (if M (if N M2 K) K)
+     for simple constants K. This is useful to expose simple
+     tests to the JIT. */
+  if (SAME_TYPE(SCHEME_TYPE(t), scheme_branch_type)
+      && (SCHEME_VOIDP(fb)
+	  || SAME_OBJ(fb, scheme_true)
+	  || SCHEME_FALSEP(fb)
+	  || SCHEME_SYMBOLP(fb)
+	  || SCHEME_INTP(fb)
+	  || SAME_TYPE(SCHEME_TYPE(fb), scheme_local_type))) {
+    Scheme_Branch_Rec *b2 = (Scheme_Branch_Rec *)t;
+    if (SCHEME_FALSEP(b2->fbranch)) {
+      Scheme_Branch_Rec *b3;
+      b3 = MALLOC_ONE_TAGGED(Scheme_Branch_Rec);
+      b3->so.type = scheme_branch_type;
+      b3->test = b2->tbranch;
+      b3->tbranch = tb;
+      b3->fbranch = fb;
+      t = b2->test;
+      tb = (Scheme_Object *)b3;
+    }
+  }
+
   b->test = t;
   b->tbranch = tb;
   b->fbranch = fb;

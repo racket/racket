@@ -37,6 +37,9 @@ Scheme_Object scheme_true[1];
 Scheme_Object scheme_false[1];
 
 Scheme_Object *scheme_not_prim;
+Scheme_Object *scheme_eq_prim;
+Scheme_Object *scheme_eqv_prim;
+Scheme_Object *scheme_equal_prim;
 
 /* locals */
 static Scheme_Object *not_prim (int argc, Scheme_Object *argv[]);
@@ -60,6 +63,9 @@ void scheme_init_bool (Scheme_Env *env)
   Scheme_Object *p;
 
   REGISTER_SO(scheme_not_prim);
+  REGISTER_SO(scheme_eq_prim);
+  REGISTER_SO(scheme_eqv_prim);
+  REGISTER_SO(scheme_equal_prim);
 
   p = scheme_make_folding_prim(not_prim, "not", 1, 1, 1);
   scheme_not_prim = p;
@@ -75,18 +81,14 @@ void scheme_init_bool (Scheme_Env *env)
 
   p = scheme_make_folding_prim(eq_prim, "eq?", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_eq_prim = p;
   scheme_add_global_constant("eq?", p, env);
 
-  scheme_add_global_constant("eqv?",
-			     scheme_make_folding_prim(eqv_prim,
-						      "eqv?",
-						      2, 2, 1),
-			     env);
-  scheme_add_global_constant("equal?",
-			     scheme_make_prim_w_arity(equal_prim,
-						      "equal?",
-						      2, 2),
-			     env);
+  scheme_eqv_prim = scheme_make_folding_prim(eqv_prim, "eqv?", 2, 2, 1);
+  scheme_add_global_constant("eqv?", scheme_eqv_prim, env);
+  
+  scheme_equal_prim = scheme_make_prim_w_arity(equal_prim, "equal?", 2, 2);
+  scheme_add_global_constant("equal?", scheme_equal_prim, env);
 }
 
 static Scheme_Object *

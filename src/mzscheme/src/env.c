@@ -122,6 +122,7 @@ static int env_uid_counter;
 #define ARBITRARY_USE 1
 #define CONSTRAINED_USE 2
 #define WAS_SET_BANGED 4
+/* See also SCHEME_USE_COUNT_MASK */
 
 typedef struct Compile_Data {
   char **stat_dists; /* (pos, depth) => used? */
@@ -1488,12 +1489,24 @@ static Scheme_Local *get_frame_loc(Scheme_Comp_Env *frame,
 /* Generates a Scheme_Local record for a static distance coodinate, and also
    marks the variable as used for closures. */
 {
-  COMPILE_DATA(frame)->use[i] |= (((flags & (SCHEME_APP_POS | SCHEME_SETTING | SCHEME_REFERENCING))
-				   ? CONSTRAINED_USE
-				   : ARBITRARY_USE)
-				  | ((flags & (SCHEME_SETTING | SCHEME_REFERENCING | SCHEME_LINKING_REF))
-				     ? WAS_SET_BANGED
-				     : 0));
+  int cnt, u;
+
+  u = COMPILE_DATA(frame)->use[i];
+  
+  u |= (((flags & (SCHEME_APP_POS | SCHEME_SETTING | SCHEME_REFERENCING))
+	 ? CONSTRAINED_USE
+	 : ARBITRARY_USE)
+	| ((flags & (SCHEME_SETTING | SCHEME_REFERENCING | SCHEME_LINKING_REF))
+	   ? WAS_SET_BANGED
+	   : 0));
+
+  cnt = ((u & SCHEME_USE_COUNT_MASK) >> SCHEME_USE_COUNT_SHIFT);
+  if (cnt < SCHEME_USE_COUNT_INF)
+    cnt++;
+  u -= (u & SCHEME_USE_COUNT_MASK);
+  u |= (cnt << SCHEME_USE_COUNT_SHIFT);
+  
+  COMPILE_DATA(frame)->use[i] = u;
   
   if (!COMPILE_DATA(frame)->stat_dists) {
     int k, *ia;
@@ -2532,6 +2545,7 @@ int *scheme_env_get_flags(Scheme_Comp_Env *frame, int start, int count)
       v[i] |= SCHEME_WAS_USED;
     if (old & WAS_SET_BANGED)
       v[i] |= SCHEME_WAS_SET_BANGED;
+    v[i] |= (old & SCHEME_USE_COUNT_MASK);
   }
 
   return v;

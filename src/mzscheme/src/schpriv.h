@@ -221,6 +221,9 @@ extern Scheme_Object *scheme_lambda_syntax;
 extern Scheme_Object *scheme_begin_syntax;
 
 extern Scheme_Object *scheme_not_prim;
+extern Scheme_Object *scheme_eq_prim;
+extern Scheme_Object *scheme_eqv_prim;
+extern Scheme_Object *scheme_equal_prim;
 
 extern Scheme_Object *scheme_def_exit_proc;
 
@@ -1713,6 +1716,7 @@ Scheme_Object *scheme_resolve_list(Scheme_Object *, Resolve_Info *);
 int scheme_is_compiled_procedure(Scheme_Object *o, int can_be_closed);
 
 Scheme_Object *scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info);
+Scheme_Object *scheme_resolve_lets_for_test(Scheme_Object *form, Resolve_Info *info);
 
 Resolve_Prefix *scheme_resolve_prefix(int phase, Comp_Prefix *cp, int simplify);
 
@@ -1783,6 +1787,10 @@ int *scheme_env_get_flags(Scheme_Comp_Env *frame, int start, int count);
 /* flags reported by scheme_env_get_fags */
 #define SCHEME_WAS_USED 1
 #define SCHEME_WAS_SET_BANGED 2
+
+#define SCHEME_USE_COUNT_MASK  0x70
+#define SCHEME_USE_COUNT_SHIFT 4
+#define SCHEME_USE_COUNT_INF   (SCHEME_USE_COUNT_MASK >> SCHEME_USE_COUNT_SHIFT)
 
 /* flags reported by scheme_resolve_info_flags */
 #define SCHEME_INFO_BOXED 1
