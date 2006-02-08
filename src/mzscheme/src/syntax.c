@@ -1612,7 +1612,7 @@ static Scheme_Object *case_lambda_jit(Scheme_Object *expr)
   if (!seqin->native_code) {
     Scheme_Case_Lambda *seqout;
     Scheme_Native_Closure_Data *ndata;
-    Scheme_Object *val;
+    Scheme_Object *val, *name;
     int i, cnt, size, all_closed = 1;
 
     cnt = seqin->count;
@@ -1622,6 +1622,10 @@ static Scheme_Object *case_lambda_jit(Scheme_Object *expr)
     seqout = (Scheme_Case_Lambda *)scheme_malloc_tagged(size);
     memcpy(seqout, seqin, size);
 
+    name = seqin->name;
+    if (SCHEME_BOXP(name))
+      name = SCHEME_BOX_VAL(name);
+
     for (i = 0; i < cnt; i++) {
       val = seqout->array[i];
       if (SCHEME_PROCP(val)) {
@@ -1629,6 +1633,7 @@ static Scheme_Object *case_lambda_jit(Scheme_Object *expr)
 	val = (Scheme_Object *)((Scheme_Closure *)val)->code;
 	seqout->array[i] = val;
       }
+      ((Scheme_Closure_Data *)val)->name = name;
       if (((Scheme_Closure_Data *)val)->closure_size)
 	all_closed = 0;
     }
@@ -1775,9 +1780,7 @@ case_lambda_syntax (Scheme_Object *form, Scheme_Comp_Env *env,
   
   form = SCHEME_STX_CDR(form);
 
-  name = rec[drec].value_name;
-  if (!name || SCHEME_FALSEP(name))
-    name = scheme_source_to_name(orig_form);
+  name = scheme_build_closure_name(orig_form, rec, drec);
   
   if (SCHEME_STX_NULLP(form)) {
     /* Case where there are no cases... */

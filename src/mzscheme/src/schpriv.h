@@ -1769,7 +1769,6 @@ Scheme_Object *scheme_make_closure_compilation(Scheme_Comp_Env *env,
 Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *compiled_list,
 						int strip_values);
 
-
 Scheme_Object *scheme_resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info);
 
 Scheme_App_Rec *scheme_malloc_application(int n);
@@ -1777,6 +1776,8 @@ void scheme_finish_application(Scheme_App_Rec *app);
 
 Scheme_Object *scheme_jit_expr(Scheme_Object *);
 Scheme_Object *scheme_jit_closure(Scheme_Object *, Scheme_Letrec *lr);
+
+Scheme_Object *scheme_build_closure_name(Scheme_Object *code, Scheme_Compile_Info *rec, int drec);
 
 #define SCHEME_SYNTAX(obj)     SCHEME_PTR1_VAL(obj)
 #define SCHEME_SYNTAX_EXP(obj) SCHEME_PTR2_VAL(obj)

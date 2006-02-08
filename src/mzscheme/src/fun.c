@@ -875,6 +875,26 @@ Scheme_Object *combine_name_with_srcloc(Scheme_Object *name, Scheme_Object *code
   return name;
 }
 
+Scheme_Object *scheme_build_closure_name(Scheme_Object *code, Scheme_Compile_Info *rec, int drec)
+{
+  Scheme_Object *name;
+
+  name = scheme_stx_property(code, scheme_inferred_name_symbol, NULL);
+  if (name && SCHEME_SYMBOLP(name)) {
+    name = combine_name_with_srcloc(name, code, 0);
+  } else {
+    name = rec[drec].value_name;
+    if (!name || SCHEME_FALSEP(name)) {
+      name = scheme_source_to_name(code);
+      if (name)
+	name = combine_name_with_srcloc(name, code, 1);
+    } else {
+      name = combine_name_with_srcloc(name, code, 0);
+    }
+  }
+  return name;
+}
+
 Scheme_Object *
 scheme_make_closure_compilation(Scheme_Comp_Env *env, Scheme_Object *code,
 				Scheme_Compile_Info *rec, int drec)
@@ -931,21 +951,8 @@ scheme_make_closure_compilation(Scheme_Comp_Env *env, Scheme_Object *code,
   forms = scheme_datum_to_syntax(forms, code, code, 0, 0);
   forms = scheme_add_env_renames(forms, frame, env);
 
-  name = scheme_stx_property(code, scheme_inferred_name_symbol, NULL);
-  if (name && SCHEME_SYMBOLP(name)) {
-    name = combine_name_with_srcloc(name, code, 0);
-    data->name = name;
-  } else {
-    name = rec[drec].value_name;
-    if (!name || SCHEME_FALSEP(name)) {
-      name = scheme_source_to_name(code);
-      if (name)
-	name = combine_name_with_srcloc(name, code, 1);
-    } else {
-      name = combine_name_with_srcloc(name, code, 0);
-    }
-    data->name = name;
-  }
+  name = scheme_build_closure_name(code, rec, drec);
+  data->name = name;
 
   scheme_compile_rec_done_local(rec, drec);
 
