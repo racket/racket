@@ -37,9 +37,12 @@
                             (hash-table-put! table key new)
                             new))))))
   (test-block ((cache (make-cache)))
-              ((cache '(1 2) (lambda () 9)) 9)
-              ((cache '(2 1) (lambda () 8)) 8)
-              ((cache '(1 2) (lambda () 1)) 9))
+              ((cache '(s 1 2) (lambda () 9)) 9)
+              ((cache '(s 2 1) (lambda () 8)) 8)
+              ((cache '(s 1 2) (lambda () 1)) 9)
+              ((cache (cons 's (cons 0 (cons +inf.0 10))) (lambda () 22)) 22)
+              ((cache (cons 's (cons 0 (cons +inf.0 10))) (lambda () 1)) 22))
+              
 
   
   ;; make-counter : -> -> nat
