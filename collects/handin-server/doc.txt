@@ -723,6 +723,11 @@ Keywords for configuring `check:':
   printouts and grading, and is in a subdirectory so students will not
   see it on the status web server.  Defaults to #t.
 
+* :untabify? -- if true, then tabs are converted to spaces, assuming a
+  standard tab width of 8 places.  This is needed for a correct
+  computation of line lengths, but note that DrScheme does not insert
+  tabs in Scheme mode.  Defaults to #t.
+
 * :textualize? -- if true, then all submissions are converted to text,
   trying to convert objects like comment boxes and test cases to some
   form of text.  Defaults to #f, meaning that an exception is raised

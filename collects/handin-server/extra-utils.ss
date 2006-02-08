@@ -124,7 +124,19 @@
                    (send x get-text 0 (send x get-count)))]
           [else x])))
 
-(define (submission->string submission maxwidth textualize?)
+(define (untabify str)
+  (let loop ([idx 0] [pos 0] [strs '()])
+    (let ([tab (regexp-match-positions #rx"\t" str idx)])
+      (if tab
+        (let* ([pos (+ pos (- (caar tab) idx))]
+               [newpos (* (add1 (quotient pos 8)) 8)])
+          (loop (cdar tab) newpos
+                (list* (make-bytes (- newpos pos) 32)
+                       (subbytes str idx (caar tab))
+                       strs)))
+        (apply bytes-append (reverse! (cons (subbytes str idx) strs)))))))
+
+(define (submission->string submission maxwidth textualize? untabify?)
   (let-values ([(defs inters) (unpack-submission submission)])
     (parameterize ([current-output-port (open-output-string)]
                    [current-input-port
@@ -141,7 +153,10 @@
                                                  "have non-textual items"))])
                         (read-bytes-line)))])
           (unless (eof-object? line)
-            (let ([line (regexp-replace #rx#"[ \t]+$" line #"")])
+            (let* ([line (regexp-replace #rx#"[ \t]+$" line #"")]
+                   [line (if (and untabify?
+                                  (regexp-match-positions #rx"\t" line))
+                           (untabify line) line)])
               (when maxwidth
                 (verify-line-length line (and (not textualize?) n) maxwidth))
               (display line) (newline) (loop (add1 n))))))
@@ -245,6 +260,7 @@
             [language*      (get ':language #'#f)]
             [teachpacks*    (get ':teachpacks #''())]
             [create-text?*  (get ':create-text? #'#t)]
+            [untabify?*     (get ':untabify? #'#t)]
             [textualize?*   (get ':textualize? #'#f)]
             [maxwidth*      (get ':maxwidth #'79)]
             [markup-prefix* (get ':markup-prefix #'#f)]
@@ -287,6 +303,7 @@
                    [language       language*]
                    [teachpacks     teachpacks*]
                    [create-text?   create-text?*]
+                   [untabify?      untabify?*]
                    [textualize?    textualize?*]
                    [maxwidth       maxwidth*]
                    [markup-prefix  markup-prefix*]
@@ -351,7 +368,8 @@
                      'truncate))
                  (define submission-text
                    (and create-text?
-                        (submission->string submission maxwidth textualize?)))
+                        (submission->string
+                         submission maxwidth textualize? untabify?)))
                  (when create-text?
                    (make-directory "grading")
                    (when (regexp-match prefix-re submission-text)
@@ -408,6 +426,8 @@
                                  "`eval?' without `language'"]
                                 [(and (not create-text?) textualize?)
                                  "`textualize?' without `create-text?'"]
+                                [(and maxwidth (not untabify?))
+                                 "`untabify?' without `maxwidth'"]
                                 [(and (not eval?) coverage?)
                                  "`coverage?' without `eval?'"]
                                 [(and textualize? coverage?)
