@@ -73,7 +73,7 @@
       ((_ re ...)
        (char-complement (union re ...)))))
   
-  ;; char-set difference
+  ;; set difference
   (define-lex-trans (sre-- stx)
     (syntax-case stx ()
       ((_)
@@ -81,7 +81,7 @@
                            "must have at least one argument"
                            stx))
       ((_ big-re re ...)
-       (syntax (intersect big-re (~ (union re) ...))))))
+       (syntax (& big-re (complement (union re ...)))))))
   
   (define-lex-trans (sre-/ stx)
     (syntax-case stx ()

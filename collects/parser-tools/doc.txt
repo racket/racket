@@ -285,9 +285,8 @@ operators:
 > (: re ...)       concatenation 
 > (seq re ...)     concatenation
 > (& re ...)       intersection
+> (- re re ...)    set difference
 > (~ re ...)       character set complement, each given regexp must match
-                     exactly one character
-> (- re re ...)    character set difference, each given regexp must match
                      exactly one character
 > (/ char-or-string ...)
                    character ranges, matches characters between successive 
