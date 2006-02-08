@@ -895,6 +895,10 @@ static int generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
   mz_push_local_p(JIT_R0, JIT_LOCAL2);
   (void)jit_calli(thread_block);
   mz_pop_local_p(JIT_R0, JIT_LOCAL2);
+#ifndef FUEL_AUTODECEREMENTS
+  (void)jit_movi_p(JIT_R1, &scheme_fuel_counter);
+  jit_ldr_i(JIT_R2, JIT_R1);
+#endif
   mz_patch_branch(ref5);
 #ifndef FUEL_AUTODECEREMENTS
   jit_subi_p(JIT_R2, JIT_R2, 0x1);
