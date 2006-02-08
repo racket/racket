@@ -1623,7 +1623,7 @@ static Scheme_Object *case_lambda_jit(Scheme_Object *expr)
     memcpy(seqout, seqin, size);
 
     name = seqin->name;
-    if (SCHEME_BOXP(name))
+    if (name && SCHEME_BOXP(name))
       name = SCHEME_BOX_VAL(name);
 
     for (i = 0; i < cnt; i++) {
