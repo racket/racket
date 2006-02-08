@@ -5,6 +5,7 @@
            (lib "list.ss")
            (lib "marks.ss" "mztake")
            (lib "mred.ss" "mred")
+           (lib "pretty.ss")
            (lib "load-sandbox.ss" "mztake")
            (prefix srfi: (lib "search.ss" "srfi" "1"))
            )
@@ -170,14 +171,16 @@
       (kernel:kernel-syntax-case
        stx #f
        [(define-values (var ...) expr)
+        
         (begin (for-each (lambda (v) (record-bound-id 'bind v v))
                          (syntax->list #'(var ...)))
                (quasisyntax/loc stx
-                 (begin (define-values (var ...) #,(annotate #`expr empty #t module-name ))
+                 (begin (define-values (var ...) #,(annotate #`expr empty #t module-name))
                         #,(if (syntax-source #'stx)
                               #`(begin (#,record-top-level-id '#,module-name 'var var) ...)
                               #'(void))
-                        (void))))
+                        (void)))
+               )
         ]
        [(define-syntaxes (var ...) expr)
         stx]
@@ -361,7 +364,7 @@
                                 (syntax->list #'exprs))])
              (if is-tail?
                  (quasisyntax/loc expr #,subexprs)
-                 (wcm-wrap (make-debug-info expr bound-vars bound-vars 'normal #f (previous-bindings bound-vars))
+                 (wcm-wrap (make-debug-info module-name expr bound-vars bound-vars 'normal #f (previous-bindings bound-vars))
                            (quasisyntax/loc expr #,subexprs))))]
           
           [(#%datum . _) expr]
@@ -376,7 +379,7 @@
       
       (if annotate-break?
           (break-wrap
-           (make-debug-info expr bound-vars bound-vars 'at-break #f (previous-bindings bound-vars))
+           (make-debug-info module-name expr bound-vars bound-vars 'at-break #f (previous-bindings bound-vars))
            annotated
            expr
            is-tail?)

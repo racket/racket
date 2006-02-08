@@ -5,7 +5,7 @@
            (lib "my-macros.ss" "stepper" "private")
            (lib "shared.ss" "stepper" "private"))
 
-  (define-struct full-mark-struct (source label bindings values))
+  (define-struct full-mark-struct (module-name source label bindings values))
 
   ; CONTRACTS
   (define mark? (-> ; no args  
@@ -28,6 +28,7 @@
    skipto-mark
    strip-skiptos
    mark-list?
+   mark-module-name
    mark-source
    mark-bindings
    mark-label
@@ -67,14 +68,17 @@
    
   
   ; the 'varargs' creator is used to avoid an extra cons cell in every mark:
-  (define (make-make-full-mark-varargs source label bindings)
+  (define (make-make-full-mark-varargs module-name source label bindings)
     (lambda (values)
-      (make-full-mark-struct source label bindings values)))
+      (make-full-mark-struct module-name source label bindings values)))
   
   ; see module top for type
-  (define (make-full-mark location label bindings assembled-info-stx)
-    (datum->syntax-object #'here `(lambda () (,(make-make-full-mark-varargs location label bindings)
+  (define (make-full-mark module-name source label bindings assembled-info-stx)
+    (datum->syntax-object #'here `(lambda () (,(make-make-full-mark-varargs module-name source label bindings)
 					      ,assembled-info-stx))))
+  
+  (define (mark-module-name mark)
+    (full-mark-struct-module-name (mark)))
   
   (define (mark-source mark)
     (full-mark-struct-source (mark)))
@@ -166,8 +170,8 @@
   ;;
   ;;;;;;;;;;
      
-  (define (make-debug-info source tail-bound free-vars label lifting? assembled-info-stx)
-    (make-full-mark source label free-vars assembled-info-stx))
+  (define (make-debug-info module-name source tail-bound free-vars label lifting? assembled-info-stx)
+    (make-full-mark module-name source label free-vars assembled-info-stx))
   
   (define (assemble-debug-info tail-bound free-vars label lifting?)
     (map make-mark-binding-stx free-vars))

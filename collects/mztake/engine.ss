@@ -245,7 +245,6 @@
            [bindings (hash-get modules module-name (lambda () (make-hash)))])
       (unless (hash-mem? modules module-name)
         (hash-put! modules module-name bindings))
-      (printf "record-top-level-id ~a ~a ~a ~n" module-name var-name val)
       (hash-put! bindings var-name val)))
   
   (define (launch-sandbox process)

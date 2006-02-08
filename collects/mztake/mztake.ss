@@ -6,6 +6,7 @@
            (rename (lib "frtime.ss" "frtime") frp:value-nowable? value-nowable?)
            (rename (lib "frtime.ss" "frtime") frp:behaviorof behaviorof)
            "mztake-structs.ss"
+           "more-useful-code.ss"
            (lib "etc.ss")
            (lib "list.ss")
            "marks.ss"
@@ -15,6 +16,7 @@
   (print-struct true)
 
   (provide (rename loc loc$)
+           debug-process-running-e 
            loc/r
            trace
            bind
@@ -108,18 +110,30 @@
        (trace* (current-process) loc proc)]
       [(_ loc body ...)
        (trace* (current-process) loc (lambda () body ...))]))
-    
+  
+  (define (mztake-top* name thunk )
+    (with-handlers
+        ([exn:fail?
+          (lambda (exn)
+            (with-handlers
+                ([exn:fail? (lambda (exn2) (raise exn))])
+              (bind* (current-process) name)))])
+      (thunk)))
+  
   (define-syntax (mztake-top stx)
     (syntax-case stx () 
       [(_ . name) 
-       (begin 
-         #'(with-handlers
-               ([exn:fail?
-                 (lambda (exn)
-                   (with-handlers
-                       ([exn:fail? (lambda (exn2) (raise exn))])
-                     (bind* (current-process) 'name)))])
-             (#%top . name)))]))
+       #'(mztake-top* 'name (lambda () (#%top . name)))]))
+  
+  (define (lookup-in-top-level p name)
+    (let/ec success
+      (for-each
+       (lambda (m)
+         (let/ec fail
+           (let ([fail* (lambda () (fail false))])
+             (success (hash-get (hash-get (debug-process-top-level p) m fail*) name fail*)))))
+       (map mark-module-name (debug-process-marks p)))
+      (error 'bind "variable `~a' not found in target at the current location" name)))
   
   (define (bind* p name)
     (unless (debug-process-marks p)
@@ -128,10 +142,9 @@
     (let ([bs (lookup-all-bindings
                (lambda (id) (eq? (syntax-e id) name))
                (debug-process-marks p))])
-      (when (empty? bs)
-        (error 'bind "variable `~a' not found in target at the current location" name))
-      
-      (mark-binding-value (first bs))))
+      (if (empty? bs)
+          (lookup-in-top-level p name)
+          (mark-binding-value (first bs)))))
   
   (define-syntax bind
     (syntax-rules ()
