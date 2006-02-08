@@ -929,18 +929,28 @@ static long equal_hash_key(Scheme_Object *o, long k)
     return k + SCHEME_INT_VAL(o);
 #ifdef MZ_USE_SINGLE_FLOATS
   case scheme_float_type:
-    {
-      double d;
-      int e;
-      d = frexp(SCHEME_DBL_VAL(o), &e);
-      return k + ((long)(d * (1 << 30))) + e;
-    }
 #endif
   case scheme_double_type:
     {
       double d;
       int e;
-      d = frexp(SCHEME_DBL_VAL(o), &e);
+      d = SCHEME_DBL_VAL(o);
+      if (MZ_IS_NAN(d)) {
+	d = 0.0;
+	e = 1000;
+      } else if (MZ_IS_POS_INFINITY(d)) {
+	d = 0.5;
+	e = 1000;
+      } else if (MZ_IS_NEG_INFINITY(d)) {
+	d = -0.5;
+	e = 1000;
+      } else if (!d && scheme_minus_zero_p(d)) {
+	d = 0;
+	e = 1000;
+      } else {
+	/* frexp should not be used on inf or nan: */
+	d = frexp(d, &e);
+      }
       return k + ((long)(d * (1 << 30))) + e;
     }
   case scheme_bignum_type:
@@ -1172,7 +1182,15 @@ long scheme_equal_hash_key2(Scheme_Object *o)
     {
       double d;
       int e;
-      d = frexp(SCHEME_DBL_VAL(o), &e);
+      d = SCHEME_DBL_VAL(o);
+      if (MZ_IS_NAN(d)
+	  || MZ_IS_POS_INFINITY(d)
+	  || MZ_IS_NEG_INFINITY(d)) {
+	e = 1;
+      } else {
+	/* frexp should not be used on inf or nan: */
+	d = frexp(d, &e);
+      }
       return e;
     }
   case scheme_bignum_type:
