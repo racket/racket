@@ -160,9 +160,8 @@
       ;; in the GUI. When modifying this value (usually indirectly), use
       ;; `header-chganging-action'. Mutate the variable, but not the list!
       (define mailbox (let ([l (with-handlers ([void (lambda (x) null)])
-					      (with-input-from-file
-						  (build-path mailbox-dir "mailbox")
-						read))])
+				 (with-input-from-file (build-path mailbox-dir "mailbox")
+				   read))])
 			;; If the file's list start with an integer, that's
 			;;  the uidvalidity value. Otherwise, for backward
 			;;  compatibility, we allow the case that it wasn't
@@ -408,8 +407,7 @@
 		      (status "Saving new headers...")
 		      (for-each
 		       (lambda (position-uid header)
-			 (with-output-to-file
-			     (build-path mailbox-dir (format "~a" (car position-uid)))
+			 (with-output-to-file (build-path mailbox-dir (format "~a" (car position-uid)))
 			   (lambda ()
 			     (display header))
 			   'truncate))
@@ -1299,10 +1297,11 @@
           (set! show-full-headers? (send i is-checked?))
 	  (redisplay-current)))
 
-      (make-object menu-item% "by Sender" sort-menu (lambda (i e) (sort-by-sender)))
+      (make-object menu-item% "by From" sort-menu (lambda (i e) (sort-by-sender)))
       (make-object menu-item% "by Subject" sort-menu (lambda (i e) (sort-by-subject)))
       (make-object menu-item% "by Date" sort-menu (lambda (i e) (sort-by-date)))
       (make-object menu-item% "by Order Received" sort-menu (lambda (i e) (sort-by-order-received)))
+      (make-object menu-item% "by Header Field..." sort-menu (lambda (i e) (sort-by-header-field)))
       
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;;  GUI: Message List                                      ;;
@@ -1922,10 +1921,10 @@
                    (format "(mz: ~a vocab: ~a)"
                            (format-number (quotient (current-memory-use) 1024))
                            (word-count)))])
-        (send main-frame set-status-text 
-              (if (equal? last-status "")
-                  mem-str
-                  (string-append last-status " " mem-str)))))
+	  (send main-frame set-status-text 
+		(if (equal? last-status "")
+		    mem-str
+		    (string-append last-status " " mem-str)))))
       (thread
        (lambda ()
          (let loop ()
@@ -2039,6 +2038,80 @@
         (sort-by-uid)
         (reset-sorting-text-styles)
         (identify-sorted sorting-text-uid))
+
+      (define prev-field-list "")
+      (define prev-field-regexp "")
+      (define (sort-by-header-field) 
+	(letrec ([d (new dialog% 
+			 [parent main-frame]
+			 [label "Header Search"]
+			 [stretchable-width #f]
+			 [stretchable-height #f])]
+		 [text-pane (new vertical-pane%
+				 [parent d]
+				 [alignment '(left center)]
+				 [stretchable-height #f])]
+		 [t1 (new message%
+			  [parent text-pane]
+			  [label "Sorts messages with matching fields before non-matching;"])]
+		 [t2 (new message%
+			  [parent text-pane]
+			  [label "use a comma to separate multiple field names"])]
+		 [text-change-callback
+		  (lambda (txt e)
+		    (check-enable-ok)
+		    (when (and (eq? 'text-field-enter
+				    (send e get-event-type))
+			       (send ok is-enabled?))
+		      (do-ok)))]
+		 [field-text (new text-field%
+				   [parent d]
+				   [label "Header Field(s):"]
+				   [callback text-change-callback]
+				   [init-value prev-field-list])]
+		 [regexp-text (new text-field%
+				   [parent d]
+				   [label "Value Regexp:"]
+				   [callback text-change-callback]
+				   [init-value prev-field-regexp])]
+		 [buttons-panel (new horizontal-panel%
+				     [parent d]
+				     [stretchable-height #f]
+				     [alignment '(right center)])]
+		 [ok (new button%
+			  [parent buttons-panel]
+			  [label "Ok"]
+			  [style '(border)]
+			  [callback (lambda (b e)(do-ok))])]
+		 [cancel (new button%
+			      [parent buttons-panel]
+			      [label "Cancel"]
+			      [callback (lambda (b e) 
+					  (send d show #f))])]
+		 [find-field-list #f]
+		 [find-fields #f]
+		 [find-regexp #f]
+		 [ok? #f]
+		 [check-enable-ok
+		  (lambda ()
+		    (set! find-field-list (send field-text get-value))
+		    (set! find-fields (regexp-split #rx" *, *" find-field-list))
+		    (set! find-regexp (send regexp-text get-value))
+		    (send ok enable
+			  (and (andmap (lambda (find-field)
+					 (and (positive? (string-length find-field))
+					      (regexp-match #rx"^[a-zA-Z0-9-]+$" find-field)))
+				       find-fields)
+			       (with-handlers ([void (lambda (x) #f)]) (regexp find-regexp)))))]
+		 [do-ok (lambda ()
+			  (set! ok? #t) 
+			  (send d show #f))])
+	  (send d show #t)
+	  (when ok?
+	    (set! prev-field-list find-field-list)
+	    (set! prev-field-regexp find-regexp)
+	    (sort-by (field<? find-fields (regexp find-regexp) (make-hash-table 'equal)))
+	    (reset-sorting-text-styles))))
       
       (define no-sort-style-delta (make-object style-delta% 'change-normal))
       (define sort-style-delta (make-object style-delta% 'change-bold))
@@ -2123,7 +2196,7 @@
                                 (get-address b)
                                 a
                                 b))
-      
+
       ;; get-address : message -> string
       (define (get-address msg)
         (let ([frm (message-from msg)])
@@ -2142,8 +2215,34 @@
 		   (hash-table-put! address-memo-table frm res)
 		   res)))
               "")))
-      
+
+      ;; get-address : message -> string
       (define address-memo-table (make-hash-table 'equal))
+      
+      (define ((field<? field-names rx ht) a b)
+	(let ([a? (match-field a field-names rx ht)]
+	      [b? (match-field b field-names rx ht)])
+	  (cond
+	   [(and a? (not b?)) #t]
+	   [(and b? (not a?)) #f]
+	   [else (< (message-uid a) (message-uid b))])))
+      
+      (define (match-field msg field-names rx ht)
+	(hash-table-get
+	 ht
+	 msg
+	 (lambda ()
+	   (let ([header (get-header (message-uid msg))])
+	     (let ([flds (map (lambda (field-name)
+				(extract-field field-name header))
+			      field-names)])
+	       (let ([res (ormap (lambda (fld)
+				   (and fld
+					(regexp-match rx fld)
+					#t))
+				 flds)])
+		 (hash-table-put! ht msg res)
+		 res))))))
       
       (define re:re (regexp "^[rR][eE]: *(.*)"))
       ;; subject<? : message message -> boolean
