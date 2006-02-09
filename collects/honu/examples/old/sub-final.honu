@@ -1,7 +1,0 @@
-type t {}
-
-final class c() : t { init int x; export t; }
-
-mixin mx() : t at t with int x { init int z; super(x = 1); export t; }
-
-subclass c2 = mx(c); // should fail because c is final

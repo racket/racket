@@ -1,5 +1,0 @@
-(module info (lib "infotab.ss" "setup")
-  (define name "Honu")
-  (define doc.txt "doc.txt")
-  (define tools (list (list "tool.ss")))
-  (define tool-icons '(("honu.png" "honu"))))

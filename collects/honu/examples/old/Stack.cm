@@ -1,7 +1,0 @@
-"List"        ; For IList, MTList, and ConsList
-"Character"   ; For Character and CharBox
-"Integer-box" ; For Integer and IntBox
-"Float"       ; For Float and FloatBox
-"String"      ; For String and StrBox
-"Stack"       ; For IStack, ListStack, and CountedListStack
-"Stack-main"  ; For the main expression

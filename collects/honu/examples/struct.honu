@@ -1,5 +1,0 @@
-struct PosnC(int x, int y) : Posn { }
-
-struct ColorC(int r, int g, int b) : Color { }
-
-struct ColorPosnC(Color c) : ColorPosn extends PosnC() : Posn { super(); }

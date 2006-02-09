@@ -1,8 +1,0 @@
-type t {
-  int md(int);
-}
-
-int main() {
-  t x = null;
-  x.md(3);
-}

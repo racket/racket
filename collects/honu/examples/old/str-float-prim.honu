@@ -1,4 +1,0 @@
-float main() {
-  if   ("foo" + "bar" == "foobar") { 1.3 + 5.7; }
-  else { error("Oops!"); }
-}

@@ -1,3 +1,0 @@
-struct Int() : IInt {
-  init int value;
-}

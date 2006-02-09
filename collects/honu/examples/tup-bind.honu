@@ -1,6 +1,0 @@
-<int, int> f(int x) { return (x, x); }
-
-struct C() : T {
-  int x = 3;
-  int y = { (int x, int y) = f(x); x; };
-}

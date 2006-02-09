@@ -1,4 +1,0 @@
-int main() {
-  [int, int] -> int x = fun(int x, int y) { x + y; };
-  x(3, 4);
-}
