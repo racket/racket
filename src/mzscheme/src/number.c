@@ -118,6 +118,8 @@ double scheme_floating_point_nzero = 0.0; /* negated below; many compilers treat
 void
 scheme_init_number (Scheme_Env *env)
 {
+  Scheme_Object *p;
+
   REGISTER_SO(scheme_pi);
   REGISTER_SO(scheme_half_pi);
   REGISTER_SO(scheme_zerod);
@@ -217,21 +219,20 @@ scheme_init_number (Scheme_Env *env)
   scheme_single_nan_object = scheme_make_float((float)not_a_number_val);
 #endif
 
-  scheme_add_global_constant("number?", 
-			     scheme_make_folding_prim(number_p,
-						      "number?",
-						      1, 1, 1),
-			     env);
+  p = scheme_make_folding_prim(number_p, "number?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("number?", p, env);
+
   scheme_add_global_constant("complex?", 
 			     scheme_make_folding_prim(complex_p,
 						      "complex?",
 						      1, 1, 1),
 			     env);
-  scheme_add_global_constant("real?", 
-			     scheme_make_folding_prim(real_p,
-						      "real?",
-						      1, 1, 1),
-			     env);
+
+  p = scheme_make_folding_prim(real_p, "real?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("real?", p, env);
+
   scheme_add_global_constant("rational?", 
 			     scheme_make_folding_prim(rational_p,
 						      "rational?",

@@ -1602,7 +1602,8 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 }
 
 static int generate_inlined_constant_test(mz_jit_state *jitter, Scheme_App2_Rec *app,
-					  Scheme_Object *cnst, jit_insn **for_branch, int branch_short)
+					  Scheme_Object *cnst, Scheme_Object *cnst2, 
+					  jit_insn **for_branch, int branch_short)
 {
   GC_CAN_IGNORE jit_insn *ref, *ref2;
 
@@ -1617,7 +1618,14 @@ static int generate_inlined_constant_test(mz_jit_state *jitter, Scheme_App2_Rec 
 
   __START_SHORT_JUMPS__(branch_short);
 
-  ref = jit_bnei_p(jit_forward(), JIT_R0, cnst);
+  if (cnst2) {
+    ref2 = jit_beqi_p(jit_forward(), JIT_R0, cnst);
+    ref = jit_bnei_p(jit_forward(), JIT_R0, cnst2);
+    mz_patch_branch(ref2);
+  } else {
+    ref = jit_bnei_p(jit_forward(), JIT_R0, cnst);
+  }
+
   if (for_branch) {
     for_branch[0] = ref;
   } else {
@@ -1634,9 +1642,13 @@ static int generate_inlined_constant_test(mz_jit_state *jitter, Scheme_App2_Rec 
 }
 
 static int generate_inlined_type_test(mz_jit_state *jitter, Scheme_App2_Rec *app,
-				      Scheme_Type ty, jit_insn **for_branch, int branch_short)
+				      Scheme_Type lo_ty, Scheme_Type hi_ty, 
+				      jit_insn **for_branch, int branch_short)
 {
-  GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3;
+  GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *ref4;
+  int int_ok;
+
+  int_ok = ((lo_ty <= scheme_integer_type) && (scheme_integer_type <= hi_ty));
 
   LOG_IT(("inlined %s\n", ((Scheme_Primitive_Proc *)app->rator)->name));
 
@@ -1651,15 +1663,35 @@ static int generate_inlined_type_test(mz_jit_state *jitter, Scheme_App2_Rec *app
 
   ref = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
   jit_ldxi_s(JIT_R0, JIT_R0, &((Scheme_Object *)0x0)->type);
-  ref3 = jit_bnei_p(jit_forward(), JIT_R0, ty);
-  if (for_branch) {
-    for_branch[0] = ref;
-    for_branch[1] = ref3;
+  if (lo_ty == hi_ty) {
+    ref3 = jit_bnei_p(jit_forward(), JIT_R0, lo_ty);
+    ref4 = NULL;
   } else {
+    ref3 = jit_blti_p(jit_forward(), JIT_R0, lo_ty);
+    ref4 = jit_bgti_p(jit_forward(), JIT_R0, hi_ty);
+  }
+  if (int_ok) {
+    mz_patch_branch(ref);
+  }
+  if (for_branch) {
+    if  (!int_ok) {
+      for_branch[0] = ref;
+    }
+    for_branch[1] = ref3;
+    for_branch[3] = ref4;
+  } else {
+    if ((lo_ty <= scheme_integer_type) && (scheme_integer_type <= hi_ty)) {
+      mz_patch_branch(ref);
+    }
     (void)jit_movi_p(JIT_R0, scheme_true);
     ref2 = jit_jmpi(jit_forward());
-    mz_patch_branch(ref);
+    if  (!int_ok) {
+      mz_patch_branch(ref);
+    }
     mz_patch_branch(ref3);
+    if (ref4) {
+      mz_patch_branch(ref4);
+    }
     (void)jit_movi_p(JIT_R0, scheme_false);
     mz_patch_ucbranch(ref2);
   }
@@ -1681,22 +1713,31 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
     return 0;
 
   if (IS_NAMED_PRIM(rator, "not")) {
-    generate_inlined_constant_test(jitter, app, scheme_false, for_branch, branch_short);
+    generate_inlined_constant_test(jitter, app, scheme_false, NULL, for_branch, branch_short);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "null?")) {
-    generate_inlined_constant_test(jitter, app, scheme_null, for_branch, branch_short);
+    generate_inlined_constant_test(jitter, app, scheme_null, NULL, for_branch, branch_short);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "pair?")) {
-    generate_inlined_type_test(jitter, app, scheme_pair_type, for_branch, branch_short);
+    generate_inlined_type_test(jitter, app, scheme_pair_type, scheme_pair_type, for_branch, branch_short);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "symbol?")) {
-    generate_inlined_type_test(jitter, app, scheme_symbol_type, for_branch, branch_short);
+    generate_inlined_type_test(jitter, app, scheme_symbol_type, scheme_symbol_type, for_branch, branch_short);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "syntax?")) {
-    generate_inlined_type_test(jitter, app, scheme_stx_type, for_branch, branch_short);
+    generate_inlined_type_test(jitter, app, scheme_stx_type, scheme_stx_type, for_branch, branch_short);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "char?")) {
-    generate_inlined_type_test(jitter, app, scheme_char_type, for_branch, branch_short);
+    generate_inlined_type_test(jitter, app, scheme_char_type, scheme_char_type, for_branch, branch_short);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "boolean?")) {
+    generate_inlined_constant_test(jitter, app, scheme_false, scheme_true, for_branch, branch_short);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "number?")) {
+    generate_inlined_type_test(jitter, app, scheme_integer_type, scheme_complex_type, for_branch, branch_short);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "real?")) {
+    generate_inlined_type_test(jitter, app, scheme_integer_type, scheme_complex_izi_type, for_branch, branch_short);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "zero?")) {
     generate_arith(jitter, rator, app->rand, NULL, 1, 0, 0, 0, for_branch, branch_short);
@@ -2603,7 +2644,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
   case scheme_branch_type:
     {	
       Scheme_Branch_Rec *branch = (Scheme_Branch_Rec *)obj;
-      jit_insn *refs[3], *ref2;
+      jit_insn *refs[4], *ref2;
       int nsrs, nsrs1, g1, g2, amt;
 #ifdef MZ_USE_JIT_PPC
       int then_short_ok, else_short_ok;
@@ -2623,8 +2664,10 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 
       LOG_IT(("if...\n"));
 
+      refs[0] = NULL;
       refs[1] = NULL;
       refs[2] = NULL;
+      refs[3] = NULL;
 
       if (!generate_inlined_test(jitter, branch->test, then_short_ok, refs)) {
 	CHECK_LIMIT();
@@ -2662,12 +2705,17 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       /* False branch */
       mz_runstack_saved(jitter);
       __START_SHORT_JUMPS__(then_short_ok);
-      mz_patch_branch(refs[0]);
+      if (refs[0]) {
+	mz_patch_branch(refs[0]);
+      }
       if (refs[1]) {
 	mz_patch_branch(refs[1]);
       }
       if (refs[2]) {
 	jit_patch_movi(refs[2], (_jit.x.pc));
+      }
+      if (refs[3]) {
+	mz_patch_branch(refs[3]);
       }
       __END_SHORT_JUMPS__(then_short_ok);
       PAUSE_JIT_DATA();

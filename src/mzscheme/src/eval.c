@@ -68,7 +68,7 @@
    The eval half of the loop detects a limited set of core syntactic
    forms, such as application and letrecs. Otherwise, it dispatches to
    external functions to implement elaborate syntactic forms, such as
-   class and unit expressions.
+   begin0 and case-lambda expressions.
 
    When collecting the arguments for an application, scheme_do_eval()
    avoids recursive C calls to evaluate arguments by recogzining
