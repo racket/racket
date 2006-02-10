@@ -58,10 +58,13 @@
   
   ;; Symbol Any String -> Void
   (define (check-color tag width rank)
-    (check-arg tag (symbol? width) "color symbol" rank width))
+    (check-arg tag (or (symbol? width) (string? width)) "color symbol or string" rank width))
   
   (define (check-mode tag s rank)
-    (check-arg tag (or (eq? s 'solid) (eq? s 'outline)) "'solid or 'outline" rank s))
+    (check-arg tag (or (eq? s 'solid)
+		       (eq? s 'outline)
+		       (string=? "solid" s)
+		       (string=? "outline" s)) "mode (solid or outline)" rank s))
   
   (define (nw:rectangle width height mode color)
     (check-pos 'rectangle width "first")
