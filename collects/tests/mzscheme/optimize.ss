@@ -8,7 +8,8 @@
 	       [eval-jit-enabled #t])
   (namespace-require 'mzscheme)
   (let* ([check-error-message (lambda (name proc)
-				(unless (memq name '(eq? not null? pair?))
+				(unless (memq name '(eq? not null? pair?
+							 real? number? boolean?))
 				  (let ([s (with-handlers ([exn? exn-message])
 					     (proc 'bad))]
 					[name (symbol->string name)])
@@ -59,6 +60,9 @@
 
     (un #f 'null? 0)
     (un #f 'pair? 0)
+    (un #f 'boolean? 0)
+    (un #t 'boolean? #t)
+    (un #t 'boolean? #f)
 
     (bin #f 'eq? 0 10)
 
@@ -73,6 +77,18 @@
     (un #f 'negative? 0)
     (un #f 'negative? 1)
     (un #t 'negative? -1)
+
+    (un #t 'real? 1)
+    (un #t 'real? (expt 2 100))
+    (un #t 'real? 1.0)
+    (un #f 'real? 1+2i)
+    (un #f 'real? 'apple)
+
+    (un #t 'number? 1)
+    (un #t 'number? (expt 2 100))
+    (un #t 'number? 1.0)
+    (un #t 'number? 1+2i)
+    (un #f 'number? 'apple)
 
     (un #t 'not #f)
     (un #f 'not #t)

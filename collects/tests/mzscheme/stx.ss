@@ -742,7 +742,8 @@
 
 (module ++m mzscheme 
   (define ++x 10) 
-  (provide (protect ++x)))
+  (define-syntax (++xm stx) #'100)
+  (provide (protect ++x ++xm)))
 (module ++n mzscheme 
   (require ++m) 
   (define ++y ++x)
@@ -762,6 +763,7 @@
 (require ++m)
 
 (test 10 values ++x)
+(test 100 values ++xm)
 (test 10 values ++y-macro2)
 
 (let ()
@@ -783,9 +785,11 @@
 
     (err/rt-test (teval '++y-macro2) exn:fail:contract:variable?)
     (err/rt-test (teval '++x) exn:fail:contract:variable?)
+    (err/rt-test (teval '++xm) exn:fail:contract:variable?)
 
     (teval '(require ++m))
     (err/rt-test (teval '++x) exn:fail:syntax?)
+    (err/rt-test (teval '++xm) exn:fail:syntax?)
     (err/rt-test (teval '++y-macro2) exn:fail:syntax?)
     
     (teval '(module zrt mzscheme 

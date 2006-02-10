@@ -183,6 +183,23 @@
 	       (continuation-marks k)
 	       'x))))
 
+;; nested full continuation, mark shared
+(wcm-test '(12 11 10)
+	  (lambda ()
+	    (let ([k (with-continuation-mark 'x 10
+		       (begin0
+			(with-continuation-mark 'x 11
+			  (let/cc k0
+			    (begin0
+			     (with-continuation-mark 'x 12
+			       (let/cc k 
+				 k))
+			     (cons 4 5))))
+			(cons 2 3)))])
+	      (continuation-mark-set->list 
+	       (continuation-marks k)
+	       'x))))
+
 ;; escape continuation, same thread
 (wcm-test '(11 10)
 	  (lambda ()
