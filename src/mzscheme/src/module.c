@@ -2074,8 +2074,7 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
     }
 
     if (pos) {
-      if ((SCHEME_INT_VAL(pos) < env->module->num_var_provides)
-	  && env->module->provide_protects
+      if (env->module->provide_protects
 	  && env->module->provide_protects[SCHEME_INT_VAL(pos)]) {
 	if (_protected)
 	  *_protected = 1;
