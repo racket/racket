@@ -293,16 +293,18 @@ closed_prim_proc {
 
 scm_closure {
   Scheme_Closure *c = (Scheme_Closure *)p;
+  int closure_size = ((Scheme_Closure_Data *)GC_resolve(c->code))->closure_size;
 
  mark:
-  int i = c->closure_size;
+
+  int i = closure_size;
   while (i--)
     gcMARK(c->vals[i]);
   gcMARK(c->code);
   
  size:
   gcBYTES_TO_WORDS((sizeof(Scheme_Closure)
-		    + (c->closure_size - 1) * sizeof(Scheme_Object *)));
+		    + (closure_size - 1) * sizeof(Scheme_Object *)));
 }
 
 case_closure {

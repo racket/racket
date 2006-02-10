@@ -782,36 +782,41 @@ int closed_prim_proc_FIXUP(void *p) {
 
 int scm_closure_SIZE(void *p) {
   Scheme_Closure *c = (Scheme_Closure *)p;
+  int closure_size = ((Scheme_Closure_Data *)GC_resolve(c->code))->closure_size;
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Closure)
-		    + (c->closure_size - 1) * sizeof(Scheme_Object *)));
+		    + (closure_size - 1) * sizeof(Scheme_Object *)));
 }
 
 int scm_closure_MARK(void *p) {
   Scheme_Closure *c = (Scheme_Closure *)p;
+  int closure_size = ((Scheme_Closure_Data *)GC_resolve(c->code))->closure_size;
 
-  int i = c->closure_size;
+
+  int i = closure_size;
   while (i--)
     gcMARK(c->vals[i]);
   gcMARK(c->code);
   
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Closure)
-		    + (c->closure_size - 1) * sizeof(Scheme_Object *)));
+		    + (closure_size - 1) * sizeof(Scheme_Object *)));
 }
 
 int scm_closure_FIXUP(void *p) {
   Scheme_Closure *c = (Scheme_Closure *)p;
+  int closure_size = ((Scheme_Closure_Data *)GC_resolve(c->code))->closure_size;
 
-  int i = c->closure_size;
+
+  int i = closure_size;
   while (i--)
     gcFIXUP(c->vals[i]);
   gcFIXUP(c->code);
   
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Closure)
-		    + (c->closure_size - 1) * sizeof(Scheme_Object *)));
+		    + (closure_size - 1) * sizeof(Scheme_Object *)));
 }
 
 #define scm_closure_IS_ATOMIC 0

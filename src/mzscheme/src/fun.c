@@ -639,12 +639,6 @@ scheme_make_closure(Scheme_Thread *p, Scheme_Object *code, int close)
   closure->so.type = scheme_closure_type;
   SCHEME_COMPILED_CLOS_CODE(closure) = data;
 
-#ifdef MZ_PRECISE_GC
-  closure->closure_size = i; /* needed for getting the object's size in bytes */
-#else
-  closure->zero_sized = !i; /* info used for reporting certain arity errors */
-#endif
-
   if (!close || !i)
     return (Scheme_Object *)closure;
 
@@ -2119,6 +2113,9 @@ const char *scheme_get_proc_name(Scheme_Object *p, int *len, int for_error)
 	if (SCHEME_FALSEP(n))
 	  return NULL;
       }
+
+      if (SCHEME_VECTORP(n))
+	n = SCHEME_VEC_ELS(n)[0];
 
       if (for_error < 0) {
 	s = (char *)n;

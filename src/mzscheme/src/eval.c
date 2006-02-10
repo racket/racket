@@ -75,7 +75,8 @@
    easily-evaluated expressions, such as constrants and variable
    lookups. This can be viewed as a kind of half-way A-normalization.
 
-   Bytecodes are not linear, but actually trees of expression nodes.
+   Bytecodes are not linear. They're actually trees of expression
+   nodes.
 
    Compilation:
 
@@ -92,6 +93,12 @@
    through the Scheme stack. The global variables and syntax objects
    are sometimes called the "prefix", and scheme_push_prefix()
    initializes the prefix portion of the stack.
+
+   Just-in-time compilation:
+
+   If the JIT is enabled, then `eval' processes a compiled expression
+   one more time (functionally): `lambda' and `case-lambda' forms are
+   converted to native-code generators, instead of bytecode variants.
 
 */
 

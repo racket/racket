@@ -1542,11 +1542,6 @@ int scheme_has_method_property(Scheme_Object *code);
 
 typedef struct {
   Scheme_Object so;
-#ifdef MZ_PRECISE_GC
-  int closure_size;
-#else
-  short zero_sized;
-#endif
   Scheme_Closure_Data *code;
   Scheme_Object *vals[1];
 } Scheme_Closure;
@@ -1554,11 +1549,7 @@ typedef struct {
 #define SCHEME_COMPILED_CLOS_CODE(c) ((Scheme_Closure *)c)->code
 #define SCHEME_COMPILED_CLOS_ENV(c) ((Scheme_Closure *)c)->vals
 
-#ifdef MZ_PRECISE_GC
-# define ZERO_SIZED_CLOSUREP(closure) !(closure->closure_size)
-#else
-# define ZERO_SIZED_CLOSUREP(closure) closure->zero_sized
-#endif
+#define ZERO_SIZED_CLOSUREP(closure) !(closure->code->closure_size)
 
 typedef struct Scheme_Native_Closure_Data {
   MZTAG_IF_REQUIRED
@@ -1580,11 +1571,6 @@ typedef struct Scheme_Native_Closure_Data {
 
 typedef struct {
   Scheme_Object so;
-#ifdef MZ_PRECISE_GC
-  int closure_size;
-#else
-  short zero_sized;
-#endif
   Scheme_Native_Closure_Data *code;
   Scheme_Object *vals[1];
 } Scheme_Native_Closure;
