@@ -146,6 +146,21 @@
       (step 0 < n add1 (lambda (i) (vector-set! v i (p i))))
       v))
 
+  ;; We know that inflating will be a bottleneck, so we might as
+  ;;  well help out the compiler...
+  (define-syntax define-const 
+    (syntax-rules ()
+      [(_ id v) (define-syntax id (make-const #'v))]))
+  (define-for-syntax (make-const val)
+    (make-set!-transformer
+     (lambda (stx)
+       (syntax-case stx (set!)
+	 [(set! id . _) (raise-syntax-error (syntax-e #'id)
+					    "cannot assign constant"
+					    stx)]
+	 [(id . rest) (quasisyntax/loc stx (#,val . rest))]
+	 [id val]))))
+
 #|
 /* The inflate algorithm uses a sliding 32K byte window on the uncompressed
    stream to find repeated byte strings.  This is implemented here as a
@@ -153,8 +168,8 @@
    and'ing with 0x7fff (32K-1). */
 |#
 
-  (define WSIZE 32768)
-  
+  (define-const WSIZE 32768)
+
   (define border 
     (vector 
      16 17 18 0 8 7 9 6 10 5 11 4 12 3 13 2 14 1 15))
@@ -185,13 +200,13 @@
      #x0001 #x0003 #x0007 #x000f #x001f #x003f #x007f #x00ff
      #x01ff #x03ff #x07ff #x0fff #x1fff #x3fff #x7fff #xffff))
 
-  (define lbits 9) ; /* bits in base literal/length lookup table */
-  (define dbits 6) ; /* bits in base distance lookup table */
+  (define-const lbits 9) ; /* bits in base literal/length lookup table */
+  (define-const dbits 6) ; /* bits in base distance lookup table */
 
 
   ; /* If BMAX needs to be larger than 16, then h and x[] should be ulg. */
-  (define BMAX 16) ; /* maximum bit length of any code (16 for explode) */
-  (define N_MAX 288) ; /* maximum number of codes in any set */
+  (define-const BMAX 16) ; /* maximum bit length of any code (16 for explode) */
+  (define-const N_MAX 288) ; /* maximum number of codes in any set */
 
 (define (inflate input-port output-port)
 
