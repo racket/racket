@@ -1603,7 +1603,13 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 	jit_notr_l(JIT_V1, v2);
 	jit_rshi_l(JIT_V1, JIT_V1, 0x1);
 	jit_addi_l(JIT_V1, JIT_V1, 0x1);
+#ifdef MZ_USE_JIT_I386
+	/* Can't shift from _ECX */
+	jit_movr_l(JIT_R2, v1);
+	jit_rshr_l(JIT_R2, JIT_R2, JIT_V1);
+#else
 	jit_rshr_l(JIT_R2, v1, JIT_V1);
+#endif
 	jit_ori_l(JIT_R0, JIT_R2, 0x1);
 	refc = jit_jmpi(jit_forward());
 
@@ -1612,7 +1618,13 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 	(void)jit_bgti_l(refslow, v2, scheme_make_integer(MAX_TRY_SHIFT));
 	jit_rshi_l(JIT_V1, v2, 0x1);
 	jit_andi_l(v1, v1, (~0x1));
+#ifdef MZ_USE_JIT_I386
+	/* Can't shift from _ECX */
+	jit_movr_l(JIT_R2, v1);
+	jit_lshr_l(JIT_R2, JIT_R2, JIT_V1);
+#else
 	jit_lshr_l(JIT_R2, v1, JIT_V1);
+#endif
 	/* If shifting back right produces a different result, that's overflow... */
 	jit_rshr_l(JIT_V1, JIT_R2, JIT_V1);
 	/* !! In case we go refslow, it nseed to add back tag to v1 !! */
