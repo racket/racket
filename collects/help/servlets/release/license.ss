@@ -48,15 +48,15 @@
        ,@(map make-item 
               `(("DrScheme"
                  "Copyright (c) 1995-2003 PLT"
-                 ,(format "Copyright (c) ~a PLT Scheme Inc." copyright-year)
+                 ,(format "Copyright (c) 2004-~a PLT Scheme Inc." copyright-year)
                  "All rights reserved.")
                 ("MrEd"
                  "Copyright (c) 1995-2003 PLT"
-		 ,(format "Copyright (c) ~a PLT Scheme Inc." copyright-year)
+		 ,(format "Copyright (c) 2004-~a PLT Scheme Inc." copyright-year)
                  "All rights reserved.")
                 ("MzScheme" 
                  "Copyright (c) 1995-2003 PLT"
-		 ,(format "Copyright (c) ~a PLT Scheme Inc." copyright-year)
+		 ,(format "Copyright (c) 2004-~a PLT Scheme Inc." copyright-year)
                  "All rights reserved.")
                 ("libscheme" 
                  "Copyright (c) 1994 Brent Benson"
@@ -89,5 +89,9 @@
 		("zlib"
 		 "Copyright (c) 1995-2002 Jean-loup Gailly and Mark Adler"
 		 "All rights reserved.")
+		("GNU MP Library"
+		 "Copyright (c) 1992, 1993, 1994, 1996 by Free Software Foundation, Inc.")
+		("GNU lightning"
+		 "Copyright (c) 1994, 1995, 1996, 1999, 2000, 2001, 2002 Free Software Foundation, Inc.")
 		("GNU Classpath"
 		 "Gnu Public Licence with special exception")))))))
