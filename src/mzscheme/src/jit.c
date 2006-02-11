@@ -1641,10 +1641,12 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
       } else {
 	if (arith == 3) {
 	  /* and */
-	  jit_andi_ul(JIT_R0, JIT_R0, scheme_make_integer(v));
+	  long l = (long)scheme_make_integer(v);
+	  jit_andi_ul(JIT_R0, JIT_R0, l);
 	} else if (arith == 4) {
 	  /* ior */
-	  jit_ori_ul(JIT_R0, JIT_R0, scheme_make_integer(v));
+	  long l = (long)scheme_make_integer(v);
+	  jit_ori_ul(JIT_R0, JIT_R0, l);
 	} else if (arith == 5) {
 	  /* xor */
 	  jit_xori_ul(JIT_R0, JIT_R0, v << 1);
