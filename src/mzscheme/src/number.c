@@ -281,7 +281,7 @@ scheme_init_number (Scheme_Env *env)
   scheme_add_global_constant("bitwise-not", p, env);
 
   p = scheme_make_folding_prim(scheme_bitwise_shift, "arithmetic-shift", 2, 2, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  /* SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED; */
   scheme_add_global_constant("arithmetic-shift", p, env);
 
   scheme_add_global_constant("gcd", 
