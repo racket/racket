@@ -263,31 +263,27 @@ scheme_init_number (Scheme_Env *env)
 						      "even?",
 						      1, 1, 1),
 			     env);
-  scheme_add_global_constant("bitwise-and", 
-			     scheme_make_folding_prim(scheme_bitwise_and,
-						      "bitwise-and",
-						      1, -1, 1),
-			     env);
-  scheme_add_global_constant("bitwise-ior", 
-			     scheme_make_folding_prim(bitwise_or,
-						      "bitwise-ior",
-						      1, -1, 1),
-			     env);
-  scheme_add_global_constant("bitwise-xor", 
-			     scheme_make_folding_prim(bitwise_xor,
-						      "bitwise-xor",
-						      1, -1, 1),
-			     env);
-  scheme_add_global_constant("bitwise-not", 
-			     scheme_make_folding_prim(bitwise_not,
-						      "bitwise-not",
-						      1, 1, 1),
-			     env);
-  scheme_add_global_constant("arithmetic-shift", 
-			     scheme_make_folding_prim(scheme_bitwise_shift,
-						      "arithmetic-shift",
-						      2, 2, 1),
-			     env);
+
+  p = scheme_make_folding_prim(scheme_bitwise_and, "bitwise-and", 1, -1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("bitwise-and", p, env);
+
+  p = scheme_make_folding_prim(bitwise_or, "bitwise-ior", 1, -1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("bitwise-ior", p, env);
+
+  p = scheme_make_folding_prim(bitwise_xor, "bitwise-xor", 1, -1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("bitwise-xor", p, env);
+
+  p = scheme_make_folding_prim(bitwise_not, "bitwise-not", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("bitwise-not", p, env);
+
+  p = scheme_make_folding_prim(scheme_bitwise_shift, "arithmetic-shift", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("arithmetic-shift", p, env);
+
   scheme_add_global_constant("gcd", 
 			     scheme_make_folding_prim(gcd,
 						      "gcd", 

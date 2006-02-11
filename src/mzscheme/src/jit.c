@@ -31,6 +31,7 @@
 #define JIT_LOG_WORD_SIZE 2
 #define WORDS_TO_BYTES(x) ((x) << JIT_LOG_WORD_SIZE)
 #define JIT_WORD_SIZE (1 << JIT_LOG_WORD_SIZE)
+#define MAX_TRY_SHIFT 30
 
 #define JIT_NOT_RET JIT_R1
 #if JIT_NOT_RET == JIT_RET
@@ -1369,12 +1370,14 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
   return is_tail ? 2 : 1;
 }
 
-static void generate_arith_slow_path(mz_jit_state *jitter, Scheme_Object *rator, 
-				     jit_insn **_ref, jit_insn **_ref4,
-				     jit_insn **for_branch, 
-				     int orig_args, int reversed, int use_v, int v)
+static jit_insn *generate_arith_slow_path(mz_jit_state *jitter, Scheme_Object *rator, 
+					  jit_insn **_ref, jit_insn **_ref4,
+					  jit_insn **for_branch, 
+					  int orig_args, int reversed, int arith, int use_v, int v)
 {
-  jit_insn *ref, *ref4;
+  jit_insn *ref, *ref4, *refslow;
+
+  refslow = _jit.x.pc;
 
   (void)jit_movi_p(JIT_R2, ((Scheme_Primitive_Proc *)rator)->prim_val);
   if (for_branch) {
@@ -1413,6 +1416,25 @@ static void generate_arith_slow_path(mz_jit_state *jitter, Scheme_Object *rator,
 
   *_ref = ref;
   *_ref4 = ref4;
+
+  if (arith == 6) {
+    /* Add tag back to first arg, just in case. See arithmetic-shift branch to refslow. */
+    ref = _jit.x.pc;
+
+    if (reversed || use_v) {
+      jit_ori_l(JIT_R0, JIT_R0, 0x1);
+    } else {
+      jit_ori_l(JIT_R1, JIT_R1, 0x1);
+    }
+
+    __START_SHORT_JUMPS__(1);
+    (void)jit_jmpi(refslow);
+    __END_SHORT_JUMPS__(1);
+
+    return ref;
+  } else {
+    return refslow;
+  }
 }
 
 static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Object *rand, Scheme_Object *rand2, 
@@ -1424,18 +1446,30 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
   LOG_IT(("inlined %s\n", ((Scheme_Primitive_Proc *)rator)->name));
 
   if (rand2) {
-    if (SCHEME_INTP(rand2)) {
+    if (SCHEME_INTP(rand2)
+	&& ((arith != 6)
+	    || ((SCHEME_INT_VAL(rand2) <= MAX_TRY_SHIFT)
+		&& (SCHEME_INT_VAL(rand2) >= -MAX_TRY_SHIFT)))) {
+      /* Second is constant, so use constant mode.
+	 For arithmetic shift, only do this if the constant
+	 is in range. */
       v = SCHEME_INT_VAL(rand2);
       rand2 = NULL;
-    } else if (SCHEME_INTP(rand) && (arith != -1)) {
+    } else if (SCHEME_INTP(rand)
+	       && (arith != 6)) {
+      /* First is constant; swap argument order and use constant mode. */
       v = SCHEME_INT_VAL(rand);
       cmp = -cmp;
       rand = rand2;
       rand2 = NULL;
       reversed = 1;
-    } else if ((arith != -1)
-	       && SAME_TYPE(SCHEME_TYPE(rand2), scheme_local_type)
-	       && !SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)) {
+    } else if ((SAME_TYPE(SCHEME_TYPE(rand2), scheme_local_type)
+		|| SCHEME_INTP(rand2))
+	       && !(SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)
+		    || SCHEME_INTP(rand))) {
+      /* Second expression is side-effect-free, unlike the first; 
+	 swap order and use the fast path for when the first arg is
+	 side-effect free. */
       Scheme_Object *t = rand2;
       rand2 = rand;
       rand = t;
@@ -1445,7 +1479,8 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
   }
 
   if (rand2) {
-    simple_rand = SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type);
+    simple_rand = (SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)
+		   || SCHEME_INTP(rand));
   } else
     simple_rand = 0;
 
@@ -1468,18 +1503,24 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
   CHECK_LIMIT();
 
   if (simple_rand) {
-    int pos;
-    pos = mz_remap(SCHEME_LOCAL_POS(rand));
-    jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
+    int pos, va;
 
-    jit_andr_ul(JIT_R2, JIT_R0, JIT_R1);
+    if (SCHEME_INTP(rand)) {
+      jit_movi_i(JIT_R1, rand);
+      va = JIT_R0;
+    } else {
+      pos = mz_remap(SCHEME_LOCAL_POS(rand));
+      jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
+      jit_andr_ul(JIT_R2, JIT_R0, JIT_R1);
+      va = JIT_R2;
+    }
+
     __START_SHORT_JUMPS__(1);
-    ref2 = jit_bmsi_ul(jit_forward(), JIT_R2, 0x1);
+    ref2 = jit_bmsi_ul(jit_forward(), va, 0x1);
     __END_SHORT_JUMPS__(1);
 
     /* Slow path */
-    refslow = _jit.x.pc;
-    generate_arith_slow_path(jitter, rator, &ref, &ref4, for_branch, orig_args, reversed, 0, 0);
+    refslow = generate_arith_slow_path(jitter, rator, &ref, &ref4, for_branch, orig_args, reversed, arith, 0, 0);
 
     __START_SHORT_JUMPS__(1);
     mz_patch_branch(ref2);
@@ -1496,8 +1537,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
     __END_SHORT_JUMPS__(1);
 
     /* Slow path */
-    refslow = _jit.x.pc;
-    generate_arith_slow_path(jitter, rator, &ref, &ref4, for_branch, orig_args, reversed, 0, 0);
+    refslow = generate_arith_slow_path(jitter, rator, &ref, &ref4, for_branch, orig_args, reversed, arith, 0, 0);
 
     __START_SHORT_JUMPS__(1);
     mz_patch_branch(ref2);
@@ -1509,13 +1549,14 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
     __END_SHORT_JUMPS__(1);
 
     /* Slow path */
-    refslow = _jit.x.pc;
-    generate_arith_slow_path(jitter, rator, &ref, &ref4, for_branch, orig_args, reversed, 1, v);
+    refslow = generate_arith_slow_path(jitter, rator, &ref, &ref4, for_branch, orig_args, reversed, arith, 1, v);
 
     __START_SHORT_JUMPS__(1);
     mz_patch_branch(ref2);
     __END_SHORT_JUMPS__(1);
   }
+
+  CHECK_LIMIT();
 
   mz_runstack_unskipped(jitter, skipped);
 
@@ -1523,26 +1564,116 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 
   if (arith) {
     if (rand2) {
-      if (arith > 0) {
+      /* First arg is in JIT_R1, second is in JIT_R0 */
+      if (arith == 1) {
 	jit_andi_ul(JIT_R2, JIT_R1, (~0x1));
 	(void)jit_boaddr_i(refslow, JIT_R2, JIT_R0);
 	jit_movr_p(JIT_R0, JIT_R2);
-      } else {
-	jit_movr_p(JIT_R2, JIT_R1);
-	(void)jit_bosubr_i(refslow, JIT_R2, JIT_R0);
+      } else if (arith == -1) {
+	if (reversed) {
+	  jit_movr_p(JIT_R2, JIT_R0);
+	  (void)jit_bosubr_i(refslow, JIT_R2, JIT_R1);
+	} else {
+	  jit_movr_p(JIT_R2, JIT_R1);
+	  (void)jit_bosubr_i(refslow, JIT_R2, JIT_R0);
+	}
 	jit_ori_ul(JIT_R0, JIT_R2, 0x1);
+      } else if (arith == 3) {
+	/* and */
+	jit_andr_ul(JIT_R0, JIT_R1, JIT_R0);
+      } else if (arith == 4) {
+	/* ior */
+	jit_orr_ul(JIT_R0, JIT_R1, JIT_R0);
+      } else if (arith == 5) {
+	/* xor */
+	jit_andi_ul(JIT_R0, JIT_R0, (~0x1));
+	jit_xorr_ul(JIT_R0, JIT_R1, JIT_R0);
+      } else if (arith == 6) {
+	/* arithmetic-shift 
+	   This is a lot of code, but if you're using
+	   arihtmetic-shift, then you probably want it. */
+	int v1 = (reversed ? JIT_R0 : JIT_R1);
+	int v2 = (reversed ? JIT_R1 : JIT_R0);
+	jit_insn *refi, *refc;
+
+	refi = jit_bgei_l(refslow, v2, scheme_make_integer(0));
+
+	/* Right shift (always works for a small enough shift) */
+	(void)jit_blti_l(refslow, v2, scheme_make_integer(-MAX_TRY_SHIFT));
+	jit_notr_l(JIT_V1, v2);
+	jit_rshi_l(JIT_V1, JIT_V1, 0x1);
+	jit_addi_l(JIT_V1, JIT_V1, 0x1);
+	jit_rshr_l(JIT_R2, v1, JIT_V1);
+	jit_ori_l(JIT_R0, JIT_R2, 0x1);
+	refc = jit_jmpi(jit_forward());
+
+	/* Left shift */
+	mz_patch_branch(refi);
+	(void)jit_bgti_l(refslow, v2, scheme_make_integer(MAX_TRY_SHIFT));
+	jit_rshi_l(JIT_V1, v2, 0x1);
+	jit_andi_l(v1, v1, (~0x1));
+	jit_lshr_l(JIT_R2, v1, JIT_V1);
+	/* If shifting back right produces a different result, that's overflow... */
+	jit_rshr_l(JIT_V1, JIT_R2, JIT_V1);
+	/* !! In case we go refslow, it nseed to add back tag to v1 !! */
+	(void)jit_bner_p(refslow, JIT_V1, v1);
+	/* No overflow. */
+	jit_ori_l(JIT_R0, JIT_R2, 0x1);
+
+	mz_patch_ucbranch(refc);
       }
     } else {
-      jit_movr_p(JIT_R2, JIT_R0);
-      if (arith > 0) {
+      /* Non-constant arg is in JIT_R0 */
+      if (arith == 1) {
+	jit_movr_p(JIT_R2, JIT_R0);
 	(void)jit_boaddi_i(refslow, JIT_R2, v << 1);
+	jit_movr_p(JIT_R0, JIT_R2);
+      } else if (arith == -1) {
+	if (reversed) {
+	  (void)jit_movi_p(JIT_R2, scheme_make_integer(v));
+	  (void)jit_bosubr_i(refslow, JIT_R2, JIT_R0);
+	  jit_addi_ul(JIT_R0, JIT_R2, 0x1);
+	} else {
+	  jit_movr_p(JIT_R2, JIT_R0);
+	  (void)jit_bosubi_i(refslow, JIT_R2, v << 1);
+	  jit_movr_p(JIT_R0, JIT_R2);
+	}
       } else {
-	(void)jit_bosubi_i(refslow, JIT_R2, v << 1);
+	if (arith == 3) {
+	  /* and */
+	  jit_andi_ul(JIT_R0, JIT_R0, scheme_make_integer(v));
+	} else if (arith == 4) {
+	  /* ior */
+	  jit_ori_ul(JIT_R0, JIT_R0, scheme_make_integer(v));
+	} else if (arith == 5) {
+	  /* xor */
+	  jit_xori_ul(JIT_R0, JIT_R0, v << 1);
+	} else if (arith == 6) {
+	  /* arithmetic-shift */
+	  /* We only get here when v is between -MAX_TRY_SHIFT and MAX_TRY_SHIFT, inclusive */
+	  if (v <= 0) {
+	    jit_rshi_l(JIT_R0, JIT_R0, -v);
+	    jit_ori_l(JIT_R0, JIT_R0, 0x1);
+	  } else {
+	    jit_andi_l(JIT_R0, JIT_R0, (~0x1));
+	    jit_lshi_l(JIT_R2, JIT_R0, v);
+	    /* If shifting back right produces a different result, that's overflow... */
+	    jit_rshi_l(JIT_V1, JIT_R2, v);
+	    /* !! In case we go refslow, it nseed to add back tag to JIT_R0 !! */
+	    (void)jit_bner_p(refslow, JIT_V1, JIT_R0);
+	    /* No overflow. */
+	    jit_ori_l(JIT_R0, JIT_R2, 0x1);
+	  }
+	} else if (arith == 7) {
+	  jit_notr_ul(JIT_R0, JIT_R0);
+	  jit_ori_ul(JIT_R0, JIT_R0, 0x1);
+	}
       }
-      jit_movr_p(JIT_R0, JIT_R2);
     }
     jit_patch_movi(ref, (_jit.x.pc));
   } else {
+    /* If second is constant, first arg is in JIT_R0. */
+    /* Otherwise, first arg is in JIT_R1, second is in JIT_R0 */
     switch (cmp) {
     case -2:
       if (rand2) {
@@ -1739,6 +1870,9 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
   } else if (IS_NAMED_PRIM(rator, "real?")) {
     generate_inlined_type_test(jitter, app, scheme_integer_type, scheme_complex_izi_type, for_branch, branch_short);
     return 1;
+  } else if (IS_NAMED_PRIM(rator, "eof-object?")) {
+    generate_inlined_constant_test(jitter, app, scheme_eof, NULL, for_branch, branch_short);
+    return 1;
   } else if (IS_NAMED_PRIM(rator, "zero?")) {
     generate_arith(jitter, rator, app->rand, NULL, 1, 0, 0, 0, for_branch, branch_short);
     return 1;
@@ -1809,6 +1943,9 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       return 1;
     } else if (IS_NAMED_PRIM(rator, "sub1")) {
       generate_arith(jitter, rator, app->rand, NULL, 1, -1, 0, 1, NULL, 1);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "bitwise-not")) {
+      generate_arith(jitter, rator, app->rand, NULL, 1, 7, 0, 9, NULL, 1);
       return 1;
     }
   }
@@ -1929,6 +2066,18 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       return 1;
     } else if (IS_NAMED_PRIM(rator, "-")) {
       generate_arith(jitter, rator, app->rand1, app->rand2, 2, -1, 0, 0, NULL, 1);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "bitwise-and")) {
+      generate_arith(jitter, rator, app->rand1, app->rand2, 2, 3, 0, 0, NULL, 1);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "bitwise-ior")) {
+      generate_arith(jitter, rator, app->rand1, app->rand2, 2, 4, 0, 0, NULL, 1);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "bitwise-xor")) {
+      generate_arith(jitter, rator, app->rand1, app->rand2, 2, 5, 0, 0, NULL, 1);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "arithmetic-shift")) {
+      generate_arith(jitter, rator, app->rand1, app->rand2, 2, 6, 0, 0, NULL, 1);
       return 1;
     } else if (IS_NAMED_PRIM(rator, "vector-ref")) {
       int simple;

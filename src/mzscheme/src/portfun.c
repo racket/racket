@@ -153,6 +153,8 @@ Scheme_Object *scheme_write_proc, *scheme_display_proc, *scheme_print_proc;
 void
 scheme_init_port_fun(Scheme_Env *env)
 {
+  Scheme_Object *p;
+
 #ifdef MZ_PRECISE_GC
   register_traversers();
 #endif
@@ -551,11 +553,11 @@ scheme_init_port_fun(Scheme_Env *env)
 						    "peek-byte-or-special",
 						    0, 3),
 			     env);
-  scheme_add_global_constant("eof-object?",
-			     scheme_make_folding_prim(eof_object_p,
-						      "eof-object?",
-						      1, 1, 1),
-			     env);
+
+  p = scheme_make_folding_prim(eof_object_p, "eof-object?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("eof-object?", p, env);
+
   scheme_add_global_constant("byte-ready?",
 			     scheme_make_noncm_prim(byte_ready_p,
 						    "byte-ready?",

@@ -17,3 +17,9 @@ GNU Lightning authors:
  i386 and PPC assemblers by Ian Piumarta <piumarta@inria.fr>
  Major PPC contributions by Laurent Michel <ldm@thorgal.homelinux.org>
 
+----------------------------------------
+
+Bugs fixed since 1.2:
+
+ * PPC jit_ldxi_* checked register instead of immediate for whether it
+   fits in 16 bits
