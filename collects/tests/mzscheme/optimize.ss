@@ -9,7 +9,8 @@
   (namespace-require 'mzscheme)
   (let* ([check-error-message (lambda (name proc)
 				(unless (memq name '(eq? not null? pair?
-							 real? number? boolean?))
+							 real? number? boolean? 
+							 eof-object?))
 				  (let ([s (with-handlers ([exn? exn-message])
 					     (proc 'bad))]
 					[name (symbol->string name)])
@@ -30,9 +31,12 @@
 		    (test (if v 'yes 'no)
 			  name 
 			  ((eval `(lambda (x) (if (,op x) 'yes 'no))) arg)))))]
+	 [un-exact (lambda (v op arg)
+		     (check-error-message op (eval `(lambda (x) (,op x))))
+		     (un0 v op arg))]
+	       
 	 [un (lambda (v op arg)
-	       (check-error-message op (eval `(lambda (x) (,op x))))
-	       (un0 v op arg)
+	       (un-exact v op arg)
 	       (when (number? arg)
 		 (let ([iv (if (number? v)
 			       (exact->inexact v)
@@ -48,9 +52,11 @@
 		     ;; (printf " for branch...\n")
 		     (test (if v 'yes 'no) name ((eval `(lambda (x) (if (,op x ,arg2) 'yes 'no))) arg1))
 		     (test (if v 'yes 'no) name ((eval `(lambda (x) (if (,op ,arg1 x) 'yes 'no))) arg2)))))]
+	 [bin-exact (lambda (v op arg1 arg2)
+		      (check-error-message op (eval `(lambda (x) (,op x ,arg2))))
+		      (bin0 v op arg1 arg2))]
 	 [bin (lambda (v op arg1 arg2)
-		(check-error-message op (eval `(lambda (x) (,op x ,arg2))))
-		(bin0 v op arg1 arg2)
+		(bin-exact v op arg1 arg2)
 		(let ([iv (if (number? v)
 			      (exact->inexact v)
 			      v)])
@@ -63,6 +69,8 @@
     (un #f 'boolean? 0)
     (un #t 'boolean? #t)
     (un #t 'boolean? #f)
+    (un #f 'eof-object? #f)
+    (un #t 'eof-object? eof)
 
     (bin #f 'eq? 0 10)
 
@@ -133,6 +141,43 @@
     (bin (expt 2 30) '- (expt 2 29) (- (expt 2 29)))
     (bin (- (expt 2 30)) '- (- (expt 2 29)) (expt 2 29))
     (bin (- 2 (expt 2 31)) '- (- 1 (expt 2 30)) (sub1 (expt 2 30)))
+
+    (bin-exact 11 'bitwise-and 11 43)
+    (bin-exact 0 'bitwise-and 11 32)
+    (bin-exact 0 'bitwise-and 11 (expt 2 50))
+    (bin-exact 0 'bitwise-and 0 -32)
+    (bin-exact 11 'bitwise-and 11 -1)
+    (bin-exact -11 'bitwise-and -11 -1)
+    (bin-exact (expt 2 50) 'bitwise-and (expt 2 50) (expt 2 50))
+
+    (bin-exact 11 'bitwise-ior 8 3)
+    (bin-exact 11 'bitwise-ior 11 3)
+    (bin-exact -1 'bitwise-ior 11 -1)
+    (bin-exact (sub1 (expt 2 51)) 'bitwise-ior (sub1 (expt 2 50)) (expt 2 50))
+    (bin-exact (add1 (expt 2 50)) 'bitwise-ior 1 (expt 2 50))
+
+    (bin-exact 11 'bitwise-xor 8 3)
+    (bin-exact 8 'bitwise-xor 11 3)
+    (bin-exact -2 'bitwise-xor 1 -1)
+    (bin-exact (sub1 (expt 2 51)) 'bitwise-xor (sub1 (expt 2 50)) (expt 2 50))
+    (bin-exact (add1 (expt 2 50)) 'bitwise-xor 1 (expt 2 50))
+
+    (bin-exact 4 'arithmetic-shift 2 1)
+    (bin-exact 1 'arithmetic-shift 2 -1)
+    (bin-exact (expt 2 30) 'arithmetic-shift 2 29)
+    (bin-exact (expt 2 31) 'arithmetic-shift 2 30)
+    (bin-exact (expt 2 32) 'arithmetic-shift 2 31)
+    (bin-exact (expt 2 33) 'arithmetic-shift 2 32)
+    (bin-exact -2 'arithmetic-shift -1 1)
+    (bin-exact -1 'arithmetic-shift -1 -1)
+    (bin-exact 2 'arithmetic-shift (expt 2 33) -32)
+    (bin-exact 8 'arithmetic-shift (expt 2 33) -30)
+
+    (un-exact -1 'bitwise-not 0)
+    (un-exact 0 'bitwise-not -1)
+    (un-exact (- -1 (expt 2 30)) 'bitwise-not (expt 2 30))
+    (un-exact (- (expt 2 30)) 'bitwise-not (sub1 (expt 2 30)))
+    (un-exact (- -1 (expt 2 32)) 'bitwise-not (expt 2 32))
 
     ))
 
