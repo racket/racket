@@ -204,7 +204,7 @@
       (define (set-recent-position filename start end)
         (let ([recent-items
                (filter (λ (x) (string=? (path->string (car x))
-                                             (path->string filename)))
+                                        (path->string filename)))
                        (preferences:get 'framework:recently-opened-files/pos))])
           (unless (null? recent-items)
             (let ([recent-item (car recent-items)])

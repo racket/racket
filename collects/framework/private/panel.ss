@@ -14,16 +14,6 @@
       (import [icon : framework:icon^]
               mred^)
       
-      
-      (define (list-set! _list _i ele)
-        (let loop ([lst _list]
-                   [i _i])
-          (cond
-            [(null? lst) (error 'list-set! "index too large for list, args: ~e ~e ~e"
-                                _list _i ele)]
-            [(zero? i) (set-car! lst ele)]
-            [else (loop (cdr lst) (- i 1))])))
-      
       (define single<%> (interface (area-container<%>) active-child))
       (define single-mixin
         (mixin (area-container<%>) (single<%>)
