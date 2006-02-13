@@ -2,7 +2,7 @@
   (require (lib "compile.ss" "profj"))
   (provide installer)
   
-  (define (mprintf a)
+  (define (mprintf . a)
     (fprintf a (current-error-port)))
   
   (define (installer plthome)
