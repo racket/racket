@@ -2,12 +2,26 @@
 (module drscheme-normal mzscheme
   (require (lib "mred.ss" "mred")
 	   (lib "class.ss")
+           (lib "cmdline.ss")
            (lib "bday.ss" "framework" "private"))
   
   ;; this used to be done by mred, but
   ;; since drscheme uses the -Z flag now,
   ;; we have to do it explicitly.
   (current-load text-editor-load-handler)
+
+  (define files-to-open
+    (command-line
+     (case (system-type)
+       [(windows) "DrScheme.exe"]
+       [(macosx) "drscheme" #;"DrScheme"]
+       [else "drscheme"])
+     (current-command-line-arguments)
+     (args filenames filenames)))
+  
+  ;; updates the command-line-arguments with only the files
+  ;; to open. See also main.ss.
+  (current-command-line-arguments (apply vector files-to-open))
   
   (define-values (texas-independence-day? halloween?)
     (let* ([date (seconds->date (current-seconds))]

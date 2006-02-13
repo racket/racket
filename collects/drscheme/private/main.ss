@@ -2,6 +2,7 @@
 (module main mzscheme
   (require (lib "string-constant.ss" "string-constants")
            (lib "unitsig.ss")
+           (lib "cmdline.ss")
            "drsig.ss"
 	   (lib "mred.ss" "mred")
            (lib "framework.ss" "framework")
@@ -16,7 +17,6 @@
            (lib "plt-installer.ss" "setup"))
   
   (provide main@)
-  (define argv (current-command-line-arguments))
   
   (define main@
     (unit/sig ()
@@ -368,7 +368,9 @@
                       (loop (cdr files))
                       (cons (car files) (loop (cdr files))))])))
       
-      (let* ([files-to-open (reverse (vector->list argv))]
+      ;; NOTE: drscheme-normal.ss sets current-command-line-arguments to
+      ;; the list of files to open, after parsing out flags like -h
+      (let* ([files-to-open (reverse (vector->list (current-command-line-arguments)))]
              [normalized/filtered
               (let loop ([files files-to-open])
                 (cond
