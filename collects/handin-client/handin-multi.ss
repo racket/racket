@@ -2,23 +2,27 @@
   (require (lib "class.ss") (lib "list.ss") (lib "string.ss") (lib "port.ss")
            (lib "unitsig.ss") (lib "mred.ss" "mred")
            (lib "framework.ss" "framework") (lib "external.ss" "browser")
-           "info.ss" "client-gui.ss" (only "updater.ss" update))
+           "info.ss" "client-gui.ss")
 
-  (define handin-name       (#%info-lookup 'name))
-  (define this-collection   (#%info-lookup 'collection))
-  (define web-address       (#%info-lookup 'web-address))
-  (define selection-mode    (#%info-lookup 'selection-mode))
+  (define handin-name     (#%info-lookup 'name))
+  (define this-collection (#%info-lookup 'collection))
+  (define web-address     (#%info-lookup 'web-address))
+  (define selection-mode  (#%info-lookup 'selection-mode))
   (define selection-defaults
     (let ([sd (#%info-lookup 'selection-default)])
       (if (string? sd) (list sd) sd)))
   (define (make-key sfx)
-    (string->symbol (format "~a:~a" (string-downcase handin-name) sfx)))
-  (define last-dir-key (make-key 'handin-last-dir))
+    (string->symbol (format "~a:~a" (string-downcase this-collection) sfx)))
+  (define last-dir-key (make-key 'multifile:last-dir))
   (preferences:set-default last-dir-key "" string?)
-  (define last-auto-key (make-key 'handin-last-auto))
+  (define last-auto-key (make-key 'multifile:last-auto))
   (preferences:set-default last-auto-key (car selection-defaults) string?)
-  (define geometry-key (make-key 'handin-geometry))
+  (define geometry-key (make-key 'multifile:geometry))
   (preferences:set-default geometry-key #f void)
+
+  (define update
+    (and (#%info-lookup 'enable-auto-update (lambda () #f))
+         (dynamic-require (in-this-collection "updater.ss") 'bg-update)))
 
   ;; ==========================================================================
   (define magic #"<<<MULTI-SUBMISSION-FILE>>>")
@@ -52,19 +56,20 @@
                      (reverse! files) (loop (cons f files)))))]
               [overwrite-all? #f])
           (define (write? file)
-            (define (del) (delete-file file) #t)
-            (cond
-             [(not (file-exists? file)) #t]
-             [overwrite-all? (del)]
-             [else (case (message-box/custom
-                          "Retrieve"
-                          (format "~s already exists, overwrite?" file)
-                          "&Yes" "&No" "Yes to &All" parent
-                          '(default=2 caution) 4)
-                     [(1) (del)]
-                     [(2) #f]
-                     [(3) (set! overwrite-all? #t) (del)]
-                     [(4) (error* "Aborting...")])]))
+            (define (del)
+              ;; check if exists: users might rename files during questions
+              (when (file-exists? file) (delete-file file)))
+            (cond [(not (file-exists? file)) #t]
+                  [overwrite-all? (del) #t]
+                  [else (case (message-box/custom
+                               "Retrieve"
+                               (format "~s already exists, overwrite?" file)
+                               "&Yes" "&No" "Yes to &All" parent
+                               '(default=2 caution) 4)
+                          [(1) (del) #t]
+                          [(2) #f]
+                          [(3) (set! overwrite-all? #t) (del) #t]
+                          [(4) (error* "Aborting...")])]))
           (unless (and (list? files)
                        (andmap (lambda (x)
                                  (and (list? x) (= 2 (length x))
@@ -115,7 +120,7 @@
         (button "&Submit"   (lambda _ (do-submit)))
         (button "&Retrieve" (lambda _ (do-retrieve)))
         (button "A&ccount"  (lambda _ (manage-handin-account this)))
-        (button "&Update"   (lambda _ (update this #t)))
+        (when update (button "&Update" (lambda _ (update this #t))))
         (button "C&lose"    (lambda _ (close))))
 
       ;; ----------------------------------------------------------------------
@@ -268,7 +273,7 @@
       (send this accept-drop-files #t)
       (send choose-dir-button focus)
       (send this show #t)
-      (update this)))
+      (when update (update this))))
 
   (provide multifile-handin)
   (define (multifile-handin) (new multifile-dialog%))

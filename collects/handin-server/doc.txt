@@ -979,3 +979,30 @@ application: in the account management dialog, the "Un/Install" tab
 has a button that will ask for a directory where it will create an
 executable for the multi-file submission utility -- the resulting
 executable can be used outside of DrScheme.
+
+*** Auto-updater
+
+The handin-client has code that can be used for automatic updating of
+clients.  This can be useful for courses where you distribute some
+additional functionality (collections, teachpacks, language-levels
+etc), and this functionality can change (or expected to change, for
+example, distributing per-homework teachpacks).
+
+To enable this, uncomment the relevant part of the "info.ss" file in
+the client code, it has the following three keys: `enable-auto-update'
+that turns this facility on, `version-filename' and `package-filename'
+which are the expected file names of the version file and the .plt
+file relative to the course web address (the value of the
+`web-address' key).  Also, include in your client collection a
+"version" file that contains a single number that is its version -- a
+big integer that holds the time of this collection in a YYYYMMDDHHMM
+format.
+
+When students install the client, every time DrScheme starts, it will
+automatically check the version from the web page (as specified by the
+`web-address' and `version-filename' keys), and if that contains a
+bigger number, it will offer the students to download and install the
+new version.  So, every time you want to distribute a new version, you
+build a new .plt file that contains a new version file, then copy
+these version and .plt files to your web page, and students will be
+notified automatically.

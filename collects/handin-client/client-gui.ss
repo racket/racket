@@ -33,17 +33,23 @@
   (define this-collection (#%info-lookup 'collection))
   (define web-menu-name   (#%info-lookup 'web-menu-name (lambda () #f)))
   (define web-address     (#%info-lookup 'web-address (lambda () #f)))
+  (define in-this-collection
+    (let ([path (collection-path this-collection)])
+      (lambda (file) (build-path path file))))
 
   (define handin-dialog-name (string-append handin-name " Handin"))
   (define button-label/h     (string-append handin-name " Handin"))
   (define button-label/r     (string-append handin-name " Retrieve"))
   (define manage-dialog-name (string-append handin-name " Handin Account"))
 
+  (define updater?
+    (#%info-lookup 'enable-auto-update (lambda () #f)))
   (define multifile?
     (#%info-lookup 'enable-multifile-handin (lambda () #f)))
 
   (define preference-key
-    (string->symbol (format "submit:username:~a" this-collection)))
+    (string->symbol
+     (format "~a:submit:username" (string-downcase this-collection))))
 
   (preferences:set-default preference-key "" string?)
   (define (remembered-user)
@@ -52,9 +58,7 @@
     (preferences:set preference-key user))
 
   (define (connect)
-    (handin-connect
-     server port-no
-     (build-path (collection-path this-collection) "server-cert.pem")))
+    (handin-connect server port-no (in-this-collection "server-cert.pem")))
 
   (provide handin-frame%)
   (define handin-frame%
@@ -608,9 +612,7 @@
 	(send bm2 set-loaded-mask mbm2))
       bm2))
 
-  (define handin-icon
-    (scale-by-half
-     (build-path (collection-path this-collection) "icon.png")))
+  (define handin-icon (scale-by-half (in-this-collection "icon.png")))
 
   (define (editors->string editors)
     (let* ([base (make-object editor-stream-out-bytes-base%)]
@@ -643,7 +645,10 @@
       (import drscheme:tool^)
 
       (define phase1 void)
-      (define phase2 void)
+      (define phase2
+        (if updater?
+          (dynamic-require (in-this-collection "updater.ss") 'bg-update)
+          void))
 
       (define tool-button-label (bitmap-label-maker button-label/h handin-icon))
 
@@ -655,20 +660,29 @@
 	  (super-instantiate ())
 
           (define/override (file-menu:between-open-and-revert file-menu)
+            ;; super adds a separator, add this and another sep after that
+            (super file-menu:between-open-and-revert file-menu)
             (new menu-item%
-		 (label (format "Manage ~a Handin Account..." handin-name))
-		 (parent file-menu)
-		 (callback (lambda (m e) (manage-handin-account this))))
+              [label (format "Manage ~a Handin Account..." handin-name)]
+              [parent file-menu]
+              [callback (lambda (m e) (manage-handin-account this))])
             (when multifile?
               (new menu-item%
-                   (label (format "Submit multiple ~a Files..." handin-name))
-                   (parent file-menu)
-                   (callback (lambda (m e)
-                               ((dynamic-require
-                                 (build-path (collection-path this-collection)
-                                             "handin-multi.ss")
-                                 'multifile-handin))))))
-            (super file-menu:between-open-and-revert file-menu))
+                [label (format "Submit multiple ~a Files..." handin-name)]
+                [parent file-menu]
+                [callback (lambda (m e)
+                            ((dynamic-require
+                              (in-this-collection "handin-multi.ss")
+                              'multifile-handin)))]))
+            (when updater?
+              (new menu-item%
+                [label (format "Update ~a plugin..." handin-name)]
+                [parent file-menu]
+                [callback
+                 (lambda (m e)
+                   ((dynamic-require (in-this-collection "updater.ss") 'update)
+                    #f #t))])) ; no parent
+            (new separator-menu-item% [parent file-menu]))
 
           (define/override (help-menu:after-about menu)
 	    (when web-menu-name
