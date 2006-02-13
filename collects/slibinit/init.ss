@@ -53,7 +53,7 @@
 	       (let ([p (collection-path "mzlib")])
 		 (let*-values ([(base name dir?) (split-path p)]
 			       [(base name dir?) (split-path base)])
-		   (and (string? base) base))))
+		   (and (path? base) (path->string base)))))
 	     (case (system-type)
 	       ((unix macosx) "/usr/local/lib/plt")
 	       ((windows) "C:\\Program Files\\PLT")
