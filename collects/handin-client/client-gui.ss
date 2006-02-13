@@ -29,15 +29,18 @@
         (values (cadr m) (string->number (caddr m))))
       (values #f #f)))
 
-  (define handin-name (#%info-lookup 'name))
+  (define handin-name     (#%info-lookup 'name))
   (define this-collection (#%info-lookup 'collection))
-  (define web-menu-name (#%info-lookup 'web-menu-name (lambda () #f)))
-  (define web-address (#%info-lookup 'web-address (lambda () #f)))
+  (define web-menu-name   (#%info-lookup 'web-menu-name (lambda () #f)))
+  (define web-address     (#%info-lookup 'web-address (lambda () #f)))
 
   (define handin-dialog-name (string-append handin-name " Handin"))
   (define button-label/h     (string-append handin-name " Handin"))
   (define button-label/r     (string-append handin-name " Retrieve"))
   (define manage-dialog-name (string-append handin-name " Handin Account"))
+
+  (define multifile?
+    (#%info-lookup 'enable-multifile-handin (lambda () #f)))
 
   (define preference-key
     (string->symbol (format "submit:username:~a" this-collection)))
@@ -298,9 +301,6 @@
                              handin-name server)]
               [parent this]
               [stretchable-width #t]))
-
-       (define multifile?
-         (#%info-lookup 'enable-multifile-handin (lambda () #f)))
 
        (define tabs
          (new tab-panel%
