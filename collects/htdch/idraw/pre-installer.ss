@@ -1,7 +1,7 @@
 (module pre-installer mzscheme
   (require (lib "compile.ss" "profj"))
   (provide pre-installer)
-  
+
   (define (pre-installer plthome)
     (let ((draw-path (build-path (collection-path "htdch" "idraw"))))
       (let ((javac
@@ -12,4 +12,3 @@
                                #f #f)))))
         (javac "Posn.java")
         ))))
-           

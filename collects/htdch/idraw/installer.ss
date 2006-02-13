@@ -1,10 +1,7 @@
 (module installer mzscheme
   (require (lib "compile.ss" "profj"))
   (provide installer)
-  
-  (define (mprintf a)
-    (fprintf a (current-error-port)))
-  
+
   (define (installer plthome)
     (let ((draw-path (build-path (collection-path "htdch" "idraw"))))
       (let ((javac
@@ -25,4 +22,3 @@
         (javac "Green.java")
         (javac "Yellow.java")
         ))))
-           
