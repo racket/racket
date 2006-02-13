@@ -574,6 +574,12 @@
   (quit "退出")
   (are-you-sure-exit "你确定要退出吗?")
   (are-you-sure-quit "你确定要退出吗?")
+  ; these next two are only used in the quit/exit dialog
+  ; on the button whose semantics is "dismiss this dialog".
+  ; they are there to provide more flexibility for translations
+  ; in English, they are just cancel.
+ (dont-exit "取消") 
+ (dont-quit "取消")
   
   ;;; autosaving
   (error-autosaving "自动保存为\"~a\"时出错。") ;; ~a will be a filename
