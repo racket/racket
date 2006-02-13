@@ -1,0 +1,50 @@
+This `idraw' package provides libraries for modeling in a visual world:
+
+  +---------------------------------+     
+  | abstract World                  |
+  +---------------------------------+       +------------------------------------+
+  | Canvas theCanvas                |------>| Canvas                             |
+  +---------------------------------+       +------------------------------------+
+  | void bigBang(int,int,double)    |       +------------------------------------+
+  | void endOfTime()                |       | void start(int,int)                |
+  |                                 |       | void stop()                        |
+  | abstract void onTick()          |       | void drawCircle(Posn,int,Color)    |
+  | abstract void onKeyEvent(String)|       | void drawDisk(Posn,int,Color)      |
+  | abstract void draw()            |       | void drawRect(Posn,int,int,Color)  |
+  | abstract void erase()           |       | void drawLine(Posn,Posn,Color)     |
+  +---------------------------------+       | void drawString(Posn,String)       |
+					    | void clearCircle(Posn,int,Color)   |
+					    | void clearDisk(Posn,int,Color)     |
+					    | void clearRect(Posn,int,int,Color) |
+					    | void clearLine(Posn,Posn,Color)    |
+					    +------------------------------------+
+
+ - class Posn 
+
+		      +----------+
+		      | Posn     |
+		      +----------+
+		      | int x    |
+		      | int y    |
+		      +----------+
+
+ - Color with five subclasses: 
+   + Blue 
+   + Green 
+   + Red 
+   + White 
+   + Yellow 
+
+                              +-------+
+                              | Color |
+                              +-------+
+                                  |
+                                 / \
+                                 ---
+                                  |
+             ------------------------------------------
+             |          |         |         |         |     
+         +-------+  +-------+ +-------+ +-------+ +-------+  
+         | Blue  |  | Green | | Red   | | White | | Yellow| 
+         +-------+  +-------+ +-------+ +-------+ +-------+ 
+
