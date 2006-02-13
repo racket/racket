@@ -647,7 +647,7 @@
       (define phase1 void)
       (define phase2
         (if updater?
-          (dynamic-require `(lib ,this-collection "updater.ss") 'bg-update)
+          (dynamic-require `(lib "updater.ss" ,this-collection) 'bg-update)
           void))
 
       (define tool-button-label (bitmap-label-maker button-label/h handin-icon))
@@ -672,7 +672,7 @@
                 [parent file-menu]
                 [callback (lambda (m e)
                             ((dynamic-require
-                              `(lib ,this-collection "handin-multi.ss")
+                              `(lib "handin-multi.ss" ,this-collection)
                               'multifile-handin)))]))
             (when updater?
               (new menu-item%
@@ -680,7 +680,7 @@
                 [parent file-menu]
                 [callback
                  (lambda (m e)
-                   ((dynamic-require `(lib ,this-collection "updater.ss")
+                   ((dynamic-require `(lib "updater.ss" ,this-collection)
                                      'update)
                     #f #t))])) ; no parent
             (new separator-menu-item% [parent file-menu]))

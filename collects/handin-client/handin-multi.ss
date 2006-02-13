@@ -22,7 +22,7 @@
 
   (define update
     (and (#%info-lookup 'enable-auto-update (lambda () #f))
-         (dynamic-require `(lib ,this-collection "updater.ss") 'bg-update)))
+         (dynamic-require `(lib "updater.ss" ,this-collection) 'bg-update)))
 
   ;; ==========================================================================
   (define magic #"<<<MULTI-SUBMISSION-FILE>>>")
