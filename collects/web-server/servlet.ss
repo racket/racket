@@ -1,4 +1,3 @@
-;; Default choice for writing module servlets
 (module servlet mzscheme
   (require (lib "contract.ss")
            (lib "etc.ss")
@@ -9,10 +8,9 @@
            "timer.ss"
            "web-cells.ss")
   
-  ;; ************************************************************
-  ;; HELPERS
-  
-  ;; Is it a Xexpr, or an Xexpr with procedures?
+  ;; CONTRACT HELPERS
+  (define servlet-response? any/c)
+    
   (define (xexpr/callback? x)
     (correct-xexpr? x 
                     (lambda () #t)
@@ -21,7 +19,25 @@
                           #t
                           (begin ((error-display-handler) (exn-message exn) exn)
                                  #f)))))
+
+  (define response-generator?
+    (string? . -> . servlet-response?))
   
+  (define url-transform?
+    (string? . -> . string?))
+  
+  (define expiration-handler?
+    (request? . -> . void?))
+  
+  (define (parameter/c c)
+    parameter?)
+  
+  (define embed/url?
+    (((request? . -> . any/c)) (expiration-handler?) . opt-> . string?))
+  
+  ;; ************************************************************
+  ;; HELPERS
+    
   ;; replace-procedures : (proc -> url) xexpr/callbacks? -> xexpr?
   ;; Change procedures to the send/suspend of a k-url
   (define (xexpr/callback->xexpr p->a p-exp)
@@ -41,25 +57,24 @@
   ;; Weak contracts: the input is checked in output-response, and a message is
   ;; sent directly to the client (Web browser) instead of the terminal/log.
   (provide/contract
+   [xexpr/callback? (any/c . -> . boolean?)]
+   [xexpr/callback->xexpr (embed/url? xexpr/callback? . -> . xexpr?)]
+   [current-url-transform (parameter/c url-transform?)]
+   [current-servlet-continuation-expiration-handler (parameter/c expiration-handler?)]
    [redirect/get (-> request?)]
    [redirect/get/forget (-> request?)]
-   [adjust-timeout! (number? . -> . any)]
-   [send/back (any/c . -> . any)]
-   [send/finish (any/c . -> . any)]
-   [send/suspend (((string? . -> . any/c)) ((request? . -> . any/c)) . opt-> . request?)]
-   [send/forward (((string? . -> . any/c)) ((request? . -> . any/c)) . opt-> . request?)]
-   ;;; validate-xexpr/callback is not checked anywhere:
-   [send/suspend/callback (xexpr/callback? . -> . any)])
+   [adjust-timeout! (number? . -> . void?)]
+   [clear-continuation-table! (-> void?)]
+   [send/back (any/c . -> . void?)]
+   [send/finish (any/c . -> . void?)]
+   [send/suspend ((response-generator?) (expiration-handler?) . opt-> . request?)]
+   [send/forward ((response-generator?) (expiration-handler?) . opt-> . request?)]
+   [send/suspend/dispatch ((embed/url? . -> . servlet-response?) . -> . any/c)]
+   [send/suspend/callback (xexpr/callback? . -> . any/c)])
   
   (provide
-   clear-continuation-table!
-   send/suspend/dispatch
-   current-url-transform
-   current-servlet-continuation-expiration-handler
-   xexpr/callback?
-   xexpr/callback->xexpr
    (all-from "web-cells.ss")
-   (all-from "servlet-helpers.ss"))    
+   (all-from "servlet-helpers.ss"))
   
   ;; ************************************************************
   ;; EXPORTS
