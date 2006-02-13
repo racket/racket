@@ -1,0 +1,52 @@
+{ (define LIBNAME "An Imperative Drawing Library (HtDC)")
+  (include "head.tinc") }
+
+
+This `idraw' package provides classes and imperative methods for modeling
+in a visual world. Here is its class diagram of public fields and methods:
+
+<pre>
+<code>
+  +---------------------------------+     
+  | abstract World                  |
+  +---------------------------------+       +------------------------------------+
+  | Canvas theCanvas                |------>| Canvas                             |
+  +---------------------------------+       +------------------------------------+
+  | void bigBang(int,int,double)    |       +------------------------------------+
+  | void endOfTime()                |       | void start(int,int)                |
+  |                                 |       | void stop()                        |
+  | abstract void onTick()          |       | void drawCircle(Posn,int,Color)    |
+  | abstract void onKeyEvent(String)|       | void drawDisk(Posn,int,Color)      |
+  | abstract void draw()            |       | void drawRect(Posn,int,int,Color)  |
+  | abstract void erase()           |       | void drawLine(Posn,Posn,Color)     |
+  +---------------------------------+       | void drawString(Posn,String)       |
+					    | void clearCircle(Posn,int,Color)   |
+					    | void clearDisk(Posn,int,Color)     |
+					    | void clearRect(Posn,int,int,Color) |
+					    | void clearLine(Posn,Posn,Color)    |
+					    +------------------------------------+
+
+		      +----------+
+		      | Posn     |
+		      +----------+
+		      | int x    |
+		      | int y    |
+		      +----------+
+
+                              +-------+
+                              | Color |
+                              +-------+
+                                  |
+                                 / \
+                                 ---
+                                  |
+             ------------------------------------------
+             |          |         |         |         |     
+         +-------+  +-------+ +-------+ +-------+ +-------+  
+         | Blue  |  | Green | | Red   | | White | | Yellow| 
+         +-------+  +-------+ +-------+ +-------+ +-------+ 
+
+</code>
+</pre>
+
+{(include "foot.tinc")}
