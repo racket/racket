@@ -67,9 +67,10 @@
     (let ([line (bytes->string/utf-8 line)])
       (unless (or (< (string-length line) len)
                   (< (string-width line) len))
-        (error* "~a \"~a\" is longer than ~a characters"
+        (error* "~a \"~a\" in ~a is longer than ~a characters"
                 (if n (format "Line #~a" n) "The line")
                 (regexp-replace #rx"^[ \t]*(.*?)[ \t]*$" line "\\1")
+                (currently-processed-file-name)
                 len)))))
 
 ;; ============================================================================
@@ -136,31 +137,48 @@
                        strs)))
         (apply bytes-append (reverse! (cons (subbytes str idx) strs)))))))
 
-(define (submission->string submission maxwidth textualize? untabify?)
+(define current-processed-file ; set when processing multi-file submissions
+  (make-parameter #f))
+(define (currently-processed-file-name)
+  (or (current-processed-file) "your code"))
+
+(define (input->process->output maxwidth textualize? untabify? bad-re)
+  (let loop ([n 1])
+    (let ([line (if textualize?
+                  (read-bytes-line (current-input-port) 'any)
+                  (with-handlers ([void
+                                   (lambda (e)
+                                     (error* "The submission must not ~a"
+                                             "have non-textual items"))])
+                    (read-bytes-line (current-input-port) 'any)))])
+      (unless (eof-object? line)
+        (let* ([line (regexp-replace #rx#"[ \t]+$" line #"")]
+               [line (if (and untabify?
+                              (regexp-match-positions #rx"\t" line))
+                       (untabify line) line)])
+          (when (and bad-re (regexp-match bad-re line))
+            (error* "You cannot use \"~a\" in ~a!~a"
+                    (if (regexp? bad-re) (object-name bad-re) bad-re)
+                    (currently-processed-file-name)
+                    (if textualize? "" (format " (line ~a)" n))))
+          (when maxwidth
+            (verify-line-length line (and (not textualize?) n) maxwidth))
+          (display line) (newline) (loop (add1 n)))))))
+
+(define (submission->bytes submission maxwidth textualize? untabify?
+                           markup-prefix bad-re)
+  (define magic #"WXME")
+  (unless (equal? magic (subbytes submission 0 (bytes-length magic)))
+    (error* "bad submission format, expecting a single  DrScheme submission"))
   (let-values ([(defs inters) (unpack-submission submission)])
-    (parameterize ([current-output-port (open-output-string)]
-                   [current-input-port
+    (parameterize ([current-input-port
                     (if textualize?
-                      (input-port->text-input-port
-                       (open-input-text-editor defs 0 'end snip->text))
-                      (open-input-text-editor defs))])
-      (let loop ([n 1])
-        (let ([line (if textualize?
-                      (read-bytes-line)
-                      (with-handlers ([void
-                                       (lambda (e)
-                                         (error* "The submission must not ~a"
-                                                 "have non-textual items"))])
-                        (read-bytes-line)))])
-          (unless (eof-object? line)
-            (let* ([line (regexp-replace #rx#"[ \t]+$" line #"")]
-                   [line (if (and untabify?
-                                  (regexp-match-positions #rx"\t" line))
-                           (untabify line) line)])
-              (when maxwidth
-                (verify-line-length line (and (not textualize?) n) maxwidth))
-              (display line) (newline) (loop (add1 n))))))
-      (get-output-string (current-output-port)))))
+                      (input-port->text-input-port (open-input-text-editor
+                                                    defs 0 'end snip->text))
+                      (open-input-text-editor defs))]
+                   [current-output-port (open-output-string)])
+      (input->process->output maxwidth textualize? untabify? bad-re)
+      (get-output-bytes (current-output-port)))))
 
 ;; ---------------------------------------------------------
 ;; This code will hack textualization of test and text boxes
@@ -224,6 +242,73 @@
 (send (get-the-snip-class-list) add text-box-sc)
 
 ;; ============================================================================
+;; Dealing with multi-file submissions
+
+(define ((unpack-multifile-submission names-checker)
+         submission maxwidth textualize? untabify?
+         markup-prefix prefix-re)
+  (define (assert-format b)
+   (unless b
+     (error* "bad submission format, expecting a multi-file submission -- ~a"
+             "use the multi-file submission tool")))
+  (let ([files
+         (parameterize ([current-input-port (open-input-bytes submission)])
+           (define magic #"<<<MULTI-SUBMISSION-FILE>>>")
+           (assert-format (equal? magic (read-bytes (bytes-length magic))))
+           (let loop ([files '()])
+             (let ([f (with-handlers ([void void]) (read))])
+               (if (eof-object? f)
+                 (quicksort files (lambda (x y) (string<? (car x) (car y))))
+                 (loop (cons f files))))))])
+    (assert-format (and (list? files)
+                        (andmap (lambda (x)
+                                  (and (list? x) (= 2 (length x))
+                                       (string? (car x)) (bytes? (cadr x))))
+                                files)))
+    (cond [(ormap (lambda (f)
+                    (and (regexp-match #rx"^[.]|[/\\ ]" (car f)) (car f)))
+                  files)
+           => (lambda (file) (error* "bad filename: ~e" file))])
+    ((cond [(procedure? names-checker) names-checker]
+           [(or (regexp? names-checker)
+                (string? names-checker) (bytes? names-checker))
+            (lambda (names)
+              (cond [(ormap (lambda (n)
+                              (and (not (regexp-match names-checker n)) n))
+                            names)
+                     => (lambda (file) (error* "bad filename: ~e" file))]))]
+           [(not names-checker) void]
+           [else (error* "bad names-checker specification: ~e" names-checker)])
+     (map car files))
+    ;; This will create copies of the original files
+    ;; (for-each (lambda (file)
+    ;;             (with-output-to-file (car file)
+    ;;               (lambda () (display (cadr file)) (flush-output))))
+    ;;           files)
+    (let* ([pfx-len  (string-length markup-prefix)]
+           [line-len (- maxwidth pfx-len)]
+           [=s       (lambda (n) (make-string n #\=))]
+           [===      (format "~a~a\n" markup-prefix (=s line-len))])
+      (define (sep name)
+        (newline)
+        (display ===)
+        (let ([n (/ (- line-len 4 (string-length name)) 2)])
+          (printf "~a~a< ~a >~a\n"
+                  markup-prefix (=s (floor n)) name (=s (ceiling n))))
+        (display ===)
+        (newline))
+      (parameterize ([current-output-port (open-output-bytes)])
+        (for-each (lambda (file)
+                    (sep (car file))
+                    (parameterize ([current-input-port
+                                    (open-input-bytes (cadr file))]
+                                   [current-processed-file (car file)])
+                      (input->process->output
+                       maxwidth textualize? untabify? prefix-re)))
+                  files)
+        (get-output-bytes (current-output-port))))))
+
+;; ============================================================================
 ;; Checker function
 
 (provide submission-eval)
@@ -255,16 +340,16 @@
        (loop #'(x ...) (cons (list (syntax-e #'key) #'key #'val) keyvals))]
       [(body ...)
        (with-syntax
-           ([users*         (get ':users #'#f)]
-            [eval?*         (get ':eval? #'#t)]
-            [language*      (get ':language #'#f)]
-            [teachpacks*    (get ':teachpacks #''())]
-            [create-text?*  (get ':create-text? #'#t)]
-            [untabify?*     (get ':untabify? #'#t)]
-            [textualize?*   (get ':textualize? #'#f)]
-            [maxwidth*      (get ':maxwidth #'79)]
+           ([users*         (get ':users         #'#f)]
+            [eval?*         (get ':eval?         #'#t)]
+            [language*      (get ':language      #'#f)]
+            [teachpacks*    (get ':teachpacks    #''())]
+            [create-text?*  (get ':create-text?  #'#t)]
+            [untabify?*     (get ':untabify?     #'#t)]
+            [textualize?*   (get ':textualize?   #'#f)]
+            [maxwidth*      (get ':maxwidth      #'79)]
             [markup-prefix* (get ':markup-prefix #'#f)]
-            [prefix-re*     (get ':prefix-re #'#f)]
+            [prefix-re*     (get ':prefix-re     #'#f)]
             [student-line*
              (get ':student-line
                   #'"Student: {username} ({Full Name} <{Email}>)")]
@@ -272,8 +357,10 @@
              (get ':extra-lines
                   #''("Maximum points for this assignment: <+100>"))]
             [value-printer* (get ':value-printer #'#f)]
-            [coverage?*     (get ':coverage? #'#f)]
-            [output*        (get ':output #'"hw.scm")]
+            [coverage?*     (get ':coverage?     #'#f)]
+            [output*        (get ':output        #'"hw.scm")]
+            [multi-file*    (get ':multi-file    #'#f)]
+            [names-checker* (get ':names-checker #'#f)]
             [user-error-message*
              (get ':user-error-message #'"Error in your code --\n~a")]
             [checker        (id 'checker)]
@@ -313,6 +400,8 @@
                    [value-printer  value-printer*]
                    [coverage?      coverage?*]
                    [output-file    output*]
+                   [multi-file     multi-file*]
+                   [names-checker  names-checker*]
                    [user-error-message user-error-message*]
                    [execute-counts #f])
                ;; ========================================
@@ -320,7 +409,11 @@
                (define suffix
                  (let ([sfx (string->symbol
                              (string-downcase
-                              (regexp-replace #rx"^.*[.]" output-file "")))])
+                              (if multi-file
+                                (format "~a" multi-file)
+                                (and output-file
+                                     (regexp-replace
+                                      #rx"^.*[.]" output-file "")))))])
                    (case sfx
                      [(java c cc c++)
                       (unless markup-prefix (set! markup-prefix "//> "))
@@ -357,26 +450,23 @@
                  (define (write-text)
                    (with-output-to-file text-file
                      (lambda ()
-                       (define added (or (thread-cell-ref added-lines) '()))
-                       (for-each
-                        (lambda (user)
-                          (prefix-line (user-substs user student-line)))
-                        users)
+                       (for-each (lambda (user)
+                                   (prefix-line
+                                    (user-substs user student-line)))
+                                 users)
                        (for-each prefix-line extra-lines)
-                       (for-each prefix-line added)
+                       (for-each prefix-line
+                                 (or (thread-cell-ref added-lines) '()))
                        (display submission-text))
                      'truncate))
                  (define submission-text
                    (and create-text?
-                        (submission->string
-                         submission maxwidth textualize? untabify?)))
-                 (when create-text?
-                   (make-directory "grading")
-                   (when (regexp-match prefix-re submission-text)
-                     (error* "You cannot use \"~a\" in your code!"
-                             (if (regexp? prefix-re)
-                               (object-name prefix-re) prefix-re)))
-                   (write-text))
+                        ((if multi-file
+                           (unpack-multifile-submission names-checker)
+                           submission->bytes)
+                          submission maxwidth textualize? untabify?
+                          markup-prefix prefix-re)))
+                 (when create-text? (make-directory "grading") (write-text))
                  (when value-printer (current-value-printer value-printer))
                  (when coverage? (coverage-enabled #t))
                  (current-run-status "checking submission")
@@ -434,7 +524,7 @@
                                  "`textualize?' and `coverage?'"]
                                 [else #f])])
                  (when bad
-                   (error* "bad checker specifications: cannot use ~a" bad)))
+                   (error* "bad checker specifications: ~a" bad)))
                ;; ========================================
                (list pre check post))))])))
 

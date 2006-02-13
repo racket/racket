@@ -302,7 +302,9 @@
                   (begin
                     (LOG "saving ~a for ~a" assignment users)
                     (parameterize ([current-directory ATTEMPT-DIR])
-                      (rename-file-or-directory "handin" part))
+                      (cond [part (unless (equal? part "handin")
+                                    (rename-file-or-directory "handin" part))]
+                            [(file-exists? "handin") (delete-file "handin")]))
                     ;; Shift successful-attempt directories so that there's
                     ;;  no SUCCESS-0:
                     (make-success-dir-available 0)
@@ -327,6 +329,8 @@
       (error 'handin "no ~a submission directory for ~a" assignment users))
     (LOG "retrieving assignment for ~a: ~a" users assignment)
     (parameterize ([current-directory (build-path "active" assignment dirname)])
+      (define magics '(#"WXME" #"<<<MULTI-SUBMISSION-FILE>>>"))
+      (define mlen (apply max (map bytes-length magics)))
       (define file
         ;; find the newest wxme file
         (let loop ([files (directory-list)] [file #f] [time #f])
@@ -334,8 +338,12 @@
             file
             (let ([f (car files)])
               (if (and (file-exists? f)
-                       (equal? #"WXME" (with-input-from-file f
-                                         (lambda () (read-bytes 4))))
+                       (let ([m (with-input-from-file f
+                                  (lambda () (read-bytes mlen)))])
+                         (ormap (lambda (magic)
+                                  (equal? magic
+                                          (subbytes m 0 (bytes-length magic))))
+                                magics))
                        (or (not file)
                            (> (file-or-directory-modify-seconds f) time)))
                 (loop (cdr files) f (file-or-directory-modify-seconds f))

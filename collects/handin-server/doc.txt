@@ -417,7 +417,9 @@ sub-directories:
     from the status interface.
 
     The checker should return a string, such as "handin.scm", to use
-    in naming the submission file.
+    in naming the submission file, or #f to indicate that he file
+    should be deleted (eg, when the checker alrady created the
+    submission file(s) in a different place).
 
     Alternatively, the module can bind `checker' to a list of three
     procedures: a pre-checker, a checker, and a post-checker.  All
@@ -739,7 +741,15 @@ Keywords for configuring `check:':
 
 * :output -- the name of the original handin file (unrelated to the
   text-converted files).  Defaults to "hw.scm".  (The suffix changes
-  the defaults of the following two entries.)
+  the defaults of the following two entries.)  Can be #f for removing
+  the original file after processing.
+
+* :multi-file -- by default, this is set to #f, which means that only
+  DrScheme is used to send submissions as usual.  See "Multiple-file
+  submissions" below for setting up multi-file submissions.
+
+* :names-checker -- used for multi-file submissions; see
+  "Multiple-file submissions" below for details.
 
 * :markup-prefix -- used as the prefix for :student-lines and
   :extra-lines below.  The default is ";;> " or "//> ", depending on
@@ -927,3 +937,45 @@ value from the submission code.
   error with source information if some code is left uncovered.  The
   collected information includes only execution coverage by submission
   code, excluding additional checker tests.
+
+*** Multiple-file submissions
+
+By default, the system is set up for submissions of single a single
+file, straight fom DrScheme using the handin-client.  There is some
+support for multi-file submissions in "extra-utils.ss" and in the
+handin-client -- it is possible to submit multiple files, and have the
+system generate a single file that is the concatenation of all
+submission files (used only with text files).  To set up multi-file
+submissions, do the following:
+
+* Add a `:multi-file' keyword in `check:', and as a value, use the
+  suffix that should be used for the single concatenated output file.
+
+* You can also add a `:names-checker' keyword -- the value can be a
+  regexp that all submitted files must follow (eg, ".*[.]scm$").
+  Alternatively, it can be a 1-argument procedure that will receive
+  the (sorted) list of submitted files and can throw an error if some
+  files are missing or some files are forbidden.
+
+* In the "info.ss" file of the handin-client you need to set
+  `enable-multifile-handin' to #t, and adjust `selection-default' to
+  patterns that are common to your course.  (It can be a single
+  pattern, or a list of them.)
+
+On the server side, each submission is saved in a file called "raw",
+which contains all submitted files.  In the "grading" directory, you
+will get a "text.<sfx>" file ("<sfx>" is the suffix that is used as a
+value for `:multi-file') that contains all submitted files with clear
+separators.  On the client side, students will have an additional
+file-menu entry for submitting multiple files, which pops up a dialog
+that can be used to submit multiple files.  In this dialog, students
+choose their working directory, and the `selection-default' entry from
+the "handin-client/info.ss" file specifies a few patterns that can be
+used to automatically select files.
+
+The dialog provides all handin-related functionality that is available
+in DrScheme.  For further convenience, it can be used as a standalone
+application: in the account management dialog, the "Un/Install" tab
+has a button that will ask for a directory where it will create an
+executable for the multi-file submission utility -- the resulting
+executable can be used outside of DrScheme.
