@@ -53,12 +53,18 @@
      server port-no
      (build-path (collection-path this-collection) "server-cert.pem")))
 
+  (provide handin-frame%)
   (define handin-frame%
     (class dialog%
       (inherit show is-shown? center)
       (super-new [label handin-dialog-name])
 
-      (init-field content open-drscheme-window)
+      (init-field content on-retrieve)
+      (define mode
+        (cond [(and content on-retrieve) #f]
+              [content     'submit]
+              [on-retrieve 'retrieve]
+              [else (error 'handin-frame "bad initial values")]))
 
       (define status (new message%
 			  [label (format "Making secure connection to ~a..." server)]
@@ -95,7 +101,9 @@
              [callback (lambda _
                          (define r? (send retrieve? get-value))
                          (send ok set-label
-                               (if r? button-label/r button-label/h)))]))
+                               (if r? button-label/r button-label/h)))]
+             [value (eq? 'retrieve mode)]
+             [style (if mode '(deleted) '())]))
 
       (define (submit-file)
         (define final-message "Handin successful.")
@@ -131,12 +139,14 @@
            (lambda ()
              (done-interface)
              (do-cancel-button)
-             (string->editor! buf (send (open-drscheme-window) get-editor))))))
+             (on-retrieve buf)))))
 
       (define ok
         (new button%
-          [label ; can change to button-label/r, so use extra spaces
-           (string-append " " button-label/h " ")]
+          [label (case mode
+                   [(submit)   button-label/h]
+                   [(retrieve) button-label/r]
+                   [else (string-append " " button-label/h " ")])] ; can change
           [parent button-panel]
           [style '(border)]
           [callback
@@ -267,12 +277,14 @@
       (center)
       (show #t)))
 
-  (define (manage-handin-account)
+  (provide manage-handin-account)
+  (define (manage-handin-account parent)
     (new
      (class dialog%
        (inherit show is-shown? center)
        (super-new [label manage-dialog-name]
-		  [alignment '(left center)])
+                  [alignment '(left center)]
+                  [parent parent])
 
        (define USER-FIELDS
          (let ([ef #f])
@@ -287,14 +299,18 @@
               [parent this]
               [stretchable-width #t]))
 
+       (define multifile?
+         (#%info-lookup 'enable-multifile-handin (lambda () #f)))
+
        (define tabs
          (new tab-panel%
               [parent this]
-              [choices '("New User" "Change Info" "Uninstall")]
+              [choices `("New User" "Change Info"
+                         ,(if multifile? "Un/Install" "Uninstall"))]
               [callback
                (lambda (tp e)
                  (send single active-child
-                       (list-ref (list new-user-box old-user-box uninstall-box)
+                       (list-ref (list new-user-box old-user-box un/install-box)
                                  (send tabs get-selection))))]))
 
        (define single (new panel:single% [parent tabs]))
@@ -386,30 +402,67 @@
                                            (do-change/add #t new-username))]
 			       [style '(border)]))
 
-       (define uninstall-box (new vertical-panel%
-				 [parent single]
-				 [alignment '(center center)]))
-       (define uninstall-button (new button%
-				     [label (format "Uninstall ~a Handin" handin-name)]
-				     [parent uninstall-box]
-				     [callback
-				      (lambda (b e)
-					(let ([dir (collection-path this-collection)])
-					  (with-handlers ([void (lambda (exn)
-								  (report-error
-								   "Uninstall failed."
-								   exn))])
-					    (delete-directory/files dir)
-					    (set! uninstalled? #t)
-					    (send uninstall-button enable #f)
-					    (message-box
-					     "Uninstall"
-					     (format
-					      "The ~a tool has been uninstalled. ~a~a"
-					      handin-name
-					      "The Handin button and associated menu items"
-					      " will not appear after you restart DrScheme.")))))]))
+       (define un/install-box
+         (new vertical-panel% [parent single] [alignment '(center center)]))
+       (define uninstall-button
+         (new button%
+           [label (format "Uninstall ~a Handin" handin-name)]
+           [parent un/install-box]
+           [callback
+            (lambda (b e)
+              (let ([dir (collection-path this-collection)])
+                (with-handlers ([void
+                                 (lambda (exn)
+                                   (report-error "Uninstall failed." exn))])
+                  (delete-directory/files dir)
+                  (set! uninstalled? #t)
+                  (send uninstall-button enable #f)
+                  (message-box "Uninstall"
+                    (format "The ~a tool has been uninstalled. ~a~a"
+                            handin-name
+                            "The Handin button and associated menu items will"
+                            " not appear after you restart DrScheme.")
+                    this)
+                  (send this show #f))))]))
        (send uninstall-button enable (not uninstalled?))
+
+       (define install-standalone-button
+         (and multifile?
+              (new button%
+                [label (format "Install Standalone ~a Handin" handin-name)]
+                [parent un/install-box]
+                [callback
+                 (lambda (b e)
+                   (define (launcher sym)
+                     (dynamic-require `(lib "launcher.ss" "launcher") sym))
+                   (let* ([exe (let-values
+                                   ([(dir name dir?)
+                                     (split-path
+                                      ((launcher 'mred-program-launcher-path)
+                                       (format "~a Handin" handin-name)))])
+                                 (path->string name))]
+                          [dir (get-directory
+                                (format "Choose a directory to create the ~s~a"
+                                        exe " executable in")
+                                #f)])
+                     (when (and dir (directory-exists? dir))
+                       (parameterize ([current-directory dir])
+                         (when (or (not (file-exists? exe))
+                                   (eq? 'ok
+                                        (message-box
+                                         "File Exists"
+                                         (format
+                                          "The ~s executable already exists, ~a"
+                                          exe "it will be overwritten")
+                                         this '(ok-cancel caution))))
+                           ((launcher 'make-mred-launcher)
+                            (list "-mvLe-" "handin-multi.ss" this-collection
+                                  "(multifile-handin)")
+                            (build-path dir exe))
+                           (message-box "Standalone Executable"
+                                        (format "~s created" exe)
+                                        this)
+                           (send this show #f))))))])))
 
        (define (report-error tag exn)
 	 (queue-callback
@@ -524,7 +577,7 @@
 
        (send new-user-box show #f)
        (send old-user-box show #f)
-       (send uninstall-box show #f)
+       (send un/install-box show #f)
        (let ([new? (equal? "" (remembered-user))])
          (send single active-child (if new? old-user-box new-user-box))
          (send single active-child (if new? new-user-box old-user-box))
@@ -605,7 +658,16 @@
             (new menu-item%
 		 (label (format "Manage ~a Handin Account..." handin-name))
 		 (parent file-menu)
-		 (callback (lambda (m e) (manage-handin-account))))
+		 (callback (lambda (m e) (manage-handin-account this))))
+            (when multifile?
+              (new menu-item%
+                   (label (format "Submit multiple ~a Files..." handin-name))
+                   (parent file-menu)
+                   (callback (lambda (m e)
+                               ((dynamic-require
+                                 (build-path (collection-path this-collection)
+                                             "handin-multi.ss")
+                                 'multifile-handin))))))
             (super file-menu:between-open-and-revert file-menu))
 
           (define/override (help-menu:after-about menu)
@@ -618,19 +680,24 @@
             (super help-menu:after-about menu))
 
 	  (define button
-	    (new button%
-		 [label (tool-button-label this)]
-		 [parent (get-button-panel)]
-		 [callback (lambda (button evt)
-			     (let ([content (editors->string
-					     (list (get-definitions-text)
-						   (get-interactions-text)))])
-			       (new handin-frame%
-                                    [parent this]
-                                    [content content]
-                                    [open-drscheme-window
-                                     drscheme:unit:open-drscheme-window])))]
-		 [style '(deleted)]))
+            (new button%
+              [label (tool-button-label this)]
+              [parent (get-button-panel)]
+              [style '(deleted)]
+              [callback
+               (lambda (button evt)
+                 (let ([content (editors->string
+                                 (list (get-definitions-text)
+                                       (get-interactions-text)))])
+                   (new handin-frame%
+                     [parent this]
+                     [content content]
+                     [on-retrieve
+                      (lambda (buf)
+                        (string->editor!
+                         buf
+                         (send (drscheme:unit:open-drscheme-window)
+                               get-editor)))])))]))
 
 	  (send (get-button-panel) change-children
 		(lambda (l) (cons button l)))))

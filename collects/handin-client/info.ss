@@ -17,4 +17,10 @@
   (define tool-icons (list (list "icon.png" collection)))
   (define tools '(("client-gui.ss")))
   (define tool-names (list name))
-  (define requires '(("mred") ("openssl"))))
+  (define requires '(("mred") ("openssl")))
+
+  ;; Multi-file submission section (see handin-server/doc.txt for details)
+  (define enable-multifile-handin #f) ; enable multi-file?
+  (define selection-mode 'extended) ; mode for file choose, usually 'extended
+  (define selection-default ; suffixes to auto-choose (a string or string-list)
+    '("*.scm;*.ss" "*.scm;*.ss;*.txt")))
