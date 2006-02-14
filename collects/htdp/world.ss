@@ -143,6 +143,9 @@
   ;; Number > 0
   [define the-delta 1000]
   
+  ;; Amount of space around the image in the world window:
+  (define INSET 5)
+
   ;; Number Number Number World -> true
   ;; create the visible world (canvas)
   (define (big-bang w h delta world)
@@ -163,19 +166,23 @@
                    ;; shut down the timer when the window is destroyed
                    (send the-time stop)
                    (inner (void) on-close)))
-               (label "DrScheme")))
-    (send 
-     (new (class editor-canvas%
-            (super-new)
-            (define/override (on-char e)
-              (on-char-proc (send e get-key-code))))
-          (parent the-frame) 
-          (editor txt)
-          (style '(no-hscroll no-vscroll))
-          ;; this 20 stuff is a hack, for now
-          (min-width (+ w 20))
-          (min-height (+ h 20)))
-     focus)
+               (label "DrScheme")
+	       (stretchable-width #f)
+	       (stretchable-height #f)
+	       (style '(no-resize-border))))
+    (let ([c (new (class editor-canvas%
+		    (super-new)
+		    (define/override (on-char e)
+		      (on-char-proc (send e get-key-code))))
+		  (parent the-frame) 
+		  (editor txt)
+		  (style '(no-hscroll no-vscroll))
+		  (horizontal-inset INSET)
+		  (vertical-inset INSET))])
+      (send c min-client-width (+ w INSET INSET))
+      (send c min-client-height (+ h INSET INSET))
+      (send c focus))
+    (send txt set-cursor (make-object cursor% 'arrow))
     (send txt hide-caret #t)
     (send the-frame show #t)
     #t)
