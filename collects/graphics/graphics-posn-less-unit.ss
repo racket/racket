@@ -317,7 +317,10 @@
 	(close-viewport (send canvas get-viewport))
         (send the-time stop)
 	(inner (void) on-close))
-      (super-instantiate ())))
+      (super-instantiate ()
+			 [stretchable-height #f]
+			 [stretchable-width #f]
+			 [style '(no-resize-border)])))
   
   (define repaint
     (lambda (viewport)
