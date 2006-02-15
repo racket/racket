@@ -136,7 +136,7 @@
              [callback (lambda (t e)
                          (when (eq? (send e get-event-type) 'text-field-enter)
                            (preferences:set last-auto-key (send t get-value))
-                           (do-auto-select #t)))]))
+                           (do-selections '() '())))]))
       (define directory-pane
         (new horizontal-pane% [parent files-pane]
              [stretchable-width #t] [stretchable-height #f]))
@@ -162,18 +162,24 @@
               [(bytes? x)  (bytes->string/utf-8 x)]
               [(symbol? x) (symbol->string x)]
               [else (error '->string "bad input: ~e" x)]))
-      (define (get-files)
+      (define (get-selected+unselected)
         (if (send files-list is-enabled?)
-          (map (lambda (i) (send files-list get-string i))
-               (send files-list get-selections))
-          '()))
+          (let ([selected (send files-list get-selections)])
+            (let loop ([i (sub1 (send files-list get-number))] [s '()] [u '()])
+              (if (<= 0 i)
+                (let ([f (send files-list get-string i)])
+                  (if (memq i selected)
+                    (loop (sub1 i) (cons f s) u)
+                    (loop (sub1 i) s (cons f u))))
+                (list (reverse! s) (reverse! u)))))
+          '(() ())))
       (define (set-dir dir)
         (let* ([dir (and dir (->string dir))]
                [dir (and dir (not (equal? "" dir)) (directory-exists? dir)
                          (->string (simplify-path (path->complete-path
                                                    (build-path dir 'same)))))]
-               [selected (if (equal? dir (->string (current-directory)))
-                           (get-files) '())])
+               [sel+unsel (if (equal? dir (->string (current-directory)))
+                            (get-selected+unselected) '(() ()))])
           (when dir
             (current-directory dir)
             (set! dir-selected? #t)
@@ -182,15 +188,12 @@
               (send (send t get-editor) select-all))
             (preferences:set last-dir-key dir)
             (send files-list clear)
-            (for-each (lambda (f)
-                        (when (file-exists? f)
-                          (send files-list append f)
-                          (when (member f selected)
-                            (send files-list select
-                                  (sub1 (send files-list get-number))))))
-                      (mergesort (map ->string (directory-list)) string<?))
+            (for-each (lambda (f) (send files-list append f))
+                      (mergesort (map ->string
+                                      (filter file-exists? (directory-list)))
+                                 string<?))
             (if (< 0 (send files-list get-number))
-              (begin (do-auto-select #f)
+              (begin (apply do-selections sel+unsel)
                      (send files-list enable #t)
                      (send files-list focus))
               (begin (send files-list append "no files")
@@ -203,37 +206,40 @@
       (define (refresh-dir)
         (when dir-selected? (set-dir (current-directory))))
       (define auto-glob+regexp '(#f #f))
-      (define (do-auto-select exactly?)
+      (define (globs->regexps glob)
+        (if (equal? (car auto-glob+regexp) glob)
+          (cdr auto-glob+regexp)
+          (let* ([regexps
+                  (map (lambda (glob)
+                         (let* ([re (regexp-replace* #rx"[.]" glob "\\\\.")]
+                                [re (regexp-replace* #rx"[?]" re ".")]
+                                [re (regexp-replace* #rx"[*]" re ".*")]
+                                [re (string-append "^" re "$")]
+                                [re (with-handlers ([void (lambda _ #f)])
+                                      (regexp re))])
+                           re))
+                       (regexp-split ";" glob))]
+                 [regexps (filter values regexps)]
+                 [regexps (if (pair? regexps)
+                            (lambda (file)
+                              (ormap (lambda (re) (regexp-match re file))
+                                     regexps))
+                            (lambda (_) #f))])
+            (set! auto-glob+regexp (cons glob regexps))
+            regexps)))
+      (define (do-selections selected unselected)
         (define glob (send auto-select get-value))
-        (define regexps
-          (if (equal? (car auto-glob+regexp) glob)
-            (cdr auto-glob+regexp)
-            (let* ([regexps
-                    (map (lambda (glob)
-                           (let* ([re (regexp-replace* #rx"[.]" glob "\\\\.")]
-                                  [re (regexp-replace* #rx"[?]" re ".")]
-                                  [re (regexp-replace* #rx"[*]" re ".*")]
-                                  [re (string-append "^" re "$")]
-                                  [re (with-handlers ([void (lambda _ #f)])
-                                        (regexp re))])
-                             re))
-                         (regexp-split ";" glob))]
-                   [regexps (filter values regexps)]
-                   [regexps (and (pair? regexps)
-                                 (lambda (file)
-                                   (ormap (lambda (re) (regexp-match re file))
-                                          regexps)))])
-              (set! auto-glob+regexp (cons glob regexps))
-              regexps)))
-        (when regexps
-          (let loop ([n (sub1 (send files-list get-number))])
-            (when (<= 0 n)
-              (let* ([file    (send files-list get-string n)]
-                     [select? (regexps file)])
-                (when (or select? exactly?) (send files-list select n select?))
-                (loop (sub1 n)))))
-          (send (if (send files-list is-enabled?) files-list choose-dir-button)
-                focus)))
+        (define regexps (globs->regexps glob))
+        (let loop ([n (sub1 (send files-list get-number))])
+          (when (<= 0 n)
+            (let ([file (send files-list get-string n)])
+              (send files-list select n
+                    (cond [(member file selected) #t]
+                          [(member file unselected) #f]
+                          [else (regexps file)]))
+              (loop (sub1 n)))))
+        (send (if (send files-list is-enabled?) files-list choose-dir-button)
+              focus))
 
       ;; ----------------------------------------------------------------------
       (define/override (on-drop-file path)
@@ -255,7 +261,7 @@
 
       ;; ----------------------------------------------------------------------
       (define (do-submit)
-        (let ([files (get-files)])
+        (let ([files (car (get-selected+unselected))])
           (if (pair? files)
             (let ([content (pack-files files)])
               (if content
