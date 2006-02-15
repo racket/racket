@@ -646,9 +646,17 @@
 # if defined(OS_X) || defined(XONX)
 
 #ifdef XONX 
-# define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-darwin"
+# ifdef __POWERPC__
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-darwin"
+# else
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-darwin"
+# endif
 #else
-# define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-macosx"
+# ifdef __POWERPC__
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-macosx"
+# else
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-macosx"
+# endif
 #endif
 
 # include "uconfig.h"
@@ -662,7 +670,9 @@
 #endif
 
 # define STACK_GROWS_DOWN
+#ifdef __POWERPC__
 # define SCHEME_BIG_ENDIAN
+#endif
 # define USE_MAP_ANON
 
 # define USE_CARBON_FP_PREDS
@@ -680,9 +690,9 @@
 # define MACOS_UNICODE_SUPPORT
 #endif
 
-# ifndef OS_X
+#ifndef OS_X
 #  define OS_X 1
-# endif
+#endif
 
 #ifdef __POWERPC__
 # define MZ_USE_JIT_PPC
@@ -696,7 +706,7 @@
 
   /************** Darwin x86  ****************/
 
-# if defined(__APPLE__) && defined(__MACH__) && defined(__i386__)
+# if defined(__APPLE__) && defined(__MACH__) && defined(__i386__) && !defined(OS_X)
 
 # define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-darwin"
 
@@ -711,9 +721,11 @@
 
 # define USE_TM_GMTOFF_FIELD
 
-# define FLAGS_ALREADY_SET
+# define USE_UNDERSCORE_SETJMP
 
 # define MZ_USE_JIT_I386
+
+# define FLAGS_ALREADY_SET
 
 # endif
 
