@@ -628,7 +628,7 @@ static int mz_is_closure(mz_jit_state *jitter, int i, int arity)
       Built-in prolog pushes 3 words in local frame already. */
 #  define mz_prolog(x) (SUBLir(3 * JIT_WORD_SIZE, JIT_SP))
 #  define mz_epilog(x) (ADDLir(3 * JIT_WORD_SIZE, JIT_SP), RET_())
-#  define LOCAL_FRAME_SIZE 5
+#  define LOCAL_FRAME_SIZE 3
 # else
 #  define mz_prolog(x) /* empty */
 #  define mz_epilog(x) RET_()
