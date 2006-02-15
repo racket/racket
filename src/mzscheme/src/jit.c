@@ -603,23 +603,39 @@ static int mz_is_closure(mz_jit_state *jitter, int i, int arity)
 # define JIT_LOCAL1 56
 # define JIT_LOCAL2 60
 # define JIT_LOCAL3 64
-# define mz_push_local_p(x, l) jit_stxi_p(l, 1, x)
-# define mz_pop_local_p(x, l) jit_ldxi_p(x, 1, l)
+# define mz_set_local_p(x, l) jit_stxi_p(l, 1, x)
+# define mz_get_local_p(x, l) jit_ldxi_p(x, 1, l)
 # define mz_patch_branch_at(a, v) (_jitl.long_jumps ? (void)jit_patch_movei(a-4, a-3, v) : (void)jit_patch_branch(a-1, v))
 # define mz_patch_ucbranch_at(a, v) (_jitl.long_jumps ? (void)jit_patch_movei(a-4, a-3, v) : (void)jit_patch_ucbranch(a-1, v))
 # define mz_patch_branch(a) mz_patch_branch_at(a, (_jit.x.pc))
 # define mz_patch_ucbranch(a) mz_patch_ucbranch_at(a, (_jit.x.pc))
-# define mz_prolog(x) (MFLRr(x), mz_push_local_p(x, JIT_LOCAL2))
-# define mz_epilog(x) (mz_pop_local_p(x, JIT_LOCAL2), jit_jmpr(x))
+# define mz_prolog(x) (MFLRr(x), mz_set_local_p(x, JIT_LOCAL2))
+# define mz_epilog(x) (mz_get_local_p(x, JIT_LOCAL2), jit_jmpr(x))
+# define mz_push_locals() /* empty */
+# define mz_pop_locals() /* empty */
 #else
-# define mz_push_local_p(x, l) jit_pushr_p(x)
-# define mz_pop_local_p(x, l) jit_popr_p(x)
+# define JIT_LOCAL1 -16
+# define JIT_LOCAL2 -20
+# define JIT_LOCAL3 JIT_LOCAL2
+# define mz_set_local_p(x, l) jit_stxi_p((l), JIT_FP, (x))
+# define mz_get_local_p(x, l) jit_ldxi_p((x), JIT_FP, (l))
 # define mz_patch_branch_at(a, v) jit_patch_at(a, v)
 # define mz_patch_ucbranch_at(a, v) jit_patch_at(a, v)
 # define mz_patch_branch(a) jit_patch(a)
 # define mz_patch_ucbranch(a) jit_patch(a)
-# define mz_prolog(x) /* empty */
-# define mz_epilog(x) RET_()
+# ifdef _CALL_DARWIN
+   /* Maintain 4-byte stack alignment.
+      Built-in prolog pushes 3 words in local frame already. */
+#  define mz_prolog(x) (SUBLir(3 * JIT_WORD_SIZE, JIT_SP))
+#  define mz_epilog(x) (ADDLir(3 * JIT_WORD_SIZE, JIT_SP), RET_())
+#  define LOCAL_FRAME_SIZE 5
+# else
+#  define mz_prolog(x) /* empty */
+#  define mz_epilog(x) RET_()
+#  define LOCAL_FRAME_SIZE 2
+# endif
+# define mz_push_locals() SUBLir((LOCAL_FRAME_SIZE << JIT_LOG_WORD_SIZE), JIT_SP)
+# define mz_pop_locals() ADDLir((LOCAL_FRAME_SIZE << JIT_LOG_WORD_SIZE), JIT_SP)
 #endif
 
 #ifdef MZ_USE_JIT_PPC
@@ -854,8 +870,9 @@ static int generate_direct_prim_tail_call(mz_jit_state *jitter, int num_rands)
   mz_finishr(JIT_V1);
   CHECK_LIMIT();
   /* Pop saved runstack val and return: */
-  mz_pop_local_p(JIT_NOT_RET, JIT_LOCAL1);
+  mz_get_local_p(JIT_NOT_RET, JIT_LOCAL1);
   jit_sti_p(&scheme_current_runstack, JIT_NOT_RET);
+  mz_pop_locals();
   jit_ret();
 
   return 1;
@@ -941,8 +958,9 @@ static int generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
   jit_pusharg_p(JIT_V1);
   (void)mz_finish(_scheme_tail_apply_from_native);
   /* Pop saved runstack val and return: */
-  mz_pop_local_p(JIT_NOT_RET, JIT_LOCAL1);
+  mz_get_local_p(JIT_NOT_RET, JIT_LOCAL1);
   jit_sti_p(&scheme_current_runstack, JIT_NOT_RET);
+  mz_pop_locals();
   jit_ret();
 
   __END_SHORT_JUMPS__(num_rands < 100);
@@ -1365,7 +1383,7 @@ static jit_insn *generate_arith_slow_path(mz_jit_state *jitter, Scheme_Object *r
   (void)jit_movi_p(JIT_R2, ((Scheme_Primitive_Proc *)rator)->prim_val);
   if (for_branch) {
     ref4 = jit_movi_p(JIT_V1, jit_forward());
-    mz_push_local_p(JIT_V1, JIT_LOCAL2);
+    mz_set_local_p(JIT_V1, JIT_LOCAL2);
   } else
     ref4 = NULL;
   ref = jit_movi_p(JIT_V1, jit_forward());
@@ -3215,7 +3233,8 @@ static int generate_function_getarg(mz_jit_state *jitter, int has_rest, int num_
   jit_insn *ref;
   int set_ref;
 
-  mz_push_local_p(JIT_RUNSTACK, JIT_LOCAL1);
+  mz_push_locals();
+  mz_set_local_p(JIT_RUNSTACK, JIT_LOCAL1);
 
   /* If rands == runstack and there are no rest args, set runstack
      base to runstack + rands (and don't copy rands), otherwise set
@@ -3283,7 +3302,8 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     CHECK_LIMIT();
     jit_movr_p(JIT_RUNSTACK, JIT_R2);
     jit_movr_p(JIT_RUNSTACK_BASE, JIT_R2);
-    mz_push_local_p(JIT_RUNSTACK, JIT_LOCAL1);
+    mz_push_locals();
+    mz_set_local_p(JIT_RUNSTACK, JIT_LOCAL1);
     jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
     if (!i) {
       jit_ldxi_p(JIT_V1, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->u.tail_code);
@@ -3302,18 +3322,20 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_getarg_p(JIT_R0, in); /* closure */
   in = jit_arg_p();
   jit_getarg_i(JIT_R2, in); /* argc */
+  mz_push_locals();
   jit_movi_i(JIT_R1, -1);
   jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
   jit_ldxi_i(JIT_V1, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->arity_code);
   jit_jmpr(JIT_V1);
   CHECK_LIMIT();
 
-  /* *** check_arity_code *** */
+  /* *** get_arity_code *** */
   /* Called as a function: */
   get_arity_code = (Native_Get_Arity_Proc)jit_get_ip().ptr;
   jit_prolog(1);
   in = jit_arg_p();
   jit_getarg_p(JIT_R0, in); /* closure */
+  mz_push_locals();
   jit_movi_i(JIT_R1, -1);
   jit_movi_i(JIT_R2, 0x0);
   jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
@@ -3358,7 +3380,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_ldxr_p(JIT_V1, JIT_RUNSTACK, JIT_R0);
 #ifdef MZ_PRECISE_GC
   /* Save global-array index before we lose it: */
-  mz_push_local_p(JIT_R0, JIT_LOCAL3);
+  mz_set_local_p(JIT_R0, JIT_LOCAL3);
 #endif
   /* Load syntax object: */
   jit_ldxr_p(JIT_R0, JIT_V1, JIT_R1);
@@ -3369,7 +3391,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_ldxr_p(JIT_R0, JIT_V1, JIT_R2); /* put element at p in R0 */
 #ifndef MZ_PRECISE_GC
   /* Save global array: */
-  mz_push_local_p(JIT_V1, JIT_LOCAL3);
+  mz_set_local_p(JIT_V1, JIT_LOCAL3);
 #endif
   /* Compute i in JIT_V1: */
   jit_subr_p(JIT_V1, JIT_R1, JIT_R2);
@@ -3392,19 +3414,14 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_retval(JIT_R0);
   /* Restore global array into JIT_R1, and put computed element at i+p+1: */
 #ifdef MZ_PRECISE_GC
-  mz_pop_local_p(JIT_R1, JIT_LOCAL3);
+  mz_get_local_p(JIT_R1, JIT_LOCAL3);
   jit_ldxr_p(JIT_R1, JIT_RUNSTACK, JIT_R0);
-  mz_push_local_p(JIT_R1, JIT_LOCAL3); /* push anything to balanec pop below */
 #else
-  mz_pop_local_p(JIT_R1, JIT_LOCAL3);
+  mz_get_local_p(JIT_R1, JIT_LOCAL3);
 #endif
   jit_stxr_p(JIT_V1, JIT_R1, JIT_R0);
   mz_patch_branch(ref);
   __END_SHORT_JUMPS__(1);
-#ifdef MZ_PRECISE_GC
-  /* Pop global-array index: */
-  mz_pop_local_p(JIT_R1, JIT_LOCAL3);
-#endif
   mz_epilog(JIT_V1);
 
   /* *** bad_{car,cdr}_code *** */
@@ -3478,7 +3495,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
 	jit_jmpr(JIT_V1);
       } else {
 	/* In for_branch mode, V1 is target for false, LOCAL2 is target for true */
-	mz_pop_local_p(JIT_R1, JIT_LOCAL2);
+	mz_get_local_p(JIT_R1, JIT_LOCAL2);
 	__START_SHORT_JUMPS__(1);
 	ref = jit_beqi_p(jit_forward(), JIT_R0, scheme_true);
 	jit_jmpr(JIT_V1);
@@ -3504,7 +3521,8 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_getarg_p(JIT_R2, in); /* argv */
   CHECK_LIMIT();
   jit_ldi_p(JIT_RUNSTACK, &MZ_RUNSTACK);
-  mz_push_local_p(JIT_RUNSTACK, JIT_LOCAL1);
+  mz_push_locals();
+  mz_set_local_p(JIT_RUNSTACK, JIT_LOCAL1);
   on_demand_jit_arity_code = jit_get_ip().ptr; /* <<<- arity variant starts here */
   jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(3));
   jit_str_p(JIT_RUNSTACK, JIT_R0);
@@ -3514,7 +3532,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R1);
   jit_stxi_p(WORDS_TO_BYTES(2), JIT_RUNSTACK, JIT_R2);
   JIT_UPDATE_THREAD_RSPTR();
-  (void)jit_calli(on_demand);
+  (void)jit_calli(on_demand); /* DARWIN: stack needs to be 16-byte aligned */
   CHECK_LIMIT();
   /* Restore registers and runstack, and jump to arity checking
      of newly-created code when argv == runstack (i.e., a tail call): */
@@ -3560,7 +3578,8 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_ldi_i(JIT_NOT_RET, &scheme_current_cont_mark_pos);
   jit_addi_i(JIT_NOT_RET, JIT_NOT_RET, 2);
   jit_sti_i(&scheme_current_cont_mark_pos, JIT_NOT_RET);
-  mz_pop_local_p(JIT_NOT_RET, JIT_LOCAL1);
+  mz_get_local_p(JIT_NOT_RET, JIT_LOCAL1);
+  mz_pop_locals();
   jit_ret();
   CHECK_LIMIT();
 
@@ -3836,9 +3855,10 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
 
   /* r == 2 => tail call performed */
   if (r != 2) {
-    mz_pop_local_p(JIT_RUNSTACK, JIT_LOCAL1);
+    mz_get_local_p(JIT_RUNSTACK, JIT_LOCAL1);
     jit_sti_p(&MZ_RUNSTACK, JIT_RUNSTACK);
     jit_movr_p(JIT_RET, JIT_R0);
+    mz_pop_locals();
     jit_ret();
   }
 
@@ -4014,9 +4034,11 @@ static int generate_simple_arity_check(mz_jit_state *jitter, int num_params, int
     ref2 = jit_blti_i(jit_forward(), JIT_R2, num_params);
   CHECK_LIMIT();
   jit_movi_i(JIT_RET, 1);
+  mz_pop_locals();
   jit_ret();
   mz_patch_branch(ref2);
   jit_movi_i(JIT_RET, 0);
+  mz_pop_locals();
   jit_ret();
   CHECK_LIMIT();
 
@@ -4031,9 +4053,11 @@ static int generate_simple_arity_check(mz_jit_state *jitter, int num_params, int
     mz_prepare(1);
     jit_pusharg_p(JIT_R0);
     (void)mz_finish(scheme_box);
+    mz_pop_locals();
     jit_ret();
   } else {
     jit_movr_p(JIT_RET, JIT_R0);
+    mz_pop_locals();
     jit_ret();
   }
 
@@ -4403,10 +4427,10 @@ Scheme_Object *scheme_native_stack_trace(void)
       q = ((void **)p)[JIT_LOCAL2 >> JIT_LOG_WORD_SIZE];
 #endif
 #ifdef MZ_USE_JIT_I386
-      /* 2nd push onto local stack of return-address proc
+      /* Push after local stack of return-address proc
 	 has the next return address */
       q = *(void **)p;
-      q = ((void **)q)[-5];
+      q = ((void **)q)[-(3 + LOCAL_FRAME_SIZE + 1)];
 #endif
       name = find_symbol((unsigned long)q);
     }

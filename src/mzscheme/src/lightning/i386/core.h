@@ -264,7 +264,13 @@ struct jit_local_state {
 
 /* The += allows for stack pollution */
 
-#define jit_prepare_i(ni)	(_jitl.argssize += (ni))
+#ifdef _CALL_DARWIN
+  /* Stack must stay 16-byte aligned: */
+# define jit_prepare_i(ni)	(((ni & 0x3) ? SUBLir(4 * ((((ni) + 3) & ~(0x3)) - (ni)), JIT_SP) : (void)0), _jitl.argssize += (((ni) + 3) & ~(0x3)))
+#else
+# define jit_prepare_i(ni)	(_jitl.argssize += (ni))
+#endif
+
 #define jit_prepare_f(nf)	(_jitl.argssize += (nf))
 #define jit_prepare_d(nd)	(_jitl.argssize += 2 * (nd))
 #define jit_pusharg_i(rs)	PUSHLr(rs)
