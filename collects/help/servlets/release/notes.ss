@@ -1,9 +1,9 @@
 (module notes mzscheme
-  (require (lib "servlet.ss" "web-server"))
-  (require (lib "list.ss"))
-  
-  (require "../private/util.ss")
-  (require "../private/headelts.ss")
+  (require (lib "servlet.ss" "web-server")
+           (lib "list.ss")
+           (lib "uri-codec.ss" "net")
+           "../private/util.ss"
+           "../private/headelts.ss")
   
   (define (make-entry s)
     (let* ([label (car s)]
@@ -12,7 +12,7 @@
            [file (build-path (collection-path "mzlib") 'up 'up "notes" dir filename)])
       (if (file-exists? file)
           `(LI (A ((HREF ,(format "/servlets/doc-anchor.ss?file=~a&name=~a&caption=~a"
-                                  (hexify-string (path->string file))
+                                  (uri-encode (path->string file))
                                   filename
                                   label)))
                   ,label))
