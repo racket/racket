@@ -106,13 +106,10 @@ MzScheme allocates the following kinds of memory objects:
    size operation) for all xtagged objects.
 
  * Interior Array - Like array objects, but pointers to the object can
-   reference its interior, rather than just the start of the object.
-   Such pointers will always be longword-aligned. MzScheme allocates
-   interior objects infrequently, and only as relatively large
-   objects. Furthermore, if GC_INTERIORABLES_NEVER_MOVE is #defined as
-   1 in gc2.h, MzScheme will assume that such objects never move
-   (useful for skipping certain stack variables that do not need to be
-   updated).
+   reference its interior, rather than just the start of the object,
+   and the object never moves. Such pointers will always be
+   longword-aligned. MzScheme allocates interior objects infrequently,
+   and only as relatively large objects.
 
  * Weak Box - The object has the following initial structure:
 

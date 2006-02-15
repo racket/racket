@@ -1565,6 +1565,9 @@ typedef struct Scheme_Native_Closure_Data {
     struct Scheme_Closure_Data *orig_code; /* For not-yet-JITted non-case-lambda */
     Scheme_Object *name;
   } u2;
+#ifdef MZ_PRECISE_GC
+  void *retain_start; /* up to arity_code */
+#endif
 } Scheme_Native_Closure_Data;
 
 #define SCHEME_NATIVE_CLOSURE_DATA_FLAGS(obj) MZ_OPT_HASH_KEY(&(obj)->iso)

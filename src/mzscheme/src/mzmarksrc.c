@@ -155,6 +155,7 @@ unclosed_proc {
   gcMARK(d->closure_map);
 #ifdef MZ_USE_JIT
   gcMARK(d->native_code);
+  gcMARK(d->context);
 #endif
 
  size:
