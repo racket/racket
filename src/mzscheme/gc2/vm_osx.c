@@ -25,12 +25,26 @@
 #include <unistd.h>
 #include <mach/mach.h>
 #include <mach/mach_error.h>
-#include <architecture/ppc/cframe.h>
+#ifdef __POWERPC__
+# include <architecture/ppc/cframe.h>
+#else
+# include <pthread.h>
+#endif
 
 #ifndef TEST
 # define TEST 1
 # include "my_qsort.c"
 void designate_modified(void *p);
+#endif
+
+#ifdef __POWERPC__
+# define ARCH_thread_state_t ppc_thread_state_t
+# define ARCH_THREAD_STATE PPC_THREAD_STATE
+# define ARCH_THREAD_STATE_COUNT PPC_THREAD_STATE_COUNT
+#else
+# define ARCH_thread_state_t i386_thread_state_t
+# define ARCH_THREAD_STATE i386_THREAD_STATE
+# define ARCH_THREAD_STATE_COUNT i386_THREAD_STATE_COUNT
 #endif
 
 #ifndef GCPRINT
@@ -71,8 +85,8 @@ extern boolean_t exc_server(mach_msg_header_t *in, mach_msg_header_t *out);
 
 /* these are the globals everyone needs */
 #define page_size vm_page_size
-static mach_port_t task_self = NULL;
-static mach_port_t exc_port = NULL;
+static mach_port_t task_self = 0;
+static mach_port_t exc_port = 0;
 
 /* the VM subsystem as defined by the GC files */
 static void *malloc_pages(size_t len, size_t alignment)
@@ -250,10 +264,8 @@ void exception_thread(void)
    exception handling thread, etc) */
 static void macosx_init_exception_handler() 
 {
-  mach_port_t thread_self, exc_port_s, exc_thread;
-  ppc_thread_state_t *exc_thread_state;
+  mach_port_t thread_self, exc_port_s;
   mach_msg_type_name_t type;
-  void *subthread_stack;
   kern_return_t retval;
 
   /* get ids for ourself */
@@ -279,35 +291,48 @@ static void macosx_init_exception_handler()
   /* set the exception ports for this thread to the above */
   retval = thread_set_exception_ports(thread_self, EXC_MASK_BAD_ACCESS, 
 				      exc_port_s, EXCEPTION_DEFAULT, 
-				      PPC_THREAD_STATE);
+				      ARCH_THREAD_STATE);
   if(retval != KERN_SUCCESS) {
     GCPRINT(GCOUTF, "Couldn't set exception ports: %s\n", mach_error_string(retval));
     abort();
   }
 
-  /* set up the subthread */
-  retval = thread_create(task_self, &exc_thread);
-  if(retval != KERN_SUCCESS) {
-    GCPRINT(GCOUTF, "Couldn't create exception thread: %s\n", mach_error_string(retval));
-    abort();
-  }
-  subthread_stack = (void*)malloc(page_size);
-  subthread_stack += (page_size - C_ARGSAVE_LEN - C_RED_ZONE);
-  exc_thread_state = (ppc_thread_state_t*)malloc(sizeof(ppc_thread_state_t));
-  exc_thread_state->srr0 = (unsigned int)exception_thread;
-  exc_thread_state->r1 = (unsigned int)subthread_stack;
-  retval = thread_set_state(exc_thread, PPC_THREAD_STATE,
-			    (thread_state_t)exc_thread_state,
-			    PPC_THREAD_STATE_COUNT);
-  if(retval != KERN_SUCCESS) {
-    GCPRINT(GCOUTF, "Couldn't set subthread state: %s\n", mach_error_string(retval));
-    abort();
-  }
-  retval = thread_resume(exc_thread);
-  if(retval != KERN_SUCCESS) {
-    GCPRINT(GCOUTF, "Couldn't resume subthread: %s\n", mach_error_string(retval));
-    abort();
-  }
+#ifdef __POWERPC__
+ {
+   /* set up the subthread */
+   mach_port_t exc_thread;
+   ARCH_thread_state_t *exc_thread_state;
+   void *subthread_stack;
+
+   retval = thread_create(task_self, &exc_thread);
+   if(retval != KERN_SUCCESS) {
+     GCPRINT(GCOUTF, "Couldn't create exception thread: %s\n", mach_error_string(retval));
+     abort();
+   }
+   subthread_stack = (void*)malloc(page_size);
+   subthread_stack += (page_size - C_ARGSAVE_LEN - C_RED_ZONE);
+   exc_thread_state = (ARCH_thread_state_t*)malloc(sizeof(ARCH_thread_state_t));
+   exc_thread_state->srr0 = (unsigned int)exception_thread;
+   exc_thread_state->r1 = (unsigned int)subthread_stack;
+   retval = thread_set_state(exc_thread, ARCH_THREAD_STATE,
+			     (thread_state_t)exc_thread_state,
+			     ARCH_THREAD_STATE_COUNT);
+   if(retval != KERN_SUCCESS) {
+     GCPRINT(GCOUTF, "Couldn't set subthread state: %s\n", mach_error_string(retval));
+     abort();
+   }
+   retval = thread_resume(exc_thread);
+   if(retval != KERN_SUCCESS) {
+     GCPRINT(GCOUTF, "Couldn't resume subthread: %s\n", mach_error_string(retval));
+     abort();
+   }
+ }
+#else
+ {
+   pthread_t th;
+   pthread_create(&th, NULL, (void *(*)(void *))exception_thread, NULL);
+ }
+#endif
 }
 
 #if TEST
