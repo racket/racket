@@ -284,8 +284,8 @@ FOREIGN_OBJS = ../../foreign/gcc/libffi/src/*.@LTO@ ../../foreign/gcc/libffi/src
 FOREIGN_LIB = ../../foreign/gcc/libffi/libffi@FOREIGN_CONVENIENCE@.la
 FOREIGN_OBJSLIB = @FOREIGN_OBJSLIB@
 
-EXTRA_OBJS_T = ../src/gmp.@LTO@ $(FOREIGN_LIB)
-EXTRA_OBJS_L = ../src/gmp.@LTO@ $(FOREIGN_OBJSLIB)
+EXTRA_OBJS_T = ../src/gmp.@LTO@ @FOREIGN_LIB_IF_USED@
+EXTRA_OBJS_L = ../src/gmp.@LTO@ @FOREIGN_OBJSLIB_IF_USED@
 
 ../libmzscheme3m.@LIBSFX@: $(OBJS) $(EXTRA_OBJS_T)
 	$(AR) $(ARFLAGS) ../libmzscheme3m.@LIBSFX@ $(OBJS) $(EXTRA_OBJS_L)
