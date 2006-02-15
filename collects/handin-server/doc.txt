@@ -772,7 +772,8 @@ Keywords for configuring `check:':
 
 * :extra-lines -- a list of lines to add after the student lines, all
   with a ";;> " or :markup-prefix too.  Defaults to a single line:
-  "Maximum points for this assignment: <+100>".
+  "Maximum points for this assignment: <+100>".  (Can use
+  "{submission}" for the submission directory.)
 
 * :user-error-message -- a string that is used to report an error that
   occurred during evaluation of the submitted code (not during
@@ -869,7 +870,7 @@ value from the submission code.
   information (see above) and then substitute field names in {braces}
   by the corresponding value.  An error will be signaled if a field
   name is missing.  Also, "{username}" will always be replaced by the
-  username.
+  username and "{submission}" by the current submission directory.
 
   This is used to process the `:student-line' value in the checker,
   but it is provided for additional uses.  See the above sample code

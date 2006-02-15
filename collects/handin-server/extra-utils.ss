@@ -32,6 +32,18 @@
   (map car (get-preference 'extra-fields (lambda () #f) #f
                            (build-path server-dir "config.ss"))))
 
+(provide submission-dir)
+(define submission-dir-re
+  (regexp (string-append "[/\\]active[/\\]([^/\\]+)[/\\](?:[^/\\]+)"
+                         "[/\\](?:SUCCESS-[0-9]+|ATTEMPT)[/\\]?$")))
+(define (submission-dir)
+  (let ([m (regexp-match submission-dir-re
+                         (path->string (current-directory)))])
+    (if m
+      (cadr m)
+      (error* "internal error: unexpected directory name: ~a"
+              (current-directory)))))
+
 (provide user-data)
 (define (user-data user)
   ;; the student always assumed to exist
@@ -40,7 +52,8 @@
 
 (provide user-substs)
 (define (user-substs user str)
-  (subst str `(("username" . ,user) ,@(map cons fields (user-data user)))))
+  (subst str `(("username" . ,user) ("submission" . ,submission-dir)
+               ,@(map cons fields (user-data user)))))
 
 (define (subst str substs)
   (if (list? str)
@@ -50,7 +63,10 @@
       (if m
         (subst (string-append
                 (substring str 0 (caar m))
-                (cond [(assoc s substs) => cdr]
+                (cond [(assoc s substs)
+                       => (lambda (x)
+                            (let ([s (cdr x)])
+                              (if (procedure? s) (s) s)))]
                       [else (error 'subst "unknown substitution: ~s" s)])
                 (substring str (cdar m)))
                substs)
@@ -310,7 +326,7 @@
     ;;           files)
     (let* ([pfx-len  (string-length markup-prefix)]
            [line-len (- maxwidth pfx-len)]
-           [=s       (lambda (n) (make-string n #\=))]
+           [=s       (lambda (n) (if (<= 0 n) (make-string n #\=) ""))]
            [===      (format "~a~a\n" markup-prefix (=s line-len))])
       (define (sep name)
         (newline)
@@ -470,6 +486,9 @@
                  (define text-file (format "grading/text.~a" suffix))
                  (define (prefix-line str)
                    (printf "~a~a\n" markup-prefix str))
+                 (define generic-substs `(("submission" . ,submission-dir)))
+                 (define (prefix-line/substs str)
+                   (prefix-line (subst str generic-substs)))
                  (define (write-text)
                    (current-run-status "creating text file")
                    (with-output-to-file text-file
@@ -478,8 +497,8 @@
                                    (prefix-line
                                     (user-substs user student-line)))
                                  users)
-                       (for-each prefix-line extra-lines)
-                       (for-each prefix-line
+                       (for-each prefix-line/substs extra-lines)
+                       (for-each prefix-line/substs
                                  (or (thread-cell-ref added-lines) '()))
                        (display submission-text))
                      'truncate))
