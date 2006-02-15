@@ -187,11 +187,10 @@
               (send t set-value dir)
               (send (send t get-editor) select-all))
             (preferences:set last-dir-key dir)
-            (send files-list clear)
-            (for-each (lambda (f) (send files-list append f))
-                      (mergesort (map ->string
-                                      (filter file-exists? (directory-list)))
-                                 string<?))
+            (send files-list set
+                  (mergesort (map ->string
+                                  (filter file-exists? (directory-list)))
+                             string<?))
             (if (< 0 (send files-list get-number))
               (begin (apply do-selections sel+unsel)
                      (send files-list enable #t)
