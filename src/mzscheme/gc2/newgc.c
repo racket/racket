@@ -90,10 +90,6 @@
 /* the maximum number of pages to compact at any one time */
 #define MAX_PAGES_TO_COMPACT 25
 
-#if defined(__APPLE__)&&defined(__ppc__)&&defined(__MACH__) && !defined(OS_X)
-# define OS_X
-#endif
-
 /* These are computed from the previous settings. You shouldn't mess with 
    them */
 #define PTR(x) ((void*)(x))
@@ -167,7 +163,7 @@ inline static void free_used_pages(size_t len)
 # define MALLOCATOR_DEFINED
 #endif
 
-#ifdef OS_X
+#if defined(__APPLE__) && defined(__MACH__)
 # define TEST 0
 void designate_modified(void *p);
 # include "vm_osx.c"

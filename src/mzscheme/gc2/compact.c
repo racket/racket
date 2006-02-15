@@ -11,10 +11,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#if defined(__APPLE__) && defined(__ppc__) && defined(__MACH__) && !defined(OS_X)
-# define OS_X
-#endif
-
 /**************** Configuration ****************/
 
 #define GROW_FACTOR 1.5
