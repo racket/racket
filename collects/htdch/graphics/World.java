@@ -17,8 +17,6 @@ public abstract class World {
   //Produces a World that will animate with a clock tick of rate
   public abstract boolean animate( int width, int height, int rate );
 
-  public abstract World transition( World w);
-  
   public abstract Image draw();
 
   public abstract Image erase();

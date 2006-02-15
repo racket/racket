@@ -11,14 +11,6 @@ public abstract class GameWorld extends World {
     super(new View());
   }
 
-  public World transition( World last ){
-    if (!(last instanceof GameWorld))
-       throw new RuntimeException("Cannot transition from a non-GameWorld to a GameWorld");
-    this.display = last.display;
-    this.timer = ((GameWorld) last).timer;
-    return this;
-  }
-
   public World endOfWorld() {
      timer.stop();
      return this;
@@ -26,29 +18,31 @@ public abstract class GameWorld extends World {
 
    World nextWorld = this;
 
+  void oneStepPrivate(World oldWorld, World newWorld) {
+     ((GameWorld) newWorld).timer = ((GameWorld) oldWorld).timer;
+     newWorld.display = oldWorld.display;
+     display.allowImage(false);
+     oldWorld.erase();
+     newWorld.draw();
+     display.allowImage(true);
+  }
+
   //Produces a World that will animate with a clock tick of rate
   public final boolean animate( int width, int height, int rate ) {
 
    class TimerCallBack {
-      TimerCallBack() { }
       public void callBack() {
          World old = GameWorld.this.nextWorld;
          GameWorld.this.nextWorld = GameWorld.this.nextWorld.onTick();
-         GameWorld.this.display.allowImage(false);
-         old.erase();
-         GameWorld.this.nextWorld.draw();
-         GameWorld.this.display.allowImage(true);
+         GameWorld.this.oneStepPrivate(old, GameWorld.this.nextWorld);
       }
    }
 
    class KeyCallBack { 
-     public void callBack(dynamic key) {
+     public void callBack(String key) {
         World old = GameWorld.this.nextWorld;
         GameWorld.this.nextWorld = GameWorld.this.nextWorld.onKey(key);
-        GameWorld.this.display.allowImage(false);
-        old.erase();
-        GameWorld.this.nextWorld.draw();
-        GameWorld.this.display.allowImage(true);
+        GameWorld.this.oneStepPrivate(old,GameWorld.this.nextWorld);
      }
    }
 

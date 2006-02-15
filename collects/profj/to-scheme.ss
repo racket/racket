@@ -252,8 +252,8 @@
           (cur-cycle-length 0)
           (current-cycle null))
       
-      (letrec ((already-in-cycle? (lambda (n) (eq? 'in-cycle (hash-table-get marks n))))
-               
+      (letrec ((already-in-cycle? 
+                (lambda (n) (eq? 'in-a-cycle (hash-table-get marks n))))
                (in-current-cycle?
                 (lambda (n) (hash-table-get current-cycle n (lambda () #f))))
                (current-cycle-memq
@@ -271,7 +271,8 @@
                   (unless (already-in-cycle? node)
                     ;(printf "componentize ~a ~a ~a~n" node successors member?)
                     (let ((added? #f)
-                          (cur-length cur-cycle-length))
+                          (cur-length cur-cycle-length)
+                          (old-mark (hash-table-get marks node)))
                       (when (and (not member?) (current-cycle-memq successors))
                         (set! added? #t)
                         (add-to-current-cycle node))
@@ -284,13 +285,15 @@
                        successors)
                       ;(printf "finished successors for ~a~n" node)
                       (if (or added? (= cur-length cur-cycle-length))
-                          (hash-table-put! marks node 'no-info)
+                          (hash-table-put! marks node old-mark)
                           (componentize node successors #f)))))))
         
         (for-each-node graph (lambda (n) (hash-table-put! marks n 'no-info)))
         
         (for-each-node graph
                        (lambda (node)
+                         ;(hash-table-for-each marks (lambda (key val) (printf "~a -> ~a~n" (eq-hash-code key) val)))
+                         ;(printf "Working on ~a~n~n" (eq-hash-code node)) 
                          (when (eq? (hash-table-get marks node) 'no-info)
                            (set! current-cycle (make-hash-table))
                            (add-to-current-cycle node)

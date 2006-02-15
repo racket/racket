@@ -6,7 +6,7 @@
            (lib "imageeq.ss" "lang" "private" ))
   
   (provide to-symbol new-object call-back-canvas% overlay-x-y 
-           inner->function image-eq? empty-list printer)
+           inner->function image-eq? empty-list printer cons-l style-list)
   
   (define (inner->function num-args inner)
     (cond
@@ -21,6 +21,10 @@
     (printf "~a~n" s))
 
   (define to-symbol string->symbol)
+  
+  (define style-list `(list 'no-autoclear))
+  
+  (define cons-l cons)
   
   (define (new-object class . args)
     ((current-eval) #`(make-object #,class #,@args)))

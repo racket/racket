@@ -455,4 +455,83 @@
    '(1.0 1.0 (void) 0.0 1.0 1)
    "Double-int conversions")
   
+    (interact-test
+   "import draw.*;
+class BlockWorld extends World {
+ int WIDTH = 100;
+ int HEIGHT = 100;
+ Color BACKGROUND = new Red();
+ DrpBlock block;
+ BlockWorld(DrpBlock block) {  
+  this. block = block;
+ }
+ World onTick() { 
+  return new BlockWorld(this. block.drop());
+ }
+
+ World onKeyEvent(String ke) { 
+  return this;
+ }
+ boolean erase() {
+  return this. drawBackground();
+ }
+ boolean draw() {
+  return this. block.draw(this); 
+ }
+ boolean drawBackground() {
+  return this. theCanvas.drawRect(new Posn(0,0),this. WIDTH,this. HEIGHT,this. BACKGROUND);
+ }
+}
+
+class Examples extends BlockWorld { 
+ Examples() {
+  super(new DrpBlock(10,0));
+ }
+}
+class DrpBlock {
+ int down;
+ int right;
+ int HEIGHT = 10; 
+ int WIDTH = 10; 
+ int deltaY = 5;
+ int deltaX = 3;
+
+ DrpBlock(int down, int right) {
+  this. down = down;
+  this. right = right;
+ }
+ DrpBlock drop() {
+  return new DrpBlock(this. down + this. deltaY,this. right);
+ }
+ boolean draw(World w) {
+  return w.theCanvas.drawRect(new Posn(this.right,this.down),this.HEIGHT,this.WIDTH,new Red());
+ }
+ boolean erase(BlockWorld w) {
+  return w.theCanvas.drawRect(new Posn(this.right,this.down),this.HEIGHT,this.WIDTH,w.BACKGROUND);
+ }
+ boolean hasLanded(BlockWorld w) {
+  if (this. down + this. HEIGHT >= w.HEIGHT)
+   return true;
+  else 
+   return false;
+ }
+ DrpBlock steer(String ke) {
+  if (ke.equals(\"left\"))
+   return new DrpBlock(this. down,this. right - this. deltaX);
+  else if (ke.equals(\"right\"))
+   return new DrpBlock(this. down,this. right + this. deltaX);
+  else 
+   return this; 
+ }
+ boolean toStop(BlockWorld w, int down) {
+  if (this. down + this. HEIGHT >= down)
+   return true;
+  else 
+   return false;
+ }
+}"
+   'intermediate
+   '("Examples a = new Examples();") '((void)) 
+   "Cycle: used to cause multiple declarations of a class")
+  
   (report-test-results))

@@ -270,6 +270,7 @@
   
   ;order-cus (list compilation-unit) type-records -> (list compilation-unit)
   (define (order-cus cus type-recs)
+    ;(printf "~a~n" cus)
     (let-values (((work-list ordered) (split-cu cus cus null null type-recs)))
       ;(printf "order-cus: ~a ~a ~a ~n" (length cus) (length work-list) (length ordered)) 
       (unless (null? work-list)
