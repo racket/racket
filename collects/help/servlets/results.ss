@@ -12,6 +12,7 @@ is stored in a module top-level and that's namespace-specific.
            (lib "list.ss")
            (lib "string.ss")
            (lib "servlet.ss" "web-server")
+           (lib "uri-codec.ss" "net")
            "../private/internal-hp.ss"
            "../private/path.ss"
            "../private/docpos.ss"
@@ -149,8 +150,8 @@ is stored in a module top-level and that's namespace-specific.
              (let ([maybe-coll (maybe-extract-coll last-header)])
                (format 
                 no-anchor-format
-                (hexify-string anchored-path)
-                (hexify-string (make-caption maybe-coll))
+                (uri-encode anchored-path)
+                (uri-encode (make-caption maybe-coll))
                 maybe-coll))]
             [else ; manual, so have absolute path
              (get-help-url path page-label)])))
@@ -177,10 +178,10 @@ is stored in a module top-level and that's namespace-specific.
       ; path is absolute pathname
       (define (make-text-href page-label path)
         (let* ([maybe-coll (maybe-extract-coll last-header)]
-               [hex-path (hexify-string (path->string (normalize-path path)))]
+               [hex-path (uri-encode (path->string (normalize-path path)))]
                [hex-caption (if (eq? maybe-coll last-header)
                                 hex-path
-                                (hexify-string (make-caption maybe-coll)))]
+                                (uri-encode (make-caption maybe-coll)))]
                [offset (or (and (number? page-label)
                                 page-label)
                            0)])
@@ -188,7 +189,7 @@ is stored in a module top-level and that's namespace-specific.
            with-anchor-format
            hex-path
            hex-caption
-           (hexify-string maybe-coll)
+           (uri-encode maybe-coll)
            offset)))
       
       (define (html-entry? path)

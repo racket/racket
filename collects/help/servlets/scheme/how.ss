@@ -4,6 +4,7 @@
            "../../private/manuals.ss"
            "../private/headelts.ss"
            "../../private/installed-components.ss"
+           (lib "uri-codec.ss" "net")
            (lib "servlet.ss" "web-server"))
   
   (provide interface-version timeout start)
@@ -95,7 +96,7 @@
          (A ((NAME "setup") (VALUE "Setup PLT program")))
          (A ((NAME "setup2") (VALUE "setup-plt program")))
          (A ((HREF ,(format "/servlets/doc-anchor.ss?file=~a&name=~a&caption=~a"
-                            (hexify-string
+                            (uri-encode
                              (path->string
                               (simplify-path
                                (build-path (collection-path "mzlib") 'up "setup" "doc.txt"))))

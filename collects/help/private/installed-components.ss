@@ -2,7 +2,8 @@
   (require (lib "list.ss")
            (lib "xml.ss" "xml")
            (lib "getinfo.ss" "setup")
-	   (lib "util.ss" "help" "servlets" "private"))
+	   (lib "uri-codec.ss" "net")
+           (lib "util.ss" "help" "servlets" "private"))
 
   (provide help-desk:installed-components)
   
@@ -95,7 +96,7 @@
 		       " See "
 		       `(A ((HREF ,(format 
 				    "/servlets/doc-anchor.ss?file=~a&caption=Documentation for the ~a collection&name=~a" 
-				    (hexify-string (path->string fname))
+				    (uri-encode (path->string fname))
 			            collection
 			            collection)))
                          "the documentation")

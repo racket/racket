@@ -6,6 +6,7 @@
 	   (lib "xml.ss" "xml")
            (lib "contract.ss")
            (lib "getinfo.ss" "setup")
+           (lib "uri-codec.ss" "net")
            "colldocs.ss"
            "docpos.ss"
            "path.ss"
@@ -272,7 +273,7 @@
            (lambda (collection-doc-file name)
              (format "<LI> <A HREF=\"/servlets/doc-anchor.ss?file=~a&name=~a&caption=Documentation for the ~a collection\">~a collection</A>"
                      ; escape colons and other junk
-                     (hexify-string
+                     (uri-encode
                       (path->string
                        (build-path (car collection-doc-file) 
                                    (cadr collection-doc-file))))

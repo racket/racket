@@ -2,11 +2,11 @@
   (require (lib "file.ss")
 	   (lib "list.ss")
 	   (lib "xml.ss" "xml")
+           (lib "uri-codec.ss" "net")
            (lib "string-constant.ss" "string-constants")
            (lib "contract.ss"))
 
   (provide/contract
-   [hexify-string (string? . -> . string?)]
    [fold-into-web-path ((listof string?) . -> . string?)])
   
   (provide get-pref/default
@@ -76,20 +76,6 @@
             (with-handlers ([exn:fail:filesystem? (lambda (x) #f)])
               (collection-path "repos-time-stamp"))))))
   
-  (define hexifiable '(#\: #\; #\? #\& #\% #\# #\< #\> #\+))
-  
-  ;; hexify-string : string -> string
-  ;; exploits good properties of utf-8 encoding
-  ;; that if can-keep? returns true that the byte is
-  ;; the character index
-  (define (hexify-string s)
-    (apply string-append 
-	   (map (λ (b) 
-		  (cond
-                    [(can-keep? b) (string (integer->char b))]
-                    [else (format "%~X" b)]))
-		(bytes->list (string->bytes/utf-8 s)))))
-
   ;; can-keep? : byte -> boolean
   ;; source rfc 2396
   (define (can-keep? i)
@@ -107,7 +93,7 @@
 	  `(A ((HREF 
 		,(format 
 		  "/servlets/doc-anchor.ss?file=~a&name=~a&caption=Documentation for the ~a collection"
-		  (hexify-string (path->string coll-file))
+		  (uri-encode (path->string coll-file))
 		  coll
 		  coll)))
 	      ,txt)

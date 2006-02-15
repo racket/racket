@@ -2,6 +2,7 @@
 
   (require "../servlets/private/util.ss"
            "internal-hp.ss"
+           (lib "uri-codec.ss" "net")
            (lib "contract.ss"))
   
   (provide home-page-url)
@@ -66,8 +67,8 @@
             internal-host
             internal-port
             coll
-            (hexify-string name)
-            (hexify-string link)))
+            (uri-encode name)
+            (uri-encode link)))
   
   (define (make-relative-results-url search-string search-type match-type lucky? manuals doc.txt? lang-name)
     (string-append
@@ -88,14 +89,14 @@
                            "lucky=~a&"
                            "manuals=~a&"
                            "doctxt=~a")
-            (hexify-string search-string)
+            (uri-encode search-string)
             search-type
             match-type
             (if lucky? "true" "false")
-            (hexify-string (format "~s" (map path->bytes manuals)))
+            (uri-encode (format "~s" (map path->bytes manuals)))
             (if doc.txt? "true" "false"))])
       (if language-name
-          (string-append start (format "&langname=~a" (hexify-string language-name)))
+          (string-append start (format "&langname=~a" (uri-encode language-name)))
           start)))
   
   ; sym, string assoc list
