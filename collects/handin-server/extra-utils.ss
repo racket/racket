@@ -48,11 +48,11 @@
     (let* ([m (regexp-match-positions #rx"{([^{}]+)}" str)]
            [s (and m (substring str (caadr m) (cdadr m)))])
       (if m
-        (subst (string-append (substring str 0 (caar m))
-                              (cond [(assoc s substs) => cdr]
-                                    [else (error 'subst
-                                                 "unknown substitution: ~s" s)])
-                              (substring str (cdar m)))
+        (subst (string-append
+                (substring str 0 (caar m))
+                (cond [(assoc s substs) => cdr]
+                      [else (error 'subst "unknown substitution: ~s" s)])
+                (substring str (cdar m)))
                substs)
         str))))
 
@@ -244,42 +244,65 @@
 ;; ============================================================================
 ;; Dealing with multi-file submissions
 
-(define ((unpack-multifile-submission names-checker)
-         submission maxwidth textualize? untabify?
-         markup-prefix prefix-re)
+(define (read-multifile . port)
+  (define magic #"<<<MULTI-SUBMISSION-FILE>>>")
   (define (assert-format b)
-   (unless b
-     (error* "bad submission format, expecting a multi-file submission -- ~a"
-             "use the multi-file submission tool")))
-  (let ([files
-         (parameterize ([current-input-port (open-input-bytes submission)])
-           (define magic #"<<<MULTI-SUBMISSION-FILE>>>")
-           (assert-format (equal? magic (read-bytes (bytes-length magic))))
-           (let loop ([files '()])
-             (let ([f (with-handlers ([void void]) (read))])
-               (if (eof-object? f)
-                 (quicksort files (lambda (x y) (string<? (car x) (car y))))
-                 (loop (cons f files))))))])
+    (unless b
+      (error* "bad submission format, expecting a multi-file submission -- ~a"
+              "use the multi-file submission tool")))
+  (define (read-it)
+    (assert-format (equal? magic (read-bytes (bytes-length magic))))
+    (let loop ([files '()])
+      (let ([f (with-handlers ([void void]) (read))])
+        (if (eof-object? f)
+          (quicksort files (lambda (x y) (string<? (car x) (car y))))
+          (loop (cons f files))))))
+  (let ([files (if (pair? port)
+                 (parameterize ([current-input-port (car port)]) (read-it))
+                 (read-it))])
     (assert-format (and (list? files)
                         (andmap (lambda (x)
                                   (and (list? x) (= 2 (length x))
                                        (string? (car x)) (bytes? (cadr x))))
                                 files)))
+    files))
+
+(define ((unpack-multifile-submission names-checker raw-file-name)
+         submission maxwidth textualize? untabify?
+         markup-prefix prefix-re)
+  (let* ([files (read-multifile (open-input-bytes submission))]
+         [names (map car files)])
     (cond [(ormap (lambda (f)
                     (and (regexp-match #rx"^[.]|[/\\ ]" (car f)) (car f)))
                   files)
            => (lambda (file) (error* "bad filename: ~e" file))])
-    ((cond [(procedure? names-checker) names-checker]
-           [(or (regexp? names-checker)
-                (string? names-checker) (bytes? names-checker))
-            (lambda (names)
-              (cond [(ormap (lambda (n)
-                              (and (not (regexp-match names-checker n)) n))
-                            names)
-                     => (lambda (file) (error* "bad filename: ~e" file))]))]
-           [(not names-checker) void]
-           [else (error* "bad names-checker specification: ~e" names-checker)])
-     (map car files))
+    (cond [(procedure? names-checker) (names-checker names)]
+          [(or (regexp? names-checker)
+               (string? names-checker) (bytes? names-checker))
+           (cond [(ormap (lambda (n)
+                           (and (not (regexp-match names-checker n)) n))
+                         names)
+                  => (lambda (file) (error* "bad filename: ~e" file))])]
+          [names-checker (error* "bad names-checker specification: ~e"
+                                 names-checker)])
+    ;; problem: students might think that submitting files one-by-one will keep
+    ;; them all; solution: if there is already a submission, then warn against
+    ;; files that disappear.
+    (let* ([raw (build-path 'up raw-file-name)]
+           [old (and (file-exists? raw)
+                     (with-handlers ([void (lambda _ #f)])
+                       (with-input-from-file raw read-multifile)))]
+           [removed (and old (remove* names (map car old)))])
+      (when (and (pair? removed)
+                 (not (eq? 'ok (message
+                                (apply string-append
+                                       "The following file"
+                                       (if (pair? (cdr removed)) "s" "")
+                                       " will be lost:"
+                                       (map (lambda (n) (string-append " " n))
+                                            removed))
+                                '(ok-cancel caution)))))
+        (error* "Aborting...")))
     ;; This will create copies of the original files
     ;; (for-each (lambda (file)
     ;;             (with-output-to-file (car file)
@@ -448,6 +471,7 @@
                  (define (prefix-line str)
                    (printf "~a~a\n" markup-prefix str))
                  (define (write-text)
+                   (current-run-status "creating text file")
                    (with-output-to-file text-file
                      (lambda ()
                        (for-each (lambda (user)
@@ -461,11 +485,13 @@
                      'truncate))
                  (define submission-text
                    (and create-text?
-                        ((if multi-file
-                           (unpack-multifile-submission names-checker)
-                           submission->bytes)
-                          submission maxwidth textualize? untabify?
-                          markup-prefix prefix-re)))
+                        (begin (current-run-status "reading submission")
+                               ((if multi-file
+                                  (unpack-multifile-submission
+                                   names-checker output-file)
+                                  submission->bytes)
+                                submission maxwidth textualize? untabify?
+                                markup-prefix prefix-re))))
                  (when create-text? (make-directory "grading") (write-text))
                  (when value-printer (current-value-printer value-printer))
                  (when coverage? (coverage-enabled #t))
