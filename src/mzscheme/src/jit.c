@@ -3401,9 +3401,9 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_stxr_p(JIT_V1, JIT_R1, JIT_R0);
   mz_patch_branch(ref);
   __END_SHORT_JUMPS__(1);
-#ifndef MZ_PRECISE_GC
+#ifdef MZ_PRECISE_GC
   /* Pop global-array index: */
-  mz_push_local_p(JIT_R1, JIT_LOCAL3);
+  mz_pop_local_p(JIT_R1, JIT_LOCAL3);
 #endif
   mz_epilog(JIT_V1);
 
