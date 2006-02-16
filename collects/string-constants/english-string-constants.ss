@@ -466,7 +466,8 @@ please adhere to these guidelines:
  (forward "Forward")
  (backward "Backward")
  (hide "Hide")
- 
+ (find-case-sensitive "Case sensitive")  ;; the check box in both the docked & undocked search
+  
  ;;; multi-file-search
  (mfs-multi-file-search-menu-item "Search in Files...")
  (mfs-string-match/graphics "String match (handles files with graphics)")

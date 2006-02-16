@@ -21,6 +21,9 @@
       
       (application-preferences-handler (λ () (preferences:show-dialog)))
       
+      (preferences:set-default 'framework:case-sensitive-search?
+                               #f
+                               boolean?)
       (preferences:set-default 'framework:basic-canvas-background
                                (send the-color-database find-color "white")
                                (λ (x) (is-a? x color%)))

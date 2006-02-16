@@ -1610,6 +1610,13 @@
                   
                   [button-panel (make-object horizontal-panel% dialog)]
                   
+                  [prefs-panel  (make-object horizontal-panel% dialog)]
+                  [sensitive-check-box-callback (λ () (send find-edit toggle-case-sensitive))]
+                  [sensitive-check-box (make-object check-box% 
+                                         (string-constant find-case-sensitive)
+                                         prefs-panel (λ (x y) (sensitive-check-box-callback)))]
+                  [dummy (begin (send sensitive-check-box set-value (send find-edit get-case-sensitive?))
+                                (send prefs-panel set-alignment 'center 'center))]
                   [update-texts
                    (λ ()
                      (send find-edit stop-searching)
@@ -1874,26 +1881,32 @@
                                        string
                                        searching-direction
                                        search-anchor
-                                       'eof #t #t #t)])
+                                       'eof #t case-sensitive? #t)])
                           (cond
                             [(not first-pos)
                              (if wrap?
-                                 (let-values ([(found-edit pos)
-                                               (find-string-embedded
-                                                top-searching-edit
-                                                string 
-                                                searching-direction
-                                                (if (eq? 'forward searching-direction)
-                                                    0
-                                                    (send searching-edit last-position)))])
-                                   (if (not pos)
-                                       (not-found found-edit #f)
-                                       (found found-edit pos)))
+                                 (begin
+                                   (let-values ([(found-edit pos)
+                                                 (find-string-embedded
+                                                  top-searching-edit
+                                                  string 
+                                                  searching-direction
+                                                  (if (eq? 'forward searching-direction)
+                                                      0
+                                                      (send searching-edit last-position))
+                                                  'eof #t case-sensitive? #f)])
+                                     (if (not pos)
+                                         (not-found found-edit #f)
+                                         (found found-edit pos))))
                                  (not-found found-edit #f))]
                             [else
                              (found found-edit first-pos)]))))))))
-          (field
-           [dont-search #f])
+          (field [dont-search #f]
+                 [case-sensitive? (preferences:get 'framework:case-sensitive-search?)])
+          (define/public (toggle-case-sensitive)
+            (set! case-sensitive? (not case-sensitive?))
+            (preferences:set 'framework:case-sensitive-search? case-sensitive?))
+          (define/public (get-case-sensitive?) case-sensitive?)
           (define/public (stop-searching)
             (set! dont-search #t))
           (define/public (start-searching)
@@ -2161,6 +2174,7 @@
               (set-search-direction direction)
               (send find-edit search #t beep?)))
           
+          (define sensitive-check-box #f)
 	  (define search-panel #f)
 	  (define search-gui-built? #f)
           (define dir-radio #f)
@@ -2236,6 +2250,15 @@
 							 'backward)])
 					(set-search-direction forward)
 					(reset-search-anchor (get-text-to-search)))))))
+                
+                (define _10
+                  (begin
+                    (set! sensitive-check-box (make-object check-box% 
+                                                (string-constant find-case-sensitive)
+                                                middle-right-panel 
+                                                (λ (x y) (send find-edit toggle-case-sensitive))))
+                    (send sensitive-check-box set-value (get-field case-sensitive? find-edit))))
+
 
 		(define hide/undock-pane (make-object horizontal-panel% middle-right-panel))
 		(define hide-button (make-object button% (string-constant hide)
