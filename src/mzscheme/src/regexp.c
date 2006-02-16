@@ -1930,7 +1930,12 @@ END_XFORM_SKIP;
 
 static int compare_ranges(const void *a, const void *b)
 {
-  if (*(unsigned int *)a < *(unsigned int *)b)
+  unsigned long av, bv;
+  av = *(unsigned long *)a;
+  bv = *(unsigned long *)b;
+  if (av == bv)
+    return 0;
+  else if (av < bv)
     return -1;
   else
     return 1;
@@ -2212,7 +2217,8 @@ static int translate(unsigned char *s, int len, char **result)
 	/* Need to translate. */
 	char *simple_on;
 	Scheme_Object *ranges;
-	unsigned int *us, *range_array;
+	unsigned int *us;
+	unsigned long *range_array;
 	int ulen, on_count, range_len, rp, p;
 
 	ulen = scheme_utf8_decode(s, rs.i + 1, k, NULL, 0, -1, NULL, 0, 0);
@@ -2278,14 +2284,15 @@ static int translate(unsigned char *s, int len, char **result)
 
 	/* Turn the ranges list into an array */
 	range_len = scheme_list_length(ranges);
-	range_array = (unsigned int *)scheme_malloc_atomic(2 * range_len * sizeof(unsigned int));
-	for (rp = 0; SCHEME_PAIRP(ranges); ranges = SCHEME_CDR(ranges), rp++) {
-	  long hi, lo;
+	range_array = (unsigned long *)scheme_malloc_atomic(2 * range_len * sizeof(unsigned long));
+	for (rp = 0; SCHEME_PAIRP(ranges); ranges = SCHEME_CDR(ranges), rp += 2) {
+	  unsigned long hi, lo;
 	  scheme_get_unsigned_int_val(SCHEME_CAAR(ranges), &lo);
 	  scheme_get_unsigned_int_val(SCHEME_CDR(SCHEME_CAR(ranges)), &hi);
 	  range_array[rp] = lo;
 	  range_array[rp+1] = hi;
 	}
+	range_len *= 2;
 	/* Sort the ranges by the starting index. */
 	my_qsort(range_array, range_len >> 1, 2 * sizeof(unsigned long), compare_ranges);
 	

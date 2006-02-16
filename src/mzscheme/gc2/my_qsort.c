@@ -1,6 +1,8 @@
 
 #if defined(sun) || defined(__sun) || defined(__sun__)
-/* Sun's qsort() is broken. */
+/* Long ago, I became convinced that Sun's qsort() was broken.
+   Probably it isn't any more, but I'm still more comfortable
+   avoiding it. */
 
 #define MAXSTACK 100
 

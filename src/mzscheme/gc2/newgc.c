@@ -726,70 +726,9 @@ void GC_fixup_variable_stack(void **var_stack, long delta, void *limit)
 
 /*****************************************************************************/
 /* Routines for root sets                                                    */
-/*                                                                           */
-/* This code is lifted in its entirety from compact.c                        */
 /*****************************************************************************/
 
-static unsigned long roots_count = 0;
-static unsigned long roots_size = 0;
-static unsigned long *roots = NULL;;
-static int nothing_new = 0;
-
-static int compare_roots(const void *a, const void *b)
-{
-  if(*(unsigned long*)a < *(unsigned long*)b)
-    return -1;
-  else 
-    return 1;
-}
-
-static void sort_and_merge_roots()
-{
-  int i, offset, top;
-
-  if(nothing_new || (roots_count < 4))
-    return;
-
-  my_qsort(roots, roots_count >> 1, 2 * sizeof(unsigned long), compare_roots);
-  offset = 0; top = roots_count;
-  for(i = 2; i < top; i += 2) {
-    if((roots[i - 2 - offset] <= roots[i])
-       && ((roots[i - 1 - offset] + (WORD_SIZE - 1)) >= roots[i])) {
-      /* merge: */
-      if(roots[i + 1] > roots[i - 1 - offset])
-	roots[i - 1 - offset] = roots[i + 1];
-      offset += 2; roots_count -= 2;
-    } else if(roots[i] == roots[i + 1]) {
-      /* Remove empty range: */
-      offset += 2;
-      roots_count -= 2;
-    } else if(offset) {
-      /* compact: */
-      roots[i - offset] = roots[i];
-      roots[i + 1 - offset] = roots[i + 1];
-    }
-  }
-  nothing_new = 1;
-}
-
-void GC_add_roots(void *start, void *end)
-{
-  if(roots_count >= roots_size) {
-    unsigned long *naya;
-
-    roots_size = roots_size ? 2 * roots_size : 500;
-    naya = (unsigned long*)malloc(sizeof(unsigned long) * (roots_size + 1));
-    if(!naya) GCERR((GCOUTF, "Couldn't allocate space for root pointers!\n"));
-    memcpy((void*)naya, (void*)roots, sizeof(unsigned long) * roots_count);
-    
-    if(roots) free(roots);
-    roots = naya;
-  }
-
-  roots[roots_count++] = (unsigned long)start;
-  roots[roots_count++] = (unsigned long)end - WORD_SIZE;
-  nothing_new = 0;
-}
+#include "roots.inc"
 
 #define traverse_roots(gcMUCK) {                                            \
     unsigned long j;                                                        \
