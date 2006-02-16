@@ -65,15 +65,20 @@
 
 (define library-vicinity
   (let ((library-path
-	 (or
-	  ;; Use this getenv if your implementation supports it.
-	  (getenv "SCHEME_LIBRARY_PATH")
-	  ;; Use this path if your scheme does not support GETENV
-	  (with-handlers ([void
-			   (lambda (x)
-			     (error 'slib-init
-				    "can't find SCHEME_LIBRARY_PATH environment variable or \"slib\" collection"))])
-	    (path->string (collection-path "slib"))))))
+         (or
+          ;; Use this getenv if your implementation supports it.
+          (getenv "SCHEME_LIBRARY_PATH")
+          ;; Try an slib collection first
+          (with-handlers ([void #f])
+            (path->string (collection-path "slib")))
+          ;; look for slib in a few common places
+          (ormap (lambda (dir)
+                   (and (directory-exists? dir) (path->string dir)))
+                 '("/usr/share/slib"
+                   ;; this is for RH/Fedora that uses umb-scheme for slib
+                   "/usr/share/umb-scheme/slib"))
+          (error 'slib-init
+                 "can't find SCHEME_LIBRARY_PATH environment variable, \"slib\" collection, or a system slib directory"))))
     (lambda () library-path)))
 
 ;;; (home-vicinity) should return the vicinity of the user's HOME
