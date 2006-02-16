@@ -1,25 +1,31 @@
 
-#if defined(sparc) || defined(__sparc) || defined(__sparc__)
+#if defined(sun) || defined(__sun) || defined(__sun__)
 /* Sun's qsort() is broken. */
 
 #define MAXSTACK 100
 
 static void exchange(void *a, void *b, size_t size) {
     size_t i;
+    int *ai = (int *) a;
+    int *bi = (int *) b;
+    char *ac;
+    char *bc;
 
     /******************
      *  exchange a,b  *
      ******************/
 
     for (i = sizeof(int); i <= size; i += sizeof(int)) {
-        int t = *((int *)a);
-        *(((int *)a)++) = *((int *)b);
-        *(((int *)b)++) = t;
+        int t = *ai;
+        *ai++ = *bi;
+        *bi++ = t;
     }
+    ac = (char *) ai;
+    bc = (char *) bi;
     for (i = i - sizeof(int) + 1; i <= size; i++) {
-        char t = *((char *)a);
-        *(((char *)a)++) = *((char *)b);
-        *(((char *)b)++) = t;
+        char t = *ac;
+        *ac++ = *bc;
+        *bc++ = t;
     }
 }
 
