@@ -41,12 +41,15 @@
        Addison-Wesley, 1993, pp 367-375.
 */
 
+#ifndef Tree
 typedef struct tree_node Tree;
 struct tree_node {
     Tree * left, * right;
     unsigned long item;
     void *data;
 };
+# define Splay_Item(t) t->item
+#endif
 
 static Tree * splay (unsigned long i, Tree * t) {
 /* Simple top down splay, not requiring i to be in the tree t.  */
@@ -57,9 +60,9 @@ static Tree * splay (unsigned long i, Tree * t) {
     l = r = &N;
 
     for (;;) {
-	if (i < t->item) {
+	if (i < Splay_Item(t)) {
 	    if (t->left == NULL) break;
-	    if (i < t->left->item) {
+	    if (i < Splay_Item(t->left)) {
 		y = t->left;                           /* rotate right */
 		t->left = y->right;
 		y->right = t;
@@ -69,9 +72,9 @@ static Tree * splay (unsigned long i, Tree * t) {
 	    r->left = t;                               /* link right */
 	    r = t;
 	    t = t->left;
-	} else if (i > t->item) {
+	} else if (i > Splay_Item(t)) {
 	    if (t->right == NULL) break;
-	    if (i > t->right->item) {
+	    if (i > Splay_Item(t->right)) {
 		y = t->right;                          /* rotate left */
 		t->right = y->left;
 		y->left = t;
@@ -92,21 +95,21 @@ static Tree * splay (unsigned long i, Tree * t) {
     return t;
 }
 
-static Tree * insert(unsigned long i, Tree * new, Tree * t) {
+static Tree * splay_insert(unsigned long i, Tree * new, Tree * t) {
 /* Insert i into the tree t, unless it's already there.    */
 /* Return a pointer to the resulting tree.                 */
-    new->item = i;
+    Splay_Item(new) = i;
     if (t == NULL) {
 	new->left = new->right = NULL;
 	return new;
     }
     t = splay(i,t);
-    if (i < t->item) {
+    if (i < Splay_Item(t)) {
 	new->left = t->left;
 	new->right = t;
 	t->left = NULL;
 	return new;
-    } else if (i > t->item) {
+    } else if (i > Splay_Item(t)) {
 	new->right = t->right;
 	new->left = t;
 	t->right = NULL;
@@ -117,13 +120,13 @@ static Tree * insert(unsigned long i, Tree * new, Tree * t) {
     }
 }
 
-static Tree * delete(unsigned long i, Tree * t) {
+static Tree * splay_delete(unsigned long i, Tree * t) {
 /* Deletes i from the tree if it's there.               */
 /* Return a pointer to the resulting tree.              */
     Tree * x;
     if (t==NULL) return NULL;
     t = splay(i,t);
-    if (i == t->item) {               /* found it */
+    if (i == Splay_Item(t)) {               /* found it */
 	if (t->left == NULL) {
 	    x = t->right;
 	} else {

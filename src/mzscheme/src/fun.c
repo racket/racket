@@ -239,7 +239,7 @@ scheme_init_fun (Scheme_Env *env)
   o = scheme_make_prim_w_arity2(scheme_call_ec,
 				"call-with-escape-continuation",
 				1, 1,
-				0, -1),
+				0, -1);
   scheme_add_global_constant("call-with-escape-continuation", o, env);
   scheme_add_global_constant("call/ec", o, env);
 
@@ -2575,6 +2575,32 @@ static void copy_cjs(Scheme_Continuation_Jump_State *a, Scheme_Continuation_Jump
   a->is_kill = b->is_kill;
 }
 
+static Scheme_Object *get_ec_marks_prefix()
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *pr = scheme_null;
+  long findpos;
+  Scheme_Cont_Mark *find;
+
+  findpos = (long)MZ_CONT_MARK_STACK;
+
+  while (findpos--) {
+    long pos;
+
+    find = p->cont_mark_stack_segments[findpos >> SCHEME_LOG_MARK_SEGMENT_SIZE];
+    pos = findpos & SCHEME_MARK_SEGMENT_MASK;
+
+    if (find[pos].pos != MZ_CONT_MARK_POS)
+      break;
+
+    pr = scheme_make_pair(scheme_make_pair(find[pos].key,
+					   find[pos].val),
+			  pr);
+  }
+
+  return pr;
+}
+
 Scheme_Object *
 scheme_call_ec (int argc, Scheme_Object *argv[])
 {
@@ -2583,30 +2609,64 @@ scheme_call_ec (int argc, Scheme_Object *argv[])
   Scheme_Thread *p1 = scheme_current_thread;
   Scheme_Object * volatile v;
   Scheme_Object *mark_key, *a[1];
-  Scheme_Cont_Frame_Data volatile cframe;
 
   scheme_check_proc_arity("call-with-escaping-continuation", 1,
 			  0, argc, argv);
 
-  mark_key = scheme_make_pair(scheme_false, scheme_false);
+  /* In tail position with respect to an existing
+     escape continuation? */
+  mark_key = p1->current_escape_cont_key;
+  if (mark_key && SAME_OBJ((Scheme_Object *)MZ_CONT_MARK_POS,
+			   SCHEME_CAR(mark_key))) {
+    /* Yes - reuse the old continuation */
+    cont = (Scheme_Escaping_Cont *)SCHEME_CDR(mark_key);
 
+    v = get_ec_marks_prefix();
+
+    if (!scheme_equal(v, cont->marks_prefix)) {
+      /* The continuation marks are different this time. 
+	 We need to clone the continuation, then change mark prefix. */
+      Scheme_Escaping_Cont *c2;
+      c2 = MALLOC_ONE_TAGGED(Scheme_Escaping_Cont);
+      memcpy(c2, cont, sizeof(Scheme_Escaping_Cont));
+      c2->marks_prefix = v;
+      cont = c2;
+    }
+
+    a[0] = (Scheme_Object *)cont;
+    SCHEME_USE_FUEL(1);
+    return scheme_tail_apply(argv[0], 1, a);
+  }
+
+  mark_key = scheme_make_pair((Scheme_Object *)MZ_CONT_MARK_POS, 
+			      scheme_false);
+  
   cont = MALLOC_ONE_TAGGED(Scheme_Escaping_Cont);
   cont->so.type = scheme_escaping_cont_type;
   cont->mark_key = mark_key;
   cont->suspend_break = p1->suspend_break;
   copy_cjs(&cont->cjs, &p1->cjs);
 
+  SCHEME_CDR(mark_key) = (Scheme_Object *)cont;
+
+  v = get_ec_marks_prefix();
+  cont->marks_prefix = v;
+
   cont->saveerr = p1->error_buf;
   p1->error_buf = &newbuf;
 
   scheme_save_env_stack_w_thread(cont->envss, p1);
 
-  scheme_push_continuation_frame((Scheme_Cont_Frame_Data *)&cframe);
+  /* Don't push a continuation frame; argument function
+     is called as tail. */
   scheme_set_cont_mark(mark_key, scheme_true);
+  p1->current_escape_cont_key = mark_key;
 
   if (scheme_setjmp(newbuf)) {
     Scheme_Thread *p2 = scheme_current_thread;
-    if ((void *)p2->cjs.jumping_to_continuation == cont) {
+    if (p2->cjs.jumping_to_continuation
+	&& SAME_OBJ(p2->cjs.jumping_to_continuation->mark_key,
+		    cont->mark_key)) {
       int n = p2->cjs.num_vals;
       Scheme_Object **vs = p2->cjs.u.vals;
       v = p2->cjs.u.val;
@@ -2619,15 +2679,22 @@ scheme_call_ec (int argc, Scheme_Object *argv[])
       scheme_longjmp(*cont->saveerr, 1);
     }
   } else {
+    /* Adjusting MZ_CONT_MARK_POS, we make the application appear to
+       be in tail position. The actual non-tailness is limited to a
+       single frame, since call_ec checks the current escape-cont key
+       as a continuation mark before getting here. */
+    MZ_CONT_MARK_POS -= 2;
+
     a[0] = (Scheme_Object *)cont;
     v = _scheme_apply_multi(argv[0], 1, a);
+
+    MZ_CONT_MARK_POS += 2;
   }
 
   p1 = scheme_current_thread;
 
   p1->error_buf = cont->saveerr;
-
-  scheme_pop_continuation_frame((Scheme_Cont_Frame_Data *)&cframe);
+  p1->current_escape_cont_key = cont->envss.current_escape_cont_key;
 
   return v;
 }
@@ -3022,10 +3089,23 @@ internal_call_cc (int argc, Scheme_Object *argv[])
     sub_cont = NULL;
   if (sub_cont && (sub_cont->ss.cont_mark_pos == MZ_CONT_MARK_POS)) {
     Scheme_Object *argv2[1];
+#ifdef MZ_USE_JIT
+    ret = scheme_native_stack_trace();
+#endif    
     /* Old cont is the same as this one, except that it may
        have different marks (not counting cont_key). */
     if ((sub_cont->cont_mark_shareable == (long)sub_cont->ss.cont_mark_stack)
-	&& (find_shareable_marks() == MZ_CONT_MARK_STACK)) {
+	&& (find_shareable_marks() == MZ_CONT_MARK_STACK)
+#ifdef MZ_USE_JIT
+	&& (SAME_OBJ(ret, sub_cont->native_trace)
+	    /* Maybe a single-function loop, where we re-allocated the
+	       last pair in the trace, but it's the same name: */
+	    || (SCHEME_PAIRP(ret)
+		&& SCHEME_PAIRP(sub_cont->native_trace)
+		&& SAME_OBJ(SCHEME_CAR(ret), SCHEME_CAR(sub_cont->native_trace))
+		&& SAME_OBJ(SCHEME_CDR(ret), SCHEME_CDR(sub_cont->native_trace))))
+#endif
+	) {
       /* Just use this one. */
       cont = sub_cont;
     } else {
@@ -3045,6 +3125,9 @@ internal_call_cc (int argc, Scheme_Object *argv[])
       cont->cont_mark_offset = offset;
       offset = find_shareable_marks();
       cont->cont_mark_shareable = offset;
+#ifdef MZ_USE_JIT
+      cont->native_trace = ret;
+#endif
     }
 
     argv2[0] = (Scheme_Object *)cont;
@@ -3094,6 +3177,11 @@ internal_call_cc (int argc, Scheme_Object *argv[])
       *owner = p;
     }
   }
+
+#ifdef MZ_USE_JIT
+  ret = scheme_native_stack_trace();
+  cont->native_trace = ret;
+#endif
 
   saved = copy_out_runstack(p, MZ_RUNSTACK, MZ_RUNSTACK_START, sub_cont);
   cont->runstack_copied = saved;
@@ -3425,42 +3513,62 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
       find = seg;
     }
 
-    cache = find[pos].cache;
-    if (cache) {
-      if (SCHEME_FALSEP(cache))
-	cache = NULL;
-      else if (SCHEME_VECTORP(cache)) {
-	cache = SCHEME_VEC_ELS(cache)[0];
+    /* For econt, skip positions that match cmpos; the econt
+       record has a prefix to use, instead. */
+    
+    if (!econt || (find[pos].pos != cmpos)) {
+      cache = find[pos].cache;
+      if (cache) {
+	if (SCHEME_FALSEP(cache))
+	  cache = NULL;
+	else if (SCHEME_VECTORP(cache)) {
+	  cache = SCHEME_VEC_ELS(cache)[0];
+	}
+      }
+
+      if (cache) {
+	if (last)
+	  last->next = (Scheme_Cont_Mark_Chain *)cache;
+	else
+	  first = (Scheme_Cont_Mark_Chain *)cache;
+
+	break;
+      } else {
+	Scheme_Cont_Mark_Chain *pr;
+	pr = MALLOC_ONE_RT(Scheme_Cont_Mark_Chain);
+	pr->so.type = scheme_cont_mark_chain_type;
+	pr->key = find[pos].key;
+	pr->val = find[pos].val;
+	pr->pos = find[pos].pos;
+	pr->next = NULL;
+	cache = find[pos].cache;
+	if (cache && !SCHEME_FALSEP(cache)) {
+	  SCHEME_VEC_ELS(cache)[0] = (Scheme_Object *)pr;
+	} else {
+	  find[pos].cache = (Scheme_Object *)pr;
+	}
+	if (last)
+	  last->next = pr;
+	else
+	  first = pr;
+
+	last = pr;
       }
     }
+  }
 
-    if (cache) {
-      if (last)
-	last->next = (Scheme_Cont_Mark_Chain *)cache;
-      else
-	first = (Scheme_Cont_Mark_Chain *)cache;
-
-      break;
-    } else {
+  if (econt) {
+    Scheme_Object *l, *a;
+    for (l = ((Scheme_Escaping_Cont *)econt)->marks_prefix; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
       Scheme_Cont_Mark_Chain *pr;
       pr = MALLOC_ONE_RT(Scheme_Cont_Mark_Chain);
       pr->so.type = scheme_cont_mark_chain_type;
-      pr->key = find[pos].key;
-      pr->val = find[pos].val;
-      pr->pos = find[pos].pos;
-      pr->next = NULL;
-      cache = find[pos].cache;
-      if (cache && !SCHEME_FALSEP(cache)) {
-	SCHEME_VEC_ELS(cache)[0] = (Scheme_Object *)pr;
-      } else {
-	find[pos].cache = (Scheme_Object *)pr;
-      }
-      if (last)
-	last->next = pr;
-      else
-	first = pr;
-
-      last = pr;
+      a = SCHEME_CAR(l);
+      pr->key = SCHEME_CAR(a);
+      pr->val = SCHEME_CDR(a);
+      pr->pos = cmpos;
+      pr->next = first;
+      first = pr;
     }
   }
 
@@ -3468,7 +3576,12 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
     return (Scheme_Object *)first;
 
 #ifdef MZ_USE_JIT
-  nt = scheme_native_stack_trace();
+  if (cont)
+    nt = cont->native_trace;
+  else if (econt)
+    nt = ((Scheme_Escaping_Cont *)econt)->native_trace;
+  else
+    nt = scheme_native_stack_trace();
 #else
   nt = NULL;
 #endif

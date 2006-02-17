@@ -370,7 +370,6 @@ static long mark_stackoflw;
 #endif
 
 static int fnl_weak_link_count;
-static int num_fnls;
 
 static int ran_final;
 static int running_finals;
@@ -488,7 +487,7 @@ void GC_register_traversers(Type_Tag tag, Size_Proc size, Mark_Proc mark, Fixup_
 /*                               root table                                   */
 /******************************************************************************/
 
-#include "roots.inc"
+#include "roots.c"
 
 void GC_register_thread(void *p, void *c)
 {
@@ -566,19 +565,16 @@ static int is_marked(void *p);
 /*                             finalization                                   */
 /******************************************************************************/
 
-typedef struct Fnl {
-  char eager_level;
-  char tagged;
-  void *p;
-  void (*f)(void *p, void *data);
-  void *data;
-#if CHECKS
-  long size;
-#endif
-  struct Fnl *next;
-} Fnl;
+static int is_finalizable_page(void *p)
+{
+  MPage *page;
+  page = find_page(p);
+  return page && page->type;
+}
 
-static Fnl *fnls, *run_queue, *last_in_queue;
+#include "fnls.c"
+
+static Fnl *run_queue, *last_in_queue;
 
 static void mark_finalizer(Fnl *fnl)
 {
@@ -616,102 +612,6 @@ static void fixup_finalizer(Fnl *fnl)
       CRASH(3);
   }
 #endif
-}
-
-void GC_set_finalizer(void *p, int tagged, int level, void (*f)(void *p, void *data), 
-		      void *data, void (**oldf)(void *p, void *data), 
-		      void **olddata)
-{
-  Fnl *fnl, *prev;
-
-  {
-    MPage *page;
-    page = find_page(p);
-    if (!page || !page->type) {
-      /* Never collected. Don't finalize it. */
-      if (oldf) *oldf = NULL;
-      if (olddata) *olddata = NULL;
-      return;
-    }
-  }
-
-  fnl = fnls;
-  prev = NULL;
-  while (fnl) {
-    if (fnl->p == p) {
-      if (oldf) *oldf = fnl->f;
-      if (olddata) *olddata = fnl->data;
-      if (f) {
-	fnl->f = f;
-	fnl->data = data;
-	fnl->eager_level = level;
-      } else {
-	if (prev)
-	  prev->next = fnl->next;
-	else
-	  fnls = fnl->next;
-	--num_fnls;
-	return;
-      }
-      return;
-    } else {
-      prev = fnl;
-      fnl = fnl->next;
-    }
-  }
-  
-  if (oldf) *oldf = NULL;
-  if (olddata) *olddata = NULL;
-
-  if (!f)
-    return;
-
-  /* Allcation might trigger GC, so we use park: */
-  park[0] = p;
-  park[1] = data;
-
-  fnl = (Fnl *)GC_malloc_atomic(sizeof(Fnl));
-
-  p = park[0];
-  park[0] = NULL;
-  data = park[1];
-  park[1] = NULL;
-
-  fnl->next = fnls;
-  fnl->p = p;
-  fnl->f = f;
-  fnl->data = data;
-  fnl->eager_level = level;
-  fnl->tagged = tagged;
-
-#if CHECKS
-  {
-    MPage *m;
-
-    m = find_page(p);
-
-    if (tagged) {
-      if (m->type != MTYPE_TAGGED) {
-	GCPRINT(GCOUTF, "Not tagged: %lx (%d)\n", 
-		(long)p, m->type);
-	CRASH(4);
-      }
-    } else {
-      if (m->type != MTYPE_XTAGGED) {
-	GCPRINT(GCOUTF, "Not xtagged: %lx (%d)\n", 
-		(long)p, m->type);
-	CRASH(5);
-      }
-      if (m->flags & MFLAG_BIGBLOCK)
-	fnl->size = m->u.size;
-      else
-	fnl->size = ((long *)p)[-1];
-    }
-  }
-#endif
-
-  fnls = fnl;
-  num_fnls++;
 }
 
 typedef struct Fnl_Weak_Link {
@@ -823,7 +723,7 @@ static int is_marked(void *p)
 }
 
 #if SEARCH
-void *search_for, *search_mark;
+void *search_for, *search_mark = 0x7;
 long search_size;
 
 void stop()
@@ -841,6 +741,7 @@ void stop()
 
 #if CHECKS
 static void **prev_ptr, **prev_prev_ptr, **prev_prev_prev_ptr;
+static void **prev_prev_prev_prev_ptr, **prev_prev_prev_prev_prev_ptr;
 static void **prev_var_stack;
 #endif
 
@@ -882,6 +783,8 @@ static void init_tagged_mpage(void **p, MPage *page)
 	GCFLUSHOUT();
 	CRASH(7);
       }
+      prev_prev_prev_prev_prev_ptr = prev_prev_prev_prev_ptr;
+      prev_prev_prev_prev_ptr = prev_prev_prev_ptr;
       prev_prev_prev_ptr = prev_prev_ptr;
       prev_prev_ptr = prev_ptr;
       prev_ptr = p;
@@ -897,6 +800,12 @@ static void init_tagged_mpage(void **p, MPage *page)
 	else
 	  size = size_proc(p);
       }
+
+#if CHECKS
+      if (size < 1) {
+	CRASH(57);
+      }
+#endif
 
       OFFSET_SET_SIZE_UNMASKED(offsets, offset, size);
       offset += size;
@@ -3044,7 +2953,7 @@ static void init(void)
 #if USE_FREELIST
     GC_register_traversers(gc_on_free_list_tag, size_on_free_list, size_on_free_list, size_on_free_list, 0, 0);
 #endif
-    GC_add_roots(&fnls, (char *)&fnls + sizeof(fnls) + 1);
+    GC_add_roots(&finalizers, (char *)&finalizers + sizeof(finalizers) + 1);
     GC_add_roots(&fnl_weaks, (char *)&fnl_weaks + sizeof(fnl_weaks) + 1);
     GC_add_roots(&run_queue, (char *)&run_queue + sizeof(run_queue) + 1);
     GC_add_roots(&last_in_queue, (char *)&last_in_queue + sizeof(last_in_queue) + 1);
@@ -3250,7 +3159,7 @@ static void gcollect(int full)
 
   {
     Fnl *f;
-    for (f = fnls; f; f = f->next) {
+    for (f = finalizers; f; f = f->next) {
 #if RECORD_MARK_SRC
       mark_src = f;
       mark_type = MTYPE_FINALIZER;
@@ -3309,7 +3218,7 @@ static void gcollect(int full)
     /* Propagate all marks. */
     propagate_all_mpages();
     
-    if ((did_fnls >= 3) || !fnls) {
+    if ((did_fnls >= 3) || !finalizers) {
       if (did_fnls == 3) {
 	/* Finish up ordered finalization */
 	Fnl *f, *next, *prev;
@@ -3318,7 +3227,7 @@ static void gcollect(int full)
 	/* Enqueue and mark level 3 finalizers that still haven't been marked. */
 	/* (Recursive marking is already done, though.) */
 	prev = NULL;
-	for (f = fnls; f; f = next) {
+	for (f = finalizers; f; f = next) {
 	  next = f->next;
 	  if (f->eager_level == 3) {
 	    if (!is_marked(f->p)) {
@@ -3332,7 +3241,7 @@ static void gcollect(int full)
 	      if (prev)
 		prev->next = next;
 	      else
-		fnls = next;
+		finalizers = next;
 	      
 	      f->eager_level = 0; /* indicates queued */
 	      
@@ -3394,7 +3303,7 @@ static void gcollect(int full)
 
 	/* Mark content of not-yet-marked finalized objects,
 	   but don't mark the finalized objects themselves. */	
-	for (f = fnls; f; f = f->next) {
+	for (f = finalizers; f; f = f->next) {
 	  if (f->eager_level == 3) {
 #if RECORD_MARK_SRC
 	    mark_src = f;
@@ -3420,7 +3329,7 @@ static void gcollect(int full)
 	/* Unordered finalization */
 	Fnl *f, *prev, *queue;
 
-	f = fnls;
+	f = finalizers;
 	prev = NULL;
 	queue = NULL;
 	
@@ -3433,7 +3342,7 @@ static void gcollect(int full)
 	      if (prev)
 		prev->next = next;
 	      else
-		fnls = next;
+		finalizers = next;
 	      
 	      f->eager_level = 0; /* indicates queued */
 	      
@@ -3480,7 +3389,7 @@ static void gcollect(int full)
   {
     Fnl *f;
     /* All finalized objects must be marked at this point. */
-    for (f = fnls; f; f = f->next) {
+    for (f = finalizers; f; f = f->next) {
       if (!is_marked(f->p))
 	CRASH(35);
     }
@@ -3609,7 +3518,7 @@ static void gcollect(int full)
 
     {
       Fnl *f;
-      for (f = fnls; f; f = f->next) {
+      for (f = finalizers; f; f = f->next) {
 #if CHECKS
 	fnl_count++;
 #endif
@@ -3654,6 +3563,8 @@ static void gcollect(int full)
   free_unused_mpages();
 
   protect_old_mpages();
+
+  reset_finalizer_tree();
 
 #if (COMPACTING == NEVER_COMPACT)
 # define THRESH_FREE_LIST_DELTA (FREE_LIST_DELTA >> LOG_WORD_SIZE)
@@ -4175,6 +4086,11 @@ void GC_free(void *p)
 
     free_bigpage(page);
   }
+}
+
+long GC_malloc_atomic_stays_put_threshold() 
+{ 
+  return BIGBLOCK_MIN_SIZE;
 }
 
 void GC_gcollect()
@@ -4834,7 +4750,7 @@ void GC_dump(void)
     Fnl *f;
     avoid_collection++;
     GCPRINT(GCOUTF, "Begin Finalizations\n");
-    for (f = fnls; f; f = f->next) {
+    for (f = finalizers; f; f = f->next) {
       print_out_pointer("==@ ", f->p);
     }
     GCPRINT(GCOUTF, "End Finalizations\n");

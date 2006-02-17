@@ -156,10 +156,8 @@ typedef struct FSSpec mzFSSpec;
 
 #define MZ_EXTERN extern MZ_DLLSPEC
 
-#ifndef MZ_PRECISE_GC
-# if defined(MZ_USE_JIT_PPC) || defined(MZ_USE_JIT_I386)
-#  define MZ_USE_JIT
-# endif
+#if defined(MZ_USE_JIT_PPC) || defined(MZ_USE_JIT_I386)
+# define MZ_USE_JIT
 #endif
 
 /* Define _W64 for MSC if needed. */
@@ -790,7 +788,10 @@ typedef long mz_pre_jmp_buf[8];
 #endif
 
 #ifdef MZ_USE_JIT
-typedef struct { mz_pre_jmp_buf jb; void *stack_frame; } mz_one_jit_jmp_buf;
+typedef struct { 
+  mz_pre_jmp_buf jb; 
+  unsigned long stack_frame; /* declared as `long' to hide pointer from 3m xform */
+} mz_one_jit_jmp_buf;
 typedef mz_one_jit_jmp_buf mz_jit_jmp_buf[1];
 #else
 # define mz_jit_jmp_buf mz_pre_jmp_buf
@@ -799,7 +800,7 @@ typedef mz_one_jit_jmp_buf mz_jit_jmp_buf[1];
 #ifdef MZ_PRECISE_GC
 typedef struct {
   mz_jit_jmp_buf jb;
-  long gcvs; /* declared as `long' so it isn't pushed when on the stack! */
+  long gcvs; /* declared as `long' to hide pointer from 3m xform */
   long gcvs_cnt;
 } mz_jmp_buf;
 #else
@@ -880,6 +881,7 @@ typedef struct Scheme_Thread {
 
   mz_jmp_buf *error_buf;
   Scheme_Continuation_Jump_State cjs;
+  Scheme_Object *current_escape_cont_key;
 
   Scheme_Thread_Cell_Table *cell_values;
   Scheme_Config *init_config;

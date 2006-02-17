@@ -9,7 +9,7 @@
   (system s))
 
 (define accounting-gc? #t)
-(define opt-flags "/O2")
+(define opt-flags "/O2 /Oy-")
 (define re:only #f)
 
 (unless (directory-exists? "xsrc")
@@ -30,6 +30,7 @@
     "fun"
     "hash"
     "image"
+    "jit"
     "list"
     "module"
     "network"

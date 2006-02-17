@@ -2292,6 +2292,8 @@ static void thread_is_dead(Scheme_Thread *r)
   
   r->error_buf = NULL;
   r->overflow_buf = NULL;
+
+  r->spare_runstack = NULL;
 }
 
 static void remove_thread(Scheme_Thread *r)
@@ -3321,6 +3323,7 @@ static void raise_break(Scheme_Thread *p)
   Scheme_Ready_Fun block_check;
   Scheme_Needs_Wakeup_Fun block_needs_wakeup;
   Scheme_Object *a[1];
+  Scheme_Cont_Frame_Data cframe;
 
   p->external_break = 0;
 
@@ -3337,7 +3340,14 @@ static void raise_break(Scheme_Thread *p)
   
   a[0] = scheme_make_prim((Scheme_Prim *)raise_user_break);
 
+  /* Continuation frame ensures that this doesn't
+     look like it's in tail position with respect to
+     an existing escape continuation */
+  scheme_push_continuation_frame(&cframe);
+
   scheme_call_ec(1, a);
+
+  scheme_pop_continuation_frame(&cframe);
 
   /* Continue from break... */
   p->block_descriptor = block_descriptor;

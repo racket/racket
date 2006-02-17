@@ -1,4 +1,13 @@
 
+/* 
+   Provides:
+      GC_add_roots
+      my_qsort
+      roots, roots_count
+   Requires:
+      WORD_SIZE
+*/
+
 #define ROOTS_PTR_ALIGNMENT WORD_SIZE
 #define ROOTS_PTR_TO_INT(x) ((unsigned long)x)
 

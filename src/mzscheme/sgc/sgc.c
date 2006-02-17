@@ -606,40 +606,40 @@ static Tree *next(Tree *node)
 static void remove_freepage(SectorFreepage *fp)
 {
   /* Remove fp from freelists: */
-  sector_freepage_by_start = delete(fp->start, sector_freepage_by_start);
-  sector_freepage_by_end = delete(fp->end, sector_freepage_by_end);
+  sector_freepage_by_start = splay_delete(fp->start, sector_freepage_by_start);
+  sector_freepage_by_end = splay_delete(fp->end, sector_freepage_by_end);
   sector_freepage_by_size = splay(fp->size, sector_freepage_by_size);
   if (TREE_FP(sector_freepage_by_size) == fp) {
     /* This was the representative for its size; remove it. */
-    sector_freepage_by_size = delete(fp->size, sector_freepage_by_size);
+    sector_freepage_by_size = splay_delete(fp->size, sector_freepage_by_size);
     if (fp->same_size) {
       SectorFreepage *same;
       same = TREE_FP(fp->same_size);
-      same->same_size = delete(same->start, fp->same_size);
-      sector_freepage_by_size = insert(same->size, &same->by_size, sector_freepage_by_size);
+      same->same_size = splay_delete(same->start, fp->same_size);
+      sector_freepage_by_size = splay_insert(same->size, &same->by_size, sector_freepage_by_size);
     }
   } else {
     /* Not the top-level representative; remove it from the representative's
        same_size tree */
     SectorFreepage *same;
     same = TREE_FP(sector_freepage_by_size);
-    same->same_size = delete(fp->start, same->same_size);
+    same->same_size = splay_delete(fp->start, same->same_size);
   }
 }
 
 static void add_freepage(SectorFreepage *naya)
 {
   naya->by_start.data = (void *)naya;
-  sector_freepage_by_start = insert(naya->start, &naya->by_start, sector_freepage_by_start);
+  sector_freepage_by_start = splay_insert(naya->start, &naya->by_start, sector_freepage_by_start);
   naya->by_end.data = (void *)naya;
-  sector_freepage_by_end = insert(naya->end, &naya->by_end, sector_freepage_by_end);
+  sector_freepage_by_end = splay_insert(naya->end, &naya->by_end, sector_freepage_by_end);
   naya->by_size.data = (void *)naya;
-  sector_freepage_by_size = insert(naya->size, &naya->by_size, sector_freepage_by_size);
+  sector_freepage_by_size = splay_insert(naya->size, &naya->by_size, sector_freepage_by_size);
   if (TREE_FP(sector_freepage_by_size) != naya) {
     /* This size was already in the tree; add it to the next_size list, instead */
     SectorFreepage *already = TREE_FP(sector_freepage_by_size);
     naya->by_start_per_size.data = (void *)naya;
-    already->same_size = insert(naya->start, &naya->by_start_per_size, already->same_size);
+    already->same_size = splay_insert(naya->start, &naya->by_start_per_size, already->same_size);
   } else
     naya->same_size = NULL;
 }

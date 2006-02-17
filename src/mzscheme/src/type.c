@@ -356,6 +356,7 @@ static void MARK_stack_state(Scheme_Stack_State *ss)
   gcMARK(ss->runstack_start);
   ss->runstack = ss->runstack_start + (ss->runstack - old);
   gcMARK(ss->runstack_saved);
+  gcMARK(ss->current_escape_cont_key);
 }
 
 static void FIXUP_stack_state(Scheme_Stack_State *ss)
@@ -366,6 +367,7 @@ static void FIXUP_stack_state(Scheme_Stack_State *ss)
   gcFIXUP(ss->runstack_saved);
   gcFIXUP_TYPED_NOW(Scheme_Object **, ss->runstack_start);
   ss->runstack = ss->runstack_start + (ss->runstack - old);
+  gcFIXUP(ss->current_escape_cont_key);
 }
 
 static void MARK_jmpup(Scheme_Jumpup_Buf *buf)

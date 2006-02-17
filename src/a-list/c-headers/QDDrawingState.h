@@ -30,7 +30,6 @@ typedef struct {
 #if ALIST_USEAPPEARANCEMGR && TARGET_RT_MAC_CFM
 	ThemeDrawingState	themeState;		/* This is only needed if we're running under CFM. */
 #endif
-/*	PixPatHandle		backPixPatH, penPixPatH;		/* These may still memory leak like a sieve if you have patterns. */
 	PenState			penState;
 	RGBColor			backColor, foreColor;
 	TextStyle			textStyle;

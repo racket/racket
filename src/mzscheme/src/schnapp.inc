@@ -59,7 +59,7 @@
 #if PRIM_CHECK_MULTI
   return _scheme_apply(rator, argc, argv);
 #else
-# ifdef PRIM_CHECK_VALUE
+# if PRIM_CHECK_VALUE
   return _scheme_apply_multi(rator, argc, argv);
 # else
   return _scheme_tail_apply(rator, argc, argv);

@@ -341,7 +341,10 @@ cont_proc {
   gcMARK(c->orig_mark_segments);
   gcMARK(c->init_config);
   gcMARK(c->init_break_cell);
-  
+#ifdef MZ_USE_JIT
+  gcMARK(c->native_trace);
+#endif
+
   MARK_jmpup(&c->buf);
   MARK_cjs(&c->cjs);
   MARK_stack_state(&c->ss);
@@ -380,6 +383,10 @@ escaping_cont_proc {
   Scheme_Escaping_Cont *c = (Scheme_Escaping_Cont *)p;
 
   gcMARK(c->mark_key);
+  gcMARK(c->marks_prefix);
+#ifdef MZ_USE_JIT
+  gcMARK(c->native_trace);
+#endif
 
   MARK_cjs(&c->cjs);
   MARK_stack_state(&c->envss);
@@ -560,6 +567,8 @@ thread_val {
   gcMARK(pr->t_set_prev);
 
   MARK_cjs(&pr->cjs);
+
+  gcMARK(pr->current_escape_cont_key);
 
   gcMARK(pr->cell_values);
   gcMARK(pr->init_config);
@@ -1762,6 +1771,70 @@ lex_rib {
 }
 
 END stxobj;
+
+/**********************************************************************/
+
+START jit;
+
+native_closure {
+  Scheme_Native_Closure *c = (Scheme_Native_Closure *)p;
+  int closure_size = ((Scheme_Native_Closure_Data *)GC_resolve(c->code))->closure_size;
+
+  if (closure_size < 0) {
+    closure_size = -(closure_size + 1);
+  }
+
+ mark:
+
+  {
+    int i = closure_size;
+    while (i--)
+      gcMARK(c->vals[i]);
+  }
+  gcMARK(c->code);
+  
+ size:
+  gcBYTES_TO_WORDS((sizeof(Scheme_Native_Closure)
+		    + (closure_size - 1) * sizeof(Scheme_Object *)));
+}
+
+mark_jit_state {
+ mark:
+  mz_jit_state *j = (mz_jit_state *)p;
+  gcMARK(j->mappings);
+ size:
+  gcBYTES_TO_WORDS(sizeof(mz_jit_state));
+}
+
+native_unclosed_proc {
+ mark:
+  Scheme_Native_Closure_Data *d = (Scheme_Native_Closure_Data *)p;
+  int i;
+
+  gcMARK(d->u2.name);
+  for (i = d->retain_count; i--; ) {
+    gcMARK(d->retained[i]);
+  }
+  if (d->closure_size < 0) {
+    gcMARK(d->u.arities);
+  }
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Native_Closure_Data));
+}
+
+native_unclosed_proc_plus_case {
+ mark:
+  Scheme_Native_Closure_Data_Plus_Case *d = (Scheme_Native_Closure_Data_Plus_Case *)p;
+
+  native_unclosed_proc_MARK(p);
+  gcMARK(d->case_lam);
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Native_Closure_Data_Plus_Case));
+}
+
+END jit;
 
 /**********************************************************************/
 

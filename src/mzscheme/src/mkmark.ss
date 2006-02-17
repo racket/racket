@@ -38,13 +38,13 @@
     (let ([prefix (read-lines re:mark)]
 	  [mark (read-lines re:size)]
 	  [size (read-lines re:close)])
-      (printf "int ~a_SIZE(void *p) {~n" name)
+      (printf "static int ~a_SIZE(void *p) {~n" name)
       (print-lines prefix)
       (printf "  return~n")
       (print-lines size)
       (printf "}~n~n")
 
-      (printf "int ~a_MARK(void *p) {~n" name)
+      (printf "static int ~a_MARK(void *p) {~n" name)
       (print-lines prefix)
       (print-lines (map (lambda (s)
 			  (regexp-replace* 
@@ -59,7 +59,7 @@
       (print-lines size)
       (printf "}~n~n")
 
-      (printf "int ~a_FIXUP(void *p) {~n" name)
+      (printf "static int ~a_FIXUP(void *p) {~n" name)
       (print-lines prefix)
       (print-lines (map (lambda (s)
 			  (regexp-replace* 

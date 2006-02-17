@@ -402,6 +402,8 @@ void *GC_malloc_atomic_uncollectable(size_t s) { return malloc(s); }
 void *GC_malloc_allow_interior(size_t s) {return allocate_big(s, PAGE_ARRAY);}
 void GC_free(void *p) {}
 
+long GC_malloc_atomic_stays_put_threshold() { return gcWORDS_TO_BYTES(MAX_OBJECT_SIZEW); }
+
 /* this function resizes generation 0 to the closest it can get (erring high)
    to the size we've computed as ideal */
 inline static void resize_gen0(unsigned long new_size)
@@ -728,7 +730,7 @@ void GC_fixup_variable_stack(void **var_stack, long delta, void *limit)
 /* Routines for root sets                                                    */
 /*****************************************************************************/
 
-#include "roots.inc"
+#include "roots.c"
 
 #define traverse_roots(gcMUCK) {                                            \
     unsigned long j;                                                        \
@@ -806,58 +808,15 @@ inline static void repair_immobiles(void)
 /*****************************************************************************/
 /* finalizers                                                                */
 /*****************************************************************************/
-struct finalizer {
-  char eager_level;
-  char tagged;
-  void *p;
-  GC_finalization_proc f;
-  void *data;
-  struct finalizer *next;
-};
 
-static struct finalizer *finalizers = NULL;
-static struct finalizer *run_queue = NULL, *last_in_queue = NULL;
-
-void GC_set_finalizer(void *p, int tagged, int level, 
-		      GC_finalization_proc f, void *data,
-		      GC_finalization_proc *oldf, void **olddata)
+static int is_finalizable_page(void *p)
 {
-  struct mpage *page = find_page(p);
-  struct finalizer *fnl, *prev;
-
-  if(!page) {
-    if(oldf) *oldf = NULL;
-    if(olddata) *olddata = NULL;
-    return;
-  }
-
-  for(fnl = finalizers, prev = NULL; fnl; prev = fnl, fnl = fnl->next)
-    if(fnl->p == p) {
-      if(oldf) *oldf = fnl->f;
-      if(olddata) *olddata = fnl->data;
-      
-      if(f) {
-	fnl->f = f;
-	fnl->data = data;
-	fnl->eager_level = level;
-      } else {
-	if(prev) prev->next = fnl->next;
-	if(!prev) finalizers = fnl->next;
-      }
-      return;
-    }
-
-  if(oldf) *oldf = NULL;
-  if(olddata) *olddata = NULL;
-  if(!f) return;
-
-  park[0] = p; park[1] = data;
-  fnl = GC_malloc_atomic(sizeof(struct finalizer));
-  p = park[0]; data = park[1]; park[0] = park[1] = NULL;
-  fnl->p = p; fnl->f = f; fnl->data = data; fnl->eager_level = level;
-  fnl->tagged = tagged; fnl->next = finalizers;
-  finalizers = fnl;
+  return (find_page(p) ? 1 : 0);
 }
+
+#include "fnls.c"
+
+static Fnl *run_queue, *last_in_queue;
 
 inline static void mark_finalizer_structs(void)
 {
@@ -2390,6 +2349,7 @@ static void garbage_collect(int force_full)
   if (generations_available)
     protect_old_pages();
   flush_freed_pages();
+  reset_finalizer_tree();
 
   /* new we do want the allocator freaking if we go over half */
   in_unsafe_allocation_mode = 0;

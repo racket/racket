@@ -38,6 +38,7 @@ OBJS =  salloc.@LTO@ \
 	fun.@LTO@ \
 	hash.@LTO@ \
 	image.@LTO@ \
+	jit.@LTO@ \
 	list.@LTO@ \
 	module.@LTO@ \
 	network.@LTO@ \
@@ -78,6 +79,7 @@ XSRCS = $(XSRCDIR)/salloc.c \
 	$(XSRCDIR)/fun.c \
 	$(XSRCDIR)/hash.c \
 	$(XSRCDIR)/image.c \
+	$(XSRCDIR)/jit.c \
 	$(XSRCDIR)/list.c \
 	$(XSRCDIR)/module.c \
 	$(XSRCDIR)/network.c \
@@ -144,6 +146,8 @@ $(XSRCDIR)/hash.c: ../src/hash.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/hash.c $(SRCDIR)/hash.c
 $(XSRCDIR)/image.c: ../src/image.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/image.c $(SRCDIR)/image.c
+$(XSRCDIR)/jit.c: ../src/jit.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/jit.c $(SRCDIR)/jit.c
 $(XSRCDIR)/module.c: ../src/module.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/module.c $(SRCDIR)/module.c
 $(XSRCDIR)/list.c: ../src/list.@LTO@ $(XFORMDEP)
@@ -224,6 +228,8 @@ hash.@LTO@: $(XSRCDIR)/hash.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/hash.c -o hash.@LTO@
 image.@LTO@: $(XSRCDIR)/image.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/image.c -o image.@LTO@
+jit.@LTO@: $(XSRCDIR)/jit.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/jit.c -o jit.@LTO@
 list.@LTO@: $(XSRCDIR)/list.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/list.c -o list.@LTO@
 module.@LTO@: $(XSRCDIR)/module.c
@@ -277,7 +283,7 @@ main.@LTO@: $(XSRCDIR)/main.c
 
 gc2.@LTO@: $(srcdir)/gc2.c $(srcdir)/newgc.c $(srcdir)/compact.c $(srcdir)/newgc.c $(srcdir)/gc2.h \
        $(srcdir)/vm_osx.c $(srcdir)/vm_mmap.c $(srcdir)/vm_osk.c $(srcdir)/alloc_cache.c $(srcdir)/my_qsort.c \
-       $(srcdir)/weak.c $(srcdir)/../include/scheme.h $(srcdir)/../src/schpriv.h
+       $(srcdir)/weak.c $(srcdir)/fnls.c $(srcdir)/../include/scheme.h $(srcdir)/../src/schpriv.h
 	$(CC) $(CFLAGS) -c $(srcdir)/gc2.c -o gc2.@LTO@
 
 FOREIGN_OBJS = ../../foreign/gcc/libffi/src/*.@LTO@ ../../foreign/gcc/libffi/src/*/*.@LTO@

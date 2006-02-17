@@ -26,6 +26,17 @@
 # define _CALL_DARWIN
 #endif
 
+/* Separate JIT_PRECISE_GC lets us test some 3m support 
+   in non-3m mode: */
+#ifdef MZ_PRECISE_GC
+# define JIT_PRECISE_GC
+#endif
+
+/* IMPORTANT! 3m arithmetic checking disabled for the whole file! */
+#ifdef MZ_PRECISE_GC
+END_XFORM_ARITH;
+#endif
+
 #include "lightning/lightning.h"
 
 #define JIT_LOG_WORD_SIZE 2
@@ -65,7 +76,8 @@ static void *get_stack_pointer_code;
 static void *stack_cache_pop_code;
 
 typedef struct {
-  jit_state js;
+  MZTAG_IF_REQUIRED
+  GC_CAN_IGNORE jit_state js;
   char *limit;
   int extra_pushed, max_extra_pushed;
   int depth, max_depth;
@@ -97,6 +109,11 @@ static void generate_case_lambda(Scheme_Case_Lambda *c, Scheme_Native_Closure_Da
 static void on_demand();
 static int generate_non_tail_mark_pos_prefix(mz_jit_state *jitter);
 static void generate_non_tail_mark_pos_suffix(mz_jit_state *jitter);
+
+#ifdef MZ_PRECISE_GC
+static void register_traversers(void);
+static void release_native_code(void *fnlized, void *p);
+#endif
 
 /* Tracking statistics: */
 #if 0
@@ -173,11 +190,11 @@ static int mz_retain_it(mz_jit_state *jitter, void *v)
   return jitter->retained;
 }
 
-#ifdef MZ_PRECISE_GC
+#ifdef JIT_PRECISE_GC
 static void mz_load_retained(mz_jit_state *jitter, int rs, int retptr)
 {
   void *p;
-  p = jitter->retain_start + retptr;
+  p = jitter->retain_start + retptr - 1;
   (void)jit_movi_p(rs, p);
   jit_ldr_p(rs, rs);
 }
@@ -187,7 +204,8 @@ static void *generate_one(mz_jit_state *old_jitter,
 			  Generate_Proc generate,
 			  void *data,
 			  int gcable,
-			  void *save_ptr)
+			  void *save_ptr,
+			  Scheme_Native_Closure_Data *ndata)
 {
   mz_jit_state _jitter;
   mz_jit_state *jitter = &_jitter;
@@ -197,11 +215,24 @@ static void *generate_one(mz_jit_state *old_jitter,
   long size = JIT_BUFFER_INIT_SIZE, known_size = 0, size_pre_retained = 0, num_retained = 0, padding;
   int mappings_size = JIT_INIT_MAPPINGS_SIZE;
   int ok, max_extra_pushed = 0;
+#ifdef MZ_PRECISE_GC
+  Scheme_Object *fnl_obj;
+
+  if (ndata) {
+    /* When fnl_obj becomes inaccessible, code generated
+       here can be freed. */
+    fnl_obj = scheme_box(scheme_false);
+  } else
+    fnl_obj = NULL;
+#endif
 
   if (!jit_buffer_cache_registered) {
     jit_buffer_cache_registered = 1;
     REGISTER_SO(jit_buffer_cache);
     REGISTER_SO(stack_cache_stack);
+#ifdef MZ_PRECISE_GC
+    register_traversers();
+#endif
     /* printf("zap!\n"); */
   }
 
@@ -216,7 +247,11 @@ static void *generate_one(mz_jit_state *old_jitter,
       size = size_pre_retained + WORDS_TO_BYTES(num_retained);
       padding = 0;
       if (gcable) {
+#ifdef MZ_PRECISE_GC
+	buffer = malloc(size);
+#else
 	buffer = scheme_malloc(size);
+#endif
       } else {
 	buffer = malloc(size);
       }
@@ -242,16 +277,35 @@ static void *generate_one(mz_jit_state *old_jitter,
 	size = jit_buffer_cache_size;
 	jit_buffer_cache = NULL;
       } else {
+#ifdef MZ_PRECISE_GC
+	long minsz;
+	minsz = GC_malloc_atomic_stays_put_threshold();
+	if (size < minsz)
+	  size = minsz;
+	buffer = (char *)scheme_malloc_atomic(size);
+#else
 	buffer = scheme_malloc(size);
+#endif
       }
       size_pre_retained = size;
     }
       
     (void)jit_set_ip(buffer).ptr;
     jitter->limit = (char *)buffer + size_pre_retained - padding;
-    if (known_size)
+    if (known_size) {
       jitter->retain_start = (void *)jitter->limit;
-    else
+#ifdef MZ_PRECISE_GC
+      if (ndata) {
+	memset(jitter->retain_start, 0, num_retained * sizeof(void*));
+	ndata->retained = jitter->retain_start;
+	ndata->retain_count = num_retained;
+	SCHEME_BOX_VAL(fnl_obj) = scheme_make_integer(size_pre_retained);
+	GC_set_finalizer(fnl_obj, 1, 1,
+			 release_native_code, buffer,
+			 NULL, NULL);
+      }
+#endif
+    } else
       jitter->retain_start = NULL;
 
     jitter->mappings = mappings;
@@ -265,6 +319,11 @@ static void *generate_one(mz_jit_state *old_jitter,
     if (save_ptr) {
       mz_retain_it(jitter, save_ptr);
     }
+#ifdef MZ_PRECISE_GC
+    if (fnl_obj) {
+      mz_retain_it(jitter, fnl_obj);
+    }
+#endif
 
     jitter->limit = (char *)jitter->limit + padding;
     if (PAST_LIMIT() || (jitter->retain_start
@@ -1217,7 +1276,7 @@ static void *generate_shared_call(int num_rands, mz_jit_state *old_jitter, int m
   data.direct_prim = direct_prim;
   data.direct_native = direct_native;
 
-  return generate_one(old_jitter, do_generate_shared_call, &data, 0, NULL);
+  return generate_one(old_jitter, do_generate_shared_call, &data, 0, NULL, NULL);
 }
 
 static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_rands, 
@@ -2019,7 +2078,7 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       
       __START_SHORT_JUMPS__(branch_short);
 
-#ifdef MZ_PRECISE_GC
+#ifdef JIT_PRECISE_GC
       if (retptr) {
 	mz_load_retained(jitter, JIT_R1, retptr);
 	ref = jit_bner_p(jit_forward(), JIT_R0, JIT_R1);
@@ -2207,7 +2266,7 @@ static int generate_closure(Scheme_Closure_Data *data,
   JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
   mz_prepare(1);
   retptr = mz_retain(code);
-#ifdef MZ_PRECISE_GC
+#ifdef JIT_PRECISE_GC
   mz_load_retained(jitter, JIT_R0, retptr);
 #else
   (void)jit_movi_p(JIT_R0, code); /* !! */
@@ -2245,6 +2304,9 @@ Scheme_Native_Closure_Data *scheme_generate_case_lambda(Scheme_Case_Lambda *c)
   int max_let_depth = 0, i, count, is_method = 0;
 
   ndata = MALLOC_ONE_RT(Scheme_Native_Closure_Data);
+#ifdef MZTAG_REQUIRED
+  ndata->type = scheme_rt_native_code;
+#endif
   name = c->name;
   if (name && SCHEME_BOXP(name)) {
     name = SCHEME_BOX_VAL(name);
@@ -2300,7 +2362,7 @@ static int generate_case_closure(Scheme_Object *obj, mz_jit_state *jitter)
   JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
   mz_prepare(1);
   retptr = mz_retain(ndata);
-#ifdef MZ_PRECISE_GC
+#ifdef JIT_PRECISE_GC
   mz_load_retained(jitter, JIT_R0, retptr);
 #else
   (void)jit_movi_p(JIT_R0, ndata); /* !! */
@@ -2442,9 +2504,11 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
     Scheme_Thread *p = scheme_current_thread;
     mz_jit_state *jitter_copy;
 
-    /* 3m FIXME: need precise handling of this copy: */
-    jitter_copy = (mz_jit_state *)scheme_malloc(sizeof(jitter_copy));
+    jitter_copy = MALLOC_ONE_RT(mz_jit_state);
     memcpy(jitter_copy, jitter, sizeof(mz_jit_state));
+#ifdef MZTAG_REQUIRED
+    jitter_copy->type = scheme_rt_jitter_data;
+#endif
 
     p->ku.k.p1 = (void *)obj;
     p->ku.k.p2 = (void *)jitter_copy;
@@ -3191,7 +3255,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       } else
 	retptr = 0;
 
-#ifdef MZ_PRECISE_GC
+#ifdef JIT_PRECISE_GC
       if (retptr)
 	mz_load_retained(jitter, JIT_R0, retptr);
       else
@@ -3378,7 +3442,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   __START_SHORT_JUMPS__(1);
   /* Load global array: */
   jit_ldxr_p(JIT_V1, JIT_RUNSTACK, JIT_R0);
-#ifdef MZ_PRECISE_GC
+#ifdef JIT_PRECISE_GC
   /* Save global-array index before we lose it: */
   mz_set_local_p(JIT_R0, JIT_LOCAL3);
 #endif
@@ -3389,7 +3453,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   CHECK_LIMIT();
   /* Syntax object is NULL, so we need to create it. */
   jit_ldxr_p(JIT_R0, JIT_V1, JIT_R2); /* put element at p in R0 */
-#ifndef MZ_PRECISE_GC
+#ifndef JIT_PRECISE_GC
   /* Save global array: */
   mz_set_local_p(JIT_V1, JIT_LOCAL3);
 #endif
@@ -3413,9 +3477,9 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   CHECK_LIMIT();
   jit_retval(JIT_R0);
   /* Restore global array into JIT_R1, and put computed element at i+p+1: */
-#ifdef MZ_PRECISE_GC
+#ifdef JIT_PRECISE_GC
   mz_get_local_p(JIT_R1, JIT_LOCAL3);
-  jit_ldxr_p(JIT_R1, JIT_RUNSTACK, JIT_R0);
+  jit_ldxr_p(JIT_R1, JIT_RUNSTACK, JIT_R1);
 #else
   mz_get_local_p(JIT_R1, JIT_LOCAL3);
 #endif
@@ -3805,7 +3869,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     __END_SHORT_JUMPS__(cnt < 100);
   }
 
-#ifdef MZ_PRECISE_GC
+#ifdef JIT_PRECISE_GC
   /* Keeping the native-closure pointer on the runstack
      ensures that the code won't be GCed while we're running
      it. */
@@ -3841,6 +3905,8 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
       } else
 	mz_runstack_pushed(jitter, 1);
     }
+  } else {
+    mz_runstack_pushed(jitter, cnt);
   }
 
   LOG_IT(("PROC: %s\n", (data->name ? scheme_format_utf8("~s", 2, 1, &data->name, NULL) : "???")));
@@ -3884,7 +3950,7 @@ static void on_demand_generate_lambda(Scheme_Native_Closure_Data *ndata)
 
   gdata.data = data;
 
-  generate_one(NULL, do_generate_closure, &gdata, 1, data->name);
+  generate_one(NULL, do_generate_closure, &gdata, 1, data->name, ndata);
 
   if (gdata.max_depth > data->max_let_depth) {
     scheme_console_printf("Bad max depth!\n");
@@ -3956,16 +4022,22 @@ Scheme_Native_Closure_Data *scheme_generate_lambda(Scheme_Closure_Data *data, in
 
   if (!jump_to_native_code) {
     /* Create shared code used for stack-overflow handling, etc.: */
-    generate_one(NULL, do_generate_common, NULL, 0, NULL);
+    generate_one(NULL, do_generate_common, NULL, 0, NULL, NULL);
   }
 
   if (!case_lam) {
     ndata = MALLOC_ONE_RT(Scheme_Native_Closure_Data);
+#ifdef MZTAG_REQUIRED
+    ndata->type = scheme_rt_native_code;
+#endif
   } else {
     Scheme_Native_Closure_Data_Plus_Case *ndatap;
     ndatap = MALLOC_ONE_RT(Scheme_Native_Closure_Data_Plus_Case);
     ndatap->case_lam = case_lam;
     ndata = (Scheme_Native_Closure_Data *)ndatap;
+#ifdef MZTAG_REQUIRED
+    ndata->type = scheme_rt_native_code_plus_case;
+#endif
   }
   ndata->code = on_demand_jit_code;
   ndata->u.tail_code = on_demand_jit_arity_code;
@@ -4091,7 +4163,7 @@ static void *generate_lambda_simple_arity_check(int num_params, int has_rest, in
   data.has_rest = has_rest;
   data.is_method = is_method;
 
-  return generate_one(NULL, do_generate_lambda_simple_arity_check, &data, !permanent, NULL);
+  return generate_one(NULL, do_generate_lambda_simple_arity_check, &data, !permanent, NULL, NULL);
 }
 
 static int generate_case_lambda_dispatch(mz_jit_state *jitter, Scheme_Case_Lambda *c, Scheme_Native_Closure_Data *ndata,
@@ -4204,7 +4276,7 @@ static void generate_case_lambda(Scheme_Case_Lambda *c, Scheme_Native_Closure_Da
   gdata.ndata = ndata;
   gdata.is_method = is_method;
 
-  generate_one(NULL, do_generate_case_lambda_dispatch, &gdata, 1, NULL);
+  generate_one(NULL, do_generate_case_lambda_dispatch, &gdata, 1, NULL, ndata);
 
   /* Generate arity table used by scheme_native_arity_check
      and scheme_get_native_arity: */
@@ -4495,6 +4567,10 @@ Scheme_Object *scheme_native_stack_trace(void)
   return first;
 }
 
+#ifdef MZ_XFORM
+START_XFORM_SKIP;
+#endif
+
 void scheme_flush_stack_cache()
 {
   void **p;
@@ -4511,7 +4587,7 @@ void scheme_jit_longjmp(mz_jit_jmp_buf b, int v)
   unsigned long limit;
   void **p;
 
-  limit = (unsigned long)b->stack_frame;
+  limit = b->stack_frame;
 
   while (stack_cache_stack_pos
 	 && STK_COMP((unsigned long)stack_cache_stack[stack_cache_stack_pos].stack_frame,
@@ -4528,12 +4604,55 @@ void scheme_jit_setjmp_prepare(mz_jit_jmp_buf b)
 {
   void *p;
   p = &p;
-  b->stack_frame = p;
+  b->stack_frame = (unsigned long)p;
 }
+
+#ifdef MZ_XFORM
+END_XFORM_SKIP;
+#endif
 
 void scheme_clean_native_symtab(void)
 {
+#ifndef MZ_PRECISE_GC
   clear_symbols_for_collected();
+#endif
 }
+
+#ifdef MZ_PRECISE_GC
+static void release_native_code(void *fnlized, void *p)
+{
+  Scheme_Object *len;
+
+  len = SCHEME_BOX_VAL(fnlized);
+
+  /* Remove name mapping: */
+  add_symbol((unsigned long)p, (unsigned long)p + SCHEME_INT_VAL(len), NULL, 0);
+  /* Free memory: */
+  free(p);
+}
+#endif
+
+/**********************************************************************/
+/*                           Precise GC                               */
+/**********************************************************************/
+
+#ifdef MZ_PRECISE_GC
+
+START_XFORM_SKIP;
+
+#define MARKS_FOR_JIT_C
+#include "mzmark.c"
+
+static void register_traversers(void)
+{
+  GC_REG_TRAV(scheme_native_closure_type, native_closure);
+  GC_REG_TRAV(scheme_rt_jitter_data, mark_jit_state);
+  GC_REG_TRAV(scheme_rt_native_code, native_unclosed_proc);
+  GC_REG_TRAV(scheme_rt_native_code_plus_case, native_unclosed_proc_plus_case);
+}
+
+END_XFORM_SKIP;
+
+#endif /* MZ_PRECISE_GC */
 
 #endif /* MZ_USE_JIT */

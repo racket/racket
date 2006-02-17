@@ -881,6 +881,7 @@ typedef struct Scheme_Stack_State {
   Scheme_Saved_Stack *runstack_saved;
   MZ_MARK_POS_TYPE cont_mark_pos;
   MZ_MARK_STACK_TYPE cont_mark_stack;
+  Scheme_Object *current_escape_cont_key;
 } Scheme_Stack_State;
 
 typedef struct Scheme_Dynamic_Wind {
@@ -914,6 +915,9 @@ typedef struct Scheme_Cont {
   void *o_start;
   Scheme_Config *init_config;
   Scheme_Object *init_break_cell;
+#ifdef MZ_USE_JIT
+  Scheme_Object *native_trace;
+#endif
   struct Scheme_Overflow *save_overflow;
   mz_jmp_buf *savebuf; /* save old error buffer here */
 } Scheme_Cont;
@@ -923,6 +927,10 @@ typedef struct Scheme_Escaping_Cont {
   Scheme_Continuation_Jump_State cjs;
   Scheme_Object *mark_key;
   struct Scheme_Stack_State envss;
+#ifdef MZ_USE_JIT
+  Scheme_Object *native_trace;
+#endif
+  Scheme_Object *marks_prefix;
   mz_jmp_buf *saveerr;
   int suspend_break;
 } Scheme_Escaping_Cont;
@@ -934,11 +942,13 @@ int scheme_escape_continuation_ok(Scheme_Object *);
 #define scheme_save_env_stack_w_thread(ss, p) \
     (ss.runstack = MZ_RUNSTACK, ss.runstack_start = MZ_RUNSTACK_START, \
      ss.cont_mark_stack = MZ_CONT_MARK_STACK, ss.cont_mark_pos = MZ_CONT_MARK_POS, \
-     ss.runstack_size = p->runstack_size, ss.runstack_saved = p->runstack_saved)
+     ss.runstack_size = p->runstack_size, ss.runstack_saved = p->runstack_saved, \
+     ss.current_escape_cont_key = p->current_escape_cont_key)
 #define scheme_restore_env_stack_w_thread(ss, p) \
     (MZ_RUNSTACK = ss.runstack, MZ_RUNSTACK_START = ss.runstack_start, \
      MZ_CONT_MARK_STACK = ss.cont_mark_stack, MZ_CONT_MARK_POS = ss.cont_mark_pos, \
-     p->runstack_size = ss.runstack_size, p->runstack_saved = ss.runstack_saved)
+     p->runstack_size = ss.runstack_size, p->runstack_saved = ss.runstack_saved, \
+     p->current_escape_cont_key = ss.current_escape_cont_key)
 #define scheme_save_env_stack(ss) \
     scheme_save_env_stack_w_thread(ss, scheme_current_thread)
 #define scheme_restore_env_stack(ss) \
@@ -1566,7 +1576,8 @@ typedef struct Scheme_Native_Closure_Data {
     Scheme_Object *name;
   } u2;
 #ifdef MZ_PRECISE_GC
-  void *retain_start; /* up to arity_code */
+  void **retained; /* inside code */
+  mzshort retain_count;
 #endif
 } Scheme_Native_Closure_Data;
 

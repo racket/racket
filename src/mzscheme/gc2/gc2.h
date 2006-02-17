@@ -188,6 +188,11 @@ GC2_EXTERN void GC_free_immobile_box(void **b);
    Allocate (or free) a non-GCed box containing a pointer to a GCed
    value.  The pointer is stored as the first longword of the box. */
 
+GC2_EXTERN long GC_malloc_atomic_stays_put_threshold();
+/*
+   Returns a minimum size for which atomic allocations generate
+   objects that never move. */
+
 /***************************************************************************/
 /* Memory tracing                                                          */
 /***************************************************************************/

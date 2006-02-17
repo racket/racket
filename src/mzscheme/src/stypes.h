@@ -209,6 +209,9 @@ enum {
   scheme_rt_parameterization,           /* 188 */
   scheme_rt_print_params,               /* 189 */
   scheme_rt_read_params,                /* 190 */
+  scheme_rt_native_code,                /* 191 */
+  scheme_rt_native_code_plus_case,      /* 192 */
+  scheme_rt_jitter_data,                /* 193 */
 #endif
 
   _scheme_last_type_

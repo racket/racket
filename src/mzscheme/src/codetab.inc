@@ -2,23 +2,26 @@
 /* Implementation of the "symbol table" for mapping code
    pointers to function names. */
 
-#ifdef USE_SENORA_GC
+#ifndef MZ_PRECISE_GC
+# ifdef USE_SENORA_GC
 # define GC_is_marked(p) GC_base(p)
-#else
+# else
 extern MZ_DLLIMPORT int GC_is_marked(void *);
+# endif
 #endif
 
 #define LOG_KEY_SIZE 4
 #define KEY_MASK ((1 << LOG_KEY_SIZE) - 1)
 #define KEY_COUNT (1 << LOG_KEY_SIZE)
 
-#define NODE_HEADER_SIZE 2
-
+/* In words: */
+#define NODE_HEADER_SIZE 3
 #define NODE_STARTS_OFFSET 1
 #define NODE_GCABLE_OFFSET 2
 
 static void **tree;
 
+static int do_clear_symbols(void **t, unsigned long start, int offset, unsigned long addr, int clearing);
 static int during_set;
 
 static void *find_symbol(unsigned long v)
@@ -44,6 +47,19 @@ static void *find_symbol(unsigned long v)
   return NULL;
 }
 
+static void **malloc_node()
+{
+  void **v;
+  v = (void **)scheme_malloc((KEY_COUNT + NODE_HEADER_SIZE) * sizeof(void *));
+
+  /* Set low bit in each of STARTS and GCABLE so that they're not confused
+     for pointers: */
+  ((unsigned long *)v)[NODE_STARTS_OFFSET] = 0x1;
+  ((unsigned long *)v)[NODE_GCABLE_OFFSET] = 0x1;
+
+  return v;
+}
+
 static void add_symbol(unsigned long start, unsigned long end, void *value, int gc_able)
 {
   unsigned long k1, k2, split_t_start = 0, split_t_end = 0, i;
@@ -53,7 +69,7 @@ static void add_symbol(unsigned long start, unsigned long end, void *value, int 
 
   if (!tree) {
     REGISTER_SO(tree);
-    tree = (void **)scheme_malloc((KEY_COUNT + NODE_HEADER_SIZE) * sizeof(void *));
+    tree = malloc_node();
   }
 
   during_set++;
@@ -67,7 +83,7 @@ static void add_symbol(unsigned long start, unsigned long end, void *value, int 
     if (offset) {
       val1 = t1[k1];
       if (!val1) {
-	val1 = (void **)scheme_malloc((KEY_COUNT + NODE_HEADER_SIZE) * sizeof(void *));
+	val1 = malloc_node();
 	t1[k1] = val1;
       }
     } else
@@ -78,7 +94,7 @@ static void add_symbol(unsigned long start, unsigned long end, void *value, int 
       /* Need to go deeper... */
       val2 = t2[k2];
       if (!val2) {
-	val2 = (void **)scheme_malloc((KEY_COUNT + NODE_HEADER_SIZE) * sizeof(void *));
+	val2 = malloc_node();
 	t2[k2] = val2;
       }
     } else
@@ -103,10 +119,17 @@ static void add_symbol(unsigned long start, unsigned long end, void *value, int 
   }
 
   /* Mark start bit: */
-  m = (1 << (k1 - NODE_HEADER_SIZE));
-  ((unsigned short *)t1)[NODE_STARTS_OFFSET] |= m;
+  m = (1 << (k1 - NODE_HEADER_SIZE + 1));
+  ((unsigned long *)t1)[NODE_STARTS_OFFSET] |= m;
+#ifndef MZ_PRECISE_GC
+  /* GCABLE flag indicates whether to check for GC later */
   if (gc_able)
-    ((unsigned short *)t1)[NODE_GCABLE_OFFSET] |= m;
+    ((unsigned long *)t1)[NODE_GCABLE_OFFSET] |= m;
+#else
+  /* GCABLE flag indicates whether it's been GCed: */
+  if (!value)
+    ((unsigned long *)t1)[NODE_GCABLE_OFFSET] |= m;
+#endif
 
   /* Fill in start and end: */
   t1[k1] = value;
@@ -145,9 +168,19 @@ static void add_symbol(unsigned long start, unsigned long end, void *value, int 
   }
 
   --during_set;
+
+#ifdef MZ_PRECISE_GC
+  if (!value) {
+    /* Prune empty branches in the tree. Only do this if this
+       object is mapped deeply enough in the tree, otherwise
+       we end up scanning the whole tree. */
+    do_clear_symbols(tree, start, 0, 0, 0);
+  }
+#endif
 }
 
-static int do_clear_symbols(void **t, int offset, unsigned long addr, int clearing)
+static int do_clear_symbols(void **t, unsigned long start, int offset, unsigned long addr, int clearing)
+  /* If MZ_PRECISE_GC, then offset and addr are not used. */
 {
   int i, m, j;
   void *p, *val, **subt;
@@ -155,26 +188,44 @@ static int do_clear_symbols(void **t, int offset, unsigned long addr, int cleari
   /* Note: this function might be called  (via a GC callback)
      while add_symbol is running. */
 
-  for (i = 0; i < KEY_COUNT; i++) {
-    m = (1 << i);
-    if (((unsigned short *)t)[NODE_STARTS_OFFSET] & m) {
+  for (i = ((start >> offset) & KEY_MASK); i < KEY_COUNT; i++) {
+    m = (1 << (i + 1));
+    if (((unsigned long *)t)[NODE_STARTS_OFFSET] & m) {
       clearing = 0;
-      if (((unsigned short *)t)[NODE_GCABLE_OFFSET] & m) {
+      if (((unsigned long *)t)[NODE_GCABLE_OFFSET] & m) {
 	/* GCable pointer starts here */
+#ifndef MZ_PRECISE_GC
+	/* Conservative GC: GCable flag means use GC_is_marked */
 	p = (void *)(addr + (i << offset));
-	if (!GC_is_marked(p)) {
+	if (!GC_is_marked(p))
+	  clearing = 1;
+#else
+	/* Precise GC: GCable flag means it's gone */
+	clearing = 1;
+#endif
+	if (clearing) {
 	  /* Collected... */
-	  ((unsigned short *)t)[NODE_STARTS_OFFSET] -= m;
-	  ((unsigned short *)t)[NODE_GCABLE_OFFSET] -= m;
-	  clearing = 1;  
+	  ((unsigned long *)t)[NODE_STARTS_OFFSET] -= m;
+	  ((unsigned long *)t)[NODE_GCABLE_OFFSET] -= m;
 	}
+      } else {
+#ifdef MZ_PRECISE_GC
+	return 0;
+#endif
       }
     }
-    val = t[i + NODE_HEADER_SIZE];
+
+#ifdef MZ_PRECISE_GC
+    if (!clearing)
+      val = NULL;
+    else
+#endif
+      val = t[i + NODE_HEADER_SIZE];
+
     if (val) {
       if (!*(Scheme_Type *)val) {
 	subt = (void **)val;
-	clearing = do_clear_symbols(subt, 
+	clearing = do_clear_symbols(subt, start,
 				    offset - LOG_KEY_SIZE,
 				    (addr + (i << offset)),
 				    clearing);
@@ -188,6 +239,12 @@ static int do_clear_symbols(void **t, int offset, unsigned long addr, int cleari
 	    t[i + NODE_HEADER_SIZE] = NULL;
 	  }
 	}
+#ifdef MZ_PRECISE_GC
+	if (!clearing) {
+	  /* Finished clearing the one item, so return. */
+	  return 0;
+	}
+#endif
       } else if (clearing)
 	t[i + NODE_HEADER_SIZE] = NULL;
     }
@@ -196,12 +253,16 @@ static int do_clear_symbols(void **t, int offset, unsigned long addr, int cleari
   return clearing;
 }
 
+#ifndef MZ_PRECISE_GC
+
 static void clear_symbols_for_collected()
 {
   if (tree) {
-    do_clear_symbols(tree, (JIT_WORD_SIZE * 8) - LOG_KEY_SIZE, 0, 0); 
+    do_clear_symbols(tree, 0, (JIT_WORD_SIZE * 8) - LOG_KEY_SIZE, 0, 0); 
   }
 }
+
+#endif
 
 /*============================================================*/
 /*                          testing                           */

@@ -81,6 +81,8 @@ static Scheme_Object *struct_type_p(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *struct_info(int argc, Scheme_Object *argv[]);
 static Scheme_Object *struct_type_info(int argc, Scheme_Object *argv[]);
+static Scheme_Object *struct_type_pred(int argc, Scheme_Object *argv[]);
+static Scheme_Object *struct_type_constr(int argc, Scheme_Object *argv[]);
 static Scheme_Object *struct_to_vector(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *struct_setter_p(int argc, Scheme_Object *argv[]);
@@ -366,6 +368,16 @@ scheme_init_struct (Scheme_Env *env)
 						       "struct-type-info",
 						       1, 1,
 						       mzNUM_ST_INFO, mzNUM_ST_INFO),
+			     env);
+  scheme_add_global_constant("struct-type-make-predicate",
+			     scheme_make_prim_w_arity(struct_type_pred,
+						      "struct-type-make-predicate",
+						      1, 1),
+			     env);
+  scheme_add_global_constant("struct-type-make-constructor",
+			     scheme_make_prim_w_arity(struct_type_constr,
+						      "struct-type-make-constructor",
+						      1, 1),
 			     env);
   scheme_add_global_constant("struct->vector",
 			     scheme_make_prim_w_arity(struct_to_vector,
@@ -1160,25 +1172,36 @@ static Scheme_Object *struct_info(int argc, Scheme_Object *argv[])
   return scheme_values(2, a);
 }
 
-static void get_struct_type_info(int argc, Scheme_Object *argv[], Scheme_Object **a, int always)
+static Scheme_Object *check_type_and_inspector(const char *who, int always, int argc, Scheme_Object *argv[])
 {
-  Scheme_Struct_Type *stype, *parent;
-  Scheme_Object *insp, *ims;
-  int p;
+  Scheme_Object *insp;
+  Scheme_Struct_Type *stype;
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_struct_type_type))
-    scheme_wrong_type("struct-type-info", "struct-type", 0, argc, argv);
+    scheme_wrong_type(who, "struct-type", 0, argc, argv);
 
   stype = (Scheme_Struct_Type *)argv[0];
 
   insp = scheme_get_param(scheme_current_config(), MZCONFIG_INSPECTOR);
 
   if (!always && !scheme_is_subinspector(stype->inspector, insp)) {
-    scheme_arg_mismatch("struct-type-info", 
+    scheme_arg_mismatch(who, 
 			"current inspector cannot extract info for struct-type: ",
 			argv[0]);
-    return;
+    return NULL;
   }
+
+  return insp;
+}
+
+static void get_struct_type_info(int argc, Scheme_Object *argv[], Scheme_Object **a, int always)
+{
+  Scheme_Struct_Type *stype, *parent;
+  Scheme_Object *insp, *ims;
+  int p;
+
+  insp = check_type_and_inspector("struct-type-info", always, argc, argv);
+  stype = (Scheme_Struct_Type *)argv[0];
 
   /* Make sure generic accessor and mutator are created: */
   if (!stype->accessor) {
@@ -1232,6 +1255,34 @@ static Scheme_Object *struct_type_info(int argc, Scheme_Object *argv[])
   get_struct_type_info(argc, argv, a, 0);
 
   return scheme_values(mzNUM_ST_INFO, a);
+}
+
+static Scheme_Object *struct_type_pred(int argc, Scheme_Object *argv[])
+{
+  Scheme_Struct_Type *stype;
+
+  check_type_and_inspector("struct-type-make-predicate", 0, argc, argv);
+  stype = (Scheme_Struct_Type *)argv[0];
+
+  return make_struct_proc(stype, 
+			  scheme_symbol_val(PRED_NAME(scheme_symbol_val(stype->name),
+						      SCHEME_SYM_LEN(stype->name))),
+			  SCHEME_PRED,
+			  stype->num_slots);
+}
+
+static Scheme_Object *struct_type_constr(int argc, Scheme_Object *argv[])
+{
+  Scheme_Struct_Type *stype;
+
+  check_type_and_inspector("struct-type-make-constructor", 0, argc, argv);
+  stype = (Scheme_Struct_Type *)argv[0];
+
+  return make_struct_proc(stype, 
+			  scheme_symbol_val(CSTR_NAME(scheme_symbol_val(stype->name),
+						      SCHEME_SYM_LEN(stype->name))),
+			  SCHEME_CONSTR,
+			  stype->num_slots);
 }
 
 Scheme_Object *scheme_struct_to_vector(Scheme_Object *_s, Scheme_Object *unknown_val, Scheme_Object *insp)
