@@ -62,7 +62,7 @@
 	   define quote
 	   list cons car cdr quasiquote unquote unquote-splicing
 	   list* append reverse
-           string-append format
+           string-append
 	   path->string build-path collection-path
 	   system-library-subpath
            (rename limited-require require)))
