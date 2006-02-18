@@ -27,6 +27,13 @@
 	#include <ToolUtils.h>
 #endif
 
+#ifdef __i386__ 
+# include "Endian.h"
+# define wxNATIVE_LONG(x) EndianS32_BtoN(x)
+#else
+# define wxNATIVE_LONG(x) x
+#endif
+
 // Include the DragManagerAdditions only if we're using an old version of the Universal Interfaces.
 #if !defined(UNIVERSAL_INTERFACES_VERSION) ||  (UNIVERSAL_INTERFACES_VERSION < 0x0300)
 	#include "DragManagerAdditions.h"
@@ -970,7 +977,7 @@ static Boolean local_ALTrackDisclosureTriangle( Point mouseLoc, EventModifiers m
 
 			// Check the keyboard NOW for the option key.
 			GetKeys( keyMap );
-			if ( (keyMap[1] >> 2) & 0x01 )
+			if ( (wxNATIVE_LONG(keyMap[1]) >> 2) & 0x01 )
 				modifiers &= optionKey;
 
 			// Change the state of the super row.
@@ -1372,7 +1379,6 @@ ALIST_API OSErr ALReceiveDrag( DragReference theDrag, ALHandle hAL )
 	unsigned short		dragItemIndex;
 	unsigned short		numDragItems;
 	ItemReference		theItem;
-	char				space = kSpace;
 	Boolean			isMove = false;
 	Boolean			saveALLock;
 	OSErr			err;
