@@ -286,7 +286,8 @@
 # if defined(__APPLE__) && defined(__MACH__) && defined(__i386__)
 #    define DARWIN
 #    define I386
-     --> Not really supported, but at least we recognize it.
+/* PLTSCHEME: support x86 Darwin... */
+#    define mach_type_known
 # endif
 # if defined(NeXT) && defined(mc68000)
 #   define M68K
@@ -966,6 +967,18 @@
 #   endif
 #   ifdef HAVE_BUILTIN_UNWIND_INIT
 #	define USE_GENERIC_PUSH_REGS
+#   endif
+/* PLTSCHEME: I386 Darwin: */
+#   ifdef DARWIN
+#     define OS_TYPE "DARWIN"
+#     define DYNAMIC_LOADING
+      /* XXX: see get_end(3), get_etext() and get_end() should not be used.
+         These aren't used when dyld support is enabled (it is by default) */
+#     define DATASTART ((ptr_t) get_etext())
+#     define DATAEND	((ptr_t) get_end())
+#     define STACKBOTTOM ((ptr_t) 0xc0000000)
+#     define USE_MMAP
+#     define USE_MMAP_ANON
 #   endif
 #   ifdef SEQUENT
 #	define OS_TYPE "SEQUENT"
