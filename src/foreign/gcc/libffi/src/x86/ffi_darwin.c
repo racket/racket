@@ -1,3 +1,4 @@
+#ifdef __i386__
 /* -----------------------------------------------------------------------
    ffi.c - Copyright (c) 1996, 1998, 1999, 2001  Red Hat, Inc.
            Copyright (c) 2002  Ranjit Mathew
@@ -26,10 +27,6 @@
    OTHER DEALINGS IN THE SOFTWARE.
    ----------------------------------------------------------------------- */
 
-#ifdef __APPLE__
-# include "ffi_darwin.c"
-#else
-
 #ifndef __x86_64__
 
 #include <ffi.h>
@@ -51,7 +48,7 @@ void ffi_prep_args(char *stack, extended_cif *ecif)
 
   argp = stack;
 
-  if (ecif->cif->flags == FFI_TYPE_STRUCT)
+  if (ecif->cif->flags == FFI_TYPE_STRUCT && ecif->cif->rtype->size > 8)
     {
       *(void **) argp = ecif->rvalue;
       argp += 4;
@@ -125,7 +122,7 @@ ffi_status ffi_prep_cif_machdep(ffi_cif *cif)
   switch (cif->rtype->type)
     {
     case FFI_TYPE_VOID:
-#ifndef X86_WIN32
+#if !defined(X86_WIN32) 
     case FFI_TYPE_STRUCT:
 #endif
     case FFI_TYPE_SINT64:
@@ -139,7 +136,8 @@ ffi_status ffi_prep_cif_machdep(ffi_cif *cif)
       cif->flags = FFI_TYPE_SINT64;
       break;
 
-#ifdef X86_WIN32
+#if defined X86_WIN32  
+
     case FFI_TYPE_STRUCT:
       if (cif->rtype->size == 1)
         {
@@ -168,6 +166,9 @@ ffi_status ffi_prep_cif_machdep(ffi_cif *cif)
       cif->flags = FFI_TYPE_INT;
       break;
     }
+
+  /* Darwin: The stack needs to be aligned to a multiple of 16 bytes */
+  cif->bytes = (cif->bytes + 15) & ~0xF;
 
   return FFI_OK;
 }
@@ -200,6 +201,7 @@ void ffi_call(/*@dependent@*/ ffi_cif *cif,
 	      /*@dependent@*/ void **avalue)
 {
   extended_cif ecif;
+  int flags;
 
   ecif.cif = cif;
   ecif.avalue = avalue;
@@ -208,7 +210,7 @@ void ffi_call(/*@dependent@*/ ffi_cif *cif,
   /* value address then we need to make one		        */
 
   if ((rvalue == NULL) && 
-      (cif->flags == FFI_TYPE_STRUCT))
+      (cif->flags == FFI_TYPE_STRUCT) && (cif->rtype->size > 8))
     {
       /*@-sysunrecog@*/
       ecif.rvalue = alloca(cif->rtype->size);
@@ -216,14 +218,23 @@ void ffi_call(/*@dependent@*/ ffi_cif *cif,
     }
   else
     ecif.rvalue = rvalue;
-    
+
+  flags = cif->flags;
+  if (flags == FFI_TYPE_STRUCT) {
+    if (cif->rtype->size == 8) {
+	flags = FFI_TYPE_SINT64;
+    } else if (cif->rtype->size < 8) {
+        flags = FFI_TYPE_INT;
+    }
+  }
+
   
   switch (cif->abi) 
     {
     case FFI_SYSV:
       /*@-usedef@*/
       ffi_call_SYSV(ffi_prep_args, &ecif, cif->bytes, 
-		    cif->flags, ecif.rvalue, fn);
+		    flags, ecif.rvalue, fn);
       /*@=usedef@*/
       break;
 #ifdef X86_WIN32
@@ -245,24 +256,28 @@ void ffi_call(/*@dependent@*/ ffi_cif *cif,
 
 static void ffi_prep_incoming_args_SYSV (char *stack, void **ret,
 					 void** args, ffi_cif* cif);
-void FFI_HIDDEN ffi_closure_SYSV (ffi_closure *)
+static void ffi_closure_SYSV (ffi_closure *)
      __attribute__ ((regparm(1)));
-unsigned int FFI_HIDDEN ffi_closure_SYSV_inner (ffi_closure *, void **, void *)
+#if !FFI_NO_RAW_API
+static void ffi_closure_raw_SYSV (ffi_raw_closure *)
      __attribute__ ((regparm(1)));
-void FFI_HIDDEN ffi_closure_raw_SYSV (ffi_raw_closure *)
-     __attribute__ ((regparm(1)));
+#endif
 
 /* This function is jumped to by the trampoline */
 
-unsigned int FFI_HIDDEN
-ffi_closure_SYSV_inner (closure, respp, args)
+static void
+ffi_closure_SYSV (closure)
      ffi_closure *closure;
-     void **respp;
-     void *args;
 {
+  // this is our return value storage
+  long double  res;
+
   // our various things...
   ffi_cif       *cif;
   void         **arg_area;
+  unsigned short rtype;
+  void          *resp = (void*)&res;
+  void *args = __builtin_dwarf_cfa ();
 
   cif         = closure->cif;
   arg_area    = (void**) alloca (cif->nargs * sizeof (void*));  
@@ -273,11 +288,54 @@ ffi_closure_SYSV_inner (closure, respp, args)
    * a structure, it will re-set RESP to point to the
    * structure return address.  */
 
-  ffi_prep_incoming_args_SYSV(args, respp, arg_area, cif);
+  ffi_prep_incoming_args_SYSV(args, (void**)&resp, arg_area, cif);
+  
+  (closure->fun) (cif, resp, arg_area, closure->user_data);
 
-  (closure->fun) (cif, *respp, arg_area, closure->user_data);
+  rtype = cif->flags;
 
-  return cif->flags;
+  if (rtype == FFI_TYPE_STRUCT && cif->rtype->size <= 8) {
+      if (cif->rtype->size == 8) {
+         rtype = FFI_TYPE_SINT64;
+      } else {
+         rtype = FFI_TYPE_INT;
+      }
+  }
+
+  /* now, do a generic return based on the value of rtype */
+  if (rtype == FFI_TYPE_INT)
+    {
+      asm ("movl (%0),%%eax" : : "r" (resp) : "eax");
+    }
+  else if (rtype == FFI_TYPE_FLOAT)
+    {
+      asm ("flds (%0)" : : "r" (resp) : "st" );
+    }
+  else if (rtype == FFI_TYPE_DOUBLE)
+    {
+      asm ("fldl (%0)" : : "r" (resp) : "st", "st(1)" );
+    }
+  else if (rtype == FFI_TYPE_LONGDOUBLE)
+    {
+      asm ("fldt (%0)" : : "r" (resp) : "st", "st(1)" );
+    }
+  else if (rtype == FFI_TYPE_SINT64)
+    {
+      asm ("movl 0(%0),%%eax;"
+	   "movl 4(%0),%%edx" 
+	   : : "r"(resp)
+	   : "eax", "edx");
+    }
+#ifdef X86_WIN32
+  else if (rtype == FFI_TYPE_SINT8) /* 1-byte struct  */
+    {
+      asm ("movsbl (%0),%%eax" : : "r" (resp) : "eax");
+    }
+  else if (rtype == FFI_TYPE_SINT16) /* 2-bytes struct */
+    {
+      asm ("movswl (%0),%%eax" : : "r" (resp) : "eax");
+    }
+#endif
 }
 
 /*@-exportheader@*/
@@ -293,7 +351,7 @@ ffi_prep_incoming_args_SYSV(char *stack, void **rvalue,
 
   argp = stack;
 
-  if ( cif->flags == FFI_TYPE_STRUCT ) {
+  if ( cif->flags == FFI_TYPE_STRUCT && (cif->rtype->size > 8)) {
     *rvalue = *(void **) argp;
     argp += 4;
   }
@@ -360,6 +418,57 @@ ffi_prep_closure (ffi_closure* closure,
 /* ------- Native raw API support -------------------------------- */
 
 #if !FFI_NO_RAW_API
+
+static void
+ffi_closure_raw_SYSV (closure)
+     ffi_raw_closure *closure;
+{
+  // this is our return value storage
+  long double    res;
+
+  // our various things...
+  ffi_raw         *raw_args;
+  ffi_cif         *cif;
+  unsigned short   rtype;
+  void            *resp = (void*)&res;
+
+  /* get the cif */
+  cif = closure->cif;
+
+  /* the SYSV/X86 abi matches the RAW API exactly, well.. almost */
+  raw_args = (ffi_raw*) __builtin_dwarf_cfa ();
+
+  (closure->fun) (cif, resp, raw_args, closure->user_data);
+
+  rtype = cif->flags;
+
+  /* now, do a generic return based on the value of rtype */
+  if (rtype == FFI_TYPE_INT)
+    {
+      asm ("movl (%0),%%eax" : : "r" (resp) : "eax");
+    }
+  else if (rtype == FFI_TYPE_FLOAT)
+    {
+      asm ("flds (%0)" : : "r" (resp) : "st" );
+    }
+  else if (rtype == FFI_TYPE_DOUBLE)
+    {
+      asm ("fldl (%0)" : : "r" (resp) : "st", "st(1)" );
+    }
+  else if (rtype == FFI_TYPE_LONGDOUBLE)
+    {
+      asm ("fldt (%0)" : : "r" (resp) : "st", "st(1)" );
+    }
+  else if (rtype == FFI_TYPE_SINT64)
+    {
+      asm ("movl 0(%0),%%eax; movl 4(%0),%%edx" 
+	   : : "r"(resp)
+	   : "eax", "edx");
+    }
+}
+
+ 
+
 
 ffi_status
 ffi_prep_raw_closure (ffi_raw_closure* closure,
@@ -436,7 +545,7 @@ ffi_raw_call(/*@dependent@*/ ffi_cif *cif,
   /* value address then we need to make one		        */
 
   if ((rvalue == NULL) && 
-      (cif->rtype->type == FFI_TYPE_STRUCT))
+      (cif->rtype->type == FFI_TYPE_STRUCT) && (cif->rtype->size > 8))
     {
       /*@-sysunrecog@*/
       ecif.rvalue = alloca(cif->rtype->size);
@@ -472,4 +581,4 @@ ffi_raw_call(/*@dependent@*/ ffi_cif *cif,
 
 #endif /* __x86_64__  */
 
-#endif /* __APPLE__ */
+#endif /* __i386__ */
