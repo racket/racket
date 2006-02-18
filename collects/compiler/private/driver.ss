@@ -211,7 +211,7 @@
 	(lambda (exn)
 	  (set! compiler:messages (reverse! compiler:messages))
 	  (compiler:report-messages! #t)
-	  (exit 1)))
+	  (raise-user-error "compile failed")))
   
       (define s:expand-top-level-expressions!
 	(lambda (input-directory reader verbose?)
@@ -503,7 +503,7 @@
 	    (when (and stop-on-errors?
 		       (or (positive? error-count)
 			   (positive? fatal-error-count)))
-	      (error "Errors encountered.  Compilation aborted.")))))
+	      (raise-user-error "Errors encountered.  Compilation aborted.")))))
 
       (define total-cpu-time 0)
       (define total-real-time 0)
@@ -1376,7 +1376,6 @@
 		     (lambda ()
 		       (with-handlers
 			   ([void (lambda (exn)
-				    (exit)
 				    (compiler:fatal-error
 				     #f
 				     (string-append
