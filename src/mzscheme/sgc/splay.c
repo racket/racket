@@ -49,6 +49,7 @@ struct tree_node {
     void *data;
 };
 # define Splay_Item(t) t->item
+# define Set_Splay_Item(t, v) t->item = v
 #endif
 
 static Tree * splay (unsigned long i, Tree * t) {
@@ -98,7 +99,7 @@ static Tree * splay (unsigned long i, Tree * t) {
 static Tree * splay_insert(unsigned long i, Tree * new, Tree * t) {
 /* Insert i into the tree t, unless it's already there.    */
 /* Return a pointer to the resulting tree.                 */
-    Splay_Item(new) = i;
+    Set_Splay_Item(new, i);
     if (t == NULL) {
 	new->left = new->right = NULL;
 	return new;

@@ -30,6 +30,7 @@ static int num_fnls;
 
 #define Tree Fnl
 #define Splay_Item(t) ((unsigned long)t->p)
+#define Set_Splay_Item(t, v) (t)->p = (void *)v
 #include "../sgc/splay.c"
 
 void GC_set_finalizer(void *p, int tagged, int level, void (*f)(void *p, void *data), 
