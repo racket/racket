@@ -309,22 +309,9 @@ int main(int argc, char *argv[])
 
 #ifdef wx_mac
   wxMacDisableMods = controlKey;
-
 # ifndef OS_X
   scheme_creator_id = 'mReD';
   wxMediaCreatorId = 'mReD';
-# endif
-
-# if !defined(__powerc) && !defined(__ppc__)
-  long calcLimit, size;
-  THz zone;
-	
-  zone = GetZone();
-  size = ((long)LMGetCurStackBase()-(*(long *)zone)-sizeof(Zone));
-  calcLimit = size - 1048576; /* 1 MB stack */
-  if (calcLimit % 2)
-    calcLimit++;
-  SetApplLimit((Ptr)((*(long *)zone)+sizeof(Zone)+calcLimit));
 # endif
 #endif
 

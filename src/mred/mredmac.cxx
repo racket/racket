@@ -20,6 +20,13 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#ifdef __i386__ 
+# include <CoreServices/CoreServices.h>
+# define wxNATIVE_LONG(x) EndianS32_BtoN((x).bigEndianValue)
+#else
+# define wxNATIVE_LONG(x) x
+#endif
+
 static int dispatched = 1;
 
 extern "C" {
@@ -479,13 +486,13 @@ static int GetMods(void)
   int mods = 0;
 	  
   GetKeys(km);
-  if (km[1] & 32768)
+  if (wxNATIVE_LONG(km[1]) & 32768)
     mods |= cmdKey;
-  if (km[1] & 1)
+  if (wxNATIVE_LONG(km[1]) & 1)
     mods |= shiftKey;
-  if (km[1] & 4)
+  if (wxNATIVE_LONG(km[1]) & 4)
     mods |= optionKey;
-  if (km[1] & 8)
+  if (wxNATIVE_LONG(km[1]) & 8)
     mods |= controlKey;
   
   return mods;

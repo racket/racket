@@ -28,8 +28,8 @@
 #endif
 
 #ifdef __i386__ 
-# include "Endian.h"
-# define wxNATIVE_LONG(x) EndianS32_BtoN(x)
+# include <CoreServices/CoreServices.h>
+# define wxNATIVE_LONG(x) EndianS32_BtoN((x).bigEndianValue)
 #else
 # define wxNATIVE_LONG(x) x
 #endif
