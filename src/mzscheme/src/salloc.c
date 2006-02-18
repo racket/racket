@@ -1753,9 +1753,6 @@ long scheme_count_memory(Scheme_Object *root, Scheme_Hash_Table *ht)
       Scheme_Saved_Stack *rs;
 
       s = sizeof(Scheme_Cont);
-#if FORCE_KNOWN_SUBPARTS
-      e = COUNT(c->home);
-#endif
 
       for (rs = c->runstack_copied; rs; rs = rs->prev) {
 	s += sizeof(Scheme_Saved_Stack);
