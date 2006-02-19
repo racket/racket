@@ -302,18 +302,17 @@ plt/collects/tests/mzscheme/image-test.ss
     (check-coordinate 'line x "first")
     (check-coordinate 'line y "second")
     (check-image-color 'line color "third")
-    (check-sizes 'line (+ x 1) (+ y 1))
-    (let ([draw-proc 
-           (make-color-wrapper
-            color 'transparent 'solid
-            (lambda (dc dx dy)
-              (send dc draw-line dx dy (+ dx x) (+ dy y))))]
-          [mask-proc
-           (make-color-wrapper
-            'black 'transparent 'solid
-            (lambda (dc dx dy)
-              (send dc draw-line dx dy (+ dx x) (+ dy y))))])
-      (make-simple-cache-image-snip (+ x 1) (+ y 1) 0 0 draw-proc mask-proc)))
+    (let ([w (+ (abs x) 1)]
+          [h (+ (abs y) 1)]
+          [px (abs (min x 0))]
+          [py (abs (min y 0))])
+      (check-sizes 'line w h)
+      (let* ([do-draw
+              (λ (dc dx dy)
+                (send dc draw-line (+ px dx) (+ py dy) (+ dx px x) (+ dy py y)))]
+             [draw-proc (make-color-wrapper color 'transparent 'solid do-draw)]
+             [mask-proc (make-color-wrapper 'black 'transparent 'solid do-draw)])
+        (make-simple-cache-image-snip w h px py draw-proc mask-proc))))
   
   ;; test what happens when the line moves out of the box.
   (define (add-line raw-i pre-x1 pre-y1 pre-x2 pre-y2 color-in)

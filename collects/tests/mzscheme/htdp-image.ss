@@ -486,6 +486,16 @@
       (image=? (line 0 4 'red)
                (color-list->image (list red red red red red) 1 5 0 0)))
 
+(test #t
+      'line 
+      (image=? (line 0 -4 'red)
+               (color-list->image (list red red red red red) 1 5 0 4)))
+
+(test #t
+      'line 
+      (image=? (line -4 0 'red)
+               (color-list->image (list red red red red red) 5 1 4 0)))
+
 ;; note: next two tests may be platform-specific... I'm not sure.
 ;; I developed them under macos x. -robby
 (test #t
