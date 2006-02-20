@@ -268,7 +268,7 @@ static char defaultTranslations[] =
 static char extendTranslations[] =
 "	Ctrl <Btn1Down>:			Toggle()\n\
 	Shift <Btn1Down>:			SelectOne()\n\
-	<Btn1Down>:			        SelectOne()\n\
+	<Btn1Down>:			        Toggle()\n\
 	Button1 <Btn1Motion>:			Extend()\n\
 	<Btn1Up>:				Notify()";
 
