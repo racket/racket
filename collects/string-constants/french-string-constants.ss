@@ -305,6 +305,13 @@
   ;; in the Help Desk language dialog, title on the right.
   (plt:hd:manual-search-ordering "Ordre de recherche dans les manuels")
 
+  ;; in the help-desk standalone font preference dialog, on a check box
+  (use-drscheme-font-size "Utiliser la taille de police de DrScheme")
+  
+  ;; in the preferences dialog in drscheme there is example text for help desk font size.
+  ;; clicking the links in that text produces a dialog with this message
+  (help-desk-this-is-just-example-text
+   "Ceci est simplement un morceau de texte pour pouvoir choisir la taille de la police.  Ouvrez l'Aide (dans le menu Aide) pour suivre ces liens.")
   
   ; help desk htty proxy
   (http-proxy "Proxy HTTP")
@@ -459,7 +466,8 @@
   (forward "En avant")
   (backward "En arrière")
   (hide "Cacher")
-  
+  (find-case-sensitive "Sensible à la casse")  ;; the check box in both the docked & undocked search
+
   ;;; multi-file-search
   (mfs-multi-file-search-menu-item "Rechercher dans les fichiers...")
   (mfs-string-match/graphics "une chaîne de caractères (y compris dans les fichiers avec graphiques)")
@@ -651,6 +659,12 @@
   (quit "Quitter")
   (are-you-sure-exit "Etes-vous certain de vouloir quitter ?")
   (are-you-sure-quit "Etes-vous certain de vouloir quitter ?")
+  ; these next two are only used in the quit/exit dialog
+  ; on the button whose semantics is "dismiss this dialog".
+  ; they are there to provide more flexibility for translations
+  ; in English, they are just cancel.
+  (dont-exit "Annuler") 
+  (dont-quit "Annuler")
   
   ;;; autosaving
   (error-autosaving "Erreur durant l'auto-sauvegarde de \"~a\".")
