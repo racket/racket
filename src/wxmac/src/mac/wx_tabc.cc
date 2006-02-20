@@ -324,6 +324,8 @@ void wxTabChoice::Paint(void)
 //-----------------------------------------------------------------------------
 void wxTabChoice::DoShow(Bool show)
 {
+  if (!CanShow(show)) return;
+
   if (show) {
     ::ShowControl(cMacControl);
   } else {

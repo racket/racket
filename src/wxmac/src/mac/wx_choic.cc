@@ -280,6 +280,9 @@ void wxChoice::OnChar(wxKeyEvent *event)
 //-----------------------------------------------------------------------------
 void wxChoice::DoShow(Bool show)
 {
+  if (!CanShow(show))
+    return;
+
   if (!show && cTitle)
     cTitle->DoShow(show);
   if (show) {
@@ -287,7 +290,9 @@ void wxChoice::DoShow(Bool show)
   } else {
     ::HideControl(cMacControl);
   }
+
   wxWindow::DoShow(show);
+
   if (show && cTitle)
     cTitle->DoShow(show);
 }

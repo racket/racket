@@ -172,6 +172,8 @@ void wxGroupBox::Paint(void)
 //-----------------------------------------------------------------------------
 void wxGroupBox::DoShow(Bool show)
 {
+  if (!CanShow(show)) return;
+
   if (show) {
     ::ShowControl(cMacControl);
   } else {
