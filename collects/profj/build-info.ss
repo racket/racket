@@ -555,7 +555,7 @@
                                                     iface-records (header-implements info)
                                                     m type-recs level)
                           (no-abstract-methods m members level type-recs)))
-                   
+                                      
                    (valid-inherited-methods? (cons super-record iface-records)
                                              (cons (if (null? super)
                                                        (make-name (make-id "Object" #f) null #f)
@@ -568,6 +568,15 @@
                                           members
                                           level
                                           type-recs)
+                   
+                   (when (and (memq 'abstract test-mods)
+                              (or (not (null? iface-records))
+                                  (not (null? (header-implements info)))))
+                     (let ((unimp-stubs (make-unimplmented-stubs iface-records (header-implements info)
+                                                                 m type-recs)))
+                       (set-def-members! class
+                                         (append unimp-stubs (def-members class)))
+                       (set! m (append m (map method-rec unimp-stubs)))))
                    
                    (let ((record
                           (make-class-record 
@@ -1035,7 +1044,7 @@
                                  #f))))
         (check-for-conflicts (cdr methods) record members level type-recs)))
   
-  ;class-fully-implemented? class-record id (list class-record) (list id) (list method) symbol -> bool
+  ;class-fully-implemented? class-record id (list class-record) (list id) (list method) type-records symbol -> bool
   (define (class-fully-implemented? super super-name ifaces ifaces-name methods type-recs level)
     (when (memq 'abstract (class-record-modifiers super))
       (let ((unimplemented-iface-methods (get-unimplemented-methods (class-record-methods super)
@@ -1051,6 +1060,59 @@
               (implements-all? (class-record-methods iface) methods iface-name level))
             ifaces
             ifaces-name))
+  
+  ;make-unimplmented-stubs: (list class-record) (list name) (list method-record) type-records -> (list method)
+  (define (make-unimplmented-stubs ifaces ifaces-name methods type-recs)
+    (letrec ((type->type-spec
+              (lambda (t)
+                (cond
+                  ((symbol? t) (make-type-spec t 0 #f))
+                  ((ref-type? t) (make-type-spec (make-name (make-id (ref-type-class/iface t) #f)
+                                                            (map (lambda (t) (make-id t #f))
+                                                                 (ref-type-path t)) #f)
+                                                 0 #f))
+                  ((array-type? t) (make-type-spec (type-spec-name (type->type-spec (array-type-type t)))
+                                                   (array-type-dim t))))))
+             (copy-method-record
+              (lambda (m)
+                (make-method-record (method-record-name m)
+                                    (cons 'abstract (method-record-modifiers m))
+                                    (method-record-rtype m)
+                                    (method-record-atypes m)
+                                    (method-record-throws m)
+                                    #f
+                                    (method-record-class m))))
+             (remove-dups
+              (lambda (l)
+                (cond
+                  ((null? l) l)
+                  ((member (car l) (cdr l)) (remove-dups (cdr l)))
+                  (else (cons (car l) (remove-dups (cdr l)))))))
+             (unimplemented-iface-methods 
+              (car (get-unimplemented-methods methods 
+                                              (remove-dups (append (map (lambda (iface)
+                                                                          (cond 
+                                                                            ((id? iface) (list (id-string iface)))
+                                                                            ((name? iface) (cons (id-string (name-id iface))
+                                                                                                 (map id-string (name-path iface))))))
+                                                                        ifaces-name)
+                                                                   (map class-record-name ifaces))) type-recs))))
+      (apply append
+             (map (lambda (m-lists)
+                    (map (lambda (m)
+                           (make-method (cons (make-modifier 'abstract #f) 
+                                              (map (lambda (a) (make-modifier a #f)) (method-record-modifiers m)))
+                                        (type->type-spec (method-record-rtype m))
+                                        null
+                                        (make-id (method-record-name m) #f)
+                                        (map (lambda (a)
+                                               (make-var-decl (make-id (gensym) #f) null
+                                                              (type->type-spec a) #f))
+                                             (method-record-atypes m))
+                                        null #f #f 
+                                        (copy-method-record m) #f))
+                         m-lists))
+                  unimplemented-iface-methods))))
   
   ;get-unimplemented-methods: (list method-record) (list (list string)) type-recs -> (list (list (list method-record)) (list string(
   (define (get-unimplemented-methods methods ifaces type-recs)

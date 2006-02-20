@@ -4,6 +4,22 @@
   (prepare-for-tests "Intermediate")
   
   ;;Execute tests without errors
+  
+  (execute-test
+   "interface A { int a(); }
+    abstract class B implements A { }
+   "
+   'intermediate
+   #f "abstract class not fully implementing an interface")
+  
+  (execute-test
+   "interface A { int a(); }
+    abstract class B implements A { }
+    class C extends B {
+     int a() { return 3; }
+    }"
+   'intermediate
+   #f "class implementing abstract class's unimplmenented interface")
 
   (execute-test
    "abstract class Foo {
@@ -301,7 +317,23 @@
      }" 'intermediate #f "Casts of class to implementing iface, and reverse")
   
   ;;Execute tests with errors
+  
+  (execute-test
+   "interface A { int a(); }
+    abstract class B implements A { }
+    class C extends B { int a() { return super.a() + 3; } }"
+   'intermediate
+   #t "Extending class calls super.a() of an abstract method")
 
+
+  (execute-test
+   "interface A { int a(); }
+    abstract class B implements A { }
+    class C extends B { }"
+   'intermediate
+   #t
+   "Extending class fails to implement abstract parent's unimplemented interfaces")
+  
   (execute-test
    "class Foo {
   Foo() {}

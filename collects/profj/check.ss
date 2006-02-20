@@ -2152,6 +2152,11 @@
            (when (and static? (not (memq 'static mods)) (not expr))
              (non-static-called-error name c-class src level))
            
+           (when (and (memq 'abstract mods)
+                      (special-name? expr)
+                      (equal? "super" (special-name-name expr)))
+             (call-abstract-error level name exp-type src))
+           
            (when (and (memq 'protected mods) (reference-type? exp-type) 
                       (or (not (is-eq-subclass? this exp-type type-recs))
                           (not (package-members? c-class (cons (ref-type-class/iface exp-type) (ref-type-path exp-type))
@@ -3037,6 +3042,16 @@
                                                          (substring internal 0 (- (string-length internal) 2))))))
                                types)))))
       (substring out 0 (- (string-length out) 5))))                                                         
+  
+  ;call-abstract-error: symbol id type src -> void
+  (define (call-abstract-error level name exp src)
+    (let ((n (id->ext-name name))
+          (t (get-call-type exp)))
+      (raise-error n
+                   (if (memq level '(beginner))
+                       (format "You maynot call method ~a from ~a" n t)
+                       (format "super.~a(...) may not be called as ~a is abstract in ~a." n n t))
+                   n src)))
   
   ;call-access-error: symbol symbol id type src -> void
   (define (call-access-error kind level name exp src)
