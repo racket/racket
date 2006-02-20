@@ -114,7 +114,7 @@
    (for-each-label-in-source (gui-model-state? any/c (label? . -> . void?) . -> . void?))
    
    (add-arrow (gui-model-state? (list/c label? label? string?) boolean? . -> . void?))
-   (remove-arrows (gui-model-state? label? (union symbol? boolean?) boolean? . -> . void?))
+   (remove-arrows (gui-model-state? label? (or/c symbol? boolean?) boolean? . -> . void?))
    (remove-all-arrows (gui-model-state? . -> . void?))
    (for-each-arrow (gui-model-state? (non-negative-exact-integer? non-negative-exact-integer? non-negative-exact-integer? non-negative-exact-integer? any/c any/c boolean? string? . -> . void?) . -> . void?))
    (get-tacked-arrows-from-label (gui-model-state? label? . -> . non-negative-exact-integer?))
@@ -222,7 +222,7 @@
           (label-gui-data-left-new-pos label-gui-data)
           (get-new-pos-from-label gui-model-state label))))
   
-  ; gui-model-state label -> (union top #f)
+  ; gui-model-state label -> (or/c top #f)
   ; we register the source of the label and the label by its position,
   ; but we don't associate any label-gui-data with it yet, to save memory.
   ; We'll associate some label-gui-data with it on the fly, as needed (when
@@ -556,7 +556,7 @@
                                               (make-ending-arrow-set)))))
     cst:void)
   
-  ; gui-model-state label (union symbol boolean) boolean -> void
+  ; gui-model-state label (or/c symbol boolean) boolean -> void
   ; remove arrows starting at given label AND arrows ending at same given label
   ; Note that assoc-set-get will fail if we try to remove non-existant arrows...
   (define (remove-arrows gui-model-state start-label tacked? exn?)
@@ -588,7 +588,7 @@
                           get-source-from-label)))
     cst:void)
   
-  ; (assoc-setof top source-gui-data) (setof arrow) (union symbol boolean)
+  ; (assoc-setof top source-gui-data) (setof arrow) (or/c symbol boolean)
   ; (arrow -> label) (label-gui-data -> (setof arrow))
   ; (label -> top)
   ; -> (setof arrow)

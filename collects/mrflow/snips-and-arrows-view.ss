@@ -64,7 +64,7 @@
    
    (add-arrow (gui-view-state? (list/c label? label? string?) boolean? . -> . void?))
    (get-tacked-arrows-from-label (gui-view-state? label? . -> . non-negative-exact-integer?))
-   (remove-arrows (gui-view-state? label? (union symbol? boolean?) boolean? . -> . void?))
+   (remove-arrows (gui-view-state? label? (or/c symbol? boolean?) boolean? . -> . void?))
    (redraw-arrows (gui-view-state? (is-a?/c dc<%>) real? real? . -> . void?))
    
    (invalidate-bitmap-cache (gui-view-state? . -> . void?))
@@ -167,7 +167,7 @@
   (define (add-arrow gui-view-state arrow-info tacked?)
     (saam:add-arrow (gui-view-state-gui-model-state gui-view-state) arrow-info tacked?))
   
-  ; gui-view-state label (union symbol boolean) boolean -> void
+  ; gui-view-state label (or/c symbol boolean) boolean -> void
   (define (remove-arrows gui-view-state start-label tacked? exn?)
     (saam:remove-arrows (gui-view-state-gui-model-state gui-view-state) start-label tacked? exn?))
   

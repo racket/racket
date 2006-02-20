@@ -48,16 +48,16 @@
   ;(pretty-print-columns 105)
   
   ;; Some predicates for contracts
-  (define label-type? (union type-case-lambda? type-cons? type-promise?
-                             type-struct-value? type-union? type-values? type-vector?))
-  (define base-type? (union type-empty? type-cst? type-struct-type?))
-  (define hashcons-type? (union label-type? base-type? type-rec?))
+  (define label-type? (or/c type-case-lambda? type-cons? type-promise?
+                            type-struct-value? type-union? type-values? type-vector?))
+  (define base-type? (or/c type-empty? type-cst? type-struct-type?))
+  (define hashcons-type? (or/c label-type? base-type? type-rec?))
   
   ;;
   ;; Hashcons tables
   ;;
   (define-struct hashcons-table
-    (from-handle     ;; handle -> (union dfa label base-type)
+    (from-handle     ;; handle -> (or/c dfa label base-type)
      from-dfa        ;; dfa -> handle
      from-label      ;; label -> handle
      from-base-type  ;; base-type -> handle
@@ -270,7 +270,7 @@
   
   ;; After we've hashconsed a recursive type this does the final job
   ;; of adding it to the hashcons table.
-  (define/contract hashcons-rec-type-body (hashcons-table? (union type? handle?) . -> . (union type? handle?))
+  (define/contract hashcons-rec-type-body (hashcons-table? (or/c type? handle?) . -> . (or/c type? handle?))
     (lambda (tbl type)
       (let ([recall-type (lambda (type) (if (has-type? tbl type)
                                             (get-type-handle tbl type)
@@ -374,7 +374,7 @@
         (hashcons type))))
   
   (define/contract bottom-up-hashcons-rec-type
-    (hashcons-table? . -> . ((listof type-var?) (listof (union type? handle?)) (union type? handle?) . ->d .
+    (hashcons-table? . -> . ((listof type-var?) (listof (or/c type? handle?)) (or/c type? handle?) . ->d .
                                                 (lambda (vars types body)
                                                   (when (has-free-vars? (make-type-rec vars types body))
                                                     (error 'bottom-up-hashcons "~a has free type variables~n" (make-type-rec vars types body)))
@@ -646,7 +646,7 @@
             [else (error 'fold-type "Unmatched type ~a" type)])))))
   
   ;; Return a type with handles replacing variables
-  (define/contract subst-handles/vars ((union label-type? handle? type-var?) tenv? . -> . (union type? handle?))
+  (define/contract subst-handles/vars ((or/c label-type? handle? type-var?) tenv? . -> . (or/c type? handle?))
     (lambda (type tenv)
       (let subst ([type type])
         (cond
@@ -684,7 +684,7 @@
           [else (error 'subst-handles/vars "Unmatched type ~a" type)]))))
   
   (define/contract subst-handles/vars-if-possible
-    ((union hashcons-type? handle? type-var?) tenv? . -> . (union type? handle?))
+    ((or/c hashcons-type? handle? type-var?) tenv? . -> . (or/c type? handle?))
     (lambda (type tenv)
       (let subst ([type type])
         (match type
@@ -722,7 +722,7 @@
            type])
         )))
   
-  (define/contract has-free-vars? ((union type? handle?) . -> . boolean?)
+  (define/contract has-free-vars? ((or/c type? handle?) . -> . boolean?)
     (lambda (type)
       (let* ([bound-vars (make-hash-table)]
              [bind (lambda (var)
@@ -769,7 +769,7 @@
                   [_ (error 'has-free-vars? "Unmatched type ~a" type)])])
             (has-free-vars? type))))))
   
-  (define/contract get-referenced-vars ((union type? handle?) . -> . (listof symbol?))
+  (define/contract get-referenced-vars ((or/c type? handle?) . -> . (listof symbol?))
     (lambda (type)
       (let ([refed (make-hash-table)])
         (let loop ([type type])
@@ -797,7 +797,7 @@
           (hash-table-map refed (lambda (v _) v))))))
   
   (define/contract same-label-type?
-    (hashcons-table? state? (union type? handle?) . -> . boolean?)
+    (hashcons-table? state? (or/c type? handle?) . -> . boolean?)
     (lambda (tbl state type)
       (or (and (handle-state? state) (handle? type) (= (handle-state-handle state) type))
           (and (handle-state? state) (equal? (get-type tbl (handle-state-handle state)) type))
@@ -1163,7 +1163,7 @@
                                            (hash-table-put! handle->var handle str)
                                            str)))]
            [handlify
-            (lambda (str handle) ;(any/c handle? . -> . (union symbol? (cons/p symbol? any/c)))
+            (lambda (str handle) ;(any/c handle? . -> . (or/c symbol? (cons/p symbol? any/c)))
               (let* ([first (if (list? str) (car str) str)]
                      [first-handle
                       (string->symbol

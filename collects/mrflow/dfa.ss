@@ -109,7 +109,7 @@
     (lambda (dfa state-number)
       (hash-table-get (dfa-stnum->state dfa) state-number)))
   
-  (define/contract greatest-handle (dfa? . -> . (union false/c handle?))
+  (define/contract greatest-handle (dfa? . -> . (or/c false/c handle?))
     (lambda (dfa)
       (let ([greatest-handle -1])
         (hash-table-for-each (dfa-stnum->state dfa)
@@ -292,7 +292,7 @@
                                            (hash-table-put! state->var state str)
                                            str)))]
            [statify
-            (lambda (sym state) ;((union symbol? list?) state-number? . -> . (union symbol? list?))
+            (lambda (sym state) ;((or/c symbol? list?) state-number? . -> . (or/c symbol? list?))
               (let* ([first (if (list? sym) (car sym) sym)]
                      [first (string->symbol
                              (string-append (symbol->string first) ":" (number->string state)))])
@@ -802,13 +802,13 @@
   ;;
   
   (define/contract set-equiv-class-of-state-number! 
-    ((vectorof (union false/c natural?)) equiv-class? state-number? . -> . void?)
+    ((vectorof (or/c false/c natural?)) equiv-class? state-number? . -> . void?)
     (lambda (classes equiv-class stnum)
       (vector-set! classes stnum (equiv-class-number equiv-class))))
   
   ;; A function extracting some value from a dfa-state. Discriminators
   ;; are used when comparing two states
-  (define discriminator? (state? . -> . (union integer? boolean?)))
+  (define discriminator? (state? . -> . (or/c integer? boolean?)))
   
   (define/contract block->partition (block? . -> . partition?)
     list-immutable)

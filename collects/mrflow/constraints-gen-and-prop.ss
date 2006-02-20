@@ -201,7 +201,7 @@
              env))
      env args args-labels))
   
-  ; syntax-object (listof (cons symbol label)) -> (union label #f)
+  ; syntax-object (listof (cons symbol label)) -> (or/c label #f)
   (define (lookup-env var env)
     (let ([name-label-pair (assq (syntax-e var) env)])
       (if name-label-pair
@@ -224,7 +224,7 @@
   (define (add-top-level-name sba-state term label)
     (hash-table-put! (sba-state-top-level-name->label sba-state) (syntax-object->datum term) label))
   
-  ; sba-state symbol -> (union label #f)
+  ; sba-state symbol -> (or/c label #f)
   ; finds the label for a top level var.
   (define (lookup-top-level-name sba-state name)
     (hash-table-get (sba-state-top-level-name->label sba-state) name cst:thunk-false))
@@ -3222,7 +3222,7 @@
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; PRIMITIVE TYPE PARSER AND LOOKUP
   
-  ; sba-state symbol -> (union prim-data #f)
+  ; sba-state symbol -> (or/c prim-data #f)
   (define (lookup-primitive-data sba-state name)
     (hash-table-get (sba-state-primitive-types-table sba-state) name cst:thunk-false))
   
@@ -4450,14 +4450,14 @@
   
   ; called when t2 is a (flow var free) type instead of a handle
   (define/contract subtype-type
-    (sba-state? handle? hc:hashcons-type? any/c boolean? (union false/c label?) . -> . boolean?)
+    (sba-state? handle? hc:hashcons-type? any/c boolean? (or/c false/c label?) . -> . boolean?)
     (lambda (sba-state t1-handle t2 delta-flow error? label)
       (subtype sba-state t1-handle
                (hc:hashcons-type (sba-state-hashcons-tbl sba-state) t2)
                delta-flow error? label)))
   
   (define/contract subtype
-    (sba-state? handle? handle? any/c boolean? (union false/c label?) . -> . boolean?)
+    (sba-state? handle? handle? any/c boolean? (or/c false/c label?) . -> . boolean?)
     (lambda (sba-state t1-handle t2-handle delta-flow error? label)
       (if (subt sba-state (sba-state-hashcons-tbl sba-state) t1-handle t2-handle delta-flow (set-make 'equal))
           #t
@@ -4493,11 +4493,11 @@
                 (eq? term-type '#%top)
                 (eq? term-type 'quote))))))
   
-  ; label -> (union number #f)
+  ; label -> (or/c number #f)
   (define (get-span-from-label label)
     (syntax-span (label-term label)))
   
-  ; sba-state label (union 'red 'green 'orange) string -> void
+  ; sba-state label (or/c 'red 'green 'orange) string -> void
   (define (set-error-for-label sba-state label gravity message)
     (err:error-table-set (sba-state-errors sba-state)
                          (list label)
@@ -4573,7 +4573,7 @@
             (set-type-var-reach! (label-type-var label) set)
             set))))
   
-  ; label -> (union type-var handle)
+  ; label -> (or/c type-var handle)
   ; the label better have a type-var...
   (define (get-handle-or-type-var label)
     (let* ([type-var (label-type-var label)]
@@ -4646,7 +4646,7 @@
           (set-type-var-handle! (label-type-var label) handle)
           handle)))
   
-  ; type (union (hash-table-of type-flow-var (cons label type)) symbol) -> string
+  ; type (or/c (hash-table-of type-flow-var (cons label type)) symbol) -> string
   ; type pretty printer
   ; delta-flow is the flow variable environment, or a symbol if no flow environment
   ; was available at the time of the call.

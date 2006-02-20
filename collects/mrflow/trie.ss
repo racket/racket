@@ -29,7 +29,7 @@
 	    (old-make-trie '() (make-hash-table 'equal)))))
   
   ; Get the trie on the edge labeled by the DFA state
-  (define/contract get-trie-child (trie? state? . -> . (union trie? false/c))
+  (define/contract get-trie-child (trie? state? . -> . (or/c trie? false/c))
     (lambda (trie letter)
       (hash-table-get (trie-dfa-state->trie trie) letter cst:thunk-false)))
   
@@ -75,7 +75,7 @@
   ; contains the start state.  Getting the representative handle, we
   ; can lookup the handle of the start state in this noted trie.
   (define/contract dfa-present?
-    (trie? (nonempty-list-of? state?) . -> . (union false/c (listof handle?)))
+    (trie? (nonempty-list-of? state?) . -> . (or/c false/c (listof handle?)))
     (lambda (trie nstates) 
       (let/ec return-with
         (let* ([rev-tries (list:foldl (lambda (state tries)
