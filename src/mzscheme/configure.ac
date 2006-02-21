@@ -102,16 +102,6 @@ if test "${enable_dynlib}" = "no" ; then
   enable_shared=no
 fi
 
-if test "${enable_mred}" = "no" ; then
-  enable_wbuild=no
-  enable_xrender=no
-  enable_cairo=no
-  enable_libpng=no
-  enable_libjpeg=no
-  enable_gl=no
-  enable_pthread=no
-fi
-
 enable_quartz=no
 if test "${enable_xonx}" = "yes" ; then
   enable_quartz=no
@@ -164,6 +154,16 @@ if test "${enable_mred}" = "yes" ; then
   if test ! -d $srcdir/mred ; then
     enable_mred=no
   fi
+fi
+
+if test "${enable_mred}" = "no" ; then
+  enable_wbuild=no
+  enable_xrender=no
+  enable_cairo=no
+  enable_libpng=no
+  enable_libjpeg=no
+  enable_gl=no
+  enable_pthread=no
 fi
 
 ###### Some defaults #######
@@ -304,6 +304,15 @@ if test "${enable_mred}" = "yes" ; then
    :
   else
    AC_PATH_XTRA
+   if test "${no_x}" = "yes" ; then
+     echo "***************************************************"
+     echo "configure: cannot find X11 headers and/or libraries,"
+     echo "           which are needed for MrEd"
+     echo "To build just MzScheme, configure with --disable-mred"
+     echo "***************************************************"
+     echo configure aborted
+     exit 1
+   fi
   fi
 
   MAKE_MRED=mr
@@ -1206,4 +1215,3 @@ if test "${enable_wbuild}" = "yes" ; then
 fi
 
 AC_OUTPUT($makefiles)
-
