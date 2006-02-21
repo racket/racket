@@ -319,6 +319,13 @@
   ;;Execute tests with errors
   
   (execute-test
+   "class A { 
+     a b c;
+    }"
+   'intermediate
+   #t "Parse error with three identifiers in a row")
+  
+  (execute-test
    "interface A { int a(); }
     abstract class B implements A { }
     class C extends B { int a() { return super.a() + 3; } }"

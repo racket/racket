@@ -78,8 +78,17 @@
           (substring parm-str 0 (sub1 (string-length parm-str))))))
   
   ;method-name->ext-name: string (list type) -> symbol
+  ;(define (method-name->ext-name name parms)
+  ;  (string->symbol (format "~a(~a)" name (make-parm-string parms))))
+  
   (define (method-name->ext-name name parms)
-    (string->symbol (format "~a(~a)" name (make-parm-string parms))))
+    (string->symbol
+     (cond
+       ((null? parms) name)
+       ((= 1 (length parms)) (format "~a, expecting one argument with type ~a, "
+                                     name (type->ext-name (car parms))))
+       (else
+        (format "~a, expecting arguments with types ~a," name (make-parm-string parms))))))
 
   ;path->ext: (list string) -> string
   (define (path->ext path)

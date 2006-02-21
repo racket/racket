@@ -662,7 +662,7 @@
               
   ;parse-members: token token symbol (->token) boolean -> token
   (define (parse-members pre cur state getter abstract-method? just-method?)
-    ;(printf "parse-members: state ~a pre ~a current ~a~n" state pre cur)
+    ;(printf "parse-members: state ~a pre ~a current ~a~n" state (get-tok pre) (get-tok cur))
     (let* ((tok (get-tok cur))
            (kind (get-token-name tok))
            (out (format-out tok))
@@ -670,6 +670,7 @@
            (end (get-end cur))
            (ps (if (null? pre) null (get-start pre)))
            (pe (if (null? pre) null (get-end pre))))
+      ;(printf "parse-members: pre-out ~a current-out ~a~n" (if (null? pre) null (format-out (get-tok pre))) out)
 
       (case state
         ((start)
@@ -709,19 +710,19 @@
            ((and (advanced?) (o-bracket? tok))
             (parse-members pre cur 'method-or-field getter abstract-method? just-method?))
            ((open-separator? tok)
-            (parse-error (format "( must be used to start parameter list, found ~a" out) srt end))
+            (parse-error (format "'(' must be used to start parameter list, found ~a" out) srt end))
            ((prim-type? tok)
             (parse-error 
-             (format "methods and fields may not be named for primitive type ~a, which appears in the name position" kind)
+             (format "Methods and fields may not be named for primitive type ~a, which appears in the name position." kind)
              srt end))
            ((java-keyword? tok)
             (parse-error 
-             (format "Expected a name for this field or method, ~a is a reserved word and cannot be the name" kind)
+             (format "Expected a name for this field or method, ~a is a reserved word and cannot be the name." kind)
              srt end))
-           (else (parse-error (format "Expected a name for this field or method, found ~a" out) srt end))))
+           (else (parse-error (format "Expected a name for this field or method, found ~a." out) srt end))))
         ((method-or-field)
          (case kind
-           ((EOF) (parse-error "Method or field must have a name, class body still requires a }" ps pe))
+           ((EOF) (parse-error "Method or field must have a name, and the class body still requires a '}'." ps pe))
            ((IDENTIFIER) 
             (let* ((next (getter))
                    (n-tok (get-tok next))
@@ -729,20 +730,20 @@
                    (ne (get-end next)))
               (cond
                 ((eof? n-tok) 
-                 (parse-error "Method or field has not completed, class body still requires a }" srt end))
+                 (parse-error "Method or field has not completed, and the class body still requires a '}'." srt end))
                 ;Just ended a field
                 ((semi-colon? n-tok) (parse-members next (getter) 'start getter #f just-method?))
                 ;Intermediate and Advanced
                 ((comma? n-tok) 
                  (if (or (intermediate?) (advanced?))
                      (parse-members next (getter) 'field-list getter abstract-method? just-method?)
-                     (parse-error (format "Expected an end to field ~a, fields end in ';', ',' is not allowed" (token-value tok))
+                     (parse-error (format "Expected an end to field ~a, fields end in ';', ',' is not allowed." (token-value tok))
                                   srt ne)))
                 ((and #;(or (intermediate?) (advanced?)) (teaching-assignment-operator? n-tok))
                  (let ((assign-exp (getter)))
                    (cond
                      ((eof? (get-tok assign-exp))
-                      (parse-error (format "Expected an expression to bind to ~a, and class body still needs a }" 
+                      (parse-error (format "Expected an expression to bind to ~a, and the class body still needs a '}'." 
                                            (token-value tok)) srt end))
                      ((and (advanced?) (o-brace? (get-tok assign-exp)))
                       (parse-members next (parse-array-init assign-exp (getter) 'start getter) 'field-init-end getter #f just-method?))
@@ -750,32 +751,27 @@
                       (parse-members next (parse-expression null assign-exp 'start getter #f #f) 'field-init-end getter #f just-method?)))))
                 ((o-paren? n-tok) (parse-members next (getter) 'method-parms getter abstract-method? just-method?))
                 ((open-separator? n-tok) 
-                 (parse-error (format "Method parameters must begin with ( found ~a" n-out) srt ne))
+                 (parse-error (format "Method parameters must begin with '(' found ~a." n-out) srt ne))
                 ((id-token? n-tok)
-                 (if (and (id-token? (get-tok pre))
-                          (close-to-keyword? (get-tok pre) 'abstract))
-                     (parse-error
-                      (string-append 
-                       (format "Incorrectly formed field or method declaration.~n")
+                 (parse-error
+                  (string-append 
+                   (format "Incorrectly formed field or method declaration. ~a may not appear here.~n" n-out)
+                   (if (and (id-token? (get-tok pre))
+                            (close-to-keyword? (get-tok pre) 'abstract))
                        (format
-                        "~a is close to 'abstract' but miscapitalized or misspelled, and might make this a method declaration.~n"
+                        "~a is close to 'abstract' but may be miscapitalized or misspelled.~n"
                         (format-out (get-tok pre)))
-                       "Otherwise, "
-                       (if (or (intermediate?) (advanced?))
-                           (format "Fields must be separated by commas, method paramters must be in ()s, ~a not allowed" n-out)
-                           (format "Fields must be separatley declared, method paramters must be in ()s, ~a not allowed" n-out)))
-                      ps ne)
-                     (parse-error
-                      (if (or (intermediate?) (advanced?))
-                          (format "Fields must be separated by commas, method paramters must be in ()s, ~a not allowed" n-out)
-                          (format "Fields must be separatley declared, method paramters must be in ()s, ~a not allowed" n-out))
-                      srt ne)))
+                       "")
+                   (if (or (intermediate?) (advanced?))
+                       "A field is Type Name followed by '=', ',', or ';'. A method is Type Name followed by '('."
+                       "A field is Type Name followed by '=', or ';''. A method is Type Name followed by '('."))
+                  ps ne))
                 (else 
                  (if (or (intermediate?) (advanced?))
                      (parse-error 
-                      (format "Expected ';' to end field or abstract method parameter list, found ~a" n-out) srt ne)
+                      (format "Expected ';' to end field or abstract method parameter list, found ~a." n-out) srt ne)
                      (parse-error 
-                      (format "Expected ';' to end field. Found ~a" n-out) srt ne))))))
+                      (format "Expected ';' to end field. Found ~a." n-out) srt ne))))))
            (else 
             (if (and (advanced?) (o-bracket? tok))
                 (let* ((next (getter))
@@ -787,7 +783,7 @@
                      (parse-error "Array type may not have [[. A closing ] is required before beginning a new []" 
                                   srt (get-end next)))
                     (else
-                     (parse-error (format "Array type is of the form type[]. ~a is not allowed" (format-out next-tok)) srt
+                     (parse-error (format "Array type is of the form Type[]. ~a is not allowed." (format-out next-tok)) srt
                                   (get-end next)))))
                 (parse-error 
                  (if (java-keyword? tok)

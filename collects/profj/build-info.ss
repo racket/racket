@@ -1239,9 +1239,10 @@
       (when (and (memq level '(beginner intermediate))
                  (member name (map method-record-name inherited-methods))
                  (not over?))
-        (inherited-overload-error name parms (method-record-atypes 
-                                              (car (filter (lambda (m) (equal? (method-record-name m) name))
-                                                           inherited-methods)))
+        (inherited-overload-error (car cname) name parms 
+                                  (method-record-atypes 
+                                   (car (filter (lambda (m) (equal? (method-record-name m) name))
+                                                inherited-methods)))
                                   (id-src (method-name method))))
             
       (when (eq? ret 'ctor)
@@ -1568,7 +1569,8 @@
     (if (eq? kind 'inherited-conflict-field)
         (let ((n (id->ext-name name)))
           (raise-error n (format "Field ~a conflicts with a method of the same name from ~a" n class) n src))
-        (let ((m-name (method-name->ext-name (id-string name) parms))
+        (let ((m-name (method-name->ext-name (id-string name) null))
+              (m-full-name (method-name->ext-name (id-string name) parms))
               (r-name (type->ext-name ret)))
           (raise-error 
            m-name
@@ -1576,35 +1578,44 @@
              ((illegal-abstract)
               (format 
                "Abstract method ~a is not allowed in non-abstract class ~a, abstract methods must be in abstract classes" 
-               m-name class))
+               m-full-name class))
              ((repeated)
               (format "~a ~a has already been written in this class, ~a, and cannot be written again" 
-                      (if ctor? "Constructor" "Method") m-name class))
+                      (if ctor? "Constructor" "Method") m-full-name class))
              ((inherit-conflict)
-              (format "Inherited method ~a from ~a conflicts with another method of the same name" m-name class))
+              (format "Inherited method ~a from ~a conflicts with another method of the same name" m-full-name class))
              ((conflict)
-              (format "Method ~a conflicts with a method inherited from ~a" m-name class))
-             ((not-implement) (format "Method ~a returning ~a from ~a should be implemented and was not" m-name r-name class))
+              (format "Method ~a conflicts with a method inherited from ~a" m-full-name class))
+             ((not-implement) (format "Method ~a returning ~a from ~a should be implemented and was not." m-full-name r-name class))
              ((ctor-ret-value)
-              (format "Constructor ~a for class ~a has a return type, which is not allowed" m-name class))
+              (format "Constructor ~a for class ~a has a return type, which is not allowed." m-full-name class))
              ((class-name)
-              (format "Method ~a from ~a has the same name as a class, which is not allowed" m-name class))
+              (format "Method ~a from ~a has the same name as a class, which is not allowed." m-full-name class))
              ((bad-ret)
               (format "Methods with the same name must have the same return type. Found definitions of method ~a in ~a with return types ~a and ~a."
-                      m-name class r-name (type->ext-name ctor?))))
+                      m-full-name class r-name (type->ext-name ctor?))))
            m-name src))))
 
-  ;inherited-overload-error: string (list type) (list type) src -> void
-  (define (inherited-overload-error name new-type inherit-type src)
-    (let ((n (string->symbol name))
-          (nt (map type->ext-name new-type))
-          (gt (map type->ext-name inherit-type)))
-      (raise-error n
-                   (string-append 
-                    (format "Attempted to override method ~a, but it should have ~a arguments with types ~a.~n"
-                            n (length inherit-type) gt)                                      
-                    (format "Given ~a arguments with types ~a" (length new-type) nt))
-                   n src)))                               
+  ;inherited-overload-error: string string (list type) (list type) src -> void
+  (define (inherited-overload-error curr-class name new-type inherit-type src)
+    (let* ((n (string->symbol name))
+           (nt (map type->ext-name new-type))
+           (nt-l (length nt))
+           (gt (map type->ext-name inherit-type))
+           (gt-l (length gt)))
+      (raise-error 
+       (string->symbol curr-class)
+       (string-append
+        (format "Attempted to override method ~a, but it should have " n)
+        (cond
+          ((= gt-l 0) "no arguments.~n")
+          ((= gt-l 1) (format "1 argument with type ~a.~n" (car gt)))
+          (else (format "~a arguments with types ~a." gt-l gt)))
+        (cond
+          ((= nt-l 0) "Given a method with no arguments.")
+          ((= nt-l 1) (format "Given a method with one argument with type ~a." (car nt)))
+          (else (format "Given a method with ~a arguments with types ~a" nt-l nt))))
+       (string->symbol curr-class) src)))
   
   ;not-ctor-error: string string src -> void
   (define (not-ctor-error meth class src)
@@ -1664,14 +1675,15 @@
   ;return-error string (list type) (list string) type type src -> void
   (define (override-return-error name parms class ret old-ret src)
     (let ((name (string->symbol name))
+          (m-name-short (method-name->ext-name name null))
           (m-name (method-name->ext-name name parms)))
       (raise-error 
        name
        (format 
         "~a~n~a"
-        (format "Method ~a of class ~a overrides an inherited method, in overriding the return type must remain the same"
+        (format "Method ~a of class ~a overrides an inherited method, in overriding the return type must remain the same."
                 m-name (car class))
-        (format "~a's return has changed from ~a to ~a" m-name (type->ext-name old-ret) (type->ext-name ret)))
+        (format "~a's return has changed from ~a to ~a." m-name-short (type->ext-name old-ret) (type->ext-name ret)))
        name src)))
   
   ;override-access-error symbol symbol string (list type) (list string) string src -> void
@@ -1685,13 +1697,13 @@
                           (format 
                            "Method ~a in ~a attempts to override final method from ~a, final methods may not be overridden"
                            m-name (car class) (if (list? parent) (car parent) parent))
-                          (format "Method ~a from ~a cannot be overridden in ~a" m-name parent (car class))))
+                          (format "Method ~a from ~a cannot be overridden in ~a" name parent (car class))))
                      ((static)
                       (format "Method ~a in ~a attempts to override static method from ~a, which is not allowed"
                               m-name (car class) parent))
                      ((public) 
                       (format "Method ~a in ~a must be public to override public method from ~a, ~a is not public" 
-                              m-name (car class) parent m-name))
+                              m-name (car class) parent name))
                      ((protected) 
                       (format 
                        "Method ~a in ~a must be public or protected to override protected method from ~a, it is neither"

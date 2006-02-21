@@ -745,13 +745,15 @@
 
   ;generate-wrappers: string (list method-record) (list field) -> (list sexp)
   (define (generate-wrappers class-name super-name methods fields)
-    (let* ((wrapped-methods
+    (let* (;these methods will be used to detect when a method is now overloaded when it wasn't in the super class
+           (wrapped-methods-initial
+            (filter (lambda (m)
+                      (and (not (eq? (method-record-rtype m) 'ctor))
+                           (not (method-record-override m)))) methods))
+           (wrapped-methods
             (filter 
-             (lambda (m)
-               (and (not (eq? (method-record-rtype m) 'ctor))
-                    (equal? (car (method-record-class m)) class-name)
-                    (not (method-record-override m))))
-             methods))
+             (lambda (m) (equal? (car (method-record-class m)) class-name))
+             wrapped-methods-initial))
            (add-ca 
             (lambda (name) (build-identifier (string-append "convert-assert-" name))))
            (add-gc 
@@ -776,7 +778,7 @@
                               wrapped-methods) #f from-dynamic?)
                    ,@extra-methods
                    ))))
-           (dynamic-callables (refine-method-list wrapped-methods)))
+           (dynamic-callables (refine-method-list wrapped-methods-initial class-name)))
       (list 
        `(define (,(build-identifier (string-append "wrap-convert-assert-" class-name)) obj p n s c)
           (let ((raise-error 
@@ -953,23 +955,27 @@
         (else value))))
   
   ;Removes from the list all methods that are not callable from a dynamic context
-  ;refine-method-list: (list method-record) -> (list method-record)
-  (define (refine-method-list methods)
-    (cond 
-      ((null? methods) methods)
-      ((method-record-override (car methods))
-       (refine-method-list (cdr methods)))
-      ((eq? 'ctor (method-record-rtype (car methods)))
-       (refine-method-list (cdr methods)))
-      (else
-       (let ((overloaded-removed 
-              (filter (lambda (m) (not (equal? (method-record-name (car methods))
-                                               (method-record-name m))))
-                      (cdr methods))))
-         (if (> (length (cdr methods))
-                (length overloaded-removed))
-             (refine-method-list overloaded-removed)
-             (cons (car methods) (refine-method-list (cdr methods))))))))
+  ;refine-method-list: (list method-record) string -> (list method-record)
+  (define (refine-method-list methods class)
+    (letrec ((refine
+              (lambda (methods)
+                (cond 
+                  ((null? methods) methods)
+                  ((method-record-override (car methods))
+                   (refine (cdr methods)))
+                  ((eq? 'ctor (method-record-rtype (car methods)))
+                   (refine (cdr methods)))
+                  (else
+                   (let ((overloaded-removed 
+                          (filter (lambda (m) (not (equal? (method-record-name (car methods))
+                                                           (method-record-name m))))
+                                  (cdr methods))))
+                     (if (> (length (cdr methods))
+                            (length overloaded-removed))
+                         (refine overloaded-removed)
+                         (cons (car methods) (refine (cdr methods))))))))))
+      (filter (lambda (m) (equal? (car (method-record-class m)) class))
+              (refine methods))))
 
   
   ;generate-dynamic-names: (list method) (list method)-> (list (list string method))

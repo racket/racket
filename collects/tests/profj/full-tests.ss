@@ -5,6 +5,16 @@
   (prepare-for-tests "Full")
 
   (execute-test
+   "class A {
+     int f (A x) { return 4; }
+    }
+    class B extends A {
+     int f( B x) { return 5; }
+    }"
+   'full #f 
+   "Overloading introduced on extends")
+  
+  (execute-test
    "class X {
      int x = y;
      int y;
