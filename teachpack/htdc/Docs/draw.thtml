@@ -24,12 +24,12 @@ world. Here is its class diagram of public fields and methods:
                                              | boolean clearLine(Posn,Posn,Color)    |
                                              +---------------------------------------+
 
-		      +----------+
-		      | Posn     |
-		      +----------+
-		      | int x    |
-		      | int y    |
-		      +----------+
+                      +----------+
+                      | Posn     |
+                      +----------+
+                      | int x    |
+                      | int y    |
+                      +----------+
 
                               +-------+
                               | Color |

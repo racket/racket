@@ -20,18 +20,18 @@ in a visual world. Here is its class diagram of public fields and methods:
   | abstract void draw()            |       | void drawRect(Posn,int,int,Color)  |
   | abstract void erase()           |       | void drawLine(Posn,Posn,Color)     |
   +---------------------------------+       | void drawString(Posn,String)       |
-					    | void clearCircle(Posn,int,Color)   |
-					    | void clearDisk(Posn,int,Color)     |
-					    | void clearRect(Posn,int,int,Color) |
-					    | void clearLine(Posn,Posn,Color)    |
-					    +------------------------------------+
+                                            | void clearCircle(Posn,int,Color)   |
+                                            | void clearDisk(Posn,int,Color)     |
+                                            | void clearRect(Posn,int,int,Color) |
+                                            | void clearLine(Posn,Posn,Color)    |
+                                            +------------------------------------+
 
-		      +----------+
-		      | Posn     |
-		      +----------+
-		      | int x    |
-		      | int y    |
-		      +----------+
+                      +----------+
+                      | Posn     |
+                      +----------+
+                      | int x    |
+                      | int y    |
+                      +----------+
 
                               +-------+
                               | Color |
