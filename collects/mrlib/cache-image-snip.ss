@@ -111,7 +111,11 @@
                   (send dc draw-bitmap bitmap x y 'solid 
                         (send the-color-database find-color "black")
                         (send bitmap get-loaded-mask)))]
-          [dc-proc (dc-proc dc x y)]
+          [dc-proc 
+           (let ([smoothing (send dc get-smoothing)])
+             (send dc set-smoothing 'aligned)
+             (dc-proc dc x y)
+             (send dc set-smoothing smoothing))]
           [else (void)]))
       
       (define/override (write f)
