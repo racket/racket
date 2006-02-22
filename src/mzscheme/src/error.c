@@ -970,6 +970,13 @@ void scheme_wrong_count_m(const char *name, int minc, int maxc,
 	} else
 	  maxc = minc;
 	name = scheme_get_proc_name((Scheme_Object *)name, NULL, 1);
+      } else if (SCHEME_STRUCTP(pa)) {
+	/* This happens when a non-case-lambda is not yet JITted.
+	 It's an arity-at-least record. */
+	pa = ((Scheme_Structure *)pa)->slots[0];
+	minc = SCHEME_INT_VAL(pa);
+	maxc = -1;
+	name = scheme_get_proc_name((Scheme_Object *)name, NULL, 1);
       } else {
 	/* complex; use "no matching case" msg */
       }
@@ -1030,6 +1037,33 @@ char *scheme_make_arity_expect_string(Scheme_Object *proc,
     name = scheme_get_proc_name(proc, &namelen, 1);
     mina = -2;
     maxa = 0;
+#ifdef MZ_USE_JIT
+  } else if (SAME_TYPE(SCHEME_TYPE((Scheme_Object *)proc), scheme_native_closure_type)) {
+    Scheme_Object *pa;
+    pa = scheme_get_native_arity((Scheme_Object *)proc);
+    if (SCHEME_BOXP(pa)) {
+      pa = SCHEME_BOX_VAL(pa);
+    }
+    if (SCHEME_INTP(pa)) {
+      mina = SCHEME_INT_VAL(pa);
+      if (mina < 0) {
+	mina = (-mina) - 1;
+	maxa = -1;
+      } else
+	maxa = mina;
+    } else if (SCHEME_STRUCTP(pa)) {
+      /* This happens when a non-case-lambda is not yet JITted.
+	 It's an arity-at-least record. */
+      pa = ((Scheme_Structure *)pa)->slots[0];
+      mina = SCHEME_INT_VAL(pa);
+      maxa = -1;
+    } else {
+      /* complex; use "no matching case" msg */
+      mina = -2;
+      maxa = 0;
+    }
+    name = scheme_get_proc_name((Scheme_Object *)proc, &namelen, 1);
+#endif
   } else {
     Scheme_Closure_Data *data;
 
