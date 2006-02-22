@@ -6,7 +6,9 @@ public abstract class World {
 
     public native void bigBang(int width, int height, double s); 
     
-    public native void endOfTime();
+    public native World endOfTime();
+
+    public native World endOfWorld();
 
     public abstract void onTick();
 

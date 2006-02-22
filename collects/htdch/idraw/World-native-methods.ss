@@ -117,5 +117,9 @@
   
   (define/provide (endOfTime-native this accs gets privates)
     (end-of-time)
-    (void))
+    this)
+
+  (define/provide (endOfWorld-native this accs gets privates)
+    (end-of-time)
+    this)
 )
