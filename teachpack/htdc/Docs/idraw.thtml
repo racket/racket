@@ -13,8 +13,8 @@ in a visual world. Here is its class diagram of public fields and methods:
   | Canvas theCanvas                |------>| Canvas                             |
   +---------------------------------+       +------------------------------------+
   | void bigBang(int,int,double)    |       +------------------------------------+
-  | void endOfTime()                |       | void start(int,int)                |
-  |                                 |       | void stop()                        |
+  | World endOfTime()               |       | void start(int,int)                |
+  | World endOfWorld()              |       | void stop()                        |
   | abstract void onTick()          |       | void drawCircle(Posn,int,Color)    |
   | abstract void onKeyEvent(String)|       | void drawDisk(Posn,int,Color)      |
   | abstract void draw()            |       | void drawRect(Posn,int,int,Color)  |
