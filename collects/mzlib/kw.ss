@@ -400,18 +400,23 @@
 
 ;; keyword searching utility (note: no errors for odd length)
 (provide keyword-get)
-(define (keyword-get args keyword . not-found)
-  (let loop ([args args])
-    (cond [(or (null? args) (null? (cdr args)) (not (keyword? (car args))))
-           (and (pair? not-found) ((car not-found)))]
-          [(eq? (car args) keyword) (cadr args)]
-          [else (loop (cddr args))])))
+(define keyword-get
+  (case-lambda
+   [(args keyword not-found)
+    (let loop ([args args])
+      (cond [(or (null? args) (null? (cdr args)) (not (keyword? (car args))))
+             (not-found)]
+            [(eq? (car args) keyword) (cadr args)]
+            [else (loop (cddr args))]))]
+   ;; the following makes another function call, but the code that is generated
+   ;; by this module never gets here
+   [(args keyword) (keyword-get* args keyword #f)]))
 
 ;; a private version of keyword-get that is used with simple values
-(define (keyword-get* args keyword . not-found)
+(define (keyword-get* args keyword not-found)
   (let loop ([args args])
     (cond [(or (null? args) (null? (cdr args)) (not (keyword? (car args))))
-           (and (pair? not-found) (car not-found))]
+           not-found]
           [(eq? (car args) keyword) (cadr args)]
           [else (loop (cddr args))])))
 
