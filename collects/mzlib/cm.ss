@@ -53,6 +53,13 @@
         ((eq? 'relative base) mode)
         (else (build-path base mode)))))
 
+  (define (try-delete-file path)
+    ;; Attempt to delete, but give up if it
+    ;;  doesn't work:
+    (with-handlers ([exn:fail:filesystem? void])
+      (trace-printf "deleting: ~a" path)
+      (delete-file path)))
+
   ;; with-compile-output : path (output-port -> alpha) -> alpha
   ;;  Open path for writing, and arranges to delete path if there's
   ;;  an exception. Breaks are managed so that the port is reliably
@@ -60,11 +67,7 @@
   (define (with-compile-output path proc)
     (let ([bp (current-break-parameterization)])
       (with-handlers ([void (lambda (exn)
-			      ;; Attempt to delete, but give up if it
-			      ;;  doesn't work:
-			      (with-handlers ([exn:fail:filesystem? void])
-				(trace-printf "deleting: ~a" path)
-				(delete-file path))
+			      (try-delete-file path)
 			      (raise exn))])
 	(let ([out (open-output-file path 'truncate/replace)])
 	  (dynamic-wind
@@ -137,7 +140,10 @@
 	       zo-name
 	       (lambda (out)
 		 (with-handlers ((exn:fail?
-				  (lambda (ex) (compilation-failure mode path zo-name #f (exn-message ex)))))
+				  (lambda (ex)
+				    (close-output-port out)
+				    (try-delete-file zo-name)
+				    (compilation-failure mode path zo-name #f (exn-message ex)))))
 		   (parameterize ([current-write-relative-directory
 				   (let-values ([(base name dir?) (split-path path)])
 				     (if (eq? base 'relative)
