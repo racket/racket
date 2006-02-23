@@ -124,13 +124,30 @@ end-string
         (lambda () (display c-file))
         'replace)
       (compile-c-to-so file c so home)))
+
+  (define (effective-system-type home)
+    (let ([t (system-type)])
+      (if (eq? t 'unix)
+	  ;; Check "buildinfo" for USE_GL flag:
+	  (let ([buildinfo (build-path home "lib" "buildinfo")])
+	    (if (file-exists? buildinfo)
+		(with-input-from-file buildinfo
+		  (lambda ()
+		    (let loop ()
+		      (let ([l (read-line)])
+			(cond
+			 [(eof-object? l) 'no-gl]
+			 [(regexp-match #rx"-DUSE_GL" l) t]
+			 [else (loop)])))))
+		t))
+	  t)))
   
   (define (make-gl-info compile-directory home)
     (let ((zo (build-path compile-directory "gl-info.zo"))
           (mod
            (compile
-            (case (system-type)
-              ((macosx windows)
+            (case (effective-system-type home)
+              ((macosx windows no-gl)
                '(module gl-info mzscheme
                   (provide (all-defined))
                   (define gl-byte-size 1)
