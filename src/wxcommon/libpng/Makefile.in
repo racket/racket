@@ -20,6 +20,7 @@ DESTDIR=
 # Where the zlib library and include files are located
 #ZLIBINC=/usr/local/include
 ZLIBINC=@ZLIB_INC@
+ZLIB_INC = -I$(srcdir)/../zlib
 
 CFLAGS=@CFLAGS@ @PREFLAGS@ @COMPFLAGS@ @OPTIONS@ @MROPTIONS@ $(ZLIBINC)
 
