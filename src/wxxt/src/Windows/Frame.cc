@@ -642,7 +642,7 @@ void wxFrame::SetIcon(wxBitmap *icon, wxBitmap *mask, int kind)
       pm = mask ? GETPIXMAP(mask) : (Pixmap)NULL;
       XtVaSetValues(X->frame, XtNiconMask, pm, NULL);
       pm = GETPIXMAP(bm);
-      XtVaSetValues(X->frame, XtNiconPixmap, pm, (Pixmap)NULL);
+      XtVaSetValues(X->frame, XtNiconPixmap, pm, (Pixmap)NULL, NULL);
       
       frame_icon = bm;
       frame_mask = mask;

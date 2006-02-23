@@ -362,7 +362,7 @@ void wxCanvas::SetScrollbars(int h_pixels, int v_pixels, int x_len, int y_len,
 	XtVaSetValues(X->scroll,
 		      XtNhScrollAmount, h_units,
 		      XtNvScrollAmount, v_units,
-		      0);
+		      NULL);
       }
     } else {
       Arg a[8];
