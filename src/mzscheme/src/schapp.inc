@@ -1,8 +1,9 @@
 
   MZ_MARK_STACK_TYPE old_cont_mark_stack;
-  Scheme_Object *v;
-  Scheme_Closed_Primitive_Proc *prim;
-  Scheme_Thread *p = scheme_current_thread;
+  GC_CAN_IGNORE Scheme_Object *v;
+  GC_CAN_IGNORE Scheme_Primitive_Closure *prim;
+  GC_CAN_IGNORE Scheme_Thread *p = scheme_current_thread;
+  GC_CAN_IGNORE Scheme_Primitive_Closure_Proc *f;
 
 #if !PRIM_NO_STACK_CHECK
 # ifdef DO_STACK_CHECK
@@ -33,11 +34,11 @@
   DO_CHECK_FOR_BREAK(p, ;);
 #endif
 
-  prim = (Scheme_Closed_Primitive_Proc *)rator;
+  prim = (Scheme_Primitive_Closure *)rator;
 
 #if PRIM_CHECK_ARITY
-  if (argc < prim->mina || (argc > prim->maxa && prim->maxa >= 0)) {
-    scheme_wrong_count(prim->name, prim->mina, prim->maxa, argc, argv);
+  if (argc < prim->p.mina || (argc > prim->p.mu.maxa && prim->p.mina >= 0)) {
+    scheme_wrong_count(prim->p.name, prim->p.mina, prim->p.mu.maxa, argc, argv);
     return NULL; /* Shouldn't get here */
   }
 #endif
@@ -45,7 +46,9 @@
   MZ_CONT_MARK_POS++;
   old_cont_mark_stack = MZ_CONT_MARK_STACK;
 
-  v = prim->prim_val(prim->data, argc, argv);
+  f = prim->p.prim_val;
+  v = f(argc, argv, (Scheme_Object *)prim);
+
 #if !PRIM_NO_CHECK_VALUE
   v = _scheme_force_value(v);
 #endif

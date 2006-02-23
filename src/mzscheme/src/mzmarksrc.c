@@ -244,11 +244,24 @@ prim_proc {
 
  mark:
   gcMARK(prim->name);
-
+  if (prim->mina < 0) {
+    gcMARK(prim->mu.cases);
+  }
+  if (prim->pp.flags & SCHEME_PRIM_IS_CLOSURE) {
+    Scheme_Primitive_Closure *cc = (Scheme_Primitive_Closure *)prim;
+    int i;
+    for (i = cc->count; i--; ) {
+      gcMARK(cc->val[i]);
+    }
+  }  
+  
  size:
-  ((prim->pp.flags & SCHEME_PRIM_IS_MULTI_RESULT)
-   ? gcBYTES_TO_WORDS(sizeof(Scheme_Prim_W_Result_Arity))
-   : gcBYTES_TO_WORDS(sizeof(Scheme_Primitive_Proc)));
+  ((prim->pp.flags & SCHEME_PRIM_IS_CLOSURE)
+   ? (gcBYTES_TO_WORDS(sizeof(Scheme_Primitive_Closure))
+      + ((Scheme_Primitive_Closure *)prim)->count - 1)
+   : ((prim->pp.flags & SCHEME_PRIM_IS_MULTI_RESULT)
+      ? gcBYTES_TO_WORDS(sizeof(Scheme_Prim_W_Result_Arity))
+      : gcBYTES_TO_WORDS(sizeof(Scheme_Primitive_Proc))));
 }
 
 closed_prim_proc {
@@ -257,23 +270,6 @@ closed_prim_proc {
  mark:
   gcMARK(c->name);
   gcMARK(SCHEME_CLSD_PRIM_DATA(c));
-  if (c->pp.flags & SCHEME_PRIM_IS_POST_DATA) {
-    if (c->mina == -2) {
-      Scheme_Closed_Case_Primitive_Post_Ext_Proc *cc;
-      int i;
-      cc = (Scheme_Closed_Case_Primitive_Post_Ext_Proc *)c;
-      for (i = cc->p.len; i--; ) {
-	gcMARK(cc->a[i]);
-      }
-    } else {
-      Scheme_Closed_Primitive_Post_Ext_Proc *cc;
-      int i;
-      cc = (Scheme_Closed_Primitive_Post_Ext_Proc *)c;
-      for (i = cc->p.len; i--; ) {
-	gcMARK(cc->a[i]);
-      }
-    }
-  }
   if (c->mina == -2) {
     gcMARK(((Scheme_Closed_Case_Primitive_Proc *)c)->cases);
   }
@@ -282,14 +278,8 @@ closed_prim_proc {
   ((c->pp.flags & SCHEME_PRIM_IS_MULTI_RESULT)
    ? gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Prim_W_Result_Arity))
    : ((c->mina == -2)
-      ? ((c->pp.flags & SCHEME_PRIM_IS_POST_DATA)
-	 ? (gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Case_Primitive_Post_Ext_Proc))
-	    + ((Scheme_Closed_Case_Primitive_Post_Proc *)c)->len - 1)
-	 : gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Case_Primitive_Proc)))
-      : ((c->pp.flags & SCHEME_PRIM_IS_POST_DATA)
-	 ? (gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Primitive_Post_Ext_Proc))
-	    + ((Scheme_Closed_Primitive_Post_Proc *)c)->len - 1)
-	 : gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Primitive_Proc)))));
+      ? gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Case_Primitive_Proc))
+      : gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Primitive_Proc))));
 }
 
 scm_closure {

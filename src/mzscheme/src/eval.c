@@ -3647,9 +3647,9 @@ static Scheme_Object *do_apply_known_k(void)
 
   p->ku.k.p2 = NULL;
 
-  return _scheme_apply_known_closed_prim_multi((Scheme_Object *)p->ku.k.p1, 
-					       p->ku.k.i1, 
-					       argv);
+  return _scheme_apply_known_prim_closure_multi((Scheme_Object *)p->ku.k.p1, 
+						p->ku.k.i1, 
+						argv);
 }
 
 #if 0
@@ -3665,36 +3665,36 @@ static Scheme_Object *do_apply_known_k(void)
 # define DEBUG_CHECK_TYPE(v) /**/
 #endif
 
-Scheme_Object *_scheme_apply_known_closed_prim_multi(Scheme_Object *rator,
-						     int argc,
-						     Scheme_Object **argv)
+Scheme_Object *_scheme_apply_known_prim_closure_multi(Scheme_Object *rator,
+						      int argc,
+						      Scheme_Object **argv)
 {
 #define PRIM_CHECK_ARITY 0
 #define PRIM_CHECK_MULTI 0
 #include "schapp.inc"
 }
 
-Scheme_Object *_scheme_apply_closed_prim_multi(Scheme_Object *rator,
-					       int argc,
-					       Scheme_Object **argv)
+Scheme_Object *_scheme_apply_prim_closure_multi(Scheme_Object *rator,
+						int argc,
+						Scheme_Object **argv)
 {
 #define PRIM_CHECK_ARITY 1
 #define PRIM_CHECK_MULTI 0
 #include "schapp.inc"
 }
 
-Scheme_Object *_scheme_apply_known_closed_prim(Scheme_Object *rator,
-					       int argc,
-					       Scheme_Object **argv)
+Scheme_Object *_scheme_apply_known_prim_closure(Scheme_Object *rator,
+						int argc,
+						Scheme_Object **argv)
 {
 #define PRIM_CHECK_ARITY 0
 #define PRIM_CHECK_MULTI 1
 #include "schapp.inc"
 }
 
-Scheme_Object *_scheme_apply_closed_prim(Scheme_Object *rator,
-					 int argc,
-					 Scheme_Object **argv)
+Scheme_Object *_scheme_apply_prim_closure(Scheme_Object *rator,
+					  int argc,
+					  Scheme_Object **argv)
 {
 #define PRIM_CHECK_ARITY 1
 #define PRIM_CHECK_MULTI 1
@@ -3909,6 +3909,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 
     if (type == scheme_prim_type) {
       GC_CAN_IGNORE Scheme_Primitive_Proc *prim;
+      GC_CAN_IGNORE Scheme_Primitive_Closure_Proc *f;
       
 #define VACATE_TAIL_BUFFER_USE_RUNSTACK() \
       if (rands == p->tail_buffer) {                                \
@@ -3936,14 +3937,15 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       prim = (Scheme_Primitive_Proc *)obj;
 
       if (num_rands < prim->mina 
-	  || (num_rands > prim->maxa && prim->maxa >= 0)) {
-	scheme_wrong_count_m(prim->name, prim->mina, prim->maxa,
+	  || (num_rands > prim->mu.maxa && prim->mina >= 0)) {
+	scheme_wrong_count_m(prim->name, prim->mina, prim->mu.maxa,
 			     num_rands, rands,
 			     prim->pp.flags & SCHEME_PRIM_IS_METHOD);
 	return NULL; /* Shouldn't get here */
       }
 
-      v = prim->prim_val(num_rands, rands);
+      f = prim->prim_val;
+      v = f(num_rands, rands, (Scheme_Object *)prim);
 
       DEBUG_CHECK_TYPE(v);
     } else if (type == scheme_closure_type) {
@@ -4128,28 +4130,6 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       }
 
       goto eval_top;
-    } else if (type == scheme_closed_prim_type) {
-      GC_CAN_IGNORE Scheme_Closed_Primitive_Proc *prim;
-      
-      DO_CHECK_FOR_BREAK(p, UPDATE_THREAD_RSPTR_FOR_GC(); if (rands == p->tail_buffer) make_tail_buffer_safe(););
-
-      VACATE_TAIL_BUFFER_USE_RUNSTACK();
-
-      UPDATE_THREAD_RSPTR();
-
-      prim = (Scheme_Closed_Primitive_Proc *)obj;
-      
-      if (num_rands < prim->mina 
-	  || (num_rands > prim->maxa && prim->maxa >= 0)) {
-	scheme_wrong_count_m(prim->name, prim->mina, prim->maxa, 
-			     num_rands, rands,
-			     prim->pp.flags & SCHEME_PRIM_IS_METHOD);
-	return NULL; /* Shouldn't get here */
-      }
-      
-      v = prim->prim_val(prim->data, num_rands, rands);
-
-      DEBUG_CHECK_TYPE(v);
     } else if (type == scheme_case_closure_type) {
       Scheme_Case_Lambda *seq;
       Scheme_Closure_Data *data;
@@ -4361,6 +4341,28 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       DO_CHECK_FOR_BREAK(p, UPDATE_THREAD_RSPTR_FOR_GC(); if (rands == p->tail_buffer) make_tail_buffer_safe(););
 
       goto apply_top;
+    } else if (type == scheme_closed_prim_type) {
+      GC_CAN_IGNORE Scheme_Closed_Primitive_Proc *prim;
+      
+      DO_CHECK_FOR_BREAK(p, UPDATE_THREAD_RSPTR_FOR_GC(); if (rands == p->tail_buffer) make_tail_buffer_safe(););
+
+      VACATE_TAIL_BUFFER_USE_RUNSTACK();
+
+      UPDATE_THREAD_RSPTR();
+
+      prim = (Scheme_Closed_Primitive_Proc *)obj;
+      
+      if (num_rands < prim->mina 
+	  || (num_rands > prim->maxa && prim->maxa >= 0)) {
+	scheme_wrong_count_m(prim->name, prim->mina, prim->maxa, 
+			     num_rands, rands,
+			     prim->pp.flags & SCHEME_PRIM_IS_METHOD);
+	return NULL; /* Shouldn't get here */
+      }
+      
+      v = prim->prim_val(prim->data, num_rands, rands);
+
+      DEBUG_CHECK_TYPE(v);
     } else {
       UPDATE_THREAD_RSPTR_FOR_ERROR();
       if (rands == p->tail_buffer)

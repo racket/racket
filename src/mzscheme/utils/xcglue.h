@@ -158,7 +158,7 @@ mzchar objscheme_unbundle_char(Scheme_Object *, const char *);
 #define objscheme_unbundle_long objscheme_unbundle_integer
 #define objscheme_unbundle_int objscheme_unbundle_integer
 
-#define OBJSCHEME_PRIM_METHOD(m, cf) (SCHEME_PRIMP(m) && (((Scheme_Primitive_Proc *)m)->prim_val == cf))
+#define OBJSCHEME_PRIM_METHOD(m, cf) (SCHEME_PRIMP(m) && ((Scheme_Prim *)((Scheme_Primitive_Proc *)m)->prim_val == cf))
 
 #define COPY_JMPBUF(dest, src) memcpy(&dest, &src, sizeof(mz_jmp_buf));
 

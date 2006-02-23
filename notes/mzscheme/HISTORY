@@ -1,4 +1,17 @@
 
+Version 301.7
+Inside MzScheme: added scheme_make_prim_closure_w_arity(), etc.
+
+Version 301.6
+The body of `let/cc' and the procedure passed to `call/ec' are
+ evaluated/called as a tail expression/call
+Added struct-type-make-constructor and struct-type-make-predicate
+Added JIT support for 3m
+
+Version 301.5
+For nested captured continuations, the shared continuation tail is
+ represented by shared data
+
 Version 301.4
 Added just-in-time native-code compiler with a new eval-jit-enabled
  parameter

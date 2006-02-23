@@ -922,7 +922,7 @@ static int generate_direct_prim_tail_call(mz_jit_state *jitter, int num_rands)
     JIT_UPDATE_THREAD_RSPTR();
   }
   jit_movi_i(JIT_R1, num_rands);
-  mz_prepare(2);
+  mz_prepare(2); /* a prim takes 3 args, but a NONCM prim ignores the 3rd */
   CHECK_LIMIT();
   jit_pusharg_p(JIT_RUNSTACK);
   jit_pusharg_i(JIT_R1);
@@ -1042,7 +1042,7 @@ static int generate_direct_prim_non_tail_call(mz_jit_state *jitter, int num_rand
   }
 
   jit_movi_i(JIT_R1, num_rands);
-  mz_prepare(2);
+  mz_prepare(2); /* a prim takes 3 args, but a NONCM prim ignores the 3rd */
   CHECK_LIMIT();
   jit_pusharg_p(JIT_RUNSTACK);
   jit_pusharg_i(JIT_R1);
@@ -1152,14 +1152,15 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
     jit_ldxi_i(JIT_R0, JIT_V1, &((Scheme_Primitive_Proc *)0x0)->mina);
     ref7 = jit_bnei_i(jit_forward(), JIT_R0, num_rands);
     /* Fast prim application */
-    jit_ldxi_p(JIT_V1, JIT_V1, &((Scheme_Primitive_Proc *)0x0)->prim_val);
+    jit_ldxi_p(JIT_R1, JIT_V1, &((Scheme_Primitive_Proc *)0x0)->prim_val);
     if (need_set_rs) {
       JIT_UPDATE_THREAD_RSPTR();
     }
-    mz_prepare(2);
+    mz_prepare(3);
+    jit_pusharg_p(JIT_V1);
     jit_pusharg_p(JIT_RUNSTACK);
     jit_pusharg_i(JIT_R0);
-    (void)mz_finishr(JIT_V1);
+    (void)mz_finishr(JIT_R1);
     CHECK_LIMIT();
     jit_retval(JIT_R0);
     if (!multi_ok) {
@@ -1291,8 +1292,8 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
 
   if (SCHEME_PRIMP(rator)) {
     if ((num_rands >= ((Scheme_Primitive_Proc *)rator)->mina)
-	&& ((num_rands <= ((Scheme_Primitive_Proc *)rator)->maxa)
-	    || (((Scheme_Primitive_Proc *)rator)->maxa < 0))
+	&& ((num_rands <= ((Scheme_Primitive_Proc *)rator)->mu.maxa)
+	    || (((Scheme_Primitive_Proc *)rator)->mina < 0))
 	&& is_noncm(rator))
       direct_prim = 1;
   } else {
@@ -2902,7 +2903,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 #else
       int then_short_ok = 1;
 #endif
-	  START_JIT_DATA();
+      START_JIT_DATA();
 
 #ifdef MZ_USE_JIT_PPC
       /* It's possible that the code for a then
@@ -3663,8 +3664,15 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   CHECK_LIMIT();
 
   /* *** stack_cache_pop_code *** */
+  /* DANGER: this code must save and restore (or avoid)
+     any registers that a function call would normally save 
+     and restore. JIT_AUX, which is used by things like jit_ldi,
+     is such a register for PPC. */
   stack_cache_pop_code = jit_get_ip().ptr;
   jit_movr_p(JIT_R0, JIT_RET);
+#ifdef MZ_USE_JIT_PPC
+  jit_movr_p(JIT_R(3), JIT_AUX);
+#endif
   /* Decrement stack_cache_stack_pos */
   jit_ldi_i(JIT_R1, &stack_cache_stack_pos);
   jit_subi_i(JIT_R2, JIT_R1, 1);
@@ -3676,6 +3684,9 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   (void)jit_movi_p(JIT_R2, &stack_cache_stack);
   jit_ldxr_p(JIT_R2, JIT_R2, JIT_R1);
   jit_movr_p(JIT_RET, JIT_R0);
+#ifdef MZ_USE_JIT_PPC
+  jit_movr_p(JIT_AUX, JIT_R(3));
+#endif
   jit_jmpr(JIT_R2);
   CHECK_LIMIT();
 

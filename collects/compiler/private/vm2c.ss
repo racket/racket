@@ -417,7 +417,7 @@
 		     number
 		     (cond
 		      [(procedure-vehicle? v)
-		       "void * void_param, int argc, Scheme_Object *argv[]"]
+		       "int argc, Scheme_Object *argv[], Scheme_Object *void_param"]
 		      [else
 		       (compiler:internal-error
 			#f
@@ -494,10 +494,10 @@
 				[(scheme-bucket) "Scheme_Bucket *"]
 				[(scheme-per-load-static) "struct Scheme_Per_Load_Statics *"]
 				[(label) "int"]
-				[(prim) "Scheme_Closed_Primitive_Post_Proc"]
-				[(prim-empty) "Scheme_Closed_Primitive_Proc"]
-				[(prim-case) "Scheme_Closed_Case_Primitive_Post_Proc"]
-				[(prim-case-empty) "Scheme_Closed_Case_Primitive_Proc"]
+				[(prim) "Scheme_Primitive_Closure_Post"]
+				[(prim-empty) "Scheme_Primitive_Proc"]
+				[(prim-case) "Scheme_Primitive_Closure_Post"]
+				[(prim-case-empty) "Scheme_Primitive_Proc"]
 				[(begin0-saver) "_Scheme_Begin0_Rec"]
 				[(wcm-saver) "_Scheme_WCM_Rec"]
 				[else (compiler:internal-error 
@@ -1331,12 +1331,12 @@
 		(let ([c (vm:tail-apply-argc ast)])
 		  (emit ", ~a, ~a, scheme_current_thread)" c (if (zero? c) "NULL" 'tail_buf)))]
 	       
-	       ;; (tail-call <label> <closure>) -> void_param = SCHEME_CLSD_PRIM_DATA(<closure>);
+	       ;; (tail-call <label> <closure>) -> void_param = MZC_PRIM_CLS_DATA(<closure>);
 	       ;;                                  goto LOC<label>;
 	       [(vm:tail-call? ast)
 		(when (vm:tail-call-set-env? ast)
 		  (emit-indentation)
-		  (emit "void_param = SCHEME_CLSD_PRIM_DATA(")
+		  (emit "void_param = MZC_PRIM_CLS_DATA(")
 		  (process (vm:tail-call-closure ast) indent-level #f #t)
 		  (emit ");~n"))
 		;; be nice to threads & user breaks:
@@ -1400,8 +1400,8 @@
 			       (not (memq (object-name v) (internal-tail-chain-prims))))
 			  (if (or (vm:apply-multi? ast)
 				  (primitive-result-arity v))
-			      "direct_apply_closed_primitive_multi"
-			      "direct_apply_closed_primitive")]
+			      "direct_apply_primitive_closure_multi"
+			      "direct_apply_primitive_closure")]
 			 [(and (primitive? v)
 			       (not (memq (object-name v) (internal-tail-chain-prims))))
 			  (if (or (vm:apply-multi? ast)
@@ -1411,13 +1411,13 @@
 			 [(vm:apply-known? ast) 
 			  (if (vm:apply-multi? ast)
 			      (if (compiler:option:disable-interrupts)
-				  "direct_apply_closed_primitive_multi_fv"
-				  "apply_known_closed_prim_multi")
+				  "direct_apply_primitive_closure_multi_fv"
+				  "apply_known_prim_closure_multi")
 			      (if (compiler:option:disable-interrupts)
 				  (if (compiler:option:unsafe)
-				      "direct_apply_closed_primitive_multi_fv"
-				      "direct_apply_closed_primitive_fv")
-				  "apply_known_closed_prim"))]
+				      "direct_apply_primitive_closure_multi_fv"
+				      "direct_apply_primitive_closure_fv")
+				  "apply_known_prim_closure"))]
 			 [(vm:apply-multi? ast) "apply_multi"]
 			 [else "apply"])))
 		(process (vm:apply-closure ast) indent-level #f #t)
@@ -1438,7 +1438,7 @@
 		  (emit ", ~a)" top_level_n))]
 	       
 	       [(vm:call? ast)
-		(emit-expr "_scheme_force_value(compiled(SCHEME_CLSD_PRIM_DATA(")
+		(emit-expr "_scheme_force_value(compiled(MZC_PRIM_CLS_DATA(")
 		(process (vm:call-closure ast) indent-level #f #t)
 		(emit "), 0, arg))")]
 

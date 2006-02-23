@@ -565,9 +565,10 @@ static Scheme_Object *current_code_inspector(int argc, Scheme_Object *argv[])
 /*                             properties                                 */
 /*========================================================================*/
 
-static Scheme_Object *prop_pred(Scheme_Object *prop, int argc, Scheme_Object **args)
+static Scheme_Object *prop_pred(int argc, Scheme_Object **args, Scheme_Object *prim)
 {
   Scheme_Struct_Type *stype;
+  Scheme_Object *prop = SCHEME_PRIM_CLOSURE_ELS(prim)[0];
 
   if (SCHEME_STRUCTP(args[0]))
     stype = ((Scheme_Structure *)args[0])->stype;
@@ -590,14 +591,14 @@ static Scheme_Object *prop_pred(Scheme_Object *prop, int argc, Scheme_Object **a
   return scheme_false;
 }
 
-static Scheme_Object *prop_accessor(Scheme_Object *prop, int argc, Scheme_Object **args)
+static Scheme_Object *do_prop_accessor(Scheme_Object *prop, Scheme_Object *arg, int error_ok)
 {
   Scheme_Struct_Type *stype;
 
-  if (SCHEME_STRUCTP(args[0]))
-    stype = ((Scheme_Structure *)args[0])->stype;
-  else if (SAME_TYPE(SCHEME_TYPE(args[0]), scheme_struct_type_type))
-    stype = (Scheme_Struct_Type *)args[0];
+  if (SCHEME_STRUCTP(arg))
+    stype = ((Scheme_Structure *)arg)->stype;
+  else if (SAME_TYPE(SCHEME_TYPE(arg), scheme_struct_type_type))
+    stype = (Scheme_Struct_Type *)arg;
   else
     stype = NULL;
 
@@ -616,11 +617,16 @@ static Scheme_Object *prop_accessor(Scheme_Object *prop, int argc, Scheme_Object
     }
   }
   
-  if (argc < 2) /* hack; see scheme_struct_type_property_ref */
+  if (error_ok) /* hack; see scheme_struct_type_property_ref */
     scheme_wrong_type("property accessor", 
 		      "struct or struct-type with property", 
-		      0, argc, args);
+		      0, 1, (Scheme_Object **)&arg);
   return NULL;
+}
+
+static Scheme_Object *prop_accessor(int argc, Scheme_Object **args, Scheme_Object *prim)
+{
+  return do_prop_accessor(SCHEME_PRIM_CLOSURE_ELS(prim)[0], args[0], 1);
 }
 
 static Scheme_Object *make_struct_type_property(int argc, Scheme_Object *argv[])
@@ -652,20 +658,20 @@ static Scheme_Object *make_struct_type_property(int argc, Scheme_Object *argv[])
   name[len] = '?';
   name[len+1] = 0;
 
-  v = scheme_make_folding_closed_prim((Scheme_Closed_Prim *)prop_pred,
-				      (void *)p,
-				      name,
-				      1, 1, 0);
+  v = scheme_make_folding_prim_closure(prop_pred,
+				       1, a,
+				       name,
+				       1, 1, 0);
   a[1] = v;
 
   name = MALLOC_N_ATOMIC(char, len + 10);
   memcpy(name, SCHEME_SYM_VAL(argv[0]), len);
   memcpy(name + len, "-accessor", 10);
 
-  v = scheme_make_folding_closed_prim((Scheme_Closed_Prim *)prop_accessor,
-				      (void *)p,
-				      name,
-				      1, 1, 0);
+  v = scheme_make_folding_prim_closure(prop_accessor,
+				       1, a,
+				       name,
+				       1, 1, 0);
   a[2] = v;
 
   return scheme_values(3, a);
@@ -690,7 +696,7 @@ Scheme_Object *scheme_make_struct_type_property(Scheme_Object *name)
 
 Scheme_Object *scheme_struct_type_property_ref(Scheme_Object *prop, Scheme_Object *s)
 {
-  return prop_accessor(prop, 2, &s); /* 2 is a hack! */
+  return do_prop_accessor(prop, s, 0);
 }
 
 static Scheme_Object *struct_type_property_p(int argc, Scheme_Object *argv[])
@@ -978,13 +984,20 @@ scheme_make_struct_instance(Scheme_Object *_stype, int argc, Scheme_Object **arg
   return (Scheme_Object *)inst;
 }
 
-static Scheme_Object *struct_pred(Scheme_Struct_Type *stype, int argc, Scheme_Object **args)
+static Scheme_Object *
+make_struct_instance(int argc, Scheme_Object **args, Scheme_Object *prim)
 {
-  if (SCHEME_STRUCTP(args[0])
-      && STRUCT_TYPEP(stype, ((Scheme_Structure *)args[0])))
-    return scheme_true;
-  else
-    return scheme_false;
+  return scheme_make_struct_instance(SCHEME_PRIM_CLOSURE_ELS(prim)[0], argc, args);
+}
+
+static Scheme_Object *struct_pred(int argc, Scheme_Object **args, Scheme_Object *prim)
+{
+  if (SCHEME_STRUCTP(args[0])) {
+    Scheme_Struct_Type *stype = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(prim)[0];
+    if (STRUCT_TYPEP(stype, ((Scheme_Structure *)args[0])))
+      return scheme_true;
+  }
+  return scheme_false;
 }
 
 static int parse_pos(const char *who, Struct_Proc_Info *i, Scheme_Object **args, int argc)
@@ -1041,10 +1054,11 @@ static int parse_pos(const char *who, Struct_Proc_Info *i, Scheme_Object **args,
   return pos;
 }
 
-static Scheme_Object *struct_getter(Struct_Proc_Info *i, int argc, Scheme_Object **args)
+static Scheme_Object *struct_getter(int argc, Scheme_Object **args, Scheme_Object *prim)
 {
   Scheme_Structure *inst;
   int pos;
+  Struct_Proc_Info *i = (Struct_Proc_Info *)SCHEME_PRIM_CLOSURE_ELS(prim)[0];
 
   inst = (Scheme_Structure *)args[0];
 
@@ -1069,11 +1083,12 @@ static Scheme_Object *struct_getter(Struct_Proc_Info *i, int argc, Scheme_Object
   return inst->slots[pos];
 }
 
-static Scheme_Object *struct_setter(Struct_Proc_Info *i, int argc, Scheme_Object **args)
+static Scheme_Object *struct_setter(int argc, Scheme_Object **args, Scheme_Object *prim)
 {
   Scheme_Structure *inst;
   int pos;
   Scheme_Object *v;
+  Struct_Proc_Info *i = (Struct_Proc_Info *)SCHEME_PRIM_CLOSURE_ELS(prim)[0];
 
   if (!SCHEME_STRUCTP(args[0])) {
     scheme_wrong_type(i->func_name, 
@@ -1426,7 +1441,7 @@ int scheme_inspector_sees_part(Scheme_Object *s, Scheme_Object *insp, int pos)
 
 
 #define STRUCT_PROCP(o, t) \
-    (SCHEME_STRUCT_PROCP(o) && (((Scheme_Closed_Primitive_Proc *)o)->pp.flags & t))
+    (SCHEME_STRUCT_PROCP(o) && (((Scheme_Primitive_Proc *)o)->pp.flags & t))
 
 static Scheme_Object *
 struct_setter_p(int argc, Scheme_Object *argv[])
@@ -1469,7 +1484,7 @@ static Scheme_Object *make_struct_field_xxor(const char *who, int getter,
   if (!STRUCT_PROCP(argv[0], (getter
 			      ? SCHEME_PRIM_IS_STRUCT_GETTER
 			      : SCHEME_PRIM_IS_STRUCT_SETTER))
-      || (((Scheme_Closed_Primitive_Proc *)argv[0])->mina == (getter ? 1 : 2))) {
+      || (((Scheme_Primitive_Proc *)argv[0])->mina == (getter ? 1 : 2))) {
     scheme_wrong_type(who, (getter 
 			    ? "accessor procedure that requires a field index"
 			    : "mutator procedure that requires a field index"),
@@ -1477,7 +1492,7 @@ static Scheme_Object *make_struct_field_xxor(const char *who, int getter,
     return NULL;
   }
 
-  i = (Struct_Proc_Info *)((Scheme_Closed_Primitive_Proc *)argv[0])->data;
+  i = (Struct_Proc_Info *)SCHEME_PRIM_CLOSURE_ELS(argv[0])[0];
 
   pos = parse_pos(who, i, argv, argc);
   
@@ -1930,22 +1945,24 @@ make_struct_proc(Scheme_Struct_Type *struct_type,
 		 char *func_name, 
 		 Scheme_ProcT proc_type, int field_num)
 {
-  Scheme_Object *p;
+  Scheme_Object *p, *a[1];
   short flags = SCHEME_PRIM_IS_STRUCT_PROC;
 
   if (proc_type == SCHEME_CONSTR) {
-    p = scheme_make_folding_closed_prim((Scheme_Closed_Prim *)scheme_make_struct_instance,
-					(void *)struct_type,
-					func_name,
-					struct_type->num_islots,
-					struct_type->num_islots,
-					0);
+    a[0] = (Scheme_Object *)struct_type;
+    p = scheme_make_folding_prim_closure(make_struct_instance,
+					 1, a,
+					 func_name,
+					 struct_type->num_islots,
+					 struct_type->num_islots,
+					 0);
     flags |= SCHEME_PRIM_IS_STRUCT_CONSTR;
   } else if (proc_type == SCHEME_PRED) {
-    p = scheme_make_folding_closed_prim((Scheme_Closed_Prim *)struct_pred,
-					(void *)struct_type,
-					func_name,
-					1, 1, 1);
+    a[0] = (Scheme_Object *)struct_type;
+    p = scheme_make_folding_prim_closure(struct_pred,
+					 1, a,
+					 func_name,
+					 1, 1, 1);
     flags |= SCHEME_PRIM_IS_STRUCT_PRED;
   } else {
     Struct_Proc_Info *i;
@@ -1965,20 +1982,22 @@ make_struct_proc(Scheme_Struct_Type *struct_type,
     else
       need_pos = 0;
 
+    a[0] = (Scheme_Object *)i;
+
     if ((proc_type == SCHEME_GETTER) || (proc_type == SCHEME_GEN_GETTER)) {
-      p = scheme_make_folding_closed_prim((Scheme_Closed_Prim *)struct_getter,
-					  (void *)i,
-					  func_name,
-					  1 + need_pos, 1 + need_pos, 1);
+      p = scheme_make_folding_prim_closure(struct_getter,
+					   1, a,
+					   func_name,
+					   1 + need_pos, 1 + need_pos, 1);
       flags |= SCHEME_PRIM_IS_STRUCT_GETTER;
       /* Cache the accessor only if `struct_info' is used.
 	 This avoids keep lots of useless accessors.
 	 if (need_pos) struct_type->accessor = p; */
     } else {
-      p = scheme_make_folding_closed_prim((Scheme_Closed_Prim *)struct_setter,
-					  (void *)i,
-					  func_name,
-					  2 + need_pos, 2 + need_pos, 0);
+      p = scheme_make_folding_prim_closure(struct_setter,
+					   1, a,
+					   func_name,
+					   2 + need_pos, 2 + need_pos, 0);
       flags |= SCHEME_PRIM_IS_STRUCT_SETTER;
       /* See note above:
 	 if (need_pos) struct_type->mutator = p; */

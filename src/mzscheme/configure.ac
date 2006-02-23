@@ -304,14 +304,6 @@ if test "${enable_mred}" = "yes" ; then
    :
   else
    AC_PATH_XTRA
-   if test "${no_x}" = "yes" ; then
-     echo "******************************************************"
-     echo "configure: cannot find X11 headers and/or libraries,"
-     echo "           which are needed to compile MrEd"
-     echo "******************************************************"
-     echo configure aborted
-     exit 1
-   fi
   fi
 
   MAKE_MRED=mr

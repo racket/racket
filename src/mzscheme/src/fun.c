@@ -436,6 +436,57 @@ scheme_make_void (void)
 /*                          primitive procedures                          */
 /*========================================================================*/
 
+static Scheme_Object *
+make_prim_closure(Scheme_Prim *fun, int eternal,
+		  const char *name,
+		  mzshort mina, mzshort maxa,
+		  int flags,
+		  mzshort minr, mzshort maxr,
+		  int closed, int count, Scheme_Object **vals)
+{
+  Scheme_Primitive_Proc *prim;
+  int hasr, size;
+
+  hasr = ((minr != 1) || (maxr != 1));
+  size = (hasr 
+	  ? sizeof(Scheme_Prim_W_Result_Arity) 
+	  : (closed
+	     ? (sizeof(Scheme_Primitive_Closure)
+		+ ((count - 1) * sizeof(Scheme_Object *)))
+	     : sizeof(Scheme_Primitive_Proc)));
+
+  if (eternal && scheme_starting_up && !closed)
+    prim = (Scheme_Primitive_Proc *)scheme_malloc_eternal_tagged(size);
+  else
+    prim = (Scheme_Primitive_Proc *)scheme_malloc_tagged(size);
+  prim->pp.so.type = scheme_prim_type;
+  prim->prim_val = (Scheme_Primitive_Closure_Proc *)fun;
+  prim->name = name;
+  prim->mina = mina;
+  if (maxa < 0)
+    maxa = SCHEME_MAX_ARGS + 1;
+  prim->mu.maxa = maxa;
+  prim->pp.flags = (flags
+		    | (scheme_defining_primitives ? SCHEME_PRIM_IS_PRIMITIVE : 0)
+		    | (hasr ? SCHEME_PRIM_IS_MULTI_RESULT : 0)
+		    | (closed ? SCHEME_PRIM_IS_CLOSURE : 0));
+
+  if (hasr) {
+    ((Scheme_Prim_W_Result_Arity *)prim)->minr = minr;
+    ((Scheme_Prim_W_Result_Arity *)prim)->maxr = maxr;
+  }
+  if (closed) {
+#ifdef MZ_PRECISE_GC
+    ((Scheme_Primitive_Closure *)prim)->count = count;
+#endif
+    memcpy(((Scheme_Primitive_Closure *)prim)->val,
+	   vals,
+	   count * sizeof(Scheme_Object *));
+  }
+
+  return (Scheme_Object *)prim;
+}
+
 Scheme_Object *
 scheme_make_prim_w_everything(Scheme_Prim *fun, int eternal,
 			      const char *name,
@@ -443,49 +494,33 @@ scheme_make_prim_w_everything(Scheme_Prim *fun, int eternal,
 			      int flags,
 			      mzshort minr, mzshort maxr)
 {
-  Scheme_Primitive_Proc *prim;
-  int hasr, size;
-
-  hasr = ((minr != 1) || (maxr != 1));
-  size = hasr ? sizeof(Scheme_Prim_W_Result_Arity) : sizeof(Scheme_Primitive_Proc);
-
-  if (eternal && scheme_starting_up)
-    prim = (Scheme_Primitive_Proc *)scheme_malloc_eternal_tagged(size);
-  else
-    prim = (Scheme_Primitive_Proc *)scheme_malloc_tagged(size);
-  prim->pp.so.type = scheme_prim_type;
-  SCHEME_PRIM(prim) = fun;
-  prim->name = name;
-  prim->mina = mina;
-  prim->maxa = maxa;
-  prim->pp.flags = (flags
-		    | (scheme_defining_primitives ? SCHEME_PRIM_IS_PRIMITIVE : 0)
-		    | (hasr ? SCHEME_PRIM_IS_MULTI_RESULT : 0));
-
-  if (hasr) {
-    ((Scheme_Prim_W_Result_Arity *)prim)->minr = minr;
-    ((Scheme_Prim_W_Result_Arity *)prim)->maxr = maxr;
-  }
-
-  return (Scheme_Object *)prim;
+  return make_prim_closure(fun, eternal,
+			   name,
+			   mina, maxa,
+			   flags,
+			   minr, maxr,
+			   0, 0, NULL);
 }
 
 Scheme_Object *scheme_make_prim(Scheme_Prim *fun)
 {
-  return scheme_make_prim_w_everything(fun, 1, NULL, 0, -1, 0, 1, 1);
+  return make_prim_closure(fun, 1, NULL, 0, -1, 0, 1, 1,
+			   0, 0, NULL);
 }
 
 Scheme_Object *
 scheme_make_noneternal_prim (Scheme_Prim *fun)
 {
-  return scheme_make_prim_w_everything(fun, 0, NULL, 0, -1, 0, 1, 1);
+  return make_prim_closure(fun, 0, NULL, 0, -1, 0, 1, 1,
+			   0, 0, NULL);
 }
 
 Scheme_Object *
 scheme_make_prim_w_arity(Scheme_Prim *fun, const char *name,
 			 mzshort mina, mzshort maxa)
 {
-  return scheme_make_prim_w_everything(fun, 1, name, mina, maxa, 0, 1, 1);
+  return make_prim_closure(fun, 1, name, mina, maxa, 0, 1, 1,
+			   0, 0, NULL);
 }
 
 Scheme_Object *
@@ -493,12 +528,13 @@ scheme_make_folding_prim(Scheme_Prim *fun, const char *name,
 			 mzshort mina, mzshort maxa,
 			 short folding)
 {
-  return scheme_make_prim_w_everything(fun, 1, name, mina, maxa,
-				       (folding 
-					? (SCHEME_PRIM_IS_FOLDING
-					   | SCHEME_PRIM_IS_NONCM)
-					: 0),
-				       1, 1);
+  return make_prim_closure(fun, 1, name, mina, maxa,
+			   (folding 
+			    ? (SCHEME_PRIM_IS_FOLDING
+			       | SCHEME_PRIM_IS_NONCM)
+			    : 0),
+			   1, 1,
+			   0, 0, NULL);
 }
 
 Scheme_Object *
@@ -506,17 +542,44 @@ scheme_make_noncm_prim(Scheme_Prim *fun, const char *name,
 		       mzshort mina, mzshort maxa)
 {
   /* A non-cm primitive leaves the mark stack unchanged when it returns,
-     and it can't return multiple values. */
-  return scheme_make_prim_w_everything(fun, 1, name, mina, maxa,
-				       SCHEME_PRIM_IS_NONCM,
-				       1, 1);
+     it can't return multiple values or a tail call, and it cannot
+     use its third argument (i.e., the closure pointer) */
+  return make_prim_closure(fun, 1, name, mina, maxa,
+			   SCHEME_PRIM_IS_NONCM,
+			   1, 1,
+			   0, 0, NULL);
 }
 
 Scheme_Object *
 scheme_make_noneternal_prim_w_arity(Scheme_Prim *fun, const char *name,
 				    mzshort mina, mzshort maxa)
 {
-  return scheme_make_prim_w_everything(fun, 0, name, mina, maxa, 0, 1, 1);
+  return make_prim_closure(fun, 0, name, mina, maxa, 0, 1, 1,
+			   0, 0, NULL);
+}
+
+Scheme_Object *scheme_make_prim_closure_w_arity(Scheme_Primitive_Closure_Proc *prim,
+						int size, Scheme_Object **vals,
+						const char *name,
+						mzshort mina, mzshort maxa)
+{
+  return make_prim_closure((Scheme_Prim *)prim, 1, name, mina, maxa, 0, 1, 1,
+			   1, size, vals);
+
+}
+
+Scheme_Object *scheme_make_folding_prim_closure(Scheme_Primitive_Closure_Proc *prim,
+						int size, Scheme_Object **vals,
+						const char *name,
+						mzshort mina, mzshort maxa,
+						short functional)
+{
+  return make_prim_closure((Scheme_Prim *)prim, 1, name, mina, maxa,
+			   (functional
+			    ? SCHEME_PRIM_IS_FOLDING
+			    : 0),
+			   1, 1,
+			   1, size, vals);
 }
 
 Scheme_Object *
@@ -1716,77 +1779,28 @@ Scheme_Object *scheme_get_or_check_arity(Scheme_Object *p, long a)
 {
   Scheme_Type type;
   mzshort mina, maxa;
-  int drop = 0;
+  int drop = 0, cases_count = 0;
+  mzshort *cases = NULL;
 
  top:
 
   type = SCHEME_TYPE(p);
   if (type == scheme_prim_type) {
     mina = ((Scheme_Primitive_Proc *)p)->mina;
-    maxa = ((Scheme_Primitive_Proc *)p)->maxa;
+    maxa = ((Scheme_Primitive_Proc *)p)->mu.maxa;
+    if (mina < 0) {
+      cases = ((Scheme_Primitive_Proc *)p)->mu.cases;
+      cases_count = -(mina + 1);
+    } else {
+      if (maxa > SCHEME_MAX_ARGS)
+	maxa = -1;
+    }
   } else if (type == scheme_closed_prim_type) {
     mina = ((Scheme_Closed_Primitive_Proc *)p)->mina;
     maxa = ((Scheme_Closed_Primitive_Proc *)p)->maxa;
-
     if (mina == -2) {
-      mzshort *cases = ((Scheme_Closed_Case_Primitive_Proc *)p)->cases;
-      int count = -maxa, i;
-
-      if (a == -1) {
-	Scheme_Object *arity, *a, *last = NULL;
-
-	arity = scheme_alloc_list(count);
-
-	for (i = 0, a = arity; i < count; i++) {
-	  Scheme_Object *av;
-	  int mn, mx;
-	  mn = cases[2 * i];
-	  mx = cases[(2 * i) + 1];
-
-	  if (mn >= drop) {
-	    mn -= drop;
-	    if (mx > 0)
-	      mx -= drop;
-
-	    av = scheme_make_arity(mn, mx);
-
-	    SCHEME_CAR(a) = av;
-	    last = a;
-	    a = SCHEME_CDR(a);
-	  }
-	}
-
-	/* If drop > 0, might have found no matches */
-	if (!SCHEME_NULLP(a)) {
-	  if (last)
-	    SCHEME_CDR(last) = scheme_null;
-	  else
-	    arity = scheme_null;
-	}
-
-	return arity;
-      }
-
-      if (a == -2) {
-	for (i = 0; i < count; i++) {
-	  if (cases[(2 * i) + 1] < 0)
-	    return scheme_true;
-	}
-
-	return scheme_false;
-      }
-
-      a += drop;
-
-      for (i = 0; i < count; i++) {
-	int na, xa;
-	na = cases[2 * i];
-	xa = cases[(2 * i) + 1];
-	if ((a >= na) && ((xa < 0) || (a <= xa)))
-	  return scheme_true;
-      }
-
-      return scheme_false;
+      cases_count = -maxa;
+      cases = ((Scheme_Closed_Case_Primitive_Proc *)p)->cases;
     }
   } else if (type == scheme_cont_type || type == scheme_escaping_cont_type) {
     mina = 0;
@@ -1951,6 +1965,66 @@ Scheme_Object *scheme_get_or_check_arity(Scheme_Object *p, long a)
 	--mina;
       maxa = -1;
     }
+  }
+
+  if (cases) {
+    int count = cases_count, i;
+
+    if (a == -1) {
+      Scheme_Object *arity, *a, *last = NULL;
+
+      arity = scheme_alloc_list(count);
+
+      for (i = 0, a = arity; i < count; i++) {
+	Scheme_Object *av;
+	int mn, mx;
+	mn = cases[2 * i];
+	mx = cases[(2 * i) + 1];
+
+	if (mn >= drop) {
+	  mn -= drop;
+	  if (mx > 0)
+	    mx -= drop;
+
+	  av = scheme_make_arity(mn, mx);
+
+	  SCHEME_CAR(a) = av;
+	  last = a;
+	  a = SCHEME_CDR(a);
+	}
+      }
+
+      /* If drop > 0, might have found no matches */
+      if (!SCHEME_NULLP(a)) {
+	if (last)
+	  SCHEME_CDR(last) = scheme_null;
+	else
+	  arity = scheme_null;
+      }
+
+      return arity;
+    }
+
+    if (a == -2) {
+      for (i = 0; i < count; i++) {
+	if (cases[(2 * i) + 1] < 0)
+	  return scheme_true;
+      }
+
+      return scheme_false;
+    }
+
+    a += drop;
+
+    for (i = 0; i < count; i++) {
+      int na, xa;
+      na = cases[2 * i];
+      xa = cases[(2 * i) + 1];
+      if ((a >= na) && ((xa < 0) || (a <= xa)))
+	return scheme_true;
+    }
+
+    return scheme_false;
   }
 
   if (a == -1) {

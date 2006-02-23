@@ -154,51 +154,92 @@
 		 v)
 	       'x))))
 
-;; full continuation, mark replaced
-(wcm-test '(11 10)
-	  (lambda ()
-	    (let ([k (with-continuation-mark 'x 10
-		       (begin0
-			(with-continuation-mark 'x 11
-			  (let/cc k 
-			    (with-continuation-mark 'x 12
-			      k)))
-			(+ 2 3)))])
-	      (continuation-mark-set->list 
-	       (continuation-marks k)
-	       'x))))
+;; continuation, mark replaced
+(let* ([extract
+	(lambda (k)
+	  (continuation-mark-set->list 
+	   (continuation-marks k)
+	   'x))]
+       [go
+	(lambda (call/xc in?)
+	  (wcm-test '(11 10)
+		    (lambda ()
+		      (let ([k (with-continuation-mark 'x 10
+				 (begin0
+				  (with-continuation-mark 'x 11
+				    (call/xc 
+				     (lambda (k )
+				       (with-continuation-mark 'x 12
+					 (if in?
+					     (extract k)
+					     k)))))
+				  (+ 2 3)))])
+			(if in?
+			    k
+			    (extract k))))))])
+  (go call/cc #t)
+  (go call/cc #f)
+  (go call/ec #t))
 
-;; nested full continuation, mark replaced
-(wcm-test '(12 10)
-	  (lambda ()
-	    (let ([k (with-continuation-mark 'x 10
-		       (begin0
-			(with-continuation-mark 'x 11
-			  (let/cc k0
-			    (with-continuation-mark 'x 12
-			      (let/cc k 
-				k))))
-			(+ 2 3)))])
-	      (continuation-mark-set->list 
-	       (continuation-marks k)
-	       'x))))
+;; nested continuation, mark replaced
+(let* ([extract
+	(lambda (k)
+	  (continuation-mark-set->list 
+	   (continuation-marks k)
+	   'x))]
+       [go
+	(lambda (call/xc in?)
+	  (wcm-test '(12 10)
+		    (lambda ()
+		      (let ([k (with-continuation-mark 'x 10
+				 (begin0
+				  (with-continuation-mark 'x 11
+				    (call/xc
+				     (lambda (k0)
+				       (with-continuation-mark 'x 12
+					 (call/xc 
+					  (lambda (k) 
+					    (if in?
+						(extract k)
+						k)))))))
+				  (+ 2 3)))])
+			(if in?
+			    k
+			    (extract k))))))])
+  (go call/cc #t)
+  (go call/cc #f)
+  (go call/ec #t))
 
-;; nested full continuation, mark shared
-(wcm-test '(12 11 10)
-	  (lambda ()
-	    (let ([k (with-continuation-mark 'x 10
-		       (begin0
-			(with-continuation-mark 'x 11
-			  (let/cc k0
-			    (begin0
-			     (with-continuation-mark 'x 12
-			       (let/cc k 
-				 k))
-			     (cons 4 5))))
-			(cons 2 3)))])
-	      (continuation-mark-set->list 
-	       (continuation-marks k)
-	       'x))))
+;; nested continuation, mark shared
+(let* ([extract
+	(lambda (k)
+	  (continuation-mark-set->list 
+	   (continuation-marks k)
+	   'x))]
+       [go
+	(lambda (call/xc in?)
+	  (wcm-test '(12 11 10)
+		    (lambda ()
+		      (let ([k (with-continuation-mark 'x 10
+				 (begin0
+				  (with-continuation-mark 'x 11
+				    (call/xc 
+				     (lambda (k0)
+				       (begin0
+					(with-continuation-mark 'x 12
+					  (call/xc 
+					   (lambda (k)
+					     (if in?
+						 (extract k)
+						 k))))
+					(cons 4 5)))))
+				  (cons 2 3)))])
+			(if in?
+			    k
+			    (extract k))))))])
+  (go call/cc #t)
+  (go call/cc #f)
+  (go call/ec #t))
 
 ;; escape continuation, same thread
 (wcm-test '(11 10)

@@ -988,6 +988,9 @@ void scheme_wrong_count_m(const char *name, int minc, int maxc,
   if (!argc || !minc)
     is_method = 0;
 
+  if (maxc > SCHEME_MAX_ARGS)
+    maxc = -1;
+
   s = make_arity_expect_string(name, -1, minc, maxc, argc, argv, &len, is_method);
 
   scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY, "%t", s, len);
@@ -1028,7 +1031,15 @@ char *scheme_make_arity_expect_string(Scheme_Object *proc,
   if (SCHEME_PRIMP(proc)) {
     name = ((Scheme_Primitive_Proc *)proc)->name;
     mina = ((Scheme_Primitive_Proc *)proc)->mina;
-    maxa = ((Scheme_Primitive_Proc *)proc)->maxa;
+    if (mina < 0) {
+      /* set min1 to -2 to indicates cases */
+      mina = -2;
+      maxa = 0;
+    } else {
+      maxa = ((Scheme_Primitive_Proc *)proc)->mu.maxa;
+      if (maxa > SCHEME_MAX_ARGS)
+	maxa = -1;
+    }
   } else if (SCHEME_CLSD_PRIMP(proc)) {
     name = ((Scheme_Closed_Primitive_Proc *)proc)->name;
     mina = ((Scheme_Closed_Primitive_Proc *)proc)->mina;

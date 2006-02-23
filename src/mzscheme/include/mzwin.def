@@ -173,14 +173,16 @@ EXPORTS
  scheme_clone_hash_table
  scheme_make_prim
  scheme_make_noneternal_prim
- scheme_make_closed_prim
  scheme_make_prim_w_arity
  scheme_make_folding_prim
  scheme_make_noncm_prim
  scheme_make_noneternal_prim_w_arity
+ scheme_make_prim_w_everything
+ scheme_make_prim_closure_w_arity
+ scheme_make_folding_prim_closure
+ scheme_make_closed_prim
  scheme_make_closed_prim_w_arity
  scheme_make_folding_closed_prim
- scheme_make_prim_w_everything
  scheme_make_closed_prim_w_everything
  scheme_prim_is_method
  scheme_make_pair

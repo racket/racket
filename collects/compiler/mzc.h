@@ -45,10 +45,10 @@ static MZC_INLINE Scheme_Object *MZC_GLOBAL_ASSIGN(Scheme_Object *vec, int pos, 
     (DO_FUEL_POLL, _scheme_direct_apply_primitive_multi(prim, argc, argv))
 #define _scheme_direct_apply_primitive_poll(prim, argc, argv) \
     (DO_FUEL_POLL, _scheme_direct_apply_primitive(prim, argc, argv))
-#define _scheme_direct_apply_closed_primitive_multi_poll(prim, argc, argv) \
-    (DO_FUEL_POLL, _scheme_direct_apply_closed_primitive_multi(prim, argc, argv))
-#define _scheme_direct_apply_closed_primitive_poll(prim, argc, argv) \
-    (DO_FUEL_POLL, _scheme_direct_apply_closed_primitive(prim, argc, argv))
+#define _scheme_direct_apply_primitive_closure_multi_poll(prim, argc, argv) \
+    (DO_FUEL_POLL, _scheme_direct_apply_primitive_closure_multi(prim, argc, argv))
+#define _scheme_direct_apply_primitive_closure_poll(prim, argc, argv) \
+    (DO_FUEL_POLL, _scheme_direct_apply_primitive_closure(prim, argc, argv))
 
 #ifdef KEEP_CLOSURE_COUNT
 static int closure_alloc_cnt;
@@ -67,31 +67,39 @@ static void closure_alloc_inc()
 # define CLOSURE_ALLOC_PP /**/
 #endif
 
+typedef struct {
+  Scheme_Primitive_Proc prim;
 #ifdef MZ_PRECISE_GC
+  int count;
+#endif
+} Scheme_Primitive_Closure_Post;
+
 # define MZC_INSTALL_DATA_PTR(rec) rec
-# define MZC_PARAM_TO_SWITCH(void_param) *(unsigned int *)((Scheme_Closed_Primitive_Post_Ext_Proc *)void_param)->a
+# define MZC_PARAM_TO_SWITCH(void_param) *(unsigned long *)(((Scheme_Primitive_Closure *)void_param)->val)
 # define MZC_ENV_POINTER(t, ct, void_param) (&(((const ct *)void_param)->data))
+
+
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+# define MZ_LOG_WORD_SIZE 4
 #else
-# define MZC_INSTALL_DATA_PTR(rec) &rec->data
-# define MZC_PARAM_TO_SWITCH(void_param) *(unsigned int*)void_param
-# define MZC_ENV_POINTER(t, ct, void_param) ((const t *)void_param)
+# define MZ_LOG_WORD_SIZE 2
 #endif
 
 #define _scheme_make_c_proc_closure(cfunc, rec, name, amin, amax, flags) \
-  (CLOSURE_ALLOC_PP (Scheme_Object *)_scheme_fill_prim_closure_post(&rec->prim, cfunc, MZC_INSTALL_DATA_PTR(rec), \
+  (CLOSURE_ALLOC_PP (Scheme_Object *)_scheme_fill_prim_closure_post(((Scheme_Primitive_Closure *)&rec->prim), cfunc, \
 								    name, amin, amax, flags, \
-                                                                    sizeof(rec->data)>>2))
+                                                                    sizeof(rec->data)>>MZ_LOG_WORD_SIZE))
 
 #define _scheme_make_c_proc_closure_empty(cfunc, rec, name, amin, amax, flags) \
-  (CLOSURE_ALLOC_PP (Scheme_Object *)_scheme_fill_prim_closure(&rec->prim, cfunc, NULL, name, amin, amax, flags))
+  (CLOSURE_ALLOC_PP (Scheme_Object *)_scheme_fill_prim_closure(&rec->prim, cfunc, name, amin, amax, flags))
 
 #define _scheme_make_c_case_proc_closure(cfunc, rec, name, ccnt, cses, flags) \
-  (CLOSURE_ALLOC_PP (Scheme_Object *)_scheme_fill_prim_case_closure_post(&rec->prim, cfunc, MZC_INSTALL_DATA_PTR(rec), \
+  (CLOSURE_ALLOC_PP (Scheme_Object *)_scheme_fill_prim_case_closure_post(((Scheme_Primitive_Closure *)&rec->prim), cfunc, \
 									 name, ccnt, cses, flags, \
-                                                                         sizeof(rec->data)>>2))
+                                                                         sizeof(rec->data)>>MZ_LOG_WORD_SIZE))
 
 #define _scheme_make_c_case_proc_closure_empty(cfunc, rec, name, ccnt, cses, flags) \
-  (CLOSURE_ALLOC_PP (Scheme_Object *)_scheme_fill_prim_case_closure(&rec->prim, cfunc, NULL, name, ccnt, cses, flags))
+  (CLOSURE_ALLOC_PP (Scheme_Object *)_scheme_fill_prim_case_closure(&rec->prim, cfunc, name, ccnt, cses, flags))
 
 #define NO_MULTIPLE_VALUES(res) \
 	if (res == SCHEME_MULTIPLE_VALUES) \
@@ -118,8 +126,8 @@ typedef struct {
   Scheme_Object *val;
 } _Scheme_WCM_Rec;
 
-#define _scheme_apply_ckp(f, argc, argv) (SCHEME_CLSD_PRIMP(f) ? _scheme_apply_closed_prim(f, argc, argv) : _scheme_apply(f, argc, argv))
-#define _scheme_apply_multi_ckp(f, argc, argv) (SCHEME_CLSD_PRIMP(f) ? _scheme_apply_closed_prim_multi(f, argc, argv) : _scheme_apply_multi(f, argc, argv))
+#define _scheme_apply_ckp(f, argc, argv) (SCHEME_CLSD_PRIMP(f) ? _scheme_apply_prim_closure(f, argc, argv) : _scheme_apply(f, argc, argv))
+#define _scheme_apply_multi_ckp(f, argc, argv) (SCHEME_CLSD_PRIMP(f) ? _scheme_apply_prim_closure_multi(f, argc, argv) : _scheme_apply_multi(f, argc, argv))
 
 #define MZC_EQP(ltp, av, bv) (SAME_OBJ(av, bv))
 #define MZC_EQVP(ltp, av, bv) (SAME_OBJ(av, bv) || scheme_eqv(av, bv))
@@ -291,10 +299,10 @@ static MSC_IZE(inline) Scheme_Object *mzc_force_value(Scheme_Object *v)
   return _scheme_force_value(v);
 }
 
-#define _scheme_direct_apply_closed_primitive_multi_fv(prim, argc, argv) \
-    mzc_force_value(_scheme_direct_apply_closed_primitive_multi(prim, argc, argv))
-#define _scheme_direct_apply_closed_primitive_fv(prim, argc, argv) \
-    scheme_check_one_value(_scheme_direct_apply_closed_primitive_multi_fv(prim, argc, argv))
+#define _scheme_direct_apply_primitive_closure_multi_fv(prim, argc, argv) \
+    mzc_force_value(_scheme_direct_apply_primitive_closure_multi(prim, argc, argv))
+#define _scheme_direct_apply_primitive_closure_fv(prim, argc, argv) \
+    scheme_check_one_value(_scheme_direct_apply_primitive_closure_multi_fv(prim, argc, argv))
 
 static int mzc_strlen(const char *c) {
   int l;
@@ -329,14 +337,14 @@ _mzc_direct_apply_primitive(Scheme_Object *prim, int argc, Scheme_Object **argv)
   return _scheme_direct_apply_primitive(prim, argc, argv);
 }
 static MZC_INLINE Scheme_Object *
-_mzc_direct_apply_closed_primitive_multi(Scheme_Object *prim, int argc, Scheme_Object **argv)
+_mzc_direct_apply_primitive_closure_multi(Scheme_Object *prim, int argc, Scheme_Object **argv)
 {
-  return _scheme_direct_apply_closed_primitive_multi(prim, argc, argv);
+  return _scheme_direct_apply_primitive_closure_multi(prim, argc, argv);
 }
 static MZC_INLINE Scheme_Object *
-_mzc_direct_apply_closed_primitive(Scheme_Object *prim, int argc, Scheme_Object **argv)
+_mzc_direct_apply_primitive_closure(Scheme_Object *prim, int argc, Scheme_Object **argv)
 {
-  return _scheme_direct_apply_closed_primitive(prim, argc, argv);
+  return _scheme_direct_apply_primitive_closure(prim, argc, argv);
 }
 END_XFORM_SUSPEND;
 #else
@@ -344,13 +352,15 @@ END_XFORM_SUSPEND;
          _scheme_direct_apply_primitive_multi(prim, argc, argv)
 # define _mzc_direct_apply_primitive(prim, argc, argv) \
          _scheme_direct_apply_primitive(prim, argc, argv)
-# define _mzc_direct_apply_closed_primitive_multi(prim, argc, argv) \
-         _scheme_direct_apply_closed_primitive_multi(prim, argc, argv)
-# define _mzc_direct_apply_closed_primitive(prim, argc, argv) \
-         _scheme_direct_apply_closed_primitive(prim, argc, argv)
+# define _mzc_direct_apply_primitive_closure_multi(prim, argc, argv) \
+         _scheme_direct_apply_primitive_closure_multi(prim, argc, argv)
+# define _mzc_direct_apply_primitive_closure(prim, argc, argv) \
+         _scheme_direct_apply_primitive_closure(prim, argc, argv)
 #endif
 
 #define _mzc_apply(r,n,rs) _scheme_apply(r,n,rs)
 #define _mzc_apply_multi(r,n,rs) _scheme_apply_multi(r,n,rs)
-#define _mzc_apply_known_closed_prim(r,n,rs) _scheme_apply_known_closed_prim(r,n,rs)
-#define _mzc_apply_known_closed_prim_multi(r,n,rs) _scheme_apply_known_closed_prim_multi(r,n,rs)
+#define _mzc_apply_known_prim_closure(r,n,rs) _scheme_apply_known_prim_closure(r,n,rs)
+#define _mzc_apply_known_prim_closure_multi(r,n,rs) _scheme_apply_known_prim_closure_multi(r,n,rs)
+
+#define MZC_PRIM_CLS_DATA(prim) (prim)

@@ -5,41 +5,18 @@
 
     if (t == scheme_prim_type) {
       Scheme_Object *v;
-      Scheme_Primitive_Proc *prim;
+      GC_CAN_IGNORE Scheme_Primitive_Proc *prim;
+      GC_CAN_IGNORE Scheme_Primitive_Closure_Proc *f;
 
       prim = (Scheme_Primitive_Proc *)rator;
 
-      if (argc < prim->mina || (argc > prim->maxa && prim->maxa >= 0)) {
-	scheme_wrong_count(prim->name, prim->mina, prim->maxa, argc, argv);
+      if (argc < prim->mina || (argc > prim->mu.maxa && prim->mina >= 0)) {
+	scheme_wrong_count(prim->name, prim->mina, prim->mu.maxa, argc, argv);
 	return NULL; /* Shouldn't get here */
       }
 
-      v = prim->prim_val(argc, argv);
-
-#if PRIM_CHECK_VALUE
-      v = _scheme_force_value(v);
-#endif
-
-#if PRIM_CHECK_MULTI
-      if (v == SCHEME_MULTIPLE_VALUES) {
-	scheme_wrong_return_arity(NULL, 1, scheme_multiple_count, scheme_multiple_array, NULL);
-	return NULL; /* Shouldn't get here */
-      }
-#endif
-
-      return v;
-    } else if (t == scheme_closed_prim_type) {
-      Scheme_Object *v;
-      Scheme_Closed_Primitive_Proc *prim;
-
-      prim = (Scheme_Closed_Primitive_Proc *)rator;
-
-      if (argc < prim->mina || (argc > prim->maxa && prim->maxa >= 0)) {
-	scheme_wrong_count(prim->name, prim->mina, prim->maxa, argc, argv);
-	return NULL; /* Shouldn't get here */
-      }
-
-      v = prim->prim_val(prim->data, argc, argv);
+      f = (Scheme_Primitive_Closure_Proc *)prim->prim_val;
+      v = f(argc, argv, (Scheme_Object *)prim);
 
 #if PRIM_CHECK_VALUE
       v = _scheme_force_value(v);

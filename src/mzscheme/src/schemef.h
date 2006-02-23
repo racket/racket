@@ -253,14 +253,14 @@ MZ_EXTERN Scheme_Object *scheme_eval_string(const char *str, Scheme_Env *env);
 MZ_EXTERN Scheme_Object *scheme_eval_string_multi(const char *str, Scheme_Env *env);
 MZ_EXTERN Scheme_Object *scheme_eval_string_all(const char *str, Scheme_Env *env, int all);
 
-MZ_EXTERN Scheme_Object *_scheme_apply_known_closed_prim(Scheme_Object *rator, int argc,
-					       Scheme_Object **argv);
-MZ_EXTERN Scheme_Object *_scheme_apply_known_closed_prim_multi(Scheme_Object *rator, int argc,
-						     Scheme_Object **argv);
-MZ_EXTERN Scheme_Object *_scheme_apply_closed_prim(Scheme_Object *rator, int argc,
-					 Scheme_Object **argv);
-MZ_EXTERN Scheme_Object *_scheme_apply_closed_prim_multi(Scheme_Object *rator, int argc,
-					       Scheme_Object **argv);
+MZ_EXTERN Scheme_Object *_scheme_apply_known_prim_closure(Scheme_Object *rator, int argc,
+							  Scheme_Object **argv);
+MZ_EXTERN Scheme_Object *_scheme_apply_known_prim_closure_multi(Scheme_Object *rator, int argc,
+								Scheme_Object **argv);
+MZ_EXTERN Scheme_Object *_scheme_apply_prim_closure(Scheme_Object *rator, int argc,
+						    Scheme_Object **argv);
+MZ_EXTERN Scheme_Object *_scheme_apply_prim_closure_multi(Scheme_Object *rator, int argc,
+							  Scheme_Object **argv);
 
 MZ_EXTERN Scheme_Object *scheme_values(int c, Scheme_Object **v);
 
@@ -389,7 +389,6 @@ MZ_EXTERN Scheme_Hash_Table *scheme_clone_hash_table(Scheme_Hash_Table *bt);
 
 MZ_EXTERN Scheme_Object *scheme_make_prim(Scheme_Prim *prim);
 MZ_EXTERN Scheme_Object *scheme_make_noneternal_prim(Scheme_Prim *prim);
-MZ_EXTERN Scheme_Object *scheme_make_closed_prim(Scheme_Closed_Prim *prim, void *data);
 MZ_EXTERN Scheme_Object *scheme_make_prim_w_arity(Scheme_Prim *prim, const char *name,
 					mzshort mina, mzshort maxa);
 MZ_EXTERN Scheme_Object *scheme_make_folding_prim(Scheme_Prim *prim,
@@ -402,18 +401,30 @@ MZ_EXTERN Scheme_Object *scheme_make_noncm_prim(Scheme_Prim *prim,
 MZ_EXTERN Scheme_Object *scheme_make_noneternal_prim_w_arity(Scheme_Prim *prim,
 						   const char *name,
 						   mzshort mina, mzshort maxa);
-MZ_EXTERN Scheme_Object *scheme_make_closed_prim_w_arity(Scheme_Closed_Prim *prim,
-					       void *data, const char *name,
-					       mzshort mina, mzshort maxa);
-MZ_EXTERN Scheme_Object *scheme_make_folding_closed_prim(Scheme_Closed_Prim *prim,
-					       void *data, const char *name,
-					       mzshort mina, mzshort maxa,
-					       short functional);
 MZ_EXTERN Scheme_Object *scheme_make_prim_w_everything(Scheme_Prim *fun, int eternal,
 						       const char *name,
 						       mzshort mina, mzshort maxa,
 						       int folding,
 						       mzshort minr, mzshort maxr);
+
+MZ_EXTERN Scheme_Object *scheme_make_prim_closure_w_arity(Scheme_Primitive_Closure_Proc *prim,
+							  int size, Scheme_Object **vals,
+							  const char *name,
+							  mzshort mina, mzshort maxa);
+MZ_EXTERN Scheme_Object *scheme_make_folding_prim_closure(Scheme_Primitive_Closure_Proc *prim,
+							  int size, Scheme_Object **vals,
+							  const char *name,
+							  mzshort mina, mzshort maxa,
+							  short functional);
+
+MZ_EXTERN Scheme_Object *scheme_make_closed_prim(Scheme_Closed_Prim *prim, void *data);
+MZ_EXTERN Scheme_Object *scheme_make_closed_prim_w_arity(Scheme_Closed_Prim *prim,
+							 void *data, const char *name,
+							 mzshort mina, mzshort maxa);
+MZ_EXTERN Scheme_Object *scheme_make_folding_closed_prim(Scheme_Closed_Prim *prim,
+							 void *data, const char *name,
+							 mzshort mina, mzshort maxa,
+							 short functional);
 MZ_EXTERN Scheme_Object *scheme_make_closed_prim_w_everything(Scheme_Closed_Prim *fun,
 							      void *data,
 							      const char *name,

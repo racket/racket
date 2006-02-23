@@ -5714,7 +5714,7 @@ static Scheme_Object *extend_parameterization(int argc, Scheme_Object *argv[])
       a[1] = scheme_false;
       if (SCHEME_PRIMP(argv[i])) {
 	Scheme_Prim *proc;
-	proc = ((Scheme_Primitive_Proc *)argv[i])->prim_val;
+	proc = (Scheme_Prim *)((Scheme_Primitive_Proc *)argv[i])->prim_val;
 	key = proc(2, a); /* leads to scheme_param_config to set a[1] */
       } else {
 	/* sets a[1] */
