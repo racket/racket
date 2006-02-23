@@ -703,6 +703,8 @@ if test "${enable_mred}" = "yes" ; then
   fi
   AC_MSG_RESULT($different) 
 
+  if test "$enable_quartz" = "no" ; then
+
   # If we're using gcc and including X11/Intrinsic doesn't work
   #  then try adding -fpermissive
   if test "$CC" = "gcc" ; then
@@ -714,7 +716,26 @@ if test "${enable_mred}" = "yes" ; then
     AC_MSG_RESULT($addperm) 
   fi
 
-  if test "$enable_quartz" = "no" ; then
+  # X11 headers present?
+  xmissing=""
+  AC_CHECK_HEADER(X11/Xlib.h, :, xmissing="$xmissing X11/Xlib.h")
+  AC_CHECK_HEADER(X11/Intrinsic.h, :, xmissing="$xmissing X11/XIntrinsic.h")
+  AC_CHECK_LIB(X11, XFlush, :, xmissing="$xmissing libX11", $X_LIBS)
+  AC_CHECK_LIB(Xext, XSyncQueryExtension, :, xmissing="$xmissing libXext", $X_LIBS -lX11)
+  AC_CHECK_LIB(Xt, XtDestroyWidget, :, xmissing="$xmissing libXt", $X_LIBS -lX11 -lXext)
+  AC_CHECK_LIB(Xmu, XmuInternAtom, :, xmissing="$xmissing libXmu", $X_LIBS -lXt -lX11 -lXext)
+  AC_CHECK_LIB(Xaw, vendorShellClassRec, :, xmissing="$xmissing libXaw", $X_LIBS -lXmu -lXt -lX11 -lXext)
+  if test "$xmissing" = "" ; then
+     :
+  else
+     echo "******************************************************"
+     echo "configure: cannot find X11 development files that are"
+     echo "           needed to compile MrEd:"
+     echo "$xmissing"
+     echo "******************************************************"
+     echo configure aborted
+     exit 1
+  fi
 
   # Can we make auto-repeat detectable?
 [ msg="whether X11/XKBlib.h is available"   ]
