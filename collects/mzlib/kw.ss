@@ -53,14 +53,6 @@
                    )
            (append formals (list #'#:rest #'rest))))]
       [(formal ...) (syntax->list formals)]))
-  ;; is an expression simple? (=> evaluating cannot have side effects)
-  (define (simple-expr? expr)
-    (let ([expr (local-expand expr 'expression null)]) ; expand id macros
-      (syntax-case expr (#%datum #%top quote)
-        [(#%datum . _) #t]
-        [(#%top . _) #t]
-        [(quote . _) #t]
-        [_ (identifier? expr)])))
   ;; split a list of syntax objects based on syntax keywords:
   ;;   (x ... #:k1 ... #:k2 ... ...) --> ((x ...) (#:k1 ...) (#:k2 ...) ...)
   (define (split-by-keywords xs)
@@ -118,6 +110,19 @@
        [(or forbid forbid-any) #f]
        [else (ormap (lambda (k) (and (assq k rests) #t)) ; suggested?
                     (car (cddddr processed-spec)))])))
+  (define (make-keyword-get-expr key rest default known-vars)
+    ;; expand (for id macros) and check if its a simple expression, because if
+    ;; it is, evaluation cannot have side-effects and we can use keyword-get*
+    (define default*
+      (local-expand default 'expression (cons #'#%app known-vars)))
+    (define simple?
+      (syntax-case default* (#%datum #%top quote)
+        [(#%datum . _) #t] [(#%top . _) #t] [(quote . _) #t]
+        [_ (identifier? default*)]))
+    (with-syntax ([getter  (if simple? #'keyword-get* #'keyword-get)]
+                  [default (if simple? default* #`(lambda () #,default*))]
+                  [rest rest] [key key])
+      #'(getter rest key default)))
   ;; --------------------------------------------------------------------------
   ;; test variables
   (define (process-vars vars opts keys0 rests modes . only-vars?)
@@ -139,15 +144,18 @@
                              processed-keyword-specs))]
          ;; turn (<id> <key> <default>) keys to (<id> <default>)
          [(keys)
-          (with-syntax ([r rest*])
-            (map (lambda (k)
-                   (list
-                    (car k)
-                    (if (simple-expr? (caddr k))
-                      ;; simple case => no closure
-                      #`(keyword-get* r #,(cadr k) #,(caddr k))
-                      #`(keyword-get  r #,(cadr k) (lambda () #,(caddr k))))))
-                 keys0))]
+          (with-syntax ([rst rest*])
+            (let loop ([ks keys0]  [r '()]
+                       [known-vars (append vars (map car opts))])
+              (if (null? ks)
+                (reverse! r)
+                (let ([k (car ks)])
+                  (loop (cdr ks)
+                        (cons (list (car k)
+                                    (make-keyword-get-expr
+                                     (cadr k) rest* (caddr k) known-vars))
+                              r)
+                        (cons (car k) known-vars))))))]
          [(all-ids)
           `(,@vars ,@(map car opts) ,@(map car keys) ,rest* ,body*
             ;; make up names if not specified, to make checking easy
