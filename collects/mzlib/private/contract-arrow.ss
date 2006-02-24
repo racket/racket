@@ -647,11 +647,11 @@
                                    (object-interface
                                     val))])
                              (void)
-			     (check-method 'method-name val-mtd-names src-info pos-blame neg-blame orig-str)
+			     (check-method val 'method-name val-mtd-names src-info pos-blame neg-blame orig-str)
                              ...)
                            
                            (unless (field-bound? field-name val)
-			     (field-error 'field-name src-info pos-blame neg-blame orig-str)) ...
+			     (field-error val 'field-name src-info pos-blame neg-blame orig-str)) ...
                            
                            (let ([vtable (extract-vtable val)]
                                  [method-ht (extract-method-ht val)])
@@ -1395,7 +1395,7 @@
                      (syntax
                       ((x ...)
                        (begin
-                         (check-pre-expr->pp/h pre-expr src-info pos-blame neg-blame orig-str)
+                         (check-pre-expr->pp/h val pre-expr src-info pos-blame neg-blame orig-str)
                          (let ([dom-id ((coerce/select-contract stx-name dom) neg-blame pos-blame src-info orig-str)]
                                ...)
                            (val (dom-id x) ...)))))]
@@ -1406,11 +1406,11 @@
                        (syntax
                         ((x ...)
                          (begin
-                           (check-pre-expr->pp/h pre-expr src-info pos-blame neg-blame orig-str)
+                           (check-pre-expr->pp/h val pre-expr src-info pos-blame neg-blame orig-str)
                            (let ([dom-id ((coerce/select-contract stx-name dom) neg-blame pos-blame src-info orig-str)]
                                  ...)
                              (let-values ([(rng-ids ...) (val (dom-id x) ...)])
-                               (check-post-expr->pp/h post-expr src-info pos-blame neg-blame orig-str)
+                               (check-post-expr->pp/h val post-expr src-info pos-blame neg-blame orig-str)
                                (let ([rng-ids-x ((coerce/select-contract stx-name rng-ctc)
                                                  pos-blame neg-blame src-info orig-str)] ...)
                                  (values (rng-ids-x rng-ids) ...))))))))]
@@ -1429,12 +1429,12 @@
                      (syntax
                       ((x ...)
                        (begin
-                         (check-pre-expr->pp/h pre-expr src-info pos-blame neg-blame orig-str)
+                         (check-pre-expr->pp/h val pre-expr src-info pos-blame neg-blame orig-str)
                          (let ([dom-id ((coerce/select-contract stx-name dom) neg-blame pos-blame src-info orig-str)]
                                ...
                                [rng-id ((coerce/select-contract stx-name rng) pos-blame neg-blame src-info orig-str)])
                            (let ([res-id (rng-id (val (dom-id x) ...))])
-                             (check-post-expr->pp/h post-expr src-info pos-blame neg-blame orig-str)
+                             (check-post-expr->pp/h val post-expr src-info pos-blame neg-blame orig-str)
                              res-id)))))]
                     [_ 
                      (raise-syntax-error name "unknown result specification" stx (syntax result-stuff))]))))))]
@@ -1501,7 +1501,7 @@
                      (syntax
                       ((x ... . rest-x)
                        (begin
-                         (check-pre-expr->pp/h pre-expr src-info pos-blame neg-blame orig-str)
+                         (check-pre-expr->pp/h val pre-expr src-info pos-blame neg-blame orig-str)
                          (let ([dom-id ((coerce/select-contract stx-name dom) neg-blame pos-blame src-info orig-str)]
                                ...
                                [rest-id ((coerce/select-contract stx-name rest-dom) neg-blame pos-blame src-info orig-str)])
@@ -1515,12 +1515,12 @@
                        (syntax
                         ((x ... . rest-x)
                          (begin
-                           (check-pre-expr->pp/h pre-expr src-info pos-blame neg-blame orig-str)
+                           (check-pre-expr->pp/h val pre-expr src-info pos-blame neg-blame orig-str)
                            (let ([dom-id ((coerce/select-contract stx-name dom) neg-blame pos-blame src-info orig-str)]
                                  ...
                                  [rest-id ((coerce/select-contract stx-name rest-dom) neg-blame pos-blame src-info orig-str)])
                              (let-values ([(rng-ids ...) (apply val (dom-id x) ... (rest-id rest-x))])
-                               (check-post-expr->pp/h post-expr src-info pos-blame neg-blame orig-str)
+                               (check-post-expr->pp/h val post-expr src-info pos-blame neg-blame orig-str)
                                (let ([rng-ids-x ((coerce/select-contract stx-name rng-ctc)
                                                  pos-blame neg-blame src-info orig-str)] ...)
                                  (values (rng-ids-x rng-ids) ...))))))))]
@@ -1544,13 +1544,13 @@
                      (syntax
                       ((x ... . rest-x)
                        (begin
-                         (check-pre-expr->pp/h pre-expr src-info pos-blame neg-blame orig-str)
+                         (check-pre-expr->pp/h val pre-expr src-info pos-blame neg-blame orig-str)
                          (let ([dom-id ((coerce/select-contract stx-name dom) neg-blame pos-blame src-info orig-str)]
                                ...
                                [rest-id ((coerce/select-contract stx-name rest-dom) neg-blame pos-blame src-info orig-str)]
                                [rng-id ((coerce/select-contract stx-name rng) pos-blame neg-blame src-info orig-str)])
                            (let ([res-id (rng-id (apply val (dom-id x) ... (rest-id rest-x)))])
-                             (check-post-expr->pp/h post-expr src-info pos-blame neg-blame orig-str)
+                             (check-post-expr->pp/h val post-expr src-info pos-blame neg-blame orig-str)
                              res-id)))))]
                     [(rng res-id post-expr)
                      (not (identifier? (syntax res-id)))
@@ -1690,17 +1690,19 @@
 	     f)))
 
 
-  (define (check-pre-expr->pp/h pre-expr src-info pos-blame neg-blame orig-str)
+  (define (check-pre-expr->pp/h val pre-expr src-info pos-blame neg-blame orig-str)
     (unless pre-expr
-      (raise-contract-error src-info
+      (raise-contract-error val
+                            src-info
                             neg-blame
                             pos-blame
                             orig-str
                             "pre-condition expression failure")))
   
-  (define (check-post-expr->pp/h post-expr src-info pos-blame neg-blame orig-str)
+  (define (check-post-expr->pp/h val post-expr src-info pos-blame neg-blame orig-str)
     (unless post-expr
-      (raise-contract-error src-info
+      (raise-contract-error val
+                            src-info
                             pos-blame
                             neg-blame
                             orig-str
@@ -1710,6 +1712,7 @@
     (unless (and (procedure? val)
 		 (procedure-arity-includes? val dom-length))
       (raise-contract-error
+       val
        src-info
        pos-blame
        neg-blame
@@ -1720,14 +1723,16 @@
 
   (define (check-procedure/kind val arity kind-of-thing src-info pos-blame neg-blame orig-str)
     (unless (procedure? val)
-      (raise-contract-error src-info
+      (raise-contract-error val
+                            src-info
 			    pos-blame
 			    neg-blame
 			    orig-str
 			    "expected a procedure, got ~e"
 			    val))
     (unless (procedure-arity-includes? val arity)
-      (raise-contract-error src-info
+      (raise-contract-error val
+                            src-info
 			    pos-blame
 			    neg-blame
 			    orig-str
@@ -1739,14 +1744,16 @@
 
   (define (check-procedure/more/kind val arity kind-of-thing src-info pos-blame neg-blame orig-str)
     (unless (procedure? val)
-      (raise-contract-error src-info
+      (raise-contract-error val
+                            src-info
 			    pos-blame
 			    neg-blame
 			    orig-str
 			    "expected a procedure, got ~e"
 			    val))
     (unless (procedure-accepts-and-more? val arity)
-      (raise-contract-error src-info
+      (raise-contract-error val
+                            src-info
 			    pos-blame
 			    neg-blame
 			    orig-str
@@ -1760,6 +1767,7 @@
     (unless (and (procedure? val)
 		 (procedure-accepts-and-more? val dom-length))
       (raise-contract-error
+       val
        src-info
        pos-blame
        neg-blame
@@ -1792,24 +1800,27 @@
 
   (define (check-object val src-info pos-blame neg-blame orig-str)
     (unless (object? val)
-      (raise-contract-error src-info
+      (raise-contract-error val
+                            src-info
 			    pos-blame
 			    neg-blame
 			    orig-str
 			    "expected an object, got ~e"
 			    val)))
 
-  (define (check-method method-name val-mtd-names src-info pos-blame neg-blame orig-str)
+  (define (check-method val method-name val-mtd-names src-info pos-blame neg-blame orig-str)
     (unless (memq method-name val-mtd-names)
-      (raise-contract-error src-info
+      (raise-contract-error val
+                            src-info
 			    pos-blame
 			    neg-blame
 			    orig-str
 			    "expected an object with method ~s"
 			    method-name)))
 
-  (define (field-error field-name src-info pos-blame neg-blame orig-str)
-    (raise-contract-error src-info
+  (define (field-error val field-name src-info pos-blame neg-blame orig-str)
+    (raise-contract-error val
+                          src-info
 			  pos-blame
 			  neg-blame
 			  orig-str

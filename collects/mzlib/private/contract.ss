@@ -976,6 +976,7 @@ add struct contracts for immutable structs?
                    (lambda (val)
                      (unless (predicate?-name val)
                        (raise-contract-error
+                        val
                         src-info
                         pos
                         neg
@@ -1083,6 +1084,7 @@ add struct contracts for immutable structs?
                                 (predicate?-name v))
                            (constructor-name (p-apps (selector-names v)) ...)
                            (raise-contract-error
+                            v
                             src-info
                             pos
                             neg
@@ -1116,6 +1118,7 @@ add struct contracts for immutable structs?
                                             (cons (p-app (selector-name v i))
                                                   (loop (cdr p-apps) (+ i 1))))])))
                          (raise-contract-error
+                          v
                           src-info
                           pos
                           neg
@@ -1186,6 +1189,7 @@ add struct contracts for immutable structs?
              (lambda (val)
                (unless (promise? val)
                  (raise-contract-error
+                  val
                   src-info
                   pos
                   neg
@@ -1239,6 +1243,7 @@ add struct contracts for immutable structs?
                    (lambda (val)
                      (unless (predicate-id val)
                        (raise-contract-error
+                        val
                         src-info
                         pos
                         neg

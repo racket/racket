@@ -4,6 +4,7 @@
            (lib "list.ss"))
 
   (provide raise-contract-error
+           contract-violation->string
            coerce-contract 
            coerce/select-contract
            contract?
@@ -85,7 +86,7 @@
        exn:fail:contract2?
        (lambda (x) (get x 0)))))
   
-  (define (raise-contract-error src-info to-blame other-party contract-sexp fmt . args)
+  (define (default-contract-violation->string val src-info to-blame other-party contract-sexp msg)
     (let ([blame-src (src-info-as-string src-info)]
           [formatted-contract-sexp
            (let ([one-line (format "~s" contract-sexp)])
@@ -102,26 +103,35 @@
 	     (if (symbol? datum)
 		 (format " on ~a" datum)
                  ""))])
-      (raise
-       (make-exn:fail:contract2
-        (string->immutable-string
-         (string-append (format "~a~a broke the contract ~ait had with ~a~a; "
-                                blame-src
-                                to-blame
-                                formatted-contract-sexp
-                                other-party
-                                specific-blame)
-                        (apply format fmt args)))
-        (current-continuation-marks)
-        (if src-info
-            (list (make-srcloc 
-                   (syntax-source src-info)
-                   (syntax-line src-info)
-                   (syntax-column src-info)
-                   (syntax-position src-info)
-                   (syntax-span src-info)))
-            '())))))
+      (string-append (format "~a~a broke the contract ~ait had with ~a~a; "
+                             blame-src
+                             to-blame
+                             formatted-contract-sexp
+                             other-party
+                             specific-blame)
+                     msg)))
   
+  (define contract-violation->string (make-parameter default-contract-violation->string))
+  
+  (define (raise-contract-error val src-info to-blame other-party contract-sexp fmt . args)
+    (raise
+     (make-exn:fail:contract2
+      (string->immutable-string
+       ((contract-violation->string) val 
+                                     src-info 
+                                     to-blame 
+                                     other-party 
+                                     contract-sexp 
+                                     (apply format fmt args)))
+      (current-continuation-marks)
+      (if src-info
+          (list (make-srcloc 
+                 (syntax-source src-info)
+                 (syntax-line src-info)
+                 (syntax-column src-info)
+                 (syntax-position src-info)
+                 (syntax-span src-info)))
+          '()))))
   
   (define print-contract-liner
     (let ([default (pretty-print-print-line)])
@@ -226,6 +236,7 @@
          (if (predicate val)
              val
              (raise-contract-error
+              val
               src-info
               pos
               neg
