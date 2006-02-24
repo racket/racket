@@ -333,7 +333,7 @@
                settings
                width))))
       
-      ;; setup-printing-parameters : (-> void) -> void
+      ;; setup-printing-parameters : (-> void) simple-settings number -> void
       (define (setup-printing-parameters thunk settings width)
         (let ([use-number-snip?
                    (λ (x)
