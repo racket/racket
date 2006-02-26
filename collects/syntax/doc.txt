@@ -337,10 +337,10 @@ currently exist).
   `ext-proc' is #f.
 
 > (resolve-module-path module-path-v rel-to-path-string/thunk/#f) -
-  resolves a module path to filename path. The module path is
-  resolved relative to `rel-to-path-string/thunk/#f' if it is a string
-  (a filename path), to the directory result of calling the thunk if
-  it is a thunk, or to the current directory otherwise.
+  resolves a module path to filename path. The module path is resolved
+  relative to `rel-to-path-string/thunk/#f' if it is a path string, to
+  the directory result of calling the thunk if it is a thunk, or to
+  the current directory otherwise.
 
 > (resolve-module-path-index module-path-index rel-to-path-string/thunk/#f)
   - like `resolve-module-path' but the input is a module path index
@@ -353,8 +353,13 @@ currently exist).
 > (collapse-module-path module-path-v rel-to-module-path-v) - returns
   a "simplified" module path by combining `module-path-v' with
   `rel-to-module-path', where the latter must have the form '(lib
-  <relative-path> <collection>), '(file <path>), a relative path, or a
-  thunk to generate one of those.
+  <relative-path> <collection>), '(file <string>), a path, or a thunk
+  to generate one of those.
+
+  The result can be a path if `module-path-v' contains a path element
+  that is needed for the result, or if `rel-to-module-path-v' is a
+  non-string path that is needed for the result; otherwise, the result
+  is a printable "quoted" module path.
 
 > (collapse-module-path-index module-path-index rel-to-module-path-v)
   - like `collapse-module-path', but the input is a module path index

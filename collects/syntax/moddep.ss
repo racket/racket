@@ -294,7 +294,7 @@
 
   (define collapse-module-path
     ;; relto-mp should be a relative path, '(lib relative-path collection), or '(file path)
-    ;;          of a thunk that produces one of those
+    ;;          or a thunk that produces one of those
     (lambda (s relto-mp)
       (let ([combine-relative-elements
 	     (lambda (elements)
@@ -302,7 +302,9 @@
 		 (set! relto-mp (relto-mp)))
 	       (cond
 		[(path-string? relto-mp)
-		 (bytes->string/locale
+		 ((if (path? relto-mp)
+		      bytes->path
+		      bytes->string/locale)
 		  (apply
 		   bytes-append
 		   (let ([m (regexp-match re:path-only (if (path? relto-mp)
