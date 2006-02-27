@@ -384,10 +384,30 @@
                     [body (make-keys-body expr)])
         (syntax/loc stx (lambda vars body)))]
      ;; both opts and keys => combine the above two
+     ;; (the problem with this is that things that follow the required
+     ;; arguments are always taken as optionals, even if they're keywords, so
+     ;; the following piece of code is used.)
+     #;
      [else
       (let ([clauses (make-opt-clauses (make-keys-body expr) rest*)])
         (with-syntax ([name name] [clauses clauses])
-          (syntax/loc stx (letrec ([name (case-lambda . clauses)]) name))))]))
+          (syntax/loc stx (letrec ([name (case-lambda . clauses)]) name))))]
+     ;; both opts and keys => pop optionals as long as they're not keywords
+     [else
+      (with-syntax
+          ([rest rest*]
+           [vars (append! vars rest*)]
+           [body (make-keys-body expr)]
+           [((optvar optexpr) ...)
+            (apply append
+                   (map (lambda (opt)
+                          (with-syntax ([(ovar odef) opt] [rest rest*])
+                            (list #'[otmp (if (null? rest)
+                                            #t (keyword? (car rest)))]
+                                  #'[ovar (if otmp odef (car rest))]
+                                  #'[rest (if otmp rest (cdr rest))])))
+                        opts))])
+        (syntax/loc stx (lambda vars (let* ([optvar optexpr] ...) body))))]))
   (syntax-case stx ()
     [(_ formals expr0 expr ...)
      (generate-body #'formals #'(let () expr0 expr ...))]))

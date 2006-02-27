@@ -227,14 +227,34 @@
 
   ;; optionals and keys
   (let ([f (lambda/kw (#:optional a b #:key c d) (list a b c d))])
+    ;; the parts that are commented out are relying on the old (CL-like)
+    ;; behavior of always treating the first arguments as optionals.  Now a
+    ;; keyword marks the end of the optionals.
     (t '(#f #f #f #f)    <= (f)
        '(1 #f #f #f)     <= (f 1)
        '(1 2 #f #f)      <= (f 1 2)
-       '(#:c #:d #f #f)  <= (f #:c #:d)
-       '(#:c 1 #f #f)    <= (f #:c 1)
+       ;; '(#:c #:d #f #f)  <= (f #:c #:d)
+       ;; '(#:c 1 #f #f)    <= (f #:c 1)
        '(1 2 #:d #f)     <= (f 1 2 #:c #:d)
-       '(#:c #:d #:d #f) <= (f #:c #:d #:c #:d)
-       '(#:c 1 #:d #f)   <= (f #:c 1 #:c #:d)))
+       ;; '(#:c #:d #:d #f) <= (f #:c #:d #:c #:d)
+       ;; '(#:c 1 #:d #f)   <= (f #:c 1 #:c #:d)
+       ;; Test new behavior on the commented expressions that are valid
+       '(#f #f #:d #f)   <= (f #:c #:d)
+       '(#f #f 1 #f)     <= (f #:c 1)
+       ;; Now test the new behavior
+       '(#f #f #f 2)     <= (f #:d 2)
+       '(1 #f #f 2)      <= (f 1 #:d 2)
+       '(1 2 #f 2)       <= (f 1 2 #:d 2)
+       '(1 #f #f 2)      <= (f 1 #f #:d 2)))
+  (let ([f (lambda/kw (x #:optional a b #:key c d) (list x a b c d))])
+    ;; also test that the required argument is still working fine
+    (t '(0 #f #f #f 2)   <= (f 0 #:d 2)
+       '(0 1 #f #f 2)    <= (f 0 1 #:d 2)
+       '(0 1 2 #f 2)     <= (f 0 1 2 #:d 2)
+       '(0 1 #f #f 2)    <= (f 0 1 #f #:d 2)
+       '(#:x 1 #f #f 2)  <= (f #:x 1 #f #:d 2)
+       ;; and test errors
+       :rt-err:          <= (f 0 #:c 2 #:c 3)))
 
   ;; multi-level arg lists with #:body specs
   (let ([f (lambda/kw (#:key x y #:body (z)) (list x y z))])
