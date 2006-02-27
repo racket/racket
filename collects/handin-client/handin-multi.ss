@@ -106,6 +106,7 @@
                                (send this get-x) (send this get-y)))
         (preferences:save)
         (send this show #f))
+      (define/augment (on-close) (close))
 
       ;; ----------------------------------------------------------------------
       (new button% [parent buttons-pane]
