@@ -6,6 +6,12 @@
   ;;Execution tests without errors
   
   (execute-test
+   "interface A { int a( int x); }
+    abstract class B implements A { }
+   "
+   'advanced #f "abs. class with interface not all impl., with args")
+  
+  (execute-test
    "public class X {
      private int x() { return 3; }
     }"

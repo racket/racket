@@ -1107,7 +1107,7 @@
                                         (make-id (method-record-name m) #f)
                                         (map (lambda (a)
                                                (make-var-decl (make-id (gensym) #f) null
-                                                              (type->type-spec a) #f))
+                                                              (type->type-spec a) #f #f))
                                              (method-record-atypes m))
                                         null #f #f 
                                         (copy-method-record m) #f))
