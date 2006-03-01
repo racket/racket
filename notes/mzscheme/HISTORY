@@ -1,4 +1,7 @@
 
+Version 301.8
+Added string-normalize-nf[k]{d,c}
+
 Version 301.7
 Inside MzScheme: added scheme_make_prim_closure_w_arity(), etc.
 

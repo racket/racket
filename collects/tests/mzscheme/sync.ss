@@ -350,11 +350,11 @@
     (set! v #f)
     (let loop ()
       (err/rt-test (sync/timeout 0
-					 (nack-guard-evt (lambda (nack) 
-								     (set! v nack)
-								     (make-semaphore)))
-					 (nack-guard-evt (lambda (nack)
-								     (/ 1 0))))
+				 (nack-guard-evt (lambda (nack) 
+						   (set! v nack)
+						   (make-semaphore)))
+				 (nack-guard-evt (lambda (nack)
+						   (/ 1 0))))
 		   exn:fail:contract:divide-by-zero?)
       (if v
 	  (test #t nack-try-wait? v)
@@ -362,11 +362,11 @@
     (set! v #f)
     (let loop ()
       (err/rt-test (sync/timeout 0
-					 (nack-guard-evt (lambda (nack)
-								     (/ 10 0)))
-					 (nack-guard-evt (lambda (nack) 
-								     (set! v nack)
-								     (make-semaphore))))
+				 (nack-guard-evt (lambda (nack)
+						   (/ 10 0)))
+				 (nack-guard-evt (lambda (nack) 
+						   (set! v nack)
+						   (make-semaphore))))
 		   exn:fail:contract:divide-by-zero?)
       (if v
 	  (begin
@@ -376,11 +376,11 @@
     (set! v null)
     (test #f sync/timeout 0
 	  (nack-guard-evt (lambda (nack) 
-				(set! v (cons nack v))
-				(make-semaphore)))
+			    (set! v (cons nack v))
+			    (make-semaphore)))
 	  (nack-guard-evt (lambda (nack) 
-				(set! v (cons nack v))
-				(make-semaphore))))
+			    (set! v (cons nack v))
+			    (make-semaphore))))
     (test '(#t #t) map nack-try-wait? v)
 
     ;; Check that thread kill also implies nack:
