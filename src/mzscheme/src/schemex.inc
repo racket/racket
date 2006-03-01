@@ -110,6 +110,7 @@
   scheme_extension_table->scheme_uchar_downs = scheme_uchar_downs;
   scheme_extension_table->scheme_uchar_titles = scheme_uchar_titles;
   scheme_extension_table->scheme_uchar_folds = scheme_uchar_folds;
+  scheme_extension_table->scheme_uchar_combining_classes = scheme_uchar_combining_classes;
   scheme_extension_table->scheme_eval = scheme_eval;
   scheme_extension_table->scheme_eval_multi = scheme_eval_multi;
   scheme_extension_table->scheme_eval_compiled = scheme_eval_compiled;

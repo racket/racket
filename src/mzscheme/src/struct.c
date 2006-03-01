@@ -39,13 +39,6 @@ typedef enum {
   SCHEME_GEN_SETTER
 } Scheme_ProcT;
 
-typedef struct Struct_Proc_Info {
-  MZTAG_IF_REQUIRED
-  Scheme_Struct_Type *struct_type;
-  char *func_name;
-  mzshort field;
-} Struct_Proc_Info;
-
 typedef struct {
   Scheme_Object so;
   Scheme_Object *evt;
@@ -990,6 +983,46 @@ make_struct_instance(int argc, Scheme_Object **args, Scheme_Object *prim)
   return scheme_make_struct_instance(SCHEME_PRIM_CLOSURE_ELS(prim)[0], argc, args);
 }
 
+static Scheme_Object *
+make_simple_struct_instance(int argc, Scheme_Object **args, Scheme_Object *prim)
+/* No guards, uninitialized slots, or proc type */
+{
+  Scheme_Structure *inst;
+  Scheme_Struct_Type *stype = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(prim)[0];
+  int i, c;
+
+  c = stype->num_slots;
+  inst = (Scheme_Structure *)
+    scheme_malloc_tagged(sizeof(Scheme_Structure) 
+			 + ((c - 1) * sizeof(Scheme_Object *)));
+  
+  inst->so.type = scheme_structure_type;
+  inst->stype = stype;
+
+  for (i = 0; i < argc; i++) {
+    inst->slots[i] = args[i];
+  }
+  
+  return (Scheme_Object *)inst;
+}
+
+static int is_simple_struct_type(Scheme_Struct_Type *stype)
+{
+  int p;
+
+  if (stype->proc_attr)
+    return 0;
+
+  for (p = stype->name_pos; p >= 0; p--) {
+    if (stype->parent_types[p]->guard)
+      return 0;
+    if (stype->parent_types[p]->num_slots != stype->parent_types[p]->num_islots)
+      return 0;
+  }
+
+  return 1;
+}
+
 static Scheme_Object *struct_pred(int argc, Scheme_Object **args, Scheme_Object *prim)
 {
   if (SCHEME_STRUCTP(args[0])) {
@@ -1440,20 +1473,30 @@ int scheme_inspector_sees_part(Scheme_Object *s, Scheme_Object *insp, int pos)
 }
 
 
-#define STRUCT_PROCP(o, t) \
-    (SCHEME_STRUCT_PROCP(o) && (((Scheme_Primitive_Proc *)o)->pp.flags & t))
+#define STRUCT_mPROCP(o, t, v)						\
+  (SCHEME_PRIMP(o) && ((((Scheme_Primitive_Proc *)o)->pp.flags & (t)) == (v)))
+
+#define STRUCT_PROCP(o, t) STRUCT_mPROCP(o, t, t)
 
 static Scheme_Object *
 struct_setter_p(int argc, Scheme_Object *argv[])
 {
-  return (STRUCT_PROCP(argv[0], SCHEME_PRIM_IS_STRUCT_SETTER)
+  return ((STRUCT_mPROCP(argv[0], 
+			 SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_STRUCT_OTHER_TYPE_MASK,
+			 SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER)
+	   || STRUCT_mPROCP(argv[0], 
+			    SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_STRUCT_OTHER_TYPE_MASK,
+			    SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_SETTER))
 	  ? scheme_true : scheme_false);
 }
 
 static Scheme_Object *
 struct_getter_p(int argc, Scheme_Object *argv[])
 {
-  return (STRUCT_PROCP(argv[0], SCHEME_PRIM_IS_STRUCT_GETTER)
+  return ((STRUCT_PROCP(argv[0], SCHEME_PRIM_IS_STRUCT_INDEXED_GETTER)
+	   || STRUCT_mPROCP(argv[0], 
+			    SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_STRUCT_OTHER_TYPE_MASK,
+			    SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_GETTER))
 	  ? scheme_true : scheme_false);
 }
 
@@ -1467,7 +1510,9 @@ struct_pred_p(int argc, Scheme_Object *argv[])
 static Scheme_Object *
 struct_constr_p(int argc, Scheme_Object *argv[])
 {
-  return (STRUCT_PROCP(argv[0], SCHEME_PRIM_IS_STRUCT_CONSTR)
+  return (STRUCT_mPROCP(argv[0], 
+			SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_STRUCT_OTHER_TYPE_MASK,
+			SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_STRUCT_TYPE_CONSTR)
 	  ? scheme_true : scheme_false);
 }
 
@@ -1481,10 +1526,11 @@ static Scheme_Object *make_struct_field_xxor(const char *who, int getter,
   char digitbuf[20];
   int fieldstrlen;
 
-  if (!STRUCT_PROCP(argv[0], (getter
-			      ? SCHEME_PRIM_IS_STRUCT_GETTER
-			      : SCHEME_PRIM_IS_STRUCT_SETTER))
-      || (((Scheme_Primitive_Proc *)argv[0])->mina == (getter ? 1 : 2))) {
+  if (!STRUCT_mPROCP(argv[0], 
+		     SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_STRUCT_OTHER_TYPE_MASK,
+		     SCHEME_PRIM_IS_STRUCT_OTHER | (getter 
+						    ? SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_GETTER
+						    : SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_SETTER))) {
     scheme_wrong_type(who, (getter 
 			    ? "accessor procedure that requires a field index"
 			    : "mutator procedure that requires a field index"),
@@ -1946,17 +1992,21 @@ make_struct_proc(Scheme_Struct_Type *struct_type,
 		 Scheme_ProcT proc_type, int field_num)
 {
   Scheme_Object *p, *a[1];
-  short flags = SCHEME_PRIM_IS_STRUCT_PROC;
+  short flags = 0;
 
   if (proc_type == SCHEME_CONSTR) {
+    int simple;
+    simple = is_simple_struct_type(struct_type);
     a[0] = (Scheme_Object *)struct_type;
-    p = scheme_make_folding_prim_closure(make_struct_instance,
+    p = scheme_make_folding_prim_closure((simple 
+					  ? make_simple_struct_instance
+					  : make_struct_instance),
 					 1, a,
 					 func_name,
 					 struct_type->num_islots,
 					 struct_type->num_islots,
 					 0);
-    flags |= SCHEME_PRIM_IS_STRUCT_CONSTR;
+    flags |= SCHEME_PRIM_STRUCT_TYPE_CONSTR | SCHEME_PRIM_IS_STRUCT_OTHER;
   } else if (proc_type == SCHEME_PRED) {
     a[0] = (Scheme_Object *)struct_type;
     p = scheme_make_folding_prim_closure(struct_pred,
@@ -1989,7 +2039,10 @@ make_struct_proc(Scheme_Struct_Type *struct_type,
 					   1, a,
 					   func_name,
 					   1 + need_pos, 1 + need_pos, 1);
-      flags |= SCHEME_PRIM_IS_STRUCT_GETTER;
+      if (need_pos)
+	flags |= SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_GETTER | SCHEME_PRIM_IS_STRUCT_OTHER;
+      else
+	flags |= SCHEME_PRIM_IS_STRUCT_INDEXED_GETTER;
       /* Cache the accessor only if `struct_info' is used.
 	 This avoids keep lots of useless accessors.
 	 if (need_pos) struct_type->accessor = p; */
@@ -1998,7 +2051,10 @@ make_struct_proc(Scheme_Struct_Type *struct_type,
 					   1, a,
 					   func_name,
 					   2 + need_pos, 2 + need_pos, 0);
-      flags |= SCHEME_PRIM_IS_STRUCT_SETTER;
+      if (need_pos)
+	flags |= SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_SETTER | SCHEME_PRIM_IS_STRUCT_OTHER;
+      else
+	flags |= SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER | SCHEME_PRIM_IS_STRUCT_OTHER;
       /* See note above:
 	 if (need_pos) struct_type->mutator = p; */
     }

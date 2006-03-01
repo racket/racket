@@ -298,7 +298,7 @@ EXTRA_OBJS_L = ../src/gmp.@LTO@ @FOREIGN_OBJSLIB_IF_USED@
 	$(RANLIB) ../libmzscheme3m.@LIBSFX@
 
 ../mzscheme3m@NOT_OSX@: main.@LTO@ ../libmzscheme3m.@LIBSFX@
-	@MZLINKER@ -o ../mzscheme3m main.@LTO@ ../libmzscheme3m.@LIBSFX@ $(LIBS)
+	@MZLINKER@ -o ../mzscheme3m @PROFFLAGS@ main.@LTO@ ../libmzscheme3m.@LIBSFX@ $(LIBS)
 
 MZFWMMM = PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme
 
@@ -311,7 +311,7 @@ $(MZFWMMM): $(OBJS) $(EXTRA_OBJS_T)
 	ln -s Versions/$(FWVERSION)_3m/PLT_MzScheme PLT_MzScheme.framework/PLT_MzScheme	
 
 ../mzscheme3m@OSX@: $(MZFWMMM) main.@LTO@
-	$(CC) -o ../mzscheme3m main.@LTO@ -Wl,-headerpad_max_install_names -F. -framework PLT_MzScheme
+	$(CC) -o ../mzscheme3m @PROFFLAGS@ main.@LTO@ -Wl,-headerpad_max_install_names -F. -framework PLT_MzScheme
 	if [ ! -d ../PLT_MzScheme.framework/Versions/$(FWVERSION)_3m ] ; then mkdir ../PLT_MzScheme.framework/Versions/$(FWVERSION)_3m ; fi
 	cp PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme ../PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme
 

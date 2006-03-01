@@ -231,6 +231,7 @@ MZ_EXTERN int scheme_uchar_ups[];
 MZ_EXTERN int scheme_uchar_downs[];
 MZ_EXTERN int scheme_uchar_titles[];
 MZ_EXTERN int scheme_uchar_folds[];
+MZ_EXTERN unsigned char scheme_uchar_combining_classes[];
 
 /*========================================================================*/
 /*                              evaluation                                */

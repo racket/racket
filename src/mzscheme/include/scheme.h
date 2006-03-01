@@ -547,6 +547,8 @@ typedef void (*Scheme_Type_Printer)(Scheme_Object *v, int for_display, Scheme_Pr
 #define scheme_isgraphic(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x800)
 #define scheme_iscaseignorable(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x1000)
 #define scheme_isspecialcasing(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x2000)
+#define scheme_needs_decompose(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x4000)
+#define scheme_needs_maybe_compose(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x8000)
 
 #define scheme_iscased(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x700)
 
@@ -554,6 +556,7 @@ typedef void (*Scheme_Type_Printer)(Scheme_Object *v, int for_display, Scheme_Pr
 #define scheme_tolower(x) (x + scheme_uchar_downs[scheme_uchar_find(scheme_uchar_cases_table, x)])
 #define scheme_totitle(x) (x + scheme_uchar_titles[scheme_uchar_find(scheme_uchar_cases_table, x)])
 #define scheme_tofold(x) (x + scheme_uchar_folds[scheme_uchar_find(scheme_uchar_cases_table, x)])
+#define scheme_combining_class(x) (scheme_uchar_combining_classes[scheme_uchar_find(scheme_uchar_cases_table, x)])
 
 /*========================================================================*/
 /*                          procedure values                              */
@@ -563,12 +566,11 @@ typedef void (*Scheme_Type_Printer)(Scheme_Object *v, int for_display, Scheme_Pr
    Do not use them directly. */
 #define SCHEME_PRIM_IS_FOLDING 1
 #define SCHEME_PRIM_IS_PRIMITIVE 2
-#define SCHEME_PRIM_IS_STRUCT_PROC 4
-#define SCHEME_PRIM_IS_STRUCT_SETTER 8
+#define SCHEME_PRIM_IS_STRUCT_INDEXED_GETTER 4
+#define SCHEME_PRIM_IS_STRUCT_PRED 8
 #define SCHEME_PRIM_IS_PARAMETER 16
-#define SCHEME_PRIM_IS_STRUCT_GETTER 32
-#define SCHEME_PRIM_IS_STRUCT_PRED 64
-#define SCHEME_PRIM_IS_STRUCT_CONSTR 128
+#define SCHEME_PRIM_IS_STRUCT_OTHER 32
+#define SCHEME_PRIM_STRUCT_OTHER_TYPE_MASK (64 | 128)
 #define SCHEME_PRIM_IS_MULTI_RESULT 256
 #define SCHEME_PRIM_IS_BINARY_INLINED 512
 #define SCHEME_PRIM_IS_USER_PARAMETER 1024
@@ -576,6 +578,13 @@ typedef void (*Scheme_Type_Printer)(Scheme_Object *v, int for_display, Scheme_Pr
 #define SCHEME_PRIM_IS_CLOSURE 4096
 #define SCHEME_PRIM_IS_NONCM 8192
 #define SCHEME_PRIM_IS_UNARY_INLINED 16384
+
+#define SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_GETTER 0
+#define SCHEME_PRIM_STRUCT_TYPE_CONSTR 64
+#define SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_SETTER 128
+#define SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER (64 | 128)
+
+#define SCHEME_PRIM_IS_STRUCT_PROC (SCHEME_PRIM_IS_STRUCT_INDEXED_GETTER | SCHEME_PRIM_IS_STRUCT_PRED | SCHEME_PRIM_IS_STRUCT_OTHER)
 
 #define SCHEME_PRIM_PROC_FLAGS(x) (((Scheme_Prim_Proc_Header *)x)->flags)
 

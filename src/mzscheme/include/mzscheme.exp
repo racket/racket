@@ -102,6 +102,7 @@ scheme_uchar_ups
 scheme_uchar_downs
 scheme_uchar_titles
 scheme_uchar_folds
+scheme_uchar_combining_classes
 scheme_eval
 scheme_eval_multi
 scheme_eval_compiled

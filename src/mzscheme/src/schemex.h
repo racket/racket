@@ -186,6 +186,7 @@ int *scheme_uchar_ups;
 int *scheme_uchar_downs;
 int *scheme_uchar_titles;
 int *scheme_uchar_folds;
+unsigned char *scheme_uchar_combining_classes;
 /*========================================================================*/
 /*                              evaluation                                */
 /*========================================================================*/

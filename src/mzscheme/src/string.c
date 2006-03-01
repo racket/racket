@@ -192,6 +192,10 @@ static Scheme_Object *string_copy (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_copy_bang (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_fill (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_to_immutable (int argc, Scheme_Object *argv[]);
+static Scheme_Object *string_normalize_c (int argc, Scheme_Object *argv[]);
+static Scheme_Object *string_normalize_kc (int argc, Scheme_Object *argv[]);
+static Scheme_Object *string_normalize_d (int argc, Scheme_Object *argv[]);
+static Scheme_Object *string_normalize_kd (int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *make_byte_string (int argc, Scheme_Object *argv[]);
 static Scheme_Object *byte_string (int argc, Scheme_Object *argv[]);
@@ -474,7 +478,26 @@ scheme_init_string (Scheme_Env *env)
 						    "string->immutable-string",
 						    1, 1),
 			     env);
-
+  scheme_add_global_constant("string-normalize-nfc",
+			     scheme_make_noncm_prim(string_normalize_c,
+						    "string-normalize-nfc",
+						    1, 1),
+			     env);
+  scheme_add_global_constant("string-normalize-nfkc",
+			     scheme_make_noncm_prim(string_normalize_kc,
+						    "string-normalize-nfkc",
+						    1, 1),
+			     env);
+  scheme_add_global_constant("string-normalize-nfd",
+			     scheme_make_noncm_prim(string_normalize_d,
+						    "string-normalize-nfd",
+						    1, 1),
+			     env);
+  scheme_add_global_constant("string-normalize-nfkd",
+			     scheme_make_noncm_prim(string_normalize_kd,
+						    "string-normalize-nfkd",
+						    1, 1),
+			     env);
 
   scheme_add_global_constant("string-upcase",
 			     scheme_make_noncm_prim(string_upcase,
@@ -3348,6 +3371,465 @@ static Scheme_Object *string_titlecase (int argc, Scheme_Object *argv[])
 static Scheme_Object *string_foldcase (int argc, Scheme_Object *argv[])
 {
   return string_recase("string-foldcase", argc, argv, 3);
+}
+
+/**********************************************************************/
+/*                          normalization                             */
+/**********************************************************************/
+
+#define MZ_JAMO_INITIAL_CONSONANT_START  0x1100
+#define MZ_JAMO_INITIAL_CONSONANT_COUNT  19
+#define MZ_JAMO_INITIAL_CONSONANT_END    (MZ_JAMO_INITIAL_CONSONANT_START + MZ_JAMO_INITIAL_CONSONANT_COUNT - 1)
+
+#define MZ_JAMO_VOWEL_START              0x1161
+#define MZ_JAMO_VOWEL_COUNT              21
+#define MZ_JAMO_VOWEL_END                (MZ_JAMO_VOWEL_START + MZ_JAMO_VOWEL_COUNT - 1)
+
+/* First in this range is not actually a consonant, but a placeholder for "no consonant" */
+#define MZ_JAMO_TRAILING_CONSONANT_START 0x11A7
+#define MZ_JAMO_TRAILING_CONSONANT_COUNT 28
+#define MZ_JAMO_TRAILING_CONSONANT_END   (MZ_JAMO_TRAILING_CONSONANT_START + MZ_JAMO_TRAILING_CONSONANT_COUNT - 1)
+
+#define MZ_JAMO_SYLLABLE_START           0xAC00
+#define MZ_JAMO_SYLLABLE_END             (MZ_JAMO_SYLLABLE_START + 11171)
+
+static mzchar get_composition(mzchar a, mzchar b)
+{
+  unsigned long key = (a << 16) | b;
+  int pos = (COMPOSE_TABLE_SIZE >> 1), new_pos;
+  int below_len = pos;
+  int above_len = (COMPOSE_TABLE_SIZE - pos - 1);
+  
+  if (a > 0xFFFF) return 0;
+
+  /* Binary search: */
+  while (key != utable_compose_pairs[pos]) {
+    if (key > utable_compose_pairs[pos]) {
+      if (!above_len)
+	return 0;
+      new_pos = pos + (above_len >> 1) + 1;
+      below_len = (new_pos - pos - 1);
+      above_len = (above_len - below_len - 1);
+      pos = new_pos;
+    } else if (key < utable_compose_pairs[pos]) {
+      if (!below_len)
+	return 0;
+      new_pos = pos - ((below_len >> 1) + 1);
+      above_len = (pos - new_pos - 1);
+      below_len = (below_len - above_len - 1);
+      pos = new_pos;
+    }
+  }
+
+  return utable_compose_result[pos];
+}
+
+mzchar get_canon_decomposition(mzchar key, mzchar *b)
+{
+  int pos = (DECOMPOSE_TABLE_SIZE >> 1), new_pos;
+  int below_len = pos;
+  int above_len = (DECOMPOSE_TABLE_SIZE - pos - 1);
+
+  /* Binary search: */
+  while (key != utable_decomp_keys[pos]) {
+    if (key > utable_decomp_keys[pos]) {
+      if (!above_len)
+	return 0;
+      new_pos = pos + (above_len >> 1) + 1;
+      below_len = (new_pos - pos - 1);
+      above_len = (above_len - below_len - 1);
+      pos = new_pos;
+    } else if (key < utable_decomp_keys[pos]) {
+      if (!below_len)
+	return 0;
+      new_pos = pos - ((below_len >> 1) + 1);
+      above_len = (pos - new_pos - 1);
+      below_len = (below_len - above_len - 1);
+      pos = new_pos;
+    }
+  }
+
+  pos = utable_decomp_indices[pos];
+  if (pos < 0) {
+    pos = -(pos + 1);
+    pos <<= 1;
+    *b = utable_compose_long_pairs[pos + 1];
+    return utable_compose_long_pairs[pos];
+  } else {
+    key = utable_compose_pairs[pos];
+    *b = (key & 0xFFFF);
+    return (key >> 16);
+  }
+}
+
+int get_kompat_decomposition(mzchar key, unsigned short **chars)
+{
+  int pos = (KOMPAT_DECOMPOSE_TABLE_SIZE >> 1), new_pos;
+  int below_len = pos;
+  int above_len = (KOMPAT_DECOMPOSE_TABLE_SIZE - pos - 1);
+
+  /* Binary search: */
+  while (key != utable_kompat_decomp_keys[pos]) {
+    if (key > utable_kompat_decomp_keys[pos]) {
+      if (!above_len)
+	return 0;
+      new_pos = pos + (above_len >> 1) + 1;
+      below_len = (new_pos - pos - 1);
+      above_len = (above_len - below_len - 1);
+      pos = new_pos;
+    } else if (key < utable_kompat_decomp_keys[pos]) {
+      if (!below_len)
+	return 0;
+      new_pos = pos - ((below_len >> 1) + 1);
+      above_len = (pos - new_pos - 1);
+      below_len = (below_len - above_len - 1);
+      pos = new_pos;
+    }
+  }
+
+  *chars = utable_kompat_decomp_strs XFORM_OK_PLUS utable_kompat_decomp_indices[pos];
+  return utable_kompat_decomp_lens[pos];
+}
+
+static Scheme_Object *normalize_c(Scheme_Object *o)
+/* Assumes then given string is in normal form D */
+{
+  mzchar *s, *s2, tmp, last_c0 = 0;
+  int len, i, j = 0, last_c0_pos = 0, last_cc = 0;
+
+  s = SCHEME_CHAR_STR_VAL(o);
+  len = SCHEME_CHAR_STRLEN_VAL(o);
+
+  s2 = (mzchar *)scheme_malloc_atomic((len + 1) * sizeof(mzchar));
+  memcpy(s2, s, len * sizeof(mzchar));
+  
+  for (i = 0; i < len; i++) {
+    if ((i + 1 < len)
+	&& (s2[i] >= MZ_JAMO_INITIAL_CONSONANT_START)
+	&& (s2[i] <= MZ_JAMO_INITIAL_CONSONANT_END)
+	&& (s2[i+1] >= MZ_JAMO_VOWEL_START)
+	&& (s2[i+1] <= MZ_JAMO_VOWEL_END)) {
+      /* Need Hangul composition */
+      if ((i + 2 < len)
+	  && (s2[i+2] > MZ_JAMO_TRAILING_CONSONANT_START)
+	  && (s2[i+2] <= MZ_JAMO_TRAILING_CONSONANT_END)) {
+	/* 3-char composition */
+	tmp = (MZ_JAMO_SYLLABLE_START
+	       + ((s2[i] - MZ_JAMO_INITIAL_CONSONANT_START) 
+		  * MZ_JAMO_VOWEL_COUNT * MZ_JAMO_TRAILING_CONSONANT_COUNT)
+	       + ((s2[i+1] - MZ_JAMO_VOWEL_START)
+		  * MZ_JAMO_TRAILING_CONSONANT_COUNT)
+	       + (s2[i+2] - MZ_JAMO_TRAILING_CONSONANT_START));
+	i += 2;
+      } else {
+	/* 2-char composition */
+	tmp = (MZ_JAMO_SYLLABLE_START
+	       + ((s2[i] - MZ_JAMO_INITIAL_CONSONANT_START) 
+		  * MZ_JAMO_VOWEL_COUNT * MZ_JAMO_TRAILING_CONSONANT_COUNT)
+	       + ((s2[i+1] - MZ_JAMO_VOWEL_START)
+		  * MZ_JAMO_TRAILING_CONSONANT_COUNT));
+	i++;
+      }
+      last_c0 = tmp;
+      last_c0_pos = j;
+      last_cc = 0;
+      s2[j++] = tmp;
+    } else {
+      int cc;
+      
+      cc = scheme_combining_class(s2[i]);
+      if (last_c0 && (cc > last_cc))
+	tmp = get_composition(last_c0, s2[i]);
+      else
+	tmp = 0;
+
+      if (tmp) {
+	/* Need to compose */
+	s2[last_c0_pos] = tmp;
+	last_c0 = tmp;
+      } else if (!cc) {
+	/* Reset last_c0... */
+	tmp = s2[i];
+	if (scheme_needs_maybe_compose(tmp)) {
+	  last_c0 = tmp;
+	  last_c0_pos = j;
+	} else {
+	  last_c0 = 0;
+	}
+	last_cc = -1;
+	s2[j++] = tmp;
+      } else {
+	s2[j++] = s2[i];
+	last_cc = cc;
+      }
+    }
+  }
+
+  s2[j] = 0;
+  if (len - j > 16) {
+    s2 = (mzchar *)scheme_malloc_atomic((j + 1) * sizeof(mzchar));
+    memcpy(s2, s, (j + 1) * sizeof(mzchar));
+    s2 = s;
+  }
+
+  return scheme_make_sized_char_string(s2, j, 0);
+}
+
+static Scheme_Object *normalize_d(Scheme_Object *o, int kompat)
+{
+  mzchar *s, tmp, *s2;
+  int len, i, delta, j, swapped;
+
+  s = SCHEME_CHAR_STR_VAL(o);
+  len = SCHEME_CHAR_STRLEN_VAL(o);
+
+  /* Run through string list to predict expansion: */
+  delta = 0;
+  for (i = 0; i < len; i++) {
+    if (scheme_needs_decompose(s[i])) {
+      int klen;
+      mzchar snd;
+      GC_CAN_IGNORE unsigned short *start;
+
+      tmp = s[i];
+      while (scheme_needs_decompose(tmp)) {
+	if (kompat)
+	  klen = get_kompat_decomposition(tmp, &start);
+	else
+	  klen = 0;
+	if (klen) {
+	  delta += (klen - 1);
+	  break;
+	} else {
+	  tmp = get_canon_decomposition(tmp, &snd);
+	  if (tmp) {
+	    if (snd) {
+	      delta++;
+	      if (kompat) {
+		klen = get_kompat_decomposition(snd, &start);
+		if (klen)
+		  delta += (klen - 1);
+	      }
+	    }
+	  } else
+	    break;
+	}
+      }
+    } else if ((s[i] >= MZ_JAMO_SYLLABLE_START)
+	       && (s[i] <= MZ_JAMO_SYLLABLE_END)) {
+      tmp = s[i];
+      tmp -= MZ_JAMO_SYLLABLE_START;
+      if (tmp % MZ_JAMO_TRAILING_CONSONANT_COUNT)
+	delta += 2;
+      else
+	delta += 1;
+    }
+  }
+
+  s2 = (mzchar *)scheme_malloc_atomic((len + delta + 1) * sizeof(mzchar));
+
+  j = 0;
+  for (i = 0; i < len; i++) {
+    if (scheme_needs_decompose(s[i])) {
+      mzchar snd, tmp2;
+      int snds = 0, klen = 0, k;
+      GC_CAN_IGNORE unsigned short*start;
+
+      tmp = s[i];
+      while (scheme_needs_decompose(tmp)) {
+	if (kompat)
+	  klen = get_kompat_decomposition(tmp, &start);
+	else
+	  klen = 0;
+	if (klen) {
+	  for (k = 0; k < klen; k++) {
+	    s2[j++] = start[k];
+	  }
+	  break;
+	} else {
+	  tmp2 = get_canon_decomposition(tmp, &snd);
+	  if (tmp2) {
+	    tmp = tmp2;
+	    if (snd) {
+	      if (kompat)
+		klen = get_kompat_decomposition(snd, &start);
+	      else
+		klen = 0;
+	      if (klen) {
+		snds += klen;
+		for (k = 0; k < klen; k++) {
+		  s2[len + delta - snds + k] = start[k];
+		}
+		klen = 0;
+	      } else {
+		snds++;
+		s2[len + delta - snds] = snd;
+	      }
+	    }
+	  } else 
+	    break;
+	}
+      }
+      if (!klen)
+	s2[j++] = tmp;
+      memcpy(s2 + j, s2 + len + delta - snds, snds * sizeof(mzchar));
+      j += snds;
+    } else if ((s[i] >= MZ_JAMO_SYLLABLE_START)
+	       && (s[i] <= MZ_JAMO_SYLLABLE_END)) {
+      int l, v, t;
+      tmp = s[i];
+      tmp -= MZ_JAMO_SYLLABLE_START;
+      l = tmp / (MZ_JAMO_VOWEL_COUNT * MZ_JAMO_TRAILING_CONSONANT_COUNT);
+      v = (tmp % (MZ_JAMO_VOWEL_COUNT * MZ_JAMO_TRAILING_CONSONANT_COUNT)) / MZ_JAMO_TRAILING_CONSONANT_COUNT;
+      t = tmp % MZ_JAMO_TRAILING_CONSONANT_COUNT;
+      s2[j++] = MZ_JAMO_INITIAL_CONSONANT_START + l;
+      s2[j++] = MZ_JAMO_VOWEL_START + v;
+      if (t) {
+	s2[j++] = MZ_JAMO_TRAILING_CONSONANT_START + t;
+      }
+    } else {
+      s2[j++] = s[i];
+    }
+  }
+  s2[j] = 0;
+  len += delta;
+
+  /* Reorder pass: */
+  do {
+    swapped = 0;
+    for (i = 0; i < len; i++) {
+      if ((i + 1 < len)
+	  && scheme_combining_class(s2[i])
+	  && scheme_combining_class(s2[i+1])
+	  && (scheme_combining_class(s2[i+1]) < scheme_combining_class(s2[i]))) {
+	/* Reorder and try again: */
+	tmp = s2[i + 1];
+	s2[i + 1] = s2[i];
+	s2[i] = tmp;
+	i--;
+	swapped = 1;
+      }
+    }
+  } while (swapped);
+
+  return scheme_make_sized_char_string(s2, len, 0);
+}
+
+static Scheme_Object *do_string_normalize_c (const char *who, int argc, Scheme_Object *argv[], int kompat)
+{
+  Scheme_Object *o;
+  mzchar *s, last_c0 = 0, snd;
+  int len, i, last_cc = 0;
+
+  o = argv[0];
+  if (!SCHEME_CHAR_STRINGP(o))
+    scheme_wrong_type(who, "string", 0, argc, argv);
+
+  s = SCHEME_CHAR_STR_VAL(o);
+  len = SCHEME_CHAR_STRLEN_VAL(o);
+
+  for (i = 0; i < len; i++) {
+    if (scheme_needs_decompose(s[i])
+	&& (kompat || get_canon_decomposition(s[i], &snd))) {
+      /* Decomposition may expose a different composition */
+      break;
+    } else if ((i + 1 < len)
+	&& scheme_combining_class(s[i])
+	&& scheme_combining_class(s[i+1])
+	&& (scheme_combining_class(s[i+1]) < scheme_combining_class(s[i]))) {
+      /* Need to reorder */
+      break;
+    } else if ((s[i] >= MZ_JAMO_INITIAL_CONSONANT_START)
+	       && (s[i] <= MZ_JAMO_INITIAL_CONSONANT_END)
+	       && (s[i+1] >= MZ_JAMO_VOWEL_START)
+	       && (s[i+1] <= MZ_JAMO_VOWEL_END)) {
+      /* Need Hangul composition */
+      break;
+    } else if (last_c0 
+	       && get_composition(last_c0, s[i])
+	       && (scheme_combining_class(s[i]) > last_cc)) {
+      /* Need to compose */
+      break;
+    } else {
+      int cc;
+
+      cc = scheme_combining_class(s[i]);
+
+      if (!cc) {
+	if (scheme_needs_maybe_compose(s[i]))
+	  last_c0 = s[i];
+	else
+	  last_c0 = 0;
+	last_cc = -1;
+      } else
+	last_cc = cc;
+    }
+  }
+
+  if (i < len) {
+    o = normalize_c(normalize_d(o, kompat));
+  }
+
+  return o;
+}
+
+static Scheme_Object *string_normalize_c (int argc, Scheme_Object *argv[])
+{
+  return do_string_normalize_c("string-normalize-nfc", argc, argv, 0);
+}
+
+static Scheme_Object *string_normalize_kc (int argc, Scheme_Object *argv[])
+{
+  return do_string_normalize_c("string-normalize-nfkc", argc, argv, 1);
+}
+
+static Scheme_Object *do_string_normalize_d (const char *who, int argc, Scheme_Object *argv[], int kompat)
+{
+  Scheme_Object *o;
+  mzchar *s;
+  int len, i;
+
+  o = argv[0];
+  if (!SCHEME_CHAR_STRINGP(o))
+    scheme_wrong_type(who, "string", 0, argc, argv);
+
+  s = SCHEME_CHAR_STR_VAL(o);
+  len = SCHEME_CHAR_STRLEN_VAL(o);
+
+  for (i = len; i--; ) {
+    if (scheme_needs_decompose(s[i])) {
+      /* Need to decompose */
+      mzchar snd;
+      if (kompat || get_canon_decomposition(s[i], &snd))
+	break;
+    } else if ((i + 1 < len)
+	       && scheme_combining_class(s[i])
+	       && scheme_combining_class(s[i+1])
+	       && (scheme_combining_class(s[i+1]) < scheme_combining_class(s[i]))) {
+      /* Need to reorder */
+      break;
+    } else if ((s[i] >= MZ_JAMO_SYLLABLE_START)
+	       && (s[i] <= MZ_JAMO_SYLLABLE_END)) {
+      /* Need Hangul decomposition */
+      break;
+    }
+  }
+
+  if (i >= 0) {
+    o = normalize_d(o, kompat);
+  }
+
+  return o;
+}
+
+static Scheme_Object *string_normalize_d (int argc, Scheme_Object *argv[])
+{
+  return do_string_normalize_d("string-normalize-nfd", argc, argv, 0);
+}
+
+static Scheme_Object *string_normalize_kd (int argc, Scheme_Object *argv[])
+{
+  return do_string_normalize_d("string-normalize-nfkd", argc, argv, 1);
 }
 
 /**********************************************************************/

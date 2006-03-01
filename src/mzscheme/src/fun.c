@@ -793,6 +793,9 @@ scheme_resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info)
   /* Then the pointer to globals, if any: */
   offset = cl->base_closure_size;
   if (cl->has_tl) {
+    /* GLOBAL ASSUMPTION: jit.c assumes that the array
+       of globals is the last item in the closure; grep
+       for "GLOBAL ASSUMPTION" in jit.c */
     int li;
     li = scheme_resolve_toplevel_pos(info);
     closure_map[offset] = li;

@@ -3372,8 +3372,12 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	      result = SCHEME_STX_CDR(result);
 	      result = scheme_flatten_begin(first, result);
 	      goto define_try_again;
-	    } else
+	    } else {
+	      /* Keep partially expanded `first': */
+	      result = SCHEME_STX_CDR(result);
+	      result = scheme_make_pair(first, result);
 	      break;
+	    }
 	  }
 	} else
 	  break;
