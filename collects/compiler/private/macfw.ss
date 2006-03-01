@@ -19,7 +19,7 @@
 				   p (version) p)
 			   dest))
 		(if mred?
-		    '("PLT_MzScheme" "PLT_MrEd")
+		    '("PLT_MrEd")
 		    '("PLT_MzScheme")))))
 
   (define (get-current-framework-path dest p)

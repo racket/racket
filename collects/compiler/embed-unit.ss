@@ -531,7 +531,10 @@
 			;; Check whether we need an absolute path to frameworks:
 			(let ([dest (mac-dest->executable dest mred?)])
 			(when (regexp-match #rx"^@executable_path" 
-					    (get-current-framework-path dest "PLT_MzScheme"))
+					    (get-current-framework-path dest 
+									(if mred?
+									    "PLT_MrEd"
+									    "PLT_MzScheme")))
 			  (update-framework-path (string-append
 						  (path->string (build-path plthome "lib"))
 						  "/")

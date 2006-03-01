@@ -1336,7 +1336,7 @@ wx_mac_PLAIN_OBJS = \
 xform: $(XSRCS) xsrc/xcglue.c
 
 wx_xt_LIBS = ../../wxxt/contrib/xpm/lib/libXpm.@LTA@ @JPEG_A@ @PNG_A@ @ZLIB_A@ 
-wx_mac_LIBS = -framework Carbon -framework QuickTime -framework AGL -framework OpenGL @JPEG_A@ @PNG_A@ -lz
+wx_mac_LIBS = -framework Carbon -framework QuickTime -framework AGL -framework OpenGL @JPEG_A@ @PNG_A@ -lz @LIBS@
 
 MREDLINKER = @MREDLINKER@
 
@@ -1366,13 +1366,13 @@ MRFW = PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd
 MRFWRES = PLT_MrEd.framework/Versions/$(FWVERSION)_3m/Resources/PLT_MrEd.rsrc
 
 ../MrEd3m.app/Contents/MacOS/MrEd3m: $(MRFWRES) $(MRFW) mrmain.@LTO@
-	$(MREDLINKER) -o ../MrEd3m.app/Contents/MacOS/MrEd3m mrmain.@LTO@ -Wl,-headerpad_max_install_names -F. -F../../mzscheme/gc2 -framework PLT_MrEd -framework Carbon -framework PLT_MzScheme
+	$(MREDLINKER) -o ../MrEd3m.app/Contents/MacOS/MrEd3m mrmain.@LTO@ -Wl,-headerpad_max_install_names -F. -framework PLT_MrEd -framework Carbon
 	if [ ! -d ../PLT_MrEd.framework/Versions/$(FWVERSION)_3m ] ; then mkdir ../PLT_MrEd.framework/Versions/$(FWVERSION)_3m ; fi
 	cp $(MRFW) ../$(MRFW)
 	cp -r PLT_MrEd.framework/Versions/$(FWVERSION)_3m/Resources ../PLT_MrEd.framework/Versions/$(FWVERSION)_3m/Resources
 
 $(MRFW) : $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS)
-	$(MREDLINKER) -dynamiclib -o $(MRFW) -F../../mzscheme/gc2 -framework PLT_MzScheme -Wl,-headerpad_max_install_names $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) $(@WXVARIANT@_LIBS)
+	$(MREDLINKER) -dynamiclib -o $(MRFW) -Wl,-headerpad_max_install_names $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../mzscheme/libmzscheme3m.@LIBSFX@ $(@WXVARIANT@_LIBS)
 
 $(MRFWRES): $(srcdir)/../../mac/osx_appl.ss $(srcdir)/../../mac/cw/MrEd.r
 	rm -rf PLT_MrEd.framework/Resources PLT_MrEd.framework/PLT_MrEd

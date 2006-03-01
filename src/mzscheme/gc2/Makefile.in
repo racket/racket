@@ -302,11 +302,11 @@ EXTRA_OBJS_L = ../src/gmp.@LTO@ @FOREIGN_OBJSLIB_IF_USED@
 
 MZFWMMM = PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme
 
-$(MZFWMMM): $(OBJS) $(EXTRA_OBJS_T)
+$(MZFWMMM): ../libmzscheme3m.@LIBSFX@
 	if [ ! -d PLT_MzScheme.framework ] ; then mkdir PLT_MzScheme.framework ; fi
 	if [ ! -d PLT_MzScheme.framework/Versions ] ; then mkdir PLT_MzScheme.framework/Versions ; fi
 	if [ ! -d PLT_MzScheme.framework/Versions/$(FWVERSION)_3m ] ; then mkdir PLT_MzScheme.framework/Versions/$(FWVERSION)_3m ; fi
-	$(CC) -o $(MZFWMMM) -framework CoreFoundation -dynamiclib -all_load $(OBJS) $(EXTRA_OBJS_L) $(LIBS)
+	$(CC) -o $(MZFWMMM) -framework CoreFoundation -dynamiclib -all_load ../libmzscheme3m.@LIBSFX@ $(LIBS)
 	rm -f PLT_MzScheme.framework/PLT_MzScheme
 	ln -s Versions/$(FWVERSION)_3m/PLT_MzScheme PLT_MzScheme.framework/PLT_MzScheme	
 
