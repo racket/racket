@@ -75,7 +75,7 @@ typedef short int WXTYPE;
 #define wxMINIMIZE_BOX      0x00000800
 #define wxMAXIMIZE_BOX      0x00001000
 #define wxTOOLBAR_BUTTON    0x00002000
-#define wxTINY_CAPTION_VERT 0x00004000
+#define wxNOT_AS_SHEET      0x00004000
 #define wxRESIZE_BOX       wxMAXIMIZE_BOX
 #define wxNO_RESIZE_BORDER	    0x00800000
 #define wxHIDE_MENUBAR	    0x01000000

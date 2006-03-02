@@ -60,9 +60,14 @@ static void dialogMenu(wxDialogBox *XTMAC_UNUSED(d))
 #endif
 }
 
+#ifndef wxNOT_AS_SHEET
+# define wxNOT_AS_SHEET 0
+#endif
+
 @BEGINSYMBOLS dialogStyle >  > PRED BUNDLE
 @SYM "no-caption" : wxNO_CAPTION
 @SYM "resize-border" : wxMAXIMIZE
+@SYM "no-sheet" : wxNOT_AS_SHEET
 @ENDSYMBOLS
 
 @INCLUDE wxs_espc.xci

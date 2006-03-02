@@ -1022,8 +1022,13 @@ static void dialogMenu(wxDialogBox *XTMAC_UNUSED(d))
 #endif
 }
 
+#ifndef wxNOT_AS_SHEET
+# define wxNOT_AS_SHEET 0
+#endif
+
 static Scheme_Object *dialogStyle_wxNO_CAPTION_sym = NULL;
 static Scheme_Object *dialogStyle_wxMAXIMIZE_sym = NULL;
+static Scheme_Object *dialogStyle_wxNOT_AS_SHEET_sym = NULL;
 
 static void init_symset_dialogStyle(void) {
   REMEMBER_VAR_STACK();
@@ -1031,12 +1036,14 @@ static void init_symset_dialogStyle(void) {
   dialogStyle_wxNO_CAPTION_sym = WITH_REMEMBERED_STACK(scheme_intern_symbol("no-caption"));
   wxREGGLOB(dialogStyle_wxMAXIMIZE_sym);
   dialogStyle_wxMAXIMIZE_sym = WITH_REMEMBERED_STACK(scheme_intern_symbol("resize-border"));
+  wxREGGLOB(dialogStyle_wxNOT_AS_SHEET_sym);
+  dialogStyle_wxNOT_AS_SHEET_sym = WITH_REMEMBERED_STACK(scheme_intern_symbol("no-sheet"));
 }
 
 static int unbundle_symset_dialogStyle(Scheme_Object *v, const char *where) {
   SETUP_VAR_STACK(1);
   VAR_STACK_PUSH(0, v);
-  if (!dialogStyle_wxMAXIMIZE_sym) WITH_VAR_STACK(init_symset_dialogStyle());
+  if (!dialogStyle_wxNOT_AS_SHEET_sym) WITH_VAR_STACK(init_symset_dialogStyle());
   Scheme_Object *i INIT_NULLED_OUT, *l = v;
   long result = 0;
   while (SCHEME_PAIRP(l)) {
@@ -1044,6 +1051,7 @@ static int unbundle_symset_dialogStyle(Scheme_Object *v, const char *where) {
   if (0) { }
   else if (i == dialogStyle_wxNO_CAPTION_sym) { result = result | wxNO_CAPTION; }
   else if (i == dialogStyle_wxMAXIMIZE_sym) { result = result | wxMAXIMIZE; }
+  else if (i == dialogStyle_wxNOT_AS_SHEET_sym) { result = result | wxNOT_AS_SHEET; }
   else { break; } 
   l = SCHEME_CDR(l);
   }

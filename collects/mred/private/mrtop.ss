@@ -137,7 +137,9 @@
 	  (check-dimension cwho height)
 	  (check-init-pos-integer cwho x)
 	  (check-init-pos-integer cwho y)
-	  (check-style cwho #f '(no-resize-border no-caption no-system-menu mdi-parent mdi-child toolbar-button hide-menu-bar float metal) 
+	  (check-style cwho #f '(no-resize-border no-caption no-system-menu 
+						  mdi-parent mdi-child 
+						  toolbar-button hide-menu-bar float metal) 
 		       style)
 	  (when (memq 'mdi-child style)
 	    (when (memq 'mdi-parent style)
@@ -212,7 +214,7 @@
 	  (check-label-string cwho label)
 	  (check-top-level-parent/false cwho parent)
 	  (for-each (lambda (x) (check-dimension cwho x)) (list width height x y))
-	  (check-style cwho #f '(no-caption resize-border) style)))
+	  (check-style cwho #f '(no-caption resize-border no-sheet) style)))
       (rename [super-on-subwindow-char on-subwindow-char])
       (private-field [wx #f])
       (override

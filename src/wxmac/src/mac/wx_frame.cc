@@ -107,7 +107,8 @@ wxFrame::wxFrame // Constructor (for frame window)
   
   if (cStyle & wxMDI_CHILD) { // hack : MDI_CHILD means dialog box
 #ifdef OS_X
-    if (parentFrame && parentFrame->GetSheetParent()) {
+    if (parentFrame && parentFrame->GetSheetParent()
+	&& !(cStyle & wxNOT_AS_SHEET)) {
       WXGC_IGNORE(this, cSheetParent);
       cSheetParent = parentFrame->GetSheetParent();
       windowClass = kSheetWindowClass;
