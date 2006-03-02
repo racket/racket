@@ -3115,6 +3115,24 @@
                 1
                 'pos
                 'neg)))
+  
+  (test/spec-passed
+   'struct/c3
+   '(let ()
+      (define-struct s (a b))
+      (contract (struct/c s integer? (struct/c s integer? boolean?))
+                (make-s 1 (make-s 2 #t))
+                'pos
+                'neg)))
+  
+  (test/pos-blame
+   'struct/c3
+   '(let ()
+      (define-struct s (a b))
+      (contract (struct/c s integer? (struct/c s integer? boolean?))
+                (make-s 1 (make-s 2 3))
+                'pos
+                'neg)))
 
   (test/spec-passed
    'recursive-contract1
@@ -3162,6 +3180,10 @@
   (test #t flat-contract? (and/c number? integer?))
   (test #t flat-contract? (and/c (flat-contract number?)
 				 (flat-contract integer?)))
+  (test #t flat-contract? (let ()
+                            (define-struct s (a b))
+                            (struct/c s any/c any/c)))
+  
   (test-flat-contract '(and/c number? integer?) 1 3/2)
 
   (test-flat-contract '(not/c integer?) #t 1)

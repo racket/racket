@@ -1214,44 +1214,43 @@ add struct contracts for immutable structs?
        (and (identifier? (syntax struct-name))
             (syntax-local-value (syntax struct-name) (lambda () #f)))
        (with-syntax ([(ctc-x ...) (generate-temporaries (syntax (args ...)))]
-                     [(ctc-proc-x ...) (generate-temporaries (syntax (args ...)))]
+                     [(ctc-name-x ...) (generate-temporaries (syntax (args ...)))]
+                     [(ctc-pred-x ...) (generate-temporaries (syntax (args ...)))]
                      [(ctc-app-x ...) (generate-temporaries (syntax (args ...)))]
+                     [(field-numbers ...)
+                      (let loop ([i 0]
+                                 [l (syntax->list (syntax (args ...)))])
+                        (cond
+                          [(null? l) '()]
+                          [else (cons i (loop (+ i 1) (cdr l)))]))]
                      [(type-desc-id 
                        constructor-id 
                        predicate-id 
-                       (selector-id ...)
+                       (rev-selector-id ...)
                        (mutator-id ...)
                        super-id)
                       (syntax-local-value (syntax struct-name))])
-         (syntax
-          (let ([ctc-x (coerce-contract struct/c args)] ...)
-            
-            (unless predicate-id
-              (error 'struct/c "could not determine predicate for ~s" 'struct-name))
-            (unless (and selector-id ...)
-              (error 'struct/c "could not determine selectors for ~s" 'struct-name))
-            
-            (unless (flat-contract? ctc-x)
-              (error 'struct/c "expected flat contracts as arguments, got ~e" ctc-x))
-            ...
-            
-            (let ([ctc-proc-x (contract-proc ctc-x)] ...)
-              (make-contract
-               (build-compound-type-name 'struct/c 'struct-name ctc-x ...)
-               (lambda (pos neg src-info orig-str)
-                 (let ([ctc-app-x (ctc-proc-x pos neg src-info orig-str)] ...)
-                   (lambda (val)
-                     (unless (predicate-id val)
-                       (raise-contract-error
-                        val
-                        src-info
-                        pos
-                        neg
-                        orig-str
-                        "expected <~a>, given: ~e"
-                        'struct-name
-                        val))
-                    (ctc-app-x (selector-id val)) ...
-                     val))))))))]
+         (with-syntax ([(selector-id ...) (reverse (syntax->list (syntax (rev-selector-id ...))))])
+           (syntax
+            (let ([ctc-x (coerce-contract struct/c args)] ...)
+              
+              (unless predicate-id
+                (error 'struct/c "could not determine predicate for ~s" 'struct-name))
+              (unless (and selector-id ...)
+                (error 'struct/c "could not determine selectors for ~s" 'struct-name))
+              
+              (unless (flat-contract? ctc-x)
+                (error 'struct/c "expected flat contracts as arguments, got ~e" args))
+              ...
+              
+              (let ([ctc-pred-x (flat-contract-predicate ctc-x)] 
+                    ...
+                    [ctc-name-x (contract-name ctc-x)]
+                    ...)
+                (build-flat-contract
+                 (build-compound-type-name 'struct/c 'struct-name ctc-x ...)
+                 (λ (val)
+                   (and (predicate-id val)
+                        (ctc-pred-x (selector-id val)) ...))))))))]
       [(_ struct-name anything ...)
        (raise-syntax-error 'struct/c "expected a struct identifier" stx (syntax struct-name))])))
