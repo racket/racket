@@ -4,7 +4,8 @@
 	   (lib "include.ss")
 	   (lib "process.ss")
 	   (lib "sendevent.ss")
-	   "private/dirs.ss")
+	   "private/dirs.ss"
+	   "private/cmdargs.ss")
 
   (require "compile-sig.ss")
 
@@ -15,8 +16,7 @@
       (import)
       
       (define (get-unix-compile)
-	(or (getenv "MZSCHEME_DYNEXT_COMPILER")
-	    (find-executable-path "gcc" #f)
+	(or (find-executable-path "gcc" #f)
 	    (find-executable-path "cc" #f)))
       
       (define (get-windows-compile)
@@ -26,10 +26,15 @@
       
       (define current-extension-compiler 
 	(make-parameter 
-	 (case (system-type) 
-	   [(unix macosx) (get-unix-compile)]
-	   [(windows) (get-windows-compile)]
-	   [else #f])
+	 (or (let ([p (or (getenv "MZSCHEME_DYNEXT_COMPILER")
+			  (getenv "CC"))])
+	       (if (and p (absolute-path? p))
+		   (find-executable-path p #f)
+		   p))
+	     (case (system-type) 
+	       [(unix macosx) (get-unix-compile)]
+	       [(windows) (get-windows-compile)]
+	       [else #f]))
 	 (lambda (v)
 	   (when v 
 	     (if (path-string? v)
@@ -91,16 +96,25 @@
 	    (raise-type-error who "list of paths/strings and thunks" l))
 	  l))
 
+      (define (get-env-compile-flags)
+	(let ([v (or (getenv "MZSCHEME_DYNEXT_COMPILER_FLAGS")
+		     (getenv "CFLAGS"))])
+	  (if v
+	      (split-command-line-args v)
+	      null)))
+
       (define current-extension-compiler-flags
 	(make-parameter
-	 (case (system-type)
-	   [(unix macosx) (if unix-cc?
-			      unix-compile-flags
-			      gcc-compile-flags)]
-	   [(windows) (if (or win-gcc? win-borland?)
-			  gcc-compile-flags
-			  msvc-compile-flags)]
-	   [(macos) '()])
+	 (append 
+	  (get-env-compile-flags)
+	  (case (system-type)
+	    [(unix macosx) (if unix-cc?
+			       unix-compile-flags
+			       gcc-compile-flags)]
+	    [(windows) (if (or win-gcc? win-borland?)
+			   gcc-compile-flags
+			   msvc-compile-flags)]
+	    [(macos) '()]))
 	 (make-flags-guard 'current-extension-compiler-flags)))
 
       (define current-extension-preprocess-flags

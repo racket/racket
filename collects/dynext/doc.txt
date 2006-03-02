@@ -18,9 +18,10 @@ and Unix:
 
 >  current-extension-compiler - compiler executable path/string or
     #f. The default is set by searching for an executable using the
-    PATH environment variable. Under windows, the search looks for
-    cl.exe, then gcc.exe, then bcc32.exe (Borland). Under Unix, it
-    checks the MZSCHEME_DYNEXT_COMPILER environment variable, then
+    PATH environment variable, or using the CC or
+    MZSCHEME_DYNEXT_COMPILER environment variable if either is defined
+    (and the latter takes precedence). Under windows, the search looks
+    for cl.exe, then gcc.exe, then bcc32.exe (Borland). Under Unix, it
     looks for gcc, then cc. #f indicates that no compiler could be
     found.
 
@@ -30,14 +31,19 @@ and Unix:
     "/MT" 3m-flag-thunk) for cl.exe and (list "-c" "-O2" "-fPIC"
     3m-flag-thunk) for gcc.exe and bcc32.exe, where 3m-flag-thunk
     returns (list "-DMZ_PRECISE_GC") for the '3m variant and null for
-    any other variant; under Unix, the default is usually
-    (list "-c" "-O2" "-fPIC" 3m-flag-thunk).
+    any other variant; under Unix, the default is usually (list "-c"
+    "-O2" "-fPIC" 3m-flag-thunk). If the CFLAGS or
+    MZSCHEME_DYNEXT_COMPILER_FLAGS environment variable is defined
+    (the latter takes precedence), then its value is parsed as a list
+    of strings that is appended before the defaults.
 
 >  current-make-compile-include-strings - procedure that takes an
     include directory path/string and returns a list of strings for
     the command line.  Windows: "dir" -> (list "/Idir") for cl.exe,
     (list "-Idir") for gcc.exe and bcc32.exe; Unix: "dir" -> (list
-    "-Idir").
+    "-Idir"). If the CFLAGS environment variable is defined, then its
+    value is parsed as a list of flags that is appended before the
+    defaults.
 
 >  current-make-compile-input-strings - procedure that takes an
     input file path/string and returns a list of strings for the
@@ -100,17 +106,21 @@ Linking parameters:
 
 >  current-extension-linker - linker executable path/string or #f. 
      The default is set by searching for an executable using the PATH
-     environment variable. Under Windows, it looks for cl.exe, then
-     ld.exe (gcc), then ilink32.exe (Borland). Under Unix it checks
-     the MZSCHEME_DYNEXT_LINKER environment variable, then, except
-     AIX, it looks for ld. Under AIX, it looks for cc. #f indicates
-     that no linker could be found.
+     environment variable, or by using the LD or
+     MZSCHEME_DYNEXT_LINKER environment variable if it is defined (and
+     the latter takes precedence). Under Windows, it looks for cl.exe,
+     then ld.exe (gcc), then ilink32.exe (Borland). Under AIX, Mac OS
+     X, or Darwin, it looks for cc. Under other Unix variants, it
+     looks for ld. #f indicates that no linker could be found.
 
 >  current-extension-linker-flags - list of paths/strings and thunks
      (see `expand-for-link-variant' below). Under Windows, default is
-     (list "/LD") for cl.exe, (list "--dll") for ld.exe, (list "/Tpd"
-     "/c") for ilink32.exe.  Under Unix, the default varies greatly
-     among platforms.
+     (list "/LD") for cl.exe, (list "--dll") for ld.exe, and (list
+     "/Tpd" "/c") for ilink32.exe.  Under Unix, the default varies
+     greatly among platforms.  If the LDFLAGS or
+     MZSCHEME_DYNEXT_LINKER_FLAGS (the latter takes precedence)
+     environment variable is defined, then its value is parsed as a
+     list of strings that is appended before the defaults.
 
 >  current-make-link-input-strings - procedure that takes an
      input file path/string and returns a list of strings for the

@@ -5,6 +5,7 @@
 	   (lib "process.ss")
 	   (lib "sendevent.ss")
 	   "private/dirs.ss"
+	   "private/cmdargs.ss"
            "filename-version.ss")
 
   (require "link-sig.ss")
@@ -26,26 +27,32 @@
 	    (find-executable-path "ilink32.exe" #f)))
 
       (define (get-unix-linker)
-	(or (getenv "MZSCHEME_DYNEXT_LINKER")
-	    (let ([s (case (string->symbol (path->string (system-library-subpath #f)))
-		       [(rs6k-aix ppc-macosx i386-macosx ppc-darwin i386-darwin) "cc"]
-		       [else "ld"])])
-	      (find-executable-path s s))))
+	(let ([s (case (string->symbol (path->string (system-library-subpath #f)))
+		   [(rs6k-aix ppc-macosx i386-macosx ppc-darwin i386-darwin) "cc"]
+		   [else "ld"])])
+	  (find-executable-path s s)))
       
+      (define (check-valid-linker-path v)
+	(unless (and (file-exists? v)
+		     (memq 'execute (file-or-directory-permissions v)))
+	  (error 'current-extension-linker 
+		 "linker not found or not executable: ~s" v)))
+
       ;; See doc.txt:
       (define current-extension-linker 
 	(make-parameter 
-	 (case (system-type) 
-	   [(unix macosx) (get-unix-linker)]
-	   [(windows) (get-windows-linker)]
-	   [else #f])
+	 (or (let ([p (getenv "MZSCHEME_DYNEXT_LINKER")])
+	       (if (and p (absolute-path? p))
+		   (find-executable-path p #f)
+		   p))
+	     (case (system-type) 
+	       [(unix macosx) (get-unix-linker)]
+	       [(windows) (get-windows-linker)]
+	       [else #f]))
 	 (lambda (v)
 	   (when v 
 	     (if (path-string? v)
-		 (unless (and (file-exists? v)
-			      (memq 'execute (file-or-directory-permissions v)))
-		   (error 'current-extension-linker 
-			  "linker not found or not executable: ~s" v))
+		 (check-valid-linker-path v)
 		 (raise-type-error 'current-extension-linker "path, valid-path string, or #f" v)))
 	   v)))
 
@@ -121,17 +128,25 @@
 	   (list "-bundle" "-flat_namespace" "-undefined" "suppress")]
 	  [(i386-cygwin) win-gcc-linker-flags]
 	  [else (list "-shared")]))
+
+      (define (get-env-link-flags)
+	(let ([v (or (getenv "MZSCHEME_DYNEXT_LINKER_FLAGS")
+		     (getenv "LDFLAGS"))])
+	  (if v
+	      (split-command-line-args v)
+	      null)))
       
       ;; See doc.txt:
       (define current-extension-linker-flags
 	(make-parameter
-	 (case (system-type)
-	   [(unix macosx) (get-unix-link-flags)]
-	   [(windows) (cond
-		       [win-gcc? win-gcc-linker-flags]
-		       [win-borland? borland-linker-flags]
-		       [else msvc-linker-flags])]
-	   [(macos) null])
+	 (append (get-env-link-flags)
+		 (case (system-type)
+		   [(unix macosx) (get-unix-link-flags)]
+		   [(windows) (cond
+			       [win-gcc? win-gcc-linker-flags]
+			       [win-borland? borland-linker-flags]
+			       [else msvc-linker-flags])]
+		   [(macos) null]))
 	 (lambda (l)
 	   (unless (and (list? l) (andmap string? l))
 	     (raise-type-error 'current-extension-linker-flags "list of strings" l))
