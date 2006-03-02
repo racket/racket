@@ -235,6 +235,29 @@ class WeeklyPlanner{
   ;;Interaction tests, mix of right and error
   
   (interact-test
+   "class A {
+     private int x = 10;
+     public int y = x * 2;
+    }
+    class B {
+     public int x = 10;
+     private int y = x * 2;
+     public int report() { return y; }
+   }
+   class C {
+     public int x = 10;
+     public int y = 2 * x;
+   }
+   class D {
+     int x = 10;
+     public int y = 2 * x;
+   }"
+   'advanced
+   '("A a = new A();" "B b = new B();" "C c = new C();" "D d = new D();" "a.y" "b.report()" "c.y" "d.y")
+   '((void) (void) (void) (void) 20 20 20 20)
+   "Private, etc shouldn't effect order of evaluation")
+  
+  (interact-test
    "public class X {
      private int x() { return 3; }
     }"

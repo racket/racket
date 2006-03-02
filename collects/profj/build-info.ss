@@ -1754,12 +1754,12 @@
                        (case kind
                          ((file) (format "Required file ~a, for class or interface ~a, not found" 
                                          (string-append (path->ext path) ".java") (path->ext path)))
-                         ((dir) (format "Required directory ~a not found" (path->ext path))))
+                         ((dir) (format "Required directory, for package ~a not found" (path->ext path))))
                        k src))
         (raise-error (string->symbol (car path))
                      (case kind
-                       ((file) (format "Class or interface ~a is not known" (path->ext path)))
-                       ((dir) (format "Directory to search, ~a, is not known" (path->ext path))))
+                       ((file) (format "Class or interface ~a is not known." (path->ext path)))
+                       ((dir) (format "Package ~a is not known." (path->ext path))))
                      (string->symbol (car path))
                      src)))
 
