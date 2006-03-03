@@ -25,6 +25,10 @@ Added exn:fail:user and raise-user-error
 Made parameter/mark lookup amortized constant time,
  instead of potentially O(stack depth)
 
+Version 301, December 2005
+Fixed a custom-input-port bug in the case that a read or peek procedure
+ returns an event created by handle-evt
+
 Version 300, December 2005
 Generalized network-address handling, includes IPv6
 Added ephemerons

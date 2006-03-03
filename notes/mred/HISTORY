@@ -1,4 +1,7 @@
 
+Version 301.8
+Added 'no-sheet dialog% style
+
 Version 300.3
 Default max undo history for an editor<%> is 0; use
  set-max-undo-history to enable undo
@@ -6,6 +9,12 @@ Added |MrEd:emacsUndo| low-level preference
 
 Version 300.1
 Disabled menu-item shortcuts stay effective (to just beep)
+
+----------------------------------------------------------------------
+
+Version 301, Decmber 2005
+Fixed a bug in reading non-text files whose encoding contains
+ a byte string longer than 64 bytes
 
 ----------------------------------------------------------------------
 
