@@ -1857,16 +1857,30 @@ static double sch_pow(double x, double y)
   } else if (MZ_IS_POS_INFINITY(x)) {
     if (y == 0.0)
       return 1.0;
+    else if (y < 0)
+      return 0.0;
     else
       return scheme_infinity_val;
   } else if (MZ_IS_NEG_INFINITY(x)) {
     if (y == 0.0)
       return 1.0;
     else {
-      if (fmod(y, 2.0) == 1.0)
-	return scheme_minus_infinity_val;
-      else
-	return scheme_infinity_val;
+      int neg = 0;
+      if (y < 0) {
+	neg = 1;
+	y = -y;
+      }
+      if (fmod(y, 2.0) == 1.0) {
+	if (neg)
+	  return scheme_floating_point_nzero;
+	else
+	  return scheme_minus_infinity_val;
+      } else {
+	if (neg)
+	  return 0.0;
+	else
+	  return scheme_infinity_val;
+      }
     }
   } else
     return pow(x, y);
