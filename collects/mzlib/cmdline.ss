@@ -1,173 +1,145 @@
 
 (module cmdline mzscheme
 
-  (define-syntax command-line
-    (lambda (stx)
-      (syntax-case stx ()
-	[(_ program-name
-	    argv
-	    clause ...)
-	 (let ([serror
-		(lambda (msg . detail)
-		  (apply
-		   raise-syntax-error
-		   #f
-		   msg
-		   stx
-		   detail))])
-	   (let ([extract-one
-                  (lambda (what args . detail)
-                    (if (null? args)
-                      (apply serror (format "missing ~a" what) detail)
-                      (values (car args) (cdr args))))]
-                 [extract-list
-                  (lambda (stx/list pred)
-                    (let loop ([xs null]
-                               [rest (if (syntax? stx/list) (syntax->list stx/list) stx/list)])
-                      (if (and (pair? rest) (pred (car rest)))
-                        (loop (cons (car rest) xs) (cdr rest))
-                        (values (reverse xs) rest))))]
-		 [formal-names
-		  (lambda (l)
-		    (map
-		     (lambda (a)
-		       (datum->syntax-object
-			(quote-syntax here)
-			(let ([s (symbol->string (syntax-e a))])
-			  (if (char=? #\* (string-ref s (sub1 (string-length s))))
-			      (substring s 0 (sub1 (string-length s)))
-			      s))
-			#f))
-		     l))])
-	     (let ([clauses
-		    (let loop ([csrcs (syntax->list (syntax (clause ...)))][clauses null])
-		      (with-syntax ([(clause ...) clauses])
-			(if (null? csrcs)
-			    (syntax ((list clause ...) (lambda (accum) (void)) null))
-			    (let ([line (car csrcs)]
-				  [arest (cdr csrcs)])
-			      (syntax-case line (help-labels => args)
-				[(help-labels s ...)
-				 (begin
-				   (unless (andmap (lambda (x) (string? (syntax-e x)))
-						   (syntax->list (syntax (s ...))))
-				     (serror "help-labels clause must contain only strings" line))
-				   (loop arest
-					 (syntax (clause 
-						  ...
-						  '(help-labels s ...)))))]
-				[(tag . rest)
-				 (ormap (lambda (x) (module-identifier=? (syntax tag) x))
-					(syntax->list (syntax (once-each once-any multi final))))
-				 (with-syntax 
-				     ([sublines
-				       (let slloop ([sublines (syntax->list (syntax rest))])
-					 (if (null? sublines)
-					     (syntax ())
-					     (with-syntax 
-						 ([looped (slloop (cdr sublines))]
-						  [subline
-						   (with-syntax 
-						       ([flags 
-							 (syntax-case (car sublines) ()
-							   [((flag ...) . rest)
-							    (begin
-							      (unless (andmap 
-								       (lambda (x) (string? (syntax-e x)))
-								       (syntax->list (syntax (flag ...))))
-								(serror 
-								 "flag specification is not a string or sequence of strings" 
-								 (syntax (flag ...))))
-							      (syntax (flag ...)))]
-							   [(flag . rest)
-							    (string? (syntax-e (syntax flag)))
-							    (syntax (flag))]
-							   [else
-							    (serror "clause does not start with flags")])])
-						     (syntax-case (car sublines) (=>)
-						       [(_ => a b)
-							(syntax (list 'flags a b))]
-						       [(_ rest ...)
-							(let*-values ([(formals rest)
-                                                                       (extract-list (syntax (rest ...)) identifier?)]
-								      [(helps rest)
-                                                                       (extract-list
-                                                                        rest (lambda (x) (string? (syntax-e x))))]
-								      [(expr1 rest)
-								       (extract-one
-									"handler body expressions" rest line)])
-                                                          (when (null? helps)
-                                                            (serror "missing help string/s"))
-							  (with-syntax ([formals formals]
-									[formal-names (formal-names formals)]
-									[helps helps]
-									[expr1 expr1]
-									[rest rest])
-							    (syntax (list 'flags
-									  (lambda (flag . formals)
-									    expr1 . rest)
-									  '(helps . formal-names)))))]))])
-					       (syntax (subline . looped)))))])
-				   (loop arest
-					 (syntax (clause
-						  ...
-						  (list 'tag . sublines)))))]
-				[(=> finish-proc arg-help help-proc unknown-proc)
-				 (begin
-				   (unless (null? arest)
-				     (serror "=> must be the last clause line"))
-				   (syntax ((list clause
-						  ...)
-					    finish-proc arg-help help-proc unknown-proc)))]
-				[(=> finish-proc arg-help help-proc)
-				 (begin
-				   (unless (null? arest)
-				     (serror "=> must be the last clause line"))
-				   (syntax ((list clause
-						  ...)
-					    finish-proc arg-help help-proc)))]
-				[(=> finish-proc arg-help)
-				 (begin
-				   (unless (null? arest)
-				     (serror "=> must be the last clause line"))
-				   (syntax ((list clause
-						  ...)
-					    finish-proc arg-help)))]
-				[(=> . _)
-				 (serror "bad => line" line)]
-				[(args arg-formals body1 body ...)
-				 (begin
-				   (unless (null? arest)
-				     (serror "args must be the last clause" line))
-				   (let ([formals
-					  (let loop ([f (syntax arg-formals)])
-					    (syntax-case f ()
-					      [() null]
-					      [(arg . rest)
-					       (identifier? (syntax arg))
-					       (cons (syntax arg) (loop (syntax rest)))]
-					      [arg
-					       (identifier? (syntax arg))
-					       (list (syntax arg))]
-					      [else
-					       (serror "bad argument list" line)]))])
-				     (with-syntax ([formal-names (formal-names formals)])
-				       (syntax ((list clause
-						      ...)
-						(lambda (accume . arg-formals)
-						  body1 body ...)
-						'formal-names)))))]
-				[(args . _)
-				 (serror "bad args line" line)]
-				[else (serror "not a once-each, once-any, multi, final, args, or => line" line)])))))])
-	       (with-syntax ([clauses clauses])
-		 (syntax
-		  (parse-command-line
-		   program-name argv
-		   . clauses))))))])))
+  (define-syntax (command-line stx)
+    (define (id=? x y)
+      (eq? (if (syntax? x) (syntax-e x) x) (if (syntax? y) (syntax-e y) y)))
+    (define (serror msg . detail)
+      (apply raise-syntax-error #f msg stx detail))
+    (define (extract-one what args . detail)
+      (if (null? args)
+        (apply serror (format "missing ~a" what) detail)
+        (values (car args) (cdr args))))
+    (define (extract-list stx/list pred)
+      (let loop ([xs null]
+                 [rest (if (syntax? stx/list) (syntax->list stx/list) stx/list)])
+        (if (and (pair? rest) (pred (car rest)))
+          (loop (cons (car rest) xs) (cdr rest))
+          (values (reverse xs) rest))))
+    (define (formal-names l)
+      (map (lambda (a)
+             (datum->syntax-object
+              (quote-syntax here)
+              (let ([s (symbol->string (syntax-e a))])
+                (if (char=? #\* (string-ref s (sub1 (string-length s))))
+                  (substring s 0 (sub1 (string-length s)))
+                  s))
+              #f))
+           l))
+    (syntax-case stx ()
+      [(_ program-name argv clause ...)
+       (let ([clauses
+              (let loop ([csrcs (syntax->list #'(clause ...))][clauses null])
+                (with-syntax ([(clause ...) clauses])
+                  (if (null? csrcs)
+                    #'((list clause ...) (lambda (accum) (void)) null)
+                    (let ([line (car csrcs)]
+                          [arest (cdr csrcs)])
+                      (syntax-case* line (help-labels => args) id=?
+                        [(help-labels s ...)
+                         (begin
+                           (unless (andmap (lambda (x) (string? (syntax-e x)))
+                                           (syntax->list #'(s ...)))
+                             (serror "help-labels clause must contain only strings" line))
+                           (loop arest #'(clause ... '(help-labels s ...))))]
+                        [(tag . rest)
+                         (ormap (lambda (x) (id=? #'tag x))
+                                (syntax->list #'(once-each once-any multi final)))
+                         (with-syntax 
+                             ([sublines
+                               (let slloop ([sublines (syntax->list #'rest)])
+                                 (if (null? sublines)
+                                   #'()
+                                   (with-syntax 
+                                       ([looped (slloop (cdr sublines))]
+                                        [subline
+                                         (with-syntax 
+                                             ([flags 
+                                               (syntax-case (car sublines) ()
+                                                 [((flag ...) . rest)
+                                                  (begin
+                                                    (unless (andmap 
+                                                             (lambda (x) (string? (syntax-e x)))
+                                                             (syntax->list #'(flag ...)))
+                                                      (serror 
+                                                       "flag specification is not a string or sequence of strings" 
+                                                       #'(flag ...)))
+                                                    #'(flag ...))]
+                                                 [(flag . rest)
+                                                  (string? (syntax-e #'flag))
+                                                  #'(flag)]
+                                                 [else
+                                                  (serror "clause does not start with flags")])])
+                                           (syntax-case (car sublines) (=>)
+                                             [(_ => a b)
+                                              #'(list 'flags a b)]
+                                             [(_ rest ...)
+                                              (let*-values ([(formals rest)
+                                                             (extract-list #'(rest ...) identifier?)]
+                                                            [(helps rest)
+                                                             (extract-list
+                                                              rest (lambda (x) (string? (syntax-e x))))]
+                                                            [(expr1 rest)
+                                                             (extract-one
+                                                              "handler body expressions" rest line)])
+                                                (when (null? helps)
+                                                  (serror "missing help string/s"))
+                                                (with-syntax ([formals formals]
+                                                              [formal-names (formal-names formals)]
+                                                              [helps helps]
+                                                              [expr1 expr1]
+                                                              [rest rest])
+                                                  #'(list 'flags
+                                                          (lambda (flag . formals) expr1 . rest)
+                                                          '(helps . formal-names))))]))])
+                                     #'(subline . looped))))])
+                           (loop arest #'(clause ... (list 'tag . sublines))))]
+                        [(=> finish-proc arg-help help-proc unknown-proc)
+                         (begin
+                           (unless (null? arest)
+                             (serror "=> must be the last clause line"))
+                           #'((list clause ...)
+                              finish-proc arg-help help-proc unknown-proc))]
+                        [(=> finish-proc arg-help help-proc)
+                         (begin
+                           (unless (null? arest)
+                             (serror "=> must be the last clause line"))
+                           #'((list clause ...)
+                              finish-proc arg-help help-proc))]
+                        [(=> finish-proc arg-help)
+                         (begin
+                           (unless (null? arest)
+                             (serror "=> must be the last clause line"))
+                           #'((list clause ...) finish-proc arg-help))]
+                        [(=> . _)
+                         (serror "bad => line" line)]
+                        [(args arg-formals body1 body ...)
+                         (begin
+                           (unless (null? arest)
+                             (serror "args must be the last clause" line))
+                           (let ([formals
+                                  (let loop ([f #'arg-formals])
+                                    (syntax-case f ()
+                                      [() null]
+                                      [(arg . rest)
+                                       (identifier? #'arg)
+                                       (cons #'arg (loop #'rest))]
+                                      [arg
+                                       (identifier? #'arg)
+                                       (list #'arg)]
+                                      [else
+                                       (serror "bad argument list" line)]))])
+                             (with-syntax ([formal-names (formal-names formals)])
+                               #'((list clause ...)
+                                  (lambda (accume . arg-formals)
+                                    body1 body ...)
+                                  'formal-names))))]
+                        [(args . _)
+                         (serror "bad args line" line)]
+                        [else (serror "not a once-each, once-any, multi, final, args, or => line" line)])))))])
+         (with-syntax ([clauses clauses])
+           #'(parse-command-line program-name argv . clauses)))]))
 
-  (define number-regexp (regexp "^[-+][0-9]*(|[.][0-9]*)$"))
-  
   (define print-args
     (lambda (port l f)
       (let loop ([l l][a (letrec ([a (procedure-arity f)]
@@ -210,12 +182,13 @@
       (parse-command-line program arguments table finish finish-help help
 			  (lambda (flag)
 			    (raise-user-error (string->symbol program) "unknown flag: ~s" flag)))]
-     [(program arguments table finish finish-help help unknown-flag)
+     [(program arguments0 table finish finish-help help unknown-flag)
+      (define arguments (if (vector? arguments0) (vector->list arguments0) arguments0))
       (unless (string? program)
 	(raise-type-error 'parse-command-line "program name string" program))
-      (unless (and (vector? arguments)
-		   (andmap string? (vector->list arguments)))
-	(raise-type-error 'parse-command-line "argument vector of strings" arguments))
+      (unless (and (list? arguments)
+		   (andmap string? arguments))
+	(raise-type-error 'parse-command-line "argument vector/list of strings" arguments0))
       (unless (and (list? table)
 		   (let ([bad-table
 			  (lambda (reason)
@@ -253,7 +226,7 @@
 							 (regexp-match #rx"^[+][+]." flag))
 						     (not (or (regexp-match #rx"^--help$" flag)
 							      (regexp-match #rx"^-h$" flag)
-							      (regexp-match number-regexp flag))))
+							      (regexp-match #rx"^[-+][0-9]*(|[.][0-9]*)$" flag))))
 						(bad-table (format "no ill-formed or pre-defined flags: ~e" flag))))
 					  (car line))
 
@@ -503,7 +476,7 @@
 			    (set-car! set #t))))
 		    (call-handler (caddar table) flag args r-acc k)]
 		   [else (loop (cdr table))])))])
-	(let loop ([args (vector->list arguments)][r-acc null])
+	(let loop ([args arguments][r-acc null])
 	  (if (null? args)
 	      (done args r-acc)
 	      (let ([arg (car args)]
@@ -511,7 +484,7 @@
 		(cond
                   [finalled?
                    (done args r-acc)]
-                  [(regexp-match number-regexp arg)
+                  [(regexp-match #rx"^[-+][0-9]*(|[.][0-9]*)$" arg)
                    (done args r-acc)]
                   [(regexp-match "^--$" arg)
                    (done (cdr args) r-acc)]

@@ -21,6 +21,20 @@
       r-append
       '("arg"))
 
+;; test that args can be a list instead of a vector
+(test '("-bye" #())
+      parse-command-line
+      "test"
+      '("--hi" "-bye")
+      (list 
+       (list
+	'multi
+	(list (list "--hi")
+	      (lambda (flag v) v)
+	      (list "Hello" "x"))))
+      r-append
+      '("arg"))
+
 (test '("1" "2" #("3"))
       parse-command-line
       "test"
@@ -155,10 +169,20 @@
 
 (err/rt-test (parse-command-line "test" #() null (lambda (x y) null) null) exn:fail?)
 
-(test (void) 'cmdline (command-line "something" #("-ab")
-				    (once-each
-				     [("-a") "ok" 5]
-				     [("-b" "--more") "Help" 7])))
+(test (void) 'cmdline
+      (command-line "something" #("-ab")
+        (once-each
+         [("-a") "ok" 5]
+         [("-b" "--more") "Help" 7])))
+
+;; test that keywords are compared for the literal symbol
+(test "foo" 'cmdline
+      (let ([once-each 3] [args "args"])
+        (command-line "something" #("-ab" "foo")
+          (once-each
+           [("-a") "ok" 5]
+           [("-b" "--more") "Help" 7])
+          (args (x) x))))
 
 (syntax-test #'(command-line))
 (syntax-test #'(command-line "hello"))
