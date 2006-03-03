@@ -1502,15 +1502,28 @@
 (test 108.0+29.0i z-round (* 100 (expt 1+i 1/3)))
 (test 25.0-43.0i z-round (* 100 (expt -8 -1/3)))
 
+;; This choice doesn't make sense to me, but it fits
+;;   with other standards and implementations:
+(define INF-POWER-OF_NEGATIVE +inf.0)
+
 (test +inf.0 expt 2 +inf.0)
 (test +inf.0 expt +inf.0 10)
+(test 0.0 expt +inf.0 -2)
 (test 1 expt +inf.0 0)
 (test 1.0 expt +inf.0 0.)
+(test +inf.0 expt +inf.0 +inf.0)
+(test INF-POWER-OF_NEGATIVE expt -2 +inf.0)
+(test INF-POWER-OF_NEGATIVE expt -inf.0 +inf.0)
 (test 0.0 expt 2 -inf.0)
 (test -inf.0 expt -inf.0 11)
 (test +inf.0 expt -inf.0 10)
+(test 0.0 expt -inf.0 -2)
+(test -0.0 expt -inf.0 -3)
 (test 1 expt -inf.0 0)
 (test 1.0 expt -inf.0 0.0)
+(test 0.0 expt +inf.0 -inf.0)
+(test 0.0 expt -2 -inf.0)
+(test 0.0 expt -inf.0 -inf.0)
 (test 1 expt +nan.0 0)
 (test 0 expt 0 10)
 (test 0 expt 0 10.0)
@@ -1556,11 +1569,12 @@
 
 (test 0.0 expt 0.5 +inf.0)
 (test +inf.0 expt 0.5 -inf.0)
+(test INF-POWER-OF_NEGATIVE expt -0.5 -inf.0)
 (test +inf.0 expt 1.5 +inf.0)
 (test 0.0 expt 1.5 -inf.0)
 (test 0.0 expt -0.5 +inf.0)
 (test +inf.0 expt -0.5 -inf.0)
-(test +inf.0 expt -1.5 +inf.0)
+(test INF-POWER-OF_NEGATIVE expt -1.5 +inf.0)
 (test 0.0 expt -1.5 -inf.0)
 
 (err/rt-test (expt 0 -1) exn:fail:contract:divide-by-zero?)
