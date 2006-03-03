@@ -843,7 +843,7 @@
     "Adds a filename to the list of recently opened files.")
 
    (handler:set-recent-position
-    (string? number? number? . -> . void?)
+    (path? number? number? . -> . void?)
     (filename start end)
     "Sets the selection of the recently opened file to"
     "\\var{start} and \\var{end}.")

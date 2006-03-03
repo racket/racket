@@ -1220,7 +1220,10 @@
           (define/private (cancel-due-to-unsaved-changes editor)
             (and (send editor is-modified?)
                  (let ([save (gui-utils:unsaved-warning
-                              (or (send editor get-filename) (get-label))
+                              (let ([fn (send editor get-filename)])
+                                (if fn 
+                                    (path->string fn)
+                                    (get-label)))
                               (string-constant clear-anyway)
                               #t
                               this)])
@@ -1283,8 +1286,11 @@
           (define/private (user-okays-switch? ed)
             (or (not (send ed is-modified?))
                 (let ([answer
-                       (gui-utils:unsaved-warning 
-                        (or (send ed get-filename) (get-label))
+                       (gui-utils:unsaved-warning
+                        (let ([fn (send ed get-filename)])
+                          (if fn
+                              (path->string fn)
+                              (get-label)))
                         (string-constant switch-anyway)
                         #t)])
                   (case answer
@@ -1569,11 +1575,12 @@
                   
                   [allow-replace? (not (send to-be-searched-text is-locked?))]
                   
-                  [dialog (make-object dialog% 
-                            (if allow-replace?
-                                (string-constant find-and-replace)
-                                (string-constant find))
-                            frame)]
+                  [dialog (new dialog% 
+                               (label (if allow-replace?
+                                          (string-constant find-and-replace)
+                                          (string-constant find)))
+                               (parent frame)
+                               (style '(no-sheet)))]
                   
                   [copy-text
                    (λ (from to)

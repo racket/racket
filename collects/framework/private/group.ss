@@ -288,7 +288,7 @@
                                 (send t begin-edit-sequence)
                                 (send t erase)
                                 (when full-name
-                                  (send t insert full-name))
+                                  (send t insert (path->string full-name)))
                                 (send t end-edit-sequence))]
                              [(list-box-dclick)
                               (set! cancelled? #f)
@@ -307,7 +307,7 @@
           (let ([fr (car sorted-frames)])
             (when (and (is-a? fr frame:basic<%>)
                        (send fr get-filename))
-              (send t insert (send (car sorted-frames) get-filename)))
+              (send t insert (path->string (send (car sorted-frames) get-filename))))
             (send lb set-selection 0))
           (send d show #t)
           (unless cancelled?

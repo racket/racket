@@ -198,7 +198,7 @@
           (size-down (preferences:get 'framework:recently-opened-files/pos)
                      n)))       
       
-      ;; set-recent-position : string number number -> void
+      ;; set-recent-position : path number number -> void
       ;; updates the recent menu preferences 
       ;; with the positions `start' and `end'
       (define (set-recent-position filename start end)
