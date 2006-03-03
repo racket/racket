@@ -10,6 +10,9 @@
   (let* ([check-error-message (lambda (name proc)
 				(unless (memq name '(eq? not null? pair?
 							 real? number? boolean? 
+							 procedure? symbol?
+							 string? bytes?
+							 vector?
 							 eof-object?))
 				  (let ([s (with-handlers ([exn? exn-message])
 					     (proc 'bad))]
@@ -71,6 +74,17 @@
     (un #t 'boolean? #f)
     (un #f 'eof-object? #f)
     (un #t 'eof-object? eof)
+    (un #f 'procedure? #f)
+    (un #t 'procedure? procedure?)
+    (un #t 'procedure? (lambda (x) 10))
+    (un #t 'symbol? 'ok)
+    (un #f 'symbol? #f)
+    (un #t 'vector? (vector 1 2 3))
+    (un #f 'vector? #f)
+    (un #t 'string? "apple")
+    (un #f 'string? #"apple")
+    (un #f 'bytes? "apple")
+    (un #t 'bytes? #"apple")
 
     (bin #f 'eq? 0 10)
 
