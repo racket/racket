@@ -2051,6 +2051,18 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
   } else if (IS_NAMED_PRIM(rator, "real?")) {
     generate_inlined_type_test(jitter, app, scheme_integer_type, scheme_complex_izi_type, for_branch, branch_short);
     return 1;
+  } else if (IS_NAMED_PRIM(rator, "procedure?")) {
+    generate_inlined_type_test(jitter, app, scheme_prim_type, scheme_native_closure_type, for_branch, branch_short);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "vector?")) {
+    generate_inlined_type_test(jitter, app, scheme_vector_type, scheme_vector_type, for_branch, branch_short);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "string?")) {
+    generate_inlined_type_test(jitter, app, scheme_char_string_type, scheme_char_string_type, for_branch, branch_short);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "bytes?")) {
+    generate_inlined_type_test(jitter, app, scheme_byte_string_type, scheme_byte_string_type, for_branch, branch_short);
+    return 1;
   } else if (IS_NAMED_PRIM(rator, "eof-object?")) {
     generate_inlined_constant_test(jitter, app, scheme_eof, NULL, for_branch, branch_short);
     return 1;

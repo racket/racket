@@ -49,11 +49,10 @@ scheme_init_vector (Scheme_Env *env)
   zero_length_vector->type = scheme_vector_type;
   SCHEME_VEC_SIZE(zero_length_vector) = 0;
 
-  scheme_add_global_constant("vector?", 
-			     scheme_make_folding_prim(vector_p, 
-						      "vector?", 
-						      1, 1, 1), 
-			     env);
+  p = scheme_make_folding_prim(vector_p, "vector?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("vector?", p, env);
+
   scheme_add_global_constant("make-vector", 
 			     scheme_make_noncm_prim(make_vector, 
 						    "make-vector", 

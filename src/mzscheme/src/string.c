@@ -288,6 +288,8 @@ static Scheme_Object *complete_symbol, *continues_symbol, *aborts_symbol, *error
 void
 scheme_init_string (Scheme_Env *env)
 {
+  Scheme_Object *p;
+
   REGISTER_SO(sys_symbol);
   sys_symbol = scheme_intern_symbol(SYSTEM_TYPE_NAME);
 
@@ -327,11 +329,10 @@ scheme_init_string (Scheme_Env *env)
   REGISTER_SO(embedding_banner);
   REGISTER_SO(current_locale_name);
 
-  scheme_add_global_constant("string?",
-			     scheme_make_folding_prim(string_p,
-						      "string?",
-						      1, 1, 1),
-			     env);
+  p = scheme_make_folding_prim(string_p, "string?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("string?", p, env);
+
   scheme_add_global_constant("make-string",
 			     scheme_make_noncm_prim(make_string,
 						    "make-string",
@@ -597,11 +598,10 @@ scheme_init_string (Scheme_Env *env)
 						      1, 1, 1),
 			     env);
 
-  scheme_add_global_constant("bytes?",
-			     scheme_make_folding_prim(byte_string_p,
-						      "bytes?",
-						      1, 1, 1),
-			     env);
+  p = scheme_make_folding_prim(byte_string_p, "bytes?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("bytes?", p, env);
+
   scheme_add_global_constant("make-bytes",
 			     scheme_make_noncm_prim(make_byte_string,
 						    "make-bytes",

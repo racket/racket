@@ -189,11 +189,12 @@ scheme_init_fun (Scheme_Env *env)
   REGISTER_SO(cached_dv_stx);
   REGISTER_SO(cached_ds_stx);
 
-  scheme_add_global_constant("procedure?",
-			     scheme_make_folding_prim(procedure_p,
-						      "procedure?",
-						      1, 1, 1),
-			     env);
+  o = scheme_make_folding_prim(procedure_p,
+			       "procedure?",
+			       1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(o) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("procedure?", o, env);
+
   scheme_add_global_constant("apply",
 			     scheme_make_prim_w_arity2(apply,
 						       "apply",
