@@ -14,7 +14,10 @@
  (plt "PLT")
  (drscheme "DrScheme")
  (ok "OK")
- (cancel "Absagen")
+ ;; We can't use "Abbrechen" here because that's much closer in
+ ;; meaning to "abort", and it appears in dialogs saying "Quit?" "OK"
+ ;; "Cancel."
+ (cancel "Abbrechen")
  (abort "Abbrechen")
  (untitled "Namenlos")
  (untitled-n "Namenlos ~a")
@@ -130,7 +133,7 @@
 
  (log-definitions-and-interactions "Definitionen and Interaktionen protokollieren...")
  (stop-logging "Protokoll stoppen")
- (please-choose-a-log-directory "Bitte wählen Sie ein Verzeichnis f?r das Protokoll")
+ (please-choose-a-log-directory "Bitte wählen Sie ein Verzeichnis für das Protokoll")
  (logging-to "Protokoll: ")
  (erase-log-directory-contents "Inhalt von Protokoll-Verzeichnisses ~a löschen?")
  (error-erasing-log-directory "Fehler beim Löschen des Protokoll-Verzeichnisses.\n\n~a\n")
@@ -204,6 +207,10 @@
   ;; in the Help Desk language dialog, title on the right.
   (plt:hd:manual-search-ordering "Suchreihenfolge Handbuch")
 
+  (use-drscheme-font-size "DrScheme-Schriftgröße verwenden")
+
+  (help-desk-this-is-just-example-text
+   "Dies ist nur ein Beispieltext für das Setzen der Schriftgröße.  Öffnen sie das Hilfezentrum (im \"Hilfe\"-Menü), um diesen Links zu folgen.")
 
  ;; Help desk htty proxy
  (http-proxy "HTTP-Proxy")
@@ -357,6 +364,7 @@
  (forward "Vorwärts")
  (backward "Rückwärts")
  (hide "Ausblenden")
+ (find-case-sensitive "Groß-/Kleinschreibung beachten")
  
  ;;; multi-file-search
  (mfs-multi-file-search-menu-item "In Dateien suchen...")
@@ -549,6 +557,8 @@
  (quit "Beenden")
  (are-you-sure-exit "Sind Sie sicher, dass Sie das Programm beenden wollen?")
  (are-you-sure-quit "Sind Sie sicher, dass Sie das Programm beenden wollen?")
+ (dont-exit "Widerrufen")
+ (dont-quit "Widerrufen")
  
  ;;; autosaving
  (error-autosaving "Fehler beim automatischen Speichern von \"~a\".") ;; ~a will be a filename
@@ -728,11 +738,11 @@
  
  ;;; Teachpack messages
  (select-a-teachpack "Teachpack auswählen")
- (clear-teachpack "Teachpack ~a herauswerfen")
+ (clear-teachpack "Teachpack ~a entfernen")
  (teachpack-error-label "DrScheme - Teachpack-Fehler")
  (teachpack-didnt-load "Die Teachpack-Datei ~a konnte nicht korrekt geladen werden.")
  (add-teachpack-menu-item-label "Teachpack hinzufügen...")
- (clear-all-teachpacks-menu-item-label "Alle Teachpacks herauswerfen")
+ (clear-all-teachpacks-menu-item-label "Alle Teachpacks entfernen")
  (drscheme-teachpack-message-title "DrScheme-Teachpack")
  (already-added-teachpack "Teachpack ~a ist schon dabei")
  
@@ -979,6 +989,8 @@
  (stepper-next "Schritt >")
  (stepper-next-application "Applikation >|")
  
+ (debug-tool-button-name "Debugger")
+
  (dialog-back "Zurück")
 
  ;; warnings about closing a drscheme frame when the program
