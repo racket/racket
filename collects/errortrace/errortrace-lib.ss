@@ -44,8 +44,10 @@
                  [v (cdr v)])
              (set-car! v (add1 (car v)))
              (when (profile-paths-enabled)
-               (let ([v (cdddr v)])
-                 (set-car! v (cons (current-continuation-marks profile-key)
+               (let ([v (cddddr v)])
+                 (set-car! v (cons (continuation-mark-set->list
+				    (current-continuation-marks)
+				    profile-key)
                                    (car v)))))
              (if (unbox b)
                  #f
