@@ -45,10 +45,14 @@
              (set-car! v (add1 (car v)))
              (when (profile-paths-enabled)
                (let ([v (cddddr v)])
-                 (set-car! v (cons (continuation-mark-set->list
-				    (current-continuation-marks)
-				    profile-key)
-                                   (car v)))))
+		 (let ([cms
+			(continuation-mark-set->list
+			 (current-continuation-marks)
+			 profile-key)])
+		   (unless (hash-table? (car v))
+		     (set-car! v (make-hash-table 'equal)))
+		   (hash-table-put! (car v) cms 
+				    (add1 (hash-table-get (car v) cms (lambda () 0)))))))
              (if (unbox b)
                  #f
                  (begin
@@ -74,12 +78,14 @@
               [expr (cadddr (cdr val))]
               [cmss (cadddr (cddr val))])
           (list count time name expr
-                (map (lambda (cms)
-                       (map (lambda (k)
-                              (let ([v (cdr (hash-table-get profile-info k))])
-                                (list (caddr v) (cadddr v))))
-                            cms))
-                     cmss))))))
+		(if (hash-table? cmss)
+		    (hash-table-map cmss (lambda (ks v)
+					   (cons v 
+						 (map (lambda (k)
+							(let ([v (cdr (hash-table-get profile-info k))])
+							  (list (caddr v) (cadddr v))))
+						      ks))))
+		    null))))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Stacktrace instrumenter
@@ -247,14 +253,15 @@
          (when paths?
            (for-each
             (lambda (cms)
-              (unless (null? cms)
-                (printf "  VIA ~e" (caar cms))
+              (unless (null? (cdr cms))
+                (printf "  ~e VIA ~e" (car cms) (caadr cms))
                 (for-each
                  (lambda (cm)
                    (printf " <- ~e" (car cm)))
-                 (cdr cms))
+                 (cddr cms))
                 (printf "~n")))
-            (cadddr (cdr c)))))
+	    (quicksort (cadddr (cdr c))
+		       (lambda (a b) (> (car a) (car b)))))))
        counts)
       (printf "Total samples: ~a~n" total)))
 

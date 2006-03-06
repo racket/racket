@@ -110,11 +110,11 @@ Profiling records:
    in turn, provide a source location file and position).
 
  * optionally, information about the procedure call path (i.e., a
-   stack trace) for every call to the procedure; follecting this
-   information is expensive. Path information is collected when the
-   `profile-paths-enabled' boolean parameter is #t; the default is #f,
-   but setting the parameter to #t immediately affects all procedure
-   instrumented for profiling information:
+   stack trace) for every call to the procedure; collecting this
+   information is relatively expensive. Path information is collected
+   when the `profile-paths-enabled' boolean parameter is #t; the
+   default is #f, but setting the parameter to #t immediately affects
+   all procedure instrumented for profiling information:
 
 >   (profile-paths-enabled) - returns #t if profiling collects path
     information, #f otherwise
@@ -139,8 +139,9 @@ To retrieve all profiling information accumulated so far, call
 
   * the syntax source of the procedure; and
 
-  * a list of call paths, recorded while `profile-paths-enabled' is
-    set to #t.  Each call path is a list containing two-element lists;
+  * a list of unique call paths recorded while `profile-paths-enabled'
+    is set to #t.  Each call path is a pair of a count (the number of
+    times the path occurred) and a list containing two-element lists;
     each two-element list contains the calling procedure's name or
     source expression and the calling procedure's source file or #f.
 
