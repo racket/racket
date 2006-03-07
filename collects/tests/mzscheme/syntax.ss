@@ -1045,4 +1045,42 @@
 (define x 5)
 (test 5 '#%top (#%top . x))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Tests related to bytecode optimizer.
+;; The (if (let ([x M]) (if x x N)) ...)
+;;   => (if (if M #t N) ...)
+;; converter drops the variable `x', which means
+;; that other mappings must adjust
+
+(let ([val 0])
+  (let ([g (lambda ()
+	     (letrec ([f (lambda (z x)
+			   (if (let ([w (even? 81)])
+				 (if w
+				     w
+				     (let ([y x])
+				       (set! x 7)
+				       (set! val (+ y 5)))))
+			       'yes
+			       'no))])
+	       (f 0 11)))])
+    (g))
+  (test 16 values val))
+
+(let ([val 0])
+  (let ([g (lambda ()
+	     (letrec ([f (lambda (z x)
+			   (if (let ([w (even? 81)])
+				 (if w
+				     w
+				     (let ([y x])
+				       (set! val (+ y 5)))))
+			       'yes
+			       'no))])
+	       (f 0 11)))])
+    (g))
+  (test 16 values val))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

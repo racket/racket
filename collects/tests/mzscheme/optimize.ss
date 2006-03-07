@@ -295,7 +295,8 @@
 (test-comp (normalize-depth '(let* ([i (cons 0 1)][g i][h (car g)][m h]) m))
 	   (normalize-depth '(let* ([i (cons 0 1)][h (car i)]) h)))
 
-(set! maybe-different-depths? #t)
+;; The current optimizer reset depths correctly:
+;; (set! maybe-different-depths? #t)
 
 (require #%kernel) ; 
 
@@ -315,5 +316,21 @@
 	   '((lambda (x) x) 3))
 (test-comp '(let ([x 3][y 4]) (+ x y))
 	   '((lambda (x y) (+ x y)) 3 4))
+
+(test-comp '(let ([x 1][y 2]) x)
+	   '1)
+(test-comp '(let ([x 1][y 2]) (+ y x))
+	   '3)
+(test-comp '(let ([x 1][y 2]) (cons x y))
+	   '(cons 1 2))
+(test-comp '(let* ([x (cons 1 1)][y x]) (cons x y))
+	   '(let* ([x (cons 1 1)]) (cons x x)))
+(test-comp '(let* ([x 1][y (add1 x)]) (+ y x))
+	   '3)
+(test-comp '(letrec ([x (cons 1 1)][y x]) (cons x y))
+	   '(letrec ([x (cons 1 1)][y x]) (cons x x)))
+
+(test-comp '(let ([f (lambda (x) x)]) f)
+	   (syntax-property (datum->syntax-object #f '(lambda (x) x)) 'inferred-name 'f))
 
 (report-errs)
