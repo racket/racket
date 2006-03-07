@@ -924,8 +924,6 @@ mark_comp_env {
   gcMARK(e->base.in_modidx);
   gcMARK(e->base.skip_table);
   
-  gcMARK(e->data.stat_dists);
-  gcMARK(e->data.sd_depths);
   gcMARK(e->data.const_names);
   gcMARK(e->data.const_vals);
   gcMARK(e->data.const_uids);
@@ -949,6 +947,20 @@ mark_resolve_info {
 
  size:
   gcBYTES_TO_WORDS(sizeof(Resolve_Info));
+}
+
+mark_optimize_info {
+ mark:
+  Optimize_Info *i = (Optimize_Info *)p;
+  
+  gcMARK(i->stat_dists);
+  gcMARK(i->sd_depths);
+  gcMARK(i->next);
+  gcMARK(i->use);
+  gcMARK(i->consts);
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(Optimize_Info));
 }
 
 

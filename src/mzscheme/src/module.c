@@ -73,7 +73,9 @@ static Scheme_Object *top_level_require_execute(Scheme_Object *data);
 static Scheme_Object *module_jit(Scheme_Object *data);
 static Scheme_Object *top_level_require_jit(Scheme_Object *data);
 
+static Scheme_Object *module_optimize(Scheme_Object *data, Optimize_Info *info);
 static Scheme_Object *module_resolve(Scheme_Object *data, Resolve_Info *info);
+static Scheme_Object *top_level_require_optimize(Scheme_Object *data, Optimize_Info *info);
 static Scheme_Object *top_level_require_resolve(Scheme_Object *data, Resolve_Info *info);
 
 static void module_validate(Scheme_Object *data, Mz_CPort *port, char *stack, int depth, int letlimit, int delta, 
@@ -197,9 +199,11 @@ void scheme_init_module(Scheme_Env *env)
   Scheme_Object *o;
 
   scheme_register_syntax(MODULE_EXPD, 
+			 module_optimize,
 			 module_resolve, module_validate, 
 			 module_execute, module_jit, -1);
   scheme_register_syntax(REQUIRE_EXPD, 
+			 top_level_require_optimize,
 			 top_level_require_resolve, top_level_require_validate, 
 			 top_level_require_execute, top_level_require_jit, 2);
 
@@ -3082,6 +3086,28 @@ static void module_validate(Scheme_Object *data, Mz_CPort *port, char *stack,
 }
 
 static Scheme_Object *
+module_optimize(Scheme_Object *data, Optimize_Info *info)
+{
+  Scheme_Module *m = (Scheme_Module *)data;
+  Scheme_Object *e, *b;
+  int max_let_depth = 0;
+
+  for (b = m->body; !SCHEME_NULLP(b); b = SCHEME_CDR(b)) {
+    e = scheme_optimize_expr(SCHEME_CAR(b), info);
+    SCHEME_CAR(b) = e;
+    if (info->max_let_depth > max_let_depth)
+      max_let_depth = info->max_let_depth;
+    info->max_let_depth = 0;
+  }
+
+  m->max_let_depth = max_let_depth;
+
+  /* Exp-time body was optimized during compilation */
+
+  return scheme_make_syntax_compiled(MODULE_EXPD, data);
+}
+
+static Scheme_Object *
 module_resolve(Scheme_Object *data, Resolve_Info *rslv)
 {
   Scheme_Module *m = (Scheme_Module *)data;
@@ -3651,7 +3677,6 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   char *exps;
   int excount, exvcount, exicount;
   int reprovide_kernel;
-  int max_let_depth;
   int all_simple_renames = 1, et_all_simple_renames = 1, tt_all_simple_renames = 1;
   Scheme_Object *redef_modname;
 
@@ -3932,6 +3957,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	  Resolve_Prefix *rp;
 	  Resolve_Info *ri;
 	  Scheme_Comp_Env *oenv, *eenv;
+	  Optimize_Info *oi;
 	  int count = 0;
 	  int for_stx;
 
@@ -4014,6 +4040,9 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	    code = scheme_expand_expr_lift_to_let(code, eenv, &erec1, 0);
 	  }
 	  m = scheme_compile_expr_lift_to_let(code, eenv, &mrec, 0);
+
+	  oi = scheme_optimize_info_create();
+	  m = scheme_optimize_expr(m, oi);
 	  
 	  /* Simplify only in compile mode; it is too slow in expand mode. */
 	  rp = scheme_resolve_prefix(1, eenv->prefix, rec[drec].comp);
@@ -4024,7 +4053,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	  vec = scheme_make_vector(5, NULL);
 	  SCHEME_VEC_ELS(vec)[0] = names;
 	  SCHEME_VEC_ELS(vec)[1] = m;
-	  SCHEME_VEC_ELS(vec)[2] = scheme_make_integer(mrec.max_let_depth);
+	  SCHEME_VEC_ELS(vec)[2] = scheme_make_integer(oi->max_let_depth);
 	  SCHEME_VEC_ELS(vec)[3] = (Scheme_Object *)rp;
 	  SCHEME_VEC_ELS(vec)[4] = (for_stx ? scheme_true : scheme_false);
 	  exp_body = scheme_make_pair(vec, exp_body);
@@ -4032,7 +4061,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	  if (ri->use_jit)
 	    m = scheme_jit_expr(m);
 	
-	  eval_defmacro(names, count, m, eenv->genv, rhs_env, rp, mrec.max_let_depth, 0, 
+	  eval_defmacro(names, count, m, eenv->genv, rhs_env, rp, oi->max_let_depth, 0, 
 			(for_stx ? env->genv->exp_env->toplevel : env->genv->syntax), for_stx,
 			rec[drec].certs);
 
@@ -4383,10 +4412,8 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
     /* Module manages its own prefix. That's how we get
        multiple instantiation of a module with "dynamic linking". */
     cenv = scheme_new_comp_env(env->genv, env->insp, SCHEME_TOPLEVEL_FRAME);
-    rec[drec].max_let_depth = 0; /* since module executer takes care of it */
   } else
     cenv = scheme_extend_as_toplevel(env);
-  max_let_depth = 0;
 
   lift_data = scheme_make_vector(3, NULL);
   SCHEME_VEC_ELS(lift_data)[0] = (Scheme_Object *)cenv;
@@ -4409,8 +4436,6 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	scheme_init_compile_recs(rec, drec, &crec1, 1);
 	crec1.resolve_module_ids = 0;
 	e = scheme_compile_expr(e, cenv, &crec1, 0);
-	if (crec1.max_let_depth > max_let_depth)
-	  max_let_depth = crec1.max_let_depth;
       } else {
 	Scheme_Expand_Info erec1;
 	scheme_init_expand_recs(rec, drec, &erec1, 1);
@@ -4943,7 +4968,6 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
     env->genv->module->num_indirect_provides = exicount;
 
     env->genv->module->comp_prefix = cenv->prefix;
-    env->genv->module->max_let_depth = max_let_depth;
 
     if (all_simple_renames && (env->genv->marked_names->count == 0)) {
       env->genv->module->rn_stx = scheme_true;
@@ -5540,6 +5564,12 @@ static void top_level_require_validate(Scheme_Object *data, Mz_CPort *port, char
 				       int depth, int letlimit, int delta, 
 				       int num_toplevels, int num_stxes)
 {
+}
+
+static Scheme_Object *
+top_level_require_optimize(Scheme_Object *data, Optimize_Info *info)
+{
+  return scheme_make_syntax_compiled(REQUIRE_EXPD, data);
 }
 
 static Scheme_Object *

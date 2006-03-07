@@ -1078,69 +1078,9 @@ static Scheme_Object *resolve_branch(Scheme_Object *o, Resolve_Info *info)
 
   b = (Scheme_Branch_Rec *)o;
 
-  t = b->test;
-  tb = b->tbranch;
-  fb = b->fbranch;
-
-  /* Try optimize: (if (not x) y z) => (if x z y) */
-  /*  Done here because `not' is easily recognized at this
-      point. Also, we haven't yet resolved Scheme-stack locations,
-      so it's ok to remove an application. */
-  while (1) {
-    if (SAME_TYPE(SCHEME_TYPE(t), scheme_application2_type)) {
-      Scheme_App2_Rec *app;
-      
-      app = (Scheme_App2_Rec *)t;
-      if (SAME_PTR(scheme_not_prim, app->rator)) {
-	t = tb;
-	tb = fb;
-	fb = t;
-	t = app->rand;
-      } else
-	break;
-    } else
-      break;
-  }
-
-  if (SAME_TYPE(SCHEME_TYPE(t), scheme_compiled_let_void_type)) {
-    /* Maybe convert: (let ([x M]) (if x x N)) => (if M #t N) */
-    t = scheme_resolve_lets_for_test(t, info);
-  } else
-    t = scheme_resolve_expr(t, info);
-
-  tb = scheme_resolve_expr(tb, info);
-  fb = scheme_resolve_expr(fb, info);
-
-  /* Try optimize: (if x x #f) => x */
-  if (SAME_TYPE(SCHEME_TYPE(t), scheme_local_type)
-      && SAME_TYPE(SCHEME_TYPE(tb), scheme_local_type)
-      && (SCHEME_LOCAL_POS(t) == SCHEME_LOCAL_POS(tb))
-      && SCHEME_FALSEP(fb)) {
-    return t;
-  }
-
-  /* Convert: (if (if M N #f) M2 K) => (if M (if N M2 K) K)
-     for simple constants K. This is useful to expose simple
-     tests to the JIT. */
-  if (SAME_TYPE(SCHEME_TYPE(t), scheme_branch_type)
-      && (SCHEME_VOIDP(fb)
-	  || SAME_OBJ(fb, scheme_true)
-	  || SCHEME_FALSEP(fb)
-	  || SCHEME_SYMBOLP(fb)
-	  || SCHEME_INTP(fb)
-	  || SAME_TYPE(SCHEME_TYPE(fb), scheme_local_type))) {
-    Scheme_Branch_Rec *b2 = (Scheme_Branch_Rec *)t;
-    if (SCHEME_FALSEP(b2->fbranch)) {
-      Scheme_Branch_Rec *b3;
-      b3 = MALLOC_ONE_TAGGED(Scheme_Branch_Rec);
-      b3->so.type = scheme_branch_type;
-      b3->test = b2->tbranch;
-      b3->tbranch = tb;
-      b3->fbranch = fb;
-      t = b2->test;
-      tb = (Scheme_Object *)b3;
-    }
-  }
+  t = scheme_resolve_expr(b->test, info);
+  tb = scheme_resolve_expr(b->tbranch, info);
+  fb = scheme_resolve_expr(b->fbranch, info);
 
   b->test = t;
   b->tbranch = tb;
@@ -1543,6 +1483,434 @@ Scheme_Object *scheme_resolve_list(Scheme_Object *expr, Resolve_Info *info)
 }
 
 /*========================================================================*/
+/*                               optimize                                 */
+/*========================================================================*/
+
+static Scheme_Object *try_optimize_fold(Scheme_Object *f, Scheme_Object *o, Optimize_Info *info)
+{
+  if ((SCHEME_PRIMP(f) 
+       && (((Scheme_Primitive_Proc *)f)->pp.flags & SCHEME_PRIM_IS_FOLDING))
+      || (SCHEME_CLSD_PRIMP(f) 
+	  && (((Scheme_Closed_Primitive_Proc *)f)->pp.flags & SCHEME_PRIM_IS_FOLDING))) {
+    Scheme_Object *args;
+    
+    switch (SCHEME_TYPE(o)) {
+    case scheme_application_type:
+      {
+	Scheme_App_Rec *app = (Scheme_App_Rec *)o;
+	int i;
+	
+	args = scheme_null;
+	for (i = app->num_args; i--; ) {
+	  args = scheme_make_pair(app->args[i + 1], args);
+	}
+      }
+      break;
+    case scheme_application2_type:
+      {
+	Scheme_App2_Rec *app = (Scheme_App2_Rec *)o;
+	args = scheme_make_pair(app->rand, scheme_null);
+      }
+      break;
+    case scheme_application3_type:
+    default:
+      {
+	Scheme_App3_Rec *app = (Scheme_App3_Rec *)o;
+	args = scheme_make_pair(app->rand1, 
+				scheme_make_pair(app->rand2,
+						 scheme_null));
+      }
+      break;
+    }
+    
+    return try_apply(f, args);
+  }
+  
+  return NULL;
+}
+
+static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info)
+{
+  Scheme_Object *le;
+  Scheme_App_Rec *app;
+  int i, n, max_let_depth = 0, all_vals = 1;
+
+  app = (Scheme_App_Rec *)o;
+
+  n = app->num_args + 1;
+
+  max_let_depth = 0;
+
+  for (i = 0; i < n; i++) {
+    le = scheme_optimize_expr(app->args[i], info);
+    app->args[i] = le;
+
+    if (i && (SCHEME_TYPE(le) < _scheme_compiled_values_types_))
+      all_vals = 0;
+    
+    if (info->max_let_depth > max_let_depth)
+      max_let_depth = info->max_let_depth;
+    info->max_let_depth = 0;
+  }
+
+  if (all_vals) {
+    le = try_optimize_fold(app->args[0], (Scheme_Object *)app, info);
+    if (le)
+      return le;
+  }
+
+  info->size += 1;
+  info->max_let_depth = max_let_depth + (n - 1);
+
+  return (Scheme_Object *)app;
+}
+
+static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *info)
+{
+  Scheme_App2_Rec *app;
+  Scheme_Object *le;
+  int max_let_depth;
+
+  app = (Scheme_App2_Rec *)o;
+
+  le = scheme_optimize_expr(app->rator, info);
+  app->rator = le;
+
+  max_let_depth = info->max_let_depth;
+  info->max_let_depth = 0;
+
+  le = scheme_optimize_expr(app->rand, info);
+  app->rand = le;
+  if (SCHEME_TYPE(le) > _scheme_compiled_values_types_) {
+    le = try_optimize_fold(app->rator, (Scheme_Object *)app, info);
+    if (le)
+      return le;
+  }
+  
+  if (info->max_let_depth > max_let_depth)
+    max_let_depth = info->max_let_depth;
+
+  info->size += 1;
+  info->max_let_depth = max_let_depth + 1;
+
+  return (Scheme_Object *)app;
+}
+
+static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *info)
+{
+  Scheme_App3_Rec *app;
+  Scheme_Object *le;
+  int max_let_depth, all_vals = 1;
+
+  app = (Scheme_App3_Rec *)o;
+
+  le = scheme_optimize_expr(app->rator, info);
+  app->rator = le;
+
+  max_let_depth = info->max_let_depth;
+  info->max_let_depth = 0;
+
+  /* 1st arg */
+
+  le = scheme_optimize_expr(app->rand1, info);
+  app->rand1 = le;
+
+  if (SCHEME_TYPE(le) < _scheme_compiled_values_types_)
+    all_vals = 0;
+
+  if (info->max_let_depth > max_let_depth)
+    max_let_depth = info->max_let_depth;
+
+  /* 2nd arg */
+
+  le = scheme_optimize_expr(app->rand2, info);
+  app->rand2 = le;
+
+  if (SCHEME_TYPE(le) < _scheme_compiled_values_types_)
+    all_vals = 0;
+
+  if (info->max_let_depth > max_let_depth)
+    max_let_depth = info->max_let_depth;
+
+  /* Fold or continue */
+
+  if (all_vals) {
+    le = try_optimize_fold(app->rator, (Scheme_Object *)app, info);
+    if (le)
+      return le;
+  }
+
+  info->size += 1;
+  info->max_let_depth = max_let_depth + 2;
+
+  return (Scheme_Object *)app;
+}
+
+static Scheme_Object *optimize_sequence(Scheme_Object *o, Optimize_Info *info)
+{
+  Scheme_Sequence *s = (Scheme_Sequence *)o;
+  Scheme_Object *le;
+  int i;
+  int max_let_depth = 0;
+
+  for (i = s->count; i--; ) {
+    le = scheme_optimize_expr(s->array[i], info);
+    s->array[i] = le;
+
+    if (info->max_let_depth > max_let_depth)
+      max_let_depth = info->max_let_depth;
+    info->max_let_depth = 0;
+  }
+
+  info->size += 1;
+  info->max_let_depth = max_let_depth;
+
+  return (Scheme_Object *)s;
+}
+
+int scheme_compiled_duplicate_ok(Scheme_Object *fb)
+{
+  return (SCHEME_VOIDP(fb)
+	  || SAME_OBJ(fb, scheme_true)
+	  || SCHEME_FALSEP(fb)
+	  || SCHEME_SYMBOLP(fb)
+	  || SCHEME_INTP(fb)
+	  || SAME_TYPE(SCHEME_TYPE(fb), scheme_local_type));
+}
+
+static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info)
+{
+  Scheme_Branch_Rec *b;
+  Scheme_Object *t, *tb, *fb;
+  int max_let_depth;
+
+  b = (Scheme_Branch_Rec *)o;
+
+  t = b->test;
+  tb = b->tbranch;
+  fb = b->fbranch;
+  
+  /* Try optimize: (if (not x) y z) => (if x z y) */
+  while (1) {
+    if (SAME_TYPE(SCHEME_TYPE(t), scheme_application2_type)) {
+      Scheme_App2_Rec *app;
+      
+      app = (Scheme_App2_Rec *)t;
+      if (SAME_PTR(scheme_not_prim, app->rator)) {
+	t = tb;
+	tb = fb;
+	fb = t;
+	t = app->rand;
+      } else
+	break;
+    } else
+      break;
+  }
+
+  if (SAME_TYPE(SCHEME_TYPE(t), scheme_compiled_let_void_type)) {
+    /* Maybe convert: (let ([x M]) (if x x N)) => (if M #t N) */
+    t = scheme_optimize_lets_for_test(t, info);
+  } else
+    t = scheme_optimize_expr(t, info);
+
+  max_let_depth = info->max_let_depth;
+  info->max_let_depth = 0;
+
+  tb = scheme_optimize_expr(tb, info);
+
+  if (info->max_let_depth > max_let_depth)
+    max_let_depth = info->max_let_depth;
+  info->max_let_depth = 0;
+
+  fb = scheme_optimize_expr(fb, info);
+
+  if (info->max_let_depth > max_let_depth)
+    max_let_depth = info->max_let_depth;
+  info->max_let_depth = 0;
+
+  /* Try optimize: (if x x #f) => x */
+  if (SAME_TYPE(SCHEME_TYPE(t), scheme_local_type)
+      && SAME_TYPE(SCHEME_TYPE(tb), scheme_local_type)
+      && (SCHEME_LOCAL_POS(t) == SCHEME_LOCAL_POS(tb))
+      && SCHEME_FALSEP(fb)) {
+    return t;
+  }
+
+  /* Convert: (if (if M N #f) M2 K) => (if M (if N M2 K) K)
+     for simple constants K. This is useful to expose simple
+     tests to the JIT. */
+  if (SAME_TYPE(SCHEME_TYPE(t), scheme_branch_type)
+      && scheme_compiled_duplicate_ok(fb)) {
+    Scheme_Branch_Rec *b2 = (Scheme_Branch_Rec *)t;
+    if (SCHEME_FALSEP(b2->fbranch)) {
+      Scheme_Branch_Rec *b3;
+      b3 = MALLOC_ONE_TAGGED(Scheme_Branch_Rec);
+      b3->so.type = scheme_branch_type;
+      b3->test = b2->tbranch;
+      b3->tbranch = tb;
+      b3->fbranch = fb;
+      t = b2->test;
+      tb = (Scheme_Object *)b3;
+    }
+  }
+
+  b->test = t;
+  b->tbranch = tb;
+  b->fbranch = fb;
+
+  info->size += 1;
+  info->max_let_depth = max_let_depth;
+
+  return o;
+}
+
+static Scheme_Object *optimize_wcm(Scheme_Object *o, Optimize_Info *info)
+{
+  Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)o;
+  Scheme_Object *k, *v, *b;
+  int max_let_depth;
+
+  k = scheme_optimize_expr(wcm->key, info);
+
+  max_let_depth = info->max_let_depth;
+  info->max_let_depth = 0;
+
+  v = scheme_optimize_expr(wcm->val, info);
+
+  if (info->max_let_depth > max_let_depth)
+    max_let_depth = info->max_let_depth;
+  info->max_let_depth = 0;
+
+  b = scheme_optimize_expr(wcm->body, info);
+
+  if (info->max_let_depth > max_let_depth)
+    max_let_depth = info->max_let_depth;
+  info->max_let_depth = 0;
+
+  wcm->key = k;
+  wcm->val = v;
+  wcm->body = b;
+
+  info->size += 1;
+  info->max_let_depth = max_let_depth;
+
+  return (Scheme_Object *)wcm;
+}
+
+static Scheme_Object *optimize_k()
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *expr = (Scheme_Object *)p->ku.k.p1;
+  Optimize_Info *info = (Optimize_Info *)p->ku.k.p2;
+
+  p->ku.k.p1 = NULL;
+  p->ku.k.p2 = NULL;
+
+  return scheme_optimize_expr(expr, info);
+}
+
+Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info)
+{
+  Scheme_Type type = SCHEME_TYPE(expr);
+
+#ifdef DO_STACK_CHECK
+# include "mzstkchk.h"
+  {
+    Scheme_Thread *p = scheme_current_thread;
+
+    p->ku.k.p1 = (void *)expr;
+    p->ku.k.p2 = (void *)info;
+
+    return scheme_handle_stack_overflow(optimize_k);
+  }
+#endif
+
+  switch (type) {
+  case scheme_local_type:
+    {
+      Scheme_Object *val;
+      int pos, delta;
+      
+      info->size += 1;
+
+      val = scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(expr));
+      if (val)
+	return val;
+
+      pos = SCHEME_LOCAL_POS(expr);
+      delta = scheme_optimize_info_get_shift(info, pos);
+      if (delta)
+	expr = scheme_make_local(scheme_local_type, pos + delta);
+
+      return expr;
+    }
+  case scheme_compiled_syntax_type:
+    {
+      Scheme_Syntax_Optimizer f;
+	  
+      f = scheme_syntax_optimizers[SCHEME_PINT_VAL(expr)];
+      return f((Scheme_Object *)SCHEME_IPTR_VAL(expr), info);
+    }
+  case scheme_application_type:
+    return optimize_application(expr, info);
+  case scheme_application2_type:
+    return optimize_application2(expr, info);
+  case scheme_application3_type:
+    return optimize_application3(expr, info);
+  case scheme_sequence_type:
+    return optimize_sequence(expr, info);
+  case scheme_branch_type:
+    return optimize_branch(expr, info);
+  case scheme_with_cont_mark_type:
+    return optimize_wcm(expr, info);
+  case scheme_compiled_unclosed_procedure_type:
+    return scheme_optimize_closure_compilation(expr, info);
+  case scheme_compiled_let_void_type:
+    return scheme_optimize_lets(expr, info);
+  case scheme_compiled_toplevel_type:
+  case scheme_compiled_quote_syntax_type:
+    scheme_optimize_info_used_top(info);
+    return expr;
+  case scheme_variable_type:
+  case scheme_module_variable_type:
+    scheme_signal_error("got top-level in wrong place");
+    return 0;
+  default:
+    info->size += 1;
+    return expr;
+  }
+}
+
+Scheme_Object *scheme_optimize_list(Scheme_Object *expr, Optimize_Info *info)
+{
+  Scheme_Object *first = scheme_null, *last = NULL;
+  int max_let_depth = 0;
+
+  while (SCHEME_PAIRP(expr)) {
+    Scheme_Object *pr;
+
+    pr = scheme_make_pair(scheme_optimize_expr(SCHEME_CAR(expr), info),
+			  scheme_null);
+
+    if (info->max_let_depth > max_let_depth)
+      max_let_depth = info->max_let_depth;
+    info->max_let_depth = 0;
+
+    if (last)
+      SCHEME_CDR(last) = pr;
+    else
+      first = pr;
+    last = pr;
+
+    expr = SCHEME_CDR(expr);
+  }
+
+  info->max_let_depth = max_let_depth;
+
+  return first;
+}
+
+/*========================================================================*/
 /*                                  JIT                                   */
 /*========================================================================*/
 
@@ -1868,7 +2236,6 @@ Scheme_Object *scheme_jit_expr(Scheme_Object *expr)
 
 void scheme_default_compile_rec(Scheme_Compile_Info *rec, int drec)
 {
-  rec[drec].max_let_depth = 0;
 }
 
 void scheme_init_compile_recs(Scheme_Compile_Info *src, int drec, 
@@ -1881,7 +2248,6 @@ void scheme_init_compile_recs(Scheme_Compile_Info *src, int drec,
     dest[i].type = scheme_rt_compile_info;
 #endif
     dest[i].comp = 1;
-    dest[i].max_let_depth = 0;
     dest[i].dont_mark_local_use = src[drec].dont_mark_local_use;
     dest[i].resolve_module_ids = src[drec].resolve_module_ids;
     dest[i].value_name = scheme_false;
@@ -1908,25 +2274,12 @@ void scheme_init_expand_recs(Scheme_Expand_Info *src, int drec,
 void scheme_merge_compile_recs(Scheme_Compile_Info *src, int drec, 
 			       Scheme_Compile_Info *dest, int n)
 {
-  int i;
-
-  if (!n) {
-    src[drec].max_let_depth = 0;
-    return;
-  }
-  
-  src[drec].max_let_depth = dest[0].max_let_depth;
-
-  for (i = 1; i < n; i++) {
-    if (dest[i].max_let_depth > src[drec].max_let_depth)
-      src[drec].max_let_depth = dest[i].max_let_depth;
-  }
+  /* Nothing to do anymore, since we moved max_let_depth to optimize phase */
 }
 
 void scheme_init_lambda_rec(Scheme_Compile_Info *src, int drec,
 			    Scheme_Compile_Info *lam, int dlrec)
 {
-  lam[dlrec].max_let_depth = 0;
   lam[dlrec].comp = 1;
   lam[dlrec].dont_mark_local_use = src[drec].dont_mark_local_use;
   lam[dlrec].resolve_module_ids = src[drec].resolve_module_ids;
@@ -2024,11 +2377,6 @@ static Scheme_Object *compile_application(Scheme_Object *form, Scheme_Comp_Env *
   form = scheme_inner_compile_list(form, scheme_no_defines(env), rec, drec, 1);
 
   result = make_application(form);
-
-  if (SAME_TYPE(SCHEME_TYPE(result), scheme_application_type)
-      || SAME_TYPE(SCHEME_TYPE(result), scheme_application2_type)
-      || SAME_TYPE(SCHEME_TYPE(result), scheme_application3_type))
-    rec[drec].max_let_depth += (len - 1);
   
   return result;
 }
@@ -2100,6 +2448,7 @@ static void *compile_k(void)
   Scheme_Object *o, *tl_queue;
   Scheme_Compilation_Top *top;
   Resolve_Prefix *rp;
+  Optimize_Info *oi;
   Scheme_Object *gval, *insp;
   Scheme_Comp_Env *cenv;
 
@@ -2179,7 +2528,6 @@ static void *compile_k(void)
     } else {
       /* We want to simply compile `form', but we have to loop in case
 	 an expression is lifted in the process of compiling: */
-      int max_let_depth = 0;
       Scheme_Object *l, *prev_o = NULL;
 
       while (1) {
@@ -2188,9 +2536,6 @@ static void *compile_k(void)
 	scheme_init_compile_recs(&rec, 0, &rec2, 1);
 
 	o = scheme_compile_expr(form, cenv, &rec2, 0);
-
-	if (rec2.max_let_depth > max_let_depth)
-	  max_let_depth = rec2.max_let_depth;
 
 	/* If we had compiled an expression in a previous iteration,
 	   combine it in a sequence: */
@@ -2216,13 +2561,15 @@ static void *compile_k(void)
 	  break;
       }
     
-      rp = scheme_resolve_prefix(0, cenv->prefix, 1);
-      
+      oi = scheme_optimize_info_create();
+      o = scheme_optimize_expr(o, oi);
+
+      rp = scheme_resolve_prefix(0, cenv->prefix, 1);      
       o = scheme_resolve_expr(o, scheme_resolve_info_create(rp));
       
       top = MALLOC_ONE_TAGGED(Scheme_Compilation_Top);
       top->so.type = scheme_compilation_top_type;
-      top->max_let_depth = max_let_depth;
+      top->max_let_depth = oi->max_let_depth;
       top->code = o;
       top->prefix = rp;
     }
@@ -2542,7 +2889,6 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
       /* A hack for handling lifted expressions. See compile_expand_lift_to_let. */
       if (SAME_TYPE(SCHEME_TYPE(SCHEME_STX_VAL(form)), scheme_already_comp_type)) {
 	form = SCHEME_STX_VAL(form);
-	rec[drec].max_let_depth = SCHEME_PINT_VAL(form);
 	return SCHEME_IPTR_VAL(form);
       }
 
@@ -3114,7 +3460,6 @@ compile_expand_expr_lift_to_let(Scheme_Object *form, Scheme_Comp_Env *env,
       o = scheme_alloc_object();
       o->type = scheme_already_comp_type;
       SCHEME_IPTR_VAL(o) = form;
-      SCHEME_PINT_VAL(o) = recs[0].max_let_depth;
     } else
       o = form;
     for (revl = scheme_null; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {

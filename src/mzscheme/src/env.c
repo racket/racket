@@ -125,9 +125,6 @@ static int env_uid_counter;
 /* See also SCHEME_USE_COUNT_MASK */
 
 typedef struct Compile_Data {
-  char **stat_dists; /* (pos, depth) => used? */
-  int *sd_depths;
-  int used_toplevel;
   int num_const;
   Scheme_Object **const_names;
   Scheme_Object **const_vals;
@@ -1068,8 +1065,6 @@ static void init_compile_data(Scheme_Comp_Env *env)
 
   data = COMPILE_DATA(env);
 
-  data->stat_dists = NULL;
-  data->sd_depths = NULL;
   data->use = use;
   for (i = 0; i < c; i++) {
     use[i] = 0;
@@ -1351,7 +1346,6 @@ static Scheme_Object *make_toplevel(mzshort depth, int position, int resolved)
 Scheme_Object *scheme_register_toplevel_in_prefix(Scheme_Object *var, Scheme_Comp_Env *env,
 						  Scheme_Compile_Info *rec, int drec)
 {
-  Scheme_Comp_Env *frame;
   Comp_Prefix *cp = env->prefix;
   Scheme_Hash_Table *ht;
   Scheme_Object *o;
@@ -1359,16 +1353,6 @@ Scheme_Object *scheme_register_toplevel_in_prefix(Scheme_Object *var, Scheme_Com
   if (rec && rec[drec].dont_mark_local_use) {
     /* Make up anything; it's going to be ignored. */
     return make_toplevel(0, 0, 0);
-  }
-
-  /* Register use at lambda, if any: */
-  frame = env;
-  while (frame) {
-    if (frame->flags & SCHEME_LAMBDA_FRAME) {
-      COMPILE_DATA(frame)->used_toplevel = 1;
-      break;
-    }
-    frame = frame->next;
   }
 
   ht = cp->toplevels;
@@ -1422,15 +1406,6 @@ Scheme_Object *scheme_register_stx_in_prefix(Scheme_Object *var, Scheme_Comp_Env
   o = (Scheme_Object *)l;
   
   scheme_hash_set(cp->stxes, var, o);
-
-  /* Register use at lambda, if any: */
-  while (env) {
-    if (env->flags & SCHEME_LAMBDA_FRAME) {
-      COMPILE_DATA(env)->used_toplevel = 1;
-      break;
-    }
-    env = env->next;
-  }
 
   return o;
 }
@@ -1507,37 +1482,6 @@ static Scheme_Local *get_frame_loc(Scheme_Comp_Env *frame,
   u |= (cnt << SCHEME_USE_COUNT_SHIFT);
   
   COMPILE_DATA(frame)->use[i] = u;
-  
-  if (!COMPILE_DATA(frame)->stat_dists) {
-    int k, *ia;
-    char **ca;
-    ca = MALLOC_N(char*, frame->num_bindings);
-    COMPILE_DATA(frame)->stat_dists = ca;
-    ia = MALLOC_N_ATOMIC(int, frame->num_bindings);
-    COMPILE_DATA(frame)->sd_depths = ia;
-    for (k = frame->num_bindings; k--; ) {
-      COMPILE_DATA(frame)->sd_depths[k] = 0;
-    }
-  }
-  
-  if (COMPILE_DATA(frame)->sd_depths[i] <= j) {
-    char *naya, *a;
-    int k;
-    
-    naya = MALLOC_N_ATOMIC(char, (j + 1));
-    for (k = j + 1; k--; ) {
-      naya[k] = 0;
-    }
-    a = COMPILE_DATA(frame)->stat_dists[i];
-    for (k = COMPILE_DATA(frame)->sd_depths[i]; k--; ) {
-      naya[k] = a[k];
-    }
-    
-    COMPILE_DATA(frame)->stat_dists[i] = naya;
-    COMPILE_DATA(frame)->sd_depths[i] = j + 1;
-  }
-
-  COMPILE_DATA(frame)->stat_dists[i][j] = 1;
 
   return (Scheme_Local *)scheme_make_local(scheme_local_type, p + i);
 }
@@ -2449,87 +2393,6 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   return (Scheme_Object *)b;
 }
 
-void scheme_env_make_closure_map(Scheme_Comp_Env *env, mzshort *_size, mzshort **_map)
-{
-  /* A closure map lists the captured variables for a closure; the
-     indices are resolved two new indicies in the second phase of
-     compilation. */
-  Compile_Data *data;
-  Scheme_Comp_Env *frame;
-  int i, j, pos = 0, lpos = 0;
-  mzshort *map, size;
-
-  /* Count vars used by this closure (skip args): */
-  j = 1;
-  for (frame = env->next; frame; frame = frame->next) {
-    data = COMPILE_DATA(frame);
-
-    if (frame->flags & SCHEME_LAMBDA_FRAME)
-      j++;
-
-    if (data->stat_dists) {
-      for (i = 0; i < frame->num_bindings; i++) {
-	if (data->sd_depths[i] > j) {
-	  if (data->stat_dists[i][j]) {
-	    pos++;
-	  }
-	}
-      }
-    }
-  }
-
-  data = NULL; /* Clear unaligned pointer */
-
-  size = pos;
-  *_size = size;
-  map = MALLOC_N_ATOMIC(mzshort, size);
-  *_map = map;
-
-  /* Build map, unmarking locals and marking deeper in parent prame */
-  j = 1; pos = 0;
-  for (frame = env->next; frame; frame = frame->next) {
-    data = COMPILE_DATA(frame);
-
-    if (frame->flags & SCHEME_LAMBDA_FRAME)
-      j++;
-
-    if (data->stat_dists) {
-      for (i = 0; i < frame->num_bindings; i++) {
-	if (data->sd_depths[i] > j) {
-	  if (data->stat_dists[i][j]) {
-	    map[pos++] = lpos;
-	    data->stat_dists[i][j] = 0; /* This closure's done with these vars... */
-	    data->stat_dists[i][j - 1] = 1; /* ... but ensure previous keeps */
-	  }
-	}
-	lpos++;
-      }
-    } else
-      lpos += frame->num_bindings;
-  }
-}
-
-int scheme_env_uses_toplevel(Scheme_Comp_Env *frame)
-{
-  int used;
-
-  used = COMPILE_DATA(frame)->used_toplevel;
-  
-  if (used) {
-    /* Propagate use to an enclosing lambda, if any: */
-    frame = frame->next;
-    while (frame) {
-      if (frame->flags & SCHEME_LAMBDA_FRAME) {
-	COMPILE_DATA(frame)->used_toplevel = 1;
-	break;
-      }
-      frame = frame->next;
-    }
-  }
-
-  return used;
-}
-
 int *scheme_env_get_flags(Scheme_Comp_Env *frame, int start, int count)
 {
   int *v, i;
@@ -2622,12 +2485,300 @@ int scheme_check_context(Scheme_Env *env, Scheme_Object *name, Scheme_Object *ok
     if (SAME_OBJ(mod, scheme_undefined))
       return 1;
   }
-
+  
   return 0;
 }
 
 /*========================================================================*/
-/*             compile-time env for phase 2 ("resolve")                   */
+/*                 compile-time env for optimization                      */
+/*========================================================================*/
+
+Optimize_Info *scheme_optimize_info_create(void)
+{
+  Optimize_Info *info;
+
+  info = MALLOC_ONE_RT(Optimize_Info);
+#ifdef MZTAG_REQUIRED
+  info->type = scheme_rt_optimize_info;
+#endif
+  
+  return info;
+}
+
+static void register_stat_dist(Optimize_Info *info, int i, int j)
+{
+  if (!info->stat_dists) {
+    int k, *ia;
+    char **ca;
+    ca = MALLOC_N(char*, info->new_frame);
+    info->stat_dists = ca;
+    ia = MALLOC_N_ATOMIC(int, info->new_frame);
+    info->sd_depths = ia;
+    for (k = info->new_frame; k--; ) {
+      info->sd_depths[k] = 0;
+    }
+  }
+  
+  if (info->sd_depths[i] <= j) {
+    char *naya, *a;
+    int k;
+    
+    naya = MALLOC_N_ATOMIC(char, (j + 1));
+    for (k = j + 1; k--; ) {
+      naya[k] = 0;
+    }
+    a = info->stat_dists[i];
+    for (k = info->sd_depths[i]; k--; ) {
+      naya[k] = a[k];
+    }
+    
+    info->stat_dists[i] = naya;
+    info->sd_depths[i] = j + 1;
+  }
+
+  info->stat_dists[i][j] = 1;
+}
+
+void scheme_env_make_closure_map(Optimize_Info *info, mzshort *_size, mzshort **_map)
+{
+  /* A closure map lists the captured variables for a closure; the
+     indices are resolved two new indicies in the second phase of
+     compilation. */
+  Optimize_Info *frame;
+  int i, j, pos = 0, lpos = 0;
+  mzshort *map, size;
+
+  /* Count vars used by this closure (skip args): */
+  j = 1;
+  for (frame = info->next; frame; frame = frame->next) {
+    if (frame->flags & SCHEME_LAMBDA_FRAME)
+      j++;
+
+    if (frame->stat_dists) {
+      for (i = 0; i < frame->new_frame; i++) {
+	if (frame->sd_depths[i] > j) {
+	  if (frame->stat_dists[i][j]) {
+	    pos++;
+	  }
+	}
+      }
+    }
+  }
+
+  size = pos;
+  *_size = size;
+  map = MALLOC_N_ATOMIC(mzshort, size);
+  *_map = map;
+
+  /* Build map, unmarking locals and marking deeper in parent frame */
+  j = 1; pos = 0;
+  for (frame = info->next; frame; frame = frame->next) {
+    if (frame->flags & SCHEME_LAMBDA_FRAME)
+      j++;
+
+    if (frame->stat_dists) {
+      for (i = 0; i < frame->new_frame; i++) {
+	if (frame->sd_depths[i] > j) {
+	  if (frame->stat_dists[i][j]) {
+	    map[pos++] = lpos;
+	    frame->stat_dists[i][j] = 0; /* This closure's done with these vars... */
+	    frame->stat_dists[i][j - 1] = 1; /* ... but ensure previous keeps */
+	  }
+	}
+	lpos++;
+      }
+    } else
+      lpos += frame->new_frame;
+  }
+}
+
+int scheme_env_uses_toplevel(Optimize_Info *frame)
+{
+  int used;
+
+  used = frame->used_toplevel;
+  
+  if (used) {
+    /* Propagate use to an enclosing lambda, if any: */
+    frame = frame->next;
+    while (frame) {
+      if (frame->flags & SCHEME_LAMBDA_FRAME) {
+	frame->used_toplevel = 1;
+	break;
+      }
+      frame = frame->next;
+    }
+  }
+
+  return used;
+}
+
+void scheme_optimize_info_used_top(Optimize_Info *info)
+{
+  while (info) {
+    if (info->flags & SCHEME_LAMBDA_FRAME) {
+      info->used_toplevel = 1;
+      break;
+    }
+    info = info->next;
+  }
+}
+
+void scheme_optimize_propagate(Optimize_Info *info, int pos, Scheme_Object *value)
+{
+  Scheme_Object *p;
+  
+  p = scheme_make_vector(3, NULL);
+  SCHEME_VEC_ELS(p)[0] = info->consts;
+  SCHEME_VEC_ELS(p)[1] = scheme_make_integer(pos);
+  SCHEME_VEC_ELS(p)[2] = value;
+
+  info->consts = p;
+}
+
+void scheme_optimize_mutated(Optimize_Info *info, int pos)
+/* pos must be in immediate frame */
+{
+  if (!info->use) {
+    char *use;
+    use = (char *)scheme_malloc_atomic(info->new_frame);
+    memset(use, 0, info->new_frame);
+    info->use = use;
+  }
+  info->use[pos] = 1;
+}
+
+Scheme_Object *scheme_optimize_reverse_unless_mutated(Optimize_Info *info, int pos)
+/* pos is in new-frame counts, and we want to produce an old-frame reference if
+   it's not mutated */
+{
+  int delta = 0;
+
+  while (info) {
+    if (pos < info->new_frame)
+      break;
+    pos -= info->new_frame;
+    delta += info->original_frame;
+    info = info->next;
+  }
+
+  if (info->use && info->use[pos])
+    return NULL;
+
+  return scheme_make_local(scheme_local_type, pos + delta);
+}
+
+int scheme_optimize_is_used(Optimize_Info *info, int pos)
+/* pos must be in immediate frame */
+{
+  int i;
+
+  if (info->stat_dists) {
+    for (i = info->sd_depths[pos]; i--; ) {
+      if (info->stat_dists[pos][i])
+	return 1;
+    }
+  }
+
+  return 0;
+}
+
+static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int j)
+{
+  Scheme_Object *p, *n;
+  int delta = 0;
+
+  while (info) {
+    if (info->flags & SCHEME_LAMBDA_FRAME)
+      j++;
+    if (pos < info->original_frame)
+      break;
+    pos -= info->original_frame;
+    delta += info->new_frame;
+    info = info->next;
+  }
+
+  p = info->consts;
+  while (p) {
+    n = SCHEME_VEC_ELS(p)[1];
+    if (SCHEME_INT_VAL(n) == pos) {
+      n = SCHEME_VEC_ELS(p)[2];
+      if (SAME_TYPE(SCHEME_TYPE(n), scheme_local_type)) {
+	int pos;
+
+	pos = SCHEME_LOCAL_POS(n);
+	if (info->flags & SCHEME_LAMBDA_FRAME)
+	  j--; /* because it will get re-added on recur */
+
+	/* Marks local as used; we don't expect to get back
+	   a value, because chaining would normally happen on the 
+	   propagate-call side. Chaining there also means that we 
+	   avoid stack overflow here. */
+	n = do_optimize_info_lookup(info, pos, j);
+
+	if (!n) {
+	  /* Return shifted reference to other local: */
+	  delta += scheme_optimize_info_get_shift(info, pos);
+	  n = scheme_make_local(scheme_local_type, pos + delta);
+	}
+      }
+      return n;
+    }
+    p = SCHEME_VEC_ELS(p)[0];
+  }
+
+  register_stat_dist(info, pos, j);
+  
+  return NULL;
+}
+
+Scheme_Object *scheme_optimize_info_lookup(Optimize_Info *info, int pos)
+{
+  return do_optimize_info_lookup(info, pos, 0);
+}
+
+Optimize_Info *scheme_optimize_info_add_frame(Optimize_Info *info, int orig, int current, int flags)
+{
+  Optimize_Info *naya;
+
+  naya = scheme_optimize_info_create();
+  naya->flags = (short)flags;
+  naya->next = info;
+  naya->original_frame = orig;
+  naya->new_frame = current;
+
+  return naya;
+}
+
+int scheme_optimize_info_get_shift(Optimize_Info *info, int pos)
+{
+  int delta = 0;
+
+  while (info) {
+    if (pos < info->original_frame)
+      break;
+    pos -= info->original_frame;
+    delta += (info->new_frame - info->original_frame);
+    info = info->next;
+  }
+
+  if (!info)
+    *(long *)0x0 = 1;
+
+  return delta;
+}
+
+void scheme_optimize_info_done(Optimize_Info *info)
+{
+  info->next->max_let_depth += info->max_let_depth;
+  info->next->size += info->size;
+}
+
+
+  
+
+/*========================================================================*/
+/*                    compile-time env for resolve                        */
 /*========================================================================*/
 
 /* See eval.c for information about the compilation phases. */
@@ -3767,6 +3918,7 @@ static void register_traversers(void)
 {
   GC_REG_TRAV(scheme_rt_comp_env, mark_comp_env);
   GC_REG_TRAV(scheme_rt_resolve_info, mark_resolve_info);
+  GC_REG_TRAV(scheme_rt_optimize_info, mark_optimize_info);
 }
 
 END_XFORM_SKIP;

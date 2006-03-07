@@ -2329,8 +2329,6 @@ static int mark_comp_env_MARK(void *p) {
   gcMARK(e->base.in_modidx);
   gcMARK(e->base.skip_table);
   
-  gcMARK(e->data.stat_dists);
-  gcMARK(e->data.sd_depths);
   gcMARK(e->data.const_names);
   gcMARK(e->data.const_vals);
   gcMARK(e->data.const_uids);
@@ -2358,8 +2356,6 @@ static int mark_comp_env_FIXUP(void *p) {
   gcFIXUP(e->base.in_modidx);
   gcFIXUP(e->base.skip_table);
   
-  gcFIXUP(e->data.stat_dists);
-  gcFIXUP(e->data.sd_depths);
   gcFIXUP(e->data.const_names);
   gcFIXUP(e->data.const_vals);
   gcFIXUP(e->data.const_uids);
@@ -2409,6 +2405,41 @@ static int mark_resolve_info_FIXUP(void *p) {
 
 #define mark_resolve_info_IS_ATOMIC 0
 #define mark_resolve_info_IS_CONST_SIZE 1
+
+
+static int mark_optimize_info_SIZE(void *p) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Optimize_Info));
+}
+
+static int mark_optimize_info_MARK(void *p) {
+  Optimize_Info *i = (Optimize_Info *)p;
+  
+  gcMARK(i->stat_dists);
+  gcMARK(i->sd_depths);
+  gcMARK(i->next);
+  gcMARK(i->use);
+  gcMARK(i->consts);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Optimize_Info));
+}
+
+static int mark_optimize_info_FIXUP(void *p) {
+  Optimize_Info *i = (Optimize_Info *)p;
+  
+  gcFIXUP(i->stat_dists);
+  gcFIXUP(i->sd_depths);
+  gcFIXUP(i->next);
+  gcFIXUP(i->use);
+  gcFIXUP(i->consts);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Optimize_Info));
+}
+
+#define mark_optimize_info_IS_ATOMIC 0
+#define mark_optimize_info_IS_CONST_SIZE 1
 
 
 

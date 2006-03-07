@@ -189,9 +189,7 @@ scheme_init_fun (Scheme_Env *env)
   REGISTER_SO(cached_dv_stx);
   REGISTER_SO(cached_ds_stx);
 
-  o = scheme_make_folding_prim(procedure_p,
-			       "procedure?",
-			       1, 1, 1);
+  o = scheme_make_folding_prim(procedure_p, "procedure?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(o) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant("procedure?", o, env);
 
@@ -759,6 +757,50 @@ typedef struct {
 } Closure_Info;
 
 Scheme_Object *
+scheme_optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info)
+{
+  Scheme_Closure_Data *data;
+  Scheme_Object *code;
+  Closure_Info *cl;
+  mzshort dcs, *dcm;
+  int i;
+
+  data = (Scheme_Closure_Data *)_data;
+
+  info = scheme_optimize_info_add_frame(info, data->num_params, data->num_params,
+					SCHEME_LAMBDA_FRAME);
+
+  cl = (Closure_Info *)data->closure_map;
+  for (i = 0; i < data->num_params; i++) {
+    if (cl->local_flags[i] & SCHEME_WAS_SET_BANGED)
+      scheme_optimize_mutated(info, i);
+  }
+
+  code = scheme_optimize_expr(data->code, info);
+
+  data->code = code;
+
+  /* Remembers positions of used vars (and unsets usage for this level) */
+  scheme_env_make_closure_map(info, &dcs, &dcm);
+  cl->base_closure_size = dcs;
+  cl->base_closure_map = dcm;
+  if (scheme_env_uses_toplevel(info))
+    cl->has_tl = 1;
+
+  data->closure_size = (cl->base_closure_size
+			+ (cl->has_tl ? 1 : 0));
+
+  info->max_let_depth += data->num_params + data->closure_size;
+  data->max_let_depth = info->max_let_depth;
+
+  info->max_let_depth = 0; /* So it doesn't propagate outward */
+
+  scheme_optimize_info_done(info);
+
+  return (Scheme_Object *)data;
+}
+
+Scheme_Object *
 scheme_resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info)
 {
   Scheme_Closure_Data *data;
@@ -965,10 +1007,9 @@ scheme_make_closure_compilation(Scheme_Comp_Env *env, Scheme_Object *code,
   Scheme_Closure_Data *data;
   Scheme_Compile_Info lam;
   Scheme_Comp_Env *frame;
-  Closure_Info *cl;
   int i;
   long num_params;
-  mzshort dcs, *dcm;
+  Closure_Info *cl;
 
   data  = MALLOC_ONE_TAGGED(Scheme_Closure_Data);
 
@@ -1033,25 +1074,12 @@ scheme_make_closure_compilation(Scheme_Comp_Env *env, Scheme_Object *code,
 #ifdef MZTAG_REQUIRED
   cl->type = scheme_rt_closure_info;
 #endif
-
   {
     int *local_flags;
     local_flags = scheme_env_get_flags(frame, 0, data->num_params);
     cl->local_flags = local_flags;
   }
-
-  /* Remembers positions of used vars (and unsets usage for this level) */
-  scheme_env_make_closure_map(frame, &dcs, &dcm);
-  cl->base_closure_size = dcs;
-  cl->base_closure_map = dcm;
-  if (scheme_env_uses_toplevel(frame))
-    cl->has_tl = 1;
-
-  data->closure_size = (cl->base_closure_size
-			+ (cl->has_tl ? 1 : 0));
   data->closure_map = (mzshort *)cl;
-
-  data->max_let_depth = lam.max_let_depth + data->num_params + data->closure_size;
 
   return (Scheme_Object *)data;
 }

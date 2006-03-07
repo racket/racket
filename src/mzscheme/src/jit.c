@@ -304,7 +304,7 @@ static void *generate_one(mz_jit_state *old_jitter,
 	ndata->retained = jitter->retain_start;
 	ndata->retain_count = num_retained;
 	SCHEME_BOX_VAL(fnl_obj) = scheme_make_integer(size_pre_retained);
-	GC_set_finalizer(fnl_obj, 1, 1,
+	GC_set_finalizer(fnl_obj, 1, 2,
 			 release_native_code, buffer,
 			 NULL, NULL);
       }
@@ -677,6 +677,33 @@ static int mz_is_closure(mz_jit_state *jitter, int i, int arity)
 # define mz_epilog_without_jmp() /* empty */
 # define mz_push_locals() /* empty */
 # define mz_pop_locals() /* empty */
+static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
+{
+  /* This must be consistent with _jit_prolog in many ways: */
+  int frame_size;
+  int ofs;
+  int first_saved_reg = JIT_AUX - n;
+  int num_saved_regs = 32 - first_saved_reg;
+
+  frame_size = 24 + 32 + 12 + num_saved_regs * 4;	/* r27..r31 + args		   */
+  frame_size += 15;			/* the stack must be quad-word     */
+  frame_size &= ~15;			/* aligned			   */
+
+  STWUrm(1, -frame_size, 1);		/* stwu  r1, -x(r1)		   */
+
+  /* We actually only need to save V0-V2, which are at
+     the end of the saved area: */
+  first_saved_reg = 29;
+  num_saved_regs = 3;
+
+  ofs = frame_size - num_saved_regs * 4;
+  STMWrm(first_saved_reg, ofs, 1);		/* stmw  rI, ofs(r1)		   */
+#ifdef _CALL_DARWIN
+  STWrm(ret_addr_reg, frame_size + 8, 1); /* stw   r0, x+8(r1)		   */
+#else
+  STWrm(ret_addr_reg, frame_size + 4, 1); /* stw   r0, x+4(r1)		   */
+#endif
+}
 #else
 # define JIT_LOCAL1 -16
 # define JIT_LOCAL2 -20
@@ -703,6 +730,7 @@ static int mz_is_closure(mz_jit_state *jitter, int i, int arity)
 # endif
 # define mz_push_locals() SUBLir((LOCAL_FRAME_SIZE << JIT_LOG_WORD_SIZE), JIT_SP)
 # define mz_pop_locals() ADDLir((LOCAL_FRAME_SIZE << JIT_LOG_WORD_SIZE), JIT_SP)
+#define _jit_prolog_again(jitter, n, ret_addr_reg) (PUSHLr(ret_addr_reg), PUSHLr(_EBP), MOVLrr(_ESP, _EBP), PUSHLr(_EBX), PUSHLr(_ESI), PUSHLr(_EDI))
 #endif
 
 #ifdef MZ_USE_JIT_PPC
@@ -1151,7 +1179,7 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
 #endif
   
   /* Fast inlined-native jump ok (proc will check argc); */
-  /* extract function and data: */
+#if 0
   mz_prepare(3);
   jit_pusharg_p(JIT_RUNSTACK);
   jit_movi_i(JIT_R1, num_rands);
@@ -1162,6 +1190,28 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
   } else {
     (void)mz_finish(jump_to_native_arity_code);
   }
+#else
+  {
+    jit_insn *refr;
+    refr = jit_movi_p(JIT_R0, jit_forward());
+    _jit_prolog_again(jitter, 3, JIT_R0); /* saves V registers */
+    jit_movr_p(JIT_R0, JIT_V1); /* closure */
+    jit_movi_i(JIT_R1, num_rands); /* argc */
+    jit_movr_p(JIT_R2, JIT_RUNSTACK); /* argv */
+    jit_movr_p(JIT_RUNSTACK_BASE, JIT_RUNSTACK);
+    CHECK_LIMIT();
+    mz_push_locals();
+    mz_set_local_p(JIT_RUNSTACK, JIT_LOCAL1);
+    jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
+    if (direct_native) {
+      jit_ldxi_p(JIT_V1, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->u.tail_code);
+    } else {
+      jit_ldxi_p(JIT_V1, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->arity_code);
+    }
+    jit_jmpr(JIT_V1);
+    jit_patch_movi(refr, (_jit.x.pc));
+  }
+#endif
   CHECK_LIMIT();
   jit_retval(JIT_R0);
   if (!multi_ok) {
@@ -4141,7 +4191,8 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   
   /* A tail call starts here. Caller must ensure that the
      stack is big enough, right number of arguments, closure
-     is in R0. */
+     is in R0. If the closure has a rest arg, also ensure
+     argc in R1 and argv in R2. */
   tail_code = jit_get_ip().ptr;
 
   /* 0 params and has_rest => (lambda args E) where args is not in E,
