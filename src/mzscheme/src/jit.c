@@ -1334,6 +1334,8 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
   int i;
   int closure_size = jitter->self_closure_size;
 
+  /* Last argument is in R0 */
+
 #ifdef JIT_PRECISE_GC
   closure_size++; /* Skip procedure pointer, too */
 #endif
@@ -1353,10 +1355,13 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
 
   /* Copy args to runstack after closure data: */
   jit_subi_p(JIT_R2, JIT_RUNSTACK_BASE, WORDS_TO_BYTES(num_rands + closure_size)); 
-  for (i = num_rands; i--; ) {
-    jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(i));
-    jit_stxi_p(WORDS_TO_BYTES(i + closure_size), JIT_R2, JIT_R1);
-    CHECK_LIMIT();
+  if (num_rands) {
+    jit_stxi_p(WORDS_TO_BYTES(num_rands - 1 + closure_size), JIT_R2, JIT_R0);
+    for (i = num_rands - 1; i--; ) {
+      jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(i));
+      jit_stxi_p(WORDS_TO_BYTES(i + closure_size), JIT_R2, JIT_R1);
+      CHECK_LIMIT();
+    }
   }
   jit_movr_p(JIT_RUNSTACK, JIT_R2);
 
@@ -1369,6 +1374,7 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
   mz_patch_branch(refslow);
   __END_SHORT_JUMPS__(1);
 
+  jit_stxi_p(WORDS_TO_BYTES(num_rands - 1), JIT_RUNSTACK, JIT_R0);
   generate(rator, jitter, 0, 0);
   CHECK_LIMIT();
   jit_movr_p(JIT_V1, JIT_R0);
@@ -1527,7 +1533,8 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
       /* Move rator back to register: */
       jit_ldxi_p(JIT_V1, JIT_RUNSTACK, WORDS_TO_BYTES(i + offset));
     }
-    if (!direct_prim || (num_rands > 1)) {
+    if ((!direct_prim || (num_rands > 1))
+	&& (!direct_self || (i + 1 < num_rands))) {
       jit_stxi_p(WORDS_TO_BYTES(i + offset), JIT_RUNSTACK, JIT_R0);
     }
   }
