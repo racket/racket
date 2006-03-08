@@ -1337,7 +1337,7 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
   /* Last argument is in R0 */
 
 #ifdef JIT_PRECISE_GC
-  closure_size++; /* Skip procedure pointer, too */
+  closure_size += 1; /* Skip procedure pointer, too */
 #endif
 
   __START_SHORT_JUMPS__(1);
