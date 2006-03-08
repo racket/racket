@@ -3307,7 +3307,11 @@
 
       (define contract-inferred-name-test6 (case-lambda [(x) x]
                                                         [(x y) y]))
-      (provide/contract (contract-inferred-name-test6 (opt-> (number?) (number?) number?)))))
+      (provide/contract (contract-inferred-name-test6 (opt-> (number?) (number?) number?)))
+      
+      (define contract-inferred-name-test7 (case-lambda [(x) (values x x)]
+                                                        [(x y) (values y y)]))
+      (provide/contract (contract-inferred-name-test7 (opt->* (number?) (number?) (number? number?))))))
   (eval '(require contract-test-suite-inferred-name1))
   ;; (eval '(test 'contract-inferred-name-test object-name contract-inferred-name-test)) ;; this one can't be made to pass, sadly.
   (eval '(test 'contract-inferred-name-test2 object-name contract-inferred-name-test2))
@@ -3315,6 +3319,7 @@
   (eval '(test 'contract-inferred-name-test4 object-name contract-inferred-name-test4))
   (eval '(test 'contract-inferred-name-test5 object-name contract-inferred-name-test5))
   (eval '(test 'contract-inferred-name-test6 object-name contract-inferred-name-test6))
+  (eval '(test 'contract-inferred-name-test7 object-name contract-inferred-name-test7))
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                                                        ;;

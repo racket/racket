@@ -44,9 +44,12 @@
                  (if any-range?
                      (syntax (lambda (args ...) (val (dom-ctc args) ...)))
                      (syntax (lambda (args ...) (rng-ctc (val (dom-ctc args) ...)))))])
-           (with-syntax ([inner-lambda (if name
-                                           (syntax-property lambda-stx 'inferred-name name)
-                                           lambda-stx)])
+           (with-syntax ([inner-lambda (cond
+                                         [(identifier? name)
+                                          (syntax-property lambda-stx 'inferred-name (syntax-e name))]
+                                         [(symbol? name)
+                                          (syntax-property lambda-stx 'inferred-name name)]
+                                         [else lambda-stx])])
              (with-syntax ([outer-lambda
                             (syntax
                              (lambda (chk rng-ctc dom-ctc ...)
@@ -100,13 +103,13 @@
     (define (obj->pp/proc stx) (make-/proc #t ->pp/h stx))
     (define (obj->pp-rest/proc stx) (make-/proc #t ->pp-rest/h stx))
     
-    (define (case->/proc stx) (make-case->/proc #f stx))
-    (define (obj-case->/proc stx) (make-case->/proc #t stx))
+    (define (case->/proc stx) (make-case->/proc #f stx stx))
+    (define (obj-case->/proc stx) (make-case->/proc #t stx stx))
 
     (define (obj-opt->/proc stx) (make-opt->/proc #t stx))
-    (define (obj-opt->*/proc stx) (make-opt->*/proc #t stx))
+    (define (obj-opt->*/proc stx) (make-opt->*/proc #t stx stx))
     (define (opt->/proc stx) (make-opt->/proc #f stx))
-    (define (opt->*/proc stx) (make-opt->*/proc #f stx))
+    (define (opt->*/proc stx) (make-opt->*/proc #f stx stx))
   
     ;; make-/proc : boolean
     ;;              (syntax -> (values (syntax -> syntax) (syntax -> syntax) (syntax -> syntax) (syntax -> syntax))) 
@@ -136,7 +139,7 @@
                       (lambda (pos-blame neg-blame src-info orig-str)
                         proj-code)))))))))))
     
-    (define (make-case->/proc method-proc? stx)
+    (define (make-case->/proc method-proc? stx inferred-name-stx)
       (syntax-case stx ()
         [(_ cases ...)
          (let-values ([(arguments-check build-projs check-val wrapper)
@@ -147,7 +150,7 @@
                            [(body ...) (wrapper outer-args)])
                (with-syntax ([inner-lambda 
                               (set-inferred-name-from
-                               stx
+                               inferred-name-stx
                                (syntax/loc stx (case-lambda body ...)))])
                  (let ([inner-lambda-w/err-check
                         (syntax
@@ -166,11 +169,11 @@
     (define (make-opt->/proc method-proc? stx)
       (syntax-case stx (any)
         [(_ (reqs ...) (opts ...) any)
-         (make-opt->*/proc method-proc? (syntax (opt->* (reqs ...) (opts ...) any)))]
+         (make-opt->*/proc method-proc? (syntax (opt->* (reqs ...) (opts ...) any)) stx)]
         [(_ (reqs ...) (opts ...) res)
-         (make-opt->*/proc method-proc? (syntax (opt->* (reqs ...) (opts ...) (res))))]))
+         (make-opt->*/proc method-proc? (syntax (opt->* (reqs ...) (opts ...) (res))) stx)]))
   
-    (define (make-opt->*/proc method-proc? stx)
+    (define (make-opt->*/proc method-proc? stx inferred-name-stx)
       (syntax-case stx (any)
         [(_ (reqs ...) (opts ...) any)
          (let* ([req-vs (generate-temporaries (syntax->list (syntax (reqs ...))))]
@@ -188,7 +191,8 @@
              (with-syntax ([expanded-case->
                             (make-case->/proc
                              method-proc?
-                             (syntax (case-> (-> case-doms ... any) ...)))])
+                             (syntax (case-> (-> case-doms ... any) ...))
+                             inferred-name-stx)])
                (syntax/loc stx
                  (let ([req-vs reqs] ...
                        [opt-vs opts] ...)
@@ -221,7 +225,8 @@
                (with-syntax ([expanded-case->
                               (make-case->/proc
                                method-proc?
-                               (syntax (case-> (-> case-doms ... single-case-result) ...)))])
+                               (syntax (case-> (-> case-doms ... single-case-result) ...))
+                               inferred-name-stx)])
                  (set-inferred-name-from
                   stx
                   (syntax/loc stx
