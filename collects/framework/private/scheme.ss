@@ -886,23 +886,40 @@
             (begin-edit-sequence)
             (let ([before-text "(let ([ans "]
                   [after-text "])\n"]
-                  [after-text2 "\nans)"]
+                  [after-text2 "(printf \"~s\\n\" ans)\nans)"]
                   [end-l (get-forward-sexp pos)])
-              (insert after-text2 end-l end-l)
-              (insert after-text end-l end-l)
-              (insert before-text pos pos)
-              (let ([blank-line-pos (+ end-l (string-length after-text) (string-length before-text))])
-                (set-position blank-line-pos blank-line-pos))
-              (tabify-selection 
-               (- pos (string-length before-text))
-               (+ end-l 
-                  (string-length before-text)
-                  (string-length after-text)
-                  (string-length after-text2))))
+              (cond
+                [end-l
+                 (insert after-text2 end-l end-l)
+                 (insert after-text end-l end-l)
+                 (insert before-text pos pos)
+                 (let ([blank-line-pos (+ end-l (string-length after-text) (string-length before-text))])
+                   (set-position blank-line-pos blank-line-pos))
+                 (tabify-selection 
+                  (- pos (string-length before-text))
+                  (+ end-l 
+                     (string-length before-text)
+                     (string-length after-text)
+                     (string-length after-text2)))]
+                [else
+                 (bell)]))
             (end-edit-sequence))
           
-          (define/public (move-sexp-out pos)
-            (void))
+          (define/public (move-sexp-out begin-inner)
+            (begin-edit-sequence)
+            (let ([end-inner (get-forward-sexp begin-inner)]
+                  [begin-outer (find-up-sexp begin-inner)])
+              (cond
+                [(and end-inner begin-outer)
+                 (let ([end-outer (get-forward-sexp begin-outer)])
+                   (cond
+                     [end-outer
+                      (delete end-inner end-outer)
+                      (delete begin-outer begin-inner)
+                      (tabify-selection begin-outer (+ begin-outer (- end-inner begin-inner)))]
+                     [else (bell)]))]
+                [else (bell)]))
+            (end-edit-sequence))
           
 	  (inherit get-fixed-style)
           (define/public (mark-matching-parenthesis pos)
