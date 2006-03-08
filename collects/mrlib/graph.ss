@@ -269,21 +269,27 @@
         #;(super on-interactive-move evt))
       
       (define/override (interactive-adjust-move snip x y)
-        (invalidate-to-children/parents snip (get-dc))
+        (let ([dc (get-dc)])
+          (when dc
+            (invalidate-to-children/parents snip dc)))
         (super interactive-adjust-move snip x y))
       
       (define/augment (after-insert snip before x y)
-        (invalidate-to-children/parents snip (get-dc))
+        (let ([dc (get-dc)])
+          (when dc
+            (invalidate-to-children/parents snip dc)))
         #;(super after-insert snip before x y))
       
       ;; invalidate-selected-snips : -> void
       ;; invalidates the region around the selected
       ;; snips and their parents and children
       (define/private (invalidate-selected-snips)
-        (let loop ([snip (find-next-selected-snip #f)])
-          (when snip
-            (invalidate-to-children/parents snip (get-dc))
-            (loop (find-next-selected-snip snip)))))
+        (let ([dc (get-dc)])
+          (when dc
+            (let loop ([snip (find-next-selected-snip #f)])
+              (when snip
+                (invalidate-to-children/parents snip dc)
+                (loop (find-next-selected-snip snip)))))))
       
       (define/private (add-to-rect from to rect)
         (let-values ([(xf yf wf hf) (get-position from)]
@@ -419,12 +425,19 @@
                  (cons rect (loop (cdr c/p-snips))))]))))
 
       (define/private (snip->rect snip)
-        (let-values ([(sx sy sw sh) (get-position snip)]
-                     [(_1 h _2 _3) (send (get-dc) get-text-extent "yX")])
-          (make-rect sx 
-                     sy 
-                     (+ sx sw) 
-                     (max (+ sy sh) (+ sy (/ sh 2) (* 2 (sin (/ arrowhead-angle-width 2)) arrowhead-long-side) h)))))
+        (let-values ([(sx sy sw sh) (get-position snip)])
+          (let* ([dc (get-dc)]
+                 [h (if dc
+                        (let-values ([(_1 h _2 _3) (send dc get-text-extent "yX")])
+                          h)
+                        10)])
+            (make-rect sx 
+                       sy 
+                       (+ sx sw) 
+                       (max (+ sy sh)
+                            (+ sy (/ sh 2) (* 2
+                                              (sin (/ arrowhead-angle-width 2)) 
+                                              arrowhead-long-side) h))))))
 
       (define/private (rect-area rect)
         (* (- (rect-right rect)
