@@ -2976,7 +2976,7 @@
 		  (break-enabled #f))
 	  (lambda ()
 	    (let/ec done
-	      (let loop ()
+	      (let repl-loop ()
 		(let/ec k
 		  (dynamic-wind
 		      (lambda ()
@@ -2994,7 +2994,7 @@
 			(set! be? (break-enabled))
 			(break-enabled #f)
 			(set! jump #f))))
-		(loop))))
+		(repl-loop))))
 	  (lambda () (error-escape-handler eeh)
 		  (break-enabled be?)
 		  (set! jump #f)
