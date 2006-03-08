@@ -272,14 +272,14 @@
       (define color-prefs-table
         (let ([constant-green (make-object color% 41 128 38)]
               [symbol-blue (make-object color% 38 38 128)])
-        `((symbol ,symbol-blue ,(string-constant scheme-mode-color-symbol))
-          (keyword ,symbol-blue ,(string-constant scheme-mode-color-keyword))
-          (comment ,(make-object color% 194 116 31) ,(string-constant scheme-mode-color-comment))
-          (string ,constant-green ,(string-constant scheme-mode-color-string))
-          (constant ,constant-green ,(string-constant scheme-mode-color-constant))
-          (parenthesis ,(make-object color% "brown") ,(string-constant scheme-mode-color-parenthesis))
-          (error ,(make-object color% "red") ,(string-constant scheme-mode-color-error))
-          (other ,(make-object color% "black") ,(string-constant scheme-mode-color-other)))))
+          `((symbol ,symbol-blue ,(string-constant scheme-mode-color-symbol))
+            (keyword ,symbol-blue ,(string-constant scheme-mode-color-keyword))
+            (comment ,(make-object color% 194 116 31) ,(string-constant scheme-mode-color-comment))
+            (string ,constant-green ,(string-constant scheme-mode-color-string))
+            (constant ,constant-green ,(string-constant scheme-mode-color-constant))
+            (parenthesis ,(make-object color% "brown") ,(string-constant scheme-mode-color-parenthesis))
+            (error ,(make-object color% "red") ,(string-constant scheme-mode-color-error))
+            (other ,(make-object color% "black") ,(string-constant scheme-mode-color-other)))))
       (define (get-color-prefs-table) color-prefs-table)
       
       (define (short-sym->pref-name sym) (string->symbol (short-sym->style-name sym)))
@@ -339,7 +339,10 @@
           transpose-sexp
           mark-matching-parenthesis
           get-tab-size
-          set-tab-size))
+          set-tab-size
+          
+          introduce-let-ans
+          move-sexp-out))
       
       (define init-wordbreak-map
         (λ (map)
@@ -400,7 +403,7 @@
           (inherit get-styles-fixed)
           (inherit has-focus? find-snip split-snip)
           
-          (public get-limit balance-parens tabify-on-return? tabify tabify-selection
+          (public get-limit balance-parens tabify-on-return? tabify
                   tabify-all insert-return calc-last-para 
                   box-comment-out-selection comment-out-selection uncomment-selection
                   get-forward-sexp remove-sexp forward-sexp flash-forward-sexp get-backward-sexp
@@ -557,7 +560,7 @@
 			     (loop next-to-last next-to-last-para)
 			     (do-indent (visual-offset last)))))])))))
           
-          (define tabify-selection
+          (define/public tabify-selection
             (opt-lambda ([start-pos (get-start-position)]
                          [end-pos (get-end-position)])
               (let ([first-para (position-paragraph start-pos)]
@@ -873,16 +876,36 @@
                     (set-position new-start new-end)
                     (bell))
                 #t)))
-          (public select-forward-sexp select-backward-sexp select-up-sexp select-down-sexp
-                  transpose-sexp mark-matching-parenthesis)
-          
+          (public select-forward-sexp select-backward-sexp select-up-sexp select-down-sexp)
           [define select-forward-sexp (λ () (select-text (λ (x) (get-forward-sexp x)) #t))]
           [define select-backward-sexp (λ () (select-text (λ (x) (get-backward-sexp x)) #f))]
           [define select-up-sexp (λ () (select-text (λ (x) (find-up-sexp x)) #f))]
           [define select-down-sexp (λ () (select-text (λ (x) (find-down-sexp x)) #t))]
           
+          (define/public (introduce-let-ans pos)
+            (begin-edit-sequence)
+            (let ([before-text "(let ([ans "]
+                  [after-text "])\n"]
+                  [after-text2 "\nans)"]
+                  [end-l (get-forward-sexp pos)])
+              (insert after-text2 end-l end-l)
+              (insert after-text end-l end-l)
+              (insert before-text pos pos)
+              (let ([blank-line-pos (+ end-l (string-length after-text) (string-length before-text))])
+                (set-position blank-line-pos blank-line-pos))
+              (tabify-selection 
+               (- pos (string-length before-text))
+               (+ end-l 
+                  (string-length before-text)
+                  (string-length after-text)
+                  (string-length after-text2))))
+            (end-edit-sequence))
+          
+          (define/public (move-sexp-out pos)
+            (void))
+          
 	  (inherit get-fixed-style)
-          (define (mark-matching-parenthesis pos)
+          (define/public (mark-matching-parenthesis pos)
             (let ([open-parens (map car (scheme-paren:get-paren-pairs))]
                   [close-parens (map cdr (scheme-paren:get-paren-pairs))])
               (when (member (string (get-character pos)) open-parens)
@@ -901,30 +924,29 @@
                          (change-style matching-parenthesis-style pos (+ pos 1))
                          (change-style matching-parenthesis-style (- end 1) end)])))))))
           
-          [define transpose-sexp
-            (λ (pos)
-              (let ([start-1 (get-backward-sexp pos)])
-                (if (not start-1)
-                    (bell)
-                    (let ([end-1 (get-forward-sexp start-1)])
-                      (if (not end-1)
-                          (bell)
-                          (let ([end-2 (get-forward-sexp end-1)])
-                            (if (not end-2)
-                                (bell)
-                                (let ([start-2 (get-backward-sexp end-2)])
-                                  (if (or (not start-2)
-                                          (< start-2 end-1))
-                                      (bell)
-                                      (let ([text-1 
-                                             (get-text start-1 end-1)]
-                                            [text-2 
-                                             (get-text start-2 end-2)])
-                                        (begin-edit-sequence)
-                                        (insert text-1 start-2 end-2)
-                                        (insert text-2 start-1 end-1)
-                                        (set-position end-2)
-                                        (end-edit-sequence)))))))))))]
+          (define/public (transpose-sexp pos)
+            (let ([start-1 (get-backward-sexp pos)])
+              (if (not start-1)
+                  (bell)
+                  (let ([end-1 (get-forward-sexp start-1)])
+                    (if (not end-1)
+                        (bell)
+                        (let ([end-2 (get-forward-sexp end-1)])
+                          (if (not end-2)
+                              (bell)
+                              (let ([start-2 (get-backward-sexp end-2)])
+                                (if (or (not start-2)
+                                        (< start-2 end-1))
+                                    (bell)
+                                    (let ([text-1 
+                                           (get-text start-1 end-1)]
+                                          [text-2 
+                                           (get-text start-2 end-2)])
+                                      (begin-edit-sequence)
+                                      (insert text-1 start-2 end-2)
+                                      (insert text-2 start-1 end-1)
+                                      (set-position end-2)
+                                      (end-edit-sequence)))))))))))
           [define tab-size 8]
           (public get-tab-size set-tab-size)
           [define get-tab-size (λ () tab-size)]
@@ -1020,27 +1042,29 @@
                                                                   ;                  ;     
                                                                   ;                  ;     
                                                                 ;;                  ;;;    
-      (define setup-keymap
-        (λ (keymap)
-          
-          (let ([add-pos-function
-                 (λ (name call-method)
-                   (send keymap add-function name
-                         (λ (edit event)
-                           (call-method
-                            edit
-                            (send edit get-start-position)))))])
-            (add-pos-function "remove-sexp" (λ (e p) (send e remove-sexp p)))
-            (add-pos-function "forward-sexp" (λ (e p) (send e forward-sexp p)))
-            (add-pos-function "backward-sexp" (λ (e p) (send e backward-sexp p)))
-            (add-pos-function "up-sexp" (λ (e p) (send e up-sexp p)))
-            (add-pos-function "down-sexp" (λ (e p) (send e down-sexp p)))
-            (add-pos-function "flash-backward-sexp" (λ (e p) (send e flash-backward-sexp p)))
-            (add-pos-function "flash-forward-sexp" (λ (e p) (send e flash-forward-sexp p)))
-            (add-pos-function "remove-parens-forward" (λ (e p) (send e remove-parens-forward p)))
-            (add-pos-function "transpose-sexp" (λ (e p) (send e transpose-sexp p)))
-            (add-pos-function "mark-matching-parenthesis"
-                              (λ (e p) (send e mark-matching-parenthesis p))))
+      (define (setup-keymap keymap)
+        (let ([add-pos-function
+               (λ (name call-method)
+                 (send keymap add-function name
+                       (λ (edit event)
+                         (call-method
+                          edit
+                          (send edit get-start-position)))))])
+          (add-pos-function "remove-sexp" (λ (e p) (send e remove-sexp p)))
+          (add-pos-function "forward-sexp" (λ (e p) (send e forward-sexp p)))
+          (add-pos-function "backward-sexp" (λ (e p) (send e backward-sexp p)))
+          (add-pos-function "up-sexp" (λ (e p) (send e up-sexp p)))
+          (add-pos-function "down-sexp" (λ (e p) (send e down-sexp p)))
+          (add-pos-function "flash-backward-sexp" (λ (e p) (send e flash-backward-sexp p)))
+          (add-pos-function "flash-forward-sexp" (λ (e p) (send e flash-forward-sexp p)))
+          (add-pos-function "remove-parens-forward" (λ (e p) (send e remove-parens-forward p)))
+          (add-pos-function "transpose-sexp" (λ (e p) (send e transpose-sexp p)))
+          (add-pos-function "mark-matching-parenthesis"
+                            (λ (e p) (send e mark-matching-parenthesis p)))
+          (add-pos-function "introduce-let-ans"
+                            (λ (e p) (send e introduce-let-ans p)))
+          (add-pos-function "move-sexp-out"
+                            (λ (e p) (send e move-sexp-out p)))
           
           (let ([add-edit-function
                  (λ (name call-method)
@@ -1145,7 +1169,9 @@
             ;(map-meta "c:m" "mark-matching-parenthesis")
             ; this keybinding doesn't interact with the paren colorer
             )
-          (send keymap map-function "c:c;c:b" "remove-parens-forward")))
+          (send keymap map-function "c:c;c:b" "remove-parens-forward")
+          (send keymap map-function "c:c;c:l" "introduce-let-ans")
+          (send keymap map-function "c:c;c:o" "move-sexp-out")))
       
       (define keymap (make-object keymap:aug-keymap%))
       (setup-keymap keymap)
