@@ -883,27 +883,30 @@
           [define select-down-sexp (λ () (select-text (λ (x) (find-down-sexp x)) #t))]
           
           (define/public (introduce-let-ans pos)
-            (begin-edit-sequence)
-            (let ([before-text "(let ([ans "]
-                  [after-text "])\n"]
-                  [after-text2 "(printf \"~s\\n\" ans)\nans)"]
-                  [end-l (get-forward-sexp pos)])
-              (cond
-                [end-l
-                 (insert after-text2 end-l end-l)
-                 (insert after-text end-l end-l)
-                 (insert before-text pos pos)
-                 (let ([blank-line-pos (+ end-l (string-length after-text) (string-length before-text))])
-                   (set-position blank-line-pos blank-line-pos))
-                 (tabify-selection 
-                  (- pos (string-length before-text))
-                  (+ end-l 
-                     (string-length before-text)
-                     (string-length after-text)
-                     (string-length after-text2)))]
-                [else
-                 (bell)]))
-            (end-edit-sequence))
+            (dynamic-wind
+             (λ () (begin-edit-sequence))
+             (λ ()
+               (let ([before-text "(let ([ans "]
+                     [after-text "])\n"]
+                     [after-text2 "(printf \"~s\\n\" ans)\nans)"]
+                     [end-l (get-forward-sexp pos)])
+                 (cond
+                   [end-l
+                    (insert after-text2 end-l end-l)
+                    (insert after-text end-l end-l)
+                    (insert before-text pos pos)
+                    (let ([blank-line-pos (+ end-l (string-length after-text) (string-length before-text))])
+                      (set-position blank-line-pos blank-line-pos))
+                    (tabify-selection 
+                     pos
+                     (+ end-l 
+                        (string-length before-text)
+                        (string-length after-text)
+                        (string-length after-text2)))]
+                   [else
+                    (bell)])))
+             (λ ()
+               (end-edit-sequence))))
           
           (define/public (move-sexp-out begin-inner)
             (begin-edit-sequence)
