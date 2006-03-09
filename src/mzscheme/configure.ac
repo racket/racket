@@ -381,6 +381,9 @@ case $OS in
   OpenBSD)
     LIBS="$LIBS -rdynamic"
     ;;
+  NetBSD)
+    LIBS="$LIBS -rdynamic"
+    ;;
   IRIX)
     STATICLINK="/usr/lib/libC.a /usr/lib/libmalloc.a"
     if test "$X_PRE_LIBS" = " -lSM -lICE" ; then

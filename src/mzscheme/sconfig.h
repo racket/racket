@@ -264,7 +264,9 @@
 
 # define STACK_GROWS_DOWN
 
+#ifndef __ELF__
 # define UNDERSCORE_DYNLOAD_SYMBOL_PREFIX
+#endif
 
 # define USE_IEEE_FP_PREDS
 # define POW_HANDLES_INF_CORRECTLY
@@ -303,7 +305,9 @@
 
 # define STACK_GROWS_DOWN
 
+#ifndef __ELF__
 # define UNDERSCORE_DYNLOAD_SYMBOL_PREFIX
+#endif
 
 # define USE_IEEE_FP_PREDS
 # define POW_HANDLES_INF_CORRECTLY
