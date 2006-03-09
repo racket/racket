@@ -196,7 +196,8 @@
 					    (with-handlers ([exn:fail:filesystem?
 							     (lambda (x)
 							       (if force?
-								   (print-status "warning: missing required collection ~s" coll-path)
+								   (print-status 
+								    (format "warning: missing required collection ~s" coll-path))
 								   (error "cannot install; missing required collection" coll-path)))])
 					      (apply collection-path coll-path))
 					    (let ([inst-version 
@@ -216,7 +217,7 @@
 									   '<unknown>
 									   inst-version))])
 						      (if force?
-							  (print-status "warning: ~a" msg)
+							  (print-status (format "warning: ~a" msg))
 							  (error (format "cannot install; ~a" msg)))))
 						  (loop (cdr v) (cdr iv)))))))
 					l))))
