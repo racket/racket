@@ -2,6 +2,30 @@
         Version 302
 ------------------------------
 
+  . Added two new keybindings to DrScheme (in Scheme mode):
+
+    c-c; c-o move-sexp-out: the sexpression following the insertion
+    point is put in place of its containing sexpression.
+
+    c-c; c-l insert-let-binding: wraps a let around the sexpression
+    following the insertion point and puts a printf in at that point
+    (useful for debugging)
+
+  . Case-insensitivity is now available in DrScheme's search box,
+    courtesy of Jens Axel Sogaard. Thanks!
+
+  . The image.ss teachpack now uses smoothed images.
+
+  . drscheme-language-positions and
+    drscheme-language-readers now allows relative paths for
+    language module specifications.
+
+  . Added `this', implicitly bound in ->r and ->pp contracts
+    when used inside `object-contract'
+
+  . union is now deprecated in favor of or/c. It's the same
+    combinator, but it matches other names in the contract library.
+
   . Added `this', implicitly bound in ->r and ->pp contracts
     when used inside `object-contract'
 
