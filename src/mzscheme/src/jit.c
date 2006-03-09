@@ -3804,6 +3804,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
 	jit_str_p(JIT_RUNSTACK, JIT_R0);
       }
       jit_movi_i(JIT_R1, argc);
+      JIT_UPDATE_THREAD_RSPTR();
       mz_prepare(2);
       jit_pusharg_p(JIT_RUNSTACK);
       jit_pusharg_p(JIT_R1);
