@@ -456,7 +456,7 @@
 	  (-> simple-rel-to-module-path-v/c)))
 
   (provide/contract
-   [check-module-form (syntax? symbol? (or/c string? false/c) 
+   [check-module-form (syntax? symbol? (or/c string? path? false/c) 
 			       . -> . any)]
 
    [get-module-code ([path-string?]
