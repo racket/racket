@@ -74,7 +74,7 @@
                    set)
                   (parameterize ([current-inspector (make-inspector)])
                     (make-struct-type 'exn:fail:contract2
-                                      struct:exn:fail
+                                      struct:exn:fail:contract
                                       1
                                       0
                                       #f

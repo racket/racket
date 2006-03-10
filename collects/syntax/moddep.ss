@@ -2,6 +2,7 @@
 (module moddep mzscheme
   (require (lib "etc.ss")
 	   (lib "port.ss")
+	   (lib "contract.ss")
            (lib "resolver.ss" "planet"))
   
 
@@ -212,7 +213,7 @@
 	  relto)]
      [(pair? relto) relto]
      [(not dir?)
-      (error 'resolve-module-path-index "can't resolve \"self\" with just a relative directory ~e" relto)]
+      (error 'resolve-module-path-index "can't resolve \"self\" with non-path relative-to: ~e" relto)]
      [(procedure? relto) (relto)]
      [else
       (current-directory)]))
@@ -321,7 +322,10 @@
 							(path->bytes e)
 							e))]))
 			elements)))]
-		[else (let ([path (path->string
+		[else (let ([path ((if (and (ormap path? elements)
+					    (eq? (car relto-mp) 'file))
+				       values
+				       path->string)
 				   (apply build-path
 					  (let-values ([(base n d?) (split-path (cadr relto-mp))])
 					    (if (eq? base 'relative)
@@ -332,9 +336,11 @@
 						  [(bytes? i) (bytes->path i)]
 						  [else i]))
 					       elements)))])
-			(if (eq? (car relto-mp) 'lib)
-			    `(lib ,path ,(caddr relto-mp))
-			    `(file ,path)))]))])
+			(if (path? path)
+			    path
+			    (if (eq? (car relto-mp) 'lib)
+				`(lib ,path ,(caddr relto-mp))
+				`(file ,path))))]))])
 	(cond
 	 [(string? s)
 	  ;; Parse Unix-style relative path string
@@ -412,18 +418,78 @@
 	  (for-each (mk-loop " [for-syntax]") fs-imports)
 	  (for-each (mk-loop " [for-template]") ft-imports)))))
 
-  (provide check-module-form
+  (define (module-path-v-string? v)
+    (and (regexp-match #rx"^[-a-zA-Z0-9./]+$" v)
+	 (not (regexp-match #rx"^/" v))
+	 (not (regexp-match #rx"/$" v))))
 
-	   get-module-code
-           exn:get-module-code
-           exn:get-module-code?
-           exn:get-module-code-path
-           make-exn:get-module-code
+  (define (module-path-v? v)
+    (cond
+     [(path? v) #t]
+     [(string? v)
+      (module-path-v-string? v)]
+     [(pair? v)
+      (case (car v)
+	[(file) (and (pair? (cdr v))
+		     (path-string? (cadr v))
+		     (null? (cddr v)))]
+	[(lib) (and (pair? (cdr v))
+		    (list? (cdr v))
+		    (map module-path-v-string? (cdr v)))]
+	[(planet) #t]
+	[else #f])]
+     [else #f]))
+
+  (define rel-to-path-string/thunk/#f
+    (or/c path-string?
+	  (-> path-string?)
+	  false/c))
+
+  (define simple-rel-to-module-path-v/c
+    (or/c
+     (list/c (symbols 'lib) module-path-v-string? module-path-v-string?)
+     (list/c (symbols 'file) (and/c string? path-string?))
+     path-string?))
+
+  (define rel-to-module-path-v/c
+    (or/c simple-rel-to-module-path-v/c
+	  (-> simple-rel-to-module-path-v/c)))
+
+  (provide/contract
+   [check-module-form (syntax? symbol? (or/c string? false/c) 
+			       . -> . any)]
+
+   [get-module-code ([path-string?]
+		     [(and/c path-string?
+			     relative-path?)
+		      (any/c . -> . any)
+		      (or/c false/c
+			    (path? boolean? . -> . any))]
+		     . opt-> .
+		     any)])
+
+  (provide
+   exn:get-module-code
+   exn:get-module-code?
+   exn:get-module-code-path
+   make-exn:get-module-code)
            
-	   resolve-module-path
-	   resolve-module-path-index
+  (provide/contract
+   [resolve-module-path (module-path-v?
+			 rel-to-path-string/thunk/#f
+			 . -> . path?)]
+   [resolve-module-path-index ((or/c symbol?
+				     module-path-index?)
+			       rel-to-path-string/thunk/#f
+			       . -> . path?)]
 
-	   collapse-module-path
-	   collapse-module-path-index
-
-	   show-import-tree))
+   [collapse-module-path (module-path-v?
+			  rel-to-module-path-v/c
+			  . -> . 
+			  simple-rel-to-module-path-v/c)]
+   [collapse-module-path-index ((or/c symbol?
+				      module-path-index?)
+				rel-to-module-path-v/c
+				. -> . simple-rel-to-module-path-v/c)])
+  
+  (provide show-import-tree))

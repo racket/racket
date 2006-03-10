@@ -338,23 +338,27 @@ currently exist).
 
 > (resolve-module-path module-path-v rel-to-path-string/thunk/#f) -
   resolves a module path to filename path. The module path is resolved
-  relative to `rel-to-path-string/thunk/#f' if it is a path string, to
-  the directory result of calling the thunk if it is a thunk, or to
-  the current directory otherwise.
+  relative to `rel-to-path-string/thunk/#f' if it is a path string
+  (assumed to be for a file), to the directory result of calling the
+  thunk if it is a thunk, or to the current directory otherwise. The
+  `module-path-v' argument is a quoted module path, as for MzScheme's
+  `dynamic-require' using the default module path resolver.
 
 > (resolve-module-path-index module-path-index rel-to-path-string/thunk/#f)
   - like `resolve-module-path' but the input is a module path index
   (see the MzScheme manual for details); in this case, the
-  `rel-to-path-string/thunk/#f' base is used where the module path index
-  contains the "self" index.  If `module-path-v' represents the
-  "self" module path index, then an exception is raised unless
+  `rel-to-path-string/thunk/#f' base is used where the module path
+  index contains the "self" index.  If `module-path-index' depends on
+  the "self" module path index, then an exception is raised unless
   `rel-to-path-string/thunk/#f' is a path string.
 
 > (collapse-module-path module-path-v rel-to-module-path-v) - returns
   a "simplified" module path by combining `module-path-v' with
   `rel-to-module-path', where the latter must have the form '(lib
   <relative-path> <collection>), '(file <string>), a path, or a thunk
-  to generate one of those.
+  to generate one of those. The `module-path-v' argument is a quoted
+  module path, as for MzScheme's `dynamic-require' using the default
+  module path resolver.
 
   The result can be a path if `module-path-v' contains a path element
   that is needed for the result, or if `rel-to-module-path-v' is a
