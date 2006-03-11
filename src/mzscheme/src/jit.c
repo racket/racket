@@ -3980,6 +3980,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     jit_pusharg_p(JIT_RUNSTACK);
     jit_pusharg_i(JIT_R1);
     (void)jit_finish(scheme_checked_vector_ref);
+    /* doesn't return */
     CHECK_LIMIT();
     
     mz_patch_branch(ref);
@@ -4078,7 +4079,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
 #endif
 #ifdef MZ_USE_JIT_I386
 # ifdef _CALL_DARWIN
-	mz_set_local(JIT_V1, JIT_LOCAL3);
+	mz_set_local_p(JIT_V1, JIT_LOCAL3);
 # else
 	jit_pushr_p(JIT_V1);
 # endif
@@ -4206,7 +4207,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
 #endif
 #ifdef MZ_USE_JIT_I386
 # ifdef _CALL_DARWIN
-	  mz_get_local(JIT_V1, JIT_LOCAL3);
+	  mz_get_local_p(JIT_V1, JIT_LOCAL3);
 # else
 	  jit_popr_p(JIT_V1);
 # endif
