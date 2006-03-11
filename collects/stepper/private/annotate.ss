@@ -27,6 +27,7 @@
                 (list?)
                 (any/c))                 ; procedure for runtime break
         boolean?                        ; track-inferred-name?
+        string?                         ; language-level-name : not a nice way to abstract.
         syntax?)]                       ; results
    #;[top-level-rewrite (-> syntax? syntax?)])
 
@@ -106,7 +107,7 @@
                [let-bound-bindings null]
                [cond-test (lx #f)])
       (if (or (syntax-property stx 'stepper-skip-completely)
-              (syntax-property stx '.stepper-define-struct-hint))
+              (syntax-property stx 'stepper-define-struct-hint))
           stx
           (let* ([recur-regular 
                   (lambda (stx)
@@ -258,7 +259,7 @@
   ; c) a boolean indicating whether to store inferred names.
   ;
   
-  (define (annotate main-exp break track-inferred-names?)
+  (define (annotate main-exp break track-inferred-names? language-level-name)
     #;(define _ (fprintf (current-error-port) "input to annotate: ~v\n" (syntax-object->datum main-exp)))
 
     (define binding-indexer
@@ -1059,7 +1060,25 @@
                  (lambda () . rest2)
                  (lambda () . rest3)))
            exp]
-          [else (error `annotate/top-level "unexpected top-level expression: ~a\n" (syntax-object->datum exp))])))
+          [else (begin
+                  (fprintf (current-error-port) "~v\n" (syntax-object->datum exp))
+                  (error `annotate/top-level "unexpected top-level expression: ~a\n" (syntax-object->datum exp)))])))
+    
+    (define/contract annotate/top-level/acl2
+      (syntax? . -> . syntax?)
+      (lambda (exp)
+        (syntax-case exp (begin define-values #%app)
+          [(begin contract-thingy 
+                  (begin body (begin)))
+           #`(begin contract-thingy (begin #,(annotate/module-top-level #`body) (begin)))]
+          [else (annotate/module-top-level exp)]
+          
+          #;[else (begin
+                  (fprintf (current-error-port) "~v\n" (syntax-object->datum exp))
+                  (error `annotate/top-level "unexpected top-level expression: ~a\n" (syntax-object->datum exp)))])))
+    
+    
+    
     
     (define/contract annotate/module-top-level
       (syntax? . -> . syntax?)
@@ -1111,6 +1130,10 @@
     
     ; body of local
     #;(printf "input: ~a\n" exp)
-    (let* ([annotated-exp (annotate/top-level main-exp)])
+    (let* ([annotated-exp (cond 
+                            [(string=? language-level-name "ACL2 Beginner (beta 8)")
+                             (annotate/top-level/acl2 main-exp)]
+                            [else 
+                             (annotate/top-level main-exp)])])
       #;(printf "annotated: \n~a\n" (syntax-object->datum annotated-exp))
       annotated-exp)))

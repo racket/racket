@@ -146,6 +146,7 @@
           (drscheme:language-configuration:language-settings-language language-settings))
         (define language-level-name
           (car (last-pair (send language get-language-position))))
+        
                 
         ;; VALUE CONVERSION CODE:
         
@@ -190,12 +191,15 @@
         
         ;; render-to-sexp : TST -> sexp
         (define (render-to-sexp val)
-          (parameterize ([current-print-convert-hook (make-print-convert-hook simple-settings)])
-            (set-print-settings
-             language
-             simple-settings
-             (lambda () 
-               (simple-module-based-language-convert-value val simple-settings)))))
+          (cond
+            [(string=? language-level-name "ACL2 Beginner (beta 8)") 
+             (simple-module-based-language-convert-value val simple-settings)]
+            [else (parameterize ([current-print-convert-hook (make-print-convert-hook simple-settings)])
+                    (set-print-settings
+                     language
+                     simple-settings
+                     (lambda () 
+                       (simple-module-based-language-convert-value val simple-settings))))]))
         
         (define (>>> x) 
           (fprintf (current-error-port) ">>> ~v\n" x)
@@ -433,7 +437,8 @@
         (model:go program-expander-prime receive-result (get-render-settings render-to-string render-to-sexp #t)
                   (not (member language-level-name
                                (list (string-constant intermediate-student/lambda)
-                                     (string-constant advanced-student)))))
+                                     (string-constant advanced-student))))
+                  language-level-name)
         (send s-frame show #t)
         
         s-frame)
