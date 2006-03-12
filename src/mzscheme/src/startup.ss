@@ -1098,8 +1098,9 @@
 			  (if (stx-vector? e ,len)
 			      ,body
 			      #f))
-		       did-var?)
-		      (let-values ([(match-elem elem-did-var? <false>>) 
+		       did-var?
+		       #f)
+		      (let-values ([(match-elem elem-did-var? <false>) 
 				    (let ([e (vector-ref (syntax-e p) (sub1 pos))])
 				      (m&e e e use-ellipses? (not did-var?) #f))])
 			(loop (sub1 pos)
