@@ -332,4 +332,9 @@
 
 ;; ----------------------------------------
 
+(test 10 'vector-pattern (syntax-case #() () [#() 10]))
+(test 'b 'vector-pattern (syntax-case #(a b c) () [#(x y z) (syntax-e #'y)]))
+
+;; ----------------------------------------
+
 (report-errs)
