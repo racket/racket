@@ -290,7 +290,7 @@ currently exist).
 > (with-module-reading-parameterization thunk) - calls `thunk' with
   all reader parameters reset to their default values.
 
-> (check-module-form stx expected-module-sym filename-string-or-#f) -
+> (check-module-form stx expected-module-sym source-or-#f) -
   inspects `stx' to check whether evaluating it will declare a module
   named `expected-module-sym' (plus a prefix, if
   `current-module-name-prefix' is set) --- at least if `module' is
@@ -301,8 +301,9 @@ currently exist).
   `check-module-form' procedure returns a syntax object that certainly
   will declare a module (adding explicit context to the leading
   `module' if necessary) in any top-level. Otherwise, if
-  `filename-string-or-#f' is a string, a suitable exception is raised,
-  and if `filename-string-or-#f' is #f, #f is returned.
+  `source-string-or-#f' is not #f, a suitable exception is raised
+  using the `write' form of the source in the message; if
+  `source-or-#f' is #f, #f is returned.
 
   If stx is eof or eof wrapped as a syntax object, then an error is
   raised or #f is returned.

@@ -78,12 +78,13 @@
 				 (module-path-index-join #f #f)))
 	rel-to))
 
-(test-cmp '(lib "./x.ss" "nonesuch") "x.ss" '(lib "y.ss" "nonesuch"))
-(test-cmp '(lib "./x.ss" "nonesuch") "x.ss" (lambda () '(lib "y.ss" "nonesuch")))
-(test-cmp '(lib "./down/x.ss" "nonesuch") "down/x.ss" '(lib "y.ss" "nonesuch"))
-(test-cmp '(lib "./x.ss" "mzlib") '(lib "x.ss") '(lib "y.ss" "nonesuch"))
-(test-cmp '(lib "./../x.ss" "nonesuch/private") "../x.ss" '(lib "y.ss" "nonesuch/private"))
-(test-cmp '(lib "./private/x.ss" "alsonot") '(lib "x.ss" "alsonot" "private") '(lib "y.ss" "nonesuch"))
+(test-cmp '(lib "x.ss" "nonesuch") "x.ss" '(lib "y.ss" "nonesuch"))
+(test-cmp '(lib "x.ss" "nonesuch") "x.ss" (lambda () '(lib "y.ss" "nonesuch")))
+(test-cmp '(lib "down/x.ss" "nonesuch") "down/x.ss" '(lib "y.ss" "nonesuch"))
+(test-cmp '(lib "x.ss" "mzlib") '(lib "x.ss") '(lib "y.ss" "nonesuch"))
+(test-cmp '(lib "../x.ss" "nonesuch/private") "../x.ss" '(lib "y.ss" "nonesuch/private"))
+(test-cmp '(lib "private/../x.ss" "nonesuch") "../x.ss" '(lib "private/y.ss" "nonesuch"))
+(test-cmp '(lib "private/x.ss" "alsonot") '(lib "x.ss" "alsonot" "private") '(lib "y.ss" "nonesuch"))
 
 (test-cmp (build-path (current-directory) "x.ss") "x.ss" (build-path (current-directory) "other"))
 (test-cmp `(file ,(path->string (build-path (current-directory) "x.ss")))
@@ -102,7 +103,7 @@
 	  (bytes->path #"\xFF")
 	  `(file ,(path->string (build-path (current-directory) "other"))))
 
-(test '(lib "./x.ss" "alsonot")
+(test '(lib "x.ss" "alsonot")
       collapse-module-path-index 
       (module-path-index-join "x.ss"
 			      (module-path-index-join
