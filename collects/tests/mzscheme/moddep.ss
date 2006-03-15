@@ -1,5 +1,4 @@
-
-;; FIXME: this file needs tests for planet paths
+;; FIXME: this file needs to test resolve-module-path for planet paths
 
 (load-relative "loadtest.ss")
 
@@ -55,6 +54,9 @@
   (test-rmp (build-path (current-directory) "x.ss") (build-path "x.ss") #f)
   (void))
 
+
+ 
+ 
 (err/rt-test (resolve-module-path "apple.ss" 'no))
 (err/rt-test (resolve-module-path "/apple.ss" #f))
 (err/rt-test (resolve-module-path "apple.ss/" #f))
@@ -93,6 +95,15 @@
 (test-cmp (build-path (current-directory) "x.ss")
 	  (build-path "x.ss")
 	  `(file ,(path->string (build-path (current-directory) "other"))))
+
+(test-cmp '(planet "x.ss" ("usr" "pkg.plt" 1)) "x.ss" '(planet "y.ss" ("usr" "pkg.plt" 1)))
+(test-cmp '(planet "x.ss" ("usr" "pkg.plt" 1 0)) "x.ss" (lambda () '(planet "y.ss" ("usr" "pkg.plt" 1 0))))
+(test-cmp '(planet "path/x.ss" ("a" "p.plt" 1)) "path/x.ss" '(planet "z.ss" ("a" "p.plt" 1)))
+(test-cmp '(planet "path/../x.ss" ("a" "p.plt" 2)) "../x.ss" '(planet "path/z.ss" ("a" "p.plt" 2)))
+(test-cmp '(planet "x.ss" ("m" "z.plt" 2)) '(planet "x.ss" ("m" "z.plt" 2)) '(planet "o.ss" ("a" "q.plt" 54 3)))
+(test-cmp '(planet "x.ss" ("m" "z.plt" 2)) '(planet "x.ss" ("m" "z.plt" 2)) '(lib "o.ss" "nonesuch"))
+(test-cmp '(planet "x.ss" ("m" "z.plt" 2)) '(planet "x.ss" ("m" "z.plt" 2)) '(file "q.ss"))
+(test-cmp '(planet "x.ss" ("m" "z.plt" 2)) '(planet "x.ss" ("m" "z.plt" 2)) "where/in/the/world/cs.ss")
 
 ;; Try path cases that don't fit UTF-8 (and therefore would go wrong as a string):
 (let ([dir (build-path (current-directory) (bytes->path #"\xFF"))])

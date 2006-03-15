@@ -423,7 +423,7 @@
 	(let ((cols (cdddr s)))
 	  `(planet 
 	    ,(attach-to-relative-path-string 
-	      (append (cdr cols)
+	      (append cols
 		      (list (cadr s)))
 	      ".")
 	    ,(caddr s)))]
@@ -493,7 +493,7 @@
      (list/c (symbols 'file) (and/c string? path-string?))
      ;; not quite specific enough of a contract -- it should also spell out what's
      ;; allowed in the package spec 
-     (cons/c (symbols 'planet) (cons/c (listof any/c) (listof string?)))
+     (cons/c (symbols 'planet) (cons/c string? (cons/c (listof any/c) (listof string?))))
      path-string?))
 
   (define rel-to-module-path-v/c
