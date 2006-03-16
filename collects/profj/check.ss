@@ -722,7 +722,7 @@
   
   (define (inherited-field-not-set-error name src)
     (raise-error (string->symbol name)
-                 (format "Inherited field ~a must be set in the constructor for the current class" name)
+                 (format "Inherited field ~a must be set in the constructor for the current class." name)
                  (string->symbol name) src))
   
   ;raise-forward-reference: id src -> void
@@ -872,15 +872,15 @@
   (define (method-error kind method src)
     (raise-error method
                  (case kind
-                   ((no-reachable) (format "method ~a does not have a reachable return" method))
+                   ((no-reachable) (format "Method ~a does not have a reachable return." method))
                    ((abstract)
                     (let ((line1 
-                           (format "abstract method ~a has an implementation, abstract methods may not have implementations"
+                           (format "Abstract method ~a has an implementation, abstract methods may not have implementations."
                                    method))
-                          (line2 "Either a ';'should come after the header, or the method should not be abstract"))
+                          (line2 "Either a ';'should come after the header, or the method should not be abstract."))
                       (format "~a~n~a" line1 line2)))
-                   ((native) (format "native method ~a has an implementation which is not allowed" method))
-                   ((no-body) (format "method ~a has no implementation and is not abstract" method)))
+                   ((native) (format "Native method ~a has an implementation which is not allowed." method))
+                   ((no-body) (format "Method ~a has no implementation and is not abstract." method)))
                  method src))
   
   ;var-init-error: symbol symbol type type src -> void
@@ -888,10 +888,10 @@
     (raise-error name
                  (case kind
                    ((array)
-                    (format "Expected ~a to be of declared type ~a, given an array" 
+                    (format "Expected ~a to be of declared type ~a, given an array." 
                             name (type->ext-name dec-type)))
                    ((other)
-                    (format "Expected ~a to be assignable to declared type ~a, given ~a which is unrelated"
+                    (format "Expected ~a to be assignable to declared type ~a, given ~a which is unrelated."
                             name (type->ext-name dec-type) (type->ext-name given))))
                  name src))
 
@@ -900,7 +900,7 @@
     (let ((d (type->ext-name dec-type))
           (g (type->ext-name given)))
       (raise-error g
-                   (format "Error initializing declared array of ~a, given element with incompatible type ~a"
+                   (format "Error initializing declared array of ~a, given element with incompatible type ~a."
                            d g)
                    d src)))
 
@@ -908,7 +908,7 @@
   (define (field-not-set-error name class kind src)
     (let ((n (id->ext-name name)))
       (raise-error n
-                   (format "Field ~a from ~a must be set in the ~a and is not"
+                   (format "Field ~a from ~a must be set in the ~a and is not."
                            n
                            class
                            (case kind
@@ -921,7 +921,7 @@
   (define (beginner-ctor-error class kind src)
     (let ((exp (statement->ext-name kind)))
       (raise-error exp
-                   (format "Constructor for ~a may only assign the fields of ~a. Found illegal statement ~a"
+                   (format "Constructor for ~a may only assign the fields of ~a. Found illegal statement ~a."
                            class class exp)
                    exp src)))
   
@@ -931,10 +931,10 @@
      '=
      (case kind
        ((not-left-this)
-        "Constructor must assign the class's fields. This expression is not a field of this class and maynot be assigned")
+        "Constructor must assign the class's fields. This expression is not a field of this class and maynot be assigned.")
        ((right-this)
-        "The constructor maynot assign fields with other of its fields. Other values must be used"))
-     '= src))          
+        "The constructor maynot assign fields with other of its fields. Other values must be used."))
+     '= src))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;Statement checking functions
@@ -1263,7 +1263,7 @@
   ;make-condition-error: symbol type src -> void
   (define (kind-condition-error kind cond src)
     (raise-error kind
-                 (format "~a condition must be a boolean: Given ~a" 
+                 (format "~a condition must be a boolean: Given ~a." 
                          kind (type->ext-name cond))
                  kind src))
     
@@ -1273,9 +1273,9 @@
       (raise-error 'throw
                    (case kind
                      ((not-throwable)
-                      (format "Expression for throw must be a subtype of Throwable: given ~a" t))
+                      (format "Expression for throw must be a subtype of Throwable: given ~a." t))
                      ((not-declared)
-                      (format "Thrown type ~a must be declared as thrown or caught" t)))
+                      (format "Thrown type ~a must be declared as thrown or caught." t)))
                    'throw src)))
   
   ;return-error: symbol type type src -> void
@@ -1289,11 +1289,11 @@
           (let ((line1 
                  (format "The return expression's type must be equal to or a subclass of the method's return ~a." e))
                 (line2
-                 (format "The given expression has type ~a which is not equivalent to the declared return" g)))
+                 (format "The given expression has type ~a which is not equivalent to the declared return." g)))
             (format "~a~n~a" line1 line2)))
-         ((void) "No value should be returned from void method, found a returned value")
+         ((void) "No value should be returned from void method, found a returned value.")
          ((val)
-          (format "Expected a return value assignable to ~a. No value was given" e)))
+          (format "Expected a return value assignable to ~a. No value was given." e)))
        'return src)))
 
   ;illegal-redefinition: id src -> void
@@ -1316,7 +1316,7 @@
   ;catch-error: type src -> void
   (define (catch-error given src)
     (raise-error 'catch
-                 (format "catch clause must catch an argument of subclass Throwable: Given ~a"
+                 (format "Catch clause must catch an argument of subclass Throwable: Given ~a"
                          (type->ext-name given))
                  'catch src))
   
@@ -1336,23 +1336,23 @@
   ;illegal-label: symbol string src -> void
   (define (illegal-label kind label src)
     (raise-error kind
-                 (format "~a references label ~a, no enclosing statement has this label"
+                 (format "~a references label ~a, no enclosing statement has this label."
                          kind label)
                  kind src))
                  
   ;break-error: src -> void
   (define (break-error src level)
     (raise-error 'break (if (eq? level 'full) 
-                            "break must be in either a loop or a switch"
-                            "break must be in a loop")
+                            "'break' must be in either a loop or a switch."
+                            "'break' must be in a loop.")
                  'break src))
   (define (continue-error src)
-    (raise-error 'continue "continue must be in a loop" 'continue src))
+    (raise-error 'continue "'continue' must be in a loop." 'continue src))
 
   ;synch-error: type src -> void
   (define (synch-error given src)
     (raise-error 'synchronize
-                 (format "synchronization expression must be a subtype of Object: Given ~a"
+                 (format "Synchronization expression must be a subtype of Object: Given ~a"
                          (type->ext-name given))
                  'synchronize src))                                        
   
@@ -2663,9 +2663,9 @@
       (raise-error
        op
        (case side
-         ((right) (format "Right hand side of ~a should be of type ~a, but given ~a" op ext-out rt))
-         ((left) (format "Left hand side of ~a should be of type ~a, but given ~a" op ext-out lt))
-         (else (format "~a expects arguments of type ~a, but given ~a and ~a" op ext-out lt rt)))
+         ((right) (format "Right hand side of ~a should be of type ~a, but given ~a." op ext-out rt))
+         ((left) (format "Left hand side of ~a should be of type ~a, but given ~a." op ext-out lt))
+         (else (format "~a expects arguments of type ~a, but given ~a and ~a." op ext-out lt rt)))
        op src)))
   
   ;bin-op-beginner-error symbol type type src -> void
@@ -2725,11 +2725,11 @@
       (raise-error 
        name
        (case kind
-         ((not-found) (format "reference to undefined identifier ~a" name))
-         ((class-name) (format "class named ~a cannot be used as a variable, which is how it is used here" name))
+         ((not-found) (format "Reference to undefined identifier ~a." name))
+         ((class-name) (format "Class named ~a cannot be used as a variable, which is how it is used here." name))
          ((method-name) 
           (let ((line1
-                 (format "method named ~a cannot be used as a variable, which is how it is used here." name))
+                 (format "Method named ~a cannot be used as a variable, which is how it is used here." name))
                 (line2 "A call to a method should be followed by () and any arguments to the method"))
             (format "~a~n~a" line1 line2))))
        name src)))
@@ -2779,17 +2779,17 @@
      name
      (case level
        ((beginner intermediate) 
-        (format "Field ~a cannot be retrieved from a class, ~a can only be accessed from an instance of the class"
+        (format "Field ~a cannot be retrieved from a class, ~a can only be accessed from an instance of the class."
                 name name))
        ((advanced full)
-        (format "Field ~a accessed as though static; this field is not a static field" name)))
+        (format "Field ~a accessed as though static; ~a is not a static field" name name)))
      name src))
   
   ;beginner-field-access-error: symbol src -> void
   (define (beginner-field-access-error name src)
     (raise-error
      name
-     (format "field ~a from the current class accessed as a variable. fields should be accessed with 'this'" name)
+     (format "Field ~a from the current class accessed as a variable. Fields should be accessed with 'this'." name)
      name src))
   
   ;illegal-field-access: symbol symbol symbol string src -> void

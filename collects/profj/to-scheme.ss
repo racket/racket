@@ -2360,7 +2360,7 @@
                (create-syntax #f 
                               `(let ((,unique-name ,expression))
                                  (if (null? ,unique-name)
-                                     (javaRuntime:nullError 'method)
+                                     ,(create-syntax #f `(javaRuntime:nullError 'method) expression)
                                      (send ,unique-name ,c-name ,@translated-args)))
                               (build-src src)))))
           
@@ -2621,10 +2621,15 @@
      (let*  ((class (get-class-name type))
              (ca-class (string->symbol (format "convert-assert-~a" (syntax-object->datum class))))
              (gc-class (string->symbol (format "guard-convert-~a" (syntax-object->datum class)))))
-       (make-syntax #f `(javaRuntime:cast-reference ,expr ,class ,ca-class ,gc-class
-                                                    ,(type-spec-dim type)
-                                                    (quote ,(get-class-name type)))
-                    (build-src src))))))
+       (if (or (eq? (syntax-object->datum class) 'String)
+               (eq? (syntax-object->datum class) 'java.lang.String))
+           (make-syntax #f `(javaRuntime:cast-reference ,expr ,class null null ,(type-spec-dim type)
+                                                        (quote ,(get-class-name type)))
+                        (build-src src))
+           (make-syntax #f `(javaRuntime:cast-reference ,expr ,class ,ca-class ,gc-class
+                                                        ,(type-spec-dim type)
+                                                        (quote ,(get-class-name type)))
+                        (build-src src)))))))
   
   ;translate-instanceof: syntax type-spec src -> syntax
   (define (translate-instanceof expr type src)

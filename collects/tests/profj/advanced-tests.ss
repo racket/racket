@@ -319,6 +319,12 @@ class WeeklyPlanner{
    (list '(void) '(void) '(void) '(void) 0 #f #\null null)
    "Array initialization checks")
   
+  (interact-test
+   'advanced
+   (list "Object o = \"\";" "(String) o")
+   (list '(void) 'o~f)
+   "Casting to a String")
+  
   (report-test-results)
   
   )
