@@ -638,14 +638,12 @@ add struct contracts for immutable structs?
   (define-syntax (recursive-contract stx)
     (syntax-case stx ()
       [(_ arg)
-       (syntax (recursive-contract/proc '(recursive-contract arg) (delay (check-contract arg))))]))
-  
-  (define (recursive-contract/proc name delayed-contract)
-    (make-contract name
-                   (λ (pos neg src str)
-                     (let ([proc (contract-proc (force delayed-contract))])
-                       (λ (val)
-                         ((proc pos neg src str) val))))))
+       (syntax (make-contract 
+                '(recursive-contract arg) 
+                (λ (pos neg src str)
+                  (let ([proc (contract-proc arg)])
+                    (λ (val)
+                      ((proc pos neg src str) val))))))]))
   
   (define (check-contract ctc)
     (unless (contract? ctc)
@@ -672,12 +670,11 @@ add struct contracts for immutable structs?
 
   
   
-  (provide anaphoric-contracts
-           flat-rec-contract
+  (provide flat-rec-contract
            flat-murec-contract
 	   or/c union
 	   not/c
-           =/c >=/c <=/c </c >/c 
+           =/c >=/c <=/c </c >/c between/c
            integer-in
            exact-integer-in
 	   real-in
@@ -748,27 +745,6 @@ add struct contracts for immutable structs?
       [(_ ([name ctc ...] ...))
        (raise-syntax-error 'flat-rec-contract "expected at least one body expression" stx)]))
       
-  
-  (define anaphoric-contracts
-    (case-lambda
-      [() (make-anaphoric-contracts (make-hash-table 'weak))]
-      [(x)
-       (unless (eq? x 'equal)
-         (error 'anaphoric-contracts "expected either no arguments, or 'equal as first argument, got ~e" x))
-       (make-anaphoric-contracts (make-hash-table 'equal 'weak))]))
-
-  (define (make-anaphoric-contracts ht)
-    (values
-     (flat-named-contract
-      "(anaphoric-contracts,from)"
-      (lambda (v)
-        (hash-table-put! ht v #t)
-        v))
-     (flat-named-contract
-      "(anaphoric-contracts,to)"
-      (lambda (v)
-        (hash-table-get ht v (lambda () #f))))))     
-  
   (define-syntax (union stx)
     (begin
 #;
@@ -830,10 +806,28 @@ add struct contracts for immutable structs?
                       [else
                        (partial-contract val)]))))))]
           [else
-           (build-flat-contract
-            (apply build-compound-type-name 'or/c flat-contracts)
-            (lambda (x)
-              (ormap (lambda (pred) (pred x)) predicates)))]))))
+           (make-flat-or/c-contract flat-contracts)]))))
+
+  (define-struct/prop flat-or/c-contract (flat-ctcs)
+    ((proj-prop flat-proj)
+     (name-prop (λ (ctc)
+                  (apply build-compound-type-name 
+                         'or/c 
+                         (flat-or/c-contract-flat-ctcs ctc))))
+     (stronger-prop
+      (λ (this that)
+        (and (flat-or/c-contract? that)
+             (let ([this-ctcs (flat-or/c-contract-flat-ctcs this)]
+                   [that-ctcs (flat-or/c-contract-flat-ctcs that)])
+               (and (= (length this-ctcs) (length that-ctcs))
+                    (andmap contract-stronger?
+                            this-ctcs
+                            that-ctcs))))))
+     (flat-prop (λ (ctc) 
+                  (let ([preds
+                         (map (λ (x) ((flat-get x) x))
+                              (flat-or/c-contract-flat-ctcs ctc))])
+                    (λ (x) (ormap (λ (p?) (p? x)) preds)))))))
   
   (define false/c
     (flat-named-contract
@@ -881,18 +875,32 @@ add struct contracts for immutable structs?
 	     (and (box? x)
 		  (printable? (unbox x))))))))
   
-  (define (=/c x)
-    (flat-named-contract
-     `(=/c ,x)
-     (lambda (y) (and (number? y) (= y x)))))
-  (define (>=/c x)
-    (flat-named-contract
-     `(>=/c ,x)
-     (lambda (y) (and (number? y) (>= y x)))))
-  (define (<=/c x)
-    (flat-named-contract
-     `(<=/c ,x)
-     (lambda (y) (and (number? y) (<= y x)))))
+  (define-struct/prop between/c (low high)
+    ((proj-prop flat-proj)
+     (name-prop (λ (ctc) 
+                  (let ([n (between/c-low ctc)]
+                        [m (between/c-high ctc)])
+                    (cond
+                      [(= n -inf.0) `(<=/c ,m)]
+                      [(= m +inf.0) `(>=/c ,n)]
+                      [(= n m) `(=/c ,n)]
+                      [else `(between/c ,n ,m)]))))
+     (stronger-prop
+      (λ (this that)
+        (and (between/c? that)
+             (<= (between/c-low that) (between/c-low this))
+             (<= (between/c-high this) (between/c-high that)))))
+     (flat-prop (λ (ctc) 
+                  (let ([n (between/c-low ctc)]
+                        [m (between/c-high ctc)])
+                    (λ (x) 
+                      (and (number? x)
+                           (<= n x m))))))))
+  (define (=/c x) (make-between/c x x))
+  (define (<=/c x) (make-between/c -inf.0 x))
+  (define (>=/c x) (make-between/c x +inf.0))
+  (define (between/c x y) (make-between/c x y))
+
   (define (</c x)
     (flat-named-contract
      `(</c ,x)

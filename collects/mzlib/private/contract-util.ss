@@ -1,14 +1,16 @@
 (module contract-util mzscheme
   (require "contract-helpers.scm"
+           "same-closure.ss"
            (lib "pretty.ss")
            (lib "list.ss"))
 
+  (require-for-syntax "contract-helpers.scm")
+  
   (provide raise-contract-error
            contract-violation->string
            coerce-contract 
            coerce/select-contract
-           contract?
-           contract-name
+           
            flat-contract/predicate?
            flat-contract?
            flat-contract
@@ -20,10 +22,82 @@
            and/c
            any/c
            
+           contract?
+           contract-name
            contract-proc
            make-contract
            build-flat-contract
-           make-flat-contract)
+           
+           define-struct/prop
+           
+           contract-stronger?
+           
+           proj-prop proj-pred? proj-get
+           name-prop name-pred? name-get
+           stronger-prop stronger-pred? stronger-get
+           flat-prop flat-pred? flat-get
+           flat-proj)
+  
+
+  ;; define-struct/prop is a define-struct-like macro that
+  ;; also allows properties to be defined
+  ;; it contains copied code (build-struct-names) in order to avoid
+  ;; a module cycle
+  (define-syntax (define-struct/prop stx)
+    (let ()
+      
+      (syntax-case stx ()
+        [(_ name (field ...) ((property value) ...))
+         (andmap identifier? (syntax->list (syntax (field ...))))
+         (let ([struct-names (build-struct-names (syntax name)
+                                                 (syntax->list (syntax (field ...)))
+                                                 #f
+                                                 #t
+                                                 stx)]
+               [struct-names/bangers (build-struct-names (syntax name)
+                                                         (syntax->list (syntax (field ...)))
+                                                         #t
+                                                         #f
+                                                         stx)]
+               [field-count/val (length (syntax->list (syntax (field ...))))])
+           (with-syntax ([struct:-name (list-ref struct-names 0)]
+                         [struct-maker (list-ref struct-names 1)]
+                         [predicate (list-ref struct-names 2)]
+                         [(count ...) (nums-up-to field-count/val)]
+                         [(selectors ...) (cdddr struct-names)]
+                         [(bangers ...) (cdddr struct-names/bangers)]
+                         [field-count field-count/val]
+                         [(field-indicies ...) (nums-up-to (length (syntax->list (syntax (field ...)))))])
+             (syntax
+              (begin
+                (define-values (struct:-name struct-maker predicate get set)
+                  (make-struct-type 'name
+                                    #f ;; super
+                                    field-count
+                                    0 ;; auto-field-k
+                                    '()
+                                    (list (cons property value) ...)))
+                (define selectors (make-struct-field-accessor get count 'field))
+                ...
+                (define bangers (make-struct-field-mutator set count 'field))
+                ...))))])))
+  
+  (define-values (proj-prop proj-pred? proj-get) 
+    (make-struct-type-property 'contract-projection))
+  (define-values (name-prop name-pred? name-get)
+    (make-struct-type-property 'contract-name))
+  (define-values (stronger-prop stronger-pred? stronger-get)
+    (make-struct-type-property 'contract-stronger-than))
+  (define-values (flat-prop flat-pred? flat-get)
+    (make-struct-type-property 'contract-flat))
+  
+  ;; contract-stronger? : contract contract -> boolean
+  ;; indicates if one contract is stronger (ie, likes fewer values) than another
+  ;; this is not a total order.
+  (define (contract-stronger? a b)
+    (let ([a-ctc (coerce-contract contract-stronger? a)]
+          [b-ctc (coerce-contract contract-stronger? b)])
+      ((stronger-get a-ctc) a-ctc b-ctc)))
   
   ;; coerce/select-contract : id (union contract? procedure-arity-1) -> contract-proc
   ;; contract-proc = sym sym stx -> alpha -> alpha
@@ -151,8 +225,7 @@
               ""))
         ""))
   
-  
-    ;                                                      
+  ;                                                      
   ;                                                      
   ;                                                      
   ;                                                      
@@ -188,28 +261,54 @@
   ;; the argument to the result function is the value to test.
   ;; (the result function is the projection)
   ;;  
+  (define (flat-proj ctc)
+    (let ([predicate ((flat-get ctc) ctc)]
+          [name ((name-get ctc) ctc)])
+      (λ (pos neg src-info orig-str)
+        (λ (val)
+          (if (predicate val)
+              val
+              (raise-contract-error
+               val
+               src-info
+               pos
+               neg
+               orig-str
+               "expected <~a>, given: ~e"
+               name
+               val))))))
+  
   (define-values (make-flat-contract
-                  flat-contract-predicate
-                  flat-contract?
-                  
-                  make-contract
-                  contract-name
-                  contract-proc
-                  contract?)
+                  make-contract)
     (let ()
-      (define-struct contract (name proc))
-      (define-struct (flat-contract contract) (predicate))
+      (define-struct/prop contract (the-name the-proc)
+        ((proj-prop (λ (ctc) (contract-the-proc ctc)))
+         (name-prop (λ (ctc) (contract-the-name ctc)))
+         (stronger-prop (λ (this that) 
+                          (and (contract? that)
+                               (same-closure? (contract-the-proc this)
+                                              (contract-the-proc that)))))))
+      (define-struct/prop flat-contract (the-name predicate)
+        ((proj-prop flat-proj)
+         (stronger-prop (λ (this that) 
+                          (and (flat-contract? that)
+                               (same-closure? (flat-contract-predicate this)
+                                              (flat-contract-predicate that)))))
+         (name-prop (λ (ctc) (flat-contract-the-name ctc)))
+         (flat-prop (λ (ctc) (flat-contract-predicate ctc)))))
       (values make-flat-contract
-              flat-contract-predicate
-              flat-contract?
-              
-              make-contract
-              contract-name
-              contract-proc
-              contract?)))
+              make-contract)))
   
+  (define (flat-contract-predicate x) 
+    (unless (flat-contract? x)
+      (error 'flat-contract-predicate "expected a flat contract, got ~e" x))
+    ((flat-get x) x))
+  (define (flat-contract? x) (flat-pred? x))
+  (define (contract-name ctc) ((name-get ctc) ctc))
+  (define (contract? x) (proj-pred? x))
+  (define (contract-proc ctc) ((proj-get ctc) ctc))
   
-    (define (flat-contract predicate)
+  (define (flat-contract predicate)
     (unless (and (procedure? predicate)
                  (procedure-arity-includes? predicate 1))
       (error 'flat-contract
@@ -228,28 +327,11 @@
              predicate name))
     (build-flat-contract name predicate))
   
-  (define (build-flat-contract name predicate)
-    (make-flat-contract
-     name
-     (lambda (pos neg src-info orig-str) 
-       (lambda (val)
-         (if (predicate val)
-             val
-             (raise-contract-error
-              val
-              src-info
-              pos
-              neg
-              orig-str
-              "expected <~a>, given: ~e"
-              name
-              val))))
-     predicate))
+  (define (build-flat-contract name predicate) (make-flat-contract name predicate))
   
   ;; build-compound-type-name : (union contract symbol) ... -> (-> sexp)
   (define (build-compound-type-name . fs)
-    (let loop ([subs fs]
-               [i 0])
+    (let loop ([subs fs])
       (cond
         [(null? subs)
          '()]
@@ -257,8 +339,8 @@
                 (cond
                   [(contract? sub)
                    (let ([mk-sub-name (contract-name sub)])
-                     `(,mk-sub-name ,@(loop (cdr subs) (+ i 1))))]
-                  [else `(,sub ,@(loop (cdr subs) i))]))])))
+                     `(,mk-sub-name ,@(loop (cdr subs))))]
+                  [else `(,sub ,@(loop (cdr subs)))]))])))
   
   (define (and/c . fs)
     (for-each
@@ -312,11 +394,7 @@
                      (loop (lambda (x) (fst (ctct x)))
                            (cdr rest)))]))))))]))
   
-  (define any/c
-    (make-flat-contract
-     'any/c
-     (lambda (pos neg src-info orig-str) (lambda (val) val))
-     (lambda (x) #t)))
+  (define any/c (make-flat-contract 'any/c (lambda (x) #t)))
   
   (define (flat-contract/predicate? pred)
     (or (flat-contract? pred)

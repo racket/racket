@@ -9,7 +9,9 @@
       (lambda (stx immediate-eval?)
 	(if (null? (use-compiled-file-paths))
 	    (orig stx immediate-eval?)
-	    (orig (errortrace-annotate stx) immediate-eval?))))))
+            (parameterize ([profiling-enabled #t])
+              (fprintf (current-error-port) "file ~s\n" (syntax-source stx))
+              (orig (errortrace-annotate stx) immediate-eval?)))))))
 
 
 

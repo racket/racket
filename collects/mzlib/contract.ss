@@ -1,10 +1,12 @@
 (module contract mzscheme
   (require "private/contract.ss"
            "private/contract-arrow.ss"
-           "private/contract-util.ss")
+           "private/contract-util.ss"
+           "private/contract-ds.ss")
   
   
   (provide 
+   (all-from "private/contract-ds.ss")
    (all-from "private/contract-arrow.ss")
    (all-from-except "private/contract-util.ss"
                     raise-contract-error

@@ -93,7 +93,6 @@
 
       (parse-at-id))
 
-
   ;; build-struct-names : id (list-of id) bool bool -> (list-of id)
   (define build-struct-names
     (opt-lambda (name-stx fields omit-sel? omit-set? [srcloc-stx #f])

@@ -77,6 +77,7 @@
     (let ([name (if (pair? contract)
                     (car contract)
                     contract)])
+      (test #t flat-contract? (eval contract))
       (test/spec-failed (format "~a fail" name)
                         `(contract ,contract ',fail 'pos 'neg)
                         "pos")
@@ -2999,36 +3000,6 @@
    #t)
 
   
-  (test/spec-passed 
-   'anaphoric1
-   '(contract (let-values ([(in out) (anaphoric-contracts)]) in)
-              1
-              'pos
-              'neg))
-  
-  (test/pos-blame
-   'anaphoric2
-   '(contract (let-values ([(in out) (anaphoric-contracts)]) out)
-              1
-              'pos
-              'neg))
-  
-  (test/spec-passed
-   'anaphoric3
-   '((contract (let-values ([(in out) (anaphoric-contracts)]) (-> in out))
-               (lambda (x) x)
-               'pos
-               'neg)
-     1))
-  
-  (test/pos-blame
-   'anaphoric4
-   '((contract (let-values ([(in out) (anaphoric-contracts)]) (-> in out))
-               (lambda (x) (* 2 x))
-               'pos
-               'neg)
-     1))
-  
   (test/pos-blame
    'promise/c1
    '(force (contract (promise/c boolean?)
@@ -3376,6 +3347,7 @@
   (test-name '(<=/c 5) (<=/c 5))
   (test-name '(</c 5) (</c 5))
   (test-name '(>/c 5) (>/c 5))
+  (test-name '(between/c 5 6) (between/c 5 6))
   (test-name '(integer-in 0 10) (integer-in 0 10))
   (test-name '(exact-integer-in 0 10) (exact-integer-in 0 10))
   (test-name '(real-in 1 10) (real-in 1 10))
@@ -3479,5 +3451,251 @@
   
   (test-name '(recursive-contract (box/c boolean?)) (recursive-contract (box/c boolean?)))
   (test-name '(recursive-contract x) (let ([x (box/c boolean?)]) (recursive-contract x)))
+  
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;
+  ;;  stronger tests
+  ;;
+  
+  (test #t contract-stronger? any/c any/c)
+  (test #t contract-stronger? (between/c 1 3) (between/c 0 4))
+  (test #f contract-stronger? (between/c 0 4) (between/c 1 3))
+  (test #t contract-stronger? (>=/c 3) (>=/c 2))
+  (test #f contract-stronger? (>=/c 2) (>=/c 3))
+  (test #f contract-stronger? (<=/c 3) (<=/c 2))
+  (test #t contract-stronger? (<=/c 2) (<=/c 3))
+  (test #f contract-stronger? (recursive-contract (<=/c 2)) (recursive-contract (<=/c 3)))
+  (test #f contract-stronger? (recursive-contract (<=/c 3)) (recursive-contract (<=/c 2)))
+  (let ([f (λ (x) (recursive-contract (<=/c x)))])
+    (test #t contract-stronger? (f 1) (f 1)))
+  (test #t contract-stronger? (-> integer? integer?) (-> integer? integer?))
+  (test #f contract-stronger? (-> boolean? boolean?) (-> integer? integer?))
+  (test #t contract-stronger? (-> (>=/c 3) (>=/c 3)) (-> (>=/c 4) (>=/c 3)))
+  (test #f contract-stronger? (-> (>=/c 4) (>=/c 3)) (-> (>=/c 3) (>=/c 3)))
+  (test #t contract-stronger? (-> (>=/c 3) (>=/c 3)) (-> (>=/c 3) (>=/c 2)))
+  (test #f contract-stronger? (-> (>=/c 3) (>=/c 2)) (-> (>=/c 3) (>=/c 3)))
+  (test #t contract-stronger? (or/c null? any/c) (or/c null? any/c))
+  (test #f contract-stronger? (or/c null? any/c) (or/c boolean? any/c))
+  (test #t contract-stronger? (or/c null? boolean?) (or/c null? boolean?))
+  (test #f contract-stronger? (or/c null? boolean?) (or/c boolean? null?))
+  (test #t contract-stronger? (or/c null? (-> integer? integer?)) (or/c null? (-> integer? integer?)))
+  (test #f contract-stronger? (or/c null? (-> boolean? boolean?)) (or/c null? (-> integer? integer?)))
+  
+  (test #t contract-stronger? number? number?)
+  (test #f contract-stronger? boolean? number?)
+  
+  #|
+  (test (contract-stronger? (couple/c any any)
+                            (couple/c any any))
+        #t)
+  
+  (test (contract-stronger? (couple/c (gt 2) (gt 3))
+                            (couple/c (gt 4) (gt 5)))
+        #f)
+  (test (contract-stronger? (couple/c (gt 4) (gt 5))
+                            (couple/c (gt 2) (gt 3)))
+        #t)
+  (test (contract-stronger? (couple/c (gt 1) (gt 5))
+                            (couple/c (gt 5) (gt 1)))
+        #f)
+  
+  (define (non-zero? x) (not (zero? x)))
+  
+  (define list-of-numbers
+    (or-p? null?
+           (couple/c (flat number?)
+                     (lift list-of-numbers))))
+  (test (contract-stronger? list-of-numbers
+                            list-of-numbers)
+        #t)
+  
+  
+  (define (short-list/less-than n)
+    (or-p? null?
+           (couple/c (lt n)
+                     (or-p? null?
+                            (couple/c (lt n)
+                                      any)))))
+  
+  (test (contract-stronger? (short-list/less-than 4)
+                            (short-list/less-than 5))
+        #t)
+  (test (contract-stronger? (short-list/less-than 5)
+                            (short-list/less-than 4))
+        #f)
+  
+  (define (short-sorted-list/less-than n)
+    (or-p? null?
+           (couple/dc 
+            [hd (lt n)]
+            [tl (hd) (or-p? null?
+                            (couple/c (lt hd)
+                                      any))])))
+  
+  (test (contract-stronger? (short-sorted-list/less-than 4)
+                            (short-sorted-list/less-than 5))
+        #t)
+  (test (contract-stronger? (short-sorted-list/less-than 5)
+                            (short-sorted-list/less-than 4))
+        #f)
+
+  (test (let ([x (make-couple 1 2)]
+              [y (make-couple 1 2)]
+              [c1 (couple/dc [hd any]
+                             [tl (hd) any])]
+              [c2 (couple/c any any)])
+          (couple-hd (apply-contract c1 x))
+          (couple-hd (apply-contract c2 x))
+          (couple-hd (apply-contract c2 y))
+          (couple-hd (apply-contract c1 y)))
+        1)
+  
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;
+  ;; list of numbers test
+  ;;
+  
+  
+  (let ()
+    (define list-of-number
+      (or-p? null?
+             (couple/c (flat number?)
+                       (lift list-of-number))))
+    
+    (let* ([l (make-couple 1 (make-couple 2 (make-couple 3 (make-couple 4 '()))))]
+           [ctc-l (apply-contract list-of-number l)])
+      ;(clength ctc-l)
+      (values l ctc-l)))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;
+  ;;  kons tests
+  ;;
+  
+  (test-blame (apply-contract (kons-sorted-gt/c 1) 2))
+  (test-no-exn (apply-contract (kons-sorted-gt/c 1) (kons 1 '())))
+  (test (kar (kons 1 '())) 1)
+  (test (kdr (kons 1 '())) '())
+  (test (kons? (kons 1 '())) #t)
+  (test (kons? (apply-contract (kons-sorted-gt/c 1) (kons 1 '()))) #t)
+  (test (kons? 1) #f)
+  (test (kar (apply-contract (kons-sorted-gt/c 1) (kons 1 '())))
+        1)
+  (test (kdr (apply-contract (kons-sorted-gt/c 1) (kons 1 '())))
+        '())
+  (test (kar (apply-contract (kons-sorted-gt/c 1) (apply-contract (kons-sorted-gt/c 1) (kons 1 '()))))
+        1)
+  (test (kdr (apply-contract (kons-sorted-gt/c 1) (apply-contract (kons-sorted-gt/c 1) (kons 1 '()))))
+        '())
+  (test (let ([x (apply-contract (kons-sorted-gt/c 1) (kons 1 '()))])
+          (list (kar x)
+                (kar x)))
+        (list 1 1))
+  (test (let ([x (apply-contract (kons-sorted-gt/c 1) (kons 1 '()))])
+          (list (kdr x)
+                (kdr x)))
+        (list '() '()))
+  
+  (test-blame (kdr (kdr (apply-contract (kons-sorted-gt/c 1) (kons 1 (kons 0 '()))))))
+  (test (kdr (kdr (apply-contract (kons-sorted-gt/c 1) (kons 1 (kons 2 '())))))
+        '())
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;
+  ;; leftist-kheaps tests
+  ;;
+  
+  (test-blame (apply-contract kleftist-heap/c 2))
+  (test-no-exn (apply-contract kleftist-heap/c (make-knode 1 2 3 #f #f)))
+  (test-no-exn (apply-contract kleftist-heap/c #f))
+  (test-no-exn (apply-contract non-empty-kleftist-heap/c (make-knode 1 2 3 #f #f)))
+  (test-blame (apply-contract non-empty-kleftist-heap/c #f))
+  (test (knode? (make-knode 1 2 3 #f #f))
+        #t)
+  (test (knode-val (make-knode 1 2 3 #f #t)) 1)
+  (test (knode-obj (make-knode 1 2 3 #f #t)) 2)
+  (test (knode-rank (make-knode 1 2 3 #f #t)) 3)
+  (test (knode-left (make-knode 1 2 3 #f #t)) #f)
+  (test (knode-right (make-knode 1 2 3 #f #t)) #t)
+  (test (knode? (apply-contract kleftist-heap/c (make-knode 1 2 3 #f #f)))
+        #t)
+
+  (test (knode-val (apply-contract kleftist-heap/c (make-knode 1 2 3 #f #f))) 1)
+  (test (knode-obj (apply-contract kleftist-heap/c (make-knode 1 2 3 #f #f))) 2)
+  (test (knode-rank (apply-contract kleftist-heap/c (make-knode 1 2 3 #f #f))) 3)
+  (test (knode-left (apply-contract kleftist-heap/c (make-knode 1 2 3 #f #f))) #f)
+  (test (knode-right (apply-contract kleftist-heap/c (make-knode 1 2 3 #f #f))) #f)
+  
+  (test (knode-val (apply-contract kleftist-heap/c 
+                                   (apply-contract kleftist-heap/c 
+                                                   (make-knode 1 2 3 #f #f)))) 1)
+  (test (knode-obj (apply-contract kleftist-heap/c 
+                                   (apply-contract kleftist-heap/c 
+                                                   (make-knode 1 2 3 #f #f)))) 2)
+  (test (knode-rank (apply-contract kleftist-heap/c 
+                                   (apply-contract kleftist-heap/c 
+                                                   (make-knode 1 2 3 #f #f)))) 3)
+  (test (knode-left (apply-contract kleftist-heap/c 
+                                   (apply-contract kleftist-heap/c 
+                                                   (make-knode 1 2 3 #f #f)))) #f)
+  (test (knode-right (apply-contract kleftist-heap/c 
+                                   (apply-contract kleftist-heap/c 
+                                                   (make-knode 1 2 3 #f #f)))) #f)
+  
+  (test (let ([h (apply-contract kleftist-heap/c (make-knode 1 2 3 #f #f))])
+          (knode-val h)
+          (knode-val h))
+        1)
+  (test (let ([h (apply-contract kleftist-heap/c (make-knode 1 2 3 #f #f))])
+          (knode-obj h)
+          (knode-obj h))
+        2)
+  (test (let ([h (apply-contract kleftist-heap/c (make-knode 1 2 3 #f #f))])
+          (knode-rank h)
+          (knode-rank h))
+        3)
+  (test (let ([h (apply-contract kleftist-heap/c (make-knode 1 2 3 #f #f))])
+          (knode-left h)
+          (knode-left h))
+        #f)
+  (test (let ([h (apply-contract kleftist-heap/c (make-knode 1 2 3 #f #f))])
+          (knode-right h)
+          (knode-right h))
+        #f)
+
+  (test (knode-val
+         (knode-right
+          (apply-contract kleftist-heap/c 
+                          (make-knode 1 2 3 
+                                      (make-knode 7 8 9 #f #f)
+                                      (make-knode 4 5 6 #f #f)))))
+        4)
+  (test (knode-val
+         (knode-left
+          (apply-contract kleftist-heap/c 
+                          (make-knode 1 2 3 
+                                      (make-knode 7 8 9 #f #f)
+                                      (make-knode 4 5 6 #f #f)))))
+        7)
+  
+  (test-blame
+   (knode-val
+    (knode-right
+     (apply-contract kleftist-heap/c 
+                     (make-knode 5 2 3 
+                                 (make-knode 7 8 9 #f #f)
+                                 (make-knode 4 5 6 #f #f))))))
+  
+  (test-blame
+   (knode-val
+    (knode-left
+     (apply-contract kleftist-heap/c 
+                     (make-knode 9 2 3 
+                                 (make-knode 7 8 9 #f #f)
+                                 (make-knode 11 5 6 #f #f))))))
+  
+|#
+  
+  
   ))
 (report-errs)
