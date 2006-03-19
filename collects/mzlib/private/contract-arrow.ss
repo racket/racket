@@ -70,8 +70,7 @@
     (let ([doms/c (map (λ (dom) (coerce-contract -> dom)) doms)]
           [rng/c (coerce-contract -> rng)]
           [dom-length (length doms)])
-      (make-contract 
-       (apply build-compound-type-name '-> (append doms/c (list rng-name)))
+      (make-->
        (lambda (pos-blame neg-blame src-info orig-str)
          (let ([partial-doms (map (λ (dom) 
                                     ((contract-proc dom)
@@ -83,7 +82,22 @@
                   (λ (val)
                     (check-procedure val dom-length src-info pos-blame neg-blame orig-str))
                   partial-range
-                  partial-doms))))))
+                  partial-doms)))
+       (apply build-compound-type-name '-> (append doms/c (list rng-name)))
+       doms/c
+       rng/c)))
+  
+  (define-struct/prop -> (proj-proc name doms rng)
+    ((proj-prop (λ (ctc) (->-proj-proc ctc)))
+     (name-prop (λ (ctc) (->-name ctc)))
+     (stronger-prop
+      (λ (this that)
+        (and (->? that)
+             (andmap contract-stronger?
+                     (->-doms that)
+                     (->-doms this))
+             (contract-stronger? (->-rng this) 
+                                 (->-rng that)))))))
   
   (define-syntax-set (->/real ->* ->d ->d* ->r ->pp ->pp-rest case-> object-contract opt-> opt->*)
     

@@ -46,35 +46,35 @@
                        [(ctc-x ...) (generate-temporaries (syntax (fields ...)))]
                        [(f-x ...) f-x/vals]
                        [((f-xs ...) ...) (generate-arglists f-x/vals)]
-                       [wrap-name (string->symbol (format "~a-wrap" (syntax-e (syntax name))))])
+                       [wrap-name (string->symbol (format "~a/lazy-contract" (syntax-e (syntax name))))])
            #` 
            (begin
              (define-values (wrap-type wrap-maker wrap-predicate wrap-get wrap-set)
                (make-struct-type 'wrap-name
-                                              #f  ;; super struct
-                                              2   ;; field count
-                                              (- field-count 1)   ;; auto-field-k
-                                              #f ;; auto-field-v
-                                              '() ;; prop-value-list
-                                              inspector))
+                                 #f  ;; super struct
+                                 2   ;; field count
+                                 (- field-count 1)   ;; auto-field-k
+                                 #f ;; auto-field-v
+                                 '() ;; prop-value-list
+                                 inspector))
              
              (define-values (type struct-maker raw-predicate get set)
                (make-struct-type 'name
-                                              #f  ;; super struct
-                                              field-count
-                                              0   ;; auto-field-k
-                                              '() ;; auto-field-v
-                                              '() ;; prop-value-list
-                                              inspector))
+                                 #f  ;; super struct
+                                 field-count
+                                 0   ;; auto-field-k
+                                 '() ;; auto-field-v
+                                 '() ;; prop-value-list
+                                 inspector))
              
              (define (predicate x) (or (raw-predicate x) (wrap-predicate x)))
              
              (define-syntax (struct/dc stx)
-               ;(ensure-well-formed stx field-count)
                (syntax-case stx ()
                  [(_ clause (... ...))
                   (with-syntax ([(maker-args (... ...))
                                  (build-clauses 'struct/dc 
+                                                (syntax coerce-contract)
                                                 stx 
                                                 (syntax (clause (... ...))))])
                     (syntax (contract-maker maker-args (... ...))))]))
@@ -86,25 +86,31 @@
                                  [(raw-predicate stct)
                                   ;; found the original value
                                   (values #f (get stct selector-indicies) ...)]
-                                 [(wrap-get stct 0)
-                                  ;; we have a contract to update
-                                  (let-values ([(_1 fields ...) (loop (wrap-get stct 0))])
-                                    (let-values ([(fields ...) 
-                                                  (rewrite-fields (wrap-get stct 1) fields ...)])
-                                      (wrap-set stct 0 #f)
-                                      (wrap-set stct selector-indicies+1 fields) ...
-                                      (values stct fields ...)))]
                                  [else
-                                  ;; found a cached version of the value
-                                  (values #f (wrap-get stct selector-indicies+1) ...)]))])
+                                  (let ([inner (wrap-get stct 0)])
+                                    (if inner
+                                        ;; we have a contract to update
+                                        (let-values ([(_1 fields ...) (loop inner)])
+                                          (let-values ([(fields ...) 
+                                                        (rewrite-fields (wrap-get stct 1) fields ...)])
+                                            (wrap-set stct 0 #f)
+                                            (wrap-set stct selector-indicies+1 fields) ...
+                                            (values stct fields ...)))
+
+                                        ;; found a cached version of the value
+                                        (values #f (wrap-get stct selector-indicies+1) ...)))]))])
                  (wrap-get stct i+1)))
              
-             (define (rewrite-fields stct ctc-x ...)
-               (let* ([f-x (let ([ctc-field (contract-get stct selector-indicies)])
+             (define (rewrite-fields contract/info ctc-x ...)
+               (let* ([f-x (let ([ctc-field (contract-get (contract/info-contract contract/info) selector-indicies)])
                              (let ([ctc (if (procedure? ctc-field)
                                             (ctc-field f-xs ...)
                                             ctc-field)])
-                               (((proj-get ctc) ctc) ctc-x)))] ...)
+                               ((((proj-get ctc) ctc) (contract/info-pos contract/info)
+                                                      (contract/info-neg contract/info)
+                                                      (contract/info-src-info contract/info)
+                                                      (contract/info-orig-str contract/info))
+                                ctc-x)))] ...)
                  (values f-x ...)))
              
              (define (stronger-lazy-contract? a b)
@@ -114,22 +120,30 @@
                      (contract-get b selector-indicies)) ...))
              
              (define (lazy-contract-proj ctc)
-               (λ (val)
-                 (unless (or (wrap-predicate val) 
-                             (raw-predicate val))
-                   (blame (format "expected <~a>, got ~e" 'name val)))
-                 (cond
-                   [(already-there? ctc val lazy-depth-to-look)
-                    val]
-                   [else
-                    (wrap-maker val ctc)])))
+               (λ (pos neg src-info orig-str)
+                 (let ([contract/info (make-contract/info ctc pos neg src-info orig-str)])
+                   (λ (val)
+                     (unless (or (wrap-predicate val) 
+                                 (raw-predicate val))
+                       (raise-contract-error
+                        val
+                        src-info
+                        pos
+                        neg
+                        orig-str
+                        "expected <~a>, got ~e" 'name val))
+                     (cond
+                       [(already-there? ctc val lazy-depth-to-look)
+                        val]
+                       [else
+                        (wrap-maker val contract/info)])))))
              
              (define (already-there? ctc val depth)
                (cond
                  [(raw-predicate val) #f]
                  [(zero? depth) #f]
                  [(wrap-get val 0)
-                  (if (contract-stronger? (wrap-get val 1) ctc)
+                  (if (contract-stronger? (contract/info-contract (wrap-get val 1)) ctc)
                       #t
                       (already-there? ctc (wrap-get val 0) (- depth 1)))]
                  [else 
@@ -138,7 +152,8 @@
                   #f]))
              
              (define (struct/c ctc-x ...)
-               (contract-maker ctc-x ...))
+               (let ([ctc-x (coerce-contract struct/c ctc-x)] ...)
+                 (contract-maker ctc-x ...)))
              
              (define (no-depend-apply-to-fields ctc fields ...)
                (let ([ctc-x (contract-get ctc selector-indicies)] ...)
@@ -157,6 +172,21 @@
                  [else
                   (error selector-name "expected <~a>, got ~e" 'name struct)]))
              
+             (define (lazy-contract-name ctc)
+               (let ([list-of-subcontracts (list (contract-get ctc selector-indicies) ...)])
+                 (cond
+                   [(andmap contract? list-of-subcontracts)
+                    (apply build-compound-type-name 'struct/c list-of-subcontracts)]
+                   [else
+                    (let ([dots (string->symbol "...")])
+                      (apply build-compound-type-name 'struct/dc
+                             (map (λ (field ctc) 
+                                    (if (contract? ctc)
+                                        (build-compound-type-name field ctc)
+                                        (build-compound-type-name field dots)))
+                                  '(fields ...)
+                                  list-of-subcontracts)))])))
+             
              (define-values (contract-type contract-maker contract-predicate contract-get contract-set)
                (make-struct-type 'contract-name
                                  #f
@@ -164,7 +194,10 @@
                                  0 ;; auto-field-k
                                  '() ;; auto-field-v
                                  (list (cons proj-prop lazy-contract-proj)
+                                       (cons name-prop lazy-contract-name)
                                        (cons stronger-prop stronger-lazy-contract?)))))))]))
+  
+  (define-struct contract/info (contract pos neg src-info orig-str))
   
   (define max-cache-size 5)
   (define lazy-depth-to-look 5) 

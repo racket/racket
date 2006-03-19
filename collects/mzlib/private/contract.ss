@@ -787,38 +787,57 @@ add struct contracts for immutable structs?
                                    contract
                                    arg)]
                            [else (loop arg fc/predicates (cdr args))]))]))])
-      (let* ([flat-contracts (map (lambda (x) (if (flat-contract? x)
-                                                  x
-                                                  (flat-contract x)))
-                                  fc/predicates)]
-             [predicates (map flat-contract-predicate flat-contracts)])
+      (let ([flat-contracts (map (lambda (x) (if (flat-contract? x)
+                                                 x
+                                                 (flat-contract x)))
+                                 fc/predicates)])
         (cond
           [contract
-           (let ([c-proc (contract-proc contract)])
-             (make-contract
-              (apply build-compound-type-name 'or/c contract flat-contracts)
-              (lambda (pos neg src-info orig-str)
-                (let ([partial-contract (c-proc pos neg src-info orig-str)])
-                  (lambda (val)
-                    (cond
-                      [(ormap (lambda (pred) (pred val)) predicates)
-                       val]
-                      [else
-                       (partial-contract val)]))))))]
+           (make-or/c flat-contracts contract)]
           [else
-           (make-flat-or/c-contract flat-contracts)]))))
+           (make-flat-or/c flat-contracts)]))))
 
-  (define-struct/prop flat-or/c-contract (flat-ctcs)
+  (define-struct/prop or/c (flat-ctcs ho-ctc)
+    ((proj-prop (λ (ctc)
+                  (let ([c-proc ((proj-get (or/c-ho-ctc ctc)) (or/c-ho-ctc ctc))]
+                        [predicates (map (λ (x) ((flat-get x) x))
+                                         (or/c-flat-ctcs ctc))])
+                    (lambda (pos neg src-info orig-str)
+                      (let ([partial-contract (c-proc pos neg src-info orig-str)])
+                        (lambda (val)
+                          (cond
+                            [(ormap (lambda (pred) (pred val)) predicates)
+                             val]
+                            [else
+                             (partial-contract val)])))))))
+     (name-prop (λ (ctc)
+                  (apply build-compound-type-name 
+                         'or/c 
+                         (or/c-ho-ctc ctc)
+                         (or/c-flat-ctcs ctc))))
+     (stronger-prop
+      (λ (this that)
+        (and (or/c? that)
+             (and 
+              (contract-stronger? (or/c-ho-ctc this) (or/c-ho-ctc that))
+              (let ([this-ctcs (or/c-flat-ctcs this)]
+                    [that-ctcs (or/c-flat-ctcs that)])
+                (and (= (length this-ctcs) (length that-ctcs))
+                     (andmap contract-stronger?
+                             this-ctcs
+                             that-ctcs)))))))))
+  
+  (define-struct/prop flat-or/c (flat-ctcs)
     ((proj-prop flat-proj)
      (name-prop (λ (ctc)
                   (apply build-compound-type-name 
                          'or/c 
-                         (flat-or/c-contract-flat-ctcs ctc))))
+                         (flat-or/c-flat-ctcs ctc))))
      (stronger-prop
       (λ (this that)
-        (and (flat-or/c-contract? that)
-             (let ([this-ctcs (flat-or/c-contract-flat-ctcs this)]
-                   [that-ctcs (flat-or/c-contract-flat-ctcs that)])
+        (and (flat-or/c? that)
+             (let ([this-ctcs (flat-or/c-flat-ctcs this)]
+                   [that-ctcs (flat-or/c-flat-ctcs that)])
                (and (= (length this-ctcs) (length that-ctcs))
                     (andmap contract-stronger?
                             this-ctcs
@@ -826,7 +845,7 @@ add struct contracts for immutable structs?
      (flat-prop (λ (ctc) 
                   (let ([preds
                          (map (λ (x) ((flat-get x) x))
-                              (flat-or/c-contract-flat-ctcs ctc))])
+                              (flat-or/c-flat-ctcs ctc))])
                     (λ (x) (ormap (λ (p?) (p? x)) preds)))))))
   
   (define false/c

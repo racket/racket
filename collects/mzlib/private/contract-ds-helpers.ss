@@ -30,13 +30,13 @@ which are then called when the contract's fields are explored
 
 |#
   
-  (define (build-clauses name stx clauses)
+  (define (build-clauses name coerce-contract stx clauses)
     (let* ([field-names 
             (map (λ (clause)
                    (syntax-case clause ()
                      [(id . whatever) (syntax id)]
                      [else (raise-syntax-error name 
-                                               "expected a field name at the beginning of a sequence" 
+                                               "expected a field name and a contract together"
                                                stx
                                                clause)]))
                  (syntax->list clauses))]
@@ -58,7 +58,7 @@ which are then called when the contract's fields are explored
                 (let ([maker-arg #`(λ #,(match-up (reverse prior-ac-ids)
                                                   (syntax (x ...))
                                                   field-names)
-                                     ctc-exp)])
+                                     (#,coerce-contract #,name ctc-exp))])
                   (loop (cdr clauses)
                         (cdr ac-ids)
                         (cons (car ac-ids) prior-ac-ids)
@@ -75,7 +75,7 @@ which are then called when the contract's fields are explored
                 (loop (cdr clauses)
                       (cdr ac-ids)
                       (cons (car ac-ids) prior-ac-ids)
-                      (cons (syntax ctc-exp) maker-args))]
+                      (cons #`(#,coerce-contract #,name ctc-exp) maker-args))]
                [(id ctc-exp)
                 (raise-syntax-error name "expected identifier" stx (syntax id))]))]))))
   

@@ -394,7 +394,13 @@
                      (loop (lambda (x) (fst (ctct x)))
                            (cdr rest)))]))))))]))
   
-  (define any/c (make-flat-contract 'any/c (lambda (x) #t)))
+  (define-struct/prop any/c ()
+    ((proj-prop (λ (ctc) (λ (pos neg src-info orig-str) (λ (v) v))))
+     (stronger-prop (λ (this that) (any/c? that)))
+     (name-prop (λ (ctc) 'any/c))
+     (flat-prop (λ (ctc) (λ (x) #t)))))
+  
+  (define any/c (make-any/c))
   
   (define (flat-contract/predicate? pred)
     (or (flat-contract? pred)
