@@ -97,7 +97,7 @@ typedef struct {
   int need_set_rs;
   void **retain_start;
   int log_depth;
-  int self_pos, self_closure_size;
+  int self_pos, self_closure_size, self_toplevel_pos;
   void *self_restart_code;
   Scheme_Native_Closure *nc;
 } mz_jit_state;
@@ -320,6 +320,7 @@ static void *generate_one(mz_jit_state *old_jitter,
     mappings[0] = 0;
     jitter->max_extra_pushed = max_extra_pushed;
     jitter->self_pos = 1; /* beyond end of stack */
+    jitter->self_toplevel_pos = -1;
 
     ok = generate(jitter, data);
 
@@ -1460,24 +1461,55 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
   } else {
     Scheme_Type t;
     t = SCHEME_TYPE(rator);
-    if ((t == scheme_local_type) || (t > _scheme_values_types_)) {
-      /* We can re-order evaluation. */
+    if (t == scheme_local_type) {
+      /* We can re-order evaluation of the rator. */
+      reorder_ok = 1;
+
+      /* Call to known native, or even known self? */
+      if (SAME_TYPE(t, scheme_local_type)) {
+	int pos;
+	pos = SCHEME_LOCAL_POS(rator) - num_rands;
+	if (mz_is_closure(jitter, pos, num_rands)) {
+	  direct_native = 1;
+	  if (is_tail
+	      && (pos == jitter->self_pos)
+	      && (num_rands < MAX_SHARED_CALL_RANDS)) {
+	    direct_self = 1;
+	  }
+	}
+      }
+    } else if ((t == scheme_toplevel_type)
+	       && (SCHEME_TOPLEVEL_FLAGS(rator) & SCHEME_TOPLEVEL_CONST)) {
+      /* We can re-order evaluation of the rator. */
+      reorder_ok = 1;
+
+      if (jitter->nc) {
+	Scheme_Object *p;
+
+	p = extract_global(rator, jitter->nc);
+	p = ((Scheme_Bucket *)p)->val;
+	if (SAME_TYPE(SCHEME_TYPE(p), scheme_native_closure_type)) {
+	  if (scheme_native_arity_check(p, num_rands)
+	      /* If it also accepts num_rands + 1, then it has a vararg,
+		 so don't try direct_native. */
+	      && !scheme_native_arity_check(p, num_rands + 1)) {
+	    direct_native = 1;
+
+	    if (is_tail
+		&& (SCHEME_TOPLEVEL_POS(rator) == jitter->self_toplevel_pos)
+		&& (num_rands < MAX_SHARED_CALL_RANDS)) {
+	      direct_self = 1;
+	    }
+	  }
+	}
+      }
+    } else if (t > _scheme_values_types_) {
+      /* We can re-order evaluation of the rator. */
       reorder_ok = 1;
     }
 
-    if (SAME_TYPE(t, scheme_local_type)) {
-      int pos;
-      pos = SCHEME_LOCAL_POS(rator) - num_rands;
-      if (mz_is_closure(jitter, pos, num_rands)) {
-	direct_native = 1;
-	if (is_tail
-	    && (pos == jitter->self_pos)
-	    && (num_rands < MAX_SHARED_CALL_RANDS)) {
-	  direct_self = 1;
-	  reorder_ok = 0;
-	}
-      }
-    }
+    if (direct_self)
+      reorder_ok = 0; /* superceded by direct_self */
   }
 
   if (num_rands) {
@@ -2789,8 +2821,11 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       /* Extract bucket value */
       jit_ldxi_p(JIT_R0, JIT_R2, &(SCHEME_VAR_BUCKET(0x0)->val));
       CHECK_LIMIT();
-      /* Is it NULL? */
-      (void)jit_beqi_p(unbound_global_code, JIT_R0, 0);
+      if (!(SCHEME_TOPLEVEL_FLAGS(obj) 
+	    & (SCHEME_TOPLEVEL_CONST | SCHEME_TOPLEVEL_READY))) {
+	/* Is it NULL? */
+	(void)jit_beqi_p(unbound_global_code, JIT_R0, 0);
+      }
       END_JIT_DATA(0);
       return 1;
     }
@@ -3282,6 +3317,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       if (lv->count == 1) {
 	/* Expect one result: */
 	generate_non_tail(lv->value, jitter, 0, 1);
+	CHECK_LIMIT();
 	if (ab) {
 	  pos = mz_remap(lv->position);
 	  jit_ldxi_p(JIT_R2, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
@@ -3459,6 +3495,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	/* No need to push mark onto value stack: */
 	jit_movr_p(JIT_V1, JIT_R0);
 	generate_non_tail(wcm->val, jitter, 0, 1);
+	CHECK_LIMIT();
       } else {
 	mz_pushr_p(JIT_R0); /* !!!!!!! */
 	generate_non_tail(wcm->val, jitter, 0, 1);
@@ -4359,7 +4396,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   /* If we have a letrec context, record arities */
   if (data->context && SAME_TYPE(SCHEME_TYPE(data->context), scheme_letrec_type)) {
     Scheme_Letrec *lr = (Scheme_Letrec *)data->context;
-    int pos, self_pos = - 1;
+    int pos, self_pos = -1;
     for (i = data->closure_size; i--; ) {
       pos = data->closure_map[i];
       if (pos < lr->count) {
@@ -4380,6 +4417,12 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     }
   } else {
     mz_runstack_pushed(jitter, cnt);
+
+    /* A define-values context? */
+    if (data->context && SAME_TYPE(SCHEME_TYPE(data->context), scheme_toplevel_type)) {
+      jitter->self_toplevel_pos = SCHEME_TOPLEVEL_POS(data->context);
+      jitter->self_closure_size = data->closure_size;
+    }
   }
 
   LOG_IT(("PROC: %s\n", (data->name ? scheme_format_utf8("~s", 2, 1, &data->name, NULL) : "???")));

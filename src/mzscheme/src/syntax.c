@@ -44,6 +44,7 @@ Scheme_Syntax_Resolver scheme_syntax_resolvers[_COUNT_EXPD_];
 Scheme_Syntax_Validater scheme_syntax_validaters[_COUNT_EXPD_];
 Scheme_Syntax_Executer scheme_syntax_executers[_COUNT_EXPD_];
 Scheme_Syntax_Jitter scheme_syntax_jitters[_COUNT_EXPD_];
+Scheme_Syntax_Cloner scheme_syntax_cloners[_COUNT_EXPD_];
 int scheme_syntax_protect_afters[_COUNT_EXPD_];
 
 /* locals */
@@ -112,6 +113,9 @@ static Scheme_Object *define_syntaxes_optimize(Scheme_Object *expr, Optimize_Inf
 static Scheme_Object *define_for_syntaxes_optimize(Scheme_Object *expr, Optimize_Info *info);
 static Scheme_Object *case_lambda_optimize(Scheme_Object *expr, Optimize_Info *info);
 static Scheme_Object *begin0_optimize(Scheme_Object *data, Optimize_Info *info);
+
+static Scheme_Object *begin0_clone(Scheme_Object *data, Optimize_Info *info, int delta, int closure_depth);
+static Scheme_Object *set_clone(Scheme_Object *data, Optimize_Info *info, int delta, int closure_depth);
 
 static Scheme_Object *define_values_resolve(Scheme_Object *data, Resolve_Info *info);
 static Scheme_Object *ref_resolve(Scheme_Object *data, Resolve_Info *info);
@@ -190,6 +194,8 @@ static void register_traversers(void);
 
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 
+#define MAX_PROC_INLINE_SIZE 32
+
 /**********************************************************************/
 /*                          initialization                            */
 /**********************************************************************/
@@ -236,41 +242,51 @@ scheme_init_syntax (Scheme_Env *env)
   scheme_register_syntax(DEFINE_VALUES_EXPD, 
 			 define_values_optimize, 
 			 define_values_resolve, define_values_validate, 
-			 define_values_execute, define_values_jit, 1);
+			 define_values_execute, define_values_jit, 
+			 NULL, 1);
   scheme_register_syntax(SET_EXPD,
 			 set_optimize,
 			 set_resolve, set_validate,
-			 set_execute, set_jit, 2);
+			 set_execute, set_jit, 
+			 set_clone, 2);
   scheme_register_syntax(REF_EXPD, 
 			 ref_optimize,
 			 ref_resolve, ref_validate, 
-			 ref_execute, ref_jit, 0);
+			 ref_execute, ref_jit, 
+			 NULL, 0);
   scheme_register_syntax(DEFINE_SYNTAX_EXPD, 
 			 define_syntaxes_optimize,
 			 define_syntaxes_resolve, define_syntaxes_validate,
-			 define_syntaxes_execute, define_syntaxes_jit, 4);
+			 define_syntaxes_execute, define_syntaxes_jit, 
+			 NULL, 4);
   scheme_register_syntax(DEFINE_FOR_SYNTAX_EXPD, 
 			 define_for_syntaxes_optimize, 
 			 define_for_syntaxes_resolve, define_for_syntaxes_validate,
-			 define_for_syntaxes_execute, define_for_syntaxes_jit, 4);
+			 define_for_syntaxes_execute, define_for_syntaxes_jit, 
+			 NULL, 4);
   scheme_register_syntax(CASE_LAMBDA_EXPD, 
 			 case_lambda_optimize,
 			 case_lambda_resolve, case_lambda_validate,
-			 case_lambda_execute, case_lambda_jit, -1);
+			 case_lambda_execute, case_lambda_jit, 
+			 NULL, -1);
   scheme_register_syntax(BEGIN0_EXPD, 
 			 begin0_optimize,
 			 begin0_resolve, begin0_validate,
-			 begin0_execute, begin0_jit, -1);
+			 begin0_execute, begin0_jit, 
+			 begin0_clone, -1);
   scheme_register_syntax(QUOTE_SYNTAX_EXPD, 
 			 NULL, NULL, quote_syntax_validate,
-			 quote_syntax_execute, quote_syntax_jit, 2);
+			 quote_syntax_execute, quote_syntax_jit, 
+			 NULL, 2);
 
   scheme_register_syntax(BOXENV_EXPD, 
 			 NULL, NULL, bangboxenv_validate,
-			 bangboxenv_execute, NULL, 1);
+			 bangboxenv_execute, NULL, 
+			 NULL, 1);
   scheme_register_syntax(BOXVAL_EXPD, 
 			 NULL, NULL, bangboxvalue_validate,
-			 bangboxvalue_execute, bangboxvalue_jit, 2);
+			 bangboxvalue_execute, bangboxvalue_jit, 
+			 NULL, 2);
 
   scheme_install_type_writer(scheme_let_value_type, write_let_value);
   scheme_install_type_reader(scheme_let_value_type, read_let_value);
@@ -576,26 +592,31 @@ static Scheme_Object *expand_lam(int argc, Scheme_Object **argv)
 void scheme_set_global_bucket(char *who, Scheme_Bucket *b, Scheme_Object *val,
 			      int set_undef)
 {
-  if (b->val || set_undef)
+  if ((b->val || set_undef) 
+      && !(((Scheme_Bucket_With_Flags *)b)->flags & GLOB_IS_IMMUTATED))
     b->val = val;
   else {
     if (((Scheme_Bucket_With_Home *)b)->home->module) {
       const char *msg;
 
       if (SCHEME_TRUEP(scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_PRINT_SRCLOC)))
-	msg = "%s: cannot set identifier before its definition: %S in module: %S";
+	msg = "%s: cannot %s: %S in module: %S";
       else
-	msg = "%s: cannot set identifier before its definition: %S";
+	msg = "%s: cannot %s: %S";
 
       scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE, b->key,
 		       msg,
 		       who,
+		       (b->val
+			? "change identifier that is instantiated as a module constant"
+			: "set identifier before its definition"),
 		       (Scheme_Object *)b->key,
 		       ((Scheme_Bucket_With_Home *)b)->home->module->modname);
     } else {
       scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE, b->key,
-		       "%s: cannot set undefined identifier: %S",
+		       "%s: cannot set %s identifier: %S",
 		       who,
+		       b->val ? "change constant" : "set undefined",
 		       (Scheme_Object *)b->key);
     }
   }
@@ -663,6 +684,10 @@ define_execute(Scheme_Object *vars, Scheme_Object *vals, int defmacro,
 	
 	  scheme_set_global_bucket("define-values", b, values[i], 1);
 	  scheme_shadow(((Scheme_Bucket_With_Home *)b)->home, (Scheme_Object *)b->key, 1);
+
+	  if (SCHEME_TOPLEVEL_FLAGS(SCHEME_CAR(vars)) & SCHEME_TOPLEVEL_CONST) {
+	    ((Scheme_Bucket_With_Flags *)b)->flags |= GLOB_IS_IMMUTATED;
+	  }
 	}
       }
       if (defmacro)
@@ -687,6 +712,10 @@ define_execute(Scheme_Object *vars, Scheme_Object *vals, int defmacro,
 
       scheme_set_global_bucket("define-values", b, vals, 1);
       scheme_shadow(((Scheme_Bucket_With_Home *)b)->home, (Scheme_Object *)b->key, 1);
+      
+      if (SCHEME_TOPLEVEL_FLAGS(SCHEME_CAR(vars)) & SCHEME_TOPLEVEL_CONST) {
+	((Scheme_Bucket_With_Flags *)b)->flags |= GLOB_IS_IMMUTATED;
+      }
       
       if (defmacro)
 	scheme_pop_prefix(save_runstack);
@@ -751,12 +780,21 @@ define_values_execute(Scheme_Object *data)
 
 static Scheme_Object *define_values_jit(Scheme_Object *data)
 {
-  Scheme_Object *orig = SCHEME_CDR(data), *naya;
-  naya = scheme_jit_expr(orig);
+  Scheme_Object *orig = SCHEME_CDR(data), *naya, *vars;
+
+  vars = SCHEME_CAR(data);
+
+  if (SAME_TYPE(SCHEME_TYPE(orig), scheme_unclosed_procedure_type)
+      && SCHEME_PAIRP(vars)
+      && SCHEME_NULLP(SCHEME_CDR(vars)))
+    naya = scheme_jit_closure(orig, SCHEME_CAR(vars));
+  else
+    naya = scheme_jit_expr(orig);
+
   if (SAME_OBJ(naya, orig))
     return data;
   else
-    return scheme_make_pair(SCHEME_CAR(data), naya);
+    return scheme_make_pair(vars, naya);
 }
 
 static void define_values_validate(Scheme_Object *data, Mz_CPort *port, 
@@ -781,13 +819,13 @@ static void define_values_validate(Scheme_Object *data, Mz_CPort *port,
 }
 
 static Scheme_Object *
-define_values_optimize(Scheme_Object *data, Optimize_Info *rslv)
+define_values_optimize(Scheme_Object *data, Optimize_Info *info)
 {
   Scheme_Object *vars = SCHEME_CAR(data);
   Scheme_Object *val = SCHEME_CDR(data);
 
-  vars = scheme_optimize_list(vars, rslv);
-  val = scheme_optimize_expr(val, rslv);
+  scheme_optimize_info_used_top(info);
+  val = scheme_optimize_expr(val, info);
 
   return scheme_make_syntax_compiled(DEFINE_VALUES_EXPD, cons(vars, val));
 }
@@ -795,10 +833,24 @@ define_values_optimize(Scheme_Object *data, Optimize_Info *rslv)
 static Scheme_Object *
 define_values_resolve(Scheme_Object *data, Resolve_Info *rslv)
 {
-  Scheme_Object *vars = SCHEME_CAR(data);
+  Scheme_Object *vars = SCHEME_CAR(data), *l, *a;
   Scheme_Object *val = SCHEME_CDR(data);
 
-  vars = scheme_resolve_list(vars, rslv);
+  /* If this is a module-level definition: for each variable, if the
+     defined variable doesn't have SCHEME_TOPLEVEL_MUTATED, then
+     resolve to a top-level reference with SCHEME_TOPLEVEL_CONST, so
+     that we know to set GLOS_IS_IMMUTATED at run time. */
+  for (l = vars; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+    a = SCHEME_CAR(l);
+    if (rslv->in_module
+	&& rslv->enforce_const
+	&& (!(SCHEME_TOPLEVEL_FLAGS(a) & SCHEME_TOPLEVEL_MUTATED))) {
+      a = scheme_toplevel_to_flagged_toplevel(a, SCHEME_TOPLEVEL_CONST);
+    }
+    a = scheme_resolve_toplevel(rslv, a);
+    SCHEME_CAR(l) = a;
+  }
+
   val = scheme_resolve_expr(val, rslv);
 
   return scheme_make_syntax_resolved(DEFINE_VALUES_EXPD, cons(vars, val));
@@ -901,6 +953,8 @@ define_values_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_
 
   val = scheme_compile_expr(val, env, rec, drec);
 
+  /* Note: module_optimize depends on the representation of
+     DEFINE_VALUES_EXPD's value. */
   return scheme_make_syntax_compiled(DEFINE_VALUES_EXPD, cons(targets, val));
 }
 
@@ -1255,12 +1309,14 @@ set_optimize(Scheme_Object *data, Optimize_Info *info)
   val = SCHEME_CDR(data);
   
   val = scheme_optimize_expr(val, info);
+
   if (SAME_TYPE(SCHEME_TYPE(var), scheme_local_type)) {
     int pos, delta;
+
     pos = SCHEME_LOCAL_POS(var);
 
     /* Register that we use this variable: */
-    scheme_optimize_info_lookup(info, pos);
+    scheme_optimize_info_lookup(info, pos, NULL);
 
     /* Offset: */
     delta = scheme_optimize_info_get_shift(info, pos);
@@ -1271,6 +1327,26 @@ set_optimize(Scheme_Object *data, Optimize_Info *info)
   }
   
   return scheme_make_syntax_compiled(SET_EXPD, cons(set_undef, cons(var, val)));
+}
+
+static Scheme_Object *
+set_clone(Scheme_Object *data, Optimize_Info *info, int delta, int closure_depth)
+{
+  Scheme_Object *var, *val, *set_undef;
+
+  set_undef = SCHEME_CAR(data);
+  data = SCHEME_CDR(data);
+  var = SCHEME_CAR(data);
+  val = SCHEME_CDR(data);
+  
+  val = scheme_optimize_clone(val, info, delta, closure_depth);
+  if (!val) return NULL;
+  if (SAME_TYPE(SCHEME_TYPE(var), scheme_local_type)) {
+    var = scheme_optimize_clone(var, info, delta, closure_depth);
+    if (!var) return NULL;
+  }
+  
+  return scheme_make_syntax_compiled(SET_EXPD, cons(set_undef, cons(var, val)));  
 }
 
 static Scheme_Object *
@@ -1373,6 +1449,7 @@ set_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
   if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
       || SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type)) {
     var = scheme_register_toplevel_in_prefix(var, env, rec, drec);
+    SCHEME_TOPLEVEL_FLAGS(var) |= SCHEME_TOPLEVEL_MUTATED;
   }
 
   scheme_compile_rec_done_local(rec, drec);
@@ -2176,14 +2253,30 @@ static int is_liftable(Scheme_Object *o, int bind_count, int fuel)
   return 0;
 }
 
-Scheme_Object *
-scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info)
+int scheme_compiled_propagate_ok(Scheme_Object *value)
 {
-  Optimize_Info *body_info;
+  if (scheme_compiled_duplicate_ok(value))
+    return 1;
+
+  if (SAME_TYPE(SCHEME_TYPE(value), scheme_compiled_unclosed_procedure_type)) {
+    int sz;
+    sz = scheme_closure_body_size((Scheme_Closure_Data *)value, 1);
+    if ((sz >= 0) && (sz <= MAX_PROC_INLINE_SIZE))
+      return 1;
+  }
+
+  return 0;
+}
+
+Scheme_Object *
+scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
+{
+  Optimize_Info *body_info, *rhs_info;
   Scheme_Let_Header *head = (Scheme_Let_Header *)form;
-  Scheme_Compiled_Let_Value *clv, *pre_body;
+  Scheme_Compiled_Let_Value *clv, *pre_body, *retry_start;
   Scheme_Object *body, *value;
   int i, j, pos, is_rec, max_let_depth = 0, all_simple = 1, skipped = 0;
+  int size_before_opt, did_set_value;
 
   /* Special case: (let ([x E]) x) where E is lambda, case-lambda, or
      a constant. (If we allowed arbitrary E here, it would affect the
@@ -2196,15 +2289,25 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info)
       lhs = SCHEME_TYPE(clv->value);
       if ((lhs == scheme_compiled_unclosed_procedure_type)
 	  || (lhs > _scheme_compiled_values_types_)) {
-	info = scheme_optimize_info_add_frame(info, 1, 0, 0);
-	body = scheme_optimize_expr(clv->value, info);
-	scheme_optimize_info_done(info);
-	return body;
+	if (for_inline) {
+	  /* Just drop the inline-introduced let */
+	  return scheme_optimize_expr(clv->value, info);
+	} else {
+	  info = scheme_optimize_info_add_frame(info, 1, 0, 0);
+	  body = scheme_optimize_expr(clv->value, info);
+	  scheme_optimize_info_done(info);
+	  return body;
+	}
       }
     }
   }
 
   body_info = scheme_optimize_info_add_frame(info, head->count, head->count, 0);
+  if (for_inline) {
+    rhs_info = scheme_optimize_info_add_frame(info, 0, head->count, 0);
+    body_info->inline_fuel >>= 1;
+  } else
+    rhs_info = body_info;
 
   is_rec = SCHEME_LET_RECURSIVE(head);
   if (is_rec)
@@ -2228,10 +2331,19 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info)
 
   body = head->body;
   pre_body = NULL;
+  retry_start = NULL;
+  did_set_value = 0;
   pos = 0;
   for (i = head->num_clauses; i--; ) {
     pre_body = (Scheme_Compiled_Let_Value *)body;
-    value = scheme_optimize_expr(pre_body->value, body_info);
+
+    if (!retry_start)
+      retry_start = pre_body;
+
+    size_before_opt = body_info->size;
+    
+    value = scheme_optimize_expr(pre_body->value, rhs_info);
+
     pre_body->value = value;
     if ((pre_body->count == 1)
 	&& !(pre_body->flags[0] & SCHEME_WAS_SET_BANGED)) {
@@ -2243,22 +2355,75 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info)
 	vpos = SCHEME_LOCAL_POS(value);
 	if ((vpos < head->count) && (vpos >= pos))
 	  value = NULL;
-	else 
-	  value = scheme_optimize_reverse_unless_mutated(body_info, vpos);
+	else {
+	  /* Convert value back to a pre-optimized local coordinate.
+	     This must be done with respect to body_info, not
+	     rhs_info, because we attach the value to body_info: */
+	  value = scheme_optimize_reverse(body_info, vpos, 1);
+	}
       }
 
-      if (value
-	  && (scheme_compiled_duplicate_ok(value)
-	      || (0 && SAME_TYPE(SCHEME_TYPE(value), scheme_compiled_unclosed_procedure_type)))) {
+      if (value && (scheme_compiled_propagate_ok(value))) {
 	scheme_optimize_propagate(body_info, pos, value);
+	did_set_value = 1;
       }
     }
-    if (body_info->max_let_depth > max_let_depth)
-      max_let_depth = body_info->max_let_depth;
-    body_info->max_let_depth = 0;
+
+    /* Re-optimize to inline letrec bindings? */
+    if (is_rec
+	&& !body_info->letrec_not_twice
+	&& ((i < 1) 
+	    || (!scheme_is_compiled_procedure(((Scheme_Compiled_Let_Value *)pre_body->body)->value, 1)
+		&& !is_liftable(((Scheme_Compiled_Let_Value *)pre_body->body)->value, head->count, 5)))) {
+      if (did_set_value) {
+	/* Next RHS ends a reorderable sequence. 
+	   Re-optimize from retry_start to pre_body, inclusive. */
+	while (1) {
+	  value = retry_start->value;
+	  if (SAME_TYPE(SCHEME_TYPE(value), scheme_compiled_unclosed_procedure_type)) {
+	    Scheme_Object *self_value;
+	    self_value = scheme_optimize_clone(value, body_info, 0, 0);
+	    if (self_value) {
+	      /* Try optimization. */
+	      int sz;
+
+	      /* Drop old size, and remove old inline fuel: */
+	      sz = scheme_closure_body_size((Scheme_Closure_Data *)value, 0);
+	      body_info->size -= (sz + 1);
+
+	      /* Setting letrec_not_twice prevents inlinining
+		 of letrec bindings in this RHS. There's a small
+		 chance that we miss some optimizations, but we
+		 avoid the possibility of N^2 behavior. */
+	      body_info->letrec_not_twice = 1;
+
+	      value = scheme_optimize_expr(self_value, body_info);
+
+	      body_info->letrec_not_twice = 0;
+
+	      retry_start->value = value;
+	    }
+	  }
+	  if (retry_start == pre_body)
+	    break;
+	  retry_start = (Scheme_Compiled_Let_Value *)retry_start->body;
+	}
+      }
+      retry_start = NULL;
+      did_set_value = 0;
+    }
+    
+    if (rhs_info->max_let_depth > max_let_depth)
+      max_let_depth = rhs_info->max_let_depth;
+    rhs_info->max_let_depth = 0;
+
     pos += pre_body->count;
     body = pre_body->body;
     info->size += 1;
+  }
+
+  if (for_inline) {
+    body_info->size = rhs_info->size;
   }
 
   body = scheme_optimize_expr(body, body_info);
@@ -2335,7 +2500,7 @@ scheme_optimize_lets_for_test(Scheme_Object *form, Optimize_Info *info)
   }
 
 
-  return scheme_optimize_lets(form, info);
+  return scheme_optimize_lets(form, info, 0);
 }
 
 Scheme_Object *
@@ -3405,6 +3570,14 @@ begin0_optimize(Scheme_Object *obj, Optimize_Info *info)
     ((Scheme_Sequence *)obj)->array[i] = le;
   }
 
+  return scheme_make_syntax_compiled(BEGIN0_EXPD, obj);
+}
+
+static Scheme_Object *
+begin0_clone(Scheme_Object *obj, Optimize_Info *info, int delta, int closure_depth)
+{
+  obj = scheme_optimize_clone(obj, info, delta, closure_depth);
+  if (!obj) return NULL;
   return scheme_make_syntax_compiled(BEGIN0_EXPD, obj);
 }
 

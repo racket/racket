@@ -818,23 +818,66 @@ static int maybe_add_chain_cache(Scheme_Stx *stx)
   return 0;
 }
 
+static void set_wraps_to_skip(Scheme_Hash_Table *ht, WRAP_POS *wraps)
+{
+  Scheme_Object *v;
+
+  v = scheme_hash_get(ht, scheme_make_integer(0));
+  wraps->l = v;
+  v = scheme_hash_get(ht, scheme_make_integer(1));
+  if (SCHEME_TRUEP(v)) {
+    wraps->pos = SCHEME_INT_VAL(v);
+    wraps->is_limb = 1;
+    wraps->a = ((Wrap_Chunk *)SCHEME_CAR(wraps->l))->a[wraps->pos];
+  } else {
+    wraps->is_limb = 0;
+    if (!SCHEME_NULLP(wraps->l))
+      wraps->a = SCHEME_CAR(wraps->l);
+  }
+}
 
 static void fill_chain_cache(Scheme_Object *wraps)
 {
-  int pos;
+  int pos, max_depth, limit;
   Scheme_Hash_Table *ht;
   Scheme_Object *p, *id;
   WRAP_POS awl;
 
   ht = (Scheme_Hash_Table *)SCHEME_CAR(wraps);
-  pos = ht->step;
-  ht->step = 0;
 
-  wraps = SCHEME_CDR(wraps);
+  p = scheme_hash_get(ht, scheme_make_integer(5));
+  if (p) {
+    limit = SCHEME_INT_VAL(p);
 
-  WRAP_POS_INIT(awl, wraps);
+    /* Extend the chain cache to deeper: */
+    set_wraps_to_skip(ht, &awl);
+
+    p = scheme_hash_get(ht, scheme_make_integer(2));
+    pos = SCHEME_INT_VAL(p);
+
+    scheme_hash_set(ht, scheme_make_integer(5), NULL);
+  } else {
+    pos = ht->step;
+    ht->step = 0;
+
+    wraps = SCHEME_CDR(wraps);
+
+    WRAP_POS_INIT(awl, wraps);
+
+    limit = 4;
+  }
+
+  /* Limit how much of the cache we build, in case we never
+     reuse this cache: */
+  max_depth = limit;
 
   while (!WRAP_POS_END_P(awl)) {
+    if (!(max_depth--)) {
+      limit *= 2;
+      scheme_hash_set(ht, scheme_make_integer(5), scheme_make_integer(limit));
+      break;
+    }
+
     p = WRAP_POS_FIRST(awl);
     if (SCHEME_VECTORP(p)) {
       int i, len;
@@ -2769,27 +2812,17 @@ static Scheme_Object *resolve_env(Scheme_Object *a, long phase,
       did_rib = NULL;
     } else if (SCHEME_HASHTP(WRAP_POS_FIRST(wraps))) {
       Scheme_Hash_Table *ht = (Scheme_Hash_Table *)WRAP_POS_FIRST(wraps);
-      Scheme_Object *v;
 
       did_rib = NULL;
 
-      if (!ht->count) {
+      if (!ht->count 
+	  /* Table isn't finished if 5 is mapped to a limit: */
+	  || scheme_hash_get(ht, scheme_make_integer(5))) {
 	fill_chain_cache(wraps.l);
       }
 
       if (!scheme_hash_get(ht, SCHEME_STX_VAL(a))) {
-	v = scheme_hash_get(ht, scheme_make_integer(0));
-	wraps.l = v;
-	v = scheme_hash_get(ht, scheme_make_integer(1));
-	if (SCHEME_TRUEP(v)) {
-	  wraps.pos = SCHEME_INT_VAL(v);
-	  wraps.is_limb = 1;
-	  wraps.a = ((Wrap_Chunk *)SCHEME_CAR(wraps.l))->a[wraps.pos];
-	} else {
-	  wraps.is_limb = 0;
-	  if (!SCHEME_NULLP(wraps.l))
-	    wraps.a = SCHEME_CAR(wraps.l);
-	}
+	set_wraps_to_skip(ht, &wraps);
 
 	continue; /* <<<<< ------ */
       }

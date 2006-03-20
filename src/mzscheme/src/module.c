@@ -201,11 +201,13 @@ void scheme_init_module(Scheme_Env *env)
   scheme_register_syntax(MODULE_EXPD, 
 			 module_optimize,
 			 module_resolve, module_validate, 
-			 module_execute, module_jit, -1);
+			 module_execute, module_jit, 
+			 NULL, -1);
   scheme_register_syntax(REQUIRE_EXPD, 
 			 top_level_require_optimize,
 			 top_level_require_resolve, top_level_require_validate, 
-			 top_level_require_execute, top_level_require_jit, 2);
+			 top_level_require_execute, top_level_require_jit, 
+			 NULL, 2);
 
   scheme_add_global_keyword("module", 
 			    scheme_make_compiled_syntax(module_syntax, 
@@ -3089,15 +3091,133 @@ static Scheme_Object *
 module_optimize(Scheme_Object *data, Optimize_Info *info)
 {
   Scheme_Module *m = (Scheme_Module *)data;
-  Scheme_Object *e, *b;
-  int max_let_depth = 0;
+  Scheme_Object *e, *b, *vars, *start_simltaneous_b;
+  Scheme_Hash_Table *consts = NULL, *ready_table = NULL;
+  int max_let_depth = 0, cont;
 
+  start_simltaneous_b = m->body;
   for (b = m->body; !SCHEME_NULLP(b); b = SCHEME_CDR(b)) {
+    /* Optimzie this expression: */
     e = scheme_optimize_expr(SCHEME_CAR(b), info);
     SCHEME_CAR(b) = e;
+
     if (info->max_let_depth > max_let_depth)
       max_let_depth = info->max_let_depth;
     info->max_let_depth = 0;
+
+    if (info->enforce_const) {
+      /* If this expression/definition can't have any side effect
+	 (including raising an exception), then continue the group of
+	 simultaneous definitions: */
+      if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_syntax_type)
+	  && (SCHEME_PINT_VAL(e) == DEFINE_VALUES_EXPD)) {
+	int n;
+
+	e = (Scheme_Object *)SCHEME_IPTR_VAL(e);
+
+	vars = SCHEME_CAR(e);
+	e = SCHEME_CDR(e);
+
+	n = scheme_list_length(vars);
+	cont = scheme_omittable_expr(e, n);
+      
+	if ((n == 1) && scheme_compiled_propagate_ok(e)) {
+	  Scheme_Toplevel *tl;
+
+	  tl = (Scheme_Toplevel *)SCHEME_CAR(vars);
+	  
+	  if (!(SCHEME_TOPLEVEL_FLAGS(tl) & SCHEME_TOPLEVEL_MUTATED)) {
+	    Scheme_Object *e2;
+
+	    if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_unclosed_procedure_type)) {
+	      e2 = scheme_optimize_clone(e, info, 0, 0);
+	    } else {
+	      e2 = e;
+	    }
+
+	    if (e2) {
+	      int pos;
+	      if (!consts)
+		consts = scheme_make_hash_table(SCHEME_hash_ptr);
+	      pos = tl->position;
+	      scheme_hash_set(consts, scheme_make_integer(pos), e2);
+	    } else {
+	      /* At least mark it as ready */
+	      if (!ready_table) {
+		ready_table = scheme_make_hash_table(SCHEME_hash_ptr);
+		if (!consts)
+		  consts = scheme_make_hash_table(SCHEME_hash_ptr);
+		scheme_hash_set(consts, scheme_false, (Scheme_Object *)ready_table);
+	      }
+	      scheme_hash_set(ready_table, scheme_make_integer(tl->position), scheme_true);
+	    }
+	  }
+	} else {
+	  /* The binding is not inlinable/propagatable, but unless it's
+	     set!ed, it is constant after evaluating the definition. We
+	     map the top-level position to indicate constantness. */
+	  Scheme_Object *l, *a;
+	  int pos;
+
+	  for (l = vars; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+	    a = SCHEME_CAR(l);
+
+	    /* Test for ISCONST to indicate no set!: */
+	    if (!(SCHEME_TOPLEVEL_FLAGS(a) & SCHEME_TOPLEVEL_MUTATED)) {
+	      pos = SCHEME_TOPLEVEL_POS(a);
+	
+	      if (!ready_table) {
+		ready_table = scheme_make_hash_table(SCHEME_hash_ptr);
+		if (!consts)
+		  consts = scheme_make_hash_table(SCHEME_hash_ptr);
+		scheme_hash_set(consts, scheme_false, (Scheme_Object *)ready_table);
+	      }
+	      scheme_hash_set(ready_table, scheme_make_integer(pos), scheme_true);
+	    }
+	  }
+	}
+      } else {
+	cont = scheme_omittable_expr(e, 1);
+      }
+      if (SCHEME_NULLP(SCHEME_CDR(b)))
+	cont = 0;
+    } else
+      cont = 1;
+
+    if (!cont) {
+      /* If we have new constants, re-optimize to inline: */
+      if (consts) {
+	if (!info->top_level_consts) {
+	  info->top_level_consts = consts;
+	} else {
+	  int i;
+	  for (i = 0; i < consts->size; i++) {
+	    if (consts->vals[i]) {
+	      scheme_hash_set(info->top_level_consts,
+			      consts->keys[i],
+			      consts->vals[i]);
+	    }
+	  }
+	}
+
+	while (1) {
+	  /* Re-optimize this expression: */
+	  e = scheme_optimize_expr(SCHEME_CAR(start_simltaneous_b), info);
+	  SCHEME_CAR(start_simltaneous_b) = e;
+
+	  if (info->max_let_depth > max_let_depth)
+	    max_let_depth = info->max_let_depth;
+	  info->max_let_depth = 0;
+	  
+	  if (SAME_OBJ(start_simltaneous_b, b))
+	    break;
+	  start_simltaneous_b = SCHEME_CDR(start_simltaneous_b);
+	}
+      }
+      
+      consts = NULL;
+      start_simltaneous_b = SCHEME_CDR(b);
+    }
   }
 
   m->max_let_depth = max_let_depth;
@@ -3108,20 +3228,23 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
 }
 
 static Scheme_Object *
-module_resolve(Scheme_Object *data, Resolve_Info *rslv)
+module_resolve(Scheme_Object *data, Resolve_Info *old_rslv)
 {
   Scheme_Module *m = (Scheme_Module *)data;
   Scheme_Object *b;
   Resolve_Prefix *rp;
+  Resolve_Info *rslv;
 
   rp = scheme_resolve_prefix(0, m->comp_prefix, 1);
   m->comp_prefix = NULL;
   m->prefix = rp;
 
-  b = scheme_resolve_expr(m->dummy, rslv);
+  b = scheme_resolve_expr(m->dummy, old_rslv);
   m->dummy = b;
 
   rslv = scheme_resolve_info_create(rp);
+  rslv->enforce_const = old_rslv->enforce_const;
+  rslv->in_module = 1;
 
   for (b = m->body; !SCHEME_NULLP(b); b = SCHEME_CDR(b)) {
     Scheme_Object *e;
@@ -4041,7 +4164,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	  }
 	  m = scheme_compile_expr_lift_to_let(code, eenv, &mrec, 0);
 
-	  oi = scheme_optimize_info_create();
+	  oi = scheme_optimize_info_create(eenv);
 	  m = scheme_optimize_expr(m, oi);
 	  
 	  /* Simplify only in compile mode; it is too slow in expand mode. */

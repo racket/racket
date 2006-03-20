@@ -3891,18 +3891,20 @@ scheme_file_position(int argc, Scheme_Object *argv[])
   if (!SCHEME_OUTPORTP(argv[0]) && !SCHEME_INPORTP(argv[0]))
     scheme_wrong_type("file-position", "port", 0, argc, argv);
   if (argc == 2) {
-    int ok = 0;
+    if (!SCHEME_EOFP(argv[1])) {
+      int ok = 0;
 
-    if (SCHEME_INTP(argv[1])) {
-      ok = (SCHEME_INT_VAL(argv[1]) >= 0);
+      if (SCHEME_INTP(argv[1])) {
+	ok = (SCHEME_INT_VAL(argv[1]) >= 0);
+      }
+      
+      if (SCHEME_BIGNUMP(argv[1])) {
+	ok = SCHEME_BIGPOS(argv[1]);
+      }
+      
+      if (!ok)
+	scheme_wrong_type("file-position", "non-negative exact integer or eof", 1, argc, argv);
     }
-
-    if (SCHEME_BIGNUMP(argv[1])) {
-      ok = SCHEME_BIGPOS(argv[1]);
-    }
-
-    if (!ok)
-      scheme_wrong_type("file-position", "non-negative exact integer", 1, argc, argv);
   }
 
   f = NULL;
@@ -3972,34 +3974,45 @@ scheme_file_position(int argc, Scheme_Object *argv[])
 		     scheme_make_provided_string(argv[0], 2, NULL));
 
   if (argc > 1) {
-    long n = SCHEME_INT_VAL(argv[1]);
+    long n;
+    int whence;
+
+    if (SCHEME_INTP(argv[1])) {
+      n = SCHEME_INT_VAL(argv[1]);
+      whence = SEEK_SET;
+    } else {
+      n = 0;
+      whence = SEEK_END;
+    }
+      
     if (f) {
-      if (fseek(f, n, 0)) {
+      if (fseek(f, n, whence)) {
 	scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
 			 "file-position: position change failed on file (%e)",
 			 errno);
       }
 #ifdef MZ_FDS
     } else if (had_fd) {
-      long n = SCHEME_INT_VAL(argv[1]), lv;
-
+      long lv;
+      
       if (SCHEME_OUTPORTP(argv[0])) {
 	flush_fd((Scheme_Output_Port *)argv[0], NULL, 0, 0, 0, 0);
       }
-
+      
 # ifdef WINDOWS_FILE_HANDLES
-      lv = SetFilePointer((HANDLE)fd, n, NULL, FILE_BEGIN);
+      lv = SetFilePointer((HANDLE)fd, n, NULL, 
+			  ((whence == SEEK_SET) ? FILE_BEGIN : FILE_END));
 # else
 #  ifdef MAC_FILE_HANDLES
-      {
-	errno = SetFPos(fd, fsFromStart, n);
+			  {
+	errno = SetFPos(fd, ((whence == SEEK_SET) ? fsFromStart : fsFromLEOF), n);
 	if (errno == noErr)
 	  lv = 0;
 	else
 	  lv = -1;
       }
 #  else
-      lv = lseek(fd, n, 0);
+      lv = lseek(fd, n, whence);
 #  endif
 # endif
 
@@ -4025,6 +4038,9 @@ scheme_file_position(int argc, Scheme_Object *argv[])
       }
 #endif
     } else {
+      if (whence == SEEK_END) {
+	n = is->size;
+      }
       if (wis) {
 	if (is->index > is->u.hot)
 	  is->u.hot = is->index;

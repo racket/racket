@@ -47,7 +47,7 @@
    needed.
 
    Tail calls are, for the most part, gotos within scheme_do_eval(). A
-   C function called y the main evaluation loop can perform a
+   C function called by the main evaluation loop can perform a
    trampoling tail call via scheme_tail_apply. The trampoline must
    return to its caller without allocating any memory, because an
    allocation optimization in the tail-call code assumes no GCs will
@@ -63,7 +63,8 @@
    implemented by C functions outside the loop. Continuation
    applications are handled directly in scheme_do_eval(). That leaves
    calls to closures, which are also performed within scheme_do_eval()
-   (so that most tail calls avoid the trampoline).
+   (so that most tail calls avoid the trampoline), and native code,
+   which is analogous to a primitive.
 
    The eval half of the loop detects a limited set of core syntactic
    forms, such as application and letrecs. Otherwise, it dispatches to
@@ -80,12 +81,14 @@
 
    Compilation:
 
-   Compilation works in two passes. The first pass, called "compile",
-   performs most of the work and tracks variable usage (including
-   whether a variable is mutated or not). The second pass, called
-   "resolve", finishes compilation by computing variable offsets and
-   indirections (often mutating the records produced by the first
-   pass). 
+   Compilation works in three passes. The first pass, called
+   "compile", performs most of the work and tracks variable usage
+   (including whether a variable is mutated or not). The second pass,
+   called "optimize", performs constant propagation, constant folding,
+   and function inlining; this pass mutates records produced by the
+   first pass. The third pass, called "resolve", finishes compilation
+   by computing variable offsets and indirections (often mutating the
+   records produced by the first pass).
    
    Top-level variables (global or module) are referenced through the
    Scheme stack, so that the variables can be "re-linked" each time a
@@ -177,6 +180,7 @@ static Scheme_Object *expand_stx_to_top_form(int argc, Scheme_Object **argv);
 static Scheme_Object *top_introduce_stx(int argc, Scheme_Object **argv);
 
 static Scheme_Object *allow_set_undefined(int argc, Scheme_Object **argv);
+static Scheme_Object *compile_module_constants(int argc, Scheme_Object **argv);
 static Scheme_Object *use_jit(int argc, Scheme_Object **argv);
 
 static Scheme_Object *app_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
@@ -439,6 +443,11 @@ scheme_init_eval (Scheme_Env *env)
 						       "compile-allow-set!-undefined",
 						       MZCONFIG_ALLOW_SET_UNDEFINED), 
 			     env);
+  scheme_add_global_constant("compile-enforce-module-constants", 
+			     scheme_register_parameter(compile_module_constants, 
+						       "compile-enforce-module-constants",
+						       MZCONFIG_COMPILE_MODULE_CONSTS), 
+			     env);
 
   scheme_add_global_constant("eval-jit-enabled", 
 			     scheme_register_parameter(use_jit, 
@@ -686,7 +695,7 @@ void *scheme_enlarge_runstack(long size, void *(*k)())
 
 int scheme_omittable_expr(Scheme_Object *o, int vals)
      /* Checks whether the bytecode `o' returns `vals' values with no
-        side-effects. */
+        side-effects. -1 for vals means that any return count is ok. */
 {
   Scheme_Type vtype;
 
@@ -702,10 +711,10 @@ int scheme_omittable_expr(Scheme_Object *o, int vals)
       || (vtype == scheme_unclosed_procedure_type)
       || (vtype == scheme_compiled_unclosed_procedure_type)
       || (vtype == scheme_case_lambda_sequence_type))
-    return (vals == 1);
+    return ((vals == 1) || (vals < 0));
 
   if ((vtype == scheme_compiled_quote_syntax_type)) {
-    return (vals == 1);
+    return ((vals == 1) || (vals < 0));
   }
 
   if ((vtype == scheme_branch_type)) {
@@ -745,10 +754,10 @@ int scheme_omittable_expr(Scheme_Object *o, int vals)
   if ((vtype == scheme_application_type)) {
     /* Look for multiple values */
     Scheme_App_Rec *app = (Scheme_App_Rec *)o;
-    if (app->num_args == vals) {
+    if ((app->num_args == vals) || (vals < 0)) {
       if (SAME_OBJ(scheme_values_func, app->args[0])) {
 	int i;
-	for (i = vals; i--; ) {
+	for (i = app->num_args; i--; ) {
 	  if (!scheme_omittable_expr(app->args[i + 1], 1))
 	    return 0;
 	}
@@ -759,7 +768,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals)
   }
 
   if ((vtype == scheme_application2_type)) {
-    if (vals == 1) {
+    if ((vals == 1) || (vals < 0)) {
       Scheme_App2_Rec *app = (Scheme_App2_Rec *)o;
       if (SAME_OBJ(scheme_values_func, app->rator)) {
 	if (scheme_omittable_expr(app->rand, 1))
@@ -770,7 +779,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals)
   }
 
   if ((vtype == scheme_application3_type)) {
-    if (vals == 2) {
+    if ((vals == 2) || (vals < 0)) {
       Scheme_App3_Rec *app = (Scheme_App3_Rec *)o;
       if (SAME_OBJ(scheme_values_func, app->rator)) {
 	if (scheme_omittable_expr(app->rand1, 1)
@@ -1139,7 +1148,7 @@ Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt)
       total++;
     } else if (opt 
 	       && (((opt > 0) && !last) || ((opt < 0) && !first))
-	       && scheme_omittable_expr(v, 1)) {
+	       && scheme_omittable_expr(v, -1)) {
       /* A value that is not the result. We'll drop it. */
       total++;
     } else {
@@ -1164,7 +1173,7 @@ Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt)
   
   if (count == 1) {
     if ((opt < 0) && !scheme_omittable_expr(SCHEME_CAR(seq), 1)) {
-      /* We can't optimize (begin expr cont) to expr because
+      /* We can't optimize (begin0 expr cont) to expr because
 	 exp is not in tail position in the original (so we'd mess
 	 up continuation marks. */
       addconst = 1;
@@ -1193,9 +1202,9 @@ Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt)
 	o->array[i++] = a[j];
       }
     } else if (opt 
-	       && ((opt > 0 && (k < total))
+	       && (((opt > 0) && (k < total))
 		   || ((opt < 0) && k))
-	       && scheme_omittable_expr(v, 1)) {
+	       && scheme_omittable_expr(v, -1)) {
       /* Value not the result. Do nothing. */
     } else
       o->array[i++] = v;
@@ -1483,6 +1492,188 @@ Scheme_Object *scheme_resolve_list(Scheme_Object *expr, Resolve_Info *info)
 }
 
 /*========================================================================*/
+/*                               uncompile                                */
+/*========================================================================*/
+
+#if 0
+
+/* For debugging, currently incomplete: */
+
+static Scheme_Object *uncompile(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_uncompile_expr(Scheme_Object *expr, Resolve_Prefix *prefix);
+
+static Scheme_Object *uncompile_k()
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *expr = (Scheme_Object *)p->ku.k.p1;
+  Resolve_Prefix *prefix = (Resolve_Prefix *)p->ku.k.p2;
+
+  p->ku.k.p1 = NULL;
+  p->ku.k.p2 = NULL;
+
+  return scheme_uncompile_expr(expr, prefix);
+}
+
+Scheme_Object *scheme_uncompile_expr(Scheme_Object *expr, Resolve_Prefix *prefix)
+{
+  char buf[32];
+
+#ifdef DO_STACK_CHECK
+# include "mzstkchk.h"
+  {
+    Scheme_Thread *p = scheme_current_thread;
+
+    p->ku.k.p1 = (void *)expr;
+    p->ku.k.p2 = (void *)prefix;
+
+    return scheme_handle_stack_overflow(uncompile_k);
+  }
+#endif
+
+  switch (SCHEME_TYPE(expr)) {
+  case scheme_toplevel_type:
+    {
+      expr = prefix->toplevels[SCHEME_TOPLEVEL_POS(expr)];
+      if (SAME_TYPE(SCHEME_TYPE(expr), scheme_variable_type)) {
+	return cons(scheme_intern_symbol("#%top"),
+		    (Scheme_Object *)((Scheme_Bucket *)expr)->key);
+      } else {
+	Module_Variable *mv = (Module_Variable *)expr;
+
+	return cons(scheme_intern_symbol("#%top"),
+		    cons(mv->modidx, mv->sym));
+      }
+    }
+  case scheme_local_type:
+    {
+      sprintf(buf, "@%d", SCHEME_LOCAL_POS(expr));
+      return scheme_intern_symbol(buf);
+    }
+  case scheme_local_unbox_type:
+    {
+      sprintf(buf, "@!%d", SCHEME_LOCAL_POS(expr));
+      return scheme_intern_symbol(buf);
+    }
+  case scheme_compiled_syntax_type:
+    {
+      return scheme_void;
+    }
+  case scheme_application_type:
+    {
+      Scheme_App_Rec *app = (Scheme_App_Rec *)expr;
+      int i;
+      expr = scheme_null;
+      for (i = app->num_args + 1; i--; ) {
+	expr = cons(scheme_uncompile_expr(app->args[i], prefix),
+		    expr);
+      }
+      return expr;
+    }
+  case scheme_application2_type:
+    {
+      Scheme_App2_Rec *app = (Scheme_App2_Rec *)expr;
+      return cons(scheme_uncompile_expr(app->rator, prefix),
+		  cons(scheme_uncompile_expr(app->rand, prefix),
+		       scheme_null));
+    }
+  case scheme_application3_type:
+    {
+      Scheme_App3_Rec *app = (Scheme_App3_Rec *)expr;
+      return cons(scheme_uncompile_expr(app->rator, prefix),
+		  cons(scheme_uncompile_expr(app->rand1, prefix),
+		       cons(scheme_uncompile_expr(app->rand2, prefix),
+			    scheme_null)));
+    }
+  case scheme_sequence_type:
+  case scheme_branch_type:
+  case scheme_with_cont_mark_type:
+    return scheme_void;
+  case scheme_let_value_type:
+    {
+      Scheme_Let_Value *lv = (Scheme_Let_Value *)expr;
+      sprintf(buf, "@%d", lv->position);
+      return cons(scheme_intern_symbol("let!"),
+		  cons(scheme_make_integer(lv->count),
+		       cons(scheme_intern_symbol(buf),
+			    cons(scheme_uncompile_expr(lv->value, prefix),
+				 cons(scheme_uncompile_expr(lv->body, prefix),
+				      scheme_null)))));
+    }
+  case scheme_let_void_type:
+    {
+      Scheme_Let_Void *lv = (Scheme_Let_Void *)expr;
+      return cons(scheme_intern_symbol("let-undefined"),
+		  cons(scheme_make_integer(lv->count),
+		       cons(scheme_uncompile_expr(lv->body, prefix),
+			    scheme_null)));
+    }
+  case scheme_letrec_type:
+    {
+      Scheme_Letrec *lr = (Scheme_Letrec *)expr;
+      int i;
+
+      expr = scheme_null;
+      for (i = lr->count; i--; ) {
+	sprintf(buf, "@%d", i);
+	expr = cons(cons(scheme_intern_symbol(buf),
+			 cons(scheme_uncompile_expr(lr->procs[i], prefix),
+			      scheme_null)),
+		    expr);
+      }
+      
+      return cons(scheme_intern_symbol("letrec!"),
+		  cons(expr,
+		       cons(scheme_uncompile_expr(lr->body, prefix),
+			    scheme_null)));
+    }
+  case scheme_let_one_type:
+    {
+      Scheme_Let_One *lo = (Scheme_Let_One *)expr;
+      return cons(scheme_intern_symbol("let"),
+		  cons(scheme_uncompile_expr(lo->value, prefix),
+		       cons(scheme_uncompile_expr(lo->body, prefix),
+			    scheme_null)));
+    }
+  case scheme_unclosed_procedure_type:
+    {
+      Scheme_Closure_Data *data = (Scheme_Closure_Data *)expr;
+      Scheme_Object *vec;
+      int i;
+      vec = scheme_make_vector(data->closure_size, NULL);
+      for (i = data->closure_size; i--; ) {
+	SCHEME_VEC_ELS(vec)[i] = scheme_make_integer(data->closure_map[i]);
+      }
+      return cons(scheme_intern_symbol((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST) ? "lambda*" : "lambda"),
+		  cons(data->name ? data->name : scheme_false,
+		       cons(scheme_make_integer(data->num_params),
+			    cons(vec,
+				 cons(scheme_uncompile_expr(data->code, prefix),
+				      scheme_null)))));
+    }
+  default:
+    if (SCHEME_CLOSUREP(expr)) {
+      return scheme_uncompile_expr((Scheme_Object *)SCHEME_COMPILED_CLOS_CODE(expr), prefix);
+    }
+    return cons(scheme_intern_symbol("quote"), cons(expr, scheme_null));
+  }
+}
+
+static Scheme_Object *
+uncompile(int argc, Scheme_Object *argv[])
+{
+  Scheme_Compilation_Top *t;
+
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_compilation_top_type))
+    scheme_wrong_type("compiled->datum", "compiled code", 0, argc, argv);
+
+  t = (Scheme_Compilation_Top *)argv[0];
+
+  return scheme_uncompile_expr(t->code, t->prefix);
+}
+
+#endif
+
+/*========================================================================*/
 /*                               optimize                                 */
 /*========================================================================*/
 
@@ -1529,6 +1720,102 @@ static Scheme_Object *try_optimize_fold(Scheme_Object *f, Scheme_Object *o, Opti
   return NULL;
 }
 
+static Scheme_Object *apply_inlined(Scheme_Object *p, Scheme_Closure_Data *data, Optimize_Info *info,
+				    int argc, Scheme_App_Rec *app, Scheme_App2_Rec *app2, Scheme_App3_Rec *app3)
+{
+  Scheme_Let_Header *lh;
+  Scheme_Compiled_Let_Value *lv, *prev = NULL;
+  int i;
+  int *flags, flag;
+
+  if (!argc) {
+    info = scheme_optimize_info_add_frame(info, 0, 0, 0);
+    info->inline_fuel >>= 1;
+    p = scheme_optimize_expr(p, info);
+    scheme_optimize_info_done(info);
+    return p;
+  }
+
+  lh = MALLOC_ONE_TAGGED(Scheme_Let_Header);
+  lh->iso.so.type = scheme_compiled_let_void_type;
+  lh->count = argc;
+  lh->num_clauses = argc;
+
+  for (i = 0; i < argc; i++) {
+    lv = MALLOC_ONE_TAGGED(Scheme_Compiled_Let_Value);
+    lv->so.type = scheme_compiled_let_value_type;
+    lv->count = 1;
+    lv->position = i;
+
+    if (app)
+      lv->value = app->args[i + 1];
+    else if (app3)
+      lv->value = (i ? app3->rand2 : app3->rand1);
+    else if (app2)
+      lv->value = app2->rand;
+
+    flag = scheme_closure_argument_flags(data, i);
+    flags = (int *)scheme_malloc_atomic(sizeof(int));
+    flags[0] = flag;
+    lv->flags = flags;
+
+    if (prev)
+      prev->body = (Scheme_Object *)lv;
+    else
+      lh->body = (Scheme_Object *)lv;
+    prev = lv;
+  }
+
+  if (prev)
+    prev->body = p;
+  else
+    lh->body = p;
+
+  return scheme_optimize_lets((Scheme_Object *)lh, info, 1);
+}
+
+Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int argc,
+				   Scheme_App_Rec *app, Scheme_App2_Rec *app2, Scheme_App3_Rec *app3)
+{
+  int offset;
+  
+  if (SAME_TYPE(SCHEME_TYPE(le), scheme_local_type)) {
+    /* Check for inling: */
+    le = scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(le), &offset);
+  } else if (SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_toplevel_type)) {
+    if (info->top_level_consts) {
+      int pos;
+      pos = SCHEME_TOPLEVEL_POS(le);
+      le = scheme_hash_get(info->top_level_consts, scheme_make_integer(pos));
+      if (le && !SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_unclosed_procedure_type))
+	le = NULL;
+    } else
+      le = NULL;
+    offset = 0;
+  } else {
+    le = NULL;
+    offset = 0;
+  }
+
+  if (le) {
+    Scheme_Closure_Data *data = (Scheme_Closure_Data *)le;
+    int sz;
+      
+    if (data->num_params == argc) {
+      sz = scheme_closure_body_size(data, 1);
+      if ((sz >= 0) && (sz <= (info->inline_fuel * (argc + 2)))) {
+	le = scheme_optimize_clone(data->code, info, offset, argc);
+	if (le) {
+	  /* fprintf(stderr, "Inline %s\n", data->name ? scheme_write_to_string(data->name, NULL) : "???"); */
+	  return apply_inlined(le, data, info, argc, app, app2, app3);
+	}
+      }
+    }
+  }
+  
+  return NULL;
+}
+
 static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info)
 {
   Scheme_Object *le;
@@ -1542,6 +1829,12 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
   max_let_depth = 0;
 
   for (i = 0; i < n; i++) {
+    if (!i) {
+      le = optimize_for_inline(info, app->args[i], n - 1, app, NULL, NULL);
+      if (le)
+	return le;
+    }
+     
     le = scheme_optimize_expr(app->args[i], info);
     app->args[i] = le;
 
@@ -1573,6 +1866,10 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
 
   app = (Scheme_App2_Rec *)o;
 
+  le = optimize_for_inline(info, app->rator, 1, NULL, app, NULL);
+  if (le)
+    return le;
+
   le = scheme_optimize_expr(app->rator, info);
   app->rator = le;
 
@@ -1603,6 +1900,10 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
   int max_let_depth, all_vals = 1;
 
   app = (Scheme_App3_Rec *)o;
+
+  le = optimize_for_inline(info, app->rator, 2, NULL, NULL, app);
+  if (le)
+    return le;
 
   le = scheme_optimize_expr(app->rator, info);
   app->rator = le;
@@ -1651,19 +1952,48 @@ static Scheme_Object *optimize_sequence(Scheme_Object *o, Optimize_Info *info)
   Scheme_Sequence *s = (Scheme_Sequence *)o;
   Scheme_Object *le;
   int i;
-  int max_let_depth = 0;
+  int max_let_depth = 0, drop = 0;
 
   for (i = s->count; i--; ) {
     le = scheme_optimize_expr(s->array[i], info);
-    s->array[i] = le;
 
-    if (info->max_let_depth > max_let_depth)
-      max_let_depth = info->max_let_depth;
+    /* Inlining and constant propagation can expose
+       omittable expressions. */
+    if ((i + 1 != s->count)
+	&& scheme_omittable_expr(le, -1)) {
+      drop++;
+      s->array[i] = NULL;
+    } else {
+      s->array[i] = le;
+      
+      if (info->max_let_depth > max_let_depth)
+	max_let_depth = info->max_let_depth;
+    }
     info->max_let_depth = 0;
   }
 
-  info->size += 1;
   info->max_let_depth = max_let_depth;
+
+  if (drop + 1 == s->count) {
+    return s->array[drop];
+  } else if (drop) {
+    Scheme_Sequence *s2;
+    int j = 0;
+
+    s2 = malloc_sequence(s->count - drop);
+    s2->so.type = scheme_sequence_type;
+    s2->count = s->count - drop;
+
+    for (i = 0; i < s->count; i++) {
+      if (s->array[i]) {
+	s2->array[j++] = s->array[i];
+      }
+    }
+
+    s = s2;
+  }
+
+  info->size += 1;
 
   return (Scheme_Object *)s;
 }
@@ -1675,7 +2005,8 @@ int scheme_compiled_duplicate_ok(Scheme_Object *fb)
 	  || SCHEME_FALSEP(fb)
 	  || SCHEME_SYMBOLP(fb)
 	  || SCHEME_INTP(fb)
-	  || SAME_TYPE(SCHEME_TYPE(fb), scheme_local_type));
+	  || SAME_TYPE(SCHEME_TYPE(fb), scheme_local_type)
+	  || SCHEME_PRIMP(fb));
 }
 
 static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info)
@@ -1712,6 +2043,13 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info)
     t = scheme_optimize_lets_for_test(t, info);
   } else
     t = scheme_optimize_expr(t, info);
+
+  if (SCHEME_TYPE(t) > _scheme_compiled_values_types_) {
+    if (SCHEME_FALSEP(t))
+      return scheme_optimize_expr(fb, info);
+    else
+      return scheme_optimize_expr(tb, info);
+  }
 
   max_let_depth = info->max_let_depth;
   info->max_let_depth = 0;
@@ -1833,7 +2171,7 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info)
       
       info->size += 1;
 
-      val = scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(expr));
+      val = scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(expr), NULL);
       if (val)
 	return val;
 
@@ -1866,8 +2204,36 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info)
   case scheme_compiled_unclosed_procedure_type:
     return scheme_optimize_closure_compilation(expr, info);
   case scheme_compiled_let_void_type:
-    return scheme_optimize_lets(expr, info);
+    return scheme_optimize_lets(expr, info, 0);
   case scheme_compiled_toplevel_type:
+    if (info->top_level_consts) {
+      int pos;
+      Scheme_Object *c;
+      pos = SCHEME_TOPLEVEL_POS(expr);
+      c = scheme_hash_get(info->top_level_consts, scheme_make_integer(pos));
+      if (c) {
+	if (scheme_compiled_duplicate_ok(c))
+	  return c;
+
+	/* We can't inline, but mark the top level as a constant, 
+	   so we can direct-jump and avoid null checks in JITed code: */
+	expr = scheme_toplevel_to_flagged_toplevel(expr, SCHEME_TOPLEVEL_CONST);
+      } else {
+	/* false is mapped to a table of non-constant ready values: */
+	c = scheme_hash_get(info->top_level_consts, scheme_false);
+	if (c) {
+	  c = scheme_hash_get((Scheme_Hash_Table *)c, scheme_make_integer(pos));
+
+	  if (c) {
+	    /* We can't inline, but mark the top level as ready, 
+	       so we can avoid null checks in JITed code: */
+	    expr = scheme_toplevel_to_flagged_toplevel(expr, SCHEME_TOPLEVEL_READY);
+	  }
+	}
+      }
+    }
+    scheme_optimize_info_used_top(info);
+    return expr;
   case scheme_compiled_quote_syntax_type:
     scheme_optimize_info_used_top(info);
     return expr;
@@ -1908,6 +2274,195 @@ Scheme_Object *scheme_optimize_list(Scheme_Object *expr, Optimize_Info *info)
   info->max_let_depth = max_let_depth;
 
   return first;
+}
+
+Scheme_Object *scheme_optimize_clone(Scheme_Object *expr, Optimize_Info *info, int delta, int closure_depth)
+/* Past closure_depth, need to reverse optimize to unoptimzed with respect to info;
+   delta is the amount to skip in info to get to the frame that bound the code */
+{
+  int t;
+
+  t = SCHEME_TYPE(expr);
+
+  switch(t) {
+  case scheme_local_type:
+    {
+      int pos = SCHEME_LOCAL_POS(expr);
+      if (pos >= closure_depth) {
+	expr = scheme_optimize_reverse(info, pos + delta - closure_depth, 0);
+	if (closure_depth)
+	  expr = scheme_make_local(scheme_local_type, SCHEME_LOCAL_POS(expr) + closure_depth);
+      }
+      return expr;
+    }
+  case scheme_compiled_syntax_type:
+    {
+      Scheme_Syntax_Cloner f;
+	  
+      f = scheme_syntax_cloners[SCHEME_PINT_VAL(expr)];
+      if (!f) return NULL;
+      return f((Scheme_Object *)SCHEME_IPTR_VAL(expr), info, delta, closure_depth);
+    }
+  case scheme_application2_type:
+    {
+      Scheme_App2_Rec *app = (Scheme_App2_Rec *)expr, *app2;
+      
+      app2 = MALLOC_ONE_TAGGED(Scheme_App2_Rec);
+      app2->iso.so.type = scheme_application2_type;
+      
+      expr = scheme_optimize_clone(app->rator, info, delta, closure_depth);
+      if (!expr) return NULL;
+      app2->rator = expr;
+      
+      expr = scheme_optimize_clone(app->rand, info, delta, closure_depth);
+      if (!expr) return NULL;
+      app2->rand = expr;
+
+      return (Scheme_Object *)app2;
+    }
+  case scheme_application_type:
+    {
+      Scheme_App_Rec *app = (Scheme_App_Rec *)expr, *app2;
+      int i;
+      
+      app2 = scheme_malloc_application(app->num_args + 1);
+
+      for (i = app->num_args + 1; i--; ) {
+	expr = scheme_optimize_clone(app->args[i], info, delta, closure_depth);
+	if (!expr) return NULL;
+	app2->args[i] = expr;
+      }
+
+      return (Scheme_Object *)app2;
+    }
+  case scheme_application3_type:
+    {
+      Scheme_App3_Rec *app = (Scheme_App3_Rec *)expr, *app2;
+      
+      app2 = MALLOC_ONE_TAGGED(Scheme_App3_Rec);
+      app2->iso.so.type = scheme_application3_type;
+      
+      expr = scheme_optimize_clone(app->rator, info, delta, closure_depth);
+      if (!expr) return NULL;
+      app2->rator = expr;
+      
+      expr = scheme_optimize_clone(app->rand1, info, delta, closure_depth);
+      if (!expr) return NULL;
+      app2->rand1 = expr;
+      
+      expr = scheme_optimize_clone(app->rand2, info, delta, closure_depth);
+      if (!expr) return NULL;
+      app2->rand2 = expr;
+
+      return (Scheme_Object *)app2;
+    }
+  case scheme_compiled_let_void_type:
+    {
+      Scheme_Let_Header *head = (Scheme_Let_Header *)expr, *head2;
+      Scheme_Object *body;
+      Scheme_Compiled_Let_Value *lv, *lv2, *prev = NULL;
+      int i, *flags, sz;
+
+      head2 = MALLOC_ONE_TAGGED(Scheme_Let_Header);
+      head2->iso.so.type = scheme_compiled_let_void_type;
+      head2->count = head->count;
+      head2->num_clauses = head->num_clauses;
+      SCHEME_LET_RECURSIVE(head2) = SCHEME_LET_RECURSIVE(head);
+
+      /* Build let-value change: */
+      body = head->body;
+      for (i = head->num_clauses; i--; ) {
+	lv = (Scheme_Compiled_Let_Value *)body;
+
+	sz = sizeof(int) * lv->count;
+	flags = (int *)scheme_malloc_atomic(sz);
+	memcpy(flags, lv->flags, sz);
+
+	lv2 = MALLOC_ONE_TAGGED(Scheme_Compiled_Let_Value);
+	lv2->so.type = scheme_compiled_let_value_type;
+	lv2->count = lv->count;
+	lv2->position = lv->position;
+	lv2->flags = flags;
+
+	expr = scheme_optimize_clone(lv->value, info, delta, closure_depth + head->count);
+	if (!expr) return NULL;
+	lv2->value = expr;
+
+	if (prev)
+	  prev->body = (Scheme_Object *)lv2;
+	else
+	  head2->body = (Scheme_Object *)lv2;
+	prev = lv2;
+
+	body = lv->body;
+      }
+      if (prev) 
+	prev->body = body;
+      else
+	head2->body = body;
+
+      expr = scheme_optimize_clone(body, info, delta, closure_depth + head->count);
+      if (!expr) return NULL;
+
+      if (prev) 
+	prev->body = expr;
+      else
+	head2->body = expr;
+      
+      return (Scheme_Object *)head2;
+    }
+  case scheme_sequence_type:
+  case scheme_begin0_sequence_type:
+    {
+      Scheme_Sequence *seq = (Scheme_Sequence *)expr, *seq2;
+      int i;
+
+      seq2 = malloc_sequence(seq->count);
+      seq2->so.type = seq->so.type;
+      seq2->count = seq->count;
+
+      for (i = seq->count; i--; ) {
+	expr = scheme_optimize_clone(seq->array[i], info, delta, closure_depth);
+	if (!expr) return NULL;
+	seq2->array[i] = expr;
+      }
+      
+      return (Scheme_Object *)seq2;
+    }
+  case scheme_branch_type:
+    {
+      Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)expr, *b2;
+
+      b2 = MALLOC_ONE_TAGGED(Scheme_Branch_Rec);
+      b2->so.type = scheme_branch_type;
+
+      expr = scheme_optimize_clone(b->test, info, delta, closure_depth);
+      if (!expr) return NULL;
+      b2->test = expr;
+
+      expr = scheme_optimize_clone(b->tbranch, info, delta, closure_depth);
+      if (!expr) return NULL;
+      b2->tbranch = expr;
+
+      expr = scheme_optimize_clone(b->fbranch, info, delta, closure_depth);
+      if (!expr) return NULL;
+      b2->fbranch = expr;
+
+      return (Scheme_Object *)b2;
+    }
+  case scheme_compiled_unclosed_procedure_type:
+    return scheme_clone_closure_compilation(expr, info, delta, closure_depth);
+  case scheme_compiled_toplevel_type:
+  case scheme_compiled_quote_syntax_type:
+    return expr;
+  default:
+    if (t > _scheme_compiled_values_types_) {
+      if (scheme_compiled_duplicate_ok(expr))
+	return expr;
+    }
+  }
+
+  return NULL;
 }
 
 /*========================================================================*/
@@ -2130,7 +2685,7 @@ static Scheme_Object *jit_letrec(Scheme_Object *o)
   lr2->procs = procs2;
 
   for (i = 0; i < count; i++) {
-    v = scheme_jit_closure(procs[i], lr2);
+    v = scheme_jit_closure(procs[i], (Scheme_Object *)lr2);
     procs2[i] = v;
   }
 
@@ -2442,12 +2997,13 @@ static void *compile_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Object *form;
-  int writeable, for_eval, rename;
+  int writeable, for_eval, rename, enforce_consts;
   Scheme_Env *genv;
   Scheme_Compile_Info rec, rec2;
   Scheme_Object *o, *tl_queue;
   Scheme_Compilation_Top *top;
   Resolve_Prefix *rp;
+  Resolve_Info *ri;
   Optimize_Info *oi;
   Scheme_Object *gval, *insp;
   Scheme_Comp_Env *cenv;
@@ -2478,7 +3034,12 @@ static void *compile_k(void)
 
   tl_queue = scheme_null;
 
-  insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
+  {
+    Scheme_Config *config;
+    config = scheme_current_config();
+    insp = scheme_get_param(config, MZCONFIG_CODE_INSPECTOR);
+    enforce_consts = SCHEME_TRUEP(scheme_get_param(config, MZCONFIG_COMPILE_MODULE_CONSTS));
+  }
 
   while (1) {
     rec.comp = 1;
@@ -2560,12 +3121,15 @@ static void *compile_k(void)
 	} else 
 	  break;
       }
-    
-      oi = scheme_optimize_info_create();
+
+      oi = scheme_optimize_info_create(cenv);
+      oi->enforce_const = enforce_consts;
       o = scheme_optimize_expr(o, oi);
 
-      rp = scheme_resolve_prefix(0, cenv->prefix, 1);      
-      o = scheme_resolve_expr(o, scheme_resolve_info_create(rp));
+      rp = scheme_resolve_prefix(0, cenv->prefix, 1);
+      ri = scheme_resolve_info_create(rp);
+      ri->enforce_const = enforce_consts;
+      o = scheme_resolve_expr(o, ri);
       
       top = MALLOC_ONE_TAGGED(Scheme_Compilation_Top);
       top->so.type = scheme_compilation_top_type;
@@ -5711,7 +6275,6 @@ compiled_p(int argc, Scheme_Object *argv[])
 	  : scheme_false);
 }
 
-
 static Scheme_Object *expand(int argc, Scheme_Object **argv)
 {
   Scheme_Env *env;
@@ -6008,6 +6571,14 @@ static Scheme_Object *allow_set_undefined(int argc, Scheme_Object **argv)
 {
   return scheme_param_config("compile-allow-set!-undefined", 
 			     scheme_make_integer(MZCONFIG_ALLOW_SET_UNDEFINED),
+			     argc, argv,
+			     -1, NULL, NULL, 1);
+}
+
+static Scheme_Object *compile_module_constants(int argc, Scheme_Object **argv)
+{
+  return scheme_param_config("compile-enforce-module-constants", 
+			     scheme_make_integer(MZCONFIG_COMPILE_MODULE_CONSTS),
 			     argc, argv,
 			     -1, NULL, NULL, 1);
 }
@@ -6350,7 +6921,7 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr, char *stack,
       mzshort *map;
       char *new_stack;
       
-      sz = data->max_let_depth + data->num_params;
+      sz = data->max_let_depth;
       map = data->closure_map;
 
       new_stack = scheme_malloc_atomic(sz);

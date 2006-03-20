@@ -55,7 +55,7 @@ Scheme_Object *scheme_local[MAX_CONST_LOCAL_POS][2];
 
 #define MAX_CONST_TOPLEVEL_DEPTH 16
 #define MAX_CONST_TOPLEVEL_POS 16
-Scheme_Object *toplevels[MAX_CONST_TOPLEVEL_DEPTH][MAX_CONST_TOPLEVEL_POS];
+Scheme_Object *toplevels[MAX_CONST_TOPLEVEL_DEPTH][MAX_CONST_TOPLEVEL_POS][SCHEME_TOPLEVEL_FLAGS_MASK + 1];
 
 #define TABLE_CACHE_MAX_SIZE 2048
 Scheme_Hash_Table *toplevels_ht;
@@ -254,33 +254,40 @@ Scheme_Env *scheme_basic_env()
   }
 
   {
-    int i, k;
+    int i, k, cnst;
 
 #ifndef USE_TAGGED_ALLOCATION
     GC_CAN_IGNORE Scheme_Toplevel *all;
 
     all = (Scheme_Toplevel *)scheme_malloc_eternal(sizeof(Scheme_Toplevel) 
 						   * MAX_CONST_TOPLEVEL_DEPTH 
-						   * MAX_CONST_TOPLEVEL_POS);
+						   * MAX_CONST_TOPLEVEL_POS
+						   * (SCHEME_TOPLEVEL_FLAGS_MASK + 1));
 # ifdef MEMORY_COUNTING_ON
-    scheme_misc_count += (sizeof(Scheme_Toplevel) * MAX_CONST_TOPLEVEL_DEPTH * MAX_CONST_TOPLEVEL_POS);
+    scheme_misc_count += (sizeof(Scheme_Toplevel) 
+			  * MAX_CONST_TOPLEVEL_DEPTH 
+			  * MAX_CONST_TOPLEVEL_POS
+			  * (SCHEME_TOPLEVEL_FLAGS_MASK + 1));
 # endif
 #endif
 
     for (i = 0; i < MAX_CONST_TOPLEVEL_DEPTH; i++) {
       for (k = 0; k < MAX_CONST_TOPLEVEL_POS; k++) {
-	Scheme_Toplevel *v;
+	for (cnst = 0; cnst <= SCHEME_TOPLEVEL_FLAGS_MASK; cnst++) {
+	  Scheme_Toplevel *v;
 	
 #ifndef USE_TAGGED_ALLOCATION
-	v = (all++);
+	  v = (all++);
 #else
-	v = (Scheme_Toplevel *)scheme_malloc_eternal_tagged(sizeof(Scheme_Toplevel));
+	  v = (Scheme_Toplevel *)scheme_malloc_eternal_tagged(sizeof(Scheme_Toplevel));
 #endif
-	v->so.type = scheme_toplevel_type;
-	v->depth = i;
-	v->position = k;
+	  v->iso.so.type = scheme_toplevel_type;
+	  v->depth = i;
+	  v->position = k;
+	  SCHEME_TOPLEVEL_FLAGS(v) = cnst;
 	
-	toplevels[i][k] = (Scheme_Object *)v;
+	  toplevels[i][k][cnst] = (Scheme_Object *)v;
+	}
       }
     }
   }
@@ -1311,17 +1318,26 @@ Scheme_Comp_Env *scheme_extend_as_toplevel(Scheme_Comp_Env *env)
     return scheme_new_compilation_frame(0, SCHEME_TOPLEVEL_FRAME, env, NULL);
 }
 
-static Scheme_Object *make_toplevel(mzshort depth, int position, int resolved)
+static Scheme_Object *make_toplevel(mzshort depth, int position, int resolved, int flags)
 {
   Scheme_Toplevel *tl;
   Scheme_Object *v, *pr;
 
+  /* Important: non-resolved can't be cached, because the ISCONST
+     field is modified to track mutated module-level variables. But
+     the value for a specific toplevel is cached in the environment
+     layer. */
+
   if (resolved) {
     if ((depth < MAX_CONST_TOPLEVEL_DEPTH)
 	&& (position < MAX_CONST_TOPLEVEL_POS))
-      return toplevels[depth][position];
+      return toplevels[depth][position][flags];
 
-    pr = scheme_make_pair(scheme_make_integer(depth), scheme_make_integer(position));
+    pr = (flags
+	  ? scheme_make_pair(scheme_make_integer(position),
+			     scheme_make_integer(flags))
+	  : scheme_make_integer(position));
+    pr = scheme_make_pair(scheme_make_integer(depth), pr);
     v = scheme_hash_get(toplevels_ht, pr);
     if (v)
       return v;
@@ -1329,9 +1345,10 @@ static Scheme_Object *make_toplevel(mzshort depth, int position, int resolved)
     pr = NULL;
 
   tl = (Scheme_Toplevel *)scheme_malloc_atomic_tagged(sizeof(Scheme_Toplevel));
-  tl->so.type = (resolved ? scheme_toplevel_type : scheme_compiled_toplevel_type);
+  tl->iso.so.type = (resolved ? scheme_toplevel_type : scheme_compiled_toplevel_type);
   tl->depth = depth;
   tl->position = position;
+  SCHEME_TOPLEVEL_FLAGS(tl) = flags;
 
   if (resolved) {
     if (toplevels_ht->count > TABLE_CACHE_MAX_SIZE) {
@@ -1352,7 +1369,7 @@ Scheme_Object *scheme_register_toplevel_in_prefix(Scheme_Object *var, Scheme_Com
 
   if (rec && rec[drec].dont_mark_local_use) {
     /* Make up anything; it's going to be ignored. */
-    return make_toplevel(0, 0, 0);
+    return make_toplevel(0, 0, 0, 0);
   }
 
   ht = cp->toplevels;
@@ -1365,12 +1382,18 @@ Scheme_Object *scheme_register_toplevel_in_prefix(Scheme_Object *var, Scheme_Com
   if (o)
     return o;
 
-  o = make_toplevel(0, cp->num_toplevels, 0);
+  o = make_toplevel(0, cp->num_toplevels, 0, 0);
 
   cp->num_toplevels++;
   scheme_hash_set(ht, var, o);
 
   return o;
+}
+
+Scheme_Object *scheme_toplevel_to_flagged_toplevel(Scheme_Object *_tl, int flags)
+{
+  Scheme_Toplevel *tl = (Scheme_Toplevel *)_tl;
+  return make_toplevel(tl->depth, tl->position, 0, flags);
 }
 
 Scheme_Object *scheme_register_stx_in_prefix(Scheme_Object *var, Scheme_Comp_Env *env, 
@@ -2092,7 +2115,7 @@ void create_skip_table(Scheme_Comp_Env *start_frame)
      scheme_variable_type (id is a global or module-bound variable),
      or
 
-     scheme_module_variable_type (id is a module-boundvariable).
+     scheme_module_variable_type (id is a module-bound variable).
 
 */
 
@@ -2493,7 +2516,7 @@ int scheme_check_context(Scheme_Env *env, Scheme_Object *name, Scheme_Object *ok
 /*                 compile-time env for optimization                      */
 /*========================================================================*/
 
-Optimize_Info *scheme_optimize_info_create(void)
+Optimize_Info *scheme_optimize_info_create()
 {
   Optimize_Info *info;
 
@@ -2501,6 +2524,7 @@ Optimize_Info *scheme_optimize_info_create(void)
 #ifdef MZTAG_REQUIRED
   info->type = scheme_rt_optimize_info;
 #endif
+  info->inline_fuel = 16;
   
   return info;
 }
@@ -2648,13 +2672,13 @@ void scheme_optimize_mutated(Optimize_Info *info, int pos)
   info->use[pos] = 1;
 }
 
-Scheme_Object *scheme_optimize_reverse_unless_mutated(Optimize_Info *info, int pos)
+Scheme_Object *scheme_optimize_reverse(Optimize_Info *info, int pos, int unless_mutated)
 /* pos is in new-frame counts, and we want to produce an old-frame reference if
    it's not mutated */
 {
   int delta = 0;
 
-  while (info) {
+  while (1) {
     if (pos < info->new_frame)
       break;
     pos -= info->new_frame;
@@ -2662,8 +2686,9 @@ Scheme_Object *scheme_optimize_reverse_unless_mutated(Optimize_Info *info, int p
     info = info->next;
   }
 
-  if (info->use && info->use[pos])
-    return NULL;
+  if (unless_mutated)
+    if (info->use && info->use[pos])
+      return NULL;
 
   return scheme_make_local(scheme_local_type, pos + delta);
 }
@@ -2683,7 +2708,7 @@ int scheme_optimize_is_used(Optimize_Info *info, int pos)
   return 0;
 }
 
-static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int j)
+static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int j, int *closure_offset)
 {
   Scheme_Object *p, *n;
   int delta = 0;
@@ -2703,7 +2728,15 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
     n = SCHEME_VEC_ELS(p)[1];
     if (SCHEME_INT_VAL(n) == pos) {
       n = SCHEME_VEC_ELS(p)[2];
-      if (SAME_TYPE(SCHEME_TYPE(n), scheme_local_type)) {
+      if (SAME_TYPE(SCHEME_TYPE(n), scheme_compiled_unclosed_procedure_type)) {
+	if (!closure_offset)
+	  break;
+	else {
+	  *closure_offset = delta;
+	}
+      } else if (closure_offset) {
+	return NULL;
+      } else if (SAME_TYPE(SCHEME_TYPE(n), scheme_local_type)) {
 	int pos;
 
 	pos = SCHEME_LOCAL_POS(n);
@@ -2714,7 +2747,7 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
 	   a value, because chaining would normally happen on the 
 	   propagate-call side. Chaining there also means that we 
 	   avoid stack overflow here. */
-	n = do_optimize_info_lookup(info, pos, j);
+	n = do_optimize_info_lookup(info, pos, j, NULL);
 
 	if (!n) {
 	  /* Return shifted reference to other local: */
@@ -2727,14 +2760,15 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
     p = SCHEME_VEC_ELS(p)[0];
   }
 
-  register_stat_dist(info, pos, j);
+  if (!closure_offset)
+    register_stat_dist(info, pos, j);
   
   return NULL;
 }
 
-Scheme_Object *scheme_optimize_info_lookup(Optimize_Info *info, int pos)
+Scheme_Object *scheme_optimize_info_lookup(Optimize_Info *info, int pos, int *closure_offset)
 {
-  return do_optimize_info_lookup(info, pos, 0);
+  return do_optimize_info_lookup(info, pos, 0, closure_offset);
 }
 
 Optimize_Info *scheme_optimize_info_add_frame(Optimize_Info *info, int orig, int current, int flags)
@@ -2746,6 +2780,10 @@ Optimize_Info *scheme_optimize_info_add_frame(Optimize_Info *info, int orig, int
   naya->next = info;
   naya->original_frame = orig;
   naya->new_frame = current;
+  naya->inline_fuel = info->inline_fuel;
+  naya->letrec_not_twice = info->letrec_not_twice;
+  naya->enforce_const = info->enforce_const;
+  naya->top_level_consts = info->top_level_consts;
 
   return naya;
 }
@@ -2868,6 +2906,7 @@ Resolve_Info *scheme_resolve_info_extend(Resolve_Info *info, int size, int oldsi
   naya->prefix = info->prefix;
   naya->next = info;
   naya->use_jit = info->use_jit;
+  naya->enforce_const = info->enforce_const;
   naya->size = size;
   naya->oldsize = oldsize;
   naya->count = mapc;
@@ -2982,7 +3021,8 @@ Scheme_Object *scheme_resolve_toplevel(Resolve_Info *info, Scheme_Object *expr)
 
   return make_toplevel(skip + SCHEME_TOPLEVEL_DEPTH(expr), /* depth is 0 (normal) or 1 (exp-time) */
 		       SCHEME_TOPLEVEL_POS(expr),
-		       1);
+		       1,
+		       SCHEME_TOPLEVEL_FLAGS(expr) & SCHEME_TOPLEVEL_FLAGS_MASK);
 }
 
 /*========================================================================*/
@@ -3732,17 +3772,39 @@ rename_transformer_p(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *write_toplevel(Scheme_Object *obj)
 {
+  int pos, flags;
+  Scheme_Object *pr;
+
+  pos = SCHEME_TOPLEVEL_POS(obj);
+  flags = (SCHEME_TOPLEVEL_FLAGS(obj) & SCHEME_TOPLEVEL_FLAGS_MASK);
+
+  pr = (flags
+	? scheme_make_pair(scheme_make_integer(pos),
+			   scheme_make_integer(flags))
+	: scheme_make_integer(pos));
+
   return scheme_make_pair(scheme_make_integer(SCHEME_TOPLEVEL_DEPTH(obj)),
-			  scheme_make_integer(SCHEME_TOPLEVEL_POS(obj)));
+			  pr);
 }
 
 static Scheme_Object *read_toplevel(Scheme_Object *obj)
 {
+  int pos, depth, flags;
+
   if (!SCHEME_PAIRP(obj)) return NULL;
 
-  return make_toplevel(SCHEME_INT_VAL(SCHEME_CAR(obj)),
-		       SCHEME_INT_VAL(SCHEME_CDR(obj)),
-		       1);
+  depth = SCHEME_INT_VAL(SCHEME_CAR(obj));
+  obj = SCHEME_CDR(obj);
+
+  if (SCHEME_PAIRP(obj)) {
+    pos = SCHEME_INT_VAL(SCHEME_CAR(obj));
+    flags = SCHEME_INT_VAL(SCHEME_CDR(obj)) & SCHEME_TOPLEVEL_FLAGS_MASK;
+  } else {
+    pos = SCHEME_INT_VAL(obj);
+    flags = 0;
+  }
+
+  return make_toplevel(depth, pos, 1, flags);
 }
 
 static Scheme_Object *write_variable(Scheme_Object *obj)

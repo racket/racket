@@ -1641,14 +1641,13 @@
        [else (loop (cdr proto-r))])))
 
   (-define (no-ellipses? stx)
-    (let loop ([stx stx])
-      (cond
-       [(stx-pair? stx)
-	(and (no-ellipses? (stx-car stx))
-	     (no-ellipses? (stx-cdr stx)))]
-       [(identifier? stx)
-	(not (...? stx))]
-       [else #t])))
+    (cond
+     [(stx-pair? stx)
+      (and (no-ellipses? (stx-car stx))
+	   (no-ellipses? (stx-cdr stx)))]
+     [(identifier? stx)
+      (not (...? stx))]
+     [else #t]))
 
   ;; Structure for communicating first-order pattern variable information:
   (define-struct syntax-mapping (depth valvar))

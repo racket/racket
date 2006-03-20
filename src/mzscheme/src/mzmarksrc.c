@@ -958,6 +958,7 @@ mark_optimize_info {
   gcMARK(i->next);
   gcMARK(i->use);
   gcMARK(i->consts);
+  gcMARK(i->top_level_consts);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Optimize_Info));

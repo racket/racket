@@ -116,6 +116,7 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv);
 static Scheme_Object *object_name(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_arity(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_arity_includes(int argc, Scheme_Object *argv[]);
+static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *primitive_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *primitive_closure_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *primitive_result_arity (int argc, Scheme_Object *argv[]);
@@ -381,6 +382,11 @@ scheme_init_fun (Scheme_Env *env)
   scheme_add_global_constant("procedure-arity-includes?",
 			     scheme_make_folding_prim(procedure_arity_includes,
 						      "procedure-arity-includes?",
+						      2, 2, 1),
+			     env);
+  scheme_add_global_constant("procedure-closure-contents-eq?",
+			     scheme_make_folding_prim(procedure_equal_closure_p,
+						      "procedure-closure-contents-eq?",
 						      2, 2, 1),
 			     env);
 
@@ -716,7 +722,7 @@ scheme_make_closure(Scheme_Thread *p, Scheme_Object *code, int close)
   return (Scheme_Object *)closure;
 }
 
-Scheme_Object *scheme_jit_closure(Scheme_Object *code, Scheme_Letrec *lr)
+Scheme_Object *scheme_jit_closure(Scheme_Object *code, Scheme_Object *context)
   /* If lr is supplied as a letrec binding this closure, it may be used
      for JIT compilation. */
 {
@@ -729,7 +735,7 @@ Scheme_Object *scheme_jit_closure(Scheme_Object *code, Scheme_Letrec *lr)
     data  = MALLOC_ONE_TAGGED(Scheme_Closure_Data);
     memcpy(data, code, sizeof(Scheme_Closure_Data));
 
-    data->context = (Scheme_Object *)lr;
+    data->context = context;
 
     ndata = scheme_generate_lambda(data, 1, NULL);
     data->native_code = ndata;
@@ -753,7 +759,7 @@ typedef struct {
   int *local_flags;
   mzshort base_closure_size; /* doesn't include top-level (if any) */
   mzshort *base_closure_map;
-  short has_tl;
+  short has_tl, body_size;
 } Closure_Info;
 
 Scheme_Object *
@@ -786,6 +792,10 @@ scheme_optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info)
   cl->base_closure_map = dcm;
   if (scheme_env_uses_toplevel(info))
     cl->has_tl = 1;
+  cl->body_size = info->size;
+
+  info->size++;
+  info->inline_fuel++;
 
   data->closure_size = (cl->base_closure_size
 			+ (cl->has_tl ? 1 : 0));
@@ -798,6 +808,62 @@ scheme_optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info)
   scheme_optimize_info_done(info);
 
   return (Scheme_Object *)data;
+}
+
+Scheme_Object *scheme_clone_closure_compilation(Scheme_Object *_data, Optimize_Info *info, int delta, int closure_depth)
+{
+  Scheme_Closure_Data *data, *data2;
+  Scheme_Object *body;
+  Closure_Info *cl;
+  int *flags, sz;
+
+  data = (Scheme_Closure_Data *)_data;
+  
+  body = scheme_optimize_clone(data->code, info, delta, closure_depth + data->num_params);
+  if (!body) return NULL;
+
+  data2 = MALLOC_ONE_TAGGED(Scheme_Closure_Data);
+  memcpy(data2, data, sizeof(Scheme_Closure_Data));
+
+  data2->code = body;
+
+  cl = MALLOC_ONE_RT(Closure_Info);
+  memcpy(cl, data->closure_map, sizeof(Closure_Info));
+  data2->closure_map = (mzshort *)cl;
+
+  sz = sizeof(int) * data2->num_params;
+  flags = (int *)scheme_malloc_atomic(sz);
+  memcpy(flags, cl->local_flags, sz);
+  cl->local_flags = flags;
+
+  return (Scheme_Object *)data2;
+}
+
+int scheme_closure_body_size(Scheme_Closure_Data *data, int check_assign)
+{
+  int i;
+  Closure_Info *cl;
+
+  cl = (Closure_Info *)data->closure_map;
+
+  if (check_assign) {
+    /* Don't try to inline if there's a rest arg: */
+    if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST)
+      return -1;
+    
+    /* Don't try to inline if any arguments are mutated: */
+    for (i = data->num_params; i--; ) {
+      if (cl->local_flags[i] & SCHEME_WAS_SET_BANGED)
+	return -1;
+    }
+  }
+
+  return cl->body_size;
+}
+
+int scheme_closure_argument_flags(Scheme_Closure_Data *data, int i)
+{
+  return ((Closure_Info *)data->closure_map)->local_flags[i];
 }
 
 Scheme_Object *
@@ -2387,6 +2453,115 @@ static Scheme_Object *procedure_arity_includes(int argc, Scheme_Object *argv[])
   n = scheme_extract_index("procedure-arity-includes?", 1, argc, argv, -2, 0);
 
   return scheme_get_or_check_arity(argv[0], n);
+}
+
+static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *v1 = argv[0], *v2 = argv[1];
+
+  if (!SCHEME_PROCP(v1))
+    scheme_wrong_type("procedure-closure-contents-eq?", "procedure", 0, argc, argv);
+  if (!SCHEME_PROCP(v2))
+    scheme_wrong_type("procedure-closure-contents-eq?", "procedure", 1, argc, argv);
+
+  if (SAME_OBJ(v1, v2))
+    return scheme_true;
+
+  if (!SAME_TYPE(SCHEME_TYPE(v1), SCHEME_TYPE(v2)))
+    return scheme_false;
+
+  switch (SCHEME_TYPE(v1)) {
+  case scheme_prim_type:
+    {
+      Scheme_Primitive_Proc *p1 = (Scheme_Primitive_Proc *)v1;
+      Scheme_Primitive_Proc *p2 = (Scheme_Primitive_Proc *)v2;
+
+      if (p1->prim_val == p2->prim_val) {
+	if (p1->pp.flags & SCHEME_PRIM_IS_CLOSURE) {
+	  if (!(p2->pp.flags & SCHEME_PRIM_IS_CLOSURE))
+	    return scheme_false;
+
+	  /* They both are closures, but we don't know how 
+	     many fields in each, except in 3m mode. So
+	     give up. */
+	  return scheme_false;
+	} else if (!(p2->pp.flags & SCHEME_PRIM_IS_CLOSURE))
+	  return scheme_true;
+      }
+    }
+    break;
+  case scheme_closure_type:
+    {
+      Scheme_Closure *c1 = (Scheme_Closure *)v1;
+      Scheme_Closure *c2 = (Scheme_Closure *)v2;
+
+      if (SAME_OBJ(c1->code, c2->code)) {
+	int i;
+	for (i = c1->code->closure_size; i--; ) {
+	  if (!SAME_OBJ(c1->vals[i], c2->vals[i]))
+	    return scheme_false;
+	}
+	return scheme_true;
+      }
+    }
+    break;
+  case scheme_native_closure_type:
+    {
+      Scheme_Native_Closure *c1 = (Scheme_Native_Closure *)v1;
+      Scheme_Native_Closure *c2 = (Scheme_Native_Closure *)v2;
+
+      if (SAME_OBJ(c1->code, c2->code)) {
+	int i;
+	i = c1->code->closure_size;
+	if (i < 0) {
+	  /* A case closure */
+	  Scheme_Native_Closure *sc1, *sc2;
+	  int j;
+	  i = -(i + 1);
+	  while (i--) {
+	    sc1 = (Scheme_Native_Closure *)c1->vals[i];
+	    sc2 = (Scheme_Native_Closure *)c2->vals[i];
+	    j = sc1->code->closure_size;
+	    while (j--) {
+	      if (!SAME_OBJ(sc1->vals[j], sc2->vals[j]))
+		return scheme_false;
+	    }
+	  }
+	} else {
+	  /* Normal closure: */
+	  while (i--) {
+	    if (!SAME_OBJ(c1->vals[i], c2->vals[i]))
+	      return scheme_false;
+	  }
+	}
+	return scheme_true;
+      }
+    }
+    break;
+  case scheme_case_closure_type:
+    {
+      Scheme_Case_Lambda *c1 = (Scheme_Case_Lambda *)v1;
+      Scheme_Case_Lambda *c2 = (Scheme_Case_Lambda *)v2;
+      if (c1->count == c2->count) {
+	Scheme_Closure *sc1, *sc2;
+	int i, j;
+	for (i = c1->count; i--; ) {
+	  sc1 = (Scheme_Closure *)c1->array[i];
+	  sc2 = (Scheme_Closure *)c2->array[i];
+	  if (!SAME_OBJ(sc1->code, sc2->code))
+	    return scheme_false;
+	  for (j = sc1->code->closure_size; j--; ) {
+	    if (!SAME_OBJ(sc1->vals[j], sc2->vals[j]))
+	      return scheme_false;
+	  }
+	}
+	return scheme_true;
+      }
+    }
+    break;
+  }
+
+  return scheme_false;
 }
 
 static Scheme_Object *
