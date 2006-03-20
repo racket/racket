@@ -1,3 +1,10 @@
+Version 301.11
+Added compile-enforce-module-constants parameter; the default is #t,
+ which effectively prohibits redeclaraing modules or changing
+ variable bindings through module->namespace
+Added function inlining in bytecode compiler
+Changed file-position: eof moves to the end of a file/string
+Added procedure-closure-contents-eq?
 
 Version 301.9
 Fixed constant propagation and folding in bytecode compiler
