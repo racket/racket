@@ -1991,7 +1991,7 @@
 (arity-test hash-table-for-each 2 2)
 (arity-test hash-table? 1 3)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Misc
 
 (test #t string? (version))
@@ -2012,6 +2012,30 @@
 (arity-test system-type 0 1)
 (arity-test system-library-subpath 0 1)
 (arity-test current-command-line-arguments 0 1)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; procedure-closure-contents-eq?
+
+(for-each
+ (lambda (jit?)
+   (parameterize ([eval-jit-enabled jit?])
+     (let ([f #f])
+       (set! f (eval '(lambda (x) (lambda () x))))
+       ((f 'c)) ; forced JIT compilation
+       (test #t procedure-closure-contents-eq? (f 'a) (f 'a))
+       (test #f procedure-closure-contents-eq? (f 'a) (f 'b))
+       (set! f (eval '(case-lambda
+		       [(x) (lambda () 12)]
+		       [(x y) (lambda () (list x y))])))
+       ((f 'c)) ; forces JIT compilation
+       ((f 'c 'd)) ; forces JIT compilation
+       (test #t procedure-closure-contents-eq? (f 'a) (f 'a))
+       (test #t procedure-closure-contents-eq? (f 'a 'b) (f 'a 'b))
+       (test #f procedure-closure-contents-eq? (f 'a 'b) (f 'c 'b)))))
+ '(#t #f))
+(test #t procedure-closure-contents-eq? add1 add1)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
 

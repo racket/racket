@@ -1081,6 +1081,20 @@
     (g))
   (test 16 values val))
 
+;; Function-inline test where (h (g v 10)) involves two inlines:
+(letrec ([f (lambda (x) (h (g v 10)))]
+	 [h (lambda (x) (list x x))]
+	 [g (lambda (a b) a)]
+	 [v (list 'hello)]
+	 [w (list 'no!)]) 
+  (test '((hello) (hello)) f 10))
+
+;; Inlining introduces a let binding that is immediately dropped:
+(test '(1 . 2)
+      (let ([x (cons 1 2)]) (let ([f (lambda (x) x)]) (f (lambda (y) x))))
+      10)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
+

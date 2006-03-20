@@ -333,4 +333,17 @@
 (test-comp '(let ([f (lambda (x) x)]) f)
 	   (syntax-property (datum->syntax-object #f '(lambda (x) x)) 'inferred-name 'f))
 
+(test-comp '(letrec ([f (lambda (x) x)])
+	      (f 10)
+	      f)
+	   '(letrec ([f (lambda (x) x)])
+	      f))
+(test-comp '(let ([f (lambda (x) x)])
+	      (f 10))
+	   10)
+(test-comp '(let ([f (lambda (x) (add1 x))]
+		  [y 10])
+	      (f y))
+	   '11)
+
 (report-errs)
