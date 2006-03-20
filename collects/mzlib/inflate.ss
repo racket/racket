@@ -260,17 +260,19 @@
   
   (define (NEEDBITS n)
     (when (< bk n)
-      (let ([v (peek-byte input-port peeked)])
-	(if (eof-object? v)
-	    (error 'inflate "unexpected end of file")
-	    (begin
-	      (set! bb (+ bb (arithmetic-shift v bk)))
-	      ;; assume that lookahead never needs more than 32 bytes:
-	      (if (peeked . < . 32)
-		  (set! peeked (add1 peeked))
-		  (read-byte input-port)))))
-      (set! bk (+ bk 8))
-      (NEEDBITS n)))
+      (READBITS n)))
+  (define (READBITS n)
+    (let ([v (peek-byte input-port peeked)])
+      (if (eof-object? v)
+	  (error 'inflate "unexpected end of file")
+	  (begin
+	    (set! bb (+ bb (arithmetic-shift v bk)))
+	    ;; assume that lookahead never needs more than 32 bytes:
+	    (if (peeked . < . 32)
+		(set! peeked (add1 peeked))
+		(read-byte input-port)))))
+    (set! bk (+ bk 8))
+    (NEEDBITS n))
   (define (DUMPBITS n)
     (set! bb (arithmetic-shift bb (- n)))
     (set! bk (- bk n)))
