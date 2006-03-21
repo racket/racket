@@ -84,18 +84,6 @@
 
   (provide uri-codec@)
 
-  ;; Macro to loop over integers from n (inclusive) to m (exclusive)
-  ;; Extracted from iteration.ss in macro package at Schematics
-  (define-syntax for
-        (syntax-rules ()
-          ((for (i n m) forms ...)
-           (let ((fixed-m m))
-                 (let loop ((i n))
-                   (if (< i fixed-m)
-                           (begin
-                                 forms ...
-                                 (loop (+ i 1)))))))))
-
   (define uri-codec@
     (unit/sig net:uri-codec^
       (import)
@@ -146,13 +134,12 @@
       (define (hex-string->number hex-string)
         (string->number (substring hex-string 1 3) 16))
 
+      (define ascii-size 128)
+      
       ;; (listof (cons char char)) -> (values (vectorof string) (vectorof string))
       (define (make-codec-tables alist)
-        (let ((encoding-table (make-vector 256 ""))
-              (decoding-table (make-vector 256 0)))
-          (for (i 0 256)
-               (vector-set! encoding-table i (number->hex-string i))
-               (vector-set! decoding-table i i))
+        (let ((encoding-table (build-vector ascii-size number->hex-string))
+              (decoding-table (build-vector ascii-size values)))
           (for-each (match-lambda
                      [(orig . enc)
                       (vector-set! encoding-table
@@ -178,8 +165,11 @@
       ;; vector string -> string
       (define (encode table str)
         (apply string-append
-               (map (lambda (byte)
-                      (vector-ref table byte))
+               (map (lambda (byte) 
+                      (cond
+                        [(< byte ascii-size)
+                         (vector-ref table byte)]
+                        [else (number->hex-string byte)]))
                     (bytes->list (string->bytes/utf-8 str)))))
 
       ;; vector string -> string
@@ -204,7 +194,7 @@
 	 (apply bytes (internal-decode (string->list str)))))
       
       (define (ascii-char? c)
-        (<= (char->integer c) 127))
+        (< (char->integer c) ascii-size))
       
       (define (hex-digit? c)
         (or (char<=? #\0 c #\9)
@@ -312,9 +302,6 @@
 					 (raise-type-error 'current-alist-separator-mode
 							   "'amp, 'semi, or 'amp-or-semi"
 							   s))
-				       s)))
-
-      ))
-  )
+				       s))))))
 
 ;;; uri-codec-unit.ss ends here
