@@ -102,8 +102,7 @@
 
       ;; The characters that always map to themselves
       (define alphanumeric-mapping
-        (map (lambda (char)
-               (cons char char))
+        (map (lambda (char) (cons char char))
              '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9
                #\A #\B #\C #\D #\E #\F #\G #\H #\I #\J
                #\K #\L #\M #\N #\O #\P #\Q #\R #\S #\T
@@ -190,17 +189,23 @@
            [() (list)]
            [(#\% (? hex-digit? char1) (? hex-digit? char2) . rest)
             ;; This used to consult the table again, but I think that's
-            ;;  wrong. For exmaple %2b should produce +, not a space.
+            ;;  wrong. For example %2b should produce +, not a space.
             (cons (string->number (string char1 char2) 16)
                   (internal-decode rest))]
-           [(char . rest)
+           [((? ascii-char? char) . rest)
             (cons
-             (vector-ref table
-                         (char->integer char))
+             (vector-ref table (char->integer char))
+             (internal-decode rest))]
+           [(char . rest)
+            (append
+             (bytes->list (string->bytes/utf-8 (string char)))
              (internal-decode rest))]))
 	(bytes->string/utf-8
 	 (apply bytes (internal-decode (string->list str)))))
-
+      
+      (define (ascii-char? c)
+        (<= (char->integer c) 127))
+      
       (define (hex-digit? c)
         (or (char<=? #\0 c #\9)
             (char<=? #\a c #\f)
@@ -259,11 +264,11 @@
       ;; http://www.w3.org/TR/html401/appendix/notes.html#ampersands-in-uris
       (define form-urlencoded->alist
 	(opt-lambda (str)
-	  (define key-regexp (regexp "[^=]*"))
+	  (define key-regexp #rx"[^=]*")
 	  (define value-regexp (case (current-alist-separator-mode)
-				 [(semi) (regexp "[^;]*")]
-				 [(amp) (regexp "[^&]*")]
-				 [else (regexp "[^&;]*")]))
+				 [(semi) #rx"[^;]*"]
+				 [(amp) #rx"[^&]*"]
+				 [else #rx"[^&;]*"]))
 	  (define (next-key str start)
 	    (if (>= start (string-length str))
 		#f

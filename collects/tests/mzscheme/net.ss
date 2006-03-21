@@ -255,6 +255,14 @@
   (test-s->u (vector "mailto" #f #f #f #f '(#("robby@plt-scheme.org")) '() #f)
              "mailto:robby@plt-scheme.org")
   
+  (test (vector "http" #f "www.drscheme.org" #f #f '() '((bar . "馨慧")) #f) 
+        string->url/vec
+        "http://www.drscheme.org?bar=馨慧")
+  
+  (test (vector "http" #f "www.drscheme.org" #f #f '() '((bár . "é")) #f) 
+        string->url/vec
+        "http://www.drscheme.org?bár=é")
+  
   (let ([empty-url (make-url #f #f #f #f #f '() '() #f)])
     (test-c-u/r (string->url "http://www.drscheme.org")
                 empty-url
