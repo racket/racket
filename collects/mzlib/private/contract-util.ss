@@ -1,6 +1,5 @@
 (module contract-util mzscheme
   (require "contract-helpers.scm"
-           "same-closure.ss"
            (lib "pretty.ss")
            (lib "list.ss"))
 
@@ -286,14 +285,14 @@
          (name-prop (λ (ctc) (contract-the-name ctc)))
          (stronger-prop (λ (this that) 
                           (and (contract? that)
-                               (same-closure? (contract-the-proc this)
-                                              (contract-the-proc that)))))))
+                               (procedure-closure-contents-eq? (contract-the-proc this)
+							       (contract-the-proc that)))))))
       (define-struct/prop flat-contract (the-name predicate)
         ((proj-prop flat-proj)
          (stronger-prop (λ (this that) 
                           (and (flat-contract? that)
-                               (same-closure? (flat-contract-predicate this)
-                                              (flat-contract-predicate that)))))
+                               (procedure-closure-contents-eq? (flat-contract-predicate this)
+							       (flat-contract-predicate that)))))
          (name-prop (λ (ctc) (flat-contract-the-name ctc)))
          (flat-prop (λ (ctc) (flat-contract-predicate ctc)))))
       (values make-flat-contract

@@ -1,7 +1,6 @@
 
 (module contract-ds mzscheme
-  (require "contract-util.ss"
-           "same-closure.ss")
+  (require "contract-util.ss")
   (require-for-syntax "contract-ds-helpers.ss"
                       "contract-helpers.scm")
   
@@ -207,7 +206,7 @@
       [(and (proj-pred? x) (proj-pred? y))
        (contract-stronger? x y)]
       [(and (procedure? x) (procedure? y))
-       (same-closure? x y)]
+       (procedure-closure-contents-eq? x y)]
       [else #f]))
   
   #|
