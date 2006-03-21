@@ -593,7 +593,8 @@ void scheme_set_global_bucket(char *who, Scheme_Bucket *b, Scheme_Object *val,
 			      int set_undef)
 {
   if ((b->val || set_undef) 
-      && !(((Scheme_Bucket_With_Flags *)b)->flags & GLOB_IS_IMMUTATED))
+      && ((b->so.type != scheme_variable_type)
+	  || !(((Scheme_Bucket_With_Flags *)b)->flags & GLOB_IS_IMMUTATED)))
     b->val = val;
   else {
     if (((Scheme_Bucket_With_Home *)b)->home->module) {
