@@ -48,6 +48,15 @@
                        [wrap-name (string->symbol (format "~a/lazy-contract" (syntax-e (syntax name))))])
            #` 
            (begin
+             
+             ;; `declare' future bindings for the top-level (so that everyone picks them up)
+             #,@(if (eq? (syntax-local-context) 'top-level)
+                    (list
+                     (syntax
+                      (define-syntaxes (contract-type contract-maker contract-predicate contract-get contract-set)
+                        (values))))
+                    (list))
+             
              (define-values (wrap-type wrap-maker wrap-predicate wrap-get wrap-set)
                (make-struct-type 'wrap-name
                                  #f  ;; super struct

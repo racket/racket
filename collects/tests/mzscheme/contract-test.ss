@@ -3521,6 +3521,19 @@
         (couple-hd (contract c1 y 'pos 'neg))))
    1)
   
+  ;; make sure that define-contract-struct contracts can go at the top level
+  (test/spec-passed
+   'd-c-s37
+   '(parameterize ([current-namespace (make-namespace)])
+      (eval '(require (lib "contract.ss")))
+      (eval '(define-contract-struct couple (hd tl)))
+      (eval '(contract-stronger?
+              (couple/dc [hd any/c]
+                         [tl (hd) any/c])
+              (couple/dc [hd any/c]
+                         [tl (hd) any/c])))))
+
+  
   ;; test the predicate
   (let ()
     (define-contract-struct couple (hd tl))
@@ -3926,6 +3939,10 @@
     (test #f contract-stronger? (couple/c (>=/c 2) (>=/c 3)) (couple/c (>=/c 4) (>=/c 5)))
     (test #t contract-stronger? (couple/c (>=/c 4) (>=/c 5)) (couple/c (>=/c 2) (>=/c 3)))
     (test #f contract-stronger? (couple/c (>=/c 1) (>=/c 5)) (couple/c (>=/c 5) (>=/c 1)))
+    (let ([ctc (couple/dc [hd any/c] [tl (hd) any/c])])
+      (test #t contract-stronger? ctc ctc))
+    (let ([ctc (couple/dc [hd any/c] [tl (hd) (<=/c hd)])])
+      (test #t contract-stronger? ctc ctc))
     (test #t contract-stronger? list-of-numbers list-of-numbers)
     (test #t contract-stronger? (short-list/less-than 4) (short-list/less-than 5))
     (test #f contract-stronger? (short-list/less-than 5) (short-list/less-than 4))

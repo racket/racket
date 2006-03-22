@@ -29,7 +29,7 @@ expands into procedures & structs like this:
 which are then called when the contract's fields are explored
 
 |#
-  
+
   (define (build-clauses name coerce-contract stx clauses)
     (let* ([field-names 
             (map (λ (clause)
@@ -40,7 +40,15 @@ which are then called when the contract's fields are explored
                                                stx
                                                clause)]))
                  (syntax->list clauses))]
-           [all-ac-ids (generate-temporaries field-names)])
+           [all-ac-ids (generate-temporaries field-names)]
+           [defeat-inlining 
+             ;; makes the procedure "big enough" so
+             ;; that inlining doesn't consider it.
+             (λ (e)
+               (let loop ([i 16])
+                 (cond
+                   [(zero? i) e]
+                   [else #`(values #,(loop (- i 1)))])))])
       (let loop ([clauses (syntax->list clauses)]
                  [ac-ids all-ac-ids]
                  [prior-ac-ids '()]
@@ -58,7 +66,8 @@ which are then called when the contract's fields are explored
                 (let ([maker-arg #`(λ #,(match-up (reverse prior-ac-ids)
                                                   (syntax (x ...))
                                                   field-names)
-                                     (#,coerce-contract #,name ctc-exp))])
+                                     #,(defeat-inlining
+                                         #`(#,coerce-contract #,name ctc-exp)))])
                   (loop (cdr clauses)
                         (cdr ac-ids)
                         (cons (car ac-ids) prior-ac-ids)
