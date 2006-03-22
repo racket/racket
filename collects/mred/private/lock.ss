@@ -1,5 +1,5 @@
 (module lock mzscheme
-  (require (prefix wx: "kernel.ss"))
+  (require "wxkernel.ss")
   (provide (protect as-entry
 		    as-exit
 		    entry-point

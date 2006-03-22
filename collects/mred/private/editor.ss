@@ -4,7 +4,7 @@
 	   (lib "etc.ss")
 	   (lib "list.ss")
 	   (lib "file.ss")
-	   (prefix wx: "kernel.ss")
+	   "wxkernel.ss"
 	   "seqcontract.ss"
 	   "lock.ss"
 	   "check.ss"

@@ -1,7 +1,7 @@
 (module gdi mzscheme
   (require (lib "class.ss")
 	   (lib "class100.ss")
-	   (prefix wx: "kernel.ss")
+	   "wxkernel.ss"
 	   "lock.ss"
 	   "check.ss"
 	   "wx.ss"

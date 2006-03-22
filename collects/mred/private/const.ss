@@ -1,7 +1,7 @@
 (module const mzscheme
   (require (lib "class.ss")
 	   (lib "file.ss")
-	   (prefix wx: "kernel.ss"))
+	   "wxkernel.ss")
   (provide (protect (all-defined)))
 
   ;; default spacing between items.

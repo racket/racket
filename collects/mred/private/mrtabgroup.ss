@@ -1,7 +1,7 @@
 (module mrtabgroup mzscheme
   (require (lib "class.ss")
 	   (lib "class100.ss")
-	   (prefix wx: "kernel.ss")
+	   "wxkernel.ss"
 	   "lock.ss"
 	   "const.ss"
 	   "check.ss"

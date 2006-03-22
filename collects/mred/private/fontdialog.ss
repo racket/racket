@@ -3,7 +3,7 @@
 	   (lib "class100.ss")
 	   (lib "etc.ss")
 	   (lib "list.ss")
-	   (prefix wx: "kernel.ss")
+	   "wxkernel.ss"
 	   "lock.ss"
 	   "wx.ss"
 	   "cycle.ss"

@@ -1,7 +1,7 @@
 (module repl mzscheme
   (require (lib "class.ss")
 	   (lib "class100.ss")
-	   (prefix wx: "kernel.ss")
+	   "wxkernel.ss"
 	   "editor.ss"
 	   "app.ss"
 	   "mrtop.ss"

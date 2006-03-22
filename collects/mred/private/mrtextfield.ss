@@ -2,7 +2,7 @@
   (require (lib "class.ss")
 	   (lib "class100.ss")
 	   (lib "list.ss")
-	   (prefix wx: "kernel.ss")
+	   "wxkernel.ss"
 	   "lock.ss"
 	   "const.ss"
 	   "check.ss"
