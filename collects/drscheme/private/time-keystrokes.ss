@@ -44,9 +44,8 @@
             (unless (eq? front-frame frame)
               (sleep 1/10)
               (loop (- n 1)))))
-        (let ([win (send frame get-focus-window)])
-          (unless win
-            (error 'time-keystrokes "frame has no focused window"))
+        (let ([win (send frame get-definitions-canvas)])
+          (send win focus)
           (time (send-key-events win chars-to-test))))
       
       (define (send-key-events window chars)
