@@ -1,7 +1,7 @@
 (module contract-arrow mzscheme
   (require (lib "etc.ss")
            (lib "list.ss")
-           "contract-util.ss"
+           "contract-guts.ss"
            "class-internal.ss")
   
   (require-for-syntax (lib "list.ss")

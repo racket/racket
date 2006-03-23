@@ -7,9 +7,7 @@
 
 (module datatype-core mzscheme
   (require (lib "pconvert-prop.ss")
-	   (lib "contract.ss" "mzlib" "private")
-           (lib "contract-util.ss" "mzlib" "private")
-           (lib "contract-arrow.ss" "mzlib" "private"))
+	   (lib "contract.ss"))
   (require-for-syntax "core-utils.ss")
 
   (provide define-datatype-core

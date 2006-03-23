@@ -1,6 +1,6 @@
 
 (module contract-ds mzscheme
-  (require "contract-util.ss")
+  (require "contract-guts.ss")
   (require-for-syntax "contract-ds-helpers.ss"
                       "contract-helpers.scm")
   

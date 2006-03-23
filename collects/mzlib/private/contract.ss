@@ -23,7 +23,7 @@ add struct contracts for immutable structs?
            (lib "list.ss")
            (lib "pretty.ss")
            "contract-arrow.ss"
-           "contract-util.ss")
+           "contract-guts.ss")
   
   (require "contract-helpers.scm")
   (require-for-syntax (prefix a: "contract-helpers.scm"))

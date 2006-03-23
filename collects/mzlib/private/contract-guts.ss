@@ -1,4 +1,4 @@
-(module contract-util mzscheme
+(module contract-guts mzscheme
   (require "contract-helpers.scm"
            (lib "pretty.ss")
            (lib "list.ss"))
@@ -81,7 +81,7 @@
                 (define bangers (make-struct-field-mutator set count 'field))
                 ...))))])))
   
-  (define-values (proj-prop proj-pred? proj-get) 
+  (define-values (proj-prop proj-pred? raw-proj-get) 
     (make-struct-type-property 'contract-projection))
   (define-values (name-prop name-pred? name-get)
     (make-struct-type-property 'contract-name))
@@ -89,6 +89,26 @@
     (make-struct-type-property 'contract-stronger-than))
   (define-values (flat-prop flat-pred? flat-get)
     (make-struct-type-property 'contract-flat))
+  
+  (define-values (pos-proj-prop pos-proj-pred? pos-proj-get) 
+    (make-struct-type-property 'contract-positive-projection))
+  (define-values (neg-proj-prop neg-proj-pred? neg-proj-get) 
+    (make-struct-type-property 'contract-negative-projection))
+  
+  (define (proj-get ctc)
+    (cond
+      [(proj-pred? ctc)
+       (raw-proj-get ctc)]
+      [(and (neg-proj-pred? ctc)
+            (pos-proj-pred? ctc))
+       (let ([pos-abs (pos-proj-get ctc)]
+             [neg-abs (pos-proj-get ctc)])
+         (λ (pos neg src-info str)
+           (let ([p-proj (pos-abs pos src-info str)]
+                 [n-proj (neg-abs neg src-info str)])
+             (lambda (v)
+               (n-proj (p-proj v))))))]
+      [else (error 'proj-get "unknown ~e" ctc)]))
   
   ;; contract-stronger? : contract contract -> boolean
   ;; indicates if one contract is stronger (ie, likes fewer values) than another
