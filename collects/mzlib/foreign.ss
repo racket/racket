@@ -1500,8 +1500,10 @@
 ;; which is not a good idea.
 (define killer-executor (make-will-executor))
 (define killer-thread
-  (thread (lambda () (let loop () (will-execute killer-executor) (loop)))))
+  (delay
+    (thread (lambda () (let loop () (will-execute killer-executor) (loop))))))
 (define* (register-finalizer obj finalizer)
+  (force killer-thread)
   (will-register killer-executor obj finalizer))
 
 (define-unsafer unsafe!)
