@@ -1660,6 +1660,8 @@ regmatch(Regwork *rw, rxpos prog)
 	case CLOSEN:
 	  isopen = 0;
 	  no = OPLEN(OPERAND(scan));
+	  if (!no)
+	    no = -1; /* => don't set in result array */
 	  break;
 	default:
 	  if (OP(scan) < CLOSE) {
@@ -1671,36 +1673,40 @@ regmatch(Regwork *rw, rxpos prog)
 	  }
 	}
 
-	save = rw->input;
-
-	if (isopen) {
-	  if (regmatch(rw, next)) {
-	    if (no >= 0) {
-	      /*
-	       * Don't set startp if some later
-	       * invocation of the same parentheses
-	       * already has.
-	       */
-	      if (rw->startp[no] == -1)
-		rw->startp[no] = save;
-	    }
-	    return(1);
-	  } else
-	    return(0);
+	if (no < 0) {
+	  /* No need to recur */
 	} else {
-	  if (regmatch(rw, next)) {
-	    if (no >= 0) {
-	      /*
-	       * Don't set endp if some later
-	       * invocation of the same parentheses
-	       * already has.
-	       */
-	      if (rw->endp[no] == -1)
-		rw->endp[no] = save;
-	    }
-	    return(1);
-	  } else
-	    return(0);
+	  save = rw->input;
+
+	  if (isopen) {
+	    if (regmatch(rw, next)) {
+	      if (no >= 0) {
+		/*
+		 * Don't set startp if some later
+		 * invocation of the same parentheses
+		 * already has.
+		 */
+		if (rw->startp[no] == -1)
+		  rw->startp[no] = save;
+	      }
+	      return(1);
+	    } else
+	      return(0);
+	  } else {
+	    if (regmatch(rw, next)) {
+	      if (no >= 0) {
+		/*
+		 * Don't set endp if some later
+		 * invocation of the same parentheses
+		 * already has.
+		 */
+		if (rw->endp[no] == -1)
+		  rw->endp[no] = save;
+	      }
+	      return(1);
+	    } else
+	      return(0);
+	  }
 	}
       }
       break;
@@ -2502,7 +2508,7 @@ static Scheme_Object *do_make_regexp(const char *who, int is_byte, int argc, Sch
       for (i = 0; i < slen; i++) {
 	if (!cp[i]) cp[i] = '0';
       } 
-      printf("%d %s\n", slen, cp);
+      printf("%d %s\n", slen, scheme_write_to_string(scheme_make_byte_string(cp), 0));
     }
 #endif
   }

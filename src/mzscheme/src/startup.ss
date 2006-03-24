@@ -160,15 +160,17 @@
 	  (cons i l)
 	  #f)))
 
-  ;; used in pattern-matching where the second
+  ;; used in pattern-matching where either
   ;;  list can be a failure; if it's null, the first
   ;;  part might be an improper list
   (define-values (append/#f)
     (lambda (l1 l2)
-      (if l2
-	  (if (null? l2)
-	      l1
-	      (append l1 l2))
+      (if l1
+	  (if l2
+	      (if (null? l2)
+		  l1
+		  (append l1 l2))
+	      #f)
 	  #f)))
 
   ;; The rotate procedures are used to
@@ -1209,10 +1211,7 @@
 	     (pair? (cdr e1))
 	     (null? (cddr e1)))
 	`(cons/#f ,(cadr e1) ,e2)
-	`(let ([v ,e1])
-	   (if v
-	       (append/#f v ,e2)
-	       #f))))
+	`(append/#f ,e1 ,e2)))
 
   ;; ----------------------------------------------------------------------
   ;; Output generator

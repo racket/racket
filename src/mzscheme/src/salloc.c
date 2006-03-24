@@ -986,7 +986,11 @@ void scheme_print_tagged_value(const char *prefix,
   scheme_check_print_is_obj = check_home;
 
   if (!xtagged) {
-    type = scheme_write_to_string_w_max((Scheme_Object *)v, &len, max_w);
+    if (SCHEME_PAIRP(v)) {
+      /* Pairs are used for all sorts of non-Scheme values: */
+      type ="#<pair>";
+    } else
+      type = scheme_write_to_string_w_max((Scheme_Object *)v, &len, max_w);
     if (!scheme_strncmp(type, "#<thread", 8) 
 	&& ((type[8] == '>') || (type[8] == ':'))) {
       char buffer[256];

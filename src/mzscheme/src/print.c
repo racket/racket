@@ -2360,7 +2360,8 @@ print_pair(Scheme_Object *pair, int notdisplay, int compact,
 	  /* This needs a tag */
 	  break;
 	}
-      }cdr = SCHEME_CDR(cdr);
+      }
+      cdr = SCHEME_CDR(cdr);
     }
     if (SCHEME_NULLP(cdr)) {
       /* Proper list without sharing. */

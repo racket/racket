@@ -584,7 +584,7 @@ static Scheme_Object *prop_pred(int argc, Scheme_Object **args, Scheme_Object *p
   return scheme_false;
 }
 
-static Scheme_Object *do_prop_accessor(Scheme_Object *prop, Scheme_Object *arg, int error_ok)
+static Scheme_Object *do_prop_accessor(Scheme_Object *prop, Scheme_Object *arg, int error_ok, const char *name)
 {
   Scheme_Struct_Type *stype;
 
@@ -611,7 +611,7 @@ static Scheme_Object *do_prop_accessor(Scheme_Object *prop, Scheme_Object *arg, 
   }
   
   if (error_ok) /* hack; see scheme_struct_type_property_ref */
-    scheme_wrong_type("property accessor", 
+    scheme_wrong_type(name ? name : "property accessor", 
 		      "struct or struct-type with property", 
 		      0, 1, (Scheme_Object **)&arg);
   return NULL;
@@ -619,7 +619,8 @@ static Scheme_Object *do_prop_accessor(Scheme_Object *prop, Scheme_Object *arg, 
 
 static Scheme_Object *prop_accessor(int argc, Scheme_Object **args, Scheme_Object *prim)
 {
-  return do_prop_accessor(SCHEME_PRIM_CLOSURE_ELS(prim)[0], args[0], 1);
+  return do_prop_accessor(SCHEME_PRIM_CLOSURE_ELS(prim)[0], args[0], 1, 
+			  ((Scheme_Primitive_Proc *)prim)->name);
 }
 
 static Scheme_Object *make_struct_type_property(int argc, Scheme_Object *argv[])
@@ -689,7 +690,7 @@ Scheme_Object *scheme_make_struct_type_property(Scheme_Object *name)
 
 Scheme_Object *scheme_struct_type_property_ref(Scheme_Object *prop, Scheme_Object *s)
 {
-  return do_prop_accessor(prop, s, 0);
+  return do_prop_accessor(prop, s, 0, NULL);
 }
 
 static Scheme_Object *struct_type_property_p(int argc, Scheme_Object *argv[])
