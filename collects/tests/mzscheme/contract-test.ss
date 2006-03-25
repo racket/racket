@@ -46,7 +46,7 @@
   (define (test/pos-blame name expression)
     (define (has-pos-blame? exn)
       (and (exn? exn)
-           (and (regexp-match #rx"^pos broke" (exn-message exn)))))
+           (and (regexp-match #rx"pos broke" (exn-message exn)))))
     (printf "testing: ~s\n" name)
     (thunk-error-test 
      (lambda () (eval expression))
@@ -56,7 +56,7 @@
   (define (test/neg-blame name expression)
     (define (has-neg-blame? exn)
       (and (exn? exn)
-           (and (regexp-match #rx"^neg broke" (exn-message exn)))))
+           (and (regexp-match #rx"neg broke" (exn-message exn)))))
     (printf "testing: ~s\n" name)
     (thunk-error-test 
      (lambda () (eval expression))
@@ -1298,6 +1298,15 @@
   (test/spec-passed
    'or/c7
    '((contract (or/c false/c (-> integer? integer?)) (lambda (x) x) 'pos 'neg) 1))
+  
+  (test/spec-passed/result
+   'or/c8
+   '((contract ((or/c false/c (-> string?))  . -> . any)
+               (λ (y) y)
+               'pos
+               'neg)
+     #f)
+   #f)
 
   (test
    '(1 2)
@@ -1623,6 +1632,19 @@
                (match (make-type:ptr '() (make-type '()))
                  [(struct type:ptr (flags type)) #f])))
       (eval '(require test2))))
+  
+  
+  ;; provide/contract should signal errors without requiring a reference to the variable
+  (test/pos-blame
+   'provide/contract15
+   '(parameterize ([current-namespace (make-namespace)])
+      (eval '(module m mzscheme
+               (require (lib "contract.ss"))
+               (provide/contract [i integer?])
+               (define i #f)))
+      (eval '(require m))))
+  
+
 
   
 ;                                                                                                     
@@ -3186,7 +3208,7 @@
                 'neg)))
   
   (test/spec-passed
-   'struct/c3
+   'struct/c4
    '(let ()
       (define-struct s (a b))
       (contract (struct/c s integer? (struct/c s integer? boolean?))
@@ -3195,7 +3217,7 @@
                 'neg)))
   
   (test/pos-blame
-   'struct/c3
+   'struct/c5
    '(let ()
       (define-struct s (a b))
       (contract (struct/c s integer? (struct/c s integer? boolean?))
@@ -3627,6 +3649,68 @@
                          [tl (hd) any/c])
               (couple/dc [hd any/c]
                          [tl (hd) any/c])))))
+  
+  ;; test functions inside structs
+  
+  (test/spec-passed/result
+   'd-c-s38
+   '(let ()
+      (define-contract-struct couple (hd tl))
+      (let ([x (make-couple (lambda (x) x) (lambda (x) x))]
+            [c (couple/dc [hd (-> integer? integer?)]
+                          [tl (hd) any/c])])
+        ((couple-hd (contract c x 'pos 'neg)) 1)))
+   1)
+  
+  (test/neg-blame
+   'd-c-s39
+   '(let ()
+      (define-contract-struct couple (hd tl))
+      (let ([x (make-couple (lambda (x) x) (lambda (x) x))]
+            [c (couple/dc [hd (-> integer? integer?)]
+                          [tl (hd) any/c])])
+        ((couple-hd (contract c x 'pos 'neg)) #f))))
+  
+  (test/pos-blame
+   'd-c-s40
+   '(let ()
+      (define-contract-struct couple (hd tl))
+      (let ([x (make-couple (lambda (x) #f) (lambda (x) #f))]
+            [c (couple/dc [hd (-> integer? integer?)]
+                          [tl (hd) any/c])])
+        ((couple-hd (contract c x 'pos 'neg)) 1))))
+  
+  (test/spec-passed/result
+   'd-c-s41
+   '(let ()
+      (define-contract-struct couple (hd tl))
+      (let ([x (make-couple 5 (lambda (x) x))]
+            [c (couple/dc [hd number?]
+                          [tl (hd) (-> (>=/c hd) (>=/c hd))])])
+        ((couple-tl (contract c x 'pos 'neg)) 6)))
+   6)
+  
+  (test/pos-blame
+   'd-c-s42
+   '(let ()
+      (define-contract-struct couple (hd tl))
+      (let ([x (make-couple 5 (lambda (x) -10))]
+            [c (couple/dc [hd number?]
+                          [tl (hd) (-> (>=/c hd) (>=/c hd))])])
+        ((couple-tl (contract c x 'pos 'neg)) 6))))
+  
+  (test/neg-blame
+   'd-c-s42
+   '(let ()
+      (define-contract-struct couple (hd tl))
+      (let ([x (make-couple 5 (lambda (x) -10))]
+            [c (couple/dc [hd number?]
+                          [tl (hd) (-> (>=/c hd) (>=/c hd))])])
+        ((couple-tl (contract c x 'pos 'neg)) -11))))
+  
+  
+  
+  
 
   
   ;; test the predicate
