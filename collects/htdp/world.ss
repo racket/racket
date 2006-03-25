@@ -169,7 +169,7 @@
                (label "DrScheme")
 	       (stretchable-width #f)
 	       (stretchable-height #f)
-	       (style '(no-resize-border))))
+	       (style '(no-resize-border metal))))
     (let ([c (new (class editor-canvas%
 		    (super-new)
 		    (define/override (on-char e)

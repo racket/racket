@@ -19,7 +19,11 @@
         wait-for-mouse-click ; -> posn
         get-key-event   ; -> (union #f char symbol)
 	get-mouse-event ; -> (union #f posn)
-        get-@VP        
+	;; 
+        get-@VP         ; -> Viewport
+	begin-draw-sequence ; Nat Nat -> #t
+	end-draw-sequence   ; -> #t
+	;; 
         big-bang        ; World -> true
         on-key-event    ; (union char symbol) World -> World 
         on-tick-event   ; World -> World 

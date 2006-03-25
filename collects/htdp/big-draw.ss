@@ -1,21 +1,21 @@
 #cs
 (module big-draw mzscheme
   (require "error.ss"
-           "draw-sig.ss"
-           (lib "etc.ss")
-           (lib "posn.ss" "lang")
-           (lib "prim.ss" "lang")           
-           (lib "unitsig.ss")
-           (prefix mred: (lib "mred.ss" "mred"))
-           (lib "class.ss")
-           (lib "mred-sig.ss" "mred")
-           (lib "graphics-sig.ss" "graphics")
-           (lib "graphics-posn-less-unit.ss" "graphics"))
+    "draw-sig.ss"
+    (lib "etc.ss")
+    (lib "posn.ss" "lang")
+    (lib "prim.ss" "lang")           
+    (lib "unitsig.ss")
+    (prefix mred: (lib "mred.ss" "mred"))
+    (lib "class.ss")
+    (lib "mred-sig.ss" "mred")
+    (lib "graphics-sig.ss" "graphics")
+    (lib "graphics-posn-less-unit.ss" "graphics"))
   
   (define-values/invoke-unit/sig graphics:posn-less^
-                                 graphics-posn-less@ #f 
-                                 (mred : mred^)
-                                 graphics:posn^)
+    graphics-posn-less@ #f 
+    (mred : mred^)
+    graphics:posn^)
   
   (provide-signature-elements graphics:posn-less^)
   
@@ -55,7 +55,7 @@
               [proc  (fools (format "~a/proc" stuff))])
          #`(define-values (#,%name #,proc)
              (values the-error
-                     (lambda a (apply #,%name a)))))]))
+	       (lambda a (apply #,%name a)))))]))
   
   (define-syntax (define-hook-draw/clear stx)
     (syntax-case stx () 
@@ -152,83 +152,101 @@
     (let ((current-window (open-viewport "Canvas" WIDTH HEIGHT))
           (*delta* 0))
       (set! @vp current-window)
-      (set! %clear-all (clear-viewport current-window))
-      
-      (set! %draw-solid-line
-            (make-line 'draw-solid-line (draw-line current-window)))
-      
-      (set! %clear-solid-line
-            (make-line 'clear-solid-line
-                       (lambda (p1 p2 c)
-                         ((clear-line current-window) p1 p2))))
-      
-      (set! %draw-solid-rect (make-rect 'draw-solid-rect (draw-solid-rectangle current-window)))
-      (set! %clear-solid-rect
-            (make-rect 'clear-solid-rect
-                       (lambda (p w h c)
-                         ((clear-solid-rectangle current-window) p w h))))
-      
-      (set! %draw-solid-disk (make-circle 'draw-solid-disk (draw-solid-ellipse current-window)))
-      (set! %clear-solid-disk
-            (make-circle 'clear-solid-disk
-                         (lambda (p r1 r2 c)
-                           ((clear-solid-ellipse current-window) p r1 r2))))
-      
-      (set! %draw-circle (make-circle 'draw-circle (draw-ellipse current-window)))
-      (set! %clear-circle
-            (make-circle 'clear-circle
-                         (lambda (p r1 r2 c)
-                           ((clear-ellipse current-window) p r1 r2))))
-      
-      
-      (set! %draw-string (make-%string 'draw-string (draw-string current-window)))
-      (set! %clear-string (make-%string 'clear-string (clear-string current-window)))
-      
-      
-      (set! %wait-for-mouse-click
-            (lambda ()
-              (mouse-click-posn
-               (get-mouse-click @vp))))
-      
-      (set! %get-key-event
-            (lambda ()
-              (cond
-                [(ready-key-press @vp) => key-value]
-                [else false])))
-      
+      (set! @pm (open-pixmap "Canvas" WIDTH HEIGHT))
+      (set-draw-ops current-window)
       (set! %on-key-event
-            (lambda (f)
-              (check-proc 'on-key-event f 2 'first 'two)
-              ((set-on-key-event @vp) 
-               (lambda (x y) (f (key-value x) y)))
-              #t))
+	(lambda (f)
+	  (check-proc 'on-key-event f 2 'first 'two)
+	  ((set-on-key-event current-window) 
+	   (lambda (x y) (f (key-value x) y)))
+	  #t))
       
       (set! %on-tick-event
-            (lambda (f)
-              (let* ([w (ceiling (* 1000 *delta*))]
-                     [w (if (exact? w) w (inexact->exact w))])
-                (check-proc 'on-key-event f 1 'first 'one)
-                ((set-on-tick-event @vp) w f)
-                #t)))
+	(lambda (f)
+	  (let* ([w (ceiling (* 1000 *delta*))]
+		 [w (if (exact? w) w (inexact->exact w))])
+	    (check-proc 'on-key-event f 1 'first 'one)
+	    ((set-on-tick-event current-window) w
+	     (lambda (x) (f x)))
+	    #t)))
       
       (set! %big-bang 
-            (lambda (delta w)
-              (check-arg 'big-bang
-                         (and (number? delta) (>= delta 0))
-                         "number [of seconds] between 0 and 1000000"
-                         "first"
-                         delta)
-              (set! *delta* delta)
-              ((init-world @vp) w) #t))
+	(lambda (delta w)
+	  (check-arg 'big-bang
+	    (and (number? delta) (>= delta 0))
+	    "number [of seconds] between 0 and 1000000"
+	    "first"
+	    delta)
+	  (set! *delta* delta)
+	  ((init-world current-window) w) #t))
       
-      (set! %end-of-time (lambda () ((stop-tick @vp))))
-      
-      (set! %get-mouse-event
-            (lambda ()
-              (cond
-                [(ready-mouse-click @vp) => mouse-click-posn]
-                [else false])))
+      (set! %end-of-time (lambda () ((stop-tick current-window))))
       #t))
+
+  (define @pm #f)
+
+  (define (begin-draw-sequence width height)
+    (check-arg 'start (and (integer? width) (> width 0)) "positive integer" "first" width)
+    (check-arg 'start (and (integer? height) (> height 0)) "positive integer" "second" height)
+    ([draw-rectangle @pm] (make-posn 0 0) width height "white")
+    (set-draw-ops @pm)
+    #t)
+
+  (define (end-draw-sequence)
+    (copy-viewport @pm @vp)
+    (set-draw-ops @vp)
+    #t)
+
+  (define (set-draw-ops current-window)
+    (set! %clear-all (clear-viewport current-window))
+      
+    (set! %draw-solid-line
+      (make-line 'draw-solid-line (draw-line current-window)))
+      
+    (set! %clear-solid-line
+      (make-line 'clear-solid-line
+	(lambda (p1 p2 c)
+	  ((clear-line current-window) p1 p2))))
+      
+    (set! %draw-solid-rect (make-rect 'draw-solid-rect (draw-solid-rectangle current-window)))
+    (set! %clear-solid-rect
+      (make-rect 'clear-solid-rect
+	(lambda (p w h c)
+	  ((clear-solid-rectangle current-window) p w h))))
+      
+    (set! %draw-solid-disk (make-circle 'draw-solid-disk (draw-solid-ellipse current-window)))
+    (set! %clear-solid-disk
+      (make-circle 'clear-solid-disk
+	(lambda (p r1 r2 c)
+	  ((clear-solid-ellipse current-window) p r1 r2))))
+      
+    (set! %draw-circle (make-circle 'draw-circle (draw-ellipse current-window)))
+    (set! %clear-circle
+      (make-circle 'clear-circle
+	(lambda (p r1 r2 c)
+	  ((clear-ellipse current-window) p r1 r2))))
+      
+      
+    (set! %draw-string (make-%string 'draw-string (draw-string current-window)))
+    (set! %clear-string (make-%string 'clear-string (clear-string current-window)))
+      
+    (set! %wait-for-mouse-click
+      (lambda ()
+	(mouse-click-posn
+	  (get-mouse-click current-window))))
+      
+    (set! %get-key-event
+      (lambda ()
+	(cond
+	  [(ready-key-press current-window) => key-value]
+	  [else false])))
+
+    (set! %get-mouse-event
+      (lambda ()
+	(cond
+	  [(ready-mouse-click current-window) => mouse-click-posn]
+	  [else false])))
+    #t)
   
   (define (stop)
     (close-graphics)
@@ -256,23 +274,21 @@
     (set! %get-mouse-event the-error)
     #t)
   
-  
-  
   ;; start/cartesian-plane : Number Number -> true
   ;; start up a canvas of size width x height  and draw a centered cartesian coordinate
   (define (start/cartesian-plane width height)
     (check-arg 'start/cartesian-plane
-               (and (integer? width) (> width 0)) "positive integer" "first" width)
+      (and (integer? width) (> width 0)) "positive integer" "first" width)
     (check-arg 'start/cartesian-plane
-               (and (integer? height) (> height 0)) "positive integer" "second" height)    
+      (and (integer? height) (> height 0)) "positive integer" "second" height)    
     (local ((define trash  (start width height))
             (define mid-x  (quotient width 2))
             (define mid-y  (quotient height 2)))
       (and (draw-solid-line (make-posn mid-x 0) (make-posn mid-x height))
-           (draw-solid-line (make-posn 0 mid-y) (make-posn width mid-y)))))
+	(draw-solid-line (make-posn 0 mid-y) (make-posn width mid-y)))))
   
   (define @vp #f)
-  #cs(define (get-@VP) @vp)
+  (define (get-@VP) @vp)
   
   (provide-signature-elements draw^)
   
@@ -288,7 +304,7 @@
       ((blue)    (make-rgb 0 0 1.0))
       ((black)   (make-rgb 0 0 0))
       (else
-       (let ([x (send mred:the-color-database find-color (symbol->string s))])
-         (if (rgb? x)
-             x
-             (error 'draw.ss "The symbol ~e is not a legal color in draw.ss." s)))))))
+	(let ([x (send mred:the-color-database find-color (symbol->string s))])
+	  (if (rgb? x)
+	      x
+	      (error 'draw.ss "The symbol ~e is not a legal color in draw.ss." s)))))))

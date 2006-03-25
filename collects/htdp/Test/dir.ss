@@ -9,7 +9,7 @@
 
 (append
  (map (lambda (x) (format "in Teachpacks, not in Test: ~s" x))
-      (filter (lambda (x) (boolean? (member x current-files))) teachps-files))
+      (filter (lambda (x) (not (member x current-files))) teachps-files))
  (map (lambda (x) (format "in Test, not in  Teachpacks: ~s" x))
-      (filter (lambda (x) (boolean? (member x teachps-files))) current-files)))
+      (filter (lambda (x) (not (member x teachps-files))) current-files)))
 

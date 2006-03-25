@@ -1,6 +1,7 @@
 #cs(module dir mzscheme
   (require (lib "error.ss" "htdp")
            (lib "list.ss")
+           (lib "etc.ss")
            (lib "prim.ss" "lang"))
   
   (provide
@@ -32,20 +33,21 @@
   ;; File       = (make-file Symbol Number (union '() X))
   
   (define (create-dir/proc a-path)
-    (check-arg 'create-dir (string? a-path) "string" "first" a-path)
-    (if (directory-exists? a-path)
-        (car (explore (list a-path)))
-        (error 'create-dir "not a directory: ~e" a-path)))
+    (check-arg 'create-dir (string? a-path) "string" "first" a-path)    
+    (let ([a-path! (string->path a-path)])
+      (if (directory-exists? a-path!)
+          (car (explore (list a-path!)))
+          (error 'create-dir "not a directory: ~e" a-path))))
   
   ;; explore : (listof String[directory-names]) -> (listof Directory)
   (define (explore dirs)
     (map (lambda (d) 
            (let-values ([(fs ds) (pushd d directory-files&directories)]) 
              (make-dir
-              (string->symbol (my-split-path d))
+              (string->symbol (path->string (my-split-path d)))
               (explore (map (lambda (x) (build-path d x)) ds))
               (map make-file
-                   (map string->symbol fs)
+                   (map (compose string->symbol path->string) fs)
                    (map (lambda (x) (if (file-exists? x) (file-size x) 0))
 			(map (lambda (x) (build-path d x)) fs))
                    (map (lambda (x) (if (link-exists? x) 'link null)) fs)))))
