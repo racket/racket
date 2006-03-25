@@ -75,7 +75,7 @@ void wxInitStyles(void)
   wxGetPreference("default-font-size", &defaultSize);
 
   wxREGGLOB(wxTheStyleList);
-  wxTheStyleList = new wxStyleList;
+  wxTheStyleList = new WXGC_PTRS wxStyleList;
 
   wxREGGLOB(quick_delta);
 }
@@ -142,13 +142,13 @@ wxStyleDelta *wxStyleDelta::SetDelta(int changeCommand, int param)
     underlinedOn = underlinedOff = FALSE;
     sipOn = sipOff = FALSE;
     transparentTextBackingOn = transparentTextBackingOff = FALSE;
-    foregroundMult = new wxMultColour;
+    foregroundMult = new WXGC_PTRS wxMultColour;
     foregroundMult->Set(1, 1, 1);
-    foregroundAdd = new wxAddColour;
+    foregroundAdd = new WXGC_PTRS wxAddColour;
     foregroundAdd->Set(0, 0, 0);
-    backgroundMult = new wxMultColour;
+    backgroundMult = new WXGC_PTRS wxMultColour;
     backgroundMult->Set(1, 1, 1);
-    backgroundAdd = new wxAddColour;
+    backgroundAdd = new WXGC_PTRS wxAddColour;
     backgroundAdd->Set(0, 0, 0);
     alignmentOn = wxBASE;
     alignmentOff = wxBASE;
@@ -552,10 +552,10 @@ wxStyle::wxStyle()
 
   textMetricDC = NULL;
 
-  foreground = new wxColour;
-  background = new wxColour;
+  foreground = new WXGC_PTRS wxColour;
+  background = new WXGC_PTRS wxColour;
 
-  cl = new wxList(wxKEY_NONE, FALSE);
+  cl = new WXGC_PTRS wxList(wxKEY_NONE, FALSE);
   children = cl;
 }
 
@@ -963,7 +963,11 @@ double wxStyle::GetTextSpace(wxDC *dc)
 
 /***************************************************************/
 
-class NotificationRec {
+class NotificationRec 
+#ifndef MZ_PRECISE_GC
+: public gc
+#endif
+{
  public:
   wxStyleNotifyFunc f;
   void *data;
@@ -981,7 +985,7 @@ wxStyleList::wxStyleList() : wxList(wxKEY_NONE, WXGC_NO_CLEANUP)
   __type = wxTYPE_STYLE_LIST;
 #endif
 
-  basic = new wxStyle;
+  basic = new WXGC_PTRS wxStyle;
   /* Note: The file-reader relies on having a new `basic' when the
      list is cleared: */
 
@@ -990,7 +994,7 @@ wxStyleList::wxStyleList() : wxList(wxKEY_NONE, WXGC_NO_CLEANUP)
   basic->name = "Basic";
   basic->baseStyle = NULL;
 
-  basic->nonjoin_delta = new wxStyleDelta;
+  basic->nonjoin_delta = new WXGC_PTRS wxStyleDelta;
   basic->nonjoin_delta->SetDelta(wxCHANGE_NORMAL);
 
   basic->font = wxTheFontList->FindOrCreateFont(defaultSize, wxDEFAULT,
@@ -1004,7 +1008,7 @@ wxStyleList::wxStyleList() : wxList(wxKEY_NONE, WXGC_NO_CLEANUP)
 
   Append(basic);
 
-  notifications = new wxList(wxKEY_NONE, FALSE);
+  notifications = new WXGC_PTRS wxList(wxKEY_NONE, FALSE);
 }
 
 void wxStyleList::Copy(wxStyleList *other)
@@ -1043,7 +1047,7 @@ wxStyle *wxStyleList::FindOrCreateStyle(wxStyle *baseStyle,
     delta = quick_delta;
     quick_delta = NULL;
   } else
-    delta = new wxStyleDelta;
+    delta = new WXGC_PTRS wxStyleDelta;
   delta->Copy(deltain);
   while (!baseStyle->name && !baseStyle->join_shiftStyle) {
     if (!delta->Collapse(baseStyle->nonjoin_delta))
@@ -1062,7 +1066,7 @@ wxStyle *wxStyleList::FindOrCreateStyle(wxStyle *baseStyle,
     }
   }
 
-  style = new wxStyle;
+  style = new WXGC_PTRS wxStyle;
 
   style->styleList = this;
 
@@ -1100,7 +1104,7 @@ wxStyle *wxStyleList::FindOrCreateJoinStyle(wxStyle *baseStyle,
       return style;
   }
 
-  style = new wxStyle;
+  style = new WXGC_PTRS wxStyle;
 
   style->styleList = this;
 
@@ -1152,7 +1156,7 @@ wxStyle *wxStyleList::DoNamedStyle(char *name, wxStyle *plainStyle, Bool replac)
   }
 
   if (!node) {
-    style = new wxStyle;
+    style = new WXGC_PTRS wxStyle;
     style->name = copystring(name);
     style->styleList = this;
   } else {
@@ -1174,7 +1178,7 @@ wxStyle *wxStyleList::DoNamedStyle(char *name, wxStyle *plainStyle, Bool replac)
     style->join_shiftStyle = plainStyle->join_shiftStyle;
     style->join_shiftStyle->children->Append(style);
   } else {
-    style->nonjoin_delta = new wxStyleDelta;
+    style->nonjoin_delta = new WXGC_PTRS wxStyleDelta;
     if (PTRNE(plainStyle, basic))
       style->nonjoin_delta->Copy(plainStyle->nonjoin_delta);
   }
@@ -1270,7 +1274,7 @@ void *wxStyleList::NotifyOnChange(wxStyleNotifyFunc f, void *data, int weak)
   if (weak)
     rec = new WXGC_ATOMIC NotificationRec;
   else
-    rec = new NotificationRec;
+    rec = new WXGC_PTRS NotificationRec;
   rec->data = data;
   if (weak)
     scheme_weak_reference((void **)&rec->data);
@@ -1415,7 +1419,7 @@ wxStyleList *wxReadStyleList(class wxMediaStreamIn *f)
   wxStyleList *l;
   long listId;
 
-  l = new wxStyleList;
+  l = new WXGC_PTRS wxStyleList;
 
   return wxmbReadStylesFromFile(l, f, 0, &listId);
 }
@@ -1635,7 +1639,7 @@ wxStyleList *wxmbReadStylesFromFile(wxStyleList *styleList,
       return ssl->styleList;
   }
 
-  ssl = new wxStyleListLink;
+  ssl = new WXGC_PTRS wxStyleListLink;
   ssl->styleList = styleList;
   ssl->listId = listId;
   ssl->basic = styleList->BasicStyle();
@@ -1644,7 +1648,7 @@ wxStyleList *wxmbReadStylesFromFile(wxStyleList *styleList,
 
   f->Get(&nms);
   ssl->numMappedStyles = nms;
-  ssl->styleMap = new wxStyle*[ssl->numMappedStyles];
+  ssl->styleMap = new WXGC_PTRS wxStyle*[ssl->numMappedStyles];
 
   bs = styleList->BasicStyle();
   ssl->styleMap[0] = bs;
@@ -1672,7 +1676,7 @@ wxStyleList *wxmbReadStylesFromFile(wxStyleList *styleList,
     } else {
       int fam;
 
-      delta = new wxStyleDelta;
+      delta = new WXGC_PTRS wxStyleDelta;
       
       f->Get(&fam);
       delta->family = FamilyStandardToThis(fam);
@@ -1790,7 +1794,7 @@ Bool wxmbWriteStylesToFile(wxStyleList *styleList, wxMediaStreamOut *f)
   lid = f->styleCount + 1;
   f->styleCount++;
 
-  ssl = new wxStyleListLink;
+  ssl = new WXGC_PTRS wxStyleListLink;
   ssl->styleList = styleList;
   ssl->listId = lid;
   ssl->next = f->ssl;
@@ -1829,7 +1833,7 @@ Bool wxmbWriteStylesToFile(wxStyleList *styleList, wxMediaStreamOut *f)
       idx = styleList->StyleToIndex(ss);
       f->Put(idx);
     } else {
-      delta = new wxStyleDelta;
+      delta = new WXGC_PTRS wxStyleDelta;
 
       style->GetDelta(delta);
       

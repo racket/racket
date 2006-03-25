@@ -40,8 +40,8 @@ wxScrollArea::wxScrollArea
 
   if (cStyle & wxVSCROLL)
     {
-      cVScrollBar = new wxScrollBar(this, NULL, "",
-				    0, 0, kVScrollBarWidth, 0, wxVSCROLL);
+      cVScrollBar = new WXGC_PTRS wxScrollBar(this, NULL, "",
+					      0, 0, kVScrollBarWidth, 0, wxVSCROLL);
       parentScrollWindow->AddChildScrollWindow(cVScrollBar);
 
       ResetVPos(bothScrolls || (cStyle & wxRESIZE_CORNER));
@@ -52,8 +52,8 @@ wxScrollArea::wxScrollArea
 
   if (cStyle & wxHSCROLL)
     {
-      cHScrollBar = new wxScrollBar(this, NULL, "",
-				    0, 0, 0, kHScrollBarHeight, wxHSCROLL);
+      cHScrollBar = new WXGC_PTRS wxScrollBar(this, NULL, "",
+					      0, 0, 0, kHScrollBarHeight, wxHSCROLL);
       parentScrollWindow->AddChildScrollWindow(cHScrollBar);
       ResetHPos(bothScrolls || (cStyle & wxRESIZE_CORNER));
       cHScrollBar->SetJustify(wxHorizontal);

@@ -290,7 +290,7 @@ static Scheme_Object *wxSchemeRegisterCollectingBitmap(int n, Scheme_Object **a)
   GCBitmap *gcbm;
   wxCanvas *cvs;
 
-  gcbm = new GCBitmap;
+  gcbm = new WXGC_PTRS GCBitmap;
 
   cvs = objscheme_unbundle_wxCanvas(a[0], "register-collecting-blit", 0);
 
@@ -565,7 +565,7 @@ void wxAlphaBlit(wxBitmap *label_bm, wxBitmap *bm, wxBitmap *loaded_mask,
   w = label_bm->GetWidth();
   h = label_bm->GetHeight();
 
-  dest = new wxMemoryDC();
+  dest = new WXGC_PTRS wxMemoryDC();
   dest->SelectObject(label_bm);
 
 #ifdef wx_msw
@@ -575,7 +575,7 @@ void wxAlphaBlit(wxBitmap *label_bm, wxBitmap *bm, wxBitmap *loaded_mask,
   } else
 #endif
     {
-      src = new wxMemoryDC(1);
+      src = new WXGC_PTRS wxMemoryDC(1);
       src->SelectObject(bm);
     }
 
@@ -589,7 +589,7 @@ void wxAlphaBlit(wxBitmap *label_bm, wxBitmap *bm, wxBitmap *loaded_mask,
   } else
 #endif
     {
-      mask = new wxMemoryDC(1);      
+      mask = new WXGC_PTRS wxMemoryDC(1);      
       mask->SelectObject(loaded_mask);
     }
 
@@ -724,7 +724,9 @@ static Scheme_Object *wxSchemeGetColourFromUser(int argc, Scheme_Object **argv)
       return scheme_false;
     }
     
-    c = new wxColour(cpInfo.theColor.color.rgb.red >> 8, cpInfo.theColor.color.rgb.green >> 8, cpInfo.theColor.color.rgb.blue >> 8);
+    c = new WXGC_PTRS wxColour(cpInfo.theColor.color.rgb.red >> 8, 
+			       cpInfo.theColor.color.rgb.green >> 8, 
+			       cpInfo.theColor.color.rgb.blue >> 8);
 
     wxPrimDialogCleanUp();
 
@@ -748,7 +750,7 @@ static Scheme_Object *wxSchemeGetColourFromUser(int argc, Scheme_Object **argv)
   if (!GetColor(pt, buf, &in, &out))
     return scheme_false;
 
-  c = new wxColour(out.red >> 8, out.green >> 8, out.blue >> 8);
+  c = new WXGC_PTRS wxColour(out.red >> 8, out.green >> 8, out.blue >> 8);
 
   return objscheme_bundle_wxColour(c);
 # endif
@@ -776,7 +778,7 @@ static Scheme_Object *wxSchemeGetColourFromUser(int argc, Scheme_Object **argv)
       return scheme_false;
     }
     
-    c = new wxColour(GetRValue(cc->rgbResult), GetGValue(cc->rgbResult), GetBValue(cc->rgbResult));
+    c = new WXGC_PTRS wxColour(GetRValue(cc->rgbResult), GetGValue(cc->rgbResult), GetBValue(cc->rgbResult));
     
     free(cc);
     cc = NULL;
@@ -988,11 +990,11 @@ static Scheme_Object *wxSchemeGetFontFromUser(int argc, Scheme_Object **argv)
       fontUnderline = TRUE;
 
     if (s)
-      f = new wxFont(c->iPointSize / 10, s, fontFamily, fontStyle, 
-		     fontWeight, fontUnderline);
+      f = new WXGC_PTRS wxFont(c->iPointSize / 10, s, fontFamily, fontStyle, 
+			       fontWeight, fontUnderline);
     else
-      f = new wxFont(c->iPointSize / 10, fontFamily, fontStyle, 
-		     fontWeight, fontUnderline);
+      f = new WXGC_PTRS wxFont(c->iPointSize / 10, fontFamily, fontStyle, 
+			       fontWeight, fontUnderline);
 
     free(c);
     c = NULL;
@@ -1039,7 +1041,7 @@ static int CALLBACK get_font(ENUMLOGFONTW FAR*  lpelf,
     mzchar **naya;
 
     data->size += (2 * data->size) + 10;
-    naya = new mzchar*[data->size];
+    naya = new WXGC_PTRS mzchar*[data->size];
     memcpy(naya, data->names, data->count * sizeof(mzchar *));
     data->names = naya;
   }
@@ -1414,17 +1416,17 @@ static Scheme_Object *wxSchemeGetPanelBackground(int, Scheme_Object **)
   wxColour *c;
 
 #ifdef wx_x
-  c = new wxColour(wxGREY);
+  c = new WXGC_PTRS wxColour(wxGREY);
 #endif
 #ifdef wx_mac
-  c = new wxColour(0xE8, 0xE8, 0xE8);
+  c = new WXGC_PTRS wxColour(0xE8, 0xE8, 0xE8);
 #endif
 #ifdef wx_msw
   DWORD v;
 
   v = GetSysColor(COLOR_BTNFACE);
 
-  c = new wxColour(GetRValue(v), GetGValue(v), GetBValue(v));
+  c = new WXGC_PTRS wxColour(GetRValue(v), GetGValue(v), GetBValue(v));
 #endif
 
   return objscheme_bundle_wxColour(c);
@@ -1574,7 +1576,7 @@ static Scheme_Object *wxPlaySound(int argc, Scheme_Object **argv)
     } else {
       AsyncSoundRec *r;
       
-      r = new AsyncSoundRec;
+      r = new WXGC_PTRS AsyncSoundRec;
 
       r->mov = theMovie;
       r->file = resRefNum;
@@ -1622,10 +1624,10 @@ wxMediaSnip *wxsMakeMediaSnip(wxMediaBuffer *useme,
 
     return objscheme_unbundle_wxMediaSnip(r, NULL, 0);
   } else {
-    return new wxMediaSnip(useme, border,
-			   lm, tm, rm, bm,
-			   li, ti, ri, bi,
-			   w, W, h, H);
+    return new WXGC_PTRS wxMediaSnip(useme, border,
+				     lm, tm, rm, bm,
+				     li, ti, ri, bi,
+				     w, W, h, H);
   }
 }
 
@@ -1635,7 +1637,7 @@ wxMediaEdit *wxsMakeMediaEdit()
     return objscheme_unbundle_wxMediaEdit(scheme_apply(make_media_edit, 0, NULL), 
 					  NULL, 0);
   } else
-    return new wxMediaEdit();
+    return new WXGC_PTRS wxMediaEdit();
 }
 
 wxMediaPasteboard *wxsMakeMediaPasteboard()
@@ -1644,7 +1646,7 @@ wxMediaPasteboard *wxsMakeMediaPasteboard()
     return objscheme_unbundle_wxMediaPasteboard(scheme_apply(make_media_pasteboard, 0, NULL), 
 						NULL, 0);
   } else
-    return new wxMediaPasteboard();
+    return new WXGC_PTRS wxMediaPasteboard();
 }
 
 static Scheme_Object *SetMediaSnipMaker(int, Scheme_Object *a[])
@@ -2213,7 +2215,7 @@ char *wxsGetDataInEventspace(wxClipboardClient *clipOwner, char *format, long *l
     
     sema = scheme_make_sema(0);
 
-    gd = new wxGetData;
+    gd = new WXGC_PTRS wxGetData;
     gd->clipOwner = clipOwner;
     gd->format = format;
     gd->sema = sema;
@@ -2321,7 +2323,7 @@ static char *win_find_home()
 
   if (d && p) {
     char *s;
-    s = new char[strlen(d) + strlen(p) + 1];
+    s = new WXGC_ATOMIC char[strlen(d) + strlen(p) + 1];
     strcpy(s, d);
     strcat(s, p);
     
@@ -2651,7 +2653,7 @@ int wxGetPreference(const char *name, char *res, long len)
     l = strlen(home);
     ends_in_slash = (home[l] == '/');
     
-    s = new char[l + 30];
+    s = new WXGC_ATOMIC char[l + 30];
     memcpy(s, home, l);
     if (!ends_in_slash)
       s[l++] = '/';
@@ -2670,7 +2672,7 @@ int wxGetPreference(const char *name, char *res, long len)
     l = strlen(home);
     ends_in_slash = ((home[l] == '/') || (home[l] == '\\'));
   
-    s = new char[l + 20];
+    s = new WXGC_ATOMIC char[l + 20];
     memcpy(s, home, l);
     if (!ends_in_slash)
       s[l++] = '\\';
@@ -2699,7 +2701,7 @@ int wxGetPreference(const char *name, char *res, long len)
       l = strlen(home);
       ends_in_slash = (home[l] == ':');
   
-      s = new char[l + 30];
+      s = new WXGC_ATOMIC char[l + 30];
       memcpy(s, home, l);
       if (!ends_in_slash)
 	s[l++] = ':';
@@ -2714,14 +2716,14 @@ int wxGetPreference(const char *name, char *res, long len)
       return 0;
 
     pref_file_cache_size = PREF_CACHE_SEG;
-    pref_file_cache = new char[pref_file_cache_size];
+    pref_file_cache = new WXGC_ATOMIC char[pref_file_cache_size];
     offset = 0;
 
     while (!feof(fp)) {
       long got;
 
       if (offset + PREF_CACHE_SEG > pref_file_cache_size) {
-	s = new char[2 * pref_file_cache_size];
+	s = new WXGC_ATOMIC char[2 * pref_file_cache_size];
 	memcpy(s, pref_file_cache, pref_file_cache_size);
 	pref_file_cache_size *= 2;
 	pref_file_cache = s;

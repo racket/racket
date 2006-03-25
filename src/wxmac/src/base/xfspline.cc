@@ -20,7 +20,7 @@ void wxbDC::DrawSpline(int n, wxPoint pts[])
   wxList *list;
   int i;
 
-  list = new wxList;
+  list = new WXGC_PTRS wxList;
   for (i=0; i<n; ++i) {
     list->Append((wxObject*)&pts[i]);
   }
@@ -48,7 +48,7 @@ void wxRegisterSplinePointList();
 void wxRegisterSplinePointList()
 {
   wxREGGLOB(wx_spline_point_list);
-  wx_spline_point_list = new wxList;
+  wx_spline_point_list = new WXGC_PTRS wxList;
 }
 
 void wxbDC::DrawSpline(wxList *pts)
@@ -187,7 +187,7 @@ int wx_spline_pop(double *x1, double *y1, double *x2, double *y2,
 static Bool wx_spline_add_point(double x, double y)
 {
   wxPoint *point;
-  point  = new wxPoint;
+  point  = new WXGC_ATOMIC wxPoint;
   point->x = x;
   point->y = y;
   wx_spline_point_list->Append((wxObject*)point);

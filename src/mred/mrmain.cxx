@@ -317,77 +317,8 @@ int main(int argc, char *argv[])
 
 #ifdef wx_mac
   /* initialize Mac stuff */
-# ifdef WX_CARBON
-  ::MoreMasterPointers(4);
-# else
-  ::MaxApplZone();
-  ::InitWindows();
-  ::InitGraf(&qd.thePort);		
-  ::InitFonts();
-  ::InitDialogs(NULL);
-  ::TEInit();
-  ::InitMenus();
-  for (int i=0; i<4; i++) {
-    ::MoreMasters();
-  }
-# endif
-
-# ifdef OS_X
   wx_original_argv_zero = argv[0];
-# endif
-
   wxDrop_GetArgs(&argc, &argv, &wx_in_terminal);
-
-# ifndef OS_X
-  wx_original_argv_zero = argv[0];
-# endif
-
-# ifndef OS_X
-  { 
-    KeyMap keys;
-    GetKeys(keys);
-    if (keys[1] & 32768L) { /* Cmd key down */
-      DialogPtr dial;
-      short hit, type;
-      Rect box;
-      Handle hand;
-      Str255 str;
-      char temp[256];
-      int argc2;
-      char **argv2;
-  
-      dial = GetNewDialog(128, NULL, (WindowRef)-1);
-      do {
-        ModalDialog(NULL, &hit);
-      } while (hit > 2);
-      if (hit == 1) {
-        GetDialogItem(dial, 3, &type, &hand, &box);
-        GetDialogItemText(hand, str);
-        CopyPascalStringToC(str,temp);
-        ParseLine(temp, &argc2, &argv2);
-      } else {
-        argc2 = 0;
-        argv2 = NULL;
-      }
-      DisposeDialog(dial);
-      
-      if (argc2) {
-        int i, j;
-        char **both;
-	both = (char **)malloc(sizeof(char *) * (argc + argc2 - 1));
-        for (i = 0; i < argc; i++) {
-          both[i] = argv[i];
-	}
-        for (j = 1; j < argc2; j++, i++) {
-          both[i] = argv2[j];
-	}
-        
-        argv = both;
-        argc += argc2 - 1;
-      }
-    }
-  }
-# endif
 #endif
 
   scheme_set_actual_main(actual_main);

@@ -20,9 +20,9 @@ wxDC::wxDC(void)
 {
   cMacDC = NULL;
   cMacCurrentTool = kNoTool;
-  current_background_color = new wxColour(wxWHITE);
-  current_text_foreground = new wxColour(wxBLACK);
-  current_text_background = new wxColour(wxWHITE);
+  current_background_color = new WXGC_ATOMIC wxColour(wxWHITE);
+  current_text_foreground = new WXGC_ATOMIC wxColour(wxBLACK);
+  current_text_background = new WXGC_ATOMIC wxColour(wxWHITE);
 }
 
 //-----------------------------------------------------------------------------

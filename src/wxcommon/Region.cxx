@@ -96,7 +96,7 @@ void wxRegion::SetRectangle(double x, double y, double width, double height)
   Cleanup();
 
   if (!no_prgn) {
-    prgn = new wxRectanglePathRgn(dc, x, y, width, height);
+    prgn = new WXGC_PTRS wxRectanglePathRgn(dc, x, y, width, height);
   }
 
   xw = x + width;
@@ -153,7 +153,7 @@ void wxRegion::SetRoundedRectangle(double x, double y, double width, double heig
   Cleanup();
 
   if (!no_prgn) {
-    prgn = new wxRoundedRectanglePathRgn(dc, x, y, width, height, radius);
+    prgn = new WXGC_PTRS wxRoundedRectanglePathRgn(dc, x, y, width, height, radius);
   }
 
   // A negative radius value is interpreted to mean
@@ -169,12 +169,12 @@ void wxRegion::SetRoundedRectangle(double x, double y, double width, double heig
     radius = dc->FLogicalToDeviceXRel(radius);
 
 #ifdef wx_x
-  lt = new wxRegion(dc, NULL, TRUE);
-  rt = new wxRegion(dc, NULL, TRUE);
-  lb = new wxRegion(dc, NULL, TRUE);
-  rb = new wxRegion(dc, NULL, TRUE);
-  w = new wxRegion(dc, NULL, TRUE);
-  h = new wxRegion(dc, NULL, TRUE);
+  lt = new WXGC_PTRS wxRegion(dc, NULL, TRUE);
+  rt = new WXGC_PTRS wxRegion(dc, NULL, TRUE);
+  lb = new WXGC_PTRS wxRegion(dc, NULL, TRUE);
+  rb = new WXGC_PTRS wxRegion(dc, NULL, TRUE);
+  w = new WXGC_PTRS wxRegion(dc, NULL, TRUE);
+  h = new WXGC_PTRS wxRegion(dc, NULL, TRUE);
 
   lt->SetEllipse(x, y, 2 * radius, 2 * radius);
   rt->SetEllipse(x + width - 2 * radius, y, 2 * radius, 2 * radius);
@@ -259,13 +259,13 @@ void wxRegion::SetEllipse(double x, double y, double width, double height)
     /* cairo_arc() went bad for clipping, so we avoid it. */
     {
       wxPath *p;
-      p = new wxPath();
+      p = new WXGC_PTRS wxPath();
       p->Arc(x, y, width, height, 0, 2 * wxPI, FALSE);
       p->Close();
-      prgn = new wxPathPathRgn(dc, p, 0, 0, wxWINDING_RULE);
+      prgn = new WXGC_PTRS wxPathPathRgn(dc, p, 0, 0, wxWINDING_RULE);
     }
 #else
-    prgn = new wxArcPathRgn(dc, x, y, width, height, 0, 2 * wxPI);
+    prgn = new WXGC_PTRS wxArcPathRgn(dc, x, y, width, height, 0, 2 * wxPI);
 #endif
   }
 
@@ -349,11 +349,11 @@ void wxRegion::SetPolygon(int n, wxPoint points[], double xoffset, double yoffse
     return;
 
   if (!no_prgn) {
-    prgn = new wxPolygonPathRgn(dc, n, points, xoffset, yoffset, fillStyle);
+    prgn = new WXGC_PTRS wxPolygonPathRgn(dc, n, points, xoffset, yoffset, fillStyle);
   }
 
-  cpoints = new POINT[n];
-  fpoints = (is_ps ? new FPoint[n] : (FPoint *)NULL);
+  cpoints = new WXGC_ATOMIC POINT[n];
+  fpoints = (is_ps ? new WXGC_ATOMIC FPoint[n] : (FPoint *)NULL);
   for (i = 0; i < n; i++) {
     v = dc->LogicalToUnscrolledDeviceX(points[i+delta].x + xoffset);
     cpoints[i].x = v;
@@ -414,7 +414,7 @@ void wxRegion::SetPath(wxPath *p, double xoffset, double yoffset, int fillStyle)
   Cleanup();
 
   if (!no_prgn) {
-    prgn = new wxPathPathRgn(dc, p, xoffset, yoffset, fillStyle);
+    prgn = new WXGC_PTRS wxPathPathRgn(dc, p, xoffset, yoffset, fillStyle);
     no_prgn = 1;
   }
 
@@ -432,7 +432,7 @@ void wxRegion::SetPath(wxPath *p, double xoffset, double yoffset, int fillStyle)
 #ifdef MZ_PRECISE_GC
   a = (wxPoint *)GC_malloc_atomic(sizeof(wxPoint) * total_cnt);
 #else
-  a = new wxPoint[total_cnt];
+  a = new WXGC_ATOMIC wxPoint[total_cnt];
 #endif
 
   for (i = 0, k = 0; i < cnt; i++) {
@@ -452,7 +452,7 @@ void wxRegion::SetPath(wxPath *p, double xoffset, double yoffset, int fillStyle)
 	SetPolygon(j, a, xoffset, yoffset, fillStyle, k);
       else {
 	wxRegion *r;
-	r = new wxRegion(dc, NULL, 1);
+	r = new WXGC_PTRS wxRegion(dc, NULL, 1);
 	r->SetPolygon(j, a, xoffset, yoffset, fillStyle, k);
 	Xor(r);
 	DELETE_OBJ r;
@@ -477,7 +477,7 @@ void wxRegion::SetArc(double x, double y, double w, double h, double start, doub
 #ifdef MZ_PRECISE_GC
   a = (wxPoint *)GC_malloc_atomic(sizeof(wxPoint) * 20);
 #else
-  a = new wxPoint[20];
+  a = new WXGC_ATOMIC wxPoint[20];
 #endif
 
   save_no_prgn = no_prgn;
@@ -486,14 +486,14 @@ void wxRegion::SetArc(double x, double y, double w, double h, double start, doub
     /* cairo_arc() went bad for clipping, so we avoid it. */
     {
       wxPath *p;
-      p = new wxPath();
+      p = new WXGC_PTRS wxPath();
       p->MoveTo(x + w / 2, y + h / 2);
       p->Arc(x, y, w, h, end, start, FALSE);
       p->Close();
-      prgn = new wxPathPathRgn(dc, p, 0, 0, wxWINDING_RULE);
+      prgn = new WXGC_PTRS wxPathPathRgn(dc, p, 0, 0, wxWINDING_RULE);
     }
 #else
-    prgn = new wxArcPathRgn(dc, x, y, w, h, start, end);
+    prgn = new WXGC_PTRS wxArcPathRgn(dc, x, y, w, h, start, end);
 #endif
     no_prgn = 1;
   }
@@ -502,7 +502,7 @@ void wxRegion::SetArc(double x, double y, double w, double h, double start, doub
 
   if (start == end) return;
 
-  r = new wxRegion(dc, NULL, TRUE);
+  r = new WXGC_PTRS wxRegion(dc, NULL, TRUE);
 
   if (!pi)
     pi = 2 * asin((double)1.0);
@@ -642,7 +642,7 @@ void wxRegion::Union(wxRegion *r)
       prgn = r->prgn;
     else {
       wxPathRgn *pr;
-      pr = new wxUnionPathRgn(prgn, r->prgn);
+      pr = new WXGC_PTRS wxUnionPathRgn(prgn, r->prgn);
       prgn = pr;
     }
   }
@@ -679,7 +679,7 @@ void wxRegion::Intersect(wxRegion *r)
   if (!no_prgn) {
     wxPathRgn *pr;
     if (!r->prgn) abort();
-    pr = new wxIntersectPathRgn(prgn, r->prgn);
+    pr = new WXGC_PTRS wxIntersectPathRgn(prgn, r->prgn);
     prgn = pr;
   }
 
@@ -710,8 +710,8 @@ void wxRegion::Subtract(wxRegion *r)
     /* wxDiffPathRgn is only half a subtract; the result must be intersected with the first part */
     wxPathRgn *pr;
     if (!r->prgn) abort();
-    pr = new wxDiffPathRgn(prgn, r->prgn);
-    pr = new wxIntersectPathRgn(prgn, pr);
+    pr = new WXGC_PTRS wxDiffPathRgn(prgn, r->prgn);
+    pr = new WXGC_PTRS wxIntersectPathRgn(prgn, pr);
     prgn = pr;
   }
 
@@ -745,7 +745,7 @@ void wxRegion::Xor(wxRegion *r)
     if (!prgn)
       pr = r->prgn;
     else
-      pr = new wxDiffPathRgn(prgn, r->prgn);
+      pr = new WXGC_PTRS wxDiffPathRgn(prgn, r->prgn);
     prgn = pr;
   }
 
@@ -1478,7 +1478,7 @@ wxPathPathRgn::wxPathPathRgn(wxDC *dc_for_scale,
 			     wxPath *_p, double _xoffset, double _yoffset, int _fillStyle)
 : wxPathRgn(dc_for_scale)
 {
-  p = new wxPath();
+  p = new WXGC_PTRS wxPath();
   p->AddPath(_p);
   p->Translate(_xoffset, _yoffset);
   fillStyle = _fillStyle;
@@ -1492,7 +1492,7 @@ Bool wxPathPathRgn::Install(long target, Bool reverse, Bool align)
   PrepareScale(target, fillStyle == wxODDEVEN_RULE, align, &m);
 
   if (reverse) {
-    q = new wxPath();
+    q = new WXGC_PTRS wxPath();
     q->AddPath(p);
     q->Reverse();
   } else
@@ -2408,8 +2408,8 @@ int wxPath::ToPolygons(int **_lens, double ***_ptss, double sx, double sy)
   if (IsOpen())
     cnt++;
 
-  ptss = new double*[cnt];
-  lens = new int[cnt];
+  ptss = new WXGC_PTRS double*[cnt];
+  lens = new WXGC_ATOMIC int[cnt];
   cnt = 0;
 
   pts = NULL;

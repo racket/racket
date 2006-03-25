@@ -189,8 +189,8 @@ Bool wxSlider::Create(wxPanel *panel, wxFunction func, char *label, int value,
 
   if (label)
     {
-      cTitle = new wxLabelArea(this, label, font,
-			       labelPosition == wxVERTICAL ? wxTop : wxLeft);
+      cTitle = new WXGC_PTRS wxLabelArea(this, label, font,
+					 labelPosition == wxVERTICAL ? wxTop : wxLeft);
     }
   else
     cTitle = NULL;
@@ -431,7 +431,7 @@ void wxSlider::TrackPart(int part)
       HIViewSetNeedsDisplay(cPaintControl, TRUE);
   }
  
-  commandEvent = new wxCommandEvent(wxEVENT_TYPE_SLIDER_COMMAND);
+  commandEvent = new WXGC_PTRS wxCommandEvent(wxEVENT_TYPE_SLIDER_COMMAND);
 
   /* Must queue callbacks only: */
   ProcessCommand(commandEvent);

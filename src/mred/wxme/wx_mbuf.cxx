@@ -83,7 +83,7 @@ class wxMediaXClipboardClient : public wxClipboardClient
 static wxMediaXClipboardClient *TheMediaXClipboardClient;
 #endif
 
-# define MALLOC_CRP(n) new wxChangeRecord*[n]
+# define MALLOC_CRP(n) new WXGC_PTRS wxChangeRecord*[n]
 
 // xformer doesn't handle static member variable declarations
 #ifdef MZ_PRECISE_GC
@@ -115,10 +115,10 @@ static int bcounter = 0;
 wxMediaBuffer::wxMediaBuffer()
  : wxObject(WXGC_NO_CLEANUP)
 {
-  map = new wxKeymap();
+  map = new WXGC_PTRS wxKeymap();
   // AddBufferFunctions(map);
 
-  styleList = new wxStyleList;
+  styleList = new WXGC_PTRS wxStyleList;
   styleList->NewNamedStyle(STD_STYLE, NULL);
   notifyId = styleList->NotifyOnChange((wxStyleNotifyFunc)MediaStyleNotify, 
 				       this, 1);
@@ -158,7 +158,7 @@ wxMediaBuffer::wxMediaBuffer()
     wxREGGLOB(bitmap);
     wxREGGLOB(lastUsedOffscreen);
     bitmap = NULL;
-    offscreen = new wxMemoryDC();
+    offscreen = new WXGC_PTRS wxMemoryDC();
     bmHeight = bmWidth = 0;
 #ifndef wx_mac
     offscreen->SetOptimization(TRUE);
@@ -472,7 +472,7 @@ Bool wxMediaBuffer::ReadyOffscreen(double width, double height)
     if (width > bmWidth)
       bmWidth = ROUND(width) + 1;
 
-    bitmap = new wxBitmap(bmWidth, bmHeight);
+    bitmap = new WXGC_PTRS wxBitmap(bmWidth, bmHeight);
 
     offscreen->SelectObject(NULL);
     if (oldbm)
@@ -647,10 +647,10 @@ wxSnip *wxMediaBuffer::OnNewBox(int type)
   wxMediaBuffer *media;
 
   if (type == wxEDIT_BUFFER)
-    media = new wxMediaEdit();
+    media = new WXGC_PTRS wxMediaEdit();
   else
-    media = new wxMediaPasteboard();
-  snip = new wxMediaSnip(media);
+    media = new WXGC_PTRS wxMediaPasteboard();
+  snip = new WXGC_PTRS wxMediaSnip(media);
 
   media->SetKeymap(map);  
   media->SetStyleList(styleList);
@@ -676,7 +676,7 @@ void wxMediaBuffer::InsertImage(char *filename, long type, Bool relative, Bool i
 wxImageSnip *wxMediaBuffer::OnNewImageSnip(char *filename, long type, 
 					   Bool relative, Bool inlineImg)
 {
-  return new wxImageSnip(filename, type, relative, inlineImg);
+  return new WXGC_PTRS wxImageSnip(filename, type, relative, inlineImg);
 }
 
 /**********************************************************************/
@@ -1062,8 +1062,8 @@ Bool wxMediaBuffer::ReadSnipsFromFile(wxMediaStreamIn *f, Bool overwritestylenam
   f->Get(&numSnips);
 
   if (bufferType == wxEDIT_BUFFER) {  
-    snipsToInsert = new wxList(wxKEY_NONE, FALSE);
-    dataToInsert = new wxList(wxKEY_NONE, FALSE);
+    snipsToInsert = new WXGC_PTRS wxList(wxKEY_NONE, FALSE);
+    dataToInsert = new WXGC_PTRS wxList(wxKEY_NONE, FALSE);
   } else {
     snipsToInsert = NULL;
     dataToInsert = NULL;
@@ -1433,7 +1433,7 @@ void wxMediaBuffer::Print(Bool interactive, Bool fitToPage, int WXUNUSED_X(outpu
     wxDC *dc;
     void *data;
     
-    dc = new wxPostScriptDC(interactive, parent, forcePageBBox, asEPS);
+    dc = new WXGC_PTRS wxPostScriptDC(interactive, parent, forcePageBBox, asEPS);
 
     if (dc->Ok()) { 
       dc->StartDoc("Printing buffer");
@@ -1461,8 +1461,8 @@ void wxMediaBuffer::Print(Bool interactive, Bool fitToPage, int WXUNUSED_X(outpu
     wxPrinter *p;
     wxPrintout *o;
   
-    p = new wxPrinter();
-    o = new wxMediaPrintout(this, fitToPage);
+    p = new WXGC_PTRS wxPrinter();
+    o = new WXGC_PTRS wxMediaPrintout(this, fitToPage);
 
     p->Print(parent, o, interactive);
     
@@ -1546,7 +1546,7 @@ void wxMediaBuffer::AddUndo(wxChangeRecord *rec)
 void wxMediaBuffer::AddSchemeUndo(void *proc)
 {
   wxSchemeModifyRecord *modrec;
-  modrec = new wxSchemeModifyRecord(proc);
+  modrec = new WXGC_PTRS wxSchemeModifyRecord(proc);
   AddUndo(modrec);
 }
 
@@ -1691,7 +1691,7 @@ void wxMediaBuffer::PerformUndos(Bool redos)
       if (cnt > 0) {
 	wxCompositeRecord *cu;
 	int i;
-	cu = new wxCompositeRecord(cnt, id, !parity);
+	cu = new WXGC_PTRS wxCompositeRecord(cnt, id, !parity);
 	for (i = 0; i < cnt; i++) {
 	  e = (end - cnt + i + size) % size;
 	  cu->AddUndo(i, c[e]);
@@ -1798,18 +1798,18 @@ static void InitCutNPaste()
     wxREGGLOB(copyRingStyle);
     wxREGGLOB(copyRingData);
 
-    copyRingBuffer1 = new wxList*[copyRingSize];
-    copyRingBuffer2 = new wxList*[copyRingSize];
-    copyRingStyle = new wxStyleList*[copyRingSize];
-    copyRingData = new wxBufferData*[copyRingSize];
+    copyRingBuffer1 = new WXGC_PTRS wxList*[copyRingSize];
+    copyRingBuffer2 = new WXGC_PTRS wxList*[copyRingSize];
+    copyRingStyle = new WXGC_PTRS wxStyleList*[copyRingSize];
+    copyRingData = new WXGC_PTRS wxBufferData*[copyRingSize];
 
     copyRingMax = 1;
     copyRingDest = 1;
 
     wxREGGLOB(wxmb_commonCopyBuffer);
     wxREGGLOB(wxmb_commonCopyBuffer2);
-    wxmb_commonCopyBuffer = new wxList(wxKEY_NONE, FALSE);
-    wxmb_commonCopyBuffer2 = new wxList(wxKEY_NONE, FALSE);
+    wxmb_commonCopyBuffer = new WXGC_PTRS wxList(wxKEY_NONE, FALSE);
+    wxmb_commonCopyBuffer2 = new WXGC_PTRS wxList(wxKEY_NONE, FALSE);
 
     wxREGGLOB(wxmb_copyStyleList);
     wxREGGLOB(wxmb_commonCopyRegionData);
@@ -1822,12 +1822,12 @@ static void InitCutNPaste()
 
   if (!TheMediaClipboardClient) {
     wxREGGLOB(TheMediaClipboardClient);
-    TheMediaClipboardClient = new wxMediaClipboardClient;
+    TheMediaClipboardClient = new WXGC_PTRS wxMediaClipboardClient;
 #if ALLOW_X_STYLE_SELECTION
     wxREGGLOB(TheMediaXClipboardClient);
     wxREGGLOB(wxMediaXSelectionOwner);
     wxREGGLOB(wxMediaXSelectionAllowed);
-    TheMediaXClipboardClient = new wxMediaXClipboardClient;
+    TheMediaXClipboardClient = new WXGC_PTRS wxMediaXClipboardClient;
 #endif
   }
 }
@@ -1876,8 +1876,8 @@ void wxMediaBuffer::FreeOldCopies(void)
       DELETE_OBJ wxmb_commonCopyRegionData;
 #endif
 
-    wxmb_commonCopyBuffer = new wxList(wxKEY_NONE, FALSE);
-    wxmb_commonCopyBuffer2 = new wxList(wxKEY_NONE, FALSE);
+    wxmb_commonCopyBuffer = new WXGC_PTRS wxList(wxKEY_NONE, FALSE);
+    wxmb_commonCopyBuffer2 = new WXGC_PTRS wxList(wxKEY_NONE, FALSE);
 
     wxmb_commonCopyRegionData = NULL;
 
@@ -1912,8 +1912,8 @@ void wxMediaBuffer::FreeOldCopies(void)
     copyRingPos = copyRingDest;
   }
 
-  wxmb_commonCopyBuffer = new wxList(wxKEY_NONE, FALSE);
-  wxmb_commonCopyBuffer2 = new wxList(wxKEY_NONE, FALSE);
+  wxmb_commonCopyBuffer = new WXGC_PTRS wxList(wxKEY_NONE, FALSE);
+  wxmb_commonCopyBuffer2 = new WXGC_PTRS wxList(wxKEY_NONE, FALSE);
   wxmb_commonCopyRegionData = NULL;
   wxmb_copyStyleList = NULL;
 
@@ -1972,8 +1972,8 @@ void wxMediaBuffer::DoBufferPaste(wxClipboard *cb, long time, Bool local)
       wxMediaStreamInStringBase *b;
       wxMediaStreamIn *mf;
 
-      b = new wxMediaStreamInStringBase(str, len);
-      mf = new wxMediaStreamIn(b);
+      b = new WXGC_PTRS wxMediaStreamInStringBase(str, len);
+      mf = new WXGC_PTRS wxMediaStreamIn(b);
 
       if (wxReadMediaVersion(mf, b, TRUE, FALSE)) {
 	if (wxReadMediaGlobalHeader(mf)) {
@@ -1998,7 +1998,7 @@ void wxMediaBuffer::DoBufferPaste(wxClipboard *cb, long time, Bool local)
       if (!pasteTextOnly)
 	bm = cb->GetClipboardBitmap(time);
       if (bm) { 
-	snip = new wxImageSnip(bm);
+	snip = new WXGC_PTRS wxImageSnip(bm);
 	InsertPasteSnip(snip, NULL);
       } else {
 	str = cb->GetClipboardString(time);
@@ -2044,9 +2044,9 @@ void wxMediaBuffer::CopySelfTo(wxMediaBuffer *m)
 
   m->BeginEditSequence();
 
-  copySnips = new wxList(wxKEY_NONE, FALSE);
+  copySnips = new WXGC_PTRS wxList(wxKEY_NONE, FALSE);
   wxmb_commonCopyBuffer = copySnips;
-  copySnips2 = new wxList(wxKEY_NONE, FALSE);
+  copySnips2 = new WXGC_PTRS wxList(wxKEY_NONE, FALSE);
   wxmb_commonCopyBuffer2 = copySnips2;
   wxmb_copyStyleList = NULL;
   wxmb_commonCopyRegionData = NULL;
@@ -2061,7 +2061,7 @@ void wxMediaBuffer::CopySelfTo(wxMediaBuffer *m)
     wxSnip *s;
     wxNode *n;
     wxList *unselect;
-    unselect = new wxList(wxKEY_NONE, FALSE);
+    unselect = new WXGC_PTRS wxList(wxKEY_NONE, FALSE);
     
     BeginEditSequence();
     for (s = pb->FindFirstSnip(); s; s = s->Next()) {
@@ -2183,7 +2183,7 @@ static char *GenericGetData(char *format, long *size,
     }
     
     if (!total)
-      total = new char[1];
+      total = new WXGC_ATOMIC char[1];
     
     total[length] = 0;
 
@@ -2234,8 +2234,8 @@ static char *GenericGetData(char *format, long *size,
     wxMediaStreamOut *mf;
     char *result;
 
-    b = new wxMediaStreamOutStringBase();
-    mf = new wxMediaStreamOut(b);
+    b = new WXGC_PTRS wxMediaStreamOutStringBase();
+    mf = new WXGC_PTRS wxMediaStreamOut(b);
 
     wxWriteMediaVersion(mf, b);
 
@@ -2296,9 +2296,9 @@ static void CopyIntoSelection()
   saveData = wxmb_commonCopyRegionData;
  
   /* Set up new selection buffers, and redirect: */
-  copySnips = new wxList(wxKEY_NONE, FALSE);
+  copySnips = new WXGC_PTRS wxList(wxKEY_NONE, FALSE);
   wxmb_commonCopyBuffer = copySnips;
-  copySnips2 = new wxList(wxKEY_NONE, FALSE);
+  copySnips2 = new WXGC_PTRS wxList(wxKEY_NONE, FALSE);
   wxmb_commonCopyBuffer2 = copySnips2;
   wxmb_copyStyleList = NULL;
   wxmb_commonCopyRegionData = NULL;

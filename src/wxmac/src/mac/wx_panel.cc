@@ -93,7 +93,7 @@ void wxPanel::CreateWxPanel(int x, int y, int w, int h) // common constructor in
   SetEraser(wxCONTROL_BACKGROUND_BRUSH);
 
   if (cStyle & wxBORDER)  {
-    cPanelBorder = new wxBorderArea(this, 1, wxAll, 1);
+    cPanelBorder = new WXGC_PTRS wxBorderArea(this, 1, wxAll, 1);
   }
 
   parent = GetParent();
@@ -143,7 +143,7 @@ void wxPanel::InitDefaults(void)
 //-----------------------------------------------------------------------------
 void wxPanel::NewLine(void)
 {
-  AdvanceCursor(NULL); // Kludge (new DESIGN)
+  AdvanceCursor(NULL); // Kludge
   cursor_x = initial_hspacing;
   cursor_y = max_height + vSpacing;
   if (cursor_y > max_height) max_height = cursor_y;
@@ -153,7 +153,7 @@ void wxPanel::NewLine(void)
 //-----------------------------------------------------------------------------
 void wxPanel::NewLine(int pixels)
 {
-  AdvanceCursor(NULL); // Kludge (new DESIGN)
+  AdvanceCursor(NULL); // Kludge
   cursor_x = initial_hspacing;
   cursor_y = max_height + pixels;
   if (cursor_y > max_height) max_height = cursor_y;
@@ -163,7 +163,7 @@ void wxPanel::NewLine(int pixels)
 //-----------------------------------------------------------------------------
 void wxPanel::Tab(void)
 {
-  AdvanceCursor(NULL); // Kludge (new DESIGN)
+  AdvanceCursor(NULL); // Kludge
   cursor_x += hSpacing;
   if (cursor_x > max_width) max_width = cursor_x;
 }
@@ -171,7 +171,7 @@ void wxPanel::Tab(void)
 //-----------------------------------------------------------------------------
 void wxPanel::Tab(int pixels)
 {
-  AdvanceCursor(NULL); // Kludge (new DESIGN)
+  AdvanceCursor(NULL); // Kludge
   cursor_x += pixels;
   if (cursor_x > max_width) max_width = cursor_x;
 }
@@ -226,7 +226,7 @@ void wxPanel::AdvanceCursor(wxWindow* item)
   //
   //''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-  if (last_created) // Kludge (new DESIGN)
+  if (last_created) // Kludge
     {
       int width, height;
       int x, y;

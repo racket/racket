@@ -12,6 +12,9 @@
 #define wxMacDCh
 
 class wxMacDC
+#ifndef MZ_PRECISE_GC
+: public gc
+#endif
 {
   protected:
 	CGrafPtr	cMacGrafPort;

@@ -64,8 +64,8 @@ wxWindow::wxWindow(void)
   cWindowHeight = 0;
   cStyle = 0;
   cScroll = NULL;
-  cAreas = new wxList(wxList::kDestroyData);
-  children = new wxChildList();
+  cAreas = new WXGC_PTRS wxList(wxList::kDestroyData);
+  children = new WXGC_PTRS wxChildList();
   cActive = TRUE;
   cEnable = TRUE;
 
@@ -79,7 +79,7 @@ wxWindow::wxWindow(void)
   
   cGrandcursor = FALSE;
 
-  cClientArea = new wxArea(this);
+  cClientArea = new WXGC_PTRS wxArea(this);
 }
 
 
@@ -96,14 +96,14 @@ wxWindow::wxWindow // Constructor (for screen window)
  wxbWindow (windowName)
 {
   cStyle = style;
-  children = new wxChildList();
+  children = new WXGC_PTRS wxChildList();
   cScroll = NULL;
   cWindowX = (x != wxDEFAULT_POSITION ? x : 0);
   cWindowY = (y != wxDEFAULT_POSITION ? y : 0);
   cWindowHeight = (height >= 0 ? height : 0);
   cWindowWidth = (width >= 0 ? width : 0);
 
-  cAreas = new wxList(wxList::kDestroyData);
+  cAreas = new WXGC_PTRS wxList(wxList::kDestroyData);
   cActive = TRUE;
   cEnable = TRUE;
   
@@ -117,7 +117,7 @@ wxWindow::wxWindow // Constructor (for screen window)
 
   cGrandcursor = FALSE;
 
-  cClientArea = new wxArea(this);
+  cClientArea = new WXGC_PTRS wxArea(this);
 }
 
 //-----------------------------------------------------------------------------
@@ -136,13 +136,13 @@ wxWindow::wxWindow // Constructor (given parentScreen; i.e., this is frame)
   wxChildList *wl, *cl;
   
   cStyle = style;
-  children = new wxChildList();
+  children = new WXGC_PTRS wxChildList();
   cScroll = NULL;
   cWindowX = (x != wxDEFAULT_POSITION ? x : 0);
   cWindowY = (y != wxDEFAULT_POSITION ? y : 0);
   cWindowHeight = (height >= 0 ? height : 0);
   cWindowWidth = (width >= 0 ? width : 0);
-  cAreas = new wxList(wxList::kDestroyData);
+  cAreas = new WXGC_PTRS wxList(wxList::kDestroyData);
 
   cActive = TRUE;
   cEnable = TRUE;
@@ -167,7 +167,7 @@ wxWindow::wxWindow // Constructor (given parentScreen; i.e., this is frame)
 
   cGrandcursor = FALSE;
 
-  cClientArea = new wxArea(this);
+  cClientArea = new WXGC_PTRS wxArea(this);
 }
 
 //-----------------------------------------------------------------------------
@@ -186,11 +186,11 @@ wxWindow::wxWindow // Constructor (given parentArea)
   wxChildList *wl;
 
   cStyle = style;
-  children = new wxChildList();
+  children = new WXGC_PTRS wxChildList();
   cScroll = NULL;
   cWindowHeight = (height >= 0 ? height : 0);
   cWindowWidth = (width >= 0 ? width : 0);
-  cAreas = new wxList(wxList::kDestroyData);
+  cAreas = new WXGC_PTRS wxList(wxList::kDestroyData);
 
   cActive = TRUE;
   cEnable = TRUE;
@@ -212,7 +212,7 @@ wxWindow::wxWindow // Constructor (given parentArea)
   InitWindowPostion(x, y);
   window_parent->AddChild(this);
 
-  cClientArea = new wxArea(this);
+  cClientArea = new WXGC_PTRS wxArea(this);
 }
 
 //-----------------------------------------------------------------------------
@@ -231,11 +231,11 @@ wxWindow::wxWindow // Constructor (given parentWindow)
   wxChildList *wl;
 
   cStyle = style;
-  children = new wxChildList();
+  children = new WXGC_PTRS wxChildList();
   cScroll = NULL;
   cWindowHeight = (height >= 0 ? height : 0);
   cWindowWidth = (width >= 0 ? width : 0);
-  cAreas = new wxList(wxList::kDestroyData);
+  cAreas = new WXGC_PTRS wxList(wxList::kDestroyData);
 
   cActive = TRUE;
   cEnable = TRUE;
@@ -257,7 +257,7 @@ wxWindow::wxWindow // Constructor (given parentWindow)
   InitWindowPostion(x, y);
   window_parent->AddChild(this);
 
-  cClientArea = new wxArea(this);
+  cClientArea = new WXGC_PTRS wxArea(this);
 }
 
 //-----------------------------------------------------------------------------
@@ -268,13 +268,13 @@ wxWindow::wxWindow // Constructor (given objectType; i.e., menu or menuBar)
  wxbWindow (windowName)
 {
   cStyle = 0;
-  children = new wxChildList();
+  children = new WXGC_PTRS wxChildList();
   cScroll = NULL;
   cWindowX = 0;
   cWindowY = 0;
   cWindowHeight = 0;
   cWindowWidth = 0;
-  cAreas = new wxList(wxList::kDestroyData);
+  cAreas = new WXGC_PTRS wxList(wxList::kDestroyData);
 
   cActive = TRUE;
   cEnable = TRUE;
@@ -289,7 +289,7 @@ wxWindow::wxWindow // Constructor (given objectType; i.e., menu or menuBar)
   
   cGrandcursor = FALSE;
 
-  cClientArea = new wxArea(this);
+  cClientArea = new WXGC_PTRS wxArea(this);
 }
 
 //=============================================================================
@@ -1314,7 +1314,7 @@ static void SendEnterLeaveEvent(wxWindow *target, int eventtype, wxWindow *evtsr
     int clientHitX, clientHitY;
     wxMouseEvent *theMouseEvent;
 
-    theMouseEvent = new wxMouseEvent(eventtype);
+    theMouseEvent = new WXGC_PTRS wxMouseEvent(eventtype);
     theMouseEvent->leftDown = evt->leftDown;
     theMouseEvent->middleDown = evt->middleDown;
     theMouseEvent->rightDown = evt->rightDown;
@@ -1497,7 +1497,7 @@ Bool wxWindow::SeekMouseEventArea(wxMouseEvent *mouseEvent, int *metal_drag_ok)
       wxMouseEvent *areaMouseEvent;
       int hitAreaX, hitAreaY;
 
-      areaMouseEvent = new wxMouseEvent(0);
+      areaMouseEvent = new WXGC_PTRS wxMouseEvent(0);
       *areaMouseEvent = *mouseEvent;
       if (hitArea) {
 	wxMargin hitAreaMargin;
@@ -1568,7 +1568,7 @@ Bool wxWindow::SeekMouseEventArea(wxMouseEvent *mouseEvent, int *metal_drag_ok)
     hitAreaMargin = hitArea->Margin(this);
     hitAreaX = hitAreaMargin.Offset(wxLeft);
     hitAreaY = hitAreaMargin.Offset(wxTop);
-    areaMouseEvent = new wxMouseEvent(0);
+    areaMouseEvent = new WXGC_PTRS wxMouseEvent(0);
     *areaMouseEvent = *mouseEvent;
     areaMouseEvent->x = hitX - hitAreaX;
     areaMouseEvent->y = hitY - hitAreaY;
@@ -2108,7 +2108,7 @@ Bool wxWindow::PopupMenu(wxMenu *menu, double x, double y)
     }
   }
 
-  event = new wxPopupEvent();
+  event = new WXGC_PTRS wxPopupEvent();
   event->menuId = itemId;
 
   menu->ProcessCommand(event);

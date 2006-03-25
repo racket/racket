@@ -115,7 +115,7 @@ wxMessage::wxMessage // Constructor (given parentPanel and bitmap)
     sBitmap = bitmap;
     sBitmap->selectedIntoDC++;
     cMessage = NULL;
-    if (cStyle & wxBORDER) new wxBorderArea(this);
+    if (cStyle & wxBORDER) new WXGC_PTRS wxBorderArea(this);
     SetClientSize(sBitmap->GetWidth(), sBitmap->GetHeight());
     CreatePaintControl();
     {
@@ -225,7 +225,7 @@ void wxMessage::CreateWxMessage(char* label, wxFont* theFont) // common construc
 
   SetFont(theFont, 13);
 
-  if (cStyle & wxBORDER) new wxBorderArea(this);
+  if (cStyle & wxBORDER) new WXGC_PTRS wxBorderArea(this);
   sBitmap = NULL;
   cMessage = wxItemStripLabel(label);
 	

@@ -26,7 +26,7 @@ wxScroll::wxScroll // root scroll
   cScrollWindow = scrollWindow;
   cScrollData = scrollData;
   cParentScroll = NULL;
-  cScrolls = new wxList(wxList::kNoDestroyData);
+  cScrolls = new WXGC_PTRS wxList(wxList::kNoDestroyData);
   WXGC_IGNORE(this, cScrollWindow);
 }
 
@@ -41,7 +41,7 @@ wxScroll::wxScroll // child scroll
   cScrollData = NULL;
   WXGC_IGNORE(this, scrollWindow);
 
-  cScrolls = new wxList(wxList::kNoDestroyData);
+  cScrolls = new WXGC_PTRS wxList(wxList::kNoDestroyData);
  
   cParentScroll = parentScrollWindow->GetScroll();
   if (!cParentScroll)
@@ -154,7 +154,7 @@ void wxScroll::AddChildScrollWindow(wxWindow* childScrollWindow)
 
   if (childScroll->cScrollData)
     {
-      DELETE_OBJ childScroll->cScrollData;
+      /* DELETE_OBJ childScroll->cScrollData; */
       childScroll->cScrollData = NULL;
     }
 

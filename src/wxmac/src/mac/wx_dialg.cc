@@ -167,14 +167,14 @@ Bool wxDialogBox::OnClose(void)
 
 static wxFrame *make_dlog_frame(wxWindow *parentFrame, char *windowTitle, int x, int y, int width, int height, int style, char *windowName, WXTYPE objectType)
 {
-  return new wxFrame((wxFrame *)parentFrame, windowTitle, 
-		     x, y,
-		     width, height, 
-		     (style | wxMDI_CHILD 
-		      | ((style & DIALOG_BORDER_STYLE) 
-			 ? 0
-			 : wxNO_RESIZE_BORDER)), 
-		     windowName, objectType);
+  return new WXGC_PTRS wxFrame((wxFrame *)parentFrame, windowTitle, 
+			       x, y,
+			       width, height, 
+			       (style | wxMDI_CHILD 
+				| ((style & DIALOG_BORDER_STYLE) 
+				   ? 0
+				   : wxNO_RESIZE_BORDER)), 
+			       windowName, objectType);
 }
 
 //-----------------------------------------------------------------------------
@@ -472,7 +472,7 @@ static void do_text_path_dialog(wxCallbackInfo *cbi)
   CFStringRef str;
   void *info_sr;
 
-  info = new wxCallbackCallbackInfo;
+  info = new WXGC_PTRS wxCallbackCallbackInfo;
   info_sr = WRAP_SAFEREF(info);
 
   init = extract_current_dir(cbi->dialog);
@@ -669,7 +669,7 @@ char *wxFileSelector(char *message, char *default_path,
       } 
     }
 
-    cbi = new wxCallbackInfo();
+    cbi = new WXGC_PTRS wxCallbackInfo();
     cbi->initial_directory = default_path;
 
     NavGetDefaultDialogCreationOptions(&dialogOptions);
@@ -826,7 +826,7 @@ char *wxFileSelector(char *message, char *default_path,
 #ifdef MZ_PRECISE_GC
     reply = (NavReplyRecord *)GC_malloc_atomic(sizeof(NavReplyRecord));
 #else
-    reply = new NavReplyRecord;
+    reply = new WXGC_ATOMIC NavReplyRecord;
 #endif
     if (NavDialogGetReply(outDialog,reply) != noErr) {
       NavDialogDispose(outDialog);
@@ -877,7 +877,7 @@ char *wxFileSelector(char *message, char *default_path,
       char *path, *wholepath;
 
       strLen = (6 * CFStringGetLength(reply->saveFileName)) + 1;
-      filename = new char[strLen];
+      filename = new WXGC_ATOMIC char[strLen];
 
       if (CFStringGetCString(reply->saveFileName,filename,strLen,kCFStringEncodingUTF8) == FALSE) {
 	// Unable to convert string

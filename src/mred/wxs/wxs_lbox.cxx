@@ -179,7 +179,7 @@ static void CB_TOSCHEME(CB_REALCLASS *obj, wxCommandEvent *event);
 
 #define l_ADDRESS 
 #define l_DEREF 
-#define l_NEWATOMIC 
+#define l_NEWATOMIC (UseGC)
 #define l_NULLOK 0
 #define l_TEST 
 #define l_POINT 
@@ -1207,7 +1207,7 @@ static Scheme_Object *os_wxListBox_ConstructScheme(int n,  Scheme_Object *p[])
   WITH_VAR_STACK(realobj->gcInit_wxListBox(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13));
 #endif
   realobj->__gc_external = (void *)p[0];
-  delete[] x9;
+  /* delete[] x9; */
   realobj->callback_closure = p[POFFSET+cb_pos];
   READY_TO_RETURN;
   ((Scheme_Class_Object *)p[0])->primdata = realobj;

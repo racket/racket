@@ -62,15 +62,15 @@ static void InitFormats()
   ClipboardFormat *cf;
 
   wxREGGLOB(ClipboardFormats);
-  ClipboardFormats = new wxList;
+  ClipboardFormats = new WXGC_PTRS wxList;
 
-  cf = new ClipboardFormat;
+  cf = new WXGC_PTRS ClipboardFormat;
   cf->name = "TEXT";
   cf->format = wxCF_TEXT;
 
   ClipboardFormats->Append(cf);
 
-  cf = new ClipboardFormat;
+  cf = new WXGC_PTRS ClipboardFormat;
   cf->name = "PICT";
   cf->format = wxCF_BITMAP;
 
@@ -339,11 +339,11 @@ int  wxRegisterClipboardFormat(char *formatName)
       return cf->format;
   }
 
-  cf = new ClipboardFormat;
+  cf = new WXGC_PTRS ClipboardFormat;
 
   cf->format = ClipboardFormats->Number();
   cf->format += CUSTOM_ID_START;
-  cf->name = new char[strlen(formatName) + 1];
+  cf->name = new WXGC_ATOMIC char[strlen(formatName) + 1];
   strcpy(cf->name, formatName);
 
   ClipboardFormats->Append(cf);
@@ -386,12 +386,12 @@ void wxInitClipboard(void)
 {
   if (!wxTheClipboard)
     wxREGGLOB(wxTheClipboard);
-  wxTheClipboard = new wxClipboard;
+  wxTheClipboard = new WXGC_PTRS wxClipboard;
 }
 
 wxClipboardClient::wxClipboardClient()
 {
-  formats = new wxStringList;
+  formats = new WXGC_PTRS wxStringList;
 }
 
 wxClipboard::wxClipboard()
@@ -494,7 +494,7 @@ char *wxClipboard::GetClipboardString(long time)
 
   str = GetClipboardData("TEXT", &length, time);
   if (!str) {
-    str = new char[1];
+    str = new WXGC_ATOMIC char[1];
     *str = 0;
   }
 
@@ -534,8 +534,8 @@ wxBitmap *wxClipboard::GetClipboardBitmap(long time)
     bbox.right = w;
     bbox.bottom = h;
       
-    bm = new wxBitmap(w, h, 0);
-    mdc = new wxMemoryDC();
+    bm = new WXGC_PTRS wxBitmap(w, h, 0);
+    mdc = new WXGC_PTRS wxMemoryDC();
     mdc->SelectObject(bm);
     if (mdc->Ok()) {
       Handle h;

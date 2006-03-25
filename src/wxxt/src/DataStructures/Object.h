@@ -38,7 +38,6 @@
 
 #ifdef MZ_PRECISE_GC
 # define WXGC_IGNORE(base, ptr) GC_finalization_weak_ptr((void **)base, (void **)&(ptr) - (void **)base)
-# define WXGC_ATOMIC /* empty */
 # define COPYSTRING_TO_ALIGNED(s, d) copystring_to_aligned(s, d)
 # define DELETE_OBJ delete_wxobject
 # define DELETE_VAL delete
@@ -53,7 +52,6 @@ typedef struct {
 # define GET_SAFEREF(x) ((*(void **)x) ? gcPTR_TO_OBJ((*(wxWeak_Box **)x)->val) : NULL)
 #else
 # define WXGC_IGNORE(base, ptr) GC_general_register_disappearing_link((void **)&(ptr), NULL)
-# define WXGC_ATOMIC (AtomicGC)
 # define COPYSTRING_TO_ALIGNED(s, d) (s + d)
 # define DELETE_OBJ delete
 # define DELETE_VAL delete

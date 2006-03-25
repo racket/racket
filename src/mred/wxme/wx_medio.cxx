@@ -286,7 +286,7 @@ wxMediaStreamOutStringBase::wxMediaStreamOutStringBase()
 {
   alloc = 50;
   len = pos = 0;
-  a_string = new char[alloc];
+  a_string = new WXGC_ATOMIC char[alloc];
   bad = FALSE;
 }
 
@@ -326,7 +326,7 @@ void wxMediaStreamOutStringBase::Write(char *data, long l, int delta)
     char *old = a_string;
 
     alloc = (alloc * 2) + l;
-    a_string = new char[alloc];
+    a_string = new WXGC_ATOMIC char[alloc];
     memcpy(a_string, old, len);
   }
 
@@ -348,7 +348,7 @@ wxMediaStreamIn::wxMediaStreamIn(wxMediaStreamInBase *s)
   f = s;
   boundalloc = 10;
   boundcount = 0;
-  boundaries = new long[boundalloc];
+  boundaries = new WXGC_ATOMIC long[boundalloc];
   bad = FALSE;
 }
 
@@ -1139,7 +1139,7 @@ void wxMediaStreamIn::SetBoundary(long n)
   if (boundcount == boundalloc) {
     long *old = boundaries;
     boundalloc *= 2;
-    boundaries = new long[boundalloc];
+    boundaries = new WXGC_ATOMIC long[boundalloc];
     memcpy(boundaries, old, boundcount * sizeof(long));
   }
 

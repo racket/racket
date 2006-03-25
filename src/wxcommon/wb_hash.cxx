@@ -38,7 +38,7 @@ wxHashTable::wxHashTable (int, int size)
   current_position = -1;
   current_node = NULL;
 
-  ll = new wxList *[size];
+  ll = new WXGC_PTRS wxList *[size];
   hash_table = ll;
   for (i = 0; i < size; i++) {
     hash_table[i] = NULL;
@@ -65,7 +65,7 @@ wxList *wxHashTable::GetList(int position, KeyType ktype, Bool makeit)
 
   if (!l) {
     if (makeit) {
-      l = new wxList(ktype, FALSE);
+      l = new WXGC_PTRS wxList(ktype, FALSE);
       hash_table[position] = l;
     }
   }

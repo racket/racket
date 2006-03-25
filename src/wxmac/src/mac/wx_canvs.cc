@@ -65,7 +65,7 @@ wxCanvas::wxCanvas // Constructor (given parentArea)
 {
   InitDefaults(gl_cfg);
 
-  wx_dc = new wxCanvasDC(this);
+  wx_dc = new WXGC_PTRS wxCanvasDC(this);
 }
 
 //-----------------------------------------------------------------------------
@@ -115,7 +115,7 @@ void wxCanvas::InitDefaults(wxGLConfig *gl_cfg)
   scrollAutomanaged = TRUE;
   bgcol = ((cStyle & wxTRANSPARENT_WIN) ? NULL : wxWHITE);
 
-  wx_dc = new wxCanvasDC(this);
+  wx_dc = new WXGC_PTRS wxCanvasDC(this);
 
   if (gl_cfg) {
     gl_cfg = gl_cfg->Clone();
@@ -135,22 +135,22 @@ void wxCanvas::InitDefaults(wxGLConfig *gl_cfg)
     if (cStyle & wxHSCROLL)
       direction -= wxBottom;
 
-    canvas_border = new wxBorderArea(this, 1, direction);
+    canvas_border = new WXGC_PTRS wxBorderArea(this, 1, direction);
   }
 
   if (cStyle & wxVSCROLL || cStyle & wxHSCROLL) {
     wxScrollData* scrollData;
-    scrollData = new wxScrollData;
-    cScroll = new wxScroll(this, scrollData);
-    cScrollArea = new wxScrollArea(this, this, 
-				   (cStyle & wxVSCROLL) | (cStyle & wxHSCROLL) | (cStyle & wxRESIZE_CORNER));
+    scrollData = new WXGC_ATOMIC wxScrollData;
+    cScroll = new WXGC_PTRS wxScroll(this, scrollData);
+    cScrollArea = new WXGC_PTRS wxScrollArea(this, this, 
+					     (cStyle & wxVSCROLL) | (cStyle & wxHSCROLL) | (cStyle & wxRESIZE_CORNER));
   }
 
   /* Make wxCONTROL_BORDER after scroll bars, so that it's outside the scrollbar */  
   if (cStyle & wxCONTROL_BORDER) {
     int direction = wxAll;
 
-    canvas_border = new wxBorderArea(this, 3, direction, 0, (cStyle & wxCOMBO_SIDE) ? 2 : 1);
+    canvas_border = new WXGC_PTRS wxBorderArea(this, 3, direction, 0, (cStyle & wxCOMBO_SIDE) ? 2 : 1);
   }
 
   if (!(cStyle & wxFLAT)) {
@@ -340,7 +340,7 @@ void wxCanvas::SetScrollbars(int horizontal, int vertical,
 
   oldScrollData = cScroll->GetScrollData();
 
-  scrollData = new wxScrollData;
+  scrollData = new WXGC_ATOMIC wxScrollData;
 
   if (oldScrollData)
     *scrollData = *oldScrollData;
@@ -532,7 +532,7 @@ void wxCanvas::Scroll(int xPos, int yPos)
 
   if (!cScroll) return;
 
-  scrollData = new wxScrollData;
+  scrollData = new WXGC_ATOMIC wxScrollData;
 
   oldScrollData = cScroll->GetScrollData();
   if (oldScrollData) 
@@ -911,7 +911,7 @@ void wxCanvas::SetCanvasBackground(wxColor *c)
     return;
   
   if (c && c->IsMutable()) {
-    c = new wxColour(c);
+    c = new WXGC_ATOMIC wxColour(c);
     c->Lock(1);
   }
    

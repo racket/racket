@@ -33,7 +33,7 @@ wxLabelArea::wxLabelArea
   wxFont* labelFont;
 
   __type = wxTYPE_LABEL_AREA;
-  cLabelText = new wxMessage(this, label, theFont, xoffset, yoffset);
+  cLabelText = new WXGC_PTRS wxMessage(this, label, theFont, xoffset, yoffset);
   cDirection = direction;
 
   labelFont = cLabelText->font;

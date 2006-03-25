@@ -34,7 +34,7 @@ copystring (const char *s)
   if (s == NULL) s = "";
   len = strlen (s) + 1;
 
-  news = new char[len];
+  news = new WXGC_ATOMIC char[len];
   memcpy (news, s, len);	// Should be the fastest
 
   return news;
@@ -150,7 +150,7 @@ wxPathOnly (char *path)
 
       if (!po_buf) {
 	wxREGGLOB(po_buf);
-	po_buf = new char[_MAXPATHLEN];
+	po_buf = new WXGC_ATOMIC char[_MAXPATHLEN];
       }
 
       // Local copy

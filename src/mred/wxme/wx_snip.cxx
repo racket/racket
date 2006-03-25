@@ -325,7 +325,7 @@ void wxSnip::Split(long position, wxSnip **first, wxSnip **second)
 {
   wxSnip *snip;
 
-  snip = new wxSnip();
+  snip = new WXGC_PTRS wxSnip();
   snip->count = position;
   count -= position;
 
@@ -405,7 +405,7 @@ wxSnip *wxSnip::Copy()
 {
   wxSnip *snip;
 
-  snip = new wxSnip();
+  snip = new WXGC_PTRS wxSnip();
   Copy(snip);
 
   return snip;
@@ -504,7 +504,7 @@ TextSnipClass::TextSnipClass(void)
 wxSnip *TextSnipClass::Read(wxMediaStreamIn *f)
 {
   wxTextSnip *s;
-  s = new wxTextSnip(0);
+  s = new WXGC_PTRS wxTextSnip(0);
   return Read(s, f);
 }
 
@@ -788,7 +788,7 @@ void wxTextSnip::Split(long position, wxSnip **first, wxSnip **second)
     return;
 
   dont_shrink_alloc_size = 1;
-  snip = new wxTextSnip(position);
+  snip = new WXGC_PTRS wxTextSnip(position);
   dont_shrink_alloc_size = 0;
 
   w = -1.0;
@@ -922,7 +922,7 @@ wxSnip *wxTextSnip::Copy()
 {
   wxTextSnip *snip;
 
-  snip = new wxTextSnip(count);
+  snip = new WXGC_PTRS wxTextSnip(count);
   Copy(snip);
   return snip;
 }
@@ -1066,7 +1066,7 @@ TabSnipClass::TabSnipClass(void)
 wxSnip *TabSnipClass::Read(wxMediaStreamIn *f)
 {
   wxTabSnip *ts;
-  ts = new wxTabSnip();
+  ts = new WXGC_PTRS wxTabSnip();
   return TextSnipClass::Read(ts, f);
 }
 
@@ -1169,7 +1169,7 @@ wxSnip *wxTabSnip::Copy()
 {
   wxTabSnip *snip;
 
-  snip = new wxTabSnip();
+  snip = new WXGC_PTRS wxTabSnip();
   wxTextSnip::Copy(snip);
   return snip;
 }
@@ -1255,7 +1255,7 @@ wxSnip *ImageSnipClass::Read(wxMediaStreamIn *f)
     }
   }
   
-  snip = new wxImageSnip(loadfile, type, relative, inlined);
+  snip = new WXGC_PTRS wxImageSnip(loadfile, type, relative, inlined);
 
   if (delfile) {
     wxRemoveFile(delfile);
@@ -1395,7 +1395,7 @@ wxSnip *wxImageSnip::Copy(void)
 {
   wxImageSnip *snip;
 
-  snip = new wxImageSnip();
+  snip = new WXGC_PTRS wxImageSnip();
   Copy(snip);
 
   return (wxSnip *)snip;
@@ -1540,7 +1540,7 @@ void wxImageSnip::LoadFile(char *name, long type, Bool relative, Bool inlineImg)
 
       wxBeginBusyCursor();
 
-      nbm = new wxBitmap(fn, type);
+      nbm = new WXGC_PTRS wxBitmap(fn, type);
 
       wxEndBusyCursor();
 
@@ -1844,7 +1844,7 @@ wxStandardSnipClassList::wxStandardSnipClassList(void)
 {
   wxList *ul;
 
-  ul = new wxList((KeyType)wxKEY_INTEGER);
+  ul = new WXGC_PTRS wxList((KeyType)wxKEY_INTEGER);
   unknowns = ul;
 
   Add(TheTextSnipClass);
@@ -1875,7 +1875,7 @@ Bool wxStandardSnipClassList::Write(wxMediaStreamOut *f)
     f->Put(sclass->version);
     f->Put(sclass->required);
 
-    sl = new wxSnipClassLink;
+    sl = new WXGC_PTRS wxSnipClassLink;
     sl->c= sclass;
     sl->mapPosition = i;
     sl->headerFlag = 0;
@@ -1913,7 +1913,7 @@ Bool wxStandardSnipClassList::Read(wxMediaStreamIn *f)
     if (!f->Ok())
       return FALSE;
 
-    sl = new wxSnipClassLink;
+    sl = new WXGC_PTRS wxSnipClassLink;
     sl->c = NULL;
     sl->mapPosition = i;
     sl->next = f->sl;
@@ -1958,7 +1958,7 @@ wxSnipClass *wxStandardSnipClassList::FindByMapPosition(wxMediaStream *f, short 
 
 wxStandardSnipClassList *wxMakeTheSnipClassList(void)
 {
-  return new wxStandardSnipClassList;
+  return new WXGC_PTRS wxStandardSnipClassList;
 }
 
 /***************************************************************/
@@ -2009,7 +2009,7 @@ wxBufferData *LocationBufferDataClass::Read(wxMediaStreamIn *f)
 {
   wxLocationBufferData *data;
 
-  data = new wxLocationBufferData;
+  data = new WXGC_PTRS wxLocationBufferData;
   f->Get(&data->x);
   f->Get(&data->y);
 
@@ -2042,7 +2042,7 @@ wxBufferDataClassList::wxBufferDataClassList(void)
   __type = wxTYPE_BUFFER_DATA_CLASS_LIST;
 #endif
   
-  ul = new wxList((KeyType)wxKEY_INTEGER);
+  ul = new WXGC_PTRS wxList((KeyType)wxKEY_INTEGER);
   unknowns = ul;
 
   Add(TheLocationBufferDataClass);
@@ -2118,7 +2118,7 @@ Bool wxBufferDataClassList::Write(wxMediaStreamOut *f)
     sclass = (wxBufferDataClass *)node->Data();
     f->Put(sclass->classname);
 
-    dl = new wxDataClassLink;
+    dl = new WXGC_PTRS wxDataClassLink;
     dl->d = sclass;
     dl->mapPosition = i + 1;
     dl->next = f->dl;
@@ -2145,7 +2145,7 @@ Bool wxBufferDataClassList::Read(wxMediaStreamIn *f)
     if (!f->Ok())
       return FALSE;
 
-    dl = new wxDataClassLink;
+    dl = new WXGC_PTRS wxDataClassLink;
     dl->d = NULL;
     dl->mapPosition = i + 1;
     dl->next = f->dl;
@@ -2186,7 +2186,7 @@ wxBufferDataClass *wxBufferDataClassList::FindByMapPosition(wxMediaStream *f, sh
 
 wxBufferDataClassList *wxMakeTheBufferDataClassList()
 {
-  return new wxBufferDataClassList;
+  return new WXGC_PTRS wxBufferDataClassList;
 }
 
 /**************************************************/
@@ -2200,9 +2200,9 @@ void wxInitSnips(void)
   wxREGGLOB(TheLocationBufferDataClass);
 
 
-  TheTextSnipClass = new TextSnipClass;
-  TheTabSnipClass = new TabSnipClass;
-  TheMediaSnipClass = new MediaSnipClass;
-  TheImageSnipClass = new ImageSnipClass;
-  TheLocationBufferDataClass = new LocationBufferDataClass;
+  TheTextSnipClass = new WXGC_PTRS TextSnipClass;
+  TheTabSnipClass = new WXGC_PTRS TabSnipClass;
+  TheMediaSnipClass = new WXGC_PTRS MediaSnipClass;
+  TheImageSnipClass = new WXGC_PTRS ImageSnipClass;
+  TheLocationBufferDataClass = new WXGC_PTRS LocationBufferDataClass;
 }

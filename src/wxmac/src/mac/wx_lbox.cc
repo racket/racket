@@ -55,7 +55,7 @@ wxListBox::wxListBox(
   }
   label_font = _label_font;
 
-  cDataList = new wxList(wxKEY_INTEGER);
+  cDataList = new WXGC_PTRS wxList(wxKEY_INTEGER);
   Create(parentPanel, func, Title, Multiple, x, y, width, height, N, Choices,
          style, windowName);
 }
@@ -194,8 +194,8 @@ Bool wxListBox::Create(wxPanel *panel, wxFunction func,
   ReleaseCurrentDC();
 
   if (Title) {
-    cListTitle = new wxLabelArea(this, Title, label_font,
-				 labelPosition == wxVERTICAL ? wxTop : wxLeft);
+    cListTitle = new WXGC_PTRS wxLabelArea(this, Title, label_font,
+						  labelPosition == wxVERTICAL ? wxTop : wxLeft);
   } else
     cListTitle = NULL;
   
@@ -297,9 +297,9 @@ void wxListBox::OnEvent(wxMouseEvent *event)
       wxCommandEvent *commandEvent;
       
       if (cellWasClicked && doubleclick)
-	commandEvent = new wxCommandEvent(wxEVENT_TYPE_LISTBOX_DCLICK_COMMAND);
+	commandEvent = new WXGC_PTRS wxCommandEvent(wxEVENT_TYPE_LISTBOX_DCLICK_COMMAND);
       else
-	commandEvent = new wxCommandEvent(wxEVENT_TYPE_LISTBOX_COMMAND);
+	commandEvent = new WXGC_PTRS wxCommandEvent(wxEVENT_TYPE_LISTBOX_COMMAND);
 
       cellWasClicked = false;			
   
@@ -405,7 +405,7 @@ void wxListBox::OnChar(wxKeyEvent *event)
 
     Refresh();
 
-    commandEvent = new wxCommandEvent(wxEVENT_TYPE_LISTBOX_COMMAND);
+    commandEvent = new WXGC_PTRS wxCommandEvent(wxEVENT_TYPE_LISTBOX_COMMAND);
     ProcessCommand(commandEvent);
   }
 }
@@ -679,7 +679,7 @@ int wxListBox::GetSelections(int **list_selections)
   if (n <= 0)
     return 0;
   cell.h = 0; cell.v = 0;
-  selections = new int[n];
+  selections = new WXGC_ATOMIC int[n];
   n = 0;
   while (ALGetSelect(TRUE, &cell, cListReference)) {
     selections[n++] = cell.v++;

@@ -380,7 +380,7 @@ void wxCheckBox::OnEvent(wxMouseEvent *event) // mac platform only
 
     if (trackResult) {
       wxCommandEvent *commandEvent;
-      commandEvent = new wxCommandEvent(wxEVENT_TYPE_CHECKBOX_COMMAND);
+      commandEvent = new WXGC_PTRS wxCommandEvent(wxEVENT_TYPE_CHECKBOX_COMMAND);
       SetValue(!GetValue()); // toggle checkbox
       ProcessCommand(commandEvent);
     }

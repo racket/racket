@@ -243,9 +243,9 @@ Bool wxPostScriptDC::Create(Bool interactive, wxWindow *parent, Bool usePaperBBo
 
   current_pen = NULL;
   current_brush = NULL;
-  current_background_color = new wxColour(wxWHITE);
+  current_background_color = new WXGC_PTRS wxColour(wxWHITE);
 
-  current_text_foreground = new wxColour(wxBLACK);
+  current_text_foreground = new WXGC_PTRS wxColour(wxBLACK);
 
   mapping_mode = MM_TEXT;
 #else
@@ -415,7 +415,7 @@ void wxPostScriptDC::SetClippingRect(double cx, double cy, double cw, double ch)
   if (!pstream)
     return;
 
-  r = new wxRegion(this);
+  r = new WXGC_PTRS wxRegion(this);
   r->SetRectangle(cx, cy, cw, ch);
 
   SetClippingRegion(r);
@@ -1479,7 +1479,7 @@ Bool wxPostScriptDC::StartDoc (char *message)
 
   if (device == wxDEVICE_EPS) {
     wxPSStream *pss;
-    pss = new wxPSStream(filename);
+    pss = new WXGC_PTRS wxPSStream(filename);
     pstream = pss;
 
     if (!pstream || !pstream->good()) {
@@ -1725,7 +1725,7 @@ Blit (double xdest, double ydest, double fwidth, double fheight,
   x = (long)floor(xsrc);
   y = (long)floor(ysrc);
 
-  c = new wxColour;
+  c = new WXGC_PTRS wxColour;
 
   /* Since we want a definition, may need to start a dictionary: */
   if (rop >= 0) {
@@ -1908,7 +1908,7 @@ Bool wxPostScriptDC::Blit (double xdest, double ydest, double fwidth, double fhe
   if (!main_dc) {
     if (!temp_mdc) {
       wxREGGLOB(temp_mdc);
-      temp_mdc = new wxMemoryDC(1);
+      temp_mdc = new WXGC_PTRS wxMemoryDC(1);
     }
     temp_mdc->SelectObject(bm);
     /* Might fail, so we double-check: */
@@ -1923,7 +1923,7 @@ Bool wxPostScriptDC::Blit (double xdest, double ydest, double fwidth, double fhe
    if (!mask_dc) {
      if (!temp_mask_mdc) {
        wxREGGLOB(temp_mask_mdc);
-       temp_mask_mdc = new wxMemoryDC(1);
+       temp_mask_mdc = new WXGC_PTRS wxMemoryDC(1);
      } 
      temp_mask_mdc->SelectObject(mask);
      if (temp_mask_mdc->GetObject()) {
@@ -2322,11 +2322,11 @@ Bool wxPrintSetupData::ShowNative(wxWindow *parent)
   Bool ok;
 
   if (!native) {
-    native = new wxPrintData();
+    native = new WXGC_PTRS wxPrintData();
     native->SetLandscape(printer_orient == PS_LANDSCAPE);
   }
 
-  d = new wxPrintDialog(parent, native);
+  d = new WXGC_PTRS wxPrintDialog(parent, native);
   ok = d->UseIt();
   DELETE_OBJ d;
 
@@ -2349,11 +2349,11 @@ void wxInitializePrintSetupData(Bool /* init */)
   wxPrintSetupData *wxThePrintSetupData;
   
 #ifdef wx_mac
-  wxThePrintPaperDatabase = new wxPrintPaperDatabase;
+  wxThePrintPaperDatabase = new WXGC_PTRS wxPrintPaperDatabase;
   wxThePrintPaperDatabase->CreateDatabase();
 #endif
   
-  wxThePrintSetupData = new wxPrintSetupData;
+  wxThePrintSetupData = new WXGC_PTRS wxPrintSetupData;
   
   wxThePrintSetupData->SetPrintPreviewCommand(PS_PREVIEW_COMMAND);
   wxThePrintSetupData->SetPrinterOrientation(PS_PORTRAIT);
@@ -2428,7 +2428,7 @@ void wxPrintPaperDatabase::AddPaperType(char *name, int wmm, int hmm,
 					int wp, int hp)
 {
   wxPrintPaperType *ppt;
-  ppt = new wxPrintPaperType(name, wmm, hmm, wp, hp);
+  ppt = new WXGC_PTRS wxPrintPaperType(name, wmm, hmm, wp, hp);
   Append(name, ppt);
 }
 

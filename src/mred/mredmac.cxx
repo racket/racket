@@ -209,7 +209,7 @@ static void QueueTransferredEvent(EventRecord *e)
   if ((e->what == osEvt) && !(((e->message >> 24) & 0x0ff) == suspendResumeMessage))
     return;
 
-  q = new MrQueueElem;
+  q = new WXGC_PTRS MrQueueElem;
   memcpy(&q->event, e, sizeof(EventRecord));
   q->next = NULL;
   q->prev = last;
@@ -1821,7 +1821,7 @@ static pascal OSErr HandleAnswer(const AppleEvent *evt, AppleEvent *rae, long k)
   long sz;
   AppleEvent *ae;
   
-  r = new ReplyItem;
+  r = new WXGC_PTRS ReplyItem;
   ae = (AppleEvent *)scheme_malloc_atomic(sizeof(AppleEvent));
   r->ae = ae;
   
@@ -2054,7 +2054,7 @@ ControlPartCode wxHETTrackControl(ControlRef theControl, Point startPoint, Contr
   wxTC_Closure *c;
   int v;
 
-  c = new wxTC_Closure;
+  c = new WXGC_PTRS wxTC_Closure;
   c->ctl = theControl;
   c->start = startPoint;
   c->proc = actionProc;
@@ -2091,7 +2091,7 @@ extern void wxHETShowWindow(WindowPtr w)
 extern void wxHETShowSheetWindow(WindowPtr w, WindowPtr pw)
 {
   wxSW_Closure *c;
-  c = new wxSW_Closure;
+  c = new WXGC_PTRS wxSW_Closure;
   c->w = w;
   c->pw = pw;
 

@@ -106,8 +106,8 @@ wxGauge::wxGauge(wxPanel *panel, char *label, int _range, int x, int y,
 
   if (label)
     {
-      cTitle = new wxLabelArea(this, label, font,
-			       labelPosition == wxVERTICAL ? wxTop : wxLeft);
+      cTitle = new WXGC_PTRS wxLabelArea(this, label, font,
+					 labelPosition == wxVERTICAL ? wxTop : wxLeft);
     } else
       cTitle = NULL;
   

@@ -59,7 +59,11 @@ typedef int BOOL;
 struct rgb { byte  r,g,b; };
 struct rgbq { byte  r,g,b,rv; };
 
-class wxGIF {
+class wxGIF
+#ifndef MZ_PRECISE_GC
+: public gc
+#endif
+{
 private:
   void InitInterlaceRow(int);
 public:

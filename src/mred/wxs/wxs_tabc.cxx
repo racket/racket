@@ -131,7 +131,7 @@ static void CB_TOSCHEME(CB_REALCLASS *obj, wxCommandEvent *event);
 
 #define l_ADDRESS 
 #define l_DEREF 
-#define l_NEWATOMIC 
+#define l_NEWATOMIC (UseGC)
 #define l_NULLOK 0
 #define l_TEST 
 #define l_POINT 
@@ -583,7 +583,7 @@ static Scheme_Object *os_wxTabChoiceSet(int n,  Scheme_Object *p[])
   x1 = WITH_VAR_STACK(__MakestringArray((0+POFFSET < n) ? p[POFFSET+0] : scheme_null, &x0, METHODNAME("tab-group","set")));
   WITH_VAR_STACK(((wxTabChoice *)((Scheme_Class_Object *)p[0])->primdata)->Set(x0, x1));
 
-  delete[] x1;
+  /* delete[] x1; */
   
   READY_TO_RETURN;
   return scheme_void;
@@ -951,7 +951,7 @@ static Scheme_Object *os_wxTabChoice_ConstructScheme(int n,  Scheme_Object *p[])
   WITH_VAR_STACK(realobj->gcInit_wxTabChoice(x0, x1, x2, x3, x4, x5, x6));
 #endif
   realobj->__gc_external = (void *)p[0];
-  delete[] x4;
+  /* delete[] x4; */
   realobj->callback_closure = p[POFFSET+cb_pos];
   READY_TO_RETURN;
   ((Scheme_Class_Object *)p[0])->primdata = realobj;

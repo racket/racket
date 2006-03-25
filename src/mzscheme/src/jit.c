@@ -1466,7 +1466,7 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
       reorder_ok = 1;
 
       /* Call to known native, or even known self? */
-      if (SAME_TYPE(t, scheme_local_type)) {
+      {
 	int pos;
 	pos = SCHEME_LOCAL_POS(rator) - num_rands;
 	if (mz_is_closure(jitter, pos, num_rands)) {

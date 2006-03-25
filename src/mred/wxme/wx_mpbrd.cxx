@@ -141,7 +141,7 @@ wxMediaPasteboard::wxMediaPasteboard()
 
   {
     wxStandardSnipAdmin *ssa;
-    ssa = new wxStandardSnipAdmin(this);
+    ssa = new WXGC_PTRS wxStandardSnipAdmin(this);
     snipAdmin = ssa;
   }
 
@@ -262,7 +262,7 @@ wxCursor *wxMediaPasteboard::AdjustCursor(wxMouseEvent *event)
 
   if (!arrow) {
     wxREGGLOB(arrow);
-    arrow = new wxCursor(wxCURSOR_ARROW);
+    arrow = new WXGC_PTRS wxCursor(wxCURSOR_ARROW);
   }
 
   return arrow;
@@ -765,7 +765,7 @@ void wxMediaPasteboard::Insert(wxSnip *snip, wxSnip *before, double x, double y)
 
   if (snip->IsOwned()) {
     /* Disaster: Can/OnInsert made the snip owned. */
-    snip = new wxImageSnip();
+    snip = new WXGC_PTRS wxImageSnip();
   }
 
   for (search = snips; search && (search != before); search = search->next) {
@@ -784,7 +784,7 @@ void wxMediaPasteboard::Insert(wxSnip *snip, wxSnip *before, double x, double y)
   else
     snips = snip;
 
-  loc = new wxSnipLocation;
+  loc = new WXGC_PTRS wxSnipLocation;
   loc->x = x;
   loc->y = y;
   loc->snip = snip;
@@ -806,7 +806,7 @@ void wxMediaPasteboard::Insert(wxSnip *snip, wxSnip *before, double x, double y)
 
   if (!noundomode) {
     wxInsertSnipRecord *is;
-    is = new wxInsertSnipRecord(snip, sequenceStreak);
+    is = new WXGC_PTRS wxInsertSnipRecord(snip, sequenceStreak);
     AddUndo(is);
   }
   if (sequence)
@@ -860,7 +860,7 @@ void wxMediaPasteboard::Delete()
   if (userLocked || writeLocked)
     return;
 
-  del = new wxDeleteSnipRecord(sequenceStreak);
+  del = new WXGC_PTRS wxDeleteSnipRecord(sequenceStreak);
   if (sequence)
     sequenceStreak = TRUE;
 
@@ -888,7 +888,7 @@ void wxMediaPasteboard::Erase()
   if (userLocked || writeLocked)
     return;
 
-  del = new wxDeleteSnipRecord(sequenceStreak);
+  del = new WXGC_PTRS wxDeleteSnipRecord(sequenceStreak);
   if (sequence)
     sequenceStreak = TRUE;
 
@@ -984,7 +984,7 @@ void wxMediaPasteboard::Delete(wxSnip *del_snip)
   if (userLocked || writeLocked)
     return;
 
-  del = new wxDeleteSnipRecord(sequenceStreak);
+  del = new WXGC_PTRS wxDeleteSnipRecord(sequenceStreak);
   if (sequence)
     sequenceStreak = TRUE;
 
@@ -1029,7 +1029,7 @@ void wxMediaPasteboard::MoveTo(wxSnip *snip, double x, double y)
     UpdateLocation(loc);
 
     if (!dragging) {
-      rec = new wxMoveSnipRecord(loc->snip, loc->x, loc->y, 
+      rec = new WXGC_PTRS wxMoveSnipRecord(loc->snip, loc->x, loc->y, 
 				 FALSE, sequenceStreak);
       if (sequence)
 	sequenceStreak = TRUE;
@@ -1129,7 +1129,7 @@ Bool wxMediaPasteboard::Resize(wxSnip *snip, double w, double h)
     if (!dragging) {
       if (!noundomode) {
 	wxResizeSnipRecord *rs;
-	rs = new wxResizeSnipRecord(snip, oldw, oldh, sequenceStreak);
+	rs = new WXGC_PTRS wxResizeSnipRecord(snip, oldw, oldh, sequenceStreak);
 	AddUndo(rs);
       }
       if (sequence)
@@ -1180,7 +1180,7 @@ void wxMediaPasteboard::_ChangeStyle(wxStyle *style, wxStyleDelta *delta,
   if (userLocked || writeLocked)
     return;
 
-  rec = new wxStyleChangeSnipRecord(sequenceStreak);
+  rec = new WXGC_PTRS wxStyleChangeSnipRecord(sequenceStreak);
   if (sequence)
     sequenceStreak = TRUE;
 
@@ -1365,7 +1365,7 @@ wxSnip *wxMediaPasteboard::SnipSetAdmin(wxSnip *snip, wxSnipAdmin *a)
     } else if (a) {
       /* Snip didn't accept membership into this buffer. Give up on it. */
       wxSnip *naya;
-      naya = new wxSnip();
+      naya = new WXGC_PTRS wxSnip();
       naya->prev = snip->prev;
       naya->next = snip->next;
       if (naya->prev)
@@ -1723,9 +1723,9 @@ void wxMediaPasteboard::Refresh(double localx, double localy, double w, double h
     {
       wxColour *clr;
       clr = dc->GetTextForeground();
-      fg = new wxColour(clr);
+      fg = new WXGC_PTRS wxColour(clr);
       clr = dc->GetTextBackground();
-      bg = new wxColour(clr);
+      bg = new WXGC_PTRS wxColour(clr);
     }
     
 #ifndef NO_GET_CLIPPING_REGION
@@ -2219,7 +2219,7 @@ wxMediaBuffer *wxMediaPasteboard::CopySelf(void)
 {
   wxMediaPasteboard *pb;
 
-  pb = new wxMediaPasteboard();
+  pb = new WXGC_PTRS wxMediaPasteboard();
 
   CopySelfTo(pb);
 
@@ -2474,7 +2474,7 @@ void wxMediaPasteboard::InsertPasteString(wxchar *str)
 {
   wxTextSnip *snip;
 
-  snip = new wxTextSnip();
+  snip = new WXGC_PTRS wxTextSnip();
   snip->style = GetDefaultStyle();
   if (!snip->style) {
     snip->style = styleList->BasicStyle();
@@ -2532,7 +2532,7 @@ wxBufferData *wxMediaPasteboard::GetSnipData(wxSnip *snip)
   if (!loc)
     return wxMediaBuffer::GetSnipData(snip);
 
-  data = new wxLocationBufferData;
+  data = new WXGC_PTRS wxLocationBufferData;
   data->x = loc->x;
   data->y = loc->y;
 
@@ -2585,8 +2585,8 @@ Bool wxMediaPasteboard::InsertFile(const char *who, Scheme_Object *f, const char
     wxMediaStreamInFileBase *b;
     wxMediaStreamIn *mf;
     
-    b = new wxMediaStreamInFileBase(f);
-    mf = new wxMediaStreamIn(b);
+    b = new WXGC_PTRS wxMediaStreamInFileBase(f);
+    mf = new WXGC_PTRS wxMediaStreamIn(b);
     
     if (wxReadMediaVersion(mf, b, FALSE, showErrors)) {
       if (wxReadMediaGlobalHeader(mf)) {
@@ -2619,8 +2619,8 @@ Bool wxMediaPasteboard::SavePort(Scheme_Object *f, int format, Bool showErrors)
 
   showErrors = TRUE;
   
-  b = new wxMediaStreamOutFileBase(f);
-  mf = new wxMediaStreamOut(b);
+  b = new WXGC_PTRS wxMediaStreamOutFileBase(f);
+  mf = new WXGC_PTRS wxMediaStreamOut(b);
   
   wxWriteMediaVersion(mf, b);
   

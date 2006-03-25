@@ -393,7 +393,7 @@ void wxCanvasDC::SetClippingRect(double cx, double cy, double cw, double ch)
   if (clippingCached)
     r = clippingCached;
   else {
-    r = new wxRegion(this);
+    r = new WXGC_PTRS wxRegion(this);
     clippingCached = r;
   }
   r->SetRectangle(cx, cy, cw, ch);
@@ -1091,7 +1091,7 @@ wxGL *wxCanvasDC::GetGL()
 {
   if (!gl) {
     CGrafPtr cp;
-    gl = new wxGL();
+    gl = new WXGC_PTRS wxGL();
     cp = cMacDC->macGrafPort();
     gl->Reset(gl_cfg, cp, 0, 0, 0);
     canvas->ResetGLView();

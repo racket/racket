@@ -163,7 +163,7 @@ BOOL wxGIF::ReadHeader(FILE *fp)
 
   if (dscgif.pflds & 0x80) {
     long tp = 0;
-    rgbTable = new uchar[3*TabCol.sogct];
+    rgbTable = new WXGC_ATOMIC uchar[3*TabCol.sogct];
     fread((char *)rgbTable,1, 3*TabCol.sogct,fp);
     for (i = 0; i < TabCol.sogct; i++) {
       TabCol.paleta[i].r = rgbTable[tp++];
@@ -381,7 +381,7 @@ ushort  wxGIF::decoder(ushort linewidth)
   oc = fc = 0;
   ret = 0;
 
-  lbuf = new uchar[linewidth + 1];
+  lbuf = new WXGC_ATOMIC uchar[linewidth + 1];
 
   if (lbuf == NULL)
     return (OUT_OF_MEMORY);
@@ -625,7 +625,7 @@ void wxGIF::GetRow(ushort n, byte *buf)
 
 BOOL wxGIF::SetColourMap(ushort n, byte *r, byte *g, byte *b)
 {
-  ColourMap = new wxColourMap();
+  ColourMap = new WXGC_PTRS wxColourMap();
   if (ColourMap)
     {
       // temporary fix
@@ -691,7 +691,7 @@ Bool wxLoadGifIntoBitmap(char *fileName, wxBitmap *bm, wxColourMap **pal, int wi
   CGrafPtr  colorPort, maskPort;
   wxGIF *gifImage;
 
-  gifImage = new wxGIF(fileName);
+  gifImage = new WXGC_PTRS wxGIF(fileName);
   if (gifImage && gifImage->GetRawImage() != 0) {
     if (!withMask)
       gifImage->transparent_index = -1;
@@ -707,7 +707,7 @@ Bool wxLoadGifIntoBitmap(char *fileName, wxBitmap *bm, wxColourMap **pal, int wi
 
       if (maskPort) {
 	wxBitmap *mask;
-	mask = new wxBitmap();
+	mask = new WXGC_PTRS wxBitmap();
 	mask->x_pixmap = maskPort;
 	mask->SetWidth(gifImage->GetWidth());
 	mask->SetHeight(gifImage->GetHeight());

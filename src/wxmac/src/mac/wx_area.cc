@@ -27,7 +27,7 @@ wxArea::wxArea
 {
   wxList *al;
 
-  cWindows = new wxChildList();
+  cWindows = new WXGC_PTRS wxChildList();
   __type = wxTYPE_AREA;	//cjc
 
   cParentWindow = parentWindow;

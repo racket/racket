@@ -332,7 +332,7 @@ void wxRadioButton::OnEvent(wxMouseEvent *event) // mac platform only
 
       if (trackResult) {
 	wxCommandEvent *commandEvent;
-	commandEvent = new wxCommandEvent(wxEVENT_TYPE_RADIOBOX_COMMAND);
+	commandEvent = new WXGC_PTRS wxCommandEvent(wxEVENT_TYPE_RADIOBOX_COMMAND);
 	ProcessCommand(commandEvent);
       }
     }

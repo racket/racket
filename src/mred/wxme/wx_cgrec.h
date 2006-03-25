@@ -6,6 +6,9 @@ class wxcgList;
 class wxChangeRecordId;
 
 class wxChangeRecord 
+#ifndef MZ_PRECISE_GC
+: public gc
+#endif
 {
  public:
   wxChangeRecord(void);

@@ -32,7 +32,7 @@ wxPrinterDC::wxPrinterDC(wxPrintData *printData, Bool interactive) : wxCanvasDC(
     if (ps->native)
       printData = ps->native->copy();
     else {
-      printData = new wxPrintData();
+      printData = new WXGC_PTRS wxPrintData();
       if (ps->GetPrinterOrientation() == PS_LANDSCAPE)
 	printData->SetLandscape(TRUE);
     }
@@ -42,7 +42,7 @@ wxPrinterDC::wxPrinterDC(wxPrintData *printData, Bool interactive) : wxCanvasDC(
   if (interactive) {
     wxPrintDialog *dialog;
 
-    dialog = new wxPrintDialog(NULL, printData);
+    dialog = new WXGC_PTRS wxPrintDialog(NULL, printData);
     dialog->ShowSetupDialog(TRUE);
     ok = dialog->UseIt();
     DELETE_OBJ dialog;
@@ -92,7 +92,7 @@ wxPrinterDC::wxPrinterDC(wxPrintData *printData, Bool interactive) : wxCanvasDC(
 
   current_pen = NULL;
   current_brush = NULL;
-  current_text_foreground = new wxColour(wxBLACK);
+  current_text_foreground = new WXGC_ATOMIC wxColour(wxBLACK);
   SetBrush(wxWHITE_BRUSH);
   SetPen(wxBLACK_PEN);
 }
@@ -164,7 +164,7 @@ void wxPrinterDC::StartPage(void)
     }
     
     current_phase = 2;
-    cMacDC = new wxMacDC(theGrafPtr);
+    cMacDC = new WXGC_PTRS wxMacDC(theGrafPtr);
   }
 }
 

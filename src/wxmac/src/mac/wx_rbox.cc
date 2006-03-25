@@ -35,7 +35,7 @@ static void wxRadioButtonProc(wxRadioButton *radioButton, wxCommandEvent *event)
   radioButtonIndex = radioBox->cRadioButtons->MemberIndex(radioButton);
   radioBox->SetSelection(radioButtonIndex);
 
-  commandEvent = new wxCommandEvent(wxEVENT_TYPE_RADIOBOX_COMMAND);
+  commandEvent = new WXGC_PTRS wxCommandEvent(wxEVENT_TYPE_RADIOBOX_COMMAND);
   radioBox->ProcessCommand(commandEvent);
 }
 
@@ -69,19 +69,19 @@ wxRadioBox::wxRadioBox // Constructor (given parentPanel, label choices)
 
   SetFont(_font, 13);
   
-  cRadioButtons = new wxList(wxList::kNoDestroyData);
+  cRadioButtons = new WXGC_PTRS wxList(wxList::kNoDestroyData);
 
   Callback(function);
 
-  cRadioPanel = new wxPanel(this->ClientArea(), 0, 0, 0, 0, 0);
+  cRadioPanel = new WXGC_PTRS wxPanel(this->ClientArea(), 0, 0, 0, 0, 0);
 
   buttonHolder = cRadioPanel;
 
   if (Title) {
     Title = wxItemStripLabel(Title);
-    cRadioTitle = new wxMessage(cRadioPanel, Title, font);
+    cRadioTitle = new WXGC_PTRS wxMessage(cRadioPanel, Title, font);
     if (labelPosition != wxVERTICAL) {
-      buttonHolder = new wxPanel(cRadioPanel->ClientArea(), -1, -1, 0, 0, 0);
+      buttonHolder = new WXGC_PTRS wxPanel(cRadioPanel->ClientArea(), -1, -1, 0, 0, 0);
       cButtonHolder = buttonHolder;
     } else
       buttonHolder->NewLine();
@@ -95,8 +95,8 @@ wxRadioBox::wxRadioBox // Constructor (given parentPanel, label choices)
     choice = wxItemStripLabel(Choices[i]);
     if (i && ((style & wxVERTICAL) == wxVERTICAL))
       buttonHolder->NewLine();
-    radioButton = new wxRadioButton(buttonHolder, (wxFunction)wxRadioButtonProc, choice,
-				    -1, -1, -1, -1, 0, font);
+    radioButton = new WXGC_PTRS wxRadioButton(buttonHolder, (wxFunction)wxRadioButtonProc, choice,
+					      -1, -1, -1, -1, 0, font);
     cRadioButtons->Append(radioButton);
   }
   SetSelection(0);
@@ -107,7 +107,7 @@ wxRadioBox::wxRadioBox // Constructor (given parentPanel, label choices)
     cRadioTitle->Centre(wxVERTICAL);
   }
 
-  if (style & wxBORDER) new wxBorderArea(this);
+  if (style & wxBORDER) new WXGC_PTRS wxBorderArea(this);
 
   if (width < 0 || height < 0)
     Fit();
@@ -149,18 +149,18 @@ wxRadioBox::wxRadioBox // Constructor (given parentPanel, bitmap choices)
 
   SetFont(_font, 13);
 
-  cRadioButtons = new wxList(wxList::kNoDestroyData);
+  cRadioButtons = new WXGC_PTRS wxList(wxList::kNoDestroyData);
 
   Callback(function);
 
-  cRadioPanel = new wxPanel(this->ClientArea(), 0, 0, 0, 0, 0);
+  cRadioPanel = new WXGC_PTRS wxPanel(this->ClientArea(), 0, 0, 0, 0, 0);
   
   buttonHolder = cRadioPanel;
 	
   if (Title) {
-    cRadioTitle = new wxMessage(cRadioPanel, Title, font);
+    cRadioTitle = new WXGC_PTRS wxMessage(cRadioPanel, Title, font);
     if (labelPosition != wxVERTICAL) {
-      buttonHolder = new wxPanel(cRadioPanel->ClientArea(), -1, -1, 0, 0, 0);
+      buttonHolder = new WXGC_PTRS wxPanel(cRadioPanel->ClientArea(), -1, -1, 0, 0, 0);
       cButtonHolder = buttonHolder;
     } else
       buttonHolder->NewLine();
@@ -171,8 +171,8 @@ wxRadioBox::wxRadioBox // Constructor (given parentPanel, bitmap choices)
     wxRadioButton* radioButton;
     if (i && ((style & wxVERTICAL) == wxVERTICAL))
       buttonHolder->NewLine();
-    radioButton = new wxRadioButton(buttonHolder, (wxFunction)wxRadioButtonProc, Choices[i],
-				    -1, -1, -1, -1, 0, font);
+    radioButton = new WXGC_PTRS wxRadioButton(buttonHolder, (wxFunction)wxRadioButtonProc, Choices[i],
+					      -1, -1, -1, -1, 0, font);
     cRadioButtons->Append(radioButton);
   }
   SetSelection(0);
@@ -183,7 +183,7 @@ wxRadioBox::wxRadioBox // Constructor (given parentPanel, bitmap choices)
     cRadioTitle->Centre(wxVERTICAL);
   }
 
-  if (style & wxBORDER) new wxBorderArea(this);
+  if (style & wxBORDER) new WXGC_PTRS wxBorderArea(this);
 
   if (width < 0 || height < 0)
     Fit(); // WCH: need wxHorizontal and wxVertical for Fit(direction)

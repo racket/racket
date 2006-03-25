@@ -50,7 +50,7 @@ START_XFORM_SKIP;
 
 #define l_ADDRESS 
 #define l_DEREF 
-#define l_NEWATOMIC 
+#define l_NEWATOMIC (UseGC)
 #define l_NULLOK 0
 #define l_TEST 
 #define l_POINT 
@@ -796,7 +796,7 @@ static int unbundle_symset_Bias(Scheme_Object *v, const char *where) {
 
 #define l_ADDRESS 
 #define l_DEREF 
-#define l_NEWATOMIC 
+#define l_NEWATOMIC (UseGC)
 #define l_NULLOK 0
 #define l_TEST 
 #define l_POINT 

@@ -295,8 +295,8 @@ class wxFontNameItem : public wxObject
 wxFontNameItem::wxFontNameItem()
 : wxObject(WXGC_NO_CLEANUP)
 {
-  screen = new wxSuffixMap;
-  printing = new wxSuffixMap;
+  screen = new WXGC_PTRS wxSuffixMap;
+  printing = new WXGC_PTRS wxSuffixMap;
 }
 
 static int WCoordinate(int w)
@@ -328,14 +328,14 @@ static int SCoordinate(int s)
 wxFontNameDirectory::wxFontNameDirectory(void)
 {
   wxHashTable *ht;
-  ht = new wxHashTable(wxKEY_INTEGER, 20);
+  ht = new WXGC_PTRS wxHashTable(wxKEY_INTEGER, 20);
   table = ht;
   nextFontId = 100; /* Larger than all family ids */
 }
 
 wxFontNameDirectory::~wxFontNameDirectory()
 {
-  delete table;
+  DELETE_OBJ table;
 }
 
 int wxFontNameDirectory::GetNewFontId(void)
@@ -396,7 +396,7 @@ void wxInitializeFontNameDirectory(void)
   AdjustFontDefaults();
 
   wxREGGLOB(wxTheFontNameDirectory);
-  wxTheFontNameDirectory = new wxFontNameDirectory;
+  wxTheFontNameDirectory = new WXGC_PTRS wxFontNameDirectory;
   wxTheFontNameDirectory->Initialize(wxSYSTEM, wxSYSTEM, "System");
   wxTheFontNameDirectory->Initialize(wxDEFAULT, wxDEFAULT, "Default");
   wxTheFontNameDirectory->Initialize(wxDECORATIVE, wxDECORATIVE, "Decorative");
@@ -482,7 +482,7 @@ void wxSuffixMap::Initialize(const char *resname, const char *devresname,
 	    
 	    len = i;
 
-	    names = new char*[count];
+	    names = new WXGC_PTRS char*[count];
 
 	    {
 	      char *cs;
@@ -549,7 +549,7 @@ void wxSuffixMap::Initialize(const char *resname, const char *devresname,
 	  }
 	  newstrlen = strlen(r);
 
-	  naya = new char[len + newstrlen + 1];
+	  naya = new WXGC_ATOMIC char[len + newstrlen + 1];
 	  memcpy(naya, v, startpos);
 	  memcpy(naya + startpos, r, newstrlen);
 	  memcpy(naya + startpos + newstrlen, v + i + 1, len - i + 1);
@@ -598,7 +598,7 @@ void wxSuffixMap::Initialize(const char *resname, const char *devresname,
 		c++;
 	    }
 	    
-	    v = new char[len + 40];
+	    v = new WXGC_ATOMIC char[len + 40];
 	    if (c < 2)
 	      prefix = "-*";
 	    else
@@ -657,7 +657,7 @@ void wxFontNameDirectory::Initialize(int fontid, int family, const char *resname
 {
   wxFontNameItem *item;
   
-  item = new wxFontNameItem;
+  item = new WXGC_PTRS wxFontNameItem;
 
   item->id = fontid;
   item->family = family;
@@ -676,7 +676,7 @@ int wxFontNameDirectory::FindOrCreateFontId(const char *name, int family)
     return id;
 
   id = GetNewFontId();
-  s = new char[strlen(name) + 2];
+  s = new WXGC_ATOMIC char[strlen(name) + 2];
   strcpy(s + 1, name);
   s[0] = '@';
   Initialize(id, family, s);

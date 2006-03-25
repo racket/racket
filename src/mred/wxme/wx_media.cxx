@@ -100,13 +100,13 @@ void wxInitMedia(void)
   wxREGGLOB(arrow);
 
   /* Creates NIL: */
-  (void)(new wxMediaLine);
+  (void)(new WXGC_PTRS wxMediaLine);
 
   wxInitClipboard();
   wxInitStyles();
 
   wxREGGLOB(wxTheMediaWordbreakMap);
-  wxTheMediaWordbreakMap = new wxMediaWordbreakMap;
+  wxTheMediaWordbreakMap = new WXGC_PTRS wxMediaWordbreakMap;
 
 #if USE_OLD_TYPE_SYSTEM
   wxAllTypes->AddType(wxTYPE_MEDIA_CANVAS, wxTYPE_CANVAS, "media-canvas");
@@ -185,7 +185,7 @@ wxMediaEdit::wxMediaEdit(double spacing, double *tabstops, int numtabs)
 
   {
     wxStandardSnipAdmin *ssa;
-    ssa = new wxStandardSnipAdmin(this);
+    ssa = new WXGC_PTRS wxStandardSnipAdmin(this);
     snipAdmin = ssa;
   }
 
@@ -269,7 +269,7 @@ wxMediaBuffer *wxMediaEdit::CopySelf(void)
 {
   wxMediaEdit *m;
 
-  m = new wxMediaEdit(lineSpacing);
+  m = new WXGC_PTRS wxMediaEdit(lineSpacing);
 
   CopySelfTo(m);
 
@@ -289,7 +289,7 @@ void wxMediaEdit::CopySelfTo(wxMediaBuffer *b)
   if (tabs) {
     double *t;
 
-    t = new double[tabcount];
+    t = new WXGC_ATOMIC double[tabcount];
     memcpy(t, tabs, sizeof(double) * tabcount);
     m->SetTabs(t, tabcount, tabSpace, tabSpaceInUnits);
   }
@@ -337,8 +337,8 @@ wxCursor *wxMediaEdit::AdjustCursor(wxMouseEvent *event)
   double how_close;
 
   if (!iBeam) {
-    arrow = new wxCursor(wxCURSOR_ARROW);
-    iBeam = new wxCursor(wxCURSOR_IBEAM);
+    arrow = new WXGC_PTRS wxCursor(wxCURSOR_ARROW);
+    iBeam = new WXGC_PTRS wxCursor(wxCURSOR_IBEAM);
   }
 
   if (!admin)
@@ -1488,7 +1488,7 @@ void wxMediaEdit::_Insert(wxSnip *isnip, long strlen, wxchar *str, wxList *snips
       if (!len && !did_one) {
 	/* Special case: ignore the empty snip */
 	snips = lastSnip = isnip;
-	lineRoot = new wxMediaLine;
+	lineRoot = new WXGC_PTRS wxMediaLine;
 	isnip->line = lineRoot;
 	lineRoot->snip = lineRoot->lastSnip = isnip;
 	if (maxWidth > 0)
@@ -1741,13 +1741,13 @@ void wxMediaEdit::_Insert(wxSnip *isnip, long strlen, wxchar *str, wxList *snips
 	  tabsnip = OnNewTabSnip();
 	  if (tabsnip->IsOwned() || tabsnip->count) {
 	    /* Uh-oh. */
-	    tabsnip = new wxTabSnip();
+	    tabsnip = new WXGC_PTRS wxTabSnip();
 	  }
 	  tabsnip->style = snip->style;
 	  rsnip = SnipSetAdmin(tabsnip, snipAdmin);
 	  if (rsnip!= tabsnip) {
 	    /* Uh-oh. */
-	    tabsnip = new wxTabSnip();
+	    tabsnip = new WXGC_PTRS wxTabSnip();
 	    tabsnip->style = snip->style;
 	    tabsnip->SetAdmin(snipAdmin);
 	  }
@@ -1799,16 +1799,16 @@ void wxMediaEdit::_Insert(wxSnip *isnip, long strlen, wxchar *str, wxList *snips
 
   if (!modified) {
     wxUnmodifyRecord *ur;
-    ur = new wxUnmodifyRecord;
+    ur = new WXGC_PTRS wxUnmodifyRecord;
     AddUndo(ur);
   }
   if (!noundomode) {
     wxInsertRecord *ir;
-    ir = new wxInsertRecord(start, addlen, 
-			    deleted || typingStreak || delayedStreak
-			    || insertForceStreak
-			    || !modified,
-			    startpos, endpos);
+    ir = new WXGC_PTRS wxInsertRecord(start, addlen, 
+				      deleted || typingStreak || delayedStreak
+				      || insertForceStreak
+				      || !modified,
+				      startpos, endpos);
     AddUndo(ir);
   }
 
@@ -2021,12 +2021,12 @@ void wxMediaEdit::_Delete(long start, long end, Bool withUndo, Bool scrollOk)
   if (withUndo) {
     if (!modified) {
       wxUnmodifyRecord *ur;
-      ur = new wxUnmodifyRecord;
+      ur = new WXGC_PTRS wxUnmodifyRecord;
       AddUndo(ur);
     }
-    rec = new wxDeleteRecord(start, end, deletionStreak || delayedStreak
-			     || deleteForceStreak || !modified,
-			     startpos, endpos);
+    rec = new WXGC_PTRS wxDeleteRecord(start, end, deletionStreak || delayedStreak
+				       || deleteForceStreak || !modified,
+				       startpos, endpos);
   } else
     rec = NULL;
 
@@ -2622,14 +2622,14 @@ wxchar *wxMediaEdit::GetText(long start, long end, Bool flatt, Bool forceCR, lon
   count = end - start;
 
   if (!flatt) {
-    s = new wxchar[count + 1];
+    s = new WXGC_ATOMIC wxchar[count + 1];
     s[count] = 0;
     alloc = count + 1;
   } else {
     alloc = 2 * count;
     if (!alloc)
       alloc = 2;
-    s = new wxchar[alloc];
+    s = new WXGC_ATOMIC wxchar[alloc];
     s[0] = 0;
   }
 
@@ -2663,7 +2663,7 @@ wxchar *wxMediaEdit::GetText(long start, long end, Bool flatt, Bool forceCR, lon
       add_newline = 0;
     if (p >= alloc) {
       alloc = 2 * p;
-      s = new wxchar[alloc];
+      s = new WXGC_ATOMIC wxchar[alloc];
     }
     memcpy(s, t, (p - add_newline) * sizeof(wxchar));
     if (add_newline)
@@ -2682,7 +2682,7 @@ wxchar *wxMediaEdit::GetText(long start, long end, Bool flatt, Bool forceCR, lon
 	memcpy(s + p, buffer, num * sizeof(wxchar));
       } else {
 	wxchar *ss;
-	ss = new wxchar[num];
+	ss = new WXGC_ATOMIC wxchar[num];
 	snip->GetTextBang(ss, 0, num, 0);
 	memcpy(s + p, ss, num * sizeof(wxchar));
       }
@@ -2703,7 +2703,7 @@ wxchar *wxMediaEdit::GetText(long start, long end, Bool flatt, Bool forceCR, lon
       if (p + offset >= alloc) {
 	alloc = 2 * (p + offset);
 	old = s;
-	s = new wxchar[alloc];
+	s = new WXGC_ATOMIC wxchar[alloc];
 	memcpy(s, old, p * sizeof(wxchar));
       }
 
@@ -2786,14 +2786,14 @@ void wxMediaEdit::SetClickback(long start, long end,
 {
   wxClickback *click;
 
-  click = new wxClickback;
+  click = new WXGC_PTRS wxClickback;
   click->start = start;
   click->end = end;
   click->f = f;
   click->data = d;
   click->callOnDown = callOnDown;
 
-  click->delta = new wxStyleDelta;
+  click->delta = new WXGC_PTRS wxStyleDelta;
   if (delta)
     click->delta->Copy(delta);
 
@@ -2803,7 +2803,7 @@ void wxMediaEdit::SetClickback(long start, long end,
 void wxMediaEdit::SetClickback(wxClickback *click)
 {
   if (!clickbacks) {
-    clickbacks = new wxList(wxKEY_NONE, FALSE);
+    clickbacks = new WXGC_PTRS wxList(wxKEY_NONE, FALSE);
   }
 
   clickbacks->Append(click);
@@ -2855,7 +2855,7 @@ void wxMediaEdit::FlashOn(long start, long end, Bool ateol, Bool scroll,
       flashTimer->Stop();
       DELETE_OBJ flashTimer;
     }
-    flashTimer = new wxMediaFlashTimer();
+    flashTimer = new WXGC_PTRS wxMediaFlashTimer();
     flashTimer->media = this;
     flashTimer->Start(timeout);
   }
@@ -3215,8 +3215,8 @@ Bool wxMediaEdit::InsertFile(const char *who, Scheme_Object *f, char *WXUNUSED(f
 
       scheme_get_byte_string(who, f, sbuffer, 0, MRED_START_STR_LEN, 0, 0, NULL);
       
-      b = new wxMediaStreamInFileBase(f);
-      mf = new wxMediaStreamIn(b);
+      b = new WXGC_PTRS wxMediaStreamInFileBase(f);
+      mf = new WXGC_PTRS wxMediaStreamIn(b);
       
       if (wxReadMediaVersion(mf, b, FALSE, showErrors)) {
 	if (wxReadMediaGlobalHeader(mf)) {
@@ -3305,8 +3305,8 @@ Bool wxMediaEdit::SavePort(Scheme_Object *f, int format, Bool showErrors)
     wxMediaStreamOutFileBase *b;
     wxMediaStreamOut *mf;
 
-    b = new wxMediaStreamOutFileBase(f);
-    mf = new wxMediaStreamOut(b);
+    b = new WXGC_PTRS wxMediaStreamOutFileBase(f);
+    mf = new WXGC_PTRS wxMediaStreamOut(b);
 
     wxWriteMediaVersion(mf, b);
 
@@ -4252,12 +4252,12 @@ void wxMediaEdit::SetStyleList(wxStyleList *newList)
   if (writeLocked)
     return;
 
-  delta = new wxStyleDelta;
+  delta = new WXGC_PTRS wxStyleDelta;
 
   count = styleList->Number();
   if (count) {
     wxStyle *i2s;
-    smap = new wxStyle*[count];
+    smap = new WXGC_PTRS wxStyle*[count];
     i2s = newList->IndexToStyle(0); /* base style maps to base style */
     smap[0] = i2s;
     for (index = 1; index < count; index++) {

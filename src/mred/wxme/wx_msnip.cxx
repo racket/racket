@@ -76,7 +76,7 @@ wxMediaSnip::wxMediaSnip(wxMediaBuffer *useme,
   }
   {
     wxMediaSnipMediaAdmin *msma;
-    msma = new wxMediaSnipMediaAdmin(this);
+    msma = new WXGC_PTRS wxMediaSnipMediaAdmin(this);
     myAdmin = msma;
   }
 
@@ -173,7 +173,7 @@ wxCursor *wxMediaSnip::AdjustCursor(wxDC *dc, double x, double y,
   if (!me) 
     return NULL;
 
-  save = new wxMSMA_SnipDrawState;
+  save = new WXGC_PTRS wxMSMA_SnipDrawState;
   myAdmin->SaveState(save, dc, x, y);
   c = me->AdjustCursor(event);
   myAdmin->RestoreState(save);
@@ -188,7 +188,7 @@ void wxMediaSnip::OnEvent(wxDC *dc, double x, double y,
 
   if (!me) return;
 
-  save = new wxMSMA_SnipDrawState;
+  save = new WXGC_PTRS wxMSMA_SnipDrawState;
   myAdmin->SaveState(save, dc, x, y);
   me->OnEvent(event);
   myAdmin->RestoreState(save);
@@ -201,7 +201,7 @@ void wxMediaSnip::OnChar(wxDC *dc, double x, double y,
 
   if (!me) return;
 
-  save = new wxMSMA_SnipDrawState;
+  save = new WXGC_PTRS wxMSMA_SnipDrawState;
   myAdmin->SaveState(save, dc, x, y);
   me->OnChar(event);
   myAdmin->RestoreState(save);
@@ -218,7 +218,7 @@ void wxMediaSnip::BlinkCaret(wxDC *dc, double x, double y)
   if (me) {
     wxMSMA_SnipDrawState *save;
 
-    save = new wxMSMA_SnipDrawState;
+    save = new WXGC_PTRS wxMSMA_SnipDrawState;
     myAdmin->SaveState(save, dc, x, y);
     me->BlinkCaret();
     myAdmin->RestoreState(save);
@@ -265,7 +265,7 @@ wxchar *wxMediaSnip::GetText(long offset, long num, Bool flat, long *got)
 
   if (!flat) {
     wxchar *s;
-    s = new wxchar[2];
+    s = new WXGC_ATOMIC wxchar[2];
     s[0] = '.';
     s[1] = 0;
     if (got) *got = 1;
@@ -286,7 +286,7 @@ void wxMediaSnip::GetExtent(wxDC *dc,
   wxMSMA_SnipDrawState *save;
   double descent, space, origH, dummyH;
 
-  save = new wxMSMA_SnipDrawState;
+  save = new WXGC_PTRS wxMSMA_SnipDrawState;
   myAdmin->SaveState(save, dc, x, y);
   
   if (!h && alignTopLine)
@@ -378,7 +378,7 @@ void wxMediaSnip::Draw(wxDC *dc, double x, double y,
 
   wxMSMA_SnipDrawState *save;
 
-  save = new wxMSMA_SnipDrawState;
+  save = new WXGC_PTRS wxMSMA_SnipDrawState;
   myAdmin->SaveState(save, dc, x, y);
   
   if (me) {
@@ -690,7 +690,7 @@ wxMediaSnipMediaAdmin::wxMediaSnipMediaAdmin(wxMediaSnip *s)
 #endif
 
   snip = s;
-  state = new wxMSMA_SnipDrawState;
+  state = new WXGC_PTRS wxMSMA_SnipDrawState;
   state->drawing = 0;
 
   WXGC_IGNORE(state, state->dc);

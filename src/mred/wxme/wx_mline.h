@@ -18,6 +18,9 @@ const unsigned long
   WXLINE_STARTS_PARA = 0x800;
 
 class wxMediaLine
+#ifndef MZ_PRECISE_GC
+: public gc
+#endif
 {
  public:
   wxMediaLine *next, *prev, *parent, *left, *right;
@@ -107,6 +110,9 @@ const unsigned long
   WXPARA_RIGHT = 0x2;
 
 class wxMediaParagraph
+#ifndef MZ_PRECISE_GC
+: public gc
+#endif
 {
  public:
   double leftMarginFirst, leftMargin;

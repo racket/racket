@@ -268,7 +268,7 @@ wxColour *wxColourDatabase::FindColour(const char *colour)
 
   if (colour[q]) {
     char *naya;
-    naya = new char[strlen(colour) + 1];
+    naya = new WXGC_ATOMIC char[strlen(colour) + 1];
     for (q = 0; colour[q]; q++) {
       naya[q] = colour[q];
       if ((naya[q] >= 'a') && (naya[q] <= 'z'))
@@ -314,11 +314,11 @@ wxInitializeStockObjects (void)
   SetOutlinePreferred(TRUE);
 
   wxREGGLOB(wxTheBrushList);
-  wxTheBrushList = new wxBrushList;
+  wxTheBrushList = new WXGC_PTRS wxBrushList;
   wxREGGLOB(wxThePenList);
-  wxThePenList = new wxPenList;
+  wxThePenList = new WXGC_PTRS wxPenList;
   wxREGGLOB(wxTheFontList);
-  wxTheFontList = new wxFontList;
+  wxTheFontList = new WXGC_PTRS wxFontList;
 
   {
     Str255 name;
@@ -337,94 +337,94 @@ wxInitializeStockObjects (void)
 		 &small_style);
 
     wxREGGLOB(wxNORMAL_FONT);
-    wxNORMAL_FONT = new wxFont (big_size, wxSYSTEM, wxNORMAL, wxNORMAL);
+    wxNORMAL_FONT = new WXGC_PTRS wxFont (big_size, wxSYSTEM, wxNORMAL, wxNORMAL);
     wxREGGLOB(wxSMALL_FONT);
-    wxSMALL_FONT = new wxFont (small_size, wxSWISS, wxNORMAL, wxNORMAL);
+    wxSMALL_FONT = new WXGC_PTRS wxFont (small_size, wxSWISS, wxNORMAL, wxNORMAL);
     wxREGGLOB(wxITALIC_FONT);
-    wxITALIC_FONT = new wxFont (big_size, wxROMAN, wxITALIC, wxNORMAL);
+    wxITALIC_FONT = new WXGC_PTRS wxFont (big_size, wxROMAN, wxITALIC, wxNORMAL);
     wxREGGLOB(wxSWISS_FONT);
-    wxSWISS_FONT = new wxFont (big_size, wxSWISS, wxNORMAL, wxNORMAL);
+    wxSWISS_FONT = new WXGC_PTRS wxFont (big_size, wxSWISS, wxNORMAL, wxNORMAL);
   }
 
   wxREGGLOB(wxRED_PEN);
-  wxRED_PEN = new wxPen ("RED", 0, wxSOLID);
+  wxRED_PEN = new WXGC_PTRS wxPen ("RED", 0, wxSOLID);
   wxREGGLOB(wxCYAN_PEN);
-  wxCYAN_PEN = new wxPen ("CYAN", 0, wxSOLID);
+  wxCYAN_PEN = new WXGC_PTRS wxPen ("CYAN", 0, wxSOLID);
   wxREGGLOB(wxGREEN_PEN);
-  wxGREEN_PEN = new wxPen ("GREEN", 0, wxSOLID);
+  wxGREEN_PEN = new WXGC_PTRS wxPen ("GREEN", 0, wxSOLID);
   wxREGGLOB(wxBLACK_PEN);
-  wxBLACK_PEN = new wxPen ("BLACK", 0, wxSOLID);
+  wxBLACK_PEN = new WXGC_PTRS wxPen ("BLACK", 0, wxSOLID);
   wxREGGLOB(wxWHITE_PEN);
-  wxWHITE_PEN = new wxPen ("WHITE", 0, wxSOLID);
+  wxWHITE_PEN = new WXGC_PTRS wxPen ("WHITE", 0, wxSOLID);
   wxREGGLOB(wxTRANSPARENT_PEN);
-  wxTRANSPARENT_PEN = new wxPen ("BLACK", 0, wxTRANSPARENT);
+  wxTRANSPARENT_PEN = new WXGC_PTRS wxPen ("BLACK", 0, wxTRANSPARENT);
   wxREGGLOB(wxBLACK_DASHED_PEN);
-  wxBLACK_DASHED_PEN = new wxPen ("BLACK", 0, wxSHORT_DASH);
+  wxBLACK_DASHED_PEN = new WXGC_PTRS wxPen ("BLACK", 0, wxSHORT_DASH);
   wxREGGLOB(wxGREY_PEN);
-  wxGREY_PEN = new wxPen ("GRAY", 0, wxSOLID);
+  wxGREY_PEN = new WXGC_PTRS wxPen ("GRAY", 0, wxSOLID);
   wxREGGLOB(wxMEDIUM_GREY_PEN);
-  wxMEDIUM_GREY_PEN = new wxPen ("MEDIUM GRAY", 0, wxSOLID);
+  wxMEDIUM_GREY_PEN = new WXGC_PTRS wxPen ("MEDIUM GRAY", 0, wxSOLID);
   wxREGGLOB(wxLIGHT_GREY_PEN);
-  wxLIGHT_GREY_PEN = new wxPen ("LIGHT GRAY", 0, wxSOLID);
+  wxLIGHT_GREY_PEN = new WXGC_PTRS wxPen ("LIGHT GRAY", 0, wxSOLID);
 
   wxWHITE_PEN->Lock(1);
   wxBLACK_PEN->Lock(1);
 
   wxREGGLOB(wxBLUE_BRUSH);
-  wxBLUE_BRUSH = new wxBrush ("BLUE", wxSOLID);
+  wxBLUE_BRUSH = new WXGC_PTRS wxBrush ("BLUE", wxSOLID);
   wxREGGLOB(wxGREEN_BRUSH);
-  wxGREEN_BRUSH = new wxBrush ("GREEN", wxSOLID);
+  wxGREEN_BRUSH = new WXGC_PTRS wxBrush ("GREEN", wxSOLID);
   wxREGGLOB(wxWHITE_BRUSH);
-  wxWHITE_BRUSH = new wxBrush ("WHITE", wxSOLID);
+  wxWHITE_BRUSH = new WXGC_PTRS wxBrush ("WHITE", wxSOLID);
   wxREGGLOB(wxBLACK_BRUSH);
-  wxBLACK_BRUSH = new wxBrush ("BLACK", wxSOLID);
+  wxBLACK_BRUSH = new WXGC_PTRS wxBrush ("BLACK", wxSOLID);
   wxREGGLOB(wxTRANSPARENT_BRUSH);
-  wxTRANSPARENT_BRUSH = new wxBrush ("BLACK", wxTRANSPARENT);
+  wxTRANSPARENT_BRUSH = new WXGC_PTRS wxBrush ("BLACK", wxTRANSPARENT);
   wxREGGLOB(wxCYAN_BRUSH);
-  wxCYAN_BRUSH = new wxBrush ("CYAN", wxSOLID);
+  wxCYAN_BRUSH = new WXGC_PTRS wxBrush ("CYAN", wxSOLID);
   wxREGGLOB(wxRED_BRUSH);
-  wxRED_BRUSH = new wxBrush ("RED", wxSOLID);
+  wxRED_BRUSH = new WXGC_PTRS wxBrush ("RED", wxSOLID);
   wxREGGLOB(wxGREY_BRUSH);
-  wxGREY_BRUSH = new wxBrush ("GRAY", wxSOLID);
+  wxGREY_BRUSH = new WXGC_PTRS wxBrush ("GRAY", wxSOLID);
   wxREGGLOB(wxMEDIUM_GREY_BRUSH);
-  wxMEDIUM_GREY_BRUSH = new wxBrush ("MEDIUM GRAY", wxSOLID);
+  wxMEDIUM_GREY_BRUSH = new WXGC_PTRS wxBrush ("MEDIUM GRAY", wxSOLID);
   wxREGGLOB(wxLIGHT_GREY_BRUSH);
-  wxLIGHT_GREY_BRUSH = new wxBrush ("LIGHT GRAY", wxSOLID);
+  wxLIGHT_GREY_BRUSH = new WXGC_PTRS wxBrush ("LIGHT GRAY", wxSOLID);
   
   wxWHITE_BRUSH->Lock(1);
   wxBLACK_BRUSH->Lock(1);
   
   {
     wxColour *ctlGray;
-    ctlGray = new wxColour(0xE8, 0xE8, 0xE8);
+    ctlGray = new WXGC_ATOMIC wxColour(0xE8, 0xE8, 0xE8);
     wxREGGLOB(wxCONTROL_BACKGROUND_BRUSH);
-    wxCONTROL_BACKGROUND_BRUSH = new wxBrush(ctlGray, wxSOLID);
+    wxCONTROL_BACKGROUND_BRUSH = new WXGC_PTRS wxBrush(ctlGray, wxSOLID);
     wxCONTROL_BACKGROUND_BRUSH->Lock(1);
   }
 
   wxREGGLOB(wxBLACK);
-  wxBLACK = new wxColour ("BLACK");
+  wxBLACK = new WXGC_ATOMIC wxColour ("BLACK");
   wxREGGLOB(wxWHITE);
-  wxWHITE = new wxColour ("WHITE");
+  wxWHITE = new WXGC_ATOMIC wxColour ("WHITE");
   wxREGGLOB(wxRED);
-  wxRED = new wxColour ("RED");
+  wxRED = new WXGC_ATOMIC wxColour ("RED");
   wxREGGLOB(wxBLUE);
-  wxBLUE = new wxColour ("BLUE");
+  wxBLUE = new WXGC_ATOMIC wxColour ("BLUE");
   wxREGGLOB(wxGREEN);
-  wxGREEN = new wxColour ("GREEN");
+  wxGREEN = new WXGC_ATOMIC wxColour ("GREEN");
   wxREGGLOB(wxCYAN);
-  wxCYAN = new wxColour ("CYAN");
+  wxCYAN = new WXGC_ATOMIC wxColour ("CYAN");
   wxREGGLOB(wxLIGHT_GREY);
-  wxLIGHT_GREY = new wxColour ("LIGHT GRAY");
+  wxLIGHT_GREY = new WXGC_ATOMIC wxColour ("LIGHT GRAY");
 
   wxREGGLOB(wxSTANDARD_CURSOR);
-  wxSTANDARD_CURSOR = new wxCursor (wxCURSOR_ARROW);
+  wxSTANDARD_CURSOR = new WXGC_PTRS wxCursor (wxCURSOR_ARROW);
   wxREGGLOB(wxHOURGLASS_CURSOR);
-  wxHOURGLASS_CURSOR = new wxCursor (wxCURSOR_WATCH);
+  wxHOURGLASS_CURSOR = new WXGC_PTRS wxCursor (wxCURSOR_WATCH);
   wxREGGLOB(wxCROSS_CURSOR);
-  wxCROSS_CURSOR = new wxCursor (wxCURSOR_CROSS);
+  wxCROSS_CURSOR = new WXGC_PTRS wxCursor (wxCURSOR_CROSS);
   wxREGGLOB(wxIBEAM_CURSOR);
-  wxIBEAM_CURSOR = new wxCursor (wxCURSOR_IBEAM);
+  wxIBEAM_CURSOR = new WXGC_PTRS wxCursor (wxCURSOR_IBEAM);
 }
 
 void 
@@ -629,7 +629,7 @@ void wxbBrush::SetStipple (wxBitmap * Stipple)
 wxPenList::wxPenList(void)
  : wxObject(WXGC_NO_CLEANUP)
 {
-  list = new wxChildList;
+  list = new WXGC_PTRS wxChildList;
 }
 
 wxPenList::~wxPenList(void)
@@ -667,7 +667,7 @@ wxPen *wxPenList::FindOrCreatePen (wxColour * colour, double width, int style)
 	return each_pen;
     }
   }
-  pen = new wxPen (colour, width, style);
+  pen = new WXGC_PTRS wxPen (colour, width, style);
   AddPen(pen);
   return pen;
 }
@@ -685,7 +685,7 @@ wxPen *wxPenList::FindOrCreatePen (char *colour, double width, int style)
 wxBrushList::wxBrushList(void)
  : wxObject(WXGC_NO_CLEANUP)
 {
-  list = new wxChildList;
+  list = new WXGC_PTRS wxChildList;
 }
 
 wxBrushList::~wxBrushList(void)
@@ -721,7 +721,7 @@ wxBrush *wxBrushList::FindOrCreateBrush (wxColour * colour, int style)
 	return each_brush;
     }
   }
-  brush = new wxBrush (colour, style);
+  brush = new WXGC_PTRS wxBrush (colour, style);
   AddBrush(brush);
   return brush;
 }
@@ -740,7 +740,7 @@ wxBrush *wxBrushList::FindOrCreateBrush (char *colour, int style)
 wxFontList::wxFontList(void)
  : wxObject(WXGC_NO_CLEANUP)
 {
-  list = new wxChildList;
+  list = new WXGC_PTRS wxChildList;
 }
 
 wxFontList::~wxFontList(void)
@@ -773,7 +773,7 @@ FindOrCreateFont (int PointSize, int FamilyOrFontId, int Style, int Weight, Bool
 	each_font->GetSizeInPixels () == sip)
       return each_font;
   }
-  font = new wxFont (PointSize, FamilyOrFontId, Style, Weight, underline, smoothing, sip);
+  font = new WXGC_PTRS wxFont (PointSize, FamilyOrFontId, Style, Weight, underline, smoothing, sip);
   AddFont(font);
   return font;
 }

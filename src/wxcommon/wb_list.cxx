@@ -135,7 +135,7 @@ wxList::wxList (int N, wxObject * Objects[])
 
   for (i = 0; i < N; i++) {
     wxNode *next;
-    next = new wxNode(last, NULL, Objects[i]);
+    next = new WXGC_PTRS wxNode(last, NULL, Objects[i]);
     last = next;
     if (i == 0)
       first_node = next;
@@ -269,7 +269,7 @@ Bool wxList::DeleteObject (wxObject * object)
 wxNode *wxList::Append(wxObject *object)
 {
   wxNode *node;
-  node = new wxNode(last_node, NULL, object);
+  node = new WXGC_PTRS wxNode(last_node, NULL, object);
   return DoAppend(node);
 }
 
@@ -279,7 +279,7 @@ wxNode *wxList::Insert (wxObject * object)
   wxNode *node;
 
   node = First();
-  node = new wxNode(NULL, node, object);
+  node = new WXGC_PTRS wxNode(NULL, node, object);
   first_node = node;
 
   if (!(node->Next()))
@@ -298,7 +298,7 @@ wxNode *wxList::Insert (wxNode * position, wxObject * object)
   if (position)
     prev = position->Previous ();
 
-  node = new wxNode(prev, position, object);
+  node = new WXGC_PTRS wxNode(prev, position, object);
   if (!first_node) {
       first_node = node;
       last_node = node;
@@ -314,21 +314,21 @@ wxNode *wxList::Insert (wxNode * position, wxObject * object)
 wxNode *wxList::Append (long key, wxObject * object)
 {
   wxNode *node;
-  node = new wxNode(last_node, NULL, object, key);
+  node = new WXGC_PTRS wxNode(last_node, NULL, object, key);
   return DoAppend(node);
 }
 
 wxNode *wxList::Append (const char *key, wxObject * object)
 {
   wxNode *node;
-  node = new wxNode(last_node, NULL, object, key);
+  node = new WXGC_PTRS wxNode(last_node, NULL, object, key);
   return DoAppend(node);
 }
 
 wxNode *wxList::Append (void *key, wxObject * object)
 {
   wxNode *node;
-  node = new wxNode(last_node, NULL, object, key);
+  node = new WXGC_PTRS wxNode(last_node, NULL, object, key);
   return DoAppend(node);
 }
 
@@ -454,7 +454,7 @@ char **wxStringList::ListToArray (Bool new_copies)
   int i, nbr;
 
   nbr = Number();
-  string_array = new char *[nbr];
+  string_array = new WXGC_PTRS char *[nbr];
   node = First ();
   for (i = 0; i < n; i++) {
     char *s;
@@ -533,7 +533,7 @@ void wxChildList::Append(wxObject *object)
   int i;
   wxChildNode *cn, **naya;
 
-  cn = new wxChildNode;
+  cn = new WXGC_PTRS wxChildNode;
 
   cn->owner = this;
   cn->strong = object;
@@ -548,7 +548,7 @@ void wxChildList::Append(wxObject *object)
   }
 
   size = (size * 2) + 20;
-  naya = new wxChildNode* [size];
+  naya = new WXGC_PTRS wxChildNode* [size];
   for (i = 0; i < n; i++) {
     naya[i] = nodes[i];
   }

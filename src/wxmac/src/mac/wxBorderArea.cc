@@ -21,11 +21,11 @@ wxBorderArea::wxBorderArea(wxWindow* parentWindow, int margin, Direction directi
 			   Bool te_border) :
 			   wxArea(parentWindow)
 {
-  cBorder = new wxRectBorder(this, margin, direction, whitespace, te_border);
+  cBorder = new WXGC_PTRS wxRectBorder(this, margin, direction, whitespace, te_border);
 }
 
 //-----------------------------------------------------------------------------
 wxBorderArea::~wxBorderArea(void)	// destructor
 {
-  //	delete cBorder;
+  // DELETE_OBJ cBorder;
 }

@@ -173,7 +173,7 @@ wxMediaLine *wxMediaLine::Insert(wxMediaLine **root, Bool before)
 {
   wxMediaLine *newline, *node;
 
-  newline = new wxMediaLine;
+  newline = new WXGC_PTRS wxMediaLine;
 
   if (PTREQ(*root, NIL)) {
     *root = newline;
@@ -655,7 +655,7 @@ void wxMediaLine::SetStartsParagraph(Bool starts)
     if (!paragraph) {
       if (!plain_paragraph) {
 	wxREGGLOB(plain_paragraph);
-	paragraph = new wxMediaParagraph();
+	paragraph = new WXGC_PTRS wxMediaParagraph();
 	paragraph->leftMarginFirst = 0;
 	paragraph->leftMargin = 0;
 	paragraph->rightMargin = 0;
@@ -1193,7 +1193,7 @@ double wxMediaLine::GetRightLocation(double maxWidth)
 wxMediaParagraph *wxMediaParagraph::Clone()
 {
   wxMediaParagraph *paragraph;
-  paragraph = new wxMediaParagraph();
+  paragraph = new WXGC_PTRS wxMediaParagraph();
 
   paragraph->leftMarginFirst = leftMarginFirst;
   paragraph->leftMargin = leftMargin;

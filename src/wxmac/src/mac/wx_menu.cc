@@ -162,7 +162,7 @@ wxMenu::wxMenu // Constructor (given objectType)
  ) :
   wxbMenu(Title, windowName)
 {
-  menuItems = new wxList();
+  menuItems = new WXGC_PTRS wxList();
 
   SetFont(_font, 14);
 
@@ -207,7 +207,7 @@ wxMenu::~wxMenu(void)
     item = (wxMenuItem*)node->Data();
     if (item->subMenu) {
       item->subMenu->window_parent = NULL; // so it doesn't try to delete itself
-      delete item->subMenu;
+      DELETE_OBJ item->subMenu;
     }
     DELETE_OBJ item;
     node = node->Next();
@@ -572,8 +572,8 @@ Bool wxMenuBar::OnAppend (wxMenu * menu, char *title)
     int i;
 
     n++;
-    new_menus = new wxMenu *[n];
-    new_titles = new char *[n];
+    new_menus = new WXGC_PTRS wxMenu *[n];
+    new_titles = new WXGC_PTRS char *[n];
     
     for (i = 0; i < n - 1; i++) {
       new_menus[i] = menus[i];
@@ -785,7 +785,7 @@ void wxMenu::AppendSeparator(void)
 {
   wxMenuItem* item;
 
-  item = new wxMenuItem(this);
+  item = new WXGC_PTRS wxMenuItem(this);
 
   item->itemId = -1;
   item->itemName = copystring("-");
@@ -810,7 +810,7 @@ void wxMenu::Append(int Id, char* Label, char* helpString, Bool checkable)
   wxMenuItem* item;
   Str255 menusetup;
 
-  item = new wxMenuItem(this, checkable);
+  item = new WXGC_PTRS wxMenuItem(this, checkable);
 
   item->itemId = Id;
   item->itemName = macCopyString(Label);
@@ -849,7 +849,7 @@ void wxMenu::Append(int Id, char* Label, wxMenu* SubMenu, char* helpString)
 
   SubMenu->window_parent = this;
 
-  item = new wxMenuItem(this);
+  item = new WXGC_PTRS wxMenuItem(this);
   item->subMenu = SubMenu;
 
   item->itemId = Id;

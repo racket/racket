@@ -33,6 +33,14 @@ the code was modified is included with the above copyright notice.
 
 enum GCPlacement {UseGC, AtomicGC};
 
+#ifdef MZ_PRECISE_GC
+# define WXGC_ATOMIC /* empty */
+# define WXGC_PTRS /* empty */
+#else
+# define WXGC_ATOMIC (AtomicGC)
+# define WXGC_PTRS (UseGC)
+#endif
+
 typedef void (*GCCleanUpFunc)(void* obj, void* clientData);
 
 extern "C" {
@@ -215,7 +223,6 @@ inline void gc::operator delete(void * /*obj*/)
 {
 }
 
-
 #ifdef OPERATOR_NEW_ARRAY
 inline void *gc::operator new[](size_t size) {
 #if defined(USE_SENORA_GC) || defined(MZ_PRECISE_GC)
@@ -249,7 +256,6 @@ inline void *operator new(size_t size, GCPlacement gcp)
   return obj;
 }
         
-
 #ifdef OPERATOR_NEW_ARRAY
 inline void *operator new[](size_t size, GCPlacement gcp)
 {

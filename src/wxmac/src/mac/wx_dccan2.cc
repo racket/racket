@@ -353,7 +353,7 @@ wxRegion *wxCanvasDC::BrushStipple()
     wxBitmap *bm;
     bm = current_brush->GetStipple();
     if (bm && bm->Ok())
-      return new wxRegion(this);
+      return new WXGC_PTRS wxRegion(this);
   }
   return NULL;
 }
@@ -591,7 +591,7 @@ void wxCanvasDC::DrawPolygon(int n, wxPoint points[],
 
   SetCurrentDC();
 
-  xpoints1 = new Point[n+1];
+  xpoints1 = new WXGC_ATOMIC Point[n+1];
   for (i = 0; i < n; i++) {
     xpoints1[i].h = XLOG2DEV(points[i].x + xoffset);
     xpoints1[i].v = YLOG2DEV(points[i].y + yoffset);
@@ -746,7 +746,7 @@ void wxCanvasDC::DrawPath(wxPath *p, double xoffset, double yoffset, int fillSty
     } else {
       wxRegion *r;
 
-      r = new wxRegion(this);
+      r = new WXGC_PTRS wxRegion(this);
       r->SetPath(p, xoffset, yoffset);
       ::OffsetRgn(r->rgn,SetOriginX,SetOriginY);
       
@@ -840,7 +840,7 @@ void wxCanvasDC::DrawLines(int n, wxPoint points[], double xoffset, double yoffs
     SetCurrentDC();
     wxMacSetCurrentTool(kPenTool);
     
-    xpoints = new Point[n];
+    xpoints = new WXGC_ATOMIC Point[n];
       
     dpx = (XLOG2DEVREL(current_pen->GetWidth()) >> 1);
     dpy = (YLOG2DEVREL(current_pen->GetWidth()) >> 1);

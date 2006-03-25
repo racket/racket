@@ -77,7 +77,7 @@ char *wxGetTempFileName (const char *prefix, char *dest)
       prefix = "";
   }
   
-  buf = new char[temp_len + strlen(prefix) + 20];
+  buf = new WXGC_ATOMIC char[temp_len + strlen(prefix) + 20];
 
   for (short suffix = last_temp + 1; suffix != last_temp; ++suffix %= 1000) {
 #ifdef OS_X

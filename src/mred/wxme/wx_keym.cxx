@@ -362,7 +362,7 @@ wxKeycode *wxKeymap::MapFunction(long code, int shift, int ctrl,
     }
   }
   
-  newkey = new wxKeycode;
+  newkey = new WXGC_PTRS wxKeycode;
 
   newkey->code = code;
   newkey->shiftOn = (shift > 0);
@@ -391,7 +391,7 @@ wxKeycode *wxKeymap::MapFunction(long code, int shift, int ctrl,
 
   if (!keys) {
     wxHashTable *ht;
-    ht = new wxHashTable(wxKEY_INTEGER, 25);
+    ht = new WXGC_PTRS wxHashTable(wxKEY_INTEGER, 25);
     keys = ht;
   }
 
@@ -457,7 +457,7 @@ void wxKeymap::MapFunction(char *keys, char *fname)
   char buffer[256];
 
   num_keys = 1;
-  key = new wxKeycode*[1];
+  key = new WXGC_PTRS wxKeycode*[1];
   key[0] = NULL;
 
   start_keys = kp = 0;
@@ -535,7 +535,7 @@ void wxKeymap::MapFunction(char *keys, char *fname)
       } 
 
       num_new_keys = num_keys;
-      new_key = new wxKeycode*[num_new_keys];
+      new_key = new WXGC_PTRS wxKeycode*[num_new_keys];
 
       for (i = 0, j = 0; i < num_keys; i++) {
 	wxKeycode *mf;
@@ -938,11 +938,11 @@ void wxKeymap::AddFunction(char *name, wxKMFunction func, void *data)
 
   if (!functions) {
     wxHashTable *ht;
-    ht = new wxHashTable(wxKEY_STRING, 50);
+    ht = new WXGC_PTRS wxHashTable(wxKEY_STRING, 50);
     functions = ht;
   }
 
-  f = new wxKMFunc(name, func, data);
+  f = new WXGC_PTRS wxKMFunc(name, func, data);
   if (functions->Get(f->name))
     functions->Delete(f->name);
   functions->Put(f->name, (wxObject *)f);
@@ -1007,7 +1007,7 @@ void wxKeymap::ChainToKeymap(wxKeymap *km, Bool prefix)
     return;
 
   old = chainTo;
-  chainTo = new wxKeymap*[chainCount + 1];
+  chainTo = new WXGC_PTRS wxKeymap*[chainCount + 1];
 
   memcpy(chainTo + (prefix ? 1 : 0), old, chainCount * sizeof(wxKeymap *));
   chainTo[prefix ? 0 : chainCount] = km;

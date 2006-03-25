@@ -31,7 +31,7 @@ void wxCleanUp(void);
 //	void CreateApp(void);	// This procedure initializes the whole application
 //	void CreateApp(void)
 //	{
-//		new MyApp;
+//		new WXGC_PTRS MyApp;
 //	}
 //
 ///////////////////////////////////////////////////////////////////////////////

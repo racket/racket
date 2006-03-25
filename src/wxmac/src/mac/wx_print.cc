@@ -261,7 +261,7 @@ wxPrintData *wxPrintData::copy(void)
 {
   wxPrintData *pd;
 
-  pd = new wxPrintData();
+  pd = new WXGC_PTRS wxPrintData();
   PMCopyPageFormat(cPageFormat, pd->cPageFormat);
   PMCopyPrintSettings(cPrintSettings, pd->cPrintSettings);
   return pd;
@@ -303,7 +303,7 @@ Bool wxPrinter::Print(wxWindow *parent, wxPrintout *printout, Bool prompt)
   if (!printout)
     return FALSE;
 
-  printData = new wxPrintData();
+  printData = new WXGC_PTRS wxPrintData();
 
   printout->SetIsPreview(FALSE);
   printout->OnPreparePrinting();
@@ -338,7 +338,7 @@ Bool wxPrinter::Print(wxWindow *parent, wxPrintout *printout, Bool prompt)
     Bool goAhead;
     wxPrintDialog *dialog;
 
-    dialog = new wxPrintDialog(parent, printData);
+    dialog = new WXGC_PTRS wxPrintDialog(parent, printData);
     dialog->ShowSetupDialog(TRUE);
     goAhead = dialog->UseIt();
     if (goAhead == FALSE) 
@@ -353,7 +353,7 @@ Bool wxPrinter::Print(wxWindow *parent, wxPrintout *printout, Bool prompt)
   }
   
   // Create a suitable device context  
-  dc = new wxPrinterDC(printData, 0); 
+  dc = new WXGC_PTRS wxPrinterDC(printData, 0); 
 
   if (!dc->Ok()) {
     if (dc) DELETE_OBJ dc; // PrSetError
@@ -413,7 +413,7 @@ Bool wxPrinter::Print(wxWindow *parent, wxPrintout *printout, Bool prompt)
 Bool wxPrinter::PrintDialog(wxWindow *parent)
 {
   wxPrintDialog *dialog;
-  dialog = new wxPrintDialog(parent, printData);
+  dialog = new WXGC_PTRS wxPrintDialog(parent, printData);
   dialog->Show(TRUE);
   DELETE_OBJ dialog;
   return 0;
@@ -422,7 +422,7 @@ Bool wxPrinter::PrintDialog(wxWindow *parent)
 Bool wxPrinter::Setup(wxWindow *parent)
 {
   wxPrintDialog *dialog;
-  dialog = new wxPrintDialog(parent, printData);
+  dialog = new WXGC_PTRS wxPrintDialog(parent, printData);
   dialog->ShowSetupDialog(TRUE);
   dialog->Show(TRUE);
   DELETE_OBJ dialog;

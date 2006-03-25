@@ -53,8 +53,8 @@ wxScreen::wxScreen // Constructor (for screen window)
 	if (width < 0) cWindowWidth = wPortRect.right - wPortRect.left;
 	if (height < 0) cWindowHeight = wPortRect.bottom - wPortRect.top;
 
-  	cMenuArea = new wxArea(this);
-  	cScreenArea = new wxArea(this);
+  	cMenuArea = new WXGC_PTRS wxArea(this);
+  	cScreenArea = new WXGC_PTRS wxArea(this);
 }
 
 //=============================================================================

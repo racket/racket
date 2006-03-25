@@ -29,6 +29,20 @@ Authors: John R. Ellis and Jesse Hull
 #include <stddef.h>
 #include "wxGC.h"
 
+/* With x86 Mac OS X, MrEd's `new' gets used by libraries
+   that shouldn't use it. So we can't define `new' on that
+   platform. For PPC, we define `new' to help ensure that
+   we're not accidentally using it in the OS X port. */
+#if defined(OS_X) && !defined(XONX)
+# ifdef __POWERPC__
+#  define SHOULDNT_USE_BUILTIN_NEW
+#  include <stdio.h>
+#  include <stdlib.h>
+# else
+#  define DONT_DEFINE_BUILTIN_NEW
+# endif
+#endif
+
 #ifdef COMPACT_BACKTRACE_GC  
 # include <stdio.h>
 #endif
@@ -52,21 +66,33 @@ typedef void (*GC_finalization_proc)(void *, void *);
 #endif
 #endif
 
+#ifndef DONT_DEFINE_BUILTIN_NEW
+
 void *operator new(size_t size)
 {
-#ifdef USE_SENORA_GC
+#ifdef SHOULDNT_USE_BUILTIN_NEW
+  printf("MrEd used global new operator!\n");
+  return malloc(size);
+#else
+# ifdef USE_SENORA_GC
   if (!cpp_objects)
     cpp_objects = GC_new_set("C++", NULL, NULL, NULL, NULL, NULL, 0);
 
   return GC_malloc_specific(size, cpp_objects);
-#else
+# else
   return GC_malloc(size);
+#endif
 #endif
 }
 
 void operator delete(void * /*obj*/)
 {
+#ifdef SHOULDNT_USE_BUILTIN_NEW
+  printf("MrEd used global delete operator!\n");
+#endif
 }
+
+#endif
 
 void gc_cleanup::install_cleanup(void)
 {
@@ -160,23 +186,33 @@ void GC_cleanup(void *obj, void *)
 /**********************************************************************/  
 
 #ifdef OPERATOR_NEW_ARRAY
+# ifndef DONT_DEFINE_BUILTIN_NEW
 
 void* operator new[](size_t size)
 {
-#ifdef USE_SENORA_GC
+#ifdef SHOULDNT_USE_BUILTIN_NEW
+  printf("MrEd used global new[] operator!\n");
+  return malloc(size);
+#else
+# ifdef USE_SENORA_GC
   if (!cpp_objects)
     cpp_objects = GC_new_set("C++", NULL, NULL, NULL, NULL, NULL, 0);
   
   return GC_malloc_specific(size, cpp_objects);
-#else
+# else
   return GC_malloc(size);
+# endif
 #endif
 }
   
 void operator delete[](void * /*obj*/)
 {
+#ifdef SHOULDNT_USE_BUILTIN_NEW
+  printf("MrEd used global delete[] operator!\n");
+#endif
 }
 
+# endif
 #endif
 
 /**********************************************************************/

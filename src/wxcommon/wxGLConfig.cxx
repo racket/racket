@@ -13,7 +13,7 @@ wxGLConfig::~wxGLConfig()
 wxGLConfig *wxGLConfig::Clone()
 {
   wxGLConfig *c;
-  c = new wxGLConfig();
+  c = new WXGC_PTRS wxGLConfig();
   c->doubleBuffered = doubleBuffered;
   c->stereo = stereo;
   c->stencil = stencil;

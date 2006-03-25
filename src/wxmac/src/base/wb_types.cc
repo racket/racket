@@ -22,7 +22,7 @@ wxTypeTree *wxAllTypes;
 void wxInitStandardTypes(void)
 {
   wxREGGLOB(wxAllTypes);
-  wxAllTypes = new wxTypeTree;
+  wxAllTypes = new WXGC_PTRS wxTypeTree;
 
   // Define explicit type hierarchy
   wxAllTypes->AddType(wxTYPE_WINDOW, wxTYPE_ANY, "window");
@@ -94,7 +94,7 @@ wxTypeTree::~wxTypeTree(void)
 void wxTypeTree::AddType(WXTYPE type, WXTYPE parent, char *name)
 {
   wxTypeDef *typ;
-  typ = new wxTypeDef;
+  typ = new WXGC_PTRS wxTypeDef;
   typ->type = type;
   typ->parent = parent;
   typ->name = copystring(name);

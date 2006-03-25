@@ -40,7 +40,7 @@ static ControlHandle MakeTabs(CGrafPtr theMacGrafPort, int N, char **Choices, Re
 #ifdef MZ_PRECISE_GC
   array = (ControlTabEntry *)GC_malloc_atomic(sizeof(ControlTabEntry) * N);
 #else
-  array = new ControlTabEntry[N];
+  array = new WXGC_ATOMIC ControlTabEntry[N];
 #endif
   for (i = 0; i < N; i++) {
     CFStringRef cfstr;
@@ -368,7 +368,7 @@ void wxTabChoice::OnEvent(wxMouseEvent *event)
 
     if (trackResult) {
       wxCommandEvent *commandEvent;
-      commandEvent = new wxCommandEvent(wxEVENT_TYPE_TAB_CHOICE_COMMAND);
+      commandEvent = new WXGC_PTRS wxCommandEvent(wxEVENT_TYPE_TAB_CHOICE_COMMAND);
       ProcessCommand(commandEvent);
     }
   }
@@ -391,7 +391,7 @@ void wxTabChoice::Append(char *s, int new_sel)
     new_sel = GetSelection();
 
   if (s) {
-    new_choices = new char*[tab_count + 1];
+    new_choices = new WXGC_PTRS char*[tab_count + 1];
     for (i = 0; i < tab_count; i++) {
       new_choices[i] = tab_labels[i];
     }

@@ -128,7 +128,7 @@ static void CB_TOSCHEME(CB_REALCLASS *obj, wxCommandEvent *event);
 
 #define l_ADDRESS 
 #define l_DEREF 
-#define l_NEWATOMIC 
+#define l_NEWATOMIC (UseGC)
 #define l_NULLOK 0
 #define l_TEST 
 #define l_POINT 
@@ -236,7 +236,7 @@ static l_TYPE l_POINT *l_MAKE_ARRAY(Scheme_Object *l, l_INTTYPE *c, char *who)
 
 #define l_ADDRESS 
 #define l_DEREF 
-#define l_NEWATOMIC 
+#define l_NEWATOMIC (UseGC)
 #define l_NULLOK 0
 #define l_TEST , l_NULLOK
 #define l_POINT *
@@ -978,7 +978,7 @@ static Scheme_Object *os_wxRadioBox_ConstructScheme(int n,  Scheme_Object *p[])
     WITH_VAR_STACK(realobj->gcInit_wxRadioBox(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12));
 #endif
     realobj->__gc_external = (void *)p[0];
-    delete[] x8;
+    /* delete[] x8; */
     realobj->callback_closure = p[POFFSET+cb_pos];
     READY_TO_PRE_RETURN;
   } else  {
@@ -1054,7 +1054,7 @@ static Scheme_Object *os_wxRadioBox_ConstructScheme(int n,  Scheme_Object *p[])
     WITH_VAR_STACK(realobj->gcInit_wxRadioBox(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12));
 #endif
     realobj->__gc_external = (void *)p[0];
-    delete[] x8;
+    /* delete[] x8; */
     realobj->callback_closure = p[POFFSET+cb_pos];
     READY_TO_PRE_RETURN;
   }

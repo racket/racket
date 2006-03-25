@@ -188,7 +188,7 @@ wxFrame::wxFrame // Constructor (for frame window)
   
   CheckMemOK(theMacWindow);
 
-  cMacDC = new wxMacDC(GetWindowPort(theMacWindow));
+  cMacDC = new WXGC_PTRS wxMacDC(GetWindowPort(theMacWindow));
 
   // Calculate the platformArea size
   GetWindowBounds(theMacWindow,kWindowStructureRgn,&theStrucRect);
@@ -481,9 +481,9 @@ void wxFrame::InitDefaults(void)
   cStatusPanel = NULL;
   cStatusText = NULL;
   cDialogPanel = NULL;
-  cControlArea = new wxArea(this);
-  cContentArea = new wxArea(this);
-  cPlatformArea = new wxArea(this);
+  cControlArea = new WXGC_PTRS wxArea(this);
+  cContentArea = new WXGC_PTRS wxArea(this);
+  cPlatformArea = new WXGC_PTRS wxArea(this);
 }
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -755,8 +755,8 @@ void wxFrame::CreateStatusLine(int number, char* name)
 
   nb_status = number;
   status_line_exists = TRUE;
-  cStatusPanel = new wxPanel(ControlArea());
-  cStatusText = new wxMessage(cStatusPanel, "");
+  cStatusPanel = new WXGC_PTRS wxPanel(ControlArea());
+  cStatusText = new WXGC_PTRS wxMessage(cStatusPanel, "");
   cStatusPanel->SetEraser(cEraser);
   cStatusText->SetEraser(cEraser);
   statusLineHeight = (int)(cStatusText->GetCharHeight() * nb_status);
@@ -891,11 +891,11 @@ void wxFrame::NowFront(Bool flag) // mac platform only
       else {
 	if (!close_menu_bar) {
 	  wxREGGLOB(close_menu_bar);
-	  close_menu_bar = new wxMenuBar;
+	  close_menu_bar = new WXGC_PTRS wxMenuBar;
 #ifndef OS_X
 	  /* When a frame doesn't have a menubar, doMacInMenuBar
 	     assumes that any menulelection is the close item. */
-	  wxMenu *file = new wxMenu();
+	  wxMenu *file = new WXGC_PTRS wxMenu();
 	  file->Append(1, "Close\tCmd+W");
 	  close_menu_bar->Append(file, "File");
 #endif
@@ -1444,7 +1444,7 @@ void wxFrame::AddDragAccept(wxWindow *target, Bool on)
 
     InstallReceiveHandler(receiveHandler, win, NULL);
 
-    drag_targets = new wxChildList();
+    drag_targets = new WXGC_PTRS wxChildList();
   }
 
   if (!on) {

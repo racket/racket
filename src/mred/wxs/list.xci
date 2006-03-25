@@ -15,7 +15,7 @@
 
 @IFDEFINE l_ADDRESS = INDIRECT : & : 
 @IFDEFINE l_DEREF = INDIRECT : * : 
-@IFDEFINE l_NEWATOMIC = NEWATOMIC : (AtomicGC) : 
+@IFDEFINE l_NEWATOMIC = NEWATOMIC : (AtomicGC) : (UseGC)
 @IFDEFINE l_NULLOK = ALLOWNULL : 1 : 0
 @IFDEFINE l_TEST = NOTEST :  : , l_NULLOK
 @IFDEFINE l_POINT = POINTERS : * : 
@@ -40,7 +40,7 @@
 @MACRO glueUncountedListSet[type.list.array.who] = x<array> = WITH_VAR_STACK(__Make<type>Array((<array>+POFFSET < n) ? p[POFFSET+<list>] : scheme_null, NULL, <who>));
 @MACRO methListSet[type.list.array.cnt] = p[POFFSET+<list>] = WITH_VAR_STACK(__Make<type>List(x<array>, x<cnt>));
 
-@MACRO glueCleanup[array] = delete[] x<array>;
+@MACRO glueCleanup[array] = /* delete[] x<array>; */
 
 @MACRO bReturnList[type.cnt] =  WITH_VAR_STACK(__Make<type>List({x}, *x<cnt>));
 

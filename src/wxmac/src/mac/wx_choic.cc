@@ -107,7 +107,7 @@ Create (wxPanel * panel, wxFunction func, char *Title,
     GetTextExtent(Title, &fWidth, &fHeight, &fDescent, &fLeading, font);
     if (fHeight < 12) fHeight = 12; 
     n = strlen(Title);
-    naya_s = new char[n+1];
+    naya_s = new WXGC_ATOMIC char[n+1];
     sTitle = (StringPtr)naya_s;
     sTitle[0] = n;
     memcpy(&sTitle[1], Title, n);
@@ -180,10 +180,10 @@ Create (wxPanel * panel, wxFunction func, char *Title,
   SetSelection(0);
 
   if (Title) {
-    cTitle = new wxLabelArea(this, Title, font,
-			     ((labelPosition == wxVERTICAL) ? wxTop : wxLeft),
-			     0,
-			     ((labelPosition == wxVERTICAL) ? 0 : ((maxdflth - lblh) / 2) + PAD_Y + 1));
+    cTitle = new WXGC_PTRS wxLabelArea(this, Title, font,
+				       ((labelPosition == wxVERTICAL) ? wxTop : wxLeft),
+				       0,
+				       ((labelPosition == wxVERTICAL) ? 0 : ((maxdflth - lblh) / 2) + PAD_Y + 1));
   } else
     cTitle = NULL;
 
@@ -271,7 +271,7 @@ void wxChoice::OnChar(wxKeyEvent *event)
     SetSelection(s + delta);
     if (s != GetSelection()) {
       wxCommandEvent *e;
-      e = new wxCommandEvent(wxEVENT_TYPE_CHOICE_COMMAND);
+      e = new WXGC_PTRS wxCommandEvent(wxEVENT_TYPE_CHOICE_COMMAND);
       ProcessCommand(e);
     }
   }
@@ -321,7 +321,7 @@ void wxChoice::OnEvent(wxMouseEvent *event) // mac platform only
 	wxCommandEvent *commandEvent;
 	selection = GetControlValue(cMacControl);
 	selection -= 1;
-	commandEvent = new wxCommandEvent(wxEVENT_TYPE_CHOICE_COMMAND);
+	commandEvent = new WXGC_PTRS wxCommandEvent(wxEVENT_TYPE_CHOICE_COMMAND);
 	ProcessCommand(commandEvent);
       }
     }

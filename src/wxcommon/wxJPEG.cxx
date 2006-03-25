@@ -90,7 +90,7 @@ static void get_scanline(JSAMPROW row, int cols, int rownum, wxMemoryDC *dc)
 
   if (!the_color) {
     wxREGGLOB(the_color);
-    the_color = new wxColour(0, 0, 0);
+    the_color = new WXGC_PTRS wxColour(0, 0, 0);
   }
 
   for (colnum = 0; colnum < cols; colnum++, d += 3) {
@@ -108,7 +108,7 @@ wxMemoryDC *create_dc(int width, int height, wxBitmap *bm, int mono)
 {
   wxMemoryDC *dc;
 
-  dc = new wxMemoryDC();
+  dc = new WXGC_PTRS wxMemoryDC();
   if (width >= 0)
     bm->Create(width, height, mono ? 1 : -1);
   dc->SelectObject(bm);
@@ -125,7 +125,7 @@ wxMemoryDC *create_reader_dc(wxBitmap *bm, volatile int *desel)
 {
   wxMemoryDC *dc;
 
-  dc = new wxMemoryDC(1); /* 1 => read-only */
+  dc = new WXGC_PTRS wxMemoryDC(1); /* 1 => read-only */
   dc->SelectObject(bm);
   if (!dc->GetObject()) {
 # ifdef wx_msw
@@ -353,7 +353,7 @@ int write_JPEG_file(char *filename, wxBitmap *bm, int quality)
   dc = create_reader_dc(bm, (int *)&desel);
 
   wid = bm->GetWidth();
-  row_pointer = new JSAMPLE[3 * wid];
+  row_pointer = new WXGC_ATOMIC JSAMPLE[3 * wid];
 
   if ((outfile = fopen(filename, "wb")) == NULL) {
     if (desel)
@@ -570,7 +570,7 @@ static void png_get_line(png_bytep row, int cols, int rownum, wxMemoryDC *dc, wx
 
   if (!the_color) {
     wxREGGLOB(the_color);
-    the_color = new wxColour(0, 0, 0);
+    the_color = new WXGC_PTRS wxColour(0, 0, 0);
   }
 
   for (colnum = 0, delta = 0; colnum < cols; colnum++, delta += step) {
@@ -595,7 +595,7 @@ static void png_get_line1(png_bytep row, int cols, int rownum, wxMemoryDC *dc)
 
   if (!the_color) {
     wxREGGLOB(the_color);
-    the_color = new wxColour(0, 0, 0);
+    the_color = new WXGC_PTRS wxColour(0, 0, 0);
   }
 
   for (colnum = 0, delta = 0; colnum < cols; delta++) {
@@ -818,7 +818,7 @@ int wx_read_png(char *file_name, wxBitmap *bm, int w_mask, wxColour *bg)
 #ifdef MZ_PRECISE_GC
    rows = (png_bytep *)GC_malloc(sizeof(png_bytep) * height);
 #else
-   rows = new png_bytep[height];
+   rows = new WXGC_ATOMIC png_bytep[height];
 #endif
 
    row_width = png_get_rowbytes(png_ptr, info_ptr);
@@ -866,7 +866,7 @@ int wx_read_png(char *file_name, wxBitmap *bm, int w_mask, wxColour *bg)
 
        mono_mask = ((y < height) ? 0 : 1);
 
-       mbm = new wxBitmap(width, height, mono_mask);
+       mbm = new WXGC_PTRS wxBitmap(width, height, mono_mask);
        if (mbm->Ok())
 	 mdc = create_dc(-1, -1, mbm, mono_mask);
        else
@@ -1009,7 +1009,7 @@ int wx_write_png(char *file_name, wxBitmap *bm)
 #ifdef MZ_PRECISE_GC
    rows = (png_bytep *)GC_malloc(sizeof(png_bytep) * height);
 #else
-   rows = new png_bytep[height];
+   rows = new WXGC_ATOMIC png_bytep[height];
 #endif
    row_width = png_get_rowbytes(png_ptr, info_ptr);
    for (y = 0; y < height; y++) {

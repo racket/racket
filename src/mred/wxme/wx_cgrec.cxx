@@ -32,6 +32,9 @@
 #include "wx_ptreq.h"
 
 class wxcgList 
+#ifndef MZ_PRECISE_GC
+: public gc
+#endif
 {
 public:
   long count, size;
@@ -54,7 +57,7 @@ void wxcgList::Append(wxObject *o)
       size *= 2;
     else
       size = 2;
-    naya = new wxObject*[size];
+    naya = new WXGC_PTRS wxObject*[size];
     memcpy(naya, array, count * sizeof(wxObject*));
     array = naya;
   }
@@ -235,7 +238,7 @@ DeleteSnipItem::~DeleteSnipItem()
 wxDeleteSnipRecord::wxDeleteSnipRecord(Bool cont)
 {
   continued = cont;
-  deletions = new wxcgList();
+  deletions = new WXGC_PTRS wxcgList();
 }
 
 wxDeleteSnipRecord::~wxDeleteSnipRecord()
@@ -245,7 +248,6 @@ wxDeleteSnipRecord::~wxDeleteSnipRecord()
   for (i = deletions->Count(); i--; ) {
     DeleteSnipItem *ds;
     ds = (DeleteSnipItem *)deletions->Get(i);
-    DELETE_OBJ ds;
   }
 
   DELETE_OBJ deletions;
@@ -256,7 +258,7 @@ void wxDeleteSnipRecord::InsertSnip(wxSnip *snip, wxSnip *before,
 {
   DeleteSnipItem *item;
 
-  item = new DeleteSnipItem();
+  item = new WXGC_PTRS DeleteSnipItem();
   item->parent = this;
   item->snip = snip;
   item->before = before;
@@ -310,7 +312,7 @@ wxDeleteRecord::wxDeleteRecord(long startpos, long endpos, Bool cont, long ss, l
   startsel = ss;
   endsel = es;
   undid = FALSE;
-  deletions = new wxcgList();
+  deletions = new WXGC_PTRS wxcgList();
   clickbacks = NULL;
 }
 
@@ -342,7 +344,7 @@ void wxDeleteRecord::InsertSnip(wxSnip *snip)
 void wxDeleteRecord::AddClickback(wxClickback *click)
 {
   if (!clickbacks) {
-    clickbacks = new wxcgList();
+    clickbacks = new WXGC_PTRS wxcgList();
   }
   clickbacks->Append((wxObject *)click);
 }
@@ -356,7 +358,7 @@ Bool wxDeleteRecord::Undo(wxMediaBuffer *buffer)
 
   media = (wxMediaEdit *)buffer;
 
-  toAdd = new wxList(wxKEY_NONE, FALSE);
+  toAdd = new WXGC_PTRS wxList(wxKEY_NONE, FALSE);
   
   count = deletions->Count();
   for (i = count; i--; ) {
@@ -410,7 +412,7 @@ wxStyleChangeRecord::wxStyleChangeRecord(long startpos, long endpos, Bool cont, 
   endsel = es;
   restoreSelection = restoreSel;
 
-  changes = new wxcgList();
+  changes = new WXGC_PTRS wxcgList();
 }
 
 wxStyleChangeRecord::~wxStyleChangeRecord()
@@ -420,17 +422,14 @@ wxStyleChangeRecord::~wxStyleChangeRecord()
   for (i = changes->Count(); i--; ) {
     StyleChange *sc;
     sc = (StyleChange *)changes->Get(i);
-    DELETE_OBJ sc;
   }
-
-  DELETE_OBJ changes;
 }
 
 void wxStyleChangeRecord::AddStyleChange(long start, long end, wxStyle *style)
 {
   StyleChange *change;
 
-  change = new StyleChange;
+  change = new WXGC_PTRS StyleChange;
 
   change->start = start;
   change->end = end;
@@ -480,7 +479,7 @@ wxStyleChangeSnipRecord::wxStyleChangeSnipRecord(Bool cont)
 {
   continued = cont;
 
-  changes = new wxcgList();
+  changes = new WXGC_PTRS wxcgList();
 }
 
 wxStyleChangeSnipRecord::~wxStyleChangeSnipRecord()
@@ -490,7 +489,6 @@ wxStyleChangeSnipRecord::~wxStyleChangeSnipRecord()
   for (i = changes->Count(); i--; ) {
     StyleChange *sc;
     sc = (StyleChange *)changes->Get(i);
-    DELETE_OBJ sc;
   }
   
   DELETE_OBJ changes;
@@ -500,7 +498,7 @@ void wxStyleChangeSnipRecord::AddStyleChange(wxSnip *snip, wxStyle *style)
 {
   StyleChangeSnip *change;
 
-  change = new StyleChangeSnip;
+  change = new WXGC_PTRS StyleChangeSnip;
 
   change->snip = snip;
   change->style = style;
@@ -599,11 +597,11 @@ char *wxResizeSnipRecord::GetName()
 wxCompositeRecord::wxCompositeRecord(int _cnt, wxChangeRecordId *_id, int _parity)
 {
   cnt = _cnt;
-  seq = new wxChangeRecord*[cnt];
+  seq = new WXGC_PTRS wxChangeRecord*[cnt];
   id = _id;
   parity = _parity;
   if (!id) {
-    id = new wxChangeRecordId;
+    id = new WXGC_PTRS wxChangeRecordId;
   }
   if (parity)
     id->positive = this;
@@ -673,7 +671,7 @@ int wxCompositeRecord::GetParity()
 
 wxChangeRecord *wxCompositeRecord::Inverse()
 {
-  return new wxInverseRecord(id, !parity);
+  return new WXGC_PTRS wxInverseRecord(id, !parity);
 }
 
 #if CGREC_DEBUG
