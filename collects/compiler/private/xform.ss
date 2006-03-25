@@ -675,12 +675,12 @@
           (printf "~n")
           
           ;; C++ cupport:
-          (printf "#define NEW_OBJ(t) new t~n")
-          (printf "#define NEW_ARRAY(t, array) (new t array)~n")
+          (printf "#define NEW_OBJ(t) new (UseGC) t~n")
+          (printf "#define NEW_ARRAY(t, array) (new (UseGC) t array)~n")
           (printf "#define NEW_ATOM(t) (new (AtomicGC) t)~n")
-          (printf "#define NEW_PTR(t) (new t)~n")
+          (printf "#define NEW_PTR(t) (new (UseGC) t)~n")
           (printf "#define NEW_ATOM_ARRAY(t, array) (new (AtomicGC) t array)~n")
-          (printf "#define NEW_PTR_ARRAY(t, array) (new t* array)~n")
+          (printf "#define NEW_PTR_ARRAY(t, array) (new (UseGC) t* array)~n")
           (printf "#define DELETE(x) (delete x)~n")
           (printf "#define DELETE_ARRAY(x) (delete[] x)~n")
           (printf (if callee-restore?
