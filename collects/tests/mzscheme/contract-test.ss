@@ -241,6 +241,17 @@
    '(let-values ([(a b) ((contract (->* (integer?) 
                                         (listof integer?)
 					any)
+                                   (lambda (x . y) (values x x))
+                                   'pos
+                                   'neg)
+                         2)])
+      1))
+  
+  (test/pos-blame
+   'contract-arrow-star11b
+   '(let-values ([(a b) ((contract (->* (integer?) 
+                                        (listof integer?)
+					any)
                                    (lambda (x) (values x x))
                                    'pos
                                    'neg)
@@ -3762,8 +3773,8 @@
       (define (contract-inferred-name-test2b x) (values x x))
       (provide/contract (contract-inferred-name-test2b (-> number? (values number? number?))))
       
-      (define (contract-inferred-name-test3 x) x)
-      (provide/contract (contract-inferred-name-test3 (->* (number?) (number?))))
+      (define (contract-inferred-name-test3 x . y) x)
+      (provide/contract (contract-inferred-name-test3 (->* (number?) (listof number?) (number?))))
 
       (define contract-inferred-name-test4
         (case-lambda [(x) x]
@@ -3805,8 +3816,8 @@
   (test-name '(-> integer? integer?) (-> integer? integer?))
   (test-name '(-> integer? any) (-> integer? any))
   (test-name '(-> integer? (values boolean? char?)) (-> integer? (values boolean? char?)))
-  (test-name '(->* (integer? boolean?) (char? any/c)) (->* (integer? boolean?) (char? any/c)))
-  (test-name '(->* (integer? boolean?) any) (->* (integer? boolean?) any))
+  (test-name '(-> integer? boolean? (values char? any/c)) (->* (integer? boolean?) (char? any/c)))
+  (test-name '(-> integer? boolean? any) (->* (integer? boolean?) any))
   (test-name '(->* (integer?) boolean? (char? any/c)) (->* (integer?) boolean? (char? any/c)))
   (test-name '(->* (integer? char?) boolean? any) (->* (integer? char?) boolean? any))
   (test-name '(->d integer? boolean? ...) (->d integer? boolean? (lambda (x y) char?)))
