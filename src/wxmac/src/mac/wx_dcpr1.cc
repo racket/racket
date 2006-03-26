@@ -92,7 +92,7 @@ wxPrinterDC::wxPrinterDC(wxPrintData *printData, Bool interactive) : wxCanvasDC(
 
   current_pen = NULL;
   current_brush = NULL;
-  current_text_foreground = new WXGC_ATOMIC wxColour(wxBLACK);
+  current_text_foreground = new WXGC_PTRS wxColour(wxBLACK);
   SetBrush(wxWHITE_BRUSH);
   SetPen(wxBLACK_PEN);
 }

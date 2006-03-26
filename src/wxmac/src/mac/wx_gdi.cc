@@ -425,7 +425,7 @@ wxPen::wxPen(void)
 {
   wxColour *c;
   
-  c = new WXGC_ATOMIC wxColour(wxBLACK);
+  c = new WXGC_PTRS wxColour(wxBLACK);
   c->Lock(1);
   colour = c;
   
@@ -449,7 +449,7 @@ wxbPen(col, Width, Style)
 {
   wxColour *c;
   
-  c = new WXGC_ATOMIC wxColour(col);
+  c = new WXGC_PTRS wxColour(col);
   c->Lock(1);
   colour = c;
   
@@ -468,7 +468,7 @@ wxbPen(col, Width, Style)
 {
   wxColour *c;
   
-  c = new WXGC_ATOMIC wxColour(col);
+  c = new WXGC_PTRS wxColour(col);
   c->Lock(1);
   colour = c;
   
@@ -488,7 +488,7 @@ wxBrush::wxBrush(void)
 {
   wxColour *c;
   
-  c = new WXGC_ATOMIC wxColour(wxBLACK);
+  c = new WXGC_PTRS wxColour(wxBLACK);
   c->Lock(1);
   
   colour = c;
@@ -506,7 +506,7 @@ wxBrush::wxBrush(wxColour *col, int Style)
 {
   wxColour *c;
   
-  c = new WXGC_ATOMIC wxColour(col);
+  c = new WXGC_PTRS wxColour(col);
   c->Lock(1);
   colour = c;
   
@@ -519,7 +519,7 @@ wxBrush::wxBrush(char *col, int Style)
 {
   wxColour *c;
   
-  c = new WXGC_ATOMIC wxColour(col);
+  c = new WXGC_PTRS wxColour(col);
   c->Lock(1);
   colour = c;
   
@@ -600,7 +600,7 @@ wxCursor::wxCursor(wxBitmap *mask, wxBitmap *bm, int hotSpotX, int hotSpotY)
     }
   }
 
-  c = new WXGC_ATOMIC wxColour(); /* to recieve bit values */
+  c = new WXGC_PTRS wxColour(); /* to recieve bit values */
 
   cMacCustomCursor = new WXGC_ATOMIC Cursor;
 

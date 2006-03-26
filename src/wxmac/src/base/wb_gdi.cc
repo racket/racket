@@ -396,26 +396,26 @@ wxInitializeStockObjects (void)
   
   {
     wxColour *ctlGray;
-    ctlGray = new WXGC_ATOMIC wxColour(0xE8, 0xE8, 0xE8);
+    ctlGray = new WXGC_PTRS wxColour(0xE8, 0xE8, 0xE8);
     wxREGGLOB(wxCONTROL_BACKGROUND_BRUSH);
     wxCONTROL_BACKGROUND_BRUSH = new WXGC_PTRS wxBrush(ctlGray, wxSOLID);
     wxCONTROL_BACKGROUND_BRUSH->Lock(1);
   }
 
   wxREGGLOB(wxBLACK);
-  wxBLACK = new WXGC_ATOMIC wxColour ("BLACK");
+  wxBLACK = new WXGC_PTRS wxColour ("BLACK");
   wxREGGLOB(wxWHITE);
-  wxWHITE = new WXGC_ATOMIC wxColour ("WHITE");
+  wxWHITE = new WXGC_PTRS wxColour ("WHITE");
   wxREGGLOB(wxRED);
-  wxRED = new WXGC_ATOMIC wxColour ("RED");
+  wxRED = new WXGC_PTRS wxColour ("RED");
   wxREGGLOB(wxBLUE);
-  wxBLUE = new WXGC_ATOMIC wxColour ("BLUE");
+  wxBLUE = new WXGC_PTRS wxColour ("BLUE");
   wxREGGLOB(wxGREEN);
-  wxGREEN = new WXGC_ATOMIC wxColour ("GREEN");
+  wxGREEN = new WXGC_PTRS wxColour ("GREEN");
   wxREGGLOB(wxCYAN);
-  wxCYAN = new WXGC_ATOMIC wxColour ("CYAN");
+  wxCYAN = new WXGC_PTRS wxColour ("CYAN");
   wxREGGLOB(wxLIGHT_GREY);
-  wxLIGHT_GREY = new WXGC_ATOMIC wxColour ("LIGHT GRAY");
+  wxLIGHT_GREY = new WXGC_PTRS wxColour ("LIGHT GRAY");
 
   wxREGGLOB(wxSTANDARD_CURSOR);
   wxSTANDARD_CURSOR = new WXGC_PTRS wxCursor (wxCURSOR_ARROW);

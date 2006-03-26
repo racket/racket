@@ -144,7 +144,7 @@ void wxbDC::DrawSpline(double x1, double y1, double x2, double y2, double x3, do
 
 wxColor *wxbDC::GetBackground(void)
 { 
-  return new WXGC_ATOMIC wxColour(current_background_color);
+  return new WXGC_PTRS wxColour(current_background_color);
 }
 
 void wxbDC::SetLogicalOrigin(double x, double y)

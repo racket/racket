@@ -911,7 +911,7 @@ void wxCanvas::SetCanvasBackground(wxColor *c)
     return;
   
   if (c && c->IsMutable()) {
-    c = new WXGC_ATOMIC wxColour(c);
+    c = new WXGC_PTRS wxColour(c);
     c->Lock(1);
   }
    
