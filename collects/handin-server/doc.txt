@@ -953,10 +953,11 @@ submissions, do the following:
   suffix that should be used for the single concatenated output file.
 
 * You can also add a `:names-checker' keyword -- the value can be a
-  regexp that all submitted files must follow (eg, ".*[.]scm$").
-  Alternatively, it can be a 1-argument procedure that will receive
-  the (sorted) list of submitted files and can throw an error if some
-  files are missing or some files are forbidden.
+  regexp that all submitted files must follow (eg, ".*[.]scm$"), or a
+  list of expected file names.  Alternatively, it can be a 1-argument
+  procedure that will receive the (sorted) list of submitted files and
+  can throw an error if some files are missing or some files are
+  forbidden.
 
 * In the "info.ss" file of the handin-client you need to set
   `enable-multifile-handin' to #t, and adjust `selection-default' to

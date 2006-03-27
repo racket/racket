@@ -299,6 +299,11 @@
                            (and (not (regexp-match names-checker n)) n))
                          names)
                   => (lambda (file) (error* "bad filename: ~e" file))])]
+          [(and (list? names-checker) (andmap string? names-checker))
+           (let ([missing (remove* names names-checker)])
+             (when (pair? missing) (error* "missing files: ~e" missing)))
+           (let ([extra (remove* names-checker names)])
+             (when (pair? extra) (error* "unexpected files: ~e" extra)))]
           [names-checker (error* "bad names-checker specification: ~e"
                                  names-checker)])
     ;; problem: students might think that submitting files one-by-one will keep
