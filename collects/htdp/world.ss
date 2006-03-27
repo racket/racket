@@ -1,3 +1,4 @@
+;; Mon Mar 27 10:29:28 EST 2006: integrated Felix's mouse events
 ;; Wed Jan 25 13:38:42 EST 2006: on-redraw: proc is now called on installation
 ;; Tue Jan  3 11:17:50 EST 2006: changed add-line behavior in world.ss 
 ;; Sat Dec 10 19:39:03 EST 2005: fixed name, changed interface to on-key-event
@@ -16,7 +17,7 @@
   (provide (all-from-except (lib "image.ss" "htdp") add-line))
   
   (provide      ;; forall(World):
-   big-bang     ;; Number Number Number World -> true 
+   big-bang	;; Number Number Number World -> true 
    end-of-time	;; String u Symbol -> World
    
    nw:rectangle ;; Number Number Mode Color -> Image
@@ -24,9 +25,9 @@
    empty-scene  ;; Number Number -> Scene 
    run-movie    ;; (Listof Image) -> true 
    (rename add-line-to-scene add-line)
-                ;; Scene Number Number Number Number Color -> Scene 
+   ;; Scene Number Number Number Number Color -> Scene 
    )
-
+  
   (provide-higher-order-primitive
    on-tick-event (tock) ;; (World -> World) -> true
    )
@@ -38,12 +39,25 @@
   ;; KeyEvent is one of: 
   ;; -- Char 
   ;; -- Symbol 
-
+  
   (provide-higher-order-primitive ;; (World KeyEvent -> World) -> true 
    on-key-event 
-   (tock)
+   (draw)
    )
-
+  
+  ;; A MouseEventType is one of:
+  ;; - 'button-down
+  ;; - 'button-up
+  ;; - 'drag
+  ;; - 'move
+  ;; - 'enter
+  ;; - 'leave
+  
+  (provide-higher-order-primitive ;; (World Number Number MouseEvent -> World) -> true 
+   on-mouse-event 
+   (clack)
+   )
+  
   ;; ---------------------------------------------------------------------------
   
   ;; Symbol Any String -> Void
@@ -145,7 +159,7 @@
   
   ;; Amount of space around the image in the world window:
   (define INSET 5)
-
+  
   ;; Number Number Number World -> true
   ;; create the visible world (canvas)
   (define (big-bang w h delta world)
@@ -167,18 +181,20 @@
                    (send the-time stop)
                    (inner (void) on-close)))
                (label "DrScheme")
-	       (stretchable-width #f)
-	       (stretchable-height #f)
-	       (style '(no-resize-border metal))))
+               (stretchable-width #f)
+               (stretchable-height #f)
+               (style '(no-resize-border metal))))
     (let ([c (new (class editor-canvas%
 		    (super-new)
 		    (define/override (on-char e)
-		      (on-char-proc (send e get-key-code))))
-		  (parent the-frame) 
-		  (editor txt)
-		  (style '(no-hscroll no-vscroll))
-		  (horizontal-inset INSET)
-		  (vertical-inset INSET))])
+		      (on-char-proc (send e get-key-code)))
+		    (define/override (on-event e)
+		      (on-mouse-proc e)))
+                  (parent the-frame) 
+                  (editor txt)
+                  (style '(no-hscroll no-vscroll))
+                  (horizontal-inset INSET)
+                  (vertical-inset INSET))])
       (send c min-client-width (+ w INSET INSET))
       (send c min-client-height (+ h INSET INSET))
       (send c focus))
@@ -192,7 +208,7 @@
   
   ;; (World -> World)
   [define timer-callback void]
-
+  
   [define (on-tick-event f)
     (check-proc 'on-tick-event f 1 "on-tick-event" "one argument")
     (check-world 'on-tick-event)
@@ -209,7 +225,7 @@
             (if (exact? w) w (inexact->exact w))))
     #t]
   
-  ;; --- key events 
+  ;; --- key and mouse events 
   
   ;; KeyEvent -> Void
   [define on-char-proc void]
@@ -238,6 +254,56 @@
     (stop-it)
     the-world]
   
+  ;; MouseEvent -> Void
+  [define on-mouse-proc void]
+  
+  [define (on-mouse-event f)
+    (check-proc 'on-mouse-event f 4 "on-mouse-event" "four arguments")
+    (check-world 'on-mouse-event)
+    (let ([esp (current-eventspace)])
+      (if (eq? on-mouse-proc void)
+          (begin
+            (set! on-mouse-proc 
+                  (lambda (e)
+                    (parameterize ([current-eventspace esp])
+                      (queue-callback
+                       (lambda ()
+                         (with-handlers ([exn:break? break-handler]
+                                         [exn? exn-handler])
+                           (set! the-world (f the-world 
+                                              (send e get-x)
+                                              (send e get-y)
+                                              (cond [(send e button-down?) 'button-down]
+                                                    [(send e button-up?)   'button-up]
+                                                    [(send e dragging?)    'drag]
+                                                    [(send e moving?)      'move]
+                                                    [(send e entering?)    'enter]
+                                                    [(send e leaving?)     'leave]
+                                                    [else ; (send e get-event-type)
+                                                     (error 'on-mouse-event
+                                                            (format 
+                                                             "Unknown event type: ~a"
+                                                             (send e get-event-type)))]
+                                                    )))
+                           (on-redraw-proc))))
+                      #t)))
+            #t)
+          (error 'on-mouse-event "the mouse event action has been set already")))]
+  #|
+  Note an alternative to the above cond is to just
+  send get-event-type, which produces one of the following:
+
+  ? 'enter -- mouse pointer entered the window
+  ? 'leave -- mouse pointer left the window
+  ? 'left-down -- left mouse button pressed
+  ? 'left-up -- left mouse button released
+  ? 'middle-down -- middle mouse button pressed
+  ? 'middle-up -- middle mouse button released
+  ? 'right-down -- right mouse button pressed (Mac OS: click with control key pressed)
+  ? 'right-up -- right mouse button released (Mac OS: release with control key pressed)
+  ? 'motion -- mouse moved, with or without button(s) pressed
+  |#                             
+  
   ;; --- library 
   [define (exn-handler e)
     (send the-time stop)
@@ -255,7 +321,7 @@
     (send the-time stop)
     (set! on-char-proc void)
     (set! timer-callback void))
- 
+  
   (define on-redraw-proc void)
   
   (define (on-redraw f)
