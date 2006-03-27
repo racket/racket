@@ -801,6 +801,7 @@
                fread fwrite socket fcntl setsockopt connect send recv close
                __builtin_next_arg __builtin_saveregs 
                __builtin_constant_p __builtin_memset
+	       __builtin___CFStringMakeConstantString
                __error __errno_location __toupper __tolower
                __attribute__ __mode__ ; not really functions in gcc
                __iob_func ; VC 8
