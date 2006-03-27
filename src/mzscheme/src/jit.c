@@ -3596,7 +3596,7 @@ static int generate_function_getarg(mz_jit_state *jitter, int has_rest, int num_
   /* If rands == runstack and there are no rest args, set runstack
      base to runstack + rands (and don't copy rands), otherwise set
      base to runstack and proceed normally. Implement this by
-     optimisitcally assuming rands == runstack, so that there's just
+     optimistically assuming rands == runstack, so that there's just
      one jump. Skip this optimization when the procedure has
      rest args, because we'll have to copy anyway. */
   if (!has_rest && num_params) {
