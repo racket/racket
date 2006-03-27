@@ -727,11 +727,10 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 # define mz_patch_branch(a) jit_patch(a)
 # define mz_patch_ucbranch(a) jit_patch(a)
 # ifdef _CALL_DARWIN
-   /* Maintain 4-byte stack alignment.
-      Built-in prolog pushes 3 words in local frame already. */
+   /* Maintain 4-byte stack alignment. */
 #  define mz_prolog(x) (SUBLir(3 * JIT_WORD_SIZE, JIT_SP))
-#  define mz_epilog_without_jmp() ADDLir(3 * JIT_WORD_SIZE, JIT_SP)
-#  define mz_epilog(x) (mz_epilog_without_jmp(), RET_())
+#  define mz_epilog_without_jmp() ADDLir(4 * JIT_WORD_SIZE, JIT_SP)
+#  define mz_epilog(x) (ADDLir(3 * JIT_WORD_SIZE, JIT_SP), RET_())
 #  define LOCAL_FRAME_SIZE 3
 #  define JIT_LOCAL3 -24
 # else
@@ -3659,7 +3658,9 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     jit_getarg_i(JIT_R2, in); /* argv */
     CHECK_LIMIT();
     jit_movr_p(JIT_RUNSTACK, JIT_R2);
-    jit_movr_p(JIT_RUNSTACK_BASE, JIT_R2);
+    jit_movr_p(JIT_RUNSTACK_BASE, JIT_R1);
+    jit_lshi_ul(JIT_RUNSTACK_BASE, JIT_RUNSTACK_BASE, JIT_LOG_WORD_SIZE);
+    jit_addr_p(JIT_RUNSTACK_BASE, JIT_RUNSTACK_BASE, JIT_RUNSTACK);
     mz_push_locals();
     mz_set_local_p(JIT_RUNSTACK, JIT_LOCAL1);
     jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
@@ -3799,9 +3800,9 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     jit_pusharg_p(JIT_RUNSTACK);
     jit_pusharg_i(JIT_R1);
     if (!i) {
-      (void)jit_finish(scheme_checked_car);
+      (void)mz_finish(scheme_checked_car);
     } else {
-      (void)jit_finish(scheme_checked_cdr);
+      (void)mz_finish(scheme_checked_cdr);
     }
     CHECK_LIMIT();
   }
@@ -3932,7 +3933,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_pusharg_p(JIT_R2);
   jit_pusharg_p(JIT_R1);
   jit_pusharg_p(JIT_R0);
-  (void)jit_finish(_scheme_apply_multi_from_native);
+  (void)mz_finish(_scheme_apply_multi_from_native);
   CHECK_LIMIT();
   jit_ldi_i(JIT_NOT_RET, &scheme_current_cont_mark_pos);
   jit_addi_i(JIT_NOT_RET, JIT_NOT_RET, 2);
@@ -4016,7 +4017,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     jit_prepare(2);
     jit_pusharg_p(JIT_RUNSTACK);
     jit_pusharg_i(JIT_R1);
-    (void)jit_finish(scheme_checked_vector_ref);
+    (void)mz_finish(scheme_checked_vector_ref);
     /* doesn't return */
     CHECK_LIMIT();
     
@@ -4062,7 +4063,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     jit_prepare(2);
     jit_pusharg_p(JIT_RUNSTACK);
     jit_pusharg_i(JIT_R1);
-    (void)jit_finish(scheme_checked_syntax_e);
+    (void)mz_finish(scheme_checked_syntax_e);
     jit_retval(JIT_R0);
     jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
     mz_epilog(JIT_R2);
@@ -4145,7 +4146,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       jit_pusharg_p(JIT_RUNSTACK);
       jit_pusharg_p(JIT_V1);
       jit_pusharg_p(JIT_R1);
-      (void)jit_finish(_scheme_apply_from_native);
+      (void)mz_finish(_scheme_apply_from_native);
       jit_retval(JIT_R0);
       jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
       JIT_UPDATE_THREAD_RSPTR();
