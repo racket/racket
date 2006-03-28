@@ -89,7 +89,8 @@ Bool wxCloseClipboard(void)
 
 Bool wxEmptyClipboard(void)
 {
-  ClearCurrentScrap();
+  OSStatus err;
+  err = ClearCurrentScrap();
   return true;
 }
 
@@ -156,9 +157,8 @@ Bool wxSetClipboardData(int dataFormat, wxObject *obj, int width, int height)
   }
   
   err = GetCurrentScrap(&scrap);
-  if (err != noErr) {
+  if (err != noErr)
     return FALSE;
-  }
   err = PutScrapFlavor(scrap, format, kScrapFlavorMaskNone, length, (const void *)obj);
   return (err == noErr);
 }
@@ -281,7 +281,7 @@ wxObject *wxGetClipboardData(int dataFormat, long *size)
   return (wxObject *)result;
 }
 
-int  wxEnumClipboardFormats(int dataFormat)
+int wxEnumClipboardFormats(int dataFormat)
 {
   long format;
   wxNode *node;
@@ -304,9 +304,19 @@ int  wxEnumClipboardFormats(int dataFormat)
 
   for (; node; node = node->Next()) {
     cf = (ClipboardFormat *)node->Data();
+#ifdef __POWERPC__
     memcpy(&format, cf->name, 4);
+#else
     {
-#ifdef WX_CARBON
+      char tmp[4];
+      tmp[3] = cf->name[0];
+      tmp[2] = cf->name[1];
+      tmp[1] = cf->name[2];
+      tmp[0] = cf->name[3];
+      memcpy(&format, tmp, 4);
+    }
+#endif
+    {
       ScrapRef scrap;
       OSErr err;
       ScrapFlavorFlags dontcare;
@@ -314,18 +324,13 @@ int  wxEnumClipboardFormats(int dataFormat)
       err = GetCurrentScrap(&scrap);
       if ((err != noErr)||(GetScrapFlavorFlags(scrap,format,&dontcare) != noErr))
 	return cf->format;
-#else
-      long offset;      
-      if (GetScrap(NULL, format, &offset) > 0)
-	return cf->format;
-#endif
     }
   }
 
   return 0;
 }
 
-int  wxRegisterClipboardFormat(char *formatName)
+int wxRegisterClipboardFormat(char *formatName)
 {
   wxNode *node;
   ClipboardFormat *cf;
@@ -365,10 +370,17 @@ Bool wxGetClipboardFormatName(int dataFormat, char *formatName, int maxCount)
   for (node = ClipboardFormats->First(); node; node = node->Next()) {
     cf = (ClipboardFormat *)node->Data();
     if (cf->format == dataFormat) {
+#ifdef __POWERPC__
       formatName[0] = cf->name[0];
       formatName[1] = cf->name[1];
       formatName[2] = cf->name[2];
       formatName[3] = cf->name[3];
+#else
+      formatName[3] = cf->name[0];
+      formatName[2] = cf->name[1];
+      formatName[1] = cf->name[2];
+      formatName[0] = cf->name[3];
+#endif
       return TRUE;
     }
   }

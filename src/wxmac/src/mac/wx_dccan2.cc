@@ -158,10 +158,15 @@ void wxCanvasDC::EndSetPixelFast()
 void wxCanvasDC::SetPixelFast(int i, int j, int r, int g, int b)
 {
   if (Colour) {
-    UInt32 *p;
+    UInt32 *p, pixval;
     
     p = (UInt32 *)fast_pb;
-    p[(j * (fast_rb >> 2)) + i] = ((r << 16) | (g << 8) | (b << 0));
+#ifdef __POWERPC__
+    pixval = ((r << 16) | (g << 8) | (b << 0));
+#else
+    pixval = ((r << 8) | (g << 16) | (b << 24));
+#endif
+    p[(j * (fast_rb >> 2)) + i] = pixval;
   } else {
     unsigned char *p, v, bit;
     int pos;
@@ -229,9 +234,15 @@ void wxCanvasDC::GetPixelFast(int x, int y, int *r, int *g, int *b)
 
     p = (UInt32 *)fast_pb;
     v = p[(y * (fast_rb >> 2)) + x];
+#ifdef __POWERPC__
     *r = (v >> 16) & 0xFF;
     *g = (v >> 8) & 0xFF;
     *b = v & 0xFF;
+#else
+    *r = (v >> 8) & 0xFF;
+    *g = (v >> 16) & 0xFF;
+    *b = (v >> 24) & 0xFF;    
+#endif
   } else {
     unsigned char *p, v, bit;
 

@@ -1336,7 +1336,21 @@ static long check_four(char *name, int which, int argc, Scheme_Object **argv)
   if (!SCHEME_BYTE_STRINGP(o) || (SCHEME_BYTE_STRTAG_VAL(o) != 4))
     scheme_wrong_type(name, "MacOS type/creator 4-character byte string", which, argc, argv);
   
-  return *(long *)SCHEME_BYTE_STR_VAL(o);
+#ifdef __POWERPC__
+  return *(int *)SCHEME_BYTE_STR_VAL(o);
+#else
+  {
+    int v;
+    char tmp[4], *bs;
+    bs = SCHEME_BYTE_STR_VAL(o);
+    tmp[3] = bs[0];
+    tmp[2] = bs[1];
+    tmp[1] = bs[2];
+    tmp[0] = bs[3];
+    memcpy(&v, tmp, 4);
+    return v;
+  }
+#endif
 }
 
 static int has_null(const char *s, long l)

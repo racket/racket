@@ -276,7 +276,6 @@ int main(int argc, char *argv[])
   int rval;
   void *stack_start;
 
-
   stack_start = (void *)&stack_start;
 
 #if defined(MZ_PRECISE_GC)
