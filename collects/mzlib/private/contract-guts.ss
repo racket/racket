@@ -24,18 +24,23 @@
            contract?
            contract-name
            contract-proc
-           make-contract
+           contract-pos-proc
+           contract-neg-proc
+           make-pair-proj-contract
            build-flat-contract
            
            define-struct/prop
            
            contract-stronger?
            
-           proj-prop proj-pred? proj-get
+           proj-pred? proj-get
+           pos-proj-prop pos-proj-pred? pos-proj-get
+           neg-proj-prop neg-proj-pred? neg-proj-get
            name-prop name-pred? name-get
            stronger-prop stronger-pred? stronger-get
            flat-prop flat-pred? flat-get
-           flat-proj)
+           any-curried-proj
+           flat-pos-proj)
   
 
   ;; define-struct/prop is a define-struct-like macro that
@@ -101,13 +106,14 @@
        (raw-proj-get ctc)]
       [(and (neg-proj-pred? ctc)
             (pos-proj-pred? ctc))
-       (let ([pos-abs (pos-proj-get ctc)]
-             [neg-abs (pos-proj-get ctc)])
-         (λ (pos neg src-info str)
-           (let ([p-proj (pos-abs pos src-info str)]
-                 [n-proj (neg-abs neg src-info str)])
-             (lambda (v)
-               (n-proj (p-proj v))))))]
+       (let ([pos-abs ((pos-proj-get ctc) ctc)]
+             [neg-abs ((neg-proj-get ctc) ctc)])
+         (λ (ctc)
+           (λ (pos neg src-info str)
+             (let ([p-proj (pos-abs pos src-info str)]
+                   [n-proj (neg-abs neg src-info str)])
+               (lambda (v)
+                 (n-proj (p-proj v)))))))]
       [else (error 'proj-get "unknown ~e" ctc)]))
   
   ;; contract-stronger? : contract contract -> boolean
@@ -179,7 +185,7 @@
        exn:fail:contract2?
        (lambda (x) (get x 0)))))
   
-  (define (default-contract-violation->string val src-info to-blame other-party contract-sexp msg)
+  (define (default-contract-violation->string val src-info to-blame contract-sexp msg)
     (let ([blame-src (src-info-as-string src-info)]
           [formatted-contract-sexp
            (let ([one-line (format "~s" contract-sexp)])
@@ -194,13 +200,12 @@
 	  [specific-blame
 	   (let ([datum (syntax-object->datum src-info)])
 	     (if (symbol? datum)
-		 (format " on ~a" datum)
+		 (format "on ~a" datum)
                  ""))])
-      (string-append (format "~a~a broke the contract ~ait had with ~a~a; "
+      (string-append (format "~a~a broke the contract ~a~a; "
                              blame-src
                              to-blame
                              formatted-contract-sexp
-                             other-party
                              specific-blame)
                      msg)))
   
@@ -213,7 +218,6 @@
        ((contract-violation->string) val 
                                      src-info 
                                      to-blame 
-                                     other-party 
                                      contract-sexp 
                                      (apply format fmt args)))
       (current-continuation-marks)
@@ -291,24 +295,50 @@
                val
                src-info
                pos
-               neg
+               '???
                orig-str
                "expected <~a>, given: ~e"
                name
                val))))))
   
+  (define (flat-pos-proj ctc)
+    (let ([predicate ((flat-get ctc) ctc)]
+          [name ((name-get ctc) ctc)])
+      (λ (pos src-info orig-str)
+        (λ (val)
+          (if (predicate val)
+              val
+              (raise-contract-error
+               val
+               src-info
+               pos
+               '???
+               orig-str
+               "expected <~a>, given: ~e"
+               name
+               val))))))
+  
+  (define (any-curried-proj ctc) any-curred-proj2)
+  (define (any-curred-proj2 pos src-info orig-str) values)
+  
   (define-values (make-flat-contract
-                  make-contract)
+                  make-pair-proj-contract)
     (let ()
-      (define-struct/prop contract (the-name the-proc)
-        ((proj-prop (λ (ctc) (contract-the-proc ctc)))
-         (name-prop (λ (ctc) (contract-the-name ctc)))
+      (define-struct/prop pair-proj-contract (the-name pos-proc neg-proc)
+        ((pos-proj-prop (λ (ctc) (pair-proj-contract-pos-proc ctc)))
+         (neg-proj-prop (λ (ctc) (pair-proj-contract-neg-proc ctc)))
+         (name-prop (λ (ctc) (pair-proj-contract-the-name ctc)))
          (stronger-prop (λ (this that) 
-                          (and (contract? that)
-                               (procedure-closure-contents-eq? (contract-the-proc this)
-							       (contract-the-proc that)))))))
+                          (and (pair-proj-contract? that)
+                               (procedure-closure-contents-eq?
+                                (pair-proj-contract-pos-proc this)
+                                (pair-proj-contract-pos-proc that))
+                               (procedure-closure-contents-eq?
+                                (pair-proj-contract-neg-proc that)
+                                (pair-proj-contract-neg-proc this)))))))
       (define-struct/prop flat-contract (the-name predicate)
-        ((proj-prop flat-proj)
+        ((pos-proj-prop flat-pos-proj)
+         (neg-proj-prop any-curried-proj)
          (stronger-prop (λ (this that) 
                           (and (flat-contract? that)
                                (procedure-closure-contents-eq? (flat-contract-predicate this)
@@ -316,7 +346,7 @@
          (name-prop (λ (ctc) (flat-contract-the-name ctc)))
          (flat-prop (λ (ctc) (flat-contract-predicate ctc)))))
       (values make-flat-contract
-              make-contract)))
+              make-pair-proj-contract)))
   
   (define (flat-contract-predicate x) 
     (unless (flat-contract? x)
@@ -324,8 +354,10 @@
     ((flat-get x) x))
   (define (flat-contract? x) (flat-pred? x))
   (define (contract-name ctc) ((name-get ctc) ctc))
-  (define (contract? x) (proj-pred? x))
+  (define (contract? x) (or (proj-pred? x) (pos-proj-pred? x)))
   (define (contract-proc ctc) ((proj-get ctc) ctc))
+  (define (contract-pos-proc ctc) ((pos-proj-get ctc) ctc))
+  (define (contract-neg-proc ctc) ((neg-proj-get ctc) ctc))
   
   (define (flat-contract predicate)
     (unless (and (procedure? predicate)
@@ -395,15 +427,27 @@
                                         (not (flat-contract? x))))
                                  fs)]
               [contracts (map (lambda (x) (if (contract? x) x (flat-contract x))) fs)]
-              [contract/procs (map contract-proc contracts)])
+              [pos-contract/procs (map contract-pos-proc contracts)]
+              [neg-contract/procs (map contract-neg-proc contracts)])
          (unless (or (null? non-flats)
                      (null? (cdr non-flats)))
            (error 'and/c "expected at most one non-flat contract as argument"))
-	 (make-contract
+	 (make-pair-proj-contract
           (apply build-compound-type-name 'and/c contracts)
-          (lambda (pos neg src-info orig-str)
-            (let ([partial-contracts (map (lambda (contract/proc) (contract/proc pos neg src-info orig-str))
-                                          contract/procs)])
+          (lambda (blame src-info orig-str)
+            (let ([partial-contracts (map (lambda (contract/proc) (contract/proc blame src-info orig-str))
+                                          pos-contract/procs)])
+              (let loop ([ctct (car partial-contracts)]
+                         [rest (cdr partial-contracts)])
+                (cond
+                  [(null? rest) ctct]
+                  [else 
+                   (let ([fst (car rest)])
+                     (loop (lambda (x) (fst (ctct x)))
+                           (cdr rest)))]))))
+          (lambda (blame src-info orig-str)
+            (let ([partial-contracts (map (lambda (contract/proc) (contract/proc blame src-info orig-str))
+                                          neg-contract/procs)])
               (let loop ([ctct (car partial-contracts)]
                          [rest (cdr partial-contracts)])
                 (cond
@@ -414,7 +458,8 @@
                            (cdr rest)))]))))))]))
   
   (define-struct/prop any/c ()
-    ((proj-prop (λ (ctc) (λ (pos neg src-info orig-str) (λ (v) v))))
+    ((pos-proj-prop any-curried-proj)
+     (neg-proj-prop any-curried-proj)
      (stronger-prop (λ (this that) (any/c? that)))
      (name-prop (λ (ctc) 'any/c))
      (flat-prop (λ (ctc) (λ (x) #t)))))

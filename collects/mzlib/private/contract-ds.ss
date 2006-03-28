@@ -8,12 +8,13 @@
   
   (define-syntax (define-contract-struct stx)
     (syntax-case stx ()
-      [(_ name (fields ...))
+      [(_ name (fields ...)) 
        (syntax (define-contract-struct name (fields ...) (current-inspector)))]
       [(_ name (fields ...) inspector)
        (and (identifier? (syntax name))
             (andmap identifier? (syntax->list (syntax (fields ...)))))
-       (let* ([add-suffix
+       (let* ([mutable? (syntax-e (syntax mutable?))]
+              [add-suffix
                (λ (suffix)
                  (datum->syntax-object (syntax name)
                                        (string->symbol 
@@ -110,15 +111,20 @@
                  (wrap-get stct i+1)))
              
              (define (rewrite-fields contract/info ctc-x ...)
-               (let* ([f-x (let ([ctc-field (contract-get (contract/info-contract contract/info) selector-indicies)])
+               (let* ([f-x (let ([ctc-field (contract-get (contract/info-contract contract/info)
+                                                          selector-indicies)])
                              (let ([ctc (if (procedure? ctc-field)
                                             (ctc-field f-xs ...)
                                             ctc-field)])
-                               ((((proj-get ctc) ctc) (contract/info-pos contract/info)
-                                                      (contract/info-neg contract/info)
-                                                      (contract/info-src-info contract/info)
-                                                      (contract/info-orig-str contract/info))
-                                ctc-x)))] ...)
+                               (if (contract/info-pos contract/info)
+                                   ((((pos-proj-get ctc) ctc) (contract/info-pos contract/info)
+                                                              (contract/info-src-info contract/info)
+                                                              (contract/info-orig-str contract/info))
+                                    ctc-x)
+                                   ((((neg-proj-get ctc) ctc) (contract/info-neg contract/info)
+                                                              (contract/info-src-info contract/info)
+                                                              (contract/info-orig-str contract/info))
+                                    ctc-x))))] ...)
                  (values f-x ...)))
              
              (define (stronger-lazy-contract? a b)
@@ -127,33 +133,49 @@
                      (contract-get a selector-indicies)
                      (contract-get b selector-indicies)) ...))
              
-             (define (lazy-contract-proj ctc)
-               (λ (pos neg src-info orig-str)
-                 (let ([contract/info (make-contract/info ctc pos neg src-info orig-str)])
+             (define (lazy-contract-pos-proj ctc)
+               (λ (blame src-info orig-str)
+                 (let ([contract/info (make-contract/info ctc blame #f src-info orig-str)])
                    (λ (val)
                      (unless (or (wrap-predicate val) 
                                  (raw-predicate val))
                        (raise-contract-error
                         val
                         src-info
-                        pos
-                        neg
+                        blame
+                        'ignored
                         orig-str
                         "expected <~a>, got ~e" 'name val))
                      (cond
-                       [(already-there? ctc val lazy-depth-to-look)
+                       [(already-there? contract/info val lazy-depth-to-look)
                         val]
                        [else
                         (wrap-maker val contract/info)])))))
              
-             (define (already-there? ctc val depth)
+             (define (lazy-contract-neg-proj ctc)
+               (λ (blame src-info orig-str)
+                 (let ([contract/info (make-contract/info ctc #f blame src-info orig-str)])
+                   (λ (val)
+                     (cond
+                       [(already-there? contract/info val lazy-depth-to-look)
+                        val]
+                       [else
+                        (wrap-maker val contract/info)])))))
+             
+             (define (already-there? new-contract/info val depth)
                (cond
                  [(raw-predicate val) #f]
                  [(zero? depth) #f]
                  [(wrap-get val 0)
-                  (if (contract-stronger? (contract/info-contract (wrap-get val 1)) ctc)
-                      #t
-                      (already-there? ctc (wrap-get val 0) (- depth 1)))]
+                  (let ([old-contract/info (wrap-get val 1)])
+                    (if (and (eq? (contract/info-pos new-contract/info)
+                                  (contract/info-pos old-contract/info))
+                             (eq? (contract/info-neg new-contract/info)
+                                  (contract/info-neg old-contract/info))
+                             (contract-stronger? (contract/info-contract old-contract/info)
+                                                 (contract/info-contract new-contract/info)))
+                        #t
+                        (already-there? new-contract/info (wrap-get val 0) (- depth 1))))]
                  [else 
                   ;; when the zeroth field is cleared out, we don't 
                   ;; have a contract to compare to anymore.
@@ -162,10 +184,6 @@
              (define (struct/c ctc-x ...)
                (let ([ctc-x (coerce-contract struct/c ctc-x)] ...)
                  (contract-maker ctc-x ...)))
-             
-             (define (no-depend-apply-to-fields ctc fields ...)
-               (let ([ctc-x (contract-get ctc selector-indicies)] ...)
-                 (values (((proj-get ctc-x) ctc-x) fields) ...)))
              
              (define (selectors x) (burrow-in x 'selectors selector-indicies)) ...
              
@@ -201,7 +219,8 @@
                                  field-count
                                  0 ;; auto-field-k
                                  '() ;; auto-field-v
-                                 (list (cons proj-prop lazy-contract-proj)
+                                 (list (cons pos-proj-prop lazy-contract-pos-proj)
+                                       (cons neg-proj-prop lazy-contract-neg-proj)
                                        (cons name-prop lazy-contract-name)
                                        (cons stronger-prop stronger-lazy-contract?)))))))]))
   
@@ -212,7 +231,7 @@
   
   (define (check-sub-contract? x y)
     (cond
-      [(and (proj-pred? x) (proj-pred? y))
+      [(and (stronger-pred? x) (stronger-pred? y))
        (contract-stronger? x y)]
       [(and (procedure? x) (procedure? y))
        (procedure-closure-contents-eq? x y)]

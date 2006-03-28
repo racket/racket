@@ -2,8 +2,18 @@
 
   (provide module-source-as-symbol build-src-loc-string mangle-id
            build-struct-names
-           nums-up-to)
+           nums-up-to
+           add-name-prop
+           all-but-last)
 
+  (define (add-name-prop name stx)
+    (cond
+      [(identifier? name)
+       (syntax-property stx 'inferred-name (syntax-e name))]
+      [(symbol? name)
+       (syntax-property stx 'inferred-name name)]
+      [else stx]))
+  
   ;; mangle-id : syntax string syntax ... -> syntax
   ;; constructs a mangled name of an identifier from an identifier
   ;; the name isn't fresh, so `id' combined with `ids' must already be unique.
@@ -22,6 +32,19 @@
           (lambda (id)
             (format "-~a" (syntax-object->datum id)))
           ids)))))))
+  
+  ;; (cons X (listof X)) -> (listof X)
+  ;; returns the elements of `l', minus the last element
+  ;; special case: if l is an improper list, it leaves off
+  ;; the contents of the last cdr (ie, making a proper list
+  ;; out of the input), so (all-but-last '(1 2 . 3)) = '(1 2)
+  (define (all-but-last l)
+    (cond
+      [(null? l) (error 'all-but-last "bad input")]
+      [(not (pair? l)) '()]
+      [(null? (cdr l)) null]
+      [(pair? (cdr l)) (cons (car l) (all-but-last (cdr l)))]
+      [else (list (car l))]))
   
   ;; build-src-loc-string : syntax -> (union #f string)
   (define (build-src-loc-string stx)
