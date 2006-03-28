@@ -3,6 +3,8 @@
 
 (require (lib "class.ss"))
 
+(define SECTION #t)
+
 (define errs null)
 (define test-count 0)
 
