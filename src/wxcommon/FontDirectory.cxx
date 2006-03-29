@@ -500,7 +500,6 @@ void wxSuffixMap::Initialize(const char *resname, const char *devresname,
 	    }
 
 	    SearchResource("", (const char **)names, count, (char **)&r);
-	    delete[] names;
 
 	    if (!r) {
 	      for (i = 0; i < len; i++) {
@@ -554,7 +553,6 @@ void wxSuffixMap::Initialize(const char *resname, const char *devresname,
 	  memcpy(naya + startpos, r, newstrlen);
 	  memcpy(naya + startpos + newstrlen, v + i + 1, len - i + 1);
 
-	  delete[] v;
 	  v = naya;
 
 	  goto found;
