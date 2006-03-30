@@ -1,5 +1,5 @@
 (module integer-set mzscheme
-  (require (lib "list.ss")
+  (require (all-except (lib "list.ss") merge)
            (lib "contract.ss"))
   
   #;(define-syntax test-block

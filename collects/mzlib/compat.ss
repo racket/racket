@@ -1,21 +1,19 @@
 
 (module compat mzscheme
-  (require "list.ss")
 
   (provide real-time
 	   1+ 1-
 	   >=? <=? >? <? =?
 	   flush-output-port
-	   sort
 	   gentemp
 	   atom?
 	   putprop getprop
 	   new-cafe
 	   define-structure)
-  
+
   (define 1+ add1)
   (define 1- sub1)
-  
+
   (define =? =)
   (define <? <)
   (define >? >)
@@ -25,10 +23,6 @@
   (define atom? (lambda (v) (not (pair? v))))
 
   (define gentemp gensym)
-
-  (define sort ; Chez argument order
-    (lambda (less-than? l)
-      (mergesort l less-than?)))
 
   (define flush-output-port flush-output)
 

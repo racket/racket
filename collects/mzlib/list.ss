@@ -3,42 +3,150 @@
   (require "spidey.ss")
 
   (provide set-first!
-	  first
-	  second
-	  third
-	  fourth
-	  fifth
-	  sixth
-	  seventh
-	  eighth
+           first
+           second
+           third
+           fourth
+           fifth
+           sixth
+           seventh
+           eighth
 
-	  set-rest!
-	  rest
+           set-rest!
+           rest
 
-	  cons?
-	  empty
-	  empty?
+           cons?
+           empty
+           empty?
 
-	  foldl
-	  foldr
+           foldl
+           foldr
 
-	  last-pair
+           last-pair
 
-	  remv
-	  remq
-	  remove
-	  remv*
-	  remq*
-	  remove*
+           remv
+           remq
+           remove
+           remv*
+           remq*
+           remove*
 
-	  assf
-	  memf
+           assf
+           memf
 
-	  filter
-	  
-	  quicksort
-	  mergesort)
-  
+           filter
+
+           quicksort
+           mergesort
+           sort
+           sort!
+           merge
+           merge!)
+
+  ;; used by sort-internal, but can be useful by itself
+  (define (merge! a b less?)
+    (define (loop r a b)
+      (if (less? (car b) (car a))
+        (begin (set-cdr! r b)
+               (if (null? (cdr b)) (set-cdr! b a) (loop b a (cdr b))))
+        ;; (car a) <= (car b)
+        (begin (set-cdr! r a)
+               (if (null? (cdr a)) (set-cdr! a b) (loop a (cdr a) b)))))
+    (cond [(null? a) b]
+          [(null? b) a]
+          [(less? (car b) (car a))
+           (if (null? (cdr b)) (set-cdr! b a) (loop b a (cdr b)))
+           b]
+          [else ; (car a) <= (car b)
+           (if (null? (cdr a)) (set-cdr! a b) (loop a (cdr a) b))
+           a]))
+  ;; a non-destructive version for symmetry with merge!
+  (define (merge a b less?)
+    (cond [(null? a) b]
+          [(null? b) a]
+          [else (let loop ([x (car a)] [a (cdr a)] [y (car b)] [b (cdr b)])
+                  ;; The loop handles the merging of non-empty lists.  It has
+                  ;; been written this way to save testing and car/cdring.
+                  (if (less? y x)
+                    (if (null? b)
+                      (list* y x a)
+                      (cons y (loop x a (car b) (cdr b))))
+                    ;; x <= y
+                    (if (null? a)
+                      (list* x y b)
+                      (cons x (loop (car a) (cdr a) y b)))))]))
+
+  ;; This is a destructive stable merge-sort, adapted from slib and improved by
+  ;; Eli Barzilay
+  ;; The original source said:
+  ;;   It uses a version of merge-sort invented, to the best of my knowledge,
+  ;;   by David H. D. Warren, and first used in the DEC-10 Prolog system.
+  ;;   R. A. O'Keefe adapted it to work destructively in Scheme.
+  ;; but it's a plain destructive merge sort.
+  (define (sort-internal lst less? copy? who)
+    (define (step n)
+      (cond [(> n 3) (let* (; let* not really needed with mzscheme's l->r eval
+                            [j (quotient n 2)] [a (step j)] [b (step (- n j))])
+                       (merge! a b less?))]
+            ;; the following two cases are just explicit treatment of sublists
+            ;; of length 2 and 3, could remove both (and use the above case for
+            ;; n>1) and it would still work, except a little slower
+            [(= n 3) (let ([p lst] [p1 (cdr lst)] [p2 (cddr lst)])
+                       (let ([x (car p)] [y (car p1)] [z (car p2)])
+                         (set! lst (cdr p2))
+                         (cond [(less? y x) ; y x
+                                (cond [(less? z y) ; z y x
+                                       (set-car! p  z)
+                                       (set-car! p1 y)
+                                       (set-car! p2 x)]
+                                      [(less? z x) ; y z x
+                                       (set-car! p        y)
+                                       (set-car! p1 z)
+                                       (set-car! p2 x)]
+                                      [else ; y x z
+                                       (set-car! p  y)
+                                       (set-car! p1 x)])]
+                               [(less? z x) ; z x y
+                                (set-car! p  z)
+                                (set-car! p1 x)
+                                (set-car! p2 y)]
+                               [(less? z y) ; x z y
+                                (set-car! p1 z)
+                                (set-car! p2 y)])
+                         (set-cdr! p2 '())
+                         p))]
+            [(= n 2) (let ([x (car lst)] [y (cadr lst)] [p lst])
+                       (set! lst (cddr lst))
+                       (when (less? y x) (set-car! p y) (set-car! (cdr p) x))
+                       (set-cdr! (cdr p) '())
+                       p)]
+            [(= n 1) (let ([p lst])
+                       (set! lst (cdr lst))
+                       (set-cdr! p '())
+                       p)]
+            [else '()]))
+    (unless (list? lst)
+      (raise-type-error who "proper list" lst))
+    (unless (procedure-arity-includes? less? 2)
+      (raise-type-error who "procedure of arity 2" less?))
+    (let ([n (length lst)])
+      (cond [(<= n 1) lst]
+            ;; check if the list is already sorted
+            ;; (which can be a common case, eg, directory lists).
+            [(let loop ([last (car lst)] [next (cdr lst)])
+               (or (null? next)
+                   (and (not (less? (car next) last))
+                        (loop (car next) (cdr next)))))
+             lst]
+            [else (when copy? (set! lst (append lst '())))
+                  (step n)])))
+
+  (define (sort! lst less?)
+    (sort-internal lst less? #f 'sort!))
+  (define (sort lst less?)
+    (sort-internal lst less? #t 'sort))
+
+  ;; deprecated!
   (define quicksort
     (polymorphic
      (lambda (l less-than)
@@ -68,34 +176,8 @@
                              (loop pivot max))))))))
          (vector->list v)))))
 
-  (define mergesort
-    (polymorphic
-     (lambda (alox less-than)
-       (letrec ([split (lambda (alox r)
-			 (cond
-			  [(null? alox) r]
-			  [(null? (cdr alox)) (cons alox r)]
-			  [else (split (cdr alox) (cons (list (car alox)) r))]))]
-		[merge (lambda (l1 l2 r)
-			 (cond
-			  [(null? l1) (append! (reverse! r) l2)]
-			  [(null? l2) (append! (reverse! r) l1)]
-			  [(less-than (car l1) (car l2)) 
-			   (merge (cdr l1) l2 (cons (car l1) r))]
-			  [else (merge (cdr l2) l1 (cons (car l2) r))]))]
-		[map2 (lambda (l)
-			(cond
-			 [(null? l) '()]
-			 [(null? (cdr l)) l]
-			 [else (cons (merge (car l) (cadr l) null) 
-				     (map2 (cddr l)))]))]
-		[until (lambda (l)
-			 (if (null? (cdr l)) 
-			     (car l) 
-			     (until (map2 l))))])
-	 (if (null? alox)
-	     null
-	     (until (split alox null)))))))
+  ;; deprecated!
+  (define mergesort sort)
 
   (define remove
     (polymorphic
@@ -109,17 +191,17 @@
 			[else (cons (car list)
 				    (loop (cdr list)))]))])])
        rm)))
-  
+
   (define remq
     (polymorphic
      (lambda (item list)
        (remove item list eq?))))
-  
+
   (define remv
     (polymorphic
      (lambda (item list)
        (remove item list eqv?))))
-  
+
   (define remove*
     (polymorphic
      (case-lambda
@@ -133,7 +215,7 @@
 		   [(equal? (car l-rest) first-r) (remove* l (cdr r) equal?)]
 		   [else (loop (cdr l-rest))])))])]
       [(l r) (remove* l r equal?)])))
-  
+
   (define remq*
     (polymorphic
      (lambda (l r)

@@ -8,7 +8,7 @@
    (lib "class.ss")
    "ast.ss")
   
-  (provide (all-defined-except sort number-assign-conversions remove-dups meth-member?
+  (provide (all-defined-except number-assign-conversions remove-dups meth-member?
                                generate-require-spec))
       
   ;; symbol-type = 'null | 'string | 'boolean | 'char | 'byte | 'short | 'int
@@ -616,10 +616,6 @@
                             (method-record-atypes (car methods)))
              (meth-member? meth (cdr methods)))))
 
-  ;sort: (list number) -> (list number)
-  (define (sort l)
-    (quicksort l (lambda (i1 i2) (< (car i1) (car i2)))))
-  
   ;number-assign-conversion: (list type) (list type) type-records -> int
   (define (number-assign-conversions site-args method-args type-recs)
     (cond
@@ -641,11 +637,12 @@
            (assignable (filter (lambda (mr)
                                  (andmap a-convert? (m-atypes mr) arg-types))
                                methods))
-           (assignable-count (sort 
+           (assignable-count (sort
                               (map (lambda (mr)
                                      (list (number-assign-conversions arg-types (m-atypes mr) type-recs)
                                            mr))
-                                   assignable))))
+                                   assignable)
+                              (lambda (i1 i2) (< (car i1) (car i2))))))
       (cond
         ((null? methods) (arg-count-fail))
         ((= 1 (length methods-same)) (car methods-same))

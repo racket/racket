@@ -2,7 +2,7 @@
   (require (lib "math.ss")
            (lib "class.ss")
            (lib "mred.ss" "mred")
-           (lib "list.ss")
+           (all-except (lib "list.ss") merge)
            (lib "struct.ss"))
 
   (provide turtles move draw turn turn/radians merge clean)
