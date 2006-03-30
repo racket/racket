@@ -341,6 +341,15 @@ Basic Constructors:
    Creates a fish, swimming either 'left or 'right.
       [MrEd only, in utils.ss]
 
+> (explode-star small-rad large-rad points line-size line-color)
+
+  Creates a star-shaped explosion thingy. The points are
+  aligned on two radii, one for the beginning of the points
+  and one for the end, large-rad and small-rad. points is
+  the number of spikes sitcking out, and line-size and
+  line-color are the thickness of the lines and the lines
+  color.
+
 
 Combiners:
 ----------
