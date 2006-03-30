@@ -1635,6 +1635,7 @@
   
   
   ;; provide/contract should signal errors without requiring a reference to the variable
+  ;; this test is bogus, because provide/contract'd variables can be set!'d.
   (test/pos-blame
    'provide/contract15
    '(parameterize ([current-namespace (make-namespace)])
