@@ -211,13 +211,13 @@
   
   (define contract-violation->string (make-parameter default-contract-violation->string))
   
-  (define (raise-contract-error val src-info to-blame other-party contract-sexp fmt . args)
+  (define (raise-contract-error val src-info blame contract-sexp fmt . args)
     (raise
      (make-exn:fail:contract2
       (string->immutable-string
        ((contract-violation->string) val 
                                      src-info 
-                                     to-blame 
+                                     blame
                                      contract-sexp 
                                      (apply format fmt args)))
       (current-continuation-marks)
@@ -284,22 +284,6 @@
   ;; the argument to the result function is the value to test.
   ;; (the result function is the projection)
   ;;  
-  (define (flat-proj ctc)
-    (let ([predicate ((flat-get ctc) ctc)]
-          [name ((name-get ctc) ctc)])
-      (λ (pos neg src-info orig-str)
-        (λ (val)
-          (if (predicate val)
-              val
-              (raise-contract-error
-               val
-               src-info
-               pos
-               '???
-               orig-str
-               "expected <~a>, given: ~e"
-               name
-               val))))))
   
   (define (flat-pos-proj ctc)
     (let ([predicate ((flat-get ctc) ctc)]
@@ -312,7 +296,6 @@
                val
                src-info
                pos
-               '???
                orig-str
                "expected <~a>, given: ~e"
                name

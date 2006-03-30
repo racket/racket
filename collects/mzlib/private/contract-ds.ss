@@ -1,3 +1,15 @@
+#|
+
+why make a separate struct for the contract information
+instead of putting it into the wrapper struct in an
+extra field?
+
+this probably requires putting the contract info into
+its own struct from the beginning, rather than passing
+it around flattened out.
+
+|#
+
 
 (module contract-ds mzscheme
   (require "contract-guts.ss")
@@ -143,7 +155,6 @@
                         val
                         src-info
                         blame
-                        'ignored
                         orig-str
                         "expected <~a>, got ~e" 'name val))
                      (cond

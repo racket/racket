@@ -1075,7 +1075,6 @@ add struct contracts for immutable structs?
                         val
                         src-info
                         blame
-                        'ignored
                         orig-str
                         "expected <~a>, given: ~e"
                         'type-name
@@ -1192,7 +1191,6 @@ add struct contracts for immutable structs?
                               v
                               src-info
                               blame
-                              'ignored
                               orig-str
                               "expected <~a>, given: ~e"
                               'type-name
@@ -1232,7 +1230,6 @@ add struct contracts for immutable structs?
                             v
                             src-info
                             blame
-                            'ignored
                             orig-str
                             "expected <~a>, given: ~e"
                             'type-name

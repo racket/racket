@@ -2032,7 +2032,6 @@
       (raise-contract-error val
                             src-info
                             blame
-                            'ignored
                             orig-str
                             "pre-condition expression failure")))
   
@@ -2041,7 +2040,6 @@
       (raise-contract-error val
                             src-info
                             blame
-                            'ignored
                             orig-str
                             "post-condition expression failure")))
   
@@ -2052,7 +2050,6 @@
        val
        src-info
        blame
-       'ignored
        orig-str
        "expected a procedure that accepts ~a arguments, given: ~e"
        dom-length
@@ -2063,16 +2060,14 @@
       (raise-contract-error val
                             src-info
 			    blame
-                            'ignored
-			    orig-str
+                            orig-str
 			    "expected a procedure, got ~e"
 			    val))
     (unless (procedure-arity-includes? val arity)
       (raise-contract-error val
                             src-info
 			    blame
-                            'ignored
-			    orig-str
+                            orig-str
 			    "expected a ~a of arity ~a (not arity ~a), got  ~e"
 			    kind-of-thing
 			    arity
@@ -2084,7 +2079,6 @@
       (raise-contract-error val
                             src-info
 			    blame
-			    'ignored
 			    orig-str
 			    "expected a procedure, got ~e"
 			    val))
@@ -2092,8 +2086,7 @@
       (raise-contract-error val
                             src-info
 			    blame
-                            'ignored
-			    orig-str
+                            orig-str
 			    "expected a ~a that accepts ~a arguments and aribtrarily more (not arity ~a), got  ~e"
 			    kind-of-thing
 			    arity
@@ -2107,7 +2100,6 @@
        val
        src-info
        blame
-       'ignored
        orig-str
        "expected a procedure that accepts ~a arguments and any number of arguments larger than ~a, given: ~e"
        dom-length
@@ -2140,8 +2132,7 @@
       (raise-contract-error val
                             src-info
 			    blame
-                            'ignored
-			    orig-str
+                            orig-str
 			    "expected an object, got ~e"
 			    val)))
 
@@ -2150,8 +2141,7 @@
       (raise-contract-error val
                             src-info
 			    blame
-                            'ignored
-			    orig-str
+                            orig-str
 			    "expected an object with method ~s"
 			    method-name)))
 
@@ -2159,8 +2149,7 @@
     (raise-contract-error val
                           src-info
 			  blame
-                          'ignored
-			  orig-str
+                          orig-str
 			  "expected an object with field ~s"
 			  field-name))
                                                 
