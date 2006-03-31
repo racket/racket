@@ -1,3 +1,7 @@
+Version 301.12
+Added char-general-category
+Changed readtable to support "default" parser used for symbols/numbers
+
 Version 301.11
 Added compile-enforce-module-constants parameter; the default is #t,
  which effectively prohibits redeclaraing modules or changing
