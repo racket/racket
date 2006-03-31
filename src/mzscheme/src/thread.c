@@ -1601,7 +1601,7 @@ static void run_closers(Scheme_Object *o, Scheme_Close_Custodian_Client *f, void
 {
   Scheme_Object *l;
 
-  for (l = closers; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+  for (l = closers; SCHEME_RPAIRP(l); l = SCHEME_CDR(l)) {
     Scheme_Exit_Closer_Func cf;
     cf = (Scheme_Exit_Closer_Func)SCHEME_CAR(l);
     cf(o, f, data);
@@ -1639,7 +1639,7 @@ void scheme_add_atexit_closer(Scheme_Exit_Closer_Func f)
     closers = scheme_null;
   }
 
-  closers = scheme_make_pair((Scheme_Object *)f, closers);
+  closers = scheme_make_raw_pair((Scheme_Object *)f, closers);
 }
 
 void scheme_schedule_custodian_close(Scheme_Custodian *c)
@@ -2149,7 +2149,7 @@ void scheme_swap_thread(Scheme_Thread *new_thread)
     {
       Scheme_Object *l, *o;
       Scheme_Closure_Func f;
-      for (l = thread_swap_callbacks; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+      for (l = thread_swap_callbacks; SCHEME_RPAIRP(l); l = SCHEME_CDR(l)) {
 	o = SCHEME_CAR(l);
 	f = SCHEME_CLOS_FUNC(o);
 	o = SCHEME_CLOS_DATA(o);
@@ -2408,7 +2408,7 @@ static void start_child(Scheme_Thread * volatile child,
     {
       Scheme_Object *l, *o;
       Scheme_Closure_Func f;
-      for (l = thread_swap_callbacks; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+      for (l = thread_swap_callbacks; SCHEME_RPAIRP(l); l = SCHEME_CDR(l)) {
 	o = SCHEME_CAR(l);
 	f = SCHEME_CLOS_FUNC(o);
 	o = SCHEME_CLOS_DATA(o);
@@ -2628,7 +2628,7 @@ void scheme_add_swap_callback(Scheme_Closure_Func f, Scheme_Object *data)
 {
   Scheme_Object *p;
 
-  p = scheme_make_pair((Scheme_Object *)f, data);
+  p = scheme_make_raw_pair((Scheme_Object *)f, data);
   thread_swap_callbacks = scheme_make_pair(p, thread_swap_callbacks);
 }
 
@@ -4416,7 +4416,7 @@ static void promote_thread(Scheme_Thread *p, Scheme_Custodian *to_c)
       /* Otherwise, this is custodian is unrelated to the existing ones.
 	 Add it as an extra custodian. */
       mref = scheme_add_managed(to_c, (Scheme_Object *)p->mr_hop, NULL, NULL, 0);
-      l = scheme_make_pair((Scheme_Object *)mref, p->extra_mrefs);
+      l = scheme_make_raw_pair((Scheme_Object *)mref, p->extra_mrefs);
       p->extra_mrefs = l;
 
       transitive_promote(p, to_c);

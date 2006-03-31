@@ -58,8 +58,11 @@ static Scheme_Object *char_upcase (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_downcase (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_titlecase (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_foldcase (int argc, Scheme_Object *argv[]);
+static Scheme_Object *char_general_category (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_utf8_length (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_map_list (int argc, Scheme_Object *argv[]);
+
+static Scheme_Object *general_category_symbols[NUM_GENERAL_CATEGORIES];
 
 void scheme_init_portable_case(void)
 {
@@ -72,6 +75,7 @@ void scheme_init_char (Scheme_Env *env)
   int i;
 
   REGISTER_SO(scheme_char_constants);
+  REGISTER_SO(general_category_symbols);
 
   scheme_char_constants = 
     (Scheme_Object **)scheme_malloc_eternal(256 * sizeof(Scheme_Object*));
@@ -227,6 +231,11 @@ void scheme_init_char (Scheme_Env *env)
   scheme_add_global_constant("char-foldcase", 
 			     scheme_make_folding_prim(char_foldcase, 
 						      "char-foldcase", 
+						      1, 1, 1),
+			     env);
+  scheme_add_global_constant("char-general-category", 
+			     scheme_make_folding_prim(char_general_category, 
+						      "char-general-category", 
 						      1, 1, 1),
 			     env);
 
@@ -385,6 +394,25 @@ GEN_RECASE(char_upcase, "char-upcase", scheme_toupper)
 GEN_RECASE(char_downcase, "char-downcase", scheme_tolower)
 GEN_RECASE(char_titlecase, "char-titlecase", scheme_totitle)
 GEN_RECASE(char_foldcase, "char-foldcase", scheme_tofold)
+
+static Scheme_Object *char_general_category (int argc, Scheme_Object *argv[])
+{
+  mzchar c;
+  int cat;
+
+  if (!SCHEME_CHARP(argv[0]))
+    scheme_wrong_type("char-general-category", "character", 0, argc, argv);
+
+  c = SCHEME_CHAR_VAL(argv[0]);
+  cat = scheme_general_category(c);
+  if (!general_category_symbols[cat]) {
+    Scheme_Object *s;
+    s = scheme_make_symbol(general_category_names[cat]);
+    general_category_symbols[cat] = s;
+  }
+
+  return general_category_symbols[cat];
+}
 
 static Scheme_Object *char_utf8_length (int argc, Scheme_Object *argv[])
 {

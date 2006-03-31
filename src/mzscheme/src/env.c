@@ -987,7 +987,8 @@ void scheme_shadow(Scheme_Env *env, Scheme_Object *n, int stxtoo)
 				  n, n,
 				  env->module->self_modidx,
 				  n,
-				  env->mod_phase);
+				  env->mod_phase,
+				  0);
     }
   }
 
@@ -1579,7 +1580,7 @@ Scheme_Object *scheme_hash_module_variable(Scheme_Env *env, Scheme_Object *modid
 Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, int is_def)
 /* The `env' argument can actually be a hash table. */
 {
-  Scheme_Object *marks = NULL, *sym, *map, *l, *a, *amarks, *m, *best_match;
+  Scheme_Object *marks = NULL, *sym, *map, *l, *a, *amarks, *m, *best_match, *cm;
   int best_match_skipped, ms;
   Scheme_Hash_Table *marked_names;
 
@@ -1627,6 +1628,12 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, int is_def)
 
   best_match = NULL;
   best_match_skipped = scheme_list_length(marks);
+  if (best_match_skipped == 1) {
+    /* A mark list of length 1 is the common case.
+       Since the list is otherwise marshaled into .zo, etc.,
+       simplify by extracting just the mark: */
+    marks = SCHEME_CAR(marks);
+  }
 
   /* Find a mapping that matches the longest tail of marks */
   for (l = map; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
@@ -1638,12 +1645,28 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, int is_def)
 	break;
       }
     } else {
-      for (m = marks, ms = 0; 
-	   SCHEME_PAIRP(m) && (ms < best_match_skipped);
-	   m = SCHEME_CDR(m), ms++) {
+      if (!SCHEME_PAIRP(marks)) {
+	/* To be better than nothing, could only match exactly: */
+	if (SAME_OBJ(amarks, marks)) {
+	  best_match = SCHEME_CDR(a);
+	  best_match_skipped = 0;
+	}
+      } else {
+	/* amarks can match a tail of marks: */
+	for (m = marks, ms = 0; 
+	     SCHEME_PAIRP(m) && (ms < best_match_skipped);
+	     m = SCHEME_CDR(m), ms++) {
+
+	  cm = m;
+	  if (!SCHEME_PAIRP(amarks)) {
+	    /* If we're down to the last element
+	       of marks, then extract it to try to
+	       match the symbol amarks. */
+	    if (SCHEME_NULLP(SCHEME_CDR(m)))
+	      cm = SCHEME_CAR(m);
+	  }
   
-	if (scheme_equal(amarks, m)) {
-	  if (ms < best_match_skipped) {
+	  if (scheme_equal(amarks, cm)) {
 	    best_match = SCHEME_CDR(a);
 	    best_match_skipped = ms;
 	    break;

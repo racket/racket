@@ -106,6 +106,7 @@
   scheme_extension_table->scheme_multiple_values = scheme_multiple_values;
   scheme_extension_table->scheme_uchar_table = scheme_uchar_table;
   scheme_extension_table->scheme_uchar_cases_table = scheme_uchar_cases_table;
+  scheme_extension_table->scheme_uchar_cats_table = scheme_uchar_cats_table;
   scheme_extension_table->scheme_uchar_ups = scheme_uchar_ups;
   scheme_extension_table->scheme_uchar_downs = scheme_uchar_downs;
   scheme_extension_table->scheme_uchar_titles = scheme_uchar_titles;
@@ -224,6 +225,7 @@
   scheme_extension_table->scheme_prim_is_method = scheme_prim_is_method;
   scheme_extension_table->scheme_make_pair = scheme_make_pair;
   scheme_extension_table->scheme_make_immutable_pair = scheme_make_immutable_pair;
+  scheme_extension_table->scheme_make_raw_pair = scheme_make_raw_pair;
   scheme_extension_table->scheme_make_byte_string = scheme_make_byte_string;
   scheme_extension_table->scheme_make_sized_byte_string = scheme_make_sized_byte_string;
   scheme_extension_table->scheme_make_sized_offset_byte_string = scheme_make_sized_offset_byte_string;

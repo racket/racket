@@ -104,7 +104,7 @@ static void preemptive_chunk(Scheme_Stx *stx);
 
 typedef struct Module_Renames {
   Scheme_Object so; /* scheme_rename_table_type */
-  char plus_kernel, kind;
+  char plus_kernel, kind, needs_unmarshal;
   long phase;
   Scheme_Object *plus_kernel_nominal_source;
   Scheme_Hash_Table *ht; /* localname ->  modidx  OR
@@ -112,9 +112,12 @@ typedef struct Module_Renames {
                                           (cons-immutable modidx nominal_modidx) OR
                                           (list* modidx exportname nominal_modidx nominal_exportname) OR
                                           (list* modidx mod-phase exportname nominal_modidx nominal_exportname) */
+  Scheme_Hash_Table *nomarshal_ht; /* like ht, but dropped on marshal */
   Scheme_Hash_Table *marked_names; /* shared with module environment while compiling the module;
 				      this table maps a top-level-bound identifier with a non-empty mark
 				      set to a gensym created for the binding */
+  Scheme_Object *unmarshal_info; /* stores some renamings as infomation needed to consult
+				    imported modules and restore renames from their exports */
 } Module_Renames;
 
 typedef struct Scheme_Cert {
@@ -141,8 +144,8 @@ typedef struct Scheme_Cert {
             maybe inactive certs in nested parts
     - cons(c1, c2): active certs c1 (maybe NULL), inactive certs c2 (maybe NULL); 
                     no inactive certs in nested parts */
-#define ACTIVE_CERTS(stx) ((Scheme_Cert *)((stx)->certs ? (SCHEME_PAIRP((stx)->certs) ? SCHEME_CAR((stx)->certs) : (stx)->certs) : NULL))
-#define INACTIVE_CERTS(stx) ((Scheme_Cert *)((stx)->certs ? (SCHEME_PAIRP((stx)->certs) ? SCHEME_CDR((stx)->certs) : NULL) : NULL))
+#define ACTIVE_CERTS(stx) ((Scheme_Cert *)((stx)->certs ? (SCHEME_RPAIRP((stx)->certs) ? SCHEME_CAR((stx)->certs) : (stx)->certs) : NULL))
+#define INACTIVE_CERTS(stx) ((Scheme_Cert *)((stx)->certs ? (SCHEME_RPAIRP((stx)->certs) ? SCHEME_CDR((stx)->certs) : NULL) : NULL))
 static Scheme_Object *stx_activate_certs(Scheme_Object *o, Scheme_Cert **cp, Scheme_Hash_Table **ht);
 
 #define SCHEME_RENAME_LEN(vec)  ((SCHEME_VEC_SIZE(vec) - 2) >> 1)
@@ -210,6 +213,7 @@ static Module_Renames *krn;
   to sub-syntax.  */
 
 #define IS_POSMARK(x) (SCHEME_INTP(x) ? (SCHEME_INT_VAL(x) >= 0) : SCHEME_BIGPOS(x))
+#define SCHEME_MARKP(x) (SCHEME_INTP(x) || SCHEME_BIGNUMP(x))
 
 /*========================================================================*/
 /*                            wrap chunks                                 */
@@ -509,7 +513,7 @@ void scheme_init_stx(Scheme_Env *env)
   REGISTER_SO(than_id_marks_ht);
 
   REGISTER_SO(no_nested_inactive_certs);
-  no_nested_inactive_certs = scheme_make_pair(NULL, NULL);
+  no_nested_inactive_certs = scheme_make_raw_pair(NULL, NULL);
 }
 
 /*========================================================================*/
@@ -1061,6 +1065,7 @@ Scheme_Object *scheme_make_module_rename(long phase, int kind, Scheme_Hash_Table
   mr->phase = phase;
   mr->kind = kind;
   mr->marked_names = marked_names;
+  mr->unmarshal_info = scheme_null;
 
   if (!krn) {
     REGISTER_SO(krn);
@@ -1084,7 +1089,8 @@ void scheme_extend_module_rename(Scheme_Object *mrn,
 				 Scheme_Object *exname,      /* name in definition context  */
 				 Scheme_Object *nominal_mod, /* nominal source module */
 				 Scheme_Object *nominal_ex,  /* nominal import before local renaming */
-				 int mod_phase)              /* phase of source defn */
+				 int mod_phase,              /* phase of source defn */
+				 int unmarshal_drop)         /* 1 => can be reconstructed from unmarshal info */
 {
   Scheme_Object *elem;
 
@@ -1115,65 +1121,98 @@ void scheme_extend_module_rename(Scheme_Object *mrn,
     elem = CONS(modname, elem);
   }
   
-  scheme_hash_set(((Module_Renames *)mrn)->ht, localname, elem);
+  if (unmarshal_drop) {
+    if (!((Module_Renames *)mrn)->nomarshal_ht) {
+      Scheme_Hash_Table *ht;
+      ht = scheme_make_hash_table(SCHEME_hash_ptr);
+      ((Module_Renames *)mrn)->nomarshal_ht = ht;
+    }
+    scheme_hash_set(((Module_Renames *)mrn)->nomarshal_ht, localname, elem);
+  } else
+    scheme_hash_set(((Module_Renames *)mrn)->ht, localname, elem);
+}
+
+void scheme_save_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info)
+{
+  Scheme_Object *l;
+
+  l = scheme_make_pair(info, ((Module_Renames *)rn)->unmarshal_info);
+  ((Module_Renames *)rn)->unmarshal_info = l;
 }
 
 static void do_append_module_rename(Scheme_Object *src, Scheme_Object *dest,
 				    Scheme_Object *old_midx, Scheme_Object *new_midx)
 {
-  Scheme_Hash_Table *ht, *hts;
+  Scheme_Hash_Table *ht, *hts, *drop_ht;
   Scheme_Object *v;
-  int i;
+  int i, t;
 
   if (((Module_Renames *)src)->plus_kernel) {
     ((Module_Renames *)dest)->plus_kernel = 1;
     ((Module_Renames *)dest)->plus_kernel_nominal_source = ((Module_Renames *)src)->plus_kernel_nominal_source;
   }
 
-  ht = ((Module_Renames *)dest)->ht;
-  hts = ((Module_Renames *)src)->ht;
-  
-  /* Mappings in src overwrite mappings in dest: */
-
-  for (i = hts->size; i--; ) {
-    if (hts->vals[i]) {
-      v = hts->vals[i];
-      if (old_midx) {
-	/* Shift the modidx part */
-	if (SCHEME_PAIRP(v)) {
-	  if (SCHEME_PAIRP(SCHEME_CDR(v))) {
-	    /* (list* modidx [mod-phase] exportname nominal_modidx nominal_exportname) */
-	    Scheme_Object *midx1, *midx2;
-	    int mod_phase;
-	    midx1 = SCHEME_CAR(v);
-	    v = SCHEME_CDR(v);
-	    if (SCHEME_INTP(SCHEME_CAR(v))) {
-	      mod_phase = SCHEME_INT_VAL(SCHEME_CAR(v));
-	      v = SCHEME_CDR(v);
-	    } else
-	      mod_phase = 0;
-	    midx2 = SCHEME_CAR(SCHEME_CDR(v));
-	    midx1 = scheme_modidx_shift(midx1, old_midx, new_midx);
-	    midx2 = scheme_modidx_shift(midx2, old_midx, new_midx);
-	    v = CONS(SCHEME_CAR(v), CONS(midx2, SCHEME_CDR(SCHEME_CDR(v))));
-	    if (mod_phase)
-	      v = CONS(scheme_make_integer(mod_phase), v);
-	    v = CONS(midx1, v);
-	  } else if (SCHEME_IMMUTABLEP(v)) {
-	    /* (cons-immutable modidx nominal_modidx) */
-	    v = ICONS(scheme_modidx_shift(SCHEME_CAR(v), old_midx, new_midx),
-		      scheme_modidx_shift(SCHEME_CDR(v), old_midx, new_midx));
-	  } else {
-	    /* (cons modidx exportname) */
-	    v = CONS(scheme_modidx_shift(SCHEME_CAR(v), old_midx, new_midx),
-		     SCHEME_CDR(v));
-	  }
-	} else {
-	  /* modidx */
-	  v = scheme_modidx_shift(v, old_midx, new_midx);
-	}
+  for (t = 0; t < 2; t++) {
+    if (!t) {
+      ht = ((Module_Renames *)dest)->ht;
+      hts = ((Module_Renames *)src)->ht;
+      drop_ht = ((Module_Renames *)dest)->nomarshal_ht;
+    } else {
+      hts = ((Module_Renames *)src)->nomarshal_ht;
+      if (!hts)
+	break;
+      ht = ((Module_Renames *)dest)->nomarshal_ht;
+      if (!ht) {
+	ht = scheme_make_hash_table(SCHEME_hash_ptr);
+	((Module_Renames *)dest)->nomarshal_ht = ht;
       }
-      scheme_hash_set(ht, hts->keys[i], v);
+      drop_ht = ((Module_Renames *)dest)->ht;
+    }
+  
+    /* Mappings in src overwrite mappings in dest: */
+
+    for (i = hts->size; i--; ) {
+      if (hts->vals[i]) {
+	v = hts->vals[i];
+	if (old_midx) {
+	  /* Shift the modidx part */
+	  if (SCHEME_PAIRP(v)) {
+	    if (SCHEME_PAIRP(SCHEME_CDR(v))) {
+	      /* (list* modidx [mod-phase] exportname nominal_modidx nominal_exportname) */
+	      Scheme_Object *midx1, *midx2;
+	      int mod_phase;
+	      midx1 = SCHEME_CAR(v);
+	      v = SCHEME_CDR(v);
+	      if (SCHEME_INTP(SCHEME_CAR(v))) {
+		mod_phase = SCHEME_INT_VAL(SCHEME_CAR(v));
+		v = SCHEME_CDR(v);
+	      } else
+		mod_phase = 0;
+	      midx2 = SCHEME_CAR(SCHEME_CDR(v));
+	      midx1 = scheme_modidx_shift(midx1, old_midx, new_midx);
+	      midx2 = scheme_modidx_shift(midx2, old_midx, new_midx);
+	      v = CONS(SCHEME_CAR(v), CONS(midx2, SCHEME_CDR(SCHEME_CDR(v))));
+	      if (mod_phase)
+		v = CONS(scheme_make_integer(mod_phase), v);
+	      v = CONS(midx1, v);
+	    } else if (SCHEME_IMMUTABLEP(v)) {
+	      /* (cons-immutable modidx nominal_modidx) */
+	      v = ICONS(scheme_modidx_shift(SCHEME_CAR(v), old_midx, new_midx),
+			scheme_modidx_shift(SCHEME_CDR(v), old_midx, new_midx));
+	    } else {
+	      /* (cons modidx exportname) */
+	      v = CONS(scheme_modidx_shift(SCHEME_CAR(v), old_midx, new_midx),
+		       SCHEME_CDR(v));
+	    }
+	  } else {
+	    /* modidx */
+	    v = scheme_modidx_shift(v, old_midx, new_midx);
+	  }
+	}
+	scheme_hash_set(ht, hts->keys[i], v);
+	if (drop_ht)
+	  scheme_hash_set(drop_ht, hts->keys[i], NULL);
+      }
     }
   }
 
@@ -1204,19 +1243,29 @@ void scheme_remove_module_rename(Scheme_Object *mrn,
 				 Scheme_Object *localname)
 {
   scheme_hash_set(((Module_Renames *)mrn)->ht, localname, NULL);
+  if (((Module_Renames *)mrn)->nomarshal_ht)
+    scheme_hash_set(((Module_Renames *)mrn)->nomarshal_ht, localname, NULL);
 }
 
 void scheme_list_module_rename(Scheme_Object *src, Scheme_Hash_Table *ht)
 {
   /* Put every name mapped by src into ht: */
   Scheme_Hash_Table *hts;
-  int i;
+  int i, t;
 
-  hts = ((Module_Renames *)src)->ht;
-  
-  for (i = hts->size; i--; ) {
-    if (hts->vals[i]) {
-      scheme_hash_set(ht, hts->keys[i], scheme_false);
+  for (t = 0; t < 2; t++) {
+    if (!t)
+      hts = ((Module_Renames *)src)->ht;
+    else {
+      hts = ((Module_Renames *)src)->nomarshal_ht;
+      if (!hts)
+	break;
+    }
+   
+    for (i = hts->size; i--; ) {
+      if (hts->vals[i]) {
+	scheme_hash_set(ht, hts->keys[i], scheme_false);
+      }
     }
   }
 
@@ -1243,15 +1292,41 @@ Scheme_Object *scheme_stx_to_rename(Scheme_Object *stx)
 Scheme_Object *scheme_stx_shift_rename(Scheme_Object *mrn, 
 				       Scheme_Object *old_midx, Scheme_Object *new_midx)
 {
-  Scheme_Object *nmrn;
+  Scheme_Object *nmrn, *a, *l, *nl;
+
   nmrn = scheme_make_module_rename(0, mzMOD_RENAME_NORMAL, NULL);
   do_append_module_rename(mrn, nmrn, old_midx, new_midx);
+
+  /* Shift each mark_info: */
+  l = ((Module_Renames *)mrn)->unmarshal_info;
+  nl = scheme_null;
+  while (!SCHEME_NULLP(l)) {
+    a = SCHEME_CAR(l);
+    nl = scheme_make_pair(scheme_make_pair(scheme_modidx_shift(SCHEME_CAR(a), old_midx, new_midx),
+					   SCHEME_CDR(a)),
+			  nl);
+    l = SCHEME_CDR(l);
+  }
+  ((Module_Renames *)nmrn)->unmarshal_info = nl;
+
   return nmrn;
 }
 
 Scheme_Hash_Table *scheme_module_rename_marked_names(Scheme_Object *rn)
 {
   return ((Module_Renames *)rn)->marked_names;
+}
+
+static void unmarshal_rename(Module_Renames *mrn,
+			     Scheme_Object *modidx_shift_from, Scheme_Object *modidx_shift_to)
+{
+  Scheme_Object *l;
+
+  mrn->needs_unmarshal = 0;
+  for (l = mrn->unmarshal_info; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+    scheme_do_module_rename_unmarshal((Scheme_Object *)mrn, SCHEME_CAR(l),
+				      modidx_shift_from, modidx_shift_to);
+  }
 }
 
 /******************** wrap manipulations ********************/
@@ -1436,7 +1511,7 @@ static void phase_shift_certs(Scheme_Object *o, Scheme_Object *owner_wraps, int 
     }
 
     if (icerts) {
-      nc = scheme_make_pair((Scheme_Object *)acerts, (Scheme_Object *)icerts);
+      nc = scheme_make_raw_pair((Scheme_Object *)acerts, (Scheme_Object *)icerts);
     } else
       nc = (Scheme_Object *)acerts;
 
@@ -1788,7 +1863,7 @@ static void make_mapped(Scheme_Cert *cert)
 
   ht = scheme_make_hash_table_equal();
 
-  pr = scheme_make_pair((Scheme_Object *)ht, (Scheme_Object *)stop);
+  pr = scheme_make_raw_pair((Scheme_Object *)ht, (Scheme_Object *)stop);
   cert->mapped = pr;
 
   for (; cert != stop; cert = cert->next) {
@@ -1855,7 +1930,7 @@ static Scheme_Object *add_certs(Scheme_Object *o, Scheme_Cert *certs, Scheme_Obj
       if (active)
 	res->certs = (Scheme_Object *)certs;
       else {
-	pr = scheme_make_pair(NULL, (Scheme_Object *)certs);
+	pr = scheme_make_raw_pair(NULL, (Scheme_Object *)certs);
 	res->certs = pr;
       }
       return (Scheme_Object *)res;
@@ -1878,10 +1953,10 @@ static Scheme_Object *add_certs(Scheme_Object *o, Scheme_Cert *certs, Scheme_Obj
 	res->wraps = stx->wraps;
 	res->u.lazy_prefix = stx->u.lazy_prefix;
 	if (!active) {
-	  pr = scheme_make_pair((Scheme_Object *)ACTIVE_CERTS(stx), (Scheme_Object *)orig_certs);
+	  pr = scheme_make_raw_pair((Scheme_Object *)ACTIVE_CERTS(stx), (Scheme_Object *)orig_certs);
 	  res->certs = pr;
-	} else if (stx->certs && SCHEME_PAIRP(stx->certs)) {
-	  pr = scheme_make_pair((Scheme_Object *)orig_certs, SCHEME_CDR(stx->certs));
+	} else if (stx->certs && SCHEME_RPAIRP(stx->certs)) {
+	  pr = scheme_make_raw_pair((Scheme_Object *)orig_certs, SCHEME_CDR(stx->certs));
 	  res->certs = pr;
 	} else
 	  res->certs = (Scheme_Object *)orig_certs;
@@ -1893,7 +1968,7 @@ static Scheme_Object *add_certs(Scheme_Object *o, Scheme_Cert *certs, Scheme_Obj
       now_certs = cl;
       if (!active) {
 	SCHEME_CDR(stx->certs) = (Scheme_Object *)cl;
-      } else if (stx->certs && SCHEME_PAIRP(stx->certs))
+      } else if (stx->certs && SCHEME_RPAIRP(stx->certs))
 	SCHEME_CAR(stx->certs) = (Scheme_Object *)cl;
       else
 	stx->certs = (Scheme_Object *)cl;
@@ -1977,15 +2052,15 @@ Scheme_Object *scheme_stx_cert(Scheme_Object *o, Scheme_Object *mark, Scheme_Env
 		     menv->module->insp, key, cert);
 
     if (active) {
-      if (stx->certs && SCHEME_PAIRP(stx->certs)) {
+      if (stx->certs && SCHEME_RPAIRP(stx->certs)) {
 	Scheme_Object *pr;
-	pr = scheme_make_pair((Scheme_Object *)cert, SCHEME_CDR(stx->certs));
+	pr = scheme_make_raw_pair((Scheme_Object *)cert, SCHEME_CDR(stx->certs));
 	res->certs = pr;
       } else
 	res->certs = (Scheme_Object *)cert;
     } else {
       Scheme_Object *pr;
-      pr = scheme_make_pair((Scheme_Object *)ACTIVE_CERTS(stx), (Scheme_Object *)cert);
+      pr = scheme_make_raw_pair((Scheme_Object *)ACTIVE_CERTS(stx), (Scheme_Object *)cert);
       res->certs = pr;
     }
     
@@ -2250,7 +2325,7 @@ static Scheme_Object *stx_activate_certs(Scheme_Object *o, Scheme_Cert **cp, Sch
 					  stx->props);
       res->wraps = stx->wraps;
       res->u.lazy_prefix = stx->u.lazy_prefix;
-      np = scheme_make_pair(SCHEME_CAR(stx->certs), NULL);
+      np = scheme_make_raw_pair(SCHEME_CAR(stx->certs), NULL);
       res->certs = np;
 
       cc = *cp;
@@ -2261,7 +2336,7 @@ static Scheme_Object *stx_activate_certs(Scheme_Object *o, Scheme_Cert **cp, Sch
       *cp = cc;
 
       return (Scheme_Object *)res;
-    } else if (stx->certs && SCHEME_PAIRP(stx->certs)) {
+    } else if (stx->certs && SCHEME_RPAIRP(stx->certs)) {
       /* Explicit pair but NULL for inactive certs means no
 	 inactive certs anywhere in this object. */
       return (Scheme_Object *)stx;
@@ -2312,7 +2387,7 @@ static Scheme_Object *stx_activate_certs(Scheme_Object *o, Scheme_Cert **cp, Sch
 	   that there are no nested certs here */
 	if (stx->certs) {
 	  Scheme_Object *np;
-	  np = scheme_make_pair(stx->certs, NULL);
+	  np = scheme_make_raw_pair(stx->certs, NULL);
 	  res->certs = np;
 	} else
 	  res->certs = no_nested_inactive_certs;
@@ -2327,7 +2402,7 @@ static Scheme_Object *stx_activate_certs(Scheme_Object *o, Scheme_Cert **cp, Sch
 	/* Record the absence of certificates in sub-parts: */
 	if (stx->certs) {
 	  Scheme_Object *np;
-	  np = scheme_make_pair(stx->certs, NULL);
+	  np = scheme_make_raw_pair(stx->certs, NULL);
 	  stx->certs = np;
 	} else
 	  stx->certs = no_nested_inactive_certs;
@@ -2608,6 +2683,9 @@ static Scheme_Object *resolve_env(Scheme_Object *a, long phase,
 	
 	if (phase == mrn->phase) {
 	  Scheme_Object *rename, *nominal = NULL, *glob_id;
+
+	  if (mrn->needs_unmarshal)
+	    unmarshal_rename(mrn, modidx_shift_from, modidx_shift_to);
 	  
 	  if (mrn->marked_names)
 	    glob_id = scheme_tl_id_sym((Scheme_Env *)mrn->marked_names, a, 0);
@@ -2615,6 +2693,8 @@ static Scheme_Object *resolve_env(Scheme_Object *a, long phase,
 	    glob_id = SCHEME_STX_VAL(a);
 
 	  rename = scheme_hash_get(mrn->ht, glob_id);
+	  if (!rename && mrn->nomarshal_ht)
+	    rename = scheme_hash_get(mrn->nomarshal_ht, glob_id);
 	  if (!rename && mrn->plus_kernel) {
 	    rename = scheme_hash_get(krn->ht, glob_id);
 	    nominal = mrn->plus_kernel_nominal_source;
@@ -2841,6 +2921,7 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, long phase)
   WRAP_POS wraps;
   Scheme_Object *result;
   int is_in_module = 0, skip_other_mods = 0;
+  long orig_phase = phase;
 
   if (((Scheme_Stx *)a)->u.modinfo_cache)
     return ((Scheme_Stx *)a)->u.modinfo_cache;
@@ -2867,13 +2948,21 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, long phase)
 	if (phase == mrn->phase) {
 	  /* Module rename: */
 	  Scheme_Object *rename, *glob_id;
-	  
+
+	  if (mrn->needs_unmarshal) {
+	    /* Use resolve_env to trigger unmarshal, so that we
+	       don't have to implement top/from shifts here: */
+	    resolve_env(a, orig_phase, 1, NULL, NULL);
+	  }
+
 	  if (mrn->marked_names)
 	    glob_id = scheme_tl_id_sym((Scheme_Env *)mrn->marked_names, a, 0);
 	  else
 	    glob_id = SCHEME_STX_VAL(a);
 
 	  rename = scheme_hash_get(mrn->ht, glob_id);
+	  if (!rename && mrn->nomarshal_ht)
+	    rename = scheme_hash_get(mrn->nomarshal_ht, glob_id);
 	  if (!rename && mrn->plus_kernel)
 	    rename = scheme_hash_get(krn->ht, glob_id);
 	  
@@ -3715,10 +3804,7 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
 	      int i, j, count = 0;
 	      Scheme_Object *l, *idi;
 	    
-	      for (i = mrn->ht->size; i--; ) {
-		if (mrn->ht->vals[i])
-		  count++;
-	      }
+	      count = mrn->ht->mcount;
 
 	      l = scheme_make_vector(count * 2, NULL);
 	    
@@ -3742,7 +3828,7 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
 		  SCHEME_VEC_ELS(l)[j++] = idi;
 		}
 	      }
-	    
+
 	      local_key = scheme_make_integer(rns->count);
 	      scheme_hash_set(rns, a, local_key);
 	    
@@ -3760,6 +3846,9 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
 		l = CONS(l, d);
 	      } else
 		l = CONS(l, scheme_null);
+
+	      if (SCHEME_PAIRP(mrn->unmarshal_info))
+		l = CONS(mrn->unmarshal_info, l); 
 	      
 	      l = CONS((mrn->kind == mzMOD_RENAME_MARKED) ? scheme_true : scheme_false, l);
 	      l = CONS(scheme_make_integer(mrn->phase), l);
@@ -4204,8 +4293,8 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
       scheme_hash_set(rns, local_key, a);
     } else if (SCHEME_PAIRP(a)) {
       /* A rename table:
-           - ([#t] <index-num> <bool> <phase-num> #(<table-elem> ...) 
-	       . ((<sym> (<marked-list> . <target-gensym>) ...) ...)) ; <- marked_names
+           - ([#t] <index-num> <phase-num> <bool> [unmarshal] #(<table-elem> ...) 
+	       . ((<sym> (<marked-list-or-mark> . <target-gensym>) ...) ...)) ; <- marked_names
 	where a <table-elem> is actually two values, one of:
            - <exname> <modname>
            - <exname> (<modname> . <defname>)
@@ -4247,6 +4336,46 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
       if (!SCHEME_PAIRP(a)) return_NULL;
       mns = SCHEME_CDR(a);
       a = SCHEME_CAR(a);
+
+      if (!SCHEME_VECTORP(a)) {
+	/* Unmarshall info: */
+	Scheme_Object *ml = a, *mli;
+	while (SCHEME_PAIRP(ml)) {
+	  mli = SCHEME_CAR(ml);
+	  if (!SCHEME_PAIRP(mli)) return NULL;
+
+	  /* A module path index: */
+	  p = SCHEME_CAR(mli);
+	  if (!(SCHEME_SYMBOLP(p)
+		|| SAME_TYPE(SCHEME_TYPE(p), scheme_module_index_type)))
+	    return NULL;
+
+	  mli = SCHEME_CDR(mli);
+	  if (!SCHEME_PAIRP(mli)) return NULL;
+	  /* A list of symbols: */
+	  p = SCHEME_CAR(mli);
+	  while (SCHEME_PAIRP(p)) {
+	    if (!SCHEME_SYMBOLP(SCHEME_CAR(p))) return NULL;
+	    p = SCHEME_CDR(p);
+	  }
+	  if (!SCHEME_NULLP(p)) return NULL;
+
+	  /* #f or a symbol: */
+	  p = SCHEME_CDR(mli);
+	  if (!SCHEME_SYMBOLP(p) && !SCHEME_FALSEP(p)) return NULL;
+
+	  ml = SCHEME_CDR(ml);
+	}
+	if (!SCHEME_NULLP(ml)) return NULL;
+
+	mrn->unmarshal_info = a;
+	if (SCHEME_PAIRP(a))
+	  mrn->needs_unmarshal = 1;
+
+	if (!SCHEME_PAIRP(mns)) return NULL;
+	a = SCHEME_CAR(mns);
+	mns = SCHEME_CDR(mns);
+      }
 
       if (!SCHEME_VECTORP(a)) return_NULL;
       count = SCHEME_VEC_SIZE(a);
@@ -4312,15 +4441,20 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
 
 	    kfirst = scheme_null;
 	    klast = NULL;
-	    for (a = SCHEME_CAR(a); SCHEME_PAIRP(a); a = SCHEME_CDR(a)) {
-	      kp = CONS(unmarshal_mark(SCHEME_CAR(a), rns), scheme_null);
-	      if (!klast)
-		kfirst = kp;
-	      else
-		SCHEME_CDR(klast) = kp;
-	      klast = kp;
+	    a = SCHEME_CAR(a);
+	    if (SCHEME_MARKP(a)) {
+	      kfirst = unmarshal_mark(a, rns);
+	    } else {
+	      for (; SCHEME_PAIRP(a); a = SCHEME_CDR(a)) {
+		kp = CONS(unmarshal_mark(SCHEME_CAR(a), rns), scheme_null);
+		if (!klast)
+		  kfirst = kp;
+		else
+		  SCHEME_CDR(klast) = kp;
+		klast = kp;
+	      }
+	      if (!SCHEME_NULLP(a)) return_NULL;
 	    }
-	    if (!SCHEME_NULLP(a)) return_NULL;
 
 	    ll = CONS(CONS(kfirst, kkey), ll);
 	  }
@@ -4618,7 +4752,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
       Scheme_Object *icerts;
       certs = cert_marks_to_certs(SCHEME_CAR(cert_marks), stx_wraps, &bad);
       icerts = cert_marks_to_certs(SCHEME_CDR(cert_marks), stx_wraps, &bad);
-      certs = scheme_make_pair(certs, icerts);
+      certs = scheme_make_raw_pair(certs, icerts);
     } else {
       /* Just active certs */
       certs = cert_marks_to_certs(cert_marks, stx_wraps, &bad);
@@ -4821,9 +4955,9 @@ static void simplify_syntax_inner(Scheme_Object *o,
 	  }
 	}
 	if (!i) {
-	  if (SCHEME_PAIRP(stx->certs)) {
+	  if (SCHEME_RPAIRP(stx->certs)) {
 	    Scheme_Object *pr;
-	    pr = scheme_make_pair((Scheme_Object *)result, SCHEME_CDR(stx->certs));
+	    pr = scheme_make_raw_pair((Scheme_Object *)result, SCHEME_CDR(stx->certs));
 	    stx->certs = pr;
 	  } else
 	    stx->certs = (Scheme_Object *)result;
@@ -4832,7 +4966,7 @@ static void simplify_syntax_inner(Scheme_Object *o,
 	    stx->certs = SCHEME_CAR(stx->certs);
 	  else {
 	    Scheme_Object *pr;
-	    pr = scheme_make_pair(SCHEME_CAR(stx->certs), (Scheme_Object *)result);
+	    pr = scheme_make_raw_pair(SCHEME_CAR(stx->certs), (Scheme_Object *)result);
 	    stx->certs = pr;
 	  }
 	}
@@ -5464,14 +5598,14 @@ static Scheme_Object *syntax_recertify(int argc, Scheme_Object **argv)
 	res->wraps = stx->wraps;
 	res->u.lazy_prefix = stx->u.lazy_prefix;
 
-	if (!i && (!stx->certs || !SCHEME_PAIRP(stx->certs) || !SCHEME_CDR(stx->certs)))
+	if (!i && (!stx->certs || !SCHEME_RPAIRP(stx->certs) || !SCHEME_CDR(stx->certs)))
 	  res->certs = (Scheme_Object *)new_certs;
 	else {
 	  Scheme_Object *pr;
 	  if (!i)
-	    pr = scheme_make_pair((Scheme_Object *)new_certs, SCHEME_CDR(stx->certs));
+	    pr = scheme_make_raw_pair((Scheme_Object *)new_certs, SCHEME_CDR(stx->certs));
 	  else
-	    pr = scheme_make_pair((Scheme_Object *)ACTIVE_CERTS(stx), (Scheme_Object *)new_certs);
+	    pr = scheme_make_raw_pair((Scheme_Object *)ACTIVE_CERTS(stx), (Scheme_Object *)new_certs);
 	  res->certs = pr;
 	}
       

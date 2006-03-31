@@ -227,6 +227,7 @@ MZ_EXTERN Scheme_Object *scheme_multiple_values;
 
 MZ_EXTERN unsigned short *scheme_uchar_table[];
 MZ_EXTERN unsigned char *scheme_uchar_cases_table[];
+MZ_EXTERN unsigned char *scheme_uchar_cats_table[];
 MZ_EXTERN int scheme_uchar_ups[];
 MZ_EXTERN int scheme_uchar_downs[];
 MZ_EXTERN int scheme_uchar_titles[];
@@ -437,6 +438,8 @@ MZ_EXTERN void scheme_prim_is_method(Scheme_Object *o);
 
 MZ_EXTERN Scheme_Object *scheme_make_pair(Scheme_Object *car, Scheme_Object *cdr);
 MZ_EXTERN Scheme_Object *scheme_make_immutable_pair(Scheme_Object *car, Scheme_Object *cdr);
+
+MZ_EXTERN Scheme_Object *scheme_make_raw_pair(Scheme_Object *, Scheme_Object *);
 
 MZ_EXTERN Scheme_Object *scheme_make_byte_string(const char *chars);
 MZ_EXTERN Scheme_Object *scheme_make_sized_byte_string(char *chars, long len, int copy);

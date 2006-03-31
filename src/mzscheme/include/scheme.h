@@ -402,6 +402,8 @@ typedef void (*Scheme_Type_Printer)(Scheme_Object *v, int for_display, Scheme_Pr
 #define SCHEME_IMMUTABLE_PAIRP(obj)    (SCHEME_PAIRP(obj) && SCHEME_IMMUTABLEP(obj))
 #define SCHEME_LISTP(obj)    (SCHEME_NULLP(obj) || SCHEME_PAIRP(obj))
 
+#define SCHEME_RPAIRP(obj)    SAME_TYPE(SCHEME_TYPE(obj), scheme_raw_pair_type)
+
 #define SCHEME_BOXP(obj)     SAME_TYPE(SCHEME_TYPE(obj), scheme_box_type)
 #define SCHEME_MUTABLE_BOXP(obj)  (SCHEME_BOXP(obj) && SCHEME_MUTABLEP(obj))
 #define SCHEME_IMMUTABLE_BOXP(obj)  (SCHEME_BOXP(obj) && SCHEME_IMMUTABLEP(obj))
@@ -538,7 +540,7 @@ typedef void (*Scheme_Type_Printer)(Scheme_Object *v, int for_display, Scheme_Pr
 #define scheme_ispunc(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x4)
 #define scheme_iscontrol(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x8)
 #define scheme_isspace(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x10)
-#define scheme_isxdigit(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x20)
+/* #define scheme_isSOMETHING(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x20) - not yet used */
 #define scheme_isdigit(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x40)
 #define scheme_isalpha(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x80)
 #define scheme_istitle(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x100)
@@ -557,6 +559,9 @@ typedef void (*Scheme_Type_Printer)(Scheme_Object *v, int for_display, Scheme_Pr
 #define scheme_totitle(x) (x + scheme_uchar_titles[scheme_uchar_find(scheme_uchar_cases_table, x)])
 #define scheme_tofold(x) (x + scheme_uchar_folds[scheme_uchar_find(scheme_uchar_cases_table, x)])
 #define scheme_combining_class(x) (scheme_uchar_combining_classes[scheme_uchar_find(scheme_uchar_cases_table, x)])
+
+#define scheme_general_category(x) ((scheme_uchar_find(scheme_uchar_cats_table, x)) & 0x1F)
+/* Note: 3 bits available in the cats table */
 
 /*========================================================================*/
 /*                          procedure values                              */

@@ -3581,7 +3581,7 @@ static void pre_het(void *d)
   HiEventTramp *het = (HiEventTramp *)d;
 
   het->old_param = scheme_get_param(het->config, mred_het_param);
-  scheme_set_param(het->config, mred_het_param, scheme_make_pair((Scheme_Object *)het, scheme_null));
+  scheme_set_param(het->config, mred_het_param, scheme_make_raw_pair((Scheme_Object *)het, scheme_null));
 }
 
 static Scheme_Object *act_het(void *d)
@@ -3739,7 +3739,7 @@ int mred_het_run_some(HiEventTrampProc do_f, void *do_data)
   {
     Scheme_Object *v;
     v = scheme_get_param(scheme_current_thread->init_config, mred_het_param);
-    if (SCHEME_PAIRP(v))
+    if (SCHEME_RPAIRP(v))
       het = (HiEventTramp *)SCHEME_CAR(v);
     else
       het = NULL;

@@ -48,6 +48,12 @@ toplevel_obj {
   gcBYTES_TO_WORDS(sizeof(Scheme_Toplevel));
 }
 
+quotesyntax_obj {
+ mark:
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Quote_Syntax));
+}
+
 cpointer_obj {
  mark:
   gcMARK(SCHEME_CPTR_VAL((Scheme_Object *)p));
@@ -1660,6 +1666,7 @@ mark_readtable {
   Readtable *t = (Readtable *)p;
   gcMARK(t->mapping);
   gcMARK(t->fast_mapping);
+  gcMARK(t->symbol_parser);
  size:
   gcBYTES_TO_WORDS(sizeof(Readtable));
 }
@@ -1726,6 +1733,8 @@ mark_rename_table {
  mark:
   Module_Renames *rn = (Module_Renames *)p;
   gcMARK(rn->ht);
+  gcMARK(rn->nomarshal_ht);
+  gcMARK(rn->unmarshal_info);
   gcMARK(rn->plus_kernel_nominal_source);
   gcMARK(rn->marked_names);
  size:

@@ -1554,7 +1554,7 @@ long scheme_get_byte_string_unless(const char *who,
 	    ip->unless_cache = scheme_false;
 	    ip->unless = unless;
 	  } else {
-	    unless = scheme_make_pair(NULL, NULL);
+	    unless = scheme_make_raw_pair(NULL, NULL);
 	    ip->unless = unless;
 	  }
 	  if (unless_evt)
@@ -1904,7 +1904,7 @@ int scheme_peeked_read_via_get(Scheme_Input_Port *ip,
       /* Some other thread is already trying to commit.
 	 Ask it to sync on our target, too */
       v = scheme_make_pair(scheme_make_integer(_size), target_evt);
-      l = scheme_make_pair(v, ip->input_extras);
+      l = scheme_make_raw_pair(v, ip->input_extras);
       ip->input_extras = l;
 
       scheme_post_sema_all(ip->input_giveup);
@@ -1941,12 +1941,12 @@ int scheme_peeked_read_via_get(Scheme_Input_Port *ip,
 	/* There are other threads trying to commit, and
 	   as main thread, we'll help them out. */
 	n = 3;
-	for (l = ip->input_extras; l ; l = SCHEME_CDR(l)) {
+	for (l = ip->input_extras; l; l = SCHEME_CDR(l)) {
 	  n++;
 	}
 	aa = MALLOC_N(Scheme_Object *, n);
 	n = 3;
-	for (l = ip->input_extras; l ; l = SCHEME_CDR(l)) {
+	for (l = ip->input_extras; l; l = SCHEME_CDR(l)) {
 	  aa[n++] = SCHEME_CDR(SCHEME_CAR(l));
 	}
       } else {

@@ -4424,6 +4424,97 @@ int GC_is_tagged(void *p)
   return page && (page->type == MTYPE_TAGGED);
 }
 
+static void *next_tagged_start(void *p, int stop_at_p)
+{
+  MPage *page;
+  void **p2, **top;
+  int prev_was_p = 0;
+
+  page = find_page(p);
+  if (page && (page->type == MTYPE_TAGGED)) {
+    p2 = (void **)page->block_start;
+
+    if (page->flags & MFLAG_CONTINUED)
+      return NULL;
+    if (page->flags & MFLAG_BIGBLOCK) {
+      if (p == (void *)p2) {
+	if (stop_at_p)
+	  return p;
+      }
+      return NULL;
+    }
+
+    top = p2 + MPAGE_WORDS;
+    
+    while (p2 < top) {
+      Type_Tag tag;
+      long size;
+
+      if (stop_at_p) {
+	if ((void *)p2 == p)
+	  return p;
+	if ((unsigned long)p2 > (unsigned long)p)
+	  break;
+      }
+      
+      tag = *(Type_Tag *)p2;
+
+      if (tag == TAGGED_EOM)
+	break;
+
+#if ALIGN_DOUBLES
+      if (tag == SKIP) {
+	p2++;
+      } else {
+#endif
+	if (prev_was_p)
+	  return (void *)p2;
+
+	{
+	  Size_Proc size_proc;
+	
+	  size_proc = size_table[tag];
+	  if (((long)size_proc) < 100)
+	    size = (long)size_proc;
+	  else
+	    size = size_proc(p2);
+	}
+
+	prev_was_p = (p == p2);
+      
+	p2 += size;
+#if ALIGN_DOUBLES
+      }
+#endif
+    }
+  }
+  
+  return NULL;
+}
+
+int GC_is_tagged_start(void *p)
+{
+  if (next_tagged_start(p, 1))
+    return 1;
+  else
+    return 0;
+}
+
+void *GC_next_tagged_start(void *p)
+{
+  void *p2;
+
+  while (1) {
+    p2 = next_tagged_start(p, 0);
+    if (p2)
+      return p2;
+
+    p = (void *)(((long)p & MPAGE_START) + MPAGE_SIZE);
+    if (!p)
+      return NULL;
+  }
+}
+
 void *print_out_pointer(const char *prefix, void *p)
 {
   MPage *page;

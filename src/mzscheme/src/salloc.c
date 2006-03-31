@@ -948,6 +948,8 @@ static void cons_onto_list(void *p)
 # ifdef MZ_PRECISE_GC
 START_XFORM_SKIP;
 extern int GC_is_tagged(void *p);
+extern int GC_is_tagged_start(void *p);
+extern void *GC_next_tagged_start(void *p);
 #  ifdef DOS_FILE_SYSTEM
 extern void gc_fprintf(int ignored, const char *c, ...);
 #   define object_console_printf gc_fprintf
@@ -986,11 +988,7 @@ void scheme_print_tagged_value(const char *prefix,
   scheme_check_print_is_obj = check_home;
 
   if (!xtagged) {
-    if (SCHEME_PAIRP(v)) {
-      /* Pairs are used for all sorts of non-Scheme values: */
-      type ="#<pair>";
-    } else
-      type = scheme_write_to_string_w_max((Scheme_Object *)v, &len, max_w);
+    type = scheme_write_to_string_w_max((Scheme_Object *)v, &len, max_w);
     if (!scheme_strncmp(type, "#<thread", 8) 
 	&& ((type[8] == '>') || (type[8] == ':'))) {
       char buffer[256];
@@ -1030,7 +1028,7 @@ void scheme_print_tagged_value(const char *prefix,
       memcpy(t2 + len, buffer, len2 + 1);
       len += len2;
       type = t2;
-    }  else if (!scheme_strncmp(type, "#<global-variable-code", 22)) {
+    } else if (!scheme_strncmp(type, "#<global-variable-code", 22)) {
       Scheme_Bucket *b = (Scheme_Bucket *)v;
       Scheme_Object *bsym = (Scheme_Object *)b->key;
       char *t2;
@@ -1070,6 +1068,22 @@ void scheme_print_tagged_value(const char *prefix,
       memcpy(t2 + len, buffer, len2 + 1);
       len += len2;
       type = t2;
+    } else if (!scheme_strncmp(type, "#<syntax-code", 13)) {
+      char *t2, *t3;
+      long len2, len3;
+
+      t2 = scheme_write_to_string_w_max(SCHEME_IPTR_VAL(v), &len2, 32);
+      
+      len3 = len + len2 + 2 + 2;
+      t3 = (char *)scheme_malloc_atomic(len3);
+      memcpy(t3, type, len);
+      t3[len] = (SCHEME_PINT_VAL(v) / 10) + '0';
+      t3[len + 1] = (SCHEME_PINT_VAL(v) % 10) + '0';
+      t3[len + 2] = '=';
+      memcpy(t3 + len + 3, t2, len2);
+      t3[len + len2 + 3] = 0;
+      type = t3;
+      len = len3;
     } else if (!scheme_strncmp(type, "#<syntax", 8)) {
       char *t2, *t3;
       long len2, len3;
@@ -1124,12 +1138,11 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
 
   scheme_start_atomic();
 
-  scheme_console_printf("Begin Dump\n");
-
   if (scheme_external_dump_arg)
     scheme_external_dump_arg(c ? p[0] : NULL);
 
 #ifdef USE_TAGGED_ALLOCATION
+  scheme_console_printf("Begin Dump\n");
   trace_path_type = -1;
   obj_type = -1;
   if (c && SCHEME_SYMBOLP(p[0])) {
@@ -1356,6 +1369,35 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
 
     if (!strcmp("fnl", s))
       GC_show_finals = 1;
+
+    if (!strcmp("peek", s) && (c == 3)) {
+      long n;
+      scheme_end_atomic();
+      if (scheme_get_int_val(p[1], &n)) {
+	if (GC_is_tagged_start((void *)n)) {
+	  return (Scheme_Object *)n;
+	} else
+	  return p[2];
+      }
+    }
+    
+    if (!strcmp("next", s) && (c == 2)) {
+      void *pt;
+      scheme_end_atomic();
+      if (SCHEME_FALSEP(p[1]))
+	pt = GC_next_tagged_start(NULL);
+      else
+	pt = GC_next_tagged_start((void *)p[1]);
+      if (pt)
+	return (Scheme_Object *)pt;
+      else
+	return scheme_false;
+    }
+
+    if (!strcmp("addr", s) && (c == 2)) {
+      scheme_end_atomic();      
+      return scheme_make_integer_value((long)p[1]);
+    }
   } else if (SCHEME_INTP(p[0])) {
     GC_trace_for_tag = SCHEME_INT_VAL(p[0]);
     GC_show_trace = 1;
@@ -1368,6 +1410,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
     GC_show_trace = 0;
   } else
     GC_path_length_limit = 1000;
+  scheme_console_printf("Begin Dump\n");
 #endif
 
   GC_dump();
@@ -1449,6 +1492,9 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
   scheme_console_printf(" (dump-memory-stats -num) - prints paths to objects of size num.\n");
   scheme_console_printf(" (dump-memory-stats sym/num len) - limits path to size len.\n");
   scheme_console_printf(" (dump-memory-stats sym/num 'cons) - builds list instead of showing paths.\n");
+  scheme_console_printf(" (dump-memory-stats 'peek num v) - returns value if num is address of object, v otherwise.\n");
+  scheme_console_printf(" (dump-memory-stats 'next v) - next tagged object after v, #f if none; start with #f.\n");
+  scheme_console_printf(" (dump-memory-stats 'addr v) - returns the address of v.\n");
   scheme_console_printf("End Help\n");
 
   result = cons_accum_result;

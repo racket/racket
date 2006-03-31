@@ -7,8 +7,8 @@
 
 ;; Run as
 ;;   mzscheme -r mk-uchar.ss
-;; in the script's directory, and have a copy of UnicodeData.txt
-;; in the same directory. The file schuchar.inc will be
+;; in the script's directory, and have a copy of UnicodeData.txt, etc.
+;; in the "Unicode" directory. The file schuchar.inc will be
 ;; overwritten.
 
 (require (lib "list.ss"))
@@ -20,6 +20,7 @@
 (define space-cats '("Zl" "Zs" "Zp"))
 (define punc-cats '("Pc" "Pd" "Ps" "Pe" "Pi" "Pf" "Po"))
 (define sym-cats '("Sm" "Sc" "Sk" "So"))
+(define sympart-non-cats '("Ps" "Pe" "Pi" "Pf" "Zl" "Zs" "Zp"))
 (define graphic-cats (append mark-cats
 			     letter-cats
 			     digit-cats
@@ -52,6 +53,15 @@
 (define (combine-case up down title fold combining)
   (indirect cases (list up down title fold combining) 256))
 
+(define general-categories (make-hash-table 'equal))
+(hash-table-put! general-categories "Cn" 0)
+(define (combine-cat cat)
+  (hash-table-get general-categories cat
+		  (lambda ()
+		    (let ([v (hash-table-count general-categories)])
+		      (hash-table-put! general-categories cat v)
+		      v))))
+
 (define hexes (map char->integer (string->list "0123456789abcdefABCDEF")))
 
 (define combining-class-ht (make-hash-table))
@@ -69,22 +79,25 @@
 
 (define top (make-vector hi-count #f))
 (define top2 (make-vector hi-count #f))
+(define top3 (make-vector hi-count #f))
 
 (define range-bottom 0)
 (define range-top -1)
 (define range-v -1)
 (define range-v2 -1)
+(define range-v3 -1)
 (define ranges null)
 
 (define ccount 0)
 
-(define (map1 c v v2 cc)
+(define (map1 c v v2 v3 cc)
   (hash-table-put! combining-class-ht c cc)
   (set! ccount (add1 ccount))
   (if (= c (add1 range-top))
       (begin
 	(unless (and (= v range-v)
-		     (= v2 range-v2))
+		     (= v2 range-v2)
+		     (= v3 range-v3))
 	  (set! range-v -1))
 	(set! range-top c))
       (begin
@@ -104,25 +117,31 @@
 	(set! range-bottom c)
 	(set! range-top c)
 	(set! range-v v)
-	(set! range-v2 v2)))
+	(set! range-v2 v2)
+	(set! range-v3 v3)))
   (let ([top-index (arithmetic-shift c (- low-bits))])
     (let ([vec (vector-ref top top-index)]
-	  [vec2 (vector-ref top2 top-index)])
+	  [vec2 (vector-ref top2 top-index)]
+	  [vec3 (vector-ref top3 top-index)])
       (unless vec
 	(vector-set! top top-index (make-vector (add1 low))))
       (unless vec2
 	(vector-set! top2 top-index (make-vector (add1 low))))
+      (unless vec3
+	(vector-set! top3 top-index (make-vector (add1 low))))
       (let ([vec (vector-ref top top-index)]
-	    [vec2 (vector-ref top2 top-index)])
+	    [vec2 (vector-ref top2 top-index)]
+	    [vec3 (vector-ref top3 top-index)])
 	(vector-set! vec (bitwise-and c low) v)
-	(vector-set! vec2 (bitwise-and c low) v2)))))
+	(vector-set! vec2 (bitwise-and c low) v2)
+	(vector-set! vec3 (bitwise-and c low) v3)))))
 
-(define (mapn c from v v2 cc)
+(define (mapn c from v v2 v3 cc)
   (if (= c from)
-      (map1 c v v2 cc)
+      (map1 c v v2 v3 cc)
       (begin
-	(map1 from v v2 cc)
-	(mapn c (add1 from) v v2 cc))))
+	(map1 from v v2 v3 cc)
+	(mapn c (add1 from) v v2 v3 cc))))
 
 (define (set-compose-initial! c)
   (let ([top-index (arithmetic-shift c (- low-bits))])
@@ -131,7 +150,7 @@
       (vector-set! vec i (bitwise-ior #x8000 (vector-ref vec i))))))
 
 (define midletters
-  (call-with-input-file "WordBreakProperty.txt"
+  (call-with-input-file "Unicode/WordBreakProperty.txt"
     (lambda (i)
       (let loop ()
 	(let ([re (regexp-match #rx"\n([0-9A-F]+)  *; *MidLetter" i)])
@@ -150,7 +169,7 @@
 ;; This code assumes that Final_Sigma is the only condition that we care about:
 (define case-foldings (make-hash-table 'equal))
 (define special-case-foldings (make-hash-table 'equal))
-(call-with-input-file "CaseFolding.txt"
+(call-with-input-file "Unicode/CaseFolding.txt"
   (lambda (i)
     (let loop ()
       (let ([l (read-line i)])
@@ -168,7 +187,7 @@
 ;; This code assumes that Final_Sigma is the only condition that we care about:
 (define special-casings (make-hash-table 'equal))
 (define-struct special-casing (lower upper title folding final-sigma?))
-(call-with-input-file "SpecialCasing.txt"
+(call-with-input-file "Unicode/SpecialCasing.txt"
   (lambda (i)
     (let loop ()
       (let ([l (read-line i)])
@@ -188,7 +207,7 @@
 (define lower-case  (make-hash-table 'equal))
 (define upper-case  (make-hash-table 'equal))
 
-(with-input-from-file "DerivedCoreProperties.txt"
+(with-input-from-file "Unicode/DerivedCoreProperties.txt"
   (lambda ()
     (let loop ()
       (let ([l (read-line)])
@@ -213,7 +232,7 @@
 (define compose-map (make-hash-table 'equal))
 (define do-not-compose-ht (make-hash-table 'equal))
 
-(with-input-from-file "CompositionExclusions.txt"
+(with-input-from-file "Unicode/CompositionExclusions.txt"
   (lambda ()
     (let loop ()
       (let ([l (read-line)])
@@ -257,7 +276,7 @@
 	      (hash-table-put! k-decomp-ht code seq)
 	      #t)))))
 
-(call-with-input-file "UnicodeData.txt"
+(call-with-input-file "Unicode/UnicodeData.txt"
   (lambda (i)
     (let loop ([prev-code 0])
       (let ([l (read-line i)])
@@ -312,8 +331,8 @@
 		     (member cat letter-cats)
 		     ;; digit
 		     (member cat digit-cats)
-		     ;; hex digit
-		     (member code hexes)
+		     ;; SOMETHING - this bit not yet used
+		     #f
 		     ;; whitespace
 		     (or (member cat space-cats)
 			 (member code '(#x9 #xa #xb #xc #xd)))
@@ -335,6 +354,8 @@
 		     (let ([case-fold (hash-table-get case-foldings code (lambda () #f))])
 		       (if case-fold (- case-fold code) 0))
 		     combining)
+		    ;; Category
+		    (combine-cat cat)
 		    ;; Combining class - used again to filter initial composes
 		    combining)
 	      (loop code))))))))
@@ -402,11 +423,11 @@
 
 (define vectors (make-hash-table 'equal))
 (define vectors2 (make-hash-table 'equal))
+(define vectors3 (make-hash-table 'equal))
 
 (define pos 0)
 (define pos2 0)
 (define pos3 0)
-(define pos4 0)
 
 (current-output-port (open-output-file "schuchar.inc" 'truncate/replace))
 
@@ -422,6 +443,7 @@
 
 (hash-vectors! top vectors (lambda () pos) (lambda (v) (set! pos v)))
 (hash-vectors! top2 vectors2 (lambda () pos2) (lambda (v) (set! pos2 v)))
+(hash-vectors! top3 vectors3 (lambda () pos3) (lambda (v) (set! pos3 v)))
 
 ;; copy folding special cases to the special-cases table, if not there already:
 (hash-table-for-each special-case-foldings
@@ -447,6 +469,8 @@
 	      (* 2 (add1 (length (hash-table-map vectors cons)))))
 	   (* (add1 low) 
 	      (* 1 (add1 (length (hash-table-map vectors2 cons)))))
+	   (* (add1 low) 
+	      (* 1 (add1 (length (hash-table-map vectors3 cons)))))
 	   (* (hash-table-count decomp-ht)
 	      8)
 	   (* (hash-table-count compose-map)
@@ -465,6 +489,9 @@
 
 (printf "\n/* Character case mapping as index into scheme_uchar_ups, etc.: */\n")
 (printf "unsigned char *scheme_uchar_cases_table[~a];~n" hi-count)
+
+(printf "\n/* Character general categories: */\n")
+(printf "unsigned char *scheme_uchar_cats_table[~a];~n" hi-count)
 
 (printf "\n/* The udata... arrays are used by init_uchar_table to fill the above mappings.*/\n\n")
 
@@ -494,6 +521,7 @@
 (print-table "short" "" vectors pos #t)
 (printf "\n")
 (print-table "char" "_cases" vectors2 pos2 #f)
+(print-table "char" "_cats" vectors3 pos3 #f)
 
 (printf "~n/* Case mapping size: ~a */\n" (hash-table-count (car cases)))
 (printf "/* Find an index into the ups, downs, etc. table for a character\n")
@@ -520,6 +548,19 @@
 (print-shift (car cases) (unbox (cdr cases)) caddr "int" "titles")
 (print-shift (car cases) (unbox (cdr cases)) cadddr "int" "folds")
 (print-shift (car cases) (unbox (cdr cases)) (lambda (x) (cadddr (cdr x))) "unsigned char" "combining_classes")
+
+(let ([l (quicksort (hash-table-map general-categories cons)
+		    (lambda (a b)
+		      (< (cdr a) (cdr b))))])
+  (printf "\n#define NUM_GENERAL_CATEGORIES ~a\n" (length l))
+  (printf "static const char *general_category_names[] = {")
+  (for-each (lambda (c)
+	      (printf (if (zero? (cdr c))
+			  "\n  ~s"
+			  ",\n  ~s")
+		      (string-downcase (car c))))
+	    l)
+  (printf "\n};\n"))
 
 (set! ranges (cons (list range-bottom range-top (range-v . > . -1))
 		   ranges))
@@ -574,6 +615,7 @@
 	    (loop (add1 i)))))))
 (print-init top vectors "")
 (print-init top2 vectors2 "_cases")
+(print-init top3 vectors3 "_cats")
 (printf "}~n")
 
 ;; ----------------------------------------

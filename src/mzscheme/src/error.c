@@ -1214,7 +1214,12 @@ void scheme_arg_mismatch(const char *name, const char *msg, Scheme_Object *o)
   char *s;
   int slen;
 
-  s = scheme_make_provided_string(o, 1, &slen);
+  if (o)
+    s = scheme_make_provided_string(o, 1, &slen);
+  else {
+    s = "";
+    slen = 0;
+  }
 
   scheme_raise_exn(MZEXN_FAIL_CONTRACT,
 		   "%s: %s%t",

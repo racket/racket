@@ -131,6 +131,25 @@ static int toplevel_obj_FIXUP(void *p) {
 #define toplevel_obj_IS_CONST_SIZE 1
 
 
+static int quotesyntax_obj_SIZE(void *p) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Quote_Syntax));
+}
+
+static int quotesyntax_obj_MARK(void *p) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Quote_Syntax));
+}
+
+static int quotesyntax_obj_FIXUP(void *p) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Quote_Syntax));
+}
+
+#define quotesyntax_obj_IS_ATOMIC 1
+#define quotesyntax_obj_IS_CONST_SIZE 1
+
+
 static int cpointer_obj_SIZE(void *p) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
@@ -4109,6 +4128,7 @@ static int mark_readtable_MARK(void *p) {
   Readtable *t = (Readtable *)p;
   gcMARK(t->mapping);
   gcMARK(t->fast_mapping);
+  gcMARK(t->symbol_parser);
   return
   gcBYTES_TO_WORDS(sizeof(Readtable));
 }
@@ -4117,6 +4137,7 @@ static int mark_readtable_FIXUP(void *p) {
   Readtable *t = (Readtable *)p;
   gcFIXUP(t->mapping);
   gcFIXUP(t->fast_mapping);
+  gcFIXUP(t->symbol_parser);
   return
   gcBYTES_TO_WORDS(sizeof(Readtable));
 }
@@ -4260,6 +4281,8 @@ static int mark_rename_table_SIZE(void *p) {
 static int mark_rename_table_MARK(void *p) {
   Module_Renames *rn = (Module_Renames *)p;
   gcMARK(rn->ht);
+  gcMARK(rn->nomarshal_ht);
+  gcMARK(rn->unmarshal_info);
   gcMARK(rn->plus_kernel_nominal_source);
   gcMARK(rn->marked_names);
   return
@@ -4269,6 +4292,8 @@ static int mark_rename_table_MARK(void *p) {
 static int mark_rename_table_FIXUP(void *p) {
   Module_Renames *rn = (Module_Renames *)p;
   gcFIXUP(rn->ht);
+  gcFIXUP(rn->nomarshal_ht);
+  gcFIXUP(rn->unmarshal_info);
   gcFIXUP(rn->plus_kernel_nominal_source);
   gcFIXUP(rn->marked_names);
   return

@@ -56,8 +56,6 @@ static void *shared_non_tail_code[3][MAX_SHARED_CALL_RANDS][2];
 #define MAX_SHARED_ARITY_CHECK 25
 static void *shared_arity_check[MAX_SHARED_ARITY_CHECK][2][2];
 
-static void *jump_to_native_code;
-static void *jump_to_native_arity_code;
 static void *bad_result_arity_code;
 static void *unbound_global_code;
 static void *quote_syntax_code;
@@ -753,16 +751,15 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 # define __END_SHORT_JUMPS__(cond) /* empty */
 #endif
 
-/* Note: Things like
-
-      refm = jit_jmpi(jit_forward());
-      jit_patch_at(refm, jump_to_native_code);
-
-   appear in the code because the generated instructions can depend on
-   the actual value supplied to jit_jmpi, and it can depend on the
-   relative location between the instruction address and the actual
-   value.  Using jit_patch ensures that the generated instructions
-   always have the same size. */
+/* In
+      jit_jmpi(code);
+   or
+      jit_blti_i(code, v);
+   with short jumps enabled, the generated instructions can depend on
+   the relative location between the instruction address and the
+   actual value. Do not enable short jumps if the relative offset can
+   change between the initial sizing pass and the final pass. Of course,
+   also don't enable short umps if the jump is potentially too long. */
 
 /*========================================================================*/
 /*                         bytecode properties                            */
@@ -783,8 +780,7 @@ static int is_short(Scheme_Object *obj, int fuel)
     {
       int t;
       t = SCHEME_PINT_VAL(obj); 
-      if ((t == CASE_LAMBDA_EXPD)
-	  || (t == QUOTE_SYNTAX_EXPD))
+      if (t == CASE_LAMBDA_EXPD)
 	return fuel - 1;
       else
 	return 0;
@@ -837,6 +833,7 @@ static int is_short(Scheme_Object *obj, int fuel)
       return is_short(branch->fbranch, fuel);
     }
   case scheme_toplevel_type:
+  case scheme_quote_syntax_type:
   case scheme_local_type:
   case scheme_local_unbox_type:
   case scheme_unclosed_procedure_type:
@@ -922,8 +919,7 @@ static int is_simple(Scheme_Object *obj, int depth, int just_markless, mz_jit_st
     {
       int t;
       t = SCHEME_PINT_VAL(obj); 
-      return ((t == CASE_LAMBDA_EXPD)
-	      || (t == QUOTE_SYNTAX_EXPD));
+      return (t == CASE_LAMBDA_EXPD);
     }
     break;
 
@@ -977,6 +973,7 @@ static int is_simple(Scheme_Object *obj, int depth, int just_markless, mz_jit_st
     break;
     
   case scheme_toplevel_type:
+  case scheme_quote_syntax_type:
   case scheme_local_type:
   case scheme_local_unbox_type:
   case scheme_unclosed_procedure_type:
@@ -1190,19 +1187,7 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
   jit_str_i(JIT_R1, JIT_R2);
 #endif
   
-  /* Fast inlined-native jump ok (proc will check argc); */
-#if 0
-  mz_prepare(3);
-  jit_pusharg_p(JIT_RUNSTACK);
-  jit_movi_i(JIT_R1, num_rands);
-  jit_pusharg_i(JIT_R1);
-  jit_pusharg_p(JIT_V1);
-  if (direct_native) {
-    (void)mz_finish(jump_to_native_code);
-  } else {
-    (void)mz_finish(jump_to_native_arity_code);
-  }
-#else
+  /* Fast inlined-native jump ok (proc will check argc, if necessary) */
   {
     jit_insn *refr;
     refr = jit_movi_p(JIT_R0, jit_forward());
@@ -1223,7 +1208,6 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
     jit_jmpr(JIT_V1);
     jit_patch_movi(refr, (_jit.x.pc));
   }
-#endif
   CHECK_LIMIT();
   jit_retval(JIT_R0);
   if (!multi_ok) {
@@ -3078,26 +3062,6 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  END_JIT_DATA(9);
 	}
 	break;
-      case QUOTE_SYNTAX_EXPD:
-	{
-	    int i, c, p;
-	    START_JIT_DATA();
-
-	    LOG_IT(("quote-syntax\n"));
-
-	    obj = SCHEME_IPTR_VAL(obj);
-	    i = SCHEME_INT_VAL(SCHEME_CAR(obj));
-	    c = mz_remap(SCHEME_INT_VAL(SCHEME_CADR(obj)));
-	    p = SCHEME_INT_VAL(SCHEME_CDDR(obj));
-	    
-	    jit_movi_i(JIT_R0, WORDS_TO_BYTES(c));
-	    jit_movi_i(JIT_R1, WORDS_TO_BYTES(i + p + 1));
-	    jit_movi_i(JIT_R2, WORDS_TO_BYTES(p));
-	    (void)jit_calli(quote_syntax_code);
-
-	    END_JIT_DATA(10);
-	}
-	break;
       default:
 	{
 	  JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
@@ -3516,6 +3480,27 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	
       return generate(wcm->body, jitter, is_tail, multi_ok);
     }
+  case scheme_quote_syntax_type:
+    {
+      Scheme_Quote_Syntax *qs = (Scheme_Quote_Syntax *)obj;
+      int i, c, p;
+      START_JIT_DATA();
+      
+      LOG_IT(("quote-syntax\n"));
+      
+      i = qs->position;
+      c = mz_remap(qs->depth);
+      p = qs->midpoint;
+	    
+      jit_movi_i(JIT_R0, WORDS_TO_BYTES(c));
+      jit_movi_i(JIT_R1, WORDS_TO_BYTES(i + p + 1));
+      jit_movi_i(JIT_R2, WORDS_TO_BYTES(p));
+      (void)jit_calli(quote_syntax_code);
+      
+      END_JIT_DATA(10);
+
+      return 1;
+    }
   default:
     {
       int retptr;
@@ -3641,37 +3626,6 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
 {
   int in, i;
   GC_CAN_IGNORE jit_insn *ref, *ref2;
-
-  /* *** jump_to_native_[arity_]code *** */
-  /* Called as a function: */
-  for (i = 0; i < 2; i++) {
-    if (!i)
-      jump_to_native_code = jit_get_ip().ptr;
-    else
-      jump_to_native_arity_code = jit_get_ip().ptr;
-    jit_prolog(3);
-    in = jit_arg_p();
-    jit_getarg_p(JIT_R0, in); /* closure */
-    in = jit_arg_p();
-    jit_getarg_i(JIT_R1, in); /* argc */
-    in = jit_arg_p();
-    jit_getarg_i(JIT_R2, in); /* argv */
-    CHECK_LIMIT();
-    jit_movr_p(JIT_RUNSTACK, JIT_R2);
-    jit_movr_p(JIT_RUNSTACK_BASE, JIT_R1);
-    jit_lshi_ul(JIT_RUNSTACK_BASE, JIT_RUNSTACK_BASE, JIT_LOG_WORD_SIZE);
-    jit_addr_p(JIT_RUNSTACK_BASE, JIT_RUNSTACK_BASE, JIT_RUNSTACK);
-    mz_push_locals();
-    mz_set_local_p(JIT_RUNSTACK, JIT_LOCAL1);
-    jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
-    if (!i) {
-      jit_ldxi_p(JIT_V1, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->u.tail_code);
-    } else {
-      jit_ldxi_p(JIT_V1, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->arity_code);
-    }
-    jit_jmpr(JIT_V1);
-    CHECK_LIMIT();
-  }
 
   /* *** check_arity_code *** */
   /* Called as a function: */
@@ -4541,7 +4495,7 @@ Scheme_Native_Closure_Data *scheme_generate_lambda(Scheme_Closure_Data *data, in
 {
   Scheme_Native_Closure_Data *ndata;
 
-  if (!jump_to_native_code) {
+  if (!check_arity_code) {
     /* Create shared code used for stack-overflow handling, etc.: */
     generate_one(NULL, do_generate_common, NULL, 0, NULL, NULL);
   }

@@ -182,6 +182,7 @@ Scheme_Object *scheme_tail_call_waiting;
 Scheme_Object *scheme_multiple_values;
 unsigned short **scheme_uchar_table;
 unsigned char **scheme_uchar_cases_table;
+unsigned char **scheme_uchar_cats_table;
 int *scheme_uchar_ups;
 int *scheme_uchar_downs;
 int *scheme_uchar_titles;
@@ -357,6 +358,7 @@ Scheme_Object *(*scheme_make_closed_prim_w_everything)(Scheme_Closed_Prim *fun,
 void (*scheme_prim_is_method)(Scheme_Object *o);
 Scheme_Object *(*scheme_make_pair)(Scheme_Object *car, Scheme_Object *cdr);
 Scheme_Object *(*scheme_make_immutable_pair)(Scheme_Object *car, Scheme_Object *cdr);
+Scheme_Object *(*scheme_make_raw_pair)(Scheme_Object *, Scheme_Object *);
 Scheme_Object *(*scheme_make_byte_string)(const char *chars);
 Scheme_Object *(*scheme_make_sized_byte_string)(char *chars, long len, int copy);
 Scheme_Object *(*scheme_make_sized_offset_byte_string)(char *chars, long d, long len, int copy);

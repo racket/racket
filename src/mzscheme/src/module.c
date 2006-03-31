@@ -443,7 +443,7 @@ void scheme_finish_kernel(Scheme_Env *env)
 
   rn = scheme_make_module_rename(0, mzMOD_RENAME_NORMAL, NULL);
   for (i = kernel->num_provides; i--; ) {
-    scheme_extend_module_rename(rn, kernel_symbol, exs[i], exs[i], kernel_symbol, exs[i], 0);
+    scheme_extend_module_rename(rn, kernel_symbol, exs[i], exs[i], kernel_symbol, exs[i], 0, 0);
   }
 
   scheme_sys_wraps(NULL);
@@ -541,7 +541,7 @@ void scheme_require_from_original_env(Scheme_Env *env, int syntax_only)
   c = kernel->num_provides;
   i = (syntax_only ? kernel->num_var_provides : 0);
   for (; i < c; i++) {
-    scheme_extend_module_rename(rn, kernel_symbol, exs[i], exs[i], kernel_symbol, exs[i], 0);
+    scheme_extend_module_rename(rn, kernel_symbol, exs[i], exs[i], kernel_symbol, exs[i], 0, 0);
   }
 }
 
@@ -1156,7 +1156,7 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 	past_to_modchains = SCHEME_CDR(past_to_modchains);
 	phase--;
       } else {
-	past_checkeds = cons((Scheme_Object *)prev_checked, past_checkeds);
+	past_checkeds = scheme_make_raw_pair((Scheme_Object *)prev_checked, past_checkeds);
 	prev_checked = checked;
 
 	todo = next_phase_todo;
@@ -1205,7 +1205,7 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
   }
   while (phase > 0) {
     prev_checked = (Scheme_Hash_Table *)SCHEME_CAR(past_checkeds);
-    future_checkeds = scheme_make_pair((Scheme_Object *)prev_checked, future_checkeds);
+    future_checkeds = scheme_make_raw_pair((Scheme_Object *)prev_checked, future_checkeds);
     
     past_checkeds = SCHEME_CDR(past_checkeds);
     --phase;
@@ -1321,7 +1321,7 @@ static Scheme_Object *namespace_unprotect_module(int argc, Scheme_Object *argv[]
 static int add_require_renames(Scheme_Object *rn, Scheme_Module *im, Scheme_Object *idx)
 {
   int i, saw_mb;
-  Scheme_Object **exs, **exss, **exsns, *midx;
+  Scheme_Object **exs, **exss, **exsns, *midx, *info;
 
   saw_mb = 0;
 
@@ -1333,7 +1333,7 @@ static int add_require_renames(Scheme_Object *rn, Scheme_Module *im, Scheme_Obje
       midx = scheme_modidx_shift(exss[i], im->src_modidx, idx);
     else
       midx = idx;
-    scheme_extend_module_rename(rn, midx, exs[i], exsns[i], idx, exs[i], 0);
+    scheme_extend_module_rename(rn, midx, exs[i], exsns[i], idx, exs[i], 0, 1);
     if (SAME_OBJ(exs[i], module_begin_symbol))
       saw_mb = 1;
   }
@@ -1342,6 +1342,9 @@ static int add_require_renames(Scheme_Object *rn, Scheme_Module *im, Scheme_Obje
     scheme_extend_module_rename_with_kernel(rn, idx);
     saw_mb = 1;
   }
+
+  info = cons(idx, cons(scheme_null, scheme_false));
+  scheme_save_module_rename_unmarshal(rn, info);
 
   return saw_mb;
 }
@@ -1403,13 +1406,13 @@ static Scheme_Object *module_to_namespace(int argc, Scheme_Object *argv[])
 	for (i = 0; i < m->num_provides; i++) {
 	  if (SCHEME_FALSEP(m->provide_srcs[i])) {
 	    name = m->provides[i];
-	    scheme_extend_module_rename(rn, m->self_modidx, name, name, m->self_modidx, name, 0);
+	    scheme_extend_module_rename(rn, m->self_modidx, name, name, m->self_modidx, name, 0, 0);
 	  }
 	}
 	/* Local, not provided: */
 	for (i = 0; i < m->num_indirect_provides; i++) {
 	  name = m->indirect_provides[i];
-	  scheme_extend_module_rename(rn, m->self_modidx, name, name, m->self_modidx, name, 0);
+	  scheme_extend_module_rename(rn, m->self_modidx, name, name, m->self_modidx, name, 0, 0);
 	}
 
 	/* Required: */
@@ -3771,7 +3774,7 @@ static Scheme_Object *add_lifted_defn(Scheme_Object *data, Scheme_Object **_id, 
   scheme_add_global_symbol(name, scheme_undefined, env->genv);
   
   /* Add a renaming: */
-  scheme_extend_module_rename(rn, self_modidx, name, name, self_modidx, name, 0);
+  scheme_extend_module_rename(rn, self_modidx, name, name, self_modidx, name, 0, 0);
 
   id = scheme_add_rename(*_id, rn);
   *_id = id;
@@ -4063,9 +4066,9 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
 	    /* Add a renaming: */
 	    if (!SAME_OBJ(SCHEME_STX_VAL(orig_name), name))
-	      scheme_extend_module_rename(post_ex_rn, self_modidx, name, name, self_modidx, name, 0);
+	      scheme_extend_module_rename(post_ex_rn, self_modidx, name, name, self_modidx, name, 0, 0);
 	    else
-	      scheme_extend_module_rename(rn, self_modidx, name, name, self_modidx, name, 0);	      
+	      scheme_extend_module_rename(rn, self_modidx, name, name, self_modidx, name, 0, 0);
 	    
 	    vars = SCHEME_STX_CDR(vars);
 	  }
@@ -4138,10 +4141,10 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
 	    if (!SAME_OBJ(SCHEME_STX_VAL(orig_name), name))
 	      scheme_extend_module_rename(for_stx ? post_ex_et_rn : post_ex_rn, self_modidx, name, name, self_modidx, name,
-					  for_stx ? 1 : 0);
+					  for_stx ? 1 : 0, 0);
 	    else
 	      scheme_extend_module_rename(for_stx ? et_rn : rn, self_modidx, name, name, self_modidx, name,
-					  for_stx ? 1 : 0);
+					  for_stx ? 1 : 0, 0);
 
 	    count++;
 	  }
@@ -5220,6 +5223,248 @@ static void qsort_provides(Scheme_Object **exs, Scheme_Object **exsns, Scheme_Ob
 /*                         top-level require                           */
 /**********************************************************************/
 
+void add_single_require(Scheme_Module *m, /* from module */
+			Scheme_Object *idx, /* from module's idx; may be used to find m on unmarshal */
+			Scheme_Env *env, /* env for mark_src or copy_vars */
+			Scheme_Object *rn, /* add requires to this rename when no mark_src */
+			Scheme_Object *post_ex_rn, /* add requires to this rename when mark_src */
+			Scheme_Object *exns, /* NULL or [syntax] list of [syntax] symbols not to import */
+			Scheme_Hash_Table *onlys, /* NULL or hash table of names to import */
+			Scheme_Object *prefix, /* NULL or prefix symbol */
+			Scheme_Object *iname, /* NULL or symbol for a single import */
+			Scheme_Object *ename, /* NULL or symbol for a single import */
+			Scheme_Object *mark_src, /* default mark_src; if onlys, each is also mark_src */
+			int unpack_kern, int copy_vars, int for_unmarshal,
+			int *all_simple,
+			Check_Func ck, /* NULL or called for each addition */
+			void *data, Scheme_Object *form, Scheme_Object *cki /* ck args */
+			)
+{
+  int j, var_count;
+  Scheme_Object **exs, **exsns, **exss;
+  Scheme_Object *orig_idx = idx;
+  int is_kern, has_context, save_marshal_info = 0, can_save_marshal = 1;
+  Scheme_Object *nominal_modidx, *one_exn, *prnt_iname, *name;
+  
+  if (mark_src) {
+    /* Check whether there's context for this import (which
+       leads to generated local names). */
+    Scheme_Object *l;
+    l = scheme_stx_extract_marks(mark_src);
+    has_context = !SCHEME_NULLP(l);
+    if (has_context) {
+      if (all_simple)
+	*all_simple = 0;
+    }
+  } else
+    has_context = 0; /* computed later */
+
+  if (iname || ename || onlys || for_unmarshal || unpack_kern || has_context)
+    can_save_marshal = 0;
+    
+  is_kern = (SAME_OBJ(idx, kernel_symbol)
+	     && !exns
+	     && !onlys
+	     && !prefix
+	     && !iname
+	     && !unpack_kern
+	     && !has_context);
+
+  one_exn = NULL;
+
+  nominal_modidx = idx;
+
+  while (1) { /* loop to handle kernel re-provides... */
+    int break_if_iname_null = !!iname;
+
+    exs = m->provides;
+    exsns = m->provide_src_names;
+    exss = m->provide_srcs;
+    var_count = m->num_var_provides;
+
+    for (j = m->num_provides; j--; ) {
+      Scheme_Object *modidx;
+	
+      if (ename) {
+	if (!SAME_OBJ(SCHEME_STX_VAL(ename), exs[j]))
+	  continue;  /* we don't want this one. */
+      } else if (onlys) {
+	name = scheme_hash_get(onlys, exs[j]);
+	if (!name)
+	  continue;  /* we don't want this one. */
+	mark_src = name;
+	{
+	  Scheme_Object *l;
+	  l = scheme_stx_extract_marks(mark_src);
+	  has_context = !SCHEME_NULLP(l);
+	}
+	/* Remove to indicate that it's been imported: */
+	scheme_hash_set(onlys, exs[j], NULL);
+      } else {
+	if (exns) {
+	  Scheme_Object *l, *a;
+	  for (l = exns; SCHEME_STX_PAIRP(l); l = SCHEME_STX_CDR(l)) {
+	    a = SCHEME_STX_CAR(l);
+	    if (SCHEME_STXP(a)) 
+	      a = SCHEME_STX_VAL(a);
+	    if (SAME_OBJ(a, exs[j]))
+	      break;
+	  }
+	  if (!SCHEME_STX_NULLP(l))
+	    continue; /* we don't want this one. */
+	}
+
+	if (one_exn) {
+	  if (SAME_OBJ(one_exn, exs[j]))
+	    continue; /* we don't want this one. */
+	}
+      }
+	
+      modidx = ((exss && !SCHEME_FALSEP(exss[j])) 
+		? scheme_modidx_shift(exss[j], m->src_modidx, idx)
+		: idx);
+      
+      if (!iname)
+	iname = exs[j];
+
+      if (SCHEME_SYM_WEIRDP(iname)) {
+	/* This shouldn't happen. In case it does, don't import a
+	   gensym or parallel symbol. The former is useless. The
+	   latter is supposed to be module-specific, and it could
+	   collide with local module-specific ids. */
+	iname = NULL;
+	continue;
+      }
+
+      if (prefix)
+	iname = scheme_symbol_append(prefix, iname);
+
+      prnt_iname = iname;
+      if (has_context) {
+	/* The `require' expression has a set of marks in its
+	   context, which means that we need to generate a name. */
+	iname = scheme_datum_to_syntax(iname, scheme_false, mark_src, 0, 0);
+	iname = scheme_tl_id_sym(env, iname, 2);
+      }
+
+      if (ck)
+	ck(prnt_iname, iname, nominal_modidx, modidx, exsns[j], (j < var_count), data, cki, form);
+	
+      if (!is_kern) {
+	if (copy_vars && (j < var_count) && !env->module && !env->phase) {
+	  Scheme_Env *menv;
+	  Scheme_Object *val;
+	  modidx = scheme_module_resolve(modidx);
+	  menv = scheme_module_access(modidx, env, 0);
+	  val = scheme_lookup_in_table(menv->toplevel, (char *)exsns[j]);
+	  scheme_add_global_symbol(iname, val, env);
+	} else if (!for_unmarshal || !has_context) {
+	  if (!save_marshal_info && !has_context && can_save_marshal)
+	    save_marshal_info = 1;
+	  scheme_extend_module_rename((has_context ? post_ex_rn : rn), 
+				      modidx, iname, exsns[j], nominal_modidx, exs[j], 0,
+				      for_unmarshal || (!has_context && can_save_marshal));
+	}
+      }
+
+      iname = NULL;
+	
+      if (ename) {
+	ename = NULL;
+	break;
+      }
+    }
+
+    if (ename) {
+      if (!m->reprovide_kernel) {
+	scheme_wrong_syntax(NULL, ename, form, "no such provided variable");
+	return;
+      }
+    }
+
+    if (is_kern)
+      scheme_extend_module_rename_with_kernel(rn, nominal_modidx);
+
+    if (break_if_iname_null && !iname)
+      break;
+
+    if (m->reprovide_kernel) {
+      idx = kernel_symbol;
+      one_exn = m->kernel_exclusion;
+      m = kernel;
+      is_kern = !prefix && !unpack_kern && !ename && !has_context;
+    } else
+      break;
+  }
+
+  if (save_marshal_info) {
+    Scheme_Object *info, *a;
+
+    if (exns) {
+      /* Convert to a list of symbols: */
+      info = scheme_null;
+      for (; SCHEME_STX_PAIRP(exns); exns = SCHEME_STX_CDR(exns)) {
+	a = SCHEME_STX_CAR(exns);
+	if (SCHEME_STXP(a))
+	  a = SCHEME_STX_VAL(a);
+	info = cons(a, info);
+      }
+      exns = info;
+    } else
+      exns = scheme_null;
+
+    /* The format of this data is checked in stxobj for unmarshaling
+       a Module_Renames. Also the idx must be first, to support shifting. */
+    info = cons(orig_idx, cons(exns, prefix ? prefix : scheme_false));
+
+    scheme_save_module_rename_unmarshal(rn, info);
+  }
+}
+
+void scheme_do_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info,
+				       Scheme_Object *modidx_shift_from, Scheme_Object *modidx_shift_to)
+{
+  Scheme_Object *orig_idx, *exns, *prefix, *idx, *name;
+  Scheme_Module *m;
+  Scheme_Env *env;
+
+  idx = SCHEME_CAR(info);
+  orig_idx = idx;
+  info = SCHEME_CDR(info);
+  exns = SCHEME_CAR(info);
+  prefix = SCHEME_CDR(info);
+
+  if (SCHEME_FALSEP(prefix))
+    prefix = NULL;
+  if (SCHEME_NULLP(exns))
+    exns = NULL;
+
+  if (modidx_shift_from)
+    idx = scheme_modidx_shift(idx,
+			      modidx_shift_from,
+			      modidx_shift_to);
+
+  env = scheme_get_env(scheme_current_config());
+  name = scheme_module_resolve(idx);
+  m = (Scheme_Module *)scheme_hash_get(env->module_registry, name);
+  if (!m) {
+    scheme_signal_error("broken compiled/expanded code or wrong namespace;"
+			" cannot find instance to restore imported renamings"
+			" from module: %s",
+			scheme_symbol_name(name));
+    return;
+  }
+
+  add_single_require(m, orig_idx, env,
+		     rn, NULL,
+		     exns, NULL, prefix, NULL, NULL,
+		     NULL,
+		     0, 0, 1,
+		     NULL,
+		     NULL,
+		     NULL, NULL, NULL);
+}
+
 Scheme_Object *parse_requires(Scheme_Object *form, 
 			      Scheme_Object *base_modidx,
 			      Scheme_Env *env,
@@ -5231,10 +5476,8 @@ Scheme_Object *parse_requires(Scheme_Object *form,
 {
   Scheme_Object *ll = form;
   Scheme_Module *m;
-  int j, var_count, is_kern, has_context;
-  Scheme_Object **exs, **exsns, **exss;
-  Scheme_Object *idxstx, *idx, *name, *i, *exns, *one_exn, *prefix, *iname, *ename, *aa;
-  Scheme_Object *imods, *nominal_modidx, *mark_src, *prnt_iname;
+  Scheme_Object *idxstx, *idx, *name, *i, *exns, *prefix, *iname, *ename, *aa;
+  Scheme_Object *imods, *mark_src;
   Scheme_Hash_Table *onlys;
 
   imods = scheme_null;
@@ -5432,25 +5675,6 @@ Scheme_Object *parse_requires(Scheme_Object *form,
     else if (expstart)
       expstart_module(m, env, 0, idx, 0, 0, scheme_null);
 
-    if (mark_src) {
-      /* Check whether there's context for this import (which
-	 leads to generated local names). */
-      Scheme_Object *l;
-      l = scheme_stx_extract_marks(mark_src);
-      has_context = !SCHEME_NULLP(l);
-      if (has_context && all_simple)
-	*all_simple = 0;
-    } else
-      has_context = 0; /* computed later */
-
-    is_kern = (SAME_OBJ(idx, kernel_symbol)
-	       && !exns
-	       && !onlys
-	       && !prefix
-	       && !iname
-	       && !unpack_kern
-	       && !has_context);
-
     /* Add name to require list, if it's not there: */
     {
       Scheme_Object *l, *last = NULL, *p;
@@ -5467,127 +5691,13 @@ Scheme_Object *parse_requires(Scheme_Object *form,
 	  imods = p;
       }
     }
-
-    one_exn = NULL;
-
-    nominal_modidx = idx;
-      
-    while (1) { /* loop to handle kernel re-provides... */
-      int break_if_iname_null = !!iname;
-
-      exs = m->provides;
-      exsns = m->provide_src_names;
-      exss = m->provide_srcs;
-      var_count = m->num_var_provides;
-
-      for (j = m->num_provides; j--; ) {
-	Scheme_Object *modidx;
-	
-	if (ename) {
-	  if (!SAME_OBJ(SCHEME_STX_VAL(ename), exs[j]))
-	    continue;  /* we don't want this one. */
-	} else if (onlys) {
-	  name = scheme_hash_get(onlys, exs[j]);
-	  if (!name)
-	    continue;  /* we don't want this one. */
-	  mark_src = name;
-	  {
-	    Scheme_Object *l;
-	    l = scheme_stx_extract_marks(mark_src);
-	    has_context = !SCHEME_NULLP(l);
-	  }
-	  /* Remove to indicate that it's been imported: */
-	  scheme_hash_set(onlys, exs[j], NULL);
-	} else {
-	  if (exns) {
-	    Scheme_Object *l;
-	    for (l = exns; SCHEME_STX_PAIRP(l); l = SCHEME_STX_CDR(l)) {
-	      if (SAME_OBJ(SCHEME_STX_VAL(SCHEME_STX_CAR(l)), exs[j]))
-		break;
-	    }
-	    if (!SCHEME_STX_NULLP(l))
-	      continue; /* we don't want this one. */
-	  }
-
-	  if (one_exn) {
-	    if (SAME_OBJ(one_exn, exs[j]))
-	      continue; /* we don't want this one. */
-	  }
-	}
-	
-	modidx = ((exss && !SCHEME_FALSEP(exss[j])) 
-		  ? scheme_modidx_shift(exss[j], m->src_modidx, idx)
-		  : idx);
-      
-	if (!iname)
-	  iname = exs[j];
-
-	if (SCHEME_SYM_WEIRDP(iname)) {
-	  /* This shouldn't happen. In case it does, don't import a
-	     gensym or parallel symbol. The former is useless. The
-	     latter is supposed to be module-specific, and it could
-	     collide with local module-specific ids. */
-	  iname = NULL;
-	  continue;
-	}
-
-	if (prefix)
- 	  iname = scheme_symbol_append(prefix, iname);
-
-	prnt_iname = iname;
-	if (has_context) {
-	  /* The `require' expression has a set of marks in its
-	     context, which means that we need to generate a name. */
-	  iname = scheme_datum_to_syntax(iname, scheme_false, mark_src, 0, 0);
-	  iname = scheme_tl_id_sym(env, iname, 2);
-	}
-
-	if (ck)
-	  ck(prnt_iname, iname, nominal_modidx, modidx, exsns[j], (j < var_count), data, i, form);
-	
-	if (!is_kern) {
-    	  if (copy_vars && start && (j < var_count) && !env->module && !env->phase) {
-	    Scheme_Env *menv;
-	    Scheme_Object *val;
-	    modidx = scheme_module_resolve(modidx);
-	    menv = scheme_module_access(modidx, env, 0);
-	    val = scheme_lookup_in_table(menv->toplevel, (char *)exsns[j]);
-	    scheme_add_global_symbol(iname, val, env);
-	  } else {
-	    scheme_extend_module_rename((has_context ? post_ex_rn : rn), 
-					modidx, iname, exsns[j], nominal_modidx, exs[j], 0);
-	  }
-	}
-
-	iname = NULL;
-	
-	if (ename) {
-	  ename = NULL;
-	  break;
-	}
-      }
-
-      if (ename) {
-	if (!m->reprovide_kernel) {
-	  scheme_wrong_syntax(NULL, ename, form, "no such provided variable");
-	  return NULL;
-	}
-      }
-
-      if (is_kern)
-	scheme_extend_module_rename_with_kernel(rn, nominal_modidx);
-
-      if (break_if_iname_null && !iname)
-	break;
-
-      if (m->reprovide_kernel) {
-	idx = kernel_symbol;
-	one_exn = m->kernel_exclusion;
-	m = kernel;
-	is_kern = !prefix && !unpack_kern && !ename && !has_context;
-      } else
-	break;
-    }
+    
+    add_single_require(m, idx, env, rn, post_ex_rn,
+		       exns, onlys, prefix, iname, ename,
+		       mark_src, 
+		       unpack_kern, copy_vars && start, 0,
+		       all_simple,
+		       ck, data, form, i);
 
     if (onlys && onlys->count) {
       /* Something required in `only' wasn't provided by the module */

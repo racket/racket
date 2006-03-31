@@ -2153,7 +2153,15 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 #ifdef SGC_STD_DEBUGGING
 	len = strlen(s) - 1;
 #endif
-	print_utf8_string(pp, s, 0, len);
+	if (!s) {
+	  char s[8];
+	  print_utf8_string(pp, "<???:", 0, 5);
+	  sprintf(s, "%d", SCHEME_TYPE(obj));
+	  print_utf8_string(pp, s, 0, -1);
+	  print_utf8_string(pp, ">", 0, 1);
+	} else {
+	  print_utf8_string(pp, s, 0, len);
+	}
 #ifdef SGC_STD_DEBUGGING
 	PRINTADDRESS(pp, obj);
 	print_utf8_string(pp, ">", 0, 1);

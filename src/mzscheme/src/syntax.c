@@ -101,7 +101,6 @@ static Scheme_Object *define_syntaxes_execute(Scheme_Object *expr);
 static Scheme_Object *define_for_syntaxes_execute(Scheme_Object *expr);
 static Scheme_Object *case_lambda_execute(Scheme_Object *expr);
 static Scheme_Object *begin0_execute(Scheme_Object *data);
-static Scheme_Object *quote_syntax_execute(Scheme_Object *data);
 
 static Scheme_Object *bangboxenv_execute(Scheme_Object *data);
 static Scheme_Object *bangboxvalue_execute(Scheme_Object *data);
@@ -139,8 +138,6 @@ static void case_lambda_validate(Scheme_Object *data, Mz_CPort *port, char *stac
 				 int num_toplevels, int num_stxes);
 static void begin0_validate(Scheme_Object *data, Mz_CPort *port, char *stack, int depth, int letlimit, int delta,
 			    int num_toplevels, int num_stxes);
-static void quote_syntax_validate(Scheme_Object *data, Mz_CPort *port, char *stack, int depth, int letlimit, int delta,
-				    int num_toplevels, int num_stxes);
 static void bangboxenv_validate(Scheme_Object *data, Mz_CPort *port, char *stack, int depth, int letlimit, int delta,
 				int num_toplevels, int num_stxes);
 static void bangboxvalue_validate(Scheme_Object *data, Mz_CPort *port, char *stack, int depth, int letlimit, int delta,
@@ -153,7 +150,6 @@ static Scheme_Object *define_syntaxes_jit(Scheme_Object *expr);
 static Scheme_Object *define_for_syntaxes_jit(Scheme_Object *expr);
 static Scheme_Object *case_lambda_jit(Scheme_Object *expr);
 static Scheme_Object *begin0_jit(Scheme_Object *data);
-static Scheme_Object *quote_syntax_jit(Scheme_Object *data);
 static Scheme_Object *bangboxvalue_jit(Scheme_Object *data);
 
 static Scheme_Object *named_let_syntax (Scheme_Object *form, Scheme_Comp_Env *env, 
@@ -274,10 +270,6 @@ scheme_init_syntax (Scheme_Env *env)
 			 begin0_resolve, begin0_validate,
 			 begin0_execute, begin0_jit, 
 			 begin0_clone, -1);
-  scheme_register_syntax(QUOTE_SYNTAX_EXPD, 
-			 NULL, NULL, quote_syntax_validate,
-			 quote_syntax_execute, quote_syntax_jit, 
-			 NULL, 2);
 
   scheme_register_syntax(BOXENV_EXPD, 
 			 NULL, NULL, bangboxenv_validate,
@@ -3792,44 +3784,6 @@ unquote_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *er
 /**********************************************************************/
 /*                            quote-syntax                            */
 /**********************************************************************/
-
-static Scheme_Object *
-quote_syntax_execute(Scheme_Object *obj)
-{
-  Scheme_Object **globs, *stx;
-  int i, c, p;
-
-  i = SCHEME_INT_VAL(SCHEME_CAR(obj));
-  c = SCHEME_INT_VAL(SCHEME_CADR(obj));
-  p = SCHEME_INT_VAL(SCHEME_CDDR(obj));
-
-  globs = (Scheme_Object **)MZ_RUNSTACK[c];
-  stx = globs[i+p+1];
-  if (!stx) {
-    stx = globs[p];
-    stx = scheme_add_rename(((Scheme_Object **)SCHEME_CDR(stx))[i], 
-			    SCHEME_CAR(stx));
-    globs[i+p+1] = stx;
-  }
-  return stx;
-}
-
-Scheme_Object *quote_syntax_jit(Scheme_Object *data)
-{
-  return data;
-}
-
-static void quote_syntax_validate(Scheme_Object *obj, Mz_CPort *port, char *stack, 
-				  int depth, int letlimit, int delta, int num_toplevels, int num_stxes)
-{
-  int i, c, p;
-
-  i = SCHEME_INT_VAL(SCHEME_CAR(obj));
-  c = SCHEME_INT_VAL(SCHEME_CADR(obj));
-  p = SCHEME_INT_VAL(SCHEME_CDDR(obj));
-
-  scheme_validate_quote_syntax(c, p, i, port, stack, depth, delta, num_toplevels, num_stxes);
-}
 
 static Scheme_Object *
 quote_syntax_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)

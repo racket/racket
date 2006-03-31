@@ -3589,7 +3589,7 @@ internal_call_cc (int argc, Scheme_Object *argv[])
     /* For copying cont marks back in, we need a list of sub_conts,
        deepest to shallowest: */
     for (sub_cont = cont->buf.cont; sub_cont; sub_cont = sub_cont->buf.cont) {
-      sub_conts = scheme_make_pair((Scheme_Object *)sub_cont, sub_conts);
+      sub_conts = scheme_make_raw_pair((Scheme_Object *)sub_cont, sub_conts);
     }
     
     /* For dynamic-winds after the "common" intersection

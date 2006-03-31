@@ -201,6 +201,8 @@ static Scheme_Object *write_with_cont_mark(Scheme_Object *obj);
 static Scheme_Object *read_with_cont_mark(Scheme_Object *obj);
 static Scheme_Object *write_syntax(Scheme_Object *obj);
 static Scheme_Object *read_syntax(Scheme_Object *obj);
+static Scheme_Object *write_quote_syntax(Scheme_Object *obj);
+static Scheme_Object *read_quote_syntax(Scheme_Object *obj);
 
 static Scheme_Object *define_values_symbol, *letrec_values_symbol, *lambda_symbol;
 static Scheme_Object *unknown_symbol, *void_link_symbol, *quote_symbol;
@@ -329,6 +331,8 @@ scheme_init_eval (Scheme_Env *env)
   scheme_install_type_reader(scheme_branch_type, read_branch);
   scheme_install_type_writer(scheme_with_cont_mark_type, write_with_cont_mark);
   scheme_install_type_reader(scheme_with_cont_mark_type, read_with_cont_mark);
+  scheme_install_type_writer(scheme_quote_syntax_type, write_quote_syntax);
+  scheme_install_type_reader(scheme_quote_syntax_type, read_quote_syntax);
   scheme_install_type_writer(scheme_syntax_type, write_syntax);
   scheme_install_type_reader(scheme_syntax_type, read_syntax);
   
@@ -1447,18 +1451,20 @@ Scheme_Object *scheme_resolve_expr(Scheme_Object *expr, Resolve_Info *info)
     return scheme_resolve_toplevel(info, expr);
   case scheme_compiled_quote_syntax_type:
     {
-      Scheme_Object *obj;
+      Scheme_Quote_Syntax *qs;
       int i, c, p;
 
       i = SCHEME_LOCAL_POS(expr);
       c = scheme_resolve_toplevel_pos(info);
       p = scheme_resolve_quote_syntax_pos(info);
 
-      obj = scheme_make_pair(scheme_make_integer(i),
-			     scheme_make_pair(scheme_make_integer(c),
-					      scheme_make_integer(p)));
+      qs = MALLOC_ONE_TAGGED(Scheme_Quote_Syntax);
+      qs->so.type = scheme_quote_syntax_type;
+      qs->depth = c;
+      qs->position = i;
+      qs->midpoint = p;
 
-      return scheme_make_syntax_resolved(QUOTE_SYNTAX_EXPD, obj);
+      return (Scheme_Object *)qs;
     }
   case scheme_variable_type:
   case scheme_module_variable_type:
@@ -5289,7 +5295,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 
     if (SCHEME_INTP(obj)) {
       v = obj;
-      goto returnv;
+      goto returnv_never_multi;
     }
 
     type = _SCHEME_TYPE(obj);
@@ -5309,17 +5315,17 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	  prefix tmp
 
 	  global_lookup(v = , obj, v);  
-	  goto returnv;
+	  goto returnv_never_multi;
 	}
       case scheme_local_type:
 	{
 	  v = RUNSTACK[SCHEME_LOCAL_POS(obj)];
-	  goto returnv;
+	  goto returnv_never_multi;
 	}
       case scheme_local_unbox_type:
 	{
 	  v = SCHEME_ENVBOX_VAL(RUNSTACK[SCHEME_LOCAL_POS(obj)]);
-	  goto returnv;
+	  goto returnv_never_multi;
 	}
       case scheme_syntax_type:
 	{
@@ -5596,7 +5602,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       case scheme_unclosed_procedure_type:
 	UPDATE_THREAD_RSPTR();
 	v = scheme_make_closure(p, obj, 1);
-	goto returnv;
+	goto returnv_never_multi;
 
       case scheme_let_value_type:
 	{
@@ -5800,10 +5806,32 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 
 	  goto eval_top;
 	}
+
+      case scheme_quote_syntax_type:
+	{
+	  GC_CAN_IGNORE Scheme_Quote_Syntax *qs = (Scheme_Quote_Syntax *)obj;
+	  Scheme_Object **globs;
+	  int i, c, p;
+
+	  i = qs->position;
+	  c = qs->depth;
+	  p = qs->midpoint;
+
+	  globs = (Scheme_Object **)RUNSTACK[c];
+	  v = globs[i+p+1];
+	  if (!v) {
+	    v = globs[p];
+	    v = scheme_add_rename(((Scheme_Object **)SCHEME_CDR(v))[i], 
+				  SCHEME_CAR(v));
+	    globs[i+p+1] = v;
+	  }
+
+	  goto returnv_never_multi;
+	}
       
       default:
 	v = obj;
-	goto returnv;
+	goto returnv_never_multi;
       }
   }
 
@@ -5833,6 +5861,8 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 				NULL);
       return NULL;
     }
+
+ returnv_never_multi:
 
   MZ_RUNSTACK = old_runstack;
   MZ_CONT_MARK_STACK = old_cont_mark_stack;
@@ -6725,10 +6755,9 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
       v = scheme_stx_phase_shift_as_rename(now_phase - src_phase, src_modidx, now_modidx);
       if (v) {
 	/* Put lazy-shift info in a[i]: */
-	v = scheme_make_pair(v, (Scheme_Object *)rp->stxes);
+	v = scheme_make_raw_pair(v, (Scheme_Object *)rp->stxes);
 	a[i] = v;
-	/* Rest of a left zeroed, to be filled in lazily by
-	   QUOTE_SYNTAX_EXPD handler */
+	/* Rest of a left zeroed, to be filled in lazily by quote-syntax evaluation */
       } else {
 	/* No shift, so fill in stxes immediately */
 	i++;
@@ -6914,6 +6943,21 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr, char *stack,
       goto top;
     }
     break;
+  case scheme_quote_syntax_type:
+    {
+      Scheme_Quote_Syntax *qs = (Scheme_Quote_Syntax *)expr;
+      int c = qs->depth;
+      int i = qs->position;
+      int p = qs->midpoint;
+      int d = c + delta;
+
+      if ((c < 0) || (p < 0) || (d >= depth)
+	  || (stack[d] != VALID_TOPLEVELS) 
+	  || (p != num_toplevels)
+	  || (i >= num_stxes))
+	scheme_ill_formed_code(port);
+    }
+    break;
   case scheme_unclosed_procedure_type:
     {
       Scheme_Closure_Data *data = (Scheme_Closure_Data *)expr;
@@ -7073,19 +7117,6 @@ void scheme_validate_toplevel(Scheme_Object *expr, Mz_CPort *port,
     scheme_ill_formed_code(port);
 
   scheme_validate_expr(port, expr, stack, depth, delta, delta, num_toplevels, num_stxes);
-}
-
-void scheme_validate_quote_syntax(int c, int p, int i, Mz_CPort *port,
-				  char *stack, int depth, int delta, 
-				  int num_toplevels, int num_stxes)
-{
-  int d = c + delta;
-
-  if ((c < 0) || (p < 0) || (d >= depth)
-      || (stack[d] != VALID_TOPLEVELS) 
-      || (p != num_toplevels)
-      || (i >= num_stxes))
-    scheme_ill_formed_code(port);
 }
 
 void scheme_validate_boxenv(int p, Mz_CPort *port, char *stack, int depth, int delta)
@@ -7256,6 +7287,44 @@ static Scheme_Object *read_syntax(Scheme_Object *obj)
     first = obj;
 
   return scheme_make_syntax_resolved(SCHEME_INT_VAL(idx), first);
+}
+
+static Scheme_Object *write_quote_syntax(Scheme_Object *obj)
+{
+  Scheme_Quote_Syntax *qs = (Scheme_Quote_Syntax *)obj;
+
+  return cons(scheme_make_integer(qs->depth),
+	      cons(scheme_make_integer(qs->position),
+		   scheme_make_integer(qs->midpoint)));
+}
+
+static Scheme_Object *read_quote_syntax(Scheme_Object *obj)
+{
+  Scheme_Quote_Syntax *qs;
+  Scheme_Object *a;
+  int c, i, p;
+  
+  if (!SCHEME_PAIRP(obj)) return NULL;
+
+  a = SCHEME_CAR(obj);
+  c = SCHEME_INT_VAL(a);
+
+  obj = SCHEME_CDR(obj);
+  if (!SCHEME_PAIRP(obj)) return NULL;
+  
+  a = SCHEME_CAR(obj);
+  i = SCHEME_INT_VAL(a);
+
+  a = SCHEME_CDR(obj);
+  p = SCHEME_INT_VAL(a);
+
+  qs = MALLOC_ONE_TAGGED(Scheme_Quote_Syntax);
+  qs->so.type = scheme_quote_syntax_type;
+  qs->depth = c;
+  qs->position = i;
+  qs->midpoint = p;  
+
+  return (Scheme_Object *)qs;
 }
 
 /*========================================================================*/

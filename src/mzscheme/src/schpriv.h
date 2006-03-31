@@ -587,8 +587,11 @@ Scheme_Object *scheme_make_module_rename(long phase, int kind, Scheme_Hash_Table
 void scheme_extend_module_rename(Scheme_Object *rn, Scheme_Object *modname,
 				 Scheme_Object *locname, Scheme_Object *exname,
 				 Scheme_Object *nominal_src, Scheme_Object *nominal_ex,
-				 int mod_phase);
+				 int mod_phase, int drop_for_marshal);
 void scheme_extend_module_rename_with_kernel(Scheme_Object *rn, Scheme_Object *nominal_src);
+void scheme_save_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info);
+void scheme_do_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info,
+				       Scheme_Object *modidx_shift_from, Scheme_Object *modidx_shift_to);
 void scheme_remove_module_rename(Scheme_Object *mrn,
 				 Scheme_Object *localname);
 void scheme_append_module_rename(Scheme_Object *src, Scheme_Object *dest);
@@ -753,6 +756,13 @@ typedef struct Scheme_Toplevel {
 #define SCHEME_TOPLEVEL_READY   0x2
 /* MUTATED and READY flags are used in different contexts */
 #define SCHEME_TOPLEVEL_FLAGS_MASK 0x3
+
+typedef struct Scheme_Quote_Syntax {
+  Scheme_Object so; /* scheme_quote_syntax_type */
+  mzshort depth;
+  mzshort position;
+  mzshort midpoint;
+} Scheme_Quote_Syntax;
 
 typedef struct Scheme_Let_Value {
   Scheme_Inclhash_Object iso; /* keyex used for autobox */
@@ -1721,10 +1731,9 @@ int scheme_is_sub_env(Scheme_Comp_Env *stx_env, Scheme_Comp_Env *env);
 #define BOXVAL_EXPD        6
 #define MODULE_EXPD        7
 #define REQUIRE_EXPD       8
-#define QUOTE_SYNTAX_EXPD  9
-#define DEFINE_FOR_SYNTAX_EXPD 10
-#define REF_EXPD           11
-#define _COUNT_EXPD_       12
+#define DEFINE_FOR_SYNTAX_EXPD 9
+#define REF_EXPD           10
+#define _COUNT_EXPD_       11
 
 #define scheme_register_syntax(i, fo, fr, fv, fe, fj, cl, pa) \
      (scheme_syntax_optimizers[i] = fo, \
@@ -1963,9 +1972,6 @@ void scheme_validate_toplevel(Scheme_Object *expr, Mz_CPort *port,
 			      int num_toplevels, int num_stxes);
 void scheme_validate_boxenv(int pos, Mz_CPort *port,
 			    char *stack, int depth, int delta);
-void scheme_validate_quote_syntax(int c, int p, int z, Mz_CPort *port,
-				  char *stack, int depth, int delta,
-				  int num_toplevels, int num_stxes);
 
 #define TRACK_ILL_FORMED_CATCH_LINES 0
 #if TRACK_ILL_FORMED_CATCH_LINES

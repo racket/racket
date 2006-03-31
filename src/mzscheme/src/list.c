@@ -532,8 +532,32 @@ Scheme_Object *scheme_make_pair(Scheme_Object *car, Scheme_Object *cdr)
 {
   Scheme_Object *cons;
 
+#if 0
+  if (!car || !cdr
+      || (SCHEME_TYPE(car) < 0)
+      || (SCHEME_TYPE(cdr) < 0)
+      || (SCHEME_TYPE(car) >= (_scheme_last_type_ + 10)) /* +10 leaves room of external types */
+      || (SCHEME_TYPE(cdr) >= (_scheme_last_type_ + 10)))
+    *(long *)0x0 = 1;
+#endif
+
   cons = scheme_alloc_object();
   cons->type = scheme_pair_type;
+  SCHEME_CAR(cons) = car;
+  SCHEME_CDR(cons) = cdr;
+  return cons;
+}
+
+Scheme_Object *scheme_make_raw_pair(Scheme_Object *car, Scheme_Object *cdr)
+{
+  Scheme_Object *cons;
+
+  /* A raw pair is like a pair, but some of our low-level debugging
+     tools expect pairs to always contain tagged values. A raw pair
+     contains arbitrary pointers. */
+
+  cons = scheme_alloc_object();
+  cons->type = scheme_raw_pair_type;
   SCHEME_CAR(cons) = car;
   SCHEME_CDR(cons) = cdr;
   return cons;
