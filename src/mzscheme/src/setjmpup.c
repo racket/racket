@@ -457,6 +457,12 @@ int scheme_setjmpup_relative(Scheme_Jumpup_Buf *b, void *base,
 
   FLUSH_REGISTER_WINDOWS;
 
+  if (c) {
+    if (STK_COMP(c->buf.stack_from, start)) {
+      c = NULL;
+    }
+  }
+
   if (STK_COMP((unsigned long)start, (unsigned long)&local))
     start = (void *)&local;
 
