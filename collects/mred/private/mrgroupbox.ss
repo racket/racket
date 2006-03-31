@@ -1,7 +1,7 @@
 (module mrgroupbox mzscheme
   (require (lib "class.ss")
 	   (lib "class100.ss")
-	   "wxkernel.ss"
+	   (prefix wx: "kernel.ss")
 	   "lock.ss"
 	   "const.ss"
 	   "check.ss"

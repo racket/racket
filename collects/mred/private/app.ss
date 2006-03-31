@@ -1,7 +1,7 @@
 (module app mzscheme
   (require (lib "class.ss")
 	   (lib "class100.ss")
-	   "wxkernel.ss"
+	   (prefix wx: "kernel.ss")
 	   "lock.ss"
 	   "helper.ss"
 	   "wx.ss"

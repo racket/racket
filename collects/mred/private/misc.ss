@@ -2,7 +2,7 @@
   (require (lib "class.ss")
 	   (lib "file.ss")
 	   (lib "process.ss")
-	   "wxkernel.ss")
+	   (prefix wx: "kernel.ss"))
 
   (provide file-creator-and-type
 	   hide-cursor-until-moved

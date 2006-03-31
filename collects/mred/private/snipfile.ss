@@ -3,7 +3,7 @@
 	   (lib "etc.ss")
 	   (lib "port.ss")
 	   (lib "moddep.ss" "syntax")
-	   "wxkernel.ss"
+	   (prefix wx: "kernel.ss")
 	   "check.ss"
 	   "editor.ss")
 		
