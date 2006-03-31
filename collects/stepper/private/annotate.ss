@@ -1067,10 +1067,25 @@
     (define/contract annotate/top-level/acl2
       (syntax? . -> . syntax?)
       (lambda (exp)
+        (>>> exp)
         (syntax-case exp (begin define-values #%app)
           [(begin contract-thingy 
                   (begin body (begin)))
            #`(begin contract-thingy (begin #,(annotate/module-top-level #`body) (begin)))]
+          
+          #;(define-values
+            (lifted)
+            (begin
+              (#%app
+               contract/proc
+               provide/contract-contract-id-zp
+               zp
+               provide/contract-pos-module-source-zp
+               (#%app module-source-as-symbol (quote-syntax here))
+               (quote-syntax zp))))
+          #;(if (#%app null? (#%app lifted (#%datum . 3))) 'y 'x)
+
+          
           [else (annotate/module-top-level exp)]
           
           #;[else (begin
