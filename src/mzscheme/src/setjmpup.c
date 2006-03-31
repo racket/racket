@@ -409,6 +409,12 @@ static long find_same(char *p, char *low, long max_size)
      prevent stack overflow. */
 # define MAX_STACK_DIFF 4096
 
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+# define SHARED_STACK_ALIGNMENT 8
+#else
+# define SHARED_STACK_ALIGNMENT 4
+#endif
+
   if (max_size > MAX_STACK_DIFF) {
     cnt = max_size - MAX_STACK_DIFF;
     max_size = MAX_STACK_DIFF;
@@ -426,6 +432,10 @@ static long find_same(char *p, char *low, long max_size)
 	break;
       cnt++;
     }
+  }
+
+  if (cnt & (SHARED_STACK_ALIGNMENT - 1)) {
+    cnt -= (cnt & (SHARED_STACK_ALIGNMENT - 1));
   }
 
   return cnt;
