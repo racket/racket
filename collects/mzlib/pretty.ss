@@ -308,19 +308,21 @@
 				   esc))
 
    (define (register-printing-port p info)
-     (hash-table-put! printing-ports p info))
+     (hash-table-put! printing-ports p (make-ephemeron p info)))
 
    (define (register-printing-port-like p pport)
      (hash-table-put! printing-ports p 
-		      (hash-table-get printing-ports pport)))
+		      (make-ephemeron p
+				      (ephemeron-value (hash-table-get printing-ports pport)))))
 
    (define (get pport selector)
-     (selector (hash-table-get printing-ports pport
-			       (lambda ()
-				 (make-print-port-info
-				  (lambda () null)
-				  (box #t)
-				  void void void void void)))))
+     (let ([e (hash-table-get printing-ports pport (lambda () #f))])
+       (selector (if e
+		     (ephemeron-value e)
+		     (make-print-port-info
+		      (lambda () null)
+		      (box #t)
+		      void void void void void)))))
 
    (define (printing-port-pre-print pport)
      (get pport print-port-info-pre-print))
