@@ -2952,7 +2952,7 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, long phase)
 	  if (mrn->needs_unmarshal) {
 	    /* Use resolve_env to trigger unmarshal, so that we
 	       don't have to implement top/from shifts here: */
-	    resolve_env(a, orig_phase, 1, NULL, NULL);
+	    resolve_env(a, orig_phase, 1, NULL, scheme_null);
 	  }
 
 	  if (mrn->marked_names)
