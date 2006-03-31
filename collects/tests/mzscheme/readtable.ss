@@ -25,6 +25,7 @@
 (err/rt-test (make-readtable #f #\a 5))
 (err/rt-test (make-readtable #f #\a #\b))
 (err/rt-test (make-readtable #f #\a 'terkminating-macro))
+(err/rt-test (make-readtable #f #\a 'terkminating-macro))
 
 (test #f current-readtable)
 (test #t readtable? (make-readtable #f))
@@ -253,6 +254,49 @@
       (go (lambda (p) (read-syntax 'string p))
 	  (lambda (stx) (car (syntax->list stx)))))))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Replace the symbol reader
+
+(let ([tcs
+       ;; As a default reader, makes all symbols three characters long,
+       ;;  except that ! is a comment:
+       (case-lambda
+	[(ch port)
+	 (if (char=? ch #\!)
+	     (make-special-comment #f)
+	     (string->symbol (string ch (read-char port) (read-char port))))]
+	[(ch port src line col pos)
+	 (if (char=? ch #\!)
+	     (make-special-comment #f)
+	     (string->symbol (string ch (read-char port) (read-char port))))])])
+
+  (let ([t (make-readtable #f 
+			   #f 'non-terminating-macro tcs)])
+    (parameterize ([current-readtable t])
+      (test 'abc read (open-input-string "abcd"))
+      (test 'abc read (open-input-string " abcd"))
+      (test 'abc read (open-input-string " !!!abcd"))
+      (test '|\u1| read (open-input-string " !!!\\u1bcd")))
+
+    ;; Now change a to return 'a:
+    (let ([t2 (make-readtable t
+			      #\a 'terminating-macro (lambda (ch port src line col pos)
+						       (string->symbol (string ch))))])
+      (parameterize ([current-readtable t2])
+	(test 'a read (open-input-string "abcd"))
+	(test 'bac read (open-input-string "bacd"))
+	(test 'a read (open-input-string "!acd")))
+
+      ;; Map z to a, and # to b
+      (let ([t3 (make-readtable t2
+				#\z #\a t2
+				#\# #\b t2)])
+	(parameterize ([current-readtable t3])
+	  (test 'a read (open-input-string "abcd"))
+	  (test 'bac read (open-input-string "bacd"))
+	  (test '|#ac| read (open-input-string "#acd"))
+	  (test 'z read (open-input-string "z#acd")))))))
+	
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
