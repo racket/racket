@@ -303,9 +303,9 @@
               (for-each (λ (item) (send hl delete-item item)) (send hl get-items))
               (for-each (λ (item) (add-recent-item item))
                         (if (eq? (preferences:get 'framework:recently-opened-sort-by) 'name)
-                            (quicksort recent-list-items
-                                       (λ (x y) (string<=? (path->string (car x))
-                                                                (path->string (car y)))))
+                            (sort recent-list-items
+                                  (λ (x y) (string<=? (path->string (car x))
+                                                      (path->string (car y)))))
                             recent-list-items))
               (send ed end-edit-sequence)))
           

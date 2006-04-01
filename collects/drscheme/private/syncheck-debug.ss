@@ -52,7 +52,7 @@
                (make-modern output-text)))
       
       (define ranges 
-        (quicksort 
+        (sort 
          (apply append (hash-table-map range-ht (λ (k vs) (map (λ (v) (cons k v)) vs))))
          (λ (x y)
            (<= (- (car (cdr x)) (cdr (cdr x)))

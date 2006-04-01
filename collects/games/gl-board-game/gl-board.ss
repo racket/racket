@@ -265,11 +265,11 @@
           (gl-matrix-mode 'modelview)
           (gl-flush)
           (let* ((hits (gl-render-mode 'render))
-                 (results (mergesort (gl-process-selection (select-buffer->gl-uint-vector selection)
-                                                           hits)
-                                     (lambda (a b)
-                                       (< (gl-selection-record-min-z a)
-                                          (gl-selection-record-min-z b))))))
+                 (results (sort (gl-process-selection (select-buffer->gl-uint-vector selection)
+                                                      hits)
+                                (lambda (a b)
+                                  (< (gl-selection-record-min-z a)
+                                     (gl-selection-record-min-z b))))))
             (cond
               ((null? results) #f)
               (else

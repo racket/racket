@@ -81,7 +81,7 @@
                                 default-name)
                             label)))]
                    [sorted/visible-frames
-                    (quicksort
+                    (sort
                      (filter (λ (x) (send (frame-frame x) is-shown?)) frames)
                      (λ (f1 f2)
                        (string-ci<=? (get-name (frame-frame f1))
@@ -254,7 +254,7 @@
       
       (define (choose-a-frame parent)
         (letrec-values ([(sorted-frames)
-                         (quicksort
+                         (sort
                           (send (get-the-frame-group) get-frames)
                           (λ (x y) (string-ci<=? (send x get-label) (send y get-label))))]
                         [(d) (make-object dialog% (string-constant bring-frame-to-front) parent 400 600)]

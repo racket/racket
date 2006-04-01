@@ -210,11 +210,11 @@
                                            (loop (- x 1)))]
                                         [else
                                          (vector-set! (vector-ref (vector-ref board i) x) 0 #f)]))))
-                                (quicksort same-colors
-                                           (lambda (x y) (<= (third x) (third y)))))
-                               
+                                (sort same-colors
+                                      (lambda (x y) (<= (third x) (third y)))))
+
                                ;; slide empty over empty rows
-                               (set! is (quicksort is >))
+                               (set! is (sort is >))
                                (let ([empty-is (filter (lambda (i)
                                                          (not (vector-ref (vector-ref (vector-ref board i) (- board-height 1)) 0)))
                                                        is)])

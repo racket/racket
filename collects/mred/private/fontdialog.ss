@@ -50,19 +50,17 @@
 				    ;; Sort space-starting first (for Xft), and
 				    ;;  otherwise push names that start with an
 				    ;;  ASCII non-letter/digit/hyphen to the end
-				    (quicksort l (lambda (a b)
-						   (let ([a-sp? (char=? #\space (string-ref a 0))]
-							 [b-sp? (char=? #\space (string-ref b 0))]
-							 [a-ugly? (ugly? a)]
-							 [b-ugly? (ugly? b)])
-						     (cond
-						      [(eq? a-sp? b-sp?)
-						       (cond
-							[(eq? a-ugly? b-ugly?)
-							 (string-locale-ci<? a b)]
-							[else
-							 b-ugly?])]
-						      [else a-sp?])))))
+				    (sort l (lambda (a b)
+                                              (let ([a-sp? (char=? #\space (string-ref a 0))]
+                                                    [b-sp? (char=? #\space (string-ref b 0))]
+                                                    [a-ugly? (ugly? a)]
+                                                    [b-ugly? (ugly? b)])
+                                                (cond [(eq? a-sp? b-sp?)
+                                                       (cond
+                                                        [(eq? a-ugly? b-ugly?)
+                                                         (string-locale-ci<? a b)]
+                                                        [else b-ugly?])]
+                                                      [else a-sp?])))))
 				  p refresh-sample)]
 	       [p2 (make-object vertical-pane% p)]
 	       [p3 (instantiate horizontal-pane% (p2) [stretchable-width #f])]

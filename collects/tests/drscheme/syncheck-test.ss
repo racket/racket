@@ -712,12 +712,10 @@
         (define actual-ht (make-hash-table 'equal))
         (define stupid-internal-define-syntax1
           (hash-table-for-each raw-actual
-                               (lambda (k v)
-                                 (hash-table-put! actual-ht
-                                                  (cdr k) 
-                                                  (quicksort
-                                                   (map cdr v)
-                                                   (lambda (x y) (< (car x) (car y))))))))
+            (lambda (k v)
+              (hash-table-put! actual-ht (cdr k)
+                               (sort (map cdr v)
+                                     (lambda (x y) (< (car x) (car y))))))))
         (define expected-ht (make-hash-table 'equal))
         (define stupid-internal-define-syntax2
           (for-each (lambda (binding) (hash-table-put! expected-ht (car binding) (cdr binding)))

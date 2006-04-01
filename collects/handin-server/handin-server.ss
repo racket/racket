@@ -111,11 +111,10 @@
     ;; means that there was a failed submission and the next one will
     ;; re-create ATTEMPT.
     (let* ([dirlist (map path->string (directory-list))]
-	   [dir (quicksort
-		 (filter (lambda (d)
-			   (and (directory-exists? d)
-				(regexp-match SUCCESS-RE d)))
-			 dirlist)
+	   [dir (sort (filter (lambda (d)
+                                (and (directory-exists? d)
+                                     (regexp-match SUCCESS-RE d)))
+                              dirlist)
 		 string<?)]
 	   [dir (and (pair? dir) (car dir))])
       (when dir
@@ -515,7 +514,7 @@
               (let ([usernames
                      ;; Username lists must always be sorted, and never empty
                      ;; (regexp-split will not return an empty list)
-                     (quicksort (regexp-split #rx" *[+] *" val) string<?)])
+                     (sort (regexp-split #rx" *[+] *" val) string<?)])
                 (a-set! data 'usernames usernames)
                 (a-set! data 'user-datas (map get-user-data usernames)))]
              [(password new-password)
@@ -567,7 +566,7 @@
     (write+flush w 'ok)) ; final confirmation for *all* actions
 
   (define (assignment-list)
-    (quicksort (map path->string (directory-list "active")) string<?))
+    (sort (map path->string (directory-list "active")) string<?))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

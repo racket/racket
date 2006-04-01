@@ -29,8 +29,8 @@
 	       [ext-compiler #f]
 	       [dest-dir (build-path "compiled" "native" (system-library-subpath))]
 	       [src-dir (current-directory)]
-	       [sses (quicksort collection-files (lambda (a b)
-						   (string-ci<? (path->string a) (path->string b))))]
+	       [sses (sort collection-files
+                           (lambda (a b) (string-ci<? (path->string a) (path->string b))))]
 	       [bases (map (lambda (src)
 			     (extract-base-filename/ss src 'make-collection-extension))
 			   sses)]

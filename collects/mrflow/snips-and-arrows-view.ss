@@ -4,7 +4,7 @@
    (lib "class.ss")
    (lib "mred.ss" "mred")
    (prefix arrow: (lib "arrow.ss" "drscheme"))
-   (prefix lst: (lib "list.ss"))
+   (only (lib "list.ss") sort)
    (prefix strcst: (lib "string-constant.ss" "string-constants"))
    
    (prefix cst: "constants.ss")
@@ -431,9 +431,9 @@
                               (send editor change-style
                                     (get-style-delta-from-label (car labels))
                                     position new-ending-pos #f))))
-                        (lst:quicksort (assoc-set-map new-terms-by-positions cons)
-                                       (lambda (pos&term-pair1 pos&term-pair2)
-                                         (> (car pos&term-pair1) (car pos&term-pair2)))))
+                        (sort (assoc-set-map new-terms-by-positions cons)
+                              (lambda (pos&term-pair1 pos&term-pair2)
+                                (> (car pos&term-pair1) (car pos&term-pair2)))))
                        (send editor lock locked?)
                        (send editor end-edit-sequence)))))))
           (set-gui-view-state-analysis-currently-modifying?! gui-view-state #f))))

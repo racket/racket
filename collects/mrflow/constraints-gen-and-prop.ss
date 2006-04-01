@@ -4983,9 +4983,7 @@
   ;                                              (substring file 0 9))
   ;                                    (string=? "test-realbig"
   ;                                              (substring file 0 12))))
-  ;                             (list:quicksort 
-  ;                              (directory-list path)
-  ;                              string<=?)
+  ;                             (list:sort (directory-list path) string<=?)
   ;                             )]
   ;         )
   ;    (initialize-primitive-type-schemes XXX)

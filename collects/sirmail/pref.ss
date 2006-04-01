@@ -460,7 +460,7 @@
 							(let ([d (send l get-selections)])
 							  (for-each (lambda (i)
 								      (send l delete i))
-								    (quicksort d >))
+								    (sort d >))
 							  (set-prefs)))))
       (define (set-prefs)
 	(send delete enable (pair? (send l get-selections)))

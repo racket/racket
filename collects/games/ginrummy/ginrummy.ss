@@ -145,7 +145,7 @@
           (or (apply = values)
               ;; ... All same suit and a straight?
               (and (apply = suits)
-                   (let ([sorted (quicksort values <)]
+                   (let ([sorted (sort values <)]
                          [try (lambda (l)
                                 (let loop ([l l])
                                   (or (null? (cdr l))
@@ -164,9 +164,7 @@
         (if (<= (length cards) 2)
             0
             (let* ([sort (lambda (get)
-                           (quicksort cards
-                                      (lambda (a b)
-                                        (< (get a) (get b)))))]
+                           (sort cards (lambda (a b) (< (get a) (get b)))))]
                    
                    ;; It's not reasonable to test every combination of 10 cards,
                    ;; but we can cut down the search space a lot by starting

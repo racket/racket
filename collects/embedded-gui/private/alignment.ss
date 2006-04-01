@@ -87,9 +87,8 @@ neck and it is the most readable solution.
     (let-values ([(total-unstretchable-size stretchable-sizes)
                   (get-onsizes rects)])
       (let-values ([(extra-div extra-mod)
-                    (get-extra/rect
-                     (- onsize total-unstretchable-size)
-                     (quicksort stretchable-sizes >))])
+                    (get-extra/rect (- onsize total-unstretchable-size)
+                                    (sort stretchable-sizes >))])
         (allocate-evenly/position extra-div extra-mod offsize rects))))
   
   #;(((listof rect?)) . ->* . (nonnegative? (listof nonnegative?)))

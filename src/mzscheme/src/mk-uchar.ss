@@ -417,9 +417,9 @@
 							     (length seq))))))])
      (hash-table-put! k-decomp-map-ht code (cons pos (length seq)))))
  ;; Sort to keep it deterministic:
- (quicksort (hash-table-map k-decomp-ht cons)
-	    (lambda (a b) (< (car a) (car b)))))
- 
+ (sort (hash-table-map k-decomp-ht cons)
+       (lambda (a b) (< (car a) (car b)))))
+
 
 (define vectors (make-hash-table 'equal))
 (define vectors2 (make-hash-table 'equal))
@@ -514,9 +514,8 @@
   (print-row (make-vector (add1 low) 0) 0 pos hex?)
   (map (lambda (p)
 	 (print-row (car p) (cdr p) pos hex?))
-       (quicksort
-	(hash-table-map vectors cons)
-	(lambda (a b) (< (cdr a) (cdr b)))))
+       (sort (hash-table-map vectors cons)
+             (lambda (a b) (< (cdr a) (cdr b)))))
   (printf "};~n"))
 (print-table "short" "" vectors pos #t)
 (printf "\n")
@@ -539,8 +538,8 @@
 			  ","))
 	      (when (zero? (modulo (add1 (cdr p)) 16))
 		(newline)))
-	    (quicksort (hash-table-map t cons)
-		       (lambda (a b) (< (cdr a) (cdr b)))))
+	    (sort (hash-table-map t cons)
+                  (lambda (a b) (< (cdr a) (cdr b)))))
   (printf " };~n"))
 
 (print-shift (car cases) (unbox (cdr cases)) car "int" "ups")
@@ -549,9 +548,8 @@
 (print-shift (car cases) (unbox (cdr cases)) cadddr "int" "folds")
 (print-shift (car cases) (unbox (cdr cases)) (lambda (x) (cadddr (cdr x))) "unsigned char" "combining_classes")
 
-(let ([l (quicksort (hash-table-map general-categories cons)
-		    (lambda (a b)
-		      (< (cdr a) (cdr b))))])
+(let ([l (sort (hash-table-map general-categories cons)
+               (lambda (a b) (< (cdr a) (cdr b))))])
   (printf "\n#define NUM_GENERAL_CATEGORIES ~a\n" (length l))
   (printf "static const char *general_category_names[] = {")
   (for-each (lambda (c)
@@ -658,8 +656,8 @@
 			  (length (special-casing-folding sc)) folding-start
 			  (if (special-casing-final-sigma? sc) 1 0)
 			  (if (zero? n) " " ",\n")))))
-	    (quicksort (hash-table-map special-casings cons)
-		       (lambda (a b) (< (car a) (car b))))))
+	    (sort (hash-table-map special-casings cons)
+                  (lambda (a b) (< (car a) (car b))))))
 (printf "};\n")
 (printf "\n/* Offsets in scheme_uchar_special_casings point into here: */\n")
 (printf "static int uchar_special_casing_data[] = {\n  ")
@@ -686,10 +684,9 @@
 
 
 (let ()
-  (define canon-composes (list->vector
-			  (quicksort
-			   (hash-table-map compose-map cons)
-			   (lambda (a b) (< (car a) (car b))))))
+  (define canon-composes
+    (list->vector (sort (hash-table-map compose-map cons)
+                        (lambda (a b) (< (car a) (car b))))))
   (define count (hash-table-count compose-map))
   
   (define-values (all-composes decomp-vector long-composes)
@@ -726,8 +723,8 @@
        (list->vector (append (vector->list canon-composes)
 			     (reverse extra)))
        (list->vector
-	(quicksort (hash-table-map decomp-pos-ht cons)
-		   (lambda (a b) (< (car a) (car b)))))
+	(sort (hash-table-map decomp-pos-ht cons)
+              (lambda (a b) (< (car a) (car b)))))
        (list->vector (reverse longs)))))
 
   (printf "\n/* Subset of ~a decompositions used for canonical composition: */\n"
@@ -779,8 +776,8 @@
 
     (let ([k-decomp-vector
 	   (list->vector
-	    (quicksort (hash-table-map k-decomp-map-ht cons)
-		       (lambda (a b) (< (car a) (car b)))))])
+	    (sort (hash-table-map k-decomp-map-ht cons)
+                  (lambda (a b) (< (car a) (car b)))))])
       (printf "\n")
       (printf "/* utable_kompat_decomp_keys identifies characters that have a compatability decomposition;\n")
       (printf "   it is sorted, and scheme_needs_decompose() is true for every key (but a character\n")

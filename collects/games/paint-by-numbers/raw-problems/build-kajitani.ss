@@ -76,8 +76,8 @@ string=? ; exec mzscheme -qr $0
 		 len
 		 ;v
 		 ))))
-   (quicksort (hash-table-map email-ht list)
-	      (lambda (x y) (> (length (cadr x)) (length (cadr y))))))
+   (sort (hash-table-map email-ht list)
+         (lambda (x y) (> (length (cadr x)) (length (cadr y))))))
 
   
   (printf "total: ~s~n" total))
@@ -99,9 +99,7 @@ string=? ; exec mzscheme -qr $0
 				   "raw-kajitani.ss")
   (lambda (port)
     (pretty-print
-     (quicksort
-      (map build-solutionless-kajitani kajitani-sets)
-      (lambda (s1 s2)
-	(string<=? (car s1) (car s2))))
+     (sort (map build-solutionless-kajitani kajitani-sets)
+           (lambda (s1 s2) (string<=? (car s1) (car s2))))
      port))
   'truncate)

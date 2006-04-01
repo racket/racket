@@ -157,7 +157,7 @@
                                       syms)
                             ;; Extract the relevant collections:
                             (hash-table-map result (lambda (k v) k))))])
-        (quicksort unsorted compare-directories))))
+        (sort unsorted compare-directories))))
   
   (define (compare-directories a b)
     (let-values ([(base1 name1 dir?1) (split-path a)]

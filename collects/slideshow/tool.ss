@@ -473,10 +473,8 @@ pict snip :
           
           (define/private (get-all-ps-from-ht picts-ht)
             (let ([ps (hash-table-map picts-ht (lambda (k v) v))])
-              (quicksort
-               ps
-               (lambda (x y) (<= (p-n x) (p-n y))))))
-              
+              (sort ps (lambda (x y) (<= (p-n x) (p-n y))))))
+
           ;; get-pos/text : event -> (values (union #f text%) (union number #f))
           ;; returns two #fs to indicate the event doesn't correspond to
           ;; a position in an editor, or returns the innermost text

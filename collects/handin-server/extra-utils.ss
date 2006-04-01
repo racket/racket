@@ -271,7 +271,7 @@
     (let loop ([files '()])
       (let ([f (with-handlers ([void void]) (read))])
         (if (eof-object? f)
-          (quicksort files (lambda (x y) (string<? (car x) (car y))))
+          (sort files (lambda (x y) (string<? (car x) (car y))))
           (loop (cons f files))))))
   (let ([files (if (pair? port)
                  (parameterize ([current-input-port (car port)]) (read-it))
@@ -426,7 +426,7 @@
                               (if (list? us)
                                 (map (lambda (x)
                                        (if (list? x)
-                                         (quicksort x string<?)
+                                         (sort x string<?)
                                          (list x)))
                                      us)
                                 us))]
@@ -654,7 +654,7 @@
                     (let ([x (read)])
                       (cond [(eof-object? x) (reverse! r)]
                             [(null? x) (loop r)]
-                            [(list? x) (loop (cons (quicksort x string<?) r))]
+                            [(list? x) (loop (cons (sort x string<?) r))]
                             [else      (loop (cons (list x) r))])))))))))
   (lambda (users)
     (read-teams!)

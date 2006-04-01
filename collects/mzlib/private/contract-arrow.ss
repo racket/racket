@@ -1992,7 +1992,7 @@
                                             (loop (cdr ars) acc)]))]))])
            (and min-at-least
                 (begin
-                  (let loop ([counts (quicksort (filter number? arity) >=)])
+                  (let loop ([counts (sort (filter number? arity) >=)])
                     (unless (null? counts)
                       (let ([count (car counts)])
                         (cond

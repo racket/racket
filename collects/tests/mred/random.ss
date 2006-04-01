@@ -1027,7 +1027,7 @@
 							   (list? b)
 							   (andmap integer? a)
 							   (andmap integer? b)
-							   (equal? (quicksort a <) (quicksort b <)))))
+							   (equal? (sort a <) (sort b <)))))
 					  (printf "Arity mismatch for ~a, real: ~a documented: ~a~n" 
 						  name (procedure-arity v) (cadr method))))))
 				

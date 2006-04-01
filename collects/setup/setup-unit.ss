@@ -192,7 +192,7 @@
                   x-specific-planet-dirs))))
       
       (define collections-to-compile
-	(quicksort
+	(sort
 	 (if (and (null? x-specific-collections) (null? x-specific-planet-dirs))
 	     (let ([ht (make-hash-table 'equal)])
 	       (let loop ([collection-paths (current-library-collection-paths)])

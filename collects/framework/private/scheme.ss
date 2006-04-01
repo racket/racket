@@ -1222,7 +1222,7 @@
                (letrec ([all-keywords (hash-table-map hash-table list)]
                         [pick-out (λ (wanted in out)
                                     (cond
-                                      [(null? in) (quicksort out string<=?)]
+                                      [(null? in) (sort out string<=?)]
                                       [else (if (eq? wanted (cadr (car in))) 
                                                 (pick-out wanted (cdr in) (cons (symbol->string (car (car in))) out))
                                                 (pick-out wanted (cdr in) out))]))])

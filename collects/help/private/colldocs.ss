@@ -41,8 +41,8 @@
       (cond
 	[(null? collection-paths)
 	 (let* ([collections-docs (map cons docs names)]
-		[l (quicksort collections-docs
-			      (lambda (a b) (string<? (cdr a) (cdr b))))])
+		[l (sort collections-docs
+                         (lambda (a b) (string<? (cdr a) (cdr b))))])
 	   (values (map car l) (map cdr l)))]
 	[else (let ([path (car collection-paths)])
 		(let cloop ([l (with-handlers ([exn:fail:filesystem? (lambda (x) null)])

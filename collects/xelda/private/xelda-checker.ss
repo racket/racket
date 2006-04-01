@@ -467,11 +467,10 @@
       [else (cons (car lst) (remove-duplicates (cdr lst)))]))
   
   (define (formula-sort fs)
-    (quicksort fs
-               (lambda (f1 f2)
-                 (let* ([name (car f1)]
-                        [deps (formula-dependencies (cadr f2))])
-                   (memq name deps)))))
+    (sort fs (lambda (f1 f2)
+               (let* ([name (car f1)]
+                      [deps (formula-dependencies (cadr f2))])
+                 (memq name deps)))))
   
   (define (get-formula-loc-up loc parser all-formula-texts)
     (let ([formula (call-parser parser (cadr (assoc loc all-formula-texts)))])
@@ -882,7 +881,7 @@
   
   (define (ordered-variables eqs)
     (remove-duplicates
-     (quicksort
+     (sort
       (foldl (lambda (eq vars)
                (append
                 (foldl (lambda (u eq-vars)
@@ -935,10 +934,9 @@
              (loop l n))]))
   
   (define (normalize-unit us)
-    (let* ([sorted-us (quicksort us (lambda (u1 u2)
-                                      (string<=?
-                                       (symbol->string (car u1))
-                                       (symbol->string (car u2)))))]
+    (let* ([sorted-us (sort us (lambda (u1 u2)
+                                 (string<=? (symbol->string (car u1))
+                                            (symbol->string (car u2)))))]
            [new-u (filter
                    (lambda (u)
                      (not (= 0 (second u))))

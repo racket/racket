@@ -62,15 +62,14 @@
       section))
          
   (define sample-solutions
-    (quicksort
-     (filter (lambda (x) (and 
-                          (> (string-length x) 3)
-                          (string=? "scm" (substring x (- (string-length x) 3) (string-length x)))
-                          (memf (lambda (y) (string=? (car y) x)) labels)))
+    (sort
+     (filter (lambda (x)
+               (and (> (string-length x) 3)
+                    (string=? "scm" (substring x (- (string-length x) 3) (string-length x)))
+                    (memf (lambda (y) (string=? (car y) x)) labels)))
              (directory-list sample-solutions-dir))
      (lambda (fx fy)
-       (< (filename->section fx)
-          (filename->section fy)))))
+       (< (filename->section fx) (filename->section fy)))))
 
   (define separator-sexp "should be")
   

@@ -65,8 +65,9 @@
                                                    (custodian-shutdown-all c)))
                                    (invoke-unit game-unit))))))))))))
    
-   (let ([game-mapping (quicksort game-mapping (lambda (a b)
-						 (string<? (list-ref a 3) (list-ref b 3))))])
+   (let ([game-mapping (sort game-mapping
+                             (lambda (a b)
+                               (string<? (list-ref a 3) (list-ref b 3))))])
      (let loop ([l game-mapping])
        (unless (null? l)
 	 (let* ([set (list-ref (car l) 3)]
@@ -84,18 +85,18 @@
 
    (for-each (lambda (p)
 	       (let ([pred (lambda (x y) (<= (send x min-width) (send y min-width)))])
-		 (send p change-children (lambda (l) (quicksort l pred)))))
+		 (send p change-children (lambda (l) (sort l pred)))))
 	     (send main-horizontal-panel get-children))
   
   (send main-horizontal-panel change-children
-        (lambda (l) (quicksort l
-                               (lambda (x y) 
-				 (let ([l1 (length (send x get-children))]
-				       [l2 (length (send y get-children))])
-				   (cond
-				    [(> l1 l2) #t]
-				    [(= l1 l2) (string-ci<? (send x get-label) (send y get-label))]
-				    [else #f]))))))
+        (lambda (l)
+          (sort l (lambda (x y)
+                    (let ([l1 (length (send x get-children))]
+                          [l2 (length (send y get-children))])
+                      (cond [(> l1 l2) #t]
+                            [(= l1 l2) (string-ci<? (send x get-label)
+                                                    (send y get-label))]
+                            [else #f]))))))
 
    (define show-games-help
      (show-help '("games") "About PLT Games"))

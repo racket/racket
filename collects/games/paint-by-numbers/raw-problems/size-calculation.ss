@@ -30,7 +30,7 @@
        (apply + (map (lambda (x) (num-possibilities col-count x)) cols)))))
 
 (pretty-print
- (quicksort
+ (sort
   (let loop ([hattoris raw-hattori])
     (cond
      [(null? hattoris) empty]

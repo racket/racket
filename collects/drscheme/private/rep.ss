@@ -727,7 +727,7 @@ TODO
                   (hash-table-put! ht (car arrs) n)
                   (loop (cdr arrs) (+ n 1))))
               (let* ([unsorted (hash-table-map ht list)]
-                     [sorted (quicksort unsorted (λ (x y) (<= (cadr x) (cadr y))))]
+                     [sorted (sort unsorted (λ (x y) (<= (cadr x) (cadr y))))]
                      [arrs (map car sorted)])
                 arrs)))
                     

@@ -144,7 +144,7 @@
                                  (syntax-position (car s))))
                           (get-execute-counts))])
         (let ([sorted
-               (quicksort
+               (sort
                 here
                 (lambda (a b)
                   (let ([ap (syntax-position (car a))]
@@ -239,9 +239,9 @@
     (error-print-width 50)
     (printf "Sorting profile data...~n")
     (let* ([sel (if sort-time? cadr car)]
-           [counts (quicksort (filter (lambda (c) (positive? (car c)))
-                                      (get-profile-results))
-                              (lambda (a b) (< (sel a) (sel b))))]
+           [counts (sort (filter (lambda (c) (positive? (car c)))
+                                 (get-profile-results))
+                         (lambda (a b) (< (sel a) (sel b))))]
            [total 0])
       (for-each
        (lambda (c)
@@ -260,8 +260,7 @@
                    (printf " <- ~e" (car cm)))
                  (cddr cms))
                 (printf "~n")))
-	    (quicksort (cadddr (cdr c))
-		       (lambda (a b) (> (car a) (car b)))))))
+	    (sort (cadddr (cdr c)) (lambda (a b) (> (car a) (car b)))))))
        counts)
       (printf "Total samples: ~a~n" total)))
 

@@ -15,11 +15,10 @@
   ;; help-desk:installed-components url : -> (listof (list string xexpr))
   ;; represents all of the collections with blurb fields 
   (define (help-desk:installed-components)
-    (let ([comps 
-           (quicksort
-            (filter (lambda (x) x)
-                    (map (lambda (c) (get-blurb c)) (all-collections)))
-            comp<=?)])
+    (let ([comps
+           (sort (filter (lambda (x) x)
+                         (map (lambda (c) (get-blurb c)) (all-collections)))
+                 comp<=?)])
       (map comp-xml comps)))
   
   ;; all-collections : ->  (lisof string)
@@ -36,8 +35,8 @@
                 (hash-table-put! colls collection #t)))
             (directory-list collection-path-dir))))
        (current-library-collection-paths))
-      (quicksort (hash-table-map colls (lambda (x v) x))
-                 (lambda (x y) (string<=? (path->string x) (path->string y))))))
+      (sort (hash-table-map colls (lambda (x v) x))
+            (lambda (x y) (string<=? (path->string x) (path->string y))))))
   
   ;; get-blurb : string url -> xexpr
   ;; builds the xexpr for a collection, based on its name a blurb

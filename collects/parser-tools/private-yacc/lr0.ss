@@ -28,7 +28,7 @@
                 (non-term-index (trans-key-gs b)))))))
   
   (define (trans-key-list-remove-dups tkl)
-    (let loop ((sorted (quicksort tkl trans-key<?)))
+    (let loop ((sorted (sort tkl trans-key<?)))
       (cond
         ((null? sorted) null)
         ((null? (cdr sorted)) sorted)
@@ -39,9 +39,8 @@
                      (kernel-index (trans-key-st (cadr sorted)))))
              (loop (cdr sorted))
              (cons (car sorted) (loop (cdr sorted))))))))
-             
-      
-           
+
+
   ;; build-transition-table : int (listof (cons/c trans-key X) ->
   ;;                          (vectorof (symbol X hashtable))
   (define (build-transition-table num-states assoc)
@@ -279,7 +278,7 @@
 		      (let* ((gs (car i))
 			     (items (cadr i))
 			     (new #f)
-			     (new-kernel (quicksort
+			     (new-kernel (sort
 					  (filter (lambda (x) x)
 						  (map move-dot-right items))
 					  item<?))

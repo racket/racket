@@ -93,7 +93,7 @@
 	(let* ([dir (find-hi-entry hi user)]
 	       [l (and dir (with-handlers ([exn:fail? (lambda (x) null)])
                              (parameterize ([current-directory dir])
-                               (quicksort
+                               (sort
                                 (filter (lambda (f)
                                           (and (not (equal? f "grade"))
                                                (file-exists? f)))
@@ -126,10 +126,10 @@
                  `((a ((href ,(make-k k soln))) "Solution"))]
                 [(directory-exists? soln)
                  (parameterize ([current-directory soln])
-                   (let ([files (mergesort (map path->string
-                                                (filter file-exists?
-                                                        (directory-list)))
-                                           string<?)])
+                   (let ([files (sort (map path->string
+                                           (filter file-exists?
+                                                   (directory-list)))
+                                      string<?)])
                      (if (null? files)
                        none
                        (apply append
@@ -170,7 +170,7 @@
       (define re:base #rx"^([a-zA-Z]*)([0-9]+)")
 
       (define (all-status-page status)
-	(let ([l (quicksort
+	(let ([l (sort
 		  (map path->string
 		       (append (directory-list active-dir)
 			       (with-handlers ([exn:fail? (lambda (x) null)])

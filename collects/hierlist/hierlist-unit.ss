@@ -7,7 +7,7 @@
 	   (lib "include-bitmap.ss" "mrlib")
 	   "hierlist-sig.ss")
 
-  (require (lib "list.ss")
+  (require (rename (lib "list.ss") sort* sort)
 	   (lib "etc.ss"))
 
   (define turn-up (include-bitmap "../icons/turn-up.png" 'png))
@@ -395,9 +395,10 @@
                       (delete (if (zero? s) s (sub1 s)) (if (zero? s) (add1 e) e)))]
                    [else (loop (add1 pos) (cdr l) (cons (car l) others))])))]
             [sort (opt-lambda (less-than? [recur? #t])
-                    (let ([l (mergesort children (lambda (a b)
-                                                   (less-than? (send a get-item)
-                                                               (send b get-item))))])
+                    (let ([l (sort* children
+                                    (lambda (a b)
+                                      (less-than? (send a get-item)
+                                                  (send b get-item))))])
                       (begin-edit-sequence)
 		      (when recur?
 			(for-each (lambda (child)

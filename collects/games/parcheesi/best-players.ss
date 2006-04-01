@@ -55,7 +55,7 @@ careful charlie
       (define/public (doubles-penalty) (void))
       
       (define/public (do-move orig-board unsorted-dice)
-        (let ([dice (quicksort unsorted-dice <)])
+        (let ([dice (sort unsorted-dice <)])
           (let* ([before (current-process-milliseconds)]
                  [candidates (search orig-board color dice)]
                  [ms (- (current-process-milliseconds) before)])

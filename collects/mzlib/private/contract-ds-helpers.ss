@@ -139,7 +139,7 @@ which are then called when the contract's fields are explored
                                   (λ () 
                                     (raise-syntax-error name "unknown field name" stx use-field-name)))))]
              [cmp (λ (x y) (<= (lookup x) (lookup y)))]
-             [sorted-id/user-specs (quicksort id/user-specs cmp)])
+             [sorted-id/user-specs (sort id/user-specs cmp)])
         (map car sorted-id/user-specs))))
     
 

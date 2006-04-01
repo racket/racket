@@ -121,7 +121,7 @@
   ;; sort results of "reflection" results
 
   (define (alphabetize lst)
-    (mzlib:quicksort lst string-ci<?))
+    (mzlib:sort lst string-ci<?))
 
   (define (make-sorted-fun f)
     (lambda (obj)

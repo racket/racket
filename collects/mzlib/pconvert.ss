@@ -1,8 +1,8 @@
 
 (module pconvert mzscheme
   
-  (require (prefix s: "string.ss")
-           (prefix f: "list.ss")
+  (require (only "string.ss" expr->string)
+           (only "list.ss" sort)
 	   "etc.ss"
 	   "pconvert-prop.ss")
   (require "class.ss")
@@ -162,9 +162,8 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   (define map-share-name
     (lambda (name)
-      (string->symbol
-       (string-append "-" (s:expr->string name) "-"))))
-  
+      (string->symbol (string-append "-" (expr->string name) "-"))))
+
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; prints an expression given that it has already been hashed. This
   ;; does not include the list of shared items.
@@ -498,11 +497,10 @@
                               shared)
                     (get-shared-helper csi))
                   (get-shared-helper csi))]
-             [cmp 
-              (lambda (x y)
-                (string<? (s:expr->string (share-info-name (car x)))
-                          (s:expr->string (share-info-name (car y)))))])
-         (map cdr (f:quicksort shared-listss cmp)))]))
+             [cmp (lambda (x y)
+                    (string<? (expr->string (share-info-name (car x)))
+                              (expr->string (share-info-name (car y)))))])
+         (map cdr (sort shared-listss cmp)))]))
   
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; helper function for determining if an item is circular.  In the

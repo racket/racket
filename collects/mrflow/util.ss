@@ -46,7 +46,7 @@
                            (loop (cdr xs) (cons (car xs) acc))
                            (loop (cdr xs) acc))))))])
       (lambda (nums)
-        (remove-duplicates (list:mergesort nums >)))))
+        (remove-duplicates (list:sort nums >)))))
   
   (define/contract lol->vov ((listof (listof any/c)) . -> . vector?)
     (lambda (xss) (list->vector (map list->vector xss))))

@@ -675,10 +675,8 @@
       (hash-table-for-each cycle
 			   (lambda (k v)
 			     (hash-table-put! share k v)))
-      (let ([ordered (map car
-			  (mergesort (hash-table-map share cons)
-				     (lambda (a b)
-				       (< (cdr a) (cdr b)))))])
+      (let ([ordered (map car (sort (hash-table-map share cons)
+                                    (lambda (a b) (< (cdr a) (cdr b)))))])
 	(let ([serializeds (map (lambda (v)
 				  (if (hash-table-get cycle v (lambda () #f))
 				      ;; Box indicates cycle record allocation
@@ -693,9 +691,8 @@
 			 (cons n
 			       (serialize-one v share #f mod-map mod-map-cache))))]
 	      [main-serialized (serialize-one v share #t mod-map mod-map-cache)]
-	      [mod-map-l (map car
-			      (mergesort (hash-table-map mod-map cons)
-					 (lambda (a b) (< (cdr a) (cdr b)))))])
+	      [mod-map-l (map car (sort (hash-table-map mod-map cons)
+                                        (lambda (a b) (< (cdr a) (cdr b)))))])
 	  (list (hash-table-count mod-map)
 		mod-map-l
 		(length serializeds)

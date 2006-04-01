@@ -273,14 +273,13 @@ needed to really make this work:
           (set! details-shown? #t)))
       
       (let ([ranges
-             (quicksort 
-              (apply append 
+             (sort
+              (apply append
                      (hash-table-map
                       range-ht
                       (λ (k vs)
-                        (map 
-                         (λ (v) (make-range k (car v) (cdr v)))
-                         vs))))
+                        (map (λ (v) (make-range k (car v) (cdr v)))
+                             vs))))
               (λ (x y)
                 (>= (- (range-end x) (range-start x))
                     (- (range-end y) (range-start y)))))])

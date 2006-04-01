@@ -11,10 +11,9 @@
 	  "It should contain the PNG test files (including GIFs for comparisons).")))
 
 (define l (map (lambda (f) (build-path png-suite f))
-	       (quicksort
-		(filter (lambda (x) (regexp-match #rx"^[^x].*[.]png$" x))
-			(directory-list png-suite))
-		string<?)))
+	       (sort (filter (lambda (x) (regexp-match #rx"^[^x].*[.]png$" x))
+                             (directory-list png-suite))
+                     string<?)))
 
 (define (png->gif f)
   (regexp-replace #rx"[.]png$" f ".gif"))

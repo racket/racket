@@ -217,102 +217,76 @@
 ;;         greenish
 ;;  Blue
 ;;         reddish
-(define l2 (quicksort l (lambda (a b)
-			  (let ([ar (redness a)]
-				[ag (greeness a)]
-				[ab (blueness a)]
-				[br (redness b)]
-				[bg (greeness b)]
-				[bb (blueness b)])
-			    (cond
-			     [(and (>= ar ag)
-				   (> ar ab))
-			      ;; a is a shade of red
-			      (cond
-			       [(and (>= br bg)
-				     (> br bb))
-				;; b is a shade of red
-				(cond
-				 [(> ag ab)
-				  ;; a is greener than blue
-				  (cond
-				   [(> bg bb)
-				    ;; b is greener than blue
-				    (> ar br)]
-				   [else #t])]
-				 [else 
-				  ;; a is bluer than green
-				  (cond
-				   [(> bg bb)
-				    ;; b is greener than blue
-				    #t]
-				   [else
-				    (> ar br)])])]
-			       [else #t])]
-			     [else
-			      (cond
-			       [(and (>= br bg)
-				     (> br bb))
-				;; b is a shade of red
-				#f]
-			       [(and (> ag ar)
-				     (> ag ab))
-				;; a is a shade of green
-				(cond
-				 [(and (> bg br)
-				       (> bg bb))
-				  ;; b is a shade of green
-				  (cond
-				   [(> ar ab)
-				    ;; a is redder than blue
-				    (cond
-				     [(> br bb)
-				      ;; b is redder than blue
-				      (> ag bg)]
-				     [else #t])]
-				   [else
-				    (cond
-				     [(> br bb)
-				      #f]
-				     [else
-				      (> ag bg)])])]
-				 [else #t])]
-			       [else
-				;; a is a shade of blue
-				(cond
-				 [(and (> bg br)
-				       (> bg bb))
-				  ;; b is a shade of green
-				  #f]
-				 [else 
-				  ;; b is a shade of blue
-				  (cond
-				   [(> ag ar)
-				    ;; a is greener than red
-				    (cond
-				     [(> bg br)
-				      ;; b is greener than red
-				      (> ab bb)]
-				     [else #t])]
-				   [else
-				    (cond
-				     [(> bg br)
-				      #f]
-				     [else
-				      (> ab bb)])])])])])))))
+(define l2
+  (sort l (lambda (a b)
+            (let ([ar (redness a)]
+                  [ag (greeness a)]
+                  [ab (blueness a)]
+                  [br (redness b)]
+                  [bg (greeness b)]
+                  [bb (blueness b)])
+              (cond
+               [(and (>= ar ag) (> ar ab))
+                ;; a is a shade of red
+                (cond [(and (>= br bg) (> br bb))
+                       ;; b is a shade of red
+                       (cond [(> ag ab)
+                              ;; a is greener than blue
+                              (cond [(> bg bb)
+                                     ;; b is greener than blue
+                                     (> ar br)]
+                                    [else #t])]
+                             [else
+                              ;; a is bluer than green
+                              (cond [(> bg bb)
+                                     ;; b is greener than blue
+                                     #t]
+                                    [else (> ar br)])])]
+                      [else #t])]
+               [else (cond [(and (>= br bg) (> br bb))
+                            ;; b is a shade of red
+                            #f]
+                           [(and (> ag ar) (> ag ab))
+                            ;; a is a shade of green
+                            (cond [(and (> bg br) (> bg bb))
+                                   ;; b is a shade of green
+                                   (cond [(> ar ab)
+                                          ;; a is redder than blue
+                                          (cond [(> br bb)
+                                                 ;; b is redder than blue
+                                                 (> ag bg)]
+                                                [else #t])]
+                                         [else (cond [(> br bb) #f]
+                                                     [else (> ag bg)])])]
+                                  [else #t])]
+                           [else
+                            ;; a is a shade of blue
+                            (cond [(and (> bg br) (> bg bb))
+                                   ;; b is a shade of green
+                                   #f]
+                                  [else
+                                   ;; b is a shade of blue
+                                   (cond [(> ag ar)
+                                          ;; a is greener than red
+                                          (cond [(> bg br)
+                                                 ;; b is greener than red
+                                                 (> ab bb)]
+                                                [else #t])]
+                                         [else
+                                          (cond [(> bg br) #f]
+                                                [else (> ab bb)])])])])])))))
 
 ;; pairwise swap to put names with spaces first:
-(define l3 (let loop ([l l2])
-	     (cond
-	      [(null? (cdr l)) l]
-	      [else (let ([l (cons (car l) (loop (cdr l)))])
-		      (cond
-		       [(and (> (string-length (caadr l))
-				(string-length (caar l)))
-			     (string=? (caar l)
-				       (regexp-replace* " " (caadr l) "")))
-			(list* (cadr l) (car l) (cddr l))]
-		       [else l]))])))
+(define l3
+  (let loop ([l l2])
+    (cond [(null? (cdr l)) l]
+          [else (let ([l (cons (car l) (loop (cdr l)))])
+                  (cond [(and (> (string-length (caadr l))
+                                 (string-length (caar l)))
+                              (string=? (caar l)
+                                        (regexp-replace* " " (caadr l) "")))
+                         (list* (cadr l) (car l) (cddr l))]
+                        [else l]))])))
 
 (define (2hex n)
   (let ([s (format "00~x" n)])

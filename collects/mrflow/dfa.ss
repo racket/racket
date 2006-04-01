@@ -355,8 +355,8 @@
   (define/contract dfa->list (dfa? . -> . any)
     (lambda (dfa)
       (list
-       (list:mergesort (hash-table-map (dfa-stnum->state dfa) (lambda (k v) (list k '-> (dfa-state->list v dfa))))
-                       (lambda (x y) (> (car x) (car y))))
+       (list:sort (hash-table-map (dfa-stnum->state dfa) (lambda (k v) (list k '-> (dfa-state->list v dfa))))
+                  (lambda (x y) (> (car x) (car y))))
        (dfa-canonical-ordering dfa)
        )))
   
@@ -476,8 +476,8 @@
              [union-partition
               (split-union-states (get-matching-states union-state?))]
              [handle-partition
-              (map list (list:mergesort (get-matching-states handle-state?)
-                                        (lambda (x y) (< (handle-state-handle x) (handle-state-handle y)))))]
+              (map list (list:sort (get-matching-states handle-state?)
+                                   (lambda (x y) (< (handle-state-handle x) (handle-state-handle y)))))]
              [setup-equiv-class
               (lambda (type)
                 (lambda(states)
@@ -503,10 +503,10 @@
                     (for-each (lambda (state)
                                 (set-union-state-elements!
                                  state
-                                 (list:mergesort (union-state-elements state)
-                                                 (lambda (a b)
-                                                   (> (send stnum->ecnum lookup a)
-                                                      (send stnum->ecnum lookup b))))))
+                                 (list:sort (union-state-elements state)
+                                            (lambda (a b)
+                                              (> (send stnum->ecnum lookup a)
+                                                 (send stnum->ecnum lookup b))))))
                               block))
                   union-partition)
         (hopcroft state-numbers
@@ -917,7 +917,7 @@
                                     (lambda (a b) (cond [(eq? a b) #f] [a #f] [b #t]))]
                                    [(integer? (car keys)) >]
                                    [else (error 'split-set "Unknown type ~a" (car keys))])]
-                         [keys (list:mergesort keys gt)])
+                         [keys (list:sort keys gt)])
                     (map (lambda (k) (hash-table-get accs k)) keys))))))))
   
   ;; list list list -> list list

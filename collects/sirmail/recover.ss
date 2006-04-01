@@ -2,9 +2,9 @@
 (require (lib "list.ss")
 	 (lib "head.ss" "net"))
 
-(define msgs (quicksort
-	      (filter (lambda (x) (regexp-match "^[0-9]*$" x)) (directory-list))
-	      (lambda (a b) (< (string->number a) (string->number b)))))
+(define msgs
+  (sort (filter (lambda (x) (regexp-match "^[0-9]*$" x)) (directory-list))
+        (lambda (a b) (< (string->number a) (string->number b)))))
 
 (define mailbox
   (let loop ([msgs msgs][p 1])

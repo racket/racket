@@ -1,6 +1,6 @@
 (module list (lib "frtime.ss" "frtime")
   
-  (require (lifted (lib "list.ss") quicksort mergesort
+  (require (lifted (lib "list.ss") sort
                    fifth sixth seventh eighth
                    last-pair)
            (rename (lib "list.ss") empty empty))

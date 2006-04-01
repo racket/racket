@@ -2984,10 +2984,9 @@
                       (loop (cdr mailbox))]))
                  
                  (let ([info 
-                        (quicksort 
+                        (sort 
                          (hash-table-map ht (lambda (x y) (list (symbol->string x) y)))
-                         (lambda (x y)
-                           (string<=? (car x) (car y))))])
+                         (lambda (x y) (string<=? (car x) (car y))))])
                    (parameterize ([current-eventspace mbox-eventspace])
                      (queue-callback
                       (lambda ()

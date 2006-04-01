@@ -100,7 +100,7 @@
                    
                    (send name-list clear)
                    (send name-list set
-                         (quicksort
+                         (sort
                           (let ([no-periods? 
                                  (not (preferences:get
                                        'framework:show-periods-in-dirlist))])

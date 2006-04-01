@@ -869,7 +869,7 @@ profile todo:
                       ;;    unless x and y are the same source location.
                       ;;    in that case, color red first and then green
                       [sorted
-                       (quicksort
+                       (sort
                         filtered
                         (λ (x y)
                           (let* ([x-stx (cadr x)]
@@ -1581,7 +1581,7 @@ profile todo:
                       (send ed hide-caret #t)
                       (send ed lock #t))]
                    
-                   [top-infos (top 100 (quicksort infos bigger-value?))])
+                   [top-infos (top 100 (sort infos bigger-value?))])
               (for-each show-highlight top-infos)
               (initialize-editors)
               (let loop ([infos top-infos]

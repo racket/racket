@@ -296,15 +296,10 @@
 
       ;; Add the "Clean" and "Sort" buttons:
       (define (sort-hand! card<)
-        (let ([sorted
-               (quicksort
-                (player-hand you)
-                card<)])
+        (let ([sorted (sort (player-hand you) card<)])
           (set-player-hand! you sorted)
           (send t stack-cards sorted)
-          (send t move-cards-to-region
-                sorted
-                (player-hand-r you))))
+          (send t move-cards-to-region sorted (player-hand-r you))))
       (define clean-button
         (make-button-region (region-x (player-r you))
                             (- (region-y (player-r you))
@@ -340,8 +335,7 @@
               (make-button-region (+ (region-x clean-button) PASS-W MARGIN)
                                   (region-y clean-button)
                                   PASS-W BUTTON-HEIGHT
-                                  "Sort" (lambda ()
-                                           (sort-hand! card<)))))
+                                  "Sort" (lambda () (sort-hand! card<)))))
       
       ;; ========== Game engine ========================================
 
@@ -426,7 +420,7 @@
 				       '(1 2 3 4))])
 		      (let ([suit-id
 			     ;; Sort based on counts, then pick the first one:
-			     (sub1 (caar (quicksort counts (lambda (a b) (> (cdr a) (cdr b))))))])
+			     (sub1 (caar (sort counts (lambda (a b) (> (cdr a) (cdr b))))))])
 			;; Find the clonable 8 for the chosen suit, and reset the discard
 			(reset-8
 			 (list-ref
@@ -555,7 +549,7 @@
 
 	;; Card setup: Deal the cards
 	(for-each (lambda (player)
-		    (set-player-hand! player (quicksort (deal init-hand-size) card<))
+		    (set-player-hand! player (sort (deal init-hand-size) card<))
 		    (send t stack-cards (player-hand player))
 		    (send t move-cards-to-region 
 			  (player-hand player)
@@ -616,9 +610,7 @@
 						     [(12) "queen"]
 						     [(13) "king"]
 						     [else v]))))
-				     (if (null? deck)
-					 "pass"
-					 "draw")))
+				     (if (null? deck) "pass" "draw")))
 	  ;; What for something to happen:
 	  (let ([what (yield msg)])
 	    ;; Discarded a crazy 8? (And not as our last card?)

@@ -1244,10 +1244,10 @@
 				       ;; sort the functions by index to get an optimal case statement
 				       ;; even for stupid compilers
 				       (set! lambda-list
-					     (quicksort lambda-list
-							(lambda (l1 l2)
-							  (< (closure-code-label (get-annotation l1))
-							     (closure-code-label (get-annotation l2))))))
+					     (sort lambda-list
+                                                   (lambda (l1 l2)
+                                                     (< (closure-code-label (get-annotation l1))
+                                                        (closure-code-label (get-annotation l2))))))
 				       (for-each (lambda (L)
 						   (let ([code (get-annotation L)]
 							 [start (zodiac:zodiac-start L)])

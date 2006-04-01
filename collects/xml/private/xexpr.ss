@@ -25,7 +25,7 @@
       
       ;; assoc-sort : (listof (list Symbol a)) -> (listof (list Symbol a))
       (define (assoc-sort to-sort)
-	(quicksort to-sort (bcompose string<? (compose symbol->string car))))
+	(sort to-sort (bcompose string<? (compose symbol->string car))))
       
       (define xexpr-drop-empty-attributes (make-parameter #f))
 

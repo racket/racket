@@ -653,7 +653,7 @@ module browser threading seems wrong.
 	    (let* ([text (send frame get-definitions-text)]
                    [unsorted-defns (get-definitions (not sort-by-name?) text)]
                    [defns (if sort-by-name?
-                              (quicksort 
+                              (sort
                                unsorted-defns
                                (λ (x y) (string-ci<=? (defn-name x) (defn-name y))))
                               unsorted-defns)])
@@ -2720,8 +2720,8 @@ module browser threading seems wrong.
                                                           (loop (- x 1)))))))])
                                        (send bdc set-font the-font)
                                        (let* ([all-chars '(#\@ #\# #\+ #\- #\: #\$ #\& #\* #\space)]
-                                              [prs 
-                                               (quicksort
+                                              [prs
+                                               (sort
                                                 (map (lambda (c) (cons c (index-char (string c))))
                                                      all-chars)
                                                 (lambda (x y) (> (cdr x) (cdr y))))]

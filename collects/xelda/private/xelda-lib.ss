@@ -16,17 +16,14 @@
    empty-unit
    canonicalize-units
    verify-equal-units)
-   
+
   (define (empty-unit) (list (list 'empty_unit 1)))
-     
+
   (define (canonicalize-units us)
-    (filter 
-     (lambda (u)
-       (not (zero? (cadr u))))
-     (quicksort us (lambda (u1 u2)
-                     (string<=?  
-                      (symbol->string (car u1))
-                      (symbol->string (car u2)))))))
+    (filter (lambda (u) (not (zero? (cadr u))))
+            (sort us (lambda (u1 u2)
+                       (string<=? (symbol->string (car u1))
+                                  (symbol->string (car u2)))))))
 
   (define (empty-unit? u)
     (and (= (length u) 1)

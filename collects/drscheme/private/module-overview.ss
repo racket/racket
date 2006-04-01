@@ -363,8 +363,8 @@
                                                                     (λ (x) (get-snip-height x)))
                                                                 v))))))
                 
-                (let ([levels (quicksort (hash-table-map level-ht list)
-                                         (λ (x y) (<= (car x) (car y))))])
+                (let ([levels (sort (hash-table-map level-ht list)
+                                    (λ (x y) (<= (car x) (car y))))])
                   (let loop ([levels levels]
                              [major-dim 0])
                     (cond

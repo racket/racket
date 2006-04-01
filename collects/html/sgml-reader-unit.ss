@@ -228,20 +228,19 @@
 		  (read-char in) ;; skip #\> or something
 		  (make-element start (file-position in) name attrs null)]
 		 [else (make-start-tag start (file-position in) name attrs)]))])))
-      
-      
+
+
       ;; lex-attributes : Input-port -> (listof Attribute)
       (define (lex-attributes in)
-	(quicksort (let loop ()
-		     (skip-space in)
-		     (cond
-		      [(name-start? (peek-char in))
+	(sort (let loop ()
+                (skip-space in)
+                (cond [(name-start? (peek-char in))
 		       (cons (lex-attribute in) (loop))]
 		      [else null]))
-		   (lambda (a b)
-		     (string<? (symbol->string (attribute-name a))
-			       (symbol->string (attribute-name b))))))
-      
+              (lambda (a b)
+                (string<? (symbol->string (attribute-name a))
+                          (symbol->string (attribute-name b))))))
+
       ;; lex-attribute : Input-port -> Attribute
       ;; Note: entities in attributes are ignored, since defacto html uses & in them for URL syntax
       (define (lex-attribute in)

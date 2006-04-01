@@ -85,7 +85,7 @@
   ;; Sorts l according to index and removes the entries with duplicate
   ;; indexes.
   (define (do-simple-equiv l index)
-    (let ((ordered (mergesort l (lambda (a b) (< (index a) (index b))))))
+    (let ((ordered (sort l (lambda (a b) (< (index a) (index b))))))
       (remove-dups ordered index null)))
 
   (test-block ()

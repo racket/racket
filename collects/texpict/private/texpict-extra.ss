@@ -203,7 +203,7 @@
 
       (define (generate-possible-slopes n)
 	(let ([positives
-	       (quicksort
+	       (sort
 		(remove-duplicates
 		 (apply append (build-list n
 					   (lambda (i)

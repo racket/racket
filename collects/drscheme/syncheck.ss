@@ -239,7 +239,7 @@ If the namespace does not, they are colored the unbound color.
                 (hash-table-for-each
                  bindings-table
                  (λ (k v)
-                   (hash-table-put! bindings-table k (quicksort v compare-bindings)))))
+                   (hash-table-put! bindings-table k (sort v compare-bindings)))))
               
               (define tacked-hash-table (make-hash-table))
               (define cursor-location #f)
@@ -2104,7 +2104,7 @@ If the namespace does not, they are colored the unbound color.
             (let ([new-sym (format "~s" (string->symbol new-str))])
               (let* ([to-be-renamed 
                       (remove-duplicates
-                       (quicksort 
+                       (sort 
                         (apply 
                          append
                          (map (λ (id-set) 

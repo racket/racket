@@ -334,22 +334,20 @@
   (define sort-signature-elems
     (lambda (elems)
       (map car
-	   (quicksort (map
-		       (lambda (ip)
-			 (let ([i (car ip)])
-			   (cons ip (symbol->string (if (symbol? i) 
-							i 
-							(signature-name i))))))
-		       elems)
-		      ;; Less-than; put subs at front
-		      (lambda (a b)
-			(if (symbol? (caar a))
-			    (if (symbol? (caar b))
-				(string<? (cdr a) (cdr b))
-				#f)
-			    (if (symbol? (caar b))
-				#t
-				(string<? (cdr a) (cdr b)))))))))
+	   (sort (map (lambda (ip)
+                        (let ([i (car ip)])
+                          (cons ip (symbol->string
+                                    (if (symbol? i) i (signature-name i))))))
+                      elems)
+                 ;; Less-than; put subs at front
+                 (lambda (a b)
+                   (if (symbol? (caar a))
+                     (if (symbol? (caar b))
+                       (string<? (cdr a) (cdr b))
+                       #f)
+                     (if (symbol? (caar b))
+                       #t
+                       (string<? (cdr a) (cdr b)))))))))
   
   (define flatten-signature
     (lambda (id sig main-ctx)

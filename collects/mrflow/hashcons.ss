@@ -932,7 +932,7 @@
   (define hashcons-table->list
     (lambda (tbl)
       (list 'hashcons-table
-            (list:mergesort
+            (list:sort
              (hash-table-map (hashcons-table-from-handle tbl)
                              (lambda (h _) (list 'Handle: h  '-> (handle->list tbl h void #t))))
              (lambda (x y) (> (cadr x) (cadr y)))))))

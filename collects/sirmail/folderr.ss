@@ -213,7 +213,7 @@
                                 short-name
                                 selectable?
                                 (loop child-mailbox-name)))))
-                       (quicksort
+                       (sort
                         child-mailboxes
                         (lambda (x y)
                           (string<=? (bytes->string/utf-8 (get-child-mailbox-name x))

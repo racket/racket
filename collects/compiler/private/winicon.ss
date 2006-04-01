@@ -454,10 +454,8 @@
 		   (add1
 		    (hash-table-get ht c (lambda () 0)))))
 		image)
-      (let ([kv-sorted
-             (quicksort (hash-table-map ht cons)
-                        (lambda (a b)
-                          (< (cdr a) (cdr b))))])
+      (let ([kv-sorted (sort (hash-table-map ht cons)
+                             (lambda (a b) (< (cdr a) (cdr b))))])
         (let ([n 0])
           (for-each (lambda (kv)
                       (let ([key (car kv)])

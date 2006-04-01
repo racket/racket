@@ -1603,7 +1603,7 @@
         (define (insert-text-pls)
           (for-each
            display-text-pl
-           (quicksort
+           (sort
             (apply append (map get-text-pls (find-relevant-directories '(textbook-pls))))
             (λ (x y)
               (cond

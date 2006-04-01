@@ -21,4 +21,4 @@
                          (clicks . -=> . true)))
 
 (define (show-profile)
-  (quicksort (hash-pairs pings) (lambda (a b) (> (second a) (second b)))))
+  (sort (hash-pairs pings) (lambda (a b) (> (second a) (second b)))))

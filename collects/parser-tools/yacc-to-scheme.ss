@@ -124,8 +124,8 @@
 		      (let ((t (get-token-grammar i)))
 			t)))))
           `(begin
-             (define-tokens t ,(quicksort (hash-table-map terms (lambda (k v) k)) symbol<?))
-             (define-empty-tokens et ,(quicksort (hash-table-map eterms (lambda (k v) k)) symbol<?))
+             (define-tokens t ,(sort (hash-table-map terms (lambda (k v) k)) symbol<?))
+             (define-empty-tokens et ,(sort (hash-table-map eterms (lambda (k v) k)) symbol<?))
              (parser
               (start ___)
               (end ___)

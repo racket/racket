@@ -167,10 +167,10 @@
                                (append (read-names in) acc)))
                            null
                            (element-def-name x))
-                    (quicksort (hack-content (expand-entities expander (element-def-content x)))
-                               (lambda (a b)
-                                 (string<=? (symbol->string a)
-                                            (symbol->string b))))))
+                    (sort (hack-content (expand-entities expander (element-def-content x)))
+                          (lambda (a b)
+                            (string<=? (symbol->string a)
+                                       (symbol->string b))))))
             (filter element-def? dtd)))))
   
   ;; merge-contents : Spec -> Spec

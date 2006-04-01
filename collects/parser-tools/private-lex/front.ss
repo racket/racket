@@ -31,7 +31,7 @@
         (let* ((from-state (car trans))
                (all-chars/to (cdr trans))
                (flat-all-chars/to
-                (mergesort
+                (sort
                  (apply append
                    (map (lambda (chars/to)
                           (let ((char-ranges (loc:integer-set-contents (car chars/to)))

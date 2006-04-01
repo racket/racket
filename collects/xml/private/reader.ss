@@ -241,19 +241,18 @@
       
       ;; lex-attributes : Input-port (-> Location) -> (listof Attribute)
       (define (lex-attributes in pos)
-        (quicksort (let loop ()
-                     (skip-space in)
-                     (cond
-                       [(name-start? (peek-char-or-special in))
-                        (cons (lex-attribute in pos) (loop))]
-                       [else null]))
-                   (lambda (a b)
-                     (let ([na (attribute-name a)]
-                           [nb (attribute-name b)])
-                       (cond
-                         [(eq? na nb) (lex-error in pos "duplicated attribute name ~a" na)]
-                         [else (string<? (symbol->string na) (symbol->string nb))])))))
-      
+        (sort (let loop ()
+                (skip-space in)
+                (cond [(name-start? (peek-char-or-special in))
+                       (cons (lex-attribute in pos) (loop))]
+                      [else null]))
+              (lambda (a b)
+                (let ([na (attribute-name a)]
+                      [nb (attribute-name b)])
+                  (cond
+                   [(eq? na nb) (lex-error in pos "duplicated attribute name ~a" na)]
+                   [else (string<? (symbol->string na) (symbol->string nb))])))))
+
       ;; lex-attribute : Input-port (-> Location) -> Attribute
       (define (lex-attribute in pos)
         (let ([start (pos)]

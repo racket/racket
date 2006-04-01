@@ -244,4 +244,4 @@ string=? ; exec $PLTHOME/bin/mzscheme -agrq $0 "$@"
 
 (pretty-print
  (map (lambda (x) (numbers->whole/part (apply cons x)))
-      (quicksort (remove-zeros avg-diffs) compare-entries)))
+      (sort (remove-zeros avg-diffs) compare-entries)))

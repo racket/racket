@@ -10,8 +10,6 @@
    find-winner  ; checks a board to see if there's a winner
    other-player ; x -> o   or  o -> x
 
-   quicksort    ; Quicksort
-
    pick-best    ; takes a list of (cons <num> <val>) and returns pair
                 ;  with the biggest <num>, randomly chossing among
                 ;  equals
@@ -81,31 +79,7 @@
             [(= o-wins x-wins) #f]
             [(> o-wins x-wins) o]
             [else x])))))
-  
-  (define quicksort
-    (lambda (l less-than)
-      (let* ([v (list->vector l)]
-             [count (vector-length v)])
-        (let loop ([min 0][max count])
-          (if (< min (sub1 max))
-              (let ([pval (vector-ref v min)])
-                (let pivot-loop ([pivot min]
-                                 [pos (add1 min)])
-                  (if (< pos max)
-                      (let ([cval (vector-ref v pos)])
-                        (if (less-than cval pval)
-                            (begin
-                              (vector-set! v pos (vector-ref v pivot))
-                              (vector-set! v pivot cval)
-                              (pivot-loop (add1 pivot) (add1 pos)))
-                            (pivot-loop pivot (add1 pos))))
-                      (if (= min pivot)
-                          (loop (add1 pivot) max)
-                          (begin
-                            (loop min pivot)
-                            (loop pivot max))))))))
-        (vector->list v))))
-  
+
   ; Compare the values in goodness and pick the biggest element.
   ; Takes a non-empty list of (cons <goodness> <choice>)
   ; If <goodness> is a pair, look at the car.

@@ -515,7 +515,7 @@
                        ;; See what the other player thinks about our candidate moves,
                        ;;  and pick the one that looks worst to the other player.
 		       (if ((caar plays) . < . +inf.0)
-			   (mergesort
+			   (sort
 			    (map
 			     (lambda (play)
 			       (log-printf 4 indent " ~a>>> Checking: ~a\n" 
@@ -536,8 +536,7 @@
                                                  (float->string (car r)))
 				     r)))
 			     plays)
-			    (lambda (a b)
-			      (> (car a) (car b))))
+			    (lambda (a b) (> (car a) (car b))))
 			   (list (car plays)))])
 		  (car nexts))))))
 

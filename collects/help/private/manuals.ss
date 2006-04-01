@@ -170,13 +170,12 @@
     (let ([unsorted
            (append (find-info.ss-doc-directories)
                    (find-doc-directories-in-doc-collection))])
-      (quicksort
-       unsorted
-       (λ (a b)
-         (let-values ([(_1 a-short _2) (split-path a)]
-                      [(_3 b-short _4) (split-path b)])
-           (< (standard-html-doc-position a-short)
-              (standard-html-doc-position b-short)))))))
+      (sort unsorted
+            (λ (a b)
+              (let-values ([(_1 a-short _2) (split-path a)]
+                           [(_3 b-short _4) (split-path b)])
+                (< (standard-html-doc-position a-short)
+                   (standard-html-doc-position b-short)))))))
   
   (define (find-info.ss-doc-directories)
     (let ([dirs (find-relevant-directories '(html-docs) 'all-available)])
@@ -238,7 +237,7 @@
                      [(get-index-file (car l))
                       (cons (car l) (loop (cdr l)))]
                      [else (loop (cdr l))]))]
-           [docs (quicksort docs compare-docs)]
+           [docs (sort docs compare-docs)]
            [names (map get-doc-name docs)]
            [names+paths (map cons names docs)])
       (let-values ([(collections-doc-files collection-names) (colldocs)])
@@ -483,9 +482,8 @@
                   (let-values ([(base name dir?) (split-path doc)])
                     (hash-table-remove! ht name)))
                 docs)
-      (quicksort
-       (hash-table-map ht cons)
-       (λ (a b) (compare-docs (car a) (car b))))))
+      (sort (hash-table-map ht cons)
+            (λ (a b) (compare-docs (car a) (car b))))))
   
   (define (compare-docs a b)
     (let-values ([(_1 a-short _2) (split-path a)]

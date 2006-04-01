@@ -212,8 +212,8 @@
 						      (let loop ([l l][ds null][fs null])
 							(cond
 							 [(null? l) (values (cons (string->path "..")
-										  (quicksort ds path-string-locale<?)) 
-									    (quicksort fs path-string-locale<?))]
+										  (sort ds path-string-locale<?)) 
+									    (sort fs path-string-locale<?))]
 							 [(and (not dot?) 
 							       (char=? (string-ref (path->string (car l)) 0) #\.)) 
 							  (loop (cdr l) ds fs)]

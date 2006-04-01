@@ -115,7 +115,7 @@
     (90  #xFFF80  #xFFFFF)
     (90  #x10FF80  #x10FFFF)))
 
-(define sorted (quicksort ranges (lambda (a b) (< (cadr a) (cadr b)))))
+(define sorted (sort ranges (lambda (a b) (< (cadr a) (cadr b)))))
 
 (define (first-n l n)
   (if (zero? n)
