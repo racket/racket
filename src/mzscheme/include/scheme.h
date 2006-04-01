@@ -826,8 +826,11 @@ typedef struct Scheme_Continuation_Jump_State {
   short is_kill;
 } Scheme_Continuation_Jump_State;
 
-#define MZ_MARK_POS_TYPE int
-#define MZ_MARK_STACK_TYPE int
+/* A mark position is in odd number, so that it can be
+   viewed as a pointer (i.e., a fixnum): */
+#define MZ_MARK_POS_TYPE long
+/* A mark "pointer" is an offset into the stack: */
+#define MZ_MARK_STACK_TYPE long
 
 typedef struct Scheme_Cont_Frame_Data {
   MZ_MARK_POS_TYPE cont_mark_pos;
