@@ -1397,8 +1397,8 @@
    '(let ()
       (eval '(module contract-test-suite1 mzscheme
                (require (lib "contract.ss"))
-               (provide/contract (x integer?))
-               (define x 1)))
+               (define x 1)
+               (provide/contract (x integer?))))
       (eval '(require contract-test-suite1))
       (eval 'x)))
   
@@ -1415,8 +1415,8 @@
    '(let ()
       (eval '(module contract-test-suite3 mzscheme
                (require (lib "contract.ss"))
-               (provide/contract (x integer?))
-               (define x #f)))
+               (define x #f)
+               (provide/contract (x integer?))))
       (eval '(require contract-test-suite3))
       (eval 'x))
    "contract-test-suite3")
@@ -1544,8 +1544,8 @@
    '(parameterize ([current-namespace (make-namespace)])
       (eval '(module contract-test-suite9 mzscheme
                (require (lib "contract.ss"))
-               (provide/contract (rename the-internal-name the-external-name integer?))
                (define the-internal-name 1)
+               (provide/contract (rename the-internal-name the-external-name integer?))
                (+ the-internal-name 1)))
       (eval '(require contract-test-suite9))
       (eval '(+ the-external-name 1))))
@@ -1639,11 +1639,21 @@
   (test/pos-blame
    'provide/contract15
    '(parameterize ([current-namespace (make-namespace)])
-      (eval '(module m mzscheme
+      (eval '(module pos mzscheme
                (require (lib "contract.ss"))
-               (provide/contract [i integer?])
-               (define i #f)))
-      (eval '(require m))))
+               (define i #f)
+               (provide/contract [i integer?])))
+      (eval '(require pos))))
+  
+  ;; this is really a positive violation, but name the module `neg' just for an addl test
+  (test/neg-blame
+   'provide/contract15
+   '(parameterize ([current-namespace (make-namespace)])
+      (eval '(module neg mzscheme
+               (require (lib "contract.ss"))
+               (define i #f)
+               (provide/contract [i integer?])))
+      (eval '(require neg))))
   
 
 
