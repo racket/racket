@@ -614,7 +614,7 @@ typedef union _ForeignAny {
 #define CTYPE_PRIMP(x)     (NULL == (CTYPE_BASETYPE(x)))
 #define CTYPE_USERP(x)     (!(CTYPE_PRIMP(x)))
 #define CTYPE_PRIMTYPE(x)  ((ffi_type*)(((ctype_struct*)(x))->scheme_to_c))
-#define CTYPE_PRIMLABEL(x) ((int)(((ctype_struct*)(x))->c_to_scheme))
+#define CTYPE_PRIMLABEL(x) ((long)(((ctype_struct*)(x))->c_to_scheme))
 #define CTYPE_USER_S2C(x)  (((ctype_struct*)(x))->scheme_to_c)
 #define CTYPE_USER_C2S(x)  (((ctype_struct*)(x))->c_to_scheme)
 
