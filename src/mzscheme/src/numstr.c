@@ -1917,7 +1917,7 @@ static Scheme_Object *real_to_bytes (int argc, Scheme_Object *argv[])
     size = SCHEME_INT_VAL(argv[1]);
   else
     size = 0;
-  if ((size != 2) && (size != 4) &&(size != 8))
+  if ((size != 4) && (size != 8))
     scheme_wrong_type("real->floating-point-bytes", "exact 4 or 8", 1, argc, argv);
 
   if (argc > 2)

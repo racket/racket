@@ -613,21 +613,12 @@ double scheme_real_to_double(Scheme_Object *r)
 }
 
 static
-/*   Inlining seems to trip over a bug in gcc 3.4.x, 
-     and it's not worth the trouble.
-   #ifndef NO_INLINE_KEYWORD
-   # ifndef DONT_INLINE_NZERO_TEST
-   MSC_IZE(inline)
-   # endif
-   #endif */
+#ifndef NO_INLINE_KEYWORD
+MSC_IZE(inline)
+#endif
 int minus_zero_p(double d)
 {
-  /* Relies on 4-byte "int": */
-  if (((int *) mzALIAS &d)[0] == ((int *) mzALIAS &scheme_floating_point_nzero)[0]
-      && ((int *) mzALIAS &d)[1] == ((int *) mzALIAS &scheme_floating_point_nzero)[1])
-    return 1;
-
-  return 0;
+  return (1 / d) < 0;
 }
 
 int scheme_minus_zero_p(double d)

@@ -103,17 +103,17 @@ X_(make, string) (int argc, Scheme_Object *argv[])
 
   len = scheme_extract_index("make-" XSTRINGSTR, 0, argc, argv, -1, 0);
 
-  if (len == -1) {
-    scheme_raise_out_of_memory("make-" XSTRINGSTR, "making " XSTR "string of length %s",
-			       scheme_make_provided_string(argv[0], 0, NULL));
-  }
-
   if (argc == 2) {
     if (!CHARP(argv[1]))
       scheme_wrong_type("make-" XSTRINGSTR, CHAR_STR, 1, argc, argv);
     fill = (Xchar)CHAR_VAL(argv[1]);
   } else
     fill = 0;
+
+  if (len == -1) {
+    scheme_raise_out_of_memory("make-" XSTRINGSTR, "making " XSTR "string of length %s",
+			       scheme_make_provided_string(argv[0], 0, NULL));
+  }
 
   str = X(scheme_alloc, _string)(len, fill);
   return str;
