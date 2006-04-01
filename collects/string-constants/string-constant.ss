@@ -160,7 +160,7 @@
 				lang2-name)
 		       (for-each
 			(lambda (x) (fprintf sp "   ~s\n" x))
-			(quicksort
+			(sort
 			 constants
 			 (lambda (x y) (string<=? (symbol->string (car x)) (symbol->string (car y))))))
 		       (newline sp)))
