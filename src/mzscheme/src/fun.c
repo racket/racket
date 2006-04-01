@@ -1296,16 +1296,18 @@ void *top_level_do(void *(*k)(void), int eb, void *sj_start)
 	  pp = scheme_current_thread;
 	  pp->overflow_reply = NULL; /* means "continue the error" */
 	} else {
-	  void *p1, *p2, *p3, *p4;
-	  int i1, i2, i3;
+	  void *p1, *p2, *p3, *p4, *p5;
+	  long i1, i2, i3, i4;
 
 	  p1 = pp->ku.k.p1;
 	  p2 = pp->ku.k.p2;
 	  p3 = pp->ku.k.p3;
 	  p4 = pp->ku.k.p4;
+	  p5 = pp->ku.k.p5;
 	  i1 = pp->ku.k.i1;
 	  i2 = pp->ku.k.i2;
 	  i3 = pp->ku.k.i3;
+	  i4 = pp->ku.k.i4;
 
 	  /* stack overflow is a lot of work; force a sleep */
 	  scheme_thread_block(0);
@@ -1315,9 +1317,11 @@ void *top_level_do(void *(*k)(void), int eb, void *sj_start)
 	  pp->ku.k.p2 = p2;
 	  pp->ku.k.p3 = p3;
 	  pp->ku.k.p4 = p4;
+	  pp->ku.k.p5 = p5;
 	  pp->ku.k.i1 = i1;
 	  pp->ku.k.i2 = i2;
 	  pp->ku.k.i3 = i3;
+	  pp->ku.k.i4 = i4;
 
 	  {
 	    Overflow_K_Proc f = scheme_overflow_k;
