@@ -45,21 +45,22 @@
 
   ;; used by sort-internal, but can be useful by itself
   (define (merge! a b less?)
-    (define (loop r a b)
+    (define (loop r a b r-a?) ; r-a? for optimization -- is r connected to a?
       (if (less? (car b) (car a))
-        (begin (set-cdr! r b)
-               (if (null? (cdr b)) (set-cdr! b a) (loop b a (cdr b))))
+        (begin (when r-a? (set-cdr! r b))
+               (if (null? (cdr b)) (set-cdr! b a) (loop b a (cdr b) #f)))
         ;; (car a) <= (car b)
-        (begin (set-cdr! r a)
-               (if (null? (cdr a)) (set-cdr! a b) (loop a (cdr a) b)))))
+        (begin (unless r-a? (set-cdr! r a))
+               (if (null? (cdr a)) (set-cdr! a b) (loop a (cdr a) b #t)))))
     (cond [(null? a) b]
           [(null? b) a]
           [(less? (car b) (car a))
-           (if (null? (cdr b)) (set-cdr! b a) (loop b a (cdr b)))
+           (if (null? (cdr b)) (set-cdr! b a) (loop b a (cdr b) #f))
            b]
           [else ; (car a) <= (car b)
-           (if (null? (cdr a)) (set-cdr! a b) (loop a (cdr a) b))
+           (if (null? (cdr a)) (set-cdr! a b) (loop a (cdr a) b #t))
            a]))
+
   ;; a non-destructive version for symmetry with merge!
   (define (merge a b less?)
     (cond [(null? a) b]
