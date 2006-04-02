@@ -44,7 +44,7 @@
            merge!)
 
   ;; used by sort-internal, but can be useful by itself
-  (define (merge! a b less?)
+  (define (merge-sorted-lists! a b less?)
     (define (loop r a b r-a?) ; r-a? for optimization -- is r connected to a?
       (if (less? (car b) (car a))
         (begin (when r-a? (set-cdr! r b))
@@ -61,8 +61,8 @@
            (if (null? (cdr a)) (set-cdr! a b) (loop a (cdr a) b #t))
            a]))
 
-  ;; a non-destructive version for symmetry with merge!
-  (define (merge a b less?)
+  ;; a non-destructive version for symmetry with merge-sorted-lists!
+  (define (merge-sorted-lists a b less?)
     (cond [(null? a) b]
           [(null? b) a]
           [else (let loop ([x (car a)] [a (cdr a)] [y (car b)] [b (cdr b)])
@@ -88,7 +88,7 @@
     (define (step n)
       (cond [(> n 3) (let* (; let* not really needed with mzscheme's l->r eval
                             [j (quotient n 2)] [a (step j)] [b (step (- n j))])
-                       (merge! a b less?))]
+                       (merge-sorted-lists! a b less?))]
             ;; the following two cases are just explicit treatment of sublists
             ;; of length 2 and 3, could remove both (and use the above case for
             ;; n>1) and it would still work, except a little slower
