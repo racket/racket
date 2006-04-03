@@ -715,7 +715,8 @@ static long hash_general(Scheme_Object *o)
     keygen += 4;
   }
 
-  return *(long *) mzALIAS o;
+  /* Relies on int = two shorts: */
+  return *(int *) mzALIAS o;
 }
 
 static long hash_symbol(Scheme_Object *o)
@@ -736,7 +737,8 @@ static long hash_symbol(Scheme_Object *o)
       return hash_general(o);
   }
 
-  return *(long *) mzALIAS o;
+  /* Relies on int = two shorts: */
+  return *(int *) mzALIAS o;
 }
 
 static long hash_prim(Scheme_Object *o)

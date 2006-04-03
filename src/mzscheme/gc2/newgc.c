@@ -2103,7 +2103,7 @@ inline static void do_heap_compact(void)
 		       gcWORDS_TO_BYTES(info->size), start+1, newplace+1));
 	      memcpy(newplace, start, gcWORDS_TO_BYTES(info->size));
 	      info->moved = 1;
-	      *(PPTR(NUM(start) + 4)) = PTR(NUM(newplace) + 4);
+	      *(PPTR(NUM(start) + WORD_SIZE)) = PTR(NUM(newplace) + WORD_SIZE);
 	      newplace += info->size;
 	    }
 	    start += info->size;
