@@ -40,8 +40,8 @@
            mergesort
            sort
            sort!
-           merge
-           merge!)
+           merge-sorted-lists
+           merge-sorted-lists!)
 
   ;; used by sort-internal, but can be useful by itself
   (define (merge-sorted-lists! a b less?)
