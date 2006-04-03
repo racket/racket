@@ -1,13 +1,12 @@
 (module heap mzscheme
   
   (require (lib "etc.ss")
-	   "base-gm.ss"
-	   "dv.ss")
+           "dv.ss")
   
   
   (provide make-heap heap-empty? heap-size heap-insert heap-pop
 	   heap-peak heap-remove heap-find
-	   heap-contains heap-resort heap-tostring)
+           heap-contains heap-resort)
   
   
   
@@ -121,14 +120,7 @@
     (heap-remove heap item)
     (heap-insert heap item))
   
-  (define (heap-tostring heap . fns)
-    (let* ((data (t-data heap))
-	   (data-list (let loop ((i 1))
-			(if (> i (heap-last heap)) empty
-			    (cons (dv:ref data i) (loop (+ i 1)))))))
-      
-      (string-append "heap: sz " (number->string (heap-size heap)) ", "
-                     (apply to-string (cons data-list fns)))))
+  
   
   (define (test)
     (define f (make-heap > eq?))

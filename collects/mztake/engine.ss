@@ -1,5 +1,7 @@
 (module engine mzscheme
   (require "marks.ss"
+           (lib "etc.ss")
+           (lib "list.ss")
            (prefix frp: (lib "lang-ext.ss" "frtime"))           
            (rename (lib "frp-core.ss" "frtime")
                    frp:signal-thunk signal-thunk)
@@ -162,6 +164,7 @@
                      (let* ([t (first traces)]
                             [e (apply (trace-struct-thunk t) vals)])
                        (frp:send-synchronous-event (trace-struct-evnt-rcvr t) e))]
+                    [no-traces? (void)]
                     [else (frp:send-synchronous-events (traces->events traces vals))])
               
               ;; With a where event to generate
@@ -211,8 +214,10 @@
         (cons (first lst) (head (rest lst) (sub1 n)))))
   
   (define (dir-contains? dir filename)
-    (let ([dir-lst (unbuild-path dir)])
-      (equal? dir-lst (head (unbuild-path filename) (length dir-lst)))))
+    (let ([dir-lst (unbuild-path dir)]
+          [file-lst (unbuild-path filename)])
+      (and (< (length dir-lst) (length file-lst))
+           (equal? dir-lst (head file-lst (length dir-lst))))))
   
   (define (map-policy-tag tag)
     (cond [(eq? tag 'fast) false]

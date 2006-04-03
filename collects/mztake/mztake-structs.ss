@@ -1,5 +1,6 @@
 (module mztake-structs mzscheme
   (require (lib "match.ss")
+           (lib "etc.ss")
            (lib "more-useful-code.ss" "mztake"))
   
   (provide (all-defined))

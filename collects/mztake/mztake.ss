@@ -111,14 +111,16 @@
       [(_ loc body ...)
        (trace* (current-process) loc (lambda () body ...))]))
   
-  (define (mztake-top* name thunk )
-    (with-handlers
-        ([exn:fail?
-          (lambda (exn)
-            (with-handlers
-                ([exn:fail? (lambda (exn2) (raise exn))])
-              (bind* (current-process) name)))])
-      (thunk)))
+  (define (mztake-top* name thunk)
+    (if (debug-process-marks (current-process))
+        (with-handlers
+            ([exn:fail?
+              (lambda (exn)
+                (with-handlers
+                    ([exn:fail? (lambda (exn2) (raise exn2))])
+                  (bind* (current-process) name)))])
+          (thunk))
+        (thunk)))
   
   (define-syntax (mztake-top stx)
     (syntax-case stx () 
@@ -127,12 +129,12 @@
   
   (define (lookup-in-top-level p name)
     (let/ec success
-      (for-each
-       (lambda (m)
-         (let/ec fail
-           (let ([fail* (lambda () (fail false))])
-             (success (hash-get (hash-get (debug-process-top-level p) m fail*) name fail*)))))
-       (map mark-module-name (debug-process-marks p)))
+      (define (try m)
+        (let/ec fail
+          (define (fail*) (fail false))
+          (success (hash-get (hash-get (debug-process-top-level p) m fail*) name fail*))))
+      (for-each try (map mark-module-name (debug-process-marks p)))
+      (hash-for-each (debug-process-top-level p) (lambda (m ns) (try m)))
       (error 'bind "variable `~a' not found in target at the current location" name)))
   
   (define (bind* p name)
