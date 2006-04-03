@@ -75,7 +75,11 @@
 #define GEN0_PAGE_SIZE (1 * 1024 * 1024)
 
 /* This is the log base 2 of the size of one word, given in bytes */
-#define LOG_WORD_SIZE 2
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+# define LOG_WORD_SIZE 3
+#else
+# define LOG_WORD_SIZE 2
+#endif
 
 /* This is the log base 2 of the standard memory page size. 14 means 2^14,
    which is 16k. This seems to be a good size. */
@@ -95,8 +99,12 @@
 #define PTR(x) ((void*)(x))
 #define PPTR(x) ((void**)(x))
 #define NUM(x) ((unsigned long)(x))
-#define USEFUL_ADDR_BITS ((8 << LOG_WORD_SIZE) - LOG_APAGE_SIZE)
-#define ADDR_BITS(x) (NUM(x) >> LOG_APAGE_SIZE)
+#define USEFUL_ADDR_BITS (32 - LOG_APAGE_SIZE)
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+# define ADDR_BITS(x) ((NUM(x) >> LOG_APAGE_SIZE) & ((1 << USEFUL_ADDR_BITS) - 1))
+#else
+# define ADDR_BITS(x) (NUM(x) >> LOG_APAGE_SIZE)
+#endif
 #define WORD_SIZE (1 << LOG_WORD_SIZE)
 #define WORD_BITS (8 * WORD_SIZE)
 #define APAGE_SIZE (1 << LOG_APAGE_SIZE)
@@ -205,24 +213,24 @@ int GC_mtrace_union_current_with(int newval)
 /*****************************************************************************/
 
 struct objhead {
-  unsigned int reserved : ((8*WORD_SIZE) - (4+3+LOG_APAGE_SIZE));
+  unsigned long reserved : ((8*WORD_SIZE) - (4+3+LOG_APAGE_SIZE));
   /* the type and size of the object */
-  unsigned int type : 3;
+  unsigned long type : 3;
   /* these are the various mark bits we use */
-  unsigned int mark : 1;
-  unsigned int btc_mark : 1;
+  unsigned long mark : 1;
+  unsigned long btc_mark : 1;
   /* these are used for compaction et al*/
-  unsigned int moved : 1;
-  unsigned int dead : 1;
-  unsigned int size : LOG_APAGE_SIZE;
+  unsigned long moved : 1;
+  unsigned long dead : 1;
+  unsigned long size : LOG_APAGE_SIZE;
 };
 
 /* For sparcs, this structure must have an odd number of 4 byte words, or
    our alignment stuff is going to get screwy */
 struct mpage {                      /* BYTES: */
   struct mpage *next, *prev;        /*    8 */
-  unsigned int previous_size;       /* +  4 */
-  unsigned int size;                /* +  4 */
+  unsigned long previous_size;      /* +  4 */
+  unsigned long size;               /* +  4 */
   unsigned char generation;         /* +  1 */
   unsigned char back_pointers;      /* +  1 */
   unsigned char big_page;           /* +  1 */
@@ -258,7 +266,44 @@ struct mpage {                      /* BYTES: */
 
 /* the page map makes a nice mapping from addresses to pages, allowing
    fairly fast lookup. this is useful. */
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+static struct mpage ***page_mapss[1 << 16];
+# define DECL_PAGE_MAP struct mpage **page_map;
+# define GET_PAGE_MAP(p) page_map = create_page_map(p);
+# define FIND_PAGE_MAP(p) page_map = get_page_map(p); if (!page_map) return NULL
+inline static struct mpage **create_page_map(void *p) {
+  unsigned long pos;
+  struct mpage ***page_maps, **page_map;
+  pos = (unsigned long)p >> 48;
+  page_maps = page_mapss[pos];
+  if (!page_maps) {
+    page_maps = (struct mpage ***)malloc(sizeof(struct mpage **) * (1 << 16));
+    page_mapss[pos] = page_maps;
+  }
+  pos = ((unsigned long)p >> 32) & ((1 << 16) - 1);
+  page_map = page_maps[pos];
+  if (!page_map) {
+    page_map = (struct mpage **)malloc(sizeof(struct mpage *) * (1 << USEFUL_ADDR_BITS));
+    page_maps[pos] = page_map;
+  }
+  return page_map;
+}
+inline static struct mpage **get_page_map(void *p) {
+  unsigned long pos;
+  struct mpage ***page_maps;
+  pos = (unsigned long)p >> 48;
+  page_maps = page_mapss[pos];
+  if (!page_maps)
+    return NULL;
+  pos = ((unsigned long)p >> 32) & ((1 << 16) - 1);
+  return page_maps[pos];
+}
+#else
 static struct mpage *page_map[1 << USEFUL_ADDR_BITS];
+# define DECL_PAGE_MAP /**/
+# define GET_PAGE_MAP(p) /**/
+# define FIND_PAGE_MAP(p) /**/
+#endif
 
 /* Generation 0. Generation 0 is a set of very large pages in a list, plus
    a set of smaller bigpages in a separate list. The former is purely an
@@ -299,8 +344,10 @@ static unsigned long memory_in_use = 0; /* the amount of memory in use */
 #define modify_page_map(page, val) {                                  \
     long size_left = page->big_page ? page->size : APAGE_SIZE;         \
     void *p = page;                                                   \
+    DECL_PAGE_MAP;                                                    \
                                                                       \
     while(size_left > 0) {                                            \
+      GET_PAGE_MAP(p);                                                \
       page_map[ADDR_BITS(p)] = val;                                   \
       size_left -= APAGE_SIZE;                                         \
       p = (char *)p + APAGE_SIZE;                                      \
@@ -319,6 +366,8 @@ inline static void pagemap_remove(struct mpage *page)
 
 inline static struct mpage *find_page(void *p)
 {
+  DECL_PAGE_MAP;
+  FIND_PAGE_MAP(p);
   return page_map[ADDR_BITS(p)];
 }
 
@@ -367,7 +416,7 @@ inline static void *allocate(size_t sizeb, int type)
     sizew = ALIGN_SIZE(sizew);
     if(sizew < MAX_OBJECT_SIZEW) {
       struct objhead *info;
-      unsigned int newsize;
+      unsigned long newsize;
 
       sizeb = gcWORDS_TO_BYTES(sizew);
     alloc_retry:
@@ -1164,7 +1213,7 @@ inline static void reset_pointer_stack(void)
 struct ot_entry {
   Scheme_Custodian *originator;
   Scheme_Custodian **members;
-  unsigned int memory_use;
+  unsigned long memory_use;
 };
 
 static struct ot_entry **owner_table = NULL;
@@ -1247,7 +1296,7 @@ inline static int custodian_member_owner_set(void *cust, int set)
   return 0;
 }
 
-inline static void account_memory(int set, int amount)
+inline static void account_memory(int set, long amount)
 {
   owner_table[set]->memory_use += amount;
 }
@@ -1731,8 +1780,8 @@ void GC_mark(const void *const_p)
 	  /* first check to see if this is an atomic object masquerading
 	     as a tagged object; if it is, then convert it */
 	  if(type == PAGE_TAGGED)
-	    if((int)mark_table[*(unsigned short*)p] < PAGE_TYPES)
-	      type = ohead->type = (int)mark_table[*(unsigned short*)p];
+	    if((long)mark_table[*(unsigned short*)p] < PAGE_TYPES)
+	      type = ohead->type = (int)(long)mark_table[*(unsigned short*)p];
 
 	  /* now set us up for the search for where to put this thing */
 	  work = pages[type];

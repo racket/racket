@@ -309,14 +309,19 @@ GC2_EXTERN void GC_fixup_variable_stack(void **var_stack,
 #endif
 
 /* Macros (implementation-specific): */
+#ifdef __x86_64__
+# define gcLOG_WORD_SIZE 3
+#else
+# define gcLOG_WORD_SIZE 2
+#endif
 #define gcMARK(x) GC_mark(x)
 #define gcMARK_TYPED(t, x) gcMARK(x)
 #define gcMARK_TYPED_NOW(t, x) gcMARK(x)
 #define gcFIXUP_TYPED_NOW(t, x) GC_fixup(&(x))
 #define gcFIXUP_TYPED(t, x) gcFIXUP_TYPED_NOW(void*, x)
 #define gcFIXUP(x) gcFIXUP_TYPED(void*, x)
-#define gcBYTES_TO_WORDS(x) ((x + 3) >> 2)
-#define gcWORDS_TO_BYTES(x) (x << 2)
+#define gcBYTES_TO_WORDS(x) ((x + (1 << gcLOG_WORD_SIZE) - 1) >> gcLOG_WORD_SIZE)
+#define gcWORDS_TO_BYTES(x) (x << gcLOG_WORD_SIZE)
 
 #define GC_INTERIORABLES_NEVER_MOVE 1
 
