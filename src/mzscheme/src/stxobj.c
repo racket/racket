@@ -4131,7 +4131,7 @@ static Scheme_Object *syntax_is_graph_k(void)
 
   p->ku.k.p1 = NULL;
 
-  return (Scheme_Object *)syntax_is_graph_inner(o);
+  return syntax_is_graph_inner(o) ? scheme_true : scheme_false;
 }
 #endif
 
@@ -4146,7 +4146,8 @@ static int syntax_is_graph_inner(Scheme_Object *o)
     {
       Scheme_Thread *p = scheme_current_thread;
       p->ku.k.p1 = (void *)o;
-      return (int)scheme_handle_stack_overflow(syntax_is_graph_k);
+      v = scheme_handle_stack_overflow(syntax_is_graph_k);
+      return SCHEME_TRUEP(v);
     }
   }
 #endif

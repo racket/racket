@@ -2276,7 +2276,7 @@ scheme_inexact_to_exact (int argc, Scheme_Object *argv[])
     double d = SCHEME_FLOAT_VAL(o);
 
     /* Try simple case: */
-    Scheme_Object *i = scheme_make_integer((int)d);
+    Scheme_Object *i = scheme_make_integer((long)d);
     if ((double)SCHEME_INT_VAL(i) == d) {
 # ifdef NAN_EQUALS_ANYTHING
       if (!MZ_IS_NAN(d))
