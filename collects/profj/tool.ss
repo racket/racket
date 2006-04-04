@@ -465,56 +465,58 @@
                   [class-path ((current-module-name-resolver) '(lib "class.ss") #f #f)]
                   [mred-path ((current-module-name-resolver) '(lib "mred.ss" "mred") #f #f)]
                   [n (current-namespace)])
-              (read-case-sensitive #t)
-              (run-in-user-thread
-               (lambda ()
-                 (error-display-handler 
-                  (drscheme:debug:make-debug-error-display-handler (error-display-handler)))
-                 (let ((old-current-eval (drscheme:debug:make-debug-eval-handler (current-eval))))
-                   (current-eval 
-                    (lambda (exp)
-                      (syntax-case exp (parse-java-full-program parse-java-interactions)
-                        ((parse-java-full-program ex)
-                         (let ((exp (old-current-eval (syntax ex))))
-                           (execution? #t)
-                           (let ((name-to-require #f))
-                             (let loop ((mods (order (compile-ast exp level execute-types)))
-                                        (extras (process-extras 
-                                                 (send execute-types get-interactions-boxes) execute-types))
-                                        (require? #f))
-                               (cond
-                                 ((and (not require?) (null? mods) (null? extras)) (void))
-                                 ((and (not require?) (null? mods))
-                                  (old-current-eval (syntax-as-top (car extras)))
-                                  (loop mods (cdr extras) require?))
-                                 (require? 
-                                  (old-current-eval 
-                                   (syntax-as-top (with-syntax ([name name-to-require])
-                                                    (syntax (require name)))))
-                                  (loop mods extras #f))
-                                 (else 
-                                  (let-values (((name syn) (get-module-name (expand (car mods)))))
-                                    (set! name-to-require name)
-                                    (syntax-as-top (old-current-eval syn))
-                                    (loop (cdr mods) extras #t))))))))
-                        ((parse-java-interactions ex loc)
-                         (let ((exp (syntax-object->datum (syntax ex))))
-                           (old-current-eval 
-                            (syntax-as-top (compile-interactions-ast exp (syntax loc) level execute-types #t)))))
-                        (_ (old-current-eval exp))))))
-                 (with-handlers ([void (lambda (x)  (printf "~a~n" (exn-message x)))])
-                   (namespace-require 'mzscheme)
-                   (namespace-attach-module n obj-path)
-                   (namespace-attach-module n string-path)
-                   (namespace-attach-module n class-path)
-                   (namespace-attach-module n mred-path)
-                   (namespace-require obj-path)
-                   (namespace-require string-path)
-                   (namespace-require class-path)
-                   (namespace-require mred-path)
-                   (namespace-require '(prefix javaRuntime: (lib "runtime.scm" "profj" "libs" "java")))
-                   (namespace-require '(prefix c: (lib "contract.ss")))
-                   )))))
+              (let ((execute-types (create-type-record)))
+                (read-case-sensitive #t)
+                (run-in-user-thread
+                 (lambda ()
+                   (error-display-handler 
+                    (drscheme:debug:make-debug-error-display-handler (error-display-handler)))
+                   (let ((old-current-eval (drscheme:debug:make-debug-eval-handler (current-eval))))
+                     (current-eval 
+                      (lambda (exp)
+                        (syntax-case exp (parse-java-full-program parse-java-interactions)
+                          ((parse-java-full-program ex)
+                           (let ((exp (old-current-eval (syntax ex))))
+                             (execution? #t)
+                             (set! execute-types (create-type-record))
+                             (let ((name-to-require #f))
+                               (let loop ((mods (order (compile-ast exp level execute-types)))
+                                          (extras (process-extras 
+                                                   (send execute-types get-interactions-boxes) execute-types))
+                                          (require? #f))
+                                 (cond
+                                   ((and (not require?) (null? mods) (null? extras)) (void))
+                                   ((and (not require?) (null? mods))
+                                    (old-current-eval (syntax-as-top (car extras)))
+                                    (loop mods (cdr extras) require?))
+                                   (require? 
+                                    (old-current-eval 
+                                     (syntax-as-top (with-syntax ([name name-to-require])
+                                                      (syntax (require name)))))
+                                    (loop mods extras #f))
+                                   (else 
+                                    (let-values (((name syn) (get-module-name (expand (car mods)))))
+                                      (set! name-to-require name)
+                                      (syntax-as-top (old-current-eval syn))
+                                      (loop (cdr mods) extras #t))))))))
+                          ((parse-java-interactions ex loc)
+                           (let ((exp (syntax-object->datum (syntax ex))))
+                             (old-current-eval 
+                              (syntax-as-top (compile-interactions-ast exp (syntax loc) level execute-types #t)))))
+                          (_ (old-current-eval exp))))))
+                   (with-handlers ([void (lambda (x)  (printf "~a~n" (exn-message x)))])
+                     (namespace-require 'mzscheme)
+                     (namespace-attach-module n obj-path)
+                     (namespace-attach-module n string-path)
+                     (namespace-attach-module n class-path)
+                     (namespace-attach-module n mred-path)
+                     (namespace-require obj-path)
+                     (namespace-require string-path)
+                     (namespace-require class-path)
+                     (namespace-require mred-path)
+                     (namespace-require '(prefix javaRuntime: (lib "runtime.scm" "profj" "libs" "java")))
+                     (namespace-require '(prefix c: (lib "contract.ss")))
+                     ))))))
           
           #;(define/public (render-value value settings port); port-write)
             (let ((print-full? (profj-settings-print-full? settings))

@@ -1108,7 +1108,7 @@
   (define (check-while cond/env src check-s loop-body)
     ((check-cond 'while) (type/env-t cond/env) src)
     (check-s loop-body (type/env-e cond/env) #t #f)
-    (make-type/env 'void (type/env-t cond/env)))
+    (make-type/env 'void (type/env-e cond/env)))
         
   ;check-do: (exp env -> type/env) exp src type/env -> type/env
   (define (check-do check-e exp src loop/env)
@@ -2746,7 +2746,7 @@
          ((method-name)
           (let ((line1
                  (format "Method ~a is being erroneously accessed as a field for class ~a." field t))
-                (line2 "A call to a method chould be followed by () and any arguments to the method"))
+                (line2 "A call to a method should be followed by () and any arguments to the method"))
             (format "~a~n~a" line1 line2)))
          ((array)
           (format "~a only has a length field, attempted to access ~a" t field))

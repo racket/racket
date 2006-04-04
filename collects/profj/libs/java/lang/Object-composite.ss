@@ -733,7 +733,7 @@
         (when (>= begin (string-length text))
           (raise (make-runtime-error
                   (format "First argument to substring must be smaller than the string's length ~a, given ~a." (string-length text) begin))))
-        (when (>= end (string-length text))
+        (when (> end (string-length text))
           (raise (make-runtime-error
                   (format "Second argument to substring must be smaller than the string's length ~a, given ~a." (string-length text) end))))
         (when (< end 0)

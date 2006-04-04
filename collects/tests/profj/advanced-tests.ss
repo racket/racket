@@ -1,9 +1,25 @@
 (module advanced-tests mzscheme
   (require (lib "profj-testing.ss" "profj"))
+  (require (lib "String.ss" "profj" "libs" "java" "lang"))
   
   (prepare-for-tests "Advanced")
   
   ;;Execution tests without errors
+  
+  (execute-test
+   "class Blah {
+	Blah () {}
+	int addUp (int top) {
+		int answer = 0;
+		int counter = 1;
+		while (counter <= top) {
+			answer += counter;
+			++counter;
+			}
+		return answer;
+		}
+	}"
+   'advanced #f "while loop with statements after")
   
   (execute-test
    "interface A { int a( int x); }
@@ -324,6 +340,13 @@ class WeeklyPlanner{
    (list "Object o = \"\";" "(String) o")
    (list '(void) 'o~f)
    "Casting to a String")
+  
+  (interact-test
+   'advanced
+   (list "\"hello\".substring(2,5)")
+   (list (make-java-string "llo"))
+   "Test of substring")
+         
   
   (report-test-results)
   
