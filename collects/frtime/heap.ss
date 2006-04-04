@@ -2,12 +2,13 @@
   
   (require (lib "etc.ss")
 	   "base-gm.ss"
+           (lib "list.ss")
 	   "dv.ss")
   
   
   (provide make-heap heap-empty? heap-size heap-insert heap-pop
 	   heap-peak heap-remove heap-find
-	   heap-contains heap-resort heap-tostring)
+	   heap-contains heap-resort heap->list)
   
   
   
@@ -119,43 +120,39 @@
   (define (heap-resort heap item)
     (heap-remove heap item)
     (heap-insert heap item))
-
-  (define (heap-tostring heap . fns)
-    (let* ((data (t-data heap))
-	   (data-list (let loop ((i 1))
-			(if (> i (heap-last heap)) empty
-			    (cons (dv:ref data i) (loop (+ i 1)))))))
-      
-    (string-append "heap: sz " (number->string (heap-size heap)) ", "
-		   (apply to-string (cons data-list fns)))))
+  
+  (define (heap->list heap)
+    (vector->list (t-data heap)))
   
   (define (test)
     (define f (make-heap > eq?))
     (define d (t-data f))
     (heap-insert f 99)
-    (debug "A " d) 
+    (print-each "A " d) 
     (heap-remove-pos f 1)
-    (debug "B " d)
+    (print-each "B " d)
     (for-each (lambda (x) (heap-insert f x)) '(1 2 3 4 5 6 7 8 9 10 11 12 13 14))
-    (debug "C " d)
-    (heap-remove f 10) (debug " " d)
-    (heap-remove f 5) (debug " " d)
-    (heap-remove f 8) (debug " " d)
-    (heap-remove f 13) (debug " " d)
-    (debug (heap-contains f 11))
-    (debug (heap-contains f 123))
+    (print-each "C " d)
+    (heap-remove f 10) (print-each " " d)
+    (heap-remove f 5) (print-each " " d)
+    (heap-remove f 8) (print-each " " d)
+    (heap-remove f 13) (print-each " " d)
+    (print-each (heap-contains f 11))
+    (print-each (heap-contains f 123))
     (heap-pop f)
     (heap-pop f)
     (heap-pop f)
-    (heap-pop f) (debug " " d)
-    (debug (heap-contains f 11))
-    (debug (heap-contains f 4))
-    (debug (heap-tostring f))
+    (heap-pop f) (print-each " " d)
+    (print-each (heap-contains f 11))
+    (print-each (heap-contains f 4))
+    (print-each (heap->list f))
     (heap-remove f 2)
-    (debug (heap-tostring f))
+    (print-each (heap->list f))
     (heap-remove f 3)
-    (debug (heap-tostring f))
+    (print-each (heap->list f))
     )
+  
+  ;(test)
 
   )
 
