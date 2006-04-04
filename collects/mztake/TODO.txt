@@ -2,16 +2,6 @@
 - Automated tests
 - Trace by function name 
  
-  #|:::::::::LOAD/ANNOTATOR BUGS:::::::::::
-* catch oops exception
-* catch the other two exceptions that my loaders throw
-* detect if the source code for a certain module is missing and throw an exception
-* do I want to parameterize it over a given namespace?
-* does this handle module prefixes?
-* what happens if two modules have the same name in different directories
-* MAKE SURE THERE WONT BE COLLISIONS WHEN EVAL'NG MODULES...GIVE THEM UNIQUE NAMES BASED ON PATH!
-::::::::::::::::::::::::::::::::::::::::::
-
 CHANGES TO MAKE-----------------------------------------------------------------------------
 Ability to add named anchors into code using Special menu in DRS -- use those anchors as tracepoints.
 
@@ -19,41 +9,14 @@ Demo monitoring DrScheme for Robby?
 
 Bind Stop button to kill-all.
 
-Test Suite for debugger annotator
-
-Demo and docs for debugging multiple files, to make Robby happy.  It is true that the docs are not very helpful on this count.  It'd be nice if you could mock up a quick example of tracing something inside DrScheme....
-
 On the whole, I like the tool, although it'd be nice to have either
  	(a) an interactive pointy-clicky interface rather than figuring
  		out line/column co-ordinates, or
- 	(b) an AST-based description of the thing to be monitored (shades
- 		of aspect-oriented programming).
 
 
 Re-direct, or at least prefix, program output from the client so that it can be distinguished from the script
 
 Paramterize print-struct to #f for printing in the script
-
-
-DEMOS---------------------------------------------------------------------------------------
-* Data structure examples
-  Binary search over a tree, show which node is being examined, or the most commonly taken path
-  Parse, graph the AST -- show OR and AND precedence getting messed up
-
-* MST example
-
-* something with multiple threads doing something and draw the threads in different colors in a window
-
-
-OPTIMIZATIONS-------------------------------------------------------------------------------
-* improve speed of lookup for line-col->pos; load them into a hashtable?  not important since this is just startup time for the script.
-
-* improve speed of load/annotate
-
-* improve speed of functions in (run)
-
-* Remove marks.ss from MzTake as soon as the new version of it becomes standard with releases.
-
 
 ERROR-CHECKING/HANDLING---------------------------------------------------------------------
 

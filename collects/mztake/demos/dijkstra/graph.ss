@@ -1,6 +1,8 @@
 ;; -*- compile-command: "mzscheme -M errortrace -u graph.ss" -*-
 (module graph mzscheme
-  (require (lib "more-useful-code.ss" "mztake"))
+  (require (lib "base-gm.ss" "frtime")
+           (lib "etc.ss")
+           (lib "list.ss"))
   
   (provide make-graph
            ;; --- Constructors :
@@ -49,36 +51,36 @@
            graph-to-string
            graph-test
            )
-
+  
   (define-struct t (flags nNodes nEdges nodes successors predessessors))
-
+  
   ;; Flags can be: 'equal 'directed 'unique-node 'unique-edge 'nodes-must-exists 'safe
   ;; 'safe is a short for '(unique-node unique-edge nodes-must-exists)
   (define (make-graph . flags)
     (let ((flag-hash (make-hash)))
       (set! flags (expands-safe-flag flags))
-      (for-each-f flags (lambda (flag) (hash-put! flag-hash flag true)))
+      (for-each (lambda (flag) (hash-put! flag-hash flag true)) flags)
       (if (member 'equal flags)
           (make-t flag-hash 0 0 (make-hash 'equal) (make-hash 'equal) (make-hash 'equal))
           (make-t flag-hash 0 0 (make-hash) (make-hash) (make-hash)))))
-
+  
   (define (graph? graph) (t? graph))
-
+  
   (define no-value (box empty))
-
+  
   ;; Makes a hash with the same 'equal as the graph
   (define (graph-make-hash graph)
     (if (graph-has-flag? graph 'equal) 
         (make-hash 'equal)
         (make-hash)))
-
-
+  
+  
   (define (expands-safe-flag flags)
     (let loop ((cur flags) (acc empty))
       (cond [(empty? cur) acc]
             [(eq? (first cur) 'safe) (loop (rest cur) (append '(unique-node unique-edge nodes-must-exists) flags))]
             [true (loop (rest cur) (cons (first cur) acc))])))
-
+  
   ;; Make a graph with mostly the same flags as another graph
   (define (graph-make-similar graph plus-flags minus-flags)
     (set! plus-flags (expands-safe-flag plus-flags))
@@ -87,7 +89,7 @@
            (append plus-flags
                    (filter (lambda (i) (not (member i minus-flags)))
                            (hash-keys (t-flags graph))))))
-
+  
   (define (graph-copy graph)
     (let* ((rtn-nodes (graph-make-hash graph))
            (rtn-successors (graph-make-hash graph))
@@ -98,7 +100,7 @@
       (hash-add-all! rtn-successors (t-successors graph))
       (hash-add-all! rtn-predessessors (t-predessessors graph))
       rtn))
-
+  
   (define (graph-add-all! dest-graph src-graph)
     (graph-for-each-node
      src-graph
@@ -115,17 +117,17 @@
   
   (define (graph-has-flag? graph flag)
     (hash-mem? (t-flags graph) flag))
-
+  
   (define (graph-directed? graph)
     (hash-mem? (t-flags graph) 'directed))
-
-;;; =====================================================================
-;;; Nodes
-
+  
+  ;;; =====================================================================
+  ;;; Nodes
+  
   (define (graph-nodes graph) (hash-keys (t-nodes graph)))
-
+  
   (define (graph-nodes-size graph) (t-nNodes graph))
-
+  
   (define graph-make-node! 
     (case-lambda
       [(graph) (graph-make-node! graph no-value)]
@@ -133,7 +135,7 @@
        (let ((sym (string->symbol (string-append "node" (number->string (t-nNodes graph))))))
          (graph-node-add! graph sym val)
          sym)]))
-
+  
   ;; Add a node to the graph. If the node already exists, 
   ;; sets its label, unless the graph has the 'unique-node property,
   ;; in which case this will assert.
@@ -149,43 +151,38 @@
              (if (graph-directed? graph)
                  (hash-put! (t-predessessors graph) node (graph-make-hash graph)))))
        (hash-put! (t-nodes graph) node val)]))
-
+  
   (define (graph-node-mem? graph node)
     (hash-mem? (t-nodes graph) node))
-
+  
   (define (graph-node-set! graph node val)
     (assert (hash-mem? (t-nodes graph) node))
     (hash-put! (t-nodes graph) node val))
-
+  
   (define (graph-node-remove! graph node)
     (assert (graph-node-mem? graph node))
-    (for-each-f (hash-get (t-successors graph) node)
-                (lambda (i) (graph-edge-remove! graph node i)))
-
+    (for-each (lambda (i) (graph-edge-remove! graph node i))
+              (hash-keys (hash-get (t-successors graph) node)))
+    
     (if (graph-directed? graph)
-        (for-each-f (hash-get (t-predessessors graph) node)
-                    (lambda (i) (graph-edge-remove! graph i node))))
-
+        (for-each (lambda (i) (graph-edge-remove! graph i node))
+                  (hash-keys (hash-get (t-predessessors graph) node))))
+    
     (hash-remove! (t-nodes graph) node)
     (hash-remove! (t-successors graph) node)
     (if (graph-directed? graph)
         (hash-remove! (t-predessessors graph) node))
     (set-t-nNodes! graph (- (t-nNodes graph) 1)))
-
+  
   (define graph-node-collapse!
     (case-lambda
       [(graph node with-self-loop) (graph-node-collapse! graph node with-self-loop (lambda (pred-label succ-label) no-value))]
       [(graph node with-self-loop label-fn)
        (let ((is-directed (graph-directed? graph)))
-         (for-each-f
-
-          (if is-directed 
-              (hash-get (t-predessessors graph) node)
-              (hash-get (t-successors graph) node))
-
+         (for-each
+          
           (lambda (pred)
-            (for-each-f
-             (hash-get (t-successors graph) node)
+            (for-each
              (lambda (succ)
                (unless (or (and (not is-directed) (eq? pred succ))
                            (graph-edge-mem? graph pred succ))
@@ -197,21 +194,26 @@
                      (hash-put! (hash-get (t-successors graph) pred) succ new-label)
                      (if is-directed
                          (hash-put! (hash-get (t-predessessors graph) succ) pred new-label)
-                         (hash-put! (hash-get (t-successors graph) succ) pred new-label))))))))))
+                         (hash-put! (hash-get (t-successors graph) succ) pred new-label))))))
+             (hash-keys (hash-get (t-successors graph) node))))
+          
+          (hash-keys (hash-get
+                      (if is-directed (t-predessessors graph) (t-successors graph))
+                      node))))
        (graph-node-remove! graph node)]))
-
+  
   (define (graph-node-has-label? graph node)
     (not (eq? (hash-get (t-nodes graph) node) no-value)))
-
+  
   (define (graph-node-label graph node)
     (let ((r (hash-get (t-nodes graph) node)))
       (if (eq? r no-value) (error "graph-node-label: no value for node" node)
           r)))
-
+  
   (define (graph-succs graph node)
     (assert (graph-directed? graph))
     (hash-keys (hash-get (t-successors graph) node)))
-
+  
   (define (graph-preds graph node)
     (assert (graph-directed? graph))
     (hash-keys (hash-get (t-predessessors graph) node)))
@@ -221,34 +223,34 @@
         (append (hash-keys (hash-get (t-successors graph) node))
                 (hash-keys (hash-get (t-predessessors graph) node)))
         (hash-keys (hash-get (t-successors graph) node))))
-
+  
   (define (graph-for-each-adjs graph node fn)
-    (for-each (lambda (succ) (fn node succ))
-              (hash-get (t-successors graph) node))
+    (for-each (hash-keys (hash-get (t-successors graph) node))
+              (lambda (succ) (fn node succ)))
     (when (graph-directed? graph)
-      (for-each (lambda (pred) (fn pred node))
-                (hash-get (t-predessessors graph) node))))
-
+      (for-each (hash-keys (hash-get (t-predessessors graph) node))
+                (lambda (pred) (fn pred node)))))
+  
   (define (graph-for-each-node graph fn)
-    (for-each-f (t-nodes graph) fn))
-
+    (for-each fn (hash-keys (t-nodes graph))))
+  
   (define (graph-fold-nodes graph init fn)
     (let ((acc init))
       (graph-for-each-node
        graph 
        (lambda (node) (set! acc (fn node acc))))
       acc))
-
-;;; =====================================================================
-;;; Edges
-
+  
+  ;;; =====================================================================
+  ;;; Edges
+  
   (define (graph-edges graph)
     (let ((rtn empty))
       (graph-for-each-edge graph (lambda (from to) (set! rtn (cons from to))))
       rtn))
-
+  
   (define (graph-edges-size graph) (t-nEdges graph))
-
+  
   ;; Add an edge to the graph. If the edge already exists, 
   ;; sets its label, unless the graph has the 'unique-edge property,
   ;; in which case this will assert.
@@ -260,18 +262,18 @@
        (if (graph-edge-mem? graph from to)
            (assert (not (graph-has-flag? graph 'unique-edge)))
            (set-t-nEdges! graph (+ (t-nEdges graph) 1)))
-
+       
        (if (graph-has-flag? graph 'nodes-must-exists)
            (assert (and (graph-node-mem? graph from) (graph-node-mem? graph to)))
            (begin (if (not (graph-node-mem? graph from)) (graph-node-add! graph from))
                   (if (not (graph-node-mem? graph to)) (graph-node-add! graph to))))
        
        (hash-put! (hash-get (t-successors graph) from) to val)
-
+       
        (if (graph-directed? graph)
            (hash-put! (hash-get (t-predessessors graph) to) from val)
            (hash-put! (hash-get (t-successors graph) to) from val))]))
-
+  
   (define (graph-edge-mem? graph from to)
     (if (graph-has-flag? graph 'nodes-must-exists) 
         (assert (and (graph-node-mem? graph from)
@@ -279,66 +281,66 @@
     
     (and (hash-mem? (t-successors graph) from)
          (hash-mem? (hash-get (t-successors graph) from) to)))
-
+  
   (define (graph-edge-set! graph from to val)
     (assert (graph-edge-mem? graph from to))
     (hash-put! (hash-get (t-successors graph) from) to val)
-
+    
     (if (graph-directed? graph)
         (hash-put! (hash-get (t-predessessors graph) to) from val)
         (hash-put! (hash-get (t-successors graph) to) from val)))
-
+  
   (define (graph-edge-remove! graph from to)
     (assert (graph-edge-mem? graph from to))
     (hash-remove! (hash-get (t-successors graph) from) to)
-
+    
     (if (graph-directed? graph)
         (hash-remove! (hash-get (t-predessessors graph) to) from)
         (hash-remove! (hash-get (t-successors graph) to) from)))
-
+  
   (define (graph-edge-has-label? graph from to)
     (not (eq? (hash-get (hash-get (t-successors graph) from) to) no-value)))
-
+  
   (define (graph-edge-label graph from to)
     (let ((r (hash-get (hash-get (t-successors graph) from) to)))
       (if (eq? r no-value) (error "graph-edge-label: no value for edge" (cons from to)))
       r))
-
+  
   (define (graph-for-each-edge graph fn)
     (graph-for-each-node 
      graph
      (lambda (from) 
-       (for-each-f (hash-get (t-successors graph) from)
-                   (lambda (to) (fn from to))))))
-
+       (for-each (lambda (to) (fn from to))
+                 (hash-keys (hash-get (t-successors graph) from))))))
+  
   (define (graph-fold-edges graph init fn)
     (let ((acc init))
       (graph-for-each-edge 
        graph 
        (lambda (from to) (set! acc (fn from to acc))))
       acc))
-
-;;; =====================================================================
-;;; Algos
-
+  
+  ;;; =====================================================================
+  ;;; Algos
+  
   (define (graph-dfs-from-node-with-log graph node dealt-with pre-fn post-fn backward)
     (assert (or (not backward) (graph-directed? graph)))
     (if (not (hash-mem? dealt-with node)) 
         (begin (hash-put! dealt-with node true)
                (pre-fn node)
-               (for-each-f (if backward
-                               (hash-get (t-predessessors graph) node)
-                               (hash-get (t-successors graph) node))
-                           (lambda (n) (graph-dfs-from-node-with-log graph n dealt-with pre-fn post-fn backward)))
+               (for-each (lambda (n) (graph-dfs-from-node-with-log graph n dealt-with pre-fn post-fn backward))
+                         (if backward
+                             (hash-keys (hash-get (t-predessessors graph) node))
+                             (hash-keys (hash-get (t-successors graph) node))))
                (post-fn node))))
   
-
+  
   (define graph-dfs-from-node
     (case-lambda 
       [(graph node pre-fn) (graph-dfs-from-node graph node pre-fn (lambda (i) i))]
       [(graph node pre-fn post-fn)
        (graph-dfs-from-node-with-log graph node (graph-make-hash graph) pre-fn post-fn false)]))
-
+  
   (define graph-dfs-all
     (case-lambda 
       [(graph pre-fn) (graph-dfs-all graph pre-fn (lambda (i) i))]
@@ -346,8 +348,8 @@
        (let ((dealt-with (graph-make-hash graph)))
          (graph-for-each-node graph (lambda (n) (if (not (hash-mem? dealt-with n)) 
                                                     (graph-dfs-from-node-with-log graph n dealt-with pre-fn post-fn false)))))]))
-
-
+  
+  
   (define (graph-components graph)
     (let ((dealt-with (graph-make-hash graph)))
       (graph-fold-nodes
@@ -356,18 +358,18 @@
        (lambda (node acc)
          (if (hash-mem? dealt-with node) acc
              (let ((cur-component 
-                (let loop ((cur node) (acc empty))
-                  (if (hash-mem? dealt-with cur) acc
-                      (begin (hash-put! dealt-with cur true)
-                             (foldl (lambda (adj acc) (loop adj acc)) (cons cur acc) 
-                                    (graph-adjs graph cur)))))))
+                    (let loop ((cur node) (acc empty))
+                      (if (hash-mem? dealt-with cur) acc
+                          (begin (hash-put! dealt-with cur true)
+                                 (foldl (lambda (adj acc) (loop adj acc)) (cons cur acc) 
+                                        (graph-adjs graph cur)))))))
                (cons cur-component acc)))))))
-
+  
   (define (graph-strongly-connected-components graph)
     (assert (graph-directed? graph))
     (let ((finish-times empty)
           (dealt-with (graph-make-hash graph)))
-
+      
       (graph-for-each-node 
        graph 
        (lambda (n) (graph-dfs-from-node-with-log 
@@ -377,12 +379,11 @@
                     false)))
       
       (set! dealt-with (graph-make-hash graph))
-
+      
       (let ((component-graph (graph-make-similar graph empty '(safe equal)))
             (node2supernode (make-hash)))
-
-        (for-each-f 
-         finish-times
+        
+        (for-each
          (lambda (n) 
            (if (not (hash-mem? dealt-with n))
                (let ((super-node (graph-make-node! component-graph empty)))
@@ -392,24 +393,25 @@
                     (graph-node-set! component-graph super-node (cons i (graph-node-label component-graph super-node)))
                     (hash-put! node2supernode i super-node))
                   (lambda (i) i)
-                  true)))))
+                  true))))
+         finish-times)
         (graph-for-each-edge graph
                              (lambda (from to)
                                (graph-edge-add! component-graph 
                                                 (hash-get node2supernode from)
                                                 (hash-get node2supernode to))))
         (cons component-graph node2supernode))))
-
+  
   (define (graph-topological-sort graph)
     (assert (graph-directed? graph))
     (let ((rtn empty))
       (graph-dfs-all graph (lambda (i) i) (lambda (node) (set! rtn (cons node rtn))))
       rtn))
-
-
-;;; =====================================================================
-;;; Utils
-
+  
+  
+  ;;; =====================================================================
+  ;;; Utils
+  
   (define graph-to-list
     (case-lambda 
       [(graph) (graph-to-list graph false)]
@@ -437,20 +439,17 @@
   
   (define (graph-to-string graph . to-string)
     (graph-to-string-prv graph false (if (empty? to-string) false (first to-string))))
-
+  
   (define (graph-to-string-with-labels graph . to-string)
     (graph-to-string-prv graph true (if (empty? to-string) true (first to-string))))
-
-  (define to-string-f (make-to-string `((,t? ,graph-to-string))))
-  (define debug-f (make-debug to-string-f))
-  (define for-each-f (make-for-each))
-
-;;; =====================================================================
-;;; Tests
-
+  
+  
+  ;;; =====================================================================
+  ;;; Tests
+  
   (define (graph-test)
     (define graph (make-graph 'safe 'directed))
-
+    
     (graph-node-add! graph 'a)
     (graph-node-add! graph 'b 2)
     (graph-node-add! graph 'c 3)
@@ -470,8 +469,8 @@
     (display (graph-edge-mem? graph 'a 'b))
     (newline)
     
-    (debug-f (graph-to-list graph true))
-    (graph-for-each-edge graph (lambda (a b) (debug-f "A " a b)))
+    (print-each (graph-to-list graph true))
+    (graph-for-each-edge graph (lambda (a b) (print-each "A " a b)))
     
     (graph-dfs-from-node graph 'a (lambda (i) (display i)))
     (newline)
@@ -490,7 +489,7 @@
       (graph-edge-add! star 'x 4)
       (graph-edge-add! star 'x 5)
       (graph-node-collapse! star 'x false)
-      (debug-f "collapsed:" (graph-to-list star)))
+      (print-each "collapsed:" (graph-to-list star)))
     
     (let ((strong-graph (make-graph 'directed)))
       
@@ -508,17 +507,17 @@
       (graph-edge-add! strong-graph 'g 'h)
       (graph-edge-add! strong-graph 'd 'h)
       (graph-edge-add! strong-graph 'h 'h)
-
+      
       (graph-edge-add! strong-graph 'xa 'xb)
       (graph-edge-add! strong-graph 'xb 'xc)
       (graph-edge-add! strong-graph 'xc 'xa)
-
-      (debug-f "strong-graph" strong-graph)
-      (debug-f "component" (graph-components strong-graph))
+      
+      (print-each "strong-graph" strong-graph)
+      (print-each "component" (graph-components strong-graph))
       (let ((components (graph-strongly-connected-components strong-graph)))
-        (debug-f "strong-components" components)
-        (debug-f "toposort" (graph-topological-sort (first components)))))
-
+        (print-each "strong-components" components)
+        (print-each "toposort" (graph-topological-sort (first components)))))
+    
     (let ((u-graph (make-graph)))
       (graph-edge-add! u-graph 'a 'b)
       (graph-edge-add! u-graph 'b 'c)
@@ -526,18 +525,18 @@
       (graph-edge-add! u-graph 'd 'a)
       (graph-edge-add! u-graph 'd 'e)
       (graph-edge-add! u-graph 'e 'c)
-
+      
       (graph-edge-add! u-graph 'xa 'xb)
       (graph-edge-add! u-graph 'xa 'xc)
       (graph-edge-add! u-graph 'xb 'xd)
       (newline)
-      (debug-f "u-graph" u-graph)
+      (print-each "u-graph" u-graph)
       (graph-edge-remove! u-graph 'b 'a)
       (graph-node-remove! u-graph 'd)
-      (debug-f "u-graph" u-graph)
-      (debug-f "component" (graph-components u-graph)))
+      (print-each "u-graph" u-graph)
+      (print-each "component" (graph-components u-graph)))
     
     )
   ;(graph-test)
   )
-  
+

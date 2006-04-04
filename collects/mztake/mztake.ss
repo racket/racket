@@ -6,7 +6,7 @@
            (rename (lib "frtime.ss" "frtime") frp:value-nowable? value-nowable?)
            (rename (lib "frtime.ss" "frtime") frp:behaviorof behaviorof)
            "mztake-structs.ss"
-           "more-useful-code.ss"
+           (lib "base-gm.ss" "frtime")
            (lib "etc.ss")
            (lib "list.ss")
            "marks.ss"

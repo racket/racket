@@ -3,7 +3,7 @@
          (lib "useful-code.ss" "mztake")
          (as-is mzscheme assoc))
 
-(define/bind (loc "random.ss" 4 6) x)
+(define/bind (loc "random.ss" '(loop _)) x)
 
 (define (assoc-inc l x)
   (let ([filtered (filter (lambda (y) (not (eq? x (first y)))) l)]

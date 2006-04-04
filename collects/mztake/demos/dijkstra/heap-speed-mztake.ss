@@ -1,5 +1,5 @@
 (require (lib "mztake.ss" "mztake"))
-(set-main! "heap.ss")
+(set-main! '(lib "heap.ss" "frtime"))
 
 (define start (current-milliseconds))
 (set-running! #t)

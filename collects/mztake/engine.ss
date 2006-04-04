@@ -2,11 +2,12 @@
   (require "marks.ss"
            (lib "etc.ss")
            (lib "list.ss")
+           (lib "match.ss")
            (prefix frp: (lib "lang-ext.ss" "frtime"))           
            (rename (lib "frp-core.ss" "frtime")
                    frp:signal-thunk signal-thunk)
            "useful-code.ss"
-           "more-useful-code.ss" ; mostly for hash- bindings
+           (lib "base-gm.ss" "frtime")
            "mztake-structs.ss"
            "load-sandbox.ss"
            "annotator.ss"
@@ -71,13 +72,13 @@
   
   (define (pattern->pos stx-lst)
     (define (quote-symbols lst)
-      (cond 
-        [(empty? lst) empty]
-        [(eq? lst '_) lst]
-        [(eq? lst '...) lst]
-        [(symbol? lst) `(quote ,lst)]
-        [else (cons (quote-symbols (first lst))
-                    (quote-symbols (rest lst)))]))
+      (match lst
+        [(? symbol? s) `(quote ,s)]
+        [() empty]
+        [('_ tl ...) `(_ ... ,@(quote-symbols tl))]
+        [(hd tl ...) (cons (quote-symbols hd)
+                           (quote-symbols tl))]
+        [item item]))
     
     (define (collect-locations h stx lst)
       (let loop ([stx stx] [lst lst])
@@ -271,6 +272,11 @@
        
        ;; annotate-module?
        (lambda (filename module-name)
+         #;(print-each "annotate-module?"
+                       filename
+                       (process-has-file? process filename)
+                       (policy-requests-annotatation? (debug-process-policy process) filename))
+         
          (or (process-has-file? process filename)
              (policy-requests-annotatation? (debug-process-policy process) filename)))
        
@@ -278,7 +284,10 @@
        (lambda (stx)
          (if (not (syntax-source stx))
              stx
-             (let*-values ([(client) (find-client/create process (path->string (syntax-source stx)))]
+             (let*-values ([(client)
+                            (find-client/create
+                             process
+                             (path->string (syntax-source stx)))]
                            [(annotated-stx pos-list)
                             (annotate-for-single-stepping 
                              stx 

@@ -1,6 +1,6 @@
 (require (lib "mztake.ss" "mztake" )
          (lib "match.ss")
-         (lib "more-useful-code.ss" "mztake"))
+         (lib "base-gm.ss" "frtime"))
 
 (set-main! "picture.ss")
 

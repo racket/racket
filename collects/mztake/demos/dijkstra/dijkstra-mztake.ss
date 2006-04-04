@@ -37,9 +37,9 @@
 	 "dijkstra-solver.ss"
          (lib "match.ss"))
 
-(define inserts (trace (loc "heap.ss" 49 6) item))
-;(define removes (trace (loc "heap.ss" 67 10) result))
-(define removes (trace (loc/r 66 22)))
+(define inserts (trace (loc '(lib "heap.ss" "frtime") '(let* ((sorter _) _) _))
+                       item))
+(define removes (trace (loc/r '(dv:ref (t-data _) _))))
 
 #| The following code
 merely observes the insertions and removals

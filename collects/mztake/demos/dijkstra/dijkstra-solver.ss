@@ -1,5 +1,5 @@
 (module dijkstra-solver mzscheme
-  (require "heap.ss"
+  (require (lib "heap.ss" "frtime")
            (lib "list.ss")
            "graph.ss")
 

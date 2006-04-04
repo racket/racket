@@ -26,14 +26,14 @@ behavior of the program "highway-mztake.ss", in the demos directory of
 the MzTake collection:
 
   (require (lib "mztake.ss" "mztake"))
-  (define/bind (loc "highway.ss" 3) speed)
+  (define/bind (loc "highway.ss" 4) speed)
   (printf-b "current speed: ~a" speed)
        ;; more code
   (set-running! true)
 
 This code executes a target module in the file "highway.ss"
 after installing a _trace point_ (also known as a _watch
-point_) just before the Scheme expression on the third line
+point_) just before the Scheme expression on the fourth line
 of "highway.ss".  SPEED is a FrTime behavior that always
 contains the *current* value of the variable named SPEED in
 the target program.
@@ -167,8 +167,23 @@ _Installing Trace Points_
    datum.  For instance, to install a trace point on the tenth line of
    the MzLib's list library, use:
 
-     (trace (loc '(lib "list.ss") 10) ...)
+     (trace (loc '(lib "list.ss") 10)   <body>   )
 
+> (loc require-spec pattern)
+
+   The LOC function can also accept a pattern.  MzTake will scan the
+   text of the target source file and install a breakpoint at every
+   location where the text matches the pattern.  The pattern language
+   is very simple.  Every symbol in the pattern is taken literally,
+   with the exception of the underscore.  In a pattern, and underscore
+   stand for zero, one, or many items.  Unlike the patterns used by
+   match.ss, MzTake does not make use of an ellipsis to indicate
+   repetition.  The repetition is always implicit. The following
+   expression inserts a tracepoint on every lambda expression that has
+   exactly one argument, called "l" :
+
+     (trace (loc '(lib "list.ss") '(lambda (l) _))  <body> )
+  
 > (trace loc body ...)
 
    Install a trace point at the location indicated by the LOC value.

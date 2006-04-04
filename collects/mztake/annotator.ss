@@ -6,6 +6,7 @@
            (lib "marks.ss" "mztake")
            (lib "mred.ss" "mred")
            (lib "pretty.ss")
+           (lib "base-gm.ss" "frtime")
            (lib "load-sandbox.ss" "mztake")
            (prefix srfi: (lib "search.ss" "srfi" "1"))
            )
