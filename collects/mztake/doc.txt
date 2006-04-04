@@ -332,7 +332,7 @@ _Installing Trace Points_
    debuggable mode.  The CURRENT-POLICY decides which.
 
    - debuggable mode: the file is instrumented with MzTake debugging
-     information.  It can be the target of trace point and it generate
+     information.  It can be the target of tracepoint and it generate
      events on the WHERE stream.  Execution can also be paused in the middle
      of code running in debuggable mode.  The instrumentation overhead
      is considerable, however, of the order of 10x-20x slowdown.
@@ -343,19 +343,11 @@ _Installing Trace Points_
      effect.  Also, pausing while executing a fast mode file will be
      delayed until execution reaches a debuggable mode file.
 
-   MzTake uses the following rules, in order, to decide between fast
-   mode and debuggable mode:
-
-   1) Files that are compiled to .zo run in fast mode.
-
-   2) Files that are the target of a trace point when first lunching
-      the process run in debuggable mode, so is the main file set by SET-MAIN!
-
-   3) If none of the two previous rules apply, the current policy is
-      consulted to decide between fast and debuggable mode.
-
-   If the check reaches the third step and the policy does not decide,
-   MzTake raises an error.
+   Files that are the target of a trace point when first lunching the
+   process run in debuggable mode, so is the main file set by
+   SET-MAIN!. Otherwise, the current policy is consulted to decide
+   between fast and debuggable mode. In this case, if the policy does
+   not decide, MzTake raises an error.
 
    Policies have the following contract:   
 
