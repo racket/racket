@@ -1463,8 +1463,8 @@
     (if (zero? len)
       #f ; #() => NULL
       (let ([cblock (malloc len type)])
-        (let loop ([i (sub1 len)])
-          (unless (< i 0)
+        (let loop ([i 0])
+          (when (< i len)
             (ptr-set! cblock type i (vector-ref v i))
             (loop (add1 i))))
         cblock))))
