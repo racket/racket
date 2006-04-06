@@ -297,20 +297,30 @@ int WNE(EventRecord *e, double sleep_secs)
     ok = ConvertEventRefToEventRecord(ref, e);
 
     if (!ok) {
+      EventRef compat = NULL;
+
       if ((GetEventClass(ref) == kEventClassMouse)
-	  && (GetEventKind(ref) == kEventMouseWheelMoved)) {
+	  && (GetEventKind(ref) == 11 /* kEventMouseScroll */)) {
+	GetEventParameter(ref, kEventParamEventRef, typeEventRef,
+			  NULL, sizeof(compat), NULL, &compat);
+      }
+      if (!compat)
+	compat = ref;
+
+      if ((GetEventClass(compat) == kEventClassMouse)
+	  && (GetEventKind(compat) == kEventMouseWheelMoved)) {
 	UInt32 modifiers;
 	EventMouseWheelAxis axis;
 	SInt32 delta;
 	Point pos;
 	
-	GetEventParameter(ref, kEventParamKeyModifiers, typeUInt32, 
+	GetEventParameter(compat, kEventParamKeyModifiers, typeUInt32, 
 			  NULL, sizeof(modifiers), NULL, &modifiers);
-	GetEventParameter(ref, kEventParamMouseWheelAxis, 
+	GetEventParameter(compat, kEventParamMouseWheelAxis, 
 			  typeMouseWheelAxis, NULL, sizeof(axis), NULL, &axis);
-	GetEventParameter(ref, kEventParamMouseWheelDelta, 
+	GetEventParameter(compat, kEventParamMouseWheelDelta, 
 			  typeLongInteger, NULL, sizeof(delta), NULL, &delta);
-	GetEventParameter(ref, kEventParamMouseLocation,
+	GetEventParameter(compat, kEventParamMouseLocation,
 			  typeQDPoint, NULL, sizeof(Point), NULL, &pos);
 
 	if (axis == kEventMouseWheelAxisY) {
@@ -1494,7 +1504,7 @@ static int ae_marshall(AEDescList *ae, AEDescList *list_in, AEKeyword kw, Scheme
 	        break;
 	      } else if (_err) {
 		*stage = "converting file to alias: ";
-		return NULL;
+		return 0;
 	      }
 	      type = typeAlias;
 	      HLock(alias);
