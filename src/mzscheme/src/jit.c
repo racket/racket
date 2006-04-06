@@ -22,18 +22,24 @@
 
   1) See "About short-jump mode" below.
 
-  2) Immediate operands (not counting moves into registers)
+  2) Use jit_patchable_movi_p() when a constant needs to be
+     visible to the GC.
+
+  3) Immediate operands (not counting moves into registers)
      must be 32-bit values on a 64-bit machine.
 
-  3) Function calls are limited to 3 arguments (i.e., jit_prepare()
+  4) Function calls are limited to 3 arguments (i.e., jit_prepare()
      must never be called with a number greater than 3). This limit
      is related to the way the x86_64 port shuffles arguments into
      temporary registers.
 
-  4) jit_ldi_X() and jit_sti_X() addresses must fit into 32 bits.
+  5) jit_ldi_X() and jit_sti_X() addresses must fit into 32 bits.
+     Currently, the code below assumes that global variables are in
+     the 32-bit address range.
 
-  5) Use jit_patchable_movi_p() when the constant needs to be
-     visible to the GC.
+  6) On x86_64, arguments are delivered in JIT_V2, JIT_V3, and JIT_R2,
+     in that order. So don't set JIT_R2 before getting the third
+     argument, etc.
 */
 
 #include "schpriv.h"

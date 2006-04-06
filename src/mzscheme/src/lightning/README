@@ -15,6 +15,14 @@ MzScheme:
    aligned, and it preserves the alignment. jit_prolog() does *not*
    automatically ensure that the stack is 16-byte aligned.
 
+ * The i386 support has been hacked to support x86_64. The x86_64
+   support has many limitations, such as allowing no more than 3
+   function arguments.
+
+ * "core-common.h" adds a `jit_code' field into the `x' union, instead
+   of taking the address of `pc' and casting it to a `jit_code*',
+   because the latter violates C99 aliasing rules.
+
 ----------------------------------------
 
 GNU Lightning authors:
