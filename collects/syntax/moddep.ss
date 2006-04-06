@@ -338,15 +338,19 @@
 	(when (procedure? relto-mp)
 	  (set! relto-mp (relto-mp)))
 	(cond
-	 [(path-string? relto-mp)
-	  ((if (path? relto-mp)
-	       bytes->path
-	       bytes->string/locale)
+	 [(or (path? relto-mp)
+	      (and (string? relto-mp)
+		   (ormap path? elements)))
+	  (apply build-path
+		 (let-values ([(base name dir?) (split-path relto-mp)])
+		   base)
+		 (map (lambda (x) (if (bytes? x) (bytes->path x) x))
+		      elements))]
+	 [(string? relto-mp)
+	  (bytes->string/locale
 	   (apply
 	    bytes-append
-	    (let ([m (regexp-match re:path-only (if (path? relto-mp)
-						    (path->bytes relto-mp)
-						    (string->bytes/locale relto-mp)))])
+	    (let ([m (regexp-match re:path-only (string->bytes/locale relto-mp))])
 	      (if m
 		  (cadr m)
 		  #"."))
