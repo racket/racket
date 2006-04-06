@@ -1987,6 +1987,7 @@
                               (slatex::decide-latex-or-tex
                                 (or (string=? cs "documentstyle")
                                     (string=? cs "documentclass")
+                                    (string=? cs "RequirePackage")
                                     (string=? cs "NeedsTeXFormat")))))
                           (cond
                            ((not slatex::*slatex-enabled?*)
