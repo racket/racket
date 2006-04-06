@@ -965,8 +965,9 @@
 (err/rt-test (make-bytes 5.0 98))
 (err/rt-test (make-bytes 5.2 97))
 (err/rt-test (make-bytes -5 98))
-(err/rt-test (make-bytes 500000000000000 #\f) exn:fail:out-of-memory?) ;; bignum on 32-bit machines
-(err/rt-test (make-bytes 50000000000000000000 #\f) exn:fail:out-of-memory?)  ;; bignum on 64-bit machines
+(err/rt-test (make-bytes 50000000000000000000 #\f))
+(err/rt-test (make-bytes 500000000000000 45) exn:fail:out-of-memory?) ;; bignum on 32-bit machines
+(err/rt-test (make-bytes 50000000000000000000 45) exn:fail:out-of-memory?)  ;; bignum on 64-bit machines
 
 
 (define f (make-bytes 3 (char->integer #\*)))
