@@ -197,7 +197,11 @@ int stack_cache_stack_pos = 0;
 /*                              JIT buffer                                */
 /*========================================================================*/
 
-#define JIT_BUFFER_PAD_SIZE 100
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+# define JIT_BUFFER_PAD_SIZE 200
+#else
+# define JIT_BUFFER_PAD_SIZE 100
+#endif
 
 #define _jit (jitter->js)
 #define PAST_LIMIT() ((long)jit_get_ip().ptr > (long)jitter->limit)
