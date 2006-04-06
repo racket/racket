@@ -33,6 +33,25 @@
 #ifndef __lightning_core_common_h
 #define __lightning_core_common_h_
 
+/* jit_code: union of many possible function pointer types.  Returned
+ * by jit_get_ip().
+ */
+typedef union jit_code {	
+  char		 *ptr;
+  void		 (*vptr)(void);
+  char		 (*cptr)(void);
+  unsigned char	 (*ucptr)(void);
+  short		 (*sptr)(void);
+  unsigned short (*usptr)(void);
+  int		 (*iptr)(void);
+  unsigned int	 (*uiptr)(void);
+  long		 (*lptr)(void);
+  unsigned long	 (*ulptr)(void);
+  void *	 (*pptr)(void);
+  float		 (*fptr)(void);
+  double	 (*dptr)(void);
+} jit_code;
+
 typedef struct {
   union {
     jit_insn             *pc;
@@ -40,6 +59,7 @@ typedef struct {
     _us                  *us_pc;
     _ui                  *ui_pc;
     _ul                  *ul_pc;
+    jit_code             code;
   }                       x;
   struct jit_fp		 *fp;
   struct jit_local_state jitl;
@@ -63,7 +83,7 @@ static jit_state 			_jit;
 
 #define _jitl				_jit.jitl
 
-#define	jit_get_ip()			(*(jit_code *) &_jit.x.pc)
+#define	jit_get_ip()			(_jit.x.code)
 #define	jit_set_ip(ptr)			(_jit.x.pc = (ptr), jit_get_ip ())
 #define	jit_get_label()			(_jit.x.pc)
 #define	jit_forward()			(_jit.x.pc)
@@ -77,24 +97,6 @@ static jit_state 			_jit;
 #define jit_align(n)
 #endif
 
-/* jit_code: union of many possible function pointer types.  Returned
- * by jit_get_ip().
- */
-typedef union jit_code {	
-  char		 *ptr;
-  void		 (*vptr)(void);
-  char		 (*cptr)(void);
-  unsigned char	 (*ucptr)(void);
-  short		 (*sptr)(void);
-  unsigned short (*usptr)(void);
-  int		 (*iptr)(void);
-  unsigned int	 (*uiptr)(void);
-  long		 (*lptr)(void);
-  unsigned long	 (*ulptr)(void);
-  void *	 (*pptr)(void);
-  float		 (*fptr)(void);
-  double	 (*dptr)(void);
-} jit_code;
 
 #ifndef jit_fill_delay_after
 #define jit_fill_delay_after(branch)	(branch)
@@ -167,6 +169,7 @@ typedef union jit_code {
 #define jit_movi_p(d, is)		(jit_movi_ul((d),       (long) (is)), _jit.x.pc)
 #endif
 
+#define jit_patchable_movi_p(r, i)      jit_movi_p(r, i)
 #define jit_patch(pv)        		jit_patch_at ((pv), (_jit.x.pc))
 
 #ifndef jit_addci_i

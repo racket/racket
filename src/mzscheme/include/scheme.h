@@ -156,7 +156,7 @@ typedef struct FSSpec mzFSSpec;
 
 #define MZ_EXTERN extern MZ_DLLSPEC
 
-#if defined(MZ_USE_JIT_PPC) || defined(MZ_USE_JIT_I386)
+#if defined(MZ_USE_JIT_PPC) || defined(MZ_USE_JIT_I386) || defined(MZ_USE_JIT_X86_64)
 # define MZ_USE_JIT
 #endif
 

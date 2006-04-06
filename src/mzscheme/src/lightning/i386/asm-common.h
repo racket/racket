@@ -85,17 +85,20 @@ typedef char		_sc;
 typedef unsigned char	_uc;
 typedef unsigned short	_us;
 typedef unsigned int	_ui;
+typedef int	        _si;
 typedef long		_sl;
 typedef unsigned long	_ul;
 
 #define _jit_UC(X)	((_uc  )(X))
 #define _jit_US(X)	((_us  )(X))
 #define _jit_UI(X)	((_ui  )(X))
+#define _jit_SI(X)	((_si  )(X))
 #define _jit_SL(X)	((_sl  )(X))
 #define _jit_UL(X)	((_ul  )(X))
 # define _PUC(X)	((_uc *)(X))
 # define _PUS(X)	((_us *)(X))
 # define _PUI(X)	((_ui *)(X))
+# define _PSI(X)	((_si *)(X))
 # define _PSL(X)	((_sl *)(X))
 # define _PUL(X)	((_ul *)(X))
 
@@ -105,9 +108,9 @@ typedef unsigned long	_ul;
 #define _jit_L(L)         _jit_UL(((*_jit.x.ul_pc++)= _jit_UL((L)       )))
 #define _jit_I_noinc(I)   _jit_UL(((*_jit.x.ui_pc)=   _jit_UI((I)       )))
 
-#define _MASK(N)	((unsigned)((1<<(N)))-1)
-#define _siP(N,I)	(!((((unsigned)(I))^(((unsigned)(I))<<1))&~_MASK(N)))
-#define _uiP(N,I)	(!(((unsigned)(I))&~_MASK(N)))
+#define _MASK(N)	((unsigned long)(((long)1<<(N)))-1)
+#define _siP(N,I)	(!((((unsigned long)(I))^(((unsigned long)(I))<<1))&~_MASK(N)))
+#define _uiP(N,I)	(!(((unsigned long)(I))&~_MASK(N)))
 #define _suiP(N,I)	(_siP(N,I) | _uiP(N,I))
 
 #ifndef _ASM_SAFETY
@@ -127,6 +130,14 @@ typedef unsigned long	_ul;
 #define _s16P(I)	_siP(16,I)
 #define _u8P(I)		_uiP(8,I)
 #define _u16P(I)	_uiP(16,I)
+
+#ifdef JIT_X86_64
+#define _s32P(I)	_siP(32,I)
+#define _u32P(I)	_uiP(32,I)
+#else
+#define _s32P(I)	1
+#define _u32P(I)	1
+#endif
 
 #define _su8(I)		_ck_su(8,I)
 #define _su16(I)	_ck_su(16,I)

@@ -44,7 +44,12 @@
 #define JIT_V(i)		((i) == 0 ? _EBX : _ESI + (i) - 1)
 
 struct jit_local_state {
+#ifdef JIT_X86_64
+  int   long_jumps;
+  int   nextarg_geti;
+#else
   int	framesize;
+#endif
   int	argssize;
 };
 
@@ -53,10 +58,16 @@ struct jit_local_state {
 	( (s2 == d) ? op1d :						\
 	  (  ((s1 == d) ? (void)0 : (void)MOVLrr(s1, d)), op2d )	\
 	)
+#define jit_qopr_(d, s1, s2, op1d, op2d)				\
+	( (s2 == d) ? op1d :						\
+	  (  ((s1 == d) ? (void)0 : (void)MOVQrr(s1, d)), op2d )	\
+	)
 
 /* 3-parameter operation, with immediate */
 #define jit_op_(d, s1, op2d)				\
-	((s1 == d) ? op2d : (MOVLrr(s1, d), op2d))	\
+	((s1 == d) ? op2d : (MOVLrr(s1, d), op2d))
+#define jit_qop_(d, s1, op2d)				\
+	((s1 == d) ? op2d : (MOVQrr(s1, d), op2d))
 
 /* 3-parameter operation, optimizable */
 #define jit_opo_(d, s1, s2, op1d, op2d, op12d)		\
@@ -92,11 +103,15 @@ struct jit_local_state {
 
 /* For BLT, BLE, ... */
 #define jit_bra_r(s1, s2, op)		(CMPLrr(s2, s1), op, _jit.x.pc)
+#define jit_bra_qr(s1, s2, op)		(CMPQrr(s2, s1), op, _jit.x.pc)
 #define jit_bra_i(rs, is, op)		(CMPLir(is, rs), op, _jit.x.pc)
+#define jit_bra_l(rs, is, op)		(CMPQir(is, rs), op, _jit.x.pc)
 
 /* When CMP with 0 can be replaced with TEST */
 #define jit_bra_i0(rs, is, op, op0)					\
 	( (is) == 0 ? (TESTLrr(rs, rs), op0, _jit.x.pc) : (CMPLir(is, rs), op, _jit.x.pc))
+#define jit_bra_l0(rs, is, op, op0)					\
+	( (is) == 0 ? (TESTQrr(rs, rs), op0, _jit.x.pc) : (CMPQir(is, rs), op, _jit.x.pc))
 
 /* Used to implement ldc, stc, ... */
 #define jit_check8(rs)		( (rs) <= _EBX )
@@ -110,11 +125,19 @@ struct jit_local_state {
 	        : jit_replace(_EBX, rs, _EAX, MOVBrm(_AL, dd, db, di, ds)))
 
 /* Reduce arguments of XOR/OR/TEST */
+#ifdef JIT_X86_64
+# define JIT_CAN_16 0
+#else
+# define JIT_CAN_16 1
+#endif
 #define jit_reduce_(op)	op
 #define jit_reduce(op, is, rs)							\
 	(_u8P(is) && jit_check8(rs) ? jit_reduce_(op##Bir(is, jit_reg8(rs))) :	\
-	(_u16P(is) ? jit_reduce_(op##Wir(is, jit_reg16(rs))) :			\
+	(_u16P(is) && JIT_CAN_16 ? jit_reduce_(op##Wir(is, jit_reg16(rs))) :			\
 	jit_reduce_(op##Lir(is, rs)) ))
+#define jit_reduceQ(op, is, rs)							\
+	(_u8P(is) && jit_check8(rs) ? jit_reduce_(op##Bir(is, jit_reg8(rs))) :	\
+	jit_reduce_(op##Qir(is, rs)) )
 
 /* Helper macros for MUL/DIV/IDIV */
 #define jit_might(d, s1, op)					\
@@ -207,9 +230,19 @@ struct jit_local_state {
 #define jit_subxi_i(d, rs, is)	jit_op_ ((d), (rs),       SBBLir((is), (d)) 		       )
 #define jit_xorr_i(d, s1, s2)	jit_opr_((d), (s1), (s2), XORLrr((s1), (d)), XORLrr((s2), (d)) )
 
+#define jit_addi_l(d, rs, is)	jit_opi_((d), (rs),       ADDQir((is), (d)), 			LEAQmr((is), (rs), 0, 0, (d))  )
+#define jit_addr_l(d, s1, s2)	jit_opo_((d), (s1), (s2), ADDQrr((s2), (d)), ADDQrr((s1), (d)), LEAQmr(0, (s1), (s2), 1, (d))  )
+#define jit_andi_l(d, rs, is)	jit_qop_ ((d), (rs),       ANDQir((is), (d)) 		       )
+#define jit_andr_l(d, s1, s2)	jit_qopr_((d), (s1), (s2), ANDQrr((s1), (d)), ANDQrr((s2), (d)) )
+#define jit_orr_l(d, s1, s2)	jit_qopr_((d), (s1), (s2),  ORQrr((s1), (d)),  ORQrr((s2), (d)) )
+#define jit_subr_l(d, s1, s2)	jit_qopr_((d), (s1), (s2), (SUBQrr((s1), (d)), NEGQr(d)),	SUBQrr((s2), (d))	       )
+#define jit_xorr_l(d, s1, s2)	jit_qopr_((d), (s1), (s2), XORQrr((s1), (d)), XORQrr((s2), (d)) )
+
 /* These can sometimes use byte or word versions! */
 #define jit_ori_i(d, rs, is)	jit_op_ ((d), (rs),        jit_reduce(OR, (is), (d))	       )
 #define jit_xori_i(d, rs, is)	jit_op_ ((d), (rs),        jit_reduce(XOR, (is), (d))	       )
+#define jit_ori_l(d, rs, is)	jit_qop_ ((d), (rs),        jit_reduceQ(OR, (is), (d))	       )
+#define jit_xori_l(d, rs, is)	jit_qop_ ((d), (rs),        jit_reduceQ(XOR, (is), (d))	       )
 
 #define jit_muli_i(d, rs, is)	jit_op_ ((d), (rs),       IMULLir((is), (d)) 		       )
 #define jit_mulr_i(d, s1, s2)	jit_opr_((d), (s1), (s2), IMULLrr((s1), (d)), IMULLrr((s2), (d)) )
@@ -257,27 +290,84 @@ struct jit_local_state {
 #define jit_rshr_i(d, r1, r2)	jit_replace((r1), (r2), _ECX, 				jit_op_ ((d), (r1), SARLrr(_CL,  (d)) ))
 #define jit_rshr_ui(d, r1, r2)	jit_replace((r1), (r2), _ECX, 				jit_op_ ((d), (r1), SHRLrr(_CL,  (d)) ))
 
+#define jit_lshi_l(d, rs, is)	((is) <= 3 ?   LEAQmr(0, 0, (rs), 1 << (is), (d))   :   jit_qop_ ((d), (rs), SHLQir((is), (d)) ))
+#define jit_rshi_l(d, rs, is)								jit_qop_ ((d), (rs), SARQir((is), (d))  )
+#define jit_rshi_ul(d, rs, is)								jit_qop_ ((d), (rs), SHRQir((is), (d))  )
+#define jit_lshr_l(d, r1, r2)	jit_replace((r1), (r2), _ECX, 				jit_qop_ ((d), (r1), SHLQrr(_CL,  (d)) ))
+#define jit_rshr_l(d, r1, r2)	jit_replace((r1), (r2), _ECX, 				jit_qop_ ((d), (r1), SARQrr(_CL,  (d)) ))
+#define jit_rshr_ul(d, r1, r2)	jit_replace((r1), (r2), _ECX, 				jit_qop_ ((d), (r1), SHRQrr(_CL,  (d)) ))
+
 /* Stack */
 #define jit_pushr_i(rs)		PUSHLr(rs)
 #define jit_popr_i(rs)		POPLr(rs)
-#define jit_prolog(n)		(_jitl.framesize = 8, PUSHLr(_EBP), MOVLrr(_ESP, _EBP), PUSHLr(_EBX), PUSHLr(_ESI), PUSHLr(_EDI))
+#define jit_pushr_l(rs) jit_pushr_i(rs)
+#define jit_popr_l(rs)  jit_popr_i(rs)
+
+#ifdef JIT_X86_64
+# define jit_base_prolog() (PUSHQr(_EBP), MOVQrr(_ESP, _EBP), PUSHQr(_EBX), PUSHQr(_R12), PUSHQr(_R13))
+# define jit_prolog(n) (_jitl.nextarg_geti = 0, jit_base_prolog())
+#else
+# define jit_base_prolog() (PUSHLr(_EBP), MOVLrr(_ESP, _EBP), PUSHLr(_EBX), PUSHLr(_ESI), PUSHLr(_EDI))
+# define jit_prolog(n) (_jitl.framesize = 8, jit_base_prolog())
+#endif
 
 /* The += allows for stack pollution */
 
-#ifdef _CALL_DARWIN
-  /* Stack must stay 16-byte aligned: */
-# define jit_prepare_i(ni)	(((ni & 0x3) ? SUBLir(4 * ((((ni) + 3) & ~(0x3)) - (ni)), JIT_SP) : (void)0), _jitl.argssize += (((ni) + 3) & ~(0x3)))
+#ifdef JIT_X86_64
+/* Stack isn't used for arguments: */
+# define jit_prepare_i(ni)	(_jitl.argssize = 0)
 #else
-# define jit_prepare_i(ni)	(_jitl.argssize += (ni))
+# ifdef _CALL_DARWIN
+  /* Stack must stay 16-byte aligned: */
+#  define jit_prepare_i(ni)	(((ni & 0x3) \
+                                  ? SUBLir(4 * ((((ni) + 3) & ~(0x3)) - (ni)), JIT_SP) \
+                                  : (void)0), \
+                                 _jitl.argssize += (((ni) + 3) & ~(0x3)))
+# else
+#  define jit_prepare_i(ni)	(_jitl.argssize += (ni))
+# endif
 #endif
 
 #define jit_prepare_f(nf)	(_jitl.argssize += (nf))
 #define jit_prepare_d(nd)	(_jitl.argssize += 2 * (nd))
-#define jit_pusharg_i(rs)	PUSHLr(rs)
-#define jit_finish(sub)		((void)jit_calli((sub)), ADDLir(4 * _jitl.argssize, JIT_SP), _jitl.argssize = 0)
-#define jit_finishr(reg)	(jit_callr((reg)), ADDLir(4 * _jitl.argssize, JIT_SP), _jitl.argssize = 0)
+#ifdef JIT_X86_64
+# define jit_pusharg_i(rs)	(_jitl.argssize++, MOVQrr(rs, JIT_CALLTMPSTART + _jitl.argssize - 1))
+# define jit_finish(sub)        (jit_shift_args(), (void)jit_calli((sub)), jit_restore_locals())
+# define jit_reg_is_arg(reg) ((reg == _EDI) || (reg ==_ESI) || (reg == _EDX))
+# define jit_finishr(reg)	((jit_reg_is_arg((reg)) ? MOVQrr(reg, JIT_REXTMP) : (void)0), \
+                                 jit_shift_args(), \
+                                 jit_reg_is_arg((reg)) ? CALQsr((JIT_REXTMP)) : jit_callr((reg)), \
+                                 jit_restore_locals())
+/* R12 and R13 are callee-save, instead of EDI and ESI */
+# define jit_shift_args() \
+   (MOVQrr(_ESI, _R12), MOVQrr(_EDI, _R13), \
+   (_jitl.argssize--  \
+    ? (MOVQrr(JIT_CALLTMPSTART + _jitl.argssize, jit_arg_reg_order[0]),  \
+       (_jitl.argssize--  \
+        ? (MOVQrr(JIT_CALLTMPSTART + _jitl.argssize, jit_arg_reg_order[1]),  \
+           (_jitl.argssize--  \
+            ? MOVQrr(JIT_CALLTMPSTART, jit_arg_reg_order[2])  \
+            : (void)0)) \
+        : (void)0)) \
+    : (void)0))
+# define jit_restore_locals() \
+    (MOVQrr(_R12, _ESI), MOVQrr(_R13, _EDI))
+#else
+# define jit_pusharg_i(rs)	PUSHLr(rs)
+# define jit_finish(sub)        ((void)jit_calli((sub)), ADDLir(sizeof(long) * _jitl.argssize, JIT_SP), _jitl.argssize = 0)
+# define jit_finishr(reg)	(jit_callr((reg)), ADDLir(sizeof(long) * _jitl.argssize, JIT_SP), _jitl.argssize = 0)
+#endif
+#define jit_pusharg_l(rs) jit_pusharg_i(rs)
 #define jit_retval_i(rd)	((void)jit_movr_i ((rd), _EAX))
+#define jit_retval_l(rd)	((void)jit_movr_l ((rd), _EAX))
 
+#ifdef JIT_X86_64
+#define	jit_arg_i()	        (_jitl.nextarg_geti++)
+#define	jit_arg_l()	        (_jitl.nextarg_geti++)
+#define	jit_arg_p()	        (_jitl.nextarg_geti++)
+#define jit_arg_reg(p)          (jit_arg_reg_order[p])
+static int jit_arg_reg_order[] = { _EDI, _ESI, _EDX, _ECX };
+#else
 #define	jit_arg_c()		((_jitl.framesize += sizeof(int)) - sizeof(int))
 #define	jit_arg_uc()		((_jitl.framesize += sizeof(int)) - sizeof(int))
 #define	jit_arg_s()		((_jitl.framesize += sizeof(int)) - sizeof(int))
@@ -287,18 +377,26 @@ struct jit_local_state {
 #define	jit_arg_l()		((_jitl.framesize += sizeof(long)) - sizeof(long))
 #define	jit_arg_ul()		((_jitl.framesize += sizeof(long)) - sizeof(long))
 #define	jit_arg_p()		((_jitl.framesize += sizeof(long)) - sizeof(long))
+#endif
 
 #define	jit_arg_f()		((_jitl.framesize += sizeof(float)) - sizeof(float))
 #define	jit_arg_d()		((_jitl.framesize += sizeof(double)) - sizeof(double))
 
 /* Unary */
 #define jit_negr_i(d, rs)	jit_opi_((d), (rs), NEGLr(d), (XORLrr((d), (d)), SUBLrr((rs), (d))) )
-#define jit_negr_l(d, rs)	jit_opi_((d), (rs), NEGLr(d), (XORLrr((d), (d)), SUBLrr((rs), (d))) )
+#define jit_negr_l(d, rs)	jit_opi_((d), (rs), NEGQr(d), (XORQrr((d), (d)), SUBQrr((rs), (d))) )
 
 #define jit_movr_i(d, rs)	((void)((rs) == (d) ? 0 : MOVLrr((rs), (d))))
 #define jit_movi_i(d, is)	((is) ? MOVLir((is), (d)) : XORLrr ((d), (d)) )
-#define jit_movi_p(d, is)	(MOVLir((is), (d)), _jit.x.pc)
-#define jit_patch_movi(pa,pv)   (*_PSL((pa) - 4) = _jit_SL((pv)))
+#define jit_movr_l(d, rs)	((void)((rs) == (d) ? 0 : MOVQrr((rs), (d))))
+#define jit_movi_l(d, is)	((is) \
+                                 ? (_u32P((long)(is)) \
+                                    ? MOVLir((is), (d)) \
+                                    : MOVQir((is), (d))) \
+                                 : XORLrr ((d), (d)) )
+#define jit_movi_p(d, is)       jit_movi_l(d, ((long)(is)))
+#define jit_patchable_movi_p(d, is) (MOVQir((is), (d)), _jit.x.pc)
+#define jit_patch_movi(pa,pv)   (*_PSL((pa) - sizeof(long)) = _jit_SL((pv)))
 
 #define jit_ntoh_ui(d, rs)	jit_op_((d), (rs), BSWAPLr(d))
 #define jit_ntoh_us(d, rs)	jit_op_((d), (rs), RORWir(8, d))
@@ -344,6 +442,23 @@ struct jit_local_state {
 #define jit_boaddr_ui(label, s1, s2)	(ADDLrr((s2), (s1)), JCm(label,0,0,0), _jit.x.pc)
 #define jit_bosubr_ui(label, s1, s2)	(SUBLrr((s2), (s1)), JCm(label,0,0,0), _jit.x.pc)
 
+#define jit_bltr_l(label, s1, s2)	jit_bra_qr((s1), (s2), JLm(label, 0,0,0) )
+#define jit_bler_l(label, s1, s2)	jit_bra_qr((s1), (s2), JLEm(label,0,0,0) )
+#define jit_bgtr_l(label, s1, s2)	jit_bra_qr((s1), (s2), JGm(label, 0,0,0) )
+#define jit_bger_l(label, s1, s2)	jit_bra_qr((s1), (s2), JGEm(label,0,0,0) )
+#define jit_beqr_l(label, s1, s2)	jit_bra_qr((s1), (s2), JEm(label, 0,0,0) )
+#define jit_bner_l(label, s1, s2)	jit_bra_qr((s1), (s2), JNEm(label,0,0,0) )
+#define jit_bltr_ul(label, s1, s2)	jit_bra_qr((s1), (s2), JBm(label, 0,0,0) )
+#define jit_bler_ul(label, s1, s2)	jit_bra_qr((s1), (s2), JBEm(label,0,0,0) )
+#define jit_bgtr_ul(label, s1, s2)	jit_bra_qr((s1), (s2), JAm(label, 0,0,0) )
+#define jit_bger_ul(label, s1, s2)	jit_bra_qr((s1), (s2), JAEm(label,0,0,0) )
+#define jit_bmsr_l(label, s1, s2)	(TESTQrr((s1), (s2)), JNZm(label,0,0,0), _jit.x.pc)
+#define jit_bmcr_l(label, s1, s2)	(TESTQrr((s1), (s2)), JZm(label,0,0,0),  _jit.x.pc)
+#define jit_boaddr_l(label, s1, s2)	(ADDQrr((s2), (s1)), JOm(label,0,0,0), _jit.x.pc)
+#define jit_bosubr_l(label, s1, s2)	(SUBQrr((s2), (s1)), JOm(label,0,0,0), _jit.x.pc)
+#define jit_boaddr_ul(label, s1, s2)	(ADDQrr((s2), (s1)), JCm(label,0,0,0), _jit.x.pc)
+#define jit_bosubr_ul(label, s1, s2)	(SUBQrr((s2), (s1)), JCm(label,0,0,0), _jit.x.pc)
+
 #define jit_blti_i(label, rs, is)	jit_bra_i0((rs), (is), JLm(label, 0,0,0), JSm(label, 0,0,0) )
 #define jit_blei_i(label, rs, is)	jit_bra_i ((rs), (is), JLEm(label,0,0,0)		    )
 #define jit_bgti_i(label, rs, is)	jit_bra_i ((rs), (is), JGm(label, 0,0,0)		    )
@@ -359,15 +474,43 @@ struct jit_local_state {
 #define jit_boaddi_ui(label, rs, is)	(ADDLir((is), (rs)), JCm(label,0,0,0), _jit.x.pc)
 #define jit_bosubi_ui(label, rs, is)	(SUBLir((is), (rs)), JCm(label,0,0,0), _jit.x.pc)
 
+#define jit_blti_l(label, rs, is)	jit_bra_l0((rs), (is), JLm(label, 0,0,0), JSm(label, 0,0,0) )
+#define jit_blei_l(label, rs, is)	jit_bra_l ((rs), (is), JLEm(label,0,0,0)		    )
+#define jit_bgti_l(label, rs, is)	jit_bra_l ((rs), (is), JGm(label, 0,0,0)		    )
+#define jit_bgei_l(label, rs, is)	jit_bra_l0((rs), (is), JGEm(label,0,0,0), JNSm(label,0,0,0) )
+#define jit_beqi_l(label, rs, is)	jit_bra_l0((rs), (is), JEm(label, 0,0,0), JEm(label, 0,0,0) )
+#define jit_bnei_l(label, rs, is)	jit_bra_l0((rs), (is), JNEm(label,0,0,0), JNEm(label,0,0,0) )
+#define jit_blti_ul(label, rs, is)	jit_bra_l ((rs), (is), JBm(label, 0,0,0)		    )
+#define jit_blei_ul(label, rs, is)	jit_bra_l0((rs), (is), JBEm(label,0,0,0), JEm(label, 0,0,0) )
+#define jit_bgti_ul(label, rs, is)	jit_bra_l0((rs), (is), JAm(label, 0,0,0), JNEm(label,0,0,0) )
+#define jit_bgei_ul(label, rs, is)	jit_bra_l ((rs), (is), JAEm(label,0,0,0)		    )
+#define jit_boaddi_l(label, rs, is)	(ADDQir((is), (rs)), JOm(label,0,0,0), _jit.x.pc)
+#define jit_bosubi_l(label, rs, is)	(SUBQir((is), (rs)), JOm(label,0,0,0), _jit.x.pc)
+#define jit_boaddi_ul(label, rs, is)	(ADDQir((is), (rs)), JCm(label,0,0,0), _jit.x.pc)
+#define jit_bosubi_ul(label, rs, is)	(SUBQir((is), (rs)), JCm(label,0,0,0), _jit.x.pc)
+
 #define jit_bmsi_i(label, rs, is)	(jit_reduce(TEST, (is), (rs)), JNZm(label,0,0,0), _jit.x.pc)
 #define jit_bmci_i(label, rs, is)	(jit_reduce(TEST, (is), (rs)), JZm(label,0,0,0),  _jit.x.pc)
+
+#define jit_bmsi_l(label, rs, is) jit_bmsi_i(label, rs, is)
+#define jit_bmci_l(label, rs, is) jit_bmci_i(label, rs, is)
 
 #define jit_jmpi(label)		(JMPm( ((unsigned long) (label)),	0, 0, 0), _jit.x.pc)
 #define jit_calli(label)	(CALLm( ((unsigned long) (label)),	0, 0, 0), _jit.x.pc)
 #define jit_callr(reg)		(CALLsr(reg))
 #define jit_jmpr(reg)		JMPsr(reg)
-#define jit_patch_at(jump_pc,v)	(*_PSL((jump_pc) - 4) = _jit_SL((jit_insn *)(v) - (jump_pc)))
-#define jit_ret()		(POPLr(_EDI), POPLr(_ESI), POPLr(_EBX), POPLr(_EBP), RET_())
+#ifdef JIT_X86_64
+#define jit_patch_long_at(jump_pc,v)  (*_PSL((jump_pc) - sizeof(long)) = _jit_SL((jit_insn *)(v)))
+# define jit_patch_short_at(jump_pc,v)  (*_PSI((jump_pc) - sizeof(int)) = _jit_SI((jit_insn *)(v) - (jump_pc)))
+# define jit_patch_branch_at(jump_pc,v) (_jitl.long_jumps ? jit_patch_long_at((jump_pc)-3, v) : jit_patch_short_at(jump_pc, v))
+# define jit_patch_ucbranch_at(jump_pc,v) (_jitl.long_jumps ? jit_patch_long_at((jump_pc)-3, v) : jit_patch_short_at(jump_pc, v))
+# define jit_ret() (POPQr(_R13), POPQr(_R12), POPQr(_EBX), POPQr(_EBP), RET_())
+#else
+#define jit_patch_long_at(jump_pc,v)  (*_PSL((jump_pc) - sizeof(long)) = _jit_SL((jit_insn *)(v) - (jump_pc)))
+# define jit_patch_branch_at(jump_pc,v)  jit_patch_long_at(jump_pc, v)
+# define jit_patch_ucbranch_at(jump_pc,v)  jit_patch_long_at(jump_pc, v)
+# define jit_ret() (POPLr(_EDI), POPLr(_ESI), POPLr(_EBX), POPLr(_EBP), RET_())
+#endif
 
 /* Memory */
 #define jit_ldi_c(d, is)		MOVSBLmr((is), 0,    0,    0, (d))
@@ -409,6 +552,16 @@ struct jit_local_state {
 #define jit_str_i(rd, rs)		MOVLrm((rs), 0,    (rd), 0,    0)
 #define jit_stxr_i(d1, d2, rs)		MOVLrm((rs), 0,    (d1), (d2), 1)
 #define jit_stxi_i(id, rd, rs)		MOVLrm((rs), (id), (rd), 0,    0)
+
+#define jit_ldi_l(d, is)		MOVQmr((is), 0,    0,    0,  (d))
+#define jit_ldr_l(d, rs)		MOVQmr(0,    (rs), 0,    0,  (d))
+#define jit_ldxr_l(d, s1, s2)		MOVQmr(0,    (s1), (s2), 1,  (d))
+#define jit_ldxi_l(d, rs, is)		MOVQmr((is), (rs), 0,    0,  (d))
+
+#define jit_sti_l(id, rs)		MOVQrm((rs), (id), 0,    0,    0)
+#define jit_str_l(rd, rs)		MOVQrm((rs), 0,    (rd), 0,    0)
+#define jit_stxr_l(d1, d2, rs)		MOVQrm((rs), 0,    (d1), (d2), 1)
+#define jit_stxi_l(id, rd, rs)		MOVQrm((rs), (id), (rd), 0,    0)
 
 /* Extra */
 #define jit_nop()			NOP_()

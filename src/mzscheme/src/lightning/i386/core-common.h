@@ -33,6 +33,25 @@
 #ifndef __lightning_core_common_h
 #define __lightning_core_common_h_
 
+/* jit_code: union of many possible function pointer types.  Returned
+ * by jit_get_ip().
+ */
+typedef union jit_code {	
+  char		 *ptr;
+  void		 (*vptr)(void);
+  char		 (*cptr)(void);
+  unsigned char	 (*ucptr)(void);
+  short		 (*sptr)(void);
+  unsigned short (*usptr)(void);
+  int		 (*iptr)(void);
+  unsigned int	 (*uiptr)(void);
+  long		 (*lptr)(void);
+  unsigned long	 (*ulptr)(void);
+  void *	 (*pptr)(void);
+  float		 (*fptr)(void);
+  double	 (*dptr)(void);
+} jit_code;
+
 typedef struct {
   union {
     jit_insn             *pc;
@@ -40,6 +59,7 @@ typedef struct {
     _us                  *us_pc;
     _ui                  *ui_pc;
     _ul                  *ul_pc;
+    jit_code             code;
   }                       x;
   struct jit_fp		 *fp;
   struct jit_local_state jitl;
@@ -63,7 +83,7 @@ static jit_state 			_jit;
 
 #define _jitl				_jit.jitl
 
-#define	jit_get_ip()			(*(jit_code *) &_jit.x.pc)
+#define	jit_get_ip()			(_jit.x.code)
 #define	jit_set_ip(ptr)			(_jit.x.pc = (ptr), jit_get_ip ())
 #define	jit_get_label()			(_jit.x.pc)
 #define	jit_forward()			(_jit.x.pc)
@@ -77,24 +97,6 @@ static jit_state 			_jit;
 #define jit_align(n)
 #endif
 
-/* jit_code: union of many possible function pointer types.  Returned
- * by jit_get_ip().
- */
-typedef union jit_code {	
-  char		 *ptr;
-  void		 (*vptr)(void);
-  char		 (*cptr)(void);
-  unsigned char	 (*ucptr)(void);
-  short		 (*sptr)(void);
-  unsigned short (*usptr)(void);
-  int		 (*iptr)(void);
-  unsigned int	 (*uiptr)(void);
-  long		 (*lptr)(void);
-  unsigned long	 (*ulptr)(void);
-  void *	 (*pptr)(void);
-  float		 (*fptr)(void);
-  double	 (*dptr)(void);
-} jit_code;
 
 #ifndef jit_fill_delay_after
 #define jit_fill_delay_after(branch)	(branch)
@@ -432,7 +434,7 @@ typedef union jit_code {
 #define jit_retval_s(rd)		jit_retval_i((rd))
 
 /* This was a bug, but we keep it.  */
-#define jit_retval(rd)			jit_retval_i ((rd))
+#define jit_retval(rd)			jit_retval_l ((rd))
 
 #ifndef jit_finish
 #define jit_finish(sub)			jit_calli(sub)
@@ -451,16 +453,16 @@ typedef union jit_code {
 #endif
 
 #ifndef jit_getarg_c
-#ifndef JIT_FP
-#define jit_getarg_c(reg, ofs)		jit_extr_c_i  ((reg), (ofs))
-#define jit_getarg_i(reg, ofs)		jit_movr_i    ((reg), (ofs))
-#define jit_getarg_l(reg, ofs)		jit_movr_l    ((reg), (ofs))
-#define jit_getarg_p(reg, ofs)		jit_movr_p    ((reg), (ofs))
-#define jit_getarg_s(reg, ofs)		jit_extr_s_i  ((reg), (ofs))
-#define jit_getarg_uc(reg, ofs)		jit_extr_uc_ui((reg), (ofs))
-#define jit_getarg_ui(reg, ofs)		jit_movr_ui   ((reg), (ofs))
-#define jit_getarg_ul(reg, ofs)		jit_extr_uc_ul((reg), (ofs))
-#define jit_getarg_us(reg, ofs)		jit_extr_us_ul((reg), (ofs))
+#if !defined(JIT_FP) || defined(JIT_X86_64)
+#define jit_getarg_c(reg, ofs)		jit_extr_c_i  ((reg), jit_arg_reg(ofs))
+#define jit_getarg_i(reg, ofs)		jit_movr_i    ((reg), jit_arg_reg(ofs))
+#define jit_getarg_l(reg, ofs)		jit_movr_l    ((reg), jit_arg_reg(ofs))
+#define jit_getarg_p(reg, ofs)		jit_movr_p    ((reg), jit_arg_reg(ofs))
+#define jit_getarg_s(reg, ofs)		jit_extr_s_i  ((reg), jit_arg_reg(ofs))
+#define jit_getarg_uc(reg, ofs)		jit_extr_uc_ui((reg), jit_arg_reg(ofs))
+#define jit_getarg_ui(reg, ofs)		jit_movr_ui   ((reg), jit_arg_reg(ofs))
+#define jit_getarg_ul(reg, ofs)		jit_extr_uc_ul((reg), jit_arg_reg(ofs))
+#define jit_getarg_us(reg, ofs)		jit_extr_us_ul((reg), jit_arg_reg(ofs))
 #else
 #define jit_getarg_c(reg, ofs)		jit_ldxi_c((reg), JIT_FP, (ofs));
 #define jit_getarg_uc(reg, ofs)		jit_ldxi_uc((reg), JIT_FP, (ofs));
@@ -474,153 +476,7 @@ typedef union jit_code {
 #endif
 #endif
 
-
-/* Common definitions when sizeof(long) = sizeof(int) */
-#ifndef jit_addi_l
-#define JIT_LONG_IS_INT
-
-/* ALU */
-#define jit_addi_l(d, rs, is)		jit_addi_i((d), (rs), (is))	
-#define jit_addr_l(d, s1, s2)		jit_addr_i((d), (s1), (s2))
-#define jit_addci_l(d, rs, is)		jit_addci_i((d), (rs), (is))	
-#define jit_addcr_l(d, s1, s2)		jit_addcr_i((d), (s1), (s2))
-#define jit_addxi_l(d, rs, is)		jit_addxi_i((d), (rs), (is))	
-#define jit_addxr_l(d, s1, s2)		jit_addxr_i((d), (s1), (s2))
-#define jit_andi_l(d, rs, is)		jit_andi_i((d), (rs), (is))	
-#define jit_andr_l(d, s1, s2)		jit_andr_i((d), (s1), (s2))
-#define jit_divi_l(d, rs, is)		jit_divi_i((d), (rs), (is))	
-#define jit_divr_l(d, s1, s2)		jit_divr_i((d), (s1), (s2))
-#define jit_hmuli_l(d, rs, is)		jit_hmuli_i((d), (rs), (is))	
-#define jit_hmulr_l(d, s1, s2)		jit_hmulr_i((d), (s1), (s2))
-#define jit_lshi_l(d, rs, is)		jit_lshi_i((d), (rs), (is))	
-#define jit_lshr_l(d, s1, s2)		jit_lshr_i((d), (s1), (s2))
-#define jit_modi_l(d, rs, is)		jit_modi_i((d), (rs), (is))	
-#define jit_modr_l(d, s1, s2)		jit_modr_i((d), (s1), (s2))
-#define jit_muli_l(d, rs, is)		jit_muli_i((d), (rs), (is))	
-#define jit_mulr_l(d, s1, s2)		jit_mulr_i((d), (s1), (s2))
-#define jit_ori_l(d, rs, is)		jit_ori_i((d), (rs), (is))	
-#define jit_orr_l(d, s1, s2)		jit_orr_i((d), (s1), (s2))
-#define jit_rshi_l(d, rs, is)		jit_rshi_i((d), (rs), (is))	
-#define jit_rshr_l(d, s1, s2)		jit_rshr_i((d), (s1), (s2))
-#define jit_subr_l(d, s1, s2)		jit_subr_i((d), (s1), (s2))
-#define jit_subcr_l(d, s1, s2)		jit_subcr_i((d), (s1), (s2))
-#define jit_subxi_l(d, rs, is)		jit_subxi_i((d), (rs), (is))	
-#define jit_subxr_l(d, s1, s2)		jit_subxr_i((d), (s1), (s2))
-#define jit_xori_l(d, rs, is)		jit_xori_i((d), (rs), (is))	
-#define jit_xorr_l(d, s1, s2)		jit_xorr_i((d), (s1), (s2))
-
-#ifndef jit_rsbi_l
-#define jit_rsbi_l(d, rs, is)		jit_rsbi_i((d), (rs), (is))	
-#endif
-
-#define jit_divi_ul(d, rs, is)		jit_divi_ui((d), (rs), (is))	
-#define jit_divr_ul(d, s1, s2)		jit_divr_ui((d), (s1), (s2))
-#define jit_hmuli_ul(d, rs, is)		jit_hmuli_ui((d), (rs), (is))	
-#define jit_hmulr_ul(d, s1, s2)		jit_hmulr_ui((d), (s1), (s2))
-#define jit_modi_ul(d, rs, is)		jit_modi_ui((d), (rs), (is))	
-#define jit_modr_ul(d, s1, s2)		jit_modr_ui((d), (s1), (s2))
-#define jit_muli_ul(d, rs, is)		jit_muli_ui((d), (rs), (is))	
-#define jit_mulr_ul(d, s1, s2)		jit_mulr_ui((d), (s1), (s2))
-#define jit_rshi_ul(d, rs, is)		jit_rshi_ui((d), (rs), (is))	
-#define jit_rshr_ul(d, s1, s2)		jit_rshr_ui((d), (s1), (s2))
-
-/* Sign/Zero extension */
-#define jit_extr_c_l(d, rs)		jit_extr_c_i(d, rs)
-#define jit_extr_c_ul(d, rs)		jit_extr_c_ui(d, rs)
-#define jit_extr_s_l(d, rs)		jit_extr_s_i(d, rs)
-#define jit_extr_s_ul(d, rs)		jit_extr_s_ui(d, rs)
-#define jit_extr_i_l(d, rs)		jit_movr_i(d, rs)
-#define jit_extr_i_ul(d, rs)		jit_movr_i(d, rs)
-
-/* Unary */
-#define jit_movi_l(d, rs)		jit_movi_i((d), (rs))
-#define jit_movr_l(d, rs)		jit_movr_i((d), (rs))
-
-/* Stack */
-#define jit_pushr_l(rs)			jit_pushr_i(rs)
-#define jit_popr_l(rs)			jit_popr_i(rs)		
-#define jit_pusharg_l(rs)		jit_pusharg_i(rs)
-
-/* Memory */
-#ifndef JIT_RZERO
-#define jit_ldr_l(d, rs)		jit_ldr_i((d), (rs))
-#define jit_ldi_l(d, is)		jit_ldi_i((d), (is))
-#define jit_str_l(d, rs)		jit_str_i((d), (rs))
-#define jit_sti_l(d, is)		jit_sti_i((d), (is))
-#define jit_ldr_ui(d, rs)		jit_ldr_i((d), (rs))
-#define jit_ldi_ui(d, is)		jit_ldi_i((d), (is))
-#define jit_ldr_ul(d, rs)		jit_ldr_ui((d), (rs))
-#define jit_ldi_ul(d, is)		jit_ldi_ui((d), (is))
-#endif
-
-#define jit_ldxr_l(d, s1, s2)		jit_ldxr_i((d), (s1), (s2))
-#define jit_ldxi_l(d, rs, is)		jit_ldxi_i((d), (rs), (is))
-#define jit_stxr_l(d, s1, s2)		jit_stxr_i((d), (s1), (s2))
-#define jit_stxi_l(d, rs, is)		jit_stxi_i((d), (rs), (is))
-#define jit_ldxr_ui(d, s1, s2)		jit_ldxr_i((d), (s1), (s2))
-#define jit_ldxi_ui(d, rs, is)		jit_ldxi_i((d), (rs), (is))
-#define jit_ldxr_ul(d, s1, s2)		jit_ldxr_ui((d), (s1), (s2))
-#define jit_ldxi_ul(d, rs, is)		jit_ldxi_ui((d), (rs), (is))
-
-
-/* Boolean */
-#define jit_ltr_l(d, s1, s2)		jit_ltr_i((d), (s1), (s2))
-#define jit_lti_l(d, rs, is)		jit_lti_i((d), (rs), (is))
-#define jit_ler_l(d, s1, s2)		jit_ler_i((d), (s1), (s2))
-#define jit_lei_l(d, rs, is)		jit_lei_i((d), (rs), (is))
-#define jit_gtr_l(d, s1, s2)		jit_gtr_i((d), (s1), (s2))
-#define jit_gti_l(d, rs, is)		jit_gti_i((d), (rs), (is))
-#define jit_ger_l(d, s1, s2)		jit_ger_i((d), (s1), (s2))
-#define jit_gei_l(d, rs, is)		jit_gei_i((d), (rs), (is))
-#define jit_eqr_l(d, s1, s2)		jit_eqr_i((d), (s1), (s2))
-#define jit_eqi_l(d, rs, is)		jit_eqi_i((d), (rs), (is))
-#define jit_ner_l(d, s1, s2)		jit_ner_i((d), (s1), (s2))
-#define jit_nei_l(d, rs, is)		jit_nei_i((d), (rs), (is))
-#define jit_ltr_ul(d, s1, s2)		jit_ltr_ui((d), (s1), (s2))
-#define jit_lti_ul(d, rs, is)		jit_lti_ui((d), (rs), (is))
-#define jit_ler_ul(d, s1, s2)		jit_ler_ui((d), (s1), (s2))
-#define jit_lei_ul(d, rs, is)		jit_lei_ui((d), (rs), (is))
-#define jit_gtr_ul(d, s1, s2)		jit_gtr_ui((d), (s1), (s2))
-#define jit_gti_ul(d, rs, is)		jit_gti_ui((d), (rs), (is))
-#define jit_ger_ul(d, s1, s2)		jit_ger_ui((d), (s1), (s2))
-#define jit_gei_ul(d, rs, is)		jit_gei_ui((d), (rs), (is))
-
-/* Branches */
-#define jit_bltr_l(label, s1, s2)	jit_bltr_i((label), (s1), (s2))
-#define jit_blti_l(label, rs, is)	jit_blti_i((label), (rs), (is))
-#define jit_bler_l(label, s1, s2)	jit_bler_i((label), (s1), (s2))
-#define jit_blei_l(label, rs, is)	jit_blei_i((label), (rs), (is))
-#define jit_bgtr_l(label, s1, s2)	jit_bgtr_i((label), (s1), (s2))
-#define jit_bgti_l(label, rs, is)	jit_bgti_i((label), (rs), (is))
-#define jit_bger_l(label, s1, s2)	jit_bger_i((label), (s1), (s2))
-#define jit_bgei_l(label, rs, is)	jit_bgei_i((label), (rs), (is))
-#define jit_beqr_l(label, s1, s2)	jit_beqr_i((label), (s1), (s2))
-#define jit_beqi_l(label, rs, is)	jit_beqi_i((label), (rs), (is))
-#define jit_bner_l(label, s1, s2)	jit_bner_i((label), (s1), (s2))
-#define jit_bnei_l(label, rs, is)	jit_bnei_i((label), (rs), (is))
-#define jit_bmcr_l(label, s1, s2)	jit_bmcr_i((label), (s1), (s2))
-#define jit_bmci_l(label, rs, is)	jit_bmci_i((label), (rs), (is))
-#define jit_bmsr_l(label, s1, s2)	jit_bmsr_i((label), (s1), (s2))
-#define jit_bmsi_l(label, rs, is)	jit_bmsi_i((label), (rs), (is))
-#define jit_boaddr_l(label, s1, s2)	jit_boaddr_i((label), (s1), (s2))
-#define jit_boaddi_l(label, rs, is)	jit_boaddi_i((label), (rs), (is))
-#define jit_bosubr_l(label, s1, s2)	jit_bosubr_i((label), (s1), (s2))
-#define jit_bosubi_l(label, rs, is)	jit_bosubi_i((label), (rs), (is))
-#define jit_bltr_ul(label, s1, s2)	jit_bltr_ui((label), (s1), (s2))
-#define jit_blti_ul(label, rs, is)	jit_blti_ui((label), (rs), (is))
-#define jit_bler_ul(label, s1, s2)	jit_bler_ui((label), (s1), (s2))
-#define jit_blei_ul(label, rs, is)	jit_blei_ui((label), (rs), (is))
-#define jit_bgtr_ul(label, s1, s2)	jit_bgtr_ui((label), (s1), (s2))
-#define jit_bgti_ul(label, rs, is)	jit_bgti_ui((label), (rs), (is))
-#define jit_bger_ul(label, s1, s2)	jit_bger_ui((label), (s1), (s2))
-#define jit_bgei_ul(label, rs, is)	jit_bgei_ui((label), (rs), (is))
-#define jit_boaddr_ul(label, s1, s2)	jit_boaddr_ui((label), (s1), (s2))
-#define jit_boaddi_ul(label, rs, is)	jit_boaddi_ui((label), (rs), (is))
-#define jit_bosubr_ul(label, s1, s2)	jit_bosubr_ui((label), (s1), (s2))
-#define jit_bosubi_ul(label, rs, is)	jit_bosubi_ui((label), (rs), (is))
-
-#define jit_retval_l(rd)		jit_retval_i((rd))
-
-#endif
+/* Removed the long == int cases, because they aren't the same
+   for x86_64, and we want to catch missing ones. */
 
 #endif /* __lightning_core_common_h_ */

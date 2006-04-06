@@ -245,6 +245,9 @@
 #if defined(i386)
 # define MZ_USE_JIT_I386
 #endif
+#if defined(__x86_64__)
+# define MZ_USE_JIT_X86_64
+#endif
 #if defined(powerpc)
 # define MZ_USE_JIT_PPC
 #endif

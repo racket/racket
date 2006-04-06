@@ -925,7 +925,7 @@ static char *make_arity_expect_string(const char *name, int namelen,
 
 void scheme_wrong_count_m(const char *name, int minc, int maxc,
 			  int argc, Scheme_Object **argv, int is_method)
-     /* minc == -1 => name is really a case-lambda or proc-struct */
+     /* minc == -1 => name is really a case-lambda, native closure, or proc-struct */
 {
   char *s;
   long len;
