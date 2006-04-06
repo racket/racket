@@ -245,7 +245,9 @@ static long sch_vsprintf(char *s, long maxlen, const char *msg, va_list args)
 	      buf[0] = c;
 	      tlen = 1;
 	    } else {
-	      tlen = scheme_utf8_encode_all(&c, 1, (unsigned char *)buf);
+	      mzchar mc;
+	      tlen = scheme_utf8_encode_all(&mc, 1, (unsigned char *)buf);
+	      c = (int)mc;
 	    }
 	    t = buf;
 	  }

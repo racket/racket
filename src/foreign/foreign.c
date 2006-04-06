@@ -303,7 +303,7 @@ static Scheme_Object *foreign_ffi_obj_name(int argc, Scheme_Object *argv[])
 #define scheme_get_realint_val(x,y) \
   scheme_get_int_val(x,(long*)(y))
 #define scheme_get_unsigned_realint_val(x,y) \
-  scheme_get_unsigned_int_val(x,(long*)(y))
+  scheme_get_unsigned_int_val(x,(unsigned long*)(y))
 #define scheme_make_realinteger_value \
   scheme_make_integer_value
 #define scheme_make_realinteger_value_from_unsigned \

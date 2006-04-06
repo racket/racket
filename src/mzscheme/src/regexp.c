@@ -1963,7 +1963,7 @@ static unsigned char *make_room(unsigned char *r, int j, int need_extra, RoomSta
 
   if ((rs->size - j - (rs->orig_len - rs->i)) < need_extra) {
     nrs = ((rs->size) * 2) + need_extra;
-    nr = (char *)scheme_malloc_atomic(nrs+1);
+    nr = (unsigned char *)scheme_malloc_atomic(nrs+1);
     memcpy(nr, r, j);
     r = nr;
     rs->size = nrs;
@@ -1982,8 +1982,8 @@ static unsigned char *add_byte_range(const unsigned char *lo, const unsigned cha
 	through hi lexicographically. See add_range to get started. */
 {
   int same_chars, j, i;
-  const unsigned char *lowest = "\200\200\200\200\200";
-  const unsigned char *highest = "\277\277\277\277\277";
+  const unsigned char *lowest = (unsigned char *)"\200\200\200\200\200";
+  const unsigned char *highest = (unsigned char *)"\277\277\277\277\277";
   unsigned char p, q;
 
   /* Look for a common prefix: */
@@ -2178,7 +2178,7 @@ static unsigned char *add_range(unsigned char *r, int *_j, RoomState *rs,
   return add_byte_range(lo, hi, count, r, _j, rs, did_alt, 0);
 }
 
-static int translate(unsigned char *s, int len, char **result)
+static int translate(unsigned char *s, int len, unsigned char **result)
 {
   int j;
   RoomState rs;
@@ -2187,7 +2187,7 @@ static int translate(unsigned char *s, int len, char **result)
   rs.orig_len = len;
   rs.size = len;
   
-  r = (char *)scheme_malloc_atomic(rs.size + 1);
+  r = (unsigned char *)scheme_malloc_atomic(rs.size + 1);
 
   /* We need to translate if the pattern contains any use of ".", if
      there's a big character in a range, if there's a not-range, or if
@@ -2497,7 +2497,7 @@ static Scheme_Object *do_make_regexp(const char *who, int is_byte, int argc, Sch
   slen = SCHEME_BYTE_STRTAG_VAL(bs);
 
   if (!is_byte) {
-    slen = translate(s,slen, &s);
+    slen = translate((unsigned char *)s, slen, (unsigned char **)&s);
 #if 0
     /* Debugging, to see the translated regexp: */
     {
@@ -2699,7 +2699,7 @@ static Scheme_Object *gen_compare(char *name, int pos,
 				0 /* not UTF-16 */);
       full_s = (char *)scheme_malloc_atomic(blen);
       scheme_utf8_encode(SCHEME_CHAR_STR_VAL(argv[1]), offset, endset,
-			 full_s, 0,
+			 (unsigned char *)full_s, 0,
 			 0 /* not UTF-16 */);
       orig_offset = offset;
       offset = 0;
@@ -2744,12 +2744,12 @@ static Scheme_Object *gen_compare(char *name, int pos,
 	       unicode chars, so the start and end points can't be in
 	       the middle of encoded characters. */
 	    int uspd, uepd;
-	    uspd = scheme_utf8_decode(full_s, offset, startp[i],
+	    uspd = scheme_utf8_decode((const unsigned char *)full_s, offset, startp[i],
 				      NULL, 0, -1,
 				      NULL, 0, 0);
 	    uspd += orig_offset;
 	    startpd = scheme_make_integer(uspd);
-	    uepd = scheme_utf8_decode(full_s, startp[i], endp[i],
+	    uepd = scheme_utf8_decode((const unsigned char *)full_s, startp[i], endp[i],
 				      NULL, 0, -1,
 				      NULL, 0, 0);
 	    uepd += uspd;

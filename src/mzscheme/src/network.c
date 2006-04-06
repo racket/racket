@@ -1737,7 +1737,7 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
 
 	      /* Check whether connect succeeded, or get error: */
 	      {
-		int so_len = sizeof(status);
+		unsigned int so_len = sizeof(status);
 		if (getsockopt(s, SOL_SOCKET, SO_ERROR, (void *)&status, &so_len) != 0) {
 		  status = SOCK_ERRNO();
 		}
@@ -2145,7 +2145,7 @@ tcp_accept(int argc, Scheme_Object *argv[])
   Scheme_Object *listener;
 # ifdef USE_SOCKETS_TCP
   tcp_t s;
-  int l;
+  unsigned int l;
   GC_CAN_IGNORE char tcp_accept_addr[MZ_SOCK_NAME_MAX_LEN];
 # endif
 
@@ -2293,10 +2293,10 @@ static Scheme_Object *tcp_addresses(int argc, Scheme_Object *argv[])
 
 # ifdef USE_SOCKETS_TCP
   {
-    int l;
+    unsigned int l;
     char here[MZ_SOCK_NAME_MAX_LEN], there[MZ_SOCK_NAME_MAX_LEN];
     char host_buf[MZ_SOCK_HOST_NAME_MAX_LEN];
-    int here_len, there_len;
+    unsigned int here_len, there_len;
 
     l = sizeof(here);
     if (getsockname(tcp->tcp, (struct sockaddr *)here, &l)) {
@@ -3079,7 +3079,7 @@ static int do_udp_recv(const char *name, Scheme_UDP *udp, char *bstr, long start
   long x;
   int errid = 0;
   char src_addr[MZ_SOCK_NAME_MAX_LEN];
-  int asize = sizeof(src_addr);
+  unsigned int asize = sizeof(src_addr);
 
   if (!udp->bound) {
     scheme_raise_exn(MZEXN_FAIL_NETWORK,

@@ -1165,8 +1165,8 @@ char *scheme_bignum_to_allocated_string(const Scheme_Object *b, int radix, int a
 
 #ifdef MZ_PRECISE_GC
   {
-    char *save = str;
-    str = (char*)scheme_malloc_atomic(slen);
+    unsigned char *save = str;
+    str = (unsigned char*)scheme_malloc_atomic(slen);
     memcpy(str, save, slen);
     RELEASE(save);
   }

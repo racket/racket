@@ -984,7 +984,7 @@ static void do_print_string(int compact, int notdisplay,
     reset = 0;
   }
   el = scheme_utf8_encode(s, offset, offset + l, 
-			  buf, 0, 0);
+			  (unsigned char *)buf, 0, 0);
   if (compact) {
     print_compact(pp, CPT_CHAR_STRING);
     print_compact_number(pp, el);
@@ -1391,7 +1391,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	mzchar us[1];
 	int l;
 	us[0] = SCHEME_CHAR_VAL(obj);
-	l = scheme_utf8_encode(us, 0, 1, s, 0, 0);
+	l = scheme_utf8_encode(us, 0, 1, (unsigned char *)s, 0, 0);
 	print_char_string(s, l, us, 0, 1, notdisplay, 1, pp);
       } else
 	print_char(obj, notdisplay, pp);

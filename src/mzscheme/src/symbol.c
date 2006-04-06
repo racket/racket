@@ -525,7 +525,7 @@ const char *scheme_symbol_name_and_size(Scheme_Object *sym, unsigned int *length
 	mzchar buf[2];
 	int ul = 2;
 	while (1) {
-	  if (scheme_utf8_decode(s, i, i + ul,
+	  if (scheme_utf8_decode((unsigned char *)s, i, i + ul,
 				 buf, 0, 1,
 				 NULL, 0, 0) > 0)
 	    break;
@@ -554,7 +554,7 @@ const char *scheme_symbol_name_and_size(Scheme_Object *sym, unsigned int *length
     mzchar cbuf[100], *cs;
     long clen;
     dz = 0;
-    cs = scheme_utf8_decode_to_buffer_len(s, len, cbuf, 100, &clen);
+    cs = scheme_utf8_decode_to_buffer_len((unsigned char *)s, len, cbuf, 100, &clen);
     if (cs
 	&& digit_start
 	&& !(flags & SCHEME_SNF_FOR_TS)

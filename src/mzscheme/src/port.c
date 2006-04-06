@@ -1257,7 +1257,7 @@ static void do_count_lines(Scheme_Port *ip, const char *buffer, long offset, lon
     int state = ip->utf8state;
     int n;
     degot += state_len(state);
-    n = scheme_utf8_decode_count(buffer, offset, offset + i + 1, &state, 0, '?');
+    n = scheme_utf8_decode_count((const unsigned char *)buffer, offset, offset + i + 1, &state, 0, '?');
     degot += (i + 1 - n);
     ip->utf8state = 0; /* assert: state == 0, because we ended with a newline */
   }
@@ -1300,7 +1300,7 @@ static void do_count_lines(Scheme_Port *ip, const char *buffer, long offset, lon
     col -= n;
     for (i = prev_i; i < got; i++) {
       if (buffer[offset + i] == '\t') {
-	n = scheme_utf8_decode_count(buffer, offset + prev_i, offset + i, &state, 0, '?');
+	n = scheme_utf8_decode_count((const unsigned char *)buffer, offset + prev_i, offset + i, &state, 0, '?');
 	degot += ((i - prev_i) - n);
 	col += n;
 	col = col - (col & 0x7) + 8;
@@ -1308,7 +1308,7 @@ static void do_count_lines(Scheme_Port *ip, const char *buffer, long offset, lon
       }
     }
     if (prev_i < i) {
-      n = scheme_utf8_decode_count(buffer, offset + prev_i, offset + i, &state, 1, '?');
+      n = scheme_utf8_decode_count((const unsigned char *)buffer, offset + prev_i, offset + i, &state, 1, '?');
       n += state_len(state);
       col += n;
       degot += ((i - prev_i) - n);
@@ -2130,7 +2130,7 @@ long scheme_get_char_string(const char *who,
 					    NULL);
 	if (got > 0) {
 	  long ulen, glen;
-	  glen = scheme_utf8_decode_as_prefix(s, 0, got + leftover,
+	  glen = scheme_utf8_decode_as_prefix((const unsigned char *)s, 0, got + leftover,
 					      buffer, offset, offset + size,
 					      &ulen, 0, '?');
 	  if (glen && (ulen < got + leftover)) {
@@ -2200,7 +2200,7 @@ long scheme_get_char_string(const char *who,
     if (got >= 0) {
       long ulen, glen;
 
-      glen = scheme_utf8_decode_as_prefix(s, 0, got + leftover,
+      glen = scheme_utf8_decode_as_prefix((const unsigned char *)s, 0, got + leftover,
 					  buffer, offset, offset + size,
 					  &ulen, 0, '?');
       
@@ -2257,7 +2257,7 @@ scheme_getc(Scheme_Object *port)
 	return '?';
       }
     } else {
-      v = scheme_utf8_decode_prefix(s, delta + 1, r, 0);
+      v = scheme_utf8_decode_prefix((const unsigned char *)s, delta + 1, r, 0);
       if (v > 0) {
 	if (delta) {
 	  /* Need to read the peeked bytes (will ignore) */
@@ -2402,7 +2402,7 @@ static int do_peekc_skip(Scheme_Object *port, Scheme_Object *skip,
 	return '?';
       }
     } else {
-      v = scheme_utf8_decode_prefix(s, delta + 1, r, 0);
+      v = scheme_utf8_decode_prefix((const unsigned char *)s, delta + 1, r, 0);
       if (v > 0)
 	return r[0];
       else if (v == -2) {
@@ -3076,7 +3076,7 @@ scheme_put_char_string(const char *who, Scheme_Object *port,
     bstr = buf;
   else
     bstr = (char *)scheme_malloc_atomic(blen);
-  scheme_utf8_encode(str, d, d + len, bstr, 0, 0);
+  scheme_utf8_encode(str, d, d + len, (unsigned char *)bstr, 0, 0);
 
   return scheme_put_byte_string(who, port, bstr, 0, blen, 0);
 }

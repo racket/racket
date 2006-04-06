@@ -66,6 +66,7 @@ static iconv_proc_t iconv;
 static iconv_open_proc_t iconv_open;
 static iconv_close_proc_t iconv_close;
 static locale_charset_proc_t locale_charset; /* Not used, currently */
+#define mzCHK_PROC(x) x
 static char *nl_langinfo(int which)
 {
   return "UTF-8";
@@ -118,6 +119,7 @@ static void init_iconv()
 #else
 # define ICONV_errno errno
 # define iconv_ready 1
+# define mzCHK_PROC(x) 1
 static void init_iconv() { }
 #endif
 
@@ -128,7 +130,7 @@ static void init_iconv() { }
 # define mzLOCALE_IS_UTF_8(s) (!s || !(*s))
 #endif
 #ifndef mzLOCALE_IS_UTF_8
-# define mzLOCALE_IS_UTF_8(s) !iconv_open
+# define mzLOCALE_IS_UTF_8(s) !mzCHK_PROC(iconv_open)
 #endif
 
 #define mz_iconv_nl_langinfo() ""
@@ -1124,7 +1126,7 @@ do_byte_string_to_char_string_locale(const char *who,
   reset_locale();
   if (!iconv_ready) init_iconv();
 
-  if (mzLOCALE_IS_UTF_8(current_locale_name) || !locale_on || !iconv_open)
+  if (mzLOCALE_IS_UTF_8(current_locale_name) || !locale_on || !mzCHK_PROC(iconv_open))
     return do_byte_string_to_char_string(who, bstr, istart, ifinish, perm, 1);
 
   if (istart < ifinish) {
@@ -1183,7 +1185,7 @@ do_string_to_vector(const char *who, int mode, int argc, Scheme_Object *argv[])
     unsigned char *s;
     long i, len;
     len = ifinish - istart;
-    s = SCHEME_BYTE_STR_VAL(argv[0]);
+    s = (unsigned char *)SCHEME_BYTE_STR_VAL(argv[0]);
     us = (mzchar *)scheme_malloc_atomic((len + 1) * sizeof(mzchar));
     for (i = istart; i < ifinish; i++) {
       us[i - istart] = s[i];
@@ -1236,7 +1238,7 @@ static Scheme_Object *do_char_string_to_byte_string(Scheme_Object *s, long istar
 			    0 /* UTF-16 */);
   bs = (char *)scheme_malloc_atomic(slen + 1);
   scheme_utf8_encode(SCHEME_CHAR_STR_VAL(s), istart, ifinish,
-		     bs, 0,
+		     (unsigned char *)bs, 0,
 		     0 /* UTF-16 */);
   bs[slen] = 0;
 
@@ -1255,7 +1257,7 @@ do_char_string_to_byte_string_locale(const char *who,
   reset_locale();
   if (!iconv_ready) init_iconv();
 
-  if (mzLOCALE_IS_UTF_8(current_locale_name) || !locale_on || !iconv_open)
+  if (mzLOCALE_IS_UTF_8(current_locale_name) || !locale_on || !mzCHK_PROC(iconv_open))
     return do_char_string_to_byte_string(cstr, istart, ifinish, 1);
 
   if (istart < ifinish) {
@@ -1339,7 +1341,7 @@ static Scheme_Object *do_chars_to_bytes(const char *who, int mode,
     }
     s[len] = 0;
 
-    return scheme_make_sized_byte_string(s, len, 0);
+    return scheme_make_sized_byte_string((char *)s, len, 0);
   }
 }
 
@@ -1758,7 +1760,7 @@ char *scheme_format_utf8(char *format, int flen, int argc, Scheme_Object **argv,
   long srlen;
   if (flen == -1)
     flen = strlen(format);
-  s = scheme_utf8_decode_to_buffer_len(format, flen, NULL, 0, &srlen);
+  s = scheme_utf8_decode_to_buffer_len((unsigned char *)format, flen, NULL, 0, &srlen);
   if (s)
     return scheme_format(s, srlen, argc, argv, rlen);
   else
@@ -1771,7 +1773,7 @@ void scheme_printf_utf8(char *format, int flen, int argc, Scheme_Object **argv)
   long srlen;
   if (flen == -1)
     flen = strlen(format);
-  s = scheme_utf8_decode_to_buffer_len(format, flen, NULL, 0, &srlen);
+  s = scheme_utf8_decode_to_buffer_len((unsigned char *)format, flen, NULL, 0, &srlen);
   if (s)
     scheme_printf(s, srlen, argc, argv);
 }
@@ -2315,7 +2317,7 @@ static char *do_convert(iconv_t cd,
 
   if (cd == (iconv_t)-1) {
     if (!iconv_ready) init_iconv();
-    if (iconv_open) {
+    if (mzCHK_PROC(iconv_open)) {
       if (!from_e)
 	from_e = mz_iconv_nl_langinfo();
       if (!to_e)
@@ -2373,7 +2375,7 @@ static char *do_convert(iconv_t cd,
 				  0);
 	if (opos <= iolen) {
 	  opos = scheme_utf8_encode((const unsigned int *)in, uid, uilen,
-				    out, od + dop,
+				    (unsigned char *)out, od + dop,
 				    0);
 	  dop += opos;
 	  dip += iilen;
@@ -2388,7 +2390,7 @@ static char *do_convert(iconv_t cd,
 	/* We assume that out + od is mzchar-aligned */
 	long ipos, opos;
 
-	r = utf8_decode_x(in, id + dip, iilen,
+	r = utf8_decode_x((unsigned char *)in, id + dip, iilen,
 			  (unsigned int *)out, (od + dop) >> 2, iolen >> 2,
 			  &ipos, &opos,
 			  0, 0, NULL, 0, 0);
@@ -2836,8 +2838,10 @@ int mz_native_strcoll(char *s1, int d1, int l1, char *s2, int d2, int l2, int cv
   CFStringRef str1, str2;
   CFComparisonResult r;
 
-  str1 = CFStringCreateWithBytes(NULL, s1 XFORM_OK_PLUS (d1 * 2), (l1 * 2), kCFStringEncodingUnicode, FALSE);
-  str2 = CFStringCreateWithBytes(NULL, s2 XFORM_OK_PLUS (d2 * 2), (l2 * 2), kCFStringEncodingUnicode, FALSE);
+  str1 = CFStringCreateWithBytes(NULL, (unsigned char *)s1 XFORM_OK_PLUS (d1 * 2), (l1 * 2), 
+				 kCFStringEncodingUnicode, FALSE);
+  str2 = CFStringCreateWithBytes(NULL, (unsigned char *)s2 XFORM_OK_PLUS (d2 * 2), (l2 * 2), 
+				 kCFStringEncodingUnicode, FALSE);
 
   r = CFStringCompare(str1, str2, (kCFCompareLocalized
 				   | (cvt_case ? kCFCompareCaseInsensitive : 0)));
@@ -3009,7 +3013,8 @@ mzchar *do_native_recase(int to_up, mzchar *in, int delta, int len, long *olen)
   GC_CAN_IGNORE CFRange rng;
   char *result;
 
-  str = CFStringCreateWithBytes(NULL, ((char *)in) XFORM_OK_PLUS (delta * 2), (len * 2), kCFStringEncodingUnicode, FALSE);
+  str = CFStringCreateWithBytes(NULL, ((unsigned char *)in) XFORM_OK_PLUS (delta * 2), (len * 2), 
+				kCFStringEncodingUnicode, FALSE);
   mstr = CFStringCreateMutableCopy(NULL, 0, str);
   CFRelease(str);
 
@@ -3098,7 +3103,7 @@ static Scheme_Object *mz_recase(const char *who, int to_up, mzchar *us, long ule
     us1 = mz_do_recase(to_up, us, delta, i - delta, &ulen1);
 
     if (utf16) {
-      us1 = scheme_utf16_to_ucs4((short *)us1, 0, ulen1, NULL, 0, &ulen1, 1);
+      us1 = scheme_utf16_to_ucs4((unsigned short *)us1, 0, ulen1, NULL, 0, &ulen1, 1);
       us1[ulen1] = 0;
     }
 
@@ -4029,7 +4034,7 @@ Scheme_Object *scheme_open_converter(const char *from_e, const char *to_e)
   } else {
     if (!iconv_ready) init_iconv();
 
-    if (!iconv_open)
+    if (!mzCHK_PROC(iconv_open))
       return scheme_false;
 
     if (!*from_e || !*to_e)
@@ -4334,7 +4339,7 @@ static int utf8_decode_x(const unsigned char *s, int start, int end,
      anything bad to the given "permissive" value. */
 
   if (end < 0)
-    end = strlen(s);
+    end = strlen((char *)s);
   if (dend < 0)
     dend = 0x7FFFFFFF;
 
@@ -4775,7 +4780,7 @@ char *scheme_utf8_encode_to_buffer_len(const mzchar *s, int len,
   if (slen + 1 > blen) {
     buf = (char *)scheme_malloc_atomic(slen + 1);
   }
-  scheme_utf8_encode(s, 0, len, buf, 0, 0);
+  scheme_utf8_encode(s, 0, len, (unsigned char *)buf, 0, 0);
   buf[slen] = 0;
   *_slen = slen;
   return buf;
@@ -4794,7 +4799,7 @@ unsigned short *scheme_ucs4_to_utf16(const mzchar *text, int start, int end,
 {
   mzchar v;
   int extra, i, j;
-  short *utf16;
+  unsigned short *utf16;
 
   /* Count characters that fall outside UCS-2: */
   for (i = start, extra = 0; i < end; i++) {

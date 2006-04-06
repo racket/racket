@@ -1579,9 +1579,9 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	      ulen = scheme_char_strlen(tagbuf);
 	      blen = scheme_utf8_encode_all(tagbuf, ulen, NULL);
 	      lbuffer = (char *)scheme_malloc_atomic(blen + MAX_UTF8_CHAR_BYTES + 1);
-	      scheme_utf8_encode_all(tagbuf, ulen, lbuffer);
-	      blen += scheme_utf8_encode(&pch, 0, 1,
-					 lbuffer, blen,
+	      scheme_utf8_encode_all(tagbuf, ulen, (unsigned char *)lbuffer);
+	      blen += scheme_utf8_encode((mzchar *)&pch, 0, 1,
+					 (unsigned char *)lbuffer, blen,
 					 0);
 	      lbuffer[blen] = 0;
 
@@ -3932,7 +3932,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	RANGE_CHECK_GETS(el);
 	s = read_compact_chars(port, buffer, BLK_BUF_SIZE, el);
 	us = (mzchar *)scheme_malloc_atomic((l + 1) * sizeof(mzchar));
-	scheme_utf8_decode_all(s, el, us, 0);
+	scheme_utf8_decode_all((const unsigned char *)s, el, us, 0);
 	us[l] = 0;
 	v = scheme_make_immutable_sized_char_string(us, l, 0);
       }

@@ -280,7 +280,7 @@ X__(string_to_list) (int argc, Scheme_Object *argv[])
   if (!SCHEME_X_STRINGP(argv[0]))
     scheme_wrong_type(XSTRINGSTR "->list", XSTR "string", 0, argc, argv);
 
-  chars = SCHEME_X_STR_VAL(argv[0]);
+  chars = (uXchar *)SCHEME_X_STR_VAL(argv[0]);
   len = SCHEME_X_STRTAG_VAL(argv[0]);
 
   if (len < 0xFFF) {

@@ -148,7 +148,7 @@ static unsigned int _random_m(unsigned int *_x)
   return y;
 }
 
-static int _random_n(int *_x, int n)
+static int _random_n(unsigned int *_x, int n)
 {
   return ((_random_m(_x) << 16) + _random_m(_x)) % n;
 }
