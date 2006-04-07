@@ -818,7 +818,7 @@ int wx_read_png(char *file_name, wxBitmap *bm, int w_mask, wxColour *bg)
 #ifdef MZ_PRECISE_GC
    rows = (png_bytep *)GC_malloc(sizeof(png_bytep) * height);
 #else
-   rows = new WXGC_ATOMIC png_bytep[height];
+   rows = new WXGC_PTRS png_bytep[height];
 #endif
 
    row_width = png_get_rowbytes(png_ptr, info_ptr);
@@ -1009,7 +1009,7 @@ int wx_write_png(char *file_name, wxBitmap *bm)
 #ifdef MZ_PRECISE_GC
    rows = (png_bytep *)GC_malloc(sizeof(png_bytep) * height);
 #else
-   rows = new WXGC_ATOMIC png_bytep[height];
+   rows = new WXGC_PTRS png_bytep[height];
 #endif
    row_width = png_get_rowbytes(png_ptr, info_ptr);
    for (y = 0; y < height; y++) {
