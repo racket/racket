@@ -403,7 +403,8 @@
       
       ;; leave-snips-alone-hook : any? (any? -> printable) any? -> printable
       (define ((leave-snips-alone-hook sh) expr basic-convert sub-convert)
-	(if (is-a? expr snip%)
+	(if (or (is-a? expr snip%)
+                (to-snip-value? expr))
 	    expr
 	    (sh expr basic-convert sub-convert)))
 
@@ -1011,7 +1012,7 @@
       
       (define (value->snip v)
         (ormap (λ (to-snip) (and ((to-snip-predicate? to-snip) v)
-                                      ((to-snip->value to-snip) v)))
+                                 ((to-snip->value to-snip) v)))
                to-snips))
       (define (to-snip-value? v)
         (ormap (λ (to-snip) ((to-snip-predicate? to-snip) v)) to-snips))
