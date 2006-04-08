@@ -107,7 +107,8 @@
       ;; allow people (SamTH) to use MrEd primitives from servlets.
       ;; GregP: putting mred.ss here is a bad idea because it will cause
       ;; web-server-text to have a dependency on mred
-      ;(lib "mred.ss" "mred")
+      ;; JM: We get around it by only doing it if the module is already attached.
+      (lib "mred.ss" "mred")
       (lib "servlet.ss" "web-server")))
   
   
@@ -134,7 +135,9 @@
     (let ([server-namespace (current-namespace)]
           [new-namespace (make-namespace)])
       (parameterize ([current-namespace new-namespace])
-        (for-each (lambda (name) (namespace-attach-module server-namespace name))
+        (for-each (lambda (name)
+                    (with-handlers ([exn? void])
+                      (namespace-attach-module server-namespace name)))
                   to-be-copied-module-names)
         new-namespace)))
   
