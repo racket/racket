@@ -42,9 +42,10 @@
       (define current-extension-linker 
 	(make-parameter 
 	 (or (let ([p (getenv "MZSCHEME_DYNEXT_LINKER")])
-	       (if (and p (absolute-path? p))
-		   (find-executable-path p #f)
-		   p))
+	       (and p
+		    (if (absolute-path? p)
+			(string->path p)
+			(find-executable-path p #f))))
 	     (case (system-type) 
 	       [(unix macosx) (get-unix-linker)]
 	       [(windows) (get-windows-linker)]

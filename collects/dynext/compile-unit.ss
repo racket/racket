@@ -28,9 +28,10 @@
 	(make-parameter 
 	 (or (let ([p (or (getenv "MZSCHEME_DYNEXT_COMPILER")
 			  (getenv "CC"))])
-	       (if (and p (absolute-path? p))
-		   (find-executable-path p #f)
-		   p))
+	       (and p
+		    (if (absolute-path? p)
+			(string->path p)
+			(find-executable-path p #f))))
 	     (case (system-type) 
 	       [(unix macosx) (get-unix-compile)]
 	       [(windows) (get-windows-compile)]
