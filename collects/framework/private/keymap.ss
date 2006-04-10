@@ -653,10 +653,11 @@
                              (string-constant goto-line)
                              (string-constant goto-line))))])
 		    (when (string? num-str)
-		      (let ([line-num (inexact->exact (string->number num-str))])
+		      (let* ([possible-num (string->number num-str)]
+                             [line-num (and possible-num (inexact->exact possible-num))])
 			(cond
                           [(and (number? line-num)
-                                (= line-num (floor line-num))
+                                (integer? line-num)
                                 (<= 1 line-num (+ (send edit last-paragraph) 1)))
                            (let ([pos (send edit paragraph-start-position 
                                             (sub1 line-num))])
