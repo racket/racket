@@ -2668,18 +2668,11 @@ Bool wxWindowDC::GlyphAvailable(int c, wxFont *font)
 
 void wxWindowDC::SetFont(wxFont *font)
 {
-    XFontStruct *xfs;
+  if (!DRAWABLE)
+    return;
 
-    if (!DRAWABLE)
-	return;
-
-    if (!(current_font = font)) // nothing to do without a font
-	return;
-
-#if 0
-    xfs  =(XFontStruct*)font->GetInternalFont(scale_x, scale_y);
-    XSetFont(DPY, TEXT_GC, xfs->fid);
-#endif
+  if (!(current_font = font)) // nothing to do without a font
+    return;
 }
 
 void wxWindowDC::SetTextForeground(wxColour *col)
