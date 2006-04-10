@@ -147,9 +147,11 @@
 
       (define send-to-server
 	(lambda (communicator message-template . rest)
-	  (apply fprintf (communicator-sender communicator)
-		 (string-append message-template "\r\n")
-		 rest)))
+	  (let ([sender (communicator-sender communicator)])
+            (apply fprintf sender
+                   (string-append message-template "\r\n")
+                   rest)
+            (flush-output sender))))
 
       ;; parse-status-line :
       ;; string -> number x string
