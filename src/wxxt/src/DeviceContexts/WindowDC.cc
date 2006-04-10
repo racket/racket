@@ -2676,8 +2676,10 @@ void wxWindowDC::SetFont(wxFont *font)
     if (!(current_font = font)) // nothing to do without a font
 	return;
 
+#if 0
     xfs  =(XFontStruct*)font->GetInternalFont(scale_x, scale_y);
     XSetFont(DPY, TEXT_GC, xfs->fid);
+#endif
 }
 
 void wxWindowDC::SetTextForeground(wxColour *col)
