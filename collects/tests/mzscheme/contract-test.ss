@@ -3774,6 +3774,8 @@
   (test/spec-passed 'any/c '(contract any/c 1 'pos 'neg))
   (test-flat-contract 'printable/c (vector (cons 1 (box #f))) (lambda (x) x))
   (test-flat-contract '(symbols 'a 'b 'c) 'a 'd)
+  (test-flat-contract '(one-of/c (expt 2 65)) (expt 2 65) 12)
+  (test-flat-contract '(one-of/c #:x #:z) #:x #:y)
   
   (let ([c% (class object% (super-new))])
     (test-flat-contract (subclass?/c c%) c% object%)
@@ -3969,7 +3971,8 @@
   (test-name 'natural-number/c natural-number/c)
   (test-name 'false/c false/c)
   (test-name 'printable/c printable/c)
-  (test-name '(symbols 'a 'b 'c)(symbols 'a 'b 'c))
+  (test-name '(symbols 'a 'b 'c) (symbols 'a 'b 'c))
+  (test-name '(one-of/c 1 2 3) (one-of/c 1 2 3))
   
   (let ([c% (class object% (super-new))])
     (test-name '(subclass?/c class:c%) (subclass?/c c%)))
@@ -4111,6 +4114,12 @@
   
   (test #t contract-stronger? number? number?)
   (test #f contract-stronger? boolean? number?)
+  
+  (test #t contract-stronger? (symbols 'x 'y) (symbols 'x 'y 'z))
+  (test #f contract-stronger? (symbols 'x 'y 'z) (symbols 'x 'y))
+  (test #t contract-stronger? (symbols 'x 'y) (symbols 'z 'x 'y))
+  (test #f contract-stronger? (symbols 'z 'x 'y) (symbols 'x 'y))
+  (test #t contract-stronger? (one-of/c (expt 2 100)) (one-of/c (expt 2 100) 12))
   
   (let ()
     (define-contract-struct couple (hd tl))

@@ -24,6 +24,7 @@ add struct contracts for immutable structs?
   (require (lib "etc.ss")
            (lib "list.ss")
            (lib "pretty.ss")
+           (lib "pconvert.ss")
            "contract-arrow.ss"
            "contract-guts.ss")
   
@@ -734,7 +735,7 @@ add struct contracts for immutable structs?
 	   string/len
            false/c
 	   printable/c
-           symbols
+           symbols one-of/c
            listof list-immutableof 
            vectorof vector-immutableof vector/c vector-immutable/c 
            cons-immutable/c cons/c list-immutable/c list/c
@@ -935,10 +936,34 @@ add struct contracts for immutable structs?
     (unless (andmap symbol? ss)
       (error 'symbols "expected symbols as arguments, given: ~a"
 	     (apply string-append (map (lambda (x) (format "~e " x)) ss))))
-    (flat-named-contract
-     `(symbols ,@(map (lambda (x) `',x) ss))
-     (lambda (x)
-       (memq x ss))))
+    (make-one-of/c ss))
+  
+  (define (one-of/c . elems) (make-one-of/c elems))
+  
+  (define-struct/prop one-of/c (elems)
+    ((pos-proj-prop flat-pos-proj)
+     (neg-proj-prop any-curried-proj)
+     (name-prop (λ (ctc) 
+                  (let ([elems (one-of/c-elems ctc)])
+                    `(,(cond
+                         [(andmap symbol? elems)
+                          'symbols]
+                         [else
+                          'one-of/c])
+                       ,@(map print-convert elems)))))
+     (stronger-prop
+      (λ (this that)
+        (and (one-of/c? that)
+             (let ([this-elems (one-of/c-elems this)]
+                   [that-elems (one-of/c-elems that)])
+               (and 
+                (andmap (λ (this-elem) (memv this-elem that-elems))
+                        this-elems)
+                #t)))))
+     (flat-prop 
+      (λ (ctc) 
+        (let ([elems (one-of/c-elems ctc)])
+          (λ (x) (memv x elems)))))))
   
   (define printable/c
     (flat-named-contract

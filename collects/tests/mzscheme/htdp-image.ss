@@ -1047,4 +1047,21 @@ snips as arguments
 (err/rt-name-test (alpha-color-list->image (list (make-alpha-color 0 0 0 0)) 1 1 #f #f) "fourth")
 (err/rt-name-test (alpha-color-list->image (list (make-alpha-color 0 0 0 0)) 1 1 0 #f) "fifth")
 
+(err/rt-name-test (overlay/xy #f
+                              13687968/78125 ; number's floor is 175
+                              10
+                              (circle 50 'outline 'blue))
+                  "first")
+(err/rt-name-test (overlay/xy (rectangle 100 200 'outline 'red)
+                              13687968/78125 ; number's floor is 175
+                              10
+                              (circle 50 'outline 'blue))
+                  "second")
+(err/rt-name-test (overlay/xy (rectangle 100 200 'outline 'red)
+                              10
+                              13687968/78125
+                              (circle 50 'outline 'blue))
+                  "third")
+(err/rt-name-test (overlay/xy (rectangle 100 200 'outline 'red) 10 10 #f) "fourth")
+
 (report-errs)

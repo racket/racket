@@ -76,6 +76,7 @@ plt/collects/tests/mzscheme/image-test.ss
   (define (check name p? v desc arg-posn) (check-arg name (p? v) desc arg-posn v))
 
   (define (check-coordinate name val arg-posn) (check name number? val "number" arg-posn))
+  (define (check-integer-coordinate name val arg-posn) (check name integer? val "integer" arg-posn))
   (define (check-size name val arg-posn) (check name posi? val "positive exact integer" arg-posn))
   (define (check-size/0 name val arg-posn) (check name nnosi? val "non-negative exact integer" arg-posn))
   (define (check-image name val arg-posn) (check name image? val "image" arg-posn))
@@ -192,10 +193,14 @@ plt/collects/tests/mzscheme/image-test.ss
 
   (define (overlay/xy a dx dy b)
     (check-image 'overlay/xy a "first")
-    (check-coordinate 'overlay/xy dx "second")
-    (check-coordinate 'overlay/xy dy "third")
+    (check-integer-coordinate 'overlay/xy dx "second")
+    (check-integer-coordinate 'overlay/xy dy "third")
     (check-image 'overlay/xy b "fourth")
-    (real-overlay/xy 'overlay/xy a dx dy b))
+    (real-overlay/xy 'overlay/xy 
+                     a
+                     (if (exact? dx) dx (inexact->exact dx))
+                     (if (exact? dy) dy (inexact->exact dy))
+                     b))
 
   (define (real-overlay/xy name raw-a raw-delta-x raw-delta-y raw-b)
     (let ([a (coerce-to-cache-image-snip raw-a)]
