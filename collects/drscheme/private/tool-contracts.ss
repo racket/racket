@@ -1342,7 +1342,7 @@
      (render-value/format (any/c 
                            any/c
                            output-port?
-                           number?
+                           (or/c number? (symbols 'infinity))
                            . -> .
                            any))
      (unmarshall-settings (printable/c . -> . any)))
