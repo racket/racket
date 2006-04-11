@@ -1,7 +1,8 @@
 (module main mzscheme 
   (require (lib "launcher.ss" "launcher")
 	   (lib "cmdline.ss")
-	   (lib "unitsig.ss")
+	   (lib "list.ss")
+           (lib "unitsig.ss")
 	   "debug.ss"
 	   "test-suite-utils.ss")
 
@@ -50,31 +51,33 @@
 	(debug-printf admin "  backup preferences file exists, using that one~n")
 	(begin (copy-file preferences-file old-preferences-file)
 	       (debug-printf admin "  saved preferences file~n"))))
-      
-  (with-handlers ([(lambda (x) #f)
-		   (lambda (x) (display (exn-message x)) (newline))])
-    (for-each
-     (lambda (x)
-       (when (member x all-files)
-	 (shutdown-mred)
-         (load-framework-automatically #t)
-	 (let/ec k
-	   (dynamic-wind
-	    (lambda ()
-	      (set-section-name! x)
-	      (set-section-jump! k))
-	    (lambda ()
-	      (with-handlers ([(lambda (x) #t)
-			       (lambda (exn)
-				 (debug-printf schedule "~a~n" (if (exn? exn) (exn-message exn) exn)))])
-
-		(debug-printf schedule "beginning ~a test suite~n" x)
-		(dynamic-require `(lib ,x "tests" "framework") #f)
-		(debug-printf schedule "PASSED ~a test suite~n" x)))
-	    (lambda ()
-	      (reset-section-name!)
-	      (reset-section-jump!))))))
-     files-to-process))
+    
+  (define jumped-out-tests '())
+  
+  (for-each
+   (lambda (x)
+     (when (member x all-files)
+       (shutdown-mred)
+       (load-framework-automatically #t)
+       (let/ec k
+         (dynamic-wind
+          (lambda ()
+            (set! jumped-out-tests (cons x jumped-out-tests))
+            (set-section-name! x)
+            (set-section-jump! k))
+          (lambda ()
+            (with-handlers ([(lambda (x) #t)
+                             (lambda (exn)
+                               (debug-printf schedule "~a~n" (if (exn? exn) (exn-message exn) exn)))])
+              
+              (debug-printf schedule "beginning ~a test suite~n" x)
+              (dynamic-require `(lib ,x "tests" "framework") #f)
+              (set! jumped-out-tests (remq x jumped-out-tests))
+              (debug-printf schedule "PASSED ~a test suite~n" x)))
+          (lambda ()
+            (reset-section-name!)
+            (reset-section-jump!))))))
+   files-to-process)
 
   (debug-printf admin "  restoring preferences file ~s to ~s~n" old-preferences-file preferences-file)
   (when (file-exists? preferences-file)
@@ -88,10 +91,12 @@
   (shutdown-listener)
 
   (cond
-   [(null? failed-tests)
-    (printf "All tests passed.~n")]
-   [else
-    (debug-printf schedule "FAILED tests:~n")
-    (for-each (lambda (failed-test)
-		(debug-printf schedule "  ~a // ~a~n" (car failed-test) (cdr failed-test)))
-	      failed-tests)]))
+    [(not (null? jumped-out-tests))
+     (printf "Test suites ended with exns ~s\n" jumped-out-tests)]
+    [(null? failed-tests)
+     (printf "All tests passed.~n")]
+    [else
+     (debug-printf schedule "FAILED tests:~n")
+     (for-each (lambda (failed-test)
+                 (debug-printf schedule "  ~a // ~a~n" (car failed-test) (cdr failed-test)))
+               failed-tests)]))

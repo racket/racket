@@ -403,7 +403,7 @@
           (inherit get-styles-fixed)
           (inherit has-focus? find-snip split-snip)
           
-          (public get-limit balance-parens tabify-on-return? tabify
+          (public get-limit tabify-on-return? tabify
                   tabify-all insert-return calc-last-para 
                   box-comment-out-selection comment-out-selection uncomment-selection
                   get-forward-sexp remove-sexp forward-sexp flash-forward-sexp get-backward-sexp
@@ -411,7 +411,7 @@
                   remove-parens-forward)
           (define (get-limit pos) 0)
           
-          (define (balance-parens key-event)
+          (define/public (balance-parens key-event)
             (insert-close-paren (get-start-position) 
                                 (send key-event get-key-code)
                                 (preferences:get 'framework:paren-match)
@@ -972,6 +972,15 @@
           [define get-tab-size (λ () tab-size)]
           [define set-tab-size (λ (s) (set! tab-size s))]
                     
+          (inherit is-frozen? is-stopped?)
+          (define/public (rewrite-square-paren)
+            (insert (cond
+                      [(or (is-frozen?) (is-stopped?))
+                       #\[]
+                      [else (choose-paren this (get-start-position))])
+                    (get-start-position)
+                    (get-end-position)))
+          
           (super-instantiate ())))
 
       (define -text-mode<%>
@@ -1109,7 +1118,9 @@
             (add-edit-function "box-comment-out"  
                                (λ (x) (send x box-comment-out-selection)))
             (add-edit-function "uncomment"  
-                               (λ (x) (send x uncomment-selection))))
+                               (λ (x) (send x uncomment-selection)))
+            (add-edit-function "rewrite-square-paren"  
+                               (λ (x) (send x rewrite-square-paren))))
           
           (send keymap add-function "balance-parens"
                 (λ (edit event)
@@ -1130,6 +1141,8 @@
           (send keymap map-function ")" "balance-parens")
           (send keymap map-function "]" "balance-parens")
           (send keymap map-function "}" "balance-parens")
+          
+          (send keymap map-function "[" "rewrite-square-paren")
           
           (let ([map-meta
                  (λ (key func)
@@ -1196,6 +1209,73 @@
       (define keymap (make-object keymap:aug-keymap%))
       (setup-keymap keymap)
       (define (get-keymap) keymap)
+      
+      ;; choose-paren : scheme-text number -> character
+      ;; returns the character to replace a #\[ with, based
+      ;; on the context where it is typed in.
+      (define (choose-paren text pos)
+        (if (memq (send text classify-position pos) '(string error comment symbol))
+            #\[
+            (let* ([before-whitespace-pos (send text skip-whitespace pos 'backward #t)]
+                   [backward-match (send text backward-match before-whitespace-pos 0)])
+              (let ([b-m-char (and (number? backward-match) (send text get-character backward-match))])
+                (cond
+                  [(member b-m-char '(#\( #\[ #\{))
+                   ;; found a "sibling" parenthesized sequence. use the parens it uses.
+                   b-m-char]
+                  [backward-match
+                   ;; there is a sexp before this, but it isn't parenthesized.
+                   ;; if it is the `cond' keyword, we get a square bracket. otherwise not.
+                   (if (and (beginning-of-sequence? text backward-match)
+                            (text-between-equal? "cond" text backward-match before-whitespace-pos))
+                       #\[
+                       #\()]
+                  [(not (zero? before-whitespace-pos))
+                   ;; this is the first thing in the sequence
+                   ;; pop out one layer and look for a keyword.
+                   ;; if we find a let<mumble> keyword, we get a square bracket, 
+                   ;; otherwise a round paren
+                   (let ([b-w-p-char (send text get-character (- before-whitespace-pos 1))])
+                     (cond
+                       [(equal? b-w-p-char #\()
+                        (let* ([second-before-whitespace-pos (send text skip-whitespace (- before-whitespace-pos 1) 'backward #t)]
+                               [second-backwards-match (send text backward-match second-before-whitespace-pos 0)])
+                          (cond
+                            [(not second-backwards-match)
+                             #\(]
+                            [(and (beginning-of-sequence? text second-backwards-match)
+                                  (ormap (λ (x) (text-between-equal? x
+                                                                     text
+                                                                     second-backwards-match
+                                                                     second-before-whitespace-pos))
+                                         '("let" 
+                                           "let*" "let-values" "let-syntax" "let-struct" "let-syntaxes"
+                                           "letrec"
+                                           "letrec-syntaxes" "letrec-syntaxes+values" "letrec-values")))
+                             #\[]
+                            [else
+                             #\(]))]
+                       [else 
+                        #\(]))]
+                  [else #\(])))))
+      
+      (define (beginning-of-sequence? text start)
+        (let ([before-space (send text skip-whitespace start 'backward #t)])
+          (cond
+            [(zero? before-space) #t]
+            [else
+             (member (send text get-character (- before-space 1))
+                     '(#\( #\[ #\{))])))
+      
+      (define (text-between-equal? str text start end)
+        (and (= (string-length str) (- end start))
+             (let loop ([i (string-length str)])
+               (cond
+                 [(= i 0) #t]
+                 [else
+                  (and (char=? (string-ref str (- i 1))
+                               (send text get-character (+ i start -1)))
+                       (loop (- i 1)))]))))
       
                                                                              
                         ;;;                                            ;;;   
