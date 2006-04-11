@@ -938,7 +938,18 @@ add struct contracts for immutable structs?
 	     (apply string-append (map (lambda (x) (format "~e " x)) ss))))
     (make-one-of/c ss))
   
-  (define (one-of/c . elems) (make-one-of/c elems))
+  (define atomic-value? 
+    (let ([undefined (letrec ([x x]) x)])
+      (λ (x)
+        (or (char? x) (symbol? x) (boolean? x)
+            (null? x) (keyword? x) (number? x)
+            (void? x) (eq? x undefined)))))
+      
+  (define (one-of/c . elems)
+    (unless (andmap atomic-value? elems)
+      (error 'one-of/c "expected chars, symbols, booleans, null, keywords, numbers, void, or undefined, got ~e"
+             elems))
+    (make-one-of/c elems))
   
   (define-struct/prop one-of/c (elems)
     ((pos-proj-prop flat-pos-proj)

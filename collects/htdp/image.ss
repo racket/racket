@@ -76,7 +76,7 @@ plt/collects/tests/mzscheme/image-test.ss
   (define (check name p? v desc arg-posn) (check-arg name (p? v) desc arg-posn v))
 
   (define (check-coordinate name val arg-posn) (check name number? val "number" arg-posn))
-  (define (check-integer-coordinate name val arg-posn) (check name integer? val "integer" arg-posn))
+  (define (check-integer-coordinate name val arg-posn) (check name nii? val "integer" arg-posn))
   (define (check-size name val arg-posn) (check name posi? val "positive exact integer" arg-posn))
   (define (check-size/0 name val arg-posn) (check name nnosi? val "non-negative exact integer" arg-posn))
   (define (check-image name val arg-posn) (check name image? val "image" arg-posn))
@@ -85,6 +85,7 @@ plt/collects/tests/mzscheme/image-test.ss
   
   (define (posi? i) (and (number? i) (integer? i) (positive? i) (exact? i)))
   (define (nnosi? i) (and (number? i) (integer? i) (exact? i) (or (zero? i) (positive? i))))
+  (define (nii? x) (and (integer? x) (not (= x +inf.0)) (not (= x -inf.0))))
 
   
   (define (check-sizes who w h)

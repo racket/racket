@@ -1063,5 +1063,7 @@ snips as arguments
                               (circle 50 'outline 'blue))
                   "third")
 (err/rt-name-test (overlay/xy (rectangle 100 200 'outline 'red) 10 10 #f) "fourth")
+(err/rt-name-test (overlay/xy (rectangle 100 200 'outline 'red) 10 +inf.0 #f) "third")
+(err/rt-name-test (overlay/xy (rectangle 100 200 'outline 'red) -inf.0 +inf.0 #f) "second")
 
 (report-errs)
