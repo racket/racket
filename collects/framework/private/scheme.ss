@@ -1122,7 +1122,18 @@
             (add-edit-function "uncomment"  
                                (λ (x) (send x uncomment-selection)))
             (add-edit-function "rewrite-square-paren"  
-                               (λ (x) (send x rewrite-square-paren))))
+                               (λ (x) (send x rewrite-square-paren)))
+            
+            (let ([add/map-non-clever
+                   (λ (name keystroke char)
+                     (add-edit-function 
+                      name
+                      (λ (e) (send e insert char (send e get-start-position) (send e get-end-position))))
+                     (send keymap map-function keystroke name))])
+              (add/map-non-clever "non-clever-open-square-bracket" "c:[" #\[)
+              (add/map-non-clever "non-clever-close-square-bracket" "c:]" #\])
+              (add/map-non-clever "non-clever-close-curley-bracket" "c:}" #\})
+              (add/map-non-clever "non-clever-close-round-paren" "c:)" #\))))
           
           (send keymap add-function "balance-parens"
                 (λ (edit event)
