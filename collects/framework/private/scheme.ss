@@ -975,13 +975,15 @@
           (inherit is-frozen? is-stopped?)
           (define/public (rewrite-square-paren)
             (insert (cond
-                      [(or (is-frozen?) (is-stopped?))
+                      [(or (not (preferences:get 'framework:fixup-parens))
+                           (is-frozen?)
+                           (is-stopped?))
                        #\[]
                       [else (choose-paren this (get-start-position))])
                     (get-start-position)
                     (get-end-position)))
           
-          (super-instantiate ())))
+          (super-new)))
 
       (define -text-mode<%>
         (interface ()
@@ -1214,22 +1216,36 @@
       ;; returns the character to replace a #\[ with, based
       ;; on the context where it is typed in.
       (define (choose-paren text pos)
-        (if (memq (send text classify-position pos) '(string error comment symbol))
+        (if (memq (send text classify-position pos) '(string error comment symbol constant))
             #\[
             (let* ([before-whitespace-pos (send text skip-whitespace pos 'backward #t)]
                    [backward-match (send text backward-match before-whitespace-pos 0)])
               (let ([b-m-char (and (number? backward-match) (send text get-character backward-match))])
                 (cond
-                  [(member b-m-char '(#\( #\[ #\{))
-                   ;; found a "sibling" parenthesized sequence. use the parens it uses.
-                   b-m-char]
                   [backward-match
-                   ;; there is a sexp before this, but it isn't parenthesized.
-                   ;; if it is the `cond' keyword, we get a square bracket. otherwise not.
-                   (if (and (beginning-of-sequence? text backward-match)
-                            (text-between-equal? "cond" text backward-match before-whitespace-pos))
-                       #\[
-                       #\()]
+                   ;; there is an expression before this, at this layer
+                   (let* ([before-whitespace-pos2 (send text skip-whitespace backward-match 'backward #t)]
+                          [backward-match2 (send text backward-match before-whitespace-pos2 0)])
+                     
+                     (cond
+                       ;; we found a new expression, two steps back, so we don't use the sibling
+                       ;; check here -- we just go with square brackets.
+                       [(and backward-match2
+                             (text-between-equal? "new"
+                                                  text
+                                                  backward-match2
+                                                  before-whitespace-pos2))
+                        #\[]
+                       [(member b-m-char '(#\( #\[ #\{))
+                        ;; found a "sibling" parenthesized sequence. use the parens it uses.
+                        b-m-char]
+                       [else
+                        ;; there is a sexp before this, but it isn't parenthesized.
+                        ;; if it is the `cond' keyword, we get a square bracket. otherwise not.
+                        (if (and (beginning-of-sequence? text backward-match)
+                                 (text-between-equal? "cond" text backward-match before-whitespace-pos))
+                            #\[
+                            #\()]))]
                   [(not (zero? before-whitespace-pos))
                    ;; this is the first thing in the sequence
                    ;; pop out one layer and look for a keyword.

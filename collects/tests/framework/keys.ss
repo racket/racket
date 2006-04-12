@@ -80,7 +80,62 @@
   (test-canonicalize 11 "esc;s:a" "esc;s:a")
   (test-canonicalize 12 "s:a;esc" "s:a;esc")
   
-  (include "key-specs.ss")
+  (define-struct key-spec (before after macos unix windows))
+  (define-struct buff-spec (string start end))
+  
+  (define global-specs
+    (list
+     (make-key-spec (make-buff-spec "abc" 1 1)
+                    (make-buff-spec "abc" 2 2)
+                    (list '(#\f control) '(right))
+                    (list '(#\f control) '(right))
+                    (list '(#\f control) '(right)))))
+  
+  (define (build-open-bracket-spec str pos char)
+    (make-key-spec (make-buff-spec str pos pos)
+                   (make-buff-spec 
+                    (string-append (substring str 0 pos)
+                                   (string char)
+                                   (substring str pos (string-length str)))
+                    (+ pos 1)
+                    (+ pos 1))
+                   (list (list char))
+                   (list (list char))
+                   (list (list char))))
+  
+  (define scheme-specs
+    (list 
+     (make-key-spec (make-buff-spec "(abc (def))" 4 4)
+                    (make-buff-spec "(abc (def))" 10 10)
+                    (list '(right alt))
+                    (list '(right alt))
+                    (list '(right alt)))
+     (make-key-spec (make-buff-spec "'(abc (def))" 1 1)
+                    (make-buff-spec "'(abc (def))" 12 12)
+                    (list '(right alt))
+                    (list '(right alt))
+                    (list '(right alt)))
+     (build-open-bracket-spec "(f cond " 8 #\()
+     (build-open-bracket-spec "(f let (" 8 #\()
+     (build-open-bracket-spec "(let (" 6 #\[)
+     (build-open-bracket-spec "(let (" 5 #\()
+     (build-open-bracket-spec "(kond " 5 #\()
+     (build-open-bracket-spec "(cond " 5 #\[)
+     (build-open-bracket-spec "(let ([]" 8 #\[)
+     (build-open-bracket-spec "(let ({}" 8 #\{)
+     (build-open-bracket-spec "()" 2 #\()
+     (build-open-bracket-spec "(let (;;" 8 #\[)
+     (build-open-bracket-spec ";" 1 #\[)
+     (build-open-bracket-spec "\"" 1 #\[)
+     (build-open-bracket-spec "\"\"" 1 #\[)
+     (build-open-bracket-spec "||" 1 #\[)
+     (build-open-bracket-spec "ab" 1 #\[)
+     (build-open-bracket-spec "" 0 #\()
+     (build-open-bracket-spec "(let (" 6 #\[)
+     (build-open-bracket-spec "(new x% " 8 #\[)
+     (build-open-bracket-spec "#\\" 1 #\[)
+     (build-open-bracket-spec "#\\a" 1 #\[)))
+  
   
   (send-sexp-to-mred `(send (make-object frame:basic% "dummy to trick frame group") show #t))
   (wait-for-frame "dummy to trick frame group")
