@@ -119,6 +119,7 @@
      (build-open-bracket-spec "(f let (" 8 #\()
      (build-open-bracket-spec "(let (" 6 #\[)
      (build-open-bracket-spec "(let (" 5 #\()
+     (build-open-bracket-spec "(provide/contract " 18 #\[)
      (build-open-bracket-spec "(kond " 5 #\()
      (build-open-bracket-spec "(cond " 5 #\[)
      (build-open-bracket-spec "(let ([]" 8 #\[)
@@ -134,7 +135,8 @@
      (build-open-bracket-spec "(let (" 6 #\[)
      (build-open-bracket-spec "(new x% " 8 #\[)
      (build-open-bracket-spec "#\\" 1 #\[)
-     (build-open-bracket-spec "#\\a" 1 #\[)))
+     (build-open-bracket-spec "#\\a" 1 #\[)
+     (build-open-bracket-spec "(let ([let (" 12 #\()))
   
   
   (send-sexp-to-mred `(send (make-object frame:basic% "dummy to trick frame group") show #t))

@@ -1243,7 +1243,10 @@
                         ;; there is a sexp before this, but it isn't parenthesized.
                         ;; if it is the `cond' keyword, we get a square bracket. otherwise not.
                         (if (and (beginning-of-sequence? text backward-match)
-                                 (text-between-equal? "cond" text backward-match before-whitespace-pos))
+                                 (ormap
+                                  (λ (x)
+                                    (text-between-equal? x text backward-match before-whitespace-pos))
+                                  '("cond" "provide/contract")))
                             #\[
                             #\()]))]
                   [(not (zero? before-whitespace-pos))
@@ -1275,13 +1278,16 @@
                         #\(]))]
                   [else #\(])))))
       
+      ;; beginning-of-sequence? : text number -> boolean 
+      ;; determines if this position is at the beginning of a sequence
+      ;; that begins with a parenthesis.
       (define (beginning-of-sequence? text start)
         (let ([before-space (send text skip-whitespace start 'backward #t)])
           (cond
             [(zero? before-space) #t]
             [else
-             (member (send text get-character (- before-space 1))
-                     '(#\( #\[ #\{))])))
+             (equal? (send text get-character (- before-space 1)) 
+                     #\()])))
       
       (define (text-between-equal? str text start end)
         (and (= (string-length str) (- end start))
