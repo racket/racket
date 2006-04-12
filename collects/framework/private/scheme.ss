@@ -974,14 +974,15 @@
                     
           (inherit is-frozen? is-stopped?)
           (define/public (rewrite-square-paren)
-            (insert (cond
-                      [(or (not (preferences:get 'framework:fixup-parens))
-                           (is-frozen?)
-                           (is-stopped?))
-                       #\[]
-                      [else (choose-paren this (get-start-position))])
-                    (get-start-position)
-                    (get-end-position)))
+            (cond
+              [(or (not (preferences:get 'framework:fixup-parens))
+                   (is-frozen?)
+                   (is-stopped?))
+               (insert #\[
+                       (get-start-position)
+                       (get-end-position))]
+              [else 
+               (insert-paren this)]))
           
           (super-new)))
 
@@ -1226,9 +1227,14 @@
       ;; choose-paren : scheme-text number -> character
       ;; returns the character to replace a #\[ with, based
       ;; on the context where it is typed in.
-      (define (choose-paren text pos)
-        (if (memq (send text classify-position pos) '(string error comment symbol constant))
-            #\[
+      (define (insert-paren text)
+        (let* ([pos (send text get-start-position)]
+               [change-to
+                (λ (c)
+                  (send text insert c pos (+ pos 1)))])
+          (send text begin-edit-sequence)
+          (send text insert #\[ pos (send text get-end-position))
+          (when (eq? (send text classify-position pos) 'parenthesis)
             (let* ([before-whitespace-pos (send text skip-whitespace pos 'backward #t)]
                    [backward-match (send text backward-match before-whitespace-pos 0)])
               (let ([b-m-char (and (number? backward-match) (send text get-character backward-match))])
@@ -1246,20 +1252,19 @@
                                                   text
                                                   backward-match2
                                                   before-whitespace-pos2))
-                        #\[]
+                        (void)]
                        [(member b-m-char '(#\( #\[ #\{))
                         ;; found a "sibling" parenthesized sequence. use the parens it uses.
-                        b-m-char]
+                        (change-to b-m-char)]
                        [else
                         ;; there is a sexp before this, but it isn't parenthesized.
                         ;; if it is the `cond' keyword, we get a square bracket. otherwise not.
-                        (if (and (beginning-of-sequence? text backward-match)
-                                 (ormap
-                                  (λ (x)
-                                    (text-between-equal? x text backward-match before-whitespace-pos))
-                                  '("cond" "provide/contract")))
-                            #\[
-                            #\()]))]
+                        (unless (and (beginning-of-sequence? text backward-match)
+                                     (ormap
+                                      (λ (x)
+                                        (text-between-equal? x text backward-match before-whitespace-pos))
+                                      '("cond" "provide/contract")))
+                          (change-to #\())]))]
                   [(not (zero? before-whitespace-pos))
                    ;; this is the first thing in the sequence
                    ;; pop out one layer and look for a keyword.
@@ -1268,11 +1273,16 @@
                    (let ([b-w-p-char (send text get-character (- before-whitespace-pos 1))])
                      (cond
                        [(equal? b-w-p-char #\()
-                        (let* ([second-before-whitespace-pos (send text skip-whitespace (- before-whitespace-pos 1) 'backward #t)]
-                               [second-backwards-match (send text backward-match second-before-whitespace-pos 0)])
+                        (let* ([second-before-whitespace-pos (send text skip-whitespace 
+                                                                   (- before-whitespace-pos 1)
+                                                                   'backward
+                                                                   #t)]
+                               [second-backwards-match (send text backward-match
+                                                             second-before-whitespace-pos
+                                                             0)])
                           (cond
                             [(not second-backwards-match)
-                             #\(]
+                             (change-to #\()]
                             [(and (beginning-of-sequence? text second-backwards-match)
                                   (ormap (λ (x) (text-between-equal? x
                                                                      text
@@ -1282,12 +1292,14 @@
                                            "let*" "let-values" "let-syntax" "let-struct" "let-syntaxes"
                                            "letrec"
                                            "letrec-syntaxes" "letrec-syntaxes+values" "letrec-values")))
-                             #\[]
+                             (void)]
                             [else
-                             #\(]))]
+                             (change-to #\()]))]
                        [else 
-                        #\(]))]
-                  [else #\(])))))
+                        (change-to #\()]))]
+                  [else 
+                   (change-to #\()]))))
+          (send text end-edit-sequence)))
       
       ;; beginning-of-sequence? : text number -> boolean 
       ;; determines if this position is at the beginning of a sequence

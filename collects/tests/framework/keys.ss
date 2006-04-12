@@ -99,9 +99,9 @@
                                    (substring str pos (string-length str)))
                     (+ pos 1)
                     (+ pos 1))
-                   (list (list char))
-                   (list (list char))
-                   (list (list char))))
+                   (list (list #\[))
+                   (list (list #\[))
+                   (list (list #\[))))
   
   (define scheme-specs
     (list 
@@ -130,13 +130,14 @@
      (build-open-bracket-spec "\"" 1 #\[)
      (build-open-bracket-spec "\"\"" 1 #\[)
      (build-open-bracket-spec "||" 1 #\[)
-     (build-open-bracket-spec "ab" 1 #\[)
      (build-open-bracket-spec "" 0 #\()
      (build-open-bracket-spec "(let (" 6 #\[)
      (build-open-bracket-spec "(new x% " 8 #\[)
-     (build-open-bracket-spec "#\\" 1 #\[)
-     (build-open-bracket-spec "#\\a" 1 #\[)
-     (build-open-bracket-spec "(let ([let (" 12 #\()))
+     (build-open-bracket-spec "#\\" 2 #\[)
+     (build-open-bracket-spec "#\\a" 2 #\[)
+     (build-open-bracket-spec "(let ([let (" 12 #\()
+     (build-open-bracket-spec "ab" 1 #\()
+     (build-open-bracket-spec "|ab|" 2 #\[)))
   
   
   (send-sexp-to-mred `(send (make-object frame:basic% "dummy to trick frame group") show #t))
@@ -152,7 +153,6 @@
            [after (key-spec-after key-spec)]
            [process-key
             (lambda (key)
-              (printf "process-key.1 ~s\n" key)
               (let ([text-expect (buff-spec-string after)]
                     [start-expect (buff-spec-start after)]
                     [end-expect (buff-spec-end after)])
@@ -169,15 +169,10 @@
       (for-each process-key keys)))
   
   (define (test-specs frame-name frame-class specs)
-    (printf "test-specs.1\n")
     (send-sexp-to-mred `(send (make-object ,frame-class ,frame-name) show #t))
-    (printf "test-specs.2\n")
     (wait-for-frame frame-name)
-    (printf "test-specs.3\n")
     (for-each test-key specs)
-    (printf "test-specs.4\n")
-    (send-sexp-to-mred `(send (get-top-level-focus-window) close))
-    (printf "test-specs.5\n"))
+    (send-sexp-to-mred `(send (get-top-level-focus-window) close)))
   
   (test-specs "global keybingings test" 'frame:text% global-specs)
   (test-specs "scheme mode keybindings test" 
