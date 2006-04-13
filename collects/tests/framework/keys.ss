@@ -137,7 +137,9 @@
      (build-open-bracket-spec "#\\a" 2 #\[)
      (build-open-bracket-spec "(let ([let (" 12 #\()
      (build-open-bracket-spec "ab" 1 #\()
-     (build-open-bracket-spec "|ab|" 2 #\[)))
+     (build-open-bracket-spec "|ab|" 2 #\[)
+     (build-open-bracket-spec "(let loop " 10 #\()
+     (build-open-bracket-spec "(let loop (" 11 #\[)))
   
   
   (send-sexp-to-mred `(send (make-object frame:basic% "dummy to trick frame group") show #t))

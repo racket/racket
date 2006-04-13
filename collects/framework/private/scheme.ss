@@ -1268,8 +1268,6 @@
                   [(not (zero? before-whitespace-pos))
                    ;; this is the first thing in the sequence
                    ;; pop out one layer and look for a keyword.
-                   ;; if we find a let<mumble> keyword, we get a square bracket, 
-                   ;; otherwise a round paren
                    (let ([b-w-p-char (send text get-character (- before-whitespace-pos 1))])
                      (cond
                        [(equal? b-w-p-char #\()
@@ -1292,9 +1290,28 @@
                                            "let*" "let-values" "let-syntax" "let-struct" "let-syntaxes"
                                            "letrec"
                                            "letrec-syntaxes" "letrec-syntaxes+values" "letrec-values")))
+                             ;; we found a let<mumble> keyword, so we get a square bracket
                              (void)]
                             [else
-                             (change-to #\()]))]
+                             ;; go back one more sexp in the same row, looking for `let loop' pattern
+                             (let* ([second-before-whitespace-pos2 (send text skip-whitespace 
+                                                                         second-backwards-match
+                                                                         'backward
+                                                                         #t)]
+                                    [second-backwards-match2 (send text backward-match
+                                                                   second-before-whitespace-pos2
+                                                                   0)])
+                               (cond
+                                 [(and second-backwards-match2
+                                       (text-between-equal? "let" 
+                                                            text
+                                                            second-backwards-match2
+                                                            second-before-whitespace-pos2))
+                                  ;; found the `(let loop (' so we keep the [
+                                  (void)]
+                                 [else
+                                  ;; otherwise, round.
+                                  (change-to #\()]))]))]
                        [else 
                         (change-to #\()]))]
                   [else 
