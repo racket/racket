@@ -375,9 +375,11 @@
      :st-err: <= (lambda/kw (x #:body x #:allow-other-keys) 1)
      :st-err: <= (lambda/kw (x #:optional ()) 1)
      :st-err: <= (lambda/kw (x #:optional (x y z)) 1)
-     :st-err: <= (lambda/kw (x #:other-keys z) 1)
-     :st-err: <= (lambda/kw (x #:other-keys+body z) 1)
-     :st-err: <= (lambda/kw (x #:all-keys z) 1)
+     ;; :st-err: <= (lambda/kw (x #:other-keys z) 1)      <-- these are all
+     ;; :st-err: <= (lambda/kw (x #:other-keys+body z) 1) <-- fine!
+     ;; :st-err: <= (lambda/kw (x #:all-keys z) 1)        <-- (see below)
+     :st-err: <= (lambda/kw (x #:other-keys z #:forbid-other-keys) 1)
+     :st-err: <= (lambda/kw (x #:all-keys   z #:forbid-other-keys) 1)
      :st-err: <= (lambda/kw (x #:key y #:allow-other-keys z) 1)
      :st-err: <= (lambda/kw (x #:key y #:forbid-body z) 1)
      :st-err: <= (lambda/kw (x #:key y #:allow-body #:rest r #:forbid-body) 1)
@@ -386,5 +388,13 @@
      :st-err: <= (lambda/kw (x #:key y z #:body (x)) x)
      :st-err: <= (lambda/kw (#:key a #:body r #:forbid-body) r)
      :st-err: <= (lambda/kw (#:key a #:other-keys r #:forbid-other-keys) r))
+
+  ;; it is ok to have no keys, and still specify all-keys etc
+  (let ([f (lambda/kw (x #:all-keys ak) (list x ak))])
+    (t (f 1)             => '(1 ())
+       (f 1 #:a 2)       => '(1 (#:a 2))
+       (f 1 #:a 2 #:b 3) => '(1 (#:a 2 #:b 3))
+       (f 1 #:a 2 #:a 3) => '(1 (#:a 2 #:a 3))
+       (f 1 #:a 2 #:a 3) => '(1 (#:a 2 #:a 3))))
 
   )

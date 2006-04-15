@@ -188,7 +188,7 @@
                 '()))]
            [opts (pop-formals #:optional)]
            [keys (pop-formals #:key)])
-      ;; now get all rest-like vars
+      ;; now get all rest-like vars and modes
       (let loop ([formals formals] [rests '()] [modes '()])
         (if (null? formals)
           (apply process-vars vars opts keys rests modes only-vars?)
@@ -197,12 +197,16 @@
             (cond [(memq k '(#:optional #:key))
                    (serror k-stx "misplaced ~a" k)]
                   [(memq k mode-keywords)
-                   (cond [(null? keys)
-                          (serror k-stx "cannot use without #:key arguments")]
-                         [(pair? (cdar formals))
-                          (serror (cadar formals)
-                                  "identifier following mode keyword ~a" k)]
-                         [else (loop (cdr formals) rests (cons k modes))])]
+                   (cond
+                    #; ;(*)
+                    ;; don't throw an error here, it still fine if used with
+                    ;; #:allow-other-keys (explicit or implicit), also below
+                    [(null? keys)
+                     (serror k-stx "cannot use without #:key arguments")]
+                    [(pair? (cdar formals))
+                     (serror (cadar formals)
+                             "identifier following mode keyword ~a" k)]
+                    [else (loop (cdr formals) rests (cons k modes))])]
                   [(not (memq k rest-like-kwds))
                    (serror k-stx "unknown meta keyword")]
                   [(assq k rests)
@@ -211,6 +215,9 @@
                    (serror k-stx "missing variable name")]
                   [(not (null? (cddar formals)))
                    (serror k-stx "too many variable names")]
+                  #; ;(*)
+                  ;; same as above: don't throw an error here, still fine if
+                  ;; used with #:allow-other-keys (explicit or implicit)
                   [(and (null? keys) (not (eq? #:rest k)))
                    (serror k-stx "cannot use without #:key arguments")]
                   [else (loop (cdr formals)
@@ -367,14 +374,24 @@
       (with-syntax ([body (make-rest-body expr)] [keys keys])
         #'(let* keys body)))
     ;; ------------------------------------------------------------------------
+    ;; more sanity tests (see commented code above -- search for "(*)")
+    (let ([r (or all-keys other-keys other-keys+body body rest)])
+      (when (and (not allow-other-keys?) (null? keys))
+        (when r (serror r "cannot use without #:key or #:allow-other-keys"))
+        (when allow-duplicate-keys?
+          (serror #f (string-append "cannot allow duplicate keys without"
+                                    " #:key or #:allow-other-keys"))))
+      (when (and allow-other-keys? (null? keys) (not r))
+        (serror #f "cannout allow other keys without using them in some way")))
+    ;; ------------------------------------------------------------------------
     ;; body generation starts here
     (cond
-     ;; no optionals or keys => plain lambda
-     [(and (null? opts) (null? keys))
+     ;; no optionals or keys (or other-keys) => plain lambda
+     [(and (null? opts) (null? keys) (not allow-other-keys?))
       (with-syntax ([vars (append! vars (or rest '()))] [expr expr])
         (syntax/loc stx (lambda vars expr)))]
      ;; no keys => make a case-lambda for optionals
-     [(null? keys)
+     [(and (null? keys) (not allow-other-keys?))
       (let ([clauses (make-opt-clauses expr (or rest '()))])
         (with-syntax ([name name] [clauses clauses])
           (syntax/loc stx (letrec ([name (case-lambda . clauses)]) name))))]
