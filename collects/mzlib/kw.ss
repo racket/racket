@@ -410,7 +410,17 @@
         (syntax/loc stx (lambda vars (let* ([optvar optexpr] ...) body))))]))
   (syntax-case stx ()
     [(_ formals expr0 expr ...)
-     (generate-body #'formals #'(let () expr0 expr ...))]))
+     ;; check if there are only identifiers, and save the whole mess if so
+     (if (let loop ([xs #'formals])
+           (cond [(syntax? xs) (loop (syntax-e xs))]
+                 [(symbol? xs) #t]
+                 [(null? xs)   #t]
+                 [(not (pair? xs)) #f]
+                 [(symbol? (if (syntax? (car xs)) (syntax-e (car xs)) (car xs)))
+                  (loop (cdr xs))]
+                 [else #f]))
+       #'(lambda formals expr0 expr ...)
+       (generate-body #'formals #'(let () expr0 expr ...)))]))
 
 (provide define/kw)
 (define-syntax (define/kw stx)
