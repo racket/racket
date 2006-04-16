@@ -1287,9 +1287,11 @@
                                                                      second-backwards-match
                                                                      second-before-whitespace-pos))
                                          '("let" 
-                                           "let*" "let-values" "let-syntax" "let-struct" "let-syntaxes"
+                                           "let*" "let-values" "let*-values"
+                                           "let-syntax" "let-struct" "let-syntaxes"
                                            "letrec"
-                                           "letrec-syntaxes" "letrec-syntaxes+values" "letrec-values")))
+                                           "letrec-syntaxes" "letrec-syntaxes+values" "letrec-values"
+                                           "parameterize")))
                              ;; we found a let<mumble> keyword, so we get a square bracket
                              (void)]
                             [else
