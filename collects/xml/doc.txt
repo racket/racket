@@ -46,7 +46,7 @@ Functions
 
        Any non-characters other than eof read from the input-port will
        appear in the document content.  Such special values may only appear
-       where XML content may.  See make-custom-input-port for information
+       where XML content may.  See make-input-port for information
        about creating ports that return non-character values.
        
 > read-xml/element : [Input-port] -> Element
