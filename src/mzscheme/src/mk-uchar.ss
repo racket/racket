@@ -582,6 +582,7 @@
 (printf "  for (i = 0; i < ~a; i++) { ~n" hi-count)
 (printf "    scheme_uchar_table[i] = udata;~n")
 (printf "    scheme_uchar_cases_table[i] = udata_cases;~n")
+(printf "    scheme_uchar_cats_table[i] = udata_cats;~n")
 (printf "  }~n")
 (printf "~n")
 (define (print-init top vectors suffix)

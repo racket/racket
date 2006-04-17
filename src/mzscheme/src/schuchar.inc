@@ -3992,6 +3992,7 @@ static void init_uchar_table(void)
   for (i = 0; i < 8192; i++) { 
     scheme_uchar_table[i] = udata;
     scheme_uchar_cases_table[i] = udata_cases;
+    scheme_uchar_cats_table[i] = udata_cats;
   }
 
   scheme_uchar_table[0] = udata + 256;

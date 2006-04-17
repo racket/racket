@@ -407,7 +407,7 @@ static Scheme_Object *char_general_category (int argc, Scheme_Object *argv[])
   cat = scheme_general_category(c);
   if (!general_category_symbols[cat]) {
     Scheme_Object *s;
-    s = scheme_make_symbol(general_category_names[cat]);
+    s = scheme_intern_symbol(general_category_names[cat]);
     general_category_symbols[cat] = s;
   }
 
