@@ -59,7 +59,7 @@
          (callback (lambda (c e)
                      (set! face-eyebrow-kind (list-ref choices (send c get-selection)))
                      (new-face-callback)))))
-  (let ([choices '(plain narrow medium large huge absurd grimace oh tongue)])
+  (let ([choices '(plain narrow medium large huge grimace oh tongue)])
     (new choice%
          (label "Mouth")
          (choices (map symbol->string choices)) 
