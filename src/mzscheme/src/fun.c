@@ -3119,8 +3119,13 @@ static Scheme_Saved_Stack *copy_out_runstack(Scheme_Thread *p,
   saved->type = scheme_rt_saved_stack;
 #endif
   if (share_from && (share_from->ss.runstack_start == runstack_start)) {
-    /* Copy just the difference between share_from's runstack and current runstack */
+    /* Copy just the difference between share_from's runstack and current runstack... */
     size = (share_from->ss.runstack XFORM_OK_MINUS runstack);
+    /* But add one, because call/cc takes one argument. If there's not one
+       move value on the stack, then call/cc must have received its argument
+       from elsewhere. */
+    if ((share_from->ss.runstack XFORM_OK_MINUS runstack_start) < p->runstack_size)
+      size++;
   } else {
     size = p->runstack_size - (runstack XFORM_OK_MINUS runstack_start);
   }
@@ -3563,10 +3568,14 @@ internal_call_cc (int argc, Scheme_Object *argv[])
 	  /* Copy shared part in: */
 	  sub_cont = sub_cont->buf.cont;
 	  size = sub_cont->runstack_copied->runstack_size;
-	  memcpy(MZ_RUNSTACK XFORM_OK_PLUS done, 
-		 sub_cont->runstack_copied->runstack_start, 
-		 size * sizeof(Scheme_Object *));
-	  done += size;
+	  if (size) {
+	    /* Skip the first item, since that's the call/cc argument,
+	       which we don't want from the outer continuation. */
+	    memcpy(MZ_RUNSTACK XFORM_OK_PLUS done, 
+		   sub_cont->runstack_copied->runstack_start + 1, 
+		   (size - 1) * sizeof(Scheme_Object *));
+	    done += (size - 1);
+	  }
 	} else
 	  break;
       }

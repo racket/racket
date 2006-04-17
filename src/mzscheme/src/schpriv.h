@@ -611,6 +611,7 @@ Scheme_Object *scheme_stx_module_name(Scheme_Object **name, long phase,
 				      Scheme_Object **nominal_modidx,
 				      Scheme_Object **nominal_name,
 				      int *mod_phase);
+Scheme_Object *scheme_stx_moduleless_env(Scheme_Object *a, long phase);
 int scheme_stx_parallel_is_used(Scheme_Object *sym, Scheme_Object *stx);
 
 int scheme_stx_bound_eq(Scheme_Object *a, Scheme_Object *b, long phase);
@@ -1973,7 +1974,7 @@ void scheme_validate_toplevel(Scheme_Object *expr, Mz_CPort *port,
 void scheme_validate_boxenv(int pos, Mz_CPort *port,
 			    char *stack, int depth, int delta);
 
-#define TRACK_ILL_FORMED_CATCH_LINES 0
+#define TRACK_ILL_FORMED_CATCH_LINES 1
 #if TRACK_ILL_FORMED_CATCH_LINES
 void scheme_ill_formed(Mz_CPort *port, const char *file, int line);
 # define scheme_ill_formed_code(port) scheme_ill_formed(port, __FILE__, __LINE__)
@@ -2114,7 +2115,7 @@ void scheme_add_global_keyword_symbol(Scheme_Object *name, Scheme_Object *v, Sch
 void scheme_add_global_constant(const char *name, Scheme_Object *v, Scheme_Env *env);
 void scheme_add_global_constant_symbol(Scheme_Object *name, Scheme_Object *v, Scheme_Env *env);
 
-Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, int is_def);
+Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Object *bdg, int is_def);
 int scheme_tl_id_is_sym_used(Scheme_Hash_Table *marked_names, Scheme_Object *sym);
 
 Scheme_Object *scheme_sys_wraps(Scheme_Comp_Env *env);
@@ -2445,6 +2446,8 @@ void scheme_count_generic(Scheme_Object *o, long *s, long *e, Scheme_Hash_Table 
 Scheme_Object *scheme_checked_car(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_cdr(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_vector_ref(int argc, Scheme_Object **argv);
+Scheme_Object *scheme_checked_string_ref (int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_checked_byte_string_ref (int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_checked_syntax_e(int argc, Scheme_Object **argv);
 
 void scheme_set_root_param(int p, Scheme_Object *v);

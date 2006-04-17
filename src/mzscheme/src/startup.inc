@@ -2596,7 +2596,7 @@
 "(string->immutable-string"
 " (format \"load/cd: cannot open a directory: ~s\" n))"
 "(current-continuation-marks)))"
-"(if(not(bytes? base))"
+"(if(not(path? base))"
 "(load n)"
 "(begin"
 "(if(not(directory-exists? base))"

@@ -418,10 +418,6 @@ scheme_lookup_global
 scheme_global_bucket
 scheme_global_keyword_bucket
 scheme_module_bucket
-scheme_exptime_global_bucket
-scheme_exptime_expdef_global_bucket
-scheme_exptime_module_bucket
-scheme_exptime_expdef_module_bucket
 scheme_builtin_value
 scheme_set_global_bucket
 scheme_install_macro

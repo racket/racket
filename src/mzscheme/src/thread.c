@@ -220,7 +220,7 @@ extern MZ_DLLIMPORT long GC_get_memory_use();
 
 typedef struct Thread_Cell {
   Scheme_Object so;
-  char inherited;
+  char inherited, assigned;
   Scheme_Object *def_val;
   /* A thread's thread_cell table maps cells to keys weakly.
      This table maps keys to values weakly. The two weak
@@ -5391,15 +5391,19 @@ Scheme_Object *scheme_thread_cell_get(Scheme_Object *cell, Scheme_Thread_Cell_Ta
 {
   Scheme_Object *v;
 
-  v = scheme_lookup_in_table(cells, (const char *)cell);
-  if (v)
-    return scheme_ephemeron_value(v);
-  else
-    return ((Thread_Cell *)cell)->def_val;
+  if (((Thread_Cell *)cell)->assigned) {
+    v = scheme_lookup_in_table(cells, (const char *)cell);
+    if (v)
+      return scheme_ephemeron_value(v);
+  }
+
+  return ((Thread_Cell *)cell)->def_val;
 }
 
 void scheme_thread_cell_set(Scheme_Object *cell, Scheme_Thread_Cell_Table *cells, Scheme_Object *v)
 {
+  if (!((Thread_Cell *)cell)->assigned)
+    ((Thread_Cell *)cell)->assigned = 1;
   v = scheme_make_ephemeron(cell, v);
   scheme_add_to_table(cells, (const char *)cell, (void *)v, 0);
 }

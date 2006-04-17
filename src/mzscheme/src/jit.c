@@ -78,6 +78,9 @@ END_XFORM_ARITH;
 #define WORDS_TO_BYTES(x) ((x) << JIT_LOG_WORD_SIZE)
 #define MAX_TRY_SHIFT 30
 
+/* a mzchar is an int: */
+#define LOG_MZCHAR_SIZE 2
+
 #if defined(MZ_USE_JIT_PPC) || defined(MZ_USE_JIT_X86_64)
 # define NEED_LONG_JUMPS
 #endif
@@ -105,6 +108,8 @@ static void *call_original_binary_arith_for_branch_code;
 static void *call_original_binary_rev_arith_for_branch_code;
 static void *bad_car_code, *bad_cdr_code;
 static void *vector_ref_code, *vector_ref_check_index_code;
+static void *string_ref_code, *string_ref_check_index_code;
+static void *bytes_ref_code, *bytes_ref_check_index_code;
 static void *syntax_e_code;
 static void *on_demand_jit_code;
 static void *on_demand_jit_arity_code;
@@ -2557,8 +2562,18 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     } else if (IS_NAMED_PRIM(rator, "arithmetic-shift")) {
       generate_arith(jitter, rator, app->rand1, app->rand2, 2, 6, 0, 0, NULL, 1);
       return 1;
-    } else if (IS_NAMED_PRIM(rator, "vector-ref")) {
+    } else if (IS_NAMED_PRIM(rator, "vector-ref")
+	       || IS_NAMED_PRIM(rator, "string-ref")
+	       || IS_NAMED_PRIM(rator, "bytes-ref")) {
       int simple;
+      int which;
+
+      if (IS_NAMED_PRIM(rator, "vector-ref"))
+	which = 0;
+      else if (IS_NAMED_PRIM(rator, "string-ref"))
+	which = 1;
+      else
+	which = 2;
 
       LOG_IT(("inlined vector-ref?\n"));
 
@@ -2590,14 +2605,31 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 	jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
 	mz_runstack_popped(jitter, 1);
 	
-	(void)jit_calli(vector_ref_check_index_code);
+	if (!which) {
+	  (void)jit_calli(vector_ref_check_index_code);
+	} else if (which == 1) {
+	  (void)jit_calli(string_ref_check_index_code);
+	} else {
+	  (void)jit_calli(bytes_ref_check_index_code);
+	}
       } else {
 	long offset;
 	offset = SCHEME_INT_VAL(app->rand2);
 	(void)jit_movi_p(JIT_R1, offset);
-	offset = ((int)&SCHEME_VEC_ELS(0x0)) + WORDS_TO_BYTES(SCHEME_INT_VAL(app->rand2));
+	if (!which)
+	  offset = ((int)&SCHEME_VEC_ELS(0x0)) + WORDS_TO_BYTES(SCHEME_INT_VAL(app->rand2));
+	else if (which == 1)
+	  offset = SCHEME_INT_VAL(app->rand2) << LOG_MZCHAR_SIZE;
+	else
+	  offset = SCHEME_INT_VAL(app->rand2);
 	jit_movi_l(JIT_V1, offset);
-	(void)jit_calli(vector_ref_code);
+	if (!which) {
+	  (void)jit_calli(vector_ref_code);
+	} else if (which == 1) {
+	  (void)jit_calli(string_ref_code);
+	} else {
+	  (void)jit_calli(bytes_ref_code);
+	}
       }
 
       if (simple)
@@ -3006,8 +3038,8 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  jit_ldi_p(JIT_R0, &scheme_current_thread);
 	  CHECK_LIMIT();
 	  jit_ldxi_i(JIT_V1, JIT_R0, &((Scheme_Thread *)0x0)->ku.multiple.count);
-	  jit_lshi_i(JIT_V1, JIT_V1, 0x1);
-	  jit_ori_i(JIT_V1, JIT_V1, 0x1);
+	  jit_lshi_l(JIT_V1, JIT_V1, 0x1);
+	  jit_ori_l(JIT_V1, JIT_V1, 0x1);
 	  mz_pushr_p(JIT_V1);
 	  jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Thread *)0x0)->ku.multiple.array);
 	  mz_pushr_p(JIT_V1); /* !!!!!!!! */
@@ -3743,7 +3775,7 @@ static int generate_function_getarg(mz_jit_state *jitter, int has_rest, int num_
 
 static int do_generate_common(mz_jit_state *jitter, void *_data)
 {
-  int in, i;
+  int in, i, ii;
   GC_CAN_IGNORE jit_insn *ref, *ref2;
 
   /* *** check_arity_code *** */
@@ -4043,8 +4075,8 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_sti_p(&stack_cache_stack_pos, JIT_R2);
   CHECK_LIMIT();
   /* Extract old return address and jump to it */
-  jit_lshi_i(JIT_R1, JIT_R1, (JIT_LOG_WORD_SIZE + 2));
-  jit_addi_i(JIT_R1, JIT_R1, (int)&((Stack_Cache_Elem *)0x0)->orig_return_address);
+  jit_lshi_l(JIT_R1, JIT_R1, (JIT_LOG_WORD_SIZE + 2));
+  jit_addi_l(JIT_R1, JIT_R1, (int)&((Stack_Cache_Elem *)0x0)->orig_return_address);
   (void)jit_movi_p(JIT_R2, &stack_cache_stack);
   jit_ldxr_p(JIT_R2, JIT_R2, JIT_R1);
   jit_movr_p(JIT_RET, JIT_R0);
@@ -4054,63 +4086,140 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_jmpr(JIT_R2);
   CHECK_LIMIT();
 
-  /* *** vector_ref_[check_index_]code *** */
-  /* R0 is vector, R1 is index (Scheme number in check-index mode), 
-     V1 is vector offset in non-check-index mode */
-  for (i = 0; i < 2; i++) {
-    jit_insn *ref, *reffail;
+  /* *** {vector,string,bytes}_ref_[check_index_]code *** */
+  /* R0 is vector/string/bytes, R1 is index (Scheme number in check-index mode), 
+     V1 is vector/string/bytes offset in non-check-index mode (and for
+     vector, it includes the offset to the start of the elements array. */
+  for (ii = 0; ii < 3; ii++) {
+    for (i = 0; i < 2; i++) {
+      jit_insn *ref, *reffail;
+      Scheme_Type ty;
+      int offset, count_offset, log_elem_size;
 
-    if (!i) {
-      vector_ref_code = jit_get_ip().ptr;
-    } else {
-      vector_ref_check_index_code = jit_get_ip().ptr;
-    }
+      switch (ii) {
+      case 0:
+	ty = scheme_vector_type;
+	offset = (int)&SCHEME_VEC_ELS(0x0);
+	count_offset = (int)&SCHEME_VEC_SIZE(0x0);
+	log_elem_size = JIT_LOG_WORD_SIZE;
+	if (!i) {
+	  vector_ref_code = jit_get_ip().ptr;
+	} else {
+	  vector_ref_check_index_code = jit_get_ip().ptr;
+	}
+	break;
+      case 1:
+	ty = scheme_char_string_type;
+	offset = (int)&SCHEME_CHAR_STR_VAL(0x0);
+	count_offset = (int)&SCHEME_CHAR_STRLEN_VAL(0x0);
+	log_elem_size = LOG_MZCHAR_SIZE;
+	if (!i) {
+	  string_ref_code = jit_get_ip().ptr;
+	} else {
+	  string_ref_check_index_code = jit_get_ip().ptr;
+	}
+	break;
+      default:
+      case 2:
+	ty = scheme_byte_string_type;
+	offset = (int)&SCHEME_BYTE_STR_VAL(0x0);
+	count_offset = (int)&SCHEME_BYTE_STRLEN_VAL(0x0);
+	log_elem_size = 0;
+	if (!i) {
+	  bytes_ref_code = jit_get_ip().ptr;
+	} else {
+	  bytes_ref_check_index_code = jit_get_ip().ptr;
+	}
+	break;
+      }
 
-    __START_SHORT_JUMPS__(1);
+      __START_SHORT_JUMPS__(1);
 
-    mz_prolog(JIT_R2);
+      mz_prolog(JIT_R2);
 
-    ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
-    CHECK_LIMIT();
+      ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
+      CHECK_LIMIT();
 
-    reffail = _jit.x.pc;
-    if (!i) {
-      jit_lshi_ul(JIT_R1, JIT_R1, 1);
-      jit_ori_ul(JIT_R1, JIT_R1, 0x1);
-    }
-    jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
-    jit_str_p(JIT_RUNSTACK, JIT_R0);
-    jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R1);
-    jit_movi_i(JIT_R1, 2);
-    JIT_UPDATE_THREAD_RSPTR();
-    jit_prepare(2);
-    jit_pusharg_p(JIT_RUNSTACK);
-    jit_pusharg_i(JIT_R1);
-    (void)mz_finish(scheme_checked_vector_ref);
-    /* doesn't return */
-    CHECK_LIMIT();
+      reffail = _jit.x.pc;
+      if (!i) {
+	jit_lshi_ul(JIT_R1, JIT_R1, 1);
+	jit_ori_ul(JIT_R1, JIT_R1, 0x1);
+      }
+      jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
+      jit_str_p(JIT_RUNSTACK, JIT_R0);
+      jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R1);
+      jit_movi_i(JIT_R1, 2);
+      JIT_UPDATE_THREAD_RSPTR();
+      jit_prepare(2);
+      jit_pusharg_p(JIT_RUNSTACK);
+      jit_pusharg_i(JIT_R1);
+      switch (ii) {
+      case 0:
+	(void)mz_finish(scheme_checked_vector_ref);
+	break;
+      case 1:
+	(void)mz_finish(scheme_checked_string_ref);
+	/* might return, if char was outside Latin-1 */
+	jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
+	JIT_UPDATE_THREAD_RSPTR();
+	jit_retval(JIT_R0);
+	mz_epilog(JIT_R2);
+	break;
+      case 2:
+	(void)mz_finish(scheme_checked_byte_string_ref);
+	break;
+      }
+      /* doesn't return */
+      CHECK_LIMIT();
     
-    mz_patch_branch(ref);
-    if (i) {
-      (void)jit_bmci_ul(reffail, JIT_R1, 0x1);
-      (void)jit_blei_l(reffail, JIT_R1, 0x0);
-    }
-    jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
-    (void)jit_bnei_i(reffail, JIT_R2, scheme_vector_type);
-    jit_ldxi_i(JIT_R2, JIT_R0, &SCHEME_VEC_SIZE(0x0));
-    if (i) {
-      jit_rshi_ul(JIT_V1, JIT_R1, 1);
-      (void)jit_bler_ul(reffail, JIT_R2, JIT_V1);
-      jit_lshi_ul(JIT_V1, JIT_V1, JIT_LOG_WORD_SIZE);
-      jit_addi_p(JIT_V1, JIT_V1, ((int)&SCHEME_VEC_ELS(0x0)));
-    } else {
-      (void)jit_bler_ul(reffail, JIT_R2, JIT_R1);
-    }
-    jit_ldxr_p(JIT_R0, JIT_R0, JIT_V1);
-    mz_epilog(JIT_R2);
-    CHECK_LIMIT();
+      mz_patch_branch(ref);
+      if (i) {
+	(void)jit_bmci_ul(reffail, JIT_R1, 0x1);
+	(void)jit_blei_l(reffail, JIT_R1, 0x0);
+      }
+      jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
+      (void)jit_bnei_i(reffail, JIT_R2, ty);
+      jit_ldxi_i(JIT_R2, JIT_R0, count_offset);
+      if (i) {
+	/* index from expression: */
+	jit_rshi_ul(JIT_V1, JIT_R1, 1);
+	(void)jit_bler_ul(reffail, JIT_R2, JIT_V1);
+	if (log_elem_size)
+	  jit_lshi_ul(JIT_V1, JIT_V1, log_elem_size);
+	if (!ii) /* vector */
+	  jit_addi_p(JIT_V1, JIT_V1, offset);
+      } else {
+	/* constant index supplied: */
+	(void)jit_bler_ul(reffail, JIT_R2, JIT_R1);
+      }
+      switch (ii) {
+      case 0:
+	jit_ldxr_p(JIT_R0, JIT_R0, JIT_V1);
+	break;
+      case 1:
+	jit_ldxi_p(JIT_R2, JIT_R0, offset);
+	jit_ldxr_i(JIT_R2, JIT_R2, JIT_V1);
+	/* Non-Latin-1 char: use slow path: */
+	jit_extr_i_l(JIT_R2, JIT_R2);
+	(void)jit_bgti_l(reffail, JIT_R2, 255);
+	/* Latin-1: extract from scheme_char_constants: */
+	jit_lshi_l(JIT_R2, JIT_R2, JIT_LOG_WORD_SIZE);
+	(void)jit_movi_p(JIT_R0, scheme_char_constants);
+	jit_ldxr_p(JIT_R0, JIT_R0, JIT_R2);
+	break;
+      case 2:
+	jit_ldxi_p(JIT_R0, JIT_R0, offset);
+	jit_ldxr_c(JIT_R0, JIT_R0, JIT_V1);
+	jit_extr_uc_ul(JIT_R0, JIT_R0);
+	jit_lshi_l(JIT_R0, JIT_R0, 0x1);
+	jit_ori_l(JIT_R0, JIT_R0, 0x1);
+	break;
+      }
+      mz_epilog(JIT_R2);
+      CHECK_LIMIT();
 
-    __END_SHORT_JUMPS__(1);
+      __END_SHORT_JUMPS__(1);
+    }
   }
 
   /* *** syntax_ecode *** */

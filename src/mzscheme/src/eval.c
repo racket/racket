@@ -3596,7 +3596,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
     /* If form is a marked name, then force #%top binding.
        This is so temporaries can be used as defined ids. */
     Scheme_Object *nm;
-    nm = scheme_tl_id_sym(env->genv, form, 0);
+    nm = scheme_tl_id_sym(env->genv, form, NULL, 0);
     if (!SAME_OBJ(nm, SCHEME_STX_VAL(form))) {
       stx = scheme_datum_to_syntax(top_symbol, scheme_false, scheme_sys_wraps(env), 0, 0);
 
@@ -3861,7 +3861,7 @@ static Scheme_Object *check_top(const char *when, Scheme_Object *form, Scheme_Co
     Scheme_Object *modidx, *symbol = c, *tl_id;
     int bad;
 
-    tl_id = scheme_tl_id_sym(env->genv, symbol, 0);
+    tl_id = scheme_tl_id_sym(env->genv, symbol, NULL, 0);
     if (NOT_SAME_OBJ(tl_id, SCHEME_STX_SYM(symbol))) {
       /* Since the module has a rename for this id, it's certainly defined. */
     } else {
@@ -3897,7 +3897,7 @@ top_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, 
 
   c = check_top(scheme_compile_stx_string, form, env);
 
-  c = scheme_tl_id_sym(env->genv, c, 0);
+  c = scheme_tl_id_sym(env->genv, c, NULL, 0);
 
   if (env->genv->module && !rec[drec].resolve_module_ids) {
     /* Self-reference in a module; need to remember the modidx.  Don't
@@ -6355,7 +6355,7 @@ scheme_make_lifted_defn(Scheme_Object *sys_wraps, Scheme_Object **_id, Scheme_Ob
   Scheme_Object *l;
 
   /* Registers marked id: */
-  scheme_tl_id_sym(env->genv, *_id, 2);
+  scheme_tl_id_sym(env->genv, *_id, scheme_false, 2);
 
   l = icons(scheme_datum_to_syntax(define_values_symbol, scheme_false, sys_wraps, 0, 0), 
 	    icons(scheme_make_immutable_pair(*_id, scheme_null),

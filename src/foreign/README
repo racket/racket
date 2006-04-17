@@ -1,0 +1,12 @@
+The copy of libffi for PLT Scheme has been changed in a few small
+ways:
+
+ * Added i386 Mac OS X support from the PyObjC project:
+     gcc/libffi/src/x86/ffi_darwin.c
+     gcc/libffi/src/x86/darwin.S
+   and changed ffi.c and sysv.S to #include these when __APPLE__
+   is defined.
+
+ * Added line to "configure" for i*86-*-darwin*
+
+ * Added line to "configure" for i*86-*-openbsd*

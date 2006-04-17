@@ -615,9 +615,30 @@ static void skip_certain_things(Scheme_Object *o, Scheme_Close_Custodian_Client 
 /*                        namespace constructors                          */
 /*========================================================================*/
 
+static void create_env_marked_names(Scheme_Env *e)
+{
+  Scheme_Hash_Table *mn;
+  Scheme_Object *rn;
+
+  /* Set up a rename table, in case an identifier with a let-binding
+     renaming ends up in a definition position: */
+
+  mn = scheme_make_hash_table(SCHEME_hash_ptr);
+  scheme_hash_set(mn, scheme_false, scheme_null);
+  e->marked_names = mn;
+
+  rn = scheme_make_module_rename(e->phase, mzMOD_RENAME_TOPLEVEL, mn);
+  e->rename = rn;
+}
+
 Scheme_Env *scheme_make_empty_env(void)
 {
-  return make_env(NULL, 0, 7);
+  Scheme_Env *e; 
+
+  e = make_env(NULL, 0, 7);
+  create_env_marked_names(e);
+
+  return e;
 }
 
 static Scheme_Env *make_env(Scheme_Env *base, int semi, int toplevel_size)
@@ -720,6 +741,9 @@ void scheme_prepare_exp_env(Scheme_Env *env)
 
     env->exp_env = eenv;
     eenv->template_env = env;
+
+    if (!env->module && !env->phase)
+      create_env_marked_names(eenv);
   }
 }
 
@@ -900,21 +924,6 @@ scheme_global_keyword_bucket(Scheme_Object *symbol, Scheme_Env *env)
   b = scheme_bucket_from_table(env->syntax, (char *)symbol);
     
   return b;
-}
-
-Scheme_Bucket *
-scheme_exptime_global_bucket(Scheme_Object *symbol, Scheme_Env *env)
-{
-  /* This is for mzc, but it can't be right. */
-  scheme_prepare_exp_env(env);
-  return scheme_global_bucket(symbol, env->exp_env);
-}
-
-Scheme_Bucket *
-scheme_exptime_expdef_global_bucket(Scheme_Object *symbol, Scheme_Env *env)
-{
-  scheme_prepare_exp_env(env);
-  return scheme_global_bucket(symbol, env->exp_env);
 }
 
 /********** Set **********/
@@ -1577,11 +1586,11 @@ Scheme_Object *scheme_hash_module_variable(Scheme_Env *env, Scheme_Object *modid
   return val;
 }
 
-Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, int is_def)
+Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Object *bdg, int is_def)
 /* The `env' argument can actually be a hash table. */
 {
-  Scheme_Object *marks = NULL, *sym, *map, *l, *a, *amarks, *m, *best_match, *cm;
-  int best_match_skipped, ms;
+  Scheme_Object *marks = NULL, *sym, *map, *l, *a, *amarks, *m, *best_match, *cm, *abdg;
+  int best_match_skipped, ms, one_mark;
   Scheme_Hash_Table *marked_names;
 
   sym = SCHEME_STX_SYM(id);
@@ -1599,8 +1608,10 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, int is_def)
     /* If we're defining, see if we need to create a table.  Getting
        marks is relatively expensive, but we only do this once per
        definition. */
+    if (!bdg)
+      bdg = scheme_stx_moduleless_env(id, 0 /* renames currently don't depend on phase */);
     marks = scheme_stx_extract_marks(id);
-    if (SCHEME_NULLP(marks))
+    if (SCHEME_NULLP(marks) && SCHEME_FALSEP(bdg))
       return sym;
   }
 
@@ -1608,7 +1619,7 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, int is_def)
     marked_names = scheme_make_hash_table(SCHEME_hash_ptr);
     env->marked_names = marked_names;
   }
-
+  
   map = scheme_hash_get(marked_names, sym);
 
   if (!map) {
@@ -1619,10 +1630,15 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, int is_def)
       map = scheme_null;
   }
 
+  if (!bdg) {
+    /* We need lexical binding, if any, too: */
+    bdg = scheme_stx_moduleless_env(id, 0 /* renames currently don't depend on phase */);
+  }
+
   if (!marks) {
     /* We really do need the marks. Get them. */
     marks = scheme_stx_extract_marks(id);
-    if (SCHEME_NULLP(marks))
+    if (SCHEME_NULLP(marks) && SCHEME_FALSEP(bdg))
       return sym;
   }
 
@@ -1633,43 +1649,57 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, int is_def)
        Since the list is otherwise marshaled into .zo, etc.,
        simplify by extracting just the mark: */
     marks = SCHEME_CAR(marks);
-  }
+    one_mark = 1;
+  } else
+    one_mark = 0;
+
+  if (!SCHEME_TRUEP(bdg))
+    bdg = NULL;
 
   /* Find a mapping that matches the longest tail of marks */
   for (l = map; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
     a = SCHEME_CAR(l);
     amarks = SCHEME_CAR(a);
-    if (is_def) {
-      if (scheme_equal(amarks, marks)) {
-	best_match = SCHEME_CDR(a);
-	break;
-      }
-    } else {
-      if (!SCHEME_PAIRP(marks)) {
-	/* To be better than nothing, could only match exactly: */
-	if (SAME_OBJ(amarks, marks)) {
+
+    if (SCHEME_VECTORP(amarks)) {
+      abdg = SCHEME_VEC_ELS(amarks)[1];
+      amarks = SCHEME_VEC_ELS(amarks)[0];
+    } else
+      abdg = NULL;
+
+    if (SAME_OBJ(abdg, bdg)) {
+      if (is_def) {
+	if (scheme_equal(amarks, marks)) {
 	  best_match = SCHEME_CDR(a);
-	  best_match_skipped = 0;
+	  break;
 	}
       } else {
-	/* amarks can match a tail of marks: */
-	for (m = marks, ms = 0; 
-	     SCHEME_PAIRP(m) && (ms < best_match_skipped);
-	     m = SCHEME_CDR(m), ms++) {
-
-	  cm = m;
-	  if (!SCHEME_PAIRP(amarks)) {
-	    /* If we're down to the last element
-	       of marks, then extract it to try to
-	       match the symbol amarks. */
-	    if (SCHEME_NULLP(SCHEME_CDR(m)))
-	      cm = SCHEME_CAR(m);
-	  }
-  
-	  if (scheme_equal(amarks, cm)) {
+	if (!SCHEME_PAIRP(marks)) {
+	  /* To be better than nothing, could only match exactly: */
+	  if (scheme_equal(amarks, marks)) {
 	    best_match = SCHEME_CDR(a);
-	    best_match_skipped = ms;
-	    break;
+	    best_match_skipped = 0;
+	  }
+	} else {
+	  /* amarks can match a tail of marks: */
+	  for (m = marks, ms = 0; 
+	       SCHEME_PAIRP(m) && (ms < best_match_skipped);
+	       m = SCHEME_CDR(m), ms++) {
+
+	    cm = m;
+	    if (!SCHEME_PAIRP(amarks)) {
+	      /* If we're down to the last element
+		 of marks, then extract it to try to
+		 match the symbol amarks. */
+	      if (SCHEME_NULLP(SCHEME_CDR(m)))
+		cm = SCHEME_CAR(m);
+	    }
+  
+	    if (scheme_equal(amarks, cm)) {
+	      best_match = SCHEME_CDR(a);
+	      best_match_skipped = ms;
+	      break;
+	    }
 	  }
 	}
       }
@@ -1741,6 +1771,12 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, int is_def)
 
 	/* Otherwise, increment counter and try again... */
       }
+    }
+    if (bdg) {
+      a = scheme_make_vector(2, NULL);
+      SCHEME_VEC_ELS(a)[0] = marks;
+      SCHEME_VEC_ELS(a)[1] = bdg;
+      marks = a;
     }
     a = scheme_make_pair(marks, best_match);
     map = scheme_make_pair(a, map);
@@ -2336,7 +2372,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     *_menv = genv;
   
   if (!modname && SCHEME_STXP(find_id))
-    find_global_id = scheme_tl_id_sym(env->genv, find_id, 0);
+    find_global_id = scheme_tl_id_sym(env->genv, find_id, NULL, 0);
   else
     find_global_id = find_id;
 

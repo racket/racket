@@ -162,7 +162,6 @@ static Scheme_Object *make_string (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_length (int argc, Scheme_Object *argv[]);
-static Scheme_Object *string_ref (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_set (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_eq (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_locale_eq (int argc, Scheme_Object *argv[]);
@@ -204,7 +203,6 @@ static Scheme_Object *byte_string (int argc, Scheme_Object *argv[]);
 static Scheme_Object *byte_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *byte_string_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *byte_string_length (int argc, Scheme_Object *argv[]);
-static Scheme_Object *byte_string_ref (int argc, Scheme_Object *argv[]);
 static Scheme_Object *byte_string_set (int argc, Scheme_Object *argv[]);
 static Scheme_Object *byte_string_eq (int argc, Scheme_Object *argv[]);
 static Scheme_Object *byte_string_lt (int argc, Scheme_Object *argv[]);
@@ -350,11 +348,11 @@ scheme_init_string (Scheme_Env *env)
 						      "string-length",
 						      1, 1, 1),
 			     env);
-  scheme_add_global_constant("string-ref",
-			     scheme_make_noncm_prim(string_ref,
-						    "string-ref",
-						    2, 2),
-			     env);
+
+  p = scheme_make_noncm_prim(scheme_checked_string_ref, "string-ref", 2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("string-ref", p, env);
+
   scheme_add_global_constant("string-set!",
 			     scheme_make_noncm_prim(string_set,
 						    "string-set!",
@@ -619,11 +617,11 @@ scheme_init_string (Scheme_Env *env)
 						      "bytes-length",
 						      1, 1, 1),
 			     env);
-  scheme_add_global_constant("bytes-ref",
-			     scheme_make_noncm_prim(byte_string_ref,
-						    "bytes-ref",
-						    2, 2),
-			     env);
+
+  p = scheme_make_noncm_prim(scheme_checked_byte_string_ref, "bytes-ref", 2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("bytes-ref", p, env);
+
   scheme_add_global_constant("bytes-set!",
 			     scheme_make_noncm_prim(byte_string_set,
 						    "bytes-set!",

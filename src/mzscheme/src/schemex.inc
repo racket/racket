@@ -467,10 +467,6 @@
   scheme_extension_table->scheme_global_bucket = scheme_global_bucket;
   scheme_extension_table->scheme_global_keyword_bucket = scheme_global_keyword_bucket;
   scheme_extension_table->scheme_module_bucket = scheme_module_bucket;
-  scheme_extension_table->scheme_exptime_global_bucket = scheme_exptime_global_bucket;
-  scheme_extension_table->scheme_exptime_expdef_global_bucket = scheme_exptime_expdef_global_bucket;
-  scheme_extension_table->scheme_exptime_module_bucket = scheme_exptime_module_bucket;
-  scheme_extension_table->scheme_exptime_expdef_module_bucket = scheme_exptime_expdef_module_bucket;
   scheme_extension_table->scheme_builtin_value = scheme_builtin_value;
   scheme_extension_table->scheme_set_global_bucket = scheme_set_global_bucket;
   scheme_extension_table->scheme_install_macro = scheme_install_macro;

@@ -692,10 +692,6 @@ Scheme_Object *(*scheme_lookup_global)(Scheme_Object *symbol, Scheme_Env *env);
 Scheme_Bucket *(*scheme_global_bucket)(Scheme_Object *symbol, Scheme_Env *env);
 Scheme_Bucket *(*scheme_global_keyword_bucket)(Scheme_Object *symbol, Scheme_Env *env);
 Scheme_Bucket *(*scheme_module_bucket)(Scheme_Object *mod, Scheme_Object *var, int pos, Scheme_Env *env);
-Scheme_Bucket *(*scheme_exptime_global_bucket)(Scheme_Object *symbol, Scheme_Env *env);
-Scheme_Bucket *(*scheme_exptime_expdef_global_bucket)(Scheme_Object *symbol, Scheme_Env *env);
-Scheme_Bucket *(*scheme_exptime_module_bucket)(Scheme_Object *mod, Scheme_Object *var, int pos, Scheme_Env *env);
-Scheme_Bucket *(*scheme_exptime_expdef_module_bucket)(Scheme_Object *mod, Scheme_Object *var, int pos, Scheme_Env *env);
 Scheme_Object *(*scheme_builtin_value)(const char *name); /* convenience */
 void (*scheme_set_global_bucket)(char *proc, Scheme_Bucket *var, Scheme_Object *val,
 			      int set_undef);

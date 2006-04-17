@@ -1941,7 +1941,7 @@ void scheme_clear_ephemerons()
   done_ephemerons = NULL;
 }
 
-extern MZ_DLLIMPORT void (*GC_custom_finalize)(void);
+extern MZ_DLLIMPORT void (*GC_custom_finalize)();
 
 void scheme_init_ephemerons(void)
 {

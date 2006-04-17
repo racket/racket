@@ -222,6 +222,8 @@ protected:
   friend class wxWindow;
   friend class wxPostScriptDC;
 
+  char need_x_set_font;
+
   void  Initialize(wxWindowDC_Xinit* init);
   void  Destroy(void);
 

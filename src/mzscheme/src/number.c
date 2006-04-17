@@ -264,15 +264,15 @@ scheme_init_number (Scheme_Env *env)
 						      1, 1, 1),
 			     env);
 
-  p = scheme_make_folding_prim(scheme_bitwise_and, "bitwise-and", 1, -1, 1);
+  p = scheme_make_folding_prim(scheme_bitwise_and, "bitwise-and", 0, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant("bitwise-and", p, env);
 
-  p = scheme_make_folding_prim(bitwise_or, "bitwise-ior", 1, -1, 1);
+  p = scheme_make_folding_prim(bitwise_or, "bitwise-ior", 0, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant("bitwise-ior", p, env);
 
-  p = scheme_make_folding_prim(bitwise_xor, "bitwise-xor", 1, -1, 1);
+  p = scheme_make_folding_prim(bitwise_xor, "bitwise-xor", 0, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant("bitwise-xor", p, env);
 
@@ -869,8 +869,8 @@ even_p (int argc, Scheme_Object *argv[])
 
 static Scheme_Object *bin_lcm (Scheme_Object *n1, Scheme_Object *n2);
 
-GEN_NARY_OP(gcd, "gcd", scheme_bin_gcd, 0, scheme_is_integer, "integer")
-GEN_NARY_OP(lcm, "lcm", bin_lcm, 1, scheme_is_integer, "integer")
+GEN_NARY_OP(static, gcd, "gcd", scheme_bin_gcd, 0, scheme_is_integer, "integer")
+GEN_NARY_OP(static, lcm, "lcm", bin_lcm, 1, scheme_is_integer, "integer")
 
 Scheme_Object *
 scheme_bin_gcd (const Scheme_Object *n1, const Scheme_Object *n2)
@@ -2324,9 +2324,9 @@ GEN_BIN_INT_OP(bin_bitwise_xor, "bitwise-xor", ^, scheme_bignum_xor)
 
 #define MZ_PUBLIC /**/
 
-GEN_TWOARY_OP(MZ_PUBLIC, scheme_bitwise_and, "bitwise-and", bin_bitwise_and, SCHEME_EXACT_INTEGERP, "exact integer")
-GEN_TWOARY_OP(static, bitwise_or, "bitwise-ior", bin_bitwise_or, SCHEME_EXACT_INTEGERP, "exact integer")
-GEN_TWOARY_OP(static, bitwise_xor, "bitwise-xor", bin_bitwise_xor, SCHEME_EXACT_INTEGERP, "exact integer")
+GEN_NARY_OP(MZ_PUBLIC, scheme_bitwise_and, "bitwise-and", bin_bitwise_and, -1, SCHEME_EXACT_INTEGERP, "exact integer")
+GEN_NARY_OP(static, bitwise_or, "bitwise-ior", bin_bitwise_or, 0, SCHEME_EXACT_INTEGERP, "exact integer")
+GEN_NARY_OP(static, bitwise_xor, "bitwise-xor", bin_bitwise_xor, 0, SCHEME_EXACT_INTEGERP, "exact integer")
 
 static Scheme_Object *
 bitwise_not(int argc, Scheme_Object *argv[])

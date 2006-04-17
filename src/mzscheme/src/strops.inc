@@ -145,8 +145,8 @@ X__(string_length) (int argc, Scheme_Object *argv[])
   return scheme_make_integer(SCHEME_X_STRTAG_VAL(argv[0]));
 }
 
-static Scheme_Object *
-X__(string_ref) (int argc, Scheme_Object *argv[])
+Scheme_Object *
+X_(scheme_checked, string_ref) (int argc, Scheme_Object *argv[])
 {
   long i, len;
   int c;
