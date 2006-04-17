@@ -1027,13 +1027,14 @@ implements an interactive browser for face configurations.
     'unhappiest - (face* 'normal 'huge #t default-face-color 0 -3)
     'mad - (face* 'angry 'grimace #t default-face-color 0)
     'mean - (face* 'angry 'narrow #f default-face-color 0)
+    'surprised - (face* 'worried 'oh #t default-face-color -4 -3 2)
 
 > (face* eyebrow-kind mouth-kind frown? [color eye-inset eyebrow-dy pupil-dx pupil-dy])
   - returns a pict for a configured face:
 
       - eyebrow-kind is one of 'none, 'normal, 'worried, or 'angry
       - mouth-kind is one of 'plain, 'narrow, 'medium, 'large, 'huge, 
-                             'grimace, or 'tongue
+                             'grimace, 'oh, or 'tongue
       - frown? determines whether the mouth is up or down
       - color is either a color string or a color% object
       - eye-inset adjusts the eye size; recommend values: between 0 and 10

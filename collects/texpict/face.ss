@@ -82,7 +82,7 @@
                   (eyebrows dy -0.3))
                 
                 (define (smile sw sh i da path dy flip?)
-		  ;; Either draw or set path.
+                  ;; Either draw or set path.
                   ((if path 
                        (lambda (x y w h s e)
 			 (send path arc x y w h s e))
@@ -246,7 +246,20 @@
                    (* 0.8 w) (* h 0.9) (* 0.08 pi)
                    (* 1.0 w) (* h 0.75) (- (* 0.01 pi))
                    flip? 0))
-
+                
+                (define (oh)
+                  (series dc 5
+                          face-edge-color
+                          (make-object color% "black")
+                          (lambda (i)
+                            (let ([sw (* w 7/20)]
+                                  [sh (* h 8/20)])
+                              (send dc draw-ellipse
+                                    (+ x i (/ (- w sw) 2))
+                                    (+ y i (* h 1/4) (* h -1/16) (/ (- h sh) 2))
+                                    (- sw (* i 2))
+                                    (- sh (* i 2)))))
+                          #t #t))
                 
                 (define (draw-eyes inset)
                   ;; Draw eyes
@@ -290,6 +303,7 @@
 		  [(large) (large-smile frown?)]
 		  [(huge) (largest-smile frown?)]
 		  [(grimace) (medium-grimace frown?)]
+                  [(oh) (oh)]
 		  [(tongue) (plain-smile frown? #t)])
                 
                 (send dc set-brush old-brush)
@@ -323,4 +337,6 @@
          (face* 'angry 'grimace #t face-color 0)]
         [(mean)
          (face* 'angry 'narrow #f face-color 0)]
+        [(surprised)
+         (face* 'worried 'oh #t face-color -4 -3 2)]
 	[else (error 'face "unknown mood: ~e" mood)]))))
