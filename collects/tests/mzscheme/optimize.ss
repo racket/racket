@@ -57,6 +57,7 @@
 		     (test (if v 'yes 'no) name ((eval `(lambda (x) (if (,op ,arg1 x) 'yes 'no))) arg2)))))]
 	 [bin-exact (lambda (v op arg1 arg2)
 		      (check-error-message op (eval `(lambda (x) (,op x ,arg2))))
+		      (check-error-message op (eval `(lambda (x) (,op ,arg1 x))))
 		      (bin0 v op arg1 arg2))]
 	 [bin (lambda (v op arg1 arg2)
 		(bin-exact v op arg1 arg2)
@@ -192,6 +193,19 @@
     (un-exact (- -1 (expt 2 30)) 'bitwise-not (expt 2 30))
     (un-exact (- (expt 2 30)) 'bitwise-not (sub1 (expt 2 30)))
     (un-exact (- -1 (expt 2 32)) 'bitwise-not (expt 2 32))
+
+    (bin-exact 'a 'vector-ref #(a b c) 0)
+    (bin-exact 'b 'vector-ref #(a b c) 1)
+    (bin-exact 'c 'vector-ref #(a b c) 2)
+
+    (bin-exact #\a 'string-ref "abc\u2001" 0)
+    (bin-exact #\b 'string-ref "abc\u2001" 1)
+    (bin-exact #\c 'string-ref "abc\u2001" 2)
+    (bin-exact #\u2001 'string-ref "abc\u2001" 3)
+
+    (bin-exact 65 'bytes-ref #"Abc\xF7" 0)
+    (bin-exact 99 'bytes-ref #"Abc\xF7" 2)
+    (bin-exact #xF7 'bytes-ref #"Abc\xF7" 3)
 
     ))
 

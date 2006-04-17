@@ -1002,9 +1002,13 @@
 (test #x-155553333 bitwise-xor #x-2aaaa5555 (bitwise-xor #x-2aaaa5555 #x-155553333))
 (test #x-15555333 bitwise-xor #x-2aaaa5555 (bitwise-xor #x-2aaaa5555 #x-15555333))
 
-(arity-test bitwise-ior 1 -1)
-(arity-test bitwise-and 1 -1)
-(arity-test bitwise-xor 1 -1)
+(test -1 bitwise-and)
+(test 0 bitwise-ior)
+(test 0 bitwise-xor)
+
+(arity-test bitwise-ior 0 -1)
+(arity-test bitwise-and 0 -1)
+(arity-test bitwise-xor 0 -1)
 (arity-test bitwise-not 1 1)
 
 (define error-test-bitwise-procs

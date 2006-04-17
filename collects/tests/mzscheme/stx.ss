@@ -1007,5 +1007,35 @@
   (go-once (lambda (e) (eval (expand e)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; layers of lexical binding
+
+(test '(1 2) 'macro-nested-lexical
+      (let ()
+	(define-syntax (m stx)
+	  (with-syntax ([x1 (let ([x 0]) #'x)]
+			[x2 (let ([x 0]) #'x)])
+	    #'(begin
+		(define x1 1)	
+		(define x2 2)
+		(list x1 x2))))
+	(m)))
+
+(module @!$m mzscheme
+  (define-syntax (d stx)
+    (syntax-case stx ()
+      [(_ id)
+       (with-syntax ([x1 (let ([x 0]) #'x)]
+		     [x2 (let ([x 0]) #'x)])
+	 #'(begin
+	     (define x1 10)
+	     (define x2 20)
+	     (define id (list x1 x2
+			      (list? (identifier-binding (quote-syntax x1)))))))]))
+  (d @!$get)
+  (provide @!$get))
+(require @!$m)
+(test '(10 20 #t) '@!$get @!$get)
+
+
 
 (report-errs)
