@@ -19,12 +19,12 @@
   
   
   (define shading-parameters
-    (list (list "mouth-shading" mouth-shading)
-          (list "eye-shading" eye-shading)
-          (list "eyebrow-shading" eyebrow-shading)
-          (list "tongue-shading" tongue-shading)
-          (list "face-background-shading" face-background-shading)
-          (list "teeth-shading" teeth-shading)))
+    (list #:mouth-shading?
+          #:eye-shading?
+          #:eyebrow-shading?
+          #:tongue-shading?
+          #:face-background-shading?
+          #:teeth-shading?))
   
   (define moods
     '(unhappiest
@@ -59,27 +59,26 @@
                                           (list-ref moods v)))
                      (new-face-callback)))))
   
-  (define hp (new horizontal-panel% (parent f)))
-  (define custom-panel (new group-box-panel% (label "Custom") (parent hp)))
-  (define shading-panel (new vertical-panel% (parent hp) (alignment '(left center))))
+  (define custom-panel (new group-box-panel% (label "Custom") (parent f)))
+  (define hp (new horizontal-panel% (parent custom-panel)))
+  (define custom-left-panel (new vertical-panel% (parent hp)))
+  (define custom-right-panel (new vertical-panel% (parent hp) (alignment '(left top))))
   
-  (for-each
-   (λ (parameter-pair)
-     (new check-box%
-          (label (car parameter-pair))
-          (parent shading-panel)
-          (value ((cadr parameter-pair)))
-          (callback
-           (λ (cb _) 
-             ((cadr parameter-pair) (send cb get-value))
-             (new-face-callback)))))
-   shading-parameters)
+  (define shading-checkboxes
+    (map
+     (λ (parameter)
+       (new check-box%
+            (label (format "~a" parameter))
+            (parent custom-right-panel)
+            (value #t)
+            (callback (λ (cb _) (new-face-callback)))))
+     shading-parameters))
   
   (let ([choices '(none normal worried angry raised)])
     (new choice%
          (label "Eyebrows")
          (choices (map symbol->string choices)) 
-         (parent custom-panel)
+         (parent custom-left-panel)
          (callback (lambda (c e)
                      (set! face-eyebrow-kind (list-ref choices (send c get-selection)))
                      (new-face-callback)))))
@@ -87,19 +86,19 @@
     (new choice%
          (label "Mouth")
          (choices (map symbol->string choices)) 
-         (parent custom-panel)
+         (parent custom-left-panel)
          (callback (lambda (c e)
                      (set! face-mouth-kind (list-ref choices (send c get-selection)))
                      (new-face-callback)))))
   (new check-box%
        (label "Frown")
-       (parent custom-panel)
+       (parent custom-left-panel)
        (callback (lambda (c e)
                    (set! face-frown? (send c get-value))
                    (new-face-callback))))
   (new slider%
        (label "Eye Inset")
-       (parent custom-panel)
+       (parent custom-left-panel)
        (min-value 0)
        (max-value 10)
        (callback (lambda (s e)
@@ -107,7 +106,7 @@
                    (new-face-callback))))
   (new slider%
        (label "Eyebrow Y")
-       (parent custom-panel)
+       (parent custom-left-panel)
        (min-value -5)
        (max-value 5)
        (init-value 0)
@@ -118,7 +117,7 @@
          (lambda (label setter hi)
            (new slider%
                 (label label)
-                (parent custom-panel)
+                (parent custom-left-panel)
                 (min-value (- hi))
                 (max-value hi)
                 (init-value 0)
@@ -149,11 +148,20 @@
     (send custom-panel enable (not face-mood))
     (set! the-pict (if face-mood
                        (face face-mood face-color)
-                       (face* face-eyebrow-kind
-                              face-mouth-kind face-frown?
+                       (apply face*
+                              face-eyebrow-kind
+                              face-mouth-kind
+                              face-frown?
                               face-color
-                              face-eye-inset face-eyebrow-dy
-                              face-pupils-dx face-pupils-dy)))
+                              face-eye-inset
+                              face-eyebrow-dy
+                              face-pupils-dx
+                              face-pupils-dy
+                              (apply
+                               append
+                               (map (λ (kw cb) (list kw (send cb get-value)))
+                                    shading-parameters
+                                    shading-checkboxes)))))
     (send c on-paint))
   
   (define (cb dc) (draw-pict the-pict dc 0 0))

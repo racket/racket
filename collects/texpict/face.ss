@@ -4,15 +4,10 @@
            (lib "utils.ss" "texpict")
            (lib "class.ss")
            (lib "math.ss")
-           (lib "etc.ss"))
+           (lib "etc.ss")
+           (lib "kw.ss"))
 
-  (provide face face* default-face-color
-           eyebrow-shading
-           mouth-shading
-           eye-shading 
-           tongue-shading
-           face-background-shading
-           teeth-shading)
+  (provide face face* default-face-color)
   
   (define no-brush (find-brush "white" 'transparent))
   (define no-pen (find-pen "white" 1 'transparent))
@@ -22,28 +17,24 @@
 
   (define default-face-color (make-object color% "orange"))
 
-  (define mouth-shading (make-parameter #t))
-  (define eye-shading (make-parameter #t))
-  (define eyebrow-shading (make-parameter #t))
-  (define tongue-shading (make-parameter #t))
-  (define face-background-shading (make-parameter #t))
-  (define teeth-shading (make-parameter #t))
-  
   (define face*
-    (opt-lambda (eyebrows-kind
-                 mouth-kind
-                 frown?
-                 [in-face-color default-face-color]
-                 [eye-inset 0]
-                 [eyebrow-dy 0]
-                 [eye-dx 0]
-                 [eye-dy 0])
-      (define mouth-shading? (mouth-shading))
-      (define eye-shading? (eye-shading))
-      (define eyebrow-shading? (eyebrow-shading))
-      (define tongue-shading? (tongue-shading))
-      (define face-background-shading? (face-background-shading))
-      (define teeth-shading? (teeth-shading))
+    (lambda/kw (eyebrows-kind
+                mouth-kind
+                frown?
+                #:optional
+                [in-face-color default-face-color]
+                [eye-inset 0]
+                [eyebrow-dy 0]
+                [eye-dx 0]
+                [eye-dy 0]
+                #:key
+                (mouth-shading? #t)
+                (eye-shading? #t)
+                (eyebrow-shading? #t)
+                (tongue-shading? #t)
+                (face-background-shading? #t)
+                (teeth-shading? #t))
+               
       (define face-color (if (string? in-face-color)
                              (make-object color% in-face-color)
                              in-face-color))
