@@ -163,7 +163,7 @@
                   (send dc set-brush (find-brush "white"))
                   (send dc draw-ellipse x y w h)
                   (series dc 
-                          (if teeth-shading? 5 1)
+                          (if teeth-shading? 5 0)
                           (make-object color% "darkgray")
                           (make-object color% "lightgray")
                           (lambda (i)
