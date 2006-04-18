@@ -1161,6 +1161,21 @@
 (test (string #\- #\nul #\+ #\- #\nul #\+ #\- #\nul #\+)
       regexp-replace* "a" "aaa" (string #\- #\nul #\+))
 
+(test "xpple" regexp-replace #rx"a" "apple" "x")
+(test #"xpple" regexp-replace #rx#"a" "apple" "x")
+(test #"xpple" regexp-replace #rx"a" #"apple" "x")
+(test #"xpple" regexp-replace #rx#"a" #"apple" "x")
+(err/rt-test (regexp-replace #rx"a" "apple" #"x"))
+
+(test "pAPple" regexp-replace #rx"a(.)" "apple" (lambda (a b) (string-append b (string-upcase a))))
+(test #"p.ap.ple" regexp-replace #rx#"a(.)" "apple" (lambda (a b) (bytes-append b #"." a #".")))
+(test #"p.ap.ple" regexp-replace #rx"a(.)" #"apple" (lambda (a b) (bytes-append b #"." a #".")))
+(test #"p.ap.ple" regexp-replace #rx#"a(.)" #"apple" (lambda (a b) (bytes-append b #"." a #".")))
+(err/rt-test (regexp-replace #rx#"a(.)" #"apple" (lambda (a b) "string")))
+(err/rt-test (regexp-replace #rx#"a(.)" "apple" (lambda (a b) "string")))
+(err/rt-test (regexp-replace #rx"a(.)" #"apple" (lambda (a b) "string")))
+(err/rt-test (regexp-replace #rx"a(.)" "apple" (lambda (a b) #"bytes")))
+
 ;; Check extremely many subexpressions:
 (for-each
  (lambda (mx)
