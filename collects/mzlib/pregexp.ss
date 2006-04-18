@@ -655,17 +655,23 @@
     (let* ((n (string-length str)) (pp (pregexp-match-positions pat str 0 n)))
       (if (not pp)
         str
-        (let ((ins-len (string-length ins)) (m-i (caar pp)) (m-n (cdar pp)))
+        (let ((m-i (caar pp)) (m-n (cdar pp)))
           (string-append
             (substring str 0 m-i)
-            (pregexp-replace-aux str ins ins-len pp)
+	    (if (procedure? ins)
+		(apply ins
+		       (map (lambda (p)
+			      (substring str (car p) (cdr p)))
+			    pp))
+		(pregexp-replace-aux str ins (string-length ins) pp))
             (substring str m-n n)))))))
 
 (define pregexp-replace*
   (lambda (pat str ins)
     (let ((pat (if (string? pat) (pregexp pat) pat))
           (n (string-length str))
-          (ins-len (string-length ins)))
+          (ins-len (and (string? ins)
+			(string-length ins))))
       (let loop ((i 0) (r ""))
         (if (>= i n)
           r
@@ -677,7 +683,12 @@
                (string-append
                  r
                  (substring str i (caar pp))
-                 (pregexp-replace-aux str ins ins-len pp))))))))))
+		 (if (procedure? ins)
+		     (apply ins
+			    (map (lambda (p)
+				   (substring str (car p) (cdr p)))
+				 pp))
+		     (pregexp-replace-aux str ins ins-len pp)))))))))))
 
 (define pregexp-quote
   (lambda (s)
