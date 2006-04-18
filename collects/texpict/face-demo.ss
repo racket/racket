@@ -14,6 +14,7 @@
                  (paint-callback
                   (lambda (x dc) 
                     (send dc set-scale canvas-scale canvas-scale)
+                    (send dc set-smoothing 'aligned)
                     (cb dc)))))
   
   
