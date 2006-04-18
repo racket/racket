@@ -443,6 +443,8 @@ Bool wxWindow::PopupMenu(wxMenu *menu, double x, double y)
   HWND hWnd;
   POINT point;
   HMENU hMenu = (HMENU)menu->ms_handle;
+  UINT dropMenuId;
+  HBITMAP bm = NULL;
 
   hWnd = GetHWND();
 
@@ -451,12 +453,43 @@ Bool wxWindow::PopupMenu(wxMenu *menu, double x, double y)
   point.y = (int)y;
   ::ClientToScreen(hWnd, &point);
 
+  if (menu->requestedWidth) {
+    /* Really ugly hack: to force the menu to a particular
+       width, create a disabled bitmap item at the end of
+       the menu. Since themenu will have some extra space
+       left and right of each item, subtract 3 times
+       the width of the checkmark, on the grounds that it's
+       probably a good approximation. */
+    long w;
+    long sz;
+    char *ones;
+
+    w = menu->requestedWidth - 3 * (GetMenuCheckMarkDimensions() & 0xFFFF);
+    sz = (w / 8) + 1;
+    
+    do {
+      dropMenuId = (WORD)rand();
+    } while (!dropMenuId || wxMenuItemIDs->Get((long)dropMenuId));
+
+    ones = new WXGC_ATOMIC char[sz];
+    memset(ones, 255, sz);
+    bm = CreateBitmap(w, 1, 1, 1, ones);
+
+    AppendMenuW(hMenu, MF_BITMAP | MF_GRAYED, dropMenuId, (LPCWSTR)bm);
+  }
+
   wxMSWSetCursor(wxSTANDARD_CURSOR->ms_cursor);
   r = wxwmTrackPopupMenu(hMenu, 
 			 TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_NONOTIFY | TPM_RETURNCMD, 
 			 point.x, point.y,
 			 0, hWnd, NULL);
   wxResetCurrentCursor();
+
+  if (bm) {
+    DeleteMenu(hMenu, dropMenuId, MF_BYCOMMAND);
+    DeleteObject(bm);
+  }
+
   if (r){
     menu->MSWCommand(0, r);
   } else {
