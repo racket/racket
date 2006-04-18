@@ -156,8 +156,6 @@
                               face-pupils-dx face-pupils-dy)))
     (send c on-paint))
   
-  (send (send c get-dc) set-smoothing 'aligned)
-  
   (define (cb dc) (draw-pict the-pict dc 0 0))
   
   (send c min-width (inexact->exact (floor (* canvas-scale (pict-width the-pict)))))
