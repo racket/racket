@@ -82,6 +82,16 @@
       [(event? beh) (format "#<event (last: ~a)>" (efirst (signal-value beh)))]
       [else beh]))
   
+  #;(define (get-rendering val super-render-fun)
+    (let-values ([(in out) (make-pipe-with-specials)])
+      (thread (lambda () (super-render-fun val out) (flush-output out) (close-output-port out)))
+      (let loop ([chars empty])
+        (let ([c (read-char-or-special in)])
+          (cond
+            [(eof-object? c) (list->string (reverse chars))]
+            [(char? c) (loop (cons c chars))]
+            [else c])))))
+  
   (define (watch beh)
     (cond
       [(undefined? beh)

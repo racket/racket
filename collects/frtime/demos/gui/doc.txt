@@ -1,31 +1,30 @@
-> FtA (Forte GUI library)
+> FrEd (Functional Reactive Editor library)
   
 MACROS
 -------
-To get the macros: 
+To get the basic macros: 
 (require (lib "mixin-macros.ss" "frtime" "demos" "gui"))
-
-> (behavior->callbacks field-name update-call)
-Generates a mixin for allowing a behavior to control a widget.
-The mixin has two arguments. The mixin's first argument is the
-default value for field-name, and the seconds argument is the
-class being mixed.
 
 > (events->callbacks field-name update-call)
 Generates a mixin for allowing an event stream to drive
-callbacks. The one argument to the resulting mixin is the
-class to be extended
+callbacks. When an event stream is given as the init
+value for field-name, that event stream is stored,
+and whenever an event occurs on that stream, 
+update-call is invoked on the value of the event. The
+one argument to the resulting mixin is the class being
+extended
 
-> (callbacks->args-evts stream-name callback (args-to-callback ...))
+> (callbacks->args-evts stream-name callback)
 Generates a mixin that sends an event on stream-name when
 callback is called. The class has an init field called
-[stream-name]-event-processor, which is a function. The
-function is applied to an event stream that has an
-occurence every time callback is called, and the value
-of the events is a list of the arguments to the callback.
-The public method (get-[stream-name]) is a public method
-of the resulting class that gets the result of applying
-[stream-name]-event-processor to the stream of args-evts.
+[stream-name]-event-processor, whose value is a function.
+The public method (get-[stream-name]) of the resulting class
+gets the result of applying [stream-name]-event-processor 
+to the stream of args-evts. The events on the stream are
+lists of the arguments to the callback. The default value 
+for [stream-name]-event-processor is given as the first
+argument to the mixin, and the class being extended is
+the second argument to the mixin.
 
 FtA provides event-is-val, split-mouse-events/type, and
 split-key-events/type for use as initialization arguments.
@@ -33,8 +32,39 @@ event-is-val can be used for [stream-name]-event-processor
 when the event should just be the value of the first 
 argument of the callback. split-*-events/type sets up an
 appropriate split (see FrTime docs for split information,
-MrEd docs for key-event codes and mouse-event types).
+MrEd docs for key-event codes and mouse-event types) over
+the type of event occurence.
+
                                                     
+events->callbacks and callbacks->args-evts are the backbone
+of the transition between an object-oriented library and
+an event-stream based library. Some common utility macros
+are provided from:
+(lib "aux-mixin-macros.ss" "frtime" "demo" "gui")
+                                                    
+> (behavior->callbacks field-name update-call)
+Generates a mixin for allowing a behavior to control a widget.
+The mixin has two arguments. The mixin's first argument is the
+default value for field-name, and the seconds argument is the
+class being mixed. Whenever a behavior is supplied as the value
+for field-name, the value-now of that behavior is used as the
+super-new argument for filed-name, and whenever there is a
+change in that behavior, update-call is invoked with the
+current value of the behavior.
+
+> (mixin-merge-e new-stream-name stream-getter1 stream-getter2)
+Generates a mixin that provides access to the merge-e
+of two event streams. The first argument is the name
+of the merged stream. The merged stream can be accessed
+by the public method (get-[new-stream-name]). The
+method stream-getter1 and stream-getter2 are assumed to
+be inherited public methods that return event streams.
+
+
+For examples of how to use these macros, look at the file
+"instr.ss" in collects/frtime/demos/gui/demo.
+
+
 
 MIXINS
 ------

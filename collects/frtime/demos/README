@@ -1,8 +1,9 @@
 
-This directory contains the source code for FrTime.
+This directory contains the source code for a collection of demos for
+FrTime.
 
-To run the animation/GUI demos, simply set the language level to
-FrTime, open the corresponding file, and Execute.  See the demo source
+To run the animation/GUI demos, simply open the corresponding file,
+set the language level to FrTime, and Execute.  See the demo source
 code for more information.
 
 orbit-mouse.ss : A collection of balls that move in circles around

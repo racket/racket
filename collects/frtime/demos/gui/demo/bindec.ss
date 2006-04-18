@@ -25,6 +25,7 @@
 
 (define-values-rec
   [sld (mode value-b ft-slider%
+             (stretchable-width #t)
              (min-value 0)
              (max-value (sub1 (expt 2 SIZE)))
              (value-set (changes 

@@ -1,25 +1,24 @@
 (module fred (lib "frtime.ss" "frtime")
   (require "mixin-macros.ss"
-           ;"r-label.ss"
+           "aux-mixin-macros.ss"
            (lib "class.ss")
            (lib "string.ss")
            (all-except (lib "mred.ss" "mred") send-event)
            (lib "framework.ss" "framework"))
   
-  (define-syntax add-signal-controls
-    (syntax-rules ()
-      [(_ src (field-name0 update-call0 default-val0) clause ...)
-       ((behavior->callbacks field-name0 update-call0)
-        default-val0
-        (add-signal-controls src clause ...))]
-      [(_ src)
-       src]))
   
-
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Helpers
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  
+  (define (in-string itm)
+    (if (undefined? itm)
+        ""
+        (if (string? itm)
+            itm
+            (expr->string itm))))
+  
   
   ;; adding assumed methods
   (define (add-void-set-value super-class)
@@ -27,16 +26,19 @@
       (define/public (set-value v) (void))
       (super-new)))
   
-  (define (add-focus-now super-class)
-    (class super-class
-      (super-new)
-      (inherit focus)
-      (define/public (focus-now _) (focus))))
-  
   (define (callback->pub-meth super-class)
     (class super-class
       (define/public (callback-method w e) (void))
       (super-new (callback (lambda (w e) (callback-method w e))))))
+  
+  (define (add-shown super-class)
+    (class super-class
+      (init (shown #f))
+      (define shown-val shown)
+      (super-new)
+      (inherit show)
+      (show shown-val)))
+      
   
   
   ;; *-event-processor init-argument values
@@ -55,54 +57,84 @@
       (split (map-e cadr evt-src) (lambda (evt) (send evt get-key-code)))))
   
   
+  (define (send-for-value w e)
+    (send w get-value))
+  
+  (define (send-for-selection w e)
+    (send w get-selection))
+  
+  
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; make state available as eventstreams
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
   (define (add-mouse-access super-class)
     ((callbacks->args-evts mouse-events ; Name of event stream
-                           on-subwindow-event ; proc overriding
-                           (window evt) ; arguments for on-subwindow-event. Caused by super being a macro
-                           )
+                          on-subwindow-event ; proc overriding
+                          )
+     split-mouse-events/type
      super-class))
   
   
   (define (add-focus-access super-class)
-    ((callbacks->args-evts focus-events on-focus (is-focused?))
+    ((callbacks->args-evts focus-events on-focus)
+     event-is-val
      super-class))
   
   (define (add-keypress-split super-class)
-    ((callbacks->args-evts key-events on-subwindow-char (w e))
+    ((callbacks->args-evts key-events on-subwindow-char)
+     split-key-events/type
      super-class))
   
   
+  (define (add-size-access super-class)
+    ((callbacks->args-evts size-events on-size)
+     (lambda (x) x)
+     super-class))
   
-  #|
-  (define (add-value-b super-class default)
-    (class super-class
-      (super-new)
-      (inherit get-value-e)
-      (define/public (get-value-b) (hold (get-value-e) default))))
-  |#
+  (define (add-size-b super-class)
+    ((mixin-hold size-b init-size-b get-size-events)
+     '(0 0)
+     (add-size-access super-class)))
+  
+  (define (add-position-access super-class)
+    ((callbacks->args-evts position-events on-move)
+     (lambda (x) x)
+     super-class))
+  
+  (define (add-position-b super-class)
+    ((mixin-hold position-b init-position-b get-position-events)
+     '(0 0)
+     (add-position-access super-class)))
+  
+  
+  
+  (define (monitor-set-value super-class)
+    ((callbacks->args-evts set-value-events set-value)
+     event-is-val
+     super-class))
+  
+  (define (monitor-callback-method super-class)
+    ((callbacks->args-evts callback-events callback-method)
+     (lambda (x) x)
+     super-class))
+  
   
   (define (add-callback-access val-ext super-class)
-    (class ((callbacks->args-evts set-value-events
-                                  set-value
-                                  (v))
-            ((callbacks->args-evts callback-events
-                                   callback-method
-                                   (w e))
-             (callback->pub-meth super-class)))
-      (super-new (set-value-events-event-processor event-is-val)
-                 (callback-events-event-processor (lambda (es)
-                                                    (map-e (lambda (e) (apply val-ext e)) es))))
-      (inherit get-set-value-events get-callback-events)
-      (define value-e (merge-e (get-set-value-events)
-                               (get-callback-events)))
-      (define value-b (hold value-e (val-ext this #f)))
-      (define/public (get-value-e) value-e)
-      (define/public (get-value-b) value-b)
-      ))
+    ((mixin-merge-e
+      value-e
+      get-set-value-events 
+      get-callback-events)
+     (class (monitor-set-value
+             (monitor-callback-method
+              (callback->pub-meth super-class)))
+       (super-new (callback-events-event-processor 
+                   (lambda (es) (map-e (lambda (e) (apply val-ext e)) es)))))))
+
+  
+  (define add-value-b (mixin-hold value-b initial-value get-value-e))
+                       
+            
   
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -115,142 +147,109 @@
   
   
   (define (add-focus-on-event super-class)
-    ((events->callbacks focus-when focus-now)
-     (add-focus-now super-class)))
+    (class ((events->callbacks focus-when carries-args-for focus)
+            super-class)
+      (init (focus-when (event-receiver)))
+      (define focus-map (map-e (lambda (_) '()) focus-when))
+      (super-new (focus-when focus-map))))
   
   
   
-    ;; Special case widgets
-  (define (in-string itm)
-    (if (undefined? itm)
-        ""
-        (if (string? itm)
-            itm
-            (expr->string itm))))
+ 
+
+  
+    ;; Standard mixin combinations
+  (define (standard-lift widget)
+    (add-size-b
+     (add-position-b
+      (add-keypress-split
+       (add-focus-on-event
+        (add-mouse-access
+         (add-focus-access
+          (add-signal-controls 
+           widget
+           (label set-label "") 
+           (enabled enable #t)
+           (min-width min-width 0)
+           (min-height min-height 0)
+           (stretchable-width stretchable-width #f)
+           (stretchable-height stretchable-height #f)
+           ))))))))
+  
+  (define (standard-input-lift accessor default val-ext)
+    (lambda (super-class)
+      (add-value-b
+       default
+       (accessor val-ext super-class))))
   
   
   
   (define ft-frame%
-    (class ((callbacks->args-evts resize-events on-size (w h))
-            (add-mouse-access 
-             (add-keypress-split 
-              (add-signal-controls frame% 
-                                   (label set-label "")))))
-      (super-new)
-      ))
+    ((behavior->callbacks shown show)
+     #f
+     (add-shown
+      (standard-lift frame%))))
+      
+  (define ft-message% 
+    (standard-lift message%))
+  
+  (define ft-button%
+    (add-callback-access (lambda (w e) e) (add-void-set-value (standard-lift button%))))
+  
+  (define ft-check-box%
+    ((standard-input-lift add-callback-access/loop #f send-for-value)
+     (standard-lift check-box%)))
+  
+  (define ft-slider%
+    ((standard-input-lift add-callback-access/loop 0 send-for-value)
+     (standard-lift slider%))) ;ideally the default should be the minimum value
+  
+  (define ft-text-field%
+    ((standard-input-lift add-callback-access/loop "" send-for-value)
+     (standard-lift text-field%)))
+
+  (define ft-radio-box%
+    ((standard-input-lift add-callback-access 0 send-for-selection)
+     (add-void-set-value (standard-lift radio-box%))))
+  
+  (define ft-choice%
+    ((standard-input-lift add-callback-access 0 send-for-selection)
+     (add-void-set-value (standard-lift choice%))))
+  
+  (define ft-list-box%
+    ((standard-input-lift add-callback-access 0 send-for-selection)
+     (add-void-set-value (standard-lift list-box%))))
   
   
+ 
+  
+  ;; Special case widgets
 
   
-  (define ft-message% 
-    (add-mouse-access
-     (add-focus-access
-      (add-signal-controls message% (label set-label "") (enabled enable #t)))))
-  
-  #;(define ft-autoresize-label% 
-    (add-mouse-access
-     (add-focus-access
-      (add-signal-controls autoresize-label% (text set-label-text "") (enabled enable #t)))))
-  
-  
   (define specialized-gauge%
-    (class gauge%
-      (init value)
-      
-      (super-new)
-      
-      (inherit set-value)
-      #;(set-value value)))
+    (add-signal-controls
+     (class gauge%
+       (init value)  
+       (super-new))
+     (value set-value 0)
+     (range set-range 1)))
+  
   
   (define ft-gauge%
-    (add-mouse-access
-     (add-focus-access
-      (add-signal-controls specialized-gauge% 
-                           (label set-label "") 
-                           (enabled enable #t)
-                           (value set-value 0)
-                           (range set-range 1)))))
+    (standard-lift specialized-gauge%))
+  
   
   (define ft-menu-item%
     (add-callback-access
      list
      (add-void-set-value
-      menu-item%)))
+      menu-item%)))  
   
   
-  
-  (define (send-for-value w e)
-    (send w get-value))
-  
-  (define (send-for-selection w e)
-    (send w get-selection))
-  
-  
-  ;; Standard mixin combinations
-  (define (standard-lift widget value-method)
-    (add-mouse-access
-     (add-focus-access
-      (add-callback-access
-       value-method
-       (add-signal-controls (add-void-set-value widget) (label set-label "") (enabled enable #t))))))
-  
-  (define (standard-lift/loop widget value-method)
-    (add-mouse-access
-     (add-focus-access
-      (add-callback-access/loop
-       value-method
-       (add-signal-controls widget (label set-label "") (enabled enable #t))))))
-  
-  
-  
-  (define ft-button%
-    (standard-lift button% (lambda (w e) e)))  
-  
-  (define ft-check-box%
-    (standard-lift/loop check-box% send-for-value))
-  
-  (define ft-radio-box%
-    (standard-lift radio-box% send-for-selection))
-  
-  (define ft-choice%
-    (standard-lift choice% send-for-selection))
-  
-  (define ft-slider%
-    (standard-lift/loop slider% send-for-value))
-  
-  (define ft-list-box% 
-    (standard-lift list-box% send-for-selection))
-  
-  (define ft-text-field%
-    (add-keypress-split
-     (add-focus-on-event
-      (standard-lift/loop text-field% send-for-value))))
-  
- 
-  
-  
-  
-  
-  (provide ft-frame%
-           ft-message%
-           ;ft-autoresize-label%
-           ft-gauge%
-           ft-button%
-           ft-check-box%
-           ft-radio-box%
-           ft-choice%
-           ft-slider%
-           ft-list-box%
-           ft-text-field%
-           ft-menu-item%
-           menu%
-           menu-bar%
-           finder:get-file
-           finder:put-file
-           split-mouse-events/type
-           split-key-events/type
+  (provide (all-defined)
            (all-from (lib "class.ss"))
-           (all-from "mixin-macros.ss"))) 
+           (all-from "mixin-macros.ss")
+           (all-from "aux-mixin-macros.ss"))) 
 
 
 
