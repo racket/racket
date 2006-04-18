@@ -259,7 +259,6 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
   (define (pkg-spec->full-pkg-spec spec stx)
     (define (pkg name maj lo hi path) (make-pkg-spec name maj lo hi path stx (version)))
     (match spec
-      [(? string?)            (pkg spec #f #f #f '())]
       [((? string? path) ...) (pkg (last path) #f 0 #f (drop-last path))]
       [((? string? path) ... (? number? maj)) (pkg (last path) maj 0 #f (drop-last path))]
       [((? string? path) ... (? number? maj) min-spec)
@@ -453,7 +452,8 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
         [(#f)  (abort (format "Server returned invalid HTTP response code ~s" response-code/str))]
         [(200)
          (let ((maj/str (extract-field "Package-Major-Version" head))
-               (min/str (extract-field "Package-Minor-Version" head)))
+               (min/str (extract-field "Package-Minor-Version" head))
+               (content-length (extract-field "Content-Length" head)))
            (unless (and maj/str min/str
                         (nat? (string->number maj/str))
                         (nat? (string->number min/str)))
@@ -468,7 +468,9 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
              (close-output-port op)
              (list #t filename maj min)))]
         [(404)
-         (list #f (format "Server had no matching package: ~a" (read-line ip)))]
+         (begin0
+           (list #f (format "Server had no matching package: ~a" (read-line ip)))
+           (close-input-port ip))]
         [(400)
          (abort (format "Internal error (malformed request): ~a" (read-line ip)))]
         [(500)
