@@ -6,7 +6,13 @@
            (lib "math.ss")
            (lib "etc.ss"))
 
-  (provide face face* default-face-color)
+  (provide face face* default-face-color
+           eyebrow-shading
+           mouth-shading
+           eye-shading 
+           tongue-shading
+           face-background-shading
+           teeth-shading)
   
   (define no-brush (find-brush "white" 'transparent))
   (define no-pen (find-pen "white" 1 'transparent))
@@ -16,6 +22,13 @@
 
   (define default-face-color (make-object color% "orange"))
 
+  (define mouth-shading (make-parameter #t))
+  (define eye-shading (make-parameter #t))
+  (define eyebrow-shading (make-parameter #t))
+  (define tongue-shading (make-parameter #t))
+  (define face-background-shading (make-parameter #t))
+  (define teeth-shading (make-parameter #t))
+  
   (define face*
     (opt-lambda (eyebrows-kind
                  mouth-kind
@@ -25,6 +38,12 @@
                  [eyebrow-dy 0]
                  [eye-dx 0]
                  [eye-dy 0])
+      (define mouth-shading? (mouth-shading))
+      (define eye-shading? (eye-shading))
+      (define eyebrow-shading? (eyebrow-shading))
+      (define tongue-shading? (tongue-shading))
+      (define face-background-shading? (face-background-shading))
+      (define teeth-shading? (teeth-shading))
       (define face-color (if (string? in-face-color)
                              (make-object color% in-face-color)
                              in-face-color))
@@ -55,7 +74,9 @@
                         ((if l? + -) (* pi 1/3) dr) ((if l? + -) (* pi 2/3) dr)))
                 
                 (define (eye-series steps start-c end-c p? extra-inset look?)
-                  (series dc steps start-c end-c
+                  (series dc
+                          (if eye-shading? steps 0)
+                          start-c end-c
                           (lambda (i)
                             (one-eye #t p? (+ extra-inset i) look?)
                             (one-eye #f p? (+ extra-inset i) look?))
@@ -63,7 +84,8 @@
                 
                 (define (eyebrows dy dr)
                   (send dc set-brush no-brush)
-                  (series dc 3
+                  (series dc
+                          (if eyebrow-shading? 3 0)
                           face-hard-edge-color
                           face-edge-color
                           (lambda (i)
@@ -95,12 +117,13 @@
                 
                 (define (plain-smile flip? tongue?)
 		  (send dc set-brush no-brush)
-		  (series dc 3
+		  (series dc 
+                          (if mouth-shading? 3 0)
                           (make-object color% "black")
                           face-edge-color
                           (lambda (i)
                             (smile w h i 0 #f 0 flip?)
-                            (smile w h (- i) 0 #f 0 flip?)) 
+                            (smile w h (+ 1 (- i)) 0 #f 0 flip?)) 
                           #t #f)
 		  (when tongue?
 		    (let ([path (new dc-path%)]
@@ -119,13 +142,15 @@
 					 (* 13/20 h)))]
 			    [tw (* 1/5 w)]
 			    [th (* 1/4 h)])
-			(series dc 3
+			(series dc
+                                (if tongue-shading? 3 0)
 				face-color
 				(make-object color% "red")
 				(lambda (i)
 				  (send dc draw-ellipse dx dy (- tw i) (- th i)))
 				#f #t)
-			(series dc 4
+			(series dc 
+                                (if tongue-shading? 4 0)
 				(make-object color% "black")
 				(scale-color 0.6 (make-object color% "red"))
 				(lambda (i)
@@ -137,7 +162,8 @@
                   ;; Assumes clipping region is set
                   (send dc set-brush (find-brush "white"))
                   (send dc draw-ellipse x y w h)
-                  (series dc 5
+                  (series dc 
+                          (if teeth-shading? 5 1)
                           (make-object color% "darkgray")
                           (make-object color% "lightgray")
                           (lambda (i)
@@ -167,13 +193,15 @@
                     
                     ;; Smile edges:
                     (send dc set-brush no-brush)
-                    (series dc 3
+                    (series dc 
+                            (if mouth-shading? 3 0)
                             (if flip? face-bright-edge-color face-hard-edge-color)
                             (if flip? face-color face-edge-color)
                             (lambda (i)
                               (smile bw bh (if flip? i (- i)) ba #f dy flip?))
                             #t #f)
-                    (series dc 3
+                    (series dc
+                            (if mouth-shading? 3 0)
                             (if flip? face-hard-edge-color face-bright-edge-color)
                             (if flip? face-edge-color face-color)
                             (lambda (i)
@@ -203,14 +231,16 @@
                                          (* pi (if top? 1 1/2)) (* pi (if top? 3/2 1)))
                                    (send dc draw-arc (+ (- (+ x w) (- elx x) 30) (/ i 2)) (- ely (/ i 2)) 30 (+ 30 i) 
                                          (* pi (if top? -1/2 0)) (* pi (if top? 0 1/2))))])
-                      (series dc 3
+                      (series dc 
+                              (if mouth-shading? 3 0)
                               (if flip? face-bright-edge-color face-hard-edge-color)
                               (if flip? face-color face-edge-color)
                               (lambda (i)
                                 (sides flip? i)
                                 (smile tw th (if flip? i (- i)) ta #f (+ (if flip? -2 -30) dy) flip?))
                               #t #f)
-                      (series dc 3
+                      (series dc 
+                              (if mouth-shading? 3 0)
                               (if flip? face-hard-edge-color face-bright-edge-color)
                               (if flip? face-edge-color face-color)
                               (lambda (i)
@@ -248,7 +278,8 @@
                    flip? 0))
                 
                 (define (oh)
-                  (series dc 5
+                  (series dc 
+                          (if mouth-shading? 5 0)
                           face-edge-color
                           (make-object color% "black")
                           (lambda (i)
@@ -281,7 +312,8 @@
                 (send dc set-pen no-pen)
                 
                 ;; Draw face background
-                (series dc 5
+                (series dc
+                        (if face-background-shading? 3 0)
                         face-edge-color
                         face-color
                         (lambda (i)

@@ -834,7 +834,9 @@
 	    [eb (send end-c blue)]
 	    [c (make-object color%)]
 	    [s (lambda (start end i)
-		 (floor (+ start (* (- end start) (/ i steps)))))])
+                 (if (= steps 0)
+                     end
+                     (floor (+ start (* (- end start) (/ i steps))))))])
 	(let loop ([i 0])
 	  (send c set (s sr er i) (s sg eg i) (s sb eb i))
 	  (when brush?

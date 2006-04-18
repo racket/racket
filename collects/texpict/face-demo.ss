@@ -3,7 +3,7 @@
            (lib "class.ss")
            (lib "utils.ss" "texpict")
            (lib "mrpict.ss" "texpict")
-           (lib "face.ss" "texpict"))
+           "face.ss")
   
   (define f (new frame% (label "frame")))
   
@@ -16,6 +16,14 @@
                     (send dc set-scale canvas-scale canvas-scale)
                     (cb dc)))))
   
+  
+  (define shading-parameters
+    (list (list "mouth-shading" mouth-shading)
+          (list "eye-shading" eye-shading)
+          (list "eyebrow-shading" eyebrow-shading)
+          (list "tongue-shading" tongue-shading)
+          (list "face-background-shading" face-background-shading)
+          (list "teeth-shading" teeth-shading)))
   
   (define moods
     '(unhappiest
@@ -50,7 +58,22 @@
                                           (list-ref moods v)))
                      (new-face-callback)))))
   
-  (define custom-panel (new group-box-panel% (label "Custom") (parent f)))
+  (define hp (new horizontal-panel% (parent f)))
+  (define custom-panel (new group-box-panel% (label "Custom") (parent hp)))
+  (define shading-panel (new vertical-panel% (parent hp) (alignment '(left center))))
+  
+  (for-each
+   (λ (parameter-pair)
+     (new check-box%
+          (label (car parameter-pair))
+          (parent shading-panel)
+          (value ((cadr parameter-pair)))
+          (callback
+           (λ (cb _) 
+             ((cadr parameter-pair) (send cb get-value))
+             (new-face-callback)))))
+   shading-parameters)
+  
   (let ([choices '(none normal worried angry raised)])
     (new choice%
          (label "Eyebrows")
