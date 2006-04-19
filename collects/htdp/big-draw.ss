@@ -1,16 +1,16 @@
 #cs
 (module big-draw mzscheme
   (require "error.ss"
-    "draw-sig.ss"
-    (lib "etc.ss")
-    (lib "posn.ss" "lang")
-    (lib "prim.ss" "lang")           
-    (lib "unitsig.ss")
-    (prefix mred: (lib "mred.ss" "mred"))
-    (lib "class.ss")
-    (lib "mred-sig.ss" "mred")
-    (lib "graphics-sig.ss" "graphics")
-    (lib "graphics-posn-less-unit.ss" "graphics"))
+           "draw-sig.ss"
+           (lib "etc.ss")
+           (lib "posn.ss" "lang")
+           (lib "prim.ss" "lang")           
+           (lib "unitsig.ss")
+           (prefix mred: (lib "mred.ss" "mred"))
+           (lib "class.ss")
+           (lib "mred-sig.ss" "mred")
+           (lib "graphics-sig.ss" "graphics")
+           (lib "graphics-posn-less-unit.ss" "graphics"))
   
   (define-values/invoke-unit/sig graphics:posn-less^
     graphics-posn-less@ #f 
@@ -19,6 +19,8 @@
   
   (provide-signature-elements graphics:posn-less^)
   
+  (define-primitive stop stop/proc)
+
   (define-primitive draw-solid-disk draw-solid-disk/proc)
   (define-primitive draw-circle draw-circle/proc)
   (define-primitive draw-solid-rect draw-solid-rect/proc)
@@ -29,9 +31,7 @@
   (define-primitive clear-solid-rect clear-solid-rect/proc)
   (define-primitive clear-solid-line clear-solid-line/proc)  
   (define-primitive clear-all clear-all/proc)
-  
-  ;   (provide draw-solid-string clear-solid-string)
-  
+
   (define-primitive draw-solid-string draw-string/proc)
   (define-primitive clear-solid-string clear-string/proc)
   
@@ -45,17 +45,31 @@
   (define-primitive big-bang big-bang/proc)
   (define-primitive end-of-time end-of-time/proc)
   
+  ;; (union #f viewport)
+  ;; the view port for normal operation 
+  (define @vp #f)
+  
+  ;; boolean 
+  ;; state: are the operations "grouped" into a draw sequence? 
+  (define in-sequence? #f) 
+  
+  ;; (union #f pixmap) 
+  ;; the pixmap for "grouped" operations 
+  (define @pm #f)
+  
+  ;; -> (list Viewport Viewport)
+  (define (get-@VP) (list @vp @pm))
+  
   (define the-error (lambda x (error "evaluate (start <num> <num>) first")))
   (define-syntax (define-hook stx)
     (syntax-case stx ()
       [(_ name)
        (let* ([stuff (symbol->string (syntax-e (syntax name)))]
               [fools (lambda (x) (datum->syntax-object #'name (string->symbol x)))]
-              [%name (fools (format "%~a" stuff))]
+              [%name (fools (format "%~a" stuff))] ;; works on viewport 
               [proc  (fools (format "~a/proc" stuff))])
          #`(define-values (#,%name #,proc)
-             (values the-error
-	       (lambda a (apply #,%name a)))))]))
+             (values the-error (lambda a (apply #,%name a)))))]))
   
   (define-syntax (define-hook-draw/clear stx)
     (syntax-case stx () 
@@ -85,8 +99,9 @@
   (define-hook on-tick-event)
   (define-hook end-of-time)
   
-  (define (make-true f) (lambda x (apply f x) #t))
-  (define sleep-for-a-while/proc (make-true mred:sleep/yield))
+  (define-hook stop)
+  
+  (define (sleep-for-a-while/proc s) (mred:sleep/yield s) #t)
   
   (define-syntax (define-make stx)
     (syntax-case stx ()
@@ -99,7 +114,9 @@
               [ffff  (fools "f")]
               [x     (fools "x")])
          #`(define (#,make- #,name #,ffff)
-             (make-true (lambda #,x (apply procedure #,x)))))]))
+             (lambda #,x
+               (apply procedure #,x)
+               #t)))]))
   
   (define-make line 
     (lambda (p1 p2 . c)
@@ -144,151 +161,150 @@
         (check-arity name (- n 1) x))
     (symbol->color (if (null? c) 'black (car c))))
   
-  (define (start WIDTH HEIGHT)
+  ;; Semaphore
+  ;; only one world can perform a draw sequence, including a start-up sequence 
+  (define seq-lock (make-semaphore 1))
+  
+  (define is-graphics-open? #f)
+  (define (start WIDTH HEIGHT) (start-and-export WIDTH HEIGHT (make-hash-table)))
+  (define (start-and-export WIDTH HEIGHT h)
+    (define-syntax setter
+      (syntax-rules ()
+        [(_ vp* pm* name exp) 
+         (begin 
+           (set! name 
+                 (let ([direct (let ([vp* vp*]) exp)][pmap (let ([vp* pm*]) exp)])
+                   (lambda a (if in-sequence? (apply pmap a) (apply direct a)))))
+           (hash-table-put! h 'name name))]))
+    
+    ;; Call after (start ... ...) to collect all the newly created closures 
     (check-arg 'start (and (integer? WIDTH) (> WIDTH 0)) "positive integer" "first" WIDTH)
     (check-arg 'start (and (integer? HEIGHT) (> HEIGHT 0)) "positive integer" "second" HEIGHT)
-    ;; --- 
-    (open-graphics)
-    (let ((current-window (open-viewport "Canvas" WIDTH HEIGHT))
-          (*delta* 0))
-      (set! @vp current-window)
-      (set! @pm (open-pixmap "Canvas" WIDTH HEIGHT))
-      (set-draw-ops current-window)
+    (semaphore-wait seq-lock)
+    ;; ---
+    (unless is-graphics-open?
+      (set! is-graphics-open? #t)
+      (open-graphics))
+    (let* ((tag (symbol->string (gensym)))
+           (vpn (string-append "Canvas VP: " tag))
+           (pmn (string-append "Canvas PM: " tag))
+           (vp* (open-viewport vpn WIDTH HEIGHT))
+           (pm* (open-pixmap pmn WIDTH HEIGHT))
+           (lbl (lambda () (if in-sequence? pmn vpn)))
+           (*delta* 0))
+      (hash-table-put! h 'label lbl)
+      (set! @vp vp*)
+      (set! @pm pm*)
+      ;; --- the following need two versions 
+      (setter vp* pm* %clear-all (clear-viewport vp*))    
+      (setter vp* pm* %draw-solid-line (make-line 'draw-solid-line (draw-line vp*)))
+      (setter vp* pm* %clear-solid-line (make-line 'clear-solid-line (lambda (p1 p2 c) ((clear-line vp*) p1 p2))))
+      (setter vp* pm* %draw-solid-rect (make-rect 'draw-solid-rect (draw-solid-rectangle vp*)))
+      (setter vp* pm* %clear-solid-rect (make-rect 'clear-solid-rect (lambda (p w h c) ((clear-solid-rectangle vp*) p w h))))
+      (setter vp* pm* %draw-solid-disk (make-circle 'draw-solid-disk (draw-solid-ellipse vp*)))
+      (setter vp* pm* %clear-solid-disk (make-circle 'clear-solid-disk (lambda (p r1 r2 c) ((clear-solid-ellipse vp*) p r1 r2))))
+      (setter vp* pm* %draw-circle (make-circle 'draw-circle (draw-ellipse vp*)))
+      (setter vp* pm* %clear-circle (make-circle 'clear-circle (lambda (p r1 r2 c) ((clear-ellipse vp*) p r1 r2))))
+      (setter vp* pm* %draw-string (make-%string 'draw-string (lambda (p s) [(draw-string vp*) p s])))
+      (setter vp* pm* %clear-string (make-%string 'clear-string (clear-string vp*))) 
+      ;; --- 
+      (set! %end-of-time
+            (lambda () 
+              [(stop-tick vp*)]
+              [(stop-tick pm*)] 
+              #t))
+      (hash-table-put! h '%end-of-time %end-of-time)
+      ;; ---
+      (set! %stop
+            (let ([a (lambda () (close-viewport @vp) (close-viewport @pm))])
+              (lambda ()
+                [(stop-tick vp*)]
+                [(stop-tick pm*)]
+                (if in-sequence? 
+                    (set! @end-actions (cons a @end-actions))
+                    [a])
+                #t)))
+      (hash-table-put! h '%stop %stop)
+      ;; --- 
+      (hash-table-put! h 'copy (lambda () (set! @vp vp*) (set! @pm pm*) [(clear-viewport pm*)]))
+      ;; ---
+      ;; --- the following can't happend during a draw sequence --- 
+      (set! %wait-for-mouse-click (lambda () (mouse-click-posn (get-mouse-click vp*))))      
+      (set! %get-key-event
+            (lambda ()
+              (cond
+                [(ready-key-press vp*) => key-value]
+                [else false])))    
+      (set! %get-mouse-event
+            (lambda ()
+              (cond
+                [(ready-mouse-click vp*) => mouse-click-posn]
+                [else false])))
       (set! %on-key-event
-	(lambda (f)
-	  (check-proc 'on-key-event f 2 'first 'two)
-	  ((set-on-key-event current-window) 
-	   (lambda (x y) (f (key-value x) y)))
-	  #t))
-      
+            (lambda (f)
+              (check-proc 'on-key-event f 2 'first 'two)
+              ((set-on-key-event vp*) 
+               (lambda (x y) (f (key-value x) y)))
+              #t))
       (set! %on-tick-event
-	(lambda (f)
-	  (let* ([w (ceiling (* 1000 *delta*))]
-		 [w (if (exact? w) w (inexact->exact w))])
-	    (check-proc 'on-key-event f 1 'first 'one)
-	    ((set-on-tick-event current-window) w
-	     (lambda (x) (f x)))
-	    #t)))
-      
+            (lambda (f)
+              (let* ([w (ceiling (* 1000 *delta*))]
+                     [w (if (exact? w) w (inexact->exact w))])
+                (check-proc 'on-key-event f 1 'first 'one)
+                ((set-on-tick-event vp*) w (lambda (x) (f x)))
+                #t)))
       (set! %big-bang 
-	(lambda (delta w)
-	  (check-arg 'big-bang
-	    (and (number? delta) (>= delta 0))
-	    "number [of seconds] between 0 and 1000000"
-	    "first"
-	    delta)
-	  (set! *delta* delta)
-	  ((init-world current-window) w) #t))
+            (lambda (delta w)
+              (check-arg 'big-bang
+                         (and (number? delta) (>= delta 0))
+                         "number [of seconds] between 0 and 1000000"
+                         "first"
+                         delta)
+              (set! *delta* delta)
+              ((init-world vp*) w) 
+              #t))
       
-      (set! %end-of-time (lambda () ((stop-tick current-window))))
+      (semaphore-post seq-lock)
       #t))
 
-  (define @pm #f)
-
-  (define (begin-draw-sequence width height)
-    (check-arg 'start (and (integer? width) (> width 0)) "positive integer" "first" width)
-    (check-arg 'start (and (integer? height) (> height 0)) "positive integer" "second" height)
-    ([draw-rectangle @pm] (make-posn 0 0) width height "white")
-    (set-draw-ops @pm)
-    #t)
-
-  (define (end-draw-sequence)
-    (copy-viewport @pm @vp)
-    (set-draw-ops @vp)
-    #t)
-
-  (define (set-draw-ops current-window)
-    (set! %clear-all (clear-viewport current-window))
-      
-    (set! %draw-solid-line
-      (make-line 'draw-solid-line (draw-line current-window)))
-      
-    (set! %clear-solid-line
-      (make-line 'clear-solid-line
-	(lambda (p1 p2 c)
-	  ((clear-line current-window) p1 p2))))
-      
-    (set! %draw-solid-rect (make-rect 'draw-solid-rect (draw-solid-rectangle current-window)))
-    (set! %clear-solid-rect
-      (make-rect 'clear-solid-rect
-	(lambda (p w h c)
-	  ((clear-solid-rectangle current-window) p w h))))
-      
-    (set! %draw-solid-disk (make-circle 'draw-solid-disk (draw-solid-ellipse current-window)))
-    (set! %clear-solid-disk
-      (make-circle 'clear-solid-disk
-	(lambda (p r1 r2 c)
-	  ((clear-solid-ellipse current-window) p r1 r2))))
-      
-    (set! %draw-circle (make-circle 'draw-circle (draw-ellipse current-window)))
-    (set! %clear-circle
-      (make-circle 'clear-circle
-	(lambda (p r1 r2 c)
-	  ((clear-ellipse current-window) p r1 r2))))
-      
-      
-    (set! %draw-string (make-%string 'draw-string (draw-string current-window)))
-    (set! %clear-string (make-%string 'clear-string (clear-string current-window)))
-      
-    (set! %wait-for-mouse-click
-      (lambda ()
-	(mouse-click-posn
-	  (get-mouse-click current-window))))
-      
-    (set! %get-key-event
-      (lambda ()
-	(cond
-	  [(ready-key-press current-window) => key-value]
-	  [else false])))
-
-    (set! %get-mouse-event
-      (lambda ()
-	(cond
-	  [(ready-mouse-click current-window) => mouse-click-posn]
-	  [else false])))
+  ;; [Listof (-> Void)]
+  ;; a list of actions to be performed after the drawing action is done. 
+  (define @end-actions '())
+  
+  ;; Viewport Pixmap -> true
+  ;; start a drawing sequence by clearing the pixmap and making it the "target" for all operations 
+  ;; effect: in-sequence?, @vp and @pm so that copy-viewport can work later 
+  ;; The draw sequence can only draw (and clear) elements from the pixmap. 
+  ;; It doesn't react to events. Should it disable them? 
+  ;; Or do we count on finishing the sequence fast enough?
+  (define (begin-draw-sequence)
+    (semaphore-wait seq-lock)
+    (set! in-sequence? #t)
     #t)
   
-  (define (stop)
-    (close-graphics)
-    (set! @vp #f)
-    (set! %clear-all the-error)
-    
-    (set! %draw-solid-line the-error)
-    (set! %clear-solid-line the-error)
-    
-    (set! %draw-solid-rect the-error)
-    (set! %clear-solid-rect the-error)
-    
-    (set! %draw-solid-disk the-error)
-    (set! %clear-solid-disk the-error)
-    
-    (set! %draw-circle the-error)
-    (set! %clear-circle the-error)
-    
-    (set! %wait-for-mouse-click the-error)
-    
-    (set! %get-key-event the-error)
-    (set! %on-key-event the-error)
-    (set! %big-bang the-error)
-    
-    (set! %get-mouse-event the-error)
+  ;; -> true 
+  ;; stop a drawing sequence and copy the pixmap into the viewport 
+  ;; effect: in-sequence? 
+  (define (end-draw-sequence)
+    (set! in-sequence? #f)
+    (copy-viewport @pm @vp)
+    (for-each (lambda (th) (th)) @end-actions)
+    (set! @end-actions '())
+    (semaphore-post seq-lock)
     #t)
   
   ;; start/cartesian-plane : Number Number -> true
   ;; start up a canvas of size width x height  and draw a centered cartesian coordinate
   (define (start/cartesian-plane width height)
     (check-arg 'start/cartesian-plane
-      (and (integer? width) (> width 0)) "positive integer" "first" width)
+               (and (integer? width) (> width 0)) "positive integer" "first" width)
     (check-arg 'start/cartesian-plane
-      (and (integer? height) (> height 0)) "positive integer" "second" height)    
+               (and (integer? height) (> height 0)) "positive integer" "second" height)    
     (local ((define trash  (start width height))
             (define mid-x  (quotient width 2))
             (define mid-y  (quotient height 2)))
       (and (draw-solid-line (make-posn mid-x 0) (make-posn mid-x height))
-	(draw-solid-line (make-posn 0 mid-y) (make-posn width mid-y)))))
-  
-  (define @vp #f)
-  (define (get-@VP) @vp)
+           (draw-solid-line (make-posn 0 mid-y) (make-posn width mid-y)))))
   
   (provide-signature-elements draw^)
   
@@ -304,7 +320,7 @@
       ((blue)    (make-rgb 0 0 1.0))
       ((black)   (make-rgb 0 0 0))
       (else
-	(let ([x (send mred:the-color-database find-color (symbol->string s))])
-	  (if (rgb? x)
-	      x
-	      (error 'draw.ss "The symbol ~e is not a legal color in draw.ss." s)))))))
+       (let ([x (send mred:the-color-database find-color (symbol->string s))])
+         (if (rgb? x)
+             x
+             (error 'draw.ss "The symbol ~e is not a legal color in draw.ss." s)))))))
