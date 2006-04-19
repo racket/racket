@@ -1,7 +1,7 @@
 { (define LIBNAME "A Functional Drawing Library (HtDC)")
   (include "head.tinc") }
 
-This `draw' package provides classes and methods for modeling in a visual
+This `draw' package provides classes and methods for a visual
 world. Here is its class diagram of public fields and methods: 
 <pre>
 <code>
