@@ -205,13 +205,14 @@
         [the-world #f]
         ;; KeyEvent World -> Void
         [on-char-proc #f]
-        [__set-up-the-timer__
-         (set! timer-callback 
-               (lambda ()
-                 (set! the-world 
-                       (with-handlers ([exn:break? break-handler]
-                                       [exn? exn-handler])
-                         (on-tick-proc the-world)))))]
+	[the-time
+	  (new timer% [notify-callback (lambda () (timer-callback))])]
+	[timer-callback
+	  (lambda ()
+	    (set! the-world 
+	      (with-handlers ([exn:break? break-handler]
+			      [exn? exn-handler])
+		(on-tick-proc the-world))))]
         ;; World -> World 
         [on-tick-proc void]
         [exn-handler 
@@ -243,14 +244,13 @@
                             #t)))))))]
         [set-on-tick-proc ;; Number [seconds] (World -> World) -> Void
          (lambda (delta f)
-           (if (eq? on-tick-proc void)
-               (set! on-tick-proc f)
-               (error 'on-tick "the timing action has been set already"))
-           (send the-time start delta))]
+	   (if (eq? on-tick-proc void)
+	       (set! on-tick-proc f)
+	       (error 'on-tick "the timing action has been set already"))
+	   (send the-time start delta))]
         [stop-tick 
          (lambda ()
-           (set! on-char-proc #f)
-           (set! on-tick-proc void)
+	   (send the-time stop)
 	   the-world)]
         [init-world (lambda (w) (set! the-world w))])
       ;; --- end timing stuff
@@ -304,9 +304,9 @@
   (define open-frames-timer (make-object mred:timer%))
   
   ;; --- timing events --- MF
-  [define the-time
-    (new timer% [notify-callback (lambda () (timer-callback))])]
-  [define timer-callback void]
+  [define the-time---old
+    (new timer% [notify-callback (lambda () (timer-callback---old))])]
+  [define timer-callback---old void]
   ;; --- end timing --- 
 
   (define sixlib-frame%
@@ -315,7 +315,7 @@
       (define/public (set-canvas x) (set! canvas x))
       (define/augment (on-close)        
 	(close-viewport (send canvas get-viewport))
-        (send the-time stop)
+        (send canvas stop-tick)
 	(inner (void) on-close))
       (super-instantiate ()
 			 [stretchable-height #f]
@@ -410,8 +410,6 @@
 	  (send vdc clear)
 	  (send vbdc clear)))))
 
-
-  
   (define draw-viewport
     (lambda (viewport)
       (let* ([dc (viewport-dc viewport)]
@@ -1189,8 +1187,7 @@
 		     (let*
 			 ([frame
 			   (parameterize ([mred:current-eventspace sixlib-eventspace])
-			     (make-object sixlib-frame%
-                               label #f width height))]
+			     (make-object sixlib-frame% label #f width height))]
 			  [panel (make-object mred:vertical-panel% frame)]
 			  [canvas (make-object sixlib-canvas% panel)]
 			  [_ (begin
@@ -1223,7 +1220,7 @@
   
   (define open-viewport (make-open-viewport 'open-viewport #t))
   (define open-pixmap (make-open-viewport 'open-pixmap #f))
-  
+
   (define (default-display-is-color?) (mred:is-color-display?))
   
   (define position-display
@@ -1233,7 +1230,6 @@
 	[else (begin 
 		(display (query-mouse-posn viewport))
 		(position-display viewport (- counter 1)))])))
-  
   
   (define create-cmap
     (lambda ()
