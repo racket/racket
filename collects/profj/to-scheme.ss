@@ -573,7 +573,11 @@
                                        (eq? 'anonymous kind)
                                        (eq? 'statement kind))
                              provides)
-                          ,@(if (null? restricted-methods)
+                          ,@(if (null? (accesses-private methods))
+                                null
+                                (list
+                                 (create-local-names (make-method-names (accesses-private methods) null))))
+                          #;(if (null? restricted-methods)
                                 null
                                 (list (create-local-names (append (make-method-names (accesses-private methods) null)
                                                                   restricted-methods))))
