@@ -24,7 +24,7 @@
           #:eyebrow-shading?
           #:tongue-shading?
           #:face-background-shading?
-          #:teeth-shading?))
+          #:teeth?))
   
   (define moods
     '(unhappiest

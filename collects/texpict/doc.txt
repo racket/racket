@@ -1042,16 +1042,18 @@ implements an interactive browser for face configurations.
       - pupil-dx adjusts the pupil; recommend values: between -10 and 10
       - pupil-dy adjusts the pupil; recommend values: between -15 and 15
 
-> eyebrow-shading : (parameter boolean)
-> mouth-shading : (parameter boolean)
-> eye-shading  : (parameter boolean)
-> tongue-shading : (parameter boolean)
-> face-background-shading : (parameter boolean)
-> teeth-shading : (parameter boolean)
+In addition to the above, the function also accepts these keywords,
+each of which is a boolean. With the exception of the last one, they
+control if there is a shading on a particular feature in the face
+(shading tends to look worse than just anti-aliasing when the face is
+small). The last one controls the visibility of the teeth.
 
-The above parameters control the shading of features on the
-face. At small sizes, the shading tends to make the face
-look worse, so can be disabled, as necessary.
+ #:eyebrow-shading?
+ #:mouth-shading?
+ #:eye-shading?
+ #:tongue-shading?
+ #:face-background-shading?
+ #:teeth?
 
 ------------------------------------------------------------
 _flash.ss_

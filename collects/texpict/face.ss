@@ -33,7 +33,7 @@
                 (eyebrow-shading? #t)
                 (tongue-shading? #t)
                 (face-background-shading? #t)
-                (teeth-shading? #t))
+                (teeth? #t))
                
       (define face-color (if (string? in-face-color)
                              (make-object color% in-face-color)
@@ -153,21 +153,22 @@
                   ;; Assumes clipping region is set
                   (send dc set-brush (find-brush "white"))
                   (send dc draw-ellipse x y w h)
-                  (series dc 
-                          (if teeth-shading? 5 0)
-                          (make-object color% "darkgray")
-                          (make-object color% "lightgray")
-                          (lambda (i)
-                            (let loop ([j 0][delta 0][tw (* w 1/10)])
-                              (unless (= j 5)
-                                (send dc draw-rectangle
-                                      (+ x (* w 1/2) delta 1) y
-                                      (- tw i 1) h)
-                                (send dc draw-rectangle
-                                      (+ x (* w 1/2) (- delta) (- tw) 1) y
-                                      (- tw i 1) h)
-                                (loop (add1 j) (+ delta tw) (* 8/10 tw)))))
-                          #f #t))
+                  (when teeth?
+                    (series dc 
+                            5
+                            (make-object color% "darkgray")
+                            (make-object color% "lightgray")
+                            (lambda (i)
+                              (let loop ([j 0][delta 0][tw (* w 1/10)])
+                                (unless (= j 5)
+                                  (send dc draw-rectangle
+                                        (+ x (* w 1/2) delta 1) y
+                                        (- tw i 1) h)
+                                  (send dc draw-rectangle
+                                        (+ x (* w 1/2) (- delta) (- tw) 1) y
+                                        (- tw i 1) h)
+                                  (loop (add1 j) (+ delta tw) (* 8/10 tw)))))
+                            #f #t)))
                 
                 (define (toothy-smile tw th ta bw bh ba flip? ddy)
                   (let-values ([(path) (make-object dc-path%)]
@@ -333,9 +334,17 @@
                 (send dc set-pen old-pen))
               w h 0 0))))
 
+  (define-syntax (case/good-error-message stx)
+    (syntax-case stx (else)
+      [(_ test [(sym ...) e] ... [else x last-e])
+       (syntax
+        (case test 
+          [(sym ...) e]  ...
+          [else (let ([x (apply append '((sym ...) ...))]) last-e)]))]))
+      
   (define face
     (opt-lambda (mood [face-color default-face-color])
-      (case mood
+      (case/good-error-message mood
 	[(unhappy)
 	 (face* 'none 'plain #t face-color 6)]
 	[(sortof-happy)
@@ -362,4 +371,4 @@
          (face* 'angry 'narrow #f face-color 0)]
         [(surprised)
          (face* 'worried 'oh #t face-color -4 -3 2)]
-	[else (error 'face "unknown mood: ~e" mood)]))))
+	[else all-ids (error 'face "unknown mood: ~e, expected one of ~s" mood all-ids)]))))
