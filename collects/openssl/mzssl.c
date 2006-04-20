@@ -1105,7 +1105,7 @@ static Scheme_Object *ssl_connect(int argc, Scheme_Object *argv[])
 
     /* see if the connection succeeded, or die if it didn't */
     {
-      int so_len = sizeof(status);
+      unsigned int so_len = sizeof(status);
       if(getsockopt(sock, SOL_SOCKET,SO_ERROR, (void*)&status, &so_len) != 0) {
 	errstr = NULL;
 	err = status; 
@@ -1504,7 +1504,7 @@ ssl_accept(int argc, Scheme_Object *argv[])
   int was_closed = 0, errid;
   Scheme_Object *listener;
   int s;
-  int l;
+  unsigned int l;
   GC_CAN_IGNORE struct sockaddr_in tcp_accept_addr;
   
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), ssl_listener_type))
@@ -1604,10 +1604,10 @@ static Scheme_Object *ssl_addresses(int argc, Scheme_Object *argv[])
 		     "ssl-addresses: port is closed");
 
   {
-    int l;
+    unsigned int l;
     char here[MZ_SOCK_NAME_MAX_LEN], there[MZ_SOCK_NAME_MAX_LEN];
     char host_buf[MZ_SOCK_HOST_NAME_MAX_LEN];
-    int here_len, there_len;
+    unsigned int here_len, there_len;
 
     l = sizeof(here);
     if (getsockname(fd, (struct sockaddr *)here, &l)) {
