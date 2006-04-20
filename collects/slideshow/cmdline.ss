@@ -69,6 +69,10 @@
         
 	(define init-page 0)
 	
+        (define (die name . args)
+          (fprintf (current-error-port) "~a: ~a\n" name (apply format args))
+          (exit -1))
+        
 	(define file-to-load
 	  (command-line
 	   "slideshow"
@@ -91,7 +95,7 @@
 			    (integer? n)
 			    (exact? n)
 			    (positive? n))
-		 (error 'slideshow "argument to -t is not a positive exact integer: ~a" page))
+		 (die 'slideshow "argument to -t is not a positive exact integer: ~a" page))
 	       (set! init-page (sub1 n))))
 	    (("-q" "--quad") "show four slides at a time"
 	     (set! quad-view? #t)
@@ -104,9 +108,9 @@
 	     (let ([nw (string->number w)]
 		   [nh (string->number h)])
 	       (unless (and nw (< 0 nw 10000))
-		 (error 'slideshow "bad width: ~e" w))
+		 (die 'slideshow "bad width: ~e" w))
 	       (unless (and nw (< 0 nh 10000))
-		 (error 'slideshow "bad height: ~e" h))
+		 (die 'slideshow "bad height: ~e" h))
 	       (set! actual-screen-w nw)
 	       (set! actual-screen-h nh)))
 	    (("-a" "--squash") "scale to full window, even if not 4:3 aspect"
@@ -122,7 +126,7 @@
 			    (integer? n)
 			    (exact? n)
 			    (positive? n))
-		 (error 'slideshow "argument to -m is not a positive exact integer: ~a" min))
+		 (die 'slideshow "argument to -m is not a positive exact integer: ~a" min))
 	       (set! talk-duration-minutes n)))
 	    (("-i" "--immediate") "no transitions"
 	     (set! use-transitions? #f))
@@ -143,8 +147,13 @@
 	   [args slide-module-file
 		 (cond
 		  [(null? slide-module-file) #f]
-		  [(null? (cdr slide-module-file)) (car slide-module-file)]
-		  [else (error 'slideshow
+		  [(null? (cdr slide-module-file)) 
+                   (let ([candidate (car slide-module-file)])
+                     (unless (file-exists? candidate)
+                       (die 'slideshow "expected a filename on the commandline, given: ~a"
+                              candidate))
+                     candidate)]
+		  [else (die 'slideshow
 			       "expects at most one module file, given ~a: ~s"
 			       (length slide-module-file)
 			       slide-module-file)])]))
