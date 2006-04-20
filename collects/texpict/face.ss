@@ -40,6 +40,7 @@
                              in-face-color))
       (define face-bright-edge-color (scale-color #e1.6 face-color))
       (define face-edge-color (scale-color #e0.8 face-color))
+      (define face-dark-edge-color (scale-color #e0.6 face-color))
       (define face-hard-edge-color (scale-color #e0.8 face-edge-color))
       (let ([w 300]
             [h 300])
@@ -270,19 +271,24 @@
                    flip? 0))
                 
                 (define (oh)
-                  (series dc 
-                          (if mouth-shading? 5 0)
-                          face-edge-color
-                          (make-object color% "black")
-                          (lambda (i)
-                            (let ([sw (* w 7/20)]
-                                  [sh (* h 8/20)])
-                              (send dc draw-ellipse
-                                    (+ x i (/ (- w sw) 2))
-                                    (+ y i (* h 1/4) (* h -1/16) (/ (- h sh) 2))
-                                    (- sw (* i 2))
-                                    (- sh (* i 2)))))
-                          #t #t))
+                  (let ([do-draw
+                         (λ (i)
+                           (let ([sw (* w 7/20)]
+                                 [sh (* h 8/20)])
+                             (send dc draw-ellipse
+                                   (+ x i (/ (- w sw) 2))
+                                   (+ y (* i .75) (* h 1/4) (* h -1/16) (/ (- h sh) 2))
+                                   (- sw (* i 2))
+                                   (- sh (* i 2)))))])
+                    (series dc 
+                            (if mouth-shading? 5 0)
+                            face-color
+                            face-dark-edge-color
+                            do-draw
+                            #t #t)
+                    (send dc set-brush (find-brush "black"))
+                    (send dc set-pen no-pen)
+                    (do-draw 9)))
                 
                 (define (draw-eyes inset)
                   ;; Draw eyes

@@ -99,8 +99,9 @@
   (new slider%
        (label "Eye Inset")
        (parent custom-left-panel)
-       (min-value 0)
+       (min-value -10)
        (max-value 10)
+       (init-value 0)
        (callback (lambda (s e)
                    (set! face-eye-inset (send s get-value))
                    (new-face-callback))))
@@ -168,5 +169,5 @@
   
   (send c min-width (inexact->exact (floor (* canvas-scale (pict-width the-pict)))))
   (send c min-height (inexact->exact (floor (* canvas-scale (pict-height the-pict)))))
-
+ 
   (send f show #t))
