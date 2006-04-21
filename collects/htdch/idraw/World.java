@@ -6,15 +6,18 @@ public abstract class World {
 
  public void bigBang(int width, int height, double s) {
 	if (width <= 0)
-	    Util.error("The method bigBang(int,int,double) expects " +
+           throw new RuntimeException(
+	              "The method bigBang(int,int,double) expects " +
 		       "the first argument to be greather than 0, given " 
 		       + width);
 	if (height <= 0)
-	    Util.error("The method bigBang(int,int,double) expects " +
+	    throw new RuntimeException(
+                       "The method bigBang(int,int,double) expects " +
 		       "the second argument to be greather than 0, given " 
 		       + height);
 	if (s <= 0)
-	    Util.error("The method bigBang(int,int,double) expects " +
+	    throw new RuntimeException(
+                       "The method bigBang(int,int,double) expects " +
 		       "the third argument to be greather than 0, given " 
 		       + s);
 	theCanvas = new Canvas(width,height); 
