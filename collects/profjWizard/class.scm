@@ -172,12 +172,12 @@
      ;; identifiers ending in f are format strings, and require ~n for newline
      
      ;; Abstract Class 
-     (define abstractF "abstract class ~a {\n")
+     (define abstractF "interface ~a {\n")
      ;; Abstract Template 
      (define purpos "  // purpose statement \n")
      (define absteg "  abstract ??? mmm();\n")       
      ;; Class 
-     (define classf "class ~a ~a{~n") (define extendsf "extends ~a ")
+     (define classf "class ~a ~a{~n") (define extendsf "implements ~a ")
      ;; Fields
      (define declaf "  ~a ~a;~n")
      ;; Constructor

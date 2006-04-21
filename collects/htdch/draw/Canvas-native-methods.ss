@@ -21,8 +21,10 @@
     (syntax-case stx ()
       [(_ body)
        #'(with-handlers 
-             ((exn:fail? 
-               (lambda (e) (raise-error "The method start(int,int) must be called on the canvas before using any drawing methods"))))
+	   ((exn:fail? 
+               (lambda (e)
+		 (raise-error
+		   "The method start(int,int) must be called on the canvas before using any drawing methods"))))
            body)]))
   
   (define-syntax (define/provide stx)
