@@ -1484,9 +1484,7 @@ user_write_result(const char *who, Scheme_Output_Port *port, int evt_ok,
   while (1) {
     if (SCHEME_FALSEP(val)) {
       if (!rarely_block)
-	scheme_arg_mismatch(who,
-			    "bad result for blocking mode: ",
-			    val);
+	return 0; /* #f result is allowed, though not preferred */
       else if (rarely_block == 2)
 	return -1;
       else if (!evt_ok)
@@ -1510,7 +1508,10 @@ user_write_result(const char *who, Scheme_Output_Port *port, int evt_ok,
 			    val);
       }
 
-      return n;
+      if (!len && !rarely_block)
+	return 1; /* turn 0 into 1 to indicate a successful blocking flush */
+      else
+	return n;
     } else if (evt_ok && scheme_is_evt(val)) {
       /* A write failed, and we were given a evt that unblocks when
 	 the write succeeds. */
@@ -1581,10 +1582,17 @@ user_write_bytes(Scheme_Output_Port *port, const char *str, long offset, long le
 
     scheme_pop_break_enable(&cframe, 1);
 
-    if (n || (rarely_block != 1))
-      return n;
+    if (!n && !rarely_block) {
+      /* Try blocking write/flush again */
+    } else {
+      if (n || (rarely_block != 1)) {
+	if (!rarely_block && !len)
+	  return 0; /* n == 1 for success, but caller wants 0 */
+	return n;
+      }
+      /* else rarely_block == 1, and we haven't written anything. */
+    }
 
-    /* rarely_block == 1, and we haven't written anything. */
     scheme_thread_block(0.0);
     scheme_current_thread->ran_some = 1;
   }
