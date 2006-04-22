@@ -110,7 +110,10 @@
 				 (focus)
 				 (set-value item)
 				 (let ([e (get-editor)])
-				   (send e set-position 0 (send e last-position))))))])
+				   (send e set-position 0 (send e last-position)))
+				 (send (as-entry (lambda () (mred->wx this)))
+				       command
+				       (make-object wx:control-event% 'text-field)))))])
       (override
 	[on-subwindow-event (lambda (w e)
 			      (and (send e button-down?)
