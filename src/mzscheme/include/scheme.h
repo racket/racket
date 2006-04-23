@@ -1563,6 +1563,8 @@ MZ_EXTERN Scheme_Object *(*scheme_make_stderr)(void);
 
 MZ_EXTERN void scheme_set_banner(char *s);
 MZ_EXTERN Scheme_Object *scheme_set_exec_cmd(char *s);
+MZ_EXTERN Scheme_Object *scheme_set_run_cmd(char *s);
+MZ_EXTERN void scheme_set_collects_path(Scheme_Object *p);
 
 /* Initialization */
 MZ_EXTERN Scheme_Env *scheme_basic_env(void);

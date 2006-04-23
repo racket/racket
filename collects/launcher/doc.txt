@@ -37,6 +37,11 @@ executables.
               script will call (ignoring `args'); if this name is not
               provided, the script will go through the MrEd executable
 
+      _'relative?_ (Unix, Mac OS X Mzscheme or 'script[-3m] variant,
+              or Windows in 'independent? mode) - a boolean, where #t
+              means that the generate shell script should launch the
+              executable through a relative path
+
    See also `build-aux-from-path' below. The default `aux' is `null'.
 
    For Unix/X, the script created by `make-mred-launcher' detects and

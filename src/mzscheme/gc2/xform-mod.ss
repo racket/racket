@@ -40,7 +40,10 @@
     [("--cpp") cmdline "set CPP command line"
      (set! cpp cmdline)]
     [("-o") dest-file "name destination file"
-     (set! file-out dest-file)]]
+     (set! file-out dest-file)]
+    [("+D") def "add CPP -D flag"
+     (set! cpp (string-append cpp " -D" 
+			      (regexp-replace* "[ \"]" def "'\\0'")))]]
    [args (file)
 	 (set! file-in file)])
 

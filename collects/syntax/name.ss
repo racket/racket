@@ -8,9 +8,14 @@
 	  (or n
 	      (let ([s (syntax-source stx)])
 		(and s
-		     (let ([s (cond
-			       [(path? s) (path->string s)]
-			       [else s])]
+		     (let ([s (let ([s (format
+					"~a"
+					(cond
+					 [(path? s) (path->string s)]
+					 [else s]))])
+				(if ((string-length s) . > . 20)
+				    (string-append "..." (substring s (- (string-length s) 20)))
+				    s))]
 			   [l (syntax-line stx)]
 			   [c (syntax-column stx)])
 		       (if l

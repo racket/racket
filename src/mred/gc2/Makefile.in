@@ -54,7 +54,7 @@ XFORM_INC_wx_xt = -Dwx_xt -I$(WXDIR)/src/XWidgets -I$(WXDIR)/src
 XFORM_INC_wx_mac = -Dwx_mac -DOS_X -MMD -DWX_CARBON -I$(WXMACDIR)/../utils/image/src -I$(WXMACDIR)/../contrib/wxxpm/libxpm.34b/lib -I$(WXMACDIR)/../../mac/mzscheme
 
 MZMMM_wx_xt = ../../mzscheme/mzscheme3m
-MZMMM_wx_mac = env DYLD_FRAMEWORK_PATH="`pwd`/../../mzscheme" ../../mzscheme/mzscheme3m
+MZMMM_wx_mac = ../../mzscheme/mzscheme3m
 MZMMM = $(MZMMM_@WXVARIANT@)
 
 XFORM_CMD = $(MZMMM) -rq $(srcdir)/../../mzscheme/gc2/xform.ss --setup 
@@ -68,6 +68,8 @@ WXBDIR=../../wxxt
 WXMACBDIR=../../wxmac/src
 
 MREDLDFLAGS = -L$(WXBDIR)/utils/image/src -L$(WXBDIR)/contrib/xpm/lib $(LDFLAGS) -L../../mzscheme -L../wxs -L../wxme -L$(WXBDIR)/src
+
+DEF_COLLECTS_DIR = +D INITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../../collects; pwd`"'"'
 
 xsrc/Window.cc: $(WXDIR)/src/Windows/Window.cc $(WXBDIR)/src/Windows/Window.@LTO@ $(XFORMDEP)
 	$(XFORM) xsrc/Window.cc $(WXDIR)/src/Windows/Window.cc
@@ -408,7 +410,7 @@ xsrc/mred.cc: $(srcdir)/../mred.cxx ../mred.@LTO@ $(XFORMDEP) $(XPRECOMP)
 	$(XFORMWP) xsrc/mred.cc $(srcdir)/../mred.cxx
 
 xsrc/mrmain.cc: $(srcdir)/../mrmain.cxx ../mrmain.@LTO@ $(XFORMDEP) $(XPRECOMP)
-	$(XFORMWP) xsrc/mrmain.cc $(srcdir)/../mrmain.cxx
+	$(XFORMWP) xsrc/mrmain.cc $(DEF_COLLECTS_DIR) $(srcdir)/../mrmain.cxx
 
 xsrc/mredx.cc: $(srcdir)/../mredx.cxx ../mredx.@LTO@ $(XFORMDEP) $(XPRECOMP)
 	$(XFORMWP) xsrc/mredx.cc $(srcdir)/../mredx.cxx
@@ -1370,6 +1372,7 @@ MRFWRES = PLT_MrEd.framework/Versions/$(FWVERSION)_3m/Resources/PLT_MrEd.rsrc
 	if [ ! -d ../PLT_MrEd.framework/Versions/$(FWVERSION)_3m ] ; then mkdir ../PLT_MrEd.framework/Versions/$(FWVERSION)_3m ; fi
 	cp $(MRFW) ../$(MRFW)
 	cp -r PLT_MrEd.framework/Versions/$(FWVERSION)_3m/Resources ../PLT_MrEd.framework/Versions/$(FWVERSION)_3m/Resources
+	/usr/bin/install_name_tool -change "PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "@executable_path/../../../PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" ../MrEd3m.app/Contents/MacOS/MrEd3m
 
 $(MRFW) : $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../mzscheme/libmzscheme3m.@LIBSFX@
 	$(MREDLINKER) -dynamiclib -o $(MRFW) -Wl,-headerpad_max_install_names $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../mzscheme/libmzscheme3m.@LIBSFX@ $(@WXVARIANT@_LIBS)

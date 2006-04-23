@@ -4,7 +4,8 @@
   (provide compiler:embed^)
 
   (define-signature compiler:embed^
-    (make-embedding-executable
+    (create-embedding-executable
+     make-embedding-executable
      write-module-bundle
      embedding-executable-is-directory?
      embedding-executable-is-actually-directory?

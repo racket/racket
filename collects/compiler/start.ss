@@ -43,6 +43,7 @@
   (define exe-embedded-flags (make-parameter '("-mvq-")))
   (define exe-embedded-libraries (make-parameter null))
   (define exe-aux (make-parameter null))
+  (define exe-embedded-lib-path (make-parameter #f))
 
   (define module-mode (make-parameter #f))
 
@@ -256,6 +257,10 @@
        [help-labels
 	"--------------------- executable configuration flags ------------------------"]
        [once-each
+	[("--collects")
+	 ,(lambda (f i)
+	    (exe-embedded-lib-path i))
+	 ("Path to libraries relative to --[gui-]exe executable" "path")]
 	[("--ico")
 	 ,(lambda (f i) (exe-aux
 			 (cons (cons 'ico i)
@@ -496,26 +501,26 @@
 		  (exe-output)
 		  (eq? mode 'gui-exe))])
        ((dynamic-require '(lib "embed.ss" "compiler" "private") 
-			 'mzc:make-embedding-executable)
+			 'mzc:create-embedding-executable)
 	dest
-	(eq? mode 'gui-exe) 
-	(compiler:option:verbose)
-	(cons
-	 `(#%mzc: (file ,(car source-files)))
-	 (map (lambda (l)
-		`(#t (lib ,@l)))
-	      (exe-embedded-libraries)))
-	null
-	`(require ,(string->symbol
-		    (format
-		     "#%mzc:~a"
-		     (let-values ([(base name dir?) (split-path (car source-files))])
-		       (path->bytes (path-replace-suffix name #""))))))
-	(let ([flags (exe-embedded-flags)])
-	  (if (eq? mode 'gui-exe) 
-	      (cons "-Z" flags)
-	      flags))
-	(exe-aux))
+	#:mred? (eq? mode 'gui-exe) 
+	#:verbose? (compiler:option:verbose)
+	#:modules (cons
+		   `(#%mzc: (file ,(car source-files)))
+		   (map (lambda (l)
+			  `(#t (lib ,@l)))
+			(exe-embedded-libraries)))
+	#:literal-expression `(require ,(string->symbol
+					 (format
+					  "#%mzc:~a"
+					  (let-values ([(base name dir?) (split-path (car source-files))])
+					    (path->bytes (path-replace-suffix name #""))))))
+	#:cmdline (let ([flags (exe-embedded-flags)])
+		    (if (eq? mode 'gui-exe) 
+			(cons "-Z" flags)
+			flags))
+	#:lib-path (exe-embedded-lib-path)
+	#:aux (exe-aux))
        (printf " [output to \"~a\"]~n" dest))]
     [(plt)
      (for-each (lambda (fd)

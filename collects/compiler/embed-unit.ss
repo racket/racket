@@ -8,6 +8,7 @@
 	   (lib "moddep.ss" "syntax")
 	   (lib "plist.ss" "xml")
 	   (lib "plthome.ss" "setup")
+	   (lib "kw.ss")
 	   "embed-sig.ss"
 	   "private/winicon.ss"
            "private/winsubsys.ss"
@@ -63,7 +64,7 @@
 	       [base (build-path c-path 'up 'up)]
 	       [fail
 		(lambda ()
-		  (error 'make-embedding-executable
+		  (error 'create-embedding-executable
 			 "can't find ~a executable"
 			 (if mred? "MrEd" "MzScheme")))]
 	       [variant-suffix (case variant
@@ -111,7 +112,7 @@
 	  (if m
 	      (caar m)
 	      (error 
-	       'make-embedding-executable
+	       'create-embedding-executable
 	       (format
 		"can't find ~a position in executable"
 		what)))))
@@ -477,7 +478,7 @@
 	  (when literal-expression
 	    (write literal-expression))))
 
-      ;; Use `write-module-bundle', but figure out how to put it into an executable
+      ;; The old interface:
       (define make-embedding-executable
 	(opt-lambda (dest mred? verbose? 
 			  modules 
@@ -486,17 +487,52 @@
 			  [aux null]
 			  [launcher? #f]
 			  [variant 'normal])
+	  (create-embedding-executable dest
+				       #:mred? mred?
+				       #:verbose? verbose?
+				       #:modules modules
+				       #:literal-files literal-files
+				       #:literal-expression literal-expression
+				       #:cmdline cmdline
+				       #:aux aux
+				       #:launcher? launcher?
+				       #:variant variant)))
+	  
+      ;; Use `write-module-bundle', but figure out how to put it into an executable
+      (define/kw (create-embedding-executable dest
+					      #:key
+					      [mred? #f]
+					      [verbose? #f]
+					      [modules null]
+					      [literal-files null]
+					      [literal-expression #f]
+					      [cmdline null]
+					      [aux null]
+					      [launcher? #f]
+					      [variant 'normal]
+					      [lib-path #f])
 	  (define keep-exe? (and launcher?
 				 (let ([m (assq 'forget-exe? aux)])
 				   (or (not m)
 				       (not (cdr m))))))
 	  (define long-cmdline? (or (eq? (system-type) 'windows)
 				    (and mred? (eq? 'macosx (system-type)))))
+	  (define lib-path-bytes (and lib-path
+				      (if (path? lib-path)
+					  (path->bytes lib-path)
+					  (if (string? lib-path)
+					      (string->bytes/locale lib-path)
+					      #f))))
 	  (unless (or long-cmdline?
 		      ((apply + (length cmdline) (map (lambda (s)
 							(bytes-length (string->bytes/utf-8 s)))
 						      cmdline)) . < . 50))
-	    (error 'make-embedding-executable "command line too long"))
+	    (error 'create-embedding-executable "command line too long"))
+	  (when lib-path
+	    (unless (path-string? lib-path)
+	      (raise-type-error 'create-embedding-executable "path, string, or #f" lib-path))
+	    (unless ((bytes-length lib-path-bytes) . <= . 512)
+	      (error 'create-embedding-executable "'collects-path value is too long")))
 	  (let ([exe (find-exe mred? variant)])
 	    (when verbose?
 	      (fprintf (current-error-port) "Copying to ~s~n" dest))
@@ -564,6 +600,13 @@
 					    (lambda () (find-cmdline 
 							"cmdline"
 							#"\\[Replace me for EXE hack")))]
+				  [libpos (and lib-path
+					       (let ([tag #"coLLECTs dIRECTORy:"])
+						 (+ (with-input-from-file dest-exe 
+						      (lambda () (find-cmdline 
+								  "collects path"
+								  tag)))
+						    (bytes-length tag))))]
 				  [anotherpos (and mred?
 						   (eq? 'windows (system-type))
 						   (let ([m (assq 'single-instance? aux)])
@@ -579,6 +622,10 @@
 				    (when anotherpos
 				      (file-position out anotherpos)
 				      (write-bytes #"no," out))
+				    (when libpos
+				      (file-position out libpos)
+				      (write-bytes lib-path-bytes out)
+				      (write-byte 0 out))
 				    (if long-cmdline?
 					;; write cmdline at end:
 					(file-position out end)
@@ -614,4 +661,4 @@
 			      (let ([m (and (eq? 'windows (system-type))
 					    (assq 'subsystem aux))])
 				(when m
-				  (set-subsystem dest-exe (cdr m))))))))))))))))))
+				  (set-subsystem dest-exe (cdr m)))))))))))))))))

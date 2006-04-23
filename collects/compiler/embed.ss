@@ -25,6 +25,7 @@
                              symbol?)
                             void?)])
   (provide write-module-bundle
+	   create-embedding-executable
            embedding-executable-is-directory?
            embedding-executable-put-file-extension+style+filters
 	   embedding-executable-add-suffix))

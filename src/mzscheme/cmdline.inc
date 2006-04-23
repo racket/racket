@@ -8,6 +8,31 @@
 char *cmdline_exe_hack = "[Replace me for EXE hack                                       ]";
 char *binary_type_hack = "bINARy tYPe:" INITIAL_BIN_TYPE;
 
+#ifndef INITIAL_COLLECTS_DIRECTORY
+# ifdef DOS_FILE_SYSTEM
+#  define INITIAL_COLLECTS_DIRECTORY "collects"
+# else
+#  define INITIAL_COLLECTS_DIRECTORY "../collects"
+# endif
+#endif
+
+static char *_coldir = "coLLECTs dIRECTORy:" /* <- this tag stays, so we can find it again */
+                       INITIAL_COLLECTS_DIRECTORY "\0"
+                       /* Pad with at least 512 bytes: */
+                       "****************************************************************"
+                       "****************************************************************"
+                       "****************************************************************"
+                       "****************************************************************"
+                       "****************************************************************"
+                       "****************************************************************"
+                       "****************************************************************"
+                       "****************************************************************";
+static int _coldir_offset = 19; /* Skip permanent tag */
+
+#ifndef MZ_PRECISE_GC
+# define XFORM_OK_PLUS +
+#endif
+
 #ifdef DOS_FILE_SYSTEM
 # include <Windows.h>
 # ifdef MZ_PRECISE_GC
@@ -502,8 +527,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
 {
   GC_CAN_IGNORE char **argv = _argv;
   Scheme_Env *global_env;
-  char *prog;
-  Scheme_Object *sch_argv;
+  char *prog, *sprog = NULL;
+  Scheme_Object *sch_argv, *collects_path = NULL;
   int i;
 #ifndef DONT_PARSE_COMMAND_LINE
   char **evals_and_loads, *real_switch = NULL, *runner;
@@ -585,7 +610,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	 The cmdline is appended to the end of the binary.
 	 The long integer at cmdline_exe_hack[4] says
 	 where the old end was, and cmdline_exe_hack[8]
-	 says how long the cmdoine string is. */
+	 says how long the cmdline string is. */
       char *path;
       HANDLE fd;
 
@@ -612,6 +637,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  p = (unsigned char *)"\0\0\0";
 	else if (cmdline_exe_hack[0] == '*') {
 	  /* "*" means that the first item is argv[0] replacement: */
+	  sprog = prog;
 	  prog = (char *)p + 4;
 	  p += (p[0]
 		+ (((long)p[1]) << 8)
@@ -727,6 +753,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
       argv[0] = "-u";
     else if (!strcmp("--main", argv[0]))
       argv[0] = "-I";
+    else if (!strcmp("--name", argv[0]))
+      argv[0] = "-N";
     else if (!strcmp("--no-lib-path", argv[0]))
       argv[0] = "-x";
     else if (!strcmp("--version", argv[0]))
@@ -743,6 +771,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
       argv[0] = "-w";
     else if (!strcmp("--binary", argv[0]))
       argv[0] = "-b";
+    else if (!strcmp("--collects", argv[0]))
+      argv[0] = "-X";
 # ifndef MZSCHEME_CMD_LINE
     else if (!strcmp("--nogui", argv[0]))
       argv[0] = "-Z";
@@ -795,6 +825,16 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  --argc;
 	  evals_and_loads[num_enl] = argv[0];
 	  eval_kind[num_enl++] = mzcmd_EVAL;
+	  break;
+	case 'X':
+	  if (argc < 2) {
+	    PRINTF("%s: missing path after %s switch\n", 
+		   prog, real_switch);
+	    goto show_need_help;
+	  }
+	  argv++;
+	  --argc;
+	  collects_path = scheme_make_path(argv[0]);
 	  break;
 	case 'x':
 	  no_lib_path = 1;
@@ -936,6 +976,17 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  --argc;
 	  eval_kind[num_enl++] = mzcmd_EVAL;
 	  break;
+	case 'N':
+	  if (argc < 2) {
+	    PRINTF("%s: missing name after %s switch\n", 
+		   prog, 
+		   real_switch);
+	    goto show_need_help;
+	  }
+	  argv++;
+	  --argc;
+	  sprog = argv[0];
+	  break;
 	case 'A':
 	  no_argv = 1;
 	  break;
@@ -1046,7 +1097,10 @@ static int run_from_cmd_line(int argc, char *_argv[],
     scheme_add_global("argv", sch_argv, global_env);
   {	
     Scheme_Object *ps;
-    ps = scheme_set_exec_cmd(prog);
+    scheme_set_exec_cmd(prog);
+    if (!sprog)
+      sprog = prog;
+    ps = scheme_set_run_cmd(sprog);
 #ifndef DONT_PARSE_COMMAND_LINE
     if (!no_argv)
 #endif
@@ -1055,8 +1109,12 @@ static int run_from_cmd_line(int argc, char *_argv[],
 
 #ifndef NO_FILE_SYSTEM_UTILS
   /* Setup path for "collects" collection directory: */
-  if (!no_lib_path)
+  if (!no_lib_path) {
+    if (!collects_path)
+      collects_path = scheme_make_path(_coldir XFORM_OK_PLUS _coldir_offset);
+    scheme_set_collects_path(collects_path);
     init_collection_paths(global_env);
+  }
 #endif /* NO_FILE_SYSTEM_UTILS */
 
 #ifndef MZSCHEME_CMD_LINE
@@ -1114,7 +1172,6 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	 "  -l <file>, --mzlib <file> : Same as -e '(require (lib \"<file>\"))'.\n"
 	 "  -L <file> <coll> : Same as -e '(require (lib \"<file>\" \"<coll>\"))'.\n"
 	 "  -M <coll> : Same as -e '(require (lib \"<coll>.ss\" \"<coll>\"))'.\n"
-	 "  -M errortrace : Report locations in uncompiled source for run-time errors.\n"
 	 "  -r, --script : Script mode: use as last switch for scripts. Same as -fmv-.\n" 
 	 "  -i, --script-cd : Like -r, but also sets the directory. Same as -dmv-.\n"
 	 "  -u, --require-script : Like -r, but requires a module. Same as -tmv-.\n" 
@@ -1129,8 +1186,10 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	 "  -k <n> <m> : Load executable-embedded code from file offset <n> to <m>.\n"
 	 "  -C, --main : Like -r, then call `main' w/argument list; car is file name.\n"
 	 " Initialization switches:\n"
+	 "  -X <dir>, --collects <dir> : libraries at <dir> relative to executable.\n"
          "  -x, --no-lib-path : Skips trying to set current-library-collection-paths.\n"
 	 "  -q, --no-init-file : Skips trying to load " INIT_FILENAME ".\n"
+	 "  -N <file>, --name <file> : Set `program' to <file>.\n"
 	 "  -A : Skips defining `argv' and `program'.\n"
 # ifdef MZ_USE_JIT
 	 "  -j, --no-jit : Disables just-in-time compiler.\n"

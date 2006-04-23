@@ -69,7 +69,7 @@ LOCALFLAGS = $(LOCALFLAGS_@WXVARIANT@)
 
 MREDOBJECTS = mrmain.@LTO@
 
-MZSCHEME = ../mzscheme/libmzscheme.@LIBSFX@ ../mzscheme/libmzgc.@LIBSFX@
+MZSCHEMEDEPS = ../mzscheme/libmzscheme.@LIBSFX@ ../mzscheme/libmzgc.@LIBSFX@
 WXSCHEME = wxs/libwxscheme.@LIBSFX@
 WXME = wxme/libwxme.@LIBSFX@
 
@@ -98,7 +98,7 @@ all:
 bin:
 	$(MAKE) $(LINKRESULT)
 
-mred : $(MZSCHEME) mrmain.@LTO@ $(MREDOBJECTS) $(@WXLIBS@) $(MRSTATIC_STUB)
+mred : $(MZSCHEMEDEPS) mrmain.@LTO@ $(MREDOBJECTS) $(@WXLIBS@) $(MRSTATIC_STUB)
 	$(MREDLINKER) $(MREDLDFLAGS) $(MRSTATIC) -o mred $(MREDOBJECTS) $(MREDLDLIBS) $(MRSTATIC_STUB)
 
 libmred.@LIBSFX@: $(WXLIBSNORM)
@@ -107,17 +107,20 @@ libmred.@LIBSFX@: $(WXLIBSNORM)
 MRFW = PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd
 MRFWRES = PLT_MrEd.framework/Versions/$(FWVERSION)/Resources/PLT_MrEd.rsrc
 
-$(MRFW) : $(MZSCHEME) $(MREDOBJECTS) $(@WXLIBS@) $(MRSTATIC_STUB)
+$(MRFW) : $(MZSCHEMEDEPS) $(MREDOBJECTS) $(@WXLIBS@) $(MRSTATIC_STUB)
 	$(MREDLINKER) $(MREDLDFLAGS) -dynamiclib -o $(MRFW) -Wl,-headerpad_max_install_names ../mzscheme/libmzscheme.@LIBSFX@ ../mzscheme/libmzgc.@LIBSFX@ $(@WXLIBS@) $(GUILIBS_@WXVARIANT@) @X_EXTRA_LIBS@
 
 MrEd.app/Contents/MacOS/MrEd: $(MRFWRES) $(MRFW) mrmain.@LTO@ 
 	$(MREDLINKER) -o MrEd.app/Contents/MacOS/MrEd mrmain.@LTO@ -Wl,-headerpad_max_install_names -F. -framework PLT_MrEd -framework Carbon @PROFFLAGS@
+	/usr/bin/install_name_tool -change "PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd" "@executable_path/../../../PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd" MrEd.app/Contents/MacOS/MrEd
 
 $(MRFWRES): $(srcdir)/../mac/osx_appl.ss $(srcdir)/../mac/cw/MrEd.r
 	rm -rf PLT_MrEd.framework/Resources PLT_MrEd.framework/PLT_MrEd
 	env BUILDBASE=.. $(srcdir)/../mac/osx_appl.ss $(srcdir)/..
 	ln -s Versions/$(FWVERSION)/PLT_MrEd PLT_MrEd.framework/PLT_MrEd
 	ln -s Versions/$(FWVERSION)/Resources PLT_MrEd.framework/Resources
+
+MZSCHEME = ../mzscheme/mzscheme
 
 ee-app: mred mrmain_ee.@LTO@
 	if [ "$(EEAPP)" = '' ] ; then echo "ERROR: You must specify EEAPP" ; else $(MREDLINKER) $(MREDLDFLAGS) $(MRSTATIC) -o $(EEAPP) mrmain_ee.@LTO@ $(EEOBJECTS) $(MREDLDLIBS) $(MRSTATIC_STUB) ; fi
@@ -144,13 +147,15 @@ mred.@LTO@ :  $(srcdir)/mred.cxx $(srcdir)/wxme/wx_media.h $(srcdir)/wxme/wx_med
           $(srcdir)/../wxcommon/wx_list.h
 	$(CXX) $(CXXFLAGS) $(LOCALFLAGS) -c $(srcdir)/mred.cxx -o mred.@LTO@
 
+DEF_COLLECTS_DIR = -DINITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../collects; pwd`"'"'
+
 mrmain.@LTO@ :  $(srcdir)/mrmain.cxx $(srcdir)/mred.h $(srcdir)/wxs/wxsmred.h \
             $(srcdir)/../mzscheme/cmdline.inc $(srcdir)/../mzscheme/src/stypes.h \
             $(srcdir)/../mzscheme/include/scheme.h $(srcdir)/../mzscheme/src/schvers.h
-	$(CXX) $(CXXFLAGS) $(LOCALFLAGS) -c $(srcdir)/mrmain.cxx -o mrmain.@LTO@
+	$(CXX) $(CXXFLAGS) $(LOCALFLAGS) $(DEF_COLLECTS_DIR) -c $(srcdir)/mrmain.cxx -o mrmain.@LTO@
 
 mrmain_ee.@LTO@ : mred.@LTO@
-	$(CXX) $(CXXFLAGS) $(LOCALFLAGS) -DSTANDALONE_WITH_EMBEDDED_EXTENSION -c $(srcdir)/mrmain.cxx -o mrmain_ee.@LTO@
+	$(CXX) $(CXXFLAGS) $(LOCALFLAGS) -DSTANDALONE_WITH_EMBEDDED_EXTENSION $(DEF_COLLECTS_DIR) -c $(srcdir)/mrmain.cxx -o mrmain_ee.@LTO@
 
 ee-main:
 	$(MAKE) mrmain_ee.@LTO@
@@ -233,6 +238,7 @@ install_wx_xt:
 	cd ..; rm -f $(prefix)/bin/mred
 	$(MAKE) @MRLIBINSTALL@
 	cd ..; $(ICP) mred/mred `(cd $(prefix); pwd)`/bin/
+	$(MZSCHEME) -e '(use-compiled-file-paths null)' -mvqL private/collects-path.ss compiler -e '(set-collects-path)' "$(prefix)/bin/mred" ../collects
 
 LIBIDIR=$(prefix)/lib
 BUILDINFO=$(LIBIDIR)/buildinfo
@@ -244,7 +250,7 @@ install_wx_mac:
 	rm -rf $(MRFWDIR)/Versions/$(FWVERSION)/Resources
 	rm -f $(MRFWDIR)/PLT_MrEd
 	rm -rf $(MRFWDIR)/Resources
-	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then rm -rf $(MZFWDIR) ; fi
+	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then rm -rf $(MRFWDIR) ; fi
 	if [ ! -d @FRAMEWORK_INSTALL_DIR@ ] ; then mkdir @FRAMEWORK_INSTALL_DIR@ ; fi
 	if [ ! -d $(MRFWDIR) ] ; then mkdir $(MRFWDIR) ; fi
 	if [ ! -d $(MRFWDIR)/Versions ] ; then mkdir $(MRFWDIR)/Versions ; fi
@@ -259,7 +265,8 @@ install_wx_mac:
 	if [ ! -d $(prefix)/collects ] ; then mkdir $(prefix)/collects ; fi
 	if [ ! -d $(prefix)/collects/launcher ] ; then mkdir $(prefix)/collects/launcher ; fi
 	cd ..; $(ICP) -r mred/Starter.app $(prefix)/collects/launcher/.
-	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then /usr/bin/install_name_tool -change "PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd" "@executable_path/../../../lib/PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd" "$(prefix)/MrEd.app/Contents/MacOS/MrEd" ; fi
+	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then /usr/bin/install_name_tool -change "@executable_path/../../../PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd" "@executable_path/../../../lib/PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd" "$(prefix)/MrEd.app/Contents/MacOS/MrEd" ; fi
+	$(MZSCHEME) -e '(use-compiled-file-paths null)' -mvqL private/collects-path.ss compiler -e '(set-collects-path)' "$(prefix)/MrEd.app/Contents/MacOS/MrEd" ../../../collects
 
 install:
 	$(MAKE) install_@WXVARIANT@
@@ -283,6 +290,7 @@ install-lib3m:
 
 install-3m_wx_xt:
 	cd ..; $(ICP) mred/mred3m $(prefix)/bin/
+	$(MZSCHEME) -e '(use-compiled-file-paths null)' -mvqL private/collects-path.ss compiler -e '(set-collects-path)' "$(prefix)/bin/mred" ../collects
 	$(MAKE) @MRLIBINSTALL@3m
 
 install-3m_wx_mac:
@@ -297,7 +305,8 @@ install-3m_wx_mac:
 	if [ ! -d $(prefix)/collects ] ; then mkdir $(prefix)/collects ; fi
 	if [ ! -d $(prefix)/collects/launcher ] ; then mkdir $(prefix)/collects/launcher ; fi
 	cd ..; $(ICP) -r mred/Starter3m.app $(prefix)/collects/launcher/.
-	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then /usr/bin/install_name_tool -change "PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "@executable_path/../../../lib/PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "$(prefix)/MrEd3m.app/Contents/MacOS/MrEd3m" ; fi
+	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then /usr/bin/install_name_tool -change "@executable_path/../../../PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "@executable_path/../../../lib/PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "$(prefix)/MrEd3m.app/Contents/MacOS/MrEd3m" ; fi
+	$(MZSCHEME) -e '(use-compiled-file-paths null)' -mvqL private/collects-path.ss compiler -e '(set-collects-path)' "$(prefix)/MrEd3m.app/Contents/MacOS/MrEd3m" ../../../collects
 
 install-3m:
 	$(MAKE) install-3m_@WXVARIANT@

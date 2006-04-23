@@ -3,21 +3,32 @@
   (require (lib "process.ss"))
 
   (provide update-framework-path
-	   get-current-framework-path)
+	   get-current-framework-path
+	   update-framework-path/cmdline)
+
+  (define (update-framework-path/cmdline)
+    (let ([v (current-command-line-arguments)])
+      (update-framework-path (vector-ref v 0)
+			     (vector-ref v 1)
+			     (equal? (vector-ref v 2) "mred"))))
 
   (define (update-framework-path fw-path dest mred?)
     (let ([dest (if (path? dest)
 		    (path->string dest)
 		    dest)])
       (for-each (lambda (p)
-		  (system* "/usr/bin/install_name_tool"
-			   "-change"
-			   (or (get-current-framework-path dest p)
-			       (format "~a.framework/Versions/~a/~a" p (version) p))
-			   (format "~a~a.framework/Versions/~a/~a" 
-				   fw-path
-				   p (version) p)
-			   dest))
+		  (let* ([orig (get-current-framework-path dest p)]
+			 [3m (if (and orig (regexp-match #rx"_3m" orig))
+				 "_3m"
+				 "")])
+		    (system* "/usr/bin/install_name_tool"
+			     "-change"
+			     (or orig
+				 (format "~a.framework/Versions/~a~a/~a" p (version) 3m p))
+			     (format "~a~a.framework/Versions/~a~a/~a" 
+				     fw-path
+				     p (version) 3m p)
+			     dest)))
 		(if mred?
 		    '("PLT_MrEd")
 		    '("PLT_MzScheme")))))

@@ -234,6 +234,73 @@
 			no-arg-x-flags)))
 		     args))))))
 
+      (define (protect-shell-string s)
+	(regexp-replace* #rx"\"" s "\\\\\""))
+
+      (define (make-relative-path-header dest bindir)
+	(let ([dirname (find-executable-path "dirname")]
+	      [basename (find-executable-path "basename")]
+	      [readlink (find-executable-path "readlink")]
+	      [dest-explode (explode-path (normalize-path dest))]
+	      [bindir-explode (explode-path (normalize-path bindir))]
+	      [newline "\n"])
+	  (if (and dirname basename readlink
+		   (equal? (car dest-explode) (car bindir-explode)))
+	      (format
+	       (string-append
+		"# Programs we need (avoid depending on user's PATH):" newline
+		"dirname=\"~a\"" newline
+		"basename=\"~a\"" newline
+		"readlink=\"~a\"" newline
+		newline
+		"# Remember current directory" newline
+		"saveD=`pwd`" newline
+		newline
+		"# Find absolute path to this script," newline
+		"# resolving symbolic references to the end" newline
+		"# (changes the current directory):" newline
+		"D=`$dirname \"$0\"`" newline
+		"F=`$basename \"$0\"`" newline
+		"cd \"$D\"" newline
+		"while [ -L \"$F\" ]; do" newline
+		"  P=`$readlink \"$F\"`" newline
+		"  D=`$dirname \"$P\"`" newline
+		"  F=`$basename \"$P\"`" newline
+		"  cd \"$D\"" newline
+		"done" newline
+		"D=`pwd`" newline
+		newline
+		"# Restore current directory" newline
+		"cd \"$saveD\"" newline
+		newline
+		"bindir=\"$D/~a\"" newline
+		newline)
+	       (protect-shell-string (path->string dirname))
+	       (protect-shell-string (path->string basename))
+	       (protect-shell-string (path->string readlink))
+	       (protect-shell-string (path->string
+				      (apply
+				       build-path
+				       (let loop ([b bindir-explode]
+						  [d dest-explode])
+					 (cond
+					  [(and (pair? b) 
+						(equal? (car b) (car d)))
+					   (loop (cdr b) (cdr d))]
+					  [else
+					   (append (map (lambda (x)
+							  'up)
+							(cdr d))
+						   b
+						   (list 'same))]))))))
+	      (make-absolute-path-header bindir))))
+	  
+      (define (make-absolute-path-header bindir)
+	(format
+	 "bindir=\"~a\"\n\n"
+	 (protect-shell-string
+	  (path->string bindir))))
+
       (define (make-unix-launcher kind variant flags dest aux)
 	(install-template dest kind "sh" "sh") ; just for something that's executable
 	(let* ([newline (string #\newline)]
@@ -244,13 +311,15 @@
 			       (format "~a~a.app/Contents/MacOS/~a~a" 
 				       (cdr m) (variant-suffix variant)
 				       (cdr m) (variant-suffix variant))))]
-	       [post-flags (if (and (eq? kind 'mred)
-				    (not (memq variant '(script script-3m))))
-			       (skip-x-flags flags)
-			       null)]
+	       [x-flags? (and (eq? kind 'mred)
+			      (eq? (system-type) 'unix)
+			      (not (memq variant '(script script-3m))))]
+	       [post-flags (cond
+			    [x-flags? (skip-x-flags flags)]
+			    [alt-exe null]
+			    [else flags])]
 	       [pre-flags (cond
-			   [alt-exe null]
-			   [(null? post-flags) flags]
+			   [(not x-flags?) null]
 			   [else
 			    (let loop ([f flags])
 			      (if (eq? f post-flags)
@@ -262,22 +331,24 @@
 			(string-append
 			 "#!/bin/sh" newline
 			 "# This script was created by make-~a-launcher" newline
-			 newline
-			 "if [ \"$PLTHOME\" = '' ] ; then" newline
-			 "  PLTHOME=\"~a\"" newline
-			 "  export PLTHOME" newline
-			 "fi" newline
 			 newline)
-			kind (regexp-replace* "\"" 
-					      (path->string plthome)
-					      "\\\\\""))]
+			kind )]
+	       [dir-finder
+		(let ([bindir (if alt-exe
+				  plthome
+				  (build-path plthome "bin"))])
+		  (if (let ([a (assq 'relative? aux)])
+			(and a (cdr a)))
+		      (make-relative-path-header dest bindir)
+		      (make-absolute-path-header bindir)))]
 	       [exec (format
-		      "exec \"${PLTHOME}/~a~a~a\" ~a"
-		      (if alt-exe "" "bin/")
+		      "exec \"${bindir}/~a~a\" ~a"
 		      (or alt-exe kind)
-		      (if alt-exe "" (variant-suffix variant)) pre-str)]
+		      (if alt-exe "" (variant-suffix variant))
+		      pre-str)]
 	       [args (format
-		      " ~a ${1+\"$@\"}~n"
+		      "~a ~a ${1+\"$@\"}~n"
+		      (if alt-exe "" " -N \"$0\"")
 		      post-str)]
 	       [assemble-exec (if (and (eq? kind 'mred)
 				       (not (memq variant '(script scrip-3m)))
@@ -287,8 +358,9 @@
 	  (unless plthome
 	    (error 'make-unix-launcher "unable to locate PLTHOME"))
 	  (let ([p (open-output-file dest 'truncate)])
-	    (fprintf p "~a~a"
+	    (fprintf p "~a~a~a"
 		     header
+		     dir-finder
 		     (assemble-exec exec args))
 	    (close-output-port p))))
       

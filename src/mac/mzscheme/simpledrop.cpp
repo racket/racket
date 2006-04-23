@@ -143,7 +143,7 @@ static void parse_commandline(char *s, char *src, int addon)
 #endif
 
     count++;
-  }	  	
+  }
   
   scheme_mac_argc = 1 + count + (addon ? 1 : 0);
   scheme_mac_argv = (char **)malloc(scheme_mac_argc * sizeof(char *));
@@ -494,13 +494,15 @@ void GetStarterInfo()
     CFStringRef execName;
     CFArrayRef storedArgsArray;
     CFIndex count;
-    char **storedArgs, *tmps;
+    char **storedArgs, *tmps, *orig_argv0 = NULL;
+    int name_offset;
     
     if (CFDictionaryContainsKey((CFDictionaryRef)propertyList,
 				(const void *)(CFSTR("executable name")))) {
       execName = (CFStringRef)CFDictionaryGetValue((CFDictionaryRef)propertyList,
 						   (CFSTR("executable name")));
       tmps = ConvertCFStringRef(execName);
+      orig_argv0 = scheme_mac_argv[0];
       scheme_mac_argv[0] = tmps;
     }
 
@@ -514,22 +516,30 @@ void GetStarterInfo()
     
     count = CFArrayGetCount(storedArgsArray);
     
-    storedArgs = (char **)malloc(sizeof(char *) * (scheme_mac_argc + count));
+    name_offset = (orig_argv0 ? 2 : 0);
+
+    storedArgs = (char **)malloc(sizeof(char *) * (scheme_mac_argc + count + name_offset));
     
     storedArgs[0] = scheme_mac_argv[0];
+    if (orig_argv0) {
+      /* Preserve the "run" name for a launcher: */
+      storedArgs[1] = "-N";
+      storedArgs[2] = orig_argv0;
+    }
+
     for (i = 0; i < count; i++) {
       CFStringRef arg;
       char *tmps;
       arg = (CFStringRef)CFArrayGetValueAtIndex(storedArgsArray,i);
       tmps = ConvertCFStringRef(arg);
-      storedArgs[i + 1] = tmps;
+      storedArgs[i + 1 + name_offset] = tmps;
     }
     for (i = 1; i < scheme_mac_argc; i++) {
-      storedArgs[count + i] = scheme_mac_argv[i];
+      storedArgs[count + i + name_offset] = scheme_mac_argv[i];
     }
 
     scheme_mac_argv = storedArgs;
-    scheme_mac_argc += count;
+    scheme_mac_argc += count + name_offset;
   }
 }
 

@@ -3063,7 +3063,8 @@
 		(cons-path default s null)))))))
 
   (define find-executable-path
-    (lambda (program libpath)
+    (case-lambda 
+     [(program libpath reverse?)
       (unless (path-string? program) 
 	(raise-type-error 'find-executable-path "path or string (sans nul)" program))
       (unless (or (not libpath) (and (path-string? libpath) 
@@ -3073,18 +3074,22 @@
 		(lambda (exec-name)
                   (if libpath
 		      (let-values ([(base name isdir?) (split-path exec-name)])
-			(if (path? base)
-			    (let ([lib (build-path base libpath)])
-			      (if (or (directory-exists? lib) 
-				      (file-exists? lib))
-				  lib
-				  (let ([resolved (resolve-path exec-name)])
-				    (cond
-				     [(equal? resolved exec-name) #f]
-				     [(relative-path? resolved)
-				      (found-exec (build-path base resolved))]
-			             [else (found-exec resolved)]))))
-			    #f))
+			(let ([next
+			       (lambda ()
+				 (let ([resolved (resolve-path exec-name)])
+				   (cond
+				    [(equal? resolved exec-name) #f]
+				    [(relative-path? resolved)
+				     (found-exec (build-path base resolved))]
+				    [else (found-exec resolved)])))])
+			  (or (and reverse? (next))
+			      (if (path? base)
+				  (let ([lib (build-path base libpath)])
+				    (and (or (directory-exists? lib) 
+					     (file-exists? lib))
+					 lib))
+				  #f)
+			      (and (not reverse?) (next)))))
 		      exec-name))])
 	(if (and (relative-path? program)
 		 (let-values ([(base name dir?) (split-path program)])
@@ -3104,7 +3109,9 @@
 			  (found-exec name)
 			  (loop (cdr paths)))))))
 	    (let ([p (path->complete-path program)])
-	      (and (file-exists? p) (found-exec p)))))))
+	      (and (file-exists? p) (found-exec p)))))]
+     [(program libpath) (find-executable-path program libpath #f)]
+     [(program) (find-executable-path program #f #f)]))
 
   ;; ------------------------------ Memtrace ------------------------------
   
@@ -3497,19 +3504,18 @@
       (build-path (find-system-path 'addon-dir)
 		  (version)
 		  "collects")
-      (or (ormap
-	   (lambda (f) (let ([p (f)]) (and p (directory-exists? p) (list (simplify-path p)))))
-	   (list
-	    (lambda () (let ((v (getenv "PLTHOME")))
-			 (and v (build-path v "collects"))))
-	    (lambda () (find-executable-path (find-system-path 'exec-file) "collects"))
-	    ;; When binary is in bin/ subdir:
-	    (lambda () (find-executable-path (find-system-path 'exec-file) (build-path 'up "collects")))
-	    ;; When binary is in .bin/<platform> subdir:
-	    (lambda () (find-executable-path (find-system-path 'exec-file) (build-path 'up 'up "collects")))
-	    ;; When binary is in bin/<appname>.app/Contents/Macos subdir:
-	    (lambda () (find-executable-path (find-system-path 'exec-file) (build-path 'up 'up 'up "collects")))))
-	  null))))
+      (let* ([collects-path (find-system-path 'collects-dir)]
+	     [v
+	      (cond
+	       [(complete-path? collects-path) collects-path]
+	       [(absolute-path? collects-path)
+		(path->complete-path collects-path
+				     (find-executable-path (find-system-path 'exec-file) #f #t))]
+	       [else
+		(find-executable-path (find-system-path 'exec-file) collects-path #t)])])
+	(if v
+	    (list (simplify-path (path->complete-path v (current-directory))))
+	    null)))))
 
   ;; -------------------------------------------------------------------------
 

@@ -42,17 +42,13 @@ First, install the Mac OS X Developer Tools from Apple. Then, follow
 the Unix instructions below, but note the following:
 
  * The MzScheme build creates a framework, PLT_MzScheme.framework,
-   which is installed into ~/Library/Frameworks. This framework is
-   used by the executable `mzscheme' that goes into plt/bin.
+   which is installed into plt/lib. This framework is used by the
+   executable `mzscheme' that goes into plt/bin.
 
  * The MrEd build creates a framework, PLT_MrEd.framework, which is
-   installed into ~/Library/Frameworks. This framework is used by the
-   executable bundle MrEd.app that goes into the `plt' directory.
-   Installation creates a script, plt/bin/mred, that runs the bundle.
-
- * If you build frequently from the Subversion-based sources, beware
-   that you may accumlate many old, unused versions of the framework
-   in ~/Library/Frameworks.
+   installed into plt/lib. This framework is used by the executable
+   bundle MrEd.app that goes into the `plt' directory.  Installation
+   creates a script, plt/bin/mred, that runs the bundle.
 
  * The --enable-shared flag for `configure' is redundant (i.e., builds
    create and use frameworks by default), and --disable-shared is not

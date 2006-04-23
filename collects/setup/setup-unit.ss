@@ -743,6 +743,7 @@
                                   (let ([p (program-launcher-path mzln)]
                                         [aux (list* `(exe-name . ,mzln)
 						    '(framework-root . #f)
+						    '(relative? . #t)
 						    (build-aux-from-path
 						     (build-path (cc-path cc)
 								 (path-replace-suffix (or mzll mzln) #""))))])
