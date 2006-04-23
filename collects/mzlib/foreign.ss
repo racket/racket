@@ -770,7 +770,7 @@
           (cond [(null? xs) n]
                 [(assq (car xs) symbols->integers) =>
                  (lambda (x) (loop (cdr xs) (bitwise-ior (cadr x) n)))]
-                [else (raise-type-error s->c (format "~a" (or name "bitmaks"))
+                [else (raise-type-error s->c (format "~a" (or name "bitmask"))
                                         symbols)]))))
     (lambda (n)
       (if (zero? n) ; probably common
