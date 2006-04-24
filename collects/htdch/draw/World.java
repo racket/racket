@@ -2,9 +2,6 @@ package draw;
         
 public abstract class World {
     protected Canvas theCanvas;
-    protected void putCanvas(Canvas c) { 
-	this.theCanvas = c; 
-    };
     public boolean bigBang(int width, int height, double s) {
 	if (width <= 0)
            throw new RuntimeException(
