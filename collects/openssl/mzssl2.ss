@@ -19,7 +19,8 @@
 (module mzssl2 mzscheme
   (require (lib "foreign.ss")
 	   (lib "port.ss")
-	   (lib "etc.ss"))
+	   (lib "etc.ss")
+	   (lib "kw.ss"))
 
   (provide ssl-available?
 
@@ -100,6 +101,9 @@
 
   (define-ssl SSL_CTX_new (_SSL_METHOD* -> _SSL_CTX*))
   (define-ssl SSL_CTX_free (_SSL_CTX* -> _void))
+  (define-ssl SSL_CTX_ctrl (_SSL_CTX* _int _long _pointer -> _long))
+  (define (SSL_CTX_set_mode ctx m)
+    (SSL_CTX_ctrl ctx SSL_CTRL_MODE m #f))
 
   (define-ssl SSL_CTX_set_verify (_SSL_CTX* _int _pointer -> _void))
   (define-ssl SSL_CTX_use_certificate_chain_file (_SSL_CTX* _bytes -> _int))
@@ -139,6 +143,9 @@
   (define SSL_VERIFY_NONE #x00)
   (define SSL_VERIFY_PEER #x01)
   (define SSL_VERIFY_FAIL_IF_NO_PEER_CERT #x02)
+
+  (define SSL_MODE_ENABLE_PARTIAL_WRITE #x01)
+  (define SSL_CTRL_MODE 33)
 
   (define-mzscheme scheme_start_atomic (-> _void))
   (define-mzscheme scheme_end_atomic (-> _void))
@@ -219,7 +226,9 @@
   (define-struct mzssl (ssl i o r-bio w-bio pipe-r pipe-w 
 			    buffer lock 
 			    flushing? must-write must-read
-			    refcount close? finalizer-cancel))
+			    refcount 
+			    close-original? shutdown-on-close?
+			    finalizer-cancel))
 
   (define (make-immobile-bytes n)
     (if (regexp-match #rx#"3m" (path->bytes (system-library-subpath)))
@@ -264,6 +273,7 @@
 	(atomically ; so we reliably register the finalizer
 	 (let ([ctx (SSL_CTX_new meth)])
 	   (check-valid ctx who "context creation")
+	   (SSL_CTX_set_mode ctx SSL_MODE_ENABLE_PARTIAL_WRITE)
 	   (register-finalizer ctx (lambda (v) (SSL_CTX_free v)))
 	   ((if client? make-ssl-client-context make-ssl-server-context) ctx))))))
 
@@ -278,7 +288,9 @@
   (define (get-context who context-or-encrypt-method client?)
     (if (ssl-context? context-or-encrypt-method)
 	(ssl-context-ctx context-or-encrypt-method)
-	(SSL_CTX_new (encrypt->method who "context" context-or-encrypt-method client?))))
+	(let ([ctx (SSL_CTX_new (encrypt->method who "context" context-or-encrypt-method client?))])
+	  (SSL_CTX_set_mode ctx SSL_MODE_ENABLE_PARTIAL_WRITE)
+	  ctx)))
 
   (define (get-context/listener who ssl-context-or-listener)
     (cond
@@ -361,7 +373,7 @@
       (atomically
        (set-box! (mzssl-finalizer-cancel mzssl) #f)
        (SSL_free (mzssl-ssl mzssl)))
-      (when (mzssl-close? mzssl)
+      (when (mzssl-close-original? mzssl)
 	(close-input-port (mzssl-i mzssl))
 	(close-output-port (mzssl-o mzssl)))))
 
@@ -692,29 +704,28 @@
 		       (semaphore-peek-evt (mzssl-flushing? mzssl))
 		       ;; issue shutdown (i.e., EOF on read end)
 		       (begin
-			 (let loop ([cnt 0])
-			   (let ([out-blocked? (pump-output mzssl)])
-			     (let ([n (SSL_shutdown (mzssl-ssl mzssl))])
-			       (unless (= n 1)
-				 (let ([err (SSL_get_error (mzssl-ssl mzssl) n)])
-				   (cond
-				    [(= err SSL_ERROR_WANT_READ)
-				     (pump-input-once mzssl (if out-blocked? (mzssl-o mzssl) #t))
-				     (loop cnt)]
-				    [(= err SSL_ERROR_WANT_WRITE)
-				     (pump-output-once mzssl #t #f)
-				     (loop cnt)]
-				    [else
-				     (if (= n 0)
-					 ;; When 0 is returned, the SSL object no longer correctly
-					 ;; reports what it wants (e.g., a write). If pumping blocked
-					 ;; or if this is our first time around, then wait on the
-					 ;; underlying output and try again.
-					 (when (or (zero? cnt) out-blocked?)
-					   (flush-ssl mzssl #f)
-					   (loop (add1 cnt)))
-					 (error 'read-bytes "SSL shutdown failed ~a"
-						(get-error-message (ERR_get_error))))]))))))
+			 (when (mzssl-shutdown-on-close? mzssl)
+			   (let loop ([cnt 0])
+			     (let ([out-blocked? (flush-ssl mzssl #f)])
+			       (let ([n (SSL_shutdown (mzssl-ssl mzssl))])
+				 (unless (= n 1)
+				   (let ([err (SSL_get_error (mzssl-ssl mzssl) n)])
+				     (cond
+				      [(= err SSL_ERROR_WANT_READ)
+				       (pump-input-once mzssl (if out-blocked? (mzssl-o mzssl) #t))
+				       (loop cnt)]
+				      [(= err SSL_ERROR_WANT_WRITE)
+				       (pump-output-once mzssl #t #f)
+				       (loop cnt)]
+				      [else
+				       (if (= n 0)
+					   ;; When 0 is returned, the SSL object doesn't correctly
+					   ;; report what it wants (e.g., a write). Send everything
+					   ;; out that we have and try again, up to 10 times.
+					   (unless (cnt . >= . 10)
+					     (loop (add1 cnt)))
+					   (error 'read-bytes "SSL shutdown failed ~a"
+						  (get-error-message (ERR_get_error))))])))))))
 			 (mzssl-release mzssl)
 			 #f)))]
 		[close-loop
@@ -738,8 +749,14 @@
 	[() buffer-mode]
 	[(mode) (set! buffer-mode mode)]))))
 
-  (define (ports->ssl-ports i o context-or-encrypt-method connect/accept close?)
-    (wrap-ports 'port->ssl-ports i o context-or-encrypt-method connect/accept close?))
+  (define/kw (ports->ssl-ports i o 
+			       #:key
+			       [context #f]
+			       [encrypt default-encrypt]
+			       [mode 'connect]
+			       [close-original? #f]
+			       [shutdown-on-close? #f])
+    (wrap-ports 'port->ssl-ports i o (or context encrypt) mode close-original? shutdown-on-close?))
 
   (define (create-ssl who context-or-encrypt-method connect/accept)
     (atomically ; so we register the finalizer (and it's ok since everything is non-blocking)
@@ -796,7 +813,7 @@
 	      ;; Return SSL and the cancel boxL:
 	      (values ssl cancel r-bio w-bio connect?)))))))))
 
-  (define (wrap-ports who i o context-or-encrypt-method connect/accept close?)
+  (define (wrap-ports who i o context-or-encrypt-method connect/accept close? shutdown-on-close?)
     (unless (input-port? i)
       (raise-type-error who "input port" i))
     (unless (output-port? o)
@@ -808,7 +825,10 @@
       (let-values ([(buffer) (make-bytes 4096)]
 		   [(pipe-r pipe-w) (make-pipe)]
 		   [(cancel) (box #t)])
-	(let ([mzssl (make-mzssl ssl i o r-bio w-bio pipe-r pipe-w buffer (make-semaphore 1) #f #f #f 2 close? cancel)])
+	(let ([mzssl (make-mzssl ssl i o r-bio w-bio pipe-r pipe-w 
+				 buffer (make-semaphore 1) #f #f #f 2 
+				 close? shutdown-on-close?
+				 cancel)])
 	  (let loop ()
 	    (let ([status (if connect?
 			      (SSL_connect ssl)
@@ -865,7 +885,7 @@
 			      (close-input-port i)
 			      (close-output-port o)
 			      (raise exn))])
-	(wrap-ports who i o (ssl-listener-mzctx ssl-listener) 'accept #t))))
+	(wrap-ports who i o (ssl-listener-mzctx ssl-listener) 'accept #t #f))))
 
   (define (ssl-accept ssl-listener)
     (do-ssl-accept 'ssl-accept tcp-accept ssl-listener))
@@ -883,7 +903,7 @@
 			      (close-input-port i)
 			      (close-output-port o)
 			      (raise exn))])
-	(wrap-ports who i o client-context-or-protocol-symbol 'connect #t))))
+	(wrap-ports who i o client-context-or-protocol-symbol 'connect #t #f))))
 
   (define ssl-connect 
     (opt-lambda (hostname port-k [client-context-or-protocol-symbol default-encrypt])
