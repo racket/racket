@@ -4,4 +4,4 @@ mkdir ..\..\..\lib
 mkdir ..\..\..\lib\msvc
 copy mzdyn.exp ..\..\..\lib\msvc
 copy mzdyn.obj ..\..\..\lib\msvc
-copy ..\..\worksp\extradlls\*.dll ..\..\..
+copy ..\..\worksp\extradlls\*.dll ..\..\..\lib
