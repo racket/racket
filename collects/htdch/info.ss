@@ -2,6 +2,4 @@
   (define name "htdch")
   (define compile-subcollections (list (list "htdch" "draw")
 				       (list "htdch" "graphics")
-                                       (list "htdch" "idraw")
-				       ))
-  )
+                                       (list "htdch" "idraw"))))

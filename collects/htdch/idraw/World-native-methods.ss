@@ -1,10 +1,10 @@
 #cs
 (module World-native-methods mzscheme
-  (require "support.scm" (lib "unitsig.ss"))
+  (require (lib "support.scm" "htdch" "draw") (lib "unitsig.ss"))
   
   (provide endOfTime-native endOfWorld-native bigBangO-double-native)
 
   (define void-or-true void)
-  (define (world-return w) w)
+  (define (imperative world@t+1 world@t) world@t)
   
   (define-values/invoke-unit/sig world-native^ world-native@ #f support^))
