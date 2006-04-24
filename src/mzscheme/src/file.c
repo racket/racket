@@ -185,9 +185,9 @@ static Scheme_Object *temp_dir_symbol, *home_dir_symbol, *pref_dir_symbol;
 static Scheme_Object *doc_dir_symbol, *desk_dir_symbol;
 static Scheme_Object *init_dir_symbol, *init_file_symbol, *sys_dir_symbol;
 static Scheme_Object *exec_file_symbol, *run_file_symbol, *collects_dir_symbol;
-static Scheme_Object *pref_file_symbol, *addon_dir_symbol;
+static Scheme_Object *pref_file_symbol, *orig_dir_symbol, *addon_dir_symbol;
 
-static Scheme_Object *exec_cmd, *run_cmd, *collects_path;
+static Scheme_Object *exec_cmd, *run_cmd, *collects_path, *original_pwd;
 #endif
 
 void scheme_init_file(Scheme_Env *env)
@@ -212,6 +212,7 @@ void scheme_init_file(Scheme_Env *env)
   REGISTER_SO(exec_file_symbol);
   REGISTER_SO(run_file_symbol);
   REGISTER_SO(collects_dir_symbol);
+  REGISTER_SO(orig_dir_symbol);
   REGISTER_SO(addon_dir_symbol);
 #endif
 
@@ -236,6 +237,7 @@ void scheme_init_file(Scheme_Env *env)
   exec_file_symbol = scheme_intern_symbol("exec-file");
   run_file_symbol = scheme_intern_symbol("run-file");
   collects_dir_symbol = scheme_intern_symbol("collects-dir");
+  orig_dir_symbol = scheme_intern_symbol("orig-dir");
   addon_dir_symbol = scheme_intern_symbol("addon-dir");
 #endif
 
@@ -4489,6 +4491,8 @@ find_system_path(int argc, Scheme_Object **argv)
       collects_path = scheme_make_path("collects");
     }
     return collects_path;
+  } else if (argv[0] == orig_dir_symbol) {
+    return original_pwd;
   } else if (argv[0] == addon_dir_symbol) {
     which = id_addon_dir;
   } else {
@@ -4750,6 +4754,14 @@ void scheme_set_collects_path(Scheme_Object *p)
 {
   REGISTER_SO(collects_path);
   collects_path = p;
+}
+
+void scheme_set_original_dir(Scheme_Object *d)
+{
+  if (!original_pwd) {
+    REGISTER_SO(original_pwd);
+  }
+  original_pwd = d;
 }
 
 /********************************************************************************/
