@@ -225,6 +225,9 @@ GC2_EXTERN void **GC_variable_stack;
 /*
    See the general overview in README. */
 
+GC2_EXTERN void **GC_get_variable_stack();
+GC2_EXTERN void GC_set_variable_stack(void **p);
+
 GC2_EXTERN void GC_register_traversers(short tag, Size_Proc size, Mark_Proc mark, Fixup_Proc fixup,
 				       int is_constant_size, int is_atomic);
 /*

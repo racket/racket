@@ -499,8 +499,18 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
               start for a MrEd-based application is
               "@executable_path/../../../"; if #f is supplied, the
               executable's framework path is left as-is, otherwise
-              a relative path to a framework in the installation's "lib"
-              directory is converted to an absolute path
+              the original executable's path to a framework is
+              converted to an absolute path if it was relative
+
+      _'dll-dir_ (Windows) - a string/path to a directory that
+              contains PLT DLLs needed by the executable, such as
+              "pltmzsch<version>.dll", or a boolean; a path can be
+              relative to the executable; if #f is supplied, the path
+              is left as-is; if #t is supplied, the path is dropped
+              (so that the DLLs must be in the system directory or the
+              user's PATH); if no value is supplied the original
+              executable's path to DLLs is converted to an absolute
+              path if it was relative
 
       _'subsystem_ (Windows) - a symbol, either 'console for a console
               application or 'windows for a consoleless application;

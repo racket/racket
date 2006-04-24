@@ -12,7 +12,8 @@
 	   "embed-sig.ss"
 	   "private/winicon.ss"
            "private/winsubsys.ss"
-	   "private/macfw.ss")
+	   "private/macfw.ss"
+	   "private/windlldir.ss")
 
   (provide compiler:embed@)
 
@@ -536,9 +537,9 @@
 	  (let ([exe (find-exe mred? variant)])
 	    (when verbose?
 	      (fprintf (current-error-port) "Copying to ~s~n" dest))
-	    (let-values ([(dest-exe osx?)
+	    (let-values ([(dest-exe orig-exe osx?)
 			  (if (and mred? (eq? 'macosx (system-type)))
-			      (values (prepare-macosx-mred exe dest aux variant) #t)
+			      (values (prepare-macosx-mred exe dest aux variant) #f #t)
 			      (begin
 				(when (or (file-exists? dest)
 					  (directory-exists? dest)
@@ -549,7 +550,7 @@
 				  ;;  on Mac OS X, which is handles above.
 				  (delete-file dest))
 				(copy-file exe dest)
-				(values dest #f)))])
+				(values dest exe #f)))])
 	      (with-handlers ([void (lambda (x)
 				      (if osx?
 					  (when (directory-exists? dest)
@@ -566,16 +567,27 @@
 						 mred?))
 			;; Check whether we need an absolute path to frameworks:
 			(let ([dest (mac-dest->executable dest mred?)])
-			(when (regexp-match #rx"^@executable_path" 
-					    (get-current-framework-path dest 
-									(if mred?
-									    "PLT_MrEd"
-									    "PLT_MzScheme")))
-			  (update-framework-path (string-append
-						  (path->string (build-path plthome "lib"))
-						  "/")
-						 dest
-						 mred?))))))
+			  (when (regexp-match #rx"^@executable_path" 
+					      (get-current-framework-path dest 
+									  (if mred?
+									      "PLT_MrEd"
+									      "PLT_MzScheme")))
+			     (update-framework-path (string-append
+						     (path->string (build-path plthome "lib"))
+						     "/")
+						    dest
+						    mred?))))))
+		(when (eq? 'windows (system-type))
+		  (let ([m (assq 'dll-dir aux)])
+		    (if m
+			(when (cdr m)
+			  (update-dll-dir dest (cdr m)))
+			;; Check whether we need an absolute path to DLLs:
+			(let ([dir (get-current-dll-dir dest)])
+			  (when (relative-path? dir)
+			    (let-values ([(orig-dir name dir?) (split-path 
+								(path->complete-path orig-exe))])
+			      (update-dll-dir dest (build-path orig-dir dir))))))))
 		(let ([start (file-size dest-exe)])
 		  (with-output-to-file dest-exe
 		    (lambda ()

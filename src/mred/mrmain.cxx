@@ -533,19 +533,11 @@ static char *CreateUniqueName()
   return together;
 }
 
-int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored, int nCmdShow)
+int APIENTRY WinMain_dlls_ready(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored, int nCmdShow)
 {
   LPWSTR m_lpCmdLine;
   long argc, j, l;
   char *a, **argv, *b, *normalized_path = NULL;
-
-  /* Order matters: load dependencies first */
-# ifndef MZ_PRECISE_GC
-  load_delayed_dll("libmzgcxxxxxxx.dll");
-# endif
-  load_delayed_dll("libmzsch" DLL_3M_SUFFIX "xxxxxxx.dll");
-  load_delayed_dll("libmred" DLL_3M_SUFFIX "xxxxxxx.dll");
-  record_dll_path();
 
   /* Get command line: */
   m_lpCmdLine = GetCommandLineW();
@@ -632,5 +624,26 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored
 
   return wxWinMain(wm_is_mred, hInstance, hPrevInstance, argc, argv, nCmdShow, main);
 }
+
+# ifdef MZ_PRECISE_GC
+START_XFORM_SKIP;
+# endif
+
+int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored, int nCmdShow)
+{
+  /* Order matters: load dependencies first */
+# ifndef MZ_PRECISE_GC
+  load_delayed_dll("libmzgcxxxxxxx.dll");
+# endif
+  load_delayed_dll("libmzsch" DLL_3M_SUFFIX "xxxxxxx.dll");
+  load_delayed_dll("libmred" DLL_3M_SUFFIX "xxxxxxx.dll");
+  record_dll_path();
+
+  return WinMain_dlls_ready(hInstance, hPrevInstance, ignored, nCmdShow);
+}
+
+# ifdef MZ_PRECISE_GC
+END_XFORM_SKIP;
+# endif
 
 #endif

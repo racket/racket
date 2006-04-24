@@ -653,6 +653,16 @@ void **GC_variable_stack;
 static unsigned long stack_base;
 static void *park[2];
 
+void **GC_get_variable_stack()
+{ 
+  return GC_variable_stack;
+}
+
+void GC_set_variable_stack(void **p)
+{
+  GC_variable_stack = p;
+}
+
 void GC_set_stack_base(void *base) 
 {
   stack_base = (unsigned long)base;

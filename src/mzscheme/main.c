@@ -226,16 +226,16 @@ int actual_main(int argc, char *argv[]);
 #endif
 
 /*****************************     main    ********************************/
-/*            Phase 1 setup, then call actual_main (indirectly)           */
+/*          Prepare for delayload, then call main_after_dlls              */
+
+static int main_after_dlls(int argc, MAIN_char **MAIN_argv);
+
+# ifdef MZ_PRECISE_GC
+START_XFORM_SKIP;
+# endif
 
 int MAIN(int argc, MAIN_char **MAIN_argv)
 {
-  void *stack_start;
-  int rval;
-#ifdef WINDOWS_UNICODE_MAIN
-  char **argv;
-#endif
-
 #ifdef DOS_FILE_SYSTEM
   /* Order matters: load dependencies first */
 # ifndef MZ_PRECISE_GC
@@ -243,6 +243,24 @@ int MAIN(int argc, MAIN_char **MAIN_argv)
 # endif
   load_delayed_dll("libmzsch" DLL_3M_SUFFIX "xxxxxxx.dll");
   record_dll_path();
+#endif
+
+  return main_after_dlls(argc, MAIN_argv);
+}
+
+# ifdef MZ_PRECISE_GC
+END_XFORM_SKIP;
+# endif
+
+/************************     main_after_dlls    **************************/
+/*            Phase 1 setup, then call actual_main (indirectly)           */
+
+static int main_after_dlls(int argc, MAIN_char **MAIN_argv)
+{
+  void *stack_start;
+  int rval;
+#ifdef WINDOWS_UNICODE_MAIN
+  char **argv;
 #endif
 
   stack_start = (void *)&stack_start;

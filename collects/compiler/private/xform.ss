@@ -11,7 +11,8 @@
 		 file-out
 		 palm? pgc? pgc-really?
 		 precompiling-header? precompiled-header
-		 show-info? output-depends-info?)
+		 show-info? output-depends-info?
+		 gc-variable-stack-through-funcs?)
     (parameterize ([current-output-port (current-output-port)])
       (begin-with-definitions
         (define power-inspector (current-inspector))
@@ -69,6 +70,8 @@
         (define used-symbols (make-hash-table))
         (hash-table-put! used-symbols (string->symbol "GC_variable_stack") 1)
         (hash-table-put! used-symbols (string->symbol "GC_cpp_delete") 1)
+	(hash-table-put! used-symbols (string->symbol "GC_get_variable_stack") 1)
+	(hash-table-put! used-symbols (string->symbol "GC_set_variable_stack") 1)
         (hash-table-put! used-symbols (string->symbol "memset") 1)
         
         ;; For dependency tracking:
@@ -568,7 +571,7 @@
         (define gc-var-stack-through-table?
           (ormap (lambda (e)
                    (and (pragma? e)
-                        (regexp-match #rx"GC_VARIABLE_SATCK_THOUGH_TABLE" (pragma-s e))))
+                        (regexp-match #rx"GC_VARIABLE_STACK_THOUGH_TABLE" (pragma-s e))))
                  e-raw))
         
         ;; The code produced by xform uses a number of macros. These macros
@@ -581,12 +584,20 @@
           (printf (if gc-var-stack-through-table?
                       "#define GC_VARIABLE_STACK (scheme_extension_table->GC_variable_stack)~n"
                       "#define GC_VARIABLE_STACK GC_variable_stack~n"))
+
+          (if gc-variable-stack-through-funcs?
+	      (begin
+		(printf "#define GET_GC_VARIABLE_STACK() GC_get_variable_stack()\n")
+		(printf "#define SET_GC_VARIABLE_STACK(v) GC_set_variable_stack(v)\n"))
+	      (begin
+		(printf "#define GET_GC_VARIABLE_STACK() GC_VARIABLE_STACK\n")
+		(printf "#define SET_GC_VARIABLE_STACK(v) (GC_VARIABLE_STACK = (v))\n")))
           
           ;; Declare stack-registration record of a particular size:
           (printf (string-append
-                   "#define PREPARE_VAR_STACK(size) void *__gc_var_stack__[size+2]; __gc_var_stack__[0] = GC_VARIABLE_STACK;"
+                   "#define PREPARE_VAR_STACK(size) void *__gc_var_stack__[size+2]; __gc_var_stack__[0] = GET_GC_VARIABLE_STACK();"
                    (if callee-restore?
-                       " GC_VARIABLE_STACK = __gc_var_stack__;"
+                       " SET_GC_VARIABLE_STACK(__gc_var_stack__);"
                        "")
                    "~n"))
           
@@ -599,19 +610,19 @@
                    "#define SETUP(x) ("
                    (if callee-restore?
                        ""
-                       "GC_VARIABLE_STACK = __gc_var_stack__, ")
+                       "SET_GC_VARIABLE_STACK(__gc_var_stack__), ")
                    "__gc_var_stack__[1] = (void *)x)~n"))
           
           ;; Call a function where the number of registered variables can change in
           ;;  nested blocks:
           (printf "#define FUNCCALL_each(setup, x) (setup, x)~n")
           ;; The same, but a "tail" call:
-          (printf "#define FUNCCALL_EMPTY_each(x) FUNCCALL_each(GC_VARIABLE_STACK = (void **)__gc_var_stack__[0], x)~n")
+          (printf "#define FUNCCALL_EMPTY_each(x) FUNCCALL_each(SET_GC_VARIABLE_STACK((void **)__gc_var_stack__[0]), x)~n")
           ;; The same, but the number of registered variables for this call is definitely
           ;;  the same as for the previous call:
           (printf (if callee-restore?
                       "#define FUNCCALL_AGAIN_each(x) x~n"
-                      "#define FUNCCALL_AGAIN_each(x) FUNCCALL_each(GC_VARIABLE_STACK = __gc_var_stack__, x)~n"))
+                      "#define FUNCCALL_AGAIN_each(x) FUNCCALL_each(SET_GC_VARIABLE_STACK(__gc_var_stack__), x)~n"))
           
           ;; As above, but when the number of registered variables never changes
           ;;  within a procedure:
@@ -640,13 +651,13 @@
                       "#define RET_VALUE_START return (__ret__val__ = ~n"
                       "#define RET_VALUE_START return~n"))
           (printf (if callee-restore?
-                      "#define RET_VALUE_END , GC_VARIABLE_STACK = (void **)__gc_var_stack__[0], __ret__val__)~n"
+                      "#define RET_VALUE_END , SET_GC_VARIABLE_STACK((void **)__gc_var_stack__[0]), __ret__val__)~n"
                       "#define RET_VALUE_END ~n"))
           ;; Wrap a return where the value is produced by a FUNCCALL_EMPTY expression:
           (printf "#define RET_VALUE_EMPTY_START return~n")
           (printf "#define RET_VALUE_EMPTY_END ~n")
           ;; Replacement for non-value return:
-          (printf "#define RET_NOTHING { GC_VARIABLE_STACK = (void **)__gc_var_stack__[0]; return; }~n")
+          (printf "#define RET_NOTHING { SET_GC_VARIABLE_STACK((void **)__gc_var_stack__[0]); return; }~n")
           ;; A non-value return inserted at the end of a void-returning function:
           (printf "#define RET_NOTHING_AT_END RET_NOTHING~n")
           
@@ -685,7 +696,7 @@
           (printf "#define DELETE_ARRAY(x) (delete[] x)~n")
           (printf (if callee-restore?
                       "#define XFORM_RESET_VAR_STACK /* empty */~n"
-                      "#define XFORM_RESET_VAR_STACK GC_VARIABLE_STACK = (void **)__gc_var_stack__[0];~n"))
+                      "#define XFORM_RESET_VAR_STACK SET_GC_VARIABLE_STACK((void **)__gc_var_stack__[0]);~n"))
           
           (unless pgc-really?
             (printf "#include \"cgc2.h\"~n"))
