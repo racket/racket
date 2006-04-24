@@ -238,7 +238,7 @@ install_wx_xt:
 	cd ..; rm -f $(prefix)/bin/mred
 	$(MAKE) @MRLIBINSTALL@
 	cd ..; $(ICP) mred/mred `(cd $(prefix); pwd)`/bin/
-	$(MZSCHEME) -e '(use-compiled-file-paths null)' -mvqL private/collects-path.ss compiler -e '(set-collects-path)' "$(prefix)/bin/mred" ../collects
+	$(MZSCHEME) -mvqu "$(srcdir)/../mzscheme/collects-path.ss" "$(prefix)/bin/mred" ../collects
 
 LIBIDIR=$(prefix)/lib
 BUILDINFO=$(LIBIDIR)/buildinfo
@@ -266,7 +266,7 @@ install_wx_mac:
 	if [ ! -d $(prefix)/collects/launcher ] ; then mkdir $(prefix)/collects/launcher ; fi
 	cd ..; $(ICP) -r mred/Starter.app $(prefix)/collects/launcher/.
 	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then /usr/bin/install_name_tool -change "@executable_path/../../../PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd" "@executable_path/../../../lib/PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd" "$(prefix)/MrEd.app/Contents/MacOS/MrEd" ; fi
-	$(MZSCHEME) -e '(use-compiled-file-paths null)' -mvqL private/collects-path.ss compiler -e '(set-collects-path)' "$(prefix)/MrEd.app/Contents/MacOS/MrEd" ../../../collects
+	$(MZSCHEME) -mvqu "$(srcdir)/../mzscheme/collects-path.ss" "$(prefix)/MrEd.app/Contents/MacOS/MrEd" ../../../collects
 
 install:
 	$(MAKE) install_@WXVARIANT@
@@ -290,7 +290,7 @@ install-lib3m:
 
 install-3m_wx_xt:
 	cd ..; $(ICP) mred/mred3m $(prefix)/bin/
-	$(MZSCHEME) -e '(use-compiled-file-paths null)' -mvqL private/collects-path.ss compiler -e '(set-collects-path)' "$(prefix)/bin/mred" ../collects
+	$(MZSCHEME) -mvqu "$(srcdir)/../mzscheme/collects-path.ss" "$(prefix)/bin/mred" ../collects
 	$(MAKE) @MRLIBINSTALL@3m
 
 install-3m_wx_mac:
@@ -306,7 +306,7 @@ install-3m_wx_mac:
 	if [ ! -d $(prefix)/collects/launcher ] ; then mkdir $(prefix)/collects/launcher ; fi
 	cd ..; $(ICP) -r mred/Starter3m.app $(prefix)/collects/launcher/.
 	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then /usr/bin/install_name_tool -change "@executable_path/../../../PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "@executable_path/../../../lib/PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "$(prefix)/MrEd3m.app/Contents/MacOS/MrEd3m" ; fi
-	$(MZSCHEME) -e '(use-compiled-file-paths null)' -mvqL private/collects-path.ss compiler -e '(set-collects-path)' "$(prefix)/MrEd3m.app/Contents/MacOS/MrEd3m" ../../../collects
+	$(MZSCHEME) -mvqu "$(srcdir)/../mzscheme/collects-path.ss" "$(prefix)/MrEd3m.app/Contents/MacOS/MrEd3m" ../../../collects
 
 install-3m:
 	$(MAKE) install-3m_@WXVARIANT@

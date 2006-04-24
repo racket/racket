@@ -266,7 +266,7 @@ install:
 install-3m-basic:
 	cd ..; $(ICP) mzscheme/mzscheme3m $(prefix)/bin/mzscheme3m
 	cd ..; $(ICP) mzscheme/mzdyn3m.o $(prefix)/lib/mzdyn3m.o
-	./mzscheme -e '(use-compiled-file-paths null)' -mvqL private/collects-path.ss compiler -e '(set-collects-path)' "$(prefix)/bin/mzscheme3m" ../collects
+	./mzscheme -mvqu "$(srcdir)/collects-path.ss" "$(prefix)/bin/mzscheme3m" ../collects
 
 install-3m@NOT_OSX@:
 	$(MAKE) install-3m-basic
@@ -282,7 +282,7 @@ unix-install:
 	cd ..; $(ICP) mzscheme/libmzgc.@LIBSFX@ $(LIBIDIR)/libmzgc.@LIBSFX@
 	cd ..; $(ICP) mzscheme/libmzscheme.@LIBSFX@ $(LIBIDIR)/libmzscheme.@LIBSFX@
 	cd ..; $(ICP) mzscheme/mzscheme "$(BINDIR)/mzscheme"
-	./mzscheme -e '(use-compiled-file-paths null)' -mvqL private/collects-path.ss compiler -e '(set-collects-path)' "$(BINDIR)/mzscheme" ../collects
+	./mzscheme -mvqu "$(srcdir)/collects-path.ss" "$(BINDIR)/mzscheme" ../collects
 	cd ..; echo 'CC=@CC@' > $(BUILDINFO)
 	cd ..; echo 'CFLAGS=@CFLAGS@ @PREFLAGS@ @COMPFLAGS@' >> $(BUILDINFO)
 	cd ..; echo 'OPTIONS=@OPTIONS@' >> $(BUILDINFO)
