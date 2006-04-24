@@ -51,30 +51,52 @@
 
   (define ssl-load-fail-reason #f)
 
-  (define libssl 
+  (define windows-lib-dir
+    (delay
+      (let ([exe (parameterize ([current-directory (find-system-path 'orig-dir)])
+                   (find-executable-path (find-system-path 'exec-file)))])
+	(with-input-from-file exe
+	  (lambda ()
+	    (let ([m (regexp-match #rx#"dLl dIRECTORy:([^\0]*)\0" (current-input-port))])
+	      (unless m (error "cannot find DLL directory"))
+	      (let-values ([(dir name dir?) (split-path exe)])
+		(build-path dir (bytes->path (cadr m))))))))))
+
+  (define (ffi-lib-xxxxxxx name)
+    (let* ([d (force windows-lib-dir)]
+	   [f (build-path d (format "~a~a.dll" name filename-version-part))])
+      (if (file-exists? f)
+	  (ffi-lib f)
+	  (ffi-lib (build-path d (format "~axxxxxxx.dll" name))))))
+
+  (define 3m? (regexp-match #rx#"3m" (path->bytes (system-library-subpath))))
+
+  (define libeay
+    (with-handlers ([exn:fail? (lambda (x)
+				 (set! ssl-load-fail-reason (exn-message x))
+				 #f)])
+      (case (system-type)
+	[(windows)
+	 (ffi-lib-xxxxxxx "libeay32")]
+	[else
+	 (ffi-lib "libssl")])))
+
+  (define libssl
+    (with-handlers ([exn:fail? (lambda (x)
+				 (set! ssl-load-fail-reason (exn-message x))
+				 #f)])
+      (case (system-type)
+	[(windows)
+	 (and libeay
+	      (ffi-lib-xxxxxxx "ssleay32"))]
+	[else
+	 libeay])))
+
+  (define libmz
     (case (system-type)
       [(windows)
-       (let* ([d (find-system-path 'collects-dir)]
-	      [d (if (relative-path? d)
-		     (parameterize ([current-directory (find-system-path 'orig-dir)])
-		       (find-executable-path (find-system-path 'exec-file) d #t))
-		     d)]
-	      [ffi-lib-xxxxxxx
-	       (lambda (name)
-		 (let ([f (build-path d (format "~a~a.dll" name filename-version-part))])
-		   (if (file-exists? f)
-		       (ffi-lib f)
-		       (ffi-lib (build-path d (format "~axxxxxxx.dll" name))))))])
-	 (with-handlers ([exn:fail? (lambda (x)
-				      (set! ssl-load-fail-reason x)
-				      #f)])
-	   (ffi-lib "libeay32")
-	   (ffi-lib "ssleay32")))]
-      [else
-       (with-handlers ([exn:fail? (lambda (x)
-				    (set! ssl-load-fail-reason x)
-				    #f)])
-	 (ffi-lib "libssl"))]))
+       (ffi-lib-xxxxxxx (format "libmzsch~a" (if 3m? "3m" "")))]
+      [else #f]))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; SSL bindings and constants
@@ -91,8 +113,9 @@
 		      (get-ffi-obj str lib (_fun . type))
 		      (lambda args (raise-not-available)))))]))]))
 
+  (define-define-X define-eay libeay libeay)
   (define-define-X define-ssl libssl libssl)
-  (define-define-X define-mzscheme #t #f)
+  (define-define-X define-mzscheme #t libmz)
 
   (define-syntax typedef
     (syntax-rules ()
@@ -115,13 +138,13 @@
   (define-ssl TLSv1_client_method (-> _SSL_METHOD*))
   (define-ssl TLSv1_server_method (-> _SSL_METHOD*))
 
-  (define-ssl BIO_s_mem (-> _BIO_METHOD*))
-  (define-ssl BIO_new (_BIO_METHOD* -> _BIO*))
-  (define-ssl BIO_free (_BIO* -> _void))
+  (define-eay BIO_s_mem (-> _BIO_METHOD*))
+  (define-eay BIO_new (_BIO_METHOD* -> _BIO*))
+  (define-eay BIO_free (_BIO* -> _void))
 
-  (define-ssl BIO_read (_BIO* _bytes _int -> _int))
-  (define-ssl BIO_write (_BIO* _bytes _int -> _int))
-  (define-ssl BIO_ctrl (_BIO* _int _long _long -> _long))
+  (define-eay BIO_read (_BIO* _bytes _int -> _int))
+  (define-eay BIO_write (_BIO* _bytes _int -> _int))
+  (define-eay BIO_ctrl (_BIO* _int _long _long -> _long))
   (define (BIO_set_mem_eof_return b v)
     (BIO_ctrl b BIO_C_SET_BUF_MEM_EOF_RETURN v 0))
 
@@ -150,8 +173,8 @@
 
   (define-ssl SSL_get_error (_SSL* _int -> _int))
 
-  (define-ssl ERR_get_error (-> _long))
-  (define-ssl ERR_error_string_n (_long _bytes _long -> _void))
+  (define-eay ERR_get_error (-> _long))
+  (define-eay ERR_error_string_n (_long _bytes _long -> _void))
 
   (define-ssl SSL_library_init (-> _void))
   (define-ssl SSL_load_error_strings (-> _void))
@@ -257,7 +280,7 @@
 			    finalizer-cancel))
 
   (define (make-immobile-bytes n)
-    (if (regexp-match #rx#"3m" (path->bytes (system-library-subpath)))
+    (if 3m?
 	;; Allocate the byte string via malloc:
 	(atomically
 	 (let* ([p (malloc 'raw n)]
