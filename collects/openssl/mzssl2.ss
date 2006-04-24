@@ -20,9 +20,11 @@
   (require (lib "foreign.ss")
 	   (lib "port.ss")
 	   (lib "etc.ss")
-	   (lib "kw.ss"))
+	   (lib "kw.ss")
+	   (lib "filename-version.ss" "dynext"))
 
   (provide ssl-available?
+	   ssl-load-fail-reason
 
 	   ssl-make-client-context
 	   ssl-make-server-context
@@ -47,8 +49,32 @@
 
   (unsafe!)
 
-  (define libssl (with-handlers ([exn:fail? (lambda (x) #f)])
-		   (ffi-lib "libssl")))
+  (define ssl-load-fail-reason #f)
+
+  (define libssl 
+    (case (system-type)
+      [(windows)
+       (let* ([d (find-system-path 'collects-dir)]
+	      [d (if (relative-path? d)
+		     (parameterize ([current-directory (find-system-path 'orig-dir)])
+		       (find-executable-path (find-system-path 'exec-file) d #t))
+		     d)]
+	      [ffi-lib-xxxxxxx
+	       (lambda (name)
+		 (let ([f (build-path d (format "~a~a.dll" name filename-version-part))])
+		   (if (file-exists? f)
+		       (ffi-lib f)
+		       (ffi-lib (build-path d (format "~axxxxxxx.dll" name))))))])
+	 (with-handlers ([exn:fail? (lambda (x)
+				      (set! ssl-load-fail-reason x)
+				      #f)])
+	   (ffi-lib "libeay32")
+	   (ffi-lib "ssleay32")))]
+      [else
+       (with-handlers ([exn:fail? (lambda (x)
+				    (set! ssl-load-fail-reason x)
+				    #f)])
+	 (ffi-lib "libssl"))]))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; SSL bindings and constants
