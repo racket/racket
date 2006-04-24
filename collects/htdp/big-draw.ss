@@ -226,6 +226,7 @@
                 #t)))
       (hash-table-put! h '%stop %stop)
       ;; --- 
+      ;; see ../htdch/draw/support.scm (copy) for explanation and design rationale
       (hash-table-put! h 'copy (lambda () (set! @vp vp*) (set! @pm pm*) [(clear-viewport pm*)]))
       ;; ---
       ;; --- the following can't happend during a draw sequence --- 

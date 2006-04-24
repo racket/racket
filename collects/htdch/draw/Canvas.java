@@ -14,9 +14,6 @@ public class Canvas {
   protected native boolean stop();
     // I need to figure out how to accomplish these two things, especially stop,
     // directly at the Scheme level w/o going thru the Java layer.
-    // BUG: this is actually a bug in ProfessorJ. Making these protected should 
-    // work just fine. Indeed, leaving off the access control qualifier should 
-    // work, too. (That's package protected.) 
      
   public native boolean show();
   public native boolean close();

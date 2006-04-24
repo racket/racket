@@ -98,7 +98,16 @@
   
       (define (stop-native this accs gets privates)
 	(wrap-start-check ([hash-table-get privates '%end-of-time])))
-  
+
+      ;; (copy) restores the viewport and the pixmap so that
+      ;; (end-draw-sequence) can copy the pixmap into the viewport.
+      ;; It also clears the pixmap from anything that was on there.
+      ;; design rationale: the closure is created during the initializtion
+      ;; of the world (big-bang) and thus encapsulates access to the actual
+      ;; values of pixmap and viewport. big-bang exists once and for
+      ;; all and thus can't encapsulate the values.
+      ;; Alternative: expose these values as a "token", which big-bang must
+      ;; install. I couldn't figure out how to do this at the time. 
       (define (copy-native this accs gets privates)
 	(wrap-start-check ([hash-table-get privates 'copy])))
   
@@ -181,7 +190,7 @@
         void-or-true)
       
       (define (endOfTime-native this accs gets privates)
-        (define theCanvas ((hash-table-get accs 'theCanvas) this))
+        (define theCanvas ((hash-table-get accs 'theCanvas) this))	
         (send theCanvas stop)
         #t)
       
