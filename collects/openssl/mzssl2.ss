@@ -200,6 +200,10 @@
   (define-mzscheme scheme_end_atomic (-> _void))
   (define-mzscheme scheme_make_custodian (_pointer -> _scheme))
 
+  ;; Make this bigger than 4096 to accomodate at least
+  ;; 4096 of unencrypted data
+  (define BUFFER-SIZE 8000)
+
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Error handling
 
@@ -437,16 +441,17 @@
 		buffer i)])
 	(cond
 	 [(eof-object? n) 
-	  (BIO_set_mem_eof_return r-bio 1)
+	  (BIO_set_mem_eof_return r-bio 0)
 	  eof]
 	 [(zero? n)
 	  (when need-progress?/out
 	    (sync need-progress?/out i))
 	  0]
-	 [else (let ([m (BIO_write r-bio buffer n)])
-		 (unless (= m n)
-		   (error 'pump-input-once "couldn't write all bytes to BIO!"))
-		 m)]))))
+	 [else 
+	  (let ([m (BIO_write r-bio buffer n)])
+	    (unless (= m n)
+	      (error 'pump-input-once "couldn't write all bytes to BIO!"))
+	    m)]))))
 
   (define (pump-output-once mzssl need-progress? output-blocked-result)
     (let ([buffer (mzssl-buffer mzssl)]
@@ -486,7 +491,7 @@
     ;;  call to SSL_read must use the same arguments.
     ;; Use xfer-buffer so we have a consistent buffer to use with
     ;;  SSL_read across calls to the port's write function.
-    (let-values ([(xfer-buffer) (make-immobile-bytes 4096)]
+    (let-values ([(xfer-buffer) (make-immobile-bytes BUFFER-SIZE)]
 		 [(got-r got-w) (make-pipe)]
 		 [(must-read-len) #f])
       (make-input-port/read-to-peek
@@ -613,7 +618,7 @@
     ;;  call to SSL_write must use the same arguments.
     ;; Use xfer-buffer so we have a consistent buffer to use with
     ;;  SSL_write across calls to the port's write function.
-    (let ([xfer-buffer (make-immobile-bytes 4096)]
+    (let ([xfer-buffer (make-immobile-bytes BUFFER-SIZE)]
 	  [buffer-mode (or (file-stream-buffer-mode (mzssl-o mzssl)) 'bloack)]
 	  [flush-ch (make-channel)]
 	  [must-write-len #f])
@@ -871,7 +876,7 @@
     (let-values ([(ssl cancel r-bio w-bio connect?)
 		  (create-ssl who context-or-encrypt-method connect/accept)])
       ;; connect/accept:
-      (let-values ([(buffer) (make-bytes 4096)]
+      (let-values ([(buffer) (make-bytes BUFFER-SIZE)]
 		   [(pipe-r pipe-w) (make-pipe)]
 		   [(cancel) (box #t)])
 	(let ([mzssl (make-mzssl ssl i o r-bio w-bio pipe-r pipe-w 
