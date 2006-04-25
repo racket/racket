@@ -162,8 +162,6 @@
 				BufferSecurityCheck="FALSE"
 				EnableFunctionLevelLinking="FALSE"
 				UsePrecompiledHeader="2"
-				ObjectFile=""
-				ProgramDataBaseFileName=""
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
 				Detect64BitPortabilityProblems="TRUE"
