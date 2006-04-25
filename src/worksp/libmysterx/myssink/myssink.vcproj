@@ -37,15 +37,16 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libmzgcxxxxxxx.lib libmzschxxxxxxx.lib mzdyn.obj ..\mysc\Debug\mysc.lib"
-				OutputFile="..\..\..\..\$(ProjectName).dll"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libmzschxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalDependencies="libmzgcxxxxxxx.lib libmzschxxxxxxx.lib mzdyn.obj ..\mysc\Debug\mysc.lib delayimp.lib"
+				OutputFile="..\..\..\..\lib\$(ProjectName).dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="..\..\..\..\lib\msvc"
 				IgnoreDefaultLibraryNames="LIBCMT.lib;LIBCMTD.lib"
 				ModuleDefinitionFile="..\..\..\mysterx\myssink\$(ProjectName).def"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="..\..\..\..\$(ProjectName).pdb"
+				ProgramDatabaseFile="..\..\..\..\lib\$(ProjectName).pdb"
 				SubSystem="2"
 				ImportLibrary="$(OutDir)\$(ProjectName).lib"
 				TargetMachine="1"/>
@@ -60,7 +61,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Register $(ProjectName).dll"
-				CommandLine="REGSVR32 /s ..\..\..\..\$(ProjectName).dll"/>
+				CommandLine="REGSVR32 /s ..\..\..\..\lib\$(ProjectName).dll"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool
@@ -105,15 +106,16 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libmzgcxxxxxxx.lib libmzschxxxxxxx.lib mzdyn.obj ..\mysc\Debug\mysc.lib"
-				OutputFile="..\..\..\..\$(ProjectName).dll"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libmzschxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalDependencies="libmzgcxxxxxxx.lib libmzschxxxxxxx.lib mzdyn.obj ..\mysc\Debug\mysc.lib delayimp.lib"
+				OutputFile="..\..\..\..\lib\$(ProjectName).dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="..\..\..\..\lib\msvc"
 				IgnoreDefaultLibraryNames="LIBCMT.lib;LIBCMTD.lib"
 				ModuleDefinitionFile="..\..\..\mysterx\myssink\$(ProjectName).def"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="..\..\..\..\$(ProjectName).pdb"
+				ProgramDatabaseFile="..\..\..\..\lib\$(ProjectName).pdb"
 				SubSystem="2"
 				ImportLibrary="$(OutDir)\$(ProjectName).lib"
 				TargetMachine="1"/>
@@ -128,7 +130,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Register $(ProjectName).dll"
-				CommandLine="REGSVR32 /s ..\..\..\..\$(ProjectName).dll"/>
+				CommandLine="REGSVR32 /s ..\..\..\..\lib\$(ProjectName).dll"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool
@@ -179,8 +181,9 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libmzgcxxxxxxx.lib libmzschxxxxxxx.lib mzdyn.obj ..\mysc\Release\mysc.lib"
-				OutputFile="..\..\..\..\$(ProjectName).dll"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libmzschxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalDependencies="libmzgcxxxxxxx.lib libmzschxxxxxxx.lib mzdyn.obj ..\mysc\Release\mysc.lib delayimp.lib"
+				OutputFile="..\..\..\..\lib\$(ProjectName).dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="..\..\..\..\lib\msvc"
@@ -203,7 +206,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Register $(ProjectName).dll"
-				CommandLine="REGSVR32 /s ..\..\..\..\$(ProjectName).dll"/>
+				CommandLine="REGSVR32 /s ..\..\..\..\lib\$(ProjectName).dll"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool

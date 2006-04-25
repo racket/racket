@@ -38,7 +38,8 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="htmlhelp.lib libmzgcxxxxxxx.lib libmzschxxxxxxx.lib mzdyn.obj mysc\Debug\mysc.lib"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libmzschxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalDependencies="htmlhelp.lib libmzgcxxxxxxx.lib libmzschxxxxxxx.lib mzdyn.obj mysc\Debug\mysc.lib delayimp.lib"
 				OutputFile="..\..\..\collects\mysterx\private\compiled\native\win32\i386\mxmain.dll"
 				LinkIncremental="0"
 				SuppressStartupBanner="TRUE"
@@ -102,7 +103,8 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="htmlhelp.lib libmzgcxxxxxxx.lib libmzschxxxxxxx.lib mscoree.lib mzdyn.obj mysc\Debug\mysc.lib"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libmzschxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalDependencies="htmlhelp.lib libmzgcxxxxxxx.lib libmzschxxxxxxx.lib mscoree.lib mzdyn.obj mysc\Debug\mysc.lib delayimp.lib"
 				OutputFile="..\..\..\collects\mysterx\private\compiled\native\win32\i386\mxmain.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="TRUE"
@@ -171,7 +173,8 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="htmlhelp.lib libmzgcxxxxxxx.lib libmzschxxxxxxx.lib mzdyn.obj mysc\Release\mysc.lib"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libmzschxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalDependencies="htmlhelp.lib libmzgcxxxxxxx.lib libmzschxxxxxxx.lib mzdyn.obj mysc\Release\mysc.lib delayimp.lib"
 				OutputFile="..\..\..\collects\mysterx\private\compiled\native\win32\i386\mxmain.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"

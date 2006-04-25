@@ -8,6 +8,8 @@
 #include "myssink_i.c"
 #include "Sink.h"
 
+#define DLL_RELATIVE_PATH "."
+#include "../../mzscheme/delayed.inc"
 
 CComModule _Module;
 
@@ -23,6 +25,8 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID /*lpReserved*/)
 {
     if (dwReason == DLL_PROCESS_ATTACH)
     {
+	load_delayed_dll(hInstance, "libmzgcxxxxxxx.dll");
+	load_delayed_dll(hInstance, "libmzschxxxxxxx.dll");
         _Module.Init(ObjectMap, hInstance, &LIBID_MYSSINKLib);
         DisableThreadLibraryCalls(hInstance);
     }

@@ -239,9 +239,9 @@ int MAIN(int argc, MAIN_char **MAIN_argv)
 #ifdef DOS_FILE_SYSTEM
   /* Order matters: load dependencies first */
 # ifndef MZ_PRECISE_GC
-  load_delayed_dll("libmzgcxxxxxxx.dll");
+  load_delayed_dll(NULL, "libmzgcxxxxxxx.dll");
 # endif
-  load_delayed_dll("libmzsch" DLL_3M_SUFFIX "xxxxxxx.dll");
+  load_delayed_dll(NULL, "libmzsch" DLL_3M_SUFFIX "xxxxxxx.dll");
   record_dll_path();
 #endif
 

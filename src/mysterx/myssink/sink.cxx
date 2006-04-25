@@ -10,6 +10,9 @@
 #include "sink.h"
 #include "comtypes.h"
 
+#define scheme_current_thread (scheme_get_current_thread())
+#define scheme_false (scheme_make_false())
+
 /////////////////////////////////////////////////////////////////////////////
 // CSink
 
@@ -153,31 +156,31 @@ Scheme_Object *CSink::variantToSchemeObject(VARIANTARG *pVariantArg) {
 
   case VT_NULL :
 
-    return scheme_void;
+    return scheme_make_void();
 
   case VT_I1 :
 
-    return scheme_make_character(pVariantArg->cVal);
+    return scheme_make_char(pVariantArg->cVal);
 
   case VT_I1 | VT_BYREF :
 
-    return scheme_box(scheme_make_character(*pVariantArg->pcVal));
+    return scheme_box(scheme_make_char(*pVariantArg->pcVal));
 
   case VT_UI1 :
 
-    return scheme_make_character((char)(pVariantArg->bVal));
+    return scheme_make_char((char)(pVariantArg->bVal));
 
   case VT_UI1 | VT_BYREF :
 
-    return scheme_box(scheme_make_character((char)(*pVariantArg->pbVal)));
+    return scheme_box(scheme_make_char((char)(*pVariantArg->pbVal)));
 
   case VT_UI2 :
 
-    return scheme_make_character((char)(pVariantArg->bVal));
+    return scheme_make_char((char)(pVariantArg->bVal));
 
   case VT_UI2 | VT_BYREF :
 
-    return scheme_box(scheme_make_character((char)(*pVariantArg->pbVal)));
+    return scheme_box(scheme_make_char((char)(*pVariantArg->pbVal)));
 
   case VT_I2 :
 
@@ -433,7 +436,7 @@ void CSink::unmarshalSchemeObject(Scheme_Object *obj,VARIANTARG *pVariantArg) {
 
   case VT_BOOL | VT_BYREF :
 
-    *(pVariantArg->pboolVal) = (val == scheme_false) ? 0 : -1;
+    *(pVariantArg->pboolVal) = (val == scheme_make_false()) ? 0 : -1;
     break;
 
   case VT_ERROR | VT_BYREF :
@@ -634,3 +637,4 @@ HRESULT CSink::Invoke(DISPID dispId, REFIID, LCID, WORD,
   memcpy(&scheme_error_buf, &jmpSave, sizeof(mz_jmp_buf));
   return S_OK;
 }
+

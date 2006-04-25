@@ -38,13 +38,13 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="libmzgcxxxxxxx.lib libmzschxxxxxxx.lib mzdyn.obj"
-				OutputFile="..\..\..\..\$(ProjectName).dll"
+				OutputFile="..\..\..\..\lib\$(ProjectName).dll"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="..\..\..\..\lib\msvc"
 				IgnoreDefaultLibraryNames="LIBCMT"
 				ModuleDefinitionFile="..\..\..\mysterx\myspage\$(ProjectName).def"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="..\..\..\..\$(ProjectName).pdb"
+				ProgramDatabaseFile="..\..\..\..\lib\$(ProjectName).pdb"
 				SubSystem="2"
 				ImportLibrary="$(OutDir)\$(ProjectName).lib"
 				TargetMachine="1"/>
@@ -60,7 +60,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Register $(ProjectName).dll"
-				CommandLine="REGSVR32 /s ..\..\..\..\$(ProjectName).dll"/>
+				CommandLine="REGSVR32 /s ..\..\..\..\lib\$(ProjectName).dll"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool
@@ -107,14 +107,14 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="libmzgcxxxxxxx.lib libmzschxxxxxxx.lib mzdyn.obj"
-				OutputFile="..\..\..\..\$(ProjectName).dll"
+				OutputFile="..\..\..\..\lib\$(ProjectName).dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="..\..\..\..\lib\msvc"
 				IgnoreDefaultLibraryNames="LIBCMT"
 				ModuleDefinitionFile="..\..\..\mysterx\myspage\$(ProjectName).def"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="..\..\..\..\$(ProjectName).pdb"
+				ProgramDatabaseFile="..\..\..\..\lib\$(ProjectName).pdb"
 				SubSystem="2"
 				ImportLibrary="$(OutDir)\$(InputName).lib"
 				TargetMachine="1"/>
@@ -130,7 +130,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Register $(ProjectName).dll"
-				CommandLine="REGSVR32 /s ..\..\..\..\$(ProjectName).dll"/>
+				CommandLine="REGSVR32 /s ..\..\..\..\lib\$(ProjectName).dll"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool
@@ -182,7 +182,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="libmzgcxxxxxxx.lib libmzschxxxxxxx.lib mzdyn.obj"
-				OutputFile="..\..\..\..\$(ProjectName).dll"
+				OutputFile="..\..\..\..\lib\$(ProjectName).dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="..\..\..\..\lib\msvc"
@@ -205,7 +205,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Register $(ProjectName).dll"
-				CommandLine="REGSVR32 /s ..\..\..\..\$(ProjectName).dll"/>
+				CommandLine="REGSVR32 /s ..\..\..\..\lib\$(ProjectName).dll"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool

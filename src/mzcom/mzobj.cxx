@@ -23,6 +23,9 @@ static void ErrorBox(char *s) {
   ::MessageBox(NULL,s,"MzCOM",MB_OK);
 }
 
+/* This indirection lets us delayload libmzsch.dll: */
+#define scheme_false (scheme_make_false())
+
 static Scheme_Object *_apply_thunk_catch_exceptions(Scheme_Object *f,
                                                     Scheme_Object **exn) {
   Scheme_Object *v;
@@ -165,7 +168,7 @@ DWORD WINAPI evalLoop(LPVOID args) {
   scheme_set_stack_base(NULL,1);
   setupSchemeEnv();
 
-  scheme_exit = exitHandler;
+  scheme_set_exit(exitHandler);
   sleepFun = scheme_builtin_value("sleep");
 
   pTg = (THREAD_GLOBALS *)args;

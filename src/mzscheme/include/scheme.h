@@ -1534,7 +1534,9 @@ MZ_EXTERN Scheme_Thread *scheme_current_thread;
 MZ_EXTERN Scheme_Thread *scheme_first_thread;
 
 /* Set these global hooks (optionally): */
-MZ_EXTERN void (*scheme_exit)(int v);
+typedef void (*Scheme_Exit_Proc)(int v);
+MZ_EXTERN Scheme_Exit_Proc scheme_exit;
+MZ_EXTERN void scheme_set_exit(Scheme_Exit_Proc p);
 typedef void (*scheme_console_printf_t)(char *str, ...);
 MZ_EXTERN scheme_console_printf_t scheme_console_printf;
 MZ_EXTERN scheme_console_printf_t scheme_get_console_printf();

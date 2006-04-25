@@ -898,3 +898,9 @@ extern unsigned long browserCount;
       scheme_signal_error(buff); }; } while (0)
 
 
+
+/* This indirection lets us delayload libmzsch.dll: */
+#define scheme_false (scheme_make_false())
+#define scheme_true (scheme_make_true())
+#define scheme_void (scheme_make_void())
+#define scheme_null (scheme_make_null())

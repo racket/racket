@@ -4,6 +4,9 @@
 
 #include "escheme.h"
 
+/* This indirection lets us delayload libmzsch.dll: */
+#define scheme_false (scheme_make_false())
+
 // fwd ref
 BSTR schemeToBSTR (Scheme_Object * obj);
 

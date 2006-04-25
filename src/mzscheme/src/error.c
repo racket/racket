@@ -36,7 +36,8 @@ scheme_console_printf_t scheme_console_printf;
 scheme_console_printf_t scheme_get_console_printf() { return scheme_console_printf; }
 
 void (*scheme_console_output)(char *str, long len);
-void (*scheme_exit)(int v);
+Scheme_Exit_Proc scheme_exit;
+void scheme_set_exit(Scheme_Exit_Proc p) { scheme_exit = p; }
 
 #ifdef MEMORY_COUNTING_ON
 long scheme_misc_count;

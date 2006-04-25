@@ -633,10 +633,10 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored
 {
   /* Order matters: load dependencies first */
 # ifndef MZ_PRECISE_GC
-  load_delayed_dll("libmzgcxxxxxxx.dll");
+  load_delayed_dll(NULL, "libmzgcxxxxxxx.dll");
 # endif
-  load_delayed_dll("libmzsch" DLL_3M_SUFFIX "xxxxxxx.dll");
-  load_delayed_dll("libmred" DLL_3M_SUFFIX "xxxxxxx.dll");
+  load_delayed_dll(NULL, "libmzsch" DLL_3M_SUFFIX "xxxxxxx.dll");
+  load_delayed_dll(NULL, "libmred" DLL_3M_SUFFIX "xxxxxxx.dll");
   record_dll_path();
 
   return WinMain_dlls_ready(hInstance, hPrevInstance, ignored, nCmdShow);

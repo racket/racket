@@ -92,6 +92,9 @@ LPCTSTR FindOneOf(LPCTSTR p1, LPCTSTR p2)
     return NULL;
 }
 
+#define DLL_RELATIVE_PATH "."
+#include "../mzscheme/delayed.inc"
+
 /////////////////////////////////////////////////////////////////////////////
 //
 extern "C" int WINAPI _tWinMain(HINSTANCE hInstance, 
@@ -100,6 +103,9 @@ extern "C" int WINAPI _tWinMain(HINSTANCE hInstance,
   globHinst = hInstance;
 
   lpCmdLine = GetCommandLine(); //this line necessary for _ATL_MIN_CRT
+
+  load_delayed_dll(hInstance, "libmzgcxxxxxxx.dll");
+  load_delayed_dll(hInstance, "libmzschxxxxxxx.dll");
 
 #if _WIN32_WINNT >= 0x0400 & defined(_ATL_FREE_THREADED)
   HRESULT hRes = CoInitializeEx(NULL, COINIT_MULTITHREADED);
