@@ -61,7 +61,7 @@ typedef size_t (*iconv_proc_t)(iconv_t cd,
 typedef iconv_t (*iconv_open_proc_t)(const char *tocode, const char *fromcode);
 typedef void (*iconv_close_proc_t)(iconv_t cd);
 typedef char *(*locale_charset_proc_t)();
-static errno_proc_t msvcrt_errno;
+static errno_proc_t iconv_errno;
 static iconv_proc_t iconv;
 static iconv_open_proc_t iconv_open;
 static iconv_close_proc_t iconv_close;
@@ -74,20 +74,25 @@ static char *nl_langinfo(int which)
 static int get_iconv_errno(void)
 {
   int *a;
-  a = msvcrt_errno();
+  a = iconv_errno();
   return *a;
 }
 # undef HAVE_CODESET
 # define HAVE_CODESET 1
 # define CODESET 0
 # define ICONV_errno get_iconv_errno()
+extern char *scheme_get_dll_path(char *s);
 static int iconv_ready = 0;
 static void init_iconv()
 {
 # ifdef MZ_NO_ICONV
 # else
   HMODULE m;
-  m = LoadLibrary("iconv.dll");
+  m = LoadLibrary(scheme_get_dll_path("iconv.dll"));
+  if (!m)
+    m = LoadLibrary(scheme_get_dll_path("libiconv.dll"));
+  if (!m)
+    m = LoadLibrary("iconv.dll");
   if (!m)
     m = LoadLibrary("libiconv.dll");
   if (m) {
@@ -103,13 +108,19 @@ static void init_iconv()
     }
   }
   if (iconv) {
-    m = LoadLibrary("msvcrt.dll");
-    if (m) {
-      msvcrt_errno = (errno_proc_t)GetProcAddress(m, "_errno");
-      if (!msvcrt_errno) {
-	iconv = NULL;
-	iconv_open = NULL;
-	iconv_close = NULL;
+    iconv_errno = (errno_proc_t)GetProcAddress(m, "_errno");
+    if (!iconv_errno) {
+      /* The iconv.dll distributed with PLT Scheme links to msvcrt.dll.
+	 It's a slighly dangerous assumption that whaetever iconv we
+	 found also uses msvcrt.dll. */
+      m = LoadLibrary("msvcrt.dll");
+      if (m) {
+	iconv_errno = (errno_proc_t)GetProcAddress(m, "_errno");
+	if (!iconv_errno) {
+	  iconv = NULL;
+	  iconv_open = NULL;
+	  iconv_close = NULL;
+	}
       }
     }
   }

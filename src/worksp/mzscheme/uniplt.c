@@ -14,8 +14,7 @@ HMODULE LoadUnicowsProc(void)
 {
   char *s;
 
-  /* Versioning should replace the "xxxxxxx" */
-  s = scheme_get_dll_path("uniplt_xxxxxxx.dll");
+  s = scheme_get_dll_path("UnicoWS.dll");
 
   return LoadLibrary(s);
 }
