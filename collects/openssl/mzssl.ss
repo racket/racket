@@ -44,6 +44,7 @@
 	   ssl-connect
 	   ssl-connect/enable-break
 
+	   ssl-listener?
 	   ssl-addresses
 	   ssl-abandon-port)
 
