@@ -3,7 +3,7 @@
   (define doc.txt "doc.txt")
 
   (define compile-omit-files
-    (list "setup.ss" "winstall.ss"))
+    (list "setup.ss"))
 
   (define mzscheme-launcher-libraries (list "setup.ss"))
   (define mzscheme-launcher-names (list "Setup PLT"))

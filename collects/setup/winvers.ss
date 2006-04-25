@@ -10,8 +10,8 @@
       (for-each (lambda (p)
                   (let ([dest (build-path vers p)])
                     (when (file-exists? dest) (delete-file dest))
-                    (copy-file (build-path plthome p) dest)))
-                '("mzscheme.exe" "libmzgcxxxxxxx.dll" "libmzschxxxxxxx.dll"))
+                    (copy-directory/files (build-path plthome p) dest)))
+                '("mzscheme.exe" "lib"))
       (build-path vers "mzscheme.exe")))
 
   (define (patch-files)
