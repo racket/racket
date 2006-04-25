@@ -42,7 +42,10 @@
 	   ssl-accept
 	   ssl-accept/enable-break
 	   ssl-connect
-	   ssl-connect/enable-break)
+	   ssl-connect/enable-break
+
+	   ssl-addresses
+	   ssl-abandon-port)
 
   (unsafe!)
 
@@ -912,8 +915,36 @@
 			     (if connect? "connect" "accept")
 			     (get-error-message (ERR_get_error)))]))))))
 	  ;; Connection complete; make ports
-	  (values (make-ssl-input-port mzssl)
-		  (make-ssl-output-port mzssl))))))
+	  (values (register (make-ssl-input-port mzssl) mzssl #t)
+		  (register (make-ssl-output-port mzssl) mzssl #f))))))
+
+  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; SSL port registry
+
+  (define ssl-ports (make-hash-table 'weak))
+
+  (define (register port mzssl input?)
+    (hash-table-put! ssl-ports port (make-ephemeron port (cons mzssl input?)))
+    port)
+
+  (define (lookup who what port)
+    (let ([v (hash-table-get ssl-ports port (lambda () #f))])
+      (unless v
+	(raise-type-error who what port))
+      (let ([p (ephemeron-value v)])
+	(values (car p) (cdr p)))))
+	 
+  (define (ssl-addresses p)
+    (let-values ([(mzssl input?) (lookup 'ssl-addresses "SSL port" p)])
+      (if input?
+	  (tcp-addresses (mzssl-i mzssl))
+	  (tcp-addresses (mzssl-o mzssl)))))
+
+  (define (ssl-abandon-port p)
+    (let-values ([(mzssl input?) (lookup 'ssl-abandon-port "SSL output port" p)])
+      (when input?
+	(raise-type-error 'ssl-abandon-port "SSL output port" p))
+      (set-mzssl-shutdown-on-close?! mzssl #f)))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; SSL listen
