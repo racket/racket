@@ -1,19 +1,19 @@
 The _openssl_ collection provides glue for the OpenSSL library with
-the MzScheme port system. The OpenSSL collection functions nearly
-identically to the standard TCP subsystems in PLT Scheme, with a few
-additional flags.
+the MzScheme port system. The OpenSSL collection provides functions
+nearly identically to the standard TCP subsystem in PLT Scheme, plus a
+generic `ports->ssl-ports' interface.
 
 To use this library, you will need OpenSSL installed on your
 machine, but
 
- * the PLT-distributed archive for Windows installs the necessary
-   DLLs, and
+ * for Windows, the PLT Scheme distribution for Windows includes the
+   necessary DLLs;
 
- * Mac OS X 10.2 provides the necessary OpenSSL libraries
-   (as do some other operating systems).
+ * for Mac OS X, version 10.2 and later provides the necessary OpenSSL
+   libraries.
 
-To build from source, you will need a C compiler and linker;
-see the end of this documentation for build notes.
+ * for Unix, libssl.so is likely to be installed on your machine
+   already.
 
 ==================================================
 
@@ -27,25 +27,34 @@ A boolean value which says whether the system openssl library was
 successfully loaded. Calling `ssl-connect', etc.  when this value is
 #f (library not loaded) will raise an error.
 
+> ssl-load-failure-reason
 
--- Client procedures ----------------------------------------
+Either #f (when `ssl-available?' is #t) or an error string (when
+`ssl-available?' is #f).
 
-> (ssl-connect hostname port-k [ssl-client-context-or-protocol-symbol])
+
+-- TCP-like Client procedures ----------------------------------------
+
+> (ssl-connect hostname port-k [client-context-or-protocol-symbol])
 
 Connect to the given host (a string) on the given port-k (a number
 from 1 to 65535). This connection will be encrypted using SSL.  The
-return values are as tcp-connect; an input port and an output port.
+return values are as for `tcp-connect': an input port and an output
+port.
 
-The optional `ssl-context-or-protocol-symbol' argument determines
-which encryption protocol is used, whether the server's certificate is
+The optional `context-or-protocol-symbol' argument determines which
+encryption protocol is used, whether the server's certificate is
 checked, etc. The argument can be either a client context created by
-`ssl-make-client-context' (see below), or one of the following symbols:
-'sslv2-or-v3 (the default), 'sslv2, 'sslv3, or 'tls; see
-`make-client-context' for further details (including the meanings of
-the protocol symbols.)
+`ssl-make-client-context' (see below), or one of the following
+symbols: 'sslv2-or-v3 (the default), 'sslv2, 'sslv3, or 'tls; see
+`ssl-make-client-context' for further details (including the meanings of
+the protocol symbols).
+
+Closing the resulting output port does not send a shutdown message to
+the server. See also `ports->ssl-ports'.
 
 
-> (ssl-connect/enable-break hostname port-k [protocol-symbol])
+> (ssl-connect/enable-break hostname port-k [client-context-or-protocol-symbol])
 
 Like `ssl-connect', but breaking is enabled while trying to connect. 
 
@@ -80,13 +89,14 @@ Returns #t if `v' is a value produced by `ssl-make-client-context', #f
 otherwise.
 
 
--- Server procedures ----------------------------------------
+-- TCP_like Server procedures ----------------------------------------
 
-> (ssl-listen port-k [queue-k reuse? hostname-or-#f protocol-symbol])
+> (ssl-listen port-k [queue-k reuse? hostname-or-#f server-context-or-protocol-symbol])
 
 Like `tcp-listen', but the result is an SSL listener (which is a
-waitable object). The extra optional `protocol-symbol' is as for
-`ssl-connect'.
+waitable object). The extra optional `server-context-protocol-symbol'
+is as for `ssl-connect', except that a context must be a server
+context instead of a client context.
 
 Call `ssl-load-certificate-chain!' and `ssl-load-private-key!' to
 avoid a _no shared cipher_ error on accepting connections. The file
@@ -105,19 +115,73 @@ Analogous to `tcp-close' and `tcp-listener?'.
 
 Analogous to `tcp-accept'.
 
+Closing the resulting output port does not send a shutdown message to
+the client. See also `ports->ssl-ports'.
+
 
 > (ssl-accept/enable-break ssl-listener)
 
 Analogous to `tcp-accept/enable-break'.
 
 
--- Certificate procedures ----------------------------------------
+> (ssl-make-server-context [protocol-symbol])
 
-> (ssl-load-certificate-chain! ssl-client-context-or-listener pathname)
+Like `ssl-make-client-context', but creates a server context.
+
+
+> (ssl-server-context? v)
+
+Returns #t if `v' is a value produced by `ssl-make-server-context', #f
+otherwise.
+
+
+-- SSL-wrapper interface ----------------------------------------
+
+> (ports->ssl-ports input-port output-port
+                    [#:mode mode-symbol]
+                    [#:context context]
+                    [#:encrypt protocol-symbol]
+                    [#:close-original? close?]
+                    [#:shutdown-on-close? shutdown?])
+
+Returns two values --- an input port and an output port --- that
+implement the SSL protocol over the given input and output port. (The
+given ports should be connected to another process that runs the SLL
+protocol.)
+
+The `mod-symbol' argument can be 'connect or 'accept, and it defaults
+to `accept. The mode determines how the SSL protocol is initialized
+over the ports, either as a client or as a server. As with
+`ssl-listen', in 'accept mode supply a `context' that has been
+initialized with `ssl-load-certificate-chain!' and
+`ssl-load-private-key!' to avoid a _no shared cipher_ error.
+
+The `context' argument should be a client context for 'connect more or
+a server context for 'accept mode. If it is not supplied, a context is
+created using the protocol specified by a `protocol-symbol' argument.
+
+If the `protocol-symbol' argument is not supplied, it defaults to
+'sslv2-or-v3. See `ssl-make-client-context' for further details
+(including all options and the meanings of the protocol symbols).
+This argument is ignored if a `context' argument is supplied.
+
+If `close?' is true, then when both SSL ports are closed, the given
+input and output ports are automatically closed. The default is #f.
+
+If `shutdown?' is true, then when the output SSL port is closed, it
+sends a shutdown message to the other end of the SSL connection. The
+default is #f. When shutdown is enabled, closing the output port can
+fail if the given output port becomes unwritable (e.g., because the
+other end of the given port has been closed by another process).
+
+
+-- Context procedures --------------------------------------------
+
+> (ssl-load-certificate-chain! context-or-listener pathname)
 
 Loads a PEM-format certification chain file for connections to made
-with the given context (created by `ssl-make-client-context') or
-listener (created by `ssl-listener').
+with the given context (created by `ssl-make-client-context' or
+`ssl-make-server-context') or listener (created by `ssl-listener').
 
 This chain is used to identify the client or server when it connects
 or accepts connections. Loading a chain overwrites the old chain. Also
@@ -128,11 +192,11 @@ The file "test.pem" is suitable for testing purposes. Since "test.pem"
 is public, such a test configuration obviously provides no security.
 
 
-> (ssl-load-private-key! ssl-client-context-or-listener pathname [rsa? asn1?])
+> (ssl-load-private-key! context-or-listener pathname [rsa? asn1?])
 
-Loads the first private key from `pathname' for the given client
-context or listener. The key goes with the certificate that identifies
-the client or server.
+Loads the first private key from `pathname' for the given context or
+listener. The key goes with the certificate that identifies the client
+or server.
 
 If `rsa?' is #t (the default), the first RSA key is read (i.e.,
 non-RSA keys are skipped). If `asn1?' is #t (the default is #f), the
@@ -142,7 +206,7 @@ The file "test.pem" is suitable for testing purposes. Since "test.pem"
 is public, such a test configuration obviously provides no security.
 
 
-> (ssl-set-verify! ssl-client-context-or-listener boolean)
+> (ssl-set-verify! context-or-listener boolean)
 
 Enables or disables verification of a connection peer's certificates.
 By default, verification is disabled.
@@ -151,7 +215,7 @@ Enabling verification also requires, at a minimum, designating trusted
 certificate authorities with `ssl-load-verify-root-certificates!'.
 
 
-> (ssl-load-verify-root-certificates! ssl-client-context-or-listener pathname)
+> (ssl-load-verify-root-certificates! context-or-listener pathname)
 
 Loads a PEM-format file containing trusted certificates that are used
 to verify the certificates of a connection peer. Call this procedure
@@ -162,7 +226,7 @@ identifies itself using "test.pem".  Since "test.pem" is public, such
 a test configuration obviously provides no security.
 
 
-> (ssl-load-suggested-certificate-authorities! ssl-listener pathname)
+> (ssl-load-suggested-certificate-authorities! context-or-listener pathname)
 
 Loads a PEM-format file containing certificates that are used by a
 server. The certificate list is sent to a client when the server
@@ -179,59 +243,18 @@ identifies itself using "test.pem".
 
 ==================================================
 
-Build notes
------------
+Implementation notes
+--------------------
 
-The "mzssl.ss" library is actually implemented in C as "mzssl.c".
-When you run Setup PLT, setup attempts to compile and link "mzssl.c"
-to create a PLT Scheme extension.
+For Windows, "mzssl.ss" relies on "libeay32xxxxxxxx.dll" and
+"ssleay32xxxxxxxx.dll", where the "xxxxxxxx" may be replaced with a
+PLT Scheme verison number, and where the DLLs are located in the same
+place as "libmzschxxxxxxx.dll". The DLLs are distributed as part of
+PLT Scheme.
 
-Per-platform notes:
+For Unix variants, "mzssl.ss" relies on "libssl.so", which must be
+installed in a standard library location, or in a directory listed by
+LD_LIBRARY_PATH.
 
- * Windows
-
-   The setup script needs "libeay32.lib" and "ssleay32.lib", which it
-   can find automatically if they are installed as
-   plt/collects/openssl/openssl/lib/{lib,ssl}easy32.lib. Similarly, the
-   setup script needs several OpenSSL header files (such as "ssl.h"),
-   which it can find automatically if they are installed as
-   plt/collects/openssl/openssl/include/openssl/ssl.h, etc.
-
-   At run-time, the DLLs "libeay32.dll" and "ssleay32.dll" must be
-   found by Windows as it tries to load the "mzssl.dll" extension. For
-   example, if the two DLLs are installed in the system folder, they
-   will be found. (Another possibility is the folder containing the
-   ".exe" that uses the "mzssl.dll" extension.)
-
-   To designate a directory other than plt/collects/openssl/openssl
-   for .lib and .h files, define the environment variable
-   PLT_EXTENSION_LIB_PATHS. The variable's value should be a
-   semicolon-separated path list, where one of the paths contains
-   "include" and "lib" subdirectories with the OpenSSL headers and
-   libraries.
-
-   If OpenSLL is built with cygwin, ".a" files are generated instead
-   of ".lib" an ".dll" files. Presumably "mzssl.c" could be made to
-   build with those libraries by modifying "pre-installer.ss", but we
-   haven't tried. Similar caveats apply to other build techniques that
-   do not produce DLLs.
-
-   Bonus hack: If "{lib,ssl}easy32xxxxxxx.lib" exist in the lib
-   directory, they are used (instead of "{lib,ssl}eay32.lib") with
-   the expectation that the resulting extension will link to
-   "{lib,ssl}eay32xxxxxxx.dll". This enables the name-mangling version
-   hack for distributing DLLs.
-
- * Mac OS
-
-   "Just works" for Mac OS X version >= 10.2 if you have the developer
-   tools installed. Building for 10.1 requires installing OpenSSL. Mac
-   OS Classic is not supported at all.
-
- * Unix (including Linux)
-
-   Usually "just works" if you have OpenSSL installed.  If the header
-   files or libraries are in a non-standard place, define the
-   environment variable PLT_EXTENSION_LIB_PATHS as a colon-separated
-   path list, where one of the paths contains "include" and "lib"
-   subdirectories with the OpenSSL headers and libraries.
+For Mac OS X, "mzssl.ss" relies on "libssl.dylib", which is part of
+the OS distribution for Mac OS X 10.2 and later.
