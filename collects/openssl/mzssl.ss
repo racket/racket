@@ -1,7 +1,4 @@
 
-;; This is a re-implementation of "mzssl.c" using `(lib "foreign.ss")'.
-;; It will soon replace "mzssl.c".
-
 ;; Warn clients: when a (non-blocking) write fails to write all the
 ;;  data, the stream is actually committed to writing the given data
 ;;  in the future. (This requirement comes from the SSL library.)
@@ -16,7 +13,7 @@
 ;;  read/write (the opposite direction) didn't finish, and so that
 ;;  opposite must be completed, first.
 
-(module mzssl2 mzscheme
+(module mzssl mzscheme
   (require (lib "foreign.ss")
 	   (lib "port.ss")
 	   (lib "etc.ss")
