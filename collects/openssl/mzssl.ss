@@ -56,15 +56,25 @@
 	  (lambda ()
 	    (let ([m (regexp-match #rx#"dLl dIRECTORy:([^\0]*)\0" (current-input-port))])
 	      (unless m (error "cannot find DLL directory"))
-	      (let-values ([(dir name dir?) (split-path exe)])
-		(build-path dir (bytes->path (cadr m))))))))))
+	      (if (regexp-match #rx#"^<" (cadr m))
+		  #f ; no lib dir
+		  (let-values ([(dir name dir?) (split-path exe)])
+		    (build-path dir (bytes->path (cadr m)))))))))))
+
+  (define (ffi-lib-win name)
+    (let* ([d (force windows-lib-dir)]
+	   [f (and d (build-path d (format "~a.dll" name)))])
+      ;; Try PLT-specific lib:
+      (if (and f (file-exists? f))
+	  (ffi-lib f)
+	  ;; Try system-wide:
+	  (ffi-lib (format "~a.dll" name)))))
 
   (define (ffi-lib-xxxxxxx name)
-    (let* ([d (force windows-lib-dir)]
-	   [f (build-path d (format "~a~a.dll" name filename-version-part))])
-      (if (file-exists? f)
-	  (ffi-lib f)
-	  (ffi-lib (build-path d (format "~axxxxxxx.dll" name))))))
+    (let* ([f (format "~a~a" name filename-version-part)])
+      (or (with-handlers ([exn? (lambda (x) #f)])
+            (ffi-lib-win (format "~a~a" name filename-version-part)))
+	  (ffi-lib-win (format "~axxxxxxx" name)))))
 
   (define 3m? (regexp-match #rx#"3m" (path->bytes (system-library-subpath))))
 
@@ -74,7 +84,7 @@
 				 #f)])
       (case (system-type)
 	[(windows)
-	 (ffi-lib-xxxxxxx "libeay32")]
+	 (ffi-lib-win "libeay32")]
 	[else
 	 (ffi-lib "libssl")])))
 
@@ -85,7 +95,7 @@
       (case (system-type)
 	[(windows)
 	 (and libeay
-	      (ffi-lib-xxxxxxx "ssleay32"))]
+	      (ffi-lib-win "ssleay32"))]
 	[else
 	 libeay])))
 
