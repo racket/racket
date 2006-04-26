@@ -265,7 +265,7 @@
 		    ""
 		    (string-append
 		     "readlink() {" newline
-		     "  P=`\"$ls\" -l \"$1\" | \"$sed\" -e 's/^.* -> //'`" newline
+		     "  P=`\"$ls\" -l -- \"$1\" | \"$sed\" -e 's/^.* -> //'`" newline
 		     "}" newline
 		     newline))
 		"# Remember current directory" newline
