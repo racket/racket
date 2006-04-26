@@ -238,21 +238,36 @@
 	(regexp-replace* #rx"\"" s "\\\\\""))
 
       (define (make-relative-path-header dest bindir)
-	(let ([dirname (find-executable-path "dirname")]
-	      [basename (find-executable-path "basename")]
-	      [readlink (find-executable-path "readlink")]
-	      [dest-explode (explode-path (normalize-path dest))]
-	      [bindir-explode (explode-path (normalize-path bindir))]
-	      [newline "\n"])
-	  (if (and dirname basename readlink
+	(let* ([dirname (find-executable-path "dirname")]
+	       [basename (find-executable-path "basename")]
+	       [readlink (and (not (eq? 'macosx (system-type)))
+			      (find-executable-path "readlink"))]
+	       [ls (and (not readlink)
+			(find-executable-path "ls"))]
+	       [sed (and (not readlink)
+			 (find-executable-path "sed"))]
+	       [dest-explode (explode-path (normalize-path dest))]
+	       [bindir-explode (explode-path (normalize-path bindir))]
+	       [newline "\n"])
+	  (if (and dirname basename (or readlink (and ls sed))
 		   (equal? (car dest-explode) (car bindir-explode)))
 	      (format
 	       (string-append
 		"# Programs we need (avoid depending on user's PATH):" newline
 		"dirname=\"~a\"" newline
 		"basename=\"~a\"" newline
-		"readlink=\"~a\"" newline
+		(if readlink
+		    "readlink=\"~a\""
+		    "~a") 
 		newline
+		newline
+		(if readlink
+		    ""
+		    (string-append
+		     "readlink() {" newline
+		     "  P=`\"$ls\" -l \"$1\" | \"$sed\" -e 's/^.* -> //'`" newline
+		     "}" newline
+		     newline))
 		"# Remember current directory" newline
 		"saveD=`pwd`" newline
 		newline
@@ -263,7 +278,10 @@
 		"F=`$basename \"$0\"`" newline
 		"cd \"$D\"" newline
 		"while [ -L \"$F\" ]; do" newline
-		"  P=`$readlink \"$F\"`" newline
+		(if readlink
+		    "  P=`$readlink \"$F\"`" 
+		    "  readlink \"$F\"")
+		newline
 		"  D=`$dirname \"$P\"`" newline
 		"  F=`$basename \"$P\"`" newline
 		"  cd \"$D\"" newline
@@ -277,7 +295,12 @@
 		newline)
 	       (protect-shell-string (path->string dirname))
 	       (protect-shell-string (path->string basename))
-	       (protect-shell-string (path->string readlink))
+	       (if readlink
+		   (protect-shell-string (path->string readlink))
+		   (format
+		    "ls=\"~a\"\nsed=\"~a\""
+		    (protect-shell-string (path->string ls))
+		    (protect-shell-string (path->string sed))))
 	       (protect-shell-string (path->string
 				      (apply
 				       build-path
