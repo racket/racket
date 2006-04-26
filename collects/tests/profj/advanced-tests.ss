@@ -347,6 +347,16 @@ class WeeklyPlanner{
    (list (make-java-string "llo"))
    "Test of substring")
          
+  (interact-test
+   "class A2 {
+      private int a;
+      A2(int a) { this.a = a; }
+      int g(A2 b) { return b.a; }
+   }"
+   'advanced
+   (list "new A2(1).g(new A2(2))")
+   (list 2)
+   "Test of private field access")
   
   (report-test-results)
   

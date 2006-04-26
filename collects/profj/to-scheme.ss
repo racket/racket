@@ -2257,7 +2257,7 @@
                                   (javaRuntime:nullError 'field)
                                   (send ,expr ,(translate-id field-string field-src)))
                              (build-src src))))
-           ((and (eq? (var-access-access access) 'private) (or (static-method) (inner-class)))
+           ((and (eq? (var-access-access access) 'private) #;(or (static-method) (inner-class)))
             (let* ((id (create-get-name field-string (var-access-class access)))
                    (getter `(send ,expr ,id ,expr))
                    (get-syntax  (if cant-be-null?
