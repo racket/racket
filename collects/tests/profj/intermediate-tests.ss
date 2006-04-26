@@ -259,9 +259,9 @@
     'intermediate #f "Abstract method implemented, class subclassed")
 
   (execute-test
-   "class X {
+   "class XIof {
      boolean equals( Object o ) {
-      return o instanceof X;
+      return o instanceof XIof;
     }
   }"
    'intermediate #f "Correct instanceof usage")
@@ -429,14 +429,14 @@
    }" 'intermediate #t "Incompatible return type from inherited interface")
 
   (execute-test
-   "class X {
+   "class X2 {
       int c (Object o) {
         return (int) o;
       }
     }" 'intermediate #t "Cast of object to primitive")
   
   (execute-test
-   "class X {
+   "class X3 {
      int c () {
        return (int) false;
      }
@@ -445,7 +445,7 @@
   (execute-test
    "interface A { int x();}
     interface B { boolean x(); }
-    class X {
+    class X4 {
       Object o(A a) {
         return (B) a;
       }

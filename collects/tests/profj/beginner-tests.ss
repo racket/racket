@@ -293,9 +293,9 @@
    "Tests instantiating a class")
   
   (interact-test
-   "class Book {
+   "class Book2 {
      int numPages;
-     Book( int numPages ) {
+     Book2( int numPages ) {
        this.numPages = numPages;
      }
      String level() {
@@ -309,7 +309,7 @@
    }
    "
    language
-   (list "new Book(9).level()" "new Book(10).level()" "new Book(100).level()" "new Book(99).level")
+   (list "new Book2(9).level()" "new Book2(10).level()" "new Book2(100).level()" "new Book2(99).level")
    (list (make-java-string "Apprentice") (make-java-string "Journeyman") (make-java-string "Master") 'error)
    "Tests of an if in a method")
   

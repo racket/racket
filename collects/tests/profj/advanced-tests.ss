@@ -22,13 +22,13 @@
    'advanced #f "while loop with statements after")
   
   (execute-test
-   "interface A { int a( int x); }
-    abstract class B implements A { }
+   "interface Abs { int a( int x); }
+    abstract class Babs implements Abs { }
    "
    'advanced #f "abs. class with interface not all impl., with args")
   
   (execute-test
-   "public class X {
+   "public class Xprivate {
      private int x() { return 3; }
     }"
    'advanced #f "Class with private method")
@@ -83,16 +83,26 @@
    'advanced #f "Class containing inits")
   
   (execute-test
-   "class X {
+   "class Xfinal {
      final int x() { return 4; }
    }"
    'advanced #f "Class with final method")
   
   (execute-test
-   "class X {
+   "class Xoverload {
      int x() { return 3; }
      int x( int y ) { return y; }
    }" 'advanced #f "Class with overloaded methods")
+  
+  (execute-test
+   "class Ret {
+     boolean rets() {
+      if (true)
+        return true;
+      return false;
+      }
+     }"
+   'advanced #f "If with no else, reachable return")
   
   ;;Execution tests with errors
 
@@ -124,8 +134,8 @@
     }" 'advanced #t "Attempt to set before named, init")
    
   (execute-test
-   "class X {  X() { this(1); }
-               X(int i) { this(); }}"
+   "class Xth {  Xth() { this(1); }
+                 Xth(int i) { this(); }}"
    'advanced #t "Cyclic calls to this")
   
   (execute-test
@@ -248,36 +258,49 @@ class WeeklyPlanner{
 }
  " 'advanced #t "Parsing test from student program. Should mention {")
   
+  (execute-test
+   "class NoRet {
+     boolean noRet() {
+       if (true) 
+         return true;
+     }
+    }"
+   'advanced #t "If with no else, and return in if")
+  
   ;;Interaction tests, mix of right and error
   
   (interact-test
-   "class A {
+   "class Afirst {
      private int x = 10;
      public int y = x * 2;
     }
-    class B {
+    class Bsecond {
      public int x = 10;
      private int y = x * 2;
      public int report() { return y; }
    }
-   class C {
+   class Cthird {
      public int x = 10;
      public int y = 2 * x;
    }
-   class D {
+   class Dfourth {
      int x = 10;
      public int y = 2 * x;
    }"
    'advanced
-   '("A a = new A();" "B b = new B();" "C c = new C();" "D d = new D();" "a.y" "b.report()" "c.y" "d.y")
+   '("Afirst a = new Afirst();" 
+     "Bsecond b = new Bsecond();" 
+     "Cthird c = new Cthird();" 
+     "Dfourth d = new Dfourth();" 
+     "a.y" "b.report()" "c.y" "d.y")
    '((void) (void) (void) (void) 20 20 20 20)
    "Private, etc shouldn't effect order of evaluation")
   
   (interact-test
-   "public class X {
+   "public class Xp {
      private int x() { return 3; }
     }"
-   'advanced '("X y = new X();" "y.x()")
+   'advanced '("Xp y = new Xp();" "y.x()")
    '((void) error) "Creating class with private method, and trying to access the method")
 
   
