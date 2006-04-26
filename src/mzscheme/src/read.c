@@ -208,7 +208,8 @@ static Scheme_Object *read_reader(Scheme_Object *port, Scheme_Object *stxsrc,
 				  Scheme_Hash_Table **ht,
 				  Scheme_Object *indentation,
 				  ReadParams *params);
-static Scheme_Object *read_compiled(Scheme_Object *port,
+static Scheme_Object *read_compiled(Scheme_Object *port, Scheme_Object *stxsrc,
+				    long line, long col, long pos,
 				    Scheme_Hash_Table **ht,
 				    ReadParams *params);
 static void unexpected_closer(int ch,
@@ -1167,7 +1168,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	  if (!params->honu_mode) {
 	    if (params->can_read_compiled) {
 	      Scheme_Object *cpld;
-	      cpld = read_compiled(port, ht, params);
+	      cpld = read_compiled(port, stxsrc, line, col, pos, ht, params);
 	      if (stxsrc)
 		cpld = scheme_make_stx_w_offset(cpld, line, col, pos, SPAN(port, pos), stxsrc, STX_SRCTAG);
 	      return cpld;
@@ -4527,6 +4528,8 @@ static long read_compact_number_from_port(Scheme_Object *port)
 
 /* "#~" has been read */
 static Scheme_Object *read_compiled(Scheme_Object *port,
+				    Scheme_Object *stxsrc,
+				    long line, long col, long pos,
 				    Scheme_Hash_Table **ht,
 				    ReadParams *params)
 {
@@ -4581,7 +4584,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
     buf[got] = 0;
 
     if (strcmp(buf, MZSCHEME_VERSION))
-      scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
+      scheme_read_err(port, stxsrc, line, col, pos, got, 0, NULL,
 		      "read (compiled): code compiled for version %s, not %s",
 		      (buf[0] ? buf : "???"), MZSCHEME_VERSION);
   }
