@@ -39,7 +39,7 @@
         (when (and (pair? r) (eq? 'newer (car r)))
           (case (message-box/custom
                  "Outdated PLT Version"
-                 (string-append "PLT Scheme v"(cadr r)"is now available")
+                 (string-append "PLT Scheme v"(cadr r)" is now available")
                  "Quit && &Take Me There" "Remind Me &Later" "&Stop Checking"
                  top '(default=2) #f)
             ;; go there
