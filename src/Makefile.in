@@ -31,7 +31,7 @@ copytree-stub: @MAKE_COPYTREE@
 mredinstall-stub: @MAKE_MREDINSTALL@
 
 setup-plt:
-	$(BINDIR)/mzscheme -qM setup
+	$(prefix)/bin/mzscheme -qM setup
 
 install-3m:
 	$(MAKE) install-normal
