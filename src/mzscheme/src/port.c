@@ -1872,7 +1872,7 @@ int scheme_peeked_read_via_get(Scheme_Input_Port *ip,
   Scheme_Type t;
   Scheme_Object * volatile target_evt = _target_evt;
 
-  /* Check whether t's even t value is known to be always itself: */
+  /* Check whether t's event value is known to be always itself: */
   t = SCHEME_TYPE(target_evt);
   if (!SAME_TYPE(t, scheme_sema_type)
       && !SAME_TYPE(t, scheme_channel_put_type)
@@ -1927,6 +1927,11 @@ int scheme_peeked_read_via_get(Scheme_Input_Port *ip,
     } else {
       /* No other thread is trying to commit. This one is hereby
 	 elected "main" if multiple threads try to commit. */
+
+      if (SAME_TYPE(t, scheme_always_evt_type)) {
+	/* Fast path: always-evt is ready */
+	return complete_peeked_read_via_get(ip, size);
+      }
 
       /* This sema makes other threads wait before reading: */
       sema = scheme_make_sema(0);
