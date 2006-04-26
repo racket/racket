@@ -147,8 +147,9 @@ the Unix instructions below, but note the following:
     the directory plt/bin/mzscheme. For a --prefix, build, the rest of
     the plt tree is also copied to the target directory.
 
-    In addition, this step runs the plt/install script, which updates
-    script paths and builds .zo files.
+    Excep for an in-place build from the Subversion archive (see step
+    4), this step also compiles ".zo" bytecode files for installed
+    Scheme source.
 
     If the installation fails because the target directory cannot be
     created, or because the target directory is not the one you
@@ -162,17 +163,19 @@ the Unix instructions below, but note the following:
     versions of the dynamic libraries in plt/lib.
 
  4. ONLY Subversion users with in-place builds: the `make install'
-    step does not run plt/install for an in-place build, because old
-    .zo files typically need to be deleted, first. After an initial
-    in-place build, manually run ./install in the plt directory. For
-    later builds, manually run plt/bin/setup-plt.
+    step does not automatically build ".zo" files. After an initial
+    in-place install, run `make setup-plt'. For subsequent installs
+    within the same Subversion checkout, you can run either `make
+    setup-plt' or `plt/bin/setup-plt'.
 
 After an "in-place" install without Subversion, the plt/src directory
 is no longer needed, and it can be safely deleted. Build information
 is recorded in plt/lib/buildinfo.
 
-If you move the plt tree (for a build without dynamic libraries), run
-the script ./install in the relocated plt directory.
+You can safely move the plt tree for a build without dynamic
+libraries. However, "launcher" scripts and other local executables
+generated from PLT Scheme may fail after moving the tree (in which
+case you'll have to re-create them).
 
 OpenGL, Unix, and pthreads
 --------------------------
@@ -307,12 +310,13 @@ for "moving memory manager".
   path. Then, in a shell, change directories to plt\src\worksp\gc2 and
   run
 
-   ../../../mzscheme.exe -r make.ss
+   ..\..\..\mzscheme.exe -r make.ss
 
   The resulting MzScheme3m.exe and MrEd3m.exe will appear in the "plt"
   directory, along with DLLs libmzsch3mxxxxxxx.dll and
-  libmred3mxxxxxxx.dll. (There is no correspingd libmzgc3mxxxxxxx.dll.
-  Instead, it is merged with libmzsch3mxxxxxxx.dll.)
+  libmred3mxxxxxxx.dll in plt/lib. (There is no correspingd
+  libmzgc3mxxxxxxx.dll.  Instead, it is merged with
+  libmzsch3mxxxxxxx.dll.)
 
 Configuration Options
 ---------------------
