@@ -1869,7 +1869,7 @@ int scheme_peeked_read_via_get(Scheme_Input_Port *ip,
   Scheme_Object * volatile v, *sema, *a[3], ** volatile aa, * volatile l;
   volatile long size = _size;
   volatile int n, current_leader = 0;
-  Scheme_Type t;
+  volatile Scheme_Type t;
   Scheme_Object * volatile target_evt = _target_evt;
 
   /* Check whether t's event value is known to be always itself: */
