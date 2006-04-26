@@ -248,7 +248,7 @@
 		      resource-files))
 	  (build-path dest "Contents" "MacOS" name)))
 
-      (define (finish-osx-mred dest flags exec-name keep-exe?)
+      (define (finish-osx-mred dest flags exec-name keep-exe? relative?)
 	(call-with-output-file (build-path dest 
 					   "Contents" 
 					   "Resources" 
@@ -257,7 +257,16 @@
 	    (write-plist 
 	     `(dict ,@(if keep-exe?
 			  `((assoc-pair "executable name"
-					,(path->string exec-name)))
+					,(path->string 
+					  (if relative?
+					      (let ([p (find-relative-path
+							(let-values ([(dir name dir?) (split-path (normalize-path dest))])
+							  dir)
+							(normalize-path exec-name))])
+						(if (relative-path? p)
+						    (build-path 'up 'up 'up p)
+						    p))
+					      exec-name))))
 			  null)
 		    (assoc-pair "stored arguments"
 				(array ,@flags)))
@@ -607,7 +616,9 @@
 					       (list "-k" start-s end-s))
 					   cmdline)])
 			(if osx?
-			    (finish-osx-mred dest full-cmdline exe keep-exe?)
+			    (finish-osx-mred dest full-cmdline exe keep-exe?
+					     (let ([m (assq 'relative? aux)])
+					       (and m (cdr m))))
 			    (let ([cmdpos (with-input-from-file dest-exe 
 					    (lambda () (find-cmdline 
 							"cmdline"
