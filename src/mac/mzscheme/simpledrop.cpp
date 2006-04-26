@@ -483,6 +483,34 @@ char *ConvertCFStringRef(CFStringRef str)
   return result;
 }  
 
+char *ExeRelativeToAbsolute(char *p)
+{
+  CFBundleRef appBundle;
+  CFURLRef url;
+  CFStringRef str;
+  char *s, *a;
+  long len, len2, len3;
+
+  appBundle = CFBundleGetMainBundle();
+  url = CFBundleCopyExecutableURL(appBundle);
+  str = CFURLCopyFileSystemPath(url, kCFURLPOSIXPathStyle);
+  
+  s = ConvertCFStringRef(str);
+
+  len = strlen(s);
+  while (len && (s[len - 1] != '/')) {
+    --len;
+  }
+
+  len2 = strlen(p);
+
+  a = (char *)malloc(len + len2 + 1);
+  memcpy(a, s, len);
+  memcpy(a + len, p, len2 + 1);
+
+  return a;
+}
+
 void GetStarterInfo()
 {
   int i;
@@ -502,6 +530,10 @@ void GetStarterInfo()
       execName = (CFStringRef)CFDictionaryGetValue((CFDictionaryRef)propertyList,
 						   (CFSTR("executable name")));
       tmps = ConvertCFStringRef(execName);
+      if (tmps[0] != '/') {
+	/* Path is relative to this executable */
+	tmps = ExeRelativeToAbsolute(tmps);
+      }
       orig_argv0 = scheme_mac_argv[0];
       scheme_mac_argv[0] = tmps;
     }
