@@ -49,12 +49,7 @@
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
       (define (show-error x main-frame)
-	(message-box "Error" 
-		     (if (exn? x)
-			 (exn-message x)
-			 (format "Strange exception: ~s" x))
-		     main-frame
-		     '(ok stop)))
+	(show-error-message-box x main-frame))
         
       (define FRAME-WIDTH 560)
       (define FRAME-HEIGHT 600)

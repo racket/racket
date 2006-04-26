@@ -15,7 +15,7 @@
   
   (require (lib "hierlist-sig.ss" "hierlist"))
 
-  (require (lib "openssl.ss" "openssl"))
+  (require (lib "mzssl.ss" "openssl"))
   
   (provide folder@)
   (define folder@

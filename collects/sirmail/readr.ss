@@ -73,29 +73,15 @@
       (define got-started? #f)
 
       (define (show-error x)
-	(let ([sp (open-output-string)])
-	  ;; use error display handler in case
-	  ;; errortrace (or something else) is
-	  ;; installed
-	  (parameterize ([current-output-port sp]
-			 [current-error-port sp])
-	    ((error-display-handler)
-	     (if (exn? x)
-		 (exn-message x)
-		 (format "uncaught exn: ~s" x))
-	     x))
-	  (message-box "Error" 
-		       (get-output-string sp)
-		       main-frame
-		       '(ok stop))
-	  (when (not got-started?)
-	    (when (eq? 'yes (confirm-box "Startup Error"
-					 (string-append
-					  "Looks like you didn't even get started. "
-					  "Set preferences (so you're ready to try again)?")
-					 #f
-					 '(app)))
-	      (show-pref-dialog)))))
+	(show-error-message-box x main-frame)
+	(when (not got-started?)
+	  (when (eq? 'yes (confirm-box "Startup Error"
+				       (string-append
+					"Looks like you didn't even get started. "
+					"Set preferences (so you're ready to try again)?")
+				       #f
+				       '(app)))
+	    (show-pref-dialog))))
 
       (initial-exception-handler
        (lambda (x)

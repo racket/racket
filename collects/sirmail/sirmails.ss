@@ -31,6 +31,8 @@
      find
      string->regexp
 
+     show-error-message-box
+
      as-background
 
      make-fixed-width
