@@ -537,7 +537,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	 The cmdline is appended to the end of the binary.
 	 The long integer at cmdline_exe_hack[4] says
 	 where the old end was, and cmdline_exe_hack[8]
-	 says how long the cmdline string is. */
+	 says how long the cmdline string is. It might
+	 be relative to the executable. */
       char *path;
       HANDLE fd;
 
@@ -566,6 +567,26 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  /* "*" means that the first item is argv[0] replacement: */
 	  sprog = prog;
 	  prog = (char *)p + 4;
+
+	  if ((prog[0] == '\\')
+	      || ((((prog[0] >= 'a') && (prog[0] <= 'z'))
+		   || 	((prog[0] >= 'A') && (prog[0] <= 'Z')))
+		  && (prog[1] == ':'))) {
+	    /* Absolute path */
+	  } else {
+	    /* Make it absolute, relative to this executable */
+	    int plen = strlen(prog);
+	    int mlen = strlen(path);
+	    char *s2;
+	    while (mlen && (path[mlen - 1] != '\\')) {
+	      mlen--;
+	    }
+	    s2 = (char *)malloc(mlen + plen + 1);
+	    memcpy(s2, path, mlen);
+	    memcpy(s2 + mlen, prog, plen + 1);
+	    prog = s2;
+	  }
+
 	  p += (p[0]
 		+ (((long)p[1]) << 8)
 		+ (((long)p[2]) << 16)

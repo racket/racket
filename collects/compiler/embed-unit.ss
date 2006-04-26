@@ -118,6 +118,16 @@
 		"can't find ~a position in executable"
 		what)))))
 
+
+      (define (relativize exec-name dest adjust)
+	(let ([p (find-relative-path
+		  (let-values ([(dir name dir?) (split-path (normalize-path dest))])
+			      dir)
+		  (normalize-path exec-name))])
+	  (if (relative-path? p)
+	      (adjust p)
+	      p)))
+
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
       (define (prepare-macosx-mred exec-name dest aux variant)
@@ -259,13 +269,9 @@
 			  `((assoc-pair "executable name"
 					,(path->string 
 					  (if relative?
-					      (let ([p (find-relative-path
-							(let-values ([(dir name dir?) (split-path (normalize-path dest))])
-							  dir)
-							(normalize-path exec-name))])
-						(if (relative-path? p)
-						    (build-path 'up 'up 'up p)
-						    p))
+					      (relativize exec-name dest
+							  (lambda (p)
+							    (build-path 'up 'up 'up p)))
 					      exec-name))))
 			  null)
 		    (assoc-pair "stored arguments"
@@ -527,6 +533,8 @@
 				       (not (cdr m))))))
 	  (define long-cmdline? (or (eq? (system-type) 'windows)
 				    (and mred? (eq? 'macosx (system-type)))))
+	  (define relative? (let ([m (assq 'relative? aux)])
+			      (and m (cdr m))))
 	  (define lib-path-bytes (and lib-path
 				      (if (path? lib-path)
 					  (path->bytes lib-path)
@@ -611,14 +619,17 @@
 					   (if launcher?
 					       (if (and (eq? 'windows (system-type))
 							keep-exe?)
-						   (list (path->string exe)) ; argv[0]
+						   ;; argv[0] replacement:
+						   (list (path->string 
+							  (if relative?
+							      (relativize exe dest-exe values)
+							      exe)))
+						   ;; No argv[0]:
 						   null)
 					       (list "-k" start-s end-s))
 					   cmdline)])
 			(if osx?
-			    (finish-osx-mred dest full-cmdline exe keep-exe?
-					     (let ([m (assq 'relative? aux)])
-					       (and m (cdr m))))
+			    (finish-osx-mred dest full-cmdline exe keep-exe? relative?)
 			    (let ([cmdpos (with-input-from-file dest-exe 
 					    (lambda () (find-cmdline 
 							"cmdline"
