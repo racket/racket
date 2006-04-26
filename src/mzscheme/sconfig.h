@@ -136,6 +136,7 @@
 
 #ifdef i386
 # define MZ_USE_JIT_I386
+# define MZ_JIT_USE_MPROTECT
 #endif
 
 # define FLAGS_ALREADY_SET
@@ -244,9 +245,11 @@
 
 #if defined(i386)
 # define MZ_USE_JIT_I386
+# define MZ_JIT_USE_MPROTECT
 #endif
 #if defined(__x86_64__)
 # define MZ_USE_JIT_X86_64
+# define MZ_JIT_USE_MPROTECT
 #endif
 #if defined(powerpc)
 # define MZ_USE_JIT_PPC
@@ -285,6 +288,7 @@
 
 #if defined(i386)
 # define MZ_USE_JIT_I386
+# define MZ_JIT_USE_MPROTECT
 #endif
 #if defined(powerpc)
 # define MZ_USE_JIT_PPC
@@ -324,6 +328,7 @@
 # define USE_TM_GMTOFF_FIELD
 
 # define MZ_USE_JIT_I386
+# define MZ_JIT_USE_MPROTECT
 
 # define FLAGS_ALREADY_SET
 
@@ -361,6 +366,7 @@
 # define REGISTER_POOR_MACHINE
 
 # define MZ_USE_JIT_I386
+# define MZ_JIT_USE_MPROTECT
 
 # define FLAGS_ALREADY_SET
 
@@ -1330,7 +1336,12 @@
 
  /* MZ_USE_JIT_I386 enables the JIT for x86 */
 
+ /* MZ_USE_JIT_X86_65 enables the JIT for x86_64 */
+
  /* MZ_USE_JIT_PPC enables the JIT for PowerPC */
+
+ /* MZ_JIT_USE_MPROTECT uses mprotect on x86 platforms to make code
+    pages executable */
 
   /***********************/
  /*     Heap Images     */

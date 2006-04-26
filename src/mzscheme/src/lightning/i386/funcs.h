@@ -34,7 +34,7 @@
 #ifndef __lightning_funcs_h
 #define __lightning_funcs_h
 
-#ifdef __linux__
+#ifdef MZ_JIT_USE_MPROTECT
 #include <unistd.h>
 #include <sys/mman.h>
 #endif
@@ -51,7 +51,7 @@ jit_flush_code(void *dest, void *end)
      execution of the data and stack segment are becoming more
      and more common (Fedora, for example), so we implement our
      jit_flush_code as an mprotect.  */
-#ifdef __linux__
+#ifdef MZ_JIT_USE_MPROTECT
   static unsigned long prev_page = 0, prev_length = 0;
   long page, length;
 #ifdef PAGESIZE
