@@ -17,7 +17,7 @@ mred3m-stub: @MAKE_MRED3M@
 
 install:
 	$(MAKE) install-normal
-	$(MAKE) finish-stub
+	$(MAKE) setup-plt
 
 install-normal:
 	if [ ! -d $(prefix) ] ; then mkdir $(prefix) ; fi
@@ -30,16 +30,16 @@ copytree-stub: @MAKE_COPYTREE@
 
 mredinstall-stub: @MAKE_MREDINSTALL@
 
-finish-stub: @MAKE_FINISH@
-
+setup-plt:
+	$(BINDIR)/mzscheme -qM setup
 
 install-3m:
 	$(MAKE) install-normal
 	$(MAKE) mzinstall3m
 	$(MAKE) mredinstall3m-stub
-	$(MAKE) finish-stub
+	$(MAKE) setup-plt
 
-mredinstall3m-stub: @MAKE_MREDINSTALL3M@ 
+mredinstall3m-stub: @MAKE_MREDINSTALL3M@
 
 
 clean:

@@ -123,7 +123,6 @@ fi
 
 if test "${prefix}" = "NONE" ; then
   prefix=`cd "${srcdir}/.." && pwd`
-  MAKE_FINISH=inplace-finish
 else
   # Check whether ${prefix} is redundant, because
   # $prefix/src is $srcdir.
@@ -140,7 +139,6 @@ else
     echo "---->   ${prefix}/man/..."
     echo "---->   ${prefix}/notes/..."
     MAKE_COPYTREE=copytree
-    MAKE_FINISH=copy-finish
   fi
 fi
 
@@ -1109,7 +1107,6 @@ AC_SUBST(MAKE_MREDINSTALL)
 AC_SUBST(MAKE_MREDINSTALL3M)
 AC_SUBST(MAKE_WBUILD)
 AC_SUBST(MAKE_COPYTREE)
-AC_SUBST(MAKE_FINISH)
 
 AC_SUBST(WXPRECOMP)
 AC_SUBST(USE_WXPRECOMP)
