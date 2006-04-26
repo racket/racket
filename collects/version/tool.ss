@@ -10,10 +10,10 @@
   ;; either 'yes, 'no, or something else, see `enabled?' below for a reason
   (preferences:set-default 'updates:enabled? 'unset symbol?)
   (preferences:set-default 'updates:last 0 integer?)
-  ;; how often do we check; default: check every three days
-  (preferences:set-default 'updates:frequency (* 60 60 24 3) integer?)
-  ;; time to wait if user chooses "later"; default: in a week
-  (define later-delay (* 60 60 24 7))
+  ;; how often do we check; default: check every week
+  (preferences:set-default 'updates:frequency (* 60 60 24 7) integer?)
+  ;; time to wait if user chooses "later"; default: in two weeks
+  (define later-delay (* 60 60 24 14))
 
   ;; This is used to check if updates:enabled? is true or false.  The problem
   ;; is that we don't want to set a default of #t or #f, so make it 'unset and
