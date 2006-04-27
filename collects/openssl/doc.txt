@@ -12,8 +12,8 @@ machine, but
  * for Mac OS X, version 10.2 and later provides the necessary OpenSSL
    libraries.
 
- * for Unix, libssl.so is likely to be installed on your machine
-   already.
+ * for Unix, libssl.so and libcryto.so are likely to be installed on
+   your machine, already.
 
 ==================================================
 
@@ -246,15 +246,15 @@ identifies itself using "test.pem".
 Implementation notes
 --------------------
 
-For Windows, "mzssl.ss" relies on "libeay32xxxxxxxx.dll" and
-"ssleay32xxxxxxxx.dll", where the "xxxxxxxx" may be replaced with a
-PLT Scheme verison number, and where the DLLs are located in the same
-place as "libmzschxxxxxxx.dll". The DLLs are distributed as part of
-PLT Scheme.
+For Windows, "mzssl.ss" relies on "libeay32.dll" and "ssleay32.dll",
+where the DLLs are located in the same place as "libmzsch<VERS>.dll"
+(where <VERS> is either "xxxxxxx" or a mangling of MzScheme's version
+number). The DLLs are distributed as part of PLT Scheme.
 
-For Unix variants, "mzssl.ss" relies on "libssl.so", which must be
-installed in a standard library location, or in a directory listed by
-LD_LIBRARY_PATH.
+For Unix variants, "mzssl.ss" relies on "libcryto.so" and "libssl.so",
+which must be installed in a standard library location, or in a
+directory listed by LD_LIBRARY_PATH.
 
-For Mac OS X, "mzssl.ss" relies on "libssl.dylib", which is part of
-the OS distribution for Mac OS X 10.2 and later.
+For Mac OS X, "mzssl.ss" relies on "libssl.dylib" and
+"libcryto.dylib", which are part of the OS distribution for Mac OS X
+10.2 and later.

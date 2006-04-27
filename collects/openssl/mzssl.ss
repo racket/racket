@@ -82,7 +82,7 @@
 
   (define 3m? (regexp-match #rx#"3m" (path->bytes (system-library-subpath))))
 
-  (define libeay
+  (define libcrypto
     (with-handlers ([exn:fail? (lambda (x)
 				 (set! ssl-load-fail-reason (exn-message x))
 				 #f)])
@@ -90,18 +90,18 @@
 	[(windows)
 	 (ffi-lib-win "libeay32")]
 	[else
-	 (ffi-lib "libssl")])))
+	 (ffi-lib "libcrypto")])))
 
   (define libssl
-    (with-handlers ([exn:fail? (lambda (x)
-				 (set! ssl-load-fail-reason (exn-message x))
-				 #f)])
-      (case (system-type)
-	[(windows)
-	 (and libeay
-	      (ffi-lib-win "ssleay32"))]
-	[else
-	 libeay])))
+    (and libcrypto
+	 (with-handlers ([exn:fail? (lambda (x)
+				      (set! ssl-load-fail-reason (exn-message x))
+				      #f)])
+	   (case (system-type)
+	     [(windows)
+	      (ffi-lib-win "ssleay32")]
+	     [else
+	      (ffi-lib "libssl")]))))
 
   (define libmz
     (case (system-type)
@@ -124,7 +124,7 @@
 		      (get-ffi-obj str lib (_fun . type))
 		      (lambda args (raise-not-available)))))]))]))
 
-  (define-define-X define-eay libeay libeay)
+  (define-define-X define-crypto libcrypto libcrypto)
   (define-define-X define-ssl libssl libssl)
   (define-define-X define-mzscheme #t libmz)
 
@@ -149,13 +149,13 @@
   (define-ssl TLSv1_client_method (-> _SSL_METHOD*))
   (define-ssl TLSv1_server_method (-> _SSL_METHOD*))
 
-  (define-eay BIO_s_mem (-> _BIO_METHOD*))
-  (define-eay BIO_new (_BIO_METHOD* -> _BIO*))
-  (define-eay BIO_free (_BIO* -> _void))
+  (define-crypto BIO_s_mem (-> _BIO_METHOD*))
+  (define-crypto BIO_new (_BIO_METHOD* -> _BIO*))
+  (define-crypto BIO_free (_BIO* -> _void))
 
-  (define-eay BIO_read (_BIO* _bytes _int -> _int))
-  (define-eay BIO_write (_BIO* _bytes _int -> _int))
-  (define-eay BIO_ctrl (_BIO* _int _long _long -> _long))
+  (define-crypto BIO_read (_BIO* _bytes _int -> _int))
+  (define-crypto BIO_write (_BIO* _bytes _int -> _int))
+  (define-crypto BIO_ctrl (_BIO* _int _long _long -> _long))
   (define (BIO_set_mem_eof_return b v)
     (BIO_ctrl b BIO_C_SET_BUF_MEM_EOF_RETURN v 0))
 
@@ -184,8 +184,8 @@
 
   (define-ssl SSL_get_error (_SSL* _int -> _int))
 
-  (define-eay ERR_get_error (-> _long))
-  (define-eay ERR_error_string_n (_long _bytes _long -> _void))
+  (define-crypto ERR_get_error (-> _long))
+  (define-crypto ERR_error_string_n (_long _bytes _long -> _void))
 
   (define-ssl SSL_library_init (-> _void))
   (define-ssl SSL_load_error_strings (-> _void))
