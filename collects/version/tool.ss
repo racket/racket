@@ -4,6 +4,7 @@
            (lib "framework.ss" "framework")
            (lib "mred.ss" "mred")
            (lib "class.ss")
+           (lib "list.ss")
            "patchlevel.ss" "check.ss"
            (lib "external.ss" "browser"))
 
@@ -31,20 +32,47 @@
         (if (null? ws)
           (begin (sleep 1) (wait-for-definitions))
           (car ws))))
+    ;; show a message and a disable button
+    (define hide-message void) ; set by show-message
+    (define (show-message top)
+      (sleep 3) ; wait to make this appearance visible
+      (let* ([info    (send top get-info-panel)]
+             [panel   (make-object horizontal-panel% info)]
+             [message (make-object message% "Checking for updates..." panel)]
+             [button  (make-object button% "Disable" panel disable)])
+        (send info change-children (lambda (l) (cons panel (remq panel l))))
+        (sleep 1) ; wait before and after check to make it visible
+        (set! hide-message
+              (lambda now?
+                (unless (and (pair? now?) (car now?)) (sleep 1))
+                (send info change-children (lambda (l) (remq panel l)))
+                (set! hide-message void)))))
+    ;; disable handler
+    (define abort void) ; used to abort an active check
+    (define (disable . _)
+      (abort) (preferences:set 'updates:enabled? 'no))
+    ;; main checker
     (define (check top)
-      ;; some wants a non-modal dialog that can be pushed back as a reminder
-      ;; instead of dismiss
-      (set! top #f)
-      (let ([r (check-version)])
+      (show-message top)
+      (let ([r #f])
+        ;; run the check in a thread, with a chance to abort it
+        (let ([t (thread (lambda () (set! r (check-version))))])
+          (set! abort (lambda () (kill-thread t)))
+          (thread-wait t)
+          (set! abort void))
         ;; do nothing if we have a good version, if there was an error, or if
         ;; there is a suggested alpha -- only show a message if there is a
         ;; newer version
         (when (and (pair? r) (eq? 'newer (car r)))
+          (hide-message 'now)
           (case (message-box/custom
                  "Outdated PLT Version"
                  (string-append "PLT Scheme v"(cadr r)" is now available")
-                 "Quit && &Take Me There" "Remind Me &Later" "&Stop Checking"
-                 top '(default=2) #f)
+                 "Quit && &Take Me There" "Remind Me &Later" "&Disable Checking"
+                 ;; don't use `top' for the parent -- some wants a non-modal
+                 ;; dialog that can be pushed back as a reminder instead of
+                 ;; dismissed
+                 #f '(default=2) #f)
             ;; go there
             [(1) (send-url "http://download.plt-scheme.org/")
                  (sleep 1)
@@ -56,13 +84,15 @@
             ;; disable
             [(3) (preferences:set 'updates:enabled? 'no)]
             ;; only other option is escape -- check again in the normal time
-            ))))
+            )))
+      (hide-message))
+    ;; start the check if enabled and enough time passed
     (when (enabled? (preferences:get 'updates:enabled?))
       (let ([cur  (current-seconds)]
             [last (preferences:get 'updates:last)]
             [freq (preferences:get 'updates:frequency)])
-        (when (> (- cur last) freq)
-          (preferences:set 'updates:last cur)
+        (when '(> (- cur last) freq)
+          '(preferences:set 'updates:last cur)
           (check (wait-for-definitions))))))
 
   (provide tool@)
@@ -74,7 +104,7 @@
         (preferences:add-to-warnings-checkbox-panel
          (lambda (panel)
            (let ([b (make-object check-box%
-                      "Check for newer PLT Scheme versions"
+                      "Periodically check for newer PLT Scheme versions"
                       panel
                       (lambda (b e)
                         (preferences:set 'updates:enabled?

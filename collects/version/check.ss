@@ -64,7 +64,7 @@
                            version-info))
         (err "bad response from server" version-info))
       ;; Make a decision
-      (let ([current (version)]
+      (let ([current "300"#;(version)]
             [stable (get 'stable)]
             [recent (get 'recent)])
         (cond
