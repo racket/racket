@@ -91,8 +91,8 @@
       (let ([cur  (current-seconds)]
             [last (preferences:get 'updates:last)]
             [freq (preferences:get 'updates:frequency)])
-        (when '(> (- cur last) freq)
-          '(preferences:set 'updates:last cur)
+        (when (> (- cur last) freq)
+          (preferences:set 'updates:last cur)
           (check (wait-for-definitions))))))
 
   (provide tool@)
