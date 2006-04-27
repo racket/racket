@@ -179,31 +179,29 @@
 			f))))))
 
       (define (output-x-arg-getter exec args)
-	(let* ([newline (string #\newline)]
-	       [or-flags
-		(lambda (l)
-		  (if (null? (cdr l))
-		      (car l)
-		      (string-append
-		       (car l)
-		       (apply
-			string-append
-			(map (lambda (s) (string-append " | " s)) (cdr l))))))])
+	(let ([or-flags
+               (lambda (l)
+                 (if (null? (cdr l))
+                   (car l)
+                   (string-append
+                    (car l)
+                    (apply
+                     string-append
+                     (map (lambda (s) (string-append " | " s)) (cdr l))))))])
 	  (apply
 	   string-append
 	   (append
-	    (list "# Find X flags and shift them to the front" newline
-		  "findxend()" newline
-		  "{" newline
-		  " oneargflag=''" newline
-		  " case \"$1\" in" newline)
+	    (list "# Find X flags and shift them to the front\n"
+		  "findxend() {\n"
+		  " oneargflag=''\n"
+		  " case \"$1\" in\n")
 	    (map
 	     (lambda (f)
 	       (format (string-append
-			"  ~a)" newline
-			"     oneargflag=\"$1\"" newline
-			"     ~a=\"$2\"" newline
-			"   ;;" newline)
+			"  ~a)\n"
+			"     oneargflag=\"$1\"\n"
+			"     ~a=\"$2\"\n"
+			"   ;;\n")
 		       (or-flags (cdr f))
 		       (car f)))
 	     one-arg-x-flags)
@@ -235,99 +233,71 @@
 		     args))))))
 
       (define (protect-shell-string s)
-	(regexp-replace* #rx"\"" s "\\\\\""))
+	(let ([s (if (path? s) (path->string s) s)])
+          (regexp-replace* #rx"[\"$`]" s "\\\\&")))
 
       (define (make-relative-path-header dest bindir)
-	(let* ([dirname (find-executable-path "dirname")]
-	       [basename (find-executable-path "basename")]
-	       [readlink (and (not (eq? 'macosx (system-type)))
-			      (find-executable-path "readlink"))]
-	       [ls (and (not readlink)
-			(find-executable-path "ls"))]
-	       [sed (and (not readlink)
-			 (find-executable-path "sed"))]
-	       [dest-explode (explode-path (normalize-path dest))]
-	       [bindir-explode (explode-path (normalize-path bindir))]
-	       [newline "\n"])
-	  (if (and dirname basename (or readlink (and ls sed))
-		   (equal? (car dest-explode) (car bindir-explode)))
-	      (format
-	       (string-append
-		"# Programs we need (avoid depending on user's PATH):" newline
-		"dirname=\"~a\"" newline
-		"basename=\"~a\"" newline
-		(if readlink
-		    "readlink=\"~a\""
-		    "~a") 
-		newline
-		newline
-		(if readlink
-		    ""
-		    (string-append
-		     "readlink() {" newline
-		     "  P=`\"$ls\" -l -- \"$1\" | \"$sed\" -e 's/^.* -> //'`" newline
-		     "}" newline
-		     newline))
-		"# Remember current directory" newline
-		"saveD=`pwd`" newline
-		newline
-		"# Find absolute path to this script," newline
-		"# resolving symbolic references to the end" newline
-		"# (changes the current directory):" newline
-		"D=`$dirname \"$0\"`" newline
-		"F=`$basename \"$0\"`" newline
-		"cd \"$D\"" newline
-		"while [ -L \"$F\" ]; do" newline
-		(if readlink
-		    "  P=`$readlink \"$F\"`" 
-		    "  readlink \"$F\"")
-		newline
-		"  D=`$dirname \"$P\"`" newline
-		"  F=`$basename \"$P\"`" newline
-		"  cd \"$D\"" newline
-		"done" newline
-		"D=`pwd`" newline
-		newline
-		"# Restore current directory" newline
-		"cd \"$saveD\"" newline
-		newline
-		"bindir=\"$D/~a\"" newline
-		newline)
-	       (protect-shell-string (path->string dirname))
-	       (protect-shell-string (path->string basename))
-	       (if readlink
-		   (protect-shell-string (path->string readlink))
-		   (format
-		    "ls=\"~a\"\nsed=\"~a\""
-		    (protect-shell-string (path->string ls))
-		    (protect-shell-string (path->string sed))))
-	       (protect-shell-string (path->string
-				      (apply
-				       build-path
-				       (let loop ([b bindir-explode]
-						  [d dest-explode])
-					 (cond
-					  [(and (pair? b) 
-						(equal? (car b) (car d)))
-					   (loop (cdr b) (cdr d))]
-					  [else
-					   (append (map (lambda (x)
-							  'up)
-							(cdr d))
-						   b
-						   (list 'same))]))))))
-	      (make-absolute-path-header bindir))))
-	  
+        ;; rely only on binaries in /usr/bin:/bin
+        (define (has-exe? exe)
+          (or (file-exists? (build-path "/usr/bin" exe))
+              (file-exists? (build-path "/bin" exe))))
+        (let* ([has-readlink?  (and (not (eq? 'macosx (system-type)))
+                                    (has-exe? "readlink"))]
+               [dest-explode   (explode-path (normalize-path dest))]
+               [bindir-explode (explode-path (normalize-path bindir))])
+          (if (and (has-exe? "dirname") (has-exe? "basename")
+                   (or has-readlink? (and (has-exe? "ls") (has-exe? "sed")))
+                   (equal? (car dest-explode) (car bindir-explode)))
+            (string-append
+             "# Make this PATH-independent\n"
+             "PATH=/usr/bin:/bin\n"
+             "\n"
+             (if has-readlink? ""
+                 (string-append
+                  "# imitate possibly-missing readlink\n"
+                  "readlink() {\n"
+                  "  ls -l -- \"$1\" | sed -e \"s/^.* -> //\"\n"
+                  "}\n"
+                  "\n"))
+             "# Remember current directory\n"
+             "saveD=`pwd`\n"
+             "\n"
+             "# Find absolute path to this script,\n"
+             "# resolving symbolic references to the end\n"
+             "# (changes the current directory):\n"
+             "D=`dirname \"$0\"`\n"
+             "F=`basename \"$0\"`\n"
+             "cd \"$D\"\n"
+             "while [ -L \"$F\" ]; do\n"
+             "  P=`readlink \"$F\"`\n"
+             "  D=`dirname \"$P\"`\n"
+             "  F=`basename \"$P\"`\n"
+             "  cd \"$D\"\n"
+             "done\n"
+             "D=`pwd`\n"
+             "\n"
+             "# Restore current directory\n"
+             "cd \"$saveD\"\n"
+             "\n"
+             "bindir=\"$D"
+             (let loop ([b bindir-explode] [d dest-explode])
+               (if (and (pair? b) (equal? (car b) (car d)))
+                 (loop (cdr b) (cdr d))
+                 (let ([p (append (map (lambda (x) 'up) (cdr d)) b)])
+                   (if (null? p) ""
+                       (string-append
+                        "/" (protect-shell-string (apply build-path p)))))))
+             "\"\n"
+             "\n")
+            ;; fallback to absolute path header
+            (make-absolute-path-header bindir))))
+
       (define (make-absolute-path-header bindir)
-	(format
-	 "bindir=\"~a\"\n\n"
-	 (protect-shell-string
-	  (path->string bindir))))
+	(string-append "bindir=\""(protect-shell-string bindir)"\"\n\n"))
 
       (define (make-unix-launcher kind variant flags dest aux)
 	(install-template dest kind "sh" "sh") ; just for something that's executable
-	(let* ([newline (string #\newline)]
-	       [alt-exe (let ([m (and (eq? kind 'mred)
+	(let* ([alt-exe (let ([m (and (eq? kind 'mred)
 				      (memq variant '(script script-3m))
 				      (assq 'exe-name aux))])
 			  (and m
@@ -350,12 +320,10 @@
 				  (cons (car f) (loop (cdr f)))))])]
 	       [pre-str (str-list->sh-str pre-flags)]
 	       [post-str (str-list->sh-str post-flags)]
-	       [header (format
-			(string-append
-			 "#!/bin/sh" newline
-			 "# This script was created by make-~a-launcher" newline
-			 newline)
-			kind )]
+	       [header (string-append
+                        "#!/bin/sh\n"
+                        "# This script was created by make-"(symbol->string kind)"-launcher\n"
+                        "\n")]
 	       [dir-finder
 		(let ([bindir (if alt-exe
 				  plthome
@@ -386,7 +354,7 @@
 		     dir-finder
 		     (assemble-exec exec args))
 	    (close-output-port p))))
-      
+
       (define (make-windows-launcher kind variant flags dest aux)
 	(if (not (and (let ([m (assq 'independent? aux)])
 			(and m (cdr m)))))
@@ -450,18 +418,18 @@
 		  (check-len len-exedir exedir "executable home directory")
 		  (check-len len-command bstr "collection/file name")
 		  (let ([p (open-output-file dest 'update)])
-		    (write-magic p exedir pos-exedir len-exedir)   
-		    (write-magic p bstr pos-command len-command)   
+		    (write-magic p exedir pos-exedir len-exedir)
+		    (write-magic p bstr pos-command len-command)
 		    (when (eq? '3m (current-launcher-variant))
 		      (write-magic p #"3" pos-variant 1))
 		    (close-output-port p)))))))
-      
+
       ;; OS X launcher code:
-     
-      ; make-macosx-launcher : symbol (listof str) pathname ->  
+
+      ; make-macosx-launcher : symbol (listof str) pathname ->
       (define (make-macosx-launcher kind variant flags dest aux)
-	(if (or (eq? kind 'mzscheme) 
-		(eq? variant 'script) 
+	(if (or (eq? kind 'mzscheme)
+		(eq? variant 'script)
 		(eq? variant 'script-3m))
 	    ;; MzScheme or script launcher is the same as for Unix
 	    (make-unix-launcher kind variant flags dest aux)
@@ -472,12 +440,11 @@
 				       aux
 				       #t
 				       variant)))
-        
-      
+
       (define (make-macos-launcher kind variant flags dest aux)
 	(install-template dest kind "GoMr" "GoMr")
 	(let ([p (open-input-file dest)])
-	  (let ([m (regexp-match-positions "<Insert offset here>" p)])
+	  (let ([m (regexp-match-positions #rx#"<Insert offset here>" p)])
 	    ;; fast-forward to the end:
 	    (let ([s (make-bytes 4096)])
 	      (let loop ()
@@ -498,24 +465,24 @@
 		(file-position p data-fork-size)
 		(display str p)
 		(close-output-port p))))))
-      
+
       (define (get-maker)
 	(case (system-type)
-	  [(unix) make-unix-launcher]
+	  [(unix)    make-unix-launcher]
 	  [(windows) make-windows-launcher]
-	  [(macos) make-macos-launcher]
-	  [(macosx) make-macosx-launcher]))
-      
+	  [(macos)   make-macos-launcher]
+	  [(macosx)  make-macosx-launcher]))
+
       (define make-mred-launcher
 	(opt-lambda (flags dest [aux null])
 	  (let ([variant (current-launcher-variant)])
 	    ((get-maker) 'mred variant flags dest aux))))
-      
+
       (define make-mzscheme-launcher
 	(opt-lambda (flags dest [aux null])
 	  (let ([variant (current-launcher-variant)])
 	    ((get-maker) 'mzscheme variant flags dest aux))))
-      
+
       (define (strip-suffix s)
 	(path-replace-suffix s #""))
 
