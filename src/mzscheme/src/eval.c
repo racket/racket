@@ -6197,7 +6197,12 @@ eval(int argc, Scheme_Object *argv[])
   if (SCHEME_STXP(form)
       && !SAME_TYPE(SCHEME_TYPE(SCHEME_STX_VAL(form)), scheme_compilation_top_type)) {
     Scheme_Env *genv;
-    genv = scheme_get_env(NULL);
+    if (argc > 1) {
+      if (SCHEME_TYPE(argv[1]) != scheme_namespace_type)
+	scheme_wrong_type("eval", "namespace", 1, argc, argv);
+      genv = (Scheme_Env *)argv[1];
+    } else
+      genv = scheme_get_env(NULL);
     form = add_renames_unless_module(form, genv);
   }
 
