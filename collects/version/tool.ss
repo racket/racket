@@ -32,6 +32,9 @@
           (begin (sleep 1) (wait-for-definitions))
           (car ws))))
     (define (check top)
+      ;; some wants a non-modal dialog that can be pushed back as a reminder
+      ;; instead of dismiss
+      (set! top #f)
       (let ([r (check-version)])
         ;; do nothing if we have a good version, if there was an error, or if
         ;; there is a suggested alpha -- only show a message if there is a
