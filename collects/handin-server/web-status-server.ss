@@ -50,6 +50,9 @@
 	    (log-file-path ,(path->string (build-path (current-directory) "web-status-log.ss")))
 	    (file-root "htdocs")
 	    (servlet-root ,web-dir)
+	    (mime-types ,(path->string (build-path (collection-path "web-server")
+						   "default-web-root"
+						   "mime.types")))
 	    (password-authentication ,(path->string (build-path (current-directory) "web-status-passwords"))))))
 	(virtual-host-table)))
 
