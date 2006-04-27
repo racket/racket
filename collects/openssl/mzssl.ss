@@ -289,6 +289,7 @@
   ;; internal:
   (define-struct mzssl (ssl i o r-bio w-bio pipe-r pipe-w 
 			    buffer lock 
+			    w-closed? r-closed?
 			    flushing? must-write must-read
 			    refcount 
 			    close-original? shutdown-on-close?
@@ -567,6 +568,8 @@
 		    [(mzssl-must-write mzssl)
 		     => (lambda (sema)
 			  (wrap-evt (semaphore-peek-evt sema) (lambda (x) 0)))]
+		    [(mzssl-r-closed? mzssl)
+		     0]
 		    [else
 		     (let ([sema (mzssl-must-read mzssl)])
 		       (when sema
@@ -595,7 +598,9 @@
 	 (call-with-semaphore
 	  (mzssl-lock mzssl)
 	  (lambda ()
-	    (mzssl-release mzssl)))))))
+	    (unless (mzssl-r-closed? mzssl)
+	      (set-mzssl-r-closed?! mzssl #t)
+	      (mzssl-release mzssl))))))))
 
   (define (flush-ssl mzssl enable-break?)
     ;; Make sure that this SSL connection has said everything that it
@@ -676,13 +681,10 @@
 				   ;;  to flush from SSL to the underlying ports:
 				   (set-mzssl-flushing?! mzssl (make-semaphore))
 				   (channel-put flush-ch #t)]
-				  [(eq? buffer-mode 'block)
-				   ;; Otherwise, we could have buffered it, so it might as
-				   ;;  well sit between SSL and the underlying ports.
-				   (void)]
 				  [else
-				   ;; Since we're allowed to block but not buffer, try to
-				   ;;  flush all the way through:
+				   ;; We're allowed to block, and things seem to
+				   ;;  work better if we, try to flush all the way
+				   ;;  through (even though we're allowed to buffer):
 				   (flush-ssl mzssl enable-break?)])
 				 n)
 			       (let ([err (SSL_get_error (mzssl-ssl mzssl) n)])
@@ -721,6 +723,8 @@
 			 (list (semaphore-peek-evt (mzssl-flushing? mzssl)))
 			 ;; Try again later:
 			 (wrap-evt always-evt (lambda (v) #f)))]
+		    [(mzssl-w-closed? mzssl)
+		     #f]
 		    [(mzssl-must-read mzssl)
 		     ;; Read pending, so wait until it's done:
 		     => (lambda (sema)
@@ -765,34 +769,38 @@
        ;; close proc:
        (letrec ([do-close
 		 (lambda ()
-		   (if (mzssl-flushing? mzssl)
-		       (semaphore-peek-evt (mzssl-flushing? mzssl))
-		       ;; issue shutdown (i.e., EOF on read end)
-		       (begin
-			 (when (mzssl-shutdown-on-close? mzssl)
-			   (let loop ([cnt 0])
-			     (let ([out-blocked? (flush-ssl mzssl #f)])
-			       (let ([n (SSL_shutdown (mzssl-ssl mzssl))])
-				 (unless (= n 1)
-				   (let ([err (SSL_get_error (mzssl-ssl mzssl) n)])
-				     (cond
-				      [(= err SSL_ERROR_WANT_READ)
-				       (pump-input-once mzssl (if out-blocked? (mzssl-o mzssl) #t))
-				       (loop cnt)]
-				      [(= err SSL_ERROR_WANT_WRITE)
-				       (pump-output-once mzssl #t #f)
-				       (loop cnt)]
-				      [else
-				       (if (= n 0)
-					   ;; When 0 is returned, the SSL object doesn't correctly
-					   ;; report what it wants (e.g., a write). Send everything
-					   ;; out that we have and try again, up to 10 times.
-					   (unless (cnt . >= . 10)
-					     (loop (add1 cnt)))
-					   (error 'read-bytes "SSL shutdown failed ~a"
-						  (get-error-message (ERR_get_error))))])))))))
-			 (mzssl-release mzssl)
-			 #f)))]
+		   (cond
+		    [(mzssl-flushing? mzssl)
+		     (semaphore-peek-evt (mzssl-flushing? mzssl))]
+		    [(mzssl-w-closed? mzssl)
+		     #f]
+		    [else
+		     ;; issue shutdown (i.e., EOF on read end)
+		     (when (mzssl-shutdown-on-close? mzssl)
+		       (let loop ([cnt 0])
+			 (let ([out-blocked? (flush-ssl mzssl #f)])
+			   (let ([n (SSL_shutdown (mzssl-ssl mzssl))])
+			     (unless (= n 1)
+			       (let ([err (SSL_get_error (mzssl-ssl mzssl) n)])
+				 (cond
+				  [(= err SSL_ERROR_WANT_READ)
+				   (pump-input-once mzssl (if out-blocked? (mzssl-o mzssl) #t))
+				   (loop cnt)]
+				  [(= err SSL_ERROR_WANT_WRITE)
+				   (pump-output-once mzssl #t #f)
+				   (loop cnt)]
+				  [else
+				   (if (= n 0)
+				       ;; When 0 is returned, the SSL object doesn't correctly
+				       ;; report what it wants (e.g., a write). Send everything
+				       ;; out that we have and try again, up to 10 times.
+				       (unless (cnt . >= . 10)
+					 (loop (add1 cnt)))
+				       (error 'read-bytes "SSL shutdown failed ~a"
+					      (get-error-message (ERR_get_error))))])))))))
+		     (set-mzssl-w-closed?! mzssl #t)
+		     (mzssl-release mzssl)
+		     #f]))]
 		[close-loop
 		 (lambda ()
 		   (let ([v (call-with-semaphore
@@ -891,7 +899,9 @@
 		   [(pipe-r pipe-w) (make-pipe)]
 		   [(cancel) (box #t)])
 	(let ([mzssl (make-mzssl ssl i o r-bio w-bio pipe-r pipe-w 
-				 buffer (make-semaphore 1) #f #f #f 2 
+				 buffer (make-semaphore 1) 
+				 #f #f
+				 #f #f #f 2 
 				 close? shutdown-on-close?
 				 cancel)])
 	  (let loop ()
