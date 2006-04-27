@@ -7,7 +7,6 @@
 
 (SECTION 'OBJECT)
 
-
 ;; ------------------------------------------------------------
 ;; Test syntax errors
 
@@ -1103,5 +1102,45 @@
       (let ()
         (define-local-member-name f)
         (new (class object% (field [f 1] [g 1]) (super-new)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that a macro expansion to init, etc,
+;; is certified correctly:
+
+(define (check-class-cert form rename?)
+  (define class-cert-%%-init (gensym 'class-cert-%%-init))
+  (define class-cert-%%-client (gensym 'class-cert-%%-client))
+  (teval
+   `(module ,class-cert-%%-init mzscheme
+      (require (lib "class.ss"))
+      (define-syntax (init-private stx)
+	(syntax-case stx ()
+	  [(_ name value)
+	   (with-syntax ([(internal-name)
+			  (generate-temporaries #'(internal-name))])
+	     #'(begin
+		 (,form (,(if rename? '(internal-name name) 'internal-name)
+			 value))
+		 (define name internal-name)))]))
+      (provide (all-defined))))
+  ;; Shouldn't fail with a cert erorr:
+  (teval
+   `(module ,class-cert-%%-client mzscheme
+      (require (lib "class.ss")
+	       ,class-cert-%%-init)
+      (define cert-error%
+	(class object%
+	  (init-private thing "value")
+	  (define/public (to-string)
+	    thing)
+	  (super-new))))))
+
+(map (lambda (rename?)
+       (check-class-cert 'init rename?)
+       (check-class-cert 'field rename?) 
+       (check-class-cert 'init-field rename?))
+     '(#t #f))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

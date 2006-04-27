@@ -24,19 +24,68 @@
       [(_ id ...)
        (begin
 	 (define-syntax (id stx)
-	   (raise-syntax-error
-	    #f
-	    "use of a class keyword is not in a class top-level"
-	    stx))
+	   (if (identifier? stx)
+	       (raise-syntax-error
+		#f
+		"illegal (unparenthesized) use of a class keyword"
+		stx)
+	       (raise-syntax-error
+		#f
+		"use of a class keyword is not in a class top-level"
+		stx)))
 	 ...
 	 (provide id ...))]))
   
   (provide-class-keyword private public override augride
 			 pubment overment augment
 			 public-final override-final augment-final
-			 field init init-field
 			 rename-super rename-inner inherit inherit-field
 			 inspect)
+
+  (define-syntax provide-class-define-like-keyword
+    (syntax-rules ()
+      [(_ [internal-id id] ...)
+       (begin
+	 (define-syntax (internal-id stx)
+	   (syntax-case stx ()
+	     [(_ orig . __)
+	      (raise-syntax-error
+	       #f
+	       "use of a class keyword is not in a class top-level"
+	       #'orig)]))
+	 ...
+	 (define-syntax (id stx)
+	   (syntax-case stx ()
+	     [(_ elem (... ...))
+	      (syntax-property
+	       #`(internal-id #,stx
+			      #,@(map (lambda (e)
+					(if (identifier? e)
+					    e
+					    (syntax-property
+					     (syntax-case e ()
+					       [((n1 n2) expr)
+						(quasisyntax/loc e
+						  (#,(syntax-property
+						      #'(n1 n2)
+						      'certify-mode 'transparent)
+						   expr))]
+					       [_else e])
+					     'certify-mode 'transparent)))
+				      (syntax-e #'(elem (... ...)))))
+	       'certify-mode
+	       'transparent)]
+	     [(_ . elems)
+	      #`(internal-id #,stx . elems)]
+	     [_else 
+	      (raise-syntax-error #f "illegal (unparenthesized) use of class keyword" stx)]))
+	 ...
+	 (provide id ...))]))
+  
+  (provide-class-define-like-keyword 
+   [-field field]
+   [-init init]
+   [-init-field init-field])
 
   (define-syntax define/provide-context-keyword
     (syntax-rules ()
@@ -76,10 +125,10 @@
 		(append
 		 (kernel-form-identifier-list (quote-syntax here))
 		 (list 
-		  (quote-syntax init)
+		  (quote-syntax -init)
 		  (quote-syntax init-rest)
-		  (quote-syntax field)
-		  (quote-syntax init-field)
+		  (quote-syntax -field)
+		  (quote-syntax -init-field)
 		  (quote-syntax inherit-field)
 		  (quote-syntax private)
 		  (quote-syntax public)
@@ -162,7 +211,12 @@
       (define (flatten alone l)
 	(apply append
 	       (map (lambda (i)
-		      (let ([l (cdr (syntax->list i))])
+		      (let ([l (let ([l (syntax->list i)])
+				 (if (ormap (lambda (i)
+					      (module-identifier=? (car l) i))
+					    (syntax-e (quote-syntax (-init -init-field -field))))
+				     (cddr l)
+				     (cdr l)))])
 			(if alone
 			    (map (lambda (i)
 				   (if (identifier? i)
@@ -369,18 +423,18 @@
 	      
 	      ;; ------ Basic syntax checks -----
 	      (for-each (lambda (stx)
-			  (syntax-case stx (init init-rest field init-field inherit-field
-						 private public override augride
-						 public-final override-final augment-final
-						 pubment overment augment
-						 rename-super inherit rename-inner
-						 inspect)
-			    [(form idp ...)
+			  (syntax-case stx (-init init-rest -field -init-field inherit-field
+						  private public override augride
+						  public-final override-final augment-final
+						  pubment overment augment
+						  rename-super inherit rename-inner
+						  inspect)
+			    [(form orig idp ...)
 			     (and (identifier? (syntax form))
-				  (or (module-identifier=? (syntax form) (quote-syntax init))
-				      (module-identifier=? (syntax form) (quote-syntax init-field))))
+				  (or (module-identifier=? (syntax form) (quote-syntax -init))
+				      (module-identifier=? (syntax form) (quote-syntax -init-field))))
 			     
-			     (let ([form (syntax-e (syntax form))])
+			     (let ([form (syntax-e (stx-car (syntax orig)))])
 			       (for-each 
 				(lambda (idp)
 				  (syntax-case idp ()
@@ -401,8 +455,8 @@
 			     'ok]
 			    [(inspect . rest)
 			     (bad "ill-formed inspect clause" stx)]
-			    [(init . rest)
-			     (bad "ill-formed init clause" stx)]
+			    [(-init orig . rest)
+			     (bad "ill-formed init clause" #'orig)]
 			    [(init-rest)
 			     'ok]
 			    [(init-rest rest)
@@ -410,9 +464,9 @@
 			     'ok]
 			    [(init-rest . rest)
 			     (bad "ill-formed init-rest clause" stx)]
-			    [(init-field . rest)
-			     (bad "ill-formed init-field clause" stx)]
-			    [(field idp ...)
+			    [(-init-field orig . rest)
+			     (bad "ill-formed init-field clause" #'orig)]
+			    [(-field orig idp ...)
 			     (for-each (lambda (idp)
 					 (syntax-case idp ()
 					   [(id expr) (identifier? (syntax id)) 'ok]
@@ -424,8 +478,8 @@
 					     "field element is not an optionally renamed identifier-expression pair"
 					     idp)]))
 				       (syntax->list (syntax (idp ...))))]
-			    [(field . rest)
-			     (bad "ill-formed field clause" stx)]
+			    [(-field orig . rest)
+			     (bad "ill-formed field clause" #'orig)]
 			    [(private id ...)
 			     (for-each
 			      (lambda (id)
@@ -528,7 +582,7 @@
 			    [(plain-inits)
 			     ;; Normalize after, but keep un-normal for error reporting
 			     (flatten #f (extract* (syntax-e 
-						    (quote-syntax (init init-rest)))
+						    (quote-syntax (-init init-rest)))
 						   exprs))]
 			    [(normal-plain-inits) (map normalize-init/field plain-inits)]
 			    [(init-rest-decls _)
@@ -537,16 +591,16 @@
 				      void)]
 			    [(inits)
 			     (flatten #f (extract* (syntax-e 
-						    (quote-syntax (init init-field)))
+						    (quote-syntax (-init -init-field)))
 						   exprs))]
 			    [(normal-inits)
 			     (map normalize-init/field inits)]
 			    [(plain-fields)
-			     (flatten #f (extract* (list (quote-syntax field)) exprs))]
+			     (flatten #f (extract* (list (quote-syntax -field)) exprs))]
 			    [(normal-plain-fields)
 			     (map normalize-init/field plain-fields)]
 			    [(plain-init-fields)
-			     (flatten #f (extract* (list (quote-syntax init-field)) exprs))]
+			     (flatten #f (extract* (list (quote-syntax -init-field)) exprs))]
 			    [(normal-plain-init-fields)
 			     (map normalize-init/field plain-init-fields)]
 			    [(inherit-fields)
@@ -600,10 +654,10 @@
 			   [(module-identifier=? #'init-rest form)
 			    (loop (cdr l) #t)]
 			   [(not saw-rest?) (loop (cdr l) #f)]
-			   [(module-identifier=? #'init form)
-			    (bad "init clause follows init-rest clause" (car l))]
-			   [(module-identifier=? #'init-field form)
-			    (bad "init-field clause follows init-rest clause" (car l))]
+			   [(module-identifier=? #'-init form)
+			    (bad "init clause follows init-rest clause" (stx-car (stx-cdr (car l))))]
+			   [(module-identifier=? #'-init-field form)
+			    (bad "init-field clause follows init-rest clause" (stx-car (stx-cdr (car l))))]
 			   [else (loop (cdr l) #t)]))]
 		       [else (loop (cdr l) saw-rest?)]))))
 		
@@ -800,15 +854,15 @@
 		      ;;  Non-method definitions to set!
 		      ;;  Initializations args access/set!
 		      (let ([exprs (map (lambda (e)
-					  (syntax-case e (define-values field init-rest)
+					  (syntax-case e (define-values -field init-rest)
 					    [(define-values (id ...) expr)
 					     (syntax/loc e (set!-values (id ...) expr))]
-					    [(-init idp ...)
-					     (and (identifier? (syntax -init))
+					    [(_init orig idp ...)
+					     (and (identifier? (syntax _init))
 						  (ormap (lambda (it) 
-							   (module-identifier=? it (syntax -init)))
-							 (syntax-e (quote-syntax (init
-										  init-field)))))
+							   (module-identifier=? it (syntax _init)))
+							 (syntax-e (quote-syntax (-init
+										  -init-field)))))
 					     (let* ([norms (map normalize-init/field
 								(syntax->list (syntax (idp ...))))]
 						    [iids (map norm-init/field-iid norms)]
@@ -828,7 +882,7 @@
 						     1 ; to ensure a non-empty body
 						     (set! id (extract-arg 'class-name `idpos init-args defval))
 						     ...))))]
-					    [(field idp ...)
+					    [(-field orig idp ...)
 					     (with-syntax ([(((iid eid) expr) ...)
 							    (map normalize-init/field (syntax->list #'(idp ...)))])
 					       (syntax/loc e (begin 
