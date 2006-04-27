@@ -23,7 +23,7 @@
   ;; in the future it is possible to change it to default to a different
   ;; default.
   (define (enabled? v)
-    (case v [(yes) #t] [(no) #f] [else #t])) ; default to #t
+    (case v [(yes) #t] [(no) #f] [else #f])) ; default to #f
 
   (define (check-for-updates)
     ;; wait until the definitions are instantiated, return top-level window
