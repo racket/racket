@@ -2392,7 +2392,6 @@ static void remove_thread(Scheme_Thread *r)
 }
 
 static void start_child(Scheme_Thread * volatile child,
-			Scheme_Thread * volatile return_to_thread,
 			Scheme_Object * volatile child_eval)
 {
   if (SETJMP(child)) {
@@ -2421,9 +2420,6 @@ static void start_child(Scheme_Thread * volatile child,
 #if WATCH_FOR_NESTED_SWAPS
     swapping = 0;
 #endif
-
-    if (return_to_thread)
-      scheme_swap_thread(return_to_thread);
 
     if (scheme_current_thread->running & MZTHREAD_KILLED) {
       /* This thread is dead! Give up now. */
@@ -2470,7 +2466,7 @@ static Scheme_Object *make_subprocess(Scheme_Object *child_thunk,
 				      Scheme_Custodian *mgr,
 				      int normal_kill)
 {
-  Scheme_Thread *child, *return_to_thread;
+  Scheme_Thread *child;
   int turn_on_multi;
  
   turn_on_multi = !scheme_first_thread->next;
@@ -2520,13 +2516,9 @@ static Scheme_Object *make_subprocess(Scheme_Object *child_thunk,
     child->suspend_to_kill = 1;
 
   child->stack_start = child_start;
-  
-  if (do_atomic)
-    return_to_thread = scheme_current_thread;
-  else
-    return_to_thread = NULL;
 
-  start_child(child, return_to_thread, child_thunk);
+  /* Sets the child's jmpbuf for swapping in later: */
+  start_child(child, child_thunk);
 
   if (scheme_notify_multithread && turn_on_multi) {
     scheme_notify_multithread(1);
