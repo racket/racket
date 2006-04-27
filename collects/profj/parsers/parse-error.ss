@@ -135,9 +135,13 @@
                 (parse-statement null first-tok 'start getter #t #f #f))
                ((IDENTIFIER)
                 (let ((next (getter)))
-                  (if (id-token? (get-tok next))
-                      (parse-statement first-tok next 'local getter #t #f #f)
-                      (parse-expression first-tok next 'name getter #t #f)))) 
+                  (cond
+                    ((id-token? (get-tok next))
+                     (parse-statement first-tok next 'local getter #t #f #f))
+                    ((o-bracket? (get-tok next))
+                     (parse-statement first-tok next 'local getter #t #f #f))
+                    (else 
+                     (parse-expression first-tok next 'name getter #t #f)))))
                (else 
                 (if (prim-type? (get-tok first-tok))
                     (parse-statement null first-tok 'start getter #t #f #f)

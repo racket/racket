@@ -381,6 +381,12 @@ class WeeklyPlanner{
    (list 2)
    "Test of private field access")
   
+  (interact-test
+   'advanced
+   (list "String[] a = {new String(\"hi\"),new String(\"i\")};")
+   (list '(void))
+   "Test of array init")
+  
   (report-test-results)
   
   )

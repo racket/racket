@@ -637,7 +637,7 @@
            (assignable (filter (lambda (mr)
                                  (andmap a-convert? (m-atypes mr) arg-types))
                                methods))
-           ;(sort (lambda (l p) (quicksort l p)))
+           (sort (lambda (l p) (quicksort l p)))
            (assignable-count (sort
                               (map (lambda (mr)
                                      (list (number-assign-conversions arg-types (m-atypes mr) type-recs)

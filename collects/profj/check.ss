@@ -855,7 +855,7 @@
             (let ((new-type/env (check-e (car exps) env)))
               (unless (assignment-conversion dec-type (type/env-t new-type/env) type-recs)
                 (array-init-error dec-type (type/env-t new-type/env) (expr-src (car exps))))
-              (loop (cdr exps) (type/env-t new-type/env)))))))))
+              (loop (cdr exps) (type/env-e new-type/env)))))))))
   
   ;check-array-init-sub-inits: (list array-init) (exp env -> type/env) env type type-records -> type/env
   (define (check-array-init-sub-inits inits check-e env type type-recs)
