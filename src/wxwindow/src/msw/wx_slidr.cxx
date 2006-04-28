@@ -276,6 +276,11 @@ void wxSlider::SetValue(int value)
     sprintf(wxBuffer, "%d", value);
     SetWindowText(edit_value, wxBuffer);
   }
+
+  if (!winEnabled) {
+    /* Windows bug? Setting the value loses disabled state. */
+    ::EnableWindow((HWND)ms_handle, (BOOL)FALSE); 
+  }
 }
 
 void wxSlider::SetLabel(char *label)
