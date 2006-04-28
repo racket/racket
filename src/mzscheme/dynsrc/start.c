@@ -229,7 +229,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 int main(int argc_in, char **argv_in)
 #endif
 {
-  char *p;
   char go[MAXCOMMANDLEN * 2];
   char *args[MAX_ARGS + 1];
   char *command_line; 
@@ -252,7 +251,33 @@ int main(int argc_in, char **argv_in)
   count = 1;
   count = parse_command_line(count, args, input, MAX_ARGS);
   
-  /* exedir should be PLTHOME path */
+  /* exedir can be relative to the current executable */
+  if ((exedir[0] == '\\')
+      || ((((exedir[0] >= 'a') && (exedir[0] <= 'z'))
+	   || 	((exedir[0] >= 'A') && (exedir[0] <= 'Z')))
+	  && (exedir[1] == ':'))) {
+    /* Absolute path */
+  } else {
+    /* Make it absolute, relative to this executable */
+    int plen;
+    int mlen;
+    char *s2, *path;
+
+    path = (char *)malloc(1024);
+    GetModuleFileName(NULL, path, 1024);
+
+    plen = strlen(exedir);
+    mlen = strlen(path);
+
+    while (mlen && (path[mlen - 1] != '\\')) {
+      mlen--;
+    }
+    s2 = (char *)malloc(mlen + plen + 1);
+    memcpy(s2, path, mlen);
+    memcpy(s2 + mlen, exedir, plen + 1);
+    exedir = s2;
+  }
+
   strcpy(go, exedir);
   strcat(go, GOSUBDIR);
   strcat(go, (variant[0] != '<') ? GOEXE3M : GOEXE);
@@ -292,13 +317,6 @@ int main(int argc_in, char **argv_in)
   for (i = 0; i < count; i++) {
     args[i] = protect(args[i]);
     /* MessageBox(NULL, args[i], "Argument", MB_OK); */
-  }
-  
-  /* make the exedir PLTHOME if it's not currently */
-
-  p = getenv("PLTHOME");
-  if (p == NULL || strcmp(p,exedir)) {
-    SetEnvironmentVariable("PLTHOME", exedir);
   }
   
   for (i = 0; i < sizeof(si); i++)

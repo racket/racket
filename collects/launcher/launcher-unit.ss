@@ -236,6 +236,15 @@
 	(let ([s (if (path? s) (path->string s) s)])
           (regexp-replace* #rx"[\"$`]" s "\\\\&")))
 
+      (define (relativize bindir-explode dest-explode)
+	(let loop ([b bindir-explode] [d dest-explode])
+	  (if (and (pair? b) (equal? (car b) (car d)))
+	      (loop (cdr b) (cdr d))
+	      (let ([p (append (map (lambda (x) 'up) (cdr d)) b)])
+		(if (null? p) 
+		    #f
+		    (apply build-path p))))))
+
       (define (make-relative-path-header dest bindir)
         ;; rely only on binaries in /usr/bin:/bin
         (define (has-exe? exe)
@@ -281,13 +290,11 @@
              "cd \"$saveD\"\n"
              "\n"
              "bindir=\"$D"
-             (let loop ([b bindir-explode] [d dest-explode])
-               (if (and (pair? b) (equal? (car b) (car d)))
-                 (loop (cdr b) (cdr d))
-                 (let ([p (append (map (lambda (x) 'up) (cdr d)) b)])
-                   (if (null? p) ""
-                       (string-append
-                        "/" (protect-shell-string (apply build-path p)))))))
+	     (let ([s (relativize bindir-explode dest-explode)])
+	       (if s
+		   (string-append "/" 
+				  (protect-shell-string s))
+		   ""))
              "\"\n"
              "PATH=\"$saveP\"\n"
              "\n")
@@ -376,7 +383,12 @@
 		    [x #rx#"<Executable Directory: Replace This[^>]*>"]
 		    [v #rx#"<Executable Variant: Replace This>"])
 		(let* ([exedir (bytes-append
-				(path->bytes plthome)
+				(path->bytes (if (let ([m (assq 'relative? aux)])
+						   (and m (cdr m)))
+						 (or (relativize (explode-path plthome)
+								 (explode-path dest))
+						     (build-path 'same))
+						 plthome))
 				;; null character marks end of executable directory
 				#"\0")]
 		       [find-it ; Find the magic start
