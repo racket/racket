@@ -656,7 +656,11 @@ for the last one, need a global "no more initialization can happen" flag.
                                    values values)
                        (make-check scheme-panel
                                    'framework:fixup-parens
-                                   (string-constant fixup-parens)
+                                   (string-constant fixup-close-parens)
+                                   values values)
+                       (make-check scheme-panel
+                                   'framework:fixup-open-parens
+                                   (string-constant fixup-open-parens)
                                    values values)
                        (make-check scheme-panel
                                    'framework:paren-match

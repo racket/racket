@@ -148,6 +148,7 @@
       
       (preferences:set-default 'framework:highlight-parens #t boolean?)
       (preferences:set-default 'framework:fixup-parens #t boolean?)
+      (preferences:set-default 'framework:fixup-open-parens #t boolean?)
       (preferences:set-default 'framework:paren-match #t boolean?)
       (let ([hash-table (make-hash-table)])
 	(for-each (λ (x) 

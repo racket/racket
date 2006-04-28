@@ -975,7 +975,7 @@
           (inherit is-frozen? is-stopped?)
           (define/public (rewrite-square-paren)
             (cond
-              [(or (not (preferences:get 'framework:fixup-parens))
+              [(or (not (preferences:get 'framework:fixup-open-parens))
                    (is-frozen?)
                    (is-stopped?))
                (insert #\[
@@ -1248,10 +1248,10 @@
                        ;; we found a new expression, two steps back, so we don't use the sibling
                        ;; check here -- we just go with square brackets.
                        [(and backward-match2
-                             (text-between-equal? "new"
-                                                  text
-                                                  backward-match2
-                                                  before-whitespace-pos2))
+                             (ormap 
+                              (λ (x)
+                                (text-between-equal? x text backward-match2 before-whitespace-pos2))
+                              '("new" "case")))
                         (void)]
                        [(member b-m-char '(#\( #\[ #\{))
                         ;; found a "sibling" parenthesized sequence. use the parens it uses.
@@ -1305,11 +1305,13 @@
                                                                    0)])
                                (cond
                                  [(and second-backwards-match2
-                                       (text-between-equal? "let" 
-                                                            text
-                                                            second-backwards-match2
-                                                            second-before-whitespace-pos2))
-                                  ;; found the `(let loop (' so we keep the [
+                                       (ormap (λ (x)
+                                                (text-between-equal? x 
+                                                                     text
+                                                                     second-backwards-match2
+                                                                     second-before-whitespace-pos2))
+                                              '("let")))
+                                  ;; found the `(let loop (' or `case' so we keep the [
                                   (void)]
                                  [else
                                   ;; otherwise, round.
