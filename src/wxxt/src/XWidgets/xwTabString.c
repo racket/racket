@@ -23,7 +23,7 @@ extern wxExtFont wxFindAAFont(Display *dpy, wxExtFont xfont, int c);
 static int leading_utf8_len(char *s, int len)
 {
   long ipos;
-  scheme_utf8_decode(s, 0, len, 
+  scheme_utf8_decode((const unsigned char *)s, 0, len, 
 		     NULL, 0, 1,
 		     &ipos, 0, '?');
   return ipos;
@@ -55,12 +55,12 @@ static int xdoDraw(measure, font,
   long ulen;
   int width = 0;
 
-  ulen = scheme_utf8_decode_all(string, length, NULL, '?');
+  ulen = scheme_utf8_decode_all((unsigned char *)string, length, NULL, '?');
   if (ulen <= WXTAB_BUF_SIZE)
     us = usbuf;
   else
     us = (unsigned int *)XtMalloc(ulen * sizeof(unsigned int));
-  ulen = scheme_utf8_decode_all(string, length, us, '?');
+  ulen = scheme_utf8_decode_all((unsigned char *)string, length, us, '?');
 
 #ifdef WX_USE_XFT
   if (!xfont)
