@@ -121,9 +121,11 @@
 
       (define (relativize exec-name dest adjust)
 	(let ([p (find-relative-path
-		  (let-values ([(dir name dir?) (split-path (normalize-path dest))])
+		  (let-values ([(dir name dir?) (split-path 
+						 (normal-case-path
+						  (normalize-path dest)))])
 			      dir)
-		  (normalize-path exec-name))])
+		  (normal-case-path (normalize-path exec-name)))])
 	  (if (relative-path? p)
 	      (adjust p)
 	      p)))

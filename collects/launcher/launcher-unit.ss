@@ -236,6 +236,9 @@
 	(let ([s (if (path? s) (path->string s) s)])
           (regexp-replace* #rx"[\"$`]" s "\\\\&")))
 
+      (define (normalize+explode-path p)
+	(explode-path (normal-case-path (normalize-path p))))
+
       (define (relativize bindir-explode dest-explode)
 	(let loop ([b bindir-explode] [d dest-explode])
 	  (if (and (pair? b) (equal? (car b) (car d)))
@@ -252,8 +255,8 @@
               (file-exists? (build-path "/bin" exe))))
         (let* ([has-readlink?  (and (not (eq? 'macosx (system-type)))
                                     (has-exe? "readlink"))]
-               [dest-explode   (explode-path (normalize-path dest))]
-               [bindir-explode (explode-path (normalize-path bindir))])
+               [dest-explode   (normalize+explode-path dest)]
+               [bindir-explode (normalize+explode-path bindir)])
           (if (and (has-exe? "dirname") (has-exe? "basename")
                    (or has-readlink? (and (has-exe? "ls") (has-exe? "sed")))
                    (equal? (car dest-explode) (car bindir-explode)))
@@ -385,8 +388,8 @@
 		(let* ([exedir (bytes-append
 				(path->bytes (if (let ([m (assq 'relative? aux)])
 						   (and m (cdr m)))
-						 (or (relativize (explode-path plthome)
-								 (explode-path dest))
+						 (or (relativize (normalize+explode-path plthome)
+								 (normalize+explode-path dest))
 						     (build-path 'same))
 						 plthome))
 				;; null character marks end of executable directory
