@@ -250,6 +250,7 @@
                    (equal? (car dest-explode) (car bindir-explode)))
             (string-append
              "# Make this PATH-independent\n"
+             "saveP=\"$PATH\"\n"
              "PATH=/usr/bin:/bin\n"
              "\n"
              (if has-readlink? ""
@@ -288,6 +289,7 @@
                        (string-append
                         "/" (protect-shell-string (apply build-path p)))))))
              "\"\n"
+             "PATH=\"$saveP\"\n"
              "\n")
             ;; fallback to absolute path header
             (make-absolute-path-header bindir))))
