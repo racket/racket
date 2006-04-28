@@ -7,7 +7,7 @@
   (define mapped-chars (make-known-char-range-list))
   
   
-  ;; gat-chars-for-x : (nat -> bool) (listof (list nat nat bool)) -> (listof (cons nat nat))
+  ;; get-chars-for-x : (nat -> bool) (listof (list nat nat bool)) -> (listof (cons nat nat))
   (define (get-chars-for char-x? mapped-chars)
     (cond
       ((null? mapped-chars) null)
