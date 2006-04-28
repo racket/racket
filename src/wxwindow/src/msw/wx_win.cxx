@@ -1593,21 +1593,24 @@ void wxWnd::OnDropFiles(WPARAM wParam)
   POINT dropPoint;
   WORD gwFilesDropped;
   char **files, *a_file;
-  int wIndex;
+  wchar_t *w_file;
+  int wIndex, len;
 
   DragQueryPoint(hFilesInfo, (LPPOINT) &dropPoint);
 
   // Get the total number of files dropped
-  gwFilesDropped = (WORD)DragQueryFile ((HDROP)hFilesInfo,
-				   (UINT)-1,
-                                   (LPSTR)0,
-                                   (UINT)0);
+  gwFilesDropped = (WORD)DragQueryFile((HDROP)hFilesInfo,
+				       (UINT)-1,
+				       (LPSTR)0,
+				       (UINT)0);
 
   files = new char *[gwFilesDropped];
 
   for (wIndex=0; wIndex < (int)gwFilesDropped; wIndex++) {
-    DragQueryFile (hFilesInfo, wIndex, (LPSTR) wxBuffer, 1000);
-    a_file = copystring(wxBuffer);
+    len = DragQueryFileW(hFilesInfo, wIndex, NULL, 0);
+    w_file = new WXGC_ATOMIC wchar_t[len + 1];
+    DragQueryFileW(hFilesInfo, wIndex, w_file, len);
+    a_file = wxNARROW_STRING(w_file);
     files[wIndex] = a_file;
   }
   DragFinish (hFilesInfo);
