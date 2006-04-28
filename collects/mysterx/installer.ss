@@ -3,7 +3,7 @@
   (provide post-installer)
   (define (post-installer plt-home)
     (define (make-dll-path . more)
-      (apply build-path plt-home "lib"))
+      (apply build-path plt-home "lib" more))
     (define (warn fmt . args) (apply fprintf (current-error-port) fmt args))
     (let* ([dlls '("myspage.dll" "myssink.dll")]
            [dll-paths (map make-dll-path dlls)]
