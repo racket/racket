@@ -1,10 +1,9 @@
 (module installer mzscheme
   (require (lib "process.ss"))
   (provide post-installer)
-  (define (post-installer mx-path)
+  (define (post-installer plt-home)
     (define (make-dll-path . more)
-      (apply build-path (collection-path "mysterx")
-             "private" "compiled" "native" "win32" "i386" more))
+      (apply build-path plt-home "lib"))
     (define (warn fmt . args) (apply fprintf (current-error-port) fmt args))
     (let* ([dlls '("myspage.dll" "myssink.dll")]
            [dll-paths (map make-dll-path dlls)]
