@@ -103,13 +103,13 @@
     (when (enabled? (preferences:get 'updates:enabled?))
       (let ([top  (wait-for-definitions)]
             [cur  (current-seconds)]
-            [last 0 #;(preferences:get 'updates:last)]
+            [last (preferences:get 'updates:last)]
             [freq (preferences:get 'updates:frequency)])
         (when (and (> (- cur last) freq)
                    (show-message top (zero? last))) ; last=0 => first-time
           (preferences:set 'updates:last cur)
           (check top)
-          (hide-message))))))
+          (hide-message)))))
 
   (provide tool@)
   (define tool@
