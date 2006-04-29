@@ -95,7 +95,7 @@
       ;;              Find Collections                 ;;
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       
-      (define-struct cc (collection path name info info-path shadowing-policy) (make-inspector))
+      (define-struct cc (collection path name info root-dir info-path shadowing-policy) (make-inspector))
       
       (define (warning-handler v)
 	(lambda (exn) 
@@ -133,6 +133,7 @@
               (apply collection-path collection-p)
               name
               info
+	      root-dir
               (build-path root-dir "info-domain" "compiled" "cache.ss")
               ;; by convention, all collections have "version" 1 0. This forces them
               ;; to conflict with each other.
@@ -162,6 +163,7 @@
              path
              name
              info
+	     #f ; don't need root-dir; absolute paths in cache.ss will be ok
              (get-planet-cache-path)
              (list `(planet ,owner ,pkg-file ,@extra-path) maj min)))))
       
@@ -653,9 +655,18 @@
                                                             (match i
                                                               [((? (lambda (a) 
                                                                        (and (bytes? a)
-                                                                            (file-exists? (build-path 
-                                                                                           (bytes->path a)
-                                                                                           "info.ss"))))
+									    (let ([p (bytes->path a)])
+									      ;; If we have a root directory, then the path
+									      ;;  must be relative to it, otherwise it must
+									      ;;  be absolute:
+									      (and (if (cc-root-dir cc)
+										       (relative-path? p)
+										       (complete-path? p))
+										   (file-exists? (build-path
+												  (if (cc-root-dir cc)
+												      (build-path (cc-root-dir cc) p)
+												      p)
+												  "info.ss"))))))
                                                                    a)
                                                                 ((? symbol? b) ...) 
                                                                 c
@@ -677,7 +688,11 @@
                           ;; Add this collection's info to the table, replacing
                           ;; any information already there.
                           (hash-table-put! t 
-                                           (path->bytes (cc-path cc))
+                                           (path->bytes (if (cc-root-dir cc)
+							    ;; Use relative path:
+							    (apply build-path (cc-collection cc))
+							    ;; Use absolute path:
+							    (cc-path cc)))
                                            (cons (domain) (cc-shadowing-policy cc))))))
                     ccs-to-compile)
           ;; Write out each collection-root-specific table to a "cache.ss" file:
