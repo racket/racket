@@ -20,7 +20,7 @@
   (is-this-your-native-language "你的母语是简体中文吗？")
   
   (are-you-sure-you-want-to-switch-languages
-    "为了改变界面语言，现在需要重新启动DrScheme。你确定吗？")
+   "为了改变界面语言，现在需要重新启动DrScheme。你确定吗？")
   
   (interact-with-drscheme-in-language "使用简体中文作为DrScheme界面语言")
   
@@ -65,7 +65,7 @@
   ;;; bug report form
   (cancel-bug-report? "取消故障报告？")
   (are-you-sure-cancel-bug-report?
-    "你确定要取消报告故障吗？")
+   "你确定要取消报告故障吗？")
   (bug-report-form "故障报告表")
   (bug-report-field-name "姓名")
   (bug-report-field-email "电子邮件")
@@ -137,13 +137,13 @@
   
   (goto-line "跳至...行")
   (goto-line-invalid-number
-    "~a不是合法的行号。必须提供一个在1和~a之间的数字")
+   "~a不是合法的行号。必须提供一个在1和~a之间的数字")
   (goto-position "跳至...位置")
   (no-full-name-since-not-saved
-    "当前文件还没有被命名，因为从来没有对它进行保存。")
+   "当前文件还没有被命名，因为从来没有对它进行保存。")
   (cannot-open-because-dne "无法打开~a，文件不存在。")
   (interactions-out-of-sync
-    "警告：交互窗口和定义窗口不同步。请单击“运行”按钮。")
+   "警告：交互窗口和定义窗口不同步。请单击“运行”按钮。")
   (file-is-not-saved "文件\"~a\"还没有保存过")
   (save "保存")
   (close-anyway "强制关闭")
@@ -211,12 +211,12 @@
   (plt:hd:refreshing-manuals-finished "完成。")
   (plt:hd:about-help-desk "关于Help Desk")
   (plt:hd:help-desk-about-string
-    "Help Desk是PLT软件的信息来源，其中包含了DrScheme，MzScheme和MrEd的全部信息。\n\n版本~a\n版权所有(c)1995-2006 PLT")
+   "Help Desk是PLT软件的信息来源，其中包含了DrScheme，MzScheme和MrEd的全部信息。\n\n版本~a\n版权所有(c)1995-2006 PLT")
   (plt:hd:help-on-help "关于帮助的帮助")
   (plt:hd:help-on-help-details "如果你需要使用Help Desk的帮助，请在Help Desk的主页中点击链接“How to use Help Desk”。（要进入Help Desk的主页，请单击Help Desk窗口上方的“主页”按钮。）")
   (reload "刷新") ;; refresh the page in a web browser
   (plt:hd:ask-about-separate-browser
-    "你选择了一个指向万维网的链接。请问您是要在Help Desk中打开该页面，还是想使用浏览器程序浏览网页？")
+   "你选择了一个指向万维网的链接。请问您是要在Help Desk中打开该页面，还是想使用浏览器程序浏览网页？")
   (plt:hd:homebrew-browser "Help Desk") ;; choice for the above string (in a button)
   (plt:hd:separate-browser "网络浏览器") ;; other choice for the above string (also in a button)
   (plt:hd:external-link-in-help "在Help中的外部URL")
@@ -298,7 +298,8 @@
   (editor-prefs-panel-label "编辑")
   (general-prefs-panel-label "常规")
   (highlight-parens "加亮显示匹配的括号")
-  (fixup-parens "自动修改括号类型以保持匹配")
+  (fixup-open-parens "自动调整开括号")
+  (fixup-close-parens "自动调整闭括号")
   (flash-paren-match "高亮显示括号匹配")
   (auto-save-files "自动保存文件")
   (backup-files "保存备份文件")
@@ -405,9 +406,9 @@
   
   ;;; reverting a file
   (are-you-sure-revert
-    "你确定要恢复这个文件吗？这一操作无法撤销。")
+   "你确定要恢复这个文件吗？这一操作无法撤销。")
   (are-you-sure-revert-title
-    "恢复？")
+   "恢复？")
   
   ;;; saving a file
   ; ~a is filled with the filename
@@ -563,7 +564,7 @@
   
   ;; open here's new menu item
   (create-new-window-or-clear-current
-    "您是想打开一个新窗口，还是清空当前窗口？")
+   "您是想打开一个新窗口，还是清空当前窗口？")
   (clear-current "清空当前")
   (new-window "新窗口")
   
@@ -578,8 +579,8 @@
   ; on the button whose semantics is "dismiss this dialog".
   ; they are there to provide more flexibility for translations
   ; in English, they are just cancel.
- (dont-exit "取消") 
- (dont-quit "取消")
+  (dont-exit "取消") 
+  (dont-quit "取消")
   
   ;;; autosaving
   (error-autosaving "自动保存为\"~a\"时出错。") ;; ~a will be a filename
@@ -619,22 +620,22 @@
   
   ;;; file modified warning
   (file-has-been-modified
-    "要保存你所作的更改吗？")
+   "要保存你所作的更改吗？")
   (overwrite-file-button-label "保存")
   
   (definitions-modified 
-    "当前磁盘文件已被修改；请保存或恢复文件。")
+   "当前磁盘文件已被修改；请保存或恢复文件。")
   (drscheme-internal-error "DrScheme内部错误")
   
   ;;; tools
   (invalid-tool-spec "Collection ~a中info.ss的tool定义不正确。需要一个字符串或者一个非空表，得到：~e")
   (error-invoking-tool-title "调用tool ~s出错；~s")
   (tool-tool-names-same-length
-    "在~s的info.ss文件中，“tool-names”和“tools”应该是等长的表，得到~e和~e")
+   "在~s的info.ss文件中，“tool-names”和“tools”应该是等长的表，得到~e和~e")
   (tool-tool-icons-same-length
-    "在~s的info.ss文件中，“tool-icons”和“tools”应该是等长的表，得到~e和~e")
+   "在~s的info.ss文件中，“tool-icons”和“tools”应该是等长的表，得到~e和~e")
   (tool-tool-urls-same-length
-    "在~s的info.ss文件中，“tool-urls”和“tools”应该是等长的表，得到~e和~e")
+   "在~s的info.ss文件中，“tool-urls”和“tools”应该是等长的表，得到~e和~e")
   (error-getting-info-tool
    "载入~s的info.ss出错")
   (tool-error-phase1 "tool ~s第一阶段出错;~s")
@@ -718,17 +719,17 @@
   (create "创建")
   (please-choose-an-executable-filename "请选择可执行文件的名称。")
   (windows-executables-must-end-with-exe
-    "文件名\n\n  ~a\n\n不合法。Windows可执行文件必须以.exe结尾。")
+   "文件名\n\n  ~a\n\n不合法。Windows可执行文件必须以.exe结尾。")
   (macosx-executables-must-end-with-app
-    "文件名\n\n  ~a\n\n不合法。MacOS X可执行文件必须以.app结尾。")
+   "文件名\n\n  ~a\n\n不合法。MacOS X可执行文件必须以.app结尾。")
   (warning-directory-will-be-replaced
-    "警告：目录：\n\n  ~a\n\n将会被重置。继续操作？")
+   "警告：目录：\n\n  ~a\n\n将会被重置。继续操作？")
   
   (create-servlet "创建Servlet...")
   
   ; the ~a is a language such as "module" or "algol60"
   (create-servlet-unsupported-language
-    "无法为~a语言程序创建Servlet。")
+   "无法为~a语言程序创建Servlet。")
   
   ;;; buttons
   (execute-button-label "运行") 
@@ -769,7 +770,7 @@
   
   ;;; Language dialog
   (introduction-to-language-dialog
-    "请选择语言。大部分入门级的学生都可以使用默认语言。")
+   "请选择语言。大部分入门级的学生都可以使用默认语言。")
   (language-dialog-title "语言选择")
   (case-sensitive-label "大小写敏感")
   (output-style-label "输出格式")
@@ -875,7 +876,7 @@
   (module-browser-show-lib-paths/short "Follow lib requires") ;; check box label in show module browser pane in drscheme window.
   (module-browser-refresh "Refresh") ;; button label in show module browser pane in drscheme window.
   (module-browser-only-in-plt-and-module-langs
-    "Module浏览器只能在PLT语言和module语言(并且要求程序中有module)中使用。")
+   "Module浏览器只能在PLT语言和module语言(并且要求程序中有module)中使用。")
   (module-browser-name-length "Name length")
   (module-browser-name-short "Short")
   (module-browser-name-medium "Medium")
@@ -909,9 +910,9 @@
   (xml-tool-switch-to-scheme "转变成Scheme框")
   (xml-tool-switch-to-scheme-splice "转变成Scheme接合框")
   (xml-tool-eliminate-whitespace-in-empty-tags
-    "Eliminiate whitespace in empty tags")
+   "Eliminiate whitespace in empty tags")
   (xml-tool-leave-whitespace-alone
-    "Leave whitespace alone")
+   "Leave whitespace alone")
   
   (show-recent-items-window-menu-item "在单独窗口中显示最近使用的文件")
   (show-recent-items-window-label "最近使用的文件")
@@ -924,7 +925,7 @@
   (stepper-home "还原")
   (stepper-name "单步执行器")
   (stepper-language-level-message
-    "您选择的语言是“~a”。目前，stepper只支持“~a”和“~a”之间的语言。")
+   "您选择的语言是“~a”。目前，stepper只支持“~a”和“~a”之间的语言。")
   (stepper-button-label "单步执行")
   (stepper-previous-application "|< 调用")
   (stepper-previous "< 上一步")
