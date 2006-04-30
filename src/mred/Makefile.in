@@ -290,7 +290,7 @@ install-lib3m:
 
 install-3m_wx_xt:
 	cd ..; $(ICP) mred/mred3m $(prefix)/bin/
-	$(MZSCHEME) -mvqu "$(srcdir)/../mzscheme/collects-path.ss" "$(prefix)/bin/mred" ../collects
+	$(MZSCHEME) -mvqu "$(srcdir)/../mzscheme/collects-path.ss" "$(prefix)/bin/mred3m" ../collects
 	$(MAKE) @MRLIBINSTALL@3m
 
 install-3m_wx_mac:
