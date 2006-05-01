@@ -94,4 +94,3 @@ copytree:
 	cp -p -r $(srcdir)/../notes $(prefix)/.
 	cp -p -r $(srcdir)/../man $(prefix)/.
 	if [ -d $(srcdir)/../teachpack ] ; then  cp -r $(srcdir)/../teachpack $(prefix)/teachpack ; fi
-	cp -p $(srcdir)/../install $(prefix)/install
