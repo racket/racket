@@ -23,6 +23,10 @@ MzScheme:
    of taking the address of `pc' and casting it to a `jit_code*',
    because the latter violates C99 aliasing rules.
 
+ * Fixed update of `prev_page' and `prev_length' in "funcs.h" for x86
+   (thanks to Ray Racine), and to call mprotect() based on whether
+   `MZ_JIT_USE_MPROTECT' (instead iof `linux') is #defined.
+
 ----------------------------------------
 
 GNU Lightning authors:
