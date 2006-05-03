@@ -147,7 +147,7 @@
     ; Note: Herman's syntactic strategy would fail without the new-request capture.
     ;       (Moving this to the tail-position is not possible anyway, by the way.)
     (let ([thunk 
-           (let/ec k0
+           (let/cc k0
              (send/back
               (response-generator
                (opt-lambda (proc [expiration-handler (current-servlet-continuation-expiration-handler)])
