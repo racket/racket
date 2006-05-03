@@ -2258,12 +2258,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 	int issame;
 	if (frame->flags & SCHEME_CAPTURE_WITHOUT_RENAME)
 	  issame = scheme_stx_module_eq(find_id, COMPILE_DATA(frame)->const_names[i], phase);
-	else if (frame->flags & SCHEME_FOR_INTDEF) {
-	  /* Comparing to uid is unreliable in case the bound
-	     identifier has multiple renamings at the same level, so
-	     use the general stx_bound_eq function: */
-	  issame = scheme_stx_bound_eq(find_id, COMPILE_DATA(frame)->const_names[i], phase);
-	} else {
+	else {
 	  if (COMPILE_DATA(frame)->const_uids) uid = COMPILE_DATA(frame)->const_uids[i];
 	  issame = (SAME_OBJ(SCHEME_STX_VAL(find_id), 
 			     SCHEME_STX_VAL(COMPILE_DATA(frame)->const_names[i]))
