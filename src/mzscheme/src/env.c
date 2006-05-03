@@ -3578,7 +3578,6 @@ local_get_shadower(int argc, Scheme_Object *argv[])
       break;
 
     for (i = COMPILE_DATA(frame)->num_const; i--; ) {
-      printf("here %s\n", SCHEME_SYM_VAL(SCHEME_STX_SYM(sym)));
       if (!(frame->flags & SCHEME_CAPTURE_WITHOUT_RENAME)) {
 	if (SAME_OBJ(SCHEME_STX_VAL(sym), 
 		     SCHEME_STX_VAL(COMPILE_DATA(frame)->const_names[i]))) {
@@ -3587,11 +3586,7 @@ local_get_shadower(int argc, Scheme_Object *argv[])
 	  if (scheme_equal(env_marks, sym_marks)) {
 	    sym = esym;
 	    if (COMPILE_DATA(frame)->const_uids) {
-	      if (frame->flags & SCHEME_FOR_INTDEF) {
-		return esym;
-	      } else {
-		uid = COMPILE_DATA(frame)->const_uids[i];
-	      }
+	      uid = COMPILE_DATA(frame)->const_uids[i];
 	    } else
 	      uid = frame->uid;
 	    break;
