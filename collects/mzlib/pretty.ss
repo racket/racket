@@ -961,7 +961,7 @@
 				   head
 				   (lambda () #f))
 		   head)
-	   ((lambda define define-macro define-syntax
+	   ((lambda λ define define-macro define-syntax
 		    syntax-rules
 		    shared
 		    unless when)
