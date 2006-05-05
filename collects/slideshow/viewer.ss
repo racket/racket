@@ -311,7 +311,11 @@
 	  (define/private (move-over dx dy)
 	    (let ([x (get-x)]
 		  [y (get-y)])
-	      (move (+ x dx) (+ y dy))))
+	      (move (+ x dx) (+ y dy)))
+	    (when background-f
+	      (let ([x (send background-f get-x)]
+		    [y (send background-f get-y)])
+		(send background-f move (+ x dx) (+ y dy)))))
 	  
 	  (define/private (prev)
 	    (stop-transition)
