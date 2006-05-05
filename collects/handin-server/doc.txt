@@ -930,7 +930,8 @@ value from the submission code.
   non-#f value in the submission context, throwing an error
   otherwise.  The second form compares the result of evaluation,
   requiring it to be equal to `result' (optionally specifying an
-  equality procedure).
+  equality procedure).  Note that the `result' and `equal?' forms are
+  *not* evaluated in the submission context.
 
 > (!all-covered)
   When coverage information is enabled (see `:coverage?' above), this

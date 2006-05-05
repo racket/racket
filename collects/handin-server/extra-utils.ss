@@ -29,8 +29,9 @@
   (error (apply format fmt args)))
 
 (define fields
-  (map car (get-preference 'extra-fields (lambda () #f) #f
-                           (build-path server-dir "config.ss"))))
+  (map car (or (get-preference 'extra-fields (lambda () #f) #f
+                               (build-path server-dir "config.ss"))
+               (error* "bad configuration file: missing extra-fields entry"))))
 
 (provide submission-dir)
 (define submission-dir-re
