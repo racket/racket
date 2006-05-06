@@ -1034,6 +1034,12 @@
 	   + - * / (rename modulo %)
 	   (rename string->number stringToNumber)
 	   (rename number->string numberToString)
+	   cons list
+	   (rename car first) 
+	   (rename cdr rest)
+	   (rename null empty)
+	   (rename null? isEmpty)
+	   (rename pair? isCons)
 	   true false
 	   display write newline
 	   #%datum
