@@ -41,10 +41,10 @@
       ;; pat - the pattern to be matched repeatedly
       ;; dot-dot-k - the ddk pattern
       ;; let-bound - a list of let bindings
-      (define ((handle-end-ddk-list ae kf ks pat dot-dot-k let-bound) sf bv)
+      (define ((handle-end-ddk-list ae kf ks pat dot-dot-k let-bound cert) sf bv)
         (define k (stx-dot-dot-k? dot-dot-k))
         (define (ksucc sf bv) 
-          (let ([bound (getbindings pat)])
+          (let ([bound (getbindings pat cert)])
             (if (syntax? bound)
                 (kf sf bv)
                 (syntax-case pat (_)
@@ -59,7 +59,8 @@
                                    bv
                                    let-bound
                                    (lambda (sf bv) #'#f)
-                                   (lambda (sf bv) #'#t))]
+                                   (lambda (sf bv) #'#t)
+				   cert)]
                             [tst (syntax-case ptst ()
                                    [(pred eta)
                                     (and (identifier? #'pred)
@@ -72,7 +73,7 @@
                              (ks sf bv))))]
                   [id
                    (and (identifier? #'id) (stx-equal? #'id (car bound)))
-                   (next-outer #'id ae sf bv let-bound kf ks)]
+                   (next-outer #'id ae sf bv let-bound kf ks cert)]
                   [the-pat
                    (let ([binding-list-names (generate-temporaries bound)]
                          (loop-name (gensym 'loop))
@@ -109,7 +110,8 @@
                                                               b-var
                                                               bv)
                                                            #,bindings-var))
-                                                      bound binding-list-names)))))))]))))
+                                                      bound binding-list-names)))
+					   cert))))]))))
         (define (new-emit f) (emit f ae let-bound sf bv kf ksucc))
         (case k
           ((0) (ksucc sf bv))
@@ -144,9 +146,9 @@
       ;; dot-dot-k - the ddk pattern
       ;; pat-rest - the rest of the list pattern that occurs after the ddk
       ;; let-bound - a list of let bindings
-      (define ((handle-inner-ddk-list ae kf ks pat dot-dot-k pat-rest let-bound) sf bv)
+      (define ((handle-inner-ddk-list ae kf ks pat dot-dot-k pat-rest let-bound cert) sf bv)
         (let* ((k (stx-dot-dot-k? dot-dot-k)))
-          (let ((bound (getbindings pat)))
+          (let ((bound (getbindings pat cert)))
             (if (syntax? bound)
                 (kf sf bv)
                 (syntax-case pat (_)
@@ -163,7 +165,8 @@
                                    bv
                                    let-bound
                                    (lambda (sf bv) #'#f)
-                                   (lambda (sf bv) #'#t)))
+                                   (lambda (sf bv) #'#t)
+				   cert))
                             (tst (syntax-case ptst ()
                                    ((pred eta)
                                     (and (identifier?
@@ -196,7 +199,8 @@
                                               bv
                                               let-bound
                                               kf
-                                              ks)))
+                                              ks
+					      cert)))
                                    (if (zero? k)
                                        succ
                                        #`(if (>= #,count-name #,k)
@@ -227,7 +231,8 @@
                                                    new-bv
                                                    let-bound
                                                    kf
-                                                   ks)))
+                                                   ks
+						   cert)))
                                         (if (zero? k)
                                             succ
                                             #`(if (>= #,count-name #,k)
@@ -259,7 +264,8 @@
                                                                 bv)
                                                              #,bindings-var))
                                                         bound
-                                                        binding-list-names))))))))))))))
+                                                        binding-list-names)))
+					     cert)))))))))))
       ;;!(function handle-ddk-vector
       ;;          (form (handle-ddk-vector ae kf ks let-bound)
       ;;                ->
@@ -279,7 +285,7 @@
       ;; ks - a success function
       ;; pt - the whole vector pattern
       ;; let-bound - a list of let bindings
-      (define (handle-ddk-vector ae kf ks pt let-bound)
+      (define (handle-ddk-vector ae kf ks pt let-bound cert)
         (let* ((vec-stx (syntax-e pt))
                (vlen (- (vector-length vec-stx) 2)) ;; length minus
                ;; the pat ...
@@ -287,7 +293,7 @@
                (minlen (+ vlen k))
                ;; get the bindings for the second to last element:
                ;; 'pat' in pat ...
-               (bound (getbindings (vector-ref vec-stx vlen)))
+               (bound (getbindings (vector-ref vec-stx vlen) cert))
                (exp-name (gensym 'exnm)))
           (lambda (sf bv)
             (if (syntax? bound)
@@ -308,7 +314,8 @@
                                      bv
                                      let-bound
                                      kf
-                                     (vloop (+ 1 n))))
+                                     (vloop (+ 1 n))
+				     cert))
                                    ((eq? (syntax-object->datum
                                           (vector-ref vec-stx vlen))
                                          '_)
@@ -353,7 +360,8 @@
                                                                     bv)
                                                                  #,bindings-var))
                                                             bound
-                                                            binding-list-names)))))))))))
+                                                            binding-list-names)))
+						 cert))))))))
                              sf
                              bv))))))))
       
@@ -377,7 +385,7 @@
       ;; ks - a success function
       ;; pt - the whole vector pattern
       ;; let-bound - a list of let bindings
-      (define (handle-ddk-vector-inner ae kf ks pt let-bound)
+      (define (handle-ddk-vector-inner ae kf ks pt let-bound cert)
         (let* ((vec-stx (syntax-e pt))
                ;; vlen as an index points at the pattern before the ddk
                (vlen (- (vector-length vec-stx) 2)) ;; length minus
@@ -390,7 +398,7 @@
                (exp-name (gensym 'exnm)))
           ;; get the bindings for the second to last element:
           ;; 'pat' in pat ...
-          ;;(bound (getbindings (vector-ref vec-stx vlen))))
+          ;;(bound (getbindings (vector-ref vec-stx vlen) cert)))
           ;; we have to look at the first pattern and see if a ddk follows it
           ;; if so handle that case else handle the pattern
           (lambda (sf bv)
@@ -441,7 +449,8 @@
                                                      ;(set! current-index-name #`(add1 #,current-index-name))
                                                      (let ((cindnm (gensym 'cindnm)))
                                                        #`(let ((#,cindnm (add1 #,count-offset-name-passover)))
-                                                           #,((vloop (+ 1 n) cindnm) sf bv))))))))
+                                                           #,((vloop (+ 1 n) cindnm) sf bv))))
+						   cert))))
                                          ((and (eq? (syntax-object->datum
                                                      (vector-ref vec-stx n)) ;this could be it
                                                     '_)
@@ -449,7 +458,7 @@
                                                    (stx-dot-dot-k? (vector-ref vec-stx (add1 n)))))
                                           (ks sf bv))
                                          (else  ;; we now know that the next pattern is a ddk
-                                          (let ((bound (getbindings (vector-ref vec-stx n))))
+                                          (let ((bound (getbindings (vector-ref vec-stx n) cert)))
                                             (if (syntax? bound)
                                                 (kf sf bv)
                                                 (let* ((k (stx-dot-dot-k? (vector-ref vec-stx (add1 n))))
@@ -523,7 +532,8 @@
                                                                            (apply
                                                                             #,vloop-name
                                                                             (add1 #,count-name)
-                                                                            arglist)))))))))))))))
+                                                                            arglist)))
+								     cert))))))))))))
                                    sf
                                    bv)))))))))
       

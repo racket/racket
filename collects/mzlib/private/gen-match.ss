@@ -110,7 +110,7 @@
                                 let-bound)))
                        bv)))
               (success-func sf bv)))))
-    (define test-list (render-test-list pat exp stx))
+    (define test-list (render-test-list pat exp (lambda (x) x) stx))
     (cons test-list success))
   
   ;;!(function gen-match

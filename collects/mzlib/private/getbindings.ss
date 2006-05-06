@@ -35,10 +35,11 @@
                    let-bound
                    kf
                    ks
+                   cert
                    [stx (syntax '())]
-                   [opt #f])
+		   [opt #f])
         (next-outer-helper p ae sf bv let-bound 
-                           (lambda (x) kf) (lambda (a b) ks) stx opt))
+                           (lambda (x) kf) (lambda (a b) ks) cert stx opt))
       
       ;;!(function next-outer-helper
       ;;          (form (next-outer p ae sf bv let-bound kf-func ks-func syntax bool)
@@ -61,10 +62,11 @@
                    let-bound
                    kf-func
                    ks-func
+                   cert
                    [stx (syntax '())]
-                   [opt #f])
+		   [opt #f])
         ;; right now this does not bind new variables
-        (let ((rendered-list (render-test-list p ae stx)))
+        (let ((rendered-list (render-test-list p ae cert stx)))
           ;; no need to reorder lists although I suspect that it may be
           ;; better to put shape tests first
           (update-binding-count rendered-list)
@@ -82,7 +84,7 @@
       ;; bindmap - a-list of bindings mapped to their expressions
       ;; last-test - a boolean value that indicates whether this function
       ;; is collecting one value or a list of values.</pre>
-      (define (create-test-func p sf let-bound bind-map last-test)
+      (define (create-test-func p sf let-bound bind-map last-test cert)
         #`(lambda (exp)
             #,(next-outer-helper 
                p #'exp sf '() let-bound
@@ -102,14 +104,15 @@
                                        #`(set! #,binding-name
                                                #,exp-to-bind))))
                                bv)
-                       #t))))))
+                       #t)))
+	       cert)))
       
       ;;!(function getbindings
       ;;          (form (getbindings pat-syntax) -> list)
       ;;          (contract syntax -> list))
       ;; This function given a pattern returns a list of pattern
       ;; variable names which are found in the pattern.
-      (define (getbindings pat-syntax)
+      (define (getbindings pat-syntax cert)
         (let/cc out
           (next-outer
            pat-syntax
@@ -118,7 +121,8 @@
            '()
            '()
            (lambda (sf bv) #'(dummy-symbol))
-           (lambda (sf bv) (out (map car bv))))))
+           (lambda (sf bv) (out (map car bv)))
+	   cert)))
       
       ;; end getbindings@
       ))

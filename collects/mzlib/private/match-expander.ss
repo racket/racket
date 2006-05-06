@@ -16,13 +16,14 @@
       [(_ id plt-match-xform match-xform std-xform)
        (if (identifier? (syntax std-xform))
            #`(define-syntax id (make-match-expander plt-match-xform
-                                                    match-xform
+						    match-xform
                                                     (lambda (stx)
                                                       (syntax-case stx (set!)
                                                         #;[(set! id v) #'(set! std-xform v)]
                                                         [(nm args (... ...)) #'(std-xform args (... ...))]
-                                                        [nm #'std-xform]))))
-           #'(define-syntax id (make-match-expander plt-match-xform match-xform std-xform)))]
+                                                        [nm #'std-xform]))
+                                                    (syntax-local-certifier)))
+           #'(define-syntax id (make-match-expander plt-match-xform match-xform std-xform (syntax-local-certifier))))]
       [(_ id plt-match-xform std-xform)
        (if (identifier? (syntax std-xform))
            #`(define-syntax id (make-match-expander plt-match-xform
@@ -31,15 +32,17 @@
                                                       (syntax-case stx (set!)
                                                         #;[(set! id v) #'(set! std-xform v)]
                                                         [(nm args (... ...)) #'(std-xform args (... ...))]
-                                                        [nm #'std-xform]))))
-           #'(define-syntax id (make-match-expander plt-match-xform #f std-xform)))]      
+                                                        [nm #'std-xform]))
+						    (syntax-local-certifier)))
+           #'(define-syntax id (make-match-expander plt-match-xform #f std-xform (syntax-local-certifier))))]      
       [(_ id plt-match-xform) 
        #'(define-syntax id 
            (make-match-expander 
             plt-match-xform 
             #f
             (lambda (stx) 
-              (match:syntax-err stx "This match expander must be used inside match"))))]
+              (match:syntax-err stx "This match expander must be used inside match"))
+	    (syntax-local-certifier)))]
       
       [_ (match:syntax-err stx "Invalid use of define-match-expander")]
       ))

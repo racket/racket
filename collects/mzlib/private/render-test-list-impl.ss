@@ -80,8 +80,8 @@
       
       
       ;; expand the regexp-matcher into an (and) with string?
-      (define (regexp-matcher ae stx pred)
-        (render-test-list #`(and (? string?) #,pred) ae stx))
+      (define (regexp-matcher ae stx pred cert)
+        (render-test-list #`(and (? string?) #,pred) ae cert stx))
       
       
       ;;!(function or-gen
@@ -99,11 +99,11 @@
       ;; larger pattern and the state of compilation has information
       ;; that will help optimaize its compilation.  And the success of
       ;; any pattern results in the same outcome.
-      (define (or-gen exp orpatlist sf bv ks kf let-bound)
+      (define (or-gen exp orpatlist sf bv ks kf let-bound cert stx)
         (define rendered-list
           (map
            (lambda (pat) 
-             (cons (render-test-list pat exp)
+             (cons (render-test-list pat exp cert stx)
                    (lambda (fail let-bound)
                      (lambda (sf bv)
                        (let ((bv (map
@@ -138,7 +138,7 @@
       ;; forward in the argument list of next and then test for it later and
       ;; then take the appropriate action.  To understand this better take a
       ;; look at how proper and improper lists are handled.
-      (define/opt (render-test-list p ae [stx #'here])
+      (define/opt (render-test-list p ae cert [stx #'here])
         (syntax-case*
             p
           (_ list quote quasiquote vector box ? app and or not struct set! var
@@ -148,13 +148,20 @@
           ;; this is how we extend match
           [(expander args ...)
            (and (identifier? #'expander) 
-                (match-expander? (syntax-local-value #'expander (lambda () #f))))
-           (let ([transformer (match-expander-plt-match-xform (syntax-local-value #'expander))])                  
+                (match-expander? (syntax-local-value (cert #'expander) (lambda () #f))))
+           (let* ([expander (syntax-local-value (cert #'expander))]
+		  [transformer (match-expander-plt-match-xform expander)])
              (if (not transformer)
                  (match:syntax-err #'expander
-                                   "This expander only works with standard match.")            
-                 (render-test-list (transformer #'(expander args ...))
-                                   ae stx)))]
+                                   "This expander only works with standard match.")
+		 (let ([introducer (make-syntax-introducer)]
+		       [certifier (match-expander-certifier expander)])
+		   (render-test-list 
+		    (introducer (transformer (introducer #'(expander args ...))))
+		    ae 
+		    (lambda (id)
+		      (certifier (cert id) #f introducer))
+		    stx))))]
           
           ;; underscore is reserved to match nothing
           (_ '()) ;(ks sf bv let-bound))
@@ -163,7 +170,7 @@
           (pt
            (and (pattern-var? (syntax pt))
                 (not (stx-dot-dot-k? (syntax pt))))
-           (render-test-list #'(var pt) ae stx))
+           (render-test-list #'(var pt) ae cert stx))
           
           ;; for variable patterns, we do bindings, and check if we've seen this variable before
           ((var pt)
@@ -191,7 +198,7 @@
           
           ;; This recognizes constants such strings
           [pt
-           (let ([pt (syntax-object->datum #'pt)])
+           (let ([pt (syntax-e #'pt)])
              (or (string? pt)
                  (boolean? pt)
                  (char? pt)
@@ -208,23 +215,15 @@
           
           ;; match a quoted datum
           ;; this is very similar to the previous pattern, except for the second argument to equal?
-          [(quote _)
+          ((quote item)
            (list 
             (reg-test
              `(equal? ,(syntax-object->datum ae)
                       ,(syntax-object->datum p))
-             ae (lambda (exp) #`(equal? #,exp #,p))))]
-          
-          ;; I do not understand this, or why it is ever matched, but removing it causes test failures
-          ('item
-            (list 
-             (reg-test
-              `(equal? ,(syntax-object->datum ae)
-                       ,(syntax-object->datum p))
-              ae (lambda (exp) #`(equal? #,exp #,p)))))
+             ae (lambda (exp) #`(equal? #,exp #,p)))))
           
           (`quasi-pat
-            (render-test-list (parse-quasi #'quasi-pat) ae stx))
+            (render-test-list (parse-quasi #'quasi-pat) ae cert stx))
           
           
           ;; check for predicate patterns
@@ -233,11 +232,11 @@
            (list (reg-test 
                   `(,(syntax-object->datum #'pred?)
                      ,(syntax-object->datum ae))
-                  ae (lambda (exp) #`(pred? #,exp)))))
+                  ae (lambda (exp) #`(#,(cert #'pred?) #,exp)))))
           
           ;; predicate patterns with binders are redundant with and patterns
           ((? pred? pats ...)
-           (render-test-list #'(and (? pred?) pats ...) ae stx))
+           (render-test-list #'(and (? pred?) pats ...) ae cert stx))
           
           ;; syntax checking
           ((? anything ...)
@@ -248,17 +247,17 @@
                 "syntax error in predicate pattern")))
           
           ((regexp reg-exp)
-           (regexp-matcher ae stx #'(? (lambda (x) (regexp-match reg-exp x)))))
+           (regexp-matcher ae stx #'(? (lambda (x) (regexp-match reg-exp x))) cert))
           ((pregexp reg-exp) 
-           (regexp-matcher ae stx #'(? (lambda (x) (pregexp-match-with-error reg-exp x)))))
+           (regexp-matcher ae stx #'(? (lambda (x) (pregexp-match-with-error reg-exp x))) cert))
           ((regexp reg-exp pat)
-           (regexp-matcher ae stx #'(app (lambda (x) (regexp-match reg-exp x)) pat)))
+           (regexp-matcher ae stx #'(app (lambda (x) (regexp-match reg-exp x)) pat) cert))
           ((pregexp reg-exp pat)
-           (regexp-matcher ae stx #'(app (lambda (x) (pregexp-match-with-error reg-exp x)) pat)))
+           (regexp-matcher ae stx #'(app (lambda (x) (pregexp-match-with-error reg-exp x)) pat) cert))
           
           ;; app patterns just apply their operation.  I'm not sure why they exist.
           ((app op pat)
-           (render-test-list #'pat #`(op #,ae) stx))
+           (render-test-list #'pat #`(#,(cert #'op) #,ae) cert stx))
           
           ;; syntax checking
           ((app . op)
@@ -274,7 +273,7 @@
                ;; empty and always succeeds
                [() '()] ;(ks seensofar boundvars let-bound))
                [(pat . rest)
-                (append (render-test-list #'pat ae stx)
+                (append (render-test-list #'pat ae cert stx)
                         (loop #'rest))])))
           
           ((or . pats)
@@ -284,7 +283,8 @@
                   (lambda (ks kf let-bound)
                     (lambda (sf bv)
                       (or-gen ae (syntax-e #'pats)
-                              sf bv ks kf let-bound))))))
+                              sf bv ks kf let-bound
+			      cert stx))))))
           
           
           ((not pat)
@@ -294,22 +294,23 @@
                   (lambda (ks kf let-bound)
                     (lambda (sf bv)
                       ;; swap success and fail
-                      (next-outer #'pat ae sf bv let-bound ks kf))))))
+                      (next-outer #'pat ae sf bv let-bound ks kf cert))))))
           
           ;; (cons a b) == (list-rest a b)
-          [(cons p1 p2) (render-test-list #'(list-rest p1 p2) ae stx)]
+          [(cons p1 p2) (render-test-list #'(list-rest p1 p2) ae cert stx)]
           
           ;; could try to catch syntax local value error and rethrow syntax error      
           ((list-no-order pats ...)
            (if (stx-null? (syntax (pats ...)))
-               (render-test-list #'(list) ae stx)
+               (render-test-list #'(list) ae cert stx)
                (let* ((pat-list (syntax->list (syntax (pats ...))))
                       (ddk-list (ddk-in-list? pat-list))
                       (ddk (ddk-only-at-end-of-list? pat-list)))
                  (if (or (not ddk-list)
                          (and ddk-list ddk))
                      (let* ((bound (getbindings (append-if-necc 'list
-                                                                (syntax (pats ...)))))
+                                                                (syntax (pats ...)))
+						cert))
                             (bind-map
                              (map (lambda (x)
                                     (cons x #`#,(gensym (syntax-object->datum x))))
@@ -333,7 +334,8 @@
                                                               sf
                                                               let-bound
                                                               bind-map
-                                                              #t)))
+                                                              #t
+							      cert)))
                                         #f)))
                                #`(let #,(map (lambda (b)
                                                #`(#,(cdr b) '()))
@@ -347,7 +349,8 @@
                                                       sf
                                                       let-bound
                                                       bind-map
-                                                      #f))
+                                                      #f
+						      cert))
                                                    pat-list))))
                                      (if (match:test-no-order test-list
                                                               #,ae
@@ -404,7 +407,8 @@
                                        bv
                                        let-bound
                                        kf
-                                       ks)))))))))
+                                       ks
+				       cert)))))))))
           
           ((hash-table . pats)
            (match:syntax-err
@@ -416,7 +420,7 @@
            (let*-values ([(field-pats) (syntax->list (syntax (fields ...)))]
                          [(num-of-fields) (length field-pats)]
                          [(pred accessors mutators parental-chain)
-                          (struct-pred-accessors-mutators #'struct-name)]
+                          (struct-pred-accessors-mutators (cert #'struct-name))]
                          ;; check that we have the right number of fields
                          [(dif) (- (length accessors) num-of-fields)])
              (unless (zero? dif)
@@ -446,7 +450,8 @@
                    [_ (render-test-list 
                        cur-pat
                        (quasisyntax/loc stx (#,cur-accessor #,ae))
-                       stx)]))
+                       cert
+		       stx)]))
                field-pats mutators accessors))))
           
           ;; syntax checking
@@ -486,13 +491,15 @@
                    (handle-end-ddk-list ae kf ks
                                         (syntax pat)
                                         (syntax dot-dot-k)
-                                        let-bound)
+                                        let-bound
+					cert)
                    (handle-inner-ddk-list ae kf ks
                                           (syntax pat)
                                           (syntax dot-dot-k)
                                           (append-if-necc 'list
                                                           (syntax (pat-rest ...)))
-                                          let-bound))))))
+                                          let-bound
+					  cert))))))
           
           ;; list-rest pattern with a ooo or ook pattern
           ((list-rest pat dot-dot-k pat-rest ...)
@@ -518,7 +525,8 @@
                     (stx-car (syntax (pat-rest ...)))
                     (append-if-necc  'list-rest
                                      (syntax (pat-rest ...))))
-                let-bound)))))
+                let-bound
+		cert)))))
           
           ;; list-rest pattern for improper lists
           ;; handle proper and improper lists      
@@ -533,11 +541,13 @@
             (append
              (render-test-list (syntax car-pat)
                                (quasisyntax/loc (syntax car-pat) (car #,ae))
-                               stx) ;(add-a e)
+                               cert
+			       stx) ;(add-a e)
              (render-test-list
               (syntax cdr-pat)
               #`(cdr #,ae)
-              stx))))
+              cert
+	      stx))))
           
           ;; list-rest pattern
           ((list-rest car-pat cdr-pat ...) ;pattern ;(pat1 pats ...)
@@ -551,11 +561,13 @@
             (append
              (render-test-list (syntax car-pat)
                                #`(car #,ae)
-                               stx) ;(add-a e)
+                               cert
+			       stx) ;(add-a e)
              (render-test-list
               (append-if-necc 'list-rest (syntax (cdr-pat ...)))
               #`(cdr #,ae)
-              stx))))
+              cert
+	      stx))))
           
           ;; general list pattern
           ((list car-pat cdr-pat ...) ;pattern ;(pat1 pats ...)
@@ -569,7 +581,8 @@
             (append
              (render-test-list (syntax car-pat)
                                #`(car #,ae)
-                               stx) ;(add-a e)
+                               cert
+			       stx) ;(add-a e)
              (if (stx-null? (syntax (cdr-pat ...)))
                  (list
                   (shape-test
@@ -578,7 +591,8 @@
                  (render-test-list
                   (append-if-necc 'list (syntax (cdr-pat ...)))
                   #`(cdr #,ae)
-                  stx)))))
+                  cert
+		  stx)))))
           
           ;; vector pattern with ooo or ook at end
           ((vector pats ...)
@@ -593,7 +607,8 @@
              (lambda (ks kf let-bound)
                (handle-ddk-vector ae kf ks
                                   #'#(pats ...)
-                                  let-bound)))))
+                                  let-bound
+				  cert)))))
           
           ;; vector pattern with ooo or ook, but not at end
           ((vector pats ...)
@@ -615,7 +630,8 @@
              (lambda (ks kf let-bound)
                (handle-ddk-vector-inner ae kf ks
                                         #'#(pats ...)
-                                        let-bound)))))
+                                        let-bound
+					cert)))))
           
           ;; plain old vector pattern
           ((vector pats ...)
@@ -635,7 +651,8 @@
                      (render-test-list
                       (vector-ref syntax-vec n)
                       #`(vector-ref #,ae #,n)
-                      stx)
+                      cert
+		      stx)
                      (vloop (+ 1 n))))))))
           
           ((box pat)
@@ -644,7 +661,7 @@
              `(box? ,(syntax-object->datum ae))
              ae (lambda (exp) #`(box? #,exp)))
             (render-test-list
-             #'pat #`(unbox #,ae) stx)))
+             #'pat #`(unbox #,ae) cert stx)))
           
           ;; This pattern wasn't a valid form.
           (got-too-far
