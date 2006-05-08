@@ -365,7 +365,7 @@ static void *generate_one(mz_jit_state *old_jitter,
 	ndata->retained = jitter->retain_start;
 	ndata->retain_count = num_retained;
 	SCHEME_BOX_VAL(fnl_obj) = scheme_make_integer(size_pre_retained);
-	GC_set_finalizer(fnl_obj, 1, 2,
+	GC_set_finalizer(fnl_obj, 1, 3,
 			 release_native_code, buffer,
 			 NULL, NULL);
       }
