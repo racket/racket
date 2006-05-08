@@ -521,7 +521,7 @@ Procedure Reference
 
 > set-title-h! - sets `title-h' and updates `titleless-page'; this
   usually makes sense only in combination with a change to
-  `current-format-slide'
+  `current-slide-assembler'
 
 > current-slide-assembler - a parameter whose value is a function for
   assembling slide content into a single pict; the assembling function
