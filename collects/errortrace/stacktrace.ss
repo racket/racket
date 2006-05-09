@@ -473,6 +473,11 @@
                             (rebuild expr (list (cons #'rhs new-rhs))))))]
 
              ;; Wrap subexpressions only
+	     [(begin e)
+	      ;; Single expression: no mark
+	      (certify
+	       expr
+	       #`(begin #,(annotate (syntax e) trans?)))]
              [(begin . body)
               (with-mark expr
                          (certify

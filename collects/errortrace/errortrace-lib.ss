@@ -305,7 +305,7 @@
                             e
                             (namespace-syntax-introduce
                              (datum->syntax-object #f e))))])
-               e2)
+	       e2)
              e)
          immediate-eval?))))
 
