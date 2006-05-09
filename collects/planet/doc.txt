@@ -363,6 +363,46 @@ ignored. If you put no legal symbols in the categories field or do not
 include this field in your info.ss file, your package will be
 categorized as "Miscellaneous."
 
+The _'can-be-loaded-with field_
+
+If present, the can-be-loaded-with field should be a quoted datum of
+one of the following forms:
+   
+can-be-loaded-with = 'all
+                   | 'none
+                   | (list 'all-except VER-SPEC ...)
+                   | (list 'only VER-SPEC ...)
+
+where VER-SPEC is a quoted instance of the VER-SPEC form defined at the
+beginning of this document. 
+
+Depending on your package's behavior, it may or may not be okay for
+multiple versions of the same package to be loaded at one time on the
+entire system --- for instance, if your package relies on writing to a
+particular file and assumes that nothing else writes to that same
+file, then multiple versions of the same package being loaded
+simultaneously may be a problem. This field allows you to specify
+whether your package can be loaded simultaneously with older versions
+of itself. If its value is 'all, then the package may be loaded with
+any older version. If it is 'none, then it may not be loaded with
+older versions at all. If it is (list 'all-except VER-SPEC ...) then
+any package except those that match one of the given VER-SPEC forms
+may be loaded with this package; if it is (list 'only VER-SPEC ...)
+then only packages that match one of the given VER-SPEC forms may be
+loaded with this package.
+
+When checking to see if a package may be loaded, PLaneT compares it to
+all other currently-loaded instances of the same package with any
+version: for each comparison, it checks to see if the newer package's
+can-be-loaded-with field allows the older package to be loaded. If all
+such comparisons succeed then the new package may be loaded; otherwise
+PLaneT signals an error.
+
+The default for this field is 'none as a conservative protection
+measure. For many packages it is safe to set this field to
+'any.
+
+
 The _'doc.txt field_
 
 If present, the doc.txt field should be a string corresponding to the

@@ -219,6 +219,19 @@ Various common pieces of code that both the client and server need to access
         (and (= (mz-version-major a) (mz-version-major b))
              (<= (mz-version-minor a) (mz-version-minor b)))))
   
+  ;; pkg< : pkg pkg -> boolean
+  ;; determines if a is an earlier version than b
+  ;; [only sensical if a and b are versions of the same package]
+  (define (pkg< a b)
+    (or (< (pkg-maj a) (pkg-maj b))
+        (and (= (pkg-maj a) (pkg-maj b))
+             (< (pkg-min a) (pkg-min b)))))
+  
+  (define (pkg> a b) 
+    (pkg< b a))
+  (define (pkg= a b) 
+    (not (or (pkg< a b) (pkg> a b))))
+  
   ;; compatible-version? : assoc-table-row FULL-PKG-SPEC -> boolean
   ;; determines if the given package constrint verstr can support the given package
   (define (compatible-version? row spec)
@@ -266,7 +279,7 @@ Various common pieces of code that both the client and server need to access
   
   ; FULL-PKG-SPEC : (make-pkg-spec string (Nat | #f) (Nat | #f) (Nat | #f) (listof string) (syntax | #f)) string
   (define-struct pkg-spec (name maj minor-lo minor-hi path stx core-version) (make-inspector))
-  ; PKG : string Nat Nat path
+  ; PKG : string (listof string) Nat Nat path
   (define-struct pkg (name route maj min path))
   
   ; ==========================================================================================
@@ -391,6 +404,15 @@ Various common pieces of code that both the client and server need to access
                 null-out)))
       (parameterize ([current-output-port outport])
         (f))))
+  
+  
+  ;; pkg->info : PKG -> (symbol (-> TST) -> TST)
+  ;; get an info.ss thunk for the given package
+  (define (pkg->info p)
+    (or
+     (with-handlers ([exn:fail? (lambda (e) #f)])
+       (get-info/full (pkg-path p)))
+     (lambda (s thunk) (thunk))))
   
   ;; ============================================================
   ;; TREE STUFF

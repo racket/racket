@@ -158,7 +158,7 @@ an appropriate subdirectory.
            "config.ss"
            "private/planet-shared.ss"
            "private/linkage.ss")
-
+  
   (provide (rename resolver planet-module-name-resolver)
            pkg-spec->full-pkg-spec
            get-package-from-cache
@@ -166,9 +166,9 @@ an appropriate subdirectory.
            download-package
            install-pkg
            get-planet-module-path/pkg)
-
+  
   (define install? (make-parameter #t)) ;; if #f, will not install packages and instead give an error
-
+  
   (define (resolver spec module-path stx)
     ;; ensure these directories exist
     (make-directory* (PLANET-DIR))
@@ -188,30 +188,80 @@ an appropriate subdirectory.
     (unless VER-CACHE-NAME (set! VER-CACHE-NAME (gensym)))
     (unless (namespace-variable-value VER-CACHE-NAME #t (lambda () #f))
       (namespace-set-variable-value! VER-CACHE-NAME (make-hash-table 'equal))))
-      
+  
   (define (the-version-cache)    (namespace-variable-value VER-CACHE-NAME))
   (define (pkg->diamond-key pkg) (cons (pkg-name pkg) (pkg-route pkg)))
   
+  (define (pkg-matches-bounds? pkg bound-info)
+    (match-let ([(maj lo hi) bound-info])
+      (and (= maj (pkg-maj pkg))
+           (or (not lo) (>= (pkg-min pkg) lo))
+           (or (not hi) (<= (pkg-min pkg) hi)))))
+  
+  ;; COMPAT ::= 'none | 'all | `(all-except ,VER-SPEC ...) | `(only ,VER-SPEC ...)
+  ;; build-compatibility-fn : COMPAT -> PKG -> bool
+  (define (build-compatibility-fn compat-data)
+    (define pre-fn
+      (match compat-data
+        [`none (lambda (_) #f)]
+        [`all (lambda (_) #t)]
+        [`(all-except ,vspec ...)
+          (let ((bounders (map version->bounds vspec)))
+            (if (andmap (lambda (x) x) bounders)
+                (lambda (v)
+                  (not 
+                   (ormap
+                    (lambda (bounder)
+                      (pkg-matches-bounds? v bounder))
+                    bounders)))
+                #f))]
+        [`(only ,vspec ...)
+          (let ((bounders (map version->bounds vspec)))
+            (if (andmap (lambda (x) x) bounders)
+                (lambda (v)
+                  (andmap
+                   (lambda (bounder)
+                     (pkg-matches-bounds? v bounder))
+                   bounders)))
+            #f)]
+        [_ #f]))
+    (or pre-fn (lambda (x) #f)))
+  
+  ;; can-be-loaded-together? : pkg pkg -> boolean
+  ;; side constraint: pkg1 and pkg2 are versions of the same package
+  ;; assumption: pkg1 and pkg2 are versions of the same package
+  ;; determines if the two versions are side-by-side compatible
+  (define (can-be-loaded-together? pkg1 pkg2)
+    (cond
+      [(pkg> pkg1 pkg2) (can-be-loaded-together? pkg2 pkg1)]
+      [(pkg= pkg1 pkg2) #t]
+      [(pkg< pkg1 pkg2)
+       (let* ([info (pkg->info pkg2)]
+              [compat? (build-compatibility-fn (info 'can-be-loaded-with (lambda () 'none)))])
+         (compat? pkg1))]))
+  
+  
   (define (add-pkg-to-diamond-registry! pkg)
-    (let ((orig (hash-table-get (the-version-cache)
-                                (pkg->diamond-key pkg)
-                                (lambda () #f))))
-      (cond
-        [(not orig) (hash-table-put! (the-version-cache) (pkg->diamond-key pkg) pkg)]
-        [(and (eq? (pkg-maj pkg) (pkg-maj orig))
-              (eq? (pkg-min pkg) (pkg-min orig)))
-         (void)]
-        [else (raise (make-exn:fail (string->immutable-string
-                                     (format 
-                                      "Package ~a loaded twice with multiple versions: 
+    (let ((loaded-packages (hash-table-get (the-version-cache)
+                                           (pkg->diamond-key pkg)
+                                           (lambda () '()))))
+      (begin
+        (for-each
+         (lambda (already-loaded-pkg)
+           (unless (can-be-loaded-together? pkg already-loaded-pkg)
+             (raise (make-exn:fail (string->immutable-string
+                                    (format 
+                                     "Package ~a loaded twice with multiple incompatible versions: 
 attempted to load version ~a.~a while version ~a.~a was already loaded" 
-                                      (pkg-name pkg) 
-                                      (pkg-maj pkg)
-                                      (pkg-min pkg)
-                                      (pkg-maj orig)
-                                      (pkg-min orig)))
-                                    (current-continuation-marks)))])))
-    
+                                     (pkg-name pkg) 
+                                     (pkg-maj pkg)
+                                     (pkg-min pkg)
+                                     (pkg-maj already-loaded-pkg)
+                                     (pkg-min already-loaded-pkg)))
+                                   (current-continuation-marks)))))
+         loaded-packages)
+        (hash-table-put! (the-version-cache) (pkg->diamond-key pkg) (cons pkg loaded-packages)))))
+  
   ; ==========================================================================================
   ; MAIN LOGIC
   ; Handles the overall functioning of the resolver
@@ -258,24 +308,42 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
   ; pkg-spec->full-pkg-spec : PKG-SPEC syntax -> FULL-PKG-SPEC
   (define (pkg-spec->full-pkg-spec spec stx)
     (define (pkg name maj lo hi path) (make-pkg-spec name maj lo hi path stx (version)))
+    (define (fail)
+      (raise-syntax-error 'require (format "Invalid PLaneT package specifier: ~e" spec) stx))
+    
     (match spec
-      [((? string? path) ...) (pkg (last path) #f 0 #f (drop-last path))]
-      [((? string? path) ... (? number? maj)) (pkg (last path) maj 0 #f (drop-last path))]
-      [((? string? path) ... (? number? maj) min-spec)
-       (let ((pkg (lambda (min max) (pkg (last path) maj min max (drop-last path)))))
+      [((? string? path) ... ver-spec ...)
+       (match (version->bounds ver-spec)
+         [(maj min-lo min-hi)
+          (pkg (last path) maj min-lo min-hi (drop-last path))]
+         [#f (fail)])]
+      [_ (fail)]))
+  
+  ;; version->bounds : VER-SPEC -> (list (number | #f) number (number | #f)) | #f
+  ;; determines the bounds for a given version-specifier
+  ;; [technically this handles a slightly extended version of VER-SPEC where MAJ may
+  ;;  be in a list by itself, because that's slightly more convenient for the above fn]
+  (define (version->bounds spec-list)
+    (match spec-list
+      [() (list #f 0 #f)]
+      [(? number? maj) (version->bounds (list maj))]
+      [((? number? maj)) (list maj 0 #f)]
+      [((? number? maj) min-spec)
+       (let ((pkg (lambda (min max) (list maj min max))))
          (match min-spec
            [(? number? min)                 (pkg min #f)]
            [((? number? lo) (? number? hi)) (pkg lo  hi)]
            [('= (? number? min))            (pkg min min)]
            [('+ (? number? min))            (pkg min #f)]
            [('- (? number? min))            (pkg 0   min)]))]
-      [_ (raise-syntax-error 'require (format "Invalid PLaneT package specifier: ~e" spec) stx)]))
-
+      [_ #f]))
+  
+  
   ; ==========================================================================================
   ; PHASE 2: CACHE SEARCH
   ; If there's no linkage, there might still be an appropriate cached module.
   ; ==========================================================================================
-
+  
   ; get-package-from-cache : FULL-PKG-SPEC -> PKG | #f
   (define (get-package-from-cache pkg-spec) 
     (lookup-package pkg-spec))
@@ -284,7 +352,7 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
   ; PHASE 3: SERVER RETRIEVAL
   ; Ask the PLaneT server for an appropriate package if we don't have one locally.
   ; ==========================================================================================
-                 
+  
   ; get-package-from-server : FULL-PKG-SPEC -> PKG | #f
   ; downloads and installs the given package from the PLaneT server and installs it in the cache,
   ; then returns a path to it 
@@ -343,7 +411,7 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
                  ((dynamic-require '(lib "plt-single-installer.ss" "setup") 'install-planet-package)
                   path the-dir (list owner (pkg-spec-name pkg) extra-path maj min)))))
             (make-pkg (pkg-spec-name pkg) (pkg-spec-path pkg) maj min the-dir)))))
-         
+  
   ; download-package : FULL-PKG-SPEC -> RESPONSE
   ; RESPONSE ::= (list #f string) | (list #t path[file] Nat Nat)
   ; downloads the given package and returns (list bool string): if bool is #t,
@@ -351,9 +419,9 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
   ; didn't exist and the string is the server's informative message.
   ; raises an exception if some protocol failure occurs in the download process
   (define (download-package/planet pkg)
-  
+    
     (define-values (ip op) (tcp-connect (PLANET-SERVER-NAME) (PLANET-SERVER-PORT)))
-
+    
     (define (close-ports)
       (close-input-port ip)
       (close-output-port op))
@@ -361,13 +429,13 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
     (define (request-pkg-list pkgs)
       (for-each/n (lambda (pkg seqno) 
                     (write-line (list* seqno 'get 
-                                   (DEFAULT-PACKAGE-LANGUAGE)    
-                                   (pkg-spec-name pkg) 
-                                   (pkg-spec-maj pkg) 
-                                   (pkg-spec-minor-lo pkg)
-                                   (pkg-spec-minor-hi pkg)
-                                   (pkg-spec-path pkg))
-                             op))
+                                       (DEFAULT-PACKAGE-LANGUAGE)    
+                                       (pkg-spec-name pkg) 
+                                       (pkg-spec-maj pkg) 
+                                       (pkg-spec-minor-lo pkg)
+                                       (pkg-spec-minor-hi pkg)
+                                       (pkg-spec-path pkg))
+                                op))
                   pkgs)
       (write-line 'end op)
       (flush-output op))
@@ -379,11 +447,11 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
         ['ok                        (state:send-pkg-request)]
         [('invalid (? string? msg)) (state:abort (string-append "protocol version error: " msg))]
         [bad-msg                    (state:abort (format "server protocol error (received invalid response): ~a" bad-msg))]))
-         
+    
     (define (state:send-pkg-request)
       (request-pkg-list (list pkg))
       (state:receive-package))
-        
+    
     (define (state:receive-package)
       (match (read ip)
         [(_ 'get 'ok (? nat? maj) (? nat? min) (? nat? bytes))
@@ -483,7 +551,7 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
                                      [else (list* line "\n" (loop))]))))))]
         [else
          (abort (format "Internal error (unknown HTTP response code ~a)" response-code))])))
-
+  
   ; ==========================================================================================
   ; MODULE MANAGEMENT
   ; Handles interaction with the module system
@@ -497,11 +565,11 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
        file-path
        module-path
        stx)))
-
+  
   ; ============================================================
   ; UTILITY
   ; A few small utility functions
-
+  
   (define (last l) (car (last-pair l)))
   
   ;; make-directory*/paths : path -> (listof path)
