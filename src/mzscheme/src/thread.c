@@ -723,7 +723,7 @@ void scheme_init_thread(Scheme_Env *env)
 				 
   scheme_add_global_constant("current-thread-initial-stack-size", 
 			     scheme_register_parameter(current_thread_initial_stack_size,
-						       "current-thread-initial-stack-increment",
+						       "current-thread-initial-stack-size",
 						       MZCONFIG_THREAD_INIT_STACK_SIZE),
 			     env);
 
