@@ -150,7 +150,7 @@
 	[("--embedded")
 	 ,(lambda (f) (compiler:option:compile-for-embedded #t))
 	 ("Compile for embedded run-time engine, with -c/-o/-g")]
-	[("--multi")
+	[("--source")
 	 ,(lambda (f) (stop-at-source #t))
 	 (,(format "Stop at ~a instead of ~a for -o/-g"
 		   (extract-suffix append-c-suffix)
