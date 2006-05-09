@@ -4,7 +4,7 @@
  ;; the name of the class, the name of the supertype ("" if none), and 
  ;; the class's fields
 
- DataType       = (make-union TypeName Fields VariantClasses Comment)
+ DataType       = (make-union TypeName Methods VariantClasses Comment)
  ;; the name of the type and its variants
  
  VariantClasses = (Listof VariantClass)
@@ -13,6 +13,8 @@
  Name           = String 
  TypeName       = String 
  SuperClass     = String 
+ Methods        = (Listof Method)
+ Method         = (cons String (cons String (listof String)))
  Fields         = (Listof Field)
  Field          = (list String String)
 |#
@@ -20,16 +22,30 @@
 #cs
 (module data-defs mzscheme 
   
-  (define-struct dt (type fields variants purpose))
+  ;; Those languages for which methods that satisfy an interface 
+  ;; don't have to be decorated with public --- 
+  (define BEGINNER "Beginner")
+  (define INTERMEDIATE "Intermediate")
+  (define PROFESSIONAL "Professional")
+  (define *languages* (list BEGINNER INTERMEDIATE PROFESSIONAL))
+  (define Language 
+    (flat-named-contract "<Language>" (lambda (x) (member x *languages*))))
+  
+  (provide BEGINNER INTERMEDIATE PROFESSIONAL Language)
+
+  (define-struct dt (type methods variants purpose))
+
+  (define (dt-fields . x) (error 'dt-fields "not implemented yet: ~a\n" x))
+  (provide dt-fields)
   
   ;; Examples
-  (define field1 '("int" "x"))
-  (define field2 '("int" "y"))
-  (define field3 '("boolean" "b"))
-  (define fields (list field1 field2 field3))
-  (define vc1    (list "Leaf" (list field1)))
-  (define vc2    (list "Node" '(("ATree" "left") ("ATree" "right"))))
-  (define datat1 (make-dt "ATree" '() (list vc1 vc2) "a tree for ints"))
+  (define method1 '("int" "x"))
+  (define method2 '("int" "y" "boolean"))
+  (define method3 '("boolean" "b" "Foo" "Bar"))
+  (define methods (list method1 method2 method3))
+  (define vc1     (list "Leaf"))
+  (define vc2     (list "Node" '(("ATree" "left") ("ATree" "right"))))
+  (define datat1  (make-dt "ATree" methods (list vc1 vc2) "a tree for ints"))
   
   (require (file "aux-contract.scm"))
   (require (lib "contract.ss"))
@@ -39,6 +55,7 @@
    Union   ;; flat-contract 
    Variant ;; flat-contract 
    Fields  ;; flat-contract
+   Method  ;; flat-contract
    java-id? ;; Any -> Boolean
    class-purpose ;; Class -> String
    variant-purpose ;; Variant -> String
@@ -72,14 +89,19 @@
            (or (java-id? super) (string=? super "")))
          (is-fields? (caddr c))))
   
+  (define-as-contract "<Methods>" (methods l)
+    (and (list? l) (andmap is-method? l)))
+  
+  (define-as-contract "<Method>" (method l)
+    (and (list? l) (>= (length l) 2) (andmap java-id? l)))
+  
   (define-as-contract "<Fields>" (fields l)
     (and (list? l) (andmap is-field? l)))
   
   (define-as-contract "<Field in Class>" (field l)
-    (and (pair? l) (pair? (cdr l)) (null? (cddr l))
-         (java-id? (car l)) (java-id? (cadr l))))
+    (and (list? l) (= (length l) 2) (andmap java-id? l)))
   
-  (define-as-contract "<Union>" (union l) (dt? l))
+  (define-as-contract "<Union>" (union l) (dt? l)) 
   
   (define (is-variants? l) (andmap is-variant? l))
   
@@ -97,12 +119,12 @@
   
   (provide/contract 
    (struct dt ((type java-id?)
-               (fields (listof is-field?))
+               (methods (listof is-method?))
                (variants (listof is-variant?))
                (purpose string?))))
   
   
-  #| Tests:   
+  #| Tests: 
   (require (lib "testing.scm" "testing"))
   
   (test== (java-id? "oops no") #f)
@@ -126,6 +148,10 @@
   (test== (andmap is-variant?  (list (list "B" '()) (list "C" '()))) #t "variants")
   (test== (java-id? "A") #t)
   (test== (is-union? (make-dt "A" '() (list (list "B" '()) (list "C" '())) "")) #t)
-  |#
   
+  (test== (is-method? method1) #t)
+  (test== (is-method? method2) #t)
+  (test== (is-method? method3) #t)
+  (test== (is-methods? methods) #t)
+|#
   )
