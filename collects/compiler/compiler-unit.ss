@@ -117,13 +117,15 @@
       (define compile-c-extension-parts
 	(make-unprefixed-compiler 'compile-c-extension-part))
 
-      (define (link/glue-extension-parts link? source-files destination-directory)
+      (define (link/glue-extension-parts link? compile? source-files destination-directory)
 	(let ([u (c-dynamic-require '(lib "ld-unit.ss" "compiler") 'ld@)]
 	      [init (unit/sig ()
 		      (import compiler:linker^)
 		      (if link?
 			  link-extension
-			  glue-extension))])
+			  (if compile?
+			      glue-extension
+			      glue-extension-source)))])
 	  (let ([f (invoke-unit/sig
 		    (compound-unit/sig
 		     (import (COMPILE : dynext:compile^)
@@ -143,10 +145,13 @@
 	    (f source-files destination-directory))))
 
       (define (link-extension-parts source-files destination-directory)
-	(link/glue-extension-parts #t source-files destination-directory))
+	(link/glue-extension-parts #t #t source-files destination-directory))
 
       (define (glue-extension-parts source-files destination-directory)
-	(link/glue-extension-parts #f source-files destination-directory))
+	(link/glue-extension-parts #f #t source-files destination-directory))
+
+      (define (glue-extension-parts-to-c source-files destination-directory)
+	(link/glue-extension-parts #f #f source-files destination-directory))
 
       (define (compile-to-zo src dest namespace eval?)
 	((if eval? (lambda (t) (t)) with-module-reading-parameterization)

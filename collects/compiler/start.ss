@@ -57,6 +57,8 @@
   (define plt-setup-collections (make-parameter null))
   (define plt-include-compiled (make-parameter #f))
 
+  (define stop-at-source (make-parameter #f))
+
   (define (extract-suffix appender)
     (bytes->string/latin-1
      (subbytes
@@ -148,6 +150,11 @@
 	[("--embedded")
 	 ,(lambda (f) (compiler:option:compile-for-embedded #t))
 	 ("Compile for embedded run-time engine, with -c/-o/-g")]
+	[("--multi")
+	 ,(lambda (f) (stop-at-source #t))
+	 (,(format "Stop at ~a instead of ~a for -o/-g"
+		   (extract-suffix append-c-suffix)
+		   (extract-suffix append-object-suffix)))]
 	[("-p" "--prefix") 
 	 ,(lambda (f v) v)
 	 ("Add elaboration-time prefix file for -e/-c/-o/-z" "file")]
@@ -415,12 +422,14 @@
     [(compile-c)
      ((compile-extensions-to-c prefix) source-files (dest-dir))]
     [(compile-o)
-     ((compile-extension-parts prefix) source-files (dest-dir))]
+     (((if (stop-at-source) compile-extension-parts-to-c compile-extension-parts) prefix)
+      source-files (dest-dir))]
     [(link)
      (never-embedded "link")
      (link-extension-parts source-files (or (dest-dir) (current-directory)))]
     [(link-glue)
-     (glue-extension-parts source-files (or (dest-dir) (current-directory)))]
+     ((if (stop-at-source) glue-extension-parts-to-c glue-extension-parts)
+      source-files (or (dest-dir) (current-directory)))]
     [(zo)
      ((compile-zos prefix) source-files (if (auto-dest-dir)
 					    'auto

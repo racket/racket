@@ -34,15 +34,21 @@
       (define (link-extension*
 	       files
 	       dest-dir)
-	(do-link-extension #t files dest-dir))
+	(do-link-extension #t #t files dest-dir))
 
       (define (glue-extension
 	       files
 	       dest-dir)
-	(do-link-extension #f files dest-dir))
+	(do-link-extension #f #t files dest-dir))
+
+      (define (glue-extension-source
+	       files
+	       dest-dir)
+	(do-link-extension #f #f files dest-dir))
 
       (define (do-link-extension
 	       link?
+	       compile?
 	       files
 	       dest-dir)
 
@@ -273,32 +279,33 @@
 	    (printf "Scheme_Object * scheme_module_name() { return NULL; }~n"))
 	  'truncate)
 	
-	(let ([tmp-dir (let ([d (getenv "PLTLDTMPDIR")])
-			 (and d (directory-exists? d) d))])
-	  
-	  (compile-extension (not (compiler:option:verbose))
-			     (build-path dest-dir _loader.c)
-			     (build-path dest-dir _loader.o)
-			     (list (collection-path "compiler")))
-	  
-	  (when (compiler:option:clean-intermediate-files)
-	    (delete-file (build-path dest-dir _loader.c)))
+	(when compile?
+	  (let ([tmp-dir (let ([d (getenv "PLTLDTMPDIR")])
+			   (and d (directory-exists? d) d))])
+	    
+	    (compile-extension (not (compiler:option:verbose))
+			       (build-path dest-dir _loader.c)
+			       (build-path dest-dir _loader.o)
+			       (list (collection-path "compiler")))
+	    
+	    (when (compiler:option:clean-intermediate-files)
+	      (delete-file (build-path dest-dir _loader.c)))
 
-	  (if link?
-	      (begin
-		(link-extension (not (compiler:option:verbose))
-				(cons (build-path dest-dir _loader.o) o-files) 
-				(build-path (if tmp-dir
-						tmp-dir
-						dest-dir)
-					    _loader.so))    
-		(when tmp-dir
-		  (copy-file (build-path tmp-dir _loader.so)
-			     (build-path dest-dir _loader.so))
-		  (delete-file (build-path tmp-dir _loader.so)))
-		
-		(when (compiler:option:clean-intermediate-files)
-		  (delete-file (build-path dest-dir _loader.o)))
-		
-		(printf " [output to \"~a\"]~n" (build-path dest-dir _loader.so)))
-	      (printf " [output to \"~a\"]~n" (build-path dest-dir _loader.o))))))))
+	    (if link?
+		(begin
+		  (link-extension (not (compiler:option:verbose))
+				  (cons (build-path dest-dir _loader.o) o-files) 
+				  (build-path (if tmp-dir
+						  tmp-dir
+						  dest-dir)
+					      _loader.so))    
+		  (when tmp-dir
+		    (copy-file (build-path tmp-dir _loader.so)
+			       (build-path dest-dir _loader.so))
+		    (delete-file (build-path tmp-dir _loader.so)))
+		  
+		  (when (compiler:option:clean-intermediate-files)
+		    (delete-file (build-path dest-dir _loader.o)))
+		  
+		  (printf " [output to \"~a\"]~n" (build-path dest-dir _loader.so)))
+		(printf " [output to \"~a\"]~n" (build-path dest-dir _loader.o)))))))))
