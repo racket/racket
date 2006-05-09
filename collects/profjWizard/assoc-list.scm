@@ -4,6 +4,17 @@
   
   (provide assoc%)
   
+  (define assoc<%> 
+    (interface () 
+      ;; type X, Y
+      add    ;; X Y -> Void
+      ;; add (cons x y) to fields or update the existing association
+      remove ;; X -> Void 
+      list   ;; -> [Listof Y]
+      lookup ;; X -> Y 
+      update ;; X Y -> Void
+      ))
+  
   (define assoc%
     (class object%
       (super-new)
@@ -12,16 +23,18 @@
       (define fields '())
       
       ;; X Y -> Void
-      ;; add (cons x y) to fields 
       (define/public (add type name)
-        (set! fields (cons (cons type name) fields)))
+        (define a (assq type fields))
+        (if a 
+            (send this update type name)
+            (set! fields (cons (cons type name) fields))))
       
       ;; X -> Void
       (define/public (remove type)
         (set! fields
               (let loop ([fields fields])
                 (cond
-                  [(null? fields) (error 'internal "can't happen: not in list")]
+                  [(null? fields) '()]
                   [(eq? (caar fields) type) (cdr fields)]
                   [else (cons (car fields) (loop (cdr fields)))]))))
       
@@ -29,7 +42,7 @@
       ;; extract all y in the order in which they were entered
       (define/public (list) (reverse! (map (lambda (f) (cdr f)) fields)))
       
-      ;; -> Y
+      ;; X -> Y
       (define/public (lookup to-edit)        
         (let loop ([v fields])
           (cond
