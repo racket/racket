@@ -147,9 +147,10 @@ the Unix instructions below, but note the following:
     the directory plt/bin/mzscheme. For a --prefix, build, the rest of
     the plt tree is also copied to the target directory.
 
-    Excep for an in-place build from the Subversion archive (see step
-    4), this step also compiles ".zo" bytecode files for installed
-    Scheme source.
+    This step also compiles ".zo" bytecode files for installed Scheme
+    source, and generates launcher programs like "DrScheme". Use `make
+    plain-install' to install without compiling ".zo" files or
+    creating launchers.
 
     If the installation fails because the target directory cannot be
     created, or because the target directory is not the one you
@@ -161,12 +162,6 @@ the Unix instructions below, but note the following:
     If you build frequently from the Subversion-based sources with
     --enabled-shared, beware that you may accumlate many old, unused
     versions of the dynamic libraries in plt/lib.
-
- 4. ONLY Subversion users with in-place builds: the `make install'
-    step does not automatically build ".zo" files. After an initial
-    in-place install, run `make setup-plt'. For subsequent installs
-    within the same Subversion checkout, you can run either `make
-    setup-plt' or `plt/bin/setup-plt'.
 
 After an "in-place" install without Subversion, the plt/src directory
 is no longer needed, and it can be safely deleted. Build information

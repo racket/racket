@@ -3027,16 +3027,16 @@ static int trace_path_buffer_pos;
 #endif
 
 #if PAD_BOUNDARY_BYTES
-static void bad_pad(char *where, void *s, long sz, long diff, long offset, 
+static void bad_pad(char *where, void *s, int type, long sz, long diff, long offset, 
 		    long pd, long expect)
 {
   FPRINTF(STDERR,
-	  "pad %s violation at %lx, len %ld (diff %ld+%ld): %lx != %lx\n", 
-	  where, (unsigned long)s, sz, diff, offset, pd, expect);
+	  "pad %s violation at %lx <%d>, len %ld (diff %ld+%ld): %lx != %lx\n", 
+	  where, (unsigned long)s, type, sz, diff, offset, pd, expect);
 }
 #endif
 
-static void collect_init_chunk(MemoryChunk *c, int uncollectable)
+static void collect_init_chunk(MemoryChunk *c, int uncollectable, int ty)
 {
   for (; c; c = c->next) {
     if (uncollectable && TRACE_COLLECT_SWITCH)
@@ -3053,20 +3053,20 @@ static void collect_init_chunk(MemoryChunk *c, int uncollectable)
       diff = ((long *)s)[1];
       pd = *(long *)s;
       if (pd != PAD_PATTERN)
-	bad_pad("start", s, sz, diff, 0, pd, PAD_PATTERN);
+	bad_pad("start", s, ty, sz, diff, 0, pd, PAD_PATTERN);
       pd = *(long *)INT_TO_PTR(c->end - PAD_END_SIZE);
       if (pd != PAD_PATTERN)
-	bad_pad("end1", s, sz, diff, 0, pd, PAD_PATTERN);
+	bad_pad("end1", s, ty, sz, diff, 0, pd, PAD_PATTERN);
       pd = *(long *)INT_TO_PTR(c->end - PAD_END_SIZE + sizeof(long));
       if (pd != PAD_PATTERN)
-	bad_pad("end2", s, sz, diff, 0, pd, PAD_PATTERN);
+	bad_pad("end2", s, ty, sz, diff, 0, pd, PAD_PATTERN);
       if (diff) {
 	/* Given was bigger than requested; check extra bytes: */
 	unsigned char *ps = ((unsigned char *)s) + sz - PAD_END_SIZE - diff;
 	long d = 0;
 	while (d < diff) {
 	  if (*ps != PAD_FILL_PATTERN) {
-	    bad_pad("extra", s, sz, diff, d, *ps, PAD_FILL_PATTERN);
+	    bad_pad("extra", s, ty, sz, diff, d, *ps, PAD_FILL_PATTERN);
 	  }
 	  ps++;
 	  d++;
@@ -3132,7 +3132,7 @@ static void collect_finish_chunk(MemoryChunk **c, GC_Set *set)
   high_plausible = local_high_plausible;
 }
 
-static void collect_init_common(BlockOfMemory **blocks, int uncollectable)
+static void collect_init_common(BlockOfMemory **blocks, int uncollectable, int ty)
 {
   int i, j;
   int boundary, boundary_val = 0;
@@ -3164,20 +3164,20 @@ static void collect_init_common(BlockOfMemory **blocks, int uncollectable)
 	  pd = *(long *)s;
 	  diff = ((long *)s)[1];
 	  if (pd != PAD_PATTERN)
-	    bad_pad("start", s, size, diff, 0, pd, PAD_PATTERN);
+	    bad_pad("start", s, ty, size, diff, 0, pd, PAD_PATTERN);
 	  pd = *(long *)INT_TO_PTR(p + size - PAD_END_SIZE);
 	  if (pd != PAD_PATTERN)
-	    bad_pad("end1", s, size, diff, 0, pd, PAD_PATTERN);
+	    bad_pad("end1", s, ty, size, diff, 0, pd, PAD_PATTERN);
 	  pd = *(long *)INT_TO_PTR(p + size - PAD_END_SIZE + sizeof(long));
 	  if (pd != PAD_PATTERN)
-	    bad_pad("end2", s, size, diff, 0, pd, PAD_PATTERN);
+	    bad_pad("end2", s, ty, size, diff, 0, pd, PAD_PATTERN);
 	  if (diff) {
 	    /* Given was bigger than requested; check extra bytes: */
 	    unsigned char *ps = ((unsigned char *)s) + size - PAD_END_SIZE - diff;
 	    long d = 0;
 	    while (d < diff) {
 	      if (*ps != PAD_FILL_PATTERN) {
-		bad_pad("extra", s, size, diff, d, *ps, PAD_FILL_PATTERN);
+		bad_pad("extra", s, ty, size, diff, d, *ps, PAD_FILL_PATTERN);
 	      }
 	      ps++;
 	      d++;
@@ -4312,9 +4312,11 @@ static void do_GC_gcollect(void *stack_now)
     if (!common_sets[j]->locked) {
 # endif
       collect_init_chunk(*(common_sets[j]->othersptr),
-			 common_sets[j]->uncollectable);
+			 common_sets[j]->uncollectable,
+			 j);
       collect_init_common(common_sets[j]->blocks,
-			  common_sets[j]->uncollectable);
+			  common_sets[j]->uncollectable,
+			  j);
 # if ALLOW_SET_LOCKING
     }
 # endif

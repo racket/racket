@@ -14,20 +14,6 @@
 
 #ifndef FLAGS_ALREADY_SET
 
-/*************** (BEGIN PLATFORM-INDEPENDENT OPTIONS) *************/
-
-  /*******************************/
- /* Evaluator Tuning Parameters */
-/*******************************/
-
-#define SCHEME_STACK_SIZE 5000
-
- /* SCHEME_STACK_SIZE <X> sets the size of stack segments for Scheme
-    variables. */
-
-/**************** (END PLATFORM-INDEPENDENT OPTIONS) **************/
-
-
 
 /******** (BEGIN KNOWN ARCHITECTURE/SYSTEM CONFIGURATIONS) ********/
 

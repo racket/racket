@@ -489,7 +489,7 @@ char *ExeRelativeToAbsolute(char *p)
   CFURLRef url;
   CFStringRef str;
   char *s, *a;
-  long len, len2, len3;
+  long len, len2;
 
   appBundle = CFBundleGetMainBundle();
   url = CFBundleCopyExecutableURL(appBundle);

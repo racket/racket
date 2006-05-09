@@ -15,9 +15,12 @@ mred-stub: @MAKE_MRED@
 mred3m-stub: @MAKE_MRED3M@
 
 
-install:
+plain-install:
 	$(MAKE) install-normal
-	$(MAKE) finish-stub
+
+install:
+	$(MAKE) plain-install
+	$(MAKE) setup-plt
 
 install-normal:
 	if [ ! -d $(prefix) ] ; then mkdir $(prefix) ; fi
@@ -30,16 +33,17 @@ copytree-stub: @MAKE_COPYTREE@
 
 mredinstall-stub: @MAKE_MREDINSTALL@
 
-finish-stub: @MAKE_FINISH@
-
 setup-plt:
 	$(prefix)/bin/mzscheme -mvqM setup
 
-install-3m:
+plain-install-3m:
 	$(MAKE) install-normal
 	$(MAKE) mzinstall3m
 	$(MAKE) mredinstall3m-stub
-	$(MAKE) finish-stub
+
+install-3m:
+	$(MAKE) plain-install-3m
+	$(MAKE) setup-plt
 
 mredinstall3m-stub: @MAKE_MREDINSTALL3M@
 
@@ -80,13 +84,6 @@ lib-finish:
 
 srcdir = @srcdir@
 prefix = @prefix@
-
-copy-finish:
-	$(MAKE) setup-plt
-
-inplace-finish:
-	if [ ! -d $(srcdir)/../collects/repos-time-stamp ] ; then $(MAKE) setup-plt ; fi
-	if [ -d $(srcdir)/../collects/repos-time-stamp ] ; then cat $(srcdir)/mzscheme/imsg.txt ; fi
 
 copytree:
 	cp -p -r $(srcdir)/../collects $(prefix)/.

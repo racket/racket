@@ -55,16 +55,18 @@ static int mark_weak_array(void *p)
   weak_arrays = a;
 
 #if CHECKS
-  /* For now, weak arrays only used for symbols and falses: */
+  /* For now, weak arrays only used for symbols, keywords, and falses: */
   {
     void **data;
     int i;
     data = a->data;
     for (i = a->count; i--; ) {
       if (data[i] 
-	  && (*(short *)(data[i]) != 46)
-	  && (*(short *)(data[i]) != 56))
+	  && (*(short *)(data[i]) != 47)
+	  && (*(short *)(data[i]) != 48)
+	  && (*(short *)(data[i]) != 57)) {
 	CRASH(1);
+      }
     }
   }
 #endif

@@ -705,7 +705,7 @@ static Scheme_Object *wxSchemeGetColourFromUser(int argc, Scheme_Object **argv)
     }
 
     cpInfo.dstProfile = NULL; // default Profile (again!)
-    cpInfo.flags = NULL;
+    cpInfo.flags = 0;
     cpInfo.placeWhere = kCenterOnMainScreen;  
     cpInfo.dialogOrigin.h = 0;
     cpInfo.dialogOrigin.v = 0;

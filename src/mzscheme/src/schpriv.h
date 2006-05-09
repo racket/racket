@@ -277,6 +277,8 @@ extern volatile int scheme_fuel_counter;
 
 extern Scheme_Thread *scheme_main_thread;
 
+#define SCHEME_TAIL_COPY_THRESHOLD 5
+
 /* Flags for Scheme_Thread's `running' field: */
 #define MZTHREAD_RUNNING 0x1
 #define MZTHREAD_SUSPENDED 0x2

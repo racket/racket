@@ -2856,14 +2856,17 @@ void wxTraceDone(void)
 
 void wxObjectFinalize(void *o)
 {
-  if (((wxObject *)o)->__type != -1) {
 #if 0
+  /* Not every gc instance is a wxObject instance, now: */
+  if (((wxObject *)o)->__type != -1) {
+# if 0
     /* New non-cleanup flag makes this incorrect: */
     fprintf(stderr, "ERROR: free wxObject had non-deleted type value!");
-#else
+# else
     ((wxObject *)o)->__type = -1;
-#endif
+# endif
   }
+#endif
 }
 
 static void set_trace_arg(Scheme_Object *a)

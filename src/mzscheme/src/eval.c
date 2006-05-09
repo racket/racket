@@ -229,8 +229,6 @@ static Scheme_Object *scheme_compile_expand_expr(Scheme_Object *form, Scheme_Com
 
 typedef void (*DW_PrePost_Proc)(void *);
 
-#define TAIL_COPY_THRESHOLD 5
-
 #if defined(UNIX_FIND_STACK_BOUNDS) || defined(WINDOWS_FIND_STACK_BOUNDS) \
     || defined(MACOS_FIND_STACK_BOUNDS) || defined(ASSUME_FIXED_STACK_SIZE) \
     || defined(BEOS_FIND_STACK_BOUNDS) || defined(OSKIT_FIXED_STACK_BOUNDS) \
@@ -634,7 +632,7 @@ void scheme_init_stack_check()
 int scheme_check_runstack(long size)
      /* Checks whether the Scheme stack has `size' room left */
 {
-  return ((MZ_RUNSTACK - MZ_RUNSTACK_START) >= (size + TAIL_COPY_THRESHOLD));
+  return ((MZ_RUNSTACK - MZ_RUNSTACK_START) >= (size + SCHEME_TAIL_COPY_THRESHOLD));
 }
 
 void *scheme_enlarge_runstack(long size, void *(*k)())
@@ -644,6 +642,7 @@ void *scheme_enlarge_runstack(long size, void *(*k)())
   Scheme_Saved_Stack *saved;
   void *v;
   int cont_count;
+  long min_size;
 
   saved = MALLOC_ONE_RT(Scheme_Saved_Stack);
 
@@ -655,9 +654,14 @@ void *scheme_enlarge_runstack(long size, void *(*k)())
   saved->runstack_start = MZ_RUNSTACK_START;
   saved->runstack_size = p->runstack_size;
   
-  size += TAIL_COPY_THRESHOLD;
-  if (size < SCHEME_STACK_SIZE)
-    size = SCHEME_STACK_SIZE;
+  size += SCHEME_TAIL_COPY_THRESHOLD;
+
+  /* If we keep growing the stack, then probably it
+     needs to be much larger, so at least double the stack size
+     each time: */
+  min_size = 2 * (p->runstack_size);
+  if (size < min_size)
+    size = min_size;
 
   p->runstack_saved = saved;
   if (p->spare_runstack && (size <= p->spare_runstack_size)) {
@@ -4802,7 +4806,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 
   if (num_rands >= 0) {
 
-    if ((RUNSTACK - RUNSTACK_START) < TAIL_COPY_THRESHOLD) {
+    if ((RUNSTACK - RUNSTACK_START) < SCHEME_TAIL_COPY_THRESHOLD) {
       /* It's possible that a sequence of primitive _scheme_tail_apply()
 	 calls will exhaust the Scheme stack. Watch out for that. */
       p->ku.k.p1 = (void *)obj;
@@ -4814,7 +4818,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       if (rands == p->tail_buffer)
 	make_tail_buffer_safe();
       MZ_CONT_MARK_POS -= 2;
-      return scheme_enlarge_runstack(100 * TAIL_COPY_THRESHOLD, (void *(*)(void))do_eval_k);
+      return scheme_enlarge_runstack(SCHEME_TAIL_COPY_THRESHOLD, (void *(*)(void))do_eval_k);
     }
 
   apply_top:
@@ -4832,7 +4836,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       
 #define VACATE_TAIL_BUFFER_USE_RUNSTACK() \
       if (rands == p->tail_buffer) {                                \
-	if (num_rands < TAIL_COPY_THRESHOLD) {                      \
+	if (num_rands < SCHEME_TAIL_COPY_THRESHOLD) {               \
 	  int i;                                                    \
 	  Scheme_Object **quick_rands;                              \
                                                                     \

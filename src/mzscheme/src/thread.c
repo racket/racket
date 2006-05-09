@@ -106,7 +106,8 @@ extern HANDLE scheme_break_semaphore;
 
 #include "schfd.h"
 
-#define INIT_SCHEME_STACK_SIZE 1000
+#define DEFAULT_INIT_STACK_SIZE 1000
+#define MAX_INIT_STACK_SIZE 100000
 
 #ifdef SGC_STD_DEBUGGING
 # define SENORA_GC_NO_FREE
@@ -314,6 +315,8 @@ static Scheme_Object *current_security_guard(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_thread_set(int argc, Scheme_Object *argv[]);
 static Scheme_Object *thread_set_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_thread_set(int argc, Scheme_Object *argv[]);
+
+static Scheme_Object *current_thread_initial_stack_size(int argc, Scheme_Object *argv[]);
 
 static void adjust_custodian_family(void *pr, void *ignored);
 
@@ -717,6 +720,13 @@ void scheme_init_thread(Scheme_Env *env)
 						      "choice-evt", 
 						      0, -1), 
 			     env);
+				 
+  scheme_add_global_constant("current-thread-initial-stack-size", 
+			     scheme_register_parameter(current_thread_initial_stack_size,
+						       "current-thread-initial-stack-increment",
+						       MZCONFIG_THREAD_INIT_STACK_SIZE),
+			     env);
+
 
   REGISTER_SO(namespace_options);
 
@@ -1985,14 +1995,36 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
     process->tail_buffer = tb;
   }
   process->tail_buffer_size = buffer_init_size;
-
-  process->runstack_size = INIT_SCHEME_STACK_SIZE;
+ 
   {
-    Scheme_Object **sa;
-    sa = scheme_malloc_allow_interior(sizeof(Scheme_Object*) * INIT_SCHEME_STACK_SIZE);
-    process->runstack_start = sa;
+    int init_stack_size;
+    Scheme_Object *iss;
+
+    iss = scheme_get_thread_param(config, cells, MZCONFIG_THREAD_INIT_STACK_SIZE);
+    if (SCHEME_INTP(iss))
+      init_stack_size = SCHEME_INT_VAL(iss);
+    else if (SCHEME_BIGNUMP(iss))
+      init_stack_size = 0x7FFFFFFF;
+    else
+      init_stack_size = DEFAULT_INIT_STACK_SIZE;
+    
+    /* A too-large stack size won't help performance.
+       A too-small stack size is unsafe for certain kinds of
+       tail calls. */
+    if (init_stack_size > MAX_INIT_STACK_SIZE)
+      init_stack_size = MAX_INIT_STACK_SIZE;
+    if (init_stack_size < SCHEME_TAIL_COPY_THRESHOLD)
+      init_stack_size = SCHEME_TAIL_COPY_THRESHOLD;
+
+    process->runstack_size = init_stack_size;
+    {
+      Scheme_Object **sa;
+      sa = scheme_malloc_allow_interior(sizeof(Scheme_Object*) * init_stack_size);
+      process->runstack_start = sa;
+    }
+    process->runstack = process->runstack_start + init_stack_size;
   }
-  process->runstack = process->runstack_start + INIT_SCHEME_STACK_SIZE;
+  
   process->runstack_saved = NULL;
 
 #ifdef RUNSTACK_IS_GLOBAL
@@ -5992,6 +6024,8 @@ static void make_initial_config(Scheme_Thread *p)
     t_set = create_thread_set(NULL);
     init_param(cells, paramz, MZCONFIG_THREAD_SET, (Scheme_Object *)t_set);
   }
+  
+  init_param(cells, paramz, MZCONFIG_THREAD_INIT_STACK_SIZE, scheme_make_integer(DEFAULT_INIT_STACK_SIZE));
 
   {
     int i;
@@ -6111,6 +6145,26 @@ Scheme_Object *scheme_param_config(char *name, Scheme_Object *pos,
   
     return scheme_void;
   }
+}
+
+static Scheme_Object *
+exact_positive_integer_p (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *n = argv[0];
+  if (SCHEME_INTP(n) && (SCHEME_INT_VAL(n) > 0))
+    return scheme_true;
+  if (SCHEME_BIGNUMP(n) && SCHEME_BIGPOS(n))
+    return scheme_true;
+
+  return scheme_false;
+}
+
+static Scheme_Object *current_thread_initial_stack_size(int argc, Scheme_Object *argv[])
+{
+  return scheme_param_config("current-thread-initial-stack-size", 
+			     scheme_make_integer(MZCONFIG_THREAD_INIT_STACK_SIZE),
+			     argc, argv,
+			     -1, exact_positive_integer_p, "exact positive integer", 0);
 }
 
 /*========================================================================*/

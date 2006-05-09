@@ -1,3 +1,14 @@
+Version 301.14
+Added current-thread-initial-stack-size
+
+Version 301.13
+Dropped PLTHOME, and instead added support to embed a path to the
+ main "collects" directory within the executable
+Changed bitwise-{and,ior,xor} to accept 0 arguments
+Added 'run-file, 'collects-dir, and 'orig-dir modes to find-system-path
+Changed initial program binding to the result of find-system path
+ with 'run-file instead of 'exec-file
+
 Version 301.12
 Added char-general-category
 Changed readtable to support "default" parser used for symbols/numbers

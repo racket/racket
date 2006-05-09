@@ -3102,8 +3102,6 @@ call_with_sema_enable_break(int argc, Scheme_Object *argv[])
   return do_call_with_sema("call-with-semaphore/enable-break", 1, argc, argv);
 }
 
-#define TOTAL_STACK_SIZE (sizeof(Scheme_Object*) * SCHEME_STACK_SIZE)
-
 static Scheme_Saved_Stack *copy_out_runstack(Scheme_Thread *p,
 					     Scheme_Object **runstack,
 					     Scheme_Object **runstack_start,

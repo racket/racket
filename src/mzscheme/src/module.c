@@ -3095,7 +3095,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
 
   start_simltaneous_b = m->body;
   for (b = m->body; !SCHEME_NULLP(b); b = SCHEME_CDR(b)) {
-    /* Optimzie this expression: */
+    /* Optimize this expression: */
     e = scheme_optimize_expr(SCHEME_CAR(b), info);
     SCHEME_CAR(b) = e;
 
@@ -3123,7 +3123,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
 	  Scheme_Toplevel *tl;
 
 	  tl = (Scheme_Toplevel *)SCHEME_CAR(vars);
-	  
+
 	  if (!(SCHEME_TOPLEVEL_FLAGS(tl) & SCHEME_TOPLEVEL_MUTATED)) {
 	    Scheme_Object *e2;
 
