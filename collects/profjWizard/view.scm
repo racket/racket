@@ -615,7 +615,7 @@
   (define (an-error? x) (eq? an-error x))
   
   ;; ------------------------------------------------------------------------
-  #| Run, program, run:  |#
+  #| Run, program, run: 
 
   (require (file "draw-txt.ss"))
 
@@ -628,5 +628,5 @@
   (define-values (c y) (get-union-info #;BEGINNER INTERMEDIATE))
   (if (and y c) (printf "/*~n~a~n*/~n" (dt-draw (car y))))
   (if y (printf "~a~n" (apply make-union (append y (list INTERMEDIATE)))))
-
+  |#
   )
