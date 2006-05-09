@@ -9,7 +9,7 @@
   (define tmp-dir (build-path src-dir "tmp"))
   (define dir->libname '(["all" "libplplot"] ["fit" "libfit"]))
   (define native-dir
-    (build-path top-dir "compiled" "native" (system-library-subpath)))
+    (build-path top-dir "compiled" "native" (system-library-subpath #f)))
 
   (define (build-library lib)
     (when (and (directory-exists? lib)

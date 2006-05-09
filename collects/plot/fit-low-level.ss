@@ -4,7 +4,7 @@
 
   (define libfit
     (ffi-lib (build-path (this-expression-source-directory)
-                         "compiled" "native" (system-library-subpath)
+                         "compiled" "native" (system-library-subpath #f)
                          "libfit")))
 
   (define do-fit-int

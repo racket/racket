@@ -6,13 +6,26 @@
 (define libplplot
   (ffi-lib
    (build-path (this-expression-source-directory)
-               "compiled" "native" (system-library-subpath) "libplplot")))
+               "compiled" "native" (system-library-subpath #f) "libplplot")))
 
 (define plplotlibdir (get-ffi-obj "plplotLibDir" libplplot _string))
 
-;; set the lib dir to contain the fonts.
-(set-ffi-obj! "plplotLibDir" libplplot _string
-  (path->string (this-expression-source-directory)))
+;; set the lib dir to contain the fonts:
+(let ([path (this-expression-source-directory)])
+  ;; free current pointer, if any:
+  (let ([p (get-ffi-obj "plplotLibDir" libplplot _pointer)])
+    (when p (free p)))
+  ;; install new value:
+  (set-ffi-obj! "plplotLibDir" libplplot _bytes
+		;; malloc the string, since the GC won't see the static variable:
+		(let* ([gced-bytes (path->bytes path)]
+		       [len (bytes-length gced-bytes)]
+		       [p (malloc (add1 len) 'raw)]
+		       [malloced-bytes (make-sized-byte-string p len)])
+		  (bytes-copy! malloced-bytes 0 gced-bytes)
+		  ;; set nul terminator:
+		  (ptr-set! p _byte len 0)
+		  malloced-bytes)))
 
 (define _plflt _double*)
 (define _plint _int)
