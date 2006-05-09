@@ -8,7 +8,7 @@
    )
   
   ;; (define-as-contract string (id x ...) body ...)
-  ;; introduces Id for export as a contract and 
+  ;; introduces id for export as a contract and 
   ;; is-id? for local testing as a function
   (define-syntax (define-as-contract stx)
     (syntax-case stx ()
