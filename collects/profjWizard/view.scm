@@ -1,22 +1,21 @@
 #cs
 (module view mzscheme 
   
-  (require (lib "mred.ss" "mred")
-           (lib "class.ss")
+  (require "assoc-list.scm"
+           "aux-class.scm"
+           "data-defs.scm"
+           "class.scm"
+           "union.ss"
+           (lib "mred.ss" "mred")
+           (lib "class.ss")           
            (lib "etc.ss")
            (lib "list.ss")
            (lib "string.ss" "srfi" "13")
            (lib "contract.ss"))
   
-  (require (file "assoc-list.scm")
-           (file "data-defs.scm")
-           (file "aux-class.scm"))
-  
   (provide/contract
-   [get-class-info (->* []
-                        [boolean? (union false/c (list/c Class boolean? boolean?))])]
-   [get-union-info (->* []
-		        [boolean? (union false/c (list/c Union boolean? boolean?))])])
+   [get-class-info (opt->* () [Language] [boolean? (union false/c (list/c Class boolean? boolean?))])]
+   [get-union-info (opt->* () [Language] [boolean? (union false/c (list/c Union boolean? boolean?))])])
   
   (define CLASS-WIZARD "The Class Wizard")
   (define UNION-WIZARD "The Union Wizard")
@@ -27,6 +26,7 @@
   (define INSERT-VARNT "Insert Variant")
   (define ADD-FIELD    "Add Field")
   (define ADD-VARIANT  "Add Variant")
+  (define ADD-INTERF   "Add Interface Method")
   (define ADD-TOSTRING "add toString()")
   (define ADD-TEMPLATE "add method template")
   (define ADD-DIAGRAM  "add class diagram")
@@ -34,6 +34,7 @@
   (define PURPOSE-UNION  "// purpose of union: ")
   (define CLASS        "class")
   (define SUPER        "super")
+  (define IMPLEMENTS   "implements")
   (define EXTENDS      "extends")
   (define CHECK-NAME-F "check name of ~a")
   (define CHECK-TYPE-F "check type for ~a")
@@ -43,25 +44,26 @@
   (define ABORT "Abort")
   (define ERROR: "Error: ")
   (define DELETE "Delete")
-  (define EDIT         "edit")
+  (define EDIT   "Edit")
   
-  
-  #|
+     #|
      present a dialog to create a single class; 
      if programmer aborts, return #f
      otherwise, produce a class and two booleans, requesting toString and draft 
      templates, respectively
      |#
   
-  (define (get-class-info)
-    (let ([ci (new class-info% (title CLASS-WIZARD)
-                   (insert-str INSERT-CLASS) (add-str ADD-FIELD))])
-      (send ci call)))
+  (define (get-class-info . opt)
+    (define ci (new class-info% (title CLASS-WIZARD) 
+                    (switches? (and (pair? opt) (not (eq? (car opt) BEGINNER))))
+                    (insert-str INSERT-CLASS) (add-str ADD-FIELD)))
+    (send ci call))
   
-  (define (get-union-info)
-    (let ([ui (new union-info% (title UNION-WIZARD)
-                   (insert-str INSERT-UNION) (add-str ADD-VARIANT))])
-      (send ui call)))
+  (define (get-union-info . opt)
+    (define ui (new union-info% (title UNION-WIZARD)
+                    (switches? (and (pair? opt) (not (eq? (car opt) BEGINNER))))
+                    (insert-str INSERT-UNION) (add-str ADD-VARIANT)))
+    (send ui call))
   
   #|
             *---------------------*
@@ -76,11 +78,9 @@
             | tostring?           |
             | template?           |
             | error-message       |
-            | an-error?           |
             | call                |
             | A: produce          |
             | A: make-class-cb    |
-            | A: add-field-cb     |
             *---------------------*
               |
               |
@@ -90,18 +90,18 @@
     *---------------------*                    *---------------------*
     | class-info%         |                    | union-info%         |
     *---------------------*                    *---------------------*
-    | field-panel         |--+                 | vart-panel          |--+
-    *---------------------*  |                 *---------------------*  |
-                             |                                          |          
-                             |                                          |          
-                             |                                          |          
-                             |                                          |          
-    *---------------------*  |                 *---------------------*  | 
-    | vertical-panel%     |  |                 | horizontal-panel%   |  |          
-    *---------------------*  |                 *---------------------*  |          
-                      |      |                                   |      |          
-                      |      |                                   |      |          
-                     / \     |                                  / \     |          
+    |                     |--+                 | vart-panel          |--+
+    *---------------------*                    *---------------------*  |
+                                                                        |          
+                                                                        |          
+                                                                        |          
+                                                                        |          
+    *---------------------*                    *---------------------*  | 
+    | vertical-panel%     |                    | horizontal-panel%   |  |          
+    *---------------------*                    *---------------------*  |          
+                      |                                          |      |          
+                      |                                          |      |          
+                     / \                                        / \     |          
                  *---------------------*                  *---------------------*
                  | field-panel%        |                  | variant-panel%      |
                  *---------------------*                  *---------------------*
@@ -111,8 +111,8 @@
                  *---------------------*                  | acquired:           |
                  | acquired:           |                  |  get-type           |
                  |  window (?)         |                  |  error-message      |
-                 |  error-message      |                  |  an-error?          |
-                 *---------------------*                  *---------------------* 
+                 |  error-message      |                  *---------------------* 
+                 *---------------------*                  
 
     |#
   
@@ -124,8 +124,8 @@
   
   ;; String String String -> ClassUnionWizard
   (define class-union-wizard%
-    (class dialog% (init-field title insert-str add-str (switches? #t))
-      (super-new (label title) (width 500) (height 300)) 
+    (class dialog% (init-field title insert-str add-str (switches? #t) (no-diagram #f))
+      (super-new (label title) (width 500) (height 400))
       
       (define p (new vertical-pane% (parent this)))
       
@@ -134,23 +134,28 @@
       (define abort? #t) ;; assume bad things happen
       (define (quit x e) (send this show #f))
       (add-button button-panel ABORT quit)
-
+      
       (define/abstract make-class-cb)
       (add-button button-panel insert-str 
                   (lambda (x e) (set! abort? #f) (make-class-cb x e)))
-      
-      (define/abstract add-field-cb)
-      (add-button button-panel add-str (lambda (x e) (add-field-cb x e)))
-      
+
       ;; switches for toString methods and template in comments 
+      (define switch-pane (add-horizontal-panel p))
       (define-values (string template diagram)
-        (if switches? 
-            (let ([switch-pane (add-horizontal-panel p)])
-              (values (make-checkbox switch-pane ADD-TOSTRING) 
-                      (make-checkbox switch-pane ADD-TEMPLATE)
-                      (make-checkbox switch-pane ADD-DIAGRAM)))
-            (values #f #f #f)))
-      (define (get-switch x) (and switches? (send x get-value)))
+        (cond
+          [switches? 
+           (values (make-checkbox switch-pane ADD-TOSTRING) 
+                   (let ([c (make-checkbox switch-pane ADD-TEMPLATE)])
+                     (send c set-value #t)
+                     c)
+                   (make-checkbox switch-pane ADD-DIAGRAM))]
+          [no-diagram (values #f #f #f)]
+          [else (values #f #f (make-checkbox switch-pane ADD-DIAGRAM))]))          
+      (define (get-switch x) 
+        (cond 
+          [(eq? x diagram) (and (not no-diagram) (send x get-value))]
+          [switches? (send x get-value)]
+          [else #f]))
       (define/public (tostring?) (get-switch string))
       (define/public (template?) (get-switch template))
       (define/public (diagram?) (get-switch diagram))
@@ -163,7 +168,6 @@
       ;; error panel         
       
       (define message-size 100)
-      (define an-error (cons 1 2))
       (define message
         (new message% (parent (add-horizontal-panel p)) 
              (label (make-string message-size #\space))))
@@ -172,9 +176,7 @@
       (define/public (error-message m)
         (send message set-label (string-append ERROR: m)) 
         (raise an-error))
-      ;; Any -> Boolean 
-      (define/public (an-error? x) (eq? an-error x ))
-      
+
       ;; TextField (union false String) -> java-id?
       (define/public (produce-name-from-text name msg)
         (let ([x (string-trim-both (send name get-value))])
@@ -199,9 +201,7 @@
       (init-field (a-super null) (a-v-class null))
       (super-new)
       (inherit-field info-pane)
-      (inherit 
-        tostring? template? diagram? 
-        error-message an-error? produce-name-from-text)
+      (inherit tostring? template? diagram? error-message produce-name-from-text)
       
       ;; --------------------------------------------------------------------
       ;; filling the info-pane 
@@ -209,36 +209,35 @@
       ;; Information about the class in general: 
       (define purpose 
         ;; it is not the kind of textbox that make-text-field creates
-        (new text-field%
-             (parent info-pane) (label PURPOSE-CLASS) (callback void)))
+        (new text-field% (parent info-pane) (label PURPOSE-CLASS) (callback void)))
       
       (define class-pane (add-horizontal-panel info-pane))
       ; (define class-privacy (make-modifier-menu class-pane))
       (define class-name (make-text-field class-pane CLASS))
       (define (super-cb x e) (send field-panel add-on-return x e))
-      (define super-name (make-text-field class-pane EXTENDS super-cb))
+      (define super-name (make-text-field class-pane IMPLEMENTS super-cb))
       
       ;; Information about the class's fields:
+      (define field-pane (new vertical-panel% (parent info-pane) (style '(border))))
+      (define field++ (add-button field-pane ADD-FIELD (lambda (x y) (send field-panel add))))
       (define field-panel
         (new field-panel%
-             (parent info-pane) (window this) 
+             (parent field-pane) (window this) 
              (error-message (lambda (x) (error-message x)))))
-      
-      (define/override (add-field-cb x e) (send field-panel add))
       
       ;; --------------------------------------------------------------------
       ;; creating the class from the specification 
       
       ;; -> (union false (list Class boolean? boolean?))
       (define/override (produce)           
-        (with-handlers ([(lambda (x) (an-error? x)) (lambda _ #f)]) 
-           (list (list (produce-name-from-text class-name CLASS)
-                       (produce-name-from-text
-                        super-name (if (null? a-super) #f SUPER))
-                       (send field-panel produce)
-                       (send purpose get-value))
-                 (tostring?) 
-                 (template?))))
+        (with-handlers ([an-error? (lambda _ #f)]) 
+          (list (list (produce-name-from-text class-name CLASS)
+                      (produce-name-from-text
+                       super-name (if (null? a-super) #f SUPER))
+                      (send field-panel produce)
+                      (send purpose get-value))
+                (tostring?) 
+                (template?))))
       
       ;; if the class specification is proper, hide dialog
       (define/override (make-class-cb x e) 
@@ -268,10 +267,8 @@
                [the-fields (cadr a-v-class)])
            (send class-name set-value name)
            (for-each (lambda (f) (send field-panel add f)) the-fields)
-           (send purpose set-value (variant-purpose a-v-class)))])
-      
-      ))
-  
+           (send purpose set-value (variant-purpose a-v-class)))])))
+
   ;; Panel Window (String -> Void) -> FieldPanel 
   ;; manage text fields to add fields to the class in a stack like fashion;
   ;; add one on <return>, allow users to delete one
@@ -315,19 +312,22 @@
       (define/public add
         (case-lambda
           [() 
+           (send window begin-container-sequence)
            (let* ([fp (add-horizontal-panel this)]
                   ; [modi (make-modifier-menu fp)]
-                  [type (make-text-field fp TYPE)]
-                  [name (make-text-field
-                         fp NAME (lambda (x e) (add-on-return x e)))]
+                  [type (make-text-field fp "   ")]
+                  [name (make-text-field fp "" (lambda (x e) (add-on-return x e)))]
                   [get-values 
                    (lambda () ; (send modi get-string-selection)
                      (list (send type get-value) (send name get-value)))])
+             (send type set-value "<field type>")
+             (send name set-value "<field name>")
              (add-field-name name)
              (send fields add type get-values)
              (make-delete-button this fp (lambda () 
                                            (send fields remove type)
                                            (remove-field-name name)))
+             (send window end-container-sequence)
              (values type name))]
           [(a-field)
            (let-values ([(type name) (add)])
@@ -355,18 +355,16 @@
          '()
          (map (lambda (th) (th)) (send fields list))))))
   
-  
-  ;; ------------------------------------------------------------------------
+  ;; ---------------------------------------------------------------------------
   ;; -> UnionInfo
   ;; get information about a datatype union 
   (define union-info%
     (class class-union-wizard%
       (super-new)
-      (inherit-field info-pane)
-      (inherit
-        tostring? template? error-message an-error? produce-name-from-text)
+      (inherit-field info-pane switches?)
+      (inherit tostring? template? error-message produce-name-from-text)
       
-      ;; --------------------------------------------------------------------
+      ;; -----------------------------------------------------------------------
       ;; filling in the info-pane 
       
       (define type-pane 
@@ -381,28 +379,31 @@
       ;; -> String
       (define (get-type) (produce-name-from-text type-text TYPE))
       
+      ;; --- the variants of the union 
+      (define meth-pane (new vertical-panel% (parent info-pane) (style '(border))))
+      (add-button meth-pane ADD-INTERF (lambda (x y) (send methods add)))
+      (define methods (new methods-pane% (window meth-pane) (error-message (lambda (x) (error-message x)))))
+      (send methods add)
+      (unless switches? 
+        (send info-pane change-children (lambda (x) (remq meth-pane x))))
+      
+      ;; --- the variants of the union 
+      (define vart-pane (new vertical-panel% (parent info-pane) (style '(border))))
+      (add-button vart-pane ADD-VARIANT (lambda (x y) (send vart-panel add)))
       (define vart-panel 
         (new variant-panel%
-             (parent info-pane)
+             (parent vart-pane)
              (get-type (lambda () (get-type)))
-             (error-message (lambda (x) (error-message x)))
-             (an-error? (lambda (x) (an-error? x)))))
-      
-      ;; Information about the union's common fields:
-      (add-button info-pane "Add Common Field"
-                  (lambda (x e) (send field-panel add)))
-      (define field-panel
-        (new field-panel%
-             (parent info-pane) (window this) 
              (error-message (lambda (x) (error-message x)))))
-      (send field-panel add)
       
+
       ;; -> Union 
       (define/override (produce)
-        (with-handlers ([(lambda (x) (an-error? x)) (lambda _ #f)])
+        (with-handlers ([an-error? (lambda _ #f)])
+          (define m (send methods produce))
           (list 
            (make-dt (get-type)
-                    (send field-panel produce)
+                    m
                     (send vart-panel produce)
                     (send purpose get-value))
            (tostring?)
@@ -411,30 +412,140 @@
       (define/override (make-class-cb x e)
         (when (produce) (send this show #f)))
       
-      (define/override (add-field-cb x e)
-        (send vart-panel add))
-      
       ;; make two variants to boot
       ;; allow people to add and delete a variant 
       (send vart-panel add)
       (send vart-panel add)))
   
+  ;; get information about all panels 
+  (define methods-pane% 
+    (class vertical-panel% 
+      (init-field window error-message)
+      (super-new (parent window) (min-height 10) (stretchable-height #f))
+      
+      (define methods (new assoc%))
+      
+      ;; add a pane to the window for specifying one method signature 
+      (define/public (add)
+        (send window begin-container-sequence)
+        (new method-panel% 
+             (parent window) (style '(border))
+             (window window) (error-message error-message) (methods methods))
+        (send window end-container-sequence))
+      
+      (define/public (produce) (send methods list))))
+  
+  ;; get information about a single method signature  
+  (define method-panel%
+    (class horizontal-panel%
+      (init-field window error-message methods)
+      (super-new)
+
+      ;; -----------------------------------------------------------------------
+      ;; the callbacks 
+      ;; remove this pane from the window and its information from the table 
+      (define (remove _1 _2)
+        (send methods remove this)
+        (send this begin-container-sequence)
+        (send window change-children (lambda (x) (remq this x)))
+        (send window container-flow-modified)
+        (send this end-container-sequence))
+      
+      ;; [Listof TextField%]       
+      (define pa* '())
+      ;; (union false '_) '_ -> Void
+      ;; add this parameter TextField% to pane 
+      (define (add-parameter-field button-or-false _2)
+        (define _ (send this begin-container-sequence))
+        (define x (make-text-field this (if button-or-false "," "") void pt))
+        (set! pa* (append pa* (list x)))
+        (send this change-children 
+              (lambda (y)
+                (let loop ([y y])
+                  (if (eq? (cadr y) pa+)
+                      (set-cdr! y (cons x end)) 
+                      (loop (cdr y))))
+                y))
+        (send this end-container-sequence))
+      
+      ;; re-establish this pane so that programmers can edit the method info
+      (define (edit _1 _2)
+        (send this begin-container-sequence)
+        (send this change-children 
+              (lambda (y) (append (list (car y)) (list ret nam opn) pa* end)))
+        (send this end-container-sequence))
+      
+      ;; retrieve, check, add method signature to table 
+      (define (convert-info-to-signature button event)
+        (with-handlers ([an-error? (lambda (x) #f)])
+          (define sig 
+            (check-sig 
+             (map (lambda (x) (send x get-value)) (cons nam (cons ret pa*)))))
+          (define _ (send this begin-container-sequence))
+          (define t (new message% (parent this) (label (method sig))))
+          (define e (new button% (parent this) (label EDIT) (callback edit)))
+          (send this change-children (lambda (y) (cons (car y) (list t e))))
+          (send e focus)
+          (send methods add this sig)
+          (send this end-container-sequence)))
+      ;; (cons String (cons String (Listof String))) -> Method 
+      ;; check signature
+      (define (check-sig sig)
+        (define name (string-trim-both (car sig)))
+        (define typ* (map string-trim-both (cdr sig)))
+        (unless (java-id? name)
+          (error-message (format "not a java id: ~s" name)))
+        (let ([typ*
+               (let loop ([types* typ*])
+                 (cond
+                   [(null? types*) '()]
+                   [(string=? (car types*) "")
+                    (if (null? (cdr types*))
+                        '()
+                        (error-message bad-para))]
+                   [else 
+                    (if (java-id? (car types*))
+                        (cons (car types*) (loop (cdr types*)))
+                        (error-message (format no-type (car types*))))]))])
+          (cons (car typ*) (cons name (cdr typ*)))))
+      (define bad-para 
+        "\"\" parameter type found, but not at the end of the parameter list")
+      (define no-type "not a java type: ~s")
+      
+      (define pt  "<parameter type>")
+      ;; ---------------------------------------------------------------------
+      ;; now set up the one-line pane for specifying a method signature 
+      (send window begin-container-sequence)      
+      (define sub (new button% (parent this) (label "-") (callback remove)))
+      ;; (make-delete-button ... when purpose statement is added/? 
+      (define ret (make-text-field this "" void "<return type>"))
+      (define nam (make-text-field this "" void "<method name>"))
+      (define opn (new message% (parent this) (label "(")))
+      (define pa+ (new button% (parent this) (label ", ...") (callback add-parameter-field)))
+      (define cls (new message% (parent this) (label ")")))
+      (define add (new button% (parent this) (label "+") (callback convert-info-to-signature)))
+      (define end (list pa+ cls add))
+      ;; ---------------------------------------------------------------------
+      (add-parameter-field #f '__)
+      (send window end-container-sequence)))
+  
   ;; (-> String) (String -> Void) (Any -> Boolean) -> VariantPanel
   ;; manage the variant panels and their content for union
   (define variant-panel%
     (class horizontal-panel% 
-      (super-new (alignment '(center center)) (style '(border))
-                 (min-height 150) (stretchable-height #f))
-      (init get-type error-message an-error?)
+      (super-new (alignment '(center center)) (min-height 150) (stretchable-height #f))
+      (init get-type error-message)
       
       ;; -> Void
       (define/public (add)
+        (send this begin-container-sequence)
         (let* ([vp (new vertical-panel% (parent this)(style '(border)))]
                [ms (new message% (parent vp) (label VARIANT))] 
                [bt (new button% (parent vp) (label EDIT)   
                         (callback (create-variant ms)))])
           (send variants add bt #f)
-          (make-delete-button this vp (lambda () (send variants remove bt)))))
+          (make-delete-button this vp (lambda () (send variants remove bt)))
+          (send this end-container-sequence)))
       
       ;; Message -> (Button Event -> Void)
       (define (create-variant ms)
@@ -446,7 +557,7 @@
                  [(b a-class) (send (new class-info% 
                                          (title VARIANT-WIZD)
                                          (insert-str INSERT-VARNT)
-                                         (switches? #f)
+                                         (switches? #f) (no-diagram #t)
                                          (add-str ADD-FIELD)
                                          (a-super type)
                                          (a-v-class (if class-in class-in '())))
@@ -484,9 +595,9 @@
   
   ;; Panel String [Callback] -> TextField
   (define make-text-field 
-    (opt-lambda (p l (c void))
+    (opt-lambda (p l (c void) (init ""))
       (new text-field% 
-           (parent p) (label l) (callback c)
+           (parent p) (label l) (callback c) (init-value init)
            (min-width 50) (stretchable-width #f))))
   
   ;; Panel (-> Void) -> Button
@@ -499,18 +610,23 @@
                            (lambda (cs)
                              (filter (lambda (c) (not (eq? vp c))) cs)))))))
   
-  ;; ------------------------------------------------------------------------
-  #| Run, program, run:  
- 
-  (require (file "class.scm") (file "draw-txt.ss"))
+  (define an-error (cons 1 2))
+  ;; Any -> Boolean 
+  (define (an-error? x) (eq? an-error x))
   
-  (define-values (b x) (get-class-info))
+  ;; ------------------------------------------------------------------------
+  #| Run, program, run:  |#
+
+  (require (file "draw-txt.ss"))
+
+  #| |#
+  (define-values (b x) (get-class-info BEGINNER))
   (if (and x b) (printf "/*~n~a~n*/~n" (class-draw (car x))))
   (if x (printf "~a~n" (apply make-class x)))
-  
-  (define-values (c y) (get-union-info))
+   
+  #||#  
+  (define-values (c y) (get-union-info #;BEGINNER INTERMEDIATE))
   (if (and y c) (printf "/*~n~a~n*/~n" (dt-draw (car y))))
-  (if y (printf "~a~n" (apply make-union y)))
+  (if y (printf "~a~n" (apply make-union (append y (list INTERMEDIATE)))))
 
- |#  
   )
