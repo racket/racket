@@ -4427,6 +4427,9 @@ static int utf8_decode_x(const unsigned char *s, int start, int end,
   int init_doki;
   int nextbits, v;
   unsigned int sc;
+# ifdef WINDOWS_UNICODE_SUPPORT
+  int pending_surrogate = 0;
+# endif
 
   if (_state) {
     state = (*_state) & 0x7;
@@ -4577,10 +4580,18 @@ static int utf8_decode_x(const unsigned char *s, int start, int end,
       if (compact) {
 	if (utf16) {
 	  if (v > 0xFFFF) {
+# ifdef WINDOWS_UNICODE_SUPPORT
+	    if (pending_surrogate) {
+	      if (us)
+		((unsigned short *)us)[j] = pending_surrogate;
+	      j++; /* Accept previously written unpaired surrogate */
+	      pending_surrogate = 0;
+	    }
+# endif
+	    if (j + 1 >= dend)
+	      break;
 	    if (us) {
 	      v -= 0x10000;
-	      if (j + 1 >= dend)
-		break;
 	      ((unsigned short *)us)[j] = 0xD800 | ((v >> 10) & 0x3FF);
 	      ((unsigned short *)us)[j+1] = 0xDC00 | (v & 0x3FF);
 	    }
@@ -4591,20 +4602,63 @@ static int utf8_decode_x(const unsigned char *s, int start, int end,
 	       a 0xDC00 after a 0xD800, otherwise multiple encodings can
 	       map to the same thing. */
 	    if ((v >= 0xD800) && (v <= 0xDFFF)) {
-	      if ((utf16 == 2) && ((v & 0xDC00) == 0xDC00)) {
-		if (permissive)
-		  v = permissive;
-		else
+	      if (pending_surrogate && ((v & 0xDC00) == 0xDC00)) {
+		/* This looks like a surrogate pair, so disallow it. */
+		if (permissive) {
+		  /* We need to fill in 6 permissive substitutions,
+		     one for each input byte. If we can't put all 6,
+		     then don't use any input. */
+		  if (j + 5 >= dend) {
+		    break;
+		  } else {
+		    int p;
+		    if (us) {
+		      for (p = 0; p < 5; p++) {
+			if (j + p >= dend)
+			  break;
+			((unsigned short *)us)[j+p] = permissive;
+		      }
+		    }
+		    j += 5;
+		    v = permissive;
+		  }
+		} else {
 		  ENCFAIL;
-	      } else if ((v & 0xDC00) == 0xD800)
-		utf16 = 2;
-	      else
-		utf16 = 1;
-	    } else
-	      utf16 = 1;
-# endif
+		}
+		pending_surrogate = 0;
+	      } else {
+		if (pending_surrogate) {
+		  if (us)
+		    ((unsigned short *)us)[j] = pending_surrogate;
+		  j++; /* Accept previousy written unpaired surrogate */
+		  pending_surrogate = 0;
+		  if (j >= dend)
+		    break;
+		}
+		if ((v & 0xDC00) == 0xD800)
+		  pending_surrogate = v;
+		else
+		  pending_surrogate = 0;
+	      }
+	    } else {
+	      if (pending_surrogate) {
+		if (us)
+		  ((unsigned short *)us)[j] = pending_surrogate;
+		j++; /* Accept previousy written unpaired surrogate */
+		pending_surrogate = 0;
+		if (j >= dend)
+		  break;
+	      }
+	    }
+
+	    if (pending_surrogate)
+	      --j; /* don't accept unpaired surrogate, yet */
+	    else if (us)
+	      ((unsigned short *)us)[j] = v;
+# else
 	    if (us)
 	      ((unsigned short *)us)[j] = v;
+# endif
 	  }
 	} else {
 	  int delta;
@@ -4664,6 +4718,11 @@ static int utf8_decode_x(const unsigned char *s, int start, int end,
     }
   }
 
+# ifdef WINDOWS_UNICODE_SUPPORT
+  if (pending_surrogate)
+    oki -= 3;
+#endif
+
   if (ipos)
     *ipos = oki;
   if (jpos)
@@ -4671,6 +4730,13 @@ static int utf8_decode_x(const unsigned char *s, int start, int end,
 
   if (i < end)
     return failmode;
+
+# ifdef WINDOWS_UNICODE_SUPPORT
+  if (pending_surrogate) {
+    /* input must have ended right after surrogate */
+    return -1;
+  }
+#endif
 
   return j - dstart;
 }
