@@ -4207,12 +4207,12 @@ static Scheme_Object *convert_one(const char *who, int opos, int argc, Scheme_Ob
   if (c->kind == mzUTF16_TO_UTF8_KIND) {
     if (istart & 0x1) {
       /* Copy to word-align */
-      char *c;
-      c = (char *)scheme_malloc_atomic(ifinish - istart);
+      char *c2;
+      c2 = (char *)scheme_malloc_atomic(ifinish - istart);
       memcpy(c, instr XFORM_OK_PLUS istart, ifinish - istart);
       ifinish = ifinish - istart;
       istart = 0;
-      instr = c;
+      instr = c2;
     }
 
     status = utf8_encode_x((const unsigned int *)instr, istart >> 1, ifinish >> 1,
