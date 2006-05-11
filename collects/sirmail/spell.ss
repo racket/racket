@@ -91,7 +91,23 @@
   ;;;
   
   (define extra-words '("sirmail" "mred" "drscheme" "mzscheme" "plt"))
-  
+
+  (define (clean-up to-send)
+    ;; Drop characters that ispell or aspell may treat as word
+    ;;  delimiters. We can to keep ' in a word, but double
+    ;;  '' counts as a delimiter, so end by replacing those.
+    (regexp-replace* #rx"''+"
+		     (list->string
+		      (map (lambda (b)
+			     (if (and ((char->integer b) . <= . 127)
+				      (or (char-alphabetic? b)
+					  (char-numeric? b)
+					  (eq? b #\')))
+				 b
+				 #\x))
+			   (string->list to-send)))
+		     "x"))
+
   (define has-ispell? 'dontknow)
   (define ispell-prog #f)
   (define ispell-in #f)
@@ -120,19 +136,7 @@
     (cond
       [has-ispell?
        (unless (and ispell-in ispell-out ispell-err)
-         (let-values ([(out in pid err status) (apply values (process* ispell-prog 
-								       "-a"
-								       "-w"
-								       ;; Tell ispell to treat every character
-								       ;;  as part of a word, because our lexer
-								       ;;  has already separated words.
-								       (let loop ([n 255][l null])
-									 (if (= n 0)
-									     (apply string-append l)
-									     (loop (sub1 n)
-										   (cons
-										    (format "n~a" n)
-										    l))))))])
+         (let-values ([(out in pid err status) (apply values (process* ispell-prog "-a"))])
            (let ([version-line (read-line out)])
              (debug "< ~s\n" version-line))
            
@@ -140,7 +144,7 @@
            (set! ispell-out out)
            (set! ispell-err err)))
        
-       (let ([to-send (format "^~a\n" word)])
+       (let ([to-send (format "^~a\n" (clean-up word))])
          (debug "> ~s\n" to-send)
          (display to-send ispell-in)
 	 (flush-output ispell-in))
