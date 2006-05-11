@@ -161,83 +161,65 @@
   ;; Bytes and words
   ;; The least significant byte of a word is the first
 
-  ;; bytesl->word : (list byte*) -> word
-  (define (bytesl->word bs)
-    (let loop ([akk 0] [mul 1] [bs bs])
-      (if (null? bs)
-        (word akk)
-        (loop (+ akk (* (car bs) mul)) (* 256 mul) (cdr bs)))))
-
-  ;; bytesl->words : (list byte) -> (list word)
-  (define (bytesl->words bytes)
-    (let loop ([bs '()] [l bytes])
-      (cond
-       [(null? l)         (list (bytesl->word (reverse! bs)))]
-       [(< (length bs) 4) (loop (cons (car l) bs)  (cdr l))]
-       [else              (cons (bytesl->word (reverse! bs)) (loop '() l))])))
-
-  ;; make-list : int any -> (list any)
-  (define (make-list n x)
-    (let loop ([n n] [r '()])
-      (if (zero? n)
-        r
-        (loop (sub1 n) (cons x r)))))
-
-  ;; Converts a byte string to a more useful vector
-  ;; vector-from-string: byte string -> (vector ...)
-  (define (vector-from-string l-raw)
-    (list->vector (bytesl->words (bytes->list l-raw))))
+  ;; Converts a byte string to words, writes the result into `result'
+  ;; bytes->word-vector! : vector byte-string -> void
+  (define (bytes->word-vector! result l-raw)
+    ;; assumption: always getting a byte-string with 64 places
+    (unless (= 64 (bytes-length l-raw))
+      (error 'bytes->word-vector! "something bad happened"))
+    (let loop ([n 15])
+      (when (<= 0 n)
+        (let ([w (vector-ref result n)] [n (* 4 n)])
+          (set-car! w (+ (bytes-ref l-raw (+ 2 n))
+                         (* 256 (bytes-ref l-raw (+ 3 n)))))
+          (set-cdr! w (+ (bytes-ref l-raw n)
+                         (* 256 (bytes-ref l-raw (+ 1 n))))))
+        (loop (sub1 n)))))
 
   (define empty-port (open-input-bytes #""))
 
   ;; List Helper
-  ;; block/list : a-port done-n -> (values vector a-port done-n)
-  ;; reads 512 bytes from the port, turns them into a vector of 16 32-bit words
-  ;; when the port is exhausted it returns #f for the port and
-  ;; the last few bytes padded
-  (define (block/list a-port done)
+  ;; read-block! : a-port done-n (vector word) -> (values vector a-port done-n)
+  ;; reads 512 bytes from the port, writes them into the `result' vector of 16
+  ;; 32-bit words when the port is exhausted it returns #f for the port and the
+  ;; last few bytes padded
+  (define (read-block! a-port done result)
+    (define (write-words! done buf)
+      (bytes->word-vector! result (step2 (* 8 done) buf)))
     (let ([l-raw (read-bytes 512/8 a-port)])
       (cond
         ;; File size was a multiple of 512 bits, or we're doing one more round
         ;; to add the correct padding from the short case
         [(eof-object? l-raw)
-         (if (zero? (modulo done 512/8))
-           ;; The file is a multiple of 512 or was 0, so there hasn't been a
-           ;; chance to add the 1-bit pad, so we need to do a full pad
-           (values (list->vector (step2 (* 8 done) (step1 '())))
-                   #f
-                   done)
-           ;; We only enter this block when the previous block didn't have
-           ;; enough room to fit the 64-bit file length, so we just add 448
-           ;; bits of zeros and then the 64-bit file length (step2)
-           (values (list->vector (step2 (* 8 done) (make-list 448/8 0)))
-                   #f
-                   done))]
+         (write-words! done
+           (if (zero? (modulo done 512/8))
+             ;; The file is a multiple of 512 or was 0, so there hasn't been a
+             ;; chance to add the 1-bit pad, so we need to do a full pad
+             (step1 #"")
+             ;; We only enter this block when the previous block didn't have
+             ;; enough room to fit the 64-bit file length, so we just add 448
+             ;; bits of zeros and then the 64-bit file length (step2)
+             (make-bytes 448/8 0)))
+         (values #f done)]
         ;; We read exactly 512 bits, the algorithm proceeds as usual
         [(= (bytes-length l-raw) 512/8)
-         (values (vector-from-string l-raw)
-                 a-port
-                 (+ done (bytes-length l-raw)))]
+         (bytes->word-vector! result l-raw)
+         (values a-port (+ done (bytes-length l-raw)))]
         ;; We read less than 512 bits, so the file has ended.
         ;; However, we don't have enough room to add the correct trailer,
         ;; so we add what we can, then go for one more round which will
         ;; automatically fall into the (eof-object? case)
         [(> (* 8 (bytes-length l-raw)) 446)
          (let ([done (+ done (bytes-length l-raw))])
-           (values (list->vector (step2 (* 8 done) (step1 (bytes->list l-raw))))
-                   empty-port
-                   done))]
+           (write-words! done (step1 l-raw))
+           (values empty-port done))]
         ;; Returning a longer vector than we should, luckily it doesn't matter.
         ;; We read less than 512 bits and there is enough room for the correct
         ;; trailer.  Add trailer and bail
         [else
          (let ([done (+ done (bytes-length l-raw))])
-           (values (list->vector (step2 (* 8 done) (step1 (bytes->list l-raw))))
-                   #f
-                   done))])))
-
-  ;; (step2 (* 8 (bytes-length  str))
-  ;;        (step1 (bytes->list str)))
+           (write-words! done (step1 l-raw))
+           (values #f done))])))
 
 
   ;; MD5
@@ -257,30 +239,23 @@
   ;; The message is padded so the length (in bits) becomes 448 modulo 512.
   ;; We allways append a 1 bit and then append the proper numbber of 0's.
   ;; NB: 448 bits is 14 words and 512 bits is 16 words
-  ;; step1 : (list byte) -> (list byte)
+  ;; step1 : bytes -> bytes
 
   (define (step1 message)
-    (let* ([z-b-t-a (modulo (- 448 (* 8 (length message))) 512)]
+    (let* ([z-b-t-a (modulo (- 448 (* 8 (bytes-length message))) 512)]
            [zero-bits-to-append (if (zero? z-b-t-a) 512 z-b-t-a)])
-      (append message
-              (cons #x80 ; The byte containing the 1 bit => one less
-                         ; 0 byte to append
-                    (make-list (quotient (- zero-bits-to-append 1) 8)
-                               0)))))
+      (bytes-append message
+                    #"\x80" ; the 1 bit byte => one less 0 bytes to append
+                    (make-bytes (quotient (- zero-bits-to-append 1) 8) 0))))
 
   ;; Step 2  -  Append Length
   ;; A 64 bit representation of the bit length b of the message before
   ;; the padding of step 1 is appended. Lower word first.
-  ;; step2 : number (list byte) -> (list word)
+  ;; step2 : number bytes -> bytes
   ;;  org-len is the length of the original message in number of bits
 
-  (define (step2 original-length padded-message)
-    (let* ([b  original-length]
-           [lo (remainder b #x100000000)]
-           [hi (remainder (quotient b #x100000000) #x100000000)])
-      (bytesl->words (append padded-message
-                             (word->bytesl (word lo))
-                             (word->bytesl (word hi))))))
+  (define (step2 len padded-message)
+    (bytes-append padded-message (integer->integer-bytes len 8 #f #f)))
 
   ;; Step 3  -  Initialize MD Buffer
   ;; These magic constants are used to initialize the loop
@@ -297,6 +272,11 @@
 
   ;; Step 3 :-) (magic constants)
   (define (step4 a-port)
+    ;; X is always a vector of 16 words (it changes in read-block!)
+    (define X
+      (vector (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0)
+              (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0)
+              (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0)))
     (let loop ([A (word #x67452301)]
                [B (word #xefcdab89)]
                [C (word #x98badcfe)]
@@ -305,88 +285,86 @@
                [done 0])
       (if (not a-port)
         (list A B C D)
-        (let-values ([(X b-port done) (block/list a-port done)])
-          (if (not X)
-            (list A B C D)
-            (let ([AA A] [BB B] [CC C] [DD D])
-              (define-syntax step
-                (syntax-rules ()
-                  [(_ a b c d e f g h)
-                   (set! a (word+ b (word<<< (word+ (word+ a (e b c d))
-                                                    (word+ (vector-ref X f)
-                                                           (word g)))
-                                             h)))]))
-              ;;---
-              (step A B C D F  0 3614090360  7)
-              (step D A B C F  1 3905402710 12)
-              (step C D A B F  2  606105819 17)
-              (step B C D A F  3 3250441966 22)
-              (step A B C D F  4 4118548399  7)
-              (step D A B C F  5 1200080426 12)
-              (step C D A B F  6 2821735955 17)
-              (step B C D A F  7 4249261313 22)
-              (step A B C D F  8 1770035416  7)
-              (step D A B C F  9 2336552879 12)
-              (step C D A B F 10 4294925233 17)
-              (step B C D A F 11 2304563134 22)
-              (step A B C D F 12 1804603682  7)
-              (step D A B C F 13 4254626195 12)
-              (step C D A B F 14 2792965006 17)
-              (step B C D A F 15 1236535329 22)
-              ;;---
-              (step A B C D G  1 4129170786  5)
-              (step D A B C G  6 3225465664  9)
-              (step C D A B G 11  643717713 14)
-              (step B C D A G  0 3921069994 20)
-              (step A B C D G  5 3593408605  5)
-              (step D A B C G 10   38016083  9)
-              (step C D A B G 15 3634488961 14)
-              (step B C D A G  4 3889429448 20)
-              (step A B C D G  9  568446438  5)
-              (step D A B C G 14 3275163606  9)
-              (step C D A B G  3 4107603335 14)
-              (step B C D A G  8 1163531501 20)
-              (step A B C D G 13 2850285829  5)
-              (step D A B C G  2 4243563512  9)
-              (step C D A B G  7 1735328473 14)
-              (step B C D A G 12 2368359562 20)
-              ;;---
-              (step A B C D H  5 4294588738  4)
-              (step D A B C H  8 2272392833 11)
-              (step C D A B H 11 1839030562 16)
-              (step B C D A H 14 4259657740 23)
-              (step A B C D H  1 2763975236  4)
-              (step D A B C H  4 1272893353 11)
-              (step C D A B H  7 4139469664 16)
-              (step B C D A H 10 3200236656 23)
-              (step A B C D H 13  681279174  4)
-              (step D A B C H  0 3936430074 11)
-              (step C D A B H  3 3572445317 16)
-              (step B C D A H  6   76029189 23)
-              (step A B C D H  9 3654602809  4)
-              (step D A B C H 12 3873151461 11)
-              (step C D A B H 15  530742520 16)
-              (step B C D A H  2 3299628645 23)
-              ;;---
-              (step A B C D II  0 4096336452  6)
-              (step D A B C II  7 1126891415 10)
-              (step C D A B II 14 2878612391 15)
-              (step B C D A II  5 4237533241 21)
-              (step A B C D II 12 1700485571  6)
-              (step D A B C II  3 2399980690 10)
-              (step C D A B II 10 4293915773 15)
-              (step B C D A II  1 2240044497 21)
-              (step A B C D II  8 1873313359  6)
-              (step D A B C II 15 4264355552 10)
-              (step C D A B II  6 2734768916 15)
-              (step B C D A II 13 1309151649 21)
-              (step A B C D II  4 4149444226  6)
-              (step D A B C II 11 3174756917 10)
-              (step C D A B II  2  718787259 15)
-              (step B C D A II  9 3951481745 21)
-              ;;---
-              (loop (word+ A AA) (word+ B BB) (word+ C CC) (word+ D DD)
-                    b-port done)))))))
+        (let-values ([(b-port done) (read-block! a-port done X)]
+                     [(AA) A] [(BB) B] [(CC) C] [(DD) D])
+          (define-syntax step
+            (syntax-rules ()
+              [(_ a b c d e f g h)
+               (set! a (word+ b (word<<< (word+ (word+ a (e b c d))
+                                                (word+ (vector-ref X f)
+                                                       (word g)))
+                                         h)))]))
+          ;;---
+          (step A B C D F  0 3614090360  7)
+          (step D A B C F  1 3905402710 12)
+          (step C D A B F  2  606105819 17)
+          (step B C D A F  3 3250441966 22)
+          (step A B C D F  4 4118548399  7)
+          (step D A B C F  5 1200080426 12)
+          (step C D A B F  6 2821735955 17)
+          (step B C D A F  7 4249261313 22)
+          (step A B C D F  8 1770035416  7)
+          (step D A B C F  9 2336552879 12)
+          (step C D A B F 10 4294925233 17)
+          (step B C D A F 11 2304563134 22)
+          (step A B C D F 12 1804603682  7)
+          (step D A B C F 13 4254626195 12)
+          (step C D A B F 14 2792965006 17)
+          (step B C D A F 15 1236535329 22)
+          ;;---
+          (step A B C D G  1 4129170786  5)
+          (step D A B C G  6 3225465664  9)
+          (step C D A B G 11  643717713 14)
+          (step B C D A G  0 3921069994 20)
+          (step A B C D G  5 3593408605  5)
+          (step D A B C G 10   38016083  9)
+          (step C D A B G 15 3634488961 14)
+          (step B C D A G  4 3889429448 20)
+          (step A B C D G  9  568446438  5)
+          (step D A B C G 14 3275163606  9)
+          (step C D A B G  3 4107603335 14)
+          (step B C D A G  8 1163531501 20)
+          (step A B C D G 13 2850285829  5)
+          (step D A B C G  2 4243563512  9)
+          (step C D A B G  7 1735328473 14)
+          (step B C D A G 12 2368359562 20)
+          ;;---
+          (step A B C D H  5 4294588738  4)
+          (step D A B C H  8 2272392833 11)
+          (step C D A B H 11 1839030562 16)
+          (step B C D A H 14 4259657740 23)
+          (step A B C D H  1 2763975236  4)
+          (step D A B C H  4 1272893353 11)
+          (step C D A B H  7 4139469664 16)
+          (step B C D A H 10 3200236656 23)
+          (step A B C D H 13  681279174  4)
+          (step D A B C H  0 3936430074 11)
+          (step C D A B H  3 3572445317 16)
+          (step B C D A H  6   76029189 23)
+          (step A B C D H  9 3654602809  4)
+          (step D A B C H 12 3873151461 11)
+          (step C D A B H 15  530742520 16)
+          (step B C D A H  2 3299628645 23)
+          ;;---
+          (step A B C D II  0 4096336452  6)
+          (step D A B C II  7 1126891415 10)
+          (step C D A B II 14 2878612391 15)
+          (step B C D A II  5 4237533241 21)
+          (step A B C D II 12 1700485571  6)
+          (step D A B C II  3 2399980690 10)
+          (step C D A B II 10 4293915773 15)
+          (step B C D A II  1 2240044497 21)
+          (step A B C D II  8 1873313359  6)
+          (step D A B C II 15 4264355552 10)
+          (step C D A B II  6 2734768916 15)
+          (step B C D A II 13 1309151649 21)
+          (step A B C D II  4 4149444226  6)
+          (step D A B C II 11 3174756917 10)
+          (step C D A B II  2  718787259 15)
+          (step B C D A II  9 3951481745 21)
+          ;;---
+          (loop (word+ A AA) (word+ B BB) (word+ C CC) (word+ D DD)
+                b-port done)))))
 
   ;; Each round consists of the application of the following
   ;; basic functions. They functions on a word bitwise, as follows.
