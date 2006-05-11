@@ -134,52 +134,59 @@
     (let* ([masks '#(#x0 #x1 #x3 #x7 #xF #x1F #x3F #x7F #xFF #x1FF #x3FF #x7FF
                      #xFFF #x1FFF #x3FFF #x7FFF #xFFFF)]
            [rot (lambda (hi lo s)
-                  (cons (bitwise-ior (arithmetic-shift (bitwise-and hi (vector-ref masks (- 16 s))) s)
-                                     (bitwise-and (arithmetic-shift lo (- s 16)) (vector-ref masks s)))
-                        (bitwise-ior (arithmetic-shift (bitwise-and lo (vector-ref masks (- 16 s))) s)
-                                     (bitwise-and (arithmetic-shift hi (- s 16)) (vector-ref masks s)))))])
+                  (cons (bitwise-ior
+                         (arithmetic-shift
+                          (bitwise-and hi (vector-ref masks (- 16 s)))
+                          s)
+                         (bitwise-and (arithmetic-shift lo (- s 16))
+                                      (vector-ref masks s)))
+                        (bitwise-ior
+                         (arithmetic-shift
+                          (bitwise-and lo (vector-ref masks (- 16 s)))
+                          s)
+                         (bitwise-and (arithmetic-shift hi (- s 16))
+                                      (vector-ref masks s)))))])
       (lambda (a s)
         (cond [(< 0 s 16) (rot (car a) (cdr a) s)]
               [(< s 32) (rot (cdr a) (car a) (- s 16))]
               [else (error "word<<<: shift out of range: " s)]))))
 
-  ;; word->bytes : word -> (list byte byte byte byte), little endian!
-  (define (word->bytes w)
+  ;; word->bytesl : word -> (list byte byte byte byte), little endian!
+  (define (word->bytesl w)
     (list (bitwise-and (cdr w) 255)
           (bitwise-and (arithmetic-shift (cdr w) -8) 255)
           (bitwise-and (car w) 255)
           (bitwise-and (arithmetic-shift (car w) -8) 255)))
 
-  (define (word.4+ a b c d)
-    (word+ (word+ (word+ a b) c) d))
-
   ;; Bytes and words
   ;; The least significant byte of a word is the first
 
-  ;; bytes->word : (list byte*) -> word
-  (define (bytes->word bs)
-    (define (bs->w akk mul bs)
+  ;; bytesl->word : (list byte*) -> word
+  (define (bytesl->word bs)
+    (let loop ([akk 0] [mul 1] [bs bs])
       (if (null? bs)
-          (word akk)
-          (bs->w (+ akk (* (car bs) mul)) (* 256 mul) (cdr bs))))
-    (bs->w 0 1 bs))
+        (word akk)
+        (loop (+ akk (* (car bs) mul)) (* 256 mul) (cdr bs)))))
 
-  ;; bytes->words : (list byte) -> (list word)
-  (define (bytes->words bytes)
-    (define (loop bs l)
-      (cond [(null? l)         (list (bytes->word (reverse bs)))]
-            [(< (length bs) 4) (loop (cons (car l) bs)  (cdr l))]
-            [else              (cons (bytes->word (reverse bs)) (loop '() l))]))
-    (if (null? bytes) '() (loop '() bytes)))
+  ;; bytesl->words : (list byte) -> (list word)
+  (define (bytesl->words bytes)
+    (let loop ([bs '()] [l bytes])
+      (cond
+       [(null? l)         (list (bytesl->word (reverse! bs)))]
+       [(< (length bs) 4) (loop (cons (car l) bs)  (cdr l))]
+       [else              (cons (bytesl->word (reverse! bs)) (loop '() l))])))
 
-  ;; string->bytes : string -> (list byte)
-  (define (string->bytes s)
-    (bytes->list s))
+  ;; make-list : int any -> (list any)
+  (define (make-list n x)
+    (let loop ([n n] [r '()])
+      (if (zero? n)
+        r
+        (loop (sub1 n) (cons x r)))))
 
   ;; Converts a byte string to a more useful vector
   ;; vector-from-string: byte string -> (vector ...)
   (define (vector-from-string l-raw)
-    (list->vector (bytes->words (string->bytes l-raw))))
+    (list->vector (bytesl->words (bytes->list l-raw))))
 
   (define empty-port (open-input-bytes #""))
 
@@ -188,48 +195,49 @@
   ;; reads 512 bytes from the port, turns them into a vector of 16 32-bit words
   ;; when the port is exhausted it returns #f for the port and
   ;; the last few bytes padded
-
   (define (block/list a-port done)
-    (let ([l-raw (read-bytes (/ 512 8) a-port)])
+    (let ([l-raw (read-bytes 512/8 a-port)])
       (cond
-        ;; File size was a multiple of 512 bits, or we're doing one more round to
-        ;; add the correct padding from the short case
+        ;; File size was a multiple of 512 bits, or we're doing one more round
+        ;; to add the correct padding from the short case
         [(eof-object? l-raw)
-         (if (zero? (modulo done (/ 512 8)))
+         (if (zero? (modulo done 512/8))
            ;; The file is a multiple of 512 or was 0, so there hasn't been a
            ;; chance to add the 1-bit pad, so we need to do a full pad
-           (values (list->vector (step2 (* 8 done) (step1 (string->bytes #""))))
+           (values (list->vector (step2 (* 8 done) (step1 '())))
                    #f
                    done)
            ;; We only enter this block when the previous block didn't have
-           ;; enough room to fit the 64-bit file length,
-           ;; so we just add 448 bits of zeros and then the 64-bit file length (step2)
-           (values (list->vector (step2 (* 8 done) (vector->list (make-vector (quotient 448 8) 0))))
+           ;; enough room to fit the 64-bit file length, so we just add 448
+           ;; bits of zeros and then the 64-bit file length (step2)
+           (values (list->vector (step2 (* 8 done) (make-list 448/8 0)))
                    #f
                    done))]
-        ;; We read exactly 512 bits, the algorythm proceeds as usual
-        [(= (bytes-length l-raw) (/ 512 8))
-         (values (vector-from-string l-raw) a-port (+ done (bytes-length l-raw)))]
+        ;; We read exactly 512 bits, the algorithm proceeds as usual
+        [(= (bytes-length l-raw) 512/8)
+         (values (vector-from-string l-raw)
+                 a-port
+                 (+ done (bytes-length l-raw)))]
         ;; We read less than 512 bits, so the file has ended.
         ;; However, we don't have enough room to add the correct trailer,
         ;; so we add what we can, then go for one more round which will
         ;; automatically fall into the (eof-object? case)
         [(> (* 8 (bytes-length l-raw)) 446)
          (let ([done (+ done (bytes-length l-raw))])
-           (values (list->vector (step2 (* 8 done) (step1 (string->bytes l-raw))))
+           (values (list->vector (step2 (* 8 done) (step1 (bytes->list l-raw))))
                    empty-port
                    done))]
         ;; Returning a longer vector than we should, luckily it doesn't matter.
-        ;; We read less than 512 bits and there is enough room for the correct trailer.
-        ;; Add trailer and bail
+        ;; We read less than 512 bits and there is enough room for the correct
+        ;; trailer.  Add trailer and bail
         [else
          (let ([done (+ done (bytes-length l-raw))])
-           (values (list->vector (step2 (* 8 done) (step1 (string->bytes l-raw))))
+           (values (list->vector (step2 (* 8 done) (step1 (bytes->list l-raw))))
                    #f
                    done))])))
 
   ;; (step2 (* 8 (bytes-length  str))
-  ;;        (step1 (string->bytes str)))
+  ;;        (step1 (bytes->list str)))
 
 
   ;; MD5
@@ -257,10 +265,8 @@
       (append message
               (cons #x80 ; The byte containing the 1 bit => one less
                          ; 0 byte to append
-                    (vector->list
-                     (make-vector
-                      (quotient (- zero-bits-to-append 1) 8)
-                      0))))))
+                    (make-list (quotient (- zero-bits-to-append 1) 8)
+                               0)))))
 
   ;; Step 2  -  Append Length
   ;; A 64 bit representation of the bit length b of the message before
@@ -272,10 +278,9 @@
     (let* ([b  original-length]
            [lo (remainder b #x100000000)]
            [hi (remainder (quotient b #x100000000) #x100000000)])
-      (bytes->words
-       (append padded-message
-               (append (word->bytes (word lo))
-                       (word->bytes (word hi)))))))
+      (bytesl->words (append padded-message
+                             (word->bytesl (word lo))
+                             (word->bytesl (word hi))))))
 
   ;; Step 3  -  Initialize MD Buffer
   ;; These magic constants are used to initialize the loop
@@ -307,10 +312,9 @@
               (define-syntax step
                 (syntax-rules ()
                   [(_ a b c d e f g h)
-                   (set! a (word+ b (word<<< (word.4+ a
-                                                      (e b c d)
-                                                      (vector-ref X f)
-                                                      (word g))
+                   (set! a (word+ b (word<<< (word+ (word+ a (e b c d))
+                                                    (word+ (vector-ref X f)
+                                                           (word g)))
                                              h)))]))
               ;;---
               (step A B C D F  0 3614090360  7)
@@ -409,7 +413,7 @@
       (bytes (vector-ref hex (quotient n 16))
              (vector-ref hex (modulo n 16))))
 
-    (apply bytes-append (map number->hex (apply append (map word->bytes l)))))
+    (apply bytes-append (map number->hex (apply append (map word->bytesl l)))))
 
 ;(define (md5-test)
 ;  (if (and (equal? (md5 "")
