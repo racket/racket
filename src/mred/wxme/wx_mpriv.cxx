@@ -649,14 +649,11 @@ long wxMediaEdit::_FindStringAll(wxchar *str, int direction,
     return -1;
 
   if (!caseSens) {
-    /* FIXME: use locale... */
     oldStr = str;
     str = new WXGC_ATOMIC wxchar[slen + 1];
     for (i = 0; i < slen; i++) {
-      if (str[i] < 128)
-	str[i] = tolower(oldStr[i]);
-      else
-	str[i] = oldStr[i];
+      c = oldStr[i];
+      str[i] = scheme_tofold(c);
     }
     str[i] = 0;
   }
@@ -741,8 +738,7 @@ long wxMediaEdit::_FindStringAll(wxchar *str, int direction,
       while(n--) {
 	c = text[i];
 	if (!caseSens)
-	  if (c >= 'A' && c <= 'Z')
-	    c += ('a' - 'A');
+	  c = scheme_tofold(c);
 	while ((s != beyond) && (str[s + direction] != c)) {
 	  s = smap[s];
 	}
