@@ -5012,7 +5012,7 @@ void browserHwndMsgLoop (LPVOID p)
   }
 }
 
-#define DLL_RELATIVE_PATH "../../../../../../../lib"
+#define DLL_RELATIVE_PATH L"../../../../../../../lib"
 #include "../mzscheme/delayed.inc"
 
 BOOL APIENTRY DllMain (HANDLE hModule, DWORD reason, LPVOID lpReserved)

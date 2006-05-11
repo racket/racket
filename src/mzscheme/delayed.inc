@@ -4,17 +4,17 @@
 # else
 #  define DLL_3M_SUFFIX ""
 # endif
-static char *_dlldir = "dLl dIRECTORy:" /* <- this tag stays, so we can find it again */
-                       DLL_RELATIVE_PATH "\0"
-                       /* Pad with 512 bytes: */
-                       "****************************************************************"
-                       "****************************************************************"
-                       "****************************************************************"
-                       "****************************************************************"
-                       "****************************************************************"
-                       "****************************************************************"
-                       "****************************************************************"
-                       "****************************************************************";
+static wchar_t *_dlldir = L"dLl dIRECTORy:" /* <- this tag stays, so we can find it again */
+                          DLL_RELATIVE_PATH L"\0"
+                          /* Pad with 512 characters: */
+                          L"****************************************************************"
+                          L"****************************************************************"
+                          L"****************************************************************"
+                          L"****************************************************************"
+                          L"****************************************************************"
+                          L"****************************************************************"
+                          L"****************************************************************"
+                          L"****************************************************************";
 static int _dlldir_offset = 14; /* Skip permanent tag */
 
 # ifdef MZ_PRECISE_GC
@@ -24,7 +24,7 @@ START_XFORM_SKIP;
 static void load_delayed_dll(HINSTANCE me, char *lib) 
 {
   /* Don't use the C library here! */
-  char *dlldir = _dlldir + _dlldir_offset;
+  wchar_t *dlldir = _dlldir + _dlldir_offset;
 
   if (dlldir[0] != '<') {
     if ((dlldir[0] == '\\')
@@ -34,11 +34,12 @@ static void load_delayed_dll(HINSTANCE me, char *lib)
       /* Absolute path */
     } else {
       /* Make it absolute, relative to this module */
-      char name[1024], *s;
+      wchar_t *name, *s;
       int j, i;
-      GetModuleFileName(me, name, 1024);
+      name = (wchar_t *)GlobalAlloc(GMEM_FIXED, 1024 * sizeof(wchar_t));
+      GetModuleFileNameW(me, name, 1024);
       name[1023] = 0;
-      s = (char *)GlobalAlloc(GMEM_FIXED, 2048);
+      s = (wchar_t *)GlobalAlloc(GMEM_FIXED, 2048 * sizeof(wchar_t));
       for (i = 0; name[i]; i++) { }
       --i;
       while (i && (name[i] != '\\')) {
@@ -58,10 +59,10 @@ static void load_delayed_dll(HINSTANCE me, char *lib)
     }
 
     {
-      char *t;
+      wchar_t *t;
       int j, i;
 
-      t = (char *)GlobalAlloc(GMEM_FIXED, 2048);
+      t = (wchar_t *)GlobalAlloc(GMEM_FIXED, 2048 * sizeof(wchar_t));
       for (i = 0; dlldir[i]; i++) {
 	t[i] = dlldir[i];
       }
@@ -72,8 +73,8 @@ static void load_delayed_dll(HINSTANCE me, char *lib)
       }
       t[i] = 0;
 
-      if (!LoadLibrary(t)) {
-	MessageBox(NULL, t, "Failure: cannot load DLL", MB_OK);
+      if (!LoadLibraryW(t)) {
+	MessageBoxW(NULL, t, L"Failure: cannot load DLL", MB_OK);
 	ExitProcess(1);
       }
     }

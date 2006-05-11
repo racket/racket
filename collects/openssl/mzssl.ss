@@ -18,7 +18,10 @@
 	   (lib "port.ss")
 	   (lib "etc.ss")
 	   (lib "kw.ss")
-	   (lib "filename-version.ss" "dynext"))
+	   (lib "filename-version.ss" "dynext")
+	   ;; For windows-lib-dir; remove it when that goes into
+	   ;;  a different library:
+	   (lib "winutf16.ss" "compiler" "private"))
 
   (provide ssl-available?
 	   ssl-load-fail-reason
@@ -58,12 +61,17 @@
                    (find-executable-path (find-system-path 'exec-file)))])
 	(with-input-from-file exe
 	  (lambda ()
-	    (let ([m (regexp-match #rx#"dLl dIRECTORy:([^\0]*)\0" (current-input-port))])
+	    (let ([m (regexp-match (byte-regexp 
+				    (bytes-append
+				     #"("
+				     (bytes->utf-16-bytes #"dLl dIRECTORy:")
+				     #".*?)\0\0"))
+				   (current-input-port))])
 	      (unless m (error "cannot find DLL directory"))
 	      (if (regexp-match #rx#"^<" (cadr m))
 		  #f ; no lib dir
 		  (let-values ([(dir name dir?) (split-path exe)])
-		    (build-path dir (bytes->path (cadr m)))))))))))
+		    (build-path dir (bytes->path (utf-16-bytes->bytes (cadr m))))))))))))
 
   (define (ffi-lib-win name)
     (let* ([d (force windows-lib-dir)]

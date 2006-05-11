@@ -76,9 +76,11 @@ wxGIF::wxGIF( char * path)
   lpbi = NULL;
   for (ushort i=0; i<13; i++) { code_mask[i] = Code_Mask[i]; }
   if (path) {
-    fp = fopen(path,"rb");
+    wchar_t *wp;
+    wp = wxWIDE_STRING(path);
+    fp = _wfopen(wp, L"rb");
     if (!fp)
-    	return;
+      return;
     if (ReadHeader(fp)) {
       Create(image.w, image.h, 8);
       if (GetRawImage() != 0)

@@ -78,6 +78,12 @@ extern char **wxGetCompleteFaceList(int *_len);
  #endif
 #endif
 
+#ifdef wx_msw
+# define fopen_to_read(fn) _wfopen(wxWIDE_STRING(fn), L"rb")
+#else
+# define fopen_to_read(fn) fopen(fn, "rb")
+#endif
+
 class GCBitmap {
 public:
 #ifdef MZ_PRECISE_GC
@@ -2565,7 +2571,8 @@ int wxsGetImageType(char *fn)
 #endif
   GC_CAN_IGNORE unsigned char *expect = NULL;
 
-  f = fopen(fn, "rb");
+  f = fopen_to_read(fn, "rb");
+
   if (f) {
     switch ((unsigned)fgetc(f)) {
     case 'B':
@@ -2711,7 +2718,7 @@ int wxGetPreference(const char *name, char *res, long len)
 
     /*************** Common ***************/
 
-    fp = fopen(s, "rb");
+    fp = fopen_to_read(s, "rb");
     if (!fp)
       return 0;
 

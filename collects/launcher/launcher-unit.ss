@@ -10,7 +10,9 @@
 	   (lib "embed.ss" "compiler")
 	   (lib "plthome.ss" "setup")
 
-	   "launcher-sig.ss")
+	   "launcher-sig.ss"
+
+	   (lib "winutf16.ss" "compiler" "private"))
 
   (provide launcher@)
 
@@ -367,6 +369,11 @@
 		     (assemble-exec exec args))
 	    (close-output-port p))))
 
+      (define (utf-16-regexp b)
+	(byte-regexp (bytes-append (bytes->utf-16-bytes b)
+				   #"[^>]*"
+				   (bytes->utf-16-bytes #">"))))
+
       (define (make-windows-launcher kind variant flags dest aux)
 	(if (not (and (let ([m (assq 'independent? aux)])
 			(and m (cdr m)))))
@@ -380,20 +387,22 @@
 	    ;; Independent launcher (needed for Setup PLT):
 	    (begin
 	      (install-template dest kind "mzstart.exe" "mrstart.exe")
-	      (let ([bstr (string->bytes/utf-8 (str-list->dos-str flags))]
+	      (let ([bstr (bytes->utf-16-bytes
+			   (string->bytes/utf-8 (str-list->dos-str flags)))]
 		    [p (open-input-file dest)]
-		    [m #rx#"<Command Line: Replace This[^>]*>"]
-		    [x #rx#"<Executable Directory: Replace This[^>]*>"]
-		    [v #rx#"<Executable Variant: Replace This>"])
-		(let* ([exedir (bytes-append
-				(path->bytes (if (let ([m (assq 'relative? aux)])
-						   (and m (cdr m)))
-						 (or (relativize (normalize+explode-path plthome)
-								 (normalize+explode-path dest))
-						     (build-path 'same))
-						 plthome))
-				;; null character marks end of executable directory
-				#"\0")]
+		    [m (utf-16-regexp #"<Command Line: Replace This")]
+		    [x (utf-16-regexp #"<Executable Directory: Replace This")]
+		    [v (byte-regexp #"<Executable Variant: Replace This")])
+		(let* ([exedir (bytes->utf-16-bytes
+				(bytes-append
+				 (path->bytes (if (let ([m (assq 'relative? aux)])
+						    (and m (cdr m)))
+						  (or (relativize (normalize+explode-path plthome)
+								  (normalize+explode-path dest))
+						      (build-path 'same))
+						  plthome))
+				 ;; null wchar marks end of executable directory
+				 #"\0\0"))]
 		       [find-it ; Find the magic start
 			(lambda (magic s)
 			  (file-position p 0)
@@ -436,7 +445,7 @@
 		  (check-len len-command bstr "collection/file name")
 		  (let ([p (open-output-file dest 'update)])
 		    (write-magic p exedir pos-exedir len-exedir)
-		    (write-magic p bstr pos-command len-command)
+		    (write-magic p (bytes-append bstr #"\0\0") pos-command len-command)
 		    (when (eq? '3m (current-launcher-variant))
 		      (write-magic p #"3" pos-variant 1))
 		    (close-output-port p)))))))

@@ -81,16 +81,16 @@ static int get_iconv_errno(void)
 # define HAVE_CODESET 1
 # define CODESET 0
 # define ICONV_errno get_iconv_errno()
-extern char *scheme_get_dll_path(char *s);
+extern wchar_t *scheme_get_dll_path(wchar_t *s);
 static int iconv_ready = 0;
 static void init_iconv()
 {
 # ifdef MZ_NO_ICONV
 # else
   HMODULE m;
-  m = LoadLibrary(scheme_get_dll_path("iconv.dll"));
+  m = LoadLibraryW(scheme_get_dll_path(L"iconv.dll"));
   if (!m)
-    m = LoadLibrary(scheme_get_dll_path("libiconv.dll"));
+    m = LoadLibraryW(scheme_get_dll_path(L"libiconv.dll"));
   if (!m)
     m = LoadLibrary("iconv.dll");
   if (!m)
@@ -1091,12 +1091,7 @@ do_byte_string_to_char_string(const char *who,
 
   ulen = utf8_decode_x((unsigned char *)chars, istart, ifinish,
 		       NULL, 0, -1,
-		       NULL, NULL, 0,
-#ifdef WINDOWS_UNICODE_SUPPORT
-		       as_locale ? 1 : 0,
-#else
-		       0,
-#endif
+		       NULL, NULL, 0, 0,
 		       NULL, 0, 
 		       (perm > -1) ? 0xD800 : 0);
   if (ulen < 0) {
@@ -1108,12 +1103,7 @@ do_byte_string_to_char_string(const char *who,
   v = (unsigned int *)scheme_malloc_atomic((ulen + 1) * sizeof(unsigned int));
   utf8_decode_x((unsigned char *)chars, istart, ifinish,
 		v, 0, -1,
-		NULL, NULL, 0,
-#ifdef WINDOWS_UNICODE_SUPPORT
-		as_locale ? 1 : 0,
-#else
-		0,
-#endif
+		NULL, NULL, 0, 0,
 		NULL, 0, 
 		(perm > -1) ? 0xD800 : 0);
   
@@ -4209,7 +4199,7 @@ static Scheme_Object *convert_one(const char *who, int opos, int argc, Scheme_Ob
       /* Copy to word-align */
       char *c2;
       c2 = (char *)scheme_malloc_atomic(ifinish - istart);
-      memcpy(c, instr XFORM_OK_PLUS istart, ifinish - istart);
+      memcpy(c2, instr XFORM_OK_PLUS istart, ifinish - istart);
       ifinish = ifinish - istart;
       istart = 0;
       instr = c2;

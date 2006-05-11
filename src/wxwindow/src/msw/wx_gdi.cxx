@@ -1948,7 +1948,9 @@ Bool wxBitmap::LoadFile(char *bitmap_file, long flags, wxColour *bg)
 
   if (flags & wxBITMAP_TYPE_BMP_RESOURCE)
   {
-    ms_bitmap = LoadBitmap(wxhInstance, bitmap_file);
+    wchar_t *ws;
+    ws = wxWIDE_STRING(bitmap_file);
+    ms_bitmap = LoadBitmapW(wxhInstance, ws);
     if (ms_bitmap) {
       BITMAP bm;
       RegisterGDIObject(ms_bitmap);

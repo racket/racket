@@ -462,6 +462,13 @@ wchar_t *wx_convert_to_wchar(char *s, int do_copy)
   return ws;
 }
 
+extern "C" {
+  wchar_t *_wx_convert_to_wchar(char *s, int do_copy)
+  {
+    return wx_convert_to_wchar(s, do_copy);
+  }
+}
+
 char *wx_convert_from_wchar(wchar_t *ws)
 {
   long len, l;

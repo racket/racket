@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "wximgxbm.h"
+#include "wx_utils.h"
 
 
 /*
@@ -69,7 +70,7 @@ char *wxLoadXBM(char *fname, int *width, int *height)
 
   k = 0;
 
-  fp=fopen(fname,"rt");
+  fp=_wfopen(wxWIDE_STRING(fname),L"rt");
   if (!fp) return NULL;
 
   /* figure out the file size (for Informational Purposes Only) */

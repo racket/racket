@@ -1592,6 +1592,10 @@
 	       "Simulate Down" p2
 	       (lambda (c e)
 		 (simulate (sub1 (send s get-value)))))
+  (make-object check-box%
+	       "Disabled" p2
+	       (lambda (c e)
+		 (send s enable (not (send c get-value)))))
   (instructions p "slider-steps.txt")
   (send f show #t))
 

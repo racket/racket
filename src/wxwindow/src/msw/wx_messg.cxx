@@ -50,13 +50,15 @@ Bool wxMessage::Create(wxPanel *panel, char *label, wxBitmap *image, int iconID,
     bm_label = image;
   } else if (iconID) {
     if (!icon_w) {
-      char name[1024];
+      wchar_t *name;
+
+      name = new WXGC_ATOMIC wchar_t[1024];
 
       icon_w = GetSystemMetrics(SM_CXICON);
       icon_h = GetSystemMetrics(SM_CYICON);
 
-      ::GetModuleFileName(NULL, name, 1023);
-      icn = ExtractIcon(NULL, name, 0);
+      ::GetModuleFileNameW(NULL, name, 1023);
+      icn = ExtractIconW(NULL, name, 0);
       icons[wxMSGICON_APP - 1] = (icn ? icn : LoadIcon(NULL, IDI_APPLICATION));
       icons[wxMSGICON_WARNING - 1] = LoadIcon(NULL, IDI_WARNING);
       icons[wxMSGICON_ERROR - 1] = LoadIcon(NULL, IDI_ERROR);

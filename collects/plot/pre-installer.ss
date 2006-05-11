@@ -20,7 +20,7 @@
                                     "Found an unknown source directory: ~s\n"
                                     lib)])]
              [so-name (build-path top-dir "compiled" "native"
-                                  (system-library-subpath)
+                                  (system-library-subpath #f)
                                   (append-extension-suffix libname))])
         (parameterize ([current-directory lib]
                        [current-extension-compiler-flags

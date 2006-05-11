@@ -92,7 +92,7 @@ LPCTSTR FindOneOf(LPCTSTR p1, LPCTSTR p2)
     return NULL;
 }
 
-#define DLL_RELATIVE_PATH "lib"
+#define DLL_RELATIVE_PATH L"lib"
 #include "../mzscheme/delayed.inc"
 
 /////////////////////////////////////////////////////////////////////////////

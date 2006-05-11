@@ -4768,30 +4768,30 @@ void scheme_set_original_dir(Scheme_Object *d)
 
 #ifdef DOS_FILE_SYSTEM
 
-static char *dlldir;
+static wchar_t *dlldir;
 
-__declspec(dllexport) char *scheme_get_dll_path(char *s);
-__declspec(dllexport) void scheme_set_dll_path(char *p);
+__declspec(dllexport) wchar_t *scheme_get_dll_path(wchar_t *s);
+__declspec(dllexport) void scheme_set_dll_path(wchar_t *p);
 
-char *scheme_get_dll_path(char *s)
+wchar_t *scheme_get_dll_path(wchar_t *s)
 {
   if (dlldir) {
     int len1, len2;
-    char *p;
-    len1 = strlen(dlldir);
-    len2 = strlen(s);
-    p = (char *)scheme_malloc_atomic(len1 + len2 + 2);
+    wchar_t *p;
+    len1 = wc_strlen(dlldir);
+    len2 = wc_strlen(s);
+    p = (wchar_t *)scheme_malloc_atomic((len1 + len2 + 2) * sizeof(wchar_t));
     memcpy(p, dlldir, len1);
     if (p[len1 - 1] != '\\') {
       p[len1++] = '\\';
     }
-    memcpy(p + len1, s, len2 + 1);
+    memcpy(p + len1, s, (len2 + 1) * sizeof(wchar_t));
     return p;
   } else
     return s;
 }
 
-void scheme_set_dll_path(char *p)
+void scheme_set_dll_path(wchar_t *p)
 {
   dlldir = p;
 }

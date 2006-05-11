@@ -53,6 +53,10 @@
 #endif
 #endif
 
+/* Need wxWIDE_STRING for Windows: */
+extern wchar_t *_wx_convert_to_wchar(char *s, int do_copy);
+#define wxWIDE_STRING(s) _wx_convert_to_wchar(s, 0)
+
 /* 3.2 backward compatibility code */
 LFUNC(CreateOldColorTable, int, (XpmColor *ct, int ncolors,
 				 XpmColor ***oldct));
@@ -454,7 +458,7 @@ XpmReadFileToBuffer(char *filename, char **buffer_return)
 
     *buffer_return = NULL;
 
-    fd = open(filename, O_RDONLY);
+    fd = _wopen(wxWIDE_STRING(filename), O_RDONLY);
     if (fd < 0)
 	return XpmOpenFailed;
 
@@ -488,7 +492,7 @@ int
 XpmWriteFileFromBuffer(char *filename, char *buffer)
 {
     int fcheck, len;
-    FILE *fp = fopen(filename, "w");
+    FILE *fp = _wfopen(wxWIDE_STRING(filename), L"w");
 
     if (!fp)
 	return XpmOpenFailed;

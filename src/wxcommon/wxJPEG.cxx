@@ -49,6 +49,17 @@ static wxColor *the_color;
 extern void wxmeError(const char *e);
 extern int wxGetPreference(const char *name, char *res, long len);
 
+#ifdef wx_msw
+# include "wx_utils.h"
+# define wxFOpen(fn, m) _wfopen(wxWIDE_STRING(fn), m)
+# define wx_RB_mode L"rb"
+# define wx_WB_mode L"wb"
+#else
+# define wxFOpen(fn, m) fopen(fn, m)
+# define wx_RB_mode "rb"
+# define wx_WB_mode "wb"
+#endif
+
 #ifndef DRAW_SCANLINE_DEFINED
 
 static void draw_scanline(JSAMPROW row, int cols, int rownum, int step, JSAMPARRAY colormap, wxMemoryDC *dc,
@@ -201,7 +212,7 @@ int read_JPEG_file(char * filename, wxBitmap *bm)
    * requires it in order to read binary files.
    */
 
-  if ((infile = fopen(filename, "rb")) == NULL) {
+  if ((infile = wxFOpen(filename, wx_RB_mode)) == NULL) {
     sprintf(jpeg_err_buffer, "can't open %.255s\n", filename);
     wxmeError(jpeg_err_buffer);
     return 0;
@@ -355,7 +366,7 @@ int write_JPEG_file(char *filename, wxBitmap *bm, int quality)
   wid = bm->GetWidth();
   row_pointer = new WXGC_ATOMIC JSAMPLE[3 * wid];
 
-  if ((outfile = fopen(filename, "wb")) == NULL) {
+  if ((outfile = wxFOpen(filename, wx_WB_mode)) == NULL) {
     if (desel)
       dc->SelectObject(NULL);
     sprintf(jpeg_err_buffer, "can't open %.255s\n", filename);
@@ -629,7 +640,7 @@ int wx_read_png(char *file_name, wxBitmap *bm, int w_mask, wxColour *bg)
    wxMemoryDC *mdc = NULL;
    wxBitmap *mbm = NULL;
 
-   if ((fp = fopen(file_name, "rb")) == NULL)
+   if ((fp = wxFOpen(file_name, wx_RB_mode)) == NULL)
      return 0;
 
    /* Create and initialize the png_struct with the desired error handler
@@ -918,7 +929,7 @@ int wx_write_png(char *file_name, wxBitmap *bm)
    volatile int desel = 1;
    volatile int mdesel = 1;
 
-   if ((fp = fopen(file_name, "wb")) == NULL)
+   if ((fp = wxFOpen(file_name, wx_WB_mode)) == NULL)
      return 0;
 
    /* Create and initialize the png_struct with the desired error handler

@@ -36,14 +36,14 @@ static int _coldir_offset = 19; /* Skip permanent tag */
 #ifdef DOS_FILE_SYSTEM
 # include <Windows.h>
 
-#define DLL_RELATIVE_PATH "lib"
+#define DLL_RELATIVE_PATH L"lib"
 #include "delayed.inc"
 
 extern 
 # ifdef __cplusplus
 "C"
 # endif
-__declspec(dllexport) void scheme_set_dll_path(char *s);
+__declspec(dllexport) void scheme_set_dll_path(wchar_t *s);
 
 static void record_dll_path(void)
 {
@@ -539,17 +539,17 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	 where the old end was, and cmdline_exe_hack[8]
 	 says how long the cmdline string is. It might
 	 be relative to the executable. */
-      char *path;
+      wchar_t *path;
       HANDLE fd;
 
-      path = (char *)malloc(1024);
-      GetModuleFileName(NULL, path, 1024);
-      fd = CreateFile(path, GENERIC_READ,
-		      FILE_SHARE_READ | FILE_SHARE_WRITE,
-		      NULL,
-		      OPEN_EXISTING,
-		      0,
-		      NULL);
+      path = (wchar_t *)malloc(1024 * sizeof(wchar_t));
+      GetModuleFileNameW(NULL, path, 1024);
+      fd = CreateFileW(path, GENERIC_READ,
+		       FILE_SHARE_READ | FILE_SHARE_WRITE,
+		       NULL,
+		       OPEN_EXISTING,
+		       0,
+		       NULL);
       if (fd == INVALID_HANDLE_VALUE)
 	p = (unsigned char *)"\0\0\0";
       else {
@@ -576,13 +576,24 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  } else {
 	    /* Make it absolute, relative to this executable */
 	    int plen = strlen(prog);
-	    int mlen = strlen(path);
-	    char *s2;
-	    while (mlen && (path[mlen - 1] != '\\')) {
+	    int mlen, len;
+	    char *s2, *p2;
+
+	    /* UTF-8 encode path: */
+	    for (len = 0; path[len]; len++) { }
+	    mlen = scheme_utf8_encode((unsigned int *)path, 0, len,
+				      NULL, 0,
+				      1 /* UTF-16 */);
+	    p2 = (char *)malloc(mlen + 1);
+	    mlen = scheme_utf8_encode((unsigned int *)path, 0, len,
+				      (unsigned char *)p2, 0,
+				      1 /* UTF-16 */);
+
+	    while (mlen && (p2[mlen - 1] != '\\')) {
 	      mlen--;
 	    }
 	    s2 = (char *)malloc(mlen + plen + 1);
-	    memcpy(s2, path, mlen);
+	    memcpy(s2, p2, mlen);
 	    memcpy(s2 + mlen, prog, plen + 1);
 	    prog = s2;
 	  }

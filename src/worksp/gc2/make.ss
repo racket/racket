@@ -246,7 +246,13 @@
 	      srcs))])
   (link-dll objs null null dll "" #f))
 
+(unless (file-exists? "mzscheme.res")
+  (system- (string-append 
+	    "rc /l 0x409 "
+	    "/fomzscheme.res ../mzscheme/mzscheme.rc")))
+
 (let ([objs (list
+	     "mzscheme.res"
 	     "xsrc/main.obj"
 	     "../mzscheme/Release/uniplt.obj"
 	     "../../../lib/msvc/libmzsch3mxxxxxxx.lib")])

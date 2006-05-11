@@ -8,7 +8,7 @@
 #include "myssink_i.c"
 #include "Sink.h"
 
-#define DLL_RELATIVE_PATH "."
+#define DLL_RELATIVE_PATH L"."
 #include "../../mzscheme/delayed.inc"
 
 CComModule _Module;
