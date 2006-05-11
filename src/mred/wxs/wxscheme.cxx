@@ -2571,7 +2571,7 @@ int wxsGetImageType(char *fn)
 #endif
   GC_CAN_IGNORE unsigned char *expect = NULL;
 
-  f = fopen_to_read(fn, "rb");
+  f = fopen_to_read(fn);
 
   if (f) {
     switch ((unsigned)fgetc(f)) {
@@ -2718,7 +2718,7 @@ int wxGetPreference(const char *name, char *res, long len)
 
     /*************** Common ***************/
 
-    fp = fopen_to_read(s, "rb");
+    fp = fopen_to_read(s);
     if (!fp)
       return 0;
 
