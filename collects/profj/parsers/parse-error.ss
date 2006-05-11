@@ -206,8 +206,12 @@
          (format "malformed string ~a" (car (token-value tok))))
         ((eq? (get-token-name tok) 'NUMBER_ERROR)
          (format "malformed number ~a" (token-value tok)))
+        ((eq? (get-token-name tok) 'HEX_LIT)
+         (format "hexadecimal formatted number ~a" (token-value tok)))
+        ((eq? (get-token-name tok) 'OCT_LIT)
+         (format "octal formatted number ~a" (token-value tok)))
         ((eq? (get-token-name tok) 'OTHER_SPECIAL)
-         (parse-error "Found special which is not a legal character in ProfessorJ" 
+         (parse-error "Found a special which is not a legal character in ProfessorJ" 
                       (cadr (token-value tok)) (caddr (token-value tok))))
         ((eq? (get-token-name tok) 'TEST_SUITE) (format "Test Suite Test"))
         ((eq? (get-token-name tok) 'INTERACTIONS_BOX) (format "Java Interactions Box"))
@@ -754,6 +758,10 @@
                      (else
                       (parse-members next (parse-expression null assign-exp 'start getter #f #f) 'field-init-end getter #f just-method?)))))
                 ((o-paren? n-tok) (parse-members next (getter) 'method-parms getter abstract-method? just-method?))
+                ((o-bracket? n-tok)
+                 (parse-error
+                  "'[' cannot appear here. Array specifications must immediately follow the type. Methods begin with '('."
+                  srt ne))
                 ((open-separator? n-tok) 
                  (parse-error (format "Method parameters must begin with '(' found ~a." n-out) srt ne))
                 ((id-token? n-tok)
@@ -1737,8 +1745,34 @@
                 (else
                  (parse-error (format "Expected a name after '.', ~a is not a valid name" (format-out (get-tok next)))
                               start (get-end next))))))
-           ((O_PAREN) (parse-statement cur-tok (parse-expression pre cur-tok 'method-call-args getter #f #t)
-                                       'end-exp getter id-ok? ctor? super-seen?))
+           ((O_PAREN) 
+            (if (and (advanced?) (close-to-keyword? (get-tok pre) 'for))
+                (let* ((next (getter))
+                       (next-tok (get-tok next)))
+                  (cond
+                    ((prim-type? next-tok)
+                     (parse-error 
+                      (format "Primitive type ~a cannot appear here.~nSection began with ~a, which is close to 'for'. Check spelling and capitalization."
+                              (format-out next-tok)
+                              (format-out (get-tok pre)))
+                      ps (get-end next)))
+                    ((c-paren? next-tok)
+                     (let ((after-c (getter)))
+                       (if (semi-colon? (get-tok after-c))
+                           (parse-statement cur-tok (getter) 'end-exp getter id-ok? ctor? super-seen?)
+                           (parse-statement cur-tok
+                                            (parse-expression next-tok after-c 'dot-op-or-end 
+                                                              getter #f #t)
+                                            'end-exp getter id-ok? ctor? super-seen?))))
+                    (else
+                     (parse-statement 
+                      cur-tok
+                      (parse-expression cur-tok 
+                                        (parse-expression cur-tok next-tok 'start getter #f #t)
+                                        'method-args getter #f #t)
+                      'end-exp getter id-ok? ctor? super-seen?))))
+                (parse-statement cur-tok (parse-expression pre cur-tok 'method-call-args getter #f #t)
+                                 'end-exp getter id-ok? ctor? super-seen?)))
            (else 
             (cond
               ((and (advanced?) (eq? kind 'O_BRACKET))

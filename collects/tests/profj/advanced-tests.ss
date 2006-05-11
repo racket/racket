@@ -267,6 +267,23 @@ class WeeklyPlanner{
     }"
    'advanced #t "If with no else, and return in if")
   
+  (execute-test
+   "class Blah {
+	boolean same (int[] these, int[] those) {
+		int which = 0;
+		while ((which < these.length) && (which < those.length)) {
+			if (these[which] == those[which]) {
+				which = which + 1;
+				return true;
+				}
+			return false;
+			}
+		}
+	}"
+   'advanced #t "No reachable return -- while loop has returns")
+  
+
+  
   ;;Interaction tests, mix of right and error
   
   (interact-test
