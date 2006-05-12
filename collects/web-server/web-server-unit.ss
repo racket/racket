@@ -4,7 +4,7 @@
            "connection-manager.ss"
            "configuration-structures.ss"
            "servlet.ss"
-           "cache-table.ss"
+           "private/cache-table.ss"
            (rename "request-parsing.ss" 
                    the-read-request read-request))
   (require (prefix sequencer: "dispatch-sequencer.ss")
@@ -31,33 +31,29 @@
         (let ([the-server-custodian (make-custodian)])
           (start-connection-manager the-server-custodian)
           (parameterize ([current-custodian the-server-custodian]
-                         [current-server-custodian the-server-custodian])
+                         [current-server-custodian the-server-custodian]
+                         [current-thread-initial-stack-size 3])
             (thread
              (lambda ()
-               (listener-loop))))
+               (start-listener))))
           (lambda ()
             (custodian-shutdown-all the-server-custodian))))
       
-      ;; listener-loop : -> void
+      ;; start-listener : -> void
       ;; loops around starting a listener if the current listener dies
-      (define (listener-loop)
-        (let loop ()
-          (thread-wait
-           (let* ([listener (tcp-listen config:port config:max-waiting
-                                        #t config:listen-ip)]
-                  [get-ports
-                   (lambda () (tcp-accept listener))])
-             (thread
-              (lambda ()
-                (with-handlers ([void (lambda (e)
-                                        ; If the exception did not kill the listener
-                                        (with-handlers ([void void])
-                                          (tcp-close listener))
-                                        ; Rethrow the error to this thread's error printer
-                                        (raise e))])
-                  (server-loop get-ports
-                               tcp-addresses))))))
-          (loop)))
+      (define (start-listener)
+        (let* ([listener (tcp-listen config:port config:max-waiting
+                                     #t config:listen-ip)]
+               [get-ports
+                (lambda () (tcp-accept listener))])
+          (with-handlers ([void (lambda (e)
+                                  ; If the exception did not kill the listener
+                                  (with-handlers ([void void])
+                                    (tcp-close listener))
+                                  ; Rethrow the error to this thread's error printer
+                                  (raise e))])
+            (server-loop get-ports
+                         tcp-addresses))))
       
       ;; server-loop: (-> input-port output-port) (input-port -> string string) -> void
       ;; start a thread to handle each incoming connection

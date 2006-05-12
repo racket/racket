@@ -1,9 +1,6 @@
 (module servlet-tables mzscheme
-  (require (lib "contract.ss")
-           (lib "url.ss" "net")
-           (lib "list.ss")
-           (lib "plt-match.ss")
-           "timer.ss")
+  (require (lib "contract.ss"))
+  (require "timer.ss")
   (provide (struct exn:servlet:instance ())
            (struct exn:servlet:no-current-instance ())
            (struct exn:servlet:continuation (expiration-handler))
@@ -35,12 +32,8 @@
   ;; * The servlet-instance-mutex is used to guarentee mutual-exclusion in the
   ;;   case when it is attempted to invoke multiple continuations
   ;;   simultaneously.
-  (provide
-   match-url-params)
   (provide/contract
-   [continuation-url? (url? . -> . (or/c boolean? (list/c symbol? number? number?)))]
-   [embed-ids (symbol? number? number? url? . -> . string?)]
-   [store-continuation! (procedure? procedure? url? servlet-instance? . -> . string?)]
+   [store-continuation! (procedure? procedure? servlet-instance? . -> . (list/c symbol? integer? integer?))]
    [create-new-instance! (hash-table? custodian? execution-context? semaphore? timer?
                                       . -> . servlet-instance?)]
    [remove-instance! (hash-table? servlet-instance? . -> . any)]
@@ -78,7 +71,7 @@
                   (hash-table-put! k-table1 id v)
                   ; Replace continuations with #f
                   (hash-table-put! k-table1 id (list* #f (cdr v))))))
-           k-table1))            
+           k-table1))
 
        ;; get-k-id!: hash-table -> number
        ;; get the current-continuation id and increment the internal value
@@ -87,14 +80,14 @@
            (hash-table-put! k-table id-slot (add1 id))
            id)))))
 
-  ;; store-continuation!: continuation expiration-handler uri servlet-instance -> url-string
+  ;; store-continuation!: continuation expiration-handler servlet-instance -> (list symbol? integer? integer?)
   ;; store a continuation in a k-table for the provided servlet-instance
-  (define (store-continuation! k expiration-handler uri inst)
+  (define (store-continuation! k expiration-handler inst)
     (let ([k-table (servlet-instance-k-table inst)])
       (let ([next-k-id (get-k-id! k-table)]
             [salt      (random 100000000)])
         (hash-table-put! k-table next-k-id (list k expiration-handler salt))
-        (embed-ids (servlet-instance-id inst) next-k-id salt uri))))
+        (list (servlet-instance-id inst) next-k-id salt))))
 
   ;; clear-continuations!: servlet-instance -> void
   ;; replace the k-table for the given servlet-instance
@@ -115,67 +108,4 @@
 
   ;; remove-instance!: hash-table servlet-instance -> void
   (define (remove-instance! instance-table inst)
-    (hash-table-remove! instance-table (servlet-instance-id inst)))
-
-  ;; ********************************************************************************
-  ;; Parameter Embedding
-
-  (define URL-PARAMS:REGEXP (regexp "([^\\*]*)\\*([^\\*]*)\\*([^\\*]*)"))
-
-  (define (match-url-params x) (regexp-match URL-PARAMS:REGEXP x))
-
-  ;; embed-ids: number number number url -> string
-  (define (embed-ids inst-id k-id salt in-url)
-    (insert-param
-     in-url
-     (format "~a*~a*~a" inst-id k-id salt)))
-
-  ;; continuation-url?: url -> (or/c (list number number number) #f)
-  ;; determine if this url encodes a continuation and extract the instance id and
-  ;; continuation id.
-  (define (continuation-url? a-url)
-    (let ([k-params (filter match-url-params
-                            (apply append (map path/param-param (url-path a-url))))])
-      (if (empty? k-params)
-          #f
-          (match (match-url-params (first k-params))
-            [(list s instance k-id salt)
-             (let ([k-id/n (string->number k-id)]
-                   [salt/n (string->number salt)])
-               (if (and (number? k-id/n)
-                        (number? salt/n))
-                   (list (string->symbol instance)
-                         k-id/n
-                         salt/n)
-                   ; XXX: Maybe log this in some way?
-                   #f))]))))
-  
-  ;; insert-param: url string -> string
-  ;; add a path/param to the path in a url
-  ;; (assumes that there is only one path/param)
-  (define (insert-param in-url new-param-str)
-    (url->string
-     (replace-path
-      (lambda (old-path)        
-        (if (empty? old-path)
-            (list (make-path/param "" (list new-param-str)))
-            (list* (make-path/param (path/param-path (first old-path))
-                                    (list new-param-str))
-                   (rest old-path))))
-      in-url)))
-
-  ;; replace-path: (url-path -> url-path) url -> url
-  ;; make a new url by replacing the path part of a url with a function
-  ;; of the url's old path
-  ;; also remove the query
-  (define (replace-path proc in-url)
-    (let ([new-path (proc (url-path in-url))])
-      (make-url
-       (url-scheme in-url)
-       (url-user in-url)
-       (url-host in-url)
-       (url-port in-url)
-       (url-path-absolute? in-url)
-       new-path
-       empty
-       (url-fragment in-url)))))
+    (hash-table-remove! instance-table (servlet-instance-id inst))))

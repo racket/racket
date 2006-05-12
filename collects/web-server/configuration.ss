@@ -5,7 +5,7 @@
            "sig.ss"
            "util.ss"
            "parse-table.ss"
-           "cache-table.ss"
+           "private/cache-table.ss"
            "response.ss")
   (require (lib "unitsig.ss")
            (lib "contract.ss"))

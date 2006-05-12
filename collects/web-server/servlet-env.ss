@@ -1,17 +1,14 @@
 (module servlet-env mzscheme
+  (require (lib "sendurl.ss" "net")
+           (lib "unitsig.ss"))
   (require "configuration.ss"
            "web-server.ss"
            "sig.ss"
-           "servlet.ss"
-           "connection-manager.ss"
            "servlet-tables.ss"
            "util.ss"
            "response.ss"
-           "cache-table.ss")
-  (require (lib "url.ss" "net")
-           (lib "sendurl.ss" "net")
-           (lib "unitsig.ss")
-           (lib "tcp-sig.ss" "net"))
+           "private/cache-table.ss")
+  (require "servlet.ss")
   (provide (rename on-web:syntax on-web)
            (all-from "servlet.ss"))
   

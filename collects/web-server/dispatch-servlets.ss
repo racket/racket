@@ -10,7 +10,8 @@
            "sig.ss"
            "timer.ss"
            "util.ss"
-           "cache-table.ss")  
+           "private/url.ss"
+           "private/cache-table.ss")  
   (provide interface-version
            gen-dispatcher)
   

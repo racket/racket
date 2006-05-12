@@ -4,6 +4,7 @@
            (lib "xml.ss" "xml"))
   (require "servlet-tables.ss"
            "response.ss"
+           "private/url.ss"
            "servlet-helpers.ss"
            "timer.ss"
            "web-cells.ss")
@@ -72,9 +73,11 @@
    [send/suspend/dispatch ((embed/url? . -> . servlet-response?) . -> . any/c)]
    [send/suspend/callback (xexpr/callback? . -> . any/c)])
   
+  (require "url.ss")
   (provide
    (all-from "web-cells.ss")
-   (all-from "servlet-helpers.ss"))
+   (all-from "servlet-helpers.ss")
+   (all-from "url.ss"))
   
   ;; ************************************************************
   ;; EXPORTS
@@ -123,10 +126,10 @@
        (let/cc k
          (let* ([inst (get-current-servlet-instance)]
                 [ctxt (servlet-instance-context inst)]
-                [k-url (store-continuation!
-                        k expiration-handler
-                        (request-uri (execution-context-request ctxt))
-                        inst)]
+                [k-embedding (store-continuation! k expiration-handler inst)]
+                [k-url (embed-ids 
+                        k-embedding
+                        (request-uri (execution-context-request ctxt)))]
                 [k-url ((current-url-transform) k-url)]
                 [response (response-generator k-url)])
            (output-response (execution-context-connection ctxt) response)
