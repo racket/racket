@@ -2,6 +2,7 @@
 
   (provide md5)
 
+  ;;; Copyright (c) 2006, PLT Scheme Inc.
   ;;; Copyright (c) 2002, Jens Axel Soegaard
   ;;;
   ;;; Permission to copy this software, in whole or in part, to use this
@@ -15,14 +16,7 @@
   ;; in R5RS Scheme. The algorithm takes an arbitrary byte-string or
   ;; an input port, and returns a 128-bit "fingerprint" byte string.
   ;; The algorithm was invented by Ron Rivest, RSA Security, INC.
-  ;; Reference:  RFC 1321, <http://www.faqs.org/rfcs/rfc1321.html>
-
-  ;;; Technicalities
-  ;; The algorithm is designed to be efficiently implemented
-  ;; using 32 bit arithmetic. If your implementation supports
-  ;; 32 bit arithmetic directly, you should substitute the
-  ;; portable 32 operations with primitives of your implementation.
-  ;; See the PLT version below for an example.
+  ;; Reference: RFC 1321, <http://www.faqs.org/rfcs/rfc1321.html>
 
   ;;; History
   ; 14-10-2002  /jas
@@ -79,6 +73,7 @@
 
   ; 11-5-2006 / Eli
   ;  - Cleaned up a lot, removed Larceny-isms
+  ;  - Heavy optimization: not consing anything throughout the loop
 
 
   ;;; Word aritmetic (32 bit)
@@ -102,9 +97,8 @@
            (if (<= 0 n 4294967296)
              (cons (quotient n 65536) (remainder n 65536))
              (error 'word "out of range: ~e" n)))]
-      ;; to use when the number is known to be in range
-      [(word #:safe #:new c) #'(word #:new #:safe c)]
-      [(word #:new #:safe c)
+      ;; use when the number is known to be in range
+      [(word #:new+safe c)
        #'(let ([n c]) (cons (quotient n 65536) (remainder n 65536)))]
       ;; default form: compute at compile-time if possible
       [(word c)
@@ -131,38 +125,30 @@
   (define (word+=! a b)
     (let ([t1 (+ (car a) (car b))]
           [t2 (+ (cdr a) (cdr b))])
-      (set-car! a (bitwise-and (+ t1 (arithmetic-shift t2 -16)) 65535))
-      (set-cdr! a (bitwise-and t2 65535))
-      a))
+      (cons! a
+             (bitwise-and (+ t1 (arithmetic-shift t2 -16)) 65535)
+             (bitwise-and t2 65535))))
 
   (define word<<<!
     (let* ([masks '#(#x0 #x1 #x3 #x7 #xF #x1F #x3F #x7F #xFF #x1FF #x3FF #x7FF
                      #xFFF #x1FFF #x3FFF #x7FFF #xFFFF)])
       (lambda (a s)
-        (let ([rot (lambda (hi lo s)
-                     (cons! a
-                            (bitwise-ior
-                             (arithmetic-shift
-                              (bitwise-and hi (vector-ref masks (- 16 s)))
-                              s)
-                             (bitwise-and (arithmetic-shift lo (- s 16))
-                                          (vector-ref masks s)))
-                            (bitwise-ior
-                             (arithmetic-shift
-                              (bitwise-and lo (vector-ref masks (- 16 s)))
-                              s)
-                             (bitwise-and (arithmetic-shift hi (- s 16))
-                                          (vector-ref masks s)))))])
-          (cond [(< 0 s 16) (rot (car a) (cdr a) s)]
-                [(< s 32) (rot (cdr a) (car a) (- s 16))]
-                [else (error 'word<<< "shift out of range: ~e" s)])))))
-
-  ;; word->bytesl : word -> (list byte byte byte byte), little endian!
-  (define (word->bytesl w)
-    (list (bitwise-and (cdr w) 255)
-          (bitwise-and (arithmetic-shift (cdr w) -8) 255)
-          (bitwise-and (car w) 255)
-          (bitwise-and (arithmetic-shift (car w) -8) 255)))
+        (let-values ([(hi lo s)
+                      (cond [(< 0 s 16) (values (car a) (cdr a) s)]
+                            [(< s 32)   (values (cdr a) (car a) (- s 16))]
+                            [else (error 'word<<< "shift out of range: ~e"
+                                         s)])])
+          (cons! a
+                 (bitwise-ior
+                  (arithmetic-shift (bitwise-and hi (vector-ref masks (- 16 s)))
+                                    s)
+                  (bitwise-and (arithmetic-shift lo (- s 16))
+                               (vector-ref masks s)))
+                 (bitwise-ior
+                  (arithmetic-shift (bitwise-and lo (vector-ref masks (- 16 s)))
+                                    s)
+                  (bitwise-and (arithmetic-shift hi (- s 16))
+                               (vector-ref masks s))))))))
 
   ;; Bytes and words
   ;; The least significant byte of a word is the first
@@ -171,15 +157,16 @@
   ;; bytes->word-vector! : vector byte-string -> void
   (define (bytes->word-vector! result l-raw)
     ;; assumption: always getting a byte-string with 64 places
-    (unless (= 64 (bytes-length l-raw))
-      (error 'bytes->word-vector! "something bad happened"))
+    ;; (unless (= 64 (bytes-length l-raw))
+    ;;   (error 'bytes->word-vector! "something bad happened"))
     (let loop ([n 15])
       (when (<= 0 n)
-        (let ([w (vector-ref result n)] [n (* 4 n)])
-          (set-car! w (+ (bytes-ref l-raw (+ 2 n))
-                         (* 256 (bytes-ref l-raw (+ 3 n)))))
-          (set-cdr! w (+ (bytes-ref l-raw n)
-                         (* 256 (bytes-ref l-raw (+ 1 n))))))
+        (let ([m (* 4 n)])
+          (cons! (vector-ref result n)
+                 (+ (bytes-ref l-raw (+ 2 m))
+                    (* 256 (bytes-ref l-raw (+ 3 m))))
+                 (+ (bytes-ref l-raw m)
+                    (* 256 (bytes-ref l-raw (+ 1 m))))))
         (loop (sub1 n)))))
 
   (define empty-port (open-input-bytes #""))
@@ -190,8 +177,9 @@
   ;; 32-bit words when the port is exhausted it returns #f for the port and the
   ;; last few bytes padded
   (define (read-block! a-port done result)
-    (define (write-words! done buf)
-      (bytes->word-vector! result (step2 (* 8 done) buf)))
+    (define-syntax write-words!
+      (syntax-rules ()
+        [(_ done buf) (bytes->word-vector! result (step2 (* 8 done) buf))]))
     (let ([l-raw (read-bytes 512/8 a-port)])
       (cond
         ;; File size was a multiple of 512 bits, or we're doing one more round
@@ -237,8 +225,7 @@
     (let ([a-port
            (cond [(bytes? a-thing) (open-input-bytes a-thing)]
                  [(input-port? a-thing) a-thing]
-                 [else (raise-type-error
-                        'md5 "input-port or bytes" a-thing)])])
+                 [else (raise-type-error 'md5 "input-port or bytes" a-thing)])])
       (step5 (step4 a-port))))
 
   ;; Step 1  -  Append Padding Bits
@@ -248,11 +235,11 @@
   ;; step1 : bytes -> bytes
 
   (define (step1 message)
-    (let* ([z-b-t-a (modulo (- 448 (* 8 (bytes-length message))) 512)]
-           [zero-bits-to-append (if (zero? z-b-t-a) 512 z-b-t-a)])
+    (let* ([nbytes (modulo (- 448/8 (bytes-length message)) 512/8)]
+           [nbytes (if (zero? nbytes) 512/8 nbytes)])
       (bytes-append message
                     #"\x80" ; the 1 bit byte => one less 0 bytes to append
-                    (make-bytes (quotient (- zero-bits-to-append 1) 8) 0))))
+                    (make-bytes (sub1 nbytes) 0))))
 
   ;; Step 2  -  Append Length
   ;; A 64 bit representation of the bit length b of the message before
@@ -274,7 +261,7 @@
 
   ;; Step 4  -  Process Message in 16-Word Blocks
   ;; For each 16 word block, go through a round one to four.
-  ;; step4 : (list word) -> "(list word word word word)"
+  ;; step4 : input-port -> (list word word word word)
 
   ;; Step 3 :-) (magic constants)
   (define (step4 a-port)
@@ -283,10 +270,10 @@
       (vector (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0)
               (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0)
               (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0)))
-    (define A (word #:new #:safe #x67452301))
-    (define B (word #:new #:safe #xefcdab89))
-    (define C (word #:new #:safe #x98badcfe))
-    (define D (word #:new #:safe #x10325476))
+    (define A (word #:new+safe #x67452301))
+    (define B (word #:new+safe #xefcdab89))
+    (define C (word #:new+safe #x98badcfe))
+    (define D (word #:new+safe #x10325476))
     (define AA (cons 0 0))
     (define BB (cons 0 0))
     (define CC (cons 0 0))
@@ -434,17 +421,19 @@
   ;; Step 5  -  Output
   ;; To finish up, we convert the word to hexadecimal string
   ;; - and make sure they end up in order.
-  ;; step5 : "(list word word word word)" -> string
+  ;; step5 : (list word word word word) -> string
 
   (define (step5 l)
-
     (define hex #(48 49 50 51 52 53 54 55 56 57 97 98 99 100 101 102))
-
-    (define (number->hex n)
-      (bytes (vector-ref hex (quotient n 16))
-             (vector-ref hex (modulo n 16))))
-
-    (apply bytes-append (map number->hex (apply append (map word->bytesl l)))))
+    ;; word->bytesl : word -> (list byte),
+    ;; returns a little endian result, but each byte is hi half and then lo half
+    (define (word->bytesl w)
+      (let ([byte (lambda (n b) (bitwise-and (arithmetic-shift n (- b)) 15))]
+            [lo (cdr w)] [hi (car w)])
+        (list (byte lo 4) (byte lo 0) (byte lo 12) (byte lo 8)
+              (byte hi 4) (byte hi 0) (byte hi 12) (byte hi 8))))
+    (apply bytes (map (lambda (n) (vector-ref hex n))
+                      (apply append (map word->bytesl l)))))
 
 ;(define (md5-test)
 ;  (if (and (equal? (md5 "")
