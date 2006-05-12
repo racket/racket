@@ -157,7 +157,7 @@
   ;; bytes->word-vector! : vector byte-string -> void
   (define (bytes->word-vector! result l-raw)
     ;; assumption: always getting a byte-string with 64 places
-    ;; (unless (= 64 (bytes-length l-raw))
+    ;; (unless (eq? 64 (bytes-length l-raw))
     ;;   (error 'bytes->word-vector! "something bad happened"))
     (let loop ([n 15])
       (when (<= 0 n)
@@ -196,24 +196,24 @@
              (make-bytes 448/8 0)))
          (values #f done)]
         ;; We read exactly 512 bits, the algorithm proceeds as usual
-        [(= (bytes-length l-raw) 512/8)
+        [(eq? (bytes-length l-raw) 512/8)
          (bytes->word-vector! result l-raw)
          (values a-port (+ done (bytes-length l-raw)))]
         ;; We read less than 512 bits, so the file has ended.
-        ;; However, we don't have enough room to add the correct trailer,
-        ;; so we add what we can, then go for one more round which will
-        ;; automatically fall into the (eof-object? case)
-        [(> (* 8 (bytes-length l-raw)) 446)
-         (let ([done (+ done (bytes-length l-raw))])
-           (write-words! done (step1 l-raw))
-           (values empty-port done))]
-        ;; Returning a longer vector than we should, luckily it doesn't matter.
-        ;; We read less than 512 bits and there is enough room for the correct
-        ;; trailer.  Add trailer and bail
         [else
          (let ([done (+ done (bytes-length l-raw))])
            (write-words! done (step1 l-raw))
-           (values #f done))])))
+           (values
+            (if (> (* 8 (bytes-length l-raw)) 446)
+              ;; However, we don't have enough room to add the correct trailer,
+              ;; so we add what we can, then go for one more round which will
+              ;; automatically fall into the (eof-object? case)
+              empty-port
+              ;; Returning a longer vector than we should, luckily it doesn't
+              ;; matter.  We read less than 512 bits and there is enough room
+              ;; for the correct trailer.  Add trailer and bail
+              #f)
+            done))])))
 
 
   ;; MD5
