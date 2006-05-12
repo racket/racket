@@ -93,63 +93,69 @@
   ;; performance.
 
   ;; (word c) turns into a quoted pair '(hi . lo) if c is a literal number.
+  ;; can create a new word, compute one at compile-time etc
   (define-syntax (word stx)
     (syntax-case stx ()
+      ;; normal version
+      [(word #:new c)
+       #'(let ([n c])
+           (if (<= 0 n 4294967296)
+             (cons (quotient n 65536) (remainder n 65536))
+             (error 'word "out of range: ~e" n)))]
+      ;; to use when the number is known to be in range
+      [(word #:safe #:new c) #'(word #:new #:safe c)]
+      [(word #:new #:safe c)
+       #'(let ([n c]) (cons (quotient n 65536) (remainder n 65536)))]
+      ;; default form: compute at compile-time if possible
       [(word c)
        (let ([n (syntax-e #'c)])
          (if (integer? n)
-           (datum->syntax-object
-            #'c `(quote ,(cons (quotient n 65536) (remainder n 65536))) #'c)
-           #'(let ([n c])
-               (if (<= 0 n 4294967296)
-                 (cons (quotient n 65536) (remainder n 65536))
-                 (error 'word "out of range: ~e" n)))))]))
+           (if (<= 0 n 4294967295)
+             (datum->syntax-object
+              #'c `(quote ,(cons (quotient n 65536) (remainder n 65536))) #'c)
+             (raise-syntax-error #f "constant number out of range" stx))
+           #'(word #:new c)))]))
 
-  (define (word+ a b)
+  ;; destructive operations to save on consing
+
+  ;; destructive cons
+  (define (cons! p x y)
+    (set-car! p x)
+    (set-cdr! p y))
+
+  ;; a := b
+  (define (word=! a b)
+    (cons! a (car b) (cdr b)))
+
+  ;; a := a + b
+  (define (word+=! a b)
     (let ([t1 (+ (car a) (car b))]
           [t2 (+ (cdr a) (cdr b))])
-      (cons (bitwise-and (+ t1 (arithmetic-shift t2 -16)) 65535)
-            (bitwise-and t2 65535))))
+      (set-car! a (bitwise-and (+ t1 (arithmetic-shift t2 -16)) 65535))
+      (set-cdr! a (bitwise-and t2 65535))
+      a))
 
-  (define (word-or a b)
-    (cons (bitwise-ior (car a) (car b))
-          (bitwise-ior (cdr a) (cdr b))))
-
-  (define (word-not a)
-    (cons (bitwise-and (bitwise-not (car a)) 65535)
-          (bitwise-and (bitwise-not (cdr a)) 65535)))
-
-  (define (word-xor a b)
-    (cons (bitwise-xor (car a) (car b))
-          (bitwise-xor (cdr a) (cdr b))))
-  (define (word-xor3 a b c)
-    (cons (bitwise-xor (car a) (car b) (car c))
-          (bitwise-xor (cdr a) (cdr b) (cdr c))))
-
-  (define (word-and a b)
-    (cons (bitwise-and (car a) (car b))
-          (bitwise-and (cdr a) (cdr b))))
-
-  (define word<<<
+  (define word<<<!
     (let* ([masks '#(#x0 #x1 #x3 #x7 #xF #x1F #x3F #x7F #xFF #x1FF #x3FF #x7FF
-                     #xFFF #x1FFF #x3FFF #x7FFF #xFFFF)]
-           [rot (lambda (hi lo s)
-                  (cons (bitwise-ior
-                         (arithmetic-shift
-                          (bitwise-and hi (vector-ref masks (- 16 s)))
-                          s)
-                         (bitwise-and (arithmetic-shift lo (- s 16))
-                                      (vector-ref masks s)))
-                        (bitwise-ior
-                         (arithmetic-shift
-                          (bitwise-and lo (vector-ref masks (- 16 s)))
-                          s)
-                         (bitwise-and (arithmetic-shift hi (- s 16))
-                                      (vector-ref masks s)))))])
+                     #xFFF #x1FFF #x3FFF #x7FFF #xFFFF)])
       (lambda (a s)
-        (cond [(< 0 s 16) (rot (car a) (cdr a) s)]
-              [(< s 32) (rot (cdr a) (car a) (- s 16))]
-              [else (error "word<<<: shift out of range: " s)]))))
+        (let ([rot (lambda (hi lo s)
+                     (cons! a
+                            (bitwise-ior
+                             (arithmetic-shift
+                              (bitwise-and hi (vector-ref masks (- 16 s)))
+                              s)
+                             (bitwise-and (arithmetic-shift lo (- s 16))
+                                          (vector-ref masks s)))
+                            (bitwise-ior
+                             (arithmetic-shift
+                              (bitwise-and lo (vector-ref masks (- 16 s)))
+                              s)
+                             (bitwise-and (arithmetic-shift hi (- s 16))
+                                          (vector-ref masks s)))))])
+          (cond [(< 0 s 16) (rot (car a) (cdr a) s)]
+                [(< s 32) (rot (cdr a) (car a) (- s 16))]
+                [else (error 'word<<< "shift out of range: ~e" s)])))))
 
   ;; word->bytesl : word -> (list byte byte byte byte), little endian!
   (define (word->bytesl w)
@@ -277,23 +283,36 @@
       (vector (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0)
               (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0)
               (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0)))
-    (let loop ([A (word #x67452301)]
-               [B (word #xefcdab89)]
-               [C (word #x98badcfe)]
-               [D (word #x10325476)]
-               [a-port a-port]
-               [done 0])
+    (define A (word #:new #:safe #x67452301))
+    (define B (word #:new #:safe #xefcdab89))
+    (define C (word #:new #:safe #x98badcfe))
+    (define D (word #:new #:safe #x10325476))
+    (define AA (cons 0 0))
+    (define BB (cons 0 0))
+    (define CC (cons 0 0))
+    (define DD (cons 0 0))
+    (define tmp (cons 0 0))
+    (let loop ([a-port a-port] [done 0])
       (if (not a-port)
         (list A B C D)
-        (let-values ([(b-port done) (read-block! a-port done X)]
-                     [(AA) A] [(BB) B] [(CC) C] [(DD) D])
+        (let-values ([(b-port done) (read-block! a-port done X)])
           (define-syntax step
             (syntax-rules ()
               [(_ a b c d e f g h)
+               #| This is the `no GC version' (aka C-in-Scheme) of this:
                (set! a (word+ b (word<<< (word+ (word+ a (e b c d))
                                                 (word+ (vector-ref X f)
                                                        (word g)))
-                                         h)))]))
+                                         h)))
+               |#
+               (begin (e tmp b c d)
+                      (word+=! a tmp)
+                      (word+=! a (vector-ref X f))
+                      (word+=! a (word g))
+                      (word<<<! a h)
+                      (word+=! a b))]))
+          ;;---
+          (word=! AA A) (word=! BB B) (word=! CC C) (word=! DD D)
           ;;---
           (step A B C D F  0 3614090360  7)
           (step D A B C F  1 3905402710 12)
@@ -363,8 +382,9 @@
           (step C D A B II  2  718787259 15)
           (step B C D A II  9 3951481745 21)
           ;;---
-          (loop (word+ A AA) (word+ B BB) (word+ C CC) (word+ D DD)
-                b-port done)))))
+          (word+=! A AA) (word+=! B BB) (word+=! C CC) (word+=! D DD)
+          ;;---
+          (loop b-port done)))))
 
   ;; Each round consists of the application of the following
   ;; basic functions. They functions on a word bitwise, as follows.
@@ -373,10 +393,43 @@
   ;;          H(X,Y,Z) = X xor Y xor Z
   ;;          I(X,Y,Z) = Y xor (X v not(Z))
 
-  (define (F x y z)  (word-or (word-and x y) (word-and (word-not x) z)))
-  (define (G x y z)  (word-or (word-and x z) (word-and y (word-not z))))
-  (define (H x y z)  (word-xor3 x y z))
-  (define (II x y z) (word-xor y (word-or x (word-not z))))
+  #| These functions used to be simple, for example:
+       (define (F x y z)
+         (word-or (word-and x y) (word-and (word-not x) z)))
+     but we don't want to allocate stuff for each operation, so we add an
+     output pair for each of these functions (the `t' argument).  However, this
+     means that if we want to avoid consing, we need either a few such
+     pre-allocated `register' values...  The solution is to use a macro that
+     will perform an operation on the cars, cdrs, and set the result into the
+     target pair.  Works only because these operations are symmetrical in their
+     use of the two halves.
+
+  |#
+
+  (define-syntax cons-op!
+    (syntax-rules ()
+      [(cons-op! t (x ...) body)
+       (cons! t (let ([x (car x)] ...) body) (let ([x (cdr x)] ...) body))]))
+
+  (define (F t x y z)
+    (cons-op! t (x y z)
+      (bitwise-and (bitwise-ior (bitwise-and x y)
+                                (bitwise-and (bitwise-not x) z))
+                   65535)))
+
+  (define (G t x y z)
+    (cons-op! t (x y z)
+      (bitwise-and (bitwise-ior (bitwise-and x z)
+                                (bitwise-and y (bitwise-not z)))
+                   65535)))
+
+  (define (H t x y z)
+    (cons-op! t (x y z) (bitwise-xor x y z)))
+
+  (define (II t x y z)
+    (cons-op! t (x y z)
+      (bitwise-and (bitwise-xor y (bitwise-ior x (bitwise-not z)))
+                   65535)))
 
   ;; Step 5  -  Output
   ;; To finish up, we convert the word to hexadecimal string
