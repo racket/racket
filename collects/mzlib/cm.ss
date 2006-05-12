@@ -245,11 +245,16 @@
 				 (let ([t (cond
 					   [(bytes? d) (compile-root mode (bytes->path d) up-to-date)]
 					   [(path? d) (compile-root mode d up-to-date)]
-					   [(and (pair? d) (eq? (car d) 'ext))
+					   [(and (pair? d) 
+						 (eq? (car d) 'ext)
+						 (or (bytes? (cdr d))
+						     (path? (cdr d))))
 					    (with-handlers ((exn:fail:filesystem?
 							     (lambda (ex) +inf.0)))
-					      (file-or-directory-modify-seconds (cdr d)))]
-					   [else -inf.0])])
+					      (file-or-directory-modify-seconds (if (bytes? (cdr d))
+										    (bytes->path (cdr d))
+										    (cdr d))))]
+					   [else +inf.0])])
 				   (when (> t path-zo-time)
 				     (trace-printf "newer: ~a (~a > ~a)..." d t path-zo-time))
 				   (> t path-zo-time)))
