@@ -73,10 +73,13 @@ GC2_EXTERN void GC_init_type_tags(int count, int weakbox, int ephemeron);
    freedom in the layout of a weak box or ephemeron, so it performs weak
    box traversals itself, but MzScheme gets to choose the tag.) */
 
-GC2_EXTERN void GC_register_thread(void *, void *);
+GC2_EXTERN void GC_register_new_thread(void *, void *);
 /*
    Indicates that a just-allocated point is for a thread record
    owned by a particular custodian. */
+GC2_EXTERN void GC_register_thread(void *, void *);
+/*
+   Indicates that a a thread record is owned by a particular custodian. */
 
 GC2_EXTERN void (*GC_collect_start_callback)(void);
 GC2_EXTERN void (*GC_collect_end_callback)(void);

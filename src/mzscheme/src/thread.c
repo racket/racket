@@ -1943,7 +1943,7 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
     mgr = (Scheme_Custodian *)scheme_get_param(config, MZCONFIG_CUSTODIAN);
 
 #ifdef MZ_PRECISE_GC
-  GC_register_thread(process, mgr);
+  GC_register_new_thread(process, mgr);
 #endif
 
   {
@@ -2820,7 +2820,7 @@ static Scheme_Object *call_as_nested_thread(int argc, Scheme_Object *argv[])
   np = MALLOC_ONE_TAGGED(Scheme_Thread);
   np->so.type = scheme_thread_type;
 #ifdef MZ_PRECISE_GC
-  GC_register_thread(np, mgr);
+  GC_register_new_thread(np, mgr);
 #endif
   np->running = MZTHREAD_RUNNING;
   np->ran_some = 1;

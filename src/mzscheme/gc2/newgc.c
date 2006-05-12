@@ -1052,6 +1052,16 @@ struct thread {
 static Mark_Proc normal_thread_mark = NULL, normal_custodian_mark = NULL;
 static struct thread *threads = NULL;
 
+inline static void register_new_thread(void *t, void *c)
+{
+  struct thread *work;
+
+  work = (struct thread *)malloc(sizeof(struct thread));
+  work->owner = current_owner((Scheme_Custodian *)c);
+  work->thread = t;
+  work->next = threads;
+  threads = work;
+}
 inline static void register_thread(void *t, void *c)
 {
   struct thread *work;
@@ -1061,11 +1071,7 @@ inline static void register_thread(void *t, void *c)
       work->owner = current_owner((Scheme_Custodian *)c);
       return;
     }
-  work = (struct thread *)malloc(sizeof(struct thread));
-  work->owner = current_owner((Scheme_Custodian *)c);
-  work->thread = t;
-  work->next = threads;
-  threads = work;
+  register_new_thread(t, c);
 }
 
 inline static void mark_threads(int owner)
@@ -1110,12 +1116,17 @@ inline static int thread_get_owner(void *p)
 
 #ifndef NEWGC_BTC_ACCOUNT
 # define register_thread(t,c) /* */
+# define register_new_thread(t,c) /* */
 # define clean_up_thread_list() /* */
 #endif
 
 void GC_register_thread(void *t, void *c)
 {
   register_thread(t, c);
+}
+void GC_register_new_thread(void *t, void *c)
+{
+  register_new_thread(t, c);
 }
 
 /*****************************************************************************/

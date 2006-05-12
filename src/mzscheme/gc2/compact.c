@@ -495,6 +495,9 @@ void GC_register_traversers(Type_Tag tag, Size_Proc size, Mark_Proc mark, Fixup_
 void GC_register_thread(void *p, void *c)
 {
 }
+void GC_register_new_thread(void *p, void *c)
+{
+}
 
 /******************************************************************************/
 /*                             immobile box                                   */
