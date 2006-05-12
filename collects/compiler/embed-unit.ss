@@ -7,7 +7,7 @@
 	   (lib "port.ss")
 	   (lib "moddep.ss" "syntax")
 	   (lib "plist.ss" "xml")
-	   (lib "plthome.ss" "setup")
+	   (lib "dirs.ss" "setup")
 	   (lib "kw.ss")
 	   "embed-sig.ss"
 	   "private/winicon.ss"
@@ -592,7 +592,7 @@
 									      "PLT_MrEd"
 									      "PLT_MzScheme")))
 			     (update-framework-path (string-append
-						     (path->string (build-path plthome "lib"))
+						     (path->string (find-lib-dir))
 						     "/")
 						    dest
 						    mred?))))))

@@ -41,7 +41,7 @@
 						   (path->string base)
 						   base)))))
 
-  (define (unmztar p filter plthome print-status)
+  (define (unmztar p filter main-collects-parent-dir print-status)
     (define bufsize 4096)
     (define buffer (make-bytes bufsize))
     (let loop ()
@@ -54,8 +54,8 @@
 				  (apply build-path v)))])
 		     (unless (or (eq? s 'same) (relative-path? s))
 		       (error "expected a directory name relative path string, got" s))
-		     (when (or (eq? s 'same) (filter 'dir s plthome))
-		       (let ([d (build-path plthome s)])
+		     (when (or (eq? s 'same) (filter 'dir s main-collects-parent-dir))
+		       (let ([d (build-path main-collects-parent-dir s)])
 			 (unless (directory-exists? d)
 			   (print-status
 			    (format "  making directory ~a" (pretty-name d)))
@@ -67,8 +67,8 @@
 	       (let ([len (read p)])
 		 (unless (and (number? len) (integer? len))
 		   (error "expected a file name size, got" len))
-		 (let* ([write? (filter kind s plthome)]
-			[path (build-path plthome s)])
+		 (let* ([write? (filter kind s main-collects-parent-dir)]
+			[path (build-path main-collects-parent-dir s)])
 		   (let ([out (and write?
 				   (if (file-exists? path)
 				       (if (eq? kind 'file)
@@ -117,9 +117,9 @@
 	(mk-default)))
 
   (define unpack 
-    (opt-lambda (archive [plthome (current-directory)] [print-status (lambda (x) (printf "~a~n" x))]
+    (opt-lambda (archive [main-collects-parent-dir (current-directory)] [print-status (lambda (x) (printf "~a~n" x))]
 			 [get-target-directory (lambda () (current-directory))] [force? #f]
-			 [get-target-plt-directory (lambda (preferred plthome options) preferred)])
+			 [get-target-plt-directory (lambda (preferred main-collects-parent-dir options) preferred)])
       (let*-values ([(p64gz) (open-input-file archive)]
 		    [(p kill) (port64gz->port p64gz)])
 	(dynamic-wind
@@ -154,13 +154,15 @@
 						 ;; Check for void because old unpacker didn't use
 						 ;;  the failure thunk.
 						 (not (void? not-user-rel?)))
-					    (get-target-plt-directory plthome plthome (list plthome))
+					    (get-target-plt-directory main-collects-parent-dir
+								      main-collects-parent-dir
+								      (list main-collects-parent-dir))
 					    (let ([addons (build-path (find-system-path 'addon-dir)
 								      (version))])
 					      (get-target-plt-directory
 					       addons
-					       plthome
-					       (list addons plthome))))
+					       main-collects-parent-dir
+					       (list addons main-collects-parent-dir))))
 					(get-target-directory)))])
 		  
 		  ;; Stop if no target directory:

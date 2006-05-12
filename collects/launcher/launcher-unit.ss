@@ -8,7 +8,7 @@
 	   (lib "compile-sig.ss" "dynext")
 	   (lib "link-sig.ss" "dynext")
 	   (lib "embed.ss" "compiler")
-	   (lib "plthome.ss" "setup")
+	   (lib "dirs.ss" "setup")
 
 	   "launcher-sig.ss"
 
@@ -36,17 +36,21 @@
 		    [(or (eq? 'unix (system-type))
 			 (and (eq? 'macosx (system-type))
 			      (eq? kind 'mzscheme)))
-		     (if (and plthome
-			      (file-exists? (build-path plthome "bin" (format "~a3m" kind))))
+		     (if (let ([bin-dir (find-console-bin-dir)])
+			   (and bin-dir
+				(file-exists? (build-path bin-dir (format "~a3m" kind)))))
 			 '(3m)
 			 null)]
 		    [(eq? 'macosx (system-type))
 		     ;; kind must be mred, because mzscheme case caught above
-		     (if (directory-exists? (build-path plthome "MrEd3m.app"))
+		     (if (directory-exists? (build-path (find-gui-bin-dir) "MrEd3m.app"))
 			 '(3m)
 			 null)]
 		    [(eq? 'windows (system-type))
-		     (if (file-exists? (build-path plthome (format "~a3m.exe" kind)))
+		     (if (file-exists? (build-path (if (eq? kind 'mzscheme)
+						       (find-console-bin-dir)
+						       (find-gui-bin-dir))
+						   (format "~a3m.exe" kind)))
 			 '(3m)
 			 null)]
 		    [else
@@ -54,15 +58,16 @@
 		     null])]
 	       [normal (if (eq? kind 'mzscheme)
 			   '(normal) ; MzScheme is always available
-			   (if (and plthome
-				    (cond
-				     [(eq? 'unix (system-type))
-				      (file-exists? (build-path plthome "bin" (format "~a" kind)))]
-				     [(eq? 'macosx (system-type))
-				      (directory-exists? (build-path plthome "MrEd.app"))]
-				     [(eq? 'windows (system-type))
-				      (file-exists? (build-path plthome (format "~a.exe" kind)))]
-				     [else #t]))
+			   (if (let ([gui-dir (find-gui-bin-dir)])
+				 (and gui-dir
+				      (cond
+				       [(eq? 'unix (system-type))
+					(file-exists? (build-path gui-dir (format "~a" kind)))]
+				       [(eq? 'macosx (system-type))
+					(directory-exists? (build-path gui-dir "MrEd.app"))]
+				       [(eq? 'windows (system-type))
+					(file-exists? (build-path gui-dir (format "~a.exe" kind)))]
+				       [else #t])))
 			       '(normal)
 			       null))]
 	       [script (if (and (eq? 'macosx (system-type))
@@ -340,8 +345,8 @@
                         "\n")]
 	       [dir-finder
 		(let ([bindir (if alt-exe
-				  plthome
-				  (build-path plthome "bin"))])
+				  (find-gui-bin-dir)
+				  (find-console-bin-dir))])
 		  (if (let ([a (assq 'relative? aux)])
 			(and a (cdr a)))
 		      (make-relative-path-header dest bindir)
@@ -360,8 +365,8 @@
 				       (not (null? post-flags)))
 				  output-x-arg-getter
 				  string-append)])
-	  (unless plthome
-	    (error 'make-unix-launcher "unable to locate PLTHOME"))
+	  (unless (find-console-bin-dir)
+	    (error 'make-unix-launcher "unable to locate bin directory"))
 	  (let ([p (open-output-file dest 'truncate)])
 	    (fprintf p "~a~a~a"
 		     header
@@ -395,12 +400,15 @@
 		    [v (byte-regexp #"<Executable Variant: Replace This")])
 		(let* ([exedir (bytes->utf-16-bytes
 				(bytes-append
-				 (path->bytes (if (let ([m (assq 'relative? aux)])
+				 (path->bytes (let ([bin-dir (if (eq? kind 'mred)
+								 (find-gui-bin-dir)
+								 (find-console-bin-dir))])
+					       (if (let ([m (assq 'relative? aux)])
 						    (and m (cdr m)))
-						  (or (relativize (normalize+explode-path plthome)
+						  (or (relativize (normalize+explode-path bin-dir)
 								  (normalize+explode-path dest))
 						      (build-path 'same))
-						  plthome))
+						  bin-dir)))
 				 ;; null wchar marks end of executable directory
 				 #"\0\0"))]
 		       [find-it ; Find the magic start
@@ -571,12 +579,6 @@
 				(build-aux-from-path
 				 (build-path (collection-path collection)
 					     (strip-suffix file)))))
-      
-      (define l-home (if (memq (system-type) '(unix))
-			 (build-path plthome "bin")
-			 plthome))
-
-      (define l-home-macosx-mzscheme (build-path plthome "bin"))
 
       (define (unix-sfx file)
 	(list->string
@@ -592,28 +594,31 @@
 			   [(windows) (string-append file ".exe")]
 			   [else file]))
 
-      (define (mred-program-launcher-path name)
+      (define (program-launcher-path name mred?)
 	(let* ([variant (current-launcher-variant)]
 	       [mac-script? (and (eq? (system-type) 'macosx) 
 				 (memq variant '(script script-3m)))])
 	  (let ([p (add-file-suffix 
 		    (build-path 
-		     (if mac-script?
-			 l-home-macosx-mzscheme
-			 l-home)
+		     (if (or mac-script? (not mred?))
+			 (find-console-bin-dir)
+			 (find-gui-bin-dir))
 		     ((if mac-script? unix-sfx sfx) name))
 		    variant)])
 	   (if (and (eq? (system-type) 'macosx) 
 		    (not (memq variant '(script script-3m))))
 	       (path-replace-suffix p #".app")
 	       p))))
+
+      (define (mred-program-launcher-path name)
+	(program-launcher-path name #t))
       
       (define (mzscheme-program-launcher-path name)
 	(case (system-type)
 	  [(macosx) (add-file-suffix 
-		     (build-path l-home-macosx-mzscheme (unix-sfx name))
+		     (build-path (find-console-bin-dir) (unix-sfx name))
 		     (current-launcher-variant))]
-	  [else (mred-program-launcher-path name)]))
+	  [else (program-launcher-path name #f)]))
       
       (define (mred-launcher-is-directory?)
 	#f)

@@ -18,7 +18,8 @@
   (define (all-users on?)
     (when on?
       (current-target-plt-directory-getter
-       (lambda (preferred plthome choices) plthome))))
+       (lambda (preferred main-collects-parent-dir choices) 
+	 main-collects-parent-dir))))
 
   ;; Converting parse-cmdline results into parameter settings:
   (define (do-flag name param)

@@ -168,4 +168,157 @@
 		out-offset)))
 	  (lambda ()
 	    (close-input-port p)
+	    (close-output-port out)))))
+
+  #;
+  (define (get/set-dylib-path rx new-path)
+    (let-values ([(p out) (open-input-output-file file 'update)])
+      (dynamic-wind
+	  void
+	  (lambda ()
+	    (check-same #xFeedFace (read-ulong p))
+	    (read-ulong p)
+	    (read-ulong p)
+	    (check-same #x2 (read-ulong p))
+	    (let* ([cnt (read-ulong p)]
+		   [cmdssz (read-ulong p)]
+		   [min-used (round-up-page cmdssz)]
+		   [sym-tab-pos 0]
+		   [dysym-pos 0]
+		   [hints-pos 0]
+		   [link-edit-pos 0]
+		   [link-edit-addr 0]
+		   [link-edit-offset 0]
+		   [link-edit-len 0])
+	      (printf "~a cmds, length 0x~x\n" cnt cmdssz)
+	      (read-ulong p)
+	      (let loop ([cnt cnt])
+		(unless (zero? cnt)
+		  (let ([pos (file-position p)]
+			[cmd (read-ulong p)]
+			[sz (read-ulong p)])
+		    (printf "~x (~a)\n" cmd sz)
+		    (case cmd
+		      [(1)
+		       ;; Segment
+		       (let ([segname (read-bytes 16 p)]
+			     [vmaddr (read-ulong p)]
+			     [vmlen (read-ulong p)]
+			     [offset (read-ulong p)]
+			     [len (read-ulong p)])
+			 (printf "~s\n" segname)
+			 (when (equal? segname #"__LINKEDIT\0\0\0\0\0\0")
+			   (set! link-edit-pos pos)
+			   (set! link-edit-addr vmaddr)
+			   (set! link-edit-offset offset)
+			   (set! link-edit-len len))
+			 (printf "  0x~x 0x~x -> 0x~x 0x~x\n" offset len vmaddr vmlen)
+			 (read-ulong p)
+			 (read-ulong p)
+			 (let ([nsects (read-ulong p)])
+			   (read-ulong p)
+			   (let loop ([nsects nsects])
+			     (unless (zero? nsects)
+			       (let ([sect (read-bytes 16 p)]
+				     [seg (read-bytes 16 p)]
+				     [vmaddr (read-ulong p)]
+				     [vmsz (read-ulong p)]
+				     [offset (read-ulong p)])
+				 (when ((+ offset vmsz) . > . (+ cmdssz 28))
+				   (when (offset . < . min-used)
+				     (printf "   new min!\n")
+				     (set! min-used offset)))
+				 (printf "    ~s,~s 0x~x 0x~x\n"
+					 seg sect offset vmsz)
+				 (read-ulong p) (read-ulong p) (read-ulong p) (read-ulong p) (read-ulong p) (read-ulong p))
+			       (loop (sub1 nsects))))))]
+		      [(2)
+		       ;; Symbol table
+		       (set! sym-tab-pos pos)]
+		      [(#xB)
+		       ;; Dysym
+		       (set! dysym-pos pos)]
+		      [(#x16)
+		       ;; 2-level hints table
+		       (set! hints-pos pos)]
+		      [else
+		       (void)])
+		    (file-position p (+ pos sz))
+		    (loop (sub1 cnt)))))
+	      (printf "Start offset: 0x~x\n" min-used)
+	      (let ([end-cmd (+ cmdssz 28)]
+		    [new-cmd-sz 56]
+		    [outlen (round-up-page (bytes-length segdata))]
+		    [out-offset (if move-link-edit?
+				    link-edit-offset
+				    (+ link-edit-offset (round-up-page link-edit-len)))]
+		    [out-addr (+ link-edit-addr (round-up-page link-edit-len))])
+		(unless ((+ end-cmd new-cmd-sz) . < . min-used)
+		  (error 'check-header "no room for a new section load command"))
+		;; Shift commands after link-edit segment:
+		(file-position p link-edit-pos)
+		(let ([s (read-bytes (- end-cmd link-edit-pos) p)])
+		  (file-position out (+ link-edit-pos 56))
+		  (display s out))
+		(file-position out 16)
+		;; The segment:
+		(write-ulong (+ cnt 1) out)
+		(write-ulong (+ cmdssz new-cmd-sz) out)
+		(file-position out link-edit-pos)
+		(write-ulong 1 out) ; LC_SEGMENT
+		(write-ulong new-cmd-sz out)
+		(display #"__PLTSCHEME\0\0\0\0\0" out)
+		(write-ulong out-addr out)
+		(write-ulong outlen out)
+		(write-ulong out-offset out)
+		(write-ulong outlen out)
+		(write-ulong 0 out)
+		(write-ulong 0 out)
+		(write-ulong 0 out)
+		(write-ulong 4 out) ; 4 means SG_NORELOC
+		(when move-link-edit?
+		  ;; Update link-edit segment entry:
+		  (when (sym-tab-pos . > . link-edit-pos)
+		    (set! sym-tab-pos (+ sym-tab-pos 56)))
+		  (when (dysym-pos . > . link-edit-pos)
+		    (set! dysym-pos (+ dysym-pos 56)))
+		  (when (hints-pos . > . link-edit-pos)
+		    (set! hints-pos (+ hints-pos 56)))
+		  (set! link-edit-pos (+ link-edit-pos 56))
+		  (file-position out (+ link-edit-pos 32))
+		  (printf "Update to ~a\n" (+ out-offset outlen))
+		  (write-ulong (+ out-offset outlen) out)
+		  ;; Read link-edit segment:
+		  (file-position p link-edit-offset)
+		  (let ([link-edit (read-bytes link-edit-len p)])
+		    ;; Write link-edit data in new location:
+		    (file-position out (+ link-edit-offset outlen))
+		    (display link-edit out))
+		  ;; Shift symbol-table pointer:
+		  (file-position p (+ sym-tab-pos 8))
+		  (let ([symtab-offset (read-ulong p)]
+			[_ (read-ulong p)]
+			[symstr-offset (read-ulong p)])
+		    (file-position out (+ sym-tab-pos 8))
+		    (write-ulong (+ symtab-offset outlen) out)
+		    (file-position out (+ sym-tab-pos 16))
+		    (write-ulong (+ symstr-offset outlen) out))
+		  ;; Shift dysym pointers:
+		  (file-position p (+ dysym-pos 56))
+		  (let ([ind-offset (read-ulong p)])
+		    (file-position out (+ dysym-pos 56))
+		    (write-ulong (+ ind-offset outlen) out))
+		  ;; Shift hints pointer:
+		  (file-position p (+ hints-pos 8))
+		  (let ([hints-offset (read-ulong p)])
+		    (file-position out (+ hints-pos 8))
+		    (write-ulong (+ hints-offset outlen) out)))
+		;; Write segdata to former link-data offset:
+		(file-position out out-offset)
+		(display segdata out)
+		(display (make-bytes (- outlen (bytes-length segdata)) 0) out)
+		;; Result is offset where data was written:
+		out-offset)))
+	  (lambda ()
+	    (close-input-port p)
 	    (close-output-port out))))))

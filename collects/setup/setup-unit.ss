@@ -18,7 +18,8 @@
            
 	   "unpack.ss"
 	   "getinfo.ss"
-	   "plthome.ss")
+	   "dirs.ss"
+	   "main-collects.ss")
   
   (provide setup@)
   
@@ -38,10 +39,10 @@
 	  (apply setup-fprintf (current-output-port) s args)))
       
       (setup-printf "Setup version is ~a" (version))
-      (setup-printf "PLT home directory is ~a" (path->string plthome))
-      (setup-printf "Collection paths are ~a" (if (null? (current-library-collection-paths))
-						  "empty!"
-						  ""))
+      (setup-printf "Main collection path is ~a" (find-main-collects-dir))
+      (setup-printf "Collection search path is ~a" (if (null? (current-library-collection-paths))
+						       "empty!"
+						       ""))
       (for-each (lambda (p)
 		  (setup-printf "  ~a" (path->string p)))
 		(current-library-collection-paths))
@@ -74,7 +75,7 @@
 	 (specific-collections)
 	 (map (lambda (x) (unpack 
 			   x 
-			   plthome 
+			   (build-path (find-main-collects-dir) 'up)
 			   (lambda (s) (setup-printf "~a" s)) 
 			   (current-target-directory-getter)
 			   (force-unpacks)
@@ -377,7 +378,7 @@
               (for-each (lambda (s)
 			  (when (path-string? s)
 			    (hash-table-put! dependencies s #t)))
-			(map un-plthome-ify (cdr deps))))))
+			(map main-collects-relative->path (cdr deps))))))
 	(delete-file path))
       
       (define (delete-files-in-directory path printout dependencies)
@@ -535,9 +536,10 @@
                       (setup-printf "~aInstalling ~a"
                                     (case part [(pre) "Pre-"] [(post) "Post-"] [else ""])
                                     (cc-name cc))
-		      (if (procedure-arity-includes? installer 2)
-			  (installer plthome (cc-path cc))
-			  (installer plthome))))))))
+		      (let ([dir (build-path (find-main-collects-dir) 'up)])
+			(if (procedure-arity-includes? installer 2)
+			    (installer dir (cc-path cc))
+			    (installer dir)))))))))
            ccs-to-compile)))
       
       (do-install-part 'pre)

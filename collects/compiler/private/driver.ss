@@ -73,7 +73,7 @@
 	   (lib "compile-sig.ss" "dynext")
 	   (lib "link-sig.ss" "dynext")
 	   (lib "file-sig.ss" "dynext")
-	   (lib "plthome.ss" "setup"))
+	   (lib "dirs.ss" "setup"))
 
   (require "../sig.ss"
 	   "sig.ss"
@@ -1352,7 +1352,7 @@
 	      (xform (not (compiler:option:verbose)) 
 		     (path->string c-output-path)
 		     c3m-output-path
-		     (list (build-path plthome "include")
+		     (list (find-include-dir)
 			   (collection-path "compiler")))
 
 	      (clean-up-src-c))))

@@ -56,7 +56,7 @@
             (delete-directory/files tmp-dir))))))
 
   (provide pre-installer)
-  (define (pre-installer plthome)
+  (define (pre-installer main-collects-parent-dir)
     (unless (directory-exists? src-dir)
       (error 'plot-preinstall "Could not find the source directory at ~a"
              src-dir))

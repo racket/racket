@@ -1,12 +1,12 @@
 
 (module etc (lib "frtime.ss" "frtime")
   (require (lib "spidey.ss")
-           (lib "plthome.ss" "setup"))
+           (lib "main-collects.ss" "setup"))
   (require-for-syntax (lib "kerncase.ss" "syntax")
 		      (lib "stx.ss" "syntax")
 		      (lib "name.ss" "syntax")
 		      (lib "context.ss" "syntax")
-		      (lib "plthome.ss" "setup")
+		      (lib "main-collects.ss" "setup")
 		      (lib "stxset.ss" "mzlib" "private"))
 
   (provide true false
@@ -441,22 +441,19 @@
    (syntax-case stx ()
      [(_)
       (let* ([source (syntax-source stx)]
-	     [local (lambda ()
-		      (or (current-load-relative-directory)
-			  (current-directory)))]
-	     [dir (plthome-ify
-                   (or (and source (string? source) (file-exists? source)
+             [source (and (path? source) source)]
+             [local (or (current-load-relative-directory) (current-directory))]
+	     [dir (path->main-collects-relative
+                   (or (and source (file-exists? source)
                             (let-values ([(base file dir?) (split-path source)])
-                              (and (string? base)
-                                   (path->complete-path
-                                    base
-                                    (or (current-load-relative-directory)
-                                        (current-directory))))))
-                       (local)))])
-        (if (and (pair? dir) (eq? 'plthome (car dir)))
+                              (and (path? base)
+                                   (path->complete-path base local))))
+                       local))])
+        (if (and (pair? dir) (eq? 'collects (car dir)))
           (with-syntax ([d dir])
-            (syntax (un-plthome-ify 'd)))
-          (datum->syntax-object (quote-syntax here) dir stx)))]))
+            #'(main-collects-relative->path 'd))
+          (with-syntax ([d (if (bytes? dir) dir (path->bytes dir))])
+            #'(bytes->path d))))]))
 
  ;; This is a macro-generating macro that wants to expand
  ;; expressions used in the generated macro. So it's weird,

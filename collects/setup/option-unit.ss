@@ -31,4 +31,4 @@
       (define current-target-directory-getter (make-parameter current-directory))
       (define current-target-plt-directory-getter 
 	(make-parameter 
-	 (lambda (preferred plthome choices) preferred))))))
+	 (lambda (preferred main-collects-parent-dir choices) preferred))))))

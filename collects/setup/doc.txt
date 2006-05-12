@@ -106,7 +106,7 @@ Additional "info.ss" fields trigger additional setup actions:
    parallel to `mzscheme-launcher-names' (see above).
 
 >  mred-launcher-names - a list of executable names to be installed in
-   plt (or plt/bin) to run MrEd programs implemented by the
+   "plt" (or "plt/bin") to run MrEd programs implemented by the
    collection.  This is treated in parallel to
    `mred-launcher-libraries' and `mred-launcher-flags' similarly to
    `mzscheme-launcher-names' above.
@@ -120,11 +120,12 @@ Additional "info.ss" fields trigger additional setup actions:
 >  install-collection - a string or a path for a library module
    relative to the collection. The module must provide `installer' as
    a procedure that accepts either one or two arguments. The first
-   argument is a directory path to the PLT installation directory; the
-   second argument, if accepted, is a path to the collection's own
-   directory. The procedure should perform collection-specific
-   installation work, and it should avoid unnecessary work in the case
-   that it is called multiple times for the same installation.
+   argument is a directory path to the parent of the PLT
+   installation's "collects" directory; the second argument, if
+   accepted, is a path to the collection's own directory. The
+   procedure should perform collection-specific installation work, and
+   it should avoid unnecessary work in the case that it is called
+   multiple times for the same installation.
 
 >  pre-install-collection - like `install-collection', except that the
    corresponding installer is called *before* the normal .zo build,
@@ -237,11 +238,12 @@ parameters that control the setup process:
             in `current-target-plt-directory-getter' will be called
             [default: current-directory]
 > current-target-plt-directory-getter - a procedure that takes a
-            preferred path, the PLTHOME path, and a list of path choices;
-            it returns a path for a "plt-relative" install; when
-            unpacking an archive, either this or the procedure
-            in `current-target-directory-getter' will be called
-            [default: (lambda (preferred plthome choices) preferred)]
+            preferred path, a path to the parent of the main
+            "collects" directory, and a list of path choices; it
+            returns a path for a "plt-relative" install; when
+            unpacking an archive, either this or the procedure in
+            `current-target-directory-getter' will be called [default:
+            (lambda (preferred main-parent-dir choices) preferred)]
 
 Thus, to unpack a single .plt archive "x.plt", set the `archives'
 parameter to (list "x.plt") and leave `specific-collections' as null.
@@ -267,10 +269,47 @@ initialized between them, e.g.:
       ...)
 
 
+_Finding installation directories_
+==================================
+
+The _dirs.ss_ modules defines several procedures for locating
+installation directories:
+
+> (find-main-collects-dir)
+
+  Returns a path to the installation's main "collects" directory, or
+  #f if none can be found. (A #f result is likely only in an
+  stand-alone executable that is distributed without libraries.)
+
+> (find-console-bin-dir)
+
+  Returns a path to the installation's executable directory, where the
+  stand-alone MzScheme executable resides. The result is #f if no such
+  directory is available.
+
+> (find-include-dir)
+
+  Returns a path to the installation's "include" directory, which
+  contains .h files for building MzScheme extensions and embedding
+  programs.  The result is #f if no such directory is available.
+
+> (find-lib-dir)
+
+  Returns a path to the installation's "lib" directory, which contains
+  libraries and other build information.  The result is #f if no such
+  directory is available.
+
+> (find-dll-dir)
+
+  Returns a path to the directory that contains DLLs for use with the
+  current executable (e.g., "libmzsch.dll" under Windows). The result
+  is #f if no such directory is available.
+
+
 _Getting info.ss fields_
 ========================
 
-The _getinfo.ss_ module defines the following functions:
+The _getinfo.ss_ module defines the following procedures:
 
 > (get-info collection-names) -> (union #f (symbol (-> TST) -> TST))
 
@@ -376,15 +415,16 @@ The raw format is
    The procedure is extracted from the archive using MzScheme's `read'
    and `eval' procedures (in a fresh namespace).
 
- * An unsigned unit that drives the unpacking process. The unit accepts two
-   imports: a path string for the plt directory and an `unmztar'
-   procedure. The remainder of the unpacking process consists of invoking
-   this unit. It is expected that the unit will call `unmztar' procedure to
-   unpack directories and files that are defined in the input archive after
-   this unit. The result of invoking the unit must be a list of collection
-   paths (where each collection path is a list of strings); once the
-   archive is unpacked, Setup PLT will compile and setup the specified
-   collections.
+ * An unsigned unit that drives the unpacking process. The unit
+   accepts two imports: a path string for the parent of the main
+   "collects" directory and an `unmztar' procedure. The remainder of
+   the unpacking process consists of invoking this unit. It is
+   expected that the unit will call `unmztar' procedure to unpack
+   directories and files that are defined in the input archive after
+   this unit. The result of invoking the unit must be a list of
+   collection paths (where each collection path is a list of strings);
+   once the archive is unpacked, Setup PLT will compile and setup the
+   specified collections.
 
    The `unmztar' procedure takes one argument: a filter
    procedure. The filter procedure is called for each directory and
@@ -394,9 +434,10 @@ The raw format is
         unpacked is a directory, a file, or a file to be replaced;
 
       + a relative path string - the pathname of the directory or file
-        to be unpacked, relative to the plt directory; and
+        to be unpacked, relative to the unpack directory; and
 
-      + a path string for the plt directory.
+      + a path string for the unpack directory (which is often the
+        parent of the main "collects" directory).
 
    If the filter procedure returns #f for a directory or file, the
    directory or file is not unpacked. If the filter procedure returns
@@ -418,10 +459,10 @@ base64-encoded input archive).
 
 An unpackable is one of the following:
 
- * The symbol 'dir followed by a list. The `build-path' procedure
-   will be applied to the list to obtain a relative path for the
-   directory (and the relative path is combined with the plt directory
-   path to get a complete path).
+ * The symbol 'dir followed by a list. The `build-path' procedure will
+   be applied to the list to obtain a relative path for the directory
+   (and the relative path is combined with the target directory path
+   to get a complete path).
 
    The 'dir symbol and list are extracted from the archive using
    MzScheme's `read' (and the result is *not* `eval'uated).
@@ -524,7 +565,8 @@ general functions to help make .plt archives:
   unpacking time.
 
   If `at-plt-home?' and `plt-relative?', the archive is to be unpacked
-  relative to the plt installation directory. The default is #f.
+  relative to the parent of the PLT Scheme installation's main
+  "collects" directory. The default is #f.
 
 > (std-filter p) - returns #t unless `p', after stripping its
   directory path and converting to a byte string, matches one of the

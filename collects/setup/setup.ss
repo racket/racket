@@ -27,12 +27,16 @@
     (let ([a (assq flag-name flags)])
       (and a (not (cadr a)))))
 
+  (define (print-bootstrapping)
+    (fprintf (current-error-port) "setup-plt: bootstrapping from source...\n"))
+
   (if (or (on? 'clean values)
 	  (on? 'make-zo not))
       ;; Don't use .zos, in case they're out of date, and don't load
       ;;  cm:
       (when (on? 'clean values)
-	(use-compiled-file-paths null))
+	(use-compiled-file-paths null)
+	(print-bootstrapping))
   
       ;; Load the cm instance to be installed while loading Setup PLT.
       ;; This has to be dynamic, so we get a chance to turn off compiled
@@ -53,6 +57,8 @@
 		    ;;  off. If an .so file is used, we give up using
 		    ;;  compiled files.
 		    (let loop ([skip-zo? (null? (use-compiled-file-paths))])
+		      (when skip-zo?
+			(print-bootstrapping))
 		      ((let/ec escape
 			 ;; Create a new namespace, and also install load handlers
 			 ;;  to check file dates, if necessary.

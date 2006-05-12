@@ -10,7 +10,7 @@
 	   (lib "etc.ss")
 	   (lib "launcher.ss" "launcher")
 	   (lib "xform.ss" "compiler")
-	   (rename (lib "plthome.ss" "setup") plthome* plthome))
+	   (lib "dirs.ss" "setup"))
   
   (provide pre-install
 	   with-new-flags)
@@ -32,7 +32,7 @@
     (if (string? s) s (path->string s)))
   
   (define pre-install 
-    (opt-lambda (plthome 
+    (opt-lambda (main-collects-parent-dir 
 		 collection-dir 
 		 file.c
 		 default-lib-dir
@@ -46,7 +46,7 @@
 		 [3m-too? #f])
       ;; Compile and link one file:
       (define (go file.c xform-src.c)
-	(pre-install/check-precompiled plthome
+	(pre-install/check-precompiled main-collects-parent-dir
 				       collection-dir 
 				       file.c
 				       default-lib-dir
@@ -72,7 +72,7 @@
 				     name))
 		file.c))))))
   
-  (define (pre-install/check-precompiled plthome collection-dir file.c . rest)
+  (define (pre-install/check-precompiled main-collects-parent-dir collection-dir file.c . rest)
     (let* ([base-dir (build-path collection-dir
 				 "precompiled"
 				 "native"
@@ -98,9 +98,9 @@
 	      (delete-file dest-file.so))
 	    (copy-file file.so dest-file.so))
 	  ;; Normal build...
-	  (apply pre-install/normal plthome collection-dir file.c rest))))
+	  (apply pre-install/normal main-collects-parent-dir collection-dir file.c rest))))
   
-  (define (pre-install/normal plthome
+  (define (pre-install/normal main-collects-parent-dir
 			      collection-dir
 			      file.c
 			      default-lib-dir
@@ -165,7 +165,7 @@
       (parameterize ([make-print-checking #f])
         
 	;; Used as make dependencies:
-	(define mz-inc-dir (build-path plthome* "include"))
+	(define mz-inc-dir (find-include-dir))
 	(define headers (map (lambda (name)
 			       (build-path mz-inc-dir name))
 			     '("scheme.h" "schvers.h" "schemef.h" "sconfig.h" "stypes.h")))

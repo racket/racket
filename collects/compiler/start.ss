@@ -32,7 +32,7 @@
 	   (lib "link.ss" "dynext")
 	   (lib "pack.ss" "setup")
 	   (lib "getinfo.ss" "setup")
-	   (lib "plthome.ss" "setup"))
+	   (lib "dirs.ss" "setup"))
 
   (define dest-dir (make-parameter #f))
   (define auto-dest-dir (make-parameter #f))
@@ -498,7 +498,7 @@
 		    (not (compiler:option:verbose))
 		    file
 		    out-file
-		    (list (build-path plthome "include")))
+		    (list (find-include-dir)))
 		   (printf " [output to \"~a\"]~n" out-file)))
 	       source-files)]
     [(exe gui-exe)

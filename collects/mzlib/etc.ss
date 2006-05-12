@@ -2,13 +2,13 @@
 (module etc mzscheme
   
   (require "spidey.ss"
-           (lib "plthome.ss" "setup"))
+           (lib "main-collects.ss" "setup"))
   
   (require-for-syntax (lib "kerncase.ss" "syntax")
 		      (lib "stx.ss" "syntax")
 		      (lib "name.ss" "syntax")
 		      (lib "context.ss" "syntax")
-                      (lib "plthome.ss" "setup")
+                      (lib "main-collects.ss" "setup")
                       "list.ss"
                       "private/stxset.ss")
 
@@ -452,15 +452,15 @@
       (let* ([source (syntax-source stx)]
              [source (and (path? source) source)]
              [local (or (current-load-relative-directory) (current-directory))]
-	     [dir (plthome-ify
+	     [dir (path->main-collects-relative
                    (or (and source (file-exists? source)
                             (let-values ([(base file dir?) (split-path source)])
                               (and (path? base)
                                    (path->complete-path base local))))
                        local))])
-        (if (and (pair? dir) (eq? 'plthome (car dir)))
+        (if (and (pair? dir) (eq? 'collects (car dir)))
           (with-syntax ([d dir])
-            #'(un-plthome-ify 'd))
+            #'(main-collects-relative->path 'd))
           (with-syntax ([d (if (bytes? dir) dir (path->bytes dir))])
             #'(bytes->path d))))]))
 

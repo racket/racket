@@ -1,6 +1,6 @@
 (module cm mzscheme
   (require (lib "moddep.ss" "syntax")
-	   (lib "plthome.ss" "setup")
+	   (lib "main-collects.ss" "setup")
 	   (lib "file.ss"))
 
   (provide make-compilation-manager-load/use-compiled-handler
@@ -15,7 +15,8 @@
   (define indent (make-parameter ""))
   (define trust-existing-zos (make-parameter #f))
 
-  (define (trace-printf fmt . args) ((trace) (string-append (indent) (apply format fmt args))))
+  (define (trace-printf fmt . args) 
+    ((trace) (string-append (indent) (apply format fmt args))))
   
   (define my-max
     (case-lambda
@@ -88,8 +89,8 @@
        dep-path
        (lambda (op)
 	 (write (cons (version)
-		      (append (map plthome-ify deps)
-			      (map (lambda (x) (plthome-ify (cons 'ext x)))
+		      (append (map path->main-collects-relative deps)
+			      (map (lambda (x) (path->main-collects-relative (cons 'ext x)))
 				   external-deps)))
 		op)
 	 (newline op)))))
@@ -252,7 +253,7 @@
 				   (when (> t path-zo-time)
 				     (trace-printf "newer: ~a (~a > ~a)..." d t path-zo-time))
 				   (> t path-zo-time)))
-			       (map un-plthome-ify (cdr deps)))
+			       (map main-collects-relative->path (cdr deps)))
                         (compile-zo mode path))))))
                 (let ((stamp (get-compiled-time mode path #t)))
                   (hash-table-put! up-to-date path stamp)
