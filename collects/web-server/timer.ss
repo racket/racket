@@ -3,7 +3,7 @@
   (require (lib "list.ss")
            (lib "async-channel.ss"))
   (provide timer? 
-           start-timer reset-timer increment-timer
+           start-timer reset-timer! increment-timer!
            cancel-timer!
            start-timer-manager)
 
@@ -73,12 +73,12 @@
 
   ; reset-timer : timer num -> void
   ; to cause timer to expire after sec from the adjust-msec-to-live's application
-  (define (reset-timer timer secs)
+  (define (reset-timer! timer secs)
     (revise-timer! timer (* 1000 secs) (timer-action timer)))
   
-  ; increment-timer : timer num -> void
+  ; increment-timer! : timer num -> void
   ; add secs to the timer, rather than replace
-  (define (increment-timer timer secs)
+  (define (increment-timer! timer secs)
     (revise-timer! timer
                    (+ (- (timer-expire-seconds timer) (current-inexact-milliseconds))
                       (* 1000 secs))

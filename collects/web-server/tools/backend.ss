@@ -1,9 +1,7 @@
 (module backend mzscheme
   (require (lib "servlet.ss" "web-server")
-           (lib "servlet-tables.ss" "web-server")
            (lib "timer.ss" "web-server")
            (lib "response.ss" "web-server")
-           (all-except (lib "request-parsing.ss" "web-server") request-bindings)
            (lib "connection-manager.ss" "web-server"))
 
   (provide start-servlet resume-servlet)
@@ -33,7 +31,7 @@
             (with-handlers ([(lambda (x) #t)
                              (make-servlet-exception-handler inst)])
               (let ([r (svt (lambda (secs)
-                              (reset-timer time-bomb secs))
+                              (reset-timer! time-bomb secs))
                             req)])
                 (when (response? r)
                   (send/back r)))))))
@@ -70,7 +68,7 @@
     (let* ([inst (hash-table-get instance-table (car k-ref)
                                  (lambda ()
                                    (raise
-                                    (make-exn:servlet-instance
+                                    (make-exn:servlet:instance
                                      "" (current-continuation-marks)))))]
            [k-table
             (servlet-instance-k-table inst)])
@@ -83,9 +81,7 @@
         ((hash-table-get k-table (cadr k-ref)
                          (lambda ()
                            (raise
-                            (make-exn:servlet-continuation
+                            (make-exn:servlet:continuation
                              "" (current-continuation-marks)))))
          req))
-      (semaphore-post (servlet-instance-mutex inst))))
-  )
-
+      (semaphore-post (servlet-instance-mutex inst)))))

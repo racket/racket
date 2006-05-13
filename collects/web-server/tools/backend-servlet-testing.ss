@@ -1,12 +1,11 @@
 (module backend-servlet-testing mzscheme
   (require (lib "connection-manager.ss" "web-server")
-           (lib "servlet-tables.ss" "web-server")
            (lib "request-parsing.ss" "web-server")
            "backend.ss"
            (lib "url.ss" "net")
            (lib "xml.ss" "xml")
            (lib "match.ss")
-           )
+           (lib "private/url.ss" "web-server"))
 
   (provide run-servlet simple-start-servlet simple-resume-servlet)
 
@@ -92,6 +91,4 @@
   ;; Produce a new request, with an url
   (define (new-request/url new-url)
     (make-request
-      'get new-url '() (url-query new-url) "a-host-ip" "a-client-ip"))
-
-  )
+      'get new-url '() (url-query new-url) "a-host-ip" "a-client-ip")))

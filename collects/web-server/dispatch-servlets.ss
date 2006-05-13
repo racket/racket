@@ -1,16 +1,19 @@
 (module dispatch-servlets mzscheme
   (require (lib "url.ss" "net")
+           (lib "plt-match.ss")
+           (lib "class.ss")
            (lib "unitsig.ss"))
   (require "dispatch.ss"
            "web-server-structs.ss"
            "connection-manager.ss"
            "response.ss"
-           "servlet-tables.ss"
            "servlet.ss"
            "sig.ss"
-           "timer.ss"
            "util.ss"
+           "managers/manager.ss"
+           "managers/timeouts.ss"
            "private/url.ss"
+           "private/servlet.ss"
            "private/cache-table.ss")  
   (provide interface-version
            gen-dispatcher)
@@ -27,24 +30,27 @@
     
     ;; servlet-content-producer: connection request -> void
     (define (servlet-content-producer conn req)
-      (let ([meth (request-method req)])
-        (if (eq? meth 'head)
-            (output-response/method
-             conn
-             (make-response/full
-              200 "Okay" (current-seconds) TEXT/HTML-MIME-TYPE
-              '() (list "ignored"))
-             meth)
-            (let ([uri (request-uri req)])
-              (set-request-bindings/raw!
-               req
-               (read-bindings/handled conn meth uri (request-headers req)))
-              (cond
-                [(continuation-url? uri)
-                 => (lambda (k-ref)
-                      (invoke-servlet-continuation conn req k-ref))]
-                [else
-                 (servlet-content-producer/path conn req uri)])))))
+      (define meth (request-method req))
+      (define uri (request-uri req))
+      (case meth
+        [(head)
+         (output-response/method
+          conn
+          (make-response/full
+           200 "Okay" (current-seconds) TEXT/HTML-MIME-TYPE
+           '() (list "ignored"))
+          meth)]
+        [else
+         (set-request-bindings/raw!
+          req
+          (read-bindings/handled conn meth uri (request-headers req)))
+         (cond
+           [(continuation-url? uri)
+            => (match-lambda
+                 [(list instance-id k-id salt)
+                  (invoke-servlet-continuation conn req instance-id k-id salt)])]
+           [else
+            (servlet-content-producer/path conn req uri)])]))
     
     ;; read-bindings/handled: connection symbol url headers -> (listof (list (symbol string))
     ;; read the bindings and handle any exceptions
@@ -66,74 +72,71 @@
                       [(lambda (x) #t)
                        (lambda (the-exn)
                          (output-response/method conn (responders-servlet-loading uri the-exn) (request-method req)))])
-        (let ([sema (make-semaphore 0)]
-              [last-inst (thread-cell-ref current-servlet-instance)])
-          (let/cc suspend
-            ; Create the session frame
-            (with-frame
-             (let* ([servlet-custodian (make-servlet-custodian)]
-                    [inst (create-new-instance!
-                           config:instances servlet-custodian
-                           (make-execution-context
-                            conn req (lambda () (suspend #t)))
-                           sema
-                           (start-timer 0 void))]                   
-                    [real-servlet-path (with-handlers ([void (lambda (e)
-                                                               (raise (make-exn:fail:filesystem:exists:servlet
-                                                                       (exn-message e)
-                                                                       (exn-continuation-marks e))))])
-                                         (url-path->path
-                                          servlet-root
-                                          (url-path->string (url-path uri))))]
-                    [servlet-exit-handler (make-servlet-exit-handler inst)])
-               (parameterize ([current-directory (get-servlet-base-dir real-servlet-path)]
-                              [current-custodian servlet-custodian]
-                              [exit-handler servlet-exit-handler])
-                 (thread-cell-set! current-servlet-instance inst)
-                 (let (;; timer thread must be within the dynamic extent of
-                       ;; servlet custodian
-                       [time-bomb (start-timer timeouts-default-servlet
-                                               (lambda ()
-                                                 (servlet-exit-handler #f)))]
-                       ;; any resources (e.g. threads) created when the
-                       ;; servlet is loaded should be within the dynamic
-                       ;; extent of the servlet custodian
-                       [the-servlet (cached-load real-servlet-path)])
-                   (parameterize ([current-namespace (servlet-namespace the-servlet)]
-                                  [current-servlet-continuation-expiration-handler
-                                   (servlet-instance-expiration-handler the-servlet)])
-                     (set-servlet-instance-timer! inst time-bomb)
-                     (with-handlers ([(lambda (x) #t)
-                                      (make-servlet-exception-handler inst)])
-                       ;; Two possibilities:
-                       ;; - module servlet. start : Request -> Void handles
-                       ;;   output-response via send/finish, etc.
-                       ;; - unit/sig or simple xexpr servlet. These must produce a
-                       ;;   response, which is then output by the server.
-                       ;; Here, we do not know if the servlet was a module,
-                       ;; unit/sig, or Xexpr; we do know whether it produces a
-                       ;; response.
-                       (let ([r ((servlet-handler the-servlet) req)])
-                         (when (response? r)
-                           (send/back r))))))))))
-          (thread-cell-set! current-servlet-instance last-inst)
-          (semaphore-post sema))))
+        (define servlet-mutex (make-semaphore 0))
+        (define last-servlet (thread-cell-ref current-servlet))
+        (define last-servlet-instance-id (thread-cell-ref current-servlet-instance-id))
+        (let/cc suspend
+          ; Create the session frame
+          (with-frame
+           (define instance-custodian (make-servlet-custodian))
+           (define servlet-path 
+             (with-handlers
+                 ([void (lambda (e)
+                          (raise (make-exn:fail:filesystem:exists:servlet
+                                  (exn-message e)
+                                  (exn-continuation-marks e))))])
+               (url-path->path
+                servlet-root
+                (url-path->string (url-path uri)))))
+           (parameterize ([current-directory (get-servlet-base-dir servlet-path)]
+                          [current-custodian instance-custodian]
+                          [exit-handler
+                           (lambda _
+                             (kill-connection! conn)
+                             (custodian-shutdown-all instance-custodian))])
+             ;; any resources (e.g. threads) created when the
+             ;; servlet is loaded should be within the dynamic
+             ;; extent of the servlet custodian
+             (define the-servlet (cached-load servlet-path))
+             (thread-cell-set! current-servlet the-servlet)
+             (parameterize ([current-namespace (servlet-namespace the-servlet)])
+               (define manager (servlet-manager the-servlet))
+               (define data
+                 (make-servlet-instance-data
+                  servlet-mutex
+                  (make-execution-context
+                   conn req (lambda () (suspend #t)))))
+               (define the-exit-handler
+                 (lambda _
+                   (kill-connection!
+                    (execution-context-connection
+                     (servlet-instance-data-context
+                      data)))
+                   (custodian-shutdown-all instance-custodian)))
+               (parameterize ([exit-handler the-exit-handler])
+                 (define instance-id (send manager create-instance data the-exit-handler))
+                 (thread-cell-set! current-servlet-instance-id instance-id)
+                 (with-handlers ([(lambda (x) #t)
+                                  (make-servlet-exception-handler data)])
+                   ;; Two possibilities:
+                   ;; - module servlet. start : Request -> Void handles
+                   ;;   output-response via send/finish, etc.
+                   ;; - unit/sig or simple xexpr servlet. These must produce a
+                   ;;   response, which is then output by the server.
+                   ;; Here, we do not know if the servlet was a module,
+                   ;; unit/sig, or Xexpr; we do know whether it produces a
+                   ;; response.
+                   (define r ((servlet-handler the-servlet) req))
+                   (when (response? r)
+                     (send/back r))))))))
+        (thread-cell-set! current-servlet last-servlet)
+        (thread-cell-set! current-servlet-instance-id last-servlet-instance-id)
+        (semaphore-post servlet-mutex)))
     
-    ;; make-servlet-exit-handler: servlet-instance -> alpha -> void
-    ;; exit handler for a servlet
-    (define (make-servlet-exit-handler inst)
-      (lambda (x)
-        (remove-instance! config:instances inst)
-        (kill-connection!
-         (execution-context-connection
-          (servlet-instance-context inst)))
-        (custodian-shutdown-all (servlet-instance-custodian inst))))        
-    
-    ;; make-default-server-instance-expiration-handler : -> (request -> response)
-    (define (make-default-servlet-instance-expiration-handler)
-      (lambda (req)
-        (responders-file-not-found
-         (request-uri req))))
+    ;; default-server-instance-expiration-handler : (request -> response)
+    (define (default-servlet-instance-expiration-handler req)
+      (responders-file-not-found
+       (request-uri req)))
     
     ;; make-servlet-exception-handler: servlet-instance -> exn -> void
     ;; This exception handler traps all unhandled servlet exceptions
@@ -148,101 +151,81 @@
     ;; * Also, suspend will post to the semaphore so that future
     ;;   requests won't be blocked.
     ;; * This fixes PR# 7066
-    (define (make-servlet-exception-handler inst)
-      (lambda (the-exn)
-        (let* ([ctxt (servlet-instance-context inst)]
-               [req (execution-context-request ctxt)]
-               [resp (responders-servlet
-                      (request-uri req)
-                      the-exn)])
-          ;; Don't handle twice
-          (with-handlers ([exn:fail? (lambda (exn) (void))])
-            (output-response/method
-             (execution-context-connection ctxt)
-             resp (request-method req)))
-          ((execution-context-suspend ctxt)))))
+    (define ((make-servlet-exception-handler inst-data) the-exn)
+      (define context (servlet-instance-data-context inst-data))
+      (define request (execution-context-request context))
+      (define resp 
+        (responders-servlet
+         (request-uri request)
+         the-exn))
+      ;; Don't handle twice
+      (with-handlers ([exn:fail? (lambda (exn) (void))])
+        (output-response/method
+         (execution-context-connection context)
+         resp (request-method request)))
+      ((execution-context-suspend context)))
     
     ;; path -> path
     ;; The actual servlet's parent directory.
     (define (get-servlet-base-dir servlet-path)
-      (let loop ((path servlet-path))
-        (let-values ([(base name must-be-dir?) (split-path path)])
-          (if must-be-dir?
-              (or (and (directory-exists? path) path)
-                  (loop base))
-              (or (and (directory-exists? base) base)
-                  (loop base))))))
+      (let loop ([path servlet-path])
+        (define-values (base name must-be-dir?) (split-path path))
+        (or (if must-be-dir?
+                (and (directory-exists? path) path)
+                (and (directory-exists? base) base))
+            (loop base))))
     
     ;; invoke-servlet-continuation: connection request continuation-reference -> void
     ;; pull the continuation out of the table and apply it
-    (define (invoke-servlet-continuation conn req k-ref)
-      (let-values ([(uk-instance uk-id uk-salt) (apply values k-ref)])
-        (let* ([uri (request-uri req)]
-               [real-servlet-path (url-path->path
-                                   servlet-root
-                                   (url-path->string (url-path uri)))]
-               [the-servlet (cached-load real-servlet-path)])
-          (parameterize ([current-custodian (servlet-custodian the-servlet)])
-            (let ([default-servlet-instance-expiration-handler
-                    (make-default-servlet-instance-expiration-handler)]
-                  [last-inst (thread-cell-ref current-servlet-instance)])
-              (thread-cell-set! current-servlet-instance #f)
-              (with-handlers ([exn:servlet:instance?
-                               (lambda (the-exn)
-                                 (output-response/method
-                                  conn
-                                  ((servlet-instance-expiration-handler the-servlet) req)
-                                  (request-method req)))]
-                              [exn:servlet:continuation?
-                               (lambda (the-exn)
-                                 (let ([handler (exn:servlet:continuation-expiration-handler the-exn)])
-                                   (if (eq? handler (servlet-instance-expiration-handler the-servlet))
-                                       (output-response/method
-                                        conn (handler req) (request-method req))
-                                       (handler req))))]
-                              [exn:servlet:no-current-instance?
-                               (lambda (the-exn)
-                                 (output-response/method
-                                  conn
-                                  ((default-servlet-instance-expiration-handler) req)
-                                  (request-method req)))])
-                (let* ([inst 
-                        (hash-table-get config:instances uk-instance
-                                        (lambda ()
-                                          (raise
-                                           (make-exn:servlet:instance
-                                            "" (current-continuation-marks)))))]
-                       [k-table
-                        (servlet-instance-k-table inst)])
-                  (let/cc suspend
-                    ; We don't use call-with-semaphore or dynamic-wind because we
-                    ; always call a continuation. The exit-handler above ensures that
-                    ; the post is done.
-                    (semaphore-wait (servlet-instance-mutex inst))
-                    (thread-cell-set! current-servlet-instance inst)
-                    (set-servlet-instance-context!
-                     inst
-                     (make-execution-context
-                      conn req (lambda () (suspend #t))))
-                    (increment-timer (servlet-instance-timer inst)
-                                     (servlet-connection-interval-timeout the-servlet))
-                    (let-values ([(k k-expiration-handler k-salt)
-                                  (apply values
-                                         (hash-table-get
-                                          k-table uk-id
-                                          (lambda ()
-                                            (raise
-                                             (make-exn:servlet:continuation
-                                              "" (current-continuation-marks)
-                                              (servlet-instance-expiration-handler the-servlet))))))])
-                      (if (and k (= k-salt uk-salt))
-                          (k req)
-                          (raise
-                           (make-exn:servlet:continuation
-                            "" (current-continuation-marks)
-                            k-expiration-handler)))))
-                  (semaphore-post (servlet-instance-mutex inst))))
-              (thread-cell-set! current-servlet-instance last-inst))))))
+    (define (invoke-servlet-continuation conn req instance-id k-id salt)
+      (define uri (request-uri req))
+      (define servlet-path 
+        (url-path->path
+         servlet-root
+         (url-path->string (url-path uri))))
+      (define last-servlet (thread-cell-ref current-servlet))
+      (define last-servlet-instance-id (thread-cell-ref current-servlet-instance-id))
+      (define the-servlet (cached-load servlet-path))
+      (define manager (servlet-manager the-servlet))
+      (thread-cell-set! current-servlet the-servlet)
+      (thread-cell-set! current-servlet-instance-id instance-id)
+      (parameterize ([current-custodian (servlet-custodian the-servlet)])
+        (with-handlers ([exn:fail:servlet-manager:no-instance?
+                         (lambda (the-exn)
+                           (output-response/method
+                            conn
+                            ((exn:fail:servlet-manager:no-instance-expiration-handler the-exn)
+                             req)
+                            (request-method req)))]
+                        [exn:fail:servlet-manager:no-continuation?
+                         (lambda (the-exn)
+                           (output-response/method
+                            conn
+                            ((exn:fail:servlet-manager:no-continuation-expiration-handler the-exn)
+                             req)
+                            (request-method req)))]
+                        [exn:fail:servlet:instance?
+                         (lambda (the-exn)
+                           (output-response/method
+                            conn
+                            (default-servlet-instance-expiration-handler
+                              req)
+                            (request-method req)))])
+          (define data (send manager instance-lookup-data instance-id))
+          ; We don't use call-with-semaphore or dynamic-wind because we
+          ; always call a continuation. The exit-handler above ensures that
+          ; the post is done.
+          (semaphore-wait (servlet-instance-data-mutex data))
+          (let/cc suspend
+            (define k (send manager continuation-lookup instance-id k-id salt))
+            (set-servlet-instance-data-context!
+             data
+             (make-execution-context
+              conn req (lambda () (suspend #t))))
+            (k req))
+          (semaphore-post (servlet-instance-data-mutex data))))
+      (thread-cell-set! current-servlet-instance-id last-servlet-instance-id)
+      (thread-cell-set! current-servlet last-servlet))
     
     ;; ************************************************************
     ;; ************************************************************
@@ -252,12 +235,12 @@
     ;; timestamps are no longer checked for performance.  The cache must be explicitly
     ;; refreshed (see dispatch).
     (define (cached-load servlet-path)
-      (let ([entry-id (string->symbol (path->string servlet-path))])
-        (cache-table-lookup! 
-         (unbox config:scripts)
-         entry-id
-         (lambda ()
-           (reload-servlet-script servlet-path)))))
+      (define entry-id (string->symbol (path->string servlet-path)))
+      (cache-table-lookup! 
+       (unbox config:scripts)
+       entry-id
+       (lambda ()
+         (reload-servlet-script servlet-path))))
     
     ;; exn:i/o:filesystem:servlet-not-found =
     ;; (make-exn:fail:filesystem:exists:servlet str continuation-marks str sym)
@@ -297,77 +280,88 @@
         (lambda (initial-request)
           (adjust-timeout! timeout)
           (start initial-request)))
-      (let ([servlet-custodian (make-servlet-custodian)])
-        (parameterize ([current-namespace (config:make-servlet-namespace)]
-                       [current-custodian servlet-custodian])
-          (and (file-exists? a-path)
-               ; XXX load/use-compiled breaks errortrace
-               (let ([s (load/use-compiled a-path)])
-                 (cond
-                   ;; signed-unit servlet
-                   ; MF: I'd also like to test that s has the correct import signature.
-                   [(unit/sig? s) 
-                    (make-servlet (v0.servlet->v1.lambda s)
-                                  servlet-custodian
-                                  (current-namespace)
-                                  timeouts-default-servlet
-                                  (make-default-servlet-instance-expiration-handler))]
-                   ; FIX - reason about exceptions from dynamic require (catch and report if not already)
-                   ;; module servlet
-                   [(void? s)
-                    (let* ([module-name `(file ,(path->string a-path))]
-                           [version (dynamic-require module-name 'interface-version)])
-                      (case version
-                        [(v1)
-                         (let ([timeout (dynamic-require module-name 'timeout)]
-                               [start (dynamic-require module-name 'start)])
-                           (make-servlet (v1.module->v1.lambda timeout start)
-                                         servlet-custodian                                         
-                                         (current-namespace)
-                                         timeouts-default-servlet
-                                         (make-default-servlet-instance-expiration-handler)))]
-                        [(v2-transitional) ; XXX: Undocumented
-                         (let ([timeout (dynamic-require module-name 'timeout)]
-                               [instance-expiration-handler (dynamic-require module-name 'instance-expiration-handler)]
-                               [start (dynamic-require module-name 'start)])
-                           (make-servlet (v1.module->v1.lambda timeout start)
-                                         servlet-custodian
-                                         (current-namespace)
-                                         timeout
-                                         instance-expiration-handler))]
-                        [else
-                         (raise (format "unknown servlet version ~e" version))]))]
-                   ;; response
-                   [(response? s)
-                    (make-servlet (v0.response->v1.lambda s a-path)
-                                  servlet-custodian
-                                  (current-namespace)
-                                  timeouts-default-servlet
-                                  (make-default-servlet-instance-expiration-handler))]
-                   [else
-                    (raise 'load-servlet/path "Loading ~e produced ~n~e~n instead of a servlet." a-path s)]))))))
+      (parameterize ([current-namespace (config:make-servlet-namespace)]
+                     [current-custodian (make-servlet-custodian)])
+        ; XXX load/use-compiled breaks errortrace
+        (define s (load/use-compiled a-path))
+        (cond
+          ;; signed-unit servlet
+          ; MF: I'd also like to test that s has the correct import signature.
+          [(unit/sig? s) 
+           (make-servlet (current-custodian)
+                         (current-namespace)
+                         (make-object timeout-manager%
+                           default-servlet-instance-expiration-handler
+                           timeouts-servlet-connection
+                           timeouts-default-servlet)
+                         (v0.servlet->v1.lambda s))]
+          ; FIX - reason about exceptions from dynamic require (catch and report if not already)
+          ;; module servlet
+          [(void? s)
+           (let* ([module-name `(file ,(path->string a-path))]
+                  [version (dynamic-require module-name 'interface-version)])
+             (case version
+               [(v1)
+                (let ([timeout (dynamic-require module-name 'timeout)]
+                      [start (dynamic-require module-name 'start)])
+                  (make-servlet (current-custodian)
+                                (current-namespace)
+                                (make-object timeout-manager%
+                                  default-servlet-instance-expiration-handler
+                                  timeouts-servlet-connection
+                                  timeouts-default-servlet)
+                                (v1.module->v1.lambda timeout start)))]
+               [(v2-transitional) ; XXX: Undocumented
+                (let ([start (dynamic-require module-name 'start)]
+                      [manager (with-handlers
+                                   ([exn:fail:contract?
+                                     (lambda (exn)
+                                       (define timeout (dynamic-require module-name 'timeout))
+                                       (define instance-expiration-handler
+                                         (dynamic-require module-name 'instance-expiration-handler))
+                                       (make-object timeout-manager%
+                                         instance-expiration-handler
+                                         timeouts-servlet-connection
+                                         timeout))])
+                                 (dynamic-require module-name 'manager))])
+                  (make-servlet (current-custodian)
+                                (current-namespace)
+                                manager
+                                start))]
+               [else
+                (error 'load-servlet/path "unknown servlet version ~e" version)]))]
+          ;; response
+          [(response? s)
+           (make-servlet (current-custodian)
+                         (current-namespace)
+                         (make-object timeout-manager%
+                           default-servlet-instance-expiration-handler
+                           timeouts-servlet-connection
+                           timeouts-default-servlet)
+                         (v0.response->v1.lambda s a-path))]
+          [else
+           (error 'load-servlet/path "Loading ~e produced ~n~e~n instead of a servlet." a-path s)])))
     
-    (define servlet-bin?
-      (let ([svt-bin-re (regexp "^/servlets(;id.*\\*.*\\*.*)?/.*")])
-        (lambda (str)
-          (regexp-match svt-bin-re str))))
+    (define svt-bin-re (regexp "^/servlets(;.*\\*.*\\*.*)?/.*"))
+    (define (servlet-bin? str)
+      (regexp-match svt-bin-re str))
     
     ;; return dispatcher
     (lambda (conn req)
-      (let-values ([(uri method path) (decompose-request req)])
-        (cond [(string=? "/conf/refresh-servlets" path)
-               ;; more here - this is broken - only out of date or specifically mentioned
-               ;; scripts should be flushed.  This destroys persistent state!
-               (cache-table-clear! (unbox config:scripts))
-               (output-response/method
-                conn
-                (responders-servlets-refreshed)
-                method)]
-              [(servlet-bin? path)
-               (adjust-connection-timeout!
-                conn
-                timeouts-servlet-connection)
-               ;; more here - make timeouts proportional to size of bindings
-               (servlet-content-producer conn req)]
-              [else
-               (next-dispatcher)])))))
+      (define-values (uri method path) (decompose-request req))
+      (cond [(string=? "/conf/refresh-servlets" path)
+             ;; more here - this is broken - only out of date or specifically mentioned
+             ;; scripts should be flushed.  This destroys persistent state!
+             (cache-table-clear! (unbox config:scripts))
+             (output-response/method
+              conn
+              (responders-servlets-refreshed)
+              method)]
+            [(servlet-bin? path)
+             (adjust-connection-timeout!
+              conn
+              timeouts-servlet-connection)
+             ;; more here - make timeouts proportional to size of bindings
+             (servlet-content-producer conn req)]
+            [else
+             (next-dispatcher)]))))

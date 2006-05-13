@@ -3,7 +3,7 @@
 ;; server was written with the assumption that continuations exist across
 ;; threads; this is not the case in the exp Web server. As a result, only one
 ;; thread should be used at a time.
-
+;;
 ;; Since the real send/* are used, with their full continuation table, one can
 ;; use this to fully pretend to be a Web browser, including back buttons and
 ;; cloning Web pages.
@@ -17,10 +17,7 @@
            (lib "servlet.ss" "web-server")
            (lib "servlet-tables.ss" "web-server")
            (lib "connection-manager.ss" "web-server")
-           (lib "timer.ss" "web-server")
-           (all-except (lib "request-parsing.ss" "web-server")
-                       request-bindings)
-           )
+           (lib "timer.ss" "web-server"))
 
   (provide start-servlet resume-servlet resume-servlet/headers)
 
@@ -134,6 +131,4 @@
   ;; Produce a new request, with bindings
   (define (new-request/bindings bs)
     (make-request 'get (string->url "http://www.example.com/") '() bs
-                  "a-host-ip" "a-client-ip"))
-
-  )
+                  "a-host-ip" "a-client-ip")))

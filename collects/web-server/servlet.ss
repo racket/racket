@@ -1,9 +1,10 @@
 (module servlet mzscheme
   (require (lib "contract.ss")
+           (lib "class.ss")
            (lib "etc.ss")
            (lib "xml.ss" "xml"))
-  (require "servlet-tables.ss"
-           "response.ss"
+  (require "response.ss"
+           "private/servlet.ss"
            "private/url.ss"
            "servlet-helpers.ss"
            "timer.ss"
@@ -11,7 +12,7 @@
   
   ;; CONTRACT HELPERS
   (define servlet-response? any/c)
-    
+  
   (define (xexpr/callback? x)
     (correct-xexpr? x 
                     (lambda () #t)
@@ -20,7 +21,7 @@
                           #t
                           (begin ((error-display-handler) (exn-message exn) exn)
                                  #f)))))
-
+  
   (define response-generator?
     (string? . -> . servlet-response?))
   
@@ -38,7 +39,7 @@
   
   ;; ************************************************************
   ;; HELPERS
-    
+  
   ;; replace-procedures : (proc -> url) xexpr/callbacks? -> xexpr?
   ;; Change procedures to the send/suspend of a k-url
   (define (xexpr/callback->xexpr p->a p-exp)
@@ -46,14 +47,7 @@
       [(list? p-exp) (map (lambda (p-e) (xexpr/callback->xexpr p->a p-e))
                           p-exp)]
       [(procedure? p-exp) (p->a p-exp)]
-      [else p-exp]))
-  
-  ;; get-current-servlet-instance : -> servlet
-  (define (get-current-servlet-instance)
-    (let ([inst (thread-cell-ref current-servlet-instance)])
-      (unless inst
-        (raise (make-exn:servlet:no-current-instance "" (current-continuation-marks))))
-      inst))
+      [else p-exp])) 
   
   ;; Weak contracts: the input is checked in output-response, and a message is
   ;; sent directly to the client (Web browser) instead of the terminal/log.
@@ -93,19 +87,18 @@
   ;; adjust-timeout! : sec -> void
   ;; adjust the timeout on the servlet
   (define (adjust-timeout! secs)
-    (reset-timer (servlet-instance-timer (get-current-servlet-instance))
-                 secs))
+    (send (current-servlet-manager) adjust-timeout! (get-current-servlet-instance-id) secs))
   
   ;; ext:clear-continuations! -> void
   (define (clear-continuation-table!)
-    (clear-continuations! (get-current-servlet-instance)))
+    (send (current-servlet-manager) clear-continuations! (get-current-servlet-instance-id)))
   
   ;; send/back: response -> void
   ;; send a response and don't clear the continuation table
   (define (send/back resp)
-    (let ([ctxt (servlet-instance-context (get-current-servlet-instance))])
-      (output-response (execution-context-connection ctxt) resp)
-      ((execution-context-suspend ctxt))))
+    (define ctxt (servlet-instance-data-context (current-servlet-instance-data)))
+    (output-response (execution-context-connection ctxt) resp)
+    ((execution-context-suspend ctxt)))
   
   ;; send/finish: response -> void
   ;; send a response and clear the continuation table
@@ -124,16 +117,16 @@
     (opt-lambda (response-generator [expiration-handler (current-servlet-continuation-expiration-handler)])
       (with-frame-after
        (let/cc k
-         (let* ([inst (get-current-servlet-instance)]
-                [ctxt (servlet-instance-context inst)]
-                [k-embedding (store-continuation! k expiration-handler inst)]
-                [k-url (embed-ids 
-                        k-embedding
-                        (request-uri (execution-context-request ctxt)))]
-                [k-url ((current-url-transform) k-url)]
-                [response (response-generator k-url)])
-           (output-response (execution-context-connection ctxt) response)
-           ((execution-context-suspend ctxt)))))))
+         (define instance-id (get-current-servlet-instance-id))
+         (define ctxt (servlet-instance-data-context (current-servlet-instance-data)))
+         (define k-embedding (send (current-servlet-manager) continuation-store! instance-id k expiration-handler))
+         (define k-url ((current-url-transform)
+                        (embed-ids 
+                         (list* instance-id k-embedding)
+                         (request-uri (execution-context-request ctxt)))))
+         (define response (response-generator k-url))
+         (output-response (execution-context-connection ctxt) response)
+         ((execution-context-suspend ctxt))))))
   
   ;; send/forward: (url -> response) [(request -> response)] -> request
   ;; clear the continuation table, then behave like send/suspend

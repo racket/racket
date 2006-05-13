@@ -7,8 +7,8 @@
   (provide
    match-url-params)
   (provide/contract
-   [continuation-url? (url? . -> . (or/c boolean? (list/c symbol? number? number?)))]
-   [embed-ids ((list/c symbol? number? number?) url? . -> . string?)])
+   [continuation-url? (url? . -> . (or/c boolean? (list/c number? number? number?)))]
+   [embed-ids ((list/c number? number? number?) url? . -> . string?)])
   
   ;; ********************************************************************************
   ;; Parameter Embedding
@@ -35,11 +35,13 @@
           #f
           (match (match-url-params (first k-params))
             [(list s instance k-id salt)
-             (let ([k-id/n (string->number k-id)]
+             (let ([instance/n (string->number instance)]
+                   [k-id/n (string->number k-id)]
                    [salt/n (string->number salt)])
-               (if (and (number? k-id/n)
+               (if (and (number? instance/n)
+                        (number? k-id/n)
                         (number? salt/n))
-                   (list (string->symbol instance)
+                   (list instance/n
                          k-id/n
                          salt/n)
                    ; XXX: Maybe log this in some way?
