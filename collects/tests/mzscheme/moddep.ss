@@ -105,6 +105,8 @@
 (test-cmp '(planet "x.ss" ("m" "z.plt" 2)) '(planet "x.ss" ("m" "z.plt" 2)) '(file "q.ss"))
 (test-cmp '(planet "x.ss" ("m" "z.plt" 2)) '(planet "x.ss" ("m" "z.plt" 2)) "where/in/the/world/cs.ss")
 
+(test-cmp "./x.ss" "x.ss" ".")
+
 ;; Try path cases that don't fit UTF-8 (and therefore would go wrong as a string):
 (let ([dir (build-path (current-directory) (bytes->path #"\xFF"))])
   (test-cmp (build-path dir "x.ss")

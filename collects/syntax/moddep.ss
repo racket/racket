@@ -343,7 +343,9 @@
 		   (ormap path? elements)))
 	  (apply build-path
 		 (let-values ([(base name dir?) (split-path relto-mp)])
-		   base)
+		   (if (eq? base 'relative)
+		       'same
+		       base))
 		 (map (lambda (x) (if (bytes? x) (bytes->path x) x))
 		      elements))]
 	 [(string? relto-mp)
