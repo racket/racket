@@ -1,9 +1,10 @@
 (module installer mzscheme
-  (require (lib "process.ss"))
+  (require (lib "process.ss")
+	   (lib "dirs.ss" "setup"))
   (provide post-installer)
   (define (post-installer plt-home)
     (define (make-dll-path . more)
-      (apply build-path plt-home "lib" more))
+      (apply build-path (find-dll-dir) more))
     (define (warn fmt . args) (apply fprintf (current-error-port) fmt args))
     (let* ([dlls '("myspage.dll" "myssink.dll")]
            [dll-paths (map make-dll-path dlls)]
