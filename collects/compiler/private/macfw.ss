@@ -1,6 +1,8 @@
 
 (module macfw mzscheme
-  (require (lib "process.ss"))
+  (require "mach-o.ss"
+	   (lib "string.ss")
+	   (lib "process.ss"))
 
   (provide update-framework-path
 	   get-current-framework-path
@@ -20,43 +22,36 @@
 		  (let* ([orig (get-current-framework-path dest p)]
 			 [3m (if (and orig (regexp-match #rx"_3m" orig))
 				 "_3m"
-				 "")])
-		    (system* "/usr/bin/install_name_tool"
-			     "-change"
-			     (or orig
-				 (format "~a.framework/Versions/~a~a/~a" p (version) 3m p))
-			     (format "~a~a.framework/Versions/~a~a/~a" 
-				     fw-path
-				     p (version) 3m p)
-			     dest)))
+				 "")]
+			 [old-path (or orig
+				       (format "~a.framework/Versions/~a~a/~a" p (version) 3m p))]
+			 [new-path (format "~a~a.framework/Versions/~a~a/~a" 
+					   fw-path
+					   p (version) 3m p)])
+		    (get/set-dylib-path dest
+					(byte-regexp
+					 (bytes-append
+					  #"^"
+					  (string->bytes/utf-8
+					   (regexp-quote old-path))
+					  #"$"))
+					(string->bytes/utf-8 new-path))))
 		(if mred?
 		    '("PLT_MrEd")
 		    '("PLT_MzScheme")))))
 
   (define (get-current-framework-path dest p)
-    (let-values ([(r w) (make-pipe)])
-      (parameterize ([current-output-port w])
-	(system* "/usr/bin/otool"
-		 "-L"
-		 (if (path? dest)
-		     (path->string dest)
-		     dest)))
-      (close-output-port w)
-      (let ([m (regexp-match (bytes-append #"[\r\n][ \t]*([^ \t][^\r\n]*" 
-					   (string->bytes/utf-8 p)
-					   #"[^\r\n]*)"
-					   #" [(]compatibility version [0-9.]*,"
-					   #" current version [0-9.]*[)][\r\n]")
-			     r)])
-	(if m
-	    (bytes->string/utf-8 (cadr m))
-	    (begin
-	      (fprintf (current-error-port)
-		       "warning: cannot find existing link for ~a in ~a\n"
-		       p dest)
-	      #f))))))
+    (let ([v (get/set-dylib-path dest
+				 (byte-regexp (string->bytes/utf-8 p))
+				 #f)])
+      (if v
+	  (bytes->string/utf-8 v)
+	  (begin
+	    (fprintf (current-error-port)
+		     "warning: cannot find existing link for ~a in ~a\n"
+		     p dest)
+	    #f)))))
 
-	       
 
 
   

@@ -1,5 +1,6 @@
 (module dirs mzscheme
-  (require (lib "winutf16.ss" "compiler" "private"))
+  (require (lib "winutf16.ss" "compiler" "private")
+	   (lib "mach-o.ss" "compiler" "private"))
 
   (define main-collects-dir
     (delay
@@ -71,11 +72,42 @@
 		      (unless m (error "cannot find \"dLl dIRECTORy\" tag in binary"))
 		      (let-values ([(dir name dir?) (split-path exe)])
 			(if (regexp-match #rx#"^<" (cadr m))
-			    ;; no DLL dir in binary, so assume exe dir:
-			    dir
+			    ;; no DLL dir in binary
+			    #f
 			    ;; resolve relative directory:
 			    (let ([p (bytes->path (utf-16-bytes->bytes (cadr m)))])
 			      (path->complete-path p dir))))))))]
+	     [(macosx)
+	      (let ([exe (parameterize ([current-directory (find-system-path 'orig-dir)])
+			   (let loop ([p (find-executable-path (find-system-path 'exec-file))])
+			     (if (link-exists? p)
+				 (loop (let-values ([(r) (resolve-path p)]
+						    [(dir name dir?) (split-path p)])
+					 (if (and (path? dir)
+						  (relative-path? r))
+					     (build-path dir r)
+					     r)))
+				 p)))])
+		(let ([rel (get/set-dylib-path exe "PLT_M[rz]" #f)])
+		  (if rel
+		      (cond
+		       [(regexp-match #rx#"^(@executable_path/)?(.*?)PLT_M(?:rEd|zScheme).framework" rel)
+			=> (lambda (m)
+			     (let ([b (caddr m)])
+			       (if (and (not (cadr m))
+					(bytes=? b #""))
+				   #f ; no path in exe
+				   (simplify-path
+				    (path->complete-path (if (not (cadr m))
+							     (bytes->path b)
+							     (let-values ([(dir name dir?) (split-path exe)])
+							       (if (bytes=? b #"")
+								   dir
+								   (build-path dir (bytes->path b)))))
+							 (find-system-path 'orig-dir))))))]
+		       [else (find-lib-dir)])
+		      ;; no framework reference found!?
+		      #f)))]
 	     [else
 	      (find-lib-dir)])))
   (define (find-dll-dir)

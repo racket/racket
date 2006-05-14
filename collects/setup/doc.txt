@@ -303,7 +303,8 @@ installation directories:
 
   Returns a path to the directory that contains DLLs for use with the
   current executable (e.g., "libmzsch.dll" under Windows). The result
-  is #f if no such directory is available.
+  is #f if no such directory is available, or if no specific directory
+  is available (i.e., other than the platform's normal search path).
 
 
 _Getting info.ss fields_

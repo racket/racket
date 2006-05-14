@@ -13,6 +13,7 @@
 	   "private/winicon.ss"
            "private/winsubsys.ss"
 	   "private/macfw.ss"
+	   "private/mach-o.ss"
 	   "private/windlldir.ss")
 
   (provide compiler:embed@)
@@ -607,12 +608,23 @@
 			    (let-values ([(orig-dir name dir?) (split-path 
 								(path->complete-path orig-exe))])
 			      (update-dll-dir dest (build-path orig-dir dir))))))))
-		(let ([start (file-size dest-exe)])
-		  (with-output-to-file dest-exe
-		    (lambda ()
-		      (write-module-bundle verbose? modules literal-files literal-expression))
-		    'append)
-		  (let ([end (file-size dest-exe)])
+		(let ([write-module
+		       (lambda ()
+			 (write-module-bundle verbose? modules literal-files literal-expression))])
+		  (let-values ([(start end)
+				(if (eq? (system-type) 'macosx)
+				    ;; For Mach-O, we know how to add a proper segment
+				    (let ([s (open-output-bytes)])
+				      (parameterize ([current-output-port s])
+					(write-module))
+				      (let ([s (get-output-bytes s)])
+					(let ([start (add-plt-segment dest-exe s)])
+					  (values start
+						  (+ start (bytes-length s))))))
+				    ;; Other platforms: just add to the end of the file:
+				    (let ([start (file-size dest-exe)])
+				      (with-output-to-file dest-exe write-module 'append)
+				      (values start (file-size dest-exe))))])
 		    (when verbose?
 		      (fprintf (current-error-port) "Setting command line~n"))
 		    (let ([start-s (number->string start)]
