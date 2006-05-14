@@ -229,7 +229,7 @@
 				       (write-ulong (+ sz delta) out)
 				       (flush-output out)
 				       ;; Shift rest of load commands by delta
-				       (let ([end cmdssz])
+				       (let ([end (+ cmdssz 56)])
 					 (file-position p (+ pos sz))
 					 (let ([s (read-bytes (- end (+ pos sz)) p)])
 					   (file-position out (+ pos sz delta))
@@ -240,7 +240,7 @@
 					   (flush-output out))
 					 ;; Change load-commands size in header:
 					 (file-position out 20)
-					 (write-ulong (+ end delta) out)
+					 (write-ulong (+ cmdssz delta) out)
 					 (flush-output out)))
 				     (file-position out (+ pos offset))
 				     (write-bytes new-path out)
