@@ -96,8 +96,9 @@ the Unix instructions below, but note the following:
     If the --prefix flag is omitted, the binaries are built for an
     in-place installation (i.e., the plt directory containing this
     README will be used directly). Unless --enable-shared is used, the
-    plt directory can be moved later, but most system administrators
-    would recommend that you use --enable-shared.
+    plt directory can be moved later; most system administrators
+    would recommend that you use --enable-shared, but the PLT Scheme
+    developers distribute binaries built without --enable-shared.
 
     The `configure' script generates the makefiles for building
     MzScheme and/or MrEd. The current directory at the time
@@ -193,7 +194,38 @@ pthreads. On these platforms, GL support will be included in MrEd,
 but it will not work properly unless --enable-pthread is specified.
 
 ========================================================================
- Compiling the OSKit-based kernel
+ Embedded Paths in the Executables
+========================================================================
+
+On all platforms, the MzScheme and MrEd binaries embed a path to the
+main "collects" directory of library collections. This path can be
+relative to the executable. Multiple paths can be provided, in which
+case the first path is the main "collects" path, and additional paths
+are placed before the main path (but after a user-specific "collects"
+path) in the default collection path list.
+
+The paths are embedded in the binary immediately after a "coLLECTs
+dIRECTORy:" tag. Each path must be NUL terminated, the entire list of
+paths must end with an additional NUL terminator, and the overall list
+must be less than 1024 bytes long.
+
+As an alternative to editing an exeuctable directly, the
+`create-embedding-executable' procedure from `(lib "embed.ss"
+"compiler")' can be used to change the embedded path. For example, the
+following clones the MzScheme executable and changes the embedded path
+n the clone to "/tmp/collects":
+
+ (require (lib "embed.ss" "compiler"))
+ (create-embedding-executable "/tmp/mz" #:lib-path "/tmp/collects")
+
+Similarly, `mzc' in `--exe' or `--gui-exe' mode accepts a `--collects'
+flag to set the collection path in the generated executable.
+
+Under Windows, executables also embed a path to DLLs. For more
+information, see worksp\README.
+
+========================================================================
+ Compiling the OSKit-based Kernel
 ========================================================================
 
 To build the OSKit-based MzScheme kernel, run the configure script

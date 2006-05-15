@@ -1,14 +1,13 @@
 This directory contains 
 
- - solution files and project files for building MzScheme and
-    MrEd with Microsoft Visual Studio (which work with the .NET
+ - solution files and project files for building MzScheme and MrEd
+    with Microsoft Visual Studio 7.1 and up (which work with the .NET
     and Express 2005 versions of Visual Studio);
 
  - mzconfig.h which is a manual version of information that is
     gathered automatically when using the "configure" script.
 
-If you have downloaded MzCOM, the directory also contains Visual
-Studio files for MzCOM.
+For files that work with MSVC 7.0, see ..\worksp-vc70\.
 
 Visual Studio Express is available for free from Microsoft, and it is
 the recommended compiler for building PLT Scheme.
@@ -16,8 +15,8 @@ the recommended compiler for building PLT Scheme.
 MzScheme and MrEd also compile with Cygwin gcc (a free compiler from
 GNU and Cygnus Solutions), but the result is a Unix-style
 installation, not a Window-style installation. To compile with gcc,
-follow the instructions in plt\src\README (there is a short
-Windows-specific section in that file).
+follow the instructions in plt\src\README (which contains a short
+Windows-specific section).
 
 With an MSVC-built MzScheme, compatible extensions can be built with
 other compilers. Build with Cygwin and copy the installed plt\lib\gcc
@@ -54,15 +53,15 @@ To build MrEd, make the MrEd solution:
    plt\src\worksp\mred - makes plt\mred.exe
 
 The make processes for MzScheme and MzCOM automatically build
-   libmzgc - makes plt\libmzgcxxxxxxx.dll and
+   libmzgc - makes plt\lib\libmzgcxxxxxxx.dll and
              plt\src\worksp\libmzgc\Release\libmzgcxxxxxxx.lib
-   mzsrc - makes plt\libmzschxxxxxxx.dll and
+   mzsrc - makes plt\lib\libmzschxxxxxxx.dll and
                  plt\src\worksp\mzsrc\Release\mzsrcxxxxxxx.lib
 
 The make process for MrEd automatically builds
    libmzgc - as above
    libmzsch - as above
-   libmred - makes plt\libmredxxxxxxx.dll and
+   libmred - makes plt\lib\libmredxxxxxxx.dll and
                    plt\src\worksp\libmred\Release\libmredxxxxxxx.lib
    wxutils - makes plt\src\worksp\wxutils\Release\wxutils.lib
    wxwin - makes plt\src\worksp\wxwin\Release\wxwin.lib
@@ -75,8 +74,7 @@ The make process for MrEd automatically builds
 In addition, building MzScheme executes
    plt\src\mzscheme\dynsrc\mkmzdyn.bat
 which copies .exp, .obj, and .lib files into plt\lib\, and also copies
-DLLs from the extradlls directory to to plt\.  uniplt_xxxxxxx.dll is
-used only under Windows 95/98/Me for Unicode.
+DLLs from the extradlls directory to to plt\lib\.
 
 To complete a build, run the versioning script described in the next
 section.
@@ -104,14 +102,13 @@ times. The resulting conversions are
   plt\mzscheme.exe -> plt\mzscheme.exe (updated)
   plt\mred.exe -> plt\mred.exe         (updated)
   plt\mzcom.exe -> plt\mzcom.exe       (updated)
-  plt\libmzgcxxxxxxx.dll -> plt\libmzgc<version>.dll
-  plt\libmzschxxxxxxx.dll -> plt\libmzsch<version>.dll
-  plt\libmredxxxxxxx.dll -> plt\libmred<version>.dll
+  plt\lib\libmzgcxxxxxxx.dll -> plt\lib\libmzgc<version>.dll
+  plt\lib\libmzschxxxxxxx.dll -> plt\lib\libmzsch<version>.dll
+  plt\lib\libmredxxxxxxx.dll -> plt\lib\libmred<version>.dll
   plt\src\worksp\libmzsch\Release\libmzschxxxxxxx.lib
                           -> plt\lib\win32\msvc\libmzsch<version>.lib
   plt\src\worksp\libmzgc\Release\libmzgcxxxxxxx.lib
                           -> plt\lib\win32\msvc\libmzgc<version>.lib
-  plt\uniplt_xxxxxxx.dll -> plt\uniplt_<version>.dll
 
 ----------------------------------------------------------------------
 Extra stuff for MzScheme and MrEd
@@ -133,6 +130,30 @@ and mzscheme.exe) by running
 add -n to the end of the above command.)
 
 ----------------------------------------------------------------------
+Finding DLLs
+----------------------------------------------------------------------
+
+Since the DLLs libmzgcxxxxxxx.dll, libmzschxxxxxxx.dll, and
+libmzmredxxxxxxx.dll are installed into plt\lib\ instead of just plt\,
+the normal search path for DLLs would not find them when running
+"MzScheme.exe" or "MrEd.exe". To find the DLLs, the executables are
+"delayload" linked with the DLLs, and the executables explicitly load
+the DLLs from plt\lib\ on start-up.
+
+The relative DLL path is embedded in each executable, and it can be
+replaced with a path of up to 512 characters. The path is stored in
+the exeuctable in wide-character format, and it is stored immediately
+after the wide-character tag "dLl dIRECTORy:" with a wide NUL
+terminator. The path can be either absolute or relative; in the latter
+case, the relative path is resolved with respect to the
+executable. Replacing the first character of the path with "<"
+disables the explicit DLL load, so that the DLLs must appear in the
+normal DLL search path.
+
+See also ..\README for information on the embedded "collects" path in
+the executables.
+
+----------------------------------------------------------------------
 Embedding MzScheme
 ----------------------------------------------------------------------
 
@@ -140,14 +161,12 @@ The MzScheme DLLs can be used within an embedding application.
 
 The libraries
 
-    plt\src\worksp\libmzsch\Release\libmzschxxxxxxx.lib
-    plt\src\worksp\libmzgc\Release\libmzgcxxxxxxx.lib
+    plt\lib\win32\msvc\libmzschxxxxxxx.lib
+    plt\lib\win32\msvc\libmzgcxxxxxxx.lib
 
 which are created by the mzsrc and gc projects, provide linking
 information for using the libmzschxxxxxxx.dll and libmzgcxxxxxxx.dll
-DLLs. The versioning script adjusts the names and puts them in
-    plt\lib\msvc\libmzsch<version>.lib
-    plt\lib\msvc\libmzgc<version>.lib
+DLLs. The versioning script adjusts the names, as described above.
 
 See the "Inside PLT MzScheme" manual for more information about using
 these libraries to embed MzScheme in an application.
