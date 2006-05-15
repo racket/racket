@@ -231,7 +231,12 @@
   (define (filled-rectangle w h)
     (dc
      (lambda (dc x y)
-       (send dc draw-rectangle x y w h))
+       (let ([b (send dc get-brush)])
+         (send dc set-brush (send the-brush-list find-or-create-brush
+				  (send (send dc get-pen) get-color)
+                                  'solid))
+	 (send dc draw-rectangle x y w h)
+	 (send dc set-brush b)))
      w
      h))
   
@@ -250,7 +255,12 @@
     (opt-lambda (w h [corner -0.25])
       (dc
        (lambda (dc x y)
-	 (send dc draw-rounded-rectangle x y w h corner))
+	 (let ([b (send dc get-brush)])
+	   (send dc set-brush (send the-brush-list find-or-create-brush
+				    (send (send dc get-pen) get-color)
+				    'solid))
+	   (send dc draw-rounded-rectangle x y w h corner)
+	   (send dc set-brush b)))
        w
        h)))
   
@@ -281,7 +291,12 @@
   
   (define (filled-ellipse width height)
     (dc (lambda (dc x y)
-	  (send dc draw-ellipse x y width height))
+	  (let ([b (send dc get-brush)])
+	    (send dc set-brush (send the-brush-list find-or-create-brush
+				     (send (send dc get-pen) get-color)
+				     'solid))
+	    (send dc draw-ellipse x y width height)
+	    (send dc set-brush b)))
 	width height))
 
   (define cloud
