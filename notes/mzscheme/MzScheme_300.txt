@@ -7,8 +7,8 @@ in several significant ways:
    case-insensitive.
 
  * MzScheme now directly supports Unicode. The "char" datatype
-   corresponds to a Unicode code point, and strings correspond to a
-   sequence of code points. Meanwhile, a new "byte string" datatype
+   corresponds to a Unicode scalar value, and strings correspond to a
+   sequence of scalar values. Meanwhile, a new "byte string" datatype
    implements a sequence of bytes (exact integers between 0 and 255),
    and byte strings take over the old role of strings with respect to
    low-level port operations.
@@ -162,10 +162,10 @@ in several significant ways:
  Unicode
 ======================================================================
 
-The "char" datatype means "Unicode code point", which technically
+The "char" datatype means "Unicode scalar value", which technically
 should not be confused with "Unicode character". But most things that
 a literate human would call a "character" can be represented by a
-single code point in Unicode, so the "code point" approximation of
+single scalar value in Unicode, so the "scalar value" approximation of
 "character" works well for many purposes. See section 1.2 in the
 MzScheme manual for an overview of MzScheme's approach to Unicode and
 locales.
@@ -212,7 +212,7 @@ Other details:
 
  * Use #\uXXXX or #\UXXXXXX for arbitrary character constants, where
    each X is a hexadecimal digit and the resulting number identifies a
-   code point. In a string (but not a byte string), use "\uXXXX" or
+   scalar value. In a string (but not a byte string), use "\uXXXX" or
    "\UXXXXXX".
 
  * All of the `char-whitespace?', `char-alphabetic?', etc. functions
