@@ -17,8 +17,17 @@ char *binary_type_hack = "bINARy tYPe:" INITIAL_BIN_TYPE;
 #endif
 
 static char *_coldir = "coLLECTs dIRECTORy:" /* <- this tag stays, so we can find it again */
-                       INITIAL_COLLECTS_DIRECTORY "\0"
-                       /* Pad with at least 512 bytes: */
+                       INITIAL_COLLECTS_DIRECTORY 
+                       "\0\0" /* <- 1st nul terminates path, 2nd terminates path list */
+                       /* Pad with at least 1024 bytes: */
+                       "****************************************************************"
+                       "****************************************************************"
+                       "****************************************************************"
+                       "****************************************************************"
+                       "****************************************************************"
+                       "****************************************************************"
+                       "****************************************************************"
+                       "****************************************************************"
                        "****************************************************************"
                        "****************************************************************"
                        "****************************************************************"
@@ -391,7 +400,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
 }
 
 #ifndef NO_FILE_SYSTEM_UTILS
-static void init_collection_paths(Scheme_Env *global_env)
+static void init_collection_paths(Scheme_Env *global_env, Scheme_Object *extra_dirs)
 {		
   mz_jmp_buf * volatile save, newbuf;
   Scheme_Thread * volatile p;
@@ -405,7 +414,8 @@ static void init_collection_paths(Scheme_Env *global_env)
     flcp = scheme_builtin_value("find-library-collection-paths");
 
     if (clcp && flcp) {
-      a[0] = _scheme_apply(flcp, 0, NULL);
+      a[0] = extra_dirs;
+      a[0] = _scheme_apply(flcp, 1, a);
       _scheme_apply(clcp, 1, a);
     }
   }
@@ -1069,10 +1079,32 @@ static int run_from_cmd_line(int argc, char *_argv[],
 #ifndef NO_FILE_SYSTEM_UTILS
   /* Setup path for "collects" collection directory: */
   if (!no_lib_path) {
+    Scheme_Object *l, *r;
+    int len, offset;
+
     if (!collects_path)
       collects_path = scheme_make_path(_coldir XFORM_OK_PLUS _coldir_offset);
     scheme_set_collects_path(collects_path);
-    init_collection_paths(global_env);
+
+    /* Make list of additional collection paths: */
+    l = scheme_make_null();
+    offset = _coldir_offset;
+    while (1) {
+      len = strlen(_coldir XFORM_OK_PLUS offset);
+      offset += len + 1;
+      if (!_coldir[offset])
+	break;
+      l = scheme_make_pair(scheme_make_path(_coldir XFORM_OK_PLUS offset),
+			   l);
+    }
+    /* Reverse list */
+    r = scheme_make_null();
+    while (SCHEME_PAIRP(l)) {
+      r = scheme_make_pair(SCHEME_CAR(l), r);
+      l = SCHEME_CDR(l);
+    }
+    
+    init_collection_paths(global_env, r);
   }
 #endif /* NO_FILE_SYSTEM_UTILS */
 

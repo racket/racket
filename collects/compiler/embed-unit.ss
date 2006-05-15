@@ -496,6 +496,11 @@
 		    literal-files)
 	  (when literal-expression
 	    (write literal-expression))))
+      
+      (define (write-lib out libpos lib-path-bytes)
+	(file-position out libpos)
+	(write-bytes lib-path-bytes out)
+	(write-byte 0 out))
 
       ;; The old interface:
       (define make-embedding-executable
@@ -539,21 +544,35 @@
 	  (define relative? (let ([m (assq 'relative? aux)])
 			      (and m (cdr m))))
 	  (define lib-path-bytes (and lib-path
-				      (if (path? lib-path)
-					  (path->bytes lib-path)
-					  (if (string? lib-path)
-					      (string->bytes/locale lib-path)
-					      #f))))
+				      (cond
+				       [(path? lib-path) (path->bytes lib-path)]
+				       [(string? lib-path) (string->bytes/locale lib-path)]
+				       [(and (list? lib-path)
+					     (pair? lib-path))
+					(let ([l (map (lambda (p)
+							(cond
+							 [(path? p) (path->bytes p)]
+							 [(string? p) (string->bytes/locale p)]
+							 [else #""]))
+						      lib-path)])
+					  (let loop ([l l])
+					    (if (null? (cdr l))
+						(car l)
+						(bytes-append (car l) #"\0" (loop (cdr l))))))]
+				       [else #""])))
 	  (unless (or long-cmdline?
 		      ((apply + (length cmdline) (map (lambda (s)
 							(bytes-length (string->bytes/utf-8 s)))
 						      cmdline)) . < . 50))
 	    (error 'create-embedding-executable "command line too long"))
 	  (when lib-path
-	    (unless (path-string? lib-path)
-	      (raise-type-error 'create-embedding-executable "path, string, or #f" lib-path))
-	    (unless ((bytes-length lib-path-bytes) . <= . 512)
-	      (error 'create-embedding-executable "'collects-path value is too long")))
+	    (unless (or (path-string? lib-path)
+			(and (list? lib-path)
+			     (pair? lib-path)
+			     (andmap path-string? lib-path)))
+	      (raise-type-error 'create-embedding-executable "path, string, non-empty list of paths and strings, or #f" lib-path))
+	    (unless ((bytes-length lib-path-bytes) . <= . 1024)
+	      (error 'create-embedding-executable "collects path list is too long")))
 	  (let ([exe (find-exe mred? variant)])
 	    (when verbose?
 	      (fprintf (current-error-port) "Copying to ~s~n" dest))
@@ -641,20 +660,26 @@
 						   ;; No argv[0]:
 						   null)
 					       (list "-k" start-s end-s))
-					   cmdline)])
+					   cmdline)]
+			    [libpos (and lib-path
+					 (let ([tag #"coLLECTs dIRECTORy:"])
+					   (+ (with-input-from-file dest-exe 
+						(lambda () (find-cmdline 
+							    "collects path"
+							    tag)))
+					      (bytes-length tag))))])
 			(if osx?
-			    (finish-osx-mred dest full-cmdline exe keep-exe? relative?)
+			    (begin
+			      (finish-osx-mred dest full-cmdline exe keep-exe? relative?)
+			      (when libpos
+				(call-with-output-file* dest-exe
+				  (lambda (out)
+				    (write-lib out libpos lib-path-bytes))
+				  'update)))
 			    (let ([cmdpos (with-input-from-file dest-exe 
 					    (lambda () (find-cmdline 
 							"cmdline"
 							#"\\[Replace me for EXE hack")))]
-				  [libpos (and lib-path
-					       (let ([tag #"coLLECTs dIRECTORy:"])
-						 (+ (with-input-from-file dest-exe 
-						      (lambda () (find-cmdline 
-								  "collects path"
-								  tag)))
-						    (bytes-length tag))))]
 				  [anotherpos (and mred?
 						   (eq? 'windows (system-type))
 						   (let ([m (assq 'single-instance? aux)])
@@ -671,9 +696,7 @@
 				      (file-position out anotherpos)
 				      (write-bytes #"no," out))
 				    (when libpos
-				      (file-position out libpos)
-				      (write-bytes lib-path-bytes out)
-				      (write-byte 0 out))
+				      (write-lib out libpos lib-path-bytes))
 				    (if long-cmdline?
 					;; write cmdline at end:
 					(file-position out end)

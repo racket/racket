@@ -3497,25 +3497,34 @@
 	    (hash-table-put! ht relto 'attach))])))
     standard-module-name-resolver)
     
-  (define (find-library-collection-paths)
-    (path-list-string->path-list
-     (or (getenv "PLTCOLLECTS") "")
-     (cons
-      (build-path (find-system-path 'addon-dir)
-		  (version)
-		  "collects")
-      (let* ([collects-path (find-system-path 'collects-dir)]
-	     [v
-	      (cond
-	       [(complete-path? collects-path) collects-path]
-	       [(absolute-path? collects-path)
-		(path->complete-path collects-path
-				     (find-executable-path (find-system-path 'exec-file) #f #t))]
-	       [else
-		(find-executable-path (find-system-path 'exec-file) collects-path #t)])])
-	(if v
-	    (list (simplify-path (path->complete-path v (current-directory))))
-	    null)))))
+  (define find-library-collection-paths
+    (case-lambda
+     [() (find-library-collection-paths null)]
+     [(extra-collects-dirs)
+      (path-list-string->path-list
+       (or (getenv "PLTCOLLECTS") "")
+       (cons
+	(build-path (find-system-path 'addon-dir)
+		    (version)
+		    "collects")
+	(let loop ([l (append
+		       extra-collects-dirs
+		       (list (find-system-path 'collects-dir)))])
+	  (if (null? l)
+	      null
+	      (let* ([collects-path (car l)]
+		     [v
+		      (cond
+		       [(complete-path? collects-path) collects-path]
+		       [(absolute-path? collects-path)
+			(path->complete-path collects-path
+					     (find-executable-path (find-system-path 'exec-file) #f #t))]
+		       [else
+			(find-executable-path (find-system-path 'exec-file) collects-path #t)])])
+		(if v
+		    (cons (simplify-path (path->complete-path v (current-directory)))
+			  (loop (cdr l)))
+		    (loop (cdr l))))))))]))
 
   ;; -------------------------------------------------------------------------
 

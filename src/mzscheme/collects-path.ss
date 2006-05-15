@@ -19,6 +19,7 @@
 	(file-position o (cdar m))
 	(write-bytes (path->bytes path) o)
 	(write-byte 0 o)
+	(write-byte 0 o)
 	(close-input-port i)
 	(close-output-port o)))))
 
