@@ -1017,4 +1017,7 @@ bigger number, it will offer the students to download and install the
 new version.  So, every time you want to distribute a new version, you
 build a new .plt file that contains a new version file, then copy
 these version and .plt files to your web page, and students will be
-notified automatically.
+notified automatically.  Note: to get this to work, you need to create
+your .plt file using mzc's `--replace' flag, so it will be possible to
+overwrite existing files.  (Also note that there is no way to delete
+files when a new .plt is installed.)
