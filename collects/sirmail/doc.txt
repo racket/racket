@@ -126,3 +126,8 @@ entry is a list of at least two elements:
 The overriding-options feature was a quick hack for what I needed, and
 it should be replaced eventually. There's a lot of duplication of
 information in the current format.
+
+
+For an individual folder, if your "mailbox" file gets corrupted, you
+can run the "recover.ss" script with the mail folder's directory as
+the current directory.
