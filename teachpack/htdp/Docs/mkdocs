@@ -7,7 +7,7 @@ else
 fi
 |#
 
-(require (lib "etc.ss") (lib "plthome.ss" "setup"))
+(require (lib "etc.ss"))
 (current-directory (this-expression-source-directory))
 
 ; for john?
@@ -35,7 +35,7 @@ fi
     #"Scheme Web Servlets"
     #"Show Queen"))
 
-(define dest-dir (build-path plthome "collects" "doc" "teachpack"))
+(define dest-dir (build-path (collection-path "doc") "teachpack"))
 (printf "writing docs to ~s\n" (path->string dest-dir))
 
 (require (lib "list.ss"))
