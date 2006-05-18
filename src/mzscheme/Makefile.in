@@ -38,6 +38,14 @@ FOREIGN_OBJSLIB = @FOREIGN_OBJSLIB@
 
 LLVM_DIR = ../llvm
 
+# About EXE_SUFFIX:
+#  Cygwin offers the illusion that binaries have no ".exe" suffix by
+#  having the file-open syscall open an ".exe" file for reading when
+#  (1) the given filename has no suffix, and (2) there's not a suffixless
+#  file present. However, Cygwin doesn't do that when opening a file for
+#  output, even when the output mode is 'update. So we need to explcitly
+#  add EXE_SUFFIX in a few places.
+
 ################################################################################
 
 bin: 
@@ -270,7 +278,7 @@ install:
 install-3m-basic:
 	cd ..; $(ICP) mzscheme/mzscheme3m $(bindir)/mzscheme3m
 	cd ..; $(ICP) mzscheme/mzdyn3m.o $(libpltdir)/mzdyn3m.o
-	./mzscheme -mvqu "$(srcdir)/collects-path.ss" "$(bindir)/mzscheme3m" @COLLECTS_PATH@
+	./mzscheme -mvqu "$(srcdir)/collects-path.ss" "$(bindir)/mzscheme3m@EXE_SUFFIX@" @COLLECTS_PATH@
 
 install-3m@NOT_OSX@:
 	$(MAKE) install-3m-basic
@@ -284,7 +292,7 @@ unix-install:
 	cd ..; $(ICP) mzscheme/libmzgc.@LIBSFX@ "$(libdir)/libmzgc.@LIBSFX@"
 	cd ..; $(ICP) mzscheme/libmzscheme.@LIBSFX@ "$(libdir)/libmzscheme.@LIBSFX@"
 	cd ..; $(ICP) mzscheme/mzscheme "$(bindir)/mzscheme"
-	./mzscheme -mvqu "$(srcdir)/collects-path.ss" "$(bindir)/mzscheme" @COLLECTS_PATH@
+	./mzscheme -mvqu "$(srcdir)/collects-path.ss" "$(bindir)/mzscheme@EXE_SUFFIX@" @COLLECTS_PATH@
 	cd ..; echo 'CC=@CC@' > $(BUILDINFO)
 	cd ..; echo 'CFLAGS=@CFLAGS@ @PREFLAGS@ @COMPFLAGS@' >> $(BUILDINFO)
 	cd ..; echo 'OPTIONS=@OPTIONS@' >> $(BUILDINFO)

@@ -243,7 +243,7 @@ install_wx_xt:
 	cd ..; rm -f "$(bindir)/mred"
 	$(MAKE) @MRLIBINSTALL@
 	cd ..; $(ICP) mred/mred "$(bindir)"
-	$(MZSCHEME) -mvqu "$(srcdir)/../mzscheme/collects-path.ss" "$(prefix)/bin/mred" @COLLECTS_PATH@
+	$(MZSCHEME) -mvqu "$(srcdir)/../mzscheme/collects-path.ss" "$(prefix)/bin/mred@EXE_SUFFIX@" @COLLECTS_PATH@
 
 BUILDINFO=$(libpltdir)/buildinfo
 
@@ -294,7 +294,7 @@ install-lib3m:
 
 install-3m_wx_xt:
 	cd ..; $(ICP) mred/mred3m "$(bindir)"
-	$(MZSCHEME) -mvqu "$(srcdir)/../mzscheme/collects-path.ss" "$(bindir)/mred3m" @COLLECTS_PATH@
+	$(MZSCHEME) -mvqu "$(srcdir)/../mzscheme/collects-path.ss" "$(bindir)/mred3m@EXE_SUFFIX@" @COLLECTS_PATH@
 	$(MAKE) @MRLIBINSTALL@3m
 
 install-3m_wx_mac:

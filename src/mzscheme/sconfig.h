@@ -620,6 +620,7 @@
 # define USE_CREATE_PIPE
 
 # define USE_MZ_CYGWIN_SETJMP
+# define USE_MZ_SETJMP
 
 # define USE_PLAIN_TIME
 # define USE_TOD_FOR_TIMEZONE

@@ -576,7 +576,7 @@ void scheme_ensure_stack_start(Scheme_Thread *p, void *d)
    as mzsj86.c, just in a slightly different syntax, and it
    probably only works with -O2. */
 
-int scheme_mz_setjmp(mz_jmp_buf b)
+int scheme_mz_setjmp(mz_pre_jmp_buf b)
 {
   asm("mov 4(%EBP), %ECX"); /* return address */
   asm("mov 8(%EBP), %EAX"); /* jmp_buf ptr */
@@ -591,7 +591,7 @@ int scheme_mz_setjmp(mz_jmp_buf b)
   return 0;
 }
 
-void scheme_mz_longjmp(mz_jmp_buf b, int v)
+void scheme_mz_longjmp(mz_pre_jmp_buf b, int v)
 {
   asm("mov 12(%EBP), %EAX"); /* return value */
   asm("mov 8(%EBP), %ECX");  /* jmp_buf */
