@@ -266,6 +266,9 @@ Additional notes:
   object;
 - This mechanism depends on line and column number information
   (`use-at-readtable' turns them on for the current input port);
+- To use this mechanism with nested commands that should preserve
+  indentation, you will need to do some additional work since the nested
+  use will have only its own indentation;
 - When using it on a command-line, you note that the reader is not aware
   of the "> " prompt, which might lead to confusing results.
 
