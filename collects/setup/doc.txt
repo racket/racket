@@ -644,7 +644,7 @@ general functions to help make .plt archives:
   archive's files and directories are to be unpacked relative to the
   user's add-ons directory or the PLT installation directories,
   depending on whether the #:at-plt-home? argument is true and whether
-  directories specified by #;test-plt-dirs are writable by the user.
+  directories specified by #:test-plt-dirs are writable by the user.
 
   If the #:at-plt-home? argument is true (the default is #f), then
   #:plt-relative? must be true, and the archive is unpacked relative
@@ -659,7 +659,7 @@ general functions to help make .plt archives:
 
   If #:test-plt-dirs is a list, then #:at-plt-home? must be true. In
   that case, when the archive is unpacked, if any of the relative
-  directories in the #;test-plt-dirs list is unwritable by the current
+  directories in the #:test-plt-dirs list is unwritable by the current
   user, then the archive is unpacked in the user's add-ons directory
   after all.
 
