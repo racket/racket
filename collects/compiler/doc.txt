@@ -402,7 +402,7 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
                                [#:mred? mred?]
                                [#:variant variant]
                                [#:aux aux]
-			       [#:lib-path lib-path-or-list]
+			       [#:collects-path path-or-list]
                                [#:launcher? launcher?]
                                [#:verbose? verbose?])
   - Copies the MzScheme (if `mred?' is #f) or MrEd (otherwise) binary,
@@ -534,21 +534,20 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
    See also `build-aux-from-path' in the "launcher" collection. The
    default `aux' is `null'.
 
-   If `lib-path-or-list' is #f, then the created executable maintains
-   its built-in (relative) path to the main "collects" directory ---
-   which will be the result of `(find-system-path 'collects-dir)' when
-   the executable is run --- plus a potential list of other
-   directories for finding library collections --- which are used to
-   initialize the `current-library-collection-paths' list in
-   combination with "PLTCOLLECTS" environment variable.  Otherwise,
-   `lib-path-or-list' specifies a replacement; it must be either a
-   path, string, or non-empty list of paths and strings. In the last
-   case, the first path or string specifies the main collection
-   directory, and the rest are additional directories for the
-   collection search path (placed, in order, after the user-specific
-   "collects" directory, but before the main "collects" directory;
-   then the search list is combined with "PLTCOLLECTS", if it is
-   defined).
+   If the #:collects-path argument is #f, then the created executable
+   maintains its built-in (relative) path to the main "collects"
+   directory --- which will be the result of `(find-system-path
+   'collects-dir)' when the executable is run --- plus a potential
+   list of other directories for finding library collections --- which
+   are used to initialize the `current-library-collection-paths' list
+   in combination with "PLTCOLLECTS" environment variable.  Otherwise,
+   the argument specifies a replacement; it must be either a path,
+   string, or non-empty list of paths and strings. In the last case,
+   the first path or string specifies the main collection directory,
+   and the rest are additional directories for the collection search
+   path (placed, in order, after the user-specific "collects"
+   directory, but before the main "collects" directory; then the
+   search list is combined with "PLTCOLLECTS", if it is defined).
 
    If `launcher?' is #t, then no `modules' should be null,
    `literal-file-list' should be null, `literal-sexp' should be #f,

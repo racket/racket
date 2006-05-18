@@ -43,7 +43,7 @@
   (define exe-embedded-flags (make-parameter '("-mvq-")))
   (define exe-embedded-libraries (make-parameter null))
   (define exe-aux (make-parameter null))
-  (define exe-embedded-lib-path (make-parameter #f))
+  (define exe-embedded-collects-path (make-parameter #f))
 
   (define module-mode (make-parameter #f))
 
@@ -267,8 +267,8 @@
        [once-each
 	[("--collects")
 	 ,(lambda (f i)
-	    (exe-embedded-lib-path i))
-	 ("Path to libraries relative to --[gui-]exe executable" "path")]
+	    (exe-embedded-collects-path i))
+	 ("Path to collects relative to --[gui-]exe executable" "path")]
 	[("--ico")
 	 ,(lambda (f i) (exe-aux
 			 (cons (cons 'ico i)
@@ -536,7 +536,7 @@
 		    (if (eq? mode 'gui-exe) 
 			(cons "-Z" flags)
 			flags))
-	#:lib-path (exe-embedded-lib-path)
+	#:collects-path (exe-embedded-collects-path)
 	#:aux (exe-aux))
        (printf " [output to \"~a\"]~n" dest))]
     [(plt)

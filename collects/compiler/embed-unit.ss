@@ -534,7 +534,7 @@
 					      [aux null]
 					      [launcher? #f]
 					      [variant 'normal]
-					      [lib-path #f])
+					      [collects-path #f])
 	  (define keep-exe? (and launcher?
 				 (let ([m (assq 'forget-exe? aux)])
 				   (or (not m)
@@ -543,35 +543,36 @@
 				    (and mred? (eq? 'macosx (system-type)))))
 	  (define relative? (let ([m (assq 'relative? aux)])
 			      (and m (cdr m))))
-	  (define lib-path-bytes (and lib-path
-				      (cond
-				       [(path? lib-path) (path->bytes lib-path)]
-				       [(string? lib-path) (string->bytes/locale lib-path)]
-				       [(and (list? lib-path)
-					     (pair? lib-path))
-					(let ([l (map (lambda (p)
-							(cond
-							 [(path? p) (path->bytes p)]
-							 [(string? p) (string->bytes/locale p)]
-							 [else #""]))
-						      lib-path)])
-					  (let loop ([l l])
-					    (if (null? (cdr l))
-						(car l)
-						(bytes-append (car l) #"\0" (loop (cdr l))))))]
-				       [else #""])))
+	  (define collects-path-bytes (and collects-path
+					   (cond
+					    [(path? collects-path) (path->bytes collects-path)]
+					    [(string? collects-path) (string->bytes/locale collects-path)]
+					    [(and (list? collects-path)
+						  (pair? collects-path))
+					     (let ([l (map (lambda (p)
+							     (cond
+							      [(path? p) (path->bytes p)]
+							      [(string? p) (string->bytes/locale p)]
+							      [else #""]))
+							   collects-path)])
+					       (let loop ([l l])
+						 (if (null? (cdr l))
+						     (car l)
+						     (bytes-append (car l) #"\0" (loop (cdr l))))))]
+					    [else #""])))
 	  (unless (or long-cmdline?
 		      ((apply + (length cmdline) (map (lambda (s)
 							(bytes-length (string->bytes/utf-8 s)))
 						      cmdline)) . < . 50))
 	    (error 'create-embedding-executable "command line too long"))
-	  (when lib-path
-	    (unless (or (path-string? lib-path)
-			(and (list? lib-path)
-			     (pair? lib-path)
-			     (andmap path-string? lib-path)))
-	      (raise-type-error 'create-embedding-executable "path, string, non-empty list of paths and strings, or #f" lib-path))
-	    (unless ((bytes-length lib-path-bytes) . <= . 1024)
+	  (when collects-path
+	    (unless (or (path-string? collects-path)
+			(and (list? collects-path)
+			     (pair? collects-path)
+			     (andmap path-string? collects-path)))
+	      (raise-type-error 'create-embedding-executable "path, string, non-empty list of paths and strings, or #f" 
+				collects-path))
+	    (unless ((bytes-length collects-path-bytes) . <= . 1024)
 	      (error 'create-embedding-executable "collects path list is too long")))
 	  (let ([exe (find-exe mred? variant)])
 	    (when verbose?
@@ -661,7 +662,7 @@
 						   null)
 					       (list "-k" start-s end-s))
 					   cmdline)]
-			    [libpos (and lib-path
+			    [libpos (and collects-path
 					 (let ([tag #"coLLECTs dIRECTORy:"])
 					   (+ (with-input-from-file dest-exe 
 						(lambda () (find-cmdline 
@@ -674,7 +675,7 @@
 			      (when libpos
 				(call-with-output-file* dest-exe
 				  (lambda (out)
-				    (write-lib out libpos lib-path-bytes))
+				    (write-lib out libpos collects-path-bytes))
 				  'update)))
 			    (let ([cmdpos (with-input-from-file dest-exe 
 					    (lambda () (find-cmdline 
@@ -696,7 +697,7 @@
 				      (file-position out anotherpos)
 				      (write-bytes #"no," out))
 				    (when libpos
-				      (write-lib out libpos lib-path-bytes))
+				      (write-lib out libpos collects-path-bytes))
 				    (if long-cmdline?
 					;; write cmdline at end:
 					(file-position out end)
