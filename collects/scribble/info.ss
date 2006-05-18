@@ -1,0 +1,5 @@
+(module info (lib "infotab.ss" "setup")
+  (define name "Scribble")
+  (define blurb '("MzScheme extensions for writing text."))
+  (define mzscheme-launcher-names '("scribble"))
+  (define mzscheme-launcher-libraries '("run-scribble.ss")))
