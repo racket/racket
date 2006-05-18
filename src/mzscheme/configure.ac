@@ -240,6 +240,8 @@ LIBMZSCHEME_DEP=""
 XFT_EXTRA_FLAGS=
 XFT_EXTRA_LIBS=
 
+EXE_SUFFIX=
+
 ###### OSKit stuff #######
 
 if test "${enable_oskit}" = "yes" ; then
@@ -471,6 +473,7 @@ case $OS in
       LIBMZSCHEME_DEP="libmzgc.la -liconv"
       LIBMRED_DEP="../mzscheme/libmzgc.la ../mzscheme/libmred.la"
     fi
+    EXE_SUFFIX=".exe"
     ;;
   BeOS)
     if test "${enable_sgcdebug}" = "yes" ; then
@@ -1124,6 +1127,7 @@ AC_SUBST(NOT_OSX)
 AC_SUBST(FRAMEWORK_INSTALL_DIR)
 AC_SUBST(FRAMEWORK_REL_INSTALL)
 AC_SUBST(INSTALL_ORIG_TREE)
+AC_SUBST(EXE_SUFFIX)
 
 AC_SUBST(MREDLINKER)
 AC_SUBST(LIBSFX)
