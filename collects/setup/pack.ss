@@ -4,47 +4,42 @@
            (lib "base64.ss" "net")
            (lib "process.ss")
 	   (lib "list.ss")
-	   (lib "etc.ss")
 	   (lib "port.ss")
 	   (lib "file.ss")
 	   (lib "kw.ss")
 	   (lib "getinfo.ss" "setup"))
 
-  (provide pack 
+  (provide pack
 	   pack-plt
-	   mztar 
-	   std-filter 
+	   mztar
+	   std-filter
 	   pack-collections
 	   pack-collections-plt)
 
   (define (x-arg-needs-true-arg who arg1-name v arg2-name)
-    (error who 
-	   (string-append
-	    "true value for `~a' argument: ~e "
-	    "requires a true value for `~a' argument")
-	   arg1-name v
-	   arg2-name))
-  
-  (define pack
-    (opt-lambda (dest name paths collections
-		      [filter std-filter]
-		      [encode? #t]
-		      [file-mode 'file]
-		      [unpack-unit #f]
-		      [plt-relative? #t]
-		      [requires null]
-		      [conflicts null]
-		      [at-plt-home? #f])
-      (pack-plt dest name paths 
-		#:collections collections
-		#:filter filter
-		#:encode? encode?
-		#:file-mode file-mode
-		#:unpack-unit unpack-unit
-		#:plt-relative? plt-relative?
-		#:requires null
-		#:conflicts null
-		#:at-plt-home? at-plt-home?)))
+    (error who (string-append "true value for `~a' argument: ~e "
+                              "requires a true value for `~a' argument")
+	   arg1-name v arg2-name))
+
+  (define/kw (pack dest name paths collections
+		   #:optional [filter std-filter]
+                              [encode? #t]
+                              [file-mode 'file]
+                              [unpack-unit #f]
+                              [plt-relative? #t]
+                              [requires null]
+                              [conflicts null]
+                              [at-plt-home? #f])
+    (pack-plt dest name paths
+              #:collections collections
+              #:filter filter
+              #:encode? encode?
+              #:file-mode file-mode
+              #:unpack-unit unpack-unit
+              #:plt-relative? plt-relative?
+              #:requires null
+              #:conflicts null
+              #:at-plt-home? at-plt-home?))
 
   (define/kw (pack-plt dest name paths
                        #:key [collections null]
