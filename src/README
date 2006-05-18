@@ -144,15 +144,19 @@ the Unix instructions below, but note the following:
 
  3. Run `make install'.
 
-    This step copies binaries and libraries into place within the plt
-    tree. For example, the `mzscheme' binary is copied for Unix into
-    the directory plt/bin/mzscheme. For a --prefix, build, the rest of
-    the plt tree is also copied to the target directory.
+    This step copies binaries and libraries into place within the
+    target installation. For example, the `mzscheme' binary is copied
+    into the "bin" directory for an in-place build, or into the
+    executable directory for a --prefix build.
 
-    This step also compiles ".zo" bytecode files for installed Scheme
-    source, and generates launcher programs like "DrScheme". Use `make
-    plain-install' to install without compiling ".zo" files or
-    creating launchers.
+    For a --prefix build, this step also creates a "config.ss" module
+    in a "config" collection for a --prefix build, so that various PLT
+    tools and libraries can find the installation directories.
+
+    Finally, this step compiles ".zo" bytecode files for installed
+    Scheme source, and generates launcher programs like
+    "DrScheme". Use `make plain-install' to install without compiling
+    ".zo" files or creating launchers.
 
     If the installation fails because the target directory cannot be
     created, or because the target directory is not the one you
@@ -161,9 +165,14 @@ the Unix instructions below, but note the following:
     it is sometimes not necessary to repeat steps 1 or 2. (Try it and
     find out...)
 
-    If you build frequently from the Subversion-based sources with
-    --enabled-shared, beware that you may accumlate many old, unused
-    versions of the dynamic libraries in plt/lib.
+    If you build frequently from the Subversion-based sources, beware
+    that you may accumulate user- and version-specific information in
+    your "add-ons" directory, which you can most easily find by
+    evaluating
+      (find-system-path 'addon-dir)
+    in MzScheme. In addition, if you configure with --enabled-shared,
+    you may accumlate many unused versions of the dynamic libraries in
+    your installation target.
 
  4. [Optional] Run `help-desk' to install missing documentation.
 
@@ -176,12 +185,11 @@ the Unix instructions below, but note the following:
 
 After an "in-place" install without Subversion, the plt/src directory
 is no longer needed, and it can be safely deleted. Build information
-is recorded in plt/lib/buildinfo.
+is recorded in a "buildinfo" file in the installation.
 
-You can safely move the plt tree for a build without dynamic
-libraries. However, "launcher" scripts and other local executables
-generated from PLT Scheme may fail after moving the tree (in which
-case you'll have to re-create them).
+For a build without --prefix (or with --enable-origtree) and without
+--enable-shared, you can safely move the install tree, because all
+file references within the installation are relative.
 
 OpenGL, Unix, and pthreads
 --------------------------
@@ -222,17 +230,22 @@ must be less than 1024 bytes long.
 As an alternative to editing an exeuctable directly, the
 `create-embedding-executable' procedure from `(lib "embed.ss"
 "compiler")' can be used to change the embedded path. For example, the
-following clones the MzScheme executable and changes the embedded path
-n the clone to "/tmp/collects":
+following program clones the MzScheme executable to "/tmp/mz" and
+changes the embedded path in the clone to "/tmp/collects":
 
  (require (lib "embed.ss" "compiler"))
- (create-embedding-executable "/tmp/mz" #:lib-path "/tmp/collects")
+ (create-embedding-executable "/tmp/mz" #:collects-path "/tmp/collects")
 
 Similarly, `mzc' in `--exe' or `--gui-exe' mode accepts a `--collects'
 flag to set the collection path in the generated executable.
 
 Under Windows, executables also embed a path to DLLs. For more
 information, see worksp\README.
+
+Paths to all other installation directories are found through the
+"config.ss" library of the "config" collection. See "doc.txt" in the
+"config" collection (for search for "config.ss" in Help Desk) for more
+information.
 
 ========================================================================
  Compiling the OSKit-based Kernel
