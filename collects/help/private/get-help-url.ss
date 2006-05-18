@@ -15,7 +15,7 @@
                       . opt-> . string?)))
   
   ; given a manual path, convert to absolute Web path
-  ; manual path is an anchored path to a collects/doc manual, never a servlet
+  ; manual path is an anchored path to a doc manual, never a servlet
   (define get-help-url
     (opt-lambda (manual-path [anchor #f])
       (let ([segments (explode-path (normalize-path manual-path))])
