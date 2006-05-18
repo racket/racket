@@ -7,7 +7,11 @@ location of directories (such as the main documentation directory) and
 also directory search paths (such as a list of directories to search
 for documentation).
 
-The library module must export the following values:
+ Note: instead of `require'ing "config.ss" directly, use the "dirs.ss"
+ library from "setup", which combines information from "config.ss" and
+ other sources.
+
+The "config.ss" module must export the following values:
 
   doc-dir - a `delay'ed path/string/bytes for the main documentation
    directory; it defaults to a "doc" sibling directory of the main
@@ -39,6 +43,10 @@ The library module must export the following values:
 
 In all cases, the value of an exported name can be a `delay'ed #f
 (instead of a path/string/bytes or list) to indicate the default.
+
+A user can override an installation's "config.ss" though a "config"
+collection in the user's collection directory (which normally takes
+precedence over the main collection directory).
 
 
 The _configtab.ss_ library of the "setup" collection defines a
