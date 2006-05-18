@@ -2,7 +2,8 @@
 
 (module foreign mzscheme
 
-(require #%foreign)
+(require #%foreign
+	 (lib "dirs.ss" "setup"))
 (require-for-syntax (lib "stx.ss" "syntax"))
 
 ;; This module is full of unsafe bindings that are not provided to requiring
@@ -166,7 +167,12 @@
              [name  (if (regexp-match lib-suffix-re name0) ; name + suffix
                       (string-append name0 version)
                       (string-append name0 "." lib-suffix version))])
-        (or (ffi-lib name #t)         ; try good name first
+        (or (ormap (lambda (dir)
+		     (or (ffi-lib (build-path dir name) #t)      ; try good name first
+			 (ffi-lib (build-path dir name0) #t)))   ; try original
+		   (get-lib-search-dirs))
+	    ;; Try without DLL path:
+	    (ffi-lib name #t)         ; try good name first
             (ffi-lib name0 #t)        ; try original
             (and (file-exists? name)  ; try a relative path
                  (ffi-lib (fullpath name) #t))

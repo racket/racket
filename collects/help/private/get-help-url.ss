@@ -4,7 +4,8 @@
   (require (lib "file.ss")
            "internal-hp.ss"
            (lib "contract.ss")
-           (lib "etc.ss"))
+           (lib "etc.ss")
+	   (lib "dirs.ss" "setup"))
   
   (provide/contract (get-help-url
                      (((lambda (x)
@@ -20,37 +21,39 @@
       (let ([segments (explode-path (normalize-path manual-path))])
         (let loop ([candidates manual-path-candidates])
           (cond
-            ;; shouldn't happen, unless documentation is found outside the user's addon dir
-            ;; and also outside the PLT tree.
-            [(null? candidates) "/cannot-find-docs.html"]
-            [else
-             (let ([candidate (car candidates)])
-               (cond
-                 [(subpath/tail (car candidate) segments)
-                  =>
-                  (λ (l-o-path)
-                     ((cadr candidate) l-o-path anchor))]
-                 [else (loop (cdr candidates))]))])))))
-  
+	   ;; shouldn't happen, unless documentation is outside
+	   ;; the set of doc dirs:
+	   [(null? candidates) "/cannot-find-docs.html"]
+	   [else
+	    (let ([candidate (car candidates)])
+	      (cond
+	       [(subpath/tail (car candidate) segments)
+		=>
+		(λ (l-o-path)
+		  ((cadr candidate) l-o-path anchor))]
+	       [else (loop (cdr candidates))]))])))))
+
   (define manual-path-candidates '())
   (define (maybe-add-candidate candidate host)
     (with-handlers ([exn:fail? void])
       (set! manual-path-candidates
             (cons (list (explode-path (normalize-path candidate))
                         (λ (segments anchor)
-                           (format "http://~a:~a~a~a"
-                                   host
-                                   internal-port
-                                   (apply string-append (map (λ (x) (format "/~a" (path->string x))) 
-                                                             segments))
-                                   (if anchor
-                                       (string-append "#" anchor)
-                                       ""))))
-                  manual-path-candidates))))
-  (define stupid-internal-define-syntax1
-    (maybe-add-candidate (build-path (collection-path "doc") 'up) internal-host))
-  (define stupid-internal-define-syntax2
-    (maybe-add-candidate (build-path (find-system-path 'addon-dir)) addon-host))
+			  (format "http://~a:~a~a~a"
+				  host
+				  internal-port
+				  (apply string-append (map (λ (x) (format "/~a" (path->string x))) 
+					                    segments))
+				  (if anchor
+				      (string-append "#" anchor)
+				      ""))))
+		  manual-path-candidates))))
+
+  ;; Add doc dirs later, so that they take precedence:
+  (for-each (lambda (dir host)
+              (maybe-add-candidate dir host))
+            (append collects-dirs doc-dirs)
+            (append collects-hosts doc-hosts))
   
   (define (subpath/tail short long)
     (let loop ([short short]

@@ -54,6 +54,7 @@
   (define plt-files-replace (make-parameter #f))
   (define plt-files-plt-relative? (make-parameter #f))
   (define plt-files-plt-home-relative? (make-parameter #f))
+  (define plt-force-install-dir? (make-parameter #f))
   (define plt-setup-collections (make-parameter null))
   (define plt-include-compiled (make-parameter #f))
 
@@ -311,10 +312,17 @@
 	 ("Files in archive replace existing files when unpacked")]
 	[("--at-plt")
 	 ,(lambda (f) (plt-files-plt-relative? #t))
-	 ("Files/dirs in archive are relative to PLT add-ons directory")]
+	 ("Files/dirs in archive are relative to user's add-ons directory")]]
+       [once-any
 	[("--all-users")
 	 ,(lambda (f) (plt-files-plt-home-relative? #t))
-	 ("Files/dirs in archive are relative to PLT installation directory")]
+	 ("Files/dirs in archive go to PLT installation if writable")]
+	[("--force-all-users")
+	 ,(lambda (f) 
+	    (plt-files-plt-home-relative? #t)
+	    (plt-force-install-dir? #t))
+	 ("Files/dirs forced to PLT installation")]]
+       [once-each
 	[("--include-compiled")
 	 ,(lambda (f) (plt-include-compiled #t))
 	 ("Include \"compiled\" subdirectories in the archive")]]
@@ -539,25 +547,27 @@
 		    "file/directory is not relative to the current directory: \"~a\""
 		    fd)))
 	       source-files)
-     (pack (plt-output) (plt-name)
-	   source-files
-	   (map list (plt-setup-collections))
-	   std-filter #t 
-	   (if (plt-files-replace)
-	       'file-replace
-	       'file)
-	   #f
-	   (or (plt-files-plt-relative?)
-	       (plt-files-plt-home-relative?))
-	   ;; Get current version of mzscheme for require:
-	   (let ([i (get-info '("mzscheme"))])
-	     (let ([v (and i (i 'version (lambda () #f)))])
-	       (list (list '("mzscheme") v))))
-	   null
-	   (plt-files-plt-home-relative?))
+     (pack-plt (plt-output) (plt-name)
+	       source-files
+	       #:collections (map list (plt-setup-collections))
+	       #:file-mode (if (plt-files-replace)
+			       'file-replace
+			       'file)
+	       #:plt-relative? (or (plt-files-plt-relative?)
+				   (plt-files-plt-home-relative?))
+	       #:at-plt-home? (plt-files-plt-home-relative?)
+	       #:test-plt-dirs (if (or (plt-force-install-dir?)
+				       (not (plt-files-plt-home-relative?)))
+				   #f
+				   (list "collects" "doc" "include" "lib"))
+	       #:requires
+	       ;; Get current version of mzscheme for require:
+	       (let ([i (get-info '("mzscheme"))])
+		 (let ([v (and i (i 'version (lambda () #f)))])
+		   (list (list '("mzscheme") v)))))
      (printf " [output to \"~a\"]~n" (plt-output))]
     [(plt-collect)
-     (pack-collections
+     (pack-collections-plt
       (plt-output)
       (if (eq? default-plt-name (plt-name))
 	  #f
@@ -569,13 +579,14 @@
 		     (cons (cadr m) (loop (caddr m)))
 		     (list sf)))))
 	   source-files)
-      (plt-files-replace)
-      (map list (plt-setup-collections))
-      (if (plt-include-compiled)
-	  (lambda (path)
-	    (or (regexp-match #rx"compiled$" path)
-		(std-filter path)))
-	  std-filter)
-      (plt-files-plt-home-relative?))
+      #:replace? (plt-files-replace)
+      #:extra-setup-collections (map list (plt-setup-collections))
+      #:filter (if (plt-include-compiled)
+		   (lambda (path)
+		     (or (regexp-match #rx"compiled$" path)
+			 (std-filter path)))
+		   std-filter)
+      #:at-plt-home? (plt-files-plt-home-relative?)
+      #:test-plt-collects? (not (plt-force-install-dir?)))
      (printf " [output to \"~a\"]~n" (plt-output))]
     [else (printf "bad mode: ~a~n" mode)]))

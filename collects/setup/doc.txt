@@ -242,8 +242,10 @@ parameters that control the setup process:
             "collects" directory, and a list of path choices; it
             returns a path for a "plt-relative" install; when
             unpacking an archive, either this or the procedure in
-            `current-target-directory-getter' will be called [default:
-            (lambda (preferred main-parent-dir choices) preferred)]
+            `current-target-directory-getter' will be called, and in
+            the former case, this procedure one may be called multiple
+	    times [default: (lambda (preferred main-parent-dir choices)
+            preferred)]
 
 Thus, to unpack a single .plt archive "x.plt", set the `archives'
 parameter to (list "x.plt") and leave `specific-collections' as null.
@@ -281,17 +283,33 @@ installation directories:
   #f if none can be found. (A #f result is likely only in an
   stand-alone executable that is distributed without libraries.)
 
-> (find-console-bin-dir)
+> (find-user-collects-dir)
 
-  Returns a path to the installation's executable directory, where the
-  stand-alone MzScheme executable resides. The result is #f if no such
-  directory is available.
+  Returns a path to the user-specific "collects" directory; the
+  directory indicated by the returned path may or may not exist.
 
-> (find-include-dir)
+> (get-collects-search-dir)
 
-  Returns a path to the installation's "include" directory, which
-  contains .h files for building MzScheme extensions and embedding
-  programs.  The result is #f if no such directory is available.
+  Returns the same result as `(current-library-collection-paths)'.
+
+
+> (find-doc-dir)
+
+  Returns a path to the installation's "doc" directory.  The result is
+  #f if no such directory is available.
+
+> (find-user-doc-dir)
+
+  Returns a path to a user-specific "doc" directory; the directory
+  indicated by the returned path may or may not exist.
+
+> (get-doc-search-dir)
+
+  Returns a list of paths to search for documentation, not including
+  documentation stored in individual collections. Unless it is
+  configured otherwise, the result includes any non-#f result of
+  `(find-doc-dir)' and `(find-user-doc-dir)'.
+
 
 > (find-lib-dir)
 
@@ -305,6 +323,49 @@ installation directories:
   current executable (e.g., "libmzsch.dll" under Windows). The result
   is #f if no such directory is available, or if no specific directory
   is available (i.e., other than the platform's normal search path).
+
+> (find-user-lib-dir)
+
+  Returns a path to a user-specific "lib" directory; the directory
+  indicated by the returned path may or may not exist.
+
+> (get-lib-search-dir)
+
+  Returns a list of paths to search for libraries. Unless it is
+  configured otherwise, the result includes any non-#f result of
+  `(find-lib-dir)', `(find-dll-dir)', and `(find-user-lib-dir)'.
+
+
+> (find-include-dir)
+
+  Returns a path to the installation's "include" directory, which
+  contains .h files for building MzScheme extensions and embedding
+  programs.  The result is #f if no such directory is available.
+
+> (find-user-include-dir)
+
+  Returns a path to a user-specific "include" directory; the directory
+  indicated by the returned path may or may not exist.
+
+> (get-include-search-dir)
+
+  Returns a list of paths to search for .h files. Unless it is
+  configured otherwise, the result includes any non-#f result of
+  `(find-include-dir)' and `(find-user-include-dir)'.
+
+
+> (find-console-bin-dir)
+
+  Returns a path to the installation's executable directory, where the
+  stand-alone MzScheme executable resides. The result is #f if no such
+  directory is available.
+
+> (find-gui-bin-dir)
+
+  Returns a path to the installation's executable directory, where the
+  stand-alone MrEd executable resides. The result is #f if no such
+  directory is available.
+
 
 
 _Getting info.ss fields_
@@ -411,7 +472,12 @@ The raw format is
 
      + 'plt-home-relative? - a boolean; if true and if `plt-relative?'
        is true, then the archive's content should be unpacked relative
-       to the plt installation directory.
+       to the PLT installation.
+
+     + 'test-plt-dirs - #f or a list of path strings; in the latter
+        case, a true value of 'plt-home-relative? is cancelled if
+        any of the directories in the list (relative to the PLT
+        installation) is unwritable by the user.
 
    The procedure is extracted from the archive using MzScheme's `read'
    and `eval' procedures (in a fresh namespace).
@@ -437,8 +503,9 @@ The raw format is
       + a relative path string - the pathname of the directory or file
         to be unpacked, relative to the unpack directory; and
 
-      + a path string for the unpack directory (which is often the
-        parent of the main "collects" directory).
+      + a path string for the unpack directory (which can vary for a
+      PLT-relative install when elements of the archive start with
+      "collects", "lib", etc.).
 
    If the filter procedure returns #f for a directory or file, the
    directory or file is not unpacked. If the filter procedure returns
@@ -492,7 +559,12 @@ mzc supports the creation of simple .plt files (see the mzc manual for
 details) but the setup collection's _pack.ss_ library provides more
 general functions to help make .plt archives:
 
-> (pack-collections dest name collections replace? extra-setup-collections [filter] [at-plt-home?])
+> (pack-collections-plt dest name collections 
+                        [#:replace? replace?]
+                        [#:at-plt-home? at-home?]
+                        [#:test-plt-collects? test?]
+                        [#:extra-setup-collections collection-list] 
+                        [#:filter filter-proc])
 
   Creates the .plt file specified by the pathname `dest', using the
   string `name' as the name reported to Setup PLT as the archive's
@@ -502,55 +574,96 @@ general functions to help make .plt archives:
   should be a list of collection paths; each collection path is, in
   turn, a list of relative-path strings.
 
-  If `replace?' is #f, then attempting to unpack the archive will
-  report an error when any of the collections exist already, otherwise
-  unpacking the archive will overwrite an existing collection.
+  If the #:replace? argument is #f, then attempting to unpack the
+  archive will report an error when any of the collections exist
+  already, otherwise unpacking the archive will overwrite an existing
+  collection.
 
-  The `extra-setup-collections' argument is a list of collection paths
-  that are not included in the archive, but are set-up when the
-  archive is unpacked.
+  If the #:at-plt-home? argument is true, then the archived
+  collections will be installed into the PLT installation directory
+  instead of the user's directory if the main "collects" directory is
+  writable by the user. If the #:test-plt-collects? argument is #f
+  (the default is #t) and the #:at-plt-home? argument is true, then
+  installation fails if the main "collects" directory is not writable.
 
-  The optional `filter' argument is the same as for `pack' (see
+  The optional #:extra-setup-collections argument is a list of
+  collection paths that are not included in the archive, but are
+  set-up when the archive is unpacked.
+
+  The optional #:filter argument is the same as for `pack-plt' (see
   below).
 
-  The optional `at-plt-home?' argument is the same as for `pack'
-  where `plt-relative?' is true.
+> (pack-collections dest name collections replace? extra-setup-collections [filter] [at-plt-home?])
 
-> (pack dest name paths collections [filter encode? file-mode unpack-unit plt-relative? requires conflicts at-plt-home?])
+  Old, keywordless variant of `pack-collections-plt' for backward compatibility.
+
+> (pack-plt dest name paths 
+            [#:filter filter-proc]
+            [#:encode? encode?]
+            [#:file-mode file-mode-sym]
+            [#:unpack-unit unit-expr-or-#f]
+            [#:collections collection-list]
+            [#:plt-relative? plt-relative?]
+            [#:at-plt-home? at-plt-home?]
+            [#:test-plt-dirs dir-list-or-#f]
+            [#:requires mod-and-version-list]
+            [#:conflicts mod-list])
 
   Creates the .plt file specified by the pathname `dest', using the
   string `name' as the name reported to Setup PLT as the archive's
-  description, and `collections' as the list of collection paths (to
-  be compiled) returned by the unpacking unit. The `paths' argument
-  must be a list of relative paths for directories and files; the
-  contents of these files and directories will be packed into the
-  archive.
+  description. The `paths' argument must be a list of relative paths
+  for directories and files; the contents of these files and
+  directories will be packed into the archive.
 
-  The `filter' procedure is called with the relative path of each
+  The #:filter procedure is called with the relative path of each
   candidate for packing. If it returns #f for some path, then that
   file or directory is omitted from the archive. If it returns 'file
   or 'file-replace for a file, the file is packed with that mode,
-  rather than the default mode. The default `filter' is `std-filter'
-  (defined below).
+  rather than the default mode. The default is `std-filter' (defined
+  below).
   
-  If `encode?' is #f, then the output archive is in raw form, and
-  still must be gzipped and mime-encoded (in that order). The default
-  value is #t.
+  If the #:encode? argument is #f, then the output archive is in raw
+  form, and still must be gzipped and mime-encoded (in that
+  order). The default value is #t.
 
-  The `file-mode' argument must be 'file or 'file-replace, indicating
-  the default mode for a file in the archive. The default value is
-  'file.
+  The #:file-mode argument must be 'file or 'file-replace,
+  indicating the default mode for a file in the archive. The default
+  is 'file.
 
   The `unpack-unit' argument is usually #f. Otherwise, it must be an
-  unsigned unit that performs the work of unpacking; see the above
-  section on .plt internals for more information about the unit. If
-  `unpack-unit' is #f, an appropriate unpacking unit is generated.
+  S-expression for a unsigned unit that performs the work of
+  unpacking; see the above section on .plt internals for more
+  information about the unit. If `unpack-unit' is #f, an appropriate
+  unpacking unit is generated.
 
-  If `plt-relative?', the archive's files and directories are to be
-  unpacked relative to the plt add-ons directory (unless
-  `plt-at-home?' is #t; see below).
+  The #:collections argument is a list of collection paths to be
+  compiled after the archive is unpacked. The default is the empty
+  list.
 
-  The `requires' argument should have the shape
+  If the #:plt-relative? argument is true (the default is #f), the
+  archive's files and directories are to be unpacked relative to the
+  user's add-ons directory or the PLT installation directories,
+  depending on whether the #:at-plt-home? argument is true and whether
+  directories specified by #;test-plt-dirs are writable by the user.
+
+  If the #:at-plt-home? argument is true (the default is #f), then
+  #:plt-relative? must be true, and the archive is unpacked relative
+  to the PLT installation directory. In that case, a relative path
+  that starts with "collects" is mapped to the installation's main
+  "collects" directory, and so on, for the following the initial
+  directory names:
+     - "collects"
+     - "doc"
+     - "lib"
+     - "include"
+
+  If #:test-plt-dirs is a list, then #:at-plt-home? must be true. In
+  that case, when the archive is unpacked, if any of the relative
+  directories in the #;test-plt-dirs list is unwritable by the current
+  user, then the archive is unpacked in the user's add-ons directory
+  after all.
+
+  The #:requires argument should have the shape
       (list (list <coll-path> <version>) ...)
   where each <coll-path> is a non-empty list of relative-path strings,
   and each <version> is a (possibly empty) list of exact integers. The
@@ -559,15 +672,15 @@ general functions to help make .plt archives:
   specified in the corresponding <version>. A collection's version is
   indicated by the `version' field of it's info.ss file.
 
-  The `conflicts' argument should have the shape
+  The #:conflicts argument should have the shape
        (list <coll-path> ...)
   where each <coll-path> is a non-empty list of relative-path
   strings. The indicated collections must *not* be installed at
   unpacking time.
 
-  If `at-plt-home?' and `plt-relative?', the archive is to be unpacked
-  relative to the parent of the PLT Scheme installation's main
-  "collects" directory. The default is #f.
+> (pack dest name paths collections [filter encode? file-mode unpack-unit plt-relative? requires conflicts at-plt-home?])
+
+  Old, keywordless variant of `pack-plt' for backward compatibility.
 
 > (std-filter p) - returns #t unless `p', after stripping its
   directory path and converting to a byte string, matches one of the

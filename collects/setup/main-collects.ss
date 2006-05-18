@@ -28,8 +28,8 @@
 	simplify-bytes-path))
 
   (define main-collects-dir-bytes
-    (delay (and (find-main-collects-dir)
-		(path->bytes (find-main-collects-dir)))))
+    (delay (and (find-collects-dir)
+		(path->bytes (find-collects-dir)))))
 
   (define main-collects-dir/
     (delay (and (force main-collects-dir-bytes)
@@ -68,7 +68,7 @@
     (cond [(and (pair? path)
                 (eq? 'collects (car path))
                 (bytes? (cdr path)))
-	   (let ([dir (or (find-main-collects-dir)
+	   (let ([dir (or (find-collects-dir)
 			  ;; No main "collects"? Use original working directory:
 			  (find-system-path 'orig-dir))])
 	     (if (equal? (cdr path) #"")

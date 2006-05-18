@@ -24,6 +24,7 @@
            "standard-urls.ss"
            "docpos.ss"
            "manuals.ss"
+	   "get-help-url.ss"
            
            "internal-hp.ss")
   
@@ -115,27 +116,58 @@
                      [(is-download.plt-scheme.org/doc-url? url)
                       url]
                      
-                     ;; on the internal host
-                     [(and (equal? internal-host (url-host url))
-                           (equal? internal-port (url-port url)))
-                      (let* ([path (url-path url)]
-                             [coll (and (pair? path)
-                                        (pair? (cdr path))
-                                        (path/param-path (cadr path)))]
-                             [coll-path (and coll (string->path coll))]
-                             [doc-pr (and coll-path (assoc coll-path known-docs))])
-                        
-                        ;; check to see if the docs are installed
-                        (if (and doc-pr
-                                 (not (has-index-installed? coll-path)))
-                            (let ([url-str (url->string url)])
-                              (string->url 
-                               (make-missing-manual-url coll (cdr doc-pr) url-str)))
-                            url))]
-                     
-                     [(and (equal? addon-host (url-host url))
-                           (equal? internal-port (url-port url)))
-                      url]
+                     ;; one of the "collects" hosts:
+                     [(and (equal? internal-port (url-port url))
+			   (or (equal? internal-host (url-host url))
+			       (ormap (lambda (host)
+					(equal? host (url-host url)))
+				      collects-hosts)))
+		      url]
+
+		     ;; one of the "doc" hosts:
+                     [(and (equal? internal-port (url-port url))
+                           (ormap (lambda (host)
+				    (equal? host (url-host url)))
+				  doc-hosts))
+		      ;; Two things can go wrong with the URL:
+		      ;;  1. The corresponding doc might not be installed
+		      ;;  2. There's a relative reference from X to Y, and
+		      ;;     X and Y are installed in different directories,
+		      ;;     so the host is wrong for Y
+		      ;; Resolve 2, then check 1.
+		      (let* ([path (url-path url)]
+			     [manual (and (pair? path)
+					  (path/param-path (car path)))])
+			(if manual
+			    ;; Find out where this manual is really located:
+			    (let* ([path (find-doc-directory (string->path manual))]
+				   [real-url (and path
+						  (get-help-url path))]
+				   [url (if real-url
+					    ;; Use the actual host:
+					    (make-url (url-scheme url)
+						      (url-user url)
+						      (url-host (string->url real-url))
+						      (url-port url)
+						      (url-path-absolute? url)
+						      (url-path url)
+						      (url-query url)
+						      (url-fragment url))
+					    ;; Can't do better than the original URL?
+					    ;;  The manual is not installed.
+					    url)])
+			      (if (or (not path)
+				      (not (has-index-installed? path)))
+				  ;; Manual not installed...
+				  (let ([doc-pr (assoc (string->path manual) known-docs)])
+				    (string->url
+				     (make-missing-manual-url manual
+							      (cdr doc-pr) 
+							      (url->string url))))
+				  ;; Manual here; use revised URL
+				  url))
+			    ;; Not a manual? Shouldn't happen.
+			    url))]
                      
                      ;; send the url off to another browser
                      [(or (and (string? (url-scheme url))
@@ -151,16 +183,8 @@
               (super-new)))
           
           ;; has-index-installed? : path -> boolean
-          (define (has-index-installed? doc-coll)
-            (let loop ([docs-dirs (find-doc-directories)])
-              (cond
-                [(null? docs-dirs) #f]
-                [else
-                 (let ([doc-dir (car docs-dirs)])
-                   (let-values ([(base name dir?) (split-path doc-dir)])
-                     (or (and (equal? doc-coll name)
-                              (get-index-file doc-dir))
-                         (loop (cdr docs-dirs)))))])))
+          (define (has-index-installed? path)
+	    (and (get-index-file path) #t))
           
           (define sk-bitmap #f)
           

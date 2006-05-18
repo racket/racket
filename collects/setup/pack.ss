@@ -7,9 +7,23 @@
 	   (lib "etc.ss")
 	   (lib "port.ss")
 	   (lib "file.ss")
+	   (lib "kw.ss")
 	   (lib "getinfo.ss" "setup"))
 
-  (provide pack mztar std-filter pack-collections)
+  (provide pack 
+	   pack-plt
+	   mztar 
+	   std-filter 
+	   pack-collections
+	   pack-collections-plt)
+
+  (define (x-arg-needs-true-arg who arg1-name v arg2-name)
+    (error who 
+	   (string-append
+	    "true value for `~a' argument: ~e "
+	    "requires a true value for `~a' argument")
+	   arg1-name v
+	   arg2-name))
   
   (define pack
     (opt-lambda (dest name paths collections
@@ -20,7 +34,37 @@
 		      [plt-relative? #t]
 		      [requires null]
 		      [conflicts null]
-		      [plt-home-relative? #f])
+		      [at-plt-home? #f])
+      (pack-plt dest name paths 
+		#:collections collections
+		#:filter filter
+		#:encode? encode?
+		#:file-mode file-mode
+		#:unpack-unit unpack-unit
+		#:plt-relative? plt-relative?
+		#:requires null
+		#:conflicts null
+		#:at-plt-home? at-plt-home?)))
+
+  (define pack-plt
+    (lambda/kw (dest name paths 
+		     #:key
+		     [collections null]
+		     [filter std-filter]
+		     [encode? #t]
+		     [file-mode 'file]
+		     [unpack-unit #f]
+		     [plt-relative? #t]
+		     [requires null]
+		     [conflicts null]
+		     [at-plt-home? #f]
+		     [test-plt-dirs #f])
+      (when at-plt-home?
+	(unless plt-relative?
+	  (x-arg-needs-true-arg 'pack-plt 'at-plt-home? at-plt-home? 'plt-relative?)))
+      (when test-plt-dirs
+	(unless at-plt-home?
+	  (x-arg-needs-true-arg 'pack-plt 'test-plt-dirs test-plt-dirs 'at-plt-home?)))
       (let*-values ([(file) (open-output-file dest 'truncate/replace)]
                     [(fileout thd)
                      (if encode?
@@ -83,7 +127,10 @@
 	      [(conflicts) ',conflicts]
 	      [(plt-relative?) ,plt-relative?]
 	      [(plt-home-relative?) ,(and plt-relative?
-					  plt-home-relative?)]
+					  at-plt-home?)]
+	      [(test-plt-dirs) ,(and plt-relative?
+				     at-plt-home?
+				     `',test-plt-dirs)]
 	      [else (failure)]))
          fileout)
         (newline fileout)
@@ -161,7 +208,21 @@
 		 (regexp-match #rx#"^[.]#" name))))))
 
   (define pack-collections
-    (opt-lambda (output name collections replace? extra-setup-collections [file-filter std-filter] [plt-home-relative? #f])
+    (opt-lambda (output name collections replace? extra-setup-collections [file-filter std-filter] [at-plt-home? #f])
+      (pack-collections-plt output name collections 
+			    #:replace? replace? 
+			    #:extra-setup-collections  extra-setup-collections 
+			    #:filter file-filter
+			    #:at-plt-home? at-plt-home?)))
+
+  (define pack-collections-plt
+    (lambda/kw (output name collections 
+		       #:key
+		       [replace? #f]
+		       [extra-setup-collections null]
+		       [file-filter std-filter]
+		       [at-plt-home? #f]
+		       [test-plt-collects? #t])
       (let-values ([(dir source-files requires conflicts name)
 		    (let ([dirs (map (lambda (cp) (apply collection-path cp)) collections)])
 		      ;; Figure out the base path:
@@ -224,35 +285,39 @@
 				     (lambda () (caar collections)))))))])
 	(let ([output (path->complete-path output)])
 	  (parameterize ([current-directory dir])
-	    (pack output name
-		  source-files
-		  (append
-		   extra-setup-collections
-		   (filter get-info collections))
-		  file-filter #t 
-		  (if replace?
-		      'file-replace
-		      'file)
-		  #f
-		  #t ; plt-relative
-		  ;; For each require, get current version
-		  (map (lambda (r)
-			 (let ([i (get-info r)])
-			   (let ([v (and i (i 'version (lambda () #f)))])
-			     (if v
-				 (begin
-				   (unless (and (list? v)
-						(andmap number? v)
-						(andmap exact? v)
-						(andmap integer? v))
-				     (error
-				      'mzc
-				      "bad version specification in info.ss for collection ~s"
-				      r))
-				   (list r v))
-				 (list r null)))))
-		       (cons
-			'("mzscheme")
-			requires))
-		  conflicts
-		  plt-home-relative?)))))))
+	    (pack-plt
+	     output name
+	     source-files
+	     #:collections (append
+			    extra-setup-collections
+			    (filter get-info collections))
+	     #:filter file-filter 
+	     #:file-mode (if replace?
+			     'file-replace
+			     'file)
+	     #:plt-relative? #t 
+	     #:requires
+	     ;; For each require, get current version
+	     (map (lambda (r)
+		    (let ([i (get-info r)])
+		      (let ([v (and i (i 'version (lambda () #f)))])
+			(if v
+			    (begin
+			      (unless (and (list? v)
+					   (andmap number? v)
+					   (andmap exact? v)
+					   (andmap integer? v))
+				(error
+				 'mzc
+				 "bad version specification in info.ss for collection ~s"
+				 r))
+			      (list r v))
+			    (list r null)))))
+		  (cons
+		   '("mzscheme")
+		   requires))
+	     #:conflicts conflicts
+	     #:at-plt-home? at-plt-home?
+	     #:test-plt-dirs (and at-plt-home?
+				  test-plt-collects?
+				  '("collects")))))))))

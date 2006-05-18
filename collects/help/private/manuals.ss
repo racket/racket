@@ -7,6 +7,8 @@
            (lib "contract.ss")
            (lib "getinfo.ss" "setup")
            (lib "uri-codec.ss" "net")
+	   (lib "dirs.ss" "setup")
+	   "finddoc.ss"
            "colldocs.ss"
            "docpos.ss"
            "path.ss"
@@ -50,87 +52,13 @@
           (make-sec "Libraries" #rx"SRFI|MzLib|Framework|PLT Miscellaneous|Teachpack|Swindle" '())
           (make-sec "Writing extensions" #rx"Tools|Inside|Foreign" '())
           (make-sec "Other" #rx"" '())))
-  
-  ;; Creates a "file:" link into the indicated manual.
-  ;; The link doesn't go to a particular anchor,
-  ;; because "file:" does not support that.
-  (define (finddoc manual index-key label)
-    (let ([m (finddoc-lookup manual index-key label)])
-      (if (string? m)
-          m
-          (format "<A href=\"file:~a\">~a</A>"
-                  (path->string (build-path (car m) (caddr m)))
-                  label))))
-
-  ;; Given a Unix-style relative path to reach the "doc"
-  ;; collection, creates a link that can go to a
-  ;; particular anchor.
-  (define (findreldoc todocs manual index-key label)
-    (let ([m (finddoc-lookup manual index-key label)])
-      (if (string? m)
-          m
-          (format "<A href=\"~a/~a/~a#~a\">~a</A>"
-                  todocs
-                  manual
-                  (caddr m)
-                  (cadddr m)
-                  label))))
-
-  (define (finddoc-page-help manual index-key anchor?)
-    (let ([m (finddoc-lookup manual index-key "dummy")])
-      (if (string? m)
-          (error (format "Error finding index \"~a\" in manual \"~a\""
-                         index-key manual))
-          (let ([path (if anchor?
-                          (string-append (caddr m) "#" (cadddr m))
-                          (caddr m))])
-            (if (servlet-path? (string->path (caddr m)))
-                path
-                (format "/doc/~a/~a" manual path))))))
-  
-  ; finddoc-page : string string -> string
-  ; returns path for use by PLT Web server
-  ;  path is of form /doc/manual/page, or
-  ;  /servlet/<rest-of-path>
-  (define (finddoc-page manual index-key)
-    (finddoc-page-help manual index-key #f))
-
-  ; finddoc-page-anchor : string string -> string
-  ; returns path (with anchor) for use by PLT Web server
-  ;  path is of form /doc/manual/page#anchor, or
-  ;  /servlet/<rest-of-path>#anchor
-  (define (finddoc-page-anchor manual index-key)
-    (finddoc-page-help manual index-key #t))
-
-  ;; returns either a string (failure) or
-  ;; (list docdir index-key filename anchor title)
-  (define finddoc-ht (make-hash-table))
-  (define (finddoc-lookup manual index-key label)
-    (let ([key (string->symbol manual)]
-	  [docdir (find-doc-directory (string->path manual))])
-      (unless docdir
-        (error 'finddoc-lookup "manual ~s not found"  manual))
-      (let ([l (hash-table-get
-		finddoc-ht
-		key
-		(lambda ()
-		  (let ([f (build-path docdir "hdindex")])
-                    (if (file-exists? f)
-                        (let ([l (with-input-from-file f read)])
-                          (hash-table-put! finddoc-ht key l)
-                          l)
-                        (error 'finddoc "manual index ~s not installed" manual)))))])
-	(let ([m (assoc index-key l)])
-	  (if m 
-	      (cons docdir m)
-	      (error 'finddoc "index key ~s not found in manual ~s" index-key manual))))))
-  
+    
   ; manual is doc collection subdirectory, e.g. "mred"
   (define (main-manual-page manual)
     (let* ([entry (assoc (string->path manual) known-docs)]
 	   [name (or (and entry (cdr entry))
                      manual)]
-	   [href (string-append "/doc/" manual "/")])
+	   [href (get-help-url (find-doc-directory manual))])
       `(A ((HREF ,href)) ,name)))
   
   ; string string string -> xexpr
@@ -197,36 +125,22 @@
                     [else (loop (cdr dirs))]))]))))
   
   (define (find-doc-directories-in-doc-collection)
-    (let loop ([paths (current-library-collection-paths)]
-               [acc null])
+    (let loop ([dirs (get-doc-search-dirs)]
+	       [acc null])
       (cond
-        [(null? paths) acc]
-        [else (let* ([path (car paths)]
-                     [doc-path (build-path path "doc")])
-                (if (directory-exists? doc-path)
-                    (let dloop ([doc-contents (directory-list doc-path)]
-                                [acc acc])
-                      (cond
-                        [(null? doc-contents) (loop (cdr paths) acc)]
-                        [else 
-                         (let ([candidate (build-path doc-path (car doc-contents))])
-                           (if (directory-exists? candidate)
-                               (dloop (cdr doc-contents) (cons candidate acc))
-                               (dloop (cdr doc-contents) acc)))]))
-                    (loop (cdr paths) acc)))])))
-  
-  ;; finds the full path of the doc directory, if one exists
-  ;; input is just the short name of the directory (as a path)
-  (define (find-doc-directory doc)
-    (let loop ([dirs (find-doc-directories-in-doc-collection)])
-      (cond
-        [(null? dirs) #f]
-        [else (let ([dir (car dirs)])
-                (let-values ([(base name dir?) (split-path dir)])
-                  (if (equal? name doc)
-                      dir
-                      (loop (cdr dirs)))))])))
-                            
+       [(null? dirs) acc]
+       [else (let* ([doc-path (car dirs)])
+	       (if (directory-exists? doc-path)
+		   (let dloop ([doc-contents (directory-list doc-path)]
+			       [acc acc])
+		     (cond
+		      [(null? doc-contents) (loop (cdr dirs) acc)]
+		      [else 
+		       (let ([candidate (build-path doc-path (car doc-contents))])
+			 (if (directory-exists? candidate)
+			     (dloop (cdr doc-contents) (cons candidate acc))
+			     (dloop (cdr doc-contents) acc)))]))
+		   (loop (cdr dirs) acc)))])))
   
   (define re:title (regexp "<[tT][iI][tT][lL][eE]>(.*)</[tT][iI][tT][lL][eE]>"))
 

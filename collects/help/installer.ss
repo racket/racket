@@ -3,7 +3,8 @@
   
   (require (lib "match.ss")
 	   (lib "file.ss")
-	   (lib "list.ss"))
+	   (lib "list.ss")
+	   (lib "dirs.ss" "setup"))
   
   (define installer
     (lambda (path)   
@@ -28,9 +29,8 @@
 		       (build-path (collection-path "help") "servlets")))
   (define exploded-servlet-dir-len (length (explode-path servlet-dir)))
   
-  ;; assume that there is only a single `help' collection and that the
-  ;; original PLT tree help directory is a sibling of that.
-  (define dest-dir (build-path (collection-path "help") 'up "doc" "help"))
+  ;; assume that "help" is in the main doc directory
+  (define dest-dir (build-path (find-doc-dir) "help"))
   
   (unless (directory-exists? dest-dir)
     (make-directory* dest-dir))

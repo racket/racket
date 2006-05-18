@@ -1140,15 +1140,25 @@ list_ref_prim(int argc, Scheme_Object *argv[])
 static Scheme_Object * \
 name (int argc, Scheme_Object *argv[]) \
 { \
-  Scheme_Object *list; \
-  list = argv[1]; \
+  Scheme_Object *list, *turtle; \
+  list = turtle = argv[1]; \
   while (SCHEME_PAIRP(list)) \
     { \
       if (comp (argv[0], SCHEME_CAR (list))) \
 	{ \
-          return (list); \
+          return list; \
 	} \
       list = SCHEME_CDR (list); \
+      if (SCHEME_PAIRP(list)) { \
+        if (comp (argv[0], SCHEME_CAR (list))) \
+	  { \
+            return list; \
+	  } \
+        if (SAME_OBJ(list, turtle)) break; \
+        list = SCHEME_CDR (list); \
+        turtle = SCHEME_CDR (turtle); \
+        SCHEME_USE_FUEL(1); \
+      } \
     } \
   if (!SCHEME_NULLP(list)) { \
     scheme_raise_exn(MZEXN_FAIL_CONTRACT, \
@@ -1166,8 +1176,8 @@ GEN_MEM(member, member, scheme_equal)
 static Scheme_Object * \
 name (int argc, Scheme_Object *argv[]) \
 { \
-  Scheme_Object *pair, *list; \
-  list = argv[1]; \
+  Scheme_Object *pair, *list, *turtle;			\
+  list = turtle = argv[1]; \
   while (SCHEME_PAIRP (list)) \
     { \
       pair = SCHEME_CAR (list); \
@@ -1187,6 +1197,17 @@ name (int argc, Scheme_Object *argv[]) \
           return (pair); \
 	} \
       list = SCHEME_CDR (list); \
+      if (SCHEME_PAIRP(list)) { \
+        pair = SCHEME_CAR (list); \
+        if (SCHEME_PAIRP(pair)) { \
+          if (comp (argv[0], SCHEME_CAR (pair))) \
+	    return pair; \
+          list = SCHEME_CDR (list); \
+          if (SAME_OBJ(list, turtle)) break; \
+          turtle = SCHEME_CDR (turtle); \
+          SCHEME_USE_FUEL(1); \
+        } \
+      } \
     } \
   if (!SCHEME_NULLP(list)) {\
     scheme_raise_exn(MZEXN_FAIL_CONTRACT, \

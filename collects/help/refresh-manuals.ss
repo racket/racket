@@ -175,7 +175,12 @@
         (when doc-dir
           (display (format sc-refresh-deleting... full-name))
           (newline)
-          (delete-directory/r doc-dir)))))
+	  (with-handlers ([exn:fail:filesystem?
+			   (lambda (exn)
+			     (fprintf (current-error-port)
+				      "Warning: delete failed: ~a\n"
+				      (exn-message exn)))])
+	    (delete-directory/r doc-dir))))))
       
   (define delete-local-plt-files
     (lambda (tmp-dir)
@@ -216,5 +221,7 @@
                   (display (format sc-refresh-installing... (cdr pr)))
                   (newline)
                   (run-single-installer (make-local-doc-filename tmp-dir (car pr))
-                                        parent))
+					(lambda ()
+					  (error 'install-docs
+						 "expected PLT-relative archive"))))
                 docs-to-install))))

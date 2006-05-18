@@ -13,6 +13,7 @@ is stored in a module top-level and that's namespace-specific.
            (lib "string.ss")
            (lib "servlet.ss" "web-server")
            (lib "uri-codec.ss" "net")
+	   (lib "dirs.ss" "setup")
            "../private/internal-hp.ss"
            "../private/path.ss"
            "../private/docpos.ss"
@@ -81,7 +82,7 @@ is stored in a module top-level and that's namespace-specific.
       (define exp-web-root
         (explode-path 
          (normalize-path 
-          (build-path (collection-path "mzlib") 'up))))
+	  (find-collects-dir))))
       (define web-root-len (length exp-web-root))
         
       (define (keyword-string? ekey)

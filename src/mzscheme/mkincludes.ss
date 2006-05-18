@@ -11,7 +11,7 @@
     (define (dir path)
       (parameterize ([current-directory path])
         (current-directory ".") (current-directory)))
-    (values (build-path (dir (car args)) "include")
+    (values (dir (car args))
             (dir (cadr args))
             (if (null? (cddr args))
               (build-path (dir (car args)) "src" "mzscheme")

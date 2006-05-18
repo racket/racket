@@ -18,8 +18,7 @@
 	   (lib "port.ss")
 	   (lib "etc.ss")
 	   (lib "kw.ss")
-	   (lib "filename-version.ss" "dynext")
-	   (lib "dirs.ss" "setup"))
+	   (lib "filename-version.ss" "dynext"))
 
   (provide ssl-available?
 	   ssl-load-fail-reason
@@ -53,20 +52,11 @@
 
   (define ssl-load-fail-reason #f)
 
-  (define (ffi-lib-win name)
-    (let* ([d (find-dll-dir)]
-	   [f (and d (build-path d (format "~a.dll" name)))])
-      ;; Try PLT-specific lib:
-      (if (and f (file-exists? f))
-	  (ffi-lib f)
-	  ;; Try system-wide:
-	  (ffi-lib (format "~a.dll" name)))))
-
   (define (ffi-lib-xxxxxxx name)
     (let* ([f (format "~a~a" name filename-version-part)])
       (or (with-handlers ([exn? (lambda (x) #f)])
-            (ffi-lib-win (format "~a~a" name filename-version-part)))
-	  (ffi-lib-win (format "~axxxxxxx" name)))))
+            (ffi-lib (format "~a~a" name filename-version-part)))
+	  (ffi-lib (format "~axxxxxxx" name)))))
 
   (define 3m? (regexp-match #rx#"3m" (path->bytes (system-library-subpath))))
 
@@ -76,7 +66,7 @@
 				 #f)])
       (case (system-type)
 	[(windows)
-	 (ffi-lib-win "libeay32")]
+	 (ffi-lib "libeay32")]
 	[else
 	 (ffi-lib "libcrypto")])))
 
@@ -87,7 +77,7 @@
 				      #f)])
 	   (case (system-type)
 	     [(windows)
-	      (ffi-lib-win "ssleay32")]
+	      (ffi-lib "ssleay32")]
 	     [else
 	      (ffi-lib "libssl")]))))
 

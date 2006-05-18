@@ -35,6 +35,7 @@ AC_ARG_ENABLE(libjpeg, [  --enable-libjpeg        use libjpeg instead of buildin
 
 AC_ARG_ENABLE(shared, [  --enable-shared         create shared libraries])
 AC_ARG_ENABLE(dynlib, [  --enable-dynlib         same as --enable-shared])
+AC_ARG_ENABLE(shared, [  --enable-origtree       install with original directory structure])
 
 AC_ARG_ENABLE(foreign, [  --enable-foreign        compile foreign support (enabled by default)], , enable_foreign=yes)
 AC_ARG_ENABLE(llvm,    [  --enable-llvm           compile llvm support (disabled by default)], , enable_llvm=no)
@@ -108,6 +109,7 @@ if test "${enable_xonx}" = "yes" ; then
 else
   if test "$OS" = "Darwin" ; then
     enable_quartz=yes
+    enable_origtree=yes
   fi
 fi
 
@@ -121,29 +123,64 @@ if test "${enable_perl}" = "" ; then
   fi
 fi
 
-if test "${prefix}" = "NONE" ; then
-  prefix=`cd "${srcdir}/.." && pwd`
-else
-  # Check whether ${prefix} is redundant, because
-  # $prefix/src is $srcdir.
-  here_inode=`(ls -i -l -d ${srcdir}/. | cut -d d -f 1) 2> /dev/null`
-  there_inode=`(ls -i -l -d ${prefix}/src | cut -d d -f 1) 2> /dev/null`
-  if test "${here_inode}" = "${there_inode}" ; then
-    echo "in-place install, --prefix  specification is redundant"
-  else 
-    echo "----> Installation will go to ${prefix}:"
-    echo "---->   ${prefix}/collects/..."
-    echo "---->   ${prefix}/bin/..."
-    echo "---->   ${prefix}/lib/..."
-    echo "---->   ${prefix}/include/..."
-    echo "---->   ${prefix}/man/..."
-    echo "---->   ${prefix}/notes/..."
-    MAKE_COPYTREE=copytree
-  fi
-fi
-
 if test "${enable_iconv}" = "" ; then
   enable_iconv=yes
+fi
+
+############## Install targets ################
+
+unixstyle=no
+if test "${prefix}" != "NONE" ; then
+  if test "${enable_origtree}" != "yes" ; then
+    unixstyle=yes
+  fi
+fi
+if test "${exec_prefix}" != "NONE" ; then
+ unixstyle=yes
+fi
+if test "${bindir}" != '${exec_prefix}/bin' ; then
+ unixstyle=yes
+fi
+if test "${datadir}" != '${prefix}/share' ; then
+ unixstyle=yes
+fi
+if test "${libdir}" != '${exec_prefix}/lib' ; then
+ unixstyle=yes
+fi
+if test "${includedir}" != '${prefix}/include' ; then
+ unixstyle=yes
+fi
+if test "${mandir}" != '${prefix}/man' ; then
+ unixstyle=yes
+fi
+
+if test "${unixstyle}" = "no" ; then
+  if test "${prefix}" = "NONE" ; then
+    inplacebuild=yes
+    prefix=`cd "${srcdir}/.." && pwd`
+  else
+    MAKE_COPYTREE=copytree
+  fi
+  bindir='${prefix}/bin'
+  libpltdir='${prefix}/lib'
+  collectsdir='${prefix}/collects'
+  includepltdir='${prefix}/include'
+  docdir='${prefix}/doc'
+  mandir='${prefix}/man'
+  COLLECTS_PATH="../collects"
+  INSTALL_ORIG_TREE=yes
+else
+  if test "${prefix}" = "NONE" ; then
+    # Set prefix explicitly so we can use it during configure
+    prefix="${ac_default_prefix}"
+  fi
+  libpltdir="${libdir}/plt"
+  collectsdir="${libdir}/plt/collects"
+  includepltdir="${includedir}/plt"
+  docdir="${datadir}/plt/doc"
+  MAKE_COPYTREE=copytree
+  COLLECTS_PATH='${collectsdir}'
+  INSTALL_ORIG_TREE=no
 fi
 
 ###### Make sure MrEd is really there ######
@@ -428,12 +465,6 @@ case $OS in
     X_LIBS="-L/usr/contrib/X11R6/lib/ $X_LIBS"
     ;;
   CYGWIN*)
-    # Old cygwin approach, to make it Windows-like instead of Unix-like:
-    #  MZBINTARGET=cygwin-bin
-    #  MZINSTALLTARGET=cygwin-install
-    #  EXTRALIBS="$LIBS gmzwin.exp"
-    #  MZOPTIONS="$MZOPTIONS -DGC_DLL"
-    #  CGCOPTIONS="$CGCOPTIONS -DGC_DLL -DGC_BUILD -DUSE_MSVC_MD_LIBRARY -DMD_LIB_MAIN"
     MZINSTALLTARGET=unix-cygwin-install
     if test "${enable_shared}" = "yes" ; then
       ar_libtool_no_undefined=" -no-undefined"
@@ -501,7 +532,7 @@ case $OS in
         FRAMEWORK_INSTALL_DIR=~/Library/Frameworks
         FRAMEWORK_REL_INSTALL=no
       else
-        FRAMEWORK_INSTALL_DIR='${LIBIDIR}'
+        FRAMEWORK_INSTALL_DIR='${libdir}'
         FRAMEWORK_REL_INSTALL=yes
       fi
     else
@@ -1092,6 +1123,7 @@ AC_SUBST(OSX)
 AC_SUBST(NOT_OSX)
 AC_SUBST(FRAMEWORK_INSTALL_DIR)
 AC_SUBST(FRAMEWORK_REL_INSTALL)
+AC_SUBST(INSTALL_ORIG_TREE)
 
 AC_SUBST(MREDLINKER)
 AC_SUBST(LIBSFX)
@@ -1136,6 +1168,12 @@ AC_SUBST(LLVMTARGET)
 
 AC_SUBST(LTO)
 AC_SUBST(LTA)
+
+AC_SUBST(collectsdir)
+AC_SUBST(libpltdir)
+AC_SUBST(includepltdir)
+AC_SUBST(docdir)
+AC_SUBST(COLLECTS_PATH)
 
 mk_needed_dir()
 {
@@ -1228,3 +1266,20 @@ if test "${enable_wbuild}" = "yes" ; then
 fi
 
 AC_OUTPUT($makefiles)
+
+if test "${inplacebuild}" = "yes" ; then
+  echo ">>> Installation is in-place"
+else
+  echo ">>> Installation targets:"
+  echo " executables  : ${bindir}/..."
+  echo " Scheme code  : ${collectsdir}/..."
+  echo " core docs    : ${docdir}/..."
+  echo " C libraries  : ${libdir}/..."
+  echo " C headers    : ${includepltdir}/..."
+  echo " extra C objs : ${libpltdir}/..."
+  echo " man pages    : ${mandir}/..."
+  echo "  where prefix = ${prefix}"
+  if test "${unixstyle}" = "yes" ; then
+    echo "    and exec_prefix = ${exec_prefix}"
+  fi
+fi

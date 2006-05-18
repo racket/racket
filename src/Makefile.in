@@ -1,6 +1,20 @@
 
 # Builds MzScheme and MrEd
 
+srcdir = @srcdir@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+libdir = @libdir@
+includepltdir = @includepltdir@
+libpltdir = @libpltdir@
+collectsdir = @collectsdir@
+mandir = @mandir@
+docdir = @docdir@
+builddir = @builddir@
+
+ALLDIRINFO = "$(bindir)" "$(collectsdir)" "$(docdir)" "$(libdir)" "$(includepltdir)" "$(libpltdir)" "$(mandir)"
+
 all:
 	$(MAKE) mz
 	$(MAKE) mred-stub
@@ -23,6 +37,7 @@ install:
 	$(MAKE) setup-plt
 
 install-normal:
+	mzscheme/mzscheme -mvqu "$(srcdir)/mkdirs.ss" $(ALLDIRINFO)
 	if [ ! -d $(prefix) ] ; then mkdir $(prefix) ; fi
 	$(MAKE) mzinstall
 	$(MAKE) mredinstall-stub
@@ -78,16 +93,11 @@ mrinstall:
 mrinstall3m:
 	cd mred; $(MAKE) install-3m
 
-
 lib-finish:
-	@LIBFINISH@ @prefix@/lib
+	@LIBFINISH@ "$(prefix)/lib"
 
 srcdir = @srcdir@
 prefix = @prefix@
 
 copytree:
-	cp -p -r $(srcdir)/../collects $(prefix)/.
-	cp -p -r $(srcdir)/../include $(prefix)/.
-	cp -p -r $(srcdir)/../notes $(prefix)/.
-	cp -p -r $(srcdir)/../man $(prefix)/.
-	if [ -d $(srcdir)/../teachpack ] ; then  cp -r $(srcdir)/../teachpack $(prefix)/teachpack ; fi
+	mzscheme/mzscheme -mvqu "$(srcdir)/copytree.ss" "$(srcdir)" $(ALLDIRINFO) @INSTALL_ORIG_TREE@

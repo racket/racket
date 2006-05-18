@@ -1024,9 +1024,7 @@
              (floor (inexact->exact (unbox y-box))))))
 
       (define teachpack-directory 
-        (let ([lib-dir (build-path 
-                        (collection-path "mzlib")
-                        'up 'up "teachpack")])
+        (let ([lib-dir (collection-path "teachpack")])
           (if (directory-exists? lib-dir)
               lib-dir
               #f)))

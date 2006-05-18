@@ -22,7 +22,7 @@
       (dynamic-require `(lib "winvers-change.ss" "setup") #f)))
 
   (define collects-dir
-    (path->string (find-main-collects-dir)))
+    (path->string (find-collects-dir)))
 
   (let ([argv (current-command-line-arguments)])
     (cond

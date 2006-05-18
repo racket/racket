@@ -1,6 +1,10 @@
 (module dirs mzscheme
-  (require (lib "winutf16.ss" "compiler" "private")
+  (require (prefix config: (lib "config.ss" "config"))
+	   (lib "winutf16.ss" "compiler" "private")
 	   (lib "mach-o.ss" "compiler" "private"))
+
+  ;; ----------------------------------------
+  ;;  "collects"
 
   (define main-collects-dir
     (delay
@@ -10,11 +14,11 @@
 	 [(absolute-path? d)
 	  ;; This happens only under Windows; add a drive
 	  ;;  specification to make the path complete
-	  (let ([exec (find-system-path 'exec-file)])
-	    (if (complete-path? exec)
-		(let-values ([(base name dir?) (split-path exec)])
-		  (path->complete-path d base))
-		(path->complete-path d (find-system-path 'orig-dir))))]
+	  (let ([exec (path->complete-path 
+		       (find-executable-path (find-system-path 'exec-file))
+		       (find-system-path 'orig-dir))])
+	    (let-values ([(base name dir?) (split-path exec)])
+	      (path->complete-path d base)))]
 	 [else
 	  ;; Relative to executable...
 	  (parameterize ([current-directory (find-system-path 'orig-dir)])
@@ -24,36 +28,137 @@
 	      (and p
 		   (simplify-path p))))]))))
 
-  (provide find-main-collects-dir)
-  (define (find-main-collects-dir)
+  (provide find-collects-dir
+	   find-user-collects-dir
+	   get-collects-search-dirs)
+  (define (find-collects-dir)
     (force main-collects-dir))
+  (define user-collects-dir
+    (delay (build-path (find-system-path 'addon-dir) (version) "collects")))
+  (define (find-user-collects-dir)
+    (force user-collects-dir))
+  (define (get-collects-search-dirs)
+    (current-library-collection-paths))
+
+  ;; ----------------------------------------
+  ;; Helpers
+
+  (define (single p) (if p (list p) null))
+  (define (extra a l) (if (and a (not (member a l))) (cons a l) l))
+  (define (combine-search l default)
+    ;; Replace #f in list with default path:
+    (if l
+	(let loop ([l l])
+	  (cond
+	   [(null? l) null]
+	   [(not (car l)) (append default (loop (cdr l)))]
+	   [else (cons (car l) (loop (cdr l)))]))
+	default))
 
   (define-syntax define-finder
     (syntax-rules ()
-      [(_ provide id default)
+      [(_ provide config:id id user-id config:search-id search-id default)
        (begin
-	 (provide id)
+	 (define-finder provide config:id id user-id default)
+	 (provide search-id)
+	 (define (search-id)
+	   (combine-search (force config:search-id)
+			   (cons (user-id) (single (id))))))]
+      [(_ provide config:id id user-id config:search-id search-id extra-search-dir default)
+       (begin
+	 (define-finder provide config:id id user-id default)
+	 (provide search-id)
+	 (define (search-id)
+	   (combine-search (force config:search-id)
+			   (extra (extra-search-dir) 
+				  (cons (user-id) (single (id)))))))]
+      [(_ provide config:id id user-id default)
+       (begin
+	 (provide id user-id)
 	 (define dir
 	   (delay
-	     (let ([p (find-main-collects-dir)])
-	       (and p
-		    (simplify-path (build-path p
-					       'up
-					       default))))))
+	     (or (force config:id)
+		 (let ([p (find-collects-dir)])
+		   (and p
+			(simplify-path (build-path p
+						   'up
+						   default)))))))
 	 (define (id)
-	   (force dir)))]))
+	   (force dir))
+	 (define user-dir
+	   (delay (build-path (find-system-path 'addon-dir) (version) default)))
+	 (define (user-id)
+	   (force user-dir)))]))
 
-  (define-finder provide find-include-dir "include")
-  (define-finder provide find-lib-dir "lib")
+  (define-syntax no-provide (syntax-rules () [(_ . rest) (begin)]))
 
-  (define-finder provide find-console-bin-dir (case (system-type)
-						[(windows) 'same]
-						[(macosx unix) "bin"]))
+  ;; ----------------------------------------
+  ;; "doc"
 
-  (define-finder provide find-gui-bin-dir (case (system-type)
-					    [(windows macosx) 'same]
-					    [(unix) "bin"]))
+  (define delayed-#f (delay #f))
 
+  (provide find-doc-dir
+	   find-user-doc-dir
+	   get-doc-search-dirs)
+  (define-finder no-provide
+    config:doc-dir
+    find-doc-dir
+    find-user-doc-dir
+    delayed-#f
+    get-new-doc-search-dirs
+    "doc")
+  ;; For now, include "doc" pseudo-collections in search path:
+  (define (get-doc-search-dirs)
+    (combine-search (force config:doc-search-dirs)
+		    (append (get-new-doc-search-dirs)
+			    (map (lambda (p)
+				   (build-path p "doc"))
+				 (current-library-collection-paths)))))
+
+  ;; ----------------------------------------
+  ;; "include"
+
+  (define-finder provide
+    config:include-dir
+    find-include-dir
+    find-user-include-dir
+    config:include-search-dirs
+    get-include-search-dirs
+    "include")
+
+  ;; ----------------------------------------
+  ;; "lib"
+
+  (define-finder provide
+    config:lib-dir
+    find-lib-dir
+    find-user-lib-dir
+    config:lib-search-dirs
+    get-lib-search-dirs find-dll-dir
+    "lib")
+
+  ;; ----------------------------------------
+  ;; Executables
+
+  (define-finder provide 
+    config:bin-dir
+    find-console-bin-dir 
+    find-user-console-bin-dir
+    (case (system-type)
+      [(windows) 'same]
+      [(macosx unix) "bin"]))
+  
+  (define-finder provide
+    config:bin-dir
+    find-gui-bin-dir
+    find-user-gui-bin-dir
+    (case (system-type)
+      [(windows macosx) 'same]
+      [(unix) "bin"]))
+
+  ;; ----------------------------------------
+  ;; DLLs
+  
   (provide find-dll-dir)
   (define dll-dir
     (delay (case (system-type)
@@ -111,6 +216,4 @@
 	     [else
 	      (find-lib-dir)])))
   (define (find-dll-dir)
-    (force dll-dir))
-
-  )
+    (force dll-dir)))

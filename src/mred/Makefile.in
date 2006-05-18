@@ -1,6 +1,11 @@
 
 srcdir = @srcdir@
 prefix = @prefix@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+libdir = @libdir@
+libpltdir = @libpltdir@
+collectsdir = @collectsdir@
 builddir = @builddir@
 
 # for version.mak:
@@ -231,17 +236,16 @@ install-no-lib:
 	echo "no dynamic libs"
 
 install-lib:
-	cd ..; $(ICP) mred/libmred.@LIBSFX@ `(cd $(prefix); pwd)`/lib/
+	cd ..; $(ICP) mred/libmred.@LIBSFX@ "$(libdir)"
 
 install_wx_xt:
-	cd ..; if [ ! -d $(prefix)/bin ] ; then mkdir $(prefix)/bin ; fi
-	cd ..; rm -f $(prefix)/bin/mred
+	cd ..; if [ ! -d "$(bindir)" ] ; then mkdir "$(bindir)" ; fi
+	cd ..; rm -f "$(bindir)/mred"
 	$(MAKE) @MRLIBINSTALL@
-	cd ..; $(ICP) mred/mred `(cd $(prefix); pwd)`/bin/
-	$(MZSCHEME) -mvqu "$(srcdir)/../mzscheme/collects-path.ss" "$(prefix)/bin/mred" ../collects
+	cd ..; $(ICP) mred/mred "$(bindir)"
+	$(MZSCHEME) -mvqu "$(srcdir)/../mzscheme/collects-path.ss" "$(prefix)/bin/mred" @COLLECTS_PATH@
 
-LIBIDIR=$(prefix)/lib
-BUILDINFO=$(LIBIDIR)/buildinfo
+BUILDINFO=$(libpltdir)/buildinfo
 
 MRFWDIR = @FRAMEWORK_INSTALL_DIR@/PLT_MrEd.framework
 
@@ -255,16 +259,16 @@ install_wx_mac:
 	if [ ! -d $(MRFWDIR) ] ; then mkdir $(MRFWDIR) ; fi
 	if [ ! -d $(MRFWDIR)/Versions ] ; then mkdir $(MRFWDIR)/Versions ; fi
 	if [ ! -d $(MRFWDIR)/Versions/$(FWVERSION) ] ; then mkdir $(MRFWDIR)/Versions/$(FWVERSION) ; fi
-	cd ..; rm -rf $(prefix)/collects/launcher/Starter.app
+	cd ..; rm -rf $(collectsdir)/launcher/Starter.app
 	cd ..; rm -rf $(prefix)/MrEd.app
 	cd ..; $(ICP) -r mred/MrEd.app $(prefix)/.
 	$(ICP) PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd $(MRFWDIR)/Versions/$(FWVERSION)/PLT_MrEd
 	$(ICP) -r PLT_MrEd.framework/Versions/$(FWVERSION)/Resources $(MRFWDIR)/Versions/$(FWVERSION)/Resources
 	ln -s Versions/$(FWVERSION)/PLT_MrEd $(MRFWDIR)/
 	ln -s Versions/$(FWVERSION)/Resources $(MRFWDIR)/
-	if [ ! -d $(prefix)/collects ] ; then mkdir $(prefix)/collects ; fi
-	if [ ! -d $(prefix)/collects/launcher ] ; then mkdir $(prefix)/collects/launcher ; fi
-	cd ..; $(ICP) -r mred/Starter.app $(prefix)/collects/launcher/.
+	if [ ! -d $(collectsdir) ] ; then mkdir $(collectsdir) ; fi
+	if [ ! -d $(collectsdir)/launcher ] ; then mkdir $(collectsdir)/launcher ; fi
+	cd ..; $(ICP) -r mred/Starter.app $(collectsdir)/launcher/.
 	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then /usr/bin/install_name_tool -change "@executable_path/../../../PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd" "@executable_path/../../../lib/PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd" "$(prefix)/MrEd.app/Contents/MacOS/MrEd" ; fi
 	$(MZSCHEME) -mvqu "$(srcdir)/../mzscheme/collects-path.ss" "$(prefix)/MrEd.app/Contents/MacOS/MrEd" ../../../collects
 
@@ -286,25 +290,25 @@ install-no-lib3m:
 	echo "no dynamic libs"
 
 install-lib3m:
-	cd ..; $(ICP) mred/libmred3m.@LIBSFX@ `(cd $(prefix); pwd)`/lib/
+	cd ..; $(ICP) mred/libmred3m.@LIBSFX@ "$(libdir)"
 
 install-3m_wx_xt:
-	cd ..; $(ICP) mred/mred3m $(prefix)/bin/
-	$(MZSCHEME) -mvqu "$(srcdir)/../mzscheme/collects-path.ss" "$(prefix)/bin/mred3m" ../collects
+	cd ..; $(ICP) mred/mred3m "$(bindir)"
+	$(MZSCHEME) -mvqu "$(srcdir)/../mzscheme/collects-path.ss" "$(bindir)/mred3m" @COLLECTS_PATH@
 	$(MAKE) @MRLIBINSTALL@3m
 
 install-3m_wx_mac:
 	rm -f $(MRFWDIR)/Versions/$(FWVERSION)_3m/PLT_MrEd
 	rm -rf $(MRFWDIR)/Versions/$(FWVERSION)_3m/Resources
 	if [ ! -d $(MRFWDIR)/Versions/$(FWVERSION)_3m ] ; then mkdir $(MRFWDIR)/Versions/$(FWVERSION)_3m ; fi
-	cd ..; rm -rf $(prefix)/collects/launcher/Starter3m.app
+	cd ..; rm -rf $(collectsdir)/launcher/Starter3m.app
 	cd ..; rm -rf $(prefix)/MrEd3m.app
 	cd ..; $(ICP) -r mred/MrEd3m.app $(prefix)/.
 	$(ICP) PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd $(MRFWDIR)/Versions/$(FWVERSION)_3m/PLT_MrEd
 	$(ICP) -r PLT_MrEd.framework/Versions/$(FWVERSION)_3m/Resources $(MRFWDIR)/Versions/$(FWVERSION)_3m/Resources
-	if [ ! -d $(prefix)/collects ] ; then mkdir $(prefix)/collects ; fi
-	if [ ! -d $(prefix)/collects/launcher ] ; then mkdir $(prefix)/collects/launcher ; fi
-	cd ..; $(ICP) -r mred/Starter3m.app $(prefix)/collects/launcher/.
+	if [ ! -d $(collectsdir) ] ; then mkdir $(collectsdir) ; fi
+	if [ ! -d $(collectsdir)/launcher ] ; then mkdir $(collectsdir)/launcher ; fi
+	cd ..; $(ICP) -r mred/Starter3m.app $(collectsdir)/launcher/.
 	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then /usr/bin/install_name_tool -change "@executable_path/../../../PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "@executable_path/../../../lib/PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "$(prefix)/MrEd3m.app/Contents/MacOS/MrEd3m" ; fi
 	$(MZSCHEME) -mvqu "$(srcdir)/../mzscheme/collects-path.ss" "$(prefix)/MrEd3m.app/Contents/MacOS/MrEd3m" ../../../collects
 

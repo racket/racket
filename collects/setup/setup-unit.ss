@@ -39,7 +39,7 @@
 	  (apply setup-fprintf (current-output-port) s args)))
       
       (setup-printf "Setup version is ~a" (version))
-      (setup-printf "Main collection path is ~a" (find-main-collects-dir))
+      (setup-printf "Main collection path is ~a" (find-collects-dir))
       (setup-printf "Collection search path is ~a" (if (null? (current-library-collection-paths))
 						       "empty!"
 						       ""))
@@ -75,7 +75,7 @@
 	 (specific-collections)
 	 (map (lambda (x) (unpack 
 			   x 
-			   (build-path (find-main-collects-dir) 'up)
+			   (build-path (find-collects-dir) 'up)
 			   (lambda (s) (setup-printf "~a" s)) 
 			   (current-target-directory-getter)
 			   (force-unpacks)
@@ -536,7 +536,7 @@
                       (setup-printf "~aInstalling ~a"
                                     (case part [(pre) "Pre-"] [(post) "Post-"] [else ""])
                                     (cc-name cc))
-		      (let ([dir (build-path (find-main-collects-dir) 'up)])
+		      (let ([dir (build-path (find-collects-dir) 'up)])
 			(if (procedure-arity-includes? installer 2)
 			    (installer dir (cc-path cc))
 			    (installer dir)))))))))

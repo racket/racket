@@ -6,7 +6,8 @@
 	   (lib "file.ss")
 	   (lib "unit.ss")
 	   (lib "base64.ss" "net")
-	   (lib "getinfo.ss" "setup"))
+	   (lib "getinfo.ss" "setup")
+	   "dirs.ss")
 
   ;; Returns a port and a kill thunk
   (define (port64gz->port p64gz)
@@ -41,34 +42,58 @@
 						   (path->string base)
 						   base)))))
 
-  (define (unmztar p filter main-collects-parent-dir print-status)
+  (define (shuffle-path parent-dir get-dir shuffle? v)
+    (if shuffle?
+	;; Re-arrange for "collects', etc.
+	(cond
+	 [(null? v) (values #f 'same)]
+	 [else
+	  (let ([dir
+		 (cond
+		  [(string=? (car v) "collects")
+		   (get-dir find-collects-dir find-user-collects-dir)]
+		  [(string=? (car v) "doc")
+		   (get-dir find-doc-dir find-user-doc-dir)]
+		  [(string=? (car v) "lib")
+		   (get-dir find-lib-dir find-user-lib-dir)]
+		  [(string=? (car v) "include")
+		   (get-dir find-include-dir find-user-include-dir)]
+		  [else #f])])
+	    (if dir
+		(if (null? (cdr v))
+		    (values dir 'same)
+		    (values dir (apply build-path (cdr v))))
+		(values parent-dir (apply build-path v))))])
+	(values parent-dir
+		(if (null? v)
+		    'same
+		    (apply build-path v)))))
+
+  (define (unmztar p filter parent-dir get-dir shuffle? print-status)
     (define bufsize 4096)
     (define buffer (make-bytes bufsize))
     (let loop ()
       (let ([kind (read p)])
 	(unless (eof-object? kind)
 	  (case kind
-	    [(dir) (let ([s (let ([v (read p)])
-			      (if (null? v)
-				  'same
-				  (apply build-path v)))])
+	    [(dir) (let-values ([(target-dir s) (shuffle-path parent-dir get-dir shuffle? (read p))])
 		     (unless (or (eq? s 'same) (relative-path? s))
 		       (error "expected a directory name relative path string, got" s))
-		     (when (or (eq? s 'same) (filter 'dir s main-collects-parent-dir))
-		       (let ([d (build-path main-collects-parent-dir s)])
+		     (when (or (eq? s 'same) (filter 'dir s target-dir))
+		       (let ([d (build-path target-dir s)])
 			 (unless (directory-exists? d)
 			   (print-status
 			    (format "  making directory ~a" (pretty-name d)))
 			   (make-directory* d)))))]
 	    [(file file-replace) 
-	     (let ([s (apply build-path (read p))])
+	     (let-values ([(target-dir s) (shuffle-path parent-dir get-dir shuffle? (read p))])
 	       (unless (relative-path? s)
 		 (error "expected a file name relative path string, got" s))
 	       (let ([len (read p)])
 		 (unless (and (number? len) (integer? len))
 		   (error "expected a file name size, got" len))
-		 (let* ([write? (filter kind s main-collects-parent-dir)]
-			[path (build-path main-collects-parent-dir s)])
+		 (let* ([write? (filter kind s target-dir)]
+			[path (build-path target-dir s)])
 		   (let ([out (and write?
 				   (if (file-exists? path)
 				       (if (eq? kind 'file)
@@ -147,26 +172,51 @@
 					   (lambda (n) 
 					     (unless (eq? n 'mzscheme)
 					       (error "unpacker isn't mzscheme:" n))))]
-		      [target-dir (let ([rel? (call-info info 'plt-relative? (lambda () #f) values)]
-					[not-user-rel? (call-info info 'plt-home-relative? (lambda () #f) values)])
-				    (if rel?
-					(if (and not-user-rel? 
-						 ;; Check for void because old unpacker didn't use
-						 ;;  the failure thunk.
-						 (not (void? not-user-rel?)))
-					    (get-target-plt-directory main-collects-parent-dir
+		      [target-dir-info
+		       (let ([rel? (call-info info 'plt-relative? (lambda () #f) values)]
+			     [not-user-rel? (call-info info 'plt-home-relative? (lambda () #f) values)]
+			     [test-dirs (call-info info 'test-plt-dirs (lambda () #f) values)])
+			 (if rel?
+			     ;; Shuffling...
+			     (if (and not-user-rel? 
+				      ;; Check for void because old unpacker didn't use
+				      ;;  the failure thunk.
+				      (not (void? not-user-rel?))
+				      ;; Non-user optional if test-dirs are writable
+				      (or (not test-dirs)
+					  (andmap (lambda (p)
+						    (and (string? p)
+							 (let ([dir (let-values ([(base dir)
+										  (shuffle-path main-collects-parent-dir
+												(lambda (a b) (a))
+												#t (list p))])
+								      (build-path base dir))])
+							   (memq 'write 
+								 (with-handlers ([exn:fail:filesystem? (lambda (x) null)])
+								   (file-or-directory-permissions dir))))))
+						  test-dirs)))
+				 ;; Shuffle to main directory always:
+				 (let ([dir (get-target-plt-directory main-collects-parent-dir
 								      main-collects-parent-dir
-								      (list main-collects-parent-dir))
-					    (let ([addons (build-path (find-system-path 'addon-dir)
-								      (version))])
-					      (get-target-plt-directory
+								      (list main-collects-parent-dir))])
+				   (list dir (lambda (sys user)
+					       (let ([a (sys)])
+						 (get-target-plt-directory a a (list a))))))
+				 ;; Prefer to shuffle to user directory:
+				 (let ([addons (find-user-collects-dir)])
+				   (let ([dir (get-target-plt-directory
 					       addons
 					       main-collects-parent-dir
-					       (list addons main-collects-parent-dir))))
-					(get-target-directory)))])
+					       (list addons main-collects-parent-dir))])
+				     (list dir (lambda (sys user)
+						 (let ([a (sys)]
+						       [b (user)])
+						   (get-target-plt-directory b a (list b a))))))))
+			     ;; No shuffling --- install to target directory:
+			     (list (get-target-directory))))])
 		  
 		  ;; Stop if no target directory:
-		  (if target-dir
+		  (if (car target-dir-info)
 
 		      ;; Check declared dependencies (none means v103)
 		      (begin
@@ -252,10 +302,15 @@
 			(let ([u (eval (read p) n)])
 			  (unless (eval `(unit? ,u) n)
 			    (error "expected a unit, got" u))
-			  (make-directory* target-dir)
+			  (make-directory* (car target-dir-info))
 			  (let ([unmztar (lambda (filter)
-					   (unmztar p filter target-dir print-status))])
-			    (eval `(invoke-unit ,u ,target-dir ,unmztar) n))))
+					   (unmztar p filter 
+						    (car target-dir-info) 
+						    (lambda (a b)
+						      ((cadr target-dir-info) a b))
+						    ((length target-dir-info) . > . 1)
+						    print-status))])
+			    (eval `(invoke-unit ,u ,(car target-dir-info) ,unmztar) n))))
 
 		      ;; Cancelled: no collections
 		      null))))

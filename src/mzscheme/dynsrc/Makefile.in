@@ -7,6 +7,8 @@ DYNLINK = mzc --ld
 
 srcdir = @srcdir@
 prefix = @prefix@
+exec_prefix = @exec_prefix@
+libpltdir = @libpltdir@
 builddir = @builddir@
 
 MZSRC = $(srcdir)/../src
@@ -41,7 +43,7 @@ MZDYNDEP = ../mzdyn.o $(srcdir)/../include/ext.exp $(srcdir)/../include/mzscheme
 dynexmpl.o: $(srcdir)/dynexmpl.c  $(HEADERS)
 	$(PLAIN_CC) $(CFLAGS) -c $(srcdir)/dynexmpl.c -o dynexmpl.o
 
-ILIBDIR = $(prefix)/lib
+ILIBDIR = $(libpltdir)
 
 # Prefix might be relative to srcdir, or it might be absolute, so we
 # have to go up and install things from there.

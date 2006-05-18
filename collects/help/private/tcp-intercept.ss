@@ -108,7 +108,8 @@
       (define (gen-tcp-connect raw)
         (lambda (hostname-string port)
           (if (and (or (string=? internal-host hostname-string)
-                       (string=? addon-host hostname-string))
+                       (ormap (lambda (host) string=? host hostname-string)
+			      doc-hosts))
                    (equal? internal-port port))
               (let-values ([(req-in req-out) (make-pipe)]
                            [(resp-in resp-out) (make-pipe)])

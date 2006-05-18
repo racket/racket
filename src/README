@@ -94,11 +94,12 @@ the Unix instructions below, but note the following:
     your shell and PATH setting).
 
     If the --prefix flag is omitted, the binaries are built for an
-    in-place installation (i.e., the plt directory containing this
-    README will be used directly). Unless --enable-shared is used, the
-    plt directory can be moved later; most system administrators
-    would recommend that you use --enable-shared, but the PLT Scheme
-    developers distribute binaries built without --enable-shared.
+    in-place installation (i.e., the parent of the directory
+    containing this README will be used directly). Unless
+    --enable-shared is used, the plt directory can be moved later;
+    most system administrators would recommend that you use
+    --enable-shared, but the PLT Scheme developers distribute binaries
+    built without --enable-shared.
 
     The `configure' script generates the makefiles for building
     MzScheme and/or MrEd. The current directory at the time
@@ -163,6 +164,15 @@ the Unix instructions below, but note the following:
     If you build frequently from the Subversion-based sources with
     --enabled-shared, beware that you may accumlate many old, unused
     versions of the dynamic libraries in plt/lib.
+
+ 4. [Optional] Run `help-desk' to install missing documentation.
+
+    The source distribution (or Subversion-based source) includes only
+    the release notes, and not the rest of the core documentation.
+    Run the newly installed `help-desk' and follow the "Manuals" link
+    to install the rest of the documentation. For a Subversion-based
+    build, the "Manuals" page includes a link to update previously
+    installed documentation.
 
 After an "in-place" install without Subversion, the plt/src directory
 is no longer needed, and it can be safely deleted. Build information
