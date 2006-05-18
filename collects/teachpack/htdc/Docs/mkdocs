@@ -7,7 +7,7 @@ else
 fi
 |#
 
-(require (lib "etc.ss"))
+(require (lib "etc.ss") (lib "dirs.ss" "setup"))
 (current-directory (this-expression-source-directory))
 
 ; for john?
@@ -18,7 +18,7 @@ fi
     #"An Imperative Drawing Library (HtDC)"
     ))
 
-(define dest-dir (build-path (collection-path "doc") "teachpack-htdc"))
+(define dest-dir (build-path (find-doc-dir) "teachpack-htdc"))
 (printf "writing docs to ~s\n" (path->string dest-dir))
 
 (require (lib "list.ss"))
@@ -41,7 +41,8 @@ fi
              (unless (file-exists? (build-path 'up ss-name))
                (error 'mkdocs "Found ~s but no ~s teachpack found" s ss-name))
              (list (cadr m) (bytes->path basename))))
-         (filter (lambda (f) (not (equal? (path->bytes f) #"index.thtml"))) thtml-files))))
+         (filter (lambda (f) (not (equal? (path->bytes f) #"index.thtml")))
+                 thtml-files))))
 ;; Check that `lib-names' exactly match `libraires':
 (let ([file-libs (map car lib-names)])
   (define (test x) (and (pair? x) x))
