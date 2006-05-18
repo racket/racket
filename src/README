@@ -105,7 +105,7 @@ the Unix instructions below, but note the following:
     MzScheme and/or MrEd. The current directory at the time
     `configure' is run will be used as working space for building the
     executables (independent of --prefix). This build directory does
-    not have to be in the plt/ tree, even for an "in-place"
+    not have to be in the source tree, even for an "in-place"
     build. It's ok to run `configure' from its own directory (as in
     the example above), but it's often better to pick a separate build
     directory that is otherwise empty.
@@ -302,6 +302,7 @@ configurations for the following platforms:
               HP/UX
               FreeBSD
               OpenBSD
+              NetBSD
               OSF1 (Alpha)
               SCO Unix (x86)
 

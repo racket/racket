@@ -13380,7 +13380,18 @@ fi
 
 
 if test "${inplacebuild}" = "yes" ; then
-  echo ">>> Installation is in-place"
+  echo ">>> Installation is in-place:"
+  echo "      ${srcdir}/.."
+  echo "    Configure with --prefix if you wanted to install somewhere else."
+  if test "${enable_quartz}" != "yes" ; then
+    echo "    The --prefix option also makes the installed files better conform"
+    echo "    to Unix installation conventions. (The configure script will show"
+    echo "    you specific installation paths when --prefix is used.)"
+  fi
+  if test "${enable_shared}" != "yes" ; then
+    echo "    Alternately, you can simply "'`'"mv' the in-place installation after"
+    echo "    running "'`'"make install'."
+  fi
 else
   echo ">>> Installation targets:"
   echo " executables  : ${bindir}/..."
