@@ -1,40 +1,49 @@
-Implements the @-reader macro for embedding text in Scheme code.
+The _Scribble_ Collection
+=========================
+
+The Scribble collection is a few libraries that can be used to create
+documents from Scheme.  It is made of independently usable parts.  For
+example, the reader can be used in any situation that requires lots of
+free-form text, or you can use the rendering portion directly to
+generate documents.
+
+The Scribble Reader
+------------------
 
 *** Introduction
 
-The @-reader is designed to be a convenient facility for embedding
-Scheme code and text.  "@" is chosen as one of the least-used characters
+The @-reader is designed to be a convenient facility for using free-form
+text in Scheme code.  "@" is chosen as one of the least-used characters
 in Scheme code (the options are: "&" (969 uses in the collects
 hierarchy), "|" (1676), "@" (2105) "^" (2257) "$" (2259)).
 
 To use this file, you can use MzScheme's #reader form:
 
-  #reader(file "...path to this file...")
+  #reader(lib "reader.ss" "scribble")
 
-But note that this will only do the concrete-level translation, and not
-give you any useful bindings.  Alternatively, you can start MzScheme,
-require this file and use the `use-at-readtable' function to switch the
-current readtable to the at-readtable.  You can do this in a single
-command line:
+but note that this will only do the concrete-level translation, and not
+give you any useful bindings.  Alternatively, you can start MzScheme and
+use the `use-at-readtable' function to switch the current readtable to
+the at-readtable.  You can do this in a single command line:
 
-  mzscheme -te ...this-file... '(use-at-readtable)'
+  mzscheme -Le reader.ss scribble "(use-at-readtable)"
 
 *** Concrete Syntax
 
 The *concrete* syntax of @-commands is (informally, more details below):
 
-  "@" <cmd> "[" <key-vals> "]" "{" <body> "}"
+  "@" <cmd> "[" <key-val> ... "]" "{" <body> ... "}"
 
 where all parts are optional, but at least one should be present.
 (Note: since the reader will try to see if there is a "{...body...}" in
-the input, it is awkward to use body-less constructs on an interactive
-REPL since reading an expression succeeds only when there is a new
-expression available.)  "@" is set as a terminating reader macro, so if
-you want to use it in Scheme code, you need to quote it with `\@' or the
-whole identifier with `|ba@rs|'.  This has no effect occurrences of "@"
-in Scheme strings.
+the input, it can be awkward to use body-less constructs on an
+interactive REPL since reading an expression succeeds only when there is
+a new expression available.)  "@" is set as a terminating reader macro,
+so if you want to use it in Scheme code, you need to quote it with `\@'
+or the whole identifier with `|ba@rs|'.  All of this has no effect
+on occurrences of "@" in Scheme strings, character constants etc.
 
-Roughly speaking, such a construct is translated to:
+Roughly speaking, such a construct is read as:
 
   (<cmd> <key-val> ... <body> ...)
 
@@ -48,8 +57,8 @@ string for each end of line.  For example:
        blah}
 
 It is your responsibility to make sure that `foo' is bound (in any way:
-it can be a macro).  To see the forms, you can use quote as usual, for
-example:
+it can be either a function or a macro).  To see the forms, you can use
+quote as usual, for example:
 
   '@foo{bar}
 
@@ -61,8 +70,9 @@ wrapping the *whole* expression.  For example:
   @`',@foo{blah}    --is-read-as-->    `',@(foo "blah")
 
 When writing Scheme code, this means that @`',@foo{blah} is exactly the
-same as `@',@foo{blah} and `',@@foo{blah}, but these constructs can
-appear in body texts where they will be read differently (see below).
+same as `@',@foo{blah} and `',@@foo{blah}, but unlike the latter two,
+the first construct can appear in body texts with the same meaning,
+whereas the other two would not work (see below).
 
 The command itself is not limited to a Scheme identifier -- it can be
 any Scheme expression:
@@ -76,15 +86,16 @@ just strings:
   @{foo bar     --is-read-as-->    ("foo bar" "\n" "baz")
     baz}
 
-  @'{foo bar    --is-read-as-->    (quote ("foo bar" "\n" "baz"))
+  @'{foo bar    --is-read-as-->    '("foo bar" "\n" "baz")
      baz}
 
 If the command part begins with a ";" (with no newline between the "@"
 and the ";"), then the construct is a comment.  There are two comment
-forms, one for an arbitrary-text, possibly nested comments, and another
+forms, one for arbitrary-text and possibly nested comments, and another
 one for a -to-the-end-of-the-line comment:
 
   @; <any-space>* { ...any-text-including-newlines... }
+
   @; <anything-that-doesn't-begin-with-a-brace-to-the-end-of-the-line>
 
 Note that in the first form the commented body must still parse
@@ -107,27 +118,37 @@ or
 otherwise you will probably confuse the editor into treating the file as
 having imbalanced parenthesis.
 
+If only the command part is specified, then the result is the command
+part only, without an extra set of parenthesis.  This makes it suitable
+for Scheme escapes in body texts.  More below, in the description of the
+body part.
+
 Finally, note that there are no special rules for using "@" in the
 command itself, which can lead to things like:
 
   @@foo{bar}{baz}    --is-read-as-->    ((foo "bar") "baz")
 
-but you should *not* rely on such behavior, since "@@" might be used
+but you should not rely on such behavior, since "@@" might be used
 differently in the future (eg, making "@@" be "@" in a body text).
 
 ** Concrete Syntax: the body part
 
 The syntax of the body part is intended to be as convenient as possible
-for writing free text.  It can contain free text, and the only
-characters with special meaning are braces, "@", "$", "|".  As described
-above, the text turns to string arguments for the resulting forms.
-Spaces at the beginning of lines are discarded, and newlines turn to
-"\n" strings.  As part of trying to do the `right thing', an empty line
-at the beginning and at the end are discarded, so
+for writing free text.  It can contain almost any text -- the only
+character with special meaning is "@", in addition, braces, "|", and
+backslash can have special meanings but only in a few contexts.  As
+described above, the text turns to a sequence of string arguments for
+the resulting form.  Spaces at the beginning of lines are discarded (but
+see the information about indentation below), and newlines turn to
+individual "\n" strings.  (Spcaces are preserved on a single-line text.)
+As part of trying to do the `right thing', an empty line at the
+beginning and at the end are discarded, so
 
   @foo{
     bar    --is-read-as-->   (foo "bar")   <--is-read-as--    @foo{bar}
   }
+
+  @foo{ bar }  --is-read-as-->   (foo " bar ")
 
 If an "@" appears in the input, then it is interpreted as Scheme code,
 which means that the at-reader will be applied recursively, and the
@@ -136,14 +157,36 @@ contents.  For example:
 
   @foo{a @bar{b} c}    --is-read-as-->    (foo "a " (bar "b") " c")
 
-A "$" also switches to Scheme mode, but it is a simple escape back to
-Scheme: it will read the next Scheme expression and plant it in the
-form.  The expression can be wrapped in braces in case it touches text
-that you don't want to include.  Examples
+If the nested "@" construct has only a command -- no body part, then it
+does not appear in a subform.  Given that the command part can be any
+Scheme expression, this makes "@" a general escape to arbitrary Scheme
+code:
 
-  @foo{foo $bar foo}    --is-read-as-->    (foo "foo " bar " foo")
-  @foo{foo$bar.}        --is-read-as-->    (foo "foo" bar.)
-  @foo{foo${bar}.}      --is-read-as-->    (foo "foo" bar ".")
+  @foo{a @bar c}        --is-read-as-->    (foo "a " bar " c")
+
+  @foo{a @(bar 2) c}    --is-read-as-->    (foo "a " (bar 2) " c")
+
+In some cases, you may want to use a Scheme identifier (or a number or a
+boolean) in a position that touches other text that can make an
+identifier -- in these situations you should surround the Scheme
+identifier (/number/boolean) by a pair of bar characters.  The text
+inside the bars is parsed as a Scheme expression, but if that fails, it
+is used as a quoted identifier -- do not rely on this behavior, and
+avoid using whitespace inside the bars.  Also, if bars are used, then no
+body text is used even if they are followed by braces (see the next
+paragraph).  Examples:
+
+  @foo{foo @bar foo}    --is-read-as-->    (foo "foo " bar " foo")
+
+  @foo{foo@bar.}        --is-read-as-->    (foo "foo" bar.)
+
+  @foo{foo@|bar|.}      --is-read-as-->    (foo "foo" bar ".")
+
+  @foo{foo@3.}          --is-read-as-->    (foo "foo" 3.0)
+
+  @foo{foo@|3|.}        --is-read-as-->    (foo "foo" 3 ".")
+
+  @foo{foo@|(f 1)|{bar}.} --is-read-as-->  (foo "foo" (f 1) "{bar}.")
 
 Braces are only problematic because a "}" is used to mark the end of the
 text.  They are therefore allowed, as long as they are balanced.  For
@@ -152,15 +195,83 @@ example:
   @foo{f{o}o}    --is-read-as-->    (foo "f{o}o")
 
 There is also an alternative syntax for the body, one that specifies a
-new marker for the end.  To do this, use two openning braces with
-punctuation characters between them (no spaces, and no alphanumerics).
-If this form is used, then the reversed form (reverse the charcters and
-swap round, square, curly, and angle parentheses) is used to close the
-text.  For example:
+new marker for the end.  To do this, use "|{" for the openning marker,
+optionally with additional characters between them (excluding "{",
+whitespace, and alphanumerics) -- the matching closing marker should be
+the mirrored form of the openning marker (reverse the characters and
+swap round, square, curly, and angle parentheses).  For example:
 
-  @foo{<{foo{{{bar}>}    --is-read-as-->    (foo "foo{{{bar")
+  @foo|{...}|              --is-read-as-->    (foo "...")
 
-For situations where spaces at the beinning of lines matter (various
+  @foo|{foo{{{bar}|        --is-read-as-->    (foo "foo{{{bar")
+
+  @foo|<{{foo{{{bar}}>|    --is-read-as-->    (foo "{foo{{{bar}")
+
+* Concrete Syntax: quoting in body texts
+
+To quote braces or "@", precede them with a backslash.  Note that this
+is an irregular use of backslash quoting!  To use "\@" in your text,
+simply precede it with a backslash.  The general rule is that to use N
+backslashes-and-a-special-character, you should precede it with one
+extra backslash.  Any other use of a backslash (one that is not followed
+by more back-slashes and a special character) is preserved in the text
+as usual.  Examples:
+
+  @foo{b\@ar}        --is-read-as-->    (foo "b@ar")
+  @foo{b\\@ar}       --is-read-as-->    (foo "b\\@ar")
+  @foo{b\\\@ar}      --is-read-as-->    (foo "b\\\\@ar")
+  @foo{b\{\@\@ar}    --is-read-as-->    (foo "b{@@ar")
+  @foo{b\ar}         --is-read-as-->    (foo "b\\ar")
+  @foo{b\\ar}        --is-read-as-->    (foo "b\\\\ar")
+
+* Concrete Syntax: newlines and indentation
+
+When indentation is used, all-space indentation string syntaxes are
+perpended to the beginning of each line.  The rule for adding these
+string is:
+- A spaces-string is added to each line according to its distance from
+  the leftmost syntax object;
+- The first string is not prepended with indentation if it appears on
+  the first line of output.
+Examples:
+
+  @foo{       --is-read-as-->    (foo "bar" "\n"
+    bar                               "  " "baz" "\n"
+      baz                             "bbb")
+    bbb}
+
+  @foo{bar    --is-read-as-->    (foo "bar" "\n"
+         baz                          "  " "baz" "\n"
+       bbb}                           "bbb")
+
+  @foo{ bar   --is-read-as-->    (foo " bar" "\n"
+          baz                         "   " "baz" "\n"
+        bbb}                          " " "bbb")
+
+  @foo{bar    --is-read-as-->    (foo "bar" "\n"
+     baz                              "baz" "\n"
+     bbb}                             "bbb")
+
+  @foo{ bar   --is-read-as-->    (foo " bar" "\n"
+     baz                              "baz" "\n"
+     bbb}                             "bbb")
+
+  @foo{ bar   --is-read-as-->    (foo " bar" "\n"
+     baz                              "baz" "\n"
+       bbb}                           "  " "bbb")
+
+Additional notes:
+- You can identify indentation strings at the syntax level by the fact
+  that they have the same location information as the following syntax
+  object;
+- This mechanism depends on line and column number information
+  (`use-at-readtable' turns them on for the current input port);
+- When using it on a command-line, you note that the reader is not aware
+  of the "> " prompt, which might lead to confusing results.
+
+[The following is likely to change.]
+
+For situations where spaces at the beginning of lines matter (various
 verbatim environments), you should begin a line with a "|".  It has no
 other special meaning -- so to use a "|" as the first character in the
 text, simply use another before it.
@@ -173,7 +284,7 @@ text, simply use another before it.
 In other situations, newlines matter -- you might want to avoid a
 newline token in some place.  To avoid a newline and still break the
 source line, use a line comment.  As in TeX, these will consume text
-upto and including the end of the line and all following whitespace.
+up-to and including the end of the line and all following whitespace.
 Example:
 
   @foo{bar @;
@@ -187,32 +298,18 @@ text:
        baz@;     --is-read-as-->    (foo "bar baz .")
        | .}
 
-Finally, to quote braces, "@" or "$", precede them with a backslash.
-Note that this is an irregular use of backslash quoting!  To use "\@" in
-your text, simply precede it with a backslash.  The general rule is that
-to use N backslashes-and-a-special-character, you should precede it with
-one extra backslash.  Any other use of a backslash (one that is not
-followed by more bslashes and a special character) is preserved in the
-text as usual.  Examples:
-
-  @foo{b\$ar}        --is-read-as-->    (foo "b$ar")
-  @foo{b\\$ar}       --is-read-as-->    (foo "b\\$ar")
-  @foo{b\\\$ar}      --is-read-as-->    (foo "b\\\\$ar")
-  @foo{b\{\$\@ar}    --is-read-as-->    (foo "b{$@ar")
-  @foo{b\ar}         --is-read-as-->    (foo "b\\ar")
-  @foo{b\\ar}        --is-read-as-->    (foo "b\\\\ar")
-
 ** Concrete Syntax: the keyword-value part
 
 The keyword-value part can contain arbitrary Scheme expressions, which
-are simply stacked before the body text:
+are simply stacked before the body text arguments:
 
-  @foo[1 (* 2 3)]{bar}      --is-read-as-->    (foo 1 (* 2 3) "bar")
+  @foo[1 (* 2 3)]{bar}     --is-read-as-->    (foo 1 (* 2 3) "bar")
+  @foo[@bar{...}]{blah}    --is-read-as-->    (foo (bar "...") "blah")
 
 But there is one change that makes it easy to use for keyword/values:
-first of all, "=" is a terminating character in the textual scope.
-Secondly, if there is a "<identifier>=<expr>" sequence (spaces
-optional), then it is converted to "#:identifier <expr>":
+(a) "=" is a terminating character in the textual scope, (b) if there is
+a "<identifier>=<expr>" sequence (spaces optional), then it is converted
+to "#:identifier <expr>":
 
   @foo[(* 2 3) a=b]{bar}    --is-read-as-->    (foo (* 2 3) #:a b "bar")
 
@@ -222,7 +319,7 @@ This facility can be used in any way you want.  All you need is to use
 function names that you bind.  You can even use quasi-quotes, skipping
 the need for functions, for example:
 
-  > (define (important . text) @`b{@u{@big{$,@text}}})
+  > (define (important . text) @`b{@u{@big{@,@text}}})
   > (important @`p{This is an important announcement!
                    Read it!})
-  (b (u (big (p "This is an important announcement!" eol "Read it!"))))
+  (b (u (big (p "This is an important announcement!" "\n" "Read it!"))))
