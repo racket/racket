@@ -29,6 +29,14 @@
     (map (lambda (b) (cons (bytes-ref b 0) (bytes-ref b 1)))
          '(#"()" #"[]" #"{}" #"<>")))
 
+  (define make-spaces
+    (let ([t (make-hash-table)])
+      (lambda (n)
+        (hash-table-get t n
+          (lambda ()
+            (let ([s (make-string n #\space)])
+              (hash-table-put! t n s) s))))))
+
   (define (dispatcher char inp source-name line-num col-num position)
     (define (next-syntax readtable . plain?)
       (let ([read (if (and (pair? plain?) (car plain?))
@@ -151,8 +159,7 @@
                       (if (and (< curline line) (< mincol (syntax-column stx)))
                         (list* stx
                                (datum->syntax-object stx
-                                 (make-string
-                                  (- (syntax-column stx) mincol) #\space)
+                                 (make-spaces (- (syntax-column stx) mincol))
                                  stx)
                                r)
                         (cons stx r)))))))))
