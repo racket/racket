@@ -1,0 +1,55 @@
+
+Installation and Search Path Configuration
+------------------------------------------
+
+The _config.ss_ library of the "config" collection specifies the
+location of directories (such as the main documentation directory) and
+also directory search paths (such as a list of directories to search
+for documentation).
+
+The library module must export the following values:
+
+  doc-dir - a `delay'ed path/string/bytes for the main documentation
+   directory; it defaults to a "doc" sibling directory of the main
+   collection directory.
+
+  lib-dir - a `delay'ed path/string/bytes for the main directory
+   containing C libraries and build information; it defaults to a
+   "lib" sibling directory of the main collection directory.
+
+  include-dir - a `delay'ed path/string/bytes for the main directory
+   containing C header files; it defaults to an "include" sibling
+   directory of the main collection directory.
+
+  bin-dir - a `delay'ed path/string/bytes for the main directory
+   containing executables; it defaults to a "bin" sibling directory of
+   the main collection directory.
+
+  doc-search-dirs - a `delay'ed list of paths/strings/bytes/#f
+   representing the search path for documentation; each #f in the
+   list, if any, is replaced with the default search path, which is
+   the user- and version-specific "doc" directory followed by the main
+   documentation directory.
+
+  lib-search-dirs - like `doc-search-dirs', but for directories
+   containing C libraries and other build information
+
+  include-search-dirs - like `doc-search-dirs', but for directories
+   containing C header files
+
+In all cases, the value of an exported name can be a `delay'ed #f
+(instead of a path/string/bytes or list) to indicate the default.
+
+
+The _configtab.ss_ library of the "setup" collection defines a
+language module that can be used to implement "config.ss" files. When
+_configtab.ss_ is used as a language module, the module body must
+consist of a sequence of
+
+   (define id val)
+
+declarations, where each `id' is one of the names that the "config.ss"
+module must export, and `val' is an expression for the value (which
+will be automatically wrapped with `delay'). If a required export has
+no corresponding `define', a definition with #f is inserted
+automatically.
