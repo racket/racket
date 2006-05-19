@@ -214,7 +214,7 @@ mark:
 	$(MAKE) $(srcdir)/src/mzmark.c
 
 headers:
-	./mzscheme -qr $(srcdir)/mkincludes.ss "$(includepltdir)" . "$(srcdir)"
+	./mzscheme -qr $(srcdir)/mkincludes.ss "$(includepltdir)" "$(srcdir)" .
 	$(MAKE) $(srcdir)/../../collects/mzscheme/lib/mzdyn.c
 
 # mzdyn.c, used for MacOS "library"

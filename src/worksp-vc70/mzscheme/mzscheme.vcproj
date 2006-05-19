@@ -50,7 +50,7 @@ if exist &quot;$(TargetPath)&quot; goto :MzOK
 echo Error: did not find $(TargetPath)
 exit 1
 :MzOK
-&quot;$(TargetPath)&quot; -qr ..\..\mzscheme\mkincludes.ss &quot;$(TargetDir)/&quot; ..
+&quot;$(TargetPath)&quot; -qr ..\..\mzscheme\mkincludes.ss &quot;$(TargetDir)/&quot; ..\..\mzscheme\src ..
 if errorlevel 1 exit 1
 cd ..\..\mzscheme\dynsrc
 mkmzdynd.bat
@@ -114,7 +114,7 @@ if exist &quot;$(TargetPath)&quot; goto :MzOK
 echo Error: did not find $(TargetPath)
 exit 1
 :MzOK
-&quot;$(TargetPath)&quot; -qr ..\..\mzscheme\mkincludes.ss &quot;$(TargetDir)/&quot; ..
+&quot;$(TargetPath)&quot; -qr ..\..\mzscheme\mkincludes.ss &quot;$(TargetDir)/&quot; ..\..\mzscheme\src ..
 if errorlevel 1 exit 1
 cd ..\..\mzscheme\dynsrc
 mkmzdyn.bat

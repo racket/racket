@@ -1,21 +1,15 @@
 ;; This is used to create the include directory.
 
-;; Should be called with two to three command-line arguments:
-;; 1. The directory where "include" should be created (plthome),
-;; 2. The location of mzconfig,
-;; 3. The location of the src/mzscheme directory, (defaults to src/mzscheme in
-;;    the first argument).
+;; Should be called with three command-line arguments:
+;; 1. The include directory that should be created,
+;; 2. The location of the src/mzscheme directory,
+;; 3. The location of mzconfig.
 
-(define-values (incdir mzconfdir mzsrcdir)
+(define-values (incdir mzsrcdir mzconfdir)
   (let ([args (vector->list argv)])
-    (define (dir path)
-      (parameterize ([current-directory path])
-        (current-directory ".") (current-directory)))
-    (values (dir (car args))
-            (dir (cadr args))
-            (if (null? (cddr args))
-              (build-path (dir (car args)) "src" "mzscheme")
-              (dir (caddr args))))))
+    (define (dir path) (normal-case-path (simplify-path (expand-path path))))
+    (unless (= 3 (length args)) (error 'mkincludes "bad arguments"))
+    (apply values (map dir args))))
 
 (printf "Making ~a\n" incdir)
 
