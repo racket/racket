@@ -37,7 +37,7 @@ install:
 	$(MAKE) setup-plt
 
 install-normal:
-	mzscheme/mzscheme -mvqu "$(srcdir)/mkdirs.ss" $(ALLDIRINFO)
+	mkdir -p $(ALLDIRINFO)
 	if [ ! -d $(prefix) ] ; then mkdir $(prefix) ; fi
 	$(MAKE) mzinstall
 	$(MAKE) mredinstall-stub
