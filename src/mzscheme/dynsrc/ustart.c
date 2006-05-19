@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
+#include <errno.h>
 
 char *config = "[Replace me with offset info                                       ]";
 
@@ -238,6 +239,28 @@ int main(int argc, char **argv)
   }
   
   /* me is now an absolute path to the binary */
+
+  /* resolve soft links */
+  while (1) {
+    int len, bufsize = 127;
+    char *buf;
+    buf = (char *)malloc(bufsize + 1);
+    len = readlink(me, buf, bufsize);
+    if (len < 0) {
+      if (errno == ENAMETOOLONG) {
+	/* Increase buffer size and try again: */
+	bufsize *= 2;
+	buf = (char *)malloc(bufsize + 1);
+      } else
+	break;
+    } else {
+      /* Resolve buf relative to me: */
+      buf[len] = 0;
+      buf = absolutize(buf, me);
+      me = buf;
+      buf = (char *)malloc(bufsize + 1);
+    }
+  }
 
   start = as_int(config);
   cmd_end = as_int(config + 4);
