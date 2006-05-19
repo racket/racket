@@ -1,7 +1,7 @@
 /* Launcher program for Windows. */
 /* Builds a MzScheme starter if MZSTART is defined. */
 /* Builds a MrEd starter if MRSTART is defined. */
-/* If neither is defined, MZSTART is auto-defined */
+/* If neither is defined, MZSTART is auto-defined. */
 
 #include <windows.h>
 #include <stdlib.h>
