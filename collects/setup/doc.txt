@@ -277,10 +277,10 @@ _Finding installation directories_
 The _dirs.ss_ modules defines several procedures for locating
 installation directories:
 
-> (find-main-collects-dir)
+> (find-collects-dir)
 
   Returns a path to the installation's main "collects" directory, or
-  #f if none can be found. (A #f result is likely only in an
+  #f if none can be found. (A #f result is likely only in a
   stand-alone executable that is distributed without libraries.)
 
 > (find-user-collects-dir)
@@ -288,7 +288,7 @@ installation directories:
   Returns a path to the user-specific "collects" directory; the
   directory indicated by the returned path may or may not exist.
 
-> (get-collects-search-dir)
+> (get-collects-search-dirs)
 
   Returns the same result as `(current-library-collection-paths)'.
 
@@ -303,7 +303,7 @@ installation directories:
   Returns a path to a user-specific "doc" directory; the directory
   indicated by the returned path may or may not exist.
 
-> (get-doc-search-dir)
+> (get-doc-search-dirs)
 
   Returns a list of paths to search for documentation, not including
   documentation stored in individual collections. Unless it is
@@ -329,7 +329,7 @@ installation directories:
   Returns a path to a user-specific "lib" directory; the directory
   indicated by the returned path may or may not exist.
 
-> (get-lib-search-dir)
+> (get-lib-search-dirs)
 
   Returns a list of paths to search for libraries. Unless it is
   configured otherwise, the result includes any non-#f result of
@@ -347,7 +347,7 @@ installation directories:
   Returns a path to a user-specific "include" directory; the directory
   indicated by the returned path may or may not exist.
 
-> (get-include-search-dir)
+> (get-include-search-dirs)
 
   Returns a list of paths to search for .h files. Unless it is
   configured otherwise, the result includes any non-#f result of
