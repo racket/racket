@@ -32,12 +32,6 @@
         (render)
         (with-output-to-file output render 'truncate))))
 
-  (define (no-suffix file)
-    (cond [(regexp-match #rx"^(.*)[.](?:[^./]*)$"
-                         (if (path? file) (path->string file) file))
-           => cadr]
-          [else file]))
-
   (provide main)
   (define (main args)
     (define *output-name #f)
@@ -60,8 +54,8 @@
                                 (regexp-match #rx"[.]([^.]+)$" *output-name))
                            => (lambda (m) (string->symbol (cadr m)))]
                           [else default-format])]
-               [output (or *output-name
-                           (format "~a.~a" (no-suffix input-file) fmt))])
+               [output (or *output-name (path-replace-suffix
+                                         input-file (symbol->string fmt)))])
           (render-file input-file output fmt))]))
 
   (main (cons (symbol->string exe-name)
