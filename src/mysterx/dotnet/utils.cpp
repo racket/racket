@@ -38,11 +38,9 @@ int show_trace (char * str, va_list marker)
     CQuickBytes buffer;
     int count = -1;
     int i = 1;
-    HRESULT hr;
 
     while (count < 0) {
-        if (FAILED (hr = buffer.ReSize (STRING_BUFFER_LEN * i)))
-            die ("Resize failed.", hr);
+        buffer.ReSizeThrows (STRING_BUFFER_LEN * i);
         count = _vsnprintf ((char *) buffer.Ptr(), STRING_BUFFER_LEN * i, str, marker);
         i *= 2;
         }

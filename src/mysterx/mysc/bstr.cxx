@@ -7,6 +7,8 @@
 /* This indirection lets us delayload libmzsch.dll: */
 #define scheme_false (scheme_make_false())
 
+typedef unsigned short *pushort;
+
 // fwd ref
 BSTR schemeToBSTR (Scheme_Object * obj);
 
@@ -14,7 +16,7 @@ static
 LPWSTR schemeUCS4ToUTF16 (const mzchar * buffer, int nchars, long * result_length)
 {
   LPWSTR s;
-  s = scheme_ucs4_to_utf16 (buffer, 0, nchars, NULL, 0, result_length, 1);
+  s = (LPWSTR) scheme_ucs4_to_utf16 (buffer, 0, nchars, NULL, 0, result_length, 1);
   s[*result_length] = 0;
   return s;
 }
@@ -122,7 +124,7 @@ Scheme_Object * multiByteToSchemeCharString (const char * mbstr)
       scheme_signal_error("Error translating string parameter to Unicode");
 
   long nchars;
-  mzchar * ucs4 = scheme_utf16_to_ucs4 (wide, 0, len, NULL, 0, &nchars, 0);
+  mzchar * ucs4 = scheme_utf16_to_ucs4 ((pushort)wide, 0, len, NULL, 0, &nchars, 0);
   return scheme_make_sized_char_string (ucs4, nchars, 0);
 }
 
@@ -154,7 +156,7 @@ Scheme_Object * BSTRToSchemeString (BSTR bstr)
 {
   UINT length = SysStringLen (bstr);
   long nchars;
-  mzchar * string = scheme_utf16_to_ucs4 (bstr, 0, length,
+  mzchar * string = scheme_utf16_to_ucs4 ((pushort)bstr, 0, length,
 					  NULL, 0,
 					  &nchars, 0);
   return scheme_make_sized_char_string (string, nchars, 0);
@@ -164,7 +166,7 @@ Scheme_Object * BSTRToSchemeSymbol (BSTR bstr)
 {
   UINT length = SysStringLen (bstr);
   long nchars;
-  mzchar * string =  scheme_utf16_to_ucs4 (bstr, 0, length,
+  mzchar * string =  scheme_utf16_to_ucs4 ((pushort)bstr, 0, length,
 					   NULL, 0,
 					   &nchars, 0);
   return scheme_intern_exact_char_symbol (string, nchars);
@@ -187,7 +189,7 @@ void updateSchemeByteStringFromBSTR (Scheme_Object * obj, BSTR bstr)
 {
   UINT len = SysStringLen (bstr);
   long nchars;
-  mzchar * string = scheme_utf16_to_ucs4 (bstr, 0, len,
+  mzchar * string = scheme_utf16_to_ucs4 ((pushort)bstr, 0, len,
 					  NULL, 0,
 					  &nchars, 0);
   if (nchars > SCHEME_BYTE_STRLEN_VAL(obj))
@@ -209,7 +211,7 @@ void updateSchemeCharStringFromBSTR (Scheme_Object * obj, BSTR bstr)
   if (len > (unsigned int)SCHEME_CHAR_STRLEN_VAL(obj))
       scheme_signal_error("String updated with longer string");
 
-  scheme_utf16_to_ucs4 (bstr, 0, len,
+  scheme_utf16_to_ucs4 ((pushort)bstr, 0, len,
 			SCHEME_CHAR_STR_VAL(obj), SCHEME_CHAR_STRLEN_VAL(obj),
 			&ulen, 0);
 

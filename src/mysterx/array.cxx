@@ -93,7 +93,7 @@ Scheme_Object *safeArrayElementToSchemeObject(SAFEARRAY *theArray,
   case VT_BSTR :
     BSTR bArg;
     SafeArrayGetElement(theArray,allIndices,&bArg);
-    return unmarshalBSTR((unsigned short *)bArg);
+    return unmarshalBSTR(bArg);
 
   case VT_ERROR :
     SCODE scodeArg;
