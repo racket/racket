@@ -60,13 +60,13 @@
                                           version-bytes
                                           (subbytes dfile (cdadr m)))])
                    (when verbose?
-                     (printf "Renaming: ~a/~a -> ~a\n"
-                             (current-directory) file new))
+                     (printf "Renaming: ~a -> ~a\n"
+                             (build-path (current-directory) file) new))
                    (rename-file-or-directory (path) (bytes->path new))
                    (set! file new)))]
               [(regexp-match-positions xxxs dfile)
-               (fprintf (current-error-port) "Warning: ~a/~a was not renamed!\n"
-                        (current-directory) file)]))
+               (fprintf (current-error-port) "Warning: ~a was not renamed!\n"
+                        (build-path (current-directory) file))]))
       (let-values ([(i o)    (open-input-output-file (path) 'update)]
                    [(print?) verbose?])
         (for-each (lambda (subst)
@@ -86,8 +86,8 @@
                   substitutions)
         (file-position i 0)
         (when (regexp-match-positions xxxs i)
-          (fprintf (current-error-port) "Warning: ~a/~a still has \"~a\"!\n"
-                   (current-directory) file xxxs))
+          (fprintf (current-error-port) "Warning: ~a still has \"~a\"!\n"
+                   (build-path (current-directory) file) xxxs))
         (close-input-port i)
         (close-output-port o))))
 
