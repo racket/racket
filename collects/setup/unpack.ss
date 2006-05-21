@@ -4,6 +4,7 @@
   (require (lib "etc.ss")
 	   (lib "inflate.ss")
 	   (lib "file.ss")
+           (lib "list.ss")
 	   (lib "unit.ss")
 	   (lib "base64.ss" "net")
 	   (lib "getinfo.ss" "setup")
@@ -38,22 +39,21 @@
   (define (shuffle-path parent-dir get-dir shuffle? v)
     (if shuffle?
       ;; Re-arrange for "collects', etc.
-      (if (null? v)
-        (values #f 'same)
-        (let ([dir (cond [(string=? (car v) "collects")
-                          (get-dir find-collects-dir find-user-collects-dir)]
-                         [(string=? (car v) "doc")
-                          (get-dir find-doc-dir find-user-doc-dir)]
-                         [(string=? (car v) "lib")
-                          (get-dir find-lib-dir find-user-lib-dir)]
-                         [(string=? (car v) "include")
-                          (get-dir find-include-dir find-user-include-dir)]
-                         [else #f])])
-          (if dir
-            (if (null? (cdr v))
-              (values dir 'same)
-              (values dir (apply build-path (cdr v))))
-            (values parent-dir (apply build-path v)))))
+      (let ([v (remq* '(same) v)])
+        (if (null? v)
+          (values #f 'same)
+          (let ([dir
+                 (case (string->symbol (car v))
+                   [(collects) (get-dir find-collects-dir find-user-collects-dir)]
+                   [(doc)     (get-dir find-doc-dir find-user-doc-dir)]
+                   [(lib)     (get-dir find-lib-dir find-user-lib-dir)]
+                   [(include) (get-dir find-include-dir find-user-include-dir)]
+                   [else #f])])
+            (if dir
+              (if (null? (cdr v))
+                (values dir 'same)
+                (values dir (apply build-path (cdr v))))
+              (values parent-dir (apply build-path v))))))
       (values parent-dir (if (null? v) 'same (apply build-path v)))))
 
   (define (unmztar p filter parent-dir get-dir shuffle? print-status)
