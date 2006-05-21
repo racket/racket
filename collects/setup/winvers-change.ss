@@ -75,8 +75,8 @@
                       (cond [(regexp-match-positions subst i) =>
                              (lambda (m)
                                (when print?
-                                 (printf "Changing: ~a/~a\n"
-                                         (current-directory) file)
+                                 (printf "Changing: ~a\n"
+                                         (build-path (current-directory) file))
                                  (set! print? #f))
                                (file-position o (+ pos (caadr m)))
                                (display version-bytes o)
