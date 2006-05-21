@@ -874,7 +874,7 @@
         (define asm-commands
           ;; When outputting, add newline before these syms
           ;; (for __asm blocks in Windows)
-          '(mov shl shld shr shrd sar))
+          '(mov shl shld shr shrd sar lock setc))
         
         (define (get-constructor v)
           (cond
@@ -934,7 +934,7 @@
         
         ;; Accum top-level typedefs for pointers and non-pointers as a list-of-sym:
         (define pointer-types '())
-        (define non-pointer-types '(int char long unsigned ulong uint void float double uchar))
+        (define non-pointer-types '(int char long unsigned ulong uint void float double uchar wchar_t))
         ;; Accum top-level struct decls as list of (cons sym (list (cons symbol vtype) ...))
         (define struct-defs '())
         
