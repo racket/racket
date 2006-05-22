@@ -7,8 +7,6 @@ This directory contains
  - mzconfig.h which is a manual version of information that is
     gathered automatically when using the "configure" script.
 
-For files that work with MSVC 7.0, see ..\worksp-vc70\.
-
 Visual Studio Express is available for free from Microsoft, and it is
 the recommended compiler for building PLT Scheme.
 
