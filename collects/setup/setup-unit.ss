@@ -773,12 +773,9 @@
                                                     (path->string p))
                                       (make-launcher
                                        (or mzlf
-                                           (if (and (cc-collection cc)
-                                                    (= 1 (length (cc-collection cc))))
-                                               ;; Common case (simpler parsing for Windows to
-                                               ;; avoid cygwin bug):
-                                               (list "-qmvL-" mzll (path->string (car (cc-collection cc))))
-                                               (list "-qmvt-" (format "~a" (path->string (build-path (cc-path cc) mzll))))))
+                                           (if (cc-collection cc)
+                                             (list "-qmvL-" mzll (path->string (apply build-path (cc-collection cc))))
+                                             (list "-qmvt-" (format "~a" (path->string (build-path (cc-path cc) mzll))))))
                                        p
                                        aux))))
                                 mzlns

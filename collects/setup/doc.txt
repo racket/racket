@@ -70,12 +70,12 @@ Additional "info.ss" fields trigger additional setup actions:
    must be provided by `mzscheme-launcher-libraries' or
    `mzscheme-launcher-flags' (see below). For each name, a launching
    executable is set up using the launcher collection's
-   `make-mzscheme-launcher'. The arguments are "-mve-" and
+   `make-mzscheme-launcher'. The arguments are "-qmvL-" and
 
-      (format "~s" `(require (lib <file> <colls> ...)))
+      "<file>" "<colls>/..."
 
    where lib is the file named by `mzscheme-launcher-libraries'
-   and <colls> ... are the collections (and subcollections)
+   and "<colls>/..." are the collections (and subcollections)
    of the info.ss file. In addition,
 
     (build-aux-from-path
