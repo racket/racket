@@ -4280,17 +4280,19 @@ static Scheme_Object *default_load(int argc, Scheme_Object *argv[])
   }
 
   config = scheme_current_config();
-  config = scheme_extend_config(config, MZCONFIG_CASE_SENS, (scheme_case_sensitive ? scheme_true : scheme_false)); // for legacy code
-  config = scheme_extend_config(config, MZCONFIG_SQUARE_BRACKETS_ARE_PARENS, scheme_true);
-  config = scheme_extend_config(config, MZCONFIG_CURLY_BRACES_ARE_PARENS, scheme_true);
-  config = scheme_extend_config(config, MZCONFIG_CAN_READ_GRAPH, scheme_true);
-  config = scheme_extend_config(config, MZCONFIG_CAN_READ_COMPILED, scheme_true);
-  config = scheme_extend_config(config, MZCONFIG_CAN_READ_BOX, scheme_true);
-  config = scheme_extend_config(config, MZCONFIG_CAN_READ_PIPE_QUOTE, scheme_true);
-  config = scheme_extend_config(config, MZCONFIG_CAN_READ_DOT, scheme_true);
-  config = scheme_extend_config(config, MZCONFIG_CAN_READ_QUASI, scheme_true);
-  config = scheme_extend_config(config, MZCONFIG_CAN_READ_READER, scheme_true);
-  config = scheme_extend_config(config, MZCONFIG_READ_DECIMAL_INEXACT, scheme_true);
+  if (SCHEME_TRUEP(expected_module)) {
+    config = scheme_extend_config(config, MZCONFIG_CASE_SENS, (scheme_case_sensitive ? scheme_true : scheme_false)); // for legacy code
+    config = scheme_extend_config(config, MZCONFIG_SQUARE_BRACKETS_ARE_PARENS, scheme_true);
+    config = scheme_extend_config(config, MZCONFIG_CURLY_BRACES_ARE_PARENS, scheme_true);
+    config = scheme_extend_config(config, MZCONFIG_CAN_READ_GRAPH, scheme_true);
+    config = scheme_extend_config(config, MZCONFIG_CAN_READ_COMPILED, scheme_true);
+    config = scheme_extend_config(config, MZCONFIG_CAN_READ_BOX, scheme_true);
+    config = scheme_extend_config(config, MZCONFIG_CAN_READ_PIPE_QUOTE, scheme_true);
+    config = scheme_extend_config(config, MZCONFIG_CAN_READ_DOT, scheme_true);
+    config = scheme_extend_config(config, MZCONFIG_CAN_READ_QUASI, scheme_true);
+    config = scheme_extend_config(config, MZCONFIG_CAN_READ_READER, scheme_true);
+    config = scheme_extend_config(config, MZCONFIG_READ_DECIMAL_INEXACT, scheme_true);
+  }
 
   lhd = MALLOC_ONE_RT(LoadHandlerData);
 #ifdef MZTAG_REQUIRED
@@ -4303,13 +4305,17 @@ static Scheme_Object *default_load(int argc, Scheme_Object *argv[])
   lhd->stxsrc = name;
   lhd->expected_module = expected_module;
 
-  scheme_push_continuation_frame(&cframe);
-  scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
+  if (SCHEME_TRUEP(expected_module)) {
+    scheme_push_continuation_frame(&cframe);
+    scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
+  }
 
   v = scheme_dynamic_wind(NULL, do_load_handler, post_load_handler,
 			  NULL, (void *)lhd);
 
-  scheme_pop_continuation_frame(&cframe);
+  if (SCHEME_TRUEP(expected_module)) {
+    scheme_pop_continuation_frame(&cframe);
+  }
 
   return v;
 }
