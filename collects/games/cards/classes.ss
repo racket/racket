@@ -220,7 +220,7 @@
 	   (inner (void) after-interactive-move e)
 	   (for-each-selected (lambda (snip) (send snip back-to-original-location this)))
 	   (let ([cards (get-reverse-selected-list)])
-	     ; (no-selected)
+	     (no-selected) ; in case overlap changed
 	     (for-each
 	      (lambda (region)
 		(when (region-hilite? region)
@@ -505,6 +505,7 @@
 	[stack-cards
 	 (lambda (cards)
 	   (unless (null? cards)
+	     (send pb no-selected) ; in case overlap changes
 	     (begin-card-sequence)
 	     (let loop ([l (cdr cards)][behind (car cards)])
 	       (unless (null? l)
@@ -536,11 +537,13 @@
 	 (lambda (duration)
 	   (let ([s (make-semaphore)]
 		 [a (alarm-evt (+ (current-inexact-milliseconds)
-				  (* duration 1000)))])
+				  (* duration 1000)))]
+		 [enabled? (send c is-enabled?)])
 	     ;; Can't move the cards during this time:
 	     (send c enable #f)
 	     (mred:yield a)
-	     (send c enable #t)))]
+	     (when enabled?
+	       (send c enable #t))))]
 	[animated
 	 (case-lambda 
 	  [() animate?]
@@ -643,7 +646,9 @@
 			   (end-card-sequence)
 			   (pause (max 0 (- (/ (* time-scale ANIMATION-TIME) ANIMATION-STEPS)
 					    (/ (- (current-milliseconds) start) 1000))))
-			   (loop (add1 n))))))))))]
+			   (loop (add1 n))))))))
+	     ;; In case overlap changed:
+	     (send pb no-selected)))]
 	[position-cards-in-region
 	 (lambda (cards r set)
 	   (let-values ([(x y w h) (send pb get-region-box r)]
