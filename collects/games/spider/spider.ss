@@ -405,7 +405,7 @@
 			      #f
 			      (lambda ()
 				(when (and (null? (vector-ref stacks i))
-					   selected)
+					   (pair? selected))
 				  (move-to-stack selected i)))))
 	  (loop (add1 i))))
 
