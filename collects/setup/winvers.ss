@@ -11,8 +11,12 @@
       (unless (directory-exists? vers) (make-directory vers))
       (for-each (lambda (p)
                   (let ([dest (build-path vers p)])
-                    (when (file-exists? dest) (delete-file dest))
-                    (copy-directory/files (build-path (find-console-bin-dir) p) dest)))
+                    ((cond [(file-exists? dest) delete-file]
+                           [(directory-exists? dest) delete-directory/files]
+                           [else void])
+                     dest)
+                    (copy-directory/files (build-path (find-console-bin-dir) p)
+                                          dest)))
                 '("mzscheme.exe" "lib"))
       (build-path vers "mzscheme.exe")))
 
@@ -48,4 +52,3 @@
        (printf "done!~n")]
       [else
        (error 'winvers "unknown command line: ~e" argv)])))
-
