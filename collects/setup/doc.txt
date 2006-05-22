@@ -367,6 +367,12 @@ installation directories:
   directory is available.
 
 
+> absolute-installation?
+
+  A binary boolean flag that is true if this installation is using
+  absolute path names.
+
+
 
 _Getting info.ss fields_
 ========================

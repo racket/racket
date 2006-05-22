@@ -2,10 +2,10 @@
 ;; Defines a language to be used by the "config.ss" file
 
 (module configtab mzscheme
-  
+
   ;; These are the name that need to be provided
   ;;  by the "config.ss" library:
-  (define-for-syntax exports
+  (define-for-syntax path-exports
     '(doc-dir
       doc-search-dirs
       lib-dir
@@ -13,27 +13,27 @@
       include-dir
       include-search-dirs
       bin-dir))
+  (define-for-syntax flag-exports
+    '(absolute-installation?))
 
   ;; ----------------------------------------
   ;; For configure into into absolute paths
 
   (define use-default (delay #f))
-  
+
   (define (to-path l)
-    (cond
-     [(string? l) (complete-path (string->path l))]
-     [(bytes? l) (complete-path (bytes->path l))]
-     [(list? l) (map to-path l)]
-     [else l]))
+    (cond [(string? l) (complete-path (string->path l))]
+          [(bytes? l) (complete-path (bytes->path l))]
+          [(list? l) (map to-path l)]
+          [else l]))
 
   (define (complete-path p)
-    (cond
-     [(complete-path? p) p]
-     [(absolute-path? p) (exe-relative p)]
-     [else
-      (or (parameterize ([current-directory (find-system-path 'orig-dir)])
-	    (find-executable-path (find-system-path 'exec-file) p))
-	  (exe-relative p))]))
+    (cond [(complete-path? p) p]
+          [(absolute-path? p) (exe-relative p)]
+          [else
+           (or (parameterize ([current-directory (find-system-path 'orig-dir)])
+                 (find-executable-path (find-system-path 'exec-file) p))
+               (exe-relative p))]))
 
   (define (exe-relative p)
     (let ([exec (path->complete-path 
@@ -54,38 +54,37 @@
 	[(_ (define name val) ...)
 	 (let ([names (syntax->list #'(name ...))])
 	   (unless (andmap identifier? names)
-	     (raise-syntax-error
-	      #f
-	      "bad syntax"
-	      stx))
+	     (raise-syntax-error #f "bad syntax" stx))
 	   (for-each (lambda (name)
-		       (unless (memq (syntax-e name) exports)
-			 (raise-syntax-error
-			  #f
-			  "not a config name"
-			  name)))
+		       (unless (or (memq (syntax-e name) path-exports)
+                                   (memq (syntax-e name) flag-exports))
+			 (raise-syntax-error #f "not a config name" name)))
 		     names)
 	   (let ([syms (map syntax-e names)])
 	     (let loop ([names names][syms syms])
-	       (cond
-		[(null? names) 'done]
-		[(memq (car syms) (cdr syms))
-		 (raise-syntax-error
-		  #f
-		  "duplicate definition"
-		  (car names))]
-		[else
-		 (loop (cdr names) (cdr syms))]))
-	     #`(#%plain-module-begin
-		(provide #,@exports)
-		(define name (delay (to-path val))) ...
-		#,@(apply
-		    append
-		    (map (lambda (id)
-			   (if (memq id syms)
-			       ()
-			       (list #`(define #,id use-default))))
-			 exports)))))])))
+	       (cond [(null? names) 'done]
+                     [(memq (car syms) (cdr syms))
+                      (raise-syntax-error #f "duplicate definition" (car names))]
+                     [else (loop (cdr names) (cdr syms))]))
+	     (with-syntax ([(expr ...)
+                            (map (lambda (name val)
+                                   (if (memq name path-exports)
+                                     #`(delay #,val) val))
+                                 (syntax->list #'(name ...))
+                                 (syntax->list #'(val  ...)))])
+               #`(#%plain-module-begin
+                  (provide #,@path-exports #,@flag-exports)
+                  (define name expr) ...
+                  #,@(apply append (map (lambda (id)
+                                          (if (memq id syms)
+                                            '()
+                                            (list #`(define #,id use-default))))
+                                        path-exports))
+                  #,@(apply append (map (lambda (id)
+                                          (if (memq id syms)
+                                            '()
+                                            (list #`(define #,id #f))))
+                                        flag-exports))))))])))
 
   (provide (rename config-module-begin #%module-begin)
 	   define

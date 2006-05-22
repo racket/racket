@@ -41,6 +41,9 @@ The "config.ss" module must export the following values:
   include-search-dirs - like `doc-search-dirs', but for directories
    containing C header files
 
+  absolute-installation? - a (simple, non-delayed) boolean that is
+   true if this installation is using absolute path names
+
 In all cases, the value of an exported name can be a `delay'ed #f
 (instead of a path/string/bytes or list) to indicate the default.
 
@@ -58,6 +61,6 @@ consist of a sequence of
 
 declarations, where each `id' is one of the names that the "config.ss"
 module must export, and `val' is an expression for the value (which
-will be automatically wrapped with `delay'). If a required export has
-no corresponding `define', a definition with #f is inserted
+will be automatically wrapped with `delay' when needed). If a required
+export has no corresponding `define', a definition with #f is inserted
 automatically.

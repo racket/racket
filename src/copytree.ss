@@ -1,44 +1,51 @@
-
+;; This file is used to copy the PLT tree as part of `make install', and as
+;; part of Unix installers.  It should be invoked with the source plt directory
+;; (holding a usual plt tree), and a list of path names that should be copied.
+;; Not providing a good cmdline interface since it is should be as independent
+;; as possible.
 (module copytree mzscheme
-  
-  (define-values (srcdir bindir collectsdir docdir libdir includepltdir libpltdir mandir origtree)
-    (apply
-     values
-     (vector->list (current-command-line-arguments))))
 
-  (define pltdir (build-path srcdir 'up))
+  (define args (vector->list (current-command-line-arguments)))
+
+  (define (path-arg)
+    (when (null? args) (error "insufficient arguments"))
+    (begin0 (car args) (set! args (cdr args))))
+
+  (define pltdir        (path-arg))
+  (define bindir        (path-arg))
+  (define collectsdir   (path-arg))
+  (define docdir        (path-arg))
+  (define libdir        (path-arg))
+  (define includepltdir (path-arg))
+  (define libpltdir     (path-arg))
+  (define mandir        (path-arg))
+  (define origtree      (path-arg))
 
   (define (skip-name? n)
-    (let ([s (path->bytes n)])
-      (or (regexp-match #rx#"^[.]svn$" s)
-	  (regexp-match #rx#"^compiled$" s))))
+    (regexp-match #rx#"^(?:[.]svn|CVS|compiled)$" (path->bytes n)))
 
   (define (copytree src dest)
-    (for-each (lambda (n)
-		(unless (skip-name? n)
-		  (let ([p (build-path src n)])
-		    (cond
-		     [(file-exists? p) 
-		      (let ([q (build-path dest n)])
-			(when (file-exists? q)
-			  (delete-file q))
-			(copy-file p q)
-			(let ([t (file-or-directory-modify-seconds p)])
-			  (file-or-directory-modify-seconds q t)))]
-		     [(directory-exists? p)
-		      (let ([q (build-path dest n)])
-			(unless (directory-exists? q)
-			  (make-directory q))
-			(copytree p q))]))))
-	      (directory-list src)))
+    (let ([src (simplify-path src #f)])
+      (printf "Copying ~a -> ~a\n" src dest)
+      (let loop ([src src] [dest dest])
+        (for-each (lambda (n)
+                    (unless (skip-name? n)
+                      (let ([from (build-path src  n)]
+                            [to   (build-path dest n)])
+                        (cond
+                         [(file-exists? from)
+                          (when (file-exists? to) (delete-file to))
+                          (copy-file from to)]
+                         [(directory-exists? from)
+                          (unless (directory-exists? to) (make-directory to))
+                          (copytree from to)])
+                        (let ([t (file-or-directory-modify-seconds from)])
+                          (file-or-directory-modify-seconds to t)))))
+                  (directory-list src)))))
 
-  (define (copytree* src dest)
-    (printf "Copying ~a\n   to ~a\n" src dest)
-    (copytree src dest))
-		
-  (copytree* (build-path pltdir "collects") collectsdir)
-  (copytree* (build-path pltdir "doc") docdir)
-  (copytree* (build-path pltdir "man") mandir)
+  (copytree (build-path pltdir "collects") collectsdir)
+  (copytree (build-path pltdir "doc") docdir)
+  (copytree (build-path pltdir "man") mandir)
 
   (unless (equal? origtree "yes")
     ;; Replace "config.ss"
@@ -48,7 +55,8 @@
 	(printf "  (define doc-dir ~s)\n" docdir)
 	(printf "  (define lib-dir ~s)\n" libpltdir)
 	(printf "  (define include-dir ~s)\n" includepltdir)
-	(printf "  (define bin-dir ~s))\n" bindir))
+	(printf "  (define bin-dir ~s)\n")
+        (printf "  (define absolute-installation? #t))\n" bindir))
       'truncate/replace))
 
   )

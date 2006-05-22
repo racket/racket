@@ -3,6 +3,8 @@
 	   (lib "winutf16.ss" "compiler" "private")
 	   (lib "mach-o.ss" "compiler" "private"))
 
+  (provide (rename config:absolute-installation? absolute-installation?))
+
   ;; ----------------------------------------
   ;;  "collects"
 

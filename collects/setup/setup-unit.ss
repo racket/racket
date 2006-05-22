@@ -761,7 +761,7 @@
                                         [aux (list* `(exe-name . ,mzln)
 						    '(framework-root . #f)
 						    '(dll-dir . #f)
-						    '(relative? . #t)
+						    `(relative? . ,(not absolute-installation?))
 						    (build-aux-from-path
 						     (build-path (cc-path cc)
 								 (path-replace-suffix (or mzll mzln) #""))))])
