@@ -16,6 +16,7 @@ To run a test use:
    framework-test <test.ss> ...
 
 where or <test.ss> is the name of one of the tests below.
+(Note: uncomment the launcher entries in info.ss for this.)
 Alternatively, pass no command-line arguments to run all of
 the tests. (Under windows, the app will be named "Framework
 Test"; see the mred-launcher-names documentation for how the
