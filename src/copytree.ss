@@ -55,8 +55,8 @@
 	(printf "  (define doc-dir ~s)\n" docdir)
 	(printf "  (define lib-dir ~s)\n" libpltdir)
 	(printf "  (define include-dir ~s)\n" includepltdir)
-	(printf "  (define bin-dir ~s)\n")
-        (printf "  (define absolute-installation? #t))\n" bindir))
+	(printf "  (define bin-dir ~s)\n" bindir)
+        (printf "  (define absolute-installation? #t))\n"))
       'truncate/replace))
 
   )
