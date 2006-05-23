@@ -68,7 +68,7 @@
                      [else (loop (cdr names) (cdr syms))]))
 	     (with-syntax ([(expr ...)
                             (map (lambda (name val)
-                                   (if (memq name path-exports)
+                                   (if (memq (syntax-e name) path-exports)
                                      #`(delay #,val) val))
                                  (syntax->list #'(name ...))
                                  (syntax->list #'(val  ...)))])
