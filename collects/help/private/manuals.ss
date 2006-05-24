@@ -69,42 +69,29 @@
   (define (manual-entry man ndx txt)
     (with-handlers ([exn:fail?
                      (lambda (x)
-                       `(font ((color "red"))
-                              ,txt
-                              " ["
-                              ,(exn-message x)
-                              "]"))])
+                       `(font ((color "red")) ,txt " [" ,(exn-message x) "]"))])
       `(A ((HREF ,(finddoc-page man ndx))) ,txt)))
-  
+
+  (define (basename path)
+    (let-values ([(dir name dir?) (split-path path)]) name))
+
   (define (find-doc-names)
-    (let* ([dirs (find-doc-directories)]
-           [installed
-            (map (lambda (dir)
-                   (let-values ([(base name dir?) (split-path dir)])
-                     name))
-                 dirs)]
-           [uninstalled
-            (filter (lambda (x) (not (member (car x) installed)))
-                    known-docs)])
-      (append
-       (map (lambda (short-name long-name) (cons short-name (get-doc-name long-name)))
-            installed 
-            dirs)
-       uninstalled)))
-  
+    (let* ([dirs        (find-doc-directories)]
+           [installed   (map basename dirs)]
+           [uninstalled (filter (lambda (x) (not (member (car x) installed)))
+                                known-docs)])
+      (append (map (lambda (short-name long-name)
+                     (cons short-name (get-doc-name long-name)))
+                   installed dirs)
+              uninstalled)))
+
   ;; find-doc-directories : -> (listof path)
   ;; constructs a sorted list of directories where documentation may reside.
   (define (find-doc-directories)
-    (let ([unsorted
-           (append (find-info.ss-doc-directories)
-                   (find-doc-directories-in-doc-collection))])
-      (sort unsorted
-            (λ (a b)
-              (let-values ([(_1 a-short _2) (split-path a)]
-                           [(_3 b-short _4) (split-path b)])
-                (< (standard-html-doc-position a-short)
-                   (standard-html-doc-position b-short)))))))
-  
+    (let ([unsorted (append (find-info.ss-doc-directories)
+                            (find-doc-directories-in-toplevel-docs))])
+      (sort unsorted compare-docs)))
+
   (define (find-info.ss-doc-directories)
     (let ([dirs (find-relevant-directories '(html-docs) 'all-available)])
       (let loop ([dirs dirs])
@@ -123,46 +110,31 @@
                          [else
                           (loop (cdr dirs))]))]
                     [else (loop (cdr dirs))]))]))))
-  
-  (define (find-doc-directories-in-doc-collection)
-    (let loop ([dirs (get-doc-search-dirs)]
-	       [acc null])
-      (cond
-       [(null? dirs) acc]
-       [else (let* ([doc-path (car dirs)])
-	       (if (directory-exists? doc-path)
-		   (let dloop ([doc-contents (directory-list doc-path)]
-			       [acc acc])
-		     (cond
-		      [(null? doc-contents) (loop (cdr dirs) acc)]
-		      [else 
-		       (let ([candidate (build-path doc-path (car doc-contents))])
-			 (if (directory-exists? candidate)
-			     (dloop (cdr doc-contents) (cons candidate acc))
-			     (dloop (cdr doc-contents) acc)))]))
-		   (loop (cdr dirs) acc)))])))
-  
-  (define re:title (regexp "<[tT][iI][tT][lL][eE]>(.*)</[tT][iI][tT][lL][eE]>"))
+
+  (define (find-doc-directories-in-toplevel-docs)
+    (apply append
+           (map (lambda (docs-path)
+                  (filter directory-exists?
+                          (map (lambda (doc-path)
+                                 (build-path docs-path doc-path))
+                               (if (directory-exists? docs-path)
+                                 (filter (lambda (x)
+                                           (not (member (path->string x)
+                                                        '(".svn" "CVS"))))
+                                         (directory-list docs-path))
+                                 '()))))
+                (get-doc-search-dirs))))
 
   (define (find-manuals)
-    (let* ([docs (let loop ([l (find-doc-directories)])
-                   (cond
-                     [(null? l) null]
-                     [(get-index-file (car l))
-                      (cons (car l) (loop (cdr l)))]
-                     [else (loop (cdr l))]))]
-           [docs (sort docs compare-docs)]
+    (let* ([docs (sort (filter get-index-file (find-doc-directories))
+                       compare-docs)]
            [names (map get-doc-name docs)]
            [names+paths (map cons names docs)])
       (let-values ([(collections-doc-files collection-names) (colldocs)])
         (apply
          string-append
          "<html>"
-         (xexpr->string 
-          `(HEAD
-            ,hd-css
-            ,@hd-links
-            (TITLE "PLT Manuals")))
+         (xexpr->string `(HEAD ,hd-css ,@hd-links (TITLE "PLT Manuals")))
          "<body>"
          
          (append 
@@ -180,7 +152,7 @@
               '())
 
           (build-known-manuals names+paths)
-          
+
           (list "<h3>Doc.txt</h3><ul>")
           (map
            (lambda (collection-doc-file name)
@@ -190,9 +162,7 @@
                       (path->string
                        (build-path (car collection-doc-file) 
                                    (cadr collection-doc-file))))
-                     name
-                     name
-                     name))
+                     name name name))
            collections-doc-files
            collection-names)
           (list "</UL>")
@@ -201,7 +171,7 @@
               [(null? uninstalled)
                (list "")]
               [else
-               (list*
+ (list*
                 "<H3>Uninstalled Manuals</H3>"
                 "<UL>"
                 (append
@@ -264,7 +234,7 @@
                              manuals)])
            (cons (build-known-section section in)
                  (loop (cdr sections) out)))])))
-  
+
   ;; build-known-section : sec (listof (cons string[title] string[path]))) -> string
   (define (build-known-section sec names+paths)
     (if (null? names+paths)
@@ -290,8 +260,7 @@
 
   ;; mk-link : string string -> string
   (define (mk-link doc-path name)
-    (let* ([manual-name (let-values ([(base manual-name dir?) (split-path doc-path)])
-                          manual-name)]
+    (let* ([manual-name (basename doc-path)]
            [index-file (get-index-file doc-path)])
       (format "<LI> <A HREF=\"~a\">~a</A>~a"
               (get-help-url (build-path doc-path index-file))
@@ -319,70 +288,47 @@
                               (build-path doc-path index-file)))))
                    "</FONT>")
                   ""))))
-  
+
   (define (to-string/escape-quotes exp)
-    (regexp-replace* #rx"\""
-                     (format "~s" exp)
-                     "|"))
-  
+    (regexp-replace* #rx"\"" (format "~s" exp) "|"))
+
   ;; get-doc-name : path -> string
   (define cached-doc-names (make-hash-table 'equal))
   (define (get-doc-name doc-dir)
-    (hash-table-get
-     cached-doc-names
-     doc-dir
-     (lambda ()
-       (let ([res (compute-doc-name doc-dir)])
-         (hash-table-put! cached-doc-names doc-dir res)
-         res))))
+    (hash-table-get cached-doc-names doc-dir
+      (lambda ()
+        (let ([res (compute-doc-name doc-dir)])
+          (hash-table-put! cached-doc-names doc-dir res)
+          res))))
 
   ;; compute-doc-name : path -> string[title of manual]
   ;; gets the title either from the known docs list, by parsing the
   ;; html, or if both those fail, by using the name of the directory
   ;; Special-cases the help collection. It's not a known doc directory
-  ;; per se, so it won't appear in known-docs, but it's name is always
+  ;; per se, so it won't appear in known-docs, but its name is always
   ;; the same.
   (define (compute-doc-name doc-dir)
-    (let-values ([(_1 doc-short-dir-name _2) (split-path doc-dir)])
-      (if (equal? (string->path "help") doc-short-dir-name)
-          "PLT Help Desk"
-          (or (get-known-doc-name doc-dir)
-              (let ([main-file (get-index-file doc-dir)])
-                (if main-file
-                    (with-input-from-file (build-path doc-dir main-file)
-                      (lambda ()
-                        (let loop ()
-                          (let ([r (read-line)])
-                            (cond
-                              [(eof-object? r) doc-short-dir-name]
-                              [(regexp-match re:title r) => cadr]
-                              [(regexp-match #rx"<[tT][iI][tT][lL][eE]>(.*)$" r)
-                               ;; Append lines until we find it 
-                               (let aloop ([r r])
-                                 (let ([a (read-line)])
-                                   (cond
-                                     [(eof-object? a) (loop)] ; give up
-                                     [else (let ([r (string-append r a)])
-                                             (cond
-                                               [(regexp-match re:title r) => cadr]
-                                               [else (aloop r)]))])))]
-                              [else (loop)])))))
-                    (path->string doc-short-dir-name)))))))
-  
+    (let ([doc-short-dir-name (basename doc-dir)])
+      (cond
+       [(equal? (string->path "help") doc-short-dir-name) "PLT Help Desk"]
+       [(get-known-doc-name doc-dir) => values]
+       [else (let* ([main-file (get-index-file doc-dir)]
+                    [m (and main-file
+                            (call-with-input-file (build-path doc-dir main-file)
+                              (lambda (inp) (regexp-match re:title inp))))])
+               (if m
+                 (bytes->string/utf-8 (cadr m))
+                 (path->string doc-short-dir-name)))])))
+  (define re:title
+    #rx"<[tT][iI][tT][lL][eE]>[ \t\r\n]*(.*?)[ \t\r\n]*</[tT][iI][tT][lL][eE]>")
+
   ;; is-known-doc? : string[path] -> boolean
   (define (is-known-doc? doc-path)
-    (let-values ([(base name dir?) (split-path doc-path)])
-      (if (assoc name known-docs)
-          #t
-          #f)))
-  
+    (and (assoc (basename doc-path) known-docs) #t))
+
   ;; get-known-doc-name : string[full-path] -> (union string #f)
   (define (get-known-doc-name doc-path)
-    (let-values ([(base name dir?) (split-path doc-path)])
-      (let ([ass (assoc name known-docs)])
-        (if ass
-            (cdr ass)
-            #f))))
+    (cond [(assoc (basename doc-path) known-docs) => cdr] [else #f]))
 
   ;; get-uninstalled : (listof path) -> (listof (cons path string[docs-name]))
   (define (get-uninstalled docs)
@@ -392,22 +338,16 @@
                                    (car known-doc)
                                    (cdr known-doc)))
                 known-docs)
-      (for-each (lambda (doc)
-                  (let-values ([(base name dir?) (split-path doc)])
-                    (hash-table-remove! ht name)))
-                docs)
+      (for-each (lambda (doc) (hash-table-remove! ht (basename doc))) docs)
       (sort (hash-table-map ht cons)
             (λ (a b) (compare-docs (car a) (car b))))))
-  
+
   (define (compare-docs a b)
-    (let-values ([(_1 a-short _2) (split-path a)]
-                 [(_3 b-short _4) (split-path b)])
-      (let ([ap (standard-html-doc-position a-short)]
-            [bp (standard-html-doc-position b-short)])
-        (cond
-          [(= ap bp) (string<? (path->string a) (path->string b))]
-          [else (< ap bp)]))))
-  
+    (let ([ap (standard-html-doc-position (basename a))]
+          [bp (standard-html-doc-position (basename b))])
+      (cond [(= ap bp) (string<? (path->string a) (path->string b))]
+            [else (< ap bp)])))
+
   ;; get-index-file : path -> (union #f path)
   ;; returns the name of the main file, if one can be found
   (define (get-index-file doc-dir)

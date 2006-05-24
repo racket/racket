@@ -6,9 +6,11 @@
            (lib "framework.ss" "framework")
            (lib "class.ss")
            (lib "etc.ss")
+           (lib "list.ss")
            (lib "url.ss" "net")
            (lib "uri-codec.ss" "net")
            (lib "htmltext.ss" "browser")
+           (lib "dirs.ss" "setup")
            "private/buginfo.ss"
            "private/manuals.ss")
 
@@ -269,7 +271,7 @@
     (define human-language
       (build/label 
        (string-constant bug-report-field-human-language)
-       (lambda (panel)            
+       (lambda (panel)
          (keymap:call/text-keymap-initializer
           (lambda ()
             (make-object text-field% #f panel void ""))))
@@ -284,7 +286,7 @@
        synthesized-panel))
 
     (define collections
-      (make-big-text 
+      (make-big-text
        (string-constant bug-report-field-collections)
        #t
        synthesized-panel))
@@ -297,7 +299,7 @@
                 (build/label
                  label
                  (lambda (panel)
-                   (let ([field 
+                   (let ([field
                           (keymap:call/text-keymap-initializer
                            (lambda ()
                              (make-object text-field% #f panel void "")))])
@@ -438,55 +440,75 @@
                          (string-constant malformed-email-address))
             (done-checking #f))
           (done-checking #t))))
-    
+
     (define (ok)
       (when (sanity-checking)
         (send-bug-report)))
-    
+
     (define (cancel)
       (cleanup-frame))
-    
+
     (define (cleanup-frame)
       (send bug-frame close))
+
+    (define (directories-contents dirs)
+      (map (lambda (d)
+             (cons (path->string d)
+                   (if (directory-exists? d)
+                     (map path->string (directory-list d))
+                     '(non-existent-path))))
+           dirs))
+
+    (define (split-by-directories dirs split-by)
+      (let ([res (append! (map list (map path->string split-by)) '((*)))]
+            [dirs (map path->string dirs)])
+        (for-each
+         (lambda (d)
+           (let* ([l (string-length d)]
+                  [x (assf
+                      (lambda (d2)
+                        (or (eq? d2 '*)
+                            (let ([l2 (string-length d2)])
+                              (and (< l2 l) (equal? d2 (substring d 0 l2))
+                                   (member (string-ref d l2) '(#\/ #\\))))))
+                           res)])
+             (append! x (list (if (string? (car x))
+                                (substring d (add1 (string-length (car x))))
+                                d)))))
+         dirs)
+        (filter (lambda (x) (pair? (cdr x))) res)))
 
     (send response-ec allow-tab-exit #t)
 
     (send severity set-selection 1)
-    (send version set-value   
-          (format "~a"
-                  (version:version)))
+    (send version set-value (format "~a" (version:version)))
 
-    (send environment set-value   
+    (send environment set-value
           (format "~a ~s (~a) (get-display-depth) = ~a"
                   (system-type)
                   (system-type #t)
                   (system-library-subpath)
                   (get-display-depth)))
-    
+
     (send (send collections get-editor)
-          insert       
-          (format "~s"
-                  (map (lambda (x)
-                         (list x 
-                               (if (directory-exists? x)
-                                   (directory-list x)
-                                   "non-existent path")))
-                       (current-library-collection-paths))))
-    
+          insert
+          (format "~s" (directories-contents (get-collects-search-dirs))))
+
     (send human-language set-value (format "~a" (this-language)))
-    
+
     (send (send collections get-editor) auto-wrap #t)
     (send (send docs-installed get-editor) auto-wrap #t)
-    (send synthesized-button-panel set-alignment 'right 'center)
-    
+    (send* synthesized-button-panel
+           (set-alignment 'right 'center) (stretchable-height #f))
+
     (align-labels)
-    (send button-panel set-alignment 'right 'center)
-    (send button-panel stretchable-height #f)
+    (send* button-panel (set-alignment 'right 'center) (stretchable-height #f))
     (switch-to-compose-view)
-    
+
     (send (send docs-installed get-editor) insert
-          (format "~s" (find-doc-directories)))
-    
+          (format "~s" (split-by-directories (find-doc-directories)
+                                             (get-doc-search-dirs))))
+
     (send bug-frame show #t))
   
   (define (ask-yes-or-no title msg parent)

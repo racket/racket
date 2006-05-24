@@ -8,13 +8,14 @@
                          (listof string?)))])
 
   (define (colldocs)
-    (let loop ([dirs (find-relevant-directories '(doc.txt) 'all-available)]
+    (let loop ([dirs (sort (map path->string (find-relevant-directories
+                                              '(doc.txt) 'all-available))
+                           string<?)]
                [docs null]
                [names null])
       (cond
-        [(null? dirs)
-         (values docs names)]
-        [else (let* ([dir (car dirs)]
+        [(null? dirs) (values (reverse docs) (reverse names))]
+        [else (let* ([dir (string->path (car dirs))]
                      [info-proc (get-info/full dir)])
                 (if info-proc
                     (let ([doc.txt-path (info-proc 'doc.txt (lambda () #f))]
@@ -22,8 +23,7 @@
                       (if (and (path-string? doc.txt-path)
                                (string? name))
                           (loop (cdr dirs)
-                                (cons (list dir
-                                            (string->path doc.txt-path))
+                                (cons (list dir (string->path doc.txt-path))
                                       docs)
                                 (cons name names))
                           (loop (cdr dirs) docs names)))
