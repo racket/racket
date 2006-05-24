@@ -30,7 +30,7 @@
        [(procedure? (external-browser))
 	((external-browser) url-str)]
        [(eq? (system-type) 'macos)
-	(if (regexp-match "Blue Box" (system-type #t))
+	(if (regexp-match "Blue Box" (system-type 'machine))
 	    ;; Classic inside OS X:
 	    (let loop ([l '("MSIE" "NAVG")])
 	      (if (null? l)

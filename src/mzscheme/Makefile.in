@@ -292,6 +292,7 @@ unix-install:
 	cd ..; $(ICP) mzscheme/libmzgc.@LIBSFX@ "$(libdir)/libmzgc.@LIBSFX@"
 	cd ..; $(ICP) mzscheme/libmzscheme.@LIBSFX@ "$(libdir)/libmzscheme.@LIBSFX@"
 	cd ..; $(ICP) mzscheme/mzscheme "$(bindir)/mzscheme"
+	cd ..; cp mzscheme/starter "$(libpltdir)/starter"
 	./mzscheme -mvqu "$(srcdir)/collects-path.ss" "$(bindir)/mzscheme@EXE_SUFFIX@" @COLLECTS_PATH@
 	cd ..; echo 'CC=@CC@' > $(BUILDINFO)
 	cd ..; echo 'CFLAGS=@CFLAGS@ @PREFLAGS@ @COMPFLAGS@' >> $(BUILDINFO)
@@ -302,7 +303,7 @@ unix-install:
 
 normal-install:
 	$(MAKE) unix-install
-	cd ..; cp mzscheme/mzdyn.o $(libpltdir)/mzdyn.o	
+	cd ..; cp mzscheme/mzdyn.o "$(libpltdir)/mzdyn.o"
 
 MZFWDIR = @FRAMEWORK_INSTALL_DIR@/PLT_MzScheme.framework
 

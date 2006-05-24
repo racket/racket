@@ -56,6 +56,10 @@
 	   [(not (car l)) (append default (loop (cdr l)))]
 	   [else (cons (car l) (loop (cdr l)))]))
 	default))
+  (define (cons-user u r)
+    (if (use-user-specific-search-paths) 
+	(cons u r)
+	r))
 
   (define-syntax define-finder
     (syntax-rules ()
@@ -65,7 +69,7 @@
 	 (provide search-id)
 	 (define (search-id)
 	   (combine-search (force config:search-id)
-			   (cons (user-id) (single (id))))))]
+			   (cons-user (user-id) (single (id))))))]
       [(_ provide config:id id user-id config:search-id search-id extra-search-dir default)
        (begin
 	 (define-finder provide config:id id user-id default)
@@ -73,7 +77,7 @@
 	 (define (search-id)
 	   (combine-search (force config:search-id)
 			   (extra (extra-search-dir) 
-				  (cons (user-id) (single (id)))))))]
+				  (cons-user (user-id) (single (id)))))))]
       [(_ provide config:id id user-id default)
        (begin
 	 (provide id user-id)
@@ -172,9 +176,8 @@
 		  (lambda ()
 		    (let ([m (regexp-match (byte-regexp 
 					    (bytes-append
-					     #"("
 					     (bytes->utf-16-bytes #"dLl dIRECTORy:")
-					     #".*?)\0\0"))
+					     #"((?:..)*?)\0\0"))
 					   (current-input-port))])
 		      (unless m (error "cannot find \"dLl dIRECTORy\" tag in binary"))
 		      (let-values ([(dir name dir?) (split-path exe)])
@@ -216,6 +219,9 @@
 		      ;; no framework reference found!?
 		      #f)))]
 	     [else
-	      (find-lib-dir)])))
+	      (if (eq? 'shared (system-type 'link))
+		  (or (force config:dll-dir)
+		      (find-lib-dir))
+		  #f)])))
   (define (find-dll-dir)
     (force dll-dir)))

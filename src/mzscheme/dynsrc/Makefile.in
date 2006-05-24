@@ -19,6 +19,7 @@ CFLAGS = @CFLAGS@ @COMPFLAGS@ @PREFLAGS@ -I$(builddir)/.. -I$(srcdir)/../include
 
 dynlib:
 	$(MAKE) ../mzdyn.o
+	$(MAKE) ../starter
 
 dynlib3m:
 	$(MAKE) ../mzdyn3m.o
@@ -42,6 +43,9 @@ MZDYNDEP = ../mzdyn.o $(srcdir)/../include/ext.exp $(srcdir)/../include/mzscheme
 	$(DYNLINK) ../dynexmpl.so dynexmpl.o
 dynexmpl.o: $(srcdir)/dynexmpl.c  $(HEADERS)
 	$(PLAIN_CC) $(CFLAGS) -c $(srcdir)/dynexmpl.c -o dynexmpl.o
+
+../starter: $(srcdir)/ustart.c
+	$(PLAIN_CC) $(CFLAGS) -o ../starter $(srcdir)/ustart.c
 
 ILIBDIR = $(libpltdir)
 

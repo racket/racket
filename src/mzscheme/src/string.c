@@ -2066,15 +2066,42 @@ static void machine_details(char *s);
 
 static Scheme_Object *system_type(int argc, Scheme_Object *argv[])
 {
-  if (!argc || SCHEME_FALSEP(argv[0]))
-    return sys_symbol;
-  else {
-    char buff[1024];
+  if (argc) {
+    Scheme_Object *sym;
+    sym = scheme_intern_symbol("link");
+    if (SAME_OBJ(argv[0], sym)) {
+#ifdef OS_X
+      return scheme_intern_symbol("framework");
+#else
+# ifdef DOS_FILE_SYSTEM
+      return scheme_intern_symbol("dll");
+# else
+#  ifdef MZ_USES_SHARED_LIB
+      return scheme_intern_symbol("shared");
+#  else
+      return scheme_intern_symbol("static");
+#  endif
+# endif
+#endif
+    }
 
-    machine_details(buff);
+    sym = scheme_intern_symbol("machine");
+    if (SAME_OBJ(argv[0], sym)) {
+      char buff[1024];
+      
+      machine_details(buff);
+    
+      return scheme_make_utf8_string(buff);
+    }
 
-    return scheme_make_utf8_string(buff);
+    sym = scheme_intern_symbol("os");
+    if (!SAME_OBJ(argv[0], sym)) {
+      scheme_wrong_type("system-type", "'os, 'link, or 'machine", 0, argc, argv);
+      return NULL;
+    }
   }
+
+  return sys_symbol;
 }
 
 static Scheme_Object *system_library_subpath(int argc, Scheme_Object *argv[])

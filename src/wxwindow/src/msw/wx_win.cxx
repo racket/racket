@@ -1609,7 +1609,7 @@ void wxWnd::OnDropFiles(WPARAM wParam)
   for (wIndex=0; wIndex < (int)gwFilesDropped; wIndex++) {
     len = DragQueryFileW(hFilesInfo, wIndex, NULL, 0);
     w_file = new WXGC_ATOMIC wchar_t[len + 1];
-    DragQueryFileW(hFilesInfo, wIndex, w_file, len);
+    DragQueryFileW(hFilesInfo, wIndex, w_file, len + 1);
     a_file = wxNARROW_STRING(w_file);
     files[wIndex] = a_file;
   }

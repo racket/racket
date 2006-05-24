@@ -3501,30 +3501,35 @@
     (case-lambda
      [() (find-library-collection-paths null)]
      [(extra-collects-dirs)
-      (path-list-string->path-list
-       (or (getenv "PLTCOLLECTS") "")
-       (cons
-	(build-path (find-system-path 'addon-dir)
-		    (version)
-		    "collects")
-	(let loop ([l (append
-		       extra-collects-dirs
-		       (list (find-system-path 'collects-dir)))])
-	  (if (null? l)
-	      null
-	      (let* ([collects-path (car l)]
-		     [v
-		      (cond
-		       [(complete-path? collects-path) collects-path]
-		       [(absolute-path? collects-path)
-			(path->complete-path collects-path
-					     (find-executable-path (find-system-path 'exec-file) #f #t))]
-		       [else
-			(find-executable-path (find-system-path 'exec-file) collects-path #t)])])
-		(if v
-		    (cons (simplify-path (path->complete-path v (current-directory)))
-			  (loop (cdr l)))
-		    (loop (cdr l))))))))]))
+      (let ([user-too? (use-user-specific-search-paths)]
+	    [cons-if (lambda (f r) (if f (cons f r) r))])
+	(path-list-string->path-list
+	 (if user-too?
+	     (or (getenv "PLTCOLLECTS") "")
+	     "")
+	 (cons-if
+	  (and user-too?
+	       (build-path (find-system-path 'addon-dir)
+			   (version)
+			   "collects"))
+	  (let loop ([l (append
+			 extra-collects-dirs
+			 (list (find-system-path 'collects-dir)))])
+	    (if (null? l)
+		null
+		(let* ([collects-path (car l)]
+		       [v
+			(cond
+			 [(complete-path? collects-path) collects-path]
+			 [(absolute-path? collects-path)
+			  (path->complete-path collects-path
+					       (find-executable-path (find-system-path 'exec-file) #f #t))]
+			 [else
+			  (find-executable-path (find-system-path 'exec-file) collects-path #t)])])
+		  (if v
+		      (cons (simplify-path (path->complete-path v (current-directory)))
+			    (loop (cdr l)))
+		      (loop (cdr l)))))))))]))
 
   ;; -------------------------------------------------------------------------
 

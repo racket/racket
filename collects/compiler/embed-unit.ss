@@ -14,7 +14,8 @@
            "private/winsubsys.ss"
 	   "private/macfw.ss"
 	   "private/mach-o.ss"
-	   "private/windlldir.ss")
+	   "private/windlldir.ss"
+	   "private/collects-path.ss")
 
   (provide compiler:embed@)
 
@@ -496,11 +497,6 @@
 		    literal-files)
 	  (when literal-expression
 	    (write literal-expression))))
-      
-      (define (write-lib out libpos lib-path-bytes)
-	(file-position out libpos)
-	(write-bytes lib-path-bytes out)
-	(write-byte 0 out))
 
       ;; The old interface:
       (define make-embedding-executable
@@ -539,58 +535,48 @@
 				 (let ([m (assq 'forget-exe? aux)])
 				   (or (not m)
 				       (not (cdr m))))))
+	  (define unix-starter? (and (eq? (system-type) 'unix)
+				     (let ([m (assq 'original-exe? aux)])
+				       (or (not m)
+					   (not (cdr m))))))
 	  (define long-cmdline? (or (eq? (system-type) 'windows)
-				    (and mred? (eq? 'macosx (system-type)))))
+				    (and mred? (eq? 'macosx (system-type)))
+				    unix-starter?))
 	  (define relative? (let ([m (assq 'relative? aux)])
 			      (and m (cdr m))))
-	  (define collects-path-bytes (and collects-path
-					   (cond
-					    [(path? collects-path) (path->bytes collects-path)]
-					    [(string? collects-path) (string->bytes/locale collects-path)]
-					    [(and (list? collects-path)
-						  (pair? collects-path))
-					     (let ([l (map (lambda (p)
-							     (cond
-							      [(path? p) (path->bytes p)]
-							      [(string? p) (string->bytes/locale p)]
-							      [else #""]))
-							   collects-path)])
-					       (let loop ([l l])
-						 (if (null? (cdr l))
-						     (car l)
-						     (bytes-append (car l) #"\0" (loop (cdr l))))))]
-					    [else #""])))
+	  (define collects-path-bytes (collects-path->bytes collects-path))
 	  (unless (or long-cmdline?
 		      ((apply + (length cmdline) (map (lambda (s)
 							(bytes-length (string->bytes/utf-8 s)))
 						      cmdline)) . < . 50))
 	    (error 'create-embedding-executable "command line too long"))
-	  (when collects-path
-	    (unless (or (path-string? collects-path)
-			(and (list? collects-path)
-			     (pair? collects-path)
-			     (andmap path-string? collects-path)))
-	      (raise-type-error 'create-embedding-executable "path, string, non-empty list of paths and strings, or #f" 
-				collects-path))
-	    (unless ((bytes-length collects-path-bytes) . <= . 1024)
-	      (error 'create-embedding-executable "collects path list is too long")))
+	  (check-collects-path 'create-embedding-executable collects-path collects-path-bytes)
 	  (let ([exe (find-exe mred? variant)])
 	    (when verbose?
 	      (fprintf (current-error-port) "Copying to ~s~n" dest))
 	    (let-values ([(dest-exe orig-exe osx?)
-			  (if (and mred? (eq? 'macosx (system-type)))
-			      (values (prepare-macosx-mred exe dest aux variant) #f #t)
-			      (begin
-				(when (or (file-exists? dest)
-					  (directory-exists? dest)
-					  (link-exists? dest))
-				  ;; Delete-file isn't enough if the target
-				  ;;  is supposed to be a directory. But
-				  ;;  currently, that happens only for MrEd 
-				  ;;  on Mac OS X, which is handles above.
-				  (delete-file dest))
-				(copy-file exe dest)
-				(values dest exe #f)))])
+			  (cond
+			   [(and mred? (eq? 'macosx (system-type)))
+			    (values (prepare-macosx-mred exe dest aux variant) #f #t)]
+			   [unix-starter?
+			    (let ([starter (build-path (find-lib-dir) "starter")])
+			      (when (or (file-exists? dest)
+					(directory-exists? dest)
+					(link-exists? dest))
+				(delete-file dest))
+			      (copy-file starter dest)
+			      (values dest starter #f))]
+			   [else
+			    (when (or (file-exists? dest)
+				      (directory-exists? dest)
+				      (link-exists? dest))
+			      ;; Delete-file isn't enough if the target
+			      ;;  is supposed to be a directory. But
+			      ;;  currently, that happens only for MrEd 
+			      ;;  on Mac OS X, which is handles above.
+			      (delete-file dest))
+			    (copy-file exe dest)
+			    (values dest exe #f)])])
 	      (with-handlers ([void (lambda (x)
 				      (if osx?
 					  (when (directory-exists? dest)
@@ -598,7 +584,8 @@
 					  (when (file-exists? dest)
 					    (delete-file dest)))
 				      (raise x))])
-		(when (eq? 'macosx (system-type))
+		(when (and (eq? 'macosx (system-type))
+			   (not unix-starter?))
 		  (let ([m (assq 'framework-root aux)])
 		    (if m
 			(when (cdr m)
@@ -632,7 +619,8 @@
 		       (lambda ()
 			 (write-module-bundle verbose? modules literal-files literal-expression))])
 		  (let-values ([(start end)
-				(if (eq? (system-type) 'macosx)
+				(if (and (eq? (system-type) 'macosx)
+					 (not unix-starter?))
 				    ;; For Mach-O, we know how to add a proper segment
 				    (let ([s (open-output-bytes)])
 				      (parameterize ([current-output-port s])
@@ -661,76 +649,120 @@
 						   ;; No argv[0]:
 						   null)
 					       (list "-k" start-s end-s))
-					   cmdline)]
-			    [libpos (and collects-path
-					 (let ([tag #"coLLECTs dIRECTORy:"])
-					   (+ (with-input-from-file dest-exe 
+					   cmdline)])
+			(when collects-path-bytes
+			  (when verbose?
+			    (fprintf (current-error-port) "Setting collection path~n"))
+			  (set-collects-path dest-exe collects-path-bytes))
+			(cond
+			 [osx?
+			  (finish-osx-mred dest full-cmdline exe keep-exe? relative?)]
+			 [unix-starter?
+			  (let ([numpos (with-input-from-file dest-exe 
+					  (lambda () (find-cmdline 
+						      "configuration"
+						      #"cOnFiG:")))]
+				[typepos (and mred?
+					      (with-input-from-file dest-exe 
 						(lambda () (find-cmdline 
-							    "collects path"
-							    tag)))
-					      (bytes-length tag))))])
-			(if osx?
-			    (begin
-			      (finish-osx-mred dest full-cmdline exe keep-exe? relative?)
-			      (when libpos
-				(call-with-output-file* dest-exe
-				  (lambda (out)
-				    (write-lib out libpos collects-path-bytes))
-				  'update)))
-			    (let ([cmdpos (with-input-from-file dest-exe 
-					    (lambda () (find-cmdline 
-							"cmdline"
-							#"\\[Replace me for EXE hack")))]
-				  [anotherpos (and mred?
-						   (eq? 'windows (system-type))
-						   (let ([m (assq 'single-instance? aux)])
-						     (and m (not (cdr m))))
-						   (with-input-from-file dest-exe 
-						     (lambda () (find-cmdline 
-								 "instance-check"
-								 #"yes, please check for another"))))]
-				  [out (open-output-file dest-exe 'update)])
+							    "exeuctable type"
+							    #"bINARy tYPe:"))))]
+				[cmdline
+				 (apply bytes-append
+					(map (lambda (s)
+					       (bytes-append 
+						(cond
+						 [(path? s) (path->bytes s)]
+						 [else (string->bytes/locale s)])
+						#"\0"))
+					     (append
+					      (list (if relative?
+							(relativize exe dest-exe values)
+							exe)
+						    (let ([dir (find-dll-dir)])
+						      (if dir
+							  (if relative?
+							      (relativize dir dest-exe values)
+							      dir)
+							  "")))
+					      full-cmdline)))]
+				[out (open-output-file dest-exe 'update)])
+			    (let ([cmdline-end (+ end (bytes-length cmdline))]
+				  [write-num (lambda (n)
+					       (write-bytes (integer->integer-bytes n 4 #t #f) out))])
 			      (dynamic-wind
 				  void
 				  (lambda ()
-				    (when anotherpos
-				      (file-position out anotherpos)
-				      (write-bytes #"no," out))
-				    (when libpos
-				      (write-lib out libpos collects-path-bytes))
-				    (if long-cmdline?
-					;; write cmdline at end:
-					(file-position out end)
-					(begin
-					  ;; write (short) cmdline in the normal position:
-					  (file-position out cmdpos)
-					  (display "!" out)))
-				    (for-each
-				     (lambda (s)
-				       (fprintf out "~a~a~c"
-						(integer->integer-bytes 
-						 (add1 (bytes-length (string->bytes/utf-8 s)) )
-						 4 #t #f)
-						s
-						#\000))
-				     full-cmdline)
-				    (display "\0\0\0\0" out)
-				    (when long-cmdline?
-				      ;; cmdline written at the end;
-				      ;; now put forwarding information at the normal cmdline pos
-				      (let ([new-end (file-position out)])
-					(file-position out cmdpos)
-					(fprintf out "~a...~a~a"
-						 (if keep-exe? "*" "?")
-						 (integer->integer-bytes end 4 #t #f)
-						 (integer->integer-bytes (- new-end end) 4 #t #f)))))
+				    (when typepos
+				      (file-position out (+ typepos 13))
+				      (write-bytes #"r" out)
+				      (flush-output out))
+				    (file-position out (+ numpos 7))
+				    (write-bytes #"!" out)
+				    (write-num start)
+				    (write-num end)
+				    (write-num cmdline-end)
+				    (write-num (length full-cmdline))
+				    (write-num (if mred? 1 0))
+				    (flush-output out)
+				    (file-position out end)
+				    (write-bytes cmdline out)
+				    (flush-output out))
 				  (lambda ()
-				    (close-output-port out)))
-			      (let ([m (and (eq? 'windows (system-type))
-					    (assq 'ico aux))])
-				(when m
-				  (install-icon dest-exe (cdr m))))
-			      (let ([m (and (eq? 'windows (system-type))
-					    (assq 'subsystem aux))])
-				(when m
-				  (set-subsystem dest-exe (cdr m)))))))))))))))))
+				    (close-output-port out)))))]
+			 [else
+			  (let ([cmdpos (with-input-from-file dest-exe 
+					  (lambda () (find-cmdline 
+						      "cmdline"
+						      #"\\[Replace me for EXE hack")))]
+				[anotherpos (and mred?
+						 (eq? 'windows (system-type))
+						 (let ([m (assq 'single-instance? aux)])
+						   (and m (not (cdr m))))
+						 (with-input-from-file dest-exe 
+						   (lambda () (find-cmdline 
+							       "instance-check"
+							       #"yes, please check for another"))))]
+				[out (open-output-file dest-exe 'update)])
+			    (dynamic-wind
+				void
+				(lambda ()
+				  (when anotherpos
+				    (file-position out anotherpos)
+				    (write-bytes #"no," out))
+				  (if long-cmdline?
+				      ;; write cmdline at end:
+				      (file-position out end)
+				      (begin
+					;; write (short) cmdline in the normal position:
+					(file-position out cmdpos)
+					(display "!" out)))
+				  (for-each
+				   (lambda (s)
+				     (fprintf out "~a~a~c"
+					      (integer->integer-bytes 
+					       (add1 (bytes-length (string->bytes/utf-8 s)) )
+					       4 #t #f)
+					      s
+					      #\000))
+				   full-cmdline)
+				  (display "\0\0\0\0" out)
+				  (when long-cmdline?
+				    ;; cmdline written at the end;
+				    ;; now put forwarding information at the normal cmdline pos
+				    (let ([new-end (file-position out)])
+				      (file-position out cmdpos)
+				      (fprintf out "~a...~a~a"
+					       (if keep-exe? "*" "?")
+					       (integer->integer-bytes end 4 #t #f)
+					       (integer->integer-bytes (- new-end end) 4 #t #f)))))
+				(lambda ()
+				  (close-output-port out)))
+			    (let ([m (and (eq? 'windows (system-type))
+					  (assq 'ico aux))])
+			      (when m
+				(install-icon dest-exe (cdr m))))
+			    (let ([m (and (eq? 'windows (system-type))
+					  (assq 'subsystem aux))])
+			      (when m
+				(set-subsystem dest-exe (cdr m)))))]))))))))))))

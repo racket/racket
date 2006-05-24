@@ -407,7 +407,8 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
                                [#:verbose? verbose?])
   - Copies the MzScheme (if `mred?' is #f) or MrEd (otherwise) binary,
   embedding code into the copied executable to be loaded on startup.
-  The source executable is located relative to the "mzlib" collection.
+  (Under Unix, the binary is actually a wrapper executable that execs
+  the original; see also 'original-exe? below.)
 
   See the mzc documentation for a simpler interface that is
   well-suited to programs defined with `module'.
@@ -530,6 +531,11 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
               main consequence is that library collections will be
               found relative to the launcher instead of the original
               executable
+
+      _'original-exe?_ (Unix) - a boolean; #t means that the embedding
+              uses the original MzScheme or MrEd executable, instead
+              of a wrapper binary that execs the original; the default is
+              #f
 
    See also `build-aux-from-path' in the "launcher" collection. The
    default `aux' is `null'.

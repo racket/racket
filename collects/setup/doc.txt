@@ -290,8 +290,9 @@ installation directories:
 
 > (get-collects-search-dirs)
 
-  Returns the same result as `(current-library-collection-paths)'.
-
+  Returns the same result as `(current-library-collection-paths)'
+  (which means that this result is not sensitive to the value of the 
+  `use-user-specific-search-paths' parameter).
 
 > (find-doc-dir)
 
@@ -308,7 +309,9 @@ installation directories:
   Returns a list of paths to search for documentation, not including
   documentation stored in individual collections. Unless it is
   configured otherwise, the result includes any non-#f result of
-  `(find-doc-dir)' and `(find-user-doc-dir)'.
+  `(find-doc-dir)' and `(find-user-doc-dir)' --- but the latter is
+  included only if the value of the `use-user-specific-search-paths'
+  parameter is true.
 
 
 > (find-lib-dir)
@@ -333,7 +336,9 @@ installation directories:
 
   Returns a list of paths to search for libraries. Unless it is
   configured otherwise, the result includes any non-#f result of
-  `(find-lib-dir)', `(find-dll-dir)', and `(find-user-lib-dir)'.
+  `(find-lib-dir)', `(find-dll-dir)', and `(find-user-lib-dir)' ---
+  but the last is included only if the value of the
+  `use-user-specific-search-paths' parameter is true.
 
 
 > (find-include-dir)
@@ -351,7 +356,9 @@ installation directories:
 
   Returns a list of paths to search for .h files. Unless it is
   configured otherwise, the result includes any non-#f result of
-  `(find-include-dir)' and `(find-user-include-dir)'.
+  `(find-include-dir)' and `(find-user-include-dir)' --- but the
+  latter is included only if the value of the
+  `use-user-specific-search-paths' parameter is true.
 
 
 > (find-console-bin-dir)

@@ -1,7 +1,7 @@
 ;; This file is used to copy the PLT tree as part of `make install', and as
 ;; part of Unix installers.  It should be invoked with the source plt directory
 ;; (holding a usual plt tree), and a list of path names that should be copied.
-;; Not providing a good cmdline interface since it is should be as independent
+;; Not providing a good cmdline interface, since it is should be as independent
 ;; as possible.
 (module copytree mzscheme
 
@@ -53,6 +53,8 @@
       (lambda ()
 	(printf "(module config (lib \"configtab.ss\" \"setup\")\n")
 	(printf "  (define doc-dir ~s)\n" docdir)
+	(when (eq? 'shared (system-type 'link))
+	  (printf "  (define dll-dir ~s)\n" libdir))
 	(printf "  (define lib-dir ~s)\n" libpltdir)
 	(printf "  (define include-dir ~s)\n" includepltdir)
 	(printf "  (define bin-dir ~s)\n" bindir)

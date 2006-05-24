@@ -486,7 +486,7 @@
     (send environment set-value
           (format "~a ~s (~a) (get-display-depth) = ~a"
                   (system-type)
-                  (system-type #t)
+                  (system-type 'machine)
                   (system-library-subpath)
                   (get-display-depth)))
 

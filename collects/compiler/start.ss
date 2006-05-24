@@ -40,10 +40,12 @@
   (define ld-output (make-parameter #f))
 
   (define exe-output (make-parameter #f))
-  (define exe-embedded-flags (make-parameter '("-mvq-")))
+  (define exe-embedded-flags (make-parameter '("-m" "-v" "-U" "-q" "--")))
   (define exe-embedded-libraries (make-parameter null))
   (define exe-aux (make-parameter null))
   (define exe-embedded-collects-path (make-parameter #f))
+
+  (define exe-dir-output (make-parameter #f))
 
   (define module-mode (make-parameter #f))
 
@@ -133,6 +135,10 @@
 	 ,(lambda (f name) (exe-output name) 'gui-exe)
 	 (,(format "Embed module in MrEd to create <exe>")
 	  "exe")]
+	[("--exe-dir")
+	 ,(lambda (f name) (exe-dir-output name) 'exe-dir)
+	 (,(format "Combine executables with support files in <dir>")
+	  "dir")]
 	[("--collection-plt")
 	 ,(lambda (f name) (plt-output name) 'plt-collect)
 	 (,(format "Create .plt <archive> containing collections")
@@ -265,7 +271,7 @@
        [help-labels
 	"--------------------- executable configuration flags ------------------------"]
        [once-each
-	[("--collects")
+	[("--collects-path")
 	 ,(lambda (f i)
 	    (exe-embedded-collects-path i))
 	 ("Path to collects relative to --[gui-]exe executable" "path")]
@@ -278,7 +284,12 @@
 	 ,(lambda (f i) (exe-aux
 			 (cons (cons 'icns i)
 			       (exe-aux))))
-	 ("Mac OS X icon for --[gui-]exe executable" ".icns-file")]]
+	 ("Mac OS X icon for --[gui-]exe executable" ".icns-file")]
+	[("--orig-exe")
+	 ,(lambda (f) (exe-aux 
+		       (cons (cons 'original-exe? #t)
+			     (exe-aux))))
+	 ("Use original executable instead of stub")]]
        [multi
 	[("++lib")
 	 ,(lambda (f l c) (exe-embedded-libraries
@@ -521,6 +532,7 @@
 			 'mzc:create-embedding-executable)
 	dest
 	#:mred? (eq? mode 'gui-exe) 
+	#:variant (if (compiler:option:3m) '3m 'normal)
 	#:verbose? (compiler:option:verbose)
 	#:modules (cons
 		   `(#%mzc: (file ,(car source-files)))
@@ -539,6 +551,12 @@
 	#:collects-path (exe-embedded-collects-path)
 	#:aux (exe-aux))
        (printf " [output to \"~a\"]~n" dest))]
+    [(exe-dir)
+     ((dynamic-require '(lib "distribute.ss" "compiler") 
+		       'assemble-distribution)
+      (exe-dir-output)
+      source-files
+      #:collects-path (exe-embedded-collects-path))]
     [(plt)
      (for-each (lambda (fd)
 		 (unless (relative-path? fd)

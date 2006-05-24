@@ -1094,6 +1094,7 @@ enum {
   MZCONFIG_CODE_INSPECTOR,
 
   MZCONFIG_USE_COMPILED_KIND,
+  MZCONFIG_USE_USER_PATHS,
 
   MZCONFIG_LOAD_DIRECTORY,
   MZCONFIG_WRITE_DIRECTORY,
@@ -1521,13 +1522,15 @@ MZ_EXTERN int scheme_square_brackets_are_parens; /* Defaults to 1 */
 MZ_EXTERN int scheme_curly_braces_are_parens; /* Defaults to 1 */
 MZ_EXTERN int scheme_hash_percent_syntax_only; /* Defaults to 0 */
 MZ_EXTERN int scheme_hash_percent_globals_only; /* Defaults to 0 */
-MZ_EXTERN int scheme_binary_mode_stdio; /* Windows-MacOS-specific. Defaults to 0 */
-MZ_EXTERN int scheme_startup_use_jit;
+MZ_EXTERN int scheme_binary_mode_stdio; /* Windows-specific; Defaults to 0 */
+MZ_EXTERN int scheme_startup_use_jit; /* Defaults to 1 */
+MZ_EXTERN int scheme_ignore_user_paths; /* Defaults to 0 */
 
 MZ_EXTERN void scheme_set_case_sensitive(int);
 MZ_EXTERN void scheme_set_allow_set_undefined(int);
 MZ_EXTERN void scheme_set_binary_mode_stdio(int);
 MZ_EXTERN void scheme_set_startup_use_jit(int);
+MZ_EXTERN void scheme_set_ignore_user_paths(int);
 
 MZ_EXTERN int scheme_get_allow_set_undefined();
 

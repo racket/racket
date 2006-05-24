@@ -2013,8 +2013,9 @@
 (test #t string? (version))
 (test #t string? (banner))
 (test #t symbol? (system-type))
-(test (system-type) system-type #f)
-(test #t string? (system-type #t))
+(test (system-type) system-type 'os)
+(test #t string? (system-type 'machine))
+(test #t symbol? (system-type 'link))
 (test #t relative-path? (system-library-subpath))
 
 (test #t 'cmdline (let ([v (current-command-line-arguments)])

@@ -113,6 +113,9 @@ long scheme_creator_id = 'MzSc';
 # define IS_A_SEP(x) (!(x))
 #endif
 
+MZ_DLLSPEC int scheme_ignore_user_paths;
+void scheme_set_ignore_user_paths(int v) { scheme_ignore_user_paths = v; }
+
 #define CURRENT_WD() scheme_get_param(scheme_current_config(), MZCONFIG_CURRENT_DIRECTORY)
 
 #define TO_PATH(x) (SCHEME_PATHP(x) ? x : scheme_char_string_to_path(x))
@@ -161,6 +164,7 @@ static Scheme_Object *file_or_dir_permissions(int argc, Scheme_Object *argv[]);
 static Scheme_Object *file_size(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_library_collection_paths(int argc, Scheme_Object *argv[]);
 static Scheme_Object *use_compiled_kind(int, Scheme_Object *[]);
+static Scheme_Object *use_user_paths(int, Scheme_Object *[]);
 static Scheme_Object *find_system_path(int argc, Scheme_Object **argv);
 #endif
 
@@ -418,6 +422,11 @@ void scheme_init_file(Scheme_Env *env)
 			     scheme_register_parameter(use_compiled_kind,
 						       "use-compiled-file-paths",
 						       MZCONFIG_USE_COMPILED_KIND),
+			     env);
+  scheme_add_global_constant("use-user-specific-search-paths",
+			     scheme_register_parameter(use_user_paths,
+						       "use-user-specific-search-paths",
+						       MZCONFIG_USE_USER_PATHS),
 			     env);
 }
 
@@ -4431,6 +4440,14 @@ static Scheme_Object *use_compiled_kind(int argc, Scheme_Object *argv[])
 			     scheme_make_integer(MZCONFIG_USE_COMPILED_KIND),
 			     argc, argv,
 			     -1, compiled_kind_p, "list of relative paths and strings", 1);
+}
+
+static Scheme_Object *use_user_paths(int argc, Scheme_Object *argv[])
+{
+  return scheme_param_config("use-user-specific-search-paths", 
+			     scheme_make_integer(MZCONFIG_USE_USER_PATHS),
+			     argc, argv,
+			     -1, NULL, NULL, 1);
 }
 
 /********************************************************************************/

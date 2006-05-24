@@ -11,34 +11,47 @@
 #include <fcntl.h>
 #include <errno.h>
 
-char *config = "[Replace me with offset info                                       ]";
+/* The config string after : is replaced with ! followed by a sequence
+   of little-endian 4-byte ints:
+    start - offset into the binary
+    prog_end - offset; start to prog_end is the program region
+    end - offset; prog_end to end is the command region
+    count - number of cmdline args in command region
+    x11? - non-zero => launches MrEd for X
 
-char *binary_type_hack = "bINARy tYPe:ezi";
+    In the command region, the format is a sequence of NUL-terminated strings:
+     exe_path - program to start (relative is w.r.t. executable)
+     dll_path - DLL directory if non-empty (relative is w.r.t. executable)
+     cmdline_arg ...
+*/
+char *config = "cOnFiG:[***************************";
+
+char *binary_type_hack = "bINARy tYPe:ezic";
 
 /* This path list is used instead of the one in the MzScheme/MrEd
    binary. That way, the same MzScheme/MrEd binary can be shared
    among embedding exectuables that have different collection
    paths. */
-static char *_coldir = "coLLECTs dIRECTORy:" /* <- this tag stays, so we can find it again */
-                       "../collects"
-                       "\0\0" /* <- 1st nul terminates path, 2nd terminates path list */
-                       /* Pad with at least 1024 bytes: */
-                       "****************************************************************"
-                       "****************************************************************"
-                       "****************************************************************"
-                       "****************************************************************"
-                       "****************************************************************"
-                       "****************************************************************"
-                       "****************************************************************"
-                       "****************************************************************"
-                       "****************************************************************"
-                       "****************************************************************"
-                       "****************************************************************"
-                       "****************************************************************"
-                       "****************************************************************"
-                       "****************************************************************"
-                       "****************************************************************"
-                       "****************************************************************";
+char *_coldir = "coLLECTs dIRECTORy:" /* <- this tag stays, so we can find it again */
+                "../collects"
+                "\0\0" /* <- 1st nul terminates path, 2nd terminates path list */
+                /* Pad with at least 1024 bytes: */
+                "****************************************************************"
+		"****************************************************************"
+		"****************************************************************"
+		"****************************************************************"
+		"****************************************************************"
+		"****************************************************************"
+		"****************************************************************"
+		"****************************************************************"
+		"****************************************************************"
+		"****************************************************************"
+		"****************************************************************"
+		"****************************************************************"
+		"****************************************************************"
+		"****************************************************************"
+		"****************************************************************"
+		"****************************************************************";
 static int _coldir_offset = 19; /* Skip permanent tag */
 
 typedef struct {
@@ -86,6 +99,8 @@ static void write_str(int fd, char *s)
   write(fd, s, strlen(s));
 }
 
+#if 0
+/* Useful for debugging: */
 static char *num_to_string(int n)
 {
   if (!n)
@@ -101,6 +116,7 @@ static char *num_to_string(int n)
     return d;
   }
 }
+#endif
 
 static char *string_append(char *s1, char *s2)
 {
@@ -192,8 +208,14 @@ int main(int argc, char **argv)
 {
   char *me = argv[0], *data, **new_argv;
   char *exe_path, *lib_path, *dll_path;
-  int start, cmd_end, end, count, fd, v, x11;
+  int start, prog_end, end, count, fd, v, x11;
   int argpos, inpos, collcount = 1;
+
+  if (config[7] == '[') {
+    write_str(2, argv[0]);
+    write_str(2, ": this is an unconfigured starter\n");
+    return 1;
+  }
 
   if (me[0] == '/') {
     /* Absolute path */
@@ -262,11 +284,11 @@ int main(int argc, char **argv)
     }
   }
 
-  start = as_int(config);
-  cmd_end = as_int(config + 4);
-  end = as_int(config + 8);
-  count = as_int(config + 12);
-  x11 = as_int(config + 16);
+  start = as_int(config + 8);
+  prog_end = as_int(config + 12);
+  end = as_int(config + 16);
+  count = as_int(config + 20);
+  x11 = as_int(config + 24);
 
   {
     int offset, len;
@@ -280,12 +302,13 @@ int main(int argc, char **argv)
     }
   }
 
-  data = (char *)malloc(cmd_end - start);
+  data = (char *)malloc(end - prog_end);
   new_argv = (char **)malloc((count + argc + (2 * collcount) + 8) * sizeof(char*));
 
   fd = open(me, O_RDONLY, 0);
-  lseek(fd, start, SEEK_SET);
-  read(fd, data, cmd_end - start);
+  lseek(fd, prog_end, SEEK_SET);
+  read(fd, data, end - prog_end);
+  close(fd);
   
   exe_path = data;
   data = next_string(data);
@@ -296,14 +319,16 @@ int main(int argc, char **argv)
   exe_path = absolutize(exe_path, me);
   lib_path = absolutize(lib_path, me);
 
-  dll_path = getenv("LD_LIBRARY_PATH");
-  if (!dll_path) {
-    dll_path = "";
+  if (*lib_path) {
+    dll_path = getenv("LD_LIBRARY_PATH");
+    if (!dll_path) {
+      dll_path = "";
+    }
+    dll_path = string_append(dll_path, ":");
+    dll_path = string_append(lib_path, dll_path);
+    dll_path = string_append("LD_LIBRARY_PATH=", dll_path);
+    putenv(dll_path);
   }
-  dll_path = string_append(dll_path, ":");
-  dll_path = string_append(lib_path, dll_path);
-  dll_path = string_append("LD_LIBRARY_PATH=", dll_path);
-  putenv(dll_path);
 
   new_argv[0] = me;
 
@@ -345,11 +370,6 @@ int main(int argc, char **argv)
       new_argv[argpos++] = _coldir + offset;
     }
   }
-
-  /* Add -k flag */
-  new_argv[argpos++] = "-k";
-  new_argv[argpos++] = num_to_string(cmd_end);
-  new_argv[argpos++] = num_to_string(end);
 
   /* Add built-in flags: */
   while (count--) {

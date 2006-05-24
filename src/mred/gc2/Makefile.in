@@ -1371,6 +1371,7 @@ MRFWRES = PLT_MrEd.framework/Versions/$(FWVERSION)_3m/Resources/PLT_MrEd.rsrc
 	$(MREDLINKER) -o ../MrEd3m.app/Contents/MacOS/MrEd3m mrmain.@LTO@ -Wl,-headerpad_max_install_names -F. -framework PLT_MrEd -framework Carbon
 	if [ ! -d ../PLT_MrEd.framework/Versions/$(FWVERSION)_3m ] ; then mkdir ../PLT_MrEd.framework/Versions/$(FWVERSION)_3m ; fi
 	cp $(MRFW) ../$(MRFW)
+	rm -rf ../PLT_MrEd.framework/Versions/$(FWVERSION)_3m/Resources
 	cp -r PLT_MrEd.framework/Versions/$(FWVERSION)_3m/Resources ../PLT_MrEd.framework/Versions/$(FWVERSION)_3m/Resources
 	/usr/bin/install_name_tool -change "PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "@executable_path/../../../PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" ../MrEd3m.app/Contents/MacOS/MrEd3m
 

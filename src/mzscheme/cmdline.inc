@@ -6,7 +6,13 @@
 #define SDESC "Set! works on undefined identifiers.\n"
 
 char *cmdline_exe_hack = "[Replace me for EXE hack                                       ]";
-char *binary_type_hack = "bINARy tYPe:" INITIAL_BIN_TYPE;
+
+#ifdef MZ_PRECISE_GC
+# define GC_PRECISION_TYPE "3"
+#else
+# define GC_PRECISION_TYPE "c"
+#endif
+char *binary_type_hack = "bINARy tYPe:" INITIAL_BIN_TYPE GC_PRECISION_TYPE;
 
 #ifndef INITIAL_COLLECTS_DIRECTORY
 # ifdef DOS_FILE_SYSTEM
@@ -465,7 +471,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
   GC_CAN_IGNORE char **argv = _argv;
   Scheme_Env *global_env;
   char *prog, *sprog = NULL;
-  Scheme_Object *sch_argv, *collects_path = NULL;
+  Scheme_Object *sch_argv, *collects_path = NULL, *collects_extra = NULL;
   int i;
 #ifndef DONT_PARSE_COMMAND_LINE
   char **evals_and_loads, *real_switch = NULL, *runner;
@@ -742,6 +748,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
       argv[0] = "-b";
     else if (!strcmp("--collects", argv[0]))
       argv[0] = "-X";
+    else if (!strcmp("--search", argv[0]))
+      argv[0] = "-S";
 # ifndef MZSCHEME_CMD_LINE
     else if (!strcmp("--nogui", argv[0]))
       argv[0] = "-Z";
@@ -804,6 +812,22 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  argv++;
 	  --argc;
 	  collects_path = scheme_make_path(argv[0]);
+	  break;
+	case 'U':
+	  scheme_set_ignore_user_paths(1);
+	  break;
+	case 'S':
+	  if (argc < 2) {
+	    PRINTF("%s: missing path after %s switch\n", 
+		   prog, real_switch);
+	    goto show_need_help;
+	  }
+	  argv++;
+	  --argc;
+	  if (!collects_extra)
+	    collects_extra = scheme_make_null();
+	  collects_extra = scheme_make_pair(scheme_make_path(argv[0]),
+					    collects_extra);
 	  break;
 	case 'x':
 	  no_lib_path = 1;
@@ -1087,15 +1111,19 @@ static int run_from_cmd_line(int argc, char *_argv[],
     scheme_set_collects_path(collects_path);
 
     /* Make list of additional collection paths: */
-    l = scheme_make_null();
-    offset = _coldir_offset;
-    while (1) {
-      len = strlen(_coldir XFORM_OK_PLUS offset);
-      offset += len + 1;
-      if (!_coldir[offset])
-	break;
-      l = scheme_make_pair(scheme_make_path(_coldir XFORM_OK_PLUS offset),
-			   l);
+    if (collects_extra) {
+      l = collects_extra;
+    } else {
+      l = scheme_make_null();
+      offset = _coldir_offset;
+      while (1) {
+	len = strlen(_coldir XFORM_OK_PLUS offset);
+	offset += len + 1;
+	if (!_coldir[offset])
+	  break;
+	l = scheme_make_pair(scheme_make_path(_coldir XFORM_OK_PLUS offset),
+			     l);
+      }
     }
     /* Reverse list */
     r = scheme_make_null();
@@ -1177,10 +1205,12 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	 "  -k <n> <m> : Load executable-embedded code from file offset <n> to <m>.\n"
 	 "  -C, --main : Like -r, then call `main' w/argument list; car is file name.\n"
 	 " Initialization switches:\n"
-	 "  -X <dir>, --collects <dir> : libraries at <dir> relative to executable.\n"
+	 "  -X <dir>, --collects <dir> : Main collects at <dir> relative to " PROGRAM ".\n"
+	 "  -S <dir>, --search <dir> : More collects at <dir> relative to " PROGRAM ".\n"
+	 "  -U, --no-user-path : Ignores user-specific collects, etc.\n"
          "  -x, --no-lib-path : Skips trying to set current-library-collection-paths.\n"
 	 "  -q, --no-init-file : Skips trying to load " INIT_FILENAME ".\n"
-	 "  -N <file>, --name <file> : Set `program' to <file>.\n"
+	 "  -N <file>, --name <file> : Sets `program' to <file>.\n"
 	 "  -A : Skips defining `argv' and `program'.\n"
 # ifdef MZ_USE_JIT
 	 "  -j, --no-jit : Disables just-in-time compiler.\n"

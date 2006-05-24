@@ -8,6 +8,7 @@
   (define-for-syntax path-exports
     '(doc-dir
       doc-search-dirs
+      dll-dir
       lib-dir
       lib-search-dirs
       include-dir
