@@ -159,8 +159,7 @@
    (define remove-prefs-callback
      (preferences:add-callback
        'framework:menu-bindings
-       (λ
-        (p v)
+       (λ (p v)
         (let loop ((menu (get-menu-bar)))
           (when (is-a? menu menu:can-restore<%>)
             (if v (send menu restore-keybinding) (send menu set-shortcut #f)))

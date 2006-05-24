@@ -22,21 +22,23 @@
   ;; this one should be defined by help desk.
   (define frame-mixin
     (namespace-variable-value 'help-desk:frame-mixin #f (lambda () (lambda (x) x))))
-  
+
   (preferences:set-default 'drscheme:email "" string?)
   (preferences:set-default 'drscheme:full-name "" string?)
 
-  (define (remove-extra-blanks %)
-    (class %
-      (define/override (edit-menu:between-find-and-preferences menu) (void))
-      (super-instantiate ())))
-
   (define bug-frame%
-    (class (frame-mixin (remove-extra-blanks (frame:standard-menus-mixin frame:basic%)))
+    (class (frame-mixin (frame:standard-menus-mixin frame:basic%))
       (init title)
 
+      ;; a bunch of stuff we don't want
       (define/override (file-menu:between-print-and-close menu) (void))
-      
+      (define/override (edit-menu:between-find-and-preferences menu) (void))
+      (define/override (file-menu:create-open?)        #f)
+      (define/override (file-menu:create-open-recent?) #f)
+      (define/override (file-menu:create-new?)         #f)
+      (define/override (file-menu:create-save?)        #f)
+      (define/override (file-menu:create-revert?)      #f)
+
       (field (ok-to-close? #f))
       (public set-ok-to-close)
       (define (set-ok-to-close ok?) (set! ok-to-close? #t))
@@ -45,15 +47,15 @@
             (ask-yes-or-no (string-constant cancel-bug-report?)
                            (string-constant are-you-sure-cancel-bug-report?)
                            this)))
-      
+
       (super-make-object title)))
-  
-  
+
+
   (define (help-desk:report-bug)
     (define bug-frame (instantiate bug-frame% () (title (string-constant bug-report-form))))
     (define single (new panel:single% (parent (send bug-frame get-area-container))))
     (define outermost-panel (make-object vertical-panel% single))
-    
+
     (define response-panel (new vertical-panel% (parent single)))
     (define response-text (new (html-text-mixin text%) (auto-wrap #t)))
     (define response-ec (new editor-canvas% (parent response-panel) (editor response-text)))

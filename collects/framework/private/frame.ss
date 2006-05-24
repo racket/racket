@@ -33,40 +33,29 @@
               [scheme : framework:scheme^]
               [exit : framework:exit^]
               [comment-box : framework:comment-box^])
-      
+
       (rename [-editor<%> editor<%>]
               [-pasteboard% pasteboard%]
               [-text% text%])
 
       (define (reorder-menus frame)
-        (let* ([items (send (send frame get-menu-bar) get-items)]
-               [move-to-back
-                (λ (name items)
-                  (let loop ([items items]
-                             [back null])
-                    (cond
-                      [(null? items) back]
-                      [else (let ([item (car items)])
-                              (if (string=? (send item get-plain-label) name)
-                                  (loop (cdr items)
-                                        (cons item back))
-                                  (cons item (loop (cdr items) back))))])))]
-               [move-to-front
-                (λ (name items)
-                  (reverse (move-to-back name (reverse items))))]
-               [re-ordered
-                (move-to-front
-                 (string-constant file-menu)
-                 (move-to-front
-                  (string-constant edit-menu)
-                  (move-to-back
-                   (string-constant help-menu)
-                   (move-to-back
-                    (string-constant windows-menu)
-                    items))))])
+        (define items (send (send frame get-menu-bar) get-items))
+        (define (find-menu name)
+          (ormap (λ (i) (and (string=? (send i get-plain-label) name) i))
+                 items))
+        (let* ([file-menu (find-menu (string-constant file-menu))]
+               [edit-menu (find-menu (string-constant edit-menu))]
+               [windows-menu (find-menu (string-constant windows-menu))]
+               [help-menu (find-menu (string-constant help-menu))]
+               [other-items
+                (remq* (list file-menu edit-menu windows-menu help-menu) items)]
+               [? (λ (menu) (and menu (pair? (send menu get-items)) menu))]
+               [re-ordered (filter values `(,(? file-menu) ,(? edit-menu)
+                                            ,@other-items
+                                            ,(? windows-menu) ,(? help-menu)))])
           (for-each (λ (item) (send item delete)) items)
           (for-each (λ (item) (send item restore)) re-ordered)))
-      
+
       (define (add-snip-menu-items edit-menu c%)
         (let* ([get-edit-target-object
                 (λ ()
