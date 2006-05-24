@@ -1,5 +1,5 @@
 .\" dummy line
-.TH MZSCHEME 1 "January 2005"
+.TH MZSCHEME 1 "May 2006"
 .UC 4
 .SH NAME
 mzscheme \- The PLT Scheme implementation
@@ -32,69 +32,53 @@ applications.
 .SH STARTUP FILE AND EXPRESSION OPTIONS
 
 .TP
-.BI \-e \ expr
-.TP
-.BI \--eval \ expr
+.BI \-e \ expr\fR,\ \fP \-\^\-eval \ expr
 Evaluates
 .I expr
 after
 .I MzScheme
 starts.
 .TP
-.BI \-f \ file
-.TP
-.BI \--load \ file
+.BI \-f \ file\fR,\ \fP \-\^\-load \ file
 Loads
 .I file
 after
 .I MzScheme
 starts.
 .TP
-.BI \-d \ file
-.TP
-.BI \--load-cd \ file
+.BI \-d \ file\fR,\ \fP \-\^\-load-cd \ file
 Load/cds
 .I file
 after
 .I MzScheme
 starts.
 .TP
-.BI \-t \ file
-.TP
-.BI \--require \ file
+.BI \-t \ file\fR,\ \fP \-\^\-require \ file
 Requires
 .I file
 after
 .I MzScheme
 starts.
 .TP
-.B \-F
-.TP
-.B \--Load
+.B \-F\fR,\fP \-\^\-Load
 .br
 Loads all remaining arguments after
 .I MzScheme
 starts.
 .TP
-.B \-D
-.TP
-.B \--Load-cd
+.B \-D\fR,\fP \-\^\-Load-cd
 .br
 Load/cds all remaining arguments after
 .I MzScheme
 starts.
 .TP
-.B \-T
-.TP
-.B \--Require
+.B \-T\fR,\fP \-\^\-Require
 .br
 Requires all remaining arguments after
 .I MzScheme
 starts.
 .TP
-.BI \-l \ file
-.TP
-.BI \--mzlib \ file
+.BI \-l \ file\fR,\ \fP \-\^\-mzlib \ file
 Same as
 .BR -e \ '(require\ (lib\ "\|\c
 .I file\|\c
@@ -116,45 +100,33 @@ Same as
 .I coll\|\c
 "))'.
 .TP
-.B \-r
-.TP
-.B \--script
+.B \-r\fR,\fP \-\^\-script
 Script mode: use as last flag for scripts.
 Same as
 .BR -fmv- .
 .TP
-.B \-i
-.TP
-.B \--script-cd
+.B \-i\fR,\fP \-\^\-script-cd
 Like -r, but also sets the directory.
 Same as 
 .BR -dmv- .
 .TP
-.B \-u
-.TP
-.B --require-script
+.B \-u\fR,\fP \-\^\-require-script
 Like -r, but requires a module.
 Same as
 .BR -tmv- .
 .TP
-.B \-i
-.TP
-.B \-w
-.TP
-.B \--awk
+.B \-w\fR,\fP \-\^\-awk
 Same as
 .B -l
 .BR awk.ss .
 .TP
-.BI \-k \ n \  m
+.BI \-k \ n \  m\ 
 Load executable-embedded code from file offset
 .I n
 to
 .IR m .
 .TP
-.B \-C
-.TP
-.B \--main
+.B \-C\fR,\fP \-\^\-main
 Like -r, then calls `main' with a list of argument strings. The first 
 string in the list is the name of the loaded file, and
 the rest of the list contains leftover command-line arguments.
@@ -162,70 +134,71 @@ the rest of the list contains leftover command-line arguments.
 
 .SH INITIALIZATION OPTIONS
 .TP
-.B \-x
+.BI \-X \ dir\fR,\ \fP \-\^\-collects \ dir
+Sets
+.I dir 
+as the location of the main "collects" directory. If
+.I dir
+is relative, it is relative to the executable.
 .TP
-.B \--no-lib-path
+.BI \-S \ dir
+.TP
+.BI \-\^\-search \ dir
+Adds 
+.I dir
+to the search path for library collections. If 
+.I dir
+is relative, it is relative to the executable.
+.TP
+.B \-U\fR,\fP \-\^\-no-user-path
+Ignores PLTHOME, and omits the user-specific "collects" directory
+from the search path for library collections.
+.TP
+.B \-x\fR,\fP \-\^\-no-lib-path
 Skips trying to set current-library-collection-paths.
 .TP
-.B \-q
-.TP
-.B \--no-init-file
+.B \-q\fR,\fP \-\^\-no-init-file
 Skips trying to load "~/.mzschemerc".
 .TP
-.B \-A
+.BI \-N \ file\fR,\ \fP \-\^\-name \ file
+Sets the program name to
+.IR name .
 .TP
-.B \--no-argv
+.B \-A\fR,\fP \-\^\-no-argv
 Skips defining `argv' and `program'.
 .PP
 
 .SH LANGUAGE SETTING OPTIONS
 .TP
-.B \-g
-.TP
-.B \--case-sens
+.B \-g\fR,\fP \-\^\-case-sens
 Identifiers and symbols are initially case-sensitive (the default).
-.B \-s
 .TP
-.B \-G
-.TP
-.B \--case-insens
+.B \-G\fR,\fP \-\^\-case-insens
 Identifiers and symbols are initially case-insensitive.
 .TP
-.B \-s
-.TP
-.B \--set-undef
+.B \-s\fR,\fP \-\^\-set-undef
 Set! works on undefined identifiers.
 .PP
 
 .SH MISCELLANEOUS OPTIONS
 .TP
-.B \--
+.B \-\^\-
 .br
 No argument following this switch is used as a switch.
 .TP
-.B \-p
-.TP
-.B \--persistent
+.B \-p\fR,\fP \-\^\-persistent
 Catches AIX SIGDANGER (low page space) signal. (AIX only)
 .TP
-.B \-m
-.TP
-.B \--mute-banner
+.B \-m\fR,\fP \-\^\-mute-banner
 Suppresses the startup banner.
 .TP
-.B \-v
-.TP
-.B \--version
+.B \-v\fR,\fP \-\^\-version
 Suppresses the read-eval-print loop.
 .TP
-.B \-h
-.TP
-.B \--help
+.B \-h\fR,\fP \-\^\-help
 Shows help for command-line arguments.
 .TP
-.BI \-R file
-.TP
-.BI \--restore \ file
+.BI \-R file\fR,\ \fP \-\^\-restore \ file
 Restores an image; must be the only switch. (Special versions only)
 
 .SH OPTION CONVENTIONS
@@ -234,10 +207,14 @@ Multiple single-letter switches can be collapsed, with arguments placed
 after the collapsed switches; the first collapsed switch cannot be
 .BR -- .
 E.g.:
-.B -vfme file expr
+.B -vfme
+.I file
+.I expr
 is the same as
-.B -v -f file -m -e
-.BR expr .
+.B -v -f
+.I file
+.B -m -e
+.IR expr .
 .PP
 Extra arguments following the last switch are put into the Scheme global
 variable `argv' as a vector of strings. The name used to start 
@@ -289,41 +266,15 @@ or
 .B --no-init-file 
 switch is used.
 .PP
-The library collections search path is read
-from the PLTCOLLECTS environment variable
-(as a colon-separated list of paths). Wherever the empty path
-appears appears in PLTCOLLECTS, it is replaced with the default
-collections directory. If PLTCOLLECTS is not defined, the default
-collections directory is used as the only element in the search path.
-.PP
-.I MzScheme
-looks for the default collections directory as one of the 
-following (tried in order):
-.IP
-The path in the environment variable PLTHOME is checked
-for a "collects" subdirectory.
-.IP
-If
-.I MzScheme
-was invoked with an absolute pathname, the directory of the invoked
-executable is checked. If the executable is a link, the directory of
-the referenced file is also checked, recursively following links. The
-parent directories and the parent's parent directories are also
-checked (in case
-.I MzScheme
-is in a "bin" directory or a ".bin/\c
-.I platform\|\c
-" directory).
-.IP
-If
-.I MzScheme
-is invoked with a relative pathname, the directories in the PATH
-environment variable containing a file with the name of the program as
-invoked (usually "mzscheme") are checked. Links and parent directories
-are followed as in the first case.
-.IP
-The "/usr/local/lib/plt/collects" directory is 
-tried.
+Unless the
+.B -U
+or
+.B --no-user-path
+switch is provided, the library collections search
+path is read from the PLTCOLLECTS environment variable
+(as a colon-separated list of paths). Where the empty path
+appears in PLTCOLLECTS, it is replaced with the default
+collections directory search path.
 
 .SH EXECUTABLE SCRIPTS
 The most flexible way to create an executable script file is to
