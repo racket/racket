@@ -237,7 +237,9 @@
     
     (define synthesized-dialog (make-object dialog% (string-constant bug-report-synthesized-information)))
     (define synthesized-panel (make-object vertical-panel% synthesized-dialog))
-    (define synthesized-button-panel (make-object horizontal-panel% synthesized-dialog))
+    (define synthesized-button-panel
+      (new horizontal-panel% [parent synthesized-dialog]
+           [alignment '(right center)] [stretchable-height #f]))
     (define synthesized-ok-button (make-object button% (string-constant ok) synthesized-button-panel
 					       (lambda (x y)
 						 (send synthesized-dialog show #f))))
@@ -310,14 +312,17 @@
                  synthesized-panel))))
            (get-bug-report-infos)))
 
-    (define button-panel (make-object horizontal-panel% outermost-panel))
+    (define button-panel
+      (new horizontal-panel% [parent outermost-panel]
+           [alignment '(right center)] [stretchable-height #f]))
     (define synthesized-button (make-object button%
                                  (string-constant bug-report-show-synthesized-info)
                                  button-panel (lambda x (show-synthesized-info))))
-    (define ok-button (make-object button% (string-constant bug-report-submit) button-panel (lambda x (ok))))
+    (define _spacer
+      (new grow-box-spacer-pane% [parent button-panel] [stretchable-width #t]))
     (define cancel-button (make-object button% (string-constant cancel) button-panel (lambda x (cancel))))
-    (define grow-box-spacer-pane (make-object grow-box-spacer-pane% button-panel))
-    
+    (define ok-button (make-object button% (string-constant bug-report-submit) button-panel (lambda x (ok))))
+
     (define (get-query)
       (list (cons 'help-desk "true")
             (cons 'replyto (preferences:get 'drscheme:email))
@@ -498,11 +503,8 @@
 
     (send (send collections get-editor) auto-wrap #t)
     (send (send docs-installed get-editor) auto-wrap #t)
-    (send* synthesized-button-panel
-           (set-alignment 'right 'center) (stretchable-height #f))
 
     (align-labels)
-    (send* button-panel (set-alignment 'right 'center) (stretchable-height #f))
     (switch-to-compose-view)
 
     (send (send docs-installed get-editor) insert
@@ -510,7 +512,7 @@
                                              (get-doc-search-dirs))))
 
     (send bug-frame show #t))
-  
+
   (define (ask-yes-or-no title msg parent)
     (gui-utils:get-choice msg 
                           (string-constant yes)
