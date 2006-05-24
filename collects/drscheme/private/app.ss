@@ -259,54 +259,52 @@
           (insert-url/external-browser "PLT" "http://www.plt-scheme.org/")
           
           (send* e
-            (insert ".")
-            (insert #\newline)
+            (insert ".\n")
             (insert (get-authors))
-            (insert #\newline)
-            (insert "For licensing information see "))
+            (insert "\nFor licensing information see "))
           
-          (insert/clickback "our software license" (λ () (help-desk:goto-plt-license)))
+          (insert/clickback "our software license"
+                            (λ () (help-desk:goto-plt-license)))
           
           (send* e
-            (insert ".")
-            (insert #\newline)
-            (insert #\newline)
-            (insert "Based on:")
-            (insert #\newline)
-            (insert "  ")
+            (insert ".\n\nBased on:\n  ")
             (insert (banner)))
           
           (when (or (eq? (system-type) 'macos)
                     (eq? (system-type) 'macosx))
             (send* e
-              (insert "  The A List (c) 1997-2001 Kyle Hammond")
-              (insert #\newline)))
-          
-          (let ([tools (drscheme:tools:get-successful-tools)])
+              (insert "  The A List (c) 1997-2001 Kyle Hammond\n")))
+
+          (let ([tools (sort (drscheme:tools:get-successful-tools)
+                             (lambda (a b)
+                               (string<? (path->string (drscheme:tools:successful-tool-spec a))
+                                         (path->string (drscheme:tools:successful-tool-spec b)))))])
             (unless (null? tools)
-              (send* e
-                (insert #\newline)
-                (insert "Installed tools:")
-                (insert #\newline))
-              (for-each
-               (λ (successful-tool)
-                 (let ([name (or (drscheme:tools:successful-tool-name successful-tool)
-                                 (format "~s" (drscheme:tools:successful-tool-spec successful-tool)))]
-                       [bm (drscheme:tools:successful-tool-bitmap successful-tool)]
-                       [url (drscheme:tools:successful-tool-url successful-tool)])
-                   (send e insert "  ")
-                   (when bm
-                     (send* e
-                       (insert (make-object image-snip% bm))
-                       (insert #\space)))
-                   (cond
-                     [url
-                      (insert-url/external-browser name url)]
-                     [else
-                      (send e insert name)])
-                   (send e insert #\newline)))
-               tools)))
-          
+              (let loop ([actions1 '()] [actions2 '()] [tools tools])
+                (if (pair? tools)
+                  (let* ([successful-tool (car tools)]
+                         [name (drscheme:tools:successful-tool-name successful-tool)]
+                         [spec (drscheme:tools:successful-tool-spec successful-tool)]
+                         [bm   (drscheme:tools:successful-tool-bitmap successful-tool)]
+                         [url  (drscheme:tools:successful-tool-url successful-tool)])
+                    (define (action)
+                      (send e insert "  ")
+                      (when bm
+                        (send* e
+                          (insert (make-object image-snip% bm))
+                          (insert #\space)))
+                      (let ([name (or name (format "~a" spec))])
+                        (cond [url  (insert-url/external-browser name url)]
+                              [else (send e insert name)]))
+                      (send e insert #\newline))
+                    (if name
+                      (loop (cons action actions1) actions2 (cdr tools))
+                      (loop actions1 (cons action actions2) (cdr tools))))
+                  (begin (send e insert "\nInstalled tools:\n")
+                         (for-each (λ (act) (act)) (reverse! actions1))
+                         ;; (send e insert "Installed anonymous tools:\n")
+                         (for-each (λ (act) (act)) (reverse! actions2)))))))
+
           (send e insert "\n")
           (send e insert (get-translating-acks))
           

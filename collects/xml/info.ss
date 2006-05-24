@@ -1,4 +1,3 @@
-
 (module info (lib "infotab.ss" "setup")
   (define name "XML")
   (define doc.txt "doc.txt")
@@ -7,8 +6,5 @@
   (define help-desk-message "Mz/Mr: (require (lib \"xml.ss\" \"xml\"))")
   (define blurb
     `("The XML collection provides functions for reading, writing, and manipulating XML documents."))
-  (define tools (list "text-box-tool.ss"))
-  (define tool-name (list "Text Box")))
-
-
-  
+  (define tools '(("text-box-tool.ss")))
+  (define tool-names '("Text Box")))
