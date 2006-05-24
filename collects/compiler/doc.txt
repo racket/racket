@@ -375,7 +375,9 @@ Embedding Scheme Code to Create a Stand-alone Executable
 
 The _embed.ss_ library provides a function to embed Scheme code into a
 copy of MzScheme or MrEd, thus creating a _stand-alone_ Scheme
-executable.
+executable. To package the executable into a distribution that is
+indpendent of your PLT installation, use `assemble-distribution'
+from "distribute.ss"
 
 Embedding walks the module dependency graph to find all modules needed
 by some initial set of top-level modules, compiling them if needed,
@@ -603,3 +605,33 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
 
 > (embedding-executable-add-suffix path mred?) - Returns a path with a
   suitable executable suffix added, if it's not present already.
+
+Packaing Stand-alone Executables into a Distribution
+====================================================
+
+The _distribute.ss_ library provides a function to combine a
+stand-alone executable created with "embed.ss" with any DLLs,
+frameworks, or shared libraries that it needs to run on other machines
+(with the same OS).
+
+> (assemble-distribution dest-dir
+                         list-of-exec-files
+                         [#:collects-path path]
+                         [#:copy-collects list-of-dirs])
+
+  Copies the executables in `list-of-exec-files' to the directory
+  `dest-dir', along with DLLs, frameworks, and/or shared libraries
+  that the executables need to run a different machine.
+
+  The arrangement of the executables and support files in `dest-dir'
+  depends on the platform. In general `assemble-distribution' tries to
+  do the Right Thing.
+
+  If a #:collects-path argument is given, it overrides the default
+  location of the main "collects" directory for the packaged
+  executables. It should be relative to the `dest-dir' directory
+  (typically inside it).
+
+  The content of each directory in the #:copy-collects argument is
+  copied into the main "collects" directory for the packaged
+  executables.
