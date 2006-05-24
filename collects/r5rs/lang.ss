@@ -70,20 +70,27 @@
 	 ((var1 init1) ...)
 	 body ...))))
 
+  ;; redefine to avoid curried define forms
+  (define-syntax (r5rs:define stx)
+    (syntax-case stx ()
+      [(_ id expr) (identifier? #'id)
+       #'(define id expr)]
+      [(_ (id . args) . body) (identifier? #'id)
+       #'(define (id . args) . body)]))
+
   ;; syntax
-  (provide quasiquote unquote unquote-splicing 
-	   if let and or cond case define delay do
-	   (rename r5rs:letrec letrec)
+  (provide quasiquote unquote unquote-splicing
+	   if let and or cond case delay do
+	   (rename r5rs:letrec letrec) (rename r5rs:define define)
 	   let* begin lambda quote set!
 	   define-syntax let-syntax letrec-syntax
 
 	   ;; We have to include the following MzScheme-isms to do anything,
 	   ;; but they're not legal R5RS names, anyway.
-	   #%app #%datum #%top 
+	   #%app #%datum #%top
 	   (rename synrule-in-stx-module-begin #%module-begin)
 	   (rename require #%require)
 	   (rename provide #%provide))
-	   
 
   (define-syntax synrule-in-stx-module-begin
     (lambda (stx)
