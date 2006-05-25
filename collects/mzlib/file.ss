@@ -178,7 +178,7 @@
       (and (not dir?) (path? file) file)))
 
   (define (file-name-from-path name)
-    (file-name 'file-name-from-path nam))
+    (file-name 'file-name-from-path name))
 
   (define (path-only name)
     (unless (path-string? name)
