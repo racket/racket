@@ -561,7 +561,7 @@
   (maybe-save)
   (let ([f (if (not (null? file))
              (car file)
-             (path->string (get-file "Open" gcalc-frame)))])
+             (cond [(get-file "Open" gcalc-frame) => path->string] [else #f]))])
     (when f
       (if (file-exists? f)
         (with-input-from-file f
