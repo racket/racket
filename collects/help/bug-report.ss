@@ -506,6 +506,9 @@
     (send (send collections get-editor) auto-wrap #t)
     (send (send docs-installed get-editor) auto-wrap #t)
 
+    ;; Currently, the help-menu is left empty
+    (frame:remove-empty-menus bug-frame)
+
     (align-labels)
     (switch-to-compose-view)
 

@@ -49,12 +49,18 @@
                [help-menu (find-menu (string-constant help-menu))]
                [other-items
                 (remq* (list file-menu edit-menu windows-menu help-menu) items)]
-               [? (λ (menu) (and menu (pair? (send menu get-items)) menu))]
-               [re-ordered (filter values `(,(? file-menu) ,(? edit-menu)
+               [re-ordered (filter values `(,file-menu ,edit-menu
                                             ,@other-items
-                                            ,(? windows-menu) ,(? help-menu)))])
+                                            ,windows-menu ,help-menu))])
           (for-each (λ (item) (send item delete)) items)
           (for-each (λ (item) (send item restore)) re-ordered)))
+
+      (define (remove-empty-menus frame)
+        (define menus (send (send frame get-menu-bar) get-items))
+        (for-each (λ (menu) (send menu delete)) menus)
+        (for-each (λ (menu)
+                    (when (pair? (send menu get-items)) (send menu restore)))
+                  menus))
 
       (define (add-snip-menu-items edit-menu c%)
         (let* ([get-edit-target-object

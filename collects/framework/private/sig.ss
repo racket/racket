@@ -417,6 +417,7 @@
      pasteboard-info-mixin))
   (define-signature framework:frame-fun^
     (reorder-menus
+     remove-empty-menus
      add-snip-menu-items
      setup-size-pref))
   (define-signature framework:frame^

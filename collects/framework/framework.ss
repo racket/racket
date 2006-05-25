@@ -685,6 +685,14 @@
     "This is useful in conjunction with the "
     "frame classes. After instantiating the class and adding ones own menus,"
     "the menus will be mis-ordered. This function fixes them up.")
+   
+   (frame:remove-empty-menus
+    ((is-a?/c frame%) . -> . void?)
+    (frame)
+    "Removes empty menus in a frame."
+    ""
+    "This is useful if you have code that might leave empty menus.")
+   
    (group:get-the-frame-group
     (-> (is-a?/c group:%))
     ()
