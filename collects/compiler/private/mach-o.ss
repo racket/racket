@@ -77,13 +77,17 @@
 				     [seg (read-bytes 16 p)]
 				     [vmaddr (read-ulong p)]
 				     [vmsz (read-ulong p)]
-				     [offset (read-ulong p)])
+				     [offset (read-ulong p)]
+				     [align (read-ulong p)]
+				     [reloff (read-ulong p)]
+				     [nreloc (read-ulong p)]
+				     [flags (read-ulong p)])
 				 (when ((+ offset vmsz) . > . (+ cmdssz 28))
 				   (when (offset . < . min-used)
 				     ;; (printf "   new min!\n")
 				     (set! min-used offset)))
 				 ;; (printf "    ~s,~s 0x~x 0x~x\n" seg sect offset vmsz)
-				 (read-ulong p) (read-ulong p) (read-ulong p) (read-ulong p) (read-ulong p) (read-ulong p))
+				 (read-ulong p) (read-ulong p))
 			       (loop (sub1 nsects))))))]
 		      [(2)
 		       ;; Symbol table
@@ -129,15 +133,16 @@
 		(write-ulong 0 out)
 		(write-ulong 0 out)
 		(write-ulong 4 out) ; 4 means SG_NORELOC
+		;; Shift command positions
+		(when (sym-tab-pos . > . link-edit-pos)
+		  (set! sym-tab-pos (+ sym-tab-pos 56)))
+		(when (dysym-pos . > . link-edit-pos)
+		  (set! dysym-pos (+ dysym-pos 56)))
+		(when (hints-pos . > . link-edit-pos)
+		  (set! hints-pos (+ hints-pos 56)))
+		(set! link-edit-pos (+ link-edit-pos 56))
 		(when move-link-edit?
 		  ;; Update link-edit segment entry:
-		  (when (sym-tab-pos . > . link-edit-pos)
-		    (set! sym-tab-pos (+ sym-tab-pos 56)))
-		  (when (dysym-pos . > . link-edit-pos)
-		    (set! dysym-pos (+ dysym-pos 56)))
-		  (when (hints-pos . > . link-edit-pos)
-		    (set! hints-pos (+ hints-pos 56)))
-		  (set! link-edit-pos (+ link-edit-pos 56))
 		  (file-position out (+ link-edit-pos 32))
 		  ;; (printf "Update to ~a\n" (+ out-offset outlen))
 		  (write-ulong (+ out-offset outlen) out)
@@ -157,10 +162,13 @@
 		    (file-position out (+ sym-tab-pos 16))
 		    (write-ulong (+ symstr-offset outlen) out))
 		  ;; Shift dysym pointers:
-		  (file-position p (+ dysym-pos 56))
-		  (let ([ind-offset (read-ulong p)])
-		    (file-position out (+ dysym-pos 56))
-		    (write-ulong (+ ind-offset outlen) out))
+		  (for-each (lambda (delta)
+			      (file-position p (+ dysym-pos delta))
+			      (let ([offset (read-ulong p)])
+				(unless (zero? offset)
+				  (file-position out (+ dysym-pos delta))
+				  (write-ulong (+ offset outlen) out))))
+			    '(32 40 48 56 64 72))
 		  ;; Shift hints pointer:
 		  (file-position p (+ hints-pos 8))
 		  (let ([hints-offset (read-ulong p)])
