@@ -163,14 +163,17 @@
       ;; unreliable).
       (let* ([version (if (pair? version) (string-append "." (car version)) "")]
              [fullpath (lambda (p) (path->complete-path (expand-path p)))]
-             [name0 (path->string (expand-path name))]     ; orig name
+             [absolute? (absolute-path? name)]     ; orig name
+             [name0 (path->string (expand-path name))]
              [name  (if (regexp-match lib-suffix-re name0) ; name + suffix
                       (string-append name0 version)
                       (string-append name0 "." lib-suffix version))])
-        (or (ormap (lambda (dir)
-		     (or (ffi-lib (build-path dir name) #t)      ; try good name first
-			 (ffi-lib (build-path dir name0) #t)))   ; try original
-		   (get-lib-search-dirs))
+        (or (and absolute?
+                 (ormap (lambda (dir)
+                          ;; try good name first, then original
+                          (or (ffi-lib (build-path dir name) #t)
+                              (ffi-lib (build-path dir name0) #t)))
+                        (get-lib-search-dirs)))
 	    ;; Try without DLL path:
 	    (ffi-lib name #t)         ; try good name first
             (ffi-lib name0 #t)        ; try original
