@@ -171,36 +171,29 @@
 			       file))]))
 	    filename))))
 
-  (define file-name-from-path
-    (lambda (name)
-      (unless (path-string? name)
-	(raise-type-error 'file-name-from-path "path or string" name))
-      (let-values ([(base file dir?) (split-path name)])
-	(if (and (not dir?) (path? file))
-	    file
-	    #f))))
+  (define (file-name who name)
+    (unless (path-string? who)
+      (raise-type-error who "path or string" name))
+    (let-values ([(base file dir?) (split-path name)])
+      (and (not dir?) (path? file) file)))
 
-  (define path-only
-    (lambda (name)
-      (unless (path-string? name)
-	(raise-type-error 'path-only "path or string" name))
-      (let-values ([(base file dir?) (split-path name)])
-	(cond
-	 [dir? name]
-	 [(path? base) base]
-	 [else #f]))))
+  (define (file-name-from-path name)
+    (filename 'file-name-from-path))
+
+  (define (path-only name)
+    (unless (path-string? name)
+      (raise-type-error 'path-only "path or string" name))
+    (let-values ([(base file dir?) (split-path name)])
+      (cond [dir? name]
+            [(path? base) base]
+            [else #f])))
 
   ;; name can be any string; we just look for a dot
-  (define filename-extension
-    (lambda (name)
-      (unless (path-string? name)
-	(raise-type-error 'filename-extension "path or string" name))
-      (let ([name (if (path? name)
-		      (path->bytes name)
-		      name)])
-	(let ([m (regexp-match #rx#"[.]([^.]+)$" name)])
-	  (and m
-	       (cadr m))))))
+  (define (filename-extension name)
+    (let* ([name (file-name 'filename-extension name)]
+           [name (and name (path->bytes name))])
+      (cond [(and name (regexp-match #rx#"[.]([^.]+)$" name)) => cadr]
+            [else #f])))
 
   (define (delete-directory/files path)
     (unless (path-string? path)
