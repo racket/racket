@@ -172,13 +172,13 @@
 	    filename))))
 
   (define (file-name who name)
-    (unless (path-string? who)
+    (unless (path-string? name)
       (raise-type-error who "path or string" name))
     (let-values ([(base file dir?) (split-path name)])
       (and (not dir?) (path? file) file)))
 
   (define (file-name-from-path name)
-    (filename 'file-name-from-path))
+    (file-name 'file-name-from-path))
 
   (define (path-only name)
     (unless (path-string? name)
