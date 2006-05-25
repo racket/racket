@@ -6,10 +6,12 @@
 
   (define handin-name     (#%info-lookup 'name))
   (define this-collection (#%info-lookup 'collection))
-  (define web-address     (#%info-lookup 'web-address))
-  (define selection-mode  (#%info-lookup 'selection-mode))
+  (define web-address     (#%info-lookup 'web-address
+                            (lambda () "http://www.plt-scheme.org")))
+  (define selection-mode  (#%info-lookup 'selection-mode
+                            (lambda () 'extended)))
   (define selection-defaults
-    (let ([sd (#%info-lookup 'selection-default)])
+    (let ([sd (#%info-lookup 'selection-default (lambda () '("*.scm" "*.ss")))])
       (if (string? sd) (list sd) sd)))
   (define (make-key sfx)
     (string->symbol (format "~a:~a" (string-downcase this-collection) sfx)))
