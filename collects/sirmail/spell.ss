@@ -94,19 +94,21 @@
 
   (define (clean-up to-send)
     ;; Drop characters that ispell or aspell may treat as word
-    ;;  delimiters. We can to keep ' in a word, but double
+    ;;  delimiters. We can to keep ' in a word, but double or leading
     ;;  '' counts as a delimiter, so end by replacing those.
-    (regexp-replace* #rx"''+"
-		     (list->string
-		      (map (lambda (b)
-			     (if (and ((char->integer b) . <= . 127)
-				      (or (char-alphabetic? b)
-					  (char-numeric? b)
-					  (eq? b #\')))
-				 b
-				 #\x))
-			   (string->list to-send)))
-		     "x"))
+    (regexp-replace* #rx"^'"
+		     (regexp-replace* #rx"''+"
+				      (list->string
+				       (map (lambda (b)
+					      (if (and ((char->integer b) . <= . 127)
+						       (or (char-alphabetic? b)
+							   (char-numeric? b)
+							   (eq? b #\')))
+						  b
+						  #\x))
+					    (string->list to-send)))
+				      "x")
+		     ""))
 
   (define has-ispell? 'dontknow)
   (define ispell-prog #f)
@@ -119,11 +121,15 @@
 						    "ispell.exe"
 						    "ispell")
 						#f)
-			  (ormap (lambda (x) (and (file-exists? x) x))
-				 '("/sw/bin/ispell"
-				   "/usr/bin/ispell"
-				   "/bin/ispell"
-				   "/usr/local/bin/ispell"))
+			  (ormap (lambda (ispell)
+				   (ormap (lambda (x) 
+					    (let ([x (build-path x ispell)])
+					      (and (file-exists? x) x)))
+					  '("/sw/bin"
+					    "/usr/bin"
+					    "/bin"
+					    "/usr/local/bin")))
+				 '("ispell" "aspell"))
 			  (find-executable-path (if (eq? (system-type) 'windows)
 						    "aspell.exe"
 						    "aspell")
