@@ -3450,7 +3450,7 @@ static Scheme_Object *simplify_path(int argc, Scheme_Object *argv[])
 {
   char *s;
   int len, use_fs;
-  Scheme_Object *bs;
+  Scheme_Object *bs, *r;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
     scheme_wrong_type("simplify-path", SCHEME_PATH_STRING_STR, 0, argc, argv);
@@ -3465,7 +3465,14 @@ static Scheme_Object *simplify_path(int argc, Scheme_Object *argv[])
 
   use_fs = ((argc <= 1) || SCHEME_TRUEP(argv[1]));
 
-  return do_simplify_path(bs, scheme_null, 0, use_fs, 0);
+  r = do_simplify_path(bs, scheme_null, 0, use_fs, 0);
+
+  if (SCHEME_FALSEP(r)) {
+    /* Input was just 'same: */
+    return scheme_make_path(".");
+  }
+
+  return r;
 }
 
 static Scheme_Object *current_drive(int argc, Scheme_Object *argv[])

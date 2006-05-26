@@ -380,6 +380,9 @@
 (test (build-path 'up "x" "y") simplify-path (build-path 'up "x" "z" 'up "y") #f)
 (test (build-path 'up "x" "y") simplify-path (build-path 'up 'same "x" "z" 'up "y") #f)
 (test (build-path 'up 'up "x" "y") simplify-path (build-path 'up 'same 'up "x" "z" 'up "y") #f)
+(test (build-path 'same) simplify-path (build-path 'same) #f)
+(test (build-path 'same) simplify-path (build-path 'same 'same 'same) #f)
+(test (build-path 'same) simplify-path (build-path 'same "a" 'same 'up 'same) #f)
 (arity-test simplify-path 1 2)
 
 (arity-test expand-path 1 1)
