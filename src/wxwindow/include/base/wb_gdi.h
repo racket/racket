@@ -334,7 +334,7 @@ extern Bool wxColourDisplay(void);
 extern int wxDisplayDepth(void);
 
 extern void wxDisplaySize(int *width, int *height, int flags = 0);
-extern void wxDisplayOrigin(int *x, int *y);
+extern void wxDisplayOrigin(int *x, int *y, int flags = 0);
 
 extern void wxSetCursor(wxCursor *cursor);
 

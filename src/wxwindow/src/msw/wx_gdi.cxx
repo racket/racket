@@ -1615,10 +1615,7 @@ void wxDisplaySize(int *width, int *height, int flags)
 {
   RECT r;
 
-  if (!flags && SystemParametersInfo(SPI_GETWORKAREA, 0, &r, 0)) {
-    *width = (r.right - r.left);
-    *height = (r.bottom - r.top);
-  } else {
+  {
     HDC dc;
     int dw, dh;
     dc = ::GetDC(NULL);
@@ -1630,11 +1627,11 @@ void wxDisplaySize(int *width, int *height, int flags)
   }
 }
 
-void wxDisplayOrigin(int *x, int *y)
+void wxDisplayOrigin(int *x, int *y, int flags)
 {
   RECT r;
 
-  if (SystemParametersInfo(SPI_GETWORKAREA, 0, &r, 0)) {
+  if (flags && SystemParametersInfo(SPI_GETWORKAREA, 0, &r, 0)) {
     *x = r.left;
     *y = r.top;
   } else {
