@@ -168,7 +168,7 @@
              [name  (if (regexp-match lib-suffix-re name0) ; name + suffix
                       (string-append name0 version)
                       (string-append name0 "." lib-suffix version))])
-        (or (and absolute?
+        (or (and (not absolute?)
                  (ormap (lambda (dir)
                           ;; try good name first, then original
                           (or (ffi-lib (build-path dir name) #t)
