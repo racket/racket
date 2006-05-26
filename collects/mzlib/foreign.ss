@@ -163,8 +163,8 @@
       ;; unreliable).
       (let* ([version (if (pair? version) (string-append "." (car version)) "")]
              [fullpath (lambda (p) (path->complete-path (expand-path p)))]
-             [absolute? (absolute-path? name)]     ; orig name
-             [name0 (path->string (expand-path name))]
+             [absolute? (absolute-path? name)]
+             [name0 (path->string (expand-path name))]     ; orig name
              [name  (if (regexp-match lib-suffix-re name0) ; name + suffix
                       (string-append name0 version)
                       (string-append name0 "." lib-suffix version))])
