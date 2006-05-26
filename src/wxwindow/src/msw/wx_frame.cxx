@@ -42,6 +42,13 @@ Bool wxFrame::Create(wxFrame *Parent, char *title, int x, int y,
 {
   wxWnd *cparent = NULL;
 
+  if ((x == -1) && (y == -1)) {
+    RECT r;
+    SystemParametersInfo(SPI_GETWORKAREA, 0, &r, 0);
+    x = r.left;
+    y = r.top;
+  }
+
   wxbFrame::Create(Parent, title, x, y, width, height, style, name);
   
   frame_type = style & (wxSDI | wxMDI_PARENT | wxMDI_CHILD);
