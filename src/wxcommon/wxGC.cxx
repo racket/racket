@@ -34,13 +34,7 @@ Authors: John R. Ellis and Jesse Hull
    platform. For PPC, we define `new' to help ensure that
    we're not accidentally using it in the OS X port. */
 #if defined(OS_X) && !defined(XONX)
-# ifdef __POWERPC__
-#  define SHOULDNT_USE_BUILTIN_NEW
-#  include <stdio.h>
-#  include <stdlib.h>
-# else
-#  define DONT_DEFINE_BUILTIN_NEW
-# endif
+# define DONT_DEFINE_BUILTIN_NEW
 #endif
 
 #ifdef COMPACT_BACKTRACE_GC  

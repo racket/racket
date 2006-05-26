@@ -61,10 +61,10 @@ static void wxCancelQuit()
 
 static void wxsDisplayOrigin(int *x, int *y, Bool flags = FALSE)
 {
-#ifdef wx_mac
-  wxDisplayOrigin(x, y, flags);
-#else
+#ifdef wx_xt
   wxDisplayOrigin(x, y);
+#else
+  wxDisplayOrigin(x, y, flags);
 #endif	
 }
 
