@@ -33,6 +33,15 @@ static void wxCancelQuit()
 #endif
 }
 
+static void wxsDisplayOrigin(int *x, int *y, Bool flags = FALSE)
+{
+#ifdef wx_mac
+  wxDisplayOrigin(x, y, flags);
+#else
+  wxDisplayOrigin(x, y);
+#endif	
+}
+
 #ifndef wxGETDIR
 # define wxGETDIR 0
 #endif
@@ -112,7 +121,7 @@ extern class wxDialogBox *objscheme_unbundle_wxDialogBox(Scheme_Object *obj, con
 @ "hide-cursor" : void wxHideCursor()
 @ "bell" : void wxBell();
 @ "display-size" : void wxDisplaySize(int*,int*,int);
-@ "display-origin" : void wxDisplayOrigin(int*,int*);
+@ "display-origin" : void wxsDisplayOrigin(int*,int*,bool=FALSE);
 
 @ "label->plain-label" : string wxStripMenuCodes_Scheme(string);
 

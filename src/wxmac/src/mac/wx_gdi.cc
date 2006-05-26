@@ -874,21 +874,27 @@ void wxDisplaySize(int *width, int *height, int flags)
   BitMap screenBits;
   int mbh;
 
-  GetQDGlobalsScreenBits(&screenBits);
-  *width = screenBits.bounds.right - screenBits.bounds.left;
-  if (flags)
-    mbh = 0;
-  else
-    mbh = wxMenuBarHeight;
-  *height = screenBits.bounds.bottom - screenBits.bounds.top - mbh;
+  if (!flags) {
+    Rect r;
+    GetAvailableWindowPositioningBounds(NULL, &r);
+    *width = (r.right - r.left);
+    *height = (r.bottom - wxMenuBarHeight);
+  } else {
+    GetQDGlobalsScreenBits(&screenBits);
+    *width = screenBits.bounds.right - screenBits.bounds.left;
+    *height = screenBits.bounds.bottom - screenBits.bounds.top;
+  }
 }
 
-void wxDisplayOrigin(int *x, int *y)
+void wxDisplayOrigin(int *x, int *y, int flags)
 {
-  int mbh;
-  *x = 0;
-  mbh = wxMenuBarHeight;
-  *y = mbh;
+  if (flags) {
+    Rect r;
+    GetAvailableWindowPositioningBounds(NULL, &r);
+    *x = r.left;
+  } else
+    *x = 0;
+  *y = wxMenuBarHeight;
 }
 
 static void FreeGWorld(GWorldPtr x_pixmap)

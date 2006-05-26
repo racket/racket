@@ -59,6 +59,15 @@ static void wxCancelQuit()
 #endif
 }
 
+static void wxsDisplayOrigin(int *x, int *y, Bool flags = FALSE)
+{
+#ifdef wx_mac
+  wxDisplayOrigin(x, y, flags);
+#else
+  wxDisplayOrigin(x, y);
+#endif	
+}
+
 #ifndef wxGETDIR
 # define wxGETDIR 0
 #endif
@@ -480,7 +489,7 @@ static Scheme_Object *wxsGlobalwxStripMenuCodes_Scheme(int n,  Scheme_Object *p[
   return WITH_REMEMBERED_STACK(objscheme_bundle_string((char *)r));
 }
 
-static Scheme_Object *wxsGlobalwxDisplayOrigin(int n,  Scheme_Object *p[])
+static Scheme_Object *wxsGlobalwxsDisplayOrigin(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
@@ -488,6 +497,7 @@ static Scheme_Object *wxsGlobalwxDisplayOrigin(int n,  Scheme_Object *p[])
   int* x0 = &_x0;
   int _x1;
   int* x1 = &_x1;
+  Bool x2;
   Scheme_Object *sbox_tmp;
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -496,9 +506,13 @@ static Scheme_Object *wxsGlobalwxDisplayOrigin(int n,  Scheme_Object *p[])
   
       *x0 = (sbox_tmp = WITH_VAR_STACK(objscheme_unbox(p[0+0], "display-origin")), WITH_VAR_STACK(objscheme_unbundle_integer(sbox_tmp, "display-origin"", extracting boxed argument")));
       *x1 = (sbox_tmp = WITH_VAR_STACK(objscheme_unbox(p[0+1], "display-origin")), WITH_VAR_STACK(objscheme_unbundle_integer(sbox_tmp, "display-origin"", extracting boxed argument")));
+  if (n > (0+2)) {
+    x2 = WITH_VAR_STACK(objscheme_unbundle_bool(p[0+2], "display-origin"));
+  } else
+    x2 = FALSE;
 
   
-  WITH_VAR_STACK(wxDisplayOrigin(x0, x1));
+  WITH_VAR_STACK(wxsDisplayOrigin(x0, x1, x2));
 
   
   if (n > (0+0))
@@ -762,7 +776,7 @@ void objscheme_setup_wxsGlobal(Scheme_Env *env)
   WITH_VAR_STACK(scheme_install_xc_global("get-resource", functmp, env));
   functmp = WITH_VAR_STACK(scheme_make_prim_w_arity((Scheme_Prim *)wxsGlobalwxStripMenuCodes_Scheme, "label->plain-label", 1, 1));
   WITH_VAR_STACK(scheme_install_xc_global("label->plain-label", functmp, env));
-  functmp = WITH_VAR_STACK(scheme_make_prim_w_arity((Scheme_Prim *)wxsGlobalwxDisplayOrigin, "display-origin", 2, 2));
+  functmp = WITH_VAR_STACK(scheme_make_prim_w_arity((Scheme_Prim *)wxsGlobalwxsDisplayOrigin, "display-origin", 2, 3));
   WITH_VAR_STACK(scheme_install_xc_global("display-origin", functmp, env));
   functmp = WITH_VAR_STACK(scheme_make_prim_w_arity((Scheme_Prim *)wxsGlobalwxDisplaySize, "display-size", 3, 3));
   WITH_VAR_STACK(scheme_install_xc_global("display-size", functmp, env));
