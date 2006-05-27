@@ -31,10 +31,17 @@ Authors: John R. Ellis and Jesse Hull
 
 /* With x86 Mac OS X, MrEd's `new' gets used by libraries
    that shouldn't use it. So we can't define `new' on that
-   platform. For PPC, we define `new' to help ensure that
-   we're not accidentally using it in the OS X port. */
+   platform. For PPC, we define `new' and `delete' to use
+   malloc() and free(); for some reason, linking fails in
+   Mac OS X 10.3 if we just omit `new' and `delete'. */
 #if defined(OS_X) && !defined(XONX)
-# define DONT_DEFINE_BUILTIN_NEW
+# ifdef __POWERPC__
+#  define MALLOC_FOR_BUILTIN_NEW
+#  include <stdio.h>
+#  include <stdlib.h>
+# else
+#  define DONT_DEFINE_BUILTIN_NEW
+# endif
 #endif
 
 #ifdef COMPACT_BACKTRACE_GC  
@@ -64,8 +71,7 @@ typedef void (*GC_finalization_proc)(void *, void *);
 
 void *operator new(size_t size)
 {
-#ifdef SHOULDNT_USE_BUILTIN_NEW
-  printf("MrEd used global new operator!\n");
+#ifdef MALLOC_FOR_BUILTIN_NEW
   return malloc(size);
 #else
 # ifdef USE_SENORA_GC
@@ -79,10 +85,10 @@ void *operator new(size_t size)
 #endif
 }
 
-void operator delete(void * /*obj*/)
+void operator delete(void *obj)
 {
-#ifdef SHOULDNT_USE_BUILTIN_NEW
-  printf("MrEd used global delete operator!\n");
+#ifdef MALLOC_FOR_BUILTIN_NEW
+  free(obj);
 #endif
 }
 
@@ -184,8 +190,7 @@ void GC_cleanup(void *obj, void *)
 
 void* operator new[](size_t size)
 {
-#ifdef SHOULDNT_USE_BUILTIN_NEW
-  printf("MrEd used global new[] operator!\n");
+#ifdef MALLOC_FOR_BUILTIN_NEW
   return malloc(size);
 #else
 # ifdef USE_SENORA_GC
@@ -199,10 +204,10 @@ void* operator new[](size_t size)
 #endif
 }
   
-void operator delete[](void * /*obj*/)
+void operator delete[](void *obj)
 {
-#ifdef SHOULDNT_USE_BUILTIN_NEW
-  printf("MrEd used global delete[] operator!\n");
+#ifdef MALLOC_FOR_BUILTIN_NEW
+  free(obj);
 #endif
 }
 
