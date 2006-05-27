@@ -305,18 +305,31 @@
       (define (normalize filename)
 	(simplify-path (expand-path filename)))
 
+      (define (is-lib-path? a)
+	(and (pair? a)
+	     (eq? 'lib (car a))))
+
+      (define (lib-module-filename collects-dest module-path)
+	(let ([p (build-path collects-dest
+			     (if (null? (cddr module-path))
+				 "mzlib"
+				 (apply build-path  (cddr module-path)))
+			     "compiled"
+			     (path-replace-suffix (cadr module-path) #".zo"))])
+	  (let-values ([(base name dir?) (split-path p)])
+	    (make-directory* base)
+	    p)))
+
       ;; Loads module code, using .zo if there, compiling from .scm if not
-      (define (get-code filename module-path codes prefixes verbose?)
+      (define (get-code filename module-path codes prefixes verbose? collects-dest)
 	(when verbose?
 	  (fprintf (current-error-port) "Getting ~s~n" filename))
 	(let ([a (assoc filename (unbox codes))])
 	  (if a
 	      ;; Already have this module. Make sure that library-referenced
 	      ;;  modules are consistently referenced through library paths:
-	      (let ([found-lib? (and (pair? (mod-mod-path a))
-				     (eq? 'lib (car (mod-mod-path a))))]
-		    [look-lib? (and (pair? module-path)
-				    (eq? 'lib (car module-path)))])
+	      (let ([found-lib? (is-lib-path? (mod-mod-path a))]
+		    [look-lib? (is-lib-path? module-path)])
 		(cond
 		 [(and found-lib? look-lib?)
 		  'ok]
@@ -346,26 +359,34 @@
 					    sub-path
 					    codes
 					    prefixes
-					    verbose?))
+					    verbose?
+					    collects-dest))
 				sub-files sub-paths)
-		      ;; Build up relative module resolutions, relative to this one,
-		      ;; that will be requested at run-time.
-		      (let ([mappings (map (lambda (sub-i sub-filename)
-					     (let-values ([(path base) (module-path-index-split sub-i)])
-					       ;; Assert: base should refer to this module:
-					       (let-values ([(path2 base2) (module-path-index-split base)])
-						 (when (or path2 base2)
-						   (error 'embed "unexpected nested module path index")))
-					       (let ([m (assoc sub-filename (unbox codes))])
-						 (cons path (mod-full-name m)))))
-					   all-file-imports sub-files)])
-			;; Record the module
-			(set-box! codes
-				  (cons (make-mod filename module-path code 
-						  name prefix (string->symbol
-							       (format "~a~a" prefix name))
-						  mappings)
-					(unbox codes)))))))))))
+		      (if (and collects-dest
+			       (is-lib-path? module-path))
+			  ;; Install code as .zo:
+			  (with-output-to-file (lib-module-filename collects-dest module-path)
+			    (lambda ()
+			      (write code))
+			    'truncate/replace)
+			  ;; Build up relative module resolutions, relative to this one,
+			  ;; that will be requested at run-time.
+			  (let ([mappings (map (lambda (sub-i sub-filename)
+						 (let-values ([(path base) (module-path-index-split sub-i)])
+						   ;; Assert: base should refer to this module:
+						   (let-values ([(path2 base2) (module-path-index-split base)])
+						     (when (or path2 base2)
+						       (error 'embed "unexpected nested module path index")))
+						   (let ([m (assoc sub-filename (unbox codes))])
+						     (cons path (mod-full-name m)))))
+					       all-file-imports sub-files)])
+			    ;; Record the module
+			    (set-box! codes
+				      (cons (make-mod filename module-path code 
+						      name prefix (string->symbol
+								   (format "~a~a" prefix name))
+						      mappings)
+					    (unbox codes))))))))))))
 
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -443,7 +464,7 @@
 
       ;; Write a module bundle that can be loaded with 'load' (do not embed it
       ;; into an executable). The bundle is written to the current output port.
-      (define (write-module-bundle verbose? modules literal-files literal-expression)
+      (define (write-module-bundle verbose? modules literal-files literal-expression collects-dest)
 	(let* ([module-paths (map cadr modules)]
 	       [files (map
 		       (lambda (mp)
@@ -471,7 +492,7 @@
 	       ;; As we descend the module tree, we append to the front after
 	       ;; loasing imports, so the list in the right order.
 	       [codes (box null)])
-	  (for-each (lambda (f mp) (get-code f mp codes prefix-mapping verbose?))
+	  (for-each (lambda (f mp) (get-code f mp codes prefix-mapping verbose? collects-dest))
 		    files
 		    collapsed-mps)
 	  ;; Install a module name resolver that redirects
@@ -530,7 +551,8 @@
 					      [aux null]
 					      [launcher? #f]
 					      [variant 'normal]
-					      [collects-path #f])
+					      [collects-path #f]
+					      [collects-dest #f])
 	  (define keep-exe? (and launcher?
 				 (let ([m (assq 'forget-exe? aux)])
 				   (or (not m)
@@ -617,7 +639,7 @@
 			      (update-dll-dir dest (build-path orig-dir dir))))))))
 		(let ([write-module
 		       (lambda ()
-			 (write-module-bundle verbose? modules literal-files literal-expression))])
+			 (write-module-bundle verbose? modules literal-files literal-expression collects-dest))])
 		  (let-values ([(start end)
 				(if (and (eq? (system-type) 'macosx)
 					 (not unix-starter?))

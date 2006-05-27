@@ -44,6 +44,7 @@
   (define exe-embedded-libraries (make-parameter null))
   (define exe-aux (make-parameter null))
   (define exe-embedded-collects-path (make-parameter #f))
+  (define exe-embedded-collects-dest (make-parameter #f))
 
   (define exe-dir-output (make-parameter #f))
 
@@ -275,6 +276,10 @@
 	 ,(lambda (f i)
 	    (exe-embedded-collects-path i))
 	 ("Path to collects relative to --[gui-]exe executable" "path")]
+	[("--collects-dest")
+	 ,(lambda (f i)
+	    (exe-embedded-collects-dest i))
+	 ("Copy needed to collection code to directory" "dir")]
 	[("--ico")
 	 ,(lambda (f i) (exe-aux
 			 (cons (cons 'ico i)
@@ -549,6 +554,7 @@
 			(cons "-Z" flags)
 			flags))
 	#:collects-path (exe-embedded-collects-path)
+	#:collects-dest (exe-embedded-collects-dest)
 	#:aux (exe-aux))
        (printf " [output to \"~a\"]~n" dest))]
     [(exe-dir)
