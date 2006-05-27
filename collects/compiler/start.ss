@@ -45,6 +45,7 @@
   (define exe-aux (make-parameter null))
   (define exe-embedded-collects-path (make-parameter #f))
   (define exe-embedded-collects-dest (make-parameter #f))
+  (define exe-dir-add-collects-dirs (make-parameter null))
 
   (define exe-dir-output (make-parameter #f))
 
@@ -275,11 +276,11 @@
 	[("--collects-path")
 	 ,(lambda (f i)
 	    (exe-embedded-collects-path i))
-	 ("Path to collects relative to --[gui-]exe executable" "path")]
+	 ("Set <path> main collects in --[gui-]exe/--exe-dir" "path")]
 	[("--collects-dest")
 	 ,(lambda (f i)
 	    (exe-embedded-collects-dest i))
-	 ("Copy needed to collection code to directory" "dir")]
+	 ("Add --[gui-]exe collection code to <dir>" "dir")]
 	[("--ico")
 	 ,(lambda (f i) (exe-aux
 			 (cons (cons 'ico i)
@@ -294,13 +295,18 @@
 	 ,(lambda (f) (exe-aux 
 		       (cons (cons 'original-exe? #t)
 			     (exe-aux))))
-	 ("Use original executable instead of stub")]]
+	 ("Use original executable for --[gui-]exe instead of stub")]]
        [multi
 	[("++lib")
 	 ,(lambda (f l c) (exe-embedded-libraries
 			   (append (exe-embedded-libraries)
 				   (list (list l c)))))
 	 ("Embed <lib> from <collect> in --[gui-]exe executable" "lib" "collect")]
+	[("++collects-copy")
+	 ,(lambda (f d) (exe-dir-add-collects-dirs
+			 (append (exe-dir-add-collects-dirs)
+				 (list d))))
+	 ("Add collects in <dir> to --exe-dir" "dir")]
 	[("++exf") 
 	 ,(lambda (f v) (exe-embedded-flags
 			 (append (exe-embedded-flags)
@@ -562,7 +568,9 @@
 		       'assemble-distribution)
       (exe-dir-output)
       source-files
-      #:collects-path (exe-embedded-collects-path))]
+      #:collects-path (exe-embedded-collects-path)
+      #:copy-collects (exe-dir-add-collects-dirs))
+     (printf " [output to \"~a\"]~n" (exe-dir-output))]
     [(plt)
      (for-each (lambda (fd)
 		 (unless (relative-path? fd)

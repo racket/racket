@@ -309,16 +309,33 @@
 	(and (pair? a)
 	     (eq? 'lib (car a))))
 
+      (define (unix-style-split p)
+	(let ([m (regexp-match #rx"^([^/]*)/(.*)$" p)])
+	  (if m
+	      (cons (cadr m) (unix-style-split (caddr m)))
+	      (list p))))
+
+      (define (extract-last l)
+	(let loop ([l l][dirs null])
+	  (if (null? (cdr l))
+	      (values (reverse dirs) (car l))
+	      (loop (cdr l) (cons (car l) dirs)))))
+
       (define (lib-module-filename collects-dest module-path)
-	(let ([p (build-path collects-dest
-			     (if (null? (cddr module-path))
-				 "mzlib"
-				 (apply build-path  (cddr module-path)))
-			     "compiled"
-			     (path-replace-suffix (cadr module-path) #".zo"))])
-	  (let-values ([(base name dir?) (split-path p)])
-	    (make-directory* base)
-	    p)))
+	(let-values ([(dir file)
+		      (extract-last
+		       (append (apply append (map unix-style-split 
+						  (if (null? (cddr module-path))
+						      '("mzlib")
+						      (cddr module-path))))
+			       (unix-style-split (cadr module-path))))])
+	  (let ([p (build-path collects-dest
+			       (apply build-path dir)
+			       "compiled"
+			       (path-replace-suffix file #".zo"))])
+	    (let-values ([(base name dir?) (split-path p)])
+	      (make-directory* base)
+	      p))))
 
       ;; Loads module code, using .zo if there, compiling from .scm if not
       (define (get-code filename module-path codes prefixes verbose? collects-dest)
@@ -365,27 +382,35 @@
 		      (if (and collects-dest
 			       (is-lib-path? module-path))
 			  ;; Install code as .zo:
-			  (with-output-to-file (lib-module-filename collects-dest module-path)
-			    (lambda ()
-			      (write code))
-			    'truncate/replace)
+			  (begin
+			    (with-output-to-file (lib-module-filename collects-dest module-path)
+			      (lambda ()
+				(write code))
+			      'truncate/replace)
+			    ;; Record module as copied
+			    (set-box! codes
+				      (cons (make-mod filename module-path #f
+						      #f #f #f #f)
+					    (unbox codes))))
 			  ;; Build up relative module resolutions, relative to this one,
 			  ;; that will be requested at run-time.
-			  (let ([mappings (map (lambda (sub-i sub-filename)
-						 (let-values ([(path base) (module-path-index-split sub-i)])
-						   ;; Assert: base should refer to this module:
-						   (let-values ([(path2 base2) (module-path-index-split base)])
-						     (when (or path2 base2)
-						       (error 'embed "unexpected nested module path index")))
-						   (let ([m (assoc sub-filename (unbox codes))])
-						     (cons path (mod-full-name m)))))
-					       all-file-imports sub-files)])
+			  (let ([mappings (map (lambda (sub-i sub-filename sub-path)
+						 (and (not (and collects-dest
+								(is-lib-path? sub-path)))
+						      (let-values ([(path base) (module-path-index-split sub-i)])
+							;; Assert: base should refer to this module:
+							(let-values ([(path2 base2) (module-path-index-split base)])
+							  (when (or path2 base2)
+							    (error 'embed "unexpected nested module path index")))
+							(let ([m (assoc sub-filename (unbox codes))])
+							  (cons path (mod-full-name m))))))
+					       all-file-imports sub-files sub-paths)])
 			    ;; Record the module
 			    (set-box! codes
 				      (cons (make-mod filename module-path code 
 						      name prefix (string->symbol
 								   (format "~a~a" prefix name))
-						      mappings)
+						      (filter values mappings))
 					    (unbox codes))))))))))))
 
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -420,9 +445,8 @@
 			(let ([a2 (assoc name (cadr a))])
 			  (if a2
 			      (cdr a2)
-			      (error 'embedding-module-name-resolver
-				     "unexpected relative mapping request: ~e in ~e"
-				     name rel-to)))
+			      ;; No relative mapping found (presumably a lib)
+			      (orig name rel-to stx)))
 			;; A library mapping that we have? 
 			(let ([a3 (and (pair? name)
 				       (eq? (car name) 'lib)
@@ -495,6 +519,8 @@
 	  (for-each (lambda (f mp) (get-code f mp codes prefix-mapping verbose? collects-dest))
 		    files
 		    collapsed-mps)
+	  ;; Drop elements of `codes' that just record copied libs:
+	  (set-box! codes (filter (lambda (m) (mod-code m)) (unbox codes)))
 	  ;; Install a module name resolver that redirects
 	  ;; to the embedded modules
 	  (write (make-module-name-resolver (unbox codes)))
