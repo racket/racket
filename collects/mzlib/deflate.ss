@@ -2035,11 +2035,10 @@
 ;;  * Run a set of bytes through the crc shift register.  If s is a NULL
 ;;  * pointer, then initialize the crc shift register contents instead.
 ;;  */
-(define crc 0)
+(define crc #xffffffff)
 (define (updcrc s n)
   ;; uch *s;                 /* pointer to bytes to pump through */
   ;; unsigned n;             /* number of bytes in s[] */
-
   (if s
       (let loop ([c crc][p 0])
 	(if (= p n)
@@ -2223,7 +2222,7 @@
 
   (flush_outbuf)
 
-  (values bytes_in bytes_out crc))
+  (values bytes_in bytes_out (bitwise-xor crc #xffffffff)))
 
 (define (gzip-through-ports in out origname time_stamp)
   
