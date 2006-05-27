@@ -147,7 +147,12 @@
 				(send dc draw-text text
 				      (+ dx sx (/ (- sw x) 2))
 				      (if (region-button? region)
-					  (+ dy sy (/ (- sh (- y d a)) 2) (- a))
+					  ;; Since we use size-in-pixels, the letters
+					  ;;  should really be 12 pixels high (including
+					  ;;  the descender), but the space above the letter
+					  ;;  can vary by font; center on 12, splitting
+					  ;;  the difference for the descender
+					  (+ dy sy (/ (- sh 12) 2) (- 12 y (/ d -2)))
 					  (+ dy sy 5))))
 			      (send dc set-font old-f))
 			    (send dc draw-bitmap text
