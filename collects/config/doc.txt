@@ -21,6 +21,10 @@ The "config.ss" module must export the following values:
    containing C libraries and build information; it defaults to a
    "lib" sibling directory of the main collection directory.
 
+  dll-dir - a `delay'ed path/string/bytes for a directory containing
+   Unix shared libraries for the main executable; it defaults to the
+   main C-library directory
+
   include-dir - a `delay'ed path/string/bytes for the main directory
    containing C header files; it defaults to an "include" sibling
    directory of the main collection directory.
