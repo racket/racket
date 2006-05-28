@@ -420,12 +420,8 @@
 
       ;; separate-path-strings : string[starting with /] -> (listof path/param)
       (define (separate-path-strings str)
-        (if (string=? str "")
-          '()
-          (let ([str (if (char=? #\/ (string-ref str 0))
-                       (substring str 1 (string-length str))
-                       str)])
-            (map separate-params (regexp-split #rx"/" str)))))
+        (let ([strs (regexp-split #rx"/" str)])
+          (map separate-params (if (string=? "" (car strs)) (cdr strs) strs))))
 
       (define (separate-params s)
         (let ([lst (map path-segment-decode (regexp-split #rx";" s))])
