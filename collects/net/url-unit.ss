@@ -362,7 +362,7 @@
                  "//"
                  "(?:([^:/@;?#]*)@)?" ; =2  user-at-opt
                  "([^:/@;?#]*)?"      ; =3  host-opt
-                 "(?::([0-9]*))?"     ; =4  colon-port-opt
+                 "(?::([0-9]+))?"     ; =4  colon-port-opt
                  ")?"                 ; >B  slashslash-opt
                  ")?"                 ; >A  front-opt
                  "([^?#]*)"           ; =5  path
