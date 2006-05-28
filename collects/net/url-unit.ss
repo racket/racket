@@ -420,29 +420,22 @@
 
       ;; separate-path-strings : string[starting with /] -> (listof path/param)
       (define (separate-path-strings str)
-        (cond
-          [(string=? str "") '()]
-          [else
-           (let loop ([str (if (char=? #\/ (string-ref str 0))
-                               (substring str 1 (string-length str))
-                               str)])
-             (cond
-               [(regexp-match #rx"([^/]*)/(.*)$" str)
-                =>
-                (lambda (m)
-                  (cons (separate-params (cadr m)) (loop (caddr m))))]
-               [else (list (separate-params str))]))]))
+        (if (string=? str "")
+          '()
+          (let ([str (if (char=? #\/ (string-ref str 0))
+                       (substring str 1 (string-length str))
+                       str)])
+            (map separate-params (regexp-split #rx"/" str)))))
 
       (define (separate-params s)
         (let ([lst (map path-segment-decode (regexp-split #rx";" s))])
           (make-path/param (car lst) (cdr lst))))
 
       (define (path-segment-decode p)
-        (cond
-          [(string=? p "..") 'up]
-          [(string=? p ".") 'same]
-          [else (uri-path-segment-decode p)]))
-      
+        (cond [(string=? p "..") 'up]
+              [(string=? p ".") 'same]
+              [else (uri-path-segment-decode p)]))
+
       (define (path-segment-encode p)
         (cond
           [(eq? p 'up) ".."]
@@ -455,21 +448,15 @@
         (cond
           [(null? path/params) ""]
           [else 
-           (apply
-            string-append
-            (if absolute? "/" "")
-            (add-between 
-             "/"
-             (map join-params path/params)))]))
+           (apply string-append
+                  (if absolute? "/" "")
+                  (add-between "/" (map join-params path/params)))]))
 
       (define (join-params s)
-        (apply 
-         string-append
-         (add-between ";" 
-                      (map 
-                       path-segment-encode
-                       (cons (path/param-path s)
-                             (path/param-param s))))))
+        (apply string-append
+               (add-between ";" (map path-segment-encode
+                                     (cons (path/param-path s)
+                                           (path/param-param s))))))
       
       (define (add-between bet lst)
         (cond
