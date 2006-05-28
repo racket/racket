@@ -72,9 +72,14 @@
         (let read-more ()
           (let ([x (lex in pos)])
             (cond
-              [(or (pi? x) (comment? x))
+              [(pi? x)
                (let-values ([(lst next) (read-more)])
                  (values (cons x lst) next))]
+              [(comment? x)
+               (let-values ([(lst next) (read-more)])
+                 (if (read-comments)
+                     (values (cons x lst) next)
+                     (values lst next)))]
               [(and (pcdata? x) (andmap char-whitespace? (string->list (pcdata-string x))))
                (read-more)]
               [else (values null x)]))))
