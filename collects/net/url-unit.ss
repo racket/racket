@@ -352,65 +352,45 @@
 
       ;; string->url : str -> url
       ;; New implementation, mostly provided by Neil Van Dyke
-      (define string->url
-        (let ((rx (regexp (string-append
-                           "^"
-                           "[ \t\f\r\n]*"
-                           "("                ; <1  front-opt
-                           "([a-zA-Z]*:)?"    ; =2  scheme-colon-opt
-                           "("                ; <3  slashslash-opt
-                           "//"
-                           "([^:/@;?#]*@)?"   ; =4  user-at-opt
-                           "([^:/@;?#]*)?"    ; =5  host-opt
-                           "(:[0-9]*)?"       ; =6  colon-port-opt
-                           ")?"               ; >3  slashslash-opt
-                           ")?"               ; >1  front-opt
-                           "([^?#]*)"         ; =7  path
-                           "(\\?[^#]*)?"      ; =8  question-query-opt
-                           "(#.*)?"           ; =9 hash-fragment-opt
-                           "[ \t\f\r\n]*"
-                           "$"))))
-          (lambda (str)
-            (let ((match (regexp-match-positions rx str)))
-              (if match
-                  (let* ((get-str (lambda (pos skip-left skip-right)
-                                    (let ((pair (list-ref match pos)))
-                                      (if pair
-                                          (substring str
-                                                     (+ (car pair) skip-left)
-                                                     (- (cdr pair) skip-right))
-                                          #f))))
-                         (get-num (lambda (pos skip-left skip-right)
-                                    (let ((s (get-str pos skip-left skip-right)))
-                                      (if s (string->number s) #f))))
-                         (host (get-str 5  0 0))
-                         (path (get-str 7 0 0))
-                         (scheme (get-str 2  0 1)))
-                    (when (string? scheme) (string-lowercase! scheme))
-                    (when (string? host) (string-lowercase! host))
-                    (make-url scheme
-                              (uri-decode/maybe (get-str 4  0 1)) ; user
-                              host
-                              (get-num 6  1 0) ; port
-                              (and (not (= 0 (string-length path)))
-                                   (char=? #\/ (string-ref path 0)))
-                              (separate-path-strings
-                               ;; If path is "" and the input is an absolute URL
-                               ;; with a hostname, then the intended path is "/",
-                               ;; but the URL is missing a "/" at the end.
-                               path
-                               #;
-                               (if (and (string=? path "")
-                                        host)
-                                   "/"
-                                   path))
-                              ;(uri-decode/maybe (get-str 8  1 0)) ;
-                              ;query
-                              (let ([q (get-str 8 1 0)])
-                                (if q (form-urlencoded->alist q) '()))
-                              (uri-decode/maybe (get-str 9  1 0)) ; fragment
-                              ))
-                  (url-error "Invalid URL string: ~e" str))))))
+      (define url-rx
+        (regexp (string-append
+                 "^"
+                 "[ \t\f\r\n]*"
+                 "(?:"                ; <A  front-opt
+                 "(?:([a-zA-Z]*):)?"  ; =1  scheme-colon-opt
+                 "(?:"                ; <B  slashslash-opt
+                 "//"
+                 "(?:([^:/@;?#]*)@)?" ; =2  user-at-opt
+                 "([^:/@;?#]*)?"      ; =3  host-opt
+                 "(?::([0-9]*))?"     ; =4  colon-port-opt
+                 ")?"                 ; >B  slashslash-opt
+                 ")?"                 ; >A  front-opt
+                 "([^?#]*)"           ; =5  path
+                 "(?:\\?([^#]*))?"    ; =6  question-query-opt
+                 "(?:#(.*))?"         ; =7  hash-fragment-opt
+                 "[ \t\f\r\n]*"
+                 "$")))
+      (define (string->url str)
+        (apply
+         (lambda (scheme user host port path query fragment)
+           (let* ([user   (uri-decode/maybe user)]
+                  [port   (and port (string->number port))]
+                  [abs?   (and (not (= 0 (string-length path)))
+                               (char=? #\/ (string-ref path 0)))]
+                  [path   (separate-path-strings
+                           ;; If path is "" and the input is an absolute URL
+                           ;; with a hostname, then the intended path is "/",
+                           ;; but the URL is missing a "/" at the end.
+                           path
+                           #;
+                           (if (and (string=? path "") host) "/" path))]
+                  [query   (if query (form-urlencoded->alist query) '())]
+                  [fragment (uri-decode/maybe fragment)])
+             (when (string? scheme) (string-lowercase! scheme))
+             (when (string? host) (string-lowercase! host))
+             (make-url scheme user host port abs? path query fragment)))
+         (cdr (or (regexp-match url-rx str)
+                  (url-error "Invalid URL string: ~e" str)))))
 
       (define (uri-decode/maybe f)
         ;; If #f, and leave unmolested any % that is followed by hex digit

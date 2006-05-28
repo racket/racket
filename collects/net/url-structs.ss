@@ -1,6 +1,6 @@
 (module url-structs mzscheme
   (require (lib "contract.ss"))
-  
+
   (define-struct url (scheme user host port path-absolute? path query fragment))
   (define-struct path/param (path param))
 
