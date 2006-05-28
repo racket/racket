@@ -13,7 +13,8 @@
   (require (lib "file.ss")
            (lib "unitsig.ss")
            (lib "port.ss")
-	   (lib "string.ss")
+           (lib "string.ss")
+           (lib "list.ss")
            "url-structs.ss"
            "uri-codec.ss"
            "url-sig.ss"
@@ -23,9 +24,9 @@
   (define url@
     (unit/sig net:url^
       (import net:tcp^)
-      
+
       (define-struct (url-exception exn:fail) ())
-      
+
       (define current-proxy-servers
         (make-parameter null (lambda (v)
                                (unless (and (list? v)
@@ -140,14 +141,32 @@
 	    (tcp-abandon-port client->server) ; flushes
             server->client)))
 
+      (define (file://->path url)
+        ;; remove all ""s
+        (let ([elts (remove* '("") (map path/param-path (url-path url)))]
+              [abs? (url-path-absolute? url)])
+          ;; See the discussion in PR8060 for an explanation
+          (if (eq? 'windows (system-type))
+            (let ([host (or (url-host url) "")])
+              (when (and (not abs?) host (pair? elts) (equal? ":" (car elts)))
+                (set-car! elts (string-append host ":"))
+                (set! host ""))
+              (unless (equal? "" host) (set! elts (cons host elts)))
+              (if (null? elts)
+                (build-path) ; make it throw the error
+                (let* ([fst (car elts)] [len (string-length fst)])
+                  (if (or (not abs?) (eq? #\: (string-ref fst (sub1 len))))
+                    (apply build-path elts)
+                    (if (null? (cdr elts))
+                      (build-path (string-append "\\\\" (car elts)))
+                      (apply build-path
+                             (string-append "\\\\" (car elts) "\\" (cadr elts))
+                             (cddr elts)))))))
+            (apply build-path (if abs? (cons "/" elts) elts)))))
+
       ;; file://get-pure-port : url -> in-port
       (define (file://get-pure-port url)
-        (open-input-file 
-         (apply
-          build-path
-          (map
-           path/param-path
-           (url-path url)))))
+        (open-input-file (file://->path url)))
 
       (define (schemeless-url url)
         (url-error "Missing protocol (usually \"http:\") at the beginning of URL: ~a" url))
