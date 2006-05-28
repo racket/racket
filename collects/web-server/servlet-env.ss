@@ -1,6 +1,5 @@
 (module servlet-env mzscheme
   (require (lib "sendurl.ss" "net")
-           (lib "class.ss")
            (lib "unitsig.ss"))
   (require "configuration.ss"
            "web-server.ss"
@@ -65,7 +64,7 @@
                            (lambda ()
                              (make-servlet (make-custodian)
                                            (i:make-servlet-namespace)
-                                           (make-object timeout-manager%
+                                           (create-timeout-manager
                                              (lambda (request)
                                              `(html (head "Return to the interaction window.")
                                                     (body (p "Return to the interaction window."))))

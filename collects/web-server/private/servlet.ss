@@ -1,5 +1,4 @@
 (module servlet mzscheme
-  (require (lib "class.ss"))
   (require "../managers/manager.ss")
   
   (define-struct (exn:fail:servlet:instance exn:fail) ())
@@ -26,6 +25,6 @@
   (define (current-servlet-instance-data)
     (define manager (current-servlet-manager))
     (define instance-id (thread-cell-ref current-servlet-instance-id))
-    (send manager instance-lookup-data instance-id))
+    ((manager-instance-lookup-data manager) instance-id))
   
   (provide (all-defined)))

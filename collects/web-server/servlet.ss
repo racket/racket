@@ -1,9 +1,9 @@
 (module servlet mzscheme
   (require (lib "contract.ss")
-           (lib "class.ss")
            (lib "etc.ss")
            (lib "xml.ss" "xml"))
   (require "response.ss"
+           "managers/manager.ss"
            "private/servlet.ss"
            "private/url.ss"
            "servlet-helpers.ss"
@@ -87,11 +87,11 @@
   ;; adjust-timeout! : sec -> void
   ;; adjust the timeout on the servlet
   (define (adjust-timeout! secs)
-    (send (current-servlet-manager) adjust-timeout! (get-current-servlet-instance-id) secs))
+    ((manager-adjust-timeout! (current-servlet-manager)) (get-current-servlet-instance-id) secs))
   
   ;; ext:clear-continuations! -> void
   (define (clear-continuation-table!)
-    (send (current-servlet-manager) clear-continuations! (get-current-servlet-instance-id)))
+    ((manager-clear-continuations! (current-servlet-manager)) (get-current-servlet-instance-id)))
   
   ;; send/back: response -> void
   ;; send a response and don't clear the continuation table
@@ -119,7 +119,7 @@
        (let/cc k
          (define instance-id (get-current-servlet-instance-id))
          (define ctxt (servlet-instance-data-context (current-servlet-instance-data)))
-         (define k-embedding (send (current-servlet-manager) continuation-store! instance-id k expiration-handler))
+         (define k-embedding ((manager-continuation-store! (current-servlet-manager)) instance-id k expiration-handler))
          (define k-url ((current-url-transform)
                         (embed-ids 
                          (list* instance-id k-embedding)

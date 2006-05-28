@@ -1,7 +1,6 @@
 (module dispatch-servlets mzscheme
   (require (lib "url.ss" "net")
            (lib "plt-match.ss")
-           (lib "class.ss")
            (lib "unitsig.ss"))
   (require "dispatch.ss"
            "web-server-structs.ss"
@@ -114,7 +113,7 @@
                       data)))
                    (custodian-shutdown-all instance-custodian)))
                (parameterize ([exit-handler the-exit-handler])
-                 (define instance-id (send manager create-instance data the-exit-handler))
+                 (define instance-id ((manager-create-instance manager) data the-exit-handler))
                  (thread-cell-set! current-servlet-instance-id instance-id)
                  (with-handlers ([(lambda (x) #t)
                                   (make-servlet-exception-handler data)])
@@ -211,13 +210,13 @@
                             (default-servlet-instance-expiration-handler
                               req)
                             (request-method req)))])
-          (define data (send manager instance-lookup-data instance-id))
+          (define data ((manager-instance-lookup-data manager) instance-id))
           ; We don't use call-with-semaphore or dynamic-wind because we
           ; always call a continuation. The exit-handler above ensures that
           ; the post is done.
           (semaphore-wait (servlet-instance-data-mutex data))
           (let/cc suspend
-            (define k (send manager continuation-lookup instance-id k-id salt))
+            (define k ((manager-continuation-lookup manager) instance-id k-id salt))
             (set-servlet-instance-data-context!
              data
              (make-execution-context
@@ -290,7 +289,7 @@
           [(unit/sig? s) 
            (make-servlet (current-custodian)
                          (current-namespace)
-                         (make-object timeout-manager%
+                         (create-timeout-manager
                            default-servlet-instance-expiration-handler
                            timeouts-servlet-connection
                            timeouts-default-servlet)
@@ -306,7 +305,7 @@
                       [start (dynamic-require module-name 'start)])
                   (make-servlet (current-custodian)
                                 (current-namespace)
-                                (make-object timeout-manager%
+                                (create-timeout-manager
                                   default-servlet-instance-expiration-handler
                                   timeouts-servlet-connection
                                   timeouts-default-servlet)
@@ -319,7 +318,7 @@
                                        (define timeout (dynamic-require module-name 'timeout))
                                        (define instance-expiration-handler
                                          (dynamic-require module-name 'instance-expiration-handler))
-                                       (make-object timeout-manager%
+                                       (create-timeout-manager
                                          instance-expiration-handler
                                          timeouts-servlet-connection
                                          timeout))])
@@ -334,7 +333,7 @@
           [(response? s)
            (make-servlet (current-custodian)
                          (current-namespace)
-                         (make-object timeout-manager%
+                         (create-timeout-manager
                            default-servlet-instance-expiration-handler
                            timeouts-servlet-connection
                            timeouts-default-servlet)
