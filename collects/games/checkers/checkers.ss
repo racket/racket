@@ -8,12 +8,11 @@
            (lib "gl.ss" "sgl")
            (lib "array.ss" "srfi" "25")
            (lib "unit.ss")
+           (lib "include-bitmap.ss" "mrlib")
            "honu-bitmaps.ss")
   
   (provide game-unit)
 
-  (define path (collection-path "games" "checkers"))
-  
   (define-struct image (width height rgba))
   
   (define (argb->rgba argb)
@@ -44,12 +43,9 @@
     (make-image (send bmp get-width) (send bmp get-height)
                 (argb->rgba (bitmap->argb bmp))))
 
-  (define (file->image file)
-    (bitmap->image (make-object bitmap% file)))
-  
-  (define light-square-img (file->image (build-path path "light.jpg")))
+  (define light-square-img (bitmap->image (include-bitmap "light.jpg")))
   (define light-square-color (gl-float-vector .7216 .6471 .5176 1))
-  (define dark-square-img (file->image (build-path path "dark.jpg")))
+  (define dark-square-img (bitmap->image (include-bitmap "dark.jpg")))
   (define dark-square-color (gl-float-vector .4745 .3569 .2627 1))
   
   (define (color-name->vector name darken?)
