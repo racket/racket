@@ -1877,12 +1877,10 @@
 						   augment-names)
 					 (map (lambda (mname index)
 						(let ([depth (get-depth index)])
-						  (lambda (obj default)
-						    (let* ([rename-inner (vector-ref (vector-ref (class-beta-methods (object-ref obj)) 
-												 index)
-										     depth)])
-						      (or rename-inner
-							  (lambda args default))))))
+						  (lambda (obj)
+						    (vector-ref (vector-ref (class-beta-methods (object-ref obj)) 
+									    index)
+								depth))))
 					      rename-inner-names
 					      rename-inner-indices))])
 		    ;; -- Create method accessors --

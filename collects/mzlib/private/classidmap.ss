@@ -1,6 +1,5 @@
 
 (module classidmap mzscheme
-
   (require (lib "stx.ss" "syntax"))
 
   (define-values (struct:s!t make-s!t s!t? s!t-ref s!t-set!)
@@ -207,8 +206,10 @@
      (let ([target (find the-finder the-obj stx)])
        (datum->syntax-object 
 	the-finder
-	(make-method-apply (list (find the-finder rename-temp stx) target default-expr)
-			   target args)
+	`(let ([i (,(find the-finder rename-temp stx) ,target)])
+	   (if i
+	       ,(make-method-apply 'i target args)
+	       ,default-expr))
 	stx))
      stx))
 

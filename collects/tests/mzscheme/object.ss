@@ -501,6 +501,23 @@
 (test '(14 (12 (8 (10 (20 (7 25)))))) 'bjt (send (new bjjbjfoo-jbjjbgoo%) hoo 25))
 
 ;; ----------------------------------------
+;; Make sure inner default isn't called when augment is available:
+
+(let ([x 0])
+  (define c% (class object%
+	       (define/pubment (m v)
+		 (inner (set! x (+ x v)) m v))
+	       (super-new)))
+  (define d% (class c%
+	       (define/augment (m v)
+		 (list v))
+	       (super-new)))
+  (test (void) 'no-inner (send (new c%) m 5))
+  (test 5 values x)
+  (test '(6) 'inner (send (new d%) m 6))
+  (test 5 values x))
+
+;; ----------------------------------------
 
 (define rest-arg-fish%
   (class fish%
