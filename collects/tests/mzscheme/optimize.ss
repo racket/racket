@@ -66,7 +66,24 @@
 			      v)])
 		  (bin0 iv op (exact->inexact arg1) arg2)
 		  (bin0 iv op arg1 (exact->inexact arg2))
-		  (bin0 iv op (exact->inexact arg1) (exact->inexact arg2))))])
+		  (bin0 iv op (exact->inexact arg1) (exact->inexact arg2))))]
+	 [tri0 (lambda (v op get-arg1 arg2 arg3 check-effect)
+		 ;; (printf "Trying ~a ~a ~a\n" op (get-arg1) arg2 arg3);
+		 (let ([name `(,op ,get-arg1 ,arg2, arg3)])
+		   (test v name ((eval `(lambda (x) (,op x ,arg2 ,arg3))) (get-arg1)))
+		   (check-effect)
+		   (test v name ((eval `(lambda (x) (,op (,get-arg1) x ,arg3))) arg2))
+		   (check-effect)
+		   (test v name ((eval `(lambda (x) (,op (,get-arg1) ,arg2 x))) arg3))
+		   (check-effect)
+		   (test v name ((eval `(lambda (x y z) (,op x y z))) (get-arg1) arg2 arg3))
+		   (check-effect)))]
+	 [tri-exact (lambda (v op get-arg1 arg2 arg3 check-effect 3rd-all-ok?)
+		      (check-error-message op (eval `(lambda (x) (,op x ,arg2 ,arg3))))
+		      (check-error-message op (eval `(lambda (x) (,op (,get-arg1) x ,arg3))))
+		      (unless 3rd-all-ok?
+			(check-error-message op (eval `(lambda (x) (,op (,get-arg1) ,arg2 x)))))
+		      (tri0 v op get-arg1 arg2 arg3 check-effect))])
 
     (un #f 'null? 0)
     (un #f 'pair? 0)
@@ -206,6 +223,24 @@
     (bin-exact 65 'bytes-ref #"Abc\xF7" 0)
     (bin-exact 99 'bytes-ref #"Abc\xF7" 2)
     (bin-exact #xF7 'bytes-ref #"Abc\xF7" 3)
+
+    (let ([test-setter
+	   (lambda (make-X def-val set-val set-name set ref)
+	     (let ([v (make-X 3 def-val)])
+	       (check-error-message set-name (eval `(lambda (x) (,set-name ,v -1 ,set-val))))
+	       (check-error-message set-name (eval `(lambda (x) (,set-name ,v 3 ,set-val))))
+	       (for-each (lambda (i)
+			   (tri-exact (void) set-name (lambda () v) i set-val
+				      (lambda ()
+					(test set-val ref v i)
+					(test def-val ref v (modulo (+ i 1) 3))
+					(test def-val ref v (modulo (+ i 2) 3))
+					(set v i def-val))
+				      #t))
+			 '(0 1 2))))])
+      (test-setter make-vector #f 7 'vector-set! vector-set! vector-ref)
+      (test-setter make-bytes 0 7 'bytes-set! bytes-set! bytes-ref)
+      (test-setter make-string #\a #\7 'string-set! string-set! string-ref))
 
     ))
 
