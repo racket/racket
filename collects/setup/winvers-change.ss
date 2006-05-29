@@ -51,7 +51,8 @@
      [else #f]))
 
   (define (do-file file)
-    (define (path) (bytes->path file))
+    (define path (bytes->path file))
+    (define full-path (build-path (current-directory) path))
     (when (binary-file? file)
       (let ([dfile (bytes-downcase file)])
         (cond [(regexp-match-positions renaming dfile) =>
@@ -60,14 +61,13 @@
                                           version-bytes
                                           (subbytes dfile (cdadr m)))])
                    (when verbose?
-                     (printf "Renaming: ~a -> ~a\n"
-                             (build-path (current-directory) file) new))
-                   (rename-file-or-directory (path) (bytes->path new))
+                     (printf "Renaming: ~a -> ~a\n" full-path new))
+                   (rename-file-or-directory path (bytes->path new))
                    (set! file new)))]
               [(regexp-match-positions xxxs dfile)
-               (fprintf (current-error-port) "Warning: ~a was not renamed!\n"
-                        (build-path (current-directory) file))]))
-      (let-values ([(i o)    (open-input-output-file (path) 'update)]
+               (fprintf (current-error-port)
+                        "Warning: ~a was not renamed!\n" full-path)]))
+      (let-values ([(i o)    (open-input-output-file path 'update)]
                    [(print?) verbose?])
         (for-each (lambda (subst)
                     (file-position i 0)
@@ -75,8 +75,7 @@
                       (cond [(regexp-match-positions subst i) =>
                              (lambda (m)
                                (when print?
-                                 (printf "Changing: ~a\n"
-                                         (build-path (current-directory) file))
+                                 (printf "Changing: ~a\n" full-path)
                                  (set! print? #f))
                                (file-position o (+ pos (caadr m)))
                                (display version-bytes o)
@@ -86,8 +85,8 @@
                   substitutions)
         (file-position i 0)
         (when (regexp-match-positions xxxs i)
-          (fprintf (current-error-port) "Warning: ~a still has \"~a\"!\n"
-                   (build-path (current-directory) file) xxxs))
+          (fprintf (current-error-port)
+                   "Warning: ~a still has \"~a\"!\n" full-path xxxs))
         (close-input-port i)
         (close-output-port o))))
 
