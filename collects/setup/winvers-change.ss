@@ -11,22 +11,16 @@
 (module winvers-change mzscheme
 
   (define verbose? #t)
-  (define binary-extensions '(#"exe" #"dll" #"lib" #"so" #"def"
-                              ;; #"obj" #"o"
-                              ))
+  (define binary-extensions '("exe" "dll" "lib" "so" "def" "exp" #|"obj" "o"|#))
   (define xxxs #"xxxxxxx")
   (define xxxs-re
-    (bytes-append #"(?:lib(?:mzsch|mzgc|mred)(?:|3m)|"
-                  #"[Pp][Ll][Tt][Gg][Dd][Ii]_|"
-                  #"[Uu][Nn][Ii][Pp][Ll][Tt]_|"
-                  #"(?:[Ll][Ii][Bb]|[Ss][Ss][Ll])[Ee][Aa][Yy]32)(" xxxs #")"))
-  (define renaming
-    (byte-regexp (bytes-append #"^" xxxs-re #"[.](?:dll|lib)$")))
+    (bytes-append #"(?:lib(?:mzsch|mzgc|mred)(?:|3m))(" xxxs #")"))
+  (define renaming (regexp (format "^~a[.](?:dll|lib|exp)$" xxxs-re)))
   (define substitutions
-    (map (lambda (s) (regexp-replace #rx#"~a" s xxxs-re))
+    (map (lambda (s) (byte-regexp (regexp-replace #rx#"~a" s xxxs-re)))
          ;; pdb not needed, but this way we can expect no
          ;; `xxxxxxx's when we finish.
-         '(#"~a[.](?:dll|lib|pdb)\0"
+         '(#"~a[.](?:dll|lib|exp|pdb)"
            #"~a_NULL_THUNK_DATA\0"
            #"__IMPORT_DESCRIPTOR_~a\0"
            #"__head_~a_lib\0"
@@ -35,71 +29,58 @@
   (require (lib "filename-version.ss" "dynext"))
   (define version-bytes (string->bytes/utf-8 filename-version-part))
 
-  (define bytes-downcase
-    (let* ([a* (char->integer #\A)]
-           [z* (char->integer #\Z)]
-           [d* (- (char->integer #\a) a*)])
-      (define (byte-downcase b) (if (<= a* b z*) (+ b d*) b))
-      (lambda (bstr)
-        (list->bytes (map byte-downcase (bytes->list bstr))))))
-
   (define (binary-file? filename)
-    (cond
-     [(regexp-match #rx#"[.]([^.]+)$" filename) =>
-      (lambda (m)
-        (member (bytes-downcase (cadr m)) binary-extensions))]
-     [else #f]))
+    (cond [(regexp-match #rx"[.]([^.]+)$" filename) =>
+           (lambda (m) (member (string-downcase (cadr m)) binary-extensions))]
+          [else #f]))
 
   (define (do-file file)
-    (define path (bytes->path file))
-    (define full-path (build-path (current-directory) path))
-    (when (binary-file? file)
-      (let ([dfile (bytes-downcase file)])
-        (cond [(regexp-match-positions renaming dfile) =>
-               (lambda (m)
-                 (let ([new (bytes-append (subbytes dfile 0 (caadr m))
-                                          version-bytes
-                                          (subbytes dfile (cdadr m)))])
-                   (when verbose?
-                     (printf "Renaming: ~a -> ~a\n" full-path new))
-                   (rename-file-or-directory path (bytes->path new))
-                   (set! file new)))]
-              [(regexp-match-positions xxxs dfile)
-               (fprintf (current-error-port)
-                        "Warning: ~a was not renamed!\n" full-path)]))
-      (let-values ([(i o)    (open-input-output-file path 'update)]
-                   [(print?) verbose?])
-        (for-each (lambda (subst)
-                    (file-position i 0)
-                    (let loop ([pos 0])
-                      (cond [(regexp-match-positions subst i) =>
-                             (lambda (m)
-                               (when print?
-                                 (printf "Changing: ~a\n" full-path)
-                                 (set! print? #f))
-                               (file-position o (+ pos (caadr m)))
-                               (display version-bytes o)
-                               (flush-output o)
-                               (file-position i (+ pos (cdar m)))
-                               (loop (+ pos (cdar m))))])))
-                  substitutions)
-        (file-position i 0)
-        (when (regexp-match-positions xxxs i)
-          (fprintf (current-error-port)
-                   "Warning: ~a still has \"~a\"!\n" full-path xxxs))
-        (close-input-port i)
-        (close-output-port o))))
+    (define (full-path) ; proc since `file' can change
+      (build-path (current-directory) file))
+    (let ([dfile (string-downcase file)])
+      (cond [(regexp-match-positions renaming dfile) =>
+             (lambda (m)
+               (let ([new (string-append (substring dfile 0 (caadr m))
+                                         filename-version-part
+                                         (substring dfile (cdadr m)))])
+                 (when verbose? (printf "Renaming: ~a -> ~a\n" (full-path) new))
+                 (rename-file-or-directory file new)
+                 (set! file new)))]
+            [(regexp-match-positions xxxs dfile)
+             (fprintf (current-error-port)
+                      "Warning: ~a was not renamed!\n" (full-path))]))
+    (let-values ([(i o) (open-input-output-file file 'update)])
+      (define print? verbose?)
+      (for-each (lambda (subst)
+                  (file-position i 0)
+                  (let loop ([pos 0])
+                    (cond [(regexp-match-positions subst i) =>
+                           (lambda (m)
+                             (when print?
+                               (printf "Changing: ~a\n" (full-path))
+                               (set! print? #f))
+                             (file-position o (+ pos (caadr m)))
+                             (write-bytes version-bytes o)
+                             (flush-output o)
+                             (file-position i (+ pos (cdar m)))
+                             (loop (+ pos (cdar m))))])))
+                substitutions)
+      (file-position i 0)
+      (when (regexp-match-positions xxxs i)
+        (fprintf (current-error-port)
+                 "Warning: ~a still has \"~a\"!\n" (full-path) xxxs))
+      (close-input-port i)
+      (close-output-port o)))
 
-  (let loop ([files (if (zero? (vector-length (current-command-line-arguments)))
-                      '(#".")
-                      (map string->bytes/utf-8
-                           (vector->list (current-command-line-arguments))))])
-    (when (pair? files)
-      (let ([path (bytes->path (car files))])
-        (cond [(file-exists? path) (do-file (car files))]
-              [(directory-exists? path)
-               (parameterize ([current-directory path])
-                 (loop (map path->bytes (directory-list))))]))
-      (loop (cdr files))))
+  (let loop ([paths (if (zero? (vector-length (current-command-line-arguments)))
+                      '(".")
+                      (vector->list (current-command-line-arguments)))])
+    (for-each (lambda (path)
+                (cond [(file-exists? path)
+                       (when (binary-file? path) (do-file path))]
+                      [(directory-exists? path)
+                       (parameterize ([current-directory path])
+                         (loop (map path->string (directory-list))))]))
+              paths))
 
 )
