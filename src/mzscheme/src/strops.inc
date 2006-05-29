@@ -169,8 +169,8 @@ X_(scheme_checked, string_ref) (int argc, Scheme_Object *argv[])
   return MAKE_CHAR(c);
 }
 
-static Scheme_Object *
-X__(string_set) (int argc, Scheme_Object *argv[])
+Scheme_Object *
+X_(scheme_checked, string_set) (int argc, Scheme_Object *argv[])
 {
   long i, len;
   Xchar *str;

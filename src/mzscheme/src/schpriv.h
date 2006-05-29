@@ -2448,8 +2448,11 @@ void scheme_count_generic(Scheme_Object *o, long *s, long *e, Scheme_Hash_Table 
 Scheme_Object *scheme_checked_car(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_cdr(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_vector_ref(int argc, Scheme_Object **argv);
-Scheme_Object *scheme_checked_string_ref (int argc, Scheme_Object *argv[]);
-Scheme_Object *scheme_checked_byte_string_ref (int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_checked_vector_set(int argc, Scheme_Object **argv);
+Scheme_Object *scheme_checked_string_ref(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_checked_string_set(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_checked_byte_string_ref(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_checked_byte_string_set(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_checked_syntax_e(int argc, Scheme_Object **argv);
 
 void scheme_set_root_param(int p, Scheme_Object *v);

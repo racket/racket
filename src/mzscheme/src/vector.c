@@ -30,7 +30,6 @@ static Scheme_Object *make_vector (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_immutable (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_length (int argc, Scheme_Object *argv[]);
-static Scheme_Object *vector_set (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_to_list (int argc, Scheme_Object *argv[]);
 static Scheme_Object *list_to_vector (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_fill (int argc, Scheme_Object *argv[]);
@@ -78,15 +77,15 @@ scheme_init_vector (Scheme_Env *env)
 			     "vector-ref", 
 			     2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
-  scheme_add_global_constant("vector-ref", 
-			     p, 
-			     env);
+  scheme_add_global_constant("vector-ref", p, env);
 
-  scheme_add_global_constant("vector-set!", 
-			     scheme_make_noncm_prim(vector_set, 
-						    "vector-set!", 
-						    3, 3), 
-			     env);
+  p = scheme_make_noncm_prim(scheme_checked_vector_set,
+			     "vector-set!", 
+			     3, 3);
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+				| SCHEME_PRIM_IS_BINARY_INLINED);
+  scheme_add_global_constant("vector-set!", p, env);
+
   scheme_add_global_constant("vector->list", 
 			     scheme_make_noncm_prim(vector_to_list, 
 						    "vector->list", 
@@ -251,8 +250,8 @@ scheme_checked_vector_ref (int argc, Scheme_Object *argv[])
   return (SCHEME_VEC_ELS(argv[0]))[i];
 }
 
-static Scheme_Object *
-vector_set(int argc, Scheme_Object *argv[])
+Scheme_Object *
+scheme_checked_vector_set(int argc, Scheme_Object *argv[])
 {
   long i, len;
 
