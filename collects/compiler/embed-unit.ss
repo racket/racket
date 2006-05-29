@@ -63,8 +63,9 @@
       ;; Find executable relative to the "mzlib"
       ;; collection.
       (define (find-exe mred? variant)
-	(let* ([c-path (collection-path "mzlib")]
-	       [base (build-path c-path 'up 'up)]
+	(let* ([base (if mred?
+			 (find-gui-bin-dir)
+			 (find-console-bin-dir))]
 	       [fail
 		(lambda ()
 		  (error 'create-embedding-executable
@@ -80,9 +81,7 @@
 			 (cond
 			  [(not mred?)
 			   ;; Need MzScheme:
-			   (build-path "bin" (string-append 
-					      "mzscheme"
-					      variant-suffix))]
+			   (string-append "mzscheme" variant-suffix)]
 			  [mred?
 			   ;; Need MrEd:
 			   (build-path (format "MrEd~a.app" variant-suffix)
@@ -94,15 +93,9 @@
 						"mzscheme")
 				 variant-suffix)]
 			[(unix)
-			 (build-path "bin"
-				     (format "~a~a" (if mred?
-							"mred"
-							"mzscheme")
-					     variant-suffix))]
-			[(macos)
 			 (format "~a~a" (if mred?
-					    "MrEd"
-					    "MzScheme")
+					    "mred"
+					    "mzscheme")
 				 variant-suffix)]))])
 	    (unless (or (file-exists? exe)
 			(directory-exists? exe))
