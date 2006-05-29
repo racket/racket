@@ -21,6 +21,11 @@
            "tcp-sig.ss")
   (provide url@)
 
+  ;; undocumented hook to allow testing
+  (provide set-url:os-type!)
+  (define url:os-type (system-type))
+  (define (set-url:os-type! new) (set! url:os-type new))
+
   (define url@
     (unit/sig net:url^
       (import net:tcp^)
@@ -146,7 +151,7 @@
         (let ([elts (remove* '("") (map path/param-path (url-path url)))]
               [abs? (url-path-absolute? url)])
           ;; See the discussion in PR8060 for an explanation
-          (if (eq? 'windows (system-type))
+          (if (eq? 'windows url:os-type)
             (let ([host (or (url-host url) "")])
               (unless (equal? "" host) (set! elts (cons host elts)))
               (if (null? elts)
@@ -391,7 +396,7 @@
          (lambda (scheme user host port path query fragment)
            ;; Windows => "file://xxx:/...." specifies a "xxx:/..." path
            (when (and (equal? "" port) (equal? "file" scheme)
-                      (eq? 'windows (system-type)))
+                      (eq? 'windows url:os-type))
              (set! path (string-append host ":" path))
              (set! host #f))
            (let* ([user   (uri-decode/maybe user)]

@@ -8,7 +8,9 @@
 
 (require (lib "url.ss" "net")
 	 (lib "uri-codec.ss" "net")
-         (lib "string.ss"))
+         (lib "string.ss")
+         (lib "url-unit.ss" "net") ; to get set-url:os-type!
+         )
 
 (test "%Pq" uri-decode "%Pq")
 (test "%P" uri-decode "%P")
@@ -243,10 +245,33 @@
   ;; test file: urls
   (test-s->u (vector "file" #f #f #f #t '(#("abc") #("def.html")) '() #f)
              "file:/abc/def.html")
-  
+
   (test-s->u (vector "file" #f "localhost" #f #t '(#("abc") #("def.html")) '() #f)
              "file://localhost/abc/def.html")
-  
+
+  ;; test files: urls with colons, and the different parsing on Windows
+  (test-s->u (vector "file" #f "localhost" 123 #t '(#("abc") #("def.html")) '() #f)
+             "file://localhost:123/abc/def.html")
+  (set-url:os-type! 'unix)
+  ;; different parse for file://foo:/...
+  (test (vector "file" #f "foo" #f #t '(#("abc") #("def.html")) '() #f)
+        string->url/vec
+        "file://foo:/abc/def.html")
+  (set-url:os-type! 'windows)
+  (test (vector "file" #f #f #f #f '(#("foo:") #("abc") #("def.html")) '() #f)
+        string->url/vec
+        "file://foo:/abc/def.html")
+  (set-url:os-type! 'unix)
+  ;; but no effect on http://foo:/...
+  (test (vector "http" #f "foo" #f #t '(#("abc") #("def.html")) '() #f)
+        string->url/vec
+        "http://foo:/abc/def.html")
+  (set-url:os-type! 'windows)
+  (test (vector "http" #f "foo" #f #t '(#("abc") #("def.html")) '() #f)
+        string->url/vec
+        "http://foo:/abc/def.html")
+  (set-url:os-type! 'unix)
+
   ;; test case sensitivity
   (test (vector "http" "ROBBY" "www.drscheme.org" 80 #t '(#("INDEX.HTML" "XXX")) '((T . "P")) "YYY")
         string->url/vec
