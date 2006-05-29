@@ -12,13 +12,13 @@
 
 (test "%Pq" uri-decode "%Pq")
 (test "%P" uri-decode "%P")
-(test "a=hel%2blo+%e7%88%b8" alist->form-urlencoded '((a . "hel+lo \u7238")))
+(test "a=hel%2Blo+%E7%88%B8" alist->form-urlencoded '((a . "hel+lo \u7238")))
 (test '((a . "hel+lo \u7238")) form-urlencoded->alist (alist->form-urlencoded '((a . "hel+lo \u7238"))))
-(test "a=hel%2blo;b=good-bye" alist->form-urlencoded '((a . "hel+lo") (b . "good-bye")))
+(test "a=hel%2Blo;b=good-bye" alist->form-urlencoded '((a . "hel+lo") (b . "good-bye")))
 (parameterize ([current-alist-separator-mode 'semi])
-  (test "a=hel%2blo;b=good-bye" alist->form-urlencoded '((a . "hel+lo") (b . "good-bye"))))
+  (test "a=hel%2Blo;b=good-bye" alist->form-urlencoded '((a . "hel+lo") (b . "good-bye"))))
 (parameterize ([current-alist-separator-mode 'amp])
-  (test "a=hel%2blo&b=good-bye" alist->form-urlencoded '((a . "hel+lo") (b . "good-bye"))))
+  (test "a=hel%2Blo&b=good-bye" alist->form-urlencoded '((a . "hel+lo") (b . "good-bye"))))
 (test '((a . "hel+lo") (b . "good-bye")) form-urlencoded->alist (alist->form-urlencoded '((a . "hel+lo") (b . "good-bye"))))
 (parameterize ([current-alist-separator-mode 'amp])
   (test '((a . "hel+lo") (b . "good-bye")) form-urlencoded->alist (alist->form-urlencoded '((a . "hel+lo") (b . "good-bye")))))
@@ -87,7 +87,7 @@
                  (and (<= 65 code) (<= code 90))   ; A-Z
                  (and (<= 97 code) (<= code 122))) ; a-z
              (test (string (integer->char code)) uri-encode (string (integer->char code)))
-             (test (string-append "%" (pad (number->string code 16)))
+             (test (string-append "%" (pad (string-upcase (number->string code 16))))
                    uri-encode
                    (string (integer->char code))))))
   
@@ -228,12 +228,12 @@
   (test-s->u (vector "http" "robb y" "www.drscheme.org" #f #t '(#("")) '() #f)
              "http://robb%20y@www.drscheme.org/")
   (test-s->u (vector "http" #f "www.drscheme.org" #f #t (list #("%a") #("b/") #("c")) '() #f)
-             "http://www.drscheme.org/%25a/b%2f/c")
+             "http://www.drscheme.org/%25a/b%2F/c")
   
   ;; test the characters that need to be encoded in paths vs those that do not need to 
   ;; be encoded in paths
   (test-s->u (vector "http" #f "www.drscheme.org" #f #t (list #("a:@!$&'()*+,=z") #("/?#[];") #("")) '() #f)
-             "http://www.drscheme.org/a:@!$&'()*+,=z/%2f%3f%23%5b%5d%3b/")
+             "http://www.drscheme.org/a:@!$&'()*+,=z/%2F%3F%23%5B%5D%3B/")
   
   (test-s->u (vector "http" #f "www.drscheme.org" #f #t (list #(".") #("..") '#(same) '#(up) #("...") #("abc.def")) '() #f)
              "http://www.drscheme.org/%2e/%2e%2e/./../.../abc.def")
