@@ -148,9 +148,6 @@
           ;; See the discussion in PR8060 for an explanation
           (if (eq? 'windows (system-type))
             (let ([host (or (url-host url) "")])
-              (when (and (not abs?) host (pair? elts) (equal? ":" (car elts)))
-                (set-car! elts (string-append host ":"))
-                (set! host ""))
               (unless (equal? "" host) (set! elts (cons host elts)))
               (if (null? elts)
                 (build-path) ; make it throw the error
@@ -381,7 +378,7 @@
                  "//"
                  "(?:([^:/@;?#]*)@)?" ; =2  user-at-opt
                  "([^:/@;?#]*)?"      ; =3  host-opt
-                 "(?::([0-9]+))?"     ; =4  colon-port-opt
+                 "(?::([0-9]*))?"     ; =4  colon-port-opt
                  ")?"                 ; >B  slashslash-opt
                  ")?"                 ; >A  front-opt
                  "([^?#]*)"           ; =5  path
@@ -392,6 +389,11 @@
       (define (string->url str)
         (apply
          (lambda (scheme user host port path query fragment)
+           ;; Windows => "file://xxx:/...." specifies a "xxx:/..." path
+           (when (and (equal? "" port) (equal? "file" scheme)
+                      (eq? 'windows (system-type)))
+             (set! path (string-append host ":" path))
+             (set! host #f))
            (let* ([user   (uri-decode/maybe user)]
                   [port   (and port (string->number port))]
                   [abs?   (and (not (= 0 (string-length path)))
