@@ -402,4 +402,62 @@
 		 (= (cdar m) (if (bytes? s)
 				 (bytes-length s)
 				 (string-utf-8-length s)))
-		 (= (cdar m) (string-length s))))))))
+		 (= (cdar m) (string-length s)))))))
+
+  (define default-glob-case-sens
+    (not (memq (system-type) '(windows macos macosx))))
+  (define (glob->regexp glob . case-sens?)
+    (opt-lambda (glob [case-sens? default-glob-case-sens])
+      (define len (string-length glob))
+      (define range #f)
+      (define init-*? #f)
+      (define case-sens
+        (if case-sens?
+          values
+          (lambda (c)
+            (if (char? c) ; do this only for char inputs -- see below
+              (let ([c1 (char-upcase c)] [c2 (char-downcase c)])
+                (if (char=? c1 c2) c (list #\[ c1 c2 #\])))
+              c))))
+      (let loop ([res '()] [i 0])
+        (define (next x) (loop (cons x res) (add1 i)))
+        (if (= i len)
+          (begin
+            (when range
+              (error 'glob->regexp "unterminated range in glob: ~e" glob))
+            (let loop ([left res] [res (if init-*? '() '(#\$))])
+              (if (null? left)
+                (regexp (list->string
+                         (cons #\^ (if init-*?
+                                     `(#\( #\? #\: #\[ #\^ #\. #\] #\. #\*
+                                           ,@res #\| ,@res #\) #\$)
+                                     res))))
+                ;; doing this only for single chars, which means that
+                ;; backslash-quoted char is left alone
+                (let ([c (case-sens (car left))])
+                  (loop (cdr left)
+                        (if (char? c)
+                          (cons (case-sens c) res)
+                          (append c res)))))))
+          (let ([c (string-ref glob i)])
+            (if range
+              (begin (set! range
+                           (case range
+                             [(0) (case c ((#\^) 1) (else 2))]
+                             [(1) 2]
+                             [else (case c ((#\]) #f) (else 2))]))
+                     (next c))
+              (case c
+                [(#\\) (set! i (add1 i))
+                 (if (< i len)
+                   (next (list #\\ (string-ref glob i)))
+                   (error 'glob->regexp "glob ends in backslash: ~e" glob))]
+                [(#\*) (if (eq? 0 i)
+                         (begin (set! init-*? #t) (next '()))
+                         (next '(#\. #\*)))]
+                [(#\?) (next (if (eq? 0 i) '(#\[ #\^ #\. #\]) #\.))]
+                [(#\[) (set! range 0) (next #\[)]
+                [(#\. #\| #\+ #\^ #\$ #\( #\) #\]) (next (list #\\ c))]
+                [else (next c)])))))))
+
+  )
