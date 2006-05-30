@@ -80,7 +80,11 @@ plt/collects/tests/mzscheme/image-test.ss
   (define (check-size name val arg-posn) (check name posi? val "positive exact integer" arg-posn))
   (define (check-size/0 name val arg-posn) (check name nnosi? val "non-negative exact integer" arg-posn))
   (define (check-image name val arg-posn) (check name image? val "image" arg-posn))
-  (define (check-image-color name val arg-posn) (check name image-color? val "image-color" arg-posn))
+  (define (check-image-color name val arg-posn) 
+    (let ([simple-check (λ (x) (or (string? x) (symbol? x) (color? x)))])
+      (check name simple-check val "image-color" arg-posn)
+      (unless (image-color? val)
+        (error name "~e is not a valid color name" val))))
   (define (check-mode name val arg-posn) (check name mode? val mode-str arg-posn))
   
   (define (posi? i) (and (number? i) (integer? i) (positive? i) (exact? i)))
