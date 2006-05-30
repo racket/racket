@@ -407,7 +407,7 @@
 
   (define default-glob-case-sens
     (not (memq (system-type) '(windows macos macosx))))
-  (define (glob->regexp glob . case-sens?)
+  (define glob->regexp
     (opt-lambda (glob [case-sens? default-glob-case-sens])
       (define len (string-length glob))
       (define range #f)
