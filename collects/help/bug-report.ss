@@ -320,10 +320,11 @@
     (define synthesized-button (make-object button%
                                  (string-constant bug-report-show-synthesized-info)
                                  button-panel (lambda x (show-synthesized-info))))
-    (define _spacer
-      (new grow-box-spacer-pane% [parent button-panel] [stretchable-width #t]))
+    (define _spacer (new horizontal-pane% (parent button-panel)))
     (define cancel-button (make-object button% (string-constant cancel) button-panel (lambda x (cancel))))
     (define ok-button (make-object button% (string-constant bug-report-submit) button-panel (lambda x (ok))))
+    (define _grow-box
+      (new grow-box-spacer-pane% [parent button-panel]))
 
     (define (get-query)
       (list (cons 'help-desk "true")
