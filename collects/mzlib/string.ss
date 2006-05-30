@@ -13,7 +13,8 @@
 	   regexp-match-peek-positions*
 	   regexp-split
 	   regexp-match-exact?
-           regexp-match/fail-without-reading)
+           regexp-match/fail-without-reading
+           glob->regexp)
 
   (require (lib "etc.ss"))
 
