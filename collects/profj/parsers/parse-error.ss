@@ -1531,7 +1531,7 @@
               (if (eof? (get-tok next))
                   (parse-error "Expected an expression after = for field initialization" start end)
                   (parse-beginner-ctor-body cur-tok (parse-expression null next 'start getter #f #f) 'assign-end getter))))
-           (else (parse-error (format "Expected = to be used in initializing the field, found ~a" out) start end))))
+           (else (parse-error (format "Expected = to be used in initializing the field in this constructor, found ~a" out) start end))))
         ((assign-end)
          (cond
            ((eof? tok) (parse-error "Expected a ; to end field intialization, constructor and class need }" ps pe))

@@ -4,6 +4,7 @@
            (lib "tool.ss" "drscheme")
            (lib "unitsig.ss")
            (lib "framework.ss" "framework")
+           (lib "string-constant.ss" "string-constants")
            (lib "class.ss")
            (lib "list.ss")
            (lib "file.ss")
@@ -289,14 +290,14 @@
       
       (define buttons
         (list (make-object button% 
-                "Close"
+                (string-constant close)
                 button-panel
                 (lambda (b c)
                   (when (eq? 'button (send c get-event-type))
                     (close-cleanup)
                     (send this show #f))))
               (make-object button%
-                "Close and disable testing"
+                "Close and Disable Testing"
                 button-panel
                 (lambda (b c)
                   (when (eq? 'button (send c get-event-type))
@@ -304,13 +305,15 @@
                     (close-cleanup)
                     (send this show #f))))
               (make-object button%
-                "Dock"
+                (string-constant dock)
                 button-panel
                 (lambda (b c)
                   (when (eq? 'button (send c get-event-type))
                     (send this show #f)
                     (put-preferences '(profj:test-window:docked?) '(#t))
-                    (switch-func))))))
+                    (switch-func))))
+              (make-object grow-box-spacer-pane% button-panel)))
+              
       
       (define/public (update-editor e)
         (set! editor e)
@@ -341,20 +344,20 @@
         (remove))
 
       (make-object button%
-        "Hide"
+        (string-constant hide)
         button-panel
         (lambda (b c)
           (when (eq? 'button (send c get-event-type))
             (hide))))
       (make-object button%
-        "Hide and disable testing"
+        "Hide and Disable Testing"
         button-panel
         (lambda (b c)
           (when (eq? 'button (send c get-event-type))
             (hide)
             (put-preferences '(profj:test-enable) '(#f)))))
       (make-object button%
-        "Undock"
+        (string-constant undock)
         button-panel
         (lambda (b c)
           (when (eq? 'button (send c get-event-type))
@@ -628,6 +631,8 @@
           
           (define/augment (on-close)
             (when test-window
+              (when (send test-window is-shown?)
+                (send test-window show #f))
               (send (get-frame) deregister-test-window test-window))
             (inner (void) on-close))
           

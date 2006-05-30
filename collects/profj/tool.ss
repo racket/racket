@@ -7,7 +7,8 @@
 	   (lib "string-constant.ss" "string-constants")
            (lib "Object.ss" "profj" "libs" "java" "lang") (lib "array.ss" "profj" "libs" "java" "lang")
            (lib "String.ss" "profj" "libs" "java" "lang"))
-  (require "compile.ss" "parameters.ss" "parsers/lexer.ss" "parser.ss" "ast.ss" "tester.scm")
+  (require "compile.ss" "parameters.ss" "parsers/lexer.ss" "parser.ss" "ast.ss" "tester.scm"
+           "display-java.ss")
 
   (require-for-syntax "compile.ss")
   
@@ -391,8 +392,9 @@
                    (send print-full set-value (profj-settings-print-full? settings)))
                  (when (eq? level 'full)
                    (send allow-testing set-value (profj-settings-allow-check? settings)))
-                 (send display-testing set-value (profj-settings-run-tests? settings))
-                 (if (profj-settings-run-tests? settings)
+                 (send display-testing set-value 
+                       (get-preference 'profj:test-enable (lambda () (profj-settings-run-tests? settings))))
+                 (if (send display-testing get-value)
                      (send collect-coverage set-value (profj-settings-coverage? settings))
                      (send collect-coverage enable #f))
                  (install-classpath (profj-settings-classpath settings))])))
@@ -611,10 +613,10 @@
                                             (let inner-loop ((os objs))
                                               (unless (null? os)
                                                 (let ((formatted 
-                                                       (format-java-list (car os) #t 'field null #f 0)))
+                                                       (format-java-value (car os) (make-format-style #t 'field #f))))
                                                   (when (< 24 (total-length formatted))
                                                     (set! formatted 
-                                                          (format-java-list (car os) #t 'field null #t 0)))
+                                                          (format-java-value (car os) (make-format-style #t 'field #t))))
                                                   (let loop ((out formatted))
                                                     (unless (null? out)
                                                       (write-special (car out))
@@ -679,9 +681,10 @@
           (define/public (render-value value settings port)
             (let* ((print-full? (profj-settings-print-full? settings))
                    (style (profj-settings-print-style settings))
-                   (formatted (format-java-list value print-full? style null #f 0)))
+                   (formatted (format-java-value value 
+                                                 (make-format-style print-full? style #f))))
               (when (< 24 (total-length formatted))
-                (set! formatted (format-java-list value print-full? style null #t 0)))
+                (set! formatted (format-java-value value (make-format-style print-full? style #t))))
               (let loop ((out formatted))
                 (unless (null? out)
                   (write-special (car out) port)
@@ -964,169 +967,6 @@
       ((_ comp ast)
         (namespace-syntax-introduce ((syntax-object->datum (syntax comp))
                                      (syntax-object->datum (syntax ast)))))))
-  
-
-  (define (supports-printable-interface? o)
-    (and (is-a? o object%)
-         (method-in-interface? 'my-name (object-interface o))
-         (method-in-interface? 'fields-for-display (object-interface o))))
-  
-  (provide format-java)
-  ;formats a java value (number, character or Object) into a string
-  ;format-java: java-value bool symbol (list value) -> string
-  (define (format-java value full-print? style already-printed newline? num-tabs)
-    (cond
-      ((null? value) "null")
-      ((number? value) (format "~a" value))
-      ((char? value) (format "'~a'" value))
-      ((boolean? value) (if value "true" "false"))
-      ((is-java-array? value) 
-       (if full-print?
-           (array->string value (send value length) -1 #t style already-printed newline? num-tabs)
-           (array->string value 3 (- (send value length) 3) #f style already-printed newline? num-tabs)))
-      ((is-a? value String) (format "~v" (send value get-mzscheme-string)))
-      ((string? value) (format "~v" value))
-      ((or (is-a? value ObjectI) (supports-printable-interface? value))
-       (case style
-         ((type) (send value my-name))
-         ((field)
-          (let* ((retrieve-fields (send value fields-for-display))
-                 (st (format "~a(" (send value my-name)))
-                 (new-tabs (+ num-tabs 3));(string-length st)))
-                 (fields ""))
-            (let loop ((current (retrieve-fields)))
-              (let ((next (retrieve-fields)))
-                (when current
-                  (set! fields 
-                        (string-append fields 
-                                       (format "~a~a = ~a~a~a" 
-                                               (if newline? (if (equal? fields "") 
-                                                                (format "~n~a" (get-n-spaces new-tabs)); "" 
-                                                                (get-n-spaces new-tabs)) "")
-                                               (car current)
-                                               (if (memq (cadr current) already-printed)
-                                                   (format-java (cadr current) full-print? 'type already-printed #f 0)
-                                                   (format-java (cadr current) full-print? style 
-                                                                (cons value already-printed) newline?
-                                                                (if newline? 
-                                                                    (+ new-tabs (string-length (car current)) 3)
-                                                                    num-tabs)))
-                                               (if next "," "")
-                                               (if newline? (format "~n") " "))))
-                  (loop next))))
-            (string-append st 
-                           (if (> (string-length fields) 1) 
-                               (substring fields 0 (sub1 (string-length fields))) "") ")")))
-         (else (send value my-name))))
-      (else (format "~a" value))))
-  
-  (define (format-java-list value full-print? style already-printed newline? num-tabs)
-    (cond
-      ((null? value) '("null"))
-      ((number? value) (list (format "~a" value)))
-      ((char? value) (list (format "'~a'" value)))
-      ((boolean? value) (list (if value "true" "false")))
-      ((is-java-array? value)
-       (if full-print?
-           (format-array->list value (send value length) -1 #t style already-printed newline? num-tabs)
-           (format-array->list value 3 (- (send value length) 3) #f style already-printed newline? num-tabs)))
-      ((is-a? value String) (list (format "~v" (send value get-mzscheme-string))))
-      ((string? value) (list (format "~v" value)))
-      ((or (is-a? value ObjectI) (supports-printable-interface? value))
-       (cond 
-         ((and (equal? "Image" (send value my-name))
-               (object-method-arity-includes? value 'Image-constructor-dynamic 1)
-               (object-method-arity-includes? value 'movePinhole-graphics.Posn 1))
-          ;(printf "~a~n" ((send value fields-for-display)))
-          (list (cadr ((send value fields-for-display)))))
-         (else
-          (if (memq value already-printed)
-              (list (send value my-name))
-              (case style
-                ((type) (list (send value my-name)))
-                ((field)
-                 (let* ((retrieve-fields (send value fields-for-display))
-                        (st (format "~a(" (send value my-name)))
-                        (new-tabs (+ num-tabs 3))
-                        (fields null))
-                   (let loop ((current (retrieve-fields)))
-                     (let ((next (retrieve-fields)))
-                       (when current
-                         (set! fields 
-                               (append fields 
-                                       (cons
-                                        (format "~a~a = "
-                                                (if newline? (if (eq? fields null)
-                                                                 (format "~n~a" (get-n-spaces new-tabs))
-                                                                 (get-n-spaces new-tabs)) "")
-                                                (car current))
-                                        (append
-                                         (if (memq (cadr current) already-printed)
-                                             (format-java-list (cadr current) full-print? 'type already-printed #f 0)
-                                             (format-java-list (cadr current) full-print? style 
-                                                               (cons value already-printed) newline?
-                                                               (if newline? 
-                                                                   (+ new-tabs (if (string? (car current))
-                                                                                   (string-length (car current)) 1) 3)
-                                                                   num-tabs)))
-                                         (list (format "~a~a" 
-                                                       (if next "," "")
-                                                       (if newline? (format "~n") " ")))))))
-                         (loop next))))
-                   (cons st 
-                         (append
-                          (if (> (length fields) 1) 
-                              (reverse (cdr (reverse fields))) null) (list ")")))))
-                (else (list (send value my-name))))))))
-          (else (list value))))
-
-  ;format-array->list: java-value int int bool symbol (list value) -> (list val)
-  (define (format-array->list value stop restart full-print? style already-printed nl? nt)
-    (letrec ((len (send value length))
-             (make-partial-string
-              (lambda (idx first-test second-test)
-                (cond
-                  ((first-test idx) "")
-                  ((second-test idx)
-                   (string-append (format-java (send value access idx) full-print? style already-printed nl? nt)
-                                  (make-partial-string (add1 idx) first-test second-test)))
-                  (else
-                   (string-append (format-java (send value access idx) full-print? style already-printed nl? nt)
-                                  " "
-                                  (make-partial-string (add1 idx) first-test second-test)))))))
-      (if (or full-print? (< restart stop))
-          (list (format "[~a]" (make-partial-string 0 (lambda (i) (>= i len)) (lambda (i) (= i (sub1 len))))))
-          (list (format "[~a~a~a]"                      
-                  (make-partial-string 0 (lambda (i) (or (>= i stop) (>= i len))) (lambda (i) (= i (sub1 stop))))
-                  " ... "
-                  (make-partial-string restart (lambda (i) (>= i len)) (lambda (i) (= i (sub1 len)))))))))
-  
-  
-  ;array->string: java-value int int bool symbol (list value) -> string
-  (define (array->string value stop restart full-print? style already-printed nl? nt)
-    (letrec ((len (send value length))
-             (make-partial-string
-              (lambda (idx first-test second-test)
-                (cond
-                  ((first-test idx) "")
-                  ((second-test idx)
-                   (string-append (format-java (send value access idx) full-print? style already-printed nl? nt)
-                                  (make-partial-string (add1 idx) first-test second-test)))
-                  (else
-                   (string-append (format-java (send value access idx) full-print? style already-printed nl? nt)
-                                  " "
-                                  (make-partial-string (add1 idx) first-test second-test)))))))
-      (if (or full-print? (< restart stop))
-          (format "[~a]" (make-partial-string 0 (lambda (i) (>= i len)) (lambda (i) (= i (sub1 len)))))
-          (format "[~a~a~a]"                      
-                  (make-partial-string 0 (lambda (i) (or (>= i stop) (>= i len))) (lambda (i) (= i (sub1 stop))))
-                  " ... "
-                  (make-partial-string restart (lambda (i) (>= i len)) (lambda (i) (= i (sub1 len))))))))
-  
-  (define (get-n-spaces n)
-    (cond
-      ((= n 0) "")
-      (else (string-append " " (get-n-spaces (sub1 n))))))
   
   (define (get-module-name stx)
     (syntax-case stx (module #%plain-module-begin)
