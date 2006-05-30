@@ -1,6 +1,5 @@
 (module wxgroupbox mzscheme
   (require (lib "class.ss")
-	   (lib "class100.ss")
 	   (prefix wx: "kernel.ss")
 	   "lock.ss"
 	   "wx.ss"

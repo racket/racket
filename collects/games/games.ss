@@ -2,7 +2,6 @@
   (require (lib "mred.ss" "mred")
 	   (lib "class.ss")
            (lib "unit.ss")
-	   (lib "class100.ss")
 	   (lib "list.ss")
            (lib "getinfo.ss" "setup")
 	   (lib "bitmap-label.ss" "mrlib")

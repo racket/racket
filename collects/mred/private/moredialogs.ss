@@ -1,6 +1,5 @@
 (module moredialogs mzscheme
   (require (lib "class.ss")
-	   (lib "class100.ss")
 	   (lib "etc.ss")
 	   (lib "list.ss")
 	   (prefix wx: "kernel.ss")
@@ -284,10 +283,10 @@
 	  (letrec ([ok? #f]
 		   [f (make-object dialog% "Choose Color" parent)]
 		   [done (lambda (ok) (lambda (b e) (set! ok? ok) (send f show #f)))]
-		   [canvas (make-object (class100 canvas% ()
-					  (override
-					    [on-paint (lambda () (repaint #f #f))])
-					  (sequence (super-init f))))]
+		   [canvas (make-object (class canvas%
+                                          (define/override (on-paint)
+                                            (repaint #f #f))
+					  (super-new [parent f])))]
 		   [p (make-object vertical-pane% f)]
 		   [repaint (lambda (s e)
 			      (let ([c (make-object wx:color% 
