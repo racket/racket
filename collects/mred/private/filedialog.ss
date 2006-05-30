@@ -50,6 +50,7 @@
                 [put?      put?]
                 [dir?      dir?]
                 [multi?    multi?]
+                [existing? (not put?)]
                 [message   message]
                 [parent    parent]
                 [directory directory]

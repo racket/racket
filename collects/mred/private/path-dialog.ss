@@ -205,7 +205,9 @@
               (when m
                 (send edit change-style path-up-delta (caadr m) (cdadr m))
                 (send edit set-clickback (caar m) (cdar m)
-                      (lambda _ (enter-text (substring dir 0 (cdar m)))))
+                      (lambda _
+                        (enter-text (substring dir 0 (cdar m)))
+                        (do-enter)))
                 (loop (cdar m)))))
           (send dir-text lock))
         (if (directory-exists? dir)
