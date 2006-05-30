@@ -151,8 +151,9 @@
         (class* object% (drscheme:language:language<%>)
           (define/public (capability-value s) 
             (cond
-              [(regexp-match #rx"^drscheme:special:" (format "~a" s)) #f]
+              [(eq? s 'drscheme:language-menu-title) "Java"]
               [(memq s '(slideshow:special-menu drscheme:define-popup)) #f]
+              [(regexp-match #rx"^drscheme:special:" (format "~a" s)) #f]
               [else
                (drscheme:language:get-capability-default s)]))
           (define/public (first-opened) (void))

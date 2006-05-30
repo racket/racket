@@ -1286,13 +1286,16 @@ module browser threading seems wrong.
                   (set! save-init-shown? mod?))
               (update-tab-label current-tab)))
 
-          ;; update-define-popup : -> void
-          ;; brings the (define ...) popup in sync with the main drscheme window
-          (define/public (update-define-popup)
-            (let ([settings (send definitions-text get-next-settings)])
-              (send func-defs-canvas language-changed 
-                    (drscheme:language-configuration:language-settings-language settings))))
-          
+          (define/private (language-changed)
+            (let* ([settings (send definitions-text get-next-settings)]
+                   [language (drscheme:language-configuration:language-settings-language settings)])
+              (send func-defs-canvas language-changed language)
+              
+              (let ([label (send scheme-menu get-label)]
+                    [new-label (send language capability-value 'drscheme:language-menu-title)])
+                (unless (equal? label new-label)
+                  (send scheme-menu set-label new-label)))))
+            
           ;; update-save-message : -> void
           ;; sets the save message. If input is #f, uses the frame's
           ;; title.
@@ -2004,7 +2007,6 @@ module browser threading seems wrong.
                   [(2) (revert)]))))
           
           (inherit get-menu-bar get-focus-object get-edit-target-object)
-          (define language-menu 'uninited-language-menu)
           
           (define/override on-size
             (lambda (w h)
@@ -2098,7 +2100,7 @@ module browser threading seems wrong.
               (restore-visible-tab-regions)
               (update-save-message)
               (update-save-button)
-              (update-define-popup)
+              (language-changed)
               
               (send definitions-text update-frame-filename)
               (send definitions-text set-delegate old-delegate)
@@ -2593,9 +2595,11 @@ module browser threading seems wrong.
                    [new-language (drscheme:language-configuration:language-settings-language language-settings)])
               (send new-language capability-value key)))
           
+          (define language-menu 'uninited-language-menu)
+          (define scheme-menu 'scheme-menu-not-yet-init)
           (define special-menu 'special-menu-not-yet-init)
           (define/public (get-special-menu) special-menu)
-
+          
           (define/private (initialize-menus)
             (let* ([mb (get-menu-bar)]
                    [language-menu-on-demand
@@ -2606,7 +2610,10 @@ module browser threading seems wrong.
                                             mb
                                             #f
                                             language-menu-on-demand))]
-                   [scheme-menu (make-object (get-menu%) (string-constant scheme-menu-name) mb)]
+                   [_ (set! scheme-menu (new (get-menu%) 
+                                             [label (drscheme:language:get-capability-default
+                                                     'drscheme:language-menu-title)]
+                                             [parent mb]))]
                    [send-method
                     (λ (method)
                       (λ (_1 _2)
@@ -2627,7 +2634,7 @@ module browser threading seems wrong.
                                        this)])
                     (when new-settings
                       (send definitions-text set-next-settings new-settings)
-                      (update-define-popup)
+                      (language-changed)
                       (preferences:set
                        drscheme:language-configuration:settings-preferences-symbol
                        new-settings))))
@@ -3076,7 +3083,7 @@ module browser threading seems wrong.
 
 	  (update-save-message)
           (update-save-button)
-          (update-define-popup)
+          (language-changed)
           
 	  (cond
             [filename

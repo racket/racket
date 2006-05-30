@@ -251,7 +251,11 @@
       (drscheme:language:register-capability 'drscheme:special:insert-fraction (flat-contract boolean?) #t)
       (drscheme:language:register-capability 'drscheme:special:insert-large-letters (flat-contract boolean?) #t)
       (drscheme:language:register-capability 'drscheme:special:insert-lambda (flat-contract boolean?) #t)
-
+      (drscheme:language:register-capability 'drscheme:language-menu-title 
+                                             (flat-contract string?)
+                                             (string-constant scheme-menu-name))
+      
+      
       (handler:current-create-new-window
        (let ([drscheme-current-create-new-window
 	      (λ (filename)

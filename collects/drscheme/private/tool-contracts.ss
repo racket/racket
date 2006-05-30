@@ -909,6 +909,8 @@
    ""
    "By default, these capabilities are registered as DrScheme starts up:"
    "\\begin{itemize}"
+   "\\item \\scheme|(drscheme:language:register-capability 'drscheme:language-menu-title (flat-contract string?) (string-constant scheme-menu-name))|"
+   " --- controls the name of the menu just to the right of the language menu (defaultly named ``Scheme'')"
    "\\item \\scheme|(drscheme:language:register-capability 'drscheme:define-popup (or/c (cons/c string? string?) false/c) (cons \"(define\" \"(define ...)\"))|"
    " --- specifies the prefix that the define popup should look for and what label it should have,"
    "or \\scheme|#f| if it should not appear at all."
@@ -918,8 +920,6 @@
    " --- determines if the insert lambda menu item in the special menu is visible"
    "\\item \\scheme|(drscheme:language:register-capability 'drscheme:special:insert-large-letters (flat-contract boolean?) #t)|"
    " --- determines if the insert large letters menu item in the special menu is visible"
-   "\\item \\scheme|()|"
-   "\\item \\scheme|()|"
    "\\end{itemize}")
   (drscheme:language:capability-registered? 
    (-> symbol? boolean?)
