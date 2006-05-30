@@ -47,15 +47,17 @@
 	(raise-type-error who "list of 2-string lists" filters))
       (if (or (eq? (system-type) 'unix) force-unix?)
         (send (new path-dialog%
-                   [put?      put?]
-                   [dir?      dir?]
-                   [multi?    multi?]
-                   [message   message]
-                   [parent    parent]
-                   [directory directory]
-                   [filename  filename]
-                   ;; implements its own filters
-                   [filters (if (eq? filters default-filters) #t filters)])
+                [put?      put?]
+                [dir?      dir?]
+                [multi?    multi?]
+                [message   message]
+                [parent    parent]
+                [directory directory]
+                [filename  filename]
+                [filters
+                 (cond [(eq? filters default-filters) #t] ; has its own defaults
+                       [dir? #f]
+                       [else filters])])
               run)
         (let ([s (wx:file-selector
                   message directory filename extension

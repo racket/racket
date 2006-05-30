@@ -66,7 +66,7 @@
             ;; (list-of (list filter-name filter-glob))
             ;; can use multiple globs with ";" separators
             ;; #f => disable, #t => use default
-            [filters default-filters]
+            [filters #t]
             ;; predicates are used to filter paths that are shown -- they are
             ;; applied on the file/dir name (as a string) (either as an
             ;; absolute path or relative while current-directory is set);
@@ -89,12 +89,15 @@
             [guard #f]
             )
 
-      (when (eq? filters #t) (set! filters default-filters))
+      (cond [(eq? filters #t) (set! filters default-filters)]
+            [(null? filters)  (set! filters #f)])
 
       (when dir?
         (if show-file?
           (error 'path-dialog% "cannot use `show-file?' with `dir?'")
-          (set! show-file? (lambda (_) #f))))
+          (set! show-file? (lambda (_) #f)))
+        (when filters (error 'path-dialog% "cannot use `filters' with `dir?'")))
+      (printf "filters = ~s\n" filters)
 
       (define label
         (if dir?
