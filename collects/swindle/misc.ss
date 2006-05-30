@@ -1853,7 +1853,7 @@
 ;;>   Try to match the given `string' against several regexps.  Each clause
 ;;>   has one of the following forms:
 ;;>   * (re => function): if `string' matches `re', apply `function' on the
-;;>     result list.
+;;>     resulting list.
 ;;>   * ((re args ...) body ...): if `string' matches `re', bind the tail of
 ;;>     results (i.e, excluding the whole match result) to the given
 ;;>     arguments and evaluate the body.  The whole match result (the first
@@ -1874,12 +1874,9 @@
                      body ...)
                    r)))]
       [(re body ...) #'((regexp-match re s) body ...)]))
-  (define (do-clauses c)
-    (cond [(null? c) c]
-          [(pair? c) (cons (do-clause (car c)) (do-clauses (cdr c)))]
-          [(syntax? c) (do-clauses (syntax-e c))]))
   (syntax-case stx ()
     [(_ str clause ...)
-     #`(let ([s str]) (cond #,@(do-clauses #'(clause ...))))]))
+     #`(let ([s str])
+         (cond #,@(map do-clause (syntax->list #'(clause ...)))))]))
 
 )
