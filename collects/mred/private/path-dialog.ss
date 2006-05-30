@@ -97,7 +97,6 @@
           (error 'path-dialog% "cannot use `show-file?' with `dir?'")
           (set! show-file? (lambda (_) #f)))
         (when filters (error 'path-dialog% "cannot use `filters' with `dir?'")))
-      (printf "filters = ~s\n" filters)
 
       (define label
         (if dir?
