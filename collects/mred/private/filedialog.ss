@@ -7,7 +7,7 @@
 	   "cycle.ss"
 	   "check.ss"
 	   "mrtop.ss"
-	   "file-getter.ss")
+	   "path-dialog.ss")
 
   (provide get-file
 	   get-file-list
@@ -46,9 +46,19 @@
 			   filters))
 	(raise-type-error who "list of 2-string lists" filters))
       (if (or (eq? (system-type) 'unix) force-unix?)
-        (file-getter put? multi? dir? message parent directory filename)
+        (send (new path-dialog%
+                   [put?      put?]
+                   [dir?      dir?]
+                   [multi?    multi?]
+                   [message   message]
+                   [parent    parent]
+                   [directory directory]
+                   [filename  filename]
+                   ;; implements its own filters
+                   [filters (if (eq? filters default-filters) #t filters)])
+              run)
         (let ([s (wx:file-selector
-                  message directory filename extension 
+                  message directory filename extension
                   ;; file types:
                   (apply string-append
                          (map (lambda (s) (format "~a|~a|" (car s) (cadr s)))
