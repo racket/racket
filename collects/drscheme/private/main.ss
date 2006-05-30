@@ -247,6 +247,10 @@
       (drscheme:language:register-capability 'drscheme:define-popup
                                              (or/c (cons/c string? string?) false/c)
                                              (cons "(define" "(define ...)"))
+      
+      (drscheme:language:register-capability 'drscheme:special:insert-fraction (flat-contract boolean?) #t)
+      (drscheme:language:register-capability 'drscheme:special:insert-large-letters (flat-contract boolean?) #t)
+      (drscheme:language:register-capability 'drscheme:special:insert-lambda (flat-contract boolean?) #t)
 
       (handler:current-create-new-window
        (let ([drscheme-current-create-new-window

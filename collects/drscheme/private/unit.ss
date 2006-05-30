@@ -2549,7 +2549,6 @@ module browser threading seems wrong.
             (let ([items (send menu get-items)])
               (when (null? items)
                 (error 'register-capability-menu-item "menu ~e has no items" menu))
-              (drscheme:language:register-capability key (flat-contract boolean?) #t)
               (let* ([menu-item (car (last-pair items))]
                      [this-one (list menu-item (length items) key)]
                      [old-ones (hash-table-get capability-menu-items menu (λ () '()))])
