@@ -1,7 +1,6 @@
 
 (module etc (lib "frtime.ss" "frtime")
-  (require (lib "spidey.ss")
-           (lib "main-collects.ss" "setup"))
+  (require (lib "main-collects.ss" "setup"))
   (require-for-syntax (lib "kerncase.ss" "syntax")
 		      (lib "stx.ss" "syntax")
 		      (lib "name.ss" "syntax")
@@ -39,11 +38,10 @@
   (define true #t)
   (define false #f)
   
-  (define identity (polymorphic (lambda (x) x)))
+  (define identity (lambda (x) x))
   
   (define compose
-    (polymorphic
-     (case-lambda 
+    (case-lambda 
       [(f) (if (procedure? f) f (raise-type-error 'compose "procedure" f))]
       [(f g)
        (let ([f (compose f)]
@@ -63,7 +61,7 @@
                     f)))))]
       [(f . more)
        (let ([m (apply compose more)])
-         (compose f m))])))
+         (compose f m))]))
   
 
 #|
@@ -88,8 +86,7 @@
   
 #|
   (define build-vector
-    (polymorphic
-     (lambda (n fcn)
+    (lambda (n fcn)
        (unless (and (integer? n) (exact? n) (>= n 0))
          (error 'build-vector "~s must be an exact integer >= 0" n))
        (unless (procedure? fcn)
@@ -99,11 +96,10 @@
            (if (= i n) vec
                (begin
                  (vector-set! vec i (fcn i))
-                 (loop (add1 i)))))))))
+                 (loop (add1 i))))))))
   |#
   (define  build-list
-    (polymorphic
-     (lambda  (n  fcn)
+    (lambda  (n  fcn)
        (unless  (and (integer? n) (exact? n) (>= n 0))
          (error  'build-list  "~s must be an exact integer >= 0"  n))
        (unless  (procedure? fcn)
@@ -111,15 +107,14 @@
        (let loop ([i (sub1 n)]  [p '()])
          (if  (>= i 0)
               (loop (sub1 i) (cons (fcn i) p))
-              p)))))
+              p))))
 
   (define loop-until
-    (polymorphic
-     (lambda (start done? next body)
+    (lambda (start done? next body)
        (let loop ([i start])
          (unless (done? i)
            (body i)
-           (loop (next i)))))))
+           (loop (next i))))))
   
   (define boolean=?
     (lambda (x y)

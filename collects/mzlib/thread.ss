@@ -1,12 +1,10 @@
 
 (module thread mzscheme
-  (require "spidey.ss"
-	   "etc.ss"
-	   "contract.ss")
+  (require "etc.ss" "contract.ss")
 
   (provide run-server
 	   consumer-thread)
-  
+
   #|
   t accepts a function, f, and creates a thread. It returns the thread and a
   function, g. When g is applied it passes it's argument to f, and evaluates

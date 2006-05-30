@@ -9,4 +9,4 @@
   (define mred-launcher-names (list "gmzc"))
 
   (define compile-omit-files
-    '("mrspidey.ss" "mrspideyf.ss" "mrspideyi.ss" "embedr.ss")))
+    '("embedr.ss")))
