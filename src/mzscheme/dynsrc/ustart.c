@@ -135,6 +135,20 @@ static char *string_append(char *s1, char *s2)
   return s;
 }
 
+static char *copy_string(char *s1)
+{
+  int l1;
+  char *s;
+
+  l1 = strlen(s1);
+
+  s  = (char *)malloc(l1 + 1);
+
+  memcpy(s, s1, l1 + 1);
+
+  return s;
+}
+
 static char *do_path_append(char *s1, int l1, char *s2)
 {
   int l2;
@@ -224,7 +238,7 @@ int main(int argc, char **argv)
     me = path_append(getcwd(NULL, 0), me);
   } else {
     /* We have to find the executable by searching PATH: */
-    char *path = getenv("PATH"), *p, *m;
+    char *path = copy_string(getenv("PATH")), *p, *m;
     int more;
 
     if (!path) {
