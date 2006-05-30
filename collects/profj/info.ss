@@ -2,8 +2,8 @@
   (require (lib "string-constant.ss" "string-constants"))
   (define name "ProfessorJ")
   (define doc.txt "doc.txt")
-  (define tools '(("tool.ss")))
-  (define tool-names '("ProfessorJ"))
+  (define tools (list (list "tool.ss") (list "test-tool.ss")))
+  (define tool-names '("ProfessorJ" "ProfessorJ Testing"))
   (define install-collection "installer.ss")
   (define pre-install-collection "pre-installer.ss")
   (define compile-subcollections

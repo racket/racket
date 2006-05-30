@@ -678,7 +678,7 @@
            (end (get-end cur))
            (ps (if (null? pre) null (get-start pre)))
            (pe (if (null? pre) null (get-end pre))))
-      ;(printf "parse-members: pre-out ~a current-out ~a~n" (if (null? pre) null (format-out (get-tok pre))) out)
+      #;(printf "parse-members: pre-out ~a current-out ~a~n" (if (null? pre) null (format-out (get-tok pre))) out)
 
       (case state
         ((start)
@@ -836,15 +836,26 @@
         ;Intermediate
         ((field-init-end)
          (case kind
-           ((EOF) (parse-error "Expected a ';' or comma after field, class body still requires a }" ps pe))
-           ((COMMA) (parse-members cur (getter) 'field-list getter #f just-method?))
+           ((EOF) 
+            (if (beginner?)
+                (parse-error "Expected a ';' after field, class body still requires a '};." ps pe)
+                (parse-error "Expected a ';' or comma after field, class body still requires a '}'." ps pe)))
+           ((COMMA) 
+            (if (beginner?)
+                (parse-error "Expected a ';' to end field, found ',' which does not end the field declaration"
+                             ps end)
+                (parse-members cur (getter) 'field-list getter #f just-method?)))
            ((SEMI_COLON) (parse-members cur (getter) 'start getter #f just-method?))
-           ((IDENTIFIER) (parse-error (format "Fields must be separated by commas, ~a not allowed" out) srt end))
+           ((IDENTIFIER) 
+            (if (beginner?)
+                (parse-error (format "Expected a ';' to end field, found ~a which is not allowed." out)
+                             srt end)
+                (parse-error (format "Fields must be separated by commas, ~a not allowed" out) srt end)))
            (else 
             (parse-error 
              (if (beginner?) 
                  (format "Expected a ';' to end the field, found ~a" out)
-                 (format "Expected a ; to end field, or more field names, found ~a" out)) srt end))))                
+                 (format "Expected a ';' to end field, or more field names, found ~a" out)) srt end))))
         ((method)
          (cond
            ((eof? tok) (parse-error "Expected method, and class body still requires a }" ps pe))
@@ -2119,8 +2130,8 @@
 
   ;parse-expression: token token state (->token) bool bool -> token
   (define (parse-expression pre cur-tok state getter statement-ok? stmt-exp?)
-    ;(printf "parse-expression state ~a pre ~a cur-tok ~a statement-ok? ~a stmt-exp? ~a ~n" 
-    ;        state pre cur-tok statement-ok? stmt-exp?)
+    #;(printf "parse-expression state ~a pre ~a cur-tok ~a statement-ok? ~a stmt-exp? ~a ~n" 
+            state pre cur-tok statement-ok? stmt-exp?)
     (let* ((tok (get-tok cur-tok))
            (kind (get-token-name tok))
            (out (format-out tok))
@@ -2166,6 +2177,8 @@
                 (parse-expression cur-tok (parse-expression cur-tok (getter) 'start getter #f #f) 
                                   'c-paren getter statement-ok? stmt-exp?)))
            ((new) (parse-expression cur-tok (getter) 'alloc-start getter statement-ok? stmt-exp?))
+           ((check) 
+            (parse-expression pre cur-tok 'check getter statement-ok? stmt-exp?))
            ((IDENTIFIER) (parse-expression cur-tok (getter) 'name getter statement-ok? stmt-exp?))
            ((STRING_ERROR)
             (if (eq? 'STRING_NEWLINE (get-token-name (caddr (token-value tok))))
@@ -2468,6 +2481,35 @@
             (if (close-separator? tok)
                 (parse-error (format "Expected ) to close constructor arguments, found ~a" out) start end)
                 (parse-error (format "A ',' is required between expressions in a constructor call, found ~a" out) start end)))))
+        ((check)
+         (parse-expression cur-tok
+                           (parse-expression cur-tok (getter) 'start getter #f stmt-exp?)
+                           'check-expect getter statement-ok? stmt-exp?))
+        ((check-expect)
+         (case kind
+           ((EOF) (parse-error "Expected 'expect' and rest of 'check' expression" ps end))
+           ((expect)
+            (parse-expression pre (parse-expression cur-tok (getter) 'start getter #f stmt-exp?)
+                              'within-or-end getter statement-ok? stmt-exp?))
+           (else
+            (if (close-to-keyword? tok 'expect)
+                (parse-error 
+                 (format "Expected 'expect' for the intended result of check.~n Found ~a which is similar to 'expect', check spelling and capitolization."
+                         out)
+                 start end)
+                (parse-error (format "Expected 'expect' for the intended result of check. Found ~a which may not appear here."
+                                     out)
+                             ps end)))))
+        ((within-or-end)
+         (case kind
+           ((within)
+            (parse-expression cur-tok (getter) 'start getter #f stmt-exp?))
+           (else
+            (if (close-to-keyword? tok 'within)
+                (parse-error
+                 (format "Expected 'within' for range of check, found ~a which is similar to 'within'. Check capitolization and spelling."
+                         out))
+                cur-tok))))
         ((name)
          (case kind
            ((PERIOD) (parse-expression cur-tok (parse-name (getter) getter #f) 'name getter statement-ok? stmt-exp?))

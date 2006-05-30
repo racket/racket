@@ -15,17 +15,50 @@ Java examples boxes, and test suite boxes. (i.e. what would be given to
 javac plus two graphical boxes). Descriptions of these boxes can be
 found in the DrScheme manual.
 
-_ProfessorJ Beginner
+_Testing in Java language levels:
+
+The ProfessorJ language levels support a language extension to support testing
+endeavors. This extension can be turned off with a language preference in
+ProfessorJ Full and Java + dynamic. The extension adds two expression forms
+to Java:
+
+check EXPR expect EXPR
+check EXPR expect EXPR within EXPR
+
+To include these expressions in any larger expression (i.e. EXPR || EXPR), the check
+expression must be within parentheses. The resulting type of both expressions is a 
+boolean. The check expression compares the two subexpressions for equality (without
+using .equals). When the two subexpressions are floats or doubles, the check-within 
+expression must be used. The within subexpression must be a number; non-doubles can
+be compared with the check-within expression. The within subexpression specifies how
+precise different floats or doubles must be.
+
+Additionally, the ProfessorJ languages support automatic execution of tests, which
+can also be turned off with a language preference. Any class with the word 'Example'
+in the name (i.e. CarExample, Examples, MyExamples) whose constructor does not
+require any arguments is instantiated on Run. Any method within this class that
+begins with the word 'test' (i.e. testAccelerate, test1) that does not require
+any arguments is called; a boolean return is expected. The test methods are run 
+in the order in which they appear within the class, top to bottom.
+
+A dockable window opens on Run reporting the result of executing all checks within 
+each Example class and the result of executing each test method. Failed checks (i.e. 
+returning false) provide source information. Coverage information is also available for
+each Example class and each testMethod. The collection of coverage information does
+slow execution and can be turned off with a language preference. Colors for the
+coverage information can be set in the Java color preference window.
+
+_ProfessorJ Beginner_
  In Version 300, the Beginner language level has undergone significant changes.
  Largest among these is that interfaces are supported within the language, but
  abstract classes are no longer allowed. Further, interface implementation is supported
  but class extension is not. For further details please see the language manual.
 
-_ProfessorJ Intermediate
+_ProfessorJ Intermediate_
  In Version 300, instanceof is now allowed. For further language details please see
  the language manual.
  
-_ProfessorJ Advanced
+_ProfessorJ Advanced_
  For details, please see the language manual.
  
 _ProfessorJ Full
@@ -91,11 +124,6 @@ _Java + dynamic_ language level
    
  
 Known bugs for dynamic:
-  Programs of the following form will not produce the expected result:
-    Object o = new Object();
-    dynamic x = o; 
-    boolean  t = x == o;
-  In this program, t will have the value false, not true as expected.
   Some casts will fail and instanceof's return false that aught to succeed:
     interface I { }
     class C implements I { }

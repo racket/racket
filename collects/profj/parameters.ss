@@ -1,4 +1,7 @@
 (module parameters mzscheme
+  
+  (require (lib "class.ss"))
+  
   (provide (all-defined))
   
   ;Stores the classpath for the current run
@@ -34,6 +37,15 @@
   ;Stores whether dynamic typing is allowed
   (define dynamic? (make-parameter #f))
   
+  ;Stores whether testing extension is on or not
+  (define test-ext? (make-parameter #t))
+  
+  ;Stores whether the test window should pop up
+  (define tests? (make-parameter #t))
+  
+  ;Stores whether coverage information should be gathered
+  (define coverage? (make-parameter #t))
+    
   ;Stores whether or not we're in MrEd and therefore images can appear in the text
   (define mred? (make-parameter #f))
   

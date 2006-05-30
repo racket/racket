@@ -294,6 +294,9 @@
                             (package "ackage" "pckage" "pakage" "pacage" "packge" "packae" "packag")
                             (protected "rotected" "portected")
                             (final "inal" "fnal" "fial" "finl" "finale" "fianl")
+                            (check "chek" "cehck" "chck" "chack")
+                            (expect "expct" "expeet" "expec" "exect")
+                            (within "with" "withi" "withen" "wihtin")
                             ))
 
   (define (select-words key)

@@ -1509,7 +1509,19 @@
                                           c-class
                                           level
                                           type-recs
-                                          env))))))
+                                          env)))
+        ((check? exp)
+         (set-expr-type exp
+                        (check-test-expr (check-test exp)
+                                         (check-actual exp)
+                                         (check-range exp)
+                                         check-sub-expr
+                                         env
+                                         level
+                                         (check-ta-src exp)
+                                         (expr-src exp)
+                                         type-recs)))
+         )))
 
   ;;check-bin-op: symbol exp exp (exp env -> type/env) env src-loc symbol type-records -> type/env
   ;;Fully checks bin-ops, including checking the subexpressions
@@ -2614,8 +2626,8 @@
                 (local-access? (access-name l-exp)))
            (add-set-to-env (id-string (local-access-name (access-name l-exp)))
                            (type/env-e rtype/env))
-           (type/env-e rtype/env)))))
-
+           (type/env-e rtype/env)))))      
+  
   ;check-final: expression bool bool string -> void
   (define (check-final expr ctor? static-init? c-class env)
     (let ((access (access-name expr))
@@ -2659,7 +2671,58 @@
     (and (special-name? expr)
          (equal? "this" (special-name-name expr))))
   
-      
+  ;check-test-expr: exp exp (U #f exp) (exp env -> type/env) env symbol src src type-records-> type/env
+  (define (check-test-expr test actual range check-e env level ta-src src type-recs)
+    (let* ((test-te (check-e test env))
+           (test-t (type/env-t test-te))
+           (actual-te (check-e actual (type/env-e test-te)))
+           (actual-t (type/env-t actual-te))
+           (range-te (if range (check-e range (type/env-e actual-te)) actual-te))
+           (range-t (when range (type/env-t range-te)))
+           (res (make-type/env 'boolean (type/env-e range-te))))
+      (when (eq? test-t 'void)
+        (check-type-error 'void test-t actual-t (expr-src test)))
+      (when (eq? actual-t 'void)
+        (check-type-error 'void test-t actual-t (expr-src actual)))
+      (when (and range (not (prim-numeric-type? range-t)))
+        (check-range-error (expr-src range) range-t)) 
+      (cond
+        ((and (eq? 'boolean test-t)
+              (eq? 'boolean actual-t)) res)
+        ((and (prim-numeric-type? test-t)
+              (prim-numeric-type? actual-t))
+         (if (or (and (prim-integral-type? test-t)
+                      (prim-integral-type? actual-t))
+                 range)
+             res
+             (check-double-error test-t actual-t 
+                                 (expr-src test) (expr-src actual))))
+        ((and (memq level '(advanced full))
+              (reference-type? test-t) (reference-type? actual-t))
+         (cond
+           ((castable? actual-t test-t type-recs) res)
+           (else (check-type-error 'cast test-t actual-t ta-src))))
+        ((and (memq level '(advanced full))
+              (or (array-type? test-t) (array-type? actual-t)))
+         (cond
+           ((castable? actual-t test-t type-recs) res)
+           (else
+            (check-type-error 'cast test-t actual-t ta-src))))
+        ((and (eq? level 'beginner) (reference-type? test-t) (reference-type? actual-t))
+         (if (or (is-eq-subclass? actual-t test-t type-recs)
+                 (implements? actual-t test-t type-recs))
+             res
+             (check-type-error 'iface test-t actual-t ta-src)))
+        ((and (reference-type? test-t) (reference-type? actual-t)) 
+         (if (or (is-eq-subclass? actual-t test-t type-recs)
+                 (implements? actual-t test-t type-recs))
+             res
+             (check-type-error 'subtype test-t actual-t ta-src)))
+        (else
+         (check-type-error (if (memq level '(advanced full)) 'cast 'subtype)
+                           test-t actual-t ta-src)))))
+  
+  
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;Expression Errors
 
@@ -3344,6 +3407,50 @@
                  (format "Implicit import of class ~a failed as this class does not exist at the specified location"
                          class)
                  (string->symbol class) src))
+  
+    (define (check-range-error src type)
+    (raise-error
+     'check
+     (format "Within clause of 'check' must specify a range with a number, found ~a."
+             (type->ext-name type))
+     'within
+     src))
+  
+  (define (check-double-error test-type actual-type test-src actual-src)
+    (let ((check-fault? (prim-integral-type? actual-type)))
+      (raise-error
+       (if check-fault? 'check 'expect)
+       (format "When ~a of a 'check' expression is a ~a, the expression must specify a range with 'within'."
+               (if check-fault?
+                   "the expression to check"
+                   "the expected expression")
+               (type->ext-name
+                (if check-fault? test-type actual-type)))
+       'check (if check-fault? test-src actual-src)
+       )))
+  
+  (define (check-type-error kind test-type actual-type ta-src)
+    (raise-error
+     'check
+     (cond
+       ((and (eq? kind 'void) (eq? test-type 'void))
+        "The test of a 'check' expression must produce a value. Current expression does not.")
+       ((and (eq? kind 'void) (eq? actual-type 'void))
+        "The expected result of a 'check' expression must be a value. Current expression is not a value.")
+       (else
+        (string-append
+         (format "In a 'check' expression, the type of the expected expression must be ~a the tested expression.~n"
+                 (if (eq? kind 'cast) "castable to" "a subtype of"))
+         (format "Found ~a, which is not ~a ~a, the type of the tested expression."
+                 (type->ext-name actual-type)
+                 (case kind
+                   ((cast)  "castable to")
+                   ((iface subtype) "a subtype of"))
+                 (type->ext-name test-type)
+                 ))))
+     'check ta-src
+     ))
+
   
   (define check-location (make-parameter #f))
   

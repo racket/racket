@@ -201,6 +201,7 @@
   ;           |  cast
   ;           |  instanceof
   ;           |  assignment
+  ;           |  check
 
   ;(make-literal (U #f type) src value)
   (p-define-struct (literal expr) (val))
@@ -282,6 +283,7 @@
   
   ;Op -> = *= /= %= += -= <<= >>= >>>= &= ^= or=  
  
-  
+  ;(make-check (U #f type) src Expression Expression (U #f Expression) src)
+  (p-define-struct (check expr) (test actual range ta-src))
   
 )

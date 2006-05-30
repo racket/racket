@@ -10,6 +10,32 @@
 
   ;;Execution tests that should pass
   
+  (execute-test
+   "class MyClass {
+      Object field;
+
+      MyClass( Object f ) { this.field = f; }      
+
+      MyClass method() { return this; }
+    }
+
+    class CorrectChecks {
+     
+     boolean t;
+     boolean t2 = check 1 expect 3;
+     boolean t3 = (check 1 expect 3) || (check 2 expect 3);
+     boolean t4 = (check 1 expect 1) && (check 3 expect 3);
+     boolean t5 = check \"Hi\" expect \"\";
+     boolean t6 = check 1.5 expect 2 within .4;
+     boolean t7 = check true expect false;
+     boolean t8 = check new MyClass(\"\") expect new MyClass(\"\");
+     boolean t9 = check new MyClass(\"\").field expect \"\";
+     boolean t10 = check new MyClass(\"\").method() expect new MyClass(\"\");
+
+     CorrectChecks() { this.t= check 1 expect 4; }
+
+   }" language #f "Class with many different style of checks within it")
+  
   (execute-test 
    "interface A {
       boolean s( B b);
@@ -117,6 +143,26 @@
   
   ;;Execution tests that should produce errors
 
+  (execute-test
+   "class CorrectChecks {
+     
+     boolean t;
+     boolean t2 = check 1 expect 3;
+     boolean t3 = (check 1 expect 3) || (check 2 expect 3);
+     boolean t4 = (check 1 expect 1) && (check 3 expect 3);
+     boolean t5 = check \"Hi\" expect \"\";
+     boolean t6 = check 1.5 expect 2 within .4;
+     boolean t7 = check true expect false;
+     boolean t8 = check new MyClass(\"\") expect new MyClass(\"\");
+     boolean t9 = check new MyClass(\"\").field expect \"\";
+     boolean t10 = check new MyClass(\"\").method() expect new MyClass(\"\");
+
+     ()
+     
+     CorrectChecks() { this.t= check 1 expect 4; }
+
+   }" language #t "Correct checks, followed by a parse error: should mention (")
+  
   (execute-test
    "class X {
      int x = this.y;
@@ -474,6 +520,19 @@
    (list "double x = 1;" "x" "new X().f()")
    (list '(void) 1.0 2.0)
    "Converting ints into doubles appropriately")
+  
+  (interact-test
+   language
+   (list "check true expect true"
+         "check true expect 1"
+         "check true expect true within 1"
+         "check new Object() expect \"hi\""
+         "check \"hi\" expect new Object()"
+         "check 1.4 expect 1"
+         "check 1.4 expect 1 within .5"
+         "check 1.4 expect 1 within true")
+   (list #t 'error #t #f 'error 'error #t 'error)
+   "Calling check in many ways")
   
   (report-test-results))
    

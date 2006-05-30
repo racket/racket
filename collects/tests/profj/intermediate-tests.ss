@@ -13,9 +13,9 @@
    #f "abstract class not fully implementing an interface")
   
   (execute-test
-   "interface A { int a(); }
-    abstract class B implements A { }
-    class C extends B {
+   "interface A1 { int a(); }
+    abstract class B1 implements A1 { }
+    class C1 extends B1 {
      int a() { return 3; }
     }"
    'intermediate
@@ -29,21 +29,21 @@
    #f "Simple abstract class with abstract method")
   
   (execute-test
-   "abstract class Foo {
+   "abstract class Foo1 {
      abstract int f();
     }
-    class FooP extends Foo {
+    class FooP extends Foo1 {
      int f() { return 3; }
     }"
     'intermediate
     #f "Simple abstract class with extending sub class")
   
   (execute-test
-   "abstract class Foo {
+   "abstract class Foo2 {
      abstract int f();
      int fp() { return 3; }
     }
-    class FooP extends Foo {
+    class FooP2 extends Foo2 {
      int f() { return this.fp(); }
     }"
    'intermediate
@@ -70,8 +70,8 @@
    'intermediate #f "Class extension")
   
   (execute-test
-   "class first { int x() { return 3; } }
-    class second extends first { int x() { return 6; }}"
+   "class first1 { int x() { return 3; } }
+    class second1 extends first1 { int x() { return 6; }}"
    'intermediate #f "Overriding")
   
   (execute-test
@@ -319,6 +319,23 @@
   ;;Execute tests with errors
   
   (execute-test
+   "class CheckError {
+     void foo() { }
+   }
+   class Examples {
+     boolean t1 = check new CheckError().foo() expect false;
+   }
+   " 'intermediate #t "Check with void method call in test")
+  
+  (execute-test
+   "class CheckError {
+    void foo() { }
+    }
+    class Examples { 
+      boolean t1 = check 3 expect new CheckError().foo();
+    }" 'intermediate #t "Check with void method call in expect")
+  
+  (execute-test
    "class A { 
      a b c;
     }"
@@ -518,7 +535,7 @@ class BlockWorld extends World {
   return this. block.draw(this); 
  }
  boolean drawBackground() {
-  return this. theCanvas.drawRect(new Posn(0,0),this. WIDTH,this. HEIGHT,this. BACKGROUND);
+  return true;//this. theCanvas.drawRect(new Posn(0,0),this. WIDTH,this. HEIGHT,this. BACKGROUND);
  }
 }
 
@@ -572,5 +589,11 @@ class DrpBlock {
    'intermediate
    '("Examples a = new Examples();") '((void)) 
    "Cycle: used to cause multiple declarations of a class")
+  
+  (interact-test
+   'intermediate
+   '("int a = 3;" "a = 45;" "a")
+   '((void) 45 45)
+   "Test of assignment")
   
   (report-test-results))

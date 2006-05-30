@@ -21,8 +21,9 @@
   
   (define parsers
     (parser
+     ;(debug "out2.ss")
      (start CompilationUnit BeginnerInteractions Expression Type)
-     (tokens java-vals special-toks Keywords Separators EmptyLiterals Operators)
+     (tokens java-vals special-toks Keywords Separators EmptyLiterals Operators ExtraKeywords)
      ;(terminals val-tokens special-tokens keyword-tokens separator-tokens literal-tokens operator-tokens)
      (error (lambda (tok-ok name val start-pos end-pos)
               (if ((determine-error))
@@ -440,9 +441,16 @@
        [(ConditionalAndExpression) $1]
        [(ConditionalOrExpression OR ConditionalAndExpression)
 	(make-bin-op #f (build-src 3) 'oror $1 $3 (build-src 2 2))])
+
+      (CheckExpression
+       [(ConditionalOrExpression) $1]
+       [(check ConditionalOrExpression expect ConditionalOrExpression) 
+        (make-check #f (build-src 4) $2 $4 #f (build-src 2 4))]
+       [(check ConditionalOrExpression expect ConditionalOrExpression within ConditionalOrExpression) 
+        (make-check #f (build-src 6) $2 $4 $6 (build-src 2 4))])
       
       (Assignment
-       [(LeftHandSide AssignmentOperator ConditionalOrExpression)
+       [(LeftHandSide AssignmentOperator CheckExpression)
 	(make-assignment #f (build-src 3) $1 $2 $3 (build-src 2 2))])
       
       (LeftHandSide
@@ -450,10 +458,11 @@
        [(FieldAccess) $1])
             
       (AssignmentOperator
-       [(=) '=])
+       [(=) '=])            
       
       (Expression
-       [(ConditionalOrExpression) $1])
+       ;[(ConditionalOrExpression) $1]
+       [(CheckExpression) $1])
       
       )))
   

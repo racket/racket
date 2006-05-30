@@ -205,7 +205,8 @@
             (else
              (or (type=? (array-type-type to) (array-type-type from))
                  (castable? (array-type-type from)
-                            (array-type-type to))))))))
+                            (array-type-type to)
+                            type-recs)))))))
   
   ;Do the two lists of method signatures have conflicting methods
   ;signature-conflicts? (list method-record) (list method-record) -> bool

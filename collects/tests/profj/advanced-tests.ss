@@ -7,6 +7,14 @@
   ;;Execution tests without errors
   
   (execute-test
+   "class Checkclass { }
+    class ExampleCheck {
+      boolean t1 = check new Checkclass[10] expect new Checkclass[10];
+      boolean t2 = check (new int[3])[1] expect 0;
+    }"
+   'advanced #f "check expressions")
+    
+  (execute-test
    "class Blah {
 	Blah () {}
 	int addUp (int top) {
@@ -286,6 +294,22 @@ class WeeklyPlanner{
   
   ;;Interaction tests, mix of right and error
   
+  (interact-test 'advanced '("int a = 1;" "++a") '((void) 2) "Test of ++")
+  
+  
+  (interact-test
+   'advanced
+   '("check (new int[12])[3] expect 0" 
+     "check new int[2] expect new int[4]"
+     "check new int[3] expect new int[3]"
+     "String[] t = new String[3];"
+     "t[2] = \"\";"
+     "check new Object[3] expect t"
+     "check new String[3] expect new Object[3]"
+     "check new int[3][3] expect new int[3]")
+   `(#t #f #t (void) ,(make-java-string "") #f #t #f)
+   "Check of arrays")
+  
   (interact-test
    "class Afirst {
      private int x = 10;
@@ -346,13 +370,14 @@ class WeeklyPlanner{
 
   (interact-test
    'advanced
-   (list "(new int[2][])[0]" #;"(new int[2][])[1]=new int[2];")
-   (list null #;0)
+   (list "(new int[2][])[0]")
+   (list null)
    "multi-dimension array - not all intialized")
   
   (interact-test
    'advanced
-   (list "int[] x = new int[10];" "for( int i = 0; i< x.length; i++) x[i]=i;" "x.length" "x[5]")
+   (list "int[] x = new int[10];" 
+         "for( int i = 0; i< x.length; i++) x[i]=i;" "x.length" "x[5]")
    (list '(void) '(void) 10 5)
    "Array & for loop")
   

@@ -1,12 +1,13 @@
 (module tool mzscheme
   (require (lib "tool.ss" "drscheme")
            (lib "mred.ss" "mred") (lib "framework.ss" "framework") (lib "unitsig.ss") 
+           (lib "file.ss")
            (lib "include-bitmap.ss" "mrlib") (lib "etc.ss")
            (lib "class.ss")
 	   (lib "string-constant.ss" "string-constants")
            (lib "Object.ss" "profj" "libs" "java" "lang") (lib "array.ss" "profj" "libs" "java" "lang")
            (lib "String.ss" "profj" "libs" "java" "lang"))
-  (require "compile.ss" "parameters.ss" "parsers/lexer.ss" "parser.ss" "ast.ss")
+  (require "compile.ss" "parameters.ss" "parsers/lexer.ss" "parser.ss" "ast.ss" "tester.scm")
 
   (require-for-syntax "compile.ss")
   
@@ -22,12 +23,20 @@
       ;Set the Java editing colors
       (define color-prefs-table
         `((keyword ,(make-object color% "black") ,(string-constant profj-java-mode-color-keyword))
+          (prim-type ,(make-object color% "darkmagenta")
+                     "primitive types"
+                     #;,(string-constant profj-java-mode-color-primtype))
+          (identifier ,(make-object color% 38 38 128) ,(string-constant profj-java-mode-color-identifier))
           (string ,(make-object color% "forestgreen") ,(string-constant profj-java-mode-color-string))
           (literal ,(make-object color% "forestgreen") ,(string-constant profj-java-mode-color-literal))
           (comment ,(make-object color% 194 116 31) ,(string-constant profj-java-mode-color-comment))
           (error ,(make-object color% "red") ,(string-constant profj-java-mode-color-error))
-          (identifier ,(make-object color% 38 38 128) ,(string-constant profj-java-mode-color-identifier))
           (default ,(make-object color% "black") ,(string-constant profj-java-mode-color-default))))
+      
+      ;Set the Java coverage colors
+      (define coverage-color-prefs
+        `((uncovered ,(make-object color% "black") "default")
+          (covered ,(make-object color% "darkmagenta") "covered expression")))
       
       ;; short-sym->pref-name : symbol -> symbol
       ;; returns the preference name for the color prefs
@@ -41,15 +50,22 @@
       ;; extend-preferences-panel : vertical-panel -> void
       ;; adds in the configuration for the Java colors to the prefs panel
       (define (extend-preferences-panel parent)
-        (for-each
-         (lambda (line)
-           (let ([sym (car line)])
-             (color-prefs:build-color-selection-panel 
-              parent
-              (short-sym->pref-name sym)
-              (short-sym->style-name sym)
-              (format "~a" sym))))
-         color-prefs-table))
+        (let ((standard-color-prefs 
+               (make-object group-box-panel% "Edit Colors" parent))
+              (coverage-color-panel
+               (make-object group-box-panel% "Coverage Colors" parent))
+              (put 
+               (lambda (p)
+                 (lambda (line)
+                   (let ([sym (car line)]
+                         [str (caddr line)])
+                     (color-prefs:build-color-selection-panel 
+                      p
+                      (short-sym->pref-name sym)
+                      (short-sym->style-name sym)
+                      str))))))
+          (for-each (put standard-color-prefs) color-prefs-table)
+          (for-each (put coverage-color-panel) coverage-color-prefs)))
       
       ;Create the Java editing mode
       (define mode-surrogate
@@ -125,8 +141,9 @@
         (drscheme:language-configuration:add-language
          (make-object ((drscheme:language:get-default-mixin) beginner-lang%))))
       
-      ;(make-profj-settings symbol boolean (list string))
-      (define-struct profj-settings (print-style print-full? classpath) (make-inspector))
+      ;(make-profj-settings symbol boolean boolean boolean boolean (list string))
+      (define-struct profj-settings 
+        (print-style print-full? allow-check? run-tests? coverage? classpath) (make-inspector))
       
       ;ProfJ general language mixin
       (define (java-lang-mixin level name number one-line dyn?)
@@ -146,22 +163,31 @@
           ;default-settings: -> profj-settings
           (define/public (default-settings) 
             (if (memq level `(beginner intermediate advanced))
-                (make-profj-settings 'field #f null)
-                (make-profj-settings 'type #f null)))
+                (make-profj-settings 'field #f #t #t #t null)
+                (make-profj-settings 'type #f #t #f #t null)))
           ;default-settings? any -> bool
           (define/public (default-settings? s) (equal? s (default-settings)))
 
           ;marshall-settings: profj-settings -> (list (list symbol) (list bool) (list string))
           (define/public (marshall-settings s)
             (list (list (profj-settings-print-style s))
-                  (list (profj-settings-print-full? s))))
+                  (list (profj-settings-print-full? s))
+                  (list (profj-settings-allow-check? s))
+                  (list (profj-settings-run-tests? s))
+                  (list (profj-settings-coverage? s))))
           
           ;unmarshall-settings: any -> (U profj-settings #f)
           (define/public (unmarshall-settings s)
-            (if (and (pair? s) (= (length s) 2)
+            (if (and (pair? s) (= (length s) 5)
                      (pair? (car s)) (= (length (car s)) 1)
-                     (pair? (cadr s)) (= (length (cadr s)) 1))
-                (make-profj-settings (caar s) (caadr s) null)
+                     (pair? (cadr s)) (= (length (cadr s)) 1)
+                     (pair? (caddr s)) (= (length (caddr s)) 1)
+                     (pair? (cadddr s)) (= (length (cadddr s)) 1)
+                     (pair? (list-ref s 4)) (= (length (list-ref s 4)) 1))
+                (make-profj-settings (caar s) (caadr s) (caaddr s) 
+                                     (get-preference 'profj:test-enable
+                                                     (lambda () (car (cadddr s))))
+                                     (car (list-ref s 4)) null)
                 #f))
 
           ;Create the ProfessorJ settings selection panel
@@ -173,21 +199,39 @@
                                (stretchable-height #f)
                                (stretchable-width #f))]
                      
-                     [output-panel (instantiate group-box-panel% ()
+                     [print-prefs (instantiate group-box-panel% ()
                                      (label "Display Preferences")
                                      (parent parent)
                                      (alignment '(left center)))]
                      [print-full (when (memq level '(advanced full))
-                                   (make-object check-box% "Print entire contents of arrays?" output-panel 
+                                   (make-object check-box% "Print entire contents of arrays?" print-prefs 
                                      (lambda (x y) update-pf)))]
                      [print-style (make-object radio-box%
                                     "Display style"
                                     (list "Class" "Class+Fields" );"Graphical")
-                                    output-panel
+                                    print-prefs
                                     (lambda (x y) (update-ps)))]
+                     [testing-prefs (instantiate group-box-panel% ()
+                                      (label "Testing Preferences")
+                                      (parent parent)
+                                      (alignment '(left center)))]
+                     [allow-testing (when (eq? level 'full)
+                                      (make-object check-box% "Allow check expression?" testing-prefs
+                                        (lambda (x y) update-at)))]
+                     [display-testing (make-object check-box% "Display testing results on Run?"
+                                        testing-prefs (lambda (x y) (update-dt x y)))]
+                     [collect-coverage (make-object check-box% "Collect coverage for tests?"
+                                          testing-prefs (lambda (x y) update-cc))]
                      
                      [update-pf (lambda () (void))]
                      [update-ps (lambda () (void))]
+                     [update-at (lambda () (void))]
+                     [update-dt (lambda (box event) 
+                                  (when (eq? 'check-box (send event get-event-type))
+                                    (put-preferences '(profj:test-enable)
+                                                     `(,(send box get-value)))
+                                    (send collect-coverage enable (send box get-value))))]
+                     [update-cc (lambda () (void))]
                      
                      [cp-panel (instantiate group-box-panel% ()
                                             (parent parent)
@@ -322,9 +366,13 @@
                                         [(0) 'type]
                                         [(1) 'field]
                                         [(2) 'graphical])
-                                      (if (memq level '(advanced full))
-                                          (send print-full get-value)
-                                          #f)
+                                      (and (memq level '(advanced full))
+                                           (send print-full get-value))
+                                      (or (not (eq? level 'full))
+                                          (send allow-testing get-value))
+                                      (send display-testing get-value)
+                                      (and (send display-testing get-value)
+                                           (send collect-coverage get-value))
                                       (get-classpath))]
                 [(settings)
                  (send print-style set-selection
@@ -334,6 +382,12 @@
                          ((graphical) 2)))
                  (when (memq level '(advanced full))
                    (send print-full set-value (profj-settings-print-full? settings)))
+                 (when (eq? level 'full)
+                   (send allow-testing set-value (profj-settings-allow-check? settings)))
+                 (send display-testing set-value (profj-settings-run-tests? settings))
+                 (if (profj-settings-run-tests? settings)
+                     (send collect-coverage set-value (profj-settings-coverage? settings))
+                     (send collect-coverage enable #f))
                  (install-classpath (profj-settings-classpath settings))])))
                      
           ;;Stores the types that can be used in the interactions window
@@ -349,7 +403,8 @@
                  (let ((end? (eof-object? (peek-char-or-special port))))
                    (if end? 
                        eof 
-                       (datum->syntax-object #f `(parse-java-full-program ,(parse port name level)) #f)))))))
+                       (datum->syntax-object #f `(parse-java-full-program ,(parse port name level)
+                                                                          ,name) #f)))))))
           (define/public (front-end/interaction port settings teachpack-cache)
             (mred? #t)
             (let ([name (object-name port)]
@@ -418,6 +473,43 @@
                     (let-values (((syn-list t t2) 
                                   (send interact-box read-special #f #f #f #f))) syn-list))
                   (process-extras (cdr extras) type-recs))))))
+        
+          (define/private (find-examples cus)
+            (let cu-loop ((cs cus) (examples null) (near-examples null))
+              (cond
+                ((null? cs) (list examples near-examples))
+                (else
+                 (let class-loop ((names (compilation-unit-contains (car cs)))
+                                  (ex examples)
+                                  (ne near-examples))
+                   (cond
+                     ((null? names) (cu-loop (cdr cs) ex ne))
+                     ((regexp-match "Example" (car names))
+                      (class-loop (cdr names)
+                                  (cons (car names) ex)
+                                  ne))
+                     ((or (regexp-match "Eample" (car names))
+                          (regexp-match "Exmple" (car names))
+                          (regexp-match "Exaple" (car names))
+                          (regexp-match "Examle" (car names))
+                          (regexp-match "Exampe" (car names))
+                          (regexp-match "Exampl" (car names))
+                          (regexp-match "Eaxmple" (car names)))
+                      (class-loop (cdr names)
+                                  ex
+                                  (cons (format "Class ~a's name contains a phrase close to Example."
+                                                (car names))
+                                        ne)))
+                     ((regexp-match "example" (car names))
+                      (class-loop (cdr names)
+                                  ex
+                                  (cons (format "Class ~a's name contains a miscapitalized example."
+                                                (car names))
+                                        ne)))
+                     (else
+                      (class-loop (cdr names) ex ne))))))))
+                
+            
           
           ;find-main-module: (list compilation-unit) -> (U syntax #f)
           (define/private (find-main-module mod-lists)
@@ -464,41 +556,88 @@
                   [string-path ((current-module-name-resolver) '(lib "String.ss" "profj" "libs" "java" "lang") #f #f)]
                   [class-path ((current-module-name-resolver) '(lib "class.ss") #f #f)]
                   [mred-path ((current-module-name-resolver) '(lib "mred.ss" "mred") #f #f)]
-                  [n (current-namespace)])
+                  [n (current-namespace)]
+                  [e (current-eventspace)])
+              (test-ext? (profj-settings-allow-check? settings))
+              (tests? (get-preference 'profj:test-enable
+                                      (lambda () (profj-settings-run-tests? settings))))
+              (coverage? (profj-settings-coverage? settings))
               (let ((execute-types (create-type-record)))
                 (read-case-sensitive #t)
                 (run-in-user-thread
                  (lambda ()
+                   (test-ext? (profj-settings-allow-check? settings))
+                   (tests? (get-preference 'profj:test-enable
+                                           (lambda () (profj-settings-run-tests? settings))))
+                   (coverage? (profj-settings-coverage? settings))
                    (error-display-handler 
                     (drscheme:debug:make-debug-error-display-handler (error-display-handler)))
                    (let ((old-current-eval (drscheme:debug:make-debug-eval-handler (current-eval))))
                      (current-eval 
                       (lambda (exp)
                         (syntax-case exp (parse-java-full-program parse-java-interactions)
-                          ((parse-java-full-program ex)
-                           (let ((exp (old-current-eval (syntax ex))))
+                          ((parse-java-full-program ex s)
+                           (let ((exp (old-current-eval (syntax ex)))
+                                 (src (old-current-eval (syntax s))))
                              (execution? #t)
                              (set! execute-types (create-type-record))
-                             (let ((name-to-require #f))
-                               (let loop ((mods (order (compile-ast exp level execute-types)))
-                                          (extras (process-extras 
-                                                   (send execute-types get-interactions-boxes) execute-types))
-                                          (require? #f))
-                                 (cond
-                                   ((and (not require?) (null? mods) (null? extras)) (void))
-                                   ((and (not require?) (null? mods))
-                                    (old-current-eval (syntax-as-top (car extras)))
-                                    (loop mods (cdr extras) require?))
-                                   (require? 
-                                    (old-current-eval 
-                                     (syntax-as-top (with-syntax ([name name-to-require])
-                                                      (syntax (require name)))))
-                                    (loop mods extras #f))
-                                   (else 
-                                    (let-values (((name syn) (get-module-name (expand (car mods)))))
-                                      (set! name-to-require name)
-                                      (syntax-as-top (old-current-eval syn))
-                                      (loop (cdr mods) extras #t))))))))
+                             (let* ((compilation-units (compile-ast exp level execute-types))
+                                    (examples (find-examples compilation-units)))
+                               (let ((name-to-require #f)
+                                     (tests-run? #f))
+                                 (let loop ((mods (order compilation-units))
+                                            (extras (process-extras 
+                                                     (send execute-types get-interactions-boxes) 
+                                                     execute-types))
+                                            (require? #f))
+                                   (cond
+                                     ((and (not require?) (null? mods) tests-run? (null? extras)) (void))
+                                     ((and (not require?) (null? mods) (not tests-run?))
+                                      (when (tests?)
+                                        (let ((tc (make-object test-info%)))
+                                          (namespace-set-variable-value! 'current~test~object% tc)
+                                          (let ((objs (send tc run-tests 
+                                                            (map (lambda (c)
+                                                                   (list c (old-current-eval (string->symbol c))))
+                                                                 (car examples))
+                                                            (cadr examples))))
+                                            (let inner-loop ((os objs))
+                                              (unless (null? os)
+                                                (let ((formatted 
+                                                       (format-java-list (car os) #t 'field null #f 0)))
+                                                  (when (< 24 (total-length formatted))
+                                                    (set! formatted 
+                                                          (format-java-list (car os) #t 'field null #t 0)))
+                                                  (let loop ((out formatted))
+                                                    (unless (null? out)
+                                                      (write-special (car out))
+                                                      (loop (cdr out))))
+                                                  (newline))
+                                                (inner-loop (cdr os))))
+                                            (parameterize ([current-eventspace e])
+                                              (queue-callback 
+                                               (lambda ()
+                                                 (let* ((tab (and (is-a? src drscheme:unit:definitions-text<%>)
+                                                                  (send src get-tab)))
+                                                        (frame (and tab (send tab get-frame)))
+                                                        (test-window 
+                                                         (make-object test-display% frame tab)))
+                                                   (send test-window pop-up-window tc))))))))
+                                      (set! tests-run? #t)
+                                      (loop mods extras require?))
+                                     ((and (not require?) (null? mods) tests-run?)
+                                      (old-current-eval (syntax-as-top (car extras)))
+                                      (loop mods (cdr extras) require?))
+                                     (require? 
+                                      (old-current-eval 
+                                       (syntax-as-top (with-syntax ([name name-to-require])
+                                                        (syntax (require name)))))
+                                      (loop mods extras #f))
+                                     (else 
+                                      (let-values (((name syn) (get-module-name (expand (car mods)))))
+                                        (set! name-to-require name)
+                                        (syntax-as-top (old-current-eval syn))
+                                        (loop (cdr mods) extras #t)))))))))
                           ((parse-java-interactions ex loc)
                            (let ((exp (syntax-object->datum (syntax ex))))
                              (old-current-eval 
@@ -577,13 +716,14 @@
       (drscheme:modes:add-mode (string-constant profj-java-mode) mode-surrogate repl-submit matches-language)
       (color-prefs:add-to-preferences-panel (string-constant profj-java) extend-preferences-panel)
       
-      (for-each (lambda (line)
-                  (let ([sym (car line)]
-                        [color (cadr line)])
-                    (color-prefs:register-color-pref (short-sym->pref-name sym)
-                                                     (short-sym->style-name sym)
-                                                     color)))
-                color-prefs-table)
+      (define (register line)
+        (let ([sym (car line)]
+              [color (cadr line)])
+          (color-prefs:register-color-pref (short-sym->pref-name sym)
+                                           (short-sym->style-name sym)
+                                           color)))
+      (for-each register color-prefs-table)
+      (for-each register coverage-color-prefs)
       
       ;;Java Boxes
       (define java-box%

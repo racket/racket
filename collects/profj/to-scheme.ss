@@ -1983,8 +1983,19 @@
   ;translates a Java expression into a Scheme expression.
   ;raises an error if it has no implementation for an expression type
   
-  ;translate-expression: Expression -> syntax
   (define (translate-expression expr)
+    (let ((translated-expr (translate-expression-unannotated expr)))
+      (if (and (not (to-file)) (coverage?) (expr-src expr))
+          (make-syntax #f `(begin0 ,translated-expr
+                                   (cond 
+                                     ((namespace-variable-value 'current~test~object% #f (lambda () #f))
+                                      => (lambda (test)
+                                           (send test covered-position ,(expr-src expr))))))
+                       #f)
+          translated-expr)))
+  
+  ;translate-expression: Expression -> syntax
+  (define (translate-expression-unannotated expr)
     (cond
       ((literal? expr) (translate-literal (expr-types expr)
                                           (literal-val expr)
@@ -2036,12 +2047,12 @@
       ((array-access? expr) (translate-array-access (translate-expression (array-access-name expr))
                                                     (translate-expression (array-access-index expr))
                                                     (expr-src expr)))
-      ((post-expr? expr) (translate-post-expr (translate-expression (post-expr-expr expr))
+      ((post-expr? expr) (translate-post-expr (translate-expression-unannotated (post-expr-expr expr))
                                               (post-expr-op expr)
                                               (post-expr-key-src expr)
                                               (expr-src expr)))
       ((pre-expr? expr) (translate-pre-expr (pre-expr-op expr)
-                                            (translate-expression (pre-expr-expr expr))
+                                            (translate-expression-unannotated (pre-expr-expr expr))
                                             (pre-expr-key-src expr)
                                             (expr-src expr)))
       ((unary? expr) (translate-unary (unary-op expr)
@@ -2063,6 +2074,10 @@
                                                 (expr-types expr)
                                                 (assignment-key-src expr)
                                                 (expr-src expr)))
+      ((check? expr) (translate-check (check-test expr)
+                                      (check-actual expr)
+                                      (check-range expr)
+                                      (expr-src expr)))
       (else
        (error 'translate-expression (format "Translate Expression given unrecognized expression ~s" expr)))))
   
@@ -2175,7 +2190,7 @@
                (make-syntax #f
                             (cond
                               ((or (dynamic-val? left-type) (dynamic-val? right-type))
-                               `(,(create-syntax #f 'javaRuntime:dynamic-equal key-src) ,left ,right))
+                               `(,(create-syntax #f 'javaRuntime:dynamic-equal? key-src) ,left ,right))
                               ((and (prim-numeric-type? left-type) (prim-numeric-type? right-type))
                                `(,(create-syntax #f '= key-src) ,left ,right))
                               (else
@@ -2577,24 +2592,22 @@
   
   ;converted
   ;translate-post-expr: syntax symbol src src -> syntax
-  (define translate-post-expr
-    (lambda (expr op key src)
-      (make-syntax #f `(begin0
-                         ,expr
-                         (set! ,expr ( ,(create-syntax #f (if (eq? op '++) 'add1 'sub1) (build-src key))
-                                       ,expr)))
-                   (build-src src))))
+  (define (translate-post-expr expr op key src)
+    (make-syntax #f `(begin0
+                       ,expr
+                       (set! ,expr ( ,(create-syntax #f (if (eq? op '++) 'add1 'sub1) (build-src key))
+                                      ,expr)))
+                 (build-src src)))
   
   ;converted
   ;translate-pre-expr: symbol syntax src src -> syntax
-  (define translate-pre-expr
-    (lambda (op expr key src)
-      (make-syntax #f
-                   `(begin
-                      (set! ,expr (,(create-syntax #f (if (eq? op '++) 'add1 'sub1) (build-src key))
-                                   ,expr))
-                      ,expr)
-                   (build-src src))))
+  (define (translate-pre-expr op expr key src)
+    (make-syntax #f
+                 `(begin
+                    (set! ,expr (,(create-syntax #f (if (eq? op '++) 'add1 'sub1) (build-src key))
+                                  ,expr))
+                    ,expr)
+                 (build-src src)))
   
   ;converted
   ;translate-unary: symbol syntax src src -> syntax
@@ -2728,6 +2741,75 @@
                       (send ,name set ,index ,new-val)
                       ,new-val)
                    (build-src src))))
+  
+  ;translate-check: expression expression (U expression #f) src -> syntax
+  (define (translate-check test actual range src)
+    (let ((t (translate-expression test))
+          (a (translate-expression actual))
+          (r (when range (translate-expression range)))
+          (extracted-info (checked-info test)))
+      (make-syntax #f 
+                   `(,(if (not range) 'javaRuntime:compare 'javaRuntime:compare-within)
+                      ,@(if range (list t a r) (list t a))
+                      ,extracted-info ,src
+                      (namespace-variable-value 'current~test~object% #f 
+                                                (lambda () #f)))
+                   (build-src src))))
+  
+  (require "error-messaging.ss")
+  
+  ;checked-info: expression -> (list sym string...)
+  (define (checked-info exp)
+    (cond
+      ((access? exp)
+       (cond
+         ((field-access? (access-name exp))
+          (let ((field (access-name exp)))
+            `(list (quote
+                    ,(if (var-access-static? (field-access-access field)) 'static-field 'field))
+                   ,(var-access-class (field-access-access field))
+                   ,(id-string (field-access-field field)))))
+         (else 
+          `(list (quote var)
+                 ,(id-string (local-access-name (access-name exp)))))))
+      ((class-alloc? exp)
+       `(list (quote alloc)
+              (quote ,(type->ext-name (expr-types exp)))
+              (list ,@(map (lambda (t) `(quote ,t))
+                           (map type->ext-name
+                                (map expr-types
+                                     (class-alloc-args exp)))))))
+      ((call? exp)
+       `(list (quote call)
+              (quote ,(if (call-expr exp)
+                          (type->ext-name (expr-types (call-expr exp)))
+                          'no-exp))
+              ,(id-string (call-method-name exp))
+              (list ,@(map (lambda (t) `(quote ,t))
+                           (map type->ext-name
+                                (map expr-types
+                                     (call-args exp)))))))
+      ((instanceof? exp)
+       `(list (quote instanceof) (quote ,(type-spec->ext-name (instanceof-type exp)))))
+      ((array-access? exp)
+       '(list (quote array)))
+      ((unary? exp)
+       '(list (quote unary) (quote (unary-op exp))))
+      (else '(list (quote value)))))
+  
+  (define (type-spec->ext-name t)
+    (format "~a~a"
+            (cond
+              ((name? (type-spec-name t))
+               (id-string (name-id t)))
+              ((symbol? (type-spec-name t))
+               (type-spec-name t)))
+            (if (= 0 (type-spec-dim t))
+                ""
+                "[]")))
+  
+  (define (src->ext-name src)
+    (format "~a:~a:~a" (src-file src) (src-line src) (src-col src)))
   
   ;translate-id: string src -> syntax
   (define translate-id

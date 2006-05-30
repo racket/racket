@@ -944,13 +944,20 @@
        [(ConditionalOrExpression ? Expression : ConditionalExpression)
 	(make-cond-expression #f (build-src 5) $1 $3 $5 (build-src 2 2))])
       
-      (AssignmentExpression
+      (CheckExpression
        [(ConditionalExpression) $1]
+       [(check ConditionalExpression expect ConditionalExpression) 
+        (make-check #f (build-src 4) $2 $4 #f (build-src 2 4))]
+       [(check ConditionalExpression expect ConditionalExpression within ConditionalExpression) 
+        (make-check #f (build-src 6) $2 $4 $6 (build-src 2 4))])
+      
+      (AssignmentExpression
+       [#;(ConditionalExpression) (CheckExpression) $1]
        [(Assignment) $1])
       
       (Assignment
        [(LeftHandSide AssignmentOperator AssignmentExpression)
-	(make-assignment #f (build-src 3) $1 $2 $3 (build-src 2 2))])
+	(make-assignment #f (build-src 3) $1 $2 $3 (build-src 2 2))])      
       
       (LeftHandSide
        [(Name) (name->access $1)]

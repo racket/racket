@@ -44,7 +44,7 @@
                                     const       for        new           switch
                                     continue    goto       package       synchronized))
   
-  (define-empty-tokens ExtraKeywords (dynamic))
+  (define-empty-tokens ExtraKeywords (dynamic check expect within))
   
   (define-tokens java-vals
                  (STRING_LIT CHAR_LIT INTEGER_LIT LONG_LIT FLOAT_LIT DOUBLE_LIT 
@@ -107,6 +107,9 @@
    (Identifier (re:: JavaLetter (re:* JavaLetterOrDigit)))
    (JavaLetter (re:or (re:/ "AZ" "az") "_" "$"))
    (JavaLetterOrDigit (re:or JavaLetter (re:/ "09")))
+    
+   (KnownTypes (re:or "boolean" "byte" "char" "double" "float" "int" "long" "short"
+                      "String" "Object"))
    
    ;; 3.9
    (Keyword (re:or "abstract"    "default"    "if"            "private"      "this"
@@ -305,6 +308,11 @@
         ((dynamic?) (string->symbol lexeme))
         (else (token-IDENTIFIER lexeme))))
      
+     ((re:or "check" "expect" "within")
+      (cond
+        ((test-ext?) (string->symbol lexeme))
+        (else (token-IDENTIFIER lexeme))))
+     
      ;; 3.9
      (Keyword (string->symbol lexeme))
      
@@ -327,13 +335,7 @@
          (token-IMAGE_SPECIAL lexeme))
         (else
          (token-OTHER_SPECIAL (list lexeme start-pos end-pos)))))
-     
-      #;(cond
-        ((class-case? lexeme) (token-CLASS_BOX lexeme))
-        ((interact-case? lexeme) (token-INTERACTIONS_BOX lexeme))
-        ((test-case? lexeme) (token-TEST_SUITE lexeme))
-        (else (token-OTHER_SPECIAL (list lexeme start-pos end-pos))))
-       
+            
      ;; 3.6
      ((re:+ WhiteSpace) (return-without-pos (get-token input-port)))
        
@@ -408,6 +410,16 @@
       (cond
         ((dynamic?) (syn-val lexeme 'keyword #f start-pos end-pos))
         (else (syn-val lexeme 'identifier #f start-pos end-pos))))
+     
+     ((re:or "check" "expect" "within")
+      (syn-val lexeme
+               (cond
+                 ((test-ext?) 'keyword)
+                 (else 'identifier))
+               #f start-pos end-pos))
+     
+     (KnownTypes
+      (syn-val lexeme 'prim-type #f start-pos end-pos))
      
      ;; 3.9
      (Keyword (syn-val lexeme 'keyword #f start-pos end-pos))
