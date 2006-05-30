@@ -27,7 +27,7 @@
     (let ([l (map (lambda (s) (if (eq? / s) path-separator-re-str s)) strs)])
       (regexp (apply string-append l))))
   (define end-separators-re    (make-re "["/"]+$"))
-  (define initial-/dir-part-re (make-re "^["/"]*[^"/"]+"))
+  (define initial-/dir-part-re (make-re "^["/"]*([^"/"]+)"))
   (define initial-dir/-part-re (make-re "^.*?["/"]"))
 
   (define default-filters (if win? '(("Any" "*.*")) '(("Any" "*"))))
@@ -201,7 +201,7 @@
           (let loop ([i 0])
             (let ([m (regexp-match-positions initial-/dir-part-re dir i)])
               (when m
-                (send edit change-style path-up-delta (caar m) (cdar m))
+                (send edit change-style path-up-delta (caadr m) (cdadr m))
                 (send edit set-clickback (caar m) (cdar m)
                       (lambda _ (enter-text (substring dir 0 (cdar m)))))
                 (loop (cdar m)))))
