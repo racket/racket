@@ -4,7 +4,8 @@ Changed system-type's optional argument to 'os, 'link, or 'machine
 
 Version 301.15
 Changed installation process to support more configurable directory
- structure
+ structure; for old-style stand-alone Unix executables, use --orig-exe
+ with mzc, or use --exe-dir to package the executable
 
 Version 301.14
 Added current-thread-initial-stack-size
