@@ -38,6 +38,12 @@
                stretchable-width stretchable-height
                get-top-level-window refresh)
       
+      (define hidden? #f)
+      (define/public (set-hidden? d?) 
+        (unless (eq? hidden? d?)
+          (set! hidden? d?)
+          (refresh)))
+      
       (define paths #f)
       
       ;; label : string
@@ -87,38 +93,39 @@
 	      (send i enable #f))))
 	
       (define/override (on-event evt)
-	(let-values ([(max-x max-y) (get-size)])
-	  (let ([inside? (and (not (send evt leaving?))
-			      (<= 0 (send evt get-x) max-x)
-			      (<= 0 (send evt get-y) max-y))])
-	    (unless (eq? inside? mouse-over?)
-	      (set! mouse-over? inside?)
-	      (refresh))))
-	
-	(cond
-	 [(send evt button-down?)
-	  (let-values ([(width height) (get-size)]
-		       [(reset) (lambda ()
-				  (set! mouse-grabbed? #f)
-				  (set! mouse-over? #f)
-				  (refresh))])
-	    (set! mouse-over? #t)
-	    (set! mouse-grabbed? #t)
-	    (let ([menu (make-object popup-menu% #f
-				     (lambda x
-				       (reset)))])
-	      (fill-popup menu reset)
-	      
-	      ;; Refresh the screen (wait for repaint)
-	      (set! paint-sema (make-semaphore))
-	      (refresh) 
-	      (yield paint-sema)
-	      (set! paint-sema #f)
-
-	      ;; Popup menu
-	      (popup-menu menu
-			  0
-			  height)))]))
+	(unless hidden?
+          (let-values ([(max-x max-y) (get-size)])
+            (let ([inside? (and (not (send evt leaving?))
+                                (<= 0 (send evt get-x) max-x)
+                                (<= 0 (send evt get-y) max-y))])
+              (unless (eq? inside? mouse-over?)
+                (set! mouse-over? inside?)
+                (refresh))))
+          
+          (cond
+            [(send evt button-down?)
+             (let-values ([(width height) (get-size)]
+                          [(reset) (lambda ()
+                                     (set! mouse-grabbed? #f)
+                                     (set! mouse-over? #f)
+                                     (refresh))])
+               (set! mouse-over? #t)
+               (set! mouse-grabbed? #t)
+               (let ([menu (make-object popup-menu% #f
+                             (lambda x
+                               (reset)))])
+                 (fill-popup menu reset)
+                 
+                 ;; Refresh the screen (wait for repaint)
+                 (set! paint-sema (make-semaphore))
+                 (refresh) 
+                 (yield paint-sema)
+                 (set! paint-sema #f)
+                 
+                 ;; Popup menu
+                 (popup-menu menu
+                             0
+                             height)))])))
 
       (define paint-sema #f)
       
@@ -134,8 +141,18 @@
 	  (semaphore-post paint-sema))
         (let ([dc (get-dc)])
           (let-values ([(w h) (get-client-size)])
-            (when (and (> w 5) (> h 5))
-              (draw-button-label dc label 0 0 w h mouse-over? mouse-grabbed?)))))
+            (cond
+              [hidden? 
+               (let ([pen (send dc get-pen)]
+                     [brush (send dc get-brush)])
+                 (send dc set-brush (send the-brush-list find-or-create-brush (get-panel-background) 'panel))
+                 (send dc set-pen (send the-pen-list find-or-create-pen "black" 1 'transparent))
+                 (send dc draw-rectangle 0 0 w h)
+                 (send dc set-pen pen)
+                 (send dc set-brush brush))]
+              [else
+               (when (and (> w 5) (> h 5))
+                 (draw-button-label dc label 0 0 w h mouse-over? mouse-grabbed?))]))))
       
       (super-new [style '(transparent)])
       (update-min-sizes)

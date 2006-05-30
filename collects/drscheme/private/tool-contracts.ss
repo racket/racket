@@ -897,6 +897,42 @@
    "created when drscheme is started up) is shown. If it isn't, the dialog"
    "does not have the details and on the right-hand side shows the manual"
    "ordering for the chosen language. This is used in Help Desk.")
+  
+  (drscheme:language:register-capability
+   (->r ([s symbol?]
+         [contract contract?]
+         [default contract])
+        void?)
+   (s contract default)
+   "Registers a new capability with a default value for each language"
+   "and a contract on the values the capability might have."
+   ""
+   "By default, these capabilities are registered as DrScheme starts up:"
+   "\\begin{itemize}"
+   "\\item \\scheme|(drscheme:language:register-capability 'drscheme:define-popup (or/c (cons/c string? string?) false/c) (cons \"(define\" \"(define ...)\"))|"
+   " --- specifies the prefix that the define popup should look for and what label it should have,"
+   "or \\scheme|#f| if it should not appear at all."
+   "\\item \\scheme|(drscheme:language:register-capability 'drscheme:special:insert-fraction (flat-contract boolean?) #t)|"
+   " --- determines if the insert fraction menu item in the special menu is visible"
+   "\\item \\scheme|(drscheme:language:register-capability 'drscheme:special:insert-lambda (flat-contract boolean?) #t)|"
+   " --- determines if the insert lambda menu item in the special menu is visible"
+   "\\item \\scheme|(drscheme:language:register-capability 'drscheme:special:insert-large-letters (flat-contract boolean?) #t)|"
+   " --- determines if the insert large letters menu item in the special menu is visible"
+   "\\item \\scheme|()|"
+   "\\item \\scheme|()|"
+   "\\end{itemize}")
+  (drscheme:language:capability-registered? 
+   (-> symbol? boolean?)
+   (s)
+   "Indicates if"
+   "@flink drscheme:langauge:register-capability"
+   "has been called with \\var{s}.")
+  (drscheme:language:get-capability-default
+   (->d (and/c symbol? drscheme:language:capability-registered?)
+        (λ (s) (drscheme:language:get-capability-contract s)))
+   (s)
+   "Returns the default for a particular capability.")
+     
 
 ;                                                           
 ;                                                           
@@ -1345,6 +1381,11 @@
                            (or/c number? (symbols 'infinity))
                            . -> .
                            any))
-     (unmarshall-settings (printable/c . -> . any)))
+     (unmarshall-settings (printable/c . -> . any))
+     (capability-value 
+      (->d (and/c symbol? drscheme:language:capability-registered?)
+           (λ (cap-name) (drscheme:language:get-capability-contract cap-name))))
+     
+     )
     #;
     (is-a?/c drscheme:language:language<%>)))

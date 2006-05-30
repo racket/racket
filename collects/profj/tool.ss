@@ -149,6 +149,12 @@
       (define (java-lang-mixin level name number one-line dyn?)
         (when dyn? (dynamic? #t))
         (class* object% (drscheme:language:language<%>)
+          (define/public (capability-value s) 
+            (cond
+              [(regexp-match #rx"^drscheme:special:" (format "~a" s)) #f]
+              [(memq s '(slideshow:special-menu drscheme:define-popup)) #f]
+              [else
+               (drscheme:language:get-capability-default s)]))
           (define/public (first-opened) (void))
           
           (define/public (order-manuals x)

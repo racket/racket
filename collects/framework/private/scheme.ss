@@ -1263,7 +1263,7 @@
                                      (ormap
                                       (λ (x)
                                         (text-between-equal? x text backward-match before-whitespace-pos))
-                                      '("cond" "provide/contract")))
+                                      '("cond" "field" "provide/contract")))
                           (change-to #\())]))]
                   [(not (zero? before-whitespace-pos))
                    ;; this is the first thing in the sequence

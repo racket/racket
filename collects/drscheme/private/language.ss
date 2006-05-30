@@ -53,6 +53,8 @@
           render-value/format
           render-value
           
+          capability-value
+          
           create-executable
           
           get-language-position
@@ -503,6 +505,9 @@
 	(mixin (module-based-language<%>) (language<%>)
 	  (inherit get-module get-transformer-module use-namespace-require/copy?
                    get-init-code use-mred-launcher get-reader)
+          
+          (define/pubment (capability-value s) 
+            (inner (get-capability-default s) capability-value))
           
           (define/public (first-opened) (void))
           (define/public (get-comment-character) (values ";  " #\;))
@@ -1018,8 +1023,23 @@
         (ormap (λ (to-snip) ((to-snip-predicate? to-snip) v)) to-snips))
       
       
-
-                                                                      
+      (define capabilities '())
+      (define (capability-registered? x) (and (assoc x capabilities) #t))
+      (define (register-capability name contract default)
+        (when (capability-registered? name)
+          (error 'register-capability "already registered capability ~s" name))
+        (set! capabilities (cons (list name default contract) capabilities)))
+      (define (get-capability-default name)
+        (let ([l (assoc name capabilities)])
+          (unless l
+            (error 'get-capability-default "name not bound ~s" name))
+          (cadr l)))
+      (define (get-capability-contract name)
+        (let ([l (assoc name capabilities)])
+          (unless l
+            (error 'get-capability-contract "name not bound ~s" name))
+          (caddr l)))
+        
                                              ;                        
                 ;                                                     
                 ;                                                     

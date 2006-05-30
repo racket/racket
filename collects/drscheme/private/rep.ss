@@ -943,17 +943,17 @@ TODO
           ;; continue to evaluate from the correct port.
           (define get-sexp/syntax/eof #f)
           (define/public (evaluate-from-port port complete-program? cleanup) ; =Kernel=, =Handler=
-              (send context disable-evaluation)
-              (send context reset-offer-kill)
-              (send context set-breakables (get-user-thread) (get-user-custodian))
-              (reset-pretty-print-width)
-              (when should-collect-garbage?
-                (set! should-collect-garbage? #f)
-                (collect-garbage))
-              (set! in-evaluation? #t)
-              (update-running #t)
-              (set! need-interaction-cleanup? #t)
-              
+            (send context disable-evaluation)
+            (send context reset-offer-kill)
+            (send context set-breakables (get-user-thread) (get-user-custodian))
+            (reset-pretty-print-width)
+            (when should-collect-garbage?
+              (set! should-collect-garbage? #f)
+              (collect-garbage))
+            (set! in-evaluation? #t)
+            (update-running #t)
+            (set! need-interaction-cleanup? #t)
+            
             (run-in-evaluation-thread
              (λ () ; =User=, =Handler=, =No-Breaks=
                (let* ([settings (current-language-settings)]
@@ -1386,7 +1386,7 @@ TODO
                                click-delta)))
             (unless (is-default-settings? user-language-settings)
               (insert/delta this (string-append " " (string-constant custom)) dark-green-delta))
-            (insert/delta this (format ".~n") welcome-delta)
+            (insert/delta this ".\n" welcome-delta)
             
             (for-each
              (λ (fn)
@@ -1394,7 +1394,7 @@ TODO
                              (string-append (string-constant teachpack) ": ")
                              welcome-delta)
                (insert/delta this fn dark-green-delta)
-               (insert/delta this (format ".~n") welcome-delta))
+               (insert/delta this ".\n" welcome-delta))
              (map path->string 
                   (drscheme:teachpack:teachpack-cache-filenames 
                    user-teachpack-cache)))
@@ -1415,7 +1415,7 @@ TODO
             (insert/delta this (string-append (string-constant welcome-to) " ") welcome-delta)
             (let-values ([(before after)
                           (insert/delta this (string-constant drscheme) click-delta drs-font-delta)])
-              (insert/delta this (format (string-append ", " (string-constant version) " ~a.~n") (version:version))
+              (insert/delta this (format (string-append ", " (string-constant version) " ~a.\n") (version:version))
                             welcome-delta)
               (set-clickback before after 
                              (λ args (drscheme:app:about-drscheme))

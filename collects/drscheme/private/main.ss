@@ -3,6 +3,7 @@
   (require (lib "string-constant.ss" "string-constants")
            (lib "unitsig.ss")
            (lib "cmdline.ss")
+           (lib "contract.ss")
            "drsig.ss"
 	   (lib "mred.ss" "mred")
            (lib "framework.ss" "framework")
@@ -242,6 +243,10 @@
                            warnings-panel))))
       (drscheme:debug:add-prefs-panel)
       (install-help-browser-preference-panel)
+      
+      (drscheme:language:register-capability 'drscheme:define-popup
+                                             (or/c (cons/c string? string?) false/c)
+                                             (cons "(define" "(define ...)"))
 
       (handler:current-create-new-window
        (let ([drscheme-current-create-new-window

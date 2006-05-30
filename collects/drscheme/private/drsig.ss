@@ -226,6 +226,11 @@
      simple-module-based-language-config-panel
      
      add-snip-value
+
+     register-capability
+     capability-registered?
+     get-capability-default
+     get-capability-contract
      
      language<%>
      module-based-language<%>
