@@ -114,7 +114,7 @@
   ; more here - ".." should probably raise an error instead of disappearing.
   ; XXX: This is terrible. should re-write.
   (define (url-path->path base p)
-    (let ([path-elems (chop-string #\/ p)])
+    (let ([path-elems (regexp-split #rx"/" p)])
       ;;; Hardcoded, bad, and wrong
       (if (or (string=? (car path-elems) "servlets")
               (and (string=? (car path-elems) "")
@@ -141,17 +141,17 @@
                  f]
                 [else
                  f]))) ;; Don't worry about e.g. links for now
-          ; spidey can't check build-path's use of only certain symbols
           (apply build-path base
-                 (foldr (lambda (x acc)
-                          (cond
-                            [(string=? x "") acc]
-                            [(string=? x ".") acc]
-                            [(string=? x "..") acc] ; ignore ".." (cons 'up acc)]
-                            [else (cons x acc)]))
-                        null
-                        (chop-string #\/ p))))))
-  
+                 (reverse!
+                  (foldl (lambda (x acc)
+                           (cond
+                             [(string=? x "") acc]
+                             [(string=? x ".") acc]
+                             [(string=? x "..") (if (pair? acc) (cdr acc) acc)]
+                             [else (cons x acc)]))
+                         null
+                         (regexp-split #rx"/" p)))))))
+
   ; update-params : Url (U #f String) -> String
   ; to create a new url just like the old one, but with a different parameter part
   ;; GREGP: this is broken! replace with the version from new-kernel
@@ -176,23 +176,6 @@
             [(string? base) (loop base new-acc)]
             [else ; conflate 'relative and #f
              new-acc])))))
-  
-  ; chop-string : Char String -> (listof String)
-  (define (chop-string separator s)
-    (let ([p (open-input-string s)])
-      (let extract-parts ()
-        (cons (list->string
-               (let part ()
-                 (let ([char (peek-char p)])
-                   (cond
-                     [(eof-object? char) null]
-                     [else (cond
-                             [(eq? separator char) null]
-                             [else (read-char p) (cons char (part))])]))))
-              (cond
-                [(eof-object? (read-char p)) null]
-                [else (extract-parts)])))))
-  
   
   ; this should go somewhere that other collections can use it too
   (define-syntax provide-define-struct
