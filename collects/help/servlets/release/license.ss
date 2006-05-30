@@ -1,7 +1,8 @@
 (module license mzscheme
   (require "../private/util.ss"
            "../private/headelts.ss"
-           (lib "uri-codec.ss" "net"))
+           (lib "uri-codec.ss" "net")
+	   (lib "dirs.ss" "setup"))
   
   (require (lib "servlet.ss" "web-server"))
   (provide interface-version timeout start)
@@ -40,7 +41,7 @@
                           (uri-encode
                            (path->string
                             (simplify-path 
-                             (build-path (collection-path "mzlib") 'up 'up "notes" "COPYING.LIB")))))))
+                             (build-path (find-doc-dir) "release-notes" "COPYING.LIB")))))))
           "COPYING.LIB")
        " for more information."
        (P)
