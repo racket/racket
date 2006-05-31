@@ -155,7 +155,9 @@
             (cond
               [(eq? s 'drscheme:language-menu-title) "Java"]
               [(memq s '(profj:special:java-comment-box 
-                         profj:special:java-examples-box
+                         profj:special:java-examples-box 
+                         profjWizard:special:java-class
+                         profjWizard:special:java-union
                          drscheme:special:insert-large-letters)) #t]
               [(memq s '(slideshow:special-menu 
                          drscheme:define-popup

@@ -12,7 +12,8 @@
            (lib "unitsig.ss") 
            (lib "etc.ss")
            (lib "class.ss")
-	   (lib "string-constant.ss" "string-constants"))
+	   (lib "string-constant.ss" "string-constants")
+           (lib "contract.ss"))
   
   (provide tool@)
   
@@ -36,7 +37,7 @@
       
       (define (java-class-wizard-mixin %)
         (class %
-          (inherit get-special-menu get-edit-target-object)
+          (inherit get-special-menu get-edit-target-object register-capability-menu-item)
           
           (super-new)
           
@@ -86,10 +87,15 @@
             (new menu-item% (label descr) (parent (get-special-menu)) (callback A)))
           
           (make-menu-item% INSERT-JAVA-CLASS get-class-info make-class class-draw)
-          (make-menu-item% INSERT-JAVA-UNION get-union-info make-union dt-draw)))
+          (register-capability-menu-item 'profjWizard:special:java-class (get-special-menu))
+          (make-menu-item% INSERT-JAVA-UNION get-union-info make-union dt-draw)
+          (register-capability-menu-item 'profjWizard:special:java-union (get-special-menu))))
       
       (drscheme:get/extend:extend-unit-frame java-class-wizard-mixin)
-      
+      (drscheme:language:register-capability 'profjWizard:special:java-class 
+                                             (flat-contract boolean?) #f)
+      (drscheme:language:register-capability 'profjWizard:special:java-union
+                                             (flat-contract boolean?) #f)
       ))
   
   )
