@@ -16,30 +16,41 @@
 ;;>>... Convenient syntax definitions
 
 ;;>> (define* ...)
-;;>   Just like `define', except that the defined identifier is
-;;>   automatically `provide'd.  Doesn't work for defining values.
+;;>   Like `define', except that the defined identifier is automatically
+;;>   `provide'd.  Doesn't provide the identifier if outside of a module
+;;>   context.
 (provide define*)
 (define-syntax (define* stx)
   (syntax-case stx ()
     [(_ x . xs)
+     (memq (syntax-local-context) '(module module-begin))
      (let ([name (let loop ([x #'x])
                    (syntax-case x () [(x . xs) (loop #'x)] [_ x]))])
-       #`(begin (provide #,name) (define x . xs)))]))
+       (if name
+         #`(begin (provide #,name) (define x . xs))
+         #`(define x . xs)))]
+    [(_ x . xs) #`(define x . xs)]))
 ;;>> (make-provide-syntax orig-def-syntax provide-def-syntax)
 ;;>   Creates `provide-def-syntax' as a syntax that is the same as
 ;;>   `orig-def-syntax' together with an automatic `provide' form for the
 ;;>   defined symbol, which should be either the first argument or the first
 ;;>   identifier in a list (it does not work for recursive nesting).  The
-;;>   convention when this is used is to use a "*" suffix for the second
-;;>   identifier.
+;;>   `provide' form is added only if the form appears at a module
+;;>   top-level.  The convention when this is used is to use a "*" suffix
+;;>   for the second identifier.
 (provide make-provide-syntax)
 (define-syntax make-provide-syntax
   (syntax-rules ()
     [(_ form form*)
-     (define-syntax form*
-       (syntax-rules ()
-         [(_ (id . as) . r) (begin (provide id) (form (id . as) . r))]
-         [(_ id . r) (begin (provide id) (form id . r))]))]))
+     (define-syntax (form* stx)
+       (syntax-case stx ()
+         [(_ (id . as) . r)
+          (memq (syntax-local-context) '(module module-begin))
+          #'(begin (provide id) (form (id . as) . r))]
+         [(_ id . r)
+          (memq (syntax-local-context) '(module module-begin))
+          #'(begin (provide id) (form id . r))]
+         [(_ . r) #'(form . r)]))]))
 ;;>> (define-syntax* ...)
 ;;>   Defined as the auto-provide form of `define-syntax'.
 (provide define-syntax*)
