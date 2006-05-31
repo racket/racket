@@ -17,22 +17,22 @@
   ;;  when cross-manual references are implemented as relative
   ;;  URLs.)
 
-  (define internal-host "helpdesk.plt-scheme.org")
+  (define internal-host "helpdesk-internal.localhost")
   (define internal-port 8000)
 
   (define (generate-hosts prefix dirs)
     (let loop ([dirs dirs][n 0])
       (if (null? dirs)
 	  null
-	  (cons (format "~a~a.helpdesk.plt-scheme.org" prefix n)
+	  (cons (format "~a~a.~a" prefix n internal-host)
 		(loop (cdr dirs) (add1 n))))))
 
   (define collects-dirs
     (get-collects-search-dirs))
-  (define collects-hosts 
+  (define collects-hosts
     (generate-hosts "collects" collects-dirs))
 
   (define doc-dirs
     (get-doc-search-dirs))
-  (define doc-hosts 
+  (define doc-hosts
     (generate-hosts "doc" doc-dirs)))
