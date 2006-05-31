@@ -454,7 +454,7 @@
                 [(eq? 'char 1st) (cons no-dot1 (cdr l))]
                 [(eq? 'any 1st)
                  (cond ;; "*"      -->  "(?:[^.].*)"
-                       [(not 2nd) no-dot+]
+                       [(not 2nd) (list no-dot+)]
                        ;; "*.---"  -->  "(?:[^.].*).---"
                        [(or (eq? #\. 2nd) (equal? '(quote #\.) 2nd))
                         (cons no-dot+ (cdr l))]
