@@ -170,12 +170,12 @@
                              files)]
                       [else (loop
                              paths dirs
-                             (if (or (and globs
-                                          (not (ormap (lambda (glob)
-                                                        (regexp-match-positions
-                                                         glob name))
-                                                      globs)))
-                                     (and show-file? (not (show-file? name))))
+                             (if (and (or (not globs)
+                                          (ormap (lambda (glob)
+                                                   (regexp-match-positions
+                                                    glob name))
+                                                 globs))
+                                      show-file? (not (show-file? name)))
                                files (cons name files)))]))))))
 
       (define (find-completion str strs)
@@ -233,19 +233,36 @@
         (let* ([value   (send text get-value)]
                [path    (build-path* dir value)]
                [empty?  (equal? "" value)]
-               [isdir?  (directory-exists? path)]
-               [isfile? (file-exists? path)])
-          (send ok-button set-label
-                (cond [(and dir? empty?) "Choose"]
-                      [(and isdir? (not empty?)) "Go"]
-                      [else "OK"]))
-          (when create-button
-            (send create-button enable (not (or isdir? isfile? empty?))))
-          (send ok-button enable
-                (or (and isdir? (not empty?)) ; go
-                    (and (or (not empty?) dir?)
-                         (parameterize ([current-directory dir])
-                           (is-ok? (if empty? "." value) isdir? isfile?)))))))
+               [selections (send path-list get-selections)])
+          ;; turn off other selections if there is a value
+          (when (and multi? (not empty?))
+            (for-each
+             (lambda (i)
+               (let ([s (send path-list get-string i)])
+                 (send path-list select i
+                       (and value (prefix? value s) ; optimize: save on replaces
+                            (equal? value (regexp-replace
+                                           end-separators-re s ""))))))
+             selections)
+            (set! selections (send path-list get-selections)))
+          (let ([seln    (length selections)]
+                [isdir?  (directory-exists? path)]
+                [isfile? (file-exists? path)])
+            ;; set ok-button label
+            (send ok-button set-label
+                  (cond [(and dir? empty? (= 0 seln)) "Choose"]
+                        [(and isdir? (not empty?) (<= 1 seln)) "Go"]
+                        [else "OK"]))
+            (when create-button
+              (send create-button enable
+                    (not (or isdir? isfile? empty? (<= 1 seln)))))
+            ;; decide if the ok-button is enabled
+            (send ok-button enable
+                  (or (and isdir? (not empty?)) ; go
+                      (and (or (not empty?) dir?)
+                           (parameterize ([current-directory dir])
+                             (is-ok? (if empty? "." value)
+                                     isdir? isfile?))))))))
 
       (define (new-selected-paths)
         (let ([sel (send path-list get-selections)])
@@ -301,18 +318,13 @@
                     [(directory-exists? path) (set! dir? #t)]))
             (cond [(not path) (return dir)] ; chose this directory -- return it
                   [dir? ; chose a directory -- go there
-                   (set-dir path)
-                   (unless (and (equal? up-dir-name sel/)
-                                (member up-dir-name paths))
-                     (send text* erase))
-                   (send text* select-all)]
+                   (set-dir path) (send* text* (erase) (select-all)) (set-ok?)]
                   [file? (return path)] ; chose existing file -- return it
                   [(and /? (or (member sel paths) (file-exists? path)))
                    (error-popup "bad input: '~a' is a file" sel)]
                   [/? (error-popup "bad input: no '~a' directory~a" sel
                                    (if create-button
-                                     " (use the NewDir button)"
-                                     ""))]
+                                     " (use the NewDir button)" ""))]
                   [else (return path)])))) ; inexistent path -- return new file
 
       (define (enter-text str . no-focus?)
