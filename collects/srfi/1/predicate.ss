@@ -103,23 +103,20 @@
   
   
   (define (list= = . lists)
-	(or (null? lists) ; special case
-		
-		(let lp1 ((list-a (car lists)) (others (cdr lists)))
-		  (or (null? others)
-			  (let ((list-b (car others))
-					(others (cdr others)))
-				(if (eq? list-a list-b)	; EQ? => LIST=
-					(lp1 list-b others)
-					(let lp2 ((list-a list-a) (list-b list-b))
-					  (if (null-list? list-a)
-						  (and (null-list? list-b)
-							   (lp1 list-b others))
-						  (and (not (null-list? list-b))
-							   (= (car list-a) (car list-b))
-							   (lp2 (cdr list-a) (cdr list-b)))))))))))
-  
-  
+    (or (null? lists) ; special case
+        (let lp1 ((list-a (car lists)) (others (cdr lists)))
+          (or (null? others)
+              (let ((list-b (car others))
+                    (others (cdr others)))
+                (if (eq? list-a list-b)        ; EQ? => LIST=
+                  (lp1 list-b others)
+                  (let lp2 ((la list-a) (lb list-b))
+                    (if (null-list? la)
+                      (and (null-list? lb)
+                           (lp1 list-b others))
+                      (and (not (null-list? lb))
+                           (= (car la) (car lb))
+                           (lp2 (cdr la) (cdr lb)))))))))))
   
   )
   
