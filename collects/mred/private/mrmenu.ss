@@ -135,6 +135,7 @@
 				(send wx-parent append (send wx id) label help-string checkable?))
 			    (send wx-parent append-item this wx))
 			  (send wx-parent append-item this wx-submenu (strip-tab label)))
+		      (send wx set-enabled #t) ; re-added item is initially enabled at wx level
 		      (set! shown? #t)
 		      (do-enable enabled?))))]
 	[delete (entry-point
