@@ -509,7 +509,7 @@
                              (loop2 (cons c chars) (add1 i)))))))]
                   [else (loop (cons c r) (add1 i))]))
               (let* ([r (reverse! r)]
-                     [r (if hide-dots? (hide-dots r) r)])
+                     [r `((#\^) ,@(if hide-dots? (hide-dots r) r) (#\$))])
                 (regexp
                  (list->string
                   (apply append
