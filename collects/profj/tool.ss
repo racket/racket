@@ -1,5 +1,5 @@
 (module tool mzscheme
-  (require (lib "tool.ss" "drscheme")
+  (require (lib "tool.ss" "drscheme") (lib "contract.ss")
            (lib "mred.ss" "mred") (lib "framework.ss" "framework") (lib "unitsig.ss") 
            (lib "file.ss")
            (lib "include-bitmap.ss" "mrlib") (lib "etc.ss")
@@ -150,10 +150,16 @@
       (define (java-lang-mixin level name number one-line dyn?)
         (when dyn? (dynamic? #t))
         (class* object% (drscheme:language:language<%>)
+
           (define/public (capability-value s) 
             (cond
               [(eq? s 'drscheme:language-menu-title) "Java"]
-              [(memq s '(slideshow:special-menu drscheme:define-popup)) #f]
+              [(memq s '(profj:special:java-comment-box 
+                         profj:special:java-examples-box
+                         drscheme:special:insert-large-letters)) #t]
+              [(memq s '(slideshow:special-menu 
+                         drscheme:define-popup
+                         profj:special:java-interactions-box)) #f]
               [(regexp-match #rx"^drscheme:special:" (format "~a" s)) #f]
               [else
                (drscheme:language:get-capability-default s)]))
@@ -837,7 +843,7 @@
           
       (define (java-comment-box-mixin %)
         (class %
-          (inherit get-special-menu get-edit-target-object)
+          (inherit get-special-menu get-edit-target-object register-capability-menu-item)
           
           (super-new)
           (new menu-item%
@@ -848,9 +854,12 @@
                (let ([c-box (new java-comment-box%)]
                      [text (get-edit-target-object)])
                  (send text insert c-box)
-                 (send text set-caret-owner c-box 'global)))))))
+                 (send text set-caret-owner c-box 'global)))))
+          (register-capability-menu-item 'profj:special:java-comment-box (get-special-menu))
+          ))
       
       (drscheme:get/extend:extend-unit-frame java-comment-box-mixin)
+      (drscheme:language:register-capability 'profj:special:java-comment-box (flat-contract boolean?) #f)
       
       ;;Java interactions box
       (define ji-gif (include-bitmap (lib "j.gif" "icons")))
@@ -934,7 +943,7 @@
       
       (define (java-interactions-box-mixin %)
         (class %
-          (inherit get-special-menu get-edit-target-object)
+          (inherit get-special-menu get-edit-target-object register-capability-menu-item)
           
           (super-new)
           (new menu-item%
@@ -945,11 +954,13 @@
                   (let ([i-box (new java-interactions-box%)]
                         [text (get-edit-target-object)])
                     (send text insert i-box)
-                    (send text set-caret-owner i-box 'global)))))))
+                    (send text set-caret-owner i-box 'global)))))
+          (register-capability-menu-item 'profj:special:java-interactions-box (get-special-menu))
+          ))
       
       (drscheme:get/extend:extend-unit-frame java-interactions-box-mixin)
-      
-
+      (drscheme:language:register-capability 'profj:special:java-interactions-box (flat-contract boolean?) #t)
+ 
   ))
   (define (editor-filter delay?)
     (lambda (s)

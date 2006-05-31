@@ -3,8 +3,8 @@
   (provide tool@)
   
   (require
-   (lib "class.ss")
-   (lib "mred.ss" "mred")
+   (lib "class.ss") (lib "contract.ss")
+   (lib "mred.ss" "mred") 
    (lib "unitsig.ss")
    (lib "string-constant.ss" "string-constants")
    (lib "tool.ss" "drscheme")
@@ -21,7 +21,7 @@
       
       (define (frame-mixin %)
         (class %
-          (inherit get-edit-target-object get-special-menu)
+          (inherit get-edit-target-object get-special-menu register-capability-menu-item)
           
           ;; this function is copied from the drscheme/private/unit.ss file
           (define (has-editor-on-demand menu-item)
@@ -43,6 +43,7 @@
                       (send box take-caret)
                       (send text end-edit-sequence)))))
                (demand-callback has-editor-on-demand))
+          (register-capability-menu-item 'profj:special:java-examples-box (get-special-menu))
           
           #;(new menu-item%
                (label (string-constant profjBoxes-insert-java-interactions))
@@ -59,7 +60,8 @@
                (demand-callback has-editor-on-demand))
           ))
 
-      (drscheme:get/extend:extend-unit-frame frame-mixin)))
+      (drscheme:get/extend:extend-unit-frame frame-mixin)
+      (drscheme:language:register-capability 'profj:special:java-examples-box (flat-contract boolean?) #f)))
   
   (define tool@
     (compound-unit/sig
