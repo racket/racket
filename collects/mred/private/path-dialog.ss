@@ -45,8 +45,12 @@
           [(equal? "" path)      (if (string? dir)  (string->path dir)  dir)]
           [else (build-path dir path)]))
 
-  (define (glob->regexps glob)
-    (map glob->regexp (regexp-split #rx" *; *" glob)))
+  ;; returns a list of a glob-regexp-list and another one without hiding dots
+  (define (glob->2regexps glob)
+    (let ([globs (remove* '("") (regexp-split #rx" *; *" glob))])
+      (map (lambda (hide-dots?)
+             (map (lambda (glob) (glob->regexp glob hide-dots?)) globs))
+           '(#t #f))))
 
   ;; ==========================================================================
   (define path-dialog%
@@ -168,7 +172,9 @@
               (let* ([path (car paths)]
                      [name (path->string (car paths))]
                      [paths (cdr paths)])
-                (cond [(and (not dotted?) (eq? #\. (string-ref name 0)))
+                (cond [(and (not dotted?)
+                            (not globs) ; globs have a no-dots version
+                            (eq? #\. (string-ref name 0)))
                        (loop paths dirs files)]
                       [(directory-exists? path)
                        (loop paths
@@ -182,7 +188,7 @@
                                           (ormap (lambda (glob)
                                                    (regexp-match-positions
                                                     glob name))
-                                                 globs))
+                                                 ((if dotted? cadr car) globs)))
                                       (or (not show-file?)
                                           (show-file? name)))
                                (cons name files) files))]))))))
@@ -572,11 +578,11 @@
       (define text* (send text get-editor))
       (send text* select-all)
 
-      (define globs (and filters (glob->regexps (cadar filters))))
+      (define globs (and filters (glob->2regexps (cadar filters))))
       (define (set-filter . new)
         (let ([filt (if (pair? new) (car new) (send file-filter get-value))])
           (when (pair? new) (send file-filter set-value filt))
-          (set! globs (and (not (equal? "" filt)) (glob->regexps filt)))
+          (set! globs (and (not (equal? "" filt)) (glob->2regexps filt)))
           (set-dir dir)
           (send text focus)))
       (define file-filter
