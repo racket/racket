@@ -698,7 +698,8 @@
 		  (let ([core-thunk
 			 (lambda ()
 			   (parameterize ([current-namespace elaborate-namespace]
-					  [current-load-relative-directory input-directory])
+					  [current-load-relative-directory input-directory]
+					  [compile-enforce-module-constants #f])
 			     (let ([sources+bytecodes+magics
 				    (map (lambda (src)
 					   (let-values ([(src bytecode magic-sym)
