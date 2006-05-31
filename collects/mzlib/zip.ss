@@ -262,21 +262,7 @@
   (provide zip)
   (define (zip zip-file . paths)
     (when (null? paths) (error 'zip "no paths specified"))
-    (let loop ([paths (map (lambda (p) (simplify-path p #f)) paths)]
-               [r '()])
-      (if (null? paths)
-        (with-output-to-file zip-file (lambda () (zip->output (reverse! r))))
-        (let loop2 ([path (car paths)]
-                    [new (cond [(file-exists? (car paths))
-                                (list (car paths))]
-                               [(directory-exists? (car paths))
-                                (find-files void (car paths))]
-                               [else (error 'zip "file/directory not found: ~a"
-                                            (car paths))])])
-          (let-values ([(base name dir?) (split-path path)])
-            (if (path? base)
-              (loop2 base (if (or (member base r) (member base paths))
-                            new (cons base new)))
-              (loop (cdr paths) (append! (reverse! new) r))))))))
+    (with-output-to-file zip-file
+      (lambda () (zip->output (pathlist-closure paths)))))
 
   )
