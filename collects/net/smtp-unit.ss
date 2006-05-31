@@ -11,7 +11,7 @@
     (unit/sig net:smtp^
       (import)
 
-      (define ID "localhost")
+      (define smtp-sending-server (make-parameter "localhost"))
 
       (define debug-via-stdio? #f)
 
@@ -70,7 +70,7 @@
 				    (raise x))])
 	      (check-reply r 220 w)
 	      (log "hello~n")
-	      (fprintf w "EHLO ~a~a" ID crlf)
+	      (fprintf w "EHLO ~a~a" (smtp-sending-server) crlf)
 	      (check-reply r 250 w)
 	      
 	      (when auth-user
