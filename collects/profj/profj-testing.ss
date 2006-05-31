@@ -2,6 +2,7 @@
   
   (require (lib "compile.ss" "profj")
            (lib "parameters.ss" "profj")
+           (lib "display-java.ss" "profj")
            (lib "tool.ss" "profj")
            (lib "class.ss"))
 
@@ -178,7 +179,7 @@
                        (v-pe (lambda () (open-input-string val)))
                        (given-val (get-val i-st i-pe))
                        (exp-val (get-val v-st v-pe)))
-                  (list 'interact (java-equal? given-val exp-val null null) (format-java given-val #t 'field null #f 0)))))))
+                  (list 'interact (java-equal? given-val exp-val null null) (format-java-value given-val #t 'field null #f 0)))))))
       (with-handlers
           ([exn?
             (lambda (exn)

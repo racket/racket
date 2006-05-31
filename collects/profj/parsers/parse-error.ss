@@ -885,8 +885,10 @@
                 (else (parse-error (format "Expected a method name, found ~a" (format-out next-tok)) 
                                    next-start next-end)))))
            ((java-keyword? tok)
-            (parse-error 
-             (format "Expected return type of the method, reserved word ~a is not a type" kind) srt end))
+            (if (and (advanced?) (modifier-token? tok))
+                (parse-members cur (getter) 'method getter abstract-method? just-method?)
+                (parse-error 
+                 (format "Expected return type of the method, reserved word ~a is not a type" kind) srt end)))
            (else (parse-error (format "Expected return type of a method, found ~a" out) srt end))))
         ((method-id)
          (case kind

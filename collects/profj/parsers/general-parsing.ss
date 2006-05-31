@@ -250,7 +250,7 @@
                                      class import package))
         (assignment-operator? t)
         (prim-type? t)
-        (modifier? t)))
+        (modifier-token? t)))
   
   ;only looks for incorrect capitalization at this point, intend to add 1-off spelling errors for at least some keywords
   ;close-to-keyword? token (opt symbol )-> bool

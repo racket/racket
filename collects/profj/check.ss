@@ -2681,9 +2681,9 @@
            (range-t (when range (type/env-t range-te)))
            (res (make-type/env 'boolean (type/env-e range-te))))
       (when (eq? test-t 'void)
-        (check-type-error 'void test-t actual-t (expr-src test)))
+        (check-type-error 'void level test-t actual-t (expr-src test)))
       (when (eq? actual-t 'void)
-        (check-type-error 'void test-t actual-t (expr-src actual)))
+        (check-type-error 'void level test-t actual-t (expr-src actual)))
       (when (and range (not (prim-numeric-type? range-t)))
         (check-range-error (expr-src range) range-t)) 
       (cond
@@ -2701,25 +2701,26 @@
               (reference-type? test-t) (reference-type? actual-t))
          (cond
            ((castable? actual-t test-t type-recs) res)
-           (else (check-type-error 'cast test-t actual-t ta-src))))
+           (else (check-type-error 'cast level test-t actual-t ta-src))))
         ((and (memq level '(advanced full))
               (or (array-type? test-t) (array-type? actual-t)))
          (cond
            ((castable? actual-t test-t type-recs) res)
            (else
-            (check-type-error 'cast test-t actual-t ta-src))))
+            (check-type-error 'cast level test-t actual-t ta-src))))
         ((and (eq? level 'beginner) (reference-type? test-t) (reference-type? actual-t))
          (if (or (is-eq-subclass? actual-t test-t type-recs)
                  (implements? actual-t test-t type-recs))
              res
-             (check-type-error 'iface test-t actual-t ta-src)))
+             (check-type-error 'iface level test-t actual-t ta-src)))
         ((and (reference-type? test-t) (reference-type? actual-t)) 
          (if (or (is-eq-subclass? actual-t test-t type-recs)
                  (implements? actual-t test-t type-recs))
              res
-             (check-type-error 'subtype test-t actual-t ta-src)))
+             (check-type-error 'subtype level test-t actual-t ta-src)))
         (else
          (check-type-error (if (memq level '(advanced full)) 'cast 'subtype)
+                           level
                            test-t actual-t ta-src)))))
   
   
@@ -3429,7 +3430,7 @@
        'check (if check-fault? test-src actual-src)
        )))
   
-  (define (check-type-error kind test-type actual-type ta-src)
+  (define (check-type-error kind level test-type actual-type ta-src)
     (raise-error
      'check
      (cond
@@ -3438,16 +3439,23 @@
        ((and (eq? kind 'void) (eq? actual-type 'void))
         "The expected result of a 'check' expression must be a value. Current expression is not a value.")
        (else
-        (string-append
-         (format "In a 'check' expression, the type of the expected expression must be ~a the tested expression.~n"
-                 (if (eq? kind 'cast) "castable to" "a subtype of"))
-         (format "Found ~a, which is not ~a ~a, the type of the tested expression."
-                 (type->ext-name actual-type)
-                 (case kind
-                   ((cast)  "castable to")
-                   ((iface subtype) "a subtype of"))
-                 (type->ext-name test-type)
-                 ))))
+        (string-append (format "A 'check' expression compares the test and expected expressions.~n")
+                       (format "Found ~a which is not comparable to ~a.~a"
+                               (type->ext-name actual-type)
+                               (type->ext-name test-type)
+                               (if (not (eq? level 'full))
+                                   ""
+                                   " The expected expression must be castable to the test type.")))        
+        #;(string-append
+           (format "In a 'check' expression, the type of the expected expression must be ~a the tested expression.~n"
+                   (if (eq? kind 'cast) "castable to" "a subtype of"))
+           (format "Found ~a, which is not ~a ~a, the type of the tested expression."
+                   (type->ext-name actual-type)
+                   (case kind
+                     ((cast)  "castable to")
+                     ((iface subtype) "a subtype of"))
+                   (type->ext-name test-type)
+                   ))))
      'check ta-src
      ))
 
