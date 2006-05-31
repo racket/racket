@@ -113,15 +113,23 @@
       ;; Utilities
 
       (define (return r)
-        (set! result (if (string? r) (string->path r) r))
-        (when (or (not r)
-                  (not put?)
-                  (not (or (file-exists? r) (directory-exists? r)))
+        (set! result (let loop ([r r])
+                       (cond [(list? r) (map loop r)]
+                             [(path? r) r]
+                             [(string? r) (string->path r)]
+                             [(not r) r]
+                             [else (error-popup "internal error!")])))
+        (when (or (not r)    ; when returning something
+                  multi?     ; single
+                  (not put?) ; and we're in put? mode
+                  (not (or (file-exists? r) ; and it exists
+                           (directory-exists? r)))
+                  ;; then ask about continuing
                   (eq? 'yes (message-box "Warning"
                                          (format "Replace \"~a\"?" r)
                                          this '(yes-no))))
           (with-handlers ([exn? (lambda (e) (error-popup (exn-message e)))]
-                          [void? (lambda (e) #t)]) ; do not return
+                          [void? (lambda (e) #t)]) ; no error, and no return
             (when guard (set! result (guard result)))
             (send this show #f))))
 
@@ -164,9 +172,9 @@
                        (loop paths dirs files)]
                       [(directory-exists? path)
                        (loop paths
-                             (if (and show-dir? (not (show-dir? name)))
-                               dirs (cons (string-append name path-separator)
-                                          dirs))
+                             (if (or (not show-dir?) (show-dir? name))
+                               (cons (string-append name path-separator) dirs)
+                               dirs)
                              files)]
                       [else (loop
                              paths dirs
@@ -175,8 +183,9 @@
                                                    (regexp-match-positions
                                                     glob name))
                                                  globs))
-                                      show-file? (not (show-file? name)))
-                               files (cons name files)))]))))))
+                                      (or (not show-file?)
+                                          (show-file? name)))
+                               (cons name files) files))]))))))
 
       (define (find-completion str strs)
         (let ([strs (filter (lambda (p) (prefix? str p)) strs)])
@@ -245,24 +254,30 @@
                                            end-separators-re s ""))))))
              selections)
             (set! selections (send path-list get-selections)))
-          (let ([seln    (length selections)]
-                [isdir?  (directory-exists? path)]
-                [isfile? (file-exists? path)])
+          (let* ([seln    (length selections)]
+                 [isdir?  (directory-exists? path)]
+                 [isfile? (file-exists? path)]
+                 [choose? (and dir? empty? (= 0 seln))]
+                 [go?     (and isdir? (not empty?) (<= seln 1))])
             ;; set ok-button label
             (send ok-button set-label
-                  (cond [(and dir? empty? (= 0 seln)) "Choose"]
-                        [(and isdir? (not empty?) (<= 1 seln)) "Go"]
-                        [else "OK"]))
+                  (cond [choose? "Choose"]
+                        [go?     "Go"]
+                        [else    "OK"]))
             (when create-button
               (send create-button enable
                     (not (or isdir? isfile? empty? (<= 1 seln)))))
             ;; decide if the ok-button is enabled
             (send ok-button enable
-                  (or (and isdir? (not empty?)) ; go
-                      (and (or (not empty?) dir?)
-                           (parameterize ([current-directory dir])
-                             (is-ok? (if empty? "." value)
-                                     isdir? isfile?))))))))
+              (or choose? go?
+                  (parameterize ([current-directory dir])
+                    (if (<= seln 1)
+                      (is-ok? (if empty? "." value) isdir? isfile?)
+                      (andmap (lambda (i)
+                                (let ([s (send path-list get-string i)])
+                                  (is-ok?
+                                   s (directory-exists? s) (file-exists? s))))
+                              selections))))))))
 
       (define (new-selected-paths)
         (let ([sel (send path-list get-selections)])
@@ -305,27 +320,35 @@
       (define (do-enter)
         (set-ok?)
         (when (send ok-button is-enabled?)
-          (let* ([sel0  (send text get-value)]
-                 [sel   (regexp-replace end-separators-re sel0 "")]
-                 [/?    (not (equal? sel0 sel))]
-                 [sel/  (string-append sel path-separator)]
-                 [path  (and (not (equal? sel "")) (build-path* dir sel))]
-                 [file? (and path (not /?) (member sel paths))]
-                 [dir?  (and path (member sel/ paths))])
-            (when (and path (not (or file? dir?)))
+          (let* ([sel0    (send text get-value)]
+                 [sel     (regexp-replace end-separators-re sel0 "")]
+                 [/?      (not (equal? sel0 sel))]
+                 [sel/    (string-append sel path-separator)]
+                 [path    (build-path* dir sel)]
+                 [isfile? (and (not /?) (member sel paths))]
+                 [isdir?  (and (member sel/ paths))]
+                 [selections (send path-list get-selections)]
+                 [many?   (and multi? (equal? "" sel)
+                               (<= 1 (length selections)))])
+            (unless (or isfile? isdir? many?)
               ;; not in list, but maybe on disk (disk changed, hidden)
-              (cond [(and (not /?) (file-exists? path)) (set! file? #t)]
-                    [(directory-exists? path) (set! dir? #t)]))
-            (cond [(not path) (return dir)] ; chose this directory -- return it
-                  [dir? ; chose a directory -- go there
+              (cond [(and (not /?) (file-exists? path)) (set! isfile? #t)]
+                    [(directory-exists? path) (set! isdir? #t)]))
+            (cond [(and isdir? (not (equal? "" sel)))
+                   ;; chose a directory -- go there
                    (set-dir path) (send* text* (erase) (select-all)) (set-ok?)]
-                  [file? (return path)] ; chose existing file -- return it
                   [(and /? (or (member sel paths) (file-exists? path)))
                    (error-popup "bad input: '~a' is a file" sel)]
-                  [/? (error-popup "bad input: no '~a' directory~a" sel
-                                   (if create-button
-                                     " (use the NewDir button)" ""))]
-                  [else (return path)])))) ; inexistent path -- return new file
+                  [(and /? (not isdir?))
+                   (error-popup "bad input: no '~a' directory~a" sel
+                                (if create-button
+                                  " (use the NewDir button)" ""))]
+                  [many? (return (map (lambda (i)
+                                        (let ([s (send path-list get-string i)])
+                                          (build-path* dir s)))
+                                      selections))]
+                  [multi? (return (list path))]
+                  [else (return path)]))))
 
       (define (enter-text str . no-focus?)
         (send text set-value str)
@@ -358,7 +381,7 @@
                  (when multi?? (send path-list focus))
                  #t)]
               ;; return is usually the same all over except for the path widget
-              [(memq key '(#\return nupad-enter))
+              [(memq key '(#\return numpad-enter))
                (cond [(eq? r dir-text)
                       (let ([edit (send r get-editor)])
                         (send edit call-clickback
