@@ -123,7 +123,10 @@ please adhere to these guidelines:
  ;; label for a generic check box, often supported on dialogs
  ;; that ask a binary choice of the user. If checked, the
  ;; dialog isn't going to be shown again.
- (dont-ask-again "Spørg ikke igen (brugt altid nuværende valg)")
+ ;; One version for always using the current choice:
+ (dont-ask-again-always-current "Spørg ikke igen (brugt altid nuværende valg)")
+ ;; One generic version (ie, on the Quit DrScheme dialog)
+ (dont-ask-again                "Spørg ikke igen")
 
  ;;; important urls
  (web-materials "Relaterede websites") ;; menu item title

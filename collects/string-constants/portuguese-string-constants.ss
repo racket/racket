@@ -125,7 +125,10 @@ please adhere to these guidelines:
  ;; label for a generic check box, often supported on dialogs
  ;; that ask a binary choice of the user. If checked, the
  ;; dialog isn't going to be shown again.
- (dont-ask-again "Não voltar a perguntar (utilizar sempre a escolha actual)")
+ ;; One version for always using the current choice:
+ (dont-ask-again-always-current "Não voltar a perguntar (utilizar sempre a escolha actual)")
+ ;; One generic version (ie, on the Quit DrScheme dialog)
+ (dont-ask-again                "Não voltar a perguntar")
 
  ;;; important urls
  (web-materials "Sitios na Web Relacionados") ;; menu item title

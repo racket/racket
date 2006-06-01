@@ -277,7 +277,7 @@
 		      (message+check-box/custom
 		       (string-constant help-desk)
 		       (string-constant plt:hd:ask-about-separate-browser)
-		       (string-constant dont-ask-again)
+		       (string-constant dont-ask-again-always-current)
 		       (string-constant plt:hd:homebrew-browser)
 		       (string-constant plt:hd:separate-browser)
 		       #f

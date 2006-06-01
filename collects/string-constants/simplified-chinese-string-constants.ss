@@ -52,7 +52,10 @@
   ;; label for a generic check box, often supported on dialogs
   ;; that ask a binary choice of the user. If checked, the
   ;; dialog isn't going to be shown again.
-  (dont-ask-again "不再询问(总是使用当前设置)")
+  ;; One version for always using the current choice:
+  (dont-ask-again-always-current "不再询问(总是使用当前设置)")
+  ;; One generic version (ie, on the Quit DrScheme dialog)
+  (dont-ask-again                "不再询问")
   
   ;;; important urls
   (web-materials "相关网站") ;; menu item title

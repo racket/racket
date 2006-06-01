@@ -33,7 +33,10 @@
  ;; label for a generic check box, often supported on dialogs
  ;; that ask a binary choice of the user. If checked, the
  ;; dialog isn't going to be shown again.
- (dont-ask-again "No volver a preguntar (usar la selección actual siempre)")
+ ;; One version for always using the current choice:
+ (dont-ask-again-always-current "No volver a preguntar (usar la selección actual siempre)")
+ ;; One generic version (ie, on the Quit DrScheme dialog)
+ (dont-ask-again                "No volver a preguntar")
  
  ;; important urls
  (web-materials "Sitios de Web Relacionados")

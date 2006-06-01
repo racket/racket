@@ -125,7 +125,10 @@ please adhere to these guidelines:
  ;; label for a generic check box, often supported on dialogs
  ;; that ask a binary choice of the user. If checked, the
  ;; dialog isn't going to be shown again.
- (dont-ask-again "今後このメッセージを表示しない (現在の選択が使われます)")
+  ;; One version for always using the current choice:
+ (dont-ask-again-always-current "今後このメッセージを表示しない (現在の選択が使われます)")
+  ;; One generic version (ie, on the Quit DrScheme dialog)
+ (dont-ask-again                "今後このメッセージを表示しない")
 
  ;;; important urls
  (web-materials "関連するウェブサイト") ;; menu item title

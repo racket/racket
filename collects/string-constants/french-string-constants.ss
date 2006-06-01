@@ -125,7 +125,10 @@
   ;; label for a generic check box, often supported on dialogs
   ;; that ask a binary choice of the user. If checked, the
   ;; dialog isn't going to be shown again.
-  (dont-ask-again "Ne jamais redemander (utilisera toujours votre présent choix)")
+  ;; One version for always using the current choice:
+  (dont-ask-again-always-current "Ne jamais redemander (utilisera toujours votre présent choix)")
+  ;; One generic version (ie, on the Quit DrScheme dialog)
+  (dont-ask-again                "Ne jamais redemander")
   
   ;;; important urls
   (web-materials "Sites web apparentés") ;; menu item title

@@ -30,7 +30,8 @@
  (ignore "Ignorieren")
  (revert "Änderungen rückgängig machen")
 
- (dont-ask-again "Nicht wieder nachfragen (immer so wie jetzt)")
+ (dont-ask-again-always-current "Nicht wieder nachfragen (immer so wie jetzt)")
+ (dont-ask-again                "Nicht wieder nachfragen")
 
  (web-materials "Verwandte Web-Seiten")
  (tool-web-sites "Web-Seiten mit Tools")

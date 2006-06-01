@@ -176,13 +176,18 @@
      (string?
       any/c
       (or/c false/c (is-a?/c frame%) (is-a?/c dialog%))
-      (symbols 'app 'caution 'stop))
+      (symbols 'app 'caution 'stop)
+      (or/c false/c (case-> (boolean? . -> . void?)
+                            (-> boolean?)))
+      string?)
      any/c)
     ((message true-choice false-choice)
      ((title (string-constant warning))
       (default-result 'disallow-close)
-      (paren #f)
-      (style 'app)))
+      (parent #f)
+      (style 'app)
+      (checkbox-proc #f)
+      (checkbox-label (string-constant dont-ask-again))))
 
     "Opens a dialog that presents a binary choice to the user. The user is forced"
     "to choose between these two options, ie cancelling or closing the dialog"
@@ -205,7 +210,16 @@
     ""
     "The \\var{style} parameter is (eventually) passed to"
     "@link message"
-    "as an icon in the dialog.")
+    "as an icon in the dialog."
+    ""
+    "If \\var{checkbox-proc} is given, it should be a procedure that behaves"
+    "like a parameter for getting/setting a boolean value.  The intention for"
+    "this value is that it can be used to disable the dialog.  When it is"
+    "given, a checkbox will appear with a \\var{checkbox-label} label"
+    "(defaults to the \\rawscm{dont-ask-again} string constant), and that"
+    "checkbox value will be sent to the \\var{checkbox-proc} when the dialog"
+    "is closed.  Note that the dialog will always pop-up --- it is the"
+    "caller's responsibility to avoid the dialog if not needed.")
 
    (gui-utils:get-clicked-clickback-delta
     (-> (is-a?/c style-delta%))
@@ -452,27 +466,24 @@
                  (title (string-constant warning))
                  (default-result 'disallow-close)
                  (parent #f)
-                 (style 'app))
-      (let ([mb-res (message-box/custom
-                     title
-                     message
-                     true-choice
-                     false-choice
-                     #f
-                     parent
-                     (case default-result
-                       [(disallow-close) 
-                        (if (eq? style 'app)
-                            `(default=1 disallow-close)
-                            `(default=1 disallow-close ,style))]
-                       [else (if (eq? style 'app)
-                                 `(default=1)
-                                 `(default=1 ,style))])
-                     default-result)])
-        (case mb-res
-          [(1) #t]
-          [(2) #f]
-          [else mb-res]))))
+                 (style 'app)
+                 (checkbox-proc #f)
+                 (checkbox-label (string-constant dont-ask-again)))
+      (let* ([check? (and checkbox-proc (checkbox-proc))]
+             [style  (if (eq? style 'app) `(default=1) `(default=1 ,style))]
+             [style  (if (eq? 'disallow-close default-result)
+                       (cons 'disallow-close style) style)]
+             [style  (if check? (cons 'checked style) style)]
+             [return (λ (mb-res) (case mb-res [(1) #t] [(2) #f] [else mb-res]))])
+        (if checkbox-proc
+          (let-values ([(mb-res checked)
+                        (message+check-box/custom title message checkbox-label
+                                                  true-choice false-choice #f
+                                                  parent style default-result)])
+            (checkbox-proc checked)
+            (return mb-res))
+          (return (message-box/custom title message true-choice false-choice #f
+                                      parent style default-result))))))
   
   ;; manual renaming
   (define gui-utils:trim-string trim-string)
