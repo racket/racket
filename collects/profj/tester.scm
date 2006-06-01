@@ -276,7 +276,8 @@
   (define test-window%
     (class frame% ()
       
-      (super-instantiate ("Test Results" #f 400 350))
+      (super-instantiate 
+          ((string-constant profj-test-results-window-title) #f 400 350))
       
       (define editor #f)
       (define switch-func void)
@@ -297,7 +298,7 @@
                     (close-cleanup)
                     (send this show #f))))
               (make-object button%
-                "Close and Disable Testing"
+                (string-constant profj-test-results-close-and-disable)
                 button-panel
                 (lambda (b c)
                   (when (eq? 'button (send c get-event-type))
@@ -350,7 +351,7 @@
           (when (eq? 'button (send c get-event-type))
             (hide))))
       (make-object button%
-        "Hide and Disable Testing"
+        (string-constant profj-test-results-hide-and-disable)
         button-panel
         (lambda (b c)
           (when (eq? 'button (send c get-event-type))

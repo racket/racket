@@ -18,7 +18,7 @@ found in the DrScheme manual.
 _Testing in Java language levels:
 
 The ProfessorJ language levels support a language extension to support testing
-endeavors. This extension can be turned off with a language preference in
+endeavors. This extension can be turned off with a language configuration option in
 ProfessorJ Full and Java + dynamic. The extension adds two expression forms
 to Java:
 
@@ -34,8 +34,8 @@ be compared with the check-within expression. The within subexpression specifies
 precise different floats or doubles must be.
 
 Additionally, the ProfessorJ languages support automatic execution of tests, which
-can also be turned off with a language preference. Any class with the word 'Example'
-in the name (i.e. CarExample, Examples, MyExamples) whose constructor does not
+can also be turned off with a language configuration option. Any class with the word 
+'Example' in the name (i.e. CarExample, Examples, MyExamples) whose constructor does not
 require any arguments is instantiated on Run. Any method within this class that
 begins with the word 'test' (i.e. testAccelerate, test1) that does not require
 any arguments is called; a boolean return is expected. The test methods are run 
@@ -45,8 +45,9 @@ A dockable window opens on Run reporting the result of executing all checks with
 each Example class and the result of executing each test method. Failed checks (i.e. 
 returning false) provide source information. Coverage information is also available for
 each Example class and each testMethod. The collection of coverage information does
-slow execution and can be turned off with a language preference. Colors for the
-coverage information can be set in the Java color preference window.
+slow execution and can be turned off with a language configuration; coverage information
+is not collected when test on Run has been disabled. Colors for the coverage information 
+can be set in the Java color preference window.
 
 _ProfessorJ Beginner_
  In Version 300, the Beginner language level has undergone significant changes.
@@ -168,6 +169,11 @@ _Libraries available to ProfessorJ:
    Float:  floatToIntBits, floatToRawBits, longBitsToFloat -- not implemented
    Boolean: getBoolean(String) not implemented
 
+
+_Capabilities registerd by ProfJ
+profj:special:java-comment-box        -- Tied to the Java comment box : default #f
+profj:special:java-interactions-box   -- Tied to the Java Interactions box : default #t
+profj:special:java-examples-box       -- Tied to the Java Examples box : default #f
 
 _Unfinished constructs:
   static nested classes

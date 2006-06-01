@@ -25,8 +25,7 @@
       (define color-prefs-table
         `((keyword ,(make-object color% "black") ,(string-constant profj-java-mode-color-keyword))
           (prim-type ,(make-object color% "darkmagenta")
-                     "primitive types"
-                     #;,(string-constant profj-java-mode-color-primtype))
+                     ,(string-constant profj-java-mode-color-prim-type))
           (identifier ,(make-object color% 38 38 128) ,(string-constant profj-java-mode-color-identifier))
           (string ,(make-object color% "forestgreen") ,(string-constant profj-java-mode-color-string))
           (literal ,(make-object color% "forestgreen") ,(string-constant profj-java-mode-color-literal))
@@ -36,8 +35,8 @@
       
       ;Set the Java coverage colors
       (define coverage-color-prefs
-        `((uncovered ,(make-object color% "black") "default")
-          (covered ,(make-object color% "darkmagenta") "covered expression")))
+        `((uncovered ,(make-object color% "black") ,(string-constant profj-java-mode-color-default))
+          (covered ,(make-object color% "darkmagenta") ,(string-constant profj-coverage-color-covered))))
       
       ;; short-sym->pref-name : symbol -> symbol
       ;; returns the preference name for the color prefs
@@ -52,9 +51,9 @@
       ;; adds in the configuration for the Java colors to the prefs panel
       (define (extend-preferences-panel parent)
         (let ((standard-color-prefs 
-               (make-object group-box-panel% "Edit Colors" parent))
+               (make-object group-box-panel% (string-constant profj-java-mode-color-heading) parent))
               (coverage-color-panel
-               (make-object group-box-panel% "Coverage Colors" parent))
+               (make-object group-box-panel% (string-constant profj-coverage-color-heading) parent))
               (put 
                (lambda (p)
                  (lambda (line)
@@ -153,7 +152,7 @@
 
           (define/public (capability-value s) 
             (cond
-              [(eq? s 'drscheme:language-menu-title) "Java"]
+              [(eq? s 'drscheme:language-menu-title) (string-constant profj-java)]
               [(memq s '(profj:special:java-comment-box 
                          profj:special:java-examples-box 
                          profjWizard:special:java-class
@@ -213,31 +212,36 @@
                                (parent _parent)
                                (alignment '(center center))
                                (stretchable-height #f)
-                               (stretchable-width #f))]
-                     
+                               (stretchable-width #f))]                     
                      [print-prefs (instantiate group-box-panel% ()
-                                     (label "Display Preferences")
+                                     (label (string-constant profj-language-config-display-preferences))
                                      (parent parent)
                                      (alignment '(left center)))]
                      [print-full (when (memq level '(advanced full))
-                                   (make-object check-box% "Print entire contents of arrays?" print-prefs 
+                                   (make-object check-box% 
+                                     (string-constant profj-language-config-display-array)
+                                     print-prefs 
                                      (lambda (x y) update-pf)))]
                      [print-style (make-object radio-box%
-                                    "Display style"
-                                    (list "Class" "Class+Fields" );"Graphical")
+                                    (string-constant profj-language-config-display-style)
+                                    (list "Class" (string-constant profj-language-config-display-field));"Graphical")
                                     print-prefs
                                     (lambda (x y) (update-ps)))]
                      [testing-prefs (instantiate group-box-panel% ()
-                                      (label "Testing Preferences")
+                                      (label (string-constant profj-language-config-testing-preferences))
                                       (parent parent)
                                       (alignment '(left center)))]
                      [allow-testing (when (eq? level 'full)
-                                      (make-object check-box% "Allow check expression?" testing-prefs
+                                      (make-object check-box% 
+                                        (string-constant profj-language-config-testing-check) 
+                                        testing-prefs
                                         (lambda (x y) update-at)))]
-                     [display-testing (make-object check-box% "Display testing results on Run?"
-                                        testing-prefs (lambda (x y) (update-dt x y)))]
-                     [collect-coverage (make-object check-box% "Collect coverage for tests?"
-                                          testing-prefs (lambda (x y) update-cc))]
+                     [display-testing 
+                      (make-object check-box% (string-constant profj-language-config-testing-enable)
+                        testing-prefs (lambda (x y) (update-dt x y)))]
+                     [collect-coverage 
+                      (make-object check-box% (string-constant profj-language-config-testing-coverage)
+                        testing-prefs (lambda (x y) update-cc))]
                      
                      [update-pf (lambda () (void))]
                      [update-ps (lambda () (void))]
@@ -252,7 +256,7 @@
                      [cp-panel (instantiate group-box-panel% ()
                                             (parent parent)
                                             (alignment '(left center))
-                                            (label "Class path"))]
+                                            (label "Classpath"))]
                      [tp-panel (instantiate horizontal-panel% ()
                                  (parent cp-panel)
                                  (alignment '(center center))
@@ -270,11 +274,21 @@
                                             (parent cp-panel)
                                             (alignment '(center center))
                                             (stretchable-height #f))]
-                     [list-button (make-object button% "Display Current" tp-panel (lambda (x y) (list-callback)))]                     
-                     [add-button (make-object button% "Add" bottom-button-panel (lambda (x y) (add-callback)))]
-                     [remove-button (make-object button% "Remove" bottom-button-panel (lambda (x y) (remove-callback)))]
-                     [raise-button (make-object button% "Raise" top-button-panel (lambda (x y) (raise-callback)))]
-                     [lower-button (make-object button% "Lower" top-button-panel (lambda (x y) (lower-callback)))]
+                     [list-button 
+                      (make-object button% (string-constant profj-language-config-classpath-display) tp-panel 
+                        (lambda (x y) (list-callback)))]
+                     [add-button 
+                      (make-object button% (string-constant ml-cp-add) bottom-button-panel 
+                        (lambda (x y) (add-callback)))]
+                     [remove-button 
+                      (make-object button% (string-constant ml-cp-remove) bottom-button-panel 
+                        (lambda (x y) (remove-callback)))]
+                     [raise-button 
+                      (make-object button% (string-constant ml-cp-raise) top-button-panel 
+                        (lambda (x y) (raise-callback)))]
+                     [lower-button 
+                      (make-object button% (string-constant ml-cp-lower) top-button-panel 
+                        (lambda (x y) (lower-callback)))]
                      [enable? #f]
                      
                      [update-buttons 

@@ -1134,13 +1134,35 @@ please adhere to these guidelines:
   ;; Profj
   (profj-java "Java")
   (profj-java-mode "Java mode")
+
+  (profj-java-mode-color-heading "Edit Colors") ; Heading for preference to choose editing colors  
   (profj-java-mode-color-keyword "keyword")
   (profj-java-mode-color-string "string")
   (profj-java-mode-color-literal "literal")
   (profj-java-mode-color-comment "comment")
   (profj-java-mode-color-error "error")
   (profj-java-mode-color-identifier "identifier")
+  (profj-java-mode-color-prim-type "primitive type") ; Example text for built-in Java types
   (profj-java-mode-color-default "default")
+
+  (profj-coverage-color-heading "Coverage Colors") ; Heading for preference to choose coverage colors
+  (profj-coverage-color-covered "covered expression") 
+  
+  (profj-language-config-display-preferences "Display Preferences") ; Heading for preferences controlling printing
+  (profj-language-config-display-style "Display style")
+  (profj-language-config-display-field "Class + Fields") ; Class should not be translated
+  (profj-language-config-display-array "Print entire contents of arrays?")
+  (profj-language-config-testing-preferences "Testing Preferences") ; Heading for preferences controlling test behavior
+  (profj-language-config-testing-enable "Display testing results on Run?") ; Run should be the word found on the Run button
+  (profj-language-config-testing-coverage "Collect coverage information for tests?")
+  (profj-language-config-testing-check "Allow check expression?") ; check should not be translated
+  (profj-language-config-classpath-display "Show current") ; Button label to print the current classpath
+
+   ;; Close testing window and do not run test cases any more
+  (profj-test-results-close-and-disable "Close and Disable Testing")
+  ;; Hide docked testing window and do not run test cases any more
+  (profj-test-results-hide-and-disable "Hide and Disable Testing")
+  (profj-test-results-window-title "Test Results")
 
   (profj-insert-java-comment-box "Insert Java Comment Box")
   (profj-insert-java-interactions-box "Insert Java Interactions Box")
