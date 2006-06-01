@@ -500,7 +500,8 @@
                             path))))
 
   (define (pathlist-closure paths)
-    (let loop ([paths (map (lambda (p) (simplify-path p #f)) paths)]
+    (let loop ([paths (map (lambda (p) (simplify-path (resolve-path p) #f))
+                           paths)]
                [r '()])
       (if (null? paths)
         (reverse! r)
