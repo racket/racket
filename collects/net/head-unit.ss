@@ -165,6 +165,7 @@
       (define nonblank "[^ \t\n\r\v]")
       (define re:all-blank (regexp (format "^~a*$" blank)))
       (define re:quoted (regexp "\"[^\"]*\""))
+      (define re:parened (regexp "[(][^)]*[)]"))
       (define re:comma (regexp ","))
       (define re:comma-separated (regexp "([^,]*),(.*)"))
 
@@ -177,8 +178,14 @@
 	    null
 	    (let loop ([prefix ""][s s])
 	      ;; Which comes first - a quote or a comma?
-	      (let ([mq (regexp-match-positions re:quoted s)]
-		    [mc (regexp-match-positions re:comma s)])
+	      (let* ([mq1 (regexp-match-positions re:quoted s)]
+		     [mq2 (regexp-match-positions re:parened s)]
+		     [mq (if (and mq1 mq2)
+			     (if (< (caar mq1) (caar mq2))
+				 mq1
+				 mq2)
+			     (or mq1 mq2))]
+		     [mc (regexp-match-positions re:comma s)])
 		(if (and mq mc (< (caar mq) (caar mc) (cdar mq)))
 		    ;; Quote contains a comma
 		    (loop (string-append 
