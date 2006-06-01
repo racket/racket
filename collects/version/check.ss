@@ -71,7 +71,7 @@
          ;; we have the newest version (can be > if we have an svn build)
          [(string>=? current recent) 'ok]
          ;; we're stable, but there's a newer version
-         [(equal? current stable)
+         [(string>=? current stable)
           `(ok-but ,recent)]
          ;; new version out -- no alphas or we have an alpha => show recent
          ;; (also for svn builds of a stable version -- anything with ".")
