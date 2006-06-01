@@ -441,14 +441,18 @@
                  ;; a b c d|     => typed a character from completed text
                  (and last-text-completed?
                       (= len start end)
-                      (< last-text-start len last-text-end)
+                      (<= last-text-start len last-text-end)
                       (prefix? value last-text-value #t))
-                 (send completion-timer stop)
-                 ;; => shrink the completed part
-                 (send text set-value last-text-value)
-                 (set! change? #f)
-                 (send text* set-position start last-text-end #f #f 'local)
-                 (set! last-text-start start)]
+                 ;; in some situations this is called with the same text before
+                 ;; the new character is inserted -- do nothing in that case,
+                 ;; not even set-ok?
+                 (when (< last-text-start len last-text-end)
+                   (send completion-timer stop)
+                   ;; => shrink the completed part
+                   (send text set-value last-text-value)
+                   (send text* set-position start last-text-end #f #f 'local)
+                   (set! last-text-start start))
+                 (set! change? #f)]
                 [;; a b c d
                  ;; a b c   => removed text
                  (prefix? value last-text-value #t)
