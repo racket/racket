@@ -302,7 +302,7 @@
                  parent
                  (short-sym->pref-name sym)
                  (short-sym->style-name sym)
-                 (format "~a" sym))))
+                 (caddr line))))
             color-prefs-table))))
       
       (define-struct string/pos (string pos))
