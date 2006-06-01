@@ -236,10 +236,10 @@ Note: Xexpr is the only important one to understand.  Even then,
         "<![CDATA[~a]]>" with proper quoting. If this is an incorrect 
         assumption, this library will generate invalid XML.
 
-> Entity = (make-entity (U Nat Symbol))
-  (define-struct entity (text))
+> Entity = (make-entity Location Location (U Nat Symbol))
+  (define-struct (entity struct:source) (text))
 
-> Processing-instruction = (make-pi Location Location String (list String))
+> Processing-instruction = (make-pi Location Location String String)
   (define-struct (pi struct:source) (target-name instruction))
 
 > Comment = (make-comment String)

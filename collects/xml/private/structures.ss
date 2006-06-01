@@ -74,7 +74,7 @@
       ; Entity = (make-entity Location Location (U Nat Symbol))
       (define-struct (entity source) (text))
       
-      ; Processing-instruction = (make-pi Location Location String (list String))
+      ; Processing-instruction = (make-pi Location Location String String)
       ; also represents XMLDecl
       (define-struct (pi source) (target-name instruction))
       
