@@ -1230,7 +1230,9 @@
       (define (insert-paren text)
         (let* ([pos (send text get-start-position)]
                [real-char #\[]
-               [change-to (λ (c) (set! real-char c))]
+               [change-to (λ (i c) 
+                            ;(printf "change-to, case ~a\n" i)
+                            (set! real-char c))]
                [start-pos (send text get-start-position)]
                [end-pos (send text get-end-position)])
           (send text begin-edit-sequence #f #f)
@@ -1256,7 +1258,7 @@
                         (void)]
                        [(member b-m-char '(#\( #\[ #\{))
                         ;; found a "sibling" parenthesized sequence. use the parens it uses.
-                        (change-to b-m-char)]
+                        (change-to 1 b-m-char)]
                        [else
                         ;; there is a sexp before this, but it isn't parenthesized.
                         ;; if it is the `cond' keyword, we get a square bracket. otherwise not.
@@ -1265,7 +1267,7 @@
                                       (λ (x)
                                         (text-between-equal? x text backward-match before-whitespace-pos))
                                       '("cond" "field" "provide/contract")))
-                          (change-to #\())]))]
+                          (change-to 2 #\())]))]
                   [(not (zero? before-whitespace-pos))
                    ;; this is the first thing in the sequence
                    ;; pop out one layer and look for a keyword.
@@ -1281,7 +1283,7 @@
                                                              0)])
                           (cond
                             [(not second-backwards-match)
-                             (change-to #\()]
+                             (change-to 3 #\()]
                             [(and (beginning-of-sequence? text second-backwards-match)
                                   (ormap (λ (x) (text-between-equal? x
                                                                      text
@@ -1306,6 +1308,9 @@
                                                                    0)])
                                (cond
                                  [(and second-backwards-match2
+                                       (eq? (send text classify-position second-backwards-match)
+                                            ;;; otherwise, this isn't a `let loop', it is a regular let!
+                                            'symbol)
                                        (ormap (λ (x)
                                                 (text-between-equal? x 
                                                                      text
@@ -1316,11 +1321,11 @@
                                   (void)]
                                  [else
                                   ;; otherwise, round.
-                                  (change-to #\()]))]))]
+                                  (change-to 4 #\()]))]))]
                        [else 
-                        (change-to #\()]))]
+                        (change-to 5 #\()]))]
                   [else 
-                   (change-to #\()]))))
+                   (change-to 6 #\()]))))
           (send text delete pos (+ pos 1) #f)
           (send text end-edit-sequence)
           (send text insert real-char start-pos end-pos)))
