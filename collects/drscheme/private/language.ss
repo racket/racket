@@ -509,7 +509,7 @@
                    get-init-code use-mred-launcher get-reader)
           
           (define/pubment (capability-value s) 
-            (inner (get-capability-default s) capability-value))
+            (inner (get-capability-default s) capability-value s))
           
           (define/public (first-opened) (void))
           (define/public (get-comment-character) (values ";  " #\;))
