@@ -113,7 +113,8 @@
                                 (make-object message%
                                   (string-constant version:connecting-server)
                                   this)
-                                (make-object button% (string-constant abort) this
+                                (make-object button%
+                                  (string-constant abort) this
                                   (lambda (b e)
                                     (kill-thread t)
                                     (send this show #f))
