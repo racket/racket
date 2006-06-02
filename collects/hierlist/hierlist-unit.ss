@@ -251,7 +251,7 @@
       ;; Buffer for a single list item
       (define hierarchical-item-text%
 	(class100 text% (tp tp-select itm snp dpth)
-          (inherit set-max-undo-history hide-caret
+          (inherit hide-caret
                    last-position set-position set-keymap
                    invalidate-bitmap-cache set-max-width
                    get-view-size)
@@ -323,13 +323,12 @@
           (sequence
             (super-init)
             (hide-caret #t)
-            (set-max-undo-history 0)
             (set-keymap item-keymap))))
       
       ;; Buffer for a compound list item (and the top-level list)
       (define (make-hierarchical-list-text% super%)
 	(class100 super% (tp tp-select dpth parent-snp)
-          (inherit set-max-undo-history hide-caret erase
+          (inherit hide-caret erase
                    last-position insert delete line-start-position line-end-position
                    begin-edit-sequence end-edit-sequence get-style-list)
           (private-field
@@ -443,8 +442,7 @@
 	    [do-edit-operation (opt-lambda (x [r? #t] [time 0]) (send top do-edit-operation x r? time))])
           (sequence
             (super-init)
-            (hide-caret #t)
-            (set-max-undo-history 0))))
+            (hide-caret #t))))
 
       (define hierarchical-list-text% (make-hierarchical-list-text% text%))
 
@@ -580,7 +578,6 @@
             [get-arrow-snip (lambda () arrow)])
 	  (sequence
 	    (super-init main-buffer #f 0 0 0 0 0 0 0 0)
-	    (send main-buffer set-max-undo-history 0)
 	    (send main-buffer hide-caret #t)
 	    (send main-buffer insert arrow)
 	    (when title (send title-buffer insert title))
