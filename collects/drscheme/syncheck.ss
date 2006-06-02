@@ -924,7 +924,7 @@ If the namespace does not, they are colored the unbound color.
               (set! rest-panel r-root)
               r-root))
 
-          (inherit open-status-line close-status-line update-status-line)
+          (inherit open-status-line close-status-line update-status-line ensure-rep-hidden)
           ;; syncheck:button-callback : (case-> (-> void) ((union #f syntax) -> void)
           ;; this is the only function that has any code running on the user's thread
           (define/public syncheck:button-callback
@@ -934,6 +934,7 @@ If the namespace does not, they are colored the unbound color.
                (when (send check-syntax-button is-enabled?)
                  (open-status-line 'drscheme:check-syntax)
                  (update-status-line 'drscheme:check-syntax status-init)
+                 (ensure-rep-hidden)
                  (let-values ([(expanded-expression expansion-completed) (make-traversal)])
                    (let* ([definitions-text (get-definitions-text)]
                           [drs-eventspace (current-eventspace)]

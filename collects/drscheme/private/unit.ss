@@ -1032,7 +1032,11 @@ module browser threading seems wrong.
           enable-evaluation
           disable-evaluation
           get-definitions/interactions-panel-parent
-          register-capability-menu-item))
+          register-capability-menu-item
+          
+          ensure-rep-shown
+          ensure-rep-hidden
+          ensure-defs-shown))
       
       (define frame-mixin
         (mixin (drscheme:frame:<%> frame:searchable-text<%> frame:delegate<%> frame:open-here<%>)
