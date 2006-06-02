@@ -962,61 +962,69 @@
         (when (file-exists? distribution-filename)
           (delete-file distribution-filename))
         ;; Figure out base name, and create working temp directory:
-        (let ([base-name (let-values ([(base name dir?) (split-path distribution-filename)])
-                           (path-replace-suffix name #""))]
-              [temp-dir
-               (make-temporary-file "drscheme-tmp-~a" 'directory)]
-              [c (make-custodian)])
-          (let ([status-message #f]
-                [ready (make-semaphore)])
-            (with-handlers ([exn? ; Catch breaks!
-                             (λ (x)
-                               (custodian-shutdown-all c)
-                               (delete-directory/files temp-dir)
-                               (message-box 
-                                (string-constant drscheme)
-                                (format "~a" (exn-message x)))
-                               (void))])              
-              (let ([orig-thread (current-thread)])
+        (let* ([base-name (let-values ([(base name dir?) (split-path distribution-filename)])
+                            (path-replace-suffix name #""))]
+               [temp-dir
+                (make-temporary-file "drscheme-tmp-~a" 'directory)]
+               [c (make-custodian)]
+               [dialog (new dialog%
+                            [label (string-constant distribution-progress-window-title)]
+                            [width 400])]
+               [status-message
+                (new message%
+                     [label (string-constant creating-executable-progress-status)]
+                     [parent dialog]
+                     [stretchable-width #t])]
+               [pane (new vertical-pane%
+                          [parent dialog])]
+               [abort-button
+                (new button%
+                     [parent pane]
+                     [label (string-constant abort)]
+                     [callback (lambda (_1 _2)
+                                 (custodian-shutdown-all c))])]
+               
+               [exn #f]
+               
+               [worker-thread
                 (parameterize ([current-custodian c])
-                  (parameterize ([current-eventspace (make-eventspace)])
-                    (queue-callback
-                     (lambda ()
-                       (let* ([dialog (new dialog%
-                                           [label (string-constant distribution-progress-window-title)]
-                                           [width 400])]
-                              [label (new message%
-                                          [label (string-constant creating-executable-progress-status)]
-                                          [parent dialog]
-                                          [stretchable-width #t])]
-                              [pane (new vertical-pane%
-                                         [parent dialog])])
-                         (new button%
-                              [parent pane]
-                              [label (string-constant abort)]
-                              [callback (lambda (c b)
-                                          (break-thread orig-thread))])
-                         (send dialog center)
-                         (set! status-message label)
-                         (semaphore-post ready)
-                         (send dialog show #t)))))))
-              (semaphore-wait ready)
-              ;; Build the exe:
-              (make-directory (build-path temp-dir "exe"))
-              (let ([exe-name (build-path temp-dir "exe" (default-executable-filename base-name 'stand-alone gui?))])
-                (make-executable exe-name)
-                (when (or (file-exists? exe-name)
-                          (directory-exists? exe-name))
-                  (let ([dist-dir (build-path temp-dir base-name)])
-                    ;; Assemble the bundle directory:
-                    (send status-message set-label (string-constant assembling-distribution-files-progress-status))
-                    (assemble-distribution dist-dir (list exe-name))
-                    ;; Pack it:
-                    (send status-message set-label (string-constant packing-distribution-progress-status))
-                    (bundle-directory distribution-filename dist-dir #t)))
-                ;; Clean up:
-                (custodian-shutdown-all c)
-                (delete-directory/files temp-dir))))))
+                  (thread
+                   (λ ()
+                     (with-handlers ([exn? (λ (e) (set! exn e))])
+                       ;; Build the exe:
+                       (make-directory (build-path temp-dir "exe"))
+                       (let ([exe-name (build-path temp-dir "exe" (default-executable-filename base-name 'stand-alone gui?))])
+                         (make-executable exe-name)
+                         (when (or (file-exists? exe-name)
+                                   (directory-exists? exe-name))
+                           (let ([dist-dir (build-path temp-dir base-name)])
+                             ;; Assemble the bundle directory:
+                             (queue-callback 
+                              (λ ()
+                                (send status-message set-label (string-constant assembling-distribution-files-progress-status))))
+                             (assemble-distribution dist-dir (list exe-name))
+                             ;; Pack it:
+                             (queue-callback
+                              (λ ()
+                                (send status-message set-label (string-constant packing-distribution-progress-status))))
+                             (bundle-directory distribution-filename dist-dir #t))))))))])
+
+          ;; create a thread that will trigger hiding the dialog and the return from `show'
+          ;; when things are done (no matter if there was a kill, or just normal terminiation)
+          (thread
+           (λ ()
+             (thread-wait worker-thread)
+             (queue-callback (λ () (send dialog show #f)))))
+          
+          (send dialog show #t)
+          
+          ;; Clean up:
+          (custodian-shutdown-all c)
+          (delete-directory/files temp-dir)
+          
+          (when exn
+            (raise exn))))
+          
       
       (define (condense-scheme-code-string s)
         (let ([i (open-input-string s)]
