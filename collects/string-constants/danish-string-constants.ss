@@ -640,7 +640,6 @@ please adhere to these guidelines:
  (help-menu-label "&Hjælp")
  (about-info "Akkrediteringer og detaljer om dette program")
  (about-menu-item "Om...")
- (help-menu-check-for-updates "Undersøg, om der er opdateringer...")
 
  ;; open here's new menu item
  (create-new-window-or-clear-current
@@ -993,6 +992,8 @@ please adhere to these guidelines:
  (kill? "Ihjel?")
 
  ;;; version checker
+ (version:update-menu-item "Undersøg, om der er opdateringer...")
+ (version:update-check "Opdateringstjek")
 
  ;; special menu
  (special-menu "Speciel")

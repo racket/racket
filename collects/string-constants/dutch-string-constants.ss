@@ -444,7 +444,6 @@
  (help-menu-label "&Hulp")
  (about-info "Credits and details for this application") ; <**>
  (about-menu-item "Info...")
- (help-menu-check-for-updates "Recentere versies...")
  
  ;;; help-desk-specific menus
  (new-help-desk "Nieuwe Hulpbron")
@@ -700,6 +699,8 @@
  (kill? "Beëindigen?")
 
  ;;; version checker
+ (version:update-menu-item "Recentere versies...")
+ (version:update-check "Versie bijwerken")
 
  ;; special menu
  (special-menu "Invoegen")

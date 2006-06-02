@@ -543,7 +543,6 @@
  (help-menu-label "&Hilfe")
  (about-info "Mehr über dieses Programm und seine Entstehung")
  (about-menu-item "Über...")
- (help-menu-check-for-updates "Nach Updates schauen...")
  
  ;; open here's new menu item
  (create-new-window-or-clear-current
@@ -896,9 +895,8 @@
  (kill? "Abbrechen?")
 
  ;;; version checker
- ;; the next two are used in the initial wizard dialog.
- ;; Note that vc-wizard-check-prompt can (should) have newlines so
- ;; it will not make the dialog too wide.
+ (version:update-menu-item "Nach Updates schauen...")
+ (version:update-check "Update-Prüfung")
 
  ;; special menu
  (special-menu "S&pezial")

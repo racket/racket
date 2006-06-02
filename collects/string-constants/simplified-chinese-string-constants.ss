@@ -563,7 +563,6 @@
   (help-menu-label "帮助(&H)")
   (about-info "本程序的详细信息以及致谢名单")
   (about-menu-item "关于...")
-  (help-menu-check-for-updates "检查更新...")
   
   ;; open here's new menu item
   (create-new-window-or-clear-current
@@ -853,9 +852,7 @@
   (kill? "终止？")
   
   ;;; version checker
-  ;; the next two are used in the initial wizard dialog.
-  ;; Note that vc-wizard-check-prompt can (should) have newlines so
-  ;; it will not make the dialog too wide.
+  (version:update-menu-item "检查更新...")
   
   ;; special menu
   (special-menu "特殊符号(&P)")

@@ -4,9 +4,12 @@
            (lib "framework.ss" "framework")
            (lib "mred.ss" "mred")
            (lib "class.ss")
-           (lib "list.ss")
-           "patchlevel.ss" "check.ss"
-           (lib "external.ss" "browser"))
+           "patchlevel.ss"
+           "check.ss"
+           (lib "external.ss" "browser")
+           (lib "string-constant.ss" "string-constants"))
+
+  (define download-url "http://download.plt-scheme.org/")
 
   ;; either 'yes, 'no, or something else, see `enabled?' below for a reason
   (preferences:set-default 'updates:enabled? 'unset symbol?)
@@ -22,19 +25,24 @@
   ;; have the default be #f, but without making it always #f for all users, and
   ;; in the future it is possible to change it to default to a different
   ;; default.
-  (define (enabled? v)
+  (define (is-enabled? v)
     (case v [(yes) #t] [(no) #f] [else #f])) ; default to #f
 
-  (define (check-for-updates)
+  (define (check-for-updates . top?)
+    (define enabled?  (is-enabled? (preferences:get 'updates:enabled?)))
+    (define explicit? (pair? top?)) ; top => explicit check for updates
+    (define top       (and (pair? top?) (car top?)))
     ;; wait until the definitions are instantiated, return top-level window
     (define (wait-for-definitions)
       (let ([ws (get-top-level-windows)])
         (if (null? ws)
           (begin (sleep 1) (wait-for-definitions))
           (car ws))))
+    #| ;; Cute code, but may resize the window if too much space, and people
+       ;; didn't like this way of asking if you want update checks.
     ;; show a message and a disable button
     (define hide-message void) ; set by show-message
-    (define (show-message top first-time?)
+    (define (show-message first-time?)
       ;; No info display if we got some non-drscheme window by accident
       (cond
        [(with-handlers ([void (lambda _ #f)]) (send top get-info-panel)) =>
@@ -59,57 +67,98 @@
                     (set! hide-message void))))
           #t)] ; return #t so that the check starts
        [else #f])) ; no standard window -- return #f to skip the whole thing
-    ;; disable handler
-    (define abort void) ; used to abort an active check
-    (define (disable . _)
-      (abort) (preferences:set 'updates:enabled? 'no))
-    ;; ask the question in a non-modal dialog
-    (define (question top ver)
-      (parameterize ([current-eventspace (make-eventspace)])
-        (message-box/custom
-         "Outdated PLT Version"
-         (string-append "PLT Scheme v"ver" is now available")
-         "Quit && &Take Me There" "Remind Me &Later" "&Disable Checking"
-         ;; don't use `top' for the parent -- some wants a non-modal dialog
-         ;; that can be pushed back as a reminder instead of dismissed
-         #f '(default=2) #f)))
+    |#
+    ;; show results in a dialog in a non-modal dialog (if it was not an
+    ;; explicit call) , so the window can be left around as a reminder.
+    (define (message style fmt . args)
+      (define (run)
+        (let-values ([(result new-enabled?)
+                      (message+check-box/custom
+                       (string-constant version:results-title)
+                       (apply format fmt args)
+                       (string-constant version:do-periodic-checks)
+                       (string-constant ok)
+                       (and (eq? 'newer style)
+                            (string-constant version:take-me-there))
+                       #f
+                       (and explicit? top)
+                       `(,@(case style
+                             [(#f) '()] [(newer) '(stop)] [else (list style)])
+                         ,@(if enabled? '(checked) '())
+                         default=1))])
+          (unless (eq? enabled? new-enabled?)
+            (preferences:set 'updates:enabled? (if new-enabled? 'yes 'no))
+            (set! enabled? new-enabled?))
+          result))
+      (if explicit?
+        (run)
+        ;; non-modal
+        (parameterize ([current-eventspace (make-eventspace)]) (run))))
     ;; main checker
-    (define (check top)
-      (let ([r #f])
+    (define (check)
+      (let ([result #f])
         ;; run the check in a thread, with a chance to abort it
-        (let ([t (thread (lambda () (set! r (check-version))))])
-          (set! abort (lambda () (kill-thread t)))
-          (thread-wait t)
-          (set! abort void))
-        ;; do nothing if we have a good version, if there was an error, or if
-        ;; there is a suggested alpha -- only show a message if there is a
-        ;; newer version
-        (when (and (pair? r) (eq? 'newer (car r)))
-          (hide-message 'now)
-          (case (question top (cadr r))
-            ;; go there
-            [(1) (send-url "http://download.plt-scheme.org/")
-                 (sleep 1)
-                 ((application-quit-handler))]
-            ;; later
-            [(2) (preferences:set 'updates:last
-                                  (- (+ (current-seconds) later-delay)
-                                     (preferences:get 'updates:frequency)))]
-            ;; disable
-            [(3) (preferences:set 'updates:enabled? 'no)]
-            ;; only other option is escape -- check again in the normal time
-            ))))
+        (let* ([d #f]
+               [t (thread (lambda ()
+                            (set! result (check-version))
+                            (when d (send d show #f))))])
+          (unless (sync/timeout .4 t) ; still checking, pop message
+            (when explicit?           ; unless it's an automatic check
+              (queue-callback
+               (lambda ()
+                 (set! d (new (class dialog%
+                                (super-new
+                                 [label (string-constant version:update-check)]
+                                 [parent #f])
+                                (make-object message%
+                                  (string-constant version:connecting-server)
+                                  this)
+                                (make-object button% (string-constant abort) this
+                                  (lambda (b e)
+                                    (kill-thread t)
+                                    (send this show #f))
+                                  '(border))
+                                (send this center))))
+                 (send d show #t)))
+              (sleep/yield .5))
+            (thread-wait t)))
+        (cond
+         [(and (pair? result) (eq? 'newer (car result)))
+          (when (equal? 2 (message 'newer "PLT Scheme v~a ~a ~a"
+                                   (cadr result)
+                                   (string-constant version:now-available-at)
+                                   download-url))
+            ;; 2 = go there
+            (send-url download-url)
+            ;; (sleep 1) ((application-quit-handler))
+            )]
+         ;; implicit auto-check => show a message only if there is a newer
+         ;; version => the rest are only for explicit calls
+         [(not explicit?) (void)]
+         [(eq? result 'ok)
+          (message #f (string-constant version:plt-up-to-date))]
+         [(not (pair? result)) (void)] ; either #f (canceled) or ok
+         [else (case (car result)
+                 [(error)
+                  (message 'stop "~a: ~a~a"
+                           (string-constant error) (cadr result)
+                           (if (pair? (cddr result))
+                             (string-append "\n" (caddr result)) ""))]
+                 [(ok-but)
+                  (message 'caution "~a,\n~a (v~a)"
+                           (string-constant version:plt-up-to-date)
+                           (string-constant version:but-newer-alpha)
+                           (cadr result))]
+                 [else (error 'check-for-updates "internal error")])])))
     ;; start the check if enabled and enough time passed
-    (when (enabled? (preferences:get 'updates:enabled?))
-      (let ([top  (wait-for-definitions)]
-            [cur  (current-seconds)]
+    (when (or explicit? enabled?)
+      (unless top (set! top (wait-for-definitions)))
+      (let ([cur  (current-seconds)]
             [last (preferences:get 'updates:last)]
             [freq (preferences:get 'updates:frequency)])
-        (when (and (> (- cur last) freq)
-                   (show-message top (zero? last))) ; last=0 => first-time
+        (when (or explicit? (> (- cur last) freq))
           (preferences:set 'updates:last cur)
-          (check top)
-          (hide-message)))))
+          (check)))))
 
   (provide tool@)
   (define tool@
@@ -120,15 +169,24 @@
         (preferences:add-to-warnings-checkbox-panel
          (lambda (panel)
            (let ([b (make-object check-box%
-                      "Periodically check for newer PLT Scheme versions"
+                      (string-constant version:do-periodic-checks)
                       panel
                       (lambda (b e)
                         (preferences:set 'updates:enabled?
                                          (if (send b get-value) 'yes 'no))))])
              (preferences:add-callback
               'updates:enabled?
-              (lambda (p v) (send b set-value (enabled? v))))
+              (lambda (p v) (send b set-value (is-enabled? v))))
              (send b set-value
-                   (enabled? (preferences:get 'updates:enabled?))))))
+                   (is-enabled? (preferences:get 'updates:enabled?))))))
+        (drscheme:get/extend:extend-unit-frame
+	 (lambda (f%)
+	   (class f%
+             (define/override (help-menu:after-about m)
+               (make-object menu-item%
+                 (string-constant version:update-menu-item) m
+                 (lambda (b e) (check-for-updates this)))
+               (super help-menu:after-about m))
+             (super-new))))
         (thread check-for-updates))
       (when (> patchlevel 0) (version:add-spec 'p patchlevel)))))

@@ -648,7 +648,6 @@ please adhere to these guidelines:
  (help-menu-label "&Help")
  (about-info "Credits and details for this application")
  (about-menu-item "About...")
- (help-menu-check-for-updates "Check for Updates...")
  
  ;; open here's new menu item
  (create-new-window-or-clear-current
@@ -1015,9 +1014,17 @@ please adhere to these guidelines:
  (kill? "Kill?")
 
  ;;; version checker
- ;; the next two are used in the initial wizard dialog.
- ;; Note that vc-wizard-check-prompt can (should) have newlines so
- ;; it will not make the dialog too wide.
+ (version:update-menu-item   "Check for Updates...")
+ (version:update-check       "Update check") ; dialog title, with the next line
+ (version:connecting-server  "Connecting to PLT version server")
+ (version:results-title      "PLT Version Check")
+ (version:do-periodic-checks "Periodically check for newer PLT Scheme versions")
+ (version:take-me-there      "Take Me There") ; ...to the download website
+ ;; the next one can appear alone, or followed by a comma and the one after that
+ (version:plt-up-to-date     "Your PLT version is up-to-date")
+ (version:but-newer-alpha    "but note that there is a newer alpha-release")
+ ;; This is used in this context: "PLT Scheme vNNN <<<*>>> http://download..."
+ (version:now-available-at   "is now available at")
 
  ;; special menu
  (special-menu "S&pecial")

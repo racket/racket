@@ -547,7 +547,6 @@
  (help-menu-label "&Ayuda")
  (about-info "Créditos y detalles de esta apliación")
  (about-menu-item "Acerca ...")
- (help-menu-check-for-updates "Buscando Actualizaciones...")
 
   ;;; help-desk-specific menus
  ;; open here's new menu item
@@ -898,11 +897,9 @@
  (kill "Terminar")
  (kill? "¿Terminar?")
  
- ;; version checker
- ;; vc-check-prompt is gone, I'm leaving this comment to make it easier to generate
- ;; vc-wizard-check-note which is similar, only it is used as part of the initial
- ;; wizard dialog.  Note that vc-wizard-check-prompt can (should) have newlines so
- ;; it will not make the dialog too wide.
+ ;;; version checker
+ (version:update-menu-item "Buscando Actualizaciones...")
+ (version:update-check "Revisar Actualización")
 
  ;; special menu
  (special-menu "Especial")

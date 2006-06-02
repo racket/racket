@@ -639,7 +639,6 @@ please adhere to these guidelines:
  (help-menu-label "ヘルプ(&H)")
  (about-info "このアプリケーションの著作権と詳細情報を表示します")
  (about-menu-item "バージョン情報...")
- (help-menu-check-for-updates "アップデートの確認...")
 
  ;; open here's new menu item
  (create-new-window-or-clear-current
@@ -989,9 +988,7 @@ please adhere to these guidelines:
  (kill? "強制終了？")
 
  ;;; version checker
- ;; the next two are used in the initial wizard dialog.
- ;; Note that vc-wizard-check-prompt can (should) have newlines so
- ;; it will not make the dialog too wide.
+ (version:update-menu-item "アップデートの確認...")
 
  ;; special menu
  (special-menu "特殊(&P)")

@@ -633,7 +633,6 @@ please adhere to these guidelines:
  (help-menu-label "&Ajuda")
  (about-info "Credits and details for this application")
  (about-menu-item "Sobre...")
- (help-menu-check-for-updates "Check for Updates...")
  
  ;; open here's new menu item
  (create-new-window-or-clear-current
@@ -961,9 +960,6 @@ please adhere to these guidelines:
  (kill? "Kill?")
 
  ;;; version checker
- ;; the next two are used in the initial wizard dialog.
- ;; Note that vc-wizard-check-prompt can (should) have newlines so
- ;; it will not make the dialog too wide.
 
  ;; special menu
  (special-menu "S&pecial")
