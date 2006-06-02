@@ -217,51 +217,38 @@
   ;; beginning of the list.
 
   (define (mapadd f l last)
-    (letrec ((helper
-              (lambda (l)
-                (cond [(null? l) (list last)]
-                      [else (cons (f (car l)) (helper (cdr l)))]))))
-      (helper l)))
+    (let loop ([l l])
+      (if (null? l)
+        (list last)
+        (cons (f (car l)) (loop (cdr l))))))
 
   (define foldl
-    (letrec ([fold-one
-              (lambda (f init l)
-                (letrec ((helper
-                          (lambda (init l)
-                            (cond [(null? l) init]
-                                  [else (helper (f (car l) init) (cdr l))]))))
-                  (helper init l)))]
-             [fold-n
-              (lambda (f init  l)
-                (cond
-                 [(ormap null? l)
-                  (if (andmap null? l) 
-                    init
-                    (error 'foldl "received non-equal length input lists"))]
-                 [else (fold-n f (apply f (mapadd car l init)) (map cdr l))]))])
-      (case-lambda
-       [(f init l) (fold-one f init l)]
-       [(f init l . ls) (fold-n f init (cons l ls))])))
+    (case-lambda
+      [(f init l)
+       (let loop ([init init] [l l])
+         (if (null? l) init (loop (f (car l) init) (cdr l))))]
+      [(f init l . ls)
+       (let loop ([init init] [ls (cons l ls)])
+         (cond [(andmap pair? ls)
+                (loop (apply f (mapadd car ls init)) (map cdr ls))]
+               [(ormap pair? ls)
+                (error 'foldl "received non-equal length input lists")]
+               [else init]))]))
 
   (define foldr
-    (letrec ([fold-one
-              (lambda (f init l)
-                (letrec ((helper
-                          (lambda (init l)
-                            (cond [(null? l) init]
-                                  [else (f (car l) (helper init (cdr l)))]))))
-                  (helper init l)))]
-             [fold-n
-              (lambda (f init l)
-                (cond
-                 [(ormap null? l)
-                  (if (andmap null? l)
-                    init
-                    (error 'foldr "received non-equal length input lists"))]
-                 [else (apply f (mapadd car l (fold-n f init (map cdr l))))]))])
-      (case-lambda
-       [(f init l) (fold-one f init l)]
-       [(f init l . ls) (fold-n f init (cons l ls))])))
+    (case-lambda
+      [(f init l)
+       (let loop ([init init] [l l])
+         (if (null? l)
+           init
+           (f (car l) (loop init (cdr l)))))]
+      [(f init l . ls)
+       (let loop ([ls (cons l ls)])
+         (cond [(andmap pair? ls)
+                (apply f (mapadd car ls (loop (map cdr ls))))]
+               [(ormap pair? ls)
+                (error 'foldr "received non-equal length input lists")]
+               [else init]))]))
 
   (define (make-find name whole-list?)
     (lambda (f list)
