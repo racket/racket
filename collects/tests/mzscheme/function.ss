@@ -50,6 +50,12 @@
 (err/rt-test (filter cons '(1 2 3)))
 (arity-test filter 2 2)
 
+(test '(0 1 2) memf add1 '(0 1 2))
+(test '(2 (c 17)) memf number? '((a 1) (0 x) (1 w) 2 (c 17)))
+(test '("ok" (2 .7) c) memf string? '((a 0) (0 a) (1 w) "ok" (2 .7) c))
+(err/rt-test (memf cons '((1) (2) (3))))
+(err/rt-test (memf string? '((1) (2) (3) . 4)) exn:application:mismatch?)
+
 (err/rt-test (assf add1 '(0 1 2)) exn:application:mismatch?)
 (test '(0 x) assf number? '((a 1) (0 x) (1 w) (2 r) (c 17)))
 (test '("ok" . 10) assf string? '((a 0) (0 a) (1 w) ("ok" . 10) (2 .7) c))

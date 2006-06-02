@@ -32,6 +32,7 @@
 
            assf
            memf
+           findf
 
            filter
 
@@ -250,31 +251,36 @@
                 (error 'foldr "received non-equal length input lists")]
                [else init]))]))
 
-  (define (make-find name whole-list?)
-    (lambda (f list)
-      (unless (and (procedure? f) (procedure-arity-includes? f 1))
-        (raise-type-error name "procedure (arity 1)" f))
-      (let loop ([l list])
-        (cond [(null? l) #f]
-              [(not (pair? l)) 
-               (raise (make-exn:fail:contract
-                       (format "~a: second argument must be a (proper) list; given ~e" name list)
-                       (current-continuation-marks)))]
+  (define-syntax (define-finder stx)
+    (syntax-case stx ()
+      [(_ name mode)
+       (and (identifier? #'name) (memq (syntax-e #'mode) '(assoc member find)))
+       #`(define (name f list)
+           (unless (and (procedure? f) (procedure-arity-includes? f 1))
+             (raise-type-error 'name "procedure (arity 1)" f))
+           (let loop ([l list])
+             (cond
+              [(null? l) #f]
+              [(not (pair? l))
+               (raise
+                (make-exn:fail:contract
+                 (string->immutable-string
+                  (format
+                   "~a: second argument must be a (proper) list; given ~e"
+                   'name list))
+                 (current-continuation-marks)))]
               [else (let ([a (car l)])
-                      (if whole-list?
-                        (if (f a) l (loop (cdr l)))
-                        (if (pair? a)
-                          (if (f (car a)) a (loop (cdr l)))
-                          (raise-mismatch-error
-                           name "found a non-pair in the list: " a))))]))))
-
-  (define assf
-    (let ([a (make-find 'assf #f)])
-      (lambda (f l) (a f l))))
-
-  (define memf
-    (let ([a (make-find 'memf #t)])
-      (lambda (f l) (a f l))))
+                      #,(case (syntax-e #'mode)
+                          [(member) #'(if (f a) l (loop (cdr l)))]
+                          [(find)   #'(if (f a) (car l) (loop (cdr l)))]
+                          [(assoc)  #'(if (pair? a)
+                                        (if (f (car a)) a (loop (cdr l)))
+                                        (raise-mismatch-error
+                                         'name "found a non-pair in the list: "
+                                         a))]))])))]))
+  (define-finder assf  assoc)
+  (define-finder memf  member)
+  (define-finder findf find)
 
   (define (filter f list)
     (unless (and (procedure? f)
@@ -297,28 +303,22 @@
   (define (set-first! x v)
     (unless (pair? x) (raise-type-error 'set-first! "non-empty list" x))
     (set-car! x v))
-  (define (lget name npos)
-    (lambda (x)
-      (let loop ([l x][pos npos])
-	(cond
-	 [(and (= pos 1) (pair? l)) (car l)]
-	 [(pair? l) (loop (cdr l) (sub1 pos))]
-	 [else (raise-type-error
-                name (format "list with ~a or more items" npos) x)]))))
-
-  ;; Gives the function a name:
-  (define-syntax (mk-lget stx)
-    (syntax-case stx ()
-      [(_ name pos)
-       (syntax (let ([g (lget 'name pos)]) (lambda (x) (g x))))]))
-
-  (define second  (mk-lget second  2))
-  (define third   (mk-lget third   3))
-  (define fourth  (mk-lget fourth  4))
-  (define fifth   (mk-lget fifth   5))
-  (define sixth   (mk-lget sixth   6))
-  (define seventh (mk-lget seventh 7))
-  (define eighth  (mk-lget eighth  8))
+  (define-syntax define-lgetter
+    (syntax-rules ()
+      [(_ name npos)
+       (define (name l0)
+         (let loop ([l l0] [pos npos])
+           (if (pair? l)
+             (if (eq? pos 1) (car l) (loop (cdr l) (sub1 pos)))
+             (raise-type-error
+              'name (format "list with ~a or more items" npos) l0))))]))
+  (define-lgetter second  2)
+  (define-lgetter third   3)
+  (define-lgetter fourth  4)
+  (define-lgetter fifth   5)
+  (define-lgetter sixth   6)
+  (define-lgetter seventh 7)
+  (define-lgetter eighth  8)
 
   (define (rest x)
     (unless (pair? x)
