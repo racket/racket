@@ -1,3 +1,6 @@
+Version 301.16
+When no location is given for a dialog%, it is centered when
+ shown
 
 Version 301.8
 Added 'no-sheet dialog% style

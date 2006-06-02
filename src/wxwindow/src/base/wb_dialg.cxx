@@ -61,7 +61,7 @@ void wxbDialogBox::Centre(int direction)
   int  width, height, x, y;
   wxFrame *frame;
 
-  if (direction & wxCENTER_FRAME) {
+  if (1 /* direction & wxCENTER_FRAME */) {
     frame = (wxFrame*)GetParent();
     if (frame) {
       frame->GetPosition(&x_offset, &y_offset);

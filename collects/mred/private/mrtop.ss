@@ -208,7 +208,7 @@
     (class100*/kw basic-top-level-window% ()
 		  [(label [parent #f] [width #f] [height #f] [x #f] [y #f] [style null])
 		   top-level-window%-keywords]
-      (inherit on-traverse-char on-system-menu-char)
+      (inherit on-traverse-char on-system-menu-char center)
       (sequence
 	(let ([cwho '(constructor dialog)])
 	  (check-label-string cwho label)
@@ -228,7 +228,7 @@
 	   (super-init (lambda (finish) 
 			 (set! wx (finish (make-object wx-dialog% this this
 						       (and parent (mred->wx parent)) label #t
-						       (or x -1) (or y -1) (or width 0) (or height 0)
+						       (or x -11111) (or y -11111) (or width 0) (or height 0)
 						       style)
 					  #f))
 			 wx)
