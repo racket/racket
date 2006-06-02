@@ -66,7 +66,7 @@
       (define file-menu (make-object menu% "&File" mb))
 
       (new menu-item% 
-	   [label "&Reset Game"]
+	   [label "&Reset Game..."]
 	   [parent file-menu]
 	   [callback (lambda (i e)
 		       (when (eq? 'yes (message-box "Reset Game"
@@ -96,7 +96,7 @@
       (new separator-menu-item%  [parent edit-menu])
 
       (new menu-item% 
-	   [label "&Options"]
+	   [label "&Options..."]
 	   [parent edit-menu]
 	   [callback (lambda (i e)
 		       (define d (new dialog% 

@@ -328,7 +328,7 @@
 				 (label "") (parent bottom) (stretchable-width #t)))
 
       (new button%
-	   [label "Auto-Play Options"]
+	   [label "Auto-Play Options..."]
 	   [parent bottom]
 	   [callback
 	    (lambda (b e)
