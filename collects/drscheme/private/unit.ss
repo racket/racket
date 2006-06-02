@@ -567,7 +567,7 @@ module browser threading seems wrong.
             (super-new)
 
 	    (inherit set-max-undo-history)
-	    (set-max-undo-history 5000))))
+	    (set-max-undo-history 'forever))))
       
       
                                                        

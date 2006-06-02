@@ -1545,7 +1545,10 @@ TODO
           
           (super-new)
           (auto-wrap #t)
-          (set-styles-sticky #f)))
+          (set-styles-sticky #f)
+
+	  (inherit set-max-undo-history)
+	  (set-max-undo-history 'forever)))
       
       (define input-delta (make-object style-delta%))
       (send input-delta set-delta-foreground (make-object color% 0 150 0))
