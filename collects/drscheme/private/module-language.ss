@@ -167,7 +167,7 @@
                                       #t
                                       #t)])
               (when executable-specs
-                (let ([stand-alone? (eq? 'stand-alone (car executable-specs))]
+                (let ([launcher? (eq? 'launcher (car executable-specs))]
                       [gui? (eq? 'mred (cadr executable-specs))]
                       [executable-filename (caddr executable-specs)])
                   (with-handlers ([(λ (x) #f) ;exn:fail?
@@ -177,28 +177,26 @@
                                       (if (exn? x)
                                           (format "~a" (exn-message x))
                                           (format "uncaught exception: ~s" x))))])
-                    (if stand-alone?
-                        (let ([short-program-name (let-values ([(base name dir) (split-path program-filename)])
-                                                    (cond
-                                                      [(regexp-match #rx#"(.*)\\...." (path->bytes name))
-                                                       =>
-                                                       cadr]
-                                                      [(regexp-match #rx#"(.*)\\..." (path->bytes name))
-                                                       =>
-                                                       cadr]
-                                                      [(regexp-match #rx#"(.*)\\.." (path->bytes name))
-                                                       =>
-                                                       cadr]
-                                                      [else (path->bytes name)]))])
-                          (make-embedding-executable
-                           executable-filename
+                    (if (not launcher?)
+                        (let ([short-program-name 
+                               (let-values ([(base name dir) (split-path program-filename)])
+                                 (path-replace-suffix name #""))])
+                          ((if (eq? 'distribution (car executable-specs))
+                               drscheme:language:create-distribution-for-executable
+                               (lambda (executable-filename gui? make)
+                                 (make executable-filename)))
+                           executable-filename 
                            gui?
-                           #f ;; verbose?
-                           (list (list #f program-filename))
-                           null
-                           null
-                           (list (if gui? "-Zmvqe-" "-mvqe-")
-                                 (format "~s" `(require ,(string->symbol (bytes->string/latin-1 short-program-name)))))))
+                           (lambda (exe-name)
+                             (make-embedding-executable
+                              exe-name
+                              gui?
+                              #f ;; verbose?
+                              (list (list #f program-filename))
+                              null
+                              null
+                              (list (if gui? "-Zmvqe-" "-mvqe-")
+                                    (format "~s" `(require ,(string->symbol (path->string short-program-name)))))))))
                         (let ([make-launcher (if gui? make-mred-launcher make-mzscheme-launcher)])
                           (make-launcher (list "-mvqt-" (path->string program-filename))
                                          executable-filename))))))))

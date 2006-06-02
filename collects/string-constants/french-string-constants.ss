@@ -805,11 +805,13 @@
   (executable-base "Base")
   (filename "Nom de fichier : ")
   (create "Créer")
-  (please-choose-an-executable-filename "Veuillez sélectionner un nom de fichier pour sauvegarder l'exécutable.")
-  (windows-executables-must-end-with-exe
-   "Le nom de fichier\n\n  ~a\n\nest illégal. Sous Windows, le nom d'un exécutable doit se terminer par .exe.")
-  (macosx-executables-must-end-with-app
-   "Le nom de fichier\n\n  ~a\n\nest illégal. Sous MacOS X, le nom d'un exécutable doit se terminer par .app.")
+  ;; "choose-an-executable" changed to "specify-a"
+  ;(please-choose-an-executable-filename "Veuillez sélectionner un nom de fichier pour sauvegarder l'exécutable.")
+  ;; Replaced by generic ~a-must-end-with-~a
+  ;(windows-executables-must-end-with-exe
+  ; "Le nom de fichier\n\n  ~a\n\nest illégal. Sous Windows, le nom d'un exécutable doit se terminer par .exe.")
+  ;(macosx-executables-must-end-with-app
+  ; "Le nom de fichier\n\n  ~a\n\nest illégal. Sous MacOS X, le nom d'un exécutable doit se terminer par .app.")
   (warning-directory-will-be-replaced
    "ATTENTION : le répertoire :\n\n  ~a\n\nva être remplacé. Voulez-vous continuer ?")
   

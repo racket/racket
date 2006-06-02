@@ -696,11 +696,13 @@
  (executable-base "Hauptteil")
  (filename "Dateiname: ")
  (create "Erzeugen")
- (please-choose-an-executable-filename "Bitte Dateinamen für Programm auswählen")
- (windows-executables-must-end-with-exe
-  "Der Dateiname\n\n  ~a\n\nist unzulässig. Unter Windows müssen Programmdateien mit .exe enden.")
- (macosx-executables-must-end-with-app
-  "Der Dateiname\n\n  ~a\n\nist unzulässig. Unter Mac OS X müssen Namen für Programme mit .app enden.")
+ ;; "choose-an-executable" changed to "specify-a"
+ ;(please-choose-an-executable-filename "Bitte Dateinamen für Programm auswählen")
+ ;; Replaced by generic ~a-must-end-with-~a
+ ;(windows-executables-must-end-with-exe
+ ; "Der Dateiname\n\n  ~a\n\nist unzulässig. Unter Windows müssen Programmdateien mit .exe enden.")
+ ;(macosx-executables-must-end-with-app
+ ; "Der Dateiname\n\n  ~a\n\nist unzulässig. Unter Mac OS X müssen Namen für Programme mit .app enden.")
  (warning-directory-will-be-replaced
   "WARNUNG: das Verzeichnis:\n\n  ~a\n\nwird überschrieben werden. Weitermachen?")
  

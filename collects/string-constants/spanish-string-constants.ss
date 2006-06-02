@@ -697,11 +697,13 @@
  (executable-base "Base")
  (filename "Nombre de archivo: ")
  (create "Crear")
- (please-choose-an-executable-filename "Por favor selecciona un nombre de archivo para salvar el ejecutable.")
- (windows-executables-must-end-with-exe
-  "El nombre de archivo \n\n  ~a\n\nes ilegal.  En Windows, los ejecutables deben tener terminación .exe.")
- (macosx-executables-must-end-with-app
-  "El nombre de archivo\n\n  ~a\n\nes ilegal.  En MacOS X, los ejecutables deben tener terminación .app.")
+ ;; "choose-an-executable" changed to "specify-a"
+ ;(please-choose-an-executable-filename "Por favor selecciona un nombre de archivo para salvar el ejecutable.")
+ ;; Replaced by generic ~a-must-end-with-~a
+ ;(windows-executables-must-end-with-exe
+ ; "El nombre de archivo \n\n  ~a\n\nes ilegal.  En Windows, los ejecutables deben tener terminación .exe.")
+ ;(macosx-executables-must-end-with-app
+ ; "El nombre de archivo\n\n  ~a\n\nes ilegal.  En MacOS X, los ejecutables deben tener terminación .app.")
  (warning-directory-will-be-replaced
   "ADVERTENCIA: el directorio:\n\n  ~a\n\nserá reemplazado.  ¿Continuar?")
  

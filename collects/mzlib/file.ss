@@ -240,8 +240,8 @@
 					   "format string for 1 argument"
 					   template))])
 	(format template void))
-      (unless (or (not copy-from) (path-string? copy-from))
-	(raise-type-error 'make-temporary-file "path, valid-path string, or #f" copy-from))
+      (unless (or (not copy-from) (path-string? copy-from) (eq? copy-from 'directory))
+	(raise-type-error 'make-temporary-file "path, valid-path string, 'directory, or #f" copy-from))
       (unless (or (not base-dir) (path-string? base-dir))
 	(raise-type-error 'make-temporary-file "path, valid-path, string, or #f" base-dir))
       (let ([tmpdir (find-system-path 'temp-dir)])
@@ -256,7 +256,9 @@
 							   (loop (- s (random 10))
 								 (+ ms (random 10))))])
 	      (if copy-from
-		  (copy-file copy-from name)
+		  (if (eq? copy-from 'directory)
+		      (make-directory name)
+		      (copy-file copy-from name))
 		  (close-output-port (open-output-file name)))
 	      name))))]
      [(template copy-from) (make-temporary-file template copy-from #f)]

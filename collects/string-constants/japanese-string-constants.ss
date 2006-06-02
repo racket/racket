@@ -790,11 +790,13 @@ please adhere to these guidelines:
  (executable-base "Base")
  (filename "ファイル名: ")
  (create "作成")
- (please-choose-an-executable-filename "Please choose a filename to save the executable.")
- (windows-executables-must-end-with-exe
-  "ファイル名\n\n  ~a\n\nは正しくありません。Windows では、実行ファイルは .exe という拡張子を持たなければなりません。")
- (macosx-executables-must-end-with-app
-  "ファイル名\n\n  ~a\n\nは正しくありません。MacOS X では、実行ファイルは .app という名前で終わるディレクトリでなければなりません。")
+ ;; "choose-an-executable" changed to "specify-a"
+ ;(please-choose-an-executable-filename "Please choose a filename.")
+ ;; Replaced by generic ~a-must-end-with-~a
+ ;(windows-executables-must-end-with-exe
+ ; "ファイル名\n\n  ~a\n\nは正しくありません。Windows では、実行ファイルは .exe という拡張子を持たなければなりません。")
+ ;(macosx-executables-must-end-with-app
+ ; "ファイル名\n\n  ~a\n\nは正しくありません。MacOS X では、実行ファイルは .app という名前で終わるディレクトリでなければなりません。")
  (warning-directory-will-be-replaced
   "警告: ディレクトリ:\n\n  ~a\n\nは削除または上書きされます。よろしいですか？")
 

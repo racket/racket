@@ -552,7 +552,8 @@
  (executable-base "Base")
  (filename "Bestandsnaam: ")
  (create "Maak")
- (please-choose-an-executable-filename "Kies een bestandsnaam voor het programma.")
+ ;; "choose-an-executable" changed to "specify-a"
+ ;(please-choose-an-executable-filename "Kies een bestandsnaam voor het programma.")
  
  (create-servlet "Maak Servlet...")
   

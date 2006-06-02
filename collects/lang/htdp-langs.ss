@@ -301,13 +301,13 @@ tracing todo:
           (inherit get-module get-transformer-module get-init-code
                    use-namespace-require/copy?)
           (define/override (create-executable setting parent program-filename teachpack-cache)
-            (let ([executable-filename
+            (let ([dist-filename
 		   (drscheme:language:put-executable
 		    parent program-filename
-		    #f 
-		    #t
-		    (string-constant save-a-mred-stand-alone-executable))])
-              (when executable-filename
+		    'distribution
+		    #t 
+		    (string-constant save-a-mred-distribution))])
+              (when dist-filename
                 (let ([wrapper-filename (make-temporary-file "drs-htdp-lang-executable~a.ss")]
                       [teachpack-specs
                        (map (lambda (x) `(file ,(path->string x)))
@@ -333,9 +333,9 @@ tracing todo:
                       (write `(require #%htdp-lang-executable) outp)
                       (newline outp))
                     'truncate)
-                  (drscheme:language:create-module-based-stand-alone-executable
+                  (drscheme:language:create-module-based-distribution
                    wrapper-filename
-                   executable-filename
+                   dist-filename
                    (get-module)
                    (get-transformer-module)
                    (get-init-code setting teachpack-cache)

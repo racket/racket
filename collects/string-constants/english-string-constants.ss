@@ -797,22 +797,35 @@ please adhere to these guidelines:
  (save-a-mzscheme-launcher "Save a MzScheme Launcher")
  (save-a-mred-stand-alone-executable "Save a MrEd Stand-alone Executable")
  (save-a-mzscheme-stand-alone-executable "Save a MzScheme Stand-alone Executable")
+ (save-a-mred-distribution "Save a MrEd Distribution")
+ (save-a-mzscheme-distribution "Save a MzScheme Distribution")
 
  (definitions-not-saved "The definitions window has not been saved. The executable will use the latest saved version of the definitions window. Continue?")
+ ;; The "-explanatory-label" variants are the labels used for the radio buttons in
+ ;;  the "Create Executable..." dialog for the "(module ...)" language.
  (launcher "Launcher")
+ (launcher-explanatory-label "Launcher (for this machine only, runs from source)")
  (stand-alone "Stand-alone")
+ (stand-alone-explanatory-label "Stand-alone (for this machine only, run compiled copy)")
+ (distribution "Distribution")
+ (distribution-explanatory-label "Distribution (to install on other machines)")
  (executable-type "Type")
  (executable-base "Base")
  (filename "Filename: ")
  (create "Create")
- (please-choose-an-executable-filename "Please choose a filename to save the executable.")
- (windows-executables-must-end-with-exe
-  "The filename\n\n  ~a\n\nis illegal. Under Windows, executables must end with .exe.")
+ (please-specify-a-filename "Please specify a filename to create.")
+ (~a-must-end-with-~a
+  "The ~a filename\n\n  ~a\n\nis illegal. The filename must end with \".~a\".")
  (macosx-executables-must-end-with-app
   "The filename\n\n  ~a\n\nis illegal. Under MacOS X, an executable must be a directory whose name ends with .app.")
  (warning-directory-will-be-replaced
   "WARNING: the directory:\n\n  ~a\n\nwill be replaced. Proceed?")
  
+ (distribution-progress-window-title "Distribution Progress")
+ (creating-executable-progress-status "Creating executable for distribution...")
+ (assembling-distribution-files-progress-status "Assembling files for distribution...")
+ (packing-distribution-progress-status "Packing distribution...")
+
  (create-servlet "Create Servlet...")
 
  ; the ~a is a language such as "module" or "algol60"

@@ -784,11 +784,13 @@ please adhere to these guidelines:
  (executable-base "Base")
  (filename "Filename: ")
  (create "Create")
- (please-choose-an-executable-filename "Please choose a filename to save the executable.")
- (windows-executables-must-end-with-exe
-  "The filename\n\n  ~a\n\nis illegal. Under Windows, executables must end with .exe.")
- (macosx-executables-must-end-with-app
-  "The filename\n\n  ~a\n\nis illegal. Under MacOS X, an executable must be a directory whose name ends with .app.")
+ ;; "choose-an-executable" changed to "specify-a"
+ ;(please-choose-an-executable-filename "Please choose a filename to save the executable.")
+ ;; Replaced by generic ~a-must-end-with-~a
+ ;(windows-executables-must-end-with-exe
+ ; "The filename\n\n  ~a\n\nis illegal. Under Windows, executables must end with .exe.")
+ ;(macosx-executables-must-end-with-app
+ ; "The filename\n\n  ~a\n\nis illegal. Under MacOS X, an executable must be a directory whose name ends with .app.")
  (warning-directory-will-be-replaced
   "WARNING: the directory:\n\n  ~a\n\nwill be replaced. Proceed?")
  

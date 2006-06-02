@@ -716,11 +716,14 @@
   (utable-base "基")
   (filename "文檔名：")
   (create "創建")
-  (please-choose-an-utable-filename "請選擇可執行文檔的名稱。")
-  (windows-utables-must-end-with-exe
-    "文檔名\n\n  ~a\n\n不合法。Windows可執行文檔必須以.exe結尾。")
-  (macosx-utables-must-end-with-app
-    "文檔名\n\n  ~a\n\n不合法。MacOS X可執行文檔必須以.app結尾。")
+  ;; ! FIXME ! : there are several of "utable"s in this file that should be "executable" !
+  ;; "choose-an-executable" changed to "specify-a"
+  ;(please-choose-an-utable-filename "請選擇可執行文檔的名稱。")
+  ;; Replaced by generic ~a-must-end-with-~a
+  ;(windows-utables-must-end-with-exe
+  ;  "文檔名\n\n  ~a\n\n不合法。Windows可執行文檔必須以.exe結尾。")
+  ;(macosx-utables-must-end-with-app
+  ;  "文檔名\n\n  ~a\n\n不合法。MacOS X可執行文檔必須以.app結尾。")
   (warning-directory-will-be-replaced
     "警告：目錄：\n\n  ~a\n\n將會被重置。繼續操作？")
   

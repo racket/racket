@@ -207,6 +207,9 @@
      
      create-module-based-launcher
      create-module-based-stand-alone-executable
+     create-module-based-distribution
+
+     create-distribution-for-executable
 
      create-executable-gui
      put-executable

@@ -720,11 +720,13 @@
   (executable-base "基")
   (filename "文件名：")
   (create "创建")
-  (please-choose-an-executable-filename "请选择可执行文件的名称。")
-  (windows-executables-must-end-with-exe
-   "文件名\n\n  ~a\n\n不合法。Windows可执行文件必须以.exe结尾。")
-  (macosx-executables-must-end-with-app
-   "文件名\n\n  ~a\n\n不合法。MacOS X可执行文件必须以.app结尾。")
+  ;; "choose-an-executable" changed to "specify-a"
+  ; (please-choose-an-executable-filename "请选择可执行文件的名称。")
+  ;; Replaced by generic ~a-must-end-with-~a
+  ;(windows-executables-must-end-with-exe
+  ; "文件名\n\n  ~a\n\n不合法。Windows可执行文件必须以.exe结尾。")
+  ;(macosx-executables-must-end-with-app
+  ; "文件名\n\n  ~a\n\n不合法。MacOS X可执行文件必须以.app结尾。")
   (warning-directory-will-be-replaced
    "警告：目录：\n\n  ~a\n\n将会被重置。继续操作？")
   

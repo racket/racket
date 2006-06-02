@@ -18,7 +18,9 @@
            (lib "launcher.ss" "launcher")
 	   (lib "mred.ss" "mred")
 	   (lib "framework.ss" "framework")
-           (lib "syntax-browser.ss" "mrlib"))
+           (lib "syntax-browser.ss" "mrlib")
+           (lib "distribute.ss" "compiler")
+           (lib "bundle-dist.ss" "compiler"))
 
   (provide language@)
 
@@ -563,9 +565,10 @@
                    [base (cadr executable-specs)]
                    [executable-filename (caddr executable-specs)]
                    [create-executable
-                    (if (eq? type 'launcher)
-                        create-module-based-launcher 
-                        create-module-based-stand-alone-executable)])
+                    (case type
+                      [(launcher) create-module-based-launcher]
+                      [(stand-alone) create-module-based-stand-alone-executable]
+                      [(distribution) create-module-based-distribution])])
               (create-executable
                program-filename
                executable-filename 
@@ -578,20 +581,23 @@
                use-copy?)))))
       
       
-      ;; create-executeable-gui : (union #f (is-a?/c top-level-area-container<%>))
-      ;;                          (union #f string?)
-      ;;                          (union #t 'launcher 'stand-alone)
-      ;;                          (union #t 'mzscheme 'mred)
-      ;;                       -> (union #f (list (union 'no-show 'launcher 'stand-alone)
-      ;;                                          (union 'no-show 'mzscheme 'mred)
-      ;;                                          string[filename]))
+      ;; create-executable-gui : (union #f (is-a?/c top-level-area-container<%>))
+      ;;                         (union #f string?)
+      ;;                         (union #t 'launcher 'stand-alone 'distribution)
+      ;;                         (union #t 'mzscheme 'mred)
+      ;;                      -> (union #f (list (union 'no-show 'launcher 'stand-alone 'distribution)
+      ;;                                         (union 'no-show 'mzscheme 'mred)
+      ;;                                         string[filename]))
       (define (create-executable-gui parent program-filename show-type show-base)
         (define dlg (make-object dialog% (string-constant create-executable-title) parent))
         (define filename-panel (make-object horizontal-panel% dlg))
         (define filename-text-field (instantiate text-field% ()
                                       (label (string-constant filename))
                                       (parent filename-panel)
-                                      (init-value (path->string (default-executable-filename program-filename #f)))
+                                      (init-value (path->string (default-executable-filename 
+                                                                  program-filename 
+                                                                  (if (eq? show-type #t) 'launcher show-type)
+                                                                  #f)))
                                       (min-width 400)
                                       (callback void)))
         (define filename-browse-button (instantiate button% ()
@@ -599,34 +605,34 @@
                                          (parent filename-panel)
                                          (callback
                                           (λ (x y) (browse-callback)))))
-        (define type/base/help-panel (instantiate horizontal-panel% ()
-                                       (parent dlg)
-                                       (alignment '(center center))))
         (define type/base-panel (instantiate vertical-panel% ()
-                                  (parent type/base/help-panel)
+                                  (parent dlg)
                                   (stretchable-width #f)))
         (define type-panel (make-object horizontal-panel% type/base-panel))
         (define type-rb (and (boolean? show-type)
                              (instantiate radio-box% ()
                                (label (string-constant executable-type))
-                               (choices (list (string-constant launcher)
-                                              (string-constant stand-alone)))
+                               (choices (list (string-constant launcher-explanatory-label)
+                                              (string-constant stand-alone-explanatory-label)
+                                              (string-constant distribution-explanatory-label)))
                                (parent type-panel)
-                               (callback void))))
+                               (callback (lambda (rb e) (reset-filename-suffix))))))
         (define base-panel (make-object horizontal-panel% type/base-panel))
         (define base-rb (and (boolean? show-base)
                              (instantiate radio-box% ()
                                (label (string-constant executable-base))
                                (choices (list "MzScheme" "MrEd"))
                                (parent base-panel)
-                               (callback void))))
+                               (callback (lambda (rb e) (reset-filename-suffix))))))
         
-        (define help-button (make-object button% 
-                              (string-constant help)
-                              type/base/help-panel
-                              (λ (x y)
-                                (send dlg show #f)
-                                (drscheme:help-desk:goto-help "drscheme" "Executables"))))
+        (define (reset-filename-suffix)
+          (let ([s (send filename-text-field get-value)])
+            (unless (string=? s "")
+              (let ([new-s (default-executable-filename 
+                             (string->path s)
+                             (current-mode)
+                             (not (currently-mzscheme-binary?)))])
+                (send filename-text-field set-value (path->string new-s))))))
 
         (define button-panel (instantiate horizontal-panel% ()
                                (parent dlg)
@@ -650,21 +656,27 @@
                               (split-path ftf)
                               (values (current-directory) "" #f))])
               (let* ([mzscheme? (currently-mzscheme-binary?)]
-                     [launcher? (currently-launcher?)]
+                     [mode (current-mode)]
                      [filename 
                       (put-executable/defaults
                        dlg
                        base
                        name
-                       launcher?
+                       mode
                        (not mzscheme?)
-                       (if launcher?
-                           (if mzscheme?
-                               (string-constant save-a-mzscheme-launcher)
-                               (string-constant save-a-mred-launcher))
-                           (if mzscheme?
-                               (string-constant save-a-mzscheme-stand-alone-executable)
-                               (string-constant save-a-mred-stand-alone-executable))))])
+                       (case mode
+                        [(launcher)
+                         (if mzscheme?
+                             (string-constant save-a-mzscheme-launcher)
+                             (string-constant save-a-mred-launcher))]
+                        [(stand-alone)
+                         (if mzscheme?
+                             (string-constant save-a-mzscheme-stand-alone-executable)
+                             (string-constant save-a-mred-stand-alone-executable))]
+                        [(distribution)
+                         (if mzscheme?
+                             (string-constant save-a-mzscheme-distribution)
+                             (string-constant save-a-mred-distribution))]))])
                 (when filename
                   (send filename-text-field set-value (path->string filename)))))))
         
@@ -674,29 +686,29 @@
              (= 0 (send base-rb get-selection))]
             [else (eq? show-base 'mzscheme)]))
           
-        (define (currently-launcher?)
+        (define (current-mode)
           (cond
             [type-rb
-             (= 0 (send type-rb get-selection))]
-            [else (eq? show-type 'launcher)]))
+             (let ([s (send type-rb get-item-label (send type-rb get-selection))])
+               (cond
+                 [(equal? s (string-constant launcher-explanatory-label)) 'launcher]
+                 [(equal? s (string-constant stand-alone-explanatory-label)) 'stand-alone]
+                 [(equal? s (string-constant distribution-explanatory-label)) 'distribution]))]
+            [else show-type]))
         
         (define (check-filename)
           (let ([filename-str (send filename-text-field get-value)]
-                [mred? (not (currently-mzscheme-binary?))])
+                [mred? (not (currently-mzscheme-binary?))]
+                [mode (current-mode)])
             (let-values ([(extension style filters)
-                          (if (currently-launcher?)
-                              (if mred?
-                                  (mred-launcher-put-file-extension+style+filters)
-                                  (mzscheme-launcher-put-file-extension+style+filters))
-                              (embedding-executable-put-file-extension+style+filters mred?))])
-              
+                          (mode->put-file-extension+style+filters mode mred?)])
               (cond
                 [(string=? "" filename-str)
                  (message-box (string-constant drscheme)
-                              (string-constant please-choose-an-executable-filename)
+                              (string-constant please-specify-a-filename)
                               dlg)
                  #f]
-                [(not (users-name-ok? extension dlg (string->path filename-str)))
+                [(not (users-name-ok? mode extension dlg (string->path filename-str)))
                  #f]
                 [(or (directory-exists? filename-str)
                      (file-exists? filename-str))
@@ -705,10 +717,11 @@
            
         ;; ask-user-can-clobber-directory? : (is-a?/c top-level-window<%>) string -> boolean
         (define (ask-user-can-clobber? filename)
-          (message-box (string-constant drscheme)
-                       (format (string-constant are-you-sure-delete?) filename)
-                       dlg
-                       '(yes-no)))
+          (eq? (message-box (string-constant drscheme)
+                            (format (string-constant are-you-sure-delete?) filename)
+                            dlg
+                            '(yes-no))
+               'yes))
             
         (define cancelled? #t)
         
@@ -718,9 +731,7 @@
           [else
            (list
             (if type-rb
-                (case (send type-rb get-selection)
-                  [(0) 'launcher]
-                  [(1) 'stand-alone])
+                (current-mode)
                 'no-show)
             (if base-rb
                 (case (send base-rb get-selection)
@@ -729,32 +740,38 @@
                 'no-show)
             (send filename-text-field get-value))]))
 
-      ;; put-executable : parent string boolean boolean -> (union false? string)
+      (define (normalize-mode mode)
+        (case mode
+          [(launcher stand-alone distribution) mode]
+          ;; Backward compatibility: interpret a boolean
+          [else (if mode 'launcher 'stand-alone)]))
+
+      ;; put-executable : parent string (union boolean 'launcher 'stand-alone 'distribution) boolean -> (union false? string)
       ;; invokes the put-file dialog with arguments specific to building executables
-      (define (put-executable parent program-filename launcher? mred? title)
+      (define (put-executable parent program-filename mode mred? title)
         (let-values ([(base name dir) (split-path program-filename)])
-          (let ([default-name (default-executable-filename name mred?)])
-            (put-executable/defaults
-             parent
-             base
-             default-name
-             launcher?
-             mred? 
-             title))))
+          (let ([mode (normalize-mode mode)])
+            (let ([default-name (default-executable-filename name mode mred?)])
+              (put-executable/defaults
+               parent
+               base
+               default-name
+               mode
+               mred? 
+               title)))))
       
-      ;; put-executable/defaults : parent string string boolean boolean -> (union false? string)
-      (define (put-executable/defaults parent default-dir default-name launcher? mred? title)
+      ;; put-executable/defaults : parent string string symbol boolean -> (union false? string)
+      (define (put-executable/defaults parent default-dir default-name mode mred? title)
         (let-values ([(extension style filters)
-                      (if launcher?
+                      (mode->put-file-extension+style+filters mode mred?)])
+          (let* ([dir? (case mode
+                         [(launcher)
                           (if mred?
-                              (mred-launcher-put-file-extension+style+filters)
-                              (mzscheme-launcher-put-file-extension+style+filters))
-                          (embedding-executable-put-file-extension+style+filters mred?))])
-          (let* ([dir? (if launcher?
-                           (if mred?
-                               (mred-launcher-is-directory?)
-                               (mzscheme-launcher-is-directory?))
-                           (embedding-executable-is-directory? mred?))]
+                              (mred-launcher-is-directory?)
+                              (mzscheme-launcher-is-directory?))]
+                         [(stand-alone)
+                          (embedding-executable-is-directory? mred?)]
+                         [(distribution) #f])]
                  [users-name
                   (if dir?
                       (get-directory title
@@ -769,7 +786,7 @@
                                 style
                                 filters))])
             (and users-name
-                 (users-name-ok? extension parent users-name)
+                 (users-name-ok? mode extension parent users-name)
                  (or (not dir?)
                      (gui-utils:get-choice
                       (format (string-constant warning-directory-will-be-replaced)
@@ -781,33 +798,29 @@
                       parent))
                  users-name))))
       
-      ;; users-name-ok? : string (union #f frame% dialog%) string -> boolean
+      ;; users-name-ok? : symbol string (union #f frame% dialog%) string -> boolean
       ;; returns #t if the string is an acceptable name for
       ;; a saved executable, and #f otherwise.
-      (define (users-name-ok? extension parent name)
+      (define (users-name-ok? mode extension parent name)
         (or (not extension)
             (let ([suffix-m (regexp-match #rx"[.][^.]*$" (path->string name))])
               (or (and suffix-m
                        (string=? (substring (car suffix-m) 1) extension))
-                  (begin
-                    ;; FIXME: change the message to be platform-neutral and to
-                    ;; use `extension' for the message
-                    (case (system-type)
-                      [(macosx) 
-                       (message-box (string-constant drscheme)
-                                    (format
-                                     (string-constant macosx-executables-must-end-with-app)
-                                     name)
-                                    parent)]
-                      [(windows) 
-                       (message-box (string-constant drscheme)
-                                    (format (string-constant windows-executables-must-end-with-exe)
-                                            name)
-                                    parent)])
-                    #f)))))
+                  (and
+                   (message-box (string-constant drscheme)
+                                (format
+                                 (string-constant ~a-must-end-with-~a)
+                                 (case mode
+                                   [(launcher) (string-constant launcher)]
+                                   [(stand-alone) (string-constant stand-alone)]
+                                   [(distribution) (string-constant distribution)])
+                                 name
+                                 extension)
+                                parent)
+                   #f)))))
       
-      ;; default-executable-filename : path -> path
-      (define (default-executable-filename program-filename mred?)
+      ;; default-executable-filename : path symbol boolean -> path
+      (define (default-executable-filename program-filename mode mred?)
         (let* ([ext (filename-extension program-filename)]
                [program-bytename (path->bytes program-filename)]
                ;; ext-less : bytes
@@ -819,13 +832,25 @@
                                           1 ;; sub1 for the period in the extension
                                           ))
                              program-bytename)])
-          (bytes->path
-           (case (system-type)
-             [(windows) (bytes-append ext-less #".exe")]
-             [(macosx) (if mred?
-                           (bytes-append ext-less #".app")
-                           ext-less)]
-             [else ext-less]))))
+          (let ([ext (let-values ([(extension style filters)
+                                   (mode->put-file-extension+style+filters mode mred?)])
+                       (and extension
+                            (string->bytes/utf-8 (string-append "." extension))))])
+            (bytes->path
+             (if ext
+                 (bytes-append ext-less ext)
+                 ext-less)))))
+      
+      (define (mode->put-file-extension+style+filters mode mred?)
+        (case mode
+          [(launcher)
+           (if mred?
+               (mred-launcher-put-file-extension+style+filters)
+               (mzscheme-launcher-put-file-extension+style+filters))]
+          [(stand-alone)
+           (embedding-executable-put-file-extension+style+filters mred?)]
+          [(distribution)
+           (bundle-put-file-extension+style+filters)]))
       
       ;; create-module-based-stand-alone-executable : ... -> void (see docs)
       (define (create-module-based-stand-alone-executable program-filename 
@@ -908,7 +933,91 @@
           (delete-file init-code-tmp-filename)
           (delete-file bootstrap-tmp-filename)
           (void)))
+    
+      ;; create-module-based-distribution : ... -> void (see docs)
+      (define (create-module-based-distribution program-filename 
+                                                distribution-filename
+                                                module-language-spec
+                                                transformer-module-language-spec
+                                                init-code
+                                                gui?
+                                                use-copy?)
+        (create-distribution-for-executable
+         distribution-filename
+         gui?
+         (lambda (exe-name)
+           (create-module-based-stand-alone-executable program-filename 
+                                                       exe-name
+                                                       module-language-spec
+                                                       transformer-module-language-spec
+                                                       init-code
+                                                       gui?
+                                                       use-copy?))))
 
+      ;; create-module-based-distribution : ... -> void (see docs)
+      (define (create-distribution-for-executable distribution-filename
+                                                  gui?
+                                                  make-executable)
+        ;; Delete old file, if it exists:
+        (when (file-exists? distribution-filename)
+          (delete-file distribution-filename))
+        ;; Figure out base name, and create working temp directory:
+        (let ([base-name (let-values ([(base name dir?) (split-path distribution-filename)])
+                           (path-replace-suffix name #""))]
+              [temp-dir
+               (make-temporary-file "drscheme-tmp-~a" 'directory)]
+              [c (make-custodian)])
+          (let ([status-message #f]
+                [ready (make-semaphore)])
+            (with-handlers ([exn? ; Catch breaks!
+                             (λ (x)
+                               (custodian-shutdown-all c)
+                               (delete-directory/files temp-dir)
+                               (message-box 
+                                (string-constant drscheme)
+                                (format "~a" (exn-message x)))
+                               (void))])              
+              (let ([orig-thread (current-thread)])
+                (parameterize ([current-custodian c])
+                  (parameterize ([current-eventspace (make-eventspace)])
+                    (queue-callback
+                     (lambda ()
+                       (let* ([dialog (new dialog%
+                                           [label (string-constant distribution-progress-window-title)]
+                                           [width 400])]
+                              [label (new message%
+                                          [label (string-constant creating-executable-progress-status)]
+                                          [parent dialog]
+                                          [stretchable-width #t])]
+                              [pane (new vertical-pane%
+                                         [parent dialog])])
+                         (new button%
+                              [parent pane]
+                              [label (string-constant abort)]
+                              [callback (lambda (c b)
+                                          (break-thread orig-thread))])
+                         (send dialog center)
+                         (set! status-message label)
+                         (semaphore-post ready)
+                         (send dialog show #t)))))))
+              (semaphore-wait ready)
+              ;; Build the exe:
+              (make-directory (build-path temp-dir "exe"))
+              (let ([exe-name (build-path temp-dir "exe" (default-executable-filename base-name 'stand-alone gui?))])
+                (make-executable exe-name)
+                (when (or (file-exists? exe-name)
+                          (directory-exists? exe-name))
+                  (let ([dist-dir (build-path temp-dir base-name)])
+                    ;; Assemble the bundle directory:
+                    (send status-message set-label (string-constant assembling-distribution-files-progress-status))
+                    (assemble-distribution dist-dir (list exe-name))
+                    ;; Pack it:
+                    (send status-message set-label (string-constant packing-distribution-progress-status))
+                    (bundle-directory distribution-filename dist-dir #t)))
+                ;; Clean up:
+                (custodian-shutdown-all c)
+                (delete-directory/files temp-dir))))))
+      
       (define (condense-scheme-code-string s)
         (let ([i (open-input-string s)]
               [o (open-output-string)])

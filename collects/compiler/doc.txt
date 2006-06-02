@@ -606,8 +606,8 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
 > (embedding-executable-add-suffix path mred?) - Returns a path with a
   suitable executable suffix added, if it's not present already.
 
-Packaing Stand-alone Executables into a Distribution
-====================================================
+Assembling Stand-alone Executables with Shared Libraries
+========================================================
 
 The _distribute.ss_ library provides a function to combine a
 stand-alone executable created with "embed.ss" with any DLLs,
@@ -635,3 +635,30 @@ frameworks, or shared libraries that it needs to run on other machines
   The content of each directory in the #:copy-collects argument is
   copied into the main "collects" directory for the packaged
   executables.
+
+Packing Stand-alone Executables into a Distribution
+===================================================
+
+The _bundle-dist.ss_ library provides a function to pack a directory
+(usually assembled by `assemble-distribution') into a distribution
+file.  Under Windows, the result is a ".zip" archive; under Mac OS X,
+it's a ".dmg" disk image; under Unix, it's a ".tgz" archive.
+
+> (bundle-directory dist-file dir [for-exe?])
+
+  Packages `dir' into `dist-file'. If `dist-file' has no extension,
+  a file extension is added automatcially (using the first result
+  of `bundle-put-file-extension+style+filters').
+
+  By default, the created archive contains a directory with the same
+  name as `dir'. If `for-exe?' is true under Mac OS X, and if `dir'
+  contains a single file, then the created disk image contains just
+  the file.
+
+  Archive creation files if `dist-file' exists.
+
+> (bundle-put-file-extension+style+filters)
+
+  Returns three values suitable for use as the `extension', `style',
+  and `filters' arguments to `put-file', respectively to select
+  a distribution-file name.

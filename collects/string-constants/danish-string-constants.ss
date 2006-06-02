@@ -790,11 +790,13 @@ please adhere to these guidelines:
  (executable-base "Efternavn")
  (filename "Filnavn: ")
  (create "Lav")
- (please-choose-an-executable-filename "Vælg et filnavn til kørselsfilen.")
- (windows-executables-must-end-with-exe
-  "Filnavnet\n\n  ~a\n\ner ikke gyldigt.. Under Windows skal kørselsfiler have efternavnet .exe.")
- (macosx-executables-must-end-with-app
-  "Filnavnet\n\n  ~a\n\ner ikke gyldigt. Under  MacOS X skal kørselsfiler have efternavnet .app.")
+ ;; "choose-an-executable" changed to "specify-a"
+ ;(please-choose-an-executable-filename "Vælg et filnavn til kørselsfilen.")
+ ;; Replaced by generic ~a-must-end-with-~a
+ ;(windows-executables-must-end-with-exe
+ ; "Filnavnet\n\n  ~a\n\ner ikke gyldigt.. Under Windows skal kørselsfiler have efternavnet .exe.")
+ ;(macosx-executables-must-end-with-app
+ ; "Filnavnet\n\n  ~a\n\ner ikke gyldigt. Under  MacOS X skal kørselsfiler have efternavnet .app.")
  (warning-directory-will-be-replaced
   "ADVARSEL: mappen:\n\n  ~a\n\nvil blive slettet. Fortsæt?")
  
