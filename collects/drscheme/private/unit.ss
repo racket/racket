@@ -1,3 +1,4 @@
+
 #|
 
 closing:
@@ -1419,8 +1420,7 @@ module browser threading seems wrong.
               (toggle-show/hide-interactions)
               (update-shown)))
           
-          (override get-editor%)
-          [define get-editor% (λ () (drscheme:get/extend:get-definitions-text))]
+          (define/override (get-editor%) (drscheme:get/extend:get-definitions-text))
           (define/public (still-untouched?)
             (and (= (send definitions-text last-position) 0)
                  (not (send definitions-text is-modified?))
@@ -2254,6 +2254,7 @@ module browser threading seems wrong.
           (define/private (update-close-tab-menu-item-shortcut item)
             (let ([just-one? (and (pair? tabs) (null? (cdr tabs)))])
               (send item set-shortcut (if just-one? #f #\w))))
+          
           (define/private (update-close-menu-item-shortcut item)
             (let ([just-one? (and (pair? tabs) (null? (cdr tabs)))])
               (send item set-shortcut (if just-one? #\w #f))))
