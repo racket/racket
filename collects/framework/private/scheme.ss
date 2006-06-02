@@ -1229,11 +1229,12 @@
       ;; on the context where it is typed in.
       (define (insert-paren text)
         (let* ([pos (send text get-start-position)]
-               [change-to
-                (λ (c)
-                  (send text insert c pos (+ pos 1)))])
-          (send text begin-edit-sequence)
-          (send text insert #\[ pos (send text get-end-position))
+               [real-char #\[]
+               [change-to (λ (c) (set! real-char c))]
+               [start-pos (send text get-start-position)]
+               [end-pos (send text get-end-position)])
+          (send text begin-edit-sequence #f #f)
+          (send text insert "[" start-pos 'same #f)
           (when (eq? (send text classify-position pos) 'parenthesis)
             (let* ([before-whitespace-pos (send text skip-whitespace pos 'backward #t)]
                    [backward-match (send text backward-match before-whitespace-pos 0)])
@@ -1320,7 +1321,9 @@
                         (change-to #\()]))]
                   [else 
                    (change-to #\()]))))
-          (send text end-edit-sequence)))
+          (send text delete pos (+ pos 1) #f)
+          (send text end-edit-sequence)
+          (send text insert real-char start-pos end-pos)))
       
       ;; beginning-of-sequence? : text number -> boolean 
       ;; determines if this position is at the beginning of a sequence

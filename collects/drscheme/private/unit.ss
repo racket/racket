@@ -13,13 +13,13 @@ module browser threading seems wrong.
 (module unit mzscheme
   (require (lib "contract.ss")
            (lib "unitsig.ss")
-	   (lib "class.ss")
+           (lib "class.ss")
            (lib "file.ss")
            (lib "etc.ss")
            (lib "list.ss")
            (lib "port.ss")
            (lib "string-constant.ss" "string-constants")
-	   (lib "framework.ss" "framework")
+           (lib "framework.ss" "framework")
            (lib "name-message.ss" "mrlib")
            (lib "bitmap-label.ss" "mrlib")
            
@@ -604,10 +604,9 @@ module browser threading seems wrong.
          (λ (menu editor event)
            (when (is-a? editor text%)
              (let* ([canvas (send editor get-canvas)]
-                    [frame (and canvas (send canvas get-frame))])
-               (unless (is-a? frame -frame<%>)
-                 (let* ([tab (send frame get-current-tab)]
-                        [language-settings (send (send tab get-definitions-text) get-next-settings)]
+                    [frame (and canvas (send canvas get-top-level-window))])
+               (when (is-a? frame -frame<%>)
+                 (let* ([language-settings (send (send frame get-definitions-text) get-next-settings)]
                         [new-language (drscheme:language-configuration:language-settings-language language-settings)]
                         [capability-info (send new-language capability-value 'drscheme:define-popup)])
                    (when capability-info
@@ -1031,7 +1030,8 @@ module browser threading seems wrong.
           on-tab-change
           enable-evaluation
           disable-evaluation
-          get-definitions/interactions-panel-parent))
+          get-definitions/interactions-panel-parent
+          register-capability-menu-item))
       
       (define frame-mixin
         (mixin (drscheme:frame:<%> frame:searchable-text<%> frame:delegate<%> frame:open-here<%>)
