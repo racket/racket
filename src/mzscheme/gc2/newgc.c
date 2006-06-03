@@ -1455,6 +1455,7 @@ inline static void mark_acc_big_page(struct mpage *page)
     case PAGE_XTAGGED: GC_mark_xtagged(start); break;
     case PAGE_TARRAY: {
       unsigned short tag = *(unsigned short *)start;
+      end -= 1;
       while(start < end) start += mark_table[tag](start);
       break;
     }
@@ -1879,6 +1880,7 @@ inline static void internal_mark(void *p)
       case PAGE_XTAGGED: GC_mark_xtagged(start); break;
       case PAGE_TARRAY: {
 	unsigned short tag = *(unsigned short *)start;
+	end -= 1;
 	while(start < end) start += mark_table[tag](start);
 	break;
       }
@@ -1897,7 +1899,7 @@ inline static void internal_mark(void *p)
       }
       case PAGE_TARRAY: {
 	void **start = p;
-	void **end = PPTR(info) + info->size;
+	void **end = PPTR(info) + (info->size - 1);
 	unsigned short tag = *(unsigned short *)start;
 	while(start < end) start += mark_table[tag](start);
 	break;
@@ -2184,6 +2186,7 @@ static void repair_heap(void)
 	      break;
 	    case PAGE_TARRAY: {
 	      unsigned short tag = *(unsigned short *)start;
+	      end -= 1;
 	      while(start < end) start += fixup_table[tag](start);
 	      break;
 	    }
@@ -2236,7 +2239,7 @@ static void repair_heap(void)
 		struct objhead *info = (struct objhead *)start;
 		size_t size = info->size;
 		if(info->mark) {
-		  void **tempend = start++ + size;
+		  void **tempend = start++ + (size - 1);
 		  unsigned short tag = *(unsigned short*)start;
 		  while(start < tempend)
 		    start += fixup_table[tag](start);
