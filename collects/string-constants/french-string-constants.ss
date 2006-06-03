@@ -7,7 +7,7 @@
 ; Note: http://www.linux-france.org/prj/jargonf/ peut etre utile... Les dictionnaires online
 ; anglais->francais sont tres pauvres en ce qui concerne le jargon technique, et l'academie
 ; francaise (http://www-rocq.inria.fr/qui/Philippe.Deschamp/RETIF/) a quelques longueures de
-; retard. http://www.can.ibm.com/francais/dico/ peut aider aussi...
+; retard. http://www-03.ibm.com/ondemand/ca/fr/dictionary/dictionnaire_u.html peut aider aussi...
 ; http://www.dicofr.com/ permet les recherches a partir du mot anglais.
 ; http://www.francophonie.hachette-livre.fr/ est un dico standard de base
 ; http://zeus.inalf.fr/academie9.htm est le dico de l'academie (A-M pour l'instant seulement)
@@ -128,7 +128,7 @@
   ;; One version for always using the current choice:
   (dont-ask-again-always-current "Ne jamais redemander (utilisera toujours votre présent choix)")
   ;; One generic version (ie, on the Quit DrScheme dialog)
-  (dont-ask-again                "Ne jamais redemander")
+  (dont-ask-again "Ne jamais redemander")
   
   ;;; important urls
   (web-materials "Sites web apparentés") ;; menu item title
@@ -190,8 +190,8 @@
   (cs-status-expanding-expression "Vérificateur de syntaxe : expansion d'une expression")
   (cs-mouse-over-import "l'identificateur ~s est importé de ~s")
   
-  (cs-lexical-variable "variable lexicale")
-  (cs-imported-variable "variable importée")
+  (cs-lexical-variable "variables lexicales")
+  (cs-imported-variable "variables importées")
 
   ;;; info bar at botttom of drscheme frame
   (collect-button-label "Ramassage") ; de miettes
@@ -244,15 +244,15 @@
   (scheme-mode "Mode scheme")
   (text-mode "Mode texte")
  
-  (scheme-mode-color-symbol "les symboles")
-  (scheme-mode-color-keyword "les mots réservés")
-  (scheme-mode-color-comment "les commentaires")
-  (scheme-mode-color-string "les chaînes de caractères")
-  (scheme-mode-color-constant "les constantes")
-  (scheme-mode-color-parenthesis "les parenthèses")
-  (scheme-mode-color-error "les erreurs")
-  (scheme-mode-color-other "le reste")
- ;; the ~a is filled in with one of the above (scheme-mode-*)
+  (scheme-mode-color-symbol "symboles")
+  (scheme-mode-color-keyword "mots réservés")
+  (scheme-mode-color-comment "commentaires")
+  (scheme-mode-color-string "chaînes de caractères")
+  (scheme-mode-color-constant "constantes")
+  (scheme-mode-color-parenthesis "parenthèses")
+  (scheme-mode-color-error "erreurs")
+  (scheme-mode-color-other "autre")
+  ;; the ~a is filled in with one of the above (scheme-mode-*)
   (syntax-coloring-choose-color "Choisissez une couleur pour ~a")
   (preferences-colors "Couleurs") ;; used in the preferences dialog
  
@@ -796,24 +796,35 @@
   (save-a-mzscheme-launcher "Sauvegarder un lanceur de type MzScheme")
   (save-a-mred-stand-alone-executable "Sauvegarder un exécutable autonome de type MrEd")
   (save-a-mzscheme-stand-alone-executable "Sauvegarder un exécutable autonome de type MzScheme")
+  (save-a-mred-distribution "Sauvegarder une distribution MrEd")
+  (save-a-mzscheme-distribution "Sauvegarder une distribution MzScheme")
   
   (definitions-not-saved "La fenêtre de définition n'a pas été sauvegardée. L'exécutable va utiliser la dernière version sauvegardée de la fenêtre de définition. Continuer ?")
+  ;; The "-explanatory-label" variants are the labels used for the radio buttons in
+  ;;  the "Create Executable..." dialog for the "(module ...)" language.
   (launcher "Lanceur")
+  (launcher-explanatory-label "Lanceur (pour cette machine uniquement, exécution à partir du code source)")
   (stand-alone "Autonome")
+  (stand-alone-explanatory-label "Autonome (pour cette machine uniquement, exécution d'une copie compilée)")
+  (distribution "Distribution")
+  (distribution-explanatory-label "Distribution (pour installation sur d'autres machines)")
   (executable-type "Type")
   (executable-base "Base")
   (filename "Nom de fichier : ")
   (create "Créer")
-  ;; "choose-an-executable" changed to "specify-a"
-  ;(please-choose-an-executable-filename "Veuillez sélectionner un nom de fichier pour sauvegarder l'exécutable.")
-  ;; Replaced by generic ~a-must-end-with-~a
-  ;(windows-executables-must-end-with-exe
-  ; "Le nom de fichier\n\n  ~a\n\nest illégal. Sous Windows, le nom d'un exécutable doit se terminer par .exe.")
-  ;(macosx-executables-must-end-with-app
-  ; "Le nom de fichier\n\n  ~a\n\nest illégal. Sous MacOS X, le nom d'un exécutable doit se terminer par .app.")
+  (please-specify-a-filename "Veuillez sélectionner un nom de fichier pour sauvegarder l'exécutable.")
+  (~a-must-end-with-~a
+   "Le nom de fichier\n\n  ~a\n\nest illégal. Le nom de fichier doit se terminer par \".~a\".")
+  (macosx-executables-must-end-with-app
+   "Le nom de fichier\n\n  ~a\n\nest illégal. Sous MacOS X, un exécutable doit être un répertoire dont le nom se termine par .app.")
   (warning-directory-will-be-replaced
    "ATTENTION : le répertoire :\n\n  ~a\n\nva être remplacé. Voulez-vous continuer ?")
   
+  (distribution-progress-window-title "Progrès de la distribution")
+  (creating-executable-progress-status "Création d'un exécutable pour la distribution...")
+  (assembling-distribution-files-progress-status "Rassemblement des fichiers pour la distribution...")
+  (packing-distribution-progress-status "Empaquetage de la distribution...")
+
   (create-servlet "Créer un servlet...") ;servlet = greffon, extension serveur?
   
   ; the ~a is a language such as "module" or "algol60"
@@ -1003,8 +1014,17 @@
   (kill? "Tuer ?")
   
   ;;; version checker
-  (version:update-menu-item "Regarder les mises à jour...")
-  (version:update-check "Vérification des mises à jour")
+  (version:update-menu-item "Rechercher des mises à jour...")
+  (version:update-check "Recherche de mises à jour") ; dialog title, with the next line
+  (version:connecting-server  "Connection au serveur de version PLT")
+  (version:results-title      "Vérification de la version")
+  (version:do-periodic-checks "Périodiquement rechercher de nouvelles mises à jour de PLT Scheme ?")
+  (version:take-me-there      "Allons-y") ; ...to the download website
+  ;; the next one can appear alone, or followed by a comma and the one after that
+  (version:plt-up-to-date     "Votre version de PLT Scheme est à jour")
+  (version:but-newer-alpha    "mais notez qu'il existe une nouvelle version au stade alpha")
+  ;; This is used in this context: "PLT Scheme vNNN <<<*>>> http://download..."
+  (version:now-available-at   "est maintenant disponible à")
   
   ;; special menu
   (special-menu "Spécial")
@@ -1137,13 +1157,35 @@
   ;; Profj
   (profj-java "Java")
   (profj-java-mode "mode Java")
-  (profj-java-mode-color-keyword "mot réservé")
-  (profj-java-mode-color-string "chaîne de caractères")
-  (profj-java-mode-color-literal "valeur litérale")
-  (profj-java-mode-color-comment "commentaire")
-  (profj-java-mode-color-error "erreur")
-  (profj-java-mode-color-identifier "identificateur") ; l'académie française ne reconnaît pas ce mot
+  
+  (profj-java-mode-color-heading "Édition des couleurs") ; Heading for preference to choose editing colors  
+  (profj-java-mode-color-keyword "mots réservés")
+  (profj-java-mode-color-string "chaînes de caractères")
+  (profj-java-mode-color-literal "valeurs litérales")
+  (profj-java-mode-color-comment "commentaires")
+  (profj-java-mode-color-error "erreurs")
+  (profj-java-mode-color-identifier "identificateurs") ; l'académie française ne reconnaît pas ce mot
+  (profj-java-mode-color-prim-type "types élémentaires") ; Example text for built-in Java types
   (profj-java-mode-color-default "valeur par défaut")
+
+  (profj-coverage-color-heading "Couleurs de couvrage") ; Heading for preference to choose coverage colors
+  (profj-coverage-color-covered "expressions couvertes") 
+  
+  (profj-language-config-display-preferences "Préférences pour l'affichage") ; Heading for preferences controlling printing
+  (profj-language-config-display-style "Styles d'affichage")
+  (profj-language-config-display-field "classe et champs") ; Class should not be translated (ah oui?)
+  (profj-language-config-display-array "Montrer le contenu des tableaux ?")
+  (profj-language-config-testing-preferences "Préférences pour les tests") ; Heading for preferences controlling test behavior
+  (profj-language-config-testing-enable "Montrer le résultat des tests lors de l'exécution ?") ; Run should be the word found on the Run button
+  (profj-language-config-testing-coverage "Collecte de l'information de couvrage durant les tests ?")
+  (profj-language-config-testing-check "Permettre les expressions de type \"check\" ?") ; check should not be translated
+  (profj-language-config-classpath-display "Montrer la valeur actuelle") ; Button label to print the current classpath
+
+  ;; Close testing window and do not run test cases any more
+  (profj-test-results-close-and-disable "Fermer la fenêtre et arrêter l'exécution des tests")
+  ;; Hide docked testing window and do not run test cases any more
+  (profj-test-results-hide-and-disable "Cacher la fenêtre et arrêter l'exécution des tests")
+  (profj-test-results-window-title "Résultats des tests")
 
   (profj-insert-java-comment-box "Insérer une boite à commentaires Java")
   (profj-insert-java-interactions-box "Insérer une boite à interactions Java")
