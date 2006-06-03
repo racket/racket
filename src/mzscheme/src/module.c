@@ -186,8 +186,6 @@ static Scheme_Object *default_module_resolver(int argc, Scheme_Object **argv);
 static void qsort_provides(Scheme_Object **exs, Scheme_Object **exsns, Scheme_Object **exss, char *exps,
 			   int start, int count, int do_uninterned);
 
-static int same_modidx(Scheme_Object *a, Scheme_Object *b);
-
 #define MODCHAIN_TABLE(p) ((Scheme_Hash_Table *)(SCHEME_VEC_ELS(p)[0]))
 
 /**********************************************************************/
@@ -1712,6 +1710,16 @@ int same_modidx(Scheme_Object *a, Scheme_Object *b)
     a = ((Scheme_Modidx *)a)->path;
   if (SAME_TYPE(SCHEME_TYPE(b), scheme_module_index_type))
     b = ((Scheme_Modidx *)b)->path;
+
+  return scheme_equal(a, b);
+}
+
+int same_resolved_modidx(Scheme_Object *a, Scheme_Object *b)
+{
+  if (SAME_TYPE(SCHEME_TYPE(a), scheme_module_index_type))
+    a = scheme_module_resolve(a);
+  if (SAME_TYPE(SCHEME_TYPE(b), scheme_module_index_type))
+    b = scheme_module_resolve(b);
 
   return scheme_equal(a, b);
 }
@@ -3704,7 +3712,7 @@ static void check_require_name(Scheme_Object *prnt_name, Scheme_Object *name, Sc
   /* Not required, or required from same module: */
   vec = scheme_hash_get(required, name);
   if (vec) {
-    if (same_modidx(SCHEME_VEC_ELS(vec)[1], modidx)
+    if (same_resolved_modidx(SCHEME_VEC_ELS(vec)[1], modidx)
 	&& SAME_OBJ(SCHEME_VEC_ELS(vec)[2], exname)) {
       /* already required, same source; add redundant nominal (for re-provides) */
       nml = scheme_make_pair(nominal_modidx, SCHEME_VEC_ELS(vec)[0]);
@@ -5727,7 +5735,7 @@ static void check_dup_require(Scheme_Object *prnt_name, Scheme_Object *name, Sch
     i = scheme_hash_get((Scheme_Hash_Table *)ht, name);
 
     if (i) {
-      if (same_modidx(modidx, SCHEME_CAR(i)) && SAME_OBJ(srcname, SCHEME_CDR(i)))
+      if (same_resolved_modidx(modidx, SCHEME_CAR(i)) && SAME_OBJ(srcname, SCHEME_CDR(i)))
 	return; /* same source */
       scheme_wrong_syntax(NULL, prnt_name, form, "duplicate import identifier");
     } else
