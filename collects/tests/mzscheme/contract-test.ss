@@ -1636,6 +1636,7 @@
   
   ;; provide/contract should signal errors without requiring a reference to the variable
   ;; this test is bogus, because provide/contract'd variables can be set!'d.
+  #;
   (test/pos-blame
    'provide/contract15
    '(parameterize ([current-namespace (make-namespace)])
@@ -1646,8 +1647,9 @@
       (eval '(require pos))))
   
   ;; this is really a positive violation, but name the module `neg' just for an addl test
+  #;
   (test/neg-blame
-   'provide/contract15
+   'provide/contract16
    '(parameterize ([current-namespace (make-namespace)])
       (eval '(module neg mzscheme
                (require (lib "contract.ss"))
