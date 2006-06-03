@@ -1535,6 +1535,10 @@
               ((and (memq (field-type init?) '(float double))
                     (memq actual-type '(long int byte short)))
                (make-syntax #f `(exact->inexact ,body-syntax) body-syntax))
+              ((and (eq? actual-type 'char) (memq (field-type init?) '(byte short int long)))
+               (make-syntax #f `(char->integer ,body-syntax) body-syntax))
+              ((and (eq? actual-type 'char) (memq (field-type init?) '(float double)))
+               (make-syntax #f `(exact->inexact (char->integer ,body-syntax)) body-syntax))
               (else body-syntax))))
          (else default-val)))))
   
@@ -2562,7 +2566,7 @@
 
   ;translate-array-alloc-init: type-spec int array-init src
   (define (translate-array-alloc-init type dim init src)
-    (initialize-array type (array-init-vals init)))
+    (initialize-array (array-init-vals init) type))
     
   ;translate-type-spec: type-spec -> syntax
   (define (translate-type-spec type)
@@ -2682,6 +2686,12 @@
                             ((and (memq type '(float double))
                                   (memq (expr-types assign-to) '(long int short byte)))
                              `(exact->inexact ,expanded-expr))
+                            ((and (eq? (expr-types assign-to) 'char)
+                                  (memq type '(byte short int long)))
+                             `(char->integer ,expanded-expr))
+                            ((and (eq? (expr-types assign-to) 'char)
+                                  (memq type '(float double)))
+                             `(exact->inexact (char->integer ,expanded-expr)))
                             (else expanded-expr))))))
       (cond 
         ((array-access? name)
@@ -2709,7 +2719,8 @@
                                                                (build-identifier (var-access-class vaccess))))))
                   ((not obj) (set-h (translate-id (build-var-name field) field-src)))
                   (else
-                   (let ((setter (if (var-access-final? vaccess)
+                   (let ((setter (if (and (var-access-final? vaccess)
+                                          (not (eq? 'private (var-access-access vaccess))))
                                      (make-syntax #f 
                                                   `(lambda (my-dummy new-val)
                                                      ((class-field-mutator ,(build-identifier (var-access-class vaccess))

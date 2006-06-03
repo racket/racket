@@ -751,6 +751,12 @@
                    (valid-inherited-methods? super-records (header-extends info) level type-recs)
                    (check-current-methods super-records m members level type-recs)
                    
+                   (for-each (lambda (fi)
+                               (unless (memq 'static (field-record-modifiers fi))
+                                 (set-field-record-modifiers! fi 
+                                                              (cons 'static (field-record-modifiers fi)))))
+                             f)
+                   
                    (let ((record
                           (make-class-record 
                            iname
@@ -1060,9 +1066,14 @@
         (implements-all? (get-methods-need-implementing (class-record-methods super))
                          methods super-name level)))
     (andmap (lambda (iface iface-name)
-              (implements-all? (class-record-methods iface) methods iface-name level))
+              (or (super-implements? iface (class-record-ifaces super))
+                  (implements-all? (class-record-methods iface) methods iface-name level)))
             ifaces
             ifaces-name))
+  
+  ;super-implements?: class-record (list (list string))
+  (define (super-implements? iface ifaces)
+    (member (class-record-name iface) ifaces))
   
   ;make-unimplmented-stubs: (list class-record) (list name) (list method-record) type-records -> (list method)
   (define (make-unimplmented-stubs ifaces ifaces-name methods type-recs)

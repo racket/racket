@@ -152,7 +152,8 @@
     (unless (null? (check-list))
       (check-defs (car (check-list)) level type-recs))
     (remove-from-packages ast type-recs)
-    (order-cus (translate-program ast type-recs) type-recs))
+    (order-cus (translate-program ast type-recs)
+               type-recs))
   
   ;compile-java-internal: port location type-records bool level-> (list compilation-unit)
   (define (compile-java-internal port location type-recs file? level)

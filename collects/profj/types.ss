@@ -116,6 +116,7 @@
   (define (widening-prim-conversion to from)
     (cond
       ((symbol=? to from) #t)
+      ((symbol=? to 'char) #f)
       ((symbol=? 'short to)
        (symbol=? 'byte from))
       ((symbol=? 'int to)
@@ -617,13 +618,52 @@
                             (method-record-atypes (car methods)))
              (meth-member? meth (cdr methods)))))
 
+  ;depth: 'a (listof 'a) -> int
+  ;The position in elt-list that elt is at, starting with 1
+  (define (depth elt elt-list)
+    (letrec ((d 
+              (lambda (elt-list cnt)
+                #;(printf "d: elt ~a elt-list ~a~n" elt elt-list)
+                (cond
+                  ((equal? (car elt-list) elt) cnt)
+                  (else (d (cdr elt-list) (add1 cnt)))))))
+      (d elt-list 1)))                   
+  
+  ;conversion-steps: type type -> int
+  (define (conversion-steps from to type-recs)
+    #;(printf "conversion-steps ~a ~a~n" from to)
+    (cond
+      ((ref-type? from)
+       (let* ((from-class (send type-recs get-class-record from))
+              (from-class-parents (class-record-parents from-class)))
+         (if (eq? to 'dynamic)
+             (sub1 (length from-class-parents))
+             (depth (cons (ref-type-class/iface to) (ref-type-path to))
+                    from-class-parents))))
+      ((array-type? from)
+       (cond
+         ((array-type? to)
+          (conversion-steps (array-type-type from) (array-type-type to) type-recs))
+         (else
+          (add1 (conversion-steps (array-type-type from) to type-recs)))))
+      (else 
+       (case from
+         ((byte) (depth to '(short int long float double)))
+         ((char) (depth to '(byte short int long float double)))
+         ((short) (depth to '(int long float double)))
+         ((int) (depth to '(long float double)))
+         ((long) (depth to '(float double)))
+         (else 1))
+       )))
+  
   ;number-assign-conversion: (list type) (list type) type-records -> int
   (define (number-assign-conversions site-args method-args type-recs)
     (cond
       ((null? site-args) 0)
-      ((and (assignment-conversion (car site-args) (car method-args) type-recs)
+      ((and (assignment-conversion (car method-args) (car site-args) type-recs)
             (not (type=? (car site-args) (car method-args))))
-       (add1 (number-assign-conversions (cdr site-args) (cdr method-args) type-recs)))
+       (+ (conversion-steps (car site-args) (car method-args) type-recs)
+          (number-assign-conversions (cdr site-args) (cdr method-args) type-recs)))
       (else (number-assign-conversions (cdr site-args) (cdr method-args) type-recs))))
   
   ;; resolve-overloading: (list method-record) (list type) (-> 'a) (-> 'a) (-> 'a) type-records-> method-record
