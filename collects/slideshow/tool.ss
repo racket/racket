@@ -26,6 +26,7 @@ pict snip :
            (lib "mred.ss" "mred")
            (lib "class.ss")
            (lib "unitsig.ss")
+           (lib "contract.ss")
            (lib "string-constant.ss" "string-constants")
            (lib "framework.ss" "framework")
            (lib "mrpict.ss" "texpict")
@@ -621,9 +622,9 @@ pict snip :
           
           (super-new)
           
-          (inherit get-special-menu #;register-capability-menu-item)
+          (inherit get-special-menu register-capability-menu-item)
           (add-special-menu-item (get-special-menu) this)
-          #;(register-capability-menu-item 'slideshow:special-menu (get-special-menu))))
+          (register-capability-menu-item 'drscheme:special:slideshow-menu-item (get-special-menu))))
       
       (define slideshow-dragable%
         (class panel:horizontal-dragable%
@@ -645,6 +646,8 @@ pict snip :
       ;; size of the drscheme window.
       (preferences:set-default 'plt:slideshow:panel-percentage 3/4 (lambda (x) (and (number? x) (<= 0 x 1))))
 
+      (drscheme:language:register-capability 'drscheme:special:slideshow-menu-item (flat-contract boolean?) #t)
+      
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;;
       ;;  communication from user thread to drscheme's repl

@@ -900,10 +900,10 @@
   
   (drscheme:language:register-capability
    (->r ([s symbol?]
-         [contract contract?]
-         [default contract])
+         [the-contract contract?]
+         [default the-contract])
         void?)
-   (s contract default)
+   (s the-contract default)
    "Registers a new capability with a default value for each language"
    "and a contract on the values the capability might have."
    ""
@@ -920,6 +920,19 @@
    " --- determines if the insert lambda menu item in the special menu is visible"
    "\\item \\scheme|(drscheme:language:register-capability 'drscheme:special:insert-large-letters (flat-contract boolean?) #t)|"
    " --- determines if the insert large letters menu item in the special menu is visible"
+   "\\item \\scheme|(drscheme:language:register-capability 'drscheme:special:insert-image (flat-contract boolean?) #t)|"
+   " --- determines if the insert image menu item in the special menu is visible"
+   "\\item \\scheme|(drscheme:language:register-capability 'drscheme:special:insert-comment-box (flat-contract boolean?) #t)|"
+   " --- determines if the insert comment box menu item in the special menu is visible"
+   "\\item \\scheme|(drscheme:language:register-capability 'drscheme:special:insert-gui-tool (flat-contract boolean?) #t)|"
+   " --- determines if the insert gui menu item in the special menu is visible"
+   "\\item \\scheme|(drscheme:language:register-capability 'drscheme:special:slideshow-menu-item (flat-contract boolean?) #t)|"
+   " --- determines if the insert pict box menu item in the special menu is visible"
+   "\\item \\scheme|(drscheme:language:register-capability 'drscheme:special:insert-text-box (flat-contract boolean?) #t)|"
+   " --- determines if the insert text box menu item in the special menu is visible"
+   "\\item \\scheme|(drscheme:language:register-capability 'drscheme:special:xml-menus (flat-contract boolean?) #t)|"
+   " --- determines if the insert scheme box, insert scheme splice box, and the insert xml box menu item ins the special menu are visible"
+   
    "\\end{itemize}")
   (drscheme:language:capability-registered? 
    (-> symbol? boolean?)

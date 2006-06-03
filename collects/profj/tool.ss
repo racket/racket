@@ -157,13 +157,13 @@
                          profj:special:java-examples-box 
                          profjWizard:special:java-class
                          profjWizard:special:java-union
+                         drscheme:special:insert-image
                          drscheme:special:insert-large-letters)) #t]
               [(memq s '(slideshow:special-menu 
                          drscheme:define-popup
                          profj:special:java-interactions-box)) #f]
               [(regexp-match #rx"^drscheme:special:" (format "~a" s)) #f]
-              [else
-               (drscheme:language:get-capability-default s)]))
+              [else (drscheme:language:get-capability-default s)]))
           (define/public (first-opened) (void))
           
           (define/public (order-manuals x)

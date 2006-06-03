@@ -4,7 +4,8 @@
            (lib "framework.ss" "framework")
            (lib "unitsig.ss")
            (lib "class.ss")
-	   (lib "string-constant.ss" "string-constants")
+	   (lib "contract.ss")
+           (lib "string-constant.ss" "string-constants")
            (lib "include-bitmap.ss" "mrlib"))
   
   (provide tool@)
@@ -140,7 +141,7 @@
             
       (define (text-box-mixin %)
         (class %
-          (inherit get-special-menu get-edit-target-object)
+          (inherit get-special-menu get-edit-target-object register-capability-menu-item)
           (super-new)
           (new menu-item%
                (label (string-constant insert-text-box-item))
@@ -150,6 +151,9 @@
                   (let ([c-box (new text-box%)]
                         [text (get-edit-target-object)])
                     (send text insert c-box)
-                    (send text set-caret-owner c-box 'global)))))))
+                    (send text set-caret-owner c-box 'global)))))
+          (register-capability-menu-item 'drscheme:special:slideshow-menu-item (get-special-menu))))
       
-      (drscheme:get/extend:extend-unit-frame text-box-mixin))))
+      (drscheme:get/extend:extend-unit-frame text-box-mixin)
+      
+      (drscheme:language:register-capability 'drscheme:special:insert-text-box (flat-contract boolean?) #t))))

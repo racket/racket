@@ -62,48 +62,56 @@
                     (when (pair? (send menu get-items)) (send menu restore)))
                   menus))
 
-      (define (add-snip-menu-items edit-menu c%)
-        (let* ([get-edit-target-object
-                (λ ()
-                  (let ([menu-bar
-                         (let loop ([p (send edit-menu get-parent)])
-                           (cond
-                             [(is-a? p menu-bar%)
-                              p]
-                             [(is-a? p menu%)
-                              (loop (send p get-parent))]
-                             [else #f]))])
-                    (and menu-bar
-                         (let ([frame (send menu-bar get-frame)])
-                           (send frame get-edit-target-object)))))]
-               [edit-menu:do 
-                (λ (const)
-                  (λ (menu evt)
+      (define add-snip-menu-items
+        (opt-lambda (edit-menu c% [func void])
+          (let* ([get-edit-target-object
+                  (λ ()
+                    (let ([menu-bar
+                           (let loop ([p (send edit-menu get-parent)])
+                             (cond
+                               [(is-a? p menu-bar%)
+                                p]
+                               [(is-a? p menu%)
+                                (loop (send p get-parent))]
+                               [else #f]))])
+                      (and menu-bar
+                           (let ([frame (send menu-bar get-frame)])
+                             (send frame get-edit-target-object)))))]
+                 [edit-menu:do 
+                  (λ (const)
+                    (λ (menu evt)
+                      (let ([edit (get-edit-target-object)])
+                        (when (and edit
+                                   (is-a? edit editor<%>))
+                          (send edit do-edit-operation const)))
+                      #t))]
+                 [on-demand
+                  (λ (menu-item)
                     (let ([edit (get-edit-target-object)])
-                      (when (and edit
-                                 (is-a? edit editor<%>))
-                        (send edit do-edit-operation const)))
-                    #t))]
-               [on-demand
-                (λ (menu-item)
-                  (let ([edit (get-edit-target-object)])
-                    (send menu-item enable (and edit (is-a? edit editor<%>)))))]
-               [insert-comment-box
-                 (λ ()
-                   (let ([text (get-edit-target-object)])
-                     (when text
-                       (let ([snip (make-object comment-box:snip%)])
-                         (send text insert snip)
-                         (send text set-caret-owner snip 'global)))))])
-          
-          (make-object c% (string-constant insert-comment-box-menu-item-label)
-            edit-menu 
-            (λ (x y) (insert-comment-box))
-            #f #f
-            on-demand)
-          (make-object c% (string-constant insert-image-item)
-            edit-menu (edit-menu:do 'insert-image) #f #f on-demand)
-          (void)))
+                      (send menu-item enable (and edit (is-a? edit editor<%>)))))]
+                 [insert-comment-box
+                  (λ ()
+                    (let ([text (get-edit-target-object)])
+                      (when text
+                        (let ([snip (make-object comment-box:snip%)])
+                          (send text insert snip)
+                          (send text set-caret-owner snip 'global)))))])
+            
+            (let ([item
+                   (new c%
+                        [label (string-constant insert-comment-box-menu-item-label)]
+                        [parent edit-menu]
+                        [callback (λ (x y) (insert-comment-box))]
+                        [demand-callback on-demand])])
+              (func item))
+            (let ([item 
+                   (new c% 
+                        [label (string-constant insert-image-item)]
+                        [parent edit-menu]
+                        [callback (edit-menu:do 'insert-image)]
+                        [demand-callback on-demand])])
+              (func item))
+            (void))))
       
       (define frame-width 600)
       (define frame-height 650)

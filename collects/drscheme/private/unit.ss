@@ -2557,7 +2557,7 @@ module browser threading seems wrong.
               (when (null? items)
                 (error 'register-capability-menu-item "menu ~e has no items" menu))
               (let* ([menu-item (car (last-pair items))]
-                     [this-one (list menu-item (length items) key)]
+                     [this-one (list menu-item (- (length items) 1) key)]
                      [old-ones (hash-table-get capability-menu-items menu (λ () '()))])
                 (hash-table-put! capability-menu-items menu (cons this-one old-ones)))))
           
@@ -2583,13 +2583,21 @@ module browser threading seems wrong.
                       (let ([is-on? (get-current-capability-value cap-key)])
                         (cond
                           [is-on?
-                           (if (eq? (car all-items) cap-item)
-                               (cons cap-item (loop (cdr capability-items) (cdr all-items) (+ i 1)))
-                               (cons cap-item (loop (cdr capability-items) all-items (+ i 1))))]
+                           (cond
+                             [(null? all-items)
+                              (cons cap-item (loop (cdr capability-items) null (+ i 1)))]
+                             [(eq? (car all-items) cap-item)
+                              (cons cap-item (loop (cdr capability-items) (cdr all-items) (+ i 1)))]
+                             [else
+                              (cons cap-item (loop (cdr capability-items) all-items (+ i 1)))])]
                           [else
-                           (if (eq? (car all-items) cap-item)
-                               (loop (cdr capability-items) (cdr all-items) (+ i 1))
-                               (loop (cdr capability-items) all-items (+ i 1)))]))]
+                           (cond
+                             [(null? all-items)
+                              (loop (cdr capability-items) null (+ i 1))]
+                             [(eq? (car all-items) cap-item)
+                              (loop (cdr capability-items) (cdr all-items) (+ i 1))]
+                             [else
+                              (loop (cdr capability-items) all-items (+ i 1))])]))]
                      [else (cons (car all-items)
                                  (loop capability-items
                                        (cdr all-items)
@@ -2879,8 +2887,18 @@ module browser threading seems wrong.
                                        (loop (- y 1)))))
                                  (send edit end-edit-sequence)))))))]
                     [c% (get-menu-item%)])
-                (frame:add-snip-menu-items special-menu c%)
                 
+                (frame:add-snip-menu-items 
+                 special-menu 
+                 c%
+                 (λ (item)
+                   (let ([label (send item get-label)])
+                     (cond
+                       [(equal? label (string-constant insert-comment-box-menu-item-label))
+                        (register-capability-menu-item 'drscheme:special:insert-comment-box special-menu)]
+                       [(equal? label (string-constant insert-image-item))
+                        (register-capability-menu-item 'drscheme:special:insert-image special-menu)]))))
+                                           
                 (make-object c% (string-constant insert-fraction-menu-item-label)
                   special-menu callback 
                   #f #f

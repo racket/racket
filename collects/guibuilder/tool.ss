@@ -5,7 +5,8 @@
            (lib "unitsig.ss")
            (lib "class.ss")
 	   (lib "string-constant.ss" "string-constants")
-	   "top-level.ss"
+	   (lib "contract.ss")
+           "top-level.ss"
 	   "toolbar.ss"
 	   "readable.ss")
 
@@ -66,4 +67,8 @@
 				       [s (make-object gui-code-snip% gb)])
 				  (send e insert s)
 				  (send gb create-main-panel)
-				  (send gb set-caret-owner #f 'display)))))))))))))
+				  (send gb set-caret-owner #f 'display))))))
+             (inherit register-capability-menu-item)
+             (register-capability-menu-item 'drscheme:special:insert-gui-tool (get-special-menu))))))
+      
+      (drscheme:language:register-capability 'drscheme:special:insert-gui-tool (flat-contract boolean?) #t))))
