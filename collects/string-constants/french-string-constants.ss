@@ -812,9 +812,9 @@
   (executable-base "Base")
   (filename "Nom de fichier : ")
   (create "Créer")
-  (please-specify-a-filename "Veuillez sélectionner un nom de fichier pour sauvegarder l'exécutable.")
+  (please-specify-a-filename "Veuillez spécifier le nom du fichier à créer.")
   (~a-must-end-with-~a
-   "Le nom de fichier\n\n  ~a\n\nest illégal. Le nom de fichier doit se terminer par \".~a\".")
+   "Le nom de fichier ~a\n\n  ~a\n\nest illégal. Le nom de fichier doit se terminer par \".~a\".")
   (macosx-executables-must-end-with-app
    "Le nom de fichier\n\n  ~a\n\nest illégal. Sous MacOS X, un exécutable doit être un répertoire dont le nom se termine par .app.")
   (warning-directory-will-be-replaced
