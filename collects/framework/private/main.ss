@@ -234,12 +234,8 @@
       (preferences:set-default 'framework:verify-exit #t boolean?)
       (preferences:set-default 'framework:delete-forward? #t boolean?)
       (preferences:set-default 'framework:show-periods-in-dirlist #f boolean?)
-      (preferences:set-default
-       'framework:file-dialogs
-       'std
-       (λ (x)
-	 (or (eq? x 'common)
-	     (eq? x 'std))))
+      (preferences:set-default 'framework:file-dialogs 'std
+                               (λ (x) (and (memq x '(common std)) #t)))
       
       ;; scheme prefs
       

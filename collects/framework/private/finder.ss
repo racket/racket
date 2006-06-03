@@ -659,7 +659,7 @@
       
       ; the std- and common- forms both have opt-lambda's, with the same
       ; list of args.  Should the opt-lambda's be placed in the dispatching function?
-      
+
       (define std-put-file
 	(opt-lambda ([name #f]
 		     [directory #f]
@@ -668,83 +668,59 @@
 		     [filter #f]
 		     [filter-msg (string-constant file-wrong-form)]
 		     [parent-win (dialog-parent-parameter)])
-	  (let* ([directory (if (and (not directory)
-				     (string? name))
+	  (let* ([directory (if (and (not directory) (string? name))
 				(path-only name)
 				directory)]
-		 [name (or (and (string? name)
-				(file-name-from-path name))
+		 [name (or (and (string? name) (file-name-from-path name))
 			   name)]
-		 [f (put-file 
-		     prompt 
-		     parent-win
-		     directory 
-		     name
-		     (default-extension)
-		     '()
-		     (default-filters))])
+		 [f (put-file prompt parent-win directory name
+                              (default-extension) '() (default-filters))])
+            (and f (or (not filter) (filter-match? filter f filter-msg))
+                 (let* ([f (normal-case-path (normalize-path f))]
+                        [dir (path-only f)]
+                        [name (file-name-from-path f)])
+                   (cond
+                    [(not (and (path-string? dir) (directory-exists? dir)))
+                     (message-box (string-constant error)
+                                  (string-constant dir-dne))
+                     #f]
+                    [(or (not name) (equal? name ""))
+                     (message-box (string-constant error)
+                                  (string-constant empty-filename))
+                     #f]
+                    [else f]))))))
 
-	    (if (or (not f)
-		    (and filter 
-			 (not (filter-match? filter 
-					     f
-					     filter-msg))))
-		#f
-		(let* ([f (normal-case-path (normalize-path f))]
-		       [dir (path-only f)]
-		       [name (file-name-from-path f)])
-		  (cond
-		   [(not (and (path-string? dir) (directory-exists? dir)))
-		    (message-box (string-constant error)
-                                 (string-constant dir-dne))
-		    #f]
-		   [(or (not name) (equal? name ""))
-		    (message-box (string-constant error)
-                                 (string-constant empty-filename))
-		    #f]
-		   [else f]))))))
-      
       (define std-get-file
 	(opt-lambda ([directory #f]
 		     [prompt (string-constant select-file)]
 		     [filter #f]
 		     [filter-msg (string-constant file-wrong-form)]
 		     [parent-win (dialog-parent-parameter)])
-	  (let ([f (get-file
-		    prompt 
-		    parent-win
-		    directory)])
+	  (let ([f (get-file prompt parent-win directory)])
+	    (and f (or (not filter) (filter-match? filter f filter-msg))
+                 (let ([f (normalize-path f)])
+                   (cond [(directory-exists? f)
+                          (message-box (string-constant error)
+                                       (string-constant that-is-dir-name))
+                          #f]
+                         [(not (file-exists? f))
+                          (message-box (string-constant error) 
+                                       (string-constant file-dne))
+                          #f]
+                         [else f]))))))
 
-	    (if f
-		(if (or (not filter) (filter-match? filter f filter-msg))
-		    (let ([f (normalize-path f)])
-		      (cond
-		       [(directory-exists? f)
-			(message-box (string-constant error)
-                                     (string-constant that-is-dir-name))
-			#f]
-		       [(not (file-exists? f))
-			(message-box (string-constant error) 
-                                     (string-constant file-dne))
-			#f]
-		       [else f]))
-		    #f)
-		#f))))
-      
-					; external interfaces to file functions
-      
+      ;; external interfaces to file functions
+
       (define -put-file
 	(λ args
-	  (let ([actual-fun 
-		 (case (preferences:get 'framework:file-dialogs)
-		   [(std) std-put-file]
-		   [(common) common-put-file])])
-	    (apply actual-fun args))))
-      
+	  (apply (case (preferences:get 'framework:file-dialogs)
+                   [(std) std-put-file]
+                   [(common) common-put-file])
+                 args)))
+
       (define -get-file
 	(λ args
-	  (let ([actual-fun
-		 (case (preferences:get 'framework:file-dialogs)
+	  (apply (case (preferences:get 'framework:file-dialogs)
 		   [(std) std-get-file]
-		   [(common) common-get-file])])
-	    (apply actual-fun args)))))))
+		   [(common) common-get-file])
+                 args))))))
