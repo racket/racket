@@ -57,13 +57,14 @@
     (class dialog%
       ;; ----------------------------------------------------------------------
       ;; Arguments & Variables
-      (init [message    #f]   ; message at the top of the dialog
+      (init [label      #f]   ; dialog title
+            [message    #f]   ; message at the top of the dialog
             [parent     #f]   ; parent frame
             [directory  #f]   ; initial directory
             [filename   #f]   ; initial text for the input box
             [put?       #f]   ; selecting a new path?
             [dir?       #f]   ; are we selecting a directory?
-            [existing?  #f]   ; must select an existing path?
+            [existing?  (not put?)] ; must select an existing path?
             [new?       #f]   ; must select a new path?
             [multi?     #f]   ; selecting multiple paths?
             [can-mkdir? put?] ; is there a create-directory button?
@@ -71,10 +72,9 @@
             ;; can use multiple globs with ";" separators
             ;; #f => disable, #t => use default
             [filters #t]
-            ;; predicates are used to filter paths that are shown -- they are
-            ;; applied on the file/dir name (as a string) (either as an
-            ;; absolute path or relative while current-directory is set);
-            ;; intended to be lightweight
+            ;; predicates that are used to filter paths that are shown -- they
+            ;; are applied on the file/dir name (as a string) while
+            ;; current-directory is set; intended to be lightweight
             [show-file? #f]   ; a predicate for listing a file
             [show-dir?  #f]   ; a predicate for listing a directory
             ;; this predicate is used like the previous two, but it is used to
@@ -87,14 +87,15 @@
             ;; is shown, and the dialog interaction continues (so it can be
             ;; used to verify results without dismissing the menu); it can also
             ;; throw a `(void)' value and the interaction continues but without
-            ;; an error message; this is checked first, before the checks that
-            ;; `exists?' or `new?' imply, but those checks are done on the
-            ;; original result
+            ;; an error message
             [guard #f]
             )
 
       (cond [(eq? filters #t) (set! filters default-filters)]
             [(null? filters)  (set! filters #f)])
+
+      (when (and new? existing?)
+        (error 'path-dialog% "cannot use `new?' with `existing?'"))
 
       (when dir?
         (if show-file?
@@ -102,10 +103,10 @@
           (set! show-file? (lambda (_) #f)))
         (when filters (error 'path-dialog% "cannot use `filters' with `dir?'")))
 
-      (define label
-        (if dir?
-          (if put? "Select New Directory" "Select Directory")
-          (if put? "Save File" "Open File")))
+      (unless label
+        (set! label (if dir?
+                      (if put? "Select New Directory" "Select Directory")
+                      (if put? "Save File" "Open File"))))
 
       (super-new [label label] [parent parent] [width 300] [height 300])
 
@@ -320,7 +321,7 @@
 
       (define (do-enter*)
         (let ([t (send text get-value)])
-          (if (regexp-match #rx"[*?]" t)
+          (if (and file-filter (regexp-match #rx"[*?]" t))
             (begin (send text set-value "") (set-filter t))
             (do-enter))))
       (define (do-enter)
