@@ -19,6 +19,7 @@
          (syntax (#%plain-module-begin 
                   (define #%keymap (make-object keymap:aug-keymap%))
                   (provide #%keymap)
+                  (define counter 0)
                   (define (#%keybinding key proc src line col pos)
                     (unless (string? key)
                       (error 'keybinding "expected string as first argument, got ~e (other arg ~e)" key proc))
@@ -27,9 +28,10 @@
                       (error 'keybinding "expected procedure of two arguments as second argument, got ~e (other arg ~e)"
                              proc
                              key))
+                    (set! counter (+ counter 1))
                     (let ([name (if (and line col)
-                                    (format "~a:~a.~a" src line col)
-                                    (format "~a:~a" src pos))])
+                                    (format "~a:~a.~a:~a" src line col counter)
+                                    (format "~a:~a:~a" src pos counter))])
                       (send #%keymap add-function name 
                             (λ (x y)
                               (let ([end-edit-sequence
