@@ -138,7 +138,7 @@
       ['get
        (map (match-lambda
               [(list-rest k v)
-               (make-binding:form (string->bytes/utf-8 k)
+               (make-binding:form (string->bytes/utf-8 (symbol->string k))
                                   (string->bytes/utf-8 v))])
             (url-query uri))]
       ['post
