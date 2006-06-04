@@ -7,6 +7,17 @@
   ;;Execution tests without errors
   
   (execute-test
+   "class OneC { }
+    class TwoC extends OneC { }
+    class ThreeC extends TwoC { }
+    class Overload {
+      int num(OneC o) { return 1; }
+      int num(TwoC o) { return 2; }
+      int t() { return num(new ThreeC()); }
+    }
+   " 'advanced #f "Overloading resolution")
+  
+  (execute-test
    "class Checkclass { }
     class ExampleCheck {
       boolean t1 = check new Checkclass[10] expect new Checkclass[10];
@@ -294,8 +305,12 @@ class WeeklyPlanner{
   
   ;;Interaction tests, mix of right and error
   
-  (interact-test 'advanced '("int a = 1;" "++a") '((void) 2) "Test of ++")
+  (interact-test
+   'advanced
+   '("int a = 'a';" "a" "int b;" "b = 'a';")
+   '((void) 97 (void) 97) "Conversion of char to int")
   
+  (interact-test 'advanced '("int a = 1;" "++a") '((void) 2) "Test of ++")
   
   (interact-test
    'advanced

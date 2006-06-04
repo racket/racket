@@ -179,9 +179,17 @@
           (define/public (default-settings) 
             (if (memq level `(beginner intermediate advanced))
                 (make-profj-settings 'field #f #t #t #t null)
-                (make-profj-settings 'type #f #t #f #t null)))
+                (make-profj-settings 'type #f #t #f #f null)))
           ;default-settings? any -> bool
           (define/public (default-settings? s) (equal? s (default-settings)))
+          
+          (define/public (update-test-setting s test?)
+            (make-profj-settings (profj-settings-print-style s)
+                                 (profj-settings-print-full? s)
+                                 (profj-settings-allow-check? s)
+                                 test?
+                                 (profj-settings-coverage? s)
+                                 (profj-settings-classpath s)))
 
           ;marshall-settings: profj-settings -> (list (list symbol) (list bool) (list string))
           (define/public (marshall-settings s)
@@ -200,8 +208,7 @@
                      (pair? (cadddr s)) (= (length (cadddr s)) 1)
                      (pair? (list-ref s 4)) (= (length (list-ref s 4)) 1))
                 (make-profj-settings (caar s) (caadr s) (caaddr s) 
-                                     (get-preference 'profj:test-enable
-                                                     (lambda () (car (cadddr s))))
+                                     (car (cadddr s))
                                      (car (list-ref s 4)) null)
                 #f))
 
@@ -248,8 +255,6 @@
                      [update-at (lambda () (void))]
                      [update-dt (lambda (box event) 
                                   (when (eq? 'check-box (send event get-event-type))
-                                    (put-preferences '(profj:test-enable)
-                                                     `(,(send box get-value)))
                                     (send collect-coverage enable (send box get-value))))]
                      [update-cc (lambda () (void))]
                      
@@ -414,8 +419,7 @@
                    (send print-full set-value (profj-settings-print-full? settings)))
                  (when (eq? level 'full)
                    (send allow-testing set-value (profj-settings-allow-check? settings)))
-                 (send display-testing set-value 
-                       (get-preference 'profj:test-enable (lambda () (profj-settings-run-tests? settings))))
+                 (send display-testing set-value (profj-settings-run-tests? settings))
                  (if (send display-testing get-value)
                      (send collect-coverage set-value (profj-settings-coverage? settings))
                      (send collect-coverage enable #f))
@@ -590,17 +594,13 @@
                   [n (current-namespace)]
                   [e (current-eventspace)])
               (test-ext? (profj-settings-allow-check? settings))
-              (tests? (get-preference 'profj:test-enable
-                                      (lambda () (profj-settings-run-tests? settings))))
-              (coverage? (profj-settings-coverage? settings))
               (let ((execute-types (create-type-record)))
                 (read-case-sensitive #t)
                 (run-in-user-thread
                  (lambda ()
                    (test-ext? (profj-settings-allow-check? settings))
-                   (tests? (get-preference 'profj:test-enable
-                                           (lambda () (profj-settings-run-tests? settings))))
-                   (coverage? (profj-settings-coverage? settings))
+                   (tests? (profj-settings-run-tests? settings))
+                   (coverage? (and (tests?) (profj-settings-coverage? settings)))
                    (error-display-handler 
                     (drscheme:debug:make-debug-error-display-handler (error-display-handler)))
                    (let ((old-current-eval (drscheme:debug:make-debug-eval-handler (current-eval))))

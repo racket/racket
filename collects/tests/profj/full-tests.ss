@@ -4,6 +4,11 @@
   
   (prepare-for-tests "Full")
 
+  (execute-test 
+   "class hasCharArray {  
+     char[] b = new char[]{'a'};
+   }" 'full #f "Test of array alloc init")
+  
   (execute-test
    "class Aextendee {
      int f (Aextendee x) { return 4; }

@@ -22,6 +22,15 @@
    #f "class implementing abstract class's unimplmenented interface")
 
   (execute-test
+   "interface ToImplement { int a(); }
+    abstract class ToExtend implements ToImplement { int a() { return 2; } }
+    class ToBe extends ToExtend implements ToImplement {
+    }"
+   'intermediate
+   #f "Repetition of fully satisfied interface in class hierarchy")
+
+  
+  (execute-test
    "abstract class Foo {
       abstract int f();
     }"

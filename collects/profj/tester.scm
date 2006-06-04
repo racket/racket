@@ -179,14 +179,16 @@
           (send current-tab current-test-editor content)
           (unless curr-win
             (send current-tab current-test-window window)
-            (send drscheme-frame register-test-window window))
-          (send window update-switch 
-                (lambda () (send drscheme-frame dock-tests)))
-          (send window update-closer
-                (lambda()
-                  (send drscheme-frame deregister-test-window window)
-                  (send current-tab current-test-window #f)
-                  (send current-tab current-test-editor #f)))
+            (send drscheme-frame register-test-window window)
+            (send window update-switch 
+                  (lambda () (send drscheme-frame dock-tests)))
+            (send window update-disable
+                  (lambda () (send current-tab update-test-preference #f)))
+            (send window update-closer
+                  (lambda()
+                    (send drscheme-frame deregister-test-window window)
+                    (send current-tab current-test-window #f)
+                    (send current-tab current-test-editor #f))))
           (if (get-preference 'profj:test-window:docked? 
                               (lambda () (put-preferences '(profj:test-window:docked?) '(#f)) #f))
               (send drscheme-frame display-test-panel content)
@@ -281,6 +283,7 @@
       
       (define editor #f)
       (define switch-func void)
+      (define disable-func void)
       (define close-cleanup void)
       
       (define content
@@ -302,7 +305,7 @@
                 button-panel
                 (lambda (b c)
                   (when (eq? 'button (send c get-event-type))
-                    (put-preferences '(profj:test-enable) '(#f))
+                    (disable-func)
                     (close-cleanup)
                     (send this show #f))))
               (make-object button%
@@ -324,6 +327,8 @@
         (set! switch-func thunk))
       (define/public (update-closer thunk)
         (set! close-cleanup thunk))
+      (define/public (update-disable thunk)
+        (set! disable-func thunk))
       ))
   
   (define test-panel%
@@ -356,7 +361,7 @@
         (lambda (b c)
           (when (eq? 'button (send c get-event-type))
             (hide)
-            (put-preferences '(profj:test-enable) '(#f)))))
+            (send (send frame get-current-tab) update-test-preference #f))))
       (make-object button%
         (string-constant undock)
         button-panel
@@ -563,7 +568,7 @@
         (class % ()
 
           (inherit get-current-tab)
-          
+                    
           (define/public (display-test-panel editor)
             (send test-panel update-editor editor)
             (unless (send test-panel is-shown?)
@@ -618,7 +623,7 @@
       (define (test-tab%-mixin %)
         (class % ()
           
-          (inherit get-frame)
+          (inherit get-frame get-defs)
           
           (define test-editor #f)
           (define/public (get-test-editor) test-editor)
@@ -629,6 +634,25 @@
           (define/public (get-test-window) test-window)
           (define/public (current-test-window w)
             (set! test-window w))
+          
+          (define/public (update-test-preference test?)
+            (let* ([language-settings
+                    (preferences:get
+                     (drscheme:language-configuration:get-settings-preferences-symbol))]
+                   [language
+                    (drscheme:language-configuration:language-settings-language
+                     language-settings)]
+                   [settings
+                    (drscheme:language-configuration:language-settings-settings
+                     language-settings)])
+              (when (object-method-arity-includes? language 'update-test-setting 2)
+                (let ((next-setting (drscheme:language-configuration:make-language-settings 
+                                     language
+                                     (send language update-test-setting settings test?))))
+                  (preferences:set
+                   (drscheme:language-configuration:get-settings-preferences-symbol)
+                   next-setting)
+                  (send (get-defs) set-next-settings next-setting)))))
           
           (define/augment (on-close)
             (when test-window
