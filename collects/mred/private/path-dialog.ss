@@ -12,11 +12,6 @@
       (send d set-delta-foreground "BLUE")
       (send d set-delta 'change-underline #t)
       d))
-  (define path-up-delta*
-    (let ([d (make-object wx:style-delta%)])
-      (send d set-delta-foreground "BLUE")
-      (send d set-delta 'change-underline #t)
-      d))
 
   ;; os-dependent stuff
   (define win? (eq? 'windows (system-type)))
@@ -559,7 +554,7 @@
       (define dir-text
         (let ([c (class (if win? combo-field% text-field%) (super-new)
                     (define editor (send this get-editor))
-                    (define/public (lock) (send editor lock #t))
+                    (define/public (lock)   (send editor lock #t))
                     (define/public (unlock) (send editor lock #f))
                     (when win?
                       (let ([m (send this get-menu)])
