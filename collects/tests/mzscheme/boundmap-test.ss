@@ -2,7 +2,7 @@
 
 (require (lib "boundmap.ss" "syntax"))
   
-(section 'BOUNDMAP)
+(SECTION 'BOUNDMAP)
 
 (test #t bound-identifier-mapping? (make-bound-identifier-mapping))
 

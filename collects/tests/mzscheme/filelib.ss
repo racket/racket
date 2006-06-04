@@ -4,7 +4,8 @@
 (SECTION 'file)
 
 (require (lib "file.ss")
-	 (lib "process.ss"))
+	 (lib "process.ss")
+	 (lib "list.ss"))
 
 (parameterize ([current-directory (current-load-relative-directory)])
   (let ([rel (find-files values)]
@@ -24,8 +25,11 @@
 						    'file
 						    'dir))
 			      (cons name accum))
-			    null)])
-      (test #t equal? rel rel2)
+			    null)]
+	  [sort (lambda (l)
+		  (sort l (lambda (a b)
+			    (bytes<? (path->bytes a) (path->bytes b)))))])
+      (test #t equal? (sort rel) (sort rel2))
 
       (when (eq? (system-type) 'unix)
 	(system "ln -s filelib.ss filelib-link.ss")
