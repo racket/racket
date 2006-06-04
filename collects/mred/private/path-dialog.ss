@@ -1,5 +1,5 @@
 (module path-dialog mzscheme
-  (require (lib "class.ss") (lib "list.ss") (lib "string.ss")
+  (require (lib "class.ss") (lib "list.ss") (lib "string.ss") (lib "file.ss")
 	   (prefix wx: "kernel.ss")
 	   "helper.ss" "mrtop.ss" "mritem.ss" "mrpanel.ss" "mrtextfield.ss"
            "messagebox.ss" "mrmenu.ss")
@@ -108,7 +108,14 @@
                       (if put? "Select New Directory" "Select Directory")
                       (if put? "Save File" "Open File"))))
 
-      (super-new [label label] [parent parent] [width 300] [height 300])
+      (define size
+        (let ([s (get-preference 'mred:path-dialog:size (lambda () #f))])
+          (or (and (list? s) (= 2 (length s)) (andmap integer? s) s)
+              '(300 300))))
+
+      (super-new [label label] [parent parent]
+                 [width (car size)] [height (cadr size)]
+                 [style '(resize-border)])
 
       (define result #f)
       (define dir    #f)
@@ -398,6 +405,13 @@
                      [else (do-enter*)])
                #t]
               [else (super on-subwindow-char r e)]))
+
+      ;; remember size
+      (define/override (on-size width height)
+        (let ([new (list width height)])
+          (unless (equal? new size)
+            (set! size new)
+            (put-preferences '(mred:path-dialog:size) (list size)))))
 
       ;;-----------------------------------------------------------------------
       ;; Delayed Filename Completion
