@@ -324,7 +324,8 @@
 				  (<= 1 list-box-wheel-step 100))
 		       (set! list-box-wheel-step 3)))
 		   (let ([top (get-first-item)])
-		     (set-first-visible-item (+ top (* list-box-wheel-step dir)))))])
+		     (set-first-visible-item
+                      (max 0 (+ top (* list-box-wheel-step dir))))))])
        (override
 	 [handles-key-code (lambda (x alpha? meta?)
 			     (case x
