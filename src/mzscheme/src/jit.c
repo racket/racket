@@ -143,8 +143,8 @@ typedef struct {
   Scheme_Native_Closure *nc;
 } mz_jit_state;
 
-typedef int (*Native_Check_Arity_Proc)(Scheme_Object *o, int argc);
-typedef Scheme_Object *(*Native_Get_Arity_Proc)(Scheme_Object *o);
+typedef int (*Native_Check_Arity_Proc)(Scheme_Object *o, int argc, int dummy);
+typedef Scheme_Object *(*Native_Get_Arity_Proc)(Scheme_Object *o, int dumm1, int dummy2);
 static Native_Check_Arity_Proc check_arity_code;
 static Native_Get_Arity_Proc get_arity_code;
 
@@ -3919,7 +3919,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   /* *** check_arity_code *** */
   /* Called as a function: */
   check_arity_code = (Native_Check_Arity_Proc)jit_get_ip().ptr;
-  jit_prolog(2);
+  jit_prolog(3); /* only need 1 argument, but return path overlaps with proc conventions */
   in = jit_arg_p();
   jit_getarg_p(JIT_R0, in); /* closure */
   in = jit_arg_p();
@@ -3928,13 +3928,13 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_movi_i(JIT_R1, -1);
   jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
   jit_ldxi_p(JIT_V1, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->arity_code);
-  jit_jmpr(JIT_V1);
+  jit_jmpr(JIT_V1); /* leads to a jit_ret() that assumes 3 arguments */
   CHECK_LIMIT();
 
   /* *** get_arity_code *** */
   /* Called as a function: */
   get_arity_code = (Native_Get_Arity_Proc)jit_get_ip().ptr;
-  jit_prolog(1);
+  jit_prolog(3); /* only need 1 argument, but return path overlaps with proc conventions */
   in = jit_arg_p();
   jit_getarg_p(JIT_R0, in); /* closure */
   mz_push_locals();
@@ -3942,7 +3942,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   (void)jit_movi_p(JIT_R2, 0x0);
   jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
   jit_ldxi_p(JIT_V1, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->arity_code);
-  jit_jmpr(JIT_V1);
+  jit_jmpr(JIT_V1); /* leads to a jit_ret() that assumes 3 arguments */
   CHECK_LIMIT();
 
   /* *** bad_result_arity_code *** */
@@ -4970,6 +4970,9 @@ static int generate_simple_arity_check(mz_jit_state *jitter, int num_params, int
   /* JIT_R2 is argv */
   /* If arity matches, JIT_RUNSTACK and JIT_RUNSTACK_BASE should be preserved */
   /* That leaves just JIT_V1 to use if airty is ok. */
+  /* This code expects a return context with 3 arguments, so make sure that's
+     true dynamically for all jumps to the code. Also, at JIT time, make sure
+     that jitter is initialized with a size-3 prolog. */
 
   jit_insn *ref, *ref2;
 
@@ -5075,7 +5078,7 @@ static void *generate_lambda_simple_arity_check(int num_params, int has_rest, in
 static int generate_case_lambda_dispatch(mz_jit_state *jitter, Scheme_Case_Lambda *c, Scheme_Native_Closure_Data *ndata,
 					 int do_getarg)
 {
-  /* See top of generate_simple_arity_check for register info. */
+  /* See top of generate_simple_arity_check for register and other context info. */
   Scheme_Closure_Data *data;
   Scheme_Object *o;
   int i, cnt, has_rest, offset, num_params;
@@ -5240,7 +5243,7 @@ int scheme_native_arity_check(Scheme_Object *closure, int argc)
     return SCHEME_TRUEP(scheme_get_or_check_arity((Scheme_Object *)&c, argc));
   }
 
-  return check_arity_code(closure, argc + 1);
+  return check_arity_code(closure, argc + 1, 0);
 }
 
 Scheme_Object *scheme_get_native_arity(Scheme_Object *closure)
@@ -5281,7 +5284,7 @@ Scheme_Object *scheme_get_native_arity(Scheme_Object *closure)
     return scheme_get_or_check_arity((Scheme_Object *)&c, -1);
   }
 
-  return get_arity_code(closure);
+  return get_arity_code(closure, 0, 0);
 }
 
 /*========================================================================*/
