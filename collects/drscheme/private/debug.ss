@@ -700,7 +700,7 @@ profile todo:
           set-test-coverage-info
           get-test-coverage-info))
       
-      (define test-coverage-frame<%>
+      (define test-coverage-tab<%>
         (interface ()
           show-test-coverage-annotations ;; hash-table (union #f style) (union #f style) boolean -> void
           get-test-coverage-info-visible?
@@ -724,7 +724,7 @@ profile todo:
           (inherit get-top-level-window)
           (define/augment (after-many-evals)
             (when test-coverage-info
-              (send (get-context) show-test-coverage-annotations 
+              (send (get-context) show-test-coverage-annotations
                     test-coverage-info
                     test-coverage-on-style
                     test-coverage-off-style
@@ -757,7 +757,7 @@ profile todo:
                      #t]))
                 #t))
           
-          (define/private (clear-test-coverage)
+          (define/public (clear-test-coverage)
             (let ([tab (get-tab)])
               (when (send tab get-test-coverage-info-visible?)
                 (send tab clear-test-coverage-display)
@@ -798,7 +798,7 @@ profile todo:
       (define erase-test-coverage-style-delta (make-object style-delta% 'change-normal-color))
       
       (define test-coverage-tab-mixin
-        (mixin (drscheme:rep:context<%>) (test-coverage-frame<%>)
+        (mixin (drscheme:rep:context<%> drscheme:unit:tab<%>) (test-coverage-tab<%>)
           
           (field [internal-clear-test-coverage-display #f])
           
@@ -969,9 +969,10 @@ profile todo:
                                (when locked? (send txt lock #t)))
                              (send txt end-edit-sequence)))))))))
 
+          (inherit get-defs)
           (define/augment (clear-annotations)
             (inner (void) clear-annotations)
-            (clear-test-coverage-display))
+            (send (get-defs) clear-test-coverage))
           
           (super-new)))
  
