@@ -360,7 +360,12 @@
       (autosave:restore-autosave-files/gui)
      
       ;; install user's keybindings
-      (for-each keymap:add-user-keybindings-file (preferences:get 'drscheme:user-defined-keybindings))
+      (with-handlers ([exn? 
+                       (λ (exn)
+                         (message-box (string-constant drscheme)
+                                      (exn-message exn)))])
+        (for-each keymap:add-user-keybindings-file 
+                  (preferences:get 'drscheme:user-defined-keybindings)))
       
       ;; the initial window doesn't set the 
       ;; unit object's state correctly, yet.
