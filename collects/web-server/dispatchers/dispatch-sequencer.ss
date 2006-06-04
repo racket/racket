@@ -1,6 +1,6 @@
 (module dispatch-sequencer mzscheme
-  (require "dispatch.ss"
-           (lib "list.ss"))
+  (require (lib "list.ss"))
+  (require "dispatch.ss")
   (provide interface-version
            gen-dispatcher)
   

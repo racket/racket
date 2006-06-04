@@ -1,7 +1,7 @@
 (module dispatch mzscheme
-  (require "connection-structs.ss"
-           "request-structs.ss"
-           "response-structs.ss")
+  (require "../connection-structs.ss"
+           "../request-structs.ss"
+           "../response-structs.ss")
   (require (lib "contract.ss")
            (lib "list.ss"))
   

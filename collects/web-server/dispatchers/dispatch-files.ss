@@ -3,9 +3,9 @@
            (lib "xml.ss" "xml")
            (lib "list.ss"))
   (require "dispatch.ss"
-           "util.ss"
-           "mime-types.ss"
-           "response.ss")  
+           "../util.ss"
+           "../mime-types.ss"
+           "../response.ss")  
   (provide interface-version
            gen-dispatcher)
   

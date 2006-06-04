@@ -1,6 +1,6 @@
 (module dispatch-host mzscheme
   (require "dispatch.ss"
-           "servlet-helpers.ss")
+           "../servlet-helpers.ss")
   (provide interface-version
            gen-dispatcher)
   

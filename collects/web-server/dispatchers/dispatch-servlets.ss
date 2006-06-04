@@ -3,17 +3,17 @@
            (lib "plt-match.ss")
            (lib "unitsig.ss"))
   (require "dispatch.ss"
-           "web-server-structs.ss"
-           "connection-manager.ss"
-           "response.ss"
-           "servlet.ss"
-           "sig.ss"
-           "util.ss"
-           "managers/manager.ss"
-           "managers/timeouts.ss"
-           "private/url.ss"
-           "private/servlet.ss"
-           "private/cache-table.ss")  
+           "../web-server-structs.ss"
+           "../connection-manager.ss"
+           "../response.ss"
+           "../servlet.ss"
+           "../sig.ss"
+           (all-except "../util.ss" translate-escapes)
+           "../managers/manager.ss"
+           "../managers/timeouts.ss"
+           "../private/url.ss"
+           "../private/servlet.ss"
+           "../private/cache-table.ss")  
   (provide interface-version
            gen-dispatcher)
   

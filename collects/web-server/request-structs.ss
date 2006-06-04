@@ -37,7 +37,7 @@
                                    [filename bytes?]
                                    [content bytes?])])
   
-  (define-struct request (method uri headers bindings/raw
+  (define-struct request (method uri headers/raw bindings/raw
                                  host-ip host-port client-ip))
   (provide/contract
    [struct request ([method symbol?] [uri url?] 

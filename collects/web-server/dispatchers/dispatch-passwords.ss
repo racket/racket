@@ -1,9 +1,9 @@
 (module dispatch-passwords mzscheme
   (require "dispatch.ss"
-           "util.ss"
-           "servlet-helpers.ss"
-           "connection-manager.ss"
-           "response.ss")
+           (all-except "../util.ss" translate-escapes)
+           "../servlet-helpers.ss"
+           "../connection-manager.ss"
+           "../response.ss")
   
   (provide interface-version
            gen-dispatcher)

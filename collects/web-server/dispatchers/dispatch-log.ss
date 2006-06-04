@@ -4,7 +4,7 @@
            (lib "async-channel.ss")
            (lib "plt-match.ss"))
   (require "dispatch.ss"
-           "servlet-helpers.ss")  
+           "../servlet-helpers.ss")  
   (provide interface-version
            gen-dispatcher)
   

@@ -1,7 +1,7 @@
 (module dispatch-pathprocedure mzscheme
   (require "dispatch.ss"
-           "util.ss"
-           "response.ss")
+           "../util.ss"
+           "../response.ss")
   (provide interface-version
            gen-dispatcher)
   
