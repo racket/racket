@@ -1,26 +1,47 @@
 (module request-structs mzscheme
   (require (lib "contract.ss")
+           (lib "plt-match.ss")
            (lib "url.ss" "net"))
+    
+  (define-struct header (field value))
+  (define (headers-assq f hs)
+    (match hs
+      [(list)
+       #f]
+      [(list-rest (and h (struct header (af av))) hs)
+       (if (equal? af f)
+           h
+           (headers-assq f hs))]))       
+  (provide/contract
+   [headers-assq (bytes? (listof header?) . -> . (or/c false/c header?))]
+   [struct header ([field bytes?]
+                   [value bytes?])])
   
-  ;; the request struct as currently doc'd
+  (define-struct binding (id))
+  (define-struct (binding:form binding) (value))
+  (define-struct (binding:file binding) (filename content))
+  (define (bindings-assq ti bs)
+    (match bs
+      [(list)
+       #f]
+      [(list-rest (and b (struct binding (i))) bs)
+       (if (equal? ti i)
+           b
+           (bindings-assq ti bs))]))
+  (provide/contract
+   [bindings-assq (bytes? (listof binding?) . -> . (or/c false/c binding?))]
+   [struct binding ([id bytes?])]
+   [struct (binding:form binding) ([id bytes?]
+                                   [value bytes?])]
+   [struct (binding:file binding) ([id bytes?]
+                                   [filename bytes?]
+                                   [content bytes?])])
+  
   (define-struct request (method uri headers bindings/raw
                                  host-ip host-port client-ip))
-
-  ;; header?: anyd/c -> boolean
-  ;; is this a header?
-  (define header?
-    (cons/c symbol? bytes?))
-
-  ;; bindings? any/c -> boolean
-  ;; is this a binding
-  (define binding?
-    (cons/c symbol? 
-            (or/c string?
-                   bytes?)))
-
-  (provide header? binding?)
   (provide/contract
-   [struct request ([method symbol?] [uri url?] [headers (listof header?)]
-                    [bindings/raw (or/c (listof binding?) string?)]
-                    [host-ip string?] [host-port number?]
-                    [client-ip string?])]))
+   [struct request ([method symbol?] [uri url?] 
+                                     [headers/raw (listof header?)]
+                                     [bindings/raw (listof binding?)]
+                                     [host-ip string?] [host-port number?]
+                                     [client-ip string?])]))

@@ -15,7 +15,7 @@
           [(parenthesized-default)
            (let ([log-message (gen-log-message log-format log-path)])
              (lambda (conn req)
-               (let ([host (get-host (request-uri req) (request-headers req))])
+               (let ([host (get-host (request-uri req) (request-headers/raw req))])
                  (log-message (request-host-ip req)
                               (request-client-ip req)
                               (request-method req)

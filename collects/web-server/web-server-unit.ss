@@ -5,7 +5,7 @@
            "configuration-structures.ss"
            "servlet.ss"
            "private/cache-table.ss"
-           (rename "request-parsing.ss" 
+           (rename "private/request.ss" 
                    the-read-request read-request))
   (require (prefix sequencer: "dispatch-sequencer.ss")
            (prefix passwords: "dispatch-passwords.ss")

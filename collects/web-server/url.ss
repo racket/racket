@@ -4,7 +4,7 @@
            (lib "url.ss" "net")
            (lib "struct.ss"))
   (require "private/url.ss"
-           "request-parsing.ss")
+           "request-structs.ss")
            
   ;; URL parsing
   (provide (struct servlet-url (protocol host port servlets-root instance-id k-id nonce servlet-path extra-path))

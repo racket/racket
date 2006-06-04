@@ -7,5 +7,5 @@
   (define interface-version 'v1)
   (define (gen-dispatcher lookup-dispatcher)
     (lambda (conn req)
-      (let* ([host (get-host (request-uri req) (request-headers req))])
+      (let* ([host (get-host (request-uri req) (request-headers/raw req))])
         ((lookup-dispatcher host) conn req)))))

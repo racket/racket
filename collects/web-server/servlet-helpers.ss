@@ -1,12 +1,13 @@
 (module servlet-helpers mzscheme
   (require (lib "list.ss")
            (lib "etc.ss")
+           (lib "plt-match.ss")
            (lib "xml.ss" "xml")
            (lib "base64.ss" "net")
            (lib "url.ss" "net"))
   (require "util.ss"
            "response.ss"
-           "request-parsing.ss")
+           "request-structs.ss")
   (provide get-host
            extract-binding/single
            extract-bindings
@@ -19,9 +20,26 @@
            permanently
            temporarily
            see-other
-           (all-from "request-parsing.ss")
-           (rename get-parsed-bindings request-bindings)
+           (all-from "request-structs.ss")
+           request-bindings
+           request-headers
            translate-escapes)    
+  
+  (define (request-headers request)
+    (map (match-lambda
+           [(struct header (field value))
+            (cons (lowercase-symbol! (bytes->string/utf-8 field))
+                  (bytes->string/utf-8 value))])
+         (request-headers/raw request)))
+  (define (request-bindings request)
+    (map (match-lambda
+           [(struct binding:form (id value))
+            (cons (lowercase-symbol! (bytes->string/utf-8 id))
+                  (bytes->string/utf-8 value))]
+           [(struct binding:file (id fname value))
+            (cons (lowercase-symbol! (bytes->string/utf-8 id))
+                  value)])
+         (request-bindings/raw request)))
   
   ;; get-host : Url (listof (cons Symbol String)) -> Symbol
   ;; host names are case insesitive---Internet RFC 1034
@@ -29,37 +47,12 @@
   (define (get-host uri headers)
     (cond
       [(url-host uri) => string->symbol]
-      [(assq 'host headers)
-       =>
-       (lambda (h) (string->symbol (bytes->string/utf-8 (cdr h))))]
+      [(headers-assq #"Host" headers)
+       => (match-lambda
+            [(struct header (_ v))
+             (string->symbol (bytes->string/utf-8 v))])]
       [else DEFAULT-HOST-NAME]))
-  
-  ;; get-parsed-bindings : request -> (listof (cons sym str))
-  (define (get-parsed-bindings r)
-    (let ([x (request-bindings/raw r)])
-      (if (list? x)
-          x
-          (parse-bindings x))))
-  
-  ;; parse-bindings : (U #f String) -> (listof (cons Symbol String))
-  (define (parse-bindings raw)
-    (if (string? raw)
-        (let ([len (string-length raw)])
-          (let loop ([start 0])
-            (let find= ([key-end start])
-              (if (>= key-end len)
-                  null
-                  (if (eq? (string-ref raw key-end) #\=)
-                      (let find-amp ([amp-end (add1 key-end)])
-                        (if (or (= amp-end len) (eq? (string-ref raw amp-end) #\&))
-                            (cons (cons (string->symbol (substring raw start key-end))
-                                        (translate-escapes
-                                         (substring raw (add1 key-end) amp-end)))
-                                  (loop (add1 amp-end)))
-                            (find-amp (add1 amp-end))))
-                      (find= (add1 key-end)))))))
-        null))
-  
+    
   ; extract-binding/single : sym (listof (cons str str)) -> str
   (define (extract-binding/single name bindings)
     (let ([lst (extract-bindings name bindings)])
@@ -146,21 +139,20 @@
   ;; 2. Headers should be read as bytes and then translated to unicode as appropriate.
   ;; 3. The Authorization header should have bytes (i.e. (cdr pass-pair) is bytes
   (define (extract-user-pass headers)
-    (let ([pass-pair (assq 'authorization headers)])
-      (and pass-pair
-           (let ([basic-credentials (cdr pass-pair)])
-             (cond
-               [(and (basic? basic-credentials)
-                     (match-authentication
-                      (base64-decode (subbytes basic-credentials 6 (bytes-length basic-credentials))))
-                     )
-                => (lambda (user-pass)
-                     (cons (cadr user-pass) (caddr user-pass)))]
-               [else #f])))))
+    (match (headers-assq #"Authorization" headers)
+      [#f #f]
+      [(struct header (_ basic-credentials))
+       (cond
+         [(and (basic? basic-credentials)
+               (match-authentication
+                (base64-decode (subbytes basic-credentials 6 (bytes-length basic-credentials))))
+               )
+          => (lambda (user-pass)
+               (cons (cadr user-pass) (caddr user-pass)))]
+         [else #f])]))
   
   ;; basic?: bytes -> (or/c (listof bytes) #f)
   ;; does the second part of the authorization header start with #"Basic "
   (define basic?
-    (let ([basic-regexp (byte-regexp #"^Basic .*")])
-      (lambda (some-bytes)
-        (regexp-match basic-regexp some-bytes)))))
+    (let ([rx (byte-regexp #"^Basic .*")])
+      (lambda (a) (regexp-match rx a)))))

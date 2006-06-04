@@ -40,9 +40,6 @@
            '() (list "ignored"))
           meth)]
         [else
-         (set-request-bindings/raw!
-          req
-          (read-bindings/handled conn meth uri (request-headers req)))
          (cond
            [(continuation-url? uri)
             => (match-lambda
@@ -50,15 +47,7 @@
                   (invoke-servlet-continuation conn req instance-id k-id salt)])]
            [else
             (servlet-content-producer/path conn req uri)])]))
-    
-    ;; read-bindings/handled: connection symbol url headers -> (listof (list (symbol string))
-    ;; read the bindings and handle any exceptions
-    (define (read-bindings/handled conn meth uri headers)
-      (with-handlers ([exn? (lambda (e)
-                              (output-response/method conn (responders-servlet-loading uri e) meth)
-                              '())])
-        (read-bindings conn meth uri headers)))
-    
+        
     ;; servlet-content-producer/path: connection request url -> void
     ;; This is not a continuation url so the loading behavior is determined
     ;; by the url path. Build the servlet path and then load the servlet

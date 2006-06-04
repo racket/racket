@@ -2,6 +2,7 @@
   (require (lib "contract.ss")
            (lib "string.ss")
            (lib "list.ss")
+           (lib "plt-match.ss")
            (lib "url.ss" "net")
            (lib "errortrace-lib.ss" "errortrace")
            (lib "uri-codec.ss" "net"))
@@ -207,16 +208,16 @@
   (define-struct servlet-error ())
   (define-struct (invalid-%-suffix servlet-error) (chars))
   (define-struct (incomplete-%-suffix invalid-%-suffix) ())
-  (define (translate-escapes raw)
-    (let ([raw (uri-decode raw)])
-      (list->string
-       (let loop ((chars (string->list raw)))
-         (if (null? chars) null
-             (let ((first (car chars))
-                   (rest (cdr chars)))
-               (let-values (((this rest)
-                             (cond
-                               ((char=? first #\+)
-                                (values #\space rest))                             
-                               (else (values first rest)))))
-                 (cons this (loop rest))))))))))
+  (define (translate-escapes init)
+    (define raw (uri-decode init))
+    (list->string
+     (let loop ([chars (string->list raw)])
+       (match chars
+         [(list)
+          (list)]
+         [(list-rest ic cs)
+          (define c
+            (cond
+              [(char=? ic #\+) #\space]
+              [else ic]))
+          (list* c (loop cs))])))))

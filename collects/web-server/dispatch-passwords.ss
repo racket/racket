@@ -22,7 +22,7 @@
       (lambda (conn req)
         (let-values ([(uri method path) (decompose-request req)])
           (cond
-            [(access-denied? method path (request-headers req) (read-password-cache))
+            [(access-denied? method path (request-headers/raw req) (read-password-cache))
              => (lambda (realm)
                   (adjust-connection-timeout! conn password-connection-timeout)
                   (request-authentication conn method uri

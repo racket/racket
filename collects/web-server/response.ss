@@ -51,7 +51,7 @@
   ;; Notes:
   ;; 1. close? is a boolean which corresponds roughly to the protocol version.
   ;;    #t |-> 1.0 and #f |-> 1.1. See function close-connection? in
-  ;;    #request-parsing.ss
+  ;;    private/request.ss
   ;;
   ;; 2. In the case of a chunked response when close? = #f, then the response
   ;;    must be compliant with http 1.0. In this case the chunked response is
