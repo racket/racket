@@ -669,7 +669,8 @@
     (opt-> ((is-a?/c menu%) (subclass?/c menu-item%))
            ((-> (is-a?/c menu-item%) void?))
            void?)
-    (menu menu-item% func)
+    ((menu menu-item%) 
+     ((func void)))
     "Inserts three menu items into \\var{menu},"
     "one that inserts a text box, one that inserts a"
     "pasteboard box, and one that inserts an image"
