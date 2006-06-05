@@ -26,7 +26,7 @@
 		(cons (read-bytes n s)
 		      (loop))))))))
 
-  (define (mk-file-selector who put? multi? dir? force-unix?)
+  (define (mk-file-selector who put? multi? dir?)
     (lambda (message parent directory filename extension style filters)
       ;; Calls from C++ have wrong kind of window:
       (when (is-a? parent wx:window%)
@@ -34,10 +34,12 @@
 
       (check-label-string/false who message)
       (check-top-level-parent/false who parent)
-      (check-path/false who directory) (check-path/false who filename) (check-string/false who extension)
+      (check-path/false who directory)
+      (check-path/false who filename)
+      (check-string/false who extension)
       (check-style who #f (cond
-			   [dir? '(enter-packages)]
-			   [else '(packages enter-packages)]) style)
+			   [dir? '(standard enter-packages)]
+			   [else '(standard packages enter-packages)]) style)
       (unless (and (list? filters)
 		   (andmap (lambda (p)
 			     (and (list? p)
@@ -46,37 +48,39 @@
 				  (string? (cadr p))))
 			   filters))
 	(raise-type-error who "list of 2-string lists" filters))
-      (if (or (eq? (system-type) 'unix) force-unix?)
-        (send (new path-dialog%
-                [put?      put?]
-                [dir?      dir?]
-                [multi?    multi?]
-                [message   message]
-                [parent    parent]
-                [directory directory]
-                [filename  filename]
-                [filters
-                 (cond [(eq? filters default-filters) #t] ; has its own defaults
-                       [dir? #f]
-                       [else filters])])
-              run)
-        (let ([s (wx:file-selector
-                  message directory filename extension
-                  ;; file types:
-                  (apply string-append
-                         (map (lambda (s) (format "~a|~a|" (car s) (cadr s)))
-                              filters))
-                  ;; style:
-                  (cons (cond [dir? 'dir]
-                              [put? 'put]
-                              [multi? 'multi]
-                              [else 'get])
-                        style)
-                  ;; parent:
-                  (and parent (mred->wx parent)))])
-          (if (and multi? s)
-            (map bytes->path (files->list (path->bytes s)))
-            s)))))
+      (let* ([std? (memq 'standard style)]
+             [style (if std? (remq 'standard style) style)])
+        (if (or std? (eq? (system-type) 'unix))
+          (send (new path-dialog%
+                  [put?      put?]
+                  [dir?      dir?]
+                  [multi?    multi?]
+                  [message   message]
+                  [parent    parent]
+                  [directory directory]
+                  [filename  filename]
+                  [filters
+                   (cond [(eq? filters default-filters) #t] ; its own defaults
+                         [dir? #f]
+                         [else filters])])
+                run)
+          (let ([s (wx:file-selector
+                    message directory filename extension
+                    ;; file types:
+                    (apply string-append
+                           (map (lambda (s) (format "~a|~a|" (car s) (cadr s)))
+                                filters))
+                    ;; style:
+                    (cons (cond [dir?   'dir]
+                                [put?   'put]
+                                [multi? 'multi]
+                                [else   'get])
+                          style)
+                    ;; parent:
+                    (and parent (mred->wx parent)))])
+            (if (and multi? s)
+              (map bytes->path (files->list (path->bytes s)))
+              s))))))
 
   (define default-filters '(("Any" "*.*")))
 
@@ -89,10 +93,8 @@
        (define name
          (opt-lambda ([message #f] [parent #f] [directory #f] [filename #f]
                       [extension #f] [style null] [filters default-filters])
-           (let* ([force-unix? (memq 'standard style)]
-                  [style (if force-unix? (remq 'standard style) style)])
-             ((mk-file-selector 'name put? multi? #f force-unix?)
-              message parent directory filename extension style filters))))]))
+           ((mk-file-selector 'name put? multi? #f)
+            message parent directory filename extension style filters)))]))
 
   (define-file-selector get-file      #f #f)
   (define-file-selector get-file-list #f #t)
@@ -100,7 +102,7 @@
 
   (define get-directory
     (opt-lambda ([message #f] [parent #f] [directory #f] [style null])
-      ((mk-file-selector 'get-directory #f #f #t #f)
+      ((mk-file-selector 'get-directory #f #f #t)
        message parent directory #f #f style null)))
 
   (set-get-file! get-file))
