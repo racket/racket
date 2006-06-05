@@ -408,7 +408,7 @@
      
      ("dynamic" 
       (cond
-        ((dynamic?) (syn-val lexeme 'keyword #f start-pos end-pos))
+        ((dynamic?) (syn-val lexeme 'prim-type #f start-pos end-pos))
         (else (syn-val lexeme 'identifier #f start-pos end-pos))))
      
      ((re:or "check" "expect" "within")

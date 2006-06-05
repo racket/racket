@@ -119,6 +119,7 @@
   ;               (list (list package (list (list compiliation-unit)) (list class-record)))
   (define (compile-files files to-file? level)
     (when (null? (classpath)) (classpath (get-classpath)))
+    (coverage? #f)
     (let ((type-recs (make-object type-records))
           (get-class-names 
            (lambda (files)
@@ -136,7 +137,8 @@
                                       (and (or (not existing-record) 
                                                (procedure? existing-record))
                                            (call-with-input-file file 
-                                             (lambda (port) (compile-java-internal port file type-recs to-file? level))))))
+                                             (lambda (port) 
+                                               (compile-java-internal port file type-recs to-file? level))))))
                                   files class-names))
                      (map (lambda (class)
                             (send type-recs get-class-record (cons class package-name) #f (lambda () (error 'internal-error))))
