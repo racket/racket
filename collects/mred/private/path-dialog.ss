@@ -561,7 +561,9 @@
                         (for-each (lambda (r)
                                     (define l (path->string r))
                                     (make-object menu-item% l m
-                                                 (lambda _ (enter-text l))))
+                                                 (lambda _
+                                                   (enter-text l)
+                                                   (do-enter))))
                                   (filesystem-root-list))))
                     (lock))])
           (if win?
