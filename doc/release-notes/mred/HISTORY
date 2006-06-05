@@ -1,17 +1,11 @@
-Version 301.16
-When no location is given for a dialog%, it is centered when
- shown
-
-Version 301.8
-Added 'no-sheet dialog% style
-
-Version 300.3
+Version 350, June 2006
 Default max undo history for an editor<%> is 0; use
  set-max-undo-history to enable undo
-Added |MrEd:emacsUndo| low-level preference
-
-Version 300.1
 Disabled menu-item shortcuts stay effective (to just beep)
+When no location is given for a dialog%, it is centered when
+ shown
+Added 'no-sheet dialog% style
+Added |MrEd:emacsUndo| low-level preference
 
 ----------------------------------------------------------------------
 
