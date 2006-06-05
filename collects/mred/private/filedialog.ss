@@ -38,8 +38,8 @@
       (check-path/false who filename)
       (check-string/false who extension)
       (check-style who #f (cond
-			   [dir? '(standard enter-packages)]
-			   [else '(standard packages enter-packages)]) style)
+			   [dir? '(common enter-packages)]
+			   [else '(common packages enter-packages)]) style)
       (unless (and (list? filters)
 		   (andmap (lambda (p)
 			     (and (list? p)
@@ -48,8 +48,8 @@
 				  (string? (cadr p))))
 			   filters))
 	(raise-type-error who "list of 2-string lists" filters))
-      (let* ([std? (memq 'standard style)]
-             [style (if std? (remq 'standard style) style)])
+      (let* ([std? (memq 'common style)]
+             [style (if std? (remq 'common style) style)])
         (if (or std? (eq? (system-type) 'unix))
           (send (new path-dialog%
                   [put?      put?]
