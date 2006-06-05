@@ -678,20 +678,23 @@ profile todo:
       (define current-test-coverage-info (make-thread-cell #f))
 
       (define (initialize-test-coverage-point key expr)
-        (unless (thread-cell-ref current-test-coverage-info)
+        (unless (hash-table? (thread-cell-ref current-test-coverage-info))
           (let ([rep (drscheme:rep:current-rep)])
             (when rep
-              (let ([ht (make-hash-table)])
-                (thread-cell-set! current-test-coverage-info ht)
-                (send rep set-test-coverage-info ht)))))
+              (let ([ut (eventspace-handler-thread (send rep get-user-eventspace))])
+                (unless (eq? ut (current-thread))
+                  (let ([ht (make-hash-table)])
+                    (thread-cell-set! current-test-coverage-info ht)
+                    (send rep set-test-coverage-info ht)))))))
         (let ([ht (thread-cell-ref current-test-coverage-info)])
-          (when ht ;; if rep isn't around, we don't do test coverage...
-                   ;; this can happen when check syntax expands, for example
+          (when (hash-table? ht)
+            ;; if rep isn't around, we don't do test coverage...
+            ;; this can happen when check syntax expands, for example
             (hash-table-put! ht key (list #f expr)))))
   
       (define (test-covered key)
         (let ([ht (thread-cell-ref current-test-coverage-info)])
-          (when ht ;; as in the `when' test in `initialize-test-coverage-point'
+          (when (hash-table? ht) ;; as in the `when' test in `initialize-test-coverage-point'
             (let ([v (hash-table-get ht key)])
               (set-car! v #t)))))
       
@@ -719,7 +722,8 @@ profile todo:
               (set! test-coverage-on-style on-style)
               (set! test-coverage-off-style off-style)
               (set! ask-about-reset? ask?)))
-          (define/public (get-test-coverage-info) test-coverage-info)
+          (define/public (get-test-coverage-info) 
+            test-coverage-info)
           
           (inherit get-top-level-window)
           (define/augment (after-many-evals)
@@ -1038,37 +1042,44 @@ profile todo:
 	(unless (thread-cell-ref current-profile-info)
           (let ([rep (drscheme:rep:current-rep)])
             (when rep
-              (let ([ht (make-hash-table)])
-                (thread-cell-set! current-profile-info ht)
-                (send (send rep get-context) add-profile-info ht)))))
+              (let ([ut (eventspace-handler-thread (send rep get-user-eventspace))])
+                (unless (eq? ut (current-thread))
+                  (let ([ht (make-hash-table)])
+                    (thread-cell-set! current-profile-info ht)
+                    (send (send rep get-context) add-profile-info ht)))))))
         (let ([profile-info (thread-cell-ref current-profile-info)])
-          (hash-table-put! profile-info
-                           key 
-                           (make-prof-info #f 0 0 (and (syntax? name) (syntax-e name)) expr)))
+          (when profile-info
+            (hash-table-put! profile-info
+                             key 
+                             (make-prof-info #f 0 0 (and (syntax? name) (syntax-e name)) expr))))
         (void))
   
       ;; register-profile-start : sym -> (union #f number)
       ;; =user=
       ;; imported into errortrace
       (define (register-profile-start key)
-	(let ([info (hash-table-get (thread-cell-ref current-profile-info) key)])
-          (set-prof-info-num! info (+ (prof-info-num info) 1))
-          (if (prof-info-nest info)
-              #f
-              (begin
-                (set-prof-info-nest! info #t)
-                (current-process-milliseconds)))))
+	(let ([ht (thread-cell-ref current-profile-info)])
+          (when ht
+            (let ([info (hash-table-get ht key)])
+              (set-prof-info-num! info (+ (prof-info-num info) 1))
+              (if (prof-info-nest info)
+                  #f
+                  (begin
+                    (set-prof-info-nest! info #t)
+                    (current-process-milliseconds)))))))
       
       ;; register-profile-done : sym (union #f number) -> void
       ;; =user=
       ;; imported into errortrace
       (define (register-profile-done key start)
         (when start
-	  (let ([info (hash-table-get (thread-cell-ref current-profile-info) key)])
-	    (set-prof-info-nest! info #f)
-	    (set-prof-info-time! info
-                                 (+ (- (current-process-milliseconds) start)
-                                    (prof-info-time info)))))
+          (let ([ht (thread-cell-ref current-profile-info)])
+            (when ht
+              (let ([info (hash-table-get ht key)])
+                (set-prof-info-nest! info #f)
+                (set-prof-info-time! info
+                                     (+ (- (current-process-milliseconds) start)
+                                        (prof-info-time info)))))))
         (void))
 
       ;; get-color-value : number number -> (is-a?/c color%)

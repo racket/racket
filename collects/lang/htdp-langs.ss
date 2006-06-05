@@ -655,13 +655,15 @@ tracing todo:
                         (send s set-delta-foreground "firebrick")
                         s)
                       #f)))))
-        (hash-table-put! (thread-cell-ref current-test-coverage-info)
-                         key
-                         (list #f expr)))
+        (let ([ht (thread-cell-ref current-test-coverage-info)])
+          (when ht
+            (hash-table-put! ht key (list #f expr)))))
       
       (define (test-covered key)
-        (let ([v (hash-table-get (thread-cell-ref current-test-coverage-info) key)])
-          (set-car! v #t)))
+        (let ([ht (thread-cell-ref current-test-coverage-info)])
+          (when ht
+            (let ([v (hash-table-get ht key)])
+              (set-car! v #t)))))
       
       (define-values/invoke-unit/sig et:stacktrace^ et:stacktrace@ et et:stacktrace-imports^)
 
