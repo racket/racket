@@ -1,6 +1,7 @@
 (module filedialog mzscheme
   (require (lib "class.ss")
 	   (lib "etc.ss")
+	   (lib "list.ss")
 	   (prefix wx: "kernel.ss")
 	   "lock.ss"
 	   "wx.ss"
@@ -88,8 +89,10 @@
        (define name
          (opt-lambda ([message #f] [parent #f] [directory #f] [filename #f]
                       [extension #f] [style null] [filters default-filters])
-           ((mk-file-selector 'name put? multi? #f #f)
-            message parent directory filename extension style filters)))]))
+           (let* ([force-unix? (memq 'standard style)]
+                  [style (if force-unix? (remq 'standard style) style)])
+             ((mk-file-selector 'name put? multi? #f force-unix?)
+              message parent directory filename extension style filters))))]))
 
   (define-file-selector get-file      #f #f)
   (define-file-selector get-file-list #f #t)
