@@ -1200,6 +1200,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 		    return NULL;
 		  goto start_over;
 		}
+		ch = 0; /* So we don't count '#' toward an opening "#|" */
 	      } else if ((ch2 == '#') && (ch == '|')) {
 		depth++;
 		ch = 0; /* So we don't count '|' toward a closing "|#" */
@@ -3521,6 +3522,7 @@ skip_whitespace_comments(Scheme_Object *port, Scheme_Object *stxsrc,
       if ((ch2 == blockc_2) && (ch == blockc_1)) {
 	if (!(depth--))
 	  goto start_over;
+	ch = 0; /* So we don't count '#' toward an opening "#|" */
       } else if ((ch2 == blockc_1) && (ch == blockc_2)) {
 	depth++;
 	ch = 0; /* So we don't count '|' toward a closing "|#" */
