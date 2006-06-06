@@ -3698,10 +3698,8 @@ do_begin_expand(char *name,
     return NULL;
   }
 
-  if (zero) {
+  if (zero)
     env = scheme_no_defines(env);
-    printf("%d\n", env->flags);
-  }
 
   if (!scheme_is_toplevel(env)) {
     /* Not at top-level: */
