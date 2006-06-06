@@ -215,10 +215,10 @@
 		   (shift e 0 -1 void)]
 		  [(down)
 		   (shift e 0 1 void)]
-		  [(#\space #\f #\n)
+		  [(#\space #\f #\n next)
 		   (next)
 		   #t]
-		  [(#\b #\backspace #\rubout)
+		  [(#\b #\backspace #\rubout prior)
 		   (prev)
 		   #t]
 		  [(#\g)
