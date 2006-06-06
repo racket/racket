@@ -1289,7 +1289,8 @@ Scheme_Comp_Env *scheme_no_defines(Scheme_Comp_Env *env)
 {
   if (scheme_is_toplevel(env)
       || scheme_is_module_env(env)
-      || scheme_is_module_begin_env(env))
+      || scheme_is_module_begin_env(env)
+      || (env->flags & SCHEME_INTDEF_FRAME))
     return scheme_new_compilation_frame(0, 0, env, NULL);
   else
     return env;
