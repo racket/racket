@@ -42,10 +42,10 @@
         (kernel-syntax-case stx #f
           [(define-values (var ...) expr)
            (let ([var-list (syntax->list #'(var ...))])
-             (cond [(= (length var-list) 1) #`(define-values (var ...) #,(expr-iterator #'expr (car var-list)))]
-                   [else #`(define-values (var ...) #,(expr-iterator #'expr #f))]))]
+             (cond [(= (length var-list) 1) #`(define-values (var ...) #,(expr-iterator #'expr (car var-list) (current-code-inspector)))]
+                   [else #`(define-values (var ...) #,(expr-iterator #'expr #f (current-code-inspector)))]))]
           [(define-syntaxes (var ...) expr)
-           #`(define-syntaxes (var ...) #,(expr-iterator #'expr #f))]
+           #`(define-syntaxes (var ...) #,(expr-iterator #'expr #f (current-code-inspector)))]
           [(begin . top-level-exprs)
            #`(begin #,@(map top-level-expr-iterator (syntax->list #'top-level-exprs)))]
           [(require . require-specs)
@@ -53,13 +53,13 @@
           [(require-for-syntax . require-specs)
            stx]
           [else
-           (expr-iterator stx #f)]))
+           (expr-iterator stx #f (current-code-inspector))]))
   
-      (define (expr-iterator stx potential-name)
+      (define (expr-iterator stx potential-name insp)
         (let* ([name-guess (or (syntax-property stx 'inferred-name) potential-name)]
-               [recur-tail (lambda (expr) (expr-iterator expr name-guess))]
-               [recur-non-tail (lambda (expr) (expr-iterator expr #f))]
-               [recur-with-name (lambda (expr name) (expr-iterator expr name))]
+               [recur-tail (lambda (expr) (expr-iterator expr name-guess insp))]
+               [recur-non-tail (lambda (expr) (expr-iterator expr #f insp))]
+               [recur-with-name (lambda (expr name) (expr-iterator expr name insp))]
                [recur-on-sequence (lambda (exprs) 
                                     (let loop ([remaining exprs])
                                       (cond [(null? remaining) null]
@@ -113,49 +113,53 @@
                             stx
                             ;(syntax-object->datum stx)
                             )]))]) 
-          (kernel-syntax-case stx #f
-            [var-stx
-             (identifier? (syntax var-stx))
-             stx]
-            [(lambda . clause)
-             #`(lambda #,@(lambda-clause-abstraction #'clause))]
-            [(case-lambda . clauses)
-             #`(case-lambda #,@(map lambda-clause-abstraction (syntax->list #'clauses)))]
-            [(if test then)
-             #`(if #,(recur-non-tail #'test) #,(recur-tail #'then))]
-            [(if test then else)
-             #`(if
-                #,(recur-non-tail #'test)
-                #,(recur-non-tail #'then)
-                #,(recur-non-tail #'else))]
-            [(begin . bodies)
-             #`(begin #,@(recur-on-sequence (syntax->list #'bodies)))]
-            [(begin0 . bodies)
-             #`(begin #,@(map recur-non-tail #'bodies))]
-            [(let-values . _)
-             (let-values-abstraction stx)]
-            [(letrec-values . _)
-             (let-values-abstraction stx)]
-            [(set! var val)               
-             #`(set! var #,(recur-with-name #'val #'var))]
-            [(quote _)
-             stx]
-            [(quote-syntax _)
-             stx]
-            [(with-continuation-mark key mark body)
-             #`(with-continuation-mark
-                #,(recur-non-tail #'key)
-                #,(recur-non-tail #'mark)
-                #,(recur-tail #'body))]
-            [(#%app . exprs)
-             #`(#%app #,@(map recur-non-tail (syntax->list #'exprs)))]
-            [(#%datum . _)
-             stx]
-            [(#%top . var)
-             stx]
-            [else
-             (error 'expr-iterator "unknown expr: ~a" 
-                    (syntax-object->datum stx))]))) 
+          (syntax-recertify
+           (kernel-syntax-case stx #f
+             [var-stx
+              (identifier? (syntax var-stx))
+              stx]
+             [(lambda . clause)
+              #`(lambda #,@(lambda-clause-abstraction #'clause))]
+             [(case-lambda . clauses)
+              #`(case-lambda #,@(map lambda-clause-abstraction (syntax->list #'clauses)))]
+             [(if test then)
+              #`(if #,(recur-non-tail #'test) #,(recur-tail #'then))]
+             [(if test then else)
+              #`(if
+                 #,(recur-non-tail #'test)
+                 #,(recur-non-tail #'then)
+                 #,(recur-non-tail #'else))]
+             [(begin . bodies)
+              #`(begin #,@(recur-on-sequence (syntax->list #'bodies)))]
+             [(begin0 . bodies)
+              #`(begin #,@(map recur-non-tail (syntax->list #'bodies)))]
+             [(let-values . _)
+              (let-values-abstraction stx)]
+             [(letrec-values . _)
+              (let-values-abstraction stx)]
+             [(set! var val)               
+              #`(set! var #,(recur-with-name #'val #'var))]
+             [(quote _)
+              stx]
+             [(quote-syntax _)
+              stx]
+             [(with-continuation-mark key mark body)
+              #`(with-continuation-mark
+                    #,(recur-non-tail #'key)
+                  #,(recur-non-tail #'mark)
+                  #,(recur-tail #'body))]
+             [(#%app . exprs)
+              #`(#%app #,@(map recur-non-tail (syntax->list #'exprs)))]
+             [(#%datum . _)
+              stx]
+             [(#%top . var)
+              stx]
+             [else
+              (error 'expr-iterator "unknown expr: ~a" 
+                     (syntax-object->datum stx))])
+           stx
+           insp
+           #f)))
       
       (define (arglist-flatten arglist)
         (let loop ([remaining arglist]
