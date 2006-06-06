@@ -763,7 +763,7 @@
    ()
    "This can only be called after all of the tools initialization phases have completed."
    ""
-   "Returns the list of all of the langauges installed in DrScheme.")
+   "Returns the list of all of the languages installed in DrScheme.")
   
   (drscheme:language-configuration:add-language
    ((and/c (is-a?/c drscheme:language:language<%>) language-object)
@@ -823,7 +823,7 @@
    (any/c . -> . boolean?)
    (val)
    
-   "Determines if the argument is a langauge-settings or not.")
+   "Determines if the argument is a language-settings or not.")
   
   (drscheme:language-configuration:language-dialog
    (opt->
@@ -938,7 +938,7 @@
    (-> symbol? boolean?)
    (s)
    "Indicates if"
-   "@flink drscheme:langauge:register-capability"
+   "@flink drscheme:language:register-capability"
    "has been called with \\var{s}.")
   (drscheme:language:get-capability-default
    (->d (and/c symbol? drscheme:language:capability-registered?)
