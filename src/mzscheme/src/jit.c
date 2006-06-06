@@ -5267,8 +5267,6 @@ Scheme_Object *scheme_get_native_arity(Scheme_Object *closure)
 	has_rest = 1;
       } else 
 	has_rest = 0;
-      if (is_method && v)
-	--v;
       a = scheme_make_arity(v, has_rest ? -1 : v);
       l = scheme_make_pair(a, l);
     }
@@ -5279,9 +5277,13 @@ Scheme_Object *scheme_get_native_arity(Scheme_Object *closure)
 
   if (((Scheme_Native_Closure *)closure)->code->code == on_demand_jit_code) {
     Scheme_Closure c;
+    Scheme_Object *a;
     c.so.type = scheme_closure_type;
     c.code = ((Scheme_Native_Closure *)closure)->code->u2.orig_code;
-    return scheme_get_or_check_arity((Scheme_Object *)&c, -1);
+    a = scheme_get_or_check_arity((Scheme_Object *)&c, -1);
+    if (SCHEME_CLOSURE_DATA_FLAGS(c.code) & CLOS_IS_METHOD)
+      a = scheme_box(a);
+    return a;
   }
 
   return get_arity_code(closure, 0, 0);
