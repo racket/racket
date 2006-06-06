@@ -279,7 +279,7 @@
     (define (ensure-expression stx k)
       (if (memq (syntax-local-context) '(expression))
 	  (k)
-          (stepper-ignore-checker #`(values #,stx))))
+	  (syntax-property #`(begin0 #,stx) 'stepper-skipto (list syntax-e cdr car))))
 
     ;; Use to generate nicer error messages than direct pattern
     ;; matching. The `where' argument is an English description
