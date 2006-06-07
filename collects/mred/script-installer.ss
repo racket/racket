@@ -12,7 +12,8 @@
 		 (parameterize ([current-launcher-variant variant])
 		   (make-mred-launcher null 
 				       (mred-program-launcher-path "MrEd")
-				       '((exe-name . "MrEd")))))])
+				       '((exe-name . "MrEd")
+					 (relative? . #t)))))])
 	  (install 'script)
 	  (when (memq 'script-3m (available-mred-variants))
 	    (install 'script-3m)))))))
