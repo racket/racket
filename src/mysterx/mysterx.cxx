@@ -4951,12 +4951,18 @@ void browserHwndMsgLoop (LPVOID p)
       ? 1L
       : 0L;
 
-  hwnd = CreateWindow ("AtlAxWin71", "myspage.DHTMLPage.1",
-		      WS_VISIBLE | hasScrollBars |
-		      (pBrowserWindowInit->browserWindow.style & ~ (WS_HSCROLL|WS_VSCROLL)),
-		      pBrowserWindowInit->browserWindow.x, pBrowserWindowInit->browserWindow.y,
-		      pBrowserWindowInit->browserWindow.width, pBrowserWindowInit->browserWindow.height,
-		      NULL, NULL, hInstance, NULL);
+  hwnd = CreateWindow (
+# if _MSC_VER < 1400
+                       "AtlAxWin71",
+#else
+                       "AtlAxWin80",
+#endif
+                       "myspage.DHTMLPage.1",
+                       WS_VISIBLE | hasScrollBars |
+                       (pBrowserWindowInit->browserWindow.style & ~ (WS_HSCROLL|WS_VSCROLL)),
+                       pBrowserWindowInit->browserWindow.x, pBrowserWindowInit->browserWindow.y,
+                       pBrowserWindowInit->browserWindow.width, pBrowserWindowInit->browserWindow.height,
+                       NULL, NULL, hInstance, NULL);
 
   if (hwnd == NULL) {
     ReleaseSemaphore (createHwndSem, 1, NULL);
