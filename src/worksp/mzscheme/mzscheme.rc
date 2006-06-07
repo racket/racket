@@ -45,13 +45,13 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "CompanyName", "PLT Inc.\0"
-            VALUE "FileDescription", "mzscheme\0"
+            VALUE "CompanyName", "PLT Scheme Inc.\0"
+            VALUE "FileDescription", "MzScheme-based application\0"
+            VALUE "InternalName", "MzScheme.exe\0"
             VALUE "FileVersion", "349, 100, 0, 0\0"
-            VALUE "InternalName", "mzscheme\0"
             VALUE "LegalCopyright", "Copyright Å© 1995-2006\0"
             VALUE "OriginalFilename", "mzscheme.exe\0"
-            VALUE "ProductName", "MzScheme\0"
+            VALUE "ProductName", "PLT Scheme\0"
             VALUE "ProductVersion", "349, 100, 0, 0\0"
         END
     END

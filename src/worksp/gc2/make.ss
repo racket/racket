@@ -246,10 +246,15 @@
 	      srcs))])
   (link-dll objs null null dll "" #f))
 
-(unless (file-exists? "mzscheme.res")
-  (system- (string-append 
-	    "rc /l 0x409 "
-	    "/fomzscheme.res ../mzscheme/mzscheme.rc")))
+(define (check-rc res rc)
+  (unless (and (file-exists? res)
+	       (>= (file-or-directory-modify-seconds res)
+		   (file-or-directory-modify-seconds rc)))
+	  (system- (string-append 
+		    "rc /l 0x409  /I ../../wxwindow/include/msw /I ../../wxwindow/contrib/fafa "
+		    (format "/fo~a ~a" res rc)))))
+
+(check-rc "mzscheme.res" "../mzscheme/mzscheme.rc")
 
 (let ([objs (list
 	     "mzscheme.res"
@@ -445,10 +450,7 @@
 
 (wx-try "mred" "mred" "mrmain" #f "cxx" #t)
 
-(unless (file-exists? "mred.res")
-  (system- (string-append 
-	    "rc /l 0x409 /I ../../wxwindow/include/msw /I ../../wxwindow/contrib/fafa "
-	    "/fomred.res ../mred/mred.rc")))
+(check-rc "mred.res" "../mred/mred.rc")
 
 (let ([objs (list
 	     "mred.res"

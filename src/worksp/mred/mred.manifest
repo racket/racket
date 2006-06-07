@@ -3,7 +3,7 @@
 <assemblyIdentity 
 version="1.0.0.0" 
 processorArchitecture="X86" 
-name="Org.PLT-Scheme.MrEd " 
+name="Org.PLT-Scheme.MrEd" 
 type="win32" 
 /> 
 <description>MrEd - Graphical PLT Scheme.</description> 
