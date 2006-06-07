@@ -126,6 +126,7 @@ Scheme_Object *mx_make_browser(int argc,Scheme_Object **argv) {
 
   WaitForSingleObject(browserHwndMutex,INFINITE);
 
+  pBrowserStream = NULL;
   browserWindowInit.ppIStream = &pBrowserStream;
 
   browser = (MX_Browser_Object *)scheme_malloc(sizeof(MX_Browser_Object));
@@ -144,6 +145,9 @@ Scheme_Object *mx_make_browser(int argc,Scheme_Object **argv) {
 
   browser->destroy = FALSE;
   browser->hwnd = browserHwnd;
+
+  if (!pBrowserStream)
+    scheme_signal_error ("make-browser: Can't create browser window");
 
   hr = CoGetInterfaceAndReleaseStream(pBrowserStream,IID_IUnknown,(void **)&pIUnknown);
 
@@ -241,6 +245,7 @@ Scheme_Object *mx_make_browser(int argc,Scheme_Object **argv) {
 
   browser->pIWebBrowser2 = pIWebBrowser2;
   browser->pISink = pISink;
+
   browser->pIEventQueue = pIEventQueue;
 
   scheme_add_managed((Scheme_Custodian *)scheme_get_param(scheme_current_config(),MZCONFIG_CUSTODIAN),

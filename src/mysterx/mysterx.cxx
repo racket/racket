@@ -4951,15 +4951,17 @@ void browserHwndMsgLoop (LPVOID p)
       ? 1L
       : 0L;
 
-  hwnd = CreateWindow ("AtlAxWin7", "myspage.DHTMLPage.1",
+  hwnd = CreateWindow ("AtlAxWin71", "myspage.DHTMLPage.1",
 		      WS_VISIBLE | hasScrollBars |
 		      (pBrowserWindowInit->browserWindow.style & ~ (WS_HSCROLL|WS_VSCROLL)),
 		      pBrowserWindowInit->browserWindow.x, pBrowserWindowInit->browserWindow.y,
 		      pBrowserWindowInit->browserWindow.width, pBrowserWindowInit->browserWindow.height,
 		      NULL, NULL, hInstance, NULL);
 
-  if (hwnd == NULL)
-    scheme_signal_error ("make-browser: Can't create browser window");
+  if (hwnd == NULL) {
+    ReleaseSemaphore (createHwndSem, 1, NULL);
+    return;
+  }
 
   ShowWindow (hwnd, SW_SHOW);
   SetForegroundWindow (hwnd);
