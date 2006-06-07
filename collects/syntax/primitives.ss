@@ -26,6 +26,7 @@
      '(call-with-values apply 
 	error
 	call-with-current-continuation
+	call-with-escape-continuation
 	hash-table-get
 	write-image-to-file
 	syntax-local-value))
