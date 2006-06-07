@@ -40,7 +40,13 @@ int show_trace (char * str, va_list marker)
     int i = 1;
 
     while (count < 0) {
-        buffer.ReSizeThrows (STRING_BUFFER_LEN * i);
+# if _MSC_VER < 1400
+        HRESULT hr;
+        if (FAILED(hr = buffer.ReSize (STRING_BUFFER_LEN * i)))
+	  die("Resize failed.", hr);
+#else
+	buffer.ReSizeThrows (STRING_BUFFER_LEN * i);
+#endif
         count = _vsnprintf ((char *) buffer.Ptr(), STRING_BUFFER_LEN * i, str, marker);
         i *= 2;
         }
