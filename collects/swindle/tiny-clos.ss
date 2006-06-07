@@ -1962,8 +1962,8 @@
 ;;>> <parameter>
 ;;>> <promise>
 ;;>> <exn>
-;;>> <break-exn>
-;;>> <non-break-exn>
+;;>> <exn:fail>
+;;>> <exn:break>
 ;;>> <semaphore>
 ;;>> <hash-table>
 ;;>> <subprocess>
@@ -2054,8 +2054,22 @@
 (defprimclass <parameter>)
 (defprimclass <promise>)
 (defprimclass <exn>)
-(defprimclass <break-exn> <exn>)
-(defprimclass <non-break-exn> <exn>)
+(defprimclass <exn:fail>  <exn>)
+(defprimclass <exn:break> <exn>)
+;; make these classes used when we see exn structs
+(let ([set-exn-class
+       (lambda (class make-exn . xs)
+         (hash-table-put! struct-to-class-table
+                          (let-values ([(e _)
+                                        (struct-info
+                                         (apply make-exn "foo"
+                                                (current-continuation-marks)
+                                                xs))])
+                            e)
+                          class))])
+  (set-exn-class <exn> make-exn)
+  (set-exn-class <exn:fail> make-exn:fail)
+  (set-exn-class <exn:fail> make-exn:break (let/ec e e)))
 (defprimclass <semaphore>)
 (defprimclass <hash-table>)
 (defprimclass <subprocess>)
@@ -2140,8 +2154,6 @@
               [(regexp?         x) <regexp>]
               [(byte-regexp?    x) <byte-regexp>]
               [(promise?        x) <promise>]
-              [(exn?            x)
-               (if (exn:break? x) <break-exn> <non-break-exn>)]
               [(real-keyword?   x) <real-keyword>]
               [(semaphore?      x) <semaphore>]
               [(hash-table?     x) <hash-table>]
@@ -2276,8 +2288,8 @@
 ;;>       <parameter> : <primitive-class>
 ;;>       <promise> : <primitive-class>
 ;;>       <exn> : <primitive-class>
-;;>         <break-exn> : <primitive-class>
-;;>         <non-break-exn> : <primitive-class>
+;;>         <exn:fail> : <primitive-class>
+;;>         <exn:break> : <primitive-class>
 ;;>       <semaphore> : <primitive-class>
 ;;>       <hash-table> : <primitive-class>
 ;;>       <subprocess> : <primitive-class>
