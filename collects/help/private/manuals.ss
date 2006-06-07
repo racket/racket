@@ -58,8 +58,11 @@
     (let* ([entry (assoc (string->path manual) known-docs)]
 	   [name (or (and entry (cdr entry))
                      manual)]
-	   [href (get-help-url (find-doc-directory manual))])
-      `(A ((HREF ,href)) ,name)))
+           [doc-dir (find-doc-directory manual)])
+      (if doc-dir
+          (let ([href (get-help-url doc-dir)])
+            `(A ((HREF ,href)) ,name))
+          name)))
   
   ; string string string -> xexpr
   ; man is manual name

@@ -8,11 +8,10 @@
 	   (lib "dirs.ss" "setup"))
   
   (provide/contract (get-help-url
-                     (((lambda (x)
-                        (or (path? x)
-                            (path-string? x))))
+                     (opt->
+                      ((or/c path? path-string?))
                       (string?)
-                      . opt-> . string?)))
+                      string?)))
   
   ; given a manual path, convert to absolute Web path
   ; manual path is an anchored path to a doc manual, never a servlet
