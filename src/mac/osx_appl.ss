@@ -41,7 +41,7 @@ exit 1
 
   ; set plthome:
   (define plthome (getenv "PLTHOME"))
-  (printf "plthome is ~s~n" plthome)
+  (printf "plthome is ~a\n" plthome)
 
   (define for-3m? (getenv "BUILDING_3M"))
 
@@ -63,10 +63,10 @@ exit 1
     (let* ([head-path (build-path path (car template-tree))])
       (when (file-exists? head-path)
 	    (error 'realize-template 
-		   "Can't create directory ~s because there's a file with that name" 
+		   "Can't create directory \"~a\" because there's a file with that name" 
 		   head-path))
       (unless (directory-exists? head-path)
-	      (printf "Creating directory: ~s~n" head-path)
+	      (printf "Creating directory: ~a\n" head-path)
 	      (make-directory head-path))
       (for-each (lambda (template-tree) (realize-template head-path template-tree))
 	        (cdr template-tree))))
@@ -79,7 +79,7 @@ exit 1
 
   (define (write-info contents-path info-plist)
     (let* ([info-plist-path (build-path contents-path "Info.plist")])
-      (printf "writing file ~s~n" info-plist-path)
+      (printf "writing file ~a\n" info-plist-path)
       (call-with-output-file info-plist-path
 	(lambda (port)
 	  (write-plist info-plist port))
@@ -91,7 +91,7 @@ exit 1
       (make-directory* app-path)
       (realize-template app-path app-template-tree)
       (let* ([pkg-info-path (build-path app-path "Contents" "PkgInfo")])
-	(printf "writing file ~s~n" pkg-info-path)
+	(printf "writing file ~a\n" pkg-info-path)
 	(call-with-output-file pkg-info-path
 	  (lambda (port)
 	    (fprintf port pkg-info-string))
