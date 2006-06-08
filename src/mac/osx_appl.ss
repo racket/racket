@@ -5,30 +5,16 @@
 # OS X pre-make script
 # builds resource files, makes template Starter.app and MrEd.app
 #
-# the script must be run from the mrd build directory,
+# the script must be run from the mred build directory,
 # and srcdir must be provided as the first argument
 
-PLTHOMEBASE="$1/.."
-export PLTHOMEBASE
-PLTHOME=
-export PLTHOME
-PLTCOLLECTS=
-export PLTCOLLECTS
-DYLD_FRAMEWORK_PATH=${BUILDBASE}/mzscheme:${DYLD_FRAMEWORK_PATH}
-export DYLD_FRAMEWORK_PATH
-shift 1
-exec ${BUILDBASE}/mzscheme/mzscheme -xqr "$0"
+exec ${BUILDBASE}/mzscheme/mzscheme -qr "$0" "$1"
 echo "Couldn't start MzScheme!"
 exit 1
 
 |#
 
 (use-compiled-file-paths null)
-
-(let ([p (getenv "PLTHOMEBASE")])
-  (let ([plthome (path->complete-path p)])
-    (putenv "PLTHOME" (path->string plthome))
-    (current-library-collection-paths (list (build-path plthome "collects")))))
 
 (module osx_appl mzscheme
 
@@ -39,11 +25,9 @@ exit 1
   (define rez-path (or (getenv "REZ")
 		       "/Developer/Tools/Rez"))
 
-  ; set plthome:
-  (define plthome (getenv "PLTHOME"))
-  (printf "plthome is ~a\n" plthome)
-
   (define for-3m? (getenv "BUILDING_3M"))
+
+  (define plthome (build-path (vector-ref (current-command-line-arguments) 0) 'up))
 
   ; Rez where needed:
   (let* ([cw-path (build-path plthome "src" "mac" "cw")]
