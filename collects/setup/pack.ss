@@ -128,7 +128,7 @@
              fileout)
       (newline fileout)
       (for-each (lambda (path)
-                  (mztar (simplify-path path #f) fileout filter file-mode))
+                  (mztar (simplify-path path #f) fileout file-filter file-mode))
                 paths)
       (close-output-port fileout)
       (thread-wait thd)))
@@ -136,7 +136,7 @@
   (define (element->string x)
     (if (path? x) (path->string x) x))
 
-  (define (mztar path output filter file-mode)
+  (define (mztar path output file-filter file-mode)
     (define (path->list p)
       (if (eq? p 'same)
         null
@@ -160,7 +160,7 @@
       (for-each
        (lambda (f)
          (let* ([p (build-path dir f)]
-                [filter-val (filter p)])
+                [filter-val (file-filter p)])
            (when filter-val
              (if (directory-exists? p)
                (loop p (append dpath (list f)) #f)
