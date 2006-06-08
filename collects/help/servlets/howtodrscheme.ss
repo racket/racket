@@ -20,7 +20,7 @@
        "See " (A ((HREF "/servlets/scheme/how.ss")) "Software & Components") 
        " for a guide to the full suite of PLT tools." 
        (UL  
-        (LI  (B  (A ((HREF "/doc/tour/")) "Tour")) ": An introduction to DrScheme")
+        (LI  (B  (A ((HREF ,(get-manual-index "tour")))) "Tour") ": An introduction to DrScheme")
         (LI  (B  ,(manual-entry "drscheme" 
                                 "graphical interface"
                                 "Interface Essentials"))

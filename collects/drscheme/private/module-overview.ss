@@ -14,12 +14,12 @@
            (lib "unit.ss")
            (lib "async-channel.ss"))
   
-  (define-struct req (filename lib?))
-  ;; type req = (make-req string[filename] boolean)
+  (define-struct req (filename key))
+  ;; type req = (make-req string[filename] (union symbol #f))
       
   (provide module-overview@
            process-program-unit
-           (struct req (filename lib?)))
+           (struct req (filename key)))
 
   (define adding-file (string-constant module-browser-adding-file))
   (define unknown-module-name "? unknown module name")
@@ -41,7 +41,10 @@
       (preferences:set-default 'drscheme:module-overview:label-font-size 12 number?)
       (preferences:set-default 'drscheme:module-overview:window-height 500 number?)
       (preferences:set-default 'drscheme:module-overview:window-width 500 number?)
-      (preferences:set-default 'drscheme:module-browser:show-lib-paths? #f boolean?)
+      (preferences:set-default 'drscheme:module-browser:hide-paths '(lib)
+                               (λ (x)
+                                 (and (list? x)
+                                      (andmap symbol? x))))
       
       (define (set-box/f b v) (when (box? b) (set-box! b v)))
       
@@ -57,7 +60,8 @@
         (interface ()
           set-label-font-size
           get-label-font-size
-          show-lib-paths
+          show-visible-paths
+          remove-visible-paths
           set-name-length
           get-name-length))
       
@@ -66,8 +70,8 @@
           get-filename
           get-word
           get-lines
-          get-lib-children
-          add-lib-child))
+          is-special-key-child?
+          add-special-key-child))
       
       ;; make-module-overview-pasteboard : boolean
       ;;                                   ((union #f snip) -> void)
@@ -190,9 +194,7 @@
               
               (set! max-lines #f)
               
-              (unless (preferences:get 'drscheme:module-browser:show-lib-paths?)
-                (remove-lib-linked))
-              
+              (remove-specially-linked)
               (render-snips)
               (end-edit-sequence))
               
@@ -200,7 +202,7 @@
             ;; name-original and name-require and the identifiers for those paths and
             ;; original-filename? and require-filename? are booleans indicating if the names
             ;; are filenames.
-            (define/public (add-connection name-original name-require lib-path? require-type)
+            (define/public (add-connection name-original name-require path-key require-type)
               (unless max-lines
                 (error 'add-connection "not in begin-adding-connections/end-adding-connections sequence"))
               (let* ([original-filename? (file-exists? name-original)]
@@ -221,9 +223,10 @@
                   [(require-for-template)
                    (add-links original-snip require-snip
                               dark-template-pen light-template-pen
-                              dark-template-brush light-template-brush)])
-                (when lib-path?
-                  (send original-snip add-lib-child require-snip))
+                              dark-template-brush light-template-brush)]
+                  [else (error 'add-connection "unknown require-type ~s" require-type)])
+                (when path-key
+                  (send original-snip add-special-key-child path-key require-snip))
                 (if (send original-snip get-level)
                     (fix-snip-level require-snip (+ original-level 1))
                     (fix-snip-level original-snip 0))))
@@ -296,36 +299,48 @@
                 (- (unbox bb)
                    (unbox tb))))
             
-            (field [lib-paths-on? (preferences:get 'drscheme:module-browser:show-lib-paths?)])
-            (define/public (show-lib-paths on?)
-              (unless (eq? on? lib-paths-on?)
-                (set! lib-paths-on? on?)
-                (begin-edit-sequence)
-                (re-add-snips)
-                (render-snips)
-                (end-edit-sequence)))
+            (field [hidden-paths (preferences:get 'drscheme:module-browser:hide-paths)])
+            (define/public (remove-visible-paths symbol)
+              (unless (memq symbol hidden-paths)
+                (set! hidden-paths (cons symbol hidden-paths))
+                (refresh-visible-paths)))
+            (define/public (show-visible-paths symbol)
+              (when (memq symbol hidden-paths)
+                (set! hidden-paths (remq symbol hidden-paths))
+                (refresh-visible-paths)))
+            
+            (define/private (refresh-visible-paths)
+              (begin-edit-sequence)
+              (re-add-snips)
+              (render-snips)
+              (end-edit-sequence))
             
             (define/private (re-add-snips)
               (begin-edit-sequence)
-              (remove-currrently-inserted)
-              (if lib-paths-on?
-                  (add-all)
-                  (remove-lib-linked))
+              (remove-specially-linked)
               (end-edit-sequence))
             
-            (define/private (remove-lib-linked)
+            (define/private (remove-specially-linked)
               (remove-currrently-inserted)
-              (for-each
-               (λ (snip)
-                 (insert snip)
-                 (let loop ([snip snip])
+              (cond
+                [(null? hidden-paths)
+                 (add-all)]
+                [else
+                 (let ([ht (make-hash-table)])
                    (for-each
-                    (λ (child)
-                      (unless (memq child (send snip get-lib-children))
-                        (insert child)
-                        (loop child)))
-                    (send snip get-children))))
-               (get-top-most-snips)))
+                    (λ (snip)
+                      (insert snip)
+                      (let loop ([snip snip])
+                        (unless (hash-table-get ht snip (λ () #f))
+                          (hash-table-put! ht snip #t)
+                          (for-each
+                           (λ (child)
+                             (unless (ormap (λ (key) (send snip is-special-key-child? key child))
+                                            hidden-paths)
+                               (insert child)
+                               (loop child)))
+                           (send snip get-children)))))
+                    (get-top-most-snips)))]))
                 
             (define/private (remove-currrently-inserted)
               (let loop ()
@@ -492,11 +507,17 @@
                         lines
                         pb)
             
-            (field [lib-children null])
-            (define/public (get-lib-children) lib-children)
-            (define/public (add-lib-child child)
-              (unless (memq child lib-children)
-                (set! lib-children (cons child lib-children))))
+            (field [special-children (make-hash-table)])
+            (define/public (is-special-key-child? key child)
+              (let ([ht (hash-table-get special-children key (λ () #f))])
+                (and ht
+                     (hash-table-get ht child (λ () #f)))))
+            (define/public (add-special-key-child key child)
+              (let ([ht (hash-table-get special-children key (λ () #f))])
+                (unless ht
+                  (set! ht (make-hash-table))
+                  (hash-table-put! special-children key ht))
+                (hash-table-put! ht child #t)))
             
             (define/public (get-filename) filename)
             (define/public (get-word) word)
@@ -687,11 +708,13 @@
                   (parent vp)
                   (callback
                    (λ (x y)
-                     (send pasteboard show-lib-paths (send lib-paths-checkbox get-value))))))
+                     (if (send lib-paths-checkbox get-value)
+                         (send pasteboard add-visible-path 'lib)
+                         (send pasteboard remove-visible-path 'lib))))))
               
               (define ec (make-object canvas:basic% vp pasteboard))
               
-              (send lib-paths-checkbox set-value (preferences:get 'drscheme:module-browser:show-lib-paths?))
+              (send lib-paths-checkbox set-value (not (memq 'lib (preferences:get 'drscheme:module-browser:hide-paths))))
               (set! update-label
                     (λ (s)
                       (if (and s (not (null? s)))
@@ -804,9 +827,9 @@
                  (unless (eq? val 'done)
                    (let ([name-original (first val)]
                          [name-require (second val)]
-                         [lib-path? (third val)]
+                         [path-key (third val)]
                          [require-type (fourth val)])
-                     (send pasteboard add-connection name-original name-require lib-path? require-type))
+                     (send pasteboard add-connection name-original name-require path-key require-type))
                    (loop))]))))
         (send pasteboard end-adding-connections)
         
@@ -921,21 +944,21 @@
               (for-each (λ (require)
                           (add-connection module-name
                                           (req-filename require)
-                                          (req-lib? require)
+                                          (req-key require)
                                           'require)
                           (add-filename-connections (req-filename require)))
                         requires)
               (for-each (λ (syntax-require)
                           (add-connection module-name 
                                           (req-filename syntax-require)
-                                          (req-lib? syntax-require)
+                                          (req-key syntax-require)
                                           'require-for-syntax)
                           (add-filename-connections (req-filename syntax-require)))
                         syntax-requires)
               (for-each (λ (require)
                           (add-connection module-name
                                           (req-filename require)
-                                          (req-lib? require)
+                                          (req-key require)
                                           'require-for-template)
                           (add-filename-connections (req-filename require)))
                         template-requires)))))
@@ -944,10 +967,10 @@
       ;; name-original and name-require and the identifiers for those paths and
       ;; original-filename? and require-filename? are booleans indicating if the names
       ;; are filenames.
-      (define (add-connection name-original name-require is-lib? require-type)
+      (define (add-connection name-original name-require req-sym require-type)
         (async-channel-put connection-channel (list name-original 
                                                     name-require  
-                                                    is-lib?
+                                                    req-sym
                                                     require-type)))
       
       (define (extract-module-name stx)
@@ -966,13 +989,16 @@
             [(null? direct-requires) null]
             [else (let ([dr (car direct-requires)])
                     (if (module-path-index? dr)
-                        (cons (make-req (simplify-path (expand-path (resolve-module-path-index dr base)))
-                                        (is-lib? dr))
-                              (loop (cdr direct-requires)))
+                        (begin
+                          ;(printf ">> ~s ~s\n" base (collapse-module-path-index dr base))
+                          (cons (make-req (simplify-path (expand-path (resolve-module-path-index dr base)))
+                                          (get-key dr))
+                                (loop (cdr direct-requires))))
                         (loop (cdr direct-requires))))])))
       
-      (define (is-lib? dr)
+      (define (get-key dr)
         (and (module-path-index? dr)
              (let-values ([(a b) (module-path-index-split dr)])
                (and (pair? a)
-                    (eq? 'lib (car a)))))))))
+                    (symbol? (car a))
+                    (car a))))))))

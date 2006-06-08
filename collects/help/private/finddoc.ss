@@ -1,10 +1,10 @@
 (module finddoc mzscheme
   (require "path.ss"
-	   (lib "dirs.ss" "setup"))
+	   "get-help-url.ss"
+           (lib "dirs.ss" "setup"))
 
   (provide finddoc
-	   findreldoc
-           finddoc-page
+	   finddoc-page
 	   finddoc-page-anchor
 	   find-doc-directory)
   
@@ -19,31 +19,18 @@
                   (build-path (car m) (caddr m))
                     label))))
 
-  ;; Given a Unix-style relative path to reach the "doc"
-  ;; collection, creates a link that can go to a
-  ;; particular anchor.
-  (define (findreldoc todocs manual index-key label)
-    (let ([m (lookup manual index-key label)])
-      (if (string? m)
-          m
-          (format "<A href=\"~a/~a/~a#~a\">~a</A>"
-                  todocs
-                  manual
-                  (caddr m)
-                  (cadddr m)
-                  label))))
-
   (define (finddoc-page-help manual index-key anchor?)
     (let ([m (lookup manual index-key "dummy")])
       (if (string? m)
           (error (format "Error finding index \"~a\" in manual \"~a\""
                          index-key manual))
-          (let ([path (if anchor?
-                          (string-append (caddr m) "#" (cadddr m))
-                          (caddr m))])
-            (if (servlet-path? (string->path (caddr m)))
-                path
-                (format "/doc/~a/~a" manual path))))))
+          (if (servlet-path? (string->path (caddr m)))
+              (if anchor?
+                  (string-append (caddr m) "#" (cadddr m))
+                  (caddr m))
+              (get-help-url (build-path (list-ref m 0)
+                                        (list-ref m 2))
+                            (list-ref m 3))))))
   
   ; finddoc-page : string string -> string
   ; returns path for use by PLT Web server

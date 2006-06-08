@@ -1,6 +1,7 @@
 (module howtoprogram mzscheme
   (require "private/util.ss"
            "private/headelts.ss"
+           "../private/manuals.ss"
            (lib "servlet.ss" "web-server"))
   
   (provide interface-version timeout start)
@@ -26,13 +27,13 @@
        (P)
        "Help Desk provides the following interactive support for the textbook:"
        (UL  
-        (LI  (B  (A ((HREF "/doc/teachpack/index.html"))
+        (LI  (B  (A ((HREF ,(get-manual-index "teachpack")))
                     "Teachpack documentation"))))
        (P)
        ,(color-highlight
          `(H2  "For Experienced Programmers"))
-       (UL  (LI  (B  (A ((HREF "/doc/t-y-scheme/index.htm"))
-                        "Teach Yourself Scheme in Fixnum Days")) 
+       (UL  (LI  (B  (A ((HREF ,(get-manual-index "t-y-scheme")))
+                        "Teach Yourself Scheme in Fixnum Days"))
                  ": For programmers with lots of experience in other languages"))
        ,(color-highlight `(H2  "For Teachers and Researchers"))
        (UL  (LI  (B  (A ((HREF "/servlets/research/why.ss")) "Why DrScheme?"))

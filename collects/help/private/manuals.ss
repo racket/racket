@@ -19,7 +19,6 @@
 
   (provide main-manual-page)
   (provide finddoc
-	   findreldoc
 	   finddoc-page-anchor)
   
   (provide/contract [manual-entry (string? string? xexpr? . -> . xexpr?)]
@@ -28,6 +27,7 @@
                     [find-doc-directories (-> (listof path?))]
                     [find-doc-directory (path? . -> . (or/c false/c path?))]
                     [find-doc-names (-> (listof (cons/c path? string?)))]
+                    [get-manual-index (-> string? string?)]
                     [get-index-file (path? . -> . (or/c false/c path?))])
   
   (provide find-manuals)
@@ -127,7 +127,7 @@
                                          (directory-list docs-path))
                                  '()))))
                 (get-doc-search-dirs))))
-
+  
   (define (find-manuals)
     (let* ([docs (sort (filter get-index-file (find-doc-directories))
                        compare-docs)]
@@ -351,6 +351,9 @@
       (cond [(= ap bp) (string<? (path->string a) (path->string b))]
             [else (< ap bp)])))
 
+  ;; get-manual-index : string -> html
+  (define (get-manual-index manual-dirname) (get-help-url (build-path (find-doc-dir) manual-dirname)))
+  
   ;; get-index-file : path -> (union #f path)
   ;; returns the name of the main file, if one can be found
   (define (get-index-file doc-dir)

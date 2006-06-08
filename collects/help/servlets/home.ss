@@ -1,5 +1,6 @@
 (module home mzscheme
   (require "private/util.ss"
+           "../private/get-help-url.ss"
            "../private/manuals.ss"
 	   (lib "servlet.ss" "web-server"))
   
@@ -31,7 +32,7 @@
                   (BR)
                   'nbsp 'nbsp 'nbsp 'nbsp 'nbsp 'nbsp
                   (FONT ((SIZE "-2"))
-                        (A ((HREF "/doc/tour/")) "Tour") ", "
+                        (a ((href ,(get-manual-index "tour"))) "Tour") ", "
                         (A ((HREF "/servlets/scheme/what.ss")) "Languages") ", "
                         (A ((HREF "/servlets/manuals.ss")) "Manuals") ", "
                         (A ((HREF "/servlets/releaseinfo.ss")) "Release") ", "
@@ -46,7 +47,8 @@
                   ": Learning to program in Scheme"             
                   (BR) 'nbsp 'nbsp 'nbsp 'nbsp 'nbsp 'nbsp 
                   (FONT ((SIZE "-2"))
-                        (A ((HREF "/doc/teachpack/")) "Teachpacks") ", "
+                        (a ((href ,(get-manual-index "teachpack"))) "Teachpacks")
+                        ", "
                         (A ((HREF "/servlets/research/why.ss")) "Why DrScheme?") ", "
                         "...")))
                 

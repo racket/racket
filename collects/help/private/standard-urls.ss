@@ -2,7 +2,9 @@
 
   (require "../servlets/private/util.ss"
            "internal-hp.ss"
+           "get-help-url.ss"
            (lib "uri-codec.ss" "net")
+           (lib "dirs.ss" "setup")
            (lib "contract.ss"))
   
   (provide home-page-url)
@@ -101,7 +103,7 @@
   
   ; sym, string assoc list
   (define hd-locations
-    '((hd-tour "/doc/tour/")
+    `((hd-tour ,(get-help-url (build-path (find-doc-dir) "tour")))
       (release-notes "/servlets/release/notes.ss")
       (plt-license "/servlets/release/license.ss")
       (front-page "/servlets/home.ss")))

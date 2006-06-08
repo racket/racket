@@ -39,6 +39,7 @@ module browser threading seems wrong.
   (define module-browser-progress-constant (string-constant module-browser-progress))
   (define status-compiling-definitions (string-constant module-browser-compiling-defns))
   (define show-lib-paths (string-constant module-browser-show-lib-paths/short))
+  (define show-planet-paths (string-constant module-browser-show-planet-paths/short))
   (define refresh (string-constant module-browser-refresh))
   
   (define unit@
@@ -2383,6 +2384,7 @@ module browser threading seems wrong.
                  [module-browser-ec #f]
                  [module-browser-button #f]
                  [module-browser-lib-path-check-box #f]
+                 [module-browser-planet-path-check-box #f]
                  [module-browser-name-length-choice #f]
                  [module-browser-pb #f]
                  [module-browser-menu-item 'module-browser-menu-item-unset])
@@ -2430,16 +2432,31 @@ module browser threading seems wrong.
               (set! module-browser-ec (make-object editor-canvas%
                                         module-browser-panel
                                         module-browser-pb))
-              (set! module-browser-lib-path-check-box
-                    (new check-box%
-                      (parent module-browser-panel)
-                      (label show-lib-paths)
-                      (value (preferences:get 'drscheme:module-browser:show-lib-paths?))
-                      (callback 
-                       (λ (x y) 
-                         (let ([val (send module-browser-lib-path-check-box get-value)])
-                           (preferences:set 'drscheme:module-browser:show-lib-paths? val)
-                           (send module-browser-pb show-lib-paths val))))))
+              
+              (let* ([show-callback
+                      (λ (cb key)
+                        (let ([val (send cb get-value)]
+                              [current (preferences:get 'drscheme:module-browser:hide-paths)])
+                          (if val
+                              (begin
+                                (when (memq key current)
+                                  (preferences:set 'drscheme:module-browser:hide-paths (remq key current)))
+                                (send module-browser-pb show-visible-paths key))
+                              (begin
+                                (unless (memq key current)
+                                  (preferences:set 'drscheme:module-browser:hide-paths (cons key current)))
+                                (send module-browser-pb remove-visible-paths key)))))]
+                     [mk-checkbox
+                      (λ (key label)
+                        (new check-box%
+                             (parent module-browser-panel)
+                             (label label)
+                             (value (not (memq key (preferences:get 'drscheme:module-browser:hide-paths))))
+                             (callback 
+                              (λ (cb _) 
+                                (show-callback cb key)))))])
+                (set! module-browser-lib-path-check-box (mk-checkbox 'lib show-lib-paths))
+                (set! module-browser-planet-path-check-box (mk-checkbox 'planet show-planet-paths)))
               
               (set! module-browser-name-length-choice
                     (new choice%
@@ -2500,6 +2517,7 @@ module browser threading seems wrong.
                 (update-status-line 'plt:module-browser status-compiling-definitions)
                 (send module-browser-button enable #f)
                 (send module-browser-lib-path-check-box enable #f)
+                (send module-browser-planet-path-check-box enable #f)
                 (send module-browser-name-length-choice enable #f)
                 (disable-evaluation-in-tab current-tab)
                 (drscheme:module-overview:fill-pasteboard 
@@ -2517,6 +2535,7 @@ module browser threading seems wrong.
                 (send mod-tab enable-evaluation)
                 (send module-browser-button enable #t)
                 (send module-browser-lib-path-check-box enable #t)
+                (send module-browser-planet-path-check-box enable #t)
                 (send module-browser-name-length-choice enable #t)
                 (close-status-line 'plt:module-browser))))
           
