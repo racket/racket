@@ -887,3 +887,8 @@ I'm going to call this the normal-break/value break.  Blurrch!
 2006-01-12
 
 *************
+
+Begin STILL isn't working.  My last plan, to wrap each 'begin' body with a mark that
+indicates the source, is naturally broken because an inner mark can destroy that one.
+The solution is (hopefully) easy; just eta-expand to prevent the mark from being lost.
+Since it's a non-tail call, this doesn't destroy tail-calling.
