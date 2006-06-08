@@ -32,7 +32,7 @@
                               [at-plt-home? #f])
     (pack-plt dest name paths
               #:collections collections
-              #:filter filter
+              #:file-filter filter
               #:encode? encode?
               #:file-mode file-mode
               #:unpack-unit unpack-unit
@@ -191,7 +191,7 @@
     (pack-collections-plt output name collections
                           #:replace? replace?
                           #:extra-setup-collections extra-setup-collections
-                          #:filter file-filter
+                          #:file-filter file-filter
                           #:at-plt-home? at-plt-home?))
 
   (define/kw (pack-collections-plt output name collections
@@ -263,7 +263,7 @@
            source-files
            #:collections (append extra-setup-collections
                                  (filter get-info collections))
-           #:filter file-filter
+           #:file-filter file-filter
            #:file-mode (if replace? 'file-replace 'file)
            #:plt-relative? #t
            #:requires
