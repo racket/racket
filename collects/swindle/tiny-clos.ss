@@ -2069,7 +2069,7 @@
                           class))])
   (set-exn-class <exn> make-exn)
   (set-exn-class <exn:fail> make-exn:fail)
-  (set-exn-class <exn:fail> make-exn:break (let/ec e e)))
+  (set-exn-class <exn:break> make-exn:break (let/ec e e)))
 (defprimclass <semaphore>)
 (defprimclass <hash-table>)
 (defprimclass <subprocess>)
