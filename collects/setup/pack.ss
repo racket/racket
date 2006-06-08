@@ -22,35 +22,35 @@
 	   arg1-name v arg2-name))
 
   (define/kw (pack dest name paths collections
-		   #:optional [filter std-filter]
-                              [encode? #t]
-                              [file-mode 'file]
-                              [unpack-unit #f]
+		   #:optional [file-filter   std-filter]
+                              [encode?       #t]
+                              [file-mode     'file]
+                              [unpack-unit   #f]
                               [plt-relative? #t]
-                              [requires null]
-                              [conflicts null]
-                              [at-plt-home? #f])
+                              [requires      null]
+                              [conflicts     null]
+                              [at-plt-home?  #f])
     (pack-plt dest name paths
-              #:collections collections
-              #:file-filter filter
-              #:encode? encode?
-              #:file-mode file-mode
-              #:unpack-unit unpack-unit
+              #:collections   collections
+              #:file-filter   file-filter
+              #:encode?       encode?
+              #:file-mode     file-mode
+              #:unpack-unit   unpack-unit
               #:plt-relative? plt-relative?
-              #:requires null
-              #:conflicts null
-              #:at-plt-home? at-plt-home?))
+              #:requires      null
+              #:conflicts     null
+              #:at-plt-home?  at-plt-home?))
 
   (define/kw (pack-plt dest name paths
-                       #:key [collections null]
-                             [filter std-filter]
-                             [encode? #t]
-                             [file-mode 'file]
-                             [unpack-unit #f]
+                       #:key [collections   null]
+                             [file-filter   std-filter]
+                             [encode?       #t]
+                             [file-mode     'file]
+                             [unpack-unit   #f]
                              [plt-relative? #t]
-                             [requires null]
-                             [conflicts null]
-                             [at-plt-home? #f]
+                             [requires      null]
+                             [conflicts     null]
+                             [at-plt-home?  #f]
                              [test-plt-dirs #f])
     (when (and at-plt-home? (not plt-relative?))
       (x-arg-needs-true-arg 'pack-plt 'at-plt-home? at-plt-home? 'plt-relative?))
