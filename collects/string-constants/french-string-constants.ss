@@ -1048,6 +1048,7 @@
   (module-browser-progress "Navigateur de modules : ~a") ;; prefix in the status line
   (module-browser-compiling-defns "Navigateur de modules : compilation des définitions")
   (module-browser-show-lib-paths/short "(require (lib ...))") ;; check box label in show module browser pane in drscheme window.
+  (module-browser-show-planet-paths/short "(require (planet ...))") ;; check box label in show module browser pane in drscheme window.
   (module-browser-refresh "Rafraîchir") ;; button label in show module browser pane in drscheme window.
   (module-browser-only-in-plt-and-module-langs
    "Le navigateur de modules n'est disponible que pour les programmes écrits dans l'un des langages PLT ou dans le langage \"module\", et seulement pour les programmes qui contiennent des modules.")

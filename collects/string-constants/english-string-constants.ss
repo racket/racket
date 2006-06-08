@@ -1048,6 +1048,7 @@ please adhere to these guidelines:
  (module-browser-progress "Module Browser: ~a") ;; prefix in the status line
  (module-browser-compiling-defns "Module Browser: compiling definitions")
  (module-browser-show-lib-paths/short "Follow lib requires") ;; check box label in show module browser pane in drscheme window.
+ (module-browser-show-planet-paths/short "Follow planet requires") ;; check box label in show module browser pane in drscheme window.
  (module-browser-refresh "Refresh") ;; button label in show module browser pane in drscheme window.
  (module-browser-only-in-plt-and-module-langs
   "The module browser is only available for programs in the PLT languages and in the module language (and only for programs that have modules in them).")

@@ -920,6 +920,7 @@
  (module-browser-progress "Modul-Browser: ~a") ;; prefix in the status line
  (module-browser-compiling-defns "Modul-Browser: Definition compilieren")
  (module-browser-show-lib-paths/short "\"lib\"-requires folgen") ;; check box label in show module browser pane in drscheme window.
+ (module-browser-show-planet-paths/short "\"planet\"-requires folgen") ;; check box label in show module browser pane in drscheme window.
  (module-browser-refresh "Aktualisieren") ;; button label in show module browser pane in drscheme window.
  (module-browser-only-in-plt-and-module-langs
   "Der Modul-Browser ist nur für Programme in den PLT-Sprachen und in der Modul-Sprache verfügbar (und nur für Programme mit Modulen).")

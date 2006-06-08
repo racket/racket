@@ -1017,6 +1017,7 @@ please adhere to these guidelines:
  (module-browser-progress "Moduloversigt: ~a") ;; prefix in the status line
  (module-browser-compiling-defns "Moduloversigt: oversætter definitioner")
  (module-browser-show-lib-paths/short "Følg lib requires") ;; check box label in show module browser pane in drscheme window.
+ (module-browser-show-lib-paths/short "Følg planet requires") ;; check box label in show module browser pane in drscheme window.
  (module-browser-refresh "Opdater") ;; button label in show module browser pane in drscheme window.
  (module-browser-only-in-plt-and-module-langs
  "Moduloversigten er kun tilgængelig for programmer i PLT-sprogene og i modul-sproget (og kun for de programmer, som benytter moduler).")
