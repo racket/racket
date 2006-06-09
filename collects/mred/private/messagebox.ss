@@ -113,9 +113,15 @@
 				      (send btn-pnl stretchable-height #f)
 				      (values msg-pnl btn-pnl btn-pnl 96 'right 'left 'top)))]
 			[else (let ([p (new horizontal-pane% [parent f] [alignment '(center top)])])
-				(make-object message% icon-id p)
-				(let ([msg-pnl (new vertical-pane% [parent p])])
-				  (values msg-pnl f msg-pnl 0 'center 'center 'center)))])])
+				(let ([icon-msg (make-object message% icon-id p)]
+				      [msg-pnl (new vertical-pane% [parent p])])
+				  (values (if single?
+					      (new horizontal-pane% 
+						   [parent msg-pnl]
+						   [alignment '(center top)]
+						   [min-height (send icon-msg min-height)])
+					      msg-pnl)
+					  f msg-pnl 0 'center 'center 'center)))])])
 	  (if single?
 	      (begin
 		(send msg-pnl set-alignment (if (= (length strings) 1) msg-h-align 'left) msg-v-align)
@@ -152,12 +158,10 @@
 			    (let ([p (new vertical-pane% [parent cb-pnl]
 					  [stretchable-height #f]
 					  [alignment '(left center)])])
-			      (when single?
-				(if (eq? 'macosx (system-type))
-				    ;; Match text-panel margin:
-				    (send p horiz-margin 8)
-				    ;; Put space between message an checkbox:
-				    (new message% [parent p] [label " "])))
+			      (when (and single?
+					 (eq? 'macosx (system-type)))
+				;; Match text-panel margin:
+				(send p horiz-margin 8))
 			      (new check-box% 
 				   [label check-message]
 				   [parent p]
