@@ -1955,7 +1955,6 @@
 ;;>> <input-stream-port>
 ;;>> <output-stream-port>
 ;;>> <void>
-;;>> <undefined>
 ;;>> <box>
 ;;>> <weak-box>
 ;;>> <regexp>
@@ -2048,7 +2047,6 @@
 (defprimclass <input-stream-port> <input-port> <stream-port>)
 (defprimclass <output-stream-port> <output-port> <stream-port>)
 (defprimclass <void>)
-(defprimclass <undefined>)
 (defprimclass <box> <mutable>)
 (defprimclass <weak-box> <box>)
 (defprimclass <regexp>)
@@ -2172,7 +2170,6 @@
               [(inspector?      x) <inspector>]
               [(pseudo-random-generator? x) <pseudo-random-generator>]
               [(compiled-expression? x) <compiled-expression>]
-              [(eq? ??? x) <undefined>]
               [else <unknown-primitive>])))
 
 ;;; ---------------------------------------------------------------------------
@@ -2284,7 +2281,6 @@
 ;;>           <input-stream-port> : <primitive-class>
 ;;>           <output-stream-port> : <primitive-class>
 ;;>       <void> : <primitive-class>
-;;>       <undefined> : <primitive-class>
 ;;>       <box> : <primitive-class>
 ;;>         <weak-box> : <primitive-class>
 ;;>       <regexp> : <primitive-class>
