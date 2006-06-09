@@ -108,8 +108,8 @@
 				      (when single?
 					(send msg-pnl horiz-margin 8))
 				      (send btn-pnl vert-margin 8)
-				      (send msg-pnl min-height 64)
-				      (send msg-pnl min-width 350)
+				      (send msg-pnl min-height 40)
+				      (send msg-pnl min-width 300)
 				      (send btn-pnl stretchable-height #f)
 				      (values msg-pnl btn-pnl btn-pnl 96 'right 'left 'top)))]
 			[else (let ([p (new horizontal-pane% [parent f] [alignment '(center top)])])
