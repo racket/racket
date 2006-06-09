@@ -1376,7 +1376,7 @@ MRFWRES = PLT_MrEd.framework/Versions/$(FWVERSION)_3m/Resources/PLT_MrEd.rsrc
 	/usr/bin/install_name_tool -change "PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "@executable_path/../../../PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" ../MrEd3m.app/Contents/MacOS/MrEd3m
 
 $(MRFW) : $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../mzscheme/libmzscheme3m.@LIBSFX@
-	$(MREDLINKER) -dynamiclib -o $(MRFW) -Wl,-headerpad_max_install_names $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../mzscheme/libmzscheme3m.@LIBSFX@ $(@WXVARIANT@_LIBS)
+	$(MREDLINKER) -dynamiclib -o $(MRFW) -Wl,-headerpad_max_install_names $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../mzscheme/libmzscheme3m.@LIBSFX@ $(@WXVARIANT@_LIBS) @X_EXTRA_LIBS@
 
 $(MRFWRES): $(srcdir)/../../mac/osx_appl.ss $(srcdir)/../../mac/cw/MrEd.r
 	rm -rf PLT_MrEd.framework/Resources PLT_MrEd.framework/PLT_MrEd
