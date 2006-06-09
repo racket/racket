@@ -1670,8 +1670,8 @@
   (make-method (list <generic>)
     (lambda (call-next-method generic . args)
       (raise* make-exn:fail:contract
-              "~s: no applicable primary methods for argument types ~e"
-              (%generic-name generic) (map class-of args)))))
+              "~s: no applicable primary methods for arguments ~e, of types ~e"
+              (%generic-name generic) args (map class-of args)))))
 
 ;;; ---------------------------------------------------------------------------
 ;;; Customization variables
