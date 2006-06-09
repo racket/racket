@@ -86,8 +86,7 @@
               (run-in-user-thread
                (lambda ()
                  (let ([new-watch (namespace-variable-value 'render)]
-                       [set-evspc (namespace-variable-value 'set-eventspace)]
-                       [get-rendering (namespace-variable-value 'get-rendering)])
+                       [set-evspc (namespace-variable-value 'set-eventspace)])
                    (set-evspc drs-eventspace)
                    (set! watch-list
                          ((if (weak-member new-watch watch-list)
