@@ -1013,8 +1013,7 @@ static int inlined_binary_prim(Scheme_Object *o, Scheme_Object *_app)
 static int inlined_nary_prim(Scheme_Object *o, Scheme_Object *_app)
 {
   return (SCHEME_PRIMP(o)
-	  && ((SCHEME_PRIM_PROC_FLAGS(o) & (SCHEME_PRIM_IS_UNARY_INLINED | SCHEME_PRIM_IS_BINARY_INLINED))
-	      == (SCHEME_PRIM_IS_UNARY_INLINED | SCHEME_PRIM_IS_BINARY_INLINED))
+	  && (SCHEME_PRIM_PROC_FLAGS(o) & SCHEME_PRIM_IS_MIN_NARY_INLINED)
 	  && (((Scheme_App_Rec *)_app)->num_args == ((Scheme_Primitive_Proc *)o)->mina));
 }
 
@@ -2665,8 +2664,7 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
   if (!SCHEME_PRIMP(rator))
     return 0;
 
-  if ((SCHEME_PRIM_PROC_FLAGS(rator) & (SCHEME_PRIM_IS_UNARY_INLINED | SCHEME_PRIM_IS_BINARY_INLINED))
-      != (SCHEME_PRIM_IS_UNARY_INLINED | SCHEME_PRIM_IS_BINARY_INLINED))
+  if (!(SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_MIN_NARY_INLINED))
     return 0;
 
   if (app->num_args != ((Scheme_Primitive_Proc *)rator)->mina)

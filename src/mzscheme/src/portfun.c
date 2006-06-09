@@ -771,7 +771,14 @@ string_get_or_peek_bytes(Scheme_Input_Port *port,
   is = (Scheme_Indexed_String *) port->port_data;
   if (is->index + skip >= is->size)
     return EOF;
-  else {
+  else if (size == 1) {
+    int pos = is->index;
+    if (buffer)
+      buffer[offset] = is->string[pos + skip];
+    if (!peek)
+      is->index = pos + 1;
+    return 1;
+  } else {
     long l, delta;
 
     delta = is->index + skip;

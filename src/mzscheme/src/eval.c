@@ -1023,6 +1023,10 @@ static int eq_testable_constant(Scheme_Object *v)
       || SAME_OBJ(v, scheme_true)
       || SCHEME_VOIDP(v))
     return 1;
+
+  if (SCHEME_CHARP(v) && (SCHEME_CHAR_VAL(v) < 256))
+    return 1;
+
   return 0;
 }
 

@@ -992,7 +992,7 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
   Scheme_Hash_Table *checked, *next_checked, *prev_checked;
   Scheme_Object *past_checkeds, *future_checkeds, *future_todos, *past_to_modchains;
   Scheme_Module *m2;
-  int same_namespace, skip_notify = 0, phase;
+  int same_namespace, set_env_for_notify = 0, phase;
 
   if (!SCHEME_NAMESPACEP(argv[0]))
     scheme_wrong_type("namespace-attach-module", "namespace", 0, argc, argv);
@@ -1004,7 +1004,7 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
     if (!SCHEME_NAMESPACEP(argv[2]))
       scheme_wrong_type("namespace-attach-module", "namespace", 2, argc, argv);
     to_env = (Scheme_Env *)argv[2];
-    skip_notify = 1;
+    set_env_for_notify = 1;
   } else
     to_env = scheme_get_env(NULL);
 
@@ -1274,9 +1274,23 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
        #f for to_modchain if there's more to do. */
   }
 
-  if (!skip_notify) {
-    /* Notify module name resolver of attached modules: */
-    resolver = scheme_get_param(scheme_current_config(), MZCONFIG_CURRENT_MODULE_RESOLVER);
+  /* Notify module name resolver of attached modules: */
+  {
+    Scheme_Cont_Frame_Data cframe;
+    Scheme_Config *config;
+
+    config = scheme_current_config();
+    
+    if (set_env_for_notify) {
+      config = scheme_extend_config(scheme_current_config(),
+				    MZCONFIG_ENV,
+				    (Scheme_Object *)to_env);
+  
+      scheme_push_continuation_frame(&cframe);
+      scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
+    }
+
+    resolver = scheme_get_param(config, MZCONFIG_CURRENT_MODULE_RESOLVER);
     while (!SCHEME_NULLP(notifies)) {
       a[0] = scheme_false;
       a[1] = SCHEME_CAR(notifies);
@@ -1285,6 +1299,10 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
       name = scheme_apply(resolver, 3, a);
       
       notifies = SCHEME_CDR(notifies);
+    }
+
+    if (set_env_for_notify) {
+      scheme_pop_continuation_frame(&cframe);
     }
   }
 

@@ -1337,6 +1337,9 @@ long scheme_get_byte_string_unless(const char *who,
   Scheme_Get_String_Fun gs;
   Scheme_Peek_String_Fun ps;
 
+  /* See also get_one_byte, below. Any change to this function
+     may require a change to 1-byte specialization of get_one_byte. */
+
   /* back-door argument: */
   special_is_ok = 0;
 
@@ -1434,8 +1437,11 @@ long scheme_get_byte_string_unless(const char *who,
 
     if (check_special && ip->ungotten_special) {
       if (!special_ok) {
-	if (!peek && ip->progress_evt)
-	  post_progress(ip);
+	if (!peek) {
+	  if (ip->progress_evt)
+	    post_progress(ip);
+	  ip->ungotten_special = NULL;
+	}
 	scheme_bad_time_for_special(who, port);
       }
       if (!peek) {
@@ -2240,6 +2246,103 @@ long scheme_get_char_string(const char *who,
   }
 }
 
+static 
+#ifndef NO_INLINE_KEYWORD
+MSC_IZE(inline)
+#endif
+long get_one_byte(const char *who,
+		  Scheme_Object *port,
+		  char *buffer, long offset,
+		  int only_avail)
+{
+  Scheme_Input_Port *ip;
+  long gc;
+  int special_ok = special_is_ok;
+  Scheme_Get_String_Fun gs;
+
+  special_is_ok = 0;
+
+  ip = (Scheme_Input_Port *)port;
+
+  CHECK_PORT_CLOSED(who, "input", port, ip->closed);
+
+  if (ip->input_lock)
+    scheme_wait_input_allowed(ip, only_avail);
+
+  if (ip->ungotten_count) {
+    buffer[offset] = ip->ungotten[--ip->ungotten_count];
+    gc = 1;
+  } else if (ip->peeked_read && pipe_char_count(ip->peeked_read)) {
+    int ch;
+    ch = scheme_get_byte(ip->peeked_read);
+    buffer[offset] = ch;
+    gc = 1;
+  } else if (ip->ungotten_special) {
+    if (ip->progress_evt)
+      post_progress(ip);
+    if (!special_ok) {
+      ip->ungotten_special = NULL;
+      scheme_bad_time_for_special(who, port);
+      return 0;
+    }
+    ip->special = ip->ungotten_special;
+    ip->ungotten_special = NULL;
+    if (ip->p.position >= 0)
+      ip->p.position++;
+    if (ip->p.count_lines)
+      inc_pos((Scheme_Port *)ip, 1);
+    return SCHEME_SPECIAL;
+  } else {
+    if (ip->pending_eof > 1) {
+      ip->pending_eof = 1;
+      return EOF;
+    } else {
+      /* Call port's get function. */
+      gs = ip->get_string_fun;
+
+      gc = gs(ip, buffer, offset, 1, 0, NULL);
+	
+      if (ip->progress_evt && (gc > 0))
+	post_progress(ip);
+
+      if (gc < 1) {
+	if (gc == SCHEME_SPECIAL) {
+	  if (special_ok) {
+	    if (ip->p.position >= 0)
+	      ip->p.position++;
+	    if (ip->p.count_lines)
+	      inc_pos((Scheme_Port *)ip, 1);
+	    return SCHEME_SPECIAL;
+	  } else {
+	    scheme_bad_time_for_special(who, port);
+	    return 0;
+	  }
+	} else if (gc == EOF) {
+	  ip->p.utf8state = 0;
+	  return EOF;
+	} else {
+	  /* didn't get anything the first try, so use slow path: */
+	  special_is_ok = special_ok;
+	  return scheme_get_byte_string_unless(who, port,
+					       buffer, offset, 1,
+					       0, 0, NULL, NULL);
+	}
+      }
+    }
+  }
+
+  /****************************************************/
+  /* Adjust position information for chars got so far */
+  /****************************************************/
+  
+  if (ip->p.position >= 0)
+    ip->p.position++;
+  if (ip->p.count_lines)
+    do_count_lines((Scheme_Port *)ip, buffer, offset, 1);
+  
+  return gc;
+}
+
 int
 scheme_getc(Scheme_Object *port)
 {
@@ -2248,11 +2351,18 @@ scheme_getc(Scheme_Object *port)
   int v, delta = 0;
 
   while(1) {
-    v = scheme_get_byte_string_unless("read-char", port,
-				      s, delta, 1,
-				      0,
-				      delta > 0, scheme_make_integer(delta-1),
-				      NULL);
+    if (delta) {
+      v = scheme_get_byte_string_unless("read-char", port,
+					s, delta, 1,
+					0,
+					delta > 0, scheme_make_integer(delta-1),
+					NULL);
+    } else {
+      v = get_one_byte("read-char", port,
+		       s, 0, 
+		       0);
+    }
+
     if ((v == EOF) || (v == SCHEME_SPECIAL)) {
       if (!delta)
 	return v;
@@ -2290,11 +2400,9 @@ scheme_get_byte(Scheme_Object *port)
   char s[1];
   int v;
 
-  v = scheme_get_byte_string_unless("read-byte", port,
-				    s, 0, 1,
-				    0,
-				    0, 0,
-				    NULL);
+  v = get_one_byte("read-byte", port,
+		   s, 0,
+		   0);
 
   if ((v == EOF) || (v == SCHEME_SPECIAL))
     return v;
@@ -4487,21 +4595,27 @@ static long fd_get_string(Scheme_Input_Port *port,
   Scheme_FD *fip;
   long bc;
 
-  if (scheme_unless_ready(unless))
+  if (unless && scheme_unless_ready(unless))
     return SCHEME_UNLESS_READY;
 
   fip = (Scheme_FD *)port->port_data;
 
   if (fip->bufcount) {
-    bc = ((size <= fip->bufcount)
-	  ? size
-	  : fip->bufcount);
+    if (size == 1) {
+      buffer[offset] = fip->buffer[fip->buffpos++];
+      --fip->bufcount;
+      return 1;
+    } else {
+      bc = ((size <= fip->bufcount)
+	    ? size
+	    : fip->bufcount);
 
-    memcpy(buffer + offset, fip->buffer + fip->buffpos, bc);
-    fip->buffpos += bc;
-    fip->bufcount -= bc;
+      memcpy(buffer + offset, fip->buffer + fip->buffpos, bc);
+      fip->buffpos += bc;
+      fip->bufcount -= bc;
 
-    return bc;
+      return bc;
+    }
   } else {
     if ((nonblock == 2) && (fip->flush == MZ_FLUSH_ALWAYS))
       return 0;

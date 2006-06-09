@@ -82,8 +82,7 @@ scheme_init_vector (Scheme_Env *env)
   p = scheme_make_noncm_prim(scheme_checked_vector_set,
 			     "vector-set!", 
 			     3, 3);
-  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
-				| SCHEME_PRIM_IS_BINARY_INLINED);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_MIN_NARY_INLINED;
   scheme_add_global_constant("vector-set!", p, env);
 
   scheme_add_global_constant("vector->list", 
