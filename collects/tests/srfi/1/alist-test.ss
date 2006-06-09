@@ -34,32 +34,32 @@
 
 (module alist-test mzscheme
 
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 1 1))
+  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            (all-except (lib "alist.ss" "srfi" "1") assoc)
            (rename (lib "alist.ss" "srfi" "1") s:assoc assoc))
 
   (provide alist-tests)
 
   (define alist-tests
-    (make-test-suite
+    (test-suite
      "Association list tests"
 
      ;; ALIST-CONS
 
-     (make-test-case
+     (test-case
       "alist-cons:null-list"
-      (assert-equal? (alist-cons 'Manawa 'Manchester '())
+      (check-equal? (alist-cons 'Manawa 'Manchester '())
                      '((Manawa . Manchester))))
 
-     (make-test-case
+     (test-case
       "alist-cons:singleton-list"
       (let* ((base '((Manilla . Manly)))
              (result (alist-cons 'Manning 'Manson base)))
-        (assert-equal? result '((Manning . Manson)
+        (check-equal? result '((Manning . Manson)
                                 (Manilla . Manly)))
-        (assert-eq? (cdr result) base)))
+        (check-eq? (cdr result) base)))
 
-     (make-test-case
+     (test-case
       "alist-cons:longer-list"
       (let* ((base '((Manteno . Mapleside)
                      (Mapleton . Maquoketa)
@@ -67,16 +67,16 @@
                      (Marengo . Marietta)
                      (Marion . Mark)))
              (result (alist-cons 'Marne 'Marquette base)))
-        (assert-equal? result
+        (check-equal? result
                        '((Marne . Marquette)
                          (Manteno . Mapleside)
                          (Mapleton . Maquoketa)
                          (Marathon . Marcus)
                          (Marengo . Marietta)
                          (Marion . Mark)))
-        (assert-eq? (cdr result) base)))
+        (check-eq? (cdr result) base)))
 
-     (make-test-case
+     (test-case
       "alist-cons:longer-list-with-duplicate-key"
       (let* ((base '((Marquisville . Marsh)
                      (Marshalltown . Martelle)
@@ -86,7 +86,7 @@
                      (Massey . Massilon)
                      (Matlock . Maud)))
              (result (alist-cons 'Masonville 'Maurice base)))
-        (assert-equal? result '((Masonville . Maurice)
+        (check-equal? result '((Masonville . Maurice)
                                 (Marquisville . Marsh)
                                 (Marshalltown . Martelle)
                                 (Martensdale . Martinsburg)
@@ -94,15 +94,15 @@
                                 (Masonville . Massena)
                                 (Massey . Massilon)
                                 (Matlock . Maud)))
-        (assert-eq? (cdr result) base)))
+        (check-eq? (cdr result) base)))
 
      ;; ALIST-COPY
 
-     (make-test-case
+     (test-case
       "alist-copy:null-list"
-      (assert-true (null? (alist-copy '()))))
+      (check-true (null? (alist-copy '()))))
 
-     (make-test-case
+     (test-case
       "alist-copy:flat-list"
       (let* ((original '((Maxon . Maxwell)
                          (Maynard . Maysville)
@@ -110,7 +110,7 @@
                          (McClelland . McGregor)
                          (McIntire . McNally)))
              (result (alist-copy original)))
-        (assert-true
+        (check-true
          (and (equal? result original)
               (not (eq? result original))
               (not (eq? (car result) (car original)))
@@ -124,7 +124,7 @@
               (not (eq? (car (cddddr result))
                         (car (cddddr original))))))))
 
-     (make-test-case
+     (test-case
       "alist-copy:bush"
       (let* ((first '(McPaul))
              (second '(McPherson
@@ -137,7 +137,7 @@
                              (cons 'Melvin second)
                              (cons 'Menlo third)))
              (result (alist-copy original)))
-        (assert-true
+        (check-true
          (and (equal? result original)
               (not (eq? result original))
               (not (eq? (car result) (car original)))
@@ -151,20 +151,20 @@
 
      ;; ALIST-DELETE
 
-     (make-test-case
+     (test-case
       "alist-delete:null-list"
-      (assert-true (null? (alist-delete 'Mercer '() (lambda (x y) #t)))))
+      (check-true (null? (alist-delete 'Mercer '() (lambda (x y) #t)))))
 
-     (make-test-case
+     (test-case
       "alist-delete:singleton-list"
-      (assert-equal?
+      (check-equal?
        (alist-delete 'Meriden
                      '((Merrill . Merrimac)))
        '((Merrill . Merrimac))))
 
-     (make-test-case
+     (test-case
       "alist-delete:all-elements-removed"
-      (assert-true
+      (check-true
        (null? (alist-delete 'Meservey
                             '((Metz . Meyer)
                               (Middleburg . Middletwon)
@@ -173,9 +173,9 @@
                               (Miller . Millersburg))
                             (lambda (x y) #t)))))
 
-     (make-test-case
+     (test-case
       "alist-delete:some-elements-removed"
-      (assert-equal?
+      (check-equal?
        (alist-delete 561
                      '((562 . 563)
                        (565 . 564)
@@ -185,9 +185,9 @@
                      (lambda (x y) (odd? (+ x y))))
        '((565 . 564) (569 . 568))))
 
-     (make-test-case
+     (test-case
       "alist-delete:no-elements-removed"
-      (assert-equal?
+      (check-equal?
        (alist-delete 'Millerton
                      '((Millman . Millnerville)
                        (Millville . Milo)
@@ -203,20 +203,20 @@
 
      ;; ALIST-DELETE!
 
-     (make-test-case
+     (test-case
       "alist-delete!:null-list"
-      (assert-true (null? (alist-delete! 'Mitchell '() (lambda (x y) #t)))))
+      (check-true (null? (alist-delete! 'Mitchell '() (lambda (x y) #t)))))
 
-     (make-test-case
+     (test-case
       "alist-delete!:singleton-list"
-      (assert-equal?
+      (check-equal?
        (alist-delete! 'Mitchellville
                       (list (cons 'Modale 'Moingona)))
        '((Modale . Moingona))))
 
-     (make-test-case
+     (test-case
       "alist-delete!:all-elements-removed"
-      (assert-true
+      (check-true
        (null?
         (alist-delete! 'Mona
                        (list (cons 'Mondamin 'Moneta)
@@ -226,9 +226,9 @@
                              (cons 'Montezuma 'Montgomery))
                        (lambda (x y) #t)))))
 
-     (make-test-case
+     (test-case
       "alist-delete!:some-elements-removed"
-      (assert-equal?
+      (check-equal?
        (alist-delete! 572
                       (list (cons 573 574)
                             (cons 576 575)
@@ -238,9 +238,9 @@
                       (lambda (x y) (even? (+ x y))))
        '((573 . 574) (577 . 578) (581 . 582))))
 
-     (make-test-case
+     (test-case
       "alist-delete!:no-elements-removed"
-      (assert-equal?
+      (check-equal?
        (alist-delete! 'Monti
                       (list (cons 'Monticello 'Montour)
                             (cons 'Montpelier 'Montrose)
@@ -255,26 +255,26 @@
 
      ;; ALIST-DELETE
 
-     (make-test-case
+     (test-case
       "alist-delete:null-list"
-      (assert-true (null? (alist-delete '(Reasnor . Redding) '()))))
+      (check-true (null? (alist-delete '(Reasnor . Redding) '()))))
 
-     (make-test-case
+     (test-case
       "alist-delete:in-singleton-list"
-      (assert-true (null?
+      (check-true (null?
                     (alist-delete '(Redfield . Reeceville)
                                   '(((Redfield . Reeceville) . Reinbeck))))))
 
-     (make-test-case
+     (test-case
       "alist-delete:not-in-singleton-list"
-      (assert-equal?
+      (check-equal?
        (alist-delete '(Rembrandt . Remsen)
                      '(((Renwick . Republic) . Rhodes)))
        '(((Renwick . Republic) . Rhodes))))
 
-     (make-test-case
+     (test-case
       "alist-delete:at-beginning-of-longer-list"
-      (assert-equal?
+      (check-equal?
        (alist-delete '(Riceville . Richard)
                      '(((Riceville . Richard) . Richfield)
                        ((Richland . Richmond) . Rickardsville)
@@ -286,9 +286,9 @@
          ((Ridgeway . Riggs) . Rinard)
          ((Ringgold . Ringsted) . Rippey))))
 
-     (make-test-case
+     (test-case
       "alist-delete:in-middle-of-longer-list"
-      (assert-equal?
+      (check-equal?
        (alist-delete '(Ritter . Riverdale)
                      '(((Riverside . Riverton) . Roberts)
                        ((Robertson . Robins) . Robinson)
@@ -304,9 +304,9 @@
          ((Roelyn . Rogers) . Roland)
          ((Rolfe . Rome) . Roscoe))))
 
-     (make-test-case
+     (test-case
       "alist-delete:at-end-of-longer-list"
-      (assert-equal?
+      (check-equal?
        (alist-delete '(Rose . Roselle)
                      '(((Roseville . Ross) . Rosserdale)
                        ((Rossie . Rossville) . Rowan)
@@ -318,9 +318,9 @@
          ((Rowley . Royal) . Rubio)
          ((Ruble . Rudd) . Runnells))))
 
-     (make-test-case
+     (test-case
       "alist-delete:not-in-longer-list"
-      (assert-equal?
+      (check-equal?
        (alist-delete '(Ruthven . Rutland)
                      '(((Rutledge . Ryan) . Sabula)
                        ((Sageville . Salem) . Salina)
@@ -333,9 +333,9 @@
          ((Sandyville . Santiago) . Saratoga)
          ((Sattre . Saude) . Savannah))))
 
-     (make-test-case
+     (test-case
       "alist-delete:several-matches-in-longer-list"
-      (assert-equal?
+      (check-equal?
        (alist-delete '(Sawyer . Saylor)
                      '(((Saylorville . Scarville) . Schaller)
                        ((Schleswig . Schley) . Sciola)
@@ -351,28 +351,28 @@
 
      ;; ALIST-DELETE!
 
-     (make-test-case
+     (test-case
       "alist-delete!:null-list"
-      (assert-true (null? (alist-delete! (cons 'Unionville 'Unique) (list)))))
+      (check-true (null? (alist-delete! (cons 'Unionville 'Unique) (list)))))
 
-     (make-test-case
+     (test-case
       "alist-delete!:in-singleton-list"
-      (assert-true
+      (check-true
        (null?
         (alist-delete! (cons 'Updegraff 'Urbana)
                        (list (cons (cons 'Updegraff 'Urbana)
                                    'Summitville))))))
 
-     (make-test-case
+     (test-case
       "alist-delete!:not-in-singleton-list"
-      (assert-equal?
+      (check-equal?
        (alist-delete! (cons 'Urbandale 'Ute)
                       (list (cons (cons 'Utica 'Vail) 'Valeria)))
        '(((Utica . Vail) . Valeria))))
 
-     (make-test-case
+     (test-case
       "alist-delete!:at-beginning-of-longer-list"
-      (assert-equal?
+      (check-equal?
        (alist-delete! (cons 'Valley 'Vandalia)
                       (list (cons (cons 'Valley 'Vandalia) 'Varina)
                             (cons (cons 'Ventura 'Vernon) 'Victor)
@@ -384,9 +384,9 @@
          ((Vincent . Vining) . Vinje)
          ((Vinton . Viola) . Volga))))
 
-     (make-test-case
+     (test-case
       "alist-delete!:in-middle-of-longer-list"
-      (assert-equal?
+      (check-equal?
        (alist-delete! (cons 'Volney 'Voorhies)
                       (list (cons (cons 'Wadena 'Wahpeton) 'Walcott)
                             (cons (cons 'Wald 'Wales) 'Walford)
@@ -403,9 +403,9 @@
          ((Washburn . Washington) . Washta)
          ((Waterloo . Waterville) . Watkins))))
 
-     (make-test-case
+     (test-case
       "alist-delete!:at-end-of-longer-list"
-      (assert-equal?
+      (check-equal?
        (alist-delete! (cons 'Watson 'Watterson)
                       (list (cons (cons 'Waubeek 'Waucoma) 'Waukee)
                             (cons (cons 'Waukon 'Waupeton) 'Waverly)
@@ -417,9 +417,9 @@
          ((Wayland . Webb) . Webster)
          ((Weldon . Weller) . Wellman))))
 
-     (make-test-case
+     (test-case
       "alist-delete!:not-in-longer-list"
-      (assert-equal?
+      (check-equal?
        (alist-delete! (cons 'Welton 'Wesley)
                       (list (cons (cons 'Western 'Westerville)
                                   'Westfield)
@@ -434,9 +434,9 @@
          ((Wheatland . Whiting) . Whittemore)
          ((Whitten . Whittier) . Wichita))))
 
-     (make-test-case
+     (test-case
       "alist-delete!:several-matches-in-longer-list"
-      (assert-equal?
+      (check-equal?
        (alist-delete! (cons 'Wick 'Wightman)
                       (list (cons (cons 'Wilke 'Willey) 'Williams)
                             (cons (cons 'Williamsburg 'Williamson)

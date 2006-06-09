@@ -35,148 +35,148 @@
 (module search-test
   mzscheme
 
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 1 1))
+  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            (all-except (lib "search.ss" "srfi" "1") member))
 
   (provide search-tests)
 
   (define search-tests
-    (make-test-suite
+    (test-suite
      "List search tests"
 
      ;; FIND
 
-     (make-test-case
+     (test-case
       "find:in-null-list"
-      (assert-true (not (find (lambda (x) #t) '()))))
+      (check-true (not (find (lambda (x) #t) '()))))
 
-     (make-test-case
+     (test-case
       "find:in-singleton-list"
-      (assert-eq? (find (lambda (x) #t) '(Aurora))
+      (check-eq? (find (lambda (x) #t) '(Aurora))
                   'Aurora))
 
-     (make-test-case
+     (test-case
       "find:not-in-singleton-list"
-      (assert-true (not (find (lambda (x) #f) '(Austinville)))))
+      (check-true (not (find (lambda (x) #f) '(Austinville)))))
 
-     (make-test-case
+     (test-case
       "find:at-front-of-longer-list"
-      (assert-eq?
+      (check-eq?
        (find (lambda (x) #t) '(Avery Avoca Avon Ayrshire Badger))
        'Avery))
 
-     (make-test-case
+     (test-case
       "find:in-middle-of-longer-list"
-      (assert =
+      (check =
               (find even? '(149 151 153 155 156 157 159))
               156))
 
-     (make-test-case
+     (test-case
       "find:at-end-of-longer-list"
-      (assert =
+      (check =
               (find even? '(161 163 165 167 168))
               168))
 
-     (make-test-case
+     (test-case
       "find:not-in-longer-list"
-      (assert-true
+      (check-true
        (not
         (find (lambda (x) #f)
               '(Bagley Bailey Badwin Balfour Balltown)))))
 
 ;;; FIND-TAIL
 
-     (make-test-case
+     (test-case
       "find-tail:in-null-list"
-      (assert-true (not (find-tail (lambda (x) #t) '()))))
+      (check-true (not (find-tail (lambda (x) #t) '()))))
 
-     (make-test-case
+     (test-case
       "find-tail:in-singleton-list"
       (let ((source '(Ballyclough)))
-        (assert-eq?
+        (check-eq?
          (find-tail (lambda (x) #t) source)
          source)))
 
-     (make-test-case
+     (test-case
       "find-tail:not-in-singleton-list"
-      (assert-true (not (find-tail (lambda (x) #f) '(Bancroft)))))
+      (check-true (not (find-tail (lambda (x) #f) '(Bancroft)))))
 
-     (make-test-case
+     (test-case
       "find-tail:at-front-of-longer-list"
       (let ((source '(Bangor Bankston Barney Barnum Bartlett)))
-        (assert-eq?
+        (check-eq?
          (find-tail (lambda (x) #t) source)
          source)))
 
-     (make-test-case
+     (test-case
       "find-tail:in-middle-of-longer-list"
       (let ((source '(169 171 173 175 176 177 179)))
-        (assert-eq?
+        (check-eq?
          (find-tail even? source)
          (cddddr source))))
 
-     (make-test-case
+     (test-case
       "find-tail:at-end-of-longer-list"
       (let ((source '(181 183 185 187 188)))
-        (assert-eq?
+        (check-eq?
          (find-tail even? source)
          (cddddr source))))
 
-     (make-test-case
+     (test-case
       "find-tail:not-in-longer-list"
-      (assert-true
+      (check-true
        (not
         (find-tail (lambda (x) #f)
                    '(Batavia Bauer Baxter Bayard Beacon)) )))
 
 ;;; ANY
 
-     (make-test-case
+     (test-case
       "any:in-one-null-list"
-      (assert-true (not (any values '()))))
+      (check-true (not (any values '()))))
 
-     (make-test-case
+     (test-case
       "any:in-one-singleton-list"
-      (assert-equal? (any vector '(Beaconsfield)) '#(Beaconsfield)))
+      (check-equal? (any vector '(Beaconsfield)) '#(Beaconsfield)))
 
-     (make-test-case
+     (test-case
       "any:not-in-one-singleton-list"
-      (assert-true (not (any (lambda (x) #f) '(Beaman)))))
+      (check-true (not (any (lambda (x) #f) '(Beaman)))))
 
-     (make-test-case
+     (test-case
       "any:at-beginning-of-one-longer-list"
-      (assert-equal?
+      (check-equal?
        (any vector '(Beaver Beaverdale Beckwith Bedford Beebeetown))
        '#(Beaver)))
 
-     (make-test-case
+     (test-case
       "any:in-middle-of-one-longer-list"
-      (assert =
+      (check =
               (any (lambda (x) (and (odd? x) (+ x 189)))
                    '(190 192 194 196 197 198 200))
               386))
 
-     (make-test-case
+     (test-case
       "any:at-end-of-one-longer-list"
-      (assert =
+      (check =
               (any (lambda (x) (and (odd? x) (+ x 201)))
                    '(202 204 206 208 209))
               410))
 
-     (make-test-case
+     (test-case
       "any:not-in-one-longer-list"
-      (assert-true
+      (check-true
        (not (any (lambda (x) #f)
                  '(Beech Belinda Belknap Bellefountain Bellevue)))))
 
-     (make-test-case
+     (test-case
       "any:in-several-null-lists"
-      (assert-true
+      (check-true
        (not (any vector '() '() '() '() '()))))
 
-     (make-test-case
+     (test-case
       "any:in-several-singleton-lists"
-      (assert-equal?
+      (check-equal?
        (any vector
             '(Belmond)
             '(Beloit)
@@ -185,9 +185,9 @@
             '(Bentley))
        '#(Belmond Beloit Bennett Benson Bentley)))
 
-     (make-test-case
+     (test-case
       "any:not-in-several-singleton-lists"
-      (assert-true
+      (check-true
        (not
         (any (lambda arguments #f)
              '(Benton)
@@ -196,9 +196,9 @@
              '(Berkley)
              '(Bernard)))))
 
-     (make-test-case
+     (test-case
       "any:at-beginning-of-several-longer-lists"
-      (assert-equal?
+      (check-equal?
        (any vector
             '(Berne Bertram Berwick Bethesda Bethlehem Bettendorf
                     Beulah)
@@ -210,9 +210,9 @@
             '(Booneville Botany Botna Bouton Bowsher Boxholm Boyd))
        '#(Berne Bevington Blakesburg Bluffton Booneville)))
 
-     (make-test-case
+     (test-case
       "any:in-middle-of-several-longer-lists"
-      (assert =
+      (check =
               (any (lambda arguments
                      (let ((sum (apply + arguments)))
                        (and (odd? sum) (+ sum 210))))
@@ -223,9 +223,9 @@
                    '(240 242 244 246 247 248 250))
               1359))
 
-     (make-test-case
+     (test-case
       "any:at-end-of-several-longer-lists"
-      (assert =
+      (check =
               (any (lambda arguments
                      (let ((sum (apply + arguments)))
                        (and (even? sum) (+ sum 210))))
@@ -236,9 +236,9 @@
                    '(281 283 285 287 289 291 292))
               1576))
 
-     (make-test-case
+     (test-case
       "any:not-in-several-longer-lists"
-      (assert-true
+      (check-true
        (not
         (any (lambda arguments #f)
              '(Boyden Boyer Braddyville Bradford Bradgate Brainard
@@ -252,9 +252,9 @@
              '(Buckeye Buckhorn Buckingham Bucknell Budd Buffalo
                        Burchinal)))))
 
-     (make-test-case
+     (test-case
       "any:not-in-lists-of-unequal-length"
-      (assert-true
+      (check-true
        (not (any (lambda arguments #f)
                  '(Burdette Burlington Burnside Burt)
                  '(Bushville Bussey)
@@ -263,57 +263,57 @@
 
 ;;; EVERY
 
-     (make-test-case
+     (test-case
       "every:in-one-null-list"
-      (assert-true (every values '())))
+      (check-true (every values '())))
 
-     (make-test-case
+     (test-case
       "every:in-one-singleton-list"
-      (assert-equal?
+      (check-equal?
        (every vector '(Camanche))
        '#(Camanche)))
 
-     (make-test-case
+     (test-case
       "every:not-in-one-singleton-list"
-      (assert-true
+      (check-true
        (not (every (lambda (x) #f) '(Cambria)))))
 
-     (make-test-case
+     (test-case
       "every:failing-at-beginning-of-one-longer-list"
-      (assert-true
+      (check-true
        (not
         (every (lambda (x) #f)
                '(Cambridge Cameron Canby Canton Cantril)) )))
 
-     (make-test-case
+     (test-case
       "every:failing-in-middle-of-one-longer-list"
-      (assert-true
+      (check-true
        (not
         (every (lambda (x) (and (even? x) (+ x 293)))
                '(294 296 298 300 301 302 304)))))
 
-     (make-test-case
+     (test-case
       "every:failing-at-end-of-one-longer-list"
-      (assert-true
+      (check-true
        (not
         (every (lambda (x) (and (even? x) (+ x 305)))
                '(306 308 310 312 313)))))
 
-     (make-test-case
+     (test-case
       "every:in-one-longer-list"
-      (assert-equal?
+      (check-equal?
        (every vector
               '(Carbon Carbondale Carl Carlisle Carmel))
        '#(Carmel)))
 
-     (make-test-case
+     (test-case
       "every:in-several-null-lists"
-      (assert-true
+      (check-true
        (every vector '() '() '() '() '())))
 
-     (make-test-case
+     (test-case
       "every:in-several-singleton-lists"
-      (assert-equal?
+      (check-equal?
        (every vector
               '(Carnarvon)
               '(Carnes)
@@ -322,9 +322,9 @@
               '(Carpenter))
        '#(Carnarvon Carnes Carney Carnforth Carpenter)))
 
-     (make-test-case
+     (test-case
       "every:not-in-several-singleton-lists"
-      (assert-true
+      (check-true
        (not
         (every (lambda arguments #f)
                '(Carroll)
@@ -333,9 +333,9 @@
                '(Carson)
                '(Cartersville)))))
 
-     (make-test-case
+     (test-case
       "every:failing-at-beginning-of-several-longer-lists"
-      (assert-true
+      (check-true
        (not
         (every (lambda arguments #f)
                '(Cascade Casey Castalia Castana Cattese Cedar
@@ -350,9 +350,9 @@
                           Clearfield))
         )))
 
-     (make-test-case
+     (test-case
       "every:failing-in-middle-of-several-longer-lists"
-      (assert-true
+      (check-true
        (not
         (every (lambda arguments
                  (let ((sum (apply + arguments)))
@@ -364,9 +364,9 @@
                '(343 345 347 349 350 351 353))
         )))
 
-     (make-test-case
+     (test-case
       "every:failing-at-end-of-several-longer-lists"
-      (assert-true
+      (check-true
        (not
         (every (lambda arguments
                  (let ((sum (apply + arguments)))
@@ -378,9 +378,9 @@
                '(383 385 387 389 391 393 394))
         )))
 
-     (make-test-case
+     (test-case
       "every:in-several-longer-lists"
-      (assert-equal?
+      (check-equal?
        (every vector
               '(Cleghorn Clemons Clermont Cleves Cliffland Climax
                          Clinton)
@@ -392,9 +392,9 @@
                            Consol))
        '#(Clinton Coalville Collins Concord Consol)))
 
-     (make-test-case
+     (test-case
       "every:in-lists-of-unequal-length"
-      (assert-equal?
+      (check-equal?
        (every vector
               '(Conway Cool Cooper Coppock)
               '(Coralville Corley)
@@ -405,55 +405,55 @@
 
 ;;; LIST-INDEX
 
-     (make-test-case
+     (test-case
       "list-index:in-one-null-list"
-      (assert-true
+      (check-true
        (not (list-index (lambda (x) #t) '()))))
 
-     (make-test-case
+     (test-case
       "list-index:in-one-singleton-list"
-      (assert-true
+      (check-true
        (zero?
         (list-index (lambda (x) #t) '(Cottonville)))))
 
-     (make-test-case
+     (test-case
       "list-index:not-in-one-singleton-list"
-      (assert-true
+      (check-true
        (not (list-index (lambda (x) #f) '(Coulter)))))
 
-     (make-test-case
+     (test-case
       "list-index:at-front-of-one-longer-list"
-      (assert-true
+      (check-true
        (zero?
         (list-index (lambda (x) #t)
                     '(Covington Craig Cranston Crathorne
                                 Crawfordsville)))))
-     (make-test-case
+     (test-case
       "list-index:in-middle-of-one-longer-list"
       (list-index even? '(395 397 399 401 402 403 405))
       (lambda (result) (= result 4)))
 
-     (make-test-case
+     (test-case
       "list-index:at-end-of-one-longer-list"
-      (assert =
+      (check =
               (list-index odd? '(406 408 410 412 414 415))
               5))
 
-     (make-test-case
+     (test-case
       "list-index:not-in-one-longer-list"
-      (assert-true
+      (check-true
        (not
         (list-index (lambda (x) #f)
                     '(Crescent Cresco Creston Crocker Crombie)))))
 
-     (make-test-case
+     (test-case
       "list-index:in-several-null-lists"
-      (assert-true
+      (check-true
        (not (list-index (lambda arguments #t) '() '() '() '() '()))))
 
-     (make-test-case
+     (test-case
       "list-index:in-several-singleton-lists"
-      (assert-true
+      (check-true
        (zero?      (list-index (lambda arguments #t)
                                '(Cromwell)
                                '(Croton)
@@ -461,9 +461,9 @@
                                '(Cumming)
                                '(Curlew)))))
 
-     (make-test-case
+     (test-case
       "list-index:not-in-several-singleton-lists"
-      (assert-true
+      (check-true
        (not      (list-index (lambda arguments #f)
                              '(Cushing)
                              '(Cylinder)
@@ -471,9 +471,9 @@
                              '(Dalby)
                              '(Dale)))))
 
-     (make-test-case
+     (test-case
       "list-index:at-front-of-several-longer-lists"
-      (assert-true
+      (check-true
        (zero? (list-index (lambda arguments #t)
                           '(Dallas Dana Danbury Danville Darbyville
                                    Davenport Dawson)
@@ -485,9 +485,9 @@
                           '(Dewar Dexter Diagonal Dickens Dickieville Dike
                                   Dillon)))))
 
-     (make-test-case
+     (test-case
       "list-index:in-middle-of-several-longer-lists"
-      (assert =
+      (check =
               (list-index (lambda arguments (odd? (apply + arguments)))
                           '(416 417 418 419 420 421 422)
                           '(423 424 425 426 427 428 429)
@@ -496,9 +496,9 @@
                           '(444 446 448 450 451 452 454))
               4))
 
-     (make-test-case
+     (test-case
       "list-index:at-end-of-several-longer-lists"
-      (assert =
+      (check =
               (list-index (lambda arguments (even? (apply + arguments)))
                           '(455 456 457 458 459 460)
                           '(461 462 463 464 465 466)
@@ -507,9 +507,9 @@
                           '(479 481 483 485 487 488))
               5))
 
-     (make-test-case
+     (test-case
       "list-index:not-in-several-longer-lists"
-      (assert-true
+      (check-true
        (not
         (list-index (lambda arguments #f)
                     '(Dinsdale Dixon Dodgeville Dolliver Donahue

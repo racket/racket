@@ -35,76 +35,76 @@
 (module lset-test
   mzscheme
 
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 1 1))
+  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            (lib "lset.ss" "srfi" "1"))
 
   (provide lset-tests)
 
   (define lset-tests
-    (make-test-suite
+    (test-suite
      "List as set procedures tests"
 
-     (make-test-case
+     (test-case
       "lset<=:singleton"
-      (assert-true (lset<= eq?)))
+      (check-true (lset<= eq?)))
 
-     (make-test-case
+     (test-case
       "lset<=:empty-list"
-      (assert-true (lset<= eq? (list))))
+      (check-true (lset<= eq? (list))))
 
-     (make-test-case
+     (test-case
       "lset<=:empty-lists"
-      (assert-true (lset<= eq? (list) (list))))
+      (check-true (lset<= eq? (list) (list))))
 
-     (make-test-case
+     (test-case
       "lset<=:normal-case"
-      (assert-true (lset<= = (list 1 2 3 4) (list 1 2 3 4))))
+      (check-true (lset<= = (list 1 2 3 4) (list 1 2 3 4))))
 
-     (make-test-case
+     (test-case
       "lset<=:normal-case-fail"
-      (assert-true (not (lset<= = (list 2 3 4 5) (list 1 2 3 4)))))
+      (check-true (not (lset<= = (list 2 3 4 5) (list 1 2 3 4)))))
 
-     (make-test-case
+     (test-case
       "lset=:empty-list"
-      (assert-true (lset= eq?)))
+      (check-true (lset= eq?)))
 
-     (make-test-case
+     (test-case
       "lset=:singleton"
-      (assert-true (lset= eq? '(a b c d e))))
+      (check-true (lset= eq? '(a b c d e))))
 
-     (make-test-case
+     (test-case
       "lset=:normal-case"
-      (assert-true (lset= = '(1 2 3 4 5) '(5 4 3 2 1))))
+      (check-true (lset= = '(1 2 3 4 5) '(5 4 3 2 1))))
 
-     (make-test-case
+     (test-case
       "lset=:normal-case-fail"
-      (assert-false (lset= eq? '(a b c d e) '(a b c d))))
+      (check-false (lset= eq? '(a b c d e) '(a b c d))))
 
-     (make-test-case
+     (test-case
       "lset-xor:empty-list"
-      (assert-equal? (lset-xor eq?) '()))
+      (check-equal? (lset-xor eq?) '()))
 
-     (make-test-case
+     (test-case
       "lset-xor:singleton"
-      (assert-equal? (lset-xor eq? '(a b c d e)) '(a b c d e)))
+      (check-equal? (lset-xor eq? '(a b c d e)) '(a b c d e)))
 
-     (make-test-case
+     (test-case
       "lset-xor:normal-case"
-      (assert-true (lset= eq?
+      (check-true (lset= eq?
                           (lset-xor eq? '(a b c d e) '(a e i o u))
                           '(d c b i o u))))
 
-     (make-test-case
+     (test-case
       "lset-xor!:empty-list"
-      (assert-equal? (lset-xor! eq?) '()))
+      (check-equal? (lset-xor! eq?) '()))
 
-     (make-test-case
+     (test-case
       "lset-xor!:singleton"
-      (assert-equal? (lset-xor! eq? '(a b c d e)) '(a b c d e)))
+      (check-equal? (lset-xor! eq? '(a b c d e)) '(a b c d e)))
 
-     (make-test-case
+     (test-case
       "lset-xor!:normal-case"
-      (assert-true (lset= eq?
+      (check-true (lset= eq?
                           (lset-xor! eq? '(a b c d e) '(a e i o u))
                           '(d c b i o u))))
      ))

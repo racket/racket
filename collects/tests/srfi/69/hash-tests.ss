@@ -1,6 +1,6 @@
 (module hash-tests mzscheme
 
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 1 1)))
+  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2)))
 
   (require (lib "list.ss" "srfi" "1")
            (prefix h: (lib "69.ss" "srfi")))
@@ -13,120 +13,120 @@
     (h:alist->hash-table '(("a" . 1) ("b" . 2) ("c" . 3)) string-ci=? h:string-ci-hash))
 
   (define hash-tests
-    (make-test-suite
+    (test-suite
      "srfi-69 test suite"
-     (make-test-case
+     (test-case
       "make-hash-table and hash-table?"
-      (assert-true
+      (check-true
        (h:hash-table? (h:make-hash-table))))
-     (make-test-case
+     (test-case
       "alist->hash-table"
-      (assert-true
+      (check-true
        (h:hash-table? test-hash-table1)))
-     (make-test-case
+     (test-case
       "hash-table-equivalence-function"
-      (assert-eq?
+      (check-eq?
        (h:hash-table-equivalence-function (h:make-hash-table))
        equal?)
-      (assert-eq?
+      (check-eq?
        (h:hash-table-equivalence-function (h:make-hash-table eq?))
        eq?)
-      (assert-eq?
+      (check-eq?
        (h:hash-table-equivalence-function test-hash-table2)
        string-ci=?))
-     (make-test-case
+     (test-case
       "hash-table-hash-function"
-      (assert-eq?
+      (check-eq?
        (h:hash-table-hash-function (h:make-hash-table))
        h:hash)
-      (assert-eq?
+      (check-eq?
        (h:hash-table-hash-function (h:make-hash-table eq?))
        h:hash-by-identity)
-      (assert-eq?
+      (check-eq?
        (h:hash-table-hash-function test-hash-table2)
        h:string-ci-hash))
-     (make-test-case
+     (test-case
       "hash-table-ref"
-      (assert-equal?
+      (check-equal?
        (h:hash-table-ref test-hash-table1 'b)
        2)
-      (assert-equal?
+      (check-equal?
        (h:hash-table-ref test-hash-table2 "C")
        3)
-      (assert-false
+      (check-false
        (h:hash-table-ref test-hash-table1 'd (lambda () #f))))
-     (make-test-case
+     (test-case
       "hash-table-ref/default"
-      (assert-false
+      (check-false
        (h:hash-table-ref/default test-hash-table2 "d" #f)))
-     (make-test-case
+     (test-case
       "hash-table-set!"
-      (assert-equal?
+      (check-equal?
        (begin (h:hash-table-set! test-hash-table1 'c 4)
               (h:hash-table-ref test-hash-table1 'c))
        4)
-      (assert-equal?
+      (check-equal?
        (begin (h:hash-table-set! test-hash-table2 "d" 4)
               (h:hash-table-ref test-hash-table2 "D"))
        4))
-     (make-test-case
+     (test-case
       "hash-table-delete!"
-      (assert-false
+      (check-false
        (begin (h:hash-table-delete! test-hash-table2 "D")
               (h:hash-table-ref/default test-hash-table2 "d" #f))))
-     (make-test-case
+     (test-case
       "hash-table-exists?"
-      (assert-true
+      (check-true
        (h:hash-table-exists? test-hash-table2 "B"))
-      (assert-false
+      (check-false
        (h:hash-table-exists? test-hash-table1 'd)))
-     (make-test-case
+     (test-case
       "hash-table-update!"
-      (assert-equal?
+      (check-equal?
        (begin (h:hash-table-update! test-hash-table1 'c sub1)
               (h:hash-table-ref test-hash-table1 'c))
        3)
-      (assert-equal?
+      (check-equal?
        (begin (h:hash-table-update! test-hash-table2 "d" add1 (lambda () 3))
               (h:hash-table-ref test-hash-table2 "d"))
        4))
-     (make-test-case
+     (test-case
       "hash-table-update!/default"
-      (assert-equal?
+      (check-equal?
        (begin (h:hash-table-update!/default test-hash-table1 'd add1 3)
               (h:hash-table-ref test-hash-table1 'd))
        4))
-     (make-test-case
+     (test-case
       "hash-table-size"
-      (assert-equal?
+      (check-equal?
        (h:hash-table-size test-hash-table1)
        4)
-      (assert-equal?
+      (check-equal?
        (h:hash-table-size test-hash-table2)
        4))
-     (make-test-case
+     (test-case
       "hash-table-keys"
-      (assert-true
+      (check-true
        (lset= eq?
               (h:hash-table-keys test-hash-table1)
               '(a b c d)))
-      (assert-true
+      (check-true
        (lset= equal?
               (h:hash-table-keys test-hash-table2)
               (list "a" "b" "c" "d"))))
-     (make-test-case
+     (test-case
       "hash-table-values"
-      (assert-true
+      (check-true
        (lset= eqv?
               (h:hash-table-values test-hash-table1)
               '(1 2 3 4)))
-      (assert-true
+      (check-true
        (lset= eqv?
               (h:hash-table-values test-hash-table2)
               '(1 2 3 4))))
-     (make-test-case
+     (test-case
       "hash-table-walk"
-      (assert-true
+      (check-true
        (let ((a '()))
          (h:hash-table-walk test-hash-table1
                             (lambda (key value)
@@ -134,9 +134,9 @@
          (lset= equal?
                 a
                 '((a . 1) (b . 2) (c . 3) (d . 4))))))
-     (make-test-case
+     (test-case
       "hash-table-fold"
-      (assert-true
+      (check-true
        (lset= equal?
               (h:hash-table-fold test-hash-table2
                                  (lambda (key value accu)
@@ -146,37 +146,37 @@
                     (cons "b" 2)
                     (cons "c" 3)
                     (cons "d" 4)))))
-     (make-test-case
+     (test-case
       "hash-table->alist"
-      (assert-true
+      (check-true
        (lset= equal?
               (h:hash-table->alist test-hash-table1)
               '((a . 1) (b . 2) (c . 3) (d . 4)))))
-     (make-test-case
+     (test-case
       "hash-table-copy"
-      (assert-true
+      (check-true
        (lset= equal?
               (h:hash-table->alist (h:hash-table-copy test-hash-table2))
               (list (cons "a" 1)
                     (cons "b" 2)
                     (cons "c" 3)
                     (cons "d" 4))))
-      (assert-false
+      (check-false
        (eq? (h:hash-table-copy test-hash-table1)
             test-hash-table1))
-      (assert-eq?
+      (check-eq?
        (h:hash-table-equivalence-function
         test-hash-table1)
        (h:hash-table-equivalence-function
         (h:hash-table-copy test-hash-table1)))
-      (assert-eq?
+      (check-eq?
        (h:hash-table-hash-function
         test-hash-table2)
        (h:hash-table-hash-function
         (h:hash-table-copy test-hash-table2))))
-     (make-test-case
+     (test-case
       "hash-table->alist"
-      (assert-true
+      (check-true
        (lset= equal?
               (h:hash-table->alist
                (h:hash-table-merge!  test-hash-table1
@@ -189,7 +189,7 @@
                 (b . 2)
                 (c . 3)
                 (d . 4))))
-      (assert-true
+      (check-true
        (lset= equal?
               (h:hash-table->alist
                (h:hash-table-merge!  test-hash-table2

@@ -35,214 +35,214 @@
 (module selector-test
   mzscheme
 
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 1 1))
+  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            (lib "selector.ss" "srfi" "1"))
 
   (provide selector-tests)
 
   (define selector-tests
-    (make-test-suite
+    (test-suite
      "List selector tests"
 
      ;; FIRST
 
-     (make-test-case
+     (test-case
       "first:of-one"
-      (assert-eq? (first '(hafnium)) 'hafnium))
+      (check-eq? (first '(hafnium)) 'hafnium))
 
-     (make-test-case
+     (test-case
       "first:of-many"
-      (assert-eq? (first '(hahnium helium holmium hydrogen indium))
+      (check-eq? (first '(hahnium helium holmium hydrogen indium))
                   'hahnium))
 
      ;; SECOND
 
-     (make-test-case
+     (test-case
       "second:of-two"
-      (assert-eq? (second '(iodine iridium)) 'iridium))
+      (check-eq? (second '(iodine iridium)) 'iridium))
 
-     (make-test-case
+     (test-case
       "second:of-many"
-      (assert-eq? (second '(iron krypton lanthanum lawrencium lead lithium))
+      (check-eq? (second '(iron krypton lanthanum lawrencium lead lithium))
                   'krypton))
 
      ;; THIRD
 
-     (make-test-case
+     (test-case
       "third:of-three"
-      (assert-eq? (third '(lutetium magnesium manganese))
+      (check-eq? (third '(lutetium magnesium manganese))
                   'manganese))
 
-     (make-test-case
+     (test-case
       "third:of-many"
-      (assert-eq? (third '(mendelevium mercury molybdenum neodymium neon
+      (check-eq? (third '(mendelevium mercury molybdenum neodymium neon
                                        neptunium nickel))
                   'molybdenum))
 
      ;; FOURTH
 
-     (make-test-case
+     (test-case
       "fourth:of-four"
-      (assert-eq? (fourth '(niobium nitrogen nobelium osmium))
+      (check-eq? (fourth '(niobium nitrogen nobelium osmium))
                   'osmium))
 
-     (make-test-case
+     (test-case
       "fourth:of-many"
-      (assert-eq? (fourth '(oxygen palladium phosphorus platinum plutonium
+      (check-eq? (fourth '(oxygen palladium phosphorus platinum plutonium
                                    polonium potassium praseodymium))
                   'platinum))
 
      ;; FIFTH
 
-     (make-test-case
+     (test-case
       "fifth:of-five"
-      (assert-eq? (fifth '(promethium protatctinium radium radon rhenium))
+      (check-eq? (fifth '(promethium protatctinium radium radon rhenium))
                   'rhenium))
 
-     (make-test-case
+     (test-case
       "fifth:of-many"
-      (assert-eq? (fifth '(rhodium rubidium ruthenium rutherfordium samarium
+      (check-eq? (fifth '(rhodium rubidium ruthenium rutherfordium samarium
                                    scandium selenium silicon silver))
                   'samarium))
 
      ;; SIXTH
 
-     (make-test-case
+     (test-case
       "sixth:of-six"
-      (assert-eq? (sixth '(sodium strontium sulfur tantalum technetium
+      (check-eq? (sixth '(sodium strontium sulfur tantalum technetium
                                   tellurium))
                   'tellurium))
 
-     (make-test-case
+     (test-case
       "sixth:of-many"
-      (assert-eq? (sixth '(terbium thallium thorium thulium tin titanium
+      (check-eq? (sixth '(terbium thallium thorium thulium tin titanium
                                    tungsten uranium vanadium xenon))
                   'titanium))
 
      ;; SEVENTH
 
-     (make-test-case
+     (test-case
       "seventh:of-seven"
-      (assert-eq? (seventh '(ytterbium yttrium zinc zirconium acacia abele
+      (check-eq? (seventh '(ytterbium yttrium zinc zirconium acacia abele
                                        ailanthus))
                   'ailanthus))
 
-     (make-test-case
+     (test-case
       "seventh:of-many"
-      (assert-eq? (seventh '(alder allspice almond apple apricot ash aspen
+      (check-eq? (seventh '(alder allspice almond apple apricot ash aspen
                                    avocado balsa balsam banyan))
                   'aspen))
 
      ;; EIGHTH
 
-     (make-test-case
+     (test-case
       "eighth:of-eight"
-      (assert-eq? (eighth '(basswood bay bayberry beech birch boxwood breadfruit
+      (check-eq? (eighth '(basswood bay bayberry beech birch boxwood breadfruit
                                      buckeye))
                   'buckeye))
 
-     (make-test-case
+     (test-case
       "eighth:of-many"
-      (assert-eq? (eighth '(butternut buttonwood cacao candleberry cashew cassia
+      (check-eq? (eighth '(butternut buttonwood cacao candleberry cashew cassia
                                       catalpa cedar cherry chestnut chinaberry
                                       chinquapin))
                   'cedar))
 
      ;; NINTH
 
-     (make-test-case
+     (test-case
       "ninth:of-nine"
-      (assert-eq? (ninth '(cinnamon citron clove coconut cork cottonwood cypress
+      (check-eq? (ninth '(cinnamon citron clove coconut cork cottonwood cypress
                                     date dogwood))
                   'dogwood))
 
-     (make-test-case
+     (test-case
       "ninth:of-many"
-      (assert-eq? (ninth '(ebony elder elm eucalyptus ficus fig fir frankincense
+      (check-eq? (ninth '(ebony elder elm eucalyptus ficus fig fir frankincense
                                  ginkgo grapefruit guava gum hawthorn))
                   'ginkgo))
 
      ;; TENTH
 
-     (make-test-case
+     (test-case
       "tenth:of-ten"
-      (assert-eq? (tenth '(hazel hemlock henna hickory holly hornbeam ironwood
+      (check-eq? (tenth '(hazel hemlock henna hickory holly hornbeam ironwood
                                  juniper kumquat laburnum))
                   'laburnum))
 
-     (make-test-case
+     (test-case
       "tenth:of-many"
-      (assert-eq? (tenth '(lancewood larch laurel lemon lime linden litchi
+      (check-eq? (tenth '(lancewood larch laurel lemon lime linden litchi
                                      locust logwood magnolia mahogany mango
                                      mangrove maple))
                   'magnolia))
 
      ;; CAR+CDR
 
-     (make-test-case
+     (test-case
       "car+cdr:pair"
       (let-values (((first second) (car+cdr (cons 'a 'b))))
-        (assert-eq? first 'a)
-        (assert-eq? second 'b)))
+        (check-eq? first 'a)
+        (check-eq? second 'b)))
 
-     (make-test-case
+     (test-case
       "car+cdr:list"
       (let-values (((first second) (car+cdr (list 'a 'b))))
-        (assert-eq? first 'a)
-        (assert-equal? second (list 'b))))
+        (check-eq? first 'a)
+        (check-equal? second (list 'b))))
 
      ;; TAKE
 
-     (make-test-case
+     (test-case
       "take:all-of-list"
-      (assert-equal? (take '(medlar mimosa mulberry nutmeg oak) 5)
+      (check-equal? (take '(medlar mimosa mulberry nutmeg oak) 5)
                      '(medlar mimosa mulberry nutmeg oak)))
 
-     (make-test-case
+     (test-case
       "take:front-of-list"
-      (assert-equal? (take '(olive orange osier palm papaw peach pear) 5)
+      (check-equal? (take '(olive orange osier palm papaw peach pear) 5)
                      '(olive orange osier palm papaw)))
 
-     (make-test-case
+     (test-case
       "take:rear-of-list"
-      (assert-equal?
+      (check-equal?
        (take-right '(pecan persimmon pine pistachio plane plum pomegranite) 5)
        '(pine pistachio plane plum pomegranite)))
 
-     (make-test-case
+     (test-case
       "take:none-of-list"
-      (assert-true (null? (take '(poplar quince redwood) 0))))
+      (check-true (null? (take '(poplar quince redwood) 0))))
 
-     (make-test-case
+     (test-case
       "take:empty-list"
-      (assert-true (null? (take '() 0))))
+      (check-true (null? (take '() 0))))
 
      ;; DROP
 
-     (make-test-case
+     (test-case
       "drop:all-of-list"
-      (assert-true (null? (drop '(rosewood sandalwood sassfras satinwood senna) 5))))
+      (check-true (null? (drop '(rosewood sandalwood sassfras satinwood senna) 5))))
 
-     (make-test-case
+     (test-case
       "drop:front-of-list"
-      (assert-equal? (drop '(sequoia serviceberry spruce sycamore tamarack tamarind
+      (check-equal? (drop '(sequoia serviceberry spruce sycamore tamarack tamarind
                                      tamarugo)
                            5)
                      '(tamarind tamarugo)))
 
-     (make-test-case
+     (test-case
       "drop:rear-of-list"
-      (assert-equal? (drop-right '(tangerine teak thuja torchwood upas walnut wandoo) 5)
+      (check-equal? (drop-right '(tangerine teak thuja torchwood upas walnut wandoo) 5)
                      '(tangerine teak)))
 
-     (make-test-case
+     (test-case
       "drop:none-of-list"
-      (assert-equal? (drop '(whitebeam whitethorn wicopy) 0)
+      (check-equal? (drop '(whitebeam whitethorn wicopy) 0)
                      '(whitebeam whitethorn wicopy)))
 
-     (make-test-case
+     (test-case
       "drop:empty-list"
-      (assert-true (null? (drop '() 0))))
+      (check-true (null? (drop '() 0))))
 
      ;; TAKE!
 
@@ -250,14 +250,14 @@
      ;; with the LIST procedure rather than as quoted data, since in
      ;; some implementations quoted data are not mutable.
 
-     (make-test-case
+     (test-case
       "take!:all-of-list"
-      (assert-equal? (take! (list 'willow 'woollybutt 'wychelm 'yellowwood 'yew) 5)
+      (check-equal? (take! (list 'willow 'woollybutt 'wychelm 'yellowwood 'yew) 5)
                      '(willow woollybutt wychelm yellowwood yew)))
 
-     (make-test-case
+     (test-case
       "take!:front-of-list"
-      (assert-equal? (take! (list 'ylang-ylang 'zebrawood 'affenpinscher 'afghan
+      (check-equal? (take! (list 'ylang-ylang 'zebrawood 'affenpinscher 'afghan
                                   'airedale 'alsatian 'barbet)
                             5)
                      '(ylang-ylang zebrawood affenpinscher afghan airedale)))
@@ -270,69 +270,69 @@
 ;        (equal? result '(beagle bloodhound boarhound borzoi
 ;                                boxer))))
 
-     (make-test-case
+     (test-case
       "take!:none-of-list"
-      (assert-true (null? (take! (list 'briard 'bulldog 'chihuahua) 0))))
+      (check-true (null? (take! (list 'briard 'bulldog 'chihuahua) 0))))
 
-     (make-test-case
+     (test-case
       "take!:empty-list"
-      (assert-true (null? (take! '() 0))))
+      (check-true (null? (take! '() 0))))
 
      ;; DROP-RIGHT!
 
-     (make-test-case
+     (test-case
       "drop-right!:all-of-list"
-      (assert-true (null? (drop-right! (list 'chow 'collie 'coonhound 'clydesdale 'dachshund)
+      (check-true (null? (drop-right! (list 'chow 'collie 'coonhound 'clydesdale 'dachshund)
                                        5))))
 
-     (make-test-case
+     (test-case
       "drop-right!:rear-of-list"
-      (assert-equal? (drop-right! (list 'groenendael 'harrier 'hound 'husky 'keeshond
+      (check-equal? (drop-right! (list 'groenendael 'harrier 'hound 'husky 'keeshond
                                         'komondor 'kuvasz)
                                   5)
                      '(groenendael harrier)))
 
-     (make-test-case
+     (test-case
       "drop-right!:none-of-list"
-      (assert-equal? (drop-right! (list 'labrador 'malamute 'malinois) 0)
+      (check-equal? (drop-right! (list 'labrador 'malamute 'malinois) 0)
                      '(labrador malamute malinois)))
 
-     (make-test-case
+     (test-case
       "drop-right!:empty-list"
-      (assert-true (null? (drop-right! '() 0))))
+      (check-true (null? (drop-right! '() 0))))
 
      ;; LAST
 
-     (make-test-case
+     (test-case
       "last:of-singleton"
-      (assert-eq? (last '(maltese))
+      (check-eq? (last '(maltese))
                   'maltese))
 
-     (make-test-case
+     (test-case
       "last:of-longer-list"
-      (assert-eq? (last '(mastiff newfoundland nizinny otterhound papillon))
+      (check-eq? (last '(mastiff newfoundland nizinny otterhound papillon))
                   'papillon))
 
      ;; LAST-PAIR
 
-     (make-test-case
+     (test-case
       "last-pair:of-singleton"
       (let ((pair '(pekingese)))
-        (assert-eq? (last-pair pair)
+        (check-eq? (last-pair pair)
                     pair)))
 
-     (make-test-case
+     (test-case
       "last-pair:of-longer-list"
       (let ((pair '(pointer)))
-        (assert-eq? (last-pair (cons 'pomeranian
+        (check-eq? (last-pair (cons 'pomeranian
                                      (cons 'poodle
                                            (cons 'pug (cons 'puli pair)))))
                     pair)))
 
-     (make-test-case
+     (test-case
       "last-pair:of-improper-list"
       (let ((pair '(manx . siamese)))
-        (assert-eq? (last-pair (cons 'abyssinian (cons 'calico pair)))
+        (check-eq? (last-pair (cons 'abyssinian (cons 'calico pair)))
                     pair)))
 
      ))

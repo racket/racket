@@ -36,7 +36,7 @@
   mzscheme
 
   (require
-   (planet "test.ss" ("schematics" "schemeunit.plt" 1 1))
+   (planet "test.ss" ("schematics" "schemeunit.plt" 2))
    (all-except (lib "misc.ss" "srfi" "1") append! reverse!)
    (rename (lib "misc.ss" "srfi" "1") s:append! append!)
    (rename (lib "misc.ss" "srfi" "1") s:reverse! reverse!))
@@ -44,23 +44,23 @@
   (provide misc-tests)
 
   (define misc-tests
-    (make-test-suite
+    (test-suite
      "Miscellaneous list procedures tests"
 
      ;; ZIP
 
-     (make-test-case
+     (test-case
       "zip:all-lists-empty"
-      (assert-true (null? (zip '() '() '() '() '()))))
+      (check-true (null? (zip '() '() '() '() '()))))
 
-     (make-test-case
+     (test-case
       "zip:one-list"
-      (assert-equal? (zip '(Pisces Puppis Reticulum))
+      (check-equal? (zip '(Pisces Puppis Reticulum))
                      '((Pisces) (Puppis) (Reticulum))))
 
-     (make-test-case
+     (test-case
       "zip:two-lists"
-      (assert-equal? (zip '(Sagitta Sagittarius Scorpio Scutum Serpens)
+      (check-equal? (zip '(Sagitta Sagittarius Scorpio Scutum Serpens)
                           '(Sextans Taurus Telescopium Triangulum Tucana))
                      '((Sagitta Sextans)
                        (Sagittarius Taurus)
@@ -68,14 +68,14 @@
                        (Scutum Triangulum)
                        (Serpens Tucana))))
 
-     (make-test-case
+     (test-case
       "zip:short-lists"
-      (assert-equal? (zip '(Vela) '(Virgo) '(Volens) '(Vulpecula))
+      (check-equal? (zip '(Vela) '(Virgo) '(Volens) '(Vulpecula))
                      '((Vela Virgo Volens Vulpecula))))
 
-     (make-test-case
+     (test-case
       "zip:several-lists"
-      (assert-equal? (zip '(actinium aluminum americium antimony argon)
+      (check-equal? (zip '(actinium aluminum americium antimony argon)
                           '(arsenic astatine barium berkeleium beryllium)
                           '(bismuth boron bromine cadmium calcium)
                           '(californium carbon cerium cesium chlorine)
@@ -95,18 +95,18 @@
 
      ;; UNZIP2
 
-     (make-test-case
+     (test-case
       "unzip2:empty-list-of-lists"
       (let-values (((firsts seconds) (unzip2 '())))
-        (assert-true (and (null? firsts) (null? seconds)))))
+        (check-true (and (null? firsts) (null? seconds)))))
 
-     (make-test-case
+     (test-case
       "unzip2:singleton-list-of-lists"
       (let-values (((firsts seconds) (unzip2 '((retriever rottweiler)))))
-        (assert-true (and (equal? firsts '(retriever))
+        (check-true (and (equal? firsts '(retriever))
                           (equal? seconds '(rottweiler))))))
 
-     (make-test-case
+     (test-case
       "unzip2:longer-list-of-lists"
       (let-values (((firsts seconds)
                     (unzip2 '((saluki samoyed)
@@ -114,38 +114,38 @@
                               (setter shepherd)
                               (skye spaniel)
                               (spitz staghound)))))
-        (assert-true (and (equal? firsts '(saluki shipperke setter skye spitz))
+        (check-true (and (equal? firsts '(saluki shipperke setter skye spitz))
                           (equal? seconds '(samoyed schnauzer shepherd spaniel
                                                     staghound))))))
 
-     (make-test-case
+     (test-case
       "unzip2:lists-with-extra-elements"
       (let-values (((firsts seconds)
                     (unzip2 '((terrier turnspit vizsla wiemaraner)
                               (whippet wolfhound)
                               (bells bones bongo carillon celesta)
                               (chimes clappers conga)))))
-        (assert-true (and (equal? firsts '(terrier whippet bells chimes))
+        (check-true (and (equal? firsts '(terrier whippet bells chimes))
                           (equal? seconds
                                   '(turnspit wolfhound bones clappers))))))
 
      ;; UNZIP3
 
-     (make-test-case
+     (test-case
       "unzip3:empty-list-of-lists"
       (let-values (((firsts seconds thirds)
                     (unzip3 '())))
-        (assert-true (and (null? firsts) (null? seconds) (null? thirds)))))
+        (check-true (and (null? firsts) (null? seconds) (null? thirds)))))
 
-     (make-test-case
+     (test-case
       "unzip3:singleton-list-of-lists"
       (let-values (((firsts seconds thirds)
                     (unzip3 '((cymbals gamelan glockenspiel)))))
-        (assert-true (and (equal? firsts '(cymbals))
+        (check-true (and (equal? firsts '(cymbals))
                           (equal? seconds '(gamelan))
                           (equal? thirds '(glockenspiel))))))
 
-     (make-test-case
+     (test-case
       "unzip3:longer-list-of-lists"
       (let-values (((firsts seconds thirds)
                     (unzip3 '((gong handbells kettledrum)
@@ -153,45 +153,45 @@
                               (mbira membranophone metallophone)
                               (nagara naker rattle)
                               (sizzler snappers tabor)))))
-        (assert-true (and (equal? firsts '(gong lyra mbira nagara sizzler))
+        (check-true (and (equal? firsts '(gong lyra mbira nagara sizzler))
                           (equal? seconds '(handbells maraca membranophone naker
                                                       snappers))
                           (equal? thirds '(kettledrum marimba metallophone rattle
                                                       tabor))))))
 
-     (make-test-case
+     (test-case
       "unzip3:lists-with-extra-elements"
       (let-values (((firsts seconds thirds)
                     (unzip3 '((tambourine timbrel timpani tintinnabula tonitruone)
                               (triangle vibraphone xylophone)
                               (baccarat banker bezique bingo bridge canasta)
                               (casino craps cribbage euchre)))))
-        (assert-true (and (equal? firsts '(tambourine triangle baccarat casino))
+        (check-true (and (equal? firsts '(tambourine triangle baccarat casino))
                           (equal? seconds '(timbrel vibraphone banker craps))
                           (equal? thirds
                                   '(timpani xylophone bezique cribbage))))))
 
      ;; UNZIP4
 
-     (make-test-case
+     (test-case
       "unzip4:empty-list-of-lists"
       (let-values (((firsts seconds thirds fourths)
                     (unzip4 '())))
-        (assert-true (and (null? firsts)
+        (check-true (and (null? firsts)
                           (null? seconds)
                           (null? thirds)
                           (null? fourths)))))
 
-     (make-test-case
+     (test-case
       "unzip4:singleton-list-of-lists"
       (let-values (((firsts seconds thirds fourths)
                     (unzip4 '((fantan faro gin hazard)))))
-        (assert-true (and (equal? firsts '(fantan))
+        (check-true (and (equal? firsts '(fantan))
                           (equal? seconds '(faro))
                           (equal? thirds '(gin))
                           (equal? fourths '(hazard))))))
 
-     (make-test-case
+     (test-case
       "unzip4:longer-list-of-lists"
       (let-values (((firsts seconds thirds fourths)
                     (unzip4 '((hearts keno loo lottery)
@@ -199,13 +199,13 @@
                               (ombre picquet pinball pinochle)
                               (poker policy quinze romesteq)
                               (roulette rum rummy skat)))))
-        (assert-true (and (equal? firsts '(hearts lotto ombre poker roulette))
+        (check-true (and (equal? firsts '(hearts lotto ombre poker roulette))
                           (equal? seconds '(keno lowball picquet policy rum))
                           (equal? thirds '(loo monte pinball quinze rummy))
                           (equal? fourths
                                   '(lottery numbers pinochle romesteq skat))))))
 
-     (make-test-case
+     (test-case
       "unzip4:lists-with-extra-elements"
       (let-values (((firsts seconds thirds fourths)
                     (unzip4 '((adamant agate alexandrite amethyst aquamarine
@@ -214,7 +214,7 @@
                               (chalcedony chrysoberyl chrysolite chrysoprase
                                           citrine coral demantoid)
                               (diamond emerald garnet girasol heliotrope)))))
-        (assert-true (and (equal? firsts '(adamant bloodstone chalcedony diamond))
+        (check-true (and (equal? firsts '(adamant bloodstone chalcedony diamond))
                           (equal? seconds '(agate brilliant chrysoberyl emerald))
                           (equal? thirds
                                   '(alexandrite carbuncle chrysolite garnet))
@@ -223,18 +223,18 @@
 
      ;; UNZIP5
 
-     (make-test-case
+     (test-case
       "unzip5:empty-list-of-lists"
       (let-values (((firsts seconds thirds fourths fifths)
                     (unzip5 '())))
-        (assert-true
+        (check-true
          (and (null? firsts)
               (null? seconds)
               (null? thirds)
               (null? fourths)
               (null? fifths)))))
 
-     (make-test-case
+     (test-case
       "unzip5:singleton-list-of-lists"
       (let-values (((firsts seconds thirds fourths fifths)
                     (unzip5 '((hyacinth jacinth jade jargoon jasper)))))
@@ -245,7 +245,7 @@
                (equal? fourths '(jargoon))
                (equal? fifths '(jasper))))))
 
-     (make-test-case
+     (test-case
       "unzip5:longer-list-of-lists"
       (let-values (((firsts seconds thirds fourths fifths)
                     (unzip5 '((kunzite moonstone morganite onyx opal)
@@ -253,7 +253,7 @@
                               (sardonyx spinel star sunstone topaz)
                               (tourmaline turquoise zircon Argus basilisk)
                               (Bigfoot Briareus bucentur Cacus Caliban)))))
-        (assert-true
+        (check-true
          (and (equal? firsts
                       '(kunzite peridot sardonyx tourmaline Bigfoot))
               (equal? seconds
@@ -262,7 +262,7 @@
               (equal? fourths '(onyx sapphire sunstone Argus Cacus))
               (equal? fifths '(opal sard topaz basilisk Caliban))))))
 
-     (make-test-case
+     (test-case
       "unzip5:lists-with-extra-elements"
       (let-values (((firsts seconds thirds fourths fifths)
                     (unzip5 '((centaur Cerberus Ceto Charybdis chimera cockatrice
@@ -271,7 +271,7 @@
                               (Gigantes Gorgon Grendel griffin Harpy hippocampus
                                         hippocentaur hippocerf)
                               (hirocervus Hydra Kraken Ladon manticore Medusa)))))
-        (assert-true
+        (check-true
          (and (equal? firsts '(centaur dipsas Gigantes hirocervus))
               (equal? seconds '(Cerberus dragon Gorgon Hydra))
               (equal? thirds '(Ceto drake Grendel Kraken))
@@ -280,18 +280,18 @@
 
      ;; APPEND!
 
-     (make-test-case
+     (test-case
       "append!:no-arguments"
-      (assert-true (null? (s:append!))))
+      (check-true (null? (s:append!))))
 
-     (make-test-case
+     (test-case
       "append!:one-argument"
-      (assert-equal? (s:append! (list 'mermaid 'merman 'Minotaur))
+      (check-equal? (s:append! (list 'mermaid 'merman 'Minotaur))
                      '(mermaid merman Minotaur)))
 
-     (make-test-case
+     (test-case
       "append!:several-arguments"
-      (assert-equal?
+      (check-equal?
        (s:append! (list 'nixie 'ogre 'ogress 'opinicus)
                   (list 'Orthos)
                   (list 'Pegasus 'Python)
@@ -301,36 +301,36 @@
                Python roc Sagittary salamander Sasquatch
                satyr Scylla simurgh siren)))
 
-     (make-test-case
+     (test-case
       "append!:some-null-arguments"
-      (assert-equal?
+      (check-equal?
        (s:append! (list) (list) (list 'Sphinx 'Talos 'troll) (list)
                   (list 'Typhoeus) (list) (list) (list))
        '(Sphinx Talos troll Typhoeus)))
 
-     (make-test-case
+     (test-case
       "append!:all-null-arguments"
-      (assert-true (null? (s:append! (list) (list) (list) (list) (list)))))
+      (check-true (null? (s:append! (list) (list) (list) (list) (list)))))
 
      ;; APPEND-REVERSE
 
-     (make-test-case
+     (test-case
       "append-reverse:first-argument-null"
-      (assert-equal? (append-reverse '() '(Typhon unicorn vampire werewolf))
+      (check-equal? (append-reverse '() '(Typhon unicorn vampire werewolf))
                      '(Typhon unicorn vampire werewolf)))
 
-     (make-test-case
+     (test-case
       "append-reverse:second-argument-null"
-      (assert-equal? (append-reverse '(windigo wivern xiphopagus yeti zombie) '())
+      (check-equal? (append-reverse '(windigo wivern xiphopagus yeti zombie) '())
                      '(zombie yeti xiphopagus wivern windigo)))
 
-     (make-test-case
+     (test-case
       "append-reverse:both-arguments-null"
-      (assert-true (null? (append-reverse '() '()))))
+      (check-true (null? (append-reverse '() '()))))
 
-     (make-test-case
+     (test-case
       "append-reverse:neither-argument-null"
-      (assert-equal?
+      (check-equal?
        (append-reverse '(Afghanistan Albania Algeria Andorra)
                        '(Angola Argentina Armenia))
        '(Andorra Algeria Albania Afghanistan Angola
@@ -338,43 +338,43 @@
 
      ;; APPEND-REVERSE!
 
-     (make-test-case
+     (test-case
       "append-reverse!:first-argument-null"
-      (assert-equal? (append-reverse! (list)
+      (check-equal? (append-reverse! (list)
                                       (list 'Australia 'Austria 'Azerbaijan))
                      '(Australia Austria Azerbaijan)))
 
-     (make-test-case
+     (test-case
       "append-reverse!:second-argument-null"
-      (assert-equal? (append-reverse! (list 'Bahrain 'Bangladesh 'Barbados
+      (check-equal? (append-reverse! (list 'Bahrain 'Bangladesh 'Barbados
                                             'Belarus 'Belgium)
                                       (list))
                      '(Belgium Belarus Barbados Bangladesh Bahrain)))
 
-     (make-test-case
+     (test-case
       "append-reverse!:both-arguments-null"
-      (assert-true (null? (append-reverse! (list) (list)))))
+      (check-true (null? (append-reverse! (list) (list)))))
 
-     (make-test-case
+     (test-case
       "append-reverse!:neither-argument-null"
-      (assert-equal? (append-reverse! (list 'Belize 'Benin 'Bhutan 'Bolivia)
+      (check-equal? (append-reverse! (list 'Belize 'Benin 'Bhutan 'Bolivia)
                                       (list 'Bosnia 'Botswana 'Brazil))
                      '(Bolivia Bhutan Benin Belize Bosnia Botswana Brazil)))
 
      ;; REVERSE!
 
-     (make-test-case
+     (test-case
       "reverse!:empty-list"
-      (assert-true (null? (s:reverse! (list)))))
+      (check-true (null? (s:reverse! (list)))))
 
-     (make-test-case
+     (test-case
       "reverse!:singleton-list"
-      (assert-equal? (s:reverse! (list 'Brunei))
+      (check-equal? (s:reverse! (list 'Brunei))
                      '(Brunei)))
 
-     (make-test-case
+     (test-case
       "reverse!:longer-list"
-      (assert-equal? (s:reverse! (list 'Bulgaria 'Burundi 'Cambodia 'Cameroon
+      (check-equal? (s:reverse! (list 'Bulgaria 'Burundi 'Cambodia 'Cameroon
                                        'Canada))
                      '(Canada Cameroon Cambodia Burundi Bulgaria)))
 

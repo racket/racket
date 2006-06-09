@@ -35,38 +35,38 @@
 (module delete-test
   mzscheme
 
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 1 1))
+  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            (all-except (lib "delete.ss" "srfi" "1") member))
 
   (provide delete-tests)
 
   (define delete-tests
-    (make-test-suite
+    (test-suite
      "List deletion tests"
 
      ;; DELETE
 
-     (make-test-case
+     (test-case
       "delete:null-list"
-      (assert-true
+      (check-true
        (null? (delete '(Fraser . Frederic) '()))))
 
-     (make-test-case
+     (test-case
       "delete:in-singleton-list"
-      (assert-true
+      (check-true
        (null?
         (delete '(Fredericksburg . Frederika)
                 '((Fredericksburg . Frederika))))))
 
-     (make-test-case
+     (test-case
       "delete:not-in-singleton-list"
-      (assert-equal?
+      (check-equal?
        (delete '(Fredonia . Fredsville) '((Freeman . Freeport)))
        '((Freeman . Freeport))))
 
-     (make-test-case
+     (test-case
       "delete:at-beginning-of-longer-list"
-      (assert-equal?
+      (check-equal?
        (delete '(Fremont . Froelich) '((Fremont . Froelich)
                                        (Fruitland . Fulton)
                                        (Furay . Galbraith)
@@ -77,9 +77,9 @@
          (Galesburg . Galland)
          (Galt . Galva))))
 
-     (make-test-case
+     (test-case
       "delete:in-middle-of-longer-list"
-      (assert-equal?
+      (check-equal?
        (delete '(Gambrill . Garber) '((Gardiner . Gardner)
                                       (Garfield . Garland)
                                       (Garnavillo . Garner)
@@ -94,9 +94,9 @@
          (Gaza . Geneva)
          (Genoa . George))))
 
-     (make-test-case
+     (test-case
       "delete:at-end-of-longer-list"
-      (assert-equal?
+      (check-equal?
        (delete '(Georgetown . Gerled) '((Germantown . Germanville)
                                         (Giard . Gibbsville)
                                         (Gibson . Gifford)
@@ -107,9 +107,9 @@
          (Gibson . Gifford)
          (Gilbert . Gilbertville))))
 
-     (make-test-case
+     (test-case
       "delete:not-in-longer-list"
-      (assert-equal?
+      (check-equal?
        (delete '(Gilliatt . Gilman) '((Givin . Gladbrook)
                                       (Gladstone . Gladwin)
                                       (Glasgow . Glendon)
@@ -121,9 +121,9 @@
          (Glenwood . Glidden)
          (Goddard . Goldfield))))
 
-     (make-test-case
+     (test-case
       "delete:several-matches-in-longer-list"
-      (assert-equal?
+      (check-equal?
        (delete '(Goodell . Gosport) '((Gowrie . Goddard)
                                       (Grable . Graettinger)
                                       (Goodell . Gosport)
@@ -138,27 +138,27 @@
 
      ;; DELETE!
 
-     (make-test-case
+     (test-case
       "delete!:null-list"
-      (assert-true (null? (delete! (cons 'Henshaw 'Hentons) (list)))))
+      (check-true (null? (delete! (cons 'Henshaw 'Hentons) (list)))))
 
-     (make-test-case
+     (test-case
       "delete!:in-singleton-list"
-      (assert-true
+      (check-true
        (null?
         (delete! (cons 'Hepburn 'Herndon)
                  (list (cons 'Hepburn 'Herndon))))))
 
-     (make-test-case
+     (test-case
       "delete!:not-in-singleton-list"
-      (assert-equal?
+      (check-equal?
        (delete! (cons 'Hesper 'Hiattsville)
                 (list (cons 'Hiawatha 'Hicks)))
        '((Hiawatha . Hicks))))
 
-     (make-test-case
+     (test-case
       "delete!:at-beginning-of-longer-list"
-      (assert-equal?
+      (check-equal?
        (delete! (cons 'Highland 'Highlandville)
                 (list (cons 'Highland 'Highlandville)
                       (cons 'Highview 'Hills)
@@ -170,9 +170,9 @@
          (Hilltop . Hinton)
          (Hiteman . Hobarton))))
 
-     (make-test-case
+     (test-case
       "delete!:in-middle-of-longer-list"
-      (assert-equal?
+      (check-equal?
        (delete! (cons 'Hocking 'Holbrook)
                 (list (cons 'Holland 'Holmes)
                       (cons 'Holstein 'Homer)
@@ -188,9 +188,9 @@
          (Horton . Hospers)
          (Houghton . Howardville))))
 
-     (make-test-case
+     (test-case
       "delete!:at-end-of-longer-list"
-      (assert-equal?
+      (check-equal?
        (delete! (cons 'Howe 'Hubbard)
                 (list (cons 'Hudson 'Hugo)
                       (cons 'Hull 'Humboldt)
@@ -202,9 +202,9 @@
          (Humeston . Huntington)
          (Hurley . Huron))))
 
-     (make-test-case
+     (test-case
       "delete!:not-in-longer-list"
-      (assert-equal?
+      (check-equal?
        (delete! (cons 'Hurstville 'Hutchins)
                 (list (cons 'Huxley 'Iconium)
                       (cons 'Illyria 'Imogene)
@@ -217,9 +217,9 @@
          (Indianola . Industry)
          (Inwood . Ion))))
 
-     (make-test-case
+     (test-case
       "delete!:several-matches-in-longer-list"
-      (assert-equal?
+      (check-equal?
        (delete! (cons 'Ionia 'Ira)
                 (list (cons 'Ireton 'Ironhills)
                       (cons 'Irving 'Irvington)
@@ -235,25 +235,25 @@
 
      ;; DELETE-DUPLICATES
 
-     (make-test-case
+     (test-case
       "delete-duplicates:null-list"
-      (assert-true (null? (delete-duplicates '()))))
+      (check-true (null? (delete-duplicates '()))))
 
-     (make-test-case
+     (test-case
       "delete-duplicates:singleton-list"
-      (assert-equal?
+      (check-equal?
        (delete-duplicates '((Knierim . Knittel)))
        '((Knierim . Knittel))))
 
-     (make-test-case
+     (test-case
       "delete-duplicates:in-doubleton-list"
-      (assert-equal?
+      (check-equal?
        (delete-duplicates '((Knoke . Knowlton) (Knoke . Knowlton)))
        '((Knoke . Knowlton))))
 
-     (make-test-case
+     (test-case
       "delete-duplicates:none-removed-in-longer-list"
-      (assert-equal?
+      (check-equal?
        (delete-duplicates '((Knox . Knoxville)
                             (Konigsmark . Kossuth)
                             (Koszta . Lacelle)
@@ -265,9 +265,9 @@
          (Lacey . Lacona)
          (Ladoga . Ladora))))
 
-     (make-test-case
+     (test-case
       "delete-duplicates:some-removed-in-longer-list"
-      (assert-equal?
+      (check-equal?
        (delete-duplicates '((Lafayette . Lainsville)
                             (Lakeside . Lakewood)
                             (Lakeside . Lakewood)
@@ -283,9 +283,9 @@
          (Lamoille . Lamoni)
          (Lamont . Lancaster))))
 
-     (make-test-case
+     (test-case
       "delete-duplicates:all-but-one-removed-in-longer-list"
-      (assert-equal?
+      (check-equal?
        (delete-duplicates '((Lanesboro . Langdon)
                             (Lanesboro . Langdon)
                             (Lanesboro . Langdon)
@@ -295,26 +295,26 @@
 
      ;; DELETE-DUPLICATES!
 
-     (make-test-case
+     (test-case
       "delete-duplicates!:null-list"
-      (assert-true (null? (delete-duplicates! (list)))))
+      (check-true (null? (delete-duplicates! (list)))))
 
-     (make-test-case
+     (test-case
       "delete-duplicates!:singleton-list"
-      (assert-equal?
+      (check-equal?
        (delete-duplicates! (list (cons 'Lester 'Letts)))
        '((Lester . Letts))))
 
-     (make-test-case
+     (test-case
       "delete-duplicates!:in-doubleton-list"
-      (assert-equal?
+      (check-equal?
        (delete-duplicates! (list (cons 'Leverette 'Levey)
                                  (cons 'Leverette 'Levey)))
        '((Leverette . Levey))))
 
-     (make-test-case
+     (test-case
       "delete-duplicates!:none-removed-in-longer-list"
-      (assert-equal?
+      (check-equal?
        (delete-duplicates! (list (cons 'Lewis 'Lexington)
                                  (cons 'Liberty 'Libertyville)
                                  (cons 'Lidderdale 'Lima)
@@ -326,9 +326,9 @@
          (Linby . Lincoln)
          (Linden . Lineville))))
 
-     (make-test-case
+     (test-case
       "delete-duplicates!:some-removed-in-longer-list"
-      (assert-equal?
+      (check-equal?
        (delete-duplicates! (list (cons 'Lisbon 'Liscomb)
                                  (cons 'Littleport 'Littleton)
                                  (cons 'Littleport 'Littleton)
@@ -344,9 +344,9 @@
          (Lockman . Lockridge)
          (Locust . Logan))))
 
-     (make-test-case
+     (test-case
       "delete-duplicates!:all-but-one-removed-in-longer-list"
-      (assert-equal?
+      (check-equal?
        (delete-duplicates! (list (cons 'Logansport 'Lohrville)
                                  (cons 'Logansport 'Lohrville)
                                  (cons 'Logansport 'Lohrville)

@@ -36,7 +36,7 @@
   mzscheme
 
   (require
-   (planet "test.ss" ("schematics" "schemeunit.plt" 1 1))
+   (planet "test.ss" ("schematics" "schemeunit.plt" 2))
    (all-except (lib "fold.ss" "srfi" "1") map for-each)
    (rename (lib "fold.ss" "srfi" "1") s:map map)
    (rename (lib "fold.ss" "srfi" "1") s:for-each for-each))
@@ -44,22 +44,22 @@
   (provide fold-tests)
 
   (define fold-tests
-    (make-test-suite
+    (test-suite
      "Folding list procedures tests"
 
      ;; UNFOLD
 
-     (make-test-case
+     (test-case
       "unfold:predicate-always-satisfied"
-      (assert-true (null?
+      (check-true (null?
                     (unfold (lambda (seed) #t)
                             (lambda (seed) (* seed 2))
                             (lambda (seed) (* seed 3))
                             1))))
 
-     (make-test-case
+     (test-case
       "unfold:normal-case"
-      (assert-equal?
+      (check-equal?
        (unfold (lambda (seed) (= seed 729))
                (lambda (seed) (* seed 2))
                (lambda (seed) (* seed 3))
@@ -68,9 +68,9 @@
 
      ;; UNFOLD-RIGHT
 
-     (make-test-case
+     (test-case
       "unfold-right:predicate-always-satisfied"
-      (assert-equal?
+      (check-equal?
        (unfold-right (lambda (seed) #t)
                      (lambda (seed) (* seed 2))
                      (lambda (seed) (* seed 3))
@@ -78,9 +78,9 @@
                      1)
        (list 1)))
 
-     (make-test-case
+     (test-case
       "unfold-right:normal-case"
-      (assert-equal?
+      (check-equal?
        (unfold-right (lambda (seed) (= seed 729))
                      (lambda (seed) (* seed 2))
                      (lambda (seed) (* seed 3))
@@ -90,36 +90,36 @@
 
      ;; FOLD
 
-     (make-test-case
+     (test-case
       "fold:one-null-list"
-      (assert = (fold (lambda (alpha beta) (* alpha (+ beta 1))) 13 '()) 13))
+      (check = (fold (lambda (alpha beta) (* alpha (+ beta 1))) 13 '()) 13))
 
-     (make-test-case
+     (test-case
       "fold:one-singleton-list"
-      (assert = (fold (lambda (alpha beta) (* alpha (+ beta 1))) 13 '(15)) 210))
+      (check = (fold (lambda (alpha beta) (* alpha (+ beta 1))) 13 '(15)) 210))
 
-     (make-test-case
+     (test-case
       "fold:one-longer-list"
-      (assert =
+      (check =
               (fold (lambda (alpha beta) (* alpha (+ beta 1)))
                     13
                     '(15 17 19 21 23))
               32927582))
 
-     (make-test-case
+     (test-case
       "fold:several-null-lists"
-      (assert-eq? (fold vector 'Chad '() '() '() '() '()) 'Chad))
+      (check-eq? (fold vector 'Chad '() '() '() '() '()) 'Chad))
 
-     (make-test-case
+     (test-case
       "fold:several-singleton-lists"
-      (assert-equal?
+      (check-equal?
        (fold vector 'Chile '(China) '(Colombia) '(Comoros) '(Congo)
              '(Croatia))
        '#(China Colombia Comoros Congo Croatia Chile)))
 
-     (make-test-case
+     (test-case
       "fold:several-longer-lists"
-      (assert-equal?
+      (check-equal?
        (fold (lambda (alpha beta gamma delta epsilon zeta)
                (cons (vector alpha beta gamma delta epsilon) zeta))
              '()
@@ -137,9 +137,9 @@
          #(Cyprus Estonia Georgia Guyana Iran)
          #(Cuba Eritrea Gambia Guinea Indonesia))))
 
-     (make-test-case
+     (test-case
       "fold:lists-of-different-lengths"
-      (assert-equal?
+      (check-equal?
        (fold (lambda (alpha beta gamma delta)
                (cons (vector alpha beta gamma) delta))
              '()
@@ -151,38 +151,38 @@
 
      ;; FOLD-RIGHT
 
-     (make-test-case
+     (test-case
       "fold-right:one-null-list"
-      (assert = (fold-right (lambda (alpha beta) (* alpha (+ beta 1))) 13 '())
+      (check = (fold-right (lambda (alpha beta) (* alpha (+ beta 1))) 13 '())
               13))
 
-     (make-test-case
+     (test-case
       "fold-right:one-singleton-list"
-      (assert = (fold-right (lambda (alpha beta) (* alpha (+ beta 1))) 13 '(15))
+      (check = (fold-right (lambda (alpha beta) (* alpha (+ beta 1))) 13 '(15))
               210))
 
-     (make-test-case
+     (test-case
       "fold-right:one-longer-list"
-      (assert = (fold-right (lambda (alpha beta) (* alpha (+ beta 1)))
+      (check = (fold-right (lambda (alpha beta) (* alpha (+ beta 1)))
                             13
                             '(15 17 19 21 23))
               32868750))
 
-     (make-test-case
+     (test-case
       "fold-right:several-null-lists"
-      (assert-eq? (fold-right vector 'Lebanon '() '() '() '() '())
+      (check-eq? (fold-right vector 'Lebanon '() '() '() '() '())
                   'Lebanon))
 
-     (make-test-case
+     (test-case
       "fold-right:several-singleton-lists"
-      (assert-equal?
+      (check-equal?
        (fold-right vector 'Lesotho '(Liberia) '(Libya) '(Liechtenstein)
                    '(Lithuania) '(Luxembourg))
        #(Liberia Libya Liechtenstein Lithuania Luxembourg Lesotho)))
 
-     (make-test-case
+     (test-case
       "fold-right:several-longer-lists"
-      (assert-equal?
+      (check-equal?
        (fold-right (lambda (alpha beta gamma delta epsilon zeta)
                      (cons (vector alpha beta gamma delta epsilon) zeta))
                    '()
@@ -204,9 +204,9 @@
          #(Mali Monaco Nepal Pakistan Portugal)
          #(Malta Mongolia Netherlands Palau Qatar))))
 
-     (make-test-case
+     (test-case
       "fold-right:lists-of-different-lengths"
-      (assert-equal?
+      (check-equal?
        (fold-right (lambda (alpha beta gamma delta)
                      (cons (vector alpha beta gamma) delta))
                    '()
@@ -229,24 +229,24 @@
                                (revappend first
                                           (loop (car rest)
                                                 (cdr rest))))))))
-       (make-test-suite
+       (test-suite
         "Pair-fold tests"
 
-        (make-test-case
+        (test-case
          "pair-fold:one-null-list"
-         (assert-equal?
+         (check-equal?
           (pair-fold revappend '(Spain Sudan) '())
           '(Spain Sudan)))
 
-        (make-test-case
+        (test-case
          "pair-fold:one-singleton-list"
-         (assert-equal?
+         (check-equal?
           (pair-fold revappend '(Suriname Swaziland) '(Sweden))
           '(Sweden Suriname Swaziland)))
 
-        (make-test-case
+        (test-case
          "pair-fold:one-longer-list"
-         (assert-equal?
+         (check-equal?
           (pair-fold revappend
                      '(Switzerland Syria)
                      '(Taiwan Tajikistan Tanzania Thailand Togo))
@@ -254,15 +254,15 @@
                  Thailand Tanzania Tajikistan Togo Thailand
                  Tanzania Tajikistan Taiwan Switzerland Syria)))
 
-        (make-test-case
+        (test-case
          "pair-fold:several-null-lists"
-         (assert-equal?
+         (check-equal?
           (pair-fold revappall '(Tonga Tunisia) '() '() '() '() '())
           '(Tonga Tunisia)))
 
-        (make-test-case
+        (test-case
          "pair-fold:several-singleton-lists"
-         (assert-equal?
+         (check-equal?
           (pair-fold revappall
                      '(Turkey Turkmenistan)
                      '(Tuvalu)
@@ -273,9 +273,9 @@
           '(Tuvalu Uganda Ukraine Uruguay Uzbekistan Turkey
                    Turkmenistan)))
 
-        (make-test-case
+        (test-case
          "pair-fold:several-longer-lists"
-         (assert-equal?
+         (check-equal?
           (pair-fold revappall
                      '(Vanuatu Venezuela)
                      '(Vietnam Yemen Yugoslavia Zaire Zambia Zimbabwe
@@ -314,9 +314,9 @@
                   Gjellerup Gide Galsworthy Faulkner Vanuatu
                   Venezuela)))
 
-        (make-test-case
+        (test-case
          "pair-fold:lists-of-different-lengths"
-         (assert-equal?
+         (check-equal?
           (pair-fold revappall
                      '(Hauptmann Hemingway Hesse)
                      '(Heyse Jensen Jimenez Johnson)
@@ -342,23 +342,23 @@
                                (revappend first
                                           (loop (car rest)
                                                 (cdr rest))))))))
-       (make-test-suite
+       (test-suite
         "Pair-fold-right tests"
-        (make-test-case
+        (test-case
          "pair-fold-right:one-null-list"
-         (assert-equal?
+         (check-equal?
           (pair-fold-right revappend '(Maeterlinck Mahfouz) '())
           '(Maeterlinck Mahfouz)))
 
-        (make-test-case
+        (test-case
          "pair-fold-right:one-singleton-list"
-         (assert-equal?
+         (check-equal?
           (pair-fold-right revappend '(Mann Martinson) '(Mauriac))
           '(Mauriac Mann Martinson)))
 
-        (make-test-case
+        (test-case
          "pair-fold-right:one-longer-list"
-         (assert-equal?
+         (check-equal?
           (pair-fold-right revappend
                            '(Milosz Mistral)
                            '(Mommsen Montale Morrison Neruda Oe))
@@ -366,15 +366,15 @@
                Morrison Montale Oe Neruda Morrison Oe Neruda Oe
                Milosz Mistral)))
 
-        (make-test-case
+        (test-case
          "pair-fold-right:several-null-lists"
-         (assert-equal?
+         (check-equal?
           (pair-fold-right revappall '(Pasternak Paz) '() '() '() '() '())
           '(Pasternak Paz)))
 
-        (make-test-case
+        (test-case
          "pair-fold-right:several-singleton-lists"
-         (assert-equal?
+         (check-equal?
           (pair-fold-right revappall
                            '(Perse Pirandello)
                            '(Pontoppidan)
@@ -385,9 +385,9 @@
           '(Pontoppidan Quasimodo Reymont Rolland Russell
                         Perse Pirandello)))
 
-        (make-test-case
+        (test-case
          "pair-fold-right:several-longer-lists"
-         (assert-equal?
+         (check-equal?
           (pair-fold-right revappall
                            '(Sachs Sartre)
                            '(Seferis Shaw Sholokov Siefert Sienkiewicz
@@ -427,9 +427,9 @@
                   Bosque Borden Simon Undset Aransas Bastrop Bowie
                   Bosque Sachs Sartre)))
 
-        (make-test-case
+        (test-case
          "pair-fold-right:lists-of-different-lengths"
-         (assert-equal?
+         (check-equal?
           (pair-fold-right revappall
                            '(Brazoria Brazos Brewster)
                            '(Briscoe Brooks Brown Burleson)
@@ -443,25 +443,25 @@
 
      ;; REDUCE
 
-     (make-test-case
+     (test-case
       "reduce:null-list"
-      (assert-true (zero? (reduce (lambda (alpha beta) (* alpha (+ beta 1))) 0 '()))))
+      (check-true (zero? (reduce (lambda (alpha beta) (* alpha (+ beta 1))) 0 '()))))
 
-     (make-test-case
+     (test-case
       "reduce:singleton-list"
-      (assert = (reduce (lambda (alpha beta) (* alpha (+ beta 1))) 0 '(25)) 25))
+      (check = (reduce (lambda (alpha beta) (* alpha (+ beta 1))) 0 '(25)) 25))
 
-     (make-test-case
+     (test-case
       "reduce:doubleton-list"
-      (assert =
+      (check =
               (reduce (lambda (alpha beta) (* alpha (+ beta 1)))
                       0
                       '(27 29))
               812))
 
-     (make-test-case
+     (test-case
       "reduce:longer-list"
-      (assert =
+      (check =
               (reduce (lambda (alpha beta) (* alpha (+ beta 1)))
                       0
                       '(31 33 35 37 39 41 43))
@@ -469,27 +469,27 @@
 
      ;; REDUCE-RIGHT
 
-     (make-test-case
+     (test-case
       "reduce-right:null-list"
-      (assert-true (zero? (reduce-right (lambda (alpha beta) (* alpha (+ beta 1))) 0 '()))))
+      (check-true (zero? (reduce-right (lambda (alpha beta) (* alpha (+ beta 1))) 0 '()))))
 
-     (make-test-case
+     (test-case
       "reduce-right:singleton-list"
-      (assert =
+      (check =
               (reduce-right (lambda (alpha beta) (* alpha (+ beta 1))) 0 '(25))
               25))
 
-     (make-test-case
+     (test-case
       "reduce-right:doubleton-list"
-      (assert =
+      (check =
               (reduce-right (lambda (alpha beta) (* alpha (+ beta 1)))
                             0
                             '(27 29))
               810))
 
-     (make-test-case
+     (test-case
       "reduce-right:longer-list"
-      (assert =
+      (check =
               (reduce-right (lambda (alpha beta) (* alpha (+ beta 1)))
                             0
                             '(31 33 35 37 39 41 43))
@@ -497,30 +497,30 @@
 
      ;; APPEND-MAP
 
-     (make-test-case
+     (test-case
       "append-map:one-null-list"
-      (assert-true (null? (append-map (lambda (element) (list element element)) '()))))
+      (check-true (null? (append-map (lambda (element) (list element element)) '()))))
 
-     (make-test-case
+     (test-case
       "append-map:one-singleton-list"
-      (assert-equal? (append-map (lambda (element) (list element element)) '(Cass))
+      (check-equal? (append-map (lambda (element) (list element element)) '(Cass))
                      '(Cass Cass)))
 
-     (make-test-case
+     (test-case
       "append-map:one-longer-list"
-      (assert-equal? (append-map (lambda (element) (list element element))
+      (check-equal? (append-map (lambda (element) (list element element))
                                  '(Castro Chambers Cherokee Childress Clay))
                      '(Castro Castro Chambers Chambers Cherokee Cherokee
                               Childress Childress Clay Clay)))
 
-     (make-test-case
+     (test-case
       "append-map:several-null-lists"
-      (assert-true (null? (append-map (lambda elements (reverse elements))
+      (check-true (null? (append-map (lambda elements (reverse elements))
                                       '() '() '() '() '()))))
 
-     (make-test-case
+     (test-case
       "append-map:several-singleton-lists"
-      (assert-equal? (append-map (lambda elements (reverse elements))
+      (check-equal? (append-map (lambda elements (reverse elements))
                                  '(Cochran)
                                  '(Coke)
                                  '(Coleman)
@@ -528,9 +528,9 @@
                                  '(Collingsworth))
                      '(Collingsworth Collin Coleman Coke Cochran)))
 
-     (make-test-case
+     (test-case
       "append-map:several-longer-lists"
-      (assert-equal?
+      (check-equal?
        (append-map (lambda elements (reverse elements))
                    '(Colorado Comal Comanche Concho Cooke Coryell
                               Cottle)
@@ -549,39 +549,39 @@
 
      ;; APPEND-MAP!
 
-     (make-test-case
+     (test-case
       "append-map!:one-null-list"
-      (assert-true (null? (append-map! (lambda (element) (list element element))
+      (check-true (null? (append-map! (lambda (element) (list element element))
                                        (list)))))
 
-     (make-test-case
+     (test-case
       "append-map!:one-singleton-list"
-      (assert-equal?
+      (check-equal?
        (append-map! (lambda (element) (list element element))
                     (list 'Gaines))
        '(Gaines Gaines)))
 
-     (make-test-case
+     (test-case
       "append-map!:one-longer-list"
-      (assert-equal?
+      (check-equal?
        (append-map! (lambda (element) (list element element))
                     (list 'Galveston 'Garza 'Gillespie 'Glasscock
                           'Goliad))
        '(Galveston Galveston Garza Garza Gillespie
                    Gillespie Glasscock Glasscock Goliad Goliad)))
 
-     (make-test-case
+     (test-case
       "append-map!:several-null-lists"
-      (assert-true (null? (append-map! (lambda elements (reverse elements))
+      (check-true (null? (append-map! (lambda elements (reverse elements))
                                        (list)
                                        (list)
                                        (list)
                                        (list)
                                        (list)))))
 
-     (make-test-case
+     (test-case
       "append-map!:several-singleton-lists"
-      (assert-equal?
+      (check-equal?
        (append-map! (lambda elements (reverse elements))
                     (list 'Gonzales)
                     (list 'Gray)
@@ -590,9 +590,9 @@
                     (list 'Grimes))
        '(Grimes Gregg Grayson Gray Gonzales)))
 
-     (make-test-case
+     (test-case
       "append-map!:several-longer-lists"
-      (assert-equal?
+      (check-equal?
        (append-map! (lambda elements (reverse elements))
                     (list 'Guadalupe 'Hale 'Hall 'Hamilton 'Hansford
                           'Hardeman 'Hardin)
@@ -613,28 +613,28 @@
 
      ;; MAP!
 
-     (make-test-case
+     (test-case
       "map!:one-null-list"
-      (assert-true (null? (map! vector (list)))))
+      (check-true (null? (map! vector (list)))))
 
-     (make-test-case
+     (test-case
       "map!:one-singleton-list"
-      (assert-equal?  (map! vector (list 'Kent))
+      (check-equal?  (map! vector (list 'Kent))
                       '(#(Kent))))
 
-     (make-test-case
+     (test-case
       "map!:one-longer-list"
-      (assert-equal?
+      (check-equal?
        (map! vector (list 'Kerr 'Kimble 'King 'Kinney 'Kleberg))
        '(#(Kerr) #(Kimble) #(King) #(Kinney) #(Kleberg))))
 
-     (make-test-case
+     (test-case
       "map!:several-null-lists"
-      (assert-true (null? (map! vector (list) (list) (list) (list) (list)))))
+      (check-true (null? (map! vector (list) (list) (list) (list) (list)))))
 
-     (make-test-case
+     (test-case
       "map!:several-singleton-lists"
-      (assert-equal?
+      (check-equal?
        (map! vector
              (list 'Knox)
              (list 'Lamar)
@@ -643,9 +643,9 @@
              (list 'Lavaca))
        '(#(Knox Lamar Lamb Lampasas Lavaca))))
 
-     (make-test-case
+     (test-case
       "map!:several-longer-lists"
-      (assert-equal?
+      (check-equal?
        (map! vector
              (list 'Lee 'Leon 'Liberty 'Limestone 'Lipscomb 'Llano
                    'Loving)
@@ -667,17 +667,17 @@
 
      ;; MAP-IN-ORDER
 
-     (make-test-case
+     (test-case
       "map-in-order:one-null-list"
-      (assert-true (null? (let ((counter 0))
+      (check-true (null? (let ((counter 0))
                             (map-in-order (lambda (element)
                                             (set! counter (+ counter 1))
                                             (cons counter element))
                                           '())))))
 
-     (make-test-case
+     (test-case
       "map-in-order:one-singleton-list"
-      (assert-equal?
+      (check-equal?
        (let ((counter 0))
          (map-in-order (lambda (element)
                          (set! counter (+ counter 1))
@@ -685,9 +685,9 @@
                        '(Oldham)))
        '((1 . Oldham))))
 
-     (make-test-case
+     (test-case
       "map-in-order:one-longer-list"
-      (assert-equal?
+      (check-equal?
        (let ((counter 0))
          (map-in-order (lambda (element)
                          (set! counter (+ counter 1))
@@ -699,17 +699,17 @@
          (4 . Parmer)
          (5 . Pecos))))
 
-     (make-test-case
+     (test-case
       "map-in-order:several-null-lists"
-      (assert-true (null? (let ((counter 0))
+      (check-true (null? (let ((counter 0))
                             (map-in-order (lambda elements
                                             (set! counter (+ counter 1))
                                             (apply vector counter elements))
                                           '() '() '() '() '())))))
 
-     (make-test-case
+     (test-case
       "map-in-order:several-singleton-lists"
-      (assert-equal?
+      (check-equal?
        (let ((counter 0))
          (map-in-order (lambda elements
                          (set! counter (+ counter 1))
@@ -721,9 +721,9 @@
                        '(Randall)))
        '(#(1 Polk Potter Presidio Rains Randall))))
 
-     (make-test-case
+     (test-case
       "map-in-order:several-longer-lists"
-      (assert-equal?
+      (check-equal?
        (let ((counter 0))
          (map-in-order (lambda elements
                          (set! counter (+ counter 1))
@@ -749,18 +749,18 @@
 
      ;; PAIR-FOR-EACH
 
-     (make-test-case
+     (test-case
       "pair-for-each:one-null-list"
-      (assert-true
+      (check-true
        (null? (let ((base '()))
                 (pair-for-each (lambda (tail)
                                  (set! base (append tail base)))
                                '())
                 base))))
 
-     (make-test-case
+     (test-case
       "pair-for-each:one-singleton-list"
-      (assert-equal?
+      (check-equal?
        (let ((base '()))
          (pair-for-each (lambda (tail)
                           (set! base (append tail base)))
@@ -768,9 +768,9 @@
          base)
        '(Victoria)))
 
-     (make-test-case
+     (test-case
       "pair-for-each:one-longer-list"
-      (assert-equal?
+      (check-equal?
        (let ((base '()))
          (pair-for-each (lambda (tail)
                           (set! base (append tail base)))
@@ -780,9 +780,9 @@
               Ward Washington Webb Walker Waller Ward
               Washington Webb)))
 
-     (make-test-case
+     (test-case
       "pair-for-each:several-null-lists"
-      (assert-true
+      (check-true
        (null? (let ((base '()))
                 (pair-for-each (lambda tails
                                  (set! base
@@ -790,9 +790,9 @@
                                '() '() '() '() '())
                 base))))
 
-     (make-test-case
+     (test-case
       "pair-for-each:several-singleton-lists"
-      (assert-equal?
+      (check-equal?
        (let ((base '()))
          (pair-for-each (lambda tails
                           (set! base
@@ -806,9 +806,9 @@
        '(#((Wharton) (Wheeler) (Wichita) (Wilbarger)
            (Willacy)))))
 
-     (make-test-case
+     (test-case
       "pair-for-each:several-longer-lists"
-      (assert-equal?
+      (check-equal?
        (let ((base '()))
          (pair-for-each (lambda tails
                           (set! base
@@ -860,42 +860,42 @@
 
      ;; FILTER-MAP
 
-     (make-test-case
+     (test-case
       "filter-map:one-null-list"
-      (assert-true (null? (filter-map values '()))))
+      (check-true (null? (filter-map values '()))))
 
-     (make-test-case
+     (test-case
       "filter-map:one-singleton-list"
-      (assert-equal?
+      (check-equal?
        (filter-map values '(Crest))
        '(Crest)))
 
-     (make-test-case
+     (test-case
       "filter-map:one-list-all-elements-removed"
-      (assert-true
+      (check-true
        (null? (filter-map (lambda (x) #f)
                           '(Crisco Degree Doritos Dristan Efferdent)))))
 
-     (make-test-case
+     (test-case
       "filter-map:one-list-some-elements-removed"
-      (assert-equal?
+      (check-equal?
        (filter-map (lambda (n) (and (even? n) n))
                    '(44 45 46 47 48 49 50))
        '(44 46 48 50)))
 
-     (make-test-case
+     (test-case
       "filter-map:one-list-no-elements-removed"
-      (assert-equal?
+      (check-equal?
        (filter-map values '(ESPN Everready Excedrin Fab Fantastik))
        '(ESPN Everready Excedrin Fab Fantastik)))
 
-     (make-test-case
+     (test-case
       "filter-map:several-null-lists"
-      (assert-true (null? (filter-map vector '() '() '() '() '()))))
+      (check-true (null? (filter-map vector '() '() '() '() '()))))
 
-     (make-test-case
+     (test-case
       "filter-map:several-singleton-lists"
-      (assert-equal?
+      (check-equal?
        (filter-map vector
                    '(Foamy)
                    '(Gatorade)
@@ -904,9 +904,9 @@
                    '(Halcion))
        '(#(Foamy Gatorade Glad Gleem Halcion))))
 
-     (make-test-case
+     (test-case
       "filter-map:several-lists-all-elements-removed"
-      (assert-true
+      (check-true
        (null?
         (filter-map (lambda arguments #f)
                     '(Hanes HBO Hostess Huggies Ivory Kent Kinney)
@@ -919,9 +919,9 @@
                     '(Prego Prell Prozac Purex Ritz Robitussin
                             Rolaids)))))
 
-     (make-test-case
+     (test-case
       "filter-map:several-lists-some-elements-removed"
-      (assert-equal?
+      (check-equal?
        (filter-map (lambda arguments
                      (let ((sum (apply + arguments)))
                        (and (odd? sum) sum)))
@@ -932,9 +932,9 @@
                    '(79 80 81 82 83 84 85))
        '(325 335 345 355)))
 
-     (make-test-case
+     (test-case
       "filter-map:several-lists-no-elements-removed"
-      (assert-equal?
+      (check-equal?
        (filter-map vector
                    '(Ronzoni Ruffles Scotch Skippy SnackWell Snapple
                              Spam)

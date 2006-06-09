@@ -35,62 +35,62 @@
 (module cons-test
   mzscheme
 
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 1 1))
+  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            (lib "cons.ss" "srfi" "1"))
 
   (provide cons-tests)
 
   (define cons-tests
-    (make-test-suite
+    (test-suite
      "List constructor tests"
 
      ;; XCONS
 
-     (make-test-case
+     (test-case
       "xcons:null-cdr"
-      (assert-equal? (xcons '() 'Andromeda) '(Andromeda)))
+      (check-equal? (xcons '() 'Andromeda) '(Andromeda)))
 
-     (make-test-case
+     (test-case
       "xcons:pair-cdr"
       (let* ((base '(Antlia))
              (result (xcons base 'Apus)))
-        (assert-equal? result '(Apus Antlia))
-        (assert-eq? (cdr result) base)))
+        (check-equal? result '(Apus Antlia))
+        (check-eq? (cdr result) base)))
 
-     (make-test-case
+     (test-case
       "xcons:datum-cdr"
-      (assert-equal? (xcons 'Aquarius 'Aquila) '(Aquila . Aquarius)))
+      (check-equal? (xcons 'Aquarius 'Aquila) '(Aquila . Aquarius)))
 
      ;; MAKE-LIST
 
-     (make-test-case
+     (test-case
       "make-list:zero-length"
-      (assert-true (null? (make-list 0))))
+      (check-true (null? (make-list 0))))
 
-     (make-test-case
+     (test-case
       "make-list:default-element"
-      (assert-equal? (make-list 5) '(#f #f #f #f #f)))
+      (check-equal? (make-list 5) '(#f #f #f #f #f)))
 
-     (make-test-case
+     (test-case
       "make-list:fill-element"
-      (assert-equal? (make-list 7 'Circinus)
+      (check-equal? (make-list 7 'Circinus)
                      '(Circinus Circinus Circinus Circinus
                                 Circinus Circinus Circinus)))
 
      ;; LIST-TABULATE
 
-     (make-test-case
+     (test-case
       "list-tabulate:zero-length"
-      (assert-true (null? (list-tabulate 0 (lambda (position) #f)))))
+      (check-true (null? (list-tabulate 0 (lambda (position) #f)))))
 
-     (make-test-case
+     (test-case
       "list-tabulate:identity"
-      (assert-equal? (list-tabulate 5 (lambda (position) position))
+      (check-equal? (list-tabulate 5 (lambda (position) position))
                      '(0 1 2 3 4)))
 
-     (make-test-case
+     (test-case
       "list-tabulate:factorial"
-      (assert-equal? (list-tabulate 7 (lambda (position)
+      (check-equal? (list-tabulate 7 (lambda (position)
                                         (do ((multiplier 1 (+ multiplier 1))
                                              (product 1 (* product multiplier)))
                                             ((< position multiplier) product))))
@@ -98,52 +98,52 @@
 
      ;; LIST*
 
-     (make-test-case
+     (test-case
       "list*:one-argument"
-      (assert-eq? (list* 'Columba)
+      (check-eq? (list* 'Columba)
                   'Columba))
 
-     (make-test-case
+     (test-case
       "list*:two-arguments"
-      (assert-equal? (list* 'Corvus 'Crater)
+      (check-equal? (list* 'Corvus 'Crater)
                      '(Corvus . Crater)))
 
-     (make-test-case
+     (test-case
       "list*:many-arguments"
-      (assert-equal? (list* 'Crux 'Cygnus 'Delphinus 'Dorado 'Draco)
+      (check-equal? (list* 'Crux 'Cygnus 'Delphinus 'Dorado 'Draco)
                      '(Crux Cygnus Delphinus Dorado . Draco)))
 
-     (make-test-case
+     (test-case
       "list*:last-argument-null"
-      (assert-equal? (list* 'Equuleus 'Fornax '())
+      (check-equal? (list* 'Equuleus 'Fornax '())
                      '(Equuleus Fornax)))
 
-     (make-test-case
+     (test-case
       "list*:last-argument-non-empty-list"
       (let* ((base '(Gemini Grus))
              (result (list* 'Hercules 'Horologium 'Hydra 'Hydrus base)))
-        (assert-equal? result
+        (check-equal? result
                        '(Hercules Horologium Hydra Hydrus Gemini Grus))
-        (assert-eq? (cddddr result) base)))
+        (check-eq? (cddddr result) base)))
 
      ;; LIST-COPY
 
-     (make-test-case
+     (test-case
       "list-copy:null-list"
-      (assert-true (null? (list-copy '()))))
+      (check-true (null? (list-copy '()))))
 
-     (make-test-case
+     (test-case
       "list-copy:flat-list"
       (let* ((original '(Indus Lacerta Leo Lepus Libra))
              (result (list-copy original)))
-        (assert-equal? result original)
-        (assert-true (not (eq? result original)))
-        (assert-true (not (eq? (cdr result) (cdr original))))
-        (assert-true (not (eq? (cddr result) (cddr original))))
-        (assert-true (not (eq? (cdddr result) (cdddr original))))
-        (assert-true (not (eq? (cddddr result) (cddddr original))))))
+        (check-equal? result original)
+        (check-true (not (eq? result original)))
+        (check-true (not (eq? (cdr result) (cdr original))))
+        (check-true (not (eq? (cddr result) (cddr original))))
+        (check-true (not (eq? (cdddr result) (cdddr original))))
+        (check-true (not (eq? (cddddr result) (cddddr original))))))
 
-     (make-test-case
+     (test-case
       "list-copy:bush"
       (let* ((first '(Lupus))
              (second '(Lynx Malus Mensa (Microscopium Monoceros)
@@ -151,27 +151,27 @@
              (third 'Ophiuchus)
              (original (list first second third))
              (result (list-copy original)))
-        (assert-equal? result original)
-        (assert-true (not (eq? result original)))
-        (assert-eq? (car result) first)
-        (assert-true (not (eq? (cdr result) (cdr original))))
-        (assert-eq? (cadr result) second)
-        (assert-true (not (eq? (cddr result) (cddr original))))
-        (assert-eq? (caddr result) third)))
+        (check-equal? result original)
+        (check-true (not (eq? result original)))
+        (check-eq? (car result) first)
+        (check-true (not (eq? (cdr result) (cdr original))))
+        (check-eq? (cadr result) second)
+        (check-true (not (eq? (cddr result) (cddr original))))
+        (check-eq? (caddr result) third)))
 
      ;; CIRCULAR-LIST
 
-     (make-test-case
+     (test-case
       "circular-list:one-element"
       (let ((result (circular-list 'Orion)))
-        (assert-true (and (pair? result)
+        (check-true (and (pair? result)
                           (eq? (car result) 'Orion)
                           (eq? (cdr result) result)))))
 
-     (make-test-case
+     (test-case
       "circular-list:many-elements"
       (let ((result (circular-list 'Pavo 'Pegasus 'Perseus 'Phoenix 'Pictor)))
-        (assert-true (and (pair? result)
+        (check-true (and (pair? result)
                           (eq? (car result) 'Pavo)
                           (pair? (cdr result))
                           (eq? (cadr result) 'Pegasus)
@@ -185,37 +185,37 @@
 
      ;; IOTA
 
-     (make-test-case
+     (test-case
       "iota:zero-count"
-      (assert-equal? (iota 0) (list)))
+      (check-equal? (iota 0) (list)))
 
-     (make-test-case
+     (test-case
       "iota:zero-count-and-step"
-      (assert-equal? (iota 0 0) (list)))
+      (check-equal? (iota 0 0) (list)))
 
-     (make-test-case
+     (test-case
       "iota:count-only"
-      (assert-equal? (iota 4) (list 0 1 2 3)))
+      (check-equal? (iota 4) (list 0 1 2 3)))
 
-     (make-test-case
+     (test-case
       "iota:count-and-start"
-      (assert-equal? (iota 3 1) (list 1 2 3)))
+      (check-equal? (iota 3 1) (list 1 2 3)))
 
-     (make-test-case
+     (test-case
       "iota:count-start-and-step"
-      (assert-equal? (iota 4 3 2) (list 3 5 7 9)))
+      (check-equal? (iota 4 3 2) (list 3 5 7 9)))
 
-     (make-test-case
+     (test-case
       "iota:negative-step"
-      (assert-equal? (iota 4 0 -1) (list 0 -1 -2 -3)))
+      (check-equal? (iota 4 0 -1) (list 0 -1 -2 -3)))
 
-     (make-test-case
+     (test-case
       "iota:non-integer-step"
-      (assert-equal? (iota 5 0 1/2) (list 0 1/2 1 3/2 2)))
+      (check-equal? (iota 5 0 1/2) (list 0 1/2 1 3/2 2)))
 
-     (make-test-case
+     (test-case
       "iota;negative-count"
-      (assert-equal? (iota -1) (list)))
+      (check-equal? (iota -1) (list)))
 
      ))
   )

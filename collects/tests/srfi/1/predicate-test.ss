@@ -36,134 +36,134 @@
   mzscheme
 
   (require
-   (planet "test.ss" ("schematics" "schemeunit.plt" 1 1))
+   (planet "test.ss" ("schematics" "schemeunit.plt" 2))
    (lib "predicate.ss" "srfi" "1")
    (lib "cons.ss" "srfi" "1"))
 
   (provide predicate-tests)
 
   (define predicate-tests
-    (make-test-suite
+    (test-suite
      "List predicate tests"
 
      ;; PROPER-LIST?
 
-     (make-test-case
+     (test-case
       "proper-list?:list"
-      (assert-true (proper-list? (list 1 2 3 4 5))))
+      (check-true (proper-list? (list 1 2 3 4 5))))
 
-     (make-test-case
+     (test-case
       "proper-list?:dotted-list"
-      (assert-true (not (proper-list? (cons 1 (cons 2 (cons 3 4)))))))
+      (check-true (not (proper-list? (cons 1 (cons 2 (cons 3 4)))))))
 
-     (make-test-case
+     (test-case
       "proper-list?:zero-length"
-      (assert-true (proper-list? (list))))
+      (check-true (proper-list? (list))))
 
-     (make-test-case
+     (test-case
       "proper-list?:circular-list"
-      (assert-true (not (proper-list? (circular-list 'a 'b 'c 'd)))))
+      (check-true (not (proper-list? (circular-list 'a 'b 'c 'd)))))
 
-     (make-test-case
+     (test-case
       "proper-list?:simple-value"
-      (assert-true (not (proper-list? 1))))
+      (check-true (not (proper-list? 1))))
 
      ;; DOTTED-LIST?
 
-     (make-test-case
+     (test-case
       "dotted-list?:dotted-list"
-      (assert-true (dotted-list? '(1 2 3 . 4))))
+      (check-true (dotted-list? '(1 2 3 . 4))))
 
-     (make-test-case
+     (test-case
       "dotted-list?:proper-list"
-      (assert-true (not (dotted-list? (list 'a 'b 'c 'd)))))
+      (check-true (not (dotted-list? (list 'a 'b 'c 'd)))))
 
-     (make-test-case
+     (test-case
       "dotted-list?:empty-list"
-      (assert-true (not (dotted-list? (list)))))
+      (check-true (not (dotted-list? (list)))))
 
-     (make-test-case
+     (test-case
       "dotted-list?:simple-value"
-      (assert-true (dotted-list? "hello")))
+      (check-true (dotted-list? "hello")))
 
      ;; CIRCULAR-LIST
 
-     (make-test-case
+     (test-case
       "circular-list?:proper-list"
-      (assert-true (not (circular-list? (list 1 2 3 4)))))
+      (check-true (not (circular-list? (list 1 2 3 4)))))
 
-     (make-test-case
+     (test-case
       "circular-list?:dotted-list"
-      (assert-true (not (circular-list? '(a b c . d)))))
+      (check-true (not (circular-list? '(a b c . d)))))
 
-     (make-test-case
+     (test-case
       "circular-list?:simple-value"
-      (assert-true (not (circular-list? 1))))
+      (check-true (not (circular-list? 1))))
 
-     (make-test-case
+     (test-case
       "circular-list?:circular-list"
-      (assert-true (circular-list? (circular-list 1 2 3 4))))
+      (check-true (circular-list? (circular-list 1 2 3 4))))
 
      ;; NOT-PAIR
 
-     (make-test-case
+     (test-case
       "not-pair?:list"
-      (assert-true (not (not-pair? (list 1 2 3 4)))))
+      (check-true (not (not-pair? (list 1 2 3 4)))))
 
-     (make-test-case
+     (test-case
       "not-pair?:number"
-      (assert-true (not-pair? 1)))
+      (check-true (not-pair? 1)))
 
-     (make-test-case
+     (test-case
       "not-pair?:symbol"
-      (assert-true (not-pair? 'symbol)))
+      (check-true (not-pair? 'symbol)))
 
-     (make-test-case
+     (test-case
       "not-pair?:string"
-      (assert-true (not-pair? "string")))
+      (check-true (not-pair? "string")))
 
      ;; NULL-LIST?
 
-     (make-test-case
+     (test-case
       "null-list?:null-list"
-      (assert-true (null-list? (list))))
+      (check-true (null-list? (list))))
 
-     (make-test-case
+     (test-case
       "null-list?:list"
-      (assert-true (not (null-list? (list 'a 'b 'c)))))
+      (check-true (not (null-list? (list 'a 'b 'c)))))
 
-     (make-test-case
+     (test-case
       "null-list?:pair"
-      (assert-true (not (null-list? (cons 1 2)))))
+      (check-true (not (null-list? (cons 1 2)))))
 
      ;; LIST=
 
-     (make-test-case
+     (test-case
       "list=:number-list"
-      (assert-true (list= = (list 1.0 2.0 3.0) (list 1 2 3))))
+      (check-true (list= = (list 1.0 2.0 3.0) (list 1 2 3))))
 
-     (make-test-case
+     (test-case
       "list=:symbol-vs-string-list"
-      (assert-true (list= (lambda (x y)
+      (check-true (list= (lambda (x y)
                             (string=? (symbol->string x) y))
                           (list 'a 'b 'c)
                           (list "a" "b" "c"))))
 
-     (make-test-case
+     (test-case
       "list=:unequal-lists"
-      (assert-true (not (list= eq? (list 1 2 3) (list 'a 'b 'c) (list 1 2 3)))))
+      (check-true (not (list= eq? (list 1 2 3) (list 'a 'b 'c) (list 1 2 3)))))
 
-     (make-test-case
+     (test-case
       "list=:unequal-lengths"
-      (assert-true (not (list= eq? (list 1 2 3) (list 1 2 3 4)))))
+      (check-true (not (list= eq? (list 1 2 3) (list 1 2 3 4)))))
 
-     (make-test-case
+     (test-case
       "list=:empty-lists"
-      (assert-true (list= eq? (list) (list) (list))))
+      (check-true (list= eq? (list) (list) (list))))
 
-     (make-test-case
+     (test-case
       "list=:no-list"
-      (assert-true (list= eq?)))
+      (check-true (list= eq?)))
 
      ))
   )
