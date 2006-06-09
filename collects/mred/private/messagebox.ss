@@ -109,6 +109,7 @@
 					(send msg-pnl horiz-margin 8))
 				      (send btn-pnl vert-margin 8)
 				      (send msg-pnl min-height 64)
+				      (send msg-pnl min-width 350)
 				      (send btn-pnl stretchable-height #f)
 				      (values msg-pnl btn-pnl 96 'right 'left 'top)))]
 			[else (let ([p (instantiate horizontal-pane% (f) [alignment '(center top)])])
@@ -150,6 +151,8 @@
 			    (let ([p (new horizontal-pane% [parent btn-pnl]
 					  [stretchable-height #f]
 					  [alignment '(left center)])])
+			      (when (eq? 'macosx (system-type))
+				(send p horiz-margin 8))
 			      (new check-box% 
 				   [label check-message]
 				   [parent p]
