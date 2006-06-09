@@ -149,12 +149,15 @@
 			(send msg-pnl delete-child c)
 			(loop #t)))))))
 	  (let ([check (and check?
-			    (let ([p (new horizontal-pane% [parent cb-pnl]
+			    (let ([p (new vertical-pane% [parent cb-pnl]
 					  [stretchable-height #f]
 					  [alignment '(left center)])])
-			      (when (and single?
-					 (eq? 'macosx (system-type)))
-				(send p horiz-margin 8))
+			      (when single?
+				(if (eq? 'macosx (system-type))
+				    ;; Match text-panel margin:
+				    (send p horiz-margin 8)
+				    ;; Put space between message an checkbox:
+				    (new message% [parent p] [label " "])))
 			      (new check-box% 
 				   [label check-message]
 				   [parent p]
