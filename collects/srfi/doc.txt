@@ -1,79 +1,80 @@
 PLT Scheme support for _SRFIs_ (`surfies')
 ==========================================
 
-This is an implementation of (some) SRFIs to the PLT Scheme system.
-It is intended for PLT Scheme v200+.
+This is an implementation of (some) SRFIs to the PLT Scheme
+system.  It is intended for PLT Scheme v200+.
 
 If you need more information on SRFI, please visit:
 
-		       http://srfi.schemers.org/
+                    http://srfi.schemers.org/
 
 Loading
 -------
 
-To load a SRFI with name conflicts (currently SRFIs 1, 19, 43, 45,
-48 and 69) in a module, please see the note below.
+To load a SRFI with name conflicts (currently SRFIs 1, 19, 43,
+45, 48 and 69) in a module, please see the note below.
 
 To load a SRFI, use the following form:
 
-		    (require (lib "N.ss" "srfi"))
+                    (require (lib "N.ss" "srfi"))
 
 if you know the number of the SRFI you want to load.  This is the
 preferred method, or this one:
 
-		 (require (lib "NAME.ss" "srfi" "N"))
+                    (require (lib "NAME.ss" "srfi" "N"))
 
 if you know the `informative name' of the SRFI.
 
 N, is a number corresponding to the sub-collection that holds a
-particular SRFI, and NAME is a more descriptive name we assigned to
-the main file in which the SRFI is defined.  For instance, to load
-SRFI-34 you have to do either one of:
+particular SRFI, and NAME is a more descriptive name we assigned
+to the main file in which the SRFI is defined.  For instance, to
+load SRFI-34 you have to do either one of:
 
-		    (require (lib "34.ss" "srfi"))
+                    (require (lib "34.ss" "srfi"))
 
 or,
 
-	       (require (lib "exception.ss" "srfi" "34"))
+                    (require (lib "exception.ss" "srfi" "34"))
 
 NOTE on SRFIs with name conflicts
 ---------------------------------
 
-Certain SRFIs (currently SRFIs 1, 13, 19, 43, 45, 48 and 69) provide
-names which conflict with names provided by the 'mzscheme' language.
-Attempting to require one of these SRFIs in a module written in the
-'mzscheme' language will result in an error.
+Certain SRFIs (currently SRFIs 1, 13, 19, 43, 45, 48 and 69)
+provide names which conflict with names provided by the
+'mzscheme' language.  Attempting to require one of these SRFIs in
+a module written in the 'mzscheme' language will result in an
+error.
 
 To address this problem, the PLT implementations of these SRFIs
-provide a different module which renames the problematic exports to
-avoid these conflicts.  For SRFI 1, this library is called list.ss,
-and should be required like this:
+provide a different module which renames the problematic exports
+to avoid these conflicts.  For SRFI 1, this library is called
+list.ss, and should be required like this:
 
-		 (require (lib "list.ss" "srfi" "1"))
+                    (require (lib "list.ss" "srfi" "1"))
 
 which supplies the colliding names with a prefix of 's:'
-(e.g. "s:map", "s:reverse!") and is therefore suitable for requires in
-a module.
+(e.g. "s:map", "s:reverse!") and is therefore suitable for
+requires in a module.
 
-For SRFI 19, this library is called time.ss, and should be required
-like this:
+For SRFI 19, this library is called time.ss, and should be
+required like this:
 
-		(require (lib "time.ss" "srfi" "19"))
+                    (require (lib "time.ss" "srfi" "19"))
 
 which supplies the colliding names with a prefix of 'srfi:'
-(e.g. "srfi:date?", "srfi:date-second") and is therefore suitable for
-requires in a module.
+(e.g. "srfi:date?", "srfi:date-second") and is therefore suitable
+for requires in a module.
 
 Supported SRFIs
 ---------------
 
-Here is a table that has an SRFI, file name, and the sub-collection
-number of the already ported SRFIs:
+Here is a table that has an SRFI, file name, and the
+sub-collection number of the already ported SRFIs:
 
   SRFI               File name               Sub-collection
  ========           ===========             ================
 
- SRFI-1             list.ss	                   1
+ SRFI-1             list.ss                        1
  SRFI-2             and-let.ss                     2
  SRFI-4(*1)         4.ss
  SRFI-5             let.ss                         5
@@ -100,7 +101,7 @@ number of the already ported SRFIs:
  SRFI-38(+)         38.ss
  SRFI-39(+)         39.ss
  SRFI-40            stream.ss                     40
- SRFI-42	    comprehensions.ss             42
+ SRFI-42            comprehensions.ss             42
  SRFI-43            vector-lib.ss                 43
  SRFI-45(*3)        lazy.ss                       45
  SRFI-48            format.ss                     48
@@ -120,17 +121,18 @@ Notes:
 `--------------------
 
 ,--------------------
-| *1 The functionality is all part of mzscheme available via
-| (lib "foreign.ss"), the only missing part is the i/o syntax.
+| *1 The functionality is all part of mzscheme available via (lib
+| "foreign.ss"), the only missing part is the i/o syntax.
 `--------------------
 
 ,--------------------
-| *2 The time module does not export its time structure (you have to
-| use the time-* procedures.)  It renames all the date-* accessors to
-| tm:date-* so that you won't get errors when including this code in
-| other modules.  Care most be taken NOT to confuse the internal date
-| structure with the PLT Scheme one, they are not the same, and all
-| procedures from this library expect the former.
+| *2 The time module does not export its time structure (you have
+| to use the time-* procedures.)  It renames all the date-*
+| accessors to tm:date-* so that you won't get errors when
+| including this code in other modules.  Care most be taken NOT
+| to confuse the internal date structure with the PLT Scheme one,
+| they are not the same, and all procedures from this library
+| expect the former.
 `--------------------
 
 ,--------------------
@@ -145,14 +147,14 @@ added to this library, please let us know:
 
    PLT Scheme <plt-scheme@fast.cs.utah.edu>
 
- + the Schematics-people @ sourceforge.net.  We are NOT members of the
-PLT group, the Schematics project is devoted to create code for PLT
-Scheme ONLY, though.  This SRFI port effort will try to be developed,
-tested, and debugged @ sourceforge, and periodically inserted to PLT
-Scheme.  Please, do join us!:
+ + the Schematics-people @ sourceforge.net.  We are NOT members
+ of the PLT group, the Schematics project is devoted to create
+ code for PLT Scheme ONLY, though.  This SRFI port effort will
+ try to be developed, tested, and debugged @ sourceforge, and
+ periodically inserted to PLT Scheme.  Please, do join us!:
 
    http://schematics.sourceforge.net
 
-(we don't have separate mailing lists @ sourceforge.  We have a couple
-of forums there, though.  Of course, you can send us mail directly,
-or... well, we read the PLT Scheme mailing list.)
+(we don't have separate mailing lists @ sourceforge.  We have a
+couple of forums there, though.  Of course, you can send us mail
+directly, or... well, we read the PLT Scheme mailing list.)
