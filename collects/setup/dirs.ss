@@ -117,8 +117,7 @@
   (define (get-doc-search-dirs)
     (combine-search (force config:doc-search-dirs)
 		    (append (get-new-doc-search-dirs)
-			    (map (lambda (p)
-				   (build-path p "doc"))
+			    (map (lambda (p) (build-path p "doc"))
 				 (current-library-collection-paths)))))
 
   ;; ----------------------------------------

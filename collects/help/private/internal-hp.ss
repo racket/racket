@@ -1,8 +1,11 @@
 (module internal-hp mzscheme
-  (require (lib "dirs.ss" "setup"))
-  (provide internal-port internal-host
+  (require (lib "dirs.ss" "setup")
+           (lib "config.ss" "planet"))
+  (provide internal-port 
+           is-internal-host? internal-host
 	   collects-hosts collects-dirs
-	   doc-hosts doc-dirs)
+	   doc-hosts doc-dirs
+           planet-host)
 
   ;; Hostnames defined here should not exist as real machines
 
@@ -20,6 +23,9 @@
   (define internal-host "helpdesk-internal.localhost")
   (define internal-port 8000)
 
+  (define (is-internal-host? str)
+    (member str all-internal-hosts))
+  
   (define (generate-hosts prefix dirs)
     (let loop ([dirs dirs][n 0])
       (if (null? dirs)
@@ -27,6 +33,8 @@
 	  (cons (format "~a~a.~a" prefix n internal-host)
 		(loop (cdr dirs) (add1 n))))))
 
+  (define planet-host (format "planet.~a" internal-host))
+  
   (define collects-dirs
     (get-collects-search-dirs))
   (define collects-hosts
@@ -35,4 +43,9 @@
   (define doc-dirs
     (get-doc-search-dirs))
   (define doc-hosts
-    (generate-hosts "doc" doc-dirs)))
+    (generate-hosts "doc" doc-dirs))
+  
+  (define all-internal-hosts 
+    (append (list internal-host planet-host)
+            collects-hosts
+            doc-hosts)))

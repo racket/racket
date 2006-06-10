@@ -29,24 +29,8 @@
     (unit/sig net:url^
       (import (raw : net:url^))
       
-      (define (url->string url)
-        (cond
-          [(and (equal? (url-port url) internal-port)
-                (equal? (url-host url) internal-host))
-           (let* ([long
-                   (url->string 
-                    (make-url ""
-			      (url-user url)
-			      ""
-			      #f
-			      (url-path-absolute? url)
-                              (url-path url)
-			      (url-query url)
-			      (url-fragment url)))])
-             (substring long 3 (string-length long)))]
-          [else (raw:url->string url)]))
-      
-      (redefine get-pure-port
+      (redefine url->string
+                get-pure-port
                 get-impure-port
                 post-pure-port
                 post-impure-port
@@ -107,9 +91,7 @@
       ; : (str nat -> iport oport) -> str nat -> iport oport
       (define (gen-tcp-connect raw)
         (lambda (hostname-string port)
-          (if (and (or (string=? internal-host hostname-string)
-                       (ormap (lambda (host) string=? host hostname-string)
-			      doc-hosts))
+          (if (and (is-internal-host? hostname-string)
                    (equal? internal-port port))
               (let-values ([(req-in req-out) (make-pipe)]
                            [(resp-in resp-out) (make-pipe)])

@@ -713,7 +713,7 @@ tracing todo:
 				 (send tab tracing:add-line (get-output-string sp))
 				 (semaphore-post sema))
 			       #f)))
-			  ;; Wait for th eline to get written, so that the
+			  ;; Wait for the line to get written, so that the
 			  ;;  trace output doesn't get too far behind (which
 			  ;;  matters, again, for infinite loops)
 			  (semaphore-wait sema)))))))))))

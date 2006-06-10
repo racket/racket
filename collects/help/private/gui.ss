@@ -118,10 +118,7 @@
                      
                      ;; one of the "collects" hosts:
                      [(and (equal? internal-port (url-port url))
-			   (or (equal? internal-host (url-host url))
-			       (ormap (lambda (host)
-					(equal? host (url-host url)))
-				      collects-hosts)))
+			   (is-internal-host? (url-host url)))
 		      url]
 
 		     ;; one of the "doc" hosts:
@@ -191,7 +188,7 @@
           (define hd-editor-mixin
             (mixin (hyper-text<%> editor<%>) ()
               (define/augment (url-allows-evaling? url)
-                (and (equal? internal-host (url-host url))
+                (and (is-internal-host? (url-host url))
                      (equal? internal-port (url-port url))))
               
               (define show-sk? #t)

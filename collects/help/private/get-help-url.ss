@@ -5,7 +5,8 @@
            "internal-hp.ss"
            (lib "contract.ss")
            (lib "etc.ss")
-	   (lib "dirs.ss" "setup"))
+	   (lib "config.ss" "planet")
+           (lib "dirs.ss" "setup"))
   
   (provide/contract (get-help-url
                      (opt->
@@ -25,12 +26,13 @@
 	   [(null? candidates) "/cannot-find-docs.html"]
 	   [else
 	    (let ([candidate (car candidates)])
-	      (cond
+              (cond
 	       [(subpath/tail (car candidate) segments)
 		=>
 		(λ (l-o-path)
-		  ((cadr candidate) l-o-path anchor))]
-	       [else (loop (cdr candidates))]))])))))
+                  ((cadr candidate) l-o-path anchor))]
+	       [else
+                (loop (cdr candidates))]))])))))
 
   (define manual-path-candidates '())
   (define (maybe-add-candidate candidate host)
@@ -49,8 +51,8 @@
 		  manual-path-candidates))))
 
   ;; Add doc dirs later, so that they take precedence:
-  (for-each (lambda (dir host)
-              (maybe-add-candidate dir host))
+  (maybe-add-candidate (PLANET-DIR) planet-host)
+  (for-each (λ (dir host) (maybe-add-candidate dir host))
             (append collects-dirs doc-dirs)
             (append collects-hosts doc-hosts))
   

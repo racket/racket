@@ -2,6 +2,7 @@
   (require (lib "file.ss")
            (lib "configuration.ss" "web-server")
 	   (lib "dirs.ss" "setup")
+           (lib "config.ss" "planet")
            "internal-hp.ss")
   
   (provide config)
@@ -52,5 +53,5 @@
 	     (lambda (virtual-host dir)
 	       `(,virtual-host 
 		 ,(make-host-config dir)))
-	     (append doc-hosts collects-hosts)
-	     (append doc-dirs collects-dirs))))))))
+	     (cons planet-host (append doc-hosts collects-hosts))
+	     (cons (PLANET-DIR) (append doc-dirs collects-dirs)))))))))
