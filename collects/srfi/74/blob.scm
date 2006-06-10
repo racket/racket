@@ -143,12 +143,12 @@
   (cut blob-sint-set! size <> <> <> <>))
 
 (define (make-ref/native base base-ref)
-  (lambda (endness blob index)
+  (lambda (blob index)
     (ensure-aligned index base)
     (base-ref (endianness native) blob index)))
 
 (define (make-set!/native base base-set!)
-  (lambda (endness blob index val)
+  (lambda (blob index val)
     (ensure-aligned index base)
     (base-set! (endianness native) blob index val)))
 

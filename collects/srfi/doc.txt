@@ -108,8 +108,11 @@ sub-collection number of the already ported SRFIs:
  SRFI-57            records.ss                    57
  SRFI-59            vicinity.ss                   59
  SRFI-60            60.ss                         60
+ SRFI-66            66.ss                         66
  SRFI-67            compare.ss                    67
  SRFI-69            hash.ss                       69
+ SRFI-74            74.ss                         74
+
 
 Notes:
 ,--------------------
@@ -136,7 +139,7 @@ Notes:
 `--------------------
 
 ,--------------------
-| *3 This port also provide |promise?| / |srfi-45-promise?|.
+| *3 This port also provides |promise?| / |srfi-45-promise?|.
 `--------------------
 
 
