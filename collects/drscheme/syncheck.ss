@@ -833,6 +833,7 @@ If the namespace does not, they are colored the unbound color.
           
           (define/augment (on-close)
 	    (send report-error-text on-close)
+            (send (get-defs) syncheck:clear-arrows)
 	    (inner (void) on-close))
           
           ;; syncheck:add-to-cleanup-texts : (is-a?/c text%) -> void
