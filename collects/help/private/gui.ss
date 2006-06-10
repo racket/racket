@@ -118,11 +118,6 @@
                      
                      ;; one of the "collects" hosts:
                      [(and (equal? internal-port (url-port url))
-			   (is-internal-host? (url-host url)))
-		      url]
-
-		     ;; one of the "doc" hosts:
-                     [(and (equal? internal-port (url-port url))
                            (ormap (lambda (host)
 				    (equal? host (url-host url)))
 				  doc-hosts))
@@ -165,6 +160,11 @@
 				  url))
 			    ;; Not a manual? Shouldn't happen.
 			    url))]
+
+		     ;; one of the other internal hosts
+                     [(and (equal? internal-port (url-port url))
+			   (is-internal-host? (url-host url)))
+		      url]
                      
                      ;; send the url off to another browser
                      [(or (and (string? (url-scheme url))
