@@ -588,6 +588,7 @@
 # define NO_MBTOWC_FUNCTIONS
 
 # define MZ_USE_JIT_I386
+# define MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC
 
 # define FLAGS_ALREADY_SET
 
@@ -1329,6 +1330,9 @@
 
  /* MZ_JIT_USE_MPROTECT uses mprotect on x86 platforms to make code
     pages executable */
+
+ /* MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC uses VirtualAlloc to make
+    code pages executable. */
 
   /***********************/
  /*     Heap Images     */

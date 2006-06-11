@@ -35,8 +35,11 @@
 #define __lightning_funcs_h
 
 #ifdef MZ_JIT_USE_MPROTECT
-#include <unistd.h>
-#include <sys/mman.h>
+# include <unistd.h>
+# include <sys/mman.h>
+#endif
+#ifdef MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC
+# include <windows.h>
 #endif
 
 static void
@@ -51,16 +54,23 @@ jit_flush_code(void *dest, void *end)
      execution of the data and stack segment are becoming more
      and more common (Fedora, for example), so we implement our
      jit_flush_code as an mprotect.  */
-#ifdef MZ_JIT_USE_MPROTECT
+#if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
   static unsigned long prev_page = 0, prev_length = 0;
   long page, length;
-#ifdef PAGESIZE
+# ifdef PAGESIZE
   const long page_size = PAGESIZE;
-#else
+# else
   static long page_size = -1;
-  if (page_size == -1)
+  if (page_size == -1) {
+#  ifdef MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC
+    SYSTEM_INFO info;
+    GetSystemInfo(&info);
+    page_size = info.dwPageSize;
+#  else
     page_size = sysconf (_SC_PAGESIZE);
-#endif
+#  endif
+  }
+# endif
 
   page = (long) dest & ~(page_size - 1);
   length = ((char *) end - (char *) page + page_size - 1) & ~(page_size - 1);
@@ -70,7 +80,14 @@ jit_flush_code(void *dest, void *end)
   if (page >= prev_page && page + length <= prev_page + prev_length)
     return;
 
+# ifdef MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC
+  {
+    DWORD old;
+    VirtualProtect((void *)page, length, PAGE_EXECUTE_READWRITE, &old);
+  }
+# else
   mprotect ((void *) page, length, PROT_READ | PROT_WRITE | PROT_EXEC);
+# endif
 
   /* See if we can extend the previously mprotect'ed memory area towards
      higher addresses: the starting address remains the same as before.  */
