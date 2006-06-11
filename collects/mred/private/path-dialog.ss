@@ -494,18 +494,28 @@
 
       ;; Use the path-list for completion options
       (define saved-path-list-state #f)
+      (define saved-path-list-sema (make-semaphore 1))
       (define (save-path-list-state)
-        (unless saved-path-list-state
-          (set! saved-path-list-state
-                (list (send path-list get-first-visible-item)
-                      (send path-list get-selections)))))
+        (dynamic-wind
+          (lambda () (semaphore-wait saved-path-list-sema))
+          (lambda ()
+            (unless saved-path-list-state
+              (set! saved-path-list-state
+                    (list (send path-list get-first-visible-item)
+                          (send path-list get-selections)))))
+          (lambda () (semaphore-post saved-path-list-sema))))
       (define (restore-path-list-state)
-        (when saved-path-list-state
-          (send path-list set paths)
-          (for-each (lambda (i) (send path-list select i))
-                    (cadr saved-path-list-state))
-          (send path-list set-first-visible-item (car saved-path-list-state))
-          (set! saved-path-list-state #f)))
+        (dynamic-wind
+          (lambda () (semaphore-wait saved-path-list-sema))
+          (lambda ()
+            (when saved-path-list-state
+              (send path-list set paths)
+              (for-each (lambda (i) (send path-list select i))
+                        (cadr saved-path-list-state))
+              (send path-list
+                    set-first-visible-item (car saved-path-list-state))
+              (set! saved-path-list-state #f)))
+          (lambda () (semaphore-post saved-path-list-sema))))
 
       ;; Timer for delaying completion
       (define completion-timer
