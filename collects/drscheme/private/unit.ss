@@ -3161,15 +3161,17 @@ module browser threading seems wrong.
                                  (car percentages))))
             (inner (void) after-percentage-change))
           (super-new)))
-      
+
       (define drs-name-message%
         (class name-message%
           (define/override (on-choose-directory dir)
-            (let ([file (finder:get-file dir)])
+            (let ([file (parameterize ([finder:dialog-parent-parameter
+                                        (send this get-top-level-window)])
+                          (finder:get-file dir))])
               (when file
                 (handler:edit-file file))))
           (super-new)))
-      
+
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;;
       ;; lambda-snipclass is for backwards compatibility

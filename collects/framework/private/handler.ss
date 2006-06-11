@@ -380,7 +380,7 @@
 
       (define open-file
 	(λ ()
-	  (let* ([parent (and (preferences:get 'framework:open-here?)
+	  (let* ([parent (and ; (preferences:get 'framework:open-here?)
                               (get-top-level-focus-window))]
                  [file 
                   (parameterize ([finder:dialog-parent-parameter parent])

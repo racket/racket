@@ -1232,7 +1232,7 @@
 		(λ (this-edit event)
                   (let ([edit (get-outer-editor this-edit)])
                     (parameterize ([finder:dialog-parent-parameter 
-                                    (and (is-a? edit editor:basic<%>)
+                                    (and ; (is-a? edit editor:basic<%>)
                                          (send edit get-top-level-window))])
                       (let ([file (finder:put-file)])
                         (when file
