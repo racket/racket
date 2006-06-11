@@ -273,13 +273,20 @@ profile todo:
       ;; prints out the src location information for src-to-display
       ;; as it would appear in an error message
       (define (display-srcloc-in-error src-to-display)
-        (let ([src (srcloc-source src-to-display)])
+        (let* ([raw-src (srcloc-source src-to-display)]
+               [src (if (and (is-a? raw-src editor<%>)
+                             (not (is-a? raw-src drscheme:unit:definitions-text<%>)))
+                        (let* ([b (box #f)]
+                               [fn (send raw-src get-filename b)])
+                          (and (not (unbox b))
+                               fn))
+                        raw-src)])
           (when (and (path? src) file-note%)
             (let ([note (new file-note%)])
               (send note set-callback 
                     (λ () (open-and-highlight-in-file src-to-display)))
               (write-special note (current-error-port))
-              (display #\space (current-error-port))
+              (display #\space (current-error-port)) 
               (display (path->string (find-relative-path (current-directory) src))
                        (current-error-port))
               (let ([line (srcloc-line src-to-display)]
@@ -296,19 +303,27 @@ profile todo:
       ;;                    -> (listof srclocs)
       ;; finds the source location to display, choosing between
       ;; the stack trace and the exception record.
-      ;; returns #f if the source isn't a string.
       (define (find-src-to-display exn cms)
-        (cond
-          [(exn:srclocs? exn)
-           ((exn:srclocs-accessor exn) exn)]
-          [(pair? cms)
-           (let ([fst (car cms)])
-             (list (make-srcloc (car fst)
-                                #f
-                                #f
-                                (cadr fst)
-                                (cddr fst))))]
-          [else '()]))
+        (let ([has-info?
+               (λ (srcloc)
+                 (ormap (λ (f) (f srcloc))
+                        (list srcloc-column
+                              srcloc-line
+                              srcloc-position
+                              srcloc-source
+                              #;srcloc-span)))])  ;; don't consider span alone to count as `info'
+          (cond
+            [(and (exn:srclocs? exn)
+                  (ormap has-info? ((exn:srclocs-accessor exn) exn)))
+             ((exn:srclocs-accessor exn) exn)]
+            [(pair? cms)
+             (let ([fst (car cms)])
+               (list (make-srcloc (car fst)
+                                  #f
+                                  #f
+                                  (cadr fst)
+                                  (cddr fst))))]
+            [else '()])))
   
       
       (define (show-syntax-error-context port exn)

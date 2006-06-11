@@ -173,7 +173,9 @@ TODO
       ;;     the highlighting.
       (define (drscheme-error-display-handler msg exn)
         (let* ([srclocs-stack 
-                (filter values (map cdr (continuation-mark-set->context (exn-continuation-marks exn))))]
+                (if (exn? exn)
+                    (filter values (map cdr (continuation-mark-set->context (exn-continuation-marks exn))))
+                    '())]
                [stack 
                 (filter
                  values

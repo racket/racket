@@ -56,9 +56,6 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                        ;; if this field is not #f, the execute-answer and load-answer fields
                        ;; are expected to be `format'able strings with one ~a in them.
                        
-                       docs-icon?                  ;; : boolean 
-                       ;; true if this should have a docs icon in front of the response.
-                       
                        breaking-test?              ;; : boolean
                        
                        ;; setup is called before the test case is run.
@@ -76,8 +73,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
                 'interactions
 		#f
-                #f
-                #f
+		#f
                 void
                 void)
      (make-test "\"a\""
@@ -86,8 +82,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
                 'interactions
 		#f
-                #f
-                #f
+		#f
                 void
                 void)
      
@@ -97,8 +92,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
                 'interactions
 		#f
-                #f
-                #f
+		#f
                 void
                 void)
      
@@ -108,8 +102,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
                 'interactions
 		#f
-                #f
-                #f
+		#f
                 void
                 void)
      
@@ -119,8 +112,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
                 (cons (make-loc 0 0 0) (make-loc 0 1 1))
 		'read
-                #f
-                #f
+		#f
                 void
                 void)
      (make-test "."
@@ -129,8 +121,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
                 (cons (make-loc 0 0 0) (make-loc 0 1 1))
                 'read
-                #f
-                #f
+		#f
                 void
                 void)
      (make-test "(lambda ())"
@@ -139,8 +130,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
                 (cons (make-loc 0 0 0) (make-loc 0 11 11))
 		'expand
-                #t
-                #f
+		#f
                 void
                 void)
      (make-test "xx"
@@ -149,8 +139,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #t
                 (cons (make-loc 0 0 0) (make-loc 0 2 2))
                 #f
-                #f
-                #f
+		#f
                 void
                 void)
      (make-test "(raise 1)"
@@ -159,8 +148,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
                 'interactions
                 #f
-                #f
-                #f
+		#f
                 void
                 void)
      (make-test "(raise #f)"
@@ -169,8 +157,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
 		'interactions
                 #f
-                #f
-                #f
+		#f
                 void
                 void)
      
@@ -180,8 +167,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
 		'interactions
                 #f
-                #f
-                #f
+		#f
                 void
                 void)
      (make-test "(list 1 2)"
@@ -190,8 +176,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
 		'interactions
                 #f
-                #f
-                #f
+		#f
                 void
                 void)
      
@@ -201,8 +186,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
                 'interactions
                 #f
-                #f
-                #f
+		#f
                 void
                 void)
      
@@ -213,8 +197,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
 		'interactions
                 #f
-                #f
-                #f
+		#f
                 void
                 void)
 
@@ -223,7 +206,6 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
 		""
 		#f
 		'interactions
-		#f
 		#f
 		#f
                 void
@@ -236,7 +218,6 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
 		'interactions
 		#f
 		#f
-		#f
                 void
                 void)
 
@@ -245,13 +226,12 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                  "(module n mzscheme (require-for-syntax m) (provide s) (define-syntax (s stx) e))\n"
                  "(require n)\n"
                  "s")
-                "compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
-                "compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
+                "~acompile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
+                "~acompile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
                 #f
-                (cons (make-loc 1 43 43) (make-loc 1 44 44))
-                #f
-                #f
-                #f
+                (cons (make-loc 0 43 43) (make-loc 0 44 44))
+                'expand
+		#f
                 void
                 void)
 
@@ -262,8 +242,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
 		'interactions
                 #f
-                #f
-                #f
+		#f
                 void
                 void)
 
@@ -273,8 +252,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #t
                 (cons (make-loc 1 0 10) (make-loc 1 2 12))
                 #f
-                #f
-                #f
+		#f
                 void
                 void)
      
@@ -287,8 +265,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
 		'interactions
                 #f
-                #f
-                #f
+     #f
                 void
                 void)
 
@@ -301,8 +278,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
       #f
       'interactions
       #f
-      #f
-      #f
+     #f
       void
       void)
      
@@ -316,8 +292,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
       #f
       'interactions
       #f
-      #f
-      #f
+     #f
       void
       void)
      
@@ -331,8 +306,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
       #f
       'interactions
       #f
-      #f
-      #f
+     #f
       void
       void)
      
@@ -346,8 +320,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
       #t
       'definitions
       #f
-      #f
-      #f
+     #f
       void
       void)
      |#
@@ -360,8 +333,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
 		#f
 		'interactions
                 #f
-                #f
-                #f
+		#f
                 void
                 void)
      (make-test "    (eval '(list 1 2))"
@@ -370,8 +342,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
 		'interactions
                 #f
-                #f
-                #f
+		#f
                 void
                 void)
      (make-test "    (eval '(lambda ()))"
@@ -380,8 +351,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 2
 		(cons (make-loc 0 4 4) (make-loc 0 23 23))
                 #f
-                #f
-                #f
+		#f
                 void
                 void)
      (make-test "    (eval 'x)"
@@ -390,8 +360,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 2
 		(cons (make-loc 0 4 4) (make-loc 0 13 13))
                 #f
-                #f
-                #f
+		#f
                 void
                 void)
      
@@ -401,7 +370,6 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
 		'interactions
 		#f
-                #f
 		#f
                 void
                 void)
@@ -412,7 +380,6 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
 		'interactions
 		#f
-                #f
 		#f
                 void
                 void)
@@ -424,8 +391,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 2
 		(cons (make-loc 0 0 0) (make-loc 0 12 12))
                 #f
-                #f
-                #f
+		#f
                 void
                 void)
      
@@ -436,8 +402,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
 		#f
 		(cons (make-loc 0 4 4) (make-loc 0 9 9))
                 'read
-                #f
-                #f
+		#f
                 void
                 void)
      (make-test "1 2 . 3 4"
@@ -446,8 +411,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
 		#f
 		(cons (make-loc 0 4 4) (make-loc 0 5 5))
                 'read
-                #f
-                #f
+		#f
                 void
                 void)
      (make-test "1 2 (lambda ()) 3 4"
@@ -456,8 +420,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
 		#f
 		(cons (make-loc 0 4 4) (make-loc 0 15 15))
                 'expand
-                #t
-                #f
+		#f
                 void
                 void)
      (make-test "1 2 x 3 4"
@@ -466,8 +429,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
 		#t
 		(cons (make-loc 0 4 4) (make-loc 0 5 5))
                 #f
-                #f
-                #f
+		#f
                 void
                 void)
      (make-test "1 2 (raise 1) 3 4"
@@ -476,8 +438,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
 		#f
 		'interactions
                 #f
-                #f
-                #f
+		#f
                 void
                 void)
      (make-test "1 2 (raise #f) 3 4"
@@ -486,8 +447,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
 		#f
 		'interactions
                 #f
-                #f
-                #f
+		#f
                 void
                 void)
 
@@ -501,8 +461,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
         (cons (make-loc -1 -1 (+ (string-length (path->string tmp-filename)) 29))
               (make-loc -1 -1 (+ (string-length (path->string tmp-filename)) 36)))
         #f
-        #f
-        #f
+	#f
         (lambda ()
           (call-with-output-file tmp-filename
             (lambda (port)
@@ -519,8 +478,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
 		(cons (make-loc 1 0 37) (make-loc 1 2 39))
                 'expand
-                #t
-                #f
+		#f
                 void
                 void)
      
@@ -530,8 +488,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
 		(cons (make-loc 1 0 44) (make-loc 1 0 46))
                 'expand
-                #t
-                #f
+		#f
                 void
                 void)
      
@@ -542,7 +499,6 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
 		'interactions
 		#f
-                #f
 		#f
                 void
                 void)
@@ -558,19 +514,19 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
       'definitions
       #f
       #f
-      #f
       void
       void)
      
      ; fraction snip test
+     ;; this test depends on the state of the 'framework:fraction-snip-style preference
+     ;; make sure this preference is set to the default when running this test.
      (make-test 'fraction-sum
-                "{number 5/6 \"5/6\" mixed}"
-                "{number 5/6 \"5/6\" mixed}"
+                "{number 5/6 \"5/6\" improper}"
+                "{number 5/6 \"5/6\" improper}"
                 #f
                 'interactions
                 #f
-                #f
-                #f
+		#f
                 void
                 void)
      
@@ -581,8 +537,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
                 'interactions
                 #f
-                #f
-                #f
+		#f
                 void
                 void)
      
@@ -593,8 +548,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
                 'interactions
                 #f
-                #f
-                #f
+		#f
                 void
                 void)
      
@@ -605,19 +559,17 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
                 'interactions
                 #f
-                #f
-                #f
+		#f
                 void
                 void)
      
      (make-test "(parameterize ([current-output-port (open-output-string)]) (fprintf (current-error-port) \"~e\" #'foot))"
-                "#<syntax::79>"
-                "#<syntax::79>"
+                "#<syntax:1:96>"
+                "#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp.ss:1:96>"
                 #f
                 'interactions
                 #f
-                #f
-                #f
+		#f
                 void
                 void)
      
@@ -627,8 +579,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
                 'interactions
                 #f
-                #f
-                #f
+		#f
                 void
                 void)
      
@@ -642,7 +593,6 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
       (cons (make-loc 0 99 99) (make-loc 0 104 104))
       #f
       #f
-      #f
       void
       void)
      
@@ -653,8 +603,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 2
 		(cons (make-loc 0 0 0) (make-loc 0 35 35))
                 #f
-                #f
-                #t
+		#t
                 void
                 void)
      
@@ -664,8 +613,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 2
 		(cons (make-loc 0 8 8) (make-loc 0 11 11))
                 #f
-                #f
-                #t
+		#t
                 void
                 void)
      
@@ -675,7 +623,6 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
 		'interactions
 		#f
-                #f
 		#f
                 void
                 void)
@@ -684,8 +631,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
 		'interactions
 		#f
-                #f
-                #f
+		#f
                 void
                 void)
      (make-test "(define v (vector (eval '(call/cc (lambda (x) x)))))\n((vector-ref v 0) 2)\nv"
@@ -693,8 +639,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
 		'interactions
 		#f
-                #f
-                #f
+		#f
                 void
                 void)
      
@@ -704,8 +649,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #t
 		(cons (make-loc 3 7 61) (make-loc 3 12 66))
 		#f
-                #f
-                #f
+		#f
                 void
                 void)
      
@@ -716,8 +660,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
                 'interactions
 		#f
-                #f
-                #f
+		#f
                 void
                 void)
      
@@ -727,8 +670,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
                 (cons (make-loc 0 0 0) (make-loc 0 5 5))
 		'expand
-                #t
-                #f
+		#f
                 void
                 void)
      
@@ -739,8 +681,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #t
 		(cons (make-loc 0 26 26) (make-loc 0 27 27))
                 #f
-                #f
-                #f
+		#f
                 void
                 void)))
   
@@ -960,6 +901,14 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                                    (send interactions-text get-character
                                          (- (send interactions-text last-position) 1))))
                 (test:keystroke #\return))
+              
+              ; in order to erase the state in the namespace already, we clear (but don't save!)
+              ; the definitions and click execute with the empty buffer
+              (test:new-window definitions-canvas)
+              (test:menu-select "Edit" "Select All")
+              (test:menu-select "Edit" "Delete")
+              (do-execute drscheme-frame #f)
+              (wait-for-execute)
               
               ; stuff the load command into the REPL 
               (for-each test:keystroke
