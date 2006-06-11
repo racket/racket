@@ -1051,12 +1051,11 @@
       ;; the result indicates if the teachpacks changed #t if they did and #f if not
       (define (add-new-teachpack frame)
         (let ([lib-file
-               (begin
-                 (parameterize ([finder:dialog-parent-parameter frame])
-                   (finder:get-file 
-                    teachpack-directory
-                    (string-constant select-a-teachpack)
-                    ".*\\.(ss|scm)$")))])
+               (parameterize ([finder:dialog-parent-parameter frame])
+                 (finder:get-file
+                  teachpack-directory
+                  (string-constant select-a-teachpack)
+                  ".*\\.(ss|scm)$"))])
           (if lib-file
               (let* ([interactions-text (send frame get-interactions-text)]
                      [tp-cache (send interactions-text get-user-teachpack-cache)]
