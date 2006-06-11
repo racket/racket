@@ -65,7 +65,7 @@
                      (when-e (< (posn-x pos1) -100))
                      (when-e (> (posn-y pos1) 500))
                      (when-e (< (posn-y pos1) -100))) . -=> . (posn+ (make-posn 100 100) (posn-integral vel1)))
-                   (posn+ (make-posn 100 100) (posn-integral vel1))))]
+                   (posn+ (make-posn 200 200) (posn-integral vel1))))]
            [vel1 (accum-b
                   (merge-e
                    ((when-e (> (posn-x pos1) 390)) . -=> . neg-x)

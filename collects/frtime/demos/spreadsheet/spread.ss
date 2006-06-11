@@ -205,13 +205,13 @@
         (set-cell! (ss-cell-value cell)
                    (with-handlers
                        ([exn? (lambda (exn)
-                                (message-box
+                                #;(message-box
                                  "Error"
                                  (format "The following error occurred while evaluating a formula:~n~a"
                                          (exn-message exn))
                                  frame
                                  '(ok stop))
-                                "#<Error>")])
+                                exn)])
                      (eval `(let ([row ,row]
                                   [col ,col])
                               ,processed-expr))))
