@@ -6,8 +6,8 @@
            "13/string-test.ss"
            "14/char-set-test.ss"
            "26/cut-test.ss"
-           ;"40/all-srfi-40-tests.ss"
-           ;"43/all-srfi-43-tests.ss"
+           "40/all-srfi-40-tests.ss"
+           "43/all-srfi-43-tests.ss"
            "69/hash-tests.ss")
   (provide all-srfi-tests)
   
@@ -19,8 +19,8 @@
      string-tests
      char-set-tests
      cut-tests
-     ;all-srfi-40-tests
-     ;all-srfi-43-tests
+     all-srfi-40-tests
+     all-srfi-43-tests
      hash-tests
      ))
   )
