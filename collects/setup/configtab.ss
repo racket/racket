@@ -70,7 +70,7 @@
 	     (with-syntax ([(expr ...)
                             (map (lambda (name val)
                                    (if (memq (syntax-e name) path-exports)
-                                     #`(delay #,val) val))
+                                     #`(delay (to-path #,val)) val))
                                  (syntax->list #'(name ...))
                                  (syntax->list #'(val  ...)))])
                #`(#%plain-module-begin
