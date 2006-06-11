@@ -172,11 +172,13 @@
               (let ([ps (append! (sort! dirs string-locale<?)
                                  (sort! files string-locale<?))])
                 (if (root? dir) ps (cons up-dir-name ps)))
-              (let* ([path (car paths)]
-                     [name (path->string (car paths))]
-                     [paths (cdr paths)])
+              (let* ([path   (car paths)]
+                     [name   (path->string (car paths))]
+                     [paths  (cdr paths)]
+                     [isdir? (directory-exists? path)])
                 (cond [(and (not dotted?)
-                            (not globs) ; globs have a no-dots version
+                            (or (not globs) ; globs used for no-dots in files
+                                isdir?)
                             (eq? #\. (string-ref name 0)))
                        (loop paths dirs files)]
                       [(directory-exists? path)
@@ -303,11 +305,12 @@
           (cond [(and (pair? sel) (null? (cdr sel)))
                  (let* ([new (send path-list get-string (car sel))]
                         [new (regexp-replace end-separators-re new "")])
-                   ;; if `multi?' is problematic on Windows since it needs the
+                   ;; `multi?' is problematic on Windows since it needs the
                    ;; focus for the mouse wheel to move
                    (enter-text new enter-text-no-focus?))]
                 [multi? (enter-text "" enter-text-no-focus?)])))
-      (define enter-text-no-focus? (or win? multi?))
+      ;; uncomment the following to keep the focus on the text
+      (define enter-text-no-focus? #t) ; (or win? multi?))
 
       (define (create-directory path) ; return #f on failure
         (with-handlers ([void (lambda (exn)
@@ -368,7 +371,7 @@
       (define multi?? multi?) ; so it's accessible below
       (define/override (on-subwindow-char r e)
         (define key (send e get-key-code))
-        (when (eq? r text) (text-callback)) ; make the text aware of all keys
+        (when (eq? r text) (text-callback key)) ; make `text' aware of all keys
         (cond [(and (eq? r text) (memq key '(up down)))
                ;; divert up/down in text to the path-list control
                ;; (must reimplement all list-box% functionality??)
@@ -396,7 +399,7 @@
                         (send edit call-clickback
                               (send edit get-start-position)
                               (send edit get-end-position)))]
-                     [(eq? r file-filter) (set-filter)]
+                     [(eq? r file-filter) (set-filter #f)]
                      [else (do-enter*)])
                #t]
               [else (super on-subwindow-char r e)]))
@@ -416,7 +419,7 @@
       (define last-text-end   0)
       (define last-text-completed? #f) ; is the last region a completion?
 
-      (define (text-callback)
+      (define (text-callback . key)
         (send completion-timer wait)
         (let* ([value   (send text get-value)]
                [len     (string-length value)]
@@ -482,7 +485,10 @@
                            (= last-text-end   end)
                            (not change?)))
                  (set-state!)]
-                ;; otherwise there is no change
+                [;; hit right at end of text and no change
+                 (and (= len start end) (pair? key) (eq? 'right (car key)))
+                 (send completion-timer fire)]
+                ;; otherwise there is no change and nothing to do
                 )
           (when change? (set-ok?))))
 
@@ -517,6 +523,9 @@
                  (super start 400 #t))
                (define/public (wait) ; delay if running
                  (when running? (reset)))
+               (define/public (fire)
+                 (stop)
+                 (notify))
                (define/override (notify)
                  (set! running? #f)
                  (let* ([new (send text get-value)]
@@ -595,15 +604,19 @@
       (send text* select-all)
 
       (define globs (and filters (glob->2regexps (cadar filters))))
-      (define (set-filter . new)
-        (let ([filt (if (pair? new) (car new) (send file-filter get-value))])
+      (define (set-filter new . keep-focus?)
+        (let ([filt (or new (send file-filter get-value))])
           (when (pair? new) (send file-filter set-value filt))
           (set! globs (and (not (equal? "" filt)) (glob->2regexps filt)))
           (set-dir dir)
-          (send text focus)))
+          (unless (and (pair? keep-focus?) (car keep-focus?))
+            (send text focus))))
       (define file-filter
         (and filters
-             (let* ([c (new combo-field% [parent this] [label "Filter:"]
+             (let* ([c (new (class combo-field% (super-new)
+                              (define/override (on-focus on?)
+                                (unless on? (set-filter #f #t))))
+                            [parent this] [label "Filter:"]
                             [choices '()] [callback void]
                             [init-value (cadar filters)])]
                     [m (send c get-menu)])
