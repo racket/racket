@@ -300,7 +300,10 @@ EXTRA_OBJS_L = ../src/gmp.@LTO@ @FOREIGN_OBJSLIB_IF_USED@
 	$(RANLIB) ../libmzscheme3m.@LIBSFX@
 
 ../mzscheme3m@NOT_OSX@: main.@LTO@ ../libmzscheme3m.@LIBSFX@
-	@MZLINKER@ -o ../mzscheme3m @PROFFLAGS@ main.@LTO@ ../libmzscheme3m.@LIBSFX@ @LDFLAGS@ $(LIBS)
+	cd ..; @MZLINKER@ -o mzscheme3m @PROFFLAGS@ gc2/main.@LTO@ libmzscheme3m.@LIBSFX@ @LDFLAGS@ $(LIBS)
+# The above "cd .." prevents a problem with libtool's generated script in --enable-shared mode,
+#  at least for Mac OS X. Beware of changing LIBS or LDFLAGS to inclucde something with a relative
+#  path.
 
 MZFWMMM = PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme
 
