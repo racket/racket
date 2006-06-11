@@ -1657,14 +1657,16 @@
                       (case (%method-qualifier method)
                         [(:before) " in a `before' method"]
                         [(:after)  " in an `after' method"]
-                        [else ""]))
-              (%generic-name generic)))))
+                        [else ""])
+                      " with arguments: ~e")
+              (%generic-name generic) args))))
 (add-method no-next-method
   (make-method (list (singleton #f) <method>)
     (lambda (call-next-method generic method . args)
       (raise* make-exn:fail:contract
-              "~s: no applicable next method when calling a method directly"
-              (%method-name method)))))
+              (concat "~s: no applicable next method in a direct method call"
+                      " with arguments: ~e")
+              (%method-name method) args))))
 
 (add-method no-applicable-method
   (make-method (list <generic>)
