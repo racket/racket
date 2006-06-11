@@ -10,10 +10,10 @@
 
 (define pings (make-hash 'equal))
 
-(for-each-e (where)
-            (match-lambda [(line function context rest ...) 
-                           (hash-table-increment! pings (list function context))]
-                          [_ (void)]))
+(for-each-e! (where)
+             (match-lambda [(line function context rest ...) 
+                            (hash-table-increment! pings (list function context))]
+                           [_ (void)]))
 
 (define clicks (changes (quotient milliseconds 50)))
 
