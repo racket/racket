@@ -1802,8 +1802,8 @@ void GC_mark(const void *const_p)
 	  /* first check to see if this is an atomic object masquerading
 	     as a tagged object; if it is, then convert it */
 	  if(type == PAGE_TAGGED)
-	    if((long)mark_table[*(unsigned short*)p] < PAGE_TYPES)
-	      type = ohead->type = (int)(long)mark_table[*(unsigned short*)p];
+	    if((unsigned long)mark_table[*(unsigned short*)p] < PAGE_TYPES)
+	      type = ohead->type = (int)(unsigned long)mark_table[*(unsigned short*)p];
 
 	  /* now set us up for the search for where to put this thing */
 	  work = pages[type];
