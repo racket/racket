@@ -230,6 +230,7 @@
                         (do-enter)))
                 (loop (cdar m)))))
           (send dir-text lock))
+        (clear-path-list-state)
         (if (directory-exists? dir)
           (begin (set! paths (sorted-dirlist dir))
                  (send path-list set paths)
@@ -494,43 +495,36 @@
 
       ;; Use the path-list for completion options
       (define saved-path-list-state #f)
-      (define saved-path-list-sema (make-semaphore 1))
+      (define (clear-path-list-state)
+        (set! saved-path-list-state #f))
       (define (save-path-list-state)
-        (dynamic-wind
-          (lambda () (semaphore-wait saved-path-list-sema))
-          (lambda ()
-            (unless saved-path-list-state
-              (set! saved-path-list-state
-                    (list (send path-list get-first-visible-item)
-                          (send path-list get-selections)))))
-          (lambda () (semaphore-post saved-path-list-sema))))
+        (unless saved-path-list-state
+          (set! saved-path-list-state
+                (list (send path-list get-first-visible-item)
+                      (send path-list get-selections)))))
       (define (restore-path-list-state)
-        (dynamic-wind
-          (lambda () (semaphore-wait saved-path-list-sema))
-          (lambda ()
-            (when saved-path-list-state
-              (send path-list set paths)
-              (for-each (lambda (i) (send path-list select i))
-                        (cadr saved-path-list-state))
-              (send path-list
-                    set-first-visible-item (car saved-path-list-state))
-              (set! saved-path-list-state #f)))
-          (lambda () (semaphore-post saved-path-list-sema))))
+        (when saved-path-list-state
+          (send path-list set paths)
+          (for-each (lambda (i) (send path-list select i))
+                    (cadr saved-path-list-state))
+          (send path-list
+                set-first-visible-item (car saved-path-list-state))
+          (set! saved-path-list-state #f)))
 
       ;; Timer for delaying completion
       (define completion-timer
         (new (class wx:timer% (super-new)
+               (define delay 400)
                (define running? #f)
                (define/override (start)
                  (set! running? #t)
-                 (super start 400 #t))
+                 (super start delay #t))
                (define/override (stop)
                  (set! running? #f)
                  (super stop))
                (define/public (reset)
                  (when running? (send this stop))
-                 (set! running? #t)
-                 (super start 400 #t))
+                 (start))
                (define/public (wait) ; delay if running
                  (when running? (reset)))
                (define/public (fire)
@@ -592,6 +586,7 @@
       (define path-list
         (new (class list-box%
                ;; make sure that if the focus is here, the text is synced
+               ;; (questionable behavior)
                (define/override (on-focus on?) (when on? (new-selected-paths)))
                (super-new))
              [parent this] [label #f] [choices '()]
@@ -613,12 +608,15 @@
       (define text* (send text get-editor))
       (send text* select-all)
 
-      (define globs (and filters (glob->2regexps (cadar filters))))
+      (define last-set-glob (and filters (cadar filters)))
+      (define globs         (and filters (glob->2regexps last-set-glob)))
       (define (set-filter new . keep-focus?)
+        (when new (send file-filter set-value new))
         (let ([filt (or new (send file-filter get-value))])
-          (when (pair? new) (send file-filter set-value filt))
-          (set! globs (and (not (equal? "" filt)) (glob->2regexps filt)))
-          (set-dir dir)
+          (unless (equal? last-set-glob filt)
+            (set! last-set-glob filt)
+            (set! globs (and (not (equal? "" filt)) (glob->2regexps filt)))
+            (set-dir dir))
           (unless (and (pair? keep-focus?) (car keep-focus?))
             (send text focus))))
       (define file-filter
