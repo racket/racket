@@ -1,22 +1,40 @@
 
 #include <windows.h>
-#include <stdio.h>
 
-#ifdef LIBMZ_EXPORTS
-# define MZ_EXTERN extern __declspec(dllexport)
-#else
-# define MZ_EXTERN extern __declspec(dllimport)
-#endif
-
-MZ_EXTERN char *scheme_get_dll_path(char *);
+static int warned;
 
 HMODULE LoadUnicowsProc(void)
 {
-  char *s;
+  /* We can't use Unicode functions, so we can't
+     use the library path as returned by scheme_get_dll_path().
+     Instead, just search for UnicoWS.dll in the standard
+     place. */
+  HMODULE h;
+  char *name;
+  int i;
 
-  s = scheme_get_dll_path("UnicoWS.dll");
+  h = LoadLibrary("UnicoWS.dll");
+  if (h) return h;
+  
+  name = (char *)GlobalAlloc(GMEM_FIXED, 1050);
+  GetModuleFileName(NULL, name, 1024);
+  name[1023] = 0;
+  for (i = 0; name[i]; i++) { }
+  --i;
+  while (i && (name[i] != '\\')) {
+    --i;
+  }
+  memcpy(name + i, "\\lib\\UnicoWS.dll", 17);
 
-  return LoadLibrary(s);
+  h = LoadLibrary(name);
+  if (h) return h;
+  
+  if (!warned) {
+    warned = 1;
+    MessageBox(NULL, name, "Can't load UnicoWS", MB_OK);
+  }
+
+  return NULL;
 }
 
 extern FARPROC _PfnLoadUnicows = (FARPROC) &LoadUnicowsProc;
