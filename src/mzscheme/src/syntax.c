@@ -607,7 +607,7 @@ void scheme_set_global_bucket(char *who, Scheme_Bucket *b, Scheme_Object *val,
 		       ((Scheme_Bucket_With_Home *)b)->home->module->modname);
     } else {
       scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE, b->key,
-		       "%s: cannot set %s identifier: %S",
+		       "%s: cannot %s identifier: %S",
 		       who,
 		       b->val ? "change constant" : "set undefined",
 		       (Scheme_Object *)b->key);
