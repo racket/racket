@@ -26,7 +26,7 @@
          (parse-host default-host-table)
          (map (lambda (h)
                 (if (and (pair? h) (pair? (cdr h)) (null? (cddr h)))
-                    (cons (car h) (parse-host (cadr h)))
+                    (cons (car h) (parse-host (cdr h)))
                     (error 'parse-configuration-table "invalid virtual-host entry ~s" h)))
               virtual-host-table))
         (error 'parse-configuration-table "invalid configuration values ~s"
