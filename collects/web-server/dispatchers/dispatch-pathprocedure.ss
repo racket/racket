@@ -3,10 +3,10 @@
            "../util.ss"
            "../response.ss")
   (provide interface-version
-           gen-dispatcher)
+           make)
   
   (define interface-version 'v1)
-  (define ((gen-dispatcher the-path procedure) conn req)
+  (define ((make the-path procedure) conn req)
     (let-values ([(uri method path) (decompose-request req)])
       (if (string=? the-path path)
           (output-response/method

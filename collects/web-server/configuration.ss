@@ -21,6 +21,17 @@
    [load-configuration (path? . -> . unit/sig?)]
    [load-developer-configuration (path? . -> . unit/sig?)])
   
+  (provide error-response
+           servlet-loading-responder
+           gen-servlet-not-found
+           gen-servlet-responder
+           gen-servlets-refreshed
+           gen-passwords-refreshed
+           gen-authentication-responder
+           gen-protocol-responder
+           gen-file-not-found-responder
+           gen-collect-garbage-responder)
+  
   (define default-configuration-table-path
     (build-path (collection-path "web-server") "configuration-table"))
   

@@ -17,7 +17,9 @@
   (require (lib "tcp-sig.ss" "net")
            (lib "unitsig.ss")
            (lib "string.ss")
+           (lib "list.ss")
            (lib "url.ss" "net"))
+  
   (provide web-server@)  
   
   ;; ****************************************  
@@ -123,41 +125,42 @@
       (define initial-connection-timeout config:initial-connection-timeout)
       
       ;; dispatch : connection request -> void
+      (define dispatch-cache (make-cache-table))
       (define dispatch 
-        (let ([cache (make-cache-table)])
-          (host:gen-dispatcher
-           (lambda (host)
-             (cache-table-lookup!
-              cache host
-              (lambda ()
+        (host:make
+         (lambda (host)
+           (cache-table-lookup!
+            dispatch-cache host
+            (lambda ()
+              (parameterize ([current-custodian (current-server-custodian)])
                 (host-info->dispatcher
                  (config:virtual-hosts (symbol->string host)))))))))
       
       ;; host-info->dispatcher : host-info -> conn request -> void
       (define (host-info->dispatcher host-info)
-        (sequencer:gen-dispatcher
-         (log:gen-dispatcher (host-log-format host-info)
-                             (host-log-path host-info))
-         (passwords:gen-dispatcher (host-passwords host-info)
-                                   (timeouts-password (host-timeouts host-info))
-                                   (responders-authentication (host-responders host-info))
-                                   (responders-passwords-refreshed (host-responders host-info)))
-         (path-procedure:gen-dispatcher "/conf/collect-garbage"
-                                        (lambda ()
-                                          (collect-garbage)
-                                          ((responders-collect-garbage (host-responders host-info)))))
-         (servlets:gen-dispatcher config:instances config:scripts config:make-servlet-namespace
-                                  (paths-servlet (host-paths host-info))
-                                  (responders-servlets-refreshed (host-responders host-info))
-                                  (responders-servlet-loading (host-responders host-info))
-                                  (responders-servlet (host-responders host-info))
-                                  (responders-file-not-found (host-responders host-info))
-                                  (timeouts-servlet-connection (host-timeouts host-info))
-                                  (timeouts-default-servlet (host-timeouts host-info)))
-         (files:gen-dispatcher (paths-htdocs (host-paths host-info))
-                               (paths-mime-types (host-paths host-info))
-                               (host-indices host-info)
-                               (responders-file-not-found (host-responders host-info)))))))
+        (sequencer:make
+         (log:make #:log-format (host-log-format host-info)
+                   #:log-path (host-log-path host-info))
+         (passwords:make #:password-file (host-passwords host-info)
+                         #:password-connection-timeout (timeouts-password (host-timeouts host-info))
+                         #:authentication-responder (responders-authentication (host-responders host-info))
+                         #:passwords-refresh-responder (responders-passwords-refreshed (host-responders host-info)))
+         (path-procedure:make "/conf/collect-garbage"
+                              (lambda ()
+                                (collect-garbage)
+                                ((responders-collect-garbage (host-responders host-info)))))
+         (servlets:make config:instances config:scripts config:make-servlet-namespace
+                        #:servlet-root (paths-servlet (host-paths host-info))
+                        #:responders-servlets-refreshed (responders-servlets-refreshed (host-responders host-info))
+                        #:responders-servlet-loading (responders-servlet-loading (host-responders host-info))
+                        #:responders-servlet (responders-servlet (host-responders host-info))
+                        #:responders-file-not-found (responders-file-not-found (host-responders host-info))
+                        #:timeouts-servlet-connection (timeouts-servlet-connection (host-timeouts host-info))
+                        #:timeouts-default-servlet (timeouts-default-servlet (host-timeouts host-info)))
+         (files:make #:htdocs-path (paths-htdocs (host-paths host-info))
+                     #:mime-types-path (paths-mime-types (host-paths host-info))
+                     #:indices (host-indices host-info)
+                     #:file-not-found-responder (responders-file-not-found (host-responders host-info)))))))
   
   (define web-server@
     (compound-unit/sig 

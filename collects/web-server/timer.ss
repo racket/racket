@@ -6,9 +6,9 @@
            start-timer reset-timer! increment-timer!
            cancel-timer!
            start-timer-manager)
-
+  
   (define timer-ch (make-async-channel))
-
+  
   ; start-timer-manager : custodian -> void
   ; The timer manager thread   
   (define (start-timer-manager server-custodian)
@@ -35,42 +35,46 @@
                             (loop (remq timer timers)))))
                        timers))))))
     (void))
-
+  
   ;; Limitation on this add-timer: thunk cannot make timer
   ;;  requests directly, because it's executed directly by
   ;;  the timer-manager thread
   ;; add-timer : number (-> void) -> timer
   (define (add-timer msecs thunk)
-    (let* ([now (current-inexact-milliseconds)]
-           [timer
-            (make-timer (alarm-evt (+ now msecs))
-                        (+ now msecs)
-                        thunk)])
-      (async-channel-put timer-ch 
-                   (lambda (timers)
-                     (cons timer timers)))
-      timer))
-
+    (define now (current-inexact-milliseconds))
+    (define timer
+      (make-timer (alarm-evt (+ now msecs))
+                  (+ now msecs)
+                  thunk))
+    (async-channel-put 
+     timer-ch 
+     (lambda (timers)
+       (list* timer timers)))
+    timer)
+  
   ; revise-timer! : timer msecs (-> void) -> timer
   ; revise the timer to ring msecs from now
   (define (revise-timer! timer msecs thunk)
-    (let ([now (current-inexact-milliseconds)])
-      (async-channel-put 
-       timer-ch 
-       (lambda (timers)
-         (set-timer-evt! timer (alarm-evt (+ now msecs)))
-         (set-timer-expire-seconds! timer (+ now msecs))
-         (set-timer-action! timer thunk)
-         timers))))
-
+    (define now (current-inexact-milliseconds))
+    (async-channel-put 
+     timer-ch 
+     (lambda (timers)
+       (set-timer-evt! timer (alarm-evt (+ now msecs)))
+       (set-timer-expire-seconds! timer (+ now msecs))
+       (set-timer-action! timer thunk)
+       timers)))
+  
   (define (cancel-timer! timer)
-    (revise-timer! timer 0 void))  
-
+    (async-channel-put
+     timer-ch
+     (lambda (timers)
+       (remq timer timers))))
+  
   ; start-timer : num (-> void) -> timer
   ; to make a timer that calls to-do after sec from make-timer's application
   (define (start-timer secs to-do)
     (add-timer (* 1000 secs) to-do))
-
+  
   ; reset-timer : timer num -> void
   ; to cause timer to expire after sec from the adjust-msec-to-live's application
   (define (reset-timer! timer secs)

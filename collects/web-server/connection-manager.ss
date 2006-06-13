@@ -32,7 +32,7 @@
   
   ;; kill-connection!: connection -> void
   ;; kill this connection
-  (define (kill-connection! conn-demned)    
+  (define (kill-connection! conn-demned)
     (cancel-timer! (connection-timer conn-demned))
     (with-handlers ([exn:fail:network? void])
       (close-output-port (connection-o-port conn-demned)))

@@ -2,10 +2,10 @@
   (require (lib "list.ss"))
   (require "dispatch.ss")
   (provide interface-version
-           gen-dispatcher)
+           make)
   
   (define interface-version 'v1)
-  (define ((gen-dispatcher . dispatchers) conn req)
+  (define ((make . dispatchers) conn req)
     (let loop ([dispatchers dispatchers])
       (let ([c (first dispatchers)])
         (with-handlers ([exn:dispatcher?

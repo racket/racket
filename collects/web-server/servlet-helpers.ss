@@ -7,11 +7,10 @@
            (lib "url.ss" "net"))
   (require "util.ss"
            "response.ss"
-           "request-structs.ss")
+           "request-structs.ss"
+           "bindings.ss")
   (provide get-host
-           extract-binding/single
-           extract-bindings
-           exists-binding?
+           (all-from "bindings.ss")
            extract-user-pass
            build-suspender
            make-html-response/incremental
@@ -52,27 +51,7 @@
             [(struct header (_ v))
              (string->symbol (bytes->string/utf-8 v))])]
       [else DEFAULT-HOST-NAME]))
-    
-  ; extract-binding/single : sym (listof (cons str str)) -> str
-  (define (extract-binding/single name bindings)
-    (let ([lst (extract-bindings name bindings)])
-      (cond
-        [(null? lst)
-         (error 'extract-binding/single "~e not found in ~e" name bindings)]
-        [(null? (cdr lst)) (car lst)]
-        [else (error 'extract-binding/single "~e occurs multiple times in ~e" name bindings)])))
-  
-  ; extract-bindings : sym (listof (cons str str)) -> (listof str)
-  (define (extract-bindings name bindings)
-    (map cdr (filter (lambda (x) (equal? name (car x))) bindings)))
-  
-  ; exists-binding? : sym (listof (cons sym str)) -> bool
-  ; for checkboxes
-  (define (exists-binding? name bindings)
-    (if (assq name bindings)
-        #t
-        #f))
-  
+      
   ; build-suspender : (listof html) (listof html) [(listof (cons sym str))] [(listof (cons sym str))] -> str -> response
   (define build-suspender
     (opt-lambda (title content [body-attributes '([bgcolor "white"])] [head-attributes null])

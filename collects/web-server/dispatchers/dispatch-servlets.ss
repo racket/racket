@@ -1,5 +1,6 @@
 (module dispatch-servlets mzscheme
   (require (lib "url.ss" "net")
+           (lib "kw.ss")
            (lib "plt-match.ss")
            (lib "unitsig.ss"))
   (require "dispatch.ss"
@@ -8,6 +9,7 @@
            "../response.ss"
            "../servlet.ss"
            "../sig.ss"
+           "../configuration.ss"
            (all-except "../util.ss" translate-escapes)
            "../managers/manager.ss"
            "../managers/timeouts.ss"
@@ -15,14 +17,22 @@
            "../private/servlet.ss"
            "../private/cache-table.ss")  
   (provide interface-version
-           gen-dispatcher)
+           make)
   
   (define interface-version 'v1)
-  (define (gen-dispatcher config:instances config:scripts config:make-servlet-namespace
-                          servlet-root
-                          responders-servlets-refreshed responders-servlet-loading responders-servlet
-                          responders-file-not-found
-                          timeouts-servlet-connection timeouts-default-servlet)
+  (define/kw (make config:instances config:scripts config:make-servlet-namespace
+                   #:key
+                   [servlet-root "servlets"]
+                   [responders-servlets-refreshed
+                    (gen-servlets-refreshed "servlet-refresh.html")]
+                   [responders-servlet-loading
+                    servlet-loading-responder]
+                   [responders-servlet
+                    (gen-servlet-responder "servlet-error.html")]
+                   [responders-file-not-found
+                    (gen-file-not-found-responder "not-found.html")]
+                   [timeouts-servlet-connection (* 60 60 24)]
+                   [timeouts-default-servlet 30])
     ;; ************************************************************
     ;; ************************************************************
     ;; SERVING SERVLETS
@@ -47,7 +57,7 @@
                   (invoke-servlet-continuation conn req instance-id k-id salt)])]
            [else
             (servlet-content-producer/path conn req uri)])]))
-        
+    
     ;; servlet-content-producer/path: connection request url -> void
     ;; This is not a continuation url so the loading behavior is determined
     ;; by the url path. Build the servlet path and then load the servlet
@@ -279,9 +289,9 @@
            (make-servlet (current-custodian)
                          (current-namespace)
                          (create-timeout-manager
-                           default-servlet-instance-expiration-handler
-                           timeouts-servlet-connection
-                           timeouts-default-servlet)
+                          default-servlet-instance-expiration-handler
+                          timeouts-servlet-connection
+                          timeouts-default-servlet)
                          (v0.servlet->v1.lambda s))]
           ; FIX - reason about exceptions from dynamic require (catch and report if not already)
           ;; module servlet
@@ -295,9 +305,9 @@
                   (make-servlet (current-custodian)
                                 (current-namespace)
                                 (create-timeout-manager
-                                  default-servlet-instance-expiration-handler
-                                  timeouts-servlet-connection
-                                  timeouts-default-servlet)
+                                 default-servlet-instance-expiration-handler
+                                 timeouts-servlet-connection
+                                 timeouts-default-servlet)
                                 (v1.module->v1.lambda timeout start)))]
                [(v2-transitional) ; XXX: Undocumented
                 (let ([start (dynamic-require module-name 'start)]
@@ -308,9 +318,9 @@
                                        (define instance-expiration-handler
                                          (dynamic-require module-name 'instance-expiration-handler))
                                        (create-timeout-manager
-                                         instance-expiration-handler
-                                         timeouts-servlet-connection
-                                         timeout))])
+                                        instance-expiration-handler
+                                        timeouts-servlet-connection
+                                        timeout))])
                                  (dynamic-require module-name 'manager))])
                   (make-servlet (current-custodian)
                                 (current-namespace)
@@ -323,9 +333,9 @@
            (make-servlet (current-custodian)
                          (current-namespace)
                          (create-timeout-manager
-                           default-servlet-instance-expiration-handler
-                           timeouts-servlet-connection
-                           timeouts-default-servlet)
+                          default-servlet-instance-expiration-handler
+                          timeouts-servlet-connection
+                          timeouts-default-servlet)
                          (v0.response->v1.lambda s a-path))]
           [else
            (error 'load-servlet/path "Loading ~e produced ~n~e~n instead of a servlet." a-path s)])))

@@ -1,42 +1,47 @@
 (module dispatch-passwords mzscheme
+  (require (lib "kw.ss"))
   (require "dispatch.ss"
            (all-except "../util.ss" translate-escapes)
+           "../configuration.ss"
            "../servlet-helpers.ss"
            "../connection-manager.ss"
-           "../response.ss")
-  
+           "../response.ss")  
   (provide interface-version
-           gen-dispatcher)
+           make)
   
   (define interface-version 'v1)
-  (define (gen-dispatcher password-file password-connection-timeout authentication-responder passwords-refresh-responder)
-    (let* ([password-cache (box #f)]
-           [reset-password-cache!
-            (lambda ()
-              ; more here - a malformed password file will kill the connection
-              (set-box! password-cache (read-passwords password-file)))]
-           [read-password-cache
-            (lambda ()
-              (unbox password-cache))])
-      (reset-password-cache!)
-      (lambda (conn req)
-        (let-values ([(uri method path) (decompose-request req)])
-          (cond
-            [(access-denied? method path (request-headers/raw req) (read-password-cache))
-             => (lambda (realm)
-                  (adjust-connection-timeout! conn password-connection-timeout)
-                  (request-authentication conn method uri
-                                          authentication-responder
-                                          realm))]
-            [(string=? "/conf/refresh-passwords" path)
-             ;; more here - send a nice error page
-             (reset-password-cache!)
-             (output-response/method
-              conn
-              (passwords-refresh-responder)
-              method)]
-            [else
-             (next-dispatcher)])))))
+  (define/kw (make #:key
+                   [password-file "passwords"]
+                   [password-connection-timeout 300]
+                   [authentication-responder 
+                    (gen-authentication-responder "forbidden.html")]
+                   [passwords-refresh-responder
+                    (gen-passwords-refreshed "passwords-refresh.html")])
+    (define password-cache (box #f))
+    (define (reset-password-cache!)
+      ; more here - a malformed password file will kill the connection
+      (set-box! password-cache (read-passwords password-file)))
+    (define (read-password-cache)
+      (unbox password-cache))
+    (reset-password-cache!)
+    (lambda (conn req)
+      (define-values (uri method path) (decompose-request req))
+      (cond
+        [(access-denied? method path (request-headers/raw req) (read-password-cache))
+         => (lambda (realm)
+              (adjust-connection-timeout! conn password-connection-timeout)
+              (request-authentication conn method uri
+                                      authentication-responder
+                                      realm))]
+        [(string=? "/conf/refresh-passwords" path)
+         ;; more here - send a nice error page
+         (reset-password-cache!)
+         (output-response/method
+          conn
+          (passwords-refresh-responder)
+          method)]
+        [else
+         (next-dispatcher)])))
   
   ;; ****************************************
   ;; ****************************************
@@ -49,10 +54,10 @@
   ;; denied?: str sym str -> (or/c str #f)
   ;; the return string is the prompt for authentication
   (define (access-denied? method uri-str headers denied?)    
-    (let ([user-pass (extract-user-pass headers)])
-      (if user-pass
-          (denied? uri-str (lowercase-symbol! (car user-pass)) (cdr user-pass))
-          (denied? uri-str fake-user ""))))
+    (define user-pass (extract-user-pass headers))
+    (if user-pass
+        (denied? uri-str (lowercase-symbol! (car user-pass)) (cdr user-pass))
+        (denied? uri-str fake-user "")))
   
   (define-struct (exn:password-file exn) ())
   
