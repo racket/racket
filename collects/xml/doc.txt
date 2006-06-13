@@ -1,8 +1,8 @@
 _XML_ Library
 =============
 
-Files: xml.ss xmlr.ss xmls.ss
-Signature: xml^
+Files: _xml.ss_
+Signature: _xml^_
 
 Basic XML Data Types
 ====================
@@ -258,7 +258,7 @@ Note: Xexpr is the only important one to understand.  Even then,
 The PList Library
 =================
 
-Files: plist.ss
+Files: _plist.ss_
 
 The PList library provides the ability to read and write xml documents which 
 conform to the "plist" DTD, used to store 'dictionaries' of string - value
