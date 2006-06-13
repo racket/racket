@@ -2680,7 +2680,10 @@ static int is_stack_too_shallow2(void)
   return s[THREAD_STACK_SPACE];
 }
 
-static int is_stack_too_shallow(void)
+int scheme_is_stack_too_shallow(void)
+/* Make sure this function insn't inlined, mainly because
+   is_stack_too_shallow2() can get inlined, and it adds a lot
+   to the stack. */
 {
 #  include "mzstkchk.h"
   {
@@ -2743,7 +2746,7 @@ Scheme_Object *scheme_thread_w_details(Scheme_Object *thunk,
 #ifdef DO_STACK_CHECK
   /* Make sure the thread starts out with a reasonable stack size, so
      it doesn't thrash right away: */
-  if (is_stack_too_shallow()) {
+  if (scheme_is_stack_too_shallow()) {
     Scheme_Thread *p = scheme_current_thread;
 
     /* Don't mangle the stack if we're in atomic mode, because that

@@ -38,10 +38,6 @@
 #endif
 #endif
 
-#ifdef memcpy
-#undef memcpy
-#endif
-
 #ifdef MZ_PRECISE_GC
 void *(*scheme_get_external_stack_val)(void);
 void (*scheme_set_external_stack_val)(void *);
@@ -244,11 +240,6 @@ END_XFORM_SKIP;
 #endif
 
 /**********************************************************************/
-
-#define memcpy(dd, ss, ll) \
-{  stack_val *d, *s; long l; \
-   l = ll / sizeof(stack_val); d = (stack_val *)dd; s = (stack_val *)ss; \
-   while (l--) { *(d++) = *(s++);} }
 
 #ifdef MZ_PRECISE_GC
 # define GC_VAR_STACK_ARG_DECL , void *gc_var_stack_in

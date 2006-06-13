@@ -4835,11 +4835,13 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
 
   code_end = jit_get_ip().ptr;
 
-  gdata->code = code;
-  gdata->tail_code = tail_code;
-  gdata->max_extra = jitter->max_extra_pushed;
-  gdata->max_depth = jitter->max_depth;
-  gdata->code_end = code_end;
+  if (jitter->retain_start) {
+    gdata->code = code;
+    gdata->tail_code = tail_code;
+    gdata->max_extra = jitter->max_extra_pushed;
+    gdata->max_depth = jitter->max_depth;
+    gdata->code_end = code_end;
+  }
 
   return 1;
 }
