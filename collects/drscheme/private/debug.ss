@@ -697,7 +697,7 @@ profile todo:
           (let ([rep (drscheme:rep:current-rep)])
             (when rep
               (let ([ut (eventspace-handler-thread (send rep get-user-eventspace))])
-                (unless (eq? ut (current-thread))
+                (when (eq? ut (current-thread))
                   (let ([ht (make-hash-table)])
                     (thread-cell-set! current-test-coverage-info ht)
                     (send rep set-test-coverage-info ht)))))))
@@ -1058,7 +1058,7 @@ profile todo:
           (let ([rep (drscheme:rep:current-rep)])
             (when rep
               (let ([ut (eventspace-handler-thread (send rep get-user-eventspace))])
-                (unless (eq? ut (current-thread))
+                (when (eq? ut (current-thread))
                   (let ([ht (make-hash-table)])
                     (thread-cell-set! current-profile-info ht)
                     (send (send rep get-context) add-profile-info ht)))))))
