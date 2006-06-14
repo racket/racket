@@ -4499,11 +4499,18 @@ do_letrec_syntaxes(const char *where,
 
   body = scheme_add_env_renames(body, stx_env, origenv);
   if (names_to_disappear) {
-    Scheme_Object *l, *a;
-    for (l = names_to_disappear; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
-      a = SCHEME_CAR(l);
-      a = scheme_add_env_renames(a, stx_env, origenv);
-      SCHEME_CAR(l) = a;
+    /* Need to add renaming for disappeared bindings --- unless
+       they originated for internal definitions, in which case
+       adding the renaming is unnecessary and intereferes with the
+       comparsion (due to limitations of the syntax-object
+       representation for internal definitions). */
+    if (!(origenv->flags & SCHEME_FOR_INTDEF)) {
+      Scheme_Object *l, *a;
+      for (l = names_to_disappear; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+	a = SCHEME_CAR(l);
+	a = scheme_add_env_renames(a, stx_env, origenv);
+	SCHEME_CAR(l) = a;
+      }
     }
   }
   if (var_env)

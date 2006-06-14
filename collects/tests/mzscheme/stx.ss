@@ -631,6 +631,29 @@
 (test #t has-stx-property? (expand #'(let () (define-struct a (x)) (define-struct (b a) (z)) 10))
       #f 'a 'disappeared-use)
 
+;; Check that origin is bound by disappeared binding:
+(test #t has-stx-property? (expand #'(let () (define-syntax (x stx) #'(quote y)) x)) 'quote 'x 'origin)
+(let ([check-expr
+       (lambda (expr)
+	 (let ([e (expand expr)])
+	   (syntax-case e ()
+	     [(lv () beg)
+	      (let ([db (syntax-property #'beg 'disappeared-binding)])
+		(syntax-case #'beg ()
+		  [(bg e)
+		   (let ([o (syntax-property #'e 'origin)])
+		     (test #t (lambda (db o)
+				(and (list? db)
+				     (list? o)
+				     (= 1 (length db))
+				     (= 1 (length o))
+				     (identifier? (car db))
+				     (identifier? (car o))
+				     (bound-identifier=? (car db) (car o))))
+			   db o))]))])))])
+  (check-expr #'(let () (letrec-syntaxes+values ([(x) (lambda (stx) #'(quote y))]) () x)))
+  (check-expr #'(let () (define-syntax (x stx) #'(quote y)) x)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; protected identifiers
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
