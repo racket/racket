@@ -60,6 +60,7 @@
         (interface ()
           set-label-font-size
           get-label-font-size
+          get-hidden-paths
           show-visible-paths
           remove-visible-paths
           set-name-length
@@ -308,6 +309,7 @@
               (when (memq symbol hidden-paths)
                 (set! hidden-paths (remq symbol hidden-paths))
                 (refresh-visible-paths)))
+            (define/public (get-hidden-paths) hidden-paths)
             
             (define/private (refresh-visible-paths)
               (begin-edit-sequence)
@@ -479,7 +481,7 @@
                                (+ (send evt get-y) 1))))))]
                 [else (super on-event evt)]))
             
-            (super-instantiate ())))
+            (super-new)))
         
         (define (trim-string str len)
           (cond
@@ -709,8 +711,8 @@
                   (callback
                    (λ (x y)
                      (if (send lib-paths-checkbox get-value)
-                         (send pasteboard add-visible-path 'lib)
-                         (send pasteboard remove-visible-path 'lib))))))
+                         (send pasteboard show-visible-paths 'lib)
+                         (send pasteboard remove-visible-paths 'lib))))))
               
               (define ec (make-object canvas:basic% vp pasteboard))
               

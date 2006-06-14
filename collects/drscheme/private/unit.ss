@@ -2419,7 +2419,6 @@ module browser threading seems wrong.
                 (message-box (string-constant drscheme)
                              (string-constant module-browser-only-in-plt-and-module-langs)))
               can-browse?))
-                  
           
           (define/private (update-module-browser-pane)
             (open-status-line 'plt:module-browser:mouse-over)
@@ -2435,17 +2434,10 @@ module browser threading seems wrong.
               
               (let* ([show-callback
                       (λ (cb key)
-                        (let ([val (send cb get-value)]
-                              [current (preferences:get 'drscheme:module-browser:hide-paths)])
-                          (if val
-                              (begin
-                                (when (memq key current)
-                                  (preferences:set 'drscheme:module-browser:hide-paths (remq key current)))
-                                (send module-browser-pb show-visible-paths key))
-                              (begin
-                                (unless (memq key current)
-                                  (preferences:set 'drscheme:module-browser:hide-paths (cons key current)))
-                                (send module-browser-pb remove-visible-paths key)))))]
+                        (if (send cb get-value)
+                            (send module-browser-pb show-visible-paths key)
+                            (send module-browser-pb remove-visible-paths key))
+                        (preferences:set 'drscheme:module-browser:hide-paths (send module-browser-pb get-hidden-paths)))]
                      [mk-checkbox
                       (λ (key label)
                         (new check-box%

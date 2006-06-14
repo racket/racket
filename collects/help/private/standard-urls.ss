@@ -104,13 +104,12 @@
   ; sym, string assoc list
   (define hd-locations
     `((hd-tour ,(get-help-url (build-path (find-doc-dir) "tour")))
-      (release-notes "/servlets/release/notes.ss")
-      (plt-license "/servlets/release/license.ss")
-      (front-page "/servlets/home.ss")))
+      (release-notes ,(prefix-with-server "/servlets/release/notes.ss"))
+      (plt-license ,(prefix-with-server "/servlets/release/license.ss"))
+      (front-page ,(prefix-with-server "/servlets/home.ss"))))
   
   (define hd-location-syms (map car hd-locations))
 
   (define (get-hd-location sym)
     ; the assq is guarded by the contract
-    (let ([entry (assq sym hd-locations)])
-      (prefix-with-server (cadr entry)))))
+    (cadr (assq sym hd-locations))))

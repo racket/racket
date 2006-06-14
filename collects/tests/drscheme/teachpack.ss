@@ -214,7 +214,7 @@
             (lambda (dir)
               (for-each (test-teachpack dir) 
                         (directory-list dir)))]
-           [teachpack-dir (normalize-path (build-path (collection-path "mzlib") 'up 'up "teachpack"))])
+           [teachpack-dir (normalize-path (collection-path "teachpack"))])
       (set-language-level! '("How to Design Programs" "Advanced Student"))
       (test-teachpacks teachpack-dir)
       (test-teachpacks (build-path teachpack-dir "htdp"))))
