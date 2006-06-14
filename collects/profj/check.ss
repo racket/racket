@@ -2613,6 +2613,11 @@
            (rtype (type/env-t rtype/env)))
       (when (access? l-exp)
         (check-final l-exp c-tor? static-init? c-class env))
+      (when (and (eq? level 'beginner) c-tor?
+                 (access? l-exp) (field-access? (access-name l-exp))
+                 (var-access-init? (field-access-access (access-name l-exp))))
+        (ctor-illegal-assignment (field-access-field (access-name l-exp))
+                                 (expr-src l-exp)))
       (make-type/env
        (case op
          ((=)
@@ -3366,6 +3371,13 @@
   (define (illegal-assignment src)
     (raise-error '= "Assignment is only allowed in the constructor" '= src))
 
+  ;ctor-illegal-assignment: id src -> void
+  (define (ctor-illegal-assignment name src)
+    (raise-error '= 
+                 (format "Field ~a has already been initialized and cannot be reassigned."
+                         (id->ext-name name))
+                 '= src))
+  
   (define (assignment-error op ltype rtype src)
     (raise-error op
                  (format "~a requires that the right hand type be equivalent to or a subtype of ~a: given ~a"
