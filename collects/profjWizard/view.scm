@@ -41,8 +41,8 @@
   (define CHECK-FIELD-NAME-F "check field name for ~a")
   (define TYPE "type") 
   (define NAME "name")
-  (define ABORT "Abort")
-  (define ERROR: "Error: ")
+  (define ABORT "Cancel")
+  (define ERROR "Error")
   (define DELETE "Delete")
   (define EDIT   "Edit")
   
@@ -129,16 +129,6 @@
       
       (define p (new vertical-pane% (parent this)))
       
-      (define button-panel (add-horizontal-panel p))
-      
-      (define abort? #t) ;; assume bad things happen
-      (define (quit x e) (send this show #f))
-      (add-button button-panel ABORT quit)
-      
-      (define/abstract make-class-cb)
-      (add-button button-panel insert-str 
-                  (lambda (x e) (set! abort? #f) (make-class-cb x e)))
-
       ;; switches for toString methods and template in comments 
       (define switch-pane (add-horizontal-panel p))
       (define-values (string template diagram)
@@ -165,16 +155,18 @@
       (field (info-pane (new vertical-panel% (parent p) (style '(border)))))
       
       ;; --------------------------------------------------------------------
-      ;; error panel         
-      
-      (define message-size 100)
-      (define message
-        (new message% (parent (add-horizontal-panel p)) 
-             (label (make-string message-size #\space))))
+      ;; error handling
       
       ;; String -> false
-      (define/public (error-message m)
-        (send message set-label (string-append ERROR: m)) 
+      (define/public (error-message ctl m)
+	(when (ctl . is-a? . text-field%)
+	  (send ctl focus)
+	  (let ([e (send ctl get-editor)])
+	    (send e set-position 0 (send e last-position))))
+	(message-box ERROR
+		     m
+		     (send ctl get-top-level-window)
+		     '(ok stop))
         (raise an-error))
 
       ;; TextField (union false String) -> java-id?
@@ -183,7 +175,25 @@
           (cond
             [(not msg) x]
             [(java-id? x) x]
-            [else (error-message (format CHECK-NAME-F msg))])))
+            [else (error-message name (format CHECK-NAME-F msg))])))
+
+      ;; --------------------------------------------------------------------
+      ;; Buttons
+
+      (define button-panel
+	(new horizontal-panel% (parent p) (stretchable-height #f) (alignment '(right center))))
+
+      (define abort? #t) ;; assume bad things happen
+      (define (quit x e) (send this show #f))
+      (add-button button-panel ABORT quit)
+      
+      (define/abstract make-class-cb)
+      (new button% (label insert-str) (parent button-panel) 
+	   (style '(border))
+	   (callback
+	    (lambda (x e) 
+	      (when (make-class-cb x e)
+		(set! abort? #f)))))
       
       ;; --------------------------------------------------------------------
       ;; call in 
@@ -223,7 +233,7 @@
       (define field-panel
         (new field-panel%
              (parent field-pane) (window this) 
-             (error-message (lambda (x) (error-message x)))))
+             (error-message (lambda (ctl x) (error-message ctl x)))))
       
       ;; --------------------------------------------------------------------
       ;; creating the class from the specification 
@@ -241,7 +251,7 @@
       
       ;; if the class specification is proper, hide dialog
       (define/override (make-class-cb x e) 
-        (when (produce) (send this show #f)))
+        (and (produce) (send this show #f)))
       
       ;; --------------------------------------------------------------------
       ;; setting it all up
@@ -319,7 +329,7 @@
                   [name (make-text-field fp "" (lambda (x e) (add-on-return x e)))]
                   [get-values 
                    (lambda () ; (send modi get-string-selection)
-                     (list (send type get-value) (send name get-value)))])
+		     (list type name))])
              (send type set-value "<field type>")
              (send name set-value "<field name>")
              (add-field-name name)
@@ -342,15 +352,17 @@
       (define/public (produce)
         (foldr ;; r gives me the right order
          (lambda (v r)
-           (let* ([type (string-trim-both (car v))]
-                  [name (string-trim-both (cadr v))])
+           (let* ([type-ctl (car v)]
+		  [name-ctl (cadr v)]
+		  [type (string-trim-both (send type-ctl get-value))]
+		  [name (string-trim-both (send name-ctl get-value))])
              (cond
                [(and (java-id? type) (java-id? name))
                 (cons (list type name) r)]
                [(java-id? type) 
-                (error-message (format CHECK-FIELD-NAME-F type))]
+                (error-message name-ctl (format CHECK-FIELD-NAME-F type))]
                [(java-id? name)
-                (error-message (format CHECK-TYPE-F name))]
+                (error-message type-ctl (format CHECK-TYPE-F name))]
                [else r])))
          '()
          (map (lambda (th) (th)) (send fields list))))))
@@ -382,7 +394,7 @@
       ;; --- the variants of the union 
       (define meth-pane (new vertical-panel% (parent info-pane) (style '(border))))
       (add-button meth-pane ADD-INTERF (lambda (x y) (send methods add)))
-      (define methods (new methods-pane% (window meth-pane) (error-message (lambda (x) (error-message x)))))
+      (define methods (new methods-pane% (window meth-pane) (error-message (lambda (ctl x) (error-message ctl x)))))
       (send methods add)
       (unless switches? 
         (send info-pane change-children (lambda (x) (remq meth-pane x))))
@@ -394,7 +406,7 @@
         (new variant-panel%
              (parent vart-pane)
              (get-type (lambda () (get-type)))
-             (error-message (lambda (x) (error-message x)))))
+             (error-message (lambda (ctl x) (error-message ctl x)))))
       
 
       ;; -> Union 
@@ -410,7 +422,7 @@
            (template?))))
       
       (define/override (make-class-cb x e)
-        (when (produce) (send this show #f)))
+        (and (produce) (send this show #f)))
       
       ;; make two variants to boot
       ;; allow people to add and delete a variant 
@@ -479,8 +491,10 @@
       (define (convert-info-to-signature button event)
         (with-handlers ([an-error? (lambda (x) #f)])
           (define sig 
-            (check-sig 
-             (map (lambda (x) (send x get-value)) (cons nam (cons ret pa*)))))
+	    (let ([ctls (cons nam (cons ret pa*))])
+	      (check-sig 
+	       (map (lambda (x) (send x get-value)) ctls)
+	       ctls)))
           (define _ (send this begin-container-sequence))
           (define t (new message% (parent this) (label (method sig))))
           (define e (new button% (parent this) (label EDIT) (callback edit)))
@@ -490,23 +504,23 @@
           (send this end-container-sequence)))
       ;; (cons String (cons String (Listof String))) -> Method 
       ;; check signature
-      (define (check-sig sig)
+      (define (check-sig sig ctls)
         (define name (string-trim-both (car sig)))
         (define typ* (map string-trim-both (cdr sig)))
         (unless (java-id? name)
-          (error-message (format "not a java id: ~s" name)))
+          (error-message (car ctls) (format "not a java id: ~s" name)))
         (let ([typ*
-               (let loop ([types* typ*])
+               (let loop ([types* typ*][ctls (cdr ctls)])
                  (cond
                    [(null? types*) '()]
                    [(string=? (car types*) "")
                     (if (null? (cdr types*))
                         '()
-                        (error-message bad-para))]
+                        (error-message (car ctls) bad-para))]
                    [else 
                     (if (java-id? (car types*))
-                        (cons (car types*) (loop (cdr types*)))
-                        (error-message (format no-type (car types*))))]))])
+                        (cons (car types*) (loop (cdr types*) (cdr ctls)))
+                        (error-message (car ctls) (format no-type (car types*))))]))])
           (cons (car typ*) (cons name (cdr typ*)))))
       (define bad-para 
         "\"\" parameter type found, but not at the end of the parameter list")
