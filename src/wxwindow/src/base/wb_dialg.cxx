@@ -84,7 +84,34 @@ void wxbDialogBox::Centre(int direction)
   if (direction & wxVERTICAL)
     y = (int)((display_height - height)/2);
 
-  SetSize(x+x_offset, y+y_offset, width, height);
+  x += x_offset;
+  y += y_offset;
+
+  if (frame) {
+    /* Stay completely on the frame's screen: */
+    HWND fw;
+    fw = frame->GetHWND();
+    if (fw) {
+      HMONITOR hm;
+      hm = MonitorFromWindow(fw, MONITOR_DEFAULTTOPRIMARY);
+      if (hm) {
+	MONITORINFO mi;
+	mi.cbSize = sizeof(mi);
+	if (GetMonitorInfo(hm, &mi)) {
+	  if (x + width > mi.rcWork.right)
+	    x = mi.rcWork.right - width;
+	  if (x < mi.rcWork.left)
+	    x = mi.rcWork.left;
+	  if (y + height > mi.rcWork.bottom)
+	    y = mi.rcWork.bottom - height;
+	  if (y < mi.rcWork.top)
+	    y = mi.rcWork.top;
+	}
+      }
+    }
+  }
+
+  SetSize(x, y, width, height);
 }
 
 
