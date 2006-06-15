@@ -173,8 +173,7 @@ Bool wxSlider::Create(wxPanel *panel, wxFunction func, char *label, int value,
   {
     void *rc;
     rc = WRAP_SAFEREF(this);
-    refcon = rc;
-    SetControlReference(cMacControl, (long)refcon);
+    SetControlReference(cMacControl, (long)rc);
   }
 
   if (label) {
@@ -219,10 +218,10 @@ wxSlider::~wxSlider(void)
 {
   void *rc;
 
-  ::DisposeControl(cMacControl);
-
   rc = (void *)GetControlReference(cMacControl);
   FREE_SAFEREF(rc);
+
+  ::DisposeControl(cMacControl);
 }
 
 
