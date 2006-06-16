@@ -1,25 +1,27 @@
-;; This file is used to copy the PLT tree as part of `make install', and as
-;; part of Unix installers.  It should be invoked with the source plt directory
-;; (holding a usual plt tree), and a list of path names that should be copied.
-;; Not providing a good cmdline interface, since it is should be as independent
-;; as possible.
+;; This file is used to copy the PLT tree as part of `make install'.  There is
+;; no good cmdline interface, since it is internal, and should be as
+;; independent as possible.  Expects these arguments:
+;; * The source plt directory
+;; * Path names that should be copied (bin, collects, doc, lib, ...)
+;; * A boolean "yes"/"no" flag indicating if an original tree structure is used
+;; >>> Should be merged with plt/collects/setup/copytree.ss
 (module copytree mzscheme
 
   (define args (vector->list (current-command-line-arguments)))
 
-  (define (path-arg)
+  (define (get-arg)
     (when (null? args) (error "insufficient arguments"))
     (begin0 (car args) (set! args (cdr args))))
 
-  (define pltdir        (path-arg))
-  (define bindir        (path-arg))
-  (define collectsdir   (path-arg))
-  (define docdir        (path-arg))
-  (define libdir        (path-arg))
-  (define includepltdir (path-arg))
-  (define libpltdir     (path-arg))
-  (define mandir        (path-arg))
-  (define origtree      (path-arg))
+  (define pltdir        (get-arg))
+  (define bindir        (get-arg))
+  (define collectsdir   (get-arg))
+  (define docdir        (get-arg))
+  (define libdir        (get-arg))
+  (define includepltdir (get-arg))
+  (define libpltdir     (get-arg))
+  (define mandir        (get-arg))
+  (define origtree      (get-arg))
 
   (define (skip-name? n)
     (regexp-match #rx#"^(?:[.]svn|CVS|compiled)$" (path->bytes n)))

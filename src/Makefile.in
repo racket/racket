@@ -96,8 +96,6 @@ mrinstall3m:
 lib-finish:
 	@LIBFINISH@ "$(prefix)/lib"
 
-srcdir = @srcdir@
-prefix = @prefix@
-
 copytree:
-	mzscheme/mzscheme -mvqu "$(srcdir)/copytree.ss" "$(srcdir)/.." $(ALLDIRINFO) @INSTALL_ORIG_TREE@
+	mzscheme/mzscheme -mvqu "$(srcdir)/copytree.ss" \
+          "$(srcdir)/.." $(ALLDIRINFO) @INSTALL_ORIG_TREE@
