@@ -618,28 +618,46 @@
                             (method-record-atypes (car methods)))
              (meth-member? meth (cdr methods)))))
 
-  ;depth: 'a (listof 'a) -> int
+  ;depth: 'a (listof 'a) -> (U int #f)
   ;The position in elt-list that elt is at, starting with 1
   (define (depth elt elt-list)
     (letrec ((d 
               (lambda (elt-list cnt)
                 #;(printf "d: elt ~a elt-list ~a~n" elt elt-list)
                 (cond
+                  ((null? (cdr elt-list)) +inf.0)
                   ((equal? (car elt-list) elt) cnt)
                   (else (d (cdr elt-list) (add1 cnt)))))))
       (d elt-list 1)))                   
+  
+  ;iface-depth: (list string) (list (list string)) type-records -> int
+  (define (iface-depth elt ifaces type-recs)
+    (if (= 1 (length ifaces))
+        1
+        (let ([iface-tree (map (lambda (iface)
+                                 (cons iface
+                                       (class-record-parents 
+                                        (send type-recs get-class-record iface)))))])
+          (apply min (map (lambda (i-list) (depth elt i-list)) iface-tree)))))
+                          
   
   ;conversion-steps: type type -> int
   (define (conversion-steps from to type-recs)
     #;(printf "conversion-steps ~a ~a~n" from to)
     (cond
       ((ref-type? from)
-       (let* ((from-class (send type-recs get-class-record from))
-              (from-class-parents (class-record-parents from-class)))
-         (if (eq? to 'dynamic)
-             (sub1 (length from-class-parents))
-             (depth (cons (ref-type-class/iface to) (ref-type-path to))
-                    from-class-parents))))
+       (let* ((to-name (cons (ref-type-class/iface to) (ref-type-path to)))
+              (from-class (send type-recs get-class-record from))
+              (from-class-parents (class-record-parents from-class))
+              (from-class-ifaces (class-record-ifaces from-class)))
+         (cond
+           ((eq? to 'dynamic) (length from-class-parents))
+           ((null? from-class-parents) 
+            (iface-depth to-name from-class-ifaces type-recs))
+           ((null? from-class-ifaces)
+            (depth to-name from-class-parents))
+           (else (min (depth to-name from-class-parents)
+                      (iface-depth to-name from-class-ifaces type-recs))))))
       ((array-type? from)
        (cond
          ((array-type? to)
