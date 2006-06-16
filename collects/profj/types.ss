@@ -637,10 +637,10 @@
         (let ([iface-tree (map (lambda (iface)
                                  (cons iface
                                        (class-record-parents 
-                                        (send type-recs get-class-record iface))))
+                                        (get-record (send type-recs get-class-record iface)
+                                                    type-recs))))
 			       ifaces)])
           (apply min (map (lambda (i-list) (depth elt i-list)) iface-tree)))))
-                          
   
   ;conversion-steps: type type -> int
   (define (conversion-steps from to type-recs)
