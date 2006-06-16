@@ -637,7 +637,8 @@
         (let ([iface-tree (map (lambda (iface)
                                  (cons iface
                                        (class-record-parents 
-                                        (send type-recs get-class-record iface)))))])
+                                        (send type-recs get-class-record iface))))
+			       ifaces)])
           (apply min (map (lambda (i-list) (depth elt i-list)) iface-tree)))))
                           
   
