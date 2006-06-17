@@ -281,7 +281,8 @@
  (editor-prefs-panel-label "Editieren")
  (general-prefs-panel-label "Allgemein")
  (highlight-parens "Geklammerten Text hervorheben")
- (fixup-parens "Klammern korrigieren")
+ (fixup-open-parens "Öffnende Klammern automatisch justieren")
+ (fixup-close-parens "Schließende Klammern automatisch justieren")
  (flash-paren-match "Passende Klammer anblinken")
  (auto-save-files "Dateien automatisch abspeichern")
  (backup-files "Backup-Dateien")
@@ -687,24 +688,33 @@
  (save-a-mzscheme-launcher "MzScheme-Launcher speichern")
  (save-a-mred-stand-alone-executable "MrEd-Stand-Alone-Programmdatei speichern")
  (save-a-mzscheme-stand-alone-executable "MzScheme-Stand-Alone-Programmdatei speichern")
+ (save-a-mred-distribution "MrEd-Distribution speichern")
+ (save-a-mzscheme-distribution "MzScheme-Distribution speichern")
 
  (definitions-not-saved "Die Definitionen sind nicht gespeichert. Die Programmdatei wird von der letzten gespeicherten Version gezogen. Weitermachen?")
  (launcher "Launcher")
+ (launcher-explanatory-label "Launcher (nur für diese Maschine, läuft vom Quelltext)")
  (stand-alone "Stand-alone")
+ (stand-alone-explanatory-label "Stand-alone (nur für diese Maschine, startet compilierte Kopie)")
+ (distribution "Distribution")
+ (distribution-explanatory-label "Distribution (für die Installation auf anderen Maschinen)")
  (executable-type "Typ")
  (executable-base "Hauptteil")
  (filename "Dateiname: ")
  (create "Erzeugen")
- ;; "choose-an-executable" changed to "specify-a"
- ;(please-choose-an-executable-filename "Bitte Dateinamen für Programm auswählen")
- ;; Replaced by generic ~a-must-end-with-~a
- ;(windows-executables-must-end-with-exe
- ; "Der Dateiname\n\n  ~a\n\nist unzulässig. Unter Windows müssen Programmdateien mit .exe enden.")
- ;(macosx-executables-must-end-with-app
- ; "Der Dateiname\n\n  ~a\n\nist unzulässig. Unter Mac OS X müssen Namen für Programme mit .app enden.")
+ (please-specify-a-filename "Bitte einen Dateinamen angeben.")
+ (~a-must-end-with-~a
+  "Der Dateiname auf \".~a\"\n\n  ~a\n\nist nicht zulässig. Der Dateiname muß auf \".~a\" enden.")
+ (macosx-executables-must-end-with-app
+  "Der Dateiname auf \".~a\"\n\n  ~a\n\nist nicht zulässig. Unter Mac OS X muß der Dateiname auf \".app\" enden.")
  (warning-directory-will-be-replaced
-  "WARNUNG: das Verzeichnis:\n\n  ~a\n\nwird überschrieben werden. Weitermachen?")
+  "WARNUNG: Das Verzeichnis:\n\n  ~a\n\nsoll überschrieben werden. Weitermachen?")
  
+ (distribution-progress-window-title "Fortschritt bei der Erstellung der Distribution")
+ (creating-executable-progress-status "Ausführbares Programm für Distribution erstellen...")
+ (assembling-distribution-files-progress-status "Dateien für Distribution zusammenstellen...")
+ (packing-distribution-progress-status "Distribution einpacken...")
+
  (create-servlet "Servlet erzeugen...")
 
  ; the ~a is a language such as "module" or "algol60"
@@ -897,6 +907,15 @@
  ;;; version checker
  (version:update-menu-item "Nach Updates schauen...")
  (version:update-check "Update-Prüfung")
+ (version:connecting-server  "Mit PLT-Versions-Server verbinden")
+ (version:results-title      "PLT-Versions-Check")
+ (version:do-periodic-checks "Regelmäßig nach neueren PLT-Scheme-Versionen schauen")
+ (version:take-me-there      "Dorthin gehen") ; ...to the download website
+ ;; the next one can appear alone, or followed by a comma and the one after that
+ (version:plt-up-to-date     "Die PLT-Version ist aktuell")
+ (version:but-newer-alpha    "aber es gibt eine neuere Alpha-Version")
+ ;; This is used in this context: "PLT Scheme vNNN <<<*>>> http://download..."
+ (version:now-available-at   "ist jetzt verfügbar bei")
 
  ;; special menu
  (special-menu "S&pezial")
@@ -1030,14 +1049,35 @@
   ;; Profj
   (profj-java "Java")
   (profj-java-mode "Java-Modus")
+  (profj-java-mode-color-heading "Farben ändern") ; Heading for preference to choose editing colors  
   (profj-java-mode-color-keyword "Schlüsselwort")
   (profj-java-mode-color-string "Zeichenkette")
   (profj-java-mode-color-literal "Literal")
   (profj-java-mode-color-comment "Kommentar")
   (profj-java-mode-color-error "Fehler")
   (profj-java-mode-color-identifier "Bezeichner")
+  (profj-java-mode-color-prim-type "primitiver Typ") ; Example text for built-in Java types
   (profj-java-mode-color-default "sonstiges")
   
+  (profj-coverage-color-heading "Farben für Abdeckung") ; Heading for preference to choose coverage colors
+  (profj-coverage-color-covered "abgedeckte Ausdrücke") 
+
+  (profj-language-config-display-preferences "Einstellungen Anzeige") ; Heading for preferences controlling printing
+  (profj-language-config-display-style "Art der Anzeige")
+  (profj-language-config-display-field "Klassen + Felder") ; Class should not be translated
+  (profj-language-config-display-array "Gesamten Inhalt von Arrays ausdrucken?")
+  (profj-language-config-testing-preferences "Einstellungen Testen") ; Heading for preferences controlling test behavior
+  (profj-language-config-testing-enable "Testresultate bei Start anzeigen?") ; Run should be the word found on the Run button
+  (profj-language-config-testing-coverage "Abdeckungsinformationen für Tests sammeln?")
+  (profj-language-config-testing-check "Check-Ausdruck zulassen?") ; check should not be translated
+  (profj-language-config-classpath-display "Aktuellen Wert anzeigen") ; Button label to print the current classpath
+
+   ;; Close testing window and do not run test cases any more
+  (profj-test-results-close-and-disable "Schließen und Testen deaktivieren")
+  ;; Hide docked testing window and do not run test cases any more
+  (profj-test-results-hide-and-disable "Ausblenden und Testen deaktivieren")
+  (profj-test-results-window-title "Testresultate")
+
   (profj-insert-java-comment-box "Java-Kommentarkasten einfügen")
   (profj-insert-java-interactions-box "Java-Interaktions-Kasten einfügen")
 
