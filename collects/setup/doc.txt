@@ -577,7 +577,7 @@ general functions to help make .plt archives:
                         [#:at-plt-home? at-home?]
                         [#:test-plt-collects? test?]
                         [#:extra-setup-collections collection-list] 
-                        [#:filter filter-proc])
+                        [#:file-filter filter-proc])
 
   Creates the .plt file specified by the pathname `dest', using the
   string `name' as the name reported to Setup PLT as the archive's
@@ -603,7 +603,7 @@ general functions to help make .plt archives:
   collection paths that are not included in the archive, but are
   set-up when the archive is unpacked.
 
-  The optional #:filter argument is the same as for `pack-plt' (see
+  The optional #:file-filter argument is the same as for `pack-plt' (see
   below).
 
 > (pack-collections dest name collections replace? extra-setup-collections [filter] [at-plt-home?])
@@ -611,7 +611,7 @@ general functions to help make .plt archives:
   Old, keywordless variant of `pack-collections-plt' for backward compatibility.
 
 > (pack-plt dest name paths 
-            [#:filter filter-proc]
+            [#:file-filter filter-proc]
             [#:encode? encode?]
             [#:file-mode file-mode-sym]
             [#:unpack-unit unit-expr-or-#f]
@@ -628,7 +628,7 @@ general functions to help make .plt archives:
   for directories and files; the contents of these files and
   directories will be packed into the archive.
 
-  The #:filter procedure is called with the relative path of each
+  The #:file-filter procedure is called with the relative path of each
   candidate for packing. If it returns #f for some path, then that
   file or directory is omitted from the archive. If it returns 'file
   or 'file-replace for a file, the file is packed with that mode,
