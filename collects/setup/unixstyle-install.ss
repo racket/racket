@@ -23,7 +23,7 @@
   (define includepltdir (get-arg))
   (define libpltdir     (get-arg))
   (define mandir        (get-arg))
-  (define srcdir        (get-arg))
+  ;; (define srcdir        (get-arg))
 
   ;; Configures level where we start owning stuff (in the sense that the
   ;; generated uninstaller will remove it, and the installation will remove
@@ -281,8 +281,11 @@
     (move-tree "include"  includepltdir)
     (move-tree "lib"      libpltdir)
     (move-tree "man"      mandir)
-    (when (and (not (equal? srcdir "")) (directory-exists? srcdir))
-      (move-tree "src" srcdir))
+    ;; (when (and (not (equal? srcdir "")) (directory-exists? "src"))
+    ;;   (move-tree "src" srcdir))
+    ;; don't use the above -- it would be pointless to put the source tree in a
+    ;; place where it would not be usable.
+    (when (directory-exists? "src") (rm "src"))
     ;; part of the distribution:
     (move-tree "readme.txt" (build-path docdir "readme.txt"))
     ;; nothing should be left now
