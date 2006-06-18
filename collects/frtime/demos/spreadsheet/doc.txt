@@ -29,3 +29,4 @@ Known Bugs:
 - Whole-screen redraw, as when scrolling or resizing, is super slow.
 - Errors arising during re-evaluation (not during initial evaluation) go
   to the DrScheme interactions window instead of propagating to the cell.
+- Does not work on MacOS
