@@ -4,7 +4,7 @@
 ;; * The source plt directory
 ;; * Path names that should be copied (bin, collects, doc, lib, ...)
 ;; * A boolean "yes"/"no" flag indicating if an original tree structure is used
-;; >>> Should be merged with plt/collects/setup/copytree.ss
+;; >>> Should be merged into plt/collects/setup/unixstyle-install.ss
 (module copytree mzscheme
 
   (define args (vector->list (current-command-line-arguments)))
