@@ -147,7 +147,9 @@ next section.
          files in this list.  If a file contains elaboration time
          expressions (e.g., macros, signatures) that are not intended
          to be local to the file, then the file should be included in
-         this list.
+         this list.  Note: files that are required by other files that
+         are compiled will get compiled in the process even when
+         listed here.
 
 >      compile-extension-omit-files - a list of filenames to extend
          the list returned for `compile-omit-files'. Unlike the list

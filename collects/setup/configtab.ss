@@ -73,19 +73,15 @@
                                      #`(delay (to-path #,val)) val))
                                  (syntax->list #'(name ...))
                                  (syntax->list #'(val  ...)))])
+               (define ((mkdef v) id)
+                 (if (memq id syms)
+                   '()
+                   (list #`(define #,(datum->syntax-object stx id stx) #,v))))
                #`(#%plain-module-begin
                   (provide #,@path-exports #,@flag-exports)
                   (define name expr) ...
-                  #,@(apply append (map (lambda (id)
-                                          (if (memq id syms)
-                                            '()
-                                            (list #`(define #,id use-default))))
-                                        path-exports))
-                  #,@(apply append (map (lambda (id)
-                                          (if (memq id syms)
-                                            '()
-                                            (list #`(define #,id #f))))
-                                        flag-exports))))))])))
+                  #,@(apply append (map (mkdef #'use-default) path-exports))
+                  #,@(apply append (map (mkdef #'#f) flag-exports))))))])))
 
   (provide (rename config-module-begin #%module-begin)
 	   define
