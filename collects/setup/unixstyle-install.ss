@@ -23,6 +23,7 @@
   (define includepltdir (get-arg))
   (define libpltdir     (get-arg))
   (define mandir        (get-arg))
+  (define srcdir        (get-arg))
 
   ;; Configures level where we start owning stuff (in the sense that the
   ;; generated uninstaller will remove it, and the installation will remove
@@ -42,6 +43,7 @@
           ;; independently, as if they had a level of #f
           [(equal? dir "lib")      1]
           [(equal? dir "man")      #f]
+          [(equal? dir "src")      1]
           [(equal? dir "readme.txt") #f] ; moved last
           [else (error 'level-of "internal-error: unknown dir ~e" dir)]))
 
@@ -279,6 +281,8 @@
     (move-tree "include"  includepltdir)
     (move-tree "lib"      libpltdir)
     (move-tree "man"      mandir)
+    (when (and (not (equal? srcdir "")) (directory-exists? srcdir))
+      (move-tree "src" srcdir))
     ;; part of the distribution:
     (move-tree "readme.txt" (build-path docdir "readme.txt"))
     ;; nothing should be left now
