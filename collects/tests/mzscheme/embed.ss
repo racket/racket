@@ -170,4 +170,69 @@
  `("-ZmvqL" "embed-me5.ss" "tests/mzscheme"))
 (try-exe mr-dest "This is 5: #<struct:class:button%>\n" #t)
 
+;; Try the mzc interface:
+(require (lib "dirs.ss" "setup")
+	 (lib "file.ss"))
+(define mzc (build-path (find-console-bin-dir) "mzc"))
+
+(define (mzc-tests mred?)
+  (parameterize ([current-directory (find-system-path 'temp-dir)])
+
+    (system* mzc 
+	     (if mred? "--gui-exe" "--exe")
+	     (path->string (mk-dest mred?))
+	     (path->string (build-path (collection-path "tests" "mzscheme") "embed-me1.ss")))
+    (try-exe (mk-dest mred?) "This is 1\n" mred?)
+
+    ;; Check that etc.ss isn't found if it's not included:
+    (system* mzc 
+	     (if mred? "--gui-exe" "--exe")
+	     (path->string (mk-dest mred?))
+	     (path->string (build-path (collection-path "tests" "mzscheme") "embed-me6.ss")))
+    (try-exe (mk-dest mred?) "This is 6\nno etc.ss\n" mred?)
+
+    ;; And it is found if it is included:
+    (system* mzc 
+	     (if mred? "--gui-exe" "--exe")
+	     (path->string (mk-dest mred?))
+	     "++lib" "etc.ss" "mzlib"
+	     (path->string (build-path (collection-path "tests" "mzscheme") "embed-me6.ss")))
+    (try-exe (mk-dest mred?) "This is 6\n#t\n" mred?)
+
+    ;; Or, it's found if we set the collection path:
+    (system* mzc 
+	     (if mred? "--gui-exe" "--exe")
+	     (path->string (mk-dest mred?))
+	     "--collects-path"
+	     (path->string (find-collects-dir))
+	     (path->string (build-path (collection-path "tests" "mzscheme") "embed-me6.ss")))
+    (try-exe (mk-dest mred?) "This is 6\n#t\n" mred?)
+
+    ;; Try --collects-dest mode
+    (system* mzc 
+	     (if mred? "--gui-exe" "--exe")
+	     (path->string (mk-dest mred?))
+	     "++lib" "etc.ss" "mzlib"
+	     "--collects-dest" "cts"
+	     "--collects-path" "cts"
+	     (path->string (build-path (collection-path "tests" "mzscheme") "embed-me6.ss")))
+    (try-exe (mk-dest mred?) "This is 6\n#t\n" mred?)
+    (delete-directory/files "cts")
+    (try-exe (mk-dest mred?) "This is 6\nno etc.ss\n" mred?)
+
+    (void)))
+
+(mzc-tests #t)
+(mzc-tests #f)
+
+;; One MrEd-specific test with mzc:
+(parameterize ([current-directory (find-system-path 'temp-dir)])
+  (system* mzc 
+	   "--gui-exe"
+	   (path->string (mk-dest #t))
+	   (path->string (build-path (collection-path "tests" "mzscheme") "embed-me5.ss")))
+  (try-exe (mk-dest #t) "This is 5: #<struct:class:button%>\n" #t))
+
+
+
 (report-errs)
