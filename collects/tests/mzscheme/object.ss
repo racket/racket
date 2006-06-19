@@ -1158,6 +1158,84 @@
        (check-class-cert 'init-field rename?))
      '(#t #f))
 
+
+;; ------------------------------------------------------------
+;; Check arity reporting for methods.
+;;  (This is really a MzScheme test, not a class.s test.)
+
+(map
+ (lambda (jit?)
+   (parameterize ([eval-jit-enabled jit?])
+     (let ([mk-f (lambda ()
+		   (eval (syntax-property #'(lambda (a b) a) 'method-arity-error #t)))]
+	   [check-arity-error
+	    (lambda (f cl?)
+	      (test (if cl? '("no clause matching 0 arguments")  '("expects 1 argument") )
+		    regexp-match #rx"expects 1 argument|no clause matching 0 arguments"
+		    (exn-message (with-handlers ([values values])
+				   ;; Use `apply' to avoid triggering
+				   ;; compilation of f:
+				   (apply f '(1))))))])
+       (test 2 procedure-arity (mk-f))
+       (check-arity-error (mk-f) #f)
+       (test 1 (mk-f) 1 2)
+       (let ([f (mk-f)])
+	 (test 1 (mk-f) 1 2)
+	 (check-arity-error (mk-f) #f))
+       (let ([mk-f (lambda ()
+		     (eval (syntax-property #'(case-lambda [(a b) a][(c d) c]) 'method-arity-error #t)))])
+	 (test '(2 2) procedure-arity (mk-f))
+	 (check-arity-error (mk-f) #t)
+	 (test 1 (mk-f) 1 2)
+	 (let ([f (mk-f)])
+	   (test 1 (mk-f) 1 2)
+	   (check-arity-error (mk-f) #t))))))
+ '(#t #f))
+
+;; ------------------------------------------------------------
+;; Check define-member-name, etc.:
+
+(let ([mk
+       (lambda (% a-name aa-name b-name c-name d-name e-name)
+	 (define-member-name a a-name) ; init
+	 (define-member-name aa aa-name) ; super init
+	 (define-member-name b b-name) ; public
+	 (define-member-name c c-name) ; override
+	 (define-member-name d d-name) ; augment
+	 (define-member-name e e-name) ; inherit
+	 (class %
+	   (init a)
+	   (define a-val a)
+	   (inherit e)
+	   (define/public (b x)
+	     (list 'b a-val x (e x)))
+	   (define/override (c y)
+	     (list 'c a-val y (super c y)))
+	   (define/augment (d y)
+	     (list 'd a-val y (inner #f d y)))
+	   (super-new [aa (list a)])))])
+  (define x% (class object%
+	       (init x-a)
+	       (define/public (x-e y)
+		 (list 'x-e y))
+	       (define/public (x-c y)
+		 (list 'x-c y))
+	       (define/pubment (x-d y)
+		 (list 'x-d y (inner #f x-d y)))
+	       (super-new)))
+  (let* ([x+% (mk x% 
+		  (member-name-key a+)
+		  (member-name-key x-a)
+		  (member-name-key b+)
+		  (member-name-key x-c)
+		  (member-name-key x-d)
+		  (member-name-key x-e))]
+	 [o (new x+% [a+ 'a-val])])
+    (test '(b a-val 1 (x-e 1)) 'send-b+ (send o b+ 1))
+    (test '(c a-val 2 (x-c 2)) 'send-b+ (send o x-c 2))
+    (test '(x-d 3 (d a-val 3 #f)) 'send-b+ (send o x-d 3))
+    (void)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

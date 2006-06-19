@@ -397,8 +397,14 @@
 
 	  (let* ([def-ctx (syntax-local-make-definition-context)]
 		 [localized-map (make-bound-identifier-mapping)]
+		 [any-localized? #f]
+		 [localize/set-flag (lambda (id)
+				      (let ([id2 (localize id)])
+					(unless (eq? id id2)
+					  (set! any-localized? #t))
+					id2))]
 		 [bind-local-id (lambda (id)
-				  (let ([l (localize id)])
+				  (let ([l (localize/set-flag id)])
 				    (syntax-local-bind-syntaxes (list id) #f def-ctx)
 				    (bound-identifier-mapping-put!
 				     localized-map
@@ -868,7 +874,7 @@
 						    [iids (map norm-init/field-iid norms)]
 						    [exids (map norm-init/field-eid norms)])
 					       (with-syntax ([(id ...) iids]
-							     [(idpos ...) (map localize exids)]
+							     [(idpos ...) (map localize/set-flag exids)]
 							     [(defval ...) 
 							      (map (lambda (norm)
 								     (if (stx-null? (stx-cdr norm))
@@ -959,6 +965,7 @@
 									   (format "set-~a!"
 										   (syntax-e id)))
 									 inherit-field-names))]
+				      [(inherit-name ...) (definify (map car inherits))]
 				      [(inherit-field-name ...) (definify inherit-field-names)]
 				      [(inherit-field-name-localized ...) (map lookup-localize inherit-field-names)]
 				      [(local-field ...) (definify
@@ -1126,12 +1133,12 @@
 							   (stx-car (stx-cdr (car inspect-decls)))
 							   #'(current-inspector))]
 					    [deserialize-id-expr deserialize-id-expr])
-				
+
 				(quasisyntax/loc stx
 				  (let ([superclass super-expression]
 					[interfaces (list interface-expression ...)])
 				    (compose-class 
-				     'name superclass interfaces inspector deserialize-id-expr
+				     'name superclass interfaces inspector deserialize-id-expr #,any-localized?
 				     ;; Field count:
 				     num-fields
 				     ;; Field names:
@@ -1483,9 +1490,52 @@
 		       (values (generate-local-member-name 'id) ...))
 		     stx-defs))))))]))
 
+  (define-syntax (define-member-name stx)
+    (syntax-case stx ()
+      [(_ id expr)
+       (let ([name #'id])
+	 (unless (identifier? name)
+	   (raise-syntax-error
+	    #f
+	    "expected an identifier for definition"
+	    stx
+	    name))
+	 (with-syntax ([stx-def
+			;; Need to attach srcloc to this definition:
+			(syntax/loc stx
+			  (define-syntax id
+			    (make-private-name (quote-syntax id) 
+					       ((syntax-local-certifier) (quote-syntax member-name)))))])
+	   #'(begin
+	       (define member-name (check-member-key 'id expr))
+	       stx-def)))]))
+
   (define (generate-local-member-name id)
     (string->uninterned-symbol
      (symbol->string id)))
+
+  (define-struct member-key (id))
+
+  (define (check-member-key id v)
+    (unless (member-key? v)
+      (error 'define-local-member-name "not a member key for ~a: ~e" id v))
+    (member-key-id v))
+
+  (define-syntax (member-name-key stx)
+    (syntax-case stx ()
+      [(_ id)
+       (identifier? #'id)
+       (with-syntax ([id (localize #'id)])
+	 (syntax/loc stx (make-member-key `id)))]
+      [(_ x)
+       (raise-syntax-error
+	#f
+	"not an identifier"
+	stx
+	#'x)]))
+
+  (define (generate-member-key)
+    (make-member-key (generate-local-member-name (gensym 'member))))
 
   ;;--------------------------------------------------------------------
   ;;  class implementation
@@ -1541,6 +1591,7 @@
 			 interfaces          ; list of interfaces
 			 inspector           ; inspector or #f
 			 deserialize-id      ; identifier or #f
+			 any-localized?      ; #t => need to double-check distinct external names
 
 			 num-fields          ; total fields (public & private)
 			 public-field-names  ; list of symbols (shorter than num-fields)
@@ -1570,6 +1621,21 @@
       (obj-error 'class* "superclass expression returned a non-class: ~a~a" 
 		 super
 		 (for-class name)))
+
+    (when any-localized?
+      (check-still-unique name
+			  init-args
+			  "initialization argument names")
+      (check-still-unique name
+			  (append public-field-names inherit-field-names)
+			  "field names")
+      (check-still-unique name
+			  (append pubment-names public-final-names public-normal-names
+				  overment-names override-final-names override-normal-names
+				  augment-names augment-final-names augride-normal-names
+				  inherit-names)
+			  "method names"))
+
     ;; -- Create new class's name --
     (let* ([name (or name
 		     (let ([s (class-name super)])
@@ -2015,6 +2081,18 @@
 						       (lambda (o2)
 							 ((class-fixup c) o o2))))))))
 			    c))))))))))))
+
+  (define (check-still-unique name syms what)
+    (let ([ht (make-hash-table)])
+      (for-each (lambda (s)
+		  (when (hash-table-get ht s 
+					(lambda ()
+					  (hash-table-put! ht s #t)
+					  #f))
+		    (obj-error 'class* "external ~a mapped to overlapping keys~a" 
+			       what
+			       (for-class name))))
+		syms)))
 
   (define-values (prop:object object? object-ref) (make-struct-type-property 'object))
 
@@ -2912,6 +2990,7 @@
 		   null
 		   #f
 		   #f
+		   #f
 		   
 		   0 null null ; no fields
 
@@ -3275,7 +3354,7 @@
 	   define/override define/overment
 	   define/augride define/augment
 	   define/public-final define/override-final define/augment-final
-	   define-local-member-name
+	   define-local-member-name define-member-name member-name-key generate-member-key
 	   (rename generic/form generic) (rename make-generic/proc make-generic) send-generic
 	   is-a? subclass? implementation? interface-extension?
 	   object-interface object-info object->vector
