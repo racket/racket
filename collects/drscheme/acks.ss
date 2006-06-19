@@ -6,6 +6,7 @@
   (define (get-authors)
     (string-append
      "DrScheme was written by "
+     "Eli Barzilay, "
      "John Clements, "
      "Matthias Felleisen, "
      "Robby Findler, "
@@ -19,7 +20,6 @@
     (string-append
      "Thanks to "
      "Ian Barland, "
-     "Eli Barzilay, "
      "Gann Bierner, "
      "Richard Cobbe, "
      "Moy Easwaran, "
