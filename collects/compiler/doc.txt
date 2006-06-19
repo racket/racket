@@ -14,8 +14,7 @@ next section.
 >  ((compile-extensions expr) scheme-file-list dest-dir)
 
       `(compile-extensions expr)' returns a compiler that is
-      initialized with the elaboration-time expression `expr', as
-      described below.
+      initialized with the expression `expr', as described below.
 
       The compiler takes a list of Scheme files and compiles each of
       them to an extension, placing the resulting extensions in the
@@ -63,9 +62,9 @@ next section.
 >  ((compile-extension-parts expr) scheme-file-list dest-dir)
 
       `(compile-extension-parts expr)' returns a compiler that is
-      initialized with the elaboration-time expression `expr'.
+      initialized with the expression `expr'.
 
-      See `compile-extension' above for information about the effect
+      See `compile-extensions' above for information about the effect
       of `expr'.
 
       The compiler takes a list of Scheme files and compiles each of
@@ -110,7 +109,7 @@ next section.
 >  ((compile-zos expr) scheme-file-list dest-dir)
 
       `(compile-zos expr)' returns a compiler that is initialized with
-      the elaboration-time expression `expr'.
+      the expression `expr'.
 
       See `compile-extensions' above for information about the effect
       of `expr'.
@@ -330,9 +329,9 @@ respectively.
 
 The low-level compiler functions from comp@ are:
 
-> (eval-compile-prefix expr) - Evaluates an elaboration-time
-    S-expression `expr'.  Future calls to mzc:compile-XXX will see the
-    effects of the elaboration expression.
+> (eval-compile-prefix expr) - Evaluates an S-expression `expr'.
+    Future calls to mzc:compile-XXX will see the effects of the
+    expression.
 
 > (compile-extension scheme-source dest-dir) - Compiles a
     single Scheme file to an extension.
