@@ -41,11 +41,18 @@
   
   ; for thread ids, port is the TCP port number (not to be confused with MzScheme ports)
   (define-values (listener port)
-    ; find first free port after 1178
-    (let loop ([port 1178])
-      (with-handlers
-          ([exn:fail:network? (lambda (_) (loop (add1 port)))])
-        (values (tcp-listen port) port))))
+    ; for the time being, disable distribution
+    (values never-evt 1178))
+  
+  (define (find-listener/port num-retries)
+    (parameterize ([current-pseudo-random-generator (make-pseudo-random-generator)])
+      (let loop ([i 0])
+        (with-handlers* ([(lambda (exn)
+                            (and (exn:fail:network? exn)
+                                 (< i num-retries)))
+                          (lambda (_) (loop (add1 i)))])
+          (let ([port (+ 1024 (random 64000))])
+            (values (tcp-listen port) port))))))
   
   (define ip-address '127.0.0.1
     #;(let*-values

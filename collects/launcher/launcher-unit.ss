@@ -240,8 +240,8 @@
 		     args))))))
 
       (define (protect-shell-string s)
-	(let ([s (if (path? s) (path->string s) s)])
-          (regexp-replace* #rx"[\"$`]" s "\\\\&")))
+	(regexp-replace*
+         #rx"[\"`'$\\]" (if (path? s) (path->string s) s) "\\\\&"))
 
       (define (normalize+explode-path p)
 	(explode-path (normal-case-path (normalize-path p))))

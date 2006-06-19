@@ -531,7 +531,7 @@
 					       (let loop ([i 0])
 						 (if (= i n)
 						     #f
-						     (let ([l (send o get-string i)])
+						     (let ([l (send win get-item-label i)])
 						       (if (and (string? l)
 								(regexp-match re l))
 							   (begin

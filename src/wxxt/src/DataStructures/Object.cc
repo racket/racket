@@ -30,6 +30,7 @@
 #define Uses_wxDebugStreamBuf
 #define Uses_wxObject
 #define Uses_wxHashTable
+#define Uses_wxTypeTree
 #include "wx.h"
 
 #include <stdarg.h>
@@ -70,5 +71,12 @@ wxObject::~wxObject(void)
 long wxObject::MemoryUse(void)
 {
   return 0;
+}
+#endif
+
+#ifdef COMPACT_BACKTRACE_GC
+char *wxObject::gcGetName()
+{
+  return wxGetTypeName(__type);
 }
 #endif

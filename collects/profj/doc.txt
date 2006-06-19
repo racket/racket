@@ -1,72 +1,81 @@
 _professorj_
 
-ProfessorJ is a compiler for Java and related languages. The languages 
-include three teaching languages, Java 1.1 (with some incomplete 
-features, see below), and an experimental language supporting interoperability
-between Java and Scheme. For details about the teaching languages, please
-see the language manuals.
+ProfessorJ is a compiler for Java and related languages. The languages
+include three teaching languages, Java 1.1 (with some incomplete
+features, see below), and an experimental language supporting
+interoperability between Java and Scheme. For details about the
+teaching languages, please see the language manuals.
 
-In all of the ProfessorJ language levels, the interactions window accepts variable 
-declaration, statements and expressions legal for the language level. If the text 
-is not sending, type Alt+Enter to force the text to send.
+In all of the ProfessorJ language levels, the interactions window
+accepts variable declaration, statements and expressions legal for the
+language level. If the text is not sending, type Alt+Enter to force
+the text to send.
 
-The definitions window expects class and interface definitions,
-Java examples boxes, and test suite boxes. (i.e. what would be given to
+The definitions window expects class and interface definitions, Java
+examples boxes, and test suite boxes. (i.e. what would be given to
 javac plus two graphical boxes). Descriptions of these boxes can be
 found in the DrScheme manual.
 
 _Testing in Java language levels:
 
-The ProfessorJ language levels support a language extension to support testing
-endeavors. This extension can be turned off with a language configuration option in
-ProfessorJ Full and Java + dynamic. The extension adds two expression forms
-to Java:
+The ProfessorJ language levels support a language extension to support
+testing endeavors. This extension can be turned off with a language
+configuration option in ProfessorJ Full and Java + dynamic. The
+extension adds two _check_ ... _expect_ expression forms to Java:
 
 check EXPR expect EXPR
 check EXPR expect EXPR within EXPR
 
-To include these expressions in any larger expression (i.e. EXPR || EXPR), the check
-expression must be within parentheses. The resulting type of both expressions is a 
-boolean. The check expression compares the two subexpressions for equality (without
-using .equals). When the two subexpressions are floats or doubles, the check-within 
-expression must be used. The within subexpression must be a number; non-doubles can
-be compared with the check-within expression. The within subexpression specifies how
-precise different floats or doubles must be.
+To include these expressions in any larger expression (i.e. EXPR ||
+EXPR), the check expression must be within parentheses. The resulting
+type of both expressions is a boolean. The check expression compares
+the two subexpressions for equality (without using .equals). When the
+two subexpressions are floats or doubles, the check-within expression
+must be used. The within subexpression must be a number; non-doubles
+can be compared with the check-within expression. The within
+subexpression specifies how precise different floats or doubles must
+be.
 
-Additionally, the ProfessorJ languages support automatic execution of tests, which
-can also be turned off with a language configuration option. Any class with the word 
-'Example' in the name (i.e. CarExample, Examples, MyExamples) whose constructor does not
-require any arguments is instantiated on Run. Any method within this class that
-begins with the word 'test' (i.e. testAccelerate, test1) that does not require
-any arguments is called; a boolean return is expected. The test methods are run 
-in the order in which they appear within the class, top to bottom.
+Additionally, the ProfessorJ languages support automatic execution of
+tests, which can also be turned off with a language configuration
+option. Any class with the word 'Example' in the name
+(i.e. CarExample, Examples, MyExamples) whose constructor does not
+require any arguments is instantiated on Run. Any method within this
+class that begins with the word 'test' (i.e. testAccelerate, test1)
+that does not require any arguments is called; a boolean return is
+expected. The test methods are run in the order in which they appear
+within the class, top to bottom.
 
-A dockable window opens on Run reporting the result of executing all checks within 
-each Example class and the result of executing each test method. Failed checks (i.e. 
-returning false) provide source information. Coverage information is also available for
-each Example class and each testMethod. The collection of coverage information does
-slow execution and can be turned off with a language configuration; coverage information
-is not collected when test on Run has been disabled. Colors for the coverage information 
-can be set in the Java color preference window.
+A dockable window opens on Run reporting the result of executing all
+checks within each Example class and the result of executing each test
+method. Failed checks (i.e.  returning false) provide source
+information. Coverage information is also available for each Example
+class and each testMethod. The collection of coverage information does
+slow execution and can be turned off with a language configuration;
+coverage information is not collected when test on Run has been
+disabled. Colors for the coverage information can be set in the Java
+color preference window.
 
 _ProfessorJ Beginner_
- In Version 300, the Beginner language level has undergone significant changes.
- Largest among these is that interfaces are supported within the language, but
- abstract classes are no longer allowed. Further, interface implementation is supported
- but class extension is not. For further details please see the language manual.
+ In Version 300, the Beginner language level has undergone significant
+ changes.  Largest among these is that interfaces are supported within
+ the language, but abstract classes are no longer allowed. Further,
+ interface implementation is supported but class extension is not. For
+ further details please see the language manual.
 
 _ProfessorJ Intermediate_
- In Version 300, instanceof is now allowed. For further language details please see
- the language manual.
+ In Version 300, instanceof is now allowed. For further language
+ details please see the language manual.
  
 _ProfessorJ Advanced_
  For details, please see the language manual.
  
 _ProfessorJ Full
- Supports Java 1.1, no 1.5 features have been included. Few libraries are available.
- Where the libraries are supported, they are from version 1.4 (there are no language
- differences between 1.1 and 1.4). Please see the list of unsupported features to see
- what constructs are not available within this language level. 
+ Supports Java 1.1, no 1.5 features have been included. Few libraries
+ are available.  Where the libraries are supported, they are from
+ version 1.4 (there are no language differences between 1.1 and
+ 1.4). Please see the list of unsupported features to see what
+ constructs are not available within this language level.
 
 _Java + dynamic_ language level
  Version 299.200 +
@@ -81,10 +90,11 @@ _Java + dynamic_ language level
      return var;
   }
  }
- In RuntimeCheck, var will be checked to be an integer when checkForNumber
- is executed. Values declared with type 'dynamic' can also be used as
- any primitive or object value in Java. In addition, values with type
- 'dynamic' can also be used as methods: var() is a legal use.
+ In RuntimeCheck, var will be checked to be an integer when
+ checkForNumber is executed. Values declared with type 'dynamic' can
+ also be used as any primitive or object value in Java. In addition,
+ values with type 'dynamic' can also be used as methods: var() is a
+ legal use.
  
  In general, variables declared with type 'dynamic' will generate a contract
  check with coercians at each usage to ensure consistency with the Java type
@@ -98,23 +108,25 @@ _Java + dynamic_ language level
  The import form is either:
    import scheme.lib.$PATH$;
    import scheme.$PATH$;
- where $PATH$ is the set of directories that leads to the Scheme module, ending
- with the modules name. The lib form is used to access Scheme modules within the
- collects hierarchy.
- The Scheme require statement (require (lib "compile.ss" "profj")) would be written
+ where $PATH$ is the set of directories that leads to the Scheme
+ module, ending with the modules name. The lib form is used to access
+ Scheme modules within the collects hierarchy.
+ The Scheme require statement (require (lib "compile.ss" "profj"))
+ would be written
    import scheme.lib.profj.compile;
  within Java + dynamic
  
- Values provided by the scheme libraries may be used within a Java program, with
- access to them treated as though the Scheme module were a class and the provided
- value a static member. If the compile module mentioned above provides a types
- function, this would be accessed with the following code:
+ Values provided by the scheme libraries may be used within a Java
+ program, with access to them treated as though the Scheme module were
+ a class and the provided value a static member. If the compile module
+ mentioned above provides a types function, this would be accessed
+ with the following code:
    ... compile.types() ...
- This value has type dynamic within the Java program, and will be dynamically checked
- based on use.
+ This value has type dynamic within the Java program, and will be
+ dynamically checked based on use.
  
- As many Scheme names are not valid Java names, the following automatic name translations
- will be used:
+ As many Scheme names are not valid Java names, the following
+ automatic name translations will be used:
  JName = [a-zA-Z0-9_]
    Scheme name        <->   Java name
    JName.*[-][a-zA-Z0-9] <-> JName.*[A-Z0-9]     i.e. make-foo      <->   makeFoo
@@ -131,7 +143,8 @@ Known bugs for dynamic:
     I ic = new C();
     dynamic x = ic;
     C c = (C) x; 
-  In this program, the cast of x to C will fail, even though the value is an intstanceof C.
+  In this program, the cast of x to C will fail, even though the value
+  is an intstanceof C.
   These issues will be addressed in future versions. 
   Some assignments (with implicit downcasts) will also fail.
  

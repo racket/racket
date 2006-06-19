@@ -894,7 +894,7 @@
 ;;>   `(amb)' fails immediately.
 (defsubst* (amb expr ...)
   (let ([prev-amb-fail (amb-fail)])
-    (let/cc sk
+    (let/ec sk
       (let/cc fk
         (amb-fail (thunk (amb-fail prev-amb-fail) (fk 'fail)))
         (sk expr)) ...

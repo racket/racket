@@ -49,6 +49,6 @@ wxObject::~wxObject(void)
 # ifdef COMPACT_BACKTRACE_GC
 char *wxObject::gcGetName()
 {
-  wxGetTypeName(__type);
+  return wxGetTypeName(__type);
 }
 # endif

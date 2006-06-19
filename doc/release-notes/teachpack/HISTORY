@@ -1,4 +1,18 @@
 ------------------------------------------------------------------------
+VERSION 350				  [Fri Jun 16 20:37:38 EDT 2006]
+
+ * The draw package (ProfJ) spawns a new Canvas per new Canvas. 
+   The implementation of draw.ss has changed for that, though the visible
+   interface should remain the same. 
+   
+ * The idraw package provides imperative versions of World and Canvas. 
+
+ * Small bugs in world.ss and image.ss fixed. 
+
+ * servlet.ss and servlet2.ss are still missing. Expect their arrival
+   for 351. 
+
+------------------------------------------------------------------------
 VERSION 300				  [Mon Dec 12 15:59:02 EST 2005]
 
  * The world.ss teachpack has changed. It no longer supports 

@@ -230,7 +230,8 @@
     (add-signal-controls
      (class gauge%
        (init value)  
-       (super-new))
+       (super-new)
+       (send this set-value value))
      (value set-value 0)
      (range set-range 1)))
   

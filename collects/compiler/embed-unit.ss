@@ -585,7 +585,12 @@
 				    unix-starter?))
 	  (define relative? (let ([m (assq 'relative? aux)])
 			      (and m (cdr m))))
-	  (define collects-path-bytes (collects-path->bytes collects-path))
+	  (define collects-path-bytes (collects-path->bytes 
+				       ((if (and mred?
+						 (eq? 'macosx (system-type)))
+					    mac-mred-collects-path-adjust
+					    values)
+					collects-path)))
 	  (unless (or long-cmdline?
 		      ((apply + (length cmdline) (map (lambda (s)
 							(bytes-length (string->bytes/utf-8 s)))
@@ -806,4 +811,14 @@
 			    (let ([m (and (eq? 'windows (system-type))
 					  (assq 'subsystem aux))])
 			      (when m
-				(set-subsystem dest-exe (cdr m)))))]))))))))))))
+				(set-subsystem dest-exe (cdr m)))))])))))))))
+
+      ;; For Mac OS X MrEd, the actual executable is deep inside the
+      ;;  nominal executable bundle
+      (define (mac-mred-collects-path-adjust p)
+	(cond
+	 [(not p) #f]
+	 [(list? p) (map mac-mred-collects-path-adjust p)]
+	 [(relative-path? p) (build-path 'up 'up 'up p)]
+	 [else p])))))
+

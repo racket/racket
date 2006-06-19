@@ -167,7 +167,8 @@
           (define/public (first-opened) (void))
           
           (define/public (order-manuals x)
-            (let* ((beg-list '(#"profj-beginner" #"tour" #"drscheme" #"help"))
+            (let* ((beg-list '(#"profj-beginner" #"teachpack-htdc"
+                               #"tour" #"drscheme" #"help"))
                    (int-list (cons #"profj-intermediate" beg-list)))
               (values (case level
                         ((beginner) beg-list)
