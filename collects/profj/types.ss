@@ -9,6 +9,7 @@
    "ast.ss")
   
   (provide (all-defined-except number-assign-conversions remove-dups meth-member?
+                               contained-in? consolidate-lists subset?
                                generate-require-spec))
       
   ;; symbol-type = 'null | 'string | 'boolean | 'char | 'byte | 'short | 'int
@@ -618,29 +619,55 @@
                             (method-record-atypes (car methods)))
              (meth-member? meth (cdr methods)))))
 
-  ;depth: 'a (listof 'a) -> (U int #f)
+  ;depth: 'a int (listof 'a) -> (U int #f)
   ;The position in elt-list that elt is at, starting with 1
-  (define (depth elt elt-list)
+  (define (depth elt start elt-list)
     (letrec ((d 
               (lambda (elt-list cnt)
                 #;(printf "d: elt ~a elt-list ~a~n" elt elt-list)
                 (cond
-                  ((null? (cdr elt-list)) +inf.0)
+                  ((null? elt-list) +inf.0)
                   ((equal? (car elt-list) elt) cnt)
                   (else (d (cdr elt-list) (add1 cnt)))))))
-      (d elt-list 1)))                   
+      (d elt-list start)))
+
+  ;consolidate-lists: (listof (listof alpha)) -> (listof (listof alpha))
+  (define (consolidate-lists lsts)
+    (cond
+      ((or (null? lsts) (null? (cdr lsts))) lsts)
+      ((contained-in? (car lsts) (cdr lsts))
+       (consolidate-lists (cdr lsts)))
+      (else
+       (cons (car lsts) (consolidate-lists (cdr lsts))))))
+  
+  ;contained-in? (listof alpha) (listof (listof alpha)) -> boolean
+  (define (contained-in? current rest)
+    (and (not (null? rest))
+         (or (subset? (reverse current)
+                      (reverse (car rest)))
+             (contained-in? current (cdr rest)))))
+  
+  (define (subset? smaller bigger)
+    (or (null? smaller)
+        (and (equal? (car smaller) (car bigger))
+             (subset? (cdr smaller) (cdr bigger)))))
   
   ;iface-depth: (list string) (list (list string)) type-records -> int
   (define (iface-depth elt ifaces type-recs)
     (if (= 1 (length ifaces))
         1
-        (let ([iface-tree (map (lambda (iface)
-                                 (cons iface
-                                       (class-record-parents 
-                                        (get-record (send type-recs get-class-record iface)
-                                                    type-recs))))
-			       ifaces)])
-          (apply min (map (lambda (i-list) (depth elt i-list)) iface-tree)))))
+        (let* ([iface-trees (map (lambda (iface)
+                                  (cons iface
+                                        (class-record-parents 
+                                         (get-record (send type-recs get-class-record iface)
+                                                     type-recs))))
+                                ifaces)]
+               [sorted-ifaces (sort iface-trees
+                                    (lambda (a b) (< (length a) (length b))))]
+               [ifaces (consolidate-lists sorted-ifaces)])
+          #;(printf "iface-depth ~a ~a ~a ~n" elt 
+                    iface-trees (map (lambda (i-list) (depth elt 0 i-list)) iface-trees))
+          (apply min (map (lambda (i-list) (depth elt 0 i-list)) ifaces)))))
   
   ;conversion-steps: type type -> int
   (define (conversion-steps from to type-recs)
@@ -656,8 +683,8 @@
            ((null? from-class-parents) 
             (iface-depth to-name from-class-ifaces type-recs))
            ((null? from-class-ifaces)
-            (depth to-name from-class-parents))
-           (else (min (depth to-name from-class-parents)
+            (depth to-name 1 from-class-parents))
+           (else (min (depth to-name 1 from-class-parents)
                       (iface-depth to-name from-class-ifaces type-recs))))))
       ((array-type? from)
        (cond
@@ -667,11 +694,11 @@
           (add1 (conversion-steps (array-type-type from) to type-recs)))))
       (else 
        (case from
-         ((byte) (depth to '(short int long float double)))
-         ((char) (depth to '(byte short int long float double)))
-         ((short) (depth to '(int long float double)))
-         ((int) (depth to '(long float double)))
-         ((long) (depth to '(float double)))
+         ((byte) (depth to 1 '(short int long float double)))
+         ((char) (depth to 1 '(byte short int long float double)))
+         ((short) (depth to 1 '(int long float double)))
+         ((int) (depth to 1 '(long float double)))
+         ((long) (depth to 1 '(float double)))
          (else 1))
        )))
   
@@ -681,12 +708,14 @@
       ((null? site-args) 0)
       ((and (assignment-conversion (car method-args) (car site-args) type-recs)
             (not (type=? (car site-args) (car method-args))))
-       (+ (conversion-steps (car site-args) (car method-args) type-recs)
-          (number-assign-conversions (cdr site-args) (cdr method-args) type-recs)))
+       (let ((step (conversion-steps (car site-args) (car method-args) type-recs)))
+         #;(printf "steps for ~a ~a~n" (car site-args) step)
+         (+ step (number-assign-conversions (cdr site-args) (cdr method-args) type-recs))))
       (else (number-assign-conversions (cdr site-args) (cdr method-args) type-recs))))
   
   ;; resolve-overloading: (list method-record) (list type) (-> 'a) (-> 'a) (-> 'a) type-records-> method-record
   (define (resolve-overloading methods arg-types arg-count-fail method-conflict-fail  no-method-fail type-recs)
+    #;(print-struct #t)
     (let* ((a (length arg-types))
            (m-atypes method-record-atypes)
            (a-convert? (lambda (t1 t2) (assignment-conversion t1 t2 type-recs)))
@@ -700,10 +729,12 @@
            (sort (lambda (l p) (quicksort l p)))
            (assignable-count (sort
                               (map (lambda (mr)
+                                     #;(printf "assigning conversions for ~a~n" (m-atypes mr))
                                      (list (number-assign-conversions arg-types (m-atypes mr) type-recs)
                                            mr))
                                    assignable)
                               (lambda (i1 i2) (< (car i1) (car i2))))))
+      #;(printf "~a~n" assignable-count)
       (cond
         ((null? methods) (arg-count-fail))
         ((= 1 (length methods-same)) (car methods-same))
@@ -712,7 +743,7 @@
         ((= 1 (length assignable)) (car assignable))
         ((= (car (car assignable-count))
             (car (cadr assignable-count))) (method-conflict-fail))
-        (else (car assignable)))))
+        (else (cadr (car assignable-count))))))
 
   ;module-has-binding?: scheme-record string (-> void) -> void
   ;module-has-binding raises an exception when variable is not defined in mod-ref
