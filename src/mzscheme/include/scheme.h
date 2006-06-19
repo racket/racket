@@ -602,7 +602,7 @@ typedef struct Scheme_Object *(Scheme_Primitive_Closure_Proc)(int argc, struct S
 
 typedef struct {
   Scheme_Object so;
-  short flags;
+  unsigned short flags;
 } Scheme_Prim_Proc_Header;
 
 typedef struct {
