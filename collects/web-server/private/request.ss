@@ -46,7 +46,8 @@
             (and (= major 1) (= minor 0))
             (match (headers-assq #"Connection" headers)
               [(struct header (f v))
-               (regexp-match rx v)]
+               (and (regexp-match rx v)
+                    #t)]
               [#f
                #f])
             (msie-from-local-machine? headers client-ip host-ip)))))
