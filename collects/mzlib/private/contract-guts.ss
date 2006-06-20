@@ -405,16 +405,9 @@
 			    (cdr preds)))]))])
 	 (flat-named-contract (apply build-compound-type-name 'and/c contracts) pred))]
       [else
-       (let* ([non-flats (filter (λ (x) 
-                                   (and (not (procedure? x))
-                                        (not (flat-contract? x))))
-                                 fs)]
-              [contracts (map (lambda (x) (if (contract? x) x (flat-contract x))) fs)]
+       (let* ([contracts (map (lambda (x) (if (contract? x) x (flat-contract x))) fs)]
               [pos-contract/procs (map contract-pos-proc contracts)]
               [neg-contract/procs (map contract-neg-proc contracts)])
-         (unless (or (null? non-flats)
-                     (null? (cdr non-flats)))
-           (error 'and/c "expected at most one non-flat contract as argument"))
 	 (make-pair-proj-contract
           (apply build-compound-type-name 'and/c contracts)
           (lambda (blame src-info orig-str)

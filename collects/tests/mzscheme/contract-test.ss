@@ -533,6 +533,33 @@
               'neg))
   
   (test/spec-passed
+   'and/c1
+   '((contract (and/c (-> (<=/c 100) (<=/c 100))
+                      (-> (>=/c -100) (>=/c -100)))
+               (λ (x) x)
+               'pos
+               'neg)
+     1))
+  
+  (test/neg-blame
+   'and/c2
+   '((contract (and/c (-> (<=/c 100) (<=/c 100))
+                      (-> (>=/c -100) (>=/c -100)))
+               (λ (x) x)
+               'pos
+               'neg)
+     200))
+  
+  (test/pos-blame
+   'and/c3
+   '((contract (and/c (-> (<=/c 100) (<=/c 100))
+                      (-> (>=/c -100) (>=/c -100)))
+               (λ (x) 200)
+               'pos
+               'neg)
+     1))
+  
+  (test/spec-passed
    '->r1
    '((contract (->r () number?) (lambda () 1) 'pos 'neg)))
   
@@ -3958,6 +3985,7 @@
   (test-name '(and/c number? integer?) (and/c (flat-contract number?)
                                               (flat-contract integer?)))
   (test-name '(and/c number? (-> integer? integer?)) (and/c number? (-> integer? integer?)))
+  (test-name '(and/c (-> boolean? boolean?) (-> integer? integer?)) (and/c (-> boolean? boolean?) (-> integer? integer?)))
 
   (test-name '(not/c integer?) (not/c integer?))
   (test-name '(=/c 5) (=/c 5))
