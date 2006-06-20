@@ -1267,7 +1267,7 @@
     fraction-style
     show-sharing
     insert-newlines
-    debugging)
+    annotations)
    
    "Constructs a simple settings.")
   
