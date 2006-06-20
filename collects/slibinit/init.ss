@@ -69,7 +69,7 @@
           ;; Use this getenv if your implementation supports it.
           (getenv "SCHEME_LIBRARY_PATH")
           ;; Try an slib collection first
-          (with-handlers ([void #f])
+          (with-handlers ([void (lambda (e) #f)])
             (path->string (collection-path "slib")))
           ;; look for slib in a few common places
           (ormap (lambda (dir)
