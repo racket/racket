@@ -1900,12 +1900,14 @@ If the namespace does not, they are colored the unbound color.
       
       ;; trim-require-prefix : syntax -> syntax
       (define (trim-require-prefix require-spec)
-        (syntax-case* require-spec (prefix all-except rename only) symbolic-compare?
+        (syntax-case* require-spec (only prefix all-except prefix-all-except rename) symbolic-compare?
+          [(only module-name identifer ...)
+           (syntax module-name)]
           [(prefix identifier module-name) 
            (syntax module-name)]
           [(all-except module-name identifer ...)
            (syntax module-name)]
-          [(only module-name identifer ...)
+          [(prefix-all-except module-name identifer ...)
            (syntax module-name)]
           [(rename module-name local-identifer exported-identifer)
            (syntax module-name)]
