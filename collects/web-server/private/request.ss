@@ -186,7 +186,10 @@
                 (let find-amp ([amp-end (add1 key-end)])
                   (if (or (= amp-end len) (eq? (bytes-ref raw amp-end) (char->integer #\&)))
                       (list* (make-binding:form
-                              (subbytes raw start key-end)
+                              (string->bytes/utf-8
+                               (translate-escapes
+                                (bytes->string/utf-8
+                                 (subbytes raw start key-end))))
                               (string->bytes/utf-8
                                (translate-escapes
                                 (bytes->string/utf-8
