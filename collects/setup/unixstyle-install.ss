@@ -108,18 +108,12 @@
     (mv src dst)
     (set! path-changes (cons (cons src dst) path-changes)))
 
-  (define binary-re
-    #rx#"coLLECTs dIRECTORy:")
-  (define script-re
-    (byte-regexp (bytes-append #"\n# Make this PATH-independent\n.*?"
-                               #"\nbindir=\"[$]D\"\nPATH=\"[$]saveP\"\n")))
-
   (define (bin-mover src dst)
     (define (binary-move)
       ;; don't move => modify a copy of the running mzscheme
       (copy-file src dst) (delete-file src)
       (let-values ([(i o) (open-input-output-file dst 'update)])
-        (let ([m (regexp-match-positions binary-re i)])
+        (let ([m (regexp-match-positions #rx#"coLLECTs dIRECTORy:" i)])
           (unless m
             (error
              (format "could not find collection-path label in executable: ~a"
@@ -133,15 +127,16 @@
     (define (script-move)
       (let* ([size (file-size src)]
              [buf (with-input-from-file src (lambda () (read-bytes size)))]
-             [m (or (regexp-match-positions script-re buf)
+             [m (or (regexp-match-positions
+                     #rx#"\n# {{{ bindir\n(.*?\n)# }}} bindir\n" buf)
                     (error (format "could not find binpath block in script: ~a"
                                    src)))])
         (with-output-to-file dst
           (lambda ()
-            (write-bytes buf (current-output-port) 0 (caar m))
-            (printf "\nbindir=\"~a\"\n"
+            (write-bytes buf (current-output-port) 0 (caadr m))
+            (printf "bindir=\"~a\"\n"
                     (regexp-replace* #rx"[\"`'$\\]" (->string bindir) "\\\\&"))
-            (write-bytes buf (current-output-port) (cdar m)))
+            (write-bytes buf (current-output-port) (cdadr m)))
           'truncate/replace)
         (delete-file src)))
     (let ([magic (with-input-from-file src (lambda () (read-bytes 10)))])
