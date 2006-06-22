@@ -214,19 +214,19 @@
 	     one-arg-x-flags)
 	    (map
 	     (lambda (f)
-	       (format "  ~a)~n    ~a=yes~n  ;;~n" (or-flags (cdr f)) (car f)))
+	       (format "  ~a)\n    ~a=yes\n  ;;\n" (or-flags (cdr f)) (car f)))
 	     no-arg-x-flags)
 	    (list
 	     (format (string-append
-		      "  *)~n    ~a~a~a  ;;~n"
-		      " esac~n"
-		      " shift~n"
-		      " if [ \"$oneargflag\" != '' ] ; then~n"
-		      "   if [ \"${1+n}\" != 'n' ] ; then echo $0: missing argument for standard X flag $oneargflag ; exit 1 ; fi~n"
-		      "   shift~n"
-		      " fi~n"
-		      " findxend ${1+\"$@\"}~n"
-		      "}~nfindxend ${1+\"$@\"}~n")
+		      "  *)\n    ~a~a~a  ;;\n"
+		      " esac\n"
+		      " shift\n"
+		      " if [ \"$oneargflag\" != '' ] ; then\n"
+		      "   if [ \"${1+n}\" != 'n' ] ; then echo $0: missing argument for standard X flag $oneargflag ; exit 1 ; fi\n"
+		      "   shift\n"
+		      " fi\n"
+		      " findxend ${1+\"$@\"}\n"
+		      "}\nfindxend ${1+\"$@\"}\n")
 		     exec 
 		     (apply
 		      string-append
@@ -270,7 +270,7 @@
             (string-append
              "# Make this PATH-independent\n"
              "saveP=\"$PATH\"\n"
-             "PATH=/usr/bin:/bin\n"
+             "PATH=\"/usr/bin:/bin\"\n"
              "\n"
              (if has-readlink? ""
                  (string-append
@@ -288,7 +288,14 @@
              "D=`dirname \"$0\"`\n"
              "F=`basename \"$0\"`\n"
              "cd \"$D\"\n"
-             "while [ -L \"$F\" ]; do\n"
+             "while test "
+             ;; On solaris, Edward Chrzanowski from Waterloo says that the man
+             ;; page says that -L is not supported, but -h is; on other systems
+             ;; (eg, freebsd) -h is listed as a compatibility feature
+             (if (regexp-match #rx"solaris" (path->string
+                                             (system-library-subpath)))
+               "-h" "-L")
+             " \"$F\"; do\n"
              "  P=`readlink \"$F\"`\n"
              "  D=`dirname \"$P\"`\n"
              "  F=`basename \"$P\"`\n"
@@ -306,13 +313,12 @@
 				  (protect-shell-string s))
 		   ""))
              "\"\n"
-             "PATH=\"$saveP\"\n"
-             "\n")
+             "PATH=\"$saveP\"\n")
             ;; fallback to absolute path header
             (make-absolute-path-header bindir))))
 
       (define (make-absolute-path-header bindir)
-	(string-append "bindir=\""(protect-shell-string bindir)"\"\n\n"))
+	(string-append "bindir=\""(protect-shell-string bindir)"\"\n"))
 
       (define (make-unix-launcher kind variant flags dest aux)
 	(install-template dest kind "sh" "sh") ; just for something that's executable
@@ -341,8 +347,8 @@
 	       [post-str (str-list->sh-str post-flags)]
 	       [header (string-append
                         "#!/bin/sh\n"
-                        "# This script was created by make-"(symbol->string kind)"-launcher\n"
-                        "\n")]
+                        "# This script was created by make-"
+                        (symbol->string kind)"-launcher\n")]
 	       [dir-finder
 		(let ([bindir (if alt-exe
 				  (find-gui-bin-dir)
@@ -357,8 +363,8 @@
 		      (if alt-exe "" (variant-suffix variant))
 		      pre-str)]
 	       [args (format
-		      "~a ~a ${1+\"$@\"}~n"
-		      (if alt-exe "" " -N \"$0\"")
+		      "~a~a ${1+\"$@\"}\n"
+		      (if alt-exe "" "-N \"$0\" ")
 		      post-str)]
 	       [assemble-exec (if (and (eq? kind 'mred)
 				       (not (memq variant '(script scrip-3m)))
@@ -367,12 +373,16 @@
 				  string-append)])
 	  (unless (find-console-bin-dir)
 	    (error 'make-unix-launcher "unable to locate bin directory"))
-	  (let ([p (open-output-file dest 'truncate)])
-	    (fprintf p "~a~a~a"
-		     header
-		     dir-finder
-		     (assemble-exec exec args))
-	    (close-output-port p))))
+          (with-output-to-file dest
+            (lambda ()
+              (display header)
+              (newline)
+              (display "# {{{ bindir\n")
+              (display dir-finder)
+              (display "# }}} bindir\n")
+              (newline)
+              (display (assemble-exec exec args)))
+            'truncate)))
 
       (define (utf-16-regexp b)
 	(byte-regexp (bytes-append (bytes->utf-16-bytes b)
