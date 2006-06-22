@@ -211,6 +211,7 @@
         (let ([pos (syntax-position expr)]
               [src (syntax-source expr)])
           (and src
+               (eq? src (syntax-source stx))
                ; (is-a? src object%) ; FIX THIS
                pos
                (hash-table-get breakpoints pos (lambda () #t))
