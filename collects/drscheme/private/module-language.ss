@@ -404,7 +404,16 @@
                (check-filename-matches filename
                                        (syntax-object->datum (syntax name)) 
                                        unexpanded-stx))
-             (let ([new-name (build-name filename)])
+             
+             
+             (values v-name
+                     stx)
+             
+             ;; this isn't working ...
+             #;
+             (let ([new-name (if filename 
+                                 (build-name filename)
+                                 v-name)])
                (values new-name
                        #`(module #,new-name lang (#%plain-module-begin bodies ...)))))]
           [else
