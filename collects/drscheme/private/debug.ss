@@ -664,9 +664,9 @@ profile todo:
           (when frame
             (send frame show #t))
           (when (and rep editor)
-            (cond
-              [(is-a? editor text:basic<%>)
-               (send rep highlight-error editor position (+ position span))]))))
+            (when (is-a? editor text:basic<%>)
+              (send rep highlight-error editor position (+ position span))
+              (send editor set-caret-owner #f 'global)))))
 
       
  
