@@ -56,7 +56,8 @@
                      parent-keymap))
             (let c-loop ([child-keymaps (send parent-keymap get-chained-keymaps)])
               (cond
-                [(null? child-keymaps) null]
+                [(null? child-keymaps) 
+                 (void)]
                 [else
                  (let ([child-keymap (car child-keymaps)])
                    (cond
