@@ -107,13 +107,15 @@
                            (list (make-partial-string (add1 idx) first-test second-test))))
                   (else
                    (append (internal-format (send value access idx) full-print? style already-printed nl? nt)
-                           (list " "
-                                 (make-partial-string (add1 idx) first-test second-test))))))))
+                           (if nl? (list (format "~n")) (list " "))
+                           (make-partial-string (add1 idx) first-test second-test)))))))
       (if (or full-print? (< restart stop))
           (append '("[") (make-partial-string 0 (lambda (i) (>= i len)) (lambda (i) (= i (sub1 len)))) '("]"))
           (append '("[")                      
                   (make-partial-string 0 (lambda (i) (or (>= i stop) (>= i len))) (lambda (i) (= i (sub1 stop))))
+                  (if nl? (list (format "~n")) (list ""))
                   '(" ... ")
+                  (if nl? (list (format "~n")) (list ""))
                   (make-partial-string restart (lambda (i) (>= i len)) (lambda (i) (= i (sub1 len))))
                   '("]")))))
   
