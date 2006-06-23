@@ -97,5 +97,6 @@ lib-finish:
 	@LIBFINISH@ "$(prefix)/lib"
 
 copytree:
-	mzscheme/mzscheme -mvqu "$(srcdir)/copytree.ss" \
-          "$(srcdir)/.." $(ALLDIRINFO) @INSTALL_ORIG_TREE@
+	mzscheme/mzscheme -mvxqu \
+          "$(srcdir)/../collects/setup/unixstyle-install.ss" \
+          make-install-copytree "$(srcdir)/.." $(ALLDIRINFO) @INSTALL_ORIG_TREE@

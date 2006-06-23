@@ -1,12 +1,22 @@
 ;; This file is used to move the PLT tree as part of a Unix sh-installer (when
-;; it works in unix-style mode).  This is done carefully (undoing changes if
-;; there is an error), and a plt-uninstall script is generated.  There is no
-;; good cmdline interface, since it is internal, and should be as independent
-;; as possible (it moves the collection tree).
-;; Expects these arguments:
-;; * The source plt directory
-;; * Path names that should be copied (bin, collects, doc, lib, ...)
-;; >>> plt/src/copytree.ss should be merged into this
+;; it works in unix-style mode) and similar situations.  When possible (`move'
+;; mode), this is done carefully (undoing changes if there is an error), and a
+;; plt-uninstall script is generated.  It is also used to change an already
+;; existing tree (eg, when DESTDIR is used) and to copy a tree (possibly part
+;; of `make install').  There is no good cmdline interface, since it is
+;; internal, and should be as independent as possible (it moves the collection
+;; tree).  Expects these arguments:
+;; * An operation verb:
+;;   - `move': move a relative installation from `pltdir' to an absolute
+;;     installation in the given paths (used by the shell installers)
+;;     (interactive, undo-on-error, create-uninstaller)
+;;   - `copy': similar to `move', but copies instead of moving
+;;   - `make-install-copytree': copies some toplevel directories, skips .svn
+;;     and compiled subdirs, and rewrite config.ss, but no uninstaller (used by
+;;     `make install') (requres an additional `origtree' argument)
+;; * pltdir: The source plt directory
+;; * Path names that should be moved/copied (bin, collects, doc, lib, ...)
+
 (module unixstyle-install mzscheme
 
   (define args (vector->list (current-command-line-arguments)))
@@ -15,6 +25,7 @@
     (when (null? args) (error "insufficient arguments"))
     (begin0 (car args) (set! args (cdr args))))
 
+  (define op (string->symbol (get-arg)))
   (define pltdir        (get-arg))
   (define bindir        (get-arg))
   (define collectsdir   (get-arg))
@@ -77,9 +88,24 @@
 
   ;; copy a file or a directory (recursively), preserving time stamps
   ;; (mzscheme's copy-file preservs permission bits)
-  #; ; this is impossible now: there is no way to create arbitrary symlink
+  (define copy-skip-filter (lambda (p) #f))
   (define (cp src dst)
-    ...)
+    (let loop ([src src] [dst dst])
+      (let ([time! (lambda ()
+                     (file-or-directory-modify-seconds
+                      dst (file-or-directory-modify-seconds src)))])
+        (cond [(copy-skip-filter (if (path? src) (path->string src) src)) 'skip]
+              [(link-exists? src)
+               ;; symlinks are impossible to do in Scheme now: can't make
+               ;; arbitrary ones
+               (run "cp" "-a" "--" src dst)]
+              [(directory-exists? src)
+               (make-directory dst) (time!)
+               (parameterize ([current-directory src])
+                 (for-each (lambda (p) (loop p (build-path dst p)))
+                           (directory-list)))]
+              [(file-exists? src) (copy-file src dst) (time!)]
+              [else (error 'cp "internal error: ~e" src)]))))
 
   ;; try to rename and if it fails (due to different fs) copy and remove
   (define (mv src dst)
@@ -95,23 +121,29 @@
                                 (rm dst)
                                 (raise e)))])
         ;; (cp src dst) (rm src)
-        ;; can't do it in Scheme, run /bin/mv instead
+        ;; can't do all in Scheme, run mv instead
         (run "mv" "--" src dst))))
 
   ;; list of changes, so we can undo them in case of an error and so we can
-  ;; create an uninstaller -- a pair is for a move, and a string/path is for a
-  ;; removed directory
+  ;; create an uninstaller
   (define path-changes '())
+  (define (register-change! op . args)
+    (set! path-changes (cons (cons op args) path-changes)))
 
   ;; like `mv', but also record moves
   (define (mv* src dst)
     (mv src dst)
-    (set! path-changes (cons (cons src dst) path-changes)))
+    (register-change! 'mv src dst))
 
-  (define (bin-mover src dst)
-    (define (binary-move)
-      ;; don't move => modify a copy of the running mzscheme
-      (copy-file src dst) (delete-file src)
+  ;; like `cp', but also record copies
+  (define (cp* src dst)
+    (cp src dst)
+    (register-change! 'cp src dst))
+
+  (define ((bin-mover/copier move?) src dst)
+    (define (binary-copy)
+      ;; never move -- modify a copy of the running mzscheme
+      (copy-file src dst)
       (let-values ([(i o) (open-input-output-file dst 'update)])
         (let ([m (regexp-match-positions #rx#"coLLECTs dIRECTORy:" i)])
           (unless m
@@ -124,7 +156,7 @@
           (write-byte 0 o)
           (close-input-port i)
           (close-output-port o))))
-    (define (script-move)
+    (define (script-copy)
       (let* ([size (file-size src)]
              [buf (with-input-from-file src (lambda () (read-bytes size)))]
              [m (or (regexp-match-positions
@@ -137,14 +169,14 @@
             (printf "bindir=\"~a\"\n"
                     (regexp-replace* #rx"[\"`'$\\]" (->string bindir) "\\\\&"))
             (write-bytes buf (current-output-port) (cdadr m)))
-          'truncate/replace)
-        (delete-file src)))
+          'truncate/replace)))
     (let ([magic (with-input-from-file src (lambda () (read-bytes 10)))])
-      (cond [(regexp-match #rx#"^\177ELF" magic) (binary-move)]
-            [(regexp-match #rx#"^#!/bin/sh" magic) (script-move)]
+      (cond [(regexp-match #rx#"^\177ELF" magic) (binary-copy)]
+            [(regexp-match #rx#"^#!/bin/sh" magic) (script-copy)]
             [else (error (format "unknown binary type: ~a" src))])
-      ;; undo might get back modified files, but the installer will remove them
-      (set! path-changes (cons (cons src dst) path-changes))
+      (when move? (delete-file src))
+      ;; undo might move modified files, but the installer removes them anyway
+      (register-change! (if move? 'mv 'cp) src dst)
       (run "chmod" "+x" dst)))
 
   ;; remove and record all empty dirs
@@ -154,7 +186,7 @@
         (let ([ps (directory-list dir)])
           (cond [(null? ps)
                  (delete-directory dir)
-                 (set! path-changes (cons dir path-changes))]
+                 (register-change! 'rd dir)]
                 [recurse?
                  (for-each (lambda (p) (loop (build-path dir p) #t)) ps)
                  (loop dir #f)] ; try again
@@ -164,17 +196,24 @@
   ;; called from an error handler, so avoid raising more errors
   (define (undo-changes)
     (printf "...undoing changes\n")
-    (for-each (lambda (p)
-                (if (pair? p)
-                  (with-handlers ([exn?
-                                   (lambda (e)
-                                     (fprintf (current-error-port)
-                                              "  ** error during undo: ~a\n"
-                                              (exn-message e))
-                                     #f)])
-                    (mv (cdr p) (car p)))
-                  (make-directory p)))
-              path-changes))
+    (for-each
+     (lambda (p)
+       (apply (case (car p)
+                [(cp) (lambda (src dst) (rm dst))]
+                [(mv) (lambda (src dst)
+                        (with-handlers
+                            ([exn?
+                              (lambda (e)
+                                (fprintf (current-error-port)
+                                         "  ** error during undo: ~a\n"
+                                         (exn-message e))
+                                #f)])
+                          (mv dst src)))]
+                [(rd) make-directory]
+                [(md) delete-directory]
+                [else (error 'undo-changes "internal-error: ~e" p)])
+              (cdr p)))
+     path-changes))
 
   (define (write-uninstaller)
     (define uninstaller (build-path bindir "plt-uninstall"))
@@ -182,37 +221,64 @@
       (lambda ()
         (printf "#!/bin/sh\n")
         (printf "while true; do read R || break; rm -rf -- \"$R\"; done \\\n")
-        (printf "<<::://E//O//F//:::\n")
-        (for-each (lambda (p) (when (pair? p) (printf "~a\n" (cdr p))))
+        (printf "<<::://E//O//F////O//N//E//:::\n")
+        ;; only moved/copied stuff are part of the distribution
+        (for-each (lambda (p)
+                    (when (memq (car p) '(mv cp)) (printf "~a\n" (caddr p))))
                   path-changes)
-        (printf "::://E//O//F//:::\n")
+        (printf "::://E//O//F////O//N//E//:::\n")
+        (printf "while true; do read R || break; ~a"
+                "rmdir -- \"$R\" > /dev/null 2>&1; done \\\n")
+        (printf "<<::://E//O//F////T//W//O//:::\n")
+        (for-each (lambda (p) (when (eq? 'md (car p)) (printf "~a\n" (cadr p))))
+                  path-changes)
+        (printf "::://E//O//F////T//W//O//:::\n")
         (printf "exec rm \"$0\"\n"))
       'replace)
     (run "chmod" "+x" uninstaller))
 
-  (define (write-config)
-    (define (cpath . xs) (apply build-path collectsdir "config" xs))
-    (with-output-to-file (cpath "config.ss")
-      (lambda ()
-        (printf ";; automatically generated at installation\n")
-        (printf "(module config (lib \"configtab.ss\" \"setup\")\n")
-        (printf "  (define doc-dir ~s)\n" docdir)
-        (when (eq? 'shared (system-type 'link)) ; never true for now
-          (printf "  (define dll-dir ~s)\n" libdir))
-        (printf "  (define lib-dir ~s)\n" libpltdir)
-        (printf "  (define include-dir ~s)\n" includepltdir)
-        (printf "  (define bin-dir ~s)\n" bindir)
-        (printf "  (define absolute-installation? #t))\n"))
-      'truncate/replace)
-    ;; in case the system time is broken:
-    (rm (cpath "compiled" "config.zo"))
-    (rm (cpath "compiled" "config.dep")))
+  (define (write-config . compile?)
+    (define (cpath . xs)
+      (apply build-path collectsdir "config" xs))
+    (define (ftime file)
+      (and (file-exists? file) (file-or-directory-modify-seconds file)))
+    (let* ([src (cpath "config.ss")]
+           [zo  (cpath "compiled" "config.zo")]
+           [dep (cpath "compiled" "config.dep")]
+           [src-time (ftime src)]
+           [zo-time  (ftime zo)])
+      (parameterize ([current-library-collection-paths (list collectsdir)])
+        (with-output-to-file (cpath "config.ss")
+          (lambda ()
+            (printf ";; automatically generated at installation\n")
+            (printf "(module config (lib \"configtab.ss\" \"setup\")\n")
+            (printf "  (define doc-dir ~s)\n" docdir)
+            (when (eq? 'shared (system-type 'link)) ; never true for now
+              (printf "  (define dll-dir ~s)\n" libdir))
+            (printf "  (define lib-dir ~s)\n" libpltdir)
+            (printf "  (define include-dir ~s)\n" includepltdir)
+            (printf "  (define bin-dir ~s)\n" bindir)
+            (printf "  (define absolute-installation? #t))\n"))
+          'truncate/replace)
+        ;; recompile & set times as if nothing happened (don't remove .dep)
+        ;; this requires the file to look the same on all compilations, and
+        ;; configtab.ss generates bindings unhygienically for that reason.
+        (unless (and no-compile? (not (car no-compile?)))
+          (when src-time (file-or-directory-modify-seconds src src-time))
+          (when zo-time
+            (with-input-from-file src
+              (lambda ()
+                (with-output-to-file zo
+                  (lambda () (write (compile (read-syntax))))
+                  'truncate/replace)))
+            (file-or-directory-modify-seconds zo zo-time))))))
 
   ;; creates a directory including its ancestors when needed
   (define (make-dir* dir)
     (unless (directory-exists? dir)
       (make-dir* (dirname dir))
-      (make-directory dir)))
+      (make-directory dir)
+      (register-change! 'md dir)))
 
   (define yes-to-all? #f)
   (define (ask-overwrite kind path)
@@ -231,14 +297,16 @@
                    [(n) (error "Abort!")]
                    [else (loop)]))))))
 
-  (define (move-tree src dst . mover)
-    (printf "Moving ~a -> ~a\n" src dst)
+  (define ((move/copy-tree move?) src dst . mover/copier)
+    (printf "~aing ~a -> ~a\n" (if move? "Mov" "Copy") src dst)
     (make-dir* (dirname dst))
     (let loop ([src (simplify-path src #f)]
                [dst (simplify-path dst #f)]
                [lvl (level-of src)]) ; see above
-      (let ([mv (let ([mv (if (pair? mover) (car mover) mv*)])
-                  (lambda () (mv src dst)))]
+      (let ([doit (let ([doit (cond [(pair? mover/copier) (car mover/copier)]
+                                    [move? mv*]
+                                    [else  cp*])])
+                    (lambda () (doit src dst)))]
             [src-d? (directory-exists? src)]
             [dst-l? (link-exists? dst)]
             [dst-d? (directory-exists? dst)]
@@ -246,8 +314,9 @@
         (when (and src-d? (not lvl) (not dst-d?))
           (when (or dst-l? dst-f?) (ask-overwrite "file or link" dst))
           (make-directory dst)
+          (register-change! 'md dst)
           (set! dst-d? #t) (set! dst-l? #f) (set! dst-f? #f))
-        (cond [dst-l? (ask-overwrite "symlink" dst) (mv)]
+        (cond [dst-l? (ask-overwrite "symlink" dst) (doit)]
               [dst-d? (if (and src-d? (or (not lvl) (< 0 lvl)))
                         ;; recurse only when the source is a dir, & not too deep
                         (for-each (lambda (name)
@@ -255,41 +324,63 @@
                                           (build-path dst name)
                                           (and lvl (sub1 lvl))))
                                   (directory-list src))
-                        (begin (ask-overwrite "dir" dst) (mv)))]
-              [dst-f? (ask-overwrite "file" dst) (mv)]
-              [else (mv)])))
-    (remove-empty-dirs src))
+                        (begin (ask-overwrite "dir" dst) (doit)))]
+              [dst-f? (ask-overwrite "file" dst) (doit)]
+              [else (doit)])))
+    (when move? (remove-empty-dirs src)))
 
   ;; --------------------------------------------------------------------------
 
-  (current-directory pltdir)
+  (define (move/copy-distribution move?)
+    (define do-tree (move/copy-tree move?))
+    (current-directory pltdir)
+    (when (ormap (lambda (p) (regexp-match #rx"[.]so" (->string p)))
+                 (directory-list "lib"))
+      (error "Cannot handle distribution of shared-libraries (yet)"))
+    (with-handlers ([void (lambda (e) (undo-changes) (raise e))])
+      (do-tree "bin"      bindir (bin-mover/copier move?))
+      (do-tree "collects" collectsdir)
+      (do-tree "doc"      docdir)
+      ;; (do-tree libdir) ; shared stuff goes here
+      (do-tree "include"  includepltdir)
+      (do-tree "lib"      libpltdir)
+      (do-tree "man"      mandir)
+      ;; (when (and (not (equal? srcdir "")) (directory-exists? "src"))
+      ;;   (do-tree "src" srcdir))
+      ;; don't use the above -- it would be pointless to put the source tree in
+      ;; a place where it would not be usable.
+      (when (and (directory-exists? "src") move?) (rm "src"))
+      ;; part of the distribution:
+      (when (file-exists? "readme.txt")
+        (do-tree "readme.txt" (build-path docdir "readme.txt")))
+      ;; nothing should be left now if this was a move
+      (when move?
+        (let ([ps (map ->string (directory-list))])
+          (unless (null? ps)
+            (error (format "leftovers in source tree: ~s" ps)))))
+      (write-uninstaller)
+      (write-config))
+    (when move?
+      (current-directory (dirname pltdir))
+      (delete-directory pltdir)))
 
-  (when (ormap (lambda (p) (regexp-match #rx"[.]so" (->string p)))
-               (directory-list "lib"))
-    (error "Cannot handle distribution of shared-libraries (yet)"))
+  (define (make-install-copytree)
+    (define copytree (move/copy-tree #f))
+    (define origtree (equal? "yes" (get-arg)))
+    (set! copy-skip-filter ; skip all dot-names, CVS and compiled subdirs
+          (lambda (p) (regexp-match #rx"^(?:[.].*|CVS|compiled)$" p)))
+    (with-handlers ([void (lambda (e) (undo-changes) (raise e))])
+      (copytree (build-path pltdir "collects") collectsdir)
+      (copytree (build-path pltdir "doc")      docdir)
+      (copytree (build-path pltdir "man")      mandir)
+      (write-config #f)))
 
-  (with-handlers ([void (lambda (e) (undo-changes) (raise e))])
-    (move-tree "bin"      bindir bin-mover)
-    (move-tree "collects" collectsdir)
-    (move-tree "doc"      docdir)
-    ;; (move-tree libdir) ; shared stuff goes here
-    (move-tree "include"  includepltdir)
-    (move-tree "lib"      libpltdir)
-    (move-tree "man"      mandir)
-    ;; (when (and (not (equal? srcdir "")) (directory-exists? "src"))
-    ;;   (move-tree "src" srcdir))
-    ;; don't use the above -- it would be pointless to put the source tree in a
-    ;; place where it would not be usable.
-    (when (directory-exists? "src") (rm "src"))
-    ;; part of the distribution:
-    (move-tree "readme.txt" (build-path docdir "readme.txt"))
-    ;; nothing should be left now
-    (let ([ps (map ->string (directory-list))])
-      (unless (null? ps)
-        (error (format "Error: leftovers in source tree: ~s" ps))))
-    (write-uninstaller)
-    (write-config))
-  (current-directory (dirname pltdir))
-  (delete-directory pltdir)
+  ;; --------------------------------------------------------------------------
+
+  (case op
+    [(move) (move/copy-distribution #t)]
+    [(copy) (move/copy-distribution #f)]
+    [(make-install-copytree) (make-install-copytree)]
+    [else   (error (format "unknown verb: ~e" op))])
 
   )
