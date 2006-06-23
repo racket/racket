@@ -263,7 +263,7 @@
         ;; recompile & set times as if nothing happened (don't remove .dep)
         ;; this requires the file to look the same on all compilations, and
         ;; configtab.ss generates bindings unhygienically for that reason.
-        (unless (and no-compile? (not (car no-compile?)))
+        (unless (and compile? (not (car compile?)))
           (when src-time (file-or-directory-modify-seconds src src-time))
           (when zo-time
             (with-input-from-file src
