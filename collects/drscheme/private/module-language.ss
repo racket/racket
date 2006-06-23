@@ -118,14 +118,27 @@
           (define/override (get-style-delta) module-language-style-delta)
           
           (define/override (front-end/complete-program port settings teachpack-cache)
-            (let ([super-thunk (super front-end/complete-program port settings teachpack-cache)]
-                  [filename (get-filename port)]
-                  [module-name #f])
+            (let* ([super-thunk (super front-end/complete-program port settings teachpack-cache)]
+                   [filename (get-filename port)]
+                   [module-name #f]
+                   [module-name-prefix (get-module-name-prefix filename)]
+                   [get-full-module-name
+                    (λ ()
+                      ;; "clearing out" the module-name via datum->syntax-object ensures
+                      ;; that check syntax doesn't think the original module name
+                      ;; is being used in this require (so it doesn't get turned red)
+                      (datum->syntax-object #'here 
+                                            (string->symbol
+                                             (format "~a~a"
+                                                     (or module-name-prefix "")
+                                                     (syntax-e module-name)))))])
               (λ ()
                 (set! iteration-number (+ iteration-number 1))
-                (let ([super-result (super-thunk)])
-                  (cond
-                    [(= iteration-number 1)
+                (cond
+                  [(= 1 iteration-number)
+                   #`(current-module-name-prefix '#,module-name-prefix)]
+                  [(= 2 iteration-number)
+                   (let ([super-result (super-thunk)])
                      (if (eof-object? super-result)
                          (raise-syntax-error
                           'module-language
@@ -136,29 +149,19 @@
                                         (expand super-result)
                                         super-result)])
                            (set! module-name name)
-                           new-module))]
-                    [(= 2 iteration-number)
+                           new-module)))]
+                  [(= 3 iteration-number)
+                   (let ([super-result (super-thunk)])
                      (if (eof-object? super-result)
-                         (with-syntax ([name 
-                                        ;; "clearing out" the module-name in this fashion ensures
-                                        ;; that check syntax doesn't think the original module name
-                                        ;; is being used in this require (so it doesn't get turned
-                                        ;; red)
-                                        (datum->syntax-object #'here module-name)])
-                           (syntax (require name)))
+                         #`(begin 
+                             (current-module-name-prefix #f)
+                             (eval '(require #,(get-full-module-name)))
+                             (eval '(current-namespace (module->namespace '#,(get-full-module-name)))))
                          (raise-syntax-error
                           'module-language
                           "there can only be one expression in the definitions window"
-                          super-result))]
-                    [(= 3 iteration-number)
-                     (with-syntax ([name 
-                                        ;; "clearing out" the module-name in this fashion ensures
-                                        ;; that check syntax doesn't think the original module name
-                                        ;; is being used in this require (so it doesn't get turned
-                                        ;; red)
-                                        (datum->syntax-object #'here module-name)])
-                       (syntax (current-namespace (module->namespace 'name))))]
-                    [else eof])))))
+                          super-result)))]
+                  [else eof]))))
           
           ;; printer settings are just ignored here.
           (define/override (create-executable setting parent program-filename teachpacks)
@@ -421,9 +424,18 @@
                                "only module expressions are allowed"
                                unexpanded-stx)]))
       
+      ;; get-module-name-prefix : path -> string
+      ;; returns the symbol that gets passed the current-module-name-prefix
+      ;; while evaluating/expanding the module.
+      (define (get-module-name-prefix path)
+        (and path
+             (let-values ([(base name dir) 
+                           (split-path (normal-case-path (simplify-path (expand-path path) #f)))])
+               (string->symbol (format ",~a" (path->string base))))))
+        
       ;; build-name : path -> symbol
       (define (build-name pre-path)
-        (let ([path (normalize-path pre-path)])
+        (let ([path (normal-case-path (simplify-path (expand-path pre-path) #f))])
           (let-values ([(base name dir) (split-path path)])
             (string->symbol (format ",~a" 
                                     (path->string
