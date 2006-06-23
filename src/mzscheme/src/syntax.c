@@ -1442,7 +1442,8 @@ set_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
   if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
       || SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type)) {
     var = scheme_register_toplevel_in_prefix(var, env, rec, drec);
-    SCHEME_TOPLEVEL_FLAGS(var) |= SCHEME_TOPLEVEL_MUTATED;
+    if (env->genv->module)
+      SCHEME_TOPLEVEL_FLAGS(var) |= SCHEME_TOPLEVEL_MUTATED;
   }
 
   scheme_compile_rec_done_local(rec, drec);
