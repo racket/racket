@@ -233,6 +233,8 @@
                                              frames pos-vec id)])
                              (send (get-tab)
                                    set-mouse-over-msg
+                                   ; consider rewriting so we can look up top-level vars even
+                                   ; when not suspended
                                    (cond
                                      [(and id frames
                                            (let/ec k
@@ -240,16 +242,13 @@
                                                     [binding (lookup-first-binding
                                                               (lambda (id2) (module-identifier=? id id2))
                                                               frames (lambda ()
-                                                                       (k #f
-                                                                        #;
-                                                                          (format "~a = ~a" id-sym
-                                                                                (namespace-variable-value
-                                                                                 id-sym
-                                                                                 #f
-                                                                                 (lambda () (k #f))
-                                                                                 (send
-                                                                                  (send (get-tab) get-ints)
-                                                                                  get-user-namespace))))))]
+                                                                       ;(printf "failed to find var ~a on stack~n" id)
+                                                                       (k (clean-status
+                                                                           (format "~a = ~a" id-sym
+                                                                                   (render
+                                                                                    ((send (get-tab) lookup-top-level-var
+                                                                                           id
+                                                                                           (lambda () (k #f))))))))))]
                                                     [val (mark-binding-value
                                                           binding)])
                                                (clean-status (format "~a = ~a" id-sym (render val))))))]
@@ -489,7 +488,10 @@
                                                     (when (< i (syntax-span bound))
                                                       (vector-set! pos-vec (+ i (syntax-position bound)) binding)
                                                       (loop (add1 i))))))
-					      void)])
+					      (lambda (mod var val)
+                                                (send (get-tab) add-top-level-binding var val)
+                                                #;
+                                                (printf "top-level binding: ~a ~a ~a~n" mod var val)))])
                                 (hash-table-for-each
                                  breakpoints
                                  (lambda (pos status)
@@ -579,6 +581,21 @@
           (define break-status #f)
           (define/public (get-break-status) break-status)
           (define/public (set-break-status stat) (set! break-status stat))
+          (define top-level-bindings empty)
+          (define/public (add-top-level-binding var val)
+            (set! top-level-bindings (cons (cons var val) top-level-bindings)))
+          (define/public (lookup-top-level-var var failure-thunk)
+            #;
+            (printf "looking for ~a in ~a~n" var top-level-bindings)
+            (let loop ([bindings top-level-bindings])
+              (cond
+                [(empty? bindings) (failure-thunk)]
+                [(let ([res (or (bound-identifier=? var (caar bindings))
+                                (free-identifier=? var (caar bindings)))])
+                   #;
+                   (printf "~a = ~a -> ~a~n" var (caar bindings) res)
+                   res) (cdar bindings)]
+                [(loop (rest bindings))])))
           (define control-panel #f)
           (define/public (resume)
 	    (let ([v break-status])
@@ -691,6 +708,7 @@
             ;(set! breakpoints (make-hash-table))
             (hash-table-put! breakpoints -1 #t)
             (set! pos-vec (make-vector (add1 (send (get-defs) last-position)) #f))
+            (set! top-level-bindings empty)
             (set! resume-ch (make-channel))
             (set! want-suspend-on-break? #f)
             (set! stack-frames #f)

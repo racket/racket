@@ -177,15 +177,18 @@
        stx #f
        [(define-values (var ...) expr)
         
-        (begin (for-each (lambda (v) (record-bound-id 'bind v v))
-                         (syntax->list #'(var ...)))
-               (quasisyntax/loc stx
-                 (begin (define-values (var ...) #,(annotate #`expr empty #t module-name))
-                        #,(if (syntax-source #'stx)
-                              #`(begin (#,record-top-level-id '#,module-name 'var var) ...)
-                              #'(void))
-                        (void)))
-               )
+        (begin
+          (for-each (lambda (v) (record-bound-id 'bind v v))
+                    (syntax->list #'(var ...)))
+          (quasisyntax/loc stx
+            (begin (define-values (var ...) #,(annotate #`expr empty #t module-name))
+                   #,(if (syntax-source stx)
+                         #`(begin (#,record-top-level-id '#,module-name #'var (case-lambda
+                                                                                [() var]
+                                                                                [(v) (set! var v)])) ...)
+                         #'(void))
+                   (void)))
+          )
         ]
        [(define-syntaxes (var ...) expr)
         stx]
@@ -305,9 +308,10 @@
           [var-stx (identifier? (syntax var-stx))
                    (let ([binder (and (syntax-original? expr)
                                       (srfi:member expr bound-vars module-identifier=?))])
-                     (when binder
-                       (let ([f (first binder)])
-                         (record-bound-id 'ref expr f)))
+                     (if binder
+                         (let ([f (first binder)])
+                           (record-bound-id 'ref expr f))
+                         (record-bound-id 'top-level expr expr))
                      expr)]
           
           [(lambda . clause)
