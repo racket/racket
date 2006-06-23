@@ -57,20 +57,6 @@
       (define (clean-status s)
 	(truncate (regexp-replace* #rx"\n" s " ") 200))
 
-      (define (string-map! f str)
-        (let loop ([i 0])
-          (when (< i (string-length str))
-            (string-set! str i (f (string-ref str i)))
-            (loop (add1 i)))
-          str))
-      
-      (define (newlines->spaces str)
-        (string-map! (lambda (chr)
-                       (case chr
-                         [(#\newline) #\space]
-                         [else chr]))
-                     str))
-      
       (define (index-of chr str)
         (let loop ([i 0])
           (if (< i (string-length str))
@@ -101,13 +87,9 @@
                    begin-edit-sequence
                    end-edit-sequence
                    get-canvas
-                   get-top-level-window)
+                   get-top-level-window
+                   get-tab)
           
-          (define parent #f)
-          (define debug? #f)
-          (define/public (set-parent! p)
-            (set! parent p)
-            (set! debug? (send parent debug?)))
           (define mouse-over-pos #f)
           (define bp-pen (send the-pen-list find-or-create-pen "black" 1 'solid))
           (define bp-brush (send the-brush-list find-or-create-brush "red" 'solid))
@@ -128,7 +110,7 @@
           
           (define/augment (on-delete start len)
             (begin-edit-sequence)
-            (let ([breakpoints (if parent (send parent get-breakpoints) (make-hash-table))]
+            (let ([breakpoints (send (get-tab) get-breakpoints)]
                   [shifts empty])
               (hash-table-for-each
                breakpoints
@@ -149,13 +131,13 @@
             (inner (void) on-delete start len))
           (define/augment (after-delete start len)
             (inner (void) after-delete start len)
-            (when (and parent debug?)
-              (send parent hide-debug))
+            (when (send (get-tab) debug?)
+              (send (get-tab) hide-debug))
             (end-edit-sequence))
           
           (define/augment (on-insert start len)
             (begin-edit-sequence)
-            (let ([breakpoints (if parent (send parent get-breakpoints) (make-hash-table))]
+            (let ([breakpoints (send (get-tab) get-breakpoints)]
                   [shifts empty])
               (hash-table-for-each
                breakpoints
@@ -168,8 +150,8 @@
             (inner (void) on-insert start len))
           (define/augment (after-insert start len)
             (inner (void) after-insert start len)
-            (when (and parent debug?)
-              (send parent hide-debug))
+            (when (send (get-tab) debug?)
+              (send (get-tab) hide-debug))
             (end-edit-sequence))
 
           (define/private (get-pos/text event)
@@ -214,13 +196,11 @@
                 (values xl yl xr yr))))
 
 	  (define/private (render v)
-	    (if parent
-		(send parent render v)
-		(printf "~e" v)))
+            (send (get-tab) render v))
           
           (define/override (on-event event)
-            (if (and parent debug?)
-                (let ([breakpoints (send parent get-breakpoints)])
+            (if (send (get-tab) debug?)
+                (let ([breakpoints (send (get-tab) get-breakpoints)])
                   (cond
                     [(send event leaving?)
                      (when mouse-over-pos
@@ -245,13 +225,13 @@
                              [mouse-over-pos
                               (set! mouse-over-pos #f)
                               (invalidate-bitmap-cache)])
-                           (let* ([frames (send parent get-stack-frames)]
-                                  [pos-vec (send parent get-pos-vec)]
+                           (let* ([frames (send (get-tab) get-stack-frames)]
+                                  [pos-vec (send (get-tab) get-pos-vec)]
                                   [id (vector-ref pos-vec pos)]
                                 #;
                                   [_ (printf "frames = ~a~npos-vec = ~a~nid = ~a~n"
                                              frames pos-vec id)])
-                             (send parent
+                             (send (get-tab)
                                    set-mouse-over-msg
                                    (cond
                                      [(and id frames
@@ -268,7 +248,7 @@
                                                                                  #f
                                                                                  (lambda () (k #f))
                                                                                  (send
-                                                                                  (send parent get-interactions-text)
+                                                                                  (send (get-tab) get-ints)
                                                                                   get-user-namespace))))))]
                                                     [val (mark-binding-value
                                                           binding)])
@@ -291,9 +271,9 @@
                                     (lambda (item evt)
                                       (hash-table-put! breakpoints pos (not break-status))
                                       (invalidate-bitmap-cache)))
-                                  (let ([pc (send parent get-pc)])
+                                  (let ([pc (send (get-tab) get-pc)])
                                     (if (and pc (= pos pc))
-                                        (let ([stat (send parent get-break-status)]
+                                        (let ([stat (send (get-tab) get-break-status)]
                                               [f (get-top-level-window)])
                                           (when (cons? stat)
                                             (send (make-object menu-item%
@@ -314,7 +294,7 @@
                                                 (let ([tmp (get-text-from-user "Return value" #f)])
                                                   (when tmp
                                                     (let/ec k
-                                                      (send parent set-break-status
+                                                      (send (get-tab) set-break-status
                                                             (cons 'exit-break
                                                                   (call-with-values
                                                                       (lambda ()
@@ -329,14 +309,14 @@
                                              breakpoints pos
                                              (lambda () (hash-table-put! breakpoints pos #f) #t))
                                             (invalidate-bitmap-cache)
-                                            (when (send parent get-stack-frames)
-                                              (send parent resume))))))
+                                            (when (send (get-tab) get-stack-frames)
+                                              (send (get-tab) resume))))))
                                   (send (get-canvas) popup-menu menu
                                         (+ 1 (inexact->exact (floor (send event get-x))))
                                         (+ 1 (inexact->exact (floor (send event get-y))))))]
                                [(invalid)
-                                (let* ([frames (send parent get-stack-frames)]
-                                       [pos-vec (send parent get-pos-vec)]
+                                (let* ([frames (send (get-tab) get-stack-frames)]
+                                       [pos-vec (send (get-tab) get-pos-vec)]
                                        [id (vector-ref pos-vec pos)]
                                        #;
                                        [_ (printf "frames = ~a~npos-vec = ~a~nid = ~a~n"
@@ -348,9 +328,9 @@
                                                     [binding (lookup-first-binding
                                                               (lambda (id2) (module-identifier=? id id2))
                                                               frames (lambda () (k #f)))]
-                                                        [val (mark-binding-value
-                                                              binding)]
-                                                        [menu (make-object popup-menu% #f)])
+                                                    [val (mark-binding-value
+                                                          binding)]
+                                                    [menu (make-object popup-menu% #f)])
                                                (send (make-object menu-item%
                                                        (clean-status
                                                         (format "~a = ~a" id-sym val))
@@ -378,8 +358,8 @@
           
           (define/override (on-paint before dc left top right bottom dx dy draw-caret)
             (super on-paint before dc left top right bottom dx dy draw-caret)
-            (when (and parent debug? (not before))
-              (let ([breakpoints (send parent get-breakpoints)])
+            (when (and (send (get-tab) debug?) (not before))
+              (let ([breakpoints (send (get-tab) get-breakpoints)])
                 (hash-table-for-each
                  breakpoints
                  (lambda (pos enabled?)
@@ -404,13 +384,13 @@
                                  (+ yl dy 2))
                          (send dc set-pen op)
                          (send dc set-brush ob)))))))
-              (let ([pos (send parent get-pc)])
+              (let ([pos (send (get-tab) get-pc)])
                 (when pos
                   (let*-values ([(xl yl xr yr) (find-char-box this (sub1 pos) pos)]
                                 [(ym) (average yl yr)])
                     (let ([op (send dc get-pen)]
                           [ob (send dc get-brush)])
-                      (case (send parent get-break-status)
+                      (case (send (get-tab) get-break-status)
                         [(error) (send dc set-pen pc-err-pen)
                                  (send dc set-brush pc-err-brush)]
                         [(break) (send dc set-pen pc-brk-pen)
@@ -420,7 +400,7 @@
                     (drscheme:arrow:draw-arrow dc xl ym xr ym dx dy))
                   #;
                   (let loop ([end-pos pos]
-                             [marks (send parent get-stack-frames)])
+                             [marks (send (get-tab) get-stack-frames)])
                     (when (cons? marks)
                       (let*-values ([(start-pos) (syntax-position (mark-source (first marks)))]
                                     [(xl0 yl0 xr0 yr0) (find-char-box this (sub1 start-pos) start-pos)]
@@ -431,7 +411,7 @@
                                     [(ym) (average yl yr)])
                         (let ([op (send dc get-pen)]
                               [ob (send dc get-brush)])
-                          (case (send parent get-break-status)
+                          (case (send (get-tab) get-break-status)
                             [(error) (send dc set-pen pc-err-pen)
                                      (send dc set-brush pc-err-brush)]
                             [(break) (send dc set-pen pc-brk-pen)
@@ -449,14 +429,15 @@
         (class super%
           
           (inherit run-in-evaluation-thread
-                   display-results)
-          
-          (define parent #f)
-          (define/public (set-parent! p)
-            (set! parent p))
+                   display-results
+                   #;get-tab)
           
           (super-instantiate ())
           
+	  (define tab #f)
+	  (define/private (get-tab) tab)
+	  (define/public (set-tab t) (set! tab t))
+
           ;; make-debug-eval-handler : (sexp -> value) -> sexp -> value
           ;; adds debugging information to `sexp' and calls `oe'
           (define/private (make-debug-eval-handler oe break? break-before break-after)
@@ -464,10 +445,9 @@
               (if (or (compiled-expression? (if (syntax? orig-exp)
                                                 (syntax-e orig-exp)
                                                 orig-exp))
-                      (not parent)
                       (not (syntax-source orig-exp))
                       (not (eq? (syntax-source orig-exp)
-                                (send parent get-definitions-text))))
+                                (send (get-tab) get-defs))))
                   (oe orig-exp)
                   (let loop ([exp (if (syntax? orig-exp)
                                       orig-exp
@@ -493,8 +473,8 @@
                             top-e
                             (lambda (fn m) #f) ; TODO: multiple file support
                             (lambda (stx)
-                              (let*-values ([(breakpoints) (send parent get-breakpoints)]
-                                            [(pos-vec) (send parent get-pos-vec)]
+                              (let*-values ([(breakpoints) (send (get-tab) get-breakpoints)]
+                                            [(pos-vec) (send (get-tab) get-pos-vec)]
                                             [(annotated break-posns)
                                              (annotate-for-single-stepping
                                               (expand-syntax top-e)
@@ -525,8 +505,8 @@
           
           (define/override (reset-console)
             (super reset-console)
-            (when (and parent (send parent debug?))
-              (let ([breakpoints (send parent get-breakpoints)])
+            (when (and (get-tab) (send (get-tab) debug?))
+              (let ([breakpoints (send (get-tab) get-breakpoints)])
                 (run-in-evaluation-thread
                  (lambda ()
                    ;(print-struct #t)
@@ -537,7 +517,7 @@
                       (lambda (msg exn)
                         (err-hndlr msg exn)
                         (if (and (eq? self (current-thread)) (exn:fail? exn))
-                            (send parent suspend oeh
+                            (send (get-tab) suspend oeh
                                   (continuation-mark-set->list (exn-continuation-marks exn) debug-key)
                                   'error)))) ; this breaks the buttons because it looks like we can resume
                      (current-eval
@@ -552,36 +532,32 @@
                        ; break-before
                        (lambda (top-mark ccm)
                          (let* ([debug-marks (continuation-mark-set->list ccm debug-key)])
-                           (send parent suspend oeh (cons top-mark debug-marks) 'entry-break)))
+                           (send (get-tab) suspend oeh (cons top-mark debug-marks) 'entry-break)))
                        ; break-after
                        (case-lambda
                          [(top-mark ccm val)
                           (let* ([debug-marks (continuation-mark-set->list ccm debug-key)])
-                            (car (send parent suspend oeh (cons top-mark debug-marks) (list 'exit-break val))))]
+                            (car (send (get-tab) suspend oeh (cons top-mark debug-marks) (list 'exit-break val))))]
                          [(top-mark ccm . vals) 
                           (let* ([debug-marks (continuation-mark-set->list ccm debug-key)])
                             (apply values
-				   (send parent suspend oeh (cons top-mark debug-marks) (cons 'exit-break vals))))])))
+				   (send (get-tab) suspend oeh (cons top-mark debug-marks) (cons 'exit-break vals))))])))
                      (current-exception-handler
                       (lambda (exn)
-                        (if (and (exn:break? exn) (send parent suspend-on-break?))
+                        (if (and (exn:break? exn) (send (get-tab) suspend-on-break?))
                             (let ([marks (exn-continuation-marks exn)]
                                   [cont (exn:break-continuation exn)])
-                              (send parent suspend oeh (continuation-mark-set->list marks debug-key) 'break)
+                              (send (get-tab) suspend oeh (continuation-mark-set->list marks debug-key) 'break)
                               (cont))
                             (oeh exn))))))))))))
       
-      (define (debug-unit-frame-mixin super%)
+      (define (debug-tab-mixin super%)
         (class super%
           
-          (inherit get-button-panel
-                   get-definitions-text
-                   get-interactions-text
-                   get-menu-bar
-                   get-current-tab
-                   get-top-level-window
-		   get-eventspace)
-          
+          (inherit get-defs
+                   get-ints
+                   get-frame)
+
           (define breakpoints (make-hash-table))
           (hash-table-put! breakpoints -1 #f)
           (define suspend-sema (make-semaphore 1))
@@ -589,24 +565,20 @@
           (define in-user-ch (make-channel))
           (define want-suspend-on-break? #f)
           (define want-debug? #f)
-          (define/public (debug?)
-            want-debug?)
+          (define/public (debug?) want-debug?)
           (define stack-frames #f)
 	  (define current-language-settings #f)
           (define pos-vec (make-vector 1))
-          (define/public (suspend-on-break?)
-            want-suspend-on-break?)
-          (define/public (get-stack-frames)
-            stack-frames)
-          (define/public (get-pos-vec)
-            pos-vec)
-          (define/public (get-breakpoints)
-            breakpoints)
+          (define/public suspend-on-break?
+            (case-lambda
+              [() want-suspend-on-break?]
+              [(v) (set! want-suspend-on-break? v)]))
+          (define/public (get-stack-frames) stack-frames)
+          (define/public (get-pos-vec) pos-vec)
+          (define/public (get-breakpoints) breakpoints)
           (define break-status #f)
-          (define/public (get-break-status)
-            break-status)
-          (define/public (set-break-status stat)
-            (set! break-status stat))
+          (define/public (get-break-status) break-status)
+          (define/public (set-break-status stat) (set! break-status stat))
           (define control-panel #f)
           (define/public (resume)
 	    (let ([v break-status])
@@ -615,8 +587,7 @@
 					 (cdr v)
 					 #f))))
           (define/public (set-mouse-over-msg msg)
-            (when (not (string=? msg (send mouse-over-message get-label)))
-              (send mouse-over-message set-label msg)))
+            (send (get-frame) set-mouse-over-msg msg))
           
           (define/public (get-pc)
             (if (cons? stack-frames)
@@ -644,39 +615,39 @@
 					  (channel-put result-ch (get-output-string s)))))
 	      (channel-get result-ch)))
           
-	  (define/private (suspend-gui frames status)
+	  (define/public (suspend-gui frames status)
 	    (set! want-suspend-on-break? #f)
 	    (hash-table-put! breakpoints -1 #f)
-	    (send pause-button enable #f)
-	    (send step-button enable #t)
-	    (send resume-button enable #t)
+	    (send (send (get-frame) get-pause-button) enable #f)
+	    (send (send (get-frame) get-step-button) enable #t)
+	    (send (send (get-frame) get-resume-button) enable #t)
 	    ;;(fprintf (current-error-port) "break: ~a~n" (map expose-mark frames))
 	    ;;(printf "status = ~a~n" status)
 	    (set! stack-frames frames)
 	    (set! break-status status)
 	    (when (cons? status)
 	      (let ([expr (mark-source (first frames))])
-		(send status-message set-label
+		(send (send (get-frame) get-status-message) set-label
 		      (clean-status
 		       (format "~a ==> ~a"
 			       (trim-expr-str
-				(send (get-definitions-text) get-text
+				(send (get-defs) get-text
 				      (sub1 (syntax-position expr))
 				      (+ -1 (syntax-position expr) (syntax-span expr))))
 			       (if (= 2 (length status))
 				   (render (cadr status))
 				   (cons 'values (map (lambda (v) (render v)) (rest status)))))))))
-	    (cond [(get-pc) => (lambda (pc) (send (get-definitions-text) scroll-to-position pc))])
-	    (send (get-definitions-text) invalidate-bitmap-cache))
+	    (cond [(get-pc) => (lambda (pc) (send (get-defs) scroll-to-position pc))])
+	    (send (get-defs) invalidate-bitmap-cache))
 
-	  (define/private (resume-gui)
+	  (define/public (resume-gui)
 	    (set! stack-frames #f)
 	    (set! break-status #f)
-	    (send pause-button enable #t)
-	    (send step-button enable #f)
-	    (send resume-button enable #f)
-	    (send status-message set-label "")
-	    (send (get-definitions-text) invalidate-bitmap-cache))
+	    (send (send (get-frame) get-pause-button) enable #t)
+	    (send (send (get-frame) get-step-button) enable #f)
+	    (send (send (get-frame) get-resume-button) enable #f)
+	    (send (send (get-frame) get-status-message) set-label "")
+	    (send (get-defs) invalidate-bitmap-cache))
 
           (define/public suspend
 	    ;; ==called from user thread==
@@ -685,12 +656,12 @@
 	      ;;  at a time
 	      (if (semaphore-try-wait? suspend-sema)
 		  (begin
-		    (parameterize ([current-eventspace (get-eventspace)])
+		    (parameterize ([current-eventspace (send (get-frame) get-eventspace)])
 		      (queue-callback (lambda () (suspend-gui frames status))))
 		    (with-handlers ([exn:break?
 				     (lambda (exn)
 				       (let ([wait-sema (make-semaphore)])
-					 (parameterize ([current-eventspace (get-eventspace)])
+					 (parameterize ([current-eventspace (send (get-frame) get-eventspace)])
 					   (queue-callback (lambda () 
 							     (resume-gui)
 							     (semaphore-post wait-sema))))
@@ -710,33 +681,54 @@
 		      (cdr status)
 		      #f))))
           
-          (define (my-execute debug?)
+          (define/public (prepare-execution debug?)
             (set! want-debug? debug?)
             (if debug?
-                (show-debug)
-                (hide-debug))
-	    (set! current-language-settings (and debug?
-						 (send (get-definitions-text) get-next-settings)))
+                (send (get-frame) show-debug)
+                (send (get-frame) hide-debug))
+	    (set! current-language-settings
+                  (and debug? (send (get-defs) get-next-settings)))
             ;(set! breakpoints (make-hash-table))
             (hash-table-put! breakpoints -1 #t)
-            (set! pos-vec (make-vector (add1 (send (get-definitions-text) last-position)) #f))
+            (set! pos-vec (make-vector (add1 (send (get-defs) last-position)) #f))
             (set! resume-ch (make-channel))
             (set! want-suspend-on-break? #f)
             (set! stack-frames #f)
-            (send (get-definitions-text) set-parent! this)
-            (send (get-interactions-text) set-parent! this)
-            (super execute-callback))
+            (send (get-ints) set-tab this))
+
+          (define/public (hide-debug)
+            (send (get-frame) hide-debug))
           
+          (define/override (enable-evaluation)
+            (send (send (get-frame) get-debug-button) enable #t)
+            (super enable-evaluation))
+          
+          (define/override (disable-evaluation)
+            (send (send (get-frame) get-debug-button) enable #f)
+            (super disable-evaluation))
+          
+          (super-new)))
+      
+      (define (debug-unit-frame-mixin super%)
+        (class super%
+          
+          (inherit get-button-panel
+                   get-definitions-text
+                   get-interactions-text
+                   get-menu-bar
+                   get-current-tab
+                   get-top-level-window
+		   get-eventspace)
+          
+	  (define current-language-settings #f)
+          (define control-panel #f)
+          (define/public (set-mouse-over-msg msg)
+            (when (not (string=? msg (send mouse-over-message get-label)))
+              (send mouse-over-message set-label msg)))
+                    
           (define/override (execute-callback)
-            (my-execute #f))
-          
-          (define/augment (enable-evaluation)
-            (send debug-button enable #t)
-            (inner (void) enable-evaluation))
-          
-          (define/augment (disable-evaluation)
-            (send debug-button enable #f)
-            (inner (void) disable-evaluation))
+            (send (get-current-tab) prepare-execution #f)
+            (super execute-callback))
           
           (define debug-parent-panel 'uninitialized-debug-parent-panel)
           (define debug-panel 'uninitialized-debug-panel)
@@ -783,7 +775,8 @@
                 (build-path (collection-path "mztake" "icons") "icon-small.png")) this)
               (make-object vertical-pane% (get-button-panel))
               (lambda (button evt)
-                (my-execute #t))))
+                (send (get-current-tab) prepare-execution #t)
+                (super execute-callback))))
           
           (define pause-button
             (instantiate button% ()
@@ -792,10 +785,10 @@
                        (build-path (collection-path "mztake" "icons") "pause.png")) this)]
               [parent debug-panel]
               [callback (lambda (button evt)
-                          (if stack-frames
+                          (if (send (get-current-tab) get-stack-frames)
                               (bell)
                               (begin
-                                (set! want-suspend-on-break? #t)
+                                (send (get-current-tab) suspend-on-break? #t)
                                 (send (get-current-tab) break-callback)
                                 (send (get-current-tab) reset-offer-kill))))]
               [enabled #t]))
@@ -807,8 +800,8 @@
                        (build-path (collection-path "mztake" "icons") "resume.png")) this)]
               [parent debug-panel]
               [callback (lambda (button evt)
-                          (if stack-frames
-			      (resume)
+                          (if (send (get-current-tab) get-stack-frames)
+			      (send (get-current-tab) resume)
                               (bell)))]
               [enabled #f]))
           
@@ -819,13 +812,19 @@
                        (build-path (collection-path "mztake" "icons") "step.png")) this)]
               [parent debug-panel]
               [callback (lambda (btn evt)
-                          (if stack-frames
+                          (if (send (get-current-tab) get-stack-frames)
                               (begin
-                                (hash-table-put! breakpoints -1 #t)
-				(resume))
+                                (hash-table-put! (send (get-current-tab) get-breakpoints) -1 #t)
+				(send (get-current-tab) resume))
                               (bell)))]
               [enabled #f]))
 
+          (define/public (get-debug-button) debug-button)
+          (define/public (get-pause-button) pause-button)
+          (define/public (get-resume-button) resume-button)
+          (define/public (get-step-button) step-button)
+          (define/public (get-status-message) status-message)
+          
           (define mouse-over-message
             (instantiate message% ()
               [label " "]
@@ -834,6 +833,13 @@
 
 	  (define/augment (on-tab-change old new)
 	    (check-current-language-for-debugger)
+            (if (send new debug?)
+                (let ([status (send new get-break-status)])
+                  (if status
+                      (send new suspend-gui (send new get-stack-frames) status)
+                      (send new resume-gui))
+                  (show-debug))
+                (hide-debug))
 	    (inner (void) on-tab-change old new))
 
 	  (define/public (check-current-language-for-debugger)
@@ -853,4 +859,5 @@
 	  (check-current-language-for-debugger)))
       (drscheme:get/extend:extend-definitions-text debug-definitions-text-mixin)
       (drscheme:get/extend:extend-interactions-text debug-interactions-text-mixin)
-      (drscheme:get/extend:extend-unit-frame debug-unit-frame-mixin))))
+      (drscheme:get/extend:extend-unit-frame debug-unit-frame-mixin)
+      (drscheme:get/extend:extend-tab debug-tab-mixin))))
