@@ -10,7 +10,7 @@
            (lib "file.ss")
            (lib "etc.ss"))
            
-  (require "ast.ss" "display-java.ss")
+  (require "ast.ss" "display-java.ss" "parameters.ss")
   
   (provide test-info% test-display% test-tool@)
 
@@ -27,7 +27,8 @@
   #;(make-single-test string (listof testcase) (listof string) 
                       int (listof failed-check) (listof src))
   (define-struct single-test (name testcases not-tested 
-                                   num-checks failed-checks covered-exprs))
+                                   num-checks failed-checks covered-exprs
+                                   covered-methods))
   
   ;(make-failed-check src (listof (U string snip%)) (listof src))
   (define-struct failed-check (src msg covers))
@@ -44,13 +45,15 @@
       (define covered null);------------- (listof src)
       (define nearly-tested-classes null);(listof string)
       
-      (define current-class (make-single-test "" null null 0 null null))
+      (define current-class (make-single-test "" null null 0 null null null))
       (define current-testcoverage null)
       
       (define total-tests 0)
       (define failed-tests 0)
       (define total-checks 0)
       (define failed-checks 0)
+      
+      (define current-test-obj null)
         
       (define/public (add-check)
         (set-single-test-num-checks! current-class 
@@ -73,7 +76,9 @@
         (set! current-testcoverage (cons src current-testcoverage))
         (set-single-test-covered-exprs! 
          current-class 
-         (cons src (single-test-covered-exprs current-class))))
+         (cons src (single-test-covered-exprs current-class)))
+        (when (and (testcase-ext?) src)
+          (send current-test-obj testCoverage-boolean-int #f (src-pos src))))
       
       (define/public (provide-test-results)
         (values tested-classes covered nearly-tested-classes total-tests 
@@ -86,18 +91,38 @@
         (let ((objects
                (map 
                 (lambda (name/class)
-                  (set! current-class (make-single-test (car name/class) null null 0 null null))
+                  (set! current-class (make-single-test (car name/class) null null 0 null null null))
                   (let ((obj (make-object (cadr name/class))))
+                    (when (testcase-ext?) (set! current-test-obj obj))
                     (with-handlers ((exn? (lambda (e) (raise e))))
                       ((current-eval)
                        #`(send #,obj #,(string->symbol (string-append (car name/class)
                                                                       "-constructor")))))
-                    (run-methods obj)
+                    (if (testcase-ext?)
+                        (run-testcases obj)
+                        (run-methods obj))
                     (set! tested-classes (cons current-class tested-classes))
+                    (when (testcase-ext?)
+                      (set-single-test-covered-methods! current-class (send obj testCoverage-boolean-int #t 1)))
                     (list (car name/class) obj)))
                 tests)))
           (set! nearly-tested-classes close-names)
           (map cadr objects)))
+      
+      (define/private (run-testcases object)
+        (let loop ([methods (send object testMethods)])
+          (cond
+            [(null? methods) (void)]
+            [else 
+             (set! total-tests (add1 total-tests))
+             (set! current-testcoverage null)
+             (let ((res ((cadr (car methods)))))
+               (set-single-test-testcases!
+                current-class
+                (cons (make-testcase (car (car methods)) res current-testcoverage)
+                      (single-test-testcases current-class)))
+               (unless res (set! failed-tests (add1 failed-tests))))
+             (loop (cdr methods))])))            
       
       (define/private (run-methods object)
         (let loop ([methods (reverse (interface->method-names (object-interface object)))])
@@ -224,7 +249,9 @@
               (make-covered-button covered editor #f)
               (send editor insert "\n"))
             
-            (send editor insert "Tested the following Example classes:\n")
+            (if (testcase-ext?)
+                (send editor insert "Run the following tests:\n")
+                (send editor insert "Tested the following Example classes:\n"))
             (for-each
              (lambda (test-info)
                (send editor insert "\n")
@@ -251,6 +278,29 @@
                                  (make-covered-button (testcase-covers test) editor #f))
                                (next-line))
                              (reverse (single-test-testcases test-info)))))
+               (unless (null? (single-test-covered-methods test-info))
+                 (next-line)
+                 (send editor insert "Tested the following classes:")
+                 (next-line)
+                 (for-each (lambda (class)
+                             (let ((num-methods (length (car (cdr class))))
+                                   (uncovered-methods (filter (lambda (m) (not (car (cdr m)))) (car (cdr class)))))
+                               (send editor insert (format "class ~a with ~a of its methods covered."
+                                                           (car class)
+                                                           (cond
+                                                             ((null? uncovered-methods) "all")
+                                                             ((= (length uncovered-methods) num-methods) "none")
+                                                             (else
+                                                              (- num-methods (length uncovered-methods))))))
+                               (next-line)
+                               (let loop ((methods uncovered-methods))
+                                 (unless (null? methods)
+                                   (send editor insert (format "Method ~a was not fully covered." 
+                                                               (car (car methods))))
+                                   (next-line)
+                                   (loop (cdr methods))))))
+                           (single-test-covered-methods test-info)))
+                                                                
                (when (> (single-test-num-checks test-info) 0)
                  (next-line)
                  (send editor insert (format "Ran ~a checks." (single-test-num-checks test-info)))

@@ -148,7 +148,6 @@
   (define (compile-ast ast level type-recs)
     (packages null)
     (check-list null)
-    (to-file #f)
     (load-lang type-recs)
     (build-info ast level type-recs #f)
     (unless (null? (check-list))

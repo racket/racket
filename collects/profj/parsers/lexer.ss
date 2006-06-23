@@ -44,7 +44,7 @@
                                     const       for        new           switch
                                     continue    goto       package       synchronized))
   
-  (define-empty-tokens ExtraKeywords (dynamic check expect within))
+  (define-empty-tokens ExtraKeywords (dynamic check expect within -> ->> ->>> test tests testcase))
   
   (define-tokens java-vals
                  (STRING_LIT CHAR_LIT INTEGER_LIT LONG_LIT FLOAT_LIT DOUBLE_LIT 
@@ -250,6 +250,10 @@
                    ((string=? l "||") (token-OR))
                    ((string=? l "|=") (token-OREQUAL))
                    (else (string->symbol l)))))
+
+     ("->" (string->symbol lexeme))
+     ("->>" (string->symbol lexeme))
+     ("->>>" (string->symbol lexeme))
      
      ;; 3.11
      ("(" (token-O_PAREN))
@@ -311,6 +315,11 @@
      ((re:or "check" "expect" "within")
       (cond
         ((test-ext?) (string->symbol lexeme))
+        (else (token-IDENTIFIER lexeme))))
+     
+     ((re:or "test" "tests" "testcase")
+      (cond
+        ((testcase-ext?) (string->symbol lexeme))
         (else (token-IDENTIFIER lexeme))))
      
      ;; 3.9
@@ -415,6 +424,13 @@
       (syn-val lexeme
                (cond
                  ((test-ext?) 'keyword)
+                 (else 'identifier))
+               #f start-pos end-pos))
+     
+     ((re:or "test" "tests ""testcase")
+      (syn-val lexeme
+               (cond
+                 ((testcase-ext?) 'keyword)
                  (else 'identifier))
                #f start-pos end-pos))
      

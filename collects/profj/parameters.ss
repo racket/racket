@@ -40,6 +40,9 @@
   ;Stores whether testing extension is on or not
   (define test-ext? (make-parameter #t))
   
+  ;Stores whether the test case extension is on or not
+  (define testcase-ext? (make-parameter #t))
+  
   ;Stores whether the test window should pop up
   (define tests? (make-parameter #t))
   

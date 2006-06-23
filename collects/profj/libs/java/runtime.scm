@@ -7,17 +7,18 @@
 (module runtime mzscheme
   
   (require (lib "class.ss")
+           (lib "list.ss")
            (lib "Object.ss" "profj" "libs" "java" "lang")
            (lib "String.ss" "profj" "libs" "java" "lang")
            (lib "Throwable.ss" "profj" "libs" "java" "lang")
            (lib "ArithmeticException.ss" "profj" "libs" "java" "lang")
            (lib "ClassCastException.ss" "profj" "libs" "java" "lang")
            (lib "NullPointerException.ss" "profj" "libs" "java" "lang")
-           (lib "parameters.ss" "profj"))
+           )
   
   (provide convert-to-string shift not-equal bitwise mod divide-dynamic divide-int 
            divide-float and or cast-primitive cast-reference instanceof-array nullError
-           check-eq? dynamic-equal? compare compare-within)
+           check-eq? dynamic-equal? compare compare-within check-catch check-mutate)
 
   (define (check-eq? obj1 obj2)
     (or (eq? obj1 obj2)
@@ -165,19 +166,19 @@
         (if (send val check-ref-type type dim)
             val
             (raise-class-cast
-             (format "Cast to ~a~a failed for ~a" name (make-brackets dim) (send (convert-to-string val) get-mzscheme-string))))
+             (format "Cast to ~a~a failed for ~a." name (make-brackets dim) (send (convert-to-string val) get-mzscheme-string))))
         (cond
           ((and (eq? Object type) (is-a? val ObjectI)) val)
           ((and (is-a? val convert-assert-Object) (is-a? val ca-type)) val)
           ((is-a? val convert-assert-Object)
            (or (send val down-cast type ca-type) 
-               (raise-class-cast (format "Cast to ~a failed for ~a" name (send val my-name)))))
+               (raise-class-cast (format "Cast to ~a failed for ~a." name (send val my-name)))))
           ((and (is-a? val guard-convert-Object) (is-a? val gc-type)) val)
           ((is-a? val guard-convert-Object)
            (or (send val down-cast type gc-type)
-               (raise-class-cast (format "Cast to ~a failed for ~a" name (send val my-name)))))
+               (raise-class-cast (format "Cast to ~a failed for ~a." name (send val my-name)))))
           ((is-a? val type) val)
-          (else (raise-class-cast (format "Cast to ~a failed for ~a" name (send val my-name)))))))
+          (else (raise-class-cast (format "Cast to ~a failed for ~a." name (send val my-name)))))))
   
   ;instanceof-array: bool val (U class sym) int -> bool
   (define (instanceof-array prim? val type dim)
@@ -198,13 +199,15 @@
                               (send exn NullPointerException-constructor-java.lang.String msg))
                             (current-continuation-marks))))
   
+  (define in-check-mutate? (make-parameter #f))
+  (define stored-checks (make-parameter null))
+  
   ;compare: val val (list symbol string ...) string (U #f object)-> boolean
   (define (compare test act info src test-obj)
     (compare-within test act 0.0 info src test-obj #f))
   
-  ;compare-within: val val val (list symbol string) (U #f object) . boolean -> boolean
+  ;compare-within: (-> val) val val (list symbol string) (U #f object) . boolean -> boolean
   (define (compare-within test act range info src test-obj . within?)
-    (when test-obj (send test-obj add-check))
     (letrec ((java-equal?
               (lambda (v1 v2 visited-v1 visited-v2)
                 (or (eq? v1 v2)
@@ -239,42 +242,108 @@
                                                    (map (lambda (v) (cons v2 visited-v2)) v2-fields)))))))))
                       ((and (not (object? v1)) (not (object? v2))) (equal? v1 v2))
                       (else #f))))))
-      (let ((res (java-equal? test act null null)))
-        (unless res
-          (when test-obj
-            (send test-obj
-                  check-failed
-                  (append '("check expected ")
-                          (list (case (car info)
-                                  ((field) 
-                                   (format "the ~a field of class ~a to have value "
-                                           (caddr info) (cadr info)))
-                                  ((static-field) 
-                                   (format "the class field ~a of ~a to have value "
-                                           (caddr info) (cadr info)))
-                                  ((var) 
-                                   (format "the local variable ~a to have value" (cadr info)))
-                                  ((alloc) 
-                                   (format "the instantiation of class ~a with values with types ~a to produce a "
-                                           (cadr info)
-                                           (caddr info)
-                                           ))
-                                  ((call) (format "the call to method ~a from ~a, with values with types ~a, to produce the value "
-                                                  (caddr info) (cadr info) (cadddr info)))
-                                  ((array) "the array value ")
-                                  ((unary) (format "the unary operation ~a to produce " (cadr info)))
-                                  ((value) "value ")))
-                          (if (null? within?)
-                              (list "within " (send test-obj format-value range)
-                                    " of " (send test-obj format-value act))
-                              (list (send test-obj format-value act)))
-                          '(", instead found ")
-                          (list (send test-obj format-value test)))
-                  src)))
+      (set! test (test))
+      (let ([res (java-equal? test act null null)]
+            [values-list (append (list act test) (if (null? within?) (list range) null))])
+        (if (in-check-mutate?)
+            (stored-checks (cons (list res 'check-expect info values-list src) (stored-checks)))
+            (report-check-result res 'check-expect info values-list src test-obj))
         res)))
-                            
+
+  ;check-catch: (-> val) string class (list string) src object -> boolean
+  (define (check-catch test name thrown info src test-obj)
+    (let* ([result (with-handlers ([(lambda (e) (and (exn? e)
+                                                     ((exception-is-a? thrown) e)))
+                                    (lambda (e) #t)]
+                                   [(lambda (e) (and (exn? e)
+                                                     ((exception-is-a? Throwable) e)))
+                                    (handle-exception
+                                     (lambda (e) (send e my-name)))])
+                     (test)
+                     #f)]
+           [return (and (boolean? result) result)]
+           [values-list (cons name (if (boolean? result) null (list result)))])
+      (if (in-check-mutate?)
+          (stored-checks (cons (list return 'check-catch info values-list src) (stored-checks)))
+          (report-check-result return 'check-catch info values-list src test-obj))
+      return))
+
+  ;check-mutate: (-> val) (-> boolean) (list string) src object -> boolean
+  (define (check-mutate mutatee check info src test-obj)
+    (mutatee)
+    (parameterize ([in-check-mutate? #t] [stored-checks null])
+      (let ([result-value (check)]
+            [mutate-msg-prefix (string-append "check following the "
+                                              (construct-info-msg info)
+                                              " expected ")])
+        (when test-obj
+          (let report-results ([checks (stored-checks)])
+            (unless (null? checks)
+              (let ([current-check (first checks)])
+                (send test-obj add-check)
+                (unless (first current-check)
+                  (send test-obj check-failed
+                        (compose-message test-obj 
+                                         (second current-check) 
+                                         (third current-check)
+                                         (fourth current-check)
+                                         mutate-msg-prefix)
+                        (fifth current-check))))
+              (report-results (cdr checks)))))
+        result-value)))
   
-   ;array->list: java-array -> (list 'a)
+  (define (report-check-result res check-kind info values src test-obj)
+    (when test-obj 
+      (send test-obj add-check)
+      (unless res 
+        (send test-obj
+              check-failed
+              (compose-message test-obj check-kind info values #f)
+              src))))
+
+  (define (compose-message test-obj check-kind info values mutate-message)
+    (let ((test-format (construct-info-msg info))           
+          (formatted-values (map (lambda (v) (send test-obj format-value v)) values))
+          (expected-format
+           (case check-kind
+             ((check-expect) "to produce ")
+             ((check-catch) "to throw an instance of "))))      
+      (append (list (if mutate-message mutate-message "check expected ")
+                    test-format
+                    expected-format
+                    (first formatted-values))
+              (case check-kind
+                ((check-expect)
+                 (if (= (length formatted-values) 3)
+                     (list ", within " (third formatted-values) ", instead found " (second formatted-values))
+                     (list ", instead found" (second formatted-values))))
+                ((check-catch)
+                 (if (= (length formatted-values) 1)
+                     (list ", instead no exceptions occured")
+                     (list ", instead an instance of " (second formatted-values) " was thrown"))))
+              (list "."))))
+
+  ;construct-info-msg (list symbol string ...) -> string
+  (define (construct-info-msg info)
+    (case (first info)
+      ((field) 
+       (format "the ~a field of class ~a " (third info) (second info)))
+      ((static-field)
+       (format "the class field ~a of ~a " (third info) (second info)))
+      ((var)
+       (format "the local variable ~a " (second info)))
+      ((alloc)
+       (format "the instantiation of ~a, using values with types ~a, "
+               (second info) (third info)))
+      ((call) 
+       (format "the call to method ~a of ~a, using values with types ~a, "
+               (third info) (second info) (fourth info)))
+      ((array) "the array value ")
+      ((unary) (format "the unary operation ~a " (second info)))
+      ((assignment) (format "the assignment of ~a" (construct-info-msg (cdr info))))
+      ((value) "value ")))
+  
+  ;array->list: java-array -> (list 'a)
   (define (array->list v)
     (letrec ((len (send v length))
              (build-up

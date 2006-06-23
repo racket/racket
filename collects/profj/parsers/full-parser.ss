@@ -154,8 +154,7 @@
       (TypeDeclaration
        [(ClassDeclaration) $1]
        [(InterfaceDeclaration) $1]
-       #;[(INTERACTIONS_BOX) $1]
-       #;[(CLASS_BOX) (parse-class-box $1 (build-src 1) 'full)]
+       [(TestDeclaration) $1]
        [(TEST_SUITE) $1]
        [(EXAMPLE) $1]
        [(SEMI_COLON) #f])
@@ -434,6 +433,84 @@
       
       (AbstractMethodDeclaration
        [(MethodHeader SEMI_COLON) $1])
+      
+      ;;test extension stuff
+
+      (TestDeclaration
+       [(test IDENTIFIER TestBody) 
+        (make-test-def (make-test-header (make-id $2 (build-src 2 2))
+                                         (list (make-modifier 'public #f)) 
+                                         null null null (build-src 2) null)
+                       $3
+                       (build-src 1)
+                       (build-src 3)
+                       (file-path)
+                       'full null 'top null)]
+       [(test IDENTIFIER tests TestClasses TestBody) 
+        (make-test-def (make-test-header (make-id $2 (build-src 2 2))
+                                         (list (make-modifier 'public #f)) 
+                                         null null null (build-src 4) $4)
+                       $5 
+                       (build-src 1)
+                       (build-src 5)
+                       (file-path)
+                       'full null 'top null)]
+       [(test IDENTIFIER extends ClassType TestBody)
+        (make-test-def (make-test-header (make-id $2 (build-src 2 2))
+                                         (list (make-modifier 'public #f))
+                                         (list $4) null null (build-src 4) null)
+                       $5
+                       (build-src 1)
+                       (build-src 5)
+                       (file-path)
+                       'full null 'top null)]
+       [(test IDENTIFIER extends ClassType tests TestClasses TestBody) 
+        (make-test-def (make-test-header (make-id $2 (build-src 2 2))
+                                         (list (make-modifier 'public #f))
+                                         (list $4) null null (build-src 6) $6)
+                       $7
+                       (build-src 1)
+                       (build-src 7)
+                       (file-path)
+                       'full null 'top null)])
+      
+      (TestClasses
+       [(ClassType) (list $1)]
+       [(TestClasses COMMA ClassType) (cons $3 $1)])
+      
+      (TestBody
+       [(O_BRACE TestMemberDeclarations C_BRACE) $2])
+      
+      (TestMemberDeclarations
+       [() null]
+       [(TestMemberDeclarations TestMemberDeclaration)
+        (cond
+          ((not $2) $1)
+          ((list? $2) (append $2 $1))
+          (else (cons $2 $1)))])
+            
+      (TestMemberDeclaration
+       [(FieldDeclaration) $1]
+       [(MethodDeclaration) $1]
+       [(TestcaseDeclaration) $1]
+       [(ConstructorDeclaration) $1]
+       [(SEMI_COLON) #f])
+      
+      (TestcaseDeclaration
+       [(testcase MethodDeclarator Block) 
+        (let ([method-header (construct-method-header (list (make-modifier 'public (build-src 1)))
+                                                      null
+                                                      (make-type-spec 'boolean 0 (build-src 1))
+                                                      $2
+                                                      null)])
+          (make-test-method (method-modifiers method-header)
+                            (method-type method-header)
+                            null
+                            (method-name method-header)
+                            (method-parms method-header)
+                            null
+                            $3
+                            #f #f (build-src 3)))])
       
       ;; 19.10
       
@@ -947,12 +1024,19 @@
       (CheckExpression
        [(ConditionalExpression) $1]
        [(check ConditionalExpression expect ConditionalExpression) 
-        (make-check #f (build-src 4) $2 $4 #f (build-src 2 4))]
+        (make-check-expect #f (build-src 4) $2 $4 #f (build-src 2 4))]
        [(check ConditionalExpression expect ConditionalExpression within ConditionalExpression) 
-        (make-check #f (build-src 6) $2 $4 $6 (build-src 2 4))])
+        (make-check-expect #f (build-src 6) $2 $4 $6 (build-src 2 4))]
+       [(check ConditionalExpression catch Type)
+        (make-check-catch #f (build-src 4) $2 $4)])
+       
+      (MutateExpression
+       [(CheckExpression) $1]
+       [(CheckExpression -> CheckExpression) 
+        (make-check-mutate #f (build-src 3) $1 $3 (build-src 2 2))])
       
       (AssignmentExpression
-       [#;(ConditionalExpression) (CheckExpression) $1]
+       [#;(ConditionalExpression) #;(CheckExpression) (MutateExpression) $1]
        [(Assignment) $1])
       
       (Assignment

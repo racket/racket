@@ -16,6 +16,9 @@
   
   ;NOTE! Abstract classes are treated no differently than any class.
   
+  ;Parameters for getting to the source of other classes
+  (define classes (make-parameter null))
+  
   ;Parameters for information about each class
   (define class-name (make-parameter "interactions"))
   (define loc (make-parameter #f))
@@ -207,16 +210,16 @@
                                      (list (id-string (name-id (package-name program)))))
                              null))
            (full-defs (if (null? (packages)) (package-defs program) (append (packages) (package-defs program))))
-           (dependent-defs (find-dependent-defs full-defs type-recs))
-           (modules (map (lambda (defs)
-                           (let*-values (((ordered-defs) (order-defs defs))
-                                         ((translated-defs reqs) (translate-defs ordered-defs type-recs)))
-                             (make-compilation-unit (map (lambda (def) (id-string (def-name def))) ordered-defs)
-                                                    translated-defs
-                                                    (map def-file ordered-defs)
-                                                    reqs)))
-                         dependent-defs)))
-      modules))
+           (dependent-defs (find-dependent-defs full-defs type-recs)))
+      (classes full-defs)
+      (map (lambda (defs)
+             (let*-values (((ordered-defs) (order-defs defs))
+                           ((translated-defs reqs) (translate-defs ordered-defs type-recs)))
+               (make-compilation-unit (map (lambda (def) (id-string (def-name def))) ordered-defs)
+                                      translated-defs
+                                      (map def-file ordered-defs)
+                                      reqs)))
+           dependent-defs)))
   
   ;get-package: definition type-records -> (list string)
   (define (get-package def type-recs)
@@ -352,9 +355,13 @@
                           `(file ,(path->string (build-path (string-append (symbol->string (module-name)) ".zo")))))
                         (module-name)))
     (let* ((translated-defs (map (lambda (d)
-                                   (if (class-def? d)
-                                       (translate-class d type-recs 0)
-                                       (translate-interface d type-recs)))
+                                   (cond
+                                     ((class-def? d)
+                                      (translate-class d type-recs #f 0))
+                                     ((test-def? d)
+                                      (translate-class d type-recs #t 0))
+                                     (else
+                                      (translate-interface d type-recs))))
                                  defs))
            (group-reqs (apply append (map (lambda (d) 
                                             (map (lambda (r) (list (def-file d) r)) (def-uses d)))
@@ -476,8 +483,8 @@
                                 (build-src (name-src i))))))
          imp))
   
-  ;translate-class: class-def type-records -> (list syntax syntax)
-  (define (translate-class class type-recs depth)
+  ;translate-class: class-def type-records boolean int -> (list syntax syntax)
+  (define (translate-class class type-recs test? depth)
     ;Let's grab onto the enclosing class-specific info incase depth > 0
     (let ((old-class-name (class-name))
           (old-parent-name (parent-name))
@@ -492,7 +499,9 @@
                     ((closure-args) (def-closure-args class))
                     ((parent parent-src extends-object?)
                      (if (null? (header-extends header))
-                         (values "Object" #f #t)
+                         (if (not test?) 
+                             (values "Object" #f #t)
+                             (values "TestBase" #f #t))
                          (let-values (((p p-s) (get-parent (header-extends header))))
                            (values p p-s
                                    (class-record-object? 
@@ -532,7 +541,7 @@
                                                                   (accesses-protected methods))
                                                           overridden-methods))
                #;(dynamic-method-defs (generate-dyn-method-defs names-for-dynamic))
-               ;(p~ (printf "about to call class-record-methods : ~a ~a ~n" (class-name) (string? (class-name))))
+               #;(p~ (printf "about to call class-record-methods : ~a ~a ~n" (class-name) (string? (class-name))))
                (wrapper-classes (append (generate-wrappers (class-name)
                                                            (parent-name)
                                                            (filter
@@ -677,6 +686,71 @@
                                ,(if (null? (accesses-private methods))
                                     '(make-hash-table)
                                     (build-method-table (accesses-private methods) private-generics)))
+                             
+                             ,@(if test?
+                                   (cons
+                                    (let ((test-methods (filter test-method? (accesses-public methods))))
+                                      `(define/override (testMethods)
+                                         ,(if (null? test-methods)
+                                              '(super testMethods)
+                                              `(append (list 
+                                                        ,@(map 
+                                                           (lambda (testcase)
+                                                             `(list ,(id-string (method-name testcase))
+                                                                    (lambda ()
+                                                                      (send this ,(build-identifier 
+                                                                                   (id-string (method-name testcase)))))))
+                                                           (filter test-method? (accesses-public methods))))
+                                                       (super testMethods)))))
+                                    (if (null? (test-header-tests header))
+                                        null
+                                        (let* ((test-classes 
+                                                (map id-string
+                                                     (map name-id (test-header-tests header))))
+                                               (class-defs 
+                                                (filter (lambda (d) (member (id-string (def-name d)) test-classes))
+                                                        (classes)))
+                                               (class/methods-list
+                                                (map (lambda (d)
+                                                       (cons (id-string (def-name d))
+                                                             (filter (lambda (m)
+                                                                       (and (method? m) (method-src m))) (def-members d))))
+                                                     class-defs))
+                                               (class/lookup-funcs
+                                                (map (lambda (c)
+                                                       (let* ((m-name (lambda (m) (id-string (method-name m))))
+                                                              (m-start (lambda (m) (src-pos (method-src m))))
+                                                              (m-stop (lambda (m)
+                                                                        (+ (m-start m) (src-span (method-src m))))))                                                       
+                                                         `(let ((methods-covered ',(map (lambda (m) `(,(m-name m) #f))
+                                                                                 (cdr c)))                                                              
+                                                                (srcs ',(map (lambda (m)
+                                                                               `(,(m-name m) ,(get-srcs (method-body m))))
+                                                                             (cdr c))))
+                                                            (list ,(car c)
+                                                                  methods-covered
+                                                                  (lambda (x)
+                                                                    (cond
+                                                                      ,@(map 
+                                                                         (lambda (m)
+                                                                           `((and (< ,(m-start m) x) (< x ,(m-stop m)))
+                                                                             (let ((m-list (assq ,(m-name m) srcs)))
+                                                                               (unless (null? (car (cdr m-list)))
+                                                                                 (set-cdr! m-list (list (,remove x (car (cdr m-list)))))
+                                                                                 (when (null? (car (cdr m-list)))
+                                                                                   (set-cdr! (assq ,(m-name m) methods-covered) (list #t)))))))
+                                                                         (cdr c))))))))
+                                                     class/methods-list)))
+                                          (list `(define/override (testCoverage-boolean-int report? src)
+                                                   (let ((class/lookups (list ,@class/lookup-funcs)))
+                                                     (if report?
+                                                         (append (map (lambda (c) (list (car c) (cadr c)))
+                                                                      class/lookups)
+                                                                 (super testCoverage-boolean-int report? src))
+                                                         (begin
+                                                           (for-each (lambda (c) ((caddr c) src)) class/lookups)
+                                                           (super testCoverage-boolean-int report? src)))))))))
+                                   null)
                                                           
                              ,@(map (lambda (i) (translate-initialize (initialize-static i)
                                                                       (initialize-block i)
@@ -697,7 +771,7 @@
                                                     (append (accesses-public fields)
                                                             (accesses-package fields)
                                                             (accesses-protected fields)))
-                          ,@(map (lambda (def) (translate-class def type-recs (add1 depth)))
+                          ,@(map (lambda (def) (translate-class def type-recs #f (add1 depth)))
                                  (members-inner class-members))
                           ,@(create-static-methods (append static-method-names
                                                            (make-static-method-names 
@@ -900,7 +974,7 @@
     (cond
       ((symbol? type)
        (case type
-         ((int byte short long float double char boolean dynamic void) value)
+         ((int byte short long float double char boolean dynamic void null) value)
          ((string) (if from-dynamic?
                        `(make-java-string ,value)
                        `(send ,value get-mzscheme-string)))))
@@ -953,7 +1027,8 @@
              ((char) (check 'char?))
              ((string) (check 'string?))
              ((boolean) (check 'boolean?))
-             ((dynamic) value))))
+             ((dynamic) value)
+             ((null) value))))
         ((and (ref-type? type) (equal? string-type type))
          (assert-value value 'string from-dynamic? kind name))
         (else value))))
@@ -1190,6 +1265,90 @@
                                                            (list (id-string (name-id n)))))
                               (build-src (name-src n)))))
          extends))
+  
+  (define (get-srcs stmt) 
+  (cond
+    [(ifS? stmt)
+     (append (get-expr-srcs (ifS-cond stmt))
+             (get-srcs (ifS-then stmt))
+             (get-srcs (ifS-else stmt)))]
+    [(throw? stmt)
+     (get-expr-srcs (throw-expr stmt))]
+    [(return? stmt)
+     (get-expr-srcs (return-expr stmt))]
+    [(while? stmt)
+     (append (get-expr-srcs (while-cond stmt))
+             (get-srcs (while-loop stmt)))]
+    [(doS? stmt)
+     (append (get-srcs (doS-loop stmt))
+             (get-expr-srcs (doS-cond stmt)))]
+    [(for? stmt)
+     (get-srcs (for-loop stmt))]
+    [(try? stmt)
+     (append (get-srcs (try-body stmt))
+             (apply append
+                    (map (compose get-srcs catch-body) (try-catches stmt))))
+     ]
+    [(block? stmt)
+     (apply append (map get-srcs (block-stmts stmt)))]
+    [(statement-expression? stmt) (get-expr-srcs stmt)]
+    [else null]))
+  
+  (define (get-expr-srcs expr)
+    (cond
+      ((not (expr-src expr)) null)
+      ((bin-op? expr) (cons (src-pos (expr-src expr))
+                            (append (get-expr-srcs (bin-op-left expr))
+                                    (get-expr-srcs (bin-op-right expr)))))
+      ((access? expr)
+       (if (or (local-access? (access-name expr))
+               (not (field-access-object (access-name expr))))
+           (list (src-pos (expr-src expr)))
+           (cons (src-pos (expr-src expr))
+                 (get-expr-srcs (field-access-object (access-name expr))))))
+      ((call? expr)
+       (cons (src-pos (expr-src expr))
+             (append
+              (if (call-expr expr)
+                  (get-expr-srcs (call-expr expr))
+                  null)
+              (apply append
+                     (map get-expr-srcs (call-args expr))))))
+      ((class-alloc? expr)
+       (cons (src-pos (expr-src expr))
+             (apply append (map get-expr-srcs (class-alloc-args expr)))))
+      ((array-alloc? expr)
+       (cons (src-pos (expr-src expr))
+             (apply append
+                    (map get-expr-srcs (array-alloc-size expr)))))
+      ((cond-expression? expr)
+       (cons (src-pos (expr-src expr))
+             (append (get-expr-srcs (cond-expression-cond expr))
+                     (get-expr-srcs (cond-expression-then expr))
+                     (get-expr-srcs (cond-expression-else expr)))))
+      ((array-access? expr)
+       (cons (src-pos (expr-src expr))
+             (append (get-expr-srcs (array-access-name expr))
+                     (get-expr-srcs (array-access-index expr)))))
+      ((post-expr? expr)
+       (cons (src-pos (expr-src expr))
+             (get-expr-srcs (post-expr-expr expr))))
+      ((pre-expr? expr)
+       (cons (src-pos (expr-src expr))
+             (get-expr-srcs (pre-expr-expr expr))))
+      ((unary? expr)
+       (cons (src-pos (expr-src expr))
+             (get-expr-srcs (unary-expr expr))))
+      ((cast? expr)
+       (cons (src-pos (expr-src expr))
+             (get-expr-srcs (cast-expr expr))))
+      ((instanceof? expr)
+       (cons (src-pos (expr-src expr))
+             (get-expr-srcs (instanceof-expr expr))))
+      ((assignment? expr)
+       (cons (src-pos (expr-src expr))
+             (get-expr-srcs (assignment-right expr))))
+      (else (list (src-pos (expr-src expr))))))
   
   ;translate-interface: interface-def type-records-> (list syntax)
   (define (translate-interface iface type-recs)
@@ -1938,7 +2097,7 @@
       ((dynamic-val? type) val)
       ((symbol? type)
        (case type
-         ((int short long byte float double boolean char dynamic void) val)
+         ((int short long byte float double boolean char dynamic void null) val)
          ((string String) `(send ,val get-mzscheme-string))))
       ((ref-type? type)
        (if (equal? type string-type)
@@ -2078,10 +2237,7 @@
                                                 (expr-types expr)
                                                 (assignment-key-src expr)
                                                 (expr-src expr)))
-      ((check? expr) (translate-check (check-test expr)
-                                      (check-actual expr)
-                                      (check-range expr)
-                                      (expr-src expr)))
+      ((check? expr) (translate-check expr))
       (else
        (error 'translate-expression (format "Translate Expression given unrecognized expression ~s" expr)))))
   
@@ -2752,10 +2908,25 @@
                       (send ,name set ,index ,new-val)
                       ,new-val)
                    (build-src src))))
+
+  ;translate-check: expr -> syntax
+  (define (translate-check expr)
+    (cond
+      ((check-expect? expr) (translate-check-expect (check-expect-test expr)
+                                                    (check-expect-actual expr)
+                                                    (check-expect-range expr)
+                                                    (expr-src expr)))
+      ((check-catch? expr) (translate-check-catch (check-catch-test expr)
+                                                  (check-catch-exn expr)
+                                                  (expr-src expr)))
+      ((check-mutate? expr) (translate-check-mutate (check-mutate-mutate expr)
+                                                    (check-mutate-check expr)
+                                                    (expr-src expr)))))
+
   
   ;translate-check: expression expression (U expression #f) src -> syntax
-  (define (translate-check test actual range src)
-    (let ((t (translate-expression test))
+  (define (translate-check-expect test actual range src)
+    (let ((t (make-syntax #f `(lambda () ,(translate-expression test)) #f))
           (a (translate-expression actual))
           (r (when range (translate-expression range)))
           (extracted-info (checked-info test)))
@@ -2765,6 +2936,26 @@
                       ,extracted-info ,src
                       (namespace-variable-value 'current~test~object% #f 
                                                 (lambda () #f)))
+                   (build-src src))))
+  
+  ;translate-check-catch: expression type-spec src -> syntax
+  (define (translate-check-catch test catch src)
+    (let ((t (create-syntax #f `(lambda () ,(translate-expression test)) #f))
+          (n (get-class-name catch)))
+      (make-syntax #f
+                   `(javaRuntime:check-catch ,t ,(symbol->string (syntax-object->datum n)) ,n ,(checked-info test) ,src
+                                             (namespace-variable-value 'current~test~object% #f
+                                                                       (lambda () #f)))
+                   (build-src src))))
+  
+  ;translate-check-mutate: expression expression src -> syntax
+  (define (translate-check-mutate mutatee check src)
+    (let ((t (create-syntax #f `(lambda () ,(translate-expression mutatee)) #f))
+          (c (create-syntax #f `(lambda () ,(translate-expression check)) #f)))
+      (make-syntax #f
+                   `(javaRuntime:check-mutate ,t ,c ,(checked-info mutatee) ,src
+                                              (namespace-variable-value 'current~test~object% #f
+                                                                        (lambda () #f)))
                    (build-src src))))
   
   (require "error-messaging.ss")
@@ -2806,6 +2997,9 @@
        '(list (quote array)))
       ((unary? exp)
        '(list (quote unary) (quote (unary-op exp))))
+      ((assignment? exp)
+       `(list (quote assignment) 
+              ,@(checked-info (assignment-left exp))))
       (else '(list (quote value)))))
   
   (define (type-spec->ext-name t)

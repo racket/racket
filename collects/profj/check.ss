@@ -265,9 +265,13 @@
                  (lambda () 
                    (error 'check-defs 
                           "Internal error: Current def does not have a record entry")))))
-      (if (interface-def? def)
-          (check-interface def package-name (def-level def) type-recs)
-          (check-class def package-name (def-level def) type-recs empty-env)))
+      (cond
+        ((interface-def? def)
+         (check-interface def package-name (def-level def) type-recs))
+        ((class-def? def)
+         (check-class def package-name (def-level def) type-recs empty-env))
+        ((test-def? def)
+         (check-test def package-name (def-level def) type-recs empty-env))))
     (packages (cons def (packages)))
     (when (not (null? (check-list)))
       (check-defs (car (check-list)) level type-recs)))
@@ -336,6 +340,18 @@
       (set-def-uses! class (send type-recs get-class-reqs))
       (update-class-with-inner old-update)
       (send type-recs set-class-reqs old-reqs)))
+  
+  ;check-test: test-def (list string) symbol type-recs -> void
+  (define (check-test test package-name level type-recs env)
+    (unless (null? (test-header-tests (def-header test)))
+      (for-each (lambda (test-class)
+                  (unless (type-exists? (id-string (name-id test-class))
+                                        (map id-string (name-path test-class))
+                                        #f (name-src test-class)
+                                        level type-recs)
+                    (tested-not-found (def-name test) test-class (name-src test-class))))
+                (test-header-tests (def-header test))))
+    (check-class test package-name level type-recs env))
 
   ;check-interface: interface-def (list string) symbol type-recs -> void
   (define (check-interface iface p-name level type-recs)
@@ -399,6 +415,14 @@
                                           (or (eq? (var-type-properties type-var) final-parm)
                                               (eq? (var-type-properties type-var) final-method-var)))
                                         (environment-types env)))))
+  
+  ;tested-not-found: id name src -> void
+  (define (tested-not-found test class src)
+    (raise-error
+     'tests
+     (format "test ~a does not test class ~a, as the class cannot be found."
+             (id->ext-name test) (path->ext (name->path class)))
+     'tests src))
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;Member checking methods
@@ -1512,15 +1536,9 @@
                                           env)))
         ((check? exp)
          (set-expr-type exp
-                        (check-test-expr (check-test exp)
-                                         (check-actual exp)
-                                         (check-range exp)
-                                         check-sub-expr
-                                         env
-                                         level
-                                         (check-ta-src exp)
-                                         (expr-src exp)
-                                         type-recs)))
+                        (check-test-exprs exp
+                                          check-sub-expr
+                                          env level type-recs)))
          )))
 
   ;;check-bin-op: symbol exp exp (exp env -> type/env) env src-loc symbol type-records -> type/env
@@ -2676,8 +2694,34 @@
     (and (special-name? expr)
          (equal? "this" (special-name-name expr))))
   
+  ;check-test-exprs: exp (exp env -> type/env) env symbol type-records -> type/env
+  (define (check-test-exprs exp check-sub-expr env level type-recs)
+    (cond
+      ((check-expect? exp)
+       (check-test-expect (check-expect-test exp)
+                          (check-expect-actual exp)
+                          (check-expect-range exp)
+                          check-sub-expr
+                          env
+                          level
+                          (check-expect-ta-src exp)
+                          (expr-src exp)
+                          type-recs))
+      ((check-catch? exp)
+       (check-test-catch (check-sub-expr (check-catch-test exp) env)
+                         (check-catch-exn exp)
+                         (expr-src exp)
+                         type-recs))
+      ((check-mutate? exp)
+       (check-test-mutate (check-mutate-mutate exp)
+                          (check-mutate-check exp)
+                          check-sub-expr
+                          env
+                          (expr-src exp)
+                          type-recs))))
+  
   ;check-test-expr: exp exp (U #f exp) (exp env -> type/env) env symbol src src type-records-> type/env
-  (define (check-test-expr test actual range check-e env level ta-src src type-recs)
+  (define (check-test-expect test actual range check-e env level ta-src src type-recs)
     (let* ((test-te (check-e test env))
            (test-t (type/env-t test-te))
            (actual-te (check-e actual (type/env-e test-te)))
@@ -2728,7 +2772,30 @@
                            level
                            test-t actual-t ta-src)))))
   
+  ;check-test-catch: type/env type-spec src type-records -> type/env
+  (define (check-test-catch test-type type src type-recs)
+    (let ((catch-type (type-spec-to-type type #f 'full type-recs)))
+      (unless (is-eq-subclass? catch-type throw-type type-recs)
+        (check-catch-error catch-type (type-spec-src type)))
+      (when (reference-type? catch-type)
+        (send type-recs add-req (make-req (ref-type-class/iface catch-type) (ref-type-path catch-type))))
+      (make-type/env 'boolean (type/env-e test-type))))
+      
+  ;check-test-mutate: exp exp (exp env -> type/env) env src type-records -> type/env
+  (define (check-test-mutate mutatee check check-sub-expr env src type-recs)
+    (unless (or (call? mutatee)
+                (assignment? mutatee)
+                (class-alloc? mutatee)
+                (post-expr? mutatee)
+                (pre-expr? mutatee))
+      (check-mutate-kind-error (expr-src mutatee)))
+    (let* ((mutatee-type (check-sub-expr mutatee env))
+           (checker-type (check-sub-expr check (type/env-e mutatee-type))))
+      (unless (eq? 'boolean (type/env-t checker-type))
+        (check-mutate-check-error (type/env-t checker-type) (expr-src check)))
+      (make-type/env 'boolean (type/env-e checker-type))))
   
+    
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;Expression Errors
 
@@ -3369,8 +3436,8 @@
   ;;Assignment errors
   ;illegal-assignment: src -> void
   (define (illegal-assignment src)
-    (raise-error '= "Assignment is only allowed in the constructor" '= src))
-
+    (raise-error '= "Assignment is only allowed in the constructor." '= src))
+  
   ;ctor-illegal-assignment: id src -> void
   (define (ctor-illegal-assignment name src)
     (raise-error '= 
@@ -3470,6 +3537,29 @@
                    ))))
      'check ta-src
      ))
+
+  ;check-catch-error: type src -> void
+  (define (check-catch-error name src)
+    (raise-error
+     'check
+     (format "check catch expects a subtype of Throwable to catch, found ~a, which is not allowed."
+             (type->ext-name name))
+     'catch src))     
+  
+  ;check-mutate-kind-error: src -> void
+  (define (check-mutate-kind-error src)
+    (raise-error
+     '->
+     "The preceeding expression in a mutation test must be allowable as a statement. This expression is not."
+     '-> src))
+  
+  ;check-mutate-check-error: type src -> void
+  (define (check-mutate-check-error type src)
+    (raise-error
+     '->
+     (format "The expression following -> in a mutation test must return a boolean; found expresstion returning ~a."
+             (type->ext-name type))
+     '-> src))
 
   
   (define check-location (make-parameter #f))

@@ -9,7 +9,7 @@
    "ast.ss")
   
   (provide (all-defined-except number-assign-conversions remove-dups meth-member?
-                               contained-in? consolidate-lists subset?
+                               contained-in? consolidate-lists subset? depth conversion-steps
                                generate-require-spec))
       
   ;; symbol-type = 'null | 'string | 'boolean | 'char | 'byte | 'short | 'int
@@ -551,6 +551,11 @@
           (hash-table-for-each (hash-table-get class-environment execution-loc)
                                (lambda (k v) (add-to-env k v 'interactions)))
           (set! execution-loc #f)))
+      
+      (define test-classes null)
+      (define/public (add-test-class name) 
+        (set! test-classes (cons name test-classes)))
+      (define/public (get-test-classes) test-classes)
       
       (super-instantiate ())))
   

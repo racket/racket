@@ -582,9 +582,9 @@
       (CheckExpression
        [(ConditionalOrExpression) $1]
        [(check ConditionalOrExpression expect ConditionalOrExpression) 
-        (make-check #f (build-src 4) $2 $4 #f (build-src 2 4))]
+        (make-check-expect #f (build-src 4) $2 $4 #f (build-src 2 4))]
        [(check ConditionalOrExpression expect ConditionalOrExpression within ConditionalOrExpression) 
-        (make-check #f (build-src 6) $2 $4 $6 (build-src 2 4))])
+        (make-check-expect #f (build-src 6) $2 $4 $6 (build-src 2 4))])
       
       #;(ConditionalExpression
        [(ConditionalOrExpression) $1])

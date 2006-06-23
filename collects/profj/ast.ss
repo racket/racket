@@ -45,11 +45,17 @@
   ;;(make-interface-def header (list member) src src string symbol (list req) symbol)
   (p-define-struct (interface-def def) ())
   
+  ;(make-test-def test-header (list member) src src string symbol (list req) symbol)
+  (p-define-struct (test-def def) ())
+  
   ;;(make-req string (list string))
   (p-define-struct req (class path))
   
   ;;(make-header id (list modifier) (list name) (list name) (list gj-info) src)
   (p-define-struct header (id modifiers extends implements type-parms src))
+  
+  ;;(make-test-header id (list modifier) (list name) (list name) (list gj-info) src (list name))
+  (p-define-struct (test-header header) (tests))
   
   ;;(make-modifier symbol src)
   (p-define-struct modifier (kind src))
@@ -89,6 +95,9 @@
   
   ;;(make-method (list modifier) type-spec null id (list var-decl) (list name) Statement bool method-record src)
   (p-define-struct method (modifiers type type-parms name parms throws body all-tail? rec src))
+
+  ;;(make-test-method (list modifier) type-spec null id (list var-decl) (list name) Statement bool method-record src)
+  (p-define-struct (test-method method) ())
   
   ;;(make-initialize bool block src)
   (p-define-struct initialize (static block src))
@@ -282,8 +291,16 @@
   (p-define-struct (assignment expr) (left op right key-src))
   
   ;Op -> = *= /= %= += -= <<= >>= >>>= &= ^= or=  
- 
-  ;(make-check (U #f type) src Expression Expression (U #f Expression) src)
-  (p-define-struct (check expr) (test actual range ta-src))
+
+  (p-define-struct (check expr) ())
+  
+  ;(make-check-expect (U #f type) src Expression Expression (U #f Expression) src)
+  (p-define-struct (check-expect check) (test actual range ta-src))
+  
+  ;(make-check-catch (U #f type) src Expression type-spec)
+  (p-define-struct (check-catch check) (test exn))
+  
+  ;(make-check-mutate (U #f type) src Expression Expression src)
+  (p-define-struct (check-mutate check) (mutate check op-src))
   
 )

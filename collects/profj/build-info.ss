@@ -74,10 +74,14 @@
                               (list (id-string (name-id (package-name prog)))))
                       null))
            (lang-pack `("java" "lang"))
+           (test-pack `("java" "tester"))
            (lang (filter (lambda (class)
                            (not (forbidden-lang-class? class level)))                  
                          (send type-recs get-package-contents lang-pack 
                                (lambda () (error 'type-recs "Internal error: Type record not set with lang")))))
+           (tester (when (testcase-ext?)
+                     (send type-recs get-package-contents test-pack
+                           (lambda () null))))
            (defs (let loop ((cur-defs (package-defs prog)))
                    (cond
                      ((null? cur-defs) null)
@@ -88,7 +92,7 @@
                       (loop (cdr cur-defs))))))
            (current-loc (cond
                           ((not (null? defs)) (def-file (car defs)))
-                          ((not (null? (package-imports prog))) 
+                          ((not (null? (package-imports prog)))
                            (import-file (car (package-imports prog)))))))
       (set-package-defs! prog defs)
 
@@ -96,6 +100,10 @@
       (for-each (lambda (class) (send type-recs add-to-env class lang-pack current-loc)) lang)
       (for-each (lambda (class) (send type-recs add-class-req (cons class lang-pack) #f current-loc)) lang)
       (send type-recs add-class-req (list 'array) #f current-loc)
+      
+      {when (testcase-ext?)
+        (for-each (lambda (class) (send type-recs add-to-env class test-pack current-loc)) tester)
+        (for-each (lambda (class) (send type-recs add-class-req (cons class test-pack) #f current-loc)) tester)}
       
       ;Set location for type error messages
       (build-info-location current-loc)      
@@ -402,34 +410,48 @@
   ;load-lang: type-records -> void (adds lang to type-recs)
   (define (load-lang type-recs)
     (let* ((lang `("java" "lang"))
-           (dir (find-directory lang (lambda () (error 'load-lang "Internal-error: Lang not accessible"))))
-           (class-list (map (lambda (fn) (substring fn 0 (- (string-length fn) 6)))
-                            (map path->string
-                                 (filter (lambda (f) (equal? (filename-extension f) #"jinfo"))
-                                         (directory-list (build-path (dir-path-path dir) "compiled"))))))
-           (array (datum->syntax-object #f `(lib "array.ss" "profj" "libs" "java" "lang") #f)))
-      ;(printf "class-list ~a~n" class-list)
-      (send type-recs add-package-contents lang class-list)
-      (for-each (lambda (c) (import-class c lang dir #f type-recs 'full #f #f)) class-list)
-      (send type-recs add-require-syntax (list 'array) (list array array))
-      
-      ;Add lang to interactions environment
-      (for-each (lambda (class) (send type-recs add-to-env class lang 'interactions)) class-list)
-      (send type-recs set-location! 'interactions)
-      (for-each (lambda (class) (send type-recs add-class-req (cons class lang) #f 'interactions)) class-list)
-      (send type-recs add-class-req (list 'array) #f 'interactions)
-      ))
+           (test '("java" "tester"))
+           (lang-dir (find-directory lang (lambda () (error 'load-lang "Internal-error: Lang not accessible"))))
+           (test-dir (when (testcase-ext?)
+                       (find-directory test (lambda () (error 'load-lang "Internal-error: Test not accessible")))))
+           (get-classes 
+            (lambda (base-dir)
+              (map (lambda (fn) (substring fn 0 (- (string-length fn) 6)))
+                   (map path->string
+                        (filter (lambda (f) (equal? (filename-extension f) #"jinfo"))
+                                (directory-list (build-path (dir-path-path base-dir) "compiled")))))))
+           (lang-classes (get-classes lang-dir)) 
+           (test-classes (when (testcase-ext?) (get-classes test-dir)))
+           (array (datum->syntax-object #f `(lib "array.ss" "profj" "libs" "java" "lang") #f))
+           
+           (add
+            (lambda (path classes dir array?)
+              #;(printf "class-list ~a~n" classes)
+              (send type-recs add-package-contents path classes)
+              (for-each (lambda (c) (import-class c path dir #f type-recs 'full #f #f)) classes)
+              (when array? (send type-recs add-require-syntax (list 'array) (list array array)))
+              
+              ;Add lang to interactions environment
+              (for-each (lambda (class) (send type-recs add-to-env class path 'interactions)) classes)
+              (send type-recs set-location! 'interactions)
+              (for-each (lambda (class) (send type-recs add-class-req (cons class path) #f 'interactions))
+                        classes)
+              (when array? (send type-recs add-class-req (list 'array) #f 'interactions)))))
+      (add lang lang-classes lang-dir #t)
+      (when (testcase-ext?) (add test test-classes test-dir #f))))
         
   ;------------------------------------------------------------------------------------
   ;Functions for processing classes and interfaces
   
-  ;; process-class/iface: (U class-def interface-def) (list string) type-records bool bool symbol -> class-record
+  ;; process-class/iface: (U class-def interface-def test-def) (list string) type-records bool bool symbol -> class-record
   (define (process-class/iface ci package-name type-recs look-in-table put-in-table level)
     (cond
-      ((interface-def? ci) 
-       (process-interface ci package-name type-recs look-in-table put-in-table level))
-      ((class-def? ci) 
-       (process-class ci package-name type-recs look-in-table put-in-table level))))
+      [(interface-def? ci)
+       (process-interface ci package-name type-recs look-in-table put-in-table level)]
+      [(class-def? ci) 
+       (process-class ci package-name type-recs look-in-table put-in-table level)]
+      [(test-def? ci)
+       (process-test ci package-name type-recs look-in-table put-in-table level)]))
   
   ;;get-parent-record: (list string) name (list string) type-records (list string) -> record
   (define (get-parent-record name n child-name level type-recs)
@@ -535,9 +557,9 @@
                  (let*-values (((old-methods) (class-record-methods super-record))
                                ((f m i)
                                 (if (memq 'strictfp test-mods)
-                                    (process-members members old-methods cname type-recs level
+                                    (process-members members old-methods cname type-recs level #f
                                                      (find-strictfp modifiers))
-                                    (process-members members old-methods cname type-recs level)))
+                                    (process-members members old-methods cname type-recs level #f)))
                                ((ctor?) (has-ctor? m)))
                                       
                    (unless ctor?
@@ -744,7 +766,7 @@
                  
                  (let-values (((f m i) (process-members members (apply append 
                                                                        (map class-record-methods super-records))
-                                                        iname type-recs level)))
+                                                        iname type-recs level #f)))
                    
                    (valid-field-names? f members m level type-recs)
                    (valid-method-sigs? m members level type-recs)
@@ -775,6 +797,116 @@
         (if look-in-table?
             (get-record (send type-recs get-class-record iname #f build-record) type-recs)
             (build-record)))))
+  
+  ;process-test: def-test (list string) type-records boolean? boolean? symbol -> class-record
+  (define (process-test test package-name type-recs look-in-table? put-in-table? level)
+    (let* ((info (def-header test))
+           (test-base '("TestBase" "java" "tester"))
+           (tname (cons (id-string (header-id info)) package-name)))
+      (send type-recs set-location! (def-file test))
+      (let ((build-record
+             (lambda ()
+               (when put-in-table? (send type-recs add-to-records tname 'in-progress))
+               (let* ((super (if (null? (header-extends info)) null (car (header-extends info))))
+                      (super-name (if (null? super)
+                                      test-base
+                                      (if (null? (name-path super))
+                                          (cons (id-string (name-id super))
+                                                (send type-recs lookup-path (id-string (name-id super)) (lambda () null)))
+                                          (name->list super))))
+                      (super-record (get-parent-record super-name super tname level type-recs))
+                      (members (def-members test))
+                      (super-req ((lambda (name-list)
+                                    (if (= (length name-list) 1)
+                                        (make-req (car name-list) 
+                                                  (send type-recs lookup-path (car name-list) (lambda () null)))
+                                        (make-req (car name-list) (cdr name-list))))
+                                  super-name))
+                      (old-loc (send type-recs get-location)))
+                 
+                 (send type-recs set-location! (def-file test))
+                 (set-def-uses! test
+                                (remove-dup-reqs 
+                                 (cons super-req (get-method-reqs (class-record-methods super-record)))))
+                 
+                 (unless (and (class-record-class? super-record)
+                              (or (equal? super-name test-base)
+                                  (member test-base (class-record-parents super-record))))
+                   (test-extension-error (class-record-class? super-record)
+                                         (header-id info)
+                                         super
+                                         (name-src super)))
+                                                   
+                 (let*-values (((old-methods) (class-record-methods super-record))
+                               ((f m i)
+                                (process-members members old-methods tname type-recs level #t))
+                               ((ctor?) (has-ctor? m)))
+                   
+                   (if ctor?
+                       (unless (= 0 (length (filter (lambda (m)
+                                                      (and (eq? 'ctor (method-record-rtype m))
+                                                           (null? (method-record-atypes m))
+                                                           (not (memq 'private (method-record-modifiers m)))
+                                                           (not (memq 'protected (method-record-modifiers m)))))
+                                                    m)))
+                         (test-not-visible-ctor-error (header-id info) (def-src test)))
+                       (add-ctor test 
+                                 (lambda (rec) (set! m (cons rec m))) old-methods (header-id info) level))
+                   
+                   (valid-field-names? (if (memq level '(beginner intermediate advanced)) 
+                                           (append f (class-record-fields super-record)) f)
+                                       members m level type-recs)
+                   
+                   (valid-method-sigs? m members level type-recs)
+
+                   (and (class-fully-implemented? super-record super null null
+                                                  m type-recs level)
+                        (no-abstract-methods m members level type-recs))
+                                      
+                   (valid-inherited-methods? (cons super-record null)
+                                             (cons (if (null? super)
+                                                       (make-name (make-id "Test" #f) 
+                                                                  (list (make-id "java" #f)
+                                                                        (make-id "test" #f)) #f)
+                                                       super) null)
+                                             level
+                                             type-recs)
+
+                   (check-current-methods (cons super-record null)
+                                          m
+                                          members
+                                          level
+                                          type-recs)
+                   
+                   (let ((record
+                          (make-class-record 
+                           tname (header-modifiers info) #t #t
+                           (append f (filter class-specific-field? (class-record-fields super-record)))
+                           (append m (filter (lambda (meth)
+                                               (class-specific-method? meth m))
+                                             (class-record-methods super-record)))
+                           (append i (filter (lambda (i-r)
+                                               (not (memq 'private (inner-record-modifiers i-r))))
+                                             (class-record-inners super-record)))
+                           (cons super-name (class-record-parents super-record))
+                           null)))
+                     (when put-in-table? 
+                       (send type-recs add-class-record record)
+                       (send type-recs add-test-class (car tname))
+                       )
+                                          
+                     (for-each (lambda (member)
+                                 (when (def? member)
+                                   (process-class/iface member package-name type-recs #f put-in-table? level)))
+                               members)
+                     (send type-recs set-location! old-loc)
+                     record))))))
+        (cond
+          ((class-record? (send type-recs get-class-record tname)) => 
+           (lambda (rec) rec))
+          (look-in-table?
+           (get-record (send type-recs get-class-record tname #f build-record) type-recs))
+          (else (build-record))))))
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;Code to check for conflicts in method/field/class naming (including types)
@@ -878,7 +1010,7 @@
              (find-member member-record (cdr members) level type-recs))))
       (else
        (find-member member-record (cdr members) level type-recs))))
-  
+ 
   ;valid-method-sigs? (list method-record) (list member) symbol type-records -> bool
   (define (valid-method-sigs? methods members level type-recs)
     (or (null? methods)
@@ -1187,9 +1319,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;Methods to process fields and methods
   
-  ;; process-members: (list members) (list method-record) (list string) type-records symbol -> 
+  ;; process-members: (list members) (list method-record) (list string) type-records symbol boolean-> 
   ;;                     (values (list field-record) (list method-record) (list inner-record))
-  (define (process-members members inherited-methods cname type-recs level . args)
+  (define (process-members members inherited-methods cname type-recs level test? . args)
     (let loop ((members members)
                (fields null)
                (methods null)
@@ -1205,8 +1337,8 @@
          (loop (cdr members)
                fields
                (cons (if (null? args)
-                         (process-method (car members) inherited-methods cname type-recs level)
-                         (process-method (car members) inherited-methods cname type-recs level (car args)))
+                         (process-method (car members) inherited-methods cname type-recs level test?)
+                         (process-method (car members) inherited-methods cname type-recs level test? (car args)))
                          methods)
                inners))
         ((def? (car members))
@@ -1229,8 +1361,8 @@
                        (if (class-name) (cons (class-name) (cdr cname)) cname)
                        (field-type field)))
                   
-  ;; process-method: method (list method-record) (list string) type-records symbol -> method-record  
-  (define (process-method method inherited-methods cname type-recs level . args)
+  ;; process-method: method (list method-record) (list string) type-records symbol boolean -> method-record  
+  (define (process-method method inherited-methods cname type-recs level test? . args)
     (let* ((name (id-string (method-name method)))
            (parms (map (lambda (p)
                          (set-field-type! p (type-spec-to-type (field-type-spec p) cname level type-recs))
@@ -1250,6 +1382,11 @@
                                 (method-throws method))))
            (over? (overrides? name parms inherited-methods)))
       
+      (when (test-method? method)
+        (unless test? (testcase-not-in-test name (car cname) (id-src (method-name method))))
+        (unless (null? parms) (testcase-args-error name (car cname) (id-src (method-name method))))
+        (unless (eq? 'boolean ret) (testcase-ret-error name (car cname) ret (id-src (method-name method)))))
+            
       (when (and (memq level '(beginner intermediate))
                  (member name (map method-record-name inherited-methods))
                  (not over?))
@@ -1577,7 +1714,28 @@
          ((implement-class) 
           (format "Only interfaces may be implemented, class ~a has attempted to implement class ~a." n s)))
        s src)))
-
+  
+  ;test-extension-error: boolean id name src -> void
+  (define (test-extension-error class? name super src)
+    (let ([n (id->ext-name name)]
+          [s (id->ext-name (name-id super))])
+      (raise-error
+       'extends
+       (if class?
+           (format "Tests may only extend other tests.~nFound ~a, which is not a test and cannot be the parent of test ~a."
+                   s n)
+           (format "Tests may not extend interfaces. Found interface ~a for test ~a." s n))
+       'extends src)))
+  
+  ;test-not-visible-ctor-error: id src -> void
+  (define (test-not-visible-ctor-error name src)
+    (raise-error
+     'test
+     (format 
+      "Tests must have a non-private constructor expecting no arguments. ~a does not have a matching constructor."
+      (id->ext-name name))
+     'test src))
+  
   ;method-error: symbol id (list type) type string src bool -> void
   (define (method-error kind name parms ret class src ctor?)
     (if (eq? kind 'inherited-conflict-field)
@@ -1610,6 +1768,27 @@
                       m-full-name class r-name (type->ext-name ctor?))))
            m-name src))))
 
+  ;testcase-not-in-test: string string src -> void
+  (define (testcase-not-in-test name class src)
+    (raise-error
+     'testcase
+     (format "Testcase ~a may not appear in class ~a. Testcases may only occur in tests." name class)
+     'testcase src))
+  
+  ;testcase-args-error: string string src -> void
+  (define (testcase-args-error name class src)
+    (raise-error 'testcase
+                 (format "A testcase cannot require parameters. testcase ~a in ~a specifies arguments."
+                         name class)
+                 'testcase src))
+  
+  ;testcase-ret-error: string string type src -> void
+  (define (testcase-ret-error name class ret src)
+    (raise-error 'testcase
+                 (format "A testcase must return a boolean. testcase ~a from ~a returns a ~a instead."
+                         name class (type->ext-name ret))
+                 'testcase src))
+  
   ;inherited-overload-error: string string (list type) (list type) src -> void
   (define (inherited-overload-error curr-class name new-type inherit-type src)
     (let* ((n (string->symbol name))

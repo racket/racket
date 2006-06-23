@@ -143,7 +143,7 @@
       
       ;(make-profj-settings symbol boolean boolean boolean boolean (list string))
       (define-struct profj-settings 
-        (print-style print-full? allow-check? run-tests? coverage? classpath) (make-inspector))
+        (print-style print-full? allow-check? allow-test? run-tests? coverage? classpath) (make-inspector))
       
       ;ProfJ general language mixin
       (define (java-lang-mixin level name number one-line dyn?)
@@ -179,8 +179,8 @@
           ;default-settings: -> profj-settings
           (define/public (default-settings) 
             (if (memq level `(beginner intermediate advanced))
-                (make-profj-settings 'field #f #t #t #t null)
-                (make-profj-settings 'type #f #t #f #f null)))
+                (make-profj-settings 'field #f #t #f #t #t null)
+                (make-profj-settings 'type #f #t #t #f #f null)))
           ;default-settings? any -> bool
           (define/public (default-settings? s) (equal? s (default-settings)))
           
@@ -188,6 +188,7 @@
             (make-profj-settings (profj-settings-print-style s)
                                  (profj-settings-print-full? s)
                                  (profj-settings-allow-check? s)
+                                 (profj-settings-allow-test? s)
                                  test?
                                  (profj-settings-coverage? s)
                                  (profj-settings-classpath s)))
@@ -197,20 +198,22 @@
             (list (list (profj-settings-print-style s))
                   (list (profj-settings-print-full? s))
                   (list (profj-settings-allow-check? s))
+                  (list (profj-settings-allow-test? s))
                   (list (profj-settings-run-tests? s))
                   (list (profj-settings-coverage? s))))
           
           ;unmarshall-settings: any -> (U profj-settings #f)
           (define/public (unmarshall-settings s)
-            (if (and (pair? s) (= (length s) 5)
+            (if (and (pair? s) (= (length s) 6)
                      (pair? (car s)) (= (length (car s)) 1)
                      (pair? (cadr s)) (= (length (cadr s)) 1)
                      (pair? (caddr s)) (= (length (caddr s)) 1)
                      (pair? (cadddr s)) (= (length (cadddr s)) 1)
-                     (pair? (list-ref s 4)) (= (length (list-ref s 4)) 1))
+                     (pair? (list-ref s 4)) (= (length (list-ref s 4)) 1)
+                     (pair? (list-ref s 5)) (= (length (list-ref s 5)) 1))
                 (make-profj-settings (caar s) (caadr s) (caaddr s) 
                                      (car (cadddr s))
-                                     (car (list-ref s 4)) null)
+                                     (car (list-ref s 4)) (car (list-ref s 5)) null)
                 #f))
 
           ;Create the ProfessorJ settings selection panel
@@ -244,6 +247,9 @@
                                         (string-constant profj-language-config-testing-check) 
                                         testing-prefs
                                         (lambda (x y) update-at)))]
+                     [allow-test (when (eq? level 'full)
+                                   (make-object check-box% "Support test Language extension?"
+                                     testing-prefs (lambda (x y) update-at2)))]
                      [display-testing 
                       (make-object check-box% (string-constant profj-language-config-testing-enable)
                         testing-prefs (lambda (x y) (update-dt x y)))]
@@ -254,6 +260,7 @@
                      [update-pf (lambda () (void))]
                      [update-ps (lambda () (void))]
                      [update-at (lambda () (void))]
+                     [update-at2 (lambda () (void))]
                      [update-dt (lambda (box event) 
                                   (when (eq? 'check-box (send event get-event-type))
                                     (send collect-coverage enable (send box get-value))))]
@@ -406,6 +413,8 @@
                                            (send print-full get-value))
                                       (or (not (eq? level 'full))
                                           (send allow-testing get-value))
+                                      (and (eq? level 'full)
+                                           (send allow-test get-value))
                                       (send display-testing get-value)
                                       (and (send display-testing get-value)
                                            (send collect-coverage get-value))
@@ -420,6 +429,8 @@
                    (send print-full set-value (profj-settings-print-full? settings)))
                  (when (eq? level 'full)
                    (send allow-testing set-value (profj-settings-allow-check? settings)))
+                 (when (eq? level 'full)
+                   (send allow-test set-value (profj-settings-allow-test? settings)))
                  (send display-testing set-value (profj-settings-run-tests? settings))
                  (if (send display-testing get-value)
                      (send collect-coverage set-value (profj-settings-coverage? settings))
@@ -595,11 +606,13 @@
                   [n (current-namespace)]
                   [e (current-eventspace)])
               (test-ext? (profj-settings-allow-check? settings))
+              (testcase-ext? (profj-settings-allow-test? settings))
               (let ((execute-types (create-type-record)))
                 (read-case-sensitive #t)
                 (run-in-user-thread
                  (lambda ()
                    (test-ext? (profj-settings-allow-check? settings))
+                   (testcase-ext? (profj-settings-allow-test? settings))
                    (tests? (profj-settings-run-tests? settings))
                    (coverage? (and (tests?) (profj-settings-coverage? settings)))
                    (error-display-handler 
@@ -614,7 +627,9 @@
                              (execution? #t)
                              (set! execute-types (create-type-record))
                              (let* ((compilation-units (compile-ast exp level execute-types))
-                                    (examples (find-examples compilation-units)))
+                                    (examples (if (testcase-ext?)
+                                                  (list (send execute-types get-test-classes) null)
+                                                  (find-examples compilation-units))))
                                (let ((name-to-require #f)
                                      (tests-run? #f))
                                  (let loop ((mods (order compilation-units))
