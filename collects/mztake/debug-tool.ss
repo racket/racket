@@ -128,27 +128,50 @@
           
           (define/augment (on-delete start len)
             (begin-edit-sequence)
+            (let ([breakpoints (if parent (send parent get-breakpoints) (make-hash-table))]
+                  [shifts empty])
+              (hash-table-for-each
+               breakpoints
+               (lambda (pos status)
+                 (cond
+                   ; deletion after breakpoint: no effect
+                   [(<= pos start)]
+                   ; deletion of breakpoint: remove from table
+                   [(and (< start pos)
+                         (<= pos (+ start len)))
+                    (hash-table-remove! breakpoints pos)]
+                   ; deletion before breakpoint: shift breakpoint
+                   [(> pos (+ start len))
+                    (hash-table-remove! breakpoints pos)
+                    (set! shifts (cons (cons (- pos len) status) shifts))])))
+              (for-each (lambda (p) (hash-table-put! breakpoints (car p) (cdr p)))
+                        shifts))
             (inner (void) on-delete start len))
           (define/augment (after-delete start len)
             (inner (void) after-delete start len)
-            (clean-up)
+            (when (and parent debug?)
+              (send parent hide-debug))
             (end-edit-sequence))
           
           (define/augment (on-insert start len)
             (begin-edit-sequence)
+            (let ([breakpoints (if parent (send parent get-breakpoints) (make-hash-table))]
+                  [shifts empty])
+              (hash-table-for-each
+               breakpoints
+               (lambda (pos status)
+                 (when (< start pos)
+                   (hash-table-remove! breakpoints pos)
+                   (set! shifts (cons (cons (+ pos len) status) shifts)))))
+              (for-each (lambda (p) (hash-table-put! breakpoints (car p) (cdr p)))
+                        shifts))
             (inner (void) on-insert start len))
           (define/augment (after-insert start len)
             (inner (void) after-insert start len)
-            (clean-up)
+            (when (and parent debug?)
+              (send parent hide-debug))
             (end-edit-sequence))
 
-          (define/private (clean-up)
-	    (when debug?
-	      (set! debug? #f)
-	      (when parent
-		    (send parent hide-debug))
-	      (invalidate-bitmap-cache)))
-          
           (define/private (get-pos/text event)
             (let ([event-x (send event get-x)]
                   [event-y (send event get-y)]
@@ -214,8 +237,8 @@
                              [(eq? pos mouse-over-pos)]
                              ; mouse on new breakable pos
                              [(not (eq? (hash-table-get
-                                       breakpoints
-                                       pos (lambda () 'invalid)) 'invalid))
+                                         breakpoints
+                                         pos (lambda () 'invalid)) 'invalid))
                               (set! mouse-over-pos pos)
                               (invalidate-bitmap-cache)]
                              ; moved off breakable pos
@@ -487,7 +510,16 @@
                                                       (vector-set! pos-vec (+ i (syntax-position bound)) binding)
                                                       (loop (add1 i))))))
 					      void)])
-                                (for-each (lambda (posn) (hash-table-put! breakpoints posn #f)) break-posns)
+                                (hash-table-for-each
+                                 breakpoints
+                                 (lambda (pos status)
+                                   ; possible efficiency problem for large files with many breakpoints
+                                   (when (and (>= pos 0) (not (memq pos break-posns)))
+                                     (hash-table-remove! breakpoints pos))))
+                                (for-each (lambda (posn)
+                                            (hash-table-put!
+                                             breakpoints posn
+                                             (hash-table-get breakpoints posn (lambda () #f)))) break-posns)
                                 ;(display-results (list orig-exp))
                                 annotated))))]))))))
           
@@ -685,7 +717,7 @@
                 (hide-debug))
 	    (set! current-language-settings (and debug?
 						 (send (get-definitions-text) get-next-settings)))
-            (set! breakpoints (make-hash-table))
+            ;(set! breakpoints (make-hash-table))
             (hash-table-put! breakpoints -1 #t)
             (set! pos-vec (make-vector (add1 (send (get-definitions-text) last-position)) #f))
             (set! resume-ch (make-channel))
