@@ -29,12 +29,12 @@ mred-stub: @MAKE_MRED@
 mred3m-stub: @MAKE_MRED3M@
 
 
-plain-install:
-	$(MAKE) install-normal
-
 install:
 	$(MAKE) plain-install
 	$(MAKE) setup-plt
+
+plain-install:
+	$(MAKE) install-normal
 
 install-normal:
 	mkdir -p $(prefix) $(ALLDIRINFO)
@@ -42,8 +42,6 @@ install-normal:
 	$(MAKE) mredinstall-stub
 	$(MAKE) copytree-stub
 	$(MAKE) lib-finish
-
-copytree-stub: @MAKE_COPYTREE@
 
 mredinstall-stub: @MAKE_MREDINSTALL@
 
@@ -92,8 +90,11 @@ mrinstall:
 mrinstall3m:
 	cd mred; $(MAKE) install-3m
 
+
 lib-finish:
 	@LIBFINISH@ "$(libdir)"
+
+copytree-stub: @MAKE_COPYTREE@
 
 copytree:
 	mzscheme/mzscheme -mvxqu \
