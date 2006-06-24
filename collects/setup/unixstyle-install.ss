@@ -223,6 +223,7 @@
     (with-output-to-file uninstaller
       (lambda ()
         (printf "#!/bin/sh\n")
+        (printf "\n# Remove files and dirs that we own\n")
         (printf "while true; do read R || break; rm -rf -- \"$R\"; done \\\n")
         (printf "<<::://E//O//F////O//N//E//:::\n")
         ;; only moved/copied stuff are part of the distribution
@@ -230,12 +231,14 @@
                     (when (memq (car p) '(mv cp)) (printf "~a\n" (caddr p))))
                   path-changes)
         (printf "::://E//O//F////O//N//E//:::\n")
+        (printf "\n# Remove dirs that we created but not own only if empty\n")
         (printf "while true; do read R || break; ~a"
                 "rmdir -- \"$R\" > /dev/null 2>&1; done \\\n")
         (printf "<<::://E//O//F////T//W//O//:::\n")
         (for-each (lambda (p) (when (eq? 'md (car p)) (printf "~a\n" (cadr p))))
                   path-changes)
         (printf "::://E//O//F////T//W//O//:::\n")
+        (printf "\n# Remove this script\n")
         (printf "exec rm \"$0\"\n"))
       'replace)
     (run "chmod" "+x" uninstaller))
