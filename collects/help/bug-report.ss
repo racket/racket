@@ -283,6 +283,17 @@
        #f
        synthesized-panel))
     
+    (define memory-use
+      (build/label 
+       (string-constant bug-report-field-memory-use)
+       (lambda (panel)
+         (keymap:call/text-keymap-initializer
+          (lambda ()
+            (make-object text-field% #f panel void ""))))
+       #f
+       #f
+       synthesized-panel))
+    
     (define docs-installed
       (make-big-text
        (string-constant bug-report-field-docs-installed)
@@ -346,10 +357,11 @@
                      "Docs Installed:\n" 
                      (format "~a" (send (send docs-installed get-editor) get-text))
                      "\n"
-                     "Collections:\n"
+                     (format "Human Language: ~a\n" (send human-language get-value))
+                     (format "(current-memory-use) ~a\n" (send memory-use get-value))
+                     "\nCollections:\n"
                      (format "~a" (send (send collections get-editor) get-text))
                      "\n"
-                     (format "Human Language: ~a\n" (send human-language get-value))
                      (apply 
                       string-append
                       (map (lambda (extra)
@@ -503,6 +515,7 @@
           (format "~s" (directories-contents (get-collects-search-dirs))))
 
     (send human-language set-value (format "~a" (this-language)))
+    (send memory-use set-value (format "~a" (current-memory-use)))
 
     (send (send collections get-editor) auto-wrap #t)
     (send (send docs-installed get-editor) auto-wrap #t)
