@@ -91,15 +91,17 @@
            (delete-directory path)]
           [else #t])) ; shouldn't happen
 
+  ;; used for filtering files when copying (and moving toplevels)
+  (define skip-filter (lambda (p) #f))
+
   ;; copy a file or a directory (recursively), preserving time stamps
   ;; (mzscheme's copy-file preservs permission bits)
-  (define copy-skip-filter (lambda (p) #f))
   (define (cp src dst)
     (let loop ([src src] [dst dst])
       (let ([time! (lambda ()
                      (file-or-directory-modify-seconds
                       dst (file-or-directory-modify-seconds src)))])
-        (cond [(copy-skip-filter (->string (basename src))) 'skip]
+        (cond [(skip-filter src) 'skip]
               [(link-exists? src)
                ;; symlinks are impossible to do in Scheme now: can't make
                ;; arbitrary ones
@@ -323,22 +325,23 @@
             [dst-l? (link-exists? dst)]
             [dst-d? (directory-exists? dst)]
             [dst-f? (file-exists? dst)])
-        (when (and src-d? (not lvl) (not dst-d?))
-          (when (or dst-l? dst-f?) (ask-overwrite "file or link" dst))
-          (make-directory dst)
-          (register-change! 'md dst)
-          (set! dst-d? #t) (set! dst-l? #f) (set! dst-f? #f))
-        (cond [dst-l? (ask-overwrite "symlink" dst) (doit)]
-              [dst-d? (if (and src-d? (or (not lvl) (< 0 lvl)))
-                        ;; recurse only when the source is a dir, & not too deep
-                        (for-each (lambda (name)
-                                    (loop (build-path src name)
-                                          (build-path dst name)
-                                          (and lvl (sub1 lvl))))
-                                  (directory-list src))
-                        (begin (ask-overwrite "dir" dst) (doit)))]
-              [dst-f? (ask-overwrite "file" dst) (doit)]
-              [else (doit)])))
+        (unless (skip-filter src)
+          (when (and src-d? (not lvl) (not dst-d?))
+            (when (or dst-l? dst-f?) (ask-overwrite "file or link" dst))
+            (make-directory dst)
+            (register-change! 'md dst)
+            (set! dst-d? #t) (set! dst-l? #f) (set! dst-f? #f))
+          (cond [dst-l? (ask-overwrite "symlink" dst) (doit)]
+                [dst-d? (if (and src-d? (or (not lvl) (< 0 lvl)))
+                          ;; recurse only when source is dir, & not too deep
+                          (for-each (lambda (name)
+                                      (loop (build-path src name)
+                                            (build-path dst name)
+                                            (and lvl (sub1 lvl))))
+                                    (directory-list src))
+                          (begin (ask-overwrite "dir" dst) (doit)))]
+                [dst-f? (ask-overwrite "file" dst) (doit)]
+                [else (doit)]))))
     (when move? (remove-empty-dirs src)))
 
   ;; --------------------------------------------------------------------------
@@ -379,8 +382,10 @@
   (define (make-install-copytree)
     (define copytree (move/copy-tree #f))
     (define origtree (equal? "yes" (get-arg)))
-    (set! copy-skip-filter ; skip all dot-names, CVS and compiled subdirs
-          (lambda (p) (regexp-match #rx"^(?:[.].*|CVS|compiled)$" p)))
+    (set! skip-filter ; skip all dot-names, CVS and compiled subdirs
+          (lambda (p)
+            (regexp-match #rx"^(?:[.].*|CVS|compiled)$"
+                          (->string (basename p)))))
     (with-handlers ([void (lambda (e) (undo-changes) (raise e))])
       (copytree (build-path pltdir "collects") collectsdir)
       (copytree (build-path pltdir "doc")      docdir)
