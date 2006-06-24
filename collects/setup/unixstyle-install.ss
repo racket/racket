@@ -46,23 +46,28 @@
   ;; encounter a directory that does not already exist.  #f means that we never
   ;; own directories, only files.
   (define (level-of dir)
-    (cond [(equal? dir "bin")      #f]
-          [(equal? dir "collects") 1]
-          [(equal? dir "doc")      1]
-          [(equal? dir "include")  1]
-          ;; if shared libraries are used, then these files should be moved
-          ;; independently, as if they had a level of #f
-          [(equal? dir "lib")      1]
-          [(equal? dir "man")      #f]
-          [(equal? dir "src")      1]
-          [(equal? dir "readme.txt") #f] ; moved last
-          [else (error 'level-of "internal-error: unknown dir ~e" dir)]))
+    (let ([dir (string->symbol (->string (basename dir)))])
+      (case dir
+        [(bin)      #f]
+        [(collects) 1]
+        [(doc)      1]
+        [(include)  1]
+        ;; if shared libraries are used, then these files should be moved
+        ;; independently, as if they had a level of #f
+        [(dir)      1]
+        [(man)      #f]
+        [(src)      1]
+        [(readme.txt) #f] ; moved last
+        [else (error 'level-of "internal-error: unknown dir ~e" dir)])))
 
   (define (->string x)
     (if (path? x) (path->string x) x))
 
+  (define (basename path)
+    (let-values ([(dir name dir?) (split-path path)]) name))
+
   (define (dirname path)
-    (let-values ([(base name dir?) (split-path path)]) base))
+    (let-values ([(dir name dir?) (split-path path)]) dir))
 
   ;; convenient wrapper for a simple subprocess
   (define (run cmd . args)
@@ -94,7 +99,7 @@
       (let ([time! (lambda ()
                      (file-or-directory-modify-seconds
                       dst (file-or-directory-modify-seconds src)))])
-        (cond [(copy-skip-filter (if (path? src) (path->string src) src)) 'skip]
+        (cond [(copy-skip-filter (->string (basename src))) 'skip]
               [(link-exists? src)
                ;; symlinks are impossible to do in Scheme now: can't make
                ;; arbitrary ones
