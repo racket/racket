@@ -37,8 +37,7 @@ install:
 	$(MAKE) setup-plt
 
 install-normal:
-	mkdir -p $(ALLDIRINFO)
-	if [ ! -d $(prefix) ] ; then mkdir $(prefix) ; fi
+	mkdir -p $(prefix) $(ALLDIRINFO)
 	$(MAKE) mzinstall
 	$(MAKE) mredinstall-stub
 	$(MAKE) copytree-stub
@@ -49,7 +48,7 @@ copytree-stub: @MAKE_COPYTREE@
 mredinstall-stub: @MAKE_MREDINSTALL@
 
 setup-plt:
-	$(prefix)/bin/mzscheme -mvqM setup
+	$(bindir)/mzscheme -mvqM setup
 
 plain-install-3m:
 	$(MAKE) install-normal
@@ -94,7 +93,7 @@ mrinstall3m:
 	cd mred; $(MAKE) install-3m
 
 lib-finish:
-	@LIBFINISH@ "$(prefix)/lib"
+	@LIBFINISH@ "$(libdir)"
 
 copytree:
 	mzscheme/mzscheme -mvxqu \
