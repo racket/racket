@@ -3157,9 +3157,9 @@ module browser threading seems wrong.
       (define drs-name-message%
         (class name-message%
           (define/override (on-choose-directory dir)
-            (let ([file (parameterize ([finder:dialog-parent-parameter
-                                        (send this get-top-level-window)])
-                          (finder:get-file dir))])
+            (let ([file (get-file (string-constant select-file)
+                                  (send this get-top-level-window)
+                                  dir)])
               (when file
                 (handler:edit-file file))))
           (super-new)))
