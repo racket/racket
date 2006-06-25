@@ -177,10 +177,9 @@
                         (parent keybindings-menu)
                         (label (string-constant keybindings-add-user-defined-keybindings))
                         (callback
-                         (λ (x y) 
-                           (let ([filename (finder:get-file #f
-                                                            (string-constant keybindings-choose-user-defined-file)
-                                                            #f "" this)])
+                         (λ (x y)
+                           (let ([filename (get-file (string-constant keybindings-choose-user-defined-file)
+                                                     this)])
                              (when filename
                                (add-keybindings-file filename))))))
                    (let ([ud (preferences:get 'drscheme:user-defined-keybindings)])
