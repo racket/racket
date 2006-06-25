@@ -32,12 +32,13 @@ mred3m-stub: @MAKE_MRED3M@
 install:
 	$(MAKE) plain-install
 	$(MAKE) setup-plt
+	$(MAKE) fix-paths
 
 plain-install:
 	$(MAKE) install-normal
 
 install-normal:
-	mkdir -p $(prefix) $(ALLDIRINFO)
+	mkdir -p $(addprefix $(DESTDIR), $(prefix) $(ALLDIRINFO))
 	$(MAKE) mzinstall
 	$(MAKE) mredinstall-stub
 	$(MAKE) copytree-stub
@@ -46,7 +47,7 @@ install-normal:
 mredinstall-stub: @MAKE_MREDINSTALL@
 
 setup-plt:
-	$(bindir)/mzscheme -mvqM setup
+	$(DESTDIR)$(bindir)/mzscheme -mvqX "$(DESTDIR)$(collectsdir)" -M setup
 
 plain-install-3m:
 	$(MAKE) install-normal
@@ -56,6 +57,7 @@ plain-install-3m:
 install-3m:
 	$(MAKE) plain-install-3m
 	$(MAKE) setup-plt
+	$(MAKE) fix-paths
 
 mredinstall3m-stub: @MAKE_MREDINSTALL3M@
 
@@ -99,4 +101,13 @@ copytree-stub: @MAKE_COPYTREE@
 copytree:
 	mzscheme/mzscheme -mvxqu \
           "$(srcdir)/../collects/setup/unixstyle-install.ss" \
-          make-install-copytree "$(srcdir)/.." $(ALLDIRINFO) @INSTALL_ORIG_TREE@
+          make-install-copytree "$(srcdir)/.." \
+          $(addprefix $(DESTDIR), $(ALLDIRINFO)) @INSTALL_ORIG_TREE@
+
+fix-paths:
+	if [ "$(DESTDIR)" != "" ]; then \
+          mzscheme/mzscheme -mvxqu \
+            "$(srcdir)/../collects/setup/unixstyle-install.ss" \
+            make-install-destdir-fix "$(srcdir)/.." \
+            $(addprefix $(DESTDIR), $(ALLDIRINFO)) @INSTALL_ORIG_TREE@; \
+        fi

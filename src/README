@@ -151,7 +151,15 @@ the Unix instructions below, but note the following:
 
     For a --prefix build, this step also creates a "config.ss" module
     in a "config" collection for a --prefix build, so that various PLT
-    tools and libraries can find the installation directories.
+    tools and libraries can find the installation directories.  In
+    this case, you can also use a `DESTDIR' environment variable to
+    have the hierarchy constructed at a temporary place (useful for
+    packaging), for example: `make DESTDIR=/tmp/plt-build install'.
+    Note that if DESTDIR is used, the resulting installation will not
+    be functional until it is installed in the its intended place
+    (because at the end of this step, the generated "config.ss", the
+    binaries and the launchers will all get patched to point at the
+    installation paths, without the DESTDIR prefix).
 
     Finally, this step compiles ".zo" bytecode files for installed
     Scheme source, and generates launcher programs like

@@ -1,3 +1,6 @@
+#
+# Makefile for mred
+#
 
 srcdir = @srcdir@
 prefix = @prefix@
@@ -236,15 +239,16 @@ install-no-lib:
 	echo "no dynamic libs"
 
 install-lib:
-	cd ..; $(ICP) mred/libmred.@LIBSFX@ "$(libdir)"
+	cd ..; $(ICP) mred/libmred.@LIBSFX@ "$(DESTDIR)$(libdir)"
 
 install_wx_xt:
-	cd ..; mkdir -p "$(bindir)"; rm -f "$(bindir)/mred"
+	cd ..; mkdir -p "$(DESTDIR)$(bindir)"
+	cd ..; rm -f "$(DESTDIR)$(bindir)/mred"
 	$(MAKE) @MRLIBINSTALL@
-	cd ..; $(ICP) mred/mred "$(bindir)"
-	$(MZSCHEME) -mvqu "$(srcdir)/../mzscheme/collects-path.ss" "$(prefix)/bin/mred@EXE_SUFFIX@" @COLLECTS_PATH@
+	cd ..; $(ICP) mred/mred "$(DESTDIR)$(bindir)"
+	$(MZSCHEME) -mvqu "$(srcdir)/../mzscheme/collects-path.ss" "$(DESTDIR)$(bindir)/mred@EXE_SUFFIX@" @COLLECTS_PATH@
 
-BUILDINFO=$(libpltdir)/buildinfo
+BUILDINFO="$(DESTDIR)$(libpltdir)/buildinfo"
 
 MRFWDIR = @FRAMEWORK_INSTALL_DIR@/PLT_MrEd.framework
 

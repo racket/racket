@@ -212,7 +212,7 @@ mark:
 	$(MAKE) $(srcdir)/src/mzmark.c
 
 headers:
-	./mzscheme -qr $(srcdir)/mkincludes.ss "$(includepltdir)" "$(srcdir)" .
+	./mzscheme -qr $(srcdir)/mkincludes.ss "$(DESTDIR)$(includepltdir)" "$(srcdir)" .
 	$(MAKE) $(srcdir)/../../collects/mzscheme/lib/mzdyn.c
 
 # mzdyn.c, used for MacOS "library"
@@ -266,7 +266,7 @@ clean@OSX@:
 	rm -rf PLT_MzScheme.framework
 	$(MAKE) clean@NOT_OSX@
 
-BUILDINFO="$(libpltdir)/buildinfo"
+BUILDINFO="$(DESTDIR)$(libpltdir)/buildinfo"
 ICP=@ICP@
 
 install:
@@ -274,24 +274,24 @@ install:
 	$(MAKE) @MZINSTALLTARGET@
 
 install-3m-basic:
-	cd ..; $(ICP) mzscheme/mzscheme3m $(bindir)/mzscheme3m
-	cd ..; $(ICP) mzscheme/mzdyn3m.o $(libpltdir)/mzdyn3m.o
-	./mzscheme -mvqu "$(srcdir)/collects-path.ss" "$(bindir)/mzscheme3m@EXE_SUFFIX@" @COLLECTS_PATH@
+	cd ..; $(ICP) mzscheme/mzscheme3m "$(DESTDIR)$(bindir)/mzscheme3m"
+	cd ..; $(ICP) mzscheme/mzdyn3m.o "$(DESTDIR)$(libpltdir)/mzdyn3m.o"
+	./mzscheme -mvqu "$(srcdir)/collects-path.ss" "$(DESTDIR)$(bindir)/mzscheme3m@EXE_SUFFIX@" @COLLECTS_PATH@
 
 install-3m@NOT_OSX@:
 	$(MAKE) install-3m-basic
-	cd ..; $(ICP) mzscheme/libmzscheme3m.@LIBSFX@ "$(libdir)/libmzscheme3m.@LIBSFX@"
+	cd ..; $(ICP) mzscheme/libmzscheme3m.@LIBSFX@ "$(DESTDIR)$(libdir)/libmzscheme3m.@LIBSFX@"
 
 # Prefix might be relative to srcdir, or it might be absolute, so we
 # have to go up and install things from there.
 
 unix-install:
-	cd ..; rm -f $(bindir)/mzscheme
-	cd ..; $(ICP) mzscheme/libmzgc.@LIBSFX@ "$(libdir)/libmzgc.@LIBSFX@"
-	cd ..; $(ICP) mzscheme/libmzscheme.@LIBSFX@ "$(libdir)/libmzscheme.@LIBSFX@"
-	cd ..; $(ICP) mzscheme/mzscheme "$(bindir)/mzscheme"
-	cd ..; cp mzscheme/starter "$(libpltdir)/starter"
-	./mzscheme -mvqu "$(srcdir)/collects-path.ss" "$(bindir)/mzscheme@EXE_SUFFIX@" @COLLECTS_PATH@
+	cd ..; rm -f "$(DESTDIR)$(bindir)/mzscheme"
+	cd ..; $(ICP) mzscheme/libmzgc.@LIBSFX@ "$(DESTDIR)$(libdir)/libmzgc.@LIBSFX@"
+	cd ..; $(ICP) mzscheme/libmzscheme.@LIBSFX@ "$(DESTDIR)$(libdir)/libmzscheme.@LIBSFX@"
+	cd ..; $(ICP) mzscheme/mzscheme "$(DESTDIR)$(bindir)/mzscheme"
+	cd ..; cp mzscheme/starter "$(DESTDIR)$(libpltdir)/starter"
+	./mzscheme -mvqu "$(srcdir)/collects-path.ss" "$(DESTDIR)$(bindir)/mzscheme@EXE_SUFFIX@" @COLLECTS_PATH@
 	cd ..; echo 'CC=@CC@' > $(BUILDINFO)
 	cd ..; echo 'CFLAGS=@CFLAGS@ @PREFLAGS@ @COMPFLAGS@' >> $(BUILDINFO)
 	cd ..; echo 'OPTIONS=@OPTIONS@' >> $(BUILDINFO)
@@ -301,7 +301,7 @@ unix-install:
 
 normal-install:
 	$(MAKE) unix-install
-	cd ..; cp mzscheme/mzdyn.o "$(libpltdir)/mzdyn.o"
+	cd ..; cp mzscheme/mzdyn.o "$(DESTDIR)$(libpltdir)/mzdyn.o"
 
 MZFWDIR = @FRAMEWORK_INSTALL_DIR@/PLT_MzScheme.framework
 
