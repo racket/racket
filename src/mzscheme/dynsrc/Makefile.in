@@ -63,8 +63,7 @@ cygwin-install:
 	dlltool --def mzdynx.def --output-exp mzdyn.exp
 	dlltool --input-def $(srcdir)/../include/mzwin.def --output-lib libmzschxxxxxxx.lib --dllname libmzschxxxxxxx.dll
 	dlltool --input-def $(srcdir)/../include/gmzwin.def --output-lib libmzgcxxxxxxx.lib --dllname libmzgcxxxxxxx.dll
-	cd ../..; if [ ! -d $(ILIBDIR) ] ; then mkdir $(ILIBDIR) ; fi
-	cd ../..; if [ ! -d $(ILIBDIR)/gcc ] ; then mkdir $(ILIBDIR)/gcc ; fi
+	cd ../..; mkdir -p $(ILIBDIR)/gcc
 	cd ../..; cp mzscheme/dynsrc/mzdynx.def $(ILIBDIR)/gcc/mzdyn.def
 	cd ../..; cp mzscheme/dynsrc/mzdyn.exp $(ILIBDIR)/gcc
 	cd ../..; cp mzscheme/dynsrc/mzdyn.o $(ILIBDIR)/gcc

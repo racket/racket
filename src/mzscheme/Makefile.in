@@ -155,9 +155,7 @@ mzscheme.exe: main.o libmzgcxxxxxxx.dll libmzschxxxxxxx.dll
 MZFW = PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme
 
 $(MZFW): libmzscheme.@LIBSFX@ libmzgc.@LIBSFX@ $(SPECIALIZINGOBJECTS)
-	if [ ! -d PLT_MzScheme.framework ] ; then mkdir PLT_MzScheme.framework ; fi
-	if [ ! -d PLT_MzScheme.framework/Versions ] ; then mkdir PLT_MzScheme.framework/Versions ; fi
-	if [ ! -d PLT_MzScheme.framework/Versions/$(FWVERSION) ] ; then mkdir PLT_MzScheme.framework/Versions/$(FWVERSION) ; fi
+	mkdir -p  PLT_MzScheme.framework/Versions/$(FWVERSION)
 	$(CC) -o $(MZFW) -framework CoreFoundation -dynamiclib -all_load $(SPECIALIZINGOBJECTS) libmzscheme.@LIBSFX@ libmzgc.@LIBSFX@ @LDFLAGS@ @LIBS@
 	rm -f PLT_MzScheme.framework/PLT_MzScheme
 	ln -s Versions/$(FWVERSION)/PLT_MzScheme PLT_MzScheme.framework/PLT_MzScheme
@@ -312,10 +310,7 @@ osx-install:
 	rm -f $(MZFWDIR)/Versions/$(FWVERSION)/PLT_MzScheme
 	rm -f $(MZFWDIR)/PLT_MzScheme
 	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then rm -rf $(MZFWDIR) ; fi
-	if [ ! -d @FRAMEWORK_INSTALL_DIR@ ] ; then mkdir @FRAMEWORK_INSTALL_DIR@ ; fi
-	if [ ! -d $(MZFWDIR) ] ; then mkdir $(MZFWDIR) ; fi
-	if [ ! -d $(MZFWDIR)/Versions ] ; then mkdir $(MZFWDIR)/Versions ; fi
-	if [ ! -d $(MZFWDIR)/Versions/$(FWVERSION) ] ; then mkdir $(MZFWDIR)/Versions/$(FWVERSION) ; fi
+	mkdir -p @FRAMEWORK_INSTALL_DIR@ "$(MZFWDIR)/Versions/$(FWVERSION)"
 	cp $(MZFW) $(MZFWDIR)/Versions/$(FWVERSION)/
 	ln -s Versions/$(FWVERSION)/PLT_MzScheme $(MZFWDIR)/
 	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then /usr/bin/install_name_tool -change "@executable_path/PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme" "@executable_path/../lib/PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme" "$(bindir)/mzscheme" ; fi
@@ -325,13 +320,13 @@ MZFWMMM = PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme
 install-3m@OSX@:
 	$(MAKE) install-3m-basic
 	rm -f $(MZFWDIR)/Versions/$(FWVERSION)_3m/PLT_MzScheme
-	if [ ! -d $(MZFWDIR)/Versions/$(FWVERSION)_3m ] ; then mkdir $(MZFWDIR)/Versions/$(FWVERSION)_3m ; fi
+	mkdir -p "$(MZFWDIR)/Versions/$(FWVERSION)_3m"
 	cp $(MZFWMMM) $(MZFWDIR)/Versions/$(FWVERSION)_3m/
 	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then /usr/bin/install_name_tool -change "@executable_path/PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "@executable_path/../lib/PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "$(bindir)/mzscheme3m" ; fi
 
 unix-cygwin-install:
 	$(MAKE) unix-install
-	cd dynsrc; $(MAKE) cygwin-install	
+	cd dynsrc; $(MAKE) cygwin-install
 
 config:
 	autoconf $(srcdir)/configure.ac | mzscheme -qr $(srcdir)/clean_ac.ss > $(srcdir)/../configure

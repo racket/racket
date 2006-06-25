@@ -308,18 +308,16 @@ EXTRA_OBJS_L = ../src/gmp.@LTO@ @FOREIGN_OBJSLIB_IF_USED@
 MZFWMMM = PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme
 
 $(MZFWMMM): ../libmzscheme3m.@LIBSFX@
-	if [ ! -d PLT_MzScheme.framework ] ; then mkdir PLT_MzScheme.framework ; fi
-	if [ ! -d PLT_MzScheme.framework/Versions ] ; then mkdir PLT_MzScheme.framework/Versions ; fi
-	if [ ! -d PLT_MzScheme.framework/Versions/$(FWVERSION)_3m ] ; then mkdir PLT_MzScheme.framework/Versions/$(FWVERSION)_3m ; fi
+	mkdir -p "PLT_MzScheme.framework/Versions/$(FWVERSION)_3m"
 	$(CC) -o $(MZFWMMM) -framework CoreFoundation -dynamiclib -all_load ../libmzscheme3m.@LIBSFX@ @LDFLAGS@ $(LIBS)
 	rm -f PLT_MzScheme.framework/PLT_MzScheme
 	ln -s Versions/$(FWVERSION)_3m/PLT_MzScheme PLT_MzScheme.framework/PLT_MzScheme	
 
 ../mzscheme3m@OSX@: $(MZFWMMM) main.@LTO@
 	$(CC) -o ../mzscheme3m @PROFFLAGS@ main.@LTO@ -Wl,-headerpad_max_install_names -F. -framework PLT_MzScheme
-	if [ ! -d ../PLT_MzScheme.framework/Versions/$(FWVERSION)_3m ] ; then mkdir ../PLT_MzScheme.framework/Versions/$(FWVERSION)_3m ; fi
-	cp PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme ../PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme
-	/usr/bin/install_name_tool -change "PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "@executable_path/PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" ../mzscheme3m
+	mkdir -p "../PLT_MzScheme.framework/Versions/$(FWVERSION)_3m"
+	cp "PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "../PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme"
+	/usr/bin/install_name_tool -change "PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "@executable_path/PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "../mzscheme3m"
 
 
 clean:
