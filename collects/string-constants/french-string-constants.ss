@@ -155,6 +155,7 @@
   (bug-report-field-docs-installed "Documentations installées")
   (bug-report-field-collections "Collections")
   (bug-report-field-human-language "Langage humain")
+  (bug-report-field-memory-use "Mémoire utilisée")
   (bug-report-field-version "Version")
   (bug-report-synthesized-information "Information Synthétisée")  ;; dialog title
   (bug-report-show-synthesized-info "Montrer l'information synthétisée")
