@@ -203,7 +203,7 @@
   
   ; mime-part : (listof header?) * (listof bytes?)
   (define-struct mime-part (headers contents))
-  (define CR-NL #"#\return#\newline")
+  (define CR-NL #"\r\n")
   (define (construct-mime-part headers body)
     (make-mime-part
      headers
