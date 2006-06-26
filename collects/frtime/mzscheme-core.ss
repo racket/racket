@@ -365,7 +365,7 @@
                       clause ...
                       (require (rename module tmp-name fun-name) ...)
                       (define (fun-name . args)
-                        (apply lift false tmp-name args))
+                        (apply lift #f tmp-name args))
                       ...))]
                [(lifted module . ids)
                 (with-syntax ([(fun-name ...) (syntax ids)]
