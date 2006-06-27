@@ -169,14 +169,16 @@ an appropriate subdirectory.
   
   (define install? (make-parameter #t)) ;; if #f, will not install packages and instead give an error
   
-  (define (resolver spec module-path stx)
-    ;; ensure these directories exist
-    (make-directory* (PLANET-DIR))
-    (make-directory* (CACHE-DIR))
-    (establish-diamond-property-monitor)
-    (cond
-      [(or spec stx) (planet-resolve spec module-path stx)]
-      [else module-path]))
+  (define resolver 
+    (case-lambda
+     [(name) (void)]
+     [(spec module-path stx load?)
+      ;; ensure these directories exist
+      (make-directory* (PLANET-DIR))
+      (make-directory* (CACHE-DIR))
+      (establish-diamond-property-monitor)
+      (planet-resolve spec module-path stx load?)]
+     [(spec module-path stx) (resolver spec module-path stx #t)]))
   
   ; ==========================================================================================
   ; DIAMOND PROPERTY STUFF
@@ -270,10 +272,10 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
   ; planet-resolve : PLANET-REQUEST symbol syntax[PLANET-REQUEST] -> symbol
   ; resolves the given request. Returns a name corresponding to the module in the correct
   ; environment
-  (define (planet-resolve spec module-path stx)
+  (define (planet-resolve spec module-path stx load?)
     (let-values ([(path pkg) (get-planet-module-path/pkg spec module-path stx)])
       (add-pkg-to-diamond-registry! pkg)
-      (do-require path (pkg-path pkg) module-path stx)))
+      (do-require path (pkg-path pkg) module-path stx load?)))
   
   ;; get-planet-module-path/pkg :PLANET-REQUEST symbol syntax[PLANET-REQUEST] -> path PKG
   ;; returns the matching package and the file path to the specific request
@@ -559,12 +561,13 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
   
   ; do-require : path path symbol syntax -> symbol
   ; requires the given filename, which must be a module, in the given path.
-  (define (do-require file-path package-path module-path stx)
+  (define (do-require file-path package-path module-path stx load?)
     (parameterize ((current-load-relative-directory package-path))    
       ((current-module-name-resolver)
        file-path
        module-path
-       stx)))
+       stx
+       load?)))
   
   ; ============================================================
   ; UTILITY

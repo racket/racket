@@ -246,7 +246,6 @@ EXPORTS
  scheme_utf8_decode_prefix
  scheme_utf8_decode_to_buffer
  scheme_utf8_decode_to_buffer_len
- scheme_utf8_decode_count
  scheme_utf8_encode
  scheme_utf8_encode_all
  scheme_utf8_encode_to_buffer
@@ -418,7 +417,6 @@ EXPORTS
  scheme_finish_primitive_module
  scheme_protect_primitive_provide
  scheme_make_modidx
- scheme_declare_module
  scheme_apply_for_syntax_in_env
  scheme_dynamic_require
  scheme_intern_symbol

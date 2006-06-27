@@ -229,6 +229,9 @@
 (syntax-test #'(set! x . 1))
 (syntax-test #'(set! x 1 . 2))
 
+(define (set!-not-ever-defined) (set! not-ever-defined (add1 not-ever-defined)))
+(err/rt-test (set!-not-ever-defined) exn:fail:contract:variable?)
+
 (set!-values (x) 9)
 (test 9 'set!-values x)
 (test (void) 'set!-values (set!-values () (values)))

@@ -1,3 +1,16 @@
+Version 350.2
+Changed the module name resolver protocol so that the resolver is
+ required to accept 1, 3, and 4 arguments; the new 4-argument mode
+ supports resolving a module path without loading the module
+Changed namespace-attach-module and namespace-unprotect-module
+ to accept quoted module paths, instead of only symbolic names
+Fixed avoidable overflow and undeflow in magnitude and / for
+ inexact complex numbers
+
+Version 350.1
+Added define-member-name, member-name-key, and generate-member-key
+ to class.ss
+
 Version 350, June 2006
 JIT compiler:
  Added just-in-time native-code compiler with a new eval-jit-enabled

@@ -209,35 +209,76 @@ Scheme_Object *scheme_complex_multiply(const Scheme_Object *a, const Scheme_Obje
   
 }
 
-Scheme_Object *scheme_complex_divide(const Scheme_Object *n, const Scheme_Object *d)
+Scheme_Object *scheme_complex_divide(const Scheme_Object *_n, const Scheme_Object *_d)
 { 
-  Scheme_Complex *cn = (Scheme_Complex *)n;
-  Scheme_Complex *cd = (Scheme_Complex *)d;
-  Scheme_Object *a_sq_p_b_sq, *r, *i;
+  Scheme_Complex *cn = (Scheme_Complex *)_n;
+  Scheme_Complex *cd = (Scheme_Complex *)_d;
+  Scheme_Object *den, *r, *i, *a, *b, *c, *d, *cm, *dm, *aa[1];
   
   if ((cn->r == zero) && (cn->i == zero))
     return zero;
 
+  a = cn->r;
+  b = cn->i;
+  c = cd->r;
+  d = cd->i;
+
   /* Check for exact-zero simplifications in d: */
-  if (cd->r == zero) {
-    i = scheme_bin_minus(zero, scheme_bin_div(cn->r, cd->i));
-    r = scheme_bin_div(cn->i, cd->i);
+  if (c == zero) {
+    i = scheme_bin_minus(zero, scheme_bin_div(a, d));
+    r = scheme_bin_div(b, d);
     return scheme_make_complex(r, i);
-  } else if (cd->i == zero) {
-    r = scheme_bin_div(cn->r, cd->r);
-    i = scheme_bin_div(cn->i, cd->r);
+  } else if (d == zero) {
+    r = scheme_bin_div(a, c);
+    i = scheme_bin_div(b, c);
     return scheme_make_complex(r, i);
   }
 
-  a_sq_p_b_sq = scheme_bin_plus(scheme_bin_mult(cd->r, cd->r), 
-				scheme_bin_mult(cd->i, cd->i));
+  aa[0] = d;
+  if (SCHEME_TRUEP(scheme_zero_p(1, aa))) {
+    /* This is like dividing by a real number, except that
+       the inexact 0 imaginary part can interact with +inf.0 and +nan.0 */
+    r = scheme_bin_plus(scheme_bin_div(a, c),
+			/* Either 0.0 or +nan.0: */
+			scheme_bin_mult(d, b));
+    i = scheme_bin_minus(scheme_bin_div(b, c),
+			 /* Either 0.0 or +nan.0: */
+			 scheme_bin_mult(d, a));
+    
+    return scheme_make_complex(r, i);
+  }
+  aa[0] = c;
+  if (SCHEME_TRUEP(scheme_zero_p(1, aa))) {
+    r = scheme_bin_plus(scheme_bin_div(b, d),
+			/* Either 0.0 or +nan.0: */
+			scheme_bin_mult(c, a));
+    i = scheme_bin_minus(scheme_bin_mult(c, b),  /* either 0.0 or +nan.0 */
+			 scheme_bin_div(a, d));
+
+    return scheme_make_complex(r, i);
+  }
+
+  aa[0] = c;
+  cm = scheme_abs(1, aa);
+  aa[0] = d;
+  dm = scheme_abs(1, aa);
+
+  if (scheme_bin_lt(cm, dm)) {
+    cm = a;
+    a = b;
+    b = cm;
+    cm = c;
+    c = d;
+    d = cm;
+  }
+
+  r = scheme_bin_div(c, d);
+  den = scheme_bin_plus(d, scheme_bin_mult(c, r));
   
-  r = scheme_bin_div(scheme_bin_plus(scheme_bin_mult(cd->r, cn->r),
-				     scheme_bin_mult(cd->i, cn->i)),
-		     a_sq_p_b_sq);
-  i = scheme_bin_div(scheme_bin_minus(scheme_bin_mult(cd->r, cn->i),
-				      scheme_bin_mult(cd->i, cn->r)),
-		     a_sq_p_b_sq);
+  i = scheme_bin_div(scheme_bin_minus(a, scheme_bin_mult(b, r)),
+		     den);
+  r = scheme_bin_div(scheme_bin_plus(b, scheme_bin_mult(a, r)),
+		     den);
   
   return scheme_make_complex(r, i);
 }

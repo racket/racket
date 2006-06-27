@@ -285,7 +285,7 @@
   scheme_extension_table->scheme_utf8_decode_prefix = scheme_utf8_decode_prefix;
   scheme_extension_table->scheme_utf8_decode_to_buffer = scheme_utf8_decode_to_buffer;
   scheme_extension_table->scheme_utf8_decode_to_buffer_len = scheme_utf8_decode_to_buffer_len;
-  scheme_extension_table->scheme_utf8_decode_count = scheme_utf8_decode_count;
+  scheme_extension_table->MZ_EXTERN = MZ_EXTERN;
   scheme_extension_table->scheme_utf8_encode = scheme_utf8_encode;
   scheme_extension_table->scheme_utf8_encode_all = scheme_utf8_encode_all;
   scheme_extension_table->scheme_utf8_encode_to_buffer = scheme_utf8_encode_to_buffer;
@@ -475,7 +475,6 @@
   scheme_extension_table->scheme_finish_primitive_module = scheme_finish_primitive_module;
   scheme_extension_table->scheme_protect_primitive_provide = scheme_protect_primitive_provide;
   scheme_extension_table->scheme_make_modidx = scheme_make_modidx;
-  scheme_extension_table->scheme_declare_module = scheme_declare_module;
   scheme_extension_table->scheme_apply_for_syntax_in_env = scheme_apply_for_syntax_in_env;
   scheme_extension_table->scheme_dynamic_require = scheme_dynamic_require;
   scheme_extension_table->scheme_intern_symbol = scheme_intern_symbol;

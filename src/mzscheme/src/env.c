@@ -644,7 +644,7 @@ Scheme_Env *scheme_make_empty_env(void)
 static Scheme_Env *make_env(Scheme_Env *base, int semi, int toplevel_size)
 {
   Scheme_Bucket_Table *toplevel, *syntax;
-  Scheme_Hash_Table *module_registry;
+  Scheme_Hash_Table *module_registry, *export_registry;
   Scheme_Object *modchain;
   Scheme_Env *env;
 
@@ -655,14 +655,17 @@ static Scheme_Env *make_env(Scheme_Env *base, int semi, int toplevel_size)
     syntax = NULL;
     modchain = NULL;
     module_registry = NULL;
+    export_registry = NULL;
   } else {
     syntax = scheme_make_bucket_table(7, SCHEME_hash_ptr);
     if (base) {
       modchain = base->modchain;
       module_registry = base->module_registry;
+      export_registry = base->export_registry;
     } else {
       if (semi < 0) {
 	module_registry = NULL;
+	export_registry = NULL;
 	modchain = NULL;
       } else {
 	Scheme_Hash_Table *modules;
@@ -673,6 +676,8 @@ static Scheme_Env *make_env(Scheme_Env *base, int semi, int toplevel_size)
 
 	module_registry = scheme_make_hash_table(SCHEME_hash_ptr);
 	module_registry->iso.so.type = scheme_module_registry_type;
+	
+	export_registry = scheme_make_hash_table(SCHEME_hash_ptr);
       }
     }
   }
@@ -686,6 +691,7 @@ static Scheme_Env *make_env(Scheme_Env *base, int semi, int toplevel_size)
     env->syntax = syntax;
     env->modchain = modchain;
     env->module_registry = module_registry;
+    env->export_registry = export_registry;
   }
 
   return env;
@@ -725,6 +731,7 @@ void scheme_prepare_exp_env(Scheme_Env *env)
 
     eenv->module = env->module;
     eenv->module_registry = env->module_registry;
+    eenv->export_registry = env->export_registry;
     eenv->insp = env->insp;
 
     modchain = SCHEME_VEC_ELS(env->modchain)[1];
@@ -759,6 +766,7 @@ void scheme_prepare_template_env(Scheme_Env *env)
 
     eenv->module = env->module;
     eenv->module_registry = env->module_registry;
+    eenv->export_registry = env->export_registry;
     eenv->insp = env->insp;
 
     modchain = SCHEME_VEC_ELS(env->modchain)[2];
@@ -789,6 +797,7 @@ Scheme_Env *scheme_clone_module_env(Scheme_Env *menv, Scheme_Env *ns, Scheme_Obj
 
   menv2->module = menv->module;
   menv2->module_registry = ns->module_registry;
+  menv2->export_registry = ns->export_registry;
   menv2->insp = menv->insp;
 
   menv2->syntax = menv->syntax;
@@ -2322,7 +2331,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 
   if (modidx) {
     /* If it's an access path, resolve it: */
-    modname = scheme_module_resolve(modidx);
+    modname = scheme_module_resolve(modidx, 1);
 
     if (env->genv->module && SAME_OBJ(modname, env->genv->module->modname)) {
       modidx = NULL;

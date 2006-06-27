@@ -1184,6 +1184,41 @@
 			     (current-preserved-thread-cell-values post)
 			     (test 3 thread-cell-ref c3)))))))
 
+
+;; ----------------------------------------
+;; Check that nested continuations sharing saved runstacks
+;;  work properly:
+
+(test '(5050 5050)
+      'shared-saved-runstacks
+      (parameterize ([current-thread-initial-stack-size 3])
+	(let ([ch (make-channel)]
+	      [r-ch (make-channel)])
+	  (let ([t (thread
+		    (lambda ()
+		      (define (mk-list put)
+			(let loop ([n 100])
+			  (if (zero? n)
+			      (let/cc k
+				(put k)
+				null)
+			      (cons n (loop (sub1 n))))))
+		      (define (sum l)
+			(let loop ([l l])
+			  (if (null? l)
+			      0
+			      (+ (car l) (loop (cdr l))))))
+		      (let ([c1 #f])
+			(let ([l (mk-list (lambda (k)
+					    (sum (mk-list (lambda (k) (channel-put ch k))))))])
+			  (channel-put r-ch (sum l))))))])
+	    (let ([k (channel-get ch)])
+	      (list
+	       (sync r-ch)
+	       (begin
+		 (thread (lambda () (k null)))
+		 (sync r-ch))))))))
+
 ; --------------------
 
 (report-errs)

@@ -3107,7 +3107,7 @@ static Scheme_Saved_Stack *copy_out_runstack(Scheme_Thread *p,
 					     Scheme_Object **runstack_start,
 					     Scheme_Cont *share_from)
 {
-  Scheme_Saved_Stack *saved, *isaved, *csaved, *share_saved, *ss;
+  Scheme_Saved_Stack *saved, *isaved, *csaved, *share_saved, *share_csaved, *ss;
   Scheme_Object **start;
   long size;
 
@@ -3136,12 +3136,14 @@ static Scheme_Saved_Stack *copy_out_runstack(Scheme_Thread *p,
   /* Copy saved runstacks: */
   isaved = saved;
   share_saved = NULL;
+  share_csaved = NULL;
   if (share_from) {
     /* We can share all saved runstacks */
-    share_saved = share_from->ss.runstack_saved;
+    share_csaved = share_from->ss.runstack_saved;
+    share_saved = share_from->runstack_copied->prev;
   }
   for (csaved = p->runstack_saved; csaved; csaved = csaved->prev) {
-    if (share_saved && (csaved->runstack_start == share_saved->runstack_start)) {
+    if (share_csaved && (csaved->runstack_start == share_csaved->runstack_start)) {
       /* Share */
       isaved->prev = share_saved;
       break;

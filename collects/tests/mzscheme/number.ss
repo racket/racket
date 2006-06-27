@@ -684,6 +684,8 @@
 (test 0.25-0.0i / 1 4+0.0i)
 (test 0.25+0.0i / 1+0.0i 4+0.0i)
 (test 0 / 0 4+3i)
+(test 0.25+0.0i / 1e300+1e300i (* 4 1e300+1e300i))
+(test 0.25+0.0i / 1e-300+1e-300i (* 4 1e-300+1e-300i))
 
 (test 3 / 1 1/3)
 (test -3 / 1 -1/3)
@@ -1333,6 +1335,10 @@
 (test 3/4 magnitude -3/4)
 (test 10.0 magnitude 10.0+0.0i)
 (test 10.0 magnitude -10.0+0.0i)
+(test 10.0 magnitude 0+10.0i)
+(test 10 magnitude 0+10i)
+(test 141421.0 round (* 1e-295 (magnitude 1e300+1e300i)))
+(test 141421.0 round (* 1e+305 (magnitude 1e-300+1e-300i)))
 
 (test 0 angle 1)
 (test 0 angle 1.0)
@@ -1622,7 +1628,7 @@
 ; Should at least be close...
 (test 4.0 round (log (exp 4.0)))
 (test 125.0 round (* 1000 (asin (sin 0.125))))
-(test 125.0d0 round (* 1000 (asin (sin 0.125+0.0d0i))))
+(test 125.0d0 round (* 1000 (magnitude (asin (sin 0.125+0.0d0i)))))
 (test 125.0 round (* 1000 (asin (sin 1/8))))
 (test 125.0 round (* 1000 (acos (cos 0.125))))
 (test 125.0d0 round (* 1000 (acos (cos 0.125+0.0d0i))))

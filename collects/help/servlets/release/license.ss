@@ -96,4 +96,4 @@
 		("GNU lightning"
 		 "Copyright (c) 1994, 1995, 1996, 1999, 2000, 2001, 2002 Free Software Foundation, Inc.")
 		("GNU Classpath"
-		 "Gnu Public Licence with special exception")))))))
+		 "GNU Public License with special exception")))))))

@@ -524,8 +524,8 @@ MZ_EXTERN mzchar *scheme_utf8_decode_to_buffer(const unsigned char *s, int len,
 					       mzchar *buf, int blen);
 MZ_EXTERN mzchar *scheme_utf8_decode_to_buffer_len(const unsigned char *s, int len, 
 						   mzchar *buf, int blen, long *rlen);
-MZ_EXTERN int scheme_utf8_decode_count(const unsigned char *s, int start, int end, 
-				       int *_state, int might_continue, int permissive);
+XFORM_NONGCING MZ_EXTERN int scheme_utf8_decode_count(const unsigned char *s, int start, int end, 
+						      int *_state, int might_continue, int permissive);
 
 MZ_EXTERN int scheme_utf8_encode(const unsigned int *us, int start, int end, 
 				 unsigned char *s, int dstart,
@@ -851,9 +851,6 @@ MZ_EXTERN void scheme_protect_primitive_provide(Scheme_Env *env, Scheme_Object *
 MZ_EXTERN Scheme_Object *scheme_make_modidx(Scheme_Object *path,
 				  Scheme_Object *base,
 				  Scheme_Object *resolved);
-
-MZ_EXTERN Scheme_Object *scheme_declare_module(Scheme_Object *shape, Scheme_Invoke_Proc ivk,
-				     Scheme_Invoke_Proc sivk, void *data, Scheme_Env *env);
 
 MZ_EXTERN Scheme_Object *scheme_apply_for_syntax_in_env(Scheme_Object *proc, Scheme_Env *env);
 

@@ -213,8 +213,10 @@ static Module_Renames *krn;
          simple lexical renames (not ribs) and marks, only, and it's
          inserted into a chain heuristically
 
-   - A wrap-elem (box (vector <num> <midx> <midx>)) is a phase shift
-         by <num>, remapping the first <midx> to the second <midx>
+   - A wrap-elem (box (vector <num> <midx> <midx> <export-registry>))
+         is a phase shift by <num>, remapping the first <midx> to the 
+         second <midx>; the <export-registry> part is for finding
+         modules to unmarshal import renamings
 
    - A wrap-elem '* is a mark barrier, which is applied to the
          result of an expansion so that top-level marks do not
@@ -1327,14 +1329,16 @@ Scheme_Hash_Table *scheme_module_rename_marked_names(Scheme_Object *rn)
 }
 
 static void unmarshal_rename(Module_Renames *mrn,
-			     Scheme_Object *modidx_shift_from, Scheme_Object *modidx_shift_to)
+			     Scheme_Object *modidx_shift_from, Scheme_Object *modidx_shift_to,
+			     Scheme_Hash_Table *export_registry)
 {
   Scheme_Object *l;
 
   mrn->needs_unmarshal = 0;
   for (l = mrn->unmarshal_info; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
     scheme_do_module_rename_unmarshal((Scheme_Object *)mrn, SCHEME_CAR(l),
-				      modidx_shift_from, modidx_shift_to);
+				      modidx_shift_from, modidx_shift_to,
+				      export_registry);
   }
 }
 
@@ -1402,22 +1406,25 @@ Scheme_Object *scheme_add_mark_barrier(Scheme_Object *o)
   return scheme_add_rename(o, barrier_symbol);
 }
 
-Scheme_Object *scheme_stx_phase_shift_as_rename(long shift, Scheme_Object *old_midx, Scheme_Object *new_midx)
+Scheme_Object *scheme_stx_phase_shift_as_rename(long shift, Scheme_Object *old_midx, Scheme_Object *new_midx,
+						Scheme_Hash_Table *export_registry)
 {
-  if (shift || new_midx) {
+  if (shift || new_midx || export_registry) {
     Scheme_Object *vec;
     
     if (last_phase_shift
 	&& ((vec = SCHEME_BOX_VAL(last_phase_shift)))
 	&& (SCHEME_VEC_ELS(vec)[0] == scheme_make_integer(shift))
 	&& (SCHEME_VEC_ELS(vec)[1] == (new_midx ? old_midx : scheme_false))
-	&& (SCHEME_VEC_ELS(vec)[2] == (new_midx ? new_midx : scheme_false))) {
+	&& (SCHEME_VEC_ELS(vec)[2] == (new_midx ? new_midx : scheme_false))
+	&& (SCHEME_VEC_ELS(vec)[3] == (export_registry ? (Scheme_Object *)export_registry : scheme_false))) {
       /* use the old one */
     } else {
-      vec = scheme_make_vector(3, NULL);
+      vec = scheme_make_vector(4, NULL);
       SCHEME_VEC_ELS(vec)[0] = scheme_make_integer(shift);
       SCHEME_VEC_ELS(vec)[1] = (new_midx ? old_midx : scheme_false);
       SCHEME_VEC_ELS(vec)[2] = (new_midx ? new_midx : scheme_false);
+      SCHEME_VEC_ELS(vec)[3] = (export_registry ? (Scheme_Object *)export_registry : scheme_false);
 
       last_phase_shift = scheme_box(vec);
     }
@@ -1428,14 +1435,15 @@ Scheme_Object *scheme_stx_phase_shift_as_rename(long shift, Scheme_Object *old_m
 }
 
 Scheme_Object *scheme_stx_phase_shift(Scheme_Object *stx, long shift,
-				      Scheme_Object *old_midx, Scheme_Object *new_midx)
+				      Scheme_Object *old_midx, Scheme_Object *new_midx,
+				      Scheme_Hash_Table *export_registry)
 /* Shifts the phase on a syntax object in a module. A 0 shift might be
    used just to re-direct relative module paths. new_midx might be
-   NULL to shift without redirection. */
+   NULL to shift without redirection. And so on. */
 {
   Scheme_Object *ps;
 
-  ps = scheme_stx_phase_shift_as_rename(shift, old_midx, new_midx);
+  ps = scheme_stx_phase_shift_as_rename(shift, old_midx, new_midx, export_registry);
   if (ps)
     return scheme_add_rename(stx, ps);  
   else
@@ -1781,8 +1789,8 @@ int scheme_stx_certified(Scheme_Object *stx, Scheme_Object *extra_certs,
 	  else
 	    cert_modidx = certs->modidx;
 	  
-	  a = scheme_module_resolve(home_modidx);
-	  b = scheme_module_resolve(cert_modidx);
+	  a = scheme_module_resolve(home_modidx, 0);
+	  b = scheme_module_resolve(cert_modidx, 0);
 	} else
 	  a = b = NULL;
 	
@@ -2057,7 +2065,7 @@ Scheme_Object *scheme_stx_cert(Scheme_Object *o, Scheme_Object *mark, Scheme_Env
     else
       cert = INACTIVE_CERTS(stx);
     
-    cert = cons_cert(mark, menv->link_midx ? menv->link_midx : menv->module->src_modidx, 
+    cert = cons_cert(mark, menv->link_midx ? menv->link_midx : menv->module->me->src_modidx, 
 		     menv->module->insp, key, cert);
 
     if (active) {
@@ -2665,6 +2673,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
   Scheme_Lexical_Rib *rib = NULL, *did_rib = NULL;
   long orig_phase = phase;
   Scheme_Object *bdg = NULL;
+  Scheme_Hash_Table *export_registry = NULL;
 
   if (_wraps) {
     WRAP_POS_COPY(wraps, *_wraps);
@@ -2718,7 +2727,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 	  Scheme_Object *rename, *nominal = NULL, *glob_id;
 
 	  if (mrn->needs_unmarshal)
-	    unmarshal_rename(mrn, modidx_shift_from, modidx_shift_to);
+	    unmarshal_rename(mrn, modidx_shift_from, modidx_shift_to, export_registry);
 	  
 	  if (mrn->marked_names) {
 	    /* Resolve based on rest of wraps: */
@@ -2829,6 +2838,13 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 	}
 	
 	modidx_shift_from = src;
+      }
+
+      {
+	Scheme_Object *er;
+	er = SCHEME_VEC_ELS(vec)[3];
+	if (SCHEME_TRUEP(er))
+	  export_registry = (Scheme_Hash_Table *)er;
       }
     } else if (rib || (SCHEME_VECTORP(WRAP_POS_FIRST(wraps))
 		       && !no_lexical)) {
@@ -3079,8 +3095,8 @@ int scheme_stx_free_eq(Scheme_Object *a, Scheme_Object *b, long phase)
   a = resolve_env(NULL, a, phase, 1, NULL, NULL);
   b = resolve_env(NULL, b, phase, 1, NULL, NULL);
 
-  a = scheme_module_resolve(a);
-  b = scheme_module_resolve(b);
+  a = scheme_module_resolve(a, 0);
+  b = scheme_module_resolve(b, 0);
 
   /* Same binding environment? */
   return SAME_OBJ(a, b);
@@ -3112,8 +3128,8 @@ int scheme_stx_module_eq(Scheme_Object *a, Scheme_Object *b, long phase)
   a = resolve_env(NULL, a, phase, 1, NULL, NULL);
   b = resolve_env(NULL, b, phase, 1, NULL, NULL);
 
-  a = scheme_module_resolve(a);
-  b = scheme_module_resolve(b);
+  a = scheme_module_resolve(a, 0);
+  b = scheme_module_resolve(b, 0);
 
   /* Same binding environment? */
   return SAME_OBJ(a, b);
@@ -3254,7 +3270,7 @@ Scheme_Object *scheme_stx_source_module(Scheme_Object *stx, int resolve)
   }
 
   if (SCHEME_TRUEP(srcmod) && resolve)
-    srcmod = scheme_module_resolve(srcmod);
+    srcmod = scheme_module_resolve(srcmod, 0);
 
   return srcmod;
 }
@@ -3993,6 +4009,18 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
       }
       /* If l is the end, don't need the phase shift */
       if (!WRAP_POS_END_P(l)) {
+	/* Need the phase shift, but drop the export table, if any: */
+	Scheme_Object *aa;
+	aa = SCHEME_BOX_VAL(a);
+	if (SCHEME_TRUEP(SCHEME_VEC_ELS(aa)[3])) {
+	  a = scheme_make_vector(4, NULL);
+	  SCHEME_VEC_ELS(a)[0] = SCHEME_VEC_ELS(aa)[0];
+	  SCHEME_VEC_ELS(a)[1] = SCHEME_VEC_ELS(aa)[1];
+	  SCHEME_VEC_ELS(a)[2] = SCHEME_VEC_ELS(aa)[2];
+	  SCHEME_VEC_ELS(a)[3] = scheme_false;
+	  a = scheme_box(a);
+	}
+
 	stack = CONS(a, stack);
 	stack_size++;
       }
@@ -5604,7 +5632,7 @@ static Scheme_Object *do_module_binding(char *name, int argc, Scheme_Object **ar
 	/* Imported */
 	int pos;
 	
-	m = scheme_module_resolve(m);
+	m = scheme_module_resolve(m, 0);
 	pos = scheme_module_export_position(m, scheme_get_env(NULL), a);
 	if (pos < 0)
 	  return scheme_false;

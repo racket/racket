@@ -268,14 +268,14 @@ static int mz_char_strcmp(const char *who, const mzchar *str1, int l1, const mzc
 static int mz_char_strcmp_ci(const char *who, const mzchar *str1, int l1, const mzchar *str2, int l2, int locale, int size_shortcut);
 static int mz_strcmp(const char *who, unsigned char *str1, int l1, unsigned char *str2, int l2);
 
-static int utf8_decode_x(const unsigned char *s, int start, int end,
-			 unsigned int *us, int dstart, int dend,
-			 long *ipos, long *jpos,
-			 char compact, char utf16,
-			 int *state, int might_continue, int permissive);
-static int utf8_encode_x(const unsigned int *us, int start, int end,
-			 unsigned char *s, int dstart, int dend,
-			 long *_ipos, long *_opos, char utf16);
+XFORM_NONGCING static int utf8_decode_x(const unsigned char *s, int start, int end,
+					unsigned int *us, int dstart, int dend,
+					long *ipos, long *jpos,
+					char compact, char utf16,
+					int *state, int might_continue, int permissive);
+XFORM_NONGCING static int utf8_encode_x(const unsigned int *us, int start, int end,
+					unsigned char *s, int dstart, int dend,
+					long *_ipos, long *_opos, char utf16);
 
 static char *string_to_from_locale(int to_bytes,
 				   char *in, int delta, int len,

@@ -2123,12 +2123,31 @@ static Scheme_Object *magnitude(int argc, Scheme_Object *argv[])
   if (SCHEME_COMPLEXP(o)) {
     Scheme_Object *r = _scheme_complex_real_part(o);
     Scheme_Object *i = _scheme_complex_imaginary_part(o);
-    Scheme_Object *m2;
-
-    m2 = scheme_bin_plus(scheme_bin_mult(r, r),
-			 scheme_bin_mult(i, i));
+    Scheme_Object *a[1], *q;
+    a[0] = r;
+    r = scheme_abs(1, a);
+    a[0] = i;
+    i = scheme_abs(1, a);
     
-    return scheme_sqrt(1, &m2);
+    if (SAME_OBJ(r, scheme_make_integer(0)))
+      return i;
+
+    if (scheme_bin_lt(i, r)) {
+      Scheme_Object *tmp;
+      tmp = i;
+      i = r;
+      r = tmp;
+    }
+    a[0] = r;
+    if (SCHEME_TRUEP(scheme_zero_p(1, a))) {
+      a[0] = i;
+      return scheme_exact_to_inexact(1, a);
+    }
+    q = scheme_bin_div(r, i);
+    q = scheme_bin_plus(scheme_make_integer(1),
+			scheme_bin_mult(q, q));
+    a[0] = q;
+    return scheme_bin_mult(i, scheme_sqrt(1, a));
   } else
     return scheme_abs(1, argv);
 }

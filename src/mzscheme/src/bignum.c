@@ -590,7 +590,7 @@ static bigdig* allocate_bigdig_array(int length)
 }
 
 /* We don't want to count leading digits of 0 in the bignum's length */
-static int bigdig_length(bigdig* array, int alloced)
+XFORM_NONGCING static int bigdig_length(bigdig* array, int alloced)
 {
   alloced--;
   while (alloced >= 0 && array[alloced] == 0) {

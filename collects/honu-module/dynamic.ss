@@ -3,23 +3,15 @@
   (require-for-syntax (lib "stx.ss" "syntax")
 		      "private/ops.ss"
 		      "private/util.ss"
-		      (lib "kerncase.ss" "syntax"))
+		      (lib "kerncase.ss" "syntax")
+		      "private/contexts.ss")
   
   (begin-for-syntax
 
    (define kernel-forms (kernel-form-identifier-list #'here))
-
-   (define (top-block-context? ctx) (memq ctx '(top-block)))
-   (define (return-block-context? ctx) (memq ctx '(return-block)))
-   (define (block-context? ctx) (memq ctx '(top-block block return-block)))
-   (define (expression-context? ctx) (memq ctx '(expression)))
-   (define (type-context? ctx) (memq ctx '(type)))
-
-   (define block-context 'block)
-   (define return-block-context 'return-block)
-   (define top-block-context 'top-block)
-   (define expression-context 'expression)
-   (define type-context 'type)
+   (define expand-stop-forms (list* #'honu-typed
+				    #'honu-unparsed-block
+				    kernel-forms))
 
    ;; --------------------------------------------------------
    ;; Transformer procedure property and basic struct
@@ -62,6 +54,11 @@
 	      (let ([str (symbol->string (syntax-e stx))])
 		(and (positive? (string-length str))
 		     (memq (string-ref str 0) sym-chars)))))))
+
+   (define (honu-identifier? stx)
+     (and (identifier? stx)
+	  (not (ormap (lambda (i) (module-identifier=? stx i)) (list #'\; #'\,)))
+	  (not (operator? stx))))
    
    (define (get-transformer stx)
      (or (and (stx-pair? stx)
@@ -104,21 +101,30 @@
 	 [((#%braces . block) . rest) (cons #'block #'rest)]
 	 [_else #f])
        => (lambda (b+r)
-	    (k #`(honu-unparsed-block #f void-type #f #,(return-block-context? ctx)
+	    (k #`(honu-unparsed-block #f obj #f #,(and (stx-null? (cdr b+r))
+						       (return-block-context? ctx))
 				      #,@(car b+r))
 	       (cdr b+r)))]
-      [else (let-values ([(expr-stxs after-expr) (extract-until body (list #'\;))])
+      [else (let-values ([(expr-stxs after-expr terminator) (extract-until body (list #'\;))])
 	      (unless expr-stxs
 		(raise-syntax-error
 		 #f
 		 "expected a semicolon to terminate form"
 		 (stx-car body)))
+	      (when (null? expr-stxs)
+		(raise-syntax-error
+		 #f
+		 "missing expression before terminator"
+		 terminator))
 	      (let ([code ((if (return-block-context? ctx)
 			       parse-a-tail-expr
 			       parse-an-expr)
 			   expr-stxs)])
 		(k ((if (top-block-context? ctx) 
-			(lambda (x) `(printf "~s\n" ,x))
+			(lambda (x) 
+			  `(let ([v ,x])
+			     (unless (void? v)
+			       (printf "~s\n" v))))
 			values)
 		    code)
 		   (stx-cdr after-expr))))]))
@@ -136,12 +142,13 @@
    ;; Parsing expressions
 
    (define parse-expr
+     ;; The given syntax sequence must not be empty
      (let ()
        (define (parse-expr-seq stx)
 	 (define (start-expr stx) 
 	   (let ([trans (get-transformer stx)])
 	     (if trans
-		 (let-values ([(expr rest) (trans stx expression-context)])
+		 (let-values ([(expr rest) (trans stx the-expression-context)])
 		   (if (stx-null? rest)
 		       (list expr)
 		       (cons expr (start-operator rest))))
@@ -169,7 +176,7 @@
 			 #f
 			 "missing expression inside braces"
 			 (stx-car stx))
-			(list #'(honu-unparsed-block #f void-type #f #f . pexpr)))]
+			(list #'(honu-unparsed-block #f obj #f #f . pexpr)))]
 		   [(op . more)
 		    (and (identifier? #'op)
 			 (ormap (lambda (uop)
@@ -235,19 +242,19 @@
 		    [(prefix? op)
 		     (group (append (reverse (cdr before))
 				    (list (quasisyntax/loc (op-id op)
-					    (#,(op-id op) #,(car before))))
+					    (honu-app #,(op-id op) #,(car before))))
 				    (reverse since)))]
 		    [(postfix? op)
 		     (let ([after (reverse since)])
 		       (group (append (reverse before)
 				      (list (quasisyntax/loc (op-id op)
-					      (#,(op-id op) #,(car after))))
+					      (honu-app #,(op-id op) #,(car after))))
 				      (cdr after))))]
 		    [(infix? op)
 		     (let ([after (reverse since)])
 		       (group (append (reverse (cdr before))
 				      (list (quasisyntax/loc (op-id op)
-					      (#,(op-id op) #,(car before) #,(car after))))
+					      (honu-app #,(op-id op) #,(car before) #,(car after))))
 				      (cdr after))))]
 		    [else (error "not an op!: " op)])]
 		  [(not (op? (stx-car seq)))
@@ -265,7 +272,7 @@
        (define (parse-arg-list stxs)
 	 (if (stx-null? stxs)
 	     stxs
-	     (let-values ([(val-stxs after-expr) (extract-until stxs (list #'\,))])
+	     (let-values ([(val-stxs after-expr terminator) (extract-until stxs (list #'\,))])
 	       (when (and val-stxs
 			  (stx-null? (stx-cdr after-expr)))
 		 (raise-syntax-error
@@ -321,30 +328,30 @@
 		    [where-stx orig-args-stx])
 	   (let-values ([(type rest-stx) (if (syntax-case args-stx (\,)
 					       [(id \, . rest)
-						(identifier? #'id)
+						(honu-identifier? #'id)
 						#t]
 					       [(id)
-						(identifier? #'id)
+						(honu-identifier? #'id)
 						#t]
 					       [_else #f])
-					     (values (make-h-type #'val #'(begin) #'(lambda (x) (values #t x)))
+					     (values (make-h-type #'obj #'(begin) #'(lambda (x) (values #t x)))
 						     args-stx)
 					     (let ([trans (get-transformer args-stx)])
 					       (if trans
-						   (trans args-stx type-context)
+						   (trans args-stx the-type-context)
 						   (values #f #f))))])
 	     (unless (honu-type? type)
 	       (raise-syntax-error
 		'|procedure declaration|
-		(format "expected a type ~a" where)
+		(format "expected an identifier or type ~a, found something else" where)
 		where-stx))
 	     (syntax-case rest-stx ()
 	       [(id)
-		(identifier? #'id)
+		(honu-identifier? #'id)
 		(parse-one-argument proc-id type #'id
 				    (lambda () null))]
 	       [(id comma . rest)
-		(and (identifier? #'id)
+		(and (honu-identifier? #'id)
 		     (identifier? #'comma)
 		     (module-identifier=? #'comma #'\,))
 		(parse-one-argument proc-id type #'id
@@ -353,18 +360,18 @@
 					    "after comma"
 					    #'comma)))]
 	       [(id something . rest)
-		(identifier? #'id)
+		(honu-identifier? #'id)
 		(raise-syntax-error
 		 'procedure\ declaration
-		 "expected a comma after identifier name"
+		 "expected a comma after argument identifier, found something else"
 		 #'something)]
 	       [_else
 		(raise-syntax-error
 		 'procedure\ declaration
-		 "expected an argument identifier"
+		 "expected an argument identifier, found something else"
 		 (car rest-stx))])))))
 
-   (define (make-honu-type pred-id mk-pred-def only-mode)
+   (define (make-honu-type pred-id mk-pred-def)
      (make-honu-trans
       (lambda (orig-stx ctx)
 	(let* ([pred-id (or pred-id
@@ -373,17 +380,17 @@
 			     (mk-pred-def pred-id orig-stx)
 			     #'(begin))])
 	  (cond
-	   [(block-context? ctx)
+	   [(or (block-context? ctx)
+		(definition-context? ctx))
 	    (with-syntax ([pred-id pred-id]
 			  [type-name (stx-car orig-stx)])
 	      (let loop ([stx (stx-cdr orig-stx)]
 			 [after (stx-car orig-stx)]
-			 [after-what "type name"]
-			 [parens-ok? #t])
+			 [after-what "type name"])
 		(syntax-case stx ()
 		  [(id . rest)
 		   (begin
-		     (unless (identifier? #'id)
+		     (unless (honu-identifier? #'id)
 		       (raise-syntax-error 'declaration
 					   (format "expected a identifier after ~a" after-what)
 					   (stx-car orig-stx)
@@ -391,13 +398,13 @@
 		     (if (and (identifier? (stx-car #'rest))
 			      (module-identifier=? #'set! (stx-car #'rest)))
 			 ;; -- Non-procedure declaration
-			 (if (eq? 'function only-mode)
+			 (if (function-definition-context? ctx)
 			     (raise-syntax-error 
 			      'declaration
 			      "expected parentheses after name for function definition"
 			      (stx-car #'rest))
-			     (let-values ([(val-stxs after-expr) (extract-until (stx-cdr #'rest)
-										(list #'\; #'\,))])
+			     (let-values ([(val-stxs after-expr terminator) (extract-until (stx-cdr #'rest)
+											   (list #'\; #'\,))])
 			       (unless val-stxs
 				 (raise-syntax-error 
 				  'declaration
@@ -408,22 +415,23 @@
 				  'declaration
 				  "missing expression initializing assignment"
 				  (stx-car #'rest)))
-			       (let ([def #`(define-typed id #f type-name pred-id 
-					      (check-expr #f 'id type-name pred-id 
-							  (honu-unparsed-expr #,@val-stxs)))])
+			       (let ([def #`(define-typed id 
+					      #,(constant-definition-context? ctx)
+					      #f type-name pred-id 
+					      (check-expr-type #f 'id type-name pred-id 
+							       (honu-unparsed-expr #,@val-stxs)))])
 				 (if (module-identifier=? #'\; (stx-car after-expr))
 				     (values #`(begin #,pred-def #,def) (stx-cdr after-expr))
 				     (let-values ([(defs remainder kind) (loop (stx-cdr after-expr) (stx-car after-expr) "comma" #f)])
 				       (values #`(begin #,pred-def #,def #,defs) remainder))))))
 			 ;; -- Procedure declaration
-			 (if (eq? 'var only-mode)
+			 (if (value-definition-context? ctx)
 			     (raise-syntax-error 
 			      'declaration
-			      "expected = after name for variable"
+			      (format "expected = after name in ~a context" (context->name ctx))
 			      (stx-car #'rest))
 			     (syntax-case #'rest (#%parens \;)
 			       [((#%parens . prest) (#%braces . body) . rest)
-				parens-ok?
 				(let ([args (parse-arguments #'prest #'id)])
 				  (with-syntax ([((arg arg-type arg-pred-def arg-pred-id) ...) args]
 						[(temp-id ...) (generate-temporaries (map car args))])
@@ -431,14 +439,14 @@
 						#,pred-def
 						arg-pred-def ...
 						(define-typed-procedure id 
+						  type-name
 						  ((arg arg-type arg-pred-id) ...)
 						  (lambda (temp-id ...)
-						    (define-typed arg id arg-type arg-pred-id temp-id) ...
+						    (define-typed arg #f id arg-type arg-pred-id temp-id) ...
 						    (honu-unparsed-block id type-name pred-id #t . body))))
 					    #'rest)))]
 			       ;; --- Error handling ---
 			       [((#%parens . prest) . bad-rest)
-				parens-ok?
 				(begin
 				  (parse-arguments #'prest #'id)
 				  (raise-syntax-error 
@@ -446,30 +454,26 @@
 				   "braces for function body after parenthesized arguments"
 				   (stx-car #'rest)
 				   #'id))]
-			       [_else
+			       [(id . _)
 				(raise-syntax-error 
 				 '|declaration|
-				 (if parens-ok?
-				     "expected either = (for variable intialization) or parens (for function arguments)"
-				     "expected = (for variable initialization)")
+				 (cond
+				  [(constant-definition-context? ctx) "expected = (for constant initialization)"]
+				  [(variable-definition-context? ctx) "expected = (for variable initialization)"]
+				  [(function-definition-context? ctx) "expected parens (for function arguments)"]
+				  [else
+				   "expected either = (for variable intialization) or parens (for function arguments)"])
 				 #'id)]))))]
 		  [_else
 		   (raise-syntax-error #f 
 				       (format "expected a identifier after ~a" after-what)
 				       after
 				       #'id)])))]
-	   [only-mode
-	    (raise-syntax-error #f 
-				(format "illegal in an ~a context"
-					(if (type-context? ctx) 
-					    "type"
-					    "expression"))
-				(stx-car orig-stx))]
 	   [(type-context? ctx) 
 	    (values (make-h-type (stx-car orig-stx) pred-def pred-id) (stx-cdr orig-stx))]
-	   [(expression-context? ctx)
+	   [else
 	    (raise-syntax-error #f 
-				"illegal in an expression context"
+				(format "illegal in ~a context" (context->name ctx))
 				(stx-car orig-stx))])))))
 
    (define (make-proc-predicate name form)
@@ -494,7 +498,7 @@
 			(raise-type-error '->
 					  "non-type within a procedure-type construction"
 					  (stx-car args-stx)))
-		      (let-values ([(type rest-stx) (trans args-stx type-context)])
+		      (let-values ([(type rest-stx) (trans args-stx the-type-context)])
 			(cons type (loop rest-stx))))))]
 	     [result-type 
 	      (let ([trans (get-transformer result-stx)])
@@ -502,7 +506,7 @@
 		  (raise-type-error '->
 				    "non-type in result position for procedure-type construction"
 				    (stx-car result-stx)))
-		(let-values ([(type rest-stx) (trans result-stx type-context)])
+		(let-values ([(type rest-stx) (trans result-stx the-type-context)])
 		  (unless (stx-null? rest-stx)
 		    (raise-type-error '->
 				      "extra tokens following result for procedure-type construction"
@@ -523,72 +527,110 @@
 		 (if (and (procedure? v)
 			  (procedure-arity-includes? v n))
 		     (values #t (lambda (arg ...)
-				  (check-expr
+				  (check-expr-type
 				   #f #t result-type result-pred-id
-				   (v (check-expr #f #f arg-type arg-pred-id arg) ...))))
+				   (v (check-expr-type #f #f arg-type arg-pred-id arg) ...))))
 		     (values #f #f))))))))
        
-   (define (compatible-type? val-expr val-type target-type)
+   (define (check-compatible-type val-expr val-type target-type fail-k)
      (and (identifier? target-type)
-	  (identifier? val-type)
-	  (or (module-identifier=? val-type target-type)
-	      (module-identifier=? #'val target-type)
-	      (and (number? (syntax-e val-expr))
-		   (module-identifier=? #'num target-type))
-	      (and (integer? (syntax-e val-expr))
-		   (exact? (syntax-e val-expr))
-		   (module-identifier=? #'int target-type))
-	      (and (real? (syntax-e val-expr))
-		   (module-identifier=? #'real target-type))
-	      (and (string? (syntax-e val-expr))
-		   (module-identifier=? #'string-type target-type))))))
-      
-   (define (check proc who type-name pred val)
-     (let-values ([(tst new-val) (pred val)])
-       (unless tst
-	 (raise
-	  (make-exn:fail:contract
-	   (string->immutable-string
-	    (format "~a: expected ~a value for ~a, got something else: ~e"
-		    (or proc (if (eq? who #t) #f who) "procedure")
-		    type-name
-		    (cond
-		     [(eq? who #t) "result"]
-		     [else (if proc 
-			       (format "~a argument" who)
-			       (if who
-				   "initialization"
-				   "argument"))])
-		    val))
-	   (current-continuation-marks))))
-       new-val))
+	  (or (module-identifier=? #'obj target-type)
+	      (and (identifier? val-type)
+		   (module-identifier=? val-type target-type))
+	      (let ([val-type
+		     (if (not val-type)
+			 (cond
+			  [(and (integer? (syntax-e val-expr))
+				(exact? (syntax-e val-expr))) #'int]
+			  [(real? (syntax-e val-expr)) #'real]
+			  [(number? (syntax-e val-expr)) #'num]
+			  [(string? (syntax-e val-expr)) #'string-type]
+			  [(boolean? (syntax-e val-expr)) #'bool]
+			  [(identifier? val-expr)
+			   (cond
+			    [(module-identifier=? #'false val-expr) #'bool]
+			    [(module-identifier=? #'true val-expr) #'bool]
+			    [else #'obj])]
+			  [else #'obj])
+			 val-type)])
+		(or (module-identifier=? val-type target-type)
+		    (and (module-identifier=? #'num target-type)
+			 (or (module-identifier=? val-type #'int)
+			     (module-identifier=? val-type #'real)))
+		    (and (module-identifier=? #'real target-type)
+			 (or (module-identifier=? val-type #'int)))
+		    (if (module-identifier=? val-type #'obj)
+			#f
+			(fail-k val-expr val-type target-type)))))))
 
-  (define-syntax (check-expr stx)
+   (define (type-mismatch val-expr val-type target-type)
+     (raise-syntax-error
+      '|type mismatch|
+      (format "actual type ~a does not match expected type ~a"
+	      (syntax-object->datum val-type)
+	      (syntax-object->datum target-type))
+      val-expr)))
+  
+  (define (check proc who type-name pred val)
+    (let-values ([(tst new-val) (pred val)])
+      (unless tst
+	(raise
+	 (make-exn:fail:contract
+	  (string->immutable-string
+	   (format "~a: expected ~a value for ~a, got something else: ~e"
+		   (or proc (if (eq? who #t) #f who) "procedure")
+		   type-name
+		   (cond
+		    [(eq? who #t) "result"]
+		    [else (if proc 
+			      (format "~a argument" who)
+			      (if who
+				  "initialization"
+				  "argument"))])
+		   val))
+	  (current-continuation-marks))))
+      new-val))
+
+  (define-syntax (check-expr-type stx)
     (syntax-case stx ()
       [(_ proc who type-name pred val)
        ;; Avoid the check if the static types are consistent
        (let ([v (local-expand
 		 #'val
 		 'expression
-		 (cons #'honu-typed
-		       kernel-forms))])
-	 (syntax-case v (honu-typed)
+		 expand-stop-forms)])
+	 (syntax-case v (honu-typed if let-values)
 	   [(honu-typed val val-type)
-	    (compatible-type? #'val #'val-type #'type-name)
+	    (check-compatible-type #'val #'val-type #'type-name type-mismatch)
 	    ;; No run-time check:
 	    #'val]
+	   [(if t then else)
+	    ;; propagate check to body:
+	    #'(if t 
+		  (check-expr-type proc who type-name pred then)
+		  (check-expr-type proc who type-name pred else))]
+	   [(let-values bindings body)
+	    #'(let-values bindings 
+		  (check-expr-type proc who type-name pred body))]
+	   [(honu-unparsed-block #f _ #f return-context? . body)
+	    #'(honu-unparsed-block who type-name pred return-context? . body)]
 	   [_else
 	    ;; Even without a type for v, we might see a literal,
 	    ;;  or maybe the declaration is simply val
-	    (if (compatible-type? v #'val #'type-name)
+	    (if (check-compatible-type v #f #'type-name type-mismatch)
 		;; No run-time check:
-		#'val
+		v
 		;; Run-time check:
-		#'(check proc who 'type-name pred val))]))]))
+		(with-syntax ([val v])
+		  #'(check proc who 'type-name pred val)))]))]))
+
+  (define-syntax honu-app
+    (syntax-rules ()
+      [(_ a b ...) (a b ...)]))
 
   (define-syntax (define-typed stx)
     (syntax-case stx ()
-      [(_ id proc-name type-name pred-id val)
+      [(_ id const? proc-name type-name pred-id val)
        (with-syntax ([gen-id (car (generate-temporaries (list #'id)))])
 	 #'(begin
 	     (define gen-id val)
@@ -597,47 +639,58 @@
 		(lambda (stx)
 		  (syntax-case stx (set!)
 		    [(set! id rhs)
-		     #'(set! gen-id (check-expr set! id type-name pred-id rhs))]
+		     (if const?
+			 (raise-syntax-error #f "cannot assign to constant" #'id)
+			 #'(set! gen-id (check-expr-type 'set! id type-name pred-id rhs)))]
 		    [(id arg (... ...))
-		     #'(#%app (honu-typed gen-id type-name) arg (... ...))]
+		     #'(honu-app (honu-typed gen-id type-name) arg (... ...))]
 		    [id
 		     #'(honu-typed gen-id type-name)]))))))]))
 
+  (define-for-syntax (make-typed-procedure gen-id result-spec arg-spec)
+    (with-syntax ([((arg arg-type pred-id) ...) arg-spec]
+		  [result-spec result-spec]
+		  [gen-id gen-id])
+      (make-set!-transformer
+       (lambda (stx)
+	 (syntax-case stx (set!)
+	   [(set! id rhs)
+	    (raise-syntax-error #f
+				"cannot assign to procedure name"
+				stx
+				#'id)]
+	   [(id actual-arg ...)
+	    (let ([actual-args (syntax->list #'(actual-arg ...))]
+		  [formal-args (syntax->list #'(arg ...))])
+	      (unless (= (length actual-args)
+			 (length formal-args))
+		(raise-syntax-error
+		 'id
+		 (format "expects ~a arguments, provided ~a"
+			 (length formal-args)
+			 (length actual-args))
+		 stx))
+	      #'(honu-typed (#%app (honu-typed gen-id type-name) 
+				   (check-expr-type 'id 'arg arg-type pred-id actual-arg) 
+				   ...)
+			    result-spec))]
+	   [id
+	    #'(honu-need-type gen-id
+			      (let ([id (lambda (arg ...)
+					  (id arg ...))])
+				id)
+			      type-name)])))))
+
+  (provide honu-typed check-expr-type) ; <-------- FIXME. These shouldn't be exported.
+
   (define-syntax (define-typed-procedure stx)
     (syntax-case stx ()
-      [(_ id arg-spec val)
+      [(_ id result-spec arg-spec val)
        (with-syntax ([gen-id (car (generate-temporaries (list #'id)))])
 	 #'(begin
 	     (define gen-id val)
 	     (define-syntax id
-	       (with-syntax ([((arg arg-type pred-id) (... ...)) (quote-syntax arg-spec)])
-		 (make-set!-transformer
-		  (lambda (stx)
-		    (syntax-case stx (set!)
-		      [(set! id rhs)
-		       (raise-syntax-error #f
-					   "cannot assign to procedure name"
-					   stx
-					   #'id)]
-		      [(id actual-arg (... ...))
-		       (let ([actual-args (syntax->list #'(actual-arg (... ...)))]
-			     [formal-args (syntax->list #'(arg (... ...)))])
-			 (unless (= (length actual-args)
-				    (length formal-args))
-			   (raise-syntax-error
-			    'id
-			    (format "expects ~a arguments, provided ~a"
-				    (length formal-args)
-				    (length actual-args))
-			    stx))
-			 #'(#%app (honu-typed gen-id type-name) 
-				  (check-expr 'id 'arg arg-type pred-id actual-arg) 
-				  (... ...)))]
-		      [id
-		       #'(honu-typed (let ([id (lambda (arg (... ...))
-						 (id arg (... ...)))])
-				       id)
-				     type-name)])))))))]))
+	       (make-typed-procedure (quote-syntax gen-id) (quote-syntax result-spec) (quote-syntax arg-spec)))))]))
 
   (define-syntax honu-typed
     (syntax-rules ()
@@ -659,7 +712,7 @@
 			   (let ([expr (local-expand
 					expr
 					(generate-expand-context)
-					kernel-forms)])
+					expand-stop-forms)])
 			     (syntax-case expr (begin)
 			       [(begin . rest)
 				(loop (syntax->list #'rest))]
@@ -675,15 +728,15 @@
 					 proc-id 
 					 (syntax-e proc-id))
 				    (reverse (cons
-					      #`(check-expr '#,proc-id #t
-							    #,result-type-name 
-							    #,result-pred-id 
-							    #,(car prev-exprs))
+					      #`(check-expr-type '#,proc-id #t
+								 #,result-type-name 
+								 #,result-pred-id 
+								 #,(car prev-exprs))
 					      (cdr prev-exprs)))
 				    (begin
 				      (unless (or (not proc-id)
 						  (not (syntax-e proc-id))
-						  (module-identifier=? #'type-name #'void-type))
+						  (module-identifier=? #'type-name #'obj))
 					(error "no expression for type check; should have been "
 					       "caught earlier"))
 				      (reverse prev-exprs)))
@@ -710,8 +763,8 @@
        #`(honu-block proc-id result-type-name result-pred-id #,@(parse-block 
 								 #'body
 								 (if (syntax-e #'return-context?)
-								     return-block-context
-								     block-context)))]))
+								     the-return-block-context
+								     the-block-context)))]))
 
   (define-syntax (honu-unparsed-expr stx)
     (syntax-case stx ()
@@ -723,7 +776,7 @@
 
   (define-syntax (#%parens stx)
     (syntax-case stx ()
-      [(_ rator (rand ...)) (syntax/loc #'rator (rator rand ...))]))
+      [(_ rator (rand ...)) (syntax/loc #'rator (honu-app rator rand ...))]))
 
   ;; --------------------------------------------------------
   ;; Defining a new transformer or new type
@@ -744,13 +797,13 @@
 	     (define pred-id (let ([pred pred-expr])
 				(lambda (v)
 				  (values (pred v) v))))
-	     (define-syntax id (make-honu-type #'pred-id #f #f))))]))
+	     (define-syntax id (make-honu-type #'pred-id #f))))]))
 
   (define-syntax (define-type-constructor stx)
     (syntax-case stx ()
       [(_ id generator-expr)
        (identifier? #'id)
-       #'(define-syntax id (make-honu-type #f generator-expr #f))]))
+       #'(define-syntax id (make-honu-type #f generator-expr))]))
 
   ;; ----------------------------------------
   ;;  Pre-defined types and forms
@@ -759,13 +812,44 @@
     (and (integer? v) (exact? v)))
 
   (define-type int exact-integer?)
+  (define-type bool boolean?)
   (define-type real real?)
   (define-type num number?)
   (define-type obj (lambda (x) #t))
   (define-type string-type string?)
 
-  (define-syntax function (make-honu-type #'(lambda (x) (values #t x)) #f 'function))
-  (define-syntax var (make-honu-type #'(lambda (x) (values #t x)) #f 'var))
+  (define-for-syntax (make-definition-form what this-context this-context?)
+    (make-honu-transformer
+     (lambda (orig-stx ctx)
+       (when (this-context? ctx)
+	 (raise-syntax-error #f 
+			     (format "redundant in ~a context" (context->name ctx))
+			     (stx-car orig-stx)))
+       (unless (block-context? ctx)
+	 (raise-syntax-error #f 
+			     (format "illegal in ~a context" (context->name ctx))
+			     (stx-car orig-stx)))
+       (let ([body (stx-cdr orig-stx)])
+	 (cond
+	  [(stx-null? body)
+	   (raise-syntax-error #f 
+			       (format "expected a ~a definition after keyword" what)
+			       (stx-car orig-stx))]
+	  [(get-transformer body)
+	   => (lambda (transformer)
+		(transformer body this-context))]
+	  [else
+	   (let ([id (stx-car orig-stx)])
+	     (unless (honu-identifier? id)
+	       (raise-syntax-error #f
+				   (format "expected an identifier for a ~a definition" what)
+				   (stx-car orig-stx)
+				   id))
+	     ((make-honu-type #'(lambda (x) (values #t x)) #f) orig-stx this-context))])))))
+
+  (define-syntax function (make-definition-form 'function the-function-definition-context function-definition-context?))
+  (define-syntax var (make-definition-form 'variable the-variable-definition-context variable-definition-context?))
+  (define-syntax const (make-definition-form 'variable the-constant-definition-context constant-definition-context?))
 
   (define-type-constructor -> make-proc-predicate)
 
@@ -781,7 +865,6 @@
 			   [(other rest) (loop #'rest null (stx-car body))])
 		(values (combine one other) rest))]
 	     [(\; . rest)
-	      (identifier? #'id)
 	      (values (parse-one (reverse accum) prev-comma (stx-car body)) #'rest)]
 	     [(x . rest)
 	      (loop #'rest (cons #'x accum) #f)]))])))
@@ -796,7 +879,7 @@
        (lambda (stxes prev-comma-stx term-stx)
 	 (syntax-case stxes ()
 	   [(id)
-	    (identifier? #'id)
+	    (honu-identifier? #'id)
 	    #`(provide id)]
 	   [else
 	    (raise-syntax-error
@@ -890,7 +973,7 @@
 		      (car stxes)
 		      (stx-car body))]
 		    [(fn)
-		     (identifier? #'fn)
+		     (honu-identifier? #'fn)
 		     #'fn]
 		    [else
 		     (raise-syntax-error
@@ -902,13 +985,13 @@
 		  (syntax-case stxes (rename #%parens \,)
 		    [(rename (#%parens spec0 spec ... \, local-id \, remote-id) . rest)
 		     (begin
-		       (unless (identifier? #'local-id)
+		       (unless (honu-identifier? #'local-id)
 			 (raise-syntax-error
 			  #f
 			  "expected an identifier"
 			  (stx-car stxes)
 			  #'local-id))
-		       (unless (identifier? #'remote-id)
+		       (unless (honu-identifier? #'remote-id)
 			 (raise-syntax-error
 			  #f
 			  "expected an identifier"
@@ -935,8 +1018,8 @@
     (lambda (stx ctx)
       (unless (return-block-context? ctx)
 	(raise-syntax-error #f "allowed only in a tail position" (stx-car stx)))
-      (let-values ([(val-stxs after-expr) (extract-until (stx-cdr stx)
-							 (list #'\;))])
+      (let-values ([(val-stxs after-expr terminator) (extract-until (stx-cdr stx)
+								    (list #'\;))])
 	(unless val-stxs
 	  (raise-syntax-error 
 	   #f
@@ -962,12 +1045,10 @@
     (lambda (stx ctx)
       (define (get-block-or-statement kw rest)
 	(syntax-case rest (#%braces)
-	  [((#%braces then ...) . rest)
-	   (values #`(honu-unparsed-block #f void-type #f #,(return-block-context? ctx) then ...)
-		   #'rest)]
+	  [((#%braces then ...) . rrest)
+	   (values (stx-cdr (stx-car rest)) #'rrest)]
 	  [else
-	   (let-values ([(val-stxs rest) (extract-until rest
-							(list #'\;))])
+	   (let-values ([(val-stxs rest terminator) (extract-until rest (list #'\;) #t)])
 	     (unless val-stxs
 	       (raise-syntax-error
 		#f
@@ -979,21 +1060,33 @@
 		"expected an expression before semicolon"
 		kw
 		(stx-car rest)))
-	     (if (return-block-context? ctx)
-		 (values (parse-tail-expr val-stxs) (stx-cdr rest))
-		 (values (parse-expr val-stxs) (stx-cdr rest))))]))
+	     (values val-stxs (stx-cdr rest)))]))
+
+      (define (wrap-block exprs rest)
+	#`(honu-unparsed-block #f obj #f #,(and (return-block-context? ctx)
+						(stx-null? rest))
+			       . #,exprs))
 
       (syntax-case stx (#%parens)
 	[(_ (#%parens test ...) . rest)
-	 (let ([test-expr (parse-expr (syntax->list #'(test ...)))])
-	   (let-values ([(then-expr rest) (get-block-or-statement (stx-car stx) #'rest)])
-	     (syntax-case rest (else)
-	       [(else . rest2)
-		(let-values ([(else-expr rest) (get-block-or-statement (stx-car rest) #'rest2)])
-		  (values #`(if #,test-expr #,then-expr #,else-expr)
-			  rest))]
-	       [_else
-		(values #`(if #,test-expr #,then-expr) rest)])))]
+	 (let* ([tests #'(test ...)])
+	   (when (stx-null? tests)
+	     (raise-syntax-error
+	      #f
+	      "missing test expression"
+	      (stx-car stx)
+	      (stx-car (stx-cdr stx))))
+	   (let ([test-expr (parse-expr (syntax->list tests))])
+	     (let-values ([(then-exprs rest) (get-block-or-statement (stx-car stx) #'rest)])
+	       (syntax-case rest (else)
+		 [(else . rest2)
+		  (let-values ([(else-exprs rest) (get-block-or-statement (stx-car rest) #'rest2)])
+		    (values #`(if #,test-expr 
+				  #,(wrap-block then-exprs rest)
+				  #,(wrap-block else-exprs rest))
+			    rest))]
+		 [_else
+		  (values #`(if #,test-expr #,(wrap-block then-exprs rest) (void)) rest)]))))]
 	[_else
 	 (raise-syntax-error
 	  #f
@@ -1001,12 +1094,48 @@
 	  (stx-car stx))])))
 
   ;; ----------------------------------------
+  ;;  Class form
+
+  (define-honu-syntax honu-class
+    (lambda (stx ctx)
+      (syntax-case stx (#%braces)
+	[(form id . rest)
+	 (not (honu-identifier? #'id))
+	 (raise-syntax-error
+	  #f
+	  "expected an identifier for the class"
+	  #'form
+	  #'id)]
+	[(form id (#%braces content ...) . rest)
+	 (let ([id #'id])
+	   
+
+	   10)]
+	[(form)
+	 (raise-syntax-error
+	  #f
+	  "missing name for the class"
+	  #'form)]
+	[(form id next . _)
+	 (raise-syntax-error
+	  #f
+	  "expected braces after class name, found something else"
+	  #'form
+	  #'next)]
+	[(form id)
+	 (raise-syntax-error
+	  #f
+	  "missing braces after class name"
+	  #'form
+	  #'id)])))
+
+  ;; ----------------------------------------
   ;; Main compiler loop
 
   (define-syntax (honu-unparsed-begin stx)
     (syntax-case stx ()
       [(_) #'(begin)]
-      [(_ . body) (let-values ([(code rest) (parse-block-one top-block-context
+      [(_ . body) (let-values ([(code rest) (parse-block-one the-top-block-context
 							     #'body 
 							     values
 							     (lambda ()
@@ -1024,13 +1153,14 @@
   (define true #t)
   (define false #f)
 
-  (provide int real obj 
-	   function var
+  (provide int real bool obj 
+	   function var const
 	   (rename string-type string) ->
 	   \;
            (rename set! =)
 	   (rename honu-return return)
 	   (rename honu-if if)
+	   (rename honu-class class)
 	   + - * / (rename modulo %)
 	   (rename string->number stringToNumber)
 	   (rename number->string numberToString)

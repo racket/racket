@@ -3303,7 +3303,24 @@
   (define (make-standard-module-name-resolver orig-namespace)
     (define planet-resolver #f)
     (define standard-module-name-resolver
-      (lambda (s relto stx)
+      (case-lambda 
+       [(s) 
+	;; Just register s as loaded
+	(when planet-resolver
+	  ;; Let planet resolver register, too:
+	  (planet-resolver s))
+	(let ([ht (hash-table-get
+		   -module-hash-table-table
+		   (namespace-module-registry (current-namespace))
+		   (lambda ()
+		     (let ([ht (make-hash-table)])
+		       (hash-table-put! -module-hash-table-table
+					(namespace-module-registry (current-namespace))
+					ht)
+		       ht)))])
+	  (hash-table-put! ht s 'attach))]
+       [(s relto stx) (standard-module-name-resolver s relto stx #t)]
+       [(s relto stx load?)
 	;; If stx is not #f, raise syntax error for ill-formed paths
 	;; If s is #f, call to resolver is a notification from namespace-attach-module
 	(cond
@@ -3311,8 +3328,8 @@
 	  (unless planet-resolver
 	    (parameterize ([current-namespace orig-namespace])
 	      (set! planet-resolver (dynamic-require '(lib "resolver.ss" "planet") 'planet-module-name-resolver))))
-	  (planet-resolver s relto stx)]
-	 [s
+	  (planet-resolver s relto stx load?)]
+	 [else
 	  (let ([get-dir (lambda ()
 			   (or (and relto
 				    (if (eq? relto -prev-relto)
@@ -3435,39 +3452,40 @@
 						    ht)
 				   ht)))])
 		      ;; Loaded already?
-		      (let ([got (hash-table-get ht modname (lambda () #f))])
-			(when got
-			  ;; Check the suffix, which gets lost when creating a key:
-			  (unless (or (symbol? got) (equal? suffix got))
-			    (error
-			     'standard-module-name-resolver
-			     "module previously loaded with suffix ~s, cannot load with suffix ~s: ~e"
-			     (if (eq? #t got) "" got)
-			     (if (eq? #t suffix) "" suffix)
-			     filename)))
-			(unless got
-			  ;; Currently loading?
-			  (let ([l (continuation-mark-set->list
-				    (current-continuation-marks)
-				    -loading-filename)]
-				[ns (current-namespace)])
-			    (for-each
-			     (lambda (s)
-			       (when (and (equal? (cdr s) normal-filename)
-					  (eq? (car s) ns))
-				 (error
-				  'standard-module-name-resolver
-				  "cycle in loading at ~e: ~e"
-				  filename
-				  (map cdr (reverse (cons s l))))))
-			     l))
-			  (let ([prefix (string->symbol abase)])
-			    (with-continuation-mark -loading-filename (cons (current-namespace) normal-filename)
-			      (parameterize ([current-module-name-prefix prefix])
-				((current-load/use-compiled) 
-				 filename 
-				 (string->symbol (bytes->string/latin-1 (path->bytes no-sfx)))))))
-			  (hash-table-put! ht modname suffix)))
+		      (when load?
+			(let ([got (hash-table-get ht modname (lambda () #f))])
+			  (when got
+			    ;; Check the suffix, which gets lost when creating a key:
+			    (unless (or (symbol? got) (equal? suffix got))
+			      (error
+			       'standard-module-name-resolver
+			       "module previously loaded with suffix ~s, cannot load with suffix ~s: ~e"
+			       (if (eq? #t got) "" got)
+			       (if (eq? #t suffix) "" suffix)
+			       filename)))
+			  (unless got
+			    ;; Currently loading?
+			    (let ([l (continuation-mark-set->list
+				      (current-continuation-marks)
+				      -loading-filename)]
+				  [ns (current-namespace)])
+			      (for-each
+			       (lambda (s)
+				 (when (and (equal? (cdr s) normal-filename)
+					    (eq? (car s) ns))
+				   (error
+				    'standard-module-name-resolver
+				    "cycle in loading at ~e: ~e"
+				    filename
+				    (map cdr (reverse (cons s l))))))
+			       l))
+			    (let ([prefix (string->symbol abase)])
+			      (with-continuation-mark -loading-filename (cons (current-namespace) normal-filename)
+				(parameterize ([current-module-name-prefix prefix])
+				  ((current-load/use-compiled) 
+				   filename 
+				   (string->symbol (bytes->string/latin-1 (path->bytes no-sfx)))))))
+			    (hash-table-put! ht modname suffix))))
 		      ;; If a `lib' path, cache pathname manipulations
 		      (when (and (not (vector? s-parsed))
 				 (or (string? s)
@@ -3485,22 +3503,7 @@
 						 modname
 						 suffix)))
 		      ;; Result is the module name:
-		      modname))))))]
-	 [else
-	  ;; Just register relto as loaded
-	  (when planet-resolver
-	    ;; Let planet resolver register, too:
-	    (planet-resolver s relto stx))
-	  (let ([ht (hash-table-get
-		     -module-hash-table-table
-		     (namespace-module-registry (current-namespace))
-		     (lambda ()
-		       (let ([ht (make-hash-table)])
-			 (hash-table-put! -module-hash-table-table
-					  (namespace-module-registry (current-namespace))
-					  ht)
-			 ht)))])
-	    (hash-table-put! ht relto 'attach))])))
+		      modname))))))])]))
     standard-module-name-resolver)
     
   (define find-library-collection-paths

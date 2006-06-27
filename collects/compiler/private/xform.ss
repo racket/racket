@@ -672,6 +672,7 @@
           (printf "#define NULL_OUT_ARRAY(a) memset(a, 0, sizeof(a))~n")
           ;; Annotation that normally disappears:
           (printf "#define GC_CAN_IGNORE /**/~n")
+          (printf "#define __xform_nongcing__ /**/~n")
           ;; Another annotation to protect against GC conversion:
           (printf "#define HIDE_FROM_XFORM(x) x~n")
           (printf "#define HIDE_NOTHING_FROM_XFORM() /**/~n")
@@ -830,21 +831,24 @@
                       non-functions)
             ht))
         
-        (define non-gcing-functions
+        (define non-gcing-builtin-functions
           ;; The following don't need wrappers, but we need to check for
           ;;  nested function calls because it takes more than one argument:
           (append
            '(memcpy memmove
                     strcmp strcoll strcpy _mzstrcpy strcat memset
                     printf sprintf vsprintf vprintf
-                    strncmp scheme_strncmp
-                    read write
-                    bigdig_length)
+                    strncmp
+                    read write)
            (map
             string->symbol
             '("XTextExtents" "XTextExtents16" 
                              "XDrawImageString16" "XDrawImageString"
                              "XDrawString16" "XDrawString"))))
+	(define non-gcing-functions (make-hash-table))
+	(for-each (lambda (name)
+		    (hash-table-put! non-gcing-functions name #t))
+		  non-gcing-builtin-functions)
         
         (define non-returning-functions
           ;; The following functions never return, so the wrappers
@@ -991,7 +995,9 @@
             
             (set! pointer-types (list-ref l 4))
             (set! non-pointer-types (list-ref l 5))
-            (set! struct-defs (list-ref l 6))))
+            (set! struct-defs (list-ref l 6))
+
+	    (set! non-gcing-functions (hash-table-copy (list-ref l 7)))))
         
         ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;; Pretty-printing output
@@ -1335,7 +1341,9 @@
                    e))]
             [(proc-prototype? e)
              (let ([name (register-proto-information e)])
-               (when show-info?
+               (when (eq? (tok-n (car e)) '__xform_nongcing__)
+		 (hash-table-put! non-gcing-functions name #t))
+	       (when show-info?
                  (printf "/* PROTO ~a */~n" name))
                (if (or precompiling-header?
                        (> (hash-table-get used-symbols name) 1)
@@ -1367,6 +1375,8 @@
                          e))))]
             [(function? e)
              (let ([name (register-proto-information e)])
+	       (when (eq? (tok-n (car e)) '__xform_nongcing__)
+		 (hash-table-put! non-gcing-functions name #t))
                (when show-info? (printf "/* FUNCTION ~a */~n" name))
                (if (or (positive? suspend-xform)
                        (not pgc?)
@@ -1587,7 +1597,9 @@
                (let ([name (tok-n (car e))]
                      [type (let loop ([t (reverse type)])
                              (if (pair? t)
-                                 (if (memq (tok-n (car t)) '(extern static inline virtual __stdcall __cdecl _inline __inline __inline__))
+                                 (if (memq (tok-n (car t)) '(extern static virtual __stdcall __cdecl 
+								    inline _inline __inline __inline__
+								    __xform_nongcing__))
                                      (loop (cdr t))
                                      (cons (car t) (loop (cdr t))))
                                  t))]
@@ -2088,6 +2100,7 @@
         ;; Temporary state used during a conversion:
         (define used-self? #f)
         (define important-conversion? #f)
+	(define saw-gcing-call #f)
         
         (define (new-vars->decls vars)
           (apply
@@ -2186,6 +2199,7 @@
                (seq-close body-v)
                (let-values ([(orig-body-e) (begin
                                              (set! important-conversion? #f)
+                                             (set! saw-gcing-call #f)
                                              body-e)]
                             [(body-e live-vars)
                              ;; convert-body does most of the conversion work, and also
@@ -2247,14 +2261,26 @@
                                             e
                                             (lambda (name class-name type args static?)
                                               type)))])
+		 (if (hash-table-get non-gcing-functions name (lambda () #f))
+		     (when saw-gcing-call
+		       (log-error "[GCING] ~a in ~a: Function ~a declared __xform_nongcing__, but includes a function call."
+				  (tok-line saw-gcing-call) (tok-file saw-gcing-call)
+				  name))
+		     (unless saw-gcing-call
+		       '
+		       (fprintf (current-error-port)
+				"[SUGGEST] Consider declaring ~a as __xform_nongcing__.\n"
+				name)))
                  (if (and (not important-conversion?)
                           (not (and function-name
                                     (eq? class-name function-name)))
-                          (null? (live-var-info-new-vars live-vars))
-                          (zero? (live-var-info-maxpush live-vars))
-                          (or (<= (live-var-info-num-calls live-vars) 1)
-                              (= (live-var-info-num-calls live-vars)
-                                 (live-var-info-num-noreturn-calls live-vars))))
+			  (or (not saw-gcing-call)
+			      (and
+			       (null? (live-var-info-new-vars live-vars))
+			       (zero? (live-var-info-maxpush live-vars))
+			       (or (<= (live-var-info-num-calls live-vars) 1)
+				   (= (live-var-info-num-calls live-vars)
+				      (live-var-info-num-noreturn-calls live-vars))))))
                      ;; No conversion necessary. (Lack of `call' records means no GC-setup
                      ;; work when printing out the function.)
                      (list->seq
@@ -3154,7 +3180,7 @@
                                     [(sub-memcpy?)
                                      ;; memcpy, etc. call?
                                      (and (pair? (cdr e-))
-                                          (memq (tok-n (cadr e-)) non-gcing-functions))]
+                                          (hash-table-get non-gcing-functions (tok-n (cadr e-)) (lambda () #f)))]
                                     [(args live-vars)
                                      (convert-paren-interior args vars &-vars
                                                              c++-class
@@ -3229,20 +3255,22 @@
                                          (live-var-info-nonempty-calls? live-vars)))])
                           (loop rest-
                                 (let ([call (if (and (null? (cdr func))
-                                                     (memq (tok-n (car func)) non-gcing-functions))
+                                                     (hash-table-get non-gcing-functions (tok-n (car func)) (lambda () #f)))
                                                 ;; Call without pointer pushes
                                                 (make-parens
                                                  "(" #f #f ")"
                                                  (list->seq (append func (list args))))
                                                 ;; Call with pointer pushes
-                                                (make-call
-                                                 "func call"
-                                                 #f #f
-                                                 func
-                                                 args
-                                                 pushed-vars
-                                                 (live-var-info-tag orig-live-vars)
-                                                 this-nonempty?))])
+						(begin
+						  (set! saw-gcing-call (car e-))
+						  (make-call
+						   "func call"
+						   #f #f
+						   func
+						   args
+						   pushed-vars
+						   (live-var-info-tag orig-live-vars)
+						   this-nonempty?)))])
                                   (cons (if (null? setups)
                                             call
                                             (make-callstage-parens
@@ -3723,7 +3751,8 @@
                     
                     (marshall pointer-types)
                     (marshall non-pointer-types)
-                    (marshall struct-defs))])
+                    (marshall struct-defs)
+		    non-gcing-functions)])
               (with-output-to-file (change-suffix file-out #".zo")
                 (lambda ()
                   (write (compile e)))

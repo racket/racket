@@ -1838,6 +1838,7 @@ static int namespace_val_MARK(void *p) {
 
   gcMARK(e->module);
   gcMARK(e->module_registry);
+  gcMARK(e->export_registry);
   gcMARK(e->insp);
 
   gcMARK(e->rename);
@@ -1871,6 +1872,7 @@ static int namespace_val_FIXUP(void *p) {
 
   gcFIXUP(e->module);
   gcFIXUP(e->module_registry);
+  gcFIXUP(e->export_registry);
   gcFIXUP(e->insp);
 
   gcFIXUP(e->rename);
@@ -2104,15 +2106,10 @@ static int module_val_MARK(void *p) {
   gcMARK(m->body);
   gcMARK(m->et_body);
 
-  gcMARK(m->provides);
-  gcMARK(m->provide_srcs);
-  gcMARK(m->provide_src_names);
+  gcMARK(m->me);
+
   gcMARK(m->provide_protects);
-
-  gcMARK(m->kernel_exclusion);
-
   gcMARK(m->indirect_provides);
-  gcMARK(m->src_modidx);
   gcMARK(m->self_modidx);
 
   gcMARK(m->accessible);
@@ -2144,15 +2141,10 @@ static int module_val_FIXUP(void *p) {
   gcFIXUP(m->body);
   gcFIXUP(m->et_body);
 
-  gcFIXUP(m->provides);
-  gcFIXUP(m->provide_srcs);
-  gcFIXUP(m->provide_src_names);
+  gcFIXUP(m->me);
+
   gcFIXUP(m->provide_protects);
-
-  gcFIXUP(m->kernel_exclusion);
-
   gcFIXUP(m->indirect_provides);
-  gcFIXUP(m->src_modidx);
   gcFIXUP(m->self_modidx);
 
   gcFIXUP(m->accessible);
@@ -2175,6 +2167,43 @@ static int module_val_FIXUP(void *p) {
 
 #define module_val_IS_ATOMIC 0
 #define module_val_IS_CONST_SIZE 1
+
+
+static int module_exports_val_SIZE(void *p) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Exports));
+}
+
+static int module_exports_val_MARK(void *p) {
+  Scheme_Module_Exports *m = (Scheme_Module_Exports *)p;
+
+  gcMARK(m->provides);
+  gcMARK(m->provide_srcs);
+  gcMARK(m->provide_src_names);
+
+  gcMARK(m->kernel_exclusion);
+
+  gcMARK(m->src_modidx);
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Exports));
+}
+
+static int module_exports_val_FIXUP(void *p) {
+  Scheme_Module_Exports *m = (Scheme_Module_Exports *)p;
+
+  gcFIXUP(m->provides);
+  gcFIXUP(m->provide_srcs);
+  gcFIXUP(m->provide_src_names);
+
+  gcFIXUP(m->kernel_exclusion);
+
+  gcFIXUP(m->src_modidx);
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Exports));
+}
+
+#define module_exports_val_IS_ATOMIC 0
+#define module_exports_val_IS_CONST_SIZE 1
 
 
 static int modidx_val_SIZE(void *p) {

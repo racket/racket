@@ -215,6 +215,7 @@ enum {
   scheme_rt_native_code,                /* 194 */
   scheme_rt_native_code_plus_case,      /* 195 */
   scheme_rt_jitter_data,                /* 196 */
+  scheme_rt_module_exports,             /* 197 */
 #endif
 
   _scheme_last_type_

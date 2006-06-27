@@ -1332,7 +1332,7 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
   Scheme_Env *menv;
 
   /* If it's a name id, resolve the name. */
-  modname = scheme_module_resolve(modidx);
+  modname = scheme_module_resolve(modidx, 1);
 
   if (env->module && SAME_OBJ(env->module->modname, modname)
       && (env->mod_phase == mod_phase))
@@ -3041,8 +3041,9 @@ static void *compile_k(void)
     form = add_renames_unless_module(form, genv);
     if (genv->module) {
       form = scheme_stx_phase_shift(form, 0, 
-				    genv->module->src_modidx, 
-				    genv->module->self_modidx);
+				    genv->module->me->src_modidx, 
+				    genv->module->self_modidx,
+				    genv->export_registry);
     }
   }
 
@@ -3877,7 +3878,7 @@ static Scheme_Object *check_top(const char *when, Scheme_Object *form, Scheme_Co
       if (modidx) {
 	/* If it's an access path, resolve it: */
 	if (env->genv->module
-	    && SAME_OBJ(scheme_module_resolve(modidx), env->genv->module->modname))
+	    && SAME_OBJ(scheme_module_resolve(modidx, 1), env->genv->module->modname))
 	  bad = 0;
 	else
 	  bad = 1;
@@ -6041,7 +6042,7 @@ Scheme_Object *scheme_eval_compiled_stx_string(Scheme_Object *expr, Scheme_Env *
     result = scheme_make_vector(len - 1, NULL);
 
     for (i = 0; i < len - 1; i++) {
-      s = scheme_stx_phase_shift(SCHEME_VEC_ELS(expr)[i], shift, orig, modidx);
+      s = scheme_stx_phase_shift(SCHEME_VEC_ELS(expr)[i], shift, orig, modidx, env->export_registry);
       SCHEME_VEC_ELS(result)[i] = s;
     }
     
@@ -6765,7 +6766,8 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
 
     if (rp->num_stxes) {
       i = rp->num_toplevels;
-      v = scheme_stx_phase_shift_as_rename(now_phase - src_phase, src_modidx, now_modidx);
+      v = scheme_stx_phase_shift_as_rename(now_phase - src_phase, src_modidx, now_modidx, 
+					   genv ? genv->export_registry : NULL);
       if (v) {
 	/* Put lazy-shift info in a[i]: */
 	v = scheme_make_raw_pair(v, (Scheme_Object *)rp->stxes);

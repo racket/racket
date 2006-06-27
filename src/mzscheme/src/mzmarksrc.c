@@ -715,6 +715,7 @@ namespace_val {
 
   gcMARK(e->module);
   gcMARK(e->module_registry);
+  gcMARK(e->export_registry);
   gcMARK(e->insp);
 
   gcMARK(e->rename);
@@ -823,15 +824,10 @@ module_val {
   gcMARK(m->body);
   gcMARK(m->et_body);
 
-  gcMARK(m->provides);
-  gcMARK(m->provide_srcs);
-  gcMARK(m->provide_src_names);
+  gcMARK(m->me);
+
   gcMARK(m->provide_protects);
-
-  gcMARK(m->kernel_exclusion);
-
   gcMARK(m->indirect_provides);
-  gcMARK(m->src_modidx);
   gcMARK(m->self_modidx);
 
   gcMARK(m->accessible);
@@ -850,6 +846,21 @@ module_val {
   gcMARK(m->primitive);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Module));
+}
+
+module_exports_val {
+ mark:
+  Scheme_Module_Exports *m = (Scheme_Module_Exports *)p;
+
+  gcMARK(m->provides);
+  gcMARK(m->provide_srcs);
+  gcMARK(m->provide_src_names);
+
+  gcMARK(m->kernel_exclusion);
+
+  gcMARK(m->src_modidx);
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Exports));
 }
 
 modidx_val {

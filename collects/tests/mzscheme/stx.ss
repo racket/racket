@@ -1069,6 +1069,57 @@
 (require @!$m)
 (test '(10 20 #t) '@!$get @!$get)
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test lazy unmarshaling of renamings and module-name resolution
 
+(let ([load-ok? #t])
+  (parameterize ([current-namespace (make-namespace)]
+		 [current-module-name-resolver
+		  (case-lambda 
+		   [(a) (void)]
+		   [(name _ __) 'huh?]
+		   [(name _ __ load?)
+		    (unless load-ok?
+		      (test #f 'load-ok load?))
+		    'a])])
+    (let ([a-code '(module a mzscheme
+		     (provide x y)
+		     (define x 1)
+		     (define y #'x))])
+      (eval a-code)
+      (let ([b-code (let ([p (open-output-bytes)])
+		      (write (compile
+			      '(module b mzscheme
+				 (require "a")
+				 (provide f)
+				 (define (f) #'x)))
+			     p)
+		      (lambda ()
+			(parameterize ([read-accept-compiled #t])
+			  (read (open-input-bytes (get-output-bytes p))))))]
+	    [x-id (parameterize ([current-namespace (make-namespace)])
+		    (eval a-code)
+		    (eval '(require a))
+		    (eval '#'x))])
+	(eval (b-code))
+	(eval '(require b))
+	(set! load-ok? #f)
+	(test #f eval '(module-identifier=? (f) #'x))
+	(test #t eval `(module-identifier=? (f) (quote-syntax ,x-id)))
+	(eval '(require a))
+	(test #t eval '(module-identifier=? (f) #'x))
+	(test #t eval `(module-identifier=? (f) (quote-syntax ,x-id)))
+	(parameterize ([current-namespace (make-namespace)])
+	  (eval '(module a mzscheme
+		   (provide y)
+		   (define y 3)))
+	  (set! load-ok? #t)
+	  (eval (b-code))
+	  (eval '(require b))
+	  (set! load-ok? #f)
+	  (test #t eval '(module-identifier=? (f) #'x))
+	  (test #f eval `(module-identifier=? (f) (quote-syntax ,x-id))))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

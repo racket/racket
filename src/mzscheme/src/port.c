@@ -1180,7 +1180,7 @@ static void register_port_wait()
 		  evt_output_port_p, 1);
 }
 
-static int pipe_char_count(Scheme_Object *p)
+XFORM_NONGCING static int pipe_char_count(Scheme_Object *p)
 {
   if (p) {
     Scheme_Pipe *pipe;
@@ -1202,7 +1202,7 @@ static void post_progress(Scheme_Input_Port *ip)
   ip->progress_evt = NULL;
 }
 
-static void inc_pos(Scheme_Port *ip, int a)
+XFORM_NONGCING static void inc_pos(Scheme_Port *ip, int a)
 {
   ip->column += a;
   ip->readpos += a;
@@ -1232,7 +1232,7 @@ static Scheme_Object *quick_plus(Scheme_Object *s, long v)
 
 #define state_len(state) ((state >> 3) & 0x7)
 
-static void do_count_lines(Scheme_Port *ip, const char *buffer, long offset, long got)
+XFORM_NONGCING static void do_count_lines(Scheme_Port *ip, const char *buffer, long offset, long got)
 {
   long i;
   int c, degot = 0;

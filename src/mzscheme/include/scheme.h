@@ -111,6 +111,12 @@ typedef long FILE;
 #endif
 
 #ifdef MZ_XFORM
+# define XFORM_NONGCING __xform_nongcing__
+#else
+# define XFORM_NONGCING /* empty */
+#endif
+
+#ifdef MZ_XFORM
 START_XFORM_SUSPEND;
 #endif
 

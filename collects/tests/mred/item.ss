@@ -1269,7 +1269,7 @@
   (define rb1 (make-object radio-box% "&Left" rb1-l hp callback))
   (define rb2-l (list "First" "Last"))
   (define rb2 (make-object radio-box% "&Center" rb2-l hp callback))
-  (define rb3-l (list "Top" "Middle" "Bottom"))
+  (define rb3-l (list "&Top" "&Middle" "&Bottom"))
   (define rb3 (make-object radio-box% "&Right" rb3-l hp callback))
 
   (define rbs (list rb1 rb2 rb3))
@@ -1285,8 +1285,8 @@
 	(with-handlers ([exn? void])
 	  (f rb p)
 	  (error "no exn raisd")))))
-  (define type-err (mk-err exn:application:type?))
-  (define mismatch-err (mk-err exn:application:mismatch?))
+  (define type-err (mk-err exn:fail:contract?))
+  (define mismatch-err (mk-err exn:fail:contract?))
 
   (define do-sel (lambda (sel n) (for-each (lambda (rb) (sel rb (n rb))) rbs)))
   (define sel-minus (lambda (sel) (do-sel (type-err sel) (lambda (rb) -1))))
@@ -1472,7 +1472,7 @@
 	  (make-object button%
 		       (string-append "Select Bad -1" mname) p2
 		       (lambda (b e)
-			 (with-handlers ([exn:application:type? void])
+			 (with-handlers ([exn:fail:contract? void])
 			   (method -1)
 			   (error "expected a type exception")))))
     (make-object button%
@@ -1490,7 +1490,7 @@
     (make-object button%
 		 (string-append "Select Bad X" mname) p2
 		 (lambda (b e)
-		   (with-handlers ([exn:application:mismatch? void]) 
+		   (with-handlers ([exn:fail:contract? void]) 
 		     (method (if numerical?
 				 (send c get-number)
 				 #f))
@@ -1537,8 +1537,8 @@
 					 (with-handlers ([exn? void])
 					   (send c get-string i)
 					   (error "out-of-bounds: no exn")))])
-			      (bad exn:application:type? -1)
-			      (bad exn:application:mismatch? (send c get-number)))
+			      (bad exn:fail:contract? -1)
+			      (bad exn:fail:contract? (send c get-number)))
 			    (unless (not (send c find-string "nada"))
 			      (error "find-string of nada wasn't #f"))
 			    (for-each
