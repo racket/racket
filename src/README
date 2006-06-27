@@ -77,8 +77,9 @@ the Unix instructions below, but note the following:
     (though generally not under Linux). See the note at the end of
     this section if OpenGL fails to work.
 
-    Finally, make sure that you are using GNU `make'. Specifically,
-    the content of the "foreign" subdirectory requires GNU `make'.
+    Finally, for some platforms, the content of the "foreign"
+    subdirectory make require GNU `make'. If the build fails with
+    another variant of `make', please try using GNU `make'.
 
  1. Run the script `configure' (which is in the same directory as this
     README), usually with a --prefix=TARGETDIR command-line argument
