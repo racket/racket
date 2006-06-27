@@ -285,7 +285,7 @@
 #define scheme_utf8_decode_prefix (scheme_extension_table->scheme_utf8_decode_prefix)
 #define scheme_utf8_decode_to_buffer (scheme_extension_table->scheme_utf8_decode_to_buffer)
 #define scheme_utf8_decode_to_buffer_len (scheme_extension_table->scheme_utf8_decode_to_buffer_len)
-#define MZ_EXTERN (scheme_extension_table->MZ_EXTERN)
+#define scheme_utf8_decode_count (scheme_extension_table->scheme_utf8_decode_count)
 #define scheme_utf8_encode (scheme_extension_table->scheme_utf8_encode)
 #define scheme_utf8_encode_all (scheme_extension_table->scheme_utf8_encode_all)
 #define scheme_utf8_encode_to_buffer (scheme_extension_table->scheme_utf8_encode_to_buffer)

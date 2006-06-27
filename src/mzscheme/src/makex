@@ -27,6 +27,9 @@ while (<>) {
 		    if ($_ =~ /^extern /) {
 			$_ = substr($_, 7);
 		    }
+		    if ($_ =~ /^XFORM_NONGCING /) {
+			$_ = substr($_, 15);
+		    }
 		    if ($_ =~ /^MZ_EXTERN /) {
 			$_ = substr($_, 10);
 		    }

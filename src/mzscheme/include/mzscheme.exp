@@ -254,7 +254,7 @@ scheme_utf8_decode_all
 scheme_utf8_decode_prefix
 scheme_utf8_decode_to_buffer
 scheme_utf8_decode_to_buffer_len
-MZ_EXTERN
+scheme_utf8_decode_count
 scheme_utf8_encode
 scheme_utf8_encode_all
 scheme_utf8_encode_to_buffer
