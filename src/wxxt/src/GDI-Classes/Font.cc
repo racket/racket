@@ -771,6 +771,7 @@ static wxFontStruct *wxLoadQueryNearestAAFont(const char *name,
       XftResult res;
       
       pat = XftNameParse(name XFORM_OK_PLUS 1);
+      if (!pat) return NULL;
 
       pat = XftPatternBuild(pat,
 			    (sip ? XFT_PIXEL_SIZE : XFT_SIZE), XftTypeInteger, point_size,
@@ -781,6 +782,7 @@ static wxFontStruct *wxLoadQueryNearestAAFont(const char *name,
 			    NULL);
 
       pat = XftFontMatch(wxAPP_DISPLAY, DefaultScreen(wxAPP_DISPLAY), pat, &res);
+      if (!pat) return NULL;
       
       if (use_rot) {
 	/* We add a transform after match, because Xft/fontconfig
