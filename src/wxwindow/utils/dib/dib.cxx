@@ -101,7 +101,7 @@ BOOL WriteDIB(LPSTR szFile, HANDLE hdib)
 	_write(fh, (LPSTR) lpbi, GlobalSize(hdib));
 
 	GlobalUnlock(hdib);
-	_lclose(fh);
+	_close(fh);
 	return TRUE;
 }
 
@@ -340,7 +340,7 @@ BOOL ReadDIB(LPSTR lpFileName, HBITMAP *bitmap, HPALETTE *palette)
     hDIB = GlobalAlloc(GHND, (DWORD)(sizeof(BITMAPINFOHEADER) + 
     					256 * sizeof(RGBQUAD)));
     if (!hDIB) {
-      _lclose(fh);
+      _close(fh);
       return(NULL);
     }
 
@@ -459,7 +459,7 @@ ErrExit2:
 	GlobalFree(hDIB);
     }
 
-    _lclose(fh);
+    _close(fh);
     return(result);
 }
 
