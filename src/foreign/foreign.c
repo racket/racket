@@ -78,6 +78,70 @@
 #define TO_PATH(x) (SCHEME_PATHP(x) ? (x) : scheme_char_string_to_path(x))
 
 /*****************************************************************************/
+
+/* We'd like to use EnumProcessModules to find all loaded DLLs, but it's
+   only available in NT 4.0 and later. The alternative, Module32{First,Next},
+   is available *except* for NT 4.0! So we try EnumProcessModules first. */
+
+#ifdef WINDOWS_DYNAMIC_LOAD
+#ifdef MZ_PRECISE_GC
+START_XFORM_SKIP;
+#endif
+
+int epm_tried = 1;
+typedef BOOL (*EnumProcessModules_t)(HANDLE hProcess, HMODULE* lphModule, DWORD cb, LPDWORD lpcbNeeded);
+EnumProcessModules_t _EnumProcessModules;
+#include <tlhelp32.h>
+
+BOOL mzEnumProcessModules(HANDLE hProcess, HMODULE* lphModule, DWORD cb, LPDWORD lpcbNeeded)
+{
+  if (!epm_tried) {
+    HMODULE hm;
+    hm = LoadLibrary("psapi.dll");
+    if (hm) {
+      _EnumProcessModules = (EnumProcessModules_t)GetProcAddress(hm, "EnumProcessModules");
+    }
+    epm_tried = 1;
+  }
+
+  if (_EnumProcessModules)
+    return _EnumProcessModules(hProcess, lphModule, cb, lpcbNeeded);
+  else {
+    HANDLE snapshot;
+    MODULEENTRY32 mod;
+    int i, ok;
+
+    snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, GetCurrentProcessId());
+    if (snapshot == INVALID_HANDLE_VALUE)
+      return FALSE;
+
+    for (i = 0; 1; i++) {
+      mod.dwSize = sizeof(mod);
+      if (!i)
+	ok = Module32First(snapshot, &mod);
+      else
+	ok = Module32Next(snapshot, &mod);
+      if (!ok)
+	break;
+      if (cb >= sizeof(HMODULE)) {
+	lphModule[i] = mod.hModule;
+	cb -= sizeof(HMODULE);
+      }
+    }
+
+    CloseHandle(snapshot);
+    *lpcbNeeded = i * sizeof(HMODULE);
+    return GetLastError() == ERROR_NO_MORE_FILES;
+  }
+}
+
+
+#ifdef MZ_PRECISE_GC
+END_XFORM_SKIP;
+#endif
+#endif
+
+/*****************************************************************************/
 /* Library objects */
 
 /* ffi-lib structure definition */
@@ -125,6 +189,7 @@ static Scheme_Object *foreign_ffi_lib(int argc, Scheme_Object *argv[])
   char *name;
   Scheme_Object *path, *hashname;
   void *handle;
+  int null_ok = 0;
   ffi_lib_struct *lib;
   if (!(SCHEME_PATH_STRINGP(argv[0]) || SCHEME_FALSEP(argv[0])))
     scheme_wrong_type(MYNAME, "string-or-false", 0, argc, argv);
@@ -137,11 +202,15 @@ static Scheme_Object *foreign_ffi_lib(int argc, Scheme_Object *argv[])
   if (!lib) {
     Scheme_Hash_Table *ht;
 #ifdef WINDOWS_DYNAMIC_LOAD
-    handle = (name==NULL) ? GetModuleHandle(NULL) : LoadLibrary(name);
+    if (name==NULL) {
+      handle = NULL;
+      null_ok = 1;
+    } else
+      handle = LoadLibrary(name);
 #else
     handle = dlopen(name, RTLD_NOW | RTLD_GLOBAL);
 #endif
-    if (handle == NULL) {
+    if (handle == NULL && !null_ok) {
       if (argc > 1 && SCHEME_TRUEP(argv[1])) return scheme_false;
       else {
 #ifdef WINDOWS_DYNAMIC_LOAD
@@ -237,7 +306,32 @@ static Scheme_Object *foreign_ffi_obj(int argc, Scheme_Object *argv[])
   obj = (ffi_obj_struct*)scheme_hash_get(lib->objects, (Scheme_Object*)dlname);
   if (!obj) {
 #ifdef WINDOWS_DYNAMIC_LOAD
-    dlobj = GetProcAddress(lib->handle, dlname);
+    if (lib->handle) {
+      dlobj = GetProcAddress(lib->handle, dlname);
+    } else {
+#     define NUM_QUICK_MODS 16
+      HMODULE *mods, me, quick_mods[NUM_QUICK_MODS];
+      DWORD cnt = NUM_QUICK_MODS * sizeof(HMODULE), actual_cnt, i;
+      me = GetCurrentProcess();
+      mods = quick_mods;
+      if (mzEnumProcessModules(me, mods, cnt, &actual_cnt)) {
+        if (actual_cnt > cnt) {
+	  cnt = actual_cnt;
+	  mods = (HMODULE *)scheme_malloc_atomic(cnt);
+	  if (!mzEnumProcessModules(me, mods, cnt, &actual_cnt))
+	    mods = NULL;
+	}
+      } else
+	mods = NULL;
+      if (mods) {
+	cnt /= sizeof(HMODULE);
+	for (i = 0; i < cnt; i++) {
+	  dlobj = GetProcAddress(mods[i], dlname);
+	  if (dlobj) break;
+	}
+      } else
+	dlobj = NULL;
+    }
     if (!dlobj) {
       long err;
       err = GetLastError();
