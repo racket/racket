@@ -13,7 +13,13 @@ mandir = @mandir@
 docdir = @docdir@
 builddir = @builddir@
 
-ALLDIRINFO = "$(bindir)" "$(collectsdir)" "$(docdir)" "$(libdir)" "$(includepltdir)" "$(libpltdir)" "$(mandir)"
+ALLDIRINFO = "$(DESTDIR)$(bindir)" \
+             "$(DESTDIR)$(collectsdir)" \
+             "$(DESTDIR)$(docdir)" \
+             "$(DESTDIR)$(libdir)" \
+             "$(DESTDIR)$(includepltdir)" \
+             "$(DESTDIR)$(libpltdir)" \
+             "$(DESTDIR)$(mandir)"
 
 all:
 	$(MAKE) mz
@@ -38,7 +44,7 @@ plain-install:
 	$(MAKE) install-normal
 
 install-normal:
-	mkdir -p $(addprefix $(DESTDIR), $(prefix) $(ALLDIRINFO))
+	mkdir -p $(ALLDIRINFO)
 	$(MAKE) mzinstall
 	$(MAKE) mredinstall-stub
 	$(MAKE) copytree-stub
@@ -102,12 +108,12 @@ copytree:
 	mzscheme/mzscheme -mvxqu \
           "$(srcdir)/../collects/setup/unixstyle-install.ss" \
           make-install-copytree "$(srcdir)/.." \
-          $(addprefix $(DESTDIR), $(ALLDIRINFO)) @INSTALL_ORIG_TREE@
+          $(ALLDIRINFO) @INSTALL_ORIG_TREE@
 
 fix-paths:
 	if [ "$(DESTDIR)" != "" ]; then \
           mzscheme/mzscheme -mvxqu \
             "$(srcdir)/../collects/setup/unixstyle-install.ss" \
             make-install-destdir-fix "$(srcdir)/.." \
-            $(addprefix $(DESTDIR), $(ALLDIRINFO)) @INSTALL_ORIG_TREE@; \
+            $(ALLDIRINFO) @INSTALL_ORIG_TREE@; \
         fi
