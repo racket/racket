@@ -6,8 +6,6 @@
            (lib "shared.ss" "stepper" "private"))
 
   (define-struct full-mark-struct (module-name source label bindings values))
-  (module-identifier=? #'skipto-annotate
-		       (datum->syntax-object #f 'skipto-annotate))
 
   ; CONTRACTS
   (define mark? (-> ; no args  

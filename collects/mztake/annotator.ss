@@ -12,10 +12,6 @@
            )
   (provide annotate-stx annotate-for-single-stepping)
 
-  (module-identifier=? #'eval/annotations
-		       (datum->syntax-object #f 'eval/annotations))
-
-
   (define (arglist-bindings arglist-stx)
     (syntax-case arglist-stx ()
       [var
