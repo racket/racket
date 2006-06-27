@@ -89,7 +89,7 @@
 START_XFORM_SKIP;
 #endif
 
-int epm_tried = 1;
+int epm_tried = 0;
 typedef BOOL (*EnumProcessModules_t)(HANDLE hProcess, HMODULE* lphModule,
                                      DWORD cb, LPDWORD lpcbNeeded);
 EnumProcessModules_t _EnumProcessModules;
