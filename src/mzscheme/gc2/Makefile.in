@@ -19,11 +19,10 @@ LIBS = @LIBS@
 
 DEF_COLLECTS_DIR = +D INITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../../collects; pwd`"'"'
 
-PRE_MZ@OSX@ = env DYLD_FRAMEWORK_PATH="`pwd`/.."
-PRE_MZ@NOT_OSX@ = 
-XFORM_SETUP = $(PRE_MZ) ../mzscheme -rq $(srcdir)/xform.ss --setup
-XFORM = $(XFORM_SETUP) --cpp "$(CPP) $(CPPFLAGS)" -o
+XFORM_SETUP = ../mzscheme -rq $(srcdir)/xform.ss --setup
+XFORM_NOPRECOMP = $(XFORM_SETUP) --cpp "$(CPP) $(CPPFLAGS)" -o
 XSRCDIR = xsrc
+XFORM = env XFORM_USE_PRECOMP=$(XSRCDIR)/precomp.h $(XFORM_NOPRECOMP)
 SRCDIR = $(srcdir)/../src
 
 OBJS =  salloc.@LTO@ \
@@ -118,7 +117,12 @@ xsrc:
 
 xobjects: $(OBJS) main.@LTO@
 
-XFORMDEP = $(srcdir)/gc2.h $(srcdir)/xform.ss $(srcdir)/xform-mod.ss
+XFORMDEP_NOPRECOMP = $(srcdir)/gc2.h $(srcdir)/xform.ss $(srcdir)/xform-mod.ss
+XFORMDEP = $(XFORMDEP_NOPRECOMP) $(XSRCDIR)/precomp.h
+
+$(XSRCDIR)/precomp.h : $(XFORMDEP_NOPRECOMP) $(srcdir)/precomp.c $(srcdir)/../src/schpriv.h $(srcdir)/../include/scheme.h \
+                       $(srcdir)/../sconfig.h $(srcdir)/../uconfig.h $(srcdir)/../src/schvers.h
+	env XFORM_PRECOMP=yes $(XFORM_NOPRECOMP) $(XSRCDIR)/precomp.h $(srcdir)/precomp.c
 
 $(XSRCDIR)/salloc.c: ../src/salloc.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/salloc.c $(SRCDIR)/salloc.c
@@ -199,7 +203,7 @@ $(XSRCDIR)/vector.c: ../src/vector.@LTO@ $(XFORMDEP)
 $(XSRCDIR)/foreign.c: ../../foreign/foreign.@LTO@ $(XFORMDEP)
 	$(XFORM_SETUP) --cpp "$(CPP) $(CPPFLAGS) -I../../foreign/gcc/libffi/include -I${SRCDIR}/../../mzscheme/src" -o $(XSRCDIR)/foreign.c $(SRCDIR)/../../foreign/foreign.c
 $(XSRCDIR)/main.c: ../main.@LTO@ $(XFORMDEP)
-	$(XFORM) $(XSRCDIR)/main.c $(DEF_COLLECTS_DIR) $(srcdir)/../main.c
+	$(XFORM_NOPRECOMP) $(XSRCDIR)/main.c $(DEF_COLLECTS_DIR) $(srcdir)/../main.c
 
 
 salloc.@LTO@: $(XSRCDIR)/salloc.c
