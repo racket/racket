@@ -1,0 +1,2 @@
+Unless noted otherwise, PLT Documentations are all distributed under
+the terms of the LGPL.  See release-notes/COPYING.LIB.
