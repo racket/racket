@@ -17,8 +17,7 @@
   (require (lib "foreign.ss")
 	   (lib "port.ss")
 	   (lib "etc.ss")
-	   (lib "kw.ss")
-	   (lib "filename-version.ss" "dynext"))
+	   (lib "kw.ss"))
 
   (provide ssl-available?
 	   ssl-load-fail-reason
