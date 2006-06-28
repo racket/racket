@@ -147,6 +147,7 @@
    [(name) (get-ffi-lib name "")]
    [(name version)
     (cond
+     [(ffi-lib? name) name]
      [(not name) (ffi-lib name)] ; #f => NULL => open this executable
      [(not (or (string? name) (path? name)))
       (raise-type-error 'ffi-lib "library-name" name)]
@@ -160,8 +161,7 @@
       ;; file-not-found error.  This is because the dlopen doesn't provide a
       ;; way to distinguish different errors (only dlerror, but that's
       ;; unreliable).
-      (let* ([version (if (zero? (string-length version))
-                        "" (string-append "." version))]
+      (let* ([version (if (pair? version) (string-append "." (car version)) "")]
              [fullpath (lambda (p) (path->complete-path (expand-path p)))]
              [absolute? (absolute-path? name)]
              [name0 (path->string (expand-path name))]     ; orig name
@@ -184,9 +184,6 @@
             ;; give up: call ffi-lib so it will raise an error
             (ffi-lib name)))])]))
 
-(define (get-ffi-lib-internal x)
-  (if (ffi-lib? x) x (get-ffi-lib x)))
-
 ;; These internal functions provide the functionality to be used by
 ;; get-ffi-obj, set-ffi-obj! and define-c below
 (define (ffi-get ffi-obj type)
@@ -203,7 +200,7 @@
    [(name lib) (ffi-obj-ref name lib #f)]
    [(name lib failure)
     (let ([name (get-ffi-obj-name 'ffi-obj-ref name)]
-          [lib  (get-ffi-lib-internal lib)])
+          [lib  (get-ffi-lib lib)])
       (with-handlers ([exn:fail:filesystem?
                        (lambda (e) (if failure (failure) (raise e)))])
         (ffi-obj name lib)))]))
@@ -214,29 +211,17 @@
 (provide* (unsafe get-ffi-obj))
 (define get-ffi-obj*
   (case-lambda
-   [(name lib type)
-    (let ([name (get-ffi-obj-name 'get-ffi-obj name)]
-          [lib  (get-ffi-lib-internal lib)])
-      (ffi-get (ffi-obj name lib) type))]
+   [(name lib type) (get-ffi-obj* name lib type #f)]
    [(name lib type failure)
     (let ([name (get-ffi-obj-name 'get-ffi-obj name)]
-          [lib  (get-ffi-lib-internal lib)])
-      (let ([(obj error?)
-             (with-handlers ([exn:fail:filesystem?
-                              (lambda (e) (values (failure) #t))])
-               (values (ffi-obj name lib) #f))])
+          [lib  (get-ffi-lib lib)])
+      (let-values ([(obj error?)
+                    (with-handlers
+                        ([exn:fail:filesystem?
+                          (lambda (e)
+                            (if failure (values (failure) #t) (raise e)))])
+                      (values (ffi-obj name lib) #f))])
         (if error? obj (ffi-get obj type))))]))
-(define (get-ffi-obj* name lib type . failure)
-  (let ([name (get-ffi-obj-name 'get-ffi-obj name)]
-        [lib  (get-ffi-lib-internal lib)])
-    (let-values ([(obj error?)
-                  (with-handlers ([exn:fail:filesystem?
-                                   (lambda (e)
-                                     (if (pair? failure)
-                                       (values ((car failure)) #t)
-                                       (raise e)))])
-                    (values (ffi-obj name lib) #f))])
-      (if error? obj (ffi-get obj type)))))
 (define-syntax (get-ffi-obj stx)
   (syntax-case stx ()
     [(_ name lib type)
@@ -251,8 +236,7 @@
 ;; crash when the Scheme function is gone.
 (provide* (unsafe set-ffi-obj!))
 (define (set-ffi-obj! name lib type new)
-  (ffi-set! (ffi-obj (get-ffi-obj-name 'set-ffi-obj! name)
-                     (get-ffi-lib-internal lib))
+  (ffi-set! (ffi-obj (get-ffi-obj-name 'set-ffi-obj! name) (get-ffi-lib lib))
             type new))
 
 ;; Combining the above two in a `define-c' special form which makes a Scheme
@@ -260,7 +244,7 @@
 (provide* (unsafe make-c-parameter))
 (define (make-c-parameter name lib type)
   (let ([obj (ffi-obj (get-ffi-obj-name 'make-c-parameter name)
-                      (get-ffi-lib-internal lib))])
+                      (get-ffi-lib lib))])
     (case-lambda [()    (ffi-get  obj type)]
                  [(new) (ffi-set! obj type new)])))
 ;; Then the fake binding syntax, uses the defined identifier to name the
