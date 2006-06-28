@@ -360,7 +360,7 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
   ; then returns a path to it 
   (define (get-package-from-server pkg)
     (with-handlers
-        ([exn:fail? (lambda (e) 
+        (#;[exn:fail? (lambda (e) 
                       (raise (make-exn:fail
                               (string->immutable-string
                                (format 
@@ -410,8 +410,8 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
                        (current-time))
                ;; oh man is this a bad hack!
                (parameterize ((current-namespace (make-namespace)))
-                 ((dynamic-require '(lib "plt-single-installer.ss" "setup") 'install-planet-package)
-                  path the-dir (list owner (pkg-spec-name pkg) extra-path maj min)))))
+                 (let ([ipp (dynamic-require '(lib "plt-single-installer.ss" "setup") 'install-planet-package)])
+                   (ipp path the-dir (list owner (pkg-spec-name pkg) extra-path maj min))))))
             (make-pkg (pkg-spec-name pkg) (pkg-spec-path pkg) maj min the-dir)))))
   
   ; download-package : FULL-PKG-SPEC -> RESPONSE
@@ -505,55 +505,64 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
   ;; The HTTP protocol does not allow any kind of complicated negotiation, but it appears that
   ;; many more users can make HTTP requests than requests from nonstandard protocols.
   (define (download-package/http pkg)
+    (let loop ([attempts 1])
+      (when (> attempts 5)
+        (raise (make-exn:i/o:protocol 
+                "Download failed too many times (possibly due to an unreliable network connection)"
+                (current-continuation-marks))))
+        
+      (let* ((args              (pkg->servlet-args pkg))
+             (target            (copy-struct url (string->url (HTTP-DOWNLOAD-SERVLET-URL)) (url-query args)))
+             (ip                (get-impure-port target))
+             (head              (purify-port ip))
+             (response-code/str (get-http-response-code head))
+             (response-code     (string->number response-code/str)))
+        
+        (define (abort msg)
+          (close-input-port ip)
+          (raise (make-exn:i/o:protocol (string->immutable-string msg)
+                                        (current-continuation-marks))))
+      
+        (case response-code
+          [(#f)  (abort (format "Server returned invalid HTTP response code ~s" response-code/str))]
+          [(200)
+           (let ((maj/str (extract-field "Package-Major-Version" head))
+                 (min/str (extract-field "Package-Minor-Version" head))
+                 (content-length/str (extract-field "Content-Length" head)))
+             (unless (and maj/str min/str content-length/str
+                          (nat? (string->number maj/str))
+                          (nat? (string->number min/str))
+                          (nat? (string->number content-length/str)))
+               (printf "~a" head)
+               (abort "Server did not include valid major and minor version information"))
+             (let* ((filename (make-temporary-file "planettmp~a.plt"))
+                    (maj      (string->number maj/str))
+                    (min      (string->number min/str))
+                    (content-length (string->number content-length/str)))
+               (let ([op (open-output-file filename 'truncate/replace)])
+                 (copy-port ip op)
+                 (close-input-port ip)
+                 (close-output-port op)
+                 (if (= (file-size filename) content-length)
+                     (list #t filename maj min)
+                     (loop (add1 attempts))))))]
+          [(404)
+           (begin0
+             (list #f (format "Server had no matching package: ~a" (read-line ip)))
+             (close-input-port ip))]
+          [(400)
+           (abort (format "Internal error (malformed request): ~a" (read-line ip)))]
+          [(500)
+           (abort (format "Server internal error: ~a"
+                          (apply string-append
+                                 (let loop ()
+                                   (let ((line (read-line ip)))
+                                     (cond
+                                       [(eof-object? line) '()]
+                                       [else (list* line "\n" (loop))]))))))]
+          [else
+           (abort (format "Internal error (unknown HTTP response code ~a)" response-code))]))))
     
-    (let* ((args              (pkg->servlet-args pkg))
-           (target            (copy-struct url (string->url (HTTP-DOWNLOAD-SERVLET-URL)) (url-query args)))
-           (ip                (get-impure-port target))
-           (head              (purify-port ip))
-           (response-code/str (get-http-response-code head))
-           (response-code     (string->number response-code/str)))
-      
-      (define (abort msg)
-        (close-input-port ip)
-        (raise (make-exn:i/o:protocol (string->immutable-string msg)
-                                      (current-continuation-marks))))
-      
-      (case response-code
-        [(#f)  (abort (format "Server returned invalid HTTP response code ~s" response-code/str))]
-        [(200)
-         (let ((maj/str (extract-field "Package-Major-Version" head))
-               (min/str (extract-field "Package-Minor-Version" head))
-               (content-length (extract-field "Content-Length" head)))
-           (unless (and maj/str min/str
-                        (nat? (string->number maj/str))
-                        (nat? (string->number min/str)))
-             (printf "~a" head)
-             (abort "Server did not include valid major and minor version information"))
-           (let* ((filename (make-temporary-file "planettmp~a.plt"))
-                  (op       (open-output-file filename 'truncate))
-                  (maj      (string->number maj/str))
-                  (min      (string->number min/str)))
-             (copy-port ip op)
-             (close-input-port ip)
-             (close-output-port op)
-             (list #t filename maj min)))]
-        [(404)
-         (begin0
-           (list #f (format "Server had no matching package: ~a" (read-line ip)))
-           (close-input-port ip))]
-        [(400)
-         (abort (format "Internal error (malformed request): ~a" (read-line ip)))]
-        [(500)
-         (abort (format "Server internal error: ~a"
-                        (apply string-append
-                               (let loop ()
-                                 (let ((line (read-line ip)))
-                                   (cond
-                                     [(eof-object? line) '()]
-                                     [else (list* line "\n" (loop))]))))))]
-        [else
-         (abort (format "Internal error (unknown HTTP response code ~a)" response-code))])))
-  
   ; ==========================================================================================
   ; MODULE MANAGEMENT
   ; Handles interaction with the module system

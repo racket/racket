@@ -298,6 +298,27 @@ _Distributing Packages with PLaneT_
 To put a package on PLaneT, or release an upgrade to an
 already-existing package:
 
+0. WRITE YOUR PACKAGE
+
+PLaneT can distribute whatever programs you write, but keep
+these guidelines in mind as you write:
+  i. Organize your code into modules. Since the planet client is
+integrated into mzscheme's `require' form, it works best if your code
+is arranged into modules.
+  ii. When one module in your program depends on another, it is best 
+to require it using the relative-file-name form rather than the
+planet require form. For instance, if your program contains files
+primary.ss and helper.ss where primary.ss requires helper, use the form
+
+(require "helper.ss")
+
+instead of
+
+(require (planet "helper.ss" ("username" "packagename.plt" 1 0)))
+
+in files that will also be a part of the package.
+
+
 1. PREPARE A DIRECTORY
 
 Make sure that all source files, documentation, etc. that you want to
