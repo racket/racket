@@ -28,13 +28,13 @@ Various common pieces of code that both the client and server need to access
   (define (language-version->repository ver)
     (cond
       [(regexp-match #rx"^20.+" ver) "207.1"]
-      [(regexp-match #rx"(^30.+)|(^29.+)" ver) "300"]
+      [(regexp-match #rx"(^3..+)|(^29.+)" ver) "300"]
       [else #f]))
   
   (define (version->description ver)
     (cond
       [(string=? ver "207.1") "20x"]
-      [(string=? ver "300") "299.x-30x"]
+      [(string=? ver "300") "299.x-3xx"]
       [else (error 'version->description "Expected one of 207.1 and 300, got ~a" ver)]))
   
   (define (legal-language? l)
